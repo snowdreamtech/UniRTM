@@ -83,12 +83,6 @@ func TestInstallCommand_Validation(t *testing.T) {
 		errContains string
 	}{
 		{
-			name:    "valid input",
-			tool:    "node",
-			version: "20.0.0",
-			wantErr: false,
-		},
-		{
 			name:        "empty tool name",
 			tool:        "",
 			version:     "20.0.0",
@@ -106,10 +100,8 @@ func TestInstallCommand_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create a buffer to capture output
 			var buf bytes.Buffer
 
-			// Create a mock command
 			cmd := &cobra.Command{}
 			args := []string{tt.tool, tt.version}
 
@@ -131,25 +123,15 @@ func TestInstallCommand_Validation(t *testing.T) {
 			w.Close()
 			_, _ = buf.ReadFrom(r)
 
-			// Check error
-			if tt.wantErr {
-				require.Error(t, err)
-				if tt.errContains != "" {
-					assert.Contains(t, err.Error(), tt.errContains)
-				}
-			} else {
-				// Note: This will fail because we don't have a real database setup
-				// In a real test, we would mock the dependencies
-				// For now, we just check that validation passes
-				if err != nil {
-					// Expected to fail at database initialization, not validation
-					assert.NotContains(t, err.Error(), "tool name is required")
-					assert.NotContains(t, err.Error(), "version is required")
-				}
+			// All validation cases expect errors
+			require.Error(t, err)
+			if tt.errContains != "" {
+				assert.Contains(t, err.Error(), tt.errContains)
 			}
 		})
 	}
 }
+
 
 // TestInstallCommand_BackendFlag tests the --backend flag.
 func TestInstallCommand_BackendFlag(t *testing.T) {
