@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 // Package internal provides core functionality for the unirtm server application.
 // It includes server initialization, configuration, request handling, and graceful shutdown.
 package internal

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 // Package property contains property-based tests for UniRTM.
 //
 // Property-based tests verify universal properties that should hold for all inputs,

@@ -65,6 +65,7 @@ if err != nil {
 ```
 
 If a checksum mismatch is detected:
+
 1. The corrupted entry is automatically deleted
 2. An audit log entry is created
 3. An error is returned to trigger re-download
@@ -97,6 +98,7 @@ err := cacheManager.AutoCleanup(ctx)
 ```
 
 The automatic cleanup process:
+
 1. Calculates current cache size by walking the cache directory
 2. If size exceeds the configured threshold (default 5GB):
    - Purges expired entries first
@@ -133,6 +135,7 @@ cacheManager, err := NewCacheManager(cacheRepo, auditRepo, config)
 ## Thread Safety
 
 The Cache Manager is thread-safe:
+
 - All operations use `sync.RWMutex` for concurrent access
 - Read operations use `RLock()` for concurrent reads
 - Write operations use `Lock()` for exclusive access

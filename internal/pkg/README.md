@@ -9,6 +9,7 @@ This directory contains shared internal packages used across UniRTM.
 Zerolog-based logging system with rotating file support.
 
 **Features:**
+
 - Structured logging with JSON output
 - Multiple log levels (Trace, Debug, Info, Warn, Error, Fatal, Panic)
 - Rotating file writers for error.log and unirtm.log
@@ -16,6 +17,7 @@ Zerolog-based logging system with rotating file support.
 - Stack trace capture for errors
 
 **Usage:**
+
 ```go
 import "github.com/snowdreamtech/unirtm/internal/pkg/logger"
 
@@ -32,11 +34,13 @@ logger.Logger.Error().Err(err).Msg("installation failed")
 Environment and build metadata management.
 
 **Features:**
+
 - Project metadata (name, version, author)
 - Build information (time, git tag, commit hash)
 - Runtime configuration flags (debug, trace, quiet)
 
 **Usage:**
+
 ```go
 import "github.com/snowdreamtech/unirtm/internal/pkg/env"
 

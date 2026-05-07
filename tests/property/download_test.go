@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 package property
 
 import (
@@ -68,8 +71,6 @@ func TestProperty13_DownloadRetryBehavior(t *testing.T) {
 		})
 	}
 }
-
-
 
 // TestProperty14_ChecksumVerification verifies checksum verification correctness
 // Property 14: Checksum Verification

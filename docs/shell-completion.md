@@ -172,9 +172,11 @@ bash  fish  powershell  zsh
    - **macOS**: `brew install bash-completion@2`
 
 2. Verify bash-completion is loaded in your shell:
+
    ```bash
    type _init_completion
    ```
+
    If this command returns "not found", bash-completion is not loaded.
 
 3. Check that the completion script is in the correct directory:
@@ -184,21 +186,25 @@ bash  fish  powershell  zsh
 ### Zsh Completion Not Working
 
 1. Ensure `compinit` is called in your `~/.zshrc`:
+
    ```zsh
    autoload -U compinit; compinit
    ```
 
 2. Check that the completion script is in a directory in your `$fpath`:
+
    ```zsh
    echo $fpath
    ```
 
 3. Verify the completion file has the correct name (must start with `_`):
+
    ```zsh
    ls -la "${fpath[1]}/_unirtm"
    ```
 
 4. Clear the completion cache and restart your shell:
+
    ```zsh
    rm -f ~/.zcompdump*
    exec zsh
@@ -207,11 +213,13 @@ bash  fish  powershell  zsh
 ### Fish Completion Not Working
 
 1. Ensure the completion file is in the correct directory:
+
    ```fish
    ls -la ~/.config/fish/completions/unirtm.fish
    ```
 
 2. Restart your shell or reload completions:
+
    ```fish
    source ~/.config/fish/completions/unirtm.fish
    ```
@@ -219,20 +227,25 @@ bash  fish  powershell  zsh
 ### PowerShell Completion Not Working
 
 1. Check your execution policy:
+
    ```powershell
    Get-ExecutionPolicy
    ```
+
    If it's set to `Restricted`, you need to change it:
+
    ```powershell
    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
    ```
 
 2. Verify the completion script is sourced in your profile:
+
    ```powershell
    Get-Content $PROFILE
    ```
 
 3. Reload your PowerShell profile:
+
    ```powershell
    . $PROFILE
    ```

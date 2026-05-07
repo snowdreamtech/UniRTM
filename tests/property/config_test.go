@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 // Package property contains property-based tests for UniRTM.
 //
 // Property-based tests verify universal properties that should hold for all inputs,
@@ -647,11 +650,11 @@ func TestProperty_InvalidSyntaxErrorReporting(t *testing.T) {
 		func(seed int) bool {
 			// Generate various invalid TOML syntax patterns
 			invalidTOMLs := []string{
-				"[tools\nnode = { version = \"20.0.0\" }", // Missing closing bracket
+				"[tools\nnode = { version = \"20.0.0\" }",                              // Missing closing bracket
 				"tools.node.version = \"20.0.0\ntools.python = { version = \"3.11\" }", // Missing closing quote
-				"[tools]\nnode = { version = 20.0.0 }", // Unquoted string value
-				"[tools]\nnode = { version = \"20.0.0\", }", // Trailing comma
-				"[tools\n[settings]", // Unclosed section
+				"[tools]\nnode = { version = 20.0.0 }",                                 // Unquoted string value
+				"[tools]\nnode = { version = \"20.0.0\", }",                            // Trailing comma
+				"[tools\n[settings]",                                                   // Unclosed section
 			}
 
 			// Pick one based on seed
@@ -690,9 +693,9 @@ func TestProperty_InvalidSyntaxErrorReporting(t *testing.T) {
 			// Generate various invalid YAML syntax patterns
 			invalidYAMLs := []string{
 				"tools:\n  node:\n    version: 20.0.0\n  python\n    version: 3.11", // Missing colon
-				"tools:\n  node:\n    version: \"20.0.0\n    backend: github", // Unclosed quote
-				"tools:\n  - node:\n      version: 20.0.0", // Mixed mapping/sequence
-				"tools:\n  node:\n  version: 20.0.0", // Invalid indentation
+				"tools:\n  node:\n    version: \"20.0.0\n    backend: github",       // Unclosed quote
+				"tools:\n  - node:\n      version: 20.0.0",                          // Mixed mapping/sequence
+				"tools:\n  node:\n  version: 20.0.0",                                // Invalid indentation
 			}
 
 			// Pick one based on seed

@@ -238,6 +238,7 @@ All index operations are automatically logged to the audit repository:
 - `index_delete` - Tool deleted from index
 
 Each audit entry includes:
+
 - Operation type
 - Tool name (if applicable)
 - Status (success/failure)
@@ -272,6 +273,7 @@ The Index Manager is thread-safe and uses read-write mutexes for concurrent acce
 - Write operations (Upsert, Delete, Update) use write locks
 
 Multiple goroutines can safely:
+
 - Read concurrently
 - Write exclusively (one at a time)
 

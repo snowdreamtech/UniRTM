@@ -20,27 +20,35 @@ This package handles all configuration management for UniRTM using Viper.
 ## Data Structures
 
 ### Config
+
 Root configuration structure containing:
+
 - **Tools**: Map of tool names to version specifications
 - **Env**: Environment variable definitions
 - **Settings**: Global settings (cache, data directories, TTL, concurrency)
 - **Tasks**: Task definitions with dependencies
 
 ### ToolConfig
+
 Tool version specification with:
+
 - **Version**: Required version string (exact, range, or alias)
 - **Backend**: Optional backend name (github, aqua, http)
 - **Provider**: Optional provider name (node, python, go, generic)
 
 ### Settings
+
 Global settings with:
+
 - **CacheDir**: Cache directory path
 - **DataDir**: Data directory path
 - **CacheTTL**: Cache time-to-live in seconds
 - **Concurrency**: Maximum concurrent operations
 
 ### Task
+
 Task definition with:
+
 - **Description**: Human-readable description
 - **Run**: Command to execute
 - **Env**: Task-specific environment variables
@@ -49,6 +57,7 @@ Task definition with:
 ## Validation
 
 All structures implement `Validate()` methods that:
+
 - Check required fields are present
 - Validate field values are within acceptable ranges
 - Report all validation errors (not just the first one)
@@ -94,6 +103,7 @@ go test -race -cover ./internal/config/
 ## Requirements
 
 Implements requirements:
+
 - ✅ **1.3**: Configuration validation with required field checking
 - ✅ **26.1**: TOML tag support for all structures
 - ✅ **26.2**: YAML tag support for all structures

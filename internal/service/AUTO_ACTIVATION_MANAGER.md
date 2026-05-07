@@ -181,6 +181,7 @@ unirtm hook-env --shell bash
 ```
 
 This command:
+
 1. Detects the current directory
 2. Compares with the previous directory (from `$UNIRTM_OLD_PWD`)
 3. Determines the activation action needed

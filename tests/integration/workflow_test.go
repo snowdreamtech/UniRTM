@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 // Package integration provides end-to-end integration tests for the full
 // UniRTM installation workflow:  install → activate → use → uninstall.
 //
@@ -67,7 +70,6 @@ func TestInstallWorkflow_DuplicateDetection(t *testing.T) {
 	err2 := installRepo.Create(ctx, inst)
 	assert.Error(t, err2, "second create must fail for duplicate tool@version")
 }
-
 
 // TestDatabase_TransactionAtomicity verifies that a failed transaction
 // leaves the database unchanged.

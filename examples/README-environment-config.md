@@ -82,6 +82,7 @@ DEBUG = "true"
 ```
 
 When loading with the `development` environment:
+
 - Node.js version will be `18.0.0` (overridden)
 - Python version will be `3.11.0` (preserved from base)
 - `NODE_ENV` will be `development` (overridden)

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 // Package property contains property-based tests for configuration atomicity
 // and dry-run no-side-effects guarantees.
 //
@@ -69,7 +72,6 @@ backend = "github"
 	contentAfter, _ := os.ReadFile(cfgPath)
 	assert.Equal(t, contentBefore, contentAfter, "failed atomic write must not corrupt original")
 }
-
 
 // TestProperty_DryRunNoSideEffects verifies that running with --dry-run produces
 // no filesystem changes and no database records.

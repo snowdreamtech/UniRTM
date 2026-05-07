@@ -68,6 +68,7 @@ fmt.Printf("Current schema version: %d\n", version)
 ### Tables
 
 #### installations
+
 Stores information about installed tools.
 
 | Column | Type | Description |
@@ -83,13 +84,16 @@ Stores information about installed tools.
 | metadata | TEXT | JSON-encoded metadata |
 
 **Indexes:**
+
 - `idx_installations_tool` on `tool`
 - `idx_installations_installed_at` on `installed_at`
 
 **Constraints:**
+
 - `UNIQUE(tool, version)` - prevents duplicate installations
 
 #### cache
+
 Stores cached data with TTL support.
 
 | Column | Type | Description |
@@ -100,9 +104,11 @@ Stores cached data with TTL support.
 | created_at | TIMESTAMP | Creation timestamp |
 
 **Indexes:**
+
 - `idx_cache_expires_at` on `expires_at`
 
 #### audit_log
+
 Records all operations for audit purposes.
 
 | Column | Type | Description |
@@ -118,11 +124,13 @@ Records all operations for audit purposes.
 | metadata | TEXT | JSON-encoded metadata |
 
 **Indexes:**
+
 - `idx_audit_log_timestamp` on `timestamp`
 - `idx_audit_log_operation` on `operation`
 - `idx_audit_log_tool` on `tool`
 
 #### tool_index
+
 Stores tool metadata and index information.
 
 | Column | Type | Description |
@@ -136,10 +144,12 @@ Stores tool metadata and index information.
 | metadata | TEXT | JSON-encoded metadata |
 
 **Indexes:**
+
 - `idx_tool_index_backend` on `backend`
 - `idx_tool_index_updated_at` on `updated_at`
 
 #### schema_migrations
+
 Tracks applied database migrations.
 
 | Column | Type | Description |
@@ -173,13 +183,13 @@ var migrations = []Migration{
 }
 ```
 
-2. Update `CurrentSchemaVersion` in `schema.go`:
+1. Update `CurrentSchemaVersion` in `schema.go`:
 
 ```go
 const CurrentSchemaVersion = 2
 ```
 
-3. The migration will be automatically applied on next database open.
+1. The migration will be automatically applied on next database open.
 
 ### Migration Safety
 
@@ -213,6 +223,7 @@ go test -race ./internal/database/...
 ## Design Decisions
 
 ### SQLite Choice
+
 - Embedded database (no separate server process)
 - Zero configuration
 - ACID transactions
@@ -220,17 +231,20 @@ go test -race ./internal/database/...
 - Sufficient performance for local tool management
 
 ### WAL Mode
+
 - Enables concurrent reads without blocking
 - Better performance for read-heavy workloads
 - Minimal overhead for write operations
 
 ### Migration System
+
 - Automatic schema evolution
 - Version tracking prevents duplicate applications
 - Transaction-based for safety
 - Rollback support for development
 
 ### Connection Pooling
+
 - Single writer connection (SQLite limitation)
 - Prevents write contention
 - Readers can still access concurrently in WAL mode

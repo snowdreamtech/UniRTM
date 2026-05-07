@@ -88,6 +88,7 @@ This will display detailed debug information during the uninstallation process.
 By default, the uninstall command requires explicit user confirmation before proceeding. This is a safety measure to prevent accidental deletion of tools.
 
 The confirmation prompt accepts:
+
 - `y` or `yes` (case-insensitive) - Proceed with uninstallation
 - `n`, `no`, or any other input - Cancel the operation
 

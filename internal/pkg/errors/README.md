@@ -46,6 +46,7 @@ Errors are classified into three categories, each with specific handling require
 Invalid input, configuration errors, version not found.
 
 **Characteristics:**
+
 - Return descriptive error messages
 - Suggest corrective actions
 - Safe to display to end users
@@ -63,6 +64,7 @@ if version == "" {
 Disk full, permission denied, database corruption.
 
 **Characteristics:**
+
 - Log full error context
 - Return generic user-safe messages
 - Require system-level intervention
@@ -80,6 +82,7 @@ if err := os.WriteFile(path, data, 0644); err != nil {
 Network failures, backend API errors, download failures.
 
 **Characteristics:**
+
 - Implement retry logic
 - Return wrapped errors with context
 - May be transient
@@ -181,6 +184,7 @@ if errors.Is(err, errors.ErrChecksumMismatch) {
 ### 1. Always Wrap Errors with Context
 
 ❌ **Bad:**
+
 ```go
 if err != nil {
     return err
@@ -188,6 +192,7 @@ if err != nil {
 ```
 
 ✅ **Good:**
+
 ```go
 if err != nil {
     return errors.Wrap(err, "install tool %s version %s", tool, version)
@@ -197,11 +202,13 @@ if err != nil {
 ### 2. Use Appropriate Error Categories
 
 ❌ **Bad:**
+
 ```go
 return errors.New("invalid version")
 ```
 
 ✅ **Good:**
+
 ```go
 return errors.NewUserError("invalid version format", errors.ErrInvalidConfig)
 ```
@@ -209,6 +216,7 @@ return errors.NewUserError("invalid version format", errors.ErrInvalidConfig)
 ### 3. Preserve Error Chains
 
 ❌ **Bad:**
+
 ```go
 if err != nil {
     return fmt.Errorf("operation failed: %s", err.Error())
@@ -216,6 +224,7 @@ if err != nil {
 ```
 
 ✅ **Good:**
+
 ```go
 if err != nil {
     return errors.Wrap(err, "operation failed")
@@ -225,6 +234,7 @@ if err != nil {
 ### 4. Check Errors with errors.Is()
 
 ❌ **Bad:**
+
 ```go
 if err.Error() == "not found" {
     // ...
@@ -232,6 +242,7 @@ if err.Error() == "not found" {
 ```
 
 ✅ **Good:**
+
 ```go
 if errors.Is(err, errors.ErrNotFound) {
     // ...
@@ -298,4 +309,4 @@ go test ./internal/pkg/errors/...
 
 - **Requirements**: 12.1, 12.2
 - **Design Document**: Error Handling section
-- **Go Error Handling**: https://go.dev/blog/go1.13-errors
+- **Go Error Handling**: <https://go.dev/blog/go1.13-errors>

@@ -64,10 +64,12 @@ for _, tool := range order.Tools {
 ## Dependency Graph Structure
 
 The dependency graph is represented as an adjacency list where:
+
 - `graph.nodes[tool]` contains the list of tools that `tool` depends on
 - `graph.versions[tool]` contains the resolved version for `tool`
 
 Example:
+
 ```go
 graph := &DependencyGraph{
     nodes: map[string][]string{
@@ -109,6 +111,7 @@ The resolver uses depth-first search (DFS) with a recursion stack to detect cycl
 4. Report the cycle path for debugging
 
 Example cycle detection:
+
 ```
 Circular dependency detected: a -> b -> c -> d -> b
 ```
@@ -211,6 +214,7 @@ The resolver includes comprehensive unit tests covering:
 - **Integration**: Complete dependency tree resolution, error handling
 
 Run tests:
+
 ```bash
 go test -v ./internal/service -run TestDependencyResolver
 ```

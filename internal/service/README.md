@@ -31,6 +31,7 @@ Database Layer (SQLite)
 The `AuditService` provides comprehensive audit logging functionality for all system operations.
 
 **Features:**
+
 - High-level API for creating audit log entries
 - Convenience methods for common operations (install, uninstall, activate, etc.)
 - Integration with the logger for immediate visibility
@@ -140,6 +141,7 @@ err := auditService.LogOperation(ctx, entry)
 The `AutoActivationManager` provides automatic environment switching based on directory context.
 
 **Features:**
+
 - Automatic detection of project configuration files
 - Shell hook generation for directory change events
 - Seamless environment switching when entering/leaving projects
@@ -172,6 +174,7 @@ fmt.Println(hook.Content)
 The `IndexManager` manages tool index storage, retrieval, search, and updates.
 
 **Features:**
+
 - Tool index storage and retrieval
 - Search functionality (name, description, tags)
 - Filtering by backend type
@@ -218,6 +221,7 @@ githubTools, err := indexManager.FilterByBackend(ctx, "github")
 ```
 
 **Validates Requirements:**
+
 - **11.1**: Maintain searchable index
 - **11.2**: Update from multiple sources
 - **11.3**: Store tool metadata
@@ -230,6 +234,7 @@ githubTools, err := indexManager.FilterByBackend(ctx, "github")
 ## Design Principles
 
 **Features:**
+
 - Shell-specific script generation (bash, zsh, fish, PowerShell)
 - PATH modification to include shims directory
 - Environment variable setting for active tool versions
@@ -307,7 +312,7 @@ if err != nil {
 - `ScopeGlobal` - System-wide default tool versions
 - `ScopeProject` - Project-specific tool versions
 
-## Design Principles
+## Core Design Principles
 
 ### 1. Single Responsibility
 

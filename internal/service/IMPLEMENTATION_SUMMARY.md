@@ -218,6 +218,7 @@ ok      github.com/snowdreamtech/unirtm/internal/service        0.336s
 ```
 
 **Test Coverage:**
+
 - 19 unit tests
 - All edge cases covered (errors, invalid metadata, etc.)
 - Mock repository for isolated testing
@@ -242,6 +243,7 @@ ok      github.com/snowdreamtech/unirtm/internal/service        0.208s
 ```
 
 **Example Coverage:**
+
 - 5 example tests demonstrating common usage patterns
 - Integration with real database (in-memory)
 - Demonstrates all major features
@@ -260,6 +262,7 @@ ok      github.com/snowdreamtech/unirtm/internal/service        0.208s
 ### 1. Service Layer Pattern
 
 Implemented a clean service layer that:
+
 - Separates business logic from data access
 - Provides high-level APIs for common operations
 - Integrates with existing infrastructure (logger, error handling)
@@ -267,6 +270,7 @@ Implemented a clean service layer that:
 ### 2. Convenience Methods
 
 Provided convenience methods for common operations to:
+
 - Reduce boilerplate code
 - Ensure consistent logging patterns
 - Make the API more discoverable
@@ -274,12 +278,14 @@ Provided convenience methods for common operations to:
 ### 3. Dual Logging
 
 Logs to both database and application logger:
+
 - Database: Permanent audit trail for compliance
 - Application logger: Immediate visibility for debugging
 
 ### 4. Metadata Flexibility
 
 Support for custom metadata via `map[string]interface{}`:
+
 - Allows operation-specific data
 - JSON-encoded for storage
 - Graceful handling of invalid metadata
@@ -287,6 +293,7 @@ Support for custom metadata via `map[string]interface{}`:
 ### 5. Error Handling
 
 Graceful error handling:
+
 - Repository errors wrapped with context
 - Invalid metadata logs warning but doesn't fail
 - Errors logged to both database and application logger
@@ -296,6 +303,7 @@ Graceful error handling:
 ### 1. Repository Layer
 
 Integrates with `repository.AuditRepository`:
+
 - Uses existing database schema
 - Leverages prepared statements for performance
 - Supports all query filters
@@ -303,6 +311,7 @@ Integrates with `repository.AuditRepository`:
 ### 2. Logger
 
 Integrates with `internal/pkg/logger`:
+
 - Structured logging with context fields
 - Automatic log level selection (INFO/ERROR)
 - Stack trace capture for errors
@@ -310,6 +319,7 @@ Integrates with `internal/pkg/logger`:
 ### 3. Error Handling
 
 Uses `internal/pkg/errors`:
+
 - Error wrapping with context
 - Error classification (user/system/external)
 - Consistent error messages

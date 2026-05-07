@@ -176,6 +176,7 @@ Created 12 example tests demonstrating:
 **Decision**: Implement exponential backoff using bit shifting: `1 << (attempt - 1)`.
 
 **Rationale**:
+
 - Simple and efficient calculation
 - Produces exact sequence: 1s → 2s → 4s → 8s → 16s
 - Caps at 16 seconds to avoid excessive delays
@@ -186,6 +187,7 @@ Created 12 example tests demonstrating:
 **Decision**: Implement retry logic in `Download()`, not in `downloadOnce()`.
 
 **Rationale**:
+
 - Clear separation of concerns
 - `downloadOnce()` focuses on single attempt
 - `Download()` orchestrates retry strategy
@@ -196,6 +198,7 @@ Created 12 example tests demonstrating:
 **Decision**: Use a custom `progressWriter` that wraps `io.Writer`.
 
 **Rationale**:
+
 - Transparent to the copy operation
 - No need to manually track progress
 - Automatically called on every write
@@ -206,6 +209,7 @@ Created 12 example tests demonstrating:
 **Decision**: Validate URLs before attempting download.
 
 **Rationale**:
+
 - Fail fast on invalid input
 - Avoid wasting retry attempts on user errors
 - Provide clear error messages
@@ -216,6 +220,7 @@ Created 12 example tests demonstrating:
 **Decision**: Support both "sha256:hash" and "hash" formats.
 
 **Rationale**:
+
 - Flexible for different backend formats
 - Backwards compatible
 - Easy to parse
@@ -226,6 +231,7 @@ Created 12 example tests demonstrating:
 **Decision**: Use categorized errors from `internal/pkg/errors`.
 
 **Rationale**:
+
 - Consistent error handling across the system
 - Enables appropriate retry logic (don't retry user errors)
 - Provides correct exit codes
@@ -236,6 +242,7 @@ Created 12 example tests demonstrating:
 **Decision**: Respect context cancellation at every step.
 
 **Rationale**:
+
 - Enables graceful shutdown
 - Supports timeout control
 - Prevents resource leaks
@@ -246,6 +253,7 @@ Created 12 example tests demonstrating:
 **Decision**: Always delete partial downloads on failure.
 
 **Rationale**:
+
 - Prevents disk space waste
 - Avoids confusion with incomplete files
 - Ensures clean state for retry

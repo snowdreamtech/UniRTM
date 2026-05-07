@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 // Package internal provides core functionality for the unirtm command line tool.
 // This package includes version information handling and other internal utilities
 // that support the main application commands.
@@ -5,16 +8,15 @@ package internal
 
 import (
 	"fmt"
-	"runtime"
-	"strings"
 	"github.com/common-nighthawk/go-figure"
 	"github.com/rs/zerolog"
+	"runtime"
+	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 	"github.com/spf13/cobra"
 )
-
 
 // welcome prints a stylized "unirtm" title in green color to the default Gin writer.
 // It uses the "figure" package to create an ASCII art title with the "larry3d" font.

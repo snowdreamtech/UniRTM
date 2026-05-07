@@ -39,6 +39,7 @@ type Transaction interface {
 ```
 
 The `Transaction` interface provides:
+
 - Transaction control methods (`Commit`, `Rollback`)
 - Access to transaction-scoped repositories
 

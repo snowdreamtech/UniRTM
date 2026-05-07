@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 // Package service provides business logic for UniRTM operations.
 package service
 
@@ -175,9 +178,9 @@ func (cv *ConfigValidator) Validate(ctx context.Context, cfg *config.Config) *Co
 	result.Valid = !result.HasErrors()
 
 	logger.Info("Configuration validation complete", map[string]interface{}{
-		"valid":    result.Valid,
-		"issues":   len(result.Issues),
-		"summary":  result.Summary(),
+		"valid":   result.Valid,
+		"issues":  len(result.Issues),
+		"summary": result.Summary(),
 	})
 
 	return result

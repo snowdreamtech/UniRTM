@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 // Package service provides business logic for UniRTM operations.
 package service
 
@@ -54,10 +57,10 @@ type ProviderFactory func() provider.Provider
 //
 // Validates Requirements: 22.1, 22.2, 22.3, 22.4, 22.5, 22.6
 type PluginManager struct {
-	mu              sync.RWMutex
-	pluginsDir      string
-	loadedPlugins   []PluginMetadata
-	backendRegistry *backend.Registry
+	mu               sync.RWMutex
+	pluginsDir       string
+	loadedPlugins    []PluginMetadata
+	backendRegistry  *backend.Registry
 	providerRegistry *provider.Registry
 }
 

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 // Package output provides CLI output formatting capabilities including
 // progress indicators, JSON output, and color-coded output.
 package output

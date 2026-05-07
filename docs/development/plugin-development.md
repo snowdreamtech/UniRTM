@@ -173,6 +173,7 @@ go build -buildmode=plugin -o ~/.config/unirtm/plugins/my-tool.so ./my-tool-prov
 ## Plugin Directory
 
 Plugins are loaded from (in order):
+
 1. `$UNIRTM_PLUGIN_DIR` (environment variable)
 2. `~/.config/unirtm/plugins/`
 3. `/etc/unirtm/plugins/` (system-wide)
@@ -181,7 +182,7 @@ Plugins are loaded from (in order):
 
 ## API Stability
 
-The **PluginAPIVersion** constant in `internal/service/plugin.go` is `"1"`.  
+The **PluginAPIVersion** constant in `internal/service/plugin.go` is `"1"`.
 UniRTM will **refuse to load** plugins with a mismatched API version and log a warning.
 
 Breaking changes to the API will increment this version. Plugins must be recompiled

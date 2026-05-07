@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 // Package config provides configuration data structures and validation for UniRTM.
 //
 // This package defines the core configuration types used throughout the UniRTM system,

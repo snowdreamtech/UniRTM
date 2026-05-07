@@ -71,9 +71,11 @@ type SemVer struct {
 Parses a version string into a Version object.
 
 **Parameters:**
+
 - `versionStr` - The version string to parse
 
 **Returns:**
+
 - `*Version` - The parsed version object
 - `error` - Error if parsing fails
 
@@ -106,9 +108,11 @@ v, err := ParseVersion("latest")
 Formats a Version object back into a version string.
 
 **Parameters:**
+
 - `v` - The version object to format
 
 **Returns:**
+
 - `string` - The formatted version string
 - `error` - Error if formatting fails
 

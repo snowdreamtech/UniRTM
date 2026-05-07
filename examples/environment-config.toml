@@ -14,7 +14,7 @@ DATABASE_URL = "postgres://prod-db:5432/myapp"
 
 [settings]
 cache_dir = "/var/cache/unirtm"
-cache_ttl = 86400  # 24 hours
+cache_ttl = 86400               # 24 hours
 concurrency = 16
 
 [tasks.build]
@@ -32,7 +32,7 @@ run = "kubectl apply -f k8s/production/"
 # Development environment overrides
 [environments.development]
 [environments.development.tools]
-node = { version = "18.0.0" }  # Use older Node.js version for compatibility testing
+node = { version = "18.0.0" } # Use older Node.js version for compatibility testing
 
 [environments.development.env]
 NODE_ENV = "development"
@@ -42,7 +42,7 @@ DATABASE_URL = "postgres://localhost:5432/myapp_dev"
 
 [environments.development.settings]
 cache_dir = "/tmp/unirtm-dev"
-cache_ttl = 3600  # 1 hour
+cache_ttl = 3600              # 1 hour
 concurrency = 4
 
 [environments.development.tasks.build]
@@ -61,7 +61,7 @@ LOG_LEVEL = "info"
 DATABASE_URL = "postgres://staging-db:5432/myapp"
 
 [environments.staging.settings]
-cache_ttl = 43200  # 12 hours
+cache_ttl = 43200 # 12 hours
 concurrency = 8
 
 [environments.staging.tasks.deploy]
@@ -71,8 +71,8 @@ run = "kubectl apply -f k8s/staging/"
 # Production environment overrides
 [environments.production]
 [environments.production.tools]
-node = { version = "20.0.0" }  # Explicitly pin production version
-go = { version = "1.22.0" }    # Use latest Go version in production
+node = { version = "20.0.0" } # Explicitly pin production version
+go = { version = "1.22.0" }   # Use latest Go version in production
 
 [environments.production.env]
 NODE_ENV = "production"
@@ -82,7 +82,7 @@ ENABLE_PROFILING = "false"
 DATABASE_URL = "postgres://prod-db:5432/myapp"
 
 [environments.production.settings]
-cache_ttl = 172800  # 48 hours
+cache_ttl = 172800 # 48 hours
 concurrency = 32
 
 [environments.production.tasks.deploy]

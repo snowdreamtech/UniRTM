@@ -130,6 +130,7 @@ Created comprehensive documentation:
 **Decision**: Use an interface rather than a concrete implementation.
 
 **Rationale**:
+
 - Supports multiple implementations (HTTP, S3, custom protocols)
 - Easy to mock for testing
 - Follows Dependency Inversion Principle
@@ -140,6 +141,7 @@ Created comprehensive documentation:
 **Decision**: Provide fluent methods (`WithChecksum()`, `WithMaxRetries()`, etc.).
 
 **Rationale**:
+
 - Improves code readability
 - Makes configuration more discoverable
 - Allows method chaining for concise configuration
@@ -150,6 +152,7 @@ Created comprehensive documentation:
 **Decision**: Pass `context.Context` as the first parameter to all methods.
 
 **Rationale**:
+
 - Follows Go conventions
 - Enables cancellation and timeout control
 - Supports request-scoped values (e.g., trace IDs)
@@ -160,6 +163,7 @@ Created comprehensive documentation:
 **Decision**: Use a simple callback function rather than channels or interfaces.
 
 **Rationale**:
+
 - Simplest approach for most use cases
 - No goroutine management required
 - Easy to implement and test
@@ -170,6 +174,7 @@ Created comprehensive documentation:
 **Decision**: Support both "sha256:hash" and just "hash" formats.
 
 **Rationale**:
+
 - Flexible for different backend formats
 - SHA-256 is the industry standard
 - Easy to parse and validate
@@ -307,6 +312,7 @@ Created comprehensive documentation:
 Task 6.1 has been successfully completed. The `Downloader` interface and `DownloadOptions` struct have been defined with comprehensive documentation, tests, and examples. The implementation follows all project standards and design principles, and is ready for concrete implementations in subsequent tasks.
 
 The interface is generic, flexible, and production-ready, supporting:
+
 - Multiple implementations (HTTP, custom protocols)
 - Retry logic with exponential backoff
 - Timeout configuration

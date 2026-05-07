@@ -60,6 +60,7 @@ func (vm *VersionManager) ParseVersionConstraint(versionStr string) (*Version, e
 Parses a version constraint string into a Version object. Enforces explicit version requirements.
 
 **Returns an error if:**
+
 - The version string is empty (explicit version required)
 - The version string is invalid
 
@@ -76,6 +77,7 @@ func (vm *VersionManager) ResolveVersion(
 Resolves a version specification to a concrete version using the specified backend.
 
 **Parameters:**
+
 - `ctx`: Context for cancellation and timeouts
 - `backendName`: Name of the backend to use (e.g., "github", "aqua", "http")
 - `tool`: Name of the tool to resolve the version for
@@ -83,10 +85,12 @@ Resolves a version specification to a concrete version using the specified backe
 - `platform`: Target platform for the resolution
 
 **Returns:**
+
 - The resolved VersionInfo with concrete version and download information
 - An error if resolution fails
 
 **Resolution behavior:**
+
 - **Exact versions** (e.g., "1.20.0"): Delegates to `backend.GetDownloadInfo`
 - **Aliases** (e.g., "latest", "lts", "stable"): Delegates to `backend.ResolveVersion`
 - **Ranges** (e.g., ">=1.20.0", "^3.11", "~2.7.0"): Delegates to `backend.ResolveVersion`

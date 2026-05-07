@@ -208,6 +208,7 @@ type ActivationScript struct {
 ✅ **Validated**
 
 The manager generates shell-specific activation scripts for:
+
 - ✅ Bash
 - ✅ Zsh
 - ✅ Fish
@@ -220,6 +221,7 @@ Each shell uses its native syntax and conventions.
 ✅ **Validated**
 
 All activation scripts modify PATH to include the shims directory:
+
 - ✅ Prepends shims directory to PATH
 - ✅ Preserves existing PATH entries
 - ✅ Uses shell-specific syntax
@@ -229,6 +231,7 @@ All activation scripts modify PATH to include the shims directory:
 ✅ **Validated**
 
 The manager sets environment variables for:
+
 - ✅ Active tool versions (UNIRTM_<TOOL>_VERSION)
 - ✅ Additional custom environment variables
 - ✅ Activation scope indicator (UNIRTM_ACTIVATION_SCOPE)
@@ -239,6 +242,7 @@ The manager sets environment variables for:
 ✅ **Validated**
 
 The manager supports project-specific activation:
+
 - ✅ `GenerateProjectActivation()` method
 - ✅ Sets UNIRTM_PROJECT_DIR environment variable
 - ✅ Sets UNIRTM_ACTIVATION_SCOPE="project"
@@ -250,6 +254,7 @@ The manager supports project-specific activation:
 ✅ **Validated**
 
 The manager supports global activation:
+
 - ✅ `GenerateGlobalActivation()` method
 - ✅ Sets UNIRTM_ACTIVATION_SCOPE="global"
 - ✅ Supports system-wide default tool versions
@@ -304,6 +309,7 @@ ok      command-line-arguments  0.179s
 ```
 
 **Test Coverage:**
+
 - 18 unit tests
 - All edge cases covered (errors, invalid configs, special characters, multiple tools)
 - Cross-platform testing (Windows path handling)
@@ -434,11 +440,13 @@ if err != nil {
 ### 1. Shell-Specific Generators
 
 Implemented separate generator functions for each shell type:
+
 - `generatePosixScript()` - Bash and Zsh (same syntax)
 - `generateFishScript()` - Fish shell
 - `generatePowerShellScript()` - PowerShell
 
 This approach:
+
 - Keeps code organized and maintainable
 - Makes it easy to add new shells
 - Allows shell-specific optimizations
@@ -446,11 +454,13 @@ This approach:
 ### 2. Environment Variable Naming
 
 Tool version environment variables follow the pattern `UNIRTM_<TOOL>_VERSION`:
+
 - Uppercase tool name
 - Hyphens replaced with underscores
 - Consistent prefix for easy identification
 
 Examples:
+
 - `node` → `UNIRTM_NODE_VERSION`
 - `python` → `UNIRTM_PYTHON_VERSION`
 - `node-js` → `UNIRTM_NODE_JS_VERSION`
@@ -458,10 +468,12 @@ Examples:
 ### 3. Activation Scope Indicators
 
 The manager sets environment variables to indicate activation scope:
+
 - `UNIRTM_ACTIVATION_SCOPE` - "global" or "project"
 - `UNIRTM_PROJECT_DIR` - Project directory (for project scope)
 
 This allows:
+
 - Shims to detect the active scope
 - Auto-activation to determine when to switch environments
 - Debugging and troubleshooting
@@ -469,6 +481,7 @@ This allows:
 ### 4. Default Shims Directory
 
 The manager accepts a default shims directory in the constructor:
+
 - Used when `ShimsDir` is not specified in the config
 - Simplifies API for common cases
 - Allows per-manager configuration
@@ -476,6 +489,7 @@ The manager accepts a default shims directory in the constructor:
 ### 5. Usage Instructions
 
 Each generated script includes usage instructions:
+
 - Tailored to the target shell
 - Includes both immediate activation and persistent activation
 - Provides concrete examples
@@ -485,6 +499,7 @@ This improves user experience and reduces support burden.
 ### 6. Cross-Platform Path Handling
 
 PowerShell scripts handle Windows paths:
+
 - Convert forward slashes to backslashes on Windows
 - Use semicolon as PATH separator
 - Use backslashes in instructions
@@ -496,6 +511,7 @@ This ensures scripts work correctly on all platforms.
 ### 1. CLI Layer
 
 The activation manager will be used by CLI commands:
+
 - `unirtm activate` - Generate and display activation script
 - `unirtm activate --shell bash` - Generate for specific shell
 - `unirtm activate --global` - Generate global activation
@@ -504,6 +520,7 @@ The activation manager will be used by CLI commands:
 ### 2. Auto-Activation Manager
 
 The activation manager will be used by the auto-activation manager (task 11.5):
+
 - Detect when entering/leaving project directories
 - Generate appropriate activation scripts
 - Switch environments automatically
@@ -511,6 +528,7 @@ The activation manager will be used by the auto-activation manager (task 11.5):
 ### 3. Configuration Manager
 
 The activation manager integrates with the configuration manager:
+
 - Read tool versions from configuration files
 - Read environment variables from configuration
 - Support environment-specific overrides
@@ -518,6 +536,7 @@ The activation manager integrates with the configuration manager:
 ### 4. Installation Manager
 
 The activation manager works with the installation manager:
+
 - Verify tools are installed before activation
 - Use installation paths for shim generation
 - Update activation when tools are installed/uninstalled
@@ -552,4 +571,3 @@ The Activation Manager implementation successfully provides shell-specific activ
 ✅ Passes all code quality checks
 
 The manager is ready for integration with the CLI layer and auto-activation manager, and can be used immediately for generating activation scripts throughout the application.
-
