@@ -706,6 +706,25 @@ repos:
           (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
         description: "Canonical Go code formatting."
 
+      - id: goimports
+        name: goimports
+        language: system
+        entry: sh scripts/lib/lint-wrapper.sh goimports -w
+        types: [go]
+        exclude: |
+          (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
+        description: "Manage Go imports and formatting."
+
+      - id: golangci-lint
+        name: golangci-lint
+        language: system
+        entry: sh scripts/lib/lint-wrapper.sh golangci-lint run --fix
+        types: [go]
+        pass_filenames: false
+        exclude: |
+          (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
+        description: "Comprehensive Go linter aggregator."
+
       - id: cargo-fmt
         name: cargo format
         language: system

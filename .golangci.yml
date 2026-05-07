@@ -1,0 +1,199 @@
+---
+# golangci-lint configuration for UniRTM
+# Reference: https://golangci-lint.run/usage/configuration/
+
+run:
+  timeout: 5m
+  tests: true
+  build-tags: []
+  skip-dirs:
+    - vendor
+    - node_modules
+    - .venv
+    - dist
+    - build
+  skip-files: []
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+
+output:
+  formats:
+    - format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+  uniq-by-line: true
+  sort-results: true
+
+linters:
+  disable-all: true
+  enable:
+    # Error checking
+    - errcheck # check all errors are handled
+    - goerr113 # enforce error wrapping
+
+    # Code quality
+    - govet # vet checks
+    - staticcheck # advanced static analysis
+    - gosimple # simplification suggestions
+    - unused # detect unused code
+    - ineffassign # detect ineffectual assignments
+    - typecheck # type checking
+
+    # Style and maintainability
+    - revive # maintainability
+    - gofmt # formatting check
+    - goimports # import formatting
+    - misspell # spelling errors
+    - unconvert # unnecessary type conversions
+    - unparam # unused function parameters
+
+    # Complexity
+    - gocyclo # cyclomatic complexity
+    - gocognit # cognitive complexity
+
+    # Best practices
+    - bodyclose # ensure HTTP response bodies are closed
+    - noctx # ensure context is passed for HTTP requests
+    - contextcheck # context propagation checks
+    - errname # error naming conventions
+    - errorlint # error wrapping
+
+    # Security
+    - gosec # security issues
+
+    # Performance
+    - prealloc # slice preallocation
+
+    # Code organization
+    - gci # import order
+    - gofumpt # stricter gofmt
+
+    # Documentation
+    - godot # comment punctuation
+
+    # Bugs
+    - gocritic # various checks
+    - nilerr # returning nil error
+    - nilnil # returning nil, nil
+
+    # Concurrency
+    - govet # includes race detector checks
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    exclude-functions:
+      - (*database/sql.Rows).Close
+      - (*database/sql.DB).Close
+
+  govet:
+    enable-all: true
+    disable:
+      - shadow # too strict for practical use
+
+  gocyclo:
+    min-complexity: 15
+
+  gocognit:
+    min-complexity: 20
+
+  revive:
+    rules:
+      - name: exported
+        arguments:
+          - disableStutteringCheck
+      - name: package-comments
+      - name: var-naming
+      - name: indent-error-flow
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: receiver-naming
+      - name: increment-decrement
+      - name: var-declaration
+      - name: range-val-in-closure
+      - name: range-val-address
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: time-naming
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+      - name: redefines-builtin-id
+
+  gosec:
+    excludes:
+      - G104 # audit errors not checked (covered by errcheck)
+      - G304 # file path provided as taint input (too many false positives)
+
+  gci:
+    sections:
+      - standard # standard library
+      - default # everything else
+      - prefix(github.com/snowdreamtech/unirtm) # project imports
+
+  gofumpt:
+    extra-rules: true
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+      - experimental
+      - opinionated
+    disabled-checks:
+      - whyNoLint # we don't require explanations for nolint directives
+      - hugeParam # too strict for practical use
+
+  misspell:
+    locale: US
+
+  unparam:
+    check-exported: false
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - gosec
+        - gocritic
+        - gocognit
+
+    # Exclude some linters from running on generated files
+    - path: ".*\\.pb\\.go$"
+      linters:
+        - gofmt
+        - goimports
+        - gci
+        - revive
+        - stylecheck
+
+    # Exclude known issues
+    - text: "G404: Use of weak random number generator"
+      linters:
+        - gosec
+
+    # Allow blank identifier in type assertions for error checking
+    - text: "type assertion on error will fail on wrapped errors"
+      linters:
+        - errorlint
+
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  new: false
+  fix: false
+
+severity:
+  default-severity: error
+  rules:
+    - linters:
+        - revive
+      severity: warning
