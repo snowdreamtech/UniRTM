@@ -1,0 +1,90 @@
+# Example configuration with environment-specific overrides
+# This demonstrates how to use environment-specific configuration in UniRTM
+
+# Base configuration - applies to all environments
+[tools]
+node = { version = "20.0.0" }
+python = { version = "3.11.0" }
+go = { version = "1.21.0" }
+
+[env]
+NODE_ENV = "production"
+LOG_LEVEL = "info"
+DATABASE_URL = "postgres://prod-db:5432/myapp"
+
+[settings]
+cache_dir = "/var/cache/unirtm"
+cache_ttl = 86400  # 24 hours
+concurrency = 16
+
+[tasks.build]
+description = "Build for production"
+run = "npm run build"
+
+[tasks.test]
+description = "Run tests"
+run = "npm test"
+
+[tasks.deploy]
+description = "Deploy to production"
+run = "kubectl apply -f k8s/production/"
+
+# Development environment overrides
+[environments.development]
+[environments.development.tools]
+node = { version = "18.0.0" }  # Use older Node.js version for compatibility testing
+
+[environments.development.env]
+NODE_ENV = "development"
+LOG_LEVEL = "debug"
+DEBUG = "true"
+DATABASE_URL = "postgres://localhost:5432/myapp_dev"
+
+[environments.development.settings]
+cache_dir = "/tmp/unirtm-dev"
+cache_ttl = 3600  # 1 hour
+concurrency = 4
+
+[environments.development.tasks.build]
+description = "Build for development with hot reload"
+run = "npm run dev"
+
+[environments.development.tasks.deploy]
+description = "Deploy to local development environment"
+run = "docker-compose up -d"
+
+# Staging environment overrides
+[environments.staging]
+[environments.staging.env]
+NODE_ENV = "staging"
+LOG_LEVEL = "info"
+DATABASE_URL = "postgres://staging-db:5432/myapp"
+
+[environments.staging.settings]
+cache_ttl = 43200  # 12 hours
+concurrency = 8
+
+[environments.staging.tasks.deploy]
+description = "Deploy to staging environment"
+run = "kubectl apply -f k8s/staging/"
+
+# Production environment overrides
+[environments.production]
+[environments.production.tools]
+node = { version = "20.0.0" }  # Explicitly pin production version
+go = { version = "1.22.0" }    # Use latest Go version in production
+
+[environments.production.env]
+NODE_ENV = "production"
+LOG_LEVEL = "warn"
+ENABLE_MONITORING = "true"
+ENABLE_PROFILING = "false"
+DATABASE_URL = "postgres://prod-db:5432/myapp"
+
+[environments.production.settings]
+cache_ttl = 172800  # 48 hours
+concurrency = 32
+
+[environments.production.tasks.deploy]
+description = "Deploy to production with blue-green deployment"
+run = "kubectl apply -f k8s/production/ && kubectl rollout status deployment/myapp"
