@@ -1,67 +1,50 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-// Package service provides business logic for UniRTM operations.
+// Package service provides the plugin loading and management capabilities.
+// It relies on HashiCorp go-plugin to dynamically load standalone binaries
+// that implement the Backend or Provider interfaces via RPC.
 package service
 
 import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
-	"plugin"
 	"strings"
 	"sync"
 
+	hplugin "github.com/hashicorp/go-plugin"
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
+	uplugin "github.com/snowdreamtech/unirtm/internal/plugin"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 )
 
-// PluginAPIVersion is the current stable plugin API version.
-// Plugins must export this constant to declare compatibility.
-const PluginAPIVersion = "1"
-
-// PluginType indicates the role of a plugin.
-type PluginType string
-
-const (
-	PluginTypeBackend  PluginType = "backend"
-	PluginTypeProvider PluginType = "provider"
-)
-
-// PluginMetadata describes a loaded plugin.
+// PluginAPIVersion defines the current plugin API version for compatibility checking.
 //
-// Validates Requirement: 22.3 (stable plugin API)
+// Validates Requirement: 22.3 (API stability and versioning)
+const PluginAPIVersion = "v1"
+
+// PluginMetadata holds information about a loaded plugin.
 type PluginMetadata struct {
 	Name       string
-	Type       PluginType
+	Type       string // "backend" or "provider"
 	APIVersion string
 	Path       string
 }
 
-// BackendFactory is the function signature that backend plugins must export
-// as the symbol "NewBackend".
+// PluginManager handles discovery, loading, and registration of Go plugins.
 //
-// Validates Requirement: 22.3 (stable plugin API)
-type BackendFactory func() backend.Backend
-
-// ProviderFactory is the function signature that provider plugins must export
-// as the symbol "NewProvider".
-type ProviderFactory func() provider.Provider
-
-// PluginManager loads and manages backend and provider plugins.
-//
-// It discovers .so files in the plugins directory, validates their API version,
-// and registers them with the backend and provider registries.
-//
-// Validates Requirements: 22.1, 22.2, 22.3, 22.4, 22.5, 22.6
+// Validates Requirements: 22.1, 22.2
 type PluginManager struct {
 	mu               sync.RWMutex
 	pluginsDir       string
 	loadedPlugins    []PluginMetadata
 	backendRegistry  *backend.Registry
 	providerRegistry *provider.Registry
+	clients          []*hplugin.Client
 }
 
 // NewPluginManager creates a new PluginManager.
@@ -91,13 +74,16 @@ func (pm *PluginManager) LoadAll(ctx context.Context) error {
 	}
 
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".so") {
+		// Validates Requirement: 22.5 (isolate plugin failures — one bad plugin doesn't block others)
+		if entry.IsDir() || (!strings.HasPrefix(entry.Name(), "unirtm-plugin-") && !strings.HasSuffix(entry.Name(), ".exe")) {
+			continue
+		}
+		if !strings.HasPrefix(entry.Name(), "unirtm-plugin-") {
 			continue
 		}
 
 		pluginPath := filepath.Join(pm.pluginsDir, entry.Name())
 
-		// Validates Requirement: 22.5 (isolate plugin failures — one bad plugin doesn't block others)
 		if err := pm.loadPlugin(ctx, pluginPath); err != nil {
 			logger.Error("Failed to load plugin (skipping)", map[string]interface{}{
 				"path":  pluginPath,
@@ -113,135 +99,100 @@ func (pm *PluginManager) LoadAll(ctx context.Context) error {
 	return nil
 }
 
-// loadPlugin loads a single plugin file, validates its API version, and
+// loadPlugin loads a single plugin binary, starts the RPC server, and
 // registers it with the appropriate registry.
 //
 // Validates Requirements: 22.3 (API version), 22.4 (validate compatibility)
 func (pm *PluginManager) loadPlugin(ctx context.Context, pluginPath string) error {
-	// Note: plugin.Open only works on Linux/macOS with CGO.
-	// On Windows or when CGO is disabled, this will error gracefully.
-	p, err := plugin.Open(pluginPath)
-	if err != nil {
-		return fmt.Errorf("open plugin: %w", err)
-	}
-
-	// Validates Requirement: 22.4 — check API version compatibility
-	apiVersionSym, err := p.Lookup("PluginAPIVersion")
-	if err != nil {
-		return fmt.Errorf("plugin missing required symbol 'PluginAPIVersion': %w", err)
-	}
-	apiVersion, ok := apiVersionSym.(*string)
-	if !ok || *apiVersion != PluginAPIVersion {
-		return fmt.Errorf("plugin API version mismatch: expected %s, got %v", PluginAPIVersion, apiVersionSym)
-	}
-
-	// Determine plugin type
-	pluginTypeSym, err := p.Lookup("PluginType")
-	if err != nil {
-		return fmt.Errorf("plugin missing required symbol 'PluginType': %w", err)
-	}
-	pluginType, ok := pluginTypeSym.(*string)
-	if !ok {
-		return fmt.Errorf("plugin 'PluginType' symbol has unexpected type")
-	}
-
-	// Plugin name
-	pluginNameSym, err := p.Lookup("PluginName")
-	if err != nil {
-		return fmt.Errorf("plugin missing required symbol 'PluginName': %w", err)
-	}
-	pluginName, ok := pluginNameSym.(*string)
-	if !ok {
-		return fmt.Errorf("plugin 'PluginName' symbol has unexpected type")
-	}
-
-	meta := PluginMetadata{
-		Name:       *pluginName,
-		APIVersion: *apiVersion,
-		Path:       pluginPath,
-	}
-
-	switch PluginType(*pluginType) {
-	case PluginTypeBackend:
-		if err := pm.loadBackendPlugin(p, meta); err != nil {
-			return fmt.Errorf("register backend plugin %q: %w", *pluginName, err)
-		}
-	case PluginTypeProvider:
-		if err := pm.loadProviderPlugin(p, meta); err != nil {
-			return fmt.Errorf("register provider plugin %q: %w", *pluginName, err)
-		}
-	default:
-		return fmt.Errorf("unknown plugin type %q", *pluginType)
-	}
-
-	pm.mu.Lock()
-	pm.loadedPlugins = append(pm.loadedPlugins, meta)
-	pm.mu.Unlock()
-
-	logger.Info("Plugin loaded", map[string]interface{}{
-		"name": *pluginName,
-		"type": *pluginType,
-		"path": pluginPath,
+	client := hplugin.NewClient(&hplugin.ClientConfig{
+		HandshakeConfig:  uplugin.HandshakeConfig,
+		Plugins:          uplugin.PluginMap,
+		Cmd:              exec.Command(pluginPath),
+		AllowedProtocols: []hplugin.Protocol{hplugin.ProtocolNetRPC},
 	})
 
-	return nil
-}
-
-// loadBackendPlugin looks up and registers a backend plugin.
-//
-// Validates Requirement: 22.1 (load custom backend implementations)
-func (pm *PluginManager) loadBackendPlugin(p *plugin.Plugin, meta PluginMetadata) error {
-	factorySym, err := p.Lookup("NewBackend")
+	rpcClient, err := client.Client()
 	if err != nil {
-		return fmt.Errorf("backend plugin missing 'NewBackend' symbol: %w", err)
-	}
-	factory, ok := factorySym.(func() backend.Backend)
-	if !ok {
-		return fmt.Errorf("'NewBackend' has unexpected signature")
+		client.Kill()
+		return fmt.Errorf("failed to start plugin client: %w", err)
 	}
 
-	b := factory()
-	if pm.backendRegistry != nil {
-		// backend.Registry.Register uses Backend.Name() internally
-		pm.backendRegistry.Register(b)
+	// Try to dispense a backend plugin first
+	raw, err := rpcClient.Dispense("backend")
+	if err == nil {
+		b, ok := raw.(backend.Backend)
+		if ok {
+			meta := PluginMetadata{
+				Name:       b.Name(),
+				Type:       "backend",
+				APIVersion: PluginAPIVersion,
+				Path:       pluginPath,
+			}
+			pm.mu.Lock()
+			pm.clients = append(pm.clients, client)
+			pm.loadedPlugins = append(pm.loadedPlugins, meta)
+			if pm.backendRegistry != nil {
+				pm.backendRegistry.Register(b)
+				logger.Debug("Registered plugin backend", map[string]interface{}{
+					"name": meta.Name,
+				})
+			}
+			pm.mu.Unlock()
+			return nil
+		}
 	}
-	meta.Type = PluginTypeBackend
-	return nil
+
+	// Try provider plugin
+	raw, err = rpcClient.Dispense("provider")
+	if err == nil {
+		p, ok := raw.(provider.Provider)
+		if ok {
+			meta := PluginMetadata{
+				Name:       p.Name(),
+				Type:       "provider",
+				APIVersion: PluginAPIVersion,
+				Path:       pluginPath,
+			}
+			pm.mu.Lock()
+			pm.clients = append(pm.clients, client)
+			pm.loadedPlugins = append(pm.loadedPlugins, meta)
+			if pm.providerRegistry != nil {
+				pm.providerRegistry.Register(p)
+				logger.Debug("Registered plugin provider", map[string]interface{}{
+					"name": meta.Name,
+				})
+			}
+			pm.mu.Unlock()
+			return nil
+		}
+	}
+
+	client.Kill()
+	return fmt.Errorf("plugin does not dispense 'backend' or 'provider'")
 }
 
-// loadProviderPlugin looks up and registers a provider plugin.
-//
-// Validates Requirement: 22.2 (load custom provider implementations)
-func (pm *PluginManager) loadProviderPlugin(p *plugin.Plugin, meta PluginMetadata) error {
-	factorySym, err := p.Lookup("NewProvider")
-	if err != nil {
-		return fmt.Errorf("provider plugin missing 'NewProvider' symbol: %w", err)
-	}
-	factory, ok := factorySym.(func() provider.Provider)
-	if !ok {
-		return fmt.Errorf("'NewProvider' has unexpected signature")
-	}
-
-	prov := factory()
-	if pm.providerRegistry != nil {
-		// provider.Registry.Register(toolName, Provider)
-		pm.providerRegistry.Register(meta.Name, prov)
-	}
-	meta.Type = PluginTypeProvider
-	return nil
-}
-
-// ListLoaded returns metadata for all successfully loaded plugins.
+// ListLoaded returns metadata for all loaded plugins.
 func (pm *PluginManager) ListLoaded() []PluginMetadata {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
 
+	// Return a copy to prevent data races
 	result := make([]PluginMetadata, len(pm.loadedPlugins))
 	copy(result, pm.loadedPlugins)
 	return result
 }
 
-// PluginsDir returns the configured plugins directory path.
+// PluginsDir returns the directory where plugins are loaded from.
 func (pm *PluginManager) PluginsDir() string {
 	return pm.pluginsDir
+}
+
+// Cleanup kills all the running plugin processes.
+func (pm *PluginManager) Cleanup() {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+	for _, client := range pm.clients {
+		client.Kill()
+	}
+	pm.clients = nil
 }

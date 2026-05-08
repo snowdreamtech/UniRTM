@@ -34,8 +34,8 @@ var pluginCmd = &cobra.Command{
 
 UniRTM supports Go-native plugins that extend its functionality with
 custom backends (tool sources) and providers (tool-specific install logic).
-Plugins are shared objects (.so on Linux/macOS, .dll on Windows) placed in
-the plugins directory (~/.local/share/unirtm/plugins/).
+Plugins are standalone executable binaries prefixed with 'unirtm-plugin-'
+placed in the plugins directory (~/.local/share/unirtm/plugins/).
 
 Use 'unirtm plugin list' to see loaded plugins.`,
 	Args: cobra.NoArgs,
@@ -72,6 +72,7 @@ func runPluginList(cmd *cobra.Command, args []string) error {
 
 	// Create plugin manager (pass nil registries — we only want to list, not load into active registries)
 	pm := service.NewPluginManager(pluginsDir, nil, nil)
+	defer pm.Cleanup()
 	if err := pm.LoadAll(ctx); err != nil {
 		formatter.Warning(fmt.Sprintf("Some plugins failed to load: %v", err), nil)
 	}
@@ -101,18 +102,18 @@ func runPluginList(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// pluginInstallCmd registers a plugin from a local .so file path.
+// pluginInstallCmd registers a plugin from a local executable file path.
 var pluginInstallCmd = &cobra.Command{
 	Use:   "install <path>",
-	Short: "Install a plugin from a local .so file",
+	Short: "Install a plugin from a local executable file",
 	Long: `Install a plugin from a compiled Go plugin file.
 
-The plugin file must be a Go plugin (.so on Linux/macOS) compiled with
-'go build -buildmode=plugin'. See docs/development/plugin-development.md
+The plugin file must be a standalone executable (e.g. built with 'go build')
+and ideally prefixed with 'unirtm-plugin-'. See docs/development/plugin-development.md
 for the plugin API.
 
 Examples:
-  unirtm plugin install ./myplugin.so`,
+  unirtm plugin install ./unirtm-plugin-myplugin`,
 	Args: cobra.ExactArgs(1),
 	RunE: runPluginInstall,
 }
@@ -193,11 +194,12 @@ func runPluginRemove(cmd *cobra.Command, args []string) error {
 	name := args[0]
 	pluginsDir := getDefaultDataDir() + "/plugins"
 
-	// Try common extensions
+	// Try common extensions and prefixes
 	candidates := []string{
-		pluginsDir + "/" + name + ".so",
-		pluginsDir + "/" + name + ".dll",
+		pluginsDir + "/unirtm-plugin-" + name,
+		pluginsDir + "/unirtm-plugin-" + name + ".exe",
 		pluginsDir + "/" + name,
+		pluginsDir + "/" + name + ".exe",
 	}
 
 	if dryRun {
