@@ -707,4 +707,5 @@ test-results/
 # docs/package.json
 .setup.lock
 .pnpm-store
-unirtm
+# Compiled binary (root only)
+/unirtm
