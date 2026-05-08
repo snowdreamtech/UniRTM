@@ -15,8 +15,8 @@
 ## 用户审查项
 
 > [!IMPORTANT]
-> 1. **通信协议选择**：`go-plugin` 支持 `net/rpc` 和 `gRPC` 两种模式。考虑到 `Backend` 和 `Provider` 的接口都使用了 `context.Context`，强烈建议使用 **gRPC**，因为它原生支持 Context 取消（Cancel）和超时传递。是否同意引入 gRPC / Protobuf 依赖？
-> 2. **插件命名约定**：采用多进程模型后，插件将是独立的跨平台二进制文件。建议命名规范从 `*.so` 改为 `unirtm-plugin-<name>`（Windows 上是 `unirtm-plugin-<name>.exe`）。是否同意此约定？
+> 1. **通信协议选择**：`go-plugin` 支持 `net/rpc` 和 `gRPC` 两种模式。由于网络环境对 `protoc` 安装不友好，我们决定直接使用更轻量、无需编译依赖的 **`net/rpc`**。`context.Context` 虽然不能跨进程传递取消信号，但 `go-plugin` 自带了父进程监控功能（父进程退出子进程也会关闭），完全满足需求。
+> 2. **插件命名约定**：采用多进程模型后，插件将是独立的跨平台二进制文件。建议命名规范从 `*.so` 改为 `unirtm-plugin-<name>`（Windows 上是 `unirtm-plugin-<name>.exe`）。
 
 ---
 
@@ -37,31 +37,21 @@
 
 ## 改造范围与阶段
 
-### 阶段 1：定义 gRPC 接口 (Protobuf)
+### 阶段 1：决定使用 net/rpc
 
-由于 `Backend` 和 `Provider` 的接口需要跨进程调用，我们需要将它们定义为 `.proto` 文件，并生成 gRPC 代码。
-
-**[NEW] `api/plugin/v1/backend.proto`**
-- 对应 `internal/backend.Backend` 接口
-- 定义 `ListVersions`, `ResolveVersion`, `GetDownloadInfo` 的 RPC 服务和 Message。
-
-**[NEW] `api/plugin/v1/provider.proto`**
-- 对应 `internal/provider.Provider` 接口
-- 定义 `Install`, `PostInstall`, `GenerateShims` 等 RPC 服务和 Message。
-
-> 备注：我们会在代码库中引入 `protoc` 生成的 go 代码，或者手写轻量级的 `net/rpc` 封装（如果不愿意引入 protobuf 依赖的话，我们可以先用 `net/rpc` 作为简化版）。
+由于 `net/rpc` 无需引入 `protoc` 或其他代码生成工具，我们决定直接编写 `net/rpc` 封装层，跳过 `.proto` 文件的编写和代码生成。
 
 ### 阶段 2：实现 HashiCorp Plugin 封装层
 
 在 `internal/plugin` 目录下实现 `plugin.Plugin` 接口（适配器）。
 
-**[NEW] `internal/plugin/backend_grpc.go`**
-- `GRPCBackendClient`：实现 `backend.Backend` 接口，内部将方法调用转换为 gRPC 调用。
-- `GRPCBackendServer`：将 gRPC 请求反向路由到真实的 Go `backend.Backend` 实现。
+**[NEW] `internal/plugin/backend_rpc.go`**
+- `BackendRPCClient`：实现 `backend.Backend` 接口，内部将方法调用转换为 RPC 调用。
+- `BackendRPCServer`：将 RPC 请求反向路由到真实的 Go `backend.Backend` 实现。
 
-**[NEW] `internal/plugin/provider_grpc.go`**
-- `GRPCProviderClient`：实现 `provider.Provider` 接口，内部转换 gRPC。
-- `GRPCProviderServer`：路由到真实的 `provider.Provider` 实现。
+**[NEW] `internal/plugin/provider_rpc.go`**
+- `ProviderRPCClient`：实现 `provider.Provider` 接口，内部转换 RPC。
+- `ProviderRPCServer`：路由到真实的 `provider.Provider` 实现。
 
 **[NEW] `internal/plugin/shared.go`**
 - 定义 `HandshakeConfig`（包含 Magic Cookie 避免非插件进程被误执行）。
@@ -99,9 +89,8 @@ func main() {
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: plugin.HandshakeConfig,
 		Plugins: map[string]plugin.Plugin{
-			"backend": &plugin.GRPCBackendPlugin{Impl: myBackend},
+			"backend": &plugin.BackendPlugin{Impl: myBackend},
 		},
-		GRPCServer: plugin.DefaultGRPCServer,
 	})
 }
 ```
