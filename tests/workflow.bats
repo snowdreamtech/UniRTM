@@ -9,6 +9,7 @@ setup() {
   unset _SNOWDREAM_TOP_LEVEL_SCRIPT
   unset _G_PROJECT_ROOT
   unset _G_LIB_DIR
+  PROJECT_ROOT="$(pwd)"
   TEMP_DIR="$(mktemp -d)"
   # Copy functional scripts
   cp -r scripts "$TEMP_DIR/"
@@ -18,6 +19,10 @@ setup() {
   touch Makefile LICENSE README.md package.json
   mkdir -p docs tests .agent/rules && touch .agent/rules/01-general.md
   echo "repos: []" >.pre-commit-config.yaml
+  # Copy ruff.toml so format.sh uses the same line-length config (120) as the project
+  cp "$PROJECT_ROOT/ruff.toml" "$TEMP_DIR/ruff.toml" 2>/dev/null || true
+  # Copy .prettierrc so format.sh uses the same printWidth config (120) as the project
+  cp "$PROJECT_ROOT/.prettierrc" "$TEMP_DIR/.prettierrc" 2>/dev/null || true
   git init -q
 
   # Create a dummy .mise.toml for get_mise_tool_version
