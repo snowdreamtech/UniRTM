@@ -56,7 +56,7 @@ type Runner interface {
 * [x] 实现 `JustRunner`，探测 `Justfile`，包装 `just` 命令。
 
 ### Phase 3: 深度内嵌 Go-Task
-* [ ] 探索直接引入 `github.com/go-task/task/v3` 作为代码依赖。如果遇到 `Taskfile.yml`，不拉起外部进程，直接通过 Go 函数级别调用 Task 的核心引擎，实现真正的“免安装极速执行”。
+* [x] 探索直接引入 `github.com/go-task/task/v3` 作为代码依赖。如果遇到 `Taskfile.yml`，不拉起外部进程，直接通过 Go 函数级别调用 Task 的核心引擎，实现真正的“免安装极速执行”。
 
 ---
 *Created by UniRTM Design Team.*

@@ -6,13 +6,18 @@ package task
 import (
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"strings"
+	"sync"
+
+	gotask "github.com/go-task/task/v3"
 )
 
-// GoTaskRunner delegates task execution to the system's `task` command
+// GoTaskRunner delegates task execution directly to the embedded `go-task` engine
 // if a Taskfile.yml or Taskfile.yaml is detected in the working directory.
 type GoTaskRunner struct{}
+
+var envMutex sync.Mutex
 
 // NewGoTaskRunner creates a new GoTaskRunner instance.
 func NewGoTaskRunner() *GoTaskRunner {
@@ -40,20 +45,55 @@ func (r *GoTaskRunner) CanExecute(dir string) bool {
 	return false
 }
 
-// Run executes the task by delegating to `task <taskName>`.
+// Run executes the task by delegating directly to the go-task library.
 func (r *GoTaskRunner) Run(ctx context.Context, dir string, taskName string, args []string, env []string) error {
-	cmdArgs := []string{taskName}
-	cmdArgs = append(cmdArgs, args...)
+	// Temporarily inject environment variables since go-task inherently inherits from os.Environ
+	envMutex.Lock()
 	
-	cmd := exec.CommandContext(ctx, "task", cmdArgs...)
-	cmd.Dir = dir
+	// Save existing environment to restore later
+	originalEnv := os.Environ()
 	
-	// Pass through the environment variables injected by UniRTM
-	cmd.Env = append(os.Environ(), env...)
+	// Apply the environment variables from UniRTM
+	for _, e := range env {
+		parts := strings.SplitN(e, "=", 2)
+		if len(parts) == 2 {
+			os.Setenv(parts[0], parts[1])
+		}
+	}
+	
+	defer func() {
+		// Restore the entire environment
+		os.Clearenv()
+		for _, e := range originalEnv {
+			parts := strings.SplitN(e, "=", 2)
+			if len(parts) == 2 {
+				os.Setenv(parts[0], parts[1])
+			}
+		}
+		envMutex.Unlock()
+	}()
 
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
+	// Initialize the executor
+	e := &gotask.Executor{
+		Dir:    dir,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+		Stdin:  os.Stdin,
+	}
 
-	return cmd.Run()
+	if err := e.Setup(); err != nil {
+		return err
+	}
+
+	// Prepare task calls
+	// If no task is specified, default is often "default" or empty.
+	if taskName == "" {
+		taskName = "default"
+	}
+	
+	calls := []*gotask.Call{
+		{Task: taskName},
+	}
+
+	return e.Run(ctx, calls...)
 }
