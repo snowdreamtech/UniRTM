@@ -31,15 +31,18 @@
 | `where` | `mise where <tool>` | `unirtm where <tool>` | 功能相同 |
 | `which` | `mise which <tool>` | `unirtm which <tool>` | 功能相同 |
 | `reshim` | `mise reshim` | `unirtm reshim` | 功能相同 |
+| `run` | `mise run <task>` | `unirtm run <task>` | UniRTM 额外支持智能路由 (go-task, make, just) |
+| `trust` | `mise trust` | `unirtm trust/untrust` | UniRTM 引入了基于文件内容哈希 (SHA256) 的防篡改验证 |
 | `migrate` | ❌ 无 | `unirtm migrate` | **UniRTM 独有**：从 mise 配置迁移 |
 
-### mise 有、UniRTM 无的命令
+### mise 有、UniRTM 待增强或暂无的命令
 
-| mise 命令 | 说明 | UniRTM 替代方式 |
+| mise 命令 | 说明 | UniRTM 状态 / 替代方式 |
 |-----------|------|----------------|
-| `mise run` | 在工具环境中运行任务 | 尚未完全实现（Task 系统在 v1.0 未暴露 CLI） |
-| `mise trust` | 信任目录的配置文件 | UniRTM 使用严格的项目根检测，无 trust 机制 |
-| `mise self-update` | 自更新 | 通过 goreleaser 发布，未内置 |
+| `mise watch` | 监控文件变更并自动重新运行任务 | ✅ `unirtm watch <task>` 已支持 (带 500ms 防抖) |
+| `mise alias` | 为版本创建自定义别名（如 `my-node -> 20.x`）| ✅ `unirtm alias` 已支持 (全局+项目级映射) |
+| `mise settings` | 通过 CLI 管理全局设置项 | UniRTM 使用 `unirtm config set/get` 替代 |
+| `mise self-update` | 二进制自更新 | 暂未内置，通过操作系统的包管理器或 goreleaser 发布更新 |
 
 ### UniRTM 有、mise 无的命令
 
@@ -62,9 +65,9 @@
 | **YAML 支持** | ❌ | ✅ **新增** |
 | **层级加载** | system → global → project → local | 完全相同 |
 | **环境特定覆盖** | `[env.development]` | ✅ 相同语义 |
-| **Tasks 任务定义** | `[tasks.xxx]` 完整支持 | Config 结构中有 Tasks 字段，CLI 未暴露 |
-| **配置热重载** | ✅ | ❌ 未实现 |
-| **配置模板变量** | 部分支持 | ❌ 未实现 |
+| **Tasks 任务定义** | `[tasks.xxx]` 完整支持 | ✅ 完整支持，并结合 `unirtm run` 支持外部引擎路由 |
+| **配置热重载** | ✅ | ✅ Shell hook 动态检测 mtime |
+| **配置模板变量** | 部分支持 | ✅ 完整支持 Go text/template (`{{ .Env.XXX }}`) |
 
 ### 2.2 后端（Backend）系统
 
@@ -102,7 +105,8 @@
 | **并发安装** | ✅ | ✅ |
 | **下载重试** | 有限支持 | **指数退避** 5 次（1→2→4→8→16s）|
 | **Checksum 校验** | ✅ SHA-256 | ✅ SHA-256 + 数据库审计存储 |
-| **GPG 签名验证** | ✅ | 框架已设计，未完整实现 |
+| **GPG 签名验证** | ✅ | ✅ 下载时自动校验 `.sig`/`.asc`，结果计入审计日志 |
+| **Trust 机制** | ✅ 目录级信任 | ✅ **增强**：文件内容哈希 (SHA256) 级别防篡改信任 |
 | **性能监控** | ❌ | ✅ **独有**：p50/p95/p99 延迟追踪 |
 | **离线模式** | 部分支持 | ✅ OfflineManager 自动检测网络 |
 | **原子操作** | 部分支持 | ✅ 所有写操作均用 SQLite 事务保障 |
@@ -199,6 +203,7 @@ File System State                       ├── CacheManager
 | 原则维度 | mise | UniRTM |
 |---------|------|--------|
 | **版本解析** | 支持模糊匹配和隐式 latest | **显式优先**：无版本时报错，要求明确指定 |
+| **配置信任** | 信任目录，配置易被篡改 | **严格哈希校验**：信任绝对路径及其内容哈希，防篡改 |
 | **配置 fallback** | 有多层隐式默认值 | **无隐式 fallback**：所有设置须明确 |
 | **操作可见性** | 操作过程可见，但无持久化审计 | **强审计**：所有操作写入 SQLite，可查询回溯 |
 | **错误策略** | Fail fast，部分有恢复提示 | **Fail fast + 自动恢复检测**：启动时扫描残留操作 |
@@ -245,3 +250,28 @@ mise：                                UniRTM：
 | 痛点解决：网络中断导致安装包损坏 | **UniRTM** | 基于数据库事务级别的回滚与一致性保障 |
 | 从 mise 无缝迁移 | **UniRTM** | `unirtm migrate` 可完美继承所有生态配置（包括 ubi/npm 等） |
 | CI/CD 自动化环境 | 两者均可 | UniRTM 的离线智能检测 + 强制 dry-run 模式更契合现代 CI 标准 |
+
+---
+
+## 六、待完善与未来演进方向 (Future Roadmap)
+
+虽然 UniRTM 在核心功能和性能上已经实现了对 mise 的超越，但生态对齐和部分高级特性仍有完善空间：
+
+1. **二进制自更新 (Self-Update)**
+   - **现状**: 依赖包管理器 (brew/apt) 或手动下载。
+   - **计划**: 引入 `unirtm self-update`，复用内部的 HTTPDownloader 和 GPG 签名校验机制，实现安全平滑的自升级。
+
+2. **高级任务编排 (Advanced Task Orchestration)**
+   - **现状**: 目前 `unirtm run` 支持智能路由和基础任务执行。
+   - **计划**: 完善解析 `.unirtm.toml` 中 `[tasks]` 的高级属性（如 `depends_on`, `env`, `dir`, 跨任务并行执行等），甚至支持将这些原生定义无缝转译给 `go-task` 等底层引擎。
+
+3. **依赖检查与本地链接 (Outdated & Link)**
+   - **现状**: 已有 `unirtm update`。
+   - **计划**: 添加 `unirtm outdated`（检查所有配置工具的最新可用版本而不执行更新），以及 `unirtm link <tool> <path>`（支持开发者将本地自行编译的二进制直接链接为某版本，避免每次发布前的手动注册）。
+
+4. **IDE 深度集成 (IDE Integrations)**
+   - **现状**: 命令行支持完善。
+   - **计划**: 为 VSCode、JetBrains 系列开发原生插件，让 IDE 直接读取 `.unirtm.toml` 识别环境变量和 LSP 版本，无需通过 shell shim 间接调用。
+
+5. **配置共享与发布 (Config Sharing)**
+   - **计划**: 探索通过 `unirtm share` 或类似机制，将特定环境的配置（包含特定的插件和版本组合）导出为可复现的锁定文件 (`unirtm.lock`)，进一步增强团队协作中的不可变环境能力。
