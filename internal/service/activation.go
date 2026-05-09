@@ -225,6 +225,41 @@ func (m *ActivationManager) generatePosixScript(config ActivationConfig) (*Activ
 	if config.ProjectDir != "" {
 		sb.WriteString(fmt.Sprintf("export UNIRTM_PROJECT_DIR=\"%s\"\n", config.ProjectDir))
 	}
+	sb.WriteString("\n")
+
+	// Hot-reloading hook
+	sb.WriteString("# UniRTM Hot Reloading Hook\n")
+	sb.WriteString("if [[ \"$OSTYPE\" == \"darwin\"* ]]; then\n")
+	sb.WriteString("  export _UNIRTM_LAST_MTIME=$(stat -f \"%m\" unirtm.toml 2>/dev/null || echo \"\")\n")
+	sb.WriteString("else\n")
+	sb.WriteString("  export _UNIRTM_LAST_MTIME=$(stat -c \"%Y\" unirtm.toml 2>/dev/null || echo \"\")\n")
+	sb.WriteString("fi\n\n")
+
+	sb.WriteString("_unirtm_hook() {\n")
+	sb.WriteString("  local config_file=\"unirtm.toml\"\n")
+	sb.WriteString("  if [ -f \"$config_file\" ]; then\n")
+	sb.WriteString("    local current_mtime\n")
+	sb.WriteString("    if [[ \"$OSTYPE\" == \"darwin\"* ]]; then\n")
+	sb.WriteString("      current_mtime=$(stat -f \"%m\" \"$config_file\" 2>/dev/null)\n")
+	sb.WriteString("    else\n")
+	sb.WriteString("      current_mtime=$(stat -c \"%Y\" \"$config_file\" 2>/dev/null)\n")
+	sb.WriteString("    fi\n")
+	sb.WriteString("    if [ \"$current_mtime\" != \"$_UNIRTM_LAST_MTIME\" ]; then\n")
+	sb.WriteString("      export _UNIRTM_LAST_MTIME=\"$current_mtime\"\n")
+	sb.WriteString(fmt.Sprintf("      eval \"$(unirtm activate --shell %s)\"\n", config.Shell))
+	sb.WriteString("    fi\n")
+	sb.WriteString("  fi\n")
+	sb.WriteString("}\n\n")
+
+	sb.WriteString("if [[ -n \"${ZSH_VERSION-}\" ]]; then\n")
+	sb.WriteString("  autoload -Uz add-zsh-hook\n")
+	sb.WriteString("  add-zsh-hook -d precmd _unirtm_hook 2>/dev/null\n")
+	sb.WriteString("  add-zsh-hook precmd _unirtm_hook\n")
+	sb.WriteString("elif [[ -n \"${BASH_VERSION-}\" ]]; then\n")
+	sb.WriteString("  if [[ ! \"$PROMPT_COMMAND\" =~ \"_unirtm_hook\" ]]; then\n")
+	sb.WriteString("    PROMPT_COMMAND=\"_unirtm_hook; ${PROMPT_COMMAND:-}\"\n")
+	sb.WriteString("  fi\n")
+	sb.WriteString("fi\n\n")
 
 	instructions := m.generatePosixInstructions(config.Shell)
 
@@ -279,6 +314,31 @@ func (m *ActivationManager) generateFishScript(config ActivationConfig) (*Activa
 	if config.ProjectDir != "" {
 		sb.WriteString(fmt.Sprintf("set -gx UNIRTM_PROJECT_DIR \"%s\"\n", config.ProjectDir))
 	}
+	sb.WriteString("\n")
+
+	// Hot-reloading hook
+	sb.WriteString("# UniRTM Hot Reloading Hook\n")
+	sb.WriteString("if string match -q \"darwin*\" $OSTYPE\n")
+	sb.WriteString("  set -gx _UNIRTM_LAST_MTIME (stat -f \"%m\" unirtm.toml 2>/dev/null)\n")
+	sb.WriteString("else\n")
+	sb.WriteString("  set -gx _UNIRTM_LAST_MTIME (stat -c \"%Y\" unirtm.toml 2>/dev/null)\n")
+	sb.WriteString("end\n\n")
+
+	sb.WriteString("function _unirtm_hook --on-event fish_prompt\n")
+	sb.WriteString("  set -l config_file \"unirtm.toml\"\n")
+	sb.WriteString("  if test -f \"$config_file\"\n")
+	sb.WriteString("    set -l current_mtime\n")
+	sb.WriteString("    if string match -q \"darwin*\" $OSTYPE\n")
+	sb.WriteString("      set current_mtime (stat -f \"%m\" \"$config_file\" 2>/dev/null)\n")
+	sb.WriteString("    else\n")
+	sb.WriteString("      set current_mtime (stat -c \"%Y\" \"$config_file\" 2>/dev/null)\n")
+	sb.WriteString("    end\n")
+	sb.WriteString("    if test \"$current_mtime\" != \"$_UNIRTM_LAST_MTIME\"\n")
+	sb.WriteString("      set -gx _UNIRTM_LAST_MTIME \"$current_mtime\"\n")
+	sb.WriteString("      unirtm activate --shell fish | source\n")
+	sb.WriteString("    end\n")
+	sb.WriteString("  end\n")
+	sb.WriteString("end\n\n")
 
 	instructions := "To activate this environment, run:\n\n" +
 		"    source /path/to/activation.fish\n\n" +

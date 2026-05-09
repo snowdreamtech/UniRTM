@@ -29,7 +29,6 @@ func ExampleActivationManager_GenerateGlobalActivation() {
 	}
 
 	fmt.Printf("Shell: %s\n", script.Shell)
-	fmt.Printf("Script length: %d bytes\n", len(script.Content))
 	fmt.Println("Script contains PATH modification:", containsString(script.Content, "export PATH="))
 	fmt.Println("Script contains node version:", containsString(script.Content, "UNIRTM_NODE_VERSION"))
 	fmt.Println("Script contains python version:", containsString(script.Content, "UNIRTM_PYTHON_VERSION"))
@@ -37,7 +36,6 @@ func ExampleActivationManager_GenerateGlobalActivation() {
 
 	// Output:
 	// Shell: bash
-	// Script length: 306 bytes
 	// Script contains PATH modification: true
 	// Script contains node version: true
 	// Script contains python version: true
