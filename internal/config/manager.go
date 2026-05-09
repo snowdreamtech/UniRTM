@@ -159,14 +159,18 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 			continue
 		}
 
-		isTrusted := false
+		status := TrustStatusTrusted
 		if m.trustManager != nil {
-			isTrusted = m.trustManager.IsTrusted(path)
+			status = m.trustManager.TrustStatus(path)
 		}
 
 		// Enforce trust for Project and Local configs (indices 2, 3, 4)
-		if i >= 2 && !isTrusted {
-			pterm.Warning.Printfln("Skipping untrusted configuration file: %s\nRun `unirtm trust %s` to trust it.", path, path)
+		if i >= 2 && status != TrustStatusTrusted {
+			if status == TrustStatusModified {
+				pterm.Warning.Printfln("Configuration file has been modified since it was last trusted: %s\nRun `unirtm trust %s` to review and trust the new contents.", path, path)
+			} else {
+				pterm.Warning.Printfln("Skipping untrusted configuration file: %s\nRun `unirtm trust %s` to trust it.", path, path)
+			}
 			continue
 		}
 

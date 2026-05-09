@@ -15,9 +15,9 @@ import (
 
 type mockTrustManager struct{}
 
-func (m *mockTrustManager) IsTrusted(path string) bool { return true }
-func (m *mockTrustManager) Trust(path string) error    { return nil }
-func (m *mockTrustManager) Untrust(path string) error  { return nil }
+func (m *mockTrustManager) TrustStatus(path string) TrustStatus { return TrustStatusTrusted }
+func (m *mockTrustManager) Trust(path string) error             { return nil }
+func (m *mockTrustManager) Untrust(path string) error           { return nil }
 
 func newTestConfigManager() *viperConfigManager {
 	m := NewConfigManager().(*viperConfigManager)

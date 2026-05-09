@@ -5,21 +5,36 @@ package config
 
 import (
 	"bufio"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 )
 
+// TrustStatus represents the current trust state of a configuration file
+type TrustStatus int
+
+const (
+	// TrustStatusUntrusted means the file has never been trusted
+	TrustStatusUntrusted TrustStatus = iota
+	// TrustStatusTrusted means the file is trusted and its hash matches
+	TrustStatusTrusted
+	// TrustStatusModified means the file was trusted previously but its contents have changed
+	TrustStatusModified
+)
+
 // TrustManager handles the trust mechanism for local and project configurations.
 // To prevent executing malicious scripts from automatically loaded configuration files
-// in untrusted repositories, we maintain a list of trusted config absolute paths.
+// in untrusted repositories, we maintain a list of trusted config absolute paths and their content hashes.
 type TrustManager interface {
-	// IsTrusted returns true if the specified configuration file is trusted.
-	IsTrusted(path string) bool
+	// TrustStatus returns the current trust state of the configuration file.
+	TrustStatus(path string) TrustStatus
 
-	// Trust adds the specified configuration file to the trusted list.
+	// Trust adds the specified configuration file to the trusted list with its current hash.
 	Trust(path string) error
 
 	// Untrust removes the specified configuration file from the trusted list.
@@ -55,8 +70,8 @@ func (m *fileTrustManager) ensureTrustFileExists() error {
 	return nil
 }
 
-// loadTrustedPaths reads the trusted_configs file and returns a map for quick lookup.
-func (m *fileTrustManager) loadTrustedPaths() (map[string]bool, error) {
+// loadTrustedPaths reads the trusted_configs file and returns a map of path -> hash.
+func (m *fileTrustManager) loadTrustedPaths() (map[string]string, error) {
 	if err := m.ensureTrustFileExists(); err != nil {
 		return nil, err
 	}
@@ -67,12 +82,20 @@ func (m *fileTrustManager) loadTrustedPaths() (map[string]bool, error) {
 	}
 	defer f.Close()
 
-	paths := make(map[string]bool)
+	paths := make(map[string]string)
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		if line != "" {
-			paths[line] = true
+		if line == "" {
+			continue
+		}
+
+		parts := strings.SplitN(line, " ", 2)
+		if len(parts) == 2 {
+			paths[parts[0]] = parts[1]
+		} else {
+			// Legacy support or missing hash: store empty hash to force a "Modified" status
+			paths[parts[0]] = ""
 		}
 	}
 
@@ -80,7 +103,7 @@ func (m *fileTrustManager) loadTrustedPaths() (map[string]bool, error) {
 }
 
 // saveTrustedPaths writes the trusted paths map back to the file.
-func (m *fileTrustManager) saveTrustedPaths(paths map[string]bool) error {
+func (m *fileTrustManager) saveTrustedPaths(paths map[string]string) error {
 	if err := m.ensureTrustFileExists(); err != nil {
 		return err
 	}
@@ -92,29 +115,60 @@ func (m *fileTrustManager) saveTrustedPaths(paths map[string]bool) error {
 	defer f.Close()
 
 	writer := bufio.NewWriter(f)
-	for path := range paths {
-		if _, err := writer.WriteString(path + "\n"); err != nil {
+	for path, hash := range paths {
+		if _, err := writer.WriteString(fmt.Sprintf("%s %s\n", path, hash)); err != nil {
 			return err
 		}
 	}
 	return writer.Flush()
 }
 
-func (m *fileTrustManager) IsTrusted(path string) bool {
+// calculateHash computes the SHA256 hash of a file's contents.
+func calculateHash(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, f); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hasher.Sum(nil)), nil
+}
+
+func (m *fileTrustManager) TrustStatus(path string) TrustStatus {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		return false
+		return TrustStatusUntrusted
 	}
 
 	paths, err := m.loadTrustedPaths()
 	if err != nil {
-		return false
+		return TrustStatusUntrusted
 	}
 
-	return paths[absPath]
+	storedHash, exists := paths[absPath]
+	if !exists {
+		return TrustStatusUntrusted
+	}
+
+	currentHash, err := calculateHash(absPath)
+	if err != nil {
+		// If we can't calculate the hash (e.g. file deleted), we treat it as untrusted
+		return TrustStatusUntrusted
+	}
+
+	if storedHash == "" || storedHash != currentHash {
+		return TrustStatusModified
+	}
+
+	return TrustStatusTrusted
 }
 
 func (m *fileTrustManager) Trust(path string) error {
@@ -126,17 +180,22 @@ func (m *fileTrustManager) Trust(path string) error {
 		return fmt.Errorf("failed to resolve absolute path: %w", err)
 	}
 
+	hash, err := calculateHash(absPath)
+	if err != nil {
+		return fmt.Errorf("failed to calculate file hash: %w", err)
+	}
+
 	paths, err := m.loadTrustedPaths()
 	if err != nil {
 		return fmt.Errorf("failed to load trusted paths: %w", err)
 	}
 
-	if paths[absPath] {
-		// Already trusted
+	if paths[absPath] == hash {
+		// Already trusted and up to date
 		return nil
 	}
 
-	paths[absPath] = true
+	paths[absPath] = hash
 	return m.saveTrustedPaths(paths)
 }
 
@@ -154,7 +213,7 @@ func (m *fileTrustManager) Untrust(path string) error {
 		return fmt.Errorf("failed to load trusted paths: %w", err)
 	}
 
-	if !paths[absPath] {
+	if _, exists := paths[absPath]; !exists {
 		// Already untrusted
 		return nil
 	}
