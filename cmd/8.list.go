@@ -172,7 +172,7 @@ func runList(cmd *cobra.Command, args []string) error {
 	pterm.EnableColor()
 	pterm.DefaultTable.
 		WithHasHeader(true).
-		WithHeaderRowSeparator("-").
+		WithSeparator("   ").
 		WithHeaderStyle(pterm.NewStyle(pterm.FgCyan, pterm.Bold)).
 		WithData(tableData).
 		Render()
