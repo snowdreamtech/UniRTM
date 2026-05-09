@@ -160,9 +160,9 @@ func runList(cmd *cobra.Command, args []string) error {
 
 	for _, inst := range installations {
 		tableData = append(tableData, []string{
-			inst.Tool,
-			inst.Version,
-			inst.Backend,
+			pterm.FgGreen.Sprint(inst.Tool),
+			pterm.FgYellow.Sprint(inst.Version),
+			pterm.FgMagenta.Sprint(inst.Backend),
 			inst.InstallPath,
 			inst.InstalledAt.Format("2006-01-02 15:04:05"),
 		})
