@@ -216,6 +216,10 @@ func (g *GitHubBackend) findMatchingAsset(assets []githubAsset, platform Platfor
 	}
 
 	// Second pass: find matching binary asset
+	var bestAsset *githubAsset
+	var bestChecksum string
+	bestScore := -1
+
 	for i := range assets {
 		asset := &assets[i]
 
@@ -227,14 +231,50 @@ func (g *GitHubBackend) findMatchingAsset(assets []githubAsset, platform Platfor
 			continue
 		}
 
+		// Skip installers and packages we don't want to handle directly
+		nameLower := strings.ToLower(asset.Name)
+		if strings.HasSuffix(nameLower, ".deb") ||
+			strings.HasSuffix(nameLower, ".rpm") ||
+			strings.HasSuffix(nameLower, ".msi") ||
+			strings.HasSuffix(nameLower, ".apk") ||
+			strings.HasSuffix(nameLower, ".dmg") ||
+			strings.HasSuffix(nameLower, ".pkg") {
+			continue
+		}
+
 		// Check if asset matches platform
 		if g.matchesPlatform(asset.Name, platform) {
 			checksum := ""
 			if checksumMap != nil {
 				checksum = checksumMap[asset.Name]
 			}
-			return asset, checksum
+
+			// Score the asset:
+			// Tar.gz > zip > tar.xz > others
+			score := 0
+			if strings.HasSuffix(nameLower, ".tar.gz") || strings.HasSuffix(nameLower, ".tgz") {
+				score = 10
+			} else if strings.HasSuffix(nameLower, ".zip") {
+				score = 8
+			} else if strings.HasSuffix(nameLower, ".tar.xz") || strings.HasSuffix(nameLower, ".txz") {
+				score = 6
+			} else if !strings.Contains(nameLower, ".") {
+				// likely a raw binary
+				score = 5
+			} else {
+				score = 1
+			}
+
+			if score > bestScore {
+				bestScore = score
+				bestAsset = asset
+				bestChecksum = checksum
+			}
 		}
+	}
+
+	if bestAsset != nil {
+		return bestAsset, bestChecksum
 	}
 
 	return nil, ""

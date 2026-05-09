@@ -25,6 +25,9 @@ func NewRegistry() *Registry {
 	r.Register(NewAquaBackend())
 	r.Register(NewHTTPBackend())
 	r.Register(NewAsdfBackend())
+	r.Register(NewNpmBackend())
+	r.Register(NewPypiBackend())
+	r.Register(NewCargoBackend())
 
 	return r
 }

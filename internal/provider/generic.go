@@ -35,10 +35,34 @@ func (g *GenericProvider) Install(ctx context.Context, installPath string, artif
 		return NewProviderError("generic", "unknown", version, "failed to create bin directory", err)
 	}
 
-	// Find all executable files in artifact path
-	executables, err := g.findExecutables(artifactPath)
-	if err != nil {
-		return NewProviderError("generic", "unknown", version, "failed to find executables", err)
+	// Extract artifact if it is an archive
+	if err := g.extractArtifact(ctx, artifactPath, installPath); err != nil {
+		// If it's not an archive, we just copy it to binDir
+		dstPath := filepath.Join(binDir, filepath.Base(artifactPath))
+		if err := g.copyFile(artifactPath, dstPath); err != nil {
+			return NewProviderError("generic", "unknown", version, "failed to copy executable", err)
+		}
+		if err := os.Chmod(dstPath, 0755); err != nil {
+			return NewProviderError("generic", "unknown", version, "failed to chmod executable", err)
+		}
+	} else {
+		// Find all executable files in the extracted path
+		executables, err := g.findExecutables(installPath)
+		if err != nil {
+			return NewProviderError("generic", "unknown", version, "failed to find executables", err)
+		}
+
+		// Move executables to bin directory (or just ensure they have +x)
+		for _, exe := range executables {
+			exePath := filepath.Join(installPath, exe)
+			if err := os.Chmod(exePath, 0755); err != nil {
+				return NewProviderError("generic", "unknown", version, fmt.Sprintf("failed to chmod %s", exe), err)
+			}
+
+			// If it's not already in binDir, we might want to symlink it or just leave it
+			// For generic, leaving it where it is and listing it from the whole install path might be better.
+			// But GenerateShims relies on ListExecutables.
+		}
 	}
 
 	// Copy executables to bin directory
@@ -231,4 +255,30 @@ func (g *GenericProvider) generateWindowsShim(exePath string, version string) st
 REM UniRTM shim for %s (version %s)
 "%s" %%*
 `, filepath.Base(exePath), version, exePath)
+}
+
+// extractArtifact attempts to extract an archive to the destination directory.
+// Returns an error if the file is not a supported archive or extraction fails.
+func (g *GenericProvider) extractArtifact(ctx context.Context, artifactPath string, dstDir string) error {
+	ext := strings.ToLower(filepath.Ext(artifactPath))
+	if ext == ".gz" || ext == ".tgz" {
+		cmd := exec.CommandContext(ctx, "tar", "-xzf", artifactPath, "-C", dstDir)
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("tar extract failed: %v, output: %s", err, string(output))
+		}
+		return nil
+	} else if ext == ".zip" {
+		cmd := exec.CommandContext(ctx, "unzip", "-q", "-o", artifactPath, "-d", dstDir)
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("unzip failed: %v, output: %s", err, string(output))
+		}
+		return nil
+	} else if ext == ".tar" {
+		cmd := exec.CommandContext(ctx, "tar", "-xf", artifactPath, "-C", dstDir)
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("tar extract failed: %v, output: %s", err, string(output))
+		}
+		return nil
+	}
+	return fmt.Errorf("unsupported archive type: %s", ext)
 }
