@@ -41,6 +41,8 @@ that manages multiple development tool versions, provides declarative configurat
 management, supports multiple backends and providers, and offers comprehensive
 audit and logging capabilities.`,
 		PersistentPreRun: setupLogging,
+		SilenceUsage:     true,
+		SilenceErrors:    true,
 	}
 
 	buildFlags()

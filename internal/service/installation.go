@@ -54,9 +54,17 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	defer tx.Rollback()
 
 	// Check if already installed
-	existing, err := im.installRepo.FindByToolAndVersion(ctx, tool, version)
+	existing, err := tx.InstallationRepo().FindByToolAndVersion(ctx, tool, version)
 	if err == nil && existing != nil {
-		return fmt.Errorf("tool %s version %s already installed", tool, version)
+		// Verify if the installation directory actually exists on disk
+		if _, statErr := os.Stat(existing.InstallPath); os.IsNotExist(statErr) {
+			// Path doesn't exist, this is a stale database record. Clean it up.
+			if delErr := tx.InstallationRepo().Delete(ctx, tool, version); delErr != nil {
+				return fmt.Errorf("failed to clean up stale installation record: %w", delErr)
+			}
+		} else {
+			return fmt.Errorf("tool %s version %s already installed", tool, version)
+		}
 	}
 
 	// Get backend
@@ -125,7 +133,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		Checksum:    versionInfo.Checksum,
 	}
 
-	if err := im.installRepo.Create(ctx, installation); err != nil {
+	if err := tx.InstallationRepo().Create(ctx, installation); err != nil {
 		os.RemoveAll(installPath)
 		return fmt.Errorf("failed to record installation: %w", err)
 	}
