@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
@@ -84,6 +85,14 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		Verbose: verbose,
 	})
 
+	// Parse backend prefix (e.g., "npm:typescript" -> backend: "npm", tool: "typescript")
+	backendName := getBackendName()
+	if strings.Contains(tool, ":") {
+		parts := strings.SplitN(tool, ":", 2)
+		backendName = parts[0]
+		tool = parts[1]
+	}
+
 	// Validate input
 	if tool == "" {
 		formatter.Error("Tool name cannot be empty")
@@ -99,7 +108,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	formatter.Info(fmt.Sprintf("Installing %s@%s", tool, version), map[string]interface{}{
 		"tool":    tool,
 		"version": version,
-		"backend": getBackendName(),
+		"backend": backendName,
 	})
 
 	// Dry-run: show intent without side effects
@@ -107,7 +116,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		formatter.Info("[dry-run] Would install "+tool+"@"+version+" — no changes made", map[string]interface{}{
 			"tool":    tool,
 			"version": version,
-			"backend": getBackendName(),
+			"backend": backendName,
 			"dry_run": true,
 		})
 		return nil
@@ -185,7 +194,6 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 	// Perform installation
 	startTime := time.Now()
-	backendName := getBackendName()
 	err = installManager.Install(ctx, tool, version, backendName)
 	duration := time.Since(startTime)
 
