@@ -70,17 +70,17 @@
 
 | Backend | mise | UniRTM |
 |---------|------|--------|
-| **asdf 插件** | ✅ 核心机制（~800+ 插件） | ❌ 不支持 asdf 插件 |
+| **asdf 插件** | ✅ 核心机制（~800+ 插件） | ✅ 已支持（通过 AsdfProvider 兼容 asdf 插件规范） |
 | **GitHub Releases** | ✅ | ✅ |
 | **Aqua Registry** | ✅ | ✅ |
 | **HTTP 直接下载** | ✅ | ✅ |
 | **自定义 Backend** | 通过 asdf 插件 | 通过 Go Plugin 系统 |
-| **npm 后端** | ✅ | ❌ 未实现 |
-| **PyPI 后端** | ✅ | ❌ 未实现 |
-| **Cargo 后端** | ✅ | ❌ 未实现 |
+| **npm 后端** | ✅ | ✅ 已实现 |
+| **PyPI 后端** | ✅ | ✅ 已实现 |
+| **Cargo 后端** | ✅ | ✅ 已实现 |
 | **Ubi 后端** | ✅ | ❌ 未实现 |
 
-> ⚠️ **关键差异**：mise 通过 asdf 生态获得了海量工具支持（800+），UniRTM 目前仅内置 GitHub/Aqua/HTTP 3 种 backend，工具覆盖面是最大的现实差距。
+> ⚠️ **差异说明**：UniRTM 已经通过 `AsdfProvider` 实现了对 asdf 插件生态的兼容，并原生支持了 npm/PyPI/Cargo 后端，功能覆盖率大幅提升。目前仅 Ubi 后端尚未实现。
 
 ### 2.3 Provider（工具特定逻辑）
 
