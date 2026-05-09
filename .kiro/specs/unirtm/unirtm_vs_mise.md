@@ -78,9 +78,9 @@
 | **npm 后端** | ✅ | ✅ 已实现 |
 | **PyPI 后端** | ✅ | ✅ 已实现 |
 | **Cargo 后端** | ✅ | ✅ 已实现 |
-| **Ubi 后端** | ✅ | ❌ 未实现 |
+| **Ubi 后端** | ✅ | ✅ 已实现 |
 
-> ⚠️ **差异说明**：UniRTM 已经通过 `AsdfProvider` 实现了对 asdf 插件生态的兼容，并原生支持了 npm/PyPI/Cargo 后端，功能覆盖率大幅提升。目前仅 Ubi 后端尚未实现。
+> ⚠️ **差异说明**：UniRTM 已经通过 `AsdfProvider` 实现了对 asdf 插件生态的兼容，并原生支持了 npm/PyPI/Cargo/Ubi 等所有核心后端，在后端生态机制上已完全对齐。
 
 ### 2.3 Provider（工具特定逻辑）
 

@@ -36,6 +36,7 @@ func NewRegistry() *Registry {
 	r.Register("npm", NewNpmProvider())
 	r.Register("pypi", NewPypiProvider())
 	r.Register("cargo", NewCargoProvider())
+	r.Register("ubi", NewUbiProvider())
 
 	return r
 }
