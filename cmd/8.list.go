@@ -7,9 +7,9 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"text/tabwriter"
 	"time"
 
+	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -154,20 +154,22 @@ func runList(cmd *cobra.Command, args []string) error {
 	}
 
 	// Human-readable table output
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "TOOL\tVERSION\tBACKEND\tINSTALL PATH\tINSTALLED AT")
-	fmt.Fprintln(w, "----\t-------\t-------\t------------\t------------")
+	tableData := pterm.TableData{
+		{"TOOL", "VERSION", "BACKEND", "INSTALL PATH", "INSTALLED AT"},
+	}
 
 	for _, inst := range installations {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+		tableData = append(tableData, []string{
 			inst.Tool,
 			inst.Version,
 			inst.Backend,
 			inst.InstallPath,
 			inst.InstalledAt.Format("2006-01-02 15:04:05"),
-		)
+		})
 	}
-	w.Flush()
+
+	fmt.Println() // Add a blank line before the table
+	pterm.DefaultTable.WithHasHeader().WithBoxed().WithData(tableData).Render()
 
 	return nil
 }
