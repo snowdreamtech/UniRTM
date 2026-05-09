@@ -293,3 +293,21 @@ mise：                                UniRTM：
 
 11. **可视化管理面板 (Local Web UI / TUI)**
     - **计划**: 提供 `unirtm ui`，启动一个轻量级的本地 Web Dashboard（或 TUI 终端界面），提供直观的监控：管理各个项目安装的版本、查看 SQLite 审计图表、点击升级版本、并可视化查看任务依赖拓扑图。
+
+12. **离线缓存池与内网镜像源 (Local Mirror / Air-gapped Support)**
+    - **计划**: 针对严格物理隔离（Air-gapped）的企业内网环境，提供 `unirtm mirror`。可将项目所需的全部依赖及工具包一键打包为 `离线缓存池 (Cache Pool)`，通过内网分发，实现无网环境下的瞬间装载。同时支持原生配置企业级自定义下载镜像源。
+
+13. **零开销 Native Shim 与 eBPF 注入 (Zero-Overhead Shim)**
+    - **计划**: 当前拦截依赖于 Shell 脚本（会带来毫秒级延迟）。未来将探索使用纯原生 Go 编译二进制 Shim，甚至在 Linux 下结合 eBPF 技术，在内核态无缝拦截并重定向工具执行路径，实现真正的**零延迟（Zero-latency）**环境切换。
+
+14. **智能故障诊断与 AI 自动修复 (AI-Powered Doctor & Healing)**
+    - **计划**: 增强 `unirtm doctor`，引入更强大的本地启发式规则或可选的 AI 分析。当工具因缺失系统底层依赖（如 `libssl-dev` 或特定 `glibc` 版本）安装失败时，能自动定位根本原因，并给出针对当前 OS 的确切修复命令（`apt/brew/yum`），甚至提示一键修复。
+
+15. **企业级版本治理与安全管控 (Version Governance & Policy)**
+    - **计划**: 为企业团队提供安全策略文件（如 `.unirtm.policy.toml`）。允许管理员配置黑白名单，拦截包含已知高危 CVE 漏洞的版本安装，或强制锁定在特定的 LTS 版本域内，防止私自升级导致生产故障。
+
+16. **环境一键打包与快照分发 (Environment Bundling)**
+    - **计划**: 提供 `unirtm bundle` 命令。不仅仅锁定配置文件，还能将已安装好的二进制本体、缓存、以及环境上下文打包为跨机器可移植的快照（Tarball）。该快照可直接载入 Docker 基础镜像或 VDI 云桌面中解压即用，大幅降低 CI 部署耗时。
+
+17. **插件沙箱执行机制 (Plugin Sandbox)**
+    - **计划**: 考虑到第三方工具插件存在供应链投毒风险，未来计划将不受信任的下载脚本或插件逻辑放置于严密的隔离沙箱（如 WASM Runtime 或 gVisor）中执行，确保核心文件系统的绝对安全。
