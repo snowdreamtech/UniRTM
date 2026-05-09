@@ -97,7 +97,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 	// Install using provider
 	installPath := filepath.Join("/opt/unirtm/tools", tool, version)
-	p := im.providerRegistry.Get(tool)
+	p := im.providerRegistry.GetWithBackend(tool, backendName)
 
 	if err := p.Install(ctx, installPath, downloadPath, version); err != nil {
 		os.RemoveAll(installPath)
@@ -140,7 +140,7 @@ func (im *InstallationManager) Uninstall(ctx context.Context, tool, version stri
 	}
 
 	// Run provider uninstall
-	p := im.providerRegistry.Get(tool)
+	p := im.providerRegistry.GetWithBackend(tool, installation.Backend)
 	if err := p.Uninstall(ctx, installation.InstallPath, version); err != nil {
 		return fmt.Errorf("provider uninstall failed: %w", err)
 	}

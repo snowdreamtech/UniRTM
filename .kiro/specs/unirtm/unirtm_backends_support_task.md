@@ -1,13 +1,13 @@
 # 多生态 Backend / Provider 支持任务
 
 ## Phase 1: asdf 支持 (内置)
-- [ ] 创建 `internal/backend/asdf.go`
+- [x] 创建 `internal/backend/asdf.go`
   - 实现 `ListVersions` (执行 `bin/list-all`)
   - 实现 Github 仓库克隆逻辑 (从 `github.com/asdf-vm/asdf-plugins` 或直接拉取对应的插件仓库)
-- [ ] 创建 `internal/provider/asdf.go`
+- [x] 创建 `internal/provider/asdf.go`
   - 实现 `Install` (执行 `bin/download` 和 `bin/install`)
   - 实现 `GenerateShims` (基于 `bin/list-bin-paths` 或默认 `bin/`)
-- [ ] 在 Registry 中注册 `asdf`
+- [x] 在 Registry 中注册 `asdf`
 - [ ] 测试 `unirtm install asdf:nodejs@20.0.0`
 
 ## Phase 2: npm & pypi 支持 (内置)

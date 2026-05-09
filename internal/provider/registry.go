@@ -51,8 +51,20 @@ func (r *Registry) Unregister(toolName string) {
 // Get retrieves a provider for a specific tool name.
 // If no specific provider is found, returns the generic provider.
 func (r *Registry) Get(toolName string) Provider {
+	return r.GetWithBackend(toolName, "")
+}
+
+// GetWithBackend retrieves a provider for a specific tool name or backend name.
+func (r *Registry) GetWithBackend(toolName string, backendName string) Provider {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
+
+	// Try backend match (e.g., "asdf", "npm", "cargo")
+	if backendName != "" {
+		if provider, ok := r.providers[strings.ToLower(backendName)]; ok {
+			return provider
+		}
+	}
 
 	// Try exact match
 	if provider, ok := r.providers[strings.ToLower(toolName)]; ok {

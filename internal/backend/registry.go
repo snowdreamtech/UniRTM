@@ -24,6 +24,7 @@ func NewRegistry() *Registry {
 	r.Register(NewGitHubBackend())
 	r.Register(NewAquaBackend())
 	r.Register(NewHTTPBackend())
+	r.Register(NewAsdfBackend())
 
 	return r
 }
