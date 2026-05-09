@@ -169,7 +169,13 @@ func runList(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println() // Add a blank line before the table
-	pterm.DefaultTable.WithHasHeader().WithBoxed().WithData(tableData).Render()
+	pterm.EnableColor()
+	pterm.DefaultTable.
+		WithHasHeader(true).
+		WithHeaderRowSeparator("-").
+		WithHeaderStyle(pterm.NewStyle(pterm.FgCyan, pterm.Bold)).
+		WithData(tableData).
+		Render()
 
 	return nil
 }
