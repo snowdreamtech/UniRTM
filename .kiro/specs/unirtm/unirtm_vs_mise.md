@@ -275,3 +275,21 @@ mise：                                UniRTM：
 
 5. **配置共享与发布 (Config Sharing)**
    - **计划**: 探索通过 `unirtm share` 或类似机制，将特定环境的配置（包含特定的插件和版本组合）导出为可复现的锁定文件 (`unirtm.lock`)，进一步增强团队协作中的不可变环境能力。
+
+6. **深度环境变量管理与注入 (Advanced Env Management)**
+   - **计划**: 引入 `unirtm env set/unset`，允许在 `.unirtm.toml` 中精细化配置跨平台的环境变量（例如动态解析路径、读取 `.env` 文件），并在用户进入目录时，以安全的隔离方式自动注入这些变量，成为统一的项目环境管理器（替代传统的 `direnv`）。
+
+7. **自动化垃圾回收与磁盘优化 (Smart Garbage Collection)**
+   - **计划**: 引入 `unirtm gc`。基于 SQLite 的审计日志记录，UniRTM 可以分析出长时间未被激活过的旧版本工具（基于 LRU 策略），并智能推荐或自动执行清理，释放磁盘空间。
+
+8. **构建证明与企业级供应链安全 (SLSA & SBOM)**
+   - **计划**: 在 GPG 签名校验的基础上，安装工具时自动拉取并校验工具的 **SLSA Provenance (构建来源证明)**，并能够一键导出当前项目所有工具栈的 **SBOM (软件物料清单)**，满足企业级零信任架构的合规需求。
+
+9. **WASM 与容器化降级执行 (WASM / Docker Fallbacks)**
+   - **计划**: 若某个工具在当前平台（如 Windows ARM）缺失预编译二进制，UniRTM 可自动降级去拉取其 WebAssembly (WASM) 版本（通过内置的 Wasm 运行时执行），或者静默拉取 Docker 镜像作为 shim 运行，真正实现“Write Once, Run Anywhere”。
+
+10. **生命周期钩子机制 (Lifecycle Hooks)**
+    - **计划**: 在 `.unirtm.toml` 中支持 `postinstall`、`preactivate` 等生命周期钩子。例如：当 Node.js 安装完成后自动执行 `corepack enable`，或在切换 Python 版本时自动运行 `poetry install`。
+
+11. **可视化管理面板 (Local Web UI / TUI)**
+    - **计划**: 提供 `unirtm ui`，启动一个轻量级的本地 Web Dashboard（或 TUI 终端界面），提供直观的监控：管理各个项目安装的版本、查看 SQLite 审计图表、点击升级版本、并可视化查看任务依赖拓扑图。
