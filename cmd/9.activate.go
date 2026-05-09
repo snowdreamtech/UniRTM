@@ -252,32 +252,3 @@ func resolveShellType(shellType string) (string, error) {
 	return string(detected), nil
 }
 
-// getDefaultShimsDir returns the default path for shim scripts.
-func getDefaultShimsDir() string {
-	dataHome := os.Getenv("XDG_DATA_HOME")
-	if dataHome == "" {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return "./shims"
-		}
-		dataHome = homeDir + "/.local/share"
-	}
-	shimsDir := dataHome + "/unirtm/shims"
-	_ = os.MkdirAll(shimsDir, 0755)
-	return shimsDir
-}
-
-// getDefaultDataDir returns the default data directory path.
-func getDefaultDataDir() string {
-	dataHome := os.Getenv("XDG_DATA_HOME")
-	if dataHome == "" {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return "./unirtm"
-		}
-		dataHome = homeDir + "/.local/share"
-	}
-	dataDir := dataHome + "/unirtm"
-	_ = os.MkdirAll(dataDir, 0755)
-	return dataDir
-}

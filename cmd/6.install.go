@@ -241,26 +241,3 @@ func getBackendName() string {
 	return "github" // Default backend
 }
 
-// getDefaultDatabasePath returns the default path for the SQLite database.
-// TODO: This should be configurable via configuration file or environment variable.
-func getDefaultDatabasePath() string {
-	// Use XDG_DATA_HOME if set, otherwise use ~/.local/share
-	dataHome := os.Getenv("XDG_DATA_HOME")
-	if dataHome == "" {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			// Fallback to current directory
-			return "./unirtm.db"
-		}
-		dataHome = homeDir + "/.local/share"
-	}
-
-	// Create unirtm data directory
-	unirtmDataDir := dataHome + "/unirtm"
-	if err := os.MkdirAll(unirtmDataDir, 0755); err != nil {
-		// Fallback to current directory
-		return "./unirtm.db"
-	}
-
-	return unirtmDataDir + "/unirtm.db"
-}

@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // TrustStatus represents the current trust state of a configuration file
@@ -49,8 +51,7 @@ type fileTrustManager struct {
 // NewTrustManager creates a new TrustManager that persists trusted paths
 // to ~/.config/unirtm/trusted_configs.
 func NewTrustManager() TrustManager {
-	homeDir, _ := os.UserHomeDir()
-	trustFilePath := filepath.Join(homeDir, ".config", "unirtm", "trusted_configs")
+	trustFilePath := filepath.Join(env.GetConfigDir(), "trusted_configs")
 	return &fileTrustManager{
 		trustFilePath: trustFilePath,
 	}

@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/pterm/pterm"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/viper"
 )
 
@@ -143,13 +144,12 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error) {
 	var configs []*Config
 
-	// Define hierarchy paths
 	hierarchyPaths := []string{
-		"/etc/unirtm/config.toml",                              // System
-		filepath.Join(m.homeDir, ".config/unirtm/config.toml"), // Global
-		"./unirtm.toml",                                        // Project (primary)
-		"./.unirtm.toml",                                       // Project (alternate)
-		"./.unirtm.local.toml",                                 // Local
+		"/etc/unirtm/config.toml",                       // System
+		filepath.Join(env.GetConfigDir(), "config.toml"), // Global
+		"./unirtm.toml",                                 // Project (primary)
+		"./.unirtm.toml",                                // Project (alternate)
+		"./.unirtm.local.toml",                          // Local
 	}
 
 	// Load each configuration file that exists

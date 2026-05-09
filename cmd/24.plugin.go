@@ -36,7 +36,7 @@ var pluginCmd = &cobra.Command{
 UniRTM supports Go-native plugins that extend its functionality with
 custom backends (tool sources) and providers (tool-specific install logic).
 Plugins are standalone executable binaries prefixed with 'unirtm-plugin-'
-placed in the plugins directory (~/.local/share/unirtm/plugins/).
+placed in the plugins data directory.
 
 Use 'unirtm plugin list' to see loaded plugins.`,
 	Args: cobra.NoArgs,
