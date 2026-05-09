@@ -311,3 +311,21 @@ mise：                                UniRTM：
 
 17. **插件沙箱执行机制 (Plugin Sandbox)**
     - **计划**: 考虑到第三方工具插件存在供应链投毒风险，未来计划将不受信任的下载脚本或插件逻辑放置于严密的隔离沙箱（如 WASM Runtime 或 gVisor）中执行，确保核心文件系统的绝对安全。
+
+18. **分布式编译与缓存共享网络 (Distributed Cache Network)**
+    - **计划**: 针对需要源码编译安装的语言（如 Python、Ruby），引入远程构建缓存（Remote Caching）。当团队中某位开发者或 CI 机器完成编译后，编译产物及哈希将被上传至企业私有缓存服务器。其他成员只需秒级拉取复用，免去重复漫长的本地编译过程。
+
+19. **透明的网络代理与根证书注入 (Transparent Proxy & CA Injection)**
+    - **计划**: 针对企业内网复杂的代理和自签发证书（如 Zscaler 拦截导致的 SSL 报错），UniRTM 在激活环境时，不仅接管 PATH，还能智能识别并自动为 npm、pip、cargo 等工具链注入全局代理变量（`HTTP_PROXY`）和企业 Root CA 证书路径，彻底根除环境相关的网络故障。
+
+20. **工具链 CVE 漏洞扫描与健康度审计 (Vulnerability Scanning)**
+    - **计划**: 引入 `unirtm audit`。结合 OSV (Open Source Vulnerabilities) 等漏洞数据库，定期扫描 `.unirtm.toml` 及本地已安装的二进制文件，若发现如 Node.js 或 Python 版本存在严重安全漏洞，则主动发出警告并推荐升级到安全的 Patch 版本。
+
+21. **原生 Monorepo 多体拓扑编排 (Polyglot Workspace Orchestration)**
+    - **计划**: 深度优化对巨型 Monorepo 的支持。通过 `unirtm workspace` 分析多包代码库的跨语言环境依赖树，不仅支持按子目录激活，还允许以最优并发度在根目录一键初始化所有微服务底层依赖（Go + Node + Python 混合架构）。
+
+22. **环境配置漂移检测 (Configuration Drift Detection)**
+    - **计划**: 引入 `unirtm drift` 命令。长期开发中，本地状态可能与 `.unirtm.toml` 声明的期望状态发生偏离（如手动替换过底层文件、Shim 丢失等）。Drift 检测可以通过对比文件哈希与 SQLite 数据库记录，精准定位并修复环境不一致性。
+
+23. **自适应底层资源分配调度 (Adaptive Resource Scheduling)**
+    - **计划**: 在执行解压、并发下载或本地编译任务时，UniRTM 能够动态感知当前系统负载。当检测到开发者正在高负载使用 IDE 甚至开会时，自动将 CPU 密集型任务分配给低功耗核心（如 Apple Silicon 的 E-core）或调低 `nice` 优先级，实现“无感静默安装”。
