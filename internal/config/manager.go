@@ -5,10 +5,13 @@
 package config
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"html/template"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/pterm/pterm"
@@ -84,14 +87,55 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 		return nil, fmt.Errorf("configuration file not found: %s", path)
 	}
 
+	// Read file contents
+	contentBytes, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read configuration file %s: %w", path, err)
+	}
+
+	// Prepare template context
+	envMap := make(map[string]string)
+	for _, e := range os.Environ() {
+		pair := strings.SplitN(e, "=", 2)
+		if len(pair) == 2 {
+			envMap[pair[0]] = pair[1]
+		}
+	}
+
+	tmplData := struct {
+		Env  map[string]string
+		OS   string
+		Arch string
+	}{
+		Env:  envMap,
+		OS:   runtime.GOOS,
+		Arch: runtime.GOARCH,
+	}
+
+	// Parse and execute template
+	tmpl, err := template.New(filepath.Base(path)).Parse(string(contentBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse template in %s: %w", path, err)
+	}
+
+	var renderedBuf bytes.Buffer
+	if err := tmpl.Execute(&renderedBuf, tmplData); err != nil {
+		return nil, fmt.Errorf("failed to render template in %s: %w", path, err)
+	}
+
 	// Create a new Viper instance for this file
 	v := viper.New()
 
-	// Set the config file path
-	v.SetConfigFile(path)
+	// Determine config type from extension
+	ext := filepath.Ext(path)
+	configType := strings.TrimPrefix(ext, ".")
+	if configType == "" {
+		configType = "toml" // default
+	}
+	v.SetConfigType(configType)
 
-	// Read the configuration file
-	if err := v.ReadInConfig(); err != nil {
+	// Read the configuration file from buffer
+	if err := v.ReadConfig(&renderedBuf); err != nil {
 		// Provide descriptive error messages for common issues
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			return nil, fmt.Errorf("configuration file not found: %s", path)
@@ -100,7 +144,7 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 		if strings.Contains(err.Error(), "toml") || strings.Contains(err.Error(), "yaml") {
 			return nil, fmt.Errorf("invalid syntax in configuration file %s: %w", path, err)
 		}
-		return nil, fmt.Errorf("failed to read configuration file %s: %w", path, err)
+		return nil, fmt.Errorf("failed to parse rendered configuration file %s: %w", path, err)
 	}
 
 	// Unmarshal into Config struct
@@ -145,11 +189,11 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 	var configs []*Config
 
 	hierarchyPaths := []string{
-		"/etc/unirtm/config.toml",                       // System
+		"/etc/unirtm/config.toml",                        // System
 		filepath.Join(env.GetConfigDir(), "config.toml"), // Global
-		"./unirtm.toml",                                 // Project (primary)
-		"./.unirtm.toml",                                // Project (alternate)
-		"./.unirtm.local.toml",                          // Local
+		"./unirtm.toml",                                  // Project (primary)
+		"./.unirtm.toml",                                 // Project (alternate)
+		"./.unirtm.local.toml",                           // Local
 	}
 
 	// Load each configuration file that exists

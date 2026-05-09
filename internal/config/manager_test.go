@@ -86,6 +86,36 @@ run = "npm test"
 		assert.Equal(t, "npm test", config.Tasks["test"].Run)
 	})
 
+	t.Run("load valid TOML file with template variables", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		configPath := filepath.Join(tmpDir, "config_tmpl.toml")
+
+		// Set a test environment variable
+		os.Setenv("UNIRTM_TEST_VAR", "test_value_from_env")
+		defer os.Unsetenv("UNIRTM_TEST_VAR")
+
+		tomlContent := `
+[tools]
+node = { version = "20.0.0" }
+
+[env]
+CUSTOM_PATH = "{{ .Env.UNIRTM_TEST_VAR }}/bin"
+OS_NAME = "{{ .OS }}"
+ARCH_NAME = "{{ .Arch }}"
+`
+		err := os.WriteFile(configPath, []byte(tomlContent), 0644)
+		require.NoError(t, err)
+
+		config, err := manager.Load(ctx, configPath)
+		require.NoError(t, err)
+		require.NotNil(t, config)
+
+		// Note: Viper lowercases keys by default
+		assert.Equal(t, "test_value_from_env/bin", config.Env["custom_path"])
+		assert.NotEmpty(t, config.Env["os_name"])
+		assert.NotEmpty(t, config.Env["arch_name"])
+	})
+
 	t.Run("load valid YAML file", func(t *testing.T) {
 		// Create a temporary YAML file
 		tmpDir := t.TempDir()
