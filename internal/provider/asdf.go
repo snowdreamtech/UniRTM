@@ -6,7 +6,6 @@ package provider
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -72,9 +71,10 @@ func (p *AsdfProvider) Install(ctx context.Context, installPath string, artifact
 		cmd := exec.CommandContext(ctx, downloadScript)
 		cmd.Env = env
 		cmd.Dir = installPath
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			return NewProviderError(p.Name(), tool, version, fmt.Sprintf("bin/download failed: %s", string(out)), err)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return NewProviderError(p.Name(), tool, version, "bin/download failed", err)
 		}
 	}
 
@@ -85,9 +85,10 @@ func (p *AsdfProvider) Install(ctx context.Context, installPath string, artifact
 		cmd := exec.CommandContext(ctx, installScript)
 		cmd.Env = env
 		cmd.Dir = installPath
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			return NewProviderError(p.Name(), tool, version, fmt.Sprintf("bin/install failed: %s", string(out)), err)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return NewProviderError(p.Name(), tool, version, "bin/install failed", err)
 		}
 	} else {
 		return NewProviderError(p.Name(), tool, version, "bin/install script not found in plugin", err)
@@ -110,9 +111,10 @@ func (p *AsdfProvider) PostInstall(ctx context.Context, installPath string, vers
 			"ASDF_INSTALL_PATH="+installPath,
 		)
 		cmd.Dir = installPath
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			return NewProviderError(p.Name(), tool, version, fmt.Sprintf("bin/post-install failed: %s", string(out)), err)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return NewProviderError(p.Name(), tool, version, "bin/post-install failed", err)
 		}
 	}
 	return nil

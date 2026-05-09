@@ -58,9 +58,10 @@ func (p *PypiProvider) Install(ctx context.Context, installPath string, artifact
 	logger.Debug("Installing pypi package", map[string]interface{}{"pkg": pkgSpec, "venv": installPath})
 
 	cmd := exec.CommandContext(ctx, pipCmd, "install", pkgSpec)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return NewProviderError(p.Name(), tool, version, fmt.Sprintf("pip install failed: %s", string(out)), err)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return NewProviderError(p.Name(), tool, version, "pip install failed", err)
 	}
 
 	return nil

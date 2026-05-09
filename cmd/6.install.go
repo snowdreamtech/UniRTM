@@ -194,8 +194,12 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		"backend": backendName,
 	})
 
-	// Start gorgeous loading animation
-	spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Installing %s@%s ...", tool, version))
+	// Start gorgeous loading animation for initialization
+	spinner, _ := pterm.DefaultSpinner.Start("Resolving backend and initializing...")
+	
+	// Since native tools (npm, cargo, asdf) have their own progress bars that require a raw TTY,
+	// we stop our spinner right before the heavy lifting to avoid clashing with their native progress output.
+	spinner.Success("Initialization complete. Handing over to native provider...")
 
 	// Perform installation
 	startTime := time.Now()
@@ -203,7 +207,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	duration := time.Since(startTime)
 
 	if err != nil {
-		spinner.Fail(fmt.Sprintf("Installation failed: %v", err))
+		pterm.Error.Printf("Installation failed: %v\n", err)
 		formatter.Error(fmt.Sprintf("Installation failed: %s", err.Error()), map[string]interface{}{
 			"tool":     tool,
 			"version":  version,
@@ -213,7 +217,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	}
 
 	// Display success message
-	spinner.Success(fmt.Sprintf("Successfully installed %s@%s (took %s)", tool, version, duration.Round(time.Millisecond).String()))
+	pterm.Success.Printf("Successfully installed %s@%s (took %s)\n", tool, version, duration.Round(time.Millisecond).String())
 
 	return nil
 }

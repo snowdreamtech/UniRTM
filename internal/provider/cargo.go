@@ -5,7 +5,6 @@ package provider
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -44,9 +43,10 @@ func (p *CargoProvider) Install(ctx context.Context, installPath string, artifac
 	logger.Debug("Installing cargo crate", map[string]interface{}{"crate": tool, "version": version, "root": installPath})
 
 	cmd := exec.CommandContext(ctx, cargoCmd, "install", tool, "--version", version, "--root", installPath)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return NewProviderError(p.Name(), tool, version, fmt.Sprintf("cargo install failed: %s", string(out)), err)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return NewProviderError(p.Name(), tool, version, "cargo install failed", err)
 	}
 
 	return nil

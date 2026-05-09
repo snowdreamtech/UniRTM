@@ -45,9 +45,11 @@ func (p *NpmProvider) Install(ctx context.Context, installPath string, artifactP
 	logger.Debug("Installing npm package", map[string]interface{}{"pkg": pkgSpec, "prefix": installPath})
 
 	cmd := exec.CommandContext(ctx, npmCmd, "install", "-g", pkgSpec, "--prefix", installPath)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return NewProviderError(p.Name(), tool, version, fmt.Sprintf("npm install failed: %s", string(out)), err)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return NewProviderError(p.Name(), tool, version, "npm install failed", err)
 	}
 
 	return nil
