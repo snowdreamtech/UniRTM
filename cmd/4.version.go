@@ -1,50 +1,65 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-// Package cmd contains all the command line interface definitions for the unirtm application.
-// It handles command registration, flag setup, and dispatching to appropriate handlers.
 package cmd
 
 import (
 	"fmt"
 	"runtime"
+	"strings"
 
+	"github.com/common-nighthawk/go-figure"
+	"github.com/rs/zerolog"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 	"github.com/spf13/cobra"
 )
 
 // init registers the version command to the root command.
-// This function is automatically called when the package is imported.
 func init() {
 	rootCmd.AddCommand(versionCmd)
 }
 
 // versionCmd represents the version command which displays the application version information.
-// This command is useful for users to check which version of the software they are running,
-// which is essential for reporting bugs and ensuring compatibility.
 var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Print the version number of " + env.ProjectName,
-	Long:  "Display version information including build details, commit hash, and build time.",
-	Run:   runVersion,
+	Use:    "version",
+	Short:  "Print the version number of " + env.ProjectName,
+	Long:   "Display version information including build details, commit hash, and build time.",
+	PreRun: preRunVersion,
+	Run:    runVersion,
 }
 
-// runVersion prints the version information of the application.
-// It includes the OS and architecture, build version, copyright details,
-// license information, author details, and build time.
-//
-// Parameters:
-//   - cmd: The cobra command that triggered this function.
-//   - args: The arguments passed to the command.
-func runVersion(cmd *cobra.Command, args []string) {
-	// OSArch represents the current operating system and architecture in the format "GOOS/GOARCH"
-	osArch := runtime.GOOS + "/" + runtime.GOARCH
+// welcome prints a stylized "UNIRTM" title in green color.
+func welcome() {
+	if zerolog.GlobalLevel() != zerolog.Disabled {
+		title := figure.NewColorFigure("UNIRTM", "larry3d", "green", true)
+		title.Print()
+	}
+}
 
-	// Print version information
-	fmt.Printf("%s version %s-%s %s\n", env.ProjectName, env.GitTag, env.CommitHash, osArch)
-	fmt.Printf("%s\n", env.COPYRIGHT)
-	fmt.Printf("License: %s\n", env.LICENSE)
-	fmt.Printf("\n")
-	fmt.Printf("Written by %s\n", env.Author)
-	fmt.Printf("Built at %s\n", env.BuildTime)
+func preRunVersion(cmd *cobra.Command, args []string) {
+	logger.InitLogger("", "")
+}
+
+func runVersion(cmd *cobra.Command, args []string) {
+	welcome()
+
+	osArch := runtime.GOOS + "/" + runtime.GOARCH
+	buildVersion := fmt.Sprintf("%s version %s-%s %s\n", env.ProjectName, env.GitTag, env.CommitHash, osArch)
+	copyrightDetail := fmt.Sprintf("%s\n", env.COPYRIGHT)
+	licenseDetail := fmt.Sprintf("License: %s\n", env.LICENSE)
+	authorDetail := fmt.Sprintf("Written by %s", env.Author)
+	buildDetail := fmt.Sprintf("Built at %s", env.BuildTime)
+
+	var builder strings.Builder
+	builder.WriteString("\n")
+	builder.WriteString(buildVersion)
+	builder.WriteString(copyrightDetail)
+	builder.WriteString(licenseDetail)
+	builder.WriteString("\n")
+	builder.WriteString(authorDetail)
+	builder.WriteString("\n")
+	builder.WriteString(buildDetail)
+
+	fmt.Println(builder.String())
 }

@@ -12,6 +12,8 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/provider"
+	"github.com/snowdreamtech/unirtm/internal/repository"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/spf13/cobra"
 )
@@ -74,8 +76,10 @@ func runWhich(cmd *cobra.Command, args []string) error {
 	}
 
 	var installPath string
+	var inst *repository.Installation
 	if version != "" {
-		inst, err := installRepo.FindByToolAndVersion(ctx, tool, version)
+		var err error
+		inst, err = installRepo.FindByToolAndVersion(ctx, tool, version)
 		if err != nil {
 			formatter.Error(fmt.Sprintf("Tool %s@%s is not installed", tool, version), map[string]interface{}{
 				"tool": tool, "version": version, "error": err.Error(),
@@ -89,9 +93,10 @@ func runWhich(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("list installations: %w", err)
 		}
-		for _, inst := range installations {
-			if inst.Tool == tool {
-				installPath = inst.InstallPath
+		for _, i := range installations {
+			if i.Tool == tool {
+				inst = i
+				installPath = i.InstallPath
 			}
 		}
 		if installPath == "" {
@@ -119,6 +124,14 @@ func runWhich(cmd *cobra.Command, args []string) error {
 	shimPath := filepath.Join(env.GetShimsDir(), binaryName)
 	if info, err := os.Stat(shimPath); err == nil && !info.IsDir() {
 		fmt.Println(shimPath)
+		return nil
+	}
+
+	// Fallback to Provider's ListExecutables
+	p := provider.DefaultRegistry.GetWithBackend(inst.Tool, inst.Backend)
+	execs, err := p.ListExecutables(installPath, inst.Version)
+	if err == nil && len(execs) > 0 {
+		fmt.Println(execs[0])
 		return nil
 	}
 
