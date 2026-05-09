@@ -13,10 +13,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type mockTrustManager struct{}
+
+func (m *mockTrustManager) IsTrusted(path string) bool { return true }
+func (m *mockTrustManager) Trust(path string) error    { return nil }
+func (m *mockTrustManager) Untrust(path string) error  { return nil }
+
+func newTestConfigManager() *viperConfigManager {
+	m := NewConfigManager().(*viperConfigManager)
+	m.trustManager = &mockTrustManager{}
+	return m
+}
+
 // TestConfigManager_Load tests the Load method with various scenarios
 func TestConfigManager_Load(t *testing.T) {
 	ctx := context.Background()
-	manager := NewConfigManager()
+	manager := newTestConfigManager()
 
 	t.Run("load valid TOML file", func(t *testing.T) {
 		// Create a temporary TOML file
@@ -236,7 +248,7 @@ concurrency = 8
 		require.NoError(t, err)
 
 		// Load hierarchy
-		manager := NewConfigManager()
+		manager := newTestConfigManager()
 		config, err := manager.LoadHierarchy(ctx)
 		require.NoError(t, err)
 		require.NotNil(t, config)
@@ -266,7 +278,7 @@ concurrency = 8
 		err = os.Chdir(tmpDir)
 		require.NoError(t, err)
 
-		manager := NewConfigManager()
+		manager := newTestConfigManager()
 		config, err := manager.LoadHierarchy(ctx)
 		require.NoError(t, err)
 		require.NotNil(t, config)
@@ -294,7 +306,7 @@ concurrency = 8
 		err = os.Chdir(tmpDir)
 		require.NoError(t, err)
 
-		manager := NewConfigManager()
+		manager := newTestConfigManager()
 		config, err := manager.LoadHierarchy(ctx)
 		assert.Error(t, err)
 		assert.Nil(t, config)
@@ -305,7 +317,7 @@ concurrency = 8
 // TestConfigManager_Validate tests configuration validation
 func TestConfigManager_Validate(t *testing.T) {
 	ctx := context.Background()
-	manager := NewConfigManager()
+	manager := newTestConfigManager()
 
 	t.Run("validate valid configuration", func(t *testing.T) {
 		config := &Config{
@@ -445,7 +457,7 @@ func TestConfigManager_Validate(t *testing.T) {
 
 // TestConfigManager_Merge tests configuration merging
 func TestConfigManager_Merge(t *testing.T) {
-	manager := NewConfigManager()
+	manager := newTestConfigManager()
 
 	t.Run("merge two configurations", func(t *testing.T) {
 		config1 := &Config{
@@ -614,7 +626,7 @@ func TestConfigManager_Merge(t *testing.T) {
 // TestConfigManager_Integration tests end-to-end scenarios
 func TestConfigManager_Integration(t *testing.T) {
 	ctx := context.Background()
-	manager := NewConfigManager()
+	manager := newTestConfigManager()
 
 	t.Run("load, validate, and merge workflow", func(t *testing.T) {
 		tmpDir := t.TempDir()
@@ -676,7 +688,7 @@ concurrency = 8
 
 // TestConfigManager_ApplyEnvironment tests environment-specific configuration overrides
 func TestConfigManager_ApplyEnvironment(t *testing.T) {
-	manager := NewConfigManager()
+	manager := newTestConfigManager()
 
 	t.Run("apply development environment", func(t *testing.T) {
 		baseConfig := &Config{
@@ -922,7 +934,7 @@ cache_ttl = 3600
 		err = os.WriteFile("unirtm.toml", []byte(configContent), 0644)
 		require.NoError(t, err)
 
-		manager := NewConfigManager()
+		manager := newTestConfigManager()
 		config, err := manager.LoadWithEnvironment(ctx, "development")
 		require.NoError(t, err)
 		require.NotNil(t, config)
@@ -958,7 +970,7 @@ node = { version = "18.0.0" }
 		err = os.Chdir(tmpDir)
 		require.NoError(t, err)
 
-		manager := NewConfigManager()
+		manager := newTestConfigManager()
 		config, err := manager.LoadWithEnvironment(ctx, "")
 		require.NoError(t, err)
 		require.NotNil(t, config)
@@ -989,7 +1001,7 @@ node = { version = "18.0.0" }
 		err = os.Chdir(tmpDir)
 		require.NoError(t, err)
 
-		manager := NewConfigManager()
+		manager := newTestConfigManager()
 		config, err := manager.LoadWithEnvironment(ctx, "nonexistent")
 		assert.Error(t, err)
 		assert.Nil(t, config)
@@ -1079,7 +1091,7 @@ concurrency = 32
 		err = os.Chdir(tmpDir)
 		require.NoError(t, err)
 
-		manager := NewConfigManager()
+		manager := newTestConfigManager()
 
 		// Test development environment
 		devConfig, err := manager.LoadWithEnvironment(ctx, "development")

@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pterm/pterm"
 	"github.com/spf13/viper"
 )
 
@@ -50,7 +51,8 @@ type ConfigManager interface {
 // viperConfigManager implements ConfigManager using Viper for TOML/YAML parsing.
 type viperConfigManager struct {
 	// homeDir is the user's home directory for resolving global config paths
-	homeDir string
+	homeDir      string
+	trustManager TrustManager
 }
 
 // NewConfigManager creates a new ConfigManager instance.
@@ -60,7 +62,8 @@ type viperConfigManager struct {
 func NewConfigManager() ConfigManager {
 	homeDir, _ := os.UserHomeDir()
 	return &viperConfigManager{
-		homeDir: homeDir,
+		homeDir:      homeDir,
+		trustManager: NewTrustManager(),
 	}
 }
 
@@ -150,9 +153,20 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 	}
 
 	// Load each configuration file that exists
-	for _, path := range hierarchyPaths {
+	for i, path := range hierarchyPaths {
 		// Skip if file doesn't exist
 		if _, err := os.Stat(path); os.IsNotExist(err) {
+			continue
+		}
+
+		isTrusted := false
+		if m.trustManager != nil {
+			isTrusted = m.trustManager.IsTrusted(path)
+		}
+
+		// Enforce trust for Project and Local configs (indices 2, 3, 4)
+		if i >= 2 && !isTrusted {
+			pterm.Warning.Printfln("Skipping untrusted configuration file: %s\nRun `unirtm trust %s` to trust it.", path, path)
 			continue
 		}
 
