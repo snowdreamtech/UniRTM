@@ -38,6 +38,10 @@ type Config struct {
 	// Keys are environment names (e.g., "development", "staging", "production").
 	// Values are partial configurations that override the base configuration.
 	Environments map[string]EnvironmentConfig `toml:"environments,omitempty" yaml:"environments,omitempty" mapstructure:"environments,omitempty"`
+
+	// Aliases maps tool names to their version aliases.
+	// Example: {"node": {"lts": "20.11.0", "latest": "22.0.0"}}
+	Aliases map[string]map[string]string `toml:"aliases,omitempty" yaml:"aliases,omitempty" mapstructure:"aliases,omitempty"`
 }
 
 // EnvironmentConfig represents environment-specific configuration overrides.

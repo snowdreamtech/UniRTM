@@ -169,6 +169,9 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 	if config.Environments == nil {
 		config.Environments = make(map[string]EnvironmentConfig)
 	}
+	if config.Aliases == nil {
+		config.Aliases = make(map[string]map[string]string)
+	}
 
 	return &config, nil
 }
@@ -234,6 +237,7 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 			Env:          make(map[string]string),
 			Tasks:        make(map[string]Task),
 			Environments: make(map[string]EnvironmentConfig),
+			Aliases:      make(map[string]map[string]string),
 		}, nil
 	}
 
@@ -310,6 +314,7 @@ func (m *viperConfigManager) Merge(configs ...*Config) (*Config, error) {
 		Env:          make(map[string]string),
 		Tasks:        make(map[string]Task),
 		Environments: make(map[string]EnvironmentConfig),
+		Aliases:      make(map[string]map[string]string),
 	}
 
 	// Merge each configuration in order
@@ -336,6 +341,16 @@ func (m *viperConfigManager) Merge(configs ...*Config) (*Config, error) {
 		// Merge Environments (later overrides earlier)
 		for envName, envConfig := range config.Environments {
 			merged.Environments[envName] = envConfig
+		}
+
+		// Merge Aliases (later overrides earlier)
+		for toolName, aliases := range config.Aliases {
+			if merged.Aliases[toolName] == nil {
+				merged.Aliases[toolName] = make(map[string]string)
+			}
+			for aliasName, aliasVersion := range aliases {
+				merged.Aliases[toolName][aliasName] = aliasVersion
+			}
 		}
 
 		// Merge Settings (non-zero values override)
@@ -389,6 +404,7 @@ func (m *viperConfigManager) ApplyEnvironment(config *Config, environment string
 		Env:          make(map[string]string),
 		Tasks:        make(map[string]Task),
 		Environments: make(map[string]EnvironmentConfig),
+		Aliases:      make(map[string]map[string]string),
 		Settings:     config.Settings,
 	}
 
@@ -410,6 +426,14 @@ func (m *viperConfigManager) ApplyEnvironment(config *Config, environment string
 	// Copy environments (for reference, though typically not used after applying)
 	for envName, env := range config.Environments {
 		result.Environments[envName] = env
+	}
+
+	// Copy aliases
+	for toolName, aliases := range config.Aliases {
+		result.Aliases[toolName] = make(map[string]string)
+		for aliasName, aliasVersion := range aliases {
+			result.Aliases[toolName][aliasName] = aliasVersion
+		}
 	}
 
 	// Apply environment-specific tool overrides
