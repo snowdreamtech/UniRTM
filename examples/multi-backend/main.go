@@ -66,6 +66,6 @@ func main() {
 		fmt.Printf("[Provider] Selected Provider: %s\n", p.Name())
 		fmt.Printf("[Provider] The provider will execute '%s' specific sandbox installation hooks.\n", p.Name())
 	}
-	
+
 	fmt.Println("\nAll ecosystem providers and backends loaded successfully!")
 }

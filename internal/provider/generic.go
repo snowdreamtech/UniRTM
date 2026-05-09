@@ -58,7 +58,7 @@ func (g *GenericProvider) Install(ctx context.Context, installPath string, artif
 			if err := os.Chmod(exePath, 0755); err != nil {
 				return NewProviderError("generic", "unknown", version, fmt.Sprintf("failed to chmod %s", exe), err)
 			}
-			
+
 			dstPath := filepath.Join(binDir, filepath.Base(exe))
 			if filepath.Dir(exePath) != binDir {
 				os.Symlink(exePath, dstPath)

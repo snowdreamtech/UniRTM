@@ -33,12 +33,12 @@ func TestNpmBackend_ListVersions(t *testing.T) {
 	// override the URL internally if possible, but since it's hardcoded to registry.npmjs.org,
 	// we will just test that it fails cleanly when the network is unavailable or package not found.
 	// For this test, we will just test the error paths since we can't easily inject the URL.
-	
+
 	ctx := context.Background()
 	platform := Platform{OS: "linux", Arch: "amd64"}
-	
+
 	// Test unknown package (will actually hit the real registry or fail network)
-	// We'll skip the real network call if possible, but let's just let it run 
+	// We'll skip the real network call if possible, but let's just let it run
 	// against a dummy package that doesn't exist.
 	_, err := b.ListVersions(ctx, "this-package-definitely-does-not-exist-12345", platform)
 	if err == nil {

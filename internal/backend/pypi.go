@@ -38,7 +38,7 @@ type pypiRegistryResponse struct {
 
 func (b *PypiBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	url := fmt.Sprintf("https://pypi.org/pypi/%s/json", tool)
-	
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, NewBackendError(b.Name(), tool, "create request", err)

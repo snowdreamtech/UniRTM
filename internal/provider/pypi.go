@@ -80,7 +80,7 @@ func (p *PypiProvider) GenerateShims(installPath string, version string) (map[st
 	shims := make(map[string]string)
 	for _, exe := range executables {
 		name := filepath.Base(exe)
-		
+
 		// Skip internal venv python/pip binaries to avoid polluting global bin
 		if name == "python" || name == "python3" || name == "pip" || name == "pip3" || name == "python.exe" || name == "pip.exe" {
 			continue

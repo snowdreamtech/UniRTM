@@ -8,10 +8,11 @@ package internal
 
 import (
 	"fmt"
-	"github.com/common-nighthawk/go-figure"
-	"github.com/rs/zerolog"
 	"runtime"
 	"strings"
+
+	"github.com/common-nighthawk/go-figure"
+	"github.com/rs/zerolog"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"

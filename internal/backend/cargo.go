@@ -40,12 +40,12 @@ type cargoRegistryResponse struct {
 
 func (b *CargoBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	url := fmt.Sprintf("https://crates.io/api/v1/crates/%s", tool)
-	
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, NewBackendError(b.Name(), tool, "create request", err)
 	}
-	
+
 	// crates.io requires a user-agent
 	req.Header.Set("User-Agent", "unirtm (https://github.com/snowdreamtech/unirtm)")
 
@@ -85,7 +85,7 @@ func (b *CargoBackend) ResolveVersion(ctx context.Context, tool string, versionR
 		if err != nil {
 			return nil, err
 		}
-		
+
 		req.Header.Set("User-Agent", "unirtm (https://github.com/snowdreamtech/unirtm)")
 
 		resp, err := b.client.Do(req)

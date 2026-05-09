@@ -81,7 +81,7 @@ func (p *NpmProvider) DetectVersion(ctx context.Context, installPath string) (st
 func (p *NpmProvider) ListExecutables(installPath string, version string) ([]string, error) {
 	// npm installs global binaries into <prefix>/bin (on Unix) or <prefix> (on Windows)
 	binDir := filepath.Join(installPath, "bin")
-	
+
 	// If /bin doesn't exist, check the root (common on Windows npm installs)
 	if _, err := os.Stat(binDir); os.IsNotExist(err) {
 		binDir = installPath
