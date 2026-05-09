@@ -11,6 +11,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/database"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/spf13/cobra"
 )
@@ -60,7 +61,7 @@ func runWhich(cmd *cobra.Command, args []string) error {
 	}
 
 	// Open database
-	dbPath := getDefaultDatabasePath()
+	dbPath := env.GetDatabasePath()
 	db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true})
 	if err != nil {
 		return fmt.Errorf("initialize database: %w", err)
@@ -115,7 +116,7 @@ func runWhich(cmd *cobra.Command, args []string) error {
 	}
 
 	// Also check the shims dir as fallback
-	shimPath := filepath.Join(getDefaultShimsDir(), binaryName)
+	shimPath := filepath.Join(env.GetShimsDir(), binaryName)
 	if info, err := os.Stat(shimPath); err == nil && !info.IsDir() {
 		fmt.Println(shimPath)
 		return nil

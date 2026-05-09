@@ -10,6 +10,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/database"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
@@ -63,7 +64,7 @@ func runReshim(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	// Open database
-	dbPath := getDefaultDatabasePath()
+	dbPath := env.GetDatabasePath()
 	db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true})
 	if err != nil {
 		return fmt.Errorf("initialize database: %w", err)
@@ -97,8 +98,8 @@ func runReshim(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	shimsDir := getDefaultShimsDir()
-	dataDir := getDefaultDataDir()
+	shimsDir := env.GetShimsDir()
+	dataDir := env.GetDataDir()
 	generator := service.NewGenerator(shimsDir, dataDir+"/installs")
 	shimCount := 0
 

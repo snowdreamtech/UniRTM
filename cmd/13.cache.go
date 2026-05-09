@@ -12,6 +12,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/database"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
@@ -100,7 +101,7 @@ var cacheStatsCmd = &cobra.Command{
 
 // newCacheManager creates a configured cache manager from the database.
 func newCacheManager(ctx context.Context, formatter output.Formatter) (*service.CacheManager, *database.DB, error) {
-	dbPath := getDefaultDatabasePath()
+	dbPath := env.GetDatabasePath()
 	db, err := database.Open(ctx, database.Config{
 		Path:    dbPath,
 		WALMode: true,
@@ -123,7 +124,7 @@ func newCacheManager(ctx context.Context, formatter output.Formatter) (*service.
 
 	auditRepo, _ := sqlite.NewAuditRepository(db.Conn())
 
-	cacheDir := getDefaultCacheDir()
+	cacheDir := env.GetCacheDir()
 	cm, err := service.NewCacheManager(cacheRepo, auditRepo, service.CacheManagerConfig{
 		CacheDir: cacheDir,
 	})
@@ -150,7 +151,7 @@ func runCacheList(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	// Walk the cache directory to list files
-	cacheDir := getDefaultCacheDir()
+	cacheDir := env.GetCacheDir()
 	entries, err := listCacheFiles(cacheDir)
 	if err != nil {
 		formatter.Error("Failed to list cache", map[string]interface{}{"error": err.Error()})
@@ -213,7 +214,7 @@ func runCacheClear(cmd *cobra.Command, args []string) error {
 
 		if err := cm.PurgeByPrefix(ctx, tool); err != nil {
 			// PurgeByPrefix not yet fully implemented in repo layer; fall back to informing user
-			formatter.Info(fmt.Sprintf("Note: Tool-specific cache clearing requires manual deletion from %s", getDefaultCacheDir()), nil)
+			formatter.Info(fmt.Sprintf("Note: Tool-specific cache clearing requires manual deletion from %s", env.GetCacheDir()), nil)
 		} else {
 			formatter.Success(fmt.Sprintf("Cleared cache for %s", tool), nil)
 		}
@@ -292,7 +293,7 @@ func runCacheStats(cmd *cobra.Command, args []string) error {
 			"hits":       stats.Hits,
 			"misses":     stats.Misses,
 			"cache_size": cacheSize,
-			"cache_dir":  getDefaultCacheDir(),
+			"cache_dir":  env.GetCacheDir(),
 		})
 		return nil
 	}
@@ -304,7 +305,7 @@ func runCacheStats(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println("Cache Statistics:")
-	fmt.Printf("  Directory: %s\n", getDefaultCacheDir())
+	fmt.Printf("  Directory: %s\n", env.GetCacheDir())
 	if cacheSize >= 0 {
 		fmt.Printf("  Size:      %s\n", formatBytes(cacheSize))
 	}

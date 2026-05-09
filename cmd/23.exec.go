@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
 )
 
@@ -113,7 +114,7 @@ func runExec(cmd *cobra.Command, args []string) error {
 	}
 
 	// Prepend shims dir to PATH so shims take precedence
-	shimsDir := getDefaultShimsDir()
+	shimsDir := env.GetShimsDir()
 	for i, e := range c.Env {
 		if strings.HasPrefix(e, "PATH=") {
 			c.Env[i] = fmt.Sprintf("PATH=%s:%s", shimsDir, strings.TrimPrefix(e, "PATH="))

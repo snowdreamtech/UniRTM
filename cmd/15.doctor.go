@@ -17,6 +17,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/spf13/cobra"
 )
@@ -88,7 +89,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 
 	// ── Check 1: Database ─────────────────────────────────────────────────────
-	dbPath := getDefaultDatabasePath()
+	dbPath := env.GetDatabasePath()
 	db, err := database.Open(ctx, database.Config{
 		Path:    dbPath,
 		WALMode: true,
@@ -105,7 +106,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 
 	// ── Check 2: Cache directory ──────────────────────────────────────────────
-	cacheDir := getDefaultCacheDir()
+	cacheDir := env.GetCacheDir()
 	testFile := filepath.Join(cacheDir, ".write_test")
 	if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
 		addCheck("cache_dir", "error", fmt.Sprintf("Cache directory not writable: %s — %s", cacheDir, err.Error()))
@@ -115,7 +116,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 
 	// ── Check 3: Data directory ───────────────────────────────────────────────
-	dataDir := getDefaultDataDir()
+	dataDir := env.GetDataDir()
 	testFile = filepath.Join(dataDir, ".write_test")
 	if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
 		addCheck("data_dir", "error", fmt.Sprintf("Data directory not writable: %s — %s", dataDir, err.Error()))
@@ -125,7 +126,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 
 	// ── Check 4: Shims directory ──────────────────────────────────────────────
-	shimsDir := getDefaultShimsDir()
+	shimsDir := env.GetShimsDir()
 	if info, err := os.Stat(shimsDir); err != nil {
 		addCheck("shims_dir", "warning",
 			fmt.Sprintf("Shims directory not found (%s) — will be created on first install", shimsDir))

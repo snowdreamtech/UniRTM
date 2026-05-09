@@ -11,6 +11,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository"
 	"github.com/snowdreamtech/unirtm/internal/transaction"
@@ -74,7 +75,10 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	// Download artifact if URL is provided
 	var downloadPath string
 	if versionInfo.DownloadURL != "" {
-		downloadPath = filepath.Join(os.TempDir(), "unirtm", "downloads", fmt.Sprintf("%s-%s", tool, version))
+		downloadPath = filepath.Join(env.GetDownloadsDir(), fmt.Sprintf("%s-%s", tool, version))
+		if err := os.MkdirAll(filepath.Dir(downloadPath), 0755); err != nil {
+			return fmt.Errorf("failed to create downloads directory: %w", err)
+		}
 		downloader, err := im.downloadManager.Get("https")
 		if err != nil {
 			return fmt.Errorf("failed to get downloader: %w", err)
@@ -99,12 +103,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	}
 
 	// Install using provider
-	homeDir, _ := os.UserHomeDir()
-	dataDir := os.Getenv("UNIRTM_DATA_DIR")
-	if dataDir == "" {
-		dataDir = filepath.Join(homeDir, ".local", "share", "unirtm")
-	}
-	installPath := filepath.Join(dataDir, "installs", tool, version)
+	installPath := filepath.Join(env.GetInstallsDir(), tool, version)
 	p := im.providerRegistry.GetWithBackend(tool, backendName)
 
 	if err := p.Install(ctx, installPath, downloadPath, version); err != nil {

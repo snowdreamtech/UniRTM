@@ -15,6 +15,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/snowdreamtech/unirtm/internal/service"
@@ -152,7 +153,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	downloadManager.Register("http", download.NewHTTPDownloader())
 
 	// Create database connection
-	dbPath := getDefaultDatabasePath()
+	dbPath := env.GetDatabasePath()
 	db, err := database.Open(ctx, database.Config{
 		Path:    dbPath,
 		WALMode: true,
@@ -196,7 +197,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 	// Start gorgeous loading animation for initialization
 	spinner, _ := pterm.DefaultSpinner.Start("Resolving backend and initializing...")
-	
+
 	// Since native tools (npm, cargo, asdf) have their own progress bars that require a raw TTY,
 	// we stop our spinner right before the heavy lifting to avoid clashing with their native progress output.
 	spinner.Success("Initialization complete. Handing over to native provider...")

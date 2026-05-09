@@ -10,6 +10,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
 )
@@ -68,7 +69,7 @@ func runPluginList(cmd *cobra.Command, args []string) error {
 	})
 
 	ctx := context.Background()
-	pluginsDir := getDefaultDataDir() + "/plugins"
+	pluginsDir := env.GetDataDir() + "/plugins"
 
 	// Create plugin manager (pass nil registries — we only want to list, not load into active registries)
 	pm := service.NewPluginManager(pluginsDir, nil, nil)
@@ -129,7 +130,7 @@ func runPluginInstall(cmd *cobra.Command, args []string) error {
 	})
 
 	srcPath := args[0]
-	pluginsDir := getDefaultDataDir() + "/plugins"
+	pluginsDir := env.GetDataDir() + "/plugins"
 
 	if dryRun {
 		formatter.Info(fmt.Sprintf("[dry-run] Would install plugin from %s to %s", srcPath, pluginsDir), nil)
@@ -192,7 +193,7 @@ func runPluginRemove(cmd *cobra.Command, args []string) error {
 	})
 
 	name := args[0]
-	pluginsDir := getDefaultDataDir() + "/plugins"
+	pluginsDir := env.GetDataDir() + "/plugins"
 
 	// Try common extensions and prefixes
 	candidates := []string{

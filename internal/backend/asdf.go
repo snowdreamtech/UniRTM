@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,31 +16,26 @@ import (
 	"sync"
 	"time"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
 // AsdfBackend implements the Backend interface for asdf plugins.
 type AsdfBackend struct {
 	mu           sync.Mutex
-	dataDir      string
+	client       *http.Client
 	registryPath string
 	pluginsPath  string
 }
 
 // NewAsdfBackend creates a new asdf backend.
 func NewAsdfBackend() *AsdfBackend {
-	// Discover data directory (usually ~/.local/share/unirtm)
-	dataDir := os.Getenv("UNIRTM_DATA_DIR")
-	if dataDir == "" {
-		home, _ := os.UserHomeDir()
-		dataDir = filepath.Join(home, ".local", "share", "unirtm")
-	}
-
-	asdfDir := filepath.Join(dataDir, "asdf")
 	return &AsdfBackend{
-		dataDir:      asdfDir,
-		registryPath: filepath.Join(asdfDir, "registry"),
-		pluginsPath:  filepath.Join(asdfDir, "plugins"),
+		client: &http.Client{
+			Timeout: 10 * time.Second,
+		},
+		registryPath: filepath.Join(env.GetDataDir(), "asdf", "registry"),
+		pluginsPath:  env.GetPluginsDir(),
 	}
 }
 

@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
@@ -22,16 +23,8 @@ type AsdfProvider struct {
 
 // NewAsdfProvider creates a new asdf provider.
 func NewAsdfProvider() *AsdfProvider {
-	dataDir := os.Getenv("UNIRTM_DATA_DIR")
-	if dataDir == "" {
-		home, _ := os.UserHomeDir()
-		dataDir = filepath.Join(home, ".local", "share", "unirtm")
-	}
-
-	asdfDir := filepath.Join(dataDir, "asdf")
 	return &AsdfProvider{
-		dataDir:     asdfDir,
-		pluginsPath: filepath.Join(asdfDir, "plugins"),
+		pluginsPath: env.GetPluginsDir(),
 	}
 }
 

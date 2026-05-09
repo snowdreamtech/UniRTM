@@ -12,6 +12,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/database"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/spf13/cobra"
 )
@@ -75,7 +76,7 @@ func runPrune(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	// Open database
-	dbPath := getDefaultDatabasePath()
+	dbPath := env.GetDatabasePath()
 	db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true})
 	if err != nil {
 		return fmt.Errorf("initialize database: %w", err)

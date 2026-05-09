@@ -11,6 +11,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/database"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
@@ -108,7 +109,7 @@ func runActivate(cmd *cobra.Command, args []string) error {
 	}
 
 	// Initialize database to get active tool versions
-	dbPath := getDefaultDatabasePath()
+	dbPath := env.GetDatabasePath()
 	db, err := database.Open(ctx, database.Config{
 		Path:    dbPath,
 		WALMode: true,
@@ -189,10 +190,10 @@ func runActivate(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get shims directory
-	shimsDir := getDefaultShimsDir()
+	shimsDir := env.GetShimsDir()
 
 	// Create activation manager
-	activationManager := service.NewActivationManager(shimsDir, getDefaultDataDir())
+	activationManager := service.NewActivationManager(shimsDir, env.GetDataDir())
 
 	// Generate activation script
 	activationConfig := service.ActivationConfig{

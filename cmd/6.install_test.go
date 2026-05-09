@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -222,7 +223,7 @@ func TestGetDefaultDatabasePath(t *testing.T) {
 		testDir := "/tmp/test-xdg-data"
 		os.Setenv("XDG_DATA_HOME", testDir)
 
-		path := getDefaultDatabasePath()
+		path := env.GetDatabasePath()
 
 		assert.Contains(t, path, testDir)
 		assert.Contains(t, path, "unirtm")
@@ -232,7 +233,7 @@ func TestGetDefaultDatabasePath(t *testing.T) {
 	t.Run("without XDG_DATA_HOME", func(t *testing.T) {
 		os.Unsetenv("XDG_DATA_HOME")
 
-		path := getDefaultDatabasePath()
+		path := env.GetDatabasePath()
 
 		// Should contain .local/share/unirtm or fallback to ./unirtm.db
 		assert.True(t,

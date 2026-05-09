@@ -9,6 +9,7 @@ import (
 	"runtime"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
 )
 
@@ -84,7 +85,7 @@ func runDeactivate(cmd *cobra.Command, args []string) error {
 // generateDeactivationScript generates a shell-specific deactivation script.
 // The script removes UniRTM shims from PATH and unsets environment variables.
 func generateDeactivationScript(shellType string) string {
-	shimsDir := getDefaultShimsDir()
+	shimsDir := env.GetShimsDir()
 
 	switch shellType {
 	case "fish":
