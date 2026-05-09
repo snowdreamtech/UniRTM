@@ -47,9 +47,10 @@ type AuditEntry struct {
 	Tool      string    `db:"tool"`
 	Version   string    `db:"version"`
 	Status    string    `db:"status"` // success, failure
-	Error     string    `db:"error"`
-	Duration  int64     `db:"duration_ms"`
-	Metadata  string    `db:"metadata"` // JSON-encoded metadata
+	Error           string    `db:"error"`
+	Duration        int64     `db:"duration_ms"`
+	GpgVerification string    `db:"gpg_verification"`
+	Metadata        string    `db:"metadata"` // JSON-encoded metadata
 }
 
 // IndexEntry represents a tool in the index

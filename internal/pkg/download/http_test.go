@@ -229,7 +229,7 @@ func TestHTTPDownloader_Download_HTTPError(t *testing.T) {
 
 			// Download file
 			downloader := download.NewHTTPDownloader()
-			opts := download.DefaultDownloadOptions()
+			opts := download.DefaultDownloadOptions().WithMaxRetries(0)
 			err := downloader.Download(context.Background(), server.URL, destination, opts)
 
 			require.Error(t, err, "Download should fail with HTTP error")

@@ -92,6 +92,9 @@ type AuditLogEntry struct {
 	// Duration is the operation duration in milliseconds
 	Duration int64
 
+	// GpgVerification is the result of GPG signature verification
+	GpgVerification string
+
 	// Metadata contains additional operation-specific data (optional)
 	Metadata map[string]interface{}
 }
@@ -116,13 +119,14 @@ func (s *AuditService) LogOperation(ctx context.Context, entry *AuditLogEntry) e
 
 	// Create repository audit entry
 	auditEntry := &repository.AuditEntry{
-		Operation: string(entry.Operation),
-		Tool:      entry.Tool,
-		Version:   entry.Version,
-		Status:    string(entry.Status),
-		Error:     entry.Error,
-		Duration:  entry.Duration,
-		Metadata:  metadataJSON,
+		Operation:       string(entry.Operation),
+		Tool:            entry.Tool,
+		Version:         entry.Version,
+		Status:          string(entry.Status),
+		Error:           entry.Error,
+		Duration:        entry.Duration,
+		GpgVerification: entry.GpgVerification,
+		Metadata:        metadataJSON,
 	}
 
 	// Log to database

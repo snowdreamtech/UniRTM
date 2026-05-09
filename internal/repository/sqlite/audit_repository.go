@@ -29,8 +29,8 @@ func NewAuditRepository(db DBExecutor) (*AuditRepository, error) {
 	var err error
 
 	repo.logStmt, err = db.Prepare(`
-		INSERT INTO audit_log (operation, tool, version, status, error, duration_ms, metadata)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO audit_log (operation, tool, version, status, error, duration_ms, gpg_verification, metadata)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("prepare log statement: %w", err)
@@ -49,6 +49,7 @@ func (r *AuditRepository) Log(ctx context.Context, entry *repository.AuditEntry)
 		entry.Status,
 		entry.Error,
 		entry.Duration,
+		entry.GpgVerification,
 		entry.Metadata,
 	)
 	if err != nil {
@@ -68,7 +69,7 @@ func (r *AuditRepository) Log(ctx context.Context, entry *repository.AuditEntry)
 func (r *AuditRepository) Query(ctx context.Context, filter repository.AuditFilter) ([]*repository.AuditEntry, error) {
 	// Build dynamic query based on filters
 	query := `
-		SELECT id, timestamp, operation, tool, version, status, error, duration_ms, metadata
+		SELECT id, timestamp, operation, tool, version, status, error, duration_ms, gpg_verification, metadata
 		FROM audit_log
 		WHERE 1=1
 	`
@@ -128,6 +129,7 @@ func (r *AuditRepository) Query(ctx context.Context, filter repository.AuditFilt
 			&entry.Status,
 			&entry.Error,
 			&entry.Duration,
+			&entry.GpgVerification,
 			&entry.Metadata,
 		)
 		if err != nil {

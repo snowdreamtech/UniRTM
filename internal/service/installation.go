@@ -82,6 +82,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 	// Download artifact if URL is provided
 	var downloadPath string
+	var gpgStatus string = "NotRequested"
 	if versionInfo.DownloadURL != "" {
 		downloadPath = filepath.Join(env.GetDownloadsDir(), fmt.Sprintf("%s-%s", tool, version))
 		if err := os.MkdirAll(filepath.Dir(downloadPath), 0755); err != nil {
@@ -96,6 +97,8 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		if versionInfo.Checksum != "" {
 			opts = opts.WithChecksum(versionInfo.Checksum)
 		}
+		gpgResult := &download.GPGResult{}
+		opts = opts.WithVerifyGPG(true, gpgResult)
 
 		if err := downloader.Download(ctx, versionInfo.DownloadURL, downloadPath, opts); err != nil {
 			return fmt.Errorf("failed to download: %w", err)
@@ -108,6 +111,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 				return fmt.Errorf("checksum verification failed: %w", err)
 			}
 		}
+		gpgStatus = gpgResult.Status
 	}
 
 	// Install using provider
@@ -136,6 +140,18 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	if err := tx.InstallationRepo().Create(ctx, installation); err != nil {
 		os.RemoveAll(installPath)
 		return fmt.Errorf("failed to record installation: %w", err)
+	}
+
+	// Record audit entry
+	auditEntry := &repository.AuditEntry{
+		Operation:       "install",
+		Tool:            tool,
+		Version:         version,
+		Status:          "success",
+		GpgVerification: gpgStatus,
+	}
+	if err := tx.AuditRepo().Log(ctx, auditEntry); err != nil {
+		// Log but don't fail
 	}
 
 	// Commit transaction

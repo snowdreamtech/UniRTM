@@ -12,11 +12,17 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/errors"
 )
+
+// ErrGPGSkipped is returned when a signature file is not found (404) and verification is skipped.
+var ErrGPGSkipped = errors.NewUserError("GPG signature not found, skipped", nil)
 
 // HTTPDownloader implements the Downloader interface using Go's standard HTTP client.
 // It supports retry logic with exponential backoff, timeout configuration, proxy support,
@@ -116,6 +122,28 @@ func (h *HTTPDownloader) Download(ctx context.Context, url string, destination s
 					// Checksum verification failed - clean up and return error
 					_ = os.Remove(destination)
 					return err
+				}
+			}
+
+			// Verify GPG signature if specified
+			if opts.VerifyGPG {
+				err := h.verifyGPGSignature(ctx, url, destination)
+				if err != nil {
+					if err == ErrGPGSkipped {
+						if opts.GPGResult != nil {
+							opts.GPGResult.Status = "Skipped"
+						}
+					} else {
+						if opts.GPGResult != nil {
+							opts.GPGResult.Status = "Failed"
+						}
+						_ = os.Remove(destination)
+						return err
+					}
+				} else {
+					if opts.GPGResult != nil {
+						opts.GPGResult.Status = "Success"
+					}
 				}
 			}
 			return nil
@@ -264,6 +292,90 @@ func (h *HTTPDownloader) VerifyChecksum(ctx context.Context, file string, expect
 			"checksum mismatch for %q: expected %s, got %s",
 			file, expectedHash, actualHash,
 		)
+	}
+
+	return nil
+}
+
+// verifyGPGSignature downloads a detached signature (.sig or .asc) and verifies it against the local keyring.
+func (h *HTTPDownloader) verifyGPGSignature(ctx context.Context, targetURL, destination string) error {
+	keyringPath := filepath.Join(env.GetDataDir(), "keyring.gpg")
+	keyringFile, err := os.Open(keyringPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return errors.NewUserError(fmt.Sprintf("keyring not found at %s. Please add trusted keys first", keyringPath), nil)
+		}
+		return errors.NewSystemError("failed to open keyring", err)
+	}
+	defer keyringFile.Close()
+
+	keyring, err := openpgp.ReadKeyRing(keyringFile)
+	if err != nil {
+		return errors.NewSystemError("failed to parse keyring", err)
+	}
+
+	// Try .sig first, then .asc
+	sigURL := targetURL + ".sig"
+	sigDest := destination + ".sig"
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sigURL, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := h.client.Do(req)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
+		// Fallback to .asc
+		sigURL = targetURL + ".asc"
+		sigDest = destination + ".asc"
+		req, _ = http.NewRequestWithContext(ctx, http.MethodGet, sigURL, nil)
+		resp, err = h.client.Do(req)
+		if err != nil {
+			return errors.NewExternalError("failed to fetch signature", err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			// If neither .sig nor .asc exist, just skip verification (assume unsigned)
+			if resp.StatusCode == http.StatusNotFound {
+				return ErrGPGSkipped
+			}
+			return errors.NewExternalError("signature not found at .sig or .asc", nil)
+		}
+	}
+
+	sigFile, err := os.Create(sigDest)
+	if err != nil {
+		resp.Body.Close()
+		return err
+	}
+	defer os.Remove(sigDest)
+
+	_, err = io.Copy(sigFile, resp.Body)
+	resp.Body.Close()
+	sigFile.Close() // Close before reading for verification
+
+	if err != nil {
+		return errors.NewSystemError("failed to save signature file", err)
+	}
+
+	// Perform verification
+	targetFile, err := os.Open(destination)
+	if err != nil {
+		return err
+	}
+	defer targetFile.Close()
+
+	sigFileRead, err := os.Open(sigDest)
+	if err != nil {
+		return err
+	}
+	defer sigFileRead.Close()
+
+	_, err = openpgp.CheckDetachedSignature(keyring, targetFile, sigFileRead, nil)
+	if err != nil {
+		return errors.Wrap(errors.ErrChecksumMismatch, "GPG signature verification failed: %v", err)
 	}
 
 	return nil

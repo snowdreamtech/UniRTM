@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 `
 
 // CurrentSchemaVersion is the current schema version
-const CurrentSchemaVersion = 1
+const CurrentSchemaVersion = 2
 
 // migrations contains all schema migrations in order
 var migrations = []Migration{
@@ -81,5 +81,11 @@ var migrations = []Migration{
 		Description: "Initial schema",
 		Up:          Schema,
 		Down:        "", // Initial schema has no down migration
+	},
+	{
+		Version:     2,
+		Description: "Add gpg_verification to audit_log",
+		Up:          "ALTER TABLE audit_log ADD COLUMN gpg_verification TEXT;",
+		Down:        "", // No down migration for adding a column in SQLite easily
 	},
 }

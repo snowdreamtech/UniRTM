@@ -212,6 +212,8 @@ func (um *UpdateManager) UpdateTool(ctx context.Context, tool, targetVersion str
 	if versionInfo.Checksum != "" {
 		opts = opts.WithChecksum(versionInfo.Checksum)
 	}
+	gpgResult := &download.GPGResult{}
+	opts = opts.WithVerifyGPG(true, gpgResult)
 
 	if err := downloader.Download(ctx, versionInfo.DownloadURL, downloadPath, opts); err != nil {
 		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to download: %w", err), false, "")
@@ -278,6 +280,7 @@ func (um *UpdateManager) UpdateTool(ctx context.Context, tool, targetVersion str
 	// Update audit log: success
 	auditEntry.Status = "success"
 	auditEntry.Duration = time.Since(startTime).Milliseconds()
+	auditEntry.GpgVerification = gpgResult.Status
 	if err := um.auditRepo.Log(ctx, auditEntry); err != nil {
 		// Log but don't fail - the update was successful
 	}

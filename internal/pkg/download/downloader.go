@@ -99,6 +99,20 @@ type DownloadOptions struct {
 	// The callback should be fast and non-blocking.
 	// The callback may be called from a different goroutine.
 	ProgressCallback func(bytesDownloaded, totalBytes int64)
+
+	// VerifyGPG indicates whether the downloader should attempt to fetch
+	// a detached GPG signature (.sig or .asc) and verify the downloaded file
+	// against the UniRTM keyring.
+	VerifyGPG bool
+
+	// GPGResult points to a struct that will be populated with the result
+	// of the GPG verification (e.g., "Success", "Failed", "Skipped").
+	GPGResult *GPGResult
+}
+
+// GPGResult holds the result of a GPG verification attempt.
+type GPGResult struct {
+	Status string
 }
 
 // DefaultDownloadOptions returns DownloadOptions with sensible defaults.
@@ -141,5 +155,13 @@ func (o DownloadOptions) WithTimeout(timeout time.Duration) DownloadOptions {
 // This is a convenience method for fluent configuration.
 func (o DownloadOptions) WithProgressCallback(callback func(int64, int64)) DownloadOptions {
 	o.ProgressCallback = callback
+	return o
+}
+
+// WithVerifyGPG returns a copy of the options with VerifyGPG set,
+// and binds the given result pointer to store the verification outcome.
+func (o DownloadOptions) WithVerifyGPG(verify bool, result *GPGResult) DownloadOptions {
+	o.VerifyGPG = verify
+	o.GPGResult = result
 	return o
 }
