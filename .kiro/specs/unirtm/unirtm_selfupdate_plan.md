@@ -102,19 +102,25 @@ unirtm self-update --dry-run
 ### 新增文件
 
 #### [NEW] `cmd/25.selfupdate.go`
+
 CLI 层，解析标志，委托给 service 层。
 
 #### [NEW] `internal/service/selfupdate.go`
+
 核心升级逻辑，包含：
+
 - `SelfUpdateManager` struct
 - `Check(ctx) (*ReleaseInfo, error)` — 查询最新版本
 - `Update(ctx, opts) (*UpdateResult, error)` — 执行升级
+
 - `Rollback(ctx) error` — 回滚到备份
 
 #### [NEW] `internal/service/selfupdate_test.go`
+
 单元测试（Mock GitHub API、Mock 文件系统操作）。
 
 #### [NEW] `tests/integration/selfupdate_test.go`
+
 集成测试：使用 temp 目录模拟完整升级流程。
 
 ---
@@ -174,7 +180,7 @@ const (
 ⚠️  UniRTM 检测到您通过 Homebrew 安装。
     请使用 Homebrew 升级以避免状态不一致：
       brew upgrade unirtm
-    
+
     如果您确定要强制使用 self-update，请添加 --force 标志。
 ```
 
@@ -307,6 +313,7 @@ go test ./internal/service/ -run TestSelfUpdate -v
 ```
 
 覆盖：
+
 - `Check`：Mock HTTP，测试缓存命中 / 缓存穿透 / API 失败
 - `smokeTest`：Mock exec，测试版本字符串解析
 - `verifyChecksum`：测试 SHA-256 匹配 / 不匹配

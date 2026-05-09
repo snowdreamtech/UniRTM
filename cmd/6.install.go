@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/database"
@@ -186,25 +187,15 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		txManager,
 	)
 
-	// Create progress callback
-	var lastProgress int
-	progressCallback := func(downloaded, total int64) {
-		if total > 0 {
-			percent := int(float64(downloaded) / float64(total) * 100)
-			// Only update every 10% to avoid too much output
-			if percent >= lastProgress+10 || percent == 100 {
-				formatter.Info(fmt.Sprintf("Downloading: %d%%", percent), map[string]interface{}{
-					"downloaded": downloaded,
-					"total":      total,
-				})
-				lastProgress = percent
-			}
-		}
-	}
+	// Display start message
+	formatter.Info(fmt.Sprintf("Initializing installation for %s@%s", tool, version), map[string]interface{}{
+		"tool":    tool,
+		"version": version,
+		"backend": backendName,
+	})
 
-	// Store progress callback in context for use by download manager
-	// TODO: Implement context-based progress callback passing
-	_ = progressCallback
+	// Start gorgeous loading animation
+	spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Installing %s@%s ...", tool, version))
 
 	// Perform installation
 	startTime := time.Now()
@@ -212,6 +203,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	duration := time.Since(startTime)
 
 	if err != nil {
+		spinner.Fail(fmt.Sprintf("Installation failed: %v", err))
 		formatter.Error(fmt.Sprintf("Installation failed: %s", err.Error()), map[string]interface{}{
 			"tool":     tool,
 			"version":  version,
@@ -221,11 +213,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	}
 
 	// Display success message
-	formatter.Success(fmt.Sprintf("Successfully installed %s@%s", tool, version), map[string]interface{}{
-		"tool":     tool,
-		"version":  version,
-		"duration": duration.String(),
-	})
+	spinner.Success(fmt.Sprintf("Successfully installed %s@%s (took %s)", tool, version, duration.Round(time.Millisecond).String()))
 
 	return nil
 }

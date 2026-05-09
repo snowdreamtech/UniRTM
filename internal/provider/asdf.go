@@ -72,10 +72,9 @@ func (p *AsdfProvider) Install(ctx context.Context, installPath string, artifact
 		cmd := exec.CommandContext(ctx, downloadScript)
 		cmd.Env = env
 		cmd.Dir = installPath
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return NewProviderError(p.Name(), tool, version, "bin/download failed", err)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return NewProviderError(p.Name(), tool, version, fmt.Sprintf("bin/download failed: %s", string(out)), err)
 		}
 	}
 
@@ -86,10 +85,9 @@ func (p *AsdfProvider) Install(ctx context.Context, installPath string, artifact
 		cmd := exec.CommandContext(ctx, installScript)
 		cmd.Env = env
 		cmd.Dir = installPath
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return NewProviderError(p.Name(), tool, version, "bin/install failed", err)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return NewProviderError(p.Name(), tool, version, fmt.Sprintf("bin/install failed: %s", string(out)), err)
 		}
 	} else {
 		return NewProviderError(p.Name(), tool, version, "bin/install script not found in plugin", err)
@@ -102,7 +100,7 @@ func (p *AsdfProvider) PostInstall(ctx context.Context, installPath string, vers
 	// Execute bin/post-install if it exists
 	tool := filepath.Base(filepath.Dir(installPath))
 	pluginDir := filepath.Join(p.pluginsPath, tool)
-	
+
 	postInstallScript := filepath.Join(pluginDir, "bin", "post-install")
 	if stat, err := os.Stat(postInstallScript); err == nil && !stat.IsDir() {
 		cmd := exec.CommandContext(ctx, postInstallScript)
@@ -112,10 +110,9 @@ func (p *AsdfProvider) PostInstall(ctx context.Context, installPath string, vers
 			"ASDF_INSTALL_PATH="+installPath,
 		)
 		cmd.Dir = installPath
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return NewProviderError(p.Name(), tool, version, "bin/post-install failed", err)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return NewProviderError(p.Name(), tool, version, fmt.Sprintf("bin/post-install failed: %s", string(out)), err)
 		}
 	}
 	return nil

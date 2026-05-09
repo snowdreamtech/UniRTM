@@ -43,10 +43,9 @@ func (p *PypiProvider) Install(ctx context.Context, installPath string, artifact
 	// 1. Create a virtual environment
 	logger.Debug("Creating virtual environment", map[string]interface{}{"path": installPath})
 	venvCmd := exec.CommandContext(ctx, pythonCmd, "-m", "venv", installPath)
-	venvCmd.Stdout = os.Stdout
-	venvCmd.Stderr = os.Stderr
-	if err := venvCmd.Run(); err != nil {
-		return NewProviderError(p.Name(), tool, version, "failed to create virtual environment", err)
+	outVenv, err := venvCmd.CombinedOutput()
+	if err != nil {
+		return NewProviderError(p.Name(), tool, version, fmt.Sprintf("failed to create virtual environment: %s", string(outVenv)), err)
 	}
 
 	// 2. Install the package inside the venv
@@ -59,10 +58,9 @@ func (p *PypiProvider) Install(ctx context.Context, installPath string, artifact
 	logger.Debug("Installing pypi package", map[string]interface{}{"pkg": pkgSpec, "venv": installPath})
 
 	cmd := exec.CommandContext(ctx, pipCmd, "install", pkgSpec)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return NewProviderError(p.Name(), tool, version, "pip install failed", err)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return NewProviderError(p.Name(), tool, version, fmt.Sprintf("pip install failed: %s", string(out)), err)
 	}
 
 	return nil

@@ -564,9 +564,6 @@ url = "https://dl.google.com/go/go1.26.2.windows-amd64.zip"
 version = "25.9.0"
 backend = "core:node"
 
-[tools.node.options]
-flavor = ""
-
 [[tools."npm:@commitlint/cli"]]
 version = "20.5.3"
 backend = "npm:@commitlint/cli"
