@@ -12,7 +12,7 @@
 |------|------|--------|---------|
 | `install` | `mise install node@20` | `unirtm install node@20` | UniRTM 强制版本显式，不支持无版本安装 |
 | `uninstall` | `mise uninstall node@20` | `unirtm uninstall node@20` | UniRTM 要求确认破坏性操作 |
-| `list` | `mise list` | `unirtm list` | 两者均支持 --json 输出 |
+| `list` | `mise list` | `unirtm list` | UniRTM 采用基于 pterm 的现代化语义着色表格，均支持 --json |
 | `search` | `mise search <term>` | `unirtm search <term>` | UniRTM 支持按 backend 类型过滤 |
 | `update` | `mise upgrade` | `unirtm update` | UniRTM 有 update preview + rollback |
 | `activate` | `eval "$(mise activate zsh)"` | `eval "$(unirtm activate zsh)"` | UniRTM 支持 bash/zsh/fish/PowerShell |
@@ -111,6 +111,7 @@
 | 功能 | mise | UniRTM |
 |------|------|--------|
 | **审计日志** | ❌ | ✅ **独有**：所有操作写入 SQLite audit_log |
+| **CLI 界面体验** | 传统纯文本 / 简单表格 | ✅ **增强**：现代化无边框语义着色输出（基于 pterm） |
 | **Dry-run 模式** | 部分命令支持 | ✅ 所有命令支持 `--dry-run` |
 | **JSON 输出** | ✅ | ✅ |
 | **诊断命令** | `mise doctor` | `unirtm doctor`（额外检查 SQLite 完整性）|
@@ -154,7 +155,10 @@ File System State                       ├── CacheManager
                                          ├── GenericProvider
                                          ├── NodeProvider
                                          ├── PythonProvider
-                                         └── GoProvider
+                                         ├── GoProvider
+                                         ├── JavaProvider
+                                         ├── RubyProvider
+                                         └── RustProvider
                                          │
                                        Data Layer (SQLite)
                                          ├── InstallationRepository
@@ -234,7 +238,7 @@ mise：                                UniRTM：
 
 | 场景 | 推荐 | 原因 |
 |------|------|------|
-| 需要大量工具（Ruby/Java/Rust 等） | **mise** | asdf 插件生态无可替代 |
+| 需要海量长尾工具（800+ 种类） | **mise** | asdf 插件生态无可替代 |
 | 企业级审计合规需求 | **UniRTM** | 完整 SQLite 审计日志 |
 | 需要精确的原子性保证 | **UniRTM** | 事务级别的一致性 |
 | 个人开发者快速上手 | **mise** | 工具覆盖面广、社区文档丰富 |
