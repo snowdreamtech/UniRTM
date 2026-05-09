@@ -64,7 +64,7 @@ Examples:
 
   # Install with JSON output
   unirtm install go 1.21.0 --json`,
-	Args: cobra.ExactArgs(2),
+	Args: cobra.RangeArgs(1, 2),
 	RunE: runInstall,
 }
 
@@ -74,7 +74,21 @@ Examples:
 // Validates: Requirements 9.1, 9.2, 9.3, 23.2
 func runInstall(cmd *cobra.Command, args []string) error {
 	tool := args[0]
-	version := args[1]
+	version := "latest"
+
+	// Parse "tool@version" syntax (like mise)
+	if strings.Contains(tool, "@") {
+		parts := strings.SplitN(tool, "@", 2)
+		tool = parts[0]
+		if parts[1] != "" {
+			version = parts[1]
+		}
+	} else if len(args) == 2 {
+		version = args[1]
+	} else if len(args) == 1 {
+		// Just 'unirtm install tool' means latest
+		version = "latest"
+	}
 
 	// Create output formatter
 	formatter := output.NewFormatter(output.FormatterOptions{
