@@ -22,22 +22,23 @@
 | `doctor` | `mise doctor` | `unirtm doctor` | 功能相同，UniRTM 额外检查 SQLite 完整性 |
 | `version` | `mise version` | `unirtm version` | 功能相同 |
 | `completion` | `mise completion zsh` | `unirtm completion zsh` | 功能相同，支持同款 shell |
+| `use` | `mise use <tool>` | `unirtm use <tool>` | 功能相同，修改 unirtm.toml |
+| `exec` | `mise exec <tool> -- <cmd>` | `unirtm exec <tool> -- <cmd>` | 功能相同 |
+| `shell` | `mise shell <tool>` | `unirtm shell <tool>` | 功能相同 |
+| `prune` | `mise prune` | `unirtm prune` | 功能相同 |
+| `plugin` | `mise plugin` | `unirtm plugin` | UniRTM 采用 Go 原生 Plugin 系统替代 |
+| `env` | `mise env` | `unirtm env` | 功能相同 |
+| `where` | `mise where <tool>` | `unirtm where <tool>` | 功能相同 |
+| `which` | `mise which <tool>` | `unirtm which <tool>` | 功能相同 |
+| `reshim` | `mise reshim` | `unirtm reshim` | 功能相同 |
 | `migrate` | ❌ 无 | `unirtm migrate` | **UniRTM 独有**：从 mise 配置迁移 |
 
 ### mise 有、UniRTM 无的命令
 
 | mise 命令 | 说明 | UniRTM 替代方式 |
 |-----------|------|----------------|
-| `mise use` | 在当前目录写入 .mise.toml | 手动编辑 unirtm.toml |
-| `mise exec` / `mise run` | 在工具环境中运行任务 | 未实现（Task 系统在 v1.0 未暴露 CLI） |
-| `mise shell` | 设置当前 shell 的工具版本 | `unirtm activate` 替代 |
+| `mise run` | 在工具环境中运行任务 | 尚未完全实现（Task 系统在 v1.0 未暴露 CLI） |
 | `mise trust` | 信任目录的配置文件 | UniRTM 使用严格的项目根检测，无 trust 机制 |
-| `mise prune` | 清理未被使用的工具版本 | 通过 `unirtm cache clear` + 手动 uninstall |
-| `mise plugin` | 管理 asdf 插件 | UniRTM 用 Go 原生 Plugin 系统替代 |
-| `mise env` | 输出环境变量 | `unirtm env`（已实现，但功能较简单） |
-| `mise where` | 显示工具安装路径 | 通过 `unirtm list` 查看 install_path |
-| `mise which` | 显示工具二进制路径 | 未独立实现 |
-| `mise reshim` | 重新生成 shims | 未独立实现（安装时自动生成） |
 | `mise self-update` | 自更新 | 通过 goreleaser 发布，未内置 |
 
 ### UniRTM 有、mise 无的命令
