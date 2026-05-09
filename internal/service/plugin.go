@@ -157,7 +157,7 @@ func (pm *PluginManager) loadPlugin(ctx context.Context, pluginPath string) erro
 			pm.clients = append(pm.clients, client)
 			pm.loadedPlugins = append(pm.loadedPlugins, meta)
 			if pm.providerRegistry != nil {
-				pm.providerRegistry.Register(p)
+				pm.providerRegistry.Register(p.Name(), p)
 				logger.Debug("Registered plugin provider", map[string]interface{}{
 					"name": meta.Name,
 				})

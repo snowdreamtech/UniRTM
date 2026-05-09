@@ -52,31 +52,17 @@ func (g *GenericProvider) Install(ctx context.Context, installPath string, artif
 			return NewProviderError("generic", "unknown", version, "failed to find executables", err)
 		}
 
-		// Move executables to bin directory (or just ensure they have +x)
+		// Ensure executables have +x and link them to binDir
 		for _, exe := range executables {
 			exePath := filepath.Join(installPath, exe)
 			if err := os.Chmod(exePath, 0755); err != nil {
 				return NewProviderError("generic", "unknown", version, fmt.Sprintf("failed to chmod %s", exe), err)
 			}
-
-			// If it's not already in binDir, we might want to symlink it or just leave it
-			// For generic, leaving it where it is and listing it from the whole install path might be better.
-			// But GenerateShims relies on ListExecutables.
-		}
-	}
-
-	// Copy executables to bin directory
-	for _, exe := range executables {
-		srcPath := filepath.Join(artifactPath, exe)
-		dstPath := filepath.Join(binDir, filepath.Base(exe))
-
-		if err := g.copyFile(srcPath, dstPath); err != nil {
-			return NewProviderError("generic", "unknown", version, fmt.Sprintf("failed to copy %s", exe), err)
-		}
-
-		// Make executable
-		if err := os.Chmod(dstPath, 0755); err != nil {
-			return NewProviderError("generic", "unknown", version, fmt.Sprintf("failed to chmod %s", exe), err)
+			
+			dstPath := filepath.Join(binDir, filepath.Base(exe))
+			if filepath.Dir(exePath) != binDir {
+				os.Symlink(exePath, dstPath)
+			}
 		}
 	}
 

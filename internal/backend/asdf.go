@@ -105,7 +105,7 @@ func (b *AsdfBackend) ResolveVersion(ctx context.Context, tool string, versionRe
 		return &versions[0], nil
 	}
 
-	// For specific version requests, we just return it. 
+	// For specific version requests, we just return it.
 	// The provider will fail during installation if it's invalid.
 	return &VersionInfo{
 		Version:  versionRequest,
@@ -141,7 +141,7 @@ func (b *AsdfBackend) ensurePlugin(ctx context.Context, tool string) (string, er
 	}
 
 	if err := b.updateRegistry(ctx); err != nil {
-		logger.Warning("Failed to update asdf registry (will try fallback)", map[string]interface{}{"error": err})
+		logger.Warn("Failed to update asdf registry (will try fallback)", map[string]interface{}{"error": err.Error()})
 	}
 
 	repoURL, err := b.lookupPluginURL(tool)
@@ -151,7 +151,7 @@ func (b *AsdfBackend) ensurePlugin(ctx context.Context, tool string) (string, er
 	}
 
 	logger.Info("Cloning asdf plugin", map[string]interface{}{"tool": tool, "url": repoURL})
-	
+
 	if err := os.MkdirAll(b.pluginsPath, 0755); err != nil {
 		return "", err
 	}
