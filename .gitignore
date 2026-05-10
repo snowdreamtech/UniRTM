@@ -225,7 +225,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
+/env/
 build/
 develop-eggs/
 downloads/

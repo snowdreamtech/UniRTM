@@ -27,6 +27,24 @@ var (
 
 	// dryRun enables dry-run mode — shows what would happen without side effects
 	dryRun bool
+
+	// cwd specifies the current working directory for the application
+	cwd string
+
+	// envName specifies the environment name for loading environment-specific configs
+	envName string
+
+	// jobs specifies the number of parallel jobs to run
+	jobs int
+
+	// yes indicates whether to automatically answer yes to all confirmation prompts
+	yes bool
+
+	// locked indicates whether to require lockfile URLs to be present during installation
+	locked bool
+
+	// silent indicates whether to suppress all output and non-error messages
+	silent bool
 )
 
 // init initializes the root command for the UniRTM CLI application.
@@ -40,7 +58,7 @@ func init() {
 that manages multiple development tool versions, provides declarative configuration
 management, supports multiple backends and providers, and offers comprehensive
 audit and logging capabilities.`,
-		PersistentPreRun: setupLogging,
+		PersistentPreRun: setupGlobalOptions,
 		SilenceUsage:     true,
 		SilenceErrors:    true,
 	}
@@ -48,27 +66,38 @@ audit and logging capabilities.`,
 	buildFlags()
 }
 
-// setupLogging configures the global logging level based on command line flags.
-// This function is executed before any command runs, ensuring proper log setup.
-//
-// The logging level priority is as follows:
-// - Quiet flag (highest priority): Disables all logging
-// - Verbose flag: Sets debug level logging
-// - Default: Sets standard Info level logging
-//
-// Parameters:
-//   - cmd: The Cobra command that is being executed
-//   - args: Command line arguments passed to the command
-func setupLogging(cmd *cobra.Command, args []string) {
+// setupGlobalOptions configures the global logging level and handles global flags like --cd.
+// This function is executed before any command runs.
+func setupGlobalOptions(cmd *cobra.Command, args []string) {
+	// Handle --cd (change directory)
+	if cwd != "" {
+		if err := os.Chdir(cwd); err != nil {
+			log.Fatalf("failed to change directory to %s: %v", cwd, err)
+		}
+	}
+
 	// Set log level from CLI flags
-	// The log level priority is: Quiet > Verbose > Info (default)
-	if quiet {
+	// The log level priority is: Silent > Quiet > Verbose > Info (default)
+	if silent {
+		zerolog.SetGlobalLevel(zerolog.Disabled)
+		// We could also disable pterm output here if needed
+	} else if quiet {
 		zerolog.SetGlobalLevel(zerolog.Disabled)
 	} else if verbose {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	} else {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
+
+	// Sync settings to env package
+	env.Cwd = cwd
+	env.EnvName = envName
+	env.Jobs = jobs
+	env.Yes = yes
+	env.Locked = locked
+	env.Silent = silent
+	env.Quiet = quiet
+	env.Config = configPath
 }
 
 // buildFlags configures all the global command-line flags available in the application.
@@ -89,9 +118,28 @@ func buildFlags() {
 	rootCmd.PersistentFlags().BoolVarP(&jsonOutput, "json", "j", false, "enable JSON output format")
 
 	// Dry-run flag: Shows what would happen without making any changes
-	// Validates: Requirement 8.7
 	rootCmd.PersistentFlags().BoolVar(&dryRun, "dry-run", false, "show what would happen without making changes")
 
-	// Store the config path in the env package for access by other components
-	env.Config = configPath
+	// CD flag: Change directory before running command
+	rootCmd.PersistentFlags().StringVarP(&cwd, "cd", "C", "", "change directory before running command")
+
+	// Env flag: Set the environment for loading configuration
+	rootCmd.PersistentFlags().StringVarP(&envName, "env", "E", "", "set the environment for loading configuration")
+
+	// Jobs flag: How many jobs to run in parallel
+	rootCmd.PersistentFlags().IntVar(&jobs, "jobs", 8, "how many jobs to run in parallel")
+
+	// Yes flag: Answer yes to all confirmation prompts
+	rootCmd.PersistentFlags().BoolVarP(&yes, "yes", "y", false, "answer yes to all confirmation prompts")
+
+	// Locked flag: Require lockfile URLs to be present during installation
+	rootCmd.PersistentFlags().BoolVar(&locked, "locked", false, "require lockfile URLs to be present during installation")
+
+	// Silent flag: Suppress all task output and non-error messages
+	rootCmd.PersistentFlags().BoolVar(&silent, "silent", false, "suppress all task output and non-error messages")
+
+	// No-config, no-env, no-hooks flags (placeholders for now to match mise surface)
+	rootCmd.PersistentFlags().Bool("no-config", false, "do not load any config files")
+	rootCmd.PersistentFlags().Bool("no-env", false, "do not load environment variables from config files")
+	rootCmd.PersistentFlags().Bool("no-hooks", false, "do not execute hooks from config files")
 }
