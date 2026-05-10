@@ -69,7 +69,7 @@ audit and logging capabilities.`,
 			if len(args) > 0 {
 				// If the first argument is not a known command, treat it as a task name.
 				// We delegate to the 'run' command implementation.
-				return runTasksRun(cmd, args)
+				return runTaskCommand(cmd, args)
 			}
 			return cmd.Help()
 		},

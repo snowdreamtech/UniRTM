@@ -52,7 +52,6 @@ Examples:
 
   # JSON output
   unirtm list --json`,
-	Aliases: []string{"ls"},
 	Args:    cobra.NoArgs,
 	RunE:    runList,
 }

@@ -5,13 +5,8 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-
 	"github.com/pterm/pterm"
-	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
