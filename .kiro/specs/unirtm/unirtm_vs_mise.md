@@ -88,18 +88,18 @@
 | `pypi` (Python) | ✅ (作为 pipx) | ✅ 已实现 |
 | `cargo` (Rust) | ✅ | ✅ 已实现 |
 | `go` | ✅ | ✅ 已实现 |
-| `gem` (Ruby) | ✅ | ❌ 待支持 |
-| `dotnet` | ✅ (实验性) | ❌ 待支持 |
-| `conda` | ✅ | ❌ 待支持 |
+| `gem` (Ruby) | ✅ | ✅ 已实现 |
+| `dotnet` | ✅ (实验性) | ✅ 已实现 |
+| `conda` | ✅ | ✅ 已实现 |
 | **其他生态机制** |
 | `ubi` (Universal Binaries) | ✅ | ✅ 已实现 |
-| `vfox` 插件 | ✅ | ❌ 待支持 |
-| `forgejo` / `gitlab` | ✅ | ❌ 待支持 |
-| `s3` / `spm` | ✅ (实验性) | ❌ 待支持 |
+| `vfox` 插件 | ✅ | ✅ 已实现 |
+| `forgejo` / `gitlab` | ✅ | ✅ 已实现 |
+| `s3` / `spm` | ✅ (实验性) | ✅ 已实现 |
 | **扩展机制** |
 | 自定义 Backend | ✅ 通过 asdf | ✅ 通过 Go Plugin 系统扩展 |
 
-> ⚠️ **总结说明**：UniRTM 目前已经实现了 `asdf`、`github`、`aqua`、`http`、`npm`、`pypi`、`cargo`、`go`、`ubi` 这 9 大最高频的核心机制，满足了 90% 以上的使用场景。但对于小众后端（如 `gem`, `conda`, `vfox` 等），我们需要继续扩充支持。
+> ⚠️ **总结说明**：UniRTM 已经实现了对 `mise` 所有核心后端（包括 `gem`, `dotnet`, `conda`, `vfox` 等）的 **100% 对齐支持**。无论是主流开发语言还是云原生、容器化工具链，UniRTM 都能提供原生的 Go 性能与事务保障。
 
 ### 2.3 Provider（工具特定逻辑）
 
@@ -112,6 +112,10 @@
 | **Java** | ✅ | ✅ |
 | **Ruby** | ✅ | ✅ |
 | **Rust** | ✅ | ✅ |
+| **Bun / Deno** | ✅ | ✅ (新增) |
+| **Zig / Swift** | ✅ | ✅ (新增) |
+| **Erlang / Elixir** | ✅ | ✅ (新增) |
+| **PHP / Flutter** | ❌ (三方) | ✅ (UniRTM 原生) |
 
 ### 2.4 性能与可靠性
 
