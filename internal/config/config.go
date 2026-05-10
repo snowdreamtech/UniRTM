@@ -104,6 +104,19 @@ type Settings struct {
 	// Concurrency is the maximum number of concurrent operations.
 	// If zero, defaults to the number of CPU cores.
 	Concurrency int `toml:"concurrency" yaml:"concurrency" mapstructure:"concurrency"`
+
+	// Lockfile controls whether unirtm.lock is generated and kept up to date.
+	// When true, every successful `unirtm install` writes the resolved URL and
+	// checksum back into unirtm.lock so that future installs can skip the API call.
+	// Default: false (opt-in, same as mise).
+	Lockfile bool `toml:"lockfile,omitempty" yaml:"lockfile,omitempty" mapstructure:"lockfile,omitempty"`
+
+	// Locked enforces strict lockfile mode.
+	// When true, `unirtm install` fails if a tool's URL is not already present
+	// in unirtm.lock.  Useful in CI to guarantee fully reproducible, API-free builds.
+	// Can also be set via the UNIRTM_LOCKED=1 environment variable.
+	// Default: false.
+	Locked bool `toml:"locked,omitempty" yaml:"locked,omitempty" mapstructure:"locked,omitempty"`
 }
 
 // Task represents a task definition that can be executed via the CLI.

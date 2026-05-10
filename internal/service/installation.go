@@ -27,9 +27,10 @@ type InstallationManager struct {
 	downloadManager  *download.Manager
 	installRepo      repository.InstallationRepository
 	txManager        transaction.TransactionManager
+	lockService      *LockService // optional; nil = lockfile disabled
 }
 
-// NewInstallationManager creates a new installation manager.
+// NewInstallationManager creates a new installation manager without lockfile support.
 func NewInstallationManager(
 	backendRegistry *backend.Registry,
 	providerRegistry *provider.Registry,
@@ -44,6 +45,21 @@ func NewInstallationManager(
 		installRepo:      installRepo,
 		txManager:        txManager,
 	}
+}
+
+// NewInstallationManagerWithLock creates an InstallationManager that reads and
+// writes unirtm.lock for reproducible, API-call-free installations.
+func NewInstallationManagerWithLock(
+	backendRegistry *backend.Registry,
+	providerRegistry *provider.Registry,
+	downloadManager *download.Manager,
+	installRepo repository.InstallationRepository,
+	txManager transaction.TransactionManager,
+	lockService *LockService,
+) *InstallationManager {
+	im := NewInstallationManager(backendRegistry, providerRegistry, downloadManager, installRepo, txManager)
+	im.lockService = lockService
+	return im
 }
 
 // Install performs the complete installation workflow for a tool.
@@ -76,11 +92,33 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		return fmt.Errorf("backend not found: %w", err)
 	}
 
-	// Get download info
+	// Get download info — check lockfile first to avoid remote API calls.
 	platform := backend.CurrentPlatform()
-	versionInfo, err := b.GetDownloadInfo(ctx, tool, version, platform)
-	if err != nil {
-		return fmt.Errorf("failed to get download info: %w", err)
+	var versionInfo *backend.VersionInfo
+
+	if im.lockService != nil {
+		// Enforce strict mode before any API call.
+		if err := im.lockService.CheckStrict(tool, backendName, version, platform); err != nil {
+			return err
+		}
+		// Try to resolve directly from the lockfile.
+		if info, ok := im.lockService.Resolve(tool, backendName, version, platform); ok {
+			logger.Debug("lockfile hit: using cached URL", map[string]interface{}{
+				"tool":     tool,
+				"version":  version,
+				"platform": platform.String(),
+			})
+			versionInfo = info
+		}
+	}
+
+	if versionInfo == nil {
+		// Lockfile miss — fall back to the remote backend.
+		info, err := b.GetDownloadInfo(ctx, tool, version, platform)
+		if err != nil {
+			return fmt.Errorf("failed to get download info: %w", err)
+		}
+		versionInfo = info
 	}
 
 	// Download artifact if URL is provided
@@ -130,6 +168,18 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 				versionInfo.Metadata = make(map[string]string)
 			}
 			versionInfo.Metadata["provenance_status"] = provenanceStatus
+		}
+
+		// Write resolved info back into the lockfile so future installs can
+		// skip the remote API call (lock hit) and use the cached URL directly.
+		if im.lockService != nil {
+			if lockErr := im.lockService.RecordInstall(tool, backendName, versionInfo); lockErr != nil {
+				// Non-fatal: log but don't abort the install.
+				logger.Warn("lockfile: failed to record install", map[string]interface{}{
+					"tool":  tool,
+					"error": lockErr.Error(),
+				})
+			}
 		}
 	}
 
