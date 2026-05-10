@@ -14,51 +14,68 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	aliasGlobal bool
+)
+
+func init() {
+	aliasCmd.PersistentFlags().BoolVar(&aliasGlobal, "global", false, "manage global aliases (~/.config/unirtm/unirtm.toml)")
+	aliasCmd.AddCommand(aliasListCmd)
+	aliasCmd.AddCommand(aliasSetCmd)
+	aliasCmd.AddCommand(aliasDeleteCmd)
+	rootCmd.AddCommand(aliasCmd)
+}
+
 var aliasCmd = &cobra.Command{
 	Use:     "alias",
 	Aliases: []string{"tool-alias"},
 	Short:   "Manage version aliases",
-	Long:    `Manage global version aliases for tools.`,
+	Long: `Manage version aliases for tools.
+
+Aliases allow you to refer to a specific version by a name (e.g. "lts", "work").
+They can be managed globally or at the project level using the --global flag.`,
 }
 
 var aliasListCmd = &cobra.Command{
-	Use:   "list [tool]",
-	Short: "List aliases",
-	Args:  cobra.MaximumNArgs(1),
+	Use:     "list [tool]",
+	Aliases: []string{"ls"},
+	Short:   "List aliases",
+	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		globalConfigPath := filepath.Join(env.GetConfigDir(), "config.toml")
-		v := viper.New()
-		v.SetConfigFile(globalConfigPath)
-		v.SetConfigType("toml")
-		_ = v.ReadInConfig()
-
-		if len(args) == 1 {
-			tool := args[0]
-			toolAliases := v.GetStringMapString(fmt.Sprintf("aliases.%s", tool))
-			if len(toolAliases) == 0 {
-				pterm.Warning.Printf("No aliases found for tool %s\n", tool)
-				return nil
-			}
-			pterm.DefaultTable.WithHasHeader().WithData(toTableData(tool, toolAliases)).Render()
-			return nil
+		cfgPath := resolveConfigFilePath(aliasGlobal)
+		m, err := loadRawTOML(cfgPath)
+		if err != nil {
+			return err
 		}
 
-		// List all
-		allAliasesMap := v.GetStringMap("aliases")
-		if len(allAliasesMap) == 0 {
+		rawAliases, ok := m["aliases"].(map[string]interface{})
+		if !ok || len(rawAliases) == 0 {
 			pterm.Info.Println("No aliases configured.")
 			return nil
 		}
 
 		var data [][]string
 		data = append(data, []string{"Tool", "Alias", "Version"})
-		for toolName, toolAliasesIfc := range allAliasesMap {
-			toolAliases, ok := toolAliasesIfc.(map[string]interface{})
+
+		if len(args) == 1 {
+			tool := args[0]
+			toolAliases, ok := rawAliases[tool].(map[string]interface{})
 			if !ok {
-				continue
+				pterm.Warning.Printf("No aliases found for tool %s\n", tool)
+				return nil
 			}
-			for alias, verIfc := range toolAliases {
-				data = append(data, []string{toolName, alias, fmt.Sprintf("%v", verIfc)})
+			for alias, ver := range toolAliases {
+				data = append(data, []string{tool, alias, fmt.Sprintf("%v", ver)})
+			}
+		} else {
+			for toolName, toolAliasesIfc := range rawAliases {
+				toolAliases, ok := toolAliasesIfc.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				for alias, ver := range toolAliases {
+					data = append(data, []string{toolName, alias, fmt.Sprintf("%v", ver)})
+				}
 			}
 		}
 		pterm.DefaultTable.WithHasHeader().WithData(data).Render()
@@ -67,31 +84,38 @@ var aliasListCmd = &cobra.Command{
 }
 
 var aliasSetCmd = &cobra.Command{
-	Use:   "set <tool> <alias> <version>",
-	Short: "Set an alias",
-	Args:  cobra.ExactArgs(3),
+	Use:     "set <tool> <alias> <version>",
+	Aliases: []string{"add"},
+	Short:   "Set an alias",
+	Args:    cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		tool, alias, version := args[0], args[1], args[2]
 
-		globalConfigPath := filepath.Join(env.GetConfigDir(), "config.toml")
-		err := os.MkdirAll(filepath.Dir(globalConfigPath), 0755)
+		cfgPath := resolveConfigFilePath(aliasGlobal)
+		m, err := loadRawTOML(cfgPath)
 		if err != nil {
 			return err
 		}
 
-		v := viper.New()
-		v.SetConfigFile(globalConfigPath)
-		v.SetConfigType("toml")
-		_ = v.ReadInConfig() // ignore error if file doesn't exist
+		rawAliases, ok := m["aliases"].(map[string]interface{})
+		if !ok {
+			rawAliases = make(map[string]interface{})
+			m["aliases"] = rawAliases
+		}
 
-		key := fmt.Sprintf("aliases.%s.%s", tool, alias)
-		v.Set(key, version)
+		toolAliases, ok := rawAliases[tool].(map[string]interface{})
+		if !ok {
+			toolAliases = make(map[string]interface{})
+			rawAliases[tool] = toolAliases
+		}
 
-		if err := v.WriteConfigAs(globalConfigPath); err != nil {
+		toolAliases[alias] = version
+
+		if err := saveRawTOML(cfgPath, m); err != nil {
 			return fmt.Errorf("failed to save alias: %w", err)
 		}
 
-		pterm.Success.Printf("Set alias %s=%s for tool %s\n", alias, version, tool)
+		pterm.Success.Printf("Set alias %s=%s for tool %s in %s\n", alias, version, tool, cfgPath)
 		return nil
 	},
 }
@@ -104,53 +128,42 @@ var aliasDeleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		tool, alias := args[0], args[1]
 
-		globalConfigPath := filepath.Join(env.GetConfigDir(), "config.toml")
-		v := viper.New()
-		v.SetConfigFile(globalConfigPath)
-		v.SetConfigType("toml")
-		if err := v.ReadInConfig(); err != nil {
-			return fmt.Errorf("no global config found: %w", err)
+		cfgPath := resolveConfigFilePath(aliasGlobal)
+		m, err := loadRawTOML(cfgPath)
+		if err != nil {
+			return err
 		}
 
-		key := fmt.Sprintf("aliases.%s.%s", tool, alias)
-		if !v.IsSet(key) {
+		rawAliases, ok := m["aliases"].(map[string]interface{})
+		if !ok {
+			pterm.Warning.Printf("No aliases found.")
+			return nil
+		}
+
+		toolAliases, ok := rawAliases[tool].(map[string]interface{})
+		if !ok {
+			pterm.Warning.Printf("No aliases found for tool %s\n", tool)
+			return nil
+		}
+
+		if _, ok := toolAliases[alias]; !ok {
 			pterm.Warning.Printf("Alias %s not found for tool %s\n", alias, tool)
 			return nil
 		}
 
-		// Viper doesn't have an easy way to delete a specific nested key in the config without a workaround or re-marshaling manually, 
-		// but since viper.Get handles it, we can get the tool aliases map, delete the key, and write it back.
-		toolAliases := v.GetStringMapString(fmt.Sprintf("aliases.%s", tool))
 		delete(toolAliases, alias)
-		
 		if len(toolAliases) == 0 {
-			// If empty, we can just omit it or set it to empty map, but Viper set won't delete the node cleanly.
-			// Reassigning works.
+			delete(rawAliases, tool)
 		}
-		
-		v.Set(fmt.Sprintf("aliases.%s", tool), toolAliases)
+		if len(rawAliases) == 0 {
+			delete(m, "aliases")
+		}
 
-		if err := v.WriteConfigAs(globalConfigPath); err != nil {
+		if err := saveRawTOML(cfgPath, m); err != nil {
 			return fmt.Errorf("failed to save alias: %w", err)
 		}
 
-		pterm.Success.Printf("Deleted alias %s for tool %s\n", alias, tool)
+		pterm.Success.Printf("Deleted alias %s for tool %s in %s\n", alias, tool, cfgPath)
 		return nil
 	},
-}
-
-func toTableData(tool string, aliases map[string]string) [][]string {
-	var data [][]string
-	data = append(data, []string{"Tool", "Alias", "Version"})
-	for k, v := range aliases {
-		data = append(data, []string{tool, k, v})
-	}
-	return data
-}
-
-func init() {
-	aliasCmd.AddCommand(aliasListCmd)
-	aliasCmd.AddCommand(aliasSetCmd)
-	aliasCmd.AddCommand(aliasDeleteCmd)
-	rootCmd.AddCommand(aliasCmd)
 }
