@@ -5,50 +5,54 @@
 
 ---
 
-## Phase 1：核心补全（高频刚需）
+## Phase 1：核心补全（高频刚需）✅ 已完成
 
-- `[ ]` **`env` 命令语义升级**
-  - `[ ]` 修改 `cmd/9.env.go`，增加 shell 变量导出模式
-  - `[ ]` 支持 `eval "$(unirtm env)"` 用法（输出 `export PATH=...`）
-  - `[ ]` 保留 `--json` 结构化输出
-  - `[ ]` 保留 `-v` 兼容旧版打印行为
-  - `[ ]` 编写测试 `cmd/9.env_test.go`
-  - `[ ]` 原子化 Commit
+- `[x]` **`env` 命令语义升级**
+  - `[x]` 修改 `cmd/3.env.go`，增加 shell 变量导出模式
+  - `[x]` 支持 `eval "$(unirtm env)"` 用法（输出 `export PATH=...`）
+  - `[x]` 支持 fish (`set -gx`) 和 nushell (`$env.PATH`)
+  - `[x]` 保留 `--info` 兼容旧版打印行为
+  - `[x]` 编写测试（8 个测试通过）
+  - `[x]` 原子化 Commit: a84e683
 
-- `[ ]` **`outdated` 命令**
-  - `[ ]` 实现 `cmd/32.outdated.go`
-  - `[ ]` 调用 backend `GetLatestVersion()` 与已安装版本对比
-  - `[ ]` 支持表格 / JSON 输出
-  - `[ ]` 支持 `unirtm outdated <tool>` 单工具检查
-  - `[ ]` 编写测试
-  - `[ ]` 原子化 Commit
+- `[x]` **`outdated` 命令**
+  - `[x]` 实现 `cmd/32.outdated.go`
+  - `[x]` 调用 backend `ResolveVersion(latest)` 与已安装版本对比
+  - `[x]` 支持表格 / JSON 输出
+  - `[x]` 支持 `unirtm outdated <tool>` 单工具检查
+  - `[x]` 编写测试（3 个测试通过）
+  - `[x]` 原子化 Commit: 7ede4b7
 
-- `[ ]` **`latest` 命令**
-  - `[ ]` 实现 `cmd/33.latest.go`
-  - `[ ]` 支持版本前缀过滤 `unirtm latest go 1.22`
-  - `[ ]` 支持 `--json` 输出
-  - `[ ]` 编写测试
-  - `[ ]` 原子化 Commit
+- `[x]` **`latest` 命令**
+  - `[x]` 实现 `cmd/33.latest.go`
+  - `[x]` 支持版本前缀过滤 `unirtm latest go 1.22`
+  - `[x]` 支持 `--json` 输出，plain 输出仅版本号（可脚本化）
+  - `[x]` 支持 `backend:tool` 和 `--backend` flag
+  - `[x]` 编写测试（3 个测试通过）
+  - `[x]` 原子化 Commit: b3249dc
 
-- `[ ]` **`list` 命令增强**
-  - `[ ]` 修改 `cmd/11.list.go`，增加「激活状态」列
-  - `[ ]` 区分 `installed` / `active` / `missing shim` 状态
-  - `[ ]` 编写测试
-  - `[ ]` 原子化 Commit
+- `[x]` **`list` 命令增强**
+  - `[x]` 修改 `cmd/8.list.go`，增加「STATUS」列
+  - `[x]` 区分 `active ✓`（绿色）/ `─`（未激活）
+  - `[x]` 添加 `ls` 别名
+  - `[x]` 编写测试
+  - `[x]` 原子化 Commit: 780e825
 
-- `[ ]` **`set` / `unset` 命令**
-  - `[ ]` 实现 `cmd/34.set.go`（含 `set` 和 `unset` 子命令）
-  - `[ ]` 支持 `--global` 写入全局配置
-  - `[ ]` 读写 unirtm.toml 中的 `[env]` 字段
-  - `[ ]` 编写测试
-  - `[ ]` 原子化 Commit
+- `[x]` **`set` / `unset` 命令**
+  - `[x]` 实现 `cmd/34.set.go`（含 `set` 和 `unset` 子命令）
+  - `[x]` 支持 `--global` 写入全局配置
+  - `[x]` 读写 unirtm.toml 中的 `[env]` 字段
+  - `[x]` 新增 `env.GetGlobalConfigPath()` 到 paths.go
+  - `[x]` 编写测试（8 个测试通过）
+  - `[x]` 原子化 Commit: 1482084
 
-- `[ ]` **`tool` 命令**
-  - `[ ]` 实现 `cmd/35.tool.go`
-  - `[ ]` 显示：tool / backend / installed versions / active version / shim / config source
-  - `[ ]` 支持 `--json` 输出
-  - `[ ]` 编写测试
-  - `[ ]` 原子化 Commit
+- `[x]` **`tool` 命令**
+  - `[x]` 实现 `cmd/35.tool.go`
+  - `[x]` 显示：tool / backend / installed versions / active version / shim / install dir
+  - `[x]` 查询 backend 显示最新可用版本
+  - `[x]` 支持 `--json` 输出
+  - `[x]` 编写测试（5 个测试通过）
+  - `[x]` 原子化 Commit: 44e2eee
 
 ---
 
@@ -160,7 +164,7 @@
 
 | Phase | 命令数 | 状态 |
 |-------|--------|------|
-| Phase 1 — 核心补全 | 6 | 未开始 |
+| Phase 1 — 核心补全 | 6 | ✅ 已完成（2026-05-10）|
 | Phase 2 — 管理完善 | 8 | 未开始 |
 | Phase 3 — 高级功能 | 9 | 未开始 |
-| **合计** | **23** | — |
+| **合计** | **23** | 6/23 完成 |
