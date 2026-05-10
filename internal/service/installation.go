@@ -5,13 +5,16 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository"
 	"github.com/snowdreamtech/unirtm/internal/transaction"
@@ -112,6 +115,22 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 			}
 		}
 		gpgStatus = gpgResult.Status
+
+		// Verify GitHub provenance (SLSA attestation) if the backend is github or ubi.
+		// If the project does not publish attestations, this is a no-op.
+		// If attestations exist, verification MUST pass to prevent supply chain attacks.
+		if backendName == "github" || backendName == "ubi" {
+			// Extract owner/repo from tool string (expected format: "owner/repo").
+			provenanceStatus, provenanceErr := tryVerifyProvenance(ctx, tool, downloadPath)
+			if provenanceErr != nil {
+				return fmt.Errorf("github provenance verification failed: %w", provenanceErr)
+			}
+			// Store result in versionInfo metadata for audit logging below.
+			if versionInfo.Metadata == nil {
+				versionInfo.Metadata = make(map[string]string)
+			}
+			versionInfo.Metadata["provenance_status"] = provenanceStatus
+		}
 	}
 
 	// Install using provider
@@ -143,12 +162,20 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	}
 
 	// Record audit entry
+	auditMeta := map[string]string{"gpg": gpgStatus}
+	if versionInfo.Metadata != nil {
+		if ps, ok := versionInfo.Metadata["provenance_status"]; ok && ps != "" {
+			auditMeta["provenance"] = ps
+		}
+	}
+	auditMetaJSON, _ := json.Marshal(auditMeta)
 	auditEntry := &repository.AuditEntry{
 		Operation:       "install",
 		Tool:            tool,
 		Version:         version,
 		Status:          "success",
 		GpgVerification: gpgStatus,
+		Metadata:        string(auditMetaJSON),
 	}
 	if err := tx.AuditRepo().Log(ctx, auditEntry); err != nil {
 		// Log but don't fail
@@ -187,4 +214,44 @@ func (im *InstallationManager) Uninstall(ctx context.Context, tool, version stri
 	}
 
 	return nil
+}
+
+// tryVerifyProvenance runs GitHub provenance (SLSA attestation) verification
+// for tools whose tool string is in "owner/repo" format.
+//
+// Returns a short status string for audit logging:
+//   - "not_applicable" — tool format is not owner/repo (e.g. language runtimes)
+//   - "not_supported"  — project published no attestations (safely skipped)
+//   - "verified"       — attestation present and verified successfully
+//
+// An error is returned only when attestations exist but verification fails,
+// which is treated as a hard security failure.
+func tryVerifyProvenance(ctx context.Context, tool, artifactPath string) (string, error) {
+	// Provenance only applies to GitHub-hosted tools in "owner/repo" format.
+	parts := strings.SplitN(tool, "/", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "not_applicable", nil
+	}
+	owner, repo := parts[0], parts[1]
+
+	// Resolve a token (reuses the 6-tier resolver from the GitHub backend).
+	token := backend.ResolveGitHubTokenPublic("github.com")
+
+	result, err := backend.VerifyArtifactProvenance(ctx, token, owner, repo, artifactPath)
+	if err != nil {
+		return "failed", err
+	}
+
+	if !result.Supported {
+		logger.Debug("GitHub provenance not supported, skipping", map[string]interface{}{"tool": tool})
+		return "not_supported", nil
+	}
+
+	logger.Debug("GitHub provenance verified", map[string]interface{}{
+		"tool":          tool,
+		"repository":    result.Repository,
+		"workflowRef":   result.WorkflowRef,
+		"predicateType": result.PredicateType,
+	})
+	return "verified", nil
 }

@@ -20,6 +20,11 @@ type githubTokensFile struct {
 	} `toml:"tokens"`
 }
 
+// ResolveGitHubTokenPublic is the exported wrapper for use outside the backend package.
+func ResolveGitHubTokenPublic(host string) string {
+	return resolveGitHubToken(host)
+}
+
 // resolveGitHubToken resolves the best available GitHub token for a given host.
 // Priority (mirrors mise behavior):
 //  1. UNIRTM_GITHUB_TOKEN (UniRTM-specific override)
