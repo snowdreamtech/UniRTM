@@ -4,7 +4,6 @@
 package backend
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -43,86 +42,11 @@ func TestSha256File_Missing(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// dssePAE
-// ---------------------------------------------------------------------------
-
-func TestDSSEPAE(t *testing.T) {
-	// Reference: https://github.com/secure-systems-lab/dsse/blob/master/protocol.md
-	payloadType := "application/vnd.in-toto+json"
-	payload := []byte(`{"_type":"https://in-toto.io/Statement/v0.1"}`)
-
-	pae := dssePAE(payloadType, payload)
-
-	// Must start with "DSSEv1 "
-	if string(pae[:7]) != "DSSEv1 " {
-		t.Errorf("PAE does not start with 'DSSEv1 ', got: %q", string(pae[:20]))
-	}
-}
-
-// ---------------------------------------------------------------------------
-// parseGhHostsYml (reused from token test — ensure it's covered here too)
-// ---------------------------------------------------------------------------
-
-func TestParseGhHostsYml_Provenance(t *testing.T) {
-	content := `github.com:
-    oauth_token: ghp_provenance_test
-    user: provenance-bot
-`
-	got := parseGhHostsYml(content, "github.com")
-	if got != "ghp_provenance_test" {
-		t.Errorf("got %q, want %q", got, "ghp_provenance_test")
-	}
-}
-
-// ---------------------------------------------------------------------------
-// verifySubjectDigest
-// ---------------------------------------------------------------------------
-
-func TestVerifySubjectDigest_Match(t *testing.T) {
-	const digest = "abc123def456"
-	subjects := []inTotoSubject{
-		{Name: "artifact.tar.gz", Digest: map[string]string{"sha256": "abc123def456"}},
-	}
-	if err := verifySubjectDigest(subjects, digest); err != nil {
-		t.Errorf("expected match, got error: %v", err)
-	}
-}
-
-func TestVerifySubjectDigest_CaseInsensitive(t *testing.T) {
-	const digest = "ABC123DEF456"
-	subjects := []inTotoSubject{
-		{Name: "artifact.tar.gz", Digest: map[string]string{"sha256": "abc123def456"}},
-	}
-	if err := verifySubjectDigest(subjects, digest); err != nil {
-		t.Errorf("expected case-insensitive match, got error: %v", err)
-	}
-}
-
-func TestVerifySubjectDigest_NoMatch(t *testing.T) {
-	subjects := []inTotoSubject{
-		{Name: "artifact.tar.gz", Digest: map[string]string{"sha256": "deadbeef"}},
-	}
-	err := verifySubjectDigest(subjects, "cafebabe")
-	if err == nil {
-		t.Error("expected mismatch error, got nil")
-	}
-}
-
-func TestVerifySubjectDigest_Empty(t *testing.T) {
-	err := verifySubjectDigest(nil, "cafebabe")
-	if err == nil {
-		t.Error("expected error for empty subjects, got nil")
-	}
-}
-
-// ---------------------------------------------------------------------------
-// fetchAttestations — HTTP 404 returns nil (not supported)
+// fetchAttestations — JSON parsing path (no live HTTP)
 // ---------------------------------------------------------------------------
 
 func TestFetchAttestations_NotSupported(t *testing.T) {
-	// We test the JSON parsing path rather than making live HTTP calls.
-	// Simulate the 404 → nil behavior by verifying the empty response path.
-	bundles, err := fetchAttestations_fromJSON([]byte(`{"attestations":[]}`))
+	bundles, err := testFetchAttestationsFromJSON([]byte(`{"attestations":[]}`))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -140,7 +64,7 @@ func TestFetchAttestations_WithBundles(t *testing.T) {
 	}
 	data, _ := json.Marshal(payload)
 
-	bundles, err := fetchAttestations_fromJSON(data)
+	bundles, err := testFetchAttestationsFromJSON(data)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -149,9 +73,9 @@ func TestFetchAttestations_WithBundles(t *testing.T) {
 	}
 }
 
-// fetchAttestations_fromJSON is a testable helper that mimics the JSON decoding
-// path of fetchAttestations without making real HTTP requests.
-func fetchAttestations_fromJSON(data []byte) ([]json.RawMessage, error) {
+// testFetchAttestationsFromJSON mimics the JSON-decode path of fetchAttestations
+// without making real HTTP requests.
+func testFetchAttestationsFromJSON(data []byte) ([]json.RawMessage, error) {
 	var apiResp attestationAPIResponse
 	if err := json.Unmarshal(data, &apiResp); err != nil {
 		return nil, err
@@ -167,79 +91,40 @@ func fetchAttestations_fromJSON(data []byte) ([]json.RawMessage, error) {
 }
 
 // ---------------------------------------------------------------------------
-// Fulcio root pool loads without error
+// regexp_escape
 // ---------------------------------------------------------------------------
 
-func TestFulcioRootPool_Loads(t *testing.T) {
-	pool, err := fulcioRootPool()
-	if err != nil {
-		t.Fatalf("fulcioRootPool() error: %v", err)
+func TestRegexpEscape(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"owner/repo", `owner\/repo`},
+		{"owner.org/repo-name", `owner\.org\/repo\-name`},
+		{"simple", "simple"},
 	}
-	if pool == nil {
-		t.Fatal("pool is nil")
+	for _, tt := range tests {
+		got := regexp_escape(tt.input)
+		if got != tt.want {
+			t.Errorf("regexp_escape(%q) = %q, want %q", tt.input, got, tt.want)
+		}
 	}
 }
 
 // ---------------------------------------------------------------------------
-// parseCertChain — invalid input
+// TUF trusted root singleton — smoke test (does not make network calls
+// if TUF cache already exists; skipped if no network connectivity)
 // ---------------------------------------------------------------------------
 
-func TestParseCertChain_Nil(t *testing.T) {
-	_, _, err := parseCertChain(nil)
-	if err == nil {
-		t.Error("expected error for nil chain, got nil")
-	}
-}
-
-func TestParseCertChain_EmptyCerts(t *testing.T) {
-	_, _, err := parseCertChain(&x509CertChain{})
-	if err == nil {
-		t.Error("expected error for empty cert list, got nil")
-	}
-}
-
-func TestParseCertChain_BadBase64(t *testing.T) {
-	_, _, err := parseCertChain(&x509CertChain{
-		Certificates: []certWrapper{{RawBytes: "!!!not-base64!!!"}},
-	})
-	if err == nil {
-		t.Error("expected base64 decode error, got nil")
-	}
-}
-
-func TestParseCertChain_BadDER(t *testing.T) {
-	_, _, err := parseCertChain(&x509CertChain{
-		Certificates: []certWrapper{
-			{RawBytes: base64.StdEncoding.EncodeToString([]byte("this-is-not-a-cert"))},
-		},
-	})
-	if err == nil {
-		t.Error("expected DER parse error, got nil")
-	}
+func TestSigstoreTrustedRoot_ResetWorks(t *testing.T) {
+	// Ensure the reset function works without panicking.
+	ResetTrustedRootForTest()
+	// After reset the singleton is nil — next call would try TUF fetch.
+	// We don't trigger the fetch here to keep tests offline-safe.
 }
 
 // ---------------------------------------------------------------------------
-// oidEqual
-// ---------------------------------------------------------------------------
-
-func TestOidEqual(t *testing.T) {
-	a := []int{1, 3, 6, 1, 4, 1, 57264, 1, 1}
-	b := []int{1, 3, 6, 1, 4, 1, 57264, 1, 1}
-	c := []int{1, 3, 6, 1, 4, 1, 57264, 1, 2}
-
-	if !oidEqual(a, b) {
-		t.Error("oidEqual: expected true for identical OIDs")
-	}
-	if oidEqual(a, c) {
-		t.Error("oidEqual: expected false for different OIDs")
-	}
-	if oidEqual(a, nil) {
-		t.Error("oidEqual: expected false for nil")
-	}
-}
-
-// ---------------------------------------------------------------------------
-// ProvenanceResult — not-supported path
+// VerifyArtifactProvenance — missing file returns error immediately
 // ---------------------------------------------------------------------------
 
 func TestVerifyArtifactProvenance_FileNotFound(t *testing.T) {

@@ -1,24 +1,35 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
+// Package backend provides the GitHub Provenance (SLSA attestation) verifier.
+//
+// Verification is backed by sigstore-go v1.1.4 with TUF-managed trust roots,
+// which means:
+//   - Fulcio CA certificates are fetched from the Sigstore TUF repository
+//     (https://tuf-repo-cdn.sigstore.dev) and cached locally
+//   - Revoked or expired CA certificates are automatically rejected after
+//     the next TUF refresh (default: every 24 hours)
+//   - The local TUF cache lives in $UNIRTM_TUF_CACHE_DIR or the OS temp dir
 package backend
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"crypto/sha256"
-	"crypto/sha512"
-	"crypto/x509"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"hash"
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/sigstore/sigstore-go/pkg/bundle"
+	"github.com/sigstore/sigstore-go/pkg/root"
+	"github.com/sigstore/sigstore-go/pkg/tuf"
+	"github.com/sigstore/sigstore-go/pkg/verify"
 )
 
 // -----------------------------------------------------------------------------
@@ -28,70 +39,115 @@ import (
 // ProvenanceResult is returned by VerifyArtifactProvenance.
 type ProvenanceResult struct {
 	// Supported is false when the project publishes no GitHub attestations.
-	// Callers MUST NOT treat this as an error; simply skip further checks.
+	// Callers MUST NOT treat this as an error — simply skip further checks.
 	Supported bool
 
-	// Verified is true when the attestation bundle passed all cryptographic checks.
+	// Verified is true when the attestation bundle passed all checks.
 	Verified bool
 
-	// Repository is the source repository recorded in the certificate SAN,
+	// Repository is the source repository recorded in the Fulcio cert SAN,
 	// e.g. "octocat/hello-world".
 	Repository string
 
-	// WorkflowRef is the triggering workflow path, e.g.
+	// WorkflowRef is the triggering workflow path recorded in the cert, e.g.
 	// "octocat/hello-world/.github/workflows/release.yml@refs/heads/main".
 	WorkflowRef string
 
-	// PredicateType is the in-toto predicate URI, e.g.
+	// PredicateType is the in-toto predicate URI in the signed statement, e.g.
 	// "https://slsa.dev/provenance/v1".
 	PredicateType string
 
-	// BuilderID is the SLSA builder identifier embedded in the cert extensions.
+	// BuilderID is the SLSA builder identifier from the certificate extension.
 	BuilderID string
 }
 
 // VerifyArtifactProvenance checks the GitHub attestation for the artifact at
 // artifactPath against the repository owner/repo.
 //
-//   - If the project publishes no attestations, result.Supported == false and
-//     err == nil. The caller should skip any further provenance enforcement.
-//   - If attestations exist but verification fails, err != nil.
-//   - On success, result.Supported == true && result.Verified == true.
+//   - result.Supported == false, err == nil  → project has no attestations; skip.
+//   - result.Supported == true, err != nil   → attestations exist but failed; hard error.
+//   - result.Supported == true, err == nil   → fully verified; proceed safely.
 func VerifyArtifactProvenance(
 	ctx context.Context,
 	token, owner, repo, artifactPath string,
 ) (*ProvenanceResult, error) {
-	// 1. Compute the SHA-256 digest of the downloaded artifact.
+	// 1. Compute SHA-256 of the artifact on disk.
 	digest, err := sha256File(artifactPath)
 	if err != nil {
 		return nil, fmt.Errorf("provenance: compute digest: %w", err)
 	}
 
-	// 2. Query the GitHub Attestations API.
+	// 2. Fetch attestation bundles from the GitHub API.
 	bundles, err := fetchAttestations(ctx, token, owner, repo, digest)
 	if err != nil {
 		return nil, err
 	}
 
-	// 3. If no attestations were published, declare "not supported" and stop.
+	// 3. No attestations → project does not publish provenance → graceful skip.
 	if len(bundles) == 0 {
 		return &ProvenanceResult{Supported: false}, nil
 	}
 
-	// 4. Verify the first matching bundle (GitHub usually only returns one).
-	result, err := verifyBundle(bundles[0], digest, owner+"/"+repo)
+	// 4. Obtain the TUF-backed Sigstore trusted root (cached, refreshed every 24h).
+	trustedMaterial, err := sigstoreTrustedRoot()
 	if err != nil {
-		return nil, fmt.Errorf("provenance: verification failed for %s/%s: %w", owner, repo, err)
+		return nil, fmt.Errorf("provenance: load TUF trusted root: %w", err)
 	}
 
-	return result, nil
+	// 5. Verify all returned bundles; at least one must pass.
+	expectedRepo := owner + "/" + repo
+	for _, rawBundle := range bundles {
+		result, err := verifyBundleWithSigstore(rawBundle, digest, expectedRepo, trustedMaterial)
+		if err == nil {
+			return result, nil
+		}
+	}
+
+	// All bundles failed verification.
+	return nil, fmt.Errorf(
+		"provenance: all %d attestation bundle(s) failed verification for %s/%s",
+		len(bundles), owner, repo,
+	)
+}
+
+// -----------------------------------------------------------------------------
+// TUF-backed Sigstore trusted root (singleton with 24 h refresh)
+// -----------------------------------------------------------------------------
+
+var (
+	liveTrustedRootOnce sync.Once
+	liveTrustedRoot     *root.LiveTrustedRoot
+	liveTrustedRootErr  error
+)
+
+// sigstoreTrustedRoot returns the Sigstore public good TUF trusted root.
+// The root is initialized once and refreshed automatically every 24 hours
+// by the LiveTrustedRoot mechanism inside sigstore-go.
+func sigstoreTrustedRoot() (*root.LiveTrustedRoot, error) {
+	liveTrustedRootOnce.Do(func() {
+		opts := tuf.DefaultOptions()
+
+		// Allow users to override the TUF cache directory.
+		if cacheDir := os.Getenv("UNIRTM_TUF_CACHE_DIR"); cacheDir != "" {
+			opts.CachePath = filepath.Join(cacheDir, "sigstore-tuf")
+		}
+
+		liveTrustedRoot, liveTrustedRootErr = root.NewLiveTrustedRoot(opts)
+	})
+	return liveTrustedRoot, liveTrustedRootErr
+}
+
+// ResetTrustedRootForTest resets the singleton — for testing only.
+func ResetTrustedRootForTest() {
+	liveTrustedRootOnce = sync.Once{}
+	liveTrustedRoot = nil
+	liveTrustedRootErr = nil
 }
 
 // -----------------------------------------------------------------------------
 // GitHub Attestations REST API
 // -----------------------------------------------------------------------------
 
-// attestationAPIResponse matches the GitHub Attestations API envelope.
 type attestationAPIResponse struct {
 	Attestations []attestationEntry `json:"attestations"`
 }
@@ -102,7 +158,7 @@ type attestationEntry struct {
 }
 
 // fetchAttestations queries GET /repos/{owner}/{repo}/attestations/sha256:{digest}.
-// Returns nil slice (not an error) when the project publishes no attestations.
+// Returns nil slice (not an error) when the project publishes no attestations (HTTP 404).
 func fetchAttestations(
 	ctx context.Context,
 	token, owner, repo, digest string,
@@ -142,7 +198,6 @@ func fetchAttestations(
 	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
 		return nil, fmt.Errorf("provenance: decode API response: %w", err)
 	}
-
 	if len(apiResp.Attestations) == 0 {
 		return nil, nil
 	}
@@ -155,399 +210,107 @@ func fetchAttestations(
 }
 
 // -----------------------------------------------------------------------------
-// Sigstore Bundle verification
+// Bundle verification via sigstore-go
 // -----------------------------------------------------------------------------
 
-// sigstoreBundle is the wire format returned by the Attestations API.
-// Conforms to application/vnd.dev.sigstore.bundle+json;version=0.3
-type sigstoreBundle struct {
-	MediaType           string              `json:"mediaType"`
-	VerificationMaterial verificationMat    `json:"verificationMaterial"`
-	DSSEEnvelope        dsseEnvelope        `json:"dsseEnvelope"`
-}
-
-type verificationMat struct {
-	X509CertificateChain *x509CertChain   `json:"x509CertificateChain"`
-	TlogEntries          []tlogEntry      `json:"tlogEntries"`
-}
-
-type x509CertChain struct {
-	Certificates []certWrapper `json:"certificates"`
-}
-
-type certWrapper struct {
-	RawBytes string `json:"rawBytes"` // base64-encoded DER
-}
-
-type tlogEntry struct {
-	LogIndex               string `json:"logIndex"`
-	LogID                  string `json:"logID"`
-	KindVersion            struct {
-		Kind    string `json:"kind"`
-		Version string `json:"version"`
-	} `json:"kindVersion"`
-	IntegratedTime         string `json:"integratedTime"`
-	InclusionPromise       struct {
-		SignedEntryTimestamp string `json:"signedEntryTimestamp"`
-	} `json:"inclusionPromise"`
-}
-
-type dsseEnvelope struct {
-	Payload     string        `json:"payload"`     // base64-encoded in-toto statement
-	PayloadType string        `json:"payloadType"` // "application/vnd.in-toto+json"
-	Signatures  []dsseSig     `json:"signatures"`
-}
-
-type dsseSig struct {
-	Sig   string `json:"sig"`   // base64-encoded signature
-	KeyID string `json:"keyid"` // empty for Sigstore ephemeral keys
-}
-
-// inTotoStatement is the decoded payload of the DSSE envelope.
-type inTotoStatement struct {
-	Type          string          `json:"_type"`
-	Subject       []inTotoSubject `json:"subject"`
-	PredicateType string          `json:"predicateType"`
-	Predicate     json.RawMessage `json:"predicate"`
-}
-
-type inTotoSubject struct {
-	Name   string            `json:"name"`
-	Digest map[string]string `json:"digest"`
-}
-
-// verifyBundle performs full cryptographic verification of a Sigstore bundle.
-func verifyBundle(raw json.RawMessage, artifactDigest, expectedRepo string) (*ProvenanceResult, error) {
-	var bundle sigstoreBundle
-	if err := json.Unmarshal(raw, &bundle); err != nil {
-		return nil, fmt.Errorf("unmarshal bundle: %w", err)
+// verifyBundleWithSigstore verifies a single Sigstore bundle using the official
+// sigstore-go library backed by TUF-managed trust material.
+//
+// Verification chain:
+//   1. Parse the bundle JSON into a sigstore-go Bundle.
+//   2. Build the verifier with transparency log + observer timestamp enforcement.
+//   3. Build an identity policy: issuer must be GitHub Actions OIDC; SAN must
+//      contain the expected repository path.
+//   4. Build an artifact digest policy enforcing SHA-256 match.
+//   5. Call verifier.Verify() — sigstore-go handles cert chain, Rekor,
+//      DSSE signature, and subject digest internally.
+//   6. Extract the workflow and predicate info from the verification result.
+func verifyBundleWithSigstore(
+	rawBundle json.RawMessage,
+	artifactDigest, expectedRepo string,
+	trustedMaterial root.TrustedMaterial,
+) (*ProvenanceResult, error) {
+	// Step 1: Parse bundle
+	b := &bundle.Bundle{}
+	if err := b.UnmarshalJSON(rawBundle); err != nil {
+		return nil, fmt.Errorf("parse bundle JSON: %w", err)
 	}
 
-	// ── Step A: Parse the leaf certificate ───────────────────────────────────
-	leaf, chain, err := parseCertChain(bundle.VerificationMaterial.X509CertificateChain)
+	// Step 2: Build verifier
+	// - WithTransparencyLog(1): require at least 1 Rekor tlog entry
+	// - WithObserverTimestamps(1): require at least 1 observer timestamp
+	//   (either tlog integrated time or RFC 3161 TSA timestamp)
+	verifier, err := verify.NewSignedEntityVerifier(
+		trustedMaterial,
+		verify.WithTransparencyLog(1),
+		verify.WithObserverTimestamps(1),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("parse cert chain: %w", err)
+		return nil, fmt.Errorf("build verifier: %w", err)
 	}
 
-	// ── Step B: Validate the certificate chain against Fulcio roots ──────────
-	if err := validateCertChain(leaf, chain); err != nil {
-		return nil, fmt.Errorf("cert chain validation: %w", err)
-	}
-
-	// ── Step C: Verify certificate has not expired at signing time ───────────
-	if err := checkCertValidity(leaf, bundle.VerificationMaterial.TlogEntries); err != nil {
-		return nil, fmt.Errorf("cert validity: %w", err)
-	}
-
-	// ── Step D: Extract claims from the certificate's OID extensions ─────────
-	claims, err := extractCertClaims(leaf)
+	// Step 3: Certificate identity policy
+	// GitHub Actions OIDC issuer + SAN regex matching the repository.
+	//
+	// SAN format for GitHub Actions:
+	//   https://github.com/{owner}/{repo}/.github/workflows/{workflow}@refs/...
+	sanRegex := fmt.Sprintf("^https://github\\.com/%s/", regexp_escape(expectedRepo))
+	identity, err := verify.NewShortCertificateIdentity(
+		"https://token.actions.githubusercontent.com", // GitHub Actions OIDC issuer
+		"",        // issuerRegex: empty (exact match above)
+		"",        // sanValue:    empty (use regex below)
+		sanRegex,  // sanRegex
+	)
 	if err != nil {
-		return nil, fmt.Errorf("extract cert claims: %w", err)
+		return nil, fmt.Errorf("build certificate identity: %w", err)
 	}
 
-	// ── Step E: Repository check — cert must reference our repo ─────────────
-	if !strings.Contains(claims.san, expectedRepo) {
-		return nil, fmt.Errorf(
-			"repository mismatch: cert SAN %q does not contain expected repo %q",
-			claims.san, expectedRepo,
-		)
-	}
-
-	// ── Step F: Decode and parse the in-toto statement ───────────────────────
-	payloadBytes, err := base64.StdEncoding.DecodeString(bundle.DSSEEnvelope.Payload)
+	// Step 4: Artifact digest policy
+	digestBytes, err := hex.DecodeString(artifactDigest)
 	if err != nil {
-		return nil, fmt.Errorf("decode DSSE payload: %w", err)
+		return nil, fmt.Errorf("decode artifact digest: %w", err)
 	}
 
-	var stmt inTotoStatement
-	if err := json.Unmarshal(payloadBytes, &stmt); err != nil {
-		return nil, fmt.Errorf("parse in-toto statement: %w", err)
-	}
+	policy := verify.NewPolicy(
+		verify.WithArtifactDigest("sha256", digestBytes),
+		verify.WithCertificateIdentity(identity),
+	)
 
-	// ── Step G: Verify the DSSE signature with the leaf cert public key ──────
-	if err := verifyDSSESignature(bundle.DSSEEnvelope, leaf); err != nil {
-		return nil, fmt.Errorf("DSSE signature verification: %w", err)
-	}
-
-	// ── Step H: Subject digest must match our artifact ───────────────────────
-	if err := verifySubjectDigest(stmt.Subject, artifactDigest); err != nil {
-		return nil, fmt.Errorf("subject digest mismatch: %w", err)
-	}
-
-	return &ProvenanceResult{
-		Supported:     true,
-		Verified:      true,
-		Repository:    expectedRepo,
-		WorkflowRef:   claims.workflowRef,
-		PredicateType: stmt.PredicateType,
-		BuilderID:     claims.builderID,
-	}, nil
-}
-
-// -----------------------------------------------------------------------------
-// Certificate handling
-// -----------------------------------------------------------------------------
-
-type certClaims struct {
-	san         string // Subject Alternative Name (URI form)
-	workflowRef string // Fulcio OID 1.3.6.1.4.1.57264.1.3
-	builderID   string // Fulcio OID 1.3.6.1.4.1.57264.1.9 (SLSA builder)
-	issuer      string // Fulcio OID 1.3.6.1.4.1.57264.1.1
-}
-
-// Fulcio custom OIDs (see https://github.com/sigstore/fulcio/blob/main/docs/oid-info.md)
-var (
-	oidFulcioIssuer      = mustParseOID("1.3.6.1.4.1.57264.1.1")
-	oidFulcioWorkflow    = mustParseOID("1.3.6.1.4.1.57264.1.3") // workflow ref
-	oidFulcioBuildSigner = mustParseOID("1.3.6.1.4.1.57264.1.9") // build signer URI (SLSA builder ID)
-)
-
-func mustParseOID(s string) []int {
-	parts := strings.Split(s, ".")
-	oid := make([]int, len(parts))
-	for i, p := range parts {
-		n := 0
-		for _, c := range p {
-			n = n*10 + int(c-'0')
-		}
-		oid[i] = n
-	}
-	return oid
-}
-
-func oidEqual(a, b []int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func parseCertChain(chain *x509CertChain) (*x509.Certificate, []*x509.Certificate, error) {
-	if chain == nil || len(chain.Certificates) == 0 {
-		return nil, nil, fmt.Errorf("empty certificate chain")
-	}
-
-	var certs []*x509.Certificate
-	for i, c := range chain.Certificates {
-		der, err := base64.StdEncoding.DecodeString(c.RawBytes)
-		if err != nil {
-			return nil, nil, fmt.Errorf("cert[%d]: base64 decode: %w", i, err)
-		}
-		cert, err := x509.ParseCertificate(der)
-		if err != nil {
-			return nil, nil, fmt.Errorf("cert[%d]: parse DER: %w", i, err)
-		}
-		certs = append(certs, cert)
-	}
-
-	return certs[0], certs[1:], nil
-}
-
-// validateCertChain verifies the leaf against the Sigstore public good Fulcio CA.
-func validateCertChain(leaf *x509.Certificate, intermediates []*x509.Certificate) error {
-	roots, err := fulcioRootPool()
+	// Step 5: Verify
+	result, err := verifier.Verify(b, policy)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("sigstore verification: %w", err)
 	}
 
-	interPool := x509.NewCertPool()
-	for _, c := range intermediates {
-		interPool.AddCert(c)
+	// Step 6: Extract metadata from the verification result
+	provResult := &ProvenanceResult{
+		Supported:  true,
+		Verified:   true,
+		Repository: expectedRepo,
 	}
 
-	opts := x509.VerifyOptions{
-		Roots:         roots,
-		Intermediates: interPool,
-		// Use the certificate's own NotBefore as CurrentTime so we verify
-		// at issuance time, not at current wall clock (ephemeral certs expire
-		// in ~10 minutes but the artifact lives forever).
-		CurrentTime: leaf.NotBefore,
-		KeyUsages:   []x509.ExtKeyUsage{x509.ExtKeyUsageCodeSigning},
+	if result.Signature != nil && result.Signature.Certificate != nil {
+		// Certificate is a *certificate.Summary
+		provResult.WorkflowRef = result.Signature.Certificate.SubjectAlternativeName
+		provResult.BuilderID = result.Signature.Certificate.Extensions.BuildSignerURI
 	}
 
-	if _, err := leaf.Verify(opts); err != nil {
-		return fmt.Errorf("certificate chain verification failed: %w", err)
+	if result.Statement != nil {
+		provResult.PredicateType = result.Statement.GetPredicateType()
 	}
-	return nil
+
+	return provResult, nil
 }
 
-// checkCertValidity ensures the transparency log entry's integrated time falls
-// within the leaf certificate's validity window.
-func checkCertValidity(leaf *x509.Certificate, entries []tlogEntry) error {
-	if len(entries) == 0 {
-		// No Rekor entry — accept if cert is still technically valid,
-		// but warn in the result. For now we allow it for private Rekor instances.
-		return nil
-	}
-	// Primary check: the entry's integratedTime must be within the cert window.
-	for _, e := range entries {
-		if e.IntegratedTime == "" {
-			continue
-		}
-		var ts int64
-		if _, err := fmt.Sscan(e.IntegratedTime, &ts); err != nil {
-			continue
-		}
-		t := time.Unix(ts, 0)
-		if t.Before(leaf.NotBefore) || t.After(leaf.NotAfter) {
-			return fmt.Errorf(
-				"tlog integrated time %v is outside cert validity [%v, %v]",
-				t, leaf.NotBefore, leaf.NotAfter,
-			)
-		}
-		return nil // first valid entry suffices
-	}
-	return nil
-}
-
-// extractCertClaims reads the Fulcio-specific OID extensions from the leaf cert.
-func extractCertClaims(leaf *x509.Certificate) (certClaims, error) {
-	var c certClaims
-
-	// Subject Alternative Name: Fulcio uses URI SAN.
-	for _, u := range leaf.URIs {
-		c.san = u.String()
-		break
-	}
-
-	// Fulcio custom extensions
-	for _, ext := range leaf.Extensions {
-		val := string(ext.Value)
-		// Strip DER UTF-8 string tag if present (0x0c <len> ...)
-		if len(ext.Value) > 2 && ext.Value[0] == 0x0c {
-			val = string(ext.Value[2:])
-		}
-
-		switch {
-		case oidEqual(ext.Id, oidFulcioIssuer):
-			c.issuer = val
-		case oidEqual(ext.Id, oidFulcioWorkflow):
-			c.workflowRef = val
-		case oidEqual(ext.Id, oidFulcioBuildSigner):
-			c.builderID = val
-		}
-	}
-
-	return c, nil
-}
-
-// verifyDSSESignature verifies the DSSE envelope signature using the leaf cert's public key.
-// DSSE PAE: "DSSEv1" + SP + len(payloadType) + SP + payloadType + SP + len(payload) + SP + payload
-func verifyDSSESignature(env dsseEnvelope, leaf *x509.Certificate) error {
-	if len(env.Signatures) == 0 {
-		return fmt.Errorf("no signatures in DSSE envelope")
-	}
-
-	payloadBytes, err := base64.StdEncoding.DecodeString(env.Payload)
-	if err != nil {
-		return fmt.Errorf("decode payload: %w", err)
-	}
-
-	// Build the PAE (Pre-Authentication Encoding) message.
-	pae := dssePAE(env.PayloadType, payloadBytes)
-
-	pubKey, ok := leaf.PublicKey.(*ecdsa.PublicKey)
-	if !ok {
-		return fmt.Errorf("leaf cert public key is not ECDSA (got %T)", leaf.PublicKey)
-	}
-
-	for _, sig := range env.Signatures {
-		sigBytes, err := base64.StdEncoding.DecodeString(sig.Sig)
-		if err != nil {
-			continue
-		}
-
-		// Choose digest algorithm based on curve
-		var h hash.Hash
-		switch pubKey.Curve.Params().Name {
-		case "P-384":
-			h = sha512.New384()
-		default: // P-256
-			h = sha256.New()
-		}
-		h.Write(pae)
-		digest := h.Sum(nil)
-
-		if ecdsa.VerifyASN1(pubKey, digest, sigBytes) {
-			return nil
-		}
-	}
-	return fmt.Errorf("no valid DSSE signature found")
-}
-
-// dssePAE computes the DSSE Pre-Authentication Encoding.
-func dssePAE(payloadType string, payload []byte) []byte {
-	// "DSSEv1" + SP + len(payloadType) + SP + payloadType + SP + len(payload) + SP + payload
-	return []byte(fmt.Sprintf("DSSEv1 %d %s %d ", len(payloadType), payloadType, len(payload)) + string(payload))
-}
-
-// verifySubjectDigest checks that at least one subject in the in-toto statement
-// matches the downloaded artifact's SHA-256 digest.
-func verifySubjectDigest(subjects []inTotoSubject, artifactDigest string) error {
-	for _, s := range subjects {
-		if d, ok := s.Digest["sha256"]; ok && strings.EqualFold(d, artifactDigest) {
-			return nil
-		}
-	}
-	return fmt.Errorf("artifact digest %q not found in attestation subjects", artifactDigest)
-}
-
-// -----------------------------------------------------------------------------
-// Fulcio root certificate pool
-// -----------------------------------------------------------------------------
-
-// fulcioRootPool returns an x509.CertPool loaded with the Sigstore public good
-// Fulcio root CA and its intermediate certificate. Both certs are embedded
-// directly to avoid network access and TUF bootstrapping complexity.
-// Source: https://github.com/sigstore/root-signing
-func fulcioRootPool() (*x509.CertPool, error) {
-	pool := x509.NewCertPool()
-
-	// Sigstore Fulcio v1 root CA (production, public good instance).
-	// Source: targets/fulcio_v1.crt.pem
-	const fulcioRootV1PEM = `-----BEGIN CERTIFICATE-----
-MIIB9zCCAXygAwIBAgIUALZNAPFdxHPwjeDloDwyYChAO/4wCgYIKoZIzj0EAwMw
-KjEVMBMGA1UEChMMc2lnc3RvcmUuZGV2MREwDwYDVQQDEwhzaWdzdG9yZTAeFw0y
-MTEwMDcxMzU2NTlaFw0zMTEwMDUxMzU2NThaMCoxFTATBgNVBAoTDHNpZ3N0b3Jl
-LmRldjERMA8GA1UEAxMIc2lnc3RvcmUwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAT7
-XeFT4rb3PQGwS4IajtLk3/OlnpgangaBclYpsYBr5i+4ynB07ceb3LP0OIOZdxex
-X69c5iVuyJRQ+Hz05yi+UF3uBWAlHpiS5sh0+H2GHE7SXrk1EC5m1Tr19L9gg92j
-YzBhMA4GA1UdDwEB/wQEAwIBBjAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBRY
-wB5fkUWlZql6zJChkyLQKsXF+jAfBgNVHSMEGDAWgBRYwB5fkUWlZql6zJChkyLQ
-KsXF+jAKBggqhkjOPQQDAwNpADBmAjEAj1nHeXZp+13NWBNa+EDsDP8G1WWg1tCM
-WP/WHPqpaVo0jhsweNFZgSs0eE7wYI4qAjEA2WB9ot98sIkoF3vZYdd3/VtWB5b9
-TNMea7Ix/stJ5TfcLLeABLE4BNJOsQ4vnBHJ
------END CERTIFICATE-----`
-
-	// Sigstore Fulcio v1 intermediate CA.
-	// Source: targets/fulcio_intermediate_v1.crt.pem
-	const fulcioIntermediateV1PEM = `-----BEGIN CERTIFICATE-----
-MIICGjCCAaGgAwIBAgIUALnViVfnU0brJasmRkHrn/UnfaQwCgYIKoZIzj0EAwMw
-KjEVMBMGA1UEChMMc2lnc3RvcmUuZGV2MREwDwYDVQQDEwhzaWdzdG9yZTAeFw0y
-MjA0MTMyMDA2MTVaFw0zMTEwMDUxMzU2NThaMDcxFTATBgNVBAoTDHNpZ3N0b3Jl
-LmRldjEeMBwGA1UEAxMVc2lnc3RvcmUtaW50ZXJtZWRpYXRlMHYwEAYHKoZIzj0C
-AQYFK4EEACIDYgAE8RVS/ysH+NOvuDZyPIZtilgUF9NlarYpAd9HP1vBBH1U5CV7
-7LSS7s0ZiH4nE7Hv7ptS6LvvR/STk798LVgMzLlJ4HeIfF3tHSaexLcYpSASr1kS
-0N/RgBJz/9jWCiXno3sweTAOBgNVHQ8BAf8EBAMCAQYwEwYDVR0lBAwwCgYIKwYB
-BQUHAwMwEgYDVR0TAQH/BAgwBgEB/wIBADAdBgNVHQ4EFgQU39Ppz1YkEZb5qNjp
-KFWixi4YZD8wHwYDVR0jBBgwFoAUWMAeX5FFpWapesyQoZMi0CrFxfowCgYIKoZI
-zj0EAwMDZwAwZAIwPCsQK4DYiZYDPIaDi5HFKnfxXx6ASSVmERfsynYBiX2X6SJR
-nZU84/9DZdnFvvxmAjBOt6QpBlc4J/0DxvkTCqpclvziL6BCCPnjdlIB3Pu3BxsP
-mygUY7Ii2zbdCdliiow=
------END CERTIFICATE-----`
-
-	for _, pemData := range []string{fulcioRootV1PEM, fulcioIntermediateV1PEM} {
-		if !pool.AppendCertsFromPEM([]byte(pemData)) {
-			return nil, fmt.Errorf("failed to load Fulcio CA certificate")
-		}
-	}
-
-	return pool, nil
+// regexp_escape escapes special regex characters in a plain string.
+func regexp_escape(s string) string {
+	replacer := strings.NewReplacer(
+		`.`, `\.`,
+		`-`, `\-`,
+		`_`, `\_`,
+		`/`, `\/`,
+	)
+	return replacer.Replace(s)
 }
 
 // -----------------------------------------------------------------------------
