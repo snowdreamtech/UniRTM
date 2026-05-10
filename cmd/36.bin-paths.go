@@ -24,8 +24,9 @@ func init() {
 
 // binPathsCmd lists all active runtime bin directories.
 var binPathsCmd = &cobra.Command{
-	Use:   "bin-paths",
-	Short: "List all active runtime bin directories",
+	Use:     "bin-paths",
+	Aliases: []string{"bin"},
+	Short:   "List all active runtime bin directories",
 	Long: `List all active runtime bin directories.
 
 Outputs one directory per line — shims dir first, then each installed
