@@ -15,9 +15,10 @@ import (
 )
 
 var aliasCmd = &cobra.Command{
-	Use:   "alias",
-	Short: "Manage version aliases",
-	Long:  `Manage global version aliases for tools.`,
+	Use:     "alias",
+	Aliases: []string{"tool-alias"},
+	Short:   "Manage version aliases",
+	Long:    `Manage global version aliases for tools.`,
 }
 
 var aliasListCmd = &cobra.Command{
