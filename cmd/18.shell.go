@@ -44,8 +44,9 @@ Examples:
 
   # Show what would be exported (without eval)
   unirtm shell node@20.0.0`,
-	Args: cobra.MinimumNArgs(1),
-	RunE: runShell,
+	Aliases: []string{"sh"},
+	Args:    cobra.RangeArgs(1, 2),
+	RunE:    runShell,
 }
 
 // runShell executes the shell command.
