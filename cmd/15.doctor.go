@@ -48,8 +48,9 @@ The doctor command runs a series of checks:
 Examples:
   unirtm doctor
   unirtm doctor --json`,
-	Args: cobra.NoArgs,
-	RunE: runDoctor,
+	Aliases: []string{"dr"},
+	Args:    cobra.NoArgs,
+	RunE:    runDoctor,
 }
 
 // checkResult represents the result of a single health check.
