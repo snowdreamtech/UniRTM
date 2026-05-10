@@ -185,3 +185,46 @@ func TestMCPHandleTool_InstallTool_OK(t *testing.T) {
 	resp := handleMCPTool(nil, 3, "install_tool", map[string]interface{}{"tool": "cli/cli", "version": "2.72.0"})
 	assert.Nil(t, resp.Error)
 }
+
+// ─── ls-remote ─────────────────────────────────────────────────────────────
+
+func TestLsRemoteCmdStructure(t *testing.T) {
+	assert.Contains(t, lsRemoteCmd.Use, "ls-remote")
+	assert.NotNil(t, lsRemoteCmd.RunE)
+}
+
+func TestLsRemoteCmdArgs(t *testing.T) {
+	err := lsRemoteCmd.Args(lsRemoteCmd, []string{"node"})
+	assert.NoError(t, err)
+	err = lsRemoteCmd.Args(lsRemoteCmd, []string{"node@20"})
+	assert.NoError(t, err)
+}
+
+// ─── prepare ──────────────────────────────────────────────────────────────────
+
+func TestPrepareCmdStructure(t *testing.T) {
+	assert.Contains(t, prepareCmd.Use, "prepare")
+	assert.Contains(t, prepareCmd.Aliases, "prep")
+	assert.NotNil(t, prepareCmd.RunE)
+}
+
+// ─── sync ─────────────────────────────────────────────────────────────────────
+
+func TestSyncCmdStructure(t *testing.T) {
+	assert.Contains(t, syncCmd.Use, "sync")
+	assert.NotNil(t, syncCmd.RunE)
+}
+
+// ─── test-tool ───────────────────────────────────────────────────────────────
+
+func TestTestToolCmdStructure(t *testing.T) {
+	assert.Contains(t, testToolCmd.Use, "test-tool")
+	assert.NotNil(t, testToolCmd.RunE)
+}
+
+// ─── tool-stub ───────────────────────────────────────────────────────────────
+
+func TestToolStubCmdStructure(t *testing.T) {
+	assert.Contains(t, toolStubCmd.Use, "tool-stub")
+	assert.NotNil(t, toolStubCmd.RunE)
+}
