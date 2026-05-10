@@ -33,6 +33,7 @@
 | `reshim` | `mise reshim` | `unirtm reshim` | 功能相同 |
 | `run` | `mise run <task>` | `unirtm run <task>` | UniRTM 额外支持智能路由 (go-task, make, just) |
 | `trust` | `mise trust` | `unirtm trust/untrust` | UniRTM 引入了基于文件内容哈希 (SHA256) 的防篡改验证 |
+| `settings` | `mise settings` | `unirtm settings` | UniRTM 提供了智能兼容包装器 (底层调用 config 命令) |
 | `migrate` | ❌ 无 | `unirtm migrate` | **UniRTM 独有**：从 mise 配置迁移 |
 
 ### mise 有、UniRTM 待增强或暂无的命令
@@ -41,7 +42,6 @@
 |-----------|------|----------------|
 | `mise watch` | 监控文件变更并自动重新运行任务 | ✅ `unirtm watch <task>` 已支持 (带 500ms 防抖) |
 | `mise alias` | 为版本创建自定义别名（如 `my-node -> 20.x`）| ✅ `unirtm alias` 已支持 (全局+项目级映射) |
-| `mise settings` | 通过 CLI 管理全局设置项 | UniRTM 使用 `unirtm config set/get` 替代 |
 | `mise self-update` | 二进制自更新 | 暂未内置，通过操作系统的包管理器或 goreleaser 发布更新 |
 
 ### UniRTM 有、mise 无的命令
