@@ -61,7 +61,9 @@ that add tool bin directories to PATH and set version-specific variables.
   unirtm env --json
 
 Use --info to print UniRTM build/version information instead.`,
-	RunE: runEnv,
+	Aliases: []string{"e"},
+	Args:    cobra.NoArgs,
+	RunE:    runEnv,
 }
 
 // ─── env info structs ─────────────────────────────────────────────────────────
