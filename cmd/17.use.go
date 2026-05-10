@@ -54,8 +54,9 @@ Examples:
 
   # Set multiple tools
   unirtm use node@20.0.0 python@3.11.0`,
-	Args: cobra.MinimumNArgs(1),
-	RunE: runUse,
+	Aliases: []string{"u"},
+	Args:    cobra.MinimumNArgs(1),
+	RunE:    runUse,
 }
 
 // runUse executes the use command.
