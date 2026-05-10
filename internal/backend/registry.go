@@ -28,6 +28,14 @@ func NewRegistry() *Registry {
 	r.Register(NewNpmBackend())
 	r.Register(NewPypiBackend())
 	r.Register(NewCargoBackend())
+	r.Register(NewGemBackend())
+	r.Register(NewDotnetBackend())
+	r.Register(NewCondaBackend())
+	r.Register(NewGitlabBackend())
+	r.Register(NewForgejoBackend())
+	r.Register(NewVfoxBackend())
+	r.Register(NewSpmBackend())
+	r.Register(NewS3Backend())
 
 	return r
 }
