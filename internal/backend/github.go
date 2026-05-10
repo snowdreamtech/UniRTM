@@ -169,6 +169,11 @@ func (g *GitHubBackend) fetchReleases(ctx context.Context, tool string) ([]githu
 	// Add GitHub API headers
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 
+	// Inject token to avoid rate limiting (403) in CI and for private repos.
+	if token := resolveGitHubToken("github.com"); token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
 	resp, err := g.client.Do(req)
 	if err != nil {
 		return nil, NewBackendError("github", tool, "failed to fetch releases", err)
@@ -192,6 +197,7 @@ func (g *GitHubBackend) fetchReleases(ctx context.Context, tool string) ([]githu
 
 	return releases, nil
 }
+
 
 // findMatchingAsset finds the asset that matches the platform and its checksum.
 func (g *GitHubBackend) findMatchingAsset(assets []githubAsset, platform Platform) (*githubAsset, string) {
