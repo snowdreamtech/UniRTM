@@ -16,10 +16,11 @@ import (
 )
 
 var watchCmd = &cobra.Command{
-	Use:   "watch <task>",
-	Short: "Watch files and run task on changes",
-	Long:  `Watch files in the current directory and automatically run the specified task when changes occur.`,
-	Args:  cobra.ExactArgs(1),
+	Use:     "watch <task>",
+	Short:   "Watch files and run task on changes",
+	Long:    `Watch files in the current directory and automatically run the specified task when changes occur.`,
+	Aliases: []string{"w"},
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		taskName := args[0]
 		
