@@ -31,8 +31,9 @@ func init() {
 
 // lsRemoteCmd represents the ls-remote command which lists available versions for a tool.
 var lsRemoteCmd = &cobra.Command{
-	Use:   "ls-remote <tool> [version-prefix]",
-	Short: "List runtime versions available for install",
+	Use:     "ls-remote <tool> [version-prefix]",
+	Aliases: []string{"lsr"},
+	Short:   "List runtime versions available for install",
 	Long: `List runtime versions available for install from the backend.
 
 The results are fetched from the remote backend and may be cached locally.
