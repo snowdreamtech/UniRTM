@@ -56,107 +56,107 @@
 
 ---
 
-## Phase 2：工具链管理完善
+## Phase 2：工具链管理完善 ✅ 已完成
 
-- `[ ]` **`bin-paths` 命令**
-  - `[ ]` 实现 `cmd/36.bin-paths.go`
-  - `[ ]` 列出所有激活 runtime 的 bin 目录路径
-  - `[ ]` 原子化 Commit
+- `[x]` **`bin-paths` 命令**
+  - `[x]` 实现 `cmd/36.bin-paths.go`
+  - `[x]` 列出所有激活 runtime 的 bin 目录路径
+  - `[x]` 原子化 Commit: 83f1ef4
 
-- `[ ]` **`backends` 命令**
-  - `[ ]` 实现 `cmd/37.backends.go`
-  - `[ ]` 子命令：`ls`（列出）、`info <name>`（详情）
-  - `[ ]` 显示每个 backend 的名称、状态、支持的工具数
-  - `[ ]` 支持 `--json` 输出
-  - `[ ]` 原子化 Commit
+- `[x]` **`backends` 命令**
+  - `[x]` 实现 `cmd/37.backends.go`
+  - `[x]` 子命令：`ls`（列出）、`info <name>`（详情）
+  - `[x]` 显示每个 backend 的名称、状态、支持的工具数
+  - `[x]` 支持 `--json` 输出
+  - `[x]` 原子化 Commit: 40ff89f
 
-- `[ ]` **`registry` 命令**
-  - `[ ]` 实现 `cmd/38.registry.go`
-  - `[ ]` 列出所有注册工具（分页 / 过滤 `--search`）
-  - `[ ]` 支持 `--json` 输出
-  - `[ ]` 原子化 Commit
+- `[x]` **`registry` 命令**
+  - `[x]` 实现 `cmd/38.registry.go`
+  - `[x]` 列出所有注册工具（分页 / 过滤 `--search`）
+  - `[x]` 支持 `--json` 输出
+  - `[x]` 原子化 Commit: 1c50061
 
-- `[ ]` **`tasks` 子命令组**
-  - `[ ]` 实现 `cmd/39.tasks.go`
-  - `[ ]` 子命令：`list`、`info <task>`、`deps`、`add <name>`、`edit <task>`
-  - `[ ]` `tasks list` 显示任务名、来源文件、描述
-  - `[ ]` `tasks deps` 显示任务依赖 DAG（文本格式）
-  - `[ ]` 编写测试
-  - `[ ]` 原子化 Commit
+- `[x]` **`tasks` 子命令组**
+  - `[x]` 实现 `cmd/39.tasks.go`
+  - `[x]` 子命令：`list`、`info <task>`、`deps`、`add <name>`、`edit <task>`
+  - `[x]` `tasks list` 显示任务名、来源文件、描述
+  - `[x]` `tasks deps` 显示任务依赖 DAG（文本格式）
+  - `[x]` 编写测试
+  - `[x]` 原子化 Commit: 19696d7
 
-- `[ ]` **`fmt` 命令**
-  - `[ ]` 实现 `cmd/40.fmt.go`
-  - `[ ]` 格式化 unirtm.toml（键排序、对齐、统一缩进）
-  - `[ ]` 支持 `--check` 模式（CI 用，仅检查不修改）
-  - `[ ]` 原子化 Commit
+- `[x]` **`fmt` 命令**
+  - `[x]` 实现 `cmd/40.fmt.go`
+  - `[x]` 格式化 unirtm.toml（键排序、对齐、统一缩进）
+  - `[x]` 支持 `--check` 模式（CI 用，仅检查不修改）
+  - `[x]` 原子化 Commit: 5d9807a
 
-- `[ ]` **`link` 命令**
-  - `[ ]` 实现 `cmd/41.link.go`
-  - `[ ]` 软链接已有工具路径进 UniRTM 管理体系
-  - `[ ]` 写入安装记录至数据库
-  - `[ ]` 原子化 Commit
+- `[x]` **`link` 命令**
+  - `[x]` 实现 `cmd/41.link.go`
+  - `[x]` 软链接已有工具路径进 UniRTM 管理体系
+  - `[x]` 写入安装记录至数据库
+  - `[x]` 原子化 Commit: 7f7ecd3
 
-- `[ ]` **`unuse` / `rm` / `remove` 命令**
-  - `[ ]` 实现 `cmd/42.unuse.go`
-  - `[ ]` 注册 `rm` 和 `remove` 为别名
-  - `[ ]` 从 unirtm.toml 中删除工具条目（不删除已安装文件）
-  - `[ ]` 原子化 Commit
+- `[x]` **`unuse` / `rm` / `remove` 命令**
+  - `[x]` 实现 `cmd/42.unuse.go`
+  - `[x]` 注册 `rm` 和 `remove` 为别名
+  - `[x]` 从 unirtm.toml 中删除工具条目（不删除已安装文件）
+  - `[x]` 原子化 Commit: 7f7ecd3
 
 ---
 
-## Phase 3：高级 / 实验性功能
+## Phase 3：高级 / 实验性功能 ✅ 已完成
 
-- `[ ]` **`self-update` 命令**
-  - `[ ]` 实现 `cmd/43.self-update.go`（参考 `.kiro/specs/unirtm/unirtm_selfupdate_plan.md`）
-  - `[ ]` 支持 `--version <version>` 指定目标版本
-  - `[ ]` 原子化 Commit
+- `[x]` **`self-update` 命令**
+  - `[x]` 实现 `cmd/43.self-update.go`
+  - `[x]` 支持 `--version <version>` 指定目标版本
+  - `[x]` 原子化 Commit: ae0129f
 
-- `[ ]` **`implode` 命令**
-  - `[ ]` 实现 `cmd/44.implode.go`
-  - `[ ]` 需要用户二次确认（交互 prompt）
-  - `[ ]` 支持 `--yes` / `-y` 跳过确认（脚本模式）
-  - `[ ]` 清理：数据目录 + shims + 数据库 + 缓存
-  - `[ ]` 原子化 Commit
+- `[x]` **`implode` 命令**
+  - `[x]` 实现 `cmd/44.implode.go`
+  - `[x]` 需要用户二次确认（交互 prompt）
+  - `[x]` 支持 `--yes` / `-y` 跳过确认（脚本模式）
+  - `[x]` 清理：数据目录 + shims + 数据库 + 缓存
+  - `[x]` 原子化 Commit: ae0129f
 
-- `[ ]` **`generate` 命令**
-  - `[ ]` 实现 `cmd/45.generate.go`
-  - `[ ]` 子命令：`github-action`、`pre-commit`、`shell-alias`
-  - `[ ]` 输出生成的文件内容（支持 `--output` 指定路径）
-  - `[ ]` 原子化 Commit
+- `[x]` **`generate` 命令**
+  - `[x]` 实现 `cmd/45.generate.go`
+  - `[x]` 子命令：`github-action`、`pre-commit`、`shell-alias`
+  - `[x]` 输出生成的文件内容（支持 `--output` 指定路径）
+  - `[x]` 原子化 Commit: ae0129f
 
-- `[ ]` **`en` 命令**
-  - `[ ]` 实现 `cmd/46.en.go`
-  - `[ ]` 在新 sub-shell 中运行 UniRTM 激活环境
-  - `[ ]` 支持 `-- <cmd>` 直接执行命令
-  - `[ ]` 原子化 Commit
+- `[x]` **`en` 命令**
+  - `[x]` 实现 `cmd/46.en.go`
+  - `[x]` 在新 sub-shell 中运行 UniRTM 激活环境
+  - `[x]` 支持 `-- <cmd>` 直接执行命令
+  - `[x]` 原子化 Commit: ae0129f
 
-- `[ ]` **`shell-alias` 命令**
-  - `[ ]` 实现 `cmd/47.shell-alias.go`
-  - `[ ]` 子命令：`list`、`add <alias>`、`remove <alias>`
-  - `[ ]` 原子化 Commit
+- `[x]` **`shell-alias` 命令**
+  - `[x]` 实现 `cmd/47.shell-alias.go`
+  - `[x]` 子命令：`list`、`add <alias>`、`remove <alias>`
+  - `[x]` 原子化 Commit: ae0129f
 
-- `[ ]` **`install-into` 命令**
-  - `[ ]` 实现 `cmd/48.install-into.go`
-  - `[ ]` 安装工具到指定自定义路径
-  - `[ ]` 原子化 Commit
+- `[x]` **`install-into` 命令**
+  - `[x]` 实现 `cmd/48.install-into.go`
+  - `[x]` 安装工具到指定自定义路径
+  - `[x]` 原子化 Commit: ae0129f
 
-- `[ ]` **`edit` 命令**
-  - `[ ]` 实现 `cmd/49.edit.go`
-  - `[ ]` 打开 `$EDITOR` / `$VISUAL` 编辑配置文件
-  - `[ ]` 支持 `--global` 编辑全局配置
-  - `[ ]` 原子化 Commit
+- `[x]` **`edit` 命令**
+  - `[x]` 实现 `cmd/49.edit.go`
+  - `[x]` 打开 `$EDITOR` / `$VISUAL` 编辑配置文件
+  - `[x]` 支持 `--global` 编辑全局配置
+  - `[x]` 原子化 Commit: ae0129f
 
-- `[ ]` **`token` 命令**
-  - `[ ]` 实现 `cmd/50.token.go`
-  - `[ ]` 显示当前各 provider 使用的 token（掩码处理）
-  - `[ ]` 支持 `unirtm token github` 指定 provider
-  - `[ ]` 原子化 Commit
+- `[x]` **`token` 命令**
+  - `[x]` 实现 `cmd/50.token.go`
+  - `[x]` 显示当前各 provider 使用s的 token（掩码处理）
+  - `[x]` 支持 `unirtm token github` 指定 provider
+  - `[x]` 原子化 Commit: ae0129f
 
-- `[ ]` **`mcp` 命令（实验性）**
-  - `[ ]` 实现 `cmd/51.mcp.go`
-  - `[ ]` 运行 MCP server（stdio 模式，供 AI 工具调用）
-  - `[ ]` 暴露：install / list / outdated / tool 等工具为 MCP tools
-  - `[ ]` 原子化 Commit
+- `[x]` **`mcp` 命令（实验性）**
+  - `[x]` 实现 `cmd/51.mcp.go`
+  - `[x]` 运行 MCP server（stdio 模式，供 AI 工具调用）
+  - `[x]` 暴露：install / list / outdated / tool 等工具为 MCP tools
+  - `[x]` 原子化 Commit: ae0129f
 
 ---
 
@@ -166,5 +166,5 @@
 |-------|--------|------|
 | Phase 1 — 核心补全 | 6 | ✅ 已完成（2026-05-10）|
 | Phase 2 — 管理完善 | 8 | ✅ 已完成（2026-05-10）|
-| Phase 3 — 高级功能 | 9 | 未开始 |
-| **合计** | **23** | 14/23 完成 |
+| Phase 3 — 高级功能 | 9 | ✅ 已完成（2026-05-10）|
+| **合计** | **23** | 23/23 完成 |
