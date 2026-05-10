@@ -66,8 +66,9 @@ Examples:
 
   # Install with JSON output
   unirtm install go 1.21.0 --json`,
-	Args: cobra.RangeArgs(1, 2),
-	RunE: runInstall,
+	Aliases: []string{"i"},
+	Args:    cobra.RangeArgs(1, 2),
+	RunE:    runInstall,
 }
 
 // runInstall executes the install command.
