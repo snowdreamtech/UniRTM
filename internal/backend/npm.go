@@ -20,7 +20,7 @@ type NpmBackend struct {
 func NewNpmBackend() *NpmBackend {
 	return &NpmBackend{
 		client: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: 30 * time.Second,
 		},
 	}
 }
