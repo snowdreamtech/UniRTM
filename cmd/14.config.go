@@ -22,6 +22,7 @@ func init() {
 	configCmd.AddCommand(configShowCmd)
 	configCmd.AddCommand(configSetCmd)
 	configCmd.AddCommand(configGetCmd)
+	configCmd.AddCommand(configGenerateCmd)
 
 	if rootCmd != nil {
 		rootCmd.AddCommand(configCmd)
@@ -37,6 +38,7 @@ var configCmd = &cobra.Command{
 Subcommands:
   validate  Validate configuration files
   show      Display merged configuration
+  generate  Generate a default configuration file
   set       Set a configuration value
   get       Get a configuration value
 
@@ -66,9 +68,20 @@ If no file is specified, validates the default configuration hierarchy.`,
 var configShowCmd = &cobra.Command{
 	Use:   "show",
 	Short: "Display merged configuration",
-	Long:  `Display the merged configuration from all sources in the hierarchy.`,
-	Args:  cobra.NoArgs,
-	RunE:  runConfigShow,
+	Long:    `Display the merged configuration from all sources in the hierarchy.`,
+	Aliases: []string{"ls", "cat"},
+	Args:    cobra.NoArgs,
+	RunE:    runConfigShow,
+}
+
+// configGenerateCmd generates a default configuration file.
+var configGenerateCmd = &cobra.Command{
+	Use:   "generate [file]",
+	Short: "Generate a default configuration file",
+	Long: `Generate a default unirtm.toml configuration file with common settings
+and placeholders for tools.`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: runConfigGenerate,
 }
 
 // configSetCmd sets a configuration value.
@@ -286,6 +299,62 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 	}
 
 	formatter.Success(fmt.Sprintf("Set %s = %s in %s", key, value, localConfigFile), nil)
+	return nil
+}
+
+// runConfigGenerate generates a default configuration file.
+func runConfigGenerate(cmd *cobra.Command, args []string) error {
+	formatter := output.NewFormatter(output.FormatterOptions{
+		Format:  getOutputFormat(),
+		NoColor: false,
+		Writer:  os.Stdout,
+		Quiet:   quiet,
+		Verbose: verbose,
+	})
+
+	targetFile := "unirtm.toml"
+	if len(args) == 1 {
+		targetFile = args[0]
+	}
+
+	if _, err := os.Stat(targetFile); err == nil {
+		if !updateForce {
+			formatter.Error(fmt.Sprintf("File %s already exists. Use --force to overwrite.", targetFile), nil)
+			return fmt.Errorf("file exists: %s", targetFile)
+		}
+	}
+
+	defaultConfig := `# UniRTM configuration file
+# For more information, see https://github.com/snowdreamtech/unirtm
+
+[settings]
+# Time to live for tool version index cache
+cache_ttl = "168h"
+
+[tools]
+# Define tools and their versions here
+# node = "20.0.0"
+# python = "3.12.0"
+# cli/cli = "latest"
+
+[env]
+# Define environment variables here
+# NODE_ENV = "development"
+
+[tasks]
+# Define project tasks here
+# build = "go build -o bin/app ."
+# test = "go test ./..."
+`
+
+	if err := os.WriteFile(targetFile, []byte(defaultConfig), 0644); err != nil {
+		formatter.Error(fmt.Sprintf("Failed to write configuration to %s", targetFile), map[string]interface{}{
+			"error": err.Error(),
+		})
+		return err
+	}
+
+	formatter.Success(fmt.Sprintf("Generated default configuration in %s", targetFile), nil)
 	return nil
 }
 

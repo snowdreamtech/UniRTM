@@ -45,8 +45,9 @@ Examples:
 
   # JSON output
   unirtm registry --json`,
-	Args: cobra.NoArgs,
-	RunE: runRegistry,
+	Aliases: []string{"ls"},
+	Args:    cobra.NoArgs,
+	RunE:    runRegistry,
 }
 
 type registryEntry struct {
