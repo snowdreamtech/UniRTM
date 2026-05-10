@@ -45,8 +45,9 @@ Examples:
 
   # Register with a specific backend label
   unirtm link node 22.14.0 ~/.nvm/versions/node/v22.14.0 --backend nvm`,
-	Args: cobra.ExactArgs(3),
-	RunE: runLink,
+	Aliases: []string{"ln"},
+	Args:    cobra.ExactArgs(3),
+	RunE:    runLink,
 }
 
 func runLink(cmd *cobra.Command, args []string) error {
