@@ -51,7 +51,7 @@ Examples:
 var backendsListCmd = &cobra.Command{
 	Use:     "ls",
 	Short:   "List all registered backends",
-	Aliases: []string{"list"},
+	Aliases: []string{"list", "b"},
 	Args:    cobra.NoArgs,
 	RunE:    runBackendsList,
 }
