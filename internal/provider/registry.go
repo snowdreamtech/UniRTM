@@ -48,6 +48,8 @@ func NewRegistry() *Registry {
 	r.Register("erlang", NewErlangProvider())
 	r.Register("swift", NewSwiftProvider())
 	r.Register("zig", NewZigProvider())
+	r.Register("php", NewPhpProvider())
+	r.Register("flutter", NewFlutterProvider())
 	
 	return r
 }
