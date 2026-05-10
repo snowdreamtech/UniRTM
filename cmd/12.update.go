@@ -65,8 +65,9 @@ Examples:
 
   # Update with JSON output
   unirtm update node --json`,
-	Args: cobra.MaximumNArgs(2),
-	RunE: runUpdate,
+	Aliases: []string{"up", "upgrade"},
+	Args:    cobra.MaximumNArgs(2),
+	RunE:    runUpdate,
 }
 
 // runUpdate executes the update command.
