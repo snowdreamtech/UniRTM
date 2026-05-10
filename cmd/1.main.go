@@ -7,6 +7,9 @@
 package cmd
 
 import (
+	"log"
+	"os"
+
 	"github.com/rs/zerolog"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
@@ -61,6 +64,15 @@ audit and logging capabilities.`,
 		PersistentPreRun: setupGlobalOptions,
 		SilenceUsage:     true,
 		SilenceErrors:    true,
+		Args:             cobra.ArbitraryArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				// If the first argument is not a known command, treat it as a task name.
+				// We delegate to the 'run' command implementation.
+				return runTasksRun(cmd, args)
+			}
+			return cmd.Help()
+		},
 	}
 
 	buildFlags()
