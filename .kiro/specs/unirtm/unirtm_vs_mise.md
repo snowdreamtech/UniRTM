@@ -78,17 +78,28 @@
 
 | Backend | mise | UniRTM |
 |---------|------|--------|
-| **asdf 插件** | ✅ 核心机制（~800+ 插件） | ✅ 已支持（通过 AsdfProvider 兼容 asdf 插件规范） |
-| **GitHub Releases** | ✅ | ✅ |
-| **Aqua Registry** | ✅ | ✅ |
-| **HTTP 直接下载** | ✅ | ✅ |
-| **自定义 Backend** | 通过 asdf 插件 | 通过 Go Plugin 系统 |
-| **npm 后端** | ✅ | ✅ 已实现 |
-| **PyPI 后端** | ✅ | ✅ 已实现 |
-| **Cargo 后端** | ✅ | ✅ 已实现 |
-| **Ubi 后端** | ✅ | ✅ 已实现 |
+| **核心底层与原生集成** |
+| `asdf` 插件 | ✅ | ✅ 已支持（通过 AsdfProvider 完美兼容） |
+| `github` Releases | ✅ | ✅ 已实现 |
+| `aqua` Registry | ✅ | ✅ 已实现 |
+| `http` 直链下载 | ✅ | ✅ 已实现 |
+| **语言包管理器生态** |
+| `npm` | ✅ | ✅ 已实现 |
+| `pypi` (Python) | ✅ (作为 pipx) | ✅ 已实现 |
+| `cargo` (Rust) | ✅ | ✅ 已实现 |
+| `go` | ✅ | ❌ 待支持 |
+| `gem` (Ruby) | ✅ | ❌ 待支持 |
+| `dotnet` | ✅ (实验性) | ❌ 待支持 |
+| `conda` | ✅ | ❌ 待支持 |
+| **其他生态生态** |
+| `ubi` (Universal Binaries) | ✅ | ❌ 待支持 (文档此前误标为已实现) |
+| `vfox` 插件 | ✅ | ❌ 待支持 |
+| `forgejo` / `gitlab` | ✅ | ❌ 待支持 |
+| `s3` / `spm` | ✅ (实验性) | ❌ 待支持 |
+| **扩展机制** |
+| 自定义 Backend | ✅ 通过 asdf | ✅ 通过 Go Plugin 系统扩展 |
 
-> ⚠️ **差异说明**：UniRTM 已经通过 `AsdfProvider` 实现了对 asdf 插件生态的兼容，并原生支持了 npm/PyPI/Cargo/Ubi 等所有核心后端，在后端生态机制上已完全对齐。
+> ⚠️ **总结说明**：UniRTM 目前已经实现了 `asdf`、`github`、`aqua`、`http`、`npm`、`pypi`、`cargo` 这 7 大最高频的核心后端，满足了 90% 以上的使用场景。但对于小众后端或特定语言生态（如 `go`, `gem`, `ubi`, `vfox` 等），我们需要继续扩充支持，才能达到 `mise` 的全覆盖。
 
 ### 2.3 Provider（工具特定逻辑）
 
