@@ -42,7 +42,13 @@ func NewRegistry() *Registry {
 	r.Register("conda", NewCondaProvider())
 	r.Register("vfox", NewVfoxProvider())
 	r.Register("spm", NewSpmProvider())
-
+	r.Register("bun", NewBunProvider())
+	r.Register("deno", NewDenoProvider())
+	r.Register("elixir", NewElixirProvider())
+	r.Register("erlang", NewErlangProvider())
+	r.Register("swift", NewSwiftProvider())
+	r.Register("zig", NewZigProvider())
+	
 	return r
 }
 
