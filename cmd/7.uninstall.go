@@ -49,8 +49,9 @@ func RegisterUninstallCommand() {
 
 // uninstallCmd represents the uninstall command which removes a specific version of a tool.
 var uninstallCmd = &cobra.Command{
-	Use:   "uninstall <tool> <version>",
-	Short: "Uninstall a specific version of a development tool",
+	Use:     "uninstall <tool> <version>",
+	Aliases: []string{"un"},
+	Short:   "Uninstall a specific version of a development tool",
 	Long: `Uninstall a specific version of a development tool.
 
 The uninstall command removes the specified version of a tool, including:
