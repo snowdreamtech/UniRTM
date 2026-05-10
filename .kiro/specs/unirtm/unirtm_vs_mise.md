@@ -60,9 +60,9 @@
 
 | 功能 | mise | UniRTM |
 |------|------|--------|
-| **配置文件格式** | `.mise.toml` / `.tool-versions` | `unirtm.toml` / `.unirtm.toml` |
-| **TOML 支持** | ✅ | ✅ |
-| **YAML 支持** | ❌ | ✅ **新增** |
+| **配置文件格式** | `.mise.toml` / `.tool-versions` | `.unirtm.{toml,yaml,yml}` (优先且默认 TOML) |
+| **TOML 支持** | ✅ | ✅ (优先级最高，推荐使用) |
+| **YAML 支持** | ❌ | ✅ **新增** (如存在 TOML 同名文件，YAML 配置将被覆盖) |
 | **层级加载** | system → global → project → local | 完全相同 |
 | **环境特定覆盖** | `[env.development]` | ✅ 相同语义 |
 | **Tasks 任务定义** | `[tasks.xxx]` 完整支持 | ✅ 完整支持，并结合 `unirtm run` 支持外部引擎路由 |

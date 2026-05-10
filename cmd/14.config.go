@@ -253,11 +253,24 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 	localConfigFile := ".unirtm.toml"
 	if configPath != "" {
 		localConfigFile = configPath
+	} else {
+		// If no specific path is provided, find the existing config file, prioritizing TOML
+		for _, f := range []string{".unirtm.toml", ".unirtm.yaml", ".unirtm.yml", "unirtm.toml", "unirtm.yaml", "unirtm.yml"} {
+			if _, err := os.Stat(f); err == nil {
+				localConfigFile = f
+				break
+			}
+		}
 	}
 
 	v := viper.New()
 	v.SetConfigFile(localConfigFile)
-	v.SetConfigType("toml")
+	ext := filepath.Ext(localConfigFile)
+	configType := strings.TrimPrefix(ext, ".")
+	if configType == "" {
+		configType = "toml"
+	}
+	v.SetConfigType(configType)
 	_ = v.ReadInConfig()
 
 	v.Set(key, value)
@@ -276,14 +289,25 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 
 // loadViperConfigHierarchy loads configuration hierarchy into a viper instance.
 func loadViperConfigHierarchy(v *viper.Viper) {
-	candidates := []string{".unirtm.toml", "unirtm.toml"}
+	// Order matters for MergeInConfig: later files override earlier files.
+	// By putting TOML last, it takes precedence over YAML if both exist in the same directory.
+	candidates := []string{
+		"unirtm.yml", "unirtm.yaml", "unirtm.toml",
+		".unirtm.yml", ".unirtm.yaml", ".unirtm.toml",
+	}
 	if configPath != "" {
-		candidates = append([]string{configPath}, candidates...)
+		// Command line flag has highest priority
+		candidates = append(candidates, configPath)
 	}
 	for _, f := range candidates {
 		if _, err := os.Stat(f); err == nil {
 			v.SetConfigFile(f)
-			v.SetConfigType("toml")
+			ext := filepath.Ext(f)
+			configType := strings.TrimPrefix(ext, ".")
+			if configType == "" {
+				configType = "toml"
+			}
+			v.SetConfigType(configType)
 			_ = v.MergeInConfig()
 		}
 	}

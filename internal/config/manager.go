@@ -191,43 +191,66 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error) {
 	var configs []*Config
 
-	hierarchyPaths := []string{
-		"/etc/unirtm/config.toml",                        // System
-		filepath.Join(env.GetConfigDir(), "config.toml"), // Global
-		"./unirtm.toml",                                  // Project (primary)
-		"./.unirtm.toml",                                 // Project (alternate)
-		"./.unirtm.local.toml",                           // Local
+	hierarchyLevels := [][]string{
+		{ // System
+			"/etc/unirtm/config.toml",
+			"/etc/unirtm/config.yaml",
+			"/etc/unirtm/config.yml",
+		},
+		{ // Global
+			filepath.Join(env.GetConfigDir(), "config.toml"),
+			filepath.Join(env.GetConfigDir(), "config.yaml"),
+			filepath.Join(env.GetConfigDir(), "config.yml"),
+		},
+		{ // Project (primary)
+			"./unirtm.toml",
+			"./unirtm.yaml",
+			"./unirtm.yml",
+		},
+		{ // Project (alternate)
+			"./.unirtm.toml",
+			"./.unirtm.yaml",
+			"./.unirtm.yml",
+		},
+		{ // Local
+			"./.unirtm.local.toml",
+			"./.unirtm.local.yaml",
+			"./.unirtm.local.yml",
+		},
 	}
 
-	// Load each configuration file that exists
-	for i, path := range hierarchyPaths {
-		// Skip if file doesn't exist
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			continue
-		}
-
-		status := TrustStatusTrusted
-		if m.trustManager != nil {
-			status = m.trustManager.TrustStatus(path)
-		}
-
-		// Enforce trust for Project and Local configs (indices 2, 3, 4)
-		if i >= 2 && status != TrustStatusTrusted {
-			if status == TrustStatusModified {
-				pterm.Warning.Printfln("Configuration file has been modified since it was last trusted: %s\nRun `unirtm trust %s` to review and trust the new contents.", path, path)
-			} else {
-				pterm.Warning.Printfln("Skipping untrusted configuration file: %s\nRun `unirtm trust %s` to trust it.", path, path)
+	// Load each configuration level
+	for i, level := range hierarchyLevels {
+		for _, path := range level {
+			// Skip if file doesn't exist
+			if _, err := os.Stat(path); os.IsNotExist(err) {
+				continue
 			}
-			continue
-		}
 
-		// Load the configuration
-		config, err := m.Load(ctx, path)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load configuration from %s: %w", path, err)
-		}
+			status := TrustStatusTrusted
+			if m.trustManager != nil {
+				status = m.trustManager.TrustStatus(path)
+			}
 
-		configs = append(configs, config)
+			// Enforce trust for Project and Local configs (indices >= 2)
+			if i >= 2 && status != TrustStatusTrusted {
+				if status == TrustStatusModified {
+					pterm.Warning.Printfln("Configuration file has been modified since it was last trusted: %s\nRun `unirtm trust %s` to review and trust the new contents.", path, path)
+				} else {
+					pterm.Warning.Printfln("Skipping untrusted configuration file: %s\nRun `unirtm trust %s` to trust it.", path, path)
+				}
+				break // Do not try fallback formats if the file exists but is untrusted
+			}
+
+			// Load the configuration
+			config, err := m.Load(ctx, path)
+			if err != nil {
+				return nil, fmt.Errorf("failed to load configuration from %s: %w", path, err)
+			}
+
+			configs = append(configs, config)
+			break // Only load one file per level (TOML has priority)
+		}
 	}
 
 	// If no configuration files found, return empty config
