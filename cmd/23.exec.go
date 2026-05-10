@@ -50,6 +50,7 @@ Examples:
 
   # Run a command without specifying a tool (uses activated tools)
   unirtm exec -- make build`,
+	Aliases:            []string{"x"},
 	Args:               cobra.MinimumNArgs(1),
 	DisableFlagParsing: false,
 	RunE:               runExec,
