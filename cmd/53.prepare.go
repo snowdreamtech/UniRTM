@@ -35,8 +35,9 @@ Examples:
 
   # Run only npm prepare
   unirtm prepare npm`,
-	Args: cobra.MaximumNArgs(1),
-	RunE: runPrepare,
+	Aliases: []string{"prep"},
+	Args:    cobra.MaximumNArgs(1),
+	RunE:    runPrepare,
 }
 
 // runPrepare executes the prepare command.
