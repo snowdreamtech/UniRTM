@@ -45,6 +45,7 @@ Examples:
   unirtm config show
   unirtm config get tools.node.version
   unirtm config set tools.node.version 20.0.0`,
+	Aliases: []string{"cfg"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()
 	},
