@@ -144,39 +144,45 @@ File System State                       ├── CacheManager
   ~/.local/share/mise/                  ├── IndexManager
   ├── installs/                         ├── UpdateManager
   ├── shims/                            ├── DependencyResolver
-  └── cache/                            ├── PerformanceMonitor
-                                        ├── SecurityManager
+  ├── downloads/                        ├── PerformanceMonitor
+  └── cache/                            ├── SecurityManager
                                         ├── OfflineManager
-                                        ├── RecoveryManager
-                                        ├── ConcurrentManager
-                                        └── PluginManager
+                                        └── ... (其他管理器)
                                          │
-                                       Backend System
-                                         ├── GitHubBackend
-                                         ├── AquaBackend
-                                         └── HTTPBackend
+                                       Backend & Provider System
+                                         ├── GitHub/Aqua/HTTP Backend
+                                         └── Node/Python/Go Provider
                                          │
-                                       Provider System
-                                         ├── GenericProvider
-                                         ├── NodeProvider
-                                         ├── PythonProvider
-                                         ├── GoProvider
-                                         ├── JavaProvider
-                                         ├── RubyProvider
-                                         └── RustProvider
-                                         │
-                                       Data Layer (SQLite)
-                                         ├── InstallationRepository
-                                         ├── CacheRepository
-                                         ├── AuditRepository
-                                         └── IndexRepository
+                                       Data & File System Layer
+                                         ├── SQLite Database (Meta & State)
+                                         │    └── unirtm.db (WAL)
+                                         └── Physical File System
+                                              ~/.local/share/unirtm/
+                                              ├── installs/ (二进制产物)
+                                              ├── shims/ (环境垫片)
+                                              ├── downloads/ (缓冲与安全校验区)
+                                              ├── plugins/ (扩展插件)
+                                              └── cache/ (元数据文件缓存)
 ```
 
-### 3.2 状态存储对比
+### 3.2 目录结构对比 (Directory Structure)
+
+UniRTM 不仅拥有类似于 `mise` 的目录结构，还对其职责进行了更严密的划分，通过引入**独立下载缓冲**与**元数据分离**来提升安全性：
+
+| 目录/文件 | mise 路径 (`~/.local/share/mise`) | UniRTM 路径 (`~/.local/share/unirtm`) | 核心作用与差异 |
+|-----------|----------------------------------|---------------------------------------|---------------|
+| **安装目录** | `/installs` | `/installs` | **作用相同**。存放最终解压并可直接执行的工具链二进制文件。 |
+| **垫片目录** | `/shims` | `/shims` | **作用相同**。存放透明代理脚本，用于动态路由到当前激活的版本。 |
+| **下载缓冲** | `/downloads` | `/downloads` | **UniRTM 强管控**。安装包不会直接进入 `installs`，必须在 `downloads` 完成 SHA-256 和 GPG 签名校验后，才会被原子化移动/解压。 |
+| **插件目录** | `/plugins` | `/plugins` | **扩展支持**。存放兼容 asdf 规范的外部插件脚本。 |
+| **文件缓存** | `/cache` | `/cache` | **作用相同**。存放 API 响应、索引缓存等，避免重复网络请求。 |
+| **状态追踪** | 散落在文件和目录状态中 | `unirtm.db` (SQLite) | **UniRTM 独有**。所有的安装状态、缓存 TTL、执行性能、哈希记录均存储于结构化的 SQLite 数据库中，而非依赖物理文件扫描。 |
+
+### 3.3 状态存储对比 (Storage Mechanism)
 
 | 维度 | mise | UniRTM |
 |------|------|--------|
-| **存储机制** | 文件系统目录结构 | SQLite 数据库（WAL 模式）|
+| **存储机制** | 文件系统目录结构 | SQLite 数据库（WAL 模式）+ 物理文件 |
 | **并发读取** | 多进程文件锁 | SQLite WAL 天然支持并发读 |
 | **事务支持** | 无（文件操作非原子） | ✅ 完整 ACID 事务 |
 | **数据查询** | 目录遍历 | SQL 查询 + 索引优化 |
