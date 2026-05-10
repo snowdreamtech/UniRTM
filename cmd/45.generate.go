@@ -44,7 +44,6 @@ Examples:
   unirtm generate pre-commit --output .pre-commit-hooks.yaml
   unirtm generate shell-alias >> ~/.zshrc`,
 	Args: cobra.NoArgs,
-	Aliases: []string{"gen"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()
 	},
