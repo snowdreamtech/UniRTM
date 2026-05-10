@@ -22,11 +22,12 @@ func init() {
 
 // versionCmd represents the version command which displays the application version information.
 var versionCmd = &cobra.Command{
-	Use:    "version",
-	Short:  "Print the version number of " + env.ProjectName,
-	Long:   "Display version information including build details, commit hash, and build time.",
-	PreRun: preRunVersion,
-	Run:    runVersion,
+	Use:     "version",
+	Short:   "Print the version number of " + env.ProjectName,
+	Long:    "Display version information including build details, commit hash, and build time.",
+	Aliases: []string{"v"},
+	PreRun:  preRunVersion,
+	Run:     runVersion,
 }
 
 // welcome prints a stylized "UNIRTM" title in green color.
