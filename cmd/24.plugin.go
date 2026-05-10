@@ -40,6 +40,7 @@ placed in the plugins data directory.
 
 Use 'unirtm plugin list' to see loaded plugins.`,
 	Args: cobra.NoArgs,
+	Aliases: []string{"p", "plugins"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()
 	},
