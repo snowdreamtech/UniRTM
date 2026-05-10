@@ -37,6 +37,7 @@ Examples:
 
   # Run a task with arguments
   unirtm run test -- -v`,
+	Aliases:            []string{"r"},
 	Args:               cobra.MinimumNArgs(1),
 	DisableFlagParsing: false,
 	RunE:               runTaskCommand,
