@@ -34,8 +34,9 @@ func init() {
 
 // listCmd represents the list command which shows all installed tools.
 var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List all installed development tools",
+	Use:     "list",
+	Aliases: []string{"ls"},
+	Short:   "List all installed development tools",
 	Long: `List all installed development tools.
 
 Shows all tools installed with UniRTM, their version, backend, activation
