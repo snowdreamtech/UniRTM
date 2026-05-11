@@ -7,9 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sort"
-	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/database"
@@ -116,7 +114,7 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 	sort.Strings(tools)
 
 	if jsonOutput {
-		results := make(map[string]string)
+		results := make(map[string]interface{})
 		for _, t := range tools {
 			results[t] = activeVersions[t]
 		}
