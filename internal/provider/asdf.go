@@ -6,6 +6,7 @@ package provider
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -58,17 +59,24 @@ func (p *AsdfProvider) Install(ctx context.Context, installPath string, artifact
 	}
 	defer os.RemoveAll(downloadPath)
 
-	// Create a temporary bin directory with an 'asdf' stub
-	// Many plugins call 'asdf reshim' at the end of installation.
-	stubDir := filepath.Join(os.TempDir(), "unirtm-asdf-stub")
-	if err := os.MkdirAll(stubDir, 0755); err != nil {
+	// 2. Create a temporary 'asdf' binary symlink to unirtm in the path to handle reshim calls.
+	// Many asdf plugins call 'asdf reshim' at the end of installation.
+	tmpBinDir, err := os.MkdirTemp("", "unirtm-asdf-bin-*")
+	if err != nil {
 		return err
 	}
-	asdfStub := filepath.Join(stubDir, "asdf")
-	if err := os.WriteFile(asdfStub, []byte("#!/bin/sh\nexit 0\n"), 0755); err != nil {
+	defer os.RemoveAll(tmpBinDir)
+
+	asdfStubPath := filepath.Join(tmpBinDir, "asdf")
+	selfExe, err := os.Executable()
+	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(stubDir)
+	if err := os.Symlink(selfExe, asdfStubPath); err != nil {
+		// If symlink fails (e.g. on Windows without permissions), fallback to a simple script/executable
+		// but for now we assume Unix-like system as requested by user.
+		return fmt.Errorf("failed to create asdf symlink: %w", err)
+	}
 
 	env := os.Environ()
 	env = append(env,
@@ -77,7 +85,7 @@ func (p *AsdfProvider) Install(ctx context.Context, installPath string, artifact
 		"ASDF_INSTALL_PATH="+installPath,
 		"ASDF_DOWNLOAD_PATH="+downloadPath,
 		"ASDF_CONCURRENCY=4", // reasonable default
-		"PATH="+stubDir+string(os.PathListSeparator)+os.Getenv("PATH"),
+		"PATH="+tmpBinDir+string(os.PathListSeparator)+os.Getenv("PATH"),
 	)
 
 	// Ensure install path exists
