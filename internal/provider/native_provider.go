@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/provider/native"
@@ -62,25 +63,33 @@ func (p *NativeProvider) Install(ctx context.Context, installPath string, artifa
 	}
 
 	ext := strings.ToLower(filepath.Ext(artifactPath))
-	var extractCmd *exec.Cmd
 	
-	// Detect if we should strip components (most official archives have a root dir)
+	// Handle single binary files (like kubectl)
+	if ext != ".zip" && !strings.HasSuffix(artifactPath, ".tar.gz") && !strings.HasSuffix(artifactPath, ".tgz") {
+		return p.generic.Install(ctx, installPath, artifactPath, version)
+	}
+
+	// Handle archives
+	var extractCmd *exec.Cmd
 	strip := "--strip-components=1"
 	
 	if strings.HasSuffix(artifactPath, ".tar.gz") || strings.HasSuffix(artifactPath, ".tgz") {
 		extractCmd = exec.CommandContext(ctx, "tar", "-xzf", artifactPath, "-C", installPath, strip)
 	} else if ext == ".zip" {
 		extractCmd = exec.CommandContext(ctx, "unzip", "-q", "-o", artifactPath, "-d", installPath)
-	} else {
-		// Fallback to generic install
-		return p.generic.Install(ctx, installPath, artifactPath, version)
 	}
 
-	if output, err := extractCmd.CombinedOutput(); err != nil {
-		// Try without strip-components if it fails (some archives might not have a root dir)
-		extractCmd = exec.CommandContext(ctx, "tar", "-xzf", artifactPath, "-C", installPath)
-		if _, err2 := extractCmd.CombinedOutput(); err2 != nil {
-			return fmt.Errorf("native: extraction failed: %v, output: %s", err, string(output))
+	if extractCmd != nil {
+		if output, err := extractCmd.CombinedOutput(); err != nil {
+			// Try without strip-components if it fails (some archives might not have a root dir)
+			if strings.Contains(strings.Join(extractCmd.Args, " "), "tar") {
+				extractCmd = exec.CommandContext(ctx, "tar", "-xzf", artifactPath, "-C", installPath)
+				if _, err2 := extractCmd.CombinedOutput(); err2 != nil {
+					return fmt.Errorf("native: extraction failed: %v, output: %s", err, string(output))
+				}
+			} else {
+				return fmt.Errorf("native: extraction failed: %v, output: %s", err, string(output))
+			}
 		}
 	}
 
@@ -88,7 +97,62 @@ func (p *NativeProvider) Install(ctx context.Context, installPath string, artifa
 }
 
 func (p *NativeProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+	// Ensure all executables are in bin/ directory (UniRTM standard)
+	binDir := filepath.Join(installPath, "bin")
+	if err := os.MkdirAll(binDir, 0755); err != nil {
+		return err
+	}
+
+	// If bin/ is already populated, we're likely good
+	entries, _ := os.ReadDir(binDir)
+	if len(entries) > 0 {
+		// Some tools like Node.js have their main executables in bin/ but might need symlinks for others
+		// We'll let it be for now if it looks correct
+	}
+
+	// Scan the whole installPath for executables that should be in bin/
+	// This handles tools like Deno/Bun that extract to root.
+	err := filepath.Walk(installPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return err
+		}
+
+		// Skip files already in bin/
+		if strings.HasPrefix(path, binDir) {
+			return nil
+		}
+
+		// Check if it is an executable
+		if isExecutable(info) {
+			// Move or link to bin/
+			dstPath := filepath.Join(binDir, filepath.Base(path))
+			if _, err := os.Stat(dstPath); os.IsNotExist(err) {
+				// For single binary tools that extract to root, moving is cleaner
+				if filepath.Dir(path) == installPath {
+					os.Rename(path, dstPath)
+				} else {
+					// For others, symlink
+					os.Symlink(path, dstPath)
+				}
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
 	return p.generic.PostInstall(ctx, installPath, version)
+}
+
+// Helper to avoid duplicate logic from generic.go for now
+func isExecutable(info os.FileInfo) bool {
+	if runtime.GOOS != "windows" {
+		return info.Mode()&0111 != 0
+	}
+	name := strings.ToLower(info.Name())
+	return strings.HasSuffix(name, ".exe") || strings.HasSuffix(name, ".bat") || strings.HasSuffix(name, ".cmd")
 }
 
 func (p *NativeProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
