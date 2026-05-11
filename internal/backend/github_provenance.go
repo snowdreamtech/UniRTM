@@ -26,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/snappy"
 	"github.com/sigstore/sigstore-go/pkg/bundle"
 	"github.com/sigstore/sigstore-go/pkg/root"
 	"github.com/sigstore/sigstore-go/pkg/tuf"
@@ -254,7 +255,24 @@ func fetchExternalBundle(ctx context.Context, url string) (json.RawMessage, erro
 		return nil, fmt.Errorf("external bundle API returned %d", resp.StatusCode)
 	}
 
-	return io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// GitHub often returns Snappy-compressed bundles (with .sn suffix).
+	// These are usually in Snappy Raw format (not framed).
+	if strings.Contains(url, ".sn") || strings.HasSuffix(url, ".sn") {
+		decoded, err := snappy.Decode(nil, body)
+		if err != nil {
+			// If raw decode fails, try framed if it might be framed (though usually it's raw)
+			// But for now, if raw fails, we return error as it's the expected format.
+			return nil, fmt.Errorf("provenance: decompress snappy bundle: %w", err)
+		}
+		return decoded, nil
+	}
+
+	return body, nil
 }
 
 // -----------------------------------------------------------------------------
