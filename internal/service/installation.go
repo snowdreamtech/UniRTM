@@ -115,11 +115,12 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	if versionInfo == nil {
 		// Lockfile miss — fall back to the remote backend.
 		fmt.Printf("ℹ resolving download info for %s@%s...\n", tool, version)
-		info, err := b.GetDownloadInfo(ctx, tool, version, platform)
+		info, err := b.ResolveVersion(ctx, tool, version, platform)
 		if err != nil {
-			return fmt.Errorf("failed to get download info: %w", err)
+			return fmt.Errorf("failed to resolve version: %w", err)
 		}
-		fmt.Printf("✓ resolved %s@%s to %s\n", tool, version, info.DownloadURL)
+		version = info.Version // Update to the concrete resolved version
+		fmt.Printf("✓ resolved %s to version %s\n", tool, version)
 		versionInfo = info
 	}
 
