@@ -216,7 +216,7 @@ func runTasksInfo(cmd *cobra.Command, args []string) error {
 	if len(t.Env) > 0 {
 		envPairs := make([]string, 0, len(t.Env))
 		for k, v := range t.Env {
-			envPairs = append(envPairs, k+"="+v)
+			envPairs = append(envPairs, fmt.Sprintf("%s=%v", k, v))
 		}
 		rows = append(rows, []string{"Env", strings.Join(envPairs, "  ")})
 	}

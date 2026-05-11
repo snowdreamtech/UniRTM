@@ -125,7 +125,7 @@ func runLock(cmd *cobra.Command, args []string) error {
 	})
 
 	// Load project configuration
-	cfg, err := config.LoadProjectConfig()
+	cfg, err := config.Load()
 	if err != nil {
 		formatter.Warning(fmt.Sprintf("Failed to load project config: %v", err))
 	} else {

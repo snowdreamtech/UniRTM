@@ -161,7 +161,7 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 		config.Tools = make(map[string]ToolConfig)
 	}
 	if config.Env == nil {
-		config.Env = make(map[string]string)
+		config.Env = make(map[string]interface{})
 	}
 	if config.Tasks == nil {
 		config.Tasks = make(map[string]Task)
@@ -257,7 +257,7 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 	if len(configs) == 0 {
 		return &Config{
 			Tools:        make(map[string]ToolConfig),
-			Env:          make(map[string]string),
+			Env:          make(map[string]interface{}),
 			Tasks:        make(map[string]Task),
 			Environments: make(map[string]EnvironmentConfig),
 			Aliases:      make(map[string]map[string]string),
@@ -334,7 +334,7 @@ func (m *viperConfigManager) Merge(configs ...*Config) (*Config, error) {
 	// Start with an empty configuration
 	merged := &Config{
 		Tools:        make(map[string]ToolConfig),
-		Env:          make(map[string]string),
+		Env:          make(map[string]interface{}),
 		Tasks:        make(map[string]Task),
 		Environments: make(map[string]EnvironmentConfig),
 		Aliases:      make(map[string]map[string]string),
@@ -424,7 +424,7 @@ func (m *viperConfigManager) ApplyEnvironment(config *Config, environment string
 	// Create a copy of the base configuration
 	result := &Config{
 		Tools:        make(map[string]ToolConfig),
-		Env:          make(map[string]string),
+		Env:          make(map[string]interface{}),
 		Tasks:        make(map[string]Task),
 		Environments: make(map[string]EnvironmentConfig),
 		Aliases:      make(map[string]map[string]string),

@@ -53,6 +53,8 @@ type ActivationConfig struct {
 	ToolVersions map[string]string
 	// EnvVars contains additional environment variables to set
 	EnvVars map[string]string
+	// Sources contains shell scripts to source
+	Sources []string
 }
 
 // ActivationScript represents a generated activation script.
@@ -220,6 +222,15 @@ func (m *ActivationManager) generatePosixScript(config ActivationConfig) (*Activ
 		sb.WriteString("\n")
 	}
 
+	// Source additional scripts
+	if len(config.Sources) > 0 {
+		sb.WriteString("# Source additional scripts\n")
+		for _, s := range config.Sources {
+			sb.WriteString(fmt.Sprintf("source \"%s\"\n", s))
+		}
+		sb.WriteString("\n")
+	}
+
 	// Set scope indicator
 	sb.WriteString(fmt.Sprintf("export UNIRTM_ACTIVATION_SCOPE=\"%s\"\n", config.Scope))
 	if config.ProjectDir != "" {
@@ -309,6 +320,15 @@ func (m *ActivationManager) generateFishScript(config ActivationConfig) (*Activa
 		sb.WriteString("\n")
 	}
 
+	// Source additional scripts
+	if len(config.Sources) > 0 {
+		sb.WriteString("# Source additional scripts\n")
+		for _, s := range config.Sources {
+			sb.WriteString(fmt.Sprintf("source \"%s\"\n", s))
+		}
+		sb.WriteString("\n")
+	}
+
 	// Set scope indicator
 	sb.WriteString(fmt.Sprintf("set -gx UNIRTM_ACTIVATION_SCOPE \"%s\"\n", config.Scope))
 	if config.ProjectDir != "" {
@@ -392,6 +412,20 @@ func (m *ActivationManager) generatePowerShellScript(config ActivationConfig) (*
 		sb.WriteString("# Set additional environment variables\n")
 		for key, value := range config.EnvVars {
 			sb.WriteString(fmt.Sprintf("$env:%s = \"%s\"\n", key, value))
+		}
+		sb.WriteString("\n")
+	}
+
+	// Source additional scripts
+	if len(config.Sources) > 0 {
+		sb.WriteString("# Source additional scripts\n")
+		for _, s := range config.Sources {
+			// In PowerShell, use dot-sourcing
+			path := s
+			if runtime.GOOS == "windows" {
+				path = filepath.FromSlash(s)
+			}
+			sb.WriteString(fmt.Sprintf(". \"%s\"\n", path))
 		}
 		sb.WriteString("\n")
 	}

@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/config"
@@ -159,6 +160,9 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		opts := download.DefaultDownloadOptions()
 		if im.settings != nil {
 			opts.GitHubProxy = im.settings.GitHubProxy
+			if im.settings.HTTPTimeout > 0 {
+				opts.Timeout = time.Duration(im.settings.HTTPTimeout) * time.Second
+			}
 		}
 		if versionInfo.Checksum != "" {
 			opts = opts.WithChecksum(versionInfo.Checksum)

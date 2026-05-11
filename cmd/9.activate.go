@@ -12,6 +12,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
@@ -192,6 +193,17 @@ func runActivate(cmd *cobra.Command, args []string) error {
 	// Get shims directory
 	shimsDir := env.GetShimsDir()
 
+	// Load configuration to get [env] variables
+	envVars := make(map[string]string)
+	var sources []string
+	if cfg, err := config.Load(); err == nil {
+		resolved, src := cfg.ResolveEnvironment()
+		for k, v := range resolved {
+			envVars[k] = v
+		}
+		sources = src
+	}
+
 	// Create activation manager
 	activationManager := service.NewActivationManager(shimsDir, env.GetDataDir())
 
@@ -202,7 +214,8 @@ func runActivate(cmd *cobra.Command, args []string) error {
 		ShimsDir:     shimsDir,
 		ProjectDir:   projectDir,
 		ToolVersions: toolVersions,
-		EnvVars:      make(map[string]string),
+		EnvVars:      envVars,
+		Sources:      sources,
 	}
 
 	script, err := activationManager.GenerateActivationScript(ctx, activationConfig)

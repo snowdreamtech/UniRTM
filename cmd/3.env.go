@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/database"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/spf13/cobra"
@@ -116,6 +117,29 @@ func runEnv(cmd *cobra.Command, args []string) error {
 	pathDirs := []string{shimsDir}
 	vars := []envVarEntry{}
 
+	// Load configuration to get [env] variables
+	var sources []string
+	if cfg, err := config.Load(); err == nil {
+		resolved, src := cfg.ResolveEnvironment()
+		sources = src
+		for k, v := range resolved {
+			if k == "PATH" {
+				// Special handling for PATH - prepend to pathDirs
+				// Split the rendered PATH and add parts that are not already in pathDirs
+				parts := strings.Split(v, string(os.PathListSeparator))
+				for i := len(parts) - 1; i >= 0; i-- {
+					p := parts[i]
+					if p != "" && p != "$PATH" {
+						// Prepend to pathDirs
+						pathDirs = append([]string{p}, pathDirs...)
+					}
+				}
+				continue
+			}
+			vars = append(vars, envVarEntry{Name: k, Value: v})
+		}
+	}
+
 	seen := make(map[string]bool)
 	for _, inst := range installations {
 		binDir := filepath.Join(installsDir, inst.Tool, inst.Version, "bin")
@@ -130,14 +154,18 @@ func runEnv(cmd *cobra.Command, args []string) error {
 
 	// JSON output.
 	if jsonOutput {
-		out := envOutput{Vars: vars, PathAdd: pathDirs}
+		out := struct {
+			Vars    []envVarEntry `json:"vars"`
+			PathAdd []string      `json:"path_add"`
+			Sources []string      `json:"sources"`
+		}{Vars: vars, PathAdd: pathDirs, Sources: sources}
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
 		return enc.Encode(out)
 	}
 
 	// Shell-specific export statements.
-	return emitShellEnv(shell, pathDirs, vars)
+	return emitShellEnv(shell, pathDirs, vars, sources)
 }
 
 // outputMinimalEnv emits the shims directory into PATH when the DB is unavailable.
@@ -145,11 +173,12 @@ func outputMinimalEnv(shell string) error {
 	return emitShellEnv(shell,
 		[]string{env.GetShimsDir()},
 		[]envVarEntry{},
+		[]string{},
 	)
 }
 
 // emitShellEnv writes the appropriate export statements for the detected shell.
-func emitShellEnv(shell string, pathDirs []string, vars []envVarEntry) error {
+func emitShellEnv(shell string, pathDirs []string, vars []envVarEntry, sources []string) error {
 	switch shell {
 	case "fish":
 		// fish uses 'set -gx'
@@ -158,6 +187,9 @@ func emitShellEnv(shell string, pathDirs []string, vars []envVarEntry) error {
 		}
 		for _, v := range vars {
 			fmt.Printf("set -gx %s %q;\n", v.Name, v.Value)
+		}
+		for _, s := range sources {
+			fmt.Printf("source %q;\n", s)
 		}
 	case "nu":
 		// nushell uses $env.PATH
@@ -168,6 +200,9 @@ func emitShellEnv(shell string, pathDirs []string, vars []envVarEntry) error {
 		for _, v := range vars {
 			fmt.Printf("$env.%s = %q\n", v.Name, v.Value)
 		}
+		for _, s := range sources {
+			fmt.Printf("source %q\n", s)
+		}
 	default:
 		// bash / zsh / posix sh
 		if len(pathDirs) > 0 {
@@ -176,6 +211,9 @@ func emitShellEnv(shell string, pathDirs []string, vars []envVarEntry) error {
 		}
 		for _, v := range vars {
 			fmt.Printf("export %s=%q\n", v.Name, v.Value)
+		}
+		for _, s := range sources {
+			fmt.Printf("source %q\n", s)
 		}
 	}
 	return nil

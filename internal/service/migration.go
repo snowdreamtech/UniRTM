@@ -75,7 +75,7 @@ func (mm *MigrationManager) MigrateFile(ctx context.Context, sourcePath string, 
 	base := filepath.Base(sourcePath)
 	var tools []MigrationTool
 	var unsupported []string
-	var envVars map[string]string
+	var envVars map[string]interface{}
 	var tasks map[string]config.Task
 	var settings config.Settings
 	var err error
@@ -230,7 +230,7 @@ func (mm *MigrationManager) parseToolVersions(path string) ([]MigrationTool, err
 // parseMiseToml parses a .mise.toml file and extracts tools, env, tasks and settings.
 //
 // Validates Requirement: 21.1
-func (mm *MigrationManager) parseMiseToml(path string) ([]MigrationTool, map[string]string, map[string]config.Task, config.Settings, []string, error) {
+func (mm *MigrationManager) parseMiseToml(path string) ([]MigrationTool, map[string]interface{}, map[string]config.Task, config.Settings, []string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, nil, nil, config.Settings{}, nil, fmt.Errorf("read mise.toml: %w", err)
@@ -243,7 +243,7 @@ func (mm *MigrationManager) parseMiseToml(path string) ([]MigrationTool, map[str
 
 	var tools []MigrationTool
 	var unsupported []string
-	envVars := make(map[string]string)
+	envVars := make(map[string]interface{})
 	tasks := make(map[string]config.Task)
 	settings := config.Settings{
 		CacheTTL: 86400, // Default 24h
@@ -313,11 +313,9 @@ func (mm *MigrationManager) parseMiseToml(path string) ([]MigrationTool, map[str
 					}
 				}
 				if env, ok := v["env"].(map[string]interface{}); ok {
-					task.Env = make(map[string]string)
+					task.Env = make(map[string]interface{})
 					for ek, ev := range env {
-						if es, ok := ev.(string); ok {
-							task.Env[ek] = es
-						}
+						task.Env[ek] = ev
 					}
 				}
 				if task.Run != "" {

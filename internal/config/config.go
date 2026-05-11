@@ -26,7 +26,7 @@ type Config struct {
 
 	// Env contains environment variable definitions.
 	// These variables are set when activating the toolchain.
-	Env map[string]string `toml:"env" yaml:"env" mapstructure:"env"`
+	Env map[string]interface{} `toml:"env" yaml:"env" mapstructure:"env"`
 
 	// Settings contains global settings for UniRTM behavior.
 	Settings Settings `toml:"settings" yaml:"settings" mapstructure:"settings"`
@@ -55,7 +55,7 @@ type EnvironmentConfig struct {
 
 	// Env contains environment variable definitions for this environment.
 	// These are merged with the base environment variables.
-	Env map[string]string `toml:"env,omitempty" yaml:"env,omitempty" mapstructure:"env,omitempty"`
+	Env map[string]interface{} `toml:"env,omitempty" yaml:"env,omitempty" mapstructure:"env,omitempty"`
 
 	// Settings contains settings overrides for this environment.
 	Settings Settings `toml:"settings,omitempty" yaml:"settings,omitempty" mapstructure:"settings,omitempty"`
@@ -124,6 +124,13 @@ type Settings struct {
 
 	// GitHubToken is a personal access token for GitHub API to avoid rate limiting.
 	GitHubToken string `toml:"github_token,omitempty" yaml:"github_token,omitempty" mapstructure:"github_token,omitempty"`
+
+	// HTTPTimeout is the default timeout for HTTP requests in seconds.
+	// If zero, defaults to 900 (15 minutes).
+	HTTPTimeout int `toml:"http_timeout,omitempty" yaml:"http_timeout,omitempty" mapstructure:"http_timeout,omitempty"`
+
+	// Experimental enables experimental features.
+	Experimental bool `toml:"experimental,omitempty" yaml:"experimental,omitempty" mapstructure:"experimental,omitempty"`
 }
 
 // Task represents a task definition that can be executed via the CLI.
@@ -139,8 +146,8 @@ type Task struct {
 	Run string `toml:"run" yaml:"run" mapstructure:"run"`
 
 	// Env contains task-specific environment variables.
-	// These are merged with the global environment variables.
-	Env map[string]string `toml:"env,omitempty" yaml:"env,omitempty" mapstructure:"env,omitempty"`
+	// These are merged with the base environment variables.
+	Env map[string]interface{} `toml:"env,omitempty" yaml:"env,omitempty" mapstructure:"env,omitempty"`
 
 	// Depends lists task names that must run before this task.
 	Depends []string `toml:"depends,omitempty" yaml:"depends,omitempty" mapstructure:"depends,omitempty"`
@@ -292,6 +299,11 @@ func (s *Settings) Validate() error {
 	// Concurrency must be non-negative
 	if s.Concurrency < 0 {
 		errs = append(errs, "concurrency must be non-negative")
+	}
+
+	// HTTPTimeout must be non-negative
+	if s.HTTPTimeout < 0 {
+		errs = append(errs, "http_timeout must be non-negative")
 	}
 
 	if len(errs) > 0 {

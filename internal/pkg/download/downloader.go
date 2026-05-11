@@ -111,6 +111,9 @@ type DownloadOptions struct {
 
 	// GitHubProxy is a proxy prefix for GitHub URLs.
 	GitHubProxy string
+
+	// GitHubToken is a personal access token for GitHub API (optional).
+	GitHubToken string
 }
 
 // GPGResult holds the result of a GPG verification attempt.

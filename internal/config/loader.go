@@ -4,13 +4,16 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strings"
+	"github.com/flosch/pongo2/v6"
+	"github.com/joho/godotenv"
 	"github.com/pelletier/go-toml/v2"
 )
 
-// LoadProjectConfig loads the UniRTM project configuration from .unirtm.toml or unirtm.toml.
-func LoadProjectConfig() (*Config, error) {
+// Load loads the UniRTM project configuration from .unirtm.toml or unirtm.toml.
+func Load() (*Config, error) {
 	data, err := os.ReadFile(".unirtm.toml")
 	if err != nil {
 		data, err = os.ReadFile("unirtm.toml")
@@ -27,45 +30,127 @@ func LoadProjectConfig() (*Config, error) {
 	return &cfg, nil
 }
 
-// ApplyEnvironment sets the environment variables defined in the configuration
-// to the current process environment.
-func (c *Config) ApplyEnvironment() {
+// ResolveEnvironment resolves environment variables defined in the configuration.
+// It returns a map of rendered environment variables and a list of scripts to source.
+// It supports pongo2 (Jinja2-like) templates.
+func (c *Config) ResolveEnvironment() (map[string]string, []string) {
+	resolved := make(map[string]string)
+	var sources []string
 	if c.Env == nil {
-		return
+		return resolved, sources
+	}
+
+	// Prepare template context
+	ctx := pongo2.Context{
+		"env": make(map[string]string),
+	}
+	for _, e := range os.Environ() {
+		pair := strings.SplitN(e, "=", 2)
+		if len(pair) == 2 {
+			ctx["env"].(map[string]string)[pair[0]] = pair[1]
+		}
 	}
 
 	for k, v := range c.Env {
-		// Basic template rendering for Jinja-like templates commonly found in mise configs.
-		// Example: {% if env.CI is defined %}0{% else %}1{% endif %}
-		rendered := v
-		if strings.Contains(v, "{%") && strings.Contains(v, "%}") {
-			isCI := os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != ""
-			
-			// Handle {% if env.CI is defined %}...{% else %}...{% endif %}
-			if strings.Contains(v, "if env.CI is defined") {
-				parts := strings.Split(v, "{% else %}")
-				if len(parts) == 2 {
-					if isCI {
-						// Extract content between if and else
-						start := strings.Index(parts[0], "%}") + 2
-						rendered = strings.TrimSpace(parts[0][start:])
-					} else {
-						// Extract content between else and endif
-						end := strings.Index(parts[1], "{% endif %}")
-						if end != -1 {
-							rendered = strings.TrimSpace(parts[1][:end])
-						} else {
-							// fallback
-							start := strings.Index(parts[1], "%}") + 2
-							rendered = strings.TrimSpace(parts[1][start:])
+		// Handle special directives starting with underscore
+		if strings.HasPrefix(k, "_.") {
+			switch k {
+			case "_.file":
+				if path, ok := v.(string); ok {
+					if envs, err := godotenv.Read(path); err == nil {
+						for ek, ev := range envs {
+							resolved[ek] = ev
+							ctx["env"].(map[string]string)[ek] = ev
 						}
 					}
+				}
+			case "_.path":
+				var paths []string
+				switch val := v.(type) {
+				case string:
+					paths = []string{val}
+				case []interface{}:
+					for _, item := range val {
+						if s, ok := item.(string); ok {
+							paths = append(paths, s)
+						}
+					}
+				}
+				for _, p := range paths {
+					// Render template for path
+					rendered := p
+					if strings.Contains(p, "{%") || strings.Contains(p, "{{") {
+						if tpl, err := pongo2.FromString(p); err == nil {
+							if out, err := tpl.Execute(ctx); err == nil {
+								rendered = out
+							}
+						}
+					}
+					
+					currentPath := resolved["PATH"]
+					if currentPath == "" {
+						currentPath = os.Getenv("PATH")
+					}
+
+					if currentPath == "" {
+						resolved["PATH"] = rendered
+					} else {
+						resolved["PATH"] = rendered + string(os.PathListSeparator) + currentPath
+					}
+					// Update context
+					ctx["env"].(map[string]string)["PATH"] = resolved["PATH"]
+				}
+			case "_.source":
+				if path, ok := v.(string); ok {
+					// Render template for source path
+					rendered := path
+					if strings.Contains(path, "{%") || strings.Contains(path, "{{") {
+						if tpl, err := pongo2.FromString(path); err == nil {
+							if out, err := tpl.Execute(ctx); err == nil {
+								rendered = out
+							}
+						}
+					}
+					sources = append(sources, rendered)
+				}
+			}
+			continue
+		}
+
+		// Regular environment variables
+		var valStr string
+		switch val := v.(type) {
+		case string:
+			valStr = val
+		case int, int64, float64, bool:
+			valStr = fmt.Sprintf("%v", val)
+		default:
+			continue
+		}
+
+		rendered := valStr
+		if strings.Contains(valStr, "{%") || strings.Contains(valStr, "{{") {
+			tpl, err := pongo2.FromString(valStr)
+			if err == nil {
+				if out, err := tpl.Execute(ctx); err == nil {
+					rendered = out
 				}
 			}
 		}
 
-		// Only set if not already set, or if we want to override.
-		// For now, let's override to ensure configuration takes precedence.
-		os.Setenv(k, rendered)
+		resolved[k] = rendered
+		// Update context for subsequent variables in the same block
+		ctx["env"].(map[string]string)[k] = rendered
+	}
+
+	return resolved, sources
+}
+
+// ApplyEnvironment sets the environment variables defined in the configuration
+// to the current process environment.
+func (c *Config) ApplyEnvironment() {
+	resolved, _ := c.ResolveEnvironment()
+	for k, v := range resolved {
+		os.Setenv(k, v)
 	}
 }
