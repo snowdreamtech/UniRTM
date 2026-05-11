@@ -32,7 +32,7 @@ func NewRegistry() *Registry {
 	r.Register("go", nativeProvider)
 	r.Register("golang", nativeProvider)
 	r.Register("go-pkg", NewGoPkgProvider())
-	r.Register("java", NewJavaProvider())
+	r.Register("java", nativeProvider)
 	r.Register("ruby", NewRubyProvider())
 	r.Register("rust", nativeProvider)
 	r.Register("asdf", NewAsdfProvider())

@@ -89,6 +89,11 @@ func GetBuiltinRecipes() map[string]Recipe {
 				"latest": "1.6.2",
 			},
 		},
+		"java": {
+			ID:      "java",
+			Handler: &JavaHandler{},
+			BaseURL: "https://api.adoptium.net",
+		},
 	}
 }
 
