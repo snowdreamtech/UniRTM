@@ -129,6 +129,14 @@ type Settings struct {
 	// If zero, defaults to 900 (15 minutes).
 	HTTPTimeout int `toml:"http_timeout,omitempty" yaml:"http_timeout,omitempty" mapstructure:"http_timeout,omitempty"`
 
+	// TaskTimeout is the default timeout for task execution in seconds.
+	// If zero, tasks run indefinitely until completed or manually terminated.
+	TaskTimeout int `toml:"task_timeout,omitempty" yaml:"task_timeout,omitempty" mapstructure:"task_timeout,omitempty"`
+
+	// TaskOutput controls how task output is displayed.
+	// Supported: "plain", "prefix", "interleave". Default: "plain".
+	TaskOutput string `toml:"task_output,omitempty" yaml:"task_output,omitempty" mapstructure:"task_output,omitempty"`
+
 	// Experimental enables experimental features.
 	Experimental bool `toml:"experimental,omitempty" yaml:"experimental,omitempty" mapstructure:"experimental,omitempty"`
 }
@@ -151,6 +159,14 @@ type Task struct {
 
 	// Depends lists task names that must run before this task.
 	Depends []string `toml:"depends,omitempty" yaml:"depends,omitempty" mapstructure:"depends,omitempty"`
+
+	// Timeout is the timeout for this specific task in seconds.
+	// Overrides global Settings.TaskTimeout.
+	Timeout int `toml:"timeout,omitempty" yaml:"timeout,omitempty" mapstructure:"timeout,omitempty"`
+
+	// Output controls how output is displayed for this specific task.
+	// Overrides global Settings.TaskOutput.
+	Output string `toml:"output,omitempty" yaml:"output,omitempty" mapstructure:"output,omitempty"`
 }
 
 // Validate validates the Config structure and returns an error if validation fails.
