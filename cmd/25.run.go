@@ -80,7 +80,7 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 	engine.Register(task.NewGoTaskRunner())
 	engine.Register(task.NewMakeRunner())
 	engine.Register(task.NewJustRunner())
-	engine.Register(task.NewNativeRunner(cfg.Tasks))
+	engine.Register(task.NewNativeRunner(cfg.Tasks, cfg.Settings))
 
 	// Get current directory
 	cwd, err := os.Getwd()

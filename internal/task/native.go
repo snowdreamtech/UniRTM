@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/config"
 )
@@ -16,12 +17,13 @@ import (
 // NativeRunner is the fallback task runner that executes tasks defined
 // directly in the UniRTM configuration file (e.g., [tasks] block).
 type NativeRunner struct {
-	tasks map[string]config.Task
+	tasks    map[string]config.Task
+	settings config.Settings
 }
 
-// NewNativeRunner creates a new NativeRunner with the parsed configuration tasks.
-func NewNativeRunner(tasks map[string]config.Task) *NativeRunner {
-	return &NativeRunner{tasks: tasks}
+// NewNativeRunner creates a new NativeRunner with the parsed configuration tasks and settings.
+func NewNativeRunner(tasks map[string]config.Task, settings config.Settings) *NativeRunner {
+	return &NativeRunner{tasks: tasks, settings: settings}
 }
 
 // Name returns the name of this runner.
@@ -55,7 +57,20 @@ func (r *NativeRunner) Run(ctx context.Context, dir string, taskName string, arg
 		script = script + " " + strings.Join(args, " ")
 	}
 
-	cmd := exec.CommandContext(ctx, "sh", "-c", script)
+	// Resolve timeout: task override > global setting
+	timeout := r.settings.TaskTimeout
+	if taskDef.Timeout > 0 {
+		timeout = taskDef.Timeout
+	}
+
+	runCtx := ctx
+	if timeout > 0 {
+		var cancel context.CancelFunc
+		runCtx, cancel = context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
+		defer cancel()
+	}
+
+	cmd := exec.CommandContext(runCtx, "sh", "-c", script)
 	cmd.Dir = dir
 	
 	// Inject process env + UniRTM env
