@@ -282,7 +282,9 @@ func (mm *MigrationManager) parseMiseToml(path string) ([]MigrationTool, map[str
 	if envData, ok := raw["env"].(map[string]interface{}); ok {
 		for k, v := range envData {
 			if str, ok := v.(string); ok {
-				envVars[k] = str
+				newKey := strings.Replace(k, "MISE_", "UNIRTM_", 1)
+				newVal := strings.ReplaceAll(str, "MISE_", "UNIRTM_")
+				envVars[newKey] = newVal
 			} else {
 				unsupported = append(unsupported, fmt.Sprintf("env var %q has non-string value and was skipped", k))
 			}
