@@ -21,7 +21,7 @@ var (
 // init registers the migrate command to the root command.
 func init() {
 	migrateCmd.Flags().BoolVar(&migrateDryRun, "dry-run", false, "preview migration without writing files")
-	migrateCmd.Flags().StringVarP(&migrateOutput, "output", "o", "unirtm.toml", "output file path")
+	migrateCmd.Flags().StringVarP(&migrateOutput, "output", "o", ".unirtm.toml", "output file path")
 
 	if rootCmd != nil {
 		rootCmd.AddCommand(migrateCmd)

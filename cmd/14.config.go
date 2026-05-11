@@ -312,7 +312,7 @@ func runConfigGenerate(cmd *cobra.Command, args []string) error {
 		Verbose: verbose,
 	})
 
-	targetFile := "unirtm.toml"
+	targetFile := ".unirtm.toml"
 	if len(args) == 1 {
 		targetFile = args[0]
 	}

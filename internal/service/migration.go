@@ -111,7 +111,7 @@ func (mm *MigrationManager) MigrateFile(ctx context.Context, sourcePath string, 
 
 	// Determine output path first to know the target format
 	if outputPath == "" {
-		outputPath = "unirtm.toml"
+		outputPath = ".unirtm.toml"
 		report.OutputFile = outputPath
 	}
 
@@ -174,7 +174,7 @@ func (mm *MigrationManager) MigrateDirectory(ctx context.Context, dir string, dr
 		if _, err := os.Stat(candidate); os.IsNotExist(err) {
 			continue
 		}
-		outputPath := filepath.Join(dir, "unirtm.toml")
+		outputPath := filepath.Join(dir, ".unirtm.toml")
 		report, err := mm.MigrateFile(ctx, candidate, outputPath, dryRun)
 		if err != nil {
 			report.Errors = append(report.Errors, err.Error())
