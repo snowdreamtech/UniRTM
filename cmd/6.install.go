@@ -123,6 +123,11 @@ func runInstall(cmd *cobra.Command, args []string) error {
 					backendName = "asdf"
 				}
 			}
+
+			// Intercept go: prefix and route to the internal go-pkg provider
+			if backendName == "go" {
+				backendName = "go-pkg"
+			}
 			toolsToInstall[name] = service.ToolSpec{
 				Name:        toolName,
 				Version:     tc.Version,
@@ -150,18 +155,25 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			parts := strings.SplitN(tool, ":", 2)
 			backendName = parts[0]
 			tool = parts[1]
-		} else if strings.Contains(tool, "/") {
-			// For owner/repo format, default to github unless specified via flag
-			if installBackend == "" {
-				backendName = "github"
+
+			// Intercept go: prefix and route to the internal go-pkg provider
+			if backendName == "go" {
+				backendName = "go-pkg"
 			}
-		} else {
-			if installBackend == "" {
-				if native.IsNativeTool(tool) {
-					backendName = "native"
-				} else {
-					backendName = "asdf"
-				}
+		}
+
+		if backendName == "" {
+			toolName := tool
+			if strings.Contains(tool, "@") {
+				toolName = strings.SplitN(tool, "@", 2)[0]
+			}
+
+			if strings.Contains(toolName, "/") {
+				backendName = "github"
+			} else if native.IsNativeTool(toolName) {
+				backendName = "native"
+			} else {
+				backendName = "asdf"
 			}
 		}
 
