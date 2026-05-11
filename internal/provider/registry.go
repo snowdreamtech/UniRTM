@@ -60,6 +60,8 @@ func NewRegistry() *Registry {
 	r.Register("opentofu", nativeProvider)
 	r.Register("tofu", nativeProvider)
 	r.Register("kubectl", nativeProvider)
+	r.Register("maven", nativeProvider)
+	r.Register("gradle", nativeProvider)
 	
 	return r
 }

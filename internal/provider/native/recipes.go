@@ -114,6 +114,16 @@ func GetBuiltinRecipes() map[string]Recipe {
 			Handler: &RubyHandler{},
 			BaseURL: "https://github.com/ruby/ruby-builder/releases",
 		},
+		"maven": {
+			ID:      "maven",
+			Handler: &MavenHandler{},
+			BaseURL: "https://archive.apache.org/dist/maven/maven-3",
+		},
+		"gradle": {
+			ID:      "gradle",
+			Handler: &GradleHandler{},
+			BaseURL: "https://services.gradle.org/versions/all",
+		},
 	}
 }
 
