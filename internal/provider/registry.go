@@ -25,10 +25,11 @@ func NewRegistry() *Registry {
 	}
 
 	// Register default providers
+	r.Register("native", nativeProvider)
 	r.Register("node", nativeProvider)
 	r.Register("nodejs", nativeProvider)
 	r.Register("python", nativeProvider)
-	r.Register("go", nativeProvider)
+	r.Register("go", NewGoPkgProvider())
 	r.Register("golang", nativeProvider)
 	r.Register("java", NewJavaProvider())
 	r.Register("ruby", NewRubyProvider())

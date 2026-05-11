@@ -13,45 +13,45 @@ import (
 	"strings"
 )
 
-// GoProvider implements the Provider interface for Go.
-type GoProvider struct {
+// GolangProvider implements the Provider interface for Go SDK.
+type GolangProvider struct {
 	generic *GenericProvider
 }
 
-// NewGoProvider creates a new Go provider.
-func NewGoProvider() *GoProvider {
-	return &GoProvider{
+// NewGolangProvider creates a new Go provider.
+func NewGolangProvider() *GolangProvider {
+	return &GolangProvider{
 		generic: NewGenericProvider(),
 	}
 }
 
 // Name returns the provider identifier.
-func (g *GoProvider) Name() string {
-	return "go"
+func (g *GolangProvider) Name() string {
+	return "golang"
 }
 
 // Install performs Go-specific installation.
-func (g *GoProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (g *GolangProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
 	return g.generic.Install(ctx, installPath, artifactPath, version)
 }
 
 // PostInstall sets up GOPATH.
-func (g *GoProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (g *GolangProvider) PostInstall(ctx context.Context, installPath string, version string) error {
 	gopath := filepath.Join(installPath, "gopath")
 	if err := os.MkdirAll(filepath.Join(gopath, "bin"), 0755); err != nil {
-		return NewProviderError("go", "go", version, "failed to create GOPATH", err)
+		return NewProviderError("golang", "go", version, "failed to create GOPATH", err)
 	}
 	if err := os.MkdirAll(filepath.Join(gopath, "pkg"), 0755); err != nil {
-		return NewProviderError("go", "go", version, "failed to create GOPATH/pkg", err)
+		return NewProviderError("golang", "go", version, "failed to create GOPATH/pkg", err)
 	}
 	if err := os.MkdirAll(filepath.Join(gopath, "src"), 0755); err != nil {
-		return NewProviderError("go", "go", version, "failed to create GOPATH/src", err)
+		return NewProviderError("golang", "go", version, "failed to create GOPATH/src", err)
 	}
 	return nil
 }
 
 // GenerateShims generates shims for go and gofmt.
-func (g *GoProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
+func (g *GolangProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
 	shims := make(map[string]string)
 
 	executables := []string{"go", "gofmt"}
@@ -69,7 +69,7 @@ func (g *GoProvider) GenerateShims(installPath string, version string) (map[stri
 }
 
 // DetectVersion detects Go version.
-func (g *GoProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (g *GolangProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
 	goPath := filepath.Join(installPath, "bin", "go")
 	if runtime.GOOS == "windows" {
 		goPath += ".exe"
@@ -78,7 +78,7 @@ func (g *GoProvider) DetectVersion(ctx context.Context, installPath string) (str
 	cmd := exec.CommandContext(ctx, goPath, "version")
 	output, err := cmd.Output()
 	if err != nil {
-		return "", NewProviderError("go", "go", "", "failed to detect version", err)
+		return "", NewProviderError("golang", "go", "", "failed to detect version", err)
 	}
 
 	version := strings.TrimSpace(string(output))
@@ -88,11 +88,11 @@ func (g *GoProvider) DetectVersion(ctx context.Context, installPath string) (str
 		return version, nil
 	}
 
-	return "", NewProviderError("go", "go", "", "failed to parse version", nil)
+	return "", NewProviderError("golang", "go", "", "failed to parse version", nil)
 }
 
 // ListExecutables returns Go executables.
-func (g *GoProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (g *GolangProvider) ListExecutables(installPath string, version string) ([]string, error) {
 	executables := []string{"go", "gofmt"}
 	if runtime.GOOS == "windows" {
 		for i := range executables {
@@ -103,16 +103,16 @@ func (g *GoProvider) ListExecutables(installPath string, version string) ([]stri
 }
 
 // Uninstall performs Go-specific cleanup.
-func (g *GoProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (g *GolangProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	gopath := filepath.Join(installPath, "gopath")
 	if err := os.RemoveAll(gopath); err != nil {
-		return NewProviderError("go", "go", version, "failed to remove GOPATH", err)
+		return NewProviderError("golang", "go", version, "failed to remove GOPATH", err)
 	}
 	return nil
 }
 
 // generateGoShim generates a Go-specific shim.
-func (g *GoProvider) generateGoShim(name, exePath, installPath, version string) string {
+func (g *GolangProvider) generateGoShim(name, exePath, installPath, version string) string {
 	gopath := filepath.Join(installPath, "gopath")
 
 	if runtime.GOOS == "windows" {
