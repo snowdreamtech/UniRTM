@@ -5,6 +5,7 @@ package config
 
 import (
 	"os"
+	"strings"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -34,8 +35,37 @@ func (c *Config) ApplyEnvironment() {
 	}
 
 	for k, v := range c.Env {
+		// Basic template rendering for Jinja-like templates commonly found in mise configs.
+		// Example: {% if env.CI is defined %}0{% else %}1{% endif %}
+		rendered := v
+		if strings.Contains(v, "{%") && strings.Contains(v, "%}") {
+			isCI := os.Getenv("CI") != "" || os.Getenv("GITHUB_ACTIONS") != ""
+			
+			// Handle {% if env.CI is defined %}...{% else %}...{% endif %}
+			if strings.Contains(v, "if env.CI is defined") {
+				parts := strings.Split(v, "{% else %}")
+				if len(parts) == 2 {
+					if isCI {
+						// Extract content between if and else
+						start := strings.Index(parts[0], "%}") + 2
+						rendered = strings.TrimSpace(parts[0][start:])
+					} else {
+						// Extract content between else and endif
+						end := strings.Index(parts[1], "{% endif %}")
+						if end != -1 {
+							rendered = strings.TrimSpace(parts[1][:end])
+						} else {
+							// fallback
+							start := strings.Index(parts[1], "%}") + 2
+							rendered = strings.TrimSpace(parts[1][start:])
+						}
+					}
+				}
+			}
+		}
+
 		// Only set if not already set, or if we want to override.
 		// For now, let's override to ensure configuration takes precedence.
-		os.Setenv(k, v)
+		os.Setenv(k, rendered)
 	}
 }

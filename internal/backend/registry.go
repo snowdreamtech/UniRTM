@@ -36,6 +36,7 @@ func NewRegistry() *Registry {
 	r.Register(NewVfoxBackend())
 	r.Register(NewSpmBackend())
 	r.Register(NewS3Backend())
+	r.Register(NewPipxBackend())
 
 	return r
 }

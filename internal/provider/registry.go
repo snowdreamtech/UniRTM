@@ -50,6 +50,7 @@ func NewRegistry() *Registry {
 	r.Register("zig", NewZigProvider())
 	r.Register("php", NewPhpProvider())
 	r.Register("flutter", NewFlutterProvider())
+	r.Register("pipx", NewPypiProvider())
 	
 	return r
 }

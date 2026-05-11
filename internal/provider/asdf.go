@@ -58,6 +58,18 @@ func (p *AsdfProvider) Install(ctx context.Context, installPath string, artifact
 	}
 	defer os.RemoveAll(downloadPath)
 
+	// Create a temporary bin directory with an 'asdf' stub
+	// Many plugins call 'asdf reshim' at the end of installation.
+	stubDir := filepath.Join(os.TempDir(), "unirtm-asdf-stub")
+	if err := os.MkdirAll(stubDir, 0755); err != nil {
+		return err
+	}
+	asdfStub := filepath.Join(stubDir, "asdf")
+	if err := os.WriteFile(asdfStub, []byte("#!/bin/sh\nexit 0\n"), 0755); err != nil {
+		return err
+	}
+	defer os.RemoveAll(stubDir)
+
 	env := os.Environ()
 	env = append(env,
 		"ASDF_INSTALL_TYPE=version",
@@ -65,6 +77,7 @@ func (p *AsdfProvider) Install(ctx context.Context, installPath string, artifact
 		"ASDF_INSTALL_PATH="+installPath,
 		"ASDF_DOWNLOAD_PATH="+downloadPath,
 		"ASDF_CONCURRENCY=4", // reasonable default
+		"PATH="+stubDir+string(os.PathListSeparator)+os.Getenv("PATH"),
 	)
 
 	// Ensure install path exists
