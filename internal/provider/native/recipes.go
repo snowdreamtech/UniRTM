@@ -30,6 +30,22 @@ func GetBuiltinRecipes() map[string]Recipe {
 			Handler: &NodeJSHandler{},
 			BaseURL: "https://nodejs.org/dist",
 		},
+		"python": {
+			ID: "python",
+			Handler: &GithubHandler{
+				Owner: "indygreg",
+				Repo:  "python-build-standalone",
+			},
+			BaseURL: "https://github.com/indygreg/python-build-standalone/releases",
+			Aliases: map[string]string{
+				"latest": "3.12.2",
+			},
+		},
+		"zig": {
+			ID:      "zig",
+			Handler: &ZigHandler{},
+			BaseURL: "https://ziglang.org/download/index.json",
+		},
 	}
 }
 

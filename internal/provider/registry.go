@@ -27,7 +27,7 @@ func NewRegistry() *Registry {
 	// Register default providers
 	r.Register("node", nativeProvider)
 	r.Register("nodejs", nativeProvider)
-	r.Register("python", NewPythonProvider())
+	r.Register("python", nativeProvider)
 	r.Register("go", nativeProvider)
 	r.Register("golang", nativeProvider)
 	r.Register("java", NewJavaProvider())
@@ -48,7 +48,7 @@ func NewRegistry() *Registry {
 	r.Register("elixir", NewElixirProvider())
 	r.Register("erlang", NewErlangProvider())
 	r.Register("swift", NewSwiftProvider())
-	r.Register("zig", NewZigProvider())
+	r.Register("zig", nativeProvider)
 	r.Register("php", NewPhpProvider())
 	r.Register("flutter", NewFlutterProvider())
 	r.Register("pipx", NewPypiProvider())
