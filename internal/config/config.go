@@ -117,6 +117,13 @@ type Settings struct {
 	// Can also be set via the UNIRTM_LOCKED=1 environment variable.
 	// Default: false.
 	Locked bool `toml:"locked,omitempty" yaml:"locked,omitempty" mapstructure:"locked,omitempty"`
+
+	// GitHubProxy is a proxy prefix for GitHub URLs to improve accessibility.
+	// Example: "https://ghproxy.com/"
+	GitHubProxy string `toml:"github_proxy,omitempty" yaml:"github_proxy,omitempty" mapstructure:"github_proxy,omitempty"`
+
+	// GitHubToken is a personal access token for GitHub API to avoid rate limiting.
+	GitHubToken string `toml:"github_token,omitempty" yaml:"github_token,omitempty" mapstructure:"github_token,omitempty"`
 }
 
 // Task represents a task definition that can be executed via the CLI.

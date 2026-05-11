@@ -200,6 +200,7 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 		downloadManager,
 		installRepo,
 		txManager,
+		nil,
 	)
 
 	// Perform uninstallation

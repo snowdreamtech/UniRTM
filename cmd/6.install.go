@@ -262,6 +262,10 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create installation manager with optional lock support
+	var settings *config.Settings
+	if cfg != nil {
+		settings = &cfg.Settings
+	}
 	installManager := service.NewInstallationManagerWithLock(
 		backendRegistry,
 		providerRegistry,
@@ -269,6 +273,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		installRepo,
 		txManager,
 		lockSvc,
+		settings,
 	)
 
 	formatter.Info(fmt.Sprintf("Processing %d tool(s)...", len(toolsToInstall)))

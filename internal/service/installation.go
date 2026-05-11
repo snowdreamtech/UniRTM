@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
@@ -28,6 +29,7 @@ type InstallationManager struct {
 	installRepo      repository.InstallationRepository
 	txManager        transaction.TransactionManager
 	lockService      *LockService // optional; nil = lockfile disabled
+	settings         *config.Settings
 }
 
 // NewInstallationManager creates a new installation manager without lockfile support.
@@ -37,6 +39,7 @@ func NewInstallationManager(
 	downloadManager *download.Manager,
 	installRepo repository.InstallationRepository,
 	txManager transaction.TransactionManager,
+	settings *config.Settings,
 ) *InstallationManager {
 	return &InstallationManager{
 		backendRegistry:  backendRegistry,
@@ -44,6 +47,7 @@ func NewInstallationManager(
 		downloadManager:  downloadManager,
 		installRepo:      installRepo,
 		txManager:        txManager,
+		settings:         settings,
 	}
 }
 
@@ -56,8 +60,9 @@ func NewInstallationManagerWithLock(
 	installRepo repository.InstallationRepository,
 	txManager transaction.TransactionManager,
 	lockService *LockService,
+	settings *config.Settings,
 ) *InstallationManager {
-	im := NewInstallationManager(backendRegistry, providerRegistry, downloadManager, installRepo, txManager)
+	im := NewInstallationManager(backendRegistry, providerRegistry, downloadManager, installRepo, txManager, settings)
 	im.lockService = lockService
 	return im
 }
@@ -139,6 +144,9 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		}
 
 		opts := download.DefaultDownloadOptions()
+		if im.settings != nil {
+			opts.GitHubProxy = im.settings.GitHubProxy
+		}
 		if versionInfo.Checksum != "" {
 			opts = opts.WithChecksum(versionInfo.Checksum)
 		}

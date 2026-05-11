@@ -88,6 +88,19 @@ func NewHTTPDownloader() *HTTPDownloader {
 // Returns:
 //   - error: nil on success, or an error describing the failure
 func (h *HTTPDownloader) Download(ctx context.Context, url string, destination string, opts DownloadOptions) error {
+	// Apply GitHub proxy if configured and URL is from GitHub
+	if opts.GitHubProxy != "" && (strings.Contains(url, "github.com") || strings.Contains(url, "githubusercontent.com")) {
+		// Ensure proxy ends with /
+		proxy := opts.GitHubProxy
+		if !strings.HasSuffix(proxy, "/") {
+			proxy += "/"
+		}
+		// Avoid double proxying
+		if !strings.HasPrefix(url, proxy) {
+			url = proxy + url
+		}
+	}
+
 	// Validate URL
 	if _, err := parseURL(url); err != nil {
 		return errors.NewUserError(fmt.Sprintf("invalid URL %q", url), err)

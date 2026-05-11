@@ -108,6 +108,9 @@ type DownloadOptions struct {
 	// GPGResult points to a struct that will be populated with the result
 	// of the GPG verification (e.g., "Success", "Failed", "Skipped").
 	GPGResult *GPGResult
+
+	// GitHubProxy is a proxy prefix for GitHub URLs.
+	GitHubProxy string
 }
 
 // GPGResult holds the result of a GPG verification attempt.
@@ -126,7 +129,7 @@ type GPGResult struct {
 func DefaultDownloadOptions() DownloadOptions {
 	return DownloadOptions{
 		MaxRetries: 5,
-		Timeout:    5 * time.Minute,
+		Timeout:    15 * time.Minute,
 	}
 }
 
