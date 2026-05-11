@@ -94,6 +94,11 @@ func GetBuiltinRecipes() map[string]Recipe {
 			Handler: &JavaHandler{},
 			BaseURL: "https://api.adoptium.net",
 		},
+		"kubectl": {
+			ID:      "kubectl",
+			Handler: &KubectlHandler{},
+			BaseURL: "https://dl.k8s.io",
+		},
 	}
 }
 

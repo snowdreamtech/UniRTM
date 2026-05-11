@@ -57,6 +57,7 @@ func NewRegistry() *Registry {
 	r.Register("terraform", nativeProvider)
 	r.Register("opentofu", nativeProvider)
 	r.Register("tofu", nativeProvider)
+	r.Register("kubectl", nativeProvider)
 	
 	return r
 }
