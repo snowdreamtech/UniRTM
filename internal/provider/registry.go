@@ -18,17 +18,18 @@ type Registry struct {
 
 // NewRegistry creates a new provider registry with default providers registered.
 func NewRegistry() *Registry {
+	nativeProvider := NewNativeProvider()
 	r := &Registry{
 		providers: make(map[string]Provider),
 		generic:   NewGenericProvider(),
 	}
 
 	// Register default providers
-	r.Register("node", NewNodeProvider())
-	r.Register("nodejs", NewNodeProvider())
+	r.Register("node", nativeProvider)
+	r.Register("nodejs", nativeProvider)
 	r.Register("python", NewPythonProvider())
-	r.Register("go", NewGoProvider())
-	r.Register("golang", NewGoProvider())
+	r.Register("go", nativeProvider)
+	r.Register("golang", nativeProvider)
 	r.Register("java", NewJavaProvider())
 	r.Register("ruby", NewRubyProvider())
 	r.Register("rust", NewRustProvider())

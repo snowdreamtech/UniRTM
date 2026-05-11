@@ -19,6 +19,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/provider"
+	"github.com/snowdreamtech/unirtm/internal/provider/native"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/snowdreamtech/unirtm/internal/transaction"
@@ -116,6 +117,8 @@ func runInstall(cmd *cobra.Command, args []string) error {
 					toolName = name[idx+1:]
 				} else if strings.Contains(name, "/") {
 					backendName = "github"
+				} else if native.IsNativeTool(toolName) {
+					backendName = "native"
 				} else {
 					backendName = "asdf"
 				}
@@ -153,9 +156,12 @@ func runInstall(cmd *cobra.Command, args []string) error {
 				backendName = "github"
 			}
 		} else {
-			// Single name tools default to asdf unless specified via flag
 			if installBackend == "" {
-				backendName = "asdf"
+				if native.IsNativeTool(tool) {
+					backendName = "native"
+				} else {
+					backendName = "asdf"
+				}
 			}
 		}
 
