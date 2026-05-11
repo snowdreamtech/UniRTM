@@ -16,6 +16,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/snowdreamtech/unirtm/internal/service"
@@ -88,18 +89,41 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		Verbose: verbose,
 	})
 
+	// Load project configuration
+	cfg, err := config.LoadProjectConfig()
+	if err != nil {
+		formatter.Warning(fmt.Sprintf("Failed to load project config: %v", err))
+	} else {
+		// Apply [env] variables from config to current process
+		cfg.ApplyEnvironment()
+	}
+
 	var toolsToInstall map[string]service.ToolSpec
 	if len(args) == 0 {
-		// Install all tools from project config
-		var err error
-		toolsToInstall, err = loadToolsFromProjectConfig()
-		if err != nil {
-			formatter.Error(fmt.Sprintf("Failed to load project config: %v", err))
-			return err
-		}
-		if len(toolsToInstall) == 0 {
+		// Use tools from config if no arguments provided
+		if cfg == nil || len(cfg.Tools) == 0 {
 			formatter.Warning("No tools found in project configuration.")
 			return nil
+		}
+		toolsToInstall = make(map[string]service.ToolSpec, len(cfg.Tools))
+		for name, tc := range cfg.Tools {
+			backendName := tc.Backend
+			toolName := name
+			if backendName == "" {
+				if idx := strings.Index(name, ":"); idx != -1 {
+					backendName = name[:idx]
+					toolName = name[idx+1:]
+				} else if strings.Contains(name, "/") {
+					backendName = "github"
+				} else {
+					backendName = "asdf"
+				}
+			}
+			toolsToInstall[name] = service.ToolSpec{
+				Name:        toolName,
+				Version:     tc.Version,
+				BackendName: backendName,
+			}
 		}
 	} else {
 		// Install specific tool from arguments
@@ -122,6 +146,16 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			parts := strings.SplitN(tool, ":", 2)
 			backendName = parts[0]
 			tool = parts[1]
+		} else if strings.Contains(tool, "/") {
+			// For owner/repo format, default to github unless specified via flag
+			if installBackend == "" {
+				backendName = "github"
+			}
+		} else {
+			// Single name tools default to asdf unless specified via flag
+			if installBackend == "" {
+				backendName = "asdf"
+			}
 		}
 
 		if tool == "" {

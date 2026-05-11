@@ -114,10 +114,12 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 	if versionInfo == nil {
 		// Lockfile miss — fall back to the remote backend.
+		fmt.Printf("ℹ resolving download info for %s@%s...\n", tool, version)
 		info, err := b.GetDownloadInfo(ctx, tool, version, platform)
 		if err != nil {
 			return fmt.Errorf("failed to get download info: %w", err)
 		}
+		fmt.Printf("✓ resolved %s@%s to %s\n", tool, version, info.DownloadURL)
 		versionInfo = info
 	}
 
@@ -126,6 +128,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	var gpgStatus string = "NotRequested"
 	if versionInfo.DownloadURL != "" {
 		downloadPath = filepath.Join(env.GetDownloadsDir(), fmt.Sprintf("%s-%s", tool, version))
+		fmt.Printf("ℹ downloading %s@%s to %s...\n", tool, version, downloadPath)
 		if err := os.MkdirAll(filepath.Dir(downloadPath), 0755); err != nil {
 			return fmt.Errorf("failed to create downloads directory: %w", err)
 		}
@@ -147,9 +150,11 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		}
 		opts = opts.WithVerifyGPG(verifyGPG, gpgResult)
 
+		fmt.Printf("ℹ downloading %s@%s...\n", tool, version)
 		if err := downloader.Download(ctx, versionInfo.DownloadURL, downloadPath, opts); err != nil {
 			return fmt.Errorf("failed to download: %w", err)
 		}
+		fmt.Printf("✓ downloaded to %s\n", downloadPath)
 		defer func() {
 			os.Remove(downloadPath)
 			// Clean up empty parent directories up to the downloads root

@@ -43,7 +43,26 @@ func (b *AsdfBackend) Name() string {
 	return "asdf"
 }
 
+// asdfAliases maps common tool names to their official asdf plugin names.
+var asdfAliases = map[string]string{
+	"node": "nodejs",
+	"go":   "golang",
+}
+
+// ResolveAsdfToolName maps common tool names to their official asdf plugin names.
+func ResolveAsdfToolName(tool string) string {
+	if alias, ok := asdfAliases[tool]; ok {
+		return alias
+	}
+	return tool
+}
+
+func (b *AsdfBackend) resolveToolName(tool string) string {
+	return ResolveAsdfToolName(tool)
+}
+
 func (b *AsdfBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
+	tool = b.resolveToolName(tool)
 	pluginDir, err := b.ensurePlugin(ctx, tool)
 	if err != nil {
 		return nil, NewBackendError(b.Name(), tool, "ensure plugin", err)
@@ -89,6 +108,7 @@ func (b *AsdfBackend) ListVersions(ctx context.Context, tool string, platform Pl
 }
 
 func (b *AsdfBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+	tool = b.resolveToolName(tool)
 	if versionRequest == "latest" {
 		versions, err := b.ListVersions(ctx, tool, platform)
 		if err != nil {
@@ -110,6 +130,7 @@ func (b *AsdfBackend) ResolveVersion(ctx context.Context, tool string, versionRe
 }
 
 func (b *AsdfBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+	tool = b.resolveToolName(tool)
 	// asdf plugins don't provide download info without actually downloading.
 	// We need to ensure the plugin is present for the provider.
 	if _, err := b.ensurePlugin(ctx, tool); err != nil {

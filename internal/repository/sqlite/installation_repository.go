@@ -6,6 +6,7 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/mattn/go-sqlite3"
@@ -82,7 +83,8 @@ func (r *InstallationRepository) Create(ctx context.Context, installation *repos
 	)
 	if err != nil {
 		// Check for unique constraint violation
-		if sqliteErr, ok := err.(sqlite3.Error); ok {
+		var sqliteErr sqlite3.Error
+		if errors.As(err, &sqliteErr) {
 			if sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
 				return fmt.Errorf("installation already exists for %s@%s: %w", installation.Tool, installation.Version, repository.ErrAlreadyExists)
 			}

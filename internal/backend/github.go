@@ -52,7 +52,8 @@ type githubAsset struct {
 
 // ListVersions returns all available versions from GitHub Releases.
 func (g *GitHubBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
-	// Tool format: "owner/repo"
+	// Tool format: "owner/repo" or "github:owner/repo"
+	tool = strings.TrimPrefix(tool, "github:")
 	if !strings.Contains(tool, "/") {
 		return nil, NewBackendError("github", tool, "invalid tool format, expected 'owner/repo'", nil)
 	}
@@ -64,13 +65,12 @@ func (g *GitHubBackend) ListVersions(ctx context.Context, tool string, platform 
 
 	var versions []VersionInfo
 	for _, release := range releases {
-		// Skip drafts
 		if release.Draft {
 			continue
 		}
 
-		// Find matching asset for platform
-		asset, checksum := g.findMatchingAsset(release.Assets, platform)
+		// Find matching asset for platform but DON'T fetch checksum here
+		asset := g.findMatchingAssetOnly(release.Assets, platform)
 		if asset == nil {
 			continue
 		}
@@ -79,7 +79,6 @@ func (g *GitHubBackend) ListVersions(ctx context.Context, tool string, platform 
 		versions = append(versions, VersionInfo{
 			Version:     version,
 			DownloadURL: asset.BrowserDownloadURL,
-			Checksum:    checksum,
 			Platform:    platform,
 			Metadata: map[string]string{
 				"tag_name":   release.TagName,
@@ -144,7 +143,67 @@ func (g *GitHubBackend) ResolveVersion(ctx context.Context, tool string, version
 
 // GetDownloadInfo retrieves download information for a specific version.
 func (g *GitHubBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
-	return g.ResolveVersion(ctx, tool, version, platform)
+	v, err := g.ResolveVersion(ctx, tool, version, platform)
+	if err != nil {
+		return nil, err
+	}
+
+	// Now that we have a concrete version, try to fetch its checksum if not already present
+	if v.Checksum == "" {
+		releases, err := g.fetchReleases(ctx, strings.TrimPrefix(tool, "github:"))
+		if err == nil {
+			for _, r := range releases {
+				if strings.TrimPrefix(r.TagName, "v") == v.Version {
+					_, checksum := g.findMatchingAsset(r.Assets, platform)
+					v.Checksum = checksum
+					break
+				}
+			}
+		}
+	}
+
+	return v, nil
+}
+
+// findMatchingAssetOnly is a light version of findMatchingAsset that doesn't fetch checksums.
+func (g *GitHubBackend) findMatchingAssetOnly(assets []githubAsset, platform Platform) *githubAsset {
+	var bestAsset *githubAsset
+	bestScore := -1
+
+	for i := range assets {
+		asset := &assets[i]
+		nameLower := strings.ToLower(asset.Name)
+
+		// Skip checksum files and installers
+		if strings.HasSuffix(nameLower, ".sha256") || strings.HasSuffix(nameLower, ".sha256sum") ||
+			strings.Contains(nameLower, "checksums") || strings.Contains(nameLower, "sha256sums") ||
+			strings.HasSuffix(nameLower, ".deb") || strings.HasSuffix(nameLower, ".rpm") ||
+			strings.HasSuffix(nameLower, ".msi") || strings.HasSuffix(nameLower, ".apk") ||
+			strings.HasSuffix(nameLower, ".dmg") || strings.HasSuffix(nameLower, ".pkg") {
+			continue
+		}
+
+		if g.matchesPlatform(asset.Name, platform) {
+			score := 0
+			if strings.HasSuffix(nameLower, ".tar.gz") || strings.HasSuffix(nameLower, ".tgz") {
+				score = 10
+			} else if strings.HasSuffix(nameLower, ".zip") {
+				score = 8
+			} else if strings.HasSuffix(nameLower, ".tar.xz") || strings.HasSuffix(nameLower, ".txz") {
+				score = 6
+			} else if !strings.Contains(nameLower, ".") {
+				score = 5
+			} else {
+				score = 1
+			}
+
+			if score > bestScore {
+				bestScore = score
+				bestAsset = asset
+			}
+		}
+	}
+	return bestAsset
 }
 
 // SupportsChecksum indicates whether this backend provides checksums.
@@ -174,10 +233,12 @@ func (g *GitHubBackend) fetchReleases(ctx context.Context, tool string) ([]githu
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
+	fmt.Printf("ℹ github: fetching releases for %s...\n", tool)
 	resp, err := g.client.Do(req)
 	if err != nil {
 		return nil, NewBackendError("github", tool, "failed to fetch releases", err)
 	}
+	fmt.Printf("✓ github: received API response with status %d\n", resp.StatusCode)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -201,89 +262,34 @@ func (g *GitHubBackend) fetchReleases(ctx context.Context, tool string) ([]githu
 
 // findMatchingAsset finds the asset that matches the platform and its checksum.
 func (g *GitHubBackend) findMatchingAsset(assets []githubAsset, platform Platform) (*githubAsset, string) {
-	var checksumAsset *githubAsset
-	var checksumMap map[string]string
+	bestAsset := g.findMatchingAssetOnly(assets, platform)
+	if bestAsset == nil {
+		return nil, ""
+	}
 
-	// First pass: find checksum file
+	// Now find the checksum for this specific asset
+	var checksumAsset *githubAsset
 	for i := range assets {
 		asset := &assets[i]
-		if strings.HasSuffix(asset.Name, ".sha256") ||
-			strings.HasSuffix(asset.Name, ".sha256sum") ||
-			strings.Contains(asset.Name, "checksums") ||
-			strings.Contains(asset.Name, "SHA256SUMS") {
+		nameLower := strings.ToLower(asset.Name)
+		if strings.HasSuffix(nameLower, ".sha256") ||
+			strings.HasSuffix(nameLower, ".sha256sum") ||
+			strings.Contains(nameLower, "checksums") ||
+			strings.Contains(nameLower, "sha256sums") {
 			checksumAsset = asset
 			break
 		}
 	}
 
-	// If checksum file found, parse it
+	var checksum string
 	if checksumAsset != nil {
-		checksumMap = g.parseChecksumFile(checksumAsset.BrowserDownloadURL)
-	}
-
-	// Second pass: find matching binary asset
-	var bestAsset *githubAsset
-	var bestChecksum string
-	bestScore := -1
-
-	for i := range assets {
-		asset := &assets[i]
-
-		// Skip checksum files
-		if strings.HasSuffix(asset.Name, ".sha256") ||
-			strings.HasSuffix(asset.Name, ".sha256sum") ||
-			strings.Contains(asset.Name, "checksums") ||
-			strings.Contains(asset.Name, "SHA256SUMS") {
-			continue
-		}
-
-		// Skip installers and packages we don't want to handle directly
-		nameLower := strings.ToLower(asset.Name)
-		if strings.HasSuffix(nameLower, ".deb") ||
-			strings.HasSuffix(nameLower, ".rpm") ||
-			strings.HasSuffix(nameLower, ".msi") ||
-			strings.HasSuffix(nameLower, ".apk") ||
-			strings.HasSuffix(nameLower, ".dmg") ||
-			strings.HasSuffix(nameLower, ".pkg") {
-			continue
-		}
-
-		// Check if asset matches platform
-		if g.matchesPlatform(asset.Name, platform) {
-			checksum := ""
-			if checksumMap != nil {
-				checksum = checksumMap[asset.Name]
-			}
-
-			// Score the asset:
-			// Tar.gz > zip > tar.xz > others
-			score := 0
-			if strings.HasSuffix(nameLower, ".tar.gz") || strings.HasSuffix(nameLower, ".tgz") {
-				score = 10
-			} else if strings.HasSuffix(nameLower, ".zip") {
-				score = 8
-			} else if strings.HasSuffix(nameLower, ".tar.xz") || strings.HasSuffix(nameLower, ".txz") {
-				score = 6
-			} else if !strings.Contains(nameLower, ".") {
-				// likely a raw binary
-				score = 5
-			} else {
-				score = 1
-			}
-
-			if score > bestScore {
-				bestScore = score
-				bestAsset = asset
-				bestChecksum = checksum
-			}
+		checksumMap := g.parseChecksumFile(checksumAsset.BrowserDownloadURL)
+		if checksumMap != nil {
+			checksum = checksumMap[bestAsset.Name]
 		}
 	}
 
-	if bestAsset != nil {
-		return bestAsset, bestChecksum
-	}
-
-	return nil, ""
+	return bestAsset, checksum
 }
 
 // matchesPlatform checks if an asset name matches the platform.

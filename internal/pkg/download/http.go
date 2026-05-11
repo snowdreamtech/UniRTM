@@ -200,6 +200,11 @@ func (h *HTTPDownloader) downloadOnce(ctx context.Context, url string, destinati
 		return errors.NewExternalError(fmt.Sprintf("HTTP %d from %q", resp.StatusCode, url), nil)
 	}
 
+	// Ensure destination directory exists
+	if err := os.MkdirAll(filepath.Dir(destination), 0755); err != nil {
+		return errors.NewSystemError(fmt.Sprintf("create directory %q", filepath.Dir(destination)), err)
+	}
+
 	// Create destination file
 	file, err := os.Create(destination)
 	if err != nil {
@@ -223,11 +228,17 @@ func (h *HTTPDownloader) downloadOnce(ctx context.Context, url string, destinati
 	}
 
 	// Copy response body to file
-	_, err = io.Copy(writer, resp.Body)
+	n, err := io.Copy(writer, resp.Body)
 	if err != nil {
 		// Clean up partial download
 		_ = os.Remove(destination)
 		return errors.NewExternalError(fmt.Sprintf("download from %q", url), err)
+	}
+
+	// Verify that we downloaded the expected amount of data
+	if totalBytes > 0 && n != totalBytes {
+		_ = os.Remove(destination)
+		return errors.NewExternalError(fmt.Sprintf("download from %q", url), fmt.Errorf("size mismatch: expected %d bytes, got %d", totalBytes, n))
 	}
 
 	// Final progress callback (100%)

@@ -30,6 +30,7 @@ import (
 	"github.com/sigstore/sigstore-go/pkg/root"
 	"github.com/sigstore/sigstore-go/pkg/tuf"
 	"github.com/sigstore/sigstore-go/pkg/verify"
+	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
 // -----------------------------------------------------------------------------
@@ -78,10 +79,12 @@ func VerifyArtifactProvenance(
 	}
 
 	// 2. Fetch attestation bundles from the GitHub API.
+	logger.Debug("provenance: fetching attestations from GitHub", map[string]interface{}{"owner": owner, "repo": repo, "digest": digest})
 	bundles, err := fetchAttestations(ctx, token, owner, repo, digest)
 	if err != nil {
 		return nil, err
 	}
+	logger.Debug("provenance: found attestation bundles", map[string]interface{}{"count": len(bundles)})
 
 	// 3. No attestations → project does not publish provenance → graceful skip.
 	if len(bundles) == 0 {
@@ -96,17 +99,19 @@ func VerifyArtifactProvenance(
 
 	// 5. Verify all returned bundles; at least one must pass.
 	expectedRepo := owner + "/" + repo
+	var lastErr error
 	for _, rawBundle := range bundles {
 		result, err := verifyBundleWithSigstore(rawBundle, digest, expectedRepo, trustedMaterial)
 		if err == nil {
 			return result, nil
 		}
+		lastErr = err
 	}
 
 	// All bundles failed verification.
 	return nil, fmt.Errorf(
-		"provenance: all %d attestation bundle(s) failed verification for %s/%s",
-		len(bundles), owner, repo,
+		"provenance: all %d attestation bundle(s) failed verification for %s/%s. Last error: %v",
+		len(bundles), owner, repo, lastErr,
 	)
 }
 
@@ -125,6 +130,8 @@ var (
 // by the LiveTrustedRoot mechanism inside sigstore-go.
 func sigstoreTrustedRoot() (*root.LiveTrustedRoot, error) {
 	liveTrustedRootOnce.Do(func() {
+		fmt.Println("ℹ provenance: initializing Sigstore TUF trusted root (this may take 30-60s on first run)")
+		logger.Debug("provenance: initializing Sigstore TUF trusted root (this may take 30-60s on first run)")
 		opts := tuf.DefaultOptions()
 
 		// Allow users to override the TUF cache directory.
@@ -132,7 +139,13 @@ func sigstoreTrustedRoot() (*root.LiveTrustedRoot, error) {
 			opts.CachePath = filepath.Join(cacheDir, "sigstore-tuf")
 		}
 
+		// TUF initialization happens here (implicitly uses background context inside sigstore-go)
 		liveTrustedRoot, liveTrustedRootErr = root.NewLiveTrustedRoot(opts)
+		if liveTrustedRootErr != nil {
+			logger.Error("provenance: failed to initialize TUF root", map[string]interface{}{"error": liveTrustedRootErr.Error()})
+		} else {
+			logger.Debug("provenance: Sigstore TUF trusted root initialized")
+		}
 	})
 	return liveTrustedRoot, liveTrustedRootErr
 }
@@ -198,15 +211,50 @@ func fetchAttestations(
 	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
 		return nil, fmt.Errorf("provenance: decode API response: %w", err)
 	}
-	if len(apiResp.Attestations) == 0 {
-		return nil, nil
-	}
-
-	raw := make([]json.RawMessage, len(apiResp.Attestations))
+	fmt.Printf("ℹ provenance: found %d attestation(s)\n", len(apiResp.Attestations))
+	raw := make([]json.RawMessage, 0, len(apiResp.Attestations))
 	for i, a := range apiResp.Attestations {
-		raw[i] = a.Bundle
+		if len(a.Bundle) > 0 && string(a.Bundle) != "null" {
+			raw = append(raw, a.Bundle)
+			continue
+		}
+
+		// Fallback to bundle_url if inline bundle is missing/null
+		if a.BundleURL != "" {
+			fmt.Printf("ℹ provenance: fetching external bundle %d/%d from URL...\n", i+1, len(apiResp.Attestations))
+			bundleData, err := fetchExternalBundle(ctx, a.BundleURL)
+			if err != nil {
+				logger.Warn("provenance: failed to fetch external bundle", map[string]interface{}{
+					"url":   a.BundleURL,
+					"error": err.Error(),
+				})
+				continue
+			}
+			raw = append(raw, bundleData)
+		}
 	}
 	return raw, nil
+}
+
+// fetchExternalBundle downloads a Sigstore bundle from an external URL.
+func fetchExternalBundle(ctx context.Context, url string) (json.RawMessage, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("external bundle API returned %d", resp.StatusCode)
+	}
+
+	return io.ReadAll(resp.Body)
 }
 
 // -----------------------------------------------------------------------------

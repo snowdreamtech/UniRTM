@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
@@ -43,6 +44,7 @@ func (p *AsdfProvider) Install(ctx context.Context, installPath string, artifact
 	if err != nil {
 		tool = filepath.Base(toolDir) // fallback
 	}
+	tool = backend.ResolveAsdfToolName(tool)
 	pluginDir := filepath.Join(p.pluginsPath, tool)
 
 	if _, err := os.Stat(pluginDir); os.IsNotExist(err) {
@@ -50,11 +52,18 @@ func (p *AsdfProvider) Install(ctx context.Context, installPath string, artifact
 	}
 
 	// Prepare environment variables required by asdf plugins
+	downloadPath := filepath.Join(installPath, "download")
+	if err := os.MkdirAll(downloadPath, 0755); err != nil {
+		return err
+	}
+	defer os.RemoveAll(downloadPath)
+
 	env := os.Environ()
 	env = append(env,
 		"ASDF_INSTALL_TYPE=version",
 		"ASDF_INSTALL_VERSION="+version,
 		"ASDF_INSTALL_PATH="+installPath,
+		"ASDF_DOWNLOAD_PATH="+downloadPath,
 		"ASDF_CONCURRENCY=4", // reasonable default
 	)
 
@@ -104,6 +113,7 @@ func (p *AsdfProvider) PostInstall(ctx context.Context, installPath string, vers
 	if err != nil {
 		tool = filepath.Base(toolDir) // fallback
 	}
+	tool = backend.ResolveAsdfToolName(tool)
 	pluginDir := filepath.Join(p.pluginsPath, tool)
 
 	postInstallScript := filepath.Join(pluginDir, "bin", "post-install")
@@ -153,6 +163,7 @@ func (p *AsdfProvider) ListExecutables(installPath string, version string) ([]st
 	if err != nil {
 		tool = filepath.Base(toolDir) // fallback
 	}
+	tool = backend.ResolveAsdfToolName(tool)
 	pluginDir := filepath.Join(p.pluginsPath, tool)
 
 	binPaths := []string{"bin"} // Default
