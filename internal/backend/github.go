@@ -195,14 +195,19 @@ func (g *GitHubBackend) calculateAssetScore(assetName string, platform Platform,
 	nameLower := strings.ToLower(assetName)
 
 	// 1. Hard Exclusions (Negative Score)
-	excludeSuffixes := []string{".sha256", ".sha256sum", ".md5", ".asc", ".sig", ".sha1", ".deb", ".rpm", ".msi", ".apk", ".dmg", ".pkg", ".txt", ".pdf"}
+	excludeSuffixes := []string{".sha256", ".sha256sum", ".md5", ".asc", ".sig", ".sha1", ".deb", ".rpm", ".msi", ".apk", ".dmg", ".pkg", ".txt", ".pdf", ".h", ".c", ".cpp", ".a", ".lib"}
 	for _, suffix := range excludeSuffixes {
 		if strings.HasSuffix(nameLower, suffix) {
 			return -1
 		}
 	}
-	if strings.Contains(nameLower, "checksums") || strings.Contains(nameLower, "sha256sums") || strings.Contains(nameLower, "license") {
-		return -1
+	
+	// Exclude non-runtime assets
+	negatives := []string{"checksums", "sha256sums", "license", "source", "devel", "dev", "header", "static-lib", "manual", "doc", "man", "debug"}
+	for _, neg := range negatives {
+		if strings.Contains(nameLower, neg) {
+			return -1
+		}
 	}
 
 	score := 0
