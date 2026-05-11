@@ -33,13 +33,17 @@ func Load() (*Config, error) {
 }
 
 // ResolveEnvironment resolves environment variables defined in the configuration.
-// It returns a map of rendered environment variables and a list of scripts to source.
+// It returns a map of rendered environment variables, a list of scripts to source,
+// a list of redacted keys, and an error if any required variables are missing.
 // It supports pongo2 (Jinja2-like) templates.
-func (c *Config) ResolveEnvironment() (map[string]string, []string) {
+func (c *Config) ResolveEnvironment() (map[string]string, []string, []string, error) {
 	resolved := make(map[string]string)
 	var sources []string
+	var redacted []string
+	var errs []string
+
 	if c.Env == nil {
-		return resolved, sources
+		return resolved, sources, redacted, nil
 	}
 
 	// Prepare template context
@@ -88,7 +92,7 @@ func (c *Config) ResolveEnvironment() (map[string]string, []string) {
 							}
 						}
 					}
-					
+
 					currentPath := resolved["PATH"]
 					if currentPath == "" {
 						currentPath = os.Getenv("PATH")
@@ -169,12 +173,39 @@ func (c *Config) ResolveEnvironment() (map[string]string, []string) {
 
 		// Regular environment variables
 		var valStr string
+		isRequired := false
+		isRedact := false
+		isRm := false
+		helpText := ""
+
 		switch val := v.(type) {
 		case string:
 			valStr = val
 		case int, int64, float64, bool:
 			valStr = fmt.Sprintf("%v", val)
+		case map[string]interface{}:
+			if rm, ok := val["rm"].(bool); ok && rm {
+				isRm = true
+			}
+			if v, ok := val["value"]; ok {
+				valStr = fmt.Sprintf("%v", v)
+			}
+			if req, ok := val["required"].(bool); ok && req {
+				isRequired = true
+			}
+			if red, ok := val["redact"].(bool); ok && red {
+				isRedact = true
+			}
+			if h, ok := val["help"].(string); ok {
+				helpText = h
+			}
 		default:
+			continue
+		}
+
+		if isRm {
+			delete(resolved, k)
+			delete(ctx["env"].(map[string]string), k)
 			continue
 		}
 
@@ -188,18 +219,40 @@ func (c *Config) ResolveEnvironment() (map[string]string, []string) {
 			}
 		}
 
+		// Handle required check
+		if isRequired && rendered == "" {
+			msg := fmt.Sprintf("Environment variable %q is required but not set.", k)
+			if helpText != "" {
+				msg += " Help: " + helpText
+			}
+			errs = append(errs, msg)
+		}
+
+		// Handle redact
+		if isRedact {
+			redacted = append(redacted, k)
+		}
+
 		resolved[k] = rendered
 		// Update context for subsequent variables in the same block
 		ctx["env"].(map[string]string)[k] = rendered
 	}
 
-	return resolved, sources
+	var finalErr error
+	if len(errs) > 0 {
+		finalErr = fmt.Errorf("environment resolution errors:\n  - %s", strings.Join(errs, "\n  - "))
+	}
+
+	return resolved, sources, redacted, finalErr
 }
 
 // ApplyEnvironment sets the environment variables defined in the configuration
 // to the current process environment.
 func (c *Config) ApplyEnvironment() {
-	resolved, _ := c.ResolveEnvironment()
+	resolved, _, _, err := c.ResolveEnvironment()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: %v\n", err)
+	}
 	for k, v := range resolved {
 		os.Setenv(k, v)
 	}

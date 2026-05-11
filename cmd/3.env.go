@@ -120,8 +120,18 @@ func runEnv(cmd *cobra.Command, args []string) error {
 	// Load configuration to get [env] variables
 	var sources []string
 	if cfg, err := config.Load(); err == nil {
-		resolved, src := cfg.ResolveEnvironment()
+		resolved, src, redacted, err := cfg.ResolveEnvironment()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: %v\n", err)
+		}
 		sources = src
+
+		// Create a map for quick redacted key lookup
+		isRedacted := make(map[string]bool)
+		for _, rk := range redacted {
+			isRedacted[rk] = true
+		}
+
 		for k, v := range resolved {
 			if k == "PATH" {
 				// Special handling for PATH - prepend to pathDirs
@@ -136,7 +146,12 @@ func runEnv(cmd *cobra.Command, args []string) error {
 				}
 				continue
 			}
-			vars = append(vars, envVarEntry{Name: k, Value: v})
+
+			val := v
+			if isRedacted[k] {
+				val = "[REDACTED]"
+			}
+			vars = append(vars, envVarEntry{Name: k, Value: val})
 		}
 	}
 

@@ -197,9 +197,25 @@ func runActivate(cmd *cobra.Command, args []string) error {
 	envVars := make(map[string]string)
 	var sources []string
 	if cfg, err := config.Load(); err == nil {
-		resolved, src := cfg.ResolveEnvironment()
+		resolved, src, redacted, err := cfg.ResolveEnvironment()
+		if err != nil {
+			formatter.Error("Environment resolution error", map[string]interface{}{
+				"error": err.Error(),
+			})
+		}
+		
+		// Create a map for quick redacted key lookup
+		isRedacted := make(map[string]bool)
+		for _, rk := range redacted {
+			isRedacted[rk] = true
+		}
+
 		for k, v := range resolved {
-			envVars[k] = v
+			val := v
+			if isRedacted[k] {
+				val = "[REDACTED]"
+			}
+			envVars[k] = val
 		}
 		sources = src
 	}
