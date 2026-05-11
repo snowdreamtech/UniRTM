@@ -13,10 +13,6 @@ backend = "github"
 version = "2.92.0"
 backend = "github"
 
-[tools."cli/cli"."platforms.macos-amd64"]
-checksum = "ae9bb327ab0d91071bdada79f8f14034a2a0f19b0e001835a782eafa519d2af0"
-url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_macOS_amd64.zip"
-
 [[tools."dotenv-linter/dotenv-linter"]]
 version = "4.0.0"
 backend = "github"
@@ -89,6 +85,13 @@ backend = "github"
 version = "2.3.5"
 backend = "github"
 
+[[tools."gradle"]]
+version = "8.14.5"
+backend = "native"
+
+[tools."gradle"."platforms.macos-amd64"]
+url = "https://services.gradle.org/distributions/gradle-8.14.5-bin.zip"
+
 [[tools."hadolint/hadolint"]]
 version = "2.14.0"
 backend = "github"
@@ -96,9 +99,6 @@ backend = "github"
 [[tools."mvdan/sh"]]
 version = "3.13.1"
 backend = "github"
-
-[tools."mvdan/sh"."platforms.macos-amd64"]
-url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_darwin_amd64"
 
 [[tools."npm:@commitlint/cli"]]
 version = "20.5.3"
@@ -175,7 +175,4 @@ backend = "github"
 [[tools."zizmorcore/zizmor"]]
 version = "1.24.1"
 backend = "github"
-
-[tools."zizmorcore/zizmor"."platforms.macos-amd64"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-x86_64-apple-darwin.tar.gz"
 

@@ -10,6 +10,8 @@ import (
 	"github.com/flosch/pongo2/v6"
 	"github.com/joho/godotenv"
 	"github.com/pelletier/go-toml/v2"
+	"path/filepath"
+	"runtime"
 )
 
 // Load loads the UniRTM project configuration from .unirtm.toml or unirtm.toml.
@@ -112,6 +114,54 @@ func (c *Config) ResolveEnvironment() (map[string]string, []string) {
 						}
 					}
 					sources = append(sources, rendered)
+				}
+			case "_.python_venv":
+				if venvPath, ok := v.(string); ok {
+					// Render template for venv path
+					rendered := venvPath
+					if strings.Contains(venvPath, "{%") || strings.Contains(venvPath, "{{") {
+						if tpl, err := pongo2.FromString(venvPath); err == nil {
+							if out, err := tpl.Execute(ctx); err == nil {
+								rendered = out
+							}
+						}
+					}
+
+					// Normalize path
+					absPath := rendered
+					if !filepath.IsAbs(rendered) {
+						// Assume relative to current directory for now
+						// In a real implementation, it might be relative to config_root
+						if cwd, err := os.Getwd(); err == nil {
+							absPath = filepath.Join(cwd, rendered)
+						}
+					}
+
+					// Check if venv exists and activate it
+					if _, err := os.Stat(absPath); err == nil {
+						// Determine bin directory
+						binDir := "bin"
+						if runtime.GOOS == "windows" {
+							binDir = "Scripts"
+						}
+						venvBin := filepath.Join(absPath, binDir)
+
+						// Update PATH
+						currentPath := resolved["PATH"]
+						if currentPath == "" {
+							currentPath = os.Getenv("PATH")
+						}
+						if currentPath == "" {
+							resolved["PATH"] = venvBin
+						} else {
+							resolved["PATH"] = venvBin + string(os.PathListSeparator) + currentPath
+						}
+						ctx["env"].(map[string]string)["PATH"] = resolved["PATH"]
+
+						// Set VIRTUAL_ENV
+						resolved["VIRTUAL_ENV"] = absPath
+						ctx["env"].(map[string]string)["VIRTUAL_ENV"] = absPath
+					}
 				}
 			}
 			continue
