@@ -62,6 +62,14 @@ func GetBuiltinRecipes() map[string]Recipe {
 			},
 			BaseURL: "https://github.com/oven-sh/bun/releases",
 		},
+		"deno": {
+			ID: "deno",
+			Handler: &GithubHandler{
+				Owner: "denoland",
+				Repo:  "deno",
+			},
+			BaseURL: "https://github.com/denoland/deno/releases",
+		},
 	}
 }
 
