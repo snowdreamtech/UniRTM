@@ -24,6 +24,10 @@ import (
 // ErrGPGSkipped is returned when a signature file is not found (404) and verification is skipped.
 var ErrGPGSkipped = errors.NewUserError("GPG signature not found, skipped", nil)
 
+type contextKey string
+
+const githubProxyKey contextKey = "github_proxy"
+
 // HTTPDownloader implements the Downloader interface using Go's standard HTTP client.
 // It supports retry logic with exponential backoff, timeout configuration, proxy support,
 // and progress reporting.
@@ -54,18 +58,41 @@ type HTTPDownloader struct {
 //   - Proxy support via HTTP_PROXY/HTTPS_PROXY environment variables
 //   - Automatic redirect following (up to 10 redirects)
 func NewHTTPDownloader() *HTTPDownloader {
-	return &HTTPDownloader{
-		client: &http.Client{
-			Timeout: 60 * time.Second, // Read timeout
-			Transport: &http.Transport{
-				Proxy:               http.ProxyFromEnvironment, // Support HTTP_PROXY/HTTPS_PROXY
-				MaxIdleConns:        100,
-				IdleConnTimeout:     90 * time.Second,
-				TLSHandshakeTimeout: 10 * time.Second,
-				// Connection timeout is handled by context deadline
-			},
+	h := &HTTPDownloader{}
+	h.client = &http.Client{
+		Timeout: 60 * time.Second, // Read timeout
+		Transport: &http.Transport{
+			Proxy:               http.ProxyFromEnvironment, // Support HTTP_PROXY/HTTPS_PROXY
+			MaxIdleConns:        100,
+			IdleConnTimeout:     90 * time.Second,
+			TLSHandshakeTimeout: 10 * time.Second,
+		},
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 10 {
+				return fmt.Errorf("too many redirects")
+			}
+
+			// Get proxy from context
+			proxy, ok := req.Context().Value(githubProxyKey).(string)
+			if ok && proxy != "" {
+				nextURL := req.URL.String()
+				if (strings.Contains(nextURL, "github.com") || strings.Contains(nextURL, "githubusercontent.com")) && !strings.HasPrefix(nextURL, proxy) {
+					// Ensure proxy ends with /
+					p := proxy
+					if !strings.HasSuffix(p, "/") {
+						p += "/"
+					}
+					// Apply proxy to the redirect target
+					newURL, err := url.Parse(p + nextURL)
+					if err == nil {
+						req.URL = newURL
+					}
+				}
+			}
+			return nil
 		},
 	}
+	return h
 }
 
 // Download downloads a file from the specified URL to the destination path.
@@ -88,6 +115,11 @@ func NewHTTPDownloader() *HTTPDownloader {
 // Returns:
 //   - error: nil on success, or an error describing the failure
 func (h *HTTPDownloader) Download(ctx context.Context, url string, destination string, opts DownloadOptions) error {
+	// Inject proxy into context for CheckRedirect
+	if opts.GitHubProxy != "" {
+		ctx = context.WithValue(ctx, githubProxyKey, opts.GitHubProxy)
+	}
+
 	// Apply GitHub proxy if configured and URL is from GitHub
 	if opts.GitHubProxy != "" && (strings.Contains(url, "github.com") || strings.Contains(url, "githubusercontent.com")) {
 		// Ensure proxy ends with /

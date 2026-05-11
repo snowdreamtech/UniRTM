@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -133,7 +134,19 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	var downloadPath string
 	var gpgStatus string = "NotRequested"
 	if versionInfo.DownloadURL != "" {
-		downloadPath = filepath.Join(env.GetDownloadsDir(), fmt.Sprintf("%s-%s", tool, version))
+		// Extract extension from URL if possible
+		ext := ""
+		if u, err := url.Parse(versionInfo.DownloadURL); err == nil {
+			ext = filepath.Ext(u.Path)
+			// Handle some common double extensions like .tar.gz
+			if strings.HasSuffix(u.Path, ".tar.gz") {
+				ext = ".tar.gz"
+			} else if strings.HasSuffix(u.Path, ".tar.xz") {
+				ext = ".tar.xz"
+			}
+		}
+
+		downloadPath = filepath.Join(env.GetDownloadsDir(), fmt.Sprintf("%s-%s%s", tool, version, ext))
 		fmt.Printf("ℹ downloading %s@%s to %s...\n", tool, version, downloadPath)
 		if err := os.MkdirAll(filepath.Dir(downloadPath), 0755); err != nil {
 			return fmt.Errorf("failed to create downloads directory: %w", err)
