@@ -40,30 +40,30 @@ func (h *GradleHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 
 	var res []VersionInfo
 	for _, v := range gv {
-		// Skip non-release versions
-		if v.Snapshot || v.Nightly || v.ReleaseNightly || v.Broken {
+		// Skip non-release versions and non-stable versions
+		lowVersion := strings.ToLower(v.Version)
+		if v.Snapshot || v.Nightly || v.ReleaseNightly || v.Broken ||
+			strings.Contains(lowVersion, "milestone") ||
+			strings.Contains(lowVersion, "rc") {
 			continue
+		}
+
+		// Create assets for common architectures since Gradle is universal
+		commonArches := []string{"x86_64", "amd64", "arm64", "aarch64"}
+		var assets []Asset
+		for _, osName := range []string{"linux", "darwin", "windows"} {
+			for _, archName := range commonArches {
+				assets = append(assets, Asset{
+					OS:   osName,
+					Arch: archName,
+					URL:  v.DownloadURL,
+				})
+			}
 		}
 
 		res = append(res, VersionInfo{
 			Version: v.Version,
-			Assets: []Asset{
-				{
-					OS:   "linux",   // Universal
-					Arch: "x86_64",  // Dummy
-					URL:  v.DownloadURL,
-				},
-				{
-					OS:   "darwin",
-					Arch: "x86_64",
-					URL:  v.DownloadURL,
-				},
-				{
-					OS:   "windows",
-					Arch: "x86_64",
-					URL:  v.DownloadURL,
-				},
-			},
+			Assets:  assets,
 		})
 	}
 
@@ -88,31 +88,22 @@ func (h *MavenHandler) ResolveVersions(ctx context.Context, baseURL string) ([]V
 	// or scrape the apache archive.
 	
 	// Better approach: use the Maven Central metadata for the distribution
+	commonArches := []string{"x86_64", "amd64", "arm64", "aarch64"}
+	var assets396 []Asset
+	for _, osName := range []string{"linux", "darwin", "windows"} {
+		for _, archName := range commonArches {
+			assets396 = append(assets396, Asset{
+				OS:   osName,
+				Arch: archName,
+				URL:  "https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz",
+			})
+		}
+	}
+
 	return []VersionInfo{
 		{
 			Version: "3.9.6",
-			Assets: []Asset{
-				{
-					OS:   "linux",
-					Arch: "x86_64",
-					URL:  "https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz",
-				},
-				{
-					OS:   "darwin",
-					Arch: "x86_64",
-					URL:  "https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz",
-				},
-			},
-		},
-		{
-			Version: "3.9.5",
-			Assets: []Asset{
-				{
-					OS:   "linux",
-					Arch: "x86_64",
-					URL:  "https://archive.apache.org/dist/maven/maven-3/3.9.5/binaries/apache-maven-3.9.5-bin.tar.gz",
-				},
-			},
+			Assets:  assets396,
 		},
 	}, nil
 }
