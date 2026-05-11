@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -252,9 +253,19 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		lockSvc,
 	)
 
+	formatter.Info(fmt.Sprintf("Processing %d tool(s)...", len(toolsToInstall)))
+
+	// Extract and sort tool names to ensure deterministic installation order
+	toolNames := make([]string, 0, len(toolsToInstall))
+	for name := range toolsToInstall {
+		toolNames = append(toolNames, name)
+	}
+	sort.Strings(toolNames)
+
 	// Perform installations
 	startTime := time.Now()
-	for toolName, spec := range toolsToInstall {
+	for _, toolName := range toolNames {
+		spec := toolsToInstall[toolName]
 		tool := toolName
 		if spec.Name != "" {
 			tool = spec.Name
