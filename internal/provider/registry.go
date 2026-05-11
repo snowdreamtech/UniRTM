@@ -53,7 +53,7 @@ func NewRegistry() *Registry {
 	r.Register("erlang", NewErlangProvider())
 	r.Register("swift", NewSwiftProvider())
 	r.Register("zig", nativeProvider)
-	r.Register("php", NewPhpProvider())
+	r.Register("php", r.providers["asdf"])
 	r.Register("flutter", NewFlutterProvider())
 	r.Register("pipx", NewPypiProvider())
 	r.Register("terraform", nativeProvider)
