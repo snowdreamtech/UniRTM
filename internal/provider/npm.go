@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
@@ -27,7 +28,14 @@ func (p *NpmProvider) Name() string {
 }
 
 func (p *NpmProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
-	tool := filepath.Base(filepath.Dir(installPath))
+	// Extract the full tool name (including scope if present) from the install path.
+	// The path structure is <installs_dir>/<tool_name>/<version>
+	installsDir := env.GetInstallsDir()
+	toolDir := filepath.Dir(installPath)
+	tool, err := filepath.Rel(installsDir, toolDir)
+	if err != nil {
+		tool = filepath.Base(toolDir) // fallback
+	}
 
 	// Ensure install path exists
 	if err := os.MkdirAll(installPath, 0755); err != nil {

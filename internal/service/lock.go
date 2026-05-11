@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/lockfile"
@@ -74,22 +75,21 @@ func defaultLockFilePath() string {
 // ─── Read API ─────────────────────────────────────────────────────────────────
 
 // Resolve returns a *backend.VersionInfo populated from the lockfile for the
-// given tool, version and current platform.  Returns (nil, false) when the
+// given lockKey, version and current platform.  Returns (nil, false) when the
 // lockfile has no entry for this combination.
 //
 // Callers (InstallationManager) should use the returned VersionInfo directly
 // and skip the remote backend API call when ok==true.
 func (ls *LockService) Resolve(
-	tool, backendName, version string,
+	lockKey, version string,
 	platform backend.Platform,
 ) (*backend.VersionInfo, bool) {
 	ls.mu.RLock()
 	defer ls.mu.RUnlock()
 
-	key := lockfile.ToolKey(backendName, tool)
 	platKey := lockfile.PlatformKey(platform.OS, platform.Arch, false)
 
-	pe := ls.lf.GetPlatform(key, version, platKey)
+	pe := ls.lf.GetPlatform(lockKey, version, platKey)
 	if pe == nil || pe.URL == "" {
 		return nil, false
 	}
@@ -104,21 +104,20 @@ func (ls *LockService) Resolve(
 	return info, true
 }
 
-// CheckStrict verifies that the lockfile contains a URL for the given tool on
+// CheckStrict verifies that the lockfile contains a URL for the given lockKey on
 // the current platform when strict mode is enabled.  Returns an error (which
 // callers must propagate) when the URL is absent.
-func (ls *LockService) CheckStrict(tool, backendName, version string, platform backend.Platform) error {
+func (ls *LockService) CheckStrict(lockKey, version string, platform backend.Platform) error {
 	if !ls.strictMode {
 		return nil
 	}
 	ls.mu.RLock()
 	defer ls.mu.RUnlock()
 
-	key := lockfile.ToolKey(backendName, tool)
 	platKey := lockfile.PlatformKey(platform.OS, platform.Arch, false)
 
 	req := lockfile.LockRequirement{
-		ToolKey:     key,
+		ToolKey:     lockKey,
 		Version:     version,
 		PlatformKey: platKey,
 	}
@@ -133,19 +132,18 @@ func (ls *LockService) CheckStrict(tool, backendName, version string, platform b
 //
 // This is called by InstallationManager after a successful download.
 func (ls *LockService) RecordInstall(
-	tool, backendName string,
+	lockKey, backendName string,
 	info *backend.VersionInfo,
 ) error {
 	ls.mu.Lock()
 	defer ls.mu.Unlock()
 
-	key := lockfile.ToolKey(backendName, tool)
 	platKey := lockfile.PlatformKey(info.Platform.OS, info.Platform.Arch, false)
 
 	// Ensure the top-level entry exists (create or update backend field).
-	existing := ls.lf.GetEntry(key, info.Version)
+	existing := ls.lf.GetEntry(lockKey, info.Version)
 	if existing == nil {
-		ls.lf.UpsertEntry(key, &lockfile.ToolLockEntry{
+		ls.lf.UpsertEntry(lockKey, &lockfile.ToolLockEntry{
 			Version:   info.Version,
 			Backend:   backendName,
 			Platforms: make(map[string]*lockfile.PlatformEntry),
@@ -163,19 +161,18 @@ func (ls *LockService) RecordInstall(
 		URL:      info.DownloadURL,
 		URLAPI:   urlAPI,
 	}
-	ls.lf.UpsertPlatform(key, info.Version, platKey, pe)
+	ls.lf.UpsertPlatform(lockKey, info.Version, platKey, pe)
 	ls.dirty = true
 
 	return ls.save()
 }
 
 // RemoveTool removes all lockfile entries for a tool (called on uninstall).
-func (ls *LockService) RemoveTool(tool, backendName string) error {
+func (ls *LockService) RemoveTool(lockKey string) error {
 	ls.mu.Lock()
 	defer ls.mu.Unlock()
 
-	key := lockfile.ToolKey(backendName, tool)
-	ls.lf.RemoveEntry(key)
+	ls.lf.RemoveEntry(lockKey)
 	ls.dirty = true
 	return ls.save()
 }
@@ -208,7 +205,38 @@ func (ls *LockService) Generate(
 
 	subset := buildSubset(tools, opts.Tools)
 
-	for toolName, spec := range subset {
+	var wg sync.WaitGroup
+	errs := make(chan error, len(subset)*len(platforms))
+
+	// Limit concurrency to avoid hitting API rate limits (e.g. GitHub)
+	// and to prevent excessive resource usage.
+	sem := make(chan struct{}, 10)
+
+	// Add timeout to context for the entire generation process
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Minute)
+	defer cancel()
+
+	// Clear old entries for tools we are refreshing to avoid duplicates
+	// (e.g. "asdf:go" vs "go")
+	ls.mu.Lock()
+	for uniqueKey := range subset {
+		ls.lf.RemoveEntry(uniqueKey)
+		// Also remove old prefixed versions if any
+		for _, b := range ls.backendRegistry.List() {
+			ls.lf.RemoveEntry(b + ":" + uniqueKey)
+		}
+	}
+	ls.mu.Unlock()
+
+	for uniqueKey, spec := range subset {
+		uniqueKey := uniqueKey
+		spec := spec
+
+		toolName := spec.Name
+		if toolName == "" {
+			toolName = uniqueKey
+		}
+
 		b, err := ls.backendForSpec(toolName, spec.BackendName)
 		if err != nil {
 			logger.Warn("lockfile generate: skipping tool (no backend)", map[string]interface{}{
@@ -219,51 +247,77 @@ func (ls *LockService) Generate(
 		}
 
 		for _, platKey := range platforms {
-			goos, goarch, _, err := lockfile.ParsePlatformKey(platKey)
-			if err != nil {
-				return fmt.Errorf("lockfile generate: %w", err)
-			}
-			plat := backend.Platform{OS: goos, Arch: goarch}
+			platKey := platKey
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
 
-			info, err := b.GetDownloadInfo(ctx, toolName, spec.Version, plat)
-			if err != nil {
-				logger.Warn("lockfile generate: could not resolve download info", map[string]interface{}{
+				// Acquire semaphore
+				select {
+				case sem <- struct{}{}:
+					defer func() { <-sem }()
+				case <-ctx.Done():
+					errs <- ctx.Err()
+					return
+				}
+
+				goos, goarch, _, err := lockfile.ParsePlatformKey(platKey)
+				if err != nil {
+					errs <- fmt.Errorf("lockfile generate: %w", err)
+					return
+				}
+				plat := backend.Platform{OS: goos, Arch: goarch}
+
+				info, err := b.GetDownloadInfo(ctx, toolName, spec.Version, plat)
+				if err != nil {
+					logger.Warn("lockfile generate: could not resolve download info", map[string]interface{}{
+						"tool":     toolName,
+						"version":  spec.Version,
+						"platform": platKey,
+						"error":    err.Error(),
+					})
+					return
+				}
+
+				lockKey := uniqueKey
+				urlAPI := ""
+				if info.Metadata != nil {
+					urlAPI = info.Metadata["url_api"]
+				}
+
+				ls.mu.Lock()
+				defer ls.mu.Unlock()
+
+				existing := ls.lf.GetEntry(lockKey, info.Version)
+				if existing == nil {
+					ls.lf.UpsertEntry(lockKey, &lockfile.ToolLockEntry{
+						Version:   info.Version,
+						Backend:   spec.BackendName,
+						Platforms: make(map[string]*lockfile.PlatformEntry),
+					})
+				}
+				ls.lf.UpsertPlatform(lockKey, info.Version, platKey, &lockfile.PlatformEntry{
+					Checksum: info.Checksum,
+					URL:      info.DownloadURL,
+					URLAPI:   urlAPI,
+				})
+				ls.dirty = true
+
+				logger.Debug("lockfile: resolved", map[string]interface{}{
 					"tool":     toolName,
-					"version":  spec.Version,
+					"version":  info.Version,
 					"platform": platKey,
-					"error":    err.Error(),
 				})
-				continue
-			}
+			}()
+		}
+	}
 
-			key := lockfile.ToolKey(spec.BackendName, toolName)
-			urlAPI := ""
-			if info.Metadata != nil {
-				urlAPI = info.Metadata["url_api"]
-			}
+	wg.Wait()
+	close(errs)
 
-			ls.mu.Lock()
-			existing := ls.lf.GetEntry(key, info.Version)
-			if existing == nil {
-				ls.lf.UpsertEntry(key, &lockfile.ToolLockEntry{
-					Version:   info.Version,
-					Backend:   spec.BackendName,
-					Platforms: make(map[string]*lockfile.PlatformEntry),
-				})
-			}
-			ls.lf.UpsertPlatform(key, info.Version, platKey, &lockfile.PlatformEntry{
-				Checksum: info.Checksum,
-				URL:      info.DownloadURL,
-				URLAPI:   urlAPI,
-			})
-			ls.dirty = true
-			ls.mu.Unlock()
-
-			logger.Debug("lockfile: resolved", map[string]interface{}{
-				"tool":     toolName,
-				"version":  info.Version,
-				"platform": platKey,
-			})
+	for err := range errs {
+		if err != nil {
+			return err
 		}
 	}
 
@@ -274,6 +328,7 @@ func (ls *LockService) Generate(
 
 // ToolSpec describes a single tool entry from project config.
 type ToolSpec struct {
+	Name        string
 	Version     string
 	BackendName string
 }

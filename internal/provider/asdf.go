@@ -36,7 +36,13 @@ func (p *AsdfProvider) Install(ctx context.Context, installPath string, artifact
 	// asdf plugins don't use the artifactPath (they download it themselves).
 	// We need to extract the tool name from the installPath.
 	// installPath format: ~/.local/share/unirtm/installs/<tool>/<version>
-	tool := filepath.Base(filepath.Dir(installPath))
+	// Extract the full tool name (including scope if present) from the install path.
+	installsDir := env.GetInstallsDir()
+	toolDir := filepath.Dir(installPath)
+	tool, err := filepath.Rel(installsDir, toolDir)
+	if err != nil {
+		tool = filepath.Base(toolDir) // fallback
+	}
 	pluginDir := filepath.Join(p.pluginsPath, tool)
 
 	if _, err := os.Stat(pluginDir); os.IsNotExist(err) {
@@ -92,7 +98,12 @@ func (p *AsdfProvider) Install(ctx context.Context, installPath string, artifact
 
 func (p *AsdfProvider) PostInstall(ctx context.Context, installPath string, version string) error {
 	// Execute bin/post-install if it exists
-	tool := filepath.Base(filepath.Dir(installPath))
+	installsDir := env.GetInstallsDir()
+	toolDir := filepath.Dir(installPath)
+	tool, err := filepath.Rel(installsDir, toolDir)
+	if err != nil {
+		tool = filepath.Base(toolDir) // fallback
+	}
 	pluginDir := filepath.Join(p.pluginsPath, tool)
 
 	postInstallScript := filepath.Join(pluginDir, "bin", "post-install")
@@ -136,7 +147,12 @@ func (p *AsdfProvider) DetectVersion(ctx context.Context, installPath string) (s
 }
 
 func (p *AsdfProvider) ListExecutables(installPath string, version string) ([]string, error) {
-	tool := filepath.Base(filepath.Dir(installPath))
+	installsDir := env.GetInstallsDir()
+	toolDir := filepath.Dir(installPath)
+	tool, err := filepath.Rel(installsDir, toolDir)
+	if err != nil {
+		tool = filepath.Base(toolDir) // fallback
+	}
 	pluginDir := filepath.Join(p.pluginsPath, tool)
 
 	binPaths := []string{"bin"} // Default

@@ -111,7 +111,11 @@ func (b *AsdfBackend) ResolveVersion(ctx context.Context, tool string, versionRe
 
 func (b *AsdfBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
 	// asdf plugins don't provide download info without actually downloading.
-	// We just return a stub so the provider can proceed.
+	// We need to ensure the plugin is present for the provider.
+	if _, err := b.ensurePlugin(ctx, tool); err != nil {
+		return nil, NewBackendError(b.Name(), tool, "ensure plugin", err)
+	}
+
 	return &VersionInfo{
 		Version:  version,
 		Platform: platform,

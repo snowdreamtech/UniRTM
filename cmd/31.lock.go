@@ -9,10 +9,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/pelletier/go-toml/v2"
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
-	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/lockfile"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/service"
@@ -116,8 +116,8 @@ func runLock(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	default:
-		// Default: current platform only.
-		platforms = []string{lockfile.CurrentPlatformKey()}
+		// Default: all standard platforms (parity with mise).
+		platforms = lockfile.StandardPlatforms
 	}
 
 	formatter.Info(fmt.Sprintf("Generating lockfile: %s", lockPath), map[string]interface{}{
@@ -253,28 +253,57 @@ func parseLockToolArg(arg string) (tool, version, backendName string) {
 	return
 }
 
-// loadToolsFromProjectConfig reads tool specs from the project config hierarchy.
-// Returns an empty map (not an error) when no config file is found.
 func loadToolsFromProjectConfig() (map[string]service.ToolSpec, error) {
-	cm := config.NewConfigManager()
-	cfg, err := cm.LoadHierarchy(context.Background())
-	if err != nil || cfg == nil {
-		return make(map[string]service.ToolSpec), err
+	// Use go-toml/v2 directly to avoid viper key mangling
+	data, err := os.ReadFile(".unirtm.toml")
+	if err != nil {
+		// Try unirtm.toml if .unirtm.toml is missing
+		data, err = os.ReadFile("unirtm.toml")
+		if err != nil {
+			return make(map[string]service.ToolSpec), nil
+		}
 	}
 
-	tools := make(map[string]service.ToolSpec, len(cfg.Tools))
-	for name, tc := range cfg.Tools {
-		backendName := tc.Backend
+	var raw map[string]interface{}
+	if err := toml.Unmarshal(data, &raw); err != nil {
+		return nil, err
+	}
+
+	toolsData, ok := raw["tools"].(map[string]interface{})
+	if !ok {
+		return make(map[string]service.ToolSpec), nil
+	}
+
+	tools := make(map[string]service.ToolSpec, len(toolsData))
+	for name, val := range toolsData {
+		tcMap, ok := val.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		version, _ := tcMap["version"].(string)
+		backendName, _ := tcMap["backend"].(string)
+		toolName := name
 		if backendName == "" {
-			// For tools in "owner/repo" format, default to github backend.
-			if strings.Contains(name, "/") {
+			// Check if the name has a backend prefix (e.g. "npm:package")
+			if idx := strings.Index(name, ":"); idx != -1 {
+				backendName = name[:idx]
+				toolName = name[idx+1:]
+			} else if strings.Contains(name, "/") {
+				// For tools in "owner/repo" format, default to github backend.
 				backendName = "github"
 			} else {
 				backendName = "asdf"
 			}
 		}
+
+		// Normalize backend names
+		if backendName == "pipx" {
+			backendName = "pypi"
+		}
+
 		tools[name] = service.ToolSpec{
-			Version:     tc.Version,
+			Name:        toolName,
+			Version:     version,
 			BackendName: backendName,
 		}
 	}

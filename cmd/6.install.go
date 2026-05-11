@@ -67,7 +67,7 @@ Examples:
   # Install with JSON output
   unirtm install go 1.21.0 --json`,
 	Aliases: []string{"i"},
-	Args:    cobra.RangeArgs(1, 2),
+	Args:    cobra.MaximumNArgs(2),
 	RunE:    runInstall,
 }
 
@@ -76,22 +76,8 @@ Examples:
 //
 // Validates: Requirements 9.1, 9.2, 9.3, 23.2
 func runInstall(cmd *cobra.Command, args []string) error {
-	tool := args[0]
-	version := "latest"
-
-	// Parse "tool@version" syntax (like mise)
-	if strings.Contains(tool, "@") {
-		parts := strings.SplitN(tool, "@", 2)
-		tool = parts[0]
-		if parts[1] != "" {
-			version = parts[1]
-		}
-	} else if len(args) == 2 {
-		version = args[1]
-	} else if len(args) == 1 {
-		// Just 'unirtm install tool' means latest
-		version = "latest"
-	}
+	// Initialize dependencies
+	ctx := context.Background()
 
 	// Create output formatter
 	formatter := output.NewFormatter(output.FormatterOptions{
@@ -102,45 +88,75 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		Verbose: verbose,
 	})
 
-	// Parse backend prefix (e.g., "npm:typescript" -> backend: "npm", tool: "typescript")
-	backendName := getBackendName()
-	if strings.Contains(tool, ":") {
-		parts := strings.SplitN(tool, ":", 2)
-		backendName = parts[0]
-		tool = parts[1]
-	}
+	var toolsToInstall map[string]service.ToolSpec
+	if len(args) == 0 {
+		// Install all tools from project config
+		var err error
+		toolsToInstall, err = loadToolsFromProjectConfig()
+		if err != nil {
+			formatter.Error(fmt.Sprintf("Failed to load project config: %v", err))
+			return err
+		}
+		if len(toolsToInstall) == 0 {
+			formatter.Warning("No tools found in project configuration.")
+			return nil
+		}
+	} else {
+		// Install specific tool from arguments
+		tool := args[0]
+		version := "latest"
 
-	// Validate input
-	if tool == "" {
-		formatter.Error("Tool name cannot be empty")
-		return fmt.Errorf("tool name is required")
-	}
+		// Parse "tool@version" syntax (like mise)
+		if strings.Contains(tool, "@") {
+			parts := strings.SplitN(tool, "@", 2)
+			tool = parts[0]
+			if parts[1] != "" {
+				version = parts[1]
+			}
+		} else if len(args) == 2 {
+			version = args[1]
+		}
 
-	if version == "" {
-		formatter.Error("Version cannot be empty")
-		return fmt.Errorf("version is required")
+		backendName := getBackendName()
+		if strings.Contains(tool, ":") {
+			parts := strings.SplitN(tool, ":", 2)
+			backendName = parts[0]
+			tool = parts[1]
+		}
+
+		if tool == "" {
+			formatter.Error("Tool name cannot be empty")
+			return fmt.Errorf("tool name is required")
+		}
+
+		toolsToInstall = map[string]service.ToolSpec{
+			tool: {
+				Version:     version,
+				BackendName: backendName,
+			},
+		}
 	}
 
 	// Display start message
-	formatter.Info(fmt.Sprintf("Installing %s@%s", tool, version), map[string]interface{}{
-		"tool":    tool,
-		"version": version,
-		"backend": backendName,
-	})
+	if len(args) > 0 {
+		tool := args[0] // original arg for display
+		formatter.Info(fmt.Sprintf("Installing %s", tool), map[string]interface{}{
+			"args": args,
+		})
+	} else {
+		formatter.Info("Installing all tools from configuration", map[string]interface{}{
+			"count": len(toolsToInstall),
+		})
+	}
 
 	// Dry-run: show intent without side effects
 	if dryRun {
-		formatter.Info("[dry-run] Would install "+tool+"@"+version+" — no changes made", map[string]interface{}{
-			"tool":    tool,
-			"version": version,
-			"backend": backendName,
+		formatter.Info("[dry-run] Would install tools — no changes made", map[string]interface{}{
+			"tools":   toolsToInstall,
 			"dry_run": true,
 		})
 		return nil
 	}
-
-	// Initialize dependencies
-	ctx := context.Background()
 
 	// Create backend registry
 	backendRegistry := backend.NewRegistry()
@@ -180,46 +196,57 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	// Create transaction manager
 	txManager := transaction.NewSQLiteTransactionManager(db.Conn())
 
-	// Create installation manager
-	installManager := service.NewInstallationManager(
+	// Create lock service if lockfile exists
+	var lockSvc *service.LockService
+	lockPath := env.GetLockFilePath()
+	if _, err := os.Stat(lockPath); err == nil {
+		lockSvc, _ = service.NewLockService(service.LockServiceOptions{
+			LockfilePath: lockPath,
+		})
+		if lockSvc != nil {
+			lockSvc.SetBackendRegistry(backendRegistry)
+		}
+	}
+
+	// Create installation manager with optional lock support
+	installManager := service.NewInstallationManagerWithLock(
 		backendRegistry,
 		providerRegistry,
 		downloadManager,
 		installRepo,
 		txManager,
+		lockSvc,
 	)
 
-	// Display start message
-	formatter.Info(fmt.Sprintf("Initializing installation for %s@%s", tool, version), map[string]interface{}{
-		"tool":    tool,
-		"version": version,
-		"backend": backendName,
-	})
-
-	// Start gorgeous loading animation for initialization
-	spinner, _ := pterm.DefaultSpinner.Start("Resolving backend and initializing...")
-
-	// Since native tools (npm, cargo, asdf) have their own progress bars that require a raw TTY,
-	// we stop our spinner right before the heavy lifting to avoid clashing with their native progress output.
-	spinner.Success("Initialization complete. Handing over to native provider...")
-
-	// Perform installation
+	// Perform installations
 	startTime := time.Now()
-	err = installManager.Install(ctx, tool, version, backendName)
-	duration := time.Since(startTime)
-
-	if err != nil {
-		pterm.Error.Printf("Installation failed: %v\n", err)
-		formatter.Error(fmt.Sprintf("Installation failed: %s", err.Error()), map[string]interface{}{
-			"tool":     tool,
-			"version":  version,
-			"duration": duration.String(),
-		})
-		return fmt.Errorf("install %s@%s: %w", tool, version, err)
+	for toolName, spec := range toolsToInstall {
+		tool := toolName
+		if spec.Name != "" {
+			tool = spec.Name
+		}
+		
+		formatter.Info(fmt.Sprintf("Processing %s@%s...", toolName, spec.Version))
+		
+		err = installManager.Install(ctx, tool, spec.Version, spec.BackendName)
+		if err != nil {
+			// Check if already installed
+			if strings.Contains(err.Error(), "already installed") {
+				formatter.Info(fmt.Sprintf("%s@%s is already installed", toolName, spec.Version))
+				continue
+			}
+			
+			pterm.Error.Printf("Installation failed for %s: %v\n", toolName, err)
+			formatter.Error(fmt.Sprintf("Installation failed for %s: %s", toolName, err.Error()))
+			return fmt.Errorf("install %s: %w", toolName, err)
+		}
+		pterm.Success.Printf("Successfully installed %s@%s\n", toolName, spec.Version)
 	}
-
-	// Display success message
-	pterm.Success.Printf("Successfully installed %s@%s (took %s)\n", tool, version, duration.Round(time.Millisecond).String())
+	
+	duration := time.Since(startTime)
+	if len(toolsToInstall) > 1 {
+		pterm.Success.Printf("All tools processed (took %s)\n", duration.Round(time.Millisecond).String())
+	}
 
 	return nil
 }

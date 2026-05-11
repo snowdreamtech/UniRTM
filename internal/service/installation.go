@@ -98,11 +98,11 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 	if im.lockService != nil {
 		// Enforce strict mode before any API call.
-		if err := im.lockService.CheckStrict(tool, backendName, version, platform); err != nil {
+		if err := im.lockService.CheckStrict(tool, version, platform); err != nil {
 			return err
 		}
 		// Try to resolve directly from the lockfile.
-		if info, ok := im.lockService.Resolve(tool, backendName, version, platform); ok {
+		if info, ok := im.lockService.Resolve(tool, version, platform); ok {
 			logger.Debug("lockfile hit: using cached URL", map[string]interface{}{
 				"tool":     tool,
 				"version":  version,
@@ -139,12 +139,22 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 			opts = opts.WithChecksum(versionInfo.Checksum)
 		}
 		gpgResult := &download.GPGResult{}
-		opts = opts.WithVerifyGPG(true, gpgResult)
+		// Only attempt GPG verification if the keyring exists
+		keyringPath := filepath.Join(env.GetDataDir(), "keyring.gpg")
+		verifyGPG := false
+		if _, err := os.Stat(keyringPath); err == nil {
+			verifyGPG = true
+		}
+		opts = opts.WithVerifyGPG(verifyGPG, gpgResult)
 
 		if err := downloader.Download(ctx, versionInfo.DownloadURL, downloadPath, opts); err != nil {
 			return fmt.Errorf("failed to download: %w", err)
 		}
-		defer os.Remove(downloadPath)
+		defer func() {
+			os.Remove(downloadPath)
+			// Clean up empty parent directories up to the downloads root
+			im.removeEmptyDirs(downloadPath, env.GetDownloadsDir())
+		}()
 
 		// Verify checksum
 		if versionInfo.Checksum != "" {
@@ -263,6 +273,11 @@ func (im *InstallationManager) Uninstall(ctx context.Context, tool, version stri
 		return fmt.Errorf("failed to remove installation record: %w", err)
 	}
 
+	// Remove from lockfile
+	if im.lockService != nil {
+		_ = im.lockService.RemoveTool(tool)
+	}
+
 	return nil
 }
 
@@ -304,4 +319,19 @@ func tryVerifyProvenance(ctx context.Context, tool, artifactPath string) (string
 		"predicateType": result.PredicateType,
 	})
 	return "verified", nil
+}
+
+// removeEmptyDirs recursively removes empty parent directories of path up to root.
+func (im *InstallationManager) removeEmptyDirs(path string, root string) {
+	dir := filepath.Dir(path)
+	for {
+		if dir == root || dir == "." || dir == filepath.Dir(root) {
+			break
+		}
+		// Try to remove the directory. os.Remove only removes if empty.
+		if err := os.Remove(dir); err != nil {
+			break
+		}
+		dir = filepath.Dir(dir)
+	}
 }

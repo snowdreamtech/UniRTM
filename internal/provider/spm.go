@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
@@ -29,7 +30,13 @@ func (p *SpmProvider) Name() string {
 
 func (p *SpmProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
 	// Usually tool is a URL for SPM
-	tool := filepath.Base(filepath.Dir(installPath))
+	// Extract the full tool name (including scope if present) from the install path.
+	installsDir := env.GetInstallsDir()
+	toolDir := filepath.Dir(installPath)
+	tool, err := filepath.Rel(installsDir, toolDir)
+	if err != nil {
+		tool = filepath.Base(toolDir) // fallback
+	}
 
 	if err := os.MkdirAll(installPath, 0755); err != nil {
 		return err
