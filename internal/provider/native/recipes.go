@@ -33,10 +33,10 @@ func GetBuiltinRecipes() map[string]Recipe {
 		"python": {
 			ID: "python",
 			Handler: &GithubHandler{
-				Owner: "indygreg",
+				Owner: "astral-sh",
 				Repo:  "python-build-standalone",
 			},
-			BaseURL: "https://github.com/indygreg/python-build-standalone/releases",
+			BaseURL: "https://github.com/astral-sh/python-build-standalone/releases",
 			Aliases: map[string]string{
 				"latest": "3.12.2",
 			},
