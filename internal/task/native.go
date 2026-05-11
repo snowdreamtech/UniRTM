@@ -6,6 +6,7 @@ package task
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -81,10 +82,54 @@ func (r *NativeRunner) Run(ctx context.Context, dir string, taskName string, arg
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	// Bind IO streams to the user's terminal
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	// Bind IO streams based on output style
+	outputStyle := r.settings.TaskOutput
+	if taskDef.Output != "" {
+		outputStyle = taskDef.Output
+	}
+
+	if outputStyle == "prefix" {
+		prefix := fmt.Sprintf("[%s] ", taskName)
+		cmd.Stdout = &prefixWriter{w: os.Stdout, prefix: prefix, atStart: true}
+		cmd.Stderr = &prefixWriter{w: os.Stderr, prefix: prefix, atStart: true}
+	} else {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
 	cmd.Stdin = os.Stdin
 
 	return cmd.Run()
+}
+
+type prefixWriter struct {
+	w       io.Writer
+	prefix  string
+	atStart bool
+}
+
+func (pw *prefixWriter) Write(p []byte) (n int, err error) {
+	lines := strings.Split(string(p), "\n")
+	for i, line := range lines {
+		if i == len(lines)-1 && len(line) == 0 {
+			break
+		}
+		if pw.atStart || i > 0 {
+			_, err = fmt.Fprint(pw.w, pw.prefix)
+			if err != nil {
+				return n, err
+			}
+		}
+		_, err = fmt.Fprint(pw.w, line)
+		if err != nil {
+			return n, err
+		}
+		if i < len(lines)-1 {
+			_, err = fmt.Fprint(pw.w, "\n")
+			if err != nil {
+				return n, err
+			}
+		}
+	}
+	pw.atStart = strings.HasSuffix(string(p), "\n")
+	return len(p), nil
 }
