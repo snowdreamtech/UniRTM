@@ -91,7 +91,17 @@ func GetBuiltinRecipes() map[string]Recipe {
 		},
 		"java": {
 			ID:      "java",
-			Handler: &JavaHandler{},
+			Handler: &JavaHandler{ImageType: "jdk"},
+			BaseURL: "https://api.adoptium.net",
+		},
+		"jdk": {
+			ID:      "java",
+			Handler: &JavaHandler{ImageType: "jdk"},
+			BaseURL: "https://api.adoptium.net",
+		},
+		"jre": {
+			ID:      "java",
+			Handler: &JavaHandler{ImageType: "jre"},
 			BaseURL: "https://api.adoptium.net",
 		},
 		"kubectl": {

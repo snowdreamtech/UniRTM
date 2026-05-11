@@ -14,7 +14,9 @@ import (
 )
 
 // JavaHandler handles Java distributions via Adoptium (Temurin) API.
-type JavaHandler struct{}
+type JavaHandler struct {
+	ImageType string // "jdk" or "jre"
+}
 
 func (h *JavaHandler) Name() string {
 	return "java"
@@ -53,7 +55,11 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 	}
 
 	for _, v := range ltsVersions {
-		url := fmt.Sprintf("https://api.adoptium.net/v3/assets/feature_releases/%s/ga?architecture=%s&heap_size=normal&image_type=jdk&jvm_impl=hotspot&os=%s&project=jdk&vendor=eclipse", v, arch, os)
+		imageType := h.ImageType
+		if imageType == "" {
+			imageType = "jdk"
+		}
+		url := fmt.Sprintf("https://api.adoptium.net/v3/assets/feature_releases/%s/ga?architecture=%s&heap_size=normal&image_type=%s&jvm_impl=hotspot&os=%s&project=jdk&vendor=eclipse", v, arch, imageType, os)
 		
 		client := &http.Client{Timeout: 10 * time.Second}
 		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
