@@ -15,12 +15,16 @@ import (
 
 // RubyProvider implements the Provider interface for Ruby.
 type RubyProvider struct {
+	native  *NativeProvider
+	asdf    *AsdfProvider
 	generic *GenericProvider
 }
 
-// NewRubyProvider creates a new Ruby provider.
-func NewRubyProvider() *RubyProvider {
+// NewRubyProvider creates a new Ruby provider with native-first fallback logic.
+func NewRubyProvider(native *NativeProvider) *RubyProvider {
 	return &RubyProvider{
+		native:  native,
+		asdf:    NewAsdfProvider(),
 		generic: NewGenericProvider(),
 	}
 }
@@ -30,9 +34,28 @@ func (r *RubyProvider) Name() string {
 	return "ruby"
 }
 
-// Install performs Ruby-specific installation.
+// Install performs Ruby-specific installation with native-first fallback.
 func (r *RubyProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
-	return r.generic.Install(ctx, installPath, artifactPath, version)
+	// Check if we are on a platform likely to support native binaries
+	isNativeSupported := runtime.GOOS == "darwin" || strings.Contains(strings.ToLower(artifactPath), "ubuntu")
+
+	if isNativeSupported {
+		// 1. Try Native installation first
+		err := r.native.Install(ctx, installPath, artifactPath, version)
+		if err == nil {
+			// Verification: try to run ruby -v to see if the binary works on this specific Linux distro (e.g. Debian)
+			if _, detectErr := r.DetectVersion(ctx, installPath); detectErr == nil {
+				return nil
+			}
+			// If binary doesn't work (e.g. glibc mismatch), cleanup and fallback
+			os.RemoveAll(installPath)
+		}
+	}
+
+	// 2. Fallback to ASDF (source compilation)
+	// Note: ASDF provider handles its own downloading if artifactPath is not what it expects,
+	// or we might need to pass an empty artifactPath to force it to resolve.
+	return r.asdf.Install(ctx, installPath, "", version)
 }
 
 // PostInstall performs post-installation steps.

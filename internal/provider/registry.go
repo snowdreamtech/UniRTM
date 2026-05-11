@@ -35,7 +35,7 @@ func NewRegistry() *Registry {
 	r.Register("java", nativeProvider)
 	r.Register("jdk", nativeProvider)
 	r.Register("jre", nativeProvider)
-	r.Register("ruby", nativeProvider)
+	r.Register("ruby", NewRubyProvider(nativeProvider))
 	r.Register("rust", nativeProvider)
 	r.Register("asdf", NewAsdfProvider())
 	r.Register("npm", NewNpmProvider())
