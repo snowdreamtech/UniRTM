@@ -93,34 +93,24 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 func (h *GithubHandler) detectPlatform(filename string) (string, string) {
 	filename = strings.ToLower(filename)
 	
-	// Skip debug or specific builds not intended for general use
-	if strings.Contains(filename, "debug") || strings.Contains(filename, "pgo") {
-		// keep it simple for now
-	}
-
 	var os, arch string
 
 	// OS Detection
 	if strings.Contains(filename, "linux") {
 		os = "linux"
-	} else if strings.Contains(filename, "darwin") || strings.Contains(filename, "macos") {
+	} else if strings.Contains(filename, "darwin") || strings.Contains(filename, "macos") || strings.Contains(filename, "apple") {
 		os = "darwin"
-	} else if strings.Contains(filename, "windows") {
+	} else if strings.Contains(filename, "windows") || strings.Contains(filename, "win") {
 		os = "windows"
 	}
 
 	// Arch Detection
-	if strings.Contains(filename, "x86_64") || strings.Contains(filename, "amd64") {
+	if strings.Contains(filename, "x86_64") || strings.Contains(filename, "amd64") || strings.Contains(filename, "x64") {
 		arch = "amd64"
 	} else if strings.Contains(filename, "aarch64") || strings.Contains(filename, "arm64") {
 		arch = "arm64"
-	} else if strings.Contains(filename, "i686") || strings.Contains(filename, "386") {
+	} else if strings.Contains(filename, "i686") || strings.Contains(filename, "386") || strings.Contains(filename, "x86") {
 		arch = "386"
-	}
-
-	// Special case for python-build-standalone which uses "apple-darwin"
-	if strings.Contains(filename, "apple-darwin") {
-		os = "darwin"
 	}
 
 	return os, arch

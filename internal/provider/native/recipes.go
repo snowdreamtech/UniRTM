@@ -54,6 +54,14 @@ func GetBuiltinRecipes() map[string]Recipe {
 				"latest": "1.76.0",
 			},
 		},
+		"bun": {
+			ID: "bun",
+			Handler: &GithubHandler{
+				Owner: "oven-sh",
+				Repo:  "bun",
+			},
+			BaseURL: "https://github.com/oven-sh/bun/releases",
+		},
 	}
 }
 
