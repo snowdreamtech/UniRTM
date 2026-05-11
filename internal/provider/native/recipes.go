@@ -70,6 +70,25 @@ func GetBuiltinRecipes() map[string]Recipe {
 			},
 			BaseURL: "https://github.com/denoland/deno/releases",
 		},
+		"terraform": {
+			ID: "terraform",
+			Handler: &GithubHandler{
+				Owner: "hashicorp",
+				Repo:  "terraform",
+			},
+			BaseURL: "https://github.com/hashicorp/terraform/releases",
+		},
+		"opentofu": {
+			ID: "opentofu",
+			Handler: &GithubHandler{
+				Owner: "opentofu",
+				Repo:  "opentofu",
+			},
+			BaseURL: "https://github.com/opentofu/opentofu/releases",
+			Aliases: map[string]string{
+				"latest": "1.6.2",
+			},
+		},
 	}
 }
 

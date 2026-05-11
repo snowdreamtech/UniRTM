@@ -54,6 +54,9 @@ func NewRegistry() *Registry {
 	r.Register("php", NewPhpProvider())
 	r.Register("flutter", NewFlutterProvider())
 	r.Register("pipx", NewPypiProvider())
+	r.Register("terraform", nativeProvider)
+	r.Register("opentofu", nativeProvider)
+	r.Register("tofu", nativeProvider)
 	
 	return r
 }
