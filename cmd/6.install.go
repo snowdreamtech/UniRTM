@@ -322,13 +322,10 @@ func getOutputFormat() output.OutputFormat {
 	return output.FormatHuman
 }
 
-// getBackendName returns the backend name to use for installation.
-// If installBackend flag is set, it returns that value.
-// Otherwise, it returns "github" as the default backend.
 func getBackendName() string {
 	if installBackend != "" {
 		return installBackend
 	}
-	return "github" // Default backend
+	return "" // Default to empty to allow auto-detection
 }
 
