@@ -93,6 +93,14 @@ func (c *Config) ResolveEnvironment() (map[string]string, []string, []string, er
 						}
 					}
 
+					// Apply shell-style expansion
+					rendered = os.Expand(rendered, func(name string) string {
+						if v, ok := resolved[name]; ok {
+							return v
+						}
+						return os.Getenv(name)
+					})
+
 					currentPath := resolved["PATH"]
 					if currentPath == "" {
 						currentPath = os.Getenv("PATH")
@@ -117,6 +125,14 @@ func (c *Config) ResolveEnvironment() (map[string]string, []string, []string, er
 							}
 						}
 					}
+
+					// Apply shell-style expansion
+					rendered = os.Expand(rendered, func(name string) string {
+						if v, ok := resolved[name]; ok {
+							return v
+						}
+						return os.Getenv(name)
+					})
 					sources = append(sources, rendered)
 				}
 			case "_.python_venv":
@@ -130,6 +146,14 @@ func (c *Config) ResolveEnvironment() (map[string]string, []string, []string, er
 							}
 						}
 					}
+
+					// Apply shell-style expansion
+					rendered = os.Expand(rendered, func(name string) string {
+						if v, ok := resolved[name]; ok {
+							return v
+						}
+						return os.Getenv(name)
+					})
 
 					// Normalize path
 					absPath := rendered
@@ -218,6 +242,14 @@ func (c *Config) ResolveEnvironment() (map[string]string, []string, []string, er
 				}
 			}
 		}
+
+		// Apply shell-style expansion ($VAR or ${VAR})
+		rendered = os.Expand(rendered, func(name string) string {
+			if v, ok := resolved[name]; ok {
+				return v
+			}
+			return os.Getenv(name)
+		})
 
 		// Handle required check
 		if isRequired && rendered == "" {
