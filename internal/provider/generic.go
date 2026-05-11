@@ -46,21 +46,29 @@ func (g *GenericProvider) Install(ctx context.Context, installPath string, artif
 			return NewProviderError("generic", "unknown", version, "failed to chmod executable", err)
 		}
 	} else {
-		// Find all executable files in the extracted path
-		executables, err := g.findExecutables(installPath)
+		// Determine tool name from installPath to help identify the main binary
+		toolName := filepath.Base(filepath.Dir(installPath))
+
+		// Find and score all executable files in the extracted path
+		allExecs, err := g.findExecutables(installPath)
 		if err != nil {
-			return NewProviderError("generic", "unknown", version, "failed to find executables", err)
+			return NewProviderError("generic", toolName, version, "failed to find executables", err)
 		}
+
+		// Pick the best executables based on scoring
+		executables := g.pickBestExecutables(allExecs, toolName)
 
 		// Ensure executables have +x and link them to binDir
 		for _, exe := range executables {
 			exePath := filepath.Join(installPath, exe)
 			if err := os.Chmod(exePath, 0755); err != nil {
-				return NewProviderError("generic", "unknown", version, fmt.Sprintf("failed to chmod %s", exe), err)
+				return NewProviderError("generic", toolName, version, fmt.Sprintf("failed to chmod %s", exe), err)
 			}
 
 			dstPath := filepath.Join(binDir, filepath.Base(exe))
 			if filepath.Dir(exePath) != binDir {
+				// Remove existing symlink if it exists
+				os.Remove(dstPath)
 				os.Symlink(exePath, dstPath)
 			}
 		}
@@ -155,6 +163,84 @@ func (g *GenericProvider) ListExecutables(installPath string, version string) ([
 func (g *GenericProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	// No special cleanup needed
 	return nil
+}
+
+// pickBestExecutables filters the list of executables to find the most relevant ones.
+func (g *GenericProvider) pickBestExecutables(execs []string, toolName string) []string {
+	if len(execs) <= 1 {
+		return execs
+	}
+
+	type scoredExe struct {
+		path  string
+		score int
+	}
+
+	var scored []scoredExe
+	maxScore := -1000
+
+	for _, exe := range execs {
+		score := g.calculateExeScore(exe, toolName)
+		scored = append(scored, scoredExe{exe, score})
+		if score > maxScore {
+			maxScore = score
+		}
+	}
+
+	var results []string
+	// If we have a clear winner, only take the high-scoring ones
+	for _, s := range scored {
+		// Heuristic: if a file scores much higher than others, it's probably the main binary.
+		// We take anything that is within 30 points of the max score.
+		if s.score >= maxScore-30 {
+			results = append(results, s.path)
+		}
+	}
+
+	return results
+}
+
+// calculateExeScore evaluates how likely an executable is the primary tool binary.
+func (g *GenericProvider) calculateExeScore(relPath string, toolName string) int {
+	filename := filepath.Base(relPath)
+	nameLower := strings.ToLower(filename)
+	toolLower := strings.ToLower(toolName)
+	score := 0
+
+	// 1. Name Match
+	if nameLower == toolLower || nameLower == toolLower+".exe" {
+		score += 100
+	} else if strings.HasPrefix(nameLower, toolLower) {
+		score += 50
+	} else if strings.Contains(nameLower, toolLower) {
+		score += 20
+	}
+
+	// 2. Location
+	dir := filepath.ToSlash(filepath.Dir(relPath))
+	if dir == "." || dir == "bin" {
+		score += 30
+	} else if strings.Contains(dir, "examples") || strings.Contains(dir, "tests") || strings.Contains(dir, "scripts") {
+		score -= 50
+	}
+
+	// 3. Format
+	ext := strings.ToLower(filepath.Ext(filename))
+	if runtime.GOOS != "windows" {
+		if ext == "" {
+			score += 20 // Prefer extensionless binaries on Unix
+		} else if ext == ".sh" || ext == ".py" || ext == ".pl" || ext == ".rb" {
+			score -= 20 // Scripts are less likely to be the main binary if a binary exists
+		}
+	} else {
+		if ext == ".exe" {
+			score += 20
+		} else if ext == ".bat" || ext == ".cmd" {
+			score -= 10
+		}
+	}
+
+	return score
 }
 
 // findExecutables recursively finds all executable files in a directory.
