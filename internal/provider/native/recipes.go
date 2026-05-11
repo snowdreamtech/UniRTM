@@ -109,6 +109,11 @@ func GetBuiltinRecipes() map[string]Recipe {
 			Handler: &KubectlHandler{},
 			BaseURL: "https://dl.k8s.io",
 		},
+		"ruby": {
+			ID:      "ruby",
+			Handler: &RubyHandler{},
+			BaseURL: "https://github.com/ruby/ruby-builder/releases",
+		},
 	}
 }
 
