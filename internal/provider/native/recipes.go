@@ -46,6 +46,14 @@ func GetBuiltinRecipes() map[string]Recipe {
 			Handler: &ZigHandler{},
 			BaseURL: "https://ziglang.org/download/index.json",
 		},
+		"rust": {
+			ID:      "rust",
+			Handler: &RustHandler{},
+			BaseURL: "https://static.rust-lang.org/dist",
+			Aliases: map[string]string{
+				"latest": "1.76.0",
+			},
+		},
 	}
 }
 
