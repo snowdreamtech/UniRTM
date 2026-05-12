@@ -192,13 +192,6 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		return fmt.Errorf("pre_install hook failed: %w", err)
 	}
 
-	// Start transaction
-	tx, err := im.txManager.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to start transaction: %w", err)
-	}
-	defer tx.Rollback()
-
 	// Get backend
 	b, err := im.backendRegistry.Get(backendName)
 	if err != nil {
@@ -238,13 +231,19 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	}
 
 	// 5. Check if already installed (AFTER resolving concrete version)
-	existing, err := tx.InstallationRepo().FindByToolAndVersion(ctx, tool, version)
+	// Note: We use im.installRepo (non-transactional) here to avoid holding a transaction during download.
+	existing, err := im.installRepo.FindByToolAndVersion(ctx, tool, version)
 	if err == nil && existing != nil {
 		// Verify if the installation directory actually exists on disk
 		if _, statErr := os.Stat(existing.InstallPath); os.IsNotExist(statErr) {
-			// Path doesn't exist, this is a stale database record. Clean it up.
-			if delErr := tx.InstallationRepo().Delete(ctx, tool, version); delErr != nil {
-				return fmt.Errorf("failed to clean up stale installation record: %w", delErr)
+			// Path doesn't exist, this is a stale database record. Clean it up in a short-lived transaction.
+			tx, err := im.txManager.Begin(ctx)
+			if err == nil {
+				if delErr := tx.InstallationRepo().Delete(ctx, tool, version); delErr == nil {
+					_ = tx.Commit()
+				} else {
+					_ = tx.Rollback()
+				}
 			}
 		} else {
 			return fmt.Errorf("tool %s version %s already installed", tool, version)
@@ -371,6 +370,13 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		Checksum:    versionInfo.Checksum,
 	}
 
+	// Start transaction for recording
+	tx, err := im.txManager.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer tx.Rollback()
+
 	if err := tx.InstallationRepo().Create(ctx, installation); err != nil {
 		os.RemoveAll(installPath)
 		return fmt.Errorf("failed to record installation: %w", err)
@@ -473,9 +479,21 @@ func (im *InstallationManager) Uninstall(ctx context.Context, tool, version stri
 		return fmt.Errorf("failed to remove installation directory: %w", err)
 	}
 
+	// Start transaction for removal
+	tx, err := im.txManager.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer tx.Rollback()
+
 	// Remove from database
-	if err := im.installRepo.Delete(ctx, tool, version); err != nil {
+	if err := tx.InstallationRepo().Delete(ctx, tool, version); err != nil {
 		return fmt.Errorf("failed to remove installation record: %w", err)
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	// Remove from lockfile
