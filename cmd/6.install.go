@@ -134,16 +134,19 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		// Install specific tool from arguments
 		tool := args[0]
 		version := "latest"
+		explicitVersion := false
 
 		// Parse "tool@version" syntax (like mise)
 		if strings.Contains(tool, "@") {
 			parts := strings.SplitN(tool, "@", 2)
 			tool = parts[0]
+			explicitVersion = true
 			if parts[1] != "" {
 				version = parts[1]
 			}
 		} else if len(args) == 2 {
 			version = args[1]
+			explicitVersion = true
 		}
 
 		backendName := getBackendName()
@@ -182,7 +185,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("version is required")
 		}
 
-		if version == "latest" && !jsonOutput {
+		if !explicitVersion && !jsonOutput {
 			// Check if stdin is a terminal
 			if stat, _ := os.Stdin.Stat(); (stat.Mode() & os.ModeCharDevice) != 0 {
 				// Get installation manager to perform interactive selection

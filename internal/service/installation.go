@@ -119,14 +119,10 @@ func (im *InstallationManager) SelectVersionInteractive(ctx context.Context, too
 		return "", fmt.Errorf("no versions found for %s", tool)
 	}
 
-	// 3. Convert to string slice and reverse (to show latest first)
+	// 3. Convert to string slice
 	versions := make([]string, len(versionInfos))
 	for i, info := range versionInfos {
 		versions[i] = info.Version
-	}
-
-	for i, j := 0, len(versions)-1; i < j; i, j = i+1, j-1 {
-		versions[i], versions[j] = versions[j], versions[i]
 	}
 
 	// 4. Show interactive menu
