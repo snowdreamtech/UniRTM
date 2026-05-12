@@ -160,6 +160,26 @@ func GetBuiltinRecipes() map[string]Recipe {
 				"1BD97A6A154E7810EE0BC832E2F38302C8075E3D", // Gradle Release
 			},
 		},
+		"cmake": {
+			ID:      "cmake",
+			Handler: &CMakeHandler{},
+			BaseURL: "https://github.com/Kitware/CMake/releases",
+		},
+		"ninja": {
+			ID:      "ninja",
+			Handler: &NinjaHandler{},
+			BaseURL: "https://github.com/ninja-build/ninja/releases",
+		},
+		"elixir": {
+			ID:      "elixir",
+			Handler: &ElixirHandler{},
+			BaseURL: "https://github.com/elixir-lang/elixir/releases",
+		},
+		"erlang": {
+			ID:      "erlang",
+			Handler: &ErlangHandler{},
+			BaseURL: "https://github.com/rabbitmq/erlang-relbin/releases",
+		},
 	}
 }
 

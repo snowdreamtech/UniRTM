@@ -8,31 +8,35 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"runtime"
 	"strings"
 	"time"
 )
 
-// ZigHandler handles Zig distribution via ziglang.org/download/index.json.
+// ZigHandler handles Zig tool versions via its official JSON API.
 type ZigHandler struct{}
 
 func (h *ZigHandler) Name() string {
 	return "zig"
 }
 
-type zigIndex map[string]struct {
-	Tarball string `json:"tarball"`
-	Shasum  string `json:"shasum"`
-	Size    string `json:"size"`
+type zigVersionMap map[string]zigVersion
+
+type zigVersion struct {
+	Version string                 `json:"version"` // Only present in some contexts
+	Tarball string                 `json:"tarball"` // Only present in platform-specific map
+	Size    string                 `json:"size"`
+	Hash    string                 `json:"hash"`
+	Master  map[string]interface{} `json:"master"` // We might handle master/nightly later
 }
 
-type zigResponse map[string]map[string]interface{}
-
 func (h *ZigHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
-	// Zig index URL: https://ziglang.org/download/index.json
-	url := "https://ziglang.org/download/index.json"
+	if baseURL == "" {
+		baseURL = "https://ziglang.org/download/index.json"
+	}
 
 	client := &http.Client{Timeout: 10 * time.Second}
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -47,55 +51,51 @@ func (h *ZigHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ver
 		return nil, fmt.Errorf("zig api: returned status %d", resp.StatusCode)
 	}
 
-	var data map[string]interface{}
+	var data map[string]map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		return nil, err
 	}
 
 	var versions []VersionInfo
-	for version, platformsRaw := range data {
-		if version == "master" {
-			// We can handle master/nightly later
-			continue
-		}
-
-		platforms, ok := platformsRaw.(map[string]interface{})
-		if !ok {
+	for verStr, platformMap := range data {
+		if verStr == "master" {
+			// Skip master/nightly for now to keep it stable
 			continue
 		}
 
 		var assets []Asset
-		for platformKey, platformDataRaw := range platforms {
-			pd, ok := platformDataRaw.(map[string]interface{})
-			if !ok {
-				continue
-			}
-
-			tarball, _ := pd["tarball"].(string)
-			shasum, _ := pd["shasum"].(string)
-
-			if tarball == "" {
-				continue
-			}
-
-			os, arch := h.parsePlatform(platformKey)
+		for platKey, platData := range platformMap {
+			// platKey format: "x86_64-linux", "aarch64-macos", etc.
+			os, arch := h.parsePlatform(platKey)
 			if os == "" || arch == "" {
 				continue
 			}
 
+			// platData is a map containing "tarball", "shasum", etc.
+			m, ok := platData.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			url, _ := m["tarball"].(string)
+			hash, _ := m["shasum"].(string)
+
+			if url == "" {
+				continue
+			}
+
 			assets = append(assets, Asset{
-				Filename: filepathBase(tarball),
-				URL:      tarball,
-				Checksum: shasum,
-				Algo:     "sha256",
+				Filename: filepathBase(url),
+				URL:      url,
 				OS:       os,
 				Arch:     arch,
+				Checksum: hash,
 			})
 		}
 
 		if len(assets) > 0 {
 			versions = append(versions, VersionInfo{
-				Version: version,
+				Version: verStr,
 				Assets:  assets,
 			})
 		}
@@ -104,9 +104,8 @@ func (h *ZigHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ver
 	return versions, nil
 }
 
-func (h *ZigHandler) parsePlatform(key string) (string, string) {
-	// Zig keys are like "x86_64-linux", "aarch64-macos", "x86-windows"
-	parts := strings.Split(key, "-")
+func (h *ZigHandler) parsePlatform(platKey string) (string, string) {
+	parts := strings.Split(platKey, "-")
 	if len(parts) != 2 {
 		return "", ""
 	}
@@ -116,6 +115,7 @@ func (h *ZigHandler) parsePlatform(key string) (string, string) {
 
 	var os, arch string
 
+	// OS Mapping
 	switch osRaw {
 	case "linux":
 		os = "linux"
@@ -127,6 +127,7 @@ func (h *ZigHandler) parsePlatform(key string) (string, string) {
 		os = "freebsd"
 	}
 
+	// Arch Mapping
 	switch archRaw {
 	case "x86_64":
 		arch = "amd64"
@@ -134,14 +135,14 @@ func (h *ZigHandler) parsePlatform(key string) (string, string) {
 		arch = "arm64"
 	case "x86":
 		arch = "386"
-	case "armv7l":
-		arch = "arm"
+	case "riscv64":
+		arch = "riscv64"
 	}
 
 	return os, arch
 }
 
-func filepathBase(path string) string {
-	parts := strings.Split(path, "/")
+func filepathBase(url string) string {
+	parts := strings.Split(url, "/")
 	return parts[len(parts)-1]
 }
