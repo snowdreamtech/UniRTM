@@ -107,18 +107,24 @@ func (im *InstallationManager) SelectVersionInteractive(ctx context.Context, too
 
 	// 2. List remote versions
 	spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Fetching versions for %s...", tool))
-	versions, err := b.ListVersions(ctx)
+	platform := backend.CurrentPlatform()
+	versionInfos, err := b.ListVersions(ctx, tool, platform)
 	if err != nil {
 		spinner.Fail(err.Error())
 		return "", fmt.Errorf("list versions: %w", err)
 	}
 	spinner.Success()
 
-	if len(versions) == 0 {
+	if len(versionInfos) == 0 {
 		return "", fmt.Errorf("no versions found for %s", tool)
 	}
 
-	// 3. Reverse versions to show latest first (usually)
+	// 3. Convert to string slice and reverse (to show latest first)
+	versions := make([]string, len(versionInfos))
+	for i, info := range versionInfos {
+		versions[i] = info.Version
+	}
+
 	for i, j := 0, len(versions)-1; i < j; i, j = i+1, j-1 {
 		versions[i], versions[j] = versions[j], versions[i]
 	}

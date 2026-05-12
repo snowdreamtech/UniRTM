@@ -182,14 +182,19 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("version is required")
 		}
 
-		if version == "latest" && !jsonOutput && pterm.IsTerminal(os.Stdin) {
-			// Get installation manager to perform interactive selection
-			im := getInstallationManager(ctx, cfg)
-			selected, err := im.SelectVersionInteractive(ctx, tool)
-			if err == nil {
-				version = selected
-			} else {
-				pterm.Warning.Printf("Interactive selection failed: %v, falling back to latest\n", err)
+		if version == "latest" && !jsonOutput {
+			// Check if stdin is a terminal
+			if stat, _ := os.Stdin.Stat(); (stat.Mode() & os.ModeCharDevice) != 0 {
+				// Get installation manager to perform interactive selection
+				im, err := getInstallationManager(ctx, cfg)
+				if err == nil {
+					selected, err := im.SelectVersionInteractive(ctx, tool)
+					if err == nil {
+						version = selected
+					} else {
+						pterm.Warning.Printf("Interactive selection failed: %v, falling back to latest\n", err)
+					}
+				}
 			}
 		}
 

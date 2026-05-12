@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/spf13/cobra"
@@ -89,9 +88,17 @@ func runUse(cmd *cobra.Command, args []string) error {
 		}
 
 		if version == "" {
-			if !jsonOutput && pterm.IsTerminal(os.Stdin) {
+			isTerminal := false
+			if stat, err := os.Stdin.Stat(); err == nil && (stat.Mode()&os.ModeCharDevice) != 0 {
+				isTerminal = true
+			}
+
+			if !jsonOutput && isTerminal {
 				cfg, _ := config.Load()
-				im := getInstallationManager(cmd.Context(), cfg)
+				im, err := getInstallationManager(cmd.Context(), cfg)
+				if err != nil {
+					return fmt.Errorf("failed to get installation manager: %w", err)
+				}
 				selected, err := im.SelectVersionInteractive(cmd.Context(), tool)
 				if err == nil {
 					version = selected
