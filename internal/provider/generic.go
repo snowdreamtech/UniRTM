@@ -390,7 +390,9 @@ func (g *GenericProvider) flattenDirectory(dir string) error {
 
 	// If there's exactly one visible entry and it's a directory, flatten it
 	if len(visibleEntries) == 1 && visibleEntries[0].IsDir() {
-		subDir := filepath.Join(dir, visibleEntries[0].Name())
+		subDirName := visibleEntries[0].Name()
+		fmt.Printf("ℹ flattening redundant directory: %s\n", subDirName)
+		subDir := filepath.Join(dir, subDirName)
 		subEntries, err := os.ReadDir(subDir)
 		if err != nil {
 			return err

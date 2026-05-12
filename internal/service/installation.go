@@ -363,23 +363,26 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 	p := im.providerRegistry.GetWithBackend(tool, backendName)
 
-	fmt.Printf("ℹ installing %s@%s...\n", tool, version)
+	fmt.Printf("ℹ extracting %s@%s...\n", tool, version)
 	if err := p.Install(ctx, tmpInstallPath, downloadPath, version); err != nil {
 		os.RemoveAll(tmpInstallPath)
 		return fmt.Errorf("installation failed: %w", err)
 	}
 
+	fmt.Printf("ℹ running post-install hooks for %s@%s...\n", tool, version)
 	if err := p.PostInstall(ctx, tmpInstallPath, version); err != nil {
 		os.RemoveAll(tmpInstallPath)
 		return fmt.Errorf("post-install failed: %w", err)
 	}
 
+	fmt.Printf("ℹ finalizing installation for %s@%s...\n", tool, version)
 	// Atomic rename from temp to final path
 	if err := os.Rename(tmpInstallPath, installPath); err != nil {
 		os.RemoveAll(tmpInstallPath)
 		return fmt.Errorf("failed to finalize installation: %w", err)
 	}
 
+	fmt.Printf("ℹ recording %s@%s to database...\n", tool, version)
 	// Record installation
 	installation := &repository.Installation{
 		Tool:        tool,
