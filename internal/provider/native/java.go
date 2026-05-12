@@ -37,8 +37,8 @@ type adoptiumRelease struct {
 }
 
 func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
-	// Adoptium LTS versions: 8, 11, 17, 21
-	ltsVersions := []string{"8", "11", "17", "21"}
+	// Adoptium versions: 23 (GA), 21 (LTS), 17 (LTS), 11 (LTS), 8 (LTS)
+	majorVersions := []string{"23", "21", "17", "11", "8"}
 	
 	var allVersions []VersionInfo
 	
@@ -55,7 +55,7 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 		arch = "aarch64"
 	}
 
-	for _, v := range ltsVersions {
+	for _, v := range majorVersions {
 		imageType := h.ImageType
 		if imageType == "" {
 			imageType = "jdk"

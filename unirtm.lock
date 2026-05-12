@@ -97,6 +97,14 @@ gpg_key = "1BD97A6A154E7810EE0BC832E2F38302C8075E3D"
 version = "2.14.0"
 backend = "github"
 
+[[tools."java"]]
+version = "1.8.0_492-b09"
+backend = "native"
+
+[tools."java"."platforms.macos-amd64"]
+url = "https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u492-b09/OpenJDK8U-jdk_x64_mac_hotspot_8u492b09.tar.gz"
+gpg_key = "3B04D753C9050D9A5D343F39843C48A565F8F04B"
+
 [[tools."maven"]]
 version = "3.9.6"
 backend = "native"
