@@ -463,7 +463,9 @@ func parseURL(rawURL string) (*url.URL, error) {
 	}
 
 	// Validate scheme
-	if u.Scheme != "http" && u.Scheme != "https" {
+	if u.Scheme == "http" {
+		fmt.Printf("⚠️  WARNING: Using insecure HTTP for download: %s. This is vulnerable to man-in-the-middle attacks.\n", rawURL)
+	} else if u.Scheme != "https" {
 		return nil, fmt.Errorf("unsupported URL scheme %q (only http and https are supported)", u.Scheme)
 	}
 

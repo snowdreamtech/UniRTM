@@ -189,6 +189,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	}
 
 	// 3. Run PreInstall hook
+	fmt.Printf("⚠️  SECURITY: executing pre_install hook for %s: %s\n", tool, preInstall)
 	if err := im.executeHook(ctx, preInstall, tool, version); err != nil {
 		return fmt.Errorf("pre_install hook failed: %w", err)
 	}
@@ -482,8 +483,11 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	}
 
 	// 11. Run PostInstall hook
-	if err := im.executeHook(ctx, postInstall, tool, version); err != nil {
-		return fmt.Errorf("post_install hook failed: %w", err)
+	if postInstall != "" {
+		fmt.Printf("⚠️  SECURITY: executing post_install hook for %s: %s\n", tool, postInstall)
+		if err := im.executeHook(ctx, postInstall, tool, version); err != nil {
+			return fmt.Errorf("post_install hook failed: %w", err)
+		}
 	}
 
 	fmt.Printf("✅ %s@%s installed successfully to %s\n", tool, version, installPath)

@@ -57,6 +57,11 @@ func (g *GenericProvider) Install(ctx context.Context, installPath string, artif
 			fmt.Printf("⚠️  failed to flatten directory: %v\n", err)
 		}
 
+		// 3.5 Validate security (Zip Slip, dangerous symlinks)
+		if err := g.validateInstallDir(installPath); err != nil {
+			return NewProviderError("generic", "unknown", version, "security validation failed", err)
+		}
+
 		// 4. Now create bin directory for UniRTM standardization
 		binDir := filepath.Join(installPath, "bin")
 		if err := os.MkdirAll(binDir, 0755); err != nil {
@@ -442,4 +447,58 @@ func (g *GenericProvider) flattenDirectory(dir string) error {
 	}
 
 	return nil
+}
+
+// validateInstallDir ensures that all files and symlinks in the directory are safe.
+// It prevents Zip Slip (path traversal) and dangerous symlinks pointing outside the install dir.
+func (g *GenericProvider) validateInstallDir(dir string) error {
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return err
+	}
+
+	return filepath.Walk(absDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// 1. Path traversal check (Zip Slip)
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			return err
+		}
+		if !strings.HasPrefix(absPath, absDir) {
+			return fmt.Errorf("security violation: file %s is outside of install directory %s", path, dir)
+		}
+
+		// 2. Symlink safety check
+		if info.Mode()&os.ModeSymlink != 0 {
+			target, err := os.Readlink(path)
+			if err != nil {
+				return err
+			}
+
+			// If it's an absolute path, it must start with absDir
+			if filepath.IsAbs(target) {
+				absTarget, err := filepath.Abs(target)
+				if err != nil {
+					return err
+				}
+				if !strings.HasPrefix(absTarget, absDir) {
+					return fmt.Errorf("security violation: symlink %s points outside of install directory: %s", path, target)
+				}
+			} else {
+				// For relative paths, we need to check the resolved path
+				absTarget, err := filepath.Abs(filepath.Join(filepath.Dir(path), target))
+				if err != nil {
+					return err
+				}
+				if !strings.HasPrefix(absTarget, absDir) {
+					return fmt.Errorf("security violation: relative symlink %s points outside of install directory: %s", path, target)
+				}
+			}
+		}
+
+		return nil
+	})
 }
