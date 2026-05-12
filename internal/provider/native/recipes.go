@@ -180,6 +180,16 @@ func GetBuiltinRecipes() map[string]Recipe {
 			Handler: &ErlangHandler{},
 			BaseURL: "https://github.com/rabbitmq/erlang-relbin/releases",
 		},
+		"flutter": {
+			ID:      "flutter",
+			Handler: &FlutterHandler{},
+			BaseURL: "https://storage.googleapis.com/flutter_infra_release/releases",
+		},
+		"julia": {
+			ID:      "julia",
+			Handler: &JuliaHandler{},
+			BaseURL: "https://github.com/JuliaLang/julia/releases",
+		},
 	}
 }
 
