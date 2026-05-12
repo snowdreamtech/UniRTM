@@ -163,6 +163,10 @@ type Settings struct {
 
 	// TrustedConfigPaths specifies directory paths where configurations are automatically trusted.
 	TrustedConfigPaths []string `toml:"trusted_config_paths,omitempty" yaml:"trusted_config_paths,omitempty" mapstructure:"trusted_config_paths,omitempty"`
+
+	// Tools contains tool-specific settings.
+	// Example: [settings.node]\ninstall_pnpm = true
+	Tools map[string]map[string]interface{} `toml:"tools,omitempty" yaml:"tools,omitempty" mapstructure:"tools,omitempty"`
 }
 
 // Task represents a task definition that can be executed via the CLI.

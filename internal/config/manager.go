@@ -494,8 +494,21 @@ func (m *viperConfigManager) Merge(configs ...*Config) (*Config, error) {
 		if len(config.Settings.CeilingPaths) > 0 {
 			merged.Settings.CeilingPaths = append(merged.Settings.CeilingPaths, config.Settings.CeilingPaths...)
 		}
-		if len(config.Settings.TrustedConfigPaths) > 0 {
+		if config.Settings.TrustedConfigPaths != nil {
 			merged.Settings.TrustedConfigPaths = append(merged.Settings.TrustedConfigPaths, config.Settings.TrustedConfigPaths...)
+		}
+		if config.Settings.Tools != nil {
+			if merged.Settings.Tools == nil {
+				merged.Settings.Tools = make(map[string]map[string]interface{})
+			}
+			for toolName, settings := range config.Settings.Tools {
+				if merged.Settings.Tools[toolName] == nil {
+					merged.Settings.Tools[toolName] = make(map[string]interface{})
+				}
+				for k, v := range settings {
+					merged.Settings.Tools[toolName][k] = v
+				}
+			}
 		}
 	}
 
