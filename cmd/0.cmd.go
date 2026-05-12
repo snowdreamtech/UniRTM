@@ -133,7 +133,7 @@ func getInstallationManager(ctx context.Context, cfg *config.Config) (*service.I
 		settings = &cfg.Settings
 	}
 
-	return service.NewInstallationManagerWithLock(
+	im := service.NewInstallationManagerWithLock(
 		backendRegistry,
 		providerRegistry,
 		downloadManager,
@@ -141,5 +141,11 @@ func getInstallationManager(ctx context.Context, cfg *config.Config) (*service.I
 		txManager,
 		lockSvc,
 		settings,
-	), nil
+	)
+
+	if cfg != nil {
+		im.SetAliases(cfg.Aliases)
+	}
+
+	return im, nil
 }

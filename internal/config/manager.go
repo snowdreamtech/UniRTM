@@ -176,6 +176,20 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 	return &config, nil
 }
 
+// ResolveAlias returns the aliased version for a tool if it exists.
+// Otherwise, it returns the original version request.
+func (c *Config) ResolveAlias(tool, version string) string {
+	if c.Aliases == nil {
+		return version
+	}
+	if toolAliases, ok := c.Aliases[tool]; ok {
+		if resolved, ok := toolAliases[version]; ok {
+			return resolved
+		}
+	}
+	return version
+}
+
 // LoadHierarchy loads configuration from all hierarchy levels.
 //
 // Configuration hierarchy (lowest to highest precedence):

@@ -32,6 +32,7 @@ type InstallationManager struct {
 	txManager        transaction.TransactionManager
 	lockService      *LockService // optional; nil = lockfile disabled
 	settings         *config.Settings
+	aliases          map[string]map[string]string
 }
 
 // NewInstallationManager creates a new installation manager without lockfile support.
@@ -69,6 +70,24 @@ func NewInstallationManagerWithLock(
 	return im
 }
 
+// SetAliases sets the version aliases for tools.
+func (im *InstallationManager) SetAliases(aliases map[string]map[string]string) {
+	im.aliases = aliases
+}
+
+// resolveAlias resolves a version alias for a tool.
+func (im *InstallationManager) resolveAlias(tool, version string) string {
+	if im.aliases == nil {
+		return version
+	}
+	if toolAliases, ok := im.aliases[tool]; ok {
+		if resolved, ok := toolAliases[version]; ok {
+			return resolved
+		}
+	}
+	return version
+}
+
 // Install performs the complete installation workflow for a tool.
 // Workflow: check → download → verify → extract → activate → record
 func (im *InstallationManager) Install(ctx context.Context, tool, version, backendName string) error {
@@ -98,6 +117,9 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	if err != nil {
 		return fmt.Errorf("backend not found: %w", err)
 	}
+
+	// Resolve alias
+	version = im.resolveAlias(tool, version)
 
 	// Get download info — check lockfile first to avoid remote API calls.
 	platform := backend.CurrentPlatform()
@@ -289,11 +311,9 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 // and installs any missing ones if the settings allow.
 func (im *InstallationManager) EnsureInstalled(ctx context.Context, tools map[string]config.ToolConfig) error {
 	for name, tc := range tools {
-		version := tc.Version
-		backendName := tc.Backend
 		toolName := name
-
 		// Handle shorthand syntax (backend:tool)
+		backendName := tc.Backend
 		if backendName == "" {
 			if idx := strings.Index(name, ":"); idx != -1 {
 				backendName = name[:idx]
@@ -302,6 +322,8 @@ func (im *InstallationManager) EnsureInstalled(ctx context.Context, tools map[st
 				backendName = "github"
 			}
 		}
+
+		version := im.resolveAlias(toolName, tc.Version)
 
 		// Intercept go: prefix and route to the internal go-pkg provider
 		if backendName == "go" || strings.HasPrefix(name, "go:") {
