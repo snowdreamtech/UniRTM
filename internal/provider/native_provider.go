@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -56,44 +55,8 @@ func (p *NativeProvider) Install(ctx context.Context, installPath string, artifa
 		return fmt.Errorf("native: no artifact path provided")
 	}
 
-	// Create bin directory in install path
-	binDir := filepath.Join(installPath, "bin")
-	if err := os.MkdirAll(binDir, 0755); err != nil {
-		return err
-	}
-
-	ext := strings.ToLower(filepath.Ext(artifactPath))
-	
-	// Handle single binary files (like kubectl)
-	if ext != ".zip" && !strings.HasSuffix(artifactPath, ".tar.gz") && !strings.HasSuffix(artifactPath, ".tgz") {
-		return p.generic.Install(ctx, installPath, artifactPath, version)
-	}
-
-	// Handle archives
-	var extractCmd *exec.Cmd
-	strip := "--strip-components=1"
-	
-	if strings.HasSuffix(artifactPath, ".tar.gz") || strings.HasSuffix(artifactPath, ".tgz") {
-		extractCmd = exec.CommandContext(ctx, "tar", "-xzf", artifactPath, "-C", installPath, strip)
-	} else if ext == ".zip" {
-		extractCmd = exec.CommandContext(ctx, "unzip", "-q", "-o", artifactPath, "-d", installPath)
-	}
-
-	if extractCmd != nil {
-		if output, err := extractCmd.CombinedOutput(); err != nil {
-			// Try without strip-components if it fails (some archives might not have a root dir)
-			if strings.Contains(strings.Join(extractCmd.Args, " "), "tar") {
-				extractCmd = exec.CommandContext(ctx, "tar", "-xzf", artifactPath, "-C", installPath)
-				if _, err2 := extractCmd.CombinedOutput(); err2 != nil {
-					return fmt.Errorf("native: extraction failed: %v, output: %s", err, string(output))
-				}
-			} else {
-				return fmt.Errorf("native: extraction failed: %v, output: %s", err, string(output))
-			}
-		}
-	}
-
-	return nil
+	// Delegate to generic provider which handles extraction, flattening, and binDir creation correctly
+	return p.generic.Install(ctx, installPath, artifactPath, version)
 }
 
 func (p *NativeProvider) PostInstall(ctx context.Context, installPath string, version string) error {

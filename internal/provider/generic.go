@@ -382,10 +382,12 @@ func (g *GenericProvider) flattenDirectory(dir string) error {
 
 	// Filter out hidden files (like .DS_Store) and metadata directories
 	var visibleEntries []os.DirEntry
+	fmt.Printf("ℹ checking directory content for flattening: %s\n", dir)
 	for _, entry := range entries {
 		name := entry.Name()
 		if !strings.HasPrefix(name, ".") && name != "__MACOSX" {
 			visibleEntries = append(visibleEntries, entry)
+			fmt.Printf("  - found: %s (isDir: %v)\n", name, entry.IsDir())
 		}
 	}
 
