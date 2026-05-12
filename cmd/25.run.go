@@ -77,10 +77,11 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 	engine := task.NewEngine()
 
 	// Register runners in priority order
+	// NativeRunner (unirtm.toml) has highest priority if task exists there.
+	engine.Register(task.NewNativeRunner(cfg.Tasks, cfg.Settings))
 	engine.Register(task.NewGoTaskRunner())
 	engine.Register(task.NewMakeRunner())
 	engine.Register(task.NewJustRunner())
-	engine.Register(task.NewNativeRunner(cfg.Tasks, cfg.Settings))
 
 	// Get current directory
 	cwd, err := os.Getwd()

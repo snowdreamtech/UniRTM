@@ -25,7 +25,7 @@ func (r *JustRunner) Name() string {
 }
 
 // CanExecute returns true if a Justfile or justfile exists in the target directory.
-func (r *JustRunner) CanExecute(dir string) bool {
+func (r *JustRunner) CanExecute(dir string, taskName string) bool {
 	if _, err := os.Stat(filepath.Join(dir, "Justfile")); err == nil {
 		return true
 	}

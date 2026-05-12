@@ -12,9 +12,8 @@ type Runner interface {
 	// Name returns the name of the runner (e.g., "native", "make").
 	Name() string
 
-	// CanExecute checks if this runner is applicable for the given directory
-	// (e.g., checks for Taskfile.yml, Makefile).
-	CanExecute(dir string) bool
+	// CanExecute checks if this runner is applicable for the given task and directory.
+	CanExecute(dir string, taskName string) bool
 
 	// Run executes the specified task within the given directory and environment.
 	// taskName is the name of the task to run.

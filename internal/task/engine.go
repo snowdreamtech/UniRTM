@@ -29,9 +29,9 @@ func (e *Engine) Register(r Runner) {
 // Execute routes the task execution to the appropriate runner based on CanExecute.
 func (e *Engine) Execute(ctx context.Context, dir string, taskName string, args []string, env []string) error {
 	for _, r := range e.runners {
-		if r.CanExecute(dir) {
+		if r.CanExecute(dir, taskName) {
 			return r.Run(ctx, dir, taskName, args, env)
 		}
 	}
-	return fmt.Errorf("no suitable task runner found for directory %s", dir)
+	return fmt.Errorf("no suitable task runner found for task %q in directory %s", taskName, dir)
 }

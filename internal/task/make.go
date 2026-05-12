@@ -25,7 +25,7 @@ func (r *MakeRunner) Name() string {
 }
 
 // CanExecute returns true if a Makefile or makefile exists in the target directory.
-func (r *MakeRunner) CanExecute(dir string) bool {
+func (r *MakeRunner) CanExecute(dir string, taskName string) bool {
 	if _, err := os.Stat(filepath.Join(dir, "Makefile")); err == nil {
 		return true
 	}

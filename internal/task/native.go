@@ -32,10 +32,10 @@ func (r *NativeRunner) Name() string {
 	return "native"
 }
 
-// CanExecute always returns true because NativeRunner acts as the ultimate fallback.
-// If the task does not exist, it will throw an error in the Run method.
-func (r *NativeRunner) CanExecute(dir string) bool {
-	return true
+// CanExecute returns true if the task is defined in the UniRTM configuration.
+func (r *NativeRunner) CanExecute(dir string, taskName string) bool {
+	_, exists := r.tasks[taskName]
+	return exists
 }
 
 // Run executes a task defined in the unirtm.toml configuration.
@@ -57,6 +57,25 @@ func (r *NativeRunner) Run(ctx context.Context, dir string, taskName string, arg
 	if len(args) > 0 {
 		script = script + " " + strings.Join(args, " ")
 	}
+
+	// Apply shell-style expansion to the script
+	envMap := make(map[string]string)
+	for _, e := range os.Environ() {
+		parts := strings.SplitN(e, "=", 2)
+		if len(parts) == 2 {
+			envMap[parts[0]] = parts[1]
+		}
+	}
+	// Overlay UniRTM resolved env
+	for _, e := range env {
+		parts := strings.SplitN(e, "=", 2)
+		if len(parts) == 2 {
+			envMap[parts[0]] = parts[1]
+		}
+	}
+	script = os.Expand(script, func(k string) string {
+		return envMap[k]
+	})
 
 	// Resolve timeout: task override > global setting
 	timeout := r.settings.TaskTimeout

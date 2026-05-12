@@ -30,7 +30,7 @@ func (r *GoTaskRunner) Name() string {
 }
 
 // CanExecute returns true if a Taskfile.yml, Taskfile.yaml or Taskfile.dist.yml exists.
-func (r *GoTaskRunner) CanExecute(dir string) bool {
+func (r *GoTaskRunner) CanExecute(dir string, taskName string) bool {
 	files := []string{
 		"Taskfile.yml",
 		"Taskfile.yaml",
