@@ -111,6 +111,15 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 func (h *GithubHandler) detectPlatform(filename string) (string, string) {
 	filename = strings.ToLower(filename)
 	
+	// Skip installer formats and packages that UniRTM doesn't handle natively
+	if strings.HasSuffix(filename, ".dmg") || 
+	   strings.HasSuffix(filename, ".pkg") || 
+	   strings.HasSuffix(filename, ".msi") ||
+	   strings.HasSuffix(filename, ".deb") ||
+	   strings.HasSuffix(filename, ".rpm") {
+		return "", ""
+	}
+
 	var os, arch string
 
 	// OS Detection

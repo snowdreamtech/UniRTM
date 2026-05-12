@@ -5,8 +5,6 @@ package native
 
 import (
 	"context"
-	"fmt"
-	"strings"
 )
 
 // HelmHandler handles Helm tool versions via GitHub releases.

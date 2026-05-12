@@ -47,6 +47,10 @@ func (b *NativeBackend) ListVersions(ctx context.Context, tool string, platform 
 			if a.OS == platform.OS && a.Arch == platform.Arch {
 				vi.DownloadURL = a.URL
 				vi.Checksum = a.Checksum
+				vi.SignatureURL = a.SignatureURL
+				vi.GPGSignature = a.Signature
+				vi.GPGKeys = recipe.GPGKeys
+				vi.Platform = platform
 				break
 			}
 		}

@@ -11,6 +11,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/provider/native"
 	"github.com/spf13/cobra"
 )
 
@@ -77,7 +78,7 @@ func runLsRemote(cmd *cobra.Command, args []string) error {
 	}
 
 	// Parse backend prefix (e.g., "npm:typescript" -> backend: "npm", tool: "typescript")
-	backendName := getLsRemoteBackendName()
+	backendName := getLsRemoteBackendName(tool)
 	if strings.Contains(tool, ":") {
 		parts := strings.SplitN(tool, ":", 2)
 		backendName = parts[0]
@@ -136,9 +137,15 @@ func runLsRemote(cmd *cobra.Command, args []string) error {
 }
 
 // getLsRemoteBackendName returns the backend name to use.
-func getLsRemoteBackendName() string {
+func getLsRemoteBackendName(tool string) string {
 	if lsRemoteBackend != "" {
 		return lsRemoteBackend
 	}
-	return "github" // Default backend
+	
+	// If the tool is a known native tool, use the native backend by default
+	if native.IsNativeTool(tool) {
+		return "native"
+	}
+	
+	return "github" // Fallback to github
 }
