@@ -232,9 +232,14 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 	}
 
 	// Merge initial configs to get settings like CeilingPaths and TrustedConfigPaths
-	initialMerged := &Config{}
+	initialMerged := &Config{
+		Tools:   make(map[string]ToolConfig),
+		Env:     make(map[string]interface{}),
+		Tasks:   make(map[string]Task),
+		Aliases: make(map[string]map[string]string),
+	}
 	for _, c := range configs {
-		initialMerged, _ = initialMerged.Merge(c)
+		initialMerged, _ = m.Merge(initialMerged, c)
 	}
 
 	// 3. Discover Project and Local configs recursively UP
