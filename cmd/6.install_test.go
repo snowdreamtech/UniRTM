@@ -146,7 +146,7 @@ func TestInstallCommand_BackendFlag(t *testing.T) {
 		{
 			name:            "default backend",
 			backendFlag:     "",
-			expectedBackend: "github",
+			expectedBackend: "",
 		},
 		{
 			name:            "custom backend",

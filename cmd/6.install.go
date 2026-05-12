@@ -181,6 +181,10 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			formatter.Error("Tool name cannot be empty")
 			return fmt.Errorf("tool name is required")
 		}
+		if version == "" {
+			formatter.Error("Version cannot be empty")
+			return fmt.Errorf("version is required")
+		}
 
 		toolsToInstall = map[string]service.ToolSpec{
 			tool: {
