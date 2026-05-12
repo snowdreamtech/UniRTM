@@ -23,16 +23,17 @@ func (h *JavaHandler) Name() string {
 }
 
 type adoptiumRelease struct {
-	Binary struct {
+	Binaries []struct {
 		Package struct {
 			Name string `json:"name"`
 			Link string `json:"link"`
 		} `json:"package"`
-	} `json:"binary"`
+		SignatureLink string `json:"signature_link"`
+	} `json:"binaries"`
 	ReleaseName string `json:"release_name"`
-	Version     struct {
+	VersionData struct {
 		OpenjdkVersion string `json:"openjdk_version"`
-	} `json:"version"`
+	} `json:"version_data"`
 }
 
 func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
@@ -83,25 +84,32 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 		}
 
 		for _, rel := range releases {
-			version := rel.Version.OpenjdkVersion
-			// Clean version string (e.g. 21.0.2+13 -> 21.0.2)
+			version := rel.VersionData.OpenjdkVersion
+			// Clean version string (e.g. 21.0.2+13-LTS -> 21.0.2)
+			// Remove -LTS if present
+			version = strings.ReplaceAll(version, "-LTS", "")
 			if idx := strings.Index(version, "+"); idx != -1 {
 				version = version[:idx]
 			}
 			
-			assets := []Asset{
-				{
-					Filename: rel.Binary.Package.Name,
-					URL:      rel.Binary.Package.Link,
-					OS:       runtime.GOOS,
-					Arch:     runtime.GOARCH,
-				},
+			for _, bin := range rel.Binaries {
+				assets := []Asset{
+					{
+						Filename:     bin.Package.Name,
+						URL:          bin.Package.Link,
+						SignatureURL: bin.SignatureLink,
+						OS:           runtime.GOOS,
+						Arch:         runtime.GOARCH,
+					},
+				}
+				
+				allVersions = append(allVersions, VersionInfo{
+					Version: version,
+					Assets:  assets,
+				})
+				// Just take the first binary that matches our query filters
+				break
 			}
-			
-			allVersions = append(allVersions, VersionInfo{
-				Version: version,
-				Assets:  assets,
-			})
 		}
 	}
 

@@ -192,9 +192,11 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	}
 
 	// 3. Run PreInstall hook
-	fmt.Printf("⚠️  SECURITY: executing pre_install hook for %s: %s\n", tool, preInstall)
-	if err := im.executeHook(ctx, preInstall, tool, version); err != nil {
-		return fmt.Errorf("pre_install hook failed: %w", err)
+	if preInstall != "" {
+		fmt.Printf("⚠️  SECURITY: executing pre_install hook for %s: %s\n", tool, preInstall)
+		if err := im.executeHook(ctx, preInstall, tool, version); err != nil {
+			return fmt.Errorf("pre_install hook failed: %w", err)
+		}
 	}
 
 	// Get backend

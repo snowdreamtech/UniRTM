@@ -91,10 +91,19 @@ backend = "native"
 
 [tools."gradle"."platforms.macos-amd64"]
 url = "https://services.gradle.org/distributions/gradle-8.14.5-bin.zip"
+gpg_key = "1BD97A6A154E7810EE0BC832E2F38302C8075E3D"
 
 [[tools."hadolint/hadolint"]]
 version = "2.14.0"
 backend = "github"
+
+[[tools."maven"]]
+version = "3.9.6"
+backend = "native"
+
+[tools."maven"."platforms.macos-amd64"]
+url = "https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz"
+gpg_key = "29BEA2A645F2D6CED7FB12E02B172E3E156466E8"
 
 [[tools."mvdan/sh"]]
 version = "3.13.1"
