@@ -151,6 +151,9 @@ type Settings struct {
 	// AlwaysKeepDownload controls whether artifacts are kept after installation.
 	// Default: false.
 	AlwaysKeepDownload bool `toml:"always_keep_download,omitempty" yaml:"always_keep_download,omitempty" mapstructure:"always_keep_download,omitempty"`
+
+	// CeilingPaths specifies directory levels where configuration discovery should stop.
+	CeilingPaths []string `toml:"ceiling_paths,omitempty" yaml:"ceiling_paths,omitempty" mapstructure:"ceiling_paths,omitempty"`
 }
 
 // Task represents a task definition that can be executed via the CLI.

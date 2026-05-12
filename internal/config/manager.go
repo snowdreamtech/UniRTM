@@ -191,69 +191,92 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error) {
 	var configs []*Config
 
-	hierarchyLevels := [][]string{
-		{ // System
-			"/etc/unirtm/config.toml",
-			"/etc/unirtm/config.yaml",
-			"/etc/unirtm/config.yml",
-		},
-		{ // Global
-			filepath.Join(env.GetConfigDir(), "config.toml"),
-			filepath.Join(env.GetConfigDir(), "config.yaml"),
-			filepath.Join(env.GetConfigDir(), "config.yml"),
-		},
-		{ // Project (primary)
-			"./unirtm.toml",
-			"./unirtm.yaml",
-			"./unirtm.yml",
-		},
-		{ // Project (alternate)
-			"./.unirtm.toml",
-			"./.unirtm.yaml",
-			"./.unirtm.yml",
-		},
-		{ // Local
-			"./.unirtm.local.toml",
-			"./.unirtm.local.yaml",
-			"./.unirtm.local.yml",
-		},
+	// 1. Load System configuration
+	systemPaths := []string{
+		"/etc/unirtm/config.toml",
+		"/etc/unirtm/config.yaml",
+		"/etc/unirtm/config.yml",
 	}
-
-	// Load each configuration level
-	for i, level := range hierarchyLevels {
-		for _, path := range level {
-			// Skip if file doesn't exist
-			if _, err := os.Stat(path); os.IsNotExist(err) {
-				continue
-			}
-
-			status := TrustStatusTrusted
-			if m.trustManager != nil {
-				status = m.trustManager.TrustStatus(path)
-			}
-
-			// Enforce trust for Project and Local configs (indices >= 2)
-			if i >= 2 && status != TrustStatusTrusted {
-				if status == TrustStatusModified {
-					pterm.Warning.Printfln("Configuration file has been modified since it was last trusted: %s\nRun `unirtm trust %s` to review and trust the new contents.", path, path)
-				} else {
-					pterm.Warning.Printfln("Skipping untrusted configuration file: %s\nRun `unirtm trust %s` to trust it.", path, path)
-				}
-				break // Do not try fallback formats if the file exists but is untrusted
-			}
-
-			// Load the configuration
-			config, err := m.Load(ctx, path)
-			if err != nil {
-				return nil, fmt.Errorf("failed to load configuration from %s: %w", path, err)
-			}
-
-			configs = append(configs, config)
-			break // Only load one file per level (TOML has priority)
+	for _, path := range systemPaths {
+		if cfg, err := m.tryLoad(ctx, path, false); cfg != nil && err == nil {
+			configs = append(configs, cfg)
+			break
 		}
 	}
 
-	// If no configuration files found, return empty config
+	// 2. Load Global configuration
+	globalPaths := []string{
+		filepath.Join(env.GetConfigDir(), "config.toml"),
+		filepath.Join(env.GetConfigDir(), "config.yaml"),
+		filepath.Join(env.GetConfigDir(), "config.yml"),
+	}
+	for _, path := range globalPaths {
+		if cfg, err := m.tryLoad(ctx, path, false); cfg != nil && err == nil {
+			configs = append(configs, cfg)
+			break
+		}
+	}
+
+	// Merge initial configs to get settings like CeilingPaths
+	initialMerged := &Config{}
+	for _, c := range configs {
+		initialMerged, _ = initialMerged.Merge(c)
+	}
+
+	// 3. Discover Project and Local configs recursively UP
+	cwd, _ := os.Getwd()
+	curr := cwd
+	var projectConfigs []*Config
+	
+	// Helper to check if a path is a ceiling
+	isCeiling := func(path string) bool {
+		absPath, _ := filepath.Abs(path)
+		for _, cp := range initialMerged.Settings.CeilingPaths {
+			absCP, _ := filepath.Abs(cp)
+			if absPath == absCP {
+				return true
+			}
+		}
+		// Always stop at root
+		parent := filepath.Dir(absPath)
+		return parent == absPath
+	}
+
+	for {
+		// Files to check in current directory (highest precedence first in this block)
+		// We want .unirtm.local.toml > .unirtm.toml > unirtm.toml
+		files := []string{
+			filepath.Join(curr, ".unirtm.local.toml"),
+			filepath.Join(curr, ".unirtm.local.yaml"),
+			filepath.Join(curr, ".unirtm.local.yml"),
+			filepath.Join(curr, ".unirtm.toml"),
+			filepath.Join(curr, ".unirtm.yaml"),
+			filepath.Join(curr, ".unirtm.yml"),
+			filepath.Join(curr, "unirtm.toml"),
+			filepath.Join(curr, "unirtm.yaml"),
+			filepath.Join(curr, "unirtm.yml"),
+		}
+
+		dirConfigs := []*Config{}
+		for _, path := range files {
+			if cfg, err := m.tryLoad(ctx, path, true); cfg != nil && err == nil {
+				dirConfigs = append(dirConfigs, cfg)
+			}
+		}
+		
+		// Add discovered configs from this directory to the front of projectConfigs
+		// (since deeper configs have higher precedence, and m.Merge(base, override) means override wins)
+		projectConfigs = append(dirConfigs, projectConfigs...)
+
+		if isCeiling(curr) {
+			break
+		}
+		curr = filepath.Dir(curr)
+	}
+
+	configs = append(configs, projectConfigs...)
+
+	// 4. Final merge
 	if len(configs) == 0 {
 		return &Config{
 			Tools:        make(map[string]ToolConfig),
@@ -264,13 +287,33 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 		}, nil
 	}
 
-	// Merge all configurations
-	merged, err := m.Merge(configs...)
+	finalConfig, err := m.Merge(configs...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to merge hierarchical configurations: %w", err)
 	}
 
-	return merged, nil
+	return finalConfig, nil
+}
+
+// tryLoad attempts to load a config file if it exists and satisfies trust requirements.
+func (m *viperConfigManager) tryLoad(ctx context.Context, path string, enforceTrust bool) (*Config, error) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return nil, nil
+	}
+
+	if enforceTrust && m.trustManager != nil {
+		status := m.trustManager.TrustStatus(path)
+		if status != TrustStatusTrusted {
+			if status == TrustStatusModified {
+				pterm.Warning.Printfln("Configuration file has been modified since it was last trusted: %s\nRun `unirtm trust %s` to review and trust the new contents.", path, path)
+			} else {
+				pterm.Warning.Printfln("Skipping untrusted configuration file: %s\nRun `unirtm trust %s` to trust it.", path, path)
+			}
+			return nil, nil
+		}
+	}
+
+	return m.Load(ctx, path)
 }
 
 // LoadWithEnvironment loads configuration from all hierarchy levels and applies
@@ -412,6 +455,9 @@ func (m *viperConfigManager) Merge(configs ...*Config) (*Config, error) {
 		}
 		if config.Settings.AlwaysKeepDownload {
 			merged.Settings.AlwaysKeepDownload = config.Settings.AlwaysKeepDownload
+		}
+		if len(config.Settings.CeilingPaths) > 0 {
+			merged.Settings.CeilingPaths = append(merged.Settings.CeilingPaths, config.Settings.CeilingPaths...)
 		}
 	}
 
