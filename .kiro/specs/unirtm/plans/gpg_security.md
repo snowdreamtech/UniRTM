@@ -24,7 +24,7 @@
 ### 3.1 锁文件指纹锁定 (Lockfile Pinning)
 - **原理**：`unirtm.lock` 将新增 `gpg_fingerprint` 字段。
 - **GPG 引擎优化**：识别 `NO_PUBKEY` 错误，实现交互式公钥导入。 [DONE]
-- **智能 Shell 启用 (unirtm enable)**：实现一键自动配置 Shell 激活（zsh/bash/fish），支持幂等写入。 [DONE]
+- **智能 Shell 启用/禁用 (unirtm enable/disable)**：实现一键自动配置/撤销 Shell 激活（zsh/bash/fish），支持幂等操作。 [DONE]
 - **锁定 GPG 指纹**：在 `unirtm.lock` 中持久化已验证的指纹。 [DONE]
     3. CI 环境检测到 `unirtm.lock` 中已存在指纹，直接执行静默校验，无需用户干预。
 
