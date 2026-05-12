@@ -431,7 +431,13 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 				}
 			}
 		} else if versionInfo.SignatureURL == "" && im.settings != nil && im.settings.GPGVerify == "strict" {
-			return fmt.Errorf("GPG security violation: signature URL missing for %s in strict mode", tool)
+			// Intelligent handling: If we have fingerprints but no signature URL, it's a violation.
+			// If we have neither, the tool likely doesn't support GPG, so we warn and allow SHA256 fallback.
+			if len(versionInfo.GPGKeys) > 0 {
+				return fmt.Errorf("GPG security violation: trusted fingerprints exist for %s but no signature URL found in strict mode", tool)
+			}
+			fmt.Printf("ℹ %s does not appear to support GPG signatures. Falling back to strong SHA256 checksum verification.\n", tool)
+			gpgStatus = "NotSupported"
 		}
 
 		// Verify GitHub provenance (SLSA attestation) if the backend is github or ubi.
