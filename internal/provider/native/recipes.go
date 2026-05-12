@@ -164,6 +164,9 @@ func GetBuiltinRecipes() map[string]Recipe {
 			ID:      "cmake",
 			Handler: &CMakeHandler{},
 			BaseURL: "https://github.com/Kitware/CMake/releases",
+			GPGKeys: []string{
+				"CBA23971357C2E6590D9EFD3EC8FEF3A7BFB4EDA", // Brad King (CMake Release)
+			},
 		},
 		"ninja": {
 			ID:      "ninja",
@@ -174,11 +177,17 @@ func GetBuiltinRecipes() map[string]Recipe {
 			ID:      "elixir",
 			Handler: &ElixirHandler{},
 			BaseURL: "https://github.com/elixir-lang/elixir/releases",
+			GPGKeys: []string{
+				"E140099F114F4B2A21FE2E69E3370FF7D467E599", // Jose Valim (Elixir Release)
+			},
 		},
 		"erlang": {
 			ID:      "erlang",
 			Handler: &ErlangHandler{},
 			BaseURL: "https://github.com/rabbitmq/erlang-relbin/releases",
+			GPGKeys: []string{
+				"0A9AF2115F4687BD29803A206B73A36E6026DFCA", // RabbitMQ Release Team (Erlang)
+			},
 		},
 		"flutter": {
 			ID:      "flutter",
@@ -189,6 +198,9 @@ func GetBuiltinRecipes() map[string]Recipe {
 			ID:      "julia",
 			Handler: &JuliaHandler{},
 			BaseURL: "https://github.com/JuliaLang/julia/releases",
+			GPGKeys: []string{
+				"3673DF529D9049477F76B37566E3C7DC03D6E495", // Julia Binary Signing Key
+			},
 		},
 	}
 }
