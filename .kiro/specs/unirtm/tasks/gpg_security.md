@@ -1,28 +1,31 @@
 # Tasks: UniRTM GPG Security Implementation
 
+## Phase 1: 原子化下载与权限加固 (Atomic Download & Permissions) [DONE]
+- [x] 1.1 实现 `.tmp.<rand>` 临时文件下载机制
+- [x] 1.2 设置下载临时文件权限为 `0600`
+- [x] 1.3 实现下载完成后的原子化 `os.Rename`
+
+## Phase 2: Zip Slip 防护与目录平铺 (Zip Slip & Flattening) [DONE]
+- [x] 2.1 修复 Gradle 等原生工具的目录平铺逻辑
+- [x] 2.2 实现 `validateInstallDir` 路径安全校验函数
+- [x] 2.3 增加对恶意软链接（指向外部敏感文件）的拦截
+- [x] 2.4 增加 `http` 协议风险警告
+
 ## Phase 3: GPG 校验核心引擎 (GPG Verification Engine)
 - [ ] 3.1 集成 GPG 核心库 (Integrate GPG Core Library)
-    - [ ] 选择并引入 Go GPG 库 (如 `golang.org/x/crypto/openpgp`) 或系统 `gpg` 调用封装
-    - [ ] 实现 `gpg.Verify(sigPath, dataPath, fingerprint)` 核心函数
-- [ ] 3.2 完善 Registry 公钥指纹支持 (Registry Fingerprint Support)
-    - [ ] 在 `internal/repository` 的模型中增加 `GPGKeys` 字段
-    - [ ] 更新 `native_provider` 和 `generic_provider` 以从 Registry 读取指纹
-- [ ] 3.3 实现公钥自动发现与下载 (Key Discovery & Download)
-    - [ ] 实现从 `keys.openpgp.org` 或其他 KeyServer 下载公钥的逻辑
-    - [ ] 实现本地公钥缓存/信任库管理
+    - [ ] 引入 `golang.org/x/crypto/openpgp` (或系统 `gpg` 封装)
+    - [ ] 实现核心校验接口 `gpg.Verify(sig, data, fingerprint)`
+- [ ] 3.3 完善 Registry 与指纹发现 (Registry & Discovery)
+    - [ ] 更新 `native_provider` 支持从 Registry 获取官方公钥指纹
+    - [ ] 实现自动从公钥服务器（如 keys.openpgp.org）拉取未知 Key 的逻辑
 - [ ] 3.4 交互式信任流程 (Interactive Trust Flow)
-    - [ ] 在 `installation.go` 中增加 TTY 检测
-    - [ ] 实现 TTY 模式下的 PTerm 交互询问窗口
+    - [ ] 实现 TTY 模式下的 PTerm 询问窗口
+    - [ ] 实现非 TTY (CI/CD) 模式下的自动退避（报错退出）策略
 
 ## Phase 4: 锁文件与 CI/CD 增强 (Lockfile & CI/CD)
-- [ ] 4.1 扩展锁文件 Schema (Extend Lockfile Schema)
-    - [ ] 在 `internal/lockfile` 中为每个工具条目增加 `gpg_fingerprint` 字段
-- [ ] 4.2 实现指纹锁定逻辑 (Fingerprint Pinning Logic)
-    - [ ] 安装成功后将验证通过的指纹回写至 `unirtm.lock`
-    - [ ] 安装时优先校验 `unirtm.lock` 中的指纹
-- [ ] 4.3 CI/CD 静默模式适配 (CI/CD Non-interactive Mode)
-    - [ ] 实现非 TTY 环境下的“匹配即通过，不匹配即报错”逻辑
-    - [ ] 增加 `UNIRTM_GPG_VERIFY` 环境变量控制开关
-- [ ] 4.4 最终验证与测试 (Final Validation & Testing)
-    - [ ] 编写 E2E 测试用例，模拟签名有效/无效/缺失的各种场景
-    - [ ] 在 GitHub Actions 中验证静默模式行为
+- [ ] 4.1 锁文件扩展 (Extend Lockfile)
+    - [ ] 在 `unirtm.lock` 中持久化记录已验证的公钥指纹
+- [ ] 4.2 环境策略控制 (Security Policy)
+    - [ ] 增加 `UNIRTM_GPG_VERIFY` 环境变量支持 (`strict`, `warn`)
+- [ ] 4.3 最终验收测试 (Final E2E Testing)
+    - [ ] 编写模拟恶意投毒、签名缺失等场景的集成测试
