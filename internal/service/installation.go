@@ -33,6 +33,7 @@ type InstallationManager struct {
 	lockService      *LockService // optional; nil = lockfile disabled
 	settings         *config.Settings
 	aliases          map[string]map[string]string
+	toolConfigs      map[string]config.ToolConfig
 }
 
 // NewInstallationManager creates a new installation manager without lockfile support.
@@ -75,6 +76,11 @@ func (im *InstallationManager) SetAliases(aliases map[string]map[string]string) 
 	im.aliases = aliases
 }
 
+// SetToolConfigs sets the tool configurations for hooks.
+func (im *InstallationManager) SetToolConfigs(toolConfigs map[string]config.ToolConfig) {
+	im.toolConfigs = toolConfigs
+}
+
 // resolveAlias resolves a version alias for a tool.
 func (im *InstallationManager) resolveAlias(tool, version string) string {
 	if im.aliases == nil {
@@ -88,9 +94,60 @@ func (im *InstallationManager) resolveAlias(tool, version string) string {
 	return version
 }
 
+// executeHook executes a command as a tool hook.
+func (im *InstallationManager) executeHook(ctx context.Context, cmdStr, tool, version string) error {
+	if cmdStr == "" {
+		return nil
+	}
+
+	fmt.Printf("➜ executing hook for %s@%s: %s\n", tool, version, cmdStr)
+	
+	// Create command
+	var shell, shellArg string
+	if runtime.GOOS == "windows" {
+		shell = "cmd"
+		shellArg = "/c"
+	} else {
+		shell = "sh"
+		shellArg = "-c"
+	}
+
+	execCmd := exec.CommandContext(ctx, shell, shellArg, cmdStr)
+	execCmd.Stdout = os.Stdout
+	execCmd.Stderr = os.Stderr
+	execCmd.Env = os.Environ()
+	
+	// Add context env vars
+	execCmd.Env = append(execCmd.Env, "UNIRTM_TOOL="+tool)
+	execCmd.Env = append(execCmd.Env, "UNIRTM_VERSION="+version)
+
+	if err := execCmd.Run(); err != nil {
+		return fmt.Errorf("hook failed: %w", err)
+	}
+
+	return nil
+}
+
 // Install performs the complete installation workflow for a tool.
 // Workflow: check → download → verify → extract → activate → record
 func (im *InstallationManager) Install(ctx context.Context, tool, version, backendName string) error {
+	// 1. Resolve aliases
+	version = im.resolveAlias(tool, version)
+
+	// 2. Fetch tool config for hooks
+	var preInstall, postInstall string
+	if im.toolConfigs != nil {
+		if tc, ok := im.toolConfigs[tool]; ok {
+			preInstall = tc.PreInstall
+			postInstall = tc.PostInstall
+		}
+	}
+
+	// 3. Run PreInstall hook
+	if err := im.executeHook(ctx, preInstall, tool, version); err != nil {
+		return fmt.Errorf("pre_install hook failed: %w", err)
+	}
+
 	// Start transaction
 	tx, err := im.txManager.Begin(ctx)
 	if err != nil {
@@ -117,9 +174,6 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	if err != nil {
 		return fmt.Errorf("backend not found: %w", err)
 	}
-
-	// Resolve alias
-	version = im.resolveAlias(tool, version)
 
 	// Get download info — check lockfile first to avoid remote API calls.
 	platform := backend.CurrentPlatform()
@@ -304,6 +358,12 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
+	// 11. Run PostInstall hook
+	if err := im.executeHook(ctx, postInstall, tool, version); err != nil {
+		return fmt.Errorf("post_install hook failed: %w", err)
+	}
+
+	fmt.Printf("✅ %s@%s installed successfully to %s\n", tool, version, installPath)
 	return nil
 }
 

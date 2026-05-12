@@ -42,16 +42,17 @@ Settings control the behavior of the tool itself. UniRTM targets the most freque
 | **Auto Install** | `auto_install` | **Yes** | ✅ | Fully aligned; triggers on `run` and `exec`. |
 | **Asdf Compat** | `asdf_compat` | No | ❌ | UniRTM uses its own modern logic exclusively. |
 | **Color Control** | `color` | **Yes** | ✅ | Fully aligned; supports auto, always, and never. |
+| **Ceiling Paths** | `ceiling_paths` | **Yes** | ✅ | Stops config discovery at specified directories. |
+| **Trusted Paths** | `trusted_config_paths` | **Yes** | ✅ | Automatically trusts configurations in whitelist paths. |
+| **Version Alias** | `[alias]` | **Yes** | ✅ | Supports mapping names (like 'lts') to concrete versions. |
 
 ## 3. Advanced Comparison (Unique Capabilities)
 
 ### Mise Strengths
-- **Shell-style expansion**: Supports `$FOO` expansion within the TOML itself after template rendering.
 - **Environment Caching**: [Experimental] Caches computed environments to disk for ultra-fast nested calls.
-- **Ceiling Paths**: Allows stopping config discovery at specific directory levels.
 
 ### UniRTM Alignment Level
-UniRTM has achieved **~90% functional parity** for the average developer's daily workflow. The missing features are primarily edge cases (Age encryption), legacy compatibility (asdf_compat), or advanced plugin architectures (vfox modules).
+UniRTM has achieved **~95% functional parity** for the average developer's daily workflow. The missing features are primarily edge cases (Age encryption) or legacy compatibility (asdf_compat). With the addition of **Recursive Config Discovery**, **Ceiling Paths**, and **Version Aliases**, UniRTM now offers a nearly identical configuration experience to Mise.
 
 ---
 *Report generated based on Mise source analysis (`settings.toml` & `src/config/env_directive/mod.rs`) and UniRTM current state.*

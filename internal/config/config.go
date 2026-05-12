@@ -83,6 +83,12 @@ type ToolConfig struct {
 	// If not specified, the system will select an appropriate provider.
 	// Examples: "node", "python", "go", "generic"
 	Provider string `toml:"provider,omitempty" yaml:"provider,omitempty" mapstructure:"provider,omitempty"`
+
+	// PreInstall is a command to run before the tool is installed.
+	PreInstall string `toml:"pre_install,omitempty" yaml:"pre_install,omitempty" mapstructure:"pre_install,omitempty"`
+
+	// PostInstall is a command to run after the tool is installed successfully.
+	PostInstall string `toml:"post_install,omitempty" yaml:"post_install,omitempty" mapstructure:"post_install,omitempty"`
 }
 
 // Settings contains global settings for UniRTM behavior.

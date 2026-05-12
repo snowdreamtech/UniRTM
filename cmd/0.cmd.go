@@ -145,6 +145,7 @@ func getInstallationManager(ctx context.Context, cfg *config.Config) (*service.I
 
 	if cfg != nil {
 		im.SetAliases(cfg.Aliases)
+		im.SetToolConfigs(cfg.Tools)
 	}
 
 	return im, nil
