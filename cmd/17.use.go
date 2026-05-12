@@ -94,12 +94,29 @@ func runUse(cmd *cobra.Command, args []string) error {
 			}
 
 			if !jsonOutput && isTerminal {
+				// Detect backend (same logic as install command)
+				backendName := ""
+				if strings.Contains(tool, ":") {
+					parts := strings.SplitN(tool, ":", 2)
+					backendName = parts[0]
+					tool = parts[1]
+				}
+
+				if backendName == "" {
+					if strings.Contains(tool, "/") {
+						backendName = "github"
+					} else {
+						// Default to asdf if not obviously github
+						backendName = "asdf"
+					}
+				}
+
 				cfg, _ := config.Load()
 				im, err := getInstallationManager(cmd.Context(), cfg)
 				if err != nil {
 					return fmt.Errorf("failed to get installation manager: %w", err)
 				}
-				selected, err := im.SelectVersionInteractive(cmd.Context(), tool)
+				selected, err := im.SelectVersionInteractive(cmd.Context(), tool, backendName)
 				if err == nil {
 					version = selected
 				} else {

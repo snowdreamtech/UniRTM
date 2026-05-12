@@ -98,11 +98,11 @@ func (im *InstallationManager) resolveAlias(tool, version string) string {
 }
 
 // SelectVersionInteractive opens an interactive menu to select a tool version.
-func (im *InstallationManager) SelectVersionInteractive(ctx context.Context, tool string) (string, error) {
+func (im *InstallationManager) SelectVersionInteractive(ctx context.Context, tool, backendName string) (string, error) {
 	// 1. Get backend
-	b, err := im.backendRegistry.Get(tool)
+	b, err := im.backendRegistry.Get(backendName)
 	if err != nil {
-		return "", fmt.Errorf("get backend for %s: %w", tool, err)
+		return "", fmt.Errorf("get backend %s: %w", backendName, err)
 	}
 
 	// 2. List remote versions
@@ -203,20 +203,6 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	}
 	defer tx.Rollback()
 
-	// Check if already installed
-	existing, err := tx.InstallationRepo().FindByToolAndVersion(ctx, tool, version)
-	if err == nil && existing != nil {
-		// Verify if the installation directory actually exists on disk
-		if _, statErr := os.Stat(existing.InstallPath); os.IsNotExist(statErr) {
-			// Path doesn't exist, this is a stale database record. Clean it up.
-			if delErr := tx.InstallationRepo().Delete(ctx, tool, version); delErr != nil {
-				return fmt.Errorf("failed to clean up stale installation record: %w", delErr)
-			}
-		} else {
-			return fmt.Errorf("tool %s version %s already installed", tool, version)
-		}
-	}
-
 	// Get backend
 	b, err := im.backendRegistry.Get(backendName)
 	if err != nil {
@@ -253,6 +239,20 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		version = info.Version // Update to the concrete resolved version
 		fmt.Printf("✓ resolved %s to version %s\n", tool, version)
 		versionInfo = info
+	}
+
+	// 5. Check if already installed (AFTER resolving concrete version)
+	existing, err := tx.InstallationRepo().FindByToolAndVersion(ctx, tool, version)
+	if err == nil && existing != nil {
+		// Verify if the installation directory actually exists on disk
+		if _, statErr := os.Stat(existing.InstallPath); os.IsNotExist(statErr) {
+			// Path doesn't exist, this is a stale database record. Clean it up.
+			if delErr := tx.InstallationRepo().Delete(ctx, tool, version); delErr != nil {
+				return fmt.Errorf("failed to clean up stale installation record: %w", delErr)
+			}
+		} else {
+			return fmt.Errorf("tool %s version %s already installed", tool, version)
+		}
 	}
 
 	// Download artifact if URL is provided

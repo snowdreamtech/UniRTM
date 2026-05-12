@@ -188,7 +188,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 				// Get installation manager to perform interactive selection
 				im, err := getInstallationManager(ctx, cfg)
 				if err == nil {
-					selected, err := im.SelectVersionInteractive(ctx, tool)
+					selected, err := im.SelectVersionInteractive(ctx, tool, backendName)
 					if err == nil {
 						version = selected
 					} else {
