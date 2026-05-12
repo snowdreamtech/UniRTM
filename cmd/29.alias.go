@@ -17,7 +17,7 @@ func init() {
 	aliasCmd.PersistentFlags().BoolVar(&aliasGlobal, "global", false, "manage global aliases (~/.config/unirtm/unirtm.toml)")
 	aliasCmd.AddCommand(aliasListCmd)
 	aliasCmd.AddCommand(aliasSetCmd)
-	aliasCmd.AddCommand(aliasDeleteCmd)
+	aliasCmd.AddCommand(aliasUnsetCmd)
 	rootCmd.AddCommand(aliasCmd)
 }
 
@@ -32,8 +32,8 @@ They can be managed globally or at the project level using the --global flag.`,
 }
 
 var aliasListCmd = &cobra.Command{
-	Use:     "list [tool]",
-	Aliases: []string{"ls"},
+	Use:     "ls [tool]",
+	Aliases: []string{"list"},
 	Short:   "List aliases",
 	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -115,9 +115,9 @@ var aliasSetCmd = &cobra.Command{
 	},
 }
 
-var aliasDeleteCmd = &cobra.Command{
-	Use:     "delete <tool> <alias>",
-	Aliases: []string{"rm", "remove"},
+var aliasUnsetCmd = &cobra.Command{
+	Use:     "unset <tool> <alias>",
+	Aliases: []string{"rm", "remove", "delete"},
 	Short:   "Delete an alias",
 	Args:    cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
