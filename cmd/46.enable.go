@@ -17,24 +17,25 @@ import (
 
 func init() {
 	if rootCmd != nil {
-		rootCmd.AddCommand(enCmd)
+		rootCmd.AddCommand(enableCmd)
 	}
 }
 
-// enCmd intelligently enables UniRTM shell activation.
-var enCmd = &cobra.Command{
-	Use:   "en",
-	Short: "Intelligently enable UniRTM in your shell configuration",
+// enableCmd intelligently enables UniRTM shell activation.
+var enableCmd = &cobra.Command{
+	Use:     "enable",
+	Aliases: []string{"en"},
+	Short:   "Intelligently enable UniRTM in your shell configuration",
 	Long: `Intelligently enable UniRTM in your shell configuration.
 
 This command auto-detects your current shell, identifies the corresponding
 configuration file (e.g., ~/.zshrc, ~/.bashrc), and appends the necessary
 activation command if it's not already present. It is idempotent and safe
  to run multiple times.`,
-	RunE: runEn,
+	RunE: runEnable,
 }
 
-func runEn(cmd *cobra.Command, args []string) error {
+func runEnable(cmd *cobra.Command, args []string) error {
 	formatter := output.NewFormatter(output.FormatterOptions{
 		Format:  getOutputFormat(),
 		NoColor: false,
