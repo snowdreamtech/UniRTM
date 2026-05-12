@@ -212,7 +212,7 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 		"/etc/unirtm/config.yml",
 	}
 	for _, path := range systemPaths {
-		if cfg, err := m.tryLoad(ctx, path, false); cfg != nil && err == nil {
+		if cfg, err := m.tryLoad(ctx, path, false, nil); cfg != nil && err == nil {
 			configs = append(configs, cfg)
 			break
 		}
@@ -225,13 +225,13 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 		filepath.Join(env.GetConfigDir(), "config.yml"),
 	}
 	for _, path := range globalPaths {
-		if cfg, err := m.tryLoad(ctx, path, false); cfg != nil && err == nil {
+		if cfg, err := m.tryLoad(ctx, path, false, nil); cfg != nil && err == nil {
 			configs = append(configs, cfg)
 			break
 		}
 	}
 
-	// Merge initial configs to get settings like CeilingPaths
+	// Merge initial configs to get settings like CeilingPaths and TrustedConfigPaths
 	initialMerged := &Config{}
 	for _, c := range configs {
 		initialMerged, _ = initialMerged.Merge(c)
@@ -273,7 +273,7 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 
 		dirConfigs := []*Config{}
 		for _, path := range files {
-			if cfg, err := m.tryLoad(ctx, path, true); cfg != nil && err == nil {
+			if cfg, err := m.tryLoad(ctx, path, true, &initialMerged.Settings); cfg != nil && err == nil {
 				dirConfigs = append(dirConfigs, cfg)
 			}
 		}
@@ -310,20 +310,36 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 }
 
 // tryLoad attempts to load a config file if it exists and satisfies trust requirements.
-func (m *viperConfigManager) tryLoad(ctx context.Context, path string, enforceTrust bool) (*Config, error) {
+func (m *viperConfigManager) tryLoad(ctx context.Context, path string, enforceTrust bool, initialSettings *Settings) (*Config, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, nil
 	}
 
 	if enforceTrust && m.trustManager != nil {
-		status := m.trustManager.TrustStatus(path)
-		if status != TrustStatusTrusted {
-			if status == TrustStatusModified {
-				pterm.Warning.Printfln("Configuration file has been modified since it was last trusted: %s\nRun `unirtm trust %s` to review and trust the new contents.", path, path)
-			} else {
-				pterm.Warning.Printfln("Skipping untrusted configuration file: %s\nRun `unirtm trust %s` to trust it.", path, path)
+		// Check if the file's directory is in TrustedConfigPaths
+		absPath, _ := filepath.Abs(path)
+		dir := filepath.Dir(absPath)
+		isTrustedPath := false
+		if initialSettings != nil {
+			for _, tp := range initialSettings.TrustedConfigPaths {
+				absTP, _ := filepath.Abs(tp)
+				if strings.HasPrefix(dir, absTP) {
+					isTrustedPath = true
+					break
+				}
 			}
-			return nil, nil
+		}
+
+		if !isTrustedPath {
+			status := m.trustManager.TrustStatus(path)
+			if status != TrustStatusTrusted {
+				if status == TrustStatusModified {
+					pterm.Warning.Printfln("Configuration file has been modified since it was last trusted: %s\nRun `unirtm trust %s` to review and trust the new contents.", path, path)
+				} else {
+					pterm.Warning.Printfln("Skipping untrusted configuration file: %s\nRun `unirtm trust %s` to trust it.", path, path)
+				}
+				return nil, nil
+			}
 		}
 	}
 
@@ -472,6 +488,9 @@ func (m *viperConfigManager) Merge(configs ...*Config) (*Config, error) {
 		}
 		if len(config.Settings.CeilingPaths) > 0 {
 			merged.Settings.CeilingPaths = append(merged.Settings.CeilingPaths, config.Settings.CeilingPaths...)
+		}
+		if len(config.Settings.TrustedConfigPaths) > 0 {
+			merged.Settings.TrustedConfigPaths = append(merged.Settings.TrustedConfigPaths, config.Settings.TrustedConfigPaths...)
 		}
 	}
 

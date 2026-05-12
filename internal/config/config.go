@@ -154,6 +154,9 @@ type Settings struct {
 
 	// CeilingPaths specifies directory levels where configuration discovery should stop.
 	CeilingPaths []string `toml:"ceiling_paths,omitempty" yaml:"ceiling_paths,omitempty" mapstructure:"ceiling_paths,omitempty"`
+
+	// TrustedConfigPaths specifies directory paths where configurations are automatically trusted.
+	TrustedConfigPaths []string `toml:"trusted_config_paths,omitempty" yaml:"trusted_config_paths,omitempty" mapstructure:"trusted_config_paths,omitempty"`
 }
 
 // Task represents a task definition that can be executed via the CLI.
