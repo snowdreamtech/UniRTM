@@ -1,5 +1,9 @@
 package env
 
+import (
+	"crypto/rand"
+)
+
 var (
 	//ProjectName Project Name
 	ProjectName string = "UniRTM"
@@ -55,3 +59,16 @@ var (
 	// Silent indicates whether to suppress all output and non-error messages.
 	Silent bool
 )
+
+// RandomString returns a random string of the specified length.
+func RandomString(n int) (string, error) {
+	const letters = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	bytes := make([]byte, n)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	for i, b := range bytes {
+		bytes[i] = letters[b%byte(len(letters))]
+	}
+	return string(bytes), nil
+}

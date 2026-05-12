@@ -298,8 +298,10 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 		fmt.Printf("ℹ downloading %s@%s...\n", tool, version)
 		
-		// Use a temporary path for downloading to ensure atomicity
-		downloadTmpPath := downloadPath + ".tmp"
+		// Use a randomized temporary path for downloading to ensure atomicity and concurrency safety
+		// Similar to how homebrew and mise handle incomplete downloads.
+		randSuffix, _ := env.RandomString(8)
+		downloadTmpPath := fmt.Sprintf("%s.tmp.%s", downloadPath, randSuffix)
 		
 		// Initialize progress bar
 		var progressbar *pterm.ProgressbarPrinter
