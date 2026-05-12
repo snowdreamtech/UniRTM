@@ -95,11 +95,16 @@ func (ls *LockService) Resolve(
 	}
 
 	info := &backend.VersionInfo{
-		Version:     version,
-		DownloadURL: pe.URL,
-		Checksum:    pe.Checksum,
-		Platform:    platform,
-		Metadata:    map[string]string{"lock_url_api": pe.URLAPI},
+		Version:      version,
+		DownloadURL:  pe.URL,
+		Checksum:     pe.Checksum,
+		SignatureURL: "", // Not stored in lockfile yet, but could be
+		GPGKeys:      nil,
+		Platform:     platform,
+		Metadata:     map[string]string{"lock_url_api": pe.URLAPI},
+	}
+	if pe.GPGKey != "" {
+		info.GPGKeys = []string{pe.GPGKey}
 	}
 	return info, true
 }
@@ -156,10 +161,17 @@ func (ls *LockService) RecordInstall(
 		urlAPI = info.Metadata["url_api"]
 	}
 
+	// Extract GPG key
+	gpgKey := ""
+	if len(info.GPGKeys) > 0 {
+		gpgKey = info.GPGKeys[0]
+	}
+
 	pe := &lockfile.PlatformEntry{
 		Checksum: info.Checksum,
 		URL:      info.DownloadURL,
 		URLAPI:   urlAPI,
+		GPGKey:   gpgKey,
 	}
 	ls.lf.UpsertPlatform(lockKey, info.Version, platKey, pe)
 	ls.dirty = true
@@ -281,8 +293,12 @@ func (ls *LockService) Generate(
 
 				lockKey := uniqueKey
 				urlAPI := ""
+				gpgKey := ""
 				if info.Metadata != nil {
 					urlAPI = info.Metadata["url_api"]
+				}
+				if len(info.GPGKeys) > 0 {
+					gpgKey = info.GPGKeys[0]
 				}
 
 				ls.mu.Lock()
@@ -300,6 +316,7 @@ func (ls *LockService) Generate(
 					Checksum: info.Checksum,
 					URL:      info.DownloadURL,
 					URLAPI:   urlAPI,
+					GPGKey:   gpgKey,
 				})
 				ls.dirty = true
 

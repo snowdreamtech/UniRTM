@@ -61,11 +61,12 @@ func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 			}
 
 			vi.Assets = append(vi.Assets, Asset{
-				URL:      fmt.Sprintf("%s/%s/node-%s-%s-%s.tar.gz", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, archName),
-				Filename: fmt.Sprintf("node-%s-%s-%s.tar.gz", v.Version, osName, archName),
-				OS:       osName,
-				Arch:     archName,
-				Algo:     "sha256", // Node provides separate SHASUMS256.txt, can be handled in Verify
+				URL:          fmt.Sprintf("%s/%s/node-%s-%s-%s.tar.gz", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, archName),
+				Filename:     fmt.Sprintf("node-%s-%s-%s.tar.gz", v.Version, osName, archName),
+				OS:           osName,
+				Arch:         archName,
+				Algo:         "sha256", // Node provides separate SHASUMS256.txt, can be handled in Verify
+				SignatureURL: fmt.Sprintf("%s/%s/SHASUMS256.txt.asc", strings.TrimSuffix(baseURL, "/"), v.Version),
 			})
 		}
 

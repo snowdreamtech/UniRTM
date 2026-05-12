@@ -11,11 +11,17 @@ func GetBuiltinRecipes() map[string]Recipe {
 			Aliases: map[string]string{
 				"latest": "1.26.2",
 			},
+			GPGKeys: []string{
+				"EB4C1BF148A2C440F831EE8752D905A67D74191C", // Google Go Release Team
+			},
 		},
 		"golang": {
 			ID:      "go",
 			Handler: &GolangHandler{},
 			BaseURL: "https://go.dev/dl",
+			GPGKeys: []string{
+				"EB4C1BF148A2C440F831EE8752D905A67D74191C",
+			},
 		},
 		"node": {
 			ID:      "node",
@@ -24,11 +30,17 @@ func GetBuiltinRecipes() map[string]Recipe {
 			Aliases: map[string]string{
 				"lts": "22.14.0",
 			},
+			GPGKeys: []string{
+				"C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8", // Node.js Release Team
+			},
 		},
 		"nodejs": {
 			ID:      "node",
 			Handler: &NodeJSHandler{},
 			BaseURL: "https://nodejs.org/dist",
+			GPGKeys: []string{
+				"C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8",
+			},
 		},
 		"python": {
 			ID: "python",

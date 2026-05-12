@@ -119,10 +119,12 @@ func (b *NativeBackend) GetDownloadInfo(ctx context.Context, tool, version strin
 	}
 
 	return &VersionInfo{
-		Version:     version,
-		DownloadURL: targetAsset.URL,
-		Checksum:    targetAsset.Checksum,
-		Platform:    platform,
+		Version:      version,
+		DownloadURL:  targetAsset.URL,
+		Checksum:     targetAsset.Checksum,
+		SignatureURL: targetAsset.SignatureURL,
+		GPGKeys:      recipe.GPGKeys,
+		Platform:     platform,
 	}, nil
 }
 
@@ -131,5 +133,5 @@ func (b *NativeBackend) SupportsChecksum() bool {
 }
 
 func (b *NativeBackend) SupportsGPG() bool {
-	return false // Can be expanded later
+	return true
 }

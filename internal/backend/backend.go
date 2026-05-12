@@ -29,11 +29,13 @@ func (p Platform) String() string {
 
 // VersionInfo contains metadata about a specific tool version.
 type VersionInfo struct {
-	Version     string            // The version string (e.g., "1.20.0")
-	DownloadURL string            // URL to download the artifact
-	Checksum    string            // SHA-256 checksum of the artifact
-	Platform    Platform          // Target platform for this artifact
-	Metadata    map[string]string // Additional metadata (e.g., release date, notes)
+	Version      string            // The version string (e.g., "1.20.0")
+	DownloadURL  string            // URL to download the artifact
+	Checksum     string            // SHA-256 checksum of the artifact
+	SignatureURL string            // URL to download the GPG signature (.asc, .sig)
+	GPGKeys      []string          // Trusted GPG fingerprints for this version
+	Platform     Platform          // Target platform for this artifact
+	Metadata     map[string]string // Additional metadata (e.g., release date, notes)
 }
 
 // Backend defines the interface for tool version management backends.

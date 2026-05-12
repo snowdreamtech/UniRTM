@@ -9,12 +9,13 @@ import (
 
 // Asset represents a downloadable file for a specific version.
 type Asset struct {
-	URL      string
-	Filename string
-	OS       string
-	Arch     string
-	Checksum string
-	Algo     string // sha256, sha1, etc.
+	URL          string
+	Filename     string
+	OS           string
+	Arch         string
+	Checksum     string
+	Algo         string // sha256, sha1, etc.
+	SignatureURL string // URL to the GPG signature (.asc, .sig)
 }
 
 // VersionInfo represents a tool version and its associated assets.
@@ -39,4 +40,5 @@ type Recipe struct {
 	Handler ProtocolHandler
 	BaseURL string
 	Aliases map[string]string
+	GPGKeys []string // List of trusted GPG fingerprints for this tool
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/pkg/gpg"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository"
@@ -38,6 +39,7 @@ type InstallationManager struct {
 	settings         *config.Settings
 	aliases          map[string]map[string]string
 	toolConfigs      map[string]config.ToolConfig
+	gpgVerifier      gpg.Verifier
 }
 
 // NewInstallationManager creates a new installation manager without lockfile support.
@@ -56,6 +58,7 @@ func NewInstallationManager(
 		installRepo:      installRepo,
 		txManager:        txManager,
 		settings:         settings,
+		gpgVerifier:      gpg.NewSystemGPGVerifier(),
 	}
 }
 
@@ -288,14 +291,6 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		if versionInfo.Checksum != "" {
 			opts = opts.WithChecksum(versionInfo.Checksum)
 		}
-		gpgResult := &download.GPGResult{}
-		// Only attempt GPG verification if the keyring exists
-		keyringPath := filepath.Join(env.GetDataDir(), "keyring.gpg")
-		verifyGPG := false
-		if _, err := os.Stat(keyringPath); err == nil {
-			verifyGPG = true
-		}
-		opts = opts.WithVerifyGPG(verifyGPG, gpgResult)
 
 		fmt.Printf("ℹ downloading %s@%s...\n", tool, version)
 		
@@ -368,7 +363,66 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 				return fmt.Errorf("checksum verification failed: %w", err)
 			}
 		}
-		gpgStatus = gpgResult.Status
+		// 5.5 GPG Signature Verification
+		if versionInfo.SignatureURL != "" && (im.settings == nil || im.settings.GPGVerify != "off") {
+			fmt.Printf("ℹ verifying GPG signature for %s@%s...\n", tool, version)
+			
+			// Download signature file
+			sigPath := downloadPath + ".asc"
+			downloader, _ := im.downloadManager.Get("https")
+			sigOpts := download.DefaultDownloadOptions()
+			if err := downloader.Download(ctx, versionInfo.SignatureURL, sigPath, sigOpts); err != nil {
+				msg := fmt.Sprintf("failed to download GPG signature: %v", err)
+				if im.settings != nil && im.settings.GPGVerify == "strict" {
+					return fmt.Errorf("GPG signature required in strict mode: %w", err)
+				}
+				fmt.Printf("⚠️  WARNING: %s. Continuing anyway (GPGVerify=%s)\n", msg, im.settings.GPGVerify)
+				gpgStatus = "Failed (Download)"
+			} else {
+				defer os.Remove(sigPath)
+				
+				// Verify signature
+				err := im.gpgVerifier.Verify(ctx, sigPath, downloadPath, versionInfo.GPGKeys)
+				if err != nil && strings.Contains(err.Error(), "missing public key") && len(versionInfo.GPGKeys) > 0 {
+					// Handle missing public key: Ask user in TTY, or fail in CI
+					if pterm.PrintColor && pterm.RawOutput { // Check if we are likely in a TTY
+						fmt.Printf("⚠️  GPG signature found but public key is missing locally.\n")
+						fp := versionInfo.GPGKeys[0] // Try first fingerprint
+						confirm, _ := pterm.DefaultInteractiveConfirm.
+							WithDefaultText(fmt.Sprintf("Do you want to trust and import GPG key %s from keyservers?", fp)).
+							Show()
+						
+						if confirm {
+							spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Importing GPG key %s...", fp))
+							if importErr := im.gpgVerifier.(*gpg.SystemGPGVerifier).ImportKey(ctx, fp); importErr == nil {
+								spinner.Success("GPG key imported successfully")
+								// Retry verification
+								err = im.gpgVerifier.Verify(ctx, sigPath, downloadPath, versionInfo.GPGKeys)
+							} else {
+								spinner.Fail(fmt.Sprintf("Failed to import GPG key: %v", importErr))
+							}
+						}
+					} else {
+						fmt.Printf("⚠️  GPG verification skipped: missing public key (Non-interactive mode)\n")
+						gpgStatus = "Failed (Missing Key)"
+					}
+				}
+
+				if err != nil {
+					msg := fmt.Sprintf("GPG verification failed: %v", err)
+					if im.settings != nil && im.settings.GPGVerify == "strict" {
+						return fmt.Errorf("SECURITY ERROR: %s", msg)
+					}
+					fmt.Printf("⚠️  SECURITY WARNING: %s. Continuing anyway (GPGVerify=%s)\n", msg, im.settings.GPGVerify)
+					gpgStatus = "Failed (Invalid)"
+				} else {
+					fmt.Printf("✓ GPG signature verified successfully\n")
+					gpgStatus = "Verified"
+				}
+			}
+		} else if versionInfo.SignatureURL == "" && im.settings != nil && im.settings.GPGVerify == "strict" {
+			return fmt.Errorf("GPG security violation: signature URL missing for %s in strict mode", tool)
+		}
 
 		// Verify GitHub provenance (SLSA attestation) if the backend is github or ubi.
 		// If the project does not publish attestations, this is a no-op.

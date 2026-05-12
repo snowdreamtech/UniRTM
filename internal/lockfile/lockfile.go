@@ -91,6 +91,9 @@ type PlatformEntry struct {
 	// URLAPI is the backend API URL for the asset (GitHub Releases asset API, etc.).
 	// Stored for cache-bypass installs that need the canonical API reference.
 	URLAPI string `toml:"url_api,omitempty"`
+
+	// GPGKey is the hex fingerprint of the trusted GPG key for this artifact.
+	GPGKey string `toml:"gpg_key,omitempty"`
 }
 
 // ─── Construction ─────────────────────────────────────────────────────────────
@@ -258,6 +261,9 @@ func (lf *LockFile) encodeEntry(buf *bytes.Buffer, key string, e *ToolLockEntry)
 		}
 		if pe.URLAPI != "" {
 			buf.WriteString(fmt.Sprintf("url_api = %q\n", pe.URLAPI))
+		}
+		if pe.GPGKey != "" {
+			buf.WriteString(fmt.Sprintf("gpg_key = %q\n", pe.GPGKey))
 		}
 		buf.WriteByte('\n')
 	}

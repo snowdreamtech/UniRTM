@@ -164,6 +164,11 @@ type Settings struct {
 	// TrustedConfigPaths specifies directory paths where configurations are automatically trusted.
 	TrustedConfigPaths []string `toml:"trusted_config_paths,omitempty" yaml:"trusted_config_paths,omitempty" mapstructure:"trusted_config_paths,omitempty"`
 
+	// GPGVerify controls GPG signature verification behavior.
+	// Supported: "strict" (fail if invalid), "warn" (log if invalid), "off" (skip).
+	// Default: "warn".
+	GPGVerify string `toml:"gpg_verify,omitempty" yaml:"gpg_verify,omitempty" mapstructure:"gpg_verify,omitempty"`
+
 	// Tools contains tool-specific settings.
 	// Example: [settings.node]\ninstall_pnpm = true
 	Tools map[string]map[string]interface{} `toml:"tools,omitempty" yaml:"tools,omitempty" mapstructure:"tools,omitempty"`
