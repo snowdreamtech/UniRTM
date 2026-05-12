@@ -36,27 +36,28 @@ func Open(ctx context.Context, config Config) (*DB, error) {
 		return nil, fmt.Errorf("create database directory: %w", err)
 	}
 
-	// Open the database connection
-	conn, err := sql.Open("sqlite3", config.Path)
+	// Open the database connection with busy_timeout
+	dsn := fmt.Sprintf("%s?_busy_timeout=5000", config.Path)
+	conn, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
 
 	// Configure connection pool
-	conn.SetMaxOpenConns(1) // SQLite only supports one writer at a time
-	conn.SetMaxIdleConns(1)
+	// We allow multiple connections for better concurrency with WAL mode.
+	// SQLite will handle write serialization internally.
+	conn.SetMaxOpenConns(100)
+	conn.SetMaxIdleConns(10)
 
 	db := &DB{
 		conn: conn,
 		path: config.Path,
 	}
 
-	// Enable WAL mode if requested
-	if config.WALMode {
-		if err := db.enableWALMode(ctx); err != nil {
-			conn.Close()
-			return nil, fmt.Errorf("enable WAL mode: %w", err)
-		}
+	// Always enable WAL mode for better concurrency
+	if err := db.enableWALMode(ctx); err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("enable WAL mode: %w", err)
 	}
 
 	// Initialize schema and run migrations
