@@ -74,9 +74,6 @@ type ToolLockEntry struct {
 	// We use toml:"-" here because the mise format stores these as top-level
 	// keys in the tool table with a "platforms." prefix, e.g. ["platforms.linux-amd64"].
 	Platforms map[string]*PlatformEntry `toml:"-"`
-
-	// RawEntries captures the mise-style flat keys during decoding.
-	RawEntries map[string]any `toml:",inline"`
 }
 
 // PlatformEntry holds the resolved artifact metadata for a single platform.
@@ -123,29 +120,45 @@ func Load(path string) (*LockFile, error) {
 	// Strip the header comment before TOML-decoding.
 	content := stripHeader(string(data))
 
-	if err := toml.Unmarshal([]byte(content), lf); err != nil {
+	// To handle the mise-style "platforms.<os>-<arch>" nested tables correctly
+	// (which go-toml v2's ,inline doesn't always capture in array-of-tables),
+	// we unmarshal into a raw structure first.
+	var raw struct {
+		Tools map[string][]map[string]any `toml:"tools"`
+	}
+	if err := toml.Unmarshal([]byte(content), &raw); err != nil {
 		return nil, fmt.Errorf("lockfile: parse %q: %w", path, err)
 	}
 
-	// Ensure nil maps become empty maps after decode.
-	if lf.Tools == nil {
-		lf.Tools = make(map[string][]*ToolLockEntry)
-	}
-	for _, entries := range lf.Tools {
-		for _, e := range entries {
-			if e == nil {
-				continue
+	for toolKey, entries := range raw.Tools {
+		for _, rawEntry := range entries {
+			e := &ToolLockEntry{
+				Platforms: make(map[string]*PlatformEntry),
 			}
-			if e.Platforms == nil {
-				e.Platforms = make(map[string]*PlatformEntry)
+
+			// Extract standard fields
+			if v, ok := rawEntry["version"].(string); ok {
+				e.Version = v
 			}
-			// Migrate flat "platforms.<plat>" keys into the Platforms map.
-			for k, v := range e.RawEntries {
+			if b, ok := rawEntry["backend"].(string); ok {
+				e.Backend = b
+			}
+			if opts, ok := rawEntry["options"].(map[string]any); ok {
+				e.Options = make(map[string]string)
+				for k, v := range opts {
+					if s, ok := v.(string); ok {
+						e.Options[k] = s
+					}
+				}
+			}
+
+			// Extract platforms.* nested tables
+			for k, v := range rawEntry {
 				if strings.HasPrefix(k, "platforms.") {
 					platKey := strings.TrimPrefix(k, "platforms.")
-					// Re-decode the map into a PlatformEntry
 					if peData, ok := v.(map[string]any); ok {
 						pe := &PlatformEntry{}
+						// Re-encode and decode into PlatformEntry to handle tags correctly
 						if b, err := toml.Marshal(peData); err == nil {
 							_ = toml.Unmarshal(b, pe)
 							e.Platforms[platKey] = pe
@@ -153,7 +166,8 @@ func Load(path string) (*LockFile, error) {
 					}
 				}
 			}
-			e.RawEntries = nil // clean up
+
+			lf.Tools[toolKey] = append(lf.Tools[toolKey], e)
 		}
 	}
 
