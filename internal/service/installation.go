@@ -296,8 +296,38 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		opts = opts.WithVerifyGPG(verifyGPG, gpgResult)
 
 		fmt.Printf("ℹ downloading %s@%s...\n", tool, version)
+		
+		// Initialize progress bar
+		var progressbar *pterm.ProgressbarPrinter
+		var lastDownloaded int64
+
+		opts.ProgressCallback = func(downloaded, total int64) {
+			if progressbar == nil && total > 0 {
+				progressbar, _ = pterm.DefaultProgressbar.
+					WithTotal(int(total)).
+					WithTitle(fmt.Sprintf("Downloading %s", tool)).
+					Start()
+			}
+			if progressbar != nil {
+				diff := downloaded - lastDownloaded
+				if diff > 0 {
+					progressbar.Add(int(diff))
+					lastDownloaded = downloaded
+				}
+				if downloaded >= total {
+					progressbar.Stop()
+				}
+			}
+		}
+
 		if err := downloader.Download(ctx, versionInfo.DownloadURL, downloadPath, opts); err != nil {
+			if progressbar != nil {
+				progressbar.Stop()
+			}
 			return fmt.Errorf("failed to download: %w", err)
+		}
+		if progressbar != nil {
+			progressbar.Stop()
 		}
 		fmt.Printf("✓ downloaded to %s\n", downloadPath)
 		defer func() {
