@@ -4,11 +4,14 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"os"
-	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
 )
 
@@ -18,22 +21,16 @@ func init() {
 	}
 }
 
-// enCmd opens a sub-shell with the UniRTM environment activated.
+// enCmd intelligently enables UniRTM shell activation.
 var enCmd = &cobra.Command{
-	Use:   "en [-- <command> [args...]]",
-	Short: "Open a sub-shell with UniRTM environment activated",
-	Long: `Open a sub-shell with UniRTM environment activated.
+	Use:   "en",
+	Short: "Intelligently enable UniRTM in your shell configuration",
+	Long: `Intelligently enable UniRTM in your shell configuration.
 
-Sources 'eval "$(unirtm env)"' before starting the shell so all tool
-bin directories are in PATH. Use '-- <command>' to execute a one-shot
-command in the activated environment without opening an interactive shell.
-
-Examples:
-  # Open an interactive shell with tools activated
-  unirtm en
-
-  # Run a single command in the activated environment
-  unirtm en -- node --version`,
+This command auto-detects your current shell, identifies the corresponding
+configuration file (e.g., ~/.zshrc, ~/.bashrc), and appends the necessary
+activation command if it's not already present. It is idempotent and safe
+ to run multiple times.`,
 	RunE: runEn,
 }
 
@@ -45,55 +42,101 @@ func runEn(cmd *cobra.Command, args []string) error {
 		Quiet:   quiet,
 	})
 
-	// Build PATH additions by calling env logic directly.
-	shimsDir := resolveShell("") // use to determine shell type only
-	_ = shimsDir
-
-	// Construct the env export string.
-	envExports, err := buildEnvExportString()
+	// 1. Detect shell
+	shell, err := service.DetectShell()
 	if err != nil {
-		formatter.Warning("Could not load tool paths; using minimal environment.")
+		return fmt.Errorf("failed to detect shell: %w", err)
 	}
 
-	if len(args) > 0 {
-		// Execute a one-shot command.
-		shellExe := resolveShellExe()
-		cmdArgs := append([]string{"-c", envExports + " && " + args[0]}, args[1:]...)
-		c := exec.Command(shellExe, cmdArgs...)
-		c.Stdin = os.Stdin
-		c.Stdout = os.Stdout
-		c.Stderr = os.Stderr
-		return c.Run()
+	// 2. Resolve config file and activation command
+	var configFile string
+	var activationCmd string
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	// Interactive sub-shell.
-	shellExe := resolveShellExe()
-	formatter.Info(fmt.Sprintf("Starting sub-shell (%s) with UniRTM environment…", shellExe), nil)
+	switch shell {
+	case service.ShellZsh:
+		configFile = filepath.Join(home, ".zshrc")
+		activationCmd = `eval "$(unirtm activate zsh)"`
+	case service.ShellBash:
+		configFile = filepath.Join(home, ".bashrc")
+		activationCmd = `eval "$(unirtm activate bash)"`
+	case service.ShellFish:
+		configFile = filepath.Join(home, ".config/fish/config.fish")
+		activationCmd = `unirtm activate fish | source`
+	case service.ShellPowerShell:
+		// PowerShell profile is complex, but we can try to find it
+		configFile = os.Getenv("PROFILE")
+		if configFile == "" {
+			configFile = filepath.Join(home, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1")
+		}
+		activationCmd = `unirtm activate powershell | Out-String | Invoke-Expression`
+	default:
+		return fmt.Errorf("unsupported shell for auto-enable: %s", shell)
+	}
 
-	c := exec.Command(shellExe)
-	c.Stdin = os.Stdin
-	c.Stdout = os.Stdout
-	c.Stderr = os.Stderr
-	// Set UNIRTM_ENV to signal the shell that UniRTM is active.
-	c.Env = append(os.Environ(), "UNIRTM_ENV=1")
-	return c.Run()
+	formatter.Info(fmt.Sprintf("Detected shell: %s", shell), nil)
+	formatter.Info(fmt.Sprintf("Target configuration file: %s", configFile), nil)
+
+	// 3. Check if already enabled
+	if exists, _ := fileExists(configFile); !exists {
+		// Create file if it doesn't exist (e.g. fish config might not exist yet)
+		if err := os.MkdirAll(filepath.Dir(configFile), 0755); err != nil {
+			return fmt.Errorf("failed to create config directory: %w", err)
+		}
+		f, err := os.Create(configFile)
+		if err != nil {
+			return fmt.Errorf("failed to create config file: %w", err)
+		}
+		f.Close()
+	}
+
+	file, err := os.Open(configFile)
+	if err != nil {
+		return fmt.Errorf("failed to open config file: %w", err)
+	}
+	defer file.Close()
+
+	alreadyEnabled := false
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		if strings.Contains(scanner.Text(), "unirtm activate") {
+			alreadyEnabled = true
+			break
+		}
+	}
+
+	if alreadyEnabled {
+		formatter.Success("UniRTM is already enabled in your shell configuration.")
+		return nil
+	}
+
+	// 4. Append to config file
+	f, err := os.OpenFile(configFile, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open config file for writing: %w", err)
+	}
+	defer f.Close()
+
+	if _, err := f.WriteString(fmt.Sprintf("\n# UniRTM shell activation\n%s\n", activationCmd)); err != nil {
+		return fmt.Errorf("failed to write to config file: %w", err)
+	}
+
+	formatter.Success(fmt.Sprintf("Successfully enabled UniRTM in %s", configFile))
+	fmt.Printf("\nPlease restart your shell or run: source %s\n", configFile)
+
+	return nil
 }
 
-func resolveShellExe() string {
-	shell := os.Getenv("SHELL")
-	if shell == "" {
-		shell = "/bin/sh"
+func fileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
 	}
-	return shell
-}
-
-// buildEnvExportString calls the same logic as runEnv but returns a string.
-func buildEnvExportString() (string, error) {
-	shimsDir, err := os.Getwd()
-	if err != nil {
-		return "", err
+	if os.IsNotExist(err) {
+		return false, nil
 	}
-	_ = shimsDir
-	// Minimal: just export the shims dir.
-	return fmt.Sprintf("export PATH=%q:$PATH", resolveShellExe()), nil
+	return false, err
 }
