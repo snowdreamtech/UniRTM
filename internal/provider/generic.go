@@ -29,15 +29,19 @@ func (g *GenericProvider) Name() string {
 
 // Install performs default installation by copying binaries from artifact to install path.
 func (g *GenericProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
-	// Create bin directory in install path
-	binDir := filepath.Join(installPath, "bin")
-	if err := os.MkdirAll(binDir, 0755); err != nil {
-		return NewProviderError("generic", "unknown", version, "failed to create bin directory", err)
+	// 1. Ensure install path exists
+	if err := os.MkdirAll(installPath, 0755); err != nil {
+		return NewProviderError("generic", "unknown", version, "failed to create install directory", err)
 	}
 
-	// Extract artifact if it is an archive
+	// 2. Extract artifact if it is an archive
 	if err := g.extractArtifact(ctx, artifactPath, installPath); err != nil {
-		// If it's not an archive, we just copy it to binDir
+		// If it's not an archive, we just copy it to a new bin directory
+		binDir := filepath.Join(installPath, "bin")
+		if err := os.MkdirAll(binDir, 0755); err != nil {
+			return NewProviderError("generic", "unknown", version, "failed to create bin directory", err)
+		}
+
 		dstPath := filepath.Join(binDir, filepath.Base(artifactPath))
 		if err := g.copyFile(artifactPath, dstPath); err != nil {
 			return NewProviderError("generic", "unknown", version, "failed to copy executable", err)
@@ -46,16 +50,23 @@ func (g *GenericProvider) Install(ctx context.Context, installPath string, artif
 			return NewProviderError("generic", "unknown", version, "failed to chmod executable", err)
 		}
 	} else {
-		// Flatten the directory if it contains only one top-level directory
+		// 3. Flatten the directory if it contains only one top-level directory
+		// This must happen BEFORE creating the bin directory.
 		if err := g.flattenDirectory(installPath); err != nil {
 			// Log error but continue, not a fatal failure
 			fmt.Printf("⚠️  failed to flatten directory: %v\n", err)
 		}
 
+		// 4. Now create bin directory for UniRTM standardization
+		binDir := filepath.Join(installPath, "bin")
+		if err := os.MkdirAll(binDir, 0755); err != nil {
+			return NewProviderError("generic", "unknown", version, "failed to create bin directory", err)
+		}
+
 		// Determine tool name from installPath to help identify the main binary
 		toolName := filepath.Base(filepath.Dir(installPath))
 
-		// Find and score all executable files in the extracted path
+		// 5. Find and score all executable files in the extracted path
 		allExecs, err := g.findExecutables(installPath)
 		if err != nil {
 			return NewProviderError("generic", toolName, version, "failed to find executables", err)
@@ -64,7 +75,7 @@ func (g *GenericProvider) Install(ctx context.Context, installPath string, artif
 		// Pick the best executables based on scoring
 		executables := g.pickBestExecutables(allExecs, toolName)
 
-		// Ensure executables have +x and link them to binDir
+		// 6. Ensure executables have +x and link them to binDir
 		for _, exe := range executables {
 			exePath := filepath.Join(installPath, exe)
 			if err := os.Chmod(exePath, 0755); err != nil {
