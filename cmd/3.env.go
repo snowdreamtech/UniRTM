@@ -218,6 +218,22 @@ func emitShellEnv(shell string, pathDirs []string, vars []envVarEntry, sources [
 		for _, s := range sources {
 			fmt.Printf("source %q\n", s)
 		}
+	case "powershell", "pwsh":
+		// powershell uses $env:VAR
+		if len(pathDirs) > 0 {
+			separator := ";"
+			if runtime.GOOS != "windows" {
+				separator = ":"
+			}
+			fmt.Printf("$env:PATH = %q\n",
+				strings.Join(pathDirs, separator)+separator+"$env:PATH")
+		}
+		for _, v := range vars {
+			fmt.Printf("$env:%s = %q\n", v.Name, v.Value)
+		}
+		for _, s := range sources {
+			fmt.Printf(". %q\n", s)
+		}
 	default:
 		// bash / zsh / posix sh
 		if len(pathDirs) > 0 {
@@ -245,6 +261,8 @@ func resolveShell(flag string) string {
 		return "fish"
 	case "nu", "nushell":
 		return "nu"
+	case "powershell", "pwsh", "pwsh.exe", "powershell.exe":
+		return "powershell"
 	default:
 		return "bash" // covers bash, zsh, sh
 	}
