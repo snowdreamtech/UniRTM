@@ -7,7 +7,8 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"text/tabwriter"
+ 
+	"github.com/pterm/pterm"
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
@@ -158,16 +159,21 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 			return nil
 		}
 
-		fmt.Printf("Available updates (%d):\n\n", preview.TotalUpdates)
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(w, "TOOL\tCURRENT\tLATEST\tBACKEND")
-		fmt.Fprintln(w, "----\t-------\t------\t-------")
-		for _, u := range preview.Updates {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", u.Tool, u.CurrentVersion, u.LatestVersion, u.Backend)
+		tableData := pterm.TableData{
+			{"TOOL", "CURRENT", "LATEST", "BACKEND"},
 		}
-		w.Flush()
-		fmt.Printf("\nEstimated time: %s\n", preview.EstimatedTime)
-		fmt.Println("\nRun without --preview to apply updates.")
+		for _, u := range preview.Updates {
+			tableData = append(tableData, []string{
+				u.Tool,
+				pterm.Gray(u.CurrentVersion),
+				pterm.Green(u.LatestVersion),
+				u.Backend,
+			})
+		}
+
+		_ = pterm.DefaultTable.WithHasHeader().WithData(tableData).Render()
+		fmt.Printf("\nEstimated time: %s\n", pterm.Cyan(preview.EstimatedTime))
+		fmt.Println("\nRun without " + pterm.LightYellow("--preview") + " to apply updates.")
 		return nil
 	}
 
