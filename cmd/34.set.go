@@ -75,6 +75,9 @@ func resolveConfigFilePath(global bool) string {
 	if global {
 		return env.GetGlobalConfigPath()
 	}
+	if configPath != "" {
+		return configPath
+	}
 	candidates := []string{"unirtm.toml", ".unirtm.toml", "unirtm.yaml", ".unirtm.yaml"}
 	for _, c := range candidates {
 		if _, err := os.Stat(c); err == nil {
