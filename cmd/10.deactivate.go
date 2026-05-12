@@ -42,8 +42,9 @@ Examples:
 
   # Deactivate for a specific shell
   unirtm deactivate --shell bash`,
-	Args: cobra.NoArgs,
-	RunE: runDeactivate,
+	Aliases: []string{"deactive"},
+	Args:    cobra.NoArgs,
+	RunE:    runDeactivate,
 }
 
 // runDeactivate executes the deactivate command.
