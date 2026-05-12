@@ -380,10 +380,11 @@ func (g *GenericProvider) flattenDirectory(dir string) error {
 		return err
 	}
 
-	// Filter out hidden files (like .DS_Store)
+	// Filter out hidden files (like .DS_Store) and metadata directories
 	var visibleEntries []os.DirEntry
 	for _, entry := range entries {
-		if !strings.HasPrefix(entry.Name(), ".") {
+		name := entry.Name()
+		if !strings.HasPrefix(name, ".") && name != "__MACOSX" {
 			visibleEntries = append(visibleEntries, entry)
 		}
 	}
@@ -391,6 +392,20 @@ func (g *GenericProvider) flattenDirectory(dir string) error {
 	// If there's exactly one visible entry and it's a directory, flatten it
 	if len(visibleEntries) == 1 && visibleEntries[0].IsDir() {
 		subDirName := visibleEntries[0].Name()
+
+		// DO NOT flatten standard directories
+		standardDirs := map[string]bool{
+			"bin":     true,
+			"lib":     true,
+			"include": true,
+			"share":   true,
+			"etc":     true,
+			"man":     true,
+		}
+		if standardDirs[strings.ToLower(subDirName)] {
+			return nil
+		}
+
 		fmt.Printf("ℹ flattening redundant directory: %s\n", subDirName)
 		subDir := filepath.Join(dir, subDirName)
 		subEntries, err := os.ReadDir(subDir)
@@ -402,13 +417,26 @@ func (g *GenericProvider) flattenDirectory(dir string) error {
 		for _, entry := range subEntries {
 			oldPath := filepath.Join(subDir, entry.Name())
 			newPath := filepath.Join(dir, entry.Name())
+			
+			// If newPath already exists (unlikely in a clean install but possible on retry),
+			// remove it first to avoid rename errors.
+			if _, err := os.Stat(newPath); err == nil {
+				os.RemoveAll(newPath)
+			}
+			
 			if err := os.Rename(oldPath, newPath); err != nil {
 				return err
 			}
 		}
 
 		// Remove the now-empty subDir
-		return os.Remove(subDir)
+		if err := os.Remove(subDir); err != nil {
+			// If removal fails, it might not be empty (hidden files?), just log and continue
+			fmt.Printf("⚠️  failed to remove empty directory %s: %v\n", subDir, err)
+		}
+
+		// Recursive call to handle double-nested directories (e.g. tool-v1/tool-v1/bin)
+		return g.flattenDirectory(dir)
 	}
 
 	return nil
