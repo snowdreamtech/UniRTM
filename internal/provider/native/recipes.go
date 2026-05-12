@@ -148,6 +148,9 @@ func GetBuiltinRecipes() map[string]Recipe {
 			ID:      "maven",
 			Handler: &MavenHandler{},
 			BaseURL: "https://archive.apache.org/dist/maven/maven-3",
+			GPGKeys: []string{
+				"29BEA2A645F2D6CED7FB12E02B172E3E156466E8", // Karl Heinz Marbaise (Maven Release Team)
+			},
 		},
 		"gradle": {
 			ID:      "gradle",
