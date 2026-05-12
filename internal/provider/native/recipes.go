@@ -65,6 +65,9 @@ func GetBuiltinRecipes() map[string]Recipe {
 			Aliases: map[string]string{
 				"latest": "1.76.0",
 			},
+			GPGKeys: []string{
+				"108F66205EAEB0AAA8DD5E1C85AB96E6FA1EF743", // Rust Release Team
+			},
 		},
 		"bun": {
 			ID: "bun",
@@ -89,6 +92,9 @@ func GetBuiltinRecipes() map[string]Recipe {
 				Repo:  "terraform",
 			},
 			BaseURL: "https://github.com/hashicorp/terraform/releases",
+			GPGKeys: []string{
+				"34365D947271F194CC1EB3455792EBB6243E081F", // HashiCorp Security
+			},
 		},
 		"opentofu": {
 			ID: "opentofu",
@@ -100,21 +106,33 @@ func GetBuiltinRecipes() map[string]Recipe {
 			Aliases: map[string]string{
 				"latest": "1.6.2",
 			},
+			GPGKeys: []string{
+				"E3E6E43D84CB852EADB0051D0C0AF313E5FD9F80", // OpenTofu Release Team
+			},
 		},
 		"java": {
 			ID:      "java",
 			Handler: &JavaHandler{ImageType: "jdk"},
 			BaseURL: "https://api.adoptium.net",
+			GPGKeys: []string{
+				"3B04D753C9050D9A5D343F39843C48A565F8F04B", // Adoptium (Eclipse Temurin)
+			},
 		},
 		"jdk": {
 			ID:      "java",
 			Handler: &JavaHandler{ImageType: "jdk"},
 			BaseURL: "https://api.adoptium.net",
+			GPGKeys: []string{
+				"3B04D753C9050D9A5D343F39843C48A565F8F04B",
+			},
 		},
 		"jre": {
 			ID:      "java",
 			Handler: &JavaHandler{ImageType: "jre"},
 			BaseURL: "https://api.adoptium.net",
+			GPGKeys: []string{
+				"3B04D753C9050D9A5D343F39843C48A565F8F04B",
+			},
 		},
 		"kubectl": {
 			ID:      "kubectl",
@@ -135,6 +153,9 @@ func GetBuiltinRecipes() map[string]Recipe {
 			ID:      "gradle",
 			Handler: &GradleHandler{},
 			BaseURL: "https://services.gradle.org/versions/all",
+			GPGKeys: []string{
+				"1BD97A6A154E7810EE0BC832E2F38302C8075E3D", // Gradle Release
+			},
 		},
 	}
 }
