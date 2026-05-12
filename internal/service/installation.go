@@ -298,6 +298,9 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 		fmt.Printf("ℹ downloading %s@%s...\n", tool, version)
 		
+		// Use a temporary path for downloading to ensure atomicity
+		downloadTmpPath := downloadPath + ".tmp"
+		
 		// Initialize progress bar
 		var progressbar *pterm.ProgressbarPrinter
 		var lastDownloaded int64
@@ -328,15 +331,23 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 			}
 		}
 
-		if err := downloader.Download(ctx, versionInfo.DownloadURL, downloadPath, opts); err != nil {
+		if err := downloader.Download(ctx, versionInfo.DownloadURL, downloadTmpPath, opts); err != nil {
 			if progressbar != nil {
 				progressbar.Stop()
 			}
+			os.Remove(downloadTmpPath)
 			return fmt.Errorf("failed to download: %w", err)
 		}
 		if progressbar != nil {
 			progressbar.Stop()
 		}
+
+		// Atomic rename from temp download path to final download path
+		if err := os.Rename(downloadTmpPath, downloadPath); err != nil {
+			os.Remove(downloadTmpPath)
+			return fmt.Errorf("failed to finalize download: %w", err)
+		}
+		
 		fmt.Printf("✓ downloaded to %s\n", downloadPath)
 		defer func() {
 			if im.settings != nil && im.settings.AlwaysKeepDownload {
