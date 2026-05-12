@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/config"
@@ -305,7 +306,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 			if progressbar == nil && total > 0 {
 				progressbar, _ = pterm.DefaultProgressbar.
 					WithTotal(int(total)).
-					WithTitle(fmt.Sprintf("Downloading %s", tool)).
+					WithTitle(fmt.Sprintf("Downloading %s (%s)", tool, humanize.Bytes(uint64(total)))).
 					Start()
 			}
 			if progressbar != nil {
@@ -313,6 +314,12 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 				if diff > 0 {
 					progressbar.Add(int(diff))
 					lastDownloaded = downloaded
+					
+					// Update title with current progress
+					progressbar.UpdateTitle(fmt.Sprintf("Downloading %s (%s/%s)", 
+						tool, 
+						humanize.Bytes(uint64(downloaded)), 
+						humanize.Bytes(uint64(total))))
 				}
 				if downloaded >= total {
 					progressbar.Stop()
