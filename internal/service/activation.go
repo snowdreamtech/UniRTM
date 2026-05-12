@@ -7,6 +7,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -240,33 +241,18 @@ func (m *ActivationManager) generatePosixScript(config ActivationConfig) (*Activ
 
 	// Hot-reloading hook
 	sb.WriteString("# UniRTM Hot Reloading Hook\n")
-	sb.WriteString("if [[ \"$OSTYPE\" == \"darwin\"* ]]; then\n")
-	sb.WriteString("  export _UNIRTM_LAST_MTIME=$(stat -f \"%m\" unirtm.toml 2>/dev/null || echo \"\")\n")
-	sb.WriteString("else\n")
-	sb.WriteString("  export _UNIRTM_LAST_MTIME=$(stat -c \"%Y\" unirtm.toml 2>/dev/null || echo \"\")\n")
-	sb.WriteString("fi\n\n")
-
+	sb.WriteString("export _UNIRTM_LAST_PWD=\"$PWD\"\n")
 	sb.WriteString("_unirtm_hook() {\n")
-	sb.WriteString("  local config_file=\"unirtm.toml\"\n")
-	sb.WriteString("  if [ -f \"$config_file\" ]; then\n")
-	sb.WriteString("    local current_mtime\n")
-	sb.WriteString("    if [[ \"$OSTYPE\" == \"darwin\"* ]]; then\n")
-	sb.WriteString("      current_mtime=$(stat -f \"%m\" \"$config_file\" 2>/dev/null)\n")
-	sb.WriteString("    else\n")
-	sb.WriteString("      current_mtime=$(stat -c \"%Y\" \"$config_file\" 2>/dev/null)\n")
-	sb.WriteString("    fi\n")
-	sb.WriteString("    if [ \"$current_mtime\" != \"$_UNIRTM_LAST_MTIME\" ]; then\n")
-	sb.WriteString("      export _UNIRTM_LAST_MTIME=\"$current_mtime\"\n")
-	sb.WriteString(fmt.Sprintf("      eval \"$(unirtm activate --shell %s)\"\n", config.Shell))
-	sb.WriteString("    fi\n")
+	sb.WriteString("  if [ \"$PWD\" != \"$_UNIRTM_LAST_PWD\" ]; then\n")
+	sb.WriteString("    export _UNIRTM_LAST_PWD=\"$PWD\"\n")
+	sb.WriteString(fmt.Sprintf("    eval \"$(unirtm activate --shell %s)\"\n", config.Shell))
 	sb.WriteString("  fi\n")
 	sb.WriteString("}\n\n")
-
-	sb.WriteString("if [[ -n \"${ZSH_VERSION-}\" ]]; then\n")
+	sb.WriteString("if [ -n \"${ZSH_VERSION-}\" ]; then\n")
 	sb.WriteString("  autoload -Uz add-zsh-hook\n")
 	sb.WriteString("  add-zsh-hook -d precmd _unirtm_hook 2>/dev/null\n")
 	sb.WriteString("  add-zsh-hook precmd _unirtm_hook\n")
-	sb.WriteString("elif [[ -n \"${BASH_VERSION-}\" ]]; then\n")
+	sb.WriteString("elif [ -n \"${BASH_VERSION-}\" ]; then\n")
 	sb.WriteString("  if [[ ! \"$PROMPT_COMMAND\" =~ \"_unirtm_hook\" ]]; then\n")
 	sb.WriteString("    PROMPT_COMMAND=\"_unirtm_hook; ${PROMPT_COMMAND:-}\"\n")
 	sb.WriteString("  fi\n")
@@ -338,25 +324,11 @@ func (m *ActivationManager) generateFishScript(config ActivationConfig) (*Activa
 
 	// Hot-reloading hook
 	sb.WriteString("# UniRTM Hot Reloading Hook\n")
-	sb.WriteString("if string match -q \"darwin*\" $OSTYPE\n")
-	sb.WriteString("  set -gx _UNIRTM_LAST_MTIME (stat -f \"%m\" unirtm.toml 2>/dev/null)\n")
-	sb.WriteString("else\n")
-	sb.WriteString("  set -gx _UNIRTM_LAST_MTIME (stat -c \"%Y\" unirtm.toml 2>/dev/null)\n")
-	sb.WriteString("end\n\n")
-
-	sb.WriteString("function _unirtm_hook --on-event fish_prompt\n")
-	sb.WriteString("  set -l config_file \"unirtm.toml\"\n")
-	sb.WriteString("  if test -f \"$config_file\"\n")
-	sb.WriteString("    set -l current_mtime\n")
-	sb.WriteString("    if string match -q \"darwin*\" $OSTYPE\n")
-	sb.WriteString("      set current_mtime (stat -f \"%m\" \"$config_file\" 2>/dev/null)\n")
-	sb.WriteString("    else\n")
-	sb.WriteString("      set current_mtime (stat -c \"%Y\" \"$config_file\" 2>/dev/null)\n")
-	sb.WriteString("    end\n")
-	sb.WriteString("    if test \"$current_mtime\" != \"$_UNIRTM_LAST_MTIME\"\n")
-	sb.WriteString("      set -gx _UNIRTM_LAST_MTIME \"$current_mtime\"\n")
-	sb.WriteString("      unirtm activate --shell fish | source\n")
-	sb.WriteString("    end\n")
+	sb.WriteString("set -gx _UNIRTM_LAST_PWD $PWD\n")
+	sb.WriteString("function _unirtm_hook --on-variable PWD --on-event fish_prompt\n")
+	sb.WriteString("  if test \"$PWD\" != \"$_UNIRTM_LAST_PWD\"\n")
+	sb.WriteString("    set -gx _UNIRTM_LAST_PWD $PWD\n")
+	sb.WriteString("    unirtm activate --shell fish | source\n")
 	sb.WriteString("  end\n")
 	sb.WriteString("end\n\n")
 
@@ -439,6 +411,26 @@ func (m *ActivationManager) generatePowerShellScript(config ActivationConfig) (*
 		}
 		sb.WriteString(fmt.Sprintf("$env:UNIRTM_PROJECT_DIR = \"%s\"\n", projectDir))
 	}
+	sb.WriteString("\n")
+
+	// Hot-reloading hook
+	sb.WriteString("# UniRTM Hot Reloading Hook\n")
+	sb.WriteString("$env:_UNIRTM_LAST_PWD = $PWD.Path\n")
+	sb.WriteString("function _unirtm_hook {\n")
+	sb.WriteString("  if ($PWD.Path -ne $env:_UNIRTM_LAST_PWD) {\n")
+	sb.WriteString("    $env:_UNIRTM_LAST_PWD = $PWD.Path\n")
+	sb.WriteString("    unirtm activate --shell powershell | Out-String | Invoke-Expression\n")
+	sb.WriteString("  }\n")
+	sb.WriteString("}\n\n")
+	sb.WriteString("# Hook into prompt\n")
+	sb.WriteString("if ($null -eq $env:_UNIRTM_PROMPT_HOOKED) {\n")
+	sb.WriteString("  $env:_UNIRTM_PROMPT_HOOKED = $true\n")
+	sb.WriteString("  $old_prompt = $function:prompt\n")
+	sb.WriteString("  function global:prompt {\n")
+	sb.WriteString("    _unirtm_hook\n")
+	sb.WriteString("    & $old_prompt\n")
+	sb.WriteString("  }\n")
+	sb.WriteString("}\n")
 
 	instructions := "To activate this environment, run:\n\n" +
 		"    . \\path\\to\\activation.ps1\n\n" +
@@ -483,24 +475,26 @@ func (m *ActivationManager) toolVersionEnvVar(tool string) string {
 // DetectShell detects the current shell from the environment.
 //
 // It checks the SHELL environment variable and returns the corresponding ShellType.
-// If the shell cannot be detected, it returns an error.
+// If the shell cannot be detected, it returns a sensible default for the platform.
 func DetectShell() (ShellType, error) {
-	// On Windows, default to PowerShell
+	// On Unix-like systems, check SHELL environment variable first
+	if shellPath := os.Getenv("SHELL"); shellPath != "" {
+		shell := filepath.Base(shellPath)
+		switch {
+		case strings.Contains(shell, "bash"):
+			return ShellBash, nil
+		case strings.Contains(shell, "zsh"):
+			return ShellZsh, nil
+		case strings.Contains(shell, "fish"):
+			return ShellFish, nil
+		}
+	}
+
+	// On Windows, default to PowerShell if SHELL is not set or not recognized
 	if runtime.GOOS == "windows" {
 		return ShellPowerShell, nil
 	}
 
-	// On Unix-like systems, check SHELL environment variable
-	shell := filepath.Base(runtime.GOOS)
-	switch {
-	case strings.Contains(shell, "bash"):
-		return ShellBash, nil
-	case strings.Contains(shell, "zsh"):
-		return ShellZsh, nil
-	case strings.Contains(shell, "fish"):
-		return ShellFish, nil
-	default:
-		// Default to bash on Unix-like systems
-		return ShellBash, nil
-	}
+	// Default to bash on Unix-like systems
+	return ShellBash, nil
 }
