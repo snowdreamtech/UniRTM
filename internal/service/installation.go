@@ -58,7 +58,7 @@ func NewInstallationManager(
 		installRepo:      installRepo,
 		txManager:        txManager,
 		settings:         settings,
-		gpgVerifier:      gpg.NewSystemGPGVerifier(),
+		gpgVerifier:      gpg.NewVerifier(),
 	}
 }
 
@@ -406,7 +406,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 						
 						if confirm {
 							spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Importing GPG key %s...", fp))
-							if importErr := im.gpgVerifier.(*gpg.SystemGPGVerifier).ImportKey(ctx, fp); importErr == nil {
+							if importErr := im.gpgVerifier.ImportKey(ctx, fp); importErr == nil {
 								spinner.Success("GPG key imported successfully")
 								// Retry verification
 								err = im.gpgVerifier.Verify(ctx, sigPath, downloadPath, trustedKeys)

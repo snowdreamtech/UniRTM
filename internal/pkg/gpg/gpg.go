@@ -14,8 +14,16 @@ import (
 type Verifier interface {
 	// Verify checks if the signature file corresponds to the data file using the provided fingerprint.
 	Verify(ctx context.Context, sigPath, dataPath string, fingerprints []string) error
+	// ImportKey imports a public key from a keyserver.
+	ImportKey(ctx context.Context, fingerprint string) error
 	// IsAvailable checks if the GPG tool is installed and usable.
 	IsAvailable(ctx context.Context) bool
+}
+
+// NewVerifier returns the best available GPG verifier.
+// It prioritizes the native implementation to avoid system dependencies.
+func NewVerifier() Verifier {
+	return NewNativeGPGVerifier()
 }
 
 // SystemGPGVerifier implements Verifier using the system 'gpg' command.
