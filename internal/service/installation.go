@@ -307,6 +307,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 				progressbar, _ = pterm.DefaultProgressbar.
 					WithTotal(int(total)).
 					WithTitle(fmt.Sprintf("Downloading %s (%s)", tool, humanize.Bytes(uint64(total)))).
+					WithShowCount(false).
 					Start()
 			}
 			if progressbar != nil {
