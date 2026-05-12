@@ -347,18 +347,37 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		}
 	}
 
-	// Install using provider
+	// 6. Install using provider with atomic rename strategy
 	installPath := filepath.Join(env.GetInstallsDir(), tool, version)
+	tmpInstallPath := installPath + ".unirtm-tmp"
+
+	// Clean up any stale directories from previous failed attempts
+	os.RemoveAll(tmpInstallPath)
+	// If final path exists but we reached here, it means it's not in the database.
+	// We'll overwrite it to be safe.
+	os.RemoveAll(installPath)
+
+	if err := os.MkdirAll(filepath.Dir(tmpInstallPath), 0755); err != nil {
+		return fmt.Errorf("failed to create installs directory: %w", err)
+	}
+
 	p := im.providerRegistry.GetWithBackend(tool, backendName)
 
-	if err := p.Install(ctx, installPath, downloadPath, version); err != nil {
-		os.RemoveAll(installPath)
+	fmt.Printf("ℹ installing %s@%s...\n", tool, version)
+	if err := p.Install(ctx, tmpInstallPath, downloadPath, version); err != nil {
+		os.RemoveAll(tmpInstallPath)
 		return fmt.Errorf("installation failed: %w", err)
 	}
 
-	if err := p.PostInstall(ctx, installPath, version); err != nil {
-		os.RemoveAll(installPath)
+	if err := p.PostInstall(ctx, tmpInstallPath, version); err != nil {
+		os.RemoveAll(tmpInstallPath)
 		return fmt.Errorf("post-install failed: %w", err)
+	}
+
+	// Atomic rename from temp to final path
+	if err := os.Rename(tmpInstallPath, installPath); err != nil {
+		os.RemoveAll(tmpInstallPath)
+		return fmt.Errorf("failed to finalize installation: %w", err)
 	}
 
 	// Record installation
