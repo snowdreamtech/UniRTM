@@ -366,17 +366,27 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 			}
 		}
 		// 5.5 GPG Signature Verification
-		if versionInfo.SignatureURL != "" && (im.settings == nil || im.settings.GPGVerify != "off") {
+		if (versionInfo.SignatureURL != "" || versionInfo.GPGSignature != "") && (im.settings == nil || im.settings.GPGVerify != "off") {
 			fmt.Printf("ℹ verifying GPG signature for %s@%s...\n", tool, version)
 			
-			// Download signature file
 			sigPath := downloadPath + ".asc"
-			downloader, _ := im.downloadManager.Get("https")
-			sigOpts := download.DefaultDownloadOptions()
-			if err := downloader.Download(ctx, versionInfo.SignatureURL, sigPath, sigOpts); err != nil {
-				msg := fmt.Sprintf("failed to download GPG signature: %v", err)
+			var downloadErr error
+			if versionInfo.GPGSignature != "" {
+				// Use embedded signature
+				if err := os.WriteFile(sigPath, []byte(versionInfo.GPGSignature), 0644); err != nil {
+					downloadErr = fmt.Errorf("failed to save embedded GPG signature: %w", err)
+				}
+			} else {
+				// Download signature file
+				downloader, _ := im.downloadManager.Get("https")
+				sigOpts := download.DefaultDownloadOptions()
+				downloadErr = downloader.Download(ctx, versionInfo.SignatureURL, sigPath, sigOpts)
+			}
+
+			if downloadErr != nil {
+				msg := fmt.Sprintf("failed to obtain GPG signature: %v", downloadErr)
 				if im.settings != nil && im.settings.GPGVerify == "strict" {
-					return fmt.Errorf("GPG signature required in strict mode: %w", err)
+					return fmt.Errorf("GPG signature required in strict mode: %w", downloadErr)
 				}
 				fmt.Printf("⚠️  WARNING: %s. Continuing anyway (GPGVerify=%s)\n", msg, im.settings.GPGVerify)
 				gpgStatus = "Failed (Download)"

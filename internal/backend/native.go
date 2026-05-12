@@ -123,6 +123,7 @@ func (b *NativeBackend) GetDownloadInfo(ctx context.Context, tool, version strin
 		DownloadURL:  targetAsset.URL,
 		Checksum:     targetAsset.Checksum,
 		SignatureURL: targetAsset.SignatureURL,
+		GPGSignature: targetAsset.Signature,
 		GPGKeys:      recipe.GPGKeys,
 		Platform:     platform,
 	}, nil

@@ -33,6 +33,7 @@ type VersionInfo struct {
 	DownloadURL  string            // URL to download the artifact
 	Checksum     string            // SHA-256 checksum of the artifact
 	SignatureURL string            // URL to download the GPG signature (.asc, .sig)
+	GPGSignature string            // Raw GPG signature content
 	GPGKeys      []string          // Trusted GPG fingerprints for this version
 	Platform     Platform          // Target platform for this artifact
 	Metadata     map[string]string // Additional metadata (e.g., release date, notes)

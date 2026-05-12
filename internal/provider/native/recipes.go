@@ -197,9 +197,17 @@ func GetBuiltinRecipes() map[string]Recipe {
 		"julia": {
 			ID:      "julia",
 			Handler: &JuliaHandler{},
-			BaseURL: "https://github.com/JuliaLang/julia/releases",
+			BaseURL: "https://julialang-s3.julialang.org/bin",
 			GPGKeys: []string{
 				"3673DF529D9049477F76B37566E3C7DC03D6E495", // Julia Binary Signing Key
+			},
+		},
+		"helm": {
+			ID:      "helm",
+			Handler: &HelmHandler{},
+			BaseURL: "https://github.com/helm/helm/releases",
+			GPGKeys: []string{
+				"BF888333D96A1C18E2682AAED79D67C9EC016739", // George Jenkins (Helm Maintainer)
 			},
 		},
 	}

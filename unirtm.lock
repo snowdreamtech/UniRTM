@@ -13,6 +13,14 @@ backend = "github"
 version = "2.92.0"
 backend = "github"
 
+[[tools."cmake"]]
+version = "4.3.2"
+backend = "native"
+
+[tools."cmake"."platforms.macos-amd64"]
+url = "https://github.com/Kitware/CMake/releases/download/v4.3.2/cmake-4.3.2-macos-universal.dmg"
+gpg_key = "CBA23971357C2E6590D9EFD3EC8FEF3A7BFB4EDA"
+
 [[tools."dotenv-linter/dotenv-linter"]]
 version = "4.0.0"
 backend = "github"
@@ -97,6 +105,14 @@ gpg_key = "1BD97A6A154E7810EE0BC832E2F38302C8075E3D"
 version = "2.14.0"
 backend = "github"
 
+[[tools."helm"]]
+version = "3.15.0"
+backend = "native"
+
+[tools."helm"."platforms.macos-amd64"]
+url = "https://get.helm.sh/helm-v3.15.0-darwin-amd64.tar.gz"
+gpg_key = "BF888333D96A1C18E2682AAED79D67C9EC016739"
+
 [[tools."java"]]
 version = "1.8.0_492-b09"
 backend = "native"
@@ -112,6 +128,15 @@ backend = "native"
 [tools."java"."platforms.macos-amd64"]
 url = "https://github.com/adoptium/temurin23-binaries/releases/download/jdk-23.0.2%2B7/OpenJDK23U-jdk_x64_mac_hotspot_23.0.2_7.tar.gz"
 gpg_key = "3B04D753C9050D9A5D343F39843C48A565F8F04B"
+
+[[tools."julia"]]
+version = "1.10.3"
+backend = "native"
+
+[tools."julia"."platforms.macos-amd64"]
+checksum = "c4d3076bc918b1300edc236f827bc49349a73f4ed577ec5a5e613410363af213"
+url = "https://julialang-s3.julialang.org/bin/mac/x64/1.10/julia-1.10.3-mac64.dmg"
+gpg_key = "3673DF529D9049477F76B37566E3C7DC03D6E495"
 
 [[tools."maven"]]
 version = "3.9.6"

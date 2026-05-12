@@ -38,9 +38,12 @@ func (h *CMakeHandler) ResolveVersions(ctx context.Context, baseURL string) ([]V
 				continue
 			}
 
-			if a.OS == "darwin" && strings.Contains(a.Filename, "macos-universal") {
+			if a.OS == "darwin" && (strings.Contains(a.Filename, "macos-universal") || a.Arch == "universal") {
 				// MacOS universal package supports both
-				assets = append(assets, a) // amd64 is default from detectPlatform
+				amd64Asset := a
+				amd64Asset.Arch = "amd64"
+				assets = append(assets, amd64Asset)
+				
 				// Also add as arm64
 				arm64Asset := a
 				arm64Asset.Arch = "arm64"

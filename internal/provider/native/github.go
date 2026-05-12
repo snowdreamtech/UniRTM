@@ -59,24 +59,42 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 
 	var versions []VersionInfo
 	for _, rel := range releases {
-		// Filter out pre-releases if needed (tag naming varies)
 		version := strings.TrimPrefix(rel.TagName, "v")
 		
+		// Map to store signatures for later matching
+		sigs := make(map[string]string)
+		for _, a := range rel.Assets {
+			if strings.HasSuffix(a.Name, ".asc") || strings.HasSuffix(a.Name, ".sig") {
+				sigs[a.Name] = a.BrowserDownloadURL
+			}
+		}
+
 		var assets []Asset
 		for _, a := range rel.Assets {
-			// Basic heuristic for python-build-standalone assets
-			// Format example: cpython-3.11.5+20230826-x86_64-unknown-linux-gnu-install_ready.tar.gz
+			if strings.HasSuffix(a.Name, ".asc") || strings.HasSuffix(a.Name, ".sig") || strings.HasSuffix(a.Name, ".sha256") {
+				continue
+			}
+
 			os, arch := h.detectPlatform(a.Name)
 			if os == "" || arch == "" {
 				continue
 			}
 
-			assets = append(assets, Asset{
+			asset := Asset{
 				Filename: a.Name,
 				URL:      a.BrowserDownloadURL,
 				OS:       os,
 				Arch:     arch,
-			})
+			}
+
+			// Try to find matching signature
+			if sigURL, ok := sigs[a.Name+".asc"]; ok {
+				asset.SignatureURL = sigURL
+			} else if sigURL, ok := sigs[a.Name+".sig"]; ok {
+				asset.SignatureURL = sigURL
+			}
+
+			assets = append(assets, asset)
 		}
 
 		if len(assets) > 0 {
@@ -98,7 +116,7 @@ func (h *GithubHandler) detectPlatform(filename string) (string, string) {
 	// OS Detection
 	if strings.Contains(filename, "linux") {
 		os = "linux"
-	} else if strings.Contains(filename, "darwin") || strings.Contains(filename, "macos") || strings.Contains(filename, "apple") {
+	} else if strings.Contains(filename, "darwin") || strings.Contains(filename, "macos") || strings.Contains(filename, "apple") || strings.Contains(filename, "mac") {
 		os = "darwin"
 	} else if strings.Contains(filename, "windows") || strings.Contains(filename, "win") {
 		os = "windows"
@@ -111,6 +129,8 @@ func (h *GithubHandler) detectPlatform(filename string) (string, string) {
 		arch = "arm64"
 	} else if strings.Contains(filename, "i686") || strings.Contains(filename, "386") || strings.Contains(filename, "x86") {
 		arch = "386"
+	} else if strings.Contains(filename, "universal") || strings.Contains(filename, "all") {
+		arch = "universal"
 	}
 
 	return os, arch
