@@ -21,7 +21,7 @@ func ExampleConfig() {
 				Version: "3.11.0",
 			},
 		},
-		Env: map[string]string{
+		Env: map[string]interface{}{
 			"NODE_ENV": "development",
 		},
 		Settings: config.Settings{
@@ -92,7 +92,7 @@ func ExampleTask() {
 	task := config.Task{
 		Description: "Deploy to production",
 		Run:         "./deploy.sh production",
-		Env: map[string]string{
+		Env: map[string]interface{}{
 			"ENVIRONMENT": "production",
 		},
 		Depends: []string{"test", "build"},

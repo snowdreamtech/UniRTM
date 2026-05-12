@@ -42,6 +42,7 @@ func TestEmitShellEnv_Bash(t *testing.T) {
 		_ = emitShellEnv("bash",
 			[]string{"/usr/local/share/unirtm/shims"},
 			[]envVarEntry{{Name: "UNIRTM_NODE_VERSION", Value: "22.14.0"}},
+			nil,
 		)
 	})
 	assert.Contains(t, out, "export PATH=")
@@ -53,6 +54,7 @@ func TestEmitShellEnv_Fish(t *testing.T) {
 		_ = emitShellEnv("fish",
 			[]string{"/usr/local/share/unirtm/shims"},
 			[]envVarEntry{{Name: "UNIRTM_NODE_VERSION", Value: "22.14.0"}},
+			nil,
 		)
 	})
 	assert.Contains(t, out, "set -gx PATH")
@@ -63,6 +65,7 @@ func TestEmitShellEnv_Nu(t *testing.T) {
 		_ = emitShellEnv("nu",
 			[]string{"/usr/local/share/unirtm/shims"},
 			[]envVarEntry{},
+			nil,
 		)
 	})
 	assert.Contains(t, out, "$env.PATH")
@@ -70,7 +73,7 @@ func TestEmitShellEnv_Nu(t *testing.T) {
 
 func TestEmitShellEnv_NoPathDirs(t *testing.T) {
 	out := captureStdoutFunc(t, func() {
-		_ = emitShellEnv("bash", []string{}, []envVarEntry{})
+		_ = emitShellEnv("bash", []string{}, []envVarEntry{}, nil)
 	})
 	assert.NotContains(t, out, "export PATH=")
 }

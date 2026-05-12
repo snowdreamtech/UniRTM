@@ -100,21 +100,21 @@ func TestParseToolVersion(t *testing.T) {
 // ─── shell-alias ──────────────────────────────────────────────────────────────
 
 func TestShellAliasCmdStructure(t *testing.T) {
-	assert.Contains(t, shellAliasCmd.Use, "shell-alias")
-	assert.Contains(t, shellAliasCmd.Aliases, "alias")
-	assert.NotNil(t, shellAliasCmd.RunE)
+	assert.Contains(t, aliasCmd.Use, "alias")
+	assert.Contains(t, aliasCmd.Aliases, "tool-alias")
+	assert.NotNil(t, aliasCmd)
 }
 
 func TestShellAliasSubcommands(t *testing.T) {
-	assert.NotNil(t, shellAliasListCmd.RunE)
-	assert.NotNil(t, shellAliasAddCmd.RunE)
-	assert.NotNil(t, shellAliasRemoveCmd.RunE)
+	assert.NotNil(t, aliasListCmd.RunE)
+	assert.NotNil(t, aliasSetCmd.RunE)
+	assert.NotNil(t, aliasDeleteCmd.RunE)
 }
 
 func TestShellAliasAddArgs(t *testing.T) {
-	err := shellAliasAddCmd.Args(shellAliasAddCmd, []string{"node", "lts", "22.0.0"})
+	err := aliasSetCmd.Args(aliasSetCmd, []string{"node", "lts", "22.0.0"})
 	assert.NoError(t, err)
-	err = shellAliasAddCmd.Args(shellAliasAddCmd, []string{"node", "lts"})
+	err = aliasSetCmd.Args(aliasSetCmd, []string{"node", "lts"})
 	assert.Error(t, err)
 }
 

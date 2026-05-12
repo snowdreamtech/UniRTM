@@ -354,7 +354,7 @@ func TestConfigManager_Validate(t *testing.T) {
 			Tools: map[string]ToolConfig{
 				"node": {Version: "20.0.0"},
 			},
-			Env: map[string]string{
+			Env: map[string]interface{}{
 				"NODE_ENV": "production",
 			},
 			Settings: Settings{
@@ -495,7 +495,7 @@ func TestConfigManager_Merge(t *testing.T) {
 				"node":   {Version: "18.0.0"},
 				"python": {Version: "3.10.0"},
 			},
-			Env: map[string]string{
+			Env: map[string]interface{}{
 				"node_env": "production",
 				"debug":    "false",
 			},
@@ -516,7 +516,7 @@ func TestConfigManager_Merge(t *testing.T) {
 				"node": {Version: "20.0.0"}, // Override node version
 				"go":   {Version: "1.21.0"}, // Add new tool
 			},
-			Env: map[string]string{
+			Env: map[string]interface{}{
 				"node_env": "development", // Override node_env
 				"path":     "/usr/local/bin",
 			},
@@ -570,7 +570,7 @@ func TestConfigManager_Merge(t *testing.T) {
 
 		config2 := &Config{
 			Tools: map[string]ToolConfig{},
-			Env:   map[string]string{},
+			Env:   map[string]interface{}{},
 			Tasks: map[string]Task{},
 		}
 
@@ -633,7 +633,7 @@ func TestConfigManager_Merge(t *testing.T) {
 		}
 
 		local := &Config{
-			Env: map[string]string{
+			Env: map[string]interface{}{
 				"node_env": "development",
 			},
 		}
@@ -726,7 +726,7 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 				"node":   {Version: "20.0.0"},
 				"python": {Version: "3.11.0"},
 			},
-			Env: map[string]string{
+			Env: map[string]interface{}{
 				"NODE_ENV": "production",
 				"DEBUG":    "false",
 			},
@@ -746,7 +746,7 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 					Tools: map[string]ToolConfig{
 						"node": {Version: "18.0.0"}, // Override node version
 					},
-					Env: map[string]string{
+					Env: map[string]interface{}{
 						"NODE_ENV": "development", // Override NODE_ENV
 						"DEBUG":    "true",        // Override DEBUG
 					},
@@ -820,7 +820,7 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 			Tools: map[string]ToolConfig{
 				"node": {Version: "18.0.0"},
 			},
-			Env: map[string]string{
+			Env: map[string]interface{}{
 				"NODE_ENV": "development",
 			},
 			Environments: map[string]EnvironmentConfig{
@@ -828,7 +828,7 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 					Tools: map[string]ToolConfig{
 						"node": {Version: "20.0.0"},
 					},
-					Env: map[string]string{
+					Env: map[string]interface{}{
 						"NODE_ENV":     "production",
 						"ENABLE_CACHE": "true",
 					},
@@ -897,7 +897,7 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 			Tools: map[string]ToolConfig{
 				"node": {Version: "20.0.0"},
 			},
-			Env: map[string]string{
+			Env: map[string]interface{}{
 				"NODE_ENV": "production",
 			},
 			Settings: Settings{

@@ -21,6 +21,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+	"reflect"
 )
 
 // Feature: unirtm, Property 1: Configuration Round-Trip (TOML)
@@ -51,7 +52,7 @@ func TestProperty_ConfigurationRoundTrip_TOML(t *testing.T) {
 				original.Tools = make(map[string]config.ToolConfig)
 			}
 			if original.Env == nil {
-				original.Env = make(map[string]string)
+				original.Env = make(map[string]interface{})
 			}
 			if original.Tasks == nil {
 				original.Tasks = make(map[string]config.Task)
@@ -81,7 +82,7 @@ func TestProperty_ConfigurationRoundTrip_TOML(t *testing.T) {
 				parsed.Tools = make(map[string]config.ToolConfig)
 			}
 			if parsed.Env == nil {
-				parsed.Env = make(map[string]string)
+				parsed.Env = make(map[string]interface{})
 			}
 			if parsed.Tasks == nil {
 				parsed.Tasks = make(map[string]config.Task)
@@ -149,7 +150,7 @@ func TestProperty_ConfigurationRoundTrip_YAML(t *testing.T) {
 				original.Tools = make(map[string]config.ToolConfig)
 			}
 			if original.Env == nil {
-				original.Env = make(map[string]string)
+				original.Env = make(map[string]interface{})
 			}
 			if original.Tasks == nil {
 				original.Tasks = make(map[string]config.Task)
@@ -185,7 +186,7 @@ func TestProperty_ConfigurationRoundTrip_YAML(t *testing.T) {
 				parsed.Tools = make(map[string]config.ToolConfig)
 			}
 			if parsed.Env == nil {
-				parsed.Env = make(map[string]string)
+				parsed.Env = make(map[string]interface{})
 			}
 			if parsed.Tasks == nil {
 				parsed.Tasks = make(map[string]config.Task)
@@ -251,9 +252,13 @@ func genConfig() gopter.Gen {
 		genSettings(),
 		genTasks(),
 	).Map(func(values []interface{}) config.Config {
+		env := make(map[string]interface{})
+		for k, v := range values[1].(map[string]string) {
+			env[k] = v
+		}
 		return config.Config{
 			Tools:    values[0].(map[string]config.ToolConfig),
-			Env:      values[1].(map[string]string),
+			Env:      env,
 			Settings: values[2].(config.Settings),
 			Tasks:    values[3].(map[string]config.Task),
 		}
@@ -384,10 +389,14 @@ func genTask() gopter.Gen {
 			return len(s) <= 2 // Limit dependencies to avoid cycles
 		}),
 	).Map(func(values []interface{}) config.Task {
+		env := make(map[string]interface{})
+		for k, v := range values[2].(map[string]string) {
+			env[k] = v
+		}
 		return config.Task{
 			Description: values[0].(string),
 			Run:         values[1].(string),
-			Env:         values[2].(map[string]string),
+			Env:         env,
 			Depends:     values[3].([]string),
 		}
 	})
@@ -404,7 +413,7 @@ func configsEqual(a, b config.Config) bool {
 	}
 
 	// Compare Env
-	if !stringMapsEqual(a.Env, b.Env) {
+	if !interfaceMapsEqual(a.Env, b.Env) {
 		return false
 	}
 
@@ -447,8 +456,19 @@ func toolConfigEqual(a, b config.ToolConfig) bool {
 		a.Provider == b.Provider
 }
 
+// interfaceMapsEqual compares two interface maps.
+func interfaceMapsEqual(a, b map[string]interface{}) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	if len(a) == 0 && len(b) == 0 {
+		return true
+	}
+	return reflect.DeepEqual(a, b)
+}
+
 // stringMapsEqual compares two string maps.
-func stringMapsEqual(a, b map[string]string) bool {
+func stringMapsEqual(a, b map[string]interface{}) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -758,7 +778,7 @@ func TestProperty_ConfigurationMergePrecedence(t *testing.T) {
 				base.Tools = make(map[string]config.ToolConfig)
 			}
 			if base.Env == nil {
-				base.Env = make(map[string]string)
+				base.Env = make(map[string]interface{})
 			}
 			if base.Tasks == nil {
 				base.Tasks = make(map[string]config.Task)
@@ -767,7 +787,7 @@ func TestProperty_ConfigurationMergePrecedence(t *testing.T) {
 				override.Tools = make(map[string]config.ToolConfig)
 			}
 			if override.Env == nil {
-				override.Env = make(map[string]string)
+				override.Env = make(map[string]interface{})
 			}
 			if override.Tasks == nil {
 				override.Tasks = make(map[string]config.Task)
@@ -891,7 +911,7 @@ func TestProperty_EnvironmentSpecificConfigurationSelection(t *testing.T) {
 				base.Tools = make(map[string]config.ToolConfig)
 			}
 			if base.Env == nil {
-				base.Env = make(map[string]string)
+				base.Env = make(map[string]interface{})
 			}
 			if base.Tasks == nil {
 				base.Tasks = make(map[string]config.Task)
@@ -905,7 +925,7 @@ func TestProperty_EnvironmentSpecificConfigurationSelection(t *testing.T) {
 				Tools: map[string]config.ToolConfig{
 					"node": {Version: "env-override-20.0.0"},
 				},
-				Env: map[string]string{
+				Env: map[string]interface{}{
 					"NODE_ENV": "production",
 				},
 				Settings: config.Settings{
@@ -994,7 +1014,7 @@ func TestProperty_ConfigurationLoadingIdempotence(t *testing.T) {
 				original.Tools = make(map[string]config.ToolConfig)
 			}
 			if original.Env == nil {
-				original.Env = make(map[string]string)
+				original.Env = make(map[string]interface{})
 			}
 			if original.Tasks == nil {
 				original.Tasks = make(map[string]config.Task)
@@ -1047,7 +1067,7 @@ func TestProperty_ConfigurationLoadingIdempotence(t *testing.T) {
 				load1.Tools = make(map[string]config.ToolConfig)
 			}
 			if load1.Env == nil {
-				load1.Env = make(map[string]string)
+				load1.Env = make(map[string]interface{})
 			}
 			if load1.Tasks == nil {
 				load1.Tasks = make(map[string]config.Task)
@@ -1060,7 +1080,7 @@ func TestProperty_ConfigurationLoadingIdempotence(t *testing.T) {
 				load2.Tools = make(map[string]config.ToolConfig)
 			}
 			if load2.Env == nil {
-				load2.Env = make(map[string]string)
+				load2.Env = make(map[string]interface{})
 			}
 			if load2.Tasks == nil {
 				load2.Tasks = make(map[string]config.Task)
@@ -1073,7 +1093,7 @@ func TestProperty_ConfigurationLoadingIdempotence(t *testing.T) {
 				load3.Tools = make(map[string]config.ToolConfig)
 			}
 			if load3.Env == nil {
-				load3.Env = make(map[string]string)
+				load3.Env = make(map[string]interface{})
 			}
 			if load3.Tasks == nil {
 				load3.Tasks = make(map[string]config.Task)
@@ -1119,7 +1139,7 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 			name: "empty config",
 			config: config.Config{
 				Tools: map[string]config.ToolConfig{},
-				Env:   map[string]string{},
+				Env:   map[string]interface{}{},
 				Tasks: map[string]config.Task{},
 			},
 		},
@@ -1129,7 +1149,7 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 				Tools: map[string]config.ToolConfig{
 					"node": {Version: "20.0.0"},
 				},
-				Env: map[string]string{
+				Env: map[string]interface{}{
 					"PATH":        "/usr/local/bin:/usr/bin",
 					"DESCRIPTION": "A tool with \"quotes\" and 'apostrophes'",
 				},
@@ -1155,7 +1175,7 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 					"terraform": {Version: "1.5.0"},
 					"kubectl":   {Version: "1.27.0"},
 				},
-				Env: map[string]string{
+				Env: map[string]interface{}{
 					"PATH":       "/usr/local/bin",
 					"HOME":       "/home/user",
 					"USER":       "testuser",
@@ -1174,7 +1194,7 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 					"build": {
 						Description: "Build the project",
 						Run:         "make build",
-						Env:         map[string]string{"CGO_ENABLED": "0"},
+						Env:         map[string]interface{}{"CGO_ENABLED": "0"},
 						Depends:     []string{"test"},
 					},
 					"test": {
@@ -1190,7 +1210,7 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 				Tools: map[string]config.ToolConfig{
 					"node": {Version: "20.0.0", Backend: "", Provider: ""},
 				},
-				Env: map[string]string{
+				Env: map[string]interface{}{
 					"EMPTY": "",
 				},
 				Settings: config.Settings{
@@ -1203,7 +1223,7 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 					"noop": {
 						Description: "",
 						Run:         "echo 'noop'",
-						Env:         map[string]string{},
+						Env:         map[string]interface{}{},
 						Depends:     []string{},
 					},
 				},
@@ -1218,7 +1238,7 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 				tc.config.Tools = make(map[string]config.ToolConfig)
 			}
 			if tc.config.Env == nil {
-				tc.config.Env = make(map[string]string)
+				tc.config.Env = make(map[string]interface{})
 			}
 			if tc.config.Tasks == nil {
 				tc.config.Tasks = make(map[string]config.Task)
@@ -1242,7 +1262,7 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 				parsed.Tools = make(map[string]config.ToolConfig)
 			}
 			if parsed.Env == nil {
-				parsed.Env = make(map[string]string)
+				parsed.Env = make(map[string]interface{})
 			}
 			if parsed.Tasks == nil {
 				parsed.Tasks = make(map[string]config.Task)

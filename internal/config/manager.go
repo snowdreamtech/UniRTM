@@ -389,6 +389,21 @@ func (m *viperConfigManager) Merge(configs ...*Config) (*Config, error) {
 		if config.Settings.Concurrency != 0 {
 			merged.Settings.Concurrency = config.Settings.Concurrency
 		}
+		if config.Settings.GitHubProxy != "" {
+			merged.Settings.GitHubProxy = config.Settings.GitHubProxy
+		}
+		if config.Settings.GitHubToken != "" {
+			merged.Settings.GitHubToken = config.Settings.GitHubToken
+		}
+		if config.Settings.HTTPTimeout != 0 {
+			merged.Settings.HTTPTimeout = config.Settings.HTTPTimeout
+		}
+		if config.Settings.TaskTimeout != 0 {
+			merged.Settings.TaskTimeout = config.Settings.TaskTimeout
+		}
+		if config.Settings.TaskOutput != "" {
+			merged.Settings.TaskOutput = config.Settings.TaskOutput
+		}
 	}
 
 	return merged, nil
@@ -486,6 +501,21 @@ func (m *viperConfigManager) ApplyEnvironment(config *Config, environment string
 	}
 	if envConfig.Settings.Concurrency != 0 {
 		result.Settings.Concurrency = envConfig.Settings.Concurrency
+	}
+	if envConfig.Settings.GitHubProxy != "" {
+		result.Settings.GitHubProxy = envConfig.Settings.GitHubProxy
+	}
+	if envConfig.Settings.GitHubToken != "" {
+		result.Settings.GitHubToken = envConfig.Settings.GitHubToken
+	}
+	if envConfig.Settings.HTTPTimeout != 0 {
+		result.Settings.HTTPTimeout = envConfig.Settings.HTTPTimeout
+	}
+	if envConfig.Settings.TaskTimeout != 0 {
+		result.Settings.TaskTimeout = envConfig.Settings.TaskTimeout
+	}
+	if envConfig.Settings.TaskOutput != "" {
+		result.Settings.TaskOutput = envConfig.Settings.TaskOutput
 	}
 
 	return result, nil

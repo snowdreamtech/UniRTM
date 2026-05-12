@@ -24,7 +24,7 @@ func TestConfig_Validate(t *testing.T) {
 					"node":   {Version: "20.0.0"},
 					"python": {Version: "3.11.0", Backend: "github"},
 				},
-				Env: map[string]string{
+				Env: map[string]interface{}{
 					"NODE_ENV": "development",
 				},
 				Settings: Settings{
@@ -318,7 +318,7 @@ func TestTask_Validate(t *testing.T) {
 			task: Task{
 				Description: "Build the project",
 				Run:         "go build",
-				Env: map[string]string{
+				Env: map[string]interface{}{
 					"CGO_ENABLED": "0",
 				},
 				Depends: []string{"test"},
@@ -519,7 +519,7 @@ func TestEnvironmentConfig_Validate(t *testing.T) {
 				Tools: map[string]ToolConfig{
 					"node": {Version: "18.0.0"},
 				},
-				Env: map[string]string{
+				Env: map[string]interface{}{
 					"NODE_ENV": "production",
 				},
 				Settings: Settings{
