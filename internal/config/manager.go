@@ -404,6 +404,15 @@ func (m *viperConfigManager) Merge(configs ...*Config) (*Config, error) {
 		if config.Settings.TaskOutput != "" {
 			merged.Settings.TaskOutput = config.Settings.TaskOutput
 		}
+		if config.Settings.AutoInstall != nil {
+			merged.Settings.AutoInstall = config.Settings.AutoInstall
+		}
+		if config.Settings.Color != "" {
+			merged.Settings.Color = config.Settings.Color
+		}
+		if config.Settings.AlwaysKeepDownload {
+			merged.Settings.AlwaysKeepDownload = config.Settings.AlwaysKeepDownload
+		}
 	}
 
 	return merged, nil
@@ -516,6 +525,15 @@ func (m *viperConfigManager) ApplyEnvironment(config *Config, environment string
 	}
 	if envConfig.Settings.TaskOutput != "" {
 		result.Settings.TaskOutput = envConfig.Settings.TaskOutput
+	}
+	if envConfig.Settings.AutoInstall != nil {
+		result.Settings.AutoInstall = envConfig.Settings.AutoInstall
+	}
+	if envConfig.Settings.Color != "" {
+		result.Settings.Color = envConfig.Settings.Color
+	}
+	if envConfig.Settings.AlwaysKeepDownload {
+		result.Settings.AlwaysKeepDownload = envConfig.Settings.AlwaysKeepDownload
 	}
 
 	return result, nil

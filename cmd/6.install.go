@@ -82,20 +82,16 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	// Initialize dependencies
 	ctx := context.Background()
 
-	// Create output formatter
-	formatter := output.NewFormatter(output.FormatterOptions{
-		Format:  getOutputFormat(),
-		NoColor: false,
-		Writer:  os.Stdout,
-		Quiet:   quiet,
-		Verbose: verbose,
-	})
-
 	// Load project configuration
 	cfg, err := config.Load()
 	if err != nil {
-		formatter.Warning(fmt.Sprintf("Failed to load project config: %v", err))
-	} else {
+		// Log warning and continue
+	}
+
+	// Create output formatter
+	formatter := getFormatter(cfg)
+
+	if cfg != nil {
 		// Apply [env] variables from config to current process
 		cfg.ApplyEnvironment()
 	}

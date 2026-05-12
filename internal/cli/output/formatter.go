@@ -56,6 +56,9 @@ type FormatterOptions struct {
 	// NoColor disables color output for human format
 	NoColor bool
 
+	// Color specifies the color mode (auto, always, never)
+	Color string
+
 	// Writer is the output writer (defaults to os.Stdout)
 	Writer io.Writer
 
@@ -81,9 +84,15 @@ func NewFormatter(opts FormatterOptions) Formatter {
 	case FormatHuman:
 		fallthrough
 	default:
+		noColor := opts.NoColor || zerolog.GlobalLevel() == zerolog.Disabled
+		if opts.Color == "always" {
+			noColor = false
+		} else if opts.Color == "never" {
+			noColor = true
+		}
 		return &HumanFormatter{
 			writer:  opts.Writer,
-			noColor: opts.NoColor || zerolog.GlobalLevel() == zerolog.Disabled,
+			noColor: noColor,
 			quiet:   opts.Quiet,
 			verbose: opts.Verbose,
 		}

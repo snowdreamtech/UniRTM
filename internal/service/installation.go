@@ -182,6 +182,10 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		}
 		fmt.Printf("✓ downloaded to %s\n", downloadPath)
 		defer func() {
+			if im.settings != nil && im.settings.AlwaysKeepDownload {
+				logger.Debug("AlwaysKeepDownload is enabled, keeping artifact", map[string]interface{}{"path": downloadPath})
+				return
+			}
 			os.Remove(downloadPath)
 			// Clean up empty parent directories up to the downloads root
 			im.removeEmptyDirs(downloadPath, env.GetDownloadsDir())
@@ -278,6 +282,50 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
+	return nil
+}
+
+// EnsureInstalled checks if all tools in the configuration are installed,
+// and installs any missing ones if the settings allow.
+func (im *InstallationManager) EnsureInstalled(ctx context.Context, tools map[string]config.ToolConfig) error {
+	for name, tc := range tools {
+		version := tc.Version
+		backendName := tc.Backend
+		toolName := name
+
+		// Handle shorthand syntax (backend:tool)
+		if backendName == "" {
+			if idx := strings.Index(name, ":"); idx != -1 {
+				backendName = name[:idx]
+				toolName = name[idx+1:]
+			} else if strings.Contains(name, "/") {
+				backendName = "github"
+			}
+		}
+
+		// Intercept go: prefix and route to the internal go-pkg provider
+		if backendName == "go" || strings.HasPrefix(name, "go:") {
+			backendName = "go-pkg"
+			if strings.HasPrefix(name, "go:") {
+				toolName = strings.TrimPrefix(name, "go:")
+			}
+		}
+
+		// Check if already installed
+		existing, err := im.installRepo.FindByToolAndVersion(ctx, toolName, version)
+		if err == nil && existing != nil {
+			// Verify if the installation directory actually exists on disk
+			if _, statErr := os.Stat(existing.InstallPath); statErr == nil {
+				continue
+			}
+		}
+
+		// Not installed, proceed with installation
+		fmt.Printf("ℹ auto-installing missing tool: %s@%s\n", toolName, version)
+		if err := im.Install(ctx, toolName, version, backendName); err != nil {
+			return fmt.Errorf("auto-install failed for %s: %w", toolName, err)
+		}
+	}
 	return nil
 }
 

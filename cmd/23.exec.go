@@ -4,12 +4,12 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 
-	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
 )
@@ -59,16 +59,28 @@ Examples:
 // runExec executes the exec command.
 // It injects tool version environment variables and then execs the command.
 func runExec(cmd *cobra.Command, args []string) error {
-	formatter := output.NewFormatter(output.FormatterOptions{
-		Format:  getOutputFormat(),
-		NoColor: false,
-		Writer:  os.Stderr,
-		Quiet:   quiet,
-		Verbose: verbose,
-	})
+	ctx := context.Background()
+
+	// Load configuration
+	cfg, err := loadConfig(ctx)
+	if err != nil {
+		// Log warning but continue
+	}
+
+	formatter := getFormatter(cfg)
 
 	if len(args) == 0 {
 		return fmt.Errorf("no command specified: usage: unirtm exec -- <command> [args...]")
+	}
+
+	// Auto-install missing tools if enabled
+	if cfg != nil && (cfg.Settings.AutoInstall == nil || *cfg.Settings.AutoInstall) {
+		installManager, err := getInstallationManager(ctx, cfg)
+		if err == nil {
+			if err := installManager.EnsureInstalled(ctx, cfg.Tools); err != nil {
+				formatter.Warning(fmt.Sprintf("Auto-install failed: %v", err))
+			}
+		}
 	}
 
 	// Find the separator "--" position and split args accordingly

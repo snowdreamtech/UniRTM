@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/pterm/pterm"
 	"github.com/rs/zerolog"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
@@ -92,9 +93,11 @@ func setupGlobalOptions(cmd *cobra.Command, args []string) {
 	// The log level priority is: Silent > Quiet > Verbose > Info (default)
 	if silent {
 		zerolog.SetGlobalLevel(zerolog.Disabled)
-		// We could also disable pterm output here if needed
+		pterm.DisableColor()
+		pterm.DisableStyling()
 	} else if quiet {
 		zerolog.SetGlobalLevel(zerolog.Disabled)
+		pterm.DisableColor()
 	} else if verbose {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	} else {

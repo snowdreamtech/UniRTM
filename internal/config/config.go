@@ -139,6 +139,18 @@ type Settings struct {
 
 	// Experimental enables experimental features.
 	Experimental bool `toml:"experimental,omitempty" yaml:"experimental,omitempty" mapstructure:"experimental,omitempty"`
+
+	// AutoInstall controls whether missing tools are automatically installed.
+	// Default: true.
+	AutoInstall *bool `toml:"auto_install,omitempty" yaml:"auto_install,omitempty" mapstructure:"auto_install,omitempty"`
+
+	// Color controls whether color is enabled in the output.
+	// Supported: "auto", "always", "never". Default: "auto".
+	Color string `toml:"color,omitempty" yaml:"color,omitempty" mapstructure:"color,omitempty"`
+
+	// AlwaysKeepDownload controls whether artifacts are kept after installation.
+	// Default: false.
+	AlwaysKeepDownload bool `toml:"always_keep_download,omitempty" yaml:"always_keep_download,omitempty" mapstructure:"always_keep_download,omitempty"`
 }
 
 // Task represents a task definition that can be executed via the CLI.

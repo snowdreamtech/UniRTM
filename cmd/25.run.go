@@ -73,6 +73,17 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Auto-install missing tools if enabled
+	if cfg.Settings.AutoInstall == nil || *cfg.Settings.AutoInstall {
+		installManager, err := getInstallationManager(ctx, cfg)
+		if err == nil {
+			if err := installManager.EnsureInstalled(ctx, cfg.Tools); err != nil {
+				// Log warning but continue
+				fmt.Fprintf(os.Stderr, "⚠ auto-install warning: %v\n", err)
+			}
+		}
+	}
+
 	// Setup Engine
 	engine := task.NewEngine()
 
