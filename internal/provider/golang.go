@@ -27,7 +27,7 @@ func NewGolangProvider() *GolangProvider {
 
 // Name returns the provider identifier.
 func (g *GolangProvider) Name() string {
-	return "golang"
+	return "go"
 }
 
 // Install performs Go-specific installation.

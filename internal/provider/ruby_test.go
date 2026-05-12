@@ -14,12 +14,12 @@ import (
 )
 
 func TestRubyProvider_Name(t *testing.T) {
-	p := NewRubyProvider()
+	p := NewRubyProvider(NewNativeProvider())
 	assert.Equal(t, "ruby", p.Name())
 }
 
 func TestRubyProvider_GenerateShims(t *testing.T) {
-	p := NewRubyProvider()
+	p := NewRubyProvider(NewNativeProvider())
 	installPath := "/fake/path"
 	version := "3.2.2"
 
@@ -45,7 +45,7 @@ func TestRubyProvider_GenerateShims(t *testing.T) {
 }
 
 func TestRubyProvider_ListExecutables(t *testing.T) {
-	p := NewRubyProvider()
+	p := NewRubyProvider(NewNativeProvider())
 	execs, err := p.ListExecutables("/fake/path", "3.2.2")
 	assert.NoError(t, err)
 
@@ -59,7 +59,7 @@ func TestRubyProvider_ListExecutables(t *testing.T) {
 }
 
 func TestRubyProvider_DetectVersionError(t *testing.T) {
-	p := NewRubyProvider()
+	p := NewRubyProvider(NewNativeProvider())
 	ctx := context.Background()
 
 	_, err := p.DetectVersion(ctx, "/fake/nonexistent/path")

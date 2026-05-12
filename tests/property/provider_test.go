@@ -123,7 +123,7 @@ func TestProviderNames(t *testing.T) {
 		{provider.NewGenericProvider(), "generic"},
 		{provider.NewNodeProvider(), "node"},
 		{provider.NewPythonProvider(), "python"},
-		{provider.NewGoProvider(), "go"},
+		{provider.NewGolangProvider(), "go"},
 	}
 
 	for _, tt := range tests {
