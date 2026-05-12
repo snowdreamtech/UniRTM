@@ -18,7 +18,7 @@ func TestDefaultDownloadOptions(t *testing.T) {
 	opts := download.DefaultDownloadOptions()
 
 	assert.Equal(t, 5, opts.MaxRetries, "MaxRetries should default to 5")
-	assert.Equal(t, 5*time.Minute, opts.Timeout, "Timeout should default to 5 minutes")
+	assert.Equal(t, 15*time.Minute, opts.Timeout, "Timeout should default to 5 minutes")
 	assert.Empty(t, opts.Checksum, "Checksum should be empty by default")
 	assert.Nil(t, opts.ProgressCallback, "ProgressCallback should be nil by default")
 }
@@ -53,7 +53,7 @@ func TestDownloadOptions_WithTimeout(t *testing.T) {
 	newOpts := opts.WithTimeout(timeout)
 
 	assert.Equal(t, timeout, newOpts.Timeout, "Timeout should be set")
-	assert.Equal(t, 5*time.Minute, opts.Timeout, "Original options should be unchanged")
+	assert.Equal(t, 15*time.Minute, opts.Timeout, "Original options should be unchanged")
 }
 
 // TestDownloadOptions_WithProgressCallback verifies the WithProgressCallback fluent method.

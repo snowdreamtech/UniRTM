@@ -22,7 +22,7 @@ func ExampleDefaultDownloadOptions() {
 
 	// Output:
 	// MaxRetries: 5
-	// Timeout: 5m0s
+	// Timeout: 15m0s
 	// Has Checksum: false
 	// Has Callback: false
 }

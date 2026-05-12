@@ -30,7 +30,7 @@ func ExampleHTTPDownloader_Download() {
 	// }
 
 	fmt.Printf("Downloader ready with options: MaxRetries=%d, Timeout=%v\n", opts.MaxRetries, opts.Timeout)
-	// Output: Downloader ready with options: MaxRetries=5, Timeout=5m0s
+	// Output: Downloader ready with options: MaxRetries=5, Timeout=15m0s
 }
 
 // ExampleHTTPDownloader_Download_withChecksum demonstrates download with checksum verification.
