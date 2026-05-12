@@ -250,8 +250,8 @@ func (h *HTTPDownloader) downloadOnce(ctx context.Context, url string, destinati
 		return errors.NewSystemError(fmt.Sprintf("create directory %q", filepath.Dir(destination)), err)
 	}
 
-	// Create destination file
-	file, err := os.Create(destination)
+	// Create destination file with restricted permissions (0600) to prevent poisoning
+	file, err := os.OpenFile(destination, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return errors.NewSystemError(fmt.Sprintf("create file %q", destination), err)
 	}
