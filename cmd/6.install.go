@@ -182,6 +182,17 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("version is required")
 		}
 
+		if version == "latest" && !jsonOutput && pterm.IsTerminal(os.Stdin) {
+			// Get installation manager to perform interactive selection
+			im := getInstallationManager(ctx, cfg)
+			selected, err := im.SelectVersionInteractive(ctx, tool)
+			if err == nil {
+				version = selected
+			} else {
+				pterm.Warning.Printf("Interactive selection failed: %v, falling back to latest\n", err)
+			}
+		}
+
 		toolsToInstall = map[string]service.ToolSpec{
 			tool: {
 				Version:     version,

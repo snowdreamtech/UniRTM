@@ -9,7 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -77,11 +79,30 @@ func runUse(cmd *cobra.Command, args []string) error {
 	}
 	pairs := make([]toolVersion, 0, len(args))
 	for _, arg := range args {
-		parts := strings.SplitN(arg, "@", 2)
-		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-			return fmt.Errorf("invalid format %q: expected <tool>@<version> (e.g. node@20.0.0)", arg)
+		tool := arg
+		version := ""
+
+		if strings.Contains(arg, "@") {
+			parts := strings.SplitN(arg, "@", 2)
+			tool = parts[0]
+			version = parts[1]
 		}
-		pairs = append(pairs, toolVersion{tool: parts[0], version: parts[1]})
+
+		if version == "" {
+			if !jsonOutput && pterm.IsTerminal(os.Stdin) {
+				cfg, _ := config.Load()
+				im := getInstallationManager(cmd.Context(), cfg)
+				selected, err := im.SelectVersionInteractive(cmd.Context(), tool)
+				if err == nil {
+					version = selected
+				} else {
+					return fmt.Errorf("interactive selection failed for %s: %w", tool, err)
+				}
+			} else {
+				return fmt.Errorf("invalid format %q: expected <tool>@<version> (e.g. node@20.0.0)", arg)
+			}
+		}
+		pairs = append(pairs, toolVersion{tool: tool, version: version})
 	}
 
 	// Resolve target directory

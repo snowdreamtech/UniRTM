@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
@@ -94,6 +95,45 @@ func (im *InstallationManager) resolveAlias(tool, version string) string {
 		}
 	}
 	return version
+}
+
+// SelectVersionInteractive opens an interactive menu to select a tool version.
+func (im *InstallationManager) SelectVersionInteractive(ctx context.Context, tool string) (string, error) {
+	// 1. Get backend
+	b, err := im.backendRegistry.Get(tool)
+	if err != nil {
+		return "", fmt.Errorf("get backend for %s: %w", tool, err)
+	}
+
+	// 2. List remote versions
+	spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Fetching versions for %s...", tool))
+	versions, err := b.ListVersions(ctx)
+	if err != nil {
+		spinner.Fail(err.Error())
+		return "", fmt.Errorf("list versions: %w", err)
+	}
+	spinner.Success()
+
+	if len(versions) == 0 {
+		return "", fmt.Errorf("no versions found for %s", tool)
+	}
+
+	// 3. Reverse versions to show latest first (usually)
+	for i, j := 0, len(versions)-1; i < j; i, j = i+1, j-1 {
+		versions[i], versions[j] = versions[j], versions[i]
+	}
+
+	// 4. Show interactive menu
+	selected, err := pterm.DefaultInteractiveSelect.
+		WithOptions(versions).
+		WithDefaultText(fmt.Sprintf("Select version for %s", tool)).
+		Show()
+
+	if err != nil {
+		return "", fmt.Errorf("interactive select: %w", err)
+	}
+
+	return selected, nil
 }
 
 // executeHook executes a command as a tool hook.
