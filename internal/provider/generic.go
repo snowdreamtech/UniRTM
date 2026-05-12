@@ -46,6 +46,12 @@ func (g *GenericProvider) Install(ctx context.Context, installPath string, artif
 			return NewProviderError("generic", "unknown", version, "failed to chmod executable", err)
 		}
 	} else {
+		// Flatten the directory if it contains only one top-level directory
+		if err := g.flattenDirectory(installPath); err != nil {
+			// Log error but continue, not a fatal failure
+			fmt.Printf("⚠️  failed to flatten directory: %v\n", err)
+		}
+
 		// Determine tool name from installPath to help identify the main binary
 		toolName := filepath.Base(filepath.Dir(installPath))
 
@@ -353,4 +359,44 @@ func (g *GenericProvider) extractArtifact(ctx context.Context, artifactPath stri
 		return nil
 	}
 	return fmt.Errorf("unsupported archive type: %s", ext)
+}
+
+// flattenDirectory checks if the directory contains only one sub-directory and no files.
+// If so, it moves everything from that sub-directory up one level.
+func (g *GenericProvider) flattenDirectory(dir string) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	// Filter out hidden files (like .DS_Store)
+	var visibleEntries []os.DirEntry
+	for _, entry := range entries {
+		if !strings.HasPrefix(entry.Name(), ".") {
+			visibleEntries = append(visibleEntries, entry)
+		}
+	}
+
+	// If there's exactly one visible entry and it's a directory, flatten it
+	if len(visibleEntries) == 1 && visibleEntries[0].IsDir() {
+		subDir := filepath.Join(dir, visibleEntries[0].Name())
+		subEntries, err := os.ReadDir(subDir)
+		if err != nil {
+			return err
+		}
+
+		// Move everything from subDir to dir
+		for _, entry := range subEntries {
+			oldPath := filepath.Join(subDir, entry.Name())
+			newPath := filepath.Join(dir, entry.Name())
+			if err := os.Rename(oldPath, newPath); err != nil {
+				return err
+			}
+		}
+
+		// Remove the now-empty subDir
+		return os.Remove(subDir)
+	}
+
+	return nil
 }
