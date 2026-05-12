@@ -9,11 +9,11 @@
 - **自动定位**：UniRTM 会根据工具类型自动寻找 `.asc`, `.sig` 或包含签名的 `SHASUMS256.txt.asc`。
 - **并行下载**：签名文件与安装包并行下载，使用同样的原子下载机制（`.tmp` 随机后缀 + `0600` 权限）。
 
-### 2.2 信任链管理
+### 2.2 信任链管理 [DONE]
 - **三级信任模型**：
-    1. **内置（Bundled）**：UniRTM 官方 Registry 内置主流工具（Node, Go, Python 等）的公钥指纹。
-    2. **显式（Explicit）**：用户在 `unirtm.yaml` 中配置的 `trusted_keys`。
-    3. **动态（Dynamic）**：通过交互式确认后存入本地信任库的 Key。
+    1. **内置（Bundled）**：UniRTM 官方 Registry 内置主流工具（Node, Go, Python 等）的公钥指纹。 [DONE]
+    2. **显式（Explicit）**：用户在 `unirtm.yaml` 中配置的 `gpg_keys`。 [DONE]
+    3. **动态（Dynamic）**：通过交互式确认后存入本地信任库的 Key。 [DONE]
 
 ### 2.3 校验逻辑
 - 在解压前，UniRTM 调用 `gpg` (或内置库) 执行：`gpg --verify <sig_file> <data_file>`。

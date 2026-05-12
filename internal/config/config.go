@@ -89,6 +89,9 @@ type ToolConfig struct {
 
 	// PostInstall is a command to run after the tool is installed successfully.
 	PostInstall string `toml:"post_install,omitempty" yaml:"post_install,omitempty" mapstructure:"post_install,omitempty"`
+
+	// GPGKeys is a tool-specific list of trusted GPG fingerprints.
+	GPGKeys []string `toml:"gpg_keys,omitempty" yaml:"gpg_keys,omitempty" mapstructure:"gpg_keys,omitempty"`
 }
 
 // Settings contains global settings for UniRTM behavior.
@@ -166,8 +169,11 @@ type Settings struct {
 
 	// GPGVerify controls GPG signature verification behavior.
 	// Supported: "strict" (fail if invalid), "warn" (log if invalid), "off" (skip).
-	// Default: "warn".
-	GPGVerify string `toml:"gpg_verify,omitempty" yaml:"gpg_verify,omitempty" mapstructure:"gpg_verify,omitempty"`
+	// GPGVerify sets the GPG verification level: strict, warn, off
+	GPGVerify string `toml:"gpg_verify" yaml:"gpg_verify" mapstructure:"gpg_verify"`
+
+	// GPGKeys is a list of trusted GPG fingerprints for all tools.
+	GPGKeys []string `toml:"gpg_keys" yaml:"gpg_keys" mapstructure:"gpg_keys"`
 
 	// Tools contains tool-specific settings.
 	// Example: [settings.node]\ninstall_pnpm = true

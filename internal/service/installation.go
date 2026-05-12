@@ -381,13 +381,23 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 			} else {
 				defer os.Remove(sigPath)
 				
+				// Collect all trusted keys (Explicit + Bundled/Lockfile)
+				trustedKeys := make([]string, 0)
+				if im.settings != nil {
+					trustedKeys = append(trustedKeys, im.settings.GPGKeys...)
+				}
+				if tc, ok := im.toolConfigs[tool]; ok {
+					trustedKeys = append(trustedKeys, tc.GPGKeys...)
+				}
+				trustedKeys = append(trustedKeys, versionInfo.GPGKeys...)
+
 				// Verify signature
-				err := im.gpgVerifier.Verify(ctx, sigPath, downloadPath, versionInfo.GPGKeys)
-				if err != nil && strings.Contains(err.Error(), "missing public key") && len(versionInfo.GPGKeys) > 0 {
+				err := im.gpgVerifier.Verify(ctx, sigPath, downloadPath, trustedKeys)
+				if err != nil && strings.Contains(err.Error(), "missing public key") && len(trustedKeys) > 0 {
 					// Handle missing public key: Ask user in TTY, or fail in CI
 					if pterm.PrintColor && pterm.RawOutput { // Check if we are likely in a TTY
 						fmt.Printf("⚠️  GPG signature found but public key is missing locally.\n")
-						fp := versionInfo.GPGKeys[0] // Try first fingerprint
+						fp := trustedKeys[0] // Try first fingerprint
 						confirm, _ := pterm.DefaultInteractiveConfirm.
 							WithDefaultText(fmt.Sprintf("Do you want to trust and import GPG key %s from keyservers?", fp)).
 							Show()
@@ -397,7 +407,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 							if importErr := im.gpgVerifier.(*gpg.SystemGPGVerifier).ImportKey(ctx, fp); importErr == nil {
 								spinner.Success("GPG key imported successfully")
 								// Retry verification
-								err = im.gpgVerifier.Verify(ctx, sigPath, downloadPath, versionInfo.GPGKeys)
+								err = im.gpgVerifier.Verify(ctx, sigPath, downloadPath, trustedKeys)
 							} else {
 								spinner.Fail(fmt.Sprintf("Failed to import GPG key: %v", importErr))
 							}
