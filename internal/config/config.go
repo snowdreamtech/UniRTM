@@ -94,6 +94,39 @@ type ToolConfig struct {
 	GPGKeys []string `toml:"gpg_keys,omitempty" yaml:"gpg_keys,omitempty" mapstructure:"gpg_keys,omitempty"`
 }
 
+// UnmarshalTOML implements custom unmarshalling for ToolConfig to support both
+// a simple version string (shorthand) and a full configuration table.
+func (tc *ToolConfig) UnmarshalTOML(data []byte) error {
+	// Try unmarshalling as a string first (shorthand: "1.2.3")
+	var s string
+	if err := toml.Unmarshal(data, &s); err == nil {
+		tc.Version = s
+		return nil
+	}
+
+	// Try unmarshalling as a table (full: { version = "1.2.3", ... })
+	type toolConfigAlias ToolConfig
+	var alias toolConfigAlias
+	if err := toml.Unmarshal(data, &alias); err != nil {
+		return err
+	}
+	*tc = ToolConfig(alias)
+	return nil
+}
+
+// MarshalTOML implements custom marshalling for ToolConfig to use the shorthand
+// format (simple string) when only the version is specified.
+func (tc ToolConfig) MarshalTOML() (interface{}, error) {
+	if tc.Backend == "" && tc.Provider == "" && tc.PreInstall == "" && tc.PostInstall == "" && len(tc.GPGKeys) == 0 {
+		return tc.Version, nil
+	}
+
+	// Use an alias to avoid infinite recursion
+	type toolConfigAlias ToolConfig
+	return toolConfigAlias(tc), nil
+}
+
+
 // Settings contains global settings for UniRTM behavior.
 //
 // These settings control caching, data storage, and operational parameters.
