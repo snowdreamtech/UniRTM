@@ -152,7 +152,7 @@ func runEnable(cmd *cobra.Command, args []string) error {
 	}
 	defer f.Close()
 
-	comment := fmt.Sprintf("\n# %s shell activation\n", targetTool)
+	comment := fmt.Sprintf("\n\n# %s shell activation\n", targetTool)
 	if _, err := f.WriteString(fmt.Sprintf("%s%s\n", comment, activationCmd)); err != nil {
 		return fmt.Errorf("failed to write to config file: %w", err)
 	}
