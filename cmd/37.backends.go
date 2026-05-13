@@ -65,9 +65,10 @@ var backendsInfoCmd = &cobra.Command{
 }
 
 type backendEntry struct {
-	Name           string `json:"name"`
-	SupportsChecksum bool  `json:"supports_checksum"`
-	SupportsGPG    bool   `json:"supports_gpg"`
+	Name                string `json:"name"`
+	SupportsChecksum    bool   `json:"supports_checksum"`
+	SupportsGPG         bool   `json:"supports_gpg"`
+	SupportsAttestation bool   `json:"supports_attestation"`
 }
 
 func runBackendsList(cmd *cobra.Command, args []string) error {
@@ -90,9 +91,10 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 			continue
 		}
 		entries = append(entries, backendEntry{
-			Name:             name,
-			SupportsChecksum: b.SupportsChecksum(),
-			SupportsGPG:      b.SupportsGPG(),
+			Name:                name,
+			SupportsChecksum:    b.SupportsChecksum(),
+			SupportsGPG:         b.SupportsGPG(),
+			SupportsAttestation: b.SupportsAttestation(),
 		})
 	}
 
@@ -109,22 +111,29 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	// Modern Compact Table
 	tableData := pterm.TableData{
-		{"BACKEND", "CHECKSUM", "GPG"},
+		{"BACKEND", "CHECKSUM", "GPG", "VERIFY"},
 	}
 	for _, e := range entries {
-		checksum := pterm.FgRed.Sprint("✗")
+		checksum := pterm.FgGray.Sprint("·")
 		if e.SupportsChecksum {
-			checksum = pterm.FgGreen.Sprint("✓")
+			checksum = pterm.NewStyle(pterm.FgGreen, pterm.Bold).Sprint("✓")
 		}
-		gpg := pterm.FgRed.Sprint("✗")
+		gpg := pterm.FgGray.Sprint("·")
 		if e.SupportsGPG {
-			gpg = pterm.FgGreen.Sprint("✓")
+			gpg = pterm.NewStyle(pterm.FgGreen, pterm.Bold).Sprint("✓")
 		}
+		verify := pterm.FgGray.Sprint("·")
+		if e.SupportsAttestation {
+			verify = pterm.NewStyle(pterm.FgGreen, pterm.Bold).Sprint("✓")
+		}
+		
 		tableData = append(tableData, []string{
-			pterm.FgCyan.Sprint(e.Name),
+			pterm.NewStyle(pterm.FgCyan, pterm.Bold).Sprint(e.Name),
 			checksum,
 			gpg,
+			verify,
 		})
 	}
 
@@ -135,6 +144,14 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 		WithHeaderStyle(pterm.NewStyle(pterm.FgCyan, pterm.Bold)).
 		WithData(tableData).
 		Render()
+
+	pterm.FgGray.Printf("\nLegend: ")
+	pterm.NewStyle(pterm.FgGreen, pterm.Bold).Print("✓")
+	pterm.FgGray.Print(" Supported  ")
+	pterm.FgGray.Print("·")
+	pterm.FgGray.Println(" Not Supported (VERIFY = GitHub Attestation/SLSA)")
+	fmt.Println()
+
 	return nil
 }
 
