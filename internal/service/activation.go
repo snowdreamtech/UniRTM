@@ -241,23 +241,13 @@ func (m *ActivationManager) generatePosixScript(config ActivationConfig) (*Activ
 	sb.WriteString("\n")
 
 	// Hot-reloading hook
-	sb.WriteString("# UniRTM Hot Reloading Hook\n")
-	sb.WriteString("export _UNIRTM_LAST_PWD=\"$PWD\"\n")
-	sb.WriteString("_unirtm_hook() {\n")
-	sb.WriteString("  if [ \"$PWD\" != \"$_UNIRTM_LAST_PWD\" ]; then\n")
-	sb.WriteString("    export _UNIRTM_LAST_PWD=\"$PWD\"\n")
-	sb.WriteString(fmt.Sprintf("    eval \"$(unirtm activate --shell %s)\"\n", config.Shell))
-	sb.WriteString("  fi\n")
-	sb.WriteString("}\n\n")
-	sb.WriteString("if [ -n \"${ZSH_VERSION-}\" ]; then\n")
-	sb.WriteString("  autoload -Uz add-zsh-hook\n")
-	sb.WriteString("  add-zsh-hook -d precmd _unirtm_hook 2>/dev/null\n")
-	sb.WriteString("  add-zsh-hook precmd _unirtm_hook\n")
-	sb.WriteString("elif [ -n \"${BASH_VERSION-}\" ]; then\n")
-	sb.WriteString("  if [[ ! \"$PROMPT_COMMAND\" =~ \"_unirtm_hook\" ]]; then\n")
-	sb.WriteString("    PROMPT_COMMAND=\"_unirtm_hook; ${PROMPT_COMMAND:-}\"\n")
-	sb.WriteString("  fi\n")
-	sb.WriteString("fi\n\n")
+	aam := NewAutoActivationManager(m)
+	hookScript, err := aam.GenerateHookEnvScript(config.Shell)
+	if err == nil {
+		sb.WriteString("\n")
+		sb.WriteString(hookScript)
+		sb.WriteString("\n")
+	}
 
 	instructions := m.generatePosixInstructions(config.Shell)
 
@@ -324,14 +314,13 @@ func (m *ActivationManager) generateFishScript(config ActivationConfig) (*Activa
 	sb.WriteString("\n")
 
 	// Hot-reloading hook
-	sb.WriteString("# UniRTM Hot Reloading Hook\n")
-	sb.WriteString("set -gx _UNIRTM_LAST_PWD $PWD\n")
-	sb.WriteString("function _unirtm_hook --on-variable PWD --on-event fish_prompt\n")
-	sb.WriteString("  if test \"$PWD\" != \"$_UNIRTM_LAST_PWD\"\n")
-	sb.WriteString("    set -gx _UNIRTM_LAST_PWD $PWD\n")
-	sb.WriteString("    unirtm activate --shell fish | source\n")
-	sb.WriteString("  end\n")
-	sb.WriteString("end\n\n")
+	aam := NewAutoActivationManager(m)
+	hookScript, err := aam.GenerateHookEnvScript(ShellFish)
+	if err == nil {
+		sb.WriteString("\n")
+		sb.WriteString(hookScript)
+		sb.WriteString("\n")
+	}
 
 	instructions := "To activate this environment, run:\n\n" +
 		"    source /path/to/activation.fish\n\n" +
@@ -415,23 +404,13 @@ func (m *ActivationManager) generatePowerShellScript(config ActivationConfig) (*
 	sb.WriteString("\n")
 
 	// Hot-reloading hook
-	sb.WriteString("# UniRTM Hot Reloading Hook\n")
-	sb.WriteString("$env:_UNIRTM_LAST_PWD = $PWD.Path\n")
-	sb.WriteString("function _unirtm_hook {\n")
-	sb.WriteString("  if ($PWD.Path -ne $env:_UNIRTM_LAST_PWD) {\n")
-	sb.WriteString("    $env:_UNIRTM_LAST_PWD = $PWD.Path\n")
-	sb.WriteString("    unirtm activate --shell powershell | Out-String | Invoke-Expression\n")
-	sb.WriteString("  }\n")
-	sb.WriteString("}\n\n")
-	sb.WriteString("# Hook into prompt\n")
-	sb.WriteString("if ($null -eq $env:_UNIRTM_PROMPT_HOOKED) {\n")
-	sb.WriteString("  $env:_UNIRTM_PROMPT_HOOKED = $true\n")
-	sb.WriteString("  $old_prompt = $function:prompt\n")
-	sb.WriteString("  function global:prompt {\n")
-	sb.WriteString("    _unirtm_hook\n")
-	sb.WriteString("    & $old_prompt\n")
-	sb.WriteString("  }\n")
-	sb.WriteString("}\n")
+	aam := NewAutoActivationManager(m)
+	hookScript, err := aam.GenerateHookEnvScript(ShellPowerShell)
+	if err == nil {
+		sb.WriteString("\n")
+		sb.WriteString(hookScript)
+		sb.WriteString("\n")
+	}
 
 	instructions := "To activate this environment, run:\n\n" +
 		"    . \\path\\to\\activation.ps1\n\n" +

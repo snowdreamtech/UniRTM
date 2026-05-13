@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pelletier/go-toml/v2"
 	"github.com/snowdreamtech/unirtm/internal/pkg/errors"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
@@ -230,13 +231,14 @@ func (m *AutoActivationManager) generateActivation(ctx context.Context, shell Sh
 		"shell":       shell,
 	})
 
-	// TODO: Load project configuration to get tool versions and env vars
-	// For now, use placeholder values
-	toolVersions := map[string]string{
-		// This will be populated from the project's configuration file
-	}
-	envVars := map[string]string{
-		// This will be populated from the project's configuration file
+	// Load project configuration
+	toolVersions, envVars, sources, err := m.LoadConfigByDir(projectDir)
+	if err != nil {
+		logger.Error("Failed to load project config", map[string]interface{}{
+			"project_dir": projectDir,
+			"error":       err.Error(),
+		})
+		// Continue with empty config if loading fails
 	}
 
 	// Generate activation script
@@ -249,6 +251,23 @@ func (m *AutoActivationManager) generateActivation(ctx context.Context, shell Sh
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "generate project activation")
+	}
+
+	// Add sources to script
+	var scriptContent strings.Builder
+	scriptContent.WriteString(activationScript.Content)
+	if len(sources) > 0 {
+		scriptContent.WriteString("\n# Project-specific sources\n")
+		for _, s := range sources {
+			switch shell {
+			case ShellFish:
+				scriptContent.WriteString(fmt.Sprintf("source \"%s\"\n", s))
+			case ShellPowerShell:
+				scriptContent.WriteString(fmt.Sprintf(". \"%s\"\n", s))
+			default: // POSIX
+				scriptContent.WriteString(fmt.Sprintf("source \"%s\"\n", s))
+			}
+		}
 	}
 
 	// Create new environment state
@@ -266,9 +285,77 @@ func (m *AutoActivationManager) generateActivation(ctx context.Context, shell Sh
 
 	return &ActivationChange{
 		Action:   ActionActivate,
-		Script:   activationScript.Content,
+		Script:   scriptContent.String(),
 		NewState: newState,
 	}, nil
+}
+
+// LoadConfigByDir loads UniRTM configuration from the specified directory.
+func (m *AutoActivationManager) LoadConfigByDir(projectDir string) (map[string]string, map[string]string, []string, error) {
+	toolVersions := make(map[string]string)
+	envVars := make(map[string]string)
+	var sources []string
+
+	// 1. Try to load unirtm.toml or .unirtm.toml
+	configPath := ""
+	for _, name := range []string{"unirtm.toml", ".unirtm.toml"} {
+		p := filepath.Join(projectDir, name)
+		if _, err := os.Stat(p); err == nil {
+			configPath = p
+			break
+		}
+	}
+
+	if configPath != "" {
+		data, err := os.ReadFile(configPath)
+		if err == nil {
+			// Minimal parsing for speed
+			var raw struct {
+				Tools map[string]interface{} `toml:"tools"`
+				Env   map[string]interface{} `toml:"env"`
+			}
+			if err := toml.Unmarshal(data, &raw); err == nil {
+				// Extract tools
+				for k, v := range raw.Tools {
+					switch val := v.(type) {
+					case string:
+						toolVersions[k] = val
+					case map[string]interface{}:
+						if ver, ok := val["version"].(string); ok {
+							toolVersions[k] = ver
+						}
+					}
+				}
+				// Extract simple env vars
+				for k, v := range raw.Env {
+					if s, ok := v.(string); ok {
+						envVars[k] = s
+					}
+				}
+			}
+		}
+	}
+
+	// 2. Try to load .tool-versions (asdf compatibility)
+	tvPath := filepath.Join(projectDir, ".tool-versions")
+	if _, err := os.Stat(tvPath); err == nil {
+		data, err := os.ReadFile(tvPath)
+		if err == nil {
+			lines := strings.Split(string(data), "\n")
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if line == "" || strings.HasPrefix(line, "#") {
+					continue
+				}
+				parts := strings.Fields(line)
+				if len(parts) >= 2 {
+					toolVersions[parts[0]] = parts[1]
+				}
+			}
+		}
+	}
+
+	return toolVersions, envVars, sources, nil
 }
 
 // generateDeactivation generates the deactivation script for leaving a project.
