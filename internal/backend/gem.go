@@ -117,7 +117,7 @@ func (b *GemBackend) GetDownloadInfo(ctx context.Context, tool string, version s
 }
 
 func (b *GemBackend) SupportsChecksum() bool {
-	return false
+	return true
 }
 
 func (b *GemBackend) SupportsGPG() bool {

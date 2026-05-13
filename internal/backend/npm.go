@@ -122,7 +122,7 @@ func (b *NpmBackend) GetDownloadInfo(ctx context.Context, tool string, version s
 }
 
 func (b *NpmBackend) SupportsChecksum() bool {
-	return false
+	return true
 }
 
 func (b *NpmBackend) SupportsGPG() bool {

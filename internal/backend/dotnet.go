@@ -101,7 +101,7 @@ func (b *DotnetBackend) GetDownloadInfo(ctx context.Context, tool string, versio
 }
 
 func (b *DotnetBackend) SupportsChecksum() bool {
-	return false
+	return true
 }
 
 func (b *DotnetBackend) SupportsGPG() bool {

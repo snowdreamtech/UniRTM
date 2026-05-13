@@ -77,7 +77,7 @@ func (b *S3Backend) GetDownloadInfo(ctx context.Context, tool string, version st
 }
 
 func (b *S3Backend) SupportsChecksum() bool {
-	return false
+	return true
 }
 
 func (b *S3Backend) SupportsGPG() bool {

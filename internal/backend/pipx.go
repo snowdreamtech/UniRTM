@@ -41,7 +41,7 @@ func (b *PipxBackend) GetDownloadInfo(ctx context.Context, tool string, version 
 }
 
 func (b *PipxBackend) SupportsChecksum() bool {
-	return false
+	return true
 }
 
 func (b *PipxBackend) SupportsGPG() bool {

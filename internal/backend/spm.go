@@ -48,7 +48,7 @@ func (b *SpmBackend) GetDownloadInfo(ctx context.Context, tool string, version s
 }
 
 func (b *SpmBackend) SupportsChecksum() bool {
-	return false
+	return true
 }
 
 func (b *SpmBackend) SupportsGPG() bool {

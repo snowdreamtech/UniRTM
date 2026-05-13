@@ -51,7 +51,7 @@ func (b *CondaBackend) GetDownloadInfo(ctx context.Context, tool string, version
 }
 
 func (b *CondaBackend) SupportsChecksum() bool {
-	return false
+	return true
 }
 
 func (b *CondaBackend) SupportsGPG() bool {

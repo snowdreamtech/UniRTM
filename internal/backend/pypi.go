@@ -116,7 +116,7 @@ func (b *PypiBackend) GetDownloadInfo(ctx context.Context, tool string, version 
 }
 
 func (b *PypiBackend) SupportsChecksum() bool {
-	return false
+	return true
 }
 
 func (b *PypiBackend) SupportsGPG() bool {

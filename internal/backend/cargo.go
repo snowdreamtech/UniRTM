@@ -123,7 +123,7 @@ func (b *CargoBackend) GetDownloadInfo(ctx context.Context, tool string, version
 }
 
 func (b *CargoBackend) SupportsChecksum() bool {
-	return false
+	return true
 }
 
 func (b *CargoBackend) SupportsGPG() bool {
