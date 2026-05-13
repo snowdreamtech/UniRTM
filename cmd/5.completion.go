@@ -19,12 +19,14 @@ import (
 var (
 	completionInstall   bool
 	completionUninstall bool
+	completionAll       bool
 )
 
 // init registers the completion command and its subcommands to the root command.
 func init() {
 	completionCmd.Flags().BoolVarP(&completionInstall, "install", "i", false, "Intelligently install completion script to your shell configuration")
 	completionCmd.Flags().BoolVarP(&completionUninstall, "uninstall", "u", false, "Intelligently uninstall completion script from your shell configuration")
+	completionCmd.Flags().BoolVarP(&completionAll, "all", "a", false, "Install/Uninstall for all supported shells (zsh, bash, fish, powershell)")
 	rootCmd.AddCommand(completionCmd)
 }
 
@@ -61,7 +63,36 @@ func runCompletion(cmd *cobra.Command, args []string) error {
 		Quiet:   quiet,
 	})
 
-	// 1. Detect/Select shell
+	// 1. Handle --all mode
+	if completionAll {
+		if !completionInstall && !completionUninstall {
+			return fmt.Errorf("--all flag must be used with --install or --uninstall")
+		}
+
+		shells := []service.ShellType{service.ShellZsh, service.ShellBash, service.ShellFish, service.ShellPowerShell}
+		scm := service.NewShellConfigManager(formatter, dryRun)
+		
+		for _, st := range shells {
+			if completionInstall {
+				// Only install if config file exists for --all mode to avoid cluttering unused shells
+				configPath, _ := scm.GetConfigPath(st)
+				if _, err := os.Stat(configPath); err == nil {
+					formatter.Info(fmt.Sprintf("Installing completion for %s...", st), nil)
+					if err := installCompletion(formatter, cmd, st); err != nil {
+						formatter.Warning(fmt.Sprintf("Failed to install completion for %s: %v", st, err), nil)
+					}
+				}
+			} else if completionUninstall {
+				formatter.Info(fmt.Sprintf("Uninstalling completion for %s...", st), nil)
+				if err := uninstallCompletion(formatter, st); err != nil {
+					formatter.Warning(fmt.Sprintf("Failed to uninstall completion for %s: %v", st, err), nil)
+				}
+			}
+		}
+		return nil
+	}
+
+	// 2. Detect/Select shell
 	var shellType service.ShellType
 	if len(args) > 0 {
 		shellType = service.ShellType(args[0])
@@ -73,17 +104,17 @@ func runCompletion(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// 2. If uninstalling
+	// 3. If uninstalling
 	if completionUninstall {
 		return uninstallCompletion(formatter, shellType)
 	}
 
-	// 3. If not installing, just print to stdout
+	// 4. If not installing, just print to stdout
 	if !completionInstall {
 		return generateCompletion(cmd, shellType, os.Stdout)
 	}
 
-	// 4. Install persistently (Plan B style)
+	// 5. Install persistently (Plan B style)
 	return installCompletion(formatter, cmd, shellType)
 }
 
