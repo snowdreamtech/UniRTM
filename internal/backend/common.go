@@ -5,6 +5,7 @@ package backend
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -225,4 +226,106 @@ func FindGPGSignatureForAsset(assets []CommonAsset, targetAsset *CommonAsset) st
 	}
 
 	return ""
+}
+
+// HostingProvider defines the interface for fetching data from a hosting platform (GitHub, GitLab, etc.).
+type HostingProvider interface {
+	Name() string
+	FetchReleases(ctx context.Context, tool string) ([]CommonRelease, error)
+	FetchReleaseByTag(ctx context.Context, tool string, tag string) (*CommonRelease, error)
+	GetAttestationType() string
+	GetClient() *http.Client
+}
+
+// CommonRelease represents a generic release from any hosting platform.
+type CommonRelease struct {
+	Tag        string
+	Prerelease bool
+	Assets     []CommonAsset
+}
+
+// GenericResolveVersion implements the common logic for resolving a version request.
+func GenericResolveVersion(ctx context.Context, p HostingProvider, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+	releases, err := p.FetchReleases(ctx, tool)
+	if err != nil {
+		return nil, err
+	}
+
+	var versions []VersionInfo
+	for _, release := range releases {
+		// Find matching asset for platform
+		bestAsset, _ := FindBestAsset(release.Assets, platform, tool)
+		if bestAsset == nil {
+			continue
+		}
+
+		v := strings.TrimPrefix(release.Tag, "v")
+		versions = append(versions, VersionInfo{
+			Version:     v,
+			DownloadURL: bestAsset.URL,
+			Platform:    platform,
+			Metadata: map[string]string{
+				"prerelease": fmt.Sprintf("%t", release.Prerelease),
+			},
+		})
+	}
+
+	if len(versions) == 0 {
+		return nil, NewBackendError(p.Name(), tool, "no suitable releases found", nil)
+	}
+
+	// Resolution logic
+	switch versionRequest {
+	case "latest", "stable":
+		for _, v := range versions {
+			if v.Metadata["prerelease"] == "false" {
+				return &v, nil
+			}
+		}
+		return &versions[0], nil
+	default:
+		reqV := strings.TrimPrefix(versionRequest, "v")
+		for _, v := range versions {
+			if v.Version == reqV {
+				return &v, nil
+			}
+		}
+		return nil, NewBackendError(p.Name(), tool, "version not found", nil)
+	}
+}
+
+// GenericGetDownloadInfo implements the common logic for retrieving download info.
+func GenericGetDownloadInfo(ctx context.Context, p HostingProvider, tool string, version string, platform Platform) (*VersionInfo, error) {
+	tag := version
+	if !strings.HasPrefix(tag, "v") {
+		tag = "v" + version
+	}
+
+	release, err := p.FetchReleaseByTag(ctx, tool, tag)
+	if err != nil {
+		// try without 'v'
+		tag = version
+		release, err = p.FetchReleaseByTag(ctx, tool, tag)
+		if err != nil {
+			return nil, NewBackendError(p.Name(), tool, "release not found", err)
+		}
+	}
+
+	bestAsset, _ := FindBestAsset(release.Assets, platform, tool)
+	if bestAsset == nil {
+		return nil, NewBackendError(p.Name(), tool, "no matching asset", nil)
+	}
+
+	checksum := FindChecksumForAsset(ctx, p.GetClient(), release.Assets, bestAsset)
+	gpgSigURL := FindGPGSignatureForAsset(release.Assets, bestAsset)
+
+	return &VersionInfo{
+		Version:     version,
+		DownloadURL: bestAsset.URL,
+		Checksum:    checksum,
+		Platform:    platform,
+		Metadata: map[string]string{
+			"gpg_signature_url": gpgSigURL,
+		},
+	}, nil
 }
