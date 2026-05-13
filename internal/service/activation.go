@@ -56,6 +56,8 @@ type ActivationConfig struct {
 	// EnvVars contains additional environment variables to set
 	EnvVars map[string]string
 	// Sources contains shell scripts to source
+	// ExePath is the absolute path to the UniRTM executable
+	ExePath string
 	Sources []string
 }
 
@@ -242,7 +244,7 @@ func (m *ActivationManager) generatePosixScript(config ActivationConfig) (*Activ
 
 	// Hot-reloading hook
 	aam := NewAutoActivationManager(m)
-	hookScript, err := aam.GenerateHookEnvScript(config.Shell)
+	hookScript, err := aam.GenerateHookEnvScript(config.Shell, config.ExePath)
 	if err == nil {
 		sb.WriteString("\n")
 		sb.WriteString(hookScript)
@@ -315,7 +317,7 @@ func (m *ActivationManager) generateFishScript(config ActivationConfig) (*Activa
 
 	// Hot-reloading hook
 	aam := NewAutoActivationManager(m)
-	hookScript, err := aam.GenerateHookEnvScript(ShellFish)
+	hookScript, err := aam.GenerateHookEnvScript(ShellFish, config.ExePath)
 	if err == nil {
 		sb.WriteString("\n")
 		sb.WriteString(hookScript)
@@ -405,7 +407,7 @@ func (m *ActivationManager) generatePowerShellScript(config ActivationConfig) (*
 
 	// Hot-reloading hook
 	aam := NewAutoActivationManager(m)
-	hookScript, err := aam.GenerateHookEnvScript(ShellPowerShell)
+	hookScript, err := aam.GenerateHookEnvScript(ShellPowerShell, config.ExePath)
 	if err == nil {
 		sb.WriteString("\n")
 		sb.WriteString(hookScript)

@@ -232,6 +232,12 @@ func runActivate(cmd *cobra.Command, args []string) error {
 	// Create activation manager
 	activationManager := service.NewActivationManager(shimsDir, env.GetDataDir())
 
+	// Get executable path for the hook
+	exePath, err := os.Executable()
+	if err != nil {
+		exePath = "unirtm" // Fallback
+	}
+
 	// Generate activation script
 	activationConfig := service.ActivationConfig{
 		Shell:        service.ShellType(shellType),
@@ -241,6 +247,7 @@ func runActivate(cmd *cobra.Command, args []string) error {
 		ToolVersions: toolVersions,
 		EnvVars:      envVars,
 		Sources:      sources,
+		ExePath:      exePath,
 	}
 
 	script, err := activationManager.GenerateActivationScript(ctx, activationConfig)

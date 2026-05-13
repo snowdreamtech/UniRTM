@@ -508,16 +508,20 @@ func (m *AutoActivationManager) generatePowerShellDeactivation(sb *strings.Build
 // or deactivation commands.
 //
 // Requirements: 15.6, 15.7
-func (m *AutoActivationManager) GenerateHookEnvScript(shell ShellType) (string, error) {
+func (m *AutoActivationManager) GenerateHookEnvScript(shell ShellType, exePath string) (string, error) {
+	if exePath == "" {
+		exePath = "unirtm"
+	}
+
 	var sb strings.Builder
 
 	switch shell {
 	case ShellBash, ShellZsh:
-		m.generatePosixHook(&sb, shell)
+		m.generatePosixHook(&sb, shell, exePath)
 	case ShellFish:
-		m.generateFishHook(&sb)
+		m.generateFishHook(&sb, exePath)
 	case ShellPowerShell:
-		m.generatePowerShellHook(&sb)
+		m.generatePowerShellHook(&sb, exePath)
 	default:
 		return "", errors.NewUserError(fmt.Sprintf("unsupported shell type: %s", shell), nil)
 	}
@@ -526,7 +530,7 @@ func (m *AutoActivationManager) GenerateHookEnvScript(shell ShellType) (string, 
 }
 
 // generatePosixHook generates the hook script for POSIX shells.
-func (m *AutoActivationManager) generatePosixHook(sb *strings.Builder, shell ShellType) {
+func (m *AutoActivationManager) generatePosixHook(sb *strings.Builder, shell ShellType, exePath string) {
 	sb.WriteString("# UniRTM auto-activation hook\n")
 	sb.WriteString("_unirtm_hook() {\n")
 	sb.WriteString("  local old_pwd=\"${UNIRTM_OLD_PWD:-}\"\n")
@@ -537,7 +541,7 @@ func (m *AutoActivationManager) generatePosixHook(sb *strings.Builder, shell She
 	sb.WriteString("    export UNIRTM_OLD_PWD=\"$new_pwd\"\n")
 	sb.WriteString("    \n")
 	sb.WriteString("    # Call unirtm hook-env to get activation changes\n")
-	sb.WriteString(fmt.Sprintf("    eval \"$(unirtm hook-env --shell %s)\"\n", shell))
+	sb.WriteString(fmt.Sprintf("    eval \"$(%s hook-env --shell %s)\"\n", exePath, shell))
 	sb.WriteString("  fi\n")
 	sb.WriteString("}\n")
 	sb.WriteString("\n")
@@ -557,16 +561,16 @@ func (m *AutoActivationManager) generatePosixHook(sb *strings.Builder, shell She
 }
 
 // generateFishHook generates the hook script for fish shell.
-func (m *AutoActivationManager) generateFishHook(sb *strings.Builder) {
+func (m *AutoActivationManager) generateFishHook(sb *strings.Builder, exePath string) {
 	sb.WriteString("# UniRTM auto-activation hook for fish\n")
 	sb.WriteString("function _unirtm_hook --on-variable PWD\n")
 	sb.WriteString("  # Call unirtm hook-env to get activation changes\n")
-	sb.WriteString("  unirtm hook-env --shell fish | source\n")
+	sb.WriteString(fmt.Sprintf("  %s hook-env --shell fish | source\n", exePath))
 	sb.WriteString("end\n")
 }
 
 // generatePowerShellHook generates the hook script for PowerShell.
-func (m *AutoActivationManager) generatePowerShellHook(sb *strings.Builder) {
+func (m *AutoActivationManager) generatePowerShellHook(sb *strings.Builder, exePath string) {
 	sb.WriteString("# UniRTM auto-activation hook for PowerShell\n")
 	sb.WriteString("function Invoke-UnirtmHook {\n")
 	sb.WriteString("  $oldPwd = $env:UNIRTM_OLD_PWD\n")
@@ -576,7 +580,7 @@ func (m *AutoActivationManager) generatePowerShellHook(sb *strings.Builder) {
 	sb.WriteString("    $env:UNIRTM_OLD_PWD = $newPwd\n")
 	sb.WriteString("    \n")
 	sb.WriteString("    # Call unirtm hook-env to get activation changes\n")
-	sb.WriteString("    $script = unirtm hook-env --shell powershell\n")
+	sb.WriteString(fmt.Sprintf("    $script = %s hook-env --shell powershell\n", exePath))
 	sb.WriteString("    if ($script) {\n")
 	sb.WriteString("      Invoke-Expression $script\n")
 	sb.WriteString("    }\n")
