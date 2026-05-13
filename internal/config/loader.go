@@ -23,13 +23,14 @@ func Load() (*Config, error) {
 			return &Config{}, nil
 		}
 	}
-
-	var cfg Config
-	if err := toml.Unmarshal(data, &cfg); err != nil {
+	cfg := &Config{}
+	if err := toml.Unmarshal(data, cfg); err != nil {
 		return nil, err
 	}
 
-	return &cfg, nil
+	cfg.PostLoad()
+
+	return cfg, nil
 }
 
 // ResolveEnvironment resolves environment variables defined in the configuration.

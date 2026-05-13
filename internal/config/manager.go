@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/pelletier/go-toml/v2"
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/viper"
@@ -150,15 +151,24 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 	// Unmarshal into Config struct
 	var config Config
 
-	// Configure Viper to use the correct struct tags
-	// Viper uses mapstructure by default, but we need to support both toml and yaml tags
-	if err := v.Unmarshal(&config); err != nil {
-		return nil, fmt.Errorf("failed to parse configuration file %s: %w", path, err)
+	if configType == "toml" {
+		if err := toml.Unmarshal(renderedBuf.Bytes(), &config); err != nil {
+			return nil, fmt.Errorf("failed to parse TOML configuration file %s: %w", path, err)
+		}
+	} else {
+		// Configure Viper to use the correct struct tags
+		// Viper uses mapstructure by default, but we need to support both toml and yaml tags
+		if err := v.Unmarshal(&config); err != nil {
+			return nil, fmt.Errorf("failed to parse configuration file %s: %w", path, err)
+		}
 	}
+
+	// Process shorthand tool versions
+	config.PostLoad()
 
 	// Initialize maps if they are nil
 	if config.Tools == nil {
-		config.Tools = make(map[string]ToolConfig)
+		config.Tools = make(ToolMap)
 	}
 	if config.Env == nil {
 		config.Env = make(map[string]interface{})
