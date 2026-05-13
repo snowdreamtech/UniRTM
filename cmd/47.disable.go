@@ -23,15 +23,20 @@ func init() {
 
 // disableCmd intelligently disables UniRTM shell activation.
 var disableCmd = &cobra.Command{
-	Use:     "disable",
+	Use:     "disable [unirtm|mise]",
 	Aliases: []string{"dis"},
-	Short:   "Intelligently disable UniRTM in your shell configuration",
-	Long: `Intelligently disable UniRTM in your shell configuration.
+	Short:   "Intelligently disable UniRTM or mise in your shell configuration",
+	Long: `Intelligently disable UniRTM or mise in your shell configuration.
 
 This command auto-detects your current shell, identifies the corresponding
-configuration file (e.g., ~/.zshrc, ~/.bashrc), and removes any UniRTM
-activation commands. It is safe to run multiple times.`,
-	RunE: runDisable,
+configuration file (e.g., ~/.zshrc, ~/.bashrc), and removes any activation
+commands for the specified tool.
+
+By default, it disables UniRTM, but you can specify 'mise' as an argument
+to disable mise instead.`,
+	Args:      cobra.MaximumNArgs(1),
+	ValidArgs: []string{"unirtm", "mise"},
+	RunE:      runDisable,
 }
 
 func runDisable(cmd *cobra.Command, args []string) error {
@@ -41,6 +46,15 @@ func runDisable(cmd *cobra.Command, args []string) error {
 		Writer:  os.Stdout,
 		Quiet:   quiet,
 	})
+
+	targetTool := "unirtm"
+	if len(args) > 0 {
+		targetTool = strings.ToLower(args[0])
+	}
+
+	if targetTool != "unirtm" && targetTool != "mise" {
+		return fmt.Errorf("unsupported tool: %s. Supported tools: unirtm, mise", targetTool)
+	}
 
 	// 1. Detect shell
 	shell, err := service.DetectShell()
@@ -72,12 +86,13 @@ func runDisable(cmd *cobra.Command, args []string) error {
 	}
 
 	if exists, _ := fileExists(configFile); !exists {
-		formatter.Success("UniRTM is not enabled (config file does not exist).")
+		formatter.Success(fmt.Sprintf("%s is not enabled (config file does not exist).", targetTool))
 		return nil
 	}
 
 	formatter.Info(fmt.Sprintf("Detected shell: %s", shell), nil)
 	formatter.Info(fmt.Sprintf("Target configuration file: %s", configFile), nil)
+	formatter.Info(fmt.Sprintf("Disabling %s...", targetTool), nil)
 
 	// 3. Read and filter config file
 	file, err := os.Open(configFile)
@@ -88,9 +103,12 @@ func runDisable(cmd *cobra.Command, args []string) error {
 	var lines []string
 	removedCount := 0
 	scanner := bufio.NewScanner(file)
+	searchPattern := fmt.Sprintf("%s activate", targetTool)
+	commentPattern := fmt.Sprintf("# %s shell activation", targetTool)
+	
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.Contains(line, "unirtm activate") || strings.Contains(line, "# UniRTM shell activation") {
+		if strings.Contains(line, searchPattern) || strings.Contains(line, commentPattern) {
 			removedCount++
 			continue
 		}
@@ -99,7 +117,7 @@ func runDisable(cmd *cobra.Command, args []string) error {
 	file.Close()
 
 	if removedCount == 0 {
-		formatter.Success("UniRTM activation not found in your shell configuration.")
+		formatter.Success(fmt.Sprintf("%s activation not found in your shell configuration.", targetTool))
 		return nil
 	}
 

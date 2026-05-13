@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -23,16 +24,20 @@ func init() {
 
 // enableCmd intelligently enables UniRTM shell activation.
 var enableCmd = &cobra.Command{
-	Use:     "enable",
+	Use:     "enable [unirtm|mise]",
 	Aliases: []string{"en"},
-	Short:   "Intelligently enable UniRTM in your shell configuration",
-	Long: `Intelligently enable UniRTM in your shell configuration.
+	Short:   "Intelligently enable UniRTM or mise in your shell configuration",
+	Long: `Intelligently enable UniRTM or mise in your shell configuration.
 
 This command auto-detects your current shell, identifies the corresponding
 configuration file (e.g., ~/.zshrc, ~/.bashrc), and appends the necessary
-activation command if it's not already present. It is idempotent and safe
- to run multiple times.`,
-	RunE: runEnable,
+activation command if it's not already present.
+
+By default, it enables UniRTM, but you can specify 'mise' as an argument
+to enable mise instead. This is useful for switching between the two tools.`,
+	Args:      cobra.MaximumNArgs(1),
+	ValidArgs: []string{"unirtm", "mise"},
+	RunE:      runEnable,
 }
 
 func runEnable(cmd *cobra.Command, args []string) error {
@@ -42,6 +47,15 @@ func runEnable(cmd *cobra.Command, args []string) error {
 		Writer:  os.Stdout,
 		Quiet:   quiet,
 	})
+
+	targetTool := "unirtm"
+	if len(args) > 0 {
+		targetTool = strings.ToLower(args[0])
+	}
+
+	if targetTool != "unirtm" && targetTool != "mise" {
+		return fmt.Errorf("unsupported tool: %s. Supported tools: unirtm, mise", targetTool)
+	}
 
 	// 1. Detect shell
 	shell, err := service.DetectShell()
@@ -57,11 +71,21 @@ func runEnable(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	// Get the absolute path of the current executable
-	exePath, err := os.Executable()
-	if err != nil {
-		// Fallback to plain "unirtm" if we can't get the executable path
-		exePath = "unirtm"
+	// Get the absolute path of the target executable
+	var exePath string
+	if targetTool == "unirtm" {
+		exePath, err = os.Executable()
+		if err != nil {
+			exePath = "unirtm"
+		}
+	} else {
+		// Try to find mise in PATH
+		exePath = "mise"
+		if p, err := exec.LookPath("mise"); err == nil {
+			if abs, err := filepath.Abs(p); err == nil {
+				exePath = abs
+			}
+		}
 	}
 
 	switch shell {
@@ -75,7 +99,6 @@ func runEnable(cmd *cobra.Command, args []string) error {
 		configFile = filepath.Join(home, ".config/fish/config.fish")
 		activationCmd = fmt.Sprintf(`%s activate fish | source`, exePath)
 	case service.ShellPowerShell:
-		// PowerShell profile is complex, but we can try to find it
 		configFile = os.Getenv("PROFILE")
 		if configFile == "" {
 			configFile = filepath.Join(home, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1")
@@ -87,10 +110,10 @@ func runEnable(cmd *cobra.Command, args []string) error {
 
 	formatter.Info(fmt.Sprintf("Detected shell: %s", shell), nil)
 	formatter.Info(fmt.Sprintf("Target configuration file: %s", configFile), nil)
+	formatter.Info(fmt.Sprintf("Enabling %s via: %s", targetTool, exePath), nil)
 
 	// 3. Check if already enabled
 	if exists, _ := fileExists(configFile); !exists {
-		// Create file if it doesn't exist (e.g. fish config might not exist yet)
 		if err := os.MkdirAll(filepath.Dir(configFile), 0755); err != nil {
 			return fmt.Errorf("failed to create config directory: %w", err)
 		}
@@ -109,15 +132,16 @@ func runEnable(cmd *cobra.Command, args []string) error {
 
 	alreadyEnabled := false
 	scanner := bufio.NewScanner(file)
+	searchPattern := fmt.Sprintf("%s activate", targetTool)
 	for scanner.Scan() {
-		if strings.Contains(scanner.Text(), "unirtm activate") {
+		if strings.Contains(scanner.Text(), searchPattern) {
 			alreadyEnabled = true
 			break
 		}
 	}
 
 	if alreadyEnabled {
-		formatter.Success("UniRTM is already enabled in your shell configuration.")
+		formatter.Success(fmt.Sprintf("%s is already enabled in your shell configuration.", targetTool))
 		return nil
 	}
 
@@ -128,11 +152,12 @@ func runEnable(cmd *cobra.Command, args []string) error {
 	}
 	defer f.Close()
 
-	if _, err := f.WriteString(fmt.Sprintf("\n# UniRTM shell activation\n%s\n", activationCmd)); err != nil {
+	comment := fmt.Sprintf("\n# %s shell activation\n", targetTool)
+	if _, err := f.WriteString(fmt.Sprintf("%s%s\n", comment, activationCmd)); err != nil {
 		return fmt.Errorf("failed to write to config file: %w", err)
 	}
 
-	formatter.Success(fmt.Sprintf("Successfully enabled UniRTM in %s", configFile))
+	formatter.Success(fmt.Sprintf("Successfully enabled %s in %s", targetTool, configFile))
 	fmt.Printf("\nPlease restart your shell or run: source %s\n", configFile)
 
 	return nil
