@@ -128,7 +128,7 @@ func (m *ActivationManager) GenerateActivationScript(ctx context.Context, config
 		return nil, errors.Wrap(err, "generate activation script")
 	}
 
-	logger.Info("Generated activation script", map[string]interface{}{
+	logger.Debug("Generated activation script", map[string]interface{}{
 		"shell":       config.Shell,
 		"scope":       config.Scope,
 		"script_size": len(script.Content),
@@ -454,12 +454,10 @@ func (m *ActivationManager) generatePosixInstructions(shell ShellType) string {
 		configFile = "~/.zshrc"
 	}
 
-	return fmt.Sprintf("To activate this environment, run:\n\n"+
-		"    source /path/to/activation.sh\n\n"+
-		"Or save the script to a file and source it in your %s config:\n\n"+
-		"    unirtm activate --shell %s > ~/unirtm-activation.sh\n"+
-		"    echo 'source ~/unirtm-activation.sh' >> %s",
-		shellName, shellName, configFile)
+	return fmt.Sprintf("UniRTM environment for %s is ready.\n\n"+
+		"To persist this, add the following to your %s config:\n\n"+
+		"    eval \"$(unirtm activate %s)\"",
+		shellName, shellName, shellName)
 }
 
 func (m *ActivationManager) toolVersionEnvVar(tool string) string {

@@ -35,8 +35,8 @@ const (
 )
 
 var (
-	// Logger is the global logger.
-	Logger = zerolog.New(os.Stderr).With().Timestamp().Logger()
+	// Logger is the global logger with a human-friendly console writer by default.
+	Logger = zerolog.New(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: time.RFC3339}).With().Timestamp().Logger()
 
 	// NoColor disables the colorized output.
 	NoColor bool
