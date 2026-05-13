@@ -55,6 +55,6 @@ func (b *SpmBackend) SupportsGPG() bool {
 	return false
 }
 
-func (b *SpmBackend) SupportsAttestation() bool {
-	return false
+func (b *SpmBackend) AttestationType() string {
+	return ""
 }

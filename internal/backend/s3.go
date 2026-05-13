@@ -84,6 +84,6 @@ func (b *S3Backend) SupportsGPG() bool {
 	return false
 }
 
-func (b *S3Backend) SupportsAttestation() bool {
-	return false
+func (b *S3Backend) AttestationType() string {
+	return ""
 }

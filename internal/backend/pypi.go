@@ -123,6 +123,6 @@ func (b *PypiBackend) SupportsGPG() bool {
 	return false
 }
 
-func (b *PypiBackend) SupportsAttestation() bool {
-	return false
+func (b *PypiBackend) AttestationType() string {
+	return ""
 }

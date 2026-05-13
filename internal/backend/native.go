@@ -141,6 +141,6 @@ func (b *NativeBackend) SupportsGPG() bool {
 	return true
 }
 
-func (b *NativeBackend) SupportsAttestation() bool {
-	return true
+func (b *NativeBackend) AttestationType() string {
+	return "Native"
 }

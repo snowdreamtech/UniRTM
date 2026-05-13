@@ -124,6 +124,6 @@ func (b *GemBackend) SupportsGPG() bool {
 	return false
 }
 
-func (b *GemBackend) SupportsAttestation() bool {
-	return false
+func (b *GemBackend) AttestationType() string {
+	return ""
 }

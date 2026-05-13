@@ -122,9 +122,9 @@ func (a *AquaBackend) SupportsGPG() bool {
 	return false
 }
 
-// SupportsAttestation indicates whether this backend supports SLSA/Attestation.
-func (a *AquaBackend) SupportsAttestation() bool {
-	return true
+// AttestationType returns the type of attestation verification supported.
+func (a *AquaBackend) AttestationType() string {
+	return "SLSA"
 }
 
 // fetchPackageMetadata fetches package metadata from Aqua registry.

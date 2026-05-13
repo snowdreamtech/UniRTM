@@ -129,6 +129,6 @@ func (b *NpmBackend) SupportsGPG() bool {
 	return false
 }
 
-func (b *NpmBackend) SupportsAttestation() bool {
-	return false
+func (b *NpmBackend) AttestationType() string {
+	return ""
 }

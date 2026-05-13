@@ -180,6 +180,6 @@ func (b *ForgejoBackend) SupportsGPG() bool {
 	return false
 }
 
-func (b *ForgejoBackend) SupportsAttestation() bool {
-	return false
+func (b *ForgejoBackend) AttestationType() string {
+	return ""
 }

@@ -297,9 +297,9 @@ func (g *GitHubBackend) SupportsGPG() bool {
 	return false
 }
 
-// SupportsAttestation indicates whether this backend supports GitHub Attestation.
-func (g *GitHubBackend) SupportsAttestation() bool {
-	return false
+// AttestationType returns the type of attestation verification supported.
+func (g *GitHubBackend) AttestationType() string {
+	return ""
 }
 
 // fetchReleases fetches all releases from GitHub API.

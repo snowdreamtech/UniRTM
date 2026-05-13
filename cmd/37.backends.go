@@ -69,6 +69,7 @@ type backendEntry struct {
 	SupportsChecksum    bool   `json:"supports_checksum"`
 	SupportsGPG         bool   `json:"supports_gpg"`
 	SupportsAttestation bool   `json:"supports_attestation"`
+	AttestationType     string `json:"attestation_type"`
 }
 
 func runBackendsList(cmd *cobra.Command, args []string) error {
@@ -94,7 +95,8 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 			Name:                name,
 			SupportsChecksum:    b.SupportsChecksum(),
 			SupportsGPG:         b.SupportsGPG(),
-			SupportsAttestation: b.SupportsAttestation(),
+			SupportsAttestation: b.AttestationType() != "",
+			AttestationType:     b.AttestationType(),
 		})
 	}
 
@@ -127,6 +129,9 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 		verify := pterm.FgRed.Sprint("✗")
 		if e.SupportsAttestation {
 			verify = pterm.FgGreen.Sprint("✓")
+			if e.AttestationType != "" {
+				verify += fmt.Sprintf(" (%s)", e.AttestationType)
+			}
 		}
 		
 		tableData = append(tableData, []string{

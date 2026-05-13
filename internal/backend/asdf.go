@@ -151,8 +151,8 @@ func (b *AsdfBackend) SupportsGPG() bool {
 	return false
 }
 
-func (b *AsdfBackend) SupportsAttestation() bool {
-	return false
+func (b *AsdfBackend) AttestationType() string {
+	return ""
 }
 
 // ensurePlugin ensures the plugin repository is cloned locally.

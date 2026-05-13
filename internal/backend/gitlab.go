@@ -188,6 +188,6 @@ func (b *GitlabBackend) SupportsGPG() bool {
 	return false
 }
 
-func (b *GitlabBackend) SupportsAttestation() bool {
-	return false
+func (b *GitlabBackend) AttestationType() string {
+	return ""
 }

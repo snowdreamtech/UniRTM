@@ -130,6 +130,6 @@ func (b *CargoBackend) SupportsGPG() bool {
 	return false
 }
 
-func (b *CargoBackend) SupportsAttestation() bool {
-	return false
+func (b *CargoBackend) AttestationType() string {
+	return ""
 }

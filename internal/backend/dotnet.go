@@ -108,6 +108,6 @@ func (b *DotnetBackend) SupportsGPG() bool {
 	return false
 }
 
-func (b *DotnetBackend) SupportsAttestation() bool {
-	return false
+func (b *DotnetBackend) AttestationType() string {
+	return ""
 }
