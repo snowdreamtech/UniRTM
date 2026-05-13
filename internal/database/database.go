@@ -10,7 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "github.com/mattn/go-sqlite3" // SQLite driver
+	_ "modernc.org/sqlite" // SQLite driver
 )
 
 // DB wraps the SQLite database connection
@@ -38,7 +38,7 @@ func Open(ctx context.Context, config Config) (*DB, error) {
 
 	// Open the database connection with busy_timeout
 	dsn := fmt.Sprintf("%s?_busy_timeout=5000", config.Path)
-	conn, err := sql.Open("sqlite3", dsn)
+	conn, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}

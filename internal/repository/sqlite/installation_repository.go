@@ -9,7 +9,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/mattn/go-sqlite3"
+	"modernc.org/sqlite"
+	sqlite3 "modernc.org/sqlite/lib"
+
 	"github.com/snowdreamtech/unirtm/internal/repository"
 )
 
@@ -83,9 +85,9 @@ func (r *InstallationRepository) Create(ctx context.Context, installation *repos
 	)
 	if err != nil {
 		// Check for unique constraint violation
-		var sqliteErr sqlite3.Error
+		var sqliteErr *sqlite.Error
 		if errors.As(err, &sqliteErr) {
-			if sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+			if sqliteErr.Code() == sqlite3.SQLITE_CONSTRAINT_UNIQUE {
 				return fmt.Errorf("installation already exists for %s@%s: %w", installation.Tool, installation.Version, repository.ErrAlreadyExists)
 			}
 		}
