@@ -133,3 +133,7 @@ func (b *CargoBackend) SupportsGPG() bool {
 func (b *CargoBackend) AttestationType() string {
 	return ""
 }
+
+func (b *CargoBackend) IsRecommended() bool {
+	return true
+}

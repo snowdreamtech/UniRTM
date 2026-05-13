@@ -198,3 +198,7 @@ func (h *HTTPBackend) buildURL(template string, version string, platform Platfor
 }
 
 
+
+func (h *HTTPBackend) IsRecommended() bool {
+	return true
+}

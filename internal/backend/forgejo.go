@@ -162,3 +162,7 @@ type forgejoAsset struct {
 	URL  string `json:"browser_download_url"`
 	Size int64  `json:"size"`
 }
+
+func (b *ForgejoBackend) IsRecommended() bool {
+	return true
+}

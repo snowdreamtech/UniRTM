@@ -98,3 +98,7 @@ func (b *S3Backend) SupportsGPG() bool {
 func (b *S3Backend) AttestationType() string {
 	return ""
 }
+
+func (b *S3Backend) IsRecommended() bool {
+	return true
+}

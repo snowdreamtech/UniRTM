@@ -111,3 +111,7 @@ func (b *DotnetBackend) SupportsGPG() bool {
 func (b *DotnetBackend) AttestationType() string {
 	return ""
 }
+
+func (b *DotnetBackend) IsRecommended() bool {
+	return true
+}

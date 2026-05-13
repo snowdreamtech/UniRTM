@@ -132,3 +132,7 @@ func (b *NpmBackend) SupportsGPG() bool {
 func (b *NpmBackend) AttestationType() string {
 	return ""
 }
+
+func (b *NpmBackend) IsRecommended() bool {
+	return true
+}

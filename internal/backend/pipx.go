@@ -51,3 +51,7 @@ func (b *PipxBackend) SupportsGPG() bool {
 func (b *PipxBackend) AttestationType() string {
 	return ""
 }
+
+func (b *PipxBackend) IsRecommended() bool {
+	return true
+}

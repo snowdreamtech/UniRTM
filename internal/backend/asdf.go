@@ -235,3 +235,7 @@ func (b *AsdfBackend) lookupPluginURL(tool string) (string, error) {
 	}
 	return url, nil
 }
+
+func (b *AsdfBackend) IsRecommended() bool {
+	return false
+}

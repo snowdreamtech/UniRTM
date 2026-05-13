@@ -68,6 +68,9 @@ type Backend interface {
 	// verification supported (e.g., "SLSA", "GitHub", "Cosign").
 	// Returns an empty string if not supported.
 	AttestationType() string
+
+	// IsRecommended indicates whether this backend is recommended for use.
+	IsRecommended() bool
 }
 
 // BackendError represents an error from a backend operation.

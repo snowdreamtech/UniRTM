@@ -70,6 +70,7 @@ type backendEntry struct {
 	SupportsGPG         bool   `json:"supports_gpg"`
 	SupportsAttestation bool   `json:"supports_attestation"`
 	AttestationType     string `json:"attestation_type"`
+	IsRecommended       bool   `json:"is_recommended"`
 }
 
 func runBackendsList(cmd *cobra.Command, args []string) error {
@@ -97,6 +98,7 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 			SupportsGPG:         b.SupportsGPG(),
 			SupportsAttestation: b.AttestationType() != "",
 			AttestationType:     b.AttestationType(),
+			IsRecommended:       b.IsRecommended(),
 		})
 	}
 
@@ -115,9 +117,13 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 
 	// Classic Red/Green Table
 	tableData := pterm.TableData{
-		{"BACKEND", "CHECKSUM", "GPG", "VERIFY"},
+		{"BACKEND", "RECOMMENDED", "CHECKSUM", "GPG", "VERIFY"},
 	}
 	for _, e := range entries {
+		recommended := pterm.FgRed.Sprint("✗")
+		if e.IsRecommended {
+			recommended = pterm.FgGreen.Sprint("✓")
+		}
 		checksum := pterm.FgRed.Sprint("✗")
 		if e.SupportsChecksum {
 			checksum = pterm.FgGreen.Sprint("✓")
@@ -136,6 +142,7 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 		
 		tableData = append(tableData, []string{
 			pterm.FgCyan.Sprint(e.Name),
+			recommended,
 			checksum,
 			gpg,
 			verify,
@@ -188,11 +195,17 @@ func runBackendsInfo(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	recommended := "no"
+	if b.IsRecommended() {
+		recommended = "yes"
+	}
+
 	fmt.Println()
 	pterm.DefaultSection.Printf("Backend: %s", pterm.FgCyan.Sprint(b.Name()))
 	pterm.DefaultTable.
 		WithSeparator("   ").
 		WithData(pterm.TableData{
+			{"Recommended", recommended},
 			{"Checksum verification", checksum},
 			{"GPG signature", gpg},
 		}).Render()

@@ -144,3 +144,7 @@ func (b *NativeBackend) SupportsGPG() bool {
 func (b *NativeBackend) AttestationType() string {
 	return "Native"
 }
+
+func (b *NativeBackend) IsRecommended() bool {
+	return true
+}

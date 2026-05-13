@@ -126,3 +126,7 @@ func (b *PypiBackend) SupportsGPG() bool {
 func (b *PypiBackend) AttestationType() string {
 	return ""
 }
+
+func (b *PypiBackend) IsRecommended() bool {
+	return true
+}

@@ -61,3 +61,7 @@ func (b *CondaBackend) SupportsGPG() bool {
 func (b *CondaBackend) AttestationType() string {
 	return ""
 }
+
+func (b *CondaBackend) IsRecommended() bool {
+	return true
+}

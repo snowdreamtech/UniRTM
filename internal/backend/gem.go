@@ -127,3 +127,7 @@ func (b *GemBackend) SupportsGPG() bool {
 func (b *GemBackend) AttestationType() string {
 	return ""
 }
+
+func (b *GemBackend) IsRecommended() bool {
+	return true
+}

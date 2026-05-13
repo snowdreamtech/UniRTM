@@ -166,3 +166,7 @@ type gitlabAsset struct {
 	Name string `json:"name"`
 	URL  string `json:"url"`
 }
+
+func (b *GitlabBackend) IsRecommended() bool {
+	return true
+}

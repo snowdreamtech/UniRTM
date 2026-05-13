@@ -57,3 +57,7 @@ func (b *VfoxBackend) SupportsGPG() bool {
 func (b *VfoxBackend) AttestationType() string {
 	return ""
 }
+
+func (b *VfoxBackend) IsRecommended() bool {
+	return false
+}

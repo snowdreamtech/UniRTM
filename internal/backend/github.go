@@ -171,3 +171,7 @@ type githubAsset struct {
 	BrowserDownloadURL string `json:"browser_download_url"`
 	Size               int64  `json:"size"`
 }
+
+func (g *GitHubBackend) IsRecommended() bool {
+	return true
+}

@@ -58,3 +58,7 @@ func (b *SpmBackend) SupportsGPG() bool {
 func (b *SpmBackend) AttestationType() string {
 	return ""
 }
+
+func (b *SpmBackend) IsRecommended() bool {
+	return true
+}

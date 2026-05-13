@@ -293,3 +293,7 @@ func (a *AquaBackend) buildDownloadURL(pkg *aquaPackage, version string, platfor
 
 	return url
 }
+
+func (a *AquaBackend) IsRecommended() bool {
+	return true
+}
