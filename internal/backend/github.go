@@ -158,6 +158,10 @@ func (g *GitHubBackend) GetDownloadInfo(ctx context.Context, tool string, versio
 					bestAsset, _ := FindBestAsset(commonAssets, platform, tool)
 					if bestAsset != nil {
 						v.Checksum = FindChecksumForAsset(ctx, g.client, commonAssets, bestAsset)
+						if v.Metadata == nil {
+							v.Metadata = make(map[string]string)
+						}
+						v.Metadata["gpg_signature_url"] = FindGPGSignatureForAsset(commonAssets, bestAsset)
 					}
 					break
 				}
@@ -200,7 +204,7 @@ func (g *GitHubBackend) SupportsChecksum() bool {
 
 // SupportsGPG indicates whether this backend supports GPG signatures.
 func (g *GitHubBackend) SupportsGPG() bool {
-	return false
+	return true
 }
 
 // AttestationType returns the type of attestation verification supported.

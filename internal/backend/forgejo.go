@@ -165,12 +165,16 @@ func (b *ForgejoBackend) GetDownloadInfo(ctx context.Context, tool string, versi
 	}
 
 	checksum := FindChecksumForAsset(ctx, b.client, commonAssets, bestAsset)
+	gpgSigURL := FindGPGSignatureForAsset(commonAssets, bestAsset)
 
 	return &VersionInfo{
 		Version:     version,
 		DownloadURL: bestAsset.URL,
 		Checksum:    checksum,
 		Platform:    platform,
+		Metadata: map[string]string{
+			"gpg_signature_url": gpgSigURL,
+		},
 	}, nil
 }
 
@@ -189,7 +193,7 @@ func (b *ForgejoBackend) SupportsChecksum() bool {
 
 // SupportsGPG indicates whether this backend supports GPG signatures.
 func (b *ForgejoBackend) SupportsGPG() bool {
-	return false
+	return true
 }
 
 // AttestationType returns the type of attestation verification supported.

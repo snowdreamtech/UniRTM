@@ -207,3 +207,22 @@ func FindChecksumForAsset(ctx context.Context, client *http.Client, assets []Com
 
 	return ""
 }
+
+// FindGPGSignatureForAsset attempts to find a matching GPG signature for an asset.
+func FindGPGSignatureForAsset(assets []CommonAsset, targetAsset *CommonAsset) string {
+	if targetAsset == nil {
+		return ""
+	}
+
+	// Look for filename.asc or filename.sig
+	ascName := targetAsset.Name + ".asc"
+	sigName := targetAsset.Name + ".sig"
+
+	for i := range assets {
+		if assets[i].Name == ascName || assets[i].Name == sigName {
+			return assets[i].URL
+		}
+	}
+
+	return ""
+}

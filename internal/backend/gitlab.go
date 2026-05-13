@@ -151,12 +151,16 @@ func (b *GitlabBackend) GetDownloadInfo(ctx context.Context, tool string, versio
 	}
 
 	checksum := FindChecksumForAsset(ctx, b.client, commonAssets, bestAsset)
+	gpgSigURL := FindGPGSignatureForAsset(commonAssets, bestAsset)
 
 	return &VersionInfo{
 		Version:     version,
 		DownloadURL: bestAsset.URL,
 		Checksum:    checksum,
 		Platform:    platform,
+		Metadata: map[string]string{
+			"gpg_signature_url": gpgSigURL,
+		},
 	}, nil
 }
 
@@ -199,7 +203,7 @@ func (b *GitlabBackend) SupportsChecksum() bool {
 
 // SupportsGPG indicates whether this backend supports GPG signatures.
 func (b *GitlabBackend) SupportsGPG() bool {
-	return false
+	return true
 }
 
 // AttestationType returns the type of attestation verification supported.
