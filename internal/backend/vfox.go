@@ -69,3 +69,11 @@ func (b *VfoxBackend) IsScriptless() bool {
 func (b *VfoxBackend) GetReach() string {
 	return "Huge"
 }
+
+func (b *VfoxBackend) IsStable() bool {
+	return false
+}
+
+func (b *VfoxBackend) SupportsOffline() bool {
+	return false
+}

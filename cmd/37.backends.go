@@ -73,6 +73,8 @@ type backendEntry struct {
 	IsRecommended       bool   `json:"is_recommended"`
 	IsScriptless        bool   `json:"is_scriptless"`
 	Reach               string `json:"reach"`
+	IsStable            bool   `json:"is_stable"`
+	SupportsOffline     bool   `json:"supports_offline"`
 }
 
 func runBackendsList(cmd *cobra.Command, args []string) error {
@@ -103,6 +105,8 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 			IsRecommended:       b.IsRecommended(),
 			IsScriptless:        b.IsScriptless(),
 			Reach:               b.GetReach(),
+			IsStable:            b.IsStable(),
+			SupportsOffline:     b.SupportsOffline(),
 		})
 	}
 
@@ -121,27 +125,12 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 
 	// Classic Red/Green Table
 	tableData := pterm.TableData{
-		{"BACKEND", "RECOMMENDED", "SCRIPTLESS", "REACH", "CHECKSUM", "GPG", "VERIFY"},
+		{"BACKEND", "RECOMMENDED", "CHECKSUM", "GPG", "VERIFY", "SCRIPTLESS", "REACH", "STABILITY", "OFFLINE"},
 	}
 	for _, e := range entries {
 		recommended := pterm.FgRed.Sprint("✗")
 		if e.IsRecommended {
 			recommended = pterm.FgGreen.Sprint("✓")
-		}
-		scriptless := pterm.FgRed.Sprint("✗")
-		if e.IsScriptless {
-			scriptless = pterm.FgGreen.Sprint("✓")
-		}
-		reach := pterm.FgGray.Sprint(e.Reach)
-		switch e.Reach {
-		case "Huge":
-			reach = pterm.FgMagenta.Sprint(e.Reach)
-		case "Large":
-			reach = pterm.FgBlue.Sprint(e.Reach)
-		case "Medium":
-			reach = pterm.FgYellow.Sprint(e.Reach)
-		case "Small":
-			reach = pterm.FgGray.Sprint(e.Reach)
 		}
 
 		checksum := pterm.FgRed.Sprint("✗")
@@ -159,15 +148,42 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 				verify += fmt.Sprintf(" (%s)", e.AttestationType)
 			}
 		}
+
+		scriptless := pterm.FgRed.Sprint("✗")
+		if e.IsScriptless {
+			scriptless = pterm.FgGreen.Sprint("✓")
+		}
+		reach := pterm.FgGray.Sprint(e.Reach)
+		switch e.Reach {
+		case "Huge":
+			reach = pterm.FgMagenta.Sprint(e.Reach)
+		case "Large":
+			reach = pterm.FgBlue.Sprint(e.Reach)
+		case "Medium":
+			reach = pterm.FgYellow.Sprint(e.Reach)
+		case "Small":
+			reach = pterm.FgGray.Sprint(e.Reach)
+		}
+
+		stability := pterm.FgGreen.Sprint("✓")
+		if !e.IsStable {
+			stability = pterm.FgYellow.Sprint("?")
+		}
+		offline := pterm.FgRed.Sprint("✗")
+		if e.SupportsOffline {
+			offline = pterm.FgGreen.Sprint("✓")
+		}
 		
 		tableData = append(tableData, []string{
 			pterm.FgCyan.Sprint(e.Name),
 			recommended,
-			scriptless,
-			reach,
 			checksum,
 			gpg,
 			verify,
+			scriptless,
+			reach,
+			stability,
+			offline,
 		})
 	}
 
@@ -227,6 +243,15 @@ func runBackendsInfo(cmd *cobra.Command, args []string) error {
 		scriptless = "yes"
 	}
 
+	stability := "high"
+	if !b.IsStable() {
+		stability = "medium (bit-rot potential)"
+	}
+	offline := "no"
+	if b.SupportsOffline() {
+		offline = "yes"
+	}
+
 	fmt.Println()
 	pterm.DefaultSection.Printf("Backend: %s", pterm.FgCyan.Sprint(b.Name()))
 	pterm.DefaultTable.
@@ -235,6 +260,8 @@ func runBackendsInfo(cmd *cobra.Command, args []string) error {
 			{"Recommended", recommended},
 			{"Scriptless (No code exec during install)", scriptless},
 			{"Reach / Coverage", b.GetReach()},
+			{"Stability / Bit-rot resistance", stability},
+			{"Offline / Mirror support", offline},
 			{"Checksum verification", checksum},
 			{"GPG signature", gpg},
 		}).Render()

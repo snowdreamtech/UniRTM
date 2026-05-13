@@ -138,3 +138,11 @@ func (b *PypiBackend) IsScriptless() bool {
 func (b *PypiBackend) GetReach() string {
 	return "Huge"
 }
+
+func (b *PypiBackend) IsStable() bool {
+	return true
+}
+
+func (b *PypiBackend) SupportsOffline() bool {
+	return true
+}

@@ -70,3 +70,11 @@ func (b *SpmBackend) IsScriptless() bool {
 func (b *SpmBackend) GetReach() string {
 	return "Large"
 }
+
+func (b *SpmBackend) IsStable() bool {
+	return true
+}
+
+func (b *SpmBackend) SupportsOffline() bool {
+	return true
+}

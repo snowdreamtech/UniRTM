@@ -63,3 +63,11 @@ func (b *PipxBackend) IsScriptless() bool {
 func (b *PipxBackend) GetReach() string {
 	return "Large"
 }
+
+func (b *PipxBackend) IsStable() bool {
+	return true
+}
+
+func (b *PipxBackend) SupportsOffline() bool {
+	return false
+}

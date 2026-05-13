@@ -139,3 +139,11 @@ func (b *GemBackend) IsScriptless() bool {
 func (b *GemBackend) GetReach() string {
 	return "Large"
 }
+
+func (b *GemBackend) IsStable() bool {
+	return true
+}
+
+func (b *GemBackend) SupportsOffline() bool {
+	return true
+}

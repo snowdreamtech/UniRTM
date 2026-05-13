@@ -123,3 +123,11 @@ func (b *DotnetBackend) IsScriptless() bool {
 func (b *DotnetBackend) GetReach() string {
 	return "Large"
 }
+
+func (b *DotnetBackend) IsStable() bool {
+	return true
+}
+
+func (b *DotnetBackend) SupportsOffline() bool {
+	return true
+}

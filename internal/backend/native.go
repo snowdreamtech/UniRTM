@@ -156,3 +156,11 @@ func (b *NativeBackend) IsScriptless() bool {
 func (b *NativeBackend) GetReach() string {
 	return "Small"
 }
+
+func (b *NativeBackend) IsStable() bool {
+	return true
+}
+
+func (b *NativeBackend) SupportsOffline() bool {
+	return true
+}

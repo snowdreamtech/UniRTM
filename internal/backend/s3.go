@@ -110,3 +110,11 @@ func (b *S3Backend) IsScriptless() bool {
 func (b *S3Backend) GetReach() string {
 	return "Small"
 }
+
+func (b *S3Backend) IsStable() bool {
+	return true
+}
+
+func (b *S3Backend) SupportsOffline() bool {
+	return true
+}

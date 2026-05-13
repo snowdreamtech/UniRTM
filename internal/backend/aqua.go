@@ -305,3 +305,11 @@ func (a *AquaBackend) IsScriptless() bool {
 func (a *AquaBackend) GetReach() string {
 	return "Large"
 }
+
+func (a *AquaBackend) IsStable() bool {
+	return true
+}
+
+func (a *AquaBackend) SupportsOffline() bool {
+	return false
+}

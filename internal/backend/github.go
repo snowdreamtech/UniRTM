@@ -183,3 +183,11 @@ func (g *GitHubBackend) IsScriptless() bool {
 func (g *GitHubBackend) GetReach() string {
 	return "Large"
 }
+
+func (g *GitHubBackend) IsStable() bool {
+	return true
+}
+
+func (g *GitHubBackend) SupportsOffline() bool {
+	return false
+}

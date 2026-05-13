@@ -144,3 +144,11 @@ func (b *NpmBackend) IsScriptless() bool {
 func (b *NpmBackend) GetReach() string {
 	return "Huge"
 }
+
+func (b *NpmBackend) IsStable() bool {
+	return true
+}
+
+func (b *NpmBackend) SupportsOffline() bool {
+	return true
+}

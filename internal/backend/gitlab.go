@@ -178,3 +178,11 @@ func (b *GitlabBackend) IsScriptless() bool {
 func (b *GitlabBackend) GetReach() string {
 	return "Large"
 }
+
+func (b *GitlabBackend) IsStable() bool {
+	return true
+}
+
+func (b *GitlabBackend) SupportsOffline() bool {
+	return false
+}

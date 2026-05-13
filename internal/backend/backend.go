@@ -77,6 +77,12 @@ type Backend interface {
 
 	// GetReach returns the relative coverage/reach of this backend (e.g., "Small", "Medium", "Large", "Huge").
 	GetReach() string
+
+	// IsStable indicates whether this backend has high stability and low bit-rot.
+	IsStable() bool
+
+	// SupportsOffline indicates whether this backend supports offline mode or private mirrors.
+	SupportsOffline() bool
 }
 
 // BackendError represents an error from a backend operation.

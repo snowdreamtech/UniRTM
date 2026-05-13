@@ -174,3 +174,11 @@ func (b *ForgejoBackend) IsScriptless() bool {
 func (b *ForgejoBackend) GetReach() string {
 	return "Large"
 }
+
+func (b *ForgejoBackend) IsStable() bool {
+	return true
+}
+
+func (b *ForgejoBackend) SupportsOffline() bool {
+	return false
+}

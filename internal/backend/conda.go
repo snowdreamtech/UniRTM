@@ -73,3 +73,11 @@ func (b *CondaBackend) IsScriptless() bool {
 func (b *CondaBackend) GetReach() string {
 	return "Large"
 }
+
+func (b *CondaBackend) IsStable() bool {
+	return true
+}
+
+func (b *CondaBackend) SupportsOffline() bool {
+	return true
+}

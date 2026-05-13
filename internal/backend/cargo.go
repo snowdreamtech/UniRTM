@@ -145,3 +145,11 @@ func (b *CargoBackend) IsScriptless() bool {
 func (b *CargoBackend) GetReach() string {
 	return "Huge"
 }
+
+func (b *CargoBackend) IsStable() bool {
+	return true
+}
+
+func (b *CargoBackend) SupportsOffline() bool {
+	return true
+}

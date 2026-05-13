@@ -210,3 +210,11 @@ func (h *HTTPBackend) IsScriptless() bool {
 func (h *HTTPBackend) GetReach() string {
 	return "Small"
 }
+
+func (h *HTTPBackend) IsStable() bool {
+	return true
+}
+
+func (h *HTTPBackend) SupportsOffline() bool {
+	return false
+}

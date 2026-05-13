@@ -247,3 +247,11 @@ func (b *AsdfBackend) IsScriptless() bool {
 func (b *AsdfBackend) GetReach() string {
 	return "Huge"
 }
+
+func (b *AsdfBackend) IsStable() bool {
+	return false
+}
+
+func (b *AsdfBackend) SupportsOffline() bool {
+	return false
+}
