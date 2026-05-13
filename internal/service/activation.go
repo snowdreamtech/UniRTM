@@ -449,10 +449,6 @@ func (m *ActivationManager) generatePowerShellScript(config ActivationConfig) (*
 // generatePosixInstructions generates usage instructions for POSIX shells.
 func (m *ActivationManager) generatePosixInstructions(shell ShellType) string {
 	shellName := string(shell)
-	configFile := "~/.bashrc"
-	if shell == ShellZsh {
-		configFile = "~/.zshrc"
-	}
 
 	return fmt.Sprintf("UniRTM environment for %s is ready.\n\n"+
 		"To persist this, add the following to your %s config:\n\n"+
