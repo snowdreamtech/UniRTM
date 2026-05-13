@@ -329,3 +329,19 @@ func GenericGetDownloadInfo(ctx context.Context, p HostingProvider, tool string,
 		},
 	}, nil
 }
+
+// ProbeURL checks if a URL is accessible via HEAD request.
+func ProbeURL(ctx context.Context, client *http.Client, url string) bool {
+	req, err := http.NewRequestWithContext(ctx, "HEAD", url, nil)
+	if err != nil {
+		return false
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+
+	return resp.StatusCode == http.StatusOK
+}

@@ -73,8 +73,8 @@ func (h *HTTPBackend) GetDownloadInfoWithConfig(ctx context.Context, tool string
 	downloadURL := h.buildURL(config.URLTemplate, version, platform, config.Replacements)
 
 	// Verify URL is accessible (HEAD request)
-	if err := h.verifyURL(ctx, downloadURL); err != nil {
-		return nil, NewBackendError("http", tool, fmt.Sprintf("failed to verify URL: %s", downloadURL), err)
+	if !ProbeURL(ctx, h.client, downloadURL) {
+		return nil, NewBackendError("http", tool, fmt.Sprintf("failed to verify URL: %s", downloadURL), nil)
 	}
 
 	// Build checksum URL if template provided
@@ -104,9 +104,9 @@ func (h *HTTPBackend) GetDownloadInfoWithConfig(ctx context.Context, tool string
 	// Try to auto-detect GPG signature if not provided
 	gpgSigURL := ""
 	// Try appending .asc or .sig to the download URL
-	if err := h.verifyURL(ctx, downloadURL+".asc"); err == nil {
+	if ProbeURL(ctx, h.client, downloadURL+".asc") {
 		gpgSigURL = downloadURL + ".asc"
-	} else if err := h.verifyURL(ctx, downloadURL+".sig"); err == nil {
+	} else if ProbeURL(ctx, h.client, downloadURL+".sig") {
 		gpgSigURL = downloadURL + ".sig"
 	}
 
@@ -197,22 +197,4 @@ func (h *HTTPBackend) buildURL(template string, version string, platform Platfor
 	return url
 }
 
-// verifyURL checks if a URL is accessible via HEAD request.
-func (h *HTTPBackend) verifyURL(ctx context.Context, url string) error {
-	req, err := http.NewRequestWithContext(ctx, "HEAD", url, nil)
-	if err != nil {
-		return err
-	}
 
-	resp, err := h.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("URL returned status %d", resp.StatusCode)
-	}
-
-	return nil
-}

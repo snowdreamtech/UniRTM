@@ -69,10 +69,21 @@ func (b *S3Backend) GetDownloadInfo(ctx context.Context, tool string, version st
 	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s/%s/%s-%s/%s.%s",
 		bucket, region, tool, version, platform.OS, platform.Arch, tool, ext)
 
+	// Try to auto-detect GPG signature
+	gpgSigURL := ""
+	if ProbeURL(ctx, b.client, url+".asc") {
+		gpgSigURL = url + ".asc"
+	} else if ProbeURL(ctx, b.client, url+".sig") {
+		gpgSigURL = url + ".sig"
+	}
+
 	return &VersionInfo{
 		Version:     version,
 		DownloadURL: url,
 		Platform:    platform,
+		Metadata: map[string]string{
+			"gpg_signature_url": gpgSigURL,
+		},
 	}, nil
 }
 
@@ -81,7 +92,7 @@ func (b *S3Backend) SupportsChecksum() bool {
 }
 
 func (b *S3Backend) SupportsGPG() bool {
-	return false
+	return true
 }
 
 func (b *S3Backend) AttestationType() string {
