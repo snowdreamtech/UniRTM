@@ -6,90 +6,311 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
 )
 
+var (
+	completionInstall   bool
+	completionUninstall bool
+)
+
 // init registers the completion command and its subcommands to the root command.
-// This function is automatically called when the package is imported.
 func init() {
+	completionCmd.Flags().BoolVarP(&completionInstall, "install", "i", false, "Intelligently install completion script to your shell configuration")
+	completionCmd.Flags().BoolVarP(&completionUninstall, "uninstall", "u", false, "Intelligently uninstall completion script from your shell configuration")
 	rootCmd.AddCommand(completionCmd)
 }
 
 // completionCmd represents the completion command which generates shell completion scripts.
-// Shell completion allows users to use tab completion for commands, flags, and arguments
-// in their shell, improving the user experience and reducing typing errors.
 var completionCmd = &cobra.Command{
 	Use:   "completion [bash|zsh|fish|powershell]",
-	Short: "Generate shell completion script",
-	Long: `Generate shell completion script for UniRTM.
+	Short: "Generate or install shell completion script",
+	Long: `Generate or install shell completion script for UniRTM.
 
-To load completions:
+By default, it auto-detects your current shell and prints the completion script.
+Use the --install (-i) flag to automatically save the script and enable it in your shell configuration.
 
-Bash:
+Examples:
+  # Auto-detect and print to stdout
+  unirtm completion
 
-  $ source <(unirtm completion bash)
+  # Auto-detect and install persistently
+  unirtm completion -i
 
-  # To load completions for each session, execute once:
-  # Linux:
-  $ unirtm completion bash > /etc/bash_completion.d/unirtm
-  # macOS:
-  $ unirtm completion bash > $(brew --prefix)/etc/bash_completion.d/unirtm
-
-Zsh:
-
-  # If shell completion is not already enabled in your environment,
-  # you will need to enable it. You can execute the following once:
-
-  $ echo "autoload -U compinit; compinit" >> ~/.zshrc
-
-  # To load completions for each session, execute once:
-  $ unirtm completion zsh > "${fpath[1]}/_unirtm"
-
-  # You will need to start a new shell for this setup to take effect.
-
-Fish:
-
-  $ unirtm completion fish | source
-
-  # To load completions for each session, execute once:
-  $ unirtm completion fish > ~/.config/fish/completions/unirtm.fish
-
-PowerShell:
-
-  PS> unirtm completion powershell | Out-String | Invoke-Expression
-
-  # To load completions for every new session, run:
-  PS> unirtm completion powershell > unirtm.ps1
-  # and source this file from your PowerShell profile.
-`,
+  # Generate for a specific shell and print
+  unirtm completion zsh`,
 	DisableFlagsInUseLine: true,
 	ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
-	Args:                  cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
-	Run:                   runCompletion,
+	Args:                  cobra.MaximumNArgs(1),
+	RunE:                  runCompletion,
 }
 
-// runCompletion generates the shell completion script for the specified shell.
-// It delegates to Cobra's built-in completion generation functions.
-//
-// Parameters:
-//   - cmd: The cobra command that triggered this function
-//   - args: The arguments passed to the command (shell type)
-func runCompletion(cmd *cobra.Command, args []string) {
-	var err error
-	switch args[0] {
-	case "bash":
-		err = cmd.Root().GenBashCompletion(os.Stdout)
-	case "zsh":
-		err = cmd.Root().GenZshCompletion(os.Stdout)
-	case "fish":
-		err = cmd.Root().GenFishCompletion(os.Stdout, true)
-	case "powershell":
-		err = cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
+// runCompletion generates or installs the shell completion script.
+func runCompletion(cmd *cobra.Command, args []string) error {
+	formatter := output.NewFormatter(output.FormatterOptions{
+		Format:  getOutputFormat(),
+		NoColor: false,
+		Writer:  os.Stdout,
+		Quiet:   quiet,
+	})
+
+	// 1. Detect/Select shell
+	var shellType service.ShellType
+	if len(args) > 0 {
+		shellType = service.ShellType(args[0])
+	} else {
+		var err error
+		shellType, err = service.DetectShell()
+		if err != nil {
+			return fmt.Errorf("failed to detect shell: %w. Please specify shell as argument", err)
+		}
 	}
+
+	// 2. If uninstalling
+	if completionUninstall {
+		return uninstallCompletion(formatter, shellType)
+	}
+
+	// 3. If not installing, just print to stdout
+	if !completionInstall {
+		return generateCompletion(cmd, shellType, os.Stdout)
+	}
+
+	// 4. Install persistently (Plan B style)
+	return installCompletion(formatter, cmd, shellType)
+}
+
+func generateCompletion(cmd *cobra.Command, shellType service.ShellType, out *os.File) error {
+	switch shellType {
+	case service.ShellBash:
+		return cmd.Root().GenBashCompletion(out)
+	case service.ShellZsh:
+		return cmd.Root().GenZshCompletion(out)
+	case service.ShellFish:
+		return cmd.Root().GenFishCompletion(out, true)
+	case service.ShellPowerShell:
+		return cmd.Root().GenPowerShellCompletionWithDesc(out)
+	default:
+		return fmt.Errorf("unsupported shell: %s", shellType)
+	}
+}
+
+func installCompletion(formatter output.Formatter, cmd *cobra.Command, shellType service.ShellType) error {
+	home, _ := os.UserHomeDir()
+	dataDir := env.GetDataDir()
+	compDir := filepath.Join(dataDir, "completions")
+	
+	if err := os.MkdirAll(compDir, 0755); err != nil {
+		return fmt.Errorf("failed to create completions directory: %w", err)
+	}
+
+	var compFile string
+	var configFile string
+	var activationCmd string
+
+	switch shellType {
+	case service.ShellZsh:
+		compFile = filepath.Join(compDir, "unirtm.zsh")
+		configFile = filepath.Join(home, ".zshrc")
+		activationCmd = fmt.Sprintf(`[[ -f %s ]] && source %s`, compFile, compFile)
+	case service.ShellBash:
+		compFile = filepath.Join(compDir, "unirtm.bash")
+		configFile = filepath.Join(home, ".bashrc")
+		activationCmd = fmt.Sprintf(`[[ -f %s ]] && source %s`, compFile, compFile)
+	case service.ShellFish:
+		// Fish has a standard completion path
+		compFile = filepath.Join(home, ".config/fish/completions/unirtm.fish")
+		// No need for activationCmd in fish if placed in standard path
+	case service.ShellPowerShell:
+		compFile = filepath.Join(compDir, "unirtm.ps1")
+		configFile = os.Getenv("PROFILE")
+		if configFile == "" {
+			configFile = filepath.Join(home, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1")
+		}
+		activationCmd = fmt.Sprintf(`. %s`, compFile)
+	default:
+		return fmt.Errorf("auto-install not supported for shell: %s", shellType)
+	}
+
+	// Write completion file
+	if dryRun {
+		formatter.Info(fmt.Sprintf("[dry-run] Would save completion script to %s", compFile), nil)
+	} else {
+		f, err := os.Create(compFile)
+		if err != nil {
+			return fmt.Errorf("failed to create completion file: %w", err)
+		}
+		if err := generateCompletion(cmd, shellType, f); err != nil {
+			f.Close()
+			return err
+		}
+		f.Close()
+		formatter.Success(fmt.Sprintf("Completion script saved to %s", compFile))
+	}
+
+	// Update RC file if needed
+	if configFile != "" {
+		if err := updateShellConfig(formatter, configFile, activationCmd, "completion"); err != nil {
+			return err
+		}
+	}
+
+	if dryRun {
+		formatter.Success(fmt.Sprintf("[dry-run] UniRTM completion for %s is ready to be enabled.", shellType))
+	} else {
+		formatter.Success(fmt.Sprintf("UniRTM completion for %s is now enabled.", shellType))
+		fmt.Printf("\nPlease restart your shell or run: source %s\n", configFile)
+	}
+	
+	return nil
+}
+
+func uninstallCompletion(formatter output.Formatter, shellType service.ShellType) error {
+	home, _ := os.UserHomeDir()
+	dataDir := env.GetDataDir()
+	compDir := filepath.Join(dataDir, "completions")
+	
+	var compFile string
+	var configFile string
+
+	switch shellType {
+	case service.ShellZsh:
+		compFile = filepath.Join(compDir, "unirtm.zsh")
+		configFile = filepath.Join(home, ".zshrc")
+	case service.ShellBash:
+		compFile = filepath.Join(compDir, "unirtm.bash")
+		configFile = filepath.Join(home, ".bashrc")
+	case service.ShellFish:
+		compFile = filepath.Join(home, ".config/fish/completions/unirtm.fish")
+	case service.ShellPowerShell:
+		compFile = filepath.Join(compDir, "unirtm.ps1")
+		configFile = os.Getenv("PROFILE")
+		if configFile == "" {
+			configFile = filepath.Join(home, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1")
+		}
+	default:
+		return fmt.Errorf("auto-uninstall not supported for shell: %s", shellType)
+	}
+
+	// Remove completion file
+	if dryRun {
+		formatter.Info(fmt.Sprintf("[dry-run] Would remove completion file %s", compFile), nil)
+	} else {
+		if err := os.Remove(compFile); err == nil {
+			formatter.Success(fmt.Sprintf("Removed completion file: %s", compFile))
+		} else if !os.IsNotExist(err) {
+			formatter.Warning(fmt.Sprintf("Failed to remove completion file: %v", err), nil)
+		}
+	}
+
+	// Update RC file if needed
+	if configFile != "" {
+		if err := removeShellConfig(formatter, configFile, "completion"); err != nil {
+			return err
+		}
+	}
+
+	formatter.Success(fmt.Sprintf("UniRTM completion for %s has been disabled.", shellType))
+	return nil
+}
+
+func updateShellConfig(formatter output.Formatter, configFile, activationCmd, marker string) error {
+	// Check if already present
+	content, err := os.ReadFile(configFile)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to read config file: %w", err)
+	}
+
+	searchPattern := fmt.Sprintf("# unirtm %s", marker)
+	if strings.Contains(string(content), searchPattern) {
+		formatter.Info(fmt.Sprintf("UniRTM %s logic already present in %s", marker, configFile), nil)
+		return nil
+	}
+
+	if dryRun {
+		formatter.Info(fmt.Sprintf("[dry-run] Would update %s with %s activation logic", configFile, marker), nil)
+		return nil
+	}
+
+	// Ensure file exists
+	if os.IsNotExist(err) {
+		if err := os.MkdirAll(filepath.Dir(configFile), 0755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(configFile, []byte(""), 0644); err != nil {
+			return err
+		}
+	}
+
+	// Append
+	f, err := os.OpenFile(configFile, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		cmd.PrintErrf("Error generating %s completion: %v\n", args[0], err)
-		os.Exit(1)
+		return err
 	}
+	defer f.Close()
+
+	block := fmt.Sprintf("\n# unirtm %s activation\n%s\n", marker, activationCmd)
+	if _, err := f.WriteString(block); err != nil {
+		return err
+	}
+
+	formatter.Success(fmt.Sprintf("Updated %s with %s logic", configFile, marker))
+	return nil
+}
+
+func removeShellConfig(formatter output.Formatter, configFile, marker string) error {
+	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+		return nil
+	}
+
+	if dryRun {
+		formatter.Info(fmt.Sprintf("[dry-run] Would remove %s logic from %s", marker, configFile), nil)
+		return nil
+	}
+
+	content, err := os.ReadFile(configFile)
+	if err != nil {
+		return fmt.Errorf("failed to read config file: %w", err)
+	}
+
+	searchPattern := fmt.Sprintf("unirtm %s", marker)
+	if !strings.Contains(string(content), searchPattern) {
+		return nil
+	}
+
+	lines := strings.Split(string(content), "\n")
+	var newLines []string
+	for _, line := range lines {
+		// Remove the comment marker line
+		if strings.Contains(line, searchPattern) {
+			continue
+		}
+		// Also remove the specific source/activation line if we find it
+		// We look for common patterns we use in install
+		if strings.Contains(line, "unirtm") && strings.Contains(line, marker) && (strings.Contains(line, "source") || strings.Contains(line, "activate")) {
+			continue
+		}
+		newLines = append(newLines, line)
+	}
+
+	// Clean up trailing empty lines
+	for len(newLines) > 0 && strings.TrimSpace(newLines[len(newLines)-1]) == "" {
+		newLines = newLines[:len(newLines)-1]
+	}
+
+	output := strings.Join(newLines, "\n") + "\n"
+	if err := os.WriteFile(configFile, []byte(output), 0644); err != nil {
+		return fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	formatter.Success(fmt.Sprintf("Removed %s logic from %s", marker, configFile))
+	return nil
 }
