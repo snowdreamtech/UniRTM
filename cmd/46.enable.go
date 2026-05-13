@@ -23,15 +23,13 @@ var (
 var enableCmd = &cobra.Command{
 	Use:     "enable [unirtm|mise]",
 	Aliases: []string{"en"},
-	Short:   "Intelligently enable UniRTM or mise in your shell configuration",
-	Long: `Intelligently enable UniRTM or mise in your shell configuration.
+	Short: "Setup UniRTM to start automatically in your shell",
+	Long: `Setup UniRTM to start automatically by adding it to your shell's configuration file (like .zshrc or .bashrc).
 
-This command auto-detects your current shell, identifies the corresponding
-configuration file (e.g., ~/.zshrc, ~/.bashrc), and appends the necessary
-activation command if it's not already present.
+This command auto-detects your shell and injects the activation command so you don't have to do it manually.
+Once enabled, UniRTM will automatically manage your project environments whenever you open a new terminal window.
 
-By default, it enables UniRTM, but you can specify 'mise' as an argument
-to enable mise instead. This is useful for switching between the two tools.`,
+By default, it enables UniRTM, but you can specify 'mise' as an argument to enable mise instead.`,
 	Args:      cobra.MaximumNArgs(1),
 	ValidArgs: []string{"unirtm", "mise"},
 	RunE:      runEnable,

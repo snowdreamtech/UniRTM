@@ -21,15 +21,11 @@ var (
 var disableCmd = &cobra.Command{
 	Use:     "disable [unirtm|mise]",
 	Aliases: []string{"dis"},
-	Short:   "Intelligently disable UniRTM or mise in your shell configuration",
-	Long: `Intelligently disable UniRTM or mise in your shell configuration.
+	Short: "Remove UniRTM automatic startup from your shell",
+	Long: `Safely removes the UniRTM activation command from your shell configuration file (like .zshrc or .bashrc).
 
-This command auto-detects your current shell, identifies the corresponding
-configuration file (e.g., ~/.zshrc, ~/.bashrc), and removes any activation
-commands for the specified tool.
-
-By default, it disables UniRTM, but you can specify 'mise' as an argument
-to disable mise instead.`,
+This stops UniRTM from automatically managing your environment in future sessions without deleting your tools or data.
+By default, it disables UniRTM, but you can specify 'mise' as an argument to disable mise instead.`,
 	Args:      cobra.MaximumNArgs(1),
 	ValidArgs: []string{"unirtm", "mise"},
 	RunE:      runDisable,
