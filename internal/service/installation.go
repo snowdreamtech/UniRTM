@@ -286,26 +286,46 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		opts := download.DefaultDownloadOptions()
 		if im.settings != nil {
 			opts.GitHubProxy = im.settings.GitHubProxy
+			if opts.GitHubProxy == "" {
+				opts.GitHubProxy = os.Getenv("GITHUB_PROXY")
+			}
 			if im.settings.HTTPTimeout > 0 {
 				opts.Timeout = time.Duration(im.settings.HTTPTimeout) * time.Second
 			}
+		} else {
+			opts.GitHubProxy = os.Getenv("GITHUB_PROXY")
 		}
 		if versionInfo.Checksum != "" {
 			opts = opts.WithChecksum(versionInfo.Checksum)
 		}
 
-		fmt.Printf("ℹ downloading %s@%s...\n", tool, version)
-		
+		// Cleanup any stale temporary files from previous interrupted attempts
+		if tmpFiles, err := filepath.Glob(downloadPath + ".tmp.*"); err == nil {
+			for _, tmpFile := range tmpFiles {
+				os.Remove(tmpFile)
+			}
+		}
+
 		// Use a randomized temporary path for downloading to ensure atomicity and concurrency safety
 		// Similar to how homebrew and mise handle incomplete downloads.
 		randSuffix, _ := env.RandomString(8)
 		downloadTmpPath := fmt.Sprintf("%s.tmp.%s", downloadPath, randSuffix)
+		
+		// Start a spinner for the connection/download phase
+		spinner, _ := pterm.DefaultSpinner.
+			WithText(fmt.Sprintf("Connecting to %s...", tool)).
+			Start()
 		
 		// Initialize progress bar
 		var progressbar *pterm.ProgressbarPrinter
 		var lastDownloaded int64
 
 		opts.ProgressCallback = func(downloaded, total int64) {
+			// Stop the connection spinner once we start receiving bytes
+			if spinner != nil {
+				spinner.Stop()
+				spinner = nil
+			}
 			if progressbar == nil && total > 0 {
 				progressbar, _ = pterm.DefaultProgressbar.
 					WithTotal(int(total)).
@@ -332,11 +352,17 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		}
 
 		if err := downloader.Download(ctx, versionInfo.DownloadURL, downloadTmpPath, opts); err != nil {
+			if spinner != nil {
+				spinner.Stop()
+			}
 			if progressbar != nil {
 				progressbar.Stop()
 			}
 			os.Remove(downloadTmpPath)
 			return fmt.Errorf("failed to download: %w", err)
+		}
+		if spinner != nil {
+			spinner.Stop()
 		}
 		if progressbar != nil {
 			progressbar.Stop()

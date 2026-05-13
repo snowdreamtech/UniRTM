@@ -6,11 +6,9 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
-	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/provider/native"
 	"github.com/spf13/cobra"
 )
@@ -57,13 +55,13 @@ Examples:
 
 // runLsRemote executes the ls-remote command.
 func runLsRemote(cmd *cobra.Command, args []string) error {
-	formatter := output.NewFormatter(output.FormatterOptions{
-		Format:  getOutputFormat(),
-		NoColor: false,
-		Writer:  os.Stdout,
-		Quiet:   quiet,
-		Verbose: verbose,
-	})
+	// Load project configuration
+	cfg, _ := loadConfig(context.Background())
+	if cfg != nil {
+		cfg.ApplyEnvironment()
+	}
+
+	formatter := getFormatter(cfg)
 
 	tool := args[0]
 	versionPrefix := ""

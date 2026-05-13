@@ -71,6 +71,9 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 		cfg = &config.Config{
 			Tasks: make(map[string]config.Task),
 		}
+	} else if cfg != nil {
+		// Apply [env] variables from config to current process
+		cfg.ApplyEnvironment()
 	}
 
 	// Auto-install missing tools if enabled
