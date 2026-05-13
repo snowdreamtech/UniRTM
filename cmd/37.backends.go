@@ -195,6 +195,26 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 		WithData(tableData).
 		Render()
 
+	// Add Legend/Glossary at the bottom
+	fmt.Println()
+	pterm.DefaultSection.WithLevel(2).Println("Legend & Column Meanings")
+	
+	legendData := pterm.TableData{
+		{pterm.FgCyan.Sprint("RECOMMENDED"), "Official certification by UniRTM team for security and reliability."},
+		{pterm.FgCyan.Sprint("CHECKSUM"), "Integrity verification via hash files (sha256/sha512)."},
+		{pterm.FgCyan.Sprint("GPG"), "Identity verification via digital signatures (.asc/.sig)."},
+		{pterm.FgCyan.Sprint("VERIFY"), "Advanced supply chain endorsement (e.g., SLSA, GitHub Attestation)."},
+		{pterm.FgCyan.Sprint("SCRIPTLESS"), "Security depth: '✓' means installation is declarative (no arbitrary script exec)."},
+		{pterm.FgCyan.Sprint("REACH"), "Utility coverage: From 'Small' (core tools) to 'Huge' (global ecosystems)."},
+		{pterm.FgCyan.Sprint("STABILITY"), "Reliability: '✓' means high stability; '?' indicates potential for bit-rot/broken links."},
+		{pterm.FgCyan.Sprint("OFFLINE"), "Enterprise capability: Supports private mirrors or offline installation."},
+	}
+
+	pterm.DefaultTable.
+		WithSeparator("  :  ").
+		WithData(legendData).
+		Render()
+
 	return nil
 }
 
