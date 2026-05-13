@@ -87,9 +87,14 @@ func (p *PythonProvider) DetectVersion(ctx context.Context, installPath string) 
 	return version, nil
 }
 
-// ListExecutables returns Python executables.
+// ListExecutables returns Python executables relative to installPath.
 func (p *PythonProvider) ListExecutables(installPath string, version string) ([]string, error) {
-	executables := []string{"python", "python3", "pip", "pip3"}
+	executables := []string{
+		filepath.Join("bin", "python"),
+		filepath.Join("bin", "python3"),
+		filepath.Join("bin", "pip"),
+		filepath.Join("bin", "pip3"),
+	}
 	if runtime.GOOS == "windows" {
 		for i := range executables {
 			executables[i] += ".exe"

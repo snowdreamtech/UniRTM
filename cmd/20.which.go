@@ -50,13 +50,13 @@ func runWhich(cmd *cobra.Command, args []string) error {
 	formatter := output.NewFormatter(output.FormatterOptions{
 		Format:  getOutputFormat(),
 		NoColor: false,
-		Writer:  os.Stdout,
+		Writer:  os.Stderr,
 		Quiet:   quiet,
 		Verbose: verbose,
 	})
 
 	ctx := context.Background()
-	tool := args[0]
+	target := args[0]
 	var version string
 	if len(args) == 2 {
 		version = args[1]
@@ -75,69 +75,74 @@ func runWhich(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("create installation repository: %w", err)
 	}
 
-	var installPath string
-	var inst *repository.Installation
+	// 1. Try to find as a tool first
+	var installations []*repository.Installation
 	if version != "" {
-		var err error
-		inst, err = installRepo.FindByToolAndVersion(ctx, tool, version)
-		if err != nil {
-			formatter.Error(fmt.Sprintf("Tool %s@%s is not installed", tool, version), map[string]interface{}{
-				"tool": tool, "version": version, "error": err.Error(),
-			})
-			return fmt.Errorf("tool %s@%s not found: %w", tool, version, err)
+		inst, err := installRepo.FindByToolAndVersion(ctx, target, version)
+		if err == nil {
+			installations = append(installations, inst)
 		}
-		installPath = inst.InstallPath
 	} else {
-		// Find latest installed version
-		installations, err := installRepo.List(ctx)
-		if err != nil {
-			return fmt.Errorf("list installations: %w", err)
-		}
-		for _, i := range installations {
-			if i.Tool == tool {
-				inst = i
-				installPath = i.InstallPath
+		all, err := installRepo.List(ctx)
+		if err == nil {
+			for _, i := range all {
+				if i.Tool == target {
+					installations = append(installations, i)
+					break
+				}
 			}
 		}
-		if installPath == "" {
-			formatter.Error(fmt.Sprintf("Tool %s is not installed", tool), map[string]interface{}{"tool": tool})
-			return fmt.Errorf("tool %s is not installed", tool)
+	}
+
+	// 2. If not found or more tools to check, list all installations for binary matching
+	if len(installations) == 0 {
+		all, err := installRepo.List(ctx)
+		if err == nil {
+			// In 'which <binary>', we check all installed tools
+			installations = all
 		}
 	}
 
-	// Search for binary in common locations within installPath
-	binaryName := tool
-	candidates := []string{
-		filepath.Join(installPath, "bin", binaryName),
-		filepath.Join(installPath, binaryName),
-	}
+	for _, inst := range installations {
+		p := provider.DefaultRegistry.GetWithBackend(inst.Tool, inst.Backend)
+		if p == nil {
+			continue
+		}
 
-	for _, candidate := range candidates {
-		info, err := os.Stat(candidate)
-		if err == nil && !info.IsDir() {
-			fmt.Println(candidate)
+		execs, err := p.ListExecutables(inst.InstallPath, inst.Version)
+		if err != nil {
+			continue
+		}
+
+		for _, exec := range execs {
+			// Normalize to absolute path
+			absPath := exec
+			if !filepath.IsAbs(absPath) {
+				absPath = filepath.Join(inst.InstallPath, exec)
+			}
+
+			// Check if this executable matches our target
+			if filepath.Base(absPath) == target {
+				fmt.Println(absPath)
+				return nil
+			}
+		}
+
+		// Fallback: If we searched by tool name but didn't find a binary with exact name,
+		// and the tool only has one primary binary, maybe return that?
+		// For example: tool 'maven' provides 'bin/mvn'.
+		if inst.Tool == target && len(execs) > 0 {
+			absPath := execs[0]
+			if !filepath.IsAbs(absPath) {
+				absPath = filepath.Join(inst.InstallPath, execs[0])
+			}
+			fmt.Println(absPath)
 			return nil
 		}
 	}
 
-	// Also check the shims dir as fallback
-	shimPath := filepath.Join(env.GetShimsDir(), binaryName)
-	if info, err := os.Stat(shimPath); err == nil && !info.IsDir() {
-		fmt.Println(shimPath)
-		return nil
-	}
-
-	// Fallback to Provider's ListExecutables
-	p := provider.DefaultRegistry.GetWithBackend(inst.Tool, inst.Backend)
-	execs, err := p.ListExecutables(installPath, inst.Version)
-	if err == nil && len(execs) > 0 {
-		fmt.Println(execs[0])
-		return nil
-	}
-
-	formatter.Error(fmt.Sprintf("Binary for %s not found in %s", tool, installPath), map[string]interface{}{
-		"tool":         tool,
-		"install_path": installPath,
+	formatter.Error(fmt.Sprintf("Binary for %s not found", target), map[string]interface{}{
+		"target": target,
 	})
-	return fmt.Errorf("binary for %s not found in %s", tool, installPath)
+	return fmt.Errorf("binary for %s not found", target)
 }

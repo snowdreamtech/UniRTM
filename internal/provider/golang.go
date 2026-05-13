@@ -91,9 +91,9 @@ func (g *GolangProvider) DetectVersion(ctx context.Context, installPath string) 
 	return "", NewProviderError("golang", "go", "", "failed to parse version", nil)
 }
 
-// ListExecutables returns Go executables.
+// ListExecutables returns Go executables relative to installPath.
 func (g *GolangProvider) ListExecutables(installPath string, version string) ([]string, error) {
-	executables := []string{"go", "gofmt"}
+	executables := []string{filepath.Join("bin", "go"), filepath.Join("bin", "gofmt")}
 	if runtime.GOOS == "windows" {
 		for i := range executables {
 			executables[i] += ".exe"

@@ -152,7 +152,7 @@ func (g *GenericProvider) DetectVersion(ctx context.Context, installPath string)
 	return "", NewProviderError("generic", "unknown", "", "failed to detect version", nil)
 }
 
-// ListExecutables returns all executable files in the bin directory.
+// ListExecutables returns all executable files in the bin directory, relative to installPath.
 func (g *GenericProvider) ListExecutables(installPath string, version string) ([]string, error) {
 	binDir := filepath.Join(installPath, "bin")
 
@@ -174,7 +174,8 @@ func (g *GenericProvider) ListExecutables(installPath string, version string) ([
 		}
 
 		if g.isExecutable(info) {
-			executables = append(executables, entry.Name())
+			// Return path relative to installPath
+			executables = append(executables, filepath.Join("bin", entry.Name()))
 		}
 	}
 

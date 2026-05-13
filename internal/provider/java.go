@@ -99,15 +99,26 @@ func (j *JavaProvider) DetectVersion(ctx context.Context, installPath string) (s
 	return "", NewProviderError("java", "java", "", "failed to parse version", nil)
 }
 
-// ListExecutables returns Java executables.
+// ListExecutables returns Java executables relative to installPath.
 func (j *JavaProvider) ListExecutables(installPath string, version string) ([]string, error) {
-	executables := []string{"java", "javac", "jar", "javadoc"}
-	if runtime.GOOS == "windows" {
-		for i := range executables {
-			executables[i] += ".exe"
-		}
+	javaHome := j.getJavaHome(installPath)
+	
+	// Get path relative to installPath
+	relHome, err := filepath.Rel(installPath, javaHome)
+	if err != nil {
+		relHome = ""
 	}
-	return executables, nil
+
+	executables := []string{"java", "javac", "jar", "javadoc"}
+	var results []string
+	for _, exe := range executables {
+		path := filepath.Join(relHome, "bin", exe)
+		if runtime.GOOS == "windows" {
+			path += ".exe"
+		}
+		results = append(results, path)
+	}
+	return results, nil
 }
 
 // Uninstall performs Java-specific cleanup.

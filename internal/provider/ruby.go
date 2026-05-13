@@ -115,40 +115,41 @@ func (r *RubyProvider) DetectVersion(ctx context.Context, installPath string) (s
 	return "", NewProviderError("ruby", "ruby", "", "failed to parse version", nil)
 }
 
-// ListExecutables returns Ruby executables including installed gems.
+// ListExecutables returns Ruby executables relative to installPath.
 func (r *RubyProvider) ListExecutables(installPath string, version string) ([]string, error) {
 	var executables []string
-	
-	// Default binaries
-	executables = append(executables, "ruby", "gem", "irb", "bundle", "bundler", "erb", "rake", "rdoc", "ri")
-	
-	// Read global gems
+
+	// 1. Core binaries in bin/
+	coreBinDir := filepath.Join(installPath, "bin")
+	if entries, err := os.ReadDir(coreBinDir); err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				executables = append(executables, filepath.Join("bin", entry.Name()))
+			}
+		}
+	}
+
+	// 2. Global gems in gem-global/bin/
 	gemBinDir := filepath.Join(installPath, "gem-global", "bin")
 	if entries, err := os.ReadDir(gemBinDir); err == nil {
 		for _, entry := range entries {
 			if !entry.IsDir() {
-				// Avoid duplicates
+				name := entry.Name()
+				// Avoid duplicates if already in bin/
 				found := false
 				for _, e := range executables {
-					if e == entry.Name() {
+					if filepath.Base(e) == name {
 						found = true
 						break
 					}
 				}
 				if !found {
-					executables = append(executables, entry.Name())
+					executables = append(executables, filepath.Join("gem-global", "bin", name))
 				}
 			}
 		}
 	}
 
-	if runtime.GOOS == "windows" {
-		for i := range executables {
-			if !strings.HasSuffix(executables[i], ".exe") && !strings.HasSuffix(executables[i], ".bat") && !strings.HasSuffix(executables[i], ".cmd") {
-				executables[i] += ".exe"
-			}
-		}
-	}
 	return executables, nil
 }
 

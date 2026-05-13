@@ -84,13 +84,11 @@ func (n *NodeProvider) DetectVersion(ctx context.Context, installPath string) (s
 	return version, nil
 }
 
-// ListExecutables returns Node.js executables.
+// ListExecutables returns Node.js executables relative to installPath.
 func (n *NodeProvider) ListExecutables(installPath string, version string) ([]string, error) {
-	executables := []string{"node", "npm", "npx"}
+	executables := []string{filepath.Join("bin", "node"), filepath.Join("bin", "npm"), filepath.Join("bin", "npx")}
 	if runtime.GOOS == "windows" {
-		for i := range executables {
-			executables[i] += ".exe"
-		}
+		executables = []string{"node.exe", "npm.cmd", "npx.cmd"}
 	}
 	return executables, nil
 }
