@@ -122,6 +122,11 @@ func (a *AquaBackend) SupportsGPG() bool {
 	return false
 }
 
+// SupportsAttestation indicates whether this backend supports SLSA/Attestation.
+func (a *AquaBackend) SupportsAttestation() bool {
+	return true
+}
+
 // fetchPackageMetadata fetches package metadata from Aqua registry.
 func (a *AquaBackend) fetchPackageMetadata(ctx context.Context, tool string) (*aquaPackage, error) {
 	// Tool format: "owner/repo" or "package-name"

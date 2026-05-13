@@ -140,3 +140,7 @@ func (b *NativeBackend) SupportsChecksum() bool {
 func (b *NativeBackend) SupportsGPG() bool {
 	return true
 }
+
+func (b *NativeBackend) SupportsAttestation() bool {
+	return true
+}

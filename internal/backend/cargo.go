@@ -129,3 +129,7 @@ func (b *CargoBackend) SupportsChecksum() bool {
 func (b *CargoBackend) SupportsGPG() bool {
 	return false
 }
+
+func (b *CargoBackend) SupportsAttestation() bool {
+	return false
+}

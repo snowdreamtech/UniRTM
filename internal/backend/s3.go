@@ -83,3 +83,7 @@ func (b *S3Backend) SupportsChecksum() bool {
 func (b *S3Backend) SupportsGPG() bool {
 	return false
 }
+
+func (b *S3Backend) SupportsAttestation() bool {
+	return false
+}

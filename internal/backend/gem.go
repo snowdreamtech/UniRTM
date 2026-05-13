@@ -123,3 +123,7 @@ func (b *GemBackend) SupportsChecksum() bool {
 func (b *GemBackend) SupportsGPG() bool {
 	return false
 }
+
+func (b *GemBackend) SupportsAttestation() bool {
+	return false
+}

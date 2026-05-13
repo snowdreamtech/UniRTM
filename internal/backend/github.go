@@ -297,6 +297,11 @@ func (g *GitHubBackend) SupportsGPG() bool {
 	return false
 }
 
+// SupportsAttestation indicates whether this backend supports GitHub Attestation.
+func (g *GitHubBackend) SupportsAttestation() bool {
+	return false
+}
+
 // fetchReleases fetches all releases from GitHub API.
 func (g *GitHubBackend) fetchReleases(ctx context.Context, tool string) ([]githubRelease, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%s/releases", tool)

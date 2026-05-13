@@ -63,6 +63,10 @@ type Backend interface {
 
 	// SupportsGPG indicates whether this backend supports GPG signature verification.
 	SupportsGPG() bool
+
+	// SupportsAttestation indicates whether this backend supports build provenance 
+	// or attestation verification (e.g., SLSA, GitHub Attestation).
+	SupportsAttestation() bool
 }
 
 // BackendError represents an error from a backend operation.

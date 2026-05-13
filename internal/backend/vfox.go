@@ -53,3 +53,7 @@ func (b *VfoxBackend) SupportsChecksum() bool {
 func (b *VfoxBackend) SupportsGPG() bool {
 	return false
 }
+
+func (b *VfoxBackend) SupportsAttestation() bool {
+	return false
+}

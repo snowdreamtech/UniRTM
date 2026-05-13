@@ -187,3 +187,7 @@ func (b *GitlabBackend) SupportsChecksum() bool {
 func (b *GitlabBackend) SupportsGPG() bool {
 	return false
 }
+
+func (b *GitlabBackend) SupportsAttestation() bool {
+	return false
+}

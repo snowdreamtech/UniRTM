@@ -151,6 +151,10 @@ func (b *AsdfBackend) SupportsGPG() bool {
 	return false
 }
 
+func (b *AsdfBackend) SupportsAttestation() bool {
+	return false
+}
+
 // ensurePlugin ensures the plugin repository is cloned locally.
 func (b *AsdfBackend) ensurePlugin(ctx context.Context, tool string) (string, error) {
 	b.mu.Lock()

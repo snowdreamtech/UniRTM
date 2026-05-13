@@ -47,3 +47,7 @@ func (b *PipxBackend) SupportsChecksum() bool {
 func (b *PipxBackend) SupportsGPG() bool {
 	return false
 }
+
+func (b *PipxBackend) SupportsAttestation() bool {
+	return false
+}

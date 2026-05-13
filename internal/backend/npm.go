@@ -128,3 +128,7 @@ func (b *NpmBackend) SupportsChecksum() bool {
 func (b *NpmBackend) SupportsGPG() bool {
 	return false
 }
+
+func (b *NpmBackend) SupportsAttestation() bool {
+	return false
+}

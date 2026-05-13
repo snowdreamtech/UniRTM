@@ -54,3 +54,7 @@ func (b *SpmBackend) SupportsChecksum() bool {
 func (b *SpmBackend) SupportsGPG() bool {
 	return false
 }
+
+func (b *SpmBackend) SupportsAttestation() bool {
+	return false
+}

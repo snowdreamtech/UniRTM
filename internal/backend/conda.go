@@ -57,3 +57,7 @@ func (b *CondaBackend) SupportsChecksum() bool {
 func (b *CondaBackend) SupportsGPG() bool {
 	return false
 }
+
+func (b *CondaBackend) SupportsAttestation() bool {
+	return false
+}

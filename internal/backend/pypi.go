@@ -122,3 +122,7 @@ func (b *PypiBackend) SupportsChecksum() bool {
 func (b *PypiBackend) SupportsGPG() bool {
 	return false
 }
+
+func (b *PypiBackend) SupportsAttestation() bool {
+	return false
+}

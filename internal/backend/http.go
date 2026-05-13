@@ -116,6 +116,10 @@ func (h *HTTPBackend) SupportsGPG() bool {
 	return false
 }
 
+func (h *HTTPBackend) SupportsAttestation() bool {
+	return false
+}
+
 // buildURL constructs a URL from a template with placeholders.
 func (h *HTTPBackend) buildURL(template string, version string, platform Platform, customReplacements map[string]string) string {
 	// Standard replacements
