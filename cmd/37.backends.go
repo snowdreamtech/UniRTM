@@ -197,7 +197,7 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 
 	// Add Legend/Glossary at the bottom
 	fmt.Println()
-	pterm.DefaultSection.WithLevel(2).Println("Legend & Column Meanings")
+	pterm.NewStyle(pterm.FgCyan, pterm.Bold).Println("Legend & Column Meanings:")
 	
 	legendData := pterm.TableData{
 		{pterm.FgCyan.Sprint("RECOMMENDED"), "Official certification by UniRTM team for security and reliability."},
