@@ -57,23 +57,30 @@ func runEnable(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to get home directory: %w", err)
 	}
 
+	// Get the absolute path of the current executable
+	exePath, err := os.Executable()
+	if err != nil {
+		// Fallback to plain "unirtm" if we can't get the executable path
+		exePath = "unirtm"
+	}
+
 	switch shell {
 	case service.ShellZsh:
 		configFile = filepath.Join(home, ".zshrc")
-		activationCmd = `eval "$(unirtm activate zsh)"`
+		activationCmd = fmt.Sprintf(`eval "$(%s activate zsh)"`, exePath)
 	case service.ShellBash:
 		configFile = filepath.Join(home, ".bashrc")
-		activationCmd = `eval "$(unirtm activate bash)"`
+		activationCmd = fmt.Sprintf(`eval "$(%s activate bash)"`, exePath)
 	case service.ShellFish:
 		configFile = filepath.Join(home, ".config/fish/config.fish")
-		activationCmd = `unirtm activate fish | source`
+		activationCmd = fmt.Sprintf(`%s activate fish | source`, exePath)
 	case service.ShellPowerShell:
 		// PowerShell profile is complex, but we can try to find it
 		configFile = os.Getenv("PROFILE")
 		if configFile == "" {
 			configFile = filepath.Join(home, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1")
 		}
-		activationCmd = `unirtm activate powershell | Out-String | Invoke-Expression`
+		activationCmd = fmt.Sprintf(`%s activate powershell | Out-String | Invoke-Expression`, exePath)
 	default:
 		return fmt.Errorf("unsupported shell for auto-enable: %s", shell)
 	}
