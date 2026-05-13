@@ -240,12 +240,14 @@ func (g *GitHubBackend) calculateAssetScore(assetName string, platform Platform,
 	archMatch := false
 	switch platform.Arch {
 	case "amd64":
-		if strings.Contains(nameLower, "amd64") || strings.Contains(nameLower, "x86_64") || strings.Contains(nameLower, "x64") || strings.Contains(nameLower, "64bit") {
+		if strings.Contains(nameLower, "amd64") || strings.Contains(nameLower, "x86_64") || strings.Contains(nameLower, "x64") || strings.Contains(nameLower, "64bit") ||
+			(platform.OS == "darwin" && strings.Contains(nameLower, "universal")) {
 			archMatch = true
 			score += 100
 		}
 	case "arm64":
-		if strings.Contains(nameLower, "arm64") || strings.Contains(nameLower, "aarch64") || strings.Contains(nameLower, "armv8") {
+		if strings.Contains(nameLower, "arm64") || strings.Contains(nameLower, "aarch64") || strings.Contains(nameLower, "armv8") ||
+			(platform.OS == "darwin" && strings.Contains(nameLower, "universal")) {
 			archMatch = true
 			score += 100
 		}
