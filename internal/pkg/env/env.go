@@ -6,7 +6,7 @@ import (
 
 var (
 	//ProjectName Project Name
-	ProjectName string = "UniRTM"
+	ProjectName string = "unirtm"
 
 	//Author Author
 	Author string = "Snowdream Tech <snowdreamtech@qq.com>"
@@ -30,7 +30,7 @@ var (
 	LICENSE string = "MIT <https://github.com/snowdreamtech/unirtm/blob/main/LICENSE>"
 
 	//Config Config File Path
-	Config string = "unirtm.yaml"
+	Config string = "unirtm.toml"
 
 	// Debug indicates whether the application should run in debug mode.
 	Debug bool

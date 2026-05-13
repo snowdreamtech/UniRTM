@@ -9,6 +9,83 @@
 
 version: 2
 
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+    # you may remove this if you don't need go generate
+    # - go generate ./...
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+      - -v
+    ldflags:
+      - -s -w
+      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.ProjectName=unirtm'
+      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.Author=Snowdream Tech <snowdreamtech@qq.com>'
+      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.BuildTime={{.Date}}
+      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.CommitHash={{.ShortCommit}}
+      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.CommitHashFull={{.FullCommit}}
+      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.GitTag={{.Tag}}
+      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.COPYRIGHT=Copyright (c) 2023-present SnowdreamTech Inc.'
+      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.LICENSE=MIT <https://github.com/snowdreamtech/unirtm/blob/main/LICENSE>'
+    goos:
+      # - aix
+      # - android
+      - darwin
+      # - dragonfly
+      - freebsd
+      # - illumos
+      # - ios
+      # - js
+      - linux
+      # - netbsd
+      # - openbsd
+      # - plan9
+      # - solaris
+      # - wasip1
+      # - windows
+    goarch:
+      - 386
+      - amd64
+      - arm
+      - arm64
+      # - loong64
+      # - mips
+      # - mips64
+      # - mips64le
+      # - mipsle
+      # - ppc64
+      - ppc64le
+      - riscv64
+      - s390x
+      # - wasm
+    # goamd64:
+    #   - v2
+    #   - v3
+    goarm:
+      - 5
+      - 6
+      - 7
+    # goarm64:
+    #   - v8.0
+    # gomips:
+    #   - hardfloat
+    #   - softfloat
+    # go386:
+    #   - sse2
+    #   - softfloat
+    # goppc64:
+    #   - power8
+    #   - power9
+    # goriscv64:
+    #   - rva22u64
+    ignore:
+      - goos: plan9
+        goarch: 386
 archives:
   - formats: [tar.gz]
     # This name template makes the OS and Arch compatible with uname and includes the version.
@@ -88,14 +165,14 @@ changelog:
     - title: "♻️ Miscellaneous Chores"
       order: 9999
 
-sboms:
-  - artifacts: any
+# sboms:
+#   - artifacts: any
 
-signs:
-  - artifacts: checksum
-    args:
-      - "sign-blob"
-      - "--output-certificate=${certificate}"
-      - "--output-signature=${signature}"
-      - "${artifact}"
-      - "--yes" # Enables keyless signing via OIDC token
+# signs:
+#   - artifacts: checksum
+#     args:
+#       - "sign-blob"
+#       - "--output-certificate=${certificate}"
+#       - "--output-signature=${signature}"
+#       - "${artifact}"
+#       - "--yes" # Enables keyless signing via OIDC token
