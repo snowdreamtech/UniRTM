@@ -42,6 +42,28 @@ Examples:
 	Args:               cobra.MinimumNArgs(1),
 	DisableFlagParsing: false,
 	RunE:               runTaskCommand,
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if len(args) > 0 {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+
+		ctx := context.Background()
+		configManager := config.NewConfigManager()
+		cfg, err := configManager.LoadHierarchy(ctx)
+		if err != nil {
+			cfg = &config.Config{}
+		}
+
+		engine := task.NewEngine()
+		engine.Register(task.NewNativeRunner(cfg.Tasks, cfg.Settings))
+		engine.Register(task.NewGoTaskRunner())
+		engine.Register(task.NewMakeRunner())
+		engine.Register(task.NewJustRunner())
+
+		cwd, _ := os.Getwd()
+		tasks := engine.ListTasks(cwd)
+		return tasks, cobra.ShellCompDirectiveNoFileComp
+	},
 }
 
 // runTaskCommand executes the task routing.

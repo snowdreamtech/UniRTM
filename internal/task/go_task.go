@@ -45,6 +45,27 @@ func (r *GoTaskRunner) CanExecute(dir string, taskName string) bool {
 	return false
 }
 
+// ListTasks returns all tasks defined in the Taskfile.
+func (r *GoTaskRunner) ListTasks(dir string) ([]string, error) {
+	if !r.CanExecute(dir, "") {
+		return nil, nil
+	}
+
+	e := &gotask.Executor{
+		Dir: dir,
+	}
+
+	if err := e.Setup(); err != nil {
+		return nil, nil // Silently fail for completion
+	}
+
+	tasks := make([]string, 0, e.Taskfile.Tasks.Len())
+	for name := range e.Taskfile.Tasks.All(nil) {
+		tasks = append(tasks, name)
+	}
+	return tasks, nil
+}
+
 // Run executes the task by delegating directly to the go-task library.
 func (r *GoTaskRunner) Run(ctx context.Context, dir string, taskName string, args []string, env []string) error {
 	// Temporarily inject environment variables since go-task inherently inherits from os.Environ

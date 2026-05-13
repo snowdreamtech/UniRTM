@@ -35,3 +35,20 @@ func (e *Engine) Execute(ctx context.Context, dir string, taskName string, args 
 	}
 	return fmt.Errorf("no suitable task runner found for task %q in directory %s", taskName, dir)
 }
+
+// ListTasks returns an aggregated list of all tasks from all registered runners.
+func (e *Engine) ListTasks(dir string) []string {
+	uniqueTasks := make(map[string]struct{})
+	var tasks []string
+	for _, r := range e.runners {
+		if t, err := r.ListTasks(dir); err == nil {
+			for _, name := range t {
+				if _, exists := uniqueTasks[name]; !exists {
+					uniqueTasks[name] = struct{}{}
+					tasks = append(tasks, name)
+				}
+			}
+		}
+	}
+	return tasks
+}

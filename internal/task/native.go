@@ -38,6 +38,15 @@ func (r *NativeRunner) CanExecute(dir string, taskName string) bool {
 	return exists
 }
 
+// ListTasks returns all tasks defined in the configuration.
+func (r *NativeRunner) ListTasks(dir string) ([]string, error) {
+	tasks := make([]string, 0, len(r.tasks))
+	for name := range r.tasks {
+		tasks = append(tasks, name)
+	}
+	return tasks, nil
+}
+
 // Run executes a task defined in the unirtm.toml configuration.
 func (r *NativeRunner) Run(ctx context.Context, dir string, taskName string, args []string, env []string) error {
 	taskDef, exists := r.tasks[taskName]

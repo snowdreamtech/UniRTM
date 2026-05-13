@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // JustRunner delegates task execution to the system's `just` command
@@ -33,6 +34,23 @@ func (r *JustRunner) CanExecute(dir string, taskName string) bool {
 		return true
 	}
 	return false
+}
+
+// ListTasks returns all targets defined in the Justfile.
+func (r *JustRunner) ListTasks(dir string) ([]string, error) {
+	if !r.CanExecute(dir, "") {
+		return nil, nil
+	}
+
+	// Use just --summary to list all targets
+	cmd := exec.Command("just", "--summary")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, nil
+	}
+
+	return strings.Fields(string(out)), nil
 }
 
 // Run executes the task by delegating to `just <taskName>`.

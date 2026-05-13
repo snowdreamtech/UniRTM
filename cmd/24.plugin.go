@@ -181,6 +181,26 @@ Examples:
   unirtm plugin remove myplugin`,
 	Args: cobra.ExactArgs(1),
 	RunE: runPluginRemove,
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if len(args) > 0 {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+
+		ctx := context.Background()
+		pluginsDir := env.GetDataDir() + "/plugins"
+		pm := service.NewPluginManager(pluginsDir, nil, nil)
+		defer pm.Cleanup()
+		if err := pm.LoadAll(ctx); err != nil {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+
+		plugins := pm.ListLoaded()
+		var names []string
+		for _, p := range plugins {
+			names = append(names, p.Name)
+		}
+		return names, cobra.ShellCompDirectiveNoFileComp
+	},
 }
 
 // runPluginRemove removes a plugin file from the plugins directory.

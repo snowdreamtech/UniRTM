@@ -16,8 +16,8 @@ type Runner interface {
 	CanExecute(dir string, taskName string) bool
 
 	// Run executes the specified task within the given directory and environment.
-	// taskName is the name of the task to run.
-	// args are additional arguments passed to the task.
-	// env is a slice of "KEY=VALUE" strings to inject into the execution environment.
 	Run(ctx context.Context, dir string, taskName string, args []string, env []string) error
+
+	// ListTasks returns a list of all available task names for the given directory.
+	ListTasks(dir string) ([]string, error)
 }

@@ -64,6 +64,50 @@ Examples:
   unirtm which node 20.0.0`,
 	Args: cobra.RangeArgs(1, 2),
 	RunE: runWhich,
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if len(args) > 1 {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+
+		ctx := context.Background()
+		var candidates []string
+
+		// 1. From Config
+		configMgr := config.NewConfigManager()
+		if cfg, err := configMgr.LoadHierarchy(ctx); err == nil {
+			for name := range cfg.Tasks {
+				candidates = append(candidates, name)
+			}
+			for name := range cfg.Tools {
+				candidates = append(candidates, name)
+			}
+		}
+
+		// 2. From Database
+		dbPath := env.GetDatabasePath()
+		if db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true}); err == nil {
+			defer db.Close()
+			if installRepo, err := sqlite.NewInstallationRepository(db.Conn()); err == nil {
+				if all, err := installRepo.List(ctx); err == nil {
+					for _, inst := range all {
+						candidates = append(candidates, inst.Tool)
+					}
+				}
+			}
+		}
+
+		// De-duplicate
+		unique := make(map[string]struct{})
+		var final []string
+		for _, c := range candidates {
+			if _, ok := unique[c]; !ok {
+				unique[c] = struct{}{}
+				final = append(final, c)
+			}
+		}
+
+		return final, cobra.ShellCompDirectiveNoFileComp
+	},
 }
 
 // runWhich executes the which command.
