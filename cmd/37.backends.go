@@ -111,26 +111,26 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Modern Compact Table
+	// Classic Red/Green Table
 	tableData := pterm.TableData{
 		{"BACKEND", "CHECKSUM", "GPG", "VERIFY"},
 	}
 	for _, e := range entries {
-		checksum := pterm.FgGray.Sprint("·")
+		checksum := pterm.FgRed.Sprint("✗")
 		if e.SupportsChecksum {
-			checksum = pterm.NewStyle(pterm.FgGreen, pterm.Bold).Sprint("✓")
+			checksum = pterm.FgGreen.Sprint("✓")
 		}
-		gpg := pterm.FgGray.Sprint("·")
+		gpg := pterm.FgRed.Sprint("✗")
 		if e.SupportsGPG {
-			gpg = pterm.NewStyle(pterm.FgGreen, pterm.Bold).Sprint("✓")
+			gpg = pterm.FgGreen.Sprint("✓")
 		}
-		verify := pterm.FgGray.Sprint("·")
+		verify := pterm.FgRed.Sprint("✗")
 		if e.SupportsAttestation {
-			verify = pterm.NewStyle(pterm.FgGreen, pterm.Bold).Sprint("✓")
+			verify = pterm.FgGreen.Sprint("✓")
 		}
 		
 		tableData = append(tableData, []string{
-			pterm.NewStyle(pterm.FgCyan, pterm.Bold).Sprint(e.Name),
+			pterm.FgCyan.Sprint(e.Name),
 			checksum,
 			gpg,
 			verify,
@@ -144,13 +144,6 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 		WithHeaderStyle(pterm.NewStyle(pterm.FgCyan, pterm.Bold)).
 		WithData(tableData).
 		Render()
-
-	pterm.FgGray.Printf("\nLegend: ")
-	pterm.NewStyle(pterm.FgGreen, pterm.Bold).Print("✓")
-	pterm.FgGray.Print(" Supported  ")
-	pterm.FgGray.Print("·")
-	pterm.FgGray.Println(" Not Supported (VERIFY = GitHub Attestation/SLSA)")
-	fmt.Println()
 
 	return nil
 }
