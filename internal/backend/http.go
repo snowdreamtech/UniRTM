@@ -86,12 +86,28 @@ func (h *HTTPBackend) GetDownloadInfoWithConfig(ctx context.Context, tool string
 	// Fetch checksum if URL provided
 	checksum := ""
 	if checksumURL != "" {
-		var err error
-		checksum, err = h.fetchChecksum(ctx, checksumURL)
-		if err != nil {
-			// Checksum fetch failure is not fatal, just log it
-			checksum = ""
+		checksumMap := FetchAndParseChecksumFile(ctx, h.client, checksumURL)
+		if checksumMap != nil {
+			// Try to find by filename or just take the first one if it's a single-file checksum
+			fileName := h.extractFileName(downloadURL)
+			if c, ok := checksumMap[fileName]; ok {
+				checksum = c
+			} else if len(checksumMap) == 1 {
+				for _, c := range checksumMap {
+					checksum = c
+					break
+				}
+			}
 		}
+	}
+
+	// Try to auto-detect GPG signature if not provided
+	gpgSigURL := ""
+	// Try appending .asc or .sig to the download URL
+	if err := h.verifyURL(ctx, downloadURL+".asc"); err == nil {
+		gpgSigURL = downloadURL + ".asc"
+	} else if err := h.verifyURL(ctx, downloadURL+".sig"); err == nil {
+		gpgSigURL = downloadURL + ".sig"
 	}
 
 	return &VersionInfo{
@@ -100,20 +116,26 @@ func (h *HTTPBackend) GetDownloadInfoWithConfig(ctx context.Context, tool string
 		Checksum:    checksum,
 		Platform:    platform,
 		Metadata: map[string]string{
-			"backend":      "http",
-			"url_template": config.URLTemplate,
+			"backend":           "http",
+			"url_template":      config.URLTemplate,
+			"gpg_signature_url": gpgSigURL,
 		},
 	}, nil
 }
 
+func (h *HTTPBackend) extractFileName(rawURL string) string {
+	parts := strings.Split(rawURL, "/")
+	return parts[len(parts)-1]
+}
+
 // SupportsChecksum indicates whether this backend provides checksums.
 func (h *HTTPBackend) SupportsChecksum() bool {
-	return true // If checksum template is provided
+	return true
 }
 
 // SupportsGPG indicates whether this backend supports GPG signatures.
 func (h *HTTPBackend) SupportsGPG() bool {
-	return false
+	return true
 }
 
 func (h *HTTPBackend) AttestationType() string {
@@ -193,39 +215,4 @@ func (h *HTTPBackend) verifyURL(ctx context.Context, url string) error {
 	}
 
 	return nil
-}
-
-// fetchChecksum fetches and parses a checksum from a URL.
-func (h *HTTPBackend) fetchChecksum(ctx context.Context, url string) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return "", err
-	}
-
-	resp, err := h.client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("checksum URL returned status %d", resp.StatusCode)
-	}
-
-	// Read checksum (assume it's just the hash, possibly with filename)
-	body := make([]byte, 1024)
-	n, err := resp.Body.Read(body)
-	if err != nil && err.Error() != "EOF" {
-		return "", err
-	}
-
-	checksumStr := strings.TrimSpace(string(body[:n]))
-
-	// If format is "checksum  filename", extract just the checksum
-	parts := strings.Fields(checksumStr)
-	if len(parts) > 0 {
-		return parts[0], nil
-	}
-
-	return checksumStr, nil
 }
