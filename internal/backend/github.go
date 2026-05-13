@@ -299,7 +299,7 @@ func (g *GitHubBackend) SupportsGPG() bool {
 
 // AttestationType returns the type of attestation verification supported.
 func (g *GitHubBackend) AttestationType() string {
-	return ""
+	return "GH"
 }
 
 // fetchReleases fetches all releases from GitHub API.

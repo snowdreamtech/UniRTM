@@ -188,6 +188,7 @@ func (b *GitlabBackend) SupportsGPG() bool {
 	return false
 }
 
-func (b *GitlabBackend) AttestationType() string {
-	return ""
+// AttestationType returns the type of attestation verification supported.
+func (g *GitlabBackend) AttestationType() string {
+	return "SLSA"
 }

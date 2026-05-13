@@ -180,6 +180,7 @@ func (b *ForgejoBackend) SupportsGPG() bool {
 	return false
 }
 
+// AttestationType returns the type of attestation verification supported.
 func (b *ForgejoBackend) AttestationType() string {
-	return ""
+	return "SLSA"
 }
