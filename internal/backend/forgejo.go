@@ -23,30 +23,36 @@ type ForgejoBackend struct {
 func NewForgejoBackend() *ForgejoBackend {
 	baseURL := os.Getenv("FORGEJO_API_URL")
 	if baseURL == "" {
-		baseURL = "https://codeberg.org/api/v1" // Defaulting to Codeberg as the most popular Forgejo instance
+		// Default to some known Forgejo instance or just empty if custom is required
+		baseURL = "https://codeberg.org/api/v1"
 	}
 	return &ForgejoBackend{
 		client: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: 15 * time.Second,
 		},
 		baseURL: baseURL,
 	}
 }
 
+// Name returns the backend identifier.
 func (b *ForgejoBackend) Name() string {
 	return "forgejo"
 }
 
 type forgejoRelease struct {
-	TagName string `json:"tag_name"`
-	Assets  []struct {
-		Name               string `json:"name"`
-		BrowserDownloadURL string `json:"browser_download_url"`
-	} `json:"assets"`
+	TagName string         `json:"tag_name"`
+	Assets  []forgejoAsset `json:"assets"`
 }
 
+type forgejoAsset struct {
+	Name string `json:"name"`
+	URL  string `json:"browser_download_url"`
+	Size int64  `json:"size"`
+}
+
+// ListVersions returns all available versions from Forgejo releases.
 func (b *ForgejoBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
-	// tool format: "owner/repo"
+	tool = strings.TrimPrefix(tool, "forgejo:")
 	apiURL := fmt.Sprintf("%s/repos/%s/releases", b.baseURL, tool)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
@@ -64,9 +70,6 @@ func (b *ForgejoBackend) ListVersions(ctx context.Context, tool string, platform
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, NewBackendError(b.Name(), tool, "repository not found", nil)
-	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
 	}
@@ -78,16 +81,24 @@ func (b *ForgejoBackend) ListVersions(ctx context.Context, tool string, platform
 
 	var versions []VersionInfo
 	for _, release := range releases {
+		commonAssets := b.toCommonAssets(release.Assets)
+		bestAsset, _ := FindBestAsset(commonAssets, platform, tool)
+		if bestAsset == nil {
+			continue
+		}
+
 		v := strings.TrimPrefix(release.TagName, "v")
 		versions = append(versions, VersionInfo{
-			Version:  v,
-			Platform: platform,
+			Version:     v,
+			DownloadURL: bestAsset.URL,
+			Platform:    platform,
 		})
 	}
 
 	return versions, nil
 }
 
+// ResolveVersion resolves a version request to a concrete version.
 func (b *ForgejoBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
 	if versionRequest == "latest" {
 		versions, err := b.ListVersions(ctx, tool, platform)
@@ -101,81 +112,82 @@ func (b *ForgejoBackend) ResolveVersion(ctx context.Context, tool string, versio
 	}
 
 	return &VersionInfo{
-		Version:  versionRequest,
+		Version:  strings.TrimPrefix(versionRequest, "v"),
 		Platform: platform,
 	}, nil
 }
 
+// GetDownloadInfo retrieves download information for a specific version.
 func (b *ForgejoBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
-	// fetch the specific release by tag name
+	tool = strings.TrimPrefix(tool, "forgejo:")
+	
 	tag := version
 	if !strings.HasPrefix(tag, "v") {
 		tag = "v" + version
 	}
-	apiURL := fmt.Sprintf("%s/repos/%s/releases/tags/%s", b.baseURL, tool, tag)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
-	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "create request", err)
-	}
+	apiURL := fmt.Sprintf("%s/repos/%s/releases/tags/%s", b.baseURL, tool, tag)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
 	if token := os.Getenv("FORGEJO_TOKEN"); token != "" {
 		req.Header.Set("Authorization", "token "+token)
 	}
 
 	resp, err := b.client.Do(req)
 	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "execute request", err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		// Try without 'v'
+		// try without 'v'
 		tag = version
 		apiURL = fmt.Sprintf("%s/repos/%s/releases/tags/%s", b.baseURL, tool, tag)
 		req, _ = http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
 		if token := os.Getenv("FORGEJO_TOKEN"); token != "" {
 			req.Header.Set("Authorization", "token "+token)
 		}
-		resp2, err2 := b.client.Do(req)
-		if err2 != nil || resp2.StatusCode != http.StatusOK {
-			if resp2 != nil {
-				resp2.Body.Close()
-			}
+		resp, err = b.client.Do(req)
+		if err != nil || resp.StatusCode != http.StatusOK {
 			return nil, NewBackendError(b.Name(), tool, "release not found", nil)
 		}
-		resp = resp2
 		defer resp.Body.Close()
 	}
 
 	var release forgejoRelease
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		return nil, NewBackendError(b.Name(), tool, "decode response", err)
+		return nil, err
 	}
 
-	var downloadURL string
-	for _, asset := range release.Assets {
-		lowerName := strings.ToLower(asset.Name)
-		if strings.Contains(lowerName, platform.OS) && strings.Contains(lowerName, platform.Arch) {
-			downloadURL = asset.BrowserDownloadURL
-			break
-		}
+	commonAssets := b.toCommonAssets(release.Assets)
+	bestAsset, _ := FindBestAsset(commonAssets, platform, tool)
+	if bestAsset == nil {
+		return nil, NewBackendError(b.Name(), tool, "no matching asset found", nil)
 	}
 
-	if downloadURL == "" && len(release.Assets) > 0 {
-		downloadURL = release.Assets[0].BrowserDownloadURL
-	}
+	checksum := FindChecksumForAsset(ctx, b.client, commonAssets, bestAsset)
 
 	return &VersionInfo{
 		Version:     version,
-		DownloadURL: downloadURL,
+		DownloadURL: bestAsset.URL,
+		Checksum:    checksum,
 		Platform:    platform,
 	}, nil
 }
 
-func (b *ForgejoBackend) SupportsChecksum() bool {
-	return false
+func (b *ForgejoBackend) toCommonAssets(assets []forgejoAsset) []CommonAsset {
+	res := make([]CommonAsset, len(assets))
+	for i, a := range assets {
+		res[i] = CommonAsset{Name: a.Name, URL: a.URL, Size: a.Size}
+	}
+	return res
 }
 
+// SupportsChecksum indicates whether this backend provides checksums.
+func (b *ForgejoBackend) SupportsChecksum() bool {
+	return true
+}
+
+// SupportsGPG indicates whether this backend supports GPG signatures.
 func (b *ForgejoBackend) SupportsGPG() bool {
 	return false
 }

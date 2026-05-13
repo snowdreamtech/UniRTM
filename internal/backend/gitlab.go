@@ -28,12 +28,13 @@ func NewGitlabBackend() *GitlabBackend {
 	}
 	return &GitlabBackend{
 		client: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: 15 * time.Second,
 		},
 		baseURL: baseURL,
 	}
 }
 
+// Name returns the backend identifier.
 func (b *GitlabBackend) Name() string {
 	return "gitlab"
 }
@@ -41,15 +42,19 @@ func (b *GitlabBackend) Name() string {
 type gitlabRelease struct {
 	TagName string `json:"tag_name"`
 	Assets  struct {
-		Links []struct {
-			Name string `json:"name"`
-			URL  string `json:"url"`
-		} `json:"links"`
+		Links []gitlabAsset `json:"links"`
 	} `json:"assets"`
 }
 
+type gitlabAsset struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
+// ListVersions returns all available versions from GitLab releases.
 func (b *GitlabBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
-	// tool format: "owner/repo"
+	// tool format: "owner/repo" or "gitlab:owner/repo"
+	tool = strings.TrimPrefix(tool, "gitlab:")
 	encodedRepo := url.PathEscape(tool)
 	apiURL := fmt.Sprintf("%s/projects/%s/releases", b.baseURL, encodedRepo)
 
@@ -82,16 +87,24 @@ func (b *GitlabBackend) ListVersions(ctx context.Context, tool string, platform 
 
 	var versions []VersionInfo
 	for _, release := range releases {
+		commonAssets := b.toCommonAssets(release.Assets.Links)
+		bestAsset, _ := FindBestAsset(commonAssets, platform, tool)
+		if bestAsset == nil {
+			continue
+		}
+
 		v := strings.TrimPrefix(release.TagName, "v")
 		versions = append(versions, VersionInfo{
-			Version:  v,
-			Platform: platform,
+			Version:     v,
+			DownloadURL: bestAsset.URL,
+			Platform:    platform,
 		})
 	}
 
 	return versions, nil
 }
 
+// ResolveVersion resolves a version request to a concrete version.
 func (b *GitlabBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
 	if versionRequest == "latest" {
 		versions, err := b.ListVersions(ctx, tool, platform)
@@ -105,90 +118,91 @@ func (b *GitlabBackend) ResolveVersion(ctx context.Context, tool string, version
 	}
 
 	return &VersionInfo{
-		Version:  versionRequest,
+		Version:  strings.TrimPrefix(versionRequest, "v"),
 		Platform: platform,
 	}, nil
 }
 
+// GetDownloadInfo retrieves download information for a specific version.
 func (b *GitlabBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+	// tool format: "owner/repo" or "gitlab:owner/repo"
+	tool = strings.TrimPrefix(tool, "gitlab:")
 	encodedRepo := url.PathEscape(tool)
-	// try to fetch the specific release by tag name
-	// Since tags could be 'v1.0.0' or '1.0.0', we might need to check both, but standard is just trusting versionRequest
+	
 	tag := version
 	if !strings.HasPrefix(tag, "v") {
 		tag = "v" + version
 	}
-	apiURL := fmt.Sprintf("%s/projects/%s/releases/%s", b.baseURL, encodedRepo, url.PathEscape(tag))
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	
+	release, err := b.fetchRelease(ctx, encodedRepo, tag)
 	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "create request", err)
+		// try without 'v'
+		tag = version
+		release, err = b.fetchRelease(ctx, encodedRepo, tag)
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	commonAssets := b.toCommonAssets(release.Assets.Links)
+	bestAsset, _ := FindBestAsset(commonAssets, platform, tool)
+	if bestAsset == nil {
+		return nil, NewBackendError(b.Name(), tool, "no matching asset found", nil)
+	}
+
+	checksum := FindChecksumForAsset(ctx, b.client, commonAssets, bestAsset)
+
+	return &VersionInfo{
+		Version:     version,
+		DownloadURL: bestAsset.URL,
+		Checksum:    checksum,
+		Platform:    platform,
+	}, nil
+}
+
+func (b *GitlabBackend) fetchRelease(ctx context.Context, encodedRepo, tag string) (*gitlabRelease, error) {
+	apiURL := fmt.Sprintf("%s/projects/%s/releases/%s", b.baseURL, encodedRepo, url.PathEscape(tag))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
 	if token := os.Getenv("GITLAB_TOKEN"); token != "" {
 		req.Header.Set("PRIVATE-TOKEN", token)
 	}
 
 	resp, err := b.client.Do(req)
 	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "execute request", err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		// try without 'v'
-		tag = version
-		apiURL = fmt.Sprintf("%s/projects/%s/releases/%s", b.baseURL, encodedRepo, url.PathEscape(tag))
-		req, _ = http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
-		if token := os.Getenv("GITLAB_TOKEN"); token != "" {
-			req.Header.Set("PRIVATE-TOKEN", token)
-		}
-		resp2, err2 := b.client.Do(req)
-		if err2 != nil || resp2.StatusCode != http.StatusOK {
-			if resp2 != nil {
-				resp2.Body.Close()
-			}
-			return nil, NewBackendError(b.Name(), tool, "release not found", nil)
-		}
-		resp = resp2
-		defer resp.Body.Close()
+		return nil, fmt.Errorf("status %d", resp.StatusCode)
 	}
 
 	var release gitlabRelease
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		return nil, NewBackendError(b.Name(), tool, "decode response", err)
+		return nil, err
 	}
-
-	// Simple heuristic to find the right asset URL
-	var downloadURL string
-	for _, asset := range release.Assets.Links {
-		lowerName := strings.ToLower(asset.Name)
-		if strings.Contains(lowerName, platform.OS) && strings.Contains(lowerName, platform.Arch) {
-			downloadURL = asset.URL
-			break
-		}
-	}
-
-	if downloadURL == "" && len(release.Assets.Links) > 0 {
-		// fallback to the first asset if OS/Arch not explicitly found
-		downloadURL = release.Assets.Links[0].URL
-	}
-
-	return &VersionInfo{
-		Version:     version,
-		DownloadURL: downloadURL,
-		Platform:    platform,
-	}, nil
+	return &release, nil
 }
 
+func (b *GitlabBackend) toCommonAssets(assets []gitlabAsset) []CommonAsset {
+	res := make([]CommonAsset, len(assets))
+	for i, a := range assets {
+		res[i] = CommonAsset{Name: a.Name, URL: a.URL}
+	}
+	return res
+}
+
+// SupportsChecksum indicates whether this backend provides checksums.
 func (b *GitlabBackend) SupportsChecksum() bool {
-	return false
+	return true
 }
 
+// SupportsGPG indicates whether this backend supports GPG signatures.
 func (b *GitlabBackend) SupportsGPG() bool {
 	return false
 }
 
 // AttestationType returns the type of attestation verification supported.
-func (g *GitlabBackend) AttestationType() string {
+func (b *GitlabBackend) AttestationType() string {
 	return "SLSA"
 }

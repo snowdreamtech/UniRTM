@@ -154,8 +154,11 @@ func (g *GitHubBackend) GetDownloadInfo(ctx context.Context, tool string, versio
 		if err == nil {
 			for _, r := range releases {
 				if strings.TrimPrefix(r.TagName, "v") == v.Version {
-					_, checksum := g.findMatchingAsset(r.Assets, platform, tool)
-					v.Checksum = checksum
+					commonAssets := g.toCommonAssets(r.Assets)
+					bestAsset, _ := FindBestAsset(commonAssets, platform, tool)
+					if bestAsset != nil {
+						v.Checksum = FindChecksumForAsset(ctx, g.client, commonAssets, bestAsset)
+					}
 					break
 				}
 			}
@@ -165,126 +168,29 @@ func (g *GitHubBackend) GetDownloadInfo(ctx context.Context, tool string, versio
 	return v, nil
 }
 
-// findMatchingAssetOnly uses a scoring system to find the best asset for the platform.
-func (g *GitHubBackend) findMatchingAssetOnly(assets []githubAsset, platform Platform, tool string) *githubAsset {
-	var bestAsset *githubAsset
-	bestScore := -1
-
-	// Extract repository name from tool (e.g., "sharkdp/fd" -> "fd")
-	// We'll use this to prioritize assets containing the tool name.
-	repoName := ""
-	if parts := strings.Split(tool, "/"); len(parts) == 2 {
-		repoName = strings.ToLower(parts[1])
+func (g *GitHubBackend) toCommonAssets(assets []githubAsset) []CommonAsset {
+	res := make([]CommonAsset, len(assets))
+	for i, a := range assets {
+		res[i] = CommonAsset{Name: a.Name, URL: a.BrowserDownloadURL, Size: a.Size}
 	}
-
-	for i := range assets {
-		asset := &assets[i]
-		score := g.calculateAssetScore(asset.Name, platform, repoName)
-
-		if score > 0 && score > bestScore {
-			bestScore = score
-			bestAsset = asset
-		}
-	}
-	return bestAsset
+	return res
 }
 
-// calculateAssetScore calculates a compatibility score for an asset.
-// Returns -1 if the asset is definitely incompatible.
-func (g *GitHubBackend) calculateAssetScore(assetName string, platform Platform, repoName string) int {
-	nameLower := strings.ToLower(assetName)
+// findMatchingAssetOnly uses the common scoring system to find the best asset.
+func (g *GitHubBackend) findMatchingAssetOnly(assets []githubAsset, platform Platform, tool string) *githubAsset {
+	commonAssets := g.toCommonAssets(assets)
+	bestAsset, _ := FindBestAsset(commonAssets, platform, tool)
+	if bestAsset == nil {
+		return nil
+	}
 
-	// 1. Hard Exclusions (Negative Score)
-	excludeSuffixes := []string{".sha256", ".sha256sum", ".md5", ".asc", ".sig", ".sha1", ".deb", ".rpm", ".msi", ".apk", ".dmg", ".pkg", ".txt", ".pdf", ".h", ".c", ".cpp", ".a", ".lib"}
-	for _, suffix := range excludeSuffixes {
-		if strings.HasSuffix(nameLower, suffix) {
-			return -1
+	// Map back to githubAsset
+	for i := range assets {
+		if assets[i].BrowserDownloadURL == bestAsset.URL {
+			return &assets[i]
 		}
 	}
-	
-	// Exclude non-runtime assets
-	negatives := []string{"checksums", "sha256sums", "license", "source", "devel", "dev", "header", "static-lib", "manual", "doc", "man", "debug"}
-	for _, neg := range negatives {
-		if strings.Contains(nameLower, neg) {
-			return -1
-		}
-	}
-
-	score := 0
-
-	// 2. OS Match
-	osMatch := false
-	switch platform.OS {
-	case "linux":
-		if strings.Contains(nameLower, "linux") || strings.Contains(nameLower, "unknown-linux") {
-			osMatch = true
-			score += 100
-		}
-	case "darwin":
-		if strings.Contains(nameLower, "darwin") || strings.Contains(nameLower, "macos") || strings.Contains(nameLower, "osx") || strings.Contains(nameLower, "apple") {
-			osMatch = true
-			score += 100
-		}
-	case "windows":
-		if strings.Contains(nameLower, "windows") || strings.Contains(nameLower, "win") || strings.HasSuffix(nameLower, ".exe") {
-			osMatch = true
-			score += 100
-		}
-	}
-
-	if !osMatch {
-		return -1
-	}
-
-	// 3. Architecture Match
-	archMatch := false
-	switch platform.Arch {
-	case "amd64":
-		if strings.Contains(nameLower, "amd64") || strings.Contains(nameLower, "x86_64") || strings.Contains(nameLower, "x64") || strings.Contains(nameLower, "64bit") ||
-			(platform.OS == "darwin" && strings.Contains(nameLower, "universal")) {
-			archMatch = true
-			score += 100
-		}
-	case "arm64":
-		if strings.Contains(nameLower, "arm64") || strings.Contains(nameLower, "aarch64") || strings.Contains(nameLower, "armv8") ||
-			(platform.OS == "darwin" && strings.Contains(nameLower, "universal")) {
-			archMatch = true
-			score += 100
-		}
-	case "386":
-		if strings.Contains(nameLower, "386") || strings.Contains(nameLower, "i386") || strings.Contains(nameLower, "x86") || strings.Contains(nameLower, "32bit") {
-			archMatch = true
-			score += 100
-		}
-	}
-
-	if !archMatch {
-		return -1
-	}
-
-	// 4. Preferred Formats
-	if strings.HasSuffix(nameLower, ".tar.gz") || strings.HasSuffix(nameLower, ".tgz") {
-		score += 50
-	} else if strings.HasSuffix(nameLower, ".zip") {
-		score += 40
-	} else if strings.HasSuffix(nameLower, ".tar.xz") || strings.HasSuffix(nameLower, ".txz") {
-		score += 30
-	} else if !strings.Contains(nameLower, ".") {
-		score += 20 // Raw binary
-	}
-
-	// 5. Tool Name Bonus
-	if repoName != "" && strings.Contains(nameLower, repoName) {
-		score += 50
-	}
-
-	// 6. Avoid "musl" if on a glibc system (or vice versa - simple heuristic)
-	// For now, let's just prioritize the one without "musl" unless we are specifically looking for it.
-	if strings.Contains(nameLower, "musl") {
-		score -= 10
-	}
-
-	return score
+	return nil
 }
 
 // SupportsChecksum indicates whether this backend provides checksums.
@@ -319,12 +225,10 @@ func (g *GitHubBackend) fetchReleases(ctx context.Context, tool string) ([]githu
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
-	fmt.Printf("ℹ github: fetching releases for %s...\n", tool)
 	resp, err := g.client.Do(req)
 	if err != nil {
 		return nil, NewBackendError("github", tool, "failed to fetch releases", err)
 	}
-	fmt.Printf("✓ github: received API response with status %d\n", resp.StatusCode)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -343,79 +247,4 @@ func (g *GitHubBackend) fetchReleases(ctx context.Context, tool string) ([]githu
 	})
 
 	return releases, nil
-}
-
-
-// findMatchingAsset finds the asset that matches the platform and its checksum.
-func (g *GitHubBackend) findMatchingAsset(assets []githubAsset, platform Platform, tool string) (*githubAsset, string) {
-	bestAsset := g.findMatchingAssetOnly(assets, platform, tool)
-	if bestAsset == nil {
-		return nil, ""
-	}
-
-	// Now find the checksum for this specific asset
-	var checksumAsset *githubAsset
-	for i := range assets {
-		asset := &assets[i]
-		nameLower := strings.ToLower(asset.Name)
-		if strings.HasSuffix(nameLower, ".sha256") ||
-			strings.HasSuffix(nameLower, ".sha256sum") ||
-			strings.Contains(nameLower, "checksums") ||
-			strings.Contains(nameLower, "sha256sums") {
-			checksumAsset = asset
-			break
-		}
-	}
-
-	var checksum string
-	if checksumAsset != nil {
-		checksumMap := g.parseChecksumFile(checksumAsset.BrowserDownloadURL)
-		if checksumMap != nil {
-			checksum = checksumMap[bestAsset.Name]
-		}
-	}
-
-	return bestAsset, checksum
-}
-
-// matchesPlatform is kept for backward compatibility but calls calculateAssetScore internally.
-func (g *GitHubBackend) matchesPlatform(assetName string, platform Platform) bool {
-	return g.calculateAssetScore(assetName, platform, "") > 0
-}
-
-// parseChecksumFile downloads and parses a checksum file.
-func (g *GitHubBackend) parseChecksumFile(url string) map[string]string {
-	resp, err := g.client.Get(url)
-	if err != nil {
-		return nil
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil
-	}
-
-	checksums := make(map[string]string)
-	lines := strings.Split(string(body), "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-
-		// Format: "checksum  filename" or "checksum filename"
-		parts := strings.Fields(line)
-		if len(parts) >= 2 {
-			checksum := parts[0]
-			filename := parts[1]
-			checksums[filename] = checksum
-		}
-	}
-
-	return checksums
 }
