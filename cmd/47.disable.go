@@ -121,6 +121,11 @@ func runDisable(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	// Clean up trailing empty lines after removal
+	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
+		lines = lines[:len(lines)-1]
+	}
+
 	// 4. Write back filtered content
 	f, err := os.OpenFile(configFile, os.O_TRUNC|os.O_WRONLY, 0644)
 	if err != nil {

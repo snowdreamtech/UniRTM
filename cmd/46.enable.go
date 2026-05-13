@@ -145,15 +145,22 @@ func runEnable(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// 4. Append to config file
-	f, err := os.OpenFile(configFile, os.O_APPEND|os.O_WRONLY, 0644)
+	// 4. Read entire content and trim trailing whitespace to prevent accumulating newlines
+	content, err := os.ReadFile(configFile)
+	if err != nil {
+		return fmt.Errorf("failed to read config file: %w", err)
+	}
+	cleanContent := strings.TrimRight(string(content), " \t\r\n")
+
+	// 5. Write back with consistent spacing
+	f, err := os.OpenFile(configFile, os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to open config file for writing: %w", err)
 	}
 	defer f.Close()
 
-	comment := fmt.Sprintf("\n\n# %s shell activation\n", targetTool)
-	if _, err := f.WriteString(fmt.Sprintf("%s%s\n", comment, activationCmd)); err != nil {
+	activationBlock := fmt.Sprintf("\n\n# %s shell activation\n%s\n", targetTool, activationCmd)
+	if _, err := f.WriteString(cleanContent + activationBlock); err != nil {
 		return fmt.Errorf("failed to write to config file: %w", err)
 	}
 
