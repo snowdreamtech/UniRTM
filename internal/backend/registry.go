@@ -28,6 +28,7 @@ func NewRegistry() *Registry {
 	r.Register(NewNpmBackend())
 	r.Register(NewPypiBackend())
 	r.Register(NewCargoBackend())
+	r.Register(NewGoBackend())
 	r.Register(NewGemBackend())
 	r.Register(NewDotnetBackend())
 	r.Register(NewCondaBackend())
