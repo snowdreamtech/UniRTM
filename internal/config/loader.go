@@ -14,18 +14,34 @@ import (
 	"runtime"
 )
 
-// Load loads the UniRTM project configuration from .unirtm.toml or unirtm.toml.
+// Load loads the UniRTM project configuration from the current directory.
 func Load() (*Config, error) {
-	data, err := os.ReadFile(".unirtm.toml")
-	if err != nil {
-		data, err = os.ReadFile("unirtm.toml")
-		if err != nil {
-			return &Config{}, nil
+	return LoadFromDir(".")
+}
+
+// LoadFromDir loads the UniRTM project configuration from the specified directory.
+func LoadFromDir(dir string) (*Config, error) {
+	configFiles := []string{".unirtm.toml", "unirtm.toml"}
+	var data []byte
+	var err error
+	var foundFile string
+
+	for _, fileName := range configFiles {
+		p := filepath.Join(dir, fileName)
+		data, err = os.ReadFile(p)
+		if err == nil {
+			foundFile = p
+			break
 		}
 	}
+
+	if foundFile == "" {
+		return &Config{}, nil
+	}
+
 	cfg := &Config{}
 	if err := toml.Unmarshal(data, cfg); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal config from %s: %w", foundFile, err)
 	}
 
 	cfg.PostLoad()

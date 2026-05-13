@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/errors"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
@@ -293,69 +294,24 @@ func (m *AutoActivationManager) generateActivation(ctx context.Context, shell Sh
 // LoadConfigByDir loads UniRTM configuration from the specified directory.
 func (m *AutoActivationManager) LoadConfigByDir(projectDir string) (map[string]string, map[string]string, []string, error) {
 	toolVersions := make(map[string]string)
-	envVars := make(map[string]string)
-	var sources []string
-
-	// 1. Try to load unirtm.toml or .unirtm.toml
-	configPath := ""
-	for _, name := range []string{"unirtm.toml", ".unirtm.toml"} {
-		p := filepath.Join(projectDir, name)
-		if _, err := os.Stat(p); err == nil {
-			configPath = p
-			break
-		}
+	
+	cfg, err := config.LoadFromDir(projectDir)
+	if err != nil {
+		return nil, nil, nil, err
 	}
 
-	if configPath != "" {
-		data, err := os.ReadFile(configPath)
-		if err == nil {
-			// Minimal parsing for speed
-			var raw struct {
-				Tools map[string]interface{} `toml:"tools"`
-				Env   map[string]interface{} `toml:"env"`
-			}
-			if err := toml.Unmarshal(data, &raw); err == nil {
-				// Extract tools
-				for k, v := range raw.Tools {
-					switch val := v.(type) {
-					case string:
-						toolVersions[k] = val
-					case map[string]interface{}:
-						if ver, ok := val["version"].(string); ok {
-							toolVersions[k] = ver
-						}
-					}
-				}
-				// Extract simple env vars
-				for k, v := range raw.Env {
-					if s, ok := v.(string); ok {
-						envVars[k] = s
-					}
-				}
-			}
-		}
+	// Extract tool versions
+	for k, tc := range cfg.Tools {
+		toolVersions[k] = tc.Version
 	}
 
-	// 2. Try to load .tool-versions (asdf compatibility)
-	tvPath := filepath.Join(projectDir, ".tool-versions")
-	if _, err := os.Stat(tvPath); err == nil {
-		data, err := os.ReadFile(tvPath)
-		if err == nil {
-			lines := strings.Split(string(data), "\n")
-			for _, line := range lines {
-				line = strings.TrimSpace(line)
-				if line == "" || strings.HasPrefix(line, "#") {
-					continue
-				}
-				parts := strings.Fields(line)
-				if len(parts) >= 2 {
-					toolVersions[parts[0]] = parts[1]
-				}
-			}
-		}
+	// Resolve environment variables and sources
+	resolvedEnv, sources, _, err := cfg.ResolveEnvironment()
+	if err != nil {
+		return toolVersions, nil, nil, err
 	}
 
-	return toolVersions, envVars, sources, nil
+	return toolVersions, resolvedEnv, sources, nil
 }
 
 // generateDeactivation generates the deactivation script for leaving a project.
