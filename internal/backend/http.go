@@ -202,3 +202,11 @@ func (h *HTTPBackend) buildURL(template string, version string, platform Platfor
 func (h *HTTPBackend) IsRecommended() bool {
 	return true
 }
+
+func (h *HTTPBackend) IsScriptless() bool {
+	return true
+}
+
+func (h *HTTPBackend) GetReach() string {
+	return "Small"
+}

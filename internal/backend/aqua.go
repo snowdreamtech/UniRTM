@@ -297,3 +297,11 @@ func (a *AquaBackend) buildDownloadURL(pkg *aquaPackage, version string, platfor
 func (a *AquaBackend) IsRecommended() bool {
 	return true
 }
+
+func (a *AquaBackend) IsScriptless() bool {
+	return true
+}
+
+func (a *AquaBackend) GetReach() string {
+	return "Large"
+}

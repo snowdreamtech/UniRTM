@@ -137,3 +137,11 @@ func (b *CargoBackend) AttestationType() string {
 func (b *CargoBackend) IsRecommended() bool {
 	return true
 }
+
+func (b *CargoBackend) IsScriptless() bool {
+	return true
+}
+
+func (b *CargoBackend) GetReach() string {
+	return "Huge"
+}

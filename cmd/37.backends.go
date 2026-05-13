@@ -71,6 +71,8 @@ type backendEntry struct {
 	SupportsAttestation bool   `json:"supports_attestation"`
 	AttestationType     string `json:"attestation_type"`
 	IsRecommended       bool   `json:"is_recommended"`
+	IsScriptless        bool   `json:"is_scriptless"`
+	Reach               string `json:"reach"`
 }
 
 func runBackendsList(cmd *cobra.Command, args []string) error {
@@ -99,6 +101,8 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 			SupportsAttestation: b.AttestationType() != "",
 			AttestationType:     b.AttestationType(),
 			IsRecommended:       b.IsRecommended(),
+			IsScriptless:        b.IsScriptless(),
+			Reach:               b.GetReach(),
 		})
 	}
 
@@ -117,13 +121,29 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 
 	// Classic Red/Green Table
 	tableData := pterm.TableData{
-		{"BACKEND", "RECOMMENDED", "CHECKSUM", "GPG", "VERIFY"},
+		{"BACKEND", "RECOMMENDED", "SCRIPTLESS", "REACH", "CHECKSUM", "GPG", "VERIFY"},
 	}
 	for _, e := range entries {
 		recommended := pterm.FgRed.Sprint("✗")
 		if e.IsRecommended {
 			recommended = pterm.FgGreen.Sprint("✓")
 		}
+		scriptless := pterm.FgRed.Sprint("✗")
+		if e.IsScriptless {
+			scriptless = pterm.FgGreen.Sprint("✓")
+		}
+		reach := pterm.FgGray.Sprint(e.Reach)
+		switch e.Reach {
+		case "Huge":
+			reach = pterm.FgMagenta.Sprint(e.Reach)
+		case "Large":
+			reach = pterm.FgBlue.Sprint(e.Reach)
+		case "Medium":
+			reach = pterm.FgYellow.Sprint(e.Reach)
+		case "Small":
+			reach = pterm.FgGray.Sprint(e.Reach)
+		}
+
 		checksum := pterm.FgRed.Sprint("✗")
 		if e.SupportsChecksum {
 			checksum = pterm.FgGreen.Sprint("✓")
@@ -143,6 +163,8 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 		tableData = append(tableData, []string{
 			pterm.FgCyan.Sprint(e.Name),
 			recommended,
+			scriptless,
+			reach,
 			checksum,
 			gpg,
 			verify,
@@ -200,12 +222,19 @@ func runBackendsInfo(cmd *cobra.Command, args []string) error {
 		recommended = "yes"
 	}
 
+	scriptless := "no"
+	if b.IsScriptless() {
+		scriptless = "yes"
+	}
+
 	fmt.Println()
 	pterm.DefaultSection.Printf("Backend: %s", pterm.FgCyan.Sprint(b.Name()))
 	pterm.DefaultTable.
 		WithSeparator("   ").
 		WithData(pterm.TableData{
 			{"Recommended", recommended},
+			{"Scriptless (No code exec during install)", scriptless},
+			{"Reach / Coverage", b.GetReach()},
 			{"Checksum verification", checksum},
 			{"GPG signature", gpg},
 		}).Render()

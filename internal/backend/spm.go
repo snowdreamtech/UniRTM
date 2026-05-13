@@ -62,3 +62,11 @@ func (b *SpmBackend) AttestationType() string {
 func (b *SpmBackend) IsRecommended() bool {
 	return true
 }
+
+func (b *SpmBackend) IsScriptless() bool {
+	return true
+}
+
+func (b *SpmBackend) GetReach() string {
+	return "Large"
+}

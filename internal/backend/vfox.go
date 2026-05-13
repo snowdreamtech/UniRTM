@@ -61,3 +61,11 @@ func (b *VfoxBackend) AttestationType() string {
 func (b *VfoxBackend) IsRecommended() bool {
 	return false
 }
+
+func (b *VfoxBackend) IsScriptless() bool {
+	return false
+}
+
+func (b *VfoxBackend) GetReach() string {
+	return "Huge"
+}

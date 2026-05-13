@@ -65,3 +65,11 @@ func (b *CondaBackend) AttestationType() string {
 func (b *CondaBackend) IsRecommended() bool {
 	return true
 }
+
+func (b *CondaBackend) IsScriptless() bool {
+	return true
+}
+
+func (b *CondaBackend) GetReach() string {
+	return "Large"
+}

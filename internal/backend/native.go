@@ -148,3 +148,11 @@ func (b *NativeBackend) AttestationType() string {
 func (b *NativeBackend) IsRecommended() bool {
 	return true
 }
+
+func (b *NativeBackend) IsScriptless() bool {
+	return true
+}
+
+func (b *NativeBackend) GetReach() string {
+	return "Small"
+}

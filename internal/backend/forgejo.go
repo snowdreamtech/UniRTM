@@ -166,3 +166,11 @@ type forgejoAsset struct {
 func (b *ForgejoBackend) IsRecommended() bool {
 	return true
 }
+
+func (b *ForgejoBackend) IsScriptless() bool {
+	return true
+}
+
+func (b *ForgejoBackend) GetReach() string {
+	return "Large"
+}

@@ -131,3 +131,11 @@ func (b *GemBackend) AttestationType() string {
 func (b *GemBackend) IsRecommended() bool {
 	return true
 }
+
+func (b *GemBackend) IsScriptless() bool {
+	return true
+}
+
+func (b *GemBackend) GetReach() string {
+	return "Large"
+}

@@ -170,3 +170,11 @@ type gitlabAsset struct {
 func (b *GitlabBackend) IsRecommended() bool {
 	return true
 }
+
+func (b *GitlabBackend) IsScriptless() bool {
+	return true
+}
+
+func (b *GitlabBackend) GetReach() string {
+	return "Large"
+}

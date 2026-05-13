@@ -136,3 +136,11 @@ func (b *NpmBackend) AttestationType() string {
 func (b *NpmBackend) IsRecommended() bool {
 	return true
 }
+
+func (b *NpmBackend) IsScriptless() bool {
+	return true
+}
+
+func (b *NpmBackend) GetReach() string {
+	return "Huge"
+}

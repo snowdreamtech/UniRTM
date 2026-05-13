@@ -71,6 +71,12 @@ type Backend interface {
 
 	// IsRecommended indicates whether this backend is recommended for use.
 	IsRecommended() bool
+
+	// IsScriptless indicates whether this backend performs installation without executing arbitrary scripts.
+	IsScriptless() bool
+
+	// GetReach returns the relative coverage/reach of this backend (e.g., "Small", "Medium", "Large", "Huge").
+	GetReach() string
 }
 
 // BackendError represents an error from a backend operation.

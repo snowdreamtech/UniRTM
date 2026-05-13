@@ -175,3 +175,11 @@ type githubAsset struct {
 func (g *GitHubBackend) IsRecommended() bool {
 	return true
 }
+
+func (g *GitHubBackend) IsScriptless() bool {
+	return true
+}
+
+func (g *GitHubBackend) GetReach() string {
+	return "Large"
+}

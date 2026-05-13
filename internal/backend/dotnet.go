@@ -115,3 +115,11 @@ func (b *DotnetBackend) AttestationType() string {
 func (b *DotnetBackend) IsRecommended() bool {
 	return true
 }
+
+func (b *DotnetBackend) IsScriptless() bool {
+	return true
+}
+
+func (b *DotnetBackend) GetReach() string {
+	return "Large"
+}

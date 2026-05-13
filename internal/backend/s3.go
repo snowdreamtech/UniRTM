@@ -102,3 +102,11 @@ func (b *S3Backend) AttestationType() string {
 func (b *S3Backend) IsRecommended() bool {
 	return true
 }
+
+func (b *S3Backend) IsScriptless() bool {
+	return true
+}
+
+func (b *S3Backend) GetReach() string {
+	return "Small"
+}

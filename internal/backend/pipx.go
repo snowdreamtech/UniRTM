@@ -55,3 +55,11 @@ func (b *PipxBackend) AttestationType() string {
 func (b *PipxBackend) IsRecommended() bool {
 	return true
 }
+
+func (b *PipxBackend) IsScriptless() bool {
+	return true
+}
+
+func (b *PipxBackend) GetReach() string {
+	return "Large"
+}

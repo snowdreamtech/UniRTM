@@ -239,3 +239,11 @@ func (b *AsdfBackend) lookupPluginURL(tool string) (string, error) {
 func (b *AsdfBackend) IsRecommended() bool {
 	return false
 }
+
+func (b *AsdfBackend) IsScriptless() bool {
+	return false
+}
+
+func (b *AsdfBackend) GetReach() string {
+	return "Huge"
+}

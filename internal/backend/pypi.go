@@ -130,3 +130,11 @@ func (b *PypiBackend) AttestationType() string {
 func (b *PypiBackend) IsRecommended() bool {
 	return true
 }
+
+func (b *PypiBackend) IsScriptless() bool {
+	return true
+}
+
+func (b *PypiBackend) GetReach() string {
+	return "Huge"
+}
