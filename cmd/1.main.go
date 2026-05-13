@@ -66,6 +66,7 @@ audit and logging capabilities.`,
 		SilenceUsage:     true,
 		SilenceErrors:    true,
 		Args:             cobra.ArbitraryArgs,
+		SuggestionsMinimumDistance: 2,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				// If the first argument is not a known command, treat it as a task name.

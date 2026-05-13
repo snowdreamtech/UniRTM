@@ -8,11 +8,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"html/template"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"text/template"
 
 	"github.com/pelletier/go-toml/v2"
 	"github.com/pterm/pterm"
@@ -135,8 +135,11 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 	}
 	v.SetConfigType(configType)
 
+	// Capture the rendered bytes before Viper consumes them
+	renderedBytes := renderedBuf.Bytes()
+
 	// Read the configuration file from buffer
-	if err := v.ReadConfig(&renderedBuf); err != nil {
+	if err := v.ReadConfig(bytes.NewReader(renderedBytes)); err != nil {
 		// Provide descriptive error messages for common issues
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			return nil, fmt.Errorf("configuration file not found: %s", path)
@@ -152,7 +155,7 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 	var config Config
 
 	if configType == "toml" {
-		if err := toml.Unmarshal(renderedBuf.Bytes(), &config); err != nil {
+		if err := toml.Unmarshal(renderedBytes, &config); err != nil {
 			return nil, fmt.Errorf("failed to parse TOML configuration file %s: %w", path, err)
 		}
 	} else {

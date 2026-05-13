@@ -6,9 +6,9 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/backend"
@@ -55,8 +55,45 @@ func Execute() {
 		os.Exit(0)
 	}
 
-	if err := rootCmd.Execute(); err != nil {
-		log.Fatalln(err)
+	err := rootCmd.Execute()
+	if err != nil {
+		if strings.Contains(err.Error(), "unknown command") {
+			target := ""
+			if len(os.Args) > 1 {
+				target = os.Args[len(os.Args)-1]
+			}
+			
+			// Suggest from ALL commands and subcommands
+			var candidates []string
+			var collectCmds func(*cobra.Command)
+			collectCmds = func(c *cobra.Command) {
+				for _, sub := range c.Commands() {
+					if sub.Hidden {
+						continue
+					}
+					candidates = append(candidates, sub.Name())
+					candidates = append(candidates, sub.Aliases...)
+					collectCmds(sub)
+				}
+			}
+			collectCmds(rootCmd)
+			
+			// De-duplicate candidates
+			unique := make(map[string]struct{})
+			var finalCandidates []string
+			for _, c := range candidates {
+				if _, ok := unique[c]; !ok {
+					unique[c] = struct{}{}
+					finalCandidates = append(finalCandidates, c)
+				}
+			}
+			
+			output.Suggest(os.Stderr, target, finalCandidates)
+		}
+		
+		formatter := output.DefaultFormatter()
+		formatter.Error(err.Error(), nil)
+		os.Exit(1)
 	}
 }
 
