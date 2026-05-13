@@ -4,7 +4,6 @@
 package cmd
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -109,74 +108,16 @@ func runEnable(cmd *cobra.Command, args []string) error {
 	}
 
 	formatter.Info(fmt.Sprintf("Detected shell: %s", shell), nil)
-	formatter.Info(fmt.Sprintf("Target configuration file: %s", configFile), nil)
 	formatter.Info(fmt.Sprintf("Enabling %s via: %s", targetTool, exePath), nil)
 
-	// 3. Check if already enabled
-	if exists, _ := fileExists(configFile); !exists {
-		if err := os.MkdirAll(filepath.Dir(configFile), 0755); err != nil {
-			return fmt.Errorf("failed to create config directory: %w", err)
-		}
-		f, err := os.Create(configFile)
-		if err != nil {
-			return fmt.Errorf("failed to create config file: %w", err)
-		}
-		f.Close()
+	// 3. Inject configuration
+	scm := service.NewShellConfigManager(formatter, dryRun)
+	if err := scm.Inject(shell, targetTool, activationCmd); err != nil {
+		return err
 	}
 
-	file, err := os.Open(configFile)
-	if err != nil {
-		return fmt.Errorf("failed to open config file: %w", err)
-	}
-	defer file.Close()
-
-	alreadyEnabled := false
-	scanner := bufio.NewScanner(file)
-	searchPattern := fmt.Sprintf("%s activate", targetTool)
-	for scanner.Scan() {
-		if strings.Contains(scanner.Text(), searchPattern) {
-			alreadyEnabled = true
-			break
-		}
-	}
-
-	if alreadyEnabled {
-		formatter.Success(fmt.Sprintf("%s is already enabled in your shell configuration.", targetTool))
-		return nil
-	}
-
-	// 4. Read entire content and trim trailing whitespace to prevent accumulating newlines
-	content, err := os.ReadFile(configFile)
-	if err != nil {
-		return fmt.Errorf("failed to read config file: %w", err)
-	}
-	cleanContent := strings.TrimRight(string(content), " \t\r\n")
-
-	// 5. Write back with consistent spacing
-	f, err := os.OpenFile(configFile, os.O_WRONLY|os.O_TRUNC, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to open config file for writing: %w", err)
-	}
-	defer f.Close()
-
-	activationBlock := fmt.Sprintf("\n\n# %s shell activation\n%s\n", targetTool, activationCmd)
-	if _, err := f.WriteString(cleanContent + activationBlock); err != nil {
-		return fmt.Errorf("failed to write to config file: %w", err)
-	}
-
-	formatter.Success(fmt.Sprintf("Successfully enabled %s in %s", targetTool, configFile))
-	fmt.Printf("\nPlease restart your shell or run: source %s\n", configFile)
+	configFilePath, _ := scm.GetConfigPath(shell)
+	fmt.Printf("\nPlease restart your shell or run: source %s\n", configFilePath)
 
 	return nil
-}
-
-func fileExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return false, err
 }

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -158,7 +157,8 @@ func installCompletion(formatter output.Formatter, cmd *cobra.Command, shellType
 
 	// Update RC file if needed
 	if configFile != "" {
-		if err := updateShellConfig(formatter, configFile, activationCmd, "completion"); err != nil {
+		scm := service.NewShellConfigManager(formatter, dryRun)
+		if err := scm.Inject(shellType, "completion", activationCmd); err != nil {
 			return err
 		}
 	}
@@ -213,104 +213,12 @@ func uninstallCompletion(formatter output.Formatter, shellType service.ShellType
 
 	// Update RC file if needed
 	if configFile != "" {
-		if err := removeShellConfig(formatter, configFile, "completion"); err != nil {
+		scm := service.NewShellConfigManager(formatter, dryRun)
+		if err := scm.Remove(shellType, "completion"); err != nil {
 			return err
 		}
 	}
 
 	formatter.Success(fmt.Sprintf("UniRTM completion for %s has been disabled.", shellType))
-	return nil
-}
-
-func updateShellConfig(formatter output.Formatter, configFile, activationCmd, marker string) error {
-	// Check if already present
-	content, err := os.ReadFile(configFile)
-	if err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to read config file: %w", err)
-	}
-
-	searchPattern := fmt.Sprintf("# unirtm %s", marker)
-	if strings.Contains(string(content), searchPattern) {
-		formatter.Info(fmt.Sprintf("UniRTM %s logic already present in %s", marker, configFile), nil)
-		return nil
-	}
-
-	if dryRun {
-		formatter.Info(fmt.Sprintf("[dry-run] Would update %s with %s activation logic", configFile, marker), nil)
-		return nil
-	}
-
-	// Ensure file exists
-	if os.IsNotExist(err) {
-		if err := os.MkdirAll(filepath.Dir(configFile), 0755); err != nil {
-			return err
-		}
-		if err := os.WriteFile(configFile, []byte(""), 0644); err != nil {
-			return err
-		}
-	}
-
-	// Append
-	f, err := os.OpenFile(configFile, os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	block := fmt.Sprintf("\n# unirtm %s activation\n%s\n", marker, activationCmd)
-	if _, err := f.WriteString(block); err != nil {
-		return err
-	}
-
-	formatter.Success(fmt.Sprintf("Updated %s with %s logic", configFile, marker))
-	return nil
-}
-
-func removeShellConfig(formatter output.Formatter, configFile, marker string) error {
-	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		return nil
-	}
-
-	if dryRun {
-		formatter.Info(fmt.Sprintf("[dry-run] Would remove %s logic from %s", marker, configFile), nil)
-		return nil
-	}
-
-	content, err := os.ReadFile(configFile)
-	if err != nil {
-		return fmt.Errorf("failed to read config file: %w", err)
-	}
-
-	searchPattern := fmt.Sprintf("unirtm %s", marker)
-	if !strings.Contains(string(content), searchPattern) {
-		return nil
-	}
-
-	lines := strings.Split(string(content), "\n")
-	var newLines []string
-	for _, line := range lines {
-		// Remove the comment marker line
-		if strings.Contains(line, searchPattern) {
-			continue
-		}
-		// Also remove the specific source/activation line if we find it
-		// We look for common patterns we use in install
-		if strings.Contains(line, "unirtm") && strings.Contains(line, marker) && (strings.Contains(line, "source") || strings.Contains(line, "activate")) {
-			continue
-		}
-		newLines = append(newLines, line)
-	}
-
-	// Clean up trailing empty lines
-	for len(newLines) > 0 && strings.TrimSpace(newLines[len(newLines)-1]) == "" {
-		newLines = newLines[:len(newLines)-1]
-	}
-
-	output := strings.Join(newLines, "\n") + "\n"
-	if err := os.WriteFile(configFile, []byte(output), 0644); err != nil {
-		return fmt.Errorf("failed to write config file: %w", err)
-	}
-
-	formatter.Success(fmt.Sprintf("Removed %s logic from %s", marker, configFile))
 	return nil
 }
