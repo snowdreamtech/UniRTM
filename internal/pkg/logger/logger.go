@@ -36,7 +36,7 @@ const (
 
 var (
 	// Logger is the global logger.
-	Logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
+	Logger = zerolog.New(os.Stderr).With().Timestamp().Logger()
 
 	// NoColor disables the colorized output.
 	NoColor bool
@@ -116,8 +116,8 @@ func InitUniRTMLogger(operationLogPath, errorLogPath string) (operationWriter io
 		Compress:   true, // compress rotated files
 	}
 
-	// Create multi-writers for operation logs (file + console)
-	operationWriter = io.MultiWriter(operationLog, os.Stdout)
+	// Create multi-writers for operation logs (file + stderr)
+	operationWriter = io.MultiWriter(operationLog, os.Stderr)
 	operationLogWriter = operationWriter
 
 	// Create multi-writers for error logs (file + stderr)
@@ -202,7 +202,7 @@ func initGinLogger(filepath string) io.Writer {
 		Compress:   true, // disabled by default
 	}
 
-	ginWriter := io.MultiWriter(ginlog, os.Stdout)
+	ginWriter := io.MultiWriter(ginlog, os.Stderr)
 
 	// gin.DefaultWriter = io.MultiWriter(accesslog)
 	// Use the following code if you need to write the logs to file and console at the same time.

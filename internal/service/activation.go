@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -461,14 +462,11 @@ func (m *ActivationManager) generatePosixInstructions(shell ShellType) string {
 		shellName, shellName, configFile)
 }
 
-// toolVersionEnvVar returns the environment variable name for a tool version.
-//
-// The environment variable name is UNIRTM_<TOOL>_VERSION, where <TOOL> is
-// the uppercase tool name with hyphens replaced by underscores.
 func (m *ActivationManager) toolVersionEnvVar(tool string) string {
-	// Convert tool name to uppercase and replace hyphens with underscores
+	// Convert tool name to uppercase and replace all non-alphanumeric characters with underscores
+	reg := regexp.MustCompile(`[^a-zA-Z0-9_]`)
 	envVar := strings.ToUpper(tool)
-	envVar = strings.ReplaceAll(envVar, "-", "_")
+	envVar = reg.ReplaceAllString(envVar, "_")
 	return fmt.Sprintf("UNIRTM_%s_VERSION", envVar)
 }
 
