@@ -13,11 +13,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	if rootCmd != nil {
-		rootCmd.AddCommand(disableCmd)
-	}
-}
+var (
+	disableAll bool
+)
 
 // disableCmd intelligently disables UniRTM shell activation.
 var disableCmd = &cobra.Command{
@@ -37,6 +35,13 @@ to disable mise instead.`,
 	RunE:      runDisable,
 }
 
+func init() {
+	disableCmd.Flags().BoolVarP(&disableAll, "all", "a", false, "Disable for all supported shells (zsh, bash, fish, powershell)")
+	if rootCmd != nil {
+		rootCmd.AddCommand(disableCmd)
+	}
+}
+
 func runDisable(cmd *cobra.Command, args []string) error {
 	formatter := output.NewFormatter(output.FormatterOptions{
 		Format:  getOutputFormat(),
@@ -54,7 +59,21 @@ func runDisable(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("unsupported tool: %s. Supported tools: unirtm, mise", targetTool)
 	}
 
-	// 1. Detect shell
+	scm := service.NewShellConfigManager(formatter, dryRun)
+	shells := []service.ShellType{service.ShellZsh, service.ShellBash, service.ShellFish, service.ShellPowerShell}
+
+	// 1. Handle --all mode
+	if disableAll {
+		for _, st := range shells {
+			formatter.Info(fmt.Sprintf("Disabling %s for %s...", targetTool, st), nil)
+			if err := scm.Remove(st, targetTool); err != nil {
+				formatter.Warning(fmt.Sprintf("Failed to disable for %s: %v", st, err), nil)
+			}
+		}
+		return nil
+	}
+
+	// 2. Detect shell
 	shell, err := service.DetectShell()
 	if err != nil {
 		return fmt.Errorf("failed to detect shell: %w", err)
@@ -63,8 +82,7 @@ func runDisable(cmd *cobra.Command, args []string) error {
 	formatter.Info(fmt.Sprintf("Detected shell: %s", shell), nil)
 	formatter.Info(fmt.Sprintf("Disabling %s...", targetTool), nil)
 
-	// 2. Remove configuration
-	scm := service.NewShellConfigManager(formatter, dryRun)
+	// 3. Remove configuration
 	if err := scm.Remove(shell, targetTool); err != nil {
 		return err
 	}

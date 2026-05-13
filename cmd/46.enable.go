@@ -15,11 +15,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-	if rootCmd != nil {
-		rootCmd.AddCommand(enableCmd)
-	}
-}
+var (
+	enableAll bool
+)
 
 // enableCmd intelligently enables UniRTM shell activation.
 var enableCmd = &cobra.Command{
@@ -39,6 +37,13 @@ to enable mise instead. This is useful for switching between the two tools.`,
 	RunE:      runEnable,
 }
 
+func init() {
+	enableCmd.Flags().BoolVarP(&enableAll, "all", "a", false, "Enable for all supported shells (zsh, bash, fish, powershell)")
+	if rootCmd != nil {
+		rootCmd.AddCommand(enableCmd)
+	}
+}
+
 func runEnable(cmd *cobra.Command, args []string) error {
 	formatter := output.NewFormatter(output.FormatterOptions{
 		Format:  getOutputFormat(),
@@ -56,22 +61,57 @@ func runEnable(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("unsupported tool: %s. Supported tools: unirtm, mise", targetTool)
 	}
 
-	// 1. Detect shell
+	scm := service.NewShellConfigManager(formatter, dryRun)
+	shells := []service.ShellType{service.ShellZsh, service.ShellBash, service.ShellFish, service.ShellPowerShell}
+
+	// 1. Handle --all mode
+	if enableAll {
+		for _, st := range shells {
+			configPath, _ := scm.GetConfigPath(st)
+			if _, err := os.Stat(configPath); err == nil {
+				formatter.Info(fmt.Sprintf("Enabling %s for %s...", targetTool, st), nil)
+				activationCmd, err := getActivationCmd(targetTool, st)
+				if err != nil {
+					formatter.Warning(fmt.Sprintf("Failed to get activation command for %s: %v", st, err), nil)
+					continue
+				}
+				if err := scm.Inject(st, targetTool, activationCmd); err != nil {
+					formatter.Warning(fmt.Sprintf("Failed to enable for %s: %v", st, err), nil)
+				}
+			}
+		}
+		return nil
+	}
+
+	// 2. Detect shell
 	shell, err := service.DetectShell()
 	if err != nil {
 		return fmt.Errorf("failed to detect shell: %w", err)
 	}
 
-	// 2. Resolve config file and activation command
-	var configFile string
-	var activationCmd string
-	home, err := os.UserHomeDir()
+	// 3. Resolve activation command
+	activationCmd, err := getActivationCmd(targetTool, shell)
 	if err != nil {
-		return fmt.Errorf("failed to get home directory: %w", err)
+		return err
 	}
 
+	formatter.Info(fmt.Sprintf("Detected shell: %s", shell), nil)
+
+	// 4. Inject configuration
+	if err := scm.Inject(shell, targetTool, activationCmd); err != nil {
+		return err
+	}
+
+	configFilePath, _ := scm.GetConfigPath(shell)
+	fmt.Printf("\nPlease restart your shell or run: source %s\n", configFilePath)
+
+	return nil
+}
+
+func getActivationCmd(targetTool string, shell service.ShellType) (string, error) {
 	// Get the absolute path of the target executable
 	var exePath string
+	var err error
 	if targetTool == "unirtm" {
 		exePath, err = os.Executable()
 		if err != nil {
@@ -89,35 +129,14 @@ func runEnable(cmd *cobra.Command, args []string) error {
 
 	switch shell {
 	case service.ShellZsh:
-		configFile = filepath.Join(home, ".zshrc")
-		activationCmd = fmt.Sprintf(`eval "$(%s activate zsh)"`, exePath)
+		return fmt.Sprintf(`eval "$(%s activate zsh)"`, exePath), nil
 	case service.ShellBash:
-		configFile = filepath.Join(home, ".bashrc")
-		activationCmd = fmt.Sprintf(`eval "$(%s activate bash)"`, exePath)
+		return fmt.Sprintf(`eval "$(%s activate bash)"`, exePath), nil
 	case service.ShellFish:
-		configFile = filepath.Join(home, ".config/fish/config.fish")
-		activationCmd = fmt.Sprintf(`%s activate fish | source`, exePath)
+		return fmt.Sprintf(`%s activate fish | source`, exePath), nil
 	case service.ShellPowerShell:
-		configFile = os.Getenv("PROFILE")
-		if configFile == "" {
-			configFile = filepath.Join(home, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1")
-		}
-		activationCmd = fmt.Sprintf(`%s activate powershell | Out-String | Invoke-Expression`, exePath)
+		return fmt.Sprintf(`%s activate powershell | Out-String | Invoke-Expression`, exePath), nil
 	default:
-		return fmt.Errorf("unsupported shell for auto-enable: %s", shell)
+		return "", fmt.Errorf("unsupported shell: %s", shell)
 	}
-
-	formatter.Info(fmt.Sprintf("Detected shell: %s", shell), nil)
-	formatter.Info(fmt.Sprintf("Enabling %s via: %s", targetTool, exePath), nil)
-
-	// 3. Inject configuration
-	scm := service.NewShellConfigManager(formatter, dryRun)
-	if err := scm.Inject(shell, targetTool, activationCmd); err != nil {
-		return err
-	}
-
-	configFilePath, _ := scm.GetConfigPath(shell)
-	fmt.Printf("\nPlease restart your shell or run: source %s\n", configFilePath)
-
-	return nil
 }
