@@ -5,6 +5,8 @@ package backend
 
 import (
 	"context"
+	"os/exec"
+	"strings"
 )
 
 // VfoxBackend implements the Backend interface for vfox plugins.
@@ -21,16 +23,44 @@ func (b *VfoxBackend) Name() string {
 }
 
 func (b *VfoxBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
-	// Rely on explicit requests or local vfox CLI output for full listing.
-	return nil, NewBackendError(b.Name(), tool, "vfox version listing via API is not natively supported without a Lua VM or CLI wrapper", nil)
+	// Since we don't have a Lua VM to run vfox plugins, we shell out to vfox if installed.
+	cmd := exec.CommandContext(ctx, "vfox", "list", "all", tool)
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, NewBackendError(b.Name(), tool, "vfox list all failed (ensure vfox is installed)", err)
+	}
+
+	var versions []VersionInfo
+	lines := strings.Split(string(out), "\n")
+	for _, line := range lines {
+		v := strings.TrimSpace(line)
+		if v == "" || strings.Contains(v, "Available versions") {
+			continue
+		}
+		// vfox output can be messy, we try to grab the first word which is usually the version
+		parts := strings.Fields(v)
+		if len(parts) > 0 {
+			versions = append(versions, VersionInfo{
+				Version:  parts[0],
+				Platform: platform,
+			})
+		}
+	}
+
+	return versions, nil
 }
 
 func (b *VfoxBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
 	if versionRequest == "latest" {
-		return &VersionInfo{
-			Version:  "latest",
-			Platform: platform,
-		}, nil
+		versions, err := b.ListVersions(ctx, tool, platform)
+		if err != nil {
+			return nil, err
+		}
+		if len(versions) == 0 {
+			return nil, NewBackendError(b.Name(), tool, "no versions found", nil)
+		}
+		// vfox list all usually returns newest last or we can pick last
+		return &versions[len(versions)-1], nil
 	}
 
 	return &VersionInfo{
