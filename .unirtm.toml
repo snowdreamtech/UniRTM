@@ -41,6 +41,9 @@ version = '1.7.12'
 [tools.'github:zizmorcore/zizmor']
 version = '1.24.1'
 
+[tools.'github:anchore/syft']
+version = '1.44.0'
+
 [tools.go]
 version = '1.26.2'
 

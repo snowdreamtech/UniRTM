@@ -18,7 +18,7 @@ version = "4.3.2"
 backend = "native"
 
 [tools."cmake"."platforms.macos-amd64"]
-url = "https://github.com/Kitware/CMake/releases/download/v4.3.2/cmake-4.3.2-macos-universal.dmg"
+url = "https://github.com/Kitware/CMake/releases/download/v4.3.2/cmake-4.3.2-macos-universal.tar.gz"
 gpg_key = "CBA23971357C2E6590D9EFD3EC8FEF3A7BFB4EDA"
 
 [[tools."dotenv-linter/dotenv-linter"]]
