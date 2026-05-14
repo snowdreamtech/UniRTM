@@ -28,6 +28,11 @@ func NewGitHubBackend() *GitHubBackend {
 }
 
 func (g *GitHubBackend) Name() string            { return "github" }
+
+func (b *GitHubBackend) Dependencies() []string {
+	return nil
+}
+
 func (g *GitHubBackend) GetClient() *http.Client { return g.client }
 func (g *GitHubBackend) GetAttestationType() string {
 	return "GitHub Attestation"

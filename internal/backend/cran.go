@@ -22,6 +22,9 @@ func (b *CranBackend) Name() string {
 	return "cran"
 }
 
+func (b *CranBackend) Dependencies() []string {
+	return nil
+}
 func (b *CranBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	// CRAN versions are usually found at https://cran.r-project.org/package=<tool>
 	// For simplicity, we return a limited implementation as a placeholder.

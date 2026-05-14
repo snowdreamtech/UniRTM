@@ -83,6 +83,10 @@ type Backend interface {
 
 	// SupportsOffline indicates whether this backend supports offline mode or private mirrors.
 	SupportsOffline() bool
+
+	// Dependencies returns a list of backend names or tools that this backend depends on.
+	// This is used to determine the installation order.
+	Dependencies() []string
 }
 
 // BackendError represents an error from a backend operation.

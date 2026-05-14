@@ -24,6 +24,9 @@ func (b *CabalBackend) Name() string {
 	return "cabal"
 }
 
+func (b *CabalBackend) Dependencies() []string {
+	return nil
+}
 type hackageResponse []struct {
 	Version string `json:"version"`
 }

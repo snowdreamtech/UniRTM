@@ -29,6 +29,10 @@ func (b *CargoBackend) Name() string {
 	return "cargo"
 }
 
+func (b *CargoBackend) Dependencies() []string {
+	return []string{"rust"}
+}
+
 type cargoRegistryResponse struct {
 	Crate struct {
 		MaxVersion string `json:"max_version"`

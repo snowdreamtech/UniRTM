@@ -30,6 +30,9 @@ func (b *CondaBackend) Name() string {
 	return "conda"
 }
 
+func (b *CondaBackend) Dependencies() []string {
+	return nil
+}
 type anacondaResponse struct {
 	Versions []string `json:"versions"`
 }

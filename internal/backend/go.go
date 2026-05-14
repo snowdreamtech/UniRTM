@@ -26,6 +26,10 @@ func (b *GoBackend) Name() string {
 	return "go"
 }
 
+func (b *GoBackend) Dependencies() []string {
+	return []string{"go"}
+}
+
 func (b *GoBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	// Go proxy API: https://proxy.golang.org/<module>/@v/list
 	// The module name needs to be escaped (lowercase and replace uppercase with !lowercase)

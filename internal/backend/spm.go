@@ -22,6 +22,9 @@ func (b *SpmBackend) Name() string {
 	return "spm"
 }
 
+func (b *SpmBackend) Dependencies() []string {
+	return nil
+}
 func (b *SpmBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	// For SPM, tool is usually a git repo URL.
 	// We use git ls-remote to fetch tags.

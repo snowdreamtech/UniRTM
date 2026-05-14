@@ -22,6 +22,9 @@ func (b *VfoxBackend) Name() string {
 	return "vfox"
 }
 
+func (b *VfoxBackend) Dependencies() []string {
+	return nil
+}
 func (b *VfoxBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	// Since we don't have a Lua VM to run vfox plugins, we shell out to vfox if installed.
 	cmd := exec.CommandContext(ctx, "vfox", "list", "all", tool)

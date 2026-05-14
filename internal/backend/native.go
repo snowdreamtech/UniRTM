@@ -25,6 +25,9 @@ func (b *NativeBackend) Name() string {
 	return "native"
 }
 
+func (b *NativeBackend) Dependencies() []string {
+	return nil
+}
 func (b *NativeBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	recipe, ok := b.recipes[tool]
 	if !ok {

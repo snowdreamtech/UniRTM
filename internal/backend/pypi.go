@@ -29,6 +29,9 @@ func (b *PypiBackend) Name() string {
 	return "pypi"
 }
 
+func (b *PypiBackend) Dependencies() []string {
+	return nil
+}
 type pypiRegistryResponse struct {
 	Info struct {
 		Version string `json:"version"`

@@ -34,6 +34,11 @@ func NewForgejoBackend() *ForgejoBackend {
 }
 
 func (b *ForgejoBackend) Name() string            { return "forgejo" }
+
+func (b *ForgejoBackend) Dependencies() []string {
+	return nil
+}
+
 func (b *ForgejoBackend) GetClient() *http.Client { return b.client }
 func (b *ForgejoBackend) GetAttestationType() string {
 	return "SLSA"

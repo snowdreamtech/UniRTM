@@ -22,6 +22,9 @@ func (b *LuarocksBackend) Name() string {
 	return "luarocks"
 }
 
+func (b *LuarocksBackend) Dependencies() []string {
+	return nil
+}
 func (b *LuarocksBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	// Luarocks doesn't have a very clean JSON API for just listing versions of one rock easily without parsing a huge manifest.
 	// But we can check https://luarocks.org/modules/<user>/<tool>

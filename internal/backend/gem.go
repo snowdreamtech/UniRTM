@@ -29,6 +29,10 @@ func (b *GemBackend) Name() string {
 	return "gem"
 }
 
+func (b *GemBackend) Dependencies() []string {
+	return []string{"ruby"}
+}
+
 type gemVersion struct {
 	Number string `json:"number"`
 }

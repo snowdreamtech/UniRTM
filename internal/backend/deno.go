@@ -24,6 +24,9 @@ func (b *DenoBackend) Name() string {
 	return "deno"
 }
 
+func (b *DenoBackend) Dependencies() []string {
+	return nil
+}
 type denoVersionsResponse struct {
 	Latest   string   `json:"latest"`
 	Versions []string `json:"versions"`

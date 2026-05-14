@@ -35,6 +35,11 @@ func NewGitlabBackend() *GitlabBackend {
 }
 
 func (b *GitlabBackend) Name() string            { return "gitlab" }
+
+func (b *GitlabBackend) Dependencies() []string {
+	return nil
+}
+
 func (b *GitlabBackend) GetClient() *http.Client { return b.client }
 func (b *GitlabBackend) GetAttestationType() string {
 	return "SLSA"

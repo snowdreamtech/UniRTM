@@ -25,6 +25,9 @@ func (b *ComposerBackend) Name() string {
 	return "composer"
 }
 
+func (b *ComposerBackend) Dependencies() []string {
+	return nil
+}
 type packagistResponse struct {
 	Package struct {
 		Versions map[string]interface{} `json:"versions"`

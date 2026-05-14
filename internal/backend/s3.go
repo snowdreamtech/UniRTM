@@ -29,6 +29,9 @@ func (b *S3Backend) Name() string {
 	return "s3"
 }
 
+func (b *S3Backend) Dependencies() []string {
+	return nil
+}
 func (b *S3Backend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	// S3 bucket listing requires parsing XML from ?list-type=2 API, which can be complex
 	// For simplicity, we assume explicit version requests or a predefined versions.txt

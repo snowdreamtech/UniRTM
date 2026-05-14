@@ -24,6 +24,10 @@ func (b *PipxBackend) Name() string {
 	return "pipx"
 }
 
+func (b *PipxBackend) Dependencies() []string {
+	return []string{"python"}
+}
+
 func (b *PipxBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	return b.pypi.ListVersions(ctx, tool, platform)
 }

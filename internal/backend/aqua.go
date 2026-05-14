@@ -36,6 +36,9 @@ func (a *AquaBackend) Name() string {
 	return "aqua"
 }
 
+func (b *AquaBackend) Dependencies() []string {
+	return nil
+}
 // aquaPackage represents an Aqua package definition.
 type aquaPackage struct {
 	Type          string            `json:"type"`

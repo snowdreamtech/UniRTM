@@ -43,6 +43,9 @@ func (b *AsdfBackend) Name() string {
 	return "asdf"
 }
 
+func (b *AsdfBackend) Dependencies() []string {
+	return nil
+}
 // asdfAliases maps common tool names to their official asdf plugin names.
 var asdfAliases = map[string]string{
 	"node": "nodejs",

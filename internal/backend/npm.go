@@ -29,6 +29,10 @@ func (b *NpmBackend) Name() string {
 	return "npm"
 }
 
+func (b *NpmBackend) Dependencies() []string {
+	return []string{"node"}
+}
+
 type npmRegistryResponse struct {
 	Versions map[string]interface{} `json:"versions"`
 	Time     map[string]string      `json:"time"`

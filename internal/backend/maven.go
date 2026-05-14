@@ -25,6 +25,9 @@ func (b *MavenBackend) Name() string {
 	return "maven"
 }
 
+func (b *MavenBackend) Dependencies() []string {
+	return nil
+}
 type mavenSearchResponse struct {
 	Response struct {
 		Docs []struct {

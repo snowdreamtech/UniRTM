@@ -30,6 +30,9 @@ func (b *DotnetBackend) Name() string {
 	return "dotnet"
 }
 
+func (b *DotnetBackend) Dependencies() []string {
+	return nil
+}
 type nugetVersionsResponse struct {
 	Versions []string `json:"versions"`
 }

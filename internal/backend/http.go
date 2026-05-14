@@ -31,6 +31,9 @@ func (h *HTTPBackend) Name() string {
 	return "http"
 }
 
+func (h *HTTPBackend) Dependencies() []string {
+	return nil
+}
 // HTTPConfig represents the configuration for an HTTP backend tool.
 // This should be provided in the tool configuration.
 type HTTPConfig struct {

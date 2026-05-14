@@ -23,6 +23,9 @@ func (b *ZigBackend) Name() string {
 	return "zig"
 }
 
+func (b *ZigBackend) Dependencies() []string {
+	return nil
+}
 type zigDownloadResponse map[string]interface{}
 
 func (b *ZigBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
