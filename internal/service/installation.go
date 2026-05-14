@@ -215,10 +215,21 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	// Simple heuristic: if it contains 2 dots, it's likely a concrete version.
 	isConcrete := strings.Count(version, ".") >= 2 || (tool == "go" && strings.Count(version, ".") >= 1)
 	if isConcrete {
-		existing, err := im.installRepo.FindByToolAndVersion(ctx, tool, version)
-		if err == nil && existing != nil {
-			if _, statErr := os.Stat(existing.InstallPath); statErr == nil {
-				return ErrAlreadyInstalled
+		// Prepare variants to check (original, and v-toggle)
+		variants := []string{version}
+		if strings.HasPrefix(version, "v") {
+			variants = append(variants, strings.TrimPrefix(version, "v"))
+		} else {
+			variants = append(variants, "v"+version)
+		}
+
+		for _, v := range variants {
+			existing, err := im.installRepo.FindByToolAndVersion(ctx, tool, v)
+			if err == nil && existing != nil {
+				if _, statErr := os.Stat(existing.InstallPath); statErr == nil {
+					// Found a valid installation on disk
+					return ErrAlreadyInstalled
+				}
 			}
 		}
 	}
