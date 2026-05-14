@@ -72,15 +72,15 @@ func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		}
 
 		for _, f := range v.Files {
-			osName, archName, isSupported := parseNodeFile(f)
+			osName, archName, rawArch, isSupported := parseNodeFile(f)
 			if !isSupported {
 				continue
 			}
 
-			downloadURL := fmt.Sprintf("%s/%s/node-%s-%s-%s.tar.gz", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, archName)
+			downloadURL := fmt.Sprintf("%s/%s/node-%s-%s-%s.tar.gz", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, rawArch)
 			if flavor == "musl" {
 				// unofficial-builds naming convention: node-vX.Y.Z-linux-ARCH-musl.tar.gz
-				downloadURL = fmt.Sprintf("%s/%s/node-%s-%s-%s-musl.tar.gz", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, archName)
+				downloadURL = fmt.Sprintf("%s/%s/node-%s-%s-%s-musl.tar.gz", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, rawArch)
 			}
 
 			vi.Assets = append(vi.Assets, Asset{
@@ -104,15 +104,15 @@ func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 	return versions, nil
 }
 
-func parseNodeFile(f string) (string, string, bool) {
+func parseNodeFile(f string) (string, string, string, bool) {
 	// Node files format: os-arch (e.g., linux-x64, osx-arm64)
 	parts := strings.Split(f, "-")
 	if len(parts) < 2 {
-		return "", "", false
+		return "", "", "", false
 	}
 
 	osName := parts[0]
-	archName := parts[1]
+	rawArch := parts[1]
 
 	// Map osx to darwin
 	if osName == "osx" {
@@ -120,7 +120,8 @@ func parseNodeFile(f string) (string, string, bool) {
 	}
 
 	// Map architecture names to UniRTM standards
-	switch archName {
+	archName := rawArch
+	switch rawArch {
 	case "x64":
 		archName = "amd64"
 	case "x86":
@@ -129,8 +130,8 @@ func parseNodeFile(f string) (string, string, bool) {
 
 	// Skip non-tar.gz formats for now (like .msi, .pkg, .exe)
 	if strings.Contains(f, "zip") || strings.Contains(f, "7z") || strings.Contains(f, "msi") || strings.Contains(f, "pkg") {
-		return "", "", false
+		return "", "", "", false
 	}
 
-	return osName, archName, true
+	return osName, archName, rawArch, true
 }

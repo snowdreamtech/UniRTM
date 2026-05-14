@@ -12,6 +12,9 @@ url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_dar
 version = "0.15.12"
 backend = "github"
 
+[tools."astral-sh/ruff"."platforms.macos-amd64"]
+url = "https://github.com/astral-sh/ruff/releases/download/0.15.12/ruff-x86_64-apple-darwin.tar.gz"
+
 [[tools."checkmake/checkmake"]]
 version = "0.3.2"
 backend = "github"
@@ -22,6 +25,9 @@ url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake
 [[tools."cli/cli"]]
 version = "2.92.0"
 backend = "github"
+
+[tools."cli/cli"."platforms.macos-amd64"]
+url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_macOS_amd64.zip"
 
 [[tools."cmake"]]
 version = "4.3.2"
@@ -35,9 +41,15 @@ gpg_key = "CBA23971357C2E6590D9EFD3EC8FEF3A7BFB4EDA"
 version = "4.0.0"
 backend = "github"
 
+[tools."dotenv-linter/dotenv-linter"."platforms.macos-amd64"]
+url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-darwin-x86_64.tar.gz"
+
 [[tools."editorconfig-checker/editorconfig-checker"]]
 version = "3.6.1"
 backend = "github"
+
+[tools."editorconfig-checker/editorconfig-checker"."platforms.macos-amd64"]
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/ec-darwin-amd64.tar.gz"
 
 [[tools."github:astral-sh/ruff"]]
 version = "0.15.12"
@@ -95,13 +107,31 @@ backend = "github"
 version = "8.30.1"
 backend = "github"
 
+[tools."gitleaks/gitleaks"."platforms.macos-amd64"]
+url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_darwin_x64.tar.gz"
+
+[[tools."go"]]
+version = "1.26.2"
+backend = "native"
+
+[tools."go"."platforms.macos-amd64"]
+checksum = "bc3f1500d9968c36d705442d90ba91addf9271665033748b82532682e90a7966"
+url = "https://mirrors.aliyun.com/golang/go1.26.2.darwin-amd64.tar.gz"
+gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
+
 [[tools."google/addlicense"]]
 version = "1.2.0"
 backend = "github"
 
+[tools."google/addlicense"."platforms.macos-amd64"]
+url = "https://github.com/google/addlicense/releases/download/v1.2.0/addlicense_v1.2.0_macOS_x86_64.tar.gz"
+
 [[tools."google/osv-scanner"]]
 version = "2.3.5"
 backend = "github"
+
+[tools."google/osv-scanner"."platforms.macos-amd64"]
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_darwin_amd64"
 
 [[tools."gradle"]]
 version = "8.14.5"
@@ -122,6 +152,9 @@ gpg_key = "1BD97A6A154E7810EE0BC832E2F38302C8075E3D"
 [[tools."hadolint/hadolint"]]
 version = "2.14.0"
 backend = "github"
+
+[tools."hadolint/hadolint"."platforms.macos-amd64"]
+url = "https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-macos-x86_64"
 
 [[tools."helm"]]
 version = "3.15.0"
@@ -156,6 +189,13 @@ checksum = "c4d3076bc918b1300edc236f827bc49349a73f4ed577ec5a5e613410363af213"
 url = "https://julialang-s3.julialang.org/bin/mac/x64/1.10/julia-1.10.3-mac64.dmg"
 gpg_key = "3673DF529D9049477F76B37566E3C7DC03D6E495"
 
+[[tools."koalaman/shellcheck"]]
+version = "0.11.0"
+backend = "github"
+
+[tools."koalaman/shellcheck"."platforms.macos-amd64"]
+url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.x86_64.tar.gz"
+
 [[tools."maven"]]
 version = "3.9.6"
 backend = "native"
@@ -167,6 +207,17 @@ gpg_key = "29BEA2A645F2D6CED7FB12E02B172E3E156466E8"
 [[tools."mvdan/sh"]]
 version = "3.13.1"
 backend = "github"
+
+[tools."mvdan/sh"."platforms.macos-amd64"]
+url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_darwin_amd64"
+
+[[tools."node"]]
+version = "26.1.0"
+backend = "native"
+
+[tools."node"."platforms.macos-amd64"]
+url = "https://npmmirror.com/mirrors/node/v26.1.0/node-v26.1.0-darwin-x64.tar.gz"
+gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [[tools."npm:@commitlint/cli"]]
 version = "20.5.3"
@@ -240,7 +291,13 @@ backend = "asdf"
 version = "1.7.12"
 backend = "github"
 
+[tools."rhysd/actionlint"."platforms.macos-amd64"]
+url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_darwin_amd64.tar.gz"
+
 [[tools."zizmorcore/zizmor"]]
 version = "1.24.1"
 backend = "github"
+
+[tools."zizmorcore/zizmor"."platforms.macos-amd64"]
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-x86_64-apple-darwin.tar.gz"
 

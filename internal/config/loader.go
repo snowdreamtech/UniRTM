@@ -11,6 +11,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/pelletier/go-toml/v2"
 	"path/filepath"
+	"regexp"
 	"runtime"
 )
 
@@ -252,7 +253,14 @@ func (c *Config) ResolveEnvironment() (map[string]string, []string, []string, er
 
 		rendered := valStr
 		if strings.Contains(valStr, "{%") || strings.Contains(valStr, "{{") {
-			tpl, err := pongo2.FromString(valStr)
+			// Pre-process to support Jinja2/mise 'is defined' syntax
+			reNotDefined := regexp.MustCompile(`(\S+)\s+is\s+not\s+defined`)
+			processedTpl := reNotDefined.ReplaceAllString(valStr, "not $1")
+
+			reDefined := regexp.MustCompile(`(\S+)\s+is\s+defined`)
+			processedTpl = reDefined.ReplaceAllString(processedTpl, "$1")
+
+			tpl, err := pongo2.FromString(processedTpl)
 			if err == nil {
 				if out, err := tpl.Execute(ctx); err == nil {
 					rendered = out
