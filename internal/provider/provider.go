@@ -111,7 +111,6 @@ func GetNoProxyEnv(extraDomains ...string) []string {
 		"registry.taobao.org",
 		"npm.taobao.org",
 		"rsproxy.cn",
-		"static.rust-lang.org",
 	}
 	
 	// Add global configuration domains
