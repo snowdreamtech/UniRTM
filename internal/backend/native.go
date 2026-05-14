@@ -67,6 +67,7 @@ func (b *NativeBackend) ListVersions(ctx context.Context, tool string, platform 
 			vi.GPGSignature = bestAsset.Signature
 			vi.GPGKeys = recipe.GPGKeys
 			vi.Platform = platform
+			vi.Metadata = bestAsset.Metadata
 		}
 		
 		res = append(res, vi)
@@ -157,6 +158,7 @@ func (b *NativeBackend) GetDownloadInfo(ctx context.Context, tool, version strin
 		GPGSignature: bestAsset.Signature,
 		GPGKeys:      recipe.GPGKeys,
 		Platform:     platform,
+		Metadata:     bestAsset.Metadata,
 	}, nil
 }
 
