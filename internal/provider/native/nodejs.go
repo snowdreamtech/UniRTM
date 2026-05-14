@@ -93,6 +93,14 @@ func parseNodeFile(f string) (string, string, bool) {
 		osName = "darwin"
 	}
 
+	// Map architecture names to UniRTM standards
+	switch archName {
+	case "x64":
+		archName = "amd64"
+	case "x86":
+		archName = "386"
+	}
+
 	// Skip non-tar.gz formats for now (like .msi, .pkg, .exe)
 	if strings.Contains(f, "zip") || strings.Contains(f, "7z") || strings.Contains(f, "msi") || strings.Contains(f, "pkg") {
 		return "", "", false
