@@ -194,7 +194,7 @@ fi
 
 # Resolve binary path by checking possible backend-prefixed directories
 TOOL_BIN=""
-for BACKEND in "" native aqua ubi go-pkg cargo npm pipx brew ruby-build; do
+for BACKEND in "" aqua ubi go-pkg cargo npm pipx brew ruby-build; do
     if [ -z "${BACKEND}" ]; then
         DIR="%[4]s/%[3]s/${UNIRTM_VERSION}"
     else
