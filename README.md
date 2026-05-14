@@ -1,4 +1,6 @@
-# Snowdream Tech AI IDE Template
+# UniRTM (Universal Runtime Manager)
+
+Inspired by [mise](https://github.com/jdx/mise) (licensed under MIT). Special thanks to jdx and the mise community for the great ideas.
 
 [![CI Pipeline](https://img.shields.io/github/actions/workflow/status/snowdreamtech/template/ci.yml?branch=main&label=CI%20Pipeline)](https://github.com/snowdreamtech/template/actions/workflows/ci.yml)
 [![CD Pipeline](https://img.shields.io/github/actions/workflow/status/snowdreamtech/template/cd.yml?branch=main&label=CD%20Pipeline)](https://github.com/snowdreamtech/template/actions/workflows/cd.yml)
