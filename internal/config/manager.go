@@ -9,11 +9,13 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
-	"text/template"
 
+	"github.com/flosch/pongo2/v6"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -94,35 +96,107 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 		return nil, fmt.Errorf("failed to read configuration file %s: %w", path, err)
 	}
 
-	// Prepare template context
-	envMap := make(map[string]string)
+	// 1. Smart Type Casting for Environment Variables
+	// Convert common boolean strings to actual booleans to support logical checks in templates
+	templateCtx := pongo2.Context{
+		"os":   runtime.GOOS,
+		"arch": runtime.GOARCH,
+	}
+
+	typedEnv := make(map[string]interface{})
 	for _, e := range os.Environ() {
 		pair := strings.SplitN(e, "=", 2)
 		if len(pair) == 2 {
-			envMap[pair[0]] = pair[1]
+			k, v := pair[0], pair[1]
+			lowV := strings.ToLower(v)
+
+			// Convert to boolean if possible
+			if lowV == "true" || lowV == "1" || lowV == "yes" || lowV == "on" {
+				typedEnv[k] = true
+			} else if lowV == "false" || lowV == "0" || lowV == "no" || lowV == "off" {
+				typedEnv[k] = false
+			} else {
+				typedEnv[k] = v
+			}
 		}
 	}
+	templateCtx["env"] = typedEnv
+	templateCtx["Env"] = typedEnv
 
-	tmplData := struct {
-		Env  map[string]string
-		OS   string
-		Arch string
-	}{
-		Env:  envMap,
-		OS:   runtime.GOOS,
-		Arch: runtime.GOARCH,
+	// 2. Context Enrichment (Mise compatibility)
+	templateCtx["config"] = map[string]interface{}{
+		"dir": filepath.Dir(path),
 	}
 
-	// Parse and execute template
-	tmpl, err := template.New(filepath.Base(path)).Parse(string(contentBytes))
+	// 2.1 Tool functions for templates
+	templateCtx["exec"] = func(cmd string) string {
+		out, err := exec.Command("sh", "-c", cmd).Output()
+		if err != nil {
+			return ""
+		}
+		return strings.TrimSpace(string(out))
+	}
+
+	templateCtx["which"] = func(bin string) string {
+		path, err := exec.LookPath(bin)
+		if err != nil {
+			return ""
+		}
+		return path
+	}
+
+	templateCtx["env"] = func(key string, defaultVal ...string) interface{} {
+		val, exists := typedEnv[key]
+		if !exists || val == "" {
+			if len(defaultVal) > 0 {
+				return defaultVal[0]
+			}
+			return ""
+		}
+		return val
+	}
+
+	templateCtx["file"] = func(path string) string {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return ""
+		}
+		return strings.TrimSpace(string(data))
+	}
+
+	templateCtx["exists"] = func(path string) bool {
+		_, err := os.Stat(path)
+		return err == nil
+	}
+
+	// 3. Syntax Bridging (Jinja2 -> Pongo2)
+	// We use regex to replace common Jinja2 patterns that Pongo2 doesn't support natively.
+	content := string(contentBytes)
+	
+	// Replace 'is defined' -> '' (Pongo2 treats existence as truthy)
+	reDefined := regexp.MustCompile(`(\w+)\s+is\s+defined`)
+	content = reDefined.ReplaceAllString(content, "$1")
+
+	// Replace 'is undefined' -> 'not $1'
+	reUndefined := regexp.MustCompile(`(\w+)\s+is\s+undefined`)
+	content = reUndefined.ReplaceAllString(content, "not $1")
+
+	// Replace '~' (Jinja2 string concat) -> '+' (Pongo2 string concat)
+	// This is a simple replacement, might need adjustment for complex expressions
+	content = strings.ReplaceAll(content, " ~ ", " + ")
+	
+	// Parse and execute template (Jinja2/Pongo2)
+	tpl, err := pongo2.FromString(content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse template in %s: %w", path, err)
 	}
 
-	var renderedBuf bytes.Buffer
-	if err := tmpl.Execute(&renderedBuf, tmplData); err != nil {
+	rendered, err := tpl.Execute(templateCtx)
+	if err != nil {
 		return nil, fmt.Errorf("failed to render template in %s: %w", path, err)
 	}
+
+	renderedBytes := []byte(rendered)
 
 	// Create a new Viper instance for this file
 	v := viper.New()
@@ -134,9 +208,6 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 		configType = "toml" // default
 	}
 	v.SetConfigType(configType)
-
-	// Capture the rendered bytes before Viper consumes them
-	renderedBytes := renderedBuf.Bytes()
 
 	// Read the configuration file from buffer
 	if err := v.ReadConfig(bytes.NewReader(renderedBytes)); err != nil {
@@ -175,6 +246,14 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 	}
 	if config.Env == nil {
 		config.Env = make(map[string]interface{})
+	}
+	// Inject environment variables into current process
+	for k, v := range config.Env {
+		if s, ok := v.(string); ok {
+			rendered := renderTemplate(s, templateCtx)
+			config.Env[k] = rendered
+			os.Setenv(k, rendered)
+		}
 	}
 	if config.Tasks == nil {
 		config.Tasks = make(map[string]Task)
@@ -281,9 +360,15 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 			filepath.Join(curr, ".unirtm.local.toml"),
 			filepath.Join(curr, ".unirtm.local.yaml"),
 			filepath.Join(curr, ".unirtm.local.yml"),
+			filepath.Join(curr, ".mise.local.toml"),
+			filepath.Join(curr, ".mise.local.yaml"),
+			filepath.Join(curr, ".mise.local.yml"),
 			filepath.Join(curr, ".unirtm.toml"),
 			filepath.Join(curr, ".unirtm.yaml"),
 			filepath.Join(curr, ".unirtm.yml"),
+			filepath.Join(curr, ".mise.toml"),
+			filepath.Join(curr, ".mise.yaml"),
+			filepath.Join(curr, ".mise.yml"),
 			filepath.Join(curr, "unirtm.toml"),
 			filepath.Join(curr, "unirtm.yaml"),
 			filepath.Join(curr, "unirtm.yml"),
@@ -653,4 +738,19 @@ func (m *viperConfigManager) ApplyEnvironment(config *Config, environment string
 	}
 
 	return result, nil
+}
+
+func renderTemplate(content string, ctx pongo2.Context) string {
+	if !strings.Contains(content, "{%") && !strings.Contains(content, "{{") {
+		return content
+	}
+	tpl, err := pongo2.FromString(content)
+	if err != nil {
+		return content
+	}
+	rendered, err := tpl.Execute(ctx)
+	if err != nil {
+		return content
+	}
+	return rendered
 }
