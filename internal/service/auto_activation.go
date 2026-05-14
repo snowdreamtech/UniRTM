@@ -431,6 +431,7 @@ func (m *AutoActivationManager) generatePosixDeactivation(sb *strings.Builder, s
 	sb.WriteString("# Unset UniRTM variables\n")
 	sb.WriteString("unset UNIRTM_ACTIVATION_SCOPE\n")
 	sb.WriteString("unset UNIRTM_PROJECT_DIR\n")
+	sb.WriteString("unset UNIRTM_PATH\n")
 }
 
 // generateFishDeactivation generates deactivation script for fish shell.
@@ -465,6 +466,7 @@ func (m *AutoActivationManager) generateFishDeactivation(sb *strings.Builder, st
 	sb.WriteString("# Unset UniRTM variables\n")
 	sb.WriteString("set -e UNIRTM_ACTIVATION_SCOPE\n")
 	sb.WriteString("set -e UNIRTM_PROJECT_DIR\n")
+	sb.WriteString("set -e UNIRTM_PATH\n")
 }
 
 // generatePowerShellDeactivation generates deactivation script for PowerShell.
@@ -499,6 +501,7 @@ func (m *AutoActivationManager) generatePowerShellDeactivation(sb *strings.Build
 	sb.WriteString("# Unset UniRTM variables\n")
 	sb.WriteString("Remove-Item Env:UNIRTM_ACTIVATION_SCOPE -ErrorAction SilentlyContinue\n")
 	sb.WriteString("Remove-Item Env:UNIRTM_PROJECT_DIR -ErrorAction SilentlyContinue\n")
+	sb.WriteString("Remove-Item Env:UNIRTM_PATH -ErrorAction SilentlyContinue\n")
 }
 
 // GenerateHookEnvScript generates a shell hook script that can be evaluated on every prompt.

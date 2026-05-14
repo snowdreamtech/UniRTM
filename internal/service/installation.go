@@ -40,6 +40,7 @@ type InstallationManager struct {
 	aliases          map[string]map[string]string
 	toolConfigs      map[string]config.ToolConfig
 	gpgVerifier      gpg.Verifier
+	shimGenerator    *Generator
 }
 
 // NewInstallationManager creates a new installation manager without lockfile support.
@@ -59,6 +60,7 @@ func NewInstallationManager(
 		txManager:        txManager,
 		settings:         settings,
 		gpgVerifier:      gpg.NewVerifier(),
+		shimGenerator:    NewGenerator(env.GetShimsDir(), env.GetInstallsDir()),
 	}
 }
 
@@ -596,6 +598,14 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		if err := im.executeHook(ctx, postInstall, tool, version); err != nil {
 			return fmt.Errorf("post_install hook failed: %w", err)
 		}
+	}
+
+	// 12. Generate shims for the tool executables
+	fmt.Printf("ℹ generating shims for %s...\n", tool)
+	execs, _ := p.ListExecutables(installPath, version)
+	if err := im.shimGenerator.GenerateShim(ctx, tool, execs...); err != nil {
+		fmt.Printf("⚠️  WARNING: failed to generate shims for %s: %v\n", tool, err)
+		// Non-fatal, don't return error
 	}
 
 	fmt.Printf("✅ %s@%s installed successfully to %s\n", tool, version, installPath)

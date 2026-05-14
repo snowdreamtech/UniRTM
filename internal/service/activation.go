@@ -15,6 +15,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/errors"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
+	"github.com/snowdreamtech/unirtm/internal/provider"
 )
 
 // ShellType represents the type of shell for activation scripts.
@@ -59,6 +60,10 @@ type ActivationConfig struct {
 	// ExePath is the absolute path to the UniRTM executable
 	ExePath string
 	Sources []string
+	// UseShims indicates whether to use shims (true) or PATH mode (false)
+	UseShims bool
+	// InjectedPaths is the list of absolute paths to inject into PATH (if not using shims)
+	InjectedPaths []string
 }
 
 // ActivationScript represents a generated activation script.
@@ -77,13 +82,16 @@ type ActivationManager struct {
 	shimsDir string
 	// dataDir is the directory for storing activation state
 	dataDir string
+	// registry is the provider registry for tool discovery
+	registry *provider.Registry
 }
 
 // NewActivationManager creates a new ActivationManager.
-func NewActivationManager(shimsDir, dataDir string) *ActivationManager {
+func NewActivationManager(shimsDir, dataDir string, registry *provider.Registry) *ActivationManager {
 	return &ActivationManager{
 		shimsDir: shimsDir,
 		dataDir:  dataDir,
+		registry: registry,
 	}
 }
 
@@ -158,13 +166,45 @@ func (m *ActivationManager) GenerateGlobalActivation(ctx context.Context, shell 
 //
 // Requirements: 15.4
 func (m *ActivationManager) GenerateProjectActivation(ctx context.Context, shell ShellType, projectDir string, toolVersions map[string]string, envVars map[string]string) (*ActivationScript, error) {
+	// If envVars is nil, initialize it
+	if envVars == nil {
+		envVars = make(map[string]string)
+	}
+
+	var injectedPaths []string
+	installsDir := filepath.Join(m.dataDir, "installs")
+
+	// Resolve tool binary paths and environment variables
+	for tool, version := range toolVersions {
+		p := m.registry.Get(tool)
+		installPath := filepath.Join(installsDir, tool, version)
+
+		// Get bin paths
+		binPaths, err := p.GetBinPaths(installPath, version)
+		if err == nil {
+			injectedPaths = append(injectedPaths, binPaths...)
+		}
+
+		// Get env vars
+		toolEnvVars, err := p.GetEnvVars(installPath, version)
+		if err == nil {
+			for k, v := range toolEnvVars {
+				if _, exists := envVars[k]; !exists {
+					envVars[k] = v
+				}
+			}
+		}
+	}
+
 	config := ActivationConfig{
-		Shell:        shell,
-		Scope:        ScopeProject,
-		ShimsDir:     m.shimsDir,
-		ProjectDir:   projectDir,
-		ToolVersions: toolVersions,
-		EnvVars:      envVars,
+		Shell:         shell,
+		Scope:         ScopeProject,
+		ShimsDir:      m.shimsDir,
+		ProjectDir:    projectDir,
+		ToolVersions:  toolVersions,
+		EnvVars:       envVars,
+		InjectedPaths: injectedPaths,
+		UseShims:      false, // Default to PATH mode for project activation
 	}
 
 	return m.GenerateActivationScript(ctx, config)
@@ -202,10 +242,21 @@ func (m *ActivationManager) generatePosixScript(config ActivationConfig) (*Activ
 	}
 	sb.WriteString("\n")
 
-	// Add shims directory to PATH
-	sb.WriteString("# Add UniRTM shims to PATH\n")
-	sb.WriteString(fmt.Sprintf("export PATH=\"%s:$PATH\"\n", config.ShimsDir))
-	sb.WriteString("\n")
+	if config.UseShims {
+		// Add shims directory to PATH
+		sb.WriteString("# Add UniRTM shims to PATH\n")
+		sb.WriteString(fmt.Sprintf("export PATH=\"%s:$PATH\"\n", config.ShimsDir))
+		sb.WriteString("\n")
+	} else if len(config.InjectedPaths) > 0 {
+		// PATH mode activation
+		sb.WriteString("# UniRTM PATH mode activation\n")
+		injectedPath := strings.Join(config.InjectedPaths, string(os.PathListSeparator))
+		
+		// Use UNIRTM_PATH to track injected paths for easy restoration
+		sb.WriteString(fmt.Sprintf("export UNIRTM_PATH=\"%s\"\n", injectedPath))
+		sb.WriteString("export PATH=\"$UNIRTM_PATH:$PATH\"\n")
+		sb.WriteString("\n")
+	}
 
 	// Set tool version environment variables
 	if len(config.ToolVersions) > 0 {
@@ -242,13 +293,15 @@ func (m *ActivationManager) generatePosixScript(config ActivationConfig) (*Activ
 	}
 	sb.WriteString("\n")
 
-	// Hot-reloading hook
-	aam := NewAutoActivationManager(m)
-	hookScript, err := aam.GenerateHookEnvScript(config.Shell, config.ExePath)
-	if err == nil {
-		sb.WriteString("\n")
-		sb.WriteString(hookScript)
-		sb.WriteString("\n")
+	// Hot-reloading hook (only in PATH mode)
+	if !config.UseShims {
+		aam := NewAutoActivationManager(m)
+		hookScript, err := aam.GenerateHookEnvScript(config.Shell, config.ExePath)
+		if err == nil {
+			sb.WriteString("\n")
+			sb.WriteString(hookScript)
+			sb.WriteString("\n")
+		}
 	}
 
 	instructions := m.generatePosixInstructions(config.Shell)
@@ -275,10 +328,20 @@ func (m *ActivationManager) generateFishScript(config ActivationConfig) (*Activa
 	}
 	sb.WriteString("\n")
 
-	// Add shims directory to PATH
-	sb.WriteString("# Add UniRTM shims to PATH\n")
-	sb.WriteString(fmt.Sprintf("set -gx PATH \"%s\" $PATH\n", config.ShimsDir))
-	sb.WriteString("\n")
+	if config.UseShims {
+		// Add shims directory to PATH
+		sb.WriteString("# Add UniRTM shims to PATH\n")
+		sb.WriteString(fmt.Sprintf("set -gx PATH \"%s\" $PATH\n", config.ShimsDir))
+		sb.WriteString("\n")
+	} else if len(config.InjectedPaths) > 0 {
+		// PATH mode activation
+		sb.WriteString("# UniRTM PATH mode activation\n")
+		// In fish, PATH is a list
+		injectedPath := strings.Join(config.InjectedPaths, " ")
+		sb.WriteString(fmt.Sprintf("set -gx UNIRTM_PATH %s\n", injectedPath))
+		sb.WriteString("set -gx PATH $UNIRTM_PATH $PATH\n")
+		sb.WriteString("\n")
+	}
 
 	// Set tool version environment variables
 	if len(config.ToolVersions) > 0 {
@@ -315,13 +378,15 @@ func (m *ActivationManager) generateFishScript(config ActivationConfig) (*Activa
 	}
 	sb.WriteString("\n")
 
-	// Hot-reloading hook
-	aam := NewAutoActivationManager(m)
-	hookScript, err := aam.GenerateHookEnvScript(ShellFish, config.ExePath)
-	if err == nil {
-		sb.WriteString("\n")
-		sb.WriteString(hookScript)
-		sb.WriteString("\n")
+	// Hot-reloading hook (only in PATH mode)
+	if !config.UseShims {
+		aam := NewAutoActivationManager(m)
+		hookScript, err := aam.GenerateHookEnvScript(ShellFish, config.ExePath)
+		if err == nil {
+			sb.WriteString("\n")
+			sb.WriteString(hookScript)
+			sb.WriteString("\n")
+		}
 	}
 
 	instructions := "To activate this environment, run:\n\n" +
@@ -351,15 +416,32 @@ func (m *ActivationManager) generatePowerShellScript(config ActivationConfig) (*
 	}
 	sb.WriteString("\n")
 
-	// Add shims directory to PATH
-	sb.WriteString("# Add UniRTM shims to PATH\n")
-	shimsDir := config.ShimsDir
-	if runtime.GOOS == "windows" {
-		// Convert forward slashes to backslashes on Windows
-		shimsDir = filepath.FromSlash(shimsDir)
+	if config.UseShims {
+		// Add shims directory to PATH
+		sb.WriteString("# Add UniRTM shims to PATH\n")
+		shimsDir := config.ShimsDir
+		if runtime.GOOS == "windows" {
+			// Convert forward slashes to backslashes on Windows
+			shimsDir = filepath.FromSlash(shimsDir)
+		}
+		sb.WriteString(fmt.Sprintf("$env:PATH = \"%s;$env:PATH\"\n", shimsDir))
+		sb.WriteString("\n")
+	} else if len(config.InjectedPaths) > 0 {
+		// PATH mode activation
+		sb.WriteString("# UniRTM PATH mode activation\n")
+		var paths []string
+		for _, p := range config.InjectedPaths {
+			path := p
+			if runtime.GOOS == "windows" {
+				path = filepath.FromSlash(p)
+			}
+			paths = append(paths, path)
+		}
+		injectedPath := strings.Join(paths, ";")
+		sb.WriteString(fmt.Sprintf("$env:UNIRTM_PATH = \"%s\"\n", injectedPath))
+		sb.WriteString("$env:PATH = \"$env:UNIRTM_PATH;$env:PATH\"\n")
+		sb.WriteString("\n")
 	}
-	sb.WriteString(fmt.Sprintf("$env:PATH = \"%s;$env:PATH\"\n", shimsDir))
-	sb.WriteString("\n")
 
 	// Set tool version environment variables
 	if len(config.ToolVersions) > 0 {
@@ -405,13 +487,15 @@ func (m *ActivationManager) generatePowerShellScript(config ActivationConfig) (*
 	}
 	sb.WriteString("\n")
 
-	// Hot-reloading hook
-	aam := NewAutoActivationManager(m)
-	hookScript, err := aam.GenerateHookEnvScript(ShellPowerShell, config.ExePath)
-	if err == nil {
-		sb.WriteString("\n")
-		sb.WriteString(hookScript)
-		sb.WriteString("\n")
+	// Hot-reloading hook (only in PATH mode)
+	if !config.UseShims {
+		aam := NewAutoActivationManager(m)
+		hookScript, err := aam.GenerateHookEnvScript(ShellPowerShell, config.ExePath)
+		if err == nil {
+			sb.WriteString("\n")
+			sb.WriteString(hookScript)
+			sb.WriteString("\n")
+		}
 	}
 
 	instructions := "To activate this environment, run:\n\n" +
