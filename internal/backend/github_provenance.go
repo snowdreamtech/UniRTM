@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -31,6 +32,8 @@ import (
 	"github.com/sigstore/sigstore-go/pkg/root"
 	"github.com/sigstore/sigstore-go/pkg/tuf"
 	"github.com/sigstore/sigstore-go/pkg/verify"
+	"github.com/theupdateframework/go-tuf/v2/metadata/fetcher"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
@@ -126,26 +129,53 @@ var (
 	liveTrustedRootErr  error
 )
 
+// tufFetcher implements fetcher.Fetcher using our standard HTTP client.
+type tufFetcher struct {
+	client *http.Client
+}
+
+var _ fetcher.Fetcher = (*tufFetcher)(nil)
+
+// DownloadFile implements the fetcher.Fetcher interface for go-tuf/v2.
+func (f *tufFetcher) DownloadFile(urlPath string, maxLength int64, _ time.Duration) ([]byte, error) {
+	req, err := http.NewRequest(http.MethodGet, urlPath, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
+
+	resp, err := f.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("TUF fetch returned %d", resp.StatusCode)
+	}
+
+	return io.ReadAll(io.LimitReader(resp.Body, maxLength))
+}
+
 // sigstoreTrustedRoot returns the Sigstore public good TUF trusted root.
-// The root is initialized once and refreshed automatically every 24 hours
-// by the LiveTrustedRoot mechanism inside sigstore-go.
 func sigstoreTrustedRoot() (*root.LiveTrustedRoot, error) {
 	liveTrustedRootOnce.Do(func() {
-		fmt.Println("ℹ provenance: initializing Sigstore TUF trusted root (this may take 30-60s on first run)")
-		logger.Debug("provenance: initializing Sigstore TUF trusted root (this may take 30-60s on first run)")
+		logger.Debug("provenance: initializing Sigstore TUF trusted root")
 		opts := tuf.DefaultOptions()
+
+		// Use our custom fetcher to ensure User-Agent and proxy support
+		opts.Fetcher = &tufFetcher{
+			client: &http.Client{Timeout: 60 * time.Second},
+		}
 
 		// Allow users to override the TUF cache directory.
 		if cacheDir := os.Getenv("UNIRTM_TUF_CACHE_DIR"); cacheDir != "" {
 			opts.CachePath = filepath.Join(cacheDir, "sigstore-tuf")
 		}
 
-		// TUF initialization happens here (implicitly uses background context inside sigstore-go)
 		liveTrustedRoot, liveTrustedRootErr = root.NewLiveTrustedRoot(opts)
 		if liveTrustedRootErr != nil {
 			logger.Error("provenance: failed to initialize TUF root", map[string]interface{}{"error": liveTrustedRootErr.Error()})
-		} else {
-			logger.Debug("provenance: Sigstore TUF trusted root initialized")
 		}
 	})
 	return liveTrustedRoot, liveTrustedRootErr
@@ -177,22 +207,29 @@ func fetchAttestations(
 	ctx context.Context,
 	token, owner, repo, digest string,
 ) ([]json.RawMessage, error) {
+	apiBase := env.Get("GITHUB_API_BASEURL")
+	if apiBase == "" {
+		apiBase = "https://api.github.com"
+	}
+	apiBase = strings.TrimSuffix(apiBase, "/")
+
 	url := fmt.Sprintf(
-		"https://api.github.com/repos/%s/%s/attestations/sha256:%s",
-		owner, repo, digest,
+		"%s/repos/%s/%s/attestations/sha256:%s",
+		apiBase, owner, repo, digest,
 	)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("provenance: create request: %w", err)
 	}
+	req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
-	client := &http.Client{Timeout: 20 * time.Second}
+	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("provenance: fetch attestations: %w", err)
@@ -238,13 +275,22 @@ func fetchAttestations(
 }
 
 // fetchExternalBundle downloads a Sigstore bundle from an external URL.
-func fetchExternalBundle(ctx context.Context, url string) (json.RawMessage, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+func fetchExternalBundle(ctx context.Context, urlStr string) (json.RawMessage, error) {
+	finalURL := urlStr
+	githubProxy := env.Get("GITHUB_PROXY")
+	if githubProxy != "" && env.Get("ENABLE_GITHUB_PROXY") == "1" {
+		if !strings.HasPrefix(urlStr, githubProxy) {
+			finalURL = githubProxy + urlStr
+		}
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, finalURL, nil)
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -262,7 +308,7 @@ func fetchExternalBundle(ctx context.Context, url string) (json.RawMessage, erro
 
 	// GitHub often returns Snappy-compressed bundles (with .sn suffix).
 	// These are usually in Snappy Raw format (not framed).
-	if strings.Contains(url, ".sn") || strings.HasSuffix(url, ".sn") {
+	if strings.Contains(urlStr, ".sn") || strings.HasSuffix(urlStr, ".sn") {
 		decoded, err := snappy.Decode(nil, body)
 		if err != nil {
 			// If raw decode fails, try framed if it might be framed (though usually it's raw)
@@ -303,12 +349,16 @@ func verifyBundleWithSigstore(
 	}
 
 	// Step 2: Build verifier
-	// - WithTransparencyLog(1): require at least 1 Rekor tlog entry
-	// - WithObserverTimestamps(1): require at least 1 observer timestamp
-	//   (either tlog integrated time or RFC 3161 TSA timestamp)
+	// By default, we require at least 1 verified log entry (Rekor).
+	// If UNIRTM_SKIP_REKOR_VERIFY=1 is set, we allow 0 entries (but still verify the signature).
+	rekorThreshold := 1
+	if os.Getenv("UNIRTM_SKIP_REKOR_VERIFY") == "1" {
+		rekorThreshold = 0
+	}
+
 	verifier, err := verify.NewSignedEntityVerifier(
 		trustedMaterial,
-		verify.WithTransparencyLog(1),
+		verify.WithTransparencyLog(rekorThreshold),
 		verify.WithObserverTimestamps(1),
 	)
 	if err != nil {
@@ -316,16 +366,12 @@ func verifyBundleWithSigstore(
 	}
 
 	// Step 3: Certificate identity policy
-	// GitHub Actions OIDC issuer + SAN regex matching the repository.
-	//
-	// SAN format for GitHub Actions:
-	//   https://github.com/{owner}/{repo}/.github/workflows/{workflow}@refs/...
-	sanRegex := fmt.Sprintf("^https://github\\.com/%s/", regexp_escape(expectedRepo))
+	sanRegex := fmt.Sprintf("^https://github\\.com/%s/", regexp.QuoteMeta(expectedRepo))
 	identity, err := verify.NewShortCertificateIdentity(
-		"https://token.actions.githubusercontent.com", // GitHub Actions OIDC issuer
-		"",        // issuerRegex: empty (exact match above)
-		"",        // sanValue:    empty (use regex below)
-		sanRegex,  // sanRegex
+		"https://token.actions.githubusercontent.com",
+		"",
+		"",
+		sanRegex,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("build certificate identity: %w", err)
@@ -368,16 +414,6 @@ func verifyBundleWithSigstore(
 	return provResult, nil
 }
 
-// regexp_escape escapes special regex characters in a plain string.
-func regexp_escape(s string) string {
-	replacer := strings.NewReplacer(
-		`.`, `\.`,
-		`-`, `\-`,
-		`_`, `\_`,
-		`/`, `\/`,
-	)
-	return replacer.Replace(s)
-}
 
 // -----------------------------------------------------------------------------
 // Utilities
