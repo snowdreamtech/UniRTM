@@ -60,7 +60,7 @@ type HTTPDownloader struct {
 func NewHTTPDownloader() *HTTPDownloader {
 	h := &HTTPDownloader{}
 	h.client = &http.Client{
-		Timeout: 60 * time.Second, // Read timeout
+		Timeout: 30 * time.Minute, // Increased total timeout for large files
 		Transport: &http.Transport{
 			Proxy:               http.ProxyFromEnvironment, // Support HTTP_PROXY/HTTPS_PROXY
 			MaxIdleConns:        100,

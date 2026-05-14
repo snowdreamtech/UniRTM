@@ -346,13 +346,14 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		var lastUpdateTime time.Time
 
 		opts.ProgressCallback = func(downloaded, total int64) {
-			// Stop the connection spinner once we start receiving bytes
-			if spinner != nil {
+			// Stop the connection spinner once we start receiving bytes, 
+			// BUT ONLY if we are going to start a progress bar.
+			if spinner != nil && total > 0 {
 				spinner.Stop()
 				spinner = nil
 			}
 			
-			// Initialize progress bar if not already done
+			// Initialize progress bar if not already done and total is known
 			if progressbar == nil && total > 0 {
 				progressbar, _ = pterm.DefaultProgressbar.
 					WithTotal(int(total)).
@@ -364,22 +365,28 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 			// Throttle updates to prevent terminal rendering bottlenecks (max 10 updates per second)
 			now := time.Now()
-			if progressbar != nil && (now.Sub(lastUpdateTime) > 100*time.Millisecond || downloaded >= total) {
-				diff := downloaded - lastDownloaded
-				if diff > 0 {
-					progressbar.Add(int(diff))
-					lastDownloaded = downloaded
-					
-					// Update title with current progress
-					progressbar.UpdateTitle(fmt.Sprintf("Downloading %s (%s/%s)", 
-						tool, 
-						humanize.Bytes(uint64(downloaded)), 
-						humanize.Bytes(uint64(total))))
-					
+			if now.Sub(lastUpdateTime) > 100*time.Millisecond || downloaded >= total {
+				if progressbar != nil {
+					diff := downloaded - lastDownloaded
+					if diff > 0 {
+						progressbar.Add(int(diff))
+						lastDownloaded = downloaded
+						
+						// Update title with current progress
+						progressbar.UpdateTitle(fmt.Sprintf("Downloading %s (%s/%s)", 
+							tool, 
+							humanize.Bytes(uint64(downloaded)), 
+							humanize.Bytes(uint64(total))))
+						
+						lastUpdateTime = now
+					}
+					if total > 0 && downloaded >= total {
+						progressbar.Stop()
+					}
+				} else if spinner != nil {
+					// Update spinner text if we don't have a progress bar (unknown total)
+					spinner.UpdateText(fmt.Sprintf("Downloading %s (%s)...", tool, humanize.Bytes(uint64(downloaded))))
 					lastUpdateTime = now
-				}
-				if downloaded >= total {
-					progressbar.Stop()
 				}
 			}
 		}
