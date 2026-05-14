@@ -28,7 +28,7 @@ func (g *GenericProvider) Name() string {
 }
 
 // Install performs default installation by copying binaries from artifact to install path.
-func (g *GenericProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (g *GenericProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	// 1. Ensure install path exists
 	if err := os.MkdirAll(installPath, 0755); err != nil {
 		return NewProviderError("generic", "unknown", version, "failed to create install directory", err)
@@ -57,6 +57,15 @@ func (g *GenericProvider) Install(ctx context.Context, installPath string, artif
 			fmt.Printf("⚠️  failed to flatten directory: %v\n", err)
 		}
 
+		// 3.1 Relativize all symlinks in the extracted directory.
+		// Some archives (like Node.js) might contain absolute symlinks or links 
+		// that become absolute during extraction/moving. We convert them to 
+		// relative paths so they remain valid after the atomic rename from 
+		// .unirtm-tmp to the final versioned path.
+		if err := g.relativizeAllSymlinks(installPath); err != nil {
+			fmt.Printf("⚠️  failed to relativize symlinks: %v\n", err)
+		}
+
 		// 3.5 Validate security (Zip Slip, dangerous symlinks)
 		if err := g.validateInstallDir(installPath); err != nil {
 			return NewProviderError("generic", "unknown", version, "security validation failed", err)
@@ -83,15 +92,33 @@ func (g *GenericProvider) Install(ctx context.Context, installPath string, artif
 		// 6. Ensure executables have +x and link them to binDir
 		for _, exe := range executables {
 			exePath := filepath.Join(installPath, exe)
+			
+			// Skip internal dependencies like node_modules
+			if strings.Contains(filepath.ToSlash(exe), "/node_modules/") {
+				continue
+			}
+
 			if err := os.Chmod(exePath, 0755); err != nil {
 				return NewProviderError("generic", toolName, version, fmt.Sprintf("failed to chmod %s", exe), err)
 			}
 
 			dstPath := filepath.Join(binDir, filepath.Base(exe))
 			if filepath.Dir(exePath) != binDir {
-				// Remove existing symlink if it exists
+				// If a file already exists at dstPath, don't overwrite it
+				// This preserves original symlinks/binaries from the archive
+				if _, err := os.Stat(dstPath); err == nil {
+					continue
+				}
+
+				// Remove existing symlink if it exists (e.g. broken link)
 				os.Remove(dstPath)
-				os.Symlink(exePath, dstPath)
+				
+				// Use relative symlink to avoid broken links after directory rename
+				relPath, err := filepath.Rel(binDir, exePath)
+				if err != nil {
+					return NewProviderError("generic", toolName, version, fmt.Sprintf("failed to get relative path for %s", exe), err)
+				}
+				os.Symlink(relPath, dstPath)
 			}
 		}
 	}
@@ -100,14 +127,14 @@ func (g *GenericProvider) Install(ctx context.Context, installPath string, artif
 }
 
 // PostInstall performs no additional steps for generic provider.
-func (g *GenericProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (g *GenericProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	// No post-install steps for generic provider
 	return nil
 }
 
 // GenerateShims generates basic shim scripts for all executables.
-func (g *GenericProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
-	executables, err := g.ListExecutables(installPath, version)
+func (g *GenericProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	executables, err := g.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -123,8 +150,8 @@ func (g *GenericProvider) GenerateShims(installPath string, version string) (map
 }
 
 // DetectVersion attempts to detect the version by running the executable with --version.
-func (g *GenericProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
-	executables, err := g.ListExecutables(installPath, "")
+func (g *GenericProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
+	executables, err := g.ListExecutables(tool, installPath, "")
 	if err != nil || len(executables) == 0 {
 		return "", NewProviderError("generic", "unknown", "", "no executables found", err)
 	}
@@ -153,7 +180,7 @@ func (g *GenericProvider) DetectVersion(ctx context.Context, installPath string)
 }
 
 // ListExecutables returns all executable files in the bin directory, relative to installPath.
-func (g *GenericProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (g *GenericProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	binDir := filepath.Join(installPath, "bin")
 
 	entries, err := os.ReadDir(binDir)
@@ -183,17 +210,17 @@ func (g *GenericProvider) ListExecutables(installPath string, version string) ([
 }
 
 // GetBinPaths returns the absolute path to the bin directory.
-func (g *GenericProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (g *GenericProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	return []string{filepath.Join(installPath, "bin")}, nil
 }
 
 // GetEnvVars returns no environment variables by default.
-func (g *GenericProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (g *GenericProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return make(map[string]string), nil
 }
 
 // Uninstall performs no special cleanup for generic provider.
-func (g *GenericProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (g *GenericProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	// No special cleanup needed
 	return nil
 }
@@ -506,6 +533,58 @@ func (g *GenericProvider) validateInstallDir(dir string) error {
 				}
 				if !strings.HasPrefix(absTarget, absDir) {
 					return fmt.Errorf("security violation: relative symlink %s points outside of install directory: %s", path, target)
+				}
+			}
+		}
+
+		return nil
+	})
+}
+
+// relativizeAllSymlinks finds all symlinks in the directory and makes them relative
+// if they point to a path within the same directory.
+func (g *GenericProvider) relativizeAllSymlinks(dir string) error {
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return err
+	}
+
+	return filepath.Walk(absDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.Mode()&os.ModeSymlink != 0 {
+			target, err := os.Readlink(path)
+			if err != nil {
+				return err
+			}
+
+			var absTarget string
+			if filepath.IsAbs(target) {
+				absTarget = target
+			} else {
+				absTarget = filepath.Clean(filepath.Join(filepath.Dir(path), target))
+			}
+
+			// If the target is within our install directory, make it relative
+			if strings.HasPrefix(absTarget, absDir) {
+				relTarget, err := filepath.Rel(filepath.Dir(path), absTarget)
+				if err != nil {
+					return err
+				}
+
+				// If it's already the same as what we have (and it was relative), skip
+				if !filepath.IsAbs(target) && target == relTarget {
+					return nil
+				}
+
+				// Re-create the symlink as relative
+				if err := os.Remove(path); err != nil {
+					return err
+				}
+				if err := os.Symlink(relTarget, path); err != nil {
+					return err
 				}
 			}
 		}
