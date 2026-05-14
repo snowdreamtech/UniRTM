@@ -104,13 +104,21 @@ func GetNoProxyEnv(extraDomains ...string) []string {
 	// Collect all domains to skip proxy for
 	domains := []string{
 		"mirrors.aliyun.com",
-		"pypi.tuna.tsinghua.edu.cn",
-		"pypi.mirrors.ustc.edu.cn",
-		"pypi.douban.com",
+		"npm.aliyun.com",
 		"registry.npmmirror.com",
+		"mirrors.cloud.tencent.com",
+		"mirrors.huaweicloud.com",
+		"repo.huaweicloud.com",
+		"mirrors.163.com",
+		"mirrors.ustc.edu.cn",
+		"pypi.mirrors.ustc.edu.cn",
+		"mirrors.tuna.tsinghua.edu.cn",
+		"pypi.tuna.tsinghua.edu.cn",
+		"pypi.douban.com",
 		"registry.taobao.org",
 		"npm.taobao.org",
 		"rsproxy.cn",
+		"r.cnpmjs.org",
 	}
 	
 	// Add global configuration domains
