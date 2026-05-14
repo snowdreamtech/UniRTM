@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // githubTokensFile represents the structure of github_tokens.toml.
@@ -38,23 +39,18 @@ func resolveGitHubToken(host string) string {
 		host = "github.com"
 	}
 
-	// 1. UNIRTM_GITHUB_TOKEN (highest priority, UniRTM-specific)
-	if token := os.Getenv("UNIRTM_GITHUB_TOKEN"); token != "" {
+	// 1. GITHUB_TOKEN (UNIRTM_GITHUB_TOKEN -> MISE_GITHUB_TOKEN -> GITHUB_TOKEN)
+	if token := env.Get("GITHUB_TOKEN"); token != "" {
 		return token
 	}
 
-	// 2. GITHUB_TOKEN (standard CI variable — GitHub Actions sets this automatically)
-	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
-		return token
-	}
-
-	// 3. GITHUB_API_TOKEN (legacy fallback)
+	// 2. GITHUB_API_TOKEN (legacy fallback)
 	if token := os.Getenv("GITHUB_API_TOKEN"); token != "" {
 		return token
 	}
 
-	// 4. credential_command (UNIRTM_GITHUB_CREDENTIAL_COMMAND)
-	if cmd := os.Getenv("UNIRTM_GITHUB_CREDENTIAL_COMMAND"); cmd != "" {
+	// 3. credential_command (UNIRTM_GITHUB_CREDENTIAL_COMMAND -> MISE_GITHUB_CREDENTIAL_COMMAND -> GITHUB_CREDENTIAL_COMMAND)
+	if cmd := env.Get("GITHUB_CREDENTIAL_COMMAND"); cmd != "" {
 		if token := runCredentialCommand(cmd, host); token != "" {
 			return token
 		}

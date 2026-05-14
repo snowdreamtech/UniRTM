@@ -289,13 +289,13 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		if im.settings != nil {
 			opts.GitHubProxy = im.settings.GitHubProxy
 			if opts.GitHubProxy == "" {
-				opts.GitHubProxy = os.Getenv("GITHUB_PROXY")
+				opts.GitHubProxy = env.Get("GITHUB_PROXY")
 			}
 			if im.settings.HTTPTimeout > 0 {
 				opts.Timeout = time.Duration(im.settings.HTTPTimeout) * time.Second
 			}
 		} else {
-			opts.GitHubProxy = os.Getenv("GITHUB_PROXY")
+			opts.GitHubProxy = env.Get("GITHUB_PROXY")
 		}
 		if versionInfo.Checksum != "" {
 			opts = opts.WithChecksum(versionInfo.Checksum)
@@ -398,7 +398,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		if im.settings != nil && im.settings.VerifyMetadata != nil {
 			verifyMetadata = *im.settings.VerifyMetadata
 		}
-		if v := os.Getenv("UNIRTM_VERIFY_METADATA"); v != "" {
+		if v := env.Get("VERIFY_METADATA"); v != "" {
 			verifyMetadata = (v == "1" || strings.ToLower(v) == "true" || strings.ToLower(v) == "yes")
 		}
 

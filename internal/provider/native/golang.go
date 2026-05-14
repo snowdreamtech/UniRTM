@@ -37,9 +37,7 @@ func (h *GolangHandler) Name() string {
 
 func (h *GolangHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
 	// Support mirror overrides (compatible with mise)
-	if mirror := os.Getenv("UNIRTM_GO_DOWNLOAD_MIRROR"); mirror != "" {
-		baseURL = mirror
-	} else if mirror := os.Getenv("MISE_GO_DOWNLOAD_MIRROR"); mirror != "" {
+	if mirror := env.Get("GO_DOWNLOAD_MIRROR"); mirror != "" {
 		baseURL = mirror
 	}
 

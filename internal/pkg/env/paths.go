@@ -9,11 +9,11 @@ import (
 // GetConfigDir returns the root configuration directory for UniRTM.
 // It uses UNIRTM_CONFIG_DIR if set, otherwise falls back to XDG config directory.
 func GetConfigDir() string {
-	if configDir := os.Getenv("UNIRTM_CONFIG_DIR"); configDir != "" {
+	if configDir := Get("CONFIG_DIR"); configDir != "" {
 		return configDir
 	}
 
-	if configHome := os.Getenv("XDG_CONFIG_HOME"); configHome != "" {
+	if configHome := Get("XDG_CONFIG_HOME"); configHome != "" {
 		return filepath.Join(configHome, "unirtm")
 	}
 
@@ -36,12 +36,12 @@ func GetConfigDir() string {
 // GetDataDir returns the root data directory for UniRTM.
 // It uses UNIRTM_DATA_DIR if set, otherwise falls back to appropriate OS directories.
 func GetDataDir() string {
-	if dataDir := os.Getenv("UNIRTM_DATA_DIR"); dataDir != "" {
+	if dataDir := Get("DATA_DIR"); dataDir != "" {
 		return dataDir
 	}
 
 	// Follow XDG Base Directory Specification for data home if XDG_DATA_HOME is set
-	if dataHome := os.Getenv("XDG_DATA_HOME"); dataHome != "" {
+	if dataHome := Get("XDG_DATA_HOME"); dataHome != "" {
 		return filepath.Join(dataHome, "unirtm")
 	}
 
@@ -52,7 +52,7 @@ func GetDataDir() string {
 
 	if runtime.GOOS == "windows" {
 		// Windows stores data in Local AppData
-		if localAppData := os.Getenv("LOCALAPPDATA"); localAppData != "" {
+		if localAppData := Get("LOCALAPPDATA"); localAppData != "" {
 			return filepath.Join(localAppData, "unirtm")
 		}
 		return filepath.Join(homeDir, "AppData", "Local", "unirtm")
@@ -98,7 +98,7 @@ func GetCacheDir() string {
 // (useful in CI or monorepo setups), falling back to "unirtm.lock" in the
 // current working directory — mirroring how mise.lock sits next to mise.toml.
 func GetLockFilePath() string {
-	if custom := os.Getenv("UNIRTM_LOCK_FILE"); custom != "" {
+	if custom := Get("LOCK_FILE"); custom != "" {
 		return custom
 	}
 	wd, err := os.Getwd()

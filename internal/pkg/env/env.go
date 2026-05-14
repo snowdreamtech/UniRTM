@@ -2,7 +2,23 @@ package env
 
 import (
 	"crypto/rand"
+	"os"
 )
+
+// Get returns the value of the environment variable with the given key,
+// searching with prefixes in order: UNIRTM_, MISE_, and then the raw key.
+func Get(key string) string {
+	// 1. UNIRTM_ prefix
+	if v := os.Getenv("UNIRTM_" + key); v != "" {
+		return v
+	}
+	// 2. MISE_ prefix
+	if v := os.Getenv("MISE_" + key); v != "" {
+		return v
+	}
+	// 3. Raw key (Native)
+	return os.Getenv(key)
+}
 
 var (
 	//ProjectName Project Name
