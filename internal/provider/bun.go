@@ -82,6 +82,32 @@ func (p *BunProvider) ListExecutables(installPath string, version string) ([]str
 	return executables, nil
 }
 
+// GetBinPaths returns the absolute paths to the bin directories.
+func (p *BunProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	exes, err := p.ListExecutables(installPath, version)
+	if err != nil {
+		return nil, err
+	}
+	var paths []string
+	seen := make(map[string]bool)
+	for _, exe := range exes {
+		dir := filepath.Dir(exe)
+		if !seen[dir] {
+			paths = append(paths, dir)
+			seen[dir] = true
+		}
+	}
+	if len(paths) == 0 {
+		return []string{installPath}, nil
+	}
+	return paths, nil
+}
+
+// GetEnvVars returns no special environment variables.
+func (p *BunProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	return make(map[string]string), nil
+}
+
 func (p *BunProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	return nil
 }

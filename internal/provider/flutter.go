@@ -98,6 +98,19 @@ func (p *FlutterProvider) ListExecutables(installPath string, version string) ([
 	return executables, nil
 }
 
+// GetBinPaths returns the absolute paths to the bin directories.
+func (p *FlutterProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	return []string{
+		filepath.Join(installPath, "bin"),
+		filepath.Join(installPath, "bin", "cache", "dart-sdk", "bin"),
+	}, nil
+}
+
+// GetEnvVars returns no special environment variables.
+func (p *FlutterProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	return make(map[string]string), nil
+}
+
 func (p *FlutterProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	return nil
 }

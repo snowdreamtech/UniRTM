@@ -94,6 +94,16 @@ func (p *ElixirProvider) ListExecutables(installPath string, version string) ([]
 	return executables, nil
 }
 
+// GetBinPaths returns the absolute path to the bin directory.
+func (p *ElixirProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	return []string{filepath.Join(installPath, "bin")}, nil
+}
+
+// GetEnvVars returns no special environment variables.
+func (p *ElixirProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	return make(map[string]string), nil
+}
+
 func (p *ElixirProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	return nil
 }
