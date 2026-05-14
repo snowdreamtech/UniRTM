@@ -35,7 +35,7 @@ func (h *GolangHandler) Name() string {
 }
 
 func (h *GolangHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
-	url := fmt.Sprintf("%s/?mode=json", strings.TrimSuffix(baseURL, "/"))
+	url := fmt.Sprintf("%s/?mode=json&include=all", strings.TrimSuffix(baseURL, "/"))
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
