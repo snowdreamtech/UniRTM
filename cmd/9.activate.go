@@ -13,6 +13,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/config"
+	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
@@ -25,6 +26,8 @@ var (
 	activateScope string
 	// activateProjectDir specifies the project directory for project-scoped activation
 	activateProjectDir string
+	// activateShims specifies whether to use shims instead of dynamic PATH mode
+	activateShims bool
 )
 
 // init registers the activate command to the root command.
@@ -32,6 +35,7 @@ func init() {
 	activateCmd.Flags().StringVarP(&activateShell, "shell", "s", "", "shell type (bash, zsh, fish, powershell) — auto-detected if not specified")
 	activateCmd.Flags().StringVar(&activateScope, "scope", "global", "activation scope (global or project)")
 	activateCmd.Flags().StringVar(&activateProjectDir, "project-dir", "", "project directory for project-scoped activation (default: current directory)")
+	activateCmd.Flags().BoolVar(&activateShims, "shims", false, "use shims instead of dynamic PATH mode")
 
 	if rootCmd != nil {
 		rootCmd.AddCommand(activateCmd)
@@ -230,7 +234,8 @@ func runActivate(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create activation manager
-	activationManager := service.NewActivationManager(shimsDir, env.GetDataDir())
+	registry := provider.NewRegistry()
+	activationManager := service.NewActivationManager(shimsDir, env.GetDataDir(), registry)
 
 	// Get executable path for the hook
 	exePath, err := os.Executable()
@@ -248,6 +253,7 @@ func runActivate(cmd *cobra.Command, args []string) error {
 		EnvVars:      envVars,
 		Sources:      sources,
 		ExePath:      exePath,
+		UseShims:     activateShims,
 	}
 
 	script, err := activationManager.GenerateActivationScript(ctx, activationConfig)

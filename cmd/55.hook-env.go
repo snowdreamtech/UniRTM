@@ -11,6 +11,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
 )
@@ -80,7 +81,8 @@ func runHookEnv(cmd *cobra.Command, args []string) error {
 	// 3. Initialize AutoActivationManager
 	shimsDir := env.GetShimsDir()
 	dataDir := env.GetDataDir()
-	am := service.NewActivationManager(shimsDir, dataDir)
+	registry := provider.NewRegistry()
+	am := service.NewActivationManager(shimsDir, dataDir, registry)
 	aam := service.NewAutoActivationManager(am)
 
 	// 4. Handle directory change

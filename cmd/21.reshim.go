@@ -11,6 +11,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
@@ -101,6 +102,7 @@ func runReshim(cmd *cobra.Command, args []string) error {
 	shimsDir := env.GetShimsDir()
 	dataDir := env.GetDataDir()
 	generator := service.NewGenerator(shimsDir, dataDir+"/installs")
+	providerRegistry := provider.NewRegistry()
 	shimCount := 0
 
 	for _, inst := range installations {
@@ -109,7 +111,13 @@ func runReshim(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		if err := generator.GenerateShim(ctx, inst.Tool); err != nil {
+		p := providerRegistry.GetWithBackend(inst.Tool, inst.Backend)
+		executables, err := p.ListExecutables(inst.InstallPath, inst.Version)
+		if err != nil {
+			executables = []string{inst.Tool}
+		}
+
+		if err := generator.GenerateShim(ctx, inst.Tool, executables...); err != nil {
 			formatter.Warning(fmt.Sprintf("Failed to generate shim for %s@%s: %v", inst.Tool, inst.Version, err), nil)
 			continue
 		}
