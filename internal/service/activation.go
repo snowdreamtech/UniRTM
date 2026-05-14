@@ -177,8 +177,11 @@ func (m *ActivationManager) GenerateProjectActivation(ctx context.Context, shell
 
 	// Resolve tool binary paths and environment variables
 	for tool, version := range toolVersions {
+		// Standardize tool name for filesystem (Scheme B: provider-tool-name)
+		fsToolName := env.GetFSToolName(tool, "")
+
 		p := m.registry.Get(tool)
-		installPath := filepath.Join(installsDir, tool, version)
+		installPath := filepath.Join(installsDir, fsToolName, version)
 
 		// Get bin paths
 		binPaths, err := p.GetBinPaths(installPath, version)

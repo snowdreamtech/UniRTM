@@ -17,6 +17,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // Generator creates shim scripts for installed tools.
@@ -144,7 +146,8 @@ func (g *Generator) generateUnixShim(tool, executable string) error {
 	shimPath := filepath.Join(g.shimsDir, executable)
 
 	envVar := toolVersionEnvVar(tool)
-	installRoot := filepath.Join(g.installsDir, tool)
+	fsToolName := env.GetFSToolName(tool, "")
+	installRoot := filepath.Join(g.installsDir, fsToolName)
 
 	content := fmt.Sprintf(`#!/bin/sh
 # UniRTM shim for %[1]s
@@ -209,7 +212,8 @@ exec "${TOOL_BIN}" "$@"
 // Validates Requirements: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6
 func (g *Generator) generateWindowsShim(tool, executable string) error {
 	envVar := toolVersionEnvVar(tool)
-	installRoot := filepath.Join(g.installsDir, tool)
+	fsToolName := env.GetFSToolName(tool, "")
+	installRoot := filepath.Join(g.installsDir, fsToolName)
 
 	cmdContent := fmt.Sprintf(`@echo off
 REM UniRTM shim for %[1]s

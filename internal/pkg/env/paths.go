@@ -4,7 +4,25 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
+
+// GetFSToolName returns a sanitized tool name for use in filesystem paths.
+// It implements Scheme B: provider-tool-name, replacing colons and slashes with hyphens.
+func GetFSToolName(tool, backend string) string {
+	name := tool
+	// If tool already contains the backend as a prefix (followed by a hyphen), don't double it.
+	if backend != "" && !strings.HasPrefix(tool, backend+"-") && !strings.HasPrefix(tool, backend+":") {
+		name = backend + "-" + tool
+	}
+
+	// Replace colons and slashes with hyphens, and remove @ for consistency with Mise
+	name = strings.ReplaceAll(name, ":", "-")
+	name = strings.ReplaceAll(name, "/", "-")
+	name = strings.ReplaceAll(name, "@", "")
+
+	return name
+}
 
 // GetConfigDir returns the root configuration directory for UniRTM.
 // It uses UNIRTM_CONFIG_DIR if set, otherwise falls back to XDG config directory.
