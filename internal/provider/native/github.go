@@ -50,13 +50,13 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		apiBase = "https://api.github.com"
 	}
 	apiBase = strings.TrimSuffix(apiBase, "/")
-	apiURL := fmt.Sprintf("%s/repos/%s/%s/releases", apiBase, h.Owner, h.Repo)
+	apiURL := fmt.Sprintf("%s/repos/%s/%s/releases?per_page=100", apiBase, h.Owner, h.Repo)
 
 	var resp *http.Response
 	var lastErr error
 
 	for i := 0; i < 3; i++ {
-		client := &http.Client{Timeout: 30 * time.Second}
+		client := &http.Client{Timeout: 60 * time.Second}
 		req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 		if err != nil {
 			return nil, err

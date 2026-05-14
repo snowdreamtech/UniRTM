@@ -207,6 +207,20 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		return fmt.Errorf("backend not found: %w", err)
 	}
 
+	// 4. Optimization: Check if this CONCRETE version is already installed before any network/API calls
+	// We only do this if it's not a symbolic version like "latest" or "3.12" (which needs resolution)
+	// Simple heuristic: if it contains 2 dots, it's likely a concrete version.
+	isConcrete := strings.Count(version, ".") >= 2 || (tool == "go" && strings.Count(version, ".") >= 1)
+	if isConcrete {
+		existing, err := im.installRepo.FindByToolAndVersion(ctx, tool, version)
+		if err == nil && existing != nil {
+			if _, statErr := os.Stat(existing.InstallPath); statErr == nil {
+				fmt.Printf("ℹ %s@%s is already installed at %s\n", tool, version, existing.InstallPath)
+				return nil
+			}
+		}
+	}
+
 	// Get download info — check lockfile first to avoid remote API calls.
 	platform := backend.CurrentPlatform()
 	var versionInfo *backend.VersionInfo
