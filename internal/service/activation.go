@@ -7,12 +7,12 @@ package service
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/errors"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 	"github.com/snowdreamtech/unirtm/internal/provider"
@@ -535,7 +535,7 @@ func (m *ActivationManager) toolVersionEnvVar(tool string) string {
 // If the shell cannot be detected, it returns a sensible default for the platform.
 func DetectShell() (ShellType, error) {
 	// On Unix-like systems, check SHELL environment variable first
-	if shellPath := os.Getenv("SHELL"); shellPath != "" {
+	if shellPath := env.Get("SHELL"); shellPath != "" {
 		shell := filepath.Base(shellPath)
 		switch {
 		case strings.Contains(shell, "bash"):

@@ -12,6 +12,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/lockfile"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
@@ -53,7 +54,7 @@ func NewLockService(opts LockServiceOptions) (*LockService, error) {
 		return nil, fmt.Errorf("lock service: %w", err)
 	}
 
-	strict := opts.StrictMode || os.Getenv("UNIRTM_LOCKED") == "1"
+	strict := opts.StrictMode || env.Get("LOCKED") == "1"
 
 	return &LockService{
 		lf:           lf,

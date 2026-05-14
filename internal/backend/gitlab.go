@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"strings"
 	"time"
 )
@@ -22,7 +22,7 @@ type GitlabBackend struct {
 
 // NewGitlabBackend creates a new GitLab backend.
 func NewGitlabBackend() *GitlabBackend {
-	baseURL := os.Getenv("GITLAB_API_URL")
+	baseURL := env.Get("GITLAB_API_URL")
 	if baseURL == "" {
 		baseURL = "https://gitlab.com/api/v4"
 	}
@@ -86,7 +86,7 @@ func (b *GitlabBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 	if err != nil {
 		return nil, err
 	}
-	if token := os.Getenv("GITLAB_TOKEN"); token != "" {
+	if token := env.Get("GITLAB_TOKEN"); token != "" {
 		req.Header.Set("PRIVATE-TOKEN", token)
 	}
 
@@ -122,7 +122,7 @@ func (b *GitlabBackend) FetchReleaseByTag(ctx context.Context, tool string, tag 
 	apiURL := fmt.Sprintf("%s/projects/%s/releases/%s", b.baseURL, encodedRepo, url.PathEscape(tag))
 
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
-	if token := os.Getenv("GITLAB_TOKEN"); token != "" {
+	if token := env.Get("GITLAB_TOKEN"); token != "" {
 		req.Header.Set("PRIVATE-TOKEN", token)
 	}
 

@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"time"
 )
 
@@ -50,11 +50,11 @@ func (b *S3Backend) ResolveVersion(ctx context.Context, tool string, versionRequ
 }
 
 func (b *S3Backend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
-	bucket := os.Getenv("UNIRTM_S3_BUCKET")
+	bucket := env.Get("S3_BUCKET")
 	if bucket == "" {
 		bucket = "unirtm-binaries" // Fallback or could fail here
 	}
-	region := os.Getenv("UNIRTM_S3_REGION")
+	region := env.Get("S3_REGION")
 	if region == "" {
 		region = "us-east-1"
 	}

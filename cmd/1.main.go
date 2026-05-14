@@ -114,6 +114,33 @@ func setupGlobalOptions(cmd *cobra.Command, args []string) {
 	env.Silent = silent
 	env.Quiet = quiet
 	env.Config = configPath
+
+	// Synchronize prefixed environment variables to native ones
+	syncEnv()
+}
+
+// syncEnv synchronizes prefixed environment variables (UNIRTM_ and MISE_) to native ones
+// if the native ones are not already set. This ensures compatibility with third-party
+// libraries and tools that only check standard environment variables.
+func syncEnv() {
+	vars := []string{
+		"HTTP_PROXY",
+		"HTTPS_PROXY",
+		"NO_PROXY",
+		"GITHUB_TOKEN",
+		"GITHUB_PROXY",
+		"GITHUB_API_TOKEN",
+		"NO_COLOR",
+		"TERM",
+	}
+
+	for _, v := range vars {
+		if os.Getenv(v) == "" {
+			if val := env.Get(v); val != "" {
+				os.Setenv(v, val)
+			}
+		}
+	}
 }
 
 // buildFlags configures all the global command-line flags available in the application.

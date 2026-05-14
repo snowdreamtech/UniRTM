@@ -4,6 +4,7 @@
 package output
 
 import (
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"os"
 	"sync"
 )
@@ -68,12 +69,12 @@ func Table(headers []string, rows [][]string) {
 // IsColorSupported checks if the terminal supports color output
 func IsColorSupported() bool {
 	// Check if NO_COLOR environment variable is set
-	if os.Getenv("NO_COLOR") != "" {
+	if env.Get("NO_COLOR") != "" {
 		return false
 	}
 
 	// Check if TERM is set to a color-supporting terminal
-	term := os.Getenv("TERM")
+	term := env.Get("TERM")
 	if term == "" || term == "dumb" {
 		return false
 	}

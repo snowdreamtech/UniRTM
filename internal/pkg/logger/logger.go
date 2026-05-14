@@ -14,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 	zlog "github.com/rs/zerolog/log"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -291,7 +292,7 @@ func initZeroLogger(out io.Writer) {
 
 // colorize returns the string s wrapped in ANSI code c, unless disabled is true or c is 0.
 func colorize(s interface{}, c int, disabled bool) string {
-	e := os.Getenv("NO_COLOR")
+	e := env.Get("NO_COLOR")
 	if e != "" || c == 0 {
 		disabled = true
 	}

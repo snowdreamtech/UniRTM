@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"strings"
 	"time"
 )
@@ -21,7 +21,7 @@ type ForgejoBackend struct {
 
 // NewForgejoBackend creates a new Forgejo backend.
 func NewForgejoBackend() *ForgejoBackend {
-	baseURL := os.Getenv("FORGEJO_API_URL")
+	baseURL := env.Get("FORGEJO_API_URL")
 	if baseURL == "" {
 		baseURL = "https://codeberg.org/api/v1"
 	}
@@ -84,7 +84,7 @@ func (b *ForgejoBackend) FetchReleases(ctx context.Context, tool string) ([]Comm
 	if err != nil {
 		return nil, err
 	}
-	if token := os.Getenv("FORGEJO_TOKEN"); token != "" {
+	if token := env.Get("FORGEJO_TOKEN"); token != "" {
 		req.Header.Set("Authorization", "token "+token)
 	}
 
@@ -119,7 +119,7 @@ func (b *ForgejoBackend) FetchReleaseByTag(ctx context.Context, tool string, tag
 	apiURL := fmt.Sprintf("%s/repos/%s/releases/tags/%s", b.baseURL, tool, tag)
 
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
-	if token := os.Getenv("FORGEJO_TOKEN"); token != "" {
+	if token := env.Get("FORGEJO_TOKEN"); token != "" {
 		req.Header.Set("Authorization", "token "+token)
 	}
 
