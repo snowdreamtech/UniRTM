@@ -133,6 +133,22 @@ func (r *RustProvider) ListExecutables(installPath string, version string) ([]st
 	return executables, nil
 }
 
+// GetBinPaths returns the absolute paths to the bin directories.
+func (r *RustProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	return []string{
+		filepath.Join(installPath, "bin"),
+		filepath.Join(installPath, "cargo", "bin"),
+	}, nil
+}
+
+// GetEnvVars returns the CARGO_HOME and RUSTUP_HOME environment variables.
+func (r *RustProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	return map[string]string{
+		"CARGO_HOME":  filepath.Join(installPath, "cargo"),
+		"RUSTUP_HOME": filepath.Join(installPath, "rustup"),
+	}, nil
+}
+
 // Uninstall performs Rust-specific cleanup.
 func (r *RustProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	cargoHome := filepath.Join(installPath, "cargo")

@@ -112,6 +112,16 @@ func (p *DotnetProvider) ListExecutables(installPath string, version string) ([]
 	return executables, nil
 }
 
+// GetBinPaths returns the absolute path to the bin directory.
+func (p *DotnetProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	return []string{filepath.Join(installPath, "bin")}, nil
+}
+
+// GetEnvVars returns no special environment variables.
+func (p *DotnetProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	return make(map[string]string), nil
+}
+
 func (p *DotnetProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	return nil
 }

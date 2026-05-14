@@ -121,6 +121,20 @@ func (j *JavaProvider) ListExecutables(installPath string, version string) ([]st
 	return results, nil
 }
 
+// GetBinPaths returns the absolute path to the Java bin directory.
+func (j *JavaProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	javaHome := j.getJavaHome(installPath)
+	return []string{filepath.Join(javaHome, "bin")}, nil
+}
+
+// GetEnvVars returns the JAVA_HOME environment variable.
+func (j *JavaProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	javaHome := j.getJavaHome(installPath)
+	return map[string]string{
+		"JAVA_HOME": javaHome,
+	}, nil
+}
+
 // Uninstall performs Java-specific cleanup.
 func (j *JavaProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	return nil

@@ -93,6 +93,27 @@ func (n *NodeProvider) ListExecutables(installPath string, version string) ([]st
 	return executables, nil
 }
 
+// GetBinPaths returns the absolute path to the bin directory and the npm-global bin directory.
+func (n *NodeProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	if runtime.GOOS == "windows" {
+		return []string{
+			installPath,
+			filepath.Join(installPath, "npm-global"),
+		}, nil
+	}
+	return []string{
+		filepath.Join(installPath, "bin"),
+		filepath.Join(installPath, "npm-global", "bin"),
+	}, nil
+}
+
+// GetEnvVars returns the NPM_CONFIG_PREFIX environment variable.
+func (n *NodeProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	return map[string]string{
+		"NPM_CONFIG_PREFIX": filepath.Join(installPath, "npm-global"),
+	}, nil
+}
+
 // Uninstall performs Node.js-specific cleanup.
 func (n *NodeProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	// Clean up npm global directory

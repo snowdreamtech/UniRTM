@@ -102,6 +102,18 @@ func (g *GolangProvider) ListExecutables(installPath string, version string) ([]
 	return executables, nil
 }
 
+// GetBinPaths returns the absolute path to the bin directory.
+func (g *GolangProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	return []string{filepath.Join(installPath, "bin")}, nil
+}
+
+// GetEnvVars returns the GOROOT environment variable.
+func (g *GolangProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	return map[string]string{
+		"GOROOT": installPath,
+	}, nil
+}
+
 // Uninstall performs Go-specific cleanup.
 func (g *GolangProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	gopath := filepath.Join(installPath, "gopath")

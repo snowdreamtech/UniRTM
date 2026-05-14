@@ -153,6 +153,21 @@ func (r *RubyProvider) ListExecutables(installPath string, version string) ([]st
 	return executables, nil
 }
 
+// GetBinPaths returns the absolute paths to the bin directories.
+func (r *RubyProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	return []string{
+		filepath.Join(installPath, "bin"),
+		filepath.Join(installPath, "gem-global", "bin"),
+	}, nil
+}
+
+// GetEnvVars returns the GEM_HOME environment variable.
+func (r *RubyProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	return map[string]string{
+		"GEM_HOME": filepath.Join(installPath, "gem-global"),
+	}, nil
+}
+
 // Uninstall performs Ruby-specific cleanup.
 func (r *RubyProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	gemGlobalDir := filepath.Join(installPath, "gem-global")

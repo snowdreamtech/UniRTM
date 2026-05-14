@@ -103,6 +103,24 @@ func (p *PythonProvider) ListExecutables(installPath string, version string) ([]
 	return executables, nil
 }
 
+// GetBinPaths returns the absolute path to the bin directory and the venv bin directory.
+func (p *PythonProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	binDir := filepath.Join(installPath, "bin")
+	venvBin := filepath.Join(installPath, "venv", "bin")
+	if runtime.GOOS == "windows" {
+		venvBin = filepath.Join(installPath, "venv", "Scripts")
+	}
+	return []string{binDir, venvBin}, nil
+}
+
+// GetEnvVars returns the VIRTUAL_ENV environment variable.
+func (p *PythonProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	venvDir := filepath.Join(installPath, "venv")
+	return map[string]string{
+		"VIRTUAL_ENV": venvDir,
+	}, nil
+}
+
 // Uninstall performs Python-specific cleanup.
 func (p *PythonProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	venvDir := filepath.Join(installPath, "venv")
