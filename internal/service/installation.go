@@ -594,7 +594,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	}
 	defer tx.Rollback()
 
-	if err := tx.InstallationRepo().Create(ctx, installation); err != nil {
+	if err := tx.InstallationRepo().Upsert(ctx, installation); err != nil {
 		os.RemoveAll(installPath)
 		return fmt.Errorf("failed to record installation: %w", err)
 	}

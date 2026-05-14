@@ -88,6 +88,9 @@ type InstallationRepository interface {
 	// Create records a new installation
 	Create(ctx context.Context, installation *Installation) error
 
+	// Upsert creates or updates an installation record
+	Upsert(ctx context.Context, installation *Installation) error
+
 	// FindByToolAndVersion finds an installation by tool and version
 	FindByToolAndVersion(ctx context.Context, tool string, version string) (*Installation, error)
 

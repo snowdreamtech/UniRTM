@@ -156,6 +156,10 @@ func (m *mockInstallationRepository) Create(ctx context.Context, installation *I
 	return nil
 }
 
+func (m *mockInstallationRepository) Upsert(ctx context.Context, installation *Installation) error {
+	return nil
+}
+
 func (m *mockInstallationRepository) FindByToolAndVersion(ctx context.Context, tool string, version string) (*Installation, error) {
 	return nil, nil
 }

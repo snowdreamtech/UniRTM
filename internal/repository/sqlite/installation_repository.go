@@ -22,6 +22,7 @@ type InstallationRepository struct {
 
 	// Prepared statements for performance
 	createStmt               *sql.Stmt
+	upsertStmt               *sql.Stmt
 	findByToolAndVersionStmt *sql.Stmt
 	listStmt                 *sql.Stmt
 	deleteStmt               *sql.Stmt
@@ -40,6 +41,20 @@ func NewInstallationRepository(db DBExecutor) (*InstallationRepository, error) {
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("prepare create statement: %w", err)
+	}
+
+	repo.upsertStmt, err = db.Prepare(`
+		INSERT INTO installations (tool, version, backend, provider, install_path, checksum, metadata)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(tool, version) DO UPDATE SET
+			backend = excluded.backend,
+			provider = excluded.provider,
+			install_path = excluded.install_path,
+			checksum = excluded.checksum,
+			metadata = excluded.metadata
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("prepare upsert statement: %w", err)
 	}
 
 	repo.findByToolAndVersionStmt, err = db.Prepare(`
@@ -92,6 +107,31 @@ func (r *InstallationRepository) Create(ctx context.Context, installation *repos
 			}
 		}
 		return fmt.Errorf("insert installation: %w", err)
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("get last insert id: %w", err)
+	}
+
+	installation.ID = id
+	return nil
+}
+
+// Upsert creates or updates an installation
+func (r *InstallationRepository) Upsert(ctx context.Context, installation *repository.Installation) error {
+	result, err := r.upsertStmt.ExecContext(
+		ctx,
+		installation.Tool,
+		installation.Version,
+		installation.Backend,
+		installation.Provider,
+		installation.InstallPath,
+		installation.Checksum,
+		installation.Metadata,
+	)
+	if err != nil {
+		return fmt.Errorf("upsert installation: %w", err)
 	}
 
 	id, err := result.LastInsertId()
@@ -188,6 +228,9 @@ func (r *InstallationRepository) Close() error {
 
 	if err := r.createStmt.Close(); err != nil {
 		errs = append(errs, fmt.Errorf("close create statement: %w", err))
+	}
+	if err := r.upsertStmt.Close(); err != nil {
+		errs = append(errs, fmt.Errorf("close upsert statement: %w", err))
 	}
 	if err := r.findByToolAndVersionStmt.Close(); err != nil {
 		errs = append(errs, fmt.Errorf("close find statement: %w", err))
