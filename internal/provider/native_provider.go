@@ -130,6 +130,16 @@ func (p *NativeProvider) ListExecutables(installPath string, version string) ([]
 	return p.generic.ListExecutables(installPath, version)
 }
 
+// GetBinPaths returns the absolute path to the bin directory.
+func (p *NativeProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	return p.generic.GetBinPaths(installPath, version)
+}
+
+// GetEnvVars returns the environment variables for the tool.
+func (p *NativeProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	return p.generic.GetEnvVars(installPath, version)
+}
+
 func (p *NativeProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	return p.generic.Uninstall(ctx, installPath, version)
 }
