@@ -105,6 +105,7 @@ func GetNoProxyEnv(extraDomains ...string) []string {
 	domains := []string{
 		"mirrors.aliyun.com",
 		"npm.aliyun.com",
+		"maven.aliyun.com",
 		"registry.npmmirror.com",
 		"mirrors.cloud.tencent.com",
 		"mirrors.huaweicloud.com",
@@ -115,8 +116,6 @@ func GetNoProxyEnv(extraDomains ...string) []string {
 		"mirrors.tuna.tsinghua.edu.cn",
 		"pypi.tuna.tsinghua.edu.cn",
 		"pypi.douban.com",
-		"registry.taobao.org",
-		"npm.taobao.org",
 		"rsproxy.cn",
 		"r.cnpmjs.org",
 	}
