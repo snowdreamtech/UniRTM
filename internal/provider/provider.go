@@ -35,6 +35,14 @@ type Provider interface {
 	// This is used for shim generation and PATH management.
 	ListExecutables(installPath string, version string) ([]string, error)
 
+	// GetBinPaths returns a list of absolute paths to the directories containing
+	// the tool's executables. These are used in PATH mode activation.
+	GetBinPaths(installPath string, version string) ([]string, error)
+
+	// GetEnvVars returns a map of environment variables that should be set
+	// when this tool is active (e.g., JAVA_HOME for Java).
+	GetEnvVars(installPath string, version string) (map[string]string, error)
+
 	// Uninstall performs tool-specific cleanup before uninstallation.
 	// This is called before the installation directory is removed.
 	Uninstall(ctx context.Context, installPath string, version string) error
