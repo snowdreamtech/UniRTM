@@ -12,7 +12,8 @@ import (
 func GetFSToolName(tool, backend string) string {
 	name := tool
 	// If tool already contains the backend as a prefix (followed by a hyphen), don't double it.
-	if backend != "" && !strings.HasPrefix(tool, backend+"-") && !strings.HasPrefix(tool, backend+":") {
+	// For 'native' backend, we don't add a prefix to align with mise core tools layout.
+	if backend != "" && backend != "native" && !strings.HasPrefix(tool, backend+"-") && !strings.HasPrefix(tool, backend+":") {
 		name = backend + "-" + tool
 	}
 
