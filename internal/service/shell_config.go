@@ -51,27 +51,82 @@ func (m *ShellConfigManager) GetConfigPath(shell ShellType) (string, error) {
 	}
 }
 
-// Inject appends a configuration block to the shell RC file if it doesn't already exist.
+// Inject appends or updates a configuration block in the shell RC file.
 func (m *ShellConfigManager) Inject(shell ShellType, marker string, content string) error {
 	configFile, err := m.GetConfigPath(shell)
 	if err != nil {
 		return err
 	}
 
-	// 1. Check if already present
+	// 1. Read existing content
 	rawContent, err := os.ReadFile(configFile)
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	searchPattern := fmt.Sprintf("# unirtm %s", marker)
-	if strings.Contains(string(rawContent), searchPattern) {
-		m.formatter.Info(fmt.Sprintf("UniRTM %s logic already present in %s", marker, configFile), nil)
+	searchPattern := fmt.Sprintf("# unirtm %s activation", marker)
+	fullBlock := fmt.Sprintf("\n# %s\n%s\n", searchPattern, content)
+	
+	rawContentStr := string(rawContent)
+	if strings.Contains(rawContentStr, searchPattern) {
+		// Already present, check if we need to update
+		if strings.Contains(rawContentStr, content) {
+			m.formatter.Info(fmt.Sprintf("UniRTM %s logic already up to date in %s", marker, configFile), nil)
+			return nil
+		}
+
+		if m.dryRun {
+			m.formatter.Info(fmt.Sprintf("[dry-run] Would update %s activation logic in %s", marker, configFile), nil)
+			return nil
+		}
+
+		// Update by replacing the old block
+		// We search for the block starting with the marker and ending at the next newline after the content-like line
+		lines := strings.Split(rawContentStr, "\n")
+		var newLines []string
+		inBlock := false
+		replaced := false
+		
+		for i := 0; i < len(lines); i++ {
+			if strings.Contains(lines[i], searchPattern) {
+				inBlock = true
+				if !replaced {
+					// Add the new block here
+					newLines = append(newLines, "# "+searchPattern)
+					newLines = append(newLines, content)
+					replaced = true
+				}
+				continue
+			}
+			
+			if inBlock {
+				// We assume the block is the marker line + one activation line
+				// If the line contains the tool name and activate/eval, it's the activation line
+				if strings.Contains(lines[i], marker) && (strings.Contains(lines[i], "activate") || strings.Contains(lines[i], "eval") || strings.Contains(lines[i], "source")) {
+					inBlock = false
+					continue
+				}
+				// If we reach an empty line or another comment, the block ended unexpectedly
+				if strings.TrimSpace(lines[i]) == "" || strings.HasPrefix(strings.TrimSpace(lines[i]), "#") {
+					inBlock = false
+					// Don't continue, process this line normally
+				} else {
+					continue
+				}
+			}
+			newLines = append(newLines, lines[i])
+		}
+
+		newContent := strings.Join(newLines, "\n")
+		if err := os.WriteFile(configFile, []byte(newContent), 0644); err != nil {
+			return err
+		}
+		m.formatter.Success(fmt.Sprintf("Updated %s activation logic in %s", marker, configFile))
 		return nil
 	}
 
 	if m.dryRun {
-		m.formatter.Info(fmt.Sprintf("[dry-run] Would update %s with %s activation logic", configFile, marker), nil)
+		m.formatter.Info(fmt.Sprintf("[dry-run] Would add %s activation logic to %s", marker, configFile), nil)
 		return nil
 	}
 
@@ -86,7 +141,7 @@ func (m *ShellConfigManager) Inject(shell ShellType, marker string, content stri
 	}
 
 	// 3. Prepare content with consistent spacing
-	cleanContent := strings.TrimRight(string(rawContent), " \t\r\n")
+	cleanContent := strings.TrimRight(rawContentStr, " \t\r\n")
 	
 	// 4. Append block
 	f, err := os.OpenFile(configFile, os.O_WRONLY|os.O_TRUNC, 0644)
@@ -95,12 +150,11 @@ func (m *ShellConfigManager) Inject(shell ShellType, marker string, content stri
 	}
 	defer f.Close()
 
-	block := fmt.Sprintf("\n\n# unirtm %s activation\n%s\n", marker, content)
-	if _, err := f.WriteString(cleanContent + block); err != nil {
+	if _, err := f.WriteString(cleanContent + "\n" + fullBlock); err != nil {
 		return err
 	}
 
-	m.formatter.Success(fmt.Sprintf("Updated %s with %s logic", configFile, marker))
+	m.formatter.Success(fmt.Sprintf("Added %s activation logic to %s", marker, configFile))
 	return nil
 }
 

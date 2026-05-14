@@ -16,7 +16,8 @@ import (
 )
 
 var (
-	enableAll bool
+	enableAll   bool
+	enableShims bool
 )
 
 // enableCmd intelligently enables UniRTM shell activation.
@@ -37,6 +38,7 @@ By default, it enables UniRTM, but you can specify 'mise' as an argument to enab
 
 func init() {
 	enableCmd.Flags().BoolVarP(&enableAll, "all", "a", false, "Enable for all supported shells (zsh, bash, fish, powershell)")
+	enableCmd.Flags().BoolVar(&enableShims, "shims", false, "Use shims mode for activation (default is path mode)")
 	if rootCmd != nil {
 		rootCmd.AddCommand(enableCmd)
 	}
@@ -68,7 +70,7 @@ func runEnable(cmd *cobra.Command, args []string) error {
 			configPath, _ := scm.GetConfigPath(st)
 			if _, err := os.Stat(configPath); err == nil {
 				formatter.Info(fmt.Sprintf("Enabling %s for %s...", targetTool, st), nil)
-				activationCmd, err := getActivationCmd(targetTool, st)
+				activationCmd, err := getActivationCmd(targetTool, st, enableShims)
 				if err != nil {
 					formatter.Warning(fmt.Sprintf("Failed to get activation command for %s: %v", st, err), nil)
 					continue
@@ -88,7 +90,7 @@ func runEnable(cmd *cobra.Command, args []string) error {
 	}
 
 	// 3. Resolve activation command
-	activationCmd, err := getActivationCmd(targetTool, shell)
+	activationCmd, err := getActivationCmd(targetTool, shell, enableShims)
 	if err != nil {
 		return err
 	}
@@ -106,7 +108,7 @@ func runEnable(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func getActivationCmd(targetTool string, shell service.ShellType) (string, error) {
+func getActivationCmd(targetTool string, shell service.ShellType, useShims bool) (string, error) {
 	// Get the absolute path of the target executable
 	var exePath string
 	var err error
@@ -124,16 +126,22 @@ func getActivationCmd(targetTool string, shell service.ShellType) (string, error
 			}
 		}
 	}
+	
+	// Prepare flags
+	flags := ""
+	if useShims {
+		flags = " --shims"
+	}
 
 	switch shell {
 	case service.ShellZsh:
-		return fmt.Sprintf(`eval "$(%s activate zsh)"`, exePath), nil
+		return fmt.Sprintf(`eval "$(%s activate%s zsh)"`, exePath, flags), nil
 	case service.ShellBash:
-		return fmt.Sprintf(`eval "$(%s activate bash)"`, exePath), nil
+		return fmt.Sprintf(`eval "$(%s activate%s bash)"`, exePath, flags), nil
 	case service.ShellFish:
-		return fmt.Sprintf(`%s activate fish | source`, exePath), nil
+		return fmt.Sprintf(`%s activate%s fish | source`, exePath, flags), nil
 	case service.ShellPowerShell:
-		return fmt.Sprintf(`%s activate powershell | Out-String | Invoke-Expression`, exePath), nil
+		return fmt.Sprintf(`%s activate%s powershell | Out-String | Invoke-Expression`, exePath, flags), nil
 	default:
 		return "", fmt.Errorf("unsupported shell: %s", shell)
 	}
