@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -35,6 +36,13 @@ func (h *GolangHandler) Name() string {
 }
 
 func (h *GolangHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
+	// Support mirror overrides (compatible with mise)
+	if mirror := os.Getenv("UNIRTM_GO_DOWNLOAD_MIRROR"); mirror != "" {
+		baseURL = mirror
+	} else if mirror := os.Getenv("MISE_GO_DOWNLOAD_MIRROR"); mirror != "" {
+		baseURL = mirror
+	}
+
 	url := fmt.Sprintf("%s/?mode=json&include=all", strings.TrimSuffix(baseURL, "/"))
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -70,7 +78,7 @@ func (h *GolangHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 			}
 
 			asset := Asset{
-				URL:      fmt.Sprintf("https://go.dev/dl/%s", gf.Filename),
+				URL:      fmt.Sprintf("%s/%s", strings.TrimSuffix(baseURL, "/"), gf.Filename),
 				Filename: gf.Filename,
 				OS:       gf.OS,
 				Arch:     gf.Arch,
