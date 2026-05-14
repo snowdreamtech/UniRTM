@@ -184,6 +184,9 @@ func (im *InstallationManager) executeHook(ctx context.Context, cmdStr, tool, ve
 // Install performs the complete installation workflow for a tool.
 // Workflow: check → download → verify → extract → activate → record
 func (im *InstallationManager) Install(ctx context.Context, tool, version, backendName string) error {
+	// Standardize tool name for filesystem check
+	fsToolName := env.GetFSToolName(tool, backendName)
+
 	// 1. Resolve aliases
 	version = im.resolveAlias(tool, version)
 
@@ -226,8 +229,10 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		for _, v := range variants {
 			existing, err := im.installRepo.FindByToolAndVersion(ctx, tool, v)
 			if err == nil && existing != nil {
-				if _, statErr := os.Stat(existing.InstallPath); statErr == nil {
-					// Found a valid installation on disk
+				// Update path if needed (in case db has old path but we want to check new standard)
+				checkPath := filepath.Join(env.GetInstallsDir(), fsToolName, v)
+				if _, statErr := os.Stat(checkPath); statErr == nil {
+					// Found a valid installation on the NEW standard disk path
 					return ErrAlreadyInstalled
 				}
 			}
@@ -270,23 +275,13 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	// Note: We use im.installRepo (non-transactional) here to avoid holding a transaction during download.
 	existing, err := im.installRepo.FindByToolAndVersion(ctx, tool, version)
 	if err == nil && existing != nil {
-		// Verify if the installation directory actually exists on disk
-		if _, statErr := os.Stat(existing.InstallPath); os.IsNotExist(statErr) {
-			// Path doesn't exist, this is a stale database record. Clean it up in a short-lived transaction.
-			tx, err := im.txManager.Begin(ctx)
-			if err == nil {
-				if delErr := tx.InstallationRepo().Delete(ctx, tool, version); delErr == nil {
-					_ = tx.Commit()
-				} else {
-					_ = tx.Rollback()
-				}
-			}
-		} else {
+		// Update path if needed (in case db has old path but we want to check new standard)
+		checkPath := filepath.Join(env.GetInstallsDir(), fsToolName, version)
+		if _, statErr := os.Stat(checkPath); statErr == nil {
+			// Found a valid installation on the NEW standard disk path
 			return ErrAlreadyInstalled
 		}
 	}
-
-	// Download artifact if URL is provided
 	var downloadPath string
 	var gpgStatus string = "NotRequested"
 	if versionInfo.DownloadURL != "" {
@@ -545,7 +540,10 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	}
 
 	// 6. Install using provider with atomic rename strategy
-	installPath := filepath.Join(env.GetInstallsDir(), tool, version)
+	// Standardize tool name for filesystem (Scheme B: provider-tool-name)
+	fsToolName = env.GetFSToolName(tool, backendName)
+
+	installPath := filepath.Join(env.GetInstallsDir(), fsToolName, version)
 	tmpInstallPath := installPath + ".unirtm-tmp"
 
 	// Clean up any stale directories from previous failed attempts
@@ -647,13 +645,23 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	return nil
 }
 
-// EnsureInstalled checks if all tools in the configuration are installed,
-// and installs any missing ones if the settings allow.
-func (im *InstallationManager) EnsureInstalled(ctx context.Context, tools map[string]config.ToolConfig) error {
+// ToolToInstall represents a tool with its resolved backend information for sorting.
+type ToolToInstall struct {
+	OriginalName string
+	ToolName     string
+	BackendName  string
+	Version      string
+	Config       config.ToolConfig
+}
+
+// SortTools sorts tools such that dependencies are installed before dependent tools.
+func (im *InstallationManager) SortTools(tools map[string]config.ToolConfig) []ToolToInstall {
+	var result []ToolToInstall
 	for name, tc := range tools {
 		toolName := name
-		// Handle shorthand syntax (backend:tool)
 		backendName := tc.Backend
+
+		// Resolve backend and tool name similarly to EnsureInstalled
 		if backendName == "" {
 			if idx := strings.Index(name, ":"); idx != -1 {
 				backendName = name[:idx]
@@ -663,9 +671,7 @@ func (im *InstallationManager) EnsureInstalled(ctx context.Context, tools map[st
 			}
 		}
 
-		version := im.resolveAlias(toolName, tc.Version)
-
-		// Intercept go: prefix and route to the internal go-pkg provider
+		// Intercept go: prefix
 		if backendName == "go" || strings.HasPrefix(name, "go:") {
 			backendName = "go-pkg"
 			if strings.HasPrefix(name, "go:") {
@@ -673,11 +679,136 @@ func (im *InstallationManager) EnsureInstalled(ctx context.Context, tools map[st
 			}
 		}
 
+		result = append(result, ToolToInstall{
+			OriginalName: name,
+			ToolName:     toolName,
+			BackendName:  backendName,
+			Version:      tc.Version,
+			Config:       tc,
+		})
+	}
+
+	// Simple topological sort or layered sorting.
+	// Since dependencies are mostly backend-based (e.g., npm depends on node),
+	// we can use a simple priority system or a more formal topological sort.
+	// Let's use a simple topological sort logic here.
+
+	// Map tool name to its info for easy lookup
+	toolMap := make(map[string]*ToolToInstall)
+	for i := range result {
+		toolMap[result[i].ToolName] = &result[i]
+	}
+
+	// Resulting sorted slice
+	sorted := make([]ToolToInstall, 0, len(result))
+	visited := make(map[string]bool)
+	tempVisited := make(map[string]bool)
+
+	var visit func(t ToolToInstall) error
+	visit = func(t ToolToInstall) error {
+		if tempVisited[t.ToolName] {
+			// Circular dependency detected, but we'll just ignore and proceed
+			return nil
+		}
+		if !visited[t.ToolName] {
+			tempVisited[t.ToolName] = true
+
+			// Get backend dependencies
+			if b, err := backend.Get(t.BackendName); err == nil {
+				for _, dep := range b.Dependencies() {
+					// Check if this dependency is also in our tools list
+					if depTool, ok := toolMap[dep]; ok {
+						visit(*depTool)
+					}
+				}
+			}
+
+			tempVisited[t.ToolName] = false
+			visited[t.ToolName] = true
+			sorted = append(sorted, t)
+		}
+		return nil
+	}
+
+	for _, t := range result {
+		visit(t)
+	}
+
+	return sorted
+}
+
+// SortToolsFromSpecs sorts tools such that dependencies are installed before dependent tools.
+func (im *InstallationManager) SortToolsFromSpecs(tools map[string]ToolSpec) []ToolToInstall {
+	var result []ToolToInstall
+	for name, ts := range tools {
+		result = append(result, ToolToInstall{
+			OriginalName: name,
+			ToolName:     ts.Name,
+			BackendName:  ts.BackendName,
+			Version:      ts.Version,
+		})
+	}
+
+	// Map tool name to its info for easy lookup
+	toolMap := make(map[string]*ToolToInstall)
+	for i := range result {
+		toolMap[result[i].ToolName] = &result[i]
+	}
+
+	// Resulting sorted slice
+	sorted := make([]ToolToInstall, 0, len(result))
+	visited := make(map[string]bool)
+	tempVisited := make(map[string]bool)
+
+	var visit func(t ToolToInstall) error
+	visit = func(t ToolToInstall) error {
+		if tempVisited[t.ToolName] {
+			return nil
+		}
+		if !visited[t.ToolName] {
+			tempVisited[t.ToolName] = true
+
+			if b, err := backend.Get(t.BackendName); err == nil {
+				for _, dep := range b.Dependencies() {
+					if depTool, ok := toolMap[dep]; ok {
+						visit(*depTool)
+					}
+				}
+			}
+
+			tempVisited[t.ToolName] = false
+			visited[t.ToolName] = true
+			sorted = append(sorted, t)
+		}
+		return nil
+	}
+
+	for _, t := range result {
+		visit(t)
+	}
+
+	return sorted
+}
+
+// EnsureInstalled checks if all tools in the configuration are installed,
+// and installs any missing ones if the settings allow.
+func (im *InstallationManager) EnsureInstalled(ctx context.Context, tools map[string]config.ToolConfig) error {
+	sortedTools := im.SortTools(tools)
+
+	for _, t := range sortedTools {
+		toolName := t.ToolName
+		backendName := t.BackendName
+		version := im.resolveAlias(toolName, t.Version)
+
+		// Standardize tool name for filesystem check
+		fsToolName := env.GetFSToolName(toolName, backendName)
+
 		// Check if already installed
 		existing, err := im.installRepo.FindByToolAndVersion(ctx, toolName, version)
 		if err == nil && existing != nil {
-			// Verify if the installation directory actually exists on disk
-			if _, statErr := os.Stat(existing.InstallPath); statErr == nil {
+			// Update path if needed (in case db has old path but we want to check new standard)
+			checkPath := filepath.Join(env.GetInstallsDir(), fsToolName, version)
+			if _, statErr := os.Stat(checkPath); statErr == nil {
 				continue
 			}
 		}

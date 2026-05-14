@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 	"time"
 
@@ -297,34 +296,29 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 	formatter.Info(fmt.Sprintf("Processing %d tool(s)...", len(toolsToInstall)))
 
-	// Extract and sort tool names to ensure deterministic installation order
-	toolNames := make([]string, 0, len(toolsToInstall))
-	for name := range toolsToInstall {
-		toolNames = append(toolNames, name)
-	}
-	sort.Strings(toolNames)
+	// Sort tools by dependency to ensure runtimes are installed first
+	sortedTools := installManager.SortToolsFromSpecs(toolsToInstall)
 
 	// Perform installations
 	startTime := time.Now()
-	for _, toolName := range toolNames {
-		spec := toolsToInstall[toolName]
-		tool := toolName
-		if spec.Name != "" {
-			tool = spec.Name
-		}
-		
-		err = installManager.Install(ctx, tool, spec.Version, spec.BackendName)
+	for _, t := range sortedTools {
+		toolName := t.OriginalName
+		tool := t.ToolName
+		version := t.Version
+		backendName := t.BackendName
+
+		err = installManager.Install(ctx, tool, version, backendName)
 		if err != nil {
 			// Check if already installed (Style C: Single line green check)
 			if err == service.ErrAlreadyInstalled || strings.Contains(err.Error(), "already installed") {
-				pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", toolName, spec.Version)
+				pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", toolName, version)
 				continue
 			}
 			
 			pterm.Error.Printf("Installation failed for %s: %v\n", toolName, err)
 			return fmt.Errorf("install %s: %w", toolName, err)
 		}
-		pterm.FgGreen.Printf("✓ Successfully installed %s@%s\n", toolName, spec.Version)
+		pterm.FgGreen.Printf("✓ Successfully installed %s@%s\n", toolName, version)
 	}
 	
 	duration := time.Since(startTime)
