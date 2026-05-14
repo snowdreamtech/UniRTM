@@ -171,19 +171,7 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 
 	// 3. Syntax Bridging (Jinja2 -> Pongo2)
 	// We use regex to replace common Jinja2 patterns that Pongo2 doesn't support natively.
-	content := string(contentBytes)
-	
-	// Replace 'is defined' -> '' (Pongo2 treats existence as truthy)
-	reDefined := regexp.MustCompile(`(\w+)\s+is\s+defined`)
-	content = reDefined.ReplaceAllString(content, "$1")
-
-	// Replace 'is undefined' -> 'not $1'
-	reUndefined := regexp.MustCompile(`(\w+)\s+is\s+undefined`)
-	content = reUndefined.ReplaceAllString(content, "not $1")
-
-	// Replace '~' (Jinja2 string concat) -> '+' (Pongo2 string concat)
-	// This is a simple replacement, might need adjustment for complex expressions
-	content = strings.ReplaceAll(content, " ~ ", " + ")
+	content := bridgeJinja2(string(contentBytes))
 	
 	// Parse and execute template (Jinja2/Pongo2)
 	tpl, err := pongo2.FromString(content)
@@ -744,6 +732,10 @@ func renderTemplate(content string, ctx pongo2.Context) string {
 	if !strings.Contains(content, "{%") && !strings.Contains(content, "{{") {
 		return content
 	}
+
+	// Syntax Bridging (Jinja2 -> Pongo2)
+	content = bridgeJinja2(content)
+
 	tpl, err := pongo2.FromString(content)
 	if err != nil {
 		return content
@@ -753,4 +745,21 @@ func renderTemplate(content string, ctx pongo2.Context) string {
 		return content
 	}
 	return rendered
+}
+
+// bridgeJinja2 replaces common Jinja2 patterns that Pongo2 doesn't support natively.
+func bridgeJinja2(content string) string {
+	// Replace 'is defined' -> '' (Pongo2 treats existence as truthy)
+	// Supports dotted names like env.CI
+	reDefined := regexp.MustCompile(`([\w.]+)\s+is\s+defined`)
+	content = reDefined.ReplaceAllString(content, "$1")
+
+	// Replace 'is undefined' -> 'not $1'
+	reUndefined := regexp.MustCompile(`([\w.]+)\s+is\s+undefined`)
+	content = reUndefined.ReplaceAllString(content, "not $1")
+
+	// Replace '~' (Jinja2 string concat) -> '+' (Pongo2 string concat)
+	content = strings.ReplaceAll(content, " ~ ", " + ")
+
+	return content
 }

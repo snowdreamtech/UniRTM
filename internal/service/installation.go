@@ -153,7 +153,7 @@ func (im *InstallationManager) executeHook(ctx context.Context, cmdStr, tool, ve
 		return nil
 	}
 
-	fmt.Printf("➜ executing hook for %s@%s: %s\n", tool, version, cmdStr)
+	pterm.FgCyan.Printf("➜ executing hook for %s@%s: %s\n", tool, version, cmdStr)
 	
 	// Create command
 	var shell, shellArg string
@@ -198,7 +198,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 	// 3. Run PreInstall hook
 	if preInstall != "" {
-		fmt.Printf("⚠️  SECURITY: executing pre_install hook for %s: %s\n", tool, preInstall)
+		pterm.FgYellow.Printf("⚠️  SECURITY: executing pre_install hook for %s: %s\n", tool, preInstall)
 		if err := im.executeHook(ctx, preInstall, tool, version); err != nil {
 			return fmt.Errorf("pre_install hook failed: %w", err)
 		}
@@ -245,13 +245,13 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 	if versionInfo == nil {
 		// Lockfile miss — fall back to the remote backend.
-		fmt.Printf("ℹ resolving download info for %s@%s...\n", tool, version)
+		pterm.FgCyan.Printf("ℹ resolving download info for %s@%s...\n", tool, version)
 		info, err := b.ResolveVersion(ctx, tool, version, platform)
 		if err != nil {
 			return fmt.Errorf("failed to resolve version: %w", err)
 		}
 		version = info.Version // Update to the concrete resolved version
-		fmt.Printf("✓ resolved %s to version %s\n", tool, version)
+		pterm.FgGreen.Printf("✅ resolved %s to version %s\n", tool, version)
 		versionInfo = info
 	}
 
@@ -292,7 +292,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		}
 
 		downloadPath = filepath.Join(env.GetDownloadsDir(), fmt.Sprintf("%s-%s%s", tool, version, ext))
-		fmt.Printf("ℹ downloading %s@%s to %s...\n", tool, version, downloadPath)
+		pterm.FgCyan.Printf("ℹ downloading %s@%s to %s...\n", tool, version, downloadPath)
 		if err := os.MkdirAll(filepath.Dir(downloadPath), 0755); err != nil {
 			return fmt.Errorf("failed to create downloads directory: %w", err)
 		}
@@ -392,7 +392,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 			return fmt.Errorf("failed to finalize download: %w", err)
 		}
 		
-		fmt.Printf("✓ downloaded to %s\n", downloadPath)
+		pterm.FgGreen.Printf("✅ downloaded to %s\n", downloadPath)
 		defer func() {
 			if im.settings != nil && im.settings.AlwaysKeepDownload {
 				logger.Debug("AlwaysKeepDownload is enabled, keeping artifact", map[string]interface{}{"path": downloadPath})
@@ -419,7 +419,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		}
 
 		if (versionInfo.SignatureURL != "" || versionInfo.GPGSignature != "") && verifyMetadata && (im.settings == nil || im.settings.GPGVerify != "off") {
-			fmt.Printf("ℹ verifying GPG signature for %s@%s...\n", tool, version)
+			pterm.FgCyan.Printf("ℹ verifying GPG signature for %s@%s...\n", tool, version)
 			
 			sigPath := downloadPath + ".asc"
 			var downloadErr error
@@ -440,7 +440,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 				if im.settings != nil && im.settings.GPGVerify == "strict" {
 					return fmt.Errorf("GPG signature required in strict mode: %w", downloadErr)
 				}
-				fmt.Printf("⚠️  WARNING: %s. Continuing anyway (GPGVerify=%s)\n", msg, im.settings.GPGVerify)
+				pterm.FgYellow.Printf("⚠️  WARNING: %s. Continuing anyway (GPGVerify=%s)\n", msg, im.settings.GPGVerify)
 				gpgStatus = "Failed (Download)"
 			} else {
 				defer os.Remove(sigPath)
@@ -460,7 +460,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 				if err != nil && strings.Contains(err.Error(), "missing public key") && len(trustedKeys) > 0 {
 					// Handle missing public key: Ask user in TTY, or fail in CI
 					if pterm.PrintColor && pterm.RawOutput { // Check if we are likely in a TTY
-						fmt.Printf("⚠️  GPG signature found but public key is missing locally.\n")
+						pterm.FgYellow.Printf("⚠️  GPG signature found but public key is missing locally.\n")
 						fp := trustedKeys[0] // Try first fingerprint
 						confirm, _ := pterm.DefaultInteractiveConfirm.
 							WithDefaultText(fmt.Sprintf("Do you want to trust and import GPG key %s from keyservers?", fp)).
@@ -477,7 +477,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 							}
 						}
 					} else {
-						fmt.Printf("⚠️  GPG verification skipped: missing public key (Non-interactive mode)\n")
+						pterm.FgYellow.Printf("⚠️  GPG verification skipped: missing public key (Non-interactive mode)\n")
 						gpgStatus = "Failed (Missing Key)"
 					}
 				}
@@ -487,10 +487,10 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 					if im.settings != nil && im.settings.GPGVerify == "strict" {
 						return fmt.Errorf("SECURITY ERROR: %s", msg)
 					}
-					fmt.Printf("⚠️  SECURITY WARNING: %s. Continuing anyway (GPGVerify=%s)\n", msg, im.settings.GPGVerify)
+					pterm.FgYellow.Printf("⚠️  SECURITY WARNING: %s. Continuing anyway (GPGVerify=%s)\n", msg, im.settings.GPGVerify)
 					gpgStatus = "Failed (Invalid)"
 				} else {
-					fmt.Printf("✓ GPG signature verified successfully\n")
+					pterm.FgGreen.Printf("✅ GPG signature verified successfully\n")
 					gpgStatus = "Verified"
 				}
 			}
@@ -500,7 +500,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 			if len(versionInfo.GPGKeys) > 0 {
 				return fmt.Errorf("GPG security violation: trusted fingerprints exist for %s but no signature URL found in strict mode", tool)
 			}
-			fmt.Printf("ℹ %s does not appear to support GPG signatures. Falling back to strong SHA256 checksum verification.\n", tool)
+			pterm.FgCyan.Printf("ℹ %s does not appear to support GPG signatures. Falling back to strong SHA256 checksum verification.\n", tool)
 			gpgStatus = "NotSupported"
 		}
 
@@ -549,26 +549,26 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 	p := im.providerRegistry.GetWithBackend(tool, backendName)
 
-	fmt.Printf("ℹ extracting %s@%s...\n", tool, version)
+	pterm.FgCyan.Printf("ℹ extracting %s@%s...\n", tool, version)
 	if err := p.Install(ctx, tmpInstallPath, downloadPath, version); err != nil {
 		os.RemoveAll(tmpInstallPath)
 		return fmt.Errorf("installation failed: %w", err)
 	}
 
-	fmt.Printf("ℹ running post-install hooks for %s@%s...\n", tool, version)
+	pterm.FgCyan.Printf("ℹ running post-install hooks for %s@%s...\n", tool, version)
 	if err := p.PostInstall(ctx, tmpInstallPath, version); err != nil {
 		os.RemoveAll(tmpInstallPath)
 		return fmt.Errorf("post-install failed: %w", err)
 	}
 
-	fmt.Printf("ℹ finalizing installation for %s@%s...\n", tool, version)
+	pterm.FgCyan.Printf("ℹ finalizing installation for %s@%s...\n", tool, version)
 	// Atomic rename from temp to final path
 	if err := os.Rename(tmpInstallPath, installPath); err != nil {
 		os.RemoveAll(tmpInstallPath)
 		return fmt.Errorf("failed to finalize installation: %w", err)
 	}
 
-	fmt.Printf("ℹ recording %s@%s to database...\n", tool, version)
+	pterm.FgCyan.Printf("ℹ recording %s@%s to database...\n", tool, version)
 	// Record installation
 	installation := &repository.Installation{
 		Tool:        tool,
@@ -618,21 +618,21 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 	// 11. Run PostInstall hook
 	if postInstall != "" {
-		fmt.Printf("⚠️  SECURITY: executing post_install hook for %s: %s\n", tool, postInstall)
+		pterm.FgYellow.Printf("⚠️  SECURITY: executing post_install hook for %s: %s\n", tool, postInstall)
 		if err := im.executeHook(ctx, postInstall, tool, version); err != nil {
 			return fmt.Errorf("post_install hook failed: %w", err)
 		}
 	}
 
 	// 12. Generate shims for the tool executables
-	fmt.Printf("ℹ generating shims for %s...\n", tool)
+	pterm.FgCyan.Printf("ℹ generating shims for %s...\n", tool)
 	execs, _ := p.ListExecutables(installPath, version)
 	if err := im.shimGenerator.GenerateShim(ctx, tool, execs...); err != nil {
-		fmt.Printf("⚠️  WARNING: failed to generate shims for %s: %v\n", tool, err)
+		pterm.FgYellow.Printf("⚠️  WARNING: failed to generate shims for %s: %v\n", tool, err)
 		// Non-fatal, don't return error
 	}
 
-	fmt.Printf("✅ %s@%s installed successfully to %s\n", tool, version, installPath)
+	pterm.FgGreen.Printf("✅ %s@%s installed successfully to %s\n", tool, version, installPath)
 	return nil
 }
 
@@ -672,7 +672,7 @@ func (im *InstallationManager) EnsureInstalled(ctx context.Context, tools map[st
 		}
 
 		// Not installed, proceed with installation
-		fmt.Printf("ℹ auto-installing missing tool: %s@%s\n", toolName, version)
+		pterm.FgCyan.Printf("ℹ auto-installing missing tool: %s@%s\n", toolName, version)
 		if err := im.Install(ctx, toolName, version, backendName); err != nil {
 			return fmt.Errorf("auto-install failed for %s: %w", toolName, err)
 		}
