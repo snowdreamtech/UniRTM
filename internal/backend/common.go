@@ -33,8 +33,22 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 	
 	// Exclude non-runtime assets
 	negatives := []string{"checksums", "sha256sums", "license", "source", "devel", "dev", "header", "static-lib", "manual", "doc", "man", "debug"}
+	
+	// Determine the short tool name to avoid false positives in negative check
+	toolShortName := toolName
+	if parts := strings.Split(toolName, "/"); len(parts) == 2 {
+		toolShortName = parts[1]
+	}
+	toolShortName = strings.TrimPrefix(toolShortName, "github:")
+	toolShortName = strings.ToLower(toolShortName)
+
 	for _, neg := range negatives {
 		if strings.Contains(nameLower, neg) {
+			// If the negative keyword is part of the tool name itself, don't exclude.
+			// Example: "addlicense" contains "license".
+			if strings.Contains(toolShortName, neg) {
+				continue
+			}
 			return -1
 		}
 	}
