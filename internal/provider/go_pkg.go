@@ -120,6 +120,16 @@ func (p *GoPkgProvider) ListExecutables(installPath string, version string) ([]s
 	return executables, nil
 }
 
+// GetBinPaths returns the absolute path to the directory containing the binaries.
+func (p *GoPkgProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	return []string{installPath}, nil
+}
+
+// GetEnvVars returns no special environment variables.
+func (p *GoPkgProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	return make(map[string]string), nil
+}
+
 func (p *GoPkgProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	return nil
 }

@@ -119,6 +119,20 @@ func (p *NpmProvider) ListExecutables(installPath string, version string) ([]str
 	return executables, nil
 }
 
+// GetBinPaths returns the absolute path to the bin directory.
+func (p *NpmProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	binDir := filepath.Join(installPath, "bin")
+	if _, err := os.Stat(binDir); os.IsNotExist(err) {
+		return []string{installPath}, nil
+	}
+	return []string{binDir}, nil
+}
+
+// GetEnvVars returns no special environment variables.
+func (p *NpmProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	return make(map[string]string), nil
+}
+
 func (p *NpmProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	// Let UniRTM delete the directory
 	return nil

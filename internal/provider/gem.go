@@ -112,6 +112,18 @@ func (p *GemProvider) ListExecutables(installPath string, version string) ([]str
 	return executables, nil
 }
 
+// GetBinPaths returns the absolute path to the bin directory.
+func (p *GemProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	return []string{filepath.Join(installPath, "bin")}, nil
+}
+
+// GetEnvVars returns the GEM_HOME environment variable.
+func (p *GemProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	return map[string]string{
+		"GEM_HOME": installPath,
+	}, nil
+}
+
 func (p *GemProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	return nil
 }

@@ -132,6 +132,22 @@ func (p *PypiProvider) ListExecutables(installPath string, version string) ([]st
 	return executables, nil
 }
 
+// GetBinPaths returns the absolute path to the bin directory.
+func (p *PypiProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	binDir := filepath.Join(installPath, "bin")
+	if _, err := os.Stat(binDir); os.IsNotExist(err) {
+		binDir = filepath.Join(installPath, "Scripts")
+	}
+	return []string{binDir}, nil
+}
+
+// GetEnvVars returns the VIRTUAL_ENV environment variable.
+func (p *PypiProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	return map[string]string{
+		"VIRTUAL_ENV": installPath,
+	}, nil
+}
+
 func (p *PypiProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	return nil
 }

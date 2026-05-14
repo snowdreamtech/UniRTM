@@ -177,6 +177,16 @@ func (p *SpmProvider) ListExecutables(installPath string, version string) ([]str
 	return executables, nil
 }
 
+// GetBinPaths returns the absolute path to the bin directory.
+func (p *SpmProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	return []string{filepath.Join(installPath, "bin")}, nil
+}
+
+// GetEnvVars returns no special environment variables.
+func (p *SpmProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	return make(map[string]string), nil
+}
+
 func (p *SpmProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	return nil
 }
