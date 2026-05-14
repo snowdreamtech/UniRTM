@@ -182,6 +182,16 @@ func (g *GenericProvider) ListExecutables(installPath string, version string) ([
 	return executables, nil
 }
 
+// GetBinPaths returns the absolute path to the bin directory.
+func (g *GenericProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	return []string{filepath.Join(installPath, "bin")}, nil
+}
+
+// GetEnvVars returns no environment variables by default.
+func (g *GenericProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	return make(map[string]string), nil
+}
+
 // Uninstall performs no special cleanup for generic provider.
 func (g *GenericProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	// No special cleanup needed
