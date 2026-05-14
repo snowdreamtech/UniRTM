@@ -62,6 +62,15 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 			return nil, err
 		}
 
+		// GitHub API requires a User-Agent header
+		req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
+		req.Header.Set("Accept", "application/vnd.github+json")
+		
+		// Add GitHub token if available to increase rate limits
+		if token := env.Get("GITHUB_TOKEN"); token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+
 		resp, err = client.Do(req)
 		if err == nil && resp.StatusCode == http.StatusOK {
 			lastErr = nil

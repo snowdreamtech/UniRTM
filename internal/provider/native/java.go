@@ -79,6 +79,7 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 		if err != nil {
 			continue
 		}
+		req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
 
 		resp, err := client.Do(req)
 		if err != nil {

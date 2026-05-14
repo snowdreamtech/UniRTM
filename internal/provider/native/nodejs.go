@@ -45,6 +45,7 @@ func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
 
 	resp, err := client.Do(req)
 	if err != nil {
