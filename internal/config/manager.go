@@ -504,6 +504,9 @@ func (m *viperConfigManager) Merge(configs ...*Config) (*Config, error) {
 		if config.Settings.AlwaysKeepDownload {
 			merged.Settings.AlwaysKeepDownload = config.Settings.AlwaysKeepDownload
 		}
+		if config.Settings.VerifyMetadata != nil {
+			merged.Settings.VerifyMetadata = config.Settings.VerifyMetadata
+		}
 		if len(config.Settings.CeilingPaths) > 0 {
 			merged.Settings.CeilingPaths = append(merged.Settings.CeilingPaths, config.Settings.CeilingPaths...)
 		}
@@ -644,6 +647,9 @@ func (m *viperConfigManager) ApplyEnvironment(config *Config, environment string
 	}
 	if envConfig.Settings.AlwaysKeepDownload {
 		result.Settings.AlwaysKeepDownload = envConfig.Settings.AlwaysKeepDownload
+	}
+	if envConfig.Settings.VerifyMetadata != nil {
+		result.Settings.VerifyMetadata = envConfig.Settings.VerifyMetadata
 	}
 
 	return result, nil

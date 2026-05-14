@@ -394,7 +394,15 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 			}
 		}
 		// 5.5 GPG Signature Verification
-		if (versionInfo.SignatureURL != "" || versionInfo.GPGSignature != "") && (im.settings == nil || im.settings.GPGVerify != "off") {
+		verifyMetadata := true
+		if im.settings != nil && im.settings.VerifyMetadata != nil {
+			verifyMetadata = *im.settings.VerifyMetadata
+		}
+		if v := os.Getenv("UNIRTM_VERIFY_METADATA"); v != "" {
+			verifyMetadata = (v == "1" || strings.ToLower(v) == "true" || strings.ToLower(v) == "yes")
+		}
+
+		if (versionInfo.SignatureURL != "" || versionInfo.GPGSignature != "") && verifyMetadata && (im.settings == nil || im.settings.GPGVerify != "off") {
 			fmt.Printf("ℹ verifying GPG signature for %s@%s...\n", tool, version)
 			
 			sigPath := downloadPath + ".asc"
@@ -483,7 +491,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		// Verify GitHub provenance (SLSA attestation) if the backend is github or ubi.
 		// If the project does not publish attestations, this is a no-op.
 		// If attestations exist, verification MUST pass to prevent supply chain attacks.
-		if backendName == "github" || backendName == "ubi" {
+		if (backendName == "github" || backendName == "ubi") && verifyMetadata {
 			// Extract owner/repo from tool string (expected format: "owner/repo").
 			provenanceStatus, provenanceErr := tryVerifyProvenance(ctx, tool, downloadPath)
 			if provenanceErr != nil {

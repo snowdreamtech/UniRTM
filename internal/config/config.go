@@ -124,6 +124,7 @@ type Settings struct {
 	TrustedConfigPaths []string `toml:"trusted_config_paths,omitempty" yaml:"trusted_config_paths,omitempty" mapstructure:"trusted_config_paths,omitempty"`
 	GPGVerify string `toml:"gpg_verify" yaml:"gpg_verify" mapstructure:"gpg_verify"`
 	GPGKeys []string `toml:"gpg_keys" yaml:"gpg_keys" mapstructure:"gpg_keys"`
+	VerifyMetadata *bool `toml:"verify_metadata,omitempty" yaml:"verify_metadata,omitempty" mapstructure:"verify_metadata,omitempty"`
 	Tools map[string]map[string]interface{} `toml:"tools,omitempty" yaml:"tools,omitempty" mapstructure:"tools,omitempty"`
 }
 
