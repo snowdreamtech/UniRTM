@@ -287,6 +287,9 @@ backend = "pypi"
 version = "3.14.4"
 backend = "asdf"
 
+[tools."python"."platforms.macos-amd64"]
+url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260414/cpython-3.14.4%2B20260414-x86_64-apple-darwin-debug-full.tar.zst"
+
 [[tools."rhysd/actionlint"]]
 version = "1.7.12"
 backend = "github"

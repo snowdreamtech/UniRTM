@@ -30,7 +30,7 @@ If no path is provided, it defaults to ./unirtm.toml in the current directory.`,
 			os.Exit(1)
 		}
 
-		pterm.Success.Printfln("Untrusted configuration file: %s", path)
+		pterm.FgGreen.Printfln("✅ Untrusted configuration file: %s", path)
 	},
 }
 

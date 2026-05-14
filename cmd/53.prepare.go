@@ -65,7 +65,7 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 		if _, err := os.Stat(filepath.Join(cwd, "node_modules")); os.IsNotExist(err) {
 			pterm.Warning.Println("node_modules missing. Suggestion: run 'npm install' or 'pnpm install'")
 		} else {
-			pterm.Success.Println("node_modules present")
+			pterm.FgGreen.Println("✅ node_modules present")
 		}
 	}
 
@@ -73,7 +73,7 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 	if _, err := os.Stat(filepath.Join(cwd, "go.mod")); err == nil {
 		found = true
 		pterm.Info.Println("Detected Go project")
-		pterm.Success.Println("go.mod present")
+		pterm.FgGreen.Println("✅ go.mod present")
 	}
 
 	// Check for Python
@@ -89,7 +89,7 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 	if !found {
 		formatter.Info("No supported project structure detected in the current directory.", nil)
 	} else {
-		pterm.Success.Println("Project preparation check complete")
+		pterm.FgGreen.Println("✅ Project preparation check complete")
 	}
 
 	return nil

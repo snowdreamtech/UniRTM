@@ -62,6 +62,6 @@ func runTestTool(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	pterm.Success.Printf("Test passed: %s@%s installed correctly\n", tool, version)
+	pterm.FgGreen.Printf("✅ Test passed: %s@%s installed correctly\n", tool, version)
 	return nil
 }

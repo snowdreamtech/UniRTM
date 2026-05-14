@@ -108,7 +108,7 @@ func runWatchTask(taskName string) {
 	if err != nil {
 		pterm.Warning.Printf("Task %s failed: %v\n", taskName, err)
 	} else {
-		pterm.Success.Printf("Task %s completed.\n", taskName)
+		pterm.FgGreen.Printf("✅ Task %s completed.\n", taskName)
 	}
 }
 

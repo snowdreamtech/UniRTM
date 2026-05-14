@@ -110,7 +110,7 @@ var aliasSetCmd = &cobra.Command{
 			return fmt.Errorf("failed to save alias: %w", err)
 		}
 
-		pterm.Success.Printf("Set alias %s=%s for tool %s in %s\n", alias, version, tool, cfgPath)
+		pterm.FgGreen.Printf("✅ Set alias %s=%s for tool %s in %s\n", alias, version, tool, cfgPath)
 		return nil
 	},
 }
@@ -158,7 +158,7 @@ var aliasUnsetCmd = &cobra.Command{
 			return fmt.Errorf("failed to save alias: %w", err)
 		}
 
-		pterm.Success.Printf("Deleted alias %s for tool %s in %s\n", alias, tool, cfgPath)
+		pterm.FgGreen.Printf("✅ Deleted alias %s for tool %s in %s\n", alias, tool, cfgPath)
 		return nil
 	},
 }
