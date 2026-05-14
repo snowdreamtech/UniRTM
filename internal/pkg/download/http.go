@@ -234,7 +234,6 @@ func (h *HTTPDownloader) downloadOnce(ctx context.Context, url string, destinati
 	}
 
 	// Perform HTTP request
-	fmt.Printf("ℹ connecting to %s...\n", url)
 	resp, err := h.client.Do(req)
 	if err != nil {
 		return errors.NewExternalError(fmt.Sprintf("HTTP request to %q", url), err)

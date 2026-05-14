@@ -343,6 +343,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		// Initialize progress bar
 		var progressbar *pterm.ProgressbarPrinter
 		var lastDownloaded int64
+		var lastUpdateTime time.Time
 
 		opts.ProgressCallback = func(downloaded, total int64) {
 			// Stop the connection spinner once we start receiving bytes
@@ -350,14 +351,20 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 				spinner.Stop()
 				spinner = nil
 			}
+			
+			// Initialize progress bar if not already done
 			if progressbar == nil && total > 0 {
 				progressbar, _ = pterm.DefaultProgressbar.
 					WithTotal(int(total)).
 					WithTitle(fmt.Sprintf("Downloading %s (%s)", tool, humanize.Bytes(uint64(total)))).
 					WithShowCount(false).
 					Start()
+				lastUpdateTime = time.Now()
 			}
-			if progressbar != nil {
+
+			// Throttle updates to prevent terminal rendering bottlenecks (max 10 updates per second)
+			now := time.Now()
+			if progressbar != nil && (now.Sub(lastUpdateTime) > 100*time.Millisecond || downloaded >= total) {
 				diff := downloaded - lastDownloaded
 				if diff > 0 {
 					progressbar.Add(int(diff))
@@ -368,6 +375,8 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 						tool, 
 						humanize.Bytes(uint64(downloaded)), 
 						humanize.Bytes(uint64(total))))
+					
+					lastUpdateTime = now
 				}
 				if downloaded >= total {
 					progressbar.Stop()
