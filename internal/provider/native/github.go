@@ -52,21 +52,37 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 	apiBase = strings.TrimSuffix(apiBase, "/")
 	apiURL := fmt.Sprintf("%s/repos/%s/%s/releases", apiBase, h.Owner, h.Repo)
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
-	if err != nil {
-		return nil, err
+	var resp *http.Response
+	var lastErr error
+
+	for i := 0; i < 3; i++ {
+		client := &http.Client{Timeout: 30 * time.Second}
+		req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err = client.Do(req)
+		if err == nil && resp.StatusCode == http.StatusOK {
+			lastErr = nil
+			break
+		}
+
+		if err != nil {
+			lastErr = fmt.Errorf("attempt %d: %w", i+1, err)
+		} else {
+			lastErr = fmt.Errorf("attempt %d: github api returned status %d", i+1, resp.StatusCode)
+			resp.Body.Close()
+		}
+
+		// Backoff before retry
+		time.Sleep(time.Duration(i+1) * time.Second)
 	}
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("github api call failed (base: %s): %w", apiBase, err)
+	if lastErr != nil {
+		return nil, fmt.Errorf("github api call failed after 3 attempts (base: %s): %w", apiBase, lastErr)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("github api: returned status %d", resp.StatusCode)
-	}
 
 	var releases []ghRelease
 	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
