@@ -38,10 +38,19 @@ func (p *PypiProvider) Install(ctx context.Context, tool string, installPath str
 		return NewProviderError(p.Name(), tool, version, "python is required to install pypi packages but was not found", err)
 	}
 
+	// Extract extra domains from environment variables
+	var extraDomains []string
+	if d := DomainFromURL(os.Getenv("PIP_INDEX_URL")); d != "" {
+		extraDomains = append(extraDomains, d)
+	}
+	if d := DomainFromURL(os.Getenv("PIP_EXTRA_INDEX_URL")); d != "" {
+		extraDomains = append(extraDomains, d)
+	}
+
 	// 1. Create a virtual environment
 	logger.Debug("Creating virtual environment", map[string]interface{}{"path": installPath})
 	venvCmd := exec.CommandContext(ctx, pythonCmd, "-m", "venv", installPath)
-	venvCmd.Env = GetNoProxyEnv()
+	venvCmd.Env = GetNoProxyEnv(extraDomains...)
 	outVenv, err := venvCmd.CombinedOutput()
 	if err != nil {
 		return NewProviderError(p.Name(), tool, version, fmt.Sprintf("failed to create virtual environment: %s", string(outVenv)), err)
@@ -58,7 +67,7 @@ func (p *PypiProvider) Install(ctx context.Context, tool string, installPath str
 	cmd := exec.CommandContext(ctx, pipCmd, "install", pkgSpec)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Env = GetNoProxyEnv()
+	cmd.Env = GetNoProxyEnv(extraDomains...)
 
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "pip install failed", err)

@@ -68,7 +68,20 @@ func (p *AsdfProvider) Install(ctx context.Context, tool string, installPath str
 		return fmt.Errorf("failed to create asdf symlink: %w", err)
 	}
 
-	env := GetNoProxyEnv()
+	// Extract extra domains from common ASDF mirror environment variables
+	var extraDomains []string
+	for _, e := range os.Environ() {
+		if strings.HasPrefix(e, "ASDF_") && strings.Contains(e, "_MIRROR_URL=") {
+			parts := strings.SplitN(e, "=", 2)
+			if len(parts) > 1 {
+				if d := DomainFromURL(parts[1]); d != "" {
+					extraDomains = append(extraDomains, d)
+				}
+			}
+		}
+	}
+
+	env := GetNoProxyEnv(extraDomains...)
 	env = append(env,
 		"ASDF_INSTALL_TYPE=version",
 		"ASDF_INSTALL_VERSION="+version,

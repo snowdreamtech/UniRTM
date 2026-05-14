@@ -55,6 +55,11 @@ func NewInstallationManager(
 	txManager transaction.TransactionManager,
 	settings *config.Settings,
 ) *InstallationManager {
+	// Initialize global no-proxy list from settings
+	if settings != nil {
+		provider.GlobalNoProxy = settings.NoProxy
+	}
+
 	return &InstallationManager{
 		backendRegistry:  backendRegistry,
 		providerRegistry: providerRegistry,

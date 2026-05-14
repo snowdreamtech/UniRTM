@@ -43,10 +43,16 @@ func (p *GemProvider) Install(ctx context.Context, tool string, installPath stri
 		args = append(args, "-v", version)
 	}
 
+	// Extract extra domains from Ruby mirror environment variables
+	var extraDomains []string
+	if d := DomainFromURL(os.Getenv("BUNDLE_MIRROR__HTTPS__RUBYGEMS__ORG")); d != "" {
+		extraDomains = append(extraDomains, d)
+	}
+
 	cmd := exec.CommandContext(ctx, gemCmd, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Env = GetNoProxyEnv()
+	cmd.Env = GetNoProxyEnv(extraDomains...)
 
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "gem install failed", err)

@@ -40,10 +40,19 @@ func (p *CargoProvider) Install(ctx context.Context, tool string, installPath st
 
 	logger.Debug("Installing cargo crate", map[string]interface{}{"crate": tool, "version": version, "root": installPath})
 
+	// Extract extra domains from Rust mirror environment variables
+	var extraDomains []string
+	if d := DomainFromURL(os.Getenv("RUSTUP_DIST_SERVER")); d != "" {
+		extraDomains = append(extraDomains, d)
+	}
+	if d := DomainFromURL(os.Getenv("RUSTUP_UPDATE_ROOT")); d != "" {
+		extraDomains = append(extraDomains, d)
+	}
+
 	cmd := exec.CommandContext(ctx, cargoCmd, "install", tool, "--version", version, "--root", installPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Env = GetNoProxyEnv()
+	cmd.Env = GetNoProxyEnv(extraDomains...)
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "cargo install failed", err)
 	}

@@ -125,6 +125,7 @@ type Settings struct {
 	GPGVerify string `toml:"gpg_verify" yaml:"gpg_verify" mapstructure:"gpg_verify"`
 	GPGKeys []string `toml:"gpg_keys" yaml:"gpg_keys" mapstructure:"gpg_keys"`
 	VerifyMetadata *bool `toml:"verify_metadata,omitempty" yaml:"verify_metadata,omitempty" mapstructure:"verify_metadata,omitempty"`
+	NoProxy []string `toml:"no_proxy,omitempty" yaml:"no_proxy,omitempty" mapstructure:"no_proxy,omitempty"`
 	Tools map[string]map[string]interface{} `toml:"tools,omitempty" yaml:"tools,omitempty" mapstructure:"tools,omitempty"`
 }
 

@@ -5,6 +5,7 @@ package provider
 
 import (
 	"context"
+	"net/url"
 	"os"
 	"strings"
 )
@@ -91,18 +92,60 @@ type ShimConfig struct {
 	Version        string            // Tool version
 	Environment    map[string]string // Additional environment variables
 }
+// GlobalNoProxy is a list of additional domains to skip proxy for, typically loaded from configuration.
+var GlobalNoProxy []string
+
 // GetNoProxyEnv returns the system environment with common mirror domains added to NO_PROXY.
 // This helps prevent installation failures when using mirrors behind a proxy.
-func GetNoProxyEnv() []string {
+// It also accepts additional domains (e.g. dynamically extracted from mirror URLs).
+func GetNoProxyEnv(extraDomains ...string) []string {
 	env := os.Environ()
-	noProxy := os.Getenv("NO_PROXY")
-	mirrors := "mirrors.aliyun.com,pypi.tuna.tsinghua.edu.cn,pypi.mirrors.ustc.edu.cn,pypi.douban.com,registry.npmmirror.com,registry.taobao.org,npm.taobao.org,rsproxy.cn,static.rust-lang.org"
+	
+	// Collect all domains to skip proxy for
+	domains := []string{
+		"mirrors.aliyun.com",
+		"pypi.tuna.tsinghua.edu.cn",
+		"pypi.mirrors.ustc.edu.cn",
+		"pypi.douban.com",
+		"registry.npmmirror.com",
+		"registry.taobao.org",
+		"npm.taobao.org",
+		"rsproxy.cn",
+		"static.rust-lang.org",
+	}
+	
+	// Add global configuration domains
+	domains = append(domains, GlobalNoProxy...)
+	
+	// Add dynamically provided domains
+	domains = append(domains, extraDomains...)
+	
+	// Remove duplicates and empty strings
+	domainMap := make(map[string]bool)
+	var finalDomains []string
+	for _, d := range domains {
+		d = strings.TrimSpace(d)
+		if d != "" && !domainMap[d] {
+			domainMap[d] = true
+			finalDomains = append(finalDomains, d)
+		}
+	}
+	
+	mirrors := strings.Join(finalDomains, ",")
 	
 	found := false
 	for i, e := range env {
 		if strings.HasPrefix(strings.ToUpper(e), "NO_PROXY=") {
-			if noProxy != "" {
-				env[i] = "NO_PROXY=" + noProxy + "," + mirrors
+			// Extract the current value (case-insensitive search but preserve original case for value if needed)
+			// Actually NO_PROXY value is just a string.
+			parts := strings.SplitN(e, "=", 2)
+			current := ""
+			if len(parts) > 1 {
+				current = parts[1]
+			}
+			
+			if current != "" {
+				env[i] = "NO_PROXY=" + current + "," + mirrors
 			} else {
 				env[i] = "NO_PROXY=" + mirrors
 			}
@@ -115,4 +158,27 @@ func GetNoProxyEnv() []string {
 		env = append(env, "NO_PROXY="+mirrors)
 	}
 	return env
+}
+
+// DomainFromURL extracts the domain name from a URL string.
+func DomainFromURL(u string) string {
+	if u == "" {
+		return ""
+	}
+	// Add scheme if missing for parsing
+	if !strings.Contains(u, "://") {
+		u = "http://" + u
+	}
+	
+	importUrl, err := url.Parse(u)
+	if err != nil {
+		return ""
+	}
+	
+	host := importUrl.Host
+	// Remove port if present
+	if idx := strings.Index(host, ":"); idx != -1 {
+		host = host[:idx]
+	}
+	return host
 }

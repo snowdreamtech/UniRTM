@@ -50,9 +50,23 @@ func (p *GoPkgProvider) Install(ctx context.Context, tool string, installPath st
 
 	logger.Info("Installing Go package", map[string]interface{}{"pkg": pkgSpec, "GOBIN": installPath})
 
+	// Extract extra domains from GOPROXY
+	var extraDomains []string
+	if goproxy := os.Getenv("GOPROXY"); goproxy != "" {
+		for _, proxy := range strings.Split(goproxy, ",") {
+			proxy = strings.TrimSpace(proxy)
+			if proxy == "direct" || proxy == "off" || proxy == "" {
+				continue
+			}
+			if d := DomainFromURL(proxy); d != "" {
+				extraDomains = append(extraDomains, d)
+			}
+		}
+	}
+
 	// Use GOBIN to install the binary into our specific versioned directory
 	cmd := exec.CommandContext(ctx, goCmd, "install", pkgSpec)
-	cmd.Env = append(GetNoProxyEnv(), "GOBIN="+installPath)
+	cmd.Env = append(GetNoProxyEnv(extraDomains...), "GOBIN="+installPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
