@@ -45,8 +45,7 @@ func (h *HumanFormatter) Info(message string, fields ...map[string]interface{}) 
 		return
 	}
 
-	prefix := h.colorize("ℹ", colorCyan)
-	fmt.Fprintf(h.writer, "%s %s", prefix, h.colorize(message, colorCyan))
+	fmt.Fprintf(h.writer, "ℹ %s", message)
 
 	if len(fields) > 0 && h.verbose {
 		h.printFields(mergeFields(fields...))

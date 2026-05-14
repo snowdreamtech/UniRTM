@@ -153,7 +153,7 @@ func (im *InstallationManager) executeHook(ctx context.Context, cmdStr, tool, ve
 		return nil
 	}
 
-	pterm.FgCyan.Printf("➜ executing hook for %s@%s: %s\n", tool, version, cmdStr)
+	fmt.Printf("➜ executing hook for %s@%s: %s\n", tool, version, cmdStr)
 	
 	// Create command
 	var shell, shellArg string
@@ -245,7 +245,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 	if versionInfo == nil {
 		// Lockfile miss — fall back to the remote backend.
-		pterm.FgCyan.Printf("ℹ resolving download info for %s@%s...\n", tool, version)
+		fmt.Printf("ℹ resolving download info for %s@%s...\n", tool, version)
 		info, err := b.ResolveVersion(ctx, tool, version, platform)
 		if err != nil {
 			return fmt.Errorf("failed to resolve version: %w", err)
@@ -292,7 +292,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		}
 
 		downloadPath = filepath.Join(env.GetDownloadsDir(), fmt.Sprintf("%s-%s%s", tool, version, ext))
-		pterm.FgCyan.Printf("ℹ downloading %s@%s to %s...\n", tool, version, downloadPath)
+		fmt.Printf("ℹ downloading %s@%s to %s...\n", tool, version, downloadPath)
 		if err := os.MkdirAll(filepath.Dir(downloadPath), 0755); err != nil {
 			return fmt.Errorf("failed to create downloads directory: %w", err)
 		}
@@ -419,7 +419,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		}
 
 		if (versionInfo.SignatureURL != "" || versionInfo.GPGSignature != "") && verifyMetadata && (im.settings == nil || im.settings.GPGVerify != "off") {
-			pterm.FgCyan.Printf("ℹ verifying GPG signature for %s@%s...\n", tool, version)
+			fmt.Printf("ℹ verifying GPG signature for %s@%s...\n", tool, version)
 			
 			sigPath := downloadPath + ".asc"
 			var downloadErr error
@@ -500,7 +500,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 			if len(versionInfo.GPGKeys) > 0 {
 				return fmt.Errorf("GPG security violation: trusted fingerprints exist for %s but no signature URL found in strict mode", tool)
 			}
-			pterm.FgCyan.Printf("ℹ %s does not appear to support GPG signatures. Falling back to strong SHA256 checksum verification.\n", tool)
+			fmt.Printf("ℹ %s does not appear to support GPG signatures. Falling back to strong SHA256 checksum verification.\n", tool)
 			gpgStatus = "NotSupported"
 		}
 
@@ -549,26 +549,26 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 	p := im.providerRegistry.GetWithBackend(tool, backendName)
 
-	pterm.FgCyan.Printf("ℹ extracting %s@%s...\n", tool, version)
+	fmt.Printf("ℹ extracting %s@%s...\n", tool, version)
 	if err := p.Install(ctx, tmpInstallPath, downloadPath, version); err != nil {
 		os.RemoveAll(tmpInstallPath)
 		return fmt.Errorf("installation failed: %w", err)
 	}
 
-	pterm.FgCyan.Printf("ℹ running post-install hooks for %s@%s...\n", tool, version)
+	fmt.Printf("ℹ running post-install hooks for %s@%s...\n", tool, version)
 	if err := p.PostInstall(ctx, tmpInstallPath, version); err != nil {
 		os.RemoveAll(tmpInstallPath)
 		return fmt.Errorf("post-install failed: %w", err)
 	}
 
-	pterm.FgCyan.Printf("ℹ finalizing installation for %s@%s...\n", tool, version)
+	fmt.Printf("ℹ finalizing installation for %s@%s...\n", tool, version)
 	// Atomic rename from temp to final path
 	if err := os.Rename(tmpInstallPath, installPath); err != nil {
 		os.RemoveAll(tmpInstallPath)
 		return fmt.Errorf("failed to finalize installation: %w", err)
 	}
 
-	pterm.FgCyan.Printf("ℹ recording %s@%s to database...\n", tool, version)
+	fmt.Printf("ℹ recording %s@%s to database...\n", tool, version)
 	// Record installation
 	installation := &repository.Installation{
 		Tool:        tool,
@@ -625,7 +625,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	}
 
 	// 12. Generate shims for the tool executables
-	pterm.FgCyan.Printf("ℹ generating shims for %s...\n", tool)
+	fmt.Printf("ℹ generating shims for %s...\n", tool)
 	execs, _ := p.ListExecutables(installPath, version)
 	if err := im.shimGenerator.GenerateShim(ctx, tool, execs...); err != nil {
 		pterm.FgYellow.Printf("⚠️  WARNING: failed to generate shims for %s: %v\n", tool, err)
@@ -672,7 +672,7 @@ func (im *InstallationManager) EnsureInstalled(ctx context.Context, tools map[st
 		}
 
 		// Not installed, proceed with installation
-		pterm.FgCyan.Printf("ℹ auto-installing missing tool: %s@%s\n", toolName, version)
+		fmt.Printf("ℹ auto-installing missing tool: %s@%s\n", toolName, version)
 		if err := im.Install(ctx, toolName, version, backendName); err != nil {
 			return fmt.Errorf("auto-install failed for %s: %w", toolName, err)
 		}
