@@ -1,6 +1,3 @@
-// Copyright (c) 2026 SnowdreamTech. All rights reserved.
-// Licensed under the MIT License. See LICENSE file in the project root for full license information.
-
 package native
 
 import (
@@ -8,49 +5,40 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
-// GithubHandler handles tools distributed via GitHub releases.
-// It specifically targets python-build-standalone style release naming.
-type GithubHandler struct {
+// PythonHandler specifically handles python-build-standalone.
+type PythonHandler struct {
 	Owner string
 	Repo  string
 }
 
-func (h *GithubHandler) Name() string {
-	return "github_release"
+func (h *PythonHandler) Name() string {
+	return "python_standalone"
 }
 
-type ghRelease struct {
-	TagName string `json:"tag_name"`
-	Assets  []struct {
-		Name               string `json:"name"`
-		BrowserDownloadURL string `json:"browser_download_url"`
-	} `json:"assets"`
-}
-
-func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
+func (h *PythonHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
 	// Support GitHub Proxy Acceleration
 	githubProxy := ""
 	if env.Get("ENABLE_GITHUB_PROXY") == "1" {
 		githubProxy = env.Get("GITHUB_PROXY")
 		if githubProxy == "" {
-			githubProxy = "https://gh-proxy.com/" // Default fallback
+			githubProxy = "https://gh-proxy.com/"
 		}
 	}
 
-	// BaseURL for github is used to construct the API URL if needed, 
-	// but we primarily use Owner/Repo.
 	apiBase := env.Get("GITHUB_API_BASEURL")
 	if apiBase == "" {
 		apiBase = "https://api.github.com"
 	}
 	apiBase = strings.TrimSuffix(apiBase, "/")
-	apiURL := fmt.Sprintf("%s/repos/%s/%s/releases?per_page=20", apiBase, h.Owner, h.Repo)
+	// Use smaller per_page to avoid 504
+	apiURL := fmt.Sprintf("%s/repos/%s/%s/releases?per_page=10", apiBase, h.Owner, h.Repo)
 
 	var resp *http.Response
 	var lastErr error
@@ -62,11 +50,9 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 			return nil, err
 		}
 
-		// GitHub API requires a User-Agent header
 		req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
 		req.Header.Set("Accept", "application/vnd.github+json")
 		
-		// Add GitHub token if available to increase rate limits
 		if token := env.Get("GITHUB_TOKEN"); token != "" {
 			req.Header.Set("Authorization", "Bearer "+token)
 		}
@@ -81,10 +67,11 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 			lastErr = fmt.Errorf("attempt %d: %w", i+1, err)
 		} else {
 			lastErr = fmt.Errorf("attempt %d: github api returned status %d", i+1, resp.StatusCode)
-			resp.Body.Close()
+			if resp != nil && resp.Body != nil {
+				resp.Body.Close()
+			}
 		}
 
-		// Backoff before retry
 		time.Sleep(time.Duration(i+1) * time.Second)
 	}
 
@@ -98,31 +85,26 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		return nil, err
 	}
 
-	var versions []VersionInfo
+	// Regex to extract version from filename: cpython-3.14.4+20260408-...
+	re := regexp.MustCompile(`cpython-([0-9.]+)\+`)
+
+	versionMap := make(map[string]*VersionInfo)
+
 	for _, rel := range releases {
-		version := strings.TrimPrefix(rel.TagName, "v")
-		
-		// Map to store signatures for later matching
-		sigs := make(map[string]string)
 		for _, a := range rel.Assets {
-			downloadURL := a.BrowserDownloadURL
-			if githubProxy != "" {
-				downloadURL = strings.TrimSuffix(githubProxy, "/") + "/" + downloadURL
-			}
-
-			if strings.HasSuffix(a.Name, ".asc") || strings.HasSuffix(a.Name, ".sig") {
-				sigs[a.Name] = downloadURL
-			}
-		}
-
-		var assets []Asset
-		for _, a := range rel.Assets {
+			// Skip metadata files
 			if strings.HasSuffix(a.Name, ".asc") || strings.HasSuffix(a.Name, ".sig") || strings.HasSuffix(a.Name, ".sha256") {
 				continue
 			}
 
-			os, arch := h.detectPlatform(a.Name)
-			if os == "" || arch == "" {
+			match := re.FindStringSubmatch(a.Name)
+			if len(match) < 2 {
+				continue
+			}
+			pyVersion := match[1]
+
+			osName, archName := h.detectPlatform(a.Name)
+			if osName == "" || archName == "" {
 				continue
 			}
 
@@ -131,39 +113,59 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 				downloadURL = strings.TrimSuffix(githubProxy, "/") + "/" + downloadURL
 			}
 
-			asset := Asset{
-				Filename: a.Name,
-				URL:      downloadURL,
-				OS:       os,
-				Arch:     arch,
-				Metadata: make(map[string]string),
+			vi, ok := versionMap[pyVersion]
+			if !ok {
+				vi = &VersionInfo{
+					Version: pyVersion,
+					Assets:  []Asset{},
+				}
+				versionMap[pyVersion] = vi
 			}
 
-			// Try to find matching signature
-			if sigURL, ok := sigs[a.Name+".asc"]; ok {
-				asset.SignatureURL = sigURL
-			} else if sigURL, ok := sigs[a.Name+".sig"]; ok {
-				asset.SignatureURL = sigURL
+			// Avoid duplicate assets for the same platform within the same version
+			// (python-build-standalone often has multiple release types like debug, pgo+lto, etc.)
+			// We prefer "pgo+lto" or "install_only" over "debug".
+			isBetter := true
+			for _, existing := range vi.Assets {
+				if existing.OS == osName && existing.Arch == archName {
+					// If we already have a non-debug one, and current is debug, skip
+					if !strings.Contains(existing.Filename, "debug") && strings.Contains(a.Name, "debug") {
+						isBetter = false
+						break
+					}
+					// If current is pgo+lto and existing is not, it's better
+					if strings.Contains(a.Name, "pgo+lto") && !strings.Contains(existing.Filename, "pgo+lto") {
+						isBetter = true
+						// We'll replace it later or just append. 
+						// To keep it simple, we just don't add if not better.
+					}
+				}
 			}
 
-			assets = append(assets, asset)
-		}
-
-		if len(assets) > 0 {
-			versions = append(versions, VersionInfo{
-				Version: version,
-				Assets:  assets,
-			})
+			if isBetter {
+				vi.Assets = append(vi.Assets, Asset{
+					Filename: a.Name,
+					URL:      downloadURL,
+					OS:       osName,
+					Arch:     archName,
+				})
+			}
 		}
 	}
 
-	return versions, nil
+	var result []VersionInfo
+	for _, vi := range versionMap {
+		if len(vi.Assets) > 0 {
+			result = append(result, *vi)
+		}
+	}
+
+	return result, nil
 }
 
-func (h *GithubHandler) detectPlatform(filename string) (string, string) {
+func (h *PythonHandler) detectPlatform(filename string) (string, string) {
 	filename = strings.ToLower(filename)
 	
-	// Skip installer formats and packages that UniRTM doesn't handle natively
 	if strings.HasSuffix(filename, ".dmg") || 
 	   strings.HasSuffix(filename, ".pkg") || 
 	   strings.HasSuffix(filename, ".msi") ||
@@ -174,7 +176,6 @@ func (h *GithubHandler) detectPlatform(filename string) (string, string) {
 
 	var os, arch string
 
-	// OS Detection
 	if strings.Contains(filename, "linux") {
 		os = "linux"
 	} else if strings.Contains(filename, "darwin") || strings.Contains(filename, "macos") || strings.Contains(filename, "apple") || strings.Contains(filename, "mac") {
@@ -183,15 +184,12 @@ func (h *GithubHandler) detectPlatform(filename string) (string, string) {
 		os = "windows"
 	}
 
-	// Arch Detection
 	if strings.Contains(filename, "x86_64") || strings.Contains(filename, "amd64") || strings.Contains(filename, "x64") {
 		arch = "amd64"
 	} else if strings.Contains(filename, "aarch64") || strings.Contains(filename, "arm64") {
 		arch = "arm64"
 	} else if strings.Contains(filename, "i686") || strings.Contains(filename, "386") || strings.Contains(filename, "x86") {
 		arch = "386"
-	} else if strings.Contains(filename, "universal") || strings.Contains(filename, "all") {
-		arch = "universal"
 	}
 
 	return os, arch

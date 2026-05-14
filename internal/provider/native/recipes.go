@@ -44,7 +44,7 @@ func GetBuiltinRecipes() map[string]Recipe {
 		},
 		"python": {
 			ID: "python",
-			Handler: &GithubHandler{
+			Handler: &PythonHandler{
 				Owner: "astral-sh",
 				Repo:  "python-build-standalone",
 			},
