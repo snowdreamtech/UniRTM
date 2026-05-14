@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // GithubHandler handles tools distributed via GitHub releases.
@@ -32,11 +34,25 @@ type ghRelease struct {
 }
 
 func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
+	// Support GitHub Proxy Acceleration
+	githubProxy := ""
+	if env.Get("ENABLE_GITHUB_PROXY") == "1" {
+		githubProxy = env.Get("GITHUB_PROXY")
+		if githubProxy == "" {
+			githubProxy = "https://gh-proxy.com/" // Default fallback
+		}
+	}
+
 	// BaseURL for github is used to construct the API URL if needed, 
 	// but we primarily use Owner/Repo.
-	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", h.Owner, h.Repo)
+	apiBase := env.Get("GITHUB_API_BASEURL")
+	if apiBase == "" {
+		apiBase = "https://api.github.com"
+	}
+	apiBase = strings.TrimSuffix(apiBase, "/")
+	apiURL := fmt.Sprintf("%s/repos/%s/%s/releases", apiBase, h.Owner, h.Repo)
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 30 * time.Second}
 	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 	if err != nil {
 		return nil, err
@@ -44,7 +60,7 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("github api call failed (base: %s): %w", apiBase, err)
 	}
 	defer resp.Body.Close()
 
@@ -64,8 +80,13 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		// Map to store signatures for later matching
 		sigs := make(map[string]string)
 		for _, a := range rel.Assets {
+			downloadURL := a.BrowserDownloadURL
+			if githubProxy != "" {
+				downloadURL = strings.TrimSuffix(githubProxy, "/") + "/" + downloadURL
+			}
+
 			if strings.HasSuffix(a.Name, ".asc") || strings.HasSuffix(a.Name, ".sig") {
-				sigs[a.Name] = a.BrowserDownloadURL
+				sigs[a.Name] = downloadURL
 			}
 		}
 
@@ -80,11 +101,17 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 				continue
 			}
 
+			downloadURL := a.BrowserDownloadURL
+			if githubProxy != "" {
+				downloadURL = strings.TrimSuffix(githubProxy, "/") + "/" + downloadURL
+			}
+
 			asset := Asset{
 				Filename: a.Name,
-				URL:      a.BrowserDownloadURL,
+				URL:      downloadURL,
 				OS:       os,
 				Arch:     arch,
+				Metadata: make(map[string]string),
 			}
 
 			// Try to find matching signature

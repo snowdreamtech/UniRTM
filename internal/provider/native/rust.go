@@ -6,6 +6,9 @@ package native
 import (
 	"context"
 	"fmt"
+	"strings"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // RustHandler handles Rust distributions from static.rust-lang.org.
@@ -36,7 +39,14 @@ func (h *RustHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 
 func (h *RustHandler) generateAssets(version string) []Asset {
 	var assets []Asset
-	
+
+	// Support Rust Dist Mirror
+	distServer := env.Get("RUSTUP_DIST_SERVER")
+	if distServer == "" {
+		distServer = "https://static.rust-lang.org"
+	}
+	distServer = strings.TrimSuffix(distServer, "/")
+
 	// Common Rust targets
 	targets := map[string]struct{ os, arch string }{
 		"x86_64-unknown-linux-gnu":  {"linux", "amd64"},
@@ -47,9 +57,9 @@ func (h *RustHandler) generateAssets(version string) []Asset {
 	}
 
 	for target, platform := range targets {
-		url := fmt.Sprintf("https://static.rust-lang.org/dist/rust-%s-%s.tar.gz", version, target)
+		url := fmt.Sprintf("%s/dist/rust-%s-%s.tar.gz", distServer, version, target)
 		if platform.os == "windows" {
-			url = fmt.Sprintf("https://static.rust-lang.org/dist/rust-%s-%s.zip", version, target)
+			url = fmt.Sprintf("%s/dist/rust-%s-%s.zip", distServer, version, target)
 		}
 
 		assets = append(assets, Asset{
@@ -57,6 +67,7 @@ func (h *RustHandler) generateAssets(version string) []Asset {
 			URL:      url,
 			OS:       platform.os,
 			Arch:     platform.arch,
+			Metadata: make(map[string]string),
 		})
 	}
 

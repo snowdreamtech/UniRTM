@@ -8,7 +8,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // NodeJSHandler handles the official Node.js download metadata from nodejs.org/dist/index.json.
@@ -26,13 +30,23 @@ func (h *NodeJSHandler) Name() string {
 }
 
 func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
+	// Support Node.js Mirrors
+	mirrorURL := env.Get("MISE_NODE_MIRROR_URL")
+	if mirrorURL == "" {
+		mirrorURL = env.Get("NODEJS_ORG_MIRROR")
+	}
+	if mirrorURL != "" {
+		baseURL = mirrorURL
+	}
+
 	url := fmt.Sprintf("%s/index.json", strings.TrimSuffix(baseURL, "/"))
+	client := &http.Client{Timeout: 30 * time.Second}
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("nodejs: fetch metadata: %w", err)
 	}
@@ -42,6 +56,8 @@ func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 	if err := json.NewDecoder(resp.Body).Decode(&nv); err != nil {
 		return nil, fmt.Errorf("nodejs: decode metadata: %w", err)
 	}
+
+	flavor := env.Get("MISE_NODE_FLAVOR")
 
 	var versions []VersionInfo
 	for _, v := range nv {
@@ -60,13 +76,22 @@ func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 				continue
 			}
 
+			downloadURL := fmt.Sprintf("%s/%s/node-%s-%s-%s.tar.gz", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, archName)
+			if flavor == "musl" {
+				// unofficial-builds naming convention: node-vX.Y.Z-linux-ARCH-musl.tar.gz
+				downloadURL = fmt.Sprintf("%s/%s/node-%s-%s-%s-musl.tar.gz", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, archName)
+			}
+
 			vi.Assets = append(vi.Assets, Asset{
-				URL:          fmt.Sprintf("%s/%s/node-%s-%s-%s.tar.gz", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, archName),
-				Filename:     fmt.Sprintf("node-%s-%s-%s.tar.gz", v.Version, osName, archName),
+				URL:          downloadURL,
+				Filename:     filepath.Base(downloadURL),
 				OS:           osName,
 				Arch:         archName,
-				Algo:         "sha256", // Node provides separate SHASUMS256.txt, can be handled in Verify
+				Algo:         "sha256",
 				SignatureURL: fmt.Sprintf("%s/%s/SHASUMS256.txt.asc", strings.TrimSuffix(baseURL, "/"), v.Version),
+				Metadata: map[string]string{
+					"flavor": flavor,
+				},
 			})
 		}
 

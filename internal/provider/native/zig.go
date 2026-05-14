@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // ZigHandler handles Zig tool versions via its official JSON API.
@@ -30,11 +32,17 @@ type zigVersion struct {
 }
 
 func (h *ZigHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
+	// Support Zig Mirror
+	mirrorURL := env.Get("ZIG_MIRROR_URL")
+	if mirrorURL != "" {
+		baseURL = mirrorURL
+	}
+
 	if baseURL == "" {
 		baseURL = "https://ziglang.org/download/index.json"
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 30 * time.Second}
 	req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
 	if err != nil {
 		return nil, err
@@ -89,6 +97,7 @@ func (h *ZigHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ver
 				OS:       os,
 				Arch:     arch,
 				Checksum: hash,
+				Metadata: make(map[string]string),
 			})
 		}
 

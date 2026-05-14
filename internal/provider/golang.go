@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // GolangProvider implements the Provider interface for Go SDK.
@@ -107,11 +109,21 @@ func (g *GolangProvider) GetBinPaths(installPath string, version string) ([]stri
 	return []string{filepath.Join(installPath, "bin")}, nil
 }
 
-// GetEnvVars returns the GOROOT environment variable.
+// GetEnvVars returns the Go environment variables.
 func (g *GolangProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
-	return map[string]string{
-		"GOROOT": installPath,
-	}, nil
+	vars := make(map[string]string)
+
+	// Default to setting GOROOT unless explicitly disabled
+	if env.Get("GO_SET_GOROOT") != "0" {
+		vars["GOROOT"] = installPath
+	}
+
+	// Default to NOT setting GOPATH unless explicitly enabled
+	if env.Get("GO_SET_GOPATH") == "1" {
+		vars["GOPATH"] = filepath.Join(installPath, "gopath")
+	}
+
+	return vars, nil
 }
 
 // Uninstall performs Go-specific cleanup.
@@ -125,19 +137,25 @@ func (g *GolangProvider) Uninstall(ctx context.Context, installPath string, vers
 
 // generateGoShim generates a Go-specific shim.
 func (g *GolangProvider) generateGoShim(name, exePath, installPath, version string) string {
-	gopath := filepath.Join(installPath, "gopath")
+	vars, _ := g.GetEnvVars(installPath, version)
 
 	if runtime.GOOS == "windows" {
-		return fmt.Sprintf(`@echo off
-REM UniRTM shim for %s (version %s)
-set "GOPATH=%s"
-"%s" %%*
-`, name, version, gopath, exePath)
+		var sb strings.Builder
+		sb.WriteString("@echo off\n")
+		sb.WriteString(fmt.Sprintf("REM UniRTM shim for %s (version %s)\n", name, version))
+		for k, v := range vars {
+			sb.WriteString(fmt.Sprintf("set \"%s=%s\"\n", k, v))
+		}
+		sb.WriteString(fmt.Sprintf("\"%s\" %%*\n", exePath))
+		return sb.String()
 	}
 
-	return fmt.Sprintf(`#!/bin/sh
-# UniRTM shim for %s (version %s)
-export GOPATH="%s"
-exec "%s" "$@"
-`, name, version, gopath, exePath)
+	var sb strings.Builder
+	sb.WriteString("#!/bin/sh\n")
+	sb.WriteString(fmt.Sprintf("# UniRTM shim for %s (version %s)\n", name, version))
+	for k, v := range vars {
+		sb.WriteString(fmt.Sprintf("export %s=\"%s\"\n", k, v))
+	}
+	sb.WriteString(fmt.Sprintf("exec \"%s\" \"$@\"\n", exePath))
+	return sb.String()
 }

@@ -15,8 +15,9 @@ type Asset struct {
 	Arch         string
 	Checksum     string
 	Algo         string // sha256, sha1, etc.
-	SignatureURL string // URL to the GPG signature (.asc, .sig)
-	Signature    string // Raw content of the GPG signature (e.g. from JSON)
+	SignatureURL string            // URL to the GPG signature (.asc, .sig)
+	Signature    string            // Raw content of the GPG signature (e.g. from JSON)
+	Metadata     map[string]string // Additional metadata
 }
 
 // VersionInfo represents a tool version and its associated assets.

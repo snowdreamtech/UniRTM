@@ -8,8 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // GolangHandler handles the official Go download metadata from go.dev/dl/?mode=json.
@@ -36,12 +37,16 @@ func (h *GolangHandler) Name() string {
 }
 
 func (h *GolangHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
-	// Support mirror overrides (compatible with mise)
-	if mirror := env.Get("GO_DOWNLOAD_MIRROR"); mirror != "" {
-		baseURL = mirror
+	metadataURL := baseURL
+	downloadMirror := env.Get("GO_DOWNLOAD_MIRROR")
+	skipChecksum := env.Get("GO_SKIP_CHECKSUM") == "1"
+
+	// Use golang.google.cn as a reliable metadata mirror for China
+	if strings.Contains(baseURL, "go.dev") {
+		metadataURL = "https://golang.google.cn/dl"
 	}
 
-	url := fmt.Sprintf("%s/?mode=json&include=all", strings.TrimSuffix(baseURL, "/"))
+	url := fmt.Sprintf("%s/?mode=json&include=all", strings.TrimSuffix(metadataURL, "/"))
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -66,23 +71,34 @@ func (h *GolangHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 	for _, gv := range goVersions {
 		vi := VersionInfo{
 			Version: strings.TrimPrefix(gv.Version, "go"),
-			IsLTS:   gv.Stable, // For Go, we treat stable as a primary indicator
+			IsLTS:   gv.Stable,
 		}
 
 		for _, gf := range gv.Files {
-			// We only care about archives (tar.gz/zip) for portability
 			if gf.Kind != "archive" {
 				continue
 			}
 
+			// Construct download URL: use mirror if provided, otherwise use metadata source
+			assetBaseURL := metadataURL
+			if downloadMirror != "" {
+				assetBaseURL = downloadMirror
+			}
+
 			asset := Asset{
-				URL:      fmt.Sprintf("%s/%s", strings.TrimSuffix(baseURL, "/"), gf.Filename),
+				URL:      fmt.Sprintf("%s/%s", strings.TrimSuffix(assetBaseURL, "/"), gf.Filename),
 				Filename: gf.Filename,
 				OS:       gf.OS,
 				Arch:     gf.Arch,
 				Checksum: gf.Sha256,
 				Algo:     "sha256",
+				Metadata: make(map[string]string),
 			}
+
+			if skipChecksum {
+				asset.Metadata["skip_checksum"] = "1"
+			}
+
 			vi.Assets = append(vi.Assets, asset)
 		}
 

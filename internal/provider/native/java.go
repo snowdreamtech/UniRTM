@@ -11,6 +11,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // JavaHandler handles Java distributions via Adoptium (Temurin) API.
@@ -60,9 +62,19 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 		if imageType == "" {
 			imageType = "jdk"
 		}
-		url := fmt.Sprintf("https://api.adoptium.net/v3/assets/feature_releases/%s/ga?architecture=%s&heap_size=normal&image_type=%s&jvm_impl=hotspot&os=%s&project=jdk&vendor=eclipse", v, arch, imageType, os)
+
+		apiBase := env.Get("ADOPTIUM_API_BASEURL")
+		if apiBase == "" {
+			apiBase = env.Get("JAVA_MIRROR_URL")
+		}
+		if apiBase == "" {
+			apiBase = "https://api.adoptium.net"
+		}
+		apiBase = strings.TrimSuffix(apiBase, "/")
+
+		url := fmt.Sprintf("%s/v3/assets/feature_releases/%s/ga?architecture=%s&heap_size=normal&image_type=%s&jvm_impl=hotspot&os=%s&project=jdk&vendor=eclipse", apiBase, v, arch, imageType, os)
 		
-		client := &http.Client{Timeout: 10 * time.Second}
+		client := &http.Client{Timeout: 30 * time.Second}
 		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 		if err != nil {
 			continue
@@ -100,6 +112,7 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 						SignatureURL: bin.SignatureLink,
 						OS:           runtime.GOOS,
 						Arch:         runtime.GOARCH,
+						Metadata:     make(map[string]string),
 					},
 				}
 				
