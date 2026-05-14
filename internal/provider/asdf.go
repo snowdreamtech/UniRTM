@@ -34,7 +34,7 @@ func (p *AsdfProvider) Name() string {
 	return "asdf"
 }
 
-func (p *AsdfProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (p *AsdfProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	// asdf plugins don't use the artifactPath (they download it themselves).
 	// We need to extract the tool name from the installPath.
 	// installPath format: ~/.local/share/unirtm/installs/<tool>/<version>
@@ -126,7 +126,7 @@ func (p *AsdfProvider) Install(ctx context.Context, installPath string, artifact
 	return nil
 }
 
-func (p *AsdfProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (p *AsdfProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	// Execute bin/post-install if it exists
 	installsDir := env.GetInstallsDir()
 	toolDir := filepath.Dir(installPath)
@@ -155,8 +155,8 @@ func (p *AsdfProvider) PostInstall(ctx context.Context, installPath string, vers
 	return nil
 }
 
-func (p *AsdfProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
-	executables, err := p.ListExecutables(installPath, version)
+func (p *AsdfProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	executables, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -172,12 +172,12 @@ func (p *AsdfProvider) GenerateShims(installPath string, version string) (map[st
 	return shims, nil
 }
 
-func (p *AsdfProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (p *AsdfProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	// Tool version should match the directory name
 	return filepath.Base(installPath), nil
 }
 
-func (p *AsdfProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (p *AsdfProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	binPaths, err := p.getRelBinPaths(installPath, version)
 	if err != nil {
 		return nil, err
@@ -206,7 +206,7 @@ func (p *AsdfProvider) ListExecutables(installPath string, version string) ([]st
 }
 
 // GetBinPaths returns the absolute paths to the bin directories.
-func (p *AsdfProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (p *AsdfProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	relPaths, err := p.getRelBinPaths(installPath, version)
 	if err != nil {
 		return nil, err
@@ -219,7 +219,7 @@ func (p *AsdfProvider) GetBinPaths(installPath string, version string) ([]string
 }
 
 // GetEnvVars returns no special environment variables.
-func (p *AsdfProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (p *AsdfProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return make(map[string]string), nil
 }
 
@@ -256,7 +256,7 @@ func (p *AsdfProvider) getRelBinPaths(installPath string, version string) ([]str
 	return binPaths, nil
 }
 
-func (p *AsdfProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (p *AsdfProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	// asdf plugins don't have a specific uninstall script for versions.
 	// We just let UniRTM delete the directory.
 	return nil

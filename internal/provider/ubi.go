@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
@@ -27,13 +26,7 @@ func (p *UbiProvider) Name() string {
 	return "ubi"
 }
 
-func (p *UbiProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
-	installsDir := env.GetInstallsDir()
-	relPath, err := filepath.Rel(installsDir, filepath.Dir(installPath))
-	if err != nil {
-		return NewProviderError(p.Name(), "unknown", version, "failed to determine tool name from install path", err)
-	}
-	tool := filepath.ToSlash(relPath)
+func (p *UbiProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 
 	binDir := filepath.Join(installPath, "bin")
 	if err := os.MkdirAll(binDir, 0755); err != nil {
@@ -77,12 +70,12 @@ func (p *UbiProvider) Install(ctx context.Context, installPath string, artifactP
 	return nil
 }
 
-func (p *UbiProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (p *UbiProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 
-func (p *UbiProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
-	executables, err := p.ListExecutables(installPath, version)
+func (p *UbiProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	executables, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -96,11 +89,11 @@ func (p *UbiProvider) GenerateShims(installPath string, version string) (map[str
 	return shims, nil
 }
 
-func (p *UbiProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (p *UbiProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	return filepath.Base(installPath), nil
 }
 
-func (p *UbiProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (p *UbiProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	binDir := filepath.Join(installPath, "bin")
 
 	entries, err := os.ReadDir(binDir)
@@ -127,15 +120,15 @@ func (p *UbiProvider) ListExecutables(installPath string, version string) ([]str
 }
 
 // GetBinPaths returns the absolute path to the bin directory.
-func (p *UbiProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (p *UbiProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	return []string{filepath.Join(installPath, "bin")}, nil
 }
 
 // GetEnvVars returns no special environment variables.
-func (p *UbiProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (p *UbiProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return make(map[string]string), nil
 }
 
-func (p *UbiProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (p *UbiProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }

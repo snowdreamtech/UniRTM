@@ -219,6 +219,14 @@ backend = "native"
 url = "https://npmmirror.com/mirrors/node/v26.1.0/node-v26.1.0-darwin-x64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
+[[tools."node"]]
+version = "25.9.0"
+backend = "native"
+
+[tools."node"."platforms.macos-amd64"]
+url = "https://npmmirror.com/mirrors/node/v25.9.0/node-v25.9.0-darwin-x64.tar.gz"
+gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
+
 [[tools."npm:@commitlint/cli"]]
 version = "20.5.3"
 backend = "npm"

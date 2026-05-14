@@ -231,12 +231,12 @@ func (um *UpdateManager) UpdateTool(ctx context.Context, tool, targetVersion str
 	newInstallPath := filepath.Join(filepath.Dir(oldInstallPath), targetVersion)
 	p := um.providerRegistry.Get(tool)
 
-	if err := p.Install(ctx, newInstallPath, downloadPath, targetVersion); err != nil {
+	if err := p.Install(ctx, tool, newInstallPath, downloadPath, targetVersion); err != nil {
 		os.RemoveAll(newInstallPath)
 		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("installation failed: %w", err), false, "")
 	}
 
-	if err := p.PostInstall(ctx, newInstallPath, targetVersion); err != nil {
+	if err := p.PostInstall(ctx, tool, newInstallPath, targetVersion); err != nil {
 		os.RemoveAll(newInstallPath)
 		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("post-install failed: %w", err), false, "")
 	}

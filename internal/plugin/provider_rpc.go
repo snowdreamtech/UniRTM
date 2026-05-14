@@ -26,14 +26,16 @@ func (m *ProviderRPCClient) Name() string {
 }
 
 type InstallArgs struct {
+	Tool         string
 	InstallPath  string
 	ArtifactPath string
 	Version      string
 }
 
-func (m *ProviderRPCClient) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (m *ProviderRPCClient) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	var resp struct{}
 	args := InstallArgs{
+		Tool:         tool,
 		InstallPath:  installPath,
 		ArtifactPath: artifactPath,
 		Version:      version,
@@ -42,13 +44,15 @@ func (m *ProviderRPCClient) Install(ctx context.Context, installPath string, art
 }
 
 type PostInstallArgs struct {
+	Tool        string
 	InstallPath string
 	Version     string
 }
 
-func (m *ProviderRPCClient) PostInstall(ctx context.Context, installPath string, version string) error {
+func (m *ProviderRPCClient) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	var resp struct{}
 	args := PostInstallArgs{
+		Tool:        tool,
 		InstallPath: installPath,
 		Version:     version,
 	}
@@ -56,13 +60,15 @@ func (m *ProviderRPCClient) PostInstall(ctx context.Context, installPath string,
 }
 
 type GenerateShimsArgs struct {
+	Tool        string
 	InstallPath string
 	Version     string
 }
 
-func (m *ProviderRPCClient) GenerateShims(installPath string, version string) (map[string]string, error) {
+func (m *ProviderRPCClient) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
 	var resp map[string]string
 	args := GenerateShimsArgs{
+		Tool:        tool,
 		InstallPath: installPath,
 		Version:     version,
 	}
@@ -71,12 +77,14 @@ func (m *ProviderRPCClient) GenerateShims(installPath string, version string) (m
 }
 
 type DetectVersionArgs struct {
+	Tool        string
 	InstallPath string
 }
 
-func (m *ProviderRPCClient) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (m *ProviderRPCClient) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	var resp string
 	args := DetectVersionArgs{
+		Tool:        tool,
 		InstallPath: installPath,
 	}
 	err := m.client.Call("Plugin.DetectVersion", args, &resp)
@@ -84,13 +92,15 @@ func (m *ProviderRPCClient) DetectVersion(ctx context.Context, installPath strin
 }
 
 type ListExecutablesArgs struct {
+	Tool        string
 	InstallPath string
 	Version     string
 }
 
-func (m *ProviderRPCClient) ListExecutables(installPath string, version string) ([]string, error) {
+func (m *ProviderRPCClient) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	var resp []string
 	args := ListExecutablesArgs{
+		Tool:        tool,
 		InstallPath: installPath,
 		Version:     version,
 	}
@@ -98,14 +108,50 @@ func (m *ProviderRPCClient) ListExecutables(installPath string, version string) 
 	return resp, err
 }
 
-type UninstallArgs struct {
+type GetBinPathsArgs struct {
+	Tool        string
 	InstallPath string
 	Version     string
 }
 
-func (m *ProviderRPCClient) Uninstall(ctx context.Context, installPath string, version string) error {
+func (m *ProviderRPCClient) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
+	var resp []string
+	args := GetBinPathsArgs{
+		Tool:        tool,
+		InstallPath: installPath,
+		Version:     version,
+	}
+	err := m.client.Call("Plugin.GetBinPaths", args, &resp)
+	return resp, err
+}
+
+type GetEnvVarsArgs struct {
+	Tool        string
+	InstallPath string
+	Version     string
+}
+
+func (m *ProviderRPCClient) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
+	var resp map[string]string
+	args := GetEnvVarsArgs{
+		Tool:        tool,
+		InstallPath: installPath,
+		Version:     version,
+	}
+	err := m.client.Call("Plugin.GetEnvVars", args, &resp)
+	return resp, err
+}
+
+type UninstallArgs struct {
+	Tool        string
+	InstallPath string
+	Version     string
+}
+
+func (m *ProviderRPCClient) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	var resp struct{}
 	args := UninstallArgs{
+		Tool:        tool,
 		InstallPath: installPath,
 		Version:     version,
 	}
@@ -124,33 +170,45 @@ func (s *ProviderRPCServer) Name(args interface{}, resp *string) error {
 }
 
 func (s *ProviderRPCServer) Install(args InstallArgs, resp *struct{}) error {
-	return s.Impl.Install(context.Background(), args.InstallPath, args.ArtifactPath, args.Version)
+	return s.Impl.Install(context.Background(), args.Tool, args.InstallPath, args.ArtifactPath, args.Version)
 }
 
 func (s *ProviderRPCServer) PostInstall(args PostInstallArgs, resp *struct{}) error {
-	return s.Impl.PostInstall(context.Background(), args.InstallPath, args.Version)
+	return s.Impl.PostInstall(context.Background(), args.Tool, args.InstallPath, args.Version)
 }
 
 func (s *ProviderRPCServer) GenerateShims(args GenerateShimsArgs, resp *map[string]string) error {
-	res, err := s.Impl.GenerateShims(args.InstallPath, args.Version)
+	res, err := s.Impl.GenerateShims(args.Tool, args.InstallPath, args.Version)
 	*resp = res
 	return err
 }
 
 func (s *ProviderRPCServer) DetectVersion(args DetectVersionArgs, resp *string) error {
-	res, err := s.Impl.DetectVersion(context.Background(), args.InstallPath)
+	res, err := s.Impl.DetectVersion(context.Background(), args.Tool, args.InstallPath)
 	*resp = res
 	return err
 }
 
 func (s *ProviderRPCServer) ListExecutables(args ListExecutablesArgs, resp *[]string) error {
-	res, err := s.Impl.ListExecutables(args.InstallPath, args.Version)
+	res, err := s.Impl.ListExecutables(args.Tool, args.InstallPath, args.Version)
+	*resp = res
+	return err
+}
+
+func (s *ProviderRPCServer) GetBinPaths(args GetBinPathsArgs, resp *[]string) error {
+	res, err := s.Impl.GetBinPaths(args.Tool, args.InstallPath, args.Version)
+	*resp = res
+	return err
+}
+
+func (s *ProviderRPCServer) GetEnvVars(args GetEnvVarsArgs, resp *map[string]string) error {
+	res, err := s.Impl.GetEnvVars(args.Tool, args.InstallPath, args.Version)
 	*resp = res
 	return err
 }
 
 func (s *ProviderRPCServer) Uninstall(args UninstallArgs, resp *struct{}) error {
-	return s.Impl.Uninstall(context.Background(), args.InstallPath, args.Version)
+	return s.Impl.Uninstall(context.Background(), args.Tool, args.InstallPath, args.Version)
 }
 
 // ProviderPlugin is the implementation of plugin.Plugin so we can serve/consume this

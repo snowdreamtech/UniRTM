@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
@@ -27,16 +26,7 @@ func (p *NpmProvider) Name() string {
 	return "npm"
 }
 
-func (p *NpmProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
-	// Extract the full tool name (including scope if present) from the install path.
-	// The path structure is <installs_dir>/<tool_name>/<version>
-	installsDir := env.GetInstallsDir()
-	toolDir := filepath.Dir(installPath)
-	tool, err := filepath.Rel(installsDir, toolDir)
-	if err != nil {
-		tool = filepath.Base(toolDir) // fallback
-	}
-
+func (p *NpmProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	// Ensure install path exists
 	if err := os.MkdirAll(installPath, 0755); err != nil {
 		return err
@@ -63,12 +53,12 @@ func (p *NpmProvider) Install(ctx context.Context, installPath string, artifactP
 	return nil
 }
 
-func (p *NpmProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (p *NpmProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 
-func (p *NpmProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
-	executables, err := p.ListExecutables(installPath, version)
+func (p *NpmProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	executables, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -82,11 +72,11 @@ func (p *NpmProvider) GenerateShims(installPath string, version string) (map[str
 	return shims, nil
 }
 
-func (p *NpmProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (p *NpmProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	return filepath.Base(installPath), nil
 }
 
-func (p *NpmProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (p *NpmProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	// npm installs global binaries into <prefix>/bin (on Unix) or <prefix> (on Windows)
 	binDir := filepath.Join(installPath, "bin")
 
@@ -120,7 +110,7 @@ func (p *NpmProvider) ListExecutables(installPath string, version string) ([]str
 }
 
 // GetBinPaths returns the absolute path to the bin directory.
-func (p *NpmProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (p *NpmProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	binDir := filepath.Join(installPath, "bin")
 	if _, err := os.Stat(binDir); os.IsNotExist(err) {
 		return []string{installPath}, nil
@@ -129,11 +119,11 @@ func (p *NpmProvider) GetBinPaths(installPath string, version string) ([]string,
 }
 
 // GetEnvVars returns no special environment variables.
-func (p *NpmProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (p *NpmProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return make(map[string]string), nil
 }
 
-func (p *NpmProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (p *NpmProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	// Let UniRTM delete the directory
 	return nil
 }

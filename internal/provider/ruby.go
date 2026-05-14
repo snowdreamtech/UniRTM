@@ -35,16 +35,16 @@ func (r *RubyProvider) Name() string {
 }
 
 // Install performs Ruby-specific installation with native-first fallback.
-func (r *RubyProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (r *RubyProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	// Check if we are on a platform likely to support native binaries
 	isNativeSupported := runtime.GOOS == "darwin" || strings.Contains(strings.ToLower(artifactPath), "ubuntu")
 
 	if isNativeSupported {
 		// 1. Try Native installation first
-		err := r.native.Install(ctx, installPath, artifactPath, version)
+		err := r.native.Install(ctx, tool, installPath, artifactPath, version)
 		if err == nil {
 			// Verification: try to run ruby -v to see if the binary works on this specific Linux distro (e.g. Debian)
-			if _, detectErr := r.DetectVersion(ctx, installPath); detectErr == nil {
+			if _, detectErr := r.DetectVersion(ctx, tool, installPath); detectErr == nil {
 				return nil
 			}
 			// If binary doesn't work (e.g. glibc mismatch), cleanup and fallback
@@ -55,11 +55,11 @@ func (r *RubyProvider) Install(ctx context.Context, installPath string, artifact
 	// 2. Fallback to ASDF (source compilation)
 	// Note: ASDF provider handles its own downloading if artifactPath is not what it expects,
 	// or we might need to pass an empty artifactPath to force it to resolve.
-	return r.asdf.Install(ctx, installPath, "", version)
+	return r.asdf.Install(ctx, tool, installPath, "", version)
 }
 
 // PostInstall performs post-installation steps.
-func (r *RubyProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (r *RubyProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	gemGlobalDir := filepath.Join(installPath, "gem-global")
 	if err := os.MkdirAll(gemGlobalDir, 0755); err != nil {
 		return NewProviderError("ruby", "ruby", version, "failed to create GEM_HOME directory", err)
@@ -68,10 +68,10 @@ func (r *RubyProvider) PostInstall(ctx context.Context, installPath string, vers
 }
 
 // GenerateShims generates shims for ruby executables.
-func (r *RubyProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
+func (r *RubyProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
 	shims := make(map[string]string)
 
-	executables, err := r.ListExecutables(installPath, version)
+	executables, err := r.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (r *RubyProvider) GenerateShims(installPath string, version string) (map[st
 			exePath = filepath.Join(installPath, "gem-global", "bin", exe)
 		}
 
-		shimContent := r.generateRubyShim(exe, exePath, installPath, version)
+		shimContent := r.generateRubyShim(tool, exe, exePath, installPath, version)
 		shims[exe] = shimContent
 	}
 
@@ -93,7 +93,7 @@ func (r *RubyProvider) GenerateShims(installPath string, version string) (map[st
 }
 
 // DetectVersion detects Ruby version.
-func (r *RubyProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (r *RubyProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	rubyPath := filepath.Join(installPath, "bin", "ruby")
 	if runtime.GOOS == "windows" {
 		rubyPath += ".exe"
@@ -116,7 +116,7 @@ func (r *RubyProvider) DetectVersion(ctx context.Context, installPath string) (s
 }
 
 // ListExecutables returns Ruby executables relative to installPath.
-func (r *RubyProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (r *RubyProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	var executables []string
 
 	// 1. Core binaries in bin/
@@ -154,7 +154,7 @@ func (r *RubyProvider) ListExecutables(installPath string, version string) ([]st
 }
 
 // GetBinPaths returns the absolute paths to the bin directories.
-func (r *RubyProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (r *RubyProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	return []string{
 		filepath.Join(installPath, "bin"),
 		filepath.Join(installPath, "gem-global", "bin"),
@@ -162,14 +162,14 @@ func (r *RubyProvider) GetBinPaths(installPath string, version string) ([]string
 }
 
 // GetEnvVars returns the GEM_HOME environment variable.
-func (r *RubyProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (r *RubyProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return map[string]string{
 		"GEM_HOME": filepath.Join(installPath, "gem-global"),
 	}, nil
 }
 
 // Uninstall performs Ruby-specific cleanup.
-func (r *RubyProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (r *RubyProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	gemGlobalDir := filepath.Join(installPath, "gem-global")
 	if err := os.RemoveAll(gemGlobalDir); err != nil {
 		return NewProviderError("ruby", "ruby", version, "failed to remove GEM_HOME directory", err)
@@ -178,7 +178,7 @@ func (r *RubyProvider) Uninstall(ctx context.Context, installPath string, versio
 }
 
 // generateRubyShim generates a Ruby-specific shim.
-func (r *RubyProvider) generateRubyShim(name, exePath, installPath, version string) string {
+func (r *RubyProvider) generateRubyShim(tool string, name, exePath, installPath, version string) string {
 	gemHome := filepath.Join(installPath, "gem-global")
 
 	if runtime.GOOS == "windows" {

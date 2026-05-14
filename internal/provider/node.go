@@ -31,13 +31,13 @@ func (n *NodeProvider) Name() string {
 }
 
 // Install performs Node.js-specific installation.
-func (n *NodeProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (n *NodeProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	// Use generic installation
-	return n.generic.Install(ctx, installPath, artifactPath, version)
+	return n.generic.Install(ctx, tool, installPath, artifactPath, version)
 }
 
 // PostInstall sets up npm global directory.
-func (n *NodeProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (n *NodeProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	// Create npm global directory
 	npmGlobalDir := filepath.Join(installPath, "npm-global")
 	if err := os.MkdirAll(npmGlobalDir, 0755); err != nil {
@@ -48,7 +48,7 @@ func (n *NodeProvider) PostInstall(ctx context.Context, installPath string, vers
 }
 
 // GenerateShims generates shims for node, npm, and npx.
-func (n *NodeProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
+func (n *NodeProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
 	shims := make(map[string]string)
 
 	// Generate shims for node, npm, npx
@@ -59,7 +59,7 @@ func (n *NodeProvider) GenerateShims(installPath string, version string) (map[st
 			exePath += ".exe"
 		}
 
-		shimContent := n.generateNodeShim(exe, exePath, installPath, version)
+		shimContent := n.generateNodeShim(tool, exe, exePath, installPath, version)
 		shims[exe] = shimContent
 	}
 
@@ -67,7 +67,7 @@ func (n *NodeProvider) GenerateShims(installPath string, version string) (map[st
 }
 
 // DetectVersion detects Node.js version.
-func (n *NodeProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (n *NodeProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	nodePath := filepath.Join(installPath, "bin", "node")
 	if runtime.GOOS == "windows" {
 		nodePath += ".exe"
@@ -85,7 +85,7 @@ func (n *NodeProvider) DetectVersion(ctx context.Context, installPath string) (s
 }
 
 // ListExecutables returns Node.js executables relative to installPath.
-func (n *NodeProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (n *NodeProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	executables := []string{filepath.Join("bin", "node"), filepath.Join("bin", "npm"), filepath.Join("bin", "npx")}
 	if runtime.GOOS == "windows" {
 		executables = []string{"node.exe", "npm.cmd", "npx.cmd"}
@@ -94,7 +94,7 @@ func (n *NodeProvider) ListExecutables(installPath string, version string) ([]st
 }
 
 // GetBinPaths returns the absolute path to the bin directory and the npm-global bin directory.
-func (n *NodeProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (n *NodeProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	if runtime.GOOS == "windows" {
 		return []string{
 			installPath,
@@ -108,14 +108,14 @@ func (n *NodeProvider) GetBinPaths(installPath string, version string) ([]string
 }
 
 // GetEnvVars returns the NPM_CONFIG_PREFIX environment variable.
-func (n *NodeProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (n *NodeProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return map[string]string{
 		"NPM_CONFIG_PREFIX": filepath.Join(installPath, "npm-global"),
 	}, nil
 }
 
 // Uninstall performs Node.js-specific cleanup.
-func (n *NodeProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (n *NodeProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	// Clean up npm global directory
 	npmGlobalDir := filepath.Join(installPath, "npm-global")
 	if err := os.RemoveAll(npmGlobalDir); err != nil {
@@ -125,7 +125,7 @@ func (n *NodeProvider) Uninstall(ctx context.Context, installPath string, versio
 }
 
 // generateNodeShim generates a Node.js-specific shim.
-func (n *NodeProvider) generateNodeShim(name, exePath, installPath, version string) string {
+func (n *NodeProvider) generateNodeShim(tool string, name, exePath, installPath, version string) string {
 	npmGlobalDir := filepath.Join(installPath, "npm-global")
 
 	if runtime.GOOS == "windows" {

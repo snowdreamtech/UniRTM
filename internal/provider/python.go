@@ -31,12 +31,12 @@ func (p *PythonProvider) Name() string {
 }
 
 // Install performs Python-specific installation.
-func (p *PythonProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
-	return p.generic.Install(ctx, installPath, artifactPath, version)
+func (p *PythonProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
+	return p.generic.Install(ctx, tool, installPath, artifactPath, version)
 }
 
 // PostInstall creates a virtual environment.
-func (p *PythonProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (p *PythonProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	pythonPath := filepath.Join(installPath, "bin", "python3")
 	if runtime.GOOS == "windows" {
 		pythonPath = filepath.Join(installPath, "bin", "python.exe")
@@ -52,7 +52,7 @@ func (p *PythonProvider) PostInstall(ctx context.Context, installPath string, ve
 }
 
 // GenerateShims generates shims for python, pip, and python3.
-func (p *PythonProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
+func (p *PythonProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
 	shims := make(map[string]string)
 
 	executables := []string{"python", "python3", "pip", "pip3"}
@@ -70,7 +70,7 @@ func (p *PythonProvider) GenerateShims(installPath string, version string) (map[
 }
 
 // DetectVersion detects Python version.
-func (p *PythonProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (p *PythonProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	pythonPath := filepath.Join(installPath, "bin", "python3")
 	if runtime.GOOS == "windows" {
 		pythonPath = filepath.Join(installPath, "bin", "python.exe")
@@ -88,7 +88,7 @@ func (p *PythonProvider) DetectVersion(ctx context.Context, installPath string) 
 }
 
 // ListExecutables returns Python executables relative to installPath.
-func (p *PythonProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (p *PythonProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	executables := []string{
 		filepath.Join("bin", "python"),
 		filepath.Join("bin", "python3"),
@@ -104,7 +104,7 @@ func (p *PythonProvider) ListExecutables(installPath string, version string) ([]
 }
 
 // GetBinPaths returns the absolute path to the bin directory and the venv bin directory.
-func (p *PythonProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (p *PythonProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	binDir := filepath.Join(installPath, "bin")
 	venvBin := filepath.Join(installPath, "venv", "bin")
 	if runtime.GOOS == "windows" {
@@ -114,7 +114,7 @@ func (p *PythonProvider) GetBinPaths(installPath string, version string) ([]stri
 }
 
 // GetEnvVars returns the VIRTUAL_ENV environment variable.
-func (p *PythonProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (p *PythonProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	venvDir := filepath.Join(installPath, "venv")
 	return map[string]string{
 		"VIRTUAL_ENV": venvDir,
@@ -122,7 +122,7 @@ func (p *PythonProvider) GetEnvVars(installPath string, version string) (map[str
 }
 
 // Uninstall performs Python-specific cleanup.
-func (p *PythonProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (p *PythonProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	venvDir := filepath.Join(installPath, "venv")
 	if err := os.RemoveAll(venvDir); err != nil {
 		return NewProviderError("python", "python", version, "failed to remove virtual environment", err)

@@ -24,7 +24,7 @@ func (p *BunProvider) Name() string {
 	return "bun"
 }
 
-func (p *BunProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (p *BunProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	logger.Debug("Installing Bun", map[string]interface{}{"version": version, "installPath": installPath, "artifactPath": artifactPath})
 
 	if err := os.MkdirAll(installPath, 0755); err != nil {
@@ -37,12 +37,12 @@ func (p *BunProvider) Install(ctx context.Context, installPath string, artifactP
 	return nil
 }
 
-func (p *BunProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (p *BunProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 
-func (p *BunProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
-	executables, err := p.ListExecutables(installPath, version)
+func (p *BunProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	executables, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -56,11 +56,11 @@ func (p *BunProvider) GenerateShims(installPath string, version string) (map[str
 	return shims, nil
 }
 
-func (p *BunProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (p *BunProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	return filepath.Base(installPath), nil
 }
 
-func (p *BunProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (p *BunProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	// Bun typically has 'bun' and 'bunx' (which is usually a symlink to bun)
 	var executables []string
 	
@@ -83,8 +83,8 @@ func (p *BunProvider) ListExecutables(installPath string, version string) ([]str
 }
 
 // GetBinPaths returns the absolute paths to the bin directories.
-func (p *BunProvider) GetBinPaths(installPath string, version string) ([]string, error) {
-	exes, err := p.ListExecutables(installPath, version)
+func (p *BunProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
+	exes, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -104,10 +104,10 @@ func (p *BunProvider) GetBinPaths(installPath string, version string) ([]string,
 }
 
 // GetEnvVars returns no special environment variables.
-func (p *BunProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (p *BunProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return make(map[string]string), nil
 }
 
-func (p *BunProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (p *BunProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }

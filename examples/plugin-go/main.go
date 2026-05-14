@@ -55,6 +55,34 @@ func (b *ExampleBackend) SupportsGPG() bool {
 	return false
 }
 
+func (b *ExampleBackend) AttestationType() string {
+	return ""
+}
+
+func (b *ExampleBackend) IsRecommended() bool {
+	return false
+}
+
+func (b *ExampleBackend) IsScriptless() bool {
+	return true
+}
+
+func (b *ExampleBackend) GetReach() string {
+	return "Small"
+}
+
+func (b *ExampleBackend) IsStable() bool {
+	return true
+}
+
+func (b *ExampleBackend) SupportsOffline() bool {
+	return false
+}
+
+func (b *ExampleBackend) Dependencies() []string {
+	return nil
+}
+
 func main() {
 	// pluginMap is the map of plugins we can dispense.
 	var pluginMap = map[string]plugin.Plugin{

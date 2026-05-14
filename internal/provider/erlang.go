@@ -24,7 +24,7 @@ func (p *ErlangProvider) Name() string {
 	return "erlang"
 }
 
-func (p *ErlangProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (p *ErlangProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	logger.Debug("Installing Erlang", map[string]interface{}{"version": version, "installPath": installPath, "artifactPath": artifactPath})
 
 	if err := os.MkdirAll(installPath, 0755); err != nil {
@@ -34,12 +34,12 @@ func (p *ErlangProvider) Install(ctx context.Context, installPath string, artifa
 	return nil
 }
 
-func (p *ErlangProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (p *ErlangProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 
-func (p *ErlangProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
-	executables, err := p.ListExecutables(installPath, version)
+func (p *ErlangProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	executables, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -53,11 +53,11 @@ func (p *ErlangProvider) GenerateShims(installPath string, version string) (map[
 	return shims, nil
 }
 
-func (p *ErlangProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (p *ErlangProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	return filepath.Base(installPath), nil
 }
 
-func (p *ErlangProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (p *ErlangProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	var executables []string
 	
 	// Erlang binaries are usually in bin/ directory
@@ -95,15 +95,15 @@ func (p *ErlangProvider) ListExecutables(installPath string, version string) ([]
 }
 
 // GetBinPaths returns the absolute path to the bin directory.
-func (p *ErlangProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (p *ErlangProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	return []string{filepath.Join(installPath, "bin")}, nil
 }
 
 // GetEnvVars returns no special environment variables.
-func (p *ErlangProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (p *ErlangProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return make(map[string]string), nil
 }
 
-func (p *ErlangProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (p *ErlangProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }

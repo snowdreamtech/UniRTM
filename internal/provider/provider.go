@@ -15,37 +15,38 @@ type Provider interface {
 
 	// Install performs tool-specific installation steps.
 	// This is called after the artifact has been downloaded and extracted.
+	// tool is the name of the tool being installed.
 	// installPath is the directory where the tool should be installed.
 	// artifactPath is the path to the downloaded and extracted artifact.
-	Install(ctx context.Context, installPath string, artifactPath string, version string) error
+	Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error
 
-	// PostInstall performs any post-installation steps (e.g., setting up virtual environments,
-	// installing additional dependencies, configuring tool-specific settings).
-	PostInstall(ctx context.Context, installPath string, version string) error
+	// PostInstall performs any post-installation steps.
+	// tool is the name of the tool being installed.
+	PostInstall(ctx context.Context, tool string, installPath string, version string) error
 
 	// GenerateShims generates shim scripts for the tool's executables.
 	// Returns a map of executable name to shim script content.
-	GenerateShims(installPath string, version string) (map[string]string, error)
+	GenerateShims(tool string, installPath string, version string) (map[string]string, error)
 
 	// DetectVersion detects the version of an installed tool.
 	// This is used to verify installation and for version management.
-	DetectVersion(ctx context.Context, installPath string) (string, error)
+	DetectVersion(ctx context.Context, tool string, installPath string) (string, error)
 
 	// ListExecutables returns a list of executable names provided by this tool.
 	// This is used for shim generation and PATH management.
-	ListExecutables(installPath string, version string) ([]string, error)
+	ListExecutables(tool string, installPath string, version string) ([]string, error)
 
 	// GetBinPaths returns a list of absolute paths to the directories containing
 	// the tool's executables. These are used in PATH mode activation.
-	GetBinPaths(installPath string, version string) ([]string, error)
+	GetBinPaths(tool string, installPath string, version string) ([]string, error)
 
 	// GetEnvVars returns a map of environment variables that should be set
 	// when this tool is active (e.g., JAVA_HOME for Java).
-	GetEnvVars(installPath string, version string) (map[string]string, error)
+	GetEnvVars(tool string, installPath string, version string) (map[string]string, error)
 
 	// Uninstall performs tool-specific cleanup before uninstallation.
 	// This is called before the installation directory is removed.
-	Uninstall(ctx context.Context, installPath string, version string) error
+	Uninstall(ctx context.Context, tool string, installPath string, version string) error
 }
 
 // ProviderError represents an error from a provider operation.

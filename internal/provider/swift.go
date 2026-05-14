@@ -24,7 +24,7 @@ func (p *SwiftProvider) Name() string {
 	return "swift"
 }
 
-func (p *SwiftProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (p *SwiftProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	logger.Debug("Installing Swift", map[string]interface{}{"version": version, "installPath": installPath, "artifactPath": artifactPath})
 
 	if err := os.MkdirAll(installPath, 0755); err != nil {
@@ -34,12 +34,12 @@ func (p *SwiftProvider) Install(ctx context.Context, installPath string, artifac
 	return nil
 }
 
-func (p *SwiftProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (p *SwiftProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 
-func (p *SwiftProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
-	executables, err := p.ListExecutables(installPath, version)
+func (p *SwiftProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	executables, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -53,11 +53,11 @@ func (p *SwiftProvider) GenerateShims(installPath string, version string) (map[s
 	return shims, nil
 }
 
-func (p *SwiftProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (p *SwiftProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	return filepath.Base(installPath), nil
 }
 
-func (p *SwiftProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (p *SwiftProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	var executables []string
 	
 	err := filepath.Walk(installPath, func(path string, info os.FileInfo, err error) error {
@@ -78,8 +78,8 @@ func (p *SwiftProvider) ListExecutables(installPath string, version string) ([]s
 }
 
 // GetBinPaths returns the absolute paths to the bin directories.
-func (p *SwiftProvider) GetBinPaths(installPath string, version string) ([]string, error) {
-	exes, err := p.ListExecutables(installPath, version)
+func (p *SwiftProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
+	exes, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -99,10 +99,10 @@ func (p *SwiftProvider) GetBinPaths(installPath string, version string) ([]strin
 }
 
 // GetEnvVars returns no special environment variables.
-func (p *SwiftProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (p *SwiftProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return make(map[string]string), nil
 }
 
-func (p *SwiftProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (p *SwiftProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }

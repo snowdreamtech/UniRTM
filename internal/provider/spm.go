@@ -28,7 +28,7 @@ func (p *SpmProvider) Name() string {
 	return "spm"
 }
 
-func (p *SpmProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (p *SpmProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	// Usually tool is a URL for SPM
 	// Extract the full tool name (including scope if present) from the install path.
 	installsDir := env.GetInstallsDir()
@@ -128,12 +128,12 @@ func (p *SpmProvider) copyFile(src, dst string) error {
 	return err
 }
 
-func (p *SpmProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (p *SpmProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 
-func (p *SpmProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
-	executables, err := p.ListExecutables(installPath, version)
+func (p *SpmProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	executables, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -147,11 +147,11 @@ func (p *SpmProvider) GenerateShims(installPath string, version string) (map[str
 	return shims, nil
 }
 
-func (p *SpmProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (p *SpmProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	return filepath.Base(installPath), nil
 }
 
-func (p *SpmProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (p *SpmProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	binDir := filepath.Join(installPath, "bin")
 
 	entries, err := os.ReadDir(binDir)
@@ -178,15 +178,15 @@ func (p *SpmProvider) ListExecutables(installPath string, version string) ([]str
 }
 
 // GetBinPaths returns the absolute path to the bin directory.
-func (p *SpmProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (p *SpmProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	return []string{filepath.Join(installPath, "bin")}, nil
 }
 
 // GetEnvVars returns no special environment variables.
-func (p *SpmProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (p *SpmProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return make(map[string]string), nil
 }
 
-func (p *SpmProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (p *SpmProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }

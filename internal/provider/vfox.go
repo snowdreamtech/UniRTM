@@ -26,7 +26,7 @@ func (p *VfoxProvider) Name() string {
 	return "vfox"
 }
 
-func (p *VfoxProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (p *VfoxProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	// Extract the full tool name (including scope if present) from the install path.
 	installsDir := env.GetInstallsDir()
 	toolDir := filepath.Dir(installPath)
@@ -72,12 +72,12 @@ func (p *VfoxProvider) Install(ctx context.Context, installPath string, artifact
 	return nil
 }
 
-func (p *VfoxProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (p *VfoxProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 
-func (p *VfoxProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
-	executables, err := p.ListExecutables(installPath, version)
+func (p *VfoxProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	executables, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -91,11 +91,11 @@ func (p *VfoxProvider) GenerateShims(installPath string, version string) (map[st
 	return shims, nil
 }
 
-func (p *VfoxProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (p *VfoxProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	return filepath.Base(installPath), nil
 }
 
-func (p *VfoxProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (p *VfoxProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	// Typically vfox installs to its own global directory if not overridden.
 	// Assuming it's in our `installPath/bin` or `installPath/...` based on how we run it.
 	binDir := filepath.Join(installPath, "bin")
@@ -124,15 +124,15 @@ func (p *VfoxProvider) ListExecutables(installPath string, version string) ([]st
 }
 
 // GetBinPaths returns the absolute path to the bin directory.
-func (p *VfoxProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (p *VfoxProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	return []string{filepath.Join(installPath, "bin")}, nil
 }
 
 // GetEnvVars returns no special environment variables.
-func (p *VfoxProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (p *VfoxProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return make(map[string]string), nil
 }
 
-func (p *VfoxProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (p *VfoxProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }

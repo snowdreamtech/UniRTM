@@ -50,16 +50,16 @@ func (p *NativeProvider) ListVersions(ctx context.Context, tool string) ([]strin
 	return res, nil
 }
 
-func (p *NativeProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (p *NativeProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	if artifactPath == "" {
 		return fmt.Errorf("native: no artifact path provided")
 	}
 
 	// Delegate to generic provider which handles extraction, flattening, and binDir creation correctly
-	return p.generic.Install(ctx, installPath, artifactPath, version)
+	return p.generic.Install(ctx, tool, installPath, artifactPath, version)
 }
 
-func (p *NativeProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (p *NativeProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	// Ensure all executables are in bin/ directory (UniRTM standard)
 	binDir := filepath.Join(installPath, "bin")
 	if err := os.MkdirAll(binDir, 0755); err != nil {
@@ -106,7 +106,7 @@ func (p *NativeProvider) PostInstall(ctx context.Context, installPath string, ve
 		return err
 	}
 
-	return p.generic.PostInstall(ctx, installPath, version)
+	return p.generic.PostInstall(ctx, tool, installPath, version)
 }
 
 // Helper to avoid duplicate logic from generic.go for now
@@ -118,30 +118,30 @@ func isExecutable(info os.FileInfo) bool {
 	return strings.HasSuffix(name, ".exe") || strings.HasSuffix(name, ".bat") || strings.HasSuffix(name, ".cmd")
 }
 
-func (p *NativeProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
-	return p.generic.GenerateShims(installPath, version)
+func (p *NativeProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	return p.generic.GenerateShims(tool, installPath, version)
 }
 
-func (p *NativeProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
-	return p.generic.DetectVersion(ctx, installPath)
+func (p *NativeProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
+	return p.generic.DetectVersion(ctx, tool, installPath)
 }
 
-func (p *NativeProvider) ListExecutables(installPath string, version string) ([]string, error) {
-	return p.generic.ListExecutables(installPath, version)
+func (p *NativeProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
+	return p.generic.ListExecutables(tool, installPath, version)
 }
 
 // GetBinPaths returns the absolute path to the bin directory.
-func (p *NativeProvider) GetBinPaths(installPath string, version string) ([]string, error) {
-	return p.generic.GetBinPaths(installPath, version)
+func (p *NativeProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
+	return p.generic.GetBinPaths(tool, installPath, version)
 }
 
 // GetEnvVars returns the environment variables for the tool.
-func (p *NativeProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
-	return p.generic.GetEnvVars(installPath, version)
+func (p *NativeProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
+	return p.generic.GetEnvVars(tool, installPath, version)
 }
 
-func (p *NativeProvider) Uninstall(ctx context.Context, installPath string, version string) error {
-	return p.generic.Uninstall(ctx, installPath, version)
+func (p *NativeProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
+	return p.generic.Uninstall(ctx, tool, installPath, version)
 }
 
 func (p *NativeProvider) Verify(ctx context.Context, tool, version, path string) error {

@@ -29,7 +29,7 @@ func (p *GoPkgProvider) Name() string {
 	return "go"
 }
 
-func (p *GoPkgProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (p *GoPkgProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	// For Go packages, tool name is derived from the path
 	installsDir := env.GetInstallsDir()
 	toolDir := filepath.Dir(installPath)
@@ -72,12 +72,12 @@ func (p *GoPkgProvider) Install(ctx context.Context, installPath string, artifac
 	return nil
 }
 
-func (p *GoPkgProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (p *GoPkgProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 
-func (p *GoPkgProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
-	executables, err := p.ListExecutables(installPath, version)
+func (p *GoPkgProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	executables, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -95,11 +95,11 @@ func (p *GoPkgProvider) GenerateShims(installPath string, version string) (map[s
 	return shims, nil
 }
 
-func (p *GoPkgProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (p *GoPkgProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	return filepath.Base(installPath), nil
 }
 
-func (p *GoPkgProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (p *GoPkgProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	entries, err := os.ReadDir(installPath)
 	if err != nil {
 		return nil, err
@@ -121,16 +121,16 @@ func (p *GoPkgProvider) ListExecutables(installPath string, version string) ([]s
 }
 
 // GetBinPaths returns the absolute path to the directory containing the binaries.
-func (p *GoPkgProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (p *GoPkgProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	return []string{installPath}, nil
 }
 
 // GetEnvVars returns no special environment variables.
-func (p *GoPkgProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (p *GoPkgProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return make(map[string]string), nil
 }
 
-func (p *GoPkgProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (p *GoPkgProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 

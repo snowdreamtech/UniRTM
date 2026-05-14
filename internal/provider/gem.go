@@ -26,7 +26,7 @@ func (p *GemProvider) Name() string {
 	return "gem"
 }
 
-func (p *GemProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (p *GemProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	// Extract the full tool name (including scope if present) from the install path.
 	installsDir := env.GetInstallsDir()
 	toolDir := filepath.Dir(installPath)
@@ -63,12 +63,12 @@ func (p *GemProvider) Install(ctx context.Context, installPath string, artifactP
 	return nil
 }
 
-func (p *GemProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (p *GemProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 
-func (p *GemProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
-	executables, err := p.ListExecutables(installPath, version)
+func (p *GemProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	executables, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -82,11 +82,11 @@ func (p *GemProvider) GenerateShims(installPath string, version string) (map[str
 	return shims, nil
 }
 
-func (p *GemProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (p *GemProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	return filepath.Base(installPath), nil
 }
 
-func (p *GemProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (p *GemProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	binDir := filepath.Join(installPath, "bin")
 
 	entries, err := os.ReadDir(binDir)
@@ -113,17 +113,17 @@ func (p *GemProvider) ListExecutables(installPath string, version string) ([]str
 }
 
 // GetBinPaths returns the absolute path to the bin directory.
-func (p *GemProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (p *GemProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	return []string{filepath.Join(installPath, "bin")}, nil
 }
 
 // GetEnvVars returns the GEM_HOME environment variable.
-func (p *GemProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (p *GemProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return map[string]string{
 		"GEM_HOME": installPath,
 	}, nil
 }
 
-func (p *GemProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (p *GemProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }

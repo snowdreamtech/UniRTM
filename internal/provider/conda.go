@@ -26,7 +26,7 @@ func (p *CondaProvider) Name() string {
 	return "conda"
 }
 
-func (p *CondaProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (p *CondaProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	// Extract the full tool name (including scope if present) from the install path.
 	installsDir := env.GetInstallsDir()
 	toolDir := filepath.Dir(installPath)
@@ -66,12 +66,12 @@ func (p *CondaProvider) Install(ctx context.Context, installPath string, artifac
 	return nil
 }
 
-func (p *CondaProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (p *CondaProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 
-func (p *CondaProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
-	executables, err := p.ListExecutables(installPath, version)
+func (p *CondaProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	executables, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -85,11 +85,11 @@ func (p *CondaProvider) GenerateShims(installPath string, version string) (map[s
 	return shims, nil
 }
 
-func (p *CondaProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (p *CondaProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	return filepath.Base(installPath), nil
 }
 
-func (p *CondaProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (p *CondaProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	binDir := filepath.Join(installPath, "bin")
 
 	// Check bin for unix, Scripts for windows
@@ -122,7 +122,7 @@ func (p *CondaProvider) ListExecutables(installPath string, version string) ([]s
 }
 
 // GetBinPaths returns the absolute paths to the bin directories.
-func (p *CondaProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (p *CondaProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	return []string{
 		filepath.Join(installPath, "bin"),
 		filepath.Join(installPath, "Scripts"),
@@ -130,12 +130,12 @@ func (p *CondaProvider) GetBinPaths(installPath string, version string) ([]strin
 }
 
 // GetEnvVars returns the CONDA_PREFIX environment variable.
-func (p *CondaProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (p *CondaProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return map[string]string{
 		"CONDA_PREFIX": installPath,
 	}, nil
 }
 
-func (p *CondaProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (p *CondaProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }

@@ -112,7 +112,7 @@ func runReshim(cmd *cobra.Command, args []string) error {
 		}
 
 		p := providerRegistry.GetWithBackend(inst.Tool, inst.Backend)
-		executables, err := p.ListExecutables(inst.InstallPath, inst.Version)
+		executables, err := p.ListExecutables(inst.Tool, inst.InstallPath, inst.Version)
 		if err != nil {
 			executables = []string{inst.Tool}
 		}

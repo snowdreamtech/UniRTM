@@ -31,12 +31,12 @@ func (j *JavaProvider) Name() string {
 }
 
 // Install performs Java-specific installation.
-func (j *JavaProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
-	return j.generic.Install(ctx, installPath, artifactPath, version)
+func (j *JavaProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
+	return j.generic.Install(ctx, tool, installPath, artifactPath, version)
 }
 
 // PostInstall performs post-installation steps.
-func (j *JavaProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (j *JavaProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 
@@ -51,7 +51,7 @@ func (j *JavaProvider) getJavaHome(installPath string) string {
 }
 
 // GenerateShims generates shims for java executables.
-func (j *JavaProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
+func (j *JavaProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
 	shims := make(map[string]string)
 	javaHome := j.getJavaHome(installPath)
 
@@ -70,7 +70,7 @@ func (j *JavaProvider) GenerateShims(installPath string, version string) (map[st
 }
 
 // DetectVersion detects Java version.
-func (j *JavaProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (j *JavaProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	javaHome := j.getJavaHome(installPath)
 	javaPath := filepath.Join(javaHome, "bin", "java")
 	if runtime.GOOS == "windows" {
@@ -100,7 +100,7 @@ func (j *JavaProvider) DetectVersion(ctx context.Context, installPath string) (s
 }
 
 // ListExecutables returns Java executables relative to installPath.
-func (j *JavaProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (j *JavaProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	javaHome := j.getJavaHome(installPath)
 	
 	// Get path relative to installPath
@@ -122,13 +122,13 @@ func (j *JavaProvider) ListExecutables(installPath string, version string) ([]st
 }
 
 // GetBinPaths returns the absolute path to the Java bin directory.
-func (j *JavaProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (j *JavaProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	javaHome := j.getJavaHome(installPath)
 	return []string{filepath.Join(javaHome, "bin")}, nil
 }
 
 // GetEnvVars returns the JAVA_HOME environment variable.
-func (j *JavaProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (j *JavaProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	javaHome := j.getJavaHome(installPath)
 	return map[string]string{
 		"JAVA_HOME": javaHome,
@@ -136,7 +136,7 @@ func (j *JavaProvider) GetEnvVars(installPath string, version string) (map[strin
 }
 
 // Uninstall performs Java-specific cleanup.
-func (j *JavaProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (j *JavaProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 

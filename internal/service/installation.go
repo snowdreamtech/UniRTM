@@ -568,13 +568,13 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	p := im.providerRegistry.GetWithBackend(tool, backendName)
 
 	fmt.Printf("ℹ extracting %s@%s...\n", tool, version)
-	if err := p.Install(ctx, tmpInstallPath, downloadPath, version); err != nil {
+	if err := p.Install(ctx, tool, tmpInstallPath, downloadPath, version); err != nil {
 		os.RemoveAll(tmpInstallPath)
 		return fmt.Errorf("installation failed: %w", err)
 	}
 
 	fmt.Printf("ℹ running post-install hooks for %s@%s...\n", tool, version)
-	if err := p.PostInstall(ctx, tmpInstallPath, version); err != nil {
+	if err := p.PostInstall(ctx, tool, tmpInstallPath, version); err != nil {
 		os.RemoveAll(tmpInstallPath)
 		return fmt.Errorf("post-install failed: %w", err)
 	}
@@ -644,7 +644,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 	// 12. Generate shims for the tool executables
 	fmt.Printf("ℹ generating shims for %s...\n", tool)
-	execs, _ := p.ListExecutables(installPath, version)
+	execs, _ := p.ListExecutables(tool, installPath, version)
 	if err := im.shimGenerator.GenerateShim(ctx, tool, execs...); err != nil {
 		pterm.FgYellow.Printf("⚠️  WARNING: failed to generate shims for %s: %v\n", tool, err)
 		// Non-fatal, don't return error
@@ -840,7 +840,7 @@ func (im *InstallationManager) Uninstall(ctx context.Context, tool, version stri
 
 	// Run provider uninstall
 	p := im.providerRegistry.GetWithBackend(tool, installation.Backend)
-	if err := p.Uninstall(ctx, installation.InstallPath, version); err != nil {
+	if err := p.Uninstall(ctx, tool, installation.InstallPath, version); err != nil {
 		return fmt.Errorf("provider uninstall failed: %w", err)
 	}
 

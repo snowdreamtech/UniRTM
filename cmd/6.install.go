@@ -200,12 +200,15 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			}
 		}
 
+		fmt.Printf("DEBUG: tool=%s, backendName=%s, version=%s\n", tool, backendName, version)
 		toolsToInstall = map[string]service.ToolSpec{
 			tool: {
+				Name:        tool,
 				Version:     version,
 				BackendName: backendName,
 			},
 		}
+		fmt.Printf("DEBUG: toolsToInstall[%s].Name=%s\n", tool, toolsToInstall[tool].Name)
 	}
 
 	// Display start message

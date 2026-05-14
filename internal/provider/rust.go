@@ -31,12 +31,12 @@ func (r *RustProvider) Name() string {
 }
 
 // Install performs Rust-specific installation.
-func (r *RustProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
-	return r.generic.Install(ctx, installPath, artifactPath, version)
+func (r *RustProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
+	return r.generic.Install(ctx, tool, installPath, artifactPath, version)
 }
 
 // PostInstall performs post-installation steps.
-func (r *RustProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (r *RustProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	cargoHome := filepath.Join(installPath, "cargo")
 	rustupHome := filepath.Join(installPath, "rustup")
 	
@@ -50,10 +50,10 @@ func (r *RustProvider) PostInstall(ctx context.Context, installPath string, vers
 }
 
 // GenerateShims generates shims for rust executables.
-func (r *RustProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
+func (r *RustProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
 	shims := make(map[string]string)
 
-	executables, err := r.ListExecutables(installPath, version)
+	executables, err := r.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func (r *RustProvider) GenerateShims(installPath string, version string) (map[st
 }
 
 // DetectVersion detects Rust version.
-func (r *RustProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (r *RustProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	rustcPath := filepath.Join(installPath, "bin", "rustc")
 	if runtime.GOOS == "windows" {
 		rustcPath += ".exe"
@@ -98,7 +98,7 @@ func (r *RustProvider) DetectVersion(ctx context.Context, installPath string) (s
 }
 
 // ListExecutables returns Rust executables.
-func (r *RustProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (r *RustProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	var executables []string
 	
 	// Default binaries
@@ -134,7 +134,7 @@ func (r *RustProvider) ListExecutables(installPath string, version string) ([]st
 }
 
 // GetBinPaths returns the absolute paths to the bin directories.
-func (r *RustProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (r *RustProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	return []string{
 		filepath.Join(installPath, "bin"),
 		filepath.Join(installPath, "cargo", "bin"),
@@ -142,7 +142,7 @@ func (r *RustProvider) GetBinPaths(installPath string, version string) ([]string
 }
 
 // GetEnvVars returns the CARGO_HOME and RUSTUP_HOME environment variables.
-func (r *RustProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (r *RustProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return map[string]string{
 		"CARGO_HOME":  filepath.Join(installPath, "cargo"),
 		"RUSTUP_HOME": filepath.Join(installPath, "rustup"),
@@ -150,7 +150,7 @@ func (r *RustProvider) GetEnvVars(installPath string, version string) (map[strin
 }
 
 // Uninstall performs Rust-specific cleanup.
-func (r *RustProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (r *RustProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	cargoHome := filepath.Join(installPath, "cargo")
 	rustupHome := filepath.Join(installPath, "rustup")
 	

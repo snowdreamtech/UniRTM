@@ -33,12 +33,12 @@ func (g *GolangProvider) Name() string {
 }
 
 // Install performs Go-specific installation.
-func (g *GolangProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
-	return g.generic.Install(ctx, installPath, artifactPath, version)
+func (g *GolangProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
+	return g.generic.Install(ctx, tool, installPath, artifactPath, version)
 }
 
 // PostInstall sets up GOPATH.
-func (g *GolangProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (g *GolangProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	gopath := filepath.Join(installPath, "gopath")
 	if err := os.MkdirAll(filepath.Join(gopath, "bin"), 0755); err != nil {
 		return NewProviderError("golang", "go", version, "failed to create GOPATH", err)
@@ -53,7 +53,7 @@ func (g *GolangProvider) PostInstall(ctx context.Context, installPath string, ve
 }
 
 // GenerateShims generates shims for go and gofmt.
-func (g *GolangProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
+func (g *GolangProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
 	shims := make(map[string]string)
 
 	executables := []string{"go", "gofmt"}
@@ -63,7 +63,7 @@ func (g *GolangProvider) GenerateShims(installPath string, version string) (map[
 			exePath += ".exe"
 		}
 
-		shimContent := g.generateGoShim(exe, exePath, installPath, version)
+		shimContent := g.generateGoShim(tool, exe, exePath, installPath, version)
 		shims[exe] = shimContent
 	}
 
@@ -71,7 +71,7 @@ func (g *GolangProvider) GenerateShims(installPath string, version string) (map[
 }
 
 // DetectVersion detects Go version.
-func (g *GolangProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (g *GolangProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	goPath := filepath.Join(installPath, "bin", "go")
 	if runtime.GOOS == "windows" {
 		goPath += ".exe"
@@ -94,7 +94,7 @@ func (g *GolangProvider) DetectVersion(ctx context.Context, installPath string) 
 }
 
 // ListExecutables returns Go executables relative to installPath.
-func (g *GolangProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (g *GolangProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	executables := []string{filepath.Join("bin", "go"), filepath.Join("bin", "gofmt")}
 	if runtime.GOOS == "windows" {
 		for i := range executables {
@@ -105,12 +105,12 @@ func (g *GolangProvider) ListExecutables(installPath string, version string) ([]
 }
 
 // GetBinPaths returns the absolute path to the bin directory.
-func (g *GolangProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (g *GolangProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	return []string{filepath.Join(installPath, "bin")}, nil
 }
 
 // GetEnvVars returns the Go environment variables.
-func (g *GolangProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (g *GolangProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	vars := make(map[string]string)
 
 	// Default to setting GOROOT unless explicitly disabled
@@ -127,7 +127,7 @@ func (g *GolangProvider) GetEnvVars(installPath string, version string) (map[str
 }
 
 // Uninstall performs Go-specific cleanup.
-func (g *GolangProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (g *GolangProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	gopath := filepath.Join(installPath, "gopath")
 	if err := os.RemoveAll(gopath); err != nil {
 		return NewProviderError("golang", "go", version, "failed to remove GOPATH", err)
@@ -136,8 +136,8 @@ func (g *GolangProvider) Uninstall(ctx context.Context, installPath string, vers
 }
 
 // generateGoShim generates a Go-specific shim.
-func (g *GolangProvider) generateGoShim(name, exePath, installPath, version string) string {
-	vars, _ := g.GetEnvVars(installPath, version)
+func (g *GolangProvider) generateGoShim(tool, name, exePath, installPath, version string) string {
+	vars, _ := g.GetEnvVars(tool, installPath, version)
 
 	if runtime.GOOS == "windows" {
 		var sb strings.Builder

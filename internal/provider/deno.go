@@ -24,7 +24,7 @@ func (p *DenoProvider) Name() string {
 	return "deno"
 }
 
-func (p *DenoProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (p *DenoProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	logger.Debug("Installing Deno", map[string]interface{}{"version": version, "installPath": installPath, "artifactPath": artifactPath})
 
 	if err := os.MkdirAll(installPath, 0755); err != nil {
@@ -34,12 +34,12 @@ func (p *DenoProvider) Install(ctx context.Context, installPath string, artifact
 	return nil
 }
 
-func (p *DenoProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (p *DenoProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 
-func (p *DenoProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
-	executables, err := p.ListExecutables(installPath, version)
+func (p *DenoProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	executables, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -53,11 +53,11 @@ func (p *DenoProvider) GenerateShims(installPath string, version string) (map[st
 	return shims, nil
 }
 
-func (p *DenoProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (p *DenoProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	return filepath.Base(installPath), nil
 }
 
-func (p *DenoProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (p *DenoProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	var executables []string
 	
 	err := filepath.Walk(installPath, func(path string, info os.FileInfo, err error) error {
@@ -78,8 +78,8 @@ func (p *DenoProvider) ListExecutables(installPath string, version string) ([]st
 }
 
 // GetBinPaths returns the absolute paths to the bin directories.
-func (p *DenoProvider) GetBinPaths(installPath string, version string) ([]string, error) {
-	exes, err := p.ListExecutables(installPath, version)
+func (p *DenoProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
+	exes, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -99,10 +99,10 @@ func (p *DenoProvider) GetBinPaths(installPath string, version string) ([]string
 }
 
 // GetEnvVars returns no special environment variables.
-func (p *DenoProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (p *DenoProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return make(map[string]string), nil
 }
 
-func (p *DenoProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (p *DenoProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }

@@ -24,7 +24,7 @@ func (p *FlutterProvider) Name() string {
 	return "flutter"
 }
 
-func (p *FlutterProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (p *FlutterProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	logger.Debug("Installing Flutter", map[string]interface{}{"version": version, "installPath": installPath, "artifactPath": artifactPath})
 
 	if err := os.MkdirAll(installPath, 0755); err != nil {
@@ -34,12 +34,12 @@ func (p *FlutterProvider) Install(ctx context.Context, installPath string, artif
 	return nil
 }
 
-func (p *FlutterProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (p *FlutterProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 
-func (p *FlutterProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
-	executables, err := p.ListExecutables(installPath, version)
+func (p *FlutterProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	executables, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -53,11 +53,11 @@ func (p *FlutterProvider) GenerateShims(installPath string, version string) (map
 	return shims, nil
 }
 
-func (p *FlutterProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (p *FlutterProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	return filepath.Base(installPath), nil
 }
 
-func (p *FlutterProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (p *FlutterProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	var executables []string
 	
 	// Flutter binary is usually in bin/
@@ -99,7 +99,7 @@ func (p *FlutterProvider) ListExecutables(installPath string, version string) ([
 }
 
 // GetBinPaths returns the absolute paths to the bin directories.
-func (p *FlutterProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (p *FlutterProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	return []string{
 		filepath.Join(installPath, "bin"),
 		filepath.Join(installPath, "bin", "cache", "dart-sdk", "bin"),
@@ -107,10 +107,10 @@ func (p *FlutterProvider) GetBinPaths(installPath string, version string) ([]str
 }
 
 // GetEnvVars returns no special environment variables.
-func (p *FlutterProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (p *FlutterProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return make(map[string]string), nil
 }
 
-func (p *FlutterProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (p *FlutterProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }

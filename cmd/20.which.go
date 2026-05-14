@@ -198,7 +198,7 @@ func runWhich(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		execs, err := p.ListExecutables(inst.InstallPath, inst.Version)
+		execs, err := p.ListExecutables(inst.Tool, inst.InstallPath, inst.Version)
 		if err != nil {
 			continue
 		}

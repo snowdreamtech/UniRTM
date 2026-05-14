@@ -26,7 +26,7 @@ func (p *CargoProvider) Name() string {
 	return "cargo"
 }
 
-func (p *CargoProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (p *CargoProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	// Extract the full tool name (including scope if present) from the install path.
 	installsDir := env.GetInstallsDir()
 	toolDir := filepath.Dir(installPath)
@@ -59,12 +59,12 @@ func (p *CargoProvider) Install(ctx context.Context, installPath string, artifac
 	return nil
 }
 
-func (p *CargoProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (p *CargoProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 
-func (p *CargoProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
-	executables, err := p.ListExecutables(installPath, version)
+func (p *CargoProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	executables, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -78,11 +78,11 @@ func (p *CargoProvider) GenerateShims(installPath string, version string) (map[s
 	return shims, nil
 }
 
-func (p *CargoProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (p *CargoProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	return filepath.Base(installPath), nil
 }
 
-func (p *CargoProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (p *CargoProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	// cargo installs binaries into <root>/bin
 	binDir := filepath.Join(installPath, "bin")
 
@@ -111,16 +111,16 @@ func (p *CargoProvider) ListExecutables(installPath string, version string) ([]s
 }
 
 // GetBinPaths returns the absolute path to the bin directory.
-func (p *CargoProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (p *CargoProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	return []string{filepath.Join(installPath, "bin")}, nil
 }
 
 // GetEnvVars returns no special environment variables.
-func (p *CargoProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (p *CargoProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return make(map[string]string), nil
 }
 
-func (p *CargoProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (p *CargoProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	// Let UniRTM delete the directory
 	return nil
 }

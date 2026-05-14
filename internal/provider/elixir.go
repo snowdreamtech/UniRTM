@@ -24,7 +24,7 @@ func (p *ElixirProvider) Name() string {
 	return "elixir"
 }
 
-func (p *ElixirProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (p *ElixirProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	logger.Debug("Installing Elixir", map[string]interface{}{"version": version, "installPath": installPath, "artifactPath": artifactPath})
 
 	if err := os.MkdirAll(installPath, 0755); err != nil {
@@ -34,12 +34,12 @@ func (p *ElixirProvider) Install(ctx context.Context, installPath string, artifa
 	return nil
 }
 
-func (p *ElixirProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (p *ElixirProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 
-func (p *ElixirProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
-	executables, err := p.ListExecutables(installPath, version)
+func (p *ElixirProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	executables, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -53,11 +53,11 @@ func (p *ElixirProvider) GenerateShims(installPath string, version string) (map[
 	return shims, nil
 }
 
-func (p *ElixirProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (p *ElixirProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	return filepath.Base(installPath), nil
 }
 
-func (p *ElixirProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (p *ElixirProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	var executables []string
 	
 	// Elixir binaries are usually in bin/ directory
@@ -95,15 +95,15 @@ func (p *ElixirProvider) ListExecutables(installPath string, version string) ([]
 }
 
 // GetBinPaths returns the absolute path to the bin directory.
-func (p *ElixirProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (p *ElixirProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	return []string{filepath.Join(installPath, "bin")}, nil
 }
 
 // GetEnvVars returns no special environment variables.
-func (p *ElixirProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (p *ElixirProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return make(map[string]string), nil
 }
 
-func (p *ElixirProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (p *ElixirProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }

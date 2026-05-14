@@ -27,7 +27,7 @@ func (p *PypiProvider) Name() string {
 	return "pypi"
 }
 
-func (p *PypiProvider) Install(ctx context.Context, installPath string, artifactPath string, version string) error {
+func (p *PypiProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	// Extract the full tool name (including scope if present) from the install path.
 	installsDir := env.GetInstallsDir()
 	toolDir := filepath.Dir(installPath)
@@ -74,12 +74,12 @@ func (p *PypiProvider) Install(ctx context.Context, installPath string, artifact
 	return nil
 }
 
-func (p *PypiProvider) PostInstall(ctx context.Context, installPath string, version string) error {
+func (p *PypiProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 
-func (p *PypiProvider) GenerateShims(installPath string, version string) (map[string]string, error) {
-	executables, err := p.ListExecutables(installPath, version)
+func (p *PypiProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
+	executables, err := p.ListExecutables(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -99,11 +99,11 @@ func (p *PypiProvider) GenerateShims(installPath string, version string) (map[st
 	return shims, nil
 }
 
-func (p *PypiProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (p *PypiProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	return filepath.Base(installPath), nil
 }
 
-func (p *PypiProvider) ListExecutables(installPath string, version string) ([]string, error) {
+func (p *PypiProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	binDir := filepath.Join(installPath, "bin")
 	if _, err := os.Stat(binDir); os.IsNotExist(err) {
 		binDir = filepath.Join(installPath, "Scripts") // Windows
@@ -133,7 +133,7 @@ func (p *PypiProvider) ListExecutables(installPath string, version string) ([]st
 }
 
 // GetBinPaths returns the absolute path to the bin directory.
-func (p *PypiProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+func (p *PypiProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	binDir := filepath.Join(installPath, "bin")
 	if _, err := os.Stat(binDir); os.IsNotExist(err) {
 		binDir = filepath.Join(installPath, "Scripts")
@@ -142,13 +142,13 @@ func (p *PypiProvider) GetBinPaths(installPath string, version string) ([]string
 }
 
 // GetEnvVars returns the VIRTUAL_ENV environment variable.
-func (p *PypiProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+func (p *PypiProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	return map[string]string{
 		"VIRTUAL_ENV": installPath,
 	}, nil
 }
 
-func (p *PypiProvider) Uninstall(ctx context.Context, installPath string, version string) error {
+func (p *PypiProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
 

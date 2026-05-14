@@ -184,13 +184,13 @@ func (m *ActivationManager) GenerateProjectActivation(ctx context.Context, shell
 		installPath := filepath.Join(installsDir, fsToolName, version)
 
 		// Get bin paths
-		binPaths, err := p.GetBinPaths(installPath, version)
+		binPaths, err := p.GetBinPaths(tool, installPath, version)
 		if err == nil {
 			injectedPaths = append(injectedPaths, binPaths...)
 		}
 
 		// Get env vars
-		toolEnvVars, err := p.GetEnvVars(installPath, version)
+		toolEnvVars, err := p.GetEnvVars(tool, installPath, version)
 		if err == nil {
 			for k, v := range toolEnvVars {
 				if _, exists := envVars[k]; !exists {
