@@ -101,6 +101,14 @@ backend = "native"
 url = "https://services.gradle.org/distributions/gradle-8.14.5-bin.zip"
 gpg_key = "1BD97A6A154E7810EE0BC832E2F38302C8075E3D"
 
+[[tools."gradle"]]
+version = "9.5.1"
+backend = "native"
+
+[tools."gradle"."platforms.macos-amd64"]
+url = "https://services.gradle.org/distributions/gradle-9.5.1-bin.zip"
+gpg_key = "1BD97A6A154E7810EE0BC832E2F38302C8075E3D"
+
 [[tools."hadolint/hadolint"]]
 version = "2.14.0"
 backend = "github"
