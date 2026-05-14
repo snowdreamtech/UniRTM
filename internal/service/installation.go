@@ -28,6 +28,9 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/transaction"
 )
 
+// ErrAlreadyInstalled is returned when a tool version is already installed.
+var ErrAlreadyInstalled = fmt.Errorf("already installed")
+
 // InstallationManager manages tool installation workflow.
 type InstallationManager struct {
 	backendRegistry  *backend.Registry
@@ -215,8 +218,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		existing, err := im.installRepo.FindByToolAndVersion(ctx, tool, version)
 		if err == nil && existing != nil {
 			if _, statErr := os.Stat(existing.InstallPath); statErr == nil {
-				fmt.Printf("ℹ %s@%s is already installed at %s\n", tool, version, existing.InstallPath)
-				return nil
+				return ErrAlreadyInstalled
 			}
 		}
 	}
@@ -269,7 +271,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 				}
 			}
 		} else {
-			return fmt.Errorf("tool %s version %s already installed", tool, version)
+			return ErrAlreadyInstalled
 		}
 	}
 

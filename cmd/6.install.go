@@ -313,18 +313,15 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			tool = spec.Name
 		}
 		
-		formatter.Info(fmt.Sprintf("Processing %s@%s...", toolName, spec.Version))
-		
 		err = installManager.Install(ctx, tool, spec.Version, spec.BackendName)
 		if err != nil {
-			// Check if already installed
-			if strings.Contains(err.Error(), "already installed") {
-				formatter.Info(fmt.Sprintf("%s@%s is already installed", toolName, spec.Version))
+			// Check if already installed (Style C: Single line green check)
+			if err == service.ErrAlreadyInstalled || strings.Contains(err.Error(), "already installed") {
+				pterm.Success.Printf("%s@%s (already installed)\n", toolName, spec.Version)
 				continue
 			}
 			
 			pterm.Error.Printf("Installation failed for %s: %v\n", toolName, err)
-			formatter.Error(fmt.Sprintf("Installation failed for %s: %s", toolName, err.Error()))
 			return fmt.Errorf("install %s: %w", toolName, err)
 		}
 		pterm.Success.Printf("Successfully installed %s@%s\n", toolName, spec.Version)
