@@ -27,14 +27,6 @@ func (p *CondaProvider) Name() string {
 }
 
 func (p *CondaProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
-	// Extract the full tool name (including scope if present) from the install path.
-	installsDir := env.GetInstallsDir()
-	toolDir := filepath.Dir(installPath)
-	tool, err := filepath.Rel(installsDir, toolDir)
-	if err != nil {
-		tool = filepath.Base(toolDir) // fallback
-	}
-
 	if err := os.MkdirAll(installPath, 0755); err != nil {
 		return err
 	}

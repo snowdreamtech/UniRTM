@@ -35,16 +35,6 @@ func (p *AsdfProvider) Name() string {
 }
 
 func (p *AsdfProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
-	// asdf plugins don't use the artifactPath (they download it themselves).
-	// We need to extract the tool name from the installPath.
-	// installPath format: ~/.local/share/unirtm/installs/<tool>/<version>
-	// Extract the full tool name (including scope if present) from the install path.
-	installsDir := env.GetInstallsDir()
-	toolDir := filepath.Dir(installPath)
-	tool, err := filepath.Rel(installsDir, toolDir)
-	if err != nil {
-		tool = filepath.Base(toolDir) // fallback
-	}
 	tool = backend.ResolveAsdfToolName(tool)
 	pluginDir := filepath.Join(p.pluginsPath, tool)
 
@@ -128,12 +118,6 @@ func (p *AsdfProvider) Install(ctx context.Context, tool string, installPath str
 
 func (p *AsdfProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	// Execute bin/post-install if it exists
-	installsDir := env.GetInstallsDir()
-	toolDir := filepath.Dir(installPath)
-	tool, err := filepath.Rel(installsDir, toolDir)
-	if err != nil {
-		tool = filepath.Base(toolDir) // fallback
-	}
 	tool = backend.ResolveAsdfToolName(tool)
 	pluginDir := filepath.Join(p.pluginsPath, tool)
 
@@ -178,7 +162,7 @@ func (p *AsdfProvider) DetectVersion(ctx context.Context, tool string, installPa
 }
 
 func (p *AsdfProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
-	binPaths, err := p.getRelBinPaths(installPath, version)
+	binPaths, err := p.getRelBinPaths(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +191,7 @@ func (p *AsdfProvider) ListExecutables(tool string, installPath string, version 
 
 // GetBinPaths returns the absolute paths to the bin directories.
 func (p *AsdfProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
-	relPaths, err := p.getRelBinPaths(installPath, version)
+	relPaths, err := p.getRelBinPaths(tool, installPath, version)
 	if err != nil {
 		return nil, err
 	}
@@ -223,13 +207,7 @@ func (p *AsdfProvider) GetEnvVars(tool string, installPath string, version strin
 	return make(map[string]string), nil
 }
 
-func (p *AsdfProvider) getRelBinPaths(installPath string, version string) ([]string, error) {
-	installsDir := env.GetInstallsDir()
-	toolDir := filepath.Dir(installPath)
-	tool, err := filepath.Rel(installsDir, toolDir)
-	if err != nil {
-		tool = filepath.Base(toolDir) // fallback
-	}
+func (p *AsdfProvider) getRelBinPaths(tool string, installPath string, version string) ([]string, error) {
 	tool = backend.ResolveAsdfToolName(tool)
 	pluginDir := filepath.Join(p.pluginsPath, tool)
 

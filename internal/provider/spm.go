@@ -30,16 +30,7 @@ func (p *SpmProvider) Name() string {
 
 func (p *SpmProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	// Usually tool is a URL for SPM
-	// Extract the full tool name (including scope if present) from the install path.
-	installsDir := env.GetInstallsDir()
-	toolDir := filepath.Dir(installPath)
-	tool, err := filepath.Rel(installsDir, toolDir)
-	if err != nil {
-		tool = filepath.Base(toolDir) // fallback
-	}
-
 	if err := os.MkdirAll(installPath, 0755); err != nil {
-		return err
 	}
 
 	swiftCmd, err := exec.LookPath("swift")

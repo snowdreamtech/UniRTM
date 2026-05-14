@@ -30,14 +30,6 @@ func (p *GoPkgProvider) Name() string {
 }
 
 func (p *GoPkgProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
-	// For Go packages, tool name is derived from the path
-	installsDir := env.GetInstallsDir()
-	toolDir := filepath.Dir(installPath)
-	tool, err := filepath.Rel(installsDir, toolDir)
-	if err != nil {
-		tool = filepath.Base(toolDir)
-	}
-
 	// Ensure install path exists
 	if err := os.MkdirAll(installPath, 0755); err != nil {
 		return err
