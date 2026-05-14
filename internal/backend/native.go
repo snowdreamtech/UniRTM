@@ -43,16 +43,30 @@ func (b *NativeBackend) ListVersions(ctx context.Context, tool string, platform 
 		}
 		
 		// Find matching asset to fill in details if possible
+		var bestAsset *native.Asset
+		bestScore := -1
 		for _, a := range v.Assets {
 			if a.OS == platform.OS && a.Arch == platform.Arch {
-				vi.DownloadURL = a.URL
-				vi.Checksum = a.Checksum
-				vi.SignatureURL = a.SignatureURL
-				vi.GPGSignature = a.Signature
-				vi.GPGKeys = recipe.GPGKeys
-				vi.Platform = platform
+				bestAsset = &a
+				bestScore = 999
 				break
 			}
+			if a.Filename != "" {
+				score := CalculateAssetScore(a.Filename, platform, tool)
+				if score > bestScore && score >= 0 {
+					bestScore = score
+					bestAsset = &a
+				}
+			}
+		}
+
+		if bestAsset != nil {
+			vi.DownloadURL = bestAsset.URL
+			vi.Checksum = bestAsset.Checksum
+			vi.SignatureURL = bestAsset.SignatureURL
+			vi.GPGSignature = bestAsset.Signature
+			vi.GPGKeys = recipe.GPGKeys
+			vi.Platform = platform
 		}
 		
 		res = append(res, vi)
@@ -110,24 +124,37 @@ func (b *NativeBackend) GetDownloadInfo(ctx context.Context, tool, version strin
 		return nil, fmt.Errorf("native: version %s not found for %s", version, tool)
 	}
 
-	var targetAsset *native.Asset
+	var bestAsset *native.Asset
+	bestScore := -1
+
 	for _, a := range targetVersion.Assets {
+		// 1. Strict Match (Priority: 999)
 		if a.OS == platform.OS && a.Arch == platform.Arch {
-			targetAsset = &a
+			bestAsset = &a
+			bestScore = 999
 			break
+		}
+
+		// 2. Guessing Logic (Fallback)
+		if a.Filename != "" {
+			score := CalculateAssetScore(a.Filename, platform, tool)
+			if score > bestScore && score >= 0 {
+				bestScore = score
+				bestAsset = &a
+			}
 		}
 	}
 
-	if targetAsset == nil {
+	if bestAsset == nil {
 		return nil, fmt.Errorf("native: no compatible asset found for %s %s on %s/%s", tool, version, platform.OS, platform.Arch)
 	}
 
 	return &VersionInfo{
 		Version:      version,
-		DownloadURL:  targetAsset.URL,
-		Checksum:     targetAsset.Checksum,
-		SignatureURL: targetAsset.SignatureURL,
-		GPGSignature: targetAsset.Signature,
+		DownloadURL:  bestAsset.URL,
+		Checksum:     bestAsset.Checksum,
+		SignatureURL: bestAsset.SignatureURL,
+		GPGSignature: bestAsset.Signature,
 		GPGKeys:      recipe.GPGKeys,
 		Platform:     platform,
 	}, nil
