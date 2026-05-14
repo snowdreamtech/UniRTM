@@ -50,6 +50,9 @@
   ```
 
 - Pin Go version in `go.mod` and in CI tooling. Use the latest stable release. Set `GONOSUMCHECK` for private modules.
+- **Network & Environment Compatibility**:
+  - Always respect standard Go environment variables: `GOPROXY`, `GONOPROXY`, `GOPRIVATE`, `GONOSUMCHECK`.
+  - For Go SDK installations, support custom download mirrors via `GO_DOWNLOAD_MIRROR` (or `MISE_GO_DOWNLOAD_MIRROR`). Use `https://golang.google.cn/dl` as the primary fallback for restricted networks.
 - Manage tooling dependencies (linters, code generators) via `tools.go`:
 
   ```go
