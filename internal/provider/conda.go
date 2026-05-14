@@ -121,6 +121,21 @@ func (p *CondaProvider) ListExecutables(installPath string, version string) ([]s
 	return executables, nil
 }
 
+// GetBinPaths returns the absolute paths to the bin directories.
+func (p *CondaProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	return []string{
+		filepath.Join(installPath, "bin"),
+		filepath.Join(installPath, "Scripts"),
+	}, nil
+}
+
+// GetEnvVars returns the CONDA_PREFIX environment variable.
+func (p *CondaProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	return map[string]string{
+		"CONDA_PREFIX": installPath,
+	}, nil
+}
+
 func (p *CondaProvider) Uninstall(ctx context.Context, installPath string, version string) error {
 	return nil
 }
