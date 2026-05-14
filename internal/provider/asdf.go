@@ -178,6 +178,52 @@ func (p *AsdfProvider) DetectVersion(ctx context.Context, installPath string) (s
 }
 
 func (p *AsdfProvider) ListExecutables(installPath string, version string) ([]string, error) {
+	binPaths, err := p.getRelBinPaths(installPath, version)
+	if err != nil {
+		return nil, err
+	}
+
+	var executables []string
+	for _, relPath := range binPaths {
+		dir := filepath.Join(installPath, relPath)
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue // Directory might not exist, which is fine
+		}
+
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				// Only include executable files
+				info, err := entry.Info()
+				if err == nil && info.Mode()&0111 != 0 {
+					executables = append(executables, filepath.Join(dir, entry.Name()))
+				}
+			}
+		}
+	}
+
+	return executables, nil
+}
+
+// GetBinPaths returns the absolute paths to the bin directories.
+func (p *AsdfProvider) GetBinPaths(installPath string, version string) ([]string, error) {
+	relPaths, err := p.getRelBinPaths(installPath, version)
+	if err != nil {
+		return nil, err
+	}
+	var absPaths []string
+	for _, rel := range relPaths {
+		absPaths = append(absPaths, filepath.Join(installPath, rel))
+	}
+	return absPaths, nil
+}
+
+// GetEnvVars returns no special environment variables.
+func (p *AsdfProvider) GetEnvVars(installPath string, version string) (map[string]string, error) {
+	return make(map[string]string), nil
+}
+
+func (p *AsdfProvider) getRelBinPaths(installPath string, version string) ([]string, error) {
 	installsDir := env.GetInstallsDir()
 	toolDir := filepath.Dir(installPath)
 	tool, err := filepath.Rel(installsDir, toolDir)
@@ -207,27 +253,7 @@ func (p *AsdfProvider) ListExecutables(installPath string, version string) ([]st
 			}
 		}
 	}
-
-	var executables []string
-	for _, relPath := range binPaths {
-		dir := filepath.Join(installPath, relPath)
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			continue // Directory might not exist, which is fine
-		}
-
-		for _, entry := range entries {
-			if !entry.IsDir() {
-				// Only include executable files
-				info, err := entry.Info()
-				if err == nil && info.Mode()&0111 != 0 {
-					executables = append(executables, filepath.Join(dir, entry.Name()))
-				}
-			}
-		}
-	}
-
-	return executables, nil
+	return binPaths, nil
 }
 
 func (p *AsdfProvider) Uninstall(ctx context.Context, installPath string, version string) error {
