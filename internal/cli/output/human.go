@@ -56,7 +56,7 @@ func (h *HumanFormatter) Info(message string, fields ...map[string]interface{}) 
 
 // Success outputs a success message
 func (h *HumanFormatter) Success(message string, fields ...map[string]interface{}) {
-	prefix := h.colorize("✅", colorGreen)
+	prefix := h.colorize("✓", colorGreen)
 	fmt.Fprintf(h.writer, "%s %s", prefix, h.colorize(message, colorGreen))
 
 	if len(fields) > 0 && h.verbose {

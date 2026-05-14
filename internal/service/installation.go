@@ -251,7 +251,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 			return fmt.Errorf("failed to resolve version: %w", err)
 		}
 		version = info.Version // Update to the concrete resolved version
-		pterm.FgGreen.Printf("✅ resolved %s to version %s\n", tool, version)
+		pterm.FgGreen.Printf("✓ resolved %s to version %s\n", tool, version)
 		versionInfo = info
 	}
 
@@ -392,7 +392,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 			return fmt.Errorf("failed to finalize download: %w", err)
 		}
 		
-		pterm.FgGreen.Printf("✅ downloaded to %s\n", downloadPath)
+		pterm.FgGreen.Printf("✓ downloaded to %s\n", downloadPath)
 		defer func() {
 			if im.settings != nil && im.settings.AlwaysKeepDownload {
 				logger.Debug("AlwaysKeepDownload is enabled, keeping artifact", map[string]interface{}{"path": downloadPath})
@@ -490,7 +490,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 					pterm.FgYellow.Printf("⚠️  SECURITY WARNING: %s. Continuing anyway (GPGVerify=%s)\n", msg, im.settings.GPGVerify)
 					gpgStatus = "Failed (Invalid)"
 				} else {
-					pterm.FgGreen.Printf("✅ GPG signature verified successfully\n")
+					pterm.FgGreen.Printf("✓ GPG signature verified successfully\n")
 					gpgStatus = "Verified"
 				}
 			}
@@ -632,7 +632,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		// Non-fatal, don't return error
 	}
 
-	pterm.FgGreen.Printf("✅ %s@%s installed successfully to %s\n", tool, version, installPath)
+	pterm.FgGreen.Printf("✓ %s@%s installed successfully to %s\n", tool, version, installPath)
 	return nil
 }
 

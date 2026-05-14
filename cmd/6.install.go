@@ -317,19 +317,19 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			// Check if already installed (Style C: Single line green check)
 			if err == service.ErrAlreadyInstalled || strings.Contains(err.Error(), "already installed") {
-				pterm.FgGreen.Printf("✅ %s@%s (already installed)\n", toolName, spec.Version)
+				pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", toolName, spec.Version)
 				continue
 			}
 			
 			pterm.Error.Printf("Installation failed for %s: %v\n", toolName, err)
 			return fmt.Errorf("install %s: %w", toolName, err)
 		}
-		pterm.FgGreen.Printf("✅ Successfully installed %s@%s\n", toolName, spec.Version)
+		pterm.FgGreen.Printf("✓ Successfully installed %s@%s\n", toolName, spec.Version)
 	}
 	
 	duration := time.Since(startTime)
 	if len(toolsToInstall) > 1 {
-		pterm.FgGreen.Printf("✅ All tools processed (took %s)\n", duration.Round(time.Millisecond).String())
+		pterm.FgGreen.Printf("✓ All tools processed (took %s)\n", duration.Round(time.Millisecond).String())
 	}
 
 	return nil
