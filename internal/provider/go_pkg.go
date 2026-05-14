@@ -12,7 +12,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 

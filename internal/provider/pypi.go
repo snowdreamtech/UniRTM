@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
