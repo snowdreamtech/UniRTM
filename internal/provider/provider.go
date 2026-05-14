@@ -5,6 +5,8 @@ package provider
 
 import (
 	"context"
+	"os"
+	"strings"
 )
 
 // Provider defines the interface for tool-specific installation and management logic.
@@ -88,4 +90,29 @@ type ShimConfig struct {
 	ExecutablePath string            // Full path to the executable
 	Version        string            // Tool version
 	Environment    map[string]string // Additional environment variables
+}
+// GetNoProxyEnv returns the system environment with common mirror domains added to NO_PROXY.
+// This helps prevent installation failures when using mirrors behind a proxy.
+func GetNoProxyEnv() []string {
+	env := os.Environ()
+	noProxy := os.Getenv("NO_PROXY")
+	mirrors := "mirrors.aliyun.com,pypi.tuna.tsinghua.edu.cn,pypi.mirrors.ustc.edu.cn,pypi.douban.com,registry.npmmirror.com,registry.taobao.org,npm.taobao.org,rsproxy.cn,static.rust-lang.org"
+	
+	found := false
+	for i, e := range env {
+		if strings.HasPrefix(strings.ToUpper(e), "NO_PROXY=") {
+			if noProxy != "" {
+				env[i] = "NO_PROXY=" + noProxy + "," + mirrors
+			} else {
+				env[i] = "NO_PROXY=" + mirrors
+			}
+			found = true
+			break
+		}
+	}
+	
+	if !found {
+		env = append(env, "NO_PROXY="+mirrors)
+	}
+	return env
 }

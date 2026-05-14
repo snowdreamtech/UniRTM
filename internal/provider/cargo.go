@@ -43,6 +43,7 @@ func (p *CargoProvider) Install(ctx context.Context, tool string, installPath st
 	cmd := exec.CommandContext(ctx, cargoCmd, "install", tool, "--version", version, "--root", installPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Env = GetNoProxyEnv()
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "cargo install failed", err)
 	}

@@ -41,6 +41,7 @@ func (p *PypiProvider) Install(ctx context.Context, tool string, installPath str
 	// 1. Create a virtual environment
 	logger.Debug("Creating virtual environment", map[string]interface{}{"path": installPath})
 	venvCmd := exec.CommandContext(ctx, pythonCmd, "-m", "venv", installPath)
+	venvCmd.Env = GetNoProxyEnv()
 	outVenv, err := venvCmd.CombinedOutput()
 	if err != nil {
 		return NewProviderError(p.Name(), tool, version, fmt.Sprintf("failed to create virtual environment: %s", string(outVenv)), err)
@@ -54,10 +55,11 @@ func (p *PypiProvider) Install(ctx context.Context, tool string, installPath str
 
 	pkgSpec := fmt.Sprintf("%s==%s", tool, version)
 	logger.Debug("Installing pypi package", map[string]interface{}{"pkg": pkgSpec, "venv": installPath})
-
 	cmd := exec.CommandContext(ctx, pipCmd, "install", pkgSpec)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Env = GetNoProxyEnv()
+
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "pip install failed", err)
 	}

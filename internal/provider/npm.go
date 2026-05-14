@@ -45,6 +45,7 @@ func (p *NpmProvider) Install(ctx context.Context, tool string, installPath stri
 	cmd := exec.CommandContext(ctx, npmCmd, "install", "-g", pkgSpec, "--prefix", installPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Env = GetNoProxyEnv()
 
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "npm install failed", err)

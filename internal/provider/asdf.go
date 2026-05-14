@@ -68,7 +68,7 @@ func (p *AsdfProvider) Install(ctx context.Context, tool string, installPath str
 		return fmt.Errorf("failed to create asdf symlink: %w", err)
 	}
 
-	env := os.Environ()
+	env := GetNoProxyEnv()
 	env = append(env,
 		"ASDF_INSTALL_TYPE=version",
 		"ASDF_INSTALL_VERSION="+version,
@@ -124,7 +124,7 @@ func (p *AsdfProvider) PostInstall(ctx context.Context, tool string, installPath
 	postInstallScript := filepath.Join(pluginDir, "bin", "post-install")
 	if stat, err := os.Stat(postInstallScript); err == nil && !stat.IsDir() {
 		cmd := exec.CommandContext(ctx, postInstallScript)
-		cmd.Env = append(os.Environ(),
+		cmd.Env = append(GetNoProxyEnv(),
 			"ASDF_INSTALL_TYPE=version",
 			"ASDF_INSTALL_VERSION="+version,
 			"ASDF_INSTALL_PATH="+installPath,
@@ -217,7 +217,7 @@ func (p *AsdfProvider) getRelBinPaths(tool string, installPath string, version s
 	listBinPathsScript := filepath.Join(pluginDir, "bin", "list-bin-paths")
 	if stat, err := os.Stat(listBinPathsScript); err == nil && !stat.IsDir() {
 		cmd := exec.Command(listBinPathsScript)
-		cmd.Env = append(os.Environ(),
+		cmd.Env = append(GetNoProxyEnv(),
 			"ASDF_INSTALL_TYPE=version",
 			"ASDF_INSTALL_VERSION="+version,
 			"ASDF_INSTALL_PATH="+installPath,

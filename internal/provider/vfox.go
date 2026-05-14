@@ -51,6 +51,7 @@ func (p *VfoxProvider) Install(ctx context.Context, tool string, installPath str
 	cmd := exec.CommandContext(ctx, vfoxCmd, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Env = GetNoProxyEnv()
 
 	// Optional: force vfox to use installPath as its base via environment variables if vfox supports it.
 	// VFOX_HOME or something similar. For simplicity, we just run it.

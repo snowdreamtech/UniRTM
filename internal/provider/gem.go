@@ -46,6 +46,7 @@ func (p *GemProvider) Install(ctx context.Context, tool string, installPath stri
 	cmd := exec.CommandContext(ctx, gemCmd, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Env = GetNoProxyEnv()
 
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "gem install failed", err)
