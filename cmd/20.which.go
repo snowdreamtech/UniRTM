@@ -180,20 +180,16 @@ func runWhich(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	allInstallations, err := installRepo.List(ctx)
+	// Only query installations for the specific target tool
+	toolInstallations, err := installRepo.ListByTool(ctx, target)
 	if err != nil {
 		return fmt.Errorf("list installations: %w", err)
 	}
 
 	var matches []match
 
-	for _, inst := range allInstallations {
-		// Filter by tool if --tool is specified
-		if whichTool != "" && inst.Tool != whichTool {
-			continue
-		}
-
-		// Auto-remove stale DB record if install path does not exist on disk
+	for _, inst := range toolInstallations {
+		// Check disk existence: auto-delete stale record and skip
 		if _, statErr := os.Stat(inst.InstallPath); os.IsNotExist(statErr) {
 			if delErr := installRepo.Delete(ctx, inst.Tool, inst.Version); delErr == nil {
 				fmt.Fprintf(os.Stderr, "⚠ Removed stale record: %s@%s (path not found on disk)\n", inst.Tool, inst.Version)
@@ -281,17 +277,13 @@ func runWhich(cmd *cobra.Command, args []string) error {
 		"target": target,
 	})
 
-	// Gather all possible targets for fuzzy matching
+	// Gather candidates from config for fuzzy suggestions
 	var candidates []string
 	for name := range cfg.Tasks {
 		candidates = append(candidates, name)
 	}
 	for name := range cfg.Tools {
 		candidates = append(candidates, name)
-	}
-	// Also add installed tools that might not be in the current config
-	for _, inst := range allInstallations {
-		candidates = append(candidates, inst.Tool)
 	}
 
 	// Remove duplicates
@@ -306,6 +298,7 @@ func runWhich(cmd *cobra.Command, args []string) error {
 
 	// Find close matches using common utility
 	output.Suggest(os.Stderr, target, finalCandidates)
+
 
 	// Check if it exists as a tool but no installation
 	if _, ok := cfg.Tools[target]; ok {

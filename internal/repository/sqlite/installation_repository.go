@@ -25,6 +25,7 @@ type InstallationRepository struct {
 	upsertStmt               *sql.Stmt
 	findByToolAndVersionStmt *sql.Stmt
 	listStmt                 *sql.Stmt
+	listByToolStmt           *sql.Stmt
 	deleteStmt               *sql.Stmt
 }
 
@@ -81,6 +82,16 @@ func NewInstallationRepository(db DBExecutor) (*InstallationRepository, error) {
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("prepare delete statement: %w", err)
+	}
+
+	repo.listByToolStmt, err = db.Prepare(`
+		SELECT id, tool, version, backend, provider, install_path, checksum, installed_at, metadata
+		FROM installations
+		WHERE tool = ?
+		ORDER BY installed_at DESC
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("prepare list-by-tool statement: %w", err)
 	}
 
 	return repo, nil
@@ -173,6 +184,41 @@ func (r *InstallationRepository) List(ctx context.Context) ([]*repository.Instal
 	rows, err := r.listStmt.QueryContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("query installations: %w", err)
+	}
+	defer rows.Close()
+
+	installations := []*repository.Installation{}
+	for rows.Next() {
+		installation := &repository.Installation{}
+		err := rows.Scan(
+			&installation.ID,
+			&installation.Tool,
+			&installation.Version,
+			&installation.Backend,
+			&installation.Provider,
+			&installation.InstallPath,
+			&installation.Checksum,
+			&installation.InstalledAt,
+			&installation.Metadata,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scan installation: %w", err)
+		}
+		installations = append(installations, installation)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate installations: %w", err)
+	}
+
+	return installations, nil
+}
+
+// ListByTool returns all installations for a specific tool name
+func (r *InstallationRepository) ListByTool(ctx context.Context, tool string) ([]*repository.Installation, error) {
+	rows, err := r.listByToolStmt.QueryContext(ctx, tool)
+	if err != nil {
+		return nil, fmt.Errorf("query installations by tool: %w", err)
 	}
 	defer rows.Close()
 
