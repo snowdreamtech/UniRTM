@@ -77,16 +77,27 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 			fsName := env.GetFSToolName(name, toolCfg.Backend)
 			basePath := filepath.Join(env.GetInstallsDir(), fsName)
 			
-			// Try original, with 'v' prefix, and without 'v' prefix
-			variants := []string{v}
-			if strings.HasPrefix(v, "v") {
-				variants = append(variants, strings.TrimPrefix(v, "v"))
-			} else {
-				variants = append(variants, "v"+v)
+			// Robust prefix handling: generate all possible variants (v, V, and none)
+			pureVersion := v
+			if strings.HasPrefix(strings.ToLower(v), "v") {
+				pureVersion = v[1:]
+			}
+			
+			variants := []string{
+				v,               // Original (e.g., v0.3.2, V0.3.2, or 0.3.2)
+				pureVersion,     // Prefix-less (e.g., 0.3.2)
+				"v" + pureVersion, // lowercase v (e.g., v0.3.2)
+				"V" + pureVersion, // uppercase V (e.g., V0.3.2)
 			}
 
 			isInst := false
+			// De-duplicate variants to save syscalls
+			seen := make(map[string]bool)
 			for _, variant := range variants {
+				if seen[variant] {
+					continue
+				}
+				seen[variant] = true
 				if _, err := os.Stat(filepath.Join(basePath, variant)); err == nil {
 					isInst = true
 					break
