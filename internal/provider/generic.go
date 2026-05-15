@@ -179,39 +179,57 @@ func (g *GenericProvider) DetectVersion(ctx context.Context, tool string, instal
 	return "", NewProviderError("generic", "unknown", "", "failed to detect version", nil)
 }
 
-// ListExecutables returns all executable files in the bin directory, relative to installPath.
+// ListExecutables returns all executable files in the root and bin directory, relative to installPath.
 func (g *GenericProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
-	binDir := filepath.Join(installPath, "bin")
-
-	entries, err := os.ReadDir(binDir)
-	if err != nil {
-		return nil, NewProviderError("generic", "unknown", version, "failed to read bin directory", err)
-	}
-
+	searchDirs := []string{"", "bin"}
 	var executables []string
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
 
-		// Check if file is executable
-		info, err := entry.Info()
+	for _, relDir := range searchDirs {
+		dir := filepath.Join(installPath, relDir)
+		entries, err := os.ReadDir(dir)
 		if err != nil {
 			continue
 		}
 
-		if g.isExecutable(info) {
-			// Return path relative to installPath
-			executables = append(executables, filepath.Join("bin", entry.Name()))
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+
+			// Check if file is executable
+			info, err := entry.Info()
+			if err != nil {
+				continue
+			}
+
+			if g.isExecutable(info) {
+				// Return path relative to installPath
+				execPath := entry.Name()
+				if relDir != "" {
+					execPath = filepath.Join(relDir, entry.Name())
+				}
+				executables = append(executables, execPath)
+			}
 		}
 	}
 
-	return executables, nil
+	if len(executables) == 0 {
+		return nil, NewProviderError("generic", "unknown", version, "no executables found in root or bin directory", nil)
+	}
+
+	return g.pickBestExecutables(executables, tool), nil
 }
 
-// GetBinPaths returns the absolute path to the bin directory.
+// GetBinPaths returns the absolute paths to the root and bin directory.
 func (g *GenericProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
-	return []string{filepath.Join(installPath, "bin")}, nil
+	paths := []string{installPath, filepath.Join(installPath, "bin")}
+	var existing []string
+	for _, p := range paths {
+		if info, err := os.Stat(p); err == nil && info.IsDir() {
+			existing = append(existing, p)
+		}
+	}
+	return existing, nil
 }
 
 // GetEnvVars returns no environment variables by default.
@@ -286,6 +304,46 @@ func (g *GenericProvider) calculateExeScore(relPath string, toolName string) int
 
 	// 3. Format
 	ext := strings.ToLower(filepath.Ext(filename))
+	
+	// Filter out common non-executable files even if they have +x bit
+	nonExecExts := map[string]bool{
+		".pyc":  true,
+		".pyo":  true,
+		".txt":  true,
+		".md":   true,
+		".json": true,
+		".yaml": true,
+		".yml":  true,
+		".html": true,
+		".css":  true,
+		".js":   true, // Some JS files have +x but should be run via node
+		".ts":   true,
+		".go":   true,
+		".c":    true,
+		".h":    true,
+		".cpp":  true,
+		".hpp":  true,
+		".rs":   true,
+		".toml": true,
+		".xml":  true,
+		".pdf":  true,
+		".png":  true,
+		".jpg":  true,
+		".jpeg": true,
+		".gif":  true,
+		".svg":  true,
+		".ico":  true,
+		".map":  true,
+		".log":  true,
+		".tmp":  true,
+		".bak":  true,
+		".sql":  true,
+		".db":   true,
+	}
+	if nonExecExts[ext] {
+		return -100 // Very low score for these
+	}
+
 	if runtime.GOOS != "windows" {
 		if ext == "" {
 			score += 20 // Prefer extensionless binaries on Unix
@@ -339,6 +397,17 @@ func (g *GenericProvider) isExecutable(info os.FileInfo) bool {
 
 	// On Windows, check file extension
 	name := strings.ToLower(info.Name())
+	
+	// Skip common non-binary files
+	if strings.HasPrefix(name, ".") || 
+	   strings.HasSuffix(name, ".txt") || 
+	   strings.HasSuffix(name, ".md") ||
+	   strings.HasSuffix(name, "__init__.py") ||
+	   strings.HasSuffix(name, "_test.go") ||
+	   strings.Contains(name, "test") {
+		return false
+	}
+
 	return strings.HasSuffix(name, ".exe") ||
 		strings.HasSuffix(name, ".bat") ||
 		strings.HasSuffix(name, ".cmd")
