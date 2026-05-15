@@ -51,16 +51,20 @@ func (g *Generator) GenerateShim(ctx context.Context, tool string, executables .
 	}
 
 	for _, exe := range executables {
-		// Strip directory prefix if present (e.g. "bin/go" -> "go")
-		exeName := filepath.Base(exe)
+		// Flatten shim directory by always using filepath.Base for the filename.
+		// This ensures consistency with mise and avoids nested directories in shims/.
+		shimName := filepath.Base(exe)
+		if shimName == "." || shimName == "/" {
+			continue
+		}
 		
 		switch runtime.GOOS {
 		case "windows":
-			if err := g.generateWindowsShim(tool, exeName); err != nil {
+			if err := g.generateWindowsShim(tool, shimName); err != nil {
 				return err
 			}
 		default:
-			if err := g.generateUnixShim(tool, exeName); err != nil {
+			if err := g.generateUnixShim(tool, shimName); err != nil {
 				return err
 			}
 		}
@@ -122,14 +126,17 @@ func (g *Generator) ListShims() ([]string, error) {
 }
 
 // shimPaths returns all shim file paths for a tool (platform-dependent).
+// It ensures that the shim name is flat by using filepath.Base(tool).
 func (g *Generator) shimPaths(tool string) []string {
+	// Flatten tool name for lookup to match flat shims directory
+	flatName := filepath.Base(tool)
 	if runtime.GOOS == "windows" {
 		return []string{
-			filepath.Join(g.shimsDir, tool+".cmd"),
-			filepath.Join(g.shimsDir, tool+".ps1"),
+			filepath.Join(g.shimsDir, flatName+".cmd"),
+			filepath.Join(g.shimsDir, flatName+".ps1"),
 		}
 	}
-	return []string{filepath.Join(g.shimsDir, tool)}
+	return []string{filepath.Join(g.shimsDir, flatName)}
 }
 
 // generateUnixShim creates a POSIX-compatible shim script.
