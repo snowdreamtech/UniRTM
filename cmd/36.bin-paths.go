@@ -52,10 +52,11 @@ Examples:
 func runBinPaths(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	// 1. Load current configuration
-	cfg, err := config.Load()
+	// 1. Load merged configuration (hierarchy)
+	cfg, err := config.LoadFull()
 	if err != nil {
-		return fmt.Errorf("load config: %w", err)
+		// If no config found, it's not necessarily an error, mise returns empty
+		cfg = &config.Config{}
 	}
 
 	// 2. Open database to find installations

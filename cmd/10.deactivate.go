@@ -6,6 +6,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -112,59 +113,92 @@ func generateDeactivationScript(shellType string) string {
 // generatePosixDeactivationScript generates a POSIX-compatible deactivation script.
 func generatePosixDeactivationScript(shimsDir string) string {
 	return fmt.Sprintf(`# UniRTM deactivation script
-# Remove UniRTM shims from PATH
-if echo "$PATH" | grep -q "%s"; then
-    export PATH="$(echo "$PATH" | sed 's|%s:||g' | sed 's|:%s||g')"
-fi
+# 1. Clean up shims and injected paths from PATH
+_unirtm_clean_path() {
+  local result=""
+  local IFS=:
+  for _p in $PATH; do
+    case ":$UNIRTM_PATH:$shimsDir:" in
+      *":$_p:"*) ;;
+      *) result="${result:+$result:}$_p" ;;
+    esac
+  done
+  echo "$result"
+}
+export PATH="$(_unirtm_clean_path)"
+unset -f _unirtm_clean_path
 
-# Unset UniRTM environment variables
+# 2. Unset UniRTM environment variables
+unset UNIRTM_PATH
 unset UNIRTM_ACTIVATION_SCOPE
 unset UNIRTM_PROJECT_DIR
 
-# Unset tool version variables (pattern UNIRTM_*_VERSION)
+# 3. Unset tool version variables (pattern UNIRTM_*_VERSION)
 for var in $(env | grep '^UNIRTM_.*_VERSION=' | cut -d= -f1); do
     unset "$var"
 done
-`, shimsDir, shimsDir, shimsDir)
+
+# 4. Remove hook if present
+unset -f unirtm
+unset -f _unirtm_hook
+`, shimsDir)
 }
 
 // generateFishDeactivationScript generates a fish shell deactivation script.
 func generateFishDeactivationScript(shimsDir string) string {
 	return fmt.Sprintf(`# UniRTM deactivation script (fish)
-# Remove UniRTM shims from PATH
-if contains "%s" $PATH
-    set -e PATH[1..(contains -i "%s" $PATH)]
+# 1. Clean up PATH
+set -l new_path
+for p in $PATH
+    if not contains $p $UNIRTM_PATH; and [ "$p" != "%s" ]
+        set -a new_path $p
+    end
 end
+set -gx PATH $new_path
 
-# Unset UniRTM environment variables
+# 2. Unset environment variables
+set -e UNIRTM_PATH
 set -e UNIRTM_ACTIVATION_SCOPE
 set -e UNIRTM_PROJECT_DIR
 
-# Unset tool version variables
+# 3. Unset tool version variables
 for var in (env | grep '^UNIRTM_.*_VERSION=' | string replace -r '=.*' '')
     set -e $var
 end
-`, shimsDir, shimsDir)
+
+# 4. Remove hook
+functions -e unirtm
+functions -e _unirtm_hook
+`, shimsDir)
 }
 
 // generatePowerShellDeactivationScript generates a PowerShell deactivation script.
 func generatePowerShellDeactivationScript(shimsDir string) string {
 	// Convert path separators for Windows
 	if runtime.GOOS == "windows" {
-		shimsDir = fmt.Sprintf("%s", shimsDir) // filepath.FromSlash would be used here in real code
+		shimsDir = filepath.FromSlash(shimsDir)
 	}
 
 	return fmt.Sprintf(`# UniRTM deactivation script (PowerShell)
-# Remove UniRTM shims from PATH
-$env:PATH = ($env:PATH -split ';' | Where-Object { $_ -ne "%s" }) -join ';'
+# 1. Clean up PATH
+$unirtmPaths = @()
+if ($env:UNIRTM_PATH) {
+    $unirtmPaths = $env:UNIRTM_PATH -split ';'
+}
+$shimsDir = "%s"
+$env:PATH = ($env:PATH -split ';' | Where-Object { $unirtmPaths -notcontains $_ -and $_ -ne $shimsDir }) -join ';'
 
-# Unset UniRTM environment variables
+# 2. Unset environment variables
+Remove-Item Env:\UNIRTM_PATH -ErrorAction SilentlyContinue
 Remove-Item Env:\UNIRTM_ACTIVATION_SCOPE -ErrorAction SilentlyContinue
 Remove-Item Env:\UNIRTM_PROJECT_DIR -ErrorAction SilentlyContinue
 
-# Unset tool version variables
+# 3. Unset tool version variables
 Get-ChildItem Env: | Where-Object { $_.Name -match '^UNIRTM_.*_VERSION$' } | ForEach-Object {
     Remove-Item "Env:\$($_.Name)" -ErrorAction SilentlyContinue
 }
+
+# 4. Remove hook
+if (Test-Path Function:\unirtm) { Remove-Item Function:\unirtm }
 `, shimsDir)
 }

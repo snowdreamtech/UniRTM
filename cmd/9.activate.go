@@ -210,7 +210,7 @@ func runActivate(cmd *cobra.Command, args []string) error {
 	// Load configuration to get tools and [env] variables
 	envVars := make(map[string]string)
 	var sources []string
-	if cfg, err := config.Load(); err == nil {
+	if cfg, err := config.LoadFull(); err == nil {
 		resolved, src, redacted, err := cfg.ResolveEnvironment()
 		if err != nil {
 			formatter.Error("Environment resolution error", map[string]interface{}{
@@ -258,13 +258,35 @@ func runActivate(cmd *cobra.Command, args []string) error {
 	// Populate InjectedPaths if not using shims (Env mode)
 	var injectedPaths []string
 	if !activateShims {
-		installsDir := filepath.Join(env.GetDataDir(), "installs")
-		for tool, version := range toolVersions {
-			p := registry.Get(tool)
-			fsToolName := env.GetFSToolName(tool, "")
+		installsDir := env.GetInstallsDir()
+		for toolNameKey, version := range toolVersions {
+			toolName := toolNameKey
+			backendName := ""
+
+			// Resolve backend and tool name from key if not explicit
+			if idx := strings.Index(toolNameKey, ":"); idx != -1 {
+				backendName = toolNameKey[:idx]
+				toolName = toolNameKey[idx+1:]
+			} else if strings.Contains(toolNameKey, "/") {
+				backendName = "github"
+			}
+
+			// Intercept go: prefix (align with installation manager)
+			if backendName == "go" || strings.HasPrefix(toolNameKey, "go:") {
+				backendName = "go-pkg"
+				if strings.HasPrefix(toolNameKey, "go:") {
+					toolName = strings.TrimPrefix(toolNameKey, "go:")
+				}
+			}
+
+			p := provider.DefaultRegistry.GetWithBackend(toolName, backendName)
+			if p == nil {
+				continue
+			}
+			fsToolName := env.GetFSToolName(toolName, backendName)
 			installPath := filepath.Join(installsDir, fsToolName, version)
 			
-			binPaths, err := p.GetBinPaths(tool, installPath, version)
+			binPaths, err := p.GetBinPaths(toolName, installPath, version)
 			if err == nil {
 				injectedPaths = append(injectedPaths, binPaths...)
 			}
