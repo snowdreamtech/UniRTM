@@ -257,9 +257,15 @@ func (m *ActivationManager) generatePosixScript(config ActivationConfig) (*Activ
 		sb.WriteString("# UniRTM PATH mode activation\n")
 		injectedPath := strings.Join(config.InjectedPaths, string(os.PathListSeparator))
 		
+		// Build individual sed commands to clean up PATH
+		var sedCmds []string
+		for _, p := range config.InjectedPaths {
+			sedCmds = append(sedCmds, fmt.Sprintf("s|%s:?||g", p))
+		}
+		
 		// Use UNIRTM_PATH to track injected paths and clean up existing PATH to avoid duplicates
 		sb.WriteString(fmt.Sprintf("export UNIRTM_PATH=\"%s\"\n", injectedPath))
-		sb.WriteString(`export PATH="$UNIRTM_PATH:$(echo "$PATH" | sed -E "s|(${UNIRTM_PATH//:/|}):?||g" | sed 's|:$||')"` + "\n")
+		sb.WriteString(fmt.Sprintf("export PATH=\"$UNIRTM_PATH:$(echo \"$PATH\" | sed -E \"%s\" | sed 's|:$||')\"\n", strings.Join(sedCmds, "; ")))
 		sb.WriteString("\n")
 	}
 
