@@ -8,10 +8,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
+	"sort"
+	"strings"
 
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/spf13/cobra"
 )
@@ -49,31 +52,91 @@ Examples:
 func runBinPaths(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
-	// Always include shims dir first.
-	shimsDir := env.GetShimsDir()
-	installsDir := env.GetInstallsDir()
+	// 1. Load current configuration
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
 
-	paths := []string{shimsDir}
-
-	// Add each installed tool's bin dir (if it exists on disk).
+	// 2. Open database to find installations
 	dbPath := env.GetDatabasePath()
 	db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true})
-	if err == nil {
-		defer db.Close()
-		if repo, err := sqlite.NewInstallationRepository(db.Conn()); err == nil {
-			if installations, err := repo.List(ctx); err == nil {
-				seen := make(map[string]bool)
-				for _, inst := range installations {
-					if inst == nil {
-						continue
-					}
-					binDir := filepath.Join(installsDir, inst.Tool, inst.Version, "bin")
-					if !seen[binDir] {
-						if _, statErr := os.Stat(binDir); statErr == nil {
-							paths = append(paths, binDir)
-							seen[binDir] = true
-						}
-					}
+	if err != nil {
+		return fmt.Errorf("initialize database: %w", err)
+	}
+	defer db.Close()
+
+	installRepo, err := sqlite.NewInstallationRepository(db.Conn())
+	if err != nil {
+		return fmt.Errorf("create installation repository: %w", err)
+	}
+
+	// 3. Collect paths
+	shimsDir := env.GetShimsDir()
+	paths := []string{shimsDir}
+	seen := make(map[string]bool)
+	seen[shimsDir] = true
+
+	// Get sorted tool names to ensure deterministic output
+	var toolNames []string
+	for name := range cfg.Tools {
+		toolNames = append(toolNames, name)
+	}
+	sort.Strings(toolNames)
+
+	// Iterate over tools defined in current config
+	for _, toolNameKey := range toolNames {
+		toolCfg := cfg.Tools[toolNameKey]
+		toolName := toolNameKey
+		backendName := toolCfg.Backend
+		version := toolCfg.Version
+
+		// Resolve backend and tool name from key if not explicit
+		if backendName == "" {
+			if idx := strings.Index(toolNameKey, ":"); idx != -1 {
+				backendName = toolNameKey[:idx]
+				toolName = toolNameKey[idx+1:]
+			} else if strings.Contains(toolNameKey, "/") {
+				backendName = "github"
+			}
+		}
+
+		// Intercept go: prefix (align with installation manager)
+		if backendName == "go" || strings.HasPrefix(toolNameKey, "go:") {
+			backendName = "go-pkg"
+			if strings.HasPrefix(toolNameKey, "go:") {
+				toolName = strings.TrimPrefix(toolNameKey, "go:")
+			}
+		}
+		
+		// Check environment variable override: UNIRTM_<TOOL>_VERSION
+		envVar := fmt.Sprintf("UNIRTM_%s_VERSION", strings.ToUpper(strings.ReplaceAll(toolName, "-", "_")))
+		if v := os.Getenv(envVar); v != "" {
+			version = v
+		}
+
+		// Find installation for this tool and version
+		inst, err := installRepo.FindByToolAndVersion(ctx, toolName, version)
+		if err != nil || inst == nil {
+			continue // Not installed, skip
+		}
+
+		// Use provider to get correct bin paths
+		p := provider.DefaultRegistry.GetWithBackend(inst.Tool, inst.Backend)
+		if p == nil {
+			continue
+		}
+
+		binPaths, err := p.GetBinPaths(inst.Tool, inst.InstallPath, inst.Version)
+		if err != nil {
+			continue
+		}
+
+		for _, bp := range binPaths {
+			if !seen[bp] {
+				if _, statErr := os.Stat(bp); statErr == nil {
+					paths = append(paths, bp)
+					seen[bp] = true
 				}
 			}
 		}
