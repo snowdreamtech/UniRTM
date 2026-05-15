@@ -591,7 +591,6 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		return fmt.Errorf("post-install failed: %w", err)
 	}
 
-	fmt.Printf("ℹ finalizing installation for %s@%s...\n", tool, version)
 	// Atomic rename from temp to final path
 	if err := os.Rename(tmpInstallPath, installPath); err != nil {
 		os.RemoveAll(tmpInstallPath)
@@ -929,30 +928,25 @@ func tryVerifyProvenance(ctx context.Context, tool, artifactPath string) (string
 // ResolveExecutable finds the absolute path and environment variables for a given executable name
 // by searching through installed tools in the current context.
 func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName string, platform backend.Platform) (string, map[string]string, error) {
-	// 1. Get all tools from config
-	// For simplicity in this first step, we'll scan all tools in the installation repository
-	// and pick the one that provides the executable.
-	// In a real scenario, we should prioritize tools in the current project config.
-	
+	// 1. Get all installations from repository
 	installations, err := im.installRepo.List(ctx)
 	if err != nil {
 		return "", nil, fmt.Errorf("list installations: %w", err)
 	}
 
-	// Group by tool to find the active version
-	// We'll prioritize:
-	// 1. Environment variable UNIRTM_<TOOL>_VERSION
-	// 2. "current" tag in database
-	// 3. Latest installed version
-	
-	// For now, let's look for any installation that provides this executable
+	// 2. Filter candidates that provide the executable
+	type candidate struct {
+		inst    *repository.Installation
+		exePath string
+	}
+	var candidates []candidate
+
 	for _, inst := range installations {
 		p := im.providerRegistry.GetWithBackend(inst.Tool, inst.Backend)
 		if p == nil {
 			continue
 		}
 
-		// Check if this tool provides the executable
 		execs, err := p.ListExecutables(inst.Tool, inst.InstallPath, inst.Version)
 		if err != nil {
 			continue
@@ -960,14 +954,37 @@ func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName st
 
 		for _, exec := range execs {
 			if filepath.Base(exec) == exeName {
-				// Found it! Now get environment variables
-				envVars, _ := p.GetEnvVars(inst.Tool, inst.InstallPath, inst.Version)
-				return exec, envVars, nil
+				absPath := exec
+				if !filepath.IsAbs(exec) {
+					absPath = filepath.Join(inst.InstallPath, exec)
+				}
+				candidates = append(candidates, candidate{inst: inst, exePath: absPath})
+				break
 			}
 		}
 	}
 
-	return "", nil, fmt.Errorf("executable %s not found", exeName)
+	if len(candidates) == 0 {
+		return "", nil, fmt.Errorf("executable %s not found", exeName)
+	}
+
+	// 3. Pick the best candidate based on current context
+	// For now, we'll pick the one where the tool name matches the executable name,
+	// or just the first one if no better match.
+	selected := candidates[0]
+	for _, c := range candidates {
+		// Priority 1: Exact tool name match
+		if c.inst.Tool == exeName || filepath.Base(c.inst.Tool) == exeName {
+			selected = c
+			break
+		}
+	}
+
+	// 4. Get environment variables for the selected tool
+	p := im.providerRegistry.GetWithBackend(selected.inst.Tool, selected.inst.Backend)
+	envVars, _ := p.GetEnvVars(selected.inst.Tool, selected.inst.InstallPath, selected.inst.Version)
+
+	return selected.exePath, envVars, nil
 }
 
 // removeEmptyDirs recursively removes empty parent directories of path up to root.
