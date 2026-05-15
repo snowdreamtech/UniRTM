@@ -64,7 +64,7 @@ func (m *ShellConfigManager) Inject(shell ShellType, marker string, content stri
 		return fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	searchPattern := fmt.Sprintf("# unirtm %s activation", marker)
+	searchPattern := fmt.Sprintf("unirtm %s activation", marker)
 	fullBlock := fmt.Sprintf("\n# %s\n%s\n", searchPattern, content)
 	
 	rawContentStr := string(rawContent)
@@ -179,9 +179,14 @@ func (m *ShellConfigManager) Remove(shell ShellType, marker string) error {
 		return fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	searchPattern := fmt.Sprintf("unirtm %s", marker)
+	searchPattern := fmt.Sprintf("unirtm %s activation", marker)
 	if !strings.Contains(string(content), searchPattern) {
-		return nil
+		// Try fallback to older pattern without "activation" suffix just in case
+		oldPattern := fmt.Sprintf("unirtm %s", marker)
+		if !strings.Contains(string(content), oldPattern) {
+			return nil
+		}
+		searchPattern = oldPattern
 	}
 
 	lines := strings.Split(string(content), "\n")
@@ -195,8 +200,11 @@ func (m *ShellConfigManager) Remove(shell ShellType, marker string) error {
 			continue
 		}
 		// Also remove the specific source/activation line if we find it
+		// Added PowerShell specific keywords: Invoke-Expression, Out-String
 		if strings.Contains(line, "unirtm") && strings.Contains(line, marker) && 
-			(strings.Contains(line, "source") || strings.Contains(line, "activate") || strings.Contains(line, "eval")) {
+			(strings.Contains(line, "source") || strings.Contains(line, "activate") || 
+			 strings.Contains(line, "eval") || strings.Contains(line, "Invoke-Expression") || 
+			 strings.Contains(line, "Out-String") || strings.Contains(line, "Invoke-RestMethod")) {
 			removedCount++
 			continue
 		}
