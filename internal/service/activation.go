@@ -249,16 +249,17 @@ func (m *ActivationManager) generatePosixScript(config ActivationConfig) (*Activ
 	if config.UseShims {
 		// Add shims directory to PATH
 		sb.WriteString("# Add UniRTM shims to PATH\n")
-		sb.WriteString(fmt.Sprintf("export PATH=\"%s:$PATH\"\n", config.ShimsDir))
+		// Clean up existing shims from PATH to avoid duplicates
+		sb.WriteString(fmt.Sprintf(`export PATH="%s:$(echo "$PATH" | sed -E 's|%s:?||g' | sed 's|:$||')"`+"\n", config.ShimsDir, config.ShimsDir))
 		sb.WriteString("\n")
 	} else if len(config.InjectedPaths) > 0 {
 		// PATH mode activation
 		sb.WriteString("# UniRTM PATH mode activation\n")
 		injectedPath := strings.Join(config.InjectedPaths, string(os.PathListSeparator))
 		
-		// Use UNIRTM_PATH to track injected paths for easy restoration
+		// Use UNIRTM_PATH to track injected paths and clean up existing PATH to avoid duplicates
 		sb.WriteString(fmt.Sprintf("export UNIRTM_PATH=\"%s\"\n", injectedPath))
-		sb.WriteString("export PATH=\"$UNIRTM_PATH:$PATH\"\n")
+		sb.WriteString(`export PATH="$UNIRTM_PATH:$(echo "$PATH" | sed -E "s|(${UNIRTM_PATH//:/|}):?||g" | sed 's|:$||')"` + "\n")
 		sb.WriteString("\n")
 	}
 
@@ -340,10 +341,16 @@ func (m *ActivationManager) generateFishScript(config ActivationConfig) (*Activa
 	} else if len(config.InjectedPaths) > 0 {
 		// PATH mode activation
 		sb.WriteString("# UniRTM PATH mode activation\n")
-		// In fish, PATH is a list
+		// In fish, PATH is a list. We filter out existing UniRTM paths to avoid duplicates.
 		injectedPath := strings.Join(config.InjectedPaths, " ")
 		sb.WriteString(fmt.Sprintf("set -gx UNIRTM_PATH %s\n", injectedPath))
-		sb.WriteString("set -gx PATH $UNIRTM_PATH $PATH\n")
+		sb.WriteString("set -l new_path\n")
+		sb.WriteString("for p in $PATH\n")
+		sb.WriteString("    if not contains $p $UNIRTM_PATH\n")
+		sb.WriteString("        set -a new_path $p\n")
+		sb.WriteString("    end\n")
+		sb.WriteString("end\n")
+		sb.WriteString("set -gx PATH $UNIRTM_PATH $new_path\n")
 		sb.WriteString("\n")
 	}
 
@@ -428,7 +435,8 @@ func (m *ActivationManager) generatePowerShellScript(config ActivationConfig) (*
 			// Convert forward slashes to backslashes on Windows
 			shimsDir = filepath.FromSlash(shimsDir)
 		}
-		sb.WriteString(fmt.Sprintf("$env:PATH = \"%s;$env:PATH\"\n", shimsDir))
+		sb.WriteString(fmt.Sprintf("$shimsDir = \"%s\"\n", shimsDir))
+		sb.WriteString("$env:PATH = \"$shimsDir;\" + (($env:PATH -split ';') | Where-Object { $_ -ne $shimsDir } -join ';')\n")
 		sb.WriteString("\n")
 	} else if len(config.InjectedPaths) > 0 {
 		// PATH mode activation
@@ -442,8 +450,9 @@ func (m *ActivationManager) generatePowerShellScript(config ActivationConfig) (*
 			paths = append(paths, path)
 		}
 		injectedPath := strings.Join(paths, ";")
-		sb.WriteString(fmt.Sprintf("$env:UNIRTM_PATH = \"%s\"\n", injectedPath))
-		sb.WriteString("$env:PATH = \"$env:UNIRTM_PATH;$env:PATH\"\n")
+		sb.WriteString(fmt.Sprintf("$unirtmPaths = \"%s\" -split ';'\n", injectedPath))
+		sb.WriteString("$env:UNIRTM_PATH = $unirtmPaths -join ';'\n")
+		sb.WriteString("$env:PATH = ($env:UNIRTM_PATH + ';' + (($env:PATH -split ';') | Where-Object { $unirtmPaths -notcontains $_ } -join ';'))\n")
 		sb.WriteString("\n")
 	}
 
