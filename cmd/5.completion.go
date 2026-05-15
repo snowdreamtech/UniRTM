@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/service"
@@ -77,15 +78,19 @@ func runCompletion(cmd *cobra.Command, args []string) error {
 				// Only install if config file exists for --all mode to avoid cluttering unused shells
 				configPath, _ := scm.GetConfigPath(st)
 				if _, err := os.Stat(configPath); err == nil {
-					formatter.Info(fmt.Sprintf("Installing completion for %s...", st), nil)
+					spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Installing completion for %s...", st))
 					if err := installCompletion(formatter, cmd, st); err != nil {
-						formatter.Warning(fmt.Sprintf("Failed to install completion for %s: %v", st, err), nil)
+						spinner.Warning(fmt.Sprintf("Failed to install completion for %s: %v", st, err))
+					} else {
+						spinner.Success(fmt.Sprintf("Installed completion for %s", st))
 					}
 				}
 			} else if completionUninstall {
-				formatter.Info(fmt.Sprintf("Uninstalling completion for %s...", st), nil)
+				spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Uninstalling completion for %s...", st))
 				if err := uninstallCompletion(formatter, st); err != nil {
-					formatter.Warning(fmt.Sprintf("Failed to uninstall completion for %s: %v", st, err), nil)
+					spinner.Warning(fmt.Sprintf("Failed to uninstall completion for %s: %v", st, err))
+				} else {
+					spinner.Success(fmt.Sprintf("Uninstalled completion for %s", st))
 				}
 			}
 		}
@@ -97,16 +102,23 @@ func runCompletion(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		shellType = service.ShellType(args[0])
 	} else {
-		var err error
-		shellType, err = service.DetectShell()
-		if err != nil {
-			return fmt.Errorf("failed to detect shell: %w. Please specify shell as argument", err)
+		shellType, _ = service.DetectShell()
+		if shellType == "" {
+			pterm.Error.Println("Failed to detect shell. Please specify shell as argument (bash|zsh|fish|powershell)")
+			return fmt.Errorf("shell detection failed")
 		}
 	}
 
 	// 3. If uninstalling
 	if completionUninstall {
-		return uninstallCompletion(formatter, shellType)
+		spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Uninstalling completion for %s...", shellType))
+		err := uninstallCompletion(formatter, shellType)
+		if err != nil {
+			spinner.Fail(err.Error())
+		} else {
+			spinner.Success(fmt.Sprintf("Completion for %s has been disabled", shellType))
+		}
+		return err
 	}
 
 	// 4. If not installing, just print to stdout
@@ -115,7 +127,14 @@ func runCompletion(cmd *cobra.Command, args []string) error {
 	}
 
 	// 5. Install persistently (Plan B style)
-	return installCompletion(formatter, cmd, shellType)
+	spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Installing completion for %s...", shellType))
+	err := installCompletion(formatter, cmd, shellType)
+	if err != nil {
+		spinner.Fail(err.Error())
+	} else {
+		spinner.Success(fmt.Sprintf("Completion for %s is now enabled", shellType))
+	}
+	return err
 }
 
 func generateCompletion(cmd *cobra.Command, shellType service.ShellType, out *os.File) error {
