@@ -193,8 +193,11 @@ func runWhich(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		// Skip if install path does not exist on disk (stale DB record)
-		if _, err := os.Stat(inst.InstallPath); os.IsNotExist(err) {
+		// Auto-remove stale DB record if install path does not exist on disk
+		if _, statErr := os.Stat(inst.InstallPath); os.IsNotExist(statErr) {
+			if delErr := installRepo.Delete(ctx, inst.Tool, inst.Version); delErr == nil {
+				fmt.Fprintf(os.Stderr, "⚠ Removed stale record: %s@%s (path not found on disk)\n", inst.Tool, inst.Version)
+			}
 			continue
 		}
 
@@ -304,25 +307,14 @@ func runWhich(cmd *cobra.Command, args []string) error {
 	// Find close matches using common utility
 	output.Suggest(os.Stderr, target, finalCandidates)
 
-	// Check if target has stale DB records (recorded but not on disk)
-	for _, inst := range allInstallations {
-		if inst.Tool == target {
-			if _, err := os.Stat(inst.InstallPath); os.IsNotExist(err) {
-				fmt.Fprintf(os.Stderr, "\nTip: %s %s is recorded in the database but not found on disk.\n", target, inst.Version)
-				fmt.Fprintf(os.Stderr, "     Run 'unirtm install %s' to reinstall it.\n", target)
-				return fmt.Errorf("not found: %s", target)
-			}
-		}
-	}
-
 	// Check if it exists as a tool but no installation
 	if _, ok := cfg.Tools[target]; ok {
 		fmt.Fprintf(os.Stderr, "\nTip: %s is defined in your config but not installed. Run 'unirtm install' to install it.\n", target)
 	}
 
 	return fmt.Errorf("not found: %s", target)
-
 }
+
 
 func printMatch(m match) {
 	if whichVersion {
