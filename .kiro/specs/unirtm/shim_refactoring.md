@@ -19,7 +19,7 @@
 
 ### C. 垃圾 Shim 过滤
 - **严格的可执行性检查**：改进了 `GenericProvider.isExecutable`，排除了 `.md`, `.py`, `.json`, `.txt` 等常见非二进制文件，即使它们具有执行权限。
-- **优选机制 (`pickBestExecutables`)**：在生成 Shim 时对搜索到的文件进行评分，仅为核心二进制文件生成 Shim，避免 `shims/` 目录被依赖项污染。
+- **优选机制 (`pickBestExecutables`)**：在生成 Shim 时对搜索到的文件进行评分。已优化为**包容性策略**：自动保留 `bin/` 目录下的所有有效二进制文件（如 `java` 及其配套的 `javac`），并放宽评分区间，确保“全家桶”类工具的关联程序也能正确生成 Shim。
 
 ### D. 系统稳定性与验证
 - **数据库一致性**：确认了 Shim 进程能够正确读取 SQLite 数据库。
