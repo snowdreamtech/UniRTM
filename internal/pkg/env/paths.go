@@ -108,8 +108,33 @@ func GetPluginsDir() string {
 }
 
 // GetCacheDir returns the directory where cache files are stored.
+// It follows XDG Base Directory Specification for cache home.
 func GetCacheDir() string {
-	return filepath.Join(GetDataDir(), "cache")
+	if cacheDir := Get("CACHE_DIR"); cacheDir != "" {
+		return cacheDir
+	}
+
+	if cacheHome := Get("XDG_CACHE_HOME"); cacheHome != "" {
+		return filepath.Join(cacheHome, "unirtm")
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "./unirtm_cache"
+	}
+
+	if runtime.GOOS == "darwin" {
+		// macOS standard cache directory
+		return filepath.Join(homeDir, "Library", "Caches", "unirtm")
+	}
+
+	if runtime.GOOS == "windows" {
+		// Windows uses Local AppData for cache too, but usually in a 'cache' subfolder
+		return filepath.Join(GetDataDir(), "cache")
+	}
+
+	// Default for Linux and others (XDG standard)
+	return filepath.Join(homeDir, ".cache", "unirtm")
 }
 
 // GetLockFilePath returns the path of the unirtm.lock file.
