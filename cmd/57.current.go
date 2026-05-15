@@ -75,9 +75,24 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 
 		for _, v := range versions {
 			fsName := env.GetFSToolName(name, toolCfg.Backend)
-			path := filepath.Join(env.GetInstallsDir(), fsName, v)
-			_, err := os.Stat(path)
-			installed = append(installed, err == nil)
+			basePath := filepath.Join(env.GetInstallsDir(), fsName)
+			
+			// Try original, with 'v' prefix, and without 'v' prefix
+			variants := []string{v}
+			if strings.HasPrefix(v, "v") {
+				variants = append(variants, strings.TrimPrefix(v, "v"))
+			} else {
+				variants = append(variants, "v"+v)
+			}
+
+			isInst := false
+			for _, variant := range variants {
+				if _, err := os.Stat(filepath.Join(basePath, variant)); err == nil {
+					isInst = true
+					break
+				}
+			}
+			installed = append(installed, isInst)
 		}
 
 		results = append(results, toolStatus{
