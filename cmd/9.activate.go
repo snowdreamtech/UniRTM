@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
@@ -243,17 +244,34 @@ func runActivate(cmd *cobra.Command, args []string) error {
 		exePath = "unirtm" // Fallback
 	}
 
+	// Populate InjectedPaths if not using shims (Env mode)
+	var injectedPaths []string
+	if !activateShims {
+		installsDir := filepath.Join(env.GetDataDir(), "installs")
+		for tool, version := range toolVersions {
+			p := registry.Get(tool)
+			fsToolName := env.GetFSToolName(tool, "")
+			installPath := filepath.Join(installsDir, fsToolName, version)
+			
+			binPaths, err := p.GetBinPaths(tool, installPath, version)
+			if err == nil {
+				injectedPaths = append(injectedPaths, binPaths...)
+			}
+		}
+	}
+
 	// Generate activation script
 	activationConfig := service.ActivationConfig{
-		Shell:        service.ShellType(shellType),
-		Scope:        scope,
-		ShimsDir:     shimsDir,
-		ProjectDir:   projectDir,
-		ToolVersions: toolVersions,
-		EnvVars:      envVars,
-		Sources:      sources,
-		ExePath:      exePath,
-		UseShims:     activateShims,
+		Shell:         service.ShellType(shellType),
+		Scope:         scope,
+		ShimsDir:      shimsDir,
+		ProjectDir:    projectDir,
+		ToolVersions:  toolVersions,
+		EnvVars:       envVars,
+		Sources:       sources,
+		ExePath:       exePath,
+		UseShims:      activateShims,
+		InjectedPaths: injectedPaths,
 	}
 
 	script, err := activationManager.GenerateActivationScript(ctx, activationConfig)
