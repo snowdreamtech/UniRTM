@@ -7,9 +7,9 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"text/tabwriter"
 	"time"
 
+	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -39,36 +39,27 @@ var cacheCmd = &cobra.Command{
 The cache command provides subcommands for listing, clearing, and
 inspecting cached artifacts.
 
-Subcommands:
-  list   List all cached artifacts
-  clear  Clear all cache or a specific tool's cache
-  purge  Remove expired cache entries
-  stats  Display cache statistics
-
-Examples:
-  unirtm cache list
-  unirtm cache clear
-  unirtm cache clear node
-  unirtm cache purge
-  unirtm cache stats`,
+If no subcommand is provided, it lists all cached artifacts.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return cmd.Help()
+		return runCacheList(cmd, args)
 	},
 }
 
 // cacheListCmd lists all cached artifacts.
 var cacheListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List all cached artifacts",
-	Long:  `List all cached artifacts stored in the UniRTM cache directory.`,
-	Args:  cobra.NoArgs,
-	RunE:  runCacheList,
+	Use:     "list",
+	Aliases: []string{"ls"},
+	Short:   "List all cached artifacts",
+	Long:    `List all cached artifacts stored in the UniRTM cache directory.`,
+	Args:    cobra.NoArgs,
+	RunE:    runCacheList,
 }
 
 // cacheClearCmd clears cache entries.
 var cacheClearCmd = &cobra.Command{
-	Use:   "clear [tool]",
-	Short: "Clear all cache or a specific tool's cache",
+	Use:     "clear [tool]",
+	Aliases: []string{"clean", "remove", "rm"},
+	Short:   "Clear all cache or a specific tool's cache",
 	Long: `Clear all cache or a specific tool's cached artifacts.
 
 Examples:
@@ -83,11 +74,12 @@ Examples:
 
 // cachePurgeCmd removes expired cache entries.
 var cachePurgeCmd = &cobra.Command{
-	Use:   "purge",
-	Short: "Remove expired cache entries",
-	Long:  `Remove all expired cache entries to free up disk space.`,
-	Args:  cobra.NoArgs,
-	RunE:  runCachePurge,
+	Use:     "purge",
+	Aliases: []string{"prune"},
+	Short:   "Remove expired cache entries",
+	Long:    `Remove all expired cache entries to free up disk space.`,
+	Args:    cobra.NoArgs,
+	RunE:    runCachePurge,
 }
 
 // cacheStatsCmd displays cache statistics.
@@ -148,8 +140,6 @@ func runCacheList(cmd *cobra.Command, args []string) error {
 		Verbose: verbose,
 	})
 
-	ctx := context.Background()
-
 	// Walk the cache directory to list files
 	cacheDir := env.GetCacheDir()
 	entries, err := listCacheFiles(cacheDir)
@@ -162,12 +152,10 @@ func runCacheList(cmd *cobra.Command, args []string) error {
 		if jsonOutput {
 			fmt.Println("[]")
 		} else {
-			formatter.Info("Cache is empty", nil)
+			pterm.Info.Println("Cache is empty")
 		}
 		return nil
 	}
-
-	_ = ctx // used via database operations above
 
 	if jsonOutput {
 		formatter.Success("Cache entries", map[string]interface{}{
@@ -177,13 +165,12 @@ func runCacheList(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "FILE\tSIZE\tMODIFIED")
-	fmt.Fprintln(w, "----\t----\t--------")
+	var data [][]string
+	data = append(data, []string{"File", "Size", "Modified"})
 	for _, e := range entries {
-		fmt.Fprintf(w, "%s\t%s\t%s\n", e["file"], e["size"], e["modified"])
+		data = append(data, []string{e["file"], e["size"], e["modified"]})
 	}
-	w.Flush()
+	pterm.DefaultTable.WithHasHeader().WithData(data).Render()
 	return nil
 }
 
@@ -208,26 +195,23 @@ func runCacheClear(cmd *cobra.Command, args []string) error {
 	defer db.Close()
 
 	if len(args) == 1 {
-		// Clear specific tool cache via prefix
 		tool := args[0]
-		formatter.Info(fmt.Sprintf("Clearing cache for %s...", tool), nil)
+		spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Clearing cache for %s...", tool))
 
 		if err := cm.PurgeByPrefix(ctx, tool); err != nil {
-			// PurgeByPrefix not yet fully implemented in repo layer; fall back to informing user
-			formatter.Info(fmt.Sprintf("Note: Tool-specific cache clearing requires manual deletion from %s", env.GetCacheDir()), nil)
+			spinner.Warning(fmt.Sprintf("Tool-specific cache clearing requires manual deletion from %s", env.GetCacheDir()))
 		} else {
-			formatter.Success(fmt.Sprintf("Cleared cache for %s", tool), nil)
+			spinner.Success(fmt.Sprintf("Cleared cache for %s", tool))
 		}
 		return nil
 	}
 
-	// Clear all cache
-	formatter.Info("Clearing all cache...", nil)
+	spinner, _ := pterm.DefaultSpinner.Start("Clearing all cache...")
 	if err := cm.PurgeAll(ctx); err != nil {
-		formatter.Error("Failed to clear cache", map[string]interface{}{"error": err.Error()})
+		spinner.Fail(fmt.Sprintf("Failed to clear cache: %v", err))
 		return fmt.Errorf("clear cache: %w", err)
 	}
-	formatter.Success("Cache cleared", nil)
+	spinner.Success("Cache cleared")
 	return nil
 }
 
@@ -251,12 +235,12 @@ func runCachePurge(cmd *cobra.Command, args []string) error {
 	}
 	defer db.Close()
 
-	formatter.Info("Removing expired cache entries...", nil)
+	spinner, _ := pterm.DefaultSpinner.Start("Removing expired cache entries...")
 	if err := cm.PurgeExpired(ctx); err != nil {
-		formatter.Error("Failed to purge cache", map[string]interface{}{"error": err.Error()})
+		spinner.Fail(fmt.Sprintf("Failed to purge cache: %v", err))
 		return fmt.Errorf("purge cache: %w", err)
 	}
-	formatter.Success("Expired cache entries removed", nil)
+	spinner.Success("Expired cache entries removed")
 	return nil
 }
 
@@ -286,8 +270,6 @@ func runCacheStats(cmd *cobra.Command, args []string) error {
 		cacheSize = -1
 	}
 
-	_ = ctx
-
 	if jsonOutput {
 		formatter.Success("Cache statistics", map[string]interface{}{
 			"hits":       stats.Hits,
@@ -304,14 +286,16 @@ func runCacheStats(cmd *cobra.Command, args []string) error {
 		hitRate = float64(stats.Hits) / float64(total) * 100
 	}
 
-	fmt.Println("Cache Statistics:")
-	fmt.Printf("  Directory: %s\n", env.GetCacheDir())
-	if cacheSize >= 0 {
-		fmt.Printf("  Size:      %s\n", formatBytes(cacheSize))
-	}
-	fmt.Printf("  Hits:      %d\n", stats.Hits)
-	fmt.Printf("  Misses:    %d\n", stats.Misses)
-	fmt.Printf("  Hit Rate:  %.1f%%\n", hitRate)
+	pterm.DefaultSection.Println("Cache Statistics")
+	pterm.BulletListPrinter{
+		Items: []pterm.BulletListItem{
+			{Level: 0, Text: fmt.Sprintf("Directory: %s", env.GetCacheDir())},
+			{Level: 0, Text: fmt.Sprintf("Size:      %s", formatBytes(cacheSize))},
+			{Level: 0, Text: fmt.Sprintf("Hits:      %d", stats.Hits)},
+			{Level: 0, Text: fmt.Sprintf("Misses:    %d", stats.Misses)},
+			{Level: 0, Text: fmt.Sprintf("Hit Rate:  %.1f%%", hitRate)},
+		},
+	}.Render()
 	return nil
 }
 
