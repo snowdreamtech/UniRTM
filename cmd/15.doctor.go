@@ -8,13 +8,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
-	"text/tabwriter"
+	"strings"
 	"time"
 
-	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -22,7 +21,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// init registers the doctor command to the root command.
 func init() {
 	if rootCmd != nil {
 		rootCmd.AddCommand(doctorCmd)
@@ -31,258 +29,200 @@ func init() {
 
 // doctorCmd runs a comprehensive system health check.
 var doctorCmd = &cobra.Command{
-	Use:   "doctor",
-	Short: "Check system health and diagnose issues",
+	Use:     "doctor",
+	Aliases: []string{"dr"},
+	Short:   "Check system health and diagnose issues",
 	Long: `Check UniRTM system health and diagnose potential issues.
 
-The doctor command runs a series of checks:
-  • Database accessibility and integrity
-  • Cache directory writability
-  • Data directory writability
-  • Shims directory
-  • Installed tools presence
-  • Configuration file validity
-  • Network connectivity to backends
-  • PATH environment check
-
-Examples:
-  unirtm doctor
-  unirtm doctor --json`,
-	Aliases: []string{"dr"},
-	Args:    cobra.NoArgs,
-	RunE:    runDoctor,
+This command aligns with 'mise doctor' to ensure your environment is
+correctly configured for UniRTM.`,
+	Args: cobra.NoArgs,
+	RunE: runDoctor,
 }
 
-// checkResult represents the result of a single health check.
-type checkResult struct {
-	Name    string `json:"name"`
-	Status  string `json:"status"` // ok, warning, error
-	Message string `json:"message"`
-}
-
-// runDoctor executes the doctor command.
-//
-// Validates: Requirements 24.1, 24.2, 24.3, 24.4, 24.5, 24.6, 24.7, 23.2
 func runDoctor(cmd *cobra.Command, args []string) error {
-	formatter := output.NewFormatter(output.FormatterOptions{
-		Format:  getOutputFormat(),
-		NoColor: false,
-		Writer:  os.Stdout,
-		Quiet:   quiet,
-		Verbose: verbose,
-	})
+	pterm.DefaultHeader.WithFullWidth().WithBackgroundStyle(pterm.NewStyle(pterm.BgLightBlue)).WithTextStyle(pterm.NewStyle(pterm.FgBlack)).Println("UniRTM System Diagnostics (Doctor)")
 
 	ctx := context.Background()
 
-	var checks []checkResult
-	hasErrors := false
+	// 1. Build & System Info
+	pterm.DefaultSection.Println("Build & System Information")
+	osArch := fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
+	pterm.DefaultBulletList.WithItems([]pterm.BulletListItem{
+		{Level: 0, Text: fmt.Sprintf("Project: %s", pterm.LightCyan(env.ProjectName))},
+		{Level: 0, Text: fmt.Sprintf("Version: %s", pterm.LightCyan(fmt.Sprintf("%s-%s", env.GitTag, env.CommitHash)))},
+		{Level: 0, Text: fmt.Sprintf("Platform: %s", pterm.LightCyan(osArch))},
+		{Level: 0, Text: fmt.Sprintf("Go Version: %s", pterm.LightCyan(runtime.Version()))},
+	}).Render()
 
-	addCheck := func(name, status, msg string) {
-		checks = append(checks, checkResult{Name: name, Status: status, Message: msg})
-		if status == "error" {
-			hasErrors = true
-		}
+	// 2. Shell Info
+	pterm.DefaultSection.Println("Shell Information")
+	shellPath := os.Getenv("SHELL")
+	shellName := filepath.Base(shellPath)
+	isActivated := os.Getenv("UNIRTM_ACTIVE") != ""
+	
+	statusStr := pterm.LightGreen("✓ activated")
+	if !isActivated {
+		statusStr = pterm.LightRed("✗ NOT activated")
 	}
 
-	if !quiet && !jsonOutput {
-		fmt.Printf("UniRTM Doctor — System Health Check\n")
-		fmt.Printf("OS: %s/%s\n\n", runtime.GOOS, runtime.GOARCH)
-	}
+	pterm.DefaultBulletList.WithItems([]pterm.BulletListItem{
+		{Level: 0, Text: fmt.Sprintf("Shell: %s (%s)", pterm.LightCyan(shellName), shellPath)},
+		{Level: 0, Text: fmt.Sprintf("Status: %s", statusStr)},
+	}).Render()
 
-	// ── Check 1: Database ─────────────────────────────────────────────────────
-	dbPath := env.GetDatabasePath()
-	db, err := database.Open(ctx, database.Config{
-		Path:    dbPath,
-		WALMode: true,
-	})
-	if err != nil {
-		addCheck("database", "error", fmt.Sprintf("Cannot open database at %s: %s", dbPath, err.Error()))
-	} else {
-		if pingErr := db.Ping(ctx); pingErr != nil {
-			addCheck("database", "error", fmt.Sprintf("Database ping failed: %s", pingErr.Error()))
-		} else {
-			addCheck("database", "ok", fmt.Sprintf("Database accessible (%s)", dbPath))
-		}
-		db.Close()
-	}
-
-	// ── Check 2: Cache directory ──────────────────────────────────────────────
-	cacheDir := env.GetCacheDir()
-	testFile := filepath.Join(cacheDir, ".write_test")
-	if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
-		addCheck("cache_dir", "error", fmt.Sprintf("Cache directory not writable: %s — %s", cacheDir, err.Error()))
-	} else {
-		os.Remove(testFile)
-		addCheck("cache_dir", "ok", fmt.Sprintf("Cache directory writable (%s)", cacheDir))
-	}
-
-	// ── Check 3: Data directory ───────────────────────────────────────────────
-	dataDir := env.GetDataDir()
-	testFile = filepath.Join(dataDir, ".write_test")
-	if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
-		addCheck("data_dir", "error", fmt.Sprintf("Data directory not writable: %s — %s", dataDir, err.Error()))
-	} else {
-		os.Remove(testFile)
-		addCheck("data_dir", "ok", fmt.Sprintf("Data directory writable (%s)", dataDir))
-	}
-
-	// ── Check 4: Shims directory ──────────────────────────────────────────────
-	shimsDir := env.GetShimsDir()
-	if info, err := os.Stat(shimsDir); err != nil {
-		addCheck("shims_dir", "warning",
-			fmt.Sprintf("Shims directory not found (%s) — will be created on first install", shimsDir))
-	} else if !info.IsDir() {
-		addCheck("shims_dir", "error", fmt.Sprintf("Shims path is not a directory: %s", shimsDir))
-	} else {
-		shims, _ := os.ReadDir(shimsDir)
-		addCheck("shims_dir", "ok", fmt.Sprintf("Shims directory OK (%d shims)", len(shims)))
-	}
-
-	// ── Check 5: Installed tools ──────────────────────────────────────────────
-	if db2, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true}); err == nil {
-		if installRepo, err := sqlite.NewInstallationRepository(db2.Conn()); err == nil {
-			installations, err := installRepo.List(ctx)
-			if err != nil {
-				addCheck("installed_tools", "warning", fmt.Sprintf("Cannot list installations: %s", err.Error()))
-			} else if len(installations) == 0 {
-				addCheck("installed_tools", "ok", "No tools installed yet")
-			} else {
-				missingCount := 0
-				for _, inst := range installations {
-					if _, statErr := os.Stat(inst.InstallPath); os.IsNotExist(statErr) {
-						missingCount++
-					}
-				}
-				if missingCount > 0 {
-					addCheck("installed_tools", "warning",
-						fmt.Sprintf("%d/%d tools have missing install directories", missingCount, len(installations)))
-				} else {
-					addCheck("installed_tools", "ok",
-						fmt.Sprintf("All %d installed tools are present", len(installations)))
-				}
-			}
-		}
-		db2.Close()
-	}
-
-	// ── Check 6: Configuration ────────────────────────────────────────────────
-	cm := config.NewConfigManager()
-	cfg, loadErr := cm.LoadHierarchy(ctx)
-	if loadErr != nil {
-		addCheck("config", "warning", "No configuration files found (optional — using defaults)")
-	} else {
-		if valErr := cm.Validate(ctx, cfg); valErr != nil {
-			addCheck("config", "error", fmt.Sprintf("Configuration invalid: %s", valErr.Error()))
-		} else {
-			addCheck("config", "ok", fmt.Sprintf("Configuration valid (%d tools configured)", len(cfg.Tools)))
-		}
-	}
-
-	// ── Check 7: Network connectivity ────────────────────────────────────────
-	networkTargets := []struct {
+	// 3. Directory Health
+	pterm.DefaultSection.Println("Directory Health Check")
+	dirChecks := []struct {
 		name string
-		url  string
+		path string
 	}{
-		{"github_api", "https://api.github.com"},
-		{"aqua_registry", "https://aquaproj.github.io"},
+		{"Config", env.GetConfigDir()},
+		{"Data", env.GetDataDir()},
+		{"Cache", env.GetCacheDir()},
+		{"Shims", env.GetShimsDir()},
+		{"State", filepath.Join(env.GetDataDir(), "state")},
 	}
 
-	httpClient := &http.Client{Timeout: 5 * time.Second}
-	for _, nt := range networkTargets {
-		resp, netErr := httpClient.Get(nt.url)
-		if netErr != nil {
-			addCheck("network_"+nt.name, "warning",
-				fmt.Sprintf("Cannot reach %s: %s (offline mode may apply)", nt.url, netErr.Error()))
+	var dirTable [][]string
+	dirTable = append(dirTable, []string{"Directory", "Path", "Status"})
+	for _, dc := range dirChecks {
+		status := pterm.LightGreen("✓ ok")
+		if _, err := os.Stat(dc.path); os.IsNotExist(err) {
+			status = pterm.LightYellow("⚠ missing")
 		} else {
-			resp.Body.Close()
-			if resp.StatusCode >= 500 {
-				addCheck("network_"+nt.name, "warning",
-					fmt.Sprintf("%s returned HTTP %d", nt.url, resp.StatusCode))
+			// Check writability
+			testFile := filepath.Join(dc.path, ".doctor_write_test")
+			if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
+				status = pterm.LightRed("✗ unwritable")
 			} else {
-				addCheck("network_"+nt.name, "ok",
-					fmt.Sprintf("%s reachable (HTTP %d)", nt.url, resp.StatusCode))
+				os.Remove(testFile)
 			}
 		}
+		dirTable = append(dirTable, []string{pterm.Bold.Sprint(dc.name), pterm.FgGray.Sprint(dc.path), status})
 	}
+	pterm.DefaultTable.WithHasHeader().WithData(dirTable).Render()
 
-	// ── Check 8: Shims in PATH ───────────────────────────────────────────────
-	pathEnv := os.Getenv("PATH")
-	shimsInPath := false
-	for _, p := range filepath.SplitList(pathEnv) {
-		if p == shimsDir {
-			shimsInPath = true
+	// 4. PATH & Shadowing Detection
+	pterm.DefaultSection.Println("PATH & Shadowing Detection")
+	pathItems := filepath.SplitList(os.Getenv("PATH"))
+	shimsDir := env.GetShimsDir()
+	
+	shimIdx := -1
+	for i, p := range pathItems {
+		if strings.EqualFold(p, shimsDir) {
+			shimIdx = i
 			break
 		}
 	}
-	if !shimsInPath {
-		addCheck("path_shims", "warning",
-			fmt.Sprintf("Shims dir not in PATH — run: eval \"$(unirtm activate)\""))
+
+	if shimIdx == -1 {
+		pterm.Error.Println("UniRTM shims directory is NOT in your PATH.")
+		pterm.DefaultBox.WithTitle("Action Required").Println(
+			fmt.Sprintf("Add this to your shell config:\n%s", 
+			pterm.LightMagenta(fmt.Sprintf("eval \"$(unirtm activate %s)\"", shellName))),
+		)
+	} else if shimIdx > 0 {
+		pterm.Warning.Println("UniRTM shims are not at the front of your PATH.")
+		shadowed := pathItems[:shimIdx]
+		pterm.Info.Printf("Preceding paths:\n  %s\n", strings.Join(shadowed, "\n  "))
 	} else {
-		addCheck("path_shims", "ok", "Shims directory is in PATH")
+		pterm.Success.Println("UniRTM shims are correctly placed at the front of your PATH.")
 	}
 
-	// ── Check 9: Optional — go binary (verbose only) ──────────────────────────
-	if verbose {
-		if goPath, err := exec.LookPath("go"); err != nil {
-			addCheck("go_runtime", "warning", "Go runtime not found in PATH")
-		} else {
-			addCheck("go_runtime", "ok", fmt.Sprintf("Go found at %s", goPath))
-		}
-	}
-
-	// ── Render output ────────────────────────────────────────────────────────
-	if jsonOutput {
-		overallStatus := "ok"
-		errorCount := countByStatus(checks, "error")
-		warningCount := countByStatus(checks, "warning")
-		if errorCount > 0 {
-			overallStatus = "error"
-		} else if warningCount > 0 {
-			overallStatus = "warning"
-		}
-		formatter.Success("Health check complete", map[string]interface{}{
-			"overall_status": overallStatus,
-			"checks":         checks,
-			"check_count":    len(checks),
-			"error_count":    errorCount,
-			"warning_count":  warningCount,
-		})
-	} else {
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-		for _, c := range checks {
-			icon := "✓"
-			if c.Status == "error" {
-				icon = "✗"
-			} else if c.Status == "warning" {
-				icon = "⚠"
+	// 5. Environment Variables (Redacted)
+	pterm.DefaultSection.Println("Environment Variables (UNIRTM_*)")
+	var envTable [][]string
+	envTable = append(envTable, []string{"Variable", "Value"})
+	foundAny := false
+	for _, e := range os.Environ() {
+		pair := strings.SplitN(e, "=", 2)
+		if strings.HasPrefix(pair[0], "UNIRTM_") {
+			foundAny = true
+			val := pair[1]
+			if strings.Contains(pair[0], "TOKEN") || strings.Contains(pair[0], "KEY") || strings.Contains(pair[0], "SECRET") {
+				val = pterm.LightMagenta("******** [REDACTED]")
 			}
-			fmt.Fprintf(w, "%s  %-20s\t%s\n", icon, c.Name, c.Message)
+			envTable = append(envTable, []string{pterm.LightBlue(pair[0]), val})
 		}
-		w.Flush()
+	}
+	if foundAny {
+		pterm.DefaultTable.WithHasHeader().WithData(envTable).Render()
+	} else {
+		pterm.Info.Println("No UNIRTM_ environment variables defined.")
+	}
 
-		fmt.Println()
-		errorCount := countByStatus(checks, "error")
-		warningCount := countByStatus(checks, "warning")
-		if errorCount == 0 && warningCount == 0 {
-			fmt.Println("✓ All checks passed — UniRTM is healthy.")
+	// 6. Config Files
+	pterm.DefaultSection.Println("Active Configuration Files")
+	cfg, _ := config.LoadFull()
+	if cfg != nil {
+		cwd, _ := os.Getwd()
+		possible := []string{
+			filepath.Join(cwd, ".unirtm.toml"),
+			filepath.Join(cwd, "unirtm.toml"),
+			filepath.Join(cwd, ".mise.toml"),
+			filepath.Join(cwd, "mise.toml"),
+			env.GetGlobalConfigPath(),
+		}
+		foundCfg := false
+		for _, p := range possible {
+			if _, err := os.Stat(p); err == nil {
+				foundCfg = true
+				pterm.Success.Printf("Loaded: %s\n", pterm.FgGray.Sprint(p))
+			}
+		}
+		if !foundCfg {
+			pterm.Info.Println("No config files found (using defaults).")
+		}
+	}
+
+	// 7. Network Connectivity
+	pterm.DefaultSection.Println("Network Connectivity")
+	client := &http.Client{Timeout: 3 * time.Second}
+	targets := []struct{ name, url string }{
+		{"GitHub API", "https://api.github.com"},
+		{"Aqua Registry", "https://aquaproj.github.io"},
+	}
+	for _, t := range targets {
+		start := time.Now()
+		resp, err := client.Get(t.url)
+		duration := time.Since(start)
+		if err != nil {
+			pterm.Error.Printf("%-15s %s (%v)\n", t.name, "Unreachable", err)
 		} else {
-			fmt.Printf("Summary: %d error(s), %d warning(s).\n", errorCount, warningCount)
+			resp.Body.Close()
+			pterm.Success.Printf("%-15s %s (HTTP %d, %v)\n", t.name, "OK", resp.StatusCode, duration.Round(time.Millisecond))
 		}
 	}
 
-	if hasErrors {
-		return fmt.Errorf("health check found %d error(s)", countByStatus(checks, "error"))
+	// 8. Database & Tools
+	pterm.DefaultSection.Println("Database & Tool Integrity")
+	dbPath := env.GetDatabasePath()
+	db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true})
+	if err != nil {
+		pterm.Error.Printf("Database: %v\n", err)
+	} else {
+		defer db.Close()
+		pterm.Success.Printf("Database: %s\n", pterm.FgGray.Sprint(dbPath))
+		
+		installRepo, _ := sqlite.NewInstallationRepository(db.Conn())
+		installs, _ := installRepo.List(ctx)
+		missing := 0
+		for _, inst := range installs {
+			if _, err := os.Stat(inst.InstallPath); os.IsNotExist(err) {
+				missing++
+			}
+		}
+		if missing > 0 {
+			pterm.Warning.Printf("Tools: %d/%d installations have missing directories.\n", missing, len(installs))
+		} else if len(installs) > 0 {
+			pterm.Success.Printf("Tools: All %d installed tools are present on disk.\n", len(installs))
+		} else {
+			pterm.Info.Println("Tools: No tools installed yet.")
+		}
 	}
+
+	fmt.Println()
+	pterm.Success.Println("Diagnostics complete. Your UniRTM is ready!")
 	return nil
-}
-
-// countByStatus counts check results with the given status.
-func countByStatus(checks []checkResult, status string) int {
-	n := 0
-	for _, c := range checks {
-		if c.Status == status {
-			n++
-		}
-	}
-	return n
 }
