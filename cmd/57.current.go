@@ -74,33 +74,47 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 		var installed []bool
 
 		for _, v := range versions {
-			fsName := env.GetFSToolName(name, toolCfg.Backend)
-			basePath := filepath.Join(env.GetInstallsDir(), fsName)
+			// Robust detection engine
+			isInst := false
+			basePath := filepath.Join(env.GetInstallsDir(), env.GetFSToolName(name, toolCfg.Backend))
 			
-			// Robust prefix handling: generate all possible variants (v, V, and none)
+			// 1. Generate core variants (v, V, none)
 			pureVersion := v
 			if strings.HasPrefix(strings.ToLower(v), "v") {
 				pureVersion = v[1:]
 			}
 			
-			variants := []string{
-				v,               // Original (e.g., v0.3.2, V0.3.2, or 0.3.2)
-				pureVersion,     // Prefix-less (e.g., 0.3.2)
-				"v" + pureVersion, // lowercase v (e.g., v0.3.2)
-				"V" + pureVersion, // uppercase V (e.g., V0.3.2)
-			}
-
-			isInst := false
-			// De-duplicate variants to save syscalls
+			checkVariants := []string{v, pureVersion, "v" + pureVersion, "V" + pureVersion}
+			
+			// 2. Exact match check
 			seen := make(map[string]bool)
-			for _, variant := range variants {
-				if seen[variant] {
-					continue
-				}
+			for _, variant := range checkVariants {
+				if variant == "" || seen[variant] { continue }
 				seen[variant] = true
 				if _, err := os.Stat(filepath.Join(basePath, variant)); err == nil {
 					isInst = true
 					break
+				}
+			}
+
+			// 3. [Surpass] Fuzzy/Normalized match for dates (2024.05.15 == 2024-05-15)
+			if !isInst {
+				normalizedReq := strings.NewReplacer("-", "", ".", "", "_", "").Replace(strings.ToLower(pureVersion))
+				entries, _ := os.ReadDir(basePath)
+				for _, entry := range entries {
+					if !entry.IsDir() { continue }
+					
+					eName := entry.Name()
+					pureEName := eName
+					if strings.HasPrefix(strings.ToLower(eName), "v") {
+						pureEName = eName[1:]
+					}
+					
+					normalizedEntry := strings.NewReplacer("-", "", ".", "", "_", "").Replace(strings.ToLower(pureEName))
+					if normalizedReq == normalizedEntry {
+						isInst = true
+						break
+					}
 				}
 			}
 			installed = append(installed, isInst)
