@@ -20,9 +20,64 @@ func Load() (*Config, error) {
 	return LoadFromDir(".")
 }
 
+// LoadFull loads the UniRTM configuration by merging current directory configs,
+// parent directory configs, and the global configuration (hierarchy).
+// This provides full alignment with mise's hierarchical config loading.
+func LoadFull() (*Config, error) {
+	pwd, err := os.Getwd()
+	if err != nil {
+		return Load() // Fallback to Load() if we can't get current directory
+	}
+	return LoadHierarchy(pwd)
+}
+
+// LoadHierarchy loads the UniRTM configuration by merging configs starting from the given directory,
+// parent directories up to root, and the global configuration.
+func LoadHierarchy(startDir string) (*Config, error) {
+	mergedCfg := &Config{}
+
+	// 1. Walk up from startDir to root to find project configs
+	curr := startDir
+	for {
+		cfg, err := LoadFromDir(curr)
+		if err == nil {
+			mergedCfg.Merge(cfg)
+		}
+
+		// Stop at root
+		parent := filepath.Dir(curr)
+		if parent == curr {
+			break
+		}
+		curr = parent
+	}
+
+	// 2. Load global config
+	globalPath := GetGlobalConfigPath()
+	if data, err := os.ReadFile(globalPath); err == nil {
+		globalCfg := &Config{}
+		if err := toml.Unmarshal(data, globalCfg); err == nil {
+			globalCfg.PostLoad()
+			mergedCfg.Merge(globalCfg)
+		}
+	}
+
+	return mergedCfg, nil
+}
+
+// GetGlobalConfigPath returns the path to the global unirtm.toml configuration file.
+// (Copied from env package to avoid circular dependency if needed, or just use full path)
+func GetGlobalConfigPath() string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(homeDir, ".config", "unirtm", "unirtm.toml")
+}
+
 // LoadFromDir loads the UniRTM project configuration from the specified directory.
 func LoadFromDir(dir string) (*Config, error) {
-	configFiles := []string{".unirtm.toml", "unirtm.toml"}
+	configFiles := []string{".unirtm.toml", "unirtm.toml", ".mise.toml", "mise.toml"}
 	var data []byte
 	var err error
 	var foundFile string
@@ -37,7 +92,7 @@ func LoadFromDir(dir string) (*Config, error) {
 	}
 
 	if foundFile == "" {
-		return &Config{}, nil
+		return &Config{}, fmt.Errorf("no config file found in %s", dir)
 	}
 
 	cfg := &Config{}

@@ -159,6 +159,70 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+// Merge merges another configuration into this one.
+// The current configuration takes precedence over the other one (deep merge).
+func (c *Config) Merge(other *Config) {
+	if other == nil {
+		return
+	}
+
+	// Merge tools
+	if c.Tools == nil {
+		c.Tools = make(ToolMap)
+	}
+	for k, v := range other.Tools {
+		if _, exists := c.Tools[k]; !exists {
+			c.Tools[k] = v
+		}
+	}
+
+	// Merge environment variables
+	if c.Env == nil {
+		c.Env = make(map[string]interface{})
+	}
+	for k, v := range other.Env {
+		if _, exists := c.Env[k]; !exists {
+			c.Env[k] = v
+		}
+	}
+
+	// Merge tasks
+	if c.Tasks == nil {
+		c.Tasks = make(map[string]Task)
+	}
+	for k, v := range other.Tasks {
+		if _, exists := c.Tasks[k]; !exists {
+			c.Tasks[k] = v
+		}
+	}
+
+	// Merge environments
+	if c.Environments == nil {
+		c.Environments = make(map[string]EnvironmentConfig)
+	}
+	for k, v := range other.Environments {
+		if _, exists := c.Environments[k]; !exists {
+			c.Environments[k] = v
+		}
+	}
+
+	// Merge aliases
+	if c.Aliases == nil {
+		c.Aliases = make(map[string]map[string]string)
+	}
+	for k, v := range other.Aliases {
+		if _, exists := c.Aliases[k]; !exists {
+			c.Aliases[k] = v
+		} else {
+			for ak, av := range v {
+				if _, aexists := c.Aliases[k][ak]; !aexists {
+					c.Aliases[k][ak] = av
+				}
+			}
+		}
+	}
+}
+
 func (c *Config) validateTaskDependencies() error {
 	var errs []string
 	for taskName, task := range c.Tasks {
