@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/pterm/pterm"
@@ -24,6 +25,7 @@ func init() {
 	cacheCmd.AddCommand(cacheClearCmd)
 	cacheCmd.AddCommand(cachePurgeCmd)
 	cacheCmd.AddCommand(cacheStatsCmd)
+	cacheCmd.AddCommand(cachePathCmd)
 
 	if rootCmd != nil {
 		rootCmd.AddCommand(cacheCmd)
@@ -36,12 +38,37 @@ var cacheCmd = &cobra.Command{
 	Short: "Manage UniRTM cache",
 	Long: `Manage the UniRTM download cache.
 
-The cache command provides subcommands for listing, clearing, and
-inspecting cached artifacts.
-
-If no subcommand is provided, it lists all cached artifacts.`,
+If no subcommand is provided, it displays the path to the cache directory.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runCacheList(cmd, args)
+		cacheDir := env.GetCacheDir()
+		var fileCount int
+		var totalSize int64
+		_ = filepath.Walk(cacheDir, func(_ string, info os.FileInfo, err error) error {
+			if err == nil && !info.IsDir() {
+				fileCount++
+				totalSize += info.Size()
+			}
+			return nil
+		})
+		sizeStr := fmt.Sprintf("%.2f MB", float64(totalSize)/(1024*1024))
+		pterm.DefaultBox.WithTitle(pterm.LightCyan("Cache Information")).Println(
+			fmt.Sprintf("%s: %s\n%s: %s\n%s: %s",
+				pterm.Bold.Sprint("Path "), pterm.LightBlue(cacheDir),
+				pterm.Bold.Sprint("Size "), pterm.LightGreen(sizeStr),
+				pterm.Bold.Sprint("Files"), pterm.LightYellow(fileCount)),
+		)
+		return nil
+	},
+}
+
+// cachePathCmd displays the cache directory path.
+var cachePathCmd = &cobra.Command{
+	Use:   "path",
+	Short: "Display the cache directory path",
+	Args:  cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		fmt.Println(env.GetCacheDir())
+		return nil
 	},
 }
 
@@ -74,8 +101,8 @@ Examples:
 
 // cachePurgeCmd removes expired cache entries.
 var cachePurgeCmd = &cobra.Command{
-	Use:     "purge",
-	Aliases: []string{"prune"},
+	Use:     "prune",
+	Aliases: []string{"purge"},
 	Short:   "Remove expired cache entries",
 	Long:    `Remove all expired cache entries to free up disk space.`,
 	Args:    cobra.NoArgs,
