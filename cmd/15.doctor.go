@@ -140,8 +140,12 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		if strings.HasPrefix(pair[0], "UNIRTM_") {
 			foundAny = true
 			val := pair[1]
+			// Redact sensitive tokens
 			if strings.Contains(pair[0], "TOKEN") || strings.Contains(pair[0], "KEY") || strings.Contains(pair[0], "SECRET") {
 				val = pterm.LightMagenta("******** [REDACTED]")
+			} else if len(val) > 60 {
+				// Surpass: Truncate long values like UNIRTM_PATH to prevent layout issues
+				val = val[:57] + pterm.FgGray.Sprint("...")
 			}
 			envTable = append(envTable, []string{pterm.LightBlue(pair[0]), val})
 		}
