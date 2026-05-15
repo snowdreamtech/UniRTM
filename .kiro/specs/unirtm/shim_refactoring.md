@@ -6,7 +6,9 @@
 ## 2. 已完成的工作
 
 ### A. 扁平化与代理架构
-- **单一入口代理**：将 Unix 系统的 Shim 修改为指向 `unirtm` 的软链接；将 Windows 系统的 Shim 简化为调用 `unirtm shim <exe>` 的轻量级包装器。
+- **单一入口代理**：
+    - **Unix (macOS/Linux)**：将 Shim 修改为指向 `unirtm` 的软链接。
+    - **Windows**：将 Shim 修改为指向 `unirtm` 的**硬链接** (Hard Link, Scoop 模式变体)。这提供了原生的 EXE 执行性能且不占用额外磁盘空间，同时避免了创建软链接所需的管理员权限。
 - **目录扁平化**：强制所有 Shim 文件生成在 `shims/` 根目录下，避免嵌套目录导致的 PATH 复杂性。
 - **动态分发**：在 `unirtm shim` 模式下，通过读取调用名称（`os.Args[0]` 或显式参数）动态解析并执行对应的工具二进制。
 
