@@ -216,7 +216,8 @@ func runWhich(cmd *cobra.Command, args []string) error {
 				absPath = filepath.Join(inst.InstallPath, exec)
 			}
 
-			if filepath.Base(absPath) == target || (inst.Tool == target && exec == execs[0]) {
+			// Priority 1: Exact filename match (e.g., node == node)
+			if filepath.Base(absPath) == target {
 				matches = append(matches, match{
 					Path:     absPath,
 					Version:  inst.Version,
@@ -225,11 +226,22 @@ func runWhich(cmd *cobra.Command, args []string) error {
 					Active:   isActive,
 					Source:   source,
 				})
-				// If not --all and we found an active one, we're done
-				if !whichAll && isActive {
-					printMatch(matches[len(matches)-1])
-					return nil
-				}
+			} else if inst.Tool == target && len(execs) == 1 {
+				// Priority 2: Single binary fallback (only if there's only one executable)
+				matches = append(matches, match{
+					Path:     absPath,
+					Version:  inst.Version,
+					Tool:     inst.Tool,
+					Provider: p.Name(),
+					Active:   isActive,
+					Source:   source,
+				})
+			}
+
+			// If not --all and we found an active exact match, we're done
+			if !whichAll && isActive && filepath.Base(absPath) == target {
+				printMatch(matches[len(matches)-1])
+				return nil
 			}
 		}
 	}
