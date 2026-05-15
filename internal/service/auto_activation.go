@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/config"
@@ -294,9 +295,11 @@ func (m *AutoActivationManager) generateActivation(ctx context.Context, shell Sh
 func (m *AutoActivationManager) LoadConfigByDir(projectDir string) (map[string]string, map[string]string, []string, error) {
 	toolVersions := make(map[string]string)
 	
-	cfg, err := config.LoadFromDir(projectDir)
+	cfg, err := config.LoadHierarchy(projectDir)
 	if err != nil {
-		return nil, nil, nil, err
+		// If LoadHierarchy fails, it might be because it didn't find any config files at all
+		// which is fine, we just return empty versions.
+		return toolVersions, nil, nil, nil
 	}
 
 	// Extract tool versions
@@ -401,10 +404,28 @@ func (m *AutoActivationManager) generateDeactivationScript(shell ShellType, stat
 
 // generatePosixDeactivation generates deactivation script for POSIX shells.
 func (m *AutoActivationManager) generatePosixDeactivation(sb *strings.Builder, state *EnvironmentState) {
-	// Restore PATH
+	// Restore PATH or clean up injected paths
 	if state.PreviousPath != "" {
 		sb.WriteString("# Restore previous PATH\n")
 		sb.WriteString(fmt.Sprintf("export PATH=\"%s\"\n", state.PreviousPath))
+		sb.WriteString("\n")
+	} else {
+		// No previous path known, clean up what we injected
+		shimsDir := m.activationManager.shimsDir
+		sb.WriteString("# Clean up UniRTM paths from PATH\n")
+		sb.WriteString("_unirtm_clean_path() {\n")
+		sb.WriteString("  local result=\"\"\n")
+		sb.WriteString("  local IFS=:\n")
+		sb.WriteString("  for _p in $PATH; do\n")
+		sb.WriteString(fmt.Sprintf("    case \":$UNIRTM_PATH:%s:\" in\n", shimsDir))
+		sb.WriteString("      *\":$_p:\"*) ;;\n")
+		sb.WriteString("      *) result=\"${result:+$result:}$_p\" ;;\n")
+		sb.WriteString("    esac\n")
+		sb.WriteString("  done\n")
+		sb.WriteString("  echo \"$result\"\n")
+		sb.WriteString("}\n")
+		sb.WriteString("export PATH=\"$(_unirtm_clean_path)\"\n")
+		sb.WriteString("unset -f _unirtm_clean_path\n")
 		sb.WriteString("\n")
 	}
 
@@ -436,10 +457,24 @@ func (m *AutoActivationManager) generatePosixDeactivation(sb *strings.Builder, s
 
 // generateFishDeactivation generates deactivation script for fish shell.
 func (m *AutoActivationManager) generateFishDeactivation(sb *strings.Builder, state *EnvironmentState) {
-	// Restore PATH
+	// Restore PATH or clean up
 	if state.PreviousPath != "" {
 		sb.WriteString("# Restore previous PATH\n")
-		sb.WriteString(fmt.Sprintf("set -gx PATH \"%s\"\n", state.PreviousPath))
+		// In fish, PATH is a list. We assume PreviousPath is colon-separated or space-separated based on how it was captured.
+		// If it's from env.Get("PATH"), it's likely colon-separated.
+		fishPath := strings.ReplaceAll(state.PreviousPath, ":", " ")
+		sb.WriteString(fmt.Sprintf("set -gx PATH %s\n", fishPath))
+		sb.WriteString("\n")
+	} else {
+		shimsDir := m.activationManager.shimsDir
+		sb.WriteString("# Clean up UniRTM paths from PATH\n")
+		sb.WriteString("set -l new_path\n")
+		sb.WriteString("for p in $PATH\n")
+		sb.WriteString(fmt.Sprintf("    if not contains $p $UNIRTM_PATH; and [ \"$p\" != \"%s\" ]\n", shimsDir))
+		sb.WriteString("        set -a new_path $p\n")
+		sb.WriteString("    end\n")
+		sb.WriteString("end\n")
+		sb.WriteString("set -gx PATH $new_path\n")
 		sb.WriteString("\n")
 	}
 
@@ -471,10 +506,21 @@ func (m *AutoActivationManager) generateFishDeactivation(sb *strings.Builder, st
 
 // generatePowerShellDeactivation generates deactivation script for PowerShell.
 func (m *AutoActivationManager) generatePowerShellDeactivation(sb *strings.Builder, state *EnvironmentState) {
-	// Restore PATH
+	// Restore PATH or clean up
 	if state.PreviousPath != "" {
 		sb.WriteString("# Restore previous PATH\n")
 		sb.WriteString(fmt.Sprintf("$env:PATH = \"%s\"\n", state.PreviousPath))
+		sb.WriteString("\n")
+	} else {
+		shimsDir := m.activationManager.shimsDir
+		if runtime.GOOS == "windows" {
+			shimsDir = filepath.FromSlash(shimsDir)
+		}
+		sb.WriteString("# Clean up UniRTM paths from PATH\n")
+		sb.WriteString("$unirtmPaths = @()\n")
+		sb.WriteString("if ($env:UNIRTM_PATH) { $unirtmPaths = $env:UNIRTM_PATH -split ';' }\n")
+		sb.WriteString(fmt.Sprintf("$shimsDir = \"%s\"\n", shimsDir))
+		sb.WriteString("$env:PATH = ($env:PATH -split ';' | Where-Object { $unirtmPaths -notcontains $_ -and $_ -ne $shimsDir }) -join ';'\n")
 		sb.WriteString("\n")
 	}
 

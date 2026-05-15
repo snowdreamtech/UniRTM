@@ -176,21 +176,43 @@ func (m *ActivationManager) GenerateProjectActivation(ctx context.Context, shell
 	installsDir := filepath.Join(m.dataDir, "installs")
 
 	// Resolve tool binary paths and environment variables
-	for tool, version := range toolVersions {
-		// Standardize tool name for filesystem (Scheme B: provider-tool-name)
-		fsToolName := env.GetFSToolName(tool, "")
+	for toolNameKey, version := range toolVersions {
+		toolName := toolNameKey
+		backendName := ""
 
-		p := m.registry.Get(tool)
+		// Resolve backend and tool name from key if not explicit
+		if idx := strings.Index(toolNameKey, ":"); idx != -1 {
+			backendName = toolNameKey[:idx]
+			toolName = toolNameKey[idx+1:]
+		} else if strings.Contains(toolNameKey, "/") {
+			backendName = "github"
+		}
+
+		// Intercept go: prefix (align with installation manager)
+		if backendName == "go" || strings.HasPrefix(toolNameKey, "go:") {
+			backendName = "go-pkg"
+			if strings.HasPrefix(toolNameKey, "go:") {
+				toolName = strings.TrimPrefix(toolNameKey, "go:")
+			}
+		}
+
+		// Standardize tool name for filesystem (Scheme B: provider-tool-name)
+		fsToolName := env.GetFSToolName(toolName, backendName)
+
+		p := m.registry.GetWithBackend(toolName, backendName)
+		if p == nil {
+			continue
+		}
 		installPath := filepath.Join(installsDir, fsToolName, version)
 
 		// Get bin paths
-		binPaths, err := p.GetBinPaths(tool, installPath, version)
+		binPaths, err := p.GetBinPaths(toolName, installPath, version)
 		if err == nil {
 			injectedPaths = append(injectedPaths, binPaths...)
 		}
 
 		// Get env vars
-		toolEnvVars, err := p.GetEnvVars(tool, installPath, version)
+		toolEnvVars, err := p.GetEnvVars(toolName, installPath, version)
 		if err == nil {
 			for k, v := range toolEnvVars {
 				if _, exists := envVars[k]; !exists {
