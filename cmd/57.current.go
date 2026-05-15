@@ -4,15 +4,15 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
+	"strings"
 
-	"github.com/snowdreamtech/unirtm/internal/cli/output"
-	"github.com/snowdreamtech/unirtm/internal/database"
+	"github.com/pterm/pterm"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
-	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/spf13/cobra"
 )
 
@@ -28,107 +28,121 @@ var currentCmd = &cobra.Command{
 	Short: "Display the active version for each tool",
 	Long: `Display the active version for each tool.
 
-If no tool is specified, it shows the active version for all installed tools.
-A version is considered active if its shim currently points to it or if it is
-the resolved version from the active configuration.
+This command aligns with 'mise current'. It looks at your configuration files
+(unirtm.toml, .tool-versions) to determine which tools and versions are
+currently requested in this directory.
 
-Examples:
-  # Show all active versions
-  unirtm current
-
-  # Show active version for node
-  unirtm current node`,
+If no tool is specified, it shows the active versions for all tools defined
+in the current hierarchy.`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runCurrent,
 }
 
 func runCurrent(cmd *cobra.Command, args []string) error {
-	formatter := output.NewFormatter(output.FormatterOptions{
-		Format:  getOutputFormat(),
-		NoColor: false,
-		Writer:  os.Stdout,
-		Quiet:   quiet,
-		Verbose: verbose,
-	})
-
-	ctx := context.Background()
-
-	dbPath := env.GetDatabasePath()
-	db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true})
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	installRepo, _ := sqlite.NewInstallationRepository(db.Conn())
-	installations, err := installRepo.List(ctx)
+	// 1. Load configuration from hierarchy (align with mise)
+	cfg, err := config.LoadFull()
 	if err != nil {
 		return err
 	}
 
-	if len(installations) == 0 {
-		if !quiet {
-			formatter.Info("No tools installed", nil)
-		}
-		return nil
-	}
-
-	// Resolve active versions (logic borrowed from list command)
-	shimsDir := env.GetShimsDir()
-	activeVersions := resolveActiveVersions(shimsDir, installations)
-
-	// Filter by tool if specified
+	filterTool := ""
 	if len(args) == 1 {
-		toolName := args[0]
-		version, ok := activeVersions[toolName]
-		if !ok {
-			// Check if tool exists at all
-			found := false
-			for _, inst := range installations {
-				if inst.Tool == toolName {
-					found = true
-					break
-				}
-			}
-			if !found {
-				return fmt.Errorf("tool not found: %s", toolName)
-			}
-			if !quiet {
-				fmt.Printf("%s: (none active)\n", toolName)
-			}
-			return nil
+		filterTool = args[0]
+	}
+
+	// 2. Resolve requested tools and their installation status
+	type toolStatus struct {
+		name      string
+		versions  []string
+		installed []bool
+	}
+	var results []toolStatus
+
+	// Get all tool names from merged config
+	var toolNames []string
+	for name := range cfg.Tools {
+		if filterTool != "" && name != filterTool {
+			continue
 		}
-		if jsonOutput {
-			formatter.Success(toolName, map[string]interface{}{"tool": toolName, "version": version})
-		} else {
-			fmt.Println(version)
+		toolNames = append(toolNames, name)
+	}
+	sort.Strings(toolNames)
+
+	for _, name := range toolNames {
+		toolCfg := cfg.Tools[name]
+		versions := strings.Fields(toolCfg.Version)
+		var installed []bool
+
+		for _, v := range versions {
+			fsName := env.GetFSToolName(name, toolCfg.Backend)
+			path := filepath.Join(env.GetInstallsDir(), fsName, v)
+			_, err := os.Stat(path)
+			installed = append(installed, err == nil)
+		}
+
+		results = append(results, toolStatus{
+			name:      name,
+			versions:  versions,
+			installed: installed,
+		})
+	}
+
+	if len(results) == 0 {
+		if filterTool != "" {
+			return fmt.Errorf("tool %s is not defined in current configuration", filterTool)
+		}
+		pterm.Info.Println("No tools defined in current configuration.")
+		return nil
+	}
+
+	// 3. Output Logic
+	// Surpass: Visual detection. If TTY and not specific tool, show rich UI.
+	if !pterm.PrintColor || jsonOutput || filterTool != "" {
+		// Plain mode (Mise style) or specific tool
+		for _, res := range results {
+			if filterTool != "" {
+				fmt.Println(strings.Join(res.versions, " "))
+			} else {
+				fmt.Printf("%s %s\n", res.name, strings.Join(res.versions, " "))
+			}
 		}
 		return nil
 	}
 
-	// Show all
-	tools := make([]string, 0, len(activeVersions))
-	for t := range activeVersions {
-		tools = append(tools, t)
-	}
-	sort.Strings(tools)
+	// [Surpass] Interactive UI
+	pterm.DefaultSection.Println("Active Runtime Versions")
+	
+	var tableData [][]string
+	tableData = append(tableData, []string{"Tool", "Version", "Status"})
 
-	if jsonOutput {
-		results := make(map[string]interface{})
-		for _, t := range tools {
-			results[t] = activeVersions[t]
+	hasMissing := false
+	for _, res := range results {
+		for i, v := range res.versions {
+			status := pterm.LightGreen("✓ installed")
+			if !res.installed[i] {
+				status = pterm.LightRed("✗ missing")
+				hasMissing = true
+			}
+			
+			toolDisplay := res.name
+			if i > 0 {
+				toolDisplay = "" 
+			}
+			
+			tableData = append(tableData, []string{
+				pterm.Bold.Sprint(toolDisplay),
+				pterm.Cyan(v),
+				status,
+			})
 		}
-		formatter.Success("Current active versions", results)
-		return nil
 	}
 
-	for _, t := range tools {
-		fmt.Printf("%-20s %s\n", t, activeVersions[t])
+	pterm.DefaultTable.WithHasHeader().WithData(tableData).Render()
+
+	if hasMissing {
+		fmt.Println()
+		pterm.Warning.Printfln("Some versions are specified but not installed. Run '%s' to fix.", pterm.LightMagenta("unirtm install"))
 	}
 
 	return nil
 }
-
-// NOTE: resolveActiveVersions is already defined in 8.list.go.
-// In Go, since both files are in the 'cmd' package, they can share it.
-// If not exported, they must be in the same package, which they are.
