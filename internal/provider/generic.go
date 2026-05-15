@@ -266,11 +266,14 @@ func (g *GenericProvider) pickBestExecutables(execs []string, toolName string) [
 	}
 
 	var results []string
-	// If we have a clear winner, only take the high-scoring ones
+	// Inclusive Strategy:
+	// 1. Keep everything in a "bin" directory (high confidence)
+	// 2. Keep anything within a reasonable range of the max score
 	for _, s := range scored {
-		// Heuristic: if a file scores much higher than others, it's probably the main binary.
-		// We take anything that is within 30 points of the max score.
-		if s.score >= maxScore-30 {
+		dir := filepath.Dir(s.path)
+		isBinDir := filepath.Base(dir) == "bin" || dir == "bin"
+		
+		if isBinDir || s.score >= maxScore-50 {
 			results = append(results, s.path)
 		}
 	}
