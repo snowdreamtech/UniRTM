@@ -38,21 +38,18 @@ func init() {
 
 // Execute executes the root command.
 func Execute() {
+	exeName := filepath.Base(os.Args[0])
+
 	// Handle asdf alias/symlink
-	if filepath.Base(os.Args[0]) == "asdf" {
-		if len(os.Args) > 1 {
-			command := os.Args[1]
-			switch command {
-			case "reshim", "update-nodebuild", "update-ruby-build":
-				// Silently succeed for these commands common in plugins
-				os.Exit(0)
-			default:
-				// For other asdf commands, we could eventually map them to unirtm commands
-				fmt.Printf("unirtm (as asdf) - intercepted %s command\n", command)
-				os.Exit(0)
-			}
-		}
-		os.Exit(0)
+	if exeName == "asdf" {
+		handleAsdfAlias()
+		return
+	}
+
+	// Handle shim mode: if invoked as a tool (e.g. "go") instead of "unirtm"
+	if !isUniRTMBinary(exeName) {
+		invokeShimMode(exeName)
+		return
 	}
 
 	err := rootCmd.Execute()
@@ -93,6 +90,76 @@ func Execute() {
 		
 		formatter := output.DefaultFormatter()
 		formatter.Error(err.Error(), nil)
+		os.Exit(1)
+	}
+}
+
+// isUniRTMBinary checks if the given name is one of UniRTM's own binary names.
+func isUniRTMBinary(name string) bool {
+	name = strings.TrimSuffix(name, ".exe")
+	return name == "unirtm" || name == "unirtm-test" || name == "main"
+}
+
+// handleAsdfAlias handles legacy asdf commands for compatibility.
+func handleAsdfAlias() {
+	if len(os.Args) > 1 {
+		command := os.Args[1]
+		switch command {
+		case "reshim", "update-nodebuild", "update-ruby-build":
+			// Silently succeed for these commands common in plugins
+			os.Exit(0)
+		default:
+			// For other asdf commands, we could eventually map them to unirtm commands
+			fmt.Printf("unirtm (as asdf) - intercepted %s command\n", command)
+			os.Exit(0)
+		}
+	}
+	os.Exit(0)
+}
+
+// invokeShimMode resolves and executes a tool when UniRTM is invoked via a symlink.
+func invokeShimMode(exeName string) {
+	ctx := context.Background()
+
+	// 1. Load configuration to find which tool provides this executable
+	cfg, err := loadConfig(ctx)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: failed to load config for shim %s: %v\n", exeName, err)
+		os.Exit(1)
+	}
+
+	// 2. Get installation manager
+	im, err := getInstallationManager(ctx, cfg)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: failed to initialize installation manager for shim %s: %v\n", exeName, err)
+		os.Exit(1)
+	}
+
+	// 3. Resolve tool path for the executable name
+	// This will look through active tools in the current directory context
+	platform := backend.CurrentPlatform()
+	binPath, envVars, err := im.ResolveExecutable(ctx, exeName, platform)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "unirtm: '%s' is not installed or binary not found.\n", exeName)
+		fmt.Fprintf(os.Stderr, "  Run: unirtm install [tool]\n")
+		os.Exit(1)
+	}
+
+	// 4. Execute the target binary with all arguments
+	// Merge with provided env vars
+	for k, v := range envVars {
+		os.Setenv(k, v)
+	}
+
+	// Prepare for execution
+	args := os.Args
+	if len(args) > 0 {
+		args[0] = binPath
+	}
+
+	// Use syscall.Exec for a clean handoff on Unix, or fallback on Windows
+	if err := service.ExecuteBinary(binPath, args); err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: failed to execute %s: %v\n", binPath, err)
 		os.Exit(1)
 	}
 }

@@ -926,6 +926,50 @@ func tryVerifyProvenance(ctx context.Context, tool, artifactPath string) (string
 	return "verified", nil
 }
 
+// ResolveExecutable finds the absolute path and environment variables for a given executable name
+// by searching through installed tools in the current context.
+func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName string, platform backend.Platform) (string, map[string]string, error) {
+	// 1. Get all tools from config
+	// For simplicity in this first step, we'll scan all tools in the installation repository
+	// and pick the one that provides the executable.
+	// In a real scenario, we should prioritize tools in the current project config.
+	
+	installations, err := im.installRepo.List(ctx)
+	if err != nil {
+		return "", nil, fmt.Errorf("list installations: %w", err)
+	}
+
+	// Group by tool to find the active version
+	// We'll prioritize:
+	// 1. Environment variable UNIRTM_<TOOL>_VERSION
+	// 2. "current" tag in database
+	// 3. Latest installed version
+	
+	// For now, let's look for any installation that provides this executable
+	for _, inst := range installations {
+		p := im.providerRegistry.GetWithBackend(inst.Tool, inst.Backend)
+		if p == nil {
+			continue
+		}
+
+		// Check if this tool provides the executable
+		execs, err := p.ListExecutables(inst.Tool, inst.InstallPath, inst.Version)
+		if err != nil {
+			continue
+		}
+
+		for _, exec := range execs {
+			if filepath.Base(exec) == exeName {
+				// Found it! Now get environment variables
+				envVars, _ := p.GetEnvVars(inst.Tool, inst.InstallPath, inst.Version)
+				return exec, envVars, nil
+			}
+		}
+	}
+
+	return "", nil, fmt.Errorf("executable %s not found", exeName)
+}
+
 // removeEmptyDirs recursively removes empty parent directories of path up to root.
 func (im *InstallationManager) removeEmptyDirs(path string, root string) {
 	dir := filepath.Dir(path)

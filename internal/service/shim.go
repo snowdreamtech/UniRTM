@@ -14,9 +14,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 )
 
 // Generator creates shim scripts for installed tools.
@@ -381,4 +383,19 @@ if (-not $ToolBin) {
 func toolVersionEnvVar(tool string) string {
 	upper := strings.ToUpper(strings.ReplaceAll(tool, "-", "_"))
 	return fmt.Sprintf("UNIRTM_%s_VERSION", upper)
+}
+
+// ExecuteBinary executes a binary with arguments, replacing the current process on Unix.
+func ExecuteBinary(binPath string, args []string) error {
+	if runtime.GOOS == "windows" {
+		// On Windows, we must use exec.Command because syscall.Exec is not available
+		cmd := exec.Command(binPath, args[1:]...)
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		return cmd.Run()
+	}
+
+	// On Unix, replace the current process
+	return syscall.Exec(binPath, args, os.Environ())
 }
