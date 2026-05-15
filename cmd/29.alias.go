@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
-	"github.com/pelletier/go-toml/v2"
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -75,70 +75,68 @@ var aliasListCmd = &cobra.Command{
 	Long:    `List aliases from all configuration levels (Global, Parent, Local).`,
 	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Use LoadFull to get merged aliases but we also want to see where they come from
-		// So we manually walk up like LoadHierarchy but keep track of the source
-		pwd, err := os.Getwd()
+		cfg, err := config.LoadFull()
 		if err != nil {
 			return err
 		}
 
-		var data [][]string
-		data = append(data, []string{"Tool", "Alias", "Version", "Source"})
+		if len(cfg.Aliases) == 0 {
+			pterm.Info.Println("No aliases configured.")
+			return nil
+		}
 
 		filterTool := ""
 		if len(args) == 1 {
 			filterTool = args[0]
 		}
 
-		// 1. Process project hierarchy (from nearest to furthest)
-		curr := pwd
-		for {
-			cfg, err := config.LoadFromDir(curr)
-			if err == nil {
-				source := "Local"
-				if curr != pwd {
-					source = curr
-				}
-				for tool, aliases := range cfg.Aliases {
-					if filterTool != "" && tool != filterTool {
-						continue
-					}
-					for alias, version := range aliases {
-						data = append(data, []string{tool, alias, version, source})
-					}
-				}
-			}
+		pterm.DefaultSection.Println("Tool Aliases")
 
-			parent := filepath.Dir(curr)
-			if parent == curr {
-				break
+		// Sort tools for consistent output
+		var tools []string
+		for t := range cfg.Aliases {
+			if filterTool != "" && t != filterTool {
+				continue
 			}
-			curr = parent
+			tools = append(tools, t)
 		}
+		sort.Strings(tools)
 
-		// 2. Process global config
-		globalPath := env.GetGlobalConfigPath()
-		if dataGlobal, err := os.ReadFile(globalPath); err == nil {
-			globalCfg := &config.Config{}
-			if err := toml.Unmarshal(dataGlobal, globalCfg); err == nil {
-				globalCfg.PostLoad()
-				for tool, aliases := range globalCfg.Aliases {
-					if filterTool != "" && tool != filterTool {
-						continue
-					}
-					for alias, version := range aliases {
-						data = append(data, []string{tool, alias, version, "Global"})
+		for _, tool := range tools {
+			aliases := cfg.Aliases[tool]
+			pterm.Bold.Printf("• %s\n", tool)
+			
+			var items []pterm.BulletListItem
+			var names []string
+			for n := range aliases {
+				names = append(names, n)
+			}
+			sort.Strings(names)
+
+			for _, name := range names {
+				version := aliases[name]
+				// We can detect source by looking at global config specifically
+				sourceTag := pterm.LightBlue("[Local]")
+				if globalCfg, err := config.LoadGlobal(); err == nil {
+					if gAliases, ok := globalCfg.Aliases[tool]; ok {
+						if gVersion, ok := gAliases[name]; ok && gVersion == version {
+							sourceTag = pterm.LightMagenta("[Global]")
+						}
 					}
 				}
+
+				items = append(items, pterm.BulletListItem{
+					Level: 1,
+					Text: fmt.Sprintf("%s %s %s %s", 
+						pterm.Cyan(name), 
+						pterm.Gray("→"), 
+						pterm.Green(version), 
+						sourceTag),
+				})
 			}
+			pterm.DefaultBulletList.WithItems(items).Render()
+			fmt.Println() // Spacer
 		}
-
-		if len(data) <= 1 {
-			pterm.Info.Println("No aliases configured.")
-			return nil
-		}
-
-		pterm.DefaultTable.WithHasHeader().WithData(data).Render()
 		return nil
 	},
 }
