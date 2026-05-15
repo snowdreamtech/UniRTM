@@ -116,8 +116,6 @@ func GetNoProxyEnv(extraDomains ...string) []string {
 		"mirrors.tuna.tsinghua.edu.cn",
 		"pypi.tuna.tsinghua.edu.cn",
 		"pypi.douban.com",
-		"registry.taobao.org",
-		"npm.taobao.org",
 		"rsproxy.cn",
 		"r.cnpmjs.org",
 		"goproxy.cn",
