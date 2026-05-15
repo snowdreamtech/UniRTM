@@ -39,7 +39,6 @@ func init() {
 // Execute executes the root command.
 func Execute() {
 	exeName := filepath.Base(os.Args[0])
-
 	// Handle asdf alias/symlink
 	if exeName == "asdf" {
 		handleAsdfAlias()

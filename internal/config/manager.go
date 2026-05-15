@@ -17,7 +17,6 @@ import (
 
 	"github.com/flosch/pongo2/v6"
 	"github.com/pelletier/go-toml/v2"
-	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/viper"
 )
@@ -145,7 +144,7 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 		return path
 	}
 
-	templateCtx["env"] = func(key string, defaultVal ...string) interface{} {
+	templateCtx["get_env"] = func(key string, defaultVal ...string) interface{} {
 		val, exists := typedEnv[key]
 		if !exists || val == "" {
 			if len(defaultVal) > 0 {
@@ -227,6 +226,8 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 
 	// Process shorthand tool versions
 	config.PostLoad()
+
+
 
 	// Initialize maps if they are nil
 	if config.Tools == nil {
@@ -342,29 +343,37 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 	}
 
 	for {
-		// Files to check in current directory (highest precedence first in this block)
-		// We want .unirtm.local.toml > .unirtm.toml > unirtm.toml
+		// Files to check in current directory (highest precedence at the end of the slice)
 		files := []string{
-			filepath.Join(curr, ".unirtm.local.toml"),
-			filepath.Join(curr, ".unirtm.local.yaml"),
-			filepath.Join(curr, ".unirtm.local.yml"),
-			filepath.Join(curr, ".mise.local.toml"),
-			filepath.Join(curr, ".mise.local.yaml"),
-			filepath.Join(curr, ".mise.local.yml"),
-			filepath.Join(curr, ".unirtm.toml"),
-			filepath.Join(curr, ".unirtm.yaml"),
-			filepath.Join(curr, ".unirtm.yml"),
-			filepath.Join(curr, ".mise.toml"),
-			filepath.Join(curr, ".mise.yaml"),
+			// 1. Mise compatibility files (Lowest precedence)
 			filepath.Join(curr, ".mise.yml"),
-			filepath.Join(curr, "unirtm.toml"),
-			filepath.Join(curr, "unirtm.yaml"),
+			filepath.Join(curr, ".mise.yaml"),
+			filepath.Join(curr, ".mise.toml"),
+			
+			// 2. Standard UniRTM project files
 			filepath.Join(curr, "unirtm.yml"),
+			filepath.Join(curr, "unirtm.yaml"),
+			filepath.Join(curr, "unirtm.toml"),
+			filepath.Join(curr, ".unirtm.yml"),
+			filepath.Join(curr, ".unirtm.yaml"),
+			filepath.Join(curr, ".unirtm.toml"),
+			
+			// 3. Local overrides (Highest precedence)
+			filepath.Join(curr, ".mise.local.yml"),
+			filepath.Join(curr, ".mise.local.yaml"),
+			filepath.Join(curr, ".mise.local.toml"),
+			filepath.Join(curr, ".unirtm.local.yml"),
+			filepath.Join(curr, ".unirtm.local.yaml"),
+			filepath.Join(curr, ".unirtm.local.toml"),
 		}
 
 		dirConfigs := []*Config{}
 		for _, path := range files {
-			if cfg, err := m.tryLoad(ctx, path, true, &initialMerged.Settings); cfg != nil && err == nil {
+			cfg, err := m.tryLoad(ctx, path, true, &initialMerged.Settings)
+			if err != nil {
+				continue
+			}
+			if cfg != nil {
 				dirConfigs = append(dirConfigs, cfg)
 			}
 		}
@@ -406,35 +415,50 @@ func (m *viperConfigManager) tryLoad(ctx context.Context, path string, enforceTr
 		return nil, nil
 	}
 
-	if enforceTrust && m.trustManager != nil {
-		// Check if the file's directory is in TrustedConfigPaths
-		absPath, _ := filepath.Abs(path)
-		dir := filepath.Dir(absPath)
-		isTrustedPath := false
-		if initialSettings != nil {
-			for _, tp := range initialSettings.TrustedConfigPaths {
-				absTP, _ := filepath.Abs(tp)
-				if strings.HasPrefix(dir, absTP) {
-					isTrustedPath = true
-					break
-				}
+	if enforceTrust {
+		// Trust check
+		trustedPaths := initialSettings.TrustedConfigPaths
+		isGloballyTrusted := false
+		for _, tp := range trustedPaths {
+			absTP, _ := filepath.Abs(tp)
+			if path == absTP {
+				isGloballyTrusted = true
+				break
 			}
 		}
 
-		if !isTrustedPath {
+		if !isGloballyTrusted {
 			status := m.trustManager.TrustStatus(path)
-			if status != TrustStatusTrusted {
-				if status == TrustStatusModified {
-					pterm.Warning.Printfln("Configuration file has been modified since it was last trusted: %s\nRun `unirtm trust %s` to review and trust the new contents.", path, path)
-				} else {
-					pterm.Warning.Printfln("Skipping untrusted configuration file: %s\nRun `unirtm trust %s` to trust it.", path, path)
-				}
+			if status == TrustStatusUntrusted {
 				return nil, nil
 			}
+			if status == TrustStatusModified {
+				cfg, err := m.Load(ctx, path)
+				if err != nil {
+					return nil, err
+				}
+				// Strip sensitive fields
+				cfg.Env = make(map[string]interface{})
+				cfg.Tasks = make(map[string]Task)
+				// Also strip from environments
+				for name, env := range cfg.Environments {
+					env.Env = nil
+					env.Tasks = nil
+					cfg.Environments[name] = env
+				}
+				return cfg, nil
+			}
+			if status == TrustStatusTrusted {
+				return m.Load(ctx, path)
+			}
+		} else {
+			return m.Load(ctx, path)
 		}
+	} else {
+		return m.Load(ctx, path)
 	}
 
-	return m.Load(ctx, path)
+	return nil, nil
 }
 
 // LoadWithEnvironment loads configuration from all hierarchy levels and applies

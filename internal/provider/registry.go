@@ -111,6 +111,14 @@ func (r *Registry) GetWithBackend(toolName string, backendName string) Provider 
 		return provider
 	}
 
+	// Try colon-prefix backend match (e.g., "pipx:clang-format" -> "pipx", "npm:prettier" -> "npm")
+	if idx := strings.Index(toolName, ":"); idx != -1 {
+		backend := strings.ToLower(toolName[:idx])
+		if provider, ok := r.providers[backend]; ok {
+			return provider
+		}
+	}
+
 	// Fallback to generic provider
 	return r.generic
 }

@@ -207,7 +207,7 @@ func runActivate(cmd *cobra.Command, args []string) error {
 	// Get shims directory
 	shimsDir := env.GetShimsDir()
 
-	// Load configuration to get [env] variables
+	// Load configuration to get tools and [env] variables
 	envVars := make(map[string]string)
 	var sources []string
 	if cfg, err := config.Load(); err == nil {
@@ -218,7 +218,16 @@ func runActivate(cmd *cobra.Command, args []string) error {
 			})
 		}
 		
-		// Create a map for quick redacted key lookup
+		// If we are activating "all" (no specific tool requested), 
+		// use the tools defined in the configuration.
+		if len(args) == 0 {
+			// Reset toolVersions to only include what's in the config
+			toolVersions = make(map[string]string)
+			for name, tc := range cfg.Tools {
+				toolVersions[name] = tc.Version
+			}
+		}
+
 		isRedacted := make(map[string]bool)
 		for _, rk := range redacted {
 			isRedacted[rk] = true
@@ -232,6 +241,11 @@ func runActivate(cmd *cobra.Command, args []string) error {
 			envVars[k] = val
 		}
 		sources = src
+	} else {
+		// If no config found and no tools requested, we have nothing to activate
+		if len(args) == 0 {
+			toolVersions = make(map[string]string)
+		}
 	}
 
 	// Create activation manager
@@ -240,9 +254,6 @@ func runActivate(cmd *cobra.Command, args []string) error {
 
 	// Get executable path for the hook
 	exePath, err := os.Executable()
-	if err != nil {
-		exePath = "unirtm" // Fallback
-	}
 
 	// Populate InjectedPaths if not using shims (Env mode)
 	var injectedPaths []string

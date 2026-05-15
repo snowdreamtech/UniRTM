@@ -256,16 +256,24 @@ func (m *ActivationManager) generatePosixScript(config ActivationConfig) (*Activ
 		// PATH mode activation
 		sb.WriteString("# UniRTM PATH mode activation\n")
 		injectedPath := strings.Join(config.InjectedPaths, string(os.PathListSeparator))
-		
-		// Build individual sed commands to clean up PATH
-		var sedCmds []string
-		for _, p := range config.InjectedPaths {
-			sedCmds = append(sedCmds, fmt.Sprintf("s|%s:?||g", p))
-		}
-		
-		// Use UNIRTM_PATH to track injected paths and clean up existing PATH to avoid duplicates
+
+		// Use UNIRTM_PATH to track injected paths.
+		// Use a shell loop to filter out existing UNIRTM-managed entries from PATH,
+		// avoiding sed command length limits when there are many tools.
 		sb.WriteString(fmt.Sprintf("export UNIRTM_PATH=\"%s\"\n", injectedPath))
-		sb.WriteString(fmt.Sprintf("export PATH=\"$UNIRTM_PATH:$(echo \"$PATH\" | sed -E \"%s\" | sed 's|:$||')\"\n", strings.Join(sedCmds, "; ")))
+		sb.WriteString("_unirtm_clean_path() {\n")
+		sb.WriteString("  local result=\"\"\n")
+		sb.WriteString("  local IFS=:\n")
+		sb.WriteString("  for _p in $PATH; do\n")
+		sb.WriteString("    case \":$UNIRTM_PATH:\" in\n")
+		sb.WriteString("      *\":$_p:\"*) ;;\n")
+		sb.WriteString("      *) result=\"${result:+$result:}$_p\" ;;\n")
+		sb.WriteString("    esac\n")
+		sb.WriteString("  done\n")
+		sb.WriteString("  echo \"$result\"\n")
+		sb.WriteString("}\n")
+		sb.WriteString("export PATH=\"$UNIRTM_PATH:$(_unirtm_clean_path)\"\n")
+		sb.WriteString("unset -f _unirtm_clean_path\n")
 		sb.WriteString("\n")
 	}
 

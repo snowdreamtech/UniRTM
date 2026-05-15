@@ -134,14 +134,14 @@ func (p *PypiProvider) ListExecutables(tool string, installPath string, version 
 	return executables, nil
 }
 
-// GetBinPaths returns the absolute path to the bin directory.
+// GetBinPaths returns no paths for PATH injection.
+// pipx/pypi tools use isolated venvs; injecting the venv's bin/ would expose
+// internal python/pip interpreters and pollute the system PATH.
+// Tool binaries are accessed via shims or resolved directly by their tool name.
 func (p *PypiProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
-	binDir := filepath.Join(installPath, "bin")
-	if _, err := os.Stat(binDir); os.IsNotExist(err) {
-		binDir = filepath.Join(installPath, "Scripts")
-	}
-	return []string{binDir}, nil
+	return []string{}, nil
 }
+
 
 // GetEnvVars returns the VIRTUAL_ENV environment variable.
 func (p *PypiProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
