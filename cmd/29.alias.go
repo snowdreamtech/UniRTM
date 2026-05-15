@@ -5,7 +5,14 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/pelletier/go-toml/v2"
 	"github.com/pterm/pterm"
+	"github.com/snowdreamtech/unirtm/internal/config"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +25,31 @@ func init() {
 	aliasCmd.AddCommand(aliasListCmd)
 	aliasCmd.AddCommand(aliasSetCmd)
 	aliasCmd.AddCommand(aliasUnsetCmd)
+	aliasCmd.AddCommand(aliasResolveCmd)
 	rootCmd.AddCommand(aliasCmd)
+}
+
+var aliasResolveCmd = &cobra.Command{
+	Use:   "resolve <tool> <alias>",
+	Short: "Resolve an alias to its actual version",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		tool, alias := args[0], args[1]
+		cfg, err := config.LoadFull()
+		if err != nil {
+			return err
+		}
+
+		if toolAliases, ok := cfg.Aliases[tool]; ok {
+			if version, ok := toolAliases[alias]; ok {
+				fmt.Println(version)
+				return nil
+			}
+		}
+
+		pterm.Error.Printf("Alias %s not found for tool %s\n", alias, tool)
+		return fmt.Errorf("alias not found")
+	},
 }
 
 var aliasCmd = &cobra.Command{
@@ -28,51 +59,85 @@ var aliasCmd = &cobra.Command{
 	Long: `Manage version aliases for tools.
 
 Aliases allow you to refer to a specific version by a name (e.g. "lts", "work").
-They can be managed globally or at the project level using the --global flag.`,
+They can be managed globally or at the project level using the --global flag.
+
+If no subcommand is provided, it lists all aliases.`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return aliasListCmd.RunE(cmd, args)
+	},
 }
 
 var aliasListCmd = &cobra.Command{
 	Use:     "ls [tool]",
 	Aliases: []string{"list"},
 	Short:   "List aliases",
+	Long:    `List aliases from all configuration levels (Global, Parent, Local).`,
 	Args:    cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfgPath := resolveConfigFilePath(aliasGlobal)
-		m, err := loadRawTOML(cfgPath)
+		// Use LoadFull to get merged aliases but we also want to see where they come from
+		// So we manually walk up like LoadHierarchy but keep track of the source
+		pwd, err := os.Getwd()
 		if err != nil {
 			return err
 		}
 
-		rawAliases, ok := m["aliases"].(map[string]interface{})
-		if !ok || len(rawAliases) == 0 {
+		var data [][]string
+		data = append(data, []string{"Tool", "Alias", "Version", "Source"})
+
+		filterTool := ""
+		if len(args) == 1 {
+			filterTool = args[0]
+		}
+
+		// 1. Process project hierarchy (from nearest to furthest)
+		curr := pwd
+		for {
+			cfg, err := config.LoadFromDir(curr)
+			if err == nil {
+				source := "Local"
+				if curr != pwd {
+					source = curr
+				}
+				for tool, aliases := range cfg.Aliases {
+					if filterTool != "" && tool != filterTool {
+						continue
+					}
+					for alias, version := range aliases {
+						data = append(data, []string{tool, alias, version, source})
+					}
+				}
+			}
+
+			parent := filepath.Dir(curr)
+			if parent == curr {
+				break
+			}
+			curr = parent
+		}
+
+		// 2. Process global config
+		globalPath := env.GetGlobalConfigPath()
+		if dataGlobal, err := os.ReadFile(globalPath); err == nil {
+			globalCfg := &config.Config{}
+			if err := toml.Unmarshal(dataGlobal, globalCfg); err == nil {
+				globalCfg.PostLoad()
+				for tool, aliases := range globalCfg.Aliases {
+					if filterTool != "" && tool != filterTool {
+						continue
+					}
+					for alias, version := range aliases {
+						data = append(data, []string{tool, alias, version, "Global"})
+					}
+				}
+			}
+		}
+
+		if len(data) <= 1 {
 			pterm.Info.Println("No aliases configured.")
 			return nil
 		}
 
-		var data [][]string
-		data = append(data, []string{"Tool", "Alias", "Version"})
-
-		if len(args) == 1 {
-			tool := args[0]
-			toolAliases, ok := rawAliases[tool].(map[string]interface{})
-			if !ok {
-				pterm.Warning.Printf("No aliases found for tool %s\n", tool)
-				return nil
-			}
-			for alias, ver := range toolAliases {
-				data = append(data, []string{tool, alias, fmt.Sprintf("%v", ver)})
-			}
-		} else {
-			for toolName, toolAliasesIfc := range rawAliases {
-				toolAliases, ok := toolAliasesIfc.(map[string]interface{})
-				if !ok {
-					continue
-				}
-				for alias, ver := range toolAliases {
-					data = append(data, []string{toolName, alias, fmt.Sprintf("%v", ver)})
-				}
-			}
-		}
 		pterm.DefaultTable.WithHasHeader().WithData(data).Render()
 		return nil
 	},
@@ -86,6 +151,15 @@ var aliasSetCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		tool, alias, version := args[0], args[1], args[2]
 
+		// 1. Resolve tool name and backend
+		toolName := tool
+		backendName := ""
+		if idx := strings.Index(tool, ":"); idx != -1 {
+			backendName = tool[:idx]
+			toolName = tool[idx+1:]
+		}
+
+		// 2. Load config
 		cfgPath := resolveConfigFilePath(aliasGlobal)
 		m, err := loadRawTOML(cfgPath)
 		if err != nil {
@@ -110,7 +184,15 @@ var aliasSetCmd = &cobra.Command{
 			return fmt.Errorf("failed to save alias: %w", err)
 		}
 
-		pterm.FgGreen.Printf("✅ Set alias %s=%s for tool %s in %s\n", alias, version, tool, cfgPath)
+		pterm.Success.Printf("Set alias %s=%s for tool %s in %s\n", alias, version, tool, cfgPath)
+
+		// [Surpass] Validation: Check if version exists (optional warning)
+		fsToolName := env.GetFSToolName(toolName, backendName)
+		installPath := filepath.Join(env.GetInstallsDir(), fsToolName, version)
+		if _, err := os.Stat(installPath); os.IsNotExist(err) {
+			pterm.Warning.Printf("Version %s for %s is not currently installed. You may need to run 'unirtm install' later.\n", version, tool)
+		}
+
 		return nil
 	},
 }
@@ -131,7 +213,7 @@ var aliasUnsetCmd = &cobra.Command{
 
 		rawAliases, ok := m["aliases"].(map[string]interface{})
 		if !ok {
-			pterm.Warning.Printf("No aliases found.")
+			pterm.Warning.Println("No aliases found.")
 			return nil
 		}
 
@@ -158,7 +240,7 @@ var aliasUnsetCmd = &cobra.Command{
 			return fmt.Errorf("failed to save alias: %w", err)
 		}
 
-		pterm.FgGreen.Printf("✅ Deleted alias %s for tool %s in %s\n", alias, tool, cfgPath)
+		pterm.Success.Printf("Deleted alias %s for tool %s in %s\n", alias, tool, cfgPath)
 		return nil
 	},
 }
