@@ -182,17 +182,36 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 
 	// 7. Network Connectivity
 	pterm.DefaultSection.Println("Network Connectivity")
-	client := &http.Client{Timeout: 3 * time.Second}
+	
+	// Detect Proxy
+	proxies := []string{"HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"}
+	foundProxy := false
+	for _, p := range proxies {
+		if val := os.Getenv(p); val != "" {
+			foundProxy = true
+			pterm.Info.Printf("Proxy detected: %s=%s\n", pterm.LightBlue(p), pterm.FgGray.Sprint(val))
+		}
+	}
+	if foundProxy {
+		fmt.Println()
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
 	targets := []struct{ name, url string }{
 		{"GitHub API", "https://api.github.com"},
 		{"Aqua Registry", "https://aquaproj.github.io"},
 	}
+	
 	for _, t := range targets {
 		start := time.Now()
 		resp, err := client.Get(t.url)
 		duration := time.Since(start)
 		if err != nil {
-			pterm.Error.Printf("%-15s %s (%v)\n", t.name, "Unreachable", err)
+			msg := err.Error()
+			if strings.Contains(msg, "reset") || strings.Contains(msg, "refused") {
+				msg += pterm.LightYellow(" (Check your proxy/firewall settings)")
+			}
+			pterm.Error.Printf("%-15s %s (%v)\n", t.name, "Unreachable", msg)
 		} else {
 			resp.Body.Close()
 			pterm.Success.Printf("%-15s %s (HTTP %d, %v)\n", t.name, "OK", resp.StatusCode, duration.Round(time.Millisecond))
