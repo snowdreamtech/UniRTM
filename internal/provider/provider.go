@@ -122,6 +122,7 @@ func GetNoProxyEnv(extraDomains ...string) []string {
 		"r.cnpmjs.org",
 		"goproxy.cn",
 		"goproxy.io",
+		"gems.ruby-china.com",
 	}
 	
 	// Add global configuration domains
