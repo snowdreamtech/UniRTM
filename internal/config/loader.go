@@ -31,6 +31,21 @@ func LoadFull() (*Config, error) {
 	return LoadHierarchy(pwd)
 }
 
+// LoadGlobal loads only the global UniRTM configuration.
+func LoadGlobal() (*Config, error) {
+	globalPath := GetGlobalConfigPath()
+	data, err := os.ReadFile(globalPath)
+	if err != nil {
+		return &Config{}, err
+	}
+	globalCfg := &Config{}
+	if err := toml.Unmarshal(data, globalCfg); err != nil {
+		return nil, err
+	}
+	globalCfg.PostLoad()
+	return globalCfg, nil
+}
+
 // LoadHierarchy loads the UniRTM configuration by merging configs starting from the given directory,
 // parent directories up to root, and the global configuration.
 func LoadHierarchy(startDir string) (*Config, error) {

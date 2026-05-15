@@ -10,8 +10,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -33,30 +35,23 @@ func init() {
 var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Manage UniRTM configuration",
-	Long: `Manage UniRTM configuration files.
+	Long: `Manage UniRTM configuration settings.
 
-Subcommands:
-  validate  Validate configuration files
-  show      Display merged configuration
-  generate  Generate a default configuration file
-  set       Set a configuration value
-  get       Get a configuration value
+This command manages settings that control UniRTM's behavior (e.g. cache TTL, data directory).
+It is NOT for managing tools or environment variables (use 'set' or 'alias' for those).
 
-Examples:
-  unirtm config validate
-  unirtm config show
-  unirtm config get tools.node.version
-  unirtm config set tools.node.version 20.0.0`,
+If no subcommand is provided, it displays the current merged configuration.`,
 	Aliases: []string{"cfg"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return cmd.Help()
+		return runConfigShow(cmd, args)
 	},
 }
 
 // configValidateCmd validates configuration files.
 var configValidateCmd = &cobra.Command{
-	Use:   "validate [file]",
-	Short: "Validate configuration files",
+	Use:     "validate [file]",
+	Aliases: []string{"check"},
+	Short:   "Validate configuration files",
 	Long: `Validate UniRTM configuration files for syntax and semantic errors.
 
 If no file is specified, validates the default configuration hierarchy.`,
@@ -66,10 +61,10 @@ If no file is specified, validates the default configuration hierarchy.`,
 
 // configShowCmd displays the merged configuration.
 var configShowCmd = &cobra.Command{
-	Use:   "show",
-	Short: "Display merged configuration",
+	Use:     "show",
+	Short:   "Display merged configuration",
 	Long:    `Display the merged configuration from all sources in the hierarchy.`,
-	Aliases: []string{"ls", "cat"},
+	Aliases: []string{"ls", "cat", "list"},
 	Args:    cobra.NoArgs,
 	RunE:    runConfigShow,
 }
@@ -174,9 +169,7 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 	cfg, err := cm.LoadHierarchy(ctx)
 	if err != nil {
 		if verbose {
-			formatter.Info("No configuration files found, showing defaults", map[string]interface{}{
-				"error": err.Error(),
-			})
+			pterm.Info.Printf("No configuration files found, using defaults: %v\n", err)
 		}
 		cfg = &config.Config{}
 	}
@@ -188,29 +181,66 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Human-readable display
-	fmt.Println("Merged Configuration:")
-	fmt.Println(strings.Repeat("-", 40))
-
+	// 1. Tool Section
+	pterm.DefaultSection.Println("Tools Configuration")
 	if len(cfg.Tools) == 0 {
-		fmt.Println("  tools: (none)")
+		pterm.Info.Println("  (no tools defined)")
 	} else {
-		fmt.Println("  tools:")
+		var toolItems []pterm.BulletListItem
 		for name, tool := range cfg.Tools {
-			fmt.Printf("    %s:\n", name)
-			if tool.Version != "" {
-				fmt.Printf("      version: %s\n", tool.Version)
-			}
+			desc := tool.Version
 			if tool.Backend != "" {
-				fmt.Printf("      backend: %s\n", tool.Backend)
+				desc = fmt.Sprintf("%s (backend: %s)", desc, tool.Backend)
 			}
+			toolItems = append(toolItems, pterm.BulletListItem{Level: 0, Text: fmt.Sprintf("%s: %s", name, desc)})
 		}
+		pterm.DefaultBulletList.WithItems(toolItems).Render()
 	}
 
-	fmt.Println("  settings:")
-	fmt.Printf("    cache_ttl:   %d\n", cfg.Settings.CacheTTL)
-	fmt.Printf("    data_dir:    %s\n", cfg.Settings.DataDir)
-	fmt.Printf("    cache_dir:   %s\n", cfg.Settings.CacheDir)
+	// 2. Settings Section
+	pterm.DefaultSection.Println("UniRTM Settings")
+	pterm.DefaultBulletList.WithItems([]pterm.BulletListItem{
+		{Level: 0, Text: fmt.Sprintf("Cache TTL:  %v", cfg.Settings.CacheTTL)},
+		{Level: 0, Text: fmt.Sprintf("Data Dir:   %s", env.GetDataDir())},
+		{Level: 0, Text: fmt.Sprintf("Config Dir: %s", env.GetConfigDir())},
+		{Level: 0, Text: fmt.Sprintf("Cache Dir:  %s", env.GetCacheDir())},
+	}).Render()
+
+	// 3. Environment & Mirrors Section
+	if len(cfg.Env) > 0 {
+		var mirrorItems []pterm.BulletListItem
+		var envItems []pterm.BulletListItem
+
+		// Sort items into groups
+		for k, v := range cfg.Env {
+			valStr := fmt.Sprintf("%v", v)
+			if valStr == "" {
+				valStr = pterm.Gray("(unset)")
+			}
+
+			item := pterm.BulletListItem{Level: 0, Text: fmt.Sprintf("%s = %s", k, valStr)}
+			
+			// Detect mirrors/proxies
+			kUpper := strings.ToUpper(k)
+			if strings.Contains(kUpper, "MIRROR") || strings.Contains(kUpper, "PROXY") || 
+				strings.Contains(kUpper, "REGISTRY") || strings.Contains(kUpper, "SERVER") ||
+				strings.Contains(kUpper, "GOPROXY") || strings.Contains(kUpper, "INDEX_URL") {
+				mirrorItems = append(mirrorItems, item)
+			} else {
+				envItems = append(envItems, item)
+			}
+		}
+
+		if len(mirrorItems) > 0 {
+			pterm.DefaultSection.Println("Mirrors & Proxies")
+			pterm.DefaultBulletList.WithItems(mirrorItems).Render()
+		}
+
+		if len(envItems) > 0 {
+			pterm.DefaultSection.Println("Environment Variables")
+			pterm.DefaultBulletList.WithItems(envItems).Render()
+		}
+	}
 
 	return nil
 }
