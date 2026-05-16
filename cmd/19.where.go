@@ -9,10 +9,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/config"
-	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
-	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/spf13/cobra"
 )
 
@@ -53,68 +52,68 @@ func runWhere(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// 1. Parse input: could be "node" or "node@20"
+	// 1. Parse input: could be "node", "node@20", or a binary like "gofmt"
 	input := args[0]
 	var backendName, toolName, version string
 	
 	if len(args) == 2 {
-		// Old style: unirtm where node 20
 		toolName = args[0]
 		version = args[1]
 	} else {
-		// New style: unirtm where node@20
 		_, toolName, version, _ = im.ParseToolSpec(input)
 	}
 
-	// 2. Resolve the version to a concrete installation path
-	// If version is "latest" or empty, try to resolve from current context
+	// 2. Resolve the version and backend
 	if version == "" || version == "latest" {
-		// Try to find what's active in the current directory first
 		if cfg != nil {
 			if toolSpec, ok := cfg.Tools[toolName]; ok {
 				version = toolSpec.Version
-				if toolSpec.Backend != "" {
-					backendName = toolSpec.Backend
-				}
+				backendName = toolSpec.Backend
 			}
 		}
 	}
 
-	// 3. Fallback to database if version is still missing
-	if version == "" || version == "latest" {
-		dbPath := env.GetDatabasePath()
-		db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true})
-		if err == nil {
-			defer db.Close()
-			installRepo, err := sqlite.NewInstallationRepository(db.Conn())
-			if err == nil {
-				installations, err := installRepo.List(ctx)
-				if err == nil {
-					for _, inst := range installations {
-						if inst.Tool == toolName {
-							version = inst.Version
-						}
-					}
-				}
-			}
-		}
-	}
-
-	if version == "" {
-		version = "latest"
-	}
-
-	// If still empty, we fallback to AutoDetectBackend and resolve
 	if backendName == "" {
 		backendName = im.AutoDetectBackend(toolName)
 	}
 
-	// 4. Resolve to absolute path
-	// Compute the expected installation path.
+	// 3. SMART RESOLVE: If not found as a tool, try as a binary
 	fsName := env.GetFSToolName(toolName, backendName)
 	installPath := filepath.Join(env.GetInstallsDir(), fsName, version)
-
+	
 	if _, err := os.Stat(installPath); err != nil {
+		// Try resolving it as an executable first
+		platform := backend.CurrentPlatform()
+		binPath, _, err := im.ResolveExecutable(ctx, input, platform)
+		if err == nil && binPath != "" {
+			// Found it! Now extract the root directory.
+			// Path is like .../installs/<tool>/<version>/bin/<exe>
+			// We need the part up to <version>
+			dir := filepath.Dir(binPath) // .../bin
+			for {
+				parent := filepath.Dir(dir)
+				if parent == dir || parent == "." || parent == "/" {
+					break
+				}
+				// Check if this parent's parent is the installs directory
+				grandparent := filepath.Dir(parent)
+				if grandparent == env.GetInstallsDir() {
+					// We found .../installs/<tool>/<version>
+					fmt.Println(parent)
+					return nil
+				}
+				// Also check for nested installs (backend/tool/version)
+				greatgrandparent := filepath.Dir(grandparent)
+				if greatgrandparent == env.GetInstallsDir() {
+					// We found .../installs/<backend>/<tool>/<version>
+					fmt.Println(parent)
+					return nil
+				}
+				dir = parent
+			}
+		}
+		
+		// If still not found, return the original error
 		return fmt.Errorf("tool %s@%s is not installed", toolName, version)
 	}
 
