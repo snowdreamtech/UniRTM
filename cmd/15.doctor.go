@@ -184,8 +184,11 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	// 7. Network Connectivity
 	pterm.DefaultSection.Println("Network Connectivity")
 	
-	// Detect Proxy (Check both upper and lower case)
-	proxies := []string{"HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy", "NO_PROXY", "no_proxy"}
+	// Detect Proxy (Check system, UniRTM prefixed, and lower case)
+	proxies := []string{
+		"HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy", "NO_PROXY", "no_proxy",
+		"UNIRTM_HTTP_PROXY", "unirtm_http_proxy", "UNIRTM_HTTPS_PROXY", "unirtm_https_proxy", "UNIRTM_ALL_PROXY", "unirtm_all_proxy",
+	}
 	foundProxy := false
 	for _, p := range proxies {
 		if val := os.Getenv(p); val != "" {
@@ -220,7 +223,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		Timeout: 15 * time.Second,
 		Transport: &http.Transport{
 			Proxy: func(req *http.Request) (*url.URL, error) {
-				// 1. Check UniRTM config first
+				// 1. Check UniRTM specific settings/env first
 				if cfg != nil {
 					if req.URL.Scheme == "http" && cfg.Settings.HttpProxy != "" {
 						return url.Parse(cfg.Settings.HttpProxy)
@@ -229,7 +232,22 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 						return url.Parse(cfg.Settings.HttpsProxy)
 					}
 				}
-				// 2. Fallback to system environment
+
+				// Check UNIRTM_ prefixed env vars
+				if req.URL.Scheme == "http" {
+					if v := os.Getenv("UNIRTM_HTTP_PROXY"); v != "" {
+						return url.Parse(v)
+					}
+				} else if req.URL.Scheme == "https" {
+					if v := os.Getenv("UNIRTM_HTTPS_PROXY"); v != "" {
+						return url.Parse(v)
+					}
+				}
+				if v := os.Getenv("UNIRTM_ALL_PROXY"); v != "" {
+					return url.Parse(v)
+				}
+
+				// 2. Fallback to standard system environment
 				return http.ProxyFromEnvironment(req)
 			},
 		},
@@ -246,6 +264,8 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		// Check which proxy will be used for this specific URL
 		targetURL, _ := url.Parse(t.url)
 		var proxyURL *url.URL
+		
+		// Priority 1: Settings
 		if cfg != nil {
 			if targetURL.Scheme == "http" && cfg.Settings.HttpProxy != "" {
 				proxyURL, _ = url.Parse(cfg.Settings.HttpProxy)
@@ -254,6 +274,25 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 			}
 		}
 		
+		// Priority 2: UNIRTM_ prefix env
+		if proxyURL == nil {
+			if targetURL.Scheme == "http" {
+				if v := os.Getenv("UNIRTM_HTTP_PROXY"); v != "" {
+					proxyURL, _ = url.Parse(v)
+				}
+			} else if targetURL.Scheme == "https" {
+				if v := os.Getenv("UNIRTM_HTTPS_PROXY"); v != "" {
+					proxyURL, _ = url.Parse(v)
+				}
+			}
+			if proxyURL == nil {
+				if v := os.Getenv("UNIRTM_ALL_PROXY"); v != "" {
+					proxyURL, _ = url.Parse(v)
+				}
+			}
+		}
+		
+		// Priority 3: Standard env
 		if proxyURL == nil {
 			proxyURL, _ = http.ProxyFromEnvironment(&http.Request{URL: targetURL})
 		}

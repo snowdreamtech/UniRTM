@@ -62,7 +62,24 @@ func NewHTTPDownloader() *HTTPDownloader {
 	h.client = &http.Client{
 		Timeout: 30 * time.Minute, // Increased total timeout for large files
 		Transport: &http.Transport{
-			Proxy:               http.ProxyFromEnvironment, // Support HTTP_PROXY/HTTPS_PROXY
+			Proxy: func(req *http.Request) (*url.URL, error) {
+				// Check UNIRTM_ prefixed env vars first
+				if req.URL.Scheme == "http" {
+					if v := os.Getenv("UNIRTM_HTTP_PROXY"); v != "" {
+						return url.Parse(v)
+					}
+				} else if req.URL.Scheme == "https" {
+					if v := os.Getenv("UNIRTM_HTTPS_PROXY"); v != "" {
+						return url.Parse(v)
+					}
+				}
+				if v := os.Getenv("UNIRTM_ALL_PROXY"); v != "" {
+					return url.Parse(v)
+				}
+
+				// Fallback to standard system environment
+				return http.ProxyFromEnvironment(req)
+			},
 			MaxIdleConns:        100,
 			IdleConnTimeout:     90 * time.Second,
 			TLSHandshakeTimeout: 10 * time.Second,
