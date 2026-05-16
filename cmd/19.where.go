@@ -7,8 +7,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
-	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
@@ -45,70 +46,78 @@ Examples:
 // runWhere executes the where command.
 // It queries the database for the installation path of the specified tool.
 func runWhere(cmd *cobra.Command, args []string) error {
-	formatter := output.NewFormatter(output.FormatterOptions{
-		Format:  getOutputFormat(),
-		NoColor: false,
-		Writer:  os.Stdout,
-		Quiet:   quiet,
-		Verbose: verbose,
-	})
-
 	ctx := context.Background()
-	tool := args[0]
-	var version string
+	cfg, _ := config.LoadFull()
+	im, err := getInstallationManager(ctx, cfg)
+	if err != nil {
+		return err
+	}
+
+	// 1. Parse input: could be "node" or "node@20"
+	input := args[0]
+	var backendName, toolName, version string
+	
 	if len(args) == 2 {
+		// Old style: unirtm where node 20
+		toolName = args[0]
 		version = args[1]
+	} else {
+		// New style: unirtm where node@20
+		_, toolName, version, _ = im.ParseToolSpec(input)
 	}
 
-	// Open database
-	dbPath := env.GetDatabasePath()
-	db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true})
-	if err != nil {
-		return fmt.Errorf("initialize database: %w", err)
-	}
-	defer db.Close()
-
-	installRepo, err := sqlite.NewInstallationRepository(db.Conn())
-	if err != nil {
-		return fmt.Errorf("create installation repository: %w", err)
-	}
-
-	if version != "" {
-		// Find specific version
-		inst, err := installRepo.FindByToolAndVersion(ctx, tool, version)
-		if err != nil {
-			formatter.Error(fmt.Sprintf("Tool %s@%s is not installed", tool, version), map[string]interface{}{
-				"tool":    tool,
-				"version": version,
-				"error":   err.Error(),
-			})
-			return fmt.Errorf("tool %s@%s not found: %w", tool, version, err)
-		}
-		fmt.Println(inst.InstallPath)
-		return nil
-	}
-
-	// Find latest installed version of tool
-	installations, err := installRepo.List(ctx)
-	if err != nil {
-		return fmt.Errorf("list installations: %w", err)
-	}
-
-	var found *struct{ installPath string }
-	for _, inst := range installations {
-		if inst.Tool == tool {
-			found = &struct{ installPath string }{inst.InstallPath}
-			// Continue to get the last (latest) entry
+	// 2. Resolve the version to a concrete installation path
+	// If version is "latest" or empty, try to resolve from current context
+	if version == "" || version == "latest" {
+		// Try to find what's active in the current directory first
+		if cfg != nil {
+			if toolSpec, ok := cfg.Tools[toolName]; ok {
+				version = toolSpec.Version
+				if toolSpec.Backend != "" {
+					backendName = toolSpec.Backend
+				}
+			}
 		}
 	}
 
-	if found == nil {
-		formatter.Error(fmt.Sprintf("Tool %s is not installed", tool), map[string]interface{}{
-			"tool": tool,
-		})
-		return fmt.Errorf("tool %s is not installed", tool)
+	// 3. Fallback to database if version is still missing
+	if version == "" || version == "latest" {
+		dbPath := env.GetDatabasePath()
+		db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true})
+		if err == nil {
+			defer db.Close()
+			installRepo, err := sqlite.NewInstallationRepository(db.Conn())
+			if err == nil {
+				installations, err := installRepo.List(ctx)
+				if err == nil {
+					for _, inst := range installations {
+						if inst.Tool == toolName {
+							version = inst.Version
+						}
+					}
+				}
+			}
+		}
 	}
 
-	fmt.Println(found.installPath)
+	if version == "" {
+		version = "latest"
+	}
+
+	// If still empty, we fallback to AutoDetectBackend and resolve
+	if backendName == "" {
+		backendName = im.AutoDetectBackend(toolName)
+	}
+
+	// 4. Resolve to absolute path
+	// Compute the expected installation path.
+	fsName := env.GetFSToolName(toolName, backendName)
+	installPath := filepath.Join(env.GetInstallsDir(), fsName, version)
+
+	if _, err := os.Stat(installPath); err != nil {
+		return fmt.Errorf("tool %s@%s is not installed", toolName, version)
+	}
+
+	fmt.Println(installPath)
 	return nil
 }
