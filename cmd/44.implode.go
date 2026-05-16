@@ -53,24 +53,22 @@ func runImplode(cmd *cobra.Command, args []string) error {
 		pterm.NewLettersFromStringWithStyle("PLODE", pterm.NewStyle(pterm.FgWhite)),
 	).Render()
 
+	dataDir := env.GetDataDir()
 	configDir := env.GetConfigDir()
 
 	targets := []struct {
 		name string
 		path string
 	}{
-		{"Tool Installations", env.GetInstallsDir()},
-		{"Shim Wrappers", env.GetShimsDir()},
-		{"Download Cache", env.GetDownloadsDir()},
-		{"Tool Database", env.GetDatabasePath()},
-		{"External Plugins", env.GetPluginsDir()},
+		{"Data Directory (installs, shims, asdf, etc.)", dataDir},
+		{"Cache Directory", env.GetCacheDir()},
 	}
 
 	if implodeConfig {
 		targets = append(targets, struct {
 			name string
 			path string
-		}{"Configuration Files", configDir})
+		}{"Configuration Directory", configDir})
 	}
 
 	// 2. Confirmation
