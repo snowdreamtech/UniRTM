@@ -1023,6 +1023,49 @@ func (im *InstallationManager) ResolveToolEnvBySpec(
 	return result
 }
 
+
+// archiveExtensions contains file extensions that are never directly executable.
+// Files with these extensions must never be passed to exec/syscall.Exec.
+var archiveExtensions = map[string]bool{
+	".zst": true, ".gz": true, ".bz2": true, ".xz": true, ".lz4": true,
+	".tar": true, ".tgz": true, ".tbz2": true, ".txz": true,
+	".zip": true, ".7z": true, ".rar": true,
+	".deb": true, ".rpm": true, ".apk": true,
+	".sig": true, ".asc": true, ".sha256": true, ".sha512": true,
+}
+
+// isExecutableFile returns true if path is a regular file that can be executed.
+// It rejects directories, archive/compressed files, and (on Unix) files
+// without the execute permission bit.
+func isExecutableFile(path string) bool {
+	// Reject known archive extensions regardless of platform.
+	ext := strings.ToLower(filepath.Ext(path))
+	if archiveExtensions[ext] {
+		return false
+	}
+	// Handle double-extensions like .tar.gz — check last two components.
+	base := strings.ToLower(filepath.Base(path))
+	for _, suffix := range []string{".tar.gz", ".tar.xz", ".tar.bz2", ".tar.zst", ".tar.lz4"} {
+		if strings.HasSuffix(base, suffix) {
+			return false
+		}
+	}
+
+	fi, err := os.Stat(path)
+	if err != nil || !fi.Mode().IsRegular() {
+		return false
+	}
+
+	// On Unix, verify the execute permission bit is set.
+	if runtime.GOOS != "windows" {
+		return fi.Mode()&0111 != 0
+	}
+
+	// On Windows, trust the extension (.exe, .cmd, .bat, .ps1).
+	winExec := map[string]bool{".exe": true, ".cmd": true, ".bat": true, ".ps1": true}
+	return winExec[ext] || ext == ""
+}
+
 // ResolveExecutable finds the absolute path and environment variables for a given executable name
 // by searching through installed tools in the current context.
 func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName string, platform backend.Platform) (string, map[string]string, error) {
@@ -1036,6 +1079,8 @@ func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName st
 	type candidate struct {
 		inst    *repository.Installation
 		exePath string
+		// exactMatch is true when the base name equals exeName exactly.
+		exactMatch bool
 	}
 	var candidates []candidate
 
@@ -1052,23 +1097,43 @@ func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName st
 
 		for _, exec := range execs {
 			baseName := filepath.Base(exec)
-			matched := false
-			if baseName == exeName {
-				matched = true
-			} else if strings.HasPrefix(baseName, exeName) {
-				// Check for common separators followed by version/arch info
+
+			// Resolve absolute path first so we can stat it.
+			absPath := exec
+			if !filepath.IsAbs(exec) {
+				absPath = filepath.Join(inst.InstallPath, exec)
+			}
+
+			// Hard filter: skip files that are not actually executable binaries.
+			if !isExecutableFile(absPath) {
+				continue
+			}
+
+			exact := baseName == exeName
+			prefix := !exact && strings.HasPrefix(baseName, exeName)
+			if prefix {
 				remainder := baseName[len(exeName):]
-				if len(remainder) > 0 && (remainder[0] == '-' || remainder[0] == '_' || remainder[0] == '@' || remainder[0] == '.') {
-					matched = true
+				// Only accept prefix match when remainder starts with a version separator.
+				// This avoids matching "python-3.14.4.zst" for "python".
+				if len(remainder) == 0 || (remainder[0] != '-' && remainder[0] != '_' && remainder[0] != '@' && remainder[0] != '.') {
+					prefix = false
+				}
+				// Reject if the remainder still contains a file extension we consider
+				// non-executable (e.g. the full name is "python-3.14.4.zst").
+				if prefix {
+					remExt := strings.ToLower(filepath.Ext(baseName))
+					if archiveExtensions[remExt] {
+						prefix = false
+					}
 				}
 			}
 
-			if matched {
-				absPath := exec
-				if !filepath.IsAbs(exec) {
-					absPath = filepath.Join(inst.InstallPath, exec)
-				}
-				candidates = append(candidates, candidate{inst: inst, exePath: absPath})
+			if exact || prefix {
+				candidates = append(candidates, candidate{
+					inst:       inst,
+					exePath:    absPath,
+					exactMatch: exact,
+				})
 				break
 			}
 		}
@@ -1078,13 +1143,20 @@ func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName st
 		return "", nil, fmt.Errorf("executable %s not found", exeName)
 	}
 
-	// 3. Pick the best candidate based on current context
-	// For now, we'll pick the one where the tool name matches the executable name,
-	// or just the first one if no better match.
+	// 3. Pick the best candidate:
+	//    a) exact base-name match over prefix match
+	//    b) among equals, prefer the tool whose name matches the executable name
 	selected := candidates[0]
 	for _, c := range candidates {
-		// Priority 1: Exact tool name match
-		if c.inst.Tool == exeName || filepath.Base(c.inst.Tool) == exeName {
+		// Prefer exact name match over prefix match.
+		if c.exactMatch && !selected.exactMatch {
+			selected = c
+			break
+		}
+		// Among candidates of equal match quality, prefer the tool whose name
+		// matches the executable (e.g. tool "python" for exe "python").
+		if c.exactMatch == selected.exactMatch &&
+			(c.inst.Tool == exeName || filepath.Base(c.inst.Tool) == exeName) {
 			selected = c
 			break
 		}
@@ -1096,6 +1168,7 @@ func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName st
 
 	return selected.exePath, envVars, nil
 }
+
 
 // ParseToolSpec parses a tool specification string (e.g., "node@20", "github:cli/cli@v2.0.0")
 // into its constituent parts: backend, tool name, version, and whether the version was explicit.
