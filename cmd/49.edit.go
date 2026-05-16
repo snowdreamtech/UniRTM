@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"time"
 
 	"github.com/pelletier/go-toml/v2"
 	"github.com/pterm/pterm"
@@ -61,10 +60,13 @@ Examples:
 }
 
 func runEdit(cmd *cobra.Command, args []string) error {
+	cfg, _ := config.Load()
+	editor, source := getBestEditorWithSource(cfg)
+
 	pterm.DefaultHeader.WithFullWidth().
 		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
 		WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
-		Println("UniRTM Config Editor")
+		Printf("UniRTM Config Editor (using %s via %s)\n", pterm.Bold.Sprint(editor), source)
 
 	targetFile := ""
 
@@ -112,20 +114,6 @@ func runEdit(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("failed to create file: %w", err)
 		}
 	}
-
-	// 3. Find editor
-	cfg, _ := config.Load()
-	editor, source := getBestEditorWithSource(cfg)
-	
-	pterm.Info.Printf("Opening %s using %s (%s)...\n", 
-		pterm.LightCyan(targetFile), 
-		pterm.LightGreen(editor), 
-		pterm.FgGray.Sprint("detected via "+source))
-
-	// Add a small delay so the user can actually read the message
-	spinner, _ := pterm.DefaultSpinner.Start("Launching editor...")
-	time.Sleep(800 * time.Millisecond)
-	spinner.Success()
 
 	// 4. Edit Loop (with validation)
 	for {
