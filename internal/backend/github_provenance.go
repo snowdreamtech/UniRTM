@@ -79,10 +79,10 @@ func VerifyArtifactProvenance(
 ) (*ProvenanceResult, error) {
 	// Step 0: Inject proxy environment for sigstore-go.
 	// Many internal parts of sigstore-go use http.DefaultClient/Transport.
-	if os.Getenv("ENABLE_GITHUB_PROXY") == "1" {
-		proxyURL := os.Getenv("GITHUB_PROXY")
+	if env.Get("ENABLE_GITHUB_PROXY") == "1" {
+		proxyURL := env.Get("GITHUB_PROXY")
 		if proxyURL != "" {
-			if os.Getenv("HTTPS_PROXY") == "" {
+			if env.Get("HTTPS_PROXY") == "" {
 				os.Setenv("HTTPS_PROXY", proxyURL)
 				os.Setenv("HTTP_PROXY", proxyURL)
 				// Force default transport to reload proxy settings from env
@@ -238,7 +238,7 @@ func sigstoreTrustedRoot() (*root.LiveTrustedRoot, error) {
 
 		// Allow users to override the TUF cache directory.
 		cachePath := opts.CachePath
-		if cacheDir := os.Getenv("UNIRTM_TUF_CACHE_DIR"); cacheDir != "" {
+		if cacheDir := env.Get("TUF_CACHE_DIR"); cacheDir != "" {
 			cachePath = filepath.Join(cacheDir, "sigstore-tuf")
 			opts.CachePath = cachePath
 		}
@@ -426,7 +426,7 @@ func verifyBundleWithSigstore(
 	// In restricted networks, verifying live log inclusion is fragile.
 	// We use a threshold of 1 by default, but allow 0 if UNIRTM_SKIP_REKOR_VERIFY is set.
 	tlogThreshold := 1
-	if os.Getenv("UNIRTM_SKIP_REKOR_VERIFY") == "1" {
+	if env.Get("SKIP_REKOR_VERIFY") == "1" {
 		tlogThreshold = 0
 	}
 

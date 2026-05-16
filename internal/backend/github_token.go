@@ -45,7 +45,7 @@ func resolveGitHubToken(host string) string {
 	}
 
 	// 2. GITHUB_API_TOKEN (legacy fallback)
-	if token := os.Getenv("GITHUB_API_TOKEN"); token != "" {
+	if token := env.Get("GITHUB_API_TOKEN"); token != "" {
 		return token
 	}
 
@@ -81,9 +81,9 @@ func runCredentialCommand(command, host string) string {
 
 // readGitHubTokensFile reads the per-host token from ~/.config/unirtm/github_tokens.toml.
 func readGitHubTokensFile(host string) string {
-	configDir := os.Getenv("UNIRTM_CONFIG_DIR")
+	configDir := env.Get("CONFIG_DIR")
 	if configDir == "" {
-		xdg := os.Getenv("XDG_CONFIG_HOME")
+		xdg := env.Get("XDG_CONFIG_HOME")
 		if xdg != "" {
 			configDir = filepath.Join(xdg, "unirtm")
 		} else {
@@ -136,7 +136,7 @@ func readGhCliToken(host string) string {
 // findGhHostsFile locates the gh CLI hosts.yml file.
 func findGhHostsFile() string {
 	// 1. $GH_CONFIG_DIR/hosts.yml
-	if ghConfigDir := os.Getenv("GH_CONFIG_DIR"); ghConfigDir != "" {
+	if ghConfigDir := env.Get("GH_CONFIG_DIR"); ghConfigDir != "" {
 		p := filepath.Join(ghConfigDir, "hosts.yml")
 		if _, err := os.Stat(p); err == nil {
 			return p
@@ -144,7 +144,7 @@ func findGhHostsFile() string {
 	}
 
 	// 2. $XDG_CONFIG_HOME/gh/hosts.yml
-	xdg := os.Getenv("XDG_CONFIG_HOME")
+	xdg := env.Get("XDG_CONFIG_HOME")
 	if xdg == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
