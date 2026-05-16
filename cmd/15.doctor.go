@@ -20,6 +20,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
 )
 
@@ -164,8 +165,14 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 			slug = strings.ReplaceAll(slug, "/", "-")
 			slug = strings.ReplaceAll(slug, "@", "")
 			
+			// Normalize version (e.g., v0.3.2 -> 0.3.2)
+			v := t.Version
+			if ver, err := service.ParseVersion(v); err == nil {
+				v = ver.String()
+			}
+			
 			installStatus := pterm.LightGreen("✓ installed")
-			toolPath := filepath.Join(env.GetDataDir(), "installs", slug, t.Version)
+			toolPath := filepath.Join(env.GetDataDir(), "installs", slug, v)
 			if _, err := os.Stat(toolPath); os.IsNotExist(err) {
 				installStatus = pterm.LightRed("✗ missing")
 			}
