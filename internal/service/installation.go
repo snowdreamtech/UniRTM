@@ -194,13 +194,25 @@ func (im *InstallationManager) IsInstalled(ctx context.Context, tool, version, b
 	// 2. Standardize tool name for filesystem check
 	fsToolName := env.GetFSToolName(tool, backendName)
 
-	// 3. Prepare variants to check (original, and v-toggle)
+	// 3. Prepare variants to check (original, and normalized if it's a semver)
 	variants := []string{version}
-	if strings.HasPrefix(version, "v") || strings.HasPrefix(version, "V") {
-		variants = append(variants, version[1:])
+	if v, err := ParseVersion(version); err == nil && v.Type == VersionTypeExact {
+		normalized := v.String()
+		if normalized != version {
+			variants = append(variants, normalized)
+		}
+		// If input didn't have 'v' but parse was successful, try adding 'v' just in case
+		// though our standard is usually no 'v' in the directory name.
+		if !strings.HasPrefix(version, "v") && !strings.HasPrefix(version, "V") {
+			variants = append(variants, "v"+normalized)
+		}
 	} else {
-		// If no v-prefix, try adding both 'v' and 'V'
-		variants = append(variants, "v"+version, "V"+version)
+		// Not a standard semver, try basic v-stripping as fallback
+		if strings.HasPrefix(version, "v") || strings.HasPrefix(version, "V") {
+			variants = append(variants, version[1:])
+		} else {
+			variants = append(variants, "v"+version)
+		}
 	}
 
 	for _, v := range variants {
