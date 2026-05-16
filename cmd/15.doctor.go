@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -17,7 +18,6 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
-	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/spf13/cobra"
 )
 
@@ -49,233 +49,195 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	cfg, _ := config.LoadFull()
 
-	// 1. Build & System Info
-	pterm.DefaultSection.Println("🛠️  Build & System Information")
-	osArch := fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
-	pterm.DefaultBulletList.WithItems([]pterm.BulletListItem{
-		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Project", pterm.LightCyan(env.ProjectName))},
-		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Version", pterm.LightCyan(fmt.Sprintf("%s (%s)", env.GitTag, env.CommitHash)))},
-		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Build Time", pterm.LightCyan(env.BuildTime))},
-		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Platform", pterm.LightCyan(osArch))},
-		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Go Version", pterm.LightCyan(runtime.Version()))},
-	}).Render()
-
-	// 2. Shell Info
-	pterm.DefaultSection.Println("🐚 Shell Information")
-	shellPath := env.Get("SHELL")
-	shellName := filepath.Base(shellPath)
+	// 1. Core Status
+	pterm.DefaultSection.Println("🚀 Core Status")
 	isActivated := env.Get("ACTIVE") != ""
-	
-	statusStr := pterm.LightGreen("✓ activated")
-	if !isActivated {
-		statusStr = pterm.LightRed("✗ NOT activated")
-	}
-
-	pterm.DefaultBulletList.WithItems([]pterm.BulletListItem{
-		{Level: 0, Text: fmt.Sprintf("%-12s: %s (%s)", "Shell", pterm.LightCyan(shellName), pterm.FgGray.Sprint(shellPath))},
-		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Status", statusStr)},
-	}).Render()
-
-	// 3. Directory Health
-	pterm.DefaultSection.Println("📁 Directory Health Check")
-	dirChecks := []struct {
-		name string
-		path string
-	}{
-		{"Config", env.GetConfigDir()},
-		{"Data", env.GetDataDir()},
-		{"Cache", env.GetCacheDir()},
-		{"Shims", env.GetShimsDir()},
-		{"State", filepath.Join(env.GetDataDir(), "state")},
-	}
-
-	var dirTable [][]string
-	dirTable = append(dirTable, []string{"Directory", "Path", "Status"})
-	for _, dc := range dirChecks {
-		status := pterm.LightGreen("✓ ok")
-		if _, err := os.Stat(dc.path); os.IsNotExist(err) {
-			status = pterm.LightYellow("⚠ missing")
-		} else {
-			testFile := filepath.Join(dc.path, ".doctor_write_test")
-			if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
-				status = pterm.LightRed("✗ unwritable")
-			} else {
-				_ = os.Remove(testFile)
-			}
-		}
-		dirTable = append(dirTable, []string{pterm.Bold.Sprint(dc.name), pterm.FgGray.Sprint(dc.path), status})
-	}
-	pterm.DefaultTable.WithHasHeader().WithData(dirTable).Render()
-
-	// 4. PATH & Shadowing Detection
-	pterm.DefaultSection.Println("🛤️  PATH & Shadowing Detection")
-	pathItems := filepath.SplitList(env.Get("PATH"))
 	shimsDir := env.GetShimsDir()
-	
-	shimIdx := -1
-	for i, p := range pathItems {
+	pathItems := filepath.SplitList(env.Get("PATH"))
+	shimsOnPath := false
+	for _, p := range pathItems {
 		if strings.EqualFold(p, shimsDir) {
-			shimIdx = i
+			shimsOnPath = true
 			break
 		}
 	}
 
-	if shimIdx == -1 {
-		pterm.Error.Println("UniRTM shims directory is NOT in your PATH.")
-		pterm.DefaultBox.WithTitle("Fix Suggestion").Println(
-			fmt.Sprintf("Add this to your shell profile (%s):\n%s", 
-			pterm.LightBlue("~/.zshrc" /* or appropriate */),
-			pterm.LightMagenta(fmt.Sprintf("eval \"$(unirtm activate %s)\"", shellName))),
-		)
-	} else if shimIdx > 0 {
-		pterm.Warning.Println("UniRTM shims are NOT at the front of your PATH. Other tools may shadow UniRTM shims.")
-		shadowed := pathItems[:shimIdx]
-		pterm.Info.Printf("Preceding paths (shadowing UniRTM):\n  %s\n", pterm.FgGray.Sprint(strings.Join(shadowed, "\n  ")))
-	} else {
-		pterm.Success.Println("UniRTM shims are correctly placed at the front of your PATH.")
+	statusItems := []pterm.BulletListItem{
+		{Level: 0, Text: fmt.Sprintf("%-15s: %s (%s)", "version", pterm.LightCyan(env.GitTag), env.CommitHash)},
+		{Level: 0, Text: fmt.Sprintf("%-15s: %s", "activated", formatBoolStatus(isActivated))},
+		{Level: 0, Text: fmt.Sprintf("%-15s: %s", "shims_on_path", formatBoolStatus(shimsOnPath))},
+	}
+	pterm.DefaultBulletList.WithItems(statusItems).Render()
+
+	// 2. Build Information
+	pterm.DefaultSection.Println("🛠️  Build Information")
+	pterm.DefaultBulletList.WithItems([]pterm.BulletListItem{
+		{Level: 0, Text: fmt.Sprintf("%-12s: %s/%s", "Target", runtime.GOOS, runtime.GOARCH)},
+		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Go Version", runtime.Version())},
+		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Built", env.BuildTime)},
+	}).Render()
+
+	// 3. Shell Information
+	pterm.DefaultSection.Println("🐚 Shell Information")
+	shellPath := env.Get("SHELL")
+	shellVer := ""
+	if out, err := exec.Command(shellPath, "--version").Output(); err == nil {
+		shellVer = strings.TrimSpace(string(out))
 	}
 
-	// 5. Environment Variables (Redacted & Hierarchical)
-	pterm.DefaultSection.Println("🔑 Environment Variables (UniRTM / Mise / Raw)")
-	var envTable [][]string
-	envTable = append(envTable, []string{"Variable", "Source", "Resolved Value"})
-	
-	// Track some key variables we want to show
-	keyVars := []string{"DATA_DIR", "CONFIG_DIR", "CACHE_DIR", "EXPERIMENTAL", "DEBUG", "PATH"}
-	for _, kv := range keyVars {
-		unirtmVal := os.Getenv("UNIRTM_" + kv)
-		miseVal := os.Getenv("MISE_" + kv)
-		resolved := env.Get(kv)
+	pterm.DefaultBulletList.WithItems([]pterm.BulletListItem{
+		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Shell", pterm.LightCyan(shellPath))},
+		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Version", shellVer)},
+	}).Render()
 
-		source := "Native"
-		if unirtmVal != "" {
-			source = "UNIRTM_"
-		} else if miseVal != "" {
-			source = "MISE_"
-		}
-
-		displayVal := resolved
-		if kv == "PATH" && len(displayVal) > 50 {
-			displayVal = displayVal[:47] + "..."
-		}
-		
-		envTable = append(envTable, []string{
-			pterm.LightBlue(kv),
-			pterm.FgGray.Sprint(source),
-			pterm.LightCyan(displayVal),
-		})
+	// 4. Directories
+	pterm.DefaultSection.Println("📁 Directories")
+	dirData := [][]string{
+		{"cache", env.GetCacheDir()},
+		{"config", env.GetConfigDir()},
+		{"data", env.GetDataDir()},
+		{"shims", env.GetShimsDir()},
+		{"state", filepath.Join(env.GetDataDir(), "state")},
 	}
-	pterm.DefaultTable.WithHasHeader().WithData(envTable).Render()
+	for i := range dirData {
+		dirData[i][0] = pterm.Bold.Sprint(dirData[i][0])
+		dirData[i][1] = pterm.FgGray.Sprint(dirData[i][1])
+	}
+	pterm.DefaultTable.WithData(dirData).Render()
 
-	// 6. Active Configuration Files
-	pterm.DefaultSection.Println("📝 Active Configuration Files")
+	// 5. Config Files
+	pterm.DefaultSection.Println("📝 Configuration Files")
 	if cfg != nil {
 		cwd, _ := os.Getwd()
-		possible := []string{
+		configs := []string{
 			filepath.Join(cwd, ".unirtm.toml"),
 			filepath.Join(cwd, "unirtm.toml"),
 			filepath.Join(cwd, ".mise.toml"),
 			filepath.Join(cwd, "mise.toml"),
 			env.GetGlobalConfigPath(),
 		}
-		foundCfg := false
-		for _, p := range possible {
-			if _, err := os.Stat(p); err == nil {
-				foundCfg = true
-				pterm.Success.Printf("Loaded: %s\n", pterm.FgGray.Sprint(p))
+		found := false
+		for _, c := range configs {
+			if _, err := os.Stat(c); err == nil {
+				pterm.Success.Printf("Loaded: %s\n", pterm.FgGray.Sprint(c))
+				found = true
 			}
 		}
-		if !foundCfg {
-			pterm.Info.Println("No project or global config files found (using defaults).")
+		if !found {
+			pterm.Info.Println("No configuration files found (using defaults).")
 		}
 	}
 
-	// 7. Settings (Effective)
-	if cfg != nil {
-		pterm.DefaultSection.Println("⚙️  Effective Settings")
-		var setTable [][]string
-		setTable = append(setTable, []string{"Setting", "Value"})
-		setTable = append(setTable, []string{"Experimental", fmt.Sprintf("%v", cfg.Settings.Experimental)})
-		
-		autoInstall := "default"
-		if cfg.Settings.AutoInstall != nil {
-			autoInstall = fmt.Sprintf("%v", *cfg.Settings.AutoInstall)
-		}
-		setTable = append(setTable, []string{"Auto Install", autoInstall})
-		setTable = append(setTable, []string{"Always Keep Download", fmt.Sprintf("%v", cfg.Settings.AlwaysKeepDownload)})
-		setTable = append(setTable, []string{"HTTP Timeout", fmt.Sprintf("%ds", cfg.Settings.HTTPTimeout)})
-		
-		pterm.DefaultTable.WithHasHeader().WithData(setTable).Render()
-	}
+	// 6. Backends
+	pterm.DefaultSection.Println("🔌 Available Backends")
+	backends := []string{"aqua", "asdf", "cargo", "gem", "go_pkg", "npm", "pypi", "github", "http"}
+	pterm.DefaultBulletList.WithItems(stringToBulletItems(backends)).Render()
 
-	// 8. Network Connectivity
-	pterm.DefaultSection.Println("🌐 Network Connectivity")
-	
-	// Detailed Proxy Summary
-	proxyReport := []string{}
-	if v := env.Get("HTTP_PROXY"); v != "" { proxyReport = append(proxyReport, fmt.Sprintf("HTTP: %s", v)) }
-	if v := env.Get("HTTPS_PROXY"); v != "" { proxyReport = append(proxyReport, fmt.Sprintf("HTTPS: %s", v)) }
-	if v := env.Get("ALL_PROXY"); v != "" { proxyReport = append(proxyReport, fmt.Sprintf("ALL: %s", v)) }
-	
-	if len(proxyReport) > 0 {
-		pterm.Info.Printf("Proxy Chain: %s\n", pterm.FgGray.Sprint(strings.Join(proxyReport, " | ")))
+	// 7. Toolset (Active Tools)
+	pterm.DefaultSection.Println("🧰 Active Toolset")
+	if cfg != nil && len(cfg.Tools) > 0 {
+		var toolData [][]string
+		toolData = append(toolData, []string{"Tool", "Version", "Backend/Provider"})
+		for name, t := range cfg.Tools {
+			source := t.Backend
+			if source == "" {
+				source = t.Provider
+			}
+			if source == "" {
+				source = "default"
+			}
+			toolData = append(toolData, []string{
+				pterm.LightBlue(name),
+				pterm.LightCyan(t.Version),
+				pterm.FgGray.Sprint(source),
+			})
+		}
+		pterm.DefaultTable.WithHasHeader().WithData(toolData).Render()
 	} else {
-		pterm.Info.Println("Direct Connection (No system proxy detected)")
+		pterm.Info.Println("No tools defined in active configuration.")
 	}
 
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-		},
-	}
-	
-	targets := []struct{ name, url string }{
-		{"GitHub API", "https://api.github.com"},
-		{"Aqua Registry", "https://aquaproj.github.io"},
-	}
-
-	for _, t := range targets {
-		start := time.Now()
-		resp, err := client.Get(t.url)
-		duration := time.Since(start)
-
-		if err != nil {
-			pterm.Error.Printf("%-15s %s (%v)\n", t.name, "Unreachable", err)
+	// 8. PATH Breakdown
+	pterm.DefaultSection.Println("🛤️  PATH Breakdown")
+	for _, p := range pathItems {
+		if strings.EqualFold(p, shimsDir) {
+			pterm.Success.Printf("%s %s\n", p, pterm.LightMagenta("(UniRTM Shims)"))
+		} else if strings.Contains(p, "unirtm") || strings.Contains(p, ".local/share/unirtm") {
+			pterm.Info.Printf("%s %s\n", p, pterm.LightCyan("(UniRTM Managed)"))
 		} else {
-			pterm.Success.Printf("%-15s %s (HTTP %d, %s)\n", t.name, "Connected", resp.StatusCode, duration.Round(time.Millisecond).String())
-			_ = resp.Body.Close()
+			pterm.FgGray.Println(p)
 		}
 	}
 
-	// 9. Database & Tool Integrity
-	pterm.DefaultSection.Println("📊 Database & Tool Integrity")
+	// 9. Environment Variables (Hierarchy)
+	pterm.DefaultSection.Println("🔑 Environment Variables (Hierarchy Check)")
+	var envData [][]string
+	envData = append(envData, []string{"Key", "Source", "Value"})
+	vars := []string{"DATA_DIR", "CONFIG_DIR", "CACHE_DIR", "EXPERIMENTAL", "DEBUG", "GITHUB_TOKEN"}
+	for _, v := range vars {
+		source := "Raw"
+		if os.Getenv("UNIRTM_"+v) != "" {
+			source = "UNIRTM_"
+		} else if os.Getenv("MISE_"+v) != "" {
+			source = "MISE_"
+		}
+		
+		val := env.Get(v)
+		if strings.Contains(v, "TOKEN") && val != "" {
+			val = "******** [REDACTED]"
+		}
+		if len(val) > 40 {
+			val = val[:37] + "..."
+		}
+
+		envData = append(envData, []string{pterm.LightBlue(v), pterm.FgGray.Sprint(source), pterm.LightCyan(val)})
+	}
+	pterm.DefaultTable.WithHasHeader().WithData(envData).Render()
+
+	// 10. Database & Network (Quick Checks)
+	pterm.DefaultSection.Println("🌐 Health Checks")
+	
+	// DB Check
 	dbPath := env.GetDatabasePath()
 	db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true})
 	if err != nil {
 		pterm.Error.Printf("Database: %v\n", err)
 	} else {
-		defer db.Close()
-		pterm.Success.Printf("Database: %s\n", pterm.FgGray.Sprint(dbPath))
-		
-		installRepo, _ := sqlite.NewInstallationRepository(db.Conn())
-		installs, _ := installRepo.List(ctx)
-		missing := 0
-		for _, inst := range installs {
-			if _, err := os.Stat(inst.InstallPath); os.IsNotExist(err) {
-				missing++
-			}
-		}
-		if missing > 0 {
-			pterm.Warning.Printf("Tools: %d/%d installations have missing directories.\n", missing, len(installs))
-		} else if len(installs) > 0 {
-			pterm.Success.Printf("Tools: All %d installed tools are present on disk.\n", len(installs))
-		} else {
-			pterm.Info.Println("Tools: No tools installed yet.")
-		}
+		db.Close()
+		pterm.Success.Printf("Database: %s (Open successful)\n", pterm.FgGray.Sprint(dbPath))
+	}
+
+	// Network Check
+	client := &http.Client{Timeout: 5 * time.Second}
+	if resp, err := client.Get("https://api.github.com"); err == nil {
+		pterm.Success.Printf("Network: GitHub API connected (HTTP %d)\n", resp.StatusCode)
+		resp.Body.Close()
+	} else {
+		pterm.Error.Printf("Network: GitHub API unreachable (%v)\n", err)
 	}
 
 	fmt.Println()
-	pterm.DefaultBox.WithTitle(pterm.LightGreen("Diagnostics Complete")).Println("Your UniRTM environment is healthy and ready for action!")
+	if !isActivated || !shimsOnPath {
+		pterm.Warning.Println("UniRTM is not fully integrated into your shell.")
+		pterm.Info.Printf("Run %s to see activation instructions.\n", pterm.LightMagenta("unirtm help activate"))
+	} else {
+		pterm.DefaultBox.WithTitle(pterm.LightGreen("Diagnostics Complete")).Println("Your UniRTM environment is perfectly configured!")
+	}
+
 	return nil
+}
+
+func formatBoolStatus(b bool) string {
+	if b {
+		return pterm.LightGreen("yes")
+	}
+	return pterm.LightRed("no")
+}
+
+func stringToBulletItems(ss []string) []pterm.BulletListItem {
+	var items []pterm.BulletListItem
+	for _, s := range ss {
+		items = append(items, pterm.BulletListItem{Level: 0, Text: s})
+	}
+	return items
 }
