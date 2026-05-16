@@ -14,7 +14,6 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 	"runtime"
 	"syscall"
 )
