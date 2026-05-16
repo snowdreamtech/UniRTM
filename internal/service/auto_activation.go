@@ -14,6 +14,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/errors"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
@@ -279,9 +280,8 @@ func (m *AutoActivationManager) generateActivation(ctx context.Context, shell Sh
 		PreviousPath: currentState.PreviousPath,
 	}
 
-	// If this is the first activation, save the current PATH
 	if newState.PreviousPath == "" {
-		newState.PreviousPath = os.Getenv("PATH")
+		newState.PreviousPath = env.Get("PATH")
 	}
 
 	return &ActivationChange{

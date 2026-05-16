@@ -10,6 +10,7 @@ import (
 	"github.com/flosch/pongo2/v6"
 	"github.com/joho/godotenv"
 	"github.com/pelletier/go-toml/v2"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -186,12 +187,12 @@ func (c *Config) ResolveEnvironment() (map[string]string, []string, []string, er
 						if v, ok := resolved[name]; ok {
 							return v
 						}
-						return os.Getenv(name)
+						return env.Get(name)
 					})
 
 					currentPath := resolved["PATH"]
 					if currentPath == "" {
-						currentPath = os.Getenv("PATH")
+						currentPath = env.Get("PATH")
 					}
 
 					if currentPath == "" {
@@ -219,7 +220,7 @@ func (c *Config) ResolveEnvironment() (map[string]string, []string, []string, er
 						if v, ok := resolved[name]; ok {
 							return v
 						}
-						return os.Getenv(name)
+						return env.Get(name)
 					})
 					sources = append(sources, rendered)
 				}
@@ -240,7 +241,7 @@ func (c *Config) ResolveEnvironment() (map[string]string, []string, []string, er
 						if v, ok := resolved[name]; ok {
 							return v
 						}
-						return os.Getenv(name)
+						return env.Get(name)
 					})
 
 					// Normalize path
@@ -265,7 +266,7 @@ func (c *Config) ResolveEnvironment() (map[string]string, []string, []string, er
 						// Update PATH
 						currentPath := resolved["PATH"]
 						if currentPath == "" {
-							currentPath = os.Getenv("PATH")
+							currentPath = env.Get("PATH")
 						}
 						if currentPath == "" {
 							resolved["PATH"] = venvBin
@@ -343,7 +344,7 @@ func (c *Config) ResolveEnvironment() (map[string]string, []string, []string, er
 			if v, ok := resolved[name]; ok {
 				return v
 			}
-			return os.Getenv(name)
+			return env.Get(name)
 		})
 
 		// Handle required check

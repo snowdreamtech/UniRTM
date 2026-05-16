@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // ShellConfigManager handles persistent configuration changes in shell RC files.
@@ -41,7 +42,7 @@ func (m *ShellConfigManager) GetConfigPath(shell ShellType) (string, error) {
 	case ShellFish:
 		return filepath.Join(home, ".config/fish/config.fish"), nil
 	case ShellPowerShell:
-		configFile := os.Getenv("PROFILE")
+		configFile := env.Get("PROFILE")
 		if configFile == "" {
 			configFile = filepath.Join(home, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1")
 		}
