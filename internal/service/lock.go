@@ -346,9 +346,10 @@ func (ls *LockService) Generate(
 
 // ToolSpec describes a single tool entry from project config.
 type ToolSpec struct {
-	Name        string
-	Version     string
-	BackendName string
+	Name         string
+	Version      string
+	BackendName  string
+	OriginalName string
 }
 
 // ─── Inspection ───────────────────────────────────────────────────────────────

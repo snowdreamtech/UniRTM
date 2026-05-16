@@ -24,6 +24,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/gpg"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 	"github.com/snowdreamtech/unirtm/internal/provider"
+	"github.com/snowdreamtech/unirtm/internal/provider/native"
 	"github.com/snowdreamtech/unirtm/internal/repository"
 	"github.com/snowdreamtech/unirtm/internal/transaction"
 )
@@ -838,9 +839,31 @@ func (im *InstallationManager) SortToolsFromSpecs(tools map[string]ToolSpec) []T
 }
 
 // EnsureInstalled checks if all tools in the configuration are installed,
-// and installs any missing ones if the settings allow.
+// and installs any missing ones.
 func (im *InstallationManager) EnsureInstalled(ctx context.Context, tools map[string]config.ToolConfig) error {
-	sortedTools := im.SortTools(tools)
+	specs := make(map[string]ToolSpec, len(tools))
+	for name, tc := range tools {
+		backendName, toolName, version, _ := im.ParseToolSpec(name)
+		if tc.Backend != "" {
+			backendName = tc.Backend
+		}
+		if tc.Version != "" {
+			version = tc.Version
+		}
+		specs[name] = ToolSpec{
+			Name:        toolName,
+			Version:     version,
+			BackendName: backendName,
+			OriginalName: name,
+		}
+	}
+	return im.EnsureInstalledFromSpecs(ctx, specs)
+}
+
+// EnsureInstalledFromSpecs checks if all tools in the specs are installed,
+// and installs any missing ones.
+func (im *InstallationManager) EnsureInstalledFromSpecs(ctx context.Context, tools map[string]ToolSpec) error {
+	sortedTools := im.SortToolsFromSpecs(tools)
 
 	for _, t := range sortedTools {
 		toolName := t.ToolName
@@ -976,7 +999,19 @@ func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName st
 		}
 
 		for _, exec := range execs {
-			if filepath.Base(exec) == exeName {
+			baseName := filepath.Base(exec)
+			matched := false
+			if baseName == exeName {
+				matched = true
+			} else if strings.HasPrefix(baseName, exeName) {
+				// Check for common separators followed by version/arch info
+				remainder := baseName[len(exeName):]
+				if len(remainder) > 0 && (remainder[0] == '-' || remainder[0] == '_' || remainder[0] == '@' || remainder[0] == '.') {
+					matched = true
+				}
+			}
+
+			if matched {
 				absPath := exec
 				if !filepath.IsAbs(exec) {
 					absPath = filepath.Join(inst.InstallPath, exec)
@@ -1008,6 +1043,53 @@ func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName st
 	envVars, _ := p.GetEnvVars(selected.inst.Tool, selected.inst.InstallPath, selected.inst.Version)
 
 	return selected.exePath, envVars, nil
+}
+
+// ParseToolSpec parses a tool specification string (e.g., "node@20", "github:cli/cli@v2.0.0")
+// into its constituent parts: backend, tool name, version, and whether the version was explicit.
+func (im *InstallationManager) ParseToolSpec(spec string) (backend, tool, version string, explicit bool) {
+	version = "latest"
+	tool = spec
+
+	// 1. Handle backend:tool[@version]
+	if idx := strings.Index(spec, ":"); idx != -1 {
+		backend = spec[:idx]
+		tool = spec[idx+1:]
+		// Intercept go: prefix and route to the internal go-pkg provider
+		if backend == "go" {
+			backend = "go-pkg"
+		}
+	}
+
+	// 2. Handle tool[@version]
+	// The version separator is the LAST '@' that is NOT at index 0 of the tool part.
+	if idx := strings.LastIndex(tool, "@"); idx > 0 {
+		version = tool[idx+1:]
+		tool = tool[:idx]
+		explicit = true
+		if version == "" {
+			version = "latest"
+		}
+	}
+
+	// 3. Auto-detect backend if not specified
+	if backend == "" {
+		backend = im.AutoDetectBackend(tool)
+	}
+
+	return backend, tool, version, explicit
+}
+
+// AutoDetectBackend attempts to identify the best backend for a given tool name.
+func (im *InstallationManager) AutoDetectBackend(toolName string) string {
+	if strings.Contains(toolName, "/") {
+		return "github"
+	}
+	if native.IsNativeTool(toolName) {
+		return "native"
+	}
+	// Default to asdf for compatibility with the broadest range of tools
+	return "asdf"
 }
 
 // removeEmptyDirs recursively removes empty parent directories of path up to root.
