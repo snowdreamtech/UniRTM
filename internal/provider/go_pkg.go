@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
@@ -52,7 +53,7 @@ func (p *GoPkgProvider) Install(ctx context.Context, tool string, installPath st
 
 	// Extract extra domains from GOPROXY
 	var extraDomains []string
-	if goproxy := os.Getenv("GOPROXY"); goproxy != "" {
+	if goproxy := env.Get("GOPROXY"); goproxy != "" {
 		for _, proxy := range strings.Split(goproxy, ",") {
 			proxy = strings.TrimSpace(proxy)
 			if proxy == "direct" || proxy == "off" || proxy == "" {

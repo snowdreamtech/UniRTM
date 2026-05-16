@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
@@ -40,10 +41,10 @@ func (p *PypiProvider) Install(ctx context.Context, tool string, installPath str
 
 	// Extract extra domains from environment variables
 	var extraDomains []string
-	if d := DomainFromURL(os.Getenv("PIP_INDEX_URL")); d != "" {
+	if d := DomainFromURL(env.Get("PIP_INDEX_URL")); d != "" {
 		extraDomains = append(extraDomains, d)
 	}
-	if d := DomainFromURL(os.Getenv("PIP_EXTRA_INDEX_URL")); d != "" {
+	if d := DomainFromURL(env.Get("PIP_EXTRA_INDEX_URL")); d != "" {
 		extraDomains = append(extraDomains, d)
 	}
 

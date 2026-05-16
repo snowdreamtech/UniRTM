@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
@@ -42,10 +43,10 @@ func (p *CargoProvider) Install(ctx context.Context, tool string, installPath st
 
 	// Extract extra domains from Rust mirror environment variables
 	var extraDomains []string
-	if d := DomainFromURL(os.Getenv("RUSTUP_DIST_SERVER")); d != "" {
+	if d := DomainFromURL(env.Get("RUSTUP_DIST_SERVER")); d != "" {
 		extraDomains = append(extraDomains, d)
 	}
-	if d := DomainFromURL(os.Getenv("RUSTUP_UPDATE_ROOT")); d != "" {
+	if d := DomainFromURL(env.Get("RUSTUP_UPDATE_ROOT")); d != "" {
 		extraDomains = append(extraDomains, d)
 	}
 

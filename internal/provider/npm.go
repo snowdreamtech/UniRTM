@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
@@ -48,7 +49,7 @@ func (p *NpmProvider) Install(ctx context.Context, tool string, installPath stri
 	
 	// Extract extra domain from environment variables
 	var extraDomains []string
-	if d := DomainFromURL(os.Getenv("NPM_CONFIG_REGISTRY")); d != "" {
+	if d := DomainFromURL(env.Get("NPM_CONFIG_REGISTRY")); d != "" {
 		extraDomains = append(extraDomains, d)
 	}
 	

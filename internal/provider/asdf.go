@@ -81,14 +81,14 @@ func (p *AsdfProvider) Install(ctx context.Context, tool string, installPath str
 		}
 	}
 
-	env := GetNoProxyEnv(extraDomains...)
-	env = append(env,
+	cmdEnv := GetNoProxyEnv(extraDomains...)
+	cmdEnv = append(cmdEnv,
 		"ASDF_INSTALL_TYPE=version",
 		"ASDF_INSTALL_VERSION="+version,
 		"ASDF_INSTALL_PATH="+installPath,
 		"ASDF_DOWNLOAD_PATH="+downloadPath,
 		"ASDF_CONCURRENCY=4", // reasonable default
-		"PATH="+tmpBinDir+string(os.PathListSeparator)+os.Getenv("PATH"),
+		"PATH="+tmpBinDir+string(os.PathListSeparator)+env.Get("PATH"),
 	)
 
 	// Ensure install path exists
@@ -101,7 +101,7 @@ func (p *AsdfProvider) Install(ctx context.Context, tool string, installPath str
 	if stat, err := os.Stat(downloadScript); err == nil && !stat.IsDir() {
 		logger.Debug("Running asdf plugin download script", map[string]interface{}{"tool": tool, "version": version})
 		cmd := exec.CommandContext(ctx, downloadScript)
-		cmd.Env = env
+		cmd.Env = cmdEnv
 		cmd.Dir = installPath
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -115,7 +115,7 @@ func (p *AsdfProvider) Install(ctx context.Context, tool string, installPath str
 	if stat, err := os.Stat(installScript); err == nil && !stat.IsDir() {
 		logger.Debug("Running asdf plugin install script", map[string]interface{}{"tool": tool, "version": version})
 		cmd := exec.CommandContext(ctx, installScript)
-		cmd.Env = env
+		cmd.Env = cmdEnv
 		cmd.Dir = installPath
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr

@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
@@ -45,7 +46,7 @@ func (p *GemProvider) Install(ctx context.Context, tool string, installPath stri
 
 	// Extract extra domains from Ruby mirror environment variables
 	var extraDomains []string
-	if d := DomainFromURL(os.Getenv("BUNDLE_MIRROR__HTTPS__RUBYGEMS__ORG")); d != "" {
+	if d := DomainFromURL(env.Get("BUNDLE_MIRROR__HTTPS__RUBYGEMS__ORG")); d != "" {
 		extraDomains = append(extraDomains, d)
 	}
 
