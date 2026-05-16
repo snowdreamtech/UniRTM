@@ -4,13 +4,21 @@
 package provider
 
 import (
+	"archive/tar"
+	"archive/zip"
+	"bufio"
+	"compress/gzip"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/klauspost/compress/zstd"
+	"github.com/ulikunitz/xz"
 )
 
 // GenericProvider implements the Provider interface with default behavior
@@ -461,65 +469,181 @@ REM UniRTM shim for %s (version %s)
 
 // extractArtifact attempts to extract an archive to the destination directory.
 // Returns an error if the file is not a supported archive or extraction fails.
+// extractArtifact attempts to extract an archive to the destination directory.
+// It uses pure Go implementations for .zip, .tar.gz, .tar.xz, and .tar.zst
+// to ensure zero-dependency on system tools.
 func (g *GenericProvider) extractArtifact(ctx context.Context, artifactPath string, dstDir string) error {
-	ext := strings.ToLower(filepath.Ext(artifactPath))
+	f, err := os.Open(artifactPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
 	base := strings.ToLower(filepath.Base(artifactPath))
 
-	// Handle .tar.gz, .tar.xz, .tar.zst etc.
-	if strings.HasSuffix(base, ".tar.gz") || strings.HasSuffix(base, ".tgz") {
-		cmd := exec.CommandContext(ctx, "tar", "-xzf", artifactPath, "-C", dstDir)
-		if output, err := cmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("tar extract failed: %v, output: %s", err, string(output))
+	// 1. Handle ZIP
+	if strings.HasSuffix(base, ".zip") {
+		return g.extractZip(artifactPath, dstDir)
+	}
+
+	// 2. Wrap the reader based on compression
+	var r io.Reader = f
+	var compressed = false
+
+	if strings.HasSuffix(base, ".tar.gz") || strings.HasSuffix(base, ".tgz") || strings.HasSuffix(base, ".gz") {
+		gz, err := gzip.NewReader(f)
+		if err != nil {
+			return err
 		}
-		return nil
-	} else if strings.HasSuffix(base, ".tar.xz") || strings.HasSuffix(base, ".txz") {
-		cmd := exec.CommandContext(ctx, "tar", "-xJf", artifactPath, "-C", dstDir)
-		if output, err := cmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("tar extract (xz) failed: %v, output: %s", err, string(output))
+		defer gz.Close()
+		r = gz
+		compressed = true
+	} else if strings.HasSuffix(base, ".tar.xz") || strings.HasSuffix(base, ".txz") || strings.HasSuffix(base, ".xz") {
+		xzr, err := xz.NewReader(f)
+		if err != nil {
+			return err
 		}
-		return nil
-	} else if strings.HasSuffix(base, ".tar.zst") {
-		// Use tar with zstd filter
-		cmd := exec.CommandContext(ctx, "tar", "--zstd", "-xf", artifactPath, "-C", dstDir)
-		if output, err := cmd.CombinedOutput(); err != nil {
-			// Fallback to -I zstd if --zstd is not supported by old tar
-			cmd = exec.CommandContext(ctx, "tar", "-I", "zstd", "-xf", artifactPath, "-C", dstDir)
-			if output, err = cmd.CombinedOutput(); err != nil {
-				return fmt.Errorf("tar extract (zstd) failed: %v, output: %s", err, string(output))
+		r = xzr
+		compressed = true
+	} else if strings.HasSuffix(base, ".tar.zst") || strings.HasSuffix(base, ".zst") {
+		zsr, err := zstd.NewReader(f)
+		if err != nil {
+			return err
+		}
+		defer zsr.Close()
+		r = zsr
+		compressed = true
+	}
+
+	// 3. Smart Sniffing: Check if the decompressed stream is a TAR archive
+	// We use a buffered reader to peek at the first 512 bytes (tar header size)
+	br := bufio.NewReader(r)
+	isTar := strings.HasSuffix(base, ".tar")
+	if !isTar && compressed {
+		// Peek for tar magic numbers (ustar)
+		header, _ := br.Peek(512)
+		if len(header) >= 263 {
+			// Look for "ustar" magic string at offset 257
+			magic := string(header[257:262])
+			if magic == "ustar" {
+				isTar = true
 			}
 		}
-		return nil
-	} else if ext == ".zip" {
-		cmd := exec.CommandContext(ctx, "unzip", "-q", "-o", artifactPath, "-d", dstDir)
-		if output, err := cmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("unzip failed: %v, output: %s", err, string(output))
-		}
-		return nil
-	} else if ext == ".tar" {
-		cmd := exec.CommandContext(ctx, "tar", "-xf", artifactPath, "-C", dstDir)
-		if output, err := cmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("tar extract failed: %v, output: %s", err, string(output))
-		}
-		return nil
-	} else if ext == ".zst" {
-		// Single file zstd (not a tarball)
-		outPath := filepath.Join(dstDir, strings.TrimSuffix(base, ".zst"))
-		cmd := exec.CommandContext(ctx, "zstd", "-d", artifactPath, "-o", outPath)
-		if output, err := cmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("zstd decompress failed: %v, output: %s", err, string(output))
-		}
-		return nil
-	} else if ext == ".xz" {
-		// Single file xz
-		outPath := filepath.Join(dstDir, strings.TrimSuffix(base, ".xz"))
-		// xz -d -c artifact > outPath
-		cmd := exec.CommandContext(ctx, "sh", "-c", fmt.Sprintf("xz -d -c %s > %s", artifactPath, outPath))
-		if output, err := cmd.CombinedOutput(); err != nil {
-			return fmt.Errorf("xz decompress failed: %v, output: %s", err, string(output))
-		}
-		return nil
 	}
-	return fmt.Errorf("unsupported archive type: %s", ext)
+
+	// 4. Extract content
+	if isTar {
+		return g.extractTar(br, dstDir)
+	}
+
+	// 5. Handle single-file decompression
+	if compressed {
+		ext := filepath.Ext(base)
+		outName := strings.TrimSuffix(base, ext)
+		// If it's a double extension like .tar.zst, we shouldn't be here (isTar handled it)
+		// but safety check for .tar
+		outName = strings.TrimSuffix(outName, ".tar")
+
+		outPath := filepath.Join(dstDir, outName)
+		outF, err := os.OpenFile(outPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
+		if err != nil {
+			return err
+		}
+		defer outF.Close()
+		_, err = io.Copy(outF, r)
+		return err
+	}
+
+	return fmt.Errorf("unsupported archive type: %s", base)
+}
+
+func (g *GenericProvider) extractZip(zipPath string, dstDir string) error {
+	rc, err := zip.OpenReader(zipPath)
+	if err != nil {
+		return err
+	}
+	defer rc.Close()
+
+	for _, f := range rc.File {
+		path := filepath.Join(dstDir, f.Name)
+		// Security check: Zip Slip
+		if !strings.HasPrefix(path, filepath.Clean(dstDir)+string(os.PathSeparator)) && path != filepath.Clean(dstDir) {
+			continue
+		}
+
+		if f.FileInfo().IsDir() {
+			os.MkdirAll(path, f.Mode())
+			continue
+		}
+
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			return err
+		}
+
+		dstFile, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+		if err != nil {
+			return err
+		}
+
+		srcFile, err := f.Open()
+		if err != nil {
+			dstFile.Close()
+			return err
+		}
+
+		_, err = io.Copy(dstFile, srcFile)
+		srcFile.Close()
+		dstFile.Close()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (g *GenericProvider) extractTar(r io.Reader, dstDir string) error {
+	tr := tar.NewReader(r)
+	for {
+		header, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		path := filepath.Join(dstDir, header.Name)
+		// Security check
+		if !strings.HasPrefix(path, filepath.Clean(dstDir)+string(os.PathSeparator)) && path != filepath.Clean(dstDir) {
+			continue
+		}
+
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(path, 0755); err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+				return err
+			}
+			f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR|os.O_TRUNC, os.FileMode(header.Mode))
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(f, tr); err != nil {
+				f.Close()
+				return err
+			}
+			f.Close()
+		case tar.TypeSymlink:
+			if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+				return err
+			}
+			os.Symlink(header.Linkname, path)
+		}
+	}
+	return nil
 }
 
 // flattenDirectory checks if the directory contains only one sub-directory and no files.
