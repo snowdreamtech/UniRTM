@@ -12,6 +12,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 func init() {
@@ -113,6 +114,14 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 	if len(entries) == 0 {
 		formatter.Info("No backends registered.", nil)
 		return nil
+	}
+
+	isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput
+	if isTerminal {
+		pterm.DefaultHeader.WithFullWidth().
+			WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
+			WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
+			Println("UniRTM Registered Backends")
 	}
 
 	if jsonOutput {
@@ -244,6 +253,14 @@ func runBackendsInfo(cmd *cobra.Command, args []string) error {
 		gpg = "yes"
 	}
 
+	isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput
+	if isTerminal {
+		pterm.DefaultHeader.WithFullWidth().
+			WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
+			WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
+			Printf("UniRTM Backend: %s\n", name)
+	}
+
 	if jsonOutput {
 		formatter.Success(fmt.Sprintf("Backend: %s", name), map[string]interface{}{
 			"name":              b.Name(),
@@ -273,7 +290,9 @@ func runBackendsInfo(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println()
-	pterm.DefaultSection.Printf("Backend: %s", pterm.FgCyan.Sprint(b.Name()))
+	if !isTerminal {
+		pterm.DefaultSection.Printf("Backend: %s", pterm.FgCyan.Sprint(b.Name()))
+	}
 	pterm.DefaultTable.
 		WithSeparator("   ").
 		WithData(pterm.TableData{
