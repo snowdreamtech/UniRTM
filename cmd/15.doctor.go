@@ -287,7 +287,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		reset := resp.Header.Get("X-RateLimit-Reset")
 		
 		if limit != "" {
-			pterm.Info.Printf("Rate Limit: %s/%s (Resets in %s)\n", 
+			pterm.Info.Printf("GitHub Rate Limit: %s/%s (Resets in %s)\n", 
 				pterm.LightCyan(remaining), pterm.LightCyan(limit), 
 				time.Until(time.Unix(parseInt(reset), 0)).Round(time.Minute))
 		}
