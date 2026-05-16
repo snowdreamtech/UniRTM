@@ -118,18 +118,12 @@ func runExec(cmd *cobra.Command, args []string) error {
 	shimsDir := env.GetShimsDir()
 	os.Setenv("PATH", fmt.Sprintf("%s%c%s", shimsDir, os.PathListSeparator, os.Getenv("PATH")))
 
-	// 5. Visual Feedback (Surpass)
-	isTerminal := term.IsTerminal(int(os.Stdout.Fd()))
-	if isTerminal && !quiet {
-		pterm.DefaultHeader.WithFullWidth().
-			WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
-			WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
-			Printf("UniRTM Executor: %s\n", strings.Join(commandArgs, " "))
-		
+	// 5. Visual Feedback (Silent for execution transparency)
+	if verbose {
+		pterm.Info.Printf("Executing: %s\n", strings.Join(commandArgs, " "))
 		if len(contextTools) > 0 {
 			pterm.Info.Printf("Context: %s\n", pterm.LightCyan(strings.Join(contextTools, ", ")))
 		}
-		fmt.Println()
 	}
 
 	// 6. Execution
