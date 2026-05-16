@@ -161,7 +161,7 @@ func runBinPaths(cmd *cobra.Command, args []string) error {
 
 	for _, p := range paths {
 		if isTerminal {
-			pterm.Success.Println(pterm.FgGray.Sprint(p))
+			pterm.Println(pterm.FgGray.Sprint(p))
 		} else {
 			fmt.Println(p)
 		}
