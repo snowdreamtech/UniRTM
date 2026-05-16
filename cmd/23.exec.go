@@ -13,6 +13,7 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
 	"runtime"
 	"syscall"
@@ -85,32 +86,50 @@ func runExec(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no command specified after '--'")
 	}
 
-	// 2. Auto-install missing tools if enabled
-	if cfg != nil && (cfg.Settings.AutoInstall == nil || *cfg.Settings.AutoInstall) {
-		installManager, err := getInstallationManager(ctx, cfg)
-		if err == nil {
-			// Ensure tools defined in config are installed
-			if err := installManager.EnsureInstalled(ctx, cfg.Tools); err != nil {
-				if verbose {
-					pterm.Warning.Printf("Auto-install failed: %v\n", err)
-				}
+	// 2. Initialize Installation Manager
+	installManager, err := getInstallationManager(ctx, cfg)
+	if err != nil {
+		if verbose {
+			pterm.Warning.Printf("Failed to initialize installation manager: %v\n", err)
+		}
+	}
+
+	// 3. Auto-install missing tools if enabled
+	if installManager != nil && cfg != nil && (cfg.Settings.AutoInstall == nil || *cfg.Settings.AutoInstall) {
+		// Ensure tools defined in config are installed
+		if err := installManager.EnsureInstalled(ctx, cfg.Tools); err != nil {
+			if verbose {
+				pterm.Warning.Printf("Auto-install failed: %v\n", err)
 			}
 		}
 	}
 
 	// 4. Resolve Environment
 	// Inject specified tools into the context
-	for _, t := range contextTools {
-		parts := strings.SplitN(t, "@", 2)
-		name := parts[0]
-		version := "latest"
-		if len(parts) > 1 {
-			version = parts[1]
+	toolsToEnsure := make(map[string]service.ToolSpec)
+	for _, arg := range contextTools {
+		// Use centralized ToolSpec parsing
+		backendName, toolName, version, _ := installManager.ParseToolSpec(arg)
+
+		// Record the tool to ensure it's available before execution
+		toolsToEnsure[toolName] = service.ToolSpec{
+			Name:        toolName,
+			Version:     version,
+			BackendName: backendName,
 		}
 		
 		// Map to environment variable
-		envKey := fmt.Sprintf("UNIRTM_%s_VERSION", strings.ToUpper(strings.ReplaceAll(name, "-", "_")))
+		envKey := fmt.Sprintf("UNIRTM_%s_VERSION", strings.ToUpper(strings.ReplaceAll(toolName, "-", "_")))
 		os.Setenv(envKey, version)
+	}
+
+	// Ensure context tools are installed
+	if installManager != nil && len(toolsToEnsure) > 0 && (cfg == nil || cfg.Settings.AutoInstall == nil || *cfg.Settings.AutoInstall) {
+		if err := installManager.EnsureInstalledFromSpecs(ctx, toolsToEnsure); err != nil {
+			if verbose {
+				pterm.Warning.Printf("Failed to install context tools: %v\n", err)
+			}
+		}
 	}
 
 	// Ensure shims is in PATH
