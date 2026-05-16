@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -479,7 +480,7 @@ func TestEnvironmentState_SavesPath(t *testing.T) {
 
 func TestFindProjectDirectory_SymlinkHandling(t *testing.T) {
 	// Skip on Windows as symlink creation requires admin privileges
-	if os.Getenv("GOOS") == "windows" {
+	if env.Get("GOOS") == "windows" {
 		t.Skip("Skipping symlink test on Windows")
 	}
 

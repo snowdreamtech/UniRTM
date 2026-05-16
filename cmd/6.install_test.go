@@ -210,7 +210,7 @@ func TestInstallCommand_OutputFormat(t *testing.T) {
 // TestGetDefaultDatabasePath tests the default database path generation.
 func TestGetDefaultDatabasePath(t *testing.T) {
 	// Save original environment
-	originalXDGDataHome := os.Getenv("XDG_DATA_HOME")
+	originalXDGDataHome := env.Get("XDG_DATA_HOME")
 	defer func() {
 		if originalXDGDataHome != "" {
 			os.Setenv("XDG_DATA_HOME", originalXDGDataHome)

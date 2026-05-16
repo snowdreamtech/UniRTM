@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -215,8 +216,8 @@ func TestGlobalWithFields(t *testing.T) {
 
 func TestIsColorSupported(t *testing.T) {
 	// Save original environment
-	originalNoColor := os.Getenv("NO_COLOR")
-	originalTerm := os.Getenv("TERM")
+	originalNoColor := env.Get("NO_COLOR")
+	originalTerm := env.Get("TERM")
 	defer func() {
 		os.Setenv("NO_COLOR", originalNoColor)
 		os.Setenv("TERM", originalTerm)
