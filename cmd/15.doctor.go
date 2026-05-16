@@ -159,20 +159,17 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		for _, name := range keys {
 			t := cfg.Tools[name]
 			
-			// Normalize tool name to directory slug (e.g., github:owner/repo -> github-owner-repo)
-			slug := name
-			slug = strings.ReplaceAll(slug, ":", "-")
-			slug = strings.ReplaceAll(slug, "/", "-")
-			slug = strings.ReplaceAll(slug, "@", "")
+			// Use official normalization logic from env package (slugification)
+			slug := env.GetFSToolName(name, t.Backend)
 			
-			// Normalize version (e.g., v0.3.2 -> 0.3.2)
+			// Normalize version using official service package logic
 			v := t.Version
 			if ver, err := service.ParseVersion(v); err == nil {
 				v = ver.String()
 			}
 			
 			installStatus := pterm.LightGreen("✓ installed")
-			toolPath := filepath.Join(env.GetDataDir(), "installs", slug, v)
+			toolPath := filepath.Join(env.GetInstallsDir(), slug, v)
 			if _, err := os.Stat(toolPath); os.IsNotExist(err) {
 				installStatus = pterm.LightRed("✗ missing")
 			}
@@ -265,6 +262,8 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 
 	// 11. Health Checks (Database & Network)
 	pterm.DefaultSection.Println("🌐 Health Checks")
+	
+	// DB Check
 	dbPath := env.GetDatabasePath()
 	db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true})
 	if err != nil {
@@ -274,6 +273,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		pterm.Success.Printf("Database: %s (Size: %s)\n", pterm.FgGray.Sprint(dbPath), getFileSize(dbPath))
 	}
 
+	// Network & Rate Limit
 	client := &http.Client{Timeout: 10 * time.Second}
 	req, _ := http.NewRequest("GET", "https://api.github.com/rate_limit", nil)
 	if token := env.Get("GITHUB_TOKEN"); token != "" {
@@ -312,7 +312,6 @@ func formatTrustStatus() string {
 
 func formatActiveEnv(cfg *config.Config) string {
 	if cfg == nil { return "none" }
-	// In UniRTM, active env is usually determined by UNIRTM_ENV or config
 	e := env.Get("ENV")
 	if e == "" { return "base" }
 	return pterm.LightCyan(e)
