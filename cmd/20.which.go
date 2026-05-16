@@ -186,6 +186,31 @@ func runWhich(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("list installations: %w", err)
 	}
 
+	// Fallback: if no installation found by exact tool name, scan all
+	// installations and look for one that provides an executable named target.
+	// This handles tools like "astral-sh/ruff" whose executable is "ruff".
+	if len(toolInstallations) == 0 {
+		allInstallations, listErr := installRepo.List(ctx)
+		if listErr == nil {
+			for _, inst := range allInstallations {
+				p := provider.DefaultRegistry.GetWithBackend(inst.Tool, inst.Backend)
+				if p == nil {
+					continue
+				}
+				execs, exErr := p.ListExecutables(inst.Tool, inst.InstallPath, inst.Version)
+				if exErr != nil {
+					continue
+				}
+				for _, ex := range execs {
+					if filepath.Base(ex) == target {
+						toolInstallations = append(toolInstallations, inst)
+						break
+					}
+				}
+			}
+		}
+	}
+
 	var matches []match
 
 	for _, inst := range toolInstallations {
