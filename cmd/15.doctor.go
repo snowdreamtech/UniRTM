@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/pterm/pterm"
+	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -130,7 +131,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 
 	// 6. Backends
 	pterm.DefaultSection.Println("🔌 Available Backends")
-	backends := []string{"aqua", "asdf", "cargo", "gem", "go_pkg", "npm", "pypi", "github", "http"}
+	backends := backend.List()
 	pterm.DefaultBulletList.WithItems(stringToBulletItems(backends)).Render()
 
 	// 7. Toolset (Active Tools)
