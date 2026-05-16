@@ -194,10 +194,20 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		}
 	}
 	
-	// Check UniRTM specific GitHub Proxy
-	if cfg != nil && cfg.Settings.GitHubProxy != "" {
-		foundProxy = true
-		pterm.Info.Printf("UniRTM GitHub Proxy: %s\n", pterm.FgGray.Sprint(cfg.Settings.GitHubProxy))
+	// Check UniRTM specific Proxies
+	if cfg != nil {
+		if cfg.Settings.GitHubProxy != "" {
+			foundProxy = true
+			pterm.Info.Printf("UniRTM GitHub Proxy: %s\n", pterm.FgGray.Sprint(cfg.Settings.GitHubProxy))
+		}
+		if cfg.Settings.HttpProxy != "" {
+			foundProxy = true
+			pterm.Info.Printf("UniRTM HTTP Proxy: %s\n", pterm.FgGray.Sprint(cfg.Settings.HttpProxy))
+		}
+		if cfg.Settings.HttpsProxy != "" {
+			foundProxy = true
+			pterm.Info.Printf("UniRTM HTTPS Proxy: %s\n", pterm.FgGray.Sprint(cfg.Settings.HttpsProxy))
+		}
 	}
 
 	if foundProxy {
@@ -209,7 +219,19 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	client := &http.Client{
 		Timeout: 15 * time.Second,
 		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
+			Proxy: func(req *http.Request) (*url.URL, error) {
+				// 1. Check UniRTM config first
+				if cfg != nil {
+					if req.URL.Scheme == "http" && cfg.Settings.HttpProxy != "" {
+						return url.Parse(cfg.Settings.HttpProxy)
+					}
+					if req.URL.Scheme == "https" && cfg.Settings.HttpsProxy != "" {
+						return url.Parse(cfg.Settings.HttpsProxy)
+					}
+				}
+				// 2. Fallback to system environment
+				return http.ProxyFromEnvironment(req)
+			},
 		},
 	}
 	
@@ -223,7 +245,19 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		
 		// Check which proxy will be used for this specific URL
 		targetURL, _ := url.Parse(t.url)
-		proxyURL, _ := http.ProxyFromEnvironment(&http.Request{URL: targetURL})
+		var proxyURL *url.URL
+		if cfg != nil {
+			if targetURL.Scheme == "http" && cfg.Settings.HttpProxy != "" {
+				proxyURL, _ = url.Parse(cfg.Settings.HttpProxy)
+			} else if targetURL.Scheme == "https" && cfg.Settings.HttpsProxy != "" {
+				proxyURL, _ = url.Parse(cfg.Settings.HttpsProxy)
+			}
+		}
+		
+		if proxyURL == nil {
+			proxyURL, _ = http.ProxyFromEnvironment(&http.Request{URL: targetURL})
+		}
+
 		proxyStr := "Direct"
 		if proxyURL != nil {
 			proxyStr = proxyURL.String()

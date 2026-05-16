@@ -112,6 +112,8 @@ type Settings struct {
 	Lockfile bool `toml:"lockfile,omitempty" yaml:"lockfile,omitempty" mapstructure:"lockfile,omitempty"`
 	Locked bool `toml:"locked,omitempty" yaml:"locked,omitempty" mapstructure:"locked,omitempty"`
 	GitHubProxy string `toml:"github_proxy,omitempty" yaml:"github_proxy,omitempty" mapstructure:"github_proxy,omitempty"`
+	HttpProxy string `toml:"http_proxy,omitempty" yaml:"http_proxy,omitempty" mapstructure:"http_proxy,omitempty"`
+	HttpsProxy string `toml:"https_proxy,omitempty" yaml:"https_proxy,omitempty" mapstructure:"https_proxy,omitempty"`
 	GitHubToken string `toml:"github_token,omitempty" yaml:"github_token,omitempty" mapstructure:"github_token,omitempty"`
 	HTTPTimeout int `toml:"http_timeout,omitempty" yaml:"http_timeout,omitempty" mapstructure:"http_timeout,omitempty"`
 	TaskTimeout int `toml:"task_timeout,omitempty" yaml:"task_timeout,omitempty" mapstructure:"task_timeout,omitempty"`
