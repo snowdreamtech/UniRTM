@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -183,8 +184,8 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	// 7. Network Connectivity
 	pterm.DefaultSection.Println("Network Connectivity")
 	
-	// Detect Proxy
-	proxies := []string{"HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY"}
+	// Detect Proxy (Check both upper and lower case)
+	proxies := []string{"HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy", "NO_PROXY", "no_proxy"}
 	foundProxy := false
 	for _, p := range proxies {
 		if val := os.Getenv(p); val != "" {
@@ -192,29 +193,54 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 			pterm.Info.Printf("Proxy detected: %s=%s\n", pterm.LightBlue(p), pterm.FgGray.Sprint(val))
 		}
 	}
-	if foundProxy {
-		fmt.Println()
+	
+	// Check UniRTM specific GitHub Proxy
+	if cfg != nil && cfg.Settings.GitHubProxy != "" {
+		foundProxy = true
+		pterm.Info.Printf("UniRTM GitHub Proxy: %s\n", pterm.FgGray.Sprint(cfg.Settings.GitHubProxy))
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	if foundProxy {
+		fmt.Println()
+	} else {
+		pterm.Info.Println("No system proxy detected. UniRTM will attempt direct connections.")
+	}
+
+	client := &http.Client{
+		Timeout: 15 * time.Second,
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+		},
+	}
+	
 	targets := []struct{ name, url string }{
 		{"GitHub API", "https://api.github.com"},
 		{"Aqua Registry", "https://aquaproj.github.io"},
 	}
-	
+
 	for _, t := range targets {
 		start := time.Now()
+		
+		// Check which proxy will be used for this specific URL
+		targetURL, _ := url.Parse(t.url)
+		proxyURL, _ := http.ProxyFromEnvironment(&http.Request{URL: targetURL})
+		proxyStr := "Direct"
+		if proxyURL != nil {
+			proxyStr = proxyURL.String()
+		}
+
 		resp, err := client.Get(t.url)
 		duration := time.Since(start)
+
 		if err != nil {
-			msg := err.Error()
-			if strings.Contains(msg, "reset") || strings.Contains(msg, "refused") {
-				msg += pterm.LightYellow(" (Check your proxy/firewall settings)")
+			errMsg := err.Error()
+			if strings.Contains(errMsg, "connection reset") || strings.Contains(errMsg, "refused") {
+				errMsg += pterm.LightYellow(" (Check your proxy/firewall settings or ensure the proxy is active)")
 			}
-			pterm.Error.Printf("%-15s %s (%v)\n", t.name, "Unreachable", msg)
+			pterm.Error.Printf("%-15s %-25s %s (%s)\n", t.name, pterm.FgGray.Sprint(proxyStr), "Unreachable", errMsg)
 		} else {
+			pterm.Success.Printf("%-15s %-25s %s (HTTP %d, %s)\n", t.name, pterm.FgGray.Sprint(proxyStr), "OK", resp.StatusCode, duration.Round(time.Millisecond).String())
 			resp.Body.Close()
-			pterm.Success.Printf("%-15s %s (HTTP %d, %v)\n", t.name, "OK", resp.StatusCode, duration.Round(time.Millisecond))
 		}
 	}
 
