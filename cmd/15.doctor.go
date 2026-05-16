@@ -332,15 +332,24 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	// 13. Fix Suggestions
 	pterm.DefaultSection.Println("💡 Fix Suggestions")
 	suggestions := 0
+	exe, _ := os.Executable()
+	// If the executable is in the PATH, we can just use the base name
+	if _, err := exec.LookPath(filepath.Base(exe)); err == nil {
+		exe = filepath.Base(exe)
+	} else {
+		// Use the path as invoked if possible, or absolute path
+		exe = os.Args[0]
+	}
+
 	if !shimsOnPath {
 		pterm.Warning.Printf("UniRTM shims directory is not in your PATH.\n")
-		pterm.Info.Printf("Fix: Add this to your shell config (.zshrc/.bashrc):\n")
-		pterm.FgMagenta.Printf("     eval \"$(unirtm enable %s)\"\n\n", strings.ToLower(filepath.Base(shellPath)))
+		pterm.Info.Printf("Fix: Run the following command to setup shims in your shell config:\n")
+		pterm.FgMagenta.Printf("     %s enable --shims\n\n", exe)
 		suggestions++
 	}
 	if !isActivated {
 		pterm.Warning.Printf("UniRTM environment is not activated.\n")
-		pterm.Info.Printf("Fix: Run 'unirtm enable' or 'eval \"$(unirtm enable)\"'.\n\n")
+		pterm.Info.Printf("Fix: Run '%s enable --shims' to setup automatic activation.\n\n", exe)
 		suggestions++
 	}
 	
