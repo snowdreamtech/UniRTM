@@ -149,7 +149,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	pterm.DefaultSection.Println("🧰 Active Toolset")
 	if cfg != nil && len(cfg.Tools) > 0 {
 		var toolData [][]string
-		toolData = append(toolData, []string{"Tool", "Version", "Backend", "Source"})
+		toolData = append(toolData, []string{"Tool", "Version", "Backend", "Install Status"})
 		
 		keys := make([]string, 0, len(cfg.Tools))
 		for k := range cfg.Tools { keys = append(keys, k) }
@@ -157,12 +157,24 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		
 		for _, name := range keys {
 			t := cfg.Tools[name]
-			source := "project" // simplified for doctor
+			
+			// Normalize tool name to directory slug (e.g., github:owner/repo -> github-owner-repo)
+			slug := name
+			slug = strings.ReplaceAll(slug, ":", "-")
+			slug = strings.ReplaceAll(slug, "/", "-")
+			slug = strings.ReplaceAll(slug, "@", "")
+			
+			installStatus := pterm.LightGreen("✓ installed")
+			toolPath := filepath.Join(env.GetDataDir(), "installs", slug, t.Version)
+			if _, err := os.Stat(toolPath); os.IsNotExist(err) {
+				installStatus = pterm.LightRed("✗ missing")
+			}
+
 			toolData = append(toolData, []string{
 				pterm.Bold.Sprint(name),
 				pterm.LightCyan(t.Version),
 				pterm.FgGray.Sprint(t.Backend),
-				pterm.FgGray.Sprint(source),
+				installStatus,
 			})
 		}
 		pterm.DefaultTable.WithHasHeader().WithData(toolData).Render()
