@@ -6,6 +6,7 @@ package download
 import (
 	"context"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -84,30 +85,38 @@ func NewHTTPDownloader() *HTTPDownloader {
 			IdleConnTimeout:     90 * time.Second,
 			TLSHandshakeTimeout: 10 * time.Second,
 		},
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) >= 10 {
-				return fmt.Errorf("too many redirects")
-			}
+	}
 
-			// Get proxy from context
-			proxy, ok := req.Context().Value(githubProxyKey).(string)
-			if ok && proxy != "" {
-				nextURL := req.URL.String()
-				if (strings.Contains(nextURL, "github.com") || strings.Contains(nextURL, "githubusercontent.com")) && !strings.HasPrefix(nextURL, proxy) {
-					// Ensure proxy ends with /
-					p := proxy
-					if !strings.HasSuffix(p, "/") {
-						p += "/"
-					}
-					// Apply proxy to the redirect target
-					newURL, err := url.Parse(p + nextURL)
-					if err == nil {
-						req.URL = newURL
-					}
+	// Support disabling HTTP/2 via environment variable for compatibility with some proxies/mirrors (like Aliyun)
+	// that might send malformed HTTP/2 frames or have ALPN issues.
+	if env.Get("HTTP2") == "0" {
+		// Setting TLSNextProto to an empty, non-nil map disables HTTP/2 support in http.Transport
+		h.client.Transport.(*http.Transport).TLSNextProto = make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)
+	}
+
+	h.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if len(via) >= 10 {
+			return fmt.Errorf("too many redirects")
+		}
+
+		// Get proxy from context
+		proxy, ok := req.Context().Value(githubProxyKey).(string)
+		if ok && proxy != "" {
+			nextURL := req.URL.String()
+			if (strings.Contains(nextURL, "github.com") || strings.Contains(nextURL, "githubusercontent.com")) && !strings.HasPrefix(nextURL, proxy) {
+				// Ensure proxy ends with /
+				p := proxy
+				if !strings.HasSuffix(p, "/") {
+					p += "/"
+				}
+				// Apply proxy to the redirect target
+				newURL, err := url.Parse(p + nextURL)
+				if err == nil {
+					req.URL = newURL
 				}
 			}
-			return nil
-		},
+		}
+		return nil
 	}
 	return h
 }
@@ -137,6 +146,9 @@ func (h *HTTPDownloader) Download(ctx context.Context, url string, destination s
 		ctx = context.WithValue(ctx, githubProxyKey, opts.GitHubProxy)
 	}
 
+	// Track if we need to force HTTP/1.1 due to protocol errors
+	forceHTTP11 := env.Get("HTTP2") == "0"
+
 	// Apply GitHub proxy if configured and URL is from GitHub
 	if opts.GitHubProxy != "" && (strings.Contains(url, "github.com") || strings.Contains(url, "githubusercontent.com")) {
 		// Ensure proxy ends with /
@@ -149,7 +161,6 @@ func (h *HTTPDownloader) Download(ctx context.Context, url string, destination s
 			url = proxy + url
 		}
 	}
-
 	// Validate URL
 	if _, err := parseURL(url); err != nil {
 		return errors.NewUserError(fmt.Sprintf("invalid URL %q", url), err)
@@ -173,6 +184,13 @@ func (h *HTTPDownloader) Download(ctx context.Context, url string, destination s
 		// Check context before each attempt
 		if err := ctx.Err(); err != nil {
 			return errors.NewExternalError(fmt.Sprintf("download cancelled after %d attempts", attempt-1), err)
+		}
+
+		// If forced to HTTP/1.1, ensure client is configured properly for this attempt
+		if forceHTTP11 {
+			if transport, ok := h.client.Transport.(*http.Transport); ok {
+				transport.TLSNextProto = make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)
+			}
 		}
 
 		// Attempt download
@@ -212,6 +230,17 @@ func (h *HTTPDownloader) Download(ctx context.Context, url string, destination s
 		}
 
 		lastErr = err
+
+		// Detect protocol errors and trigger fallback to HTTP/1.1
+		if strings.Contains(err.Error(), "malformed HTTP response") {
+			if !forceHTTP11 {
+				forceHTTP11 = true
+				// We don't increment attempt counter yet, just retry immediately with HTTP/1.1
+				// if this is the first time we see this error.
+				attempt--
+				continue
+			}
+		}
 
 		// Don't retry on user errors (invalid URL, etc.)
 		if errors.IsUserError(err) {
