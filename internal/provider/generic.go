@@ -463,10 +463,30 @@ REM UniRTM shim for %s (version %s)
 // Returns an error if the file is not a supported archive or extraction fails.
 func (g *GenericProvider) extractArtifact(ctx context.Context, artifactPath string, dstDir string) error {
 	ext := strings.ToLower(filepath.Ext(artifactPath))
-	if ext == ".gz" || ext == ".tgz" {
+	base := strings.ToLower(filepath.Base(artifactPath))
+
+	// Handle .tar.gz, .tar.xz, .tar.zst etc.
+	if strings.HasSuffix(base, ".tar.gz") || strings.HasSuffix(base, ".tgz") {
 		cmd := exec.CommandContext(ctx, "tar", "-xzf", artifactPath, "-C", dstDir)
 		if output, err := cmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("tar extract failed: %v, output: %s", err, string(output))
+		}
+		return nil
+	} else if strings.HasSuffix(base, ".tar.xz") || strings.HasSuffix(base, ".txz") {
+		cmd := exec.CommandContext(ctx, "tar", "-xJf", artifactPath, "-C", dstDir)
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("tar extract (xz) failed: %v, output: %s", err, string(output))
+		}
+		return nil
+	} else if strings.HasSuffix(base, ".tar.zst") {
+		// Use tar with zstd filter
+		cmd := exec.CommandContext(ctx, "tar", "--zstd", "-xf", artifactPath, "-C", dstDir)
+		if output, err := cmd.CombinedOutput(); err != nil {
+			// Fallback to -I zstd if --zstd is not supported by old tar
+			cmd = exec.CommandContext(ctx, "tar", "-I", "zstd", "-xf", artifactPath, "-C", dstDir)
+			if output, err = cmd.CombinedOutput(); err != nil {
+				return fmt.Errorf("tar extract (zstd) failed: %v, output: %s", err, string(output))
+			}
 		}
 		return nil
 	} else if ext == ".zip" {
@@ -479,6 +499,23 @@ func (g *GenericProvider) extractArtifact(ctx context.Context, artifactPath stri
 		cmd := exec.CommandContext(ctx, "tar", "-xf", artifactPath, "-C", dstDir)
 		if output, err := cmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("tar extract failed: %v, output: %s", err, string(output))
+		}
+		return nil
+	} else if ext == ".zst" {
+		// Single file zstd (not a tarball)
+		outPath := filepath.Join(dstDir, strings.TrimSuffix(base, ".zst"))
+		cmd := exec.CommandContext(ctx, "zstd", "-d", artifactPath, "-o", outPath)
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("zstd decompress failed: %v, output: %s", err, string(output))
+		}
+		return nil
+	} else if ext == ".xz" {
+		// Single file xz
+		outPath := filepath.Join(dstDir, strings.TrimSuffix(base, ".xz"))
+		// xz -d -c artifact > outPath
+		cmd := exec.CommandContext(ctx, "sh", "-c", fmt.Sprintf("xz -d -c %s > %s", artifactPath, outPath))
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("xz decompress failed: %v, output: %s", err, string(output))
 		}
 		return nil
 	}

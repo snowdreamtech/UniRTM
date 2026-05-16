@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
@@ -188,7 +189,8 @@ func runWhich(cmd *cobra.Command, args []string) error {
 
 	// Fallback: if no installation found by exact tool name, scan all
 	// installations and look for one that provides an executable named target.
-	// This handles tools like "astral-sh/ruff" whose executable is "ruff".
+	// This handles tools like "astral-sh/ruff" whose executable is "ruff",
+	// and handles version-suffixed binaries like "hadolint-2.14.0".
 	if len(toolInstallations) == 0 {
 		allInstallations, listErr := installRepo.List(ctx)
 		if listErr == nil {
@@ -202,7 +204,32 @@ func runWhich(cmd *cobra.Command, args []string) error {
 					continue
 				}
 				for _, ex := range execs {
-					if filepath.Base(ex) == target {
+					absPath := ex
+					if !filepath.IsAbs(absPath) {
+						absPath = filepath.Join(inst.InstallPath, ex)
+					}
+
+					// Skip non-executable files (like .zst archives)
+					if !isExecutableFile(absPath) {
+						continue
+					}
+
+					baseName := filepath.Base(absPath)
+					matched := false
+					if baseName == target {
+						matched = true
+					} else if strings.HasPrefix(baseName, target) {
+						// Smart match: check for separator or digit (e.g. hadolint-2.14.0 or python3)
+						remainder := baseName[len(target):]
+						if len(remainder) > 0 {
+							r := remainder[0]
+							if r == '-' || r == '_' || r == '@' || r == '.' || (r >= '0' && r <= '9') {
+								matched = true
+							}
+						}
+					}
+
+					if matched {
 						toolInstallations = append(toolInstallations, inst)
 						break
 					}
@@ -245,8 +272,26 @@ func runWhich(cmd *cobra.Command, args []string) error {
 				absPath = filepath.Join(inst.InstallPath, exec)
 			}
 
-			// Priority 1: Exact filename match (e.g., node == node)
-			if filepath.Base(absPath) == target {
+			// Defensive check: skip non-executables
+			if !isExecutableFile(absPath) {
+				continue
+			}
+
+			baseName := filepath.Base(absPath)
+			matched := false
+			if baseName == target {
+				matched = true
+			} else if strings.HasPrefix(baseName, target) {
+				remainder := baseName[len(target):]
+				if len(remainder) > 0 {
+					r := remainder[0]
+					if r == '-' || r == '_' || r == '@' || r == '.' || (r >= '0' && r <= '9') {
+						matched = true
+					}
+				}
+			}
+
+			if matched {
 				matches = append(matches, match{
 					Path:     absPath,
 					Version:  inst.Version,
@@ -256,7 +301,7 @@ func runWhich(cmd *cobra.Command, args []string) error {
 					Source:   source,
 				})
 			} else if inst.Tool == target && len(execs) == 1 {
-				// Priority 2: Single binary fallback (only if there's only one executable)
+				// Priority 2: Single binary fallback (if tool name matches exactly)
 				matches = append(matches, match{
 					Path:     absPath,
 					Version:  inst.Version,
@@ -267,8 +312,8 @@ func runWhich(cmd *cobra.Command, args []string) error {
 				})
 			}
 
-			// If not --all and we found an active exact match, we're done
-			if !whichAll && isActive && filepath.Base(absPath) == target {
+			// If not --all and we found an active match, we're done
+			if !whichAll && isActive && matched {
 				printMatch(matches[len(matches)-1])
 				return nil
 			}
@@ -352,4 +397,36 @@ func printMatch(m match) {
 		return
 	}
 	fmt.Println(m.Path)
+}
+
+// archiveExtensions contains file extensions that are never directly executable.
+var archiveExtensions = map[string]bool{
+	".zst": true, ".gz": true, ".bz2": true, ".xz": true, ".lz4": true,
+	".tar": true, ".tgz": true, ".tbz2": true, ".txz": true,
+	".zip": true, ".7z": true, ".rar": true,
+	".deb": true, ".rpm": true, ".apk": true,
+	".sig": true, ".asc": true, ".sha256": true, ".sha512": true,
+}
+
+// isExecutableFile returns true if path is a regular file that can be executed.
+func isExecutableFile(path string) bool {
+	ext := strings.ToLower(filepath.Ext(path))
+	if archiveExtensions[ext] {
+		return false
+	}
+	base := strings.ToLower(filepath.Base(path))
+	for _, suffix := range []string{".tar.gz", ".tar.xz", ".tar.bz2", ".tar.zst", ".tar.lz4"} {
+		if strings.HasSuffix(base, suffix) {
+			return false
+		}
+	}
+	fi, err := os.Stat(path)
+	if err != nil || !fi.Mode().IsRegular() {
+		return false
+	}
+	if runtime.GOOS != "windows" {
+		return fi.Mode()&0111 != 0
+	}
+	winExec := map[string]bool{".exe": true, ".cmd": true, ".bat": true, ".ps1": true}
+	return winExec[ext] || ext == ""
 }
