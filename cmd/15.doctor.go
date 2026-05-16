@@ -58,8 +58,8 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 
 	// 2. Shell Info
 	pterm.DefaultSection.Println("Shell Information")
-	shellPath := os.Getenv("SHELL")
-	shellName := filepath.Base(shellPath)
+	shellPath := env.Get("SHELL")
+	shellName := filepath.Base(env.Get("SHELL"))
 	isActivated := os.Getenv("UNIRTM_ACTIVE") != ""
 	
 	statusStr := pterm.LightGreen("✓ activated")

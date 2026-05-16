@@ -255,7 +255,7 @@ func resolveShell(flag string) string {
 	if flag != "" {
 		return strings.ToLower(flag)
 	}
-	shellEnv := filepath.Base(os.Getenv("SHELL"))
+	shellEnv := filepath.Base(env.Get("SHELL"))
 	switch shellEnv {
 	case "fish":
 		return "fish"

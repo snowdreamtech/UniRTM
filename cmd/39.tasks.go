@@ -14,6 +14,7 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
 )
 
@@ -280,9 +281,12 @@ func runTasksEdit(cmd *cobra.Command, args []string) error {
 	}
 
 	cfgPath := resolveConfigFilePath(false)
-	editor := os.Getenv("VISUAL")
+	editor := env.Get("VISUAL")
 	if editor == "" {
-		editor = os.Getenv("EDITOR")
+		editor = env.Get("EDITOR")
+	}
+	if editor == "" && cfg != nil && cfg.Settings.Editor != "" {
+		editor = cfg.Settings.Editor
 	}
 	if editor == "" {
 		editor = "vi"

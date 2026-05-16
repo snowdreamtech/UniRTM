@@ -132,6 +132,9 @@ func syncEnv() {
 		"GITHUB_API_TOKEN",
 		"NO_COLOR",
 		"TERM",
+		"EDITOR",
+		"VISUAL",
+		"SHELL",
 	}
 
 	for _, v := range vars {

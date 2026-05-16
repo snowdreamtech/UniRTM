@@ -328,17 +328,7 @@ func runCacheStats(cmd *cobra.Command, args []string) error {
 
 // getDefaultCacheDir returns the default cache directory path.
 func getDefaultCacheDir() string {
-	cacheHome := os.Getenv("XDG_CACHE_HOME")
-	if cacheHome == "" {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return "./cache"
-		}
-		cacheHome = homeDir + "/.cache"
-	}
-	cacheDir := cacheHome + "/unirtm"
-	_ = os.MkdirAll(cacheDir, 0755)
-	return cacheDir
+	return env.GetCacheDir()
 }
 
 // listCacheFiles walks the cache directory and returns a list of file info maps.

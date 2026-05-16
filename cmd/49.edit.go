@@ -9,6 +9,8 @@ import (
 	"os/exec"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
 )
 
@@ -66,9 +68,13 @@ func runEdit(cmd *cobra.Command, args []string) error {
 		formatter.Info(fmt.Sprintf("Created new config file: %s", cfgPath), nil)
 	}
 
-	editor := os.Getenv("VISUAL")
+	cfg, _ := config.Load()
+	editor := env.Get("VISUAL")
 	if editor == "" {
-		editor = os.Getenv("EDITOR")
+		editor = env.Get("EDITOR")
+	}
+	if editor == "" && cfg != nil && cfg.Settings.Editor != "" {
+		editor = cfg.Settings.Editor
 	}
 	if editor == "" {
 		editor = "vi"
