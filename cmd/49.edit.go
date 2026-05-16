@@ -72,7 +72,7 @@ func runEdit(cmd *cobra.Command, args []string) error {
 
 	// Add a tip if we are using a fallback/system default
 	if source == "system default" || source == "fallback" {
-		fmt.Printf("%s Set $EDITOR or run 'unirtm settings set editor %s' to change your preference.\n\n", pterm.FgGray.Sprint("Tip:"), editor)
+		fmt.Printf("%s Set $EDITOR or run 'unirtm settings set editor <editor>' to change your preference.\n\n", pterm.FgGray.Sprint("Tip:"))
 	}
 
 	targetFile := ""
