@@ -636,6 +636,10 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 	var downloadErr error
 	var errOnce sync.Once
 	
+	// Create a cancellable context for all threads to enable Fail-Fast
+	workerCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	
 	downloadedBytes := int64(0)
 	
 	for i := 0; i < numThreads; i++ {
@@ -649,13 +653,23 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 		go func(start, end int64, threadID int) {
 			defer wg.Done()
 			
+			// Panic Recovery: Prevent a single thread from crashing the whole process
+			defer func() {
+				if r := recover(); r != nil {
+					errOnce.Do(func() {
+						downloadErr = fmt.Errorf("thread %d panicked: %v", threadID, r)
+					})
+					cancel() // Trigger global meltdown
+				}
+			}()
+			
 			backoff := 1 * time.Second
 			for attempt := 0; attempt < 3; attempt++ {
-				if ctx.Err() != nil {
-					return
+				if workerCtx.Err() != nil {
+					return // Context cancelled by another thread or user
 				}
 				
-				req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+				req, err := http.NewRequestWithContext(workerCtx, "GET", url, nil)
 				if err != nil {
 					continue
 				}
@@ -685,6 +699,7 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 						if writeErr != nil {
 							errOnce.Do(func() { downloadErr = writeErr })
 							resp.Body.Close()
+							cancel() // Tell other threads to stop
 							return
 						}
 						currentOffset += int64(n)
@@ -698,16 +713,22 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 						if readErr == io.EOF {
 							return // Success for this chunk
 						}
-						break // Retry
+						break // Retry on connection issues
 					}
 				}
 				time.Sleep(backoff)
 				backoff *= 2
 			}
-			errOnce.Do(func() { downloadErr = fmt.Errorf("thread %d failed after retries", threadID) })
+			// If we exhausted all retries for this chunk
+			errOnce.Do(func() { downloadErr = fmt.Errorf("thread %d failed after 3 retries", threadID) })
+			cancel() // Fail fast: stop other threads
 		}(start, end, i)
 	}
 
 	wg.Wait()
+	// Clean up file on failure
+	if downloadErr != nil {
+		_ = os.Remove(destination)
+	}
 	return downloadErr
 }
