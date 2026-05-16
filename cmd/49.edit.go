@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/pelletier/go-toml/v2"
 	"github.com/pterm/pterm"
@@ -120,6 +121,11 @@ func runEdit(cmd *cobra.Command, args []string) error {
 		pterm.LightCyan(targetFile), 
 		pterm.LightGreen(editor), 
 		pterm.FgGray.Sprint("detected via "+source))
+
+	// Add a small delay so the user can actually read the message
+	spinner, _ := pterm.DefaultSpinner.Start("Launching editor...")
+	time.Sleep(800 * time.Millisecond)
+	spinner.Success()
 
 	// 4. Edit Loop (with validation)
 	for {

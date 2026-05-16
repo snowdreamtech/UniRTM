@@ -87,7 +87,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	pterm.DefaultSection.Println("🐚 Context & Shell")
 	shellPath := env.Get("SHELL")
 	cwd, _ := os.Getwd()
-	
+
 	shellVer := "unknown"
 	if out, err := exec.Command(shellPath, "-c", "echo $ZSH_VERSION $BASH_VERSION").CombinedOutput(); err == nil {
 		shellVer = strings.TrimSpace(string(out))
@@ -132,7 +132,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 				pterm.Success.Printf("Loaded: %s\n", pterm.FgGray.Sprint(c))
 			}
 		}
-		
+
 		if len(cfg.Aliases) > 0 {
 			fmt.Println(pterm.Bold.Sprint("\nAliases:"))
 			for tool, aliases := range cfg.Aliases {
@@ -148,13 +148,13 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	if cfg != nil {
 		var settingsData [][]string
 		settingsData = append(settingsData, []string{"Setting", "Value"})
-		
+
 		v := reflect.ValueOf(cfg.Settings)
 		t := v.Type()
 		for i := 0; i < v.NumField(); i++ {
 			field := t.Field(i)
 			val := v.Field(i).Interface()
-			
+
 			// Format value
 			displayVal := fmt.Sprintf("%v", val)
 			if field.Type.Kind() == reflect.Ptr && !v.Field(i).IsNil() {
@@ -162,7 +162,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 			} else if field.Type.Kind() == reflect.Ptr && v.Field(i).IsNil() {
 				displayVal = "unset"
 			}
-			
+
 			if strings.Contains(field.Name, "Token") && displayVal != "unset" && displayVal != "" {
 				displayVal = "******** [REDACTED]"
 			}
@@ -188,23 +188,23 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	if cfg != nil && len(cfg.Tools) > 0 {
 		var toolData [][]string
 		toolData = append(toolData, []string{"Tool", "Version", "Backend", "Install Status"})
-		
+
 		keys := make([]string, 0, len(cfg.Tools))
 		for k := range cfg.Tools { keys = append(keys, k) }
 		sort.Strings(keys)
-		
+
 		for _, name := range keys {
 			t := cfg.Tools[name]
-			
+
 			// Use official normalization logic from env package (slugification)
 			slug := env.GetFSToolName(name, t.Backend)
-			
+
 			// Normalize version using official service package logic
 			v := t.Version
 			if ver, err := service.ParseVersion(v); err == nil {
 				v = ver.String()
 			}
-			
+
 			installStatus := pterm.LightGreen("✓ installed")
 			toolPath := filepath.Join(env.GetInstallsDir(), slug, v)
 			if _, err := os.Stat(toolPath); os.IsNotExist(err) {
@@ -228,7 +228,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	for i, p := range pathItems {
 		prefix := "  "
 		if i == 0 { prefix = "-> " }
-		
+
 		if strings.EqualFold(p, shimsDir) {
 			pterm.Success.Printf("%s%s %s\n", prefix, p, pterm.LightMagenta("(UniRTM Shims)"))
 		} else if strings.Contains(p, "unirtm") {
@@ -299,7 +299,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 
 	// 12. Health Checks (Database & Network)
 	pterm.DefaultSection.Println("🌐 Health Checks")
-	
+
 	// DB Check
 	dbPath := env.GetDatabasePath()
 	db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true})
@@ -316,16 +316,16 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	if token := env.Get("GITHUB_TOKEN"); token != "" {
 		req.Header.Set("Authorization", "token "+token)
 	}
-	
+
 	if resp, err := client.Do(req); err == nil {
 		pterm.Success.Printf("GitHub API: Connected (HTTP %d)\n", resp.StatusCode)
 		limit := resp.Header.Get("X-RateLimit-Limit")
 		remaining := resp.Header.Get("X-RateLimit-Remaining")
 		reset := resp.Header.Get("X-RateLimit-Reset")
-		
+
 		if limit != "" {
-			pterm.Info.Printf("GitHub Rate Limit: %s/%s (Resets in %s)\n", 
-				pterm.LightCyan(remaining), pterm.LightCyan(limit), 
+			pterm.Info.Printf("GitHub Rate Limit: %s/%s (Resets in %s)\n",
+				pterm.LightCyan(remaining), pterm.LightCyan(limit),
 				time.Until(time.Unix(parseInt(reset), 0)).Round(time.Minute))
 		}
 		_ = resp.Body.Close()
@@ -354,7 +354,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		pterm.Info.Printf("Fix: Run '%s enable --shims' to setup automatic activation.\n\n", exe)
 		suggestions++
 	}
-	
+
 	// Check for missing tools
 	missingTools := 0
 	if cfg != nil {
