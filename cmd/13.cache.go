@@ -41,6 +41,17 @@ var cacheCmd = &cobra.Command{
 
 If no subcommand is provided, it displays the path to the cache directory.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		cacheDir := env.GetCacheDir()
+		var fileCount int
+		var totalSize int64
+		_ = filepath.Walk(cacheDir, func(_ string, info os.FileInfo, err error) error {
+			if err == nil && !info.IsDir() {
+				fileCount++
+				totalSize += info.Size()
+			}
+			return nil
+		})
+
 		isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput
 		if isTerminal {
 			pterm.DefaultHeader.WithFullWidth().
