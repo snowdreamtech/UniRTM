@@ -1,6 +1,3 @@
-// Copyright (c) 2026 SnowdreamTech. All rights reserved.
-// Licensed under the MIT License. See LICENSE file in the project root for full license information.
-
 package cmd
 
 import (
@@ -8,18 +5,22 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
-	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
 )
 
 var (
-	implodeYes bool
+	implodeYes    bool
+	implodeConfig bool
 )
 
 func init() {
 	implodeCmd.Flags().BoolVarP(&implodeYes, "yes", "y", false, "skip confirmation prompt")
+	implodeCmd.Flags().BoolVar(&implodeConfig, "config", false, "also remove configuration directory (~/.config/unirtm)")
+	
 	if rootCmd != nil {
 		rootCmd.AddCommand(implodeCmd)
 	}
@@ -28,84 +29,112 @@ func init() {
 // implodeCmd removes all UniRTM data, shims, cache, and database.
 var implodeCmd = &cobra.Command{
 	Use:   "implode",
-	Short: "Remove all UniRTM data, shims, cache, and database",
-	Long: `Remove all UniRTM data, shims, cache, and database.
+	Short: "Completely remove all UniRTM data and tool installations",
+	Long: `Completely remove all UniRTM data and tool installations.
 
-This command deletes:
-  • Installed tool files (installs directory)
-  • Shims directory
-  • Downloads cache
-  • SQLite database
-  • Plugins directory
+This command will internal-combust and erase:
+  • All tool installations (binaries)
+  • All shims and wrapper scripts
+  • All download caches and temporary files
+  • The central SQLite database
+  • All external plugins
+  • (Optional) Your configuration directory (~/.config/unirtm)
 
-The UniRTM binary itself is NOT removed. Config files in ~/.config/unirtm
-are also kept.
-
-Use --yes / -y to skip the confirmation prompt in scripts.
-
-Examples:
-  unirtm implode
-  unirtm implode --yes`,
+WARNING: This action is permanent and IRREVERSIBLE.`,
 	Args: cobra.NoArgs,
 	RunE: runImplode,
 }
 
 func runImplode(cmd *cobra.Command, args []string) error {
-	formatter := output.NewFormatter(output.FormatterOptions{
-		Format:  getOutputFormat(),
-		NoColor: false,
-		Writer:  os.Stdout,
-		Quiet:   quiet,
-		Verbose: verbose,
-	})
+	// 1. Visual Banner
+	pterm.DefaultCenter.Println(pterm.Red("!!! DANGER ZONE !!!"))
+	pterm.DefaultBigText.WithLetters(
+		pterm.NewLettersFromStringWithStyle("IM", pterm.NewStyle(pterm.FgRed)),
+		pterm.NewLettersFromStringWithStyle("PLODE", pterm.NewStyle(pterm.FgWhite)),
+	).Render()
 
-	dataDir := env.GetDataDir()
-	targets := []string{
-		env.GetInstallsDir(),
-		env.GetShimsDir(),
-		env.GetDownloadsDir(),
-		env.GetDatabasePath(),
-		env.GetPluginsDir(),
+	configDir := env.GetConfigDir()
+
+	targets := []struct {
+		name string
+		path string
+	}{
+		{"Tool Installations", env.GetInstallsDir()},
+		{"Shim Wrappers", env.GetShimsDir()},
+		{"Download Cache", env.GetDownloadsDir()},
+		{"Tool Database", env.GetDatabasePath()},
+		{"External Plugins", env.GetPluginsDir()},
 	}
 
+	if implodeConfig {
+		targets = append(targets, struct {
+			name string
+			path string
+		}{"Configuration Files", configDir})
+	}
+
+	// 2. Confirmation
 	if !implodeYes {
-		fmt.Printf("\n⚠  This will delete ALL UniRTM data under: %s\n\n", dataDir)
-		fmt.Println("  • installs/   (all tool binaries)")
-		fmt.Println("  • shims/      (shell wrapper scripts)")
-		fmt.Println("  • downloads/  (cached archives)")
-		fmt.Println("  • unirtm.db   (installation database)")
-		fmt.Println("  • plugins/    (backend plugins)")
-		fmt.Print("\nType 'yes' to confirm: ")
+		pterm.Warning.Prefix = pterm.Prefix{Text: "WARNING", Style: pterm.NewStyle(pterm.BgRed, pterm.FgWhite)}
+		pterm.Warning.Println("This will permanently destroy ALL UniRTM data and tools.")
+		fmt.Printf("\nSelected Targets:\n")
+		for _, t := range targets {
+			pterm.BulletListPrinter{}.WithItems([]pterm.BulletListItem{
+				{Level: 0, Text: fmt.Sprintf("%s (%s)", pterm.Bold.Sprint(t.name), t.path), Bullet: "•", BulletStyle: pterm.NewStyle(pterm.FgRed)},
+			}).Render()
+		}
+
+		fmt.Print("\n" + pterm.LightRed("Type 'yes' to proceed with self-destruction: "))
 
 		reader := bufio.NewReader(os.Stdin)
 		answer, _ := reader.ReadString('\n')
 		answer = strings.TrimSpace(strings.ToLower(answer))
 		if answer != "yes" {
-			formatter.Info("Implode cancelled.", nil)
+			pterm.Info.Println("Implode aborted. You live to fight another day.")
 			return nil
 		}
+
+		// 3. Countdown
+		fmt.Println()
+		for i := 3; i > 0; i-- {
+			pterm.Info.Printf("Initiating sequence in %d...\r", i)
+			time.Sleep(1 * time.Second)
+		}
+		fmt.Println()
 	}
 
-	anyErr := false
-	for _, path := range targets {
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			if verbose {
-				formatter.Info(fmt.Sprintf("Skipping (not found): %s", path), nil)
-			}
+	// 4. Execution
+	pterm.Println(pterm.LightRed("Self-destruct sequence active..."))
+	fmt.Println()
+
+	multi := pterm.DefaultMultiPrinter
+	for _, t := range targets {
+		spinner, _ := pterm.DefaultSpinner.WithWriter(multi.NewWriter()).Start("Destroying " + t.name + "...")
+		
+		if _, err := os.Stat(t.path); os.IsNotExist(err) {
+			spinner.Info("Skipped (Already gone)")
 			continue
 		}
-		if err := os.RemoveAll(path); err != nil {
-			formatter.Warning(fmt.Sprintf("Failed to remove %s: %v", path, err))
-			anyErr = true
+
+		if err := os.RemoveAll(t.path); err != nil {
+			spinner.Fail(fmt.Sprintf("Failed to remove %s: %v", t.name, err))
 		} else {
-			formatter.Success(fmt.Sprintf("Removed: %s", path), nil)
+			spinner.Success("Erased: " + t.name)
 		}
 	}
+	multi.Start()
 
-	if anyErr {
-		formatter.Warning("Some directories could not be removed (see above).")
-	} else {
-		formatter.Success("UniRTM data removed. Run 'unirtm install' to start fresh.", nil)
-	}
+	// 5. Final Message
+	fmt.Println()
+	pterm.DefaultHeader.WithBackgroundStyle(pterm.NewStyle(pterm.BgRed)).WithTextStyle(pterm.NewStyle(pterm.FgWhite)).Println("IMPLODE COMPLETE")
+	fmt.Println()
+	
+	pterm.Info.Println("To complete the cleanup, you may want to:")
+	pterm.BulletListPrinter{}.WithItems([]pterm.BulletListItem{
+		{Level: 0, Text: "Remove the 'unirtm' binary from your PATH."},
+		{Level: 0, Text: "Remove UniRTM activation code from your .zshrc/.bashrc if present."},
+		{Level: 0, Text: "Say goodbye to your tools. They are gone forever."},
+	}).Render()
+
 	return nil
 }
