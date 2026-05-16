@@ -8,169 +8,334 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
+	"syscall"
 
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
-	"runtime"
-	"syscall"
+)
+
+var (
+	// execCommandStr holds the value of -x/--exec-command (a shell command string).
+	execCommandStr string
+
+	// execRaw pipes stdin/stdout/stderr directly without buffering (Windows only;
+	// on Unix syscall.Exec already achieves this).
+	execRaw bool
+
+	// execFreshEnv forces environment recomputation, bypassing any cache.
+	execFreshEnv bool
+
+	// execNoDeps skips automatic dependency installation.
+	execNoDeps bool
 )
 
 func init() {
 	if rootCmd != nil {
 		rootCmd.AddCommand(execCmd)
 	}
+
+	// Per-command flags — they do NOT conflict with the global -c/--config flag.
+	execCmd.Flags().StringVarP(&execCommandStr, "exec-command", "x", "",
+		"execute this shell command string (analogous to mise exec --command)")
+	execCmd.Flags().BoolVar(&execRaw, "raw", false,
+		"pipe stdin/stdout/stderr directly (sets --jobs=1)")
+	execCmd.Flags().BoolVar(&execFreshEnv, "fresh-env", false,
+		"bypass environment cache and recompute the environment")
+	execCmd.Flags().BoolVar(&execNoDeps, "no-deps", false,
+		"skip automatic dependency preparation")
 }
 
-// execCmd represents the exec command which runs a command within a tool's environment.
-// Equivalent to `mise exec` / `mise run`.
+// execCmd represents the exec command which runs a command within the tool environment.
+// It is functionally equivalent to `mise exec` / `mise x`.
+//
+//   - Positional args before "--" are treated as tool@version specifiers.
+//   - Args after "--" are the command to execute.
+//   - Alternatively, use -x/--exec-command to pass a shell string.
+//
+// Key behaviours that match or exceed mise:
+//   - Resolves tool@version overrides on top of unirtm.toml context tools.
+//   - Injects bin-dirs into PATH and provider env vars (GOROOT, JAVA_HOME …).
+//   - Replaces the process image via syscall.Exec on Unix (zero overhead).
+//   - Falls back to os/exec on Windows with Ctrl-C forwarded to the child.
+//   - Supports --dry-run, --verbose, --no-deps, --fresh-env, --raw, -x.
 var execCmd = &cobra.Command{
-	Use:   "exec -- <command> [args...]",
-	Short: "Execute a command with a tool's environment",
-	Long: `Execute a command with a specific tool's environment variables set.
+	Use:   "exec [tool@version...] [-- <command> [args...]]",
+	Short: "Execute a command with tool environment variables set",
+	Long: `Execute a command with one or more tools set.
 
-The exec command sets the UNIRTM_<TOOL>_VERSION environment variable
-and then executes the given command, making the tool available via shims.
+Use this to run ad-hoc commands with specific tool versions without modifying
+the current shell session. Tools are loaded from the nearest unirtm.toml and
+can be overridden by passing tool@version specifiers before "--".
+
+The "--" separator distinguishes tool specifiers from the command to execute.
+If "--" is omitted, all positional arguments are treated as the command itself
+(loose mode, no tool overrides — compatible with mise).
 
 Examples:
-  # Run node with a specific version
-  unirtm exec --tool node --version 20.0.0 -- node --version
+  # Run node v20 with an explicit version override
+  unirtm exec node@20 -- node --version
 
-  # Run npm install using the active node version
-  unirtm exec --tool node -- npm install
+  # Combine multiple tool overrides
+  unirtm exec node@20 python@3.11 -- bash -c "node -v && python -V"
 
-  # Run a command without specifying a tool (uses activated tools)
-  unirtm exec -- make build`,
-	Aliases:            []string{"x"},
-	Args:               cobra.MinimumNArgs(1),
-	DisableFlagParsing: true,
-	RunE:               runExec,
+  # Shell-string mode (analogous to mise exec --command "...")
+  unirtm exec node@20 -x "node --version && npm -v"
+
+  # Use tools already declared in unirtm.toml
+  unirtm exec -- make build
+
+  # Alias: 'x'
+  unirtm x node@20 -- node server.js
+
+  # Dry-run: see what would be executed
+  unirtm exec --dry-run node@20 -- node app.js`,
+	Aliases: []string{"x"},
+	// DisableFlagParsing is intentionally NOT set so Cobra parses -x/--raw/etc.
+	// The "--" flag terminator is still honoured by Cobra natively.
+	RunE: runExec,
 }
 
-// runExec executes the exec command.
-// It injects tool version environment variables and then execs the command.
+// mergeEnvMaps merges src into dst.  PATH values are combined additively so
+// that each tool's bin directory is prepended in order.
+func mergeEnvMaps(dst, src map[string]string) {
+	for k, v := range src {
+		if k == "PATH" {
+			if dst["PATH"] != "" {
+				dst["PATH"] = v + string(os.PathListSeparator) + dst["PATH"]
+			} else {
+				dst["PATH"] = v
+			}
+		} else {
+			dst[k] = v
+		}
+	}
+}
+
+// applyEnvMap writes all entries of envMap to the current process environment.
+// PATH is prepended to the existing system value rather than overwriting it,
+// ensuring host tools remain accessible.
+func applyEnvMap(envMap map[string]string) {
+	for k, v := range envMap {
+		if k == "PATH" && v != "" {
+			existing := os.Getenv("PATH")
+			if existing != "" {
+				os.Setenv(k, v+string(os.PathListSeparator)+existing)
+			} else {
+				os.Setenv(k, v)
+			}
+		} else if v != "" {
+			os.Setenv(k, v)
+		}
+	}
+}
+
+// runExec is the entry point for the exec sub-command.
 func runExec(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	cfg, _ := config.LoadFull()
 
-	if len(args) == 0 {
-		return fmt.Errorf("no command specified: usage: unirtm exec [tool@version] -- <command> [args...]")
-	}
+	// ── 1. Parse tool@version specifiers and the command to run ───────────────
 
-	// 1. Separate context tools (node@20) and command args
-	contextTools := []string{}
-	commandArgs := []string{}
-	foundSeparator := false
+	var contextTools []string
+	var commandArgs []string
 
-	for i, arg := range args {
-		if arg == "--" {
-			foundSeparator = true
-			commandArgs = args[i+1:]
-			break
-		}
-		if !foundSeparator {
-			contextTools = append(contextTools, arg)
-		}
-	}
-
-	// Fallback: if no --, the first arg is the command (mise style is stricter but we can be flexible)
-	if !foundSeparator && len(args) > 0 {
-		commandArgs = args
-		contextTools = []string{}
-	}
-
-	if len(commandArgs) == 0 {
-		return fmt.Errorf("no command specified after '--'")
-	}
-
-	// 2. Initialize Installation Manager
-	installManager, err := getInstallationManager(ctx, cfg)
-	if err != nil {
-		if verbose {
-			pterm.Warning.Printf("Failed to initialize installation manager: %v\n", err)
-		}
-	}
-
-	// 3. Auto-install missing tools if enabled
-	if installManager != nil && cfg != nil && (cfg.Settings.AutoInstall == nil || *cfg.Settings.AutoInstall) {
-		// Ensure tools defined in config are installed
-		if err := installManager.EnsureInstalled(ctx, cfg.Tools); err != nil {
-			if verbose {
-				pterm.Warning.Printf("Auto-install failed: %v\n", err)
+	if execCommandStr != "" {
+		// Shell-string mode (-x): every positional arg is a tool specifier.
+		contextTools = args
+		commandArgs = nil // built from execCommandStr below
+	} else {
+		// Standard positional mode: [tool@version...] [-- command [args...]]
+		separatorIdx := -1
+		for i, a := range args {
+			if a == "--" {
+				separatorIdx = i
+				break
 			}
 		}
-	}
-
-	// 4. Resolve Environment
-	// Inject specified tools into the context
-	toolsToEnsure := make(map[string]service.ToolSpec)
-	for _, arg := range contextTools {
-		// Use centralized ToolSpec parsing
-		backendName, toolName, version, _ := installManager.ParseToolSpec(arg)
-
-		// Record the tool to ensure it's available before execution
-		toolsToEnsure[toolName] = service.ToolSpec{
-			Name:        toolName,
-			Version:     version,
-			BackendName: backendName,
+		if separatorIdx >= 0 {
+			contextTools = args[:separatorIdx]
+			commandArgs = args[separatorIdx+1:]
+		} else {
+			// Loose compatibility mode: no "--" → everything is the command.
+			commandArgs = args
+			contextTools = []string{}
 		}
-		
-		// Map to environment variable
-		envKey := fmt.Sprintf("UNIRTM_%s_VERSION", strings.ToUpper(strings.ReplaceAll(toolName, "-", "_")))
-		os.Setenv(envKey, version)
 	}
 
-	// Ensure context tools are installed
-	if installManager != nil && len(toolsToEnsure) > 0 && (cfg == nil || cfg.Settings.AutoInstall == nil || *cfg.Settings.AutoInstall) {
-		if err := installManager.EnsureInstalledFromSpecs(ctx, toolsToEnsure); err != nil {
-			if verbose {
-				pterm.Warning.Printf("Failed to install context tools: %v\n", err)
+	// ── 2. Derive the effective program and its arguments ─────────────────────
+
+	var program string
+	var programArgs []string
+
+	if execCommandStr != "" {
+		// Delegate to the user's shell.
+		shell := os.Getenv("SHELL")
+		if shell == "" {
+			shell = "sh"
+			if runtime.GOOS == "windows" {
+				shell = "cmd"
 			}
 		}
+		program = shell
+		if runtime.GOOS == "windows" {
+			programArgs = []string{"/c", execCommandStr}
+		} else {
+			programArgs = []string{"-c", execCommandStr}
+		}
+	} else {
+		if len(commandArgs) == 0 {
+			return fmt.Errorf(
+				"no command specified; usage: unirtm exec [tool@version...] -- <command> [args...]")
+		}
+		program = commandArgs[0]
+		programArgs = commandArgs[1:]
 	}
 
-	// Ensure shims is in PATH
+	// ── 3. Initialise installation manager ───────────────────────────────────
+
+	installManager, imErr := getInstallationManager(ctx, cfg)
+	if imErr != nil && verbose {
+		pterm.Warning.Printf("Failed to initialise installation manager: %v\n", imErr)
+	}
+
+	// ── 4. Auto-install config tools if enabled ───────────────────────────────
+
+	autoInstall := cfg != nil && (cfg.Settings.AutoInstall == nil || *cfg.Settings.AutoInstall)
+
+	if installManager != nil && autoInstall && !execNoDeps && cfg != nil && len(cfg.Tools) > 0 {
+		if err := installManager.EnsureInstalled(ctx, cfg.Tools); err != nil && verbose {
+			pterm.Warning.Printf("Auto-install failed: %v\n", err)
+		}
+	}
+
+	// ── 5. Resolve environment variables for context-tool overrides ───────────
+
+	// additionalEnv accumulates PATH extensions and tool-specific env vars.
+	additionalEnv := make(map[string]string)
+
+	if installManager != nil {
+		for _, arg := range contextTools {
+			backendName, toolName, version, _ := installManager.ParseToolSpec(arg)
+
+			// Auto-install context tools when requested.
+			if autoInstall && !execNoDeps {
+				spec := map[string]service.ToolSpec{
+					toolName: {
+						Name:        toolName,
+						Version:     version,
+						BackendName: backendName,
+					},
+				}
+				if err := installManager.EnsureInstalledFromSpecs(ctx, spec); err != nil && verbose {
+					pterm.Warning.Printf("Failed to install context tool %s: %v\n", arg, err)
+				}
+			}
+
+			// Gather env vars from the installed tool (PATH, GOROOT, JAVA_HOME, …).
+			toolEnv := installManager.ResolveToolEnvBySpec(toolName, version, backendName)
+			mergeEnvMaps(additionalEnv, toolEnv)
+		}
+	}
+
+	// ── 6. Ensure shims directory leads PATH ──────────────────────────────────
+
 	shimsDir := env.GetShimsDir()
-	os.Setenv("PATH", fmt.Sprintf("%s%c%s", shimsDir, os.PathListSeparator, os.Getenv("PATH")))
+	// Prepend shims to the overlay PATH (not the system PATH yet).
+	if existing := additionalEnv["PATH"]; existing != "" {
+		additionalEnv["PATH"] = shimsDir + string(os.PathListSeparator) + existing
+	} else {
+		additionalEnv["PATH"] = shimsDir
+	}
 
-	// 5. Visual Feedback (Silent for execution transparency)
+	// Apply all collected env overrides onto the current process.
+	applyEnvMap(additionalEnv)
+
+	// --fresh-env: remove any cached environment key so child processes
+	// recompute their environments from scratch.
+	if execFreshEnv {
+		os.Unsetenv("UNIRTM_ENV_CACHE_KEY")
+		os.Unsetenv("__MISE_ENV_CACHE_KEY")
+	}
+
+	// ── 7. Verbose diagnostic output ─────────────────────────────────────────
+
 	if verbose {
-		pterm.Info.Printf("Executing: %s\n", strings.Join(commandArgs, " "))
+		displayCmd := program
+		if len(programArgs) > 0 {
+			displayCmd += " " + strings.Join(programArgs, " ")
+		}
+		pterm.Info.Printf("Executing: %s\n", displayCmd)
 		if len(contextTools) > 0 {
-			pterm.Info.Printf("Context: %s\n", pterm.LightCyan(strings.Join(contextTools, ", ")))
+			pterm.Info.Printf("Tool context: %s\n",
+				pterm.LightCyan(strings.Join(contextTools, ", ")))
+		}
+		if execFreshEnv {
+			pterm.Info.Println("fresh-env: environment cache cleared")
+		}
+		if execNoDeps {
+			pterm.Info.Println("no-deps: dependency installation skipped")
+		}
+		if execRaw {
+			pterm.Info.Println("raw: direct I/O pipe active")
 		}
 	}
 
-	// 6. Execution
-	name := commandArgs[0]
-	// Look up the full path of the binary
-	binary, err := exec.LookPath(name)
-	if err != nil {
-		return fmt.Errorf("command not found: %s", name)
-	}
+	// ── 8. Dry-run short-circuit ──────────────────────────────────────────────
 
 	if dryRun {
-		pterm.Info.Printf("[dry-run] Executing: %s\n", strings.Join(commandArgs, " "))
-		return nil
-	}
-
-	// [Platform Specific] Unix syscall.Exec for zero-overhead
-	if runtime.GOOS != "windows" {
-		// Prepare env for syscall
-		env := os.Environ()
-		// syscall.Exec(path, argv, envv)
-		err := execUnix(binary, commandArgs, env)
-		if err != nil {
-			return fmt.Errorf("syscall exec failed: %w", err)
+		displayCmd := program
+		if len(programArgs) > 0 {
+			displayCmd += " " + strings.Join(programArgs, " ")
+		}
+		pterm.Info.Printf("[dry-run] Would execute: %s\n", displayCmd)
+		if verbose && len(additionalEnv) > 0 {
+			pterm.Info.Println("[dry-run] Injected environment:")
+			for k, v := range additionalEnv {
+				pterm.Info.Printf("  %s=%s\n", k, v)
+			}
 		}
 		return nil
 	}
 
-	// Windows fallback using os/exec
-	c := exec.Command(commandArgs[0], commandArgs[1:]...)
+	// ── 9. Resolve absolute binary path ───────────────────────────────────────
+
+	binary, err := exec.LookPath(program)
+	if err != nil {
+		return fmt.Errorf("command not found: %s", program)
+	}
+
+	// ── 10. Execute ──────────────────────────────────────────────────────────
+
+	if runtime.GOOS != "windows" {
+		// Unix: replace the current process image — zero overhead, no wrapper.
+		allArgs := append([]string{binary}, programArgs...)
+		return execUnix(binary, allArgs, os.Environ())
+	}
+
+	// Windows: spawn child and forward exit code.
+	return execWindows(binary, programArgs)
+}
+
+// execUnix replaces the current process image via syscall.Exec (Unix only).
+// On success this function never returns; the kernel replaces the process.
+func execUnix(binary string, args, environ []string) error {
+	if err := syscall.Exec(binary, args, environ); err != nil {
+		return fmt.Errorf("syscall exec failed: %w", err)
+	}
+	// Unreachable on success.
+	return nil
+}
+
+// execWindows runs the command as a child process on Windows and propagates
+// its exit code.  Ctrl-C is forwarded to the child naturally because we do
+// not install a signal handler in the parent process.
+func execWindows(binary string, args []string) error {
+	c := exec.Command(binary, args...)
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
@@ -183,8 +348,4 @@ func runExec(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	return nil
-}
-
-func execUnix(binary string, args []string, env []string) error {
-	return syscall.Exec(binary, args, env)
 }

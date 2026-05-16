@@ -971,6 +971,58 @@ func tryVerifyProvenance(ctx context.Context, tool, artifactPath string) (string
 	return "verified", nil
 }
 
+// ResolveToolEnvBySpec returns the environment variables exported by an installed
+// tool identified by its name, version, and backend.  It is used by the exec
+// sub-command to inject per-tool environment variables (e.g. GOROOT, JAVA_HOME,
+// UNIRTM_<TOOL>_VERSION) and bin-directory PATH entries.
+//
+// If the tool is not installed or the provider does not export env vars the
+// function returns an empty (non-nil) map and a nil error.
+func (im *InstallationManager) ResolveToolEnvBySpec(
+	toolName, version, backendName string,
+) map[string]string {
+	result := make(map[string]string)
+
+	// Compute the expected installation path.
+	fsName := env.GetFSToolName(toolName, backendName)
+	installPath := filepath.Join(env.GetInstallsDir(), fsName, version)
+	if _, err := os.Stat(installPath); err != nil {
+		// Tool is not installed — nothing to inject.
+		return result
+	}
+
+	// Ask the provider for its canonical environment exports.
+	p := im.providerRegistry.GetWithBackend(toolName, backendName)
+	if p != nil {
+		if envVars, err := p.GetEnvVars(toolName, installPath, version); err == nil {
+			for k, v := range envVars {
+				result[k] = v
+			}
+		}
+	}
+
+	// Always export UNIRTM_<TOOL>_VERSION so shims and scripts can read it.
+	envKey := "UNIRTM_" + strings.ToUpper(strings.ReplaceAll(toolName, "-", "_")) + "_VERSION"
+	result[envKey] = version
+
+	// Prepend the tool's bin directory to PATH.
+	for _, binDir := range []string{
+		filepath.Join(installPath, "bin"),
+		installPath,
+	} {
+		if fi, err := os.Stat(binDir); err == nil && fi.IsDir() {
+			if existing, ok := result["PATH"]; ok && existing != "" {
+				result["PATH"] = binDir + string(os.PathListSeparator) + existing
+			} else {
+				result["PATH"] = binDir
+			}
+			break // Only prepend the first valid bin directory.
+		}
+	}
+
+	return result
+}
+
 // ResolveExecutable finds the absolute path and environment variables for a given executable name
 // by searching through installed tools in the current context.
 func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName string, platform backend.Platform) (string, map[string]string, error) {
