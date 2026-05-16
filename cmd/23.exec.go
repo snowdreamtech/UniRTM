@@ -13,6 +13,7 @@ import (
 	"syscall"
 
 	"github.com/pterm/pterm"
+	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/service"
@@ -213,12 +214,34 @@ func runExec(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// ── 5. Resolve environment variables for context-tool overrides ───────────
+	// ── 5. Resolve environment variables for all tools ──────────────────────
 
 	// additionalEnv accumulates PATH extensions and tool-specific env vars.
 	additionalEnv := make(map[string]string)
 
 	if installManager != nil {
+		// 5.1 First, inject tools from configuration (lower priority)
+		if cfg != nil {
+			for toolName, toolSpec := range cfg.Tools {
+				// Use backend defined in config, or auto-detect if missing
+				backendName := toolSpec.Backend
+				if backendName == "" {
+					// Important: Ensure we match the backend used during install
+					backendName = installManager.AutoDetectBackend(toolName)
+				}
+				
+				// Resolve the version (might be a ref or alias)
+				version := toolSpec.Version
+				
+				// Gather env vars (PATH, GOROOT, etc.)
+				toolEnv := installManager.ResolveToolEnvBySpec(toolName, version, backendName)
+				if len(toolEnv) > 0 {
+					mergeEnvMaps(additionalEnv, toolEnv)
+				}
+			}
+		}
+
+		// 5.2 Second, inject context tools from command line (higher priority)
 		for _, arg := range contextTools {
 			backendName, toolName, version, _ := installManager.ParseToolSpec(arg)
 
@@ -236,18 +259,21 @@ func runExec(cmd *cobra.Command, args []string) error {
 				}
 			}
 
-			// Gather env vars from the installed tool (PATH, GOROOT, JAVA_HOME, …).
+			// Gather env vars (overriding config tools if same variables)
 			toolEnv := installManager.ResolveToolEnvBySpec(toolName, version, backendName)
-			mergeEnvMaps(additionalEnv, toolEnv)
+			if len(toolEnv) > 0 {
+				mergeEnvMaps(additionalEnv, toolEnv)
+			}
 		}
 	}
 
-	// ── 6. Ensure shims directory leads PATH ──────────────────────────────────
+	// ── 6. Ensure tool binaries take precedence over shims ────────────────────
 
 	shimsDir := env.GetShimsDir()
-	// Prepend shims to the overlay PATH (not the system PATH yet).
+	// Tool bins are already in additionalEnv["PATH"]. We want them to be searched FIRST.
+	// Then shims, then the original system PATH.
 	if existing := additionalEnv["PATH"]; existing != "" {
-		additionalEnv["PATH"] = shimsDir + string(os.PathListSeparator) + existing
+		additionalEnv["PATH"] = existing + string(os.PathListSeparator) + shimsDir
 	} else {
 		additionalEnv["PATH"] = shimsDir
 	}
@@ -304,9 +330,21 @@ func runExec(cmd *cobra.Command, args []string) error {
 
 	// ── 9. Resolve absolute binary path ───────────────────────────────────────
 
-	binary, err := exec.LookPath(program)
-	if err != nil {
-		return fmt.Errorf("command not found: %s", program)
+	// First, try to resolve via InstallationManager (more accurate for UniRTM tools)
+	var binary string
+	if installManager != nil {
+		if resolved, _, err := installManager.ResolveExecutable(ctx, program, backend.CurrentPlatform()); err == nil {
+			binary = resolved
+		}
+	}
+
+	// If not found in UniRTM tools, fallback to system PATH (using the modified PATH)
+	if binary == "" {
+		var err error
+		binary, err = exec.LookPath(program)
+		if err != nil {
+			return fmt.Errorf("command not found: %s (checked UniRTM tools and PATH)", program)
+		}
 	}
 
 	// ── 10. Execute ──────────────────────────────────────────────────────────

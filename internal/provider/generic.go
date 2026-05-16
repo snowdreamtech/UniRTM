@@ -15,6 +15,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 
 	"github.com/klauspost/compress/zstd"
@@ -273,13 +274,16 @@ func (g *GenericProvider) pickBestExecutables(execs []string, toolName string) [
 		}
 	}
 
+	// Sort by score descending
+	sort.Slice(scored, func(i, j int) bool {
+		return scored[i].score > scored[j].score
+	})
+
 	var results []string
-	// Strategy:
-	// 1. Prioritize entries with maxScore (usually exact matches)
-	// 2. Keep entries that are reasonably close to the best match
-	// 3. Avoid including every single file in 'bin' to prevent noise
 	for _, s := range scored {
-		if s.score >= maxScore-30 && s.score > 0 {
+		// Include all entries with a positive score.
+		// Secondary tools like 'gofmt' will have lower scores but still > 0.
+		if s.score > 0 {
 			results = append(results, s.path)
 		}
 	}
