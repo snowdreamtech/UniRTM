@@ -4,170 +4,144 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 
-	"github.com/snowdreamtech/unirtm/internal/database"
+	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
+	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/spf13/cobra"
-	"context"
+	"golang.org/x/term"
 )
 
 var (
 	// envShell selects output format for shell integration.
-	// Supported: bash, zsh, fish, nu. Default: auto-detect from $SHELL.
 	envShell string
 
-	// envLegacy prints the legacy version/build-info output instead of tool PATH.
+	// envLegacy prints the legacy version/build-info output.
 	envLegacy bool
 )
 
 func init() {
-	envCmd.Flags().StringVar(&envShell, "shell", "", "shell format (bash, zsh, fish, nu). Default: auto-detect")
+	envCmd.Flags().StringVar(&envShell, "shell", "", "shell format (bash, zsh, fish, nu, powershell). Default: auto-detect")
 	envCmd.Flags().BoolVar(&envLegacy, "info", false, "print build/version info instead of tool environment")
-	rootCmd.AddCommand(envCmd)
+	if rootCmd != nil {
+		rootCmd.AddCommand(envCmd)
+	}
 }
 
 // envCmd outputs the shell environment for activating UniRTM tools.
-//
-// Primary use (mirrors mise env):
-//
-//	eval "$(unirtm env)"           # bash / zsh
-//	unirtm env | source            # fish
-//
-// Legacy use:
-//
-//	unirtm env --info              # print version/build info
 var envCmd = &cobra.Command{
 	Use:   "env",
 	Short: "Export shell environment variables for activated tools",
-	Long: `Export shell environment variables for activated tools.
+	Long: `Display or export the environment variables for the current UniRTM context.
 
-The primary use of 'env' is shell integration — it outputs export statements
-that add tool bin directories to PATH and set version-specific variables.
+When run in an interactive terminal, it provides a beautiful, data-rich dashboard 
+of your current environment, including PATH additions and variable sources.
 
-  # bash / zsh
+When redirected or used with 'eval', it outputs shell-specific export statements 
+suitable for shell integration.
+
+Examples:
+  # Display interactive environment dashboard
+  unirtm env
+
+  # Export variables to current shell
   eval "$(unirtm env)"
 
-  # fish
-  unirtm env --shell fish | source
-
-  # JSON output (for scripting)
-  unirtm env --json
-
-Use --info to print UniRTM build/version information instead.`,
+  # Get environment in JSON format
+  unirtm env --json`,
 	Aliases: []string{"e"},
 	Args:    cobra.NoArgs,
 	RunE:    runEnv,
 }
 
-// ─── env info structs ─────────────────────────────────────────────────────────
-
-type envVarEntry struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
-type envOutput struct {
-	Vars    []envVarEntry `json:"vars"`
-	PathAdd []string      `json:"path_add"`
-}
-
-// ─── runEnv ───────────────────────────────────────────────────────────────────
-
 func runEnv(cmd *cobra.Command, args []string) error {
-	// Legacy --info mode: print build/version info (backwards compatible).
+	// 1. Handle legacy --info mode
 	if envLegacy {
-		return runEnvInfo()
+		return runEnvInfoWithStyle()
 	}
 
-	// Detect shell format.
-	shell := resolveShell(envShell)
-
-	// Load activated tools from DB.
 	ctx := context.Background()
-	dbPath := env.GetDatabasePath()
-	db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true})
-	if err != nil {
-		// Non-fatal: output shims dir at minimum so basic shell integration works.
-		return outputMinimalEnv(shell)
-	}
-	defer db.Close()
-
-	installRepo, err := sqlite.NewInstallationRepository(db.Conn())
-	if err != nil {
-		return outputMinimalEnv(shell)
-	}
-
-	installations, err := installRepo.List(ctx)
-	if err != nil {
-		return outputMinimalEnv(shell)
-	}
-
-	// Collect PATH additions: shims dir first, then each install's bin dir.
+	cfg, _ := config.LoadFull()
+	
+	// Collect environment data
+	shell := resolveShell(envShell)
 	shimsDir := env.GetShimsDir()
 	installsDir := env.GetInstallsDir()
-
+	
 	pathDirs := []string{shimsDir}
 	vars := []envVarEntry{}
-
-	// Load configuration to get [env] variables
 	var sources []string
-	if cfg, err := config.Load(); err == nil {
+	isRedacted := make(map[string]bool)
+
+	// Load tools from database
+	dbPath := env.GetDatabasePath()
+	db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true})
+	if err == nil {
+		defer db.Close()
+		installRepo, _ := sqlite.NewInstallationRepository(db.Conn())
+		installations, _ := installRepo.List(ctx)
+		
+		seen := make(map[string]bool)
+		for _, inst := range installations {
+			binDir := filepath.Join(installsDir, inst.Tool, inst.Version, "bin")
+			if _, statErr := os.Stat(binDir); statErr == nil && !seen[binDir] {
+				pathDirs = append(pathDirs, binDir)
+				seen[binDir] = true
+			}
+			// Add version variables
+			varName := "UNIRTM_" + strings.ToUpper(strings.ReplaceAll(inst.Tool, "-", "_")) + "_VERSION"
+			vars = append(vars, envVarEntry{Name: varName, Value: inst.Version, Source: "tool:" + inst.Tool})
+		}
+	}
+
+	// Load config [env] variables
+	if cfg != nil {
 		resolved, src, redacted, err := cfg.ResolveEnvironment()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: %v\n", err)
-		}
-		sources = src
+		if err == nil {
+			sources = src
+			for _, rk := range redacted { isRedacted[rk] = true }
 
-		// Create a map for quick redacted key lookup
-		isRedacted := make(map[string]bool)
-		for _, rk := range redacted {
-			isRedacted[rk] = true
-		}
-
-		for k, v := range resolved {
-			if k == "PATH" {
-				// Special handling for PATH - prepend to pathDirs
-				// Split the rendered PATH and add parts that are not already in pathDirs
-				parts := strings.Split(v, string(os.PathListSeparator))
-				for i := len(parts) - 1; i >= 0; i-- {
-					p := parts[i]
-					if p != "" && p != "$PATH" {
-						// Prepend to pathDirs
-						pathDirs = append([]string{p}, pathDirs...)
+			for k, v := range resolved {
+				if k == "PATH" {
+					parts := strings.Split(v, string(os.PathListSeparator))
+					for i := len(parts) - 1; i >= 0; i-- {
+						p := parts[i]
+						if p != "" && p != "$PATH" {
+							pathDirs = append([]string{p}, pathDirs...)
+						}
 					}
+					continue
 				}
-				continue
+				
+				val := v
+				if isRedacted[k] { val = "[REDACTED]" }
+				vars = append(vars, envVarEntry{Name: k, Value: val, Source: "config"})
 			}
-
-			val := v
-			if isRedacted[k] {
-				val = "[REDACTED]"
-			}
-			vars = append(vars, envVarEntry{Name: k, Value: val})
 		}
 	}
 
-	seen := make(map[string]bool)
-	for _, inst := range installations {
-		binDir := filepath.Join(installsDir, inst.Tool, inst.Version, "bin")
-		if _, statErr := os.Stat(binDir); statErr == nil && !seen[binDir] {
-			pathDirs = append(pathDirs, binDir)
-			seen[binDir] = true
-		}
-		// Add a canonical version variable, e.g. UNIRTM_NODE_VERSION=22.14.0
-		varName := "UNIRTM_" + strings.ToUpper(strings.ReplaceAll(inst.Tool, "-", "_")) + "_VERSION"
-		vars = append(vars, envVarEntry{Name: varName, Value: inst.Version})
+	// Determine if we should show the interactive TUI
+	// We show the TUI ONLY if:
+	// 1. Output is a terminal
+	// 2. No --shell flag is provided
+	// 3. No --json flag is provided
+	isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput && envShell == ""
+	
+	if isTerminal {
+		return renderInteractiveEnv(cfg, pathDirs, vars, sources)
 	}
 
-	// JSON output.
+	// Scripting/Shell mode
 	if jsonOutput {
 		out := struct {
 			Vars    []envVarEntry `json:"vars"`
@@ -179,24 +153,98 @@ func runEnv(cmd *cobra.Command, args []string) error {
 		return enc.Encode(out)
 	}
 
-	// Shell-specific export statements.
 	return emitShellEnv(shell, pathDirs, vars, sources)
 }
 
-// outputMinimalEnv emits the shims directory into PATH when the DB is unavailable.
-func outputMinimalEnv(shell string) error {
-	return emitShellEnv(shell,
-		[]string{env.GetShimsDir()},
-		[]envVarEntry{},
-		[]string{},
-	)
+func renderInteractiveEnv(cfg *config.Config, pathDirs []string, vars []envVarEntry, sources []string) error {
+	pterm.DefaultHeader.WithFullWidth().
+		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightGreen)).
+		WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
+		Println("UniRTM Active Environment")
+
+	// 1. Active Environment Info
+	activeEnv := "base"
+	if e := env.Get("ENV"); e != "" { activeEnv = e }
+	pterm.DefaultSection.Printf("Context: %s\n", pterm.LightCyan(activeEnv))
+
+	// 2. PATH Hierarchy
+	pterm.DefaultSection.Println("🛤️  PATH Additions (Priority Order)")
+	for i, p := range pathDirs {
+		label := pterm.FgGray.Sprint("(managed)")
+		if strings.Contains(p, "shims") {
+			label = pterm.LightMagenta("(shims)")
+		} else if strings.Contains(p, "bin") {
+			label = pterm.LightBlue("(tool bin)")
+		}
+		prefix := "  "
+		if i == 0 { prefix = "-> " }
+		fmt.Printf("%s%s %s\n", prefix, p, label)
+	}
+
+	// 3. Variables Table
+	pterm.DefaultSection.Println("🔑 Exported Variables")
+	if len(vars) > 0 {
+		var data [][]string
+		data = append(data, []string{"Variable", "Value", "Source"})
+		sort.Slice(vars, func(i, j int) bool { return vars[i].Name < vars[j].Name })
+		
+		for _, v := range vars {
+			displayVal := v.Value
+			if len(displayVal) > 50 { displayVal = displayVal[:47] + "..." }
+			data = append(data, []string{
+				pterm.Bold.Sprint(v.Name),
+				pterm.LightCyan(displayVal),
+				pterm.FgGray.Sprint(v.Source),
+			})
+		}
+		pterm.DefaultTable.WithHasHeader().WithData(data).Render()
+	} else {
+		pterm.Info.Println("No additional variables exported.")
+	}
+
+	// 4. Configuration Sources
+	if len(sources) > 0 {
+		pterm.DefaultSection.Println("📝 Loaded Config Sources")
+		for _, s := range sources {
+			pterm.Success.Println(pterm.FgGray.Sprint(s))
+		}
+	}
+
+	fmt.Println()
+	pterm.Info.Println("To apply this environment, run: " + pterm.LightMagenta("eval \"$(unirtm env)\""))
+	
+	return nil
+}
+
+type envVarEntry struct {
+	Name   string `json:"name"`
+	Value  string `json:"value"`
+	Source string `json:"source,omitempty"`
+}
+
+func runEnvInfoWithStyle() error {
+	pterm.DefaultHeader.WithFullWidth().
+		WithBackgroundStyle(pterm.NewStyle(pterm.BgGray)).
+		WithTextStyle(pterm.NewStyle(pterm.FgWhite)).
+		Println("UniRTM Build & Version Info")
+
+	data := [][]string{
+		{"Project", env.ProjectName},
+		{"Version", env.GitTag},
+		{"Commit", env.CommitHash},
+		{"Built", env.BuildTime},
+		{"Platform", fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)},
+		{"Go", runtime.Version()},
+		{"License", env.LICENSE},
+	}
+	pterm.DefaultTable.WithData(data).Render()
+	return nil
 }
 
 // emitShellEnv writes the appropriate export statements for the detected shell.
 func emitShellEnv(shell string, pathDirs []string, vars []envVarEntry, sources []string) error {
 	switch shell {
 	case "fish":
-		// fish uses 'set -gx'
 		if len(pathDirs) > 0 {
 			fmt.Printf("set -gx PATH %s $PATH;\n", strings.Join(quoteFish(pathDirs), " "))
 		}
@@ -207,7 +255,6 @@ func emitShellEnv(shell string, pathDirs []string, vars []envVarEntry, sources [
 			fmt.Printf("source %q;\n", s)
 		}
 	case "nu":
-		// nushell uses $env.PATH
 		if len(pathDirs) > 0 {
 			fmt.Printf("$env.PATH = (%s ++ $env.PATH)\n",
 				"["+strings.Join(quoteNu(pathDirs), " ")+"]")
@@ -219,12 +266,9 @@ func emitShellEnv(shell string, pathDirs []string, vars []envVarEntry, sources [
 			fmt.Printf("source %q\n", s)
 		}
 	case "powershell", "pwsh":
-		// powershell uses $env:VAR
 		if len(pathDirs) > 0 {
 			separator := ";"
-			if runtime.GOOS != "windows" {
-				separator = ":"
-			}
+			if runtime.GOOS != "windows" { separator = ":" }
 			fmt.Printf("$env:PATH = %q\n",
 				strings.Join(pathDirs, separator)+separator+"$env:PATH")
 		}
@@ -250,54 +294,25 @@ func emitShellEnv(shell string, pathDirs []string, vars []envVarEntry, sources [
 	return nil
 }
 
-// resolveShell returns the canonical shell name from the flag or $SHELL.
 func resolveShell(flag string) string {
-	if flag != "" {
-		return strings.ToLower(flag)
-	}
+	if flag != "" { return strings.ToLower(flag) }
 	shellEnv := filepath.Base(env.Get("SHELL"))
 	switch shellEnv {
-	case "fish":
-		return "fish"
-	case "nu", "nushell":
-		return "nu"
-	case "powershell", "pwsh", "pwsh.exe", "powershell.exe":
-		return "powershell"
-	default:
-		return "bash" // covers bash, zsh, sh
+	case "fish": return "fish"
+	case "nu", "nushell": return "nu"
+	case "powershell", "pwsh", "pwsh.exe", "powershell.exe": return "powershell"
+	default: return "bash"
 	}
 }
 
 func quoteFish(dirs []string) []string {
 	out := make([]string, len(dirs))
-	for i, d := range dirs {
-		out[i] = fmt.Sprintf("%q", d)
-	}
+	for i, d := range dirs { out[i] = fmt.Sprintf("%q", d) }
 	return out
 }
 
 func quoteNu(dirs []string) []string {
 	out := make([]string, len(dirs))
-	for i, d := range dirs {
-		out[i] = fmt.Sprintf("%q", d)
-	}
+	for i, d := range dirs { out[i] = fmt.Sprintf("%q", d) }
 	return out
-}
-
-// runEnvInfo prints legacy build/version information.
-func runEnvInfo() error {
-	var builder strings.Builder
-	builder.WriteString(fmt.Sprintf("ProjectName=%s\n", env.ProjectName))
-	builder.WriteString(fmt.Sprintf("Author=%s\n", env.Author))
-	builder.WriteString(fmt.Sprintf("BuildTime=%s\n", env.BuildTime))
-	builder.WriteString(fmt.Sprintf("GitTag=%s\n", env.GitTag))
-	builder.WriteString(fmt.Sprintf("CommitHash=%s\n", env.CommitHash))
-	builder.WriteString(fmt.Sprintf("CommitHashFull=%s\n", env.CommitHashFull))
-	builder.WriteString(fmt.Sprintf("GOOS=%s\n", runtime.GOOS))
-	builder.WriteString(fmt.Sprintf("GOARCH=%s\n", runtime.GOARCH))
-	builder.WriteString(fmt.Sprintf("GOVERSION=%s\n", runtime.Version()))
-	builder.WriteString(fmt.Sprintf("Copyright=%s\n", env.COPYRIGHT))
-	builder.WriteString(fmt.Sprintf("LICENSE=%s\n", env.LICENSE))
-	fmt.Print(builder.String())
-	return nil
 }
