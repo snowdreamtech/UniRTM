@@ -576,12 +576,27 @@ func parseChecksum(checksum string) (string, string, error) {
 
 // downloadConcurrent performs a multi-threaded download using Range requests.
 func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, destination string, totalSize int64, opts DownloadOptions) error {
+	// 1. Determine optimal number of threads
 	numThreads := 4
-	if env.Get("JOBS") != "" {
-		fmt.Sscanf(env.Get("JOBS"), "%d", &numThreads)
+	if totalSize > 200*1024*1024 {
+		numThreads = 16 // Huge files (> 200MB)
+	} else if totalSize > 50*1024*1024 {
+		numThreads = 12 // Large files (50-200MB)
+	} else if totalSize > 5*1024*1024 {
+		numThreads = 8 // Medium files (5-50MB)
 	}
-	if numThreads <= 1 {
-		numThreads = 4
+
+	// 2. Allow explicit override via JOBS environment variable
+	if jobs := env.Get("JOBS"); jobs != "" {
+		var j int
+		if _, err := fmt.Sscanf(jobs, "%d", &j); err == nil && j > 0 {
+			numThreads = j
+		}
+	}
+
+	// Clamp threads to avoid overwhelming resources
+	if numThreads > 32 {
+		numThreads = 32 // Hard cap at 32 threads
 	}
 
 	// Pre-allocate file
