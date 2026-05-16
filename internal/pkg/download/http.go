@@ -314,6 +314,9 @@ func (h *HTTPDownloader) downloadOnce(ctx context.Context, url string, destinati
 						return nil
 					}
 					// Fallback on failure
+					if ctx.Err() != nil {
+						return err // Intercept cancellation, do not fallback
+					}
 				}
 			}
 		}
