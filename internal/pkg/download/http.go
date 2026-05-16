@@ -63,17 +63,17 @@ func NewHTTPDownloader() *HTTPDownloader {
 		Timeout: 30 * time.Minute, // Increased total timeout for large files
 		Transport: &http.Transport{
 			Proxy: func(req *http.Request) (*url.URL, error) {
-				// Check UNIRTM_ prefixed env vars first
+				// Check UNIRTM_ or MISE_ prefixed env vars first via env.Get
 				if req.URL.Scheme == "http" {
-					if v := os.Getenv("UNIRTM_HTTP_PROXY"); v != "" {
+					if v := env.Get("HTTP_PROXY"); v != "" {
 						return url.Parse(v)
 					}
 				} else if req.URL.Scheme == "https" {
-					if v := os.Getenv("UNIRTM_HTTPS_PROXY"); v != "" {
+					if v := env.Get("HTTPS_PROXY"); v != "" {
 						return url.Parse(v)
 					}
 				}
-				if v := os.Getenv("UNIRTM_ALL_PROXY"); v != "" {
+				if v := env.Get("ALL_PROXY"); v != "" {
 					return url.Parse(v)
 				}
 
