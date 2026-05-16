@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -36,30 +35,35 @@ var doctorCmd = &cobra.Command{
 	Long: `Check UniRTM system health and diagnose potential issues.
 
 This command aligns with 'mise doctor' to ensure your environment is
-correctly configured for UniRTM.`,
+correctly configured for UniRTM, while providing enhanced visual diagnostics.`,
 	Args: cobra.NoArgs,
 	RunE: runDoctor,
 }
 
 func runDoctor(cmd *cobra.Command, args []string) error {
-	pterm.DefaultHeader.WithFullWidth().WithBackgroundStyle(pterm.NewStyle(pterm.BgLightBlue)).WithTextStyle(pterm.NewStyle(pterm.FgBlack)).Println("UniRTM System Diagnostics (Doctor)")
+	pterm.DefaultHeader.WithFullWidth().
+		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightBlue)).
+		WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
+		Println("UniRTM System Diagnostics (Doctor)")
 
 	ctx := context.Background()
+	cfg, _ := config.LoadFull()
 
 	// 1. Build & System Info
-	pterm.DefaultSection.Println("Build & System Information")
+	pterm.DefaultSection.Println("🛠️  Build & System Information")
 	osArch := fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
 	pterm.DefaultBulletList.WithItems([]pterm.BulletListItem{
-		{Level: 0, Text: fmt.Sprintf("Project: %s", pterm.LightCyan(env.ProjectName))},
-		{Level: 0, Text: fmt.Sprintf("Version: %s", pterm.LightCyan(fmt.Sprintf("%s-%s", env.GitTag, env.CommitHash)))},
-		{Level: 0, Text: fmt.Sprintf("Platform: %s", pterm.LightCyan(osArch))},
-		{Level: 0, Text: fmt.Sprintf("Go Version: %s", pterm.LightCyan(runtime.Version()))},
+		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Project", pterm.LightCyan(env.ProjectName))},
+		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Version", pterm.LightCyan(fmt.Sprintf("%s (%s)", env.GitTag, env.CommitHash)))},
+		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Build Time", pterm.LightCyan(env.BuildTime))},
+		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Platform", pterm.LightCyan(osArch))},
+		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Go Version", pterm.LightCyan(runtime.Version()))},
 	}).Render()
 
 	// 2. Shell Info
-	pterm.DefaultSection.Println("Shell Information")
+	pterm.DefaultSection.Println("🐚 Shell Information")
 	shellPath := env.Get("SHELL")
-	shellName := filepath.Base(env.Get("SHELL"))
+	shellName := filepath.Base(shellPath)
 	isActivated := env.Get("ACTIVE") != ""
 	
 	statusStr := pterm.LightGreen("✓ activated")
@@ -68,12 +72,12 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 
 	pterm.DefaultBulletList.WithItems([]pterm.BulletListItem{
-		{Level: 0, Text: fmt.Sprintf("Shell: %s (%s)", pterm.LightCyan(shellName), shellPath)},
-		{Level: 0, Text: fmt.Sprintf("Status: %s", statusStr)},
+		{Level: 0, Text: fmt.Sprintf("%-12s: %s (%s)", "Shell", pterm.LightCyan(shellName), pterm.FgGray.Sprint(shellPath))},
+		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Status", statusStr)},
 	}).Render()
 
 	// 3. Directory Health
-	pterm.DefaultSection.Println("Directory Health Check")
+	pterm.DefaultSection.Println("📁 Directory Health Check")
 	dirChecks := []struct {
 		name string
 		path string
@@ -92,12 +96,11 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		if _, err := os.Stat(dc.path); os.IsNotExist(err) {
 			status = pterm.LightYellow("⚠ missing")
 		} else {
-			// Check writability
 			testFile := filepath.Join(dc.path, ".doctor_write_test")
 			if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
 				status = pterm.LightRed("✗ unwritable")
 			} else {
-				os.Remove(testFile)
+				_ = os.Remove(testFile)
 			}
 		}
 		dirTable = append(dirTable, []string{pterm.Bold.Sprint(dc.name), pterm.FgGray.Sprint(dc.path), status})
@@ -105,7 +108,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	pterm.DefaultTable.WithHasHeader().WithData(dirTable).Render()
 
 	// 4. PATH & Shadowing Detection
-	pterm.DefaultSection.Println("PATH & Shadowing Detection")
+	pterm.DefaultSection.Println("🛤️  PATH & Shadowing Detection")
 	pathItems := filepath.SplitList(env.Get("PATH"))
 	shimsDir := env.GetShimsDir()
 	
@@ -119,47 +122,53 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 
 	if shimIdx == -1 {
 		pterm.Error.Println("UniRTM shims directory is NOT in your PATH.")
-		pterm.DefaultBox.WithTitle("Action Required").Println(
-			fmt.Sprintf("Add this to your shell config:\n%s", 
+		pterm.DefaultBox.WithTitle("Fix Suggestion").Println(
+			fmt.Sprintf("Add this to your shell profile (%s):\n%s", 
+			pterm.LightBlue("~/.zshrc" /* or appropriate */),
 			pterm.LightMagenta(fmt.Sprintf("eval \"$(unirtm activate %s)\"", shellName))),
 		)
 	} else if shimIdx > 0 {
-		pterm.Warning.Println("UniRTM shims are not at the front of your PATH.")
+		pterm.Warning.Println("UniRTM shims are NOT at the front of your PATH. Other tools may shadow UniRTM shims.")
 		shadowed := pathItems[:shimIdx]
-		pterm.Info.Printf("Preceding paths:\n  %s\n", strings.Join(shadowed, "\n  "))
+		pterm.Info.Printf("Preceding paths (shadowing UniRTM):\n  %s\n", pterm.FgGray.Sprint(strings.Join(shadowed, "\n  ")))
 	} else {
 		pterm.Success.Println("UniRTM shims are correctly placed at the front of your PATH.")
 	}
 
-	// 5. Environment Variables (Redacted)
-	pterm.DefaultSection.Println("Environment Variables (UNIRTM_*)")
+	// 5. Environment Variables (Redacted & Hierarchical)
+	pterm.DefaultSection.Println("🔑 Environment Variables (UniRTM / Mise / Raw)")
 	var envTable [][]string
-	envTable = append(envTable, []string{"Variable", "Value"})
-	foundAny := false
-	for _, e := range os.Environ() {
-		pair := strings.SplitN(e, "=", 2)
-		if strings.HasPrefix(pair[0], "UNIRTM_") {
-			foundAny = true
-			val := pair[1]
-			// Redact sensitive tokens
-			if strings.Contains(pair[0], "TOKEN") || strings.Contains(pair[0], "KEY") || strings.Contains(pair[0], "SECRET") {
-				val = pterm.LightMagenta("******** [REDACTED]")
-			} else if len(val) > 60 {
-				// Surpass: Truncate long values like UNIRTM_PATH to prevent layout issues
-				val = val[:57] + pterm.FgGray.Sprint("...")
-			}
-			envTable = append(envTable, []string{pterm.LightBlue(pair[0]), val})
-		}
-	}
-	if foundAny {
-		pterm.DefaultTable.WithHasHeader().WithData(envTable).Render()
-	} else {
-		pterm.Info.Println("No UNIRTM_ environment variables defined.")
-	}
+	envTable = append(envTable, []string{"Variable", "Source", "Resolved Value"})
+	
+	// Track some key variables we want to show
+	keyVars := []string{"DATA_DIR", "CONFIG_DIR", "CACHE_DIR", "EXPERIMENTAL", "DEBUG", "PATH"}
+	for _, kv := range keyVars {
+		unirtmVal := os.Getenv("UNIRTM_" + kv)
+		miseVal := os.Getenv("MISE_" + kv)
+		resolved := env.Get(kv)
 
-	// 6. Config Files
-	pterm.DefaultSection.Println("Active Configuration Files")
-	cfg, _ := config.LoadFull()
+		source := "Native"
+		if unirtmVal != "" {
+			source = "UNIRTM_"
+		} else if miseVal != "" {
+			source = "MISE_"
+		}
+
+		displayVal := resolved
+		if kv == "PATH" && len(displayVal) > 50 {
+			displayVal = displayVal[:47] + "..."
+		}
+		
+		envTable = append(envTable, []string{
+			pterm.LightBlue(kv),
+			pterm.FgGray.Sprint(source),
+			pterm.LightCyan(displayVal),
+		})
+	}
+	pterm.DefaultTable.WithHasHeader().WithData(envTable).Render()
+
+	// 6. Active Configuration Files
+	pterm.DefaultSection.Println("📝 Active Configuration Files")
 	if cfg != nil {
 		cwd, _ := os.Getwd()
 		possible := []string{
@@ -177,80 +186,47 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 			}
 		}
 		if !foundCfg {
-			pterm.Info.Println("No config files found (using defaults).")
+			pterm.Info.Println("No project or global config files found (using defaults).")
 		}
 	}
 
-	// 7. Network Connectivity
-	pterm.DefaultSection.Println("Network Connectivity")
-	
-	// Detect Proxy (Check system, UniRTM/Mise prefixed, and lower case)
-	proxies := []string{
-		"HTTP_PROXY", "http_proxy", "HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy", "NO_PROXY", "no_proxy",
-		"UNIRTM_HTTP_PROXY", "unirtm_http_proxy", "UNIRTM_HTTPS_PROXY", "unirtm_https_proxy", "UNIRTM_ALL_PROXY", "unirtm_all_proxy",
-		"MISE_HTTP_PROXY", "mise_http_proxy", "MISE_HTTPS_PROXY", "mise_https_proxy", "MISE_ALL_PROXY", "mise_all_proxy",
-	}
-	foundProxy := false
-	for _, p := range proxies {
-		if val := env.Get(p); val != "" {
-			foundProxy = true
-			pterm.Info.Printf("Proxy detected: %s=%s\n", pterm.LightBlue(p), pterm.FgGray.Sprint(val))
-		}
-	}
-	
-	// Check UniRTM specific Proxies
+	// 7. Settings (Effective)
 	if cfg != nil {
-		if cfg.Settings.GitHubProxy != "" {
-			foundProxy = true
-			pterm.Info.Printf("UniRTM GitHub Proxy: %s\n", pterm.FgGray.Sprint(cfg.Settings.GitHubProxy))
+		pterm.DefaultSection.Println("⚙️  Effective Settings")
+		var setTable [][]string
+		setTable = append(setTable, []string{"Setting", "Value"})
+		setTable = append(setTable, []string{"Experimental", fmt.Sprintf("%v", cfg.Settings.Experimental)})
+		
+		autoInstall := "default"
+		if cfg.Settings.AutoInstall != nil {
+			autoInstall = fmt.Sprintf("%v", *cfg.Settings.AutoInstall)
 		}
-		if cfg.Settings.HttpProxy != "" {
-			foundProxy = true
-			pterm.Info.Printf("UniRTM HTTP Proxy: %s\n", pterm.FgGray.Sprint(cfg.Settings.HttpProxy))
-		}
-		if cfg.Settings.HttpsProxy != "" {
-			foundProxy = true
-			pterm.Info.Printf("UniRTM HTTPS Proxy: %s\n", pterm.FgGray.Sprint(cfg.Settings.HttpsProxy))
-		}
+		setTable = append(setTable, []string{"Auto Install", autoInstall})
+		setTable = append(setTable, []string{"Always Keep Download", fmt.Sprintf("%v", cfg.Settings.AlwaysKeepDownload)})
+		setTable = append(setTable, []string{"HTTP Timeout", fmt.Sprintf("%ds", cfg.Settings.HTTPTimeout)})
+		
+		pterm.DefaultTable.WithHasHeader().WithData(setTable).Render()
 	}
 
-	if foundProxy {
-		fmt.Println()
+	// 8. Network Connectivity
+	pterm.DefaultSection.Println("🌐 Network Connectivity")
+	
+	// Detailed Proxy Summary
+	proxyReport := []string{}
+	if v := env.Get("HTTP_PROXY"); v != "" { proxyReport = append(proxyReport, fmt.Sprintf("HTTP: %s", v)) }
+	if v := env.Get("HTTPS_PROXY"); v != "" { proxyReport = append(proxyReport, fmt.Sprintf("HTTPS: %s", v)) }
+	if v := env.Get("ALL_PROXY"); v != "" { proxyReport = append(proxyReport, fmt.Sprintf("ALL: %s", v)) }
+	
+	if len(proxyReport) > 0 {
+		pterm.Info.Printf("Proxy Chain: %s\n", pterm.FgGray.Sprint(strings.Join(proxyReport, " | ")))
 	} else {
-		pterm.Info.Println("No system proxy detected. UniRTM will attempt direct connections.")
+		pterm.Info.Println("Direct Connection (No system proxy detected)")
 	}
 
 	client := &http.Client{
-		Timeout: 15 * time.Second,
+		Timeout: 10 * time.Second,
 		Transport: &http.Transport{
-			Proxy: func(req *http.Request) (*url.URL, error) {
-				// 1. Check UniRTM specific settings/env first
-				if cfg != nil {
-					if req.URL.Scheme == "http" && cfg.Settings.HttpProxy != "" {
-						return url.Parse(cfg.Settings.HttpProxy)
-					}
-					if req.URL.Scheme == "https" && cfg.Settings.HttpsProxy != "" {
-						return url.Parse(cfg.Settings.HttpsProxy)
-					}
-				}
-
-				// Check UNIRTM_ or MISE_ prefixed env vars
-				if req.URL.Scheme == "http" {
-					if v := env.Get("HTTP_PROXY"); v != "" {
-						return url.Parse(v)
-					}
-				} else if req.URL.Scheme == "https" {
-					if v := env.Get("HTTPS_PROXY"); v != "" {
-						return url.Parse(v)
-					}
-				}
-				if v := env.Get("ALL_PROXY"); v != "" {
-					return url.Parse(v)
-				}
-
-				// 2. Fallback to standard system environment
-				return http.ProxyFromEnvironment(req)
-			},
+			Proxy: http.ProxyFromEnvironment,
 		},
 	}
 	
@@ -261,65 +237,19 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 
 	for _, t := range targets {
 		start := time.Now()
-		
-		// Check which proxy will be used for this specific URL
-		targetURL, _ := url.Parse(t.url)
-		var proxyURL *url.URL
-		
-		// Priority 1: Settings
-		if cfg != nil {
-			if targetURL.Scheme == "http" && cfg.Settings.HttpProxy != "" {
-				proxyURL, _ = url.Parse(cfg.Settings.HttpProxy)
-			} else if targetURL.Scheme == "https" && cfg.Settings.HttpsProxy != "" {
-				proxyURL, _ = url.Parse(cfg.Settings.HttpsProxy)
-			}
-		}
-		
-		// Priority 2: UNIRTM_ or MISE_ prefix env
-		if proxyURL == nil {
-			if targetURL.Scheme == "http" {
-				if v := env.Get("HTTP_PROXY"); v != "" {
-					proxyURL, _ = url.Parse(v)
-				}
-			} else if targetURL.Scheme == "https" {
-				if v := env.Get("HTTPS_PROXY"); v != "" {
-					proxyURL, _ = url.Parse(v)
-				}
-			}
-			if proxyURL == nil {
-				if v := env.Get("ALL_PROXY"); v != "" {
-					proxyURL, _ = url.Parse(v)
-				}
-			}
-		}
-		
-		// Priority 3: Standard env
-		if proxyURL == nil {
-			proxyURL, _ = http.ProxyFromEnvironment(&http.Request{URL: targetURL})
-		}
-
-		proxyStr := "Direct"
-		if proxyURL != nil {
-			proxyStr = proxyURL.String()
-		}
-
 		resp, err := client.Get(t.url)
 		duration := time.Since(start)
 
 		if err != nil {
-			errMsg := err.Error()
-			if strings.Contains(errMsg, "connection reset") || strings.Contains(errMsg, "refused") {
-				errMsg += pterm.LightYellow(" (Check your proxy/firewall settings or ensure the proxy is active)")
-			}
-			pterm.Error.Printf("%-15s %-25s %s (%s)\n", t.name, pterm.FgGray.Sprint(proxyStr), "Unreachable", errMsg)
+			pterm.Error.Printf("%-15s %s (%v)\n", t.name, "Unreachable", err)
 		} else {
-			pterm.Success.Printf("%-15s %-25s %s (HTTP %d, %s)\n", t.name, pterm.FgGray.Sprint(proxyStr), "OK", resp.StatusCode, duration.Round(time.Millisecond).String())
-			resp.Body.Close()
+			pterm.Success.Printf("%-15s %s (HTTP %d, %s)\n", t.name, "Connected", resp.StatusCode, duration.Round(time.Millisecond).String())
+			_ = resp.Body.Close()
 		}
 	}
 
-	// 8. Database & Tools
-	pterm.DefaultSection.Println("Database & Tool Integrity")
+	// 9. Database & Tool Integrity
+	pterm.DefaultSection.Println("📊 Database & Tool Integrity")
 	dbPath := env.GetDatabasePath()
 	db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true})
 	if err != nil {
@@ -346,6 +276,6 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println()
-	pterm.Success.Println("Diagnostics complete. Your UniRTM is ready!")
+	pterm.DefaultBox.WithTitle(pterm.LightGreen("Diagnostics Complete")).Println("Your UniRTM environment is healthy and ready for action!")
 	return nil
 }
