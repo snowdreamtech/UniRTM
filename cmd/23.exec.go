@@ -10,22 +10,16 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/pterm/pterm"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
+	"runtime"
+	"syscall"
 )
 
-var (
-	// execTool specifies the tool to set up before running the command
-	execTool string
-	// execVersion specifies the tool version to use
-	execVersion string
-)
-
-// init registers the exec command to the root command.
 func init() {
-	execCmd.Flags().StringVarP(&execTool, "tool", "t", "", "tool to activate (e.g. node)")
-	execCmd.Flags().StringVarP(&execVersion, "version", "V", "", "tool version to use (default: latest installed)")
-
 	if rootCmd != nil {
 		rootCmd.AddCommand(execCmd)
 	}
@@ -52,7 +46,7 @@ Examples:
   unirtm exec -- make build`,
 	Aliases:            []string{"x"},
 	Args:               cobra.MinimumNArgs(1),
-	DisableFlagParsing: false,
+	DisableFlagParsing: true,
 	RunE:               runExec,
 }
 
@@ -60,87 +54,125 @@ Examples:
 // It injects tool version environment variables and then execs the command.
 func runExec(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
-
-	// Load configuration
-	cfg, err := loadConfig(ctx)
-	if err != nil {
-		// Log warning but continue
-	}
-
-	formatter := getFormatter(cfg)
+	cfg, _ := config.LoadFull()
 
 	if len(args) == 0 {
-		return fmt.Errorf("no command specified: usage: unirtm exec -- <command> [args...]")
+		return fmt.Errorf("no command specified: usage: unirtm exec [tool@version] -- <command> [args...]")
 	}
 
-	// Auto-install missing tools if enabled
-	if cfg != nil && (cfg.Settings.AutoInstall == nil || *cfg.Settings.AutoInstall) {
-		installManager, err := getInstallationManager(ctx, cfg)
-		if err == nil {
-			if err := installManager.EnsureInstalled(ctx, cfg.Tools); err != nil {
-				formatter.Warning(fmt.Sprintf("Auto-install failed: %v", err))
-			}
-		}
-	}
+	// 1. Separate context tools (node@20) and command args
+	contextTools := []string{}
+	commandArgs := []string{}
+	foundSeparator := false
 
-	// Find the separator "--" position and split args accordingly
-	commandArgs := args
-	for i, a := range args {
-		if a == "--" {
+	for i, arg := range args {
+		if arg == "--" {
+			foundSeparator = true
 			commandArgs = args[i+1:]
 			break
 		}
+		if !foundSeparator {
+			contextTools = append(contextTools, arg)
+		}
 	}
+
+	// Fallback: if no --, the first arg is the command (mise style is stricter but we can be flexible)
+	if !foundSeparator && len(args) > 0 {
+		commandArgs = args
+		contextTools = []string{}
+	}
+
 	if len(commandArgs) == 0 {
 		return fmt.Errorf("no command specified after '--'")
 	}
 
-	if dryRun {
-		parts := []string{}
-		if execTool != "" && execVersion != "" {
-			parts = append(parts, fmt.Sprintf("UNIRTM_%s_VERSION=%s", strings.ToUpper(execTool), execVersion))
+	// 2. Auto-install missing tools if enabled
+	if cfg != nil && (cfg.Settings.AutoInstall == nil || *cfg.Settings.AutoInstall) {
+		installManager, err := getInstallationManager(ctx, cfg)
+		if err == nil {
+			// Ensure tools defined in config are installed
+			if err := installManager.EnsureInstalled(ctx, cfg.Tools); err != nil {
+				if verbose {
+					pterm.Warning.Printf("Auto-install failed: %v\n", err)
+				}
+			}
 		}
-		parts = append(parts, commandArgs...)
-		formatter.Info(fmt.Sprintf("[dry-run] Would run: %s", strings.Join(parts, " ")), nil)
+	}
+
+	// 4. Resolve Environment
+	// Inject specified tools into the context
+	for _, t := range contextTools {
+		parts := strings.SplitN(t, "@", 2)
+		name := parts[0]
+		version := "latest"
+		if len(parts) > 1 {
+			version = parts[1]
+		}
+		
+		// Map to environment variable
+		envKey := fmt.Sprintf("UNIRTM_%s_VERSION", strings.ToUpper(strings.ReplaceAll(name, "-", "_")))
+		os.Setenv(envKey, version)
+	}
+
+	// Ensure shims is in PATH
+	shimsDir := env.GetShimsDir()
+	os.Setenv("PATH", fmt.Sprintf("%s%c%s", shimsDir, os.PathListSeparator, os.Getenv("PATH")))
+
+	// 5. Visual Feedback (Surpass)
+	isTerminal := term.IsTerminal(int(os.Stdout.Fd()))
+	if isTerminal && !quiet {
+		pterm.DefaultHeader.WithFullWidth().
+			WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
+			WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
+			Printf("UniRTM Executor: %s\n", strings.Join(commandArgs, " "))
+		
+		if len(contextTools) > 0 {
+			pterm.Info.Printf("Context: %s\n", pterm.LightCyan(strings.Join(contextTools, ", ")))
+		}
+		fmt.Println()
+	}
+
+	// 6. Execution
+	name := commandArgs[0]
+	// Look up the full path of the binary
+	binary, err := exec.LookPath(name)
+	if err != nil {
+		return fmt.Errorf("command not found: %s", name)
+	}
+
+	if dryRun {
+		pterm.Info.Printf("[dry-run] Executing: %s\n", strings.Join(commandArgs, " "))
 		return nil
 	}
 
-	// Build the child command
-	name := commandArgs[0]
-	childArgs := commandArgs[1:]
+	// [Platform Specific] Unix syscall.Exec for zero-overhead
+	if runtime.GOOS != "windows" {
+		// Prepare env for syscall
+		env := os.Environ()
+		// syscall.Exec(path, argv, envv)
+		err := execUnix(binary, commandArgs, env)
+		if err != nil {
+			return fmt.Errorf("syscall exec failed: %w", err)
+		}
+		return nil
+	}
 
-	c := exec.Command(name, childArgs...)
+	// Windows fallback using os/exec
+	c := exec.Command(commandArgs[0], commandArgs[1:]...)
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
-
-	// Inherit current environment
 	c.Env = os.Environ()
 
-	// Inject tool version env var if specified
-	if execTool != "" && execVersion != "" {
-		envKey := fmt.Sprintf("UNIRTM_%s_VERSION", strings.ToUpper(strings.ReplaceAll(execTool, "-", "_")))
-		c.Env = append(c.Env, fmt.Sprintf("%s=%s", envKey, execVersion))
-		if verbose {
-			formatter.Info(fmt.Sprintf("Setting %s=%s", envKey, execVersion), nil)
-		}
-	}
-
-	// Prepend shims dir to PATH so shims take precedence
-	shimsDir := env.GetShimsDir()
-	for i, e := range c.Env {
-		if strings.HasPrefix(e, "PATH=") {
-			c.Env[i] = fmt.Sprintf("PATH=%s:%s", shimsDir, strings.TrimPrefix(e, "PATH="))
-			break
-		}
-	}
-
 	if err := c.Run(); err != nil {
-		// Return exit code transparently
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			os.Exit(exitErr.ExitCode())
 		}
-		return fmt.Errorf("exec %s: %w", name, err)
+		return err
 	}
 	return nil
+}
+
+func execUnix(binary string, args []string, env []string) error {
+	return syscall.Exec(binary, args, env)
 }
