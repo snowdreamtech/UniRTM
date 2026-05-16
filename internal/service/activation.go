@@ -327,7 +327,8 @@ func (m *ActivationManager) generatePosixScript(config ActivationConfig) (*Activ
 		sb.WriteString("\n")
 	}
 
-	// Set scope indicator
+	// Set activation markers
+	sb.WriteString("export UNIRTM_ACTIVE=1\n")
 	sb.WriteString(fmt.Sprintf("export UNIRTM_ACTIVATION_SCOPE=\"%s\"\n", config.Scope))
 	if config.ProjectDir != "" {
 		sb.WriteString(fmt.Sprintf("export UNIRTM_PROJECT_DIR=\"%s\"\n", config.ProjectDir))
@@ -418,7 +419,8 @@ func (m *ActivationManager) generateFishScript(config ActivationConfig) (*Activa
 		sb.WriteString("\n")
 	}
 
-	// Set scope indicator
+	// Set activation markers
+	sb.WriteString("set -gx UNIRTM_ACTIVE 1\n")
 	sb.WriteString(fmt.Sprintf("set -gx UNIRTM_ACTIVATION_SCOPE \"%s\"\n", config.Scope))
 	if config.ProjectDir != "" {
 		sb.WriteString(fmt.Sprintf("set -gx UNIRTM_PROJECT_DIR \"%s\"\n", config.ProjectDir))
@@ -525,7 +527,8 @@ func (m *ActivationManager) generatePowerShellScript(config ActivationConfig) (*
 		sb.WriteString("\n")
 	}
 
-	// Set scope indicator
+	// Set activation markers
+	sb.WriteString("$env:UNIRTM_ACTIVE = \"1\"\n")
 	sb.WriteString(fmt.Sprintf("$env:UNIRTM_ACTIVATION_SCOPE = \"%s\"\n", config.Scope))
 	if config.ProjectDir != "" {
 		projectDir := config.ProjectDir
