@@ -60,13 +60,20 @@ Examples:
 }
 
 func runEdit(cmd *cobra.Command, args []string) error {
+	// 3. Find editor
 	cfg, _ := config.Load()
 	editor, source := getBestEditorWithSource(cfg)
-
+	
+	// Show editor info in header
 	pterm.DefaultHeader.WithFullWidth().
 		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
 		WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
 		Printf("UniRTM Config Editor (using %s via %s)\n", pterm.Bold.Sprint(editor), source)
+
+	// Add a tip if we are using a fallback/system default
+	if source == "system default" || source == "fallback" {
+		fmt.Printf("%s Set $EDITOR or run 'unirtm settings set editor %s' to change your preference.\n\n", pterm.FgGray.Sprint("Tip:"), editor)
+	}
 
 	targetFile := ""
 
