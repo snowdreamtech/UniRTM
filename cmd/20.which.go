@@ -171,9 +171,9 @@ func runWhich(cmd *cobra.Command, args []string) error {
 	if versionArg != "" {
 		activeVersions[target] = versionArg
 	} else {
-		// Check environment variable UNIRTM_<TOOL>_VERSION
-		envVar := fmt.Sprintf("UNIRTM_%s_VERSION", strings.ToUpper(strings.ReplaceAll(target, "-", "_")))
-		if v := os.Getenv(envVar); v != "" {
+		// Check environment variable override: <PREFIX>_<TOOL>_VERSION
+		toolKey := strings.ToUpper(strings.ReplaceAll(target, "-", "_")) + "_VERSION"
+		if v := env.Get(toolKey); v != "" {
 			activeVersions[target] = v
 		} else if tc, ok := cfg.Tools[target]; ok {
 			activeVersions[target] = tc.Version

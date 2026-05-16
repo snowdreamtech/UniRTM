@@ -110,9 +110,9 @@ func runBinPaths(cmd *cobra.Command, args []string) error {
 			}
 		}
 		
-		// Check environment variable override: UNIRTM_<TOOL>_VERSION
-		envVar := fmt.Sprintf("UNIRTM_%s_VERSION", strings.ToUpper(strings.ReplaceAll(toolName, "-", "_")))
-		if v := os.Getenv(envVar); v != "" {
+		// Check environment variable override: <PREFIX>_<TOOL>_VERSION
+		toolKey := strings.ToUpper(strings.ReplaceAll(toolName, "-", "_")) + "_VERSION"
+		if v := env.Get(toolKey); v != "" {
 			version = v
 		}
 

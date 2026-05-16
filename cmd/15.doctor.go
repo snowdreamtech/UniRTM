@@ -60,7 +60,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	pterm.DefaultSection.Println("Shell Information")
 	shellPath := env.Get("SHELL")
 	shellName := filepath.Base(env.Get("SHELL"))
-	isActivated := os.Getenv("UNIRTM_ACTIVE") != ""
+	isActivated := env.Get("ACTIVE") != ""
 	
 	statusStr := pterm.LightGreen("✓ activated")
 	if !isActivated {
@@ -106,7 +106,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 
 	// 4. PATH & Shadowing Detection
 	pterm.DefaultSection.Println("PATH & Shadowing Detection")
-	pathItems := filepath.SplitList(os.Getenv("PATH"))
+	pathItems := filepath.SplitList(env.Get("PATH"))
 	shimsDir := env.GetShimsDir()
 	
 	shimIdx := -1
@@ -192,7 +192,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 	foundProxy := false
 	for _, p := range proxies {
-		if val := os.Getenv(p); val != "" {
+		if val := env.Get(p); val != "" {
 			foundProxy = true
 			pterm.Info.Printf("Proxy detected: %s=%s\n", pterm.LightBlue(p), pterm.FgGray.Sprint(val))
 		}

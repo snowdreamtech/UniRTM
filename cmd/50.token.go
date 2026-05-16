@@ -4,12 +4,11 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
-	"strings"
 
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
 )
 
@@ -19,34 +18,22 @@ func init() {
 	}
 }
 
-// tokenCmd shows configured provider tokens (masked).
 var tokenCmd = &cobra.Command{
 	Use:   "token [provider]",
-	Short: "Show configured provider API tokens (masked)",
-	Long: `Show configured provider API tokens (masked).
-
-Displays tokens read from environment variables for each known provider.
-Sensitive values are masked — only the last 4 characters are shown.
-
-Known environment variables:
-  GITHUB_TOKEN / GH_TOKEN   GitHub API token (github backend)
-  GITLAB_TOKEN              GitLab token
-  AQUA_GITHUB_TOKEN         Aqua registry GitHub token
-
-Examples:
-  # Show all tokens
-  unirtm token
-
-  # Show token for a specific provider
-  unirtm token github`,
-	Args: cobra.MaximumNArgs(1),
-	RunE: runToken,
+	Short: "Show tokens from environment variables",
+	Args:  cobra.MaximumNArgs(1),
+	RunE:  runToken,
 }
 
 type tokenEntry struct {
 	Provider string `json:"provider"`
 	EnvVar   string `json:"env_var"`
-	Masked   string `json:"value"`
+}
+
+type tokenOutput struct {
+	Provider string `json:"provider"`
+	EnvVar   string `json:"env_var"`
+	Token    string `json:"token"`
 	Set      bool   `json:"set"`
 }
 
@@ -69,67 +56,57 @@ func runToken(cmd *cobra.Command, args []string) error {
 
 	filterProvider := ""
 	if len(args) > 0 {
-		filterProvider = strings.ToLower(args[0])
+		filterProvider = args[0]
 	}
 
-	// Resolve values from environment.
-	entries := make([]tokenEntry, 0, len(knownTokens))
+	results := []tokenOutput{}
 	for _, t := range knownTokens {
 		if filterProvider != "" && t.Provider != filterProvider {
 			continue
 		}
-		val := os.Getenv(t.EnvVar)
+		val := env.Get(t.EnvVar)
 		masked := "(not set)"
 		set := false
 		if val != "" {
+			masked = maskToken(val)
 			set = true
-			if len(val) > 4 {
-				masked = strings.Repeat("*", len(val)-4) + val[len(val)-4:]
-			} else {
-				masked = strings.Repeat("*", len(val))
-			}
 		}
-		entries = append(entries, tokenEntry{
+		results = append(results, tokenOutput{
 			Provider: t.Provider,
 			EnvVar:   t.EnvVar,
-			Masked:   masked,
+			Token:    masked,
 			Set:      set,
 		})
 	}
 
-	if len(entries) == 0 {
-		formatter.Info("No token entries found for the specified provider.", nil)
+	if getOutputFormat() == "json" {
+		formatter.Data(results)
 		return nil
 	}
 
-	if jsonOutput {
-		formatter.Success("Tokens", map[string]interface{}{
-			"tokens": entries,
-		})
-		return nil
-	}
-
+	pterm.DefaultSection.Println("Provider Tokens")
 	tableData := pterm.TableData{
-		{"PROVIDER", "ENV VAR", "VALUE"},
+		{"Provider", "Env Var", "Token Status"},
 	}
-	for _, e := range entries {
-		val := pterm.FgRed.Sprint(e.Masked)
-		if e.Set {
-			val = pterm.FgGreen.Sprint(e.Masked)
+
+	for _, r := range results {
+		status := pterm.LightRed("not set")
+		if r.Set {
+			status = pterm.LightGreen(r.Token)
 		}
 		tableData = append(tableData, []string{
-			pterm.FgCyan.Sprint(e.Provider),
-			e.EnvVar,
-			val,
+			pterm.LightBlue(r.Provider),
+			pterm.FgGray.Sprint(r.EnvVar),
+			status,
 		})
 	}
 
-	fmt.Println()
-	pterm.DefaultTable.
-		WithHasHeader(true).
-		WithSeparator("   ").
-		WithHeaderStyle(pterm.NewStyle(pterm.FgCyan, pterm.Bold)).
-		WithData(tableData).
-		Render()
-	return nil
+	return pterm.DefaultTable.WithHasHeader().WithData(tableData).Render()
+}
+
+func maskToken(token string) string {
+	if len(token) <= 8 {
+		return "********"
+	}
+	return token[:4] + "...." + token[len(token)-4:]
 }

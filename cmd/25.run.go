@@ -129,7 +129,7 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 	// Prepare environment injects
 	shimsDir := env.GetShimsDir()
 	envInjects := []string{
-		fmt.Sprintf("PATH=%s:%s", shimsDir, os.Getenv("PATH")),
+		fmt.Sprintf("PATH=%s:%s", shimsDir, env.Get("PATH")),
 	}
 
 	// Execute task

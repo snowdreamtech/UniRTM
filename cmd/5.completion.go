@@ -180,7 +180,7 @@ func installCompletion(formatter output.Formatter, cmd *cobra.Command, shellType
 		// No need for activationCmd in fish if placed in standard path
 	case service.ShellPowerShell:
 		compFile = filepath.Join(compDir, "unirtm.ps1")
-		configFile = os.Getenv("PROFILE")
+		configFile = env.Get("PROFILE")
 		if configFile == "" {
 			configFile = filepath.Join(home, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1")
 		}
@@ -242,7 +242,7 @@ func uninstallCompletion(formatter output.Formatter, shellType service.ShellType
 		compFile = filepath.Join(home, ".config/fish/completions/unirtm.fish")
 	case service.ShellPowerShell:
 		compFile = filepath.Join(compDir, "unirtm.ps1")
-		configFile = os.Getenv("PROFILE")
+		configFile = env.Get("PROFILE")
 		if configFile == "" {
 			configFile = filepath.Join(home, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1")
 		}

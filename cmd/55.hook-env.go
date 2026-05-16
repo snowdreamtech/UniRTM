@@ -60,10 +60,11 @@ func runHookEnv(cmd *cobra.Command, args []string) error {
 
 	// 2. Reconstruct current environment state from env vars
 	currentState := &service.EnvironmentState{
-		ProjectDir:   os.Getenv("UNIRTM_PROJECT_DIR"),
+		ProjectDir:   env.Get("PROJECT_DIR"),
 		ToolVersions: make(map[string]string),
 		EnvVars:      make(map[string]string),
 	}
+	oldPwd := env.Get("OLD_PWD")
 
 	// Extract tool versions from environment (UNIRTM_XXX_VERSION)
 	for _, e := range os.Environ() {
@@ -87,7 +88,6 @@ func runHookEnv(cmd *cobra.Command, args []string) error {
 
 	// 4. Handle directory change
 	pwd, _ := os.Getwd()
-	oldPwd := os.Getenv("UNIRTM_OLD_PWD")
 	
 	event := service.DirectoryChangeEvent{
 		OldDir: oldPwd,
