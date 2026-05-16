@@ -14,6 +14,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 func init() {
@@ -136,8 +137,10 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 	}
 
 	// 3. Output Logic
-	// Surpass: Visual detection. If TTY and not specific tool, show rich UI.
-	if !pterm.PrintColor || jsonOutput || filterTool != "" {
+	// Determine if we should show the interactive TUI
+	isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput && filterTool == ""
+	
+	if !isTerminal {
 		// Plain mode (Mise style) or specific tool
 		for _, res := range results {
 			if filterTool != "" {
@@ -150,7 +153,10 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 	}
 
 	// [Surpass] Interactive UI
-	pterm.DefaultSection.Println("Active Runtime Versions")
+	pterm.DefaultHeader.WithFullWidth().
+		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
+		WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
+		Println("UniRTM Active Versions")
 	
 	var tableData [][]string
 	tableData = append(tableData, []string{"Tool", "Version", "Status"})
