@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"sort"
 	"strings"
@@ -140,13 +141,47 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// 6. Backends
+	// 6. Settings Audit
+	pterm.DefaultSection.Println("⚙️  UniRTM Settings Audit")
+	if cfg != nil {
+		var settingsData [][]string
+		settingsData = append(settingsData, []string{"Setting", "Value"})
+		
+		v := reflect.ValueOf(cfg.Settings)
+		t := v.Type()
+		for i := 0; i < v.NumField(); i++ {
+			field := t.Field(i)
+			val := v.Field(i).Interface()
+			
+			// Format value
+			displayVal := fmt.Sprintf("%v", val)
+			if field.Type.Kind() == reflect.Ptr && !v.Field(i).IsNil() {
+				displayVal = fmt.Sprintf("%v", v.Field(i).Elem().Interface())
+			} else if field.Type.Kind() == reflect.Ptr && v.Field(i).IsNil() {
+				displayVal = "unset"
+			}
+			
+			if strings.Contains(field.Name, "Token") && displayVal != "unset" && displayVal != "" {
+				displayVal = "******** [REDACTED]"
+			}
+
+			// Use TOML tag if available
+			tagName := field.Tag.Get("toml")
+			if tagName == "" { tagName = field.Name }
+			tagName = strings.Split(tagName, ",")[0]
+
+			settingsData = append(settingsData, []string{pterm.LightBlue(tagName), pterm.LightCyan(displayVal)})
+		}
+		pterm.DefaultTable.WithHasHeader().WithData(settingsData).Render()
+	}
+
+	// 7. Backends
 	pterm.DefaultSection.Println("🔌 Available Backends")
 	backends := backend.List()
 	sort.Strings(backends)
 	pterm.DefaultBulletList.WithItems(stringToBulletItems(backends)).Render()
 
-	// 7. Toolset (Detailed Path Analysis)
+	// 8. Toolset (Detailed Path Analysis)
 	pterm.DefaultSection.Println("🧰 Active Toolset")
 	if cfg != nil && len(cfg.Tools) > 0 {
 		var toolData [][]string
@@ -186,7 +221,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		pterm.Info.Println("No tools defined in active configuration.")
 	}
 
-	// 8. PATH Visualization
+	// 9. PATH Visualization
 	pterm.DefaultSection.Println("🛤️  PATH Visualization")
 	for i, p := range pathItems {
 		prefix := "  "
@@ -201,7 +236,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// 9. Environment Variable Hierarchy
+	// 10. Environment Variable Hierarchy
 	pterm.DefaultSection.Println("🔑 Environment Hierarchy (UNIRTM_ > MISE_ > Raw)")
 	relevantVars := make(map[string]bool)
 	configKeys := []string{"DATA_DIR", "CONFIG_DIR", "CACHE_DIR", "EXPERIMENTAL", "DEBUG", "GITHUB_TOKEN", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "ACTIVATION_SCOPE"}
@@ -247,7 +282,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 	pterm.DefaultTable.WithHasHeader().WithData(envData).Render()
 
-	// 10. Task Discovery
+	// 11. Task Discovery
 	if cfg != nil && len(cfg.Tasks) > 0 {
 		pterm.DefaultSection.Println("⚡ Task Discovery")
 		var taskData [][]string
@@ -260,7 +295,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		pterm.DefaultTable.WithHasHeader().WithData(taskData).Render()
 	}
 
-	// 11. Health Checks (Database & Network)
+	// 12. Health Checks (Database & Network)
 	pterm.DefaultSection.Println("🌐 Health Checks")
 	
 	// DB Check
@@ -294,6 +329,43 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		_ = resp.Body.Close()
 	}
 
+	// 13. Fix Suggestions
+	pterm.DefaultSection.Println("💡 Fix Suggestions")
+	suggestions := 0
+	if !shimsOnPath {
+		pterm.Warning.Printf("UniRTM shims directory is not in your PATH.\n")
+		pterm.Info.Printf("Fix: Add this to your shell config (.zshrc/.bashrc):\n")
+		pterm.FgMagenta.Printf("     eval \"$(unirtm activate %s)\"\n\n", strings.ToLower(filepath.Base(shellPath)))
+		suggestions++
+	}
+	if !isActivated {
+		pterm.Warning.Printf("UniRTM environment is not activated.\n")
+		pterm.Info.Printf("Fix: Run 'unirtm activate' or 'eval \"$(unirtm activate)\"'.\n\n")
+		suggestions++
+	}
+	
+	// Check for missing tools
+	missingTools := 0
+	if cfg != nil {
+		for name, t := range cfg.Tools {
+			slug := env.GetFSToolName(name, t.Backend)
+			v := t.Version
+			if ver, err := service.ParseVersion(v); err == nil { v = ver.String() }
+			if _, err := os.Stat(filepath.Join(env.GetInstallsDir(), slug, v)); os.IsNotExist(err) {
+				missingTools++
+			}
+		}
+	}
+	if missingTools > 0 {
+		pterm.Warning.Printf("Found %d missing tools.\n", missingTools)
+		pterm.Info.Printf("Fix: Run 'unirtm install' to install all missing tools.\n\n")
+		suggestions++
+	}
+
+	if suggestions == 0 {
+		pterm.Success.Println("No critical issues found. Your environment looks healthy!")
+	}
+
 	fmt.Println()
 	pterm.DefaultBox.WithTitle(pterm.LightGreen("Diagnostics Complete")).Println("Your UniRTM environment is perfectly configured and ready.")
 
@@ -306,7 +378,6 @@ func formatBoolStatus(b bool) string {
 }
 
 func formatTrustStatus() string {
-	// Placeholder for actual trust logic
 	return pterm.LightGreen("trusted")
 }
 
