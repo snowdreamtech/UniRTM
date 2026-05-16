@@ -15,6 +15,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
@@ -275,24 +277,44 @@ func (h *HTTPDownloader) Download(ctx context.Context, url string, destination s
 
 // downloadOnce performs a single download attempt without retry logic.
 func (h *HTTPDownloader) downloadOnce(ctx context.Context, url string, destination string, opts DownloadOptions) error {
-	// Create HTTP request
+	// 1. Pre-flight check: Get content length and range support using HEAD
+	headReq, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
+	if err == nil {
+		headResp, err := h.client.Do(headReq)
+		if err == nil {
+			defer headResp.Body.Close()
+			if headResp.StatusCode == http.StatusOK {
+				totalBytes := headResp.ContentLength
+				acceptRanges := headResp.Header.Get("Accept-Ranges") == "bytes"
+
+				// 2. Decide if we use concurrent download
+				// Criteria: Size > 1MB, Server supports Ranges
+				if acceptRanges && totalBytes > 1*1024*1024 {
+					err := h.downloadConcurrent(ctx, url, destination, totalBytes, opts)
+					if err == nil {
+						return nil
+					}
+					// Fallback on failure
+				}
+			}
+		}
+	}
+
+	// 3. Standard download logic...
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return errors.NewUserError(fmt.Sprintf("create request for %q", url), err)
 	}
 
-	// Perform HTTP request
 	resp, err := h.client.Do(req)
 	if err != nil {
 		return errors.NewExternalError(fmt.Sprintf("HTTP request to %q", url), err)
 	}
 	defer resp.Body.Close()
 
-	// Check HTTP status code
 	if resp.StatusCode != http.StatusOK {
 		return errors.NewExternalError(fmt.Sprintf("HTTP %d from %q", resp.StatusCode, url), nil)
 	}
-
 	// Ensure destination directory exists
 	if err := os.MkdirAll(filepath.Dir(destination), 0755); err != nil {
 		return errors.NewSystemError(fmt.Sprintf("create directory %q", filepath.Dir(destination)), err)
@@ -550,4 +572,108 @@ func parseChecksum(checksum string) (string, string, error) {
 
 	// Assume SHA-256 if no algorithm specified
 	return "sha256", checksum, nil
+}
+
+// downloadConcurrent performs a multi-threaded download using Range requests.
+func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, destination string, totalSize int64, opts DownloadOptions) error {
+	numThreads := 4
+	if env.Get("JOBS") != "" {
+		fmt.Sscanf(env.Get("JOBS"), "%d", &numThreads)
+	}
+	if numThreads <= 1 {
+		numThreads = 4
+	}
+
+	// Pre-allocate file
+	if err := os.MkdirAll(filepath.Dir(destination), 0755); err != nil {
+		return err
+	}
+	file, err := os.OpenFile(destination, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	if err := file.Truncate(totalSize); err != nil {
+		return err
+	}
+
+	chunkSize := totalSize / int64(numThreads)
+	var wg sync.WaitGroup
+	var downloadErr error
+	var errOnce sync.Once
+	
+	downloadedBytes := int64(0)
+	
+	for i := 0; i < numThreads; i++ {
+		start := int64(i) * chunkSize
+		end := start + chunkSize - 1
+		if i == numThreads-1 {
+			end = totalSize - 1
+		}
+
+		wg.Add(1)
+		go func(start, end int64, threadID int) {
+			defer wg.Done()
+			
+			backoff := 1 * time.Second
+			for attempt := 0; attempt < 3; attempt++ {
+				if ctx.Err() != nil {
+					return
+				}
+				
+				req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+				if err != nil {
+					continue
+				}
+				req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", start, end))
+				
+				resp, err := h.client.Do(req)
+				if err != nil {
+					time.Sleep(backoff)
+					backoff *= 2
+					continue
+				}
+				
+				if resp.StatusCode != http.StatusPartialContent && resp.StatusCode != http.StatusOK {
+					resp.Body.Close()
+					time.Sleep(backoff)
+					backoff *= 2
+					continue
+				}
+				
+				// Use a local buffer to read and then WriteAt
+				buf := make([]byte, 32*1024)
+				currentOffset := start
+				for {
+					n, readErr := resp.Body.Read(buf)
+					if n > 0 {
+						_, writeErr := file.WriteAt(buf[:n], currentOffset)
+						if writeErr != nil {
+							errOnce.Do(func() { downloadErr = writeErr })
+							resp.Body.Close()
+							return
+						}
+						currentOffset += int64(n)
+						atomic.AddInt64(&downloadedBytes, int64(n))
+						if opts.ProgressCallback != nil {
+							opts.ProgressCallback(atomic.LoadInt64(&downloadedBytes), totalSize)
+						}
+					}
+					if readErr != nil {
+						resp.Body.Close()
+						if readErr == io.EOF {
+							return // Success for this chunk
+						}
+						break // Retry
+					}
+				}
+				time.Sleep(backoff)
+				backoff *= 2
+			}
+			errOnce.Do(func() { downloadErr = fmt.Errorf("thread %d failed after retries", threadID) })
+		}(start, end, i)
+	}
+
+	wg.Wait()
+	return downloadErr
 }
