@@ -186,6 +186,37 @@ func (im *InstallationManager) executeHook(ctx context.Context, cmdStr, tool, ve
 	return nil
 }
 
+// IsInstalled checks if a tool version is installed, considering version variants (v-prefix).
+func (im *InstallationManager) IsInstalled(ctx context.Context, tool, version, backendName string) (bool, *repository.Installation) {
+	// 1. Resolve aliases
+	version = im.resolveAlias(tool, version)
+
+	// 2. Standardize tool name for filesystem check
+	fsToolName := env.GetFSToolName(tool, backendName)
+
+	// 3. Prepare variants to check (original, and v-toggle)
+	variants := []string{version}
+	if strings.HasPrefix(version, "v") || strings.HasPrefix(version, "V") {
+		variants = append(variants, version[1:])
+	} else {
+		// If no v-prefix, try adding both 'v' and 'V'
+		variants = append(variants, "v"+version, "V"+version)
+	}
+
+	for _, v := range variants {
+		existing, err := im.installRepo.FindByToolAndVersion(ctx, tool, v)
+		if err == nil && existing != nil {
+			// Verify physical existence on disk
+			checkPath := filepath.Join(env.GetInstallsDir(), fsToolName, v)
+			if _, statErr := os.Stat(checkPath); statErr == nil {
+				return true, existing
+			}
+		}
+	}
+
+	return false, nil
+}
+
 // Install performs the complete installation workflow for a tool.
 // Workflow: check → download → verify → extract → activate → record
 func (im *InstallationManager) Install(ctx context.Context, tool, version, backendName string) error {
@@ -223,24 +254,8 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	// Simple heuristic: if it contains 2 dots, it's likely a concrete version.
 	isConcrete := strings.Count(version, ".") >= 2 || (tool == "go" && strings.Count(version, ".") >= 1)
 	if isConcrete {
-		// Prepare variants to check (original, and v-toggle)
-		variants := []string{version}
-		if strings.HasPrefix(version, "v") {
-			variants = append(variants, strings.TrimPrefix(version, "v"))
-		} else {
-			variants = append(variants, "v"+version)
-		}
-
-		for _, v := range variants {
-			existing, err := im.installRepo.FindByToolAndVersion(ctx, tool, v)
-			if err == nil && existing != nil {
-				// Update path if needed (in case db has old path but we want to check new standard)
-				checkPath := filepath.Join(env.GetInstallsDir(), fsToolName, v)
-				if _, statErr := os.Stat(checkPath); statErr == nil {
-					// Found a valid installation on the NEW standard disk path
-					return ErrAlreadyInstalled
-				}
-			}
+		if installed, _ := im.IsInstalled(ctx, tool, version, backendName); installed {
+			return ErrAlreadyInstalled
 		}
 	}
 
@@ -818,24 +833,20 @@ func (im *InstallationManager) EnsureInstalled(ctx context.Context, tools map[st
 	for _, t := range sortedTools {
 		toolName := t.ToolName
 		backendName := t.BackendName
-		version := im.resolveAlias(toolName, t.Version)
+		version := t.Version
 
-		// Standardize tool name for filesystem check
-		fsToolName := env.GetFSToolName(toolName, backendName)
-
-		// Check if already installed
-		existing, err := im.installRepo.FindByToolAndVersion(ctx, toolName, version)
-		if err == nil && existing != nil {
-			// Update path if needed (in case db has old path but we want to check new standard)
-			checkPath := filepath.Join(env.GetInstallsDir(), fsToolName, version)
-			if _, statErr := os.Stat(checkPath); statErr == nil {
-				continue
-			}
+		// Check if already installed using robust variant detection
+		installed, _ := im.IsInstalled(ctx, toolName, version, backendName)
+		if installed {
+			continue
 		}
 
 		// Not installed, proceed with installation
 		fmt.Printf("ℹ auto-installing missing tool: %s@%s\n", toolName, version)
 		if err := im.Install(ctx, toolName, version, backendName); err != nil {
+			if err == ErrAlreadyInstalled {
+				continue
+			}
 			return fmt.Errorf("auto-install failed for %s: %w", toolName, err)
 		}
 	}
