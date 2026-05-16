@@ -6,7 +6,11 @@ package config
 import (
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 type Config struct {
@@ -39,6 +43,7 @@ type ToolConfig struct {
 type ToolMap map[string]ToolConfig
 
 func (c *Config) PostLoad() {
+	c.Settings.LoadFromEnv()
 	if c.ToolsRaw != nil {
 		c.Tools = make(ToolMap)
 		for k, v := range c.ToolsRaw {
@@ -129,6 +134,88 @@ type Settings struct {
 	VerifyMetadata *bool `toml:"verify_metadata,omitempty" yaml:"verify_metadata,omitempty" mapstructure:"verify_metadata,omitempty"`
 	NoProxy []string `toml:"no_proxy,omitempty" yaml:"no_proxy,omitempty" mapstructure:"no_proxy,omitempty"`
 	Tools map[string]map[string]interface{} `toml:"tools,omitempty" yaml:"tools,omitempty" mapstructure:"tools,omitempty"`
+}
+
+func (s *Settings) LoadFromEnv() {
+	if v := env.Get("CACHE_DIR"); v != "" {
+		s.CacheDir = v
+	}
+	if v := env.Get("DATA_DIR"); v != "" {
+		s.DataDir = v
+	}
+	if v := env.Get("CACHE_TTL"); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			s.CacheTTL = i
+		}
+	}
+	if v := env.Get("CONCURRENCY"); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			s.Concurrency = i
+		}
+	}
+	if v := env.Get("LOCKFILE"); v != "" {
+		s.Lockfile = strings.ToLower(v) == "true" || v == "1"
+	}
+	if v := env.Get("LOCKED"); v != "" {
+		s.Locked = strings.ToLower(v) == "true" || v == "1"
+	}
+	if v := env.Get("GITHUB_PROXY"); v != "" {
+		s.GitHubProxy = v
+	}
+	if v := env.Get("HTTP_PROXY"); v != "" {
+		s.HttpProxy = v
+	}
+	if v := env.Get("HTTPS_PROXY"); v != "" {
+		s.HttpsProxy = v
+	}
+	if v := env.Get("GITHUB_TOKEN"); v != "" {
+		s.GitHubToken = v
+	}
+	if v := env.Get("HTTP_TIMEOUT"); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			s.HTTPTimeout = i
+		}
+	}
+	if v := env.Get("TASK_TIMEOUT"); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			s.TaskTimeout = i
+		}
+	}
+	if v := env.Get("TASK_OUTPUT"); v != "" {
+		s.TaskOutput = v
+	}
+	if v := env.Get("EXPERIMENTAL"); v != "" {
+		s.Experimental = strings.ToLower(v) == "true" || v == "1"
+	}
+	if v := env.Get("AUTO_INSTALL"); v != "" {
+		b := strings.ToLower(v) == "true" || v == "1"
+		s.AutoInstall = &b
+	}
+	if v := env.Get("COLOR"); v != "" {
+		s.Color = v
+	}
+	if v := env.Get("ALWAYS_KEEP_DOWNLOAD"); v != "" {
+		s.AlwaysKeepDownload = strings.ToLower(v) == "true" || v == "1"
+	}
+	if v := env.Get("CEILING_PATHS"); v != "" {
+		s.CeilingPaths = strings.Split(v, string(os.PathListSeparator))
+	}
+	if v := env.Get("TRUSTED_CONFIG_PATHS"); v != "" {
+		s.TrustedConfigPaths = strings.Split(v, string(os.PathListSeparator))
+	}
+	if v := env.Get("GPG_VERIFY"); v != "" {
+		s.GPGVerify = v
+	}
+	if v := env.Get("GPG_KEYS"); v != "" {
+		s.GPGKeys = strings.Split(v, ",")
+	}
+	if v := env.Get("VERIFY_METADATA"); v != "" {
+		b := strings.ToLower(v) == "true" || v == "1"
+		s.VerifyMetadata = &b
+	}
+	if v := env.Get("NO_PROXY"); v != "" {
+		s.NoProxy = strings.Split(v, ",")
+	}
 }
 
 type Task struct {
