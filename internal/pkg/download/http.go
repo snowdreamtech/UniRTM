@@ -191,26 +191,33 @@ func (h *HTTPDownloader) Download(ctx context.Context, url string, destination s
 		}
 
 		// If forced to HTTP/1.1, ensure client is configured properly for this attempt
+		var originalClient *http.Client
 		if forceHTTP11 {
-			// Instead of modifying the existing transport in place (which might have cached state),
-			// we create a fresh transport for this attempt that explicitly disables HTTP/2.
 			if transport, ok := h.client.Transport.(*http.Transport); ok {
 				newTransport := transport.Clone()
+				// Physically disable HTTP/2
 				newTransport.TLSNextProto = make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)
-				// Create a temporary client for this attempt
-				originalClient := h.client
+				
+				originalClient = h.client
 				h.client = &http.Client{
 					Timeout:       originalClient.Timeout,
 					CheckRedirect: originalClient.CheckRedirect,
 					Transport:     newTransport,
 				}
-				// Restore the original client after this attempt
-				defer func() { h.client = originalClient }()
 			}
 		}
 
 		// Attempt download
 		err := h.downloadOnce(ctx, url, destination, opts)
+
+		// Restore client immediately if it was swapped
+		if originalClient != nil {
+			// Close idle connections of the temporary transport to be clean
+			if tempTransport, ok := h.client.Transport.(*http.Transport); ok {
+				tempTransport.CloseIdleConnections()
+			}
+			h.client = originalClient
+		}
 		if err == nil {
 			// Success - verify checksum if specified
 			if opts.Checksum != "" {
