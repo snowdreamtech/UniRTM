@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -377,8 +378,12 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		var progressbar *pterm.ProgressbarPrinter
 		var lastDownloaded int64
 		var lastUpdateTime time.Time
+		var progressMutex sync.Mutex
 
 		opts.ProgressCallback = func(downloaded, total int64) {
+			progressMutex.Lock()
+			defer progressMutex.Unlock()
+			
 			// Stop the connection spinner once we start receiving bytes, 
 			// BUT ONLY if we are going to start a progress bar.
 			if spinner != nil && total > 0 {
