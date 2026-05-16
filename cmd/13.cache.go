@@ -17,6 +17,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 // init registers the cache command and its subcommands to the root command.
@@ -40,23 +41,27 @@ var cacheCmd = &cobra.Command{
 
 If no subcommand is provided, it displays the path to the cache directory.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cacheDir := env.GetCacheDir()
-		var fileCount int
-		var totalSize int64
-		_ = filepath.Walk(cacheDir, func(_ string, info os.FileInfo, err error) error {
-			if err == nil && !info.IsDir() {
-				fileCount++
-				totalSize += info.Size()
-			}
-			return nil
-		})
+		isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput
+		if isTerminal {
+			pterm.DefaultHeader.WithFullWidth().
+				WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
+				WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
+				Println("UniRTM Cache Information")
+		}
+
 		sizeStr := fmt.Sprintf("%.2f MB", float64(totalSize)/(1024*1024))
-		pterm.DefaultBox.WithTitle(pterm.LightCyan("Cache Information")).Println(
-			fmt.Sprintf("%s: %s\n%s: %s\n%s: %s",
-				pterm.Bold.Sprint("Path "), pterm.LightBlue(cacheDir),
-				pterm.Bold.Sprint("Size "), pterm.LightGreen(sizeStr),
-				pterm.Bold.Sprint("Files"), pterm.LightYellow(fileCount)),
-		)
+		if isTerminal {
+			pterm.DefaultSection.Println("Summary")
+			pterm.BulletListPrinter{
+				Items: []pterm.BulletListItem{
+					{Level: 0, Text: fmt.Sprintf("%-10s: %s", pterm.Bold.Sprint("Path"), pterm.LightBlue(cacheDir))},
+					{Level: 0, Text: fmt.Sprintf("%-10s: %s", pterm.Bold.Sprint("Size"), pterm.LightGreen(sizeStr))},
+					{Level: 0, Text: fmt.Sprintf("%-10s: %d", pterm.Bold.Sprint("Files"), fileCount)},
+				},
+			}.Render()
+		} else {
+			fmt.Printf("Path: %s\nSize: %s\nFiles: %d\n", cacheDir, sizeStr, fileCount)
+		}
 		return nil
 	},
 }
@@ -184,6 +189,14 @@ func runCacheList(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput
+	if isTerminal {
+		pterm.DefaultHeader.WithFullWidth().
+			WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
+			WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
+			Println("UniRTM Cache List")
+	}
+
 	if jsonOutput {
 		formatter.Success("Cache entries", map[string]interface{}{
 			"count":   len(entries),
@@ -297,6 +310,14 @@ func runCacheStats(cmd *cobra.Command, args []string) error {
 		cacheSize = -1
 	}
 
+	isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput
+	if isTerminal {
+		pterm.DefaultHeader.WithFullWidth().
+			WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
+			WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
+			Println("UniRTM Cache Statistics")
+	}
+
 	if jsonOutput {
 		formatter.Success("Cache statistics", map[string]interface{}{
 			"hits":       stats.Hits,
@@ -313,7 +334,9 @@ func runCacheStats(cmd *cobra.Command, args []string) error {
 		hitRate = float64(stats.Hits) / float64(total) * 100
 	}
 
-	pterm.DefaultSection.Println("Cache Statistics")
+	if !isTerminal {
+		pterm.DefaultSection.Println("Cache Statistics")
+	}
 	pterm.BulletListPrinter{
 		Items: []pterm.BulletListItem{
 			{Level: 0, Text: fmt.Sprintf("Directory: %s", env.GetCacheDir())},

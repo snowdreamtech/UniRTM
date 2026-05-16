@@ -16,6 +16,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/term"
 )
 
 // init registers the config command and its subcommands.
@@ -109,6 +110,14 @@ Examples:
 //
 // Validates: Requirements 13.6, 23.2
 func runConfigValidate(cmd *cobra.Command, args []string) error {
+	isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput
+	if isTerminal {
+		pterm.DefaultHeader.WithFullWidth().
+			WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
+			WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
+			Println("UniRTM Config Validation")
+	}
+
 	formatter := output.NewFormatter(output.FormatterOptions{
 		Format:  getOutputFormat(),
 		NoColor: false,
@@ -155,6 +164,14 @@ func runConfigValidate(cmd *cobra.Command, args []string) error {
 //
 // Validates: Requirements 13.6, 23.2
 func runConfigShow(cmd *cobra.Command, args []string) error {
+	isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput
+	if isTerminal {
+		pterm.DefaultHeader.WithFullWidth().
+			WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
+			WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
+			Println("UniRTM Configuration")
+	}
+
 	formatter := output.NewFormatter(output.FormatterOptions{
 		Format:  getOutputFormat(),
 		NoColor: false,
@@ -182,7 +199,11 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 	}
 
 	// 1. Tool Section
-	pterm.DefaultSection.Println("Tools Configuration")
+	if !isTerminal {
+		pterm.DefaultSection.Println("Tools Configuration")
+	} else {
+		pterm.DefaultSection.Println("Tools")
+	}
 	if len(cfg.Tools) == 0 {
 		pterm.Info.Println("  (no tools defined)")
 	} else {
@@ -198,7 +219,9 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 	}
 
 	// 2. Settings Section
-	pterm.DefaultSection.Println("UniRTM Settings")
+	if !isTerminal {
+		pterm.DefaultSection.Println("UniRTM Settings")
+	}
 	pterm.DefaultBulletList.WithItems([]pterm.BulletListItem{
 		{Level: 0, Text: fmt.Sprintf("Cache TTL:  %v", cfg.Settings.CacheTTL)},
 		{Level: 0, Text: fmt.Sprintf("Data Dir:   %s", env.GetDataDir())},
