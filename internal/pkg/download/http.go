@@ -83,7 +83,9 @@ func NewHTTPDownloader() *HTTPDownloader {
 			},
 			MaxIdleConns:        100,
 			IdleConnTimeout:     90 * time.Second,
-			TLSHandshakeTimeout: 10 * time.Second,
+			TLSHandshakeTimeout: 30 * time.Second,
+			ResponseHeaderTimeout: 30 * time.Second,
+			ExpectContinueTimeout: 5 * time.Second,
 		},
 	}
 
