@@ -663,23 +663,37 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 				}
 			}()
 			
+			currentOffset := start
 			backoff := 1 * time.Second
 			for attempt := 0; attempt < 3; attempt++ {
 				if workerCtx.Err() != nil {
 					return // Context cancelled by another thread or user
 				}
 				
+				if currentOffset > end {
+					return // Already finished
+				}
+				
 				req, err := http.NewRequestWithContext(workerCtx, "GET", url, nil)
 				if err != nil {
 					continue
 				}
-				req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", start, end))
+				// Micro-resume: Request exactly from where we left off
+				req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", currentOffset, end))
 				
 				resp, err := h.client.Do(req)
 				if err != nil {
 					time.Sleep(backoff)
 					backoff *= 2
 					continue
+				}
+				
+				// Handle servers that ignore Range headers
+				if resp.StatusCode == http.StatusOK && currentOffset > 0 {
+					resp.Body.Close()
+					errOnce.Do(func() { downloadErr = fmt.Errorf("server ignored Range header, concurrent download impossible") })
+					cancel()
+					return
 				}
 				
 				if resp.StatusCode != http.StatusPartialContent && resp.StatusCode != http.StatusOK {
@@ -689,11 +703,22 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 					continue
 				}
 				
-				// Use a local buffer to read and then WriteAt
 				buf := make([]byte, 32*1024)
-				currentOffset := start
+				var chunkSuccess bool
 				for {
-					n, readErr := resp.Body.Read(buf)
+					bytesLeft := end - currentOffset + 1
+					if bytesLeft <= 0 {
+						chunkSuccess = true
+						break // Finished this chunk
+					}
+					
+					// Ensure we never read past our designated chunk boundary
+					toRead := int64(len(buf))
+					if toRead > bytesLeft {
+						toRead = bytesLeft
+					}
+					
+					n, readErr := resp.Body.Read(buf[:toRead])
 					if n > 0 {
 						_, writeErr := file.WriteAt(buf[:n], currentOffset)
 						if writeErr != nil {
@@ -709,13 +734,22 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 						}
 					}
 					if readErr != nil {
-						resp.Body.Close()
 						if readErr == io.EOF {
-							return // Success for this chunk
+							if currentOffset > end {
+								chunkSuccess = true // True completion
+							}
+							// If currentOffset <= end, it's a premature connection drop.
+							// We break and let the outer loop retry from the new currentOffset.
 						}
-						break // Retry on connection issues
+						break // Exit inner read loop
 					}
 				}
+				resp.Body.Close()
+				
+				if chunkSuccess || currentOffset > end {
+					return // Thread fully succeeded
+				}
+				
 				time.Sleep(backoff)
 				backoff *= 2
 			}
