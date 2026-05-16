@@ -580,6 +580,12 @@ func (m *viperConfigManager) Merge(configs ...*Config) (*Config, error) {
 		if config.Settings.GitHubProxy != "" {
 			merged.Settings.GitHubProxy = config.Settings.GitHubProxy
 		}
+		if config.Settings.HttpProxy != "" {
+			merged.Settings.HttpProxy = config.Settings.HttpProxy
+		}
+		if config.Settings.HttpsProxy != "" {
+			merged.Settings.HttpsProxy = config.Settings.HttpsProxy
+		}
 		if config.Settings.GitHubToken != "" {
 			merged.Settings.GitHubToken = config.Settings.GitHubToken
 		}
@@ -723,6 +729,12 @@ func (m *viperConfigManager) ApplyEnvironment(config *Config, environment string
 	}
 	if envConfig.Settings.GitHubProxy != "" {
 		result.Settings.GitHubProxy = envConfig.Settings.GitHubProxy
+	}
+	if envConfig.Settings.HttpProxy != "" {
+		result.Settings.HttpProxy = envConfig.Settings.HttpProxy
+	}
+	if envConfig.Settings.HttpsProxy != "" {
+		result.Settings.HttpsProxy = envConfig.Settings.HttpsProxy
 	}
 	if envConfig.Settings.GitHubToken != "" {
 		result.Settings.GitHubToken = envConfig.Settings.GitHubToken
