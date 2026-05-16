@@ -93,9 +93,11 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		shellVer = strings.TrimSpace(string(out))
 	}
 
+	editor, source := getBestEditorWithSource(cfg)
 	pterm.DefaultBulletList.WithItems([]pterm.BulletListItem{
 		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Shell", pterm.LightCyan(shellPath))},
 		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Version", shellVer)},
+		{Level: 0, Text: fmt.Sprintf("%-12s: %s (%s)", "Editor", pterm.LightGreen(editor), pterm.FgGray.Sprint("via "+source))},
 		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Work Dir", pterm.FgGray.Sprint(cwd))},
 		{Level: 0, Text: fmt.Sprintf("%-12s: %s", "Active Env", formatActiveEnv(cfg))},
 	}).Render()

@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 
 	"github.com/pelletier/go-toml/v2"
 	"github.com/pterm/pterm"
@@ -115,9 +114,12 @@ func runEdit(cmd *cobra.Command, args []string) error {
 
 	// 3. Find editor
 	cfg, _ := config.Load()
-	editor := getBestEditor(cfg)
+	editor, source := getBestEditorWithSource(cfg)
 	
-	pterm.Info.Printf("Opening %s with %s...\n", pterm.LightCyan(targetFile), pterm.LightGreen(editor))
+	pterm.Info.Printf("Opening %s using %s (%s)...\n", 
+		pterm.LightCyan(targetFile), 
+		pterm.LightGreen(editor), 
+		pterm.FgGray.Sprint("detected via "+source))
 
 	// 4. Edit Loop (with validation)
 	for {
@@ -186,32 +188,3 @@ func discoverConfigFiles() []configCandidate {
 	return candidates
 }
 
-func getBestEditor(cfg *config.Config) string {
-	// 1. Env vars
-	for _, e := range []string{"UNIRTM_EDITOR", "VISUAL", "EDITOR"} {
-		if v := env.Get(e); v != "" {
-			return v
-		}
-	}
-
-	// 2. Config settings
-	if cfg != nil && cfg.Settings.Editor != "" {
-		return cfg.Settings.Editor
-	}
-
-	// 3. System defaults
-	var defaults []string
-	if runtime.GOOS == "windows" {
-		defaults = []string{"notepad", "code", "vim"}
-	} else {
-		defaults = []string{"vim", "vi", "nano", "code", "emacs"}
-	}
-
-	for _, d := range defaults {
-		if _, err := exec.LookPath(d); err == nil {
-			return d
-		}
-	}
-
-	return "vi" // fallback
-}

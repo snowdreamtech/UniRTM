@@ -7,7 +7,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/pterm/pterm"
@@ -252,4 +254,34 @@ func getInstallationManager(ctx context.Context, cfg *config.Config) (*service.I
 	}
 
 	return im, nil
+}
+
+func getBestEditorWithSource(cfg *config.Config) (string, string) {
+	// 1. Env vars
+	for _, e := range []string{"UNIRTM_EDITOR", "VISUAL", "EDITOR"} {
+		if v := env.Get(e); v != "" {
+			return v, "$" + e
+		}
+	}
+
+	// 2. Config settings
+	if cfg != nil && cfg.Settings.Editor != "" {
+		return cfg.Settings.Editor, "unirtm settings"
+	}
+
+	// 3. System defaults
+	var defaults []string
+	if runtime.GOOS == "windows" {
+		defaults = []string{"notepad", "code", "vim"}
+	} else {
+		defaults = []string{"vim", "vi", "nano", "code", "emacs"}
+	}
+
+	for _, d := range defaults {
+		if _, err := exec.LookPath(d); err == nil {
+			return d, "system default"
+		}
+	}
+
+	return "vi", "fallback"
 }
