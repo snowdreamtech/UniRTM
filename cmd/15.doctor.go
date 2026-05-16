@@ -46,9 +46,9 @@ perfectly configured, providing deep insights into tools, paths, and connectivit
 
 func runDoctor(cmd *cobra.Command, args []string) error {
 	pterm.DefaultHeader.WithFullWidth().
-		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightBlue)).
+		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
 		WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
-		Println("UniRTM System Diagnostics (Doctor)")
+		Println("UniRTM System Doctor")
 
 	ctx := context.Background()
 	cfg, _ := config.LoadFull()

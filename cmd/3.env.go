@@ -158,7 +158,7 @@ func runEnv(cmd *cobra.Command, args []string) error {
 
 func renderInteractiveEnv(cfg *config.Config, pathDirs []string, vars []envVarEntry, sources []string) error {
 	pterm.DefaultHeader.WithFullWidth().
-		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightGreen)).
+		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
 		WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
 		Println("UniRTM Active Environment")
 
