@@ -4,14 +4,17 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 var (
@@ -71,62 +74,63 @@ func runUse(cmd *cobra.Command, args []string) error {
 		Verbose: verbose,
 	})
 
+	// Initialize installation manager for interactive selection if needed
+	cfg, _ := config.Load()
+	ctx := context.Background()
+	backendRegistry := backend.NewRegistry()
+	im, _ := getInstallationManager(ctx, cfg)
+
 	// Parse tool@version pairs
 	type toolVersion struct {
-		tool    string
+		key     string // key in config (e.g. github:org/repo)
 		version string
 	}
 	pairs := make([]toolVersion, 0, len(args))
 	for _, arg := range args {
-		tool := arg
-		version := ""
-
-		if strings.Contains(arg, "@") {
-			parts := strings.SplitN(arg, "@", 2)
-			tool = parts[0]
-			version = parts[1]
-		}
-
-		if version == "" {
-			isTerminal := false
-			if stat, err := os.Stdin.Stat(); err == nil && (stat.Mode()&os.ModeCharDevice) != 0 {
-				isTerminal = true
-			}
-
-			if !jsonOutput && isTerminal {
-				// Detect backend (same logic as install command)
-				backendName := ""
-				if strings.Contains(tool, ":") {
-					parts := strings.SplitN(tool, ":", 2)
-					backendName = parts[0]
-					tool = parts[1]
-				}
-
-				if backendName == "" {
-					if strings.Contains(tool, "/") {
-						backendName = "github"
-					} else {
-						// Default to asdf if not obviously github
-						backendName = "asdf"
-					}
-				}
-
-				cfg, _ := config.Load()
-				im, err := getInstallationManager(cmd.Context(), cfg)
-				if err != nil {
-					return fmt.Errorf("failed to get installation manager: %w", err)
-				}
-				selected, err := im.SelectVersionInteractive(cmd.Context(), tool, backendName)
+		backendName, toolName, version, explicit := im.ParseToolSpec(arg)
+		
+		// If no explicit version, try interactive selection
+		if !explicit || version == "latest" {
+			isTerminal := term.IsTerminal(int(os.Stdin.Fd()))
+			if !jsonOutput && isTerminal && im != nil {
+				selected, err := im.SelectVersionInteractive(cmd.Context(), toolName, backendName)
 				if err == nil {
 					version = selected
 				} else {
-					return fmt.Errorf("interactive selection failed for %s: %w", tool, err)
+					return fmt.Errorf("interactive selection failed for %s: %w", toolName, err)
 				}
-			} else {
-				return fmt.Errorf("invalid format %q: expected <tool>@<version> (e.g. node@20.0.0)", arg)
+			} else if version == "" || version == "latest" {
+				// Try to get latest from backend if possible
+				b, err := backendRegistry.Get(backendName)
+				if err == nil {
+					platform := backend.CurrentPlatform()
+					if info, err := b.ResolveVersion(cmd.Context(), toolName, "latest", platform); err == nil && info != nil {
+						version = info.Version
+					}
+				}
 			}
 		}
-		pairs = append(pairs, toolVersion{tool: tool, version: version})
+
+		if version == "" || version == "latest" {
+			return fmt.Errorf("invalid format %q: expected <tool>@<version> (e.g. node@20.0.0)", arg)
+		}
+
+		// Reconstruct key for config: backend:tool (if backend is not auto-detected or is explicit)
+		configKey := toolName
+		if backendName != "" && (strings.Contains(arg, ":") || backendName == "github") {
+			// If it's github or explicit backend, use backend:tool as key
+			// but for github, we often just use owner/repo which is auto-detected.
+			// Actually, let's keep it simple: if it contains '/', it's github.
+			if strings.Contains(toolName, "/") {
+				configKey = "github:" + toolName
+			} else if strings.Contains(arg, ":") {
+				// Was explicit backend in input
+				origBackend := strings.SplitN(arg, ":", 2)[0]
+				configKey = origBackend + ":" + toolName
+			}
+		}
+
+		pairs = append(pairs, toolVersion{key: configKey, version: version})
 	}
 
 	// Resolve target directory
@@ -151,7 +155,7 @@ func runUse(cmd *cobra.Command, args []string) error {
 
 	if dryRun {
 		for _, p := range pairs {
-			formatter.Info(fmt.Sprintf("[dry-run] Would write %s = %q to %s", p.tool, p.version, configFile), nil)
+			formatter.Info(fmt.Sprintf("[dry-run] Would write %s = %q to %s", p.key, p.version, configFile), nil)
 		}
 		return nil
 	}
@@ -169,7 +173,7 @@ func runUse(cmd *cobra.Command, args []string) error {
 
 	// Apply each tool@version into the [tools] section
 	for _, p := range pairs {
-		content = upsertToolVersion(content, p.tool, p.version)
+		content = upsertToolVersion(content, p.key, p.version)
 	}
 
 	// Write back
@@ -178,8 +182,8 @@ func runUse(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, p := range pairs {
-		formatter.Success(fmt.Sprintf("Set %s = %q in %s", p.tool, p.version, configFile), map[string]interface{}{
-			"tool":    p.tool,
+		formatter.Success(fmt.Sprintf("Set %s = %q in %s", p.key, p.version, configFile), map[string]interface{}{
+			"tool":    p.key,
 			"version": p.version,
 			"file":    configFile,
 		})

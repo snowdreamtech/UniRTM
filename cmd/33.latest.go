@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
@@ -62,24 +61,21 @@ func runLatest(cmd *cobra.Command, args []string) error {
 		Verbose: verbose,
 	})
 
-	tool := args[0]
-	versionPrefix := ""
+	ctx := context.Background()
+	im, _ := getInstallationManager(ctx, nil)
+
+	backendName, tool, versionPrefix, explicit := im.ParseToolSpec(args[0])
+	if latestBackend != "" {
+		backendName = latestBackend
+	}
+
 	if len(args) == 2 {
 		versionPrefix = args[1]
+	} else if !explicit {
+		versionPrefix = "latest"
 	}
 
-	// Parse "backend:tool" syntax.
-	backendName := latestBackend
-	if strings.Contains(tool, ":") {
-		parts := strings.SplitN(tool, ":", 2)
-		backendName = parts[0]
-		tool = parts[1]
-	}
-	if backendName == "" {
-		backendName = getBackendName()
-	}
-
-	ctx := context.Background()
+	ctx = context.Background()
 	backendRegistry := backend.NewRegistry()
 
 	b, err := backendRegistry.Get(backendName)

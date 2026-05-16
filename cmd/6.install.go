@@ -18,7 +18,6 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/provider"
-	"github.com/snowdreamtech/unirtm/internal/provider/native"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/snowdreamtech/unirtm/internal/transaction"
@@ -95,6 +94,15 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		cfg.ApplyEnvironment()
 	}
 
+	// Get installation manager early for parsing and selection
+	im, err := getInstallationManager(ctx, cfg)
+	if err != nil {
+		formatter.Error("Failed to initialize installation manager", map[string]interface{}{
+			"error": err.Error(),
+		})
+		return fmt.Errorf("get installation manager: %w", err)
+	}
+
 	var toolsToInstall map[string]service.ToolSpec
 	if len(args) == 0 {
 		// Use tools from config if no arguments provided
@@ -104,75 +112,28 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		}
 		toolsToInstall = make(map[string]service.ToolSpec, len(cfg.Tools))
 		for name, tc := range cfg.Tools {
-			backendName := tc.Backend
-			toolName := name
-			if backendName == "" {
-				if idx := strings.Index(name, ":"); idx != -1 {
-					backendName = name[:idx]
-					toolName = name[idx+1:]
-				} else if strings.Contains(name, "/") {
-					backendName = "github"
-				} else if native.IsNativeTool(toolName) {
-					backendName = "native"
-				} else {
-					backendName = "asdf"
-				}
+			backendName, toolName, version, _ := im.ParseToolSpec(name)
+			if tc.Backend != "" {
+				backendName = tc.Backend
 			}
-
-			// Intercept go: prefix and route to the internal go-pkg provider
-			if backendName == "go" {
-				backendName = "go-pkg"
+			if tc.Version != "" {
+				version = tc.Version
 			}
+			
 			toolsToInstall[name] = service.ToolSpec{
 				Name:        toolName,
-				Version:     tc.Version,
+				Version:     version,
 				BackendName: backendName,
 			}
 		}
 	} else {
-		// Install specific tool from arguments
-		tool := args[0]
-		version := "latest"
-		explicitVersion := false
+		// Use centralized ToolSpec parsing
+		backendName, tool, version, explicitVersion := im.ParseToolSpec(args[0])
 
-		// Parse "tool@version" syntax (like mise)
-		if strings.Contains(tool, "@") {
-			parts := strings.SplitN(tool, "@", 2)
-			tool = parts[0]
-			explicitVersion = true
-			if parts[1] != "" {
-				version = parts[1]
-			}
-		} else if len(args) == 2 {
+		// Override with explicit version if provided as second argument
+		if len(args) == 2 {
 			version = args[1]
 			explicitVersion = true
-		}
-
-		backendName := getBackendName()
-		if strings.Contains(tool, ":") {
-			parts := strings.SplitN(tool, ":", 2)
-			backendName = parts[0]
-			tool = parts[1]
-
-			// Intercept go: prefix and route to the internal go-pkg provider
-			if backendName == "go" {
-				backendName = "go-pkg"
-			}
-		}
-
-		if backendName == "" {
-			toolName := tool
-			if strings.Contains(tool, "@") {
-				toolName = strings.SplitN(tool, "@", 2)[0]
-			}
-
-			if strings.Contains(toolName, "/") {
-				backendName = "github"
-			} else if native.IsNativeTool(toolName) {
-				backendName = "native"
-			} else {
-				backendName = "asdf"
-			}
 		}
 
 		if tool == "" {
@@ -187,15 +148,11 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		if !explicitVersion && !jsonOutput {
 			// Check if stdin is a terminal
 			if stat, _ := os.Stdin.Stat(); (stat.Mode() & os.ModeCharDevice) != 0 {
-				// Get installation manager to perform interactive selection
-				im, err := getInstallationManager(ctx, cfg)
+				selected, err := im.SelectVersionInteractive(ctx, tool, backendName)
 				if err == nil {
-					selected, err := im.SelectVersionInteractive(ctx, tool, backendName)
-					if err == nil {
-						version = selected
-					} else {
-						pterm.Warning.Printf("Interactive selection failed: %v, falling back to latest\n", err)
-					}
+					version = selected
+				} else {
+					pterm.Warning.Printf("Interactive selection failed: %v, falling back to latest\n", err)
 				}
 			}
 		}

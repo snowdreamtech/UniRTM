@@ -63,27 +63,21 @@ func runLsRemote(cmd *cobra.Command, args []string) error {
 
 	formatter := getFormatter(cfg)
 
-	tool := args[0]
-	versionPrefix := ""
-
-	// Support tool@version syntax
-	if strings.Contains(tool, "@") {
-		parts := strings.SplitN(tool, "@", 2)
-		tool = parts[0]
-		versionPrefix = parts[1]
-	} else if len(args) == 2 {
-		versionPrefix = args[1]
-	}
-
-	// Parse backend prefix (e.g., "npm:typescript" -> backend: "npm", tool: "typescript")
-	backendName := getLsRemoteBackendName(tool)
-	if strings.Contains(tool, ":") {
-		parts := strings.SplitN(tool, ":", 2)
-		backendName = parts[0]
-		tool = parts[1]
-	}
-
 	ctx := context.Background()
+	im, _ := getInstallationManager(ctx, cfg)
+
+	backendName, tool, versionPrefix, explicit := im.ParseToolSpec(args[0])
+	if lsRemoteBackend != "" {
+		backendName = lsRemoteBackend
+	}
+	
+	if len(args) == 2 {
+		versionPrefix = args[1]
+	} else if !explicit {
+		versionPrefix = ""
+	}
+
+	ctx = context.Background()
 	backendRegistry := backend.NewRegistry()
 
 	b, err := backendRegistry.Get(backendName)

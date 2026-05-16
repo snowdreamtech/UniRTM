@@ -88,30 +88,18 @@ func runBinPaths(cmd *cobra.Command, args []string) error {
 	sort.Strings(toolNames)
 
 	// Iterate over tools defined in current config
+	im, _ := getInstallationManager(ctx, cfg)
 	for _, toolNameKey := range toolNames {
 		toolCfg := cfg.Tools[toolNameKey]
-		toolName := toolNameKey
-		backendName := toolCfg.Backend
-		version := toolCfg.Version
-
-		// Resolve backend and tool name from key if not explicit
-		if backendName == "" {
-			if idx := strings.Index(toolNameKey, ":"); idx != -1 {
-				backendName = toolNameKey[:idx]
-				toolName = toolNameKey[idx+1:]
-			} else if strings.Contains(toolNameKey, "/") {
-				backendName = "github"
-			}
+		_, toolName, version, _ := im.ParseToolSpec(toolNameKey)
+		if toolCfg.Backend != "" {
+			// Backend in config is ignored if we already have it in DB, 
+			// but we keep the logic consistent.
+		}
+		if toolCfg.Version != "" {
+			version = toolCfg.Version
 		}
 
-		// Intercept go: prefix (align with installation manager)
-		if backendName == "go" || strings.HasPrefix(toolNameKey, "go:") {
-			backendName = "go-pkg"
-			if strings.HasPrefix(toolNameKey, "go:") {
-				toolName = strings.TrimPrefix(toolNameKey, "go:")
-			}
-		}
-		
 		// Check environment variable override: <PREFIX>_<TOOL>_VERSION
 		toolKey := strings.ToUpper(strings.ReplaceAll(toolName, "-", "_")) + "_VERSION"
 		if v := env.Get(toolKey); v != "" {
@@ -121,7 +109,17 @@ func runBinPaths(cmd *cobra.Command, args []string) error {
 		// Find installation for this tool and version
 		inst, err := installRepo.FindByToolAndVersion(ctx, toolName, version)
 		if err != nil || inst == nil {
-			continue // Not installed, skip
+			// Try without v prefix as fallback
+			v2 := version
+			if strings.HasPrefix(v2, "v") {
+				v2 = v2[1:]
+			} else {
+				v2 = "v" + v2
+			}
+			inst, _ = installRepo.FindByToolAndVersion(ctx, toolName, v2)
+			if inst == nil {
+				continue // Not installed, skip
+			}
 		}
 
 		// Use provider to get correct bin paths
@@ -147,9 +145,10 @@ func runBinPaths(cmd *cobra.Command, args []string) error {
 
 	isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput
 	if isTerminal {
-		pterm.DefaultHeader.WithFullWidth().
+		pterm.DefaultHeader.
 			WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
 			WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
+			WithMargin(10).
 			Println("UniRTM Active Bin Paths")
 	}
 
