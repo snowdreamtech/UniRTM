@@ -4,6 +4,8 @@
 package service_test
 
 import (
+	"github.com/snowdreamtech/unirtm/internal/provider"
+
 	"context"
 	"fmt"
 
@@ -13,7 +15,7 @@ import (
 // ExampleActivationManager_GenerateGlobalActivation demonstrates generating
 // a global activation script for bash.
 func ExampleActivationManager_GenerateGlobalActivation() {
-	manager := service.NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := service.NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	toolVersions := map[string]string{
@@ -45,7 +47,7 @@ func ExampleActivationManager_GenerateGlobalActivation() {
 // ExampleActivationManager_GenerateProjectActivation demonstrates generating
 // a project-specific activation script.
 func ExampleActivationManager_GenerateProjectActivation() {
-	manager := service.NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := service.NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	toolVersions := map[string]string{
@@ -86,7 +88,7 @@ func ExampleActivationManager_GenerateProjectActivation() {
 // ExampleActivationManager_GenerateActivationScript_fish demonstrates generating
 // an activation script for fish shell.
 func ExampleActivationManager_GenerateActivationScript_fish() {
-	manager := service.NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := service.NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	config := service.ActivationConfig{
@@ -117,7 +119,7 @@ func ExampleActivationManager_GenerateActivationScript_fish() {
 // ExampleActivationManager_GenerateActivationScript_powershell demonstrates
 // generating an activation script for PowerShell.
 func ExampleActivationManager_GenerateActivationScript_powershell() {
-	manager := service.NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := service.NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	config := service.ActivationConfig{
@@ -153,7 +155,7 @@ func ExampleActivationManager_GenerateActivationScript_powershell() {
 // ExampleActivationManager_GenerateActivationScript_multipleTools demonstrates
 // generating an activation script with multiple tools.
 func ExampleActivationManager_GenerateActivationScript_multipleTools() {
-	manager := service.NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := service.NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	config := service.ActivationConfig{

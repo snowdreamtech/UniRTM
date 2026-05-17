@@ -7,7 +7,11 @@ import (
 
 // Get returns the value of the environment variable with the given key,
 // searching with prefixes in order: UNIRTM_, MISE_, and then the raw key.
+// Note: PATH is retrieved directly to avoid pollution from UNIRTM_PATH/MISE_PATH.
 func Get(key string) string {
+	if key == "PATH" {
+		return os.Getenv("PATH")
+	}
 	// 1. UNIRTM_ prefix
 	if v := os.Getenv("UNIRTM_" + key); v != "" {
 		return v

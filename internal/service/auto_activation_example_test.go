@@ -4,6 +4,8 @@
 package service_test
 
 import (
+	"github.com/snowdreamtech/unirtm/internal/provider"
+
 	"context"
 	"fmt"
 	"os"
@@ -25,7 +27,7 @@ func ExampleAutoActivationManager_HandleDirectoryChange() {
 	_ = os.WriteFile(filepath.Join(projectDir, "unirtm.toml"), []byte("# project config"), 0644)
 
 	// Create managers
-	activationMgr := service.NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := service.NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := service.NewAutoActivationManager(activationMgr)
 
 	// Initial state (no project active)
@@ -63,7 +65,7 @@ func ExampleAutoActivationManager_HandleDirectoryChange() {
 // ExampleAutoActivationManager_GenerateHookEnvScript demonstrates how to generate
 // a shell hook script for automatic activation.
 func ExampleAutoActivationManager_GenerateHookEnvScript() {
-	activationMgr := service.NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := service.NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := service.NewAutoActivationManager(activationMgr)
 
 	// Generate hook script for bash
@@ -99,7 +101,7 @@ func ExampleAutoActivationManager_projectSwitch() {
 	_ = os.WriteFile(filepath.Join(project2, "unirtm.toml"), []byte("# project2"), 0644)
 
 	// Create managers
-	activationMgr := service.NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := service.NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := service.NewAutoActivationManager(activationMgr)
 
 	// Start in project1
@@ -147,7 +149,7 @@ func ExampleAutoActivationManager_deactivation() {
 	_ = os.WriteFile(filepath.Join(projectDir, "unirtm.toml"), []byte("# project"), 0644)
 
 	// Create managers
-	activationMgr := service.NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := service.NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := service.NewAutoActivationManager(activationMgr)
 
 	// Start in project

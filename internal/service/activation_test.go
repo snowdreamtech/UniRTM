@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +19,7 @@ func TestNewActivationManager(t *testing.T) {
 	shimsDir := "/usr/local/unirtm/shims"
 	dataDir := "/var/lib/unirtm"
 
-	manager := NewActivationManager(shimsDir, dataDir)
+	manager := NewActivationManager(shimsDir, dataDir, provider.NewRegistry())
 
 	require.NotNil(t, manager)
 	assert.Equal(t, shimsDir, manager.shimsDir)
@@ -26,7 +27,7 @@ func TestNewActivationManager(t *testing.T) {
 }
 
 func TestActivationManager_GenerateActivationScript_Bash(t *testing.T) {
-	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	config := ActivationConfig{
@@ -59,7 +60,7 @@ func TestActivationManager_GenerateActivationScript_Bash(t *testing.T) {
 }
 
 func TestActivationManager_GenerateActivationScript_Zsh(t *testing.T) {
-	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	config := ActivationConfig{
@@ -87,7 +88,7 @@ func TestActivationManager_GenerateActivationScript_Zsh(t *testing.T) {
 }
 
 func TestActivationManager_GenerateActivationScript_Fish(t *testing.T) {
-	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	config := ActivationConfig{
@@ -113,7 +114,7 @@ func TestActivationManager_GenerateActivationScript_Fish(t *testing.T) {
 }
 
 func TestActivationManager_GenerateActivationScript_PowerShell(t *testing.T) {
-	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	config := ActivationConfig{
@@ -143,7 +144,7 @@ func TestActivationManager_GenerateActivationScript_PowerShell(t *testing.T) {
 }
 
 func TestActivationManager_GenerateActivationScript_InvalidConfig(t *testing.T) {
-	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	tests := []struct {
@@ -191,7 +192,7 @@ func TestActivationManager_GenerateActivationScript_InvalidConfig(t *testing.T) 
 }
 
 func TestActivationManager_GenerateGlobalActivation(t *testing.T) {
-	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	toolVersions := map[string]string{
@@ -212,7 +213,7 @@ func TestActivationManager_GenerateGlobalActivation(t *testing.T) {
 }
 
 func TestActivationManager_GenerateProjectActivation(t *testing.T) {
-	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	toolVersions := map[string]string{
@@ -237,7 +238,7 @@ func TestActivationManager_GenerateProjectActivation(t *testing.T) {
 }
 
 func TestActivationManager_ToolVersionEnvVar(t *testing.T) {
-	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 
 	tests := []struct {
 		tool     string
@@ -260,7 +261,7 @@ func TestActivationManager_ToolVersionEnvVar(t *testing.T) {
 }
 
 func TestActivationManager_GenerateActivationScript_EmptyToolVersions(t *testing.T) {
-	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	config := ActivationConfig{
@@ -283,7 +284,7 @@ func TestActivationManager_GenerateActivationScript_EmptyToolVersions(t *testing
 }
 
 func TestActivationManager_GenerateActivationScript_MultipleTools(t *testing.T) {
-	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	toolVersions := map[string]string{
@@ -317,7 +318,7 @@ func TestActivationManager_GenerateActivationScript_MultipleTools(t *testing.T) 
 }
 
 func TestActivationManager_GenerateActivationScript_PathModification(t *testing.T) {
-	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	tests := []struct {
@@ -364,7 +365,7 @@ func TestActivationManager_GenerateActivationScript_PathModification(t *testing.
 }
 
 func TestActivationManager_GenerateActivationScript_Instructions(t *testing.T) {
-	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	tests := []struct {
@@ -429,7 +430,7 @@ func TestActivationManager_GenerateActivationScript_Instructions(t *testing.T) {
 
 func TestActivationManager_GenerateActivationScript_DefaultShimsDir(t *testing.T) {
 	defaultShimsDir := "/usr/local/unirtm/shims"
-	manager := NewActivationManager(defaultShimsDir, "/var/lib/unirtm")
+	manager := NewActivationManager(defaultShimsDir, "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	config := ActivationConfig{
@@ -460,7 +461,7 @@ func TestDetectShell(t *testing.T) {
 }
 
 func TestActivationManager_GenerateActivationScript_SpecialCharacters(t *testing.T) {
-	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	config := ActivationConfig{
@@ -484,7 +485,7 @@ func TestActivationManager_GenerateActivationScript_SpecialCharacters(t *testing
 }
 
 func TestActivationManager_GenerateActivationScript_ProjectScope(t *testing.T) {
-	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	tests := []struct {
@@ -540,7 +541,7 @@ func TestActivationManager_GenerateActivationScript_ProjectScope(t *testing.T) {
 }
 
 func TestActivationManager_GenerateActivationScript_Comments(t *testing.T) {
-	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	config := ActivationConfig{
@@ -572,7 +573,7 @@ func TestActivationManager_GenerateActivationScript_Comments(t *testing.T) {
 }
 
 func TestActivationManager_GenerateActivationScript_AllShells(t *testing.T) {
-	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm")
+	manager := NewActivationManager("/usr/local/unirtm/shims", "/var/lib/unirtm", provider.NewRegistry())
 	ctx := context.Background()
 
 	shells := []ShellType{ShellBash, ShellZsh, ShellFish, ShellPowerShell}

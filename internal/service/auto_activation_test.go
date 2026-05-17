@@ -4,6 +4,8 @@
 package service
 
 import (
+	"github.com/snowdreamtech/unirtm/internal/provider"
+
 	"context"
 	"os"
 	"path/filepath"
@@ -16,7 +18,7 @@ import (
 )
 
 func TestNewAutoActivationManager(t *testing.T) {
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	require.NotNil(t, autoMgr)
@@ -39,7 +41,7 @@ func TestFindProjectDirectory(t *testing.T) {
 	configPath := filepath.Join(projectDir, "unirtm.toml")
 	require.NoError(t, os.WriteFile(configPath, []byte("# test config"), 0644))
 
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	tests := []struct {
@@ -89,7 +91,7 @@ func TestFindProjectDirectory_MultipleConfigFiles(t *testing.T) {
 		".tool-versions",
 	}
 
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	for _, configFile := range configFiles {
@@ -110,7 +112,7 @@ func TestFindProjectDirectory_MultipleConfigFiles(t *testing.T) {
 }
 
 func TestDetermineAction(t *testing.T) {
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	tests := []struct {
@@ -173,7 +175,7 @@ func TestDetermineAction(t *testing.T) {
 }
 
 func TestHandleDirectoryChange_NoChange(t *testing.T) {
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	ctx := context.Background()
@@ -203,7 +205,7 @@ func TestHandleDirectoryChange_Activate(t *testing.T) {
 	configPath := filepath.Join(projectDir, "unirtm.toml")
 	require.NoError(t, os.WriteFile(configPath, []byte("# test"), 0644))
 
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	ctx := context.Background()
@@ -235,7 +237,7 @@ func TestHandleDirectoryChange_Deactivate(t *testing.T) {
 	configPath := filepath.Join(projectDir, "unirtm.toml")
 	require.NoError(t, os.WriteFile(configPath, []byte("# test"), 0644))
 
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	ctx := context.Background()
@@ -274,7 +276,7 @@ func TestHandleDirectoryChange_Switch(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(project1Dir, "unirtm.toml"), []byte("# test"), 0644))
 	require.NoError(t, os.WriteFile(filepath.Join(project2Dir, "unirtm.toml"), []byte("# test"), 0644))
 
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	ctx := context.Background()
@@ -302,7 +304,7 @@ func TestHandleDirectoryChange_Switch(t *testing.T) {
 }
 
 func TestGenerateDeactivationScript_Bash(t *testing.T) {
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	state := &EnvironmentState{
@@ -329,7 +331,7 @@ func TestGenerateDeactivationScript_Bash(t *testing.T) {
 }
 
 func TestGenerateDeactivationScript_Fish(t *testing.T) {
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	state := &EnvironmentState{
@@ -351,7 +353,7 @@ func TestGenerateDeactivationScript_Fish(t *testing.T) {
 }
 
 func TestGenerateDeactivationScript_PowerShell(t *testing.T) {
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	state := &EnvironmentState{
@@ -373,7 +375,7 @@ func TestGenerateDeactivationScript_PowerShell(t *testing.T) {
 }
 
 func TestGenerateHookEnvScript_Bash(t *testing.T) {
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	script, err := autoMgr.GenerateHookEnvScript(ShellBash)
@@ -387,7 +389,7 @@ func TestGenerateHookEnvScript_Bash(t *testing.T) {
 }
 
 func TestGenerateHookEnvScript_Zsh(t *testing.T) {
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	script, err := autoMgr.GenerateHookEnvScript(ShellZsh)
@@ -401,7 +403,7 @@ func TestGenerateHookEnvScript_Zsh(t *testing.T) {
 }
 
 func TestGenerateHookEnvScript_Fish(t *testing.T) {
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	script, err := autoMgr.GenerateHookEnvScript(ShellFish)
@@ -413,7 +415,7 @@ func TestGenerateHookEnvScript_Fish(t *testing.T) {
 }
 
 func TestGenerateHookEnvScript_PowerShell(t *testing.T) {
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	script, err := autoMgr.GenerateHookEnvScript(ShellPowerShell)
@@ -427,7 +429,7 @@ func TestGenerateHookEnvScript_PowerShell(t *testing.T) {
 }
 
 func TestGenerateHookEnvScript_UnsupportedShell(t *testing.T) {
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	_, err := autoMgr.GenerateHookEnvScript("unsupported")
@@ -436,7 +438,7 @@ func TestGenerateHookEnvScript_UnsupportedShell(t *testing.T) {
 }
 
 func TestEnvironmentState_SavesPath(t *testing.T) {
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	// Create temporary project directory
@@ -498,7 +500,7 @@ func TestFindProjectDirectory_SymlinkHandling(t *testing.T) {
 		t.Skipf("Cannot create symlink: %v", err)
 	}
 
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	// Should find project through symlink
@@ -507,7 +509,7 @@ func TestFindProjectDirectory_SymlinkHandling(t *testing.T) {
 }
 
 func TestGenerateDeactivationScript_EmptyState(t *testing.T) {
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	state := &EnvironmentState{
@@ -562,7 +564,7 @@ func TestFindProjectDirectory_NestedProjects(t *testing.T) {
 	subDir := filepath.Join(innerProject, "src")
 	require.NoError(t, os.MkdirAll(subDir, 0755))
 
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	// Should find inner project, not outer
@@ -580,7 +582,7 @@ func TestGenerateSwitch_CombinesScripts(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(project1Dir, "unirtm.toml"), []byte("# test"), 0644))
 	require.NoError(t, os.WriteFile(filepath.Join(project2Dir, "unirtm.toml"), []byte("# test"), 0644))
 
-	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data")
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
 	ctx := context.Background()
