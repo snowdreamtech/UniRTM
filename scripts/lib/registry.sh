@@ -35,14 +35,14 @@ register_unirtm_tool() {
   local _NAME="${1:-}"
   local _PROVIDER="${2:-}"
   local _VERSION="${3:-}"
-  local _MISE_TOML
-  _MISE_TOML=$(get_project_root)/.unirtm.toml
-  if [ ! -f "${_MISE_TOML:-}" ]; then
-    _MISE_TOML="$(get_project_root)/.mise.toml"
+  local _UNIRTM_TOML
+  _UNIRTM_TOML=$(get_project_root)/.unirtm.toml
+  if [ ! -f "${_UNIRTM_TOML:-}" ]; then
+    _UNIRTM_TOML="$(get_project_root)/.mise.toml"
   fi
 
   # Check if already in config file
-  if grep -qE "^\"?${_PROVIDER:-}\"?[[:space:]]*=" "${_MISE_TOML:-}" 2>/dev/null; then
+  if grep -qE "^\"?${_PROVIDER:-}\"?[[:space:]]*=" "${_UNIRTM_TOML:-}" 2>/dev/null; then
     return 0
   fi
 
@@ -64,7 +64,7 @@ register_unirtm_tool() {
   awk -v inject="\"${_PROVIDER:-}\" = \"${_VERSION:-}\"" '
     /^\[tools\]/ { print; print inject; next }
     { print }
-  ' "${_MISE_TOML:-}" >"${_MISE_TOML:-}.tmp" && mv "${_MISE_TOML:-}.tmp" "${_MISE_TOML:-}"
+  ' "${_UNIRTM_TOML:-}" >"${_UNIRTM_TOML:-}.tmp" && mv "${_UNIRTM_TOML:-}.tmp" "${_UNIRTM_TOML:-}"
 }
 
 # Backward compatibility wrapper
@@ -81,14 +81,14 @@ register_unirtm_tool_complex() {
   local _NAME="${1:-}"
   local _TOOL="${2:-}"
   local _TOML_VALUE="${3:-}"
-  local _MISE_TOML
-  _MISE_TOML=$(get_project_root)/.unirtm.toml
-  if [ ! -f "${_MISE_TOML:-}" ]; then
-    _MISE_TOML="$(get_project_root)/.mise.toml"
+  local _UNIRTM_TOML
+  _UNIRTM_TOML=$(get_project_root)/.unirtm.toml
+  if [ ! -f "${_UNIRTM_TOML:-}" ]; then
+    _UNIRTM_TOML="$(get_project_root)/.mise.toml"
   fi
 
   # Check if already in config file
-  if grep -qE "^\"?${_TOOL:-}\"?[[:space:]]*=" "${_MISE_TOML:-}" 2>/dev/null; then
+  if grep -qE "^\"?${_TOOL:-}\"?[[:space:]]*=" "${_UNIRTM_TOML:-}" 2>/dev/null; then
     return 0
   fi
 
@@ -104,7 +104,7 @@ register_unirtm_tool_complex() {
   awk -v inject="\"${_TOOL:-}\" = ${_TOML_VALUE:-}" '
     /^\[tools\]/ { print; print inject; next }
     { print }
-  ' "${_MISE_TOML:-}" >"${_MISE_TOML:-}.tmp" && mv "${_MISE_TOML:-}.tmp" "${_MISE_TOML:-}"
+  ' "${_UNIRTM_TOML:-}" >"${_UNIRTM_TOML:-}.tmp" && mv "${_UNIRTM_TOML:-}.tmp" "${_UNIRTM_TOML:-}"
 
   unirtm install "${_TOOL:-}"
 }

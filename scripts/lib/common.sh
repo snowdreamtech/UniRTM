@@ -75,23 +75,23 @@ Darwin)
   # 1. Standard: ~/Library/Application Support/unirtm (default)
   # 2. XDG-style: ~/.local/share/unirtm (if XDG_DATA_HOME is set)
   if [ -d "$HOME/Library/Application Support/mise/shims" ]; then
-    _G_MISE_BIN_BASE="$HOME/.local/bin"
-    _G_MISE_SHIMS_BASE="$HOME/Library/Application Support/mise/shims"
+    _G_UNIRTM_BIN_BASE="$HOME/.local/bin"
+    _G_UNIRTM_SHIMS_BASE="$HOME/Library/Application Support/mise/shims"
   elif [ -d "$HOME/.local/share/mise/shims" ]; then
-    _G_MISE_BIN_BASE="$HOME/.local/bin"
-    _G_MISE_SHIMS_BASE="$HOME/.local/share/mise/shims"
+    _G_UNIRTM_BIN_BASE="$HOME/.local/bin"
+    _G_UNIRTM_SHIMS_BASE="$HOME/.local/share/mise/shims"
   else
     # Fallback: assume standard macOS location
-    _G_MISE_BIN_BASE="$HOME/.local/bin"
-    _G_MISE_SHIMS_BASE="$HOME/Library/Application Support/mise/shims"
+    _G_UNIRTM_BIN_BASE="$HOME/.local/bin"
+    _G_UNIRTM_SHIMS_BASE="$HOME/Library/Application Support/mise/shims"
   fi
   ;;
 Linux)
   _G_OS="linux"
   _G_VENV_BIN="bin"
   # Linux: standard XDG Base Directory Specification
-  _G_MISE_BIN_BASE="$HOME/.local/bin"
-  _G_MISE_SHIMS_BASE="$HOME/.local/share/mise/shims"
+  _G_UNIRTM_BIN_BASE="$HOME/.local/bin"
+  _G_UNIRTM_SHIMS_BASE="$HOME/.local/share/mise/shims"
   ;;
 MINGW* | MSYS* | CYGWIN*)
   _G_OS="windows"
@@ -108,30 +108,30 @@ MINGW* | MSYS* | CYGWIN*)
   # 1. Git Bash style: $HOME/.local/share/unirtm (most common in CI)
   # 2. Windows style: %LOCALAPPDATA%\unirtm (native Windows installs)
   if [ -d "$HOME/.local/share/mise/shims" ]; then
-    _G_MISE_BIN_BASE="$HOME/.local/bin"
-    _G_MISE_SHIMS_BASE="$HOME/.local/share/mise/shims"
+    _G_UNIRTM_BIN_BASE="$HOME/.local/bin"
+    _G_UNIRTM_SHIMS_BASE="$HOME/.local/share/mise/shims"
   elif [ -d "${_G_APP_DATA_LOCAL:-}/mise/shims" ]; then
-    _G_MISE_BIN_BASE="${_G_APP_DATA_LOCAL:-}/mise/bin"
-    _G_MISE_SHIMS_BASE="${_G_APP_DATA_LOCAL:-}/mise/shims"
+    _G_UNIRTM_BIN_BASE="${_G_APP_DATA_LOCAL:-}/mise/bin"
+    _G_UNIRTM_SHIMS_BASE="${_G_APP_DATA_LOCAL:-}/mise/shims"
   else
     # Fallback: assume Git Bash style (will be created during setup)
-    _G_MISE_BIN_BASE="$HOME/.local/bin"
-    _G_MISE_SHIMS_BASE="$HOME/.local/share/mise/shims"
+    _G_UNIRTM_BIN_BASE="$HOME/.local/bin"
+    _G_UNIRTM_SHIMS_BASE="$HOME/.local/share/mise/shims"
   fi
   ;;
 *)
   _G_OS="linux"
   _G_VENV_BIN="bin"
-  _G_MISE_BIN_BASE="$HOME/.local/bin"
-  _G_MISE_SHIMS_BASE="$HOME/.local/share/mise/shims"
+  _G_UNIRTM_BIN_BASE="$HOME/.local/bin"
+  _G_UNIRTM_SHIMS_BASE="$HOME/.local/share/mise/shims"
   ;;
 esac
 
 # Debug: Log detected paths (only in verbose mode)
 if [ "${VERBOSE:-1}" -ge 2 ]; then
   printf "[DEBUG] OS: %s\n" "${_G_OS:-}" >&2
-  printf "[DEBUG] MISE_BIN_BASE: %s\n" "${_G_MISE_BIN_BASE:-}" >&2
-  printf "[DEBUG] MISE_SHIMS_BASE: %s\n" "${_G_MISE_SHIMS_BASE:-}" >&2
+  printf "[DEBUG] MISE_BIN_BASE: %s\n" "${_G_UNIRTM_BIN_BASE:-}" >&2
+  printf "[DEBUG] MISE_SHIMS_BASE: %s\n" "${_G_UNIRTM_SHIMS_BASE:-}" >&2
 fi
 
 # ── 🪟 Windows Path Utilities ────────────────────────────────────────────────
@@ -281,7 +281,7 @@ fi
 # These can be overridden via environment variables
 TIMEOUT_RESOLVE_BIN="${TIMEOUT_RESOLVE_BIN:-5}"  # Binary resolution
 TIMEOUT_JSON_PARSE="${TIMEOUT_JSON_PARSE:-3}"    # JSON parsing
-TIMEOUT_MISE_WHICH="${TIMEOUT_MISE_WHICH:-5}"    # unirtm which command
+TIMEOUT_UNIRTM_WHICH="${TIMEOUT_UNIRTM_WHICH:-5}"    # unirtm which command
 TIMEOUT_FIND_BINARY="${TIMEOUT_FIND_BINARY:-10}" # Filesystem search
 TIMEOUT_NETWORK="${TIMEOUT_NETWORK:-30}"         # Network operations
 
@@ -326,25 +326,25 @@ fi
 # scripts that perform multiple version checks (like setup and check-env).
 # Initialized LAZILY at first tool resolution, or manually refreshed after installs.
 # shellcheck disable=SC2120
-refresh_mise_cache() {
+refresh_unirtm_cache() {
   # Re-enabled with timeout protection to prevent indefinite hangs
   # Uses 5-second timeout and MISE_OFFLINE=1 to prevent network calls
   if command -v mise >/dev/null 2>&1; then
     # Use run_with_timeout_robust if available, otherwise fallback to run_with_timeout
     if command -v run_with_timeout_robust >/dev/null 2>&1; then
-      _G_MISE_LS_JSON_CACHE=$(run_with_timeout_robust 5 mise ls --json 2>/dev/null || echo "{}")
+      _G_UNIRTM_LS_JSON_CACHE=$(run_with_timeout_robust 5 mise ls --json 2>/dev/null || echo "{}")
     else
-      _G_MISE_LS_JSON_CACHE=$(MISE_OFFLINE=1 run_with_timeout 5 mise ls --json 2>/dev/null || echo "{}")
+      _G_UNIRTM_LS_JSON_CACHE=$(MISE_OFFLINE=1 run_with_timeout 5 mise ls --json 2>/dev/null || echo "{}")
     fi
   else
-    _G_MISE_LS_JSON_CACHE="{}"
+    _G_UNIRTM_LS_JSON_CACHE="{}"
   fi
-  export _G_MISE_LS_JSON_CACHE
+  export _G_UNIRTM_LS_JSON_CACHE
   return 0
 }
 
 # Initial state: Empty (triggers lazy load on first resolution)
-_G_MISE_LS_JSON_CACHE=""
+_G_UNIRTM_LS_JSON_CACHE=""
 # ── 📊 CI Step Summary Abstraction (Cross-Platform) ──────────────────────────
 # Detect and unify CI summary reporting paths (GitHub, GitLab, Gitea, Local).
 # Ref: Rule 09 (Interaction/Summary Integration)
@@ -404,8 +404,8 @@ PYTHON="${PYTHON:-python3}"
 # are prioritized over system globals without requiring manual activation.
 _LOCAL_BIN_VENV=$(pwd)/${VENV:-}/${_G_VENV_BIN:-}
 _LOCAL_BIN_NODE=$(pwd)/node_modules/.bin
-_LOCAL_MISE_BIN="${_G_MISE_BIN_BASE:-}"
-_LOCAL_MISE_SHIMS="${_G_MISE_SHIMS_BASE:-}"
+_LOCAL_MISE_BIN="${_G_UNIRTM_BIN_BASE:-}"
+_LOCAL_MISE_SHIMS="${_G_UNIRTM_SHIMS_BASE:-}"
 
 # Resilience: Always attempt to add these paths to ensure toolchain availability
 # even if directories are created later (like during setup JIT).
@@ -480,7 +480,7 @@ GITHUB_PROXY="${GITHUB_PROXY:-https://gh-proxy.sn0wdr1am.com/}"
 . "${_G_LIB_DIR:-${_G_PROJECT_ROOT:-}/scripts/lib}/versions.sh"
 
 # Runtime versions (Managed via .unirtm.toml, but some logic might still reference these for bootstrap purposes)
-# Only MISE is hardcoded here to facilitate the zero-dependency bootstrap phase.
+# Only unirtm is hardcoded here to facilitate the zero-dependency bootstrap phase.
 MISE_VERSION="${MISE_VERSION:-${VER_MISE:-}}"
 
 # Note: All other tools (Gitleaks, Shellcheck, Shfmt, Java Format, etc.) are purely managed
@@ -748,7 +748,7 @@ run_unirtm() {
   elif command -v unirtm >/dev/null 2>&1; then
     _M_BIN=$(command -v unirtm)
   else
-    _M_BIN=$(command -v mise || echo "${_G_MISE_BIN_BASE:-$HOME/.local/bin}/mise")
+    _M_BIN=$(command -v mise || echo "${_G_UNIRTM_BIN_BASE:-$HOME/.local/bin}/mise")
     [ "${_G_OS:-}" = "windows" ] && [ ! -x "${_M_BIN:-}" ] && _M_BIN="${_M_BIN:-}.exe"
   fi
 
@@ -841,8 +841,8 @@ run_unirtm() {
     _T_OUT=300 # 300s for install operations
   fi
 
-  local _MISE_OPTS=""
-  if [ "${VERBOSE:-1}" -ge 2 ]; then _MISE_OPTS="--verbose"; fi
+  local _UNIRTM_OPTS=""
+  if [ "${VERBOSE:-1}" -ge 2 ]; then _UNIRTM_OPTS="--verbose"; fi
 
   # Skip actual installation if tool is already at correct version
   if [ "${_SKIP_INSTALL:-0}" -eq 1 ]; then
@@ -856,7 +856,7 @@ run_unirtm() {
 
       # Wrap in timeout utility (Standardized via run_with_timeout_robust)
       # shellcheck disable=SC2086
-      MISE_LOCKED="${_EFFECTIVE_LOCKED:-}" run_with_timeout_robust "${_T_OUT:-}" "${_M_BIN:-}" ${_MISE_OPTS:-} "${_CMD:-}" "$@"
+      MISE_LOCKED="${_EFFECTIVE_LOCKED:-}" run_with_timeout_robust "${_T_OUT:-}" "${_M_BIN:-}" ${_UNIRTM_OPTS:-} "${_CMD:-}" "$@"
       _STATUS=$?
       # Exit code 124 = timeout expiry; treat as retryable network failure.
       # Exit codes > 128 = signal (SIGTERM/SIGKILL); abort immediately.
@@ -884,18 +884,18 @@ run_unirtm() {
   # see the newly available tools/binaries immediately.
   if [ ${_STATUS:-} -eq 0 ] &&
     { [ "${_CMD:-}" = "install" ] || [ "${_CMD:-}" = "i" ]; }; then
-    refresh_mise_cache
+    refresh_unirtm_cache
 
     # Unified PATH Management (Task 3.1):
     # Automatically add unirtm/unirtm shims to PATH after successful installation
     # if not already present. This ensures resolve_bin can immediately
     # locate newly installed tools without manual PATH manipulation.
-    if [ -n "${_G_MISE_SHIMS_BASE:-}" ]; then
+    if [ -n "${_G_UNIRTM_SHIMS_BASE:-}" ]; then
       case ":$PATH:" in
-      *":${_G_MISE_SHIMS_BASE:-}:"*) ;;
+      *":${_G_UNIRTM_SHIMS_BASE:-}:"*) ;;
       *)
-        export PATH="${_G_MISE_SHIMS_BASE:-}:$PATH"
-        log_debug "Added unirtm/mise shims to PATH: ${_G_MISE_SHIMS_BASE:-}"
+        export PATH="${_G_UNIRTM_SHIMS_BASE:-}:$PATH"
+        log_debug "Added unirtm/mise shims to PATH: ${_G_UNIRTM_SHIMS_BASE:-}"
         ;;
       esac
     fi
@@ -936,8 +936,8 @@ run_unirtm() {
     # CI PATH Persistence (Task 3.2):
     # In CI environments, persist unirtm/unirtm shims to ensure
     # subsequent workflow steps can resolve tools installed in this step.
-    if is_ci_env && [ -n "${_G_MISE_SHIMS_BASE:-}" ]; then
-      _persist_path_to_ci "${_G_MISE_SHIMS_BASE:-}"
+    if is_ci_env && [ -n "${_G_UNIRTM_SHIMS_BASE:-}" ]; then
+      _persist_path_to_ci "${_G_UNIRTM_SHIMS_BASE:-}"
     fi
   fi
 
@@ -1479,7 +1479,7 @@ get_version() {
 
   # 1. Try UniRTM First (Fast & Reliable for JIT tools)
   # Check unirtm via cache first (fastest)
-  if [ -z "${_G_MISE_LS_JSON_CACHE:-}" ]; then refresh_mise_cache; fi
+  if [ -z "${_G_UNIRTM_LS_JSON_CACHE:-}" ]; then refresh_unirtm_cache; fi
   local _MISE_VER_OUT
 
   # Parse JSON using the new parse_json function with fallback to awk
@@ -1489,7 +1489,7 @@ get_version() {
   # Try using parse_json if available (requires custom logic for array handling)
   # For now, use a helper script approach with Node.js/Python that can handle the complex structure
   if command -v node >/dev/null 2>&1 && [ -f "${_G_LIB_DIR:-}/json-parser.cjs" ]; then
-    _MISE_VER_OUT=$(echo "${_G_MISE_LS_JSON_CACHE:-}" | node -e "
+    _MISE_VER_OUT=$(echo "${_G_UNIRTM_LS_JSON_CACHE:-}" | node -e "
       const data = JSON.parse(require('fs').readFileSync(0, 'utf-8'));
       const plugin = '${_M_PLUGIN:-}';
 
@@ -1507,7 +1507,7 @@ get_version() {
       }
     " 2>/dev/null || true)
   elif command -v python3 >/dev/null 2>&1; then
-    _MISE_VER_OUT=$(echo "${_G_MISE_LS_JSON_CACHE:-}" | python3 -c "
+    _MISE_VER_OUT=$(echo "${_G_UNIRTM_LS_JSON_CACHE:-}" | python3 -c "
 import json, sys
 data = json.load(sys.stdin)
 plugin = '${_M_PLUGIN:-}'
@@ -1525,7 +1525,7 @@ if tool_key and isinstance(data[tool_key], list):
 " 2>/dev/null || true)
   else
     # Fallback to awk for cross-platform compatibility (original implementation)
-    _MISE_VER_OUT=$(echo "${_G_MISE_LS_JSON_CACHE:-}" | awk -v plugin="${_M_PLUGIN:-}" '
+    _MISE_VER_OUT=$(echo "${_G_UNIRTM_LS_JSON_CACHE:-}" | awk -v plugin="${_M_PLUGIN:-}" '
       BEGIN {
         in_tool = 0;
         active_ver = "";
@@ -1589,7 +1589,7 @@ if tool_key and isinstance(data[tool_key], list):
     # it likely means the tool is installed globally (pipx, etc.) but not in .unirtm.toml.
     # To prevent 'unirtm ERROR No version is set', we use 'unirtm exec' if it's a shim.
     case "${_LV_RESOLVED:-}" in
-    *"${_G_MISE_SHIMS_BASE:-}"*)
+    *"${_G_UNIRTM_SHIMS_BASE:-}"*)
       unirtm exec "${_M_PLUGIN:-latest}" -- "${_CMD_VER:-}" "${_ARG_VER:---version}" 2>/dev/null | grep -E -o "[0-9]+\.[0-9]+\.[0-9]+" | head -n 1
       return 0
       ;;
@@ -1723,7 +1723,7 @@ resolve_bin() {
     # Guard: If it resolves to a unirtm shim, verify the tool is actually installed.
     # Shims exist for ALL tools in .unirtm.toml, even uninstalled ones ("hollow shims").
     case "${_SP:-}" in
-    *"${_G_MISE_SHIMS_BASE:-}"*)
+    *"${_G_UNIRTM_SHIMS_BASE:-}"*)
       # Use 'unirtm which' — the lightweight, jq-free way to validate a shim.
       # Returns the real binary path if installed, non-zero if not.
       # Guard: Add timeout and offline mode to prevent hangs in broken unirtm environments or lock contention.
@@ -1739,7 +1739,7 @@ resolve_bin() {
       IFS=":"
       # shellcheck disable=SC2086
       for _p in $PATH; do
-        if [ "${_p:-}" != "${_G_MISE_SHIMS_BASE:-}" ] && [ -x "${_p:-}/${_BIN:-}" ]; then
+        if [ "${_p:-}" != "${_G_UNIRTM_SHIMS_BASE:-}" ] && [ -x "${_p:-}/${_BIN:-}" ]; then
           IFS="$_OLD_IFS" && echo "${_p:-}/${_BIN:-}" && return 0
         fi
       done
@@ -1764,8 +1764,8 @@ resolve_bin() {
   # ── 5. UniRTM Cache Fallback (Metadata-aware) ──
   # Handles tools installed JIT (e.g., Tier 2) but not in active .unirtm.toml
   # which causes 'unirtm which' to fail even if the tool exists on disk.
-  if [ -z "${_G_MISE_LS_JSON_CACHE:-}" ]; then refresh_mise_cache; fi
-  _MC_PATH=$(echo "${_G_MISE_LS_JSON_CACHE:-}" | awk -v bin="${_BIN:-}" '
+  if [ -z "${_G_UNIRTM_LS_JSON_CACHE:-}" ]; then refresh_unirtm_cache; fi
+  _MC_PATH=$(echo "${_G_UNIRTM_LS_JSON_CACHE:-}" | awk -v bin="${_BIN:-}" '
     BEGIN { found_bin = 0; }
     # Portable matching of tool key: matches "bin", "prefix:bin", or "prefix:owner/bin"
     # Matches strings ending in "bin" preceded by " , : or /
@@ -2187,7 +2187,7 @@ install_tool_safe() {
   # CRITICAL: In CI, refresh unirtm cache to avoid stale data from GitHub Actions cache
   if is_ci_env; then
     log_info "CI detected: Refreshing unirtm cache to avoid stale data"
-    refresh_mise_cache
+    refresh_unirtm_cache
   fi
 
   # CRITICAL: Resolve actual binary name from unirtm installation
@@ -2268,7 +2268,7 @@ install_tool_safe() {
 
     # CRITICAL: Aggressive cache refresh after uninstall
     # This is essential for version changes (e.g., taplo 0.7.0 -> 0.10.0)
-    refresh_mise_cache
+    refresh_unirtm_cache
     mise reshim 2>/dev/null || true
 
     # Wait for filesystem sync
@@ -2303,7 +2303,7 @@ install_tool_safe() {
   mise reshim 2>/dev/null || true
 
   # CRITICAL: Refresh unirtm cache after installation to ensure get_version sees new binary
-  refresh_mise_cache
+  refresh_unirtm_cache
 
   # Wait for filesystem sync (especially important in CI with network filesystems)
   sleep 2
@@ -2798,15 +2798,15 @@ fi
 if is_ci_env && [ -z "${_G_CI_PATH_SYNCED:-}" ]; then
   # Proactively add unirtm paths to CI persistence
   # Note: Use Unix-style paths even on Windows (GitHub Actions runs in Git Bash)
-  _M_BIN_CI="${_G_MISE_BIN_BASE:-}"
-  _M_SHIMS_CI="${_G_MISE_SHIMS_BASE:-}"
+  _M_BIN_CI="${_G_UNIRTM_BIN_BASE:-}"
+  _M_SHIMS_CI="${_G_UNIRTM_SHIMS_BASE:-}"
 
   # Only persist paths that actually exist and contain files
-  if [ -d "$_G_MISE_BIN_BASE" ] && [ -n "$(ls -A "$_G_MISE_BIN_BASE" 2>/dev/null)" ]; then
+  if [ -d "$_G_UNIRTM_BIN_BASE" ] && [ -n "$(ls -A "$_G_UNIRTM_BIN_BASE" 2>/dev/null)" ]; then
     _persist_path_to_ci "${_M_BIN_CI:-}"
     log_debug "Persisted mise bin to CI: $_M_BIN_CI"
   fi
-  if [ -d "$_G_MISE_SHIMS_BASE" ] && [ -n "$(ls -A "$_G_MISE_SHIMS_BASE" 2>/dev/null)" ]; then
+  if [ -d "$_G_UNIRTM_SHIMS_BASE" ] && [ -n "$(ls -A "$_G_UNIRTM_SHIMS_BASE" 2>/dev/null)" ]; then
     _persist_path_to_ci "${_M_SHIMS_CI:-}"
     log_debug "Persisted mise shims to CI: $_M_SHIMS_CI"
   fi

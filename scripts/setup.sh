@@ -256,7 +256,7 @@ EOF
   fi
 
   # 5. Bootstrap Toolchain Manager
-  bootstrap_mise || log_warn "Warning: unirtm/unirtm bootstrap failed. Falling back to local tool installation."
+  bootstrap_unirtm || log_warn "Warning: unirtm/unirtm bootstrap failed. Falling back to local tool installation."
 
   # 6. Toolchain Manager Strategy
   if [ "${DRY_RUN:-0}" -eq 0 ]; then
@@ -264,7 +264,7 @@ EOF
     export MISE_GIT_ALWAYS_USE_GIX=0
 
     # Performance Opt: Cache unirtm state once per session
-    refresh_mise_cache
+    refresh_unirtm_cache
 
     if [ "${_IS_ALL_MODULES:-}" = "true" ] && [ "$(uname -s)" != "Windows_NT" ]; then
       log_info "Performing full toolchain synchronization via unirtm..."
@@ -427,19 +427,19 @@ EOF
     # This is critical for Windows CI where tools are installed during setup
     if is_ci_env && [ "${DRY_RUN:-0}" -eq 0 ]; then
       log_info "[CI-PATH] Persisting unirtm paths to CI..."
-      if [ -d "${_G_MISE_BIN_BASE:-}" ] && [ -n "$(ls -A "${_G_MISE_BIN_BASE:-}" 2>/dev/null)" ]; then
-        _persist_path_to_ci "${_G_MISE_BIN_BASE:-}"
+      if [ -d "${_G_UNIRTM_BIN_BASE:-}" ] && [ -n "$(ls -A "${_G_UNIRTM_BIN_BASE:-}" 2>/dev/null)" ]; then
+        _persist_path_to_ci "${_G_UNIRTM_BIN_BASE:-}"
         # Use echo to avoid printf issues with Windows paths
-        echo "  [OK] Persisted unirtm bin: ${_G_MISE_BIN_BASE:-}" >&2
+        echo "  [OK] Persisted unirtm bin: ${_G_UNIRTM_BIN_BASE:-}" >&2
       else
-        echo "  [WARN] unirtm bin directory not found or empty: ${_G_MISE_BIN_BASE:-}" >&2
+        echo "  [WARN] unirtm bin directory not found or empty: ${_G_UNIRTM_BIN_BASE:-}" >&2
       fi
-      if [ -d "${_G_MISE_SHIMS_BASE:-}" ] && [ -n "$(ls -A "${_G_MISE_SHIMS_BASE:-}" 2>/dev/null)" ]; then
-        _persist_path_to_ci "${_G_MISE_SHIMS_BASE:-}"
+      if [ -d "${_G_UNIRTM_SHIMS_BASE:-}" ] && [ -n "$(ls -A "${_G_UNIRTM_SHIMS_BASE:-}" 2>/dev/null)" ]; then
+        _persist_path_to_ci "${_G_UNIRTM_SHIMS_BASE:-}"
         # Use echo to avoid printf issues with Windows paths
-        echo "  [OK] Persisted unirtm shims: ${_G_MISE_SHIMS_BASE:-}" >&2
+        echo "  [OK] Persisted unirtm shims: ${_G_UNIRTM_SHIMS_BASE:-}" >&2
       else
-        echo "  [WARN] unirtm shims directory not found or empty: ${_G_MISE_SHIMS_BASE:-}" >&2
+        echo "  [WARN] unirtm shims directory not found or empty: ${_G_UNIRTM_SHIMS_BASE:-}" >&2
       fi
     fi
 

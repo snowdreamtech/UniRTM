@@ -16,9 +16,9 @@ set -eu
 # Purpose: Ensures unirtm is installed and available in the environment.
 #          Downloads the standalone binary if missing (cross-platform).
 # Examples:
-#   bootstrap_mise
+#   bootstrap_unirtm
 # Internal helper to detect the current user shell.
-_mise_detect_shell() {
+_unirtm_detect_shell() {
   local _M_SHELL="bash"
   local _PARENT_SHELL
   _PARENT_SHELL=$(ps -p "${PPID:-}" -o comm= 2>/dev/null | awk -F/ '{print $NF}' | tr -d '-')
@@ -44,7 +44,7 @@ _mise_detect_shell() {
 }
 
 # Internal helper to detect the CPU architecture.
-_mise_detect_arch() {
+_unirtm_detect_arch() {
   local _OS="${1:-}"
   local _ARCH
   _ARCH=$(uname -m)
@@ -65,7 +65,7 @@ _mise_detect_arch() {
 }
 
 # Internal helper to detect the OS type.
-_mise_detect_os() {
+_unirtm_detect_os() {
   case "$(uname -s)" in
   Darwin) echo "macos" ;;
   Linux) echo "linux" ;;
@@ -75,7 +75,7 @@ _mise_detect_os() {
 }
 
 # Tier 1: Official install script (unirtm.jdx.dev) - Supports version specification.
-_mise_install_tier1() {
+_unirtm_install_tier1() {
   log_info "Tier 1: Trying official install script..."
   if [ -n "${MISE_VERSION:-}" ]; then
     log_info "Installing unirtm version: ${MISE_VERSION:-}"
@@ -95,7 +95,7 @@ _mise_install_tier1() {
 }
 
 # Tier 2: System Package Managers.
-_mise_install_tier2() {
+_unirtm_install_tier2() {
   log_info "Tier 2: Searching for system package managers..."
   if command -v brew >/dev/null 2>&1; then
     log_info "Detected Homebrew. Installing unirtm..."
@@ -129,7 +129,7 @@ _mise_install_tier2() {
 }
 
 # Tier 3: Language-specific tools.
-_mise_install_tier3() {
+_unirtm_install_tier3() {
   log_info "Tier 3: Searching for language-specific tools..."
   if command -v cargo >/dev/null 2>&1; then
     log_info "Detected Cargo. Installing unirtm..."
@@ -151,7 +151,7 @@ _mise_install_tier3() {
 }
 
 # Tier 4: Manual Binary Download (GitHub Releases).
-_mise_install_tier4() {
+_unirtm_install_tier4() {
   local _OS="${1:-}"
   local _ARCH="${2:-}"
   local _VER="${3:-}"
@@ -164,7 +164,7 @@ _mise_install_tier4() {
   if [ "${ENABLE_GITHUB_PROXY:-}" = "1" ] || [ "${ENABLE_GITHUB_PROXY:-}" = "true" ]; then
     _M_URL="${GITHUB_PROXY:-}${_M_URL:-}"
   fi
-  local _DEST="${_G_MISE_BIN_BASE:-$HOME/.local/bin}/mise"
+  local _DEST="${_G_UNIRTM_BIN_BASE:-$HOME/.local/bin}/mise"
   if [ "${_OS:-}" = "windows" ]; then _DEST="${_DEST:-}.exe"; fi
 
   mkdir -p "$(dirname "${_DEST:-}")"
@@ -215,7 +215,7 @@ _mise_install_tier4() {
 }
 
 # Setup shell completions.
-_mise_setup_completions() {
+_unirtm_setup_completions() {
   local _SHELL="${1:-}"
   log_info "Setting up unirtm completions for ${_SHELL:-}..."
 
@@ -252,7 +252,7 @@ _mise_setup_completions() {
 }
 
 # Run unirtm doctor to verify health.
-_mise_verify_health() {
+_unirtm_verify_health() {
   log_info "Verifying unirtm health..."
   if ! run_quiet mise doctor; then
     log_warn "unirtm doctor reported some issues. Please check 'unirtm doctor' manually."
@@ -263,18 +263,18 @@ _mise_verify_health() {
 
 # ── 🐚 Shell-Specific Activation Helpers ─────────────────────────────────────
 
-_mise_activate_bash() {
+_unirtm_activate_bash() {
   local _RC="$HOME/.bashrc"
   [ -f "${_RC:-}" ] || return 0
-  local _MISE_BIN
-  _MISE_BIN=$(command -v mise 2>/dev/null || echo "${_G_MISE_BIN_BASE:-$HOME/.local/bin}/mise")
+  local _UNIRTM_BIN
+  _UNIRTM_BIN=$(command -v mise 2>/dev/null || echo "${_G_UNIRTM_BIN_BASE:-$HOME/.local/bin}/mise")
   # shellcheck disable=SC2016
   # Check for any existing unirtm activate line (with or without full path)
   if ! grep -qE '(mise|\.local/bin/mise) activate bash' "${_RC:-}"; then
     {
       echo ''
       echo '# unirtm activation (added by snowdreamtech/ai-ide-template setup)'
-      echo "eval \"\$(${_MISE_BIN} activate bash)\""
+      echo "eval \"\$(${_UNIRTM_BIN} activate bash)\""
     } >>"${_RC:-}"
     log_debug "Added mise activation to ${_RC:-}"
   else
@@ -282,18 +282,18 @@ _mise_activate_bash() {
   fi
 }
 
-_mise_activate_zsh() {
+_unirtm_activate_zsh() {
   local _RC="${ZDOTDIR-$HOME}/.zshrc"
   [ -f "${_RC:-}" ] || return 0
-  local _MISE_BIN
-  _MISE_BIN=$(command -v mise 2>/dev/null || echo "${_G_MISE_BIN_BASE:-$HOME/.local/bin}/mise")
+  local _UNIRTM_BIN
+  _UNIRTM_BIN=$(command -v mise 2>/dev/null || echo "${_G_UNIRTM_BIN_BASE:-$HOME/.local/bin}/mise")
   # shellcheck disable=SC2016
   # Check for any existing unirtm activate line (with or without full path)
   if ! grep -qE '(mise|\.local/bin/mise) activate zsh' "${_RC:-}"; then
     {
       echo ''
       echo '# unirtm activation (added by snowdreamtech/ai-ide-template setup)'
-      echo "eval \"\$(${_MISE_BIN} activate zsh)\""
+      echo "eval \"\$(${_UNIRTM_BIN} activate zsh)\""
     } >>"${_RC:-}"
     log_debug "Added mise activation to ${_RC:-}"
   else
@@ -301,17 +301,17 @@ _mise_activate_zsh() {
   fi
 }
 
-_mise_activate_fish() {
+_unirtm_activate_fish() {
   local _RC="$HOME/.config/fish/config.fish"
   mkdir -p "$(dirname "${_RC:-}")"
-  local _MISE_BIN
-  _MISE_BIN=$(command -v mise 2>/dev/null || echo "${_G_MISE_BIN_BASE:-$HOME/.local/bin}/mise")
+  local _UNIRTM_BIN
+  _UNIRTM_BIN=$(command -v mise 2>/dev/null || echo "${_G_UNIRTM_BIN_BASE:-$HOME/.local/bin}/mise")
   # Check for any existing unirtm activate line
   if ! grep -qE '(mise|\.local/bin/mise) activate fish' "${_RC:-}"; then
     {
       echo ''
       echo '# unirtm activation (added by snowdreamtech/ai-ide-template setup)'
-      echo "${_MISE_BIN} activate fish | source"
+      echo "${_UNIRTM_BIN} activate fish | source"
     } >>"${_RC:-}"
     log_debug "Added mise activation to ${_RC:-}"
   else
@@ -319,7 +319,7 @@ _mise_activate_fish() {
   fi
 }
 
-_mise_activate_pwsh() {
+_unirtm_activate_pwsh() {
   # Powershell profile path varies, we use a common heuristic.
   local _RC="$HOME/Documents/PowerShell/Microsoft.PowerShell_profile.ps1"
   [ -d "$(dirname "${_RC:-}")" ] || mkdir -p "$(dirname "${_RC:-}")"
@@ -354,7 +354,7 @@ _mise_activate_nu() {
   grep -q "mise.nu" "${_CONF:-}" 2>/dev/null || printf "use (\$nu.default-config-dir | path join mise.nu)\n" >>"${_CONF:-}"
 }
 
-_mise_activate_xonsh() {
+_unirtm_activate_xonsh() {
   local _RC="$HOME/.config/xonsh/rc.xsh"
   [ -d "$(dirname "${_RC:-}")" ] || mkdir -p "$(dirname "${_RC:-}")"
   # shellcheck disable=SC2016
@@ -371,7 +371,7 @@ _mise_activate_xonsh() {
   fi
 }
 
-_mise_activate_elvish() {
+_unirtm_activate_elvish() {
   local _RC="$HOME/.config/elvish/rc.elv"
   [ -d "$(dirname "${_RC:-}")" ] || mkdir -p "$(dirname "${_RC:-}")"
   # shellcheck disable=SC2016
@@ -389,20 +389,20 @@ _mise_activate_elvish() {
 }
 
 # Helper to ensure unirtm is activated in the current session and RC files.
-_mise_apply_activation() {
+_unirtm_apply_activation() {
   local _SHELL="${1:-}"
   log_info "Synchronizing unirtm activation for ${_SHELL:-}..."
 
   # 1. Permanent RC File Injection
   case "${_SHELL:-}" in
-  zsh) _mise_activate_zsh ;;
-  bash) _mise_activate_bash ;;
-  fish) _mise_activate_fish ;;
-  pwsh | powershell) _mise_activate_pwsh ;;
+  zsh) _unirtm_activate_zsh ;;
+  bash) _unirtm_activate_bash ;;
+  fish) _unirtm_activate_fish ;;
+  pwsh | powershell) _unirtm_activate_pwsh ;;
   nu | nushell) _mise_activate_nu ;;
-  xonsh) _mise_activate_xonsh ;;
-  elvish) _mise_activate_elvish ;;
-  *) _mise_activate_bash ;;
+  xonsh) _unirtm_activate_xonsh ;;
+  elvish) _unirtm_activate_elvish ;;
+  *) _unirtm_activate_bash ;;
   esac
 
   # 2. Ephemeral Session Activation (POSIX sh compatible)
@@ -413,25 +413,25 @@ _mise_apply_activation() {
   # session with the RC file changes we made above.
 
   # Ensure unirtm bin directory is in PATH
-  if [ -d "${_G_MISE_BIN_BASE:-}" ]; then
+  if [ -d "${_G_UNIRTM_BIN_BASE:-}" ]; then
     case ":${PATH:-}:" in
-    *":${_G_MISE_BIN_BASE:-}:"*) ;;
-    *) export PATH="${_G_MISE_BIN_BASE:-}:${PATH:-}" ;;
+    *":${_G_UNIRTM_BIN_BASE:-}:"*) ;;
+    *) export PATH="${_G_UNIRTM_BIN_BASE:-}:${PATH:-}" ;;
     esac
   fi
 
   # Ensure unirtm shims directory is in PATH
-  if [ -d "${_G_MISE_SHIMS_BASE:-}" ]; then
+  if [ -d "${_G_UNIRTM_SHIMS_BASE:-}" ]; then
     case ":${PATH:-}:" in
-    *":${_G_MISE_SHIMS_BASE:-}:"*) ;;
-    *) export PATH="${_G_MISE_SHIMS_BASE:-}:${PATH:-}" ;;
+    *":${_G_UNIRTM_SHIMS_BASE:-}:"*) ;;
+    *) export PATH="${_G_UNIRTM_SHIMS_BASE:-}:${PATH:-}" ;;
     esac
   fi
 
   log_debug "mise PATH synchronized for current session. Full activation will occur in new shell sessions."
 }
 
-bootstrap_mise() {
+bootstrap_unirtm() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_info "Dry-run: Skipping unirtm bootstrap."
     return 0
@@ -439,7 +439,7 @@ bootstrap_mise() {
 
   if command -v mise >/dev/null 2>&1; then
     log_debug "mise is already installed."
-    _mise_apply_activation "$(_mise_detect_shell)"
+    _unirtm_apply_activation "$(_unirtm_detect_shell)"
     return 0
   fi
 
@@ -447,41 +447,41 @@ bootstrap_mise() {
   optimize_network
 
   local _M_SHELL
-  _M_SHELL=$(_mise_detect_shell)
+  _M_SHELL=$(_unirtm_detect_shell)
   local _M_OS
-  _M_OS=$(_mise_detect_os)
+  _M_OS=$(_unirtm_detect_os)
   local _M_ARCH
-  _M_ARCH=$(_mise_detect_arch "${_M_OS:-}")
+  _M_ARCH=$(_unirtm_detect_arch "${_M_OS:-}")
 
   # Priority 1: Official Install Script (Supports version specification)
-  if _mise_install_tier1; then
+  if _unirtm_install_tier1; then
     log_success "unirtm installed via Tier 1 (Official Install Script)."
   # Priority 2: System Package Managers
-  elif _mise_install_tier2; then
+  elif _unirtm_install_tier2; then
     log_success "unirtm installed via Tier 2 (Package Manager)."
   # Priority 3: Manual Binary (Fast & cross-platform)
-  elif _mise_install_tier4 "${_M_OS:-}" "${_M_ARCH:-}" "${MISE_VERSION#[vV]}"; then
+  elif _unirtm_install_tier4 "${_M_OS:-}" "${_M_ARCH:-}" "${MISE_VERSION#[vV]}"; then
     log_success "unirtm installed via Tier 3 (Manual Binary)."
   # Priority 4: Language Tools (Slowest fallback)
-  elif _mise_install_tier3; then
+  elif _unirtm_install_tier3; then
     log_success "unirtm installed via Tier 4 (Language Tool)."
   else
     log_error "All unirtm installation tiers failed."
     return 1
   fi
 
-  # Path Refresh: Ensure MISE is available for immediate setup
+  # Path Refresh: Ensure unirtm is available for immediate setup
   if [ -d "$HOME/.local/bin" ]; then export PATH="$HOME/.local/bin:$PATH"; fi
-  if [ -d "${_G_MISE_BIN_BASE:-}" ]; then export PATH="${_G_MISE_BIN_BASE:-}:$PATH"; fi
-  if [ -d "${_G_MISE_SHIMS_BASE:-}" ]; then export PATH="${_G_MISE_SHIMS_BASE:-}:$PATH"; fi
+  if [ -d "${_G_UNIRTM_BIN_BASE:-}" ]; then export PATH="${_G_UNIRTM_BIN_BASE:-}:$PATH"; fi
+  if [ -d "${_G_UNIRTM_SHIMS_BASE:-}" ]; then export PATH="${_G_UNIRTM_SHIMS_BASE:-}:$PATH"; fi
 
   # ── 🏗️ Post-Install Configuration ──
 
   # Finalize Activation
-  _mise_apply_activation "${_M_SHELL:-}"
+  _unirtm_apply_activation "${_M_SHELL:-}"
 
   # Setup Completions
-  _mise_setup_completions "${_M_SHELL:-}"
+  _unirtm_setup_completions "${_M_SHELL:-}"
 
   # Security & Automation: Trust project config
   if [ -f ".mise.toml" ]; then
@@ -490,5 +490,5 @@ bootstrap_mise() {
   fi
 
   # Verify Health
-  _mise_verify_health
+  _unirtm_verify_health
 }

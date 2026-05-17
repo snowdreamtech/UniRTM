@@ -96,7 +96,7 @@ resolve_bin_layer2() {
 
   # Check if this is a unirtm or unirtm shim
   case "${_SP:-}" in
-  *"${_G_MISE_SHIMS_BASE:-}"*)
+  *"${_G_UNIRTM_SHIMS_BASE:-}"*)
     # Validate shim with timeout protection
     local _MW
     if command -v run_with_timeout_robust >/dev/null 2>&1; then
@@ -117,7 +117,7 @@ resolve_bin_layer2() {
     IFS=":"
     # shellcheck disable=SC2086
     for _p in $PATH; do
-      if [ "${_p:-}" != "${_G_MISE_SHIMS_BASE:-}" ] && [ -x "${_p:-}/${_BIN:-}" ]; then
+      if [ "${_p:-}" != "${_G_UNIRTM_SHIMS_BASE:-}" ] && [ -x "${_p:-}/${_BIN:-}" ]; then
         IFS="$_OLD_IFS"
         echo "${_p:-}/${_BIN:-}"
         return 0
@@ -184,17 +184,17 @@ resolve_bin_layer4() {
   [ -z "${_BIN:-}" ] && return 1
 
   # Ensure unirtm cache is populated
-  if [ -z "${_G_MISE_LS_JSON_CACHE:-}" ]; then
-    if command -v refresh_mise_cache >/dev/null 2>&1; then
-      refresh_mise_cache
+  if [ -z "${_G_UNIRTM_LS_JSON_CACHE:-}" ]; then
+    if command -v refresh_unirtm_cache >/dev/null 2>&1; then
+      refresh_unirtm_cache
     fi
   fi
 
-  [ -z "${_G_MISE_LS_JSON_CACHE:-}" ] && return 1
+  [ -z "${_G_UNIRTM_LS_JSON_CACHE:-}" ] && return 1
 
   # Extract install path from unirtm cache using awk
   local _MC_PATH
-  _MC_PATH=$(echo "${_G_MISE_LS_JSON_CACHE:-}" | awk -v bin="${_BIN:-}" '
+  _MC_PATH=$(echo "${_G_UNIRTM_LS_JSON_CACHE:-}" | awk -v bin="${_BIN:-}" '
     BEGIN { found_bin = 0; }
     # Portable matching of tool key: matches "bin", "prefix:bin", or "prefix:owner/bin"
     # Matches strings ending in "bin" preceded by " , : or /
