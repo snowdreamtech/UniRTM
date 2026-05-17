@@ -167,29 +167,24 @@ func (v *provenanceVerifier) verify(
 		return nil, fmt.Errorf("build global identity: %w", err)
 	}
 
+	identities := []verify.CertificateIdentity{mainIdentity, globalIdentity}
+
 	// 6. Verify all returned bundles; at least one must pass.
 	var lastErr error
 	for _, rawBundle := range bundles {
-		// Try main identity first
-		result, err := verifyBundleWithSigstore(rawBundle, digest, expectedRepo, trustedMaterial, mainIdentity)
-		if err == nil {
-			return result, nil
+		for _, identity := range identities {
+			result, err := verifyBundleWithSigstore(rawBundle, digest, expectedRepo, trustedMaterial, identity)
+			if err == nil {
+				return result, nil
+			}
+			lastErr = err
 		}
-		
-		// Fallback to global identity
-		logger.Debug("provenance: main identity mismatch, trying global identity fallback")
-		result, err = verifyBundleWithSigstore(rawBundle, digest, expectedRepo, trustedMaterial, globalIdentity)
-		if err == nil {
-			return result, nil
-		}
-		
-		lastErr = err
 	}
 
 	// All bundles failed verification.
 	return nil, fmt.Errorf(
-		"provenance: all %d attestation bundle(s) failed verification for %s/%s. Last error: %v",
-		len(bundles), owner, repo, lastErr,
+		"provenance: all %d attestation bundle(s) failed verification for %s. Last error: %v",
+		len(bundles), expectedRepo, lastErr,
 	)
 }
 
@@ -488,10 +483,10 @@ func verifyBundleWithSigstore(
 		logger.Debug("provenance: sigstore-go verification failed", map[string]interface{}{"error": err.Error()})
 		return nil, fmt.Errorf("sigstore verification: %w", err)
 	}
-	logger.Info("✓ provenance: verified signature and identity")
 
-
-	// Step 6: Extract metadata from the verification result
+	// Step 6: Post-verification spoofing check
+	// When using global identity, we MUST verify the expected repository is in the OIDC extensions
+	// Otherwise any artifact signed by GitHub Releases from any repo would pass verification!
 	provResult := &ProvenanceResult{
 		Supported:  true,
 		Verified:   true,
@@ -499,15 +494,30 @@ func verifyBundleWithSigstore(
 	}
 
 	if result.Signature != nil && result.Signature.Certificate != nil {
-		// Certificate is a *certificate.Summary
-		provResult.WorkflowRef = result.Signature.Certificate.SubjectAlternativeName
-		provResult.BuilderID = result.Signature.Certificate.Extensions.BuildSignerURI
+		cert := result.Signature.Certificate
+		provResult.WorkflowRef = cert.SubjectAlternativeName
+		provResult.BuilderID = cert.Extensions.BuildSignerURI
+
+		// If it's a global release, ensure it belongs to the expected repo
+		if cert.SubjectAlternativeName == "https://dotcom.releases.github.com" {
+			hasExpectedRepo := false
+			if strings.Contains(cert.Extensions.SourceRepositoryURI, expectedRepo) {
+				hasExpectedRepo = true
+			} else if strings.Contains(cert.Extensions.BuildSignerURI, expectedRepo) {
+				hasExpectedRepo = true
+			}
+			
+			if !hasExpectedRepo {
+				return nil, fmt.Errorf("spoofed global identity: expected repository %s not found in OIDC extensions", expectedRepo)
+			}
+		}
 	}
 
 	if result.Statement != nil {
 		provResult.PredicateType = result.Statement.GetPredicateType()
 	}
 
+	logger.Info("✓ provenance: verified signature and identity")
 	return provResult, nil
 }
 
