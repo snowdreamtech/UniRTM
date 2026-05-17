@@ -2,86 +2,33 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 // Package backend provides the GitHub Provenance (SLSA attestation) verifier.
-//
-// Verification is backed by sigstore-go v1.1.4 with TUF-managed trust roots,
-// which means:
-//   - Fulcio CA certificates are fetched from the Sigstore TUF repository
-//     (https://tuf-repo-cdn.sigstore.dev) and cached locally
-//   - Revoked or expired CA certificates are automatically rejected after
-//     the next TUF refresh (default: every 24 hours)
-//   - The local TUF cache lives in $UNIRTM_TUF_CACHE_DIR or the OS temp dir
 package backend
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/golang/snappy"
-	"github.com/sigstore/sigstore-go/pkg/bundle"
 	"github.com/sigstore/sigstore-go/pkg/root"
-	"github.com/sigstore/sigstore-go/pkg/tuf"
 	"github.com/sigstore/sigstore-go/pkg/verify"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
-	"github.com/theupdateframework/go-tuf/v2/metadata"
-	"github.com/theupdateframework/go-tuf/v2/metadata/fetcher"
 )
-
-// -----------------------------------------------------------------------------
-// Public API
-// -----------------------------------------------------------------------------
-
-// ProvenanceResult is returned by VerifyArtifactProvenance.
-type ProvenanceResult struct {
-	// Supported is false when the project publishes no GitHub attestations.
-	// Callers MUST NOT treat this as an error — simply skip further checks.
-	Supported bool
-
-	// Verified is true when the attestation bundle passed all checks.
-	Verified bool
-
-	// Repository is the source repository recorded in the Fulcio cert SAN,
-	// e.g. "octocat/hello-world".
-	Repository string
-
-	// WorkflowRef is the triggering workflow path recorded in the cert, e.g.
-	// "octocat/hello-world/.github/workflows/release.yml@refs/heads/main".
-	WorkflowRef string
-
-	// PredicateType is the in-toto predicate URI in the signed statement, e.g.
-	// "https://slsa.dev/provenance/v1".
-	PredicateType string
-
-	// BuilderID is the SLSA builder identifier from the certificate extension.
-	BuilderID string
-}
 
 // VerifyArtifactProvenance checks the GitHub attestation for the artifact at
 // artifactPath against the repository owner/repo.
-//
-//   - result.Supported == false, err == nil  → project has no attestations; skip.
-//   - result.Supported == true, err != nil   → attestations exist but failed; hard error.
-//   - result.Supported == true, err == nil   → fully verified; proceed safely.
 func VerifyArtifactProvenance(
 	ctx context.Context,
 	token, owner, repo, artifactPath string,
 ) (*ProvenanceResult, error) {
-	// Inject network fallback settings for sigstore-go and internal API calls.
-	// Many internal parts of sigstore-go (and our fetchers) use http.DefaultClient/Transport.
 	if trans, ok := http.DefaultTransport.(*http.Transport); ok {
-		// HTTP/2 downgrade fallback
-		// Fixes "malformed HTTP response" errors caused by transparent proxies corrupting HTTP/2 ALPN frames.
 		if env.Get("HTTP2") == "0" {
 			pkgHttp.DisableHTTP2(trans)
 			logger.Debug("provenance: globally disabled HTTP/2 for verification (manual via env)")
@@ -94,8 +41,6 @@ func VerifyArtifactProvenance(
 
 	result, err := verifier.verify(ctx, token, owner, repo, artifactPath)
 	if err != nil && strings.Contains(err.Error(), "malformed HTTP response") {
-		// Smart downgrade: If we hit a malformed HTTP response (typically an HTTP/2 proxy framing error),
-		// disable HTTP/2 globally on the DefaultTransport and try exactly ONE more time.
 		if trans, ok := http.DefaultTransport.(*http.Transport); ok {
 			logger.Warn("provenance: detected malformed HTTP response, smartly downgrading to HTTP/1.1 and retrying...")
 			pkgHttp.DisableHTTP2(trans)
@@ -116,13 +61,11 @@ func (v *provenanceVerifier) verify(
 	ctx context.Context,
 	token, owner, repo, artifactPath string,
 ) (*ProvenanceResult, error) {
-	// 1. Compute SHA-256 of the artifact on disk.
 	digest, err := sha256File(artifactPath)
 	if err != nil {
 		return nil, fmt.Errorf("provenance: compute digest: %w", err)
 	}
 
-	// 2. Fetch attestation bundles from the GitHub API.
 	logger.Debug("provenance: fetching attestations from GitHub", map[string]interface{}{"owner": owner, "repo": repo, "digest": digest})
 	bundles, err := v.fetchAttestations(ctx, token, owner, repo, digest)
 	if err != nil {
@@ -130,20 +73,15 @@ func (v *provenanceVerifier) verify(
 	}
 	logger.Debug("provenance: found attestation bundles", map[string]interface{}{"count": len(bundles)})
 
-	// 3. No attestations → project does not publish provenance → graceful skip.
 	if len(bundles) == 0 {
 		return &ProvenanceResult{Supported: false}, nil
 	}
 
-	// 4. Obtain the TUF-backed Sigstore trusted root (cached, refreshed every 24h).
 	trustedMaterial, err := sigstoreTrustedRoot()
 	if err != nil {
 		return nil, fmt.Errorf("provenance: load TUF trusted root: %w", err)
 	}
 
-	// 5. Build identity requirements. 
-	// We allow either the repo-specific SAN (standard Actions) 
-	// or the GitHub global releases identity (GitHub official).
 	expectedRepo := owner + "/" + repo
 	repoRegex := "^https://github\\.com/" + owner + "/" + repo + "/"
 	
@@ -167,25 +105,13 @@ func (v *provenanceVerifier) verify(
 		return nil, fmt.Errorf("build global identity: %w", err)
 	}
 
-	identities := []verify.CertificateIdentity{mainIdentity, globalIdentity}
-
-	// 6. Verify all returned bundles; at least one must pass.
-	var lastErr error
-	for _, rawBundle := range bundles {
-		for _, identity := range identities {
-			result, err := verifyBundleWithSigstore(rawBundle, digest, expectedRepo, trustedMaterial, identity)
-			if err == nil {
-				return result, nil
-			}
-			lastErr = err
-		}
+	sigstoreVerifier := &SigstoreVerifier{
+		TrustedMaterial: trustedMaterial,
+		Identities:      []verify.CertificateIdentity{mainIdentity, globalIdentity},
+		ExpectedRepo:    expectedRepo,
 	}
 
-	// All bundles failed verification.
-	return nil, fmt.Errorf(
-		"provenance: all %d attestation bundle(s) failed verification for %s. Last error: %v",
-		len(bundles), expectedRepo, lastErr,
-	)
+	return sigstoreVerifier.VerifyBundles(bundles, digest)
 }
 
 // -----------------------------------------------------------------------------
@@ -198,78 +124,16 @@ var (
 	liveTrustedRootErr  error
 )
 
-// tufFetcher implements fetcher.Fetcher using our standard HTTP client.
-type tufFetcher struct {
-	client *http.Client
-}
-
-var _ fetcher.Fetcher = (*tufFetcher)(nil)
-
-// DownloadFile implements the fetcher.Fetcher interface for go-tuf/v2.
-func (f *tufFetcher) DownloadFile(urlPath string, maxLength int64, _ time.Duration) ([]byte, error) {
-	// Ensure urlPath is absolute. sigstore-go usually provides absolute URLs,
-	// but we guard against relative paths for robustness.
-	finalURL := urlPath
-	if !strings.HasPrefix(urlPath, "http") {
-		finalURL = "https://tuf-repo.github.com/" + strings.TrimPrefix(urlPath, "/")
-	}
-
-	logger.Debug("provenance: TUF fetching", map[string]interface{}{"url": finalURL, "max_length": maxLength})
-
-	req, err := http.NewRequest(http.MethodGet, finalURL, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
-
-	resp, err := f.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		// Log the failed URL for diagnostics
-		logger.Debug("provenance: TUF fetch returned non-200", map[string]interface{}{
-			"url":    finalURL,
-			"status": resp.StatusCode,
-		})
-		// Important: go-tuf/v2/metadata/updater expects ErrDownloadHTTP for 404
-		// to gracefully stop root rotation.
-		return nil, &metadata.ErrDownloadHTTP{StatusCode: resp.StatusCode, URL: finalURL}
-	}
-
-	return io.ReadAll(io.LimitReader(resp.Body, maxLength))
-}
-
-// sigstoreTrustedRoot returns the GitHub TUF trusted root.
 func sigstoreTrustedRoot() (*root.LiveTrustedRoot, error) {
 	liveTrustedRootOnce.Do(func() {
 		logger.Debug("provenance: initializing GitHub TUF trusted root")
-		opts := tuf.DefaultOptions()
-		opts.RepositoryBaseURL = "https://tuf-repo.github.com"
-		opts.Root = githubTufRoot
-
-		// Use our custom fetcher to ensure User-Agent and proxy support
-		opts.Fetcher = &tufFetcher{
-			client: pkgHttp.NewClientWithTimeout(60 * time.Second),
-		}
-
-		// Allow users to override the TUF cache directory.
-		// Default opts.CachePath is usually something like $HOME/.sigstore/tuf.
-		// We'll replace the last element to use github-tuf to avoid collisions.
-		cachePath := opts.CachePath
-		if cacheDir := env.Get("TUF_CACHE_DIR"); cacheDir != "" {
-			cachePath = filepath.Join(cacheDir, "github-tuf")
-		} else {
-			cachePath = filepath.Join(filepath.Dir(cachePath), "github-tuf")
-		}
-		opts.CachePath = cachePath
-		logger.Debug("provenance: GitHub TUF cache path", map[string]interface{}{"path": cachePath})
-
-		liveTrustedRoot, liveTrustedRootErr = root.NewLiveTrustedRoot(opts)
+		liveTrustedRoot, liveTrustedRootErr = InitializeTUFRoot(
+			"github-tuf",
+			"https://tuf-repo.github.com",
+			githubTufRoot,
+		)
 		if liveTrustedRootErr != nil {
-			logger.Error("provenance: failed to initialize TUF root", map[string]interface{}{"error": liveTrustedRootErr.Error()})
+			logger.Error("provenance: failed to initialize GitHub TUF root", map[string]interface{}{"error": liveTrustedRootErr.Error()})
 		} else {
 			logger.Debug("provenance: GitHub TUF root initialized successfully")
 		}
@@ -277,7 +141,6 @@ func sigstoreTrustedRoot() (*root.LiveTrustedRoot, error) {
 	return liveTrustedRoot, liveTrustedRootErr
 }
 
-// ResetTrustedRootForTest resets the singleton — for testing only.
 func ResetTrustedRootForTest() {
 	liveTrustedRootOnce = sync.Once{}
 	liveTrustedRoot = nil
@@ -297,8 +160,6 @@ type attestationEntry struct {
 	BundleURL string          `json:"bundle_url"`
 }
 
-// fetchAttestations queries GET /repos/{owner}/{repo}/attestations/sha256:{digest}.
-// Returns nil slice (not an error) when the project publishes no attestations (HTTP 404).
 func (v *provenanceVerifier) fetchAttestations(
 	ctx context.Context,
 	token, owner, repo, digest string,
@@ -331,7 +192,6 @@ func (v *provenanceVerifier) fetchAttestations(
 	}
 	defer resp.Body.Close()
 
-	// 404 → project does not publish attestations → gracefully skip.
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
@@ -352,7 +212,6 @@ func (v *provenanceVerifier) fetchAttestations(
 			continue
 		}
 
-		// Fallback to bundle_url if inline bundle is missing/null
 		if a.BundleURL != "" {
 			fmt.Printf("ℹ provenance: fetching external bundle %d/%d from URL...\n", i+1, len(apiResp.Attestations))
 			bundleData, err := v.fetchExternalBundle(ctx, a.BundleURL)
@@ -369,7 +228,6 @@ func (v *provenanceVerifier) fetchAttestations(
 	return raw, nil
 }
 
-// fetchExternalBundle downloads a Sigstore bundle from an external URL.
 func (v *provenanceVerifier) fetchExternalBundle(ctx context.Context, urlStr string) (json.RawMessage, error) {
 	finalURL := urlStr
 	githubProxy := env.Get("GITHUB_PROXY")
@@ -400,13 +258,9 @@ func (v *provenanceVerifier) fetchExternalBundle(ctx context.Context, urlStr str
 		return nil, err
 	}
 
-	// GitHub often returns Snappy-compressed bundles (with .sn suffix).
-	// These are usually in Snappy Raw format (not framed).
 	if strings.Contains(urlStr, ".sn") || strings.HasSuffix(urlStr, ".sn") {
 		decoded, err := snappy.Decode(nil, body)
 		if err != nil {
-			// If raw decode fails, try framed if it might be framed (though usually it's raw)
-			// But for now, if raw fails, we return error as it's the expected format.
 			return nil, fmt.Errorf("provenance: decompress snappy bundle: %w", err)
 		}
 		return decoded, nil
@@ -414,130 +268,3 @@ func (v *provenanceVerifier) fetchExternalBundle(ctx context.Context, urlStr str
 
 	return body, nil
 }
-
-// -----------------------------------------------------------------------------
-// Bundle verification via sigstore-go
-// -----------------------------------------------------------------------------
-
-// verifyBundleWithSigstore verifies a single Sigstore bundle using the official
-// sigstore-go library backed by TUF-managed trust material.
-//
-// Verification chain:
-//  1. Parse the bundle JSON into a sigstore-go Bundle.
-//  2. Build the verifier with transparency log + observer timestamp enforcement.
-//  3. Build an identity policy: issuer must be GitHub Actions OIDC; SAN must
-//     contain the expected repository path.
-//  4. Build an artifact digest policy enforcing SHA-256 match.
-//  5. Call verifier.Verify() — sigstore-go handles cert chain, Rekor,
-//     DSSE signature, and subject digest internally.
-//  6. Extract the workflow and predicate info from the verification result.
-func verifyBundleWithSigstore(
-	rawBundle json.RawMessage,
-	artifactDigest, expectedRepo string,
-	trustedMaterial root.TrustedMaterial,
-	identity verify.CertificateIdentity,
-) (*ProvenanceResult, error) {
-	// Step 1: Parse bundle
-	b := &bundle.Bundle{}
-	if err := b.UnmarshalJSON(rawBundle); err != nil {
-		return nil, fmt.Errorf("parse bundle JSON: %w", err)
-	}
-
-	// Step 2: Build verifier
-	// In restricted networks, verifying live log inclusion is fragile.
-	// We use a threshold of 1 by default, but allow 0 if UNIRTM_SKIP_REKOR_VERIFY is set.
-	tlogThreshold := 1
-	if env.Get("SKIP_REKOR_VERIFY") == "1" {
-		tlogThreshold = 0
-	}
-
-	verifierOpts := []verify.VerifierOption{
-		verify.WithObserverTimestamps(1),
-	}
-	if tlogThreshold > 0 {
-		verifierOpts = append(verifierOpts, verify.WithTransparencyLog(tlogThreshold))
-	}
-
-	verifier, err := verify.NewSignedEntityVerifier(trustedMaterial, verifierOpts...)
-	if err != nil {
-		return nil, fmt.Errorf("build verifier: %w", err)
-	}
-
-	// Step 4: Artifact digest policy
-	digestBytes, err := hex.DecodeString(artifactDigest)
-	if err != nil {
-		return nil, fmt.Errorf("decode artifact digest: %w", err)
-	}
-
-	policy := verify.NewPolicy(
-		verify.WithArtifactDigest("sha256", digestBytes),
-		verify.WithCertificateIdentity(identity),
-	)
-
-	logger.Debug("provenance: performing sigstore-go verification", map[string]interface{}{
-		"tlogThreshold": tlogThreshold,
-		"expectedRepo":  expectedRepo,
-	})
-	result, err := verifier.Verify(b, policy)
-	if err != nil {
-		logger.Debug("provenance: sigstore-go verification failed", map[string]interface{}{"error": err.Error()})
-		return nil, fmt.Errorf("sigstore verification: %w", err)
-	}
-
-	// Step 6: Post-verification spoofing check
-	// When using global identity, we MUST verify the expected repository is in the OIDC extensions
-	// Otherwise any artifact signed by GitHub Releases from any repo would pass verification!
-	provResult := &ProvenanceResult{
-		Supported:  true,
-		Verified:   true,
-		Repository: expectedRepo,
-	}
-
-	if result.Signature != nil && result.Signature.Certificate != nil {
-		cert := result.Signature.Certificate
-		provResult.WorkflowRef = cert.SubjectAlternativeName
-		provResult.BuilderID = cert.Extensions.BuildSignerURI
-
-		// If it's a global release, ensure it belongs to the expected repo
-		if cert.SubjectAlternativeName == "https://dotcom.releases.github.com" {
-			hasExpectedRepo := false
-			if strings.Contains(cert.Extensions.SourceRepositoryURI, expectedRepo) {
-				hasExpectedRepo = true
-			} else if strings.Contains(cert.Extensions.BuildSignerURI, expectedRepo) {
-				hasExpectedRepo = true
-			}
-			
-			if !hasExpectedRepo {
-				return nil, fmt.Errorf("spoofed global identity: expected repository %s not found in OIDC extensions", expectedRepo)
-			}
-		}
-	}
-
-	if result.Statement != nil {
-		provResult.PredicateType = result.Statement.GetPredicateType()
-	}
-
-	logger.Info("✓ provenance: verified signature and identity")
-	return provResult, nil
-}
-
-// -----------------------------------------------------------------------------
-// Utilities
-// -----------------------------------------------------------------------------
-
-// sha256File computes the hex-encoded SHA-256 digest of the file at path.
-func sha256File(path string) (string, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(h.Sum(nil)), nil
-}
-
-
