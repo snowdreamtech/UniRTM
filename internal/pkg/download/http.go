@@ -67,6 +67,12 @@ func NewHTTPDownloader() *HTTPDownloader {
 		Timeout: 0, // No overall timeout to allow large file downloads on slow networks
 		Transport: &http.Transport{
 			Proxy: func(req *http.Request) (*url.URL, error) {
+				// 智能代理分流：凡是国内常见的镜像站，强制绕过代理直连
+				host := req.URL.Hostname()
+				if strings.Contains(host, "mirror") || strings.HasSuffix(host, ".cn") || strings.Contains(host, "aliyun.com") || strings.Contains(host, "tsinghua.edu.cn") || strings.Contains(host, "ustc.edu.cn") {
+					return nil, nil // Return nil proxy URL means DIRECT connection
+				}
+
 				// Check UNIRTM_ or MISE_ prefixed env vars first via env.Get
 				if req.URL.Scheme == "http" {
 					if v := env.Get("HTTP_PROXY"); v != "" {
