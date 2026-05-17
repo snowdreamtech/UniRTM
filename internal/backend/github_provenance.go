@@ -15,7 +15,6 @@ package backend
 import (
 	"context"
 	"crypto/sha256"
-	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -97,8 +96,7 @@ func VerifyArtifactProvenance(
 		// 2. HTTP/2 downgrade fallback
 		// Fixes "malformed HTTP response" errors caused by transparent proxies corrupting HTTP/2 ALPN frames.
 		if env.Get("HTTP2") == "0" {
-			trans.ForceAttemptHTTP2 = false
-			trans.TLSNextProto = make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)
+			env.DisableHTTP2(trans)
 			logger.Debug("provenance: globally disabled HTTP/2 for verification (manual via env)")
 		}
 	}
@@ -109,8 +107,7 @@ func VerifyArtifactProvenance(
 		// disable HTTP/2 globally on the DefaultTransport and try exactly ONE more time.
 		if trans, ok := http.DefaultTransport.(*http.Transport); ok {
 			logger.Warn("provenance: detected malformed HTTP response, smartly downgrading to HTTP/1.1 and retrying...")
-			trans.ForceAttemptHTTP2 = false
-			trans.TLSNextProto = make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)
+			env.DisableHTTP2(trans)
 			return doVerifyArtifactProvenance(ctx, token, owner, repo, artifactPath)
 		}
 	}

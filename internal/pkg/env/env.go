@@ -2,6 +2,8 @@ package env
 
 import (
 	"crypto/rand"
+	"crypto/tls"
+	"net/http"
 	"os"
 	"strings"
 )
@@ -58,6 +60,26 @@ func ShouldBypassProxy(host string) bool {
 		}
 	}
 	return false
+}
+
+// DisableHTTP2 safely disables HTTP/2 on the given transport.
+// This prevents ALPN framing errors when proxies intercept traffic.
+func DisableHTTP2(trans *http.Transport) {
+	if trans == nil {
+		return
+	}
+	trans.ForceAttemptHTTP2 = false
+	trans.TLSNextProto = make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)
+
+	// Strip "h2" from ALPN negotiation to prevent the CDN/proxy from sending HTTP/2 frames
+	if trans.TLSClientConfig != nil {
+		trans.TLSClientConfig = trans.TLSClientConfig.Clone()
+		trans.TLSClientConfig.NextProtos = []string{"http/1.1"}
+	} else {
+		trans.TLSClientConfig = &tls.Config{
+			NextProtos: []string{"http/1.1"},
+		}
+	}
 }
 
 var (

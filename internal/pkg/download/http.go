@@ -6,7 +6,6 @@ package download
 import (
 	"context"
 	"crypto/sha256"
-	"crypto/tls"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -100,8 +99,9 @@ func NewHTTPDownloader() *HTTPDownloader {
 	// Support disabling HTTP/2 via environment variable for compatibility with some proxies/mirrors (like Aliyun)
 	// that might send malformed HTTP/2 frames or have ALPN issues.
 	if env.Get("HTTP2") == "0" {
-		// Setting TLSNextProto to an empty, non-nil map disables HTTP/2 support in http.Transport
-		h.client.Transport.(*http.Transport).TLSNextProto = make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)
+		if trans, ok := h.client.Transport.(*http.Transport); ok {
+			env.DisableHTTP2(trans)
+		}
 	}
 
 	h.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
@@ -204,19 +204,8 @@ func (h *HTTPDownloader) Download(ctx context.Context, url string, destination s
 		if forceHTTP11 {
 			if transport, ok := h.client.Transport.(*http.Transport); ok {
 				newTransport := transport.Clone()
-				// Physically disable HTTP/2
-				newTransport.ForceAttemptHTTP2 = false
-				newTransport.TLSNextProto = make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)
-				
-				// Strip "h2" from ALPN negotiation to prevent the CDN from sending HTTP/2 frames
-				if newTransport.TLSClientConfig != nil {
-					newTransport.TLSClientConfig = newTransport.TLSClientConfig.Clone()
-					newTransport.TLSClientConfig.NextProtos = []string{"http/1.1"}
-				} else {
-					newTransport.TLSClientConfig = &tls.Config{
-						NextProtos: []string{"http/1.1"},
-					}
-				}
+				// Physically disable HTTP/2 and ALPN
+				env.DisableHTTP2(newTransport)
 				
 				tempTransport = newTransport
 				localDownloader.client = &http.Client{
