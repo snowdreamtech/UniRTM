@@ -48,7 +48,7 @@ func flattenDirectory(dir string) error {
 		if err := os.Remove(subDir); err != nil {
 			return err
 		}
-		
+
 		// Recursive call to handle nested single directories
 		return flattenDirectory(dir)
 	}
@@ -65,7 +65,7 @@ func main() {
 	targetDir := filepath.Join(tmpDir, "8.14.5")
 	os.MkdirAll(filepath.Join(targetDir, "gradle-8.14.5", "bin"), 0755)
 	os.WriteFile(filepath.Join(targetDir, "gradle-8.14.5", "bin", "gradle"), []byte("echo gradle"), 0755)
-	
+
 	// Add __MACOSX to test filtering
 	os.MkdirAll(filepath.Join(targetDir, "__MACOSX"), 0755)
 
