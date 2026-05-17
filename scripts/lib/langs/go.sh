@@ -22,7 +22,7 @@ install_go_lint() {
 
   # Support verbose logging for Tier 2 tools to track large binary downloads (~50MB)
   log_info "Downloading golangci-lint (this may take a few minutes on slow networks)..."
-  MISE_HTTP_TIMEOUT=600s VERBOSE=2 ENABLE_GITHUB_PROXY=1 install_tool_safe "golangci-lint" "golangci-lint" "Go Lint" "--version" 1
+  UNIRTM_HTTP_TIMEOUT=600s VERBOSE=2 ENABLE_GITHUB_PROXY=1 install_tool_safe "golangci-lint" "golangci-lint" "Go Lint" "--version" 1
 }
 
 # Purpose: Installs govulncheck for Go project vulnerability scanning.

@@ -257,6 +257,6 @@ VER_BATS="1.13.0"
 VER_BATS_PROVIDER="npm:bats"
 
 # ── 🛠️ UniRTM Internal / Helpers ────────────────────────────────────────────────
-VER_MISE="2026.4.15"
+VER_UNIRTM="2026.4.15"
 VER_USAGE="3.3.0"
 VER_USAGE_PROVIDER="usage"

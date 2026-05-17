@@ -261,7 +261,7 @@ EOF
   # 6. Toolchain Manager Strategy
   if [ "${DRY_RUN:-0}" -eq 0 ]; then
     export GIT_PROTOCOL=version=2
-    export MISE_GIT_ALWAYS_USE_GIX=0
+    export UNIRTM_GIT_ALWAYS_USE_GIX=0
 
     # Performance Opt: Cache unirtm state once per session
     refresh_unirtm_cache

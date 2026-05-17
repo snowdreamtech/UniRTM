@@ -200,8 +200,8 @@ update_cargo_deps() {
 
 # Purpose: Upgrades UniRTM-managed tool versions in registry and config.
 # Examples:
-#   update_mise_tool_versions
-update_mise_tool_versions() {
+#   update_unirtm_tool_versions
+update_unirtm_tool_versions() {
   if [ -f "${SCRIPT_DIR:-}/update-tools.sh" ]; then
     log_info "Upgrading UniRTM tool versions..."
     # Delegate to update-tools.sh, passing through relevant flags
@@ -255,7 +255,7 @@ main() {
   update_cargo_deps
   update_ruby_gems
   update_pre_commit
-  update_mise_tool_versions "$@"
+  update_unirtm_tool_versions "$@"
 
   # Optional: run npm update if defined
   run_npm_script "update"

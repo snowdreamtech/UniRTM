@@ -194,7 +194,7 @@ resolve_bin:$test_name:$bin_name:$elapsed_ms:$status:$resolved_path"
 # Params:
 #   $1 - Tool name
 #   $2 - Test case name
-measure_mise_which() {
+measure_unirtm_which() {
   local tool_name="${1:-}"
   local test_name="${2:-}"
   local start_time end_time elapsed_ms status resolved_path
@@ -210,14 +210,14 @@ measure_mise_which() {
 
     # Test unirtm which with timeout
     if command -v unirtm >/dev/null 2>&1; then
-      if resolved_path=$(MISE_OFFLINE=1 run_with_timeout "$TIMEOUT_PLATFORM_RESOLVE" unirtm which "$tool_name" 2>/dev/null); then
+      if resolved_path=$(UNIRTM_OFFLINE=1 run_with_timeout "$TIMEOUT_PLATFORM_RESOLVE" unirtm which "$tool_name" 2>/dev/null); then
         status="success"
       else
         status="not_found"
         resolved_path=""
       fi
     else
-      status="mise_not_available"
+      status="unirtm_not_available"
       resolved_path=""
     fi
 
@@ -227,7 +227,7 @@ measure_mise_which() {
 
   # Store result
   TEST_RESULTS="$TEST_RESULTS
-mise_which:$test_name:$tool_name:$elapsed_ms:$status:$resolved_path"
+unirtm_which:$test_name:$tool_name:$elapsed_ms:$status:$resolved_path"
 
   [ "${VERBOSE:-1}" -ge 1 ] && log_info "    Result: $status (${elapsed_ms}ms) -> $resolved_path" >&2
 }
@@ -289,19 +289,19 @@ measure_find_pattern() {
 
     # Test find with pattern in unirtm installation directory
     if command -v unirtm >/dev/null 2>&1; then
-      local mise_installs
-      mise_installs=$(unirtm where 2>/dev/null || echo "")
+      local unirtm_installs
+      unirtm_installs=$(unirtm where 2>/dev/null || echo "")
 
-      if [ -n "$mise_installs" ] && [ -d "$mise_installs" ]; then
-        found_count=$(run_with_timeout 10 find "$mise_installs" -type f -name "$pattern" 2>/dev/null | wc -l | tr -d ' ')
+      if [ -n "$unirtm_installs" ] && [ -d "$unirtm_installs" ]; then
+        found_count=$(run_with_timeout 10 find "$unirtm_installs" -type f -name "$pattern" 2>/dev/null | wc -l | tr -d ' ')
         status="success"
       else
         found_count=0
-        status="mise_dir_not_found"
+        status="unirtm_dir_not_found"
       fi
     else
       found_count=0
-      status="mise_not_available"
+      status="unirtm_not_available"
     fi
 
     end_time=$(get_timestamp_ms)
@@ -323,7 +323,7 @@ run_test_cases() {
   log_info "Test Case 1: Standard Binary (shfmt)" >&2
   measure_verify_binary "shfmt" "standard_binary"
   measure_resolve_bin "shfmt" "standard_binary"
-  measure_mise_which "shfmt" "standard_binary"
+  measure_unirtm_which "shfmt" "standard_binary"
   measure_command_v "shfmt" "standard_binary"
 
   # Test Case 2: Platform-Specific Binary (editorconfig-checker)
@@ -352,7 +352,7 @@ run_test_cases() {
 
   measure_verify_binary "$ec_pattern" "platform_specific"
   measure_resolve_bin "$ec_pattern" "platform_specific"
-  measure_mise_which "editorconfig-checker" "platform_specific"
+  measure_unirtm_which "editorconfig-checker" "platform_specific"
   measure_find_pattern "ec-*" "platform_specific"
 
   # Test Case 3: Windows Binary (hadolint.exe)
@@ -371,10 +371,10 @@ run_test_cases() {
 
   # Test Case 5: UniRTM Shim (shellcheck)
   log_info "Test Case 5: UniRTM Shim (shellcheck)" >&2
-  measure_verify_binary "shellcheck" "mise_shim"
-  measure_resolve_bin "shellcheck" "mise_shim"
-  measure_mise_which "shellcheck" "mise_shim"
-  measure_command_v "shellcheck" "mise_shim"
+  measure_verify_binary "shellcheck" "unirtm_shim"
+  measure_resolve_bin "shellcheck" "unirtm_shim"
+  measure_unirtm_which "shellcheck" "unirtm_shim"
+  measure_command_v "shellcheck" "unirtm_shim"
 }
 
 # Purpose: Calculate statistics from results
@@ -505,7 +505,7 @@ Test Results by Strategy:
 "
 
   # Group results by strategy
-  for strategy in verify_binary_exists resolve_bin mise_which command_v find_pattern; do
+  for strategy in verify_binary_exists resolve_bin unirtm_which command_v find_pattern; do
     local count
     count=$(echo "$TEST_RESULTS" | grep -c "^$strategy:" || echo "0")
 

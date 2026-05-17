@@ -31,7 +31,8 @@ cleanup_rc_file() {
 
   # Count unirtm activation lines
   local _count
-  _count=$(grep -cE '(unirtm|\.local/bin/unirtm) activate' "${_file:-}" 2>/dev/null || echo "0")
+  _count=$(grep -cE '(unirtm|\.local/bin/unirtm) activate' "${_file:-}" 2>/dev/null || true)
+  _count=${_count:-0}
 
   if [ "${_count:-0}" -eq 0 ]; then
     echo "  ✅ No unirtm activation lines found"
@@ -58,17 +59,17 @@ cleanup_rc_file() {
 
   # Add back a single unirtm activation line at the end
   # Try to detect unirtm binary location, fallback to standard location
-  local _mise_bin
+  local _unirtm_bin
   if command -v unirtm >/dev/null 2>&1; then
-    _mise_bin=$(command -v unirtm)
+    _unirtm_bin=$(command -v unirtm)
   else
     # Fallback: try common locations
     if [ -f "$HOME/.local/bin/unirtm" ]; then
-      _mise_bin="$HOME/.local/bin/unirtm"
+      _unirtm_bin="$HOME/.local/bin/unirtm"
     elif [ -f "$HOME/Library/Application Support/unirtm/bin/unirtm" ]; then
-      _mise_bin="$HOME/Library/Application Support/unirtm/bin/unirtm"
+      _unirtm_bin="$HOME/Library/Application Support/unirtm/bin/unirtm"
     else
-      _mise_bin="unirtm" # Hope it's in PATH
+      _unirtm_bin="unirtm" # Hope it's in PATH
     fi
   fi
 
@@ -78,16 +79,16 @@ cleanup_rc_file() {
     echo "# unirtm activation (added by snowdreamtech/ai-ide-template setup)"
     case "${_shell:-}" in
     bash)
-      echo "eval \"\$(${_mise_bin} activate bash)\""
+      echo "eval \"\$(${_unirtm_bin} activate bash)\""
       ;;
     zsh)
-      echo "eval \"\$(${_mise_bin} activate zsh)\""
+      echo "eval \"\$(${_unirtm_bin} activate zsh)\""
       ;;
     fish)
-      echo "${_mise_bin} activate fish | source"
+      echo "${_unirtm_bin} activate fish | source"
       ;;
     *)
-      echo "eval \"\$(${_mise_bin} activate ${_shell:-})\""
+      echo "eval \"\$(${_unirtm_bin} activate ${_shell:-})\""
       ;;
     esac
   } >"${_file:-}"

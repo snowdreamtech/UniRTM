@@ -65,7 +65,7 @@ _get_latest_version() {
 # Purpose: Main execution logic for upgrading versions.sh and .unirtm.toml.
 run_upgrade() {
   local _VERSIONS_FILE="scripts/lib/versions.sh"
-  local _MISE_FILE=".unirtm.toml"
+  local _UNIRTM_FILE=".unirtm.toml"
   local _UPDATED_COUNT=0
   local _CHECK_COUNT=0
   local _SUMMARY_DATA=""
@@ -120,13 +120,13 @@ run_upgrade() {
   fi
 
   # --- Phase 2: Update .unirtm.toml (Tier 1 & Static Global Tools) ---
-  if [ -f "${_MISE_FILE:-}" ]; then
-    log_debug "Scanning ${_MISE_FILE:-}..."
+  if [ -f "${_UNIRTM_FILE:-}" ]; then
+    log_debug "Scanning ${_UNIRTM_FILE:-}..."
     # We look for lines in the [tools] section: tool = "version"
     # Note: We only process lines that look like Assignments until we hit the next section
     _IN_TOOLS=0
-    _TMP_MISE_SCAN=".unirtm.toml.scan.tmp"
-    cp "${_MISE_FILE:-}" "${_TMP_MISE_SCAN:-}"
+    _TMP_UNIRTM_SCAN=".unirtm.toml.scan.tmp"
+    cp "${_UNIRTM_FILE:-}" "${_TMP_UNIRTM_SCAN:-}"
 
     # Process line by line from the scan file to avoid SC2094
     while IFS= read -r line; do
@@ -147,7 +147,7 @@ run_upgrade() {
         if is_ci_env; then
           case "${_TOOL_IDENT:-}" in
           *osv-scanner* | *zizmor* | *pip-audit* | *govulncheck* | *cargo-audit*)
-            log_warn "⏭️  CI Filter: Bypassing upgrade for Tier 3 tool [${_TOOL_IDENT:-}] in ${_MISE_FILE:-}"
+            log_warn "⏭️  CI Filter: Bypassing upgrade for Tier 3 tool [${_TOOL_IDENT:-}] in ${_UNIRTM_FILE:-}"
             continue
             ;;
           esac
@@ -155,24 +155,24 @@ run_upgrade() {
 
         _LATEST_VER=$(_get_latest_version "${_PROV_VAL:-}")
         if [ -n "${_LATEST_VER:-}" ] && [ "${_CUR_VER:-}" != "${_LATEST_VER:-}" ]; then
-          log_success "✨ Upgrade [${_MISE_FILE:-}]: ${_TOOL_IDENT:-} ${_CUR_VER:-} -> ${_LATEST_VER:-}"
+          log_success "✨ Upgrade [${_UNIRTM_FILE:-}]: ${_TOOL_IDENT:-} ${_CUR_VER:-} -> ${_LATEST_VER:-}"
           _SUMMARY_DATA="${_SUMMARY_DATA:-}| \`${_TOOL_IDENT:-}\` | \`${_CUR_VER:-}\` | \`${_LATEST_VER:-}\` | \`.unirtm.toml\` |\n"
           if [ "${DRY_RUN:-0}" -eq 0 ]; then
             if [ "$(uname -s)" = "Darwin" ]; then
-              sed -i '' "s#${_TOOL_IDENT:-} = \"${_CUR_VER:-}\"#${_TOOL_IDENT:-} = \"${_LATEST_VER:-}\"#" "${_MISE_FILE:-}"
+              sed -i '' "s#${_TOOL_IDENT:-} = \"${_CUR_VER:-}\"#${_TOOL_IDENT:-} = \"${_LATEST_VER:-}\"#" "${_UNIRTM_FILE:-}"
               # Also handle quoted variant if any
-              sed -i '' "s#\"${_TOOL_IDENT:-}\" = \"${_CUR_VER:-}\"#\"${_TOOL_IDENT:-}\" = \"${_LATEST_VER:-}\"#" "${_MISE_FILE:-}"
+              sed -i '' "s#\"${_TOOL_IDENT:-}\" = \"${_CUR_VER:-}\"#\"${_TOOL_IDENT:-}\" = \"${_LATEST_VER:-}\"#" "${_UNIRTM_FILE:-}"
             else
-              sed -i "s#${_TOOL_IDENT:-} = \"${_CUR_VER:-}\"#${_TOOL_IDENT:-} = \"${_LATEST_VER:-}\"#" "${_MISE_FILE:-}"
-              sed -i "s#\"${_TOOL_IDENT:-}\" = \"${_CUR_VER:-}\"#\"${_TOOL_IDENT:-}\" = \"${_LATEST_VER:-}\"#" "${_MISE_FILE:-}"
+              sed -i "s#${_TOOL_IDENT:-} = \"${_CUR_VER:-}\"#${_TOOL_IDENT:-} = \"${_LATEST_VER:-}\"#" "${_UNIRTM_FILE:-}"
+              sed -i "s#\"${_TOOL_IDENT:-}\" = \"${_CUR_VER:-}\"#\"${_TOOL_IDENT:-}\" = \"${_LATEST_VER:-}\"#" "${_UNIRTM_FILE:-}"
             fi
           fi
           _UPDATED_COUNT=$((_UPDATED_COUNT + 1))
         fi
         _CHECK_COUNT=$((_CHECK_COUNT + 1))
       fi
-    done <"${_TMP_MISE_SCAN:-}"
-    rm -f "${_TMP_MISE_SCAN:-}"
+    done <"${_TMP_UNIRTM_SCAN:-}"
+    rm -f "${_TMP_UNIRTM_SCAN:-}"
   fi
 
   # --- Write Summary to GitHub Actions ---

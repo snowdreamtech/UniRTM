@@ -20,21 +20,20 @@ install_runtime_node() {
   if [ -f /etc/alpine-release ] || [ "${ALPINE_VERSION:-}" != "" ]; then
     log_info "Alpine/musl environment detected. Configuring unirtm for musl binaries..."
 
-    # Export ALPINE_VERSION for unirtm.toml template evaluation
-    # This ensures MISE_NODE_MIRROR_URL points to unofficial-builds
+    # This ensures UNIRTM_NODE_MIRROR_URL points to unofficial-builds
     if [ -z "${ALPINE_VERSION:-}" ]; then
       export ALPINE_VERSION="detected"
     fi
 
     # Explicitly set unirtm environment variables for Node.js
     # These override the .unirtm.toml template values
-    export MISE_NODE_MIRROR_URL="https://unofficial-builds.nodejs.org/download/release/"
-    export MISE_NODE_FLAVOR="musl"
-    export MISE_NODE_COMPILE="false"
+    export UNIRTM_NODE_MIRROR_URL="https://unofficial-builds.nodejs.org/download/release/"
+    export UNIRTM_NODE_FLAVOR="musl"
+    export UNIRTM_NODE_COMPILE="false"
 
-    log_debug "MISE_NODE_MIRROR_URL: ${MISE_NODE_MIRROR_URL:-}"
-    log_debug "MISE_NODE_FLAVOR: ${MISE_NODE_FLAVOR:-}"
-    log_debug "MISE_NODE_COMPILE: ${MISE_NODE_COMPILE:-}"
+    log_debug "UNIRTM_NODE_MIRROR_URL: ${UNIRTM_NODE_MIRROR_URL:-}"
+    log_debug "UNIRTM_NODE_FLAVOR: ${UNIRTM_NODE_FLAVOR:-}"
+    log_debug "UNIRTM_NODE_COMPILE: ${UNIRTM_NODE_COMPILE:-}"
 
     # Check if bash is installed (required by npm)
     if ! command -v bash >/dev/null 2>&1; then

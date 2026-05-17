@@ -54,7 +54,7 @@ main() {
 
   # 1. Resolve Binary Path
   local _LINTER_BIN="${_LINTER_WRAP:-}"
-  local _MISE_TOOL_SPEC=""
+  local _UNIRTM_TOOL_SPEC=""
   case "${_LINTER_WRAP:-}" in
   psscriptanalyzer) _LINTER_BIN="pwsh" ;;
   osv_scanner) _LINTER_BIN="osv-scanner" ;;
@@ -68,19 +68,19 @@ main() {
   # of github:checkmake/checkmake). This prevents supply chain attacks via
   # implicit registry redirections.
   checkmake)
-    _MISE_TOOL_SPEC="github:checkmake/checkmake"
+    _UNIRTM_TOOL_SPEC="github:checkmake/checkmake"
     _LINTER_BIN="checkmake"
     ;;
   shfmt)
-    _MISE_TOOL_SPEC="github:mvdan/sh"
+    _UNIRTM_TOOL_SPEC="github:mvdan/sh"
     _LINTER_BIN="shfmt"
     ;;
   taplo)
-    _MISE_TOOL_SPEC="npm:@taplo/cli"
+    _UNIRTM_TOOL_SPEC="npm:@taplo/cli"
     _LINTER_BIN="taplo"
     ;;
   editorconfig-checker)
-    _MISE_TOOL_SPEC="github:editorconfig-checker/editorconfig-checker"
+    _UNIRTM_TOOL_SPEC="github:editorconfig-checker/editorconfig-checker"
     # Binary name is 'ec' with platform-specific suffixes
     # The unirtm tool spec uses bin = "ec-*" to match all variants
     _LINTER_BIN="ec"
@@ -123,11 +123,11 @@ main() {
       fi
 
       log_info "=== CI Tool Resolution Fallback for ${_LINTER_WRAP:-} ==="
-      log_info "Tool spec: ${_MISE_TOOL_SPEC:-${_LINTER_BIN:-}}"
+      log_info "Tool spec: ${_UNIRTM_TOOL_SPEC:-${_LINTER_BIN:-}}"
       log_info "Binary name: ${_LINTER_BIN:-}"
 
       # Use tool spec if available, otherwise use binary name
-      local _EXEC_TARGET="${_MISE_TOOL_SPEC:-${_LINTER_BIN:-}}"
+      local _EXEC_TARGET="${_UNIRTM_TOOL_SPEC:-${_LINTER_BIN:-}}"
 
       # Step 1: Try to execute the tool first
       log_debug "Step 1: Attempting unirtm exec..."

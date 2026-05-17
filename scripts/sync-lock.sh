@@ -42,21 +42,21 @@ run_sync_lock() {
   # Disable paranoid mode as GitHub attestations are not universally adopted yet.
   # Many legitimate projects don't provide attestations, making this check too strict.
   # We rely on unirtm's built-in checksum verification for security instead.
-  export MISE_PARANOID=0
-  export MISE_LOCKFILE_PARANOID=0
-  export MISE_YES=1
+  export UNIRTM_PARANOID=0
+  export UNIRTM_LOCKFILE_PARANOID=0
+  export UNIRTM_YES=1
 
   # Disable all attestation/provenance verification checks
   # This prevents errors when new tool versions lack attestations that previous versions had
   # See: docs/troubleshooting/unirtm-attestation-error.md
-  export MISE_SKIP_CHECKSUM=1
-  export MISE_AQUA_GITHUB_ATTESTATIONS=0
-  export MISE_AQUA_SLSA=0
-  export MISE_AQUA_COSIGN=0
-  export MISE_AQUA_MINISIGN=0
+  export UNIRTM_SKIP_CHECKSUM=1
+  export UNIRTM_AQUA_GITHUB_ATTESTATIONS=0
+  export UNIRTM_AQUA_SLSA=0
+  export UNIRTM_AQUA_COSIGN=0
+  export UNIRTM_AQUA_MINISIGN=0
 
   # shellcheck disable=SC2086
-  MISE_CONFIG="${_TMP_MANIFEST:-}" unirtm lock --platform linux-x64,linux-arm64,linux-x64-musl,linux-arm64-musl,macos-x64,macos-arm64,windows-x64 ${_TOOLS:-} "$@"
+  UNIRTM_CONFIG="${_TMP_MANIFEST:-}" unirtm lock --platform linux-x64,linux-arm64,linux-x64-musl,linux-arm64-musl,macos-x64,macos-arm64,windows-x64 ${_TOOLS:-} "$@"
 
   # 4. Remove provenance fields from unirtm.lock to prevent attestation comparison errors
   # When a new version lacks attestations that the previous version had, unirtm will error out.

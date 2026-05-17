@@ -92,9 +92,9 @@ check_tool_version() {
 
   # 2. Path A: Tool is FOUND (Active)
   if [ -n "${_LV_RESOLVED:-}" ]; then
-    local _LV_MISE_KEY="${7:-${_LV_CMD:-}}"
+    local _LV_UNIRTM_KEY="${7:-${_LV_CMD:-}}"
     local _LV_CURRENT_VER
-    _LV_CURRENT_VER=$(get_version "${_LV_CMD:-}" "" "${_LV_MISE_KEY:-}" | tr -d '\r')
+    _LV_CURRENT_VER=$(get_version "${_LV_CMD:-}" "" "${_LV_UNIRTM_KEY:-}" | tr -d '\r')
     [ "${_LV_CURRENT_VER:-}" = "-" ] && _LV_CURRENT_VER="0.0"
 
     # Strip leading 'v' or 'V' from version for consistent comparison

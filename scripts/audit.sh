@@ -60,8 +60,7 @@ main() {
   # Generate a temporary full manifest so unirtm can resolve all locked versions.
   ./scripts/gen-full-manifest.sh >.unirtm.audit.toml
   UNIRTM_CONFIG="$(pwd)/.unirtm.audit.toml"
-  MISE_CONFIG="$(pwd)/.unirtm.audit.toml"
-  export UNIRTM_CONFIG MISE_CONFIG
+  export UNIRTM_CONFIG
   trap "rm -f .unirtm.audit.toml" EXIT INT TERM
   guard_project_root
 

@@ -77,13 +77,13 @@ _unirtm_detect_os() {
 # Tier 1: Official install script (unirtm.jdx.dev) - Supports version specification.
 _unirtm_install_tier1() {
   log_info "Tier 1: Trying official install script..."
-  if [ -n "${MISE_VERSION:-}" ]; then
-    log_info "Installing unirtm version: ${MISE_VERSION:-}"
+  if [ -n "${UNIRTM_VERSION:-}" ]; then
+    log_info "Installing unirtm version: ${UNIRTM_VERSION:-}"
   else
     log_info "Installing latest unirtm version"
   fi
 
-  _TMP_SH="${TMPDIR:-/tmp}/mise_install_$.sh"
+  _TMP_SH="${TMPDIR:-/tmp}/unirtm_install_$.sh"
   if curl --retry 5 --retry-delay 2 --retry-connrefused -sS -L "https://unirtm.jdx.dev/install.sh" -o"${_TMP_SH:-}"; then
     if sh "${_TMP_SH:-}"; then
       rm -f "${_TMP_SH:-}"
@@ -186,7 +186,7 @@ _unirtm_install_tier4() {
       return 1
     fi
     local _TMP_DIR
-    _TMP_DIR=$(mktemp -d 2>/dev/null || echo "/tmp/mise_win_extract_$")
+    _TMP_DIR=$(mktemp -d 2>/dev/null || echo "/tmp/unirtm_win_extract_$")
     local _TMP_ZIP="${_TMP_DIR:-}/unirtm.zip"
 
     if _download "${_M_URL:-}" "${_TMP_ZIP:-}"; then
@@ -230,7 +230,7 @@ _unirtm_setup_completions() {
   zsh)
     local _DIR="${ZDOTDIR:-${HOME:-}}/.zsh/completions"
     mkdir -p "${_DIR:-}"
-    unirtm completion zsh >"${_DIR:-}/_mise" 2>/dev/null || true
+    unirtm completion zsh >"${_DIR:-}/_unirtm" 2>/dev/null || true
     ;;
   bash)
     local _DIR="$HOME/.local/share/bash-completion/completions"
@@ -336,20 +336,20 @@ _unirtm_activate_pwsh() {
   fi
 }
 
-_mise_activate_nu() {
+_unirtm_activate_nu() {
   # Nushell requires env.nu and config.nu updates.
   local _NU_DIR="$HOME/.config/nushell"
   [ -d "${_NU_DIR:-}" ] || return 0
   local _ENV="${_NU_DIR:-}/env.nu"
   local _CONF="${_NU_DIR:-}/config.nu"
-  local _MISE_NU="${_NU_DIR:-}/unirtm.nu"
+  local _UNIRTM_NU="${_NU_DIR:-}/unirtm.nu"
 
-  if [ ! -f "${_MISE_NU:-}" ]; then
-    unirtm activate nu >"${_MISE_NU:-}" 2>/dev/null || true
+  if [ ! -f "${_UNIRTM_NU:-}" ]; then
+    unirtm activate nu >"${_UNIRTM_NU:-}" 2>/dev/null || true
   fi
 
   # shellcheck disable=SC2016
-  grep -q "unirtm.nu" "${_ENV:-}" 2>/dev/null || printf "let mise_path = \$nu.default-config-dir | path join unirtm.nu\n^unirtm activate nu | save \$mise_path --force\n" >>"${_ENV:-}"
+  grep -q "unirtm.nu" "${_ENV:-}" 2>/dev/null || printf "let unirtm_path = \$nu.default-config-dir | path join unirtm.nu\n^unirtm activate nu | save \$unirtm_path --force\n" >>"${_ENV:-}"
   # shellcheck disable=SC2016
   grep -q "unirtm.nu" "${_CONF:-}" 2>/dev/null || printf "use (\$nu.default-config-dir | path join unirtm.nu)\n" >>"${_CONF:-}"
 }
@@ -399,7 +399,7 @@ _unirtm_apply_activation() {
   bash) _unirtm_activate_bash ;;
   fish) _unirtm_activate_fish ;;
   pwsh | powershell) _unirtm_activate_pwsh ;;
-  nu | nushell) _mise_activate_nu ;;
+  nu | nushell) _unirtm_activate_nu ;;
   xonsh) _unirtm_activate_xonsh ;;
   elvish) _unirtm_activate_elvish ;;
   *) _unirtm_activate_bash ;;
@@ -460,7 +460,7 @@ bootstrap_unirtm() {
   elif _unirtm_install_tier2; then
     log_success "unirtm installed via Tier 2 (Package Manager)."
   # Priority 3: Manual Binary (Fast & cross-platform)
-  elif _unirtm_install_tier4 "${_M_OS:-}" "${_M_ARCH:-}" "${MISE_VERSION#[vV]}"; then
+  elif _unirtm_install_tier4 "${_M_OS:-}" "${_M_ARCH:-}" "${UNIRTM_VERSION#[vV]}"; then
     log_success "unirtm installed via Tier 3 (Manual Binary)."
   # Priority 4: Language Tools (Slowest fallback)
   elif _unirtm_install_tier3; then

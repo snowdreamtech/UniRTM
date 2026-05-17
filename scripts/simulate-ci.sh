@@ -43,9 +43,9 @@ enable_ci_mode() {
   GITHUB_SHA="$(git rev-parse HEAD 2>/dev/null || echo 'local-sha')"
 
   # CI behavior flags
-  MISE_YES=true
-  MISE_NON_INTERACTIVE=true
-  MISE_QUIET=true
+  UNIRTM_YES=true
+  UNIRTM_NON_INTERACTIVE=true
+  UNIRTM_QUIET=true
 
   # Force cache refresh in CI
   _G_IS_CI=1
@@ -57,7 +57,7 @@ enable_ci_mode() {
   # Export all variables (POSIX compatible)
   export CI GITHUB_ACTIONS GITHUB_WORKFLOW GITHUB_RUN_ID GITHUB_RUN_NUMBER
   export GITHUB_ACTOR GITHUB_REPOSITORY GITHUB_REF GITHUB_SHA
-  export MISE_YES MISE_NON_INTERACTIVE MISE_QUIET
+  export UNIRTM_YES UNIRTM_NON_INTERACTIVE UNIRTM_QUIET
   export _G_IS_CI GITHUB_STEP_SUMMARY
 
   printf '%s✅ CI mode enabled%s\n' "${GREEN}" "${NC}"
