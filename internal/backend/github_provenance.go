@@ -33,6 +33,7 @@ import (
 	"github.com/sigstore/sigstore-go/pkg/tuf"
 	"github.com/sigstore/sigstore-go/pkg/verify"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 	"github.com/theupdateframework/go-tuf/v2/metadata"
 	"github.com/theupdateframework/go-tuf/v2/metadata/fetcher"
@@ -96,7 +97,7 @@ func VerifyArtifactProvenance(
 		// 2. HTTP/2 downgrade fallback
 		// Fixes "malformed HTTP response" errors caused by transparent proxies corrupting HTTP/2 ALPN frames.
 		if env.Get("HTTP2") == "0" {
-			env.DisableHTTP2(trans)
+			pkgHttp.DisableHTTP2(trans)
 			logger.Debug("provenance: globally disabled HTTP/2 for verification (manual via env)")
 		}
 	}
@@ -107,7 +108,7 @@ func VerifyArtifactProvenance(
 		// disable HTTP/2 globally on the DefaultTransport and try exactly ONE more time.
 		if trans, ok := http.DefaultTransport.(*http.Transport); ok {
 			logger.Warn("provenance: detected malformed HTTP response, smartly downgrading to HTTP/1.1 and retrying...")
-			env.DisableHTTP2(trans)
+			pkgHttp.DisableHTTP2(trans)
 			return doVerifyArtifactProvenance(ctx, token, owner, repo, artifactPath)
 		}
 	}

@@ -21,6 +21,7 @@ import (
 
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/errors"
 )
 
@@ -67,7 +68,7 @@ func NewHTTPDownloader() *HTTPDownloader {
 		Transport: &http.Transport{
 			Proxy: func(req *http.Request) (*url.URL, error) {
 				// Smart proxy bypass: For common domestic mirror sites, forcefully bypass the proxy to establish a direct connection.
-				if env.ShouldBypassProxy(req.URL.Hostname()) {
+				if pkgHttp.ShouldBypassProxy(req.URL.Hostname()) {
 					return nil, nil // Return nil proxy URL means DIRECT connection
 				}
 
@@ -100,7 +101,7 @@ func NewHTTPDownloader() *HTTPDownloader {
 	// that might send malformed HTTP/2 frames or have ALPN issues.
 	if env.Get("HTTP2") == "0" {
 		if trans, ok := h.client.Transport.(*http.Transport); ok {
-			env.DisableHTTP2(trans)
+			pkgHttp.DisableHTTP2(trans)
 		}
 	}
 
@@ -205,7 +206,7 @@ func (h *HTTPDownloader) Download(ctx context.Context, url string, destination s
 			if transport, ok := h.client.Transport.(*http.Transport); ok {
 				newTransport := transport.Clone()
 				// Physically disable HTTP/2 and ALPN
-				env.DisableHTTP2(newTransport)
+				pkgHttp.DisableHTTP2(newTransport)
 				
 				tempTransport = newTransport
 				localDownloader.client = &http.Client{

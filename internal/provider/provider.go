@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	pkgEnv "github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // Provider defines the interface for tool-specific installation and management logic.
@@ -104,7 +104,7 @@ func GetNoProxyEnv(extraDomains ...string) []string {
 	env := os.Environ()
 	
 	// Collect all domains to skip proxy for
-	domains := append([]string{}, pkgEnv.ProxyBypassDomains...)
+	domains := append([]string{}, pkgHttp.ProxyBypassDomains...)
 	
 	// Add global configuration domains
 	domains = append(domains, GlobalNoProxy...)
