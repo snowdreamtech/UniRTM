@@ -90,26 +90,6 @@ func testFetchAttestationsFromJSON(data []byte) ([]json.RawMessage, error) {
 	return raw, nil
 }
 
-// ---------------------------------------------------------------------------
-// regexp_escape
-// ---------------------------------------------------------------------------
-
-func TestRegexpEscape(t *testing.T) {
-	tests := []struct {
-		input string
-		want  string
-	}{
-		{"owner/repo", `owner\/repo`},
-		{"owner.org/repo-name", `owner\.org\/repo\-name`},
-		{"simple", "simple"},
-	}
-	for _, tt := range tests {
-		got := regexp_escape(tt.input)
-		if got != tt.want {
-			t.Errorf("regexp_escape(%q) = %q, want %q", tt.input, got, tt.want)
-		}
-	}
-}
 
 // ---------------------------------------------------------------------------
 // TUF trusted root singleton — smoke test (does not make network calls

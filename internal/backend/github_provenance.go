@@ -102,20 +102,31 @@ func VerifyArtifactProvenance(
 		}
 	}
 
-	result, err := doVerifyArtifactProvenance(ctx, token, owner, repo, artifactPath)
+	verifier := &provenanceVerifier{
+		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
+	}
+
+	result, err := verifier.verify(ctx, token, owner, repo, artifactPath)
 	if err != nil && strings.Contains(err.Error(), "malformed HTTP response") {
 		// Smart downgrade: If we hit a malformed HTTP response (typically an HTTP/2 proxy framing error),
 		// disable HTTP/2 globally on the DefaultTransport and try exactly ONE more time.
 		if trans, ok := http.DefaultTransport.(*http.Transport); ok {
 			logger.Warn("provenance: detected malformed HTTP response, smartly downgrading to HTTP/1.1 and retrying...")
 			pkgHttp.DisableHTTP2(trans)
-			return doVerifyArtifactProvenance(ctx, token, owner, repo, artifactPath)
+			verifier = &provenanceVerifier{
+				client: pkgHttp.NewClientWithTimeout(30 * time.Second),
+			}
+			return verifier.verify(ctx, token, owner, repo, artifactPath)
 		}
 	}
 	return result, err
 }
 
-func doVerifyArtifactProvenance(
+type provenanceVerifier struct {
+	client *http.Client
+}
+
+func (v *provenanceVerifier) verify(
 	ctx context.Context,
 	token, owner, repo, artifactPath string,
 ) (*ProvenanceResult, error) {
@@ -127,7 +138,7 @@ func doVerifyArtifactProvenance(
 
 	// 2. Fetch attestation bundles from the GitHub API.
 	logger.Debug("provenance: fetching attestations from GitHub", map[string]interface{}{"owner": owner, "repo": repo, "digest": digest})
-	bundles, err := fetchAttestations(ctx, token, owner, repo, digest)
+	bundles, err := v.fetchAttestations(ctx, token, owner, repo, digest)
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +312,7 @@ type attestationEntry struct {
 
 // fetchAttestations queries GET /repos/{owner}/{repo}/attestations/sha256:{digest}.
 // Returns nil slice (not an error) when the project publishes no attestations (HTTP 404).
-func fetchAttestations(
+func (v *provenanceVerifier) fetchAttestations(
 	ctx context.Context,
 	token, owner, repo, digest string,
 ) ([]json.RawMessage, error) {
@@ -327,8 +338,7 @@ func fetchAttestations(
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
-	client := pkgHttp.NewClientWithTimeout(30 * time.Second)
-	resp, err := client.Do(req)
+	resp, err := v.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("provenance: fetch attestations: %w", err)
 	}
@@ -358,7 +368,7 @@ func fetchAttestations(
 		// Fallback to bundle_url if inline bundle is missing/null
 		if a.BundleURL != "" {
 			fmt.Printf("ℹ provenance: fetching external bundle %d/%d from URL...\n", i+1, len(apiResp.Attestations))
-			bundleData, err := fetchExternalBundle(ctx, a.BundleURL)
+			bundleData, err := v.fetchExternalBundle(ctx, a.BundleURL)
 			if err != nil {
 				logger.Warn("provenance: failed to fetch external bundle", map[string]interface{}{
 					"url":   a.BundleURL,
@@ -373,7 +383,7 @@ func fetchAttestations(
 }
 
 // fetchExternalBundle downloads a Sigstore bundle from an external URL.
-func fetchExternalBundle(ctx context.Context, urlStr string) (json.RawMessage, error) {
+func (v *provenanceVerifier) fetchExternalBundle(ctx context.Context, urlStr string) (json.RawMessage, error) {
 	finalURL := urlStr
 	githubProxy := env.Get("GITHUB_PROXY")
 	if githubProxy != "" && env.Get("ENABLE_GITHUB_PROXY") == "1" {
@@ -388,8 +398,7 @@ func fetchExternalBundle(ctx context.Context, urlStr string) (json.RawMessage, e
 	}
 	req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
 
-	client := pkgHttp.NewClientWithTimeout(30 * time.Second)
-	resp, err := client.Do(req)
+	resp, err := v.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
