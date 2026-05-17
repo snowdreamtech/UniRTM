@@ -428,6 +428,9 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 						lastUpdateTime = now
 					}
 					if total > 0 && downloaded >= total {
+						// 留出 150ms 让 pterm 异步渲染协程把最新一帧 (例如 68MB/68MB) 刷新到终端屏幕上
+						// 防止还没画完就被 Stop 强杀，留下 67MB/68MB 100% 的误导性画面
+						time.Sleep(150 * time.Millisecond)
 						progressbar.Stop()
 					}
 				} else if spinner != nil {
