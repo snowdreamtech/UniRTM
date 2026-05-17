@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"strings"
 	"time"
 )
@@ -20,9 +21,7 @@ type HTTPBackend struct {
 // NewHTTPBackend creates a new HTTP backend.
 func NewHTTPBackend() *HTTPBackend {
 	return &HTTPBackend{
-		client: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
 	}
 }
 

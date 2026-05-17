@@ -258,7 +258,7 @@ func sigstoreTrustedRoot() (*root.LiveTrustedRoot, error) {
 
 		// Use our custom fetcher to ensure User-Agent and proxy support
 		opts.Fetcher = &tufFetcher{
-			client: &http.Client{Timeout: 60 * time.Second},
+			client: pkgHttp.NewClientWithTimeout(60 * time.Second),
 		}
 
 		// Allow users to override the TUF cache directory.
@@ -327,7 +327,7 @@ func fetchAttestations(
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := pkgHttp.NewClientWithTimeout(30 * time.Second)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("provenance: fetch attestations: %w", err)
@@ -388,7 +388,7 @@ func fetchExternalBundle(ctx context.Context, urlStr string) (json.RawMessage, e
 	}
 	req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := pkgHttp.NewClientWithTimeout(30 * time.Second)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

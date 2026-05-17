@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"net/http"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"time"
 )
 
@@ -12,9 +13,7 @@ type LuarocksBackend struct {
 
 func NewLuarocksBackend() *LuarocksBackend {
 	return &LuarocksBackend{
-		client: &http.Client{
-			Timeout: 15 * time.Second,
-		},
+		client: pkgHttp.NewClientWithTimeout(15 * time.Second),
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"strings"
 	"time"
@@ -26,9 +27,7 @@ func NewForgejoBackend() *ForgejoBackend {
 		baseURL = "https://codeberg.org/api/v1"
 	}
 	return &ForgejoBackend{
-		client: &http.Client{
-			Timeout: 15 * time.Second,
-		},
+		client: pkgHttp.NewClientWithTimeout(15 * time.Second),
 		baseURL: baseURL,
 	}
 }

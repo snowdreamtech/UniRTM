@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"strings"
 	"time"
 )
@@ -20,9 +21,7 @@ type DotnetBackend struct {
 // NewDotnetBackend creates a new dotnet backend.
 func NewDotnetBackend() *DotnetBackend {
 	return &DotnetBackend{
-		client: &http.Client{
-			Timeout: 10 * time.Second,
-		},
+		client: pkgHttp.NewClientWithTimeout(10 * time.Second),
 	}
 }
 

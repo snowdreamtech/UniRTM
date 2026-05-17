@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"strings"
 	"time"
@@ -27,9 +28,7 @@ func NewGitlabBackend() *GitlabBackend {
 		baseURL = "https://gitlab.com/api/v4"
 	}
 	return &GitlabBackend{
-		client: &http.Client{
-			Timeout: 15 * time.Second,
-		},
+		client: pkgHttp.NewClientWithTimeout(15 * time.Second),
 		baseURL: baseURL,
 	}
 }

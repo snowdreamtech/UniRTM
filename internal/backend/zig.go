@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"time"
 )
 
@@ -13,9 +14,7 @@ type ZigBackend struct {
 
 func NewZigBackend() *ZigBackend {
 	return &ZigBackend{
-		client: &http.Client{
-			Timeout: 10 * time.Second,
-		},
+		client: pkgHttp.NewClientWithTimeout(10 * time.Second),
 	}
 }
 

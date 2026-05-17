@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"sort"
 	"strings"
 	"time"
@@ -16,9 +17,7 @@ type GoBackend struct {
 
 func NewGoBackend() *GoBackend {
 	return &GoBackend{
-		client: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
 	}
 }
 

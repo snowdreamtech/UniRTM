@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"runtime"
 	"strings"
 	"time"
@@ -40,7 +41,7 @@ func (h *FlutterHandler) ResolveVersions(ctx context.Context, baseURL string) ([
 	
 	apiURL := fmt.Sprintf("https://storage.googleapis.com/flutter_infra_release/releases/releases_%s.json", platform)
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := pkgHttp.NewClientWithTimeout(10 * time.Second)
 	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 	if err != nil {
 		return nil, err

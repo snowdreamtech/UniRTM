@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"sort"
 	"strings"
 	"time"
@@ -24,9 +25,7 @@ type AquaBackend struct {
 // NewAquaBackend creates a new Aqua backend.
 func NewAquaBackend() *AquaBackend {
 	return &AquaBackend{
-		client: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
 		registryURL: "https://raw.githubusercontent.com/aquaproj/aqua-registry/main/pkgs",
 	}
 }

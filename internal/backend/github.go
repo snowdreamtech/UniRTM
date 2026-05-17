@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"sort"
 	"strings"
 	"time"
@@ -21,9 +22,7 @@ type GitHubBackend struct {
 // NewGitHubBackend creates a new GitHub backend.
 func NewGitHubBackend() *GitHubBackend {
 	return &GitHubBackend{
-		client: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
 	}
 }
 

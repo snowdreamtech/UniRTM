@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"sort"
 	"time"
 )
@@ -20,9 +21,7 @@ type CondaBackend struct {
 // NewCondaBackend creates a new conda backend.
 func NewCondaBackend() *CondaBackend {
 	return &CondaBackend{
-		client: &http.Client{
-			Timeout: 15 * time.Second,
-		},
+		client: pkgHttp.NewClientWithTimeout(15 * time.Second),
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"strings"
 	"time"
 )
@@ -15,9 +16,7 @@ type MavenBackend struct {
 
 func NewMavenBackend() *MavenBackend {
 	return &MavenBackend{
-		client: &http.Client{
-			Timeout: 10 * time.Second,
-		},
+		client: pkgHttp.NewClientWithTimeout(10 * time.Second),
 	}
 }
 

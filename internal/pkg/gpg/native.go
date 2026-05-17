@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"os"
 	"strings"
 	"time"
@@ -22,7 +23,7 @@ type NativeGPGVerifier struct {
 
 func NewNativeGPGVerifier() *NativeGPGVerifier {
 	return &NativeGPGVerifier{
-		client: &http.Client{Timeout: 30 * time.Second},
+		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"time"
 )
 
@@ -14,9 +15,7 @@ type CabalBackend struct {
 
 func NewCabalBackend() *CabalBackend {
 	return &CabalBackend{
-		client: &http.Client{
-			Timeout: 10 * time.Second,
-		},
+		client: pkgHttp.NewClientWithTimeout(10 * time.Second),
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
@@ -44,7 +45,7 @@ func (h *PythonHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 	var lastErr error
 
 	for i := 0; i < 3; i++ {
-		client := &http.Client{Timeout: 60 * time.Second}
+		client := pkgHttp.NewClientWithTimeout(60 * time.Second)
 		req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 		if err != nil {
 			return nil, err

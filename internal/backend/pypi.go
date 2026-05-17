@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"time"
 )
 
@@ -19,9 +20,7 @@ type PypiBackend struct {
 // NewPypiBackend creates a new PyPI backend.
 func NewPypiBackend() *PypiBackend {
 	return &PypiBackend{
-		client: &http.Client{
-			Timeout: 10 * time.Second,
-		},
+		client: pkgHttp.NewClientWithTimeout(10 * time.Second),
 	}
 }
 

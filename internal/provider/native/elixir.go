@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"strings"
 	"time"
 )
@@ -28,7 +29,7 @@ func (h *ElixirHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 	// We call a modified logic that doesn't strictly filter by OS/Arch initially
 	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", h.Owner, h.Repo)
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := pkgHttp.NewClientWithTimeout(10 * time.Second)
 	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 	if err != nil {
 		return nil, err

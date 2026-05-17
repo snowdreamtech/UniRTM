@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"time"
 )
@@ -19,9 +20,7 @@ type S3Backend struct {
 // NewS3Backend creates a new S3 backend.
 func NewS3Backend() *S3Backend {
 	return &S3Backend{
-		client: &http.Client{
-			Timeout: 10 * time.Second,
-		},
+		client: pkgHttp.NewClientWithTimeout(10 * time.Second),
 	}
 }
 

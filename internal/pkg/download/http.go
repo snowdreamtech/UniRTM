@@ -63,47 +63,9 @@ type HTTPDownloader struct {
 //   - Automatic redirect following (up to 10 redirects)
 func NewHTTPDownloader() *HTTPDownloader {
 	h := &HTTPDownloader{}
-	h.client = &http.Client{
-		Timeout: 0, // No overall timeout to allow large file downloads on slow networks
-		Transport: &http.Transport{
-			Proxy: func(req *http.Request) (*url.URL, error) {
-				// Smart proxy bypass: For common domestic mirror sites, forcefully bypass the proxy to establish a direct connection.
-				if pkgHttp.ShouldBypassProxy(req.URL.Hostname()) {
-					return nil, nil // Return nil proxy URL means DIRECT connection
-				}
-
-				// Check UNIRTM_ or MISE_ prefixed env vars first via env.Get
-				if req.URL.Scheme == "http" {
-					if v := env.Get("HTTP_PROXY"); v != "" {
-						return url.Parse(v)
-					}
-				} else if req.URL.Scheme == "https" {
-					if v := env.Get("HTTPS_PROXY"); v != "" {
-						return url.Parse(v)
-					}
-				}
-				if v := env.Get("ALL_PROXY"); v != "" {
-					return url.Parse(v)
-				}
-
-				// Fallback to standard system environment
-				return http.ProxyFromEnvironment(req)
-			},
-			MaxIdleConns:        100,
-			IdleConnTimeout:     90 * time.Second,
-			TLSHandshakeTimeout: 30 * time.Second,
-			ResponseHeaderTimeout: 30 * time.Second,
-			ExpectContinueTimeout: 5 * time.Second,
-		},
-	}
-
-	// Support disabling HTTP/2 via environment variable for compatibility with some proxies/mirrors (like Aliyun)
-	// that might send malformed HTTP/2 frames or have ALPN issues.
-	if env.Get("HTTP2") == "0" {
-		if trans, ok := h.client.Transport.(*http.Transport); ok {
-			pkgHttp.DisableHTTP2(trans)
-		}
-	}
+	// Use the shared robust client: proxy bypass, HTTP/2 smart downgrade, and connection pool tuning are all pre-configured.
+	h.client = pkgHttp.NewClient()
+	h.client.Timeout = 0 // No overall timeout to allow large file downloads on slow networks
 
 	h.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		if len(via) >= 10 {

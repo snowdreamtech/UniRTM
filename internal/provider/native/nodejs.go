@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
@@ -40,7 +41,7 @@ func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 	}
 
 	url := fmt.Sprintf("%s/index.json", strings.TrimSuffix(baseURL, "/"))
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := pkgHttp.NewClientWithTimeout(30 * time.Second)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err

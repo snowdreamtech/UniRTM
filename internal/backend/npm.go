@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"time"
 )
 
@@ -19,9 +20,7 @@ type NpmBackend struct {
 // NewNpmBackend creates a new npm backend.
 func NewNpmBackend() *NpmBackend {
 	return &NpmBackend{
-		client: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
 	}
 }
 

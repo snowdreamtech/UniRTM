@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
@@ -74,7 +75,7 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 
 		url := fmt.Sprintf("%s/v3/assets/feature_releases/%s/ga?architecture=%s&heap_size=normal&image_type=%s&jvm_impl=hotspot&os=%s&project=jdk&vendor=eclipse", apiBase, v, arch, imageType, os)
 		
-		client := &http.Client{Timeout: 30 * time.Second}
+		client := pkgHttp.NewClientWithTimeout(30 * time.Second)
 		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 		if err != nil {
 			continue

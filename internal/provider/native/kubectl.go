@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"strings"
 	"time"
 )
@@ -23,7 +24,7 @@ func (h *KubectlHandler) ResolveVersions(ctx context.Context, baseURL string) ([
 	// Fetch latest stable version
 	stableURL := "https://dl.k8s.io/release/stable.txt"
 	
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := pkgHttp.NewClientWithTimeout(10 * time.Second)
 	req, err := http.NewRequestWithContext(ctx, "GET", stableURL, nil)
 	if err != nil {
 		return nil, err

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
@@ -42,7 +43,7 @@ func (h *ZigHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ver
 		baseURL = "https://ziglang.org/download/index.json"
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := pkgHttp.NewClientWithTimeout(30 * time.Second)
 	req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
 	if err != nil {
 		return nil, err

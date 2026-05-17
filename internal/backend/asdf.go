@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
@@ -31,9 +32,7 @@ type AsdfBackend struct {
 // NewAsdfBackend creates a new asdf backend.
 func NewAsdfBackend() *AsdfBackend {
 	return &AsdfBackend{
-		client: &http.Client{
-			Timeout: 10 * time.Second,
-		},
+		client: pkgHttp.NewClientWithTimeout(10 * time.Second),
 		registryPath: filepath.Join(env.GetDataDir(), "asdf", "registry"),
 		pluginsPath:  env.GetPluginsDir(),
 	}
