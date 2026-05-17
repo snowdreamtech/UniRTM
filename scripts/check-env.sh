@@ -669,10 +669,12 @@ main() {
   fi
 
   log_info "── Toolchain Manager ──"
-  if resolve_bin "mise" >/dev/null 2>&1; then
-    log_success "✅ mise: Active ($(get_version mise))"
+  if resolve_bin "unirtm" >/dev/null 2>&1; then
+    log_success "✅ unirtm: Active ($(get_version unirtm))"
+  elif resolve_bin "mise" >/dev/null 2>&1; then
+    log_success "✅ unirtm/mise (legacy fallback): Active ($(get_version mise))"
   else
-    log_warn "❌ mise: Not found. (Mandatory for toolchain management)"
+    log_warn "❌ unirtm/mise: Not found. (Mandatory for toolchain management)"
     HEALTHY_ST=1
   fi
   printf "\n"
@@ -715,7 +717,7 @@ main() {
   # 7. Project File Integrity
   log_info "── Project Integrity ──"
   local _f_chk
-  for _f_chk in "Makefile" "README.md" ".agent/rules/01-general.md"; do
+  for _f_chk in ".unirtm.toml" "README.md" ".agent/rules/01-general.md"; do
     if [ -f "${_f_chk:-}" ]; then
       log_debug "Found $_f_chk"
     else
@@ -760,7 +762,7 @@ main() {
     exit 0
   elif [ "${CORE_HEALTHY_ST:-0}" -eq 0 ]; then
     log_warn "\n🛠️  Environment is FUNCTIONAL but has warnings (missing recommended/optional tools)."
-    log_warn "💡 Run 'make setup' to address the warnings above."
+    log_warn "💡 Run 'unirtm run setup' to address the warnings above."
     exit 0
   else
     log_error "\n❌ Environment is BROKEN. Critical tools or files are missing."

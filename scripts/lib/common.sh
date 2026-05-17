@@ -201,8 +201,12 @@ DRY_RUN=${DRY_RUN:-0}
 export MISE_YES=true
 export MISE_NON_INTERACTIVE=true
 export MISE_QUIET=true
+export UNIRTM_YES=true
+export UNIRTM_NON_INTERACTIVE=true
+export UNIRTM_QUIET=true
 # Suppress mise's built-in update checker to avoid GitHub API calls on every invocation.
 export MISE_CHECK_FOR_UPDATES=0
+export UNIRTM_CHECK_FOR_UPDATES=0
 # Force mise to use system git for better proxy/config compatibility
 export MISE_GIT_ALWAYS_USE_GIX=0
 export MISE_GIX=0
@@ -627,7 +631,11 @@ EOF
 get_mise_tool_version() {
   local _TOOL_NAME_MISE="${1:-}"
   local _MISE_TOM_PATH
-  _MISE_TOM_PATH=$(get_project_root)/.mise.toml
+  if [ -f "$(get_project_root)/.unirtm.toml" ]; then
+    _MISE_TOM_PATH=$(get_project_root)/.unirtm.toml
+  else
+    _MISE_TOM_PATH=$(get_project_root)/.mise.toml
+  fi
 
   local _VER=""
 
@@ -667,12 +675,12 @@ get_mise_tool_version() {
 
 # ── 🔄 GITHUB_PATH Synchronization ──────────────────────────────────────────
 
-# Purpose: Executes a mise command with retry logic and intelligent fallback.
+# Purpose: Executes a unirtm/mise command with retry logic and intelligent fallback.
 # Params:
-#   $@ - Command and arguments for mise
+#   $@ - Command and arguments for unirtm/mise
 # Examples:
-#   run_mise install node
-run_mise() {
+#   run_unirtm install node
+run_unirtm() {
   local _CMD="${1:-}"
   shift
 
@@ -686,23 +694,23 @@ run_mise() {
   if ! is_ci_env && [ "${GITHUB_TOKEN_FORCE_KEEP:-0}" -ne 1 ]; then
     unset GITHUB_TOKEN
   else
-    # Ensure GITHUB_API_TOKEN is set for mise's internal GitHub API calls.
+    # Ensure GITHUB_API_TOKEN is set for unirtm's internal GitHub API calls.
     # Workflows set this at env level, but ensure it survives subshell/export boundaries.
     if [ -n "${GITHUB_TOKEN:-}" ] && [ -z "${GITHUB_API_TOKEN:-}" ]; then
       export GITHUB_API_TOKEN="${GITHUB_TOKEN:-}"
-      log_debug "Forwarded GITHUB_TOKEN -> GITHUB_API_TOKEN for mise."
+      log_debug "Forwarded GITHUB_TOKEN -> GITHUB_API_TOKEN for unirtm."
     fi
 
-    # Ensure MISE_GITHUB_ENTERPRISE_TOKEN is set for mise's internal GitHub API calls.
+    # Ensure MISE_GITHUB_ENTERPRISE_TOKEN is set for unirtm's internal GitHub API calls.
     # Workflows set this at env level, but ensure it survives subshell/export boundaries.
     if [ -n "${GITHUB_TOKEN:-}" ] && [ -z "${MISE_GITHUB_ENTERPRISE_TOKEN:-}" ]; then
       export MISE_GITHUB_ENTERPRISE_TOKEN="${GITHUB_TOKEN:-}"
-      log_debug "Forwarded GITHUB_TOKEN -> MISE_GITHUB_ENTERPRISE_TOKEN for mise."
+      log_debug "Forwarded GITHUB_TOKEN -> MISE_GITHUB_ENTERPRISE_TOKEN for unirtm."
     fi
   fi
 
   # Adaptive Lock Forgiveness (ALF)
-  # Mise cannot reliably lock source-compiled tools (go: prefix). To prevent CI
+  # unirtm cannot reliably lock source-compiled tools (go: prefix). To prevent CI
   # failures in --locked mode, we automatically drop the strict requirement
   # for these tools while preserving it for the rest of the orchestration.
   local _EFFECTIVE_LOCKED="${MISE_LOCKED:-}"
@@ -724,14 +732,23 @@ run_mise() {
     fi
   fi
 
-  local _M_BIN
-  _M_BIN=$(command -v mise || echo "${_G_MISE_BIN_BASE:-$HOME/.local/bin}/mise")
-  [ "${_G_OS:-}" = "windows" ] && [ ! -x "${_M_BIN:-}" ] && _M_BIN="${_M_BIN:-}.exe"
+  # Smart Bootstrapping: Prioritize local development version, fall back to global
+  local _M_BIN=""
+  if [ -f "${_G_PROJECT_ROOT:-}/unirtm" ]; then
+    _M_BIN="${_G_PROJECT_ROOT:-}/unirtm"
+  elif [ -f "${_G_PROJECT_ROOT:-}/unirtm.exe" ]; then
+    _M_BIN="${_G_PROJECT_ROOT:-}/unirtm.exe"
+  elif command -v unirtm >/dev/null 2>&1; then
+    _M_BIN=$(command -v unirtm)
+  else
+    _M_BIN=$(command -v mise || echo "${_G_MISE_BIN_BASE:-$HOME/.local/bin}/mise")
+    [ "${_G_OS:-}" = "windows" ] && [ ! -x "${_M_BIN:-}" ] && _M_BIN="${_M_BIN:-}.exe"
+  fi
 
   # Performance Opt: Skip installation if version already matches SSoT
   # BUT still ensure PATH synchronization for CI environments
   # CRITICAL: In CI, we MUST verify tool executability, not just version match
-  # because mise may have hollow shims (especially on Windows)
+  # because unirtm may have hollow shims (especially on Windows)
   local _SKIP_INSTALL=0
   if [ "${_CMD:-}" = "install" ] && [ -n "${1:-}" ]; then
     local _T_CHECK="${1:-}"
@@ -760,29 +777,29 @@ run_mise() {
     case "${_T_CHECK:-}" in
     cargo:*)
       if ! command -v cargo >/dev/null 2>&1; then
-        log_error "Cannot install '${_T_CHECK:-}': 'cargo' (Rust) is missing. Install with: mise use -g rust" && return 1
+        log_error "Cannot install '${_T_CHECK:-}': 'cargo' (Rust) is missing. Install with: unirtm use -g rust" && return 1
       fi
       ;;
     go:*)
       if ! command -v go >/dev/null 2>&1; then
-        log_error "Cannot install '${_T_CHECK:-}': 'go' (Golang) is missing. Install with: mise use -g go" && return 1
+        log_error "Cannot install '${_T_CHECK:-}': 'go' (Golang) is missing. Install with: unirtm use -g go" && return 1
       fi
       ;;
     npm:*)
       # npm backend supports npm, bun, or pnpm as package managers
       if ! command -v npm >/dev/null 2>&1 && ! command -v bun >/dev/null 2>&1 && ! command -v pnpm >/dev/null 2>&1; then
-        log_error "Cannot install '${_T_CHECK:-}': No Node.js package manager found (npm/bun/pnpm). Install with: mise use -g node" && return 1
+        log_error "Cannot install '${_T_CHECK:-}': No Node.js package manager found (npm/bun/pnpm). Install with: unirtm use -g node" && return 1
       fi
       ;;
     pipx:*)
       # pipx backend prefers uvx (from uv) but falls back to pipx
       if ! command -v uv >/dev/null 2>&1 && ! command -v pipx >/dev/null 2>&1; then
-        log_error "Cannot install '${_T_CHECK:-}': Neither 'uv' nor 'pipx' found. Install with: mise use -g uv (or: mise use -g python && pip install pipx)" && return 1
+        log_error "Cannot install '${_T_CHECK:-}': Neither 'uv' nor 'pipx' found. Install with: unirtm use -g uv (or: unirtm use -g python && pip install pipx)" && return 1
       fi
       ;;
     gem:*)
       if ! command -v gem >/dev/null 2>&1; then
-        log_error "Cannot install '${_T_CHECK:-}': 'gem' (Ruby) is missing. Install with: mise use -g ruby" && return 1
+        log_error "Cannot install '${_T_CHECK:-}': 'gem' (Ruby) is missing. Install with: unirtm use -g ruby" && return 1
       fi
       ;;
     conda:*)
@@ -827,14 +844,13 @@ run_mise() {
   else
     while [ ${_RETRY_COUNT:-} -lt ${_MAX_RETRIES:-} ]; do
       # Ensure MISE_HTTP_TIMEOUT is synchronized with the execution timeout
-      # to prevent internal mise network calls from hanging the wrapper.
+      # to prevent internal unirtm/mise network calls from hanging the wrapper.
       export MISE_HTTP_TIMEOUT="${_T_OUT:-300}s"
 
       # Wrap in timeout utility (Standardized via run_with_timeout_robust)
       # shellcheck disable=SC2086
       MISE_LOCKED="${_EFFECTIVE_LOCKED:-}" run_with_timeout_robust "${_T_OUT:-}" "${_M_BIN:-}" ${_MISE_OPTS:-} "${_CMD:-}" "$@"
       _STATUS=$?
-      [ ${_STATUS:-} -eq 0 ] && break
       # Exit code 124 = timeout expiry; treat as retryable network failure.
       # Exit codes > 128 = signal (SIGTERM/SIGKILL); abort immediately.
       if [ ${_STATUS:-} -gt 128 ] && [ ${_STATUS:-} -ne 124 ]; then break; fi
@@ -843,7 +859,7 @@ run_mise() {
       if [ ${_RETRY_COUNT:-} -lt ${_MAX_RETRIES:-} ]; then
         # Exponential backoff: 1s, 2s, 4s... to recover from transient rate limits.
         local _BACKOFF=$((1 << (_RETRY_COUNT - 1)))
-        log_warn "mise ${_CMD:-} failed (attempt ${_RETRY_COUNT:-}/${_MAX_RETRIES:-}). Retrying in ${_BACKOFF:-}s..."
+        log_warn "unirtm/mise ${_CMD:-} failed (attempt ${_RETRY_COUNT:-}/${_MAX_RETRIES:-}). Retrying in ${_BACKOFF:-}s..."
         sleep "${_BACKOFF:-}"
       fi
     done
@@ -856,7 +872,7 @@ run_mise() {
     unset GITHUB_TOKEN
   fi
   # Centralized Metadata Cache Refresh:
-  # If we just performed an installation, refresh the global mise metadata cache
+  # If we just performed an installation, refresh the global unirtm/mise metadata cache
   # to ensure subsequent version checks (get_version) or resolution (resolve_bin)
   # see the newly available tools/binaries immediately.
   if [ ${_STATUS:-} -eq 0 ] &&
@@ -864,7 +880,7 @@ run_mise() {
     refresh_mise_cache
 
     # Unified PATH Management (Task 3.1):
-    # Automatically add mise shims to PATH after successful installation
+    # Automatically add unirtm/mise shims to PATH after successful installation
     # if not already present. This ensures resolve_bin can immediately
     # locate newly installed tools without manual PATH manipulation.
     if [ -n "${_G_MISE_SHIMS_BASE:-}" ]; then
@@ -872,13 +888,13 @@ run_mise() {
       *":${_G_MISE_SHIMS_BASE:-}:"*) ;;
       *)
         export PATH="${_G_MISE_SHIMS_BASE:-}:$PATH"
-        log_debug "Added mise shims to PATH: ${_G_MISE_SHIMS_BASE:-}"
+        log_debug "Added unirtm/mise shims to PATH: ${_G_MISE_SHIMS_BASE:-}"
         ;;
       esac
     fi
 
     # Enhanced PATH Management for Dynamically Installed Tools:
-    # For tools installed but not activated (not in .mise.toml), mise won't
+    # For tools installed but not activated (not in .mise.toml), unirtm/mise won't
     # create shims. We need to add the tool's actual bin directory to PATH.
     # This supports the "dynamic install without .mise.toml pollution" pattern.
     if [ -n "${_TOOL_ARG:-}" ]; then
@@ -886,11 +902,11 @@ run_mise() {
       local _TOOL_SPEC
       _TOOL_SPEC=$(echo "${_TOOL_ARG:-}" | sed 's/@.*//')
 
-      # Try to get the tool's bin directory from mise
-      if command -v mise >/dev/null 2>&1; then
+      # Try to get the tool's bin directory from unirtm/mise
+      if command -v unirtm >/dev/null 2>&1 || command -v mise >/dev/null 2>&1; then
         local _TOOL_BIN_DIR
-        # Use mise where to get the installation path
-        _TOOL_BIN_DIR=$(mise where "${_TOOL_SPEC:-}" 2>/dev/null || true)
+        # Use unirtm/mise where to get the installation path
+        _TOOL_BIN_DIR=$("${_M_BIN:-}" where "${_TOOL_SPEC:-}" 2>/dev/null || true)
 
         if [ -n "${_TOOL_BIN_DIR:-}" ] && [ -d "${_TOOL_BIN_DIR:-}/bin" ]; then
           # Add tool's bin directory to PATH
@@ -911,7 +927,7 @@ run_mise() {
     fi
 
     # CI PATH Persistence (Task 3.2):
-    # In CI environments, persist mise shims to ensure
+    # In CI environments, persist unirtm/mise shims to ensure
     # subsequent workflow steps can resolve tools installed in this step.
     if is_ci_env && [ -n "${_G_MISE_SHIMS_BASE:-}" ]; then
       _persist_path_to_ci "${_G_MISE_SHIMS_BASE:-}"
@@ -920,6 +936,24 @@ run_mise() {
 
   return ${_STATUS:-}
 }
+
+# ── 🔄 Backward Compatibility Wrappers (Zero-Cost Transitional Layer) ───
+
+# Wrapper for legacy code calling run_mise
+run_mise() {
+  run_unirtm "$@"
+}
+
+# POSIX Shell Function wrapper to hijack direct 'mise' calls and redirect to unirtm
+mise() {
+  run_unirtm "$@"
+}
+
+# POSIX Shell Function wrapper for direct 'unirtm' calls to use the local binary safely
+unirtm() {
+  run_unirtm "$@"
+}
+
 
 # ── 📢 Standardized Logging ──────────────────────────────────────────────────
 

@@ -94,15 +94,17 @@ resolve_bin_layer2() {
 
   [ -z "${_SP:-}" ] && return 1
 
-  # Check if this is a mise shim
+  # Check if this is a unirtm or mise shim
   case "${_SP:-}" in
   *"${_G_MISE_SHIMS_BASE:-}"*)
     # Validate shim with timeout protection
     local _MW
     if command -v run_with_timeout_robust >/dev/null 2>&1; then
-      _MW=$(run_with_timeout_robust 1 mise which "${_BIN:-}" 2>/dev/null) || true
+      _MW=$(run_with_timeout_robust 1 unirtm which "${_BIN:-}" 2>/dev/null) ||
+        _MW=$(run_with_timeout_robust 1 mise which "${_BIN:-}" 2>/dev/null) || true
     else
-      _MW=$(mise which "${_BIN:-}" 2>/dev/null) || true
+      _MW=$(unirtm which "${_BIN:-}" 2>/dev/null) ||
+        _MW=$(mise which "${_BIN:-}" 2>/dev/null) || true
     fi
 
     if [ -n "${_MW:-}" ] && [ -x "${_MW:-}" ]; then
@@ -133,9 +135,9 @@ resolve_bin_layer2() {
   esac
 }
 
-# ── 🔍 Layer 3: Mise Metadata Query ──────────────────────────────────────────
+# ── 🔍 Layer 3: UniRTM / Mise Metadata Query ───────────────────────────────────
 
-# Purpose: Queries mise metadata for tool installation path
+# Purpose: Queries unirtm/mise metadata for tool installation path
 # Params:
 #   $1 - Binary name
 # Returns:
@@ -148,12 +150,14 @@ resolve_bin_layer3() {
   local _BIN="${1:-}"
   [ -z "${_BIN:-}" ] && return 1
 
-  # Try mise which with timeout protection
+  # Try unirtm which or mise which with timeout protection
   local _MW
   if command -v run_with_timeout_robust >/dev/null 2>&1; then
-    _MW=$(run_with_timeout_robust 5 mise which "${_BIN:-}" 2>/dev/null) || true
+    _MW=$(run_with_timeout_robust 5 unirtm which "${_BIN:-}" 2>/dev/null) ||
+      _MW=$(run_with_timeout_robust 5 mise which "${_BIN:-}" 2>/dev/null) || true
   else
-    _MW=$(mise which "${_BIN:-}" 2>/dev/null) || true
+    _MW=$(unirtm which "${_BIN:-}" 2>/dev/null) ||
+      _MW=$(mise which "${_BIN:-}" 2>/dev/null) || true
   fi
 
   if [ -n "${_MW:-}" ] && [ -x "${_MW:-}" ]; then

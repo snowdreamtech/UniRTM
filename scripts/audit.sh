@@ -57,12 +57,12 @@ EOF
 # Examples:
 #   main --verbose
 main() {
-  # 1. Execution Context Guard (On-demand Tier 2 activation)
-  # Generate a temporary full manifest so mise can resolve all locked versions.
-  ./scripts/gen-full-manifest.sh >.mise.audit.toml
-  MISE_CONFIG="$(pwd)/.mise.audit.toml"
-  export MISE_CONFIG
-  trap "rm -f .mise.audit.toml" EXIT INT TERM
+  # Generate a temporary full manifest so unirtm/mise can resolve all locked versions.
+  ./scripts/gen-full-manifest.sh >.unirtm.audit.toml
+  UNIRTM_CONFIG="$(pwd)/.unirtm.audit.toml"
+  MISE_CONFIG="$(pwd)/.unirtm.audit.toml"
+  export UNIRTM_CONFIG MISE_CONFIG
+  trap "rm -f .unirtm.audit.toml" EXIT INT TERM
   guard_project_root
 
   # 2. Argument Parsing

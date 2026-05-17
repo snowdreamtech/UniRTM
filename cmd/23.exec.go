@@ -151,16 +151,30 @@ func runExec(cmd *cobra.Command, args []string) error {
 		commandArgs = nil // built from execCommandStr below
 	} else {
 		// Standard positional mode: [tool@version...] [-- command [args...]]
+		// Cobra natively consumes and strips the "--" separator from the args slice.
+		// We reconstruct the partition by tracing args against raw os.Args.
 		separatorIdx := -1
-		for i, a := range args {
-			if a == "--" {
-				separatorIdx = i
+		argsPtr := 0
+		seenSubcommand := false
+		for _, token := range os.Args {
+			if !seenSubcommand {
+				if token == "exec" || token == "x" {
+					seenSubcommand = true
+				}
+				continue
+			}
+			if token == "--" {
+				separatorIdx = argsPtr
 				break
 			}
+			if argsPtr < len(args) && token == args[argsPtr] {
+				argsPtr++
+			}
 		}
+
 		if separatorIdx >= 0 {
 			contextTools = args[:separatorIdx]
-			commandArgs = args[separatorIdx+1:]
+			commandArgs = args[separatorIdx:]
 		} else {
 			// Loose compatibility mode: no "--" → everything is the command.
 			commandArgs = args
