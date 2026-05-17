@@ -28,7 +28,6 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/sigstore/sigstore-go/pkg/bundle"
-	"github.com/sigstore/sigstore-go/pkg/fulcio/certificate"
 	"github.com/sigstore/sigstore-go/pkg/root"
 	"github.com/sigstore/sigstore-go/pkg/tuf"
 	"github.com/sigstore/sigstore-go/pkg/verify"
@@ -217,7 +216,7 @@ func (f *tufFetcher) DownloadFile(urlPath string, maxLength int64, _ time.Durati
 	// but we guard against relative paths for robustness.
 	finalURL := urlPath
 	if !strings.HasPrefix(urlPath, "http") {
-		finalURL = "https://tuf-repo-cdn.sigstore.dev/" + strings.TrimPrefix(urlPath, "/")
+		finalURL = "https://tuf-repo.github.com/" + strings.TrimPrefix(urlPath, "/")
 	}
 
 	logger.Debug("provenance: TUF fetching", map[string]interface{}{"url": finalURL, "max_length": maxLength})
@@ -248,11 +247,13 @@ func (f *tufFetcher) DownloadFile(urlPath string, maxLength int64, _ time.Durati
 	return io.ReadAll(io.LimitReader(resp.Body, maxLength))
 }
 
-// sigstoreTrustedRoot returns the Sigstore public good TUF trusted root.
+// sigstoreTrustedRoot returns the GitHub TUF trusted root.
 func sigstoreTrustedRoot() (*root.LiveTrustedRoot, error) {
 	liveTrustedRootOnce.Do(func() {
-		logger.Debug("provenance: initializing Sigstore TUF trusted root")
+		logger.Debug("provenance: initializing GitHub TUF trusted root")
 		opts := tuf.DefaultOptions()
+		opts.RepositoryBaseURL = "https://tuf-repo.github.com"
+		opts.Root = githubTufRoot
 
 		// Use our custom fetcher to ensure User-Agent and proxy support
 		opts.Fetcher = &tufFetcher{
@@ -260,18 +261,22 @@ func sigstoreTrustedRoot() (*root.LiveTrustedRoot, error) {
 		}
 
 		// Allow users to override the TUF cache directory.
+		// Default opts.CachePath is usually something like $HOME/.sigstore/tuf.
+		// We'll replace the last element to use github-tuf to avoid collisions.
 		cachePath := opts.CachePath
 		if cacheDir := env.Get("TUF_CACHE_DIR"); cacheDir != "" {
-			cachePath = filepath.Join(cacheDir, "sigstore-tuf")
-			opts.CachePath = cachePath
+			cachePath = filepath.Join(cacheDir, "github-tuf")
+		} else {
+			cachePath = filepath.Join(filepath.Dir(cachePath), "github-tuf")
 		}
-		logger.Debug("provenance: Sigstore TUF cache path", map[string]interface{}{"path": cachePath})
+		opts.CachePath = cachePath
+		logger.Debug("provenance: GitHub TUF cache path", map[string]interface{}{"path": cachePath})
 
 		liveTrustedRoot, liveTrustedRootErr = root.NewLiveTrustedRoot(opts)
 		if liveTrustedRootErr != nil {
 			logger.Error("provenance: failed to initialize TUF root", map[string]interface{}{"error": liveTrustedRootErr.Error()})
 		} else {
-			logger.Debug("provenance: Sigstore TUF root initialized successfully")
+			logger.Debug("provenance: GitHub TUF root initialized successfully")
 		}
 	})
 	return liveTrustedRoot, liveTrustedRootErr
@@ -481,63 +486,9 @@ func verifyBundleWithSigstore(
 	result, err := verifier.Verify(b, policy)
 	if err != nil {
 		logger.Debug("provenance: sigstore-go verification failed", map[string]interface{}{"error": err.Error()})
-		// If it failed with log inclusion error and we were at threshold 1,
-		// and we haven't explicitly disabled it, let's try to be smart.
-		if tlogThreshold > 0 && strings.Contains(err.Error(), "not enough verified log entries") {
-			logger.Warn("provenance: transparency log verification failed (likely network issue), retrying with signature-only verification...")
-
-			// Extract integrated time from bundle as our trusted reference time
-			refTime := time.Now()
-			tlogEntries, tlogErr := b.TlogEntries()
-			if tlogErr == nil {
-				logger.Debug("provenance: bundle tlog entries count", map[string]interface{}{"count": len(tlogEntries)})
-				if len(tlogEntries) > 0 {
-					refTime = tlogEntries[0].IntegratedTime()
-					logger.Debug("provenance: using integrated time from bundle", map[string]interface{}{"time": refTime.String()})
-				}
-			} else {
-				logger.Debug("provenance: failed to get tlog entries from bundle", map[string]interface{}{"error": tlogErr.Error()})
-			}
-			
-			if len(tlogEntries) == 0 {
-				// Fallback: try to use the leaf certificate's NotBefore as a hint
-				if vc, err := b.VerificationContent(); err == nil {
-					if cert := vc.Certificate(); cert != nil {
-						refTime = cert.NotBefore.Add(time.Second)
-						logger.Debug("provenance: using certificate NotBefore as reference time hint", map[string]interface{}{"time": refTime.String()})
-					}
-				}
-			}
-
-			v2, v2err := verify.NewSignedEntityVerifier(trustedMaterial, verify.WithCurrentTime())
-			if v2err != nil {
-				return nil, fmt.Errorf("build fallback verifier: %w", v2err)
-			}
-			if v2 == nil {
-				return nil, fmt.Errorf("fallback verifier is nil")
-			}
-
-			result, err = v2.Verify(b, policy)
-			if err != nil && strings.Contains(err.Error(), "leaf certificate verification failed") {
-				logger.Warn("provenance: certificate expired, performing manual offline verification...")
-				if err := manualVerify(b, refTime, trustedMaterial, identity, artifactDigest); err != nil {
-					logger.Debug("provenance: sigstore-go verification (fallback) failed", map[string]interface{}{"error": err.Error()})
-					return nil, fmt.Errorf("sigstore verification (fallback): %w", err)
-				}
-				logger.Info("✓ provenance: verified signature and identity (offline)")
-				return &ProvenanceResult{Supported: true, Verified: true, Repository: expectedRepo}, nil
-			}
-			if err != nil {
-				logger.Debug("provenance: sigstore-go verification (fallback) failed", map[string]interface{}{"error": err.Error()})
-				return nil, fmt.Errorf("sigstore verification (fallback): %w", err)
-			}
-			logger.Info("✓ provenance: verified signature and identity (offline)")
-			return &ProvenanceResult{Supported: true, Verified: true, Repository: expectedRepo}, nil
-		} else {
-			logger.Debug("provenance: sigstore-go verification failed, and not retrying offline", map[string]interface{}{"error": err.Error()})
-			return nil, fmt.Errorf("sigstore verification: %w", err)
-		}
+		return nil, fmt.Errorf("sigstore verification: %w", err)
 	}
+	logger.Info("✓ provenance: verified signature and identity")
 
 
 	// Step 6: Extract metadata from the verification result
@@ -579,133 +530,4 @@ func sha256File(path string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-// manualVerify performs a last-resort identity and integrity check.
-// It prioritizes security but allows for resilience in restricted environments.
-func manualVerify(
-	b *bundle.Bundle,
-	refTime time.Time,
-	trustedMaterial root.TrustedMaterial,
-	identity verify.CertificateIdentity,
-	artifactDigest string,
-) error {
-	logger.Debug("provenance: starting manual verification", map[string]interface{}{
-		"refTime":        refTime.String(),
-		"artifactDigest": artifactDigest,
-	})
 
-	// 1. Get verification material
-	vc, err := b.VerificationContent()
-	if err != nil {
-		return fmt.Errorf("get verification content: %w", err)
-	}
-	leaf := vc.Certificate()
-	if leaf == nil {
-		return fmt.Errorf("no leaf certificate found in bundle")
-	}
-
-	logger.Debug("provenance: leaf certificate info", map[string]interface{}{
-		"subject":   leaf.Subject.String(),
-		"issuer":    leaf.Issuer.String(),
-		"notBefore": leaf.NotBefore.String(),
-		"notAfter":  leaf.NotAfter.String(),
-		"dnsNames":  leaf.DNSNames,
-	})
-
-	// 2. Verify leaf certificate chain
-	cas := trustedMaterial.FulcioCertificateAuthorities()
-	logger.Debug("provenance: trusted Fulcio CAs", map[string]interface{}{
-		"count": len(cas),
-	})
-	for i := range cas {
-		// Attempt to get more info about the CA if possible
-		logger.Debug(fmt.Sprintf("provenance: CA[%d] info tracked", i))
-	}
-
-	// We try strict time-based verification first.
-	_, err = verify.VerifyLeafCertificate(refTime, leaf, trustedMaterial)
-	if err != nil {
-		logger.Warn("provenance: strict chain verification failed, trying soft fallback...", map[string]interface{}{"error": err.Error()})
-		
-		// Soft fallback: Check if the certificate is signed by ANY trusted Fulcio CA,
-		// potentially ignoring the exact observer timestamp if TUF roots are slightly out of sync.
-		verified := false
-		for i, ca := range cas {
-			// Try with refTime
-			if _, verr := ca.Verify(leaf, refTime); verr == nil {
-				logger.Debug(fmt.Sprintf("provenance: CA[%d] verified successfully with refTime", i))
-				verified = true
-				break
-			} else {
-				logger.Debug(fmt.Sprintf("provenance: CA[%d] failed with refTime", i), map[string]interface{}{"error": verr.Error()})
-			}
-
-			// Try with NotBefore + 1s
-			testTime := leaf.NotBefore.Add(time.Second)
-			if _, verr := ca.Verify(leaf, testTime); verr == nil {
-				logger.Debug(fmt.Sprintf("provenance: CA[%d] verified successfully with NotBefore", i))
-				verified = true
-				break
-			} else {
-				logger.Debug(fmt.Sprintf("provenance: CA[%d] failed with NotBefore", i), map[string]interface{}{"error": verr.Error()})
-			}
-		}
-		
-		if !verified {
-			// Check if this is GitHub's private Fulcio (common for GitHub Attestations)
-			// issuer="CN=Fulcio Intermediate l1,O=GitHub, Inc."
-			if leaf.Issuer.Organization != nil && len(leaf.Issuer.Organization) > 0 && leaf.Issuer.Organization[0] == "GitHub, Inc." {
-				logger.Warn("provenance: using GitHub-specific trust fallback (CA chain not verified but identity and signature are valid)")
-				verified = true
-			}
-		}
-
-		if !verified {
-			return fmt.Errorf("leaf certificate is not issued by a trusted Fulcio CA: %w", err)
-		}
-		logger.Info("ℹ provenance: verified certificate chain (resilient mode)")
-	} else {
-		logger.Debug("provenance: strict chain verification succeeded")
-	}
-
-	// 3. Verify Identity (OIDC Issuer + Subject) (MANDATORY)
-	summary, err := certificate.SummarizeCertificate(leaf)
-	if err != nil {
-		return fmt.Errorf("summarize certificate: %w", err)
-	}
-	
-	// Convert summary to JSON for deep inspection
-	summaryJSON, _ := json.Marshal(summary)
-	logger.Debug("provenance: certificate full summary", map[string]interface{}{
-		"summary": string(summaryJSON),
-	})
-
-	if err := identity.Verify(summary); err != nil {
-		return fmt.Errorf("certificate identity mismatch: %w", err)
-	}
-
-	// 4. Verify Cryptographic Signature and Artifact Integrity (MANDATORY)
-	sigContent, err := b.SignatureContent()
-	if err != nil {
-		return fmt.Errorf("get signature content: %w", err)
-	}
-
-	digestBytes, err := hex.DecodeString(artifactDigest)
-	if err != nil {
-		return fmt.Errorf("decode artifact digest: %w", err)
-	}
-
-	digests := []verify.ArtifactDigest{
-		{
-			Algorithm: "sha256",
-			Digest:    digestBytes,
-		},
-	}
-
-	err = verify.VerifySignatureWithArtifactDigests(sigContent, vc, trustedMaterial, digests)
-	if err != nil {
-		return fmt.Errorf("cryptographic signature verification failed: %w", err)
-	}
-	logger.Debug("provenance: cryptographic signature verified")
-
-	return nil
-}
