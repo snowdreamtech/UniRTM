@@ -407,30 +407,25 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 				if progressbar != nil {
 					diff := downloaded - lastDownloaded
 					if diff != 0 {
+						// MUST update title BEFORE Add(). 
+						// If Add() reaches 100%, pterm internally calls Stop() and freezes the UI.
+						// Any title update after Add() would be completely ignored on the final frame.
+						progressbar.UpdateTitle(fmt.Sprintf("Downloading %s (%s/%s)", 
+							tool, 
+							humanize.Bytes(uint64(downloaded)), 
+							humanize.Bytes(uint64(total))))
+
 						if diff < 0 {
 							// Download was reset (e.g. fallback from concurrent to sequential)
-							// Some terminals/progress bars don't support negative additions, 
-							// so we just update the title and reset our local tracker.
-							// The progress bar will visually freeze until we catch up to the previous high-water mark,
-							// which is perfectly fine to indicate we are recovering lost progress.
 							lastDownloaded = downloaded
 						} else {
 							progressbar.Add(int(diff))
 							lastDownloaded = downloaded
 						}
 						
-						// Update title with current progress
-						progressbar.UpdateTitle(fmt.Sprintf("Downloading %s (%s/%s)", 
-							tool, 
-							humanize.Bytes(uint64(downloaded)), 
-							humanize.Bytes(uint64(total))))
-						
 						lastUpdateTime = now
 					}
 					if total > 0 && downloaded >= total {
-						// 留出 150ms 让 pterm 异步渲染协程把最新一帧 (例如 68MB/68MB) 刷新到终端屏幕上
-						// 防止还没画完就被 Stop 强杀，留下 67MB/68MB 100% 的误导性画面
-						time.Sleep(150 * time.Millisecond)
 						progressbar.Stop()
 					}
 				} else if spinner != nil {
