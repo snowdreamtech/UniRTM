@@ -69,3 +69,117 @@ cache_ttl = 86400
 concurrency = 0
 
 [tasks]
+[tasks.init]
+description = "Hydrate project from template (rename placeholders)"
+run = "sh scripts/init-project.sh"
+
+[tasks.setup]
+description = "Install system-level development tools"
+run = "sh scripts/setup.sh"
+
+[tasks.install]
+description = "Install project-level dependencies (pip, npm)"
+depends = ["setup"]
+run = "sh scripts/install.sh"
+
+[tasks.lint]
+description = "Run standardized linter (pre-commit)"
+run = "sh scripts/lint.sh"
+
+[tasks.precommit]
+description = "Alias for lint (Run pre-commit hooks)"
+depends = ["lint"]
+run = "echo 'Pre-commit checks passed!'"
+
+[tasks.format]
+description = "Auto-format code (ruff, prettier, shfmt, etc.)"
+run = "sh scripts/format.sh"
+
+[tasks.test]
+description = "Run unified test suite"
+run = "sh scripts/test.sh"
+
+[tasks.build]
+description = "Build project artifacts"
+run = "sh scripts/build.sh"
+
+[tasks.commit]
+description = "Start the interactive Commitizen CLI"
+run = "sh scripts/commit.sh"
+
+[tasks.verify]
+description = "Run full local verification (env, lint, test, audit)"
+run = "sh scripts/verify.sh"
+
+[tasks.release]
+description = "Standardized release manager (versioning & tagging)"
+run = "sh scripts/release.sh"
+
+[tasks.env]
+description = "Environment configuration manager (.env)"
+run = "sh scripts/env.sh"
+
+[tasks.update-tools]
+description = "Upgrade UniRTM-managed tool versions"
+run = "sh scripts/update-tools.sh"
+
+[tasks.update]
+description = "Update all tools, dependencies, and hooks"
+run = "sh scripts/update.sh"
+
+[tasks.audit]
+description = "Run security audit and vulnerability scans"
+run = "sh scripts/audit.sh"
+
+[tasks.health]
+description = "Generate unified project health dashboard"
+run = "sh scripts/health.sh"
+
+[tasks.bench]
+description = "Run performance benchmarks"
+run = "sh scripts/bench.sh"
+
+[tasks.sync-docs]
+description = "Synchronize documentation between versions"
+run = "sh scripts/sync-docs.sh"
+
+[tasks.docs]
+description = "Documentation site manager (dev/build/preview)"
+run = "sh scripts/docs.sh"
+
+[tasks.gen-dependabot]
+description = "Auto-generate dependabot.yml from detected ecosystems"
+run = "sh scripts/gen-dependabot.sh"
+
+[tasks.sync-labels]
+description = "Synchronize and brand repository labels"
+run = "sh scripts/sync-labels.sh"
+
+[tasks.sync-harden-runner]
+description = "Synchronize Harden Runner endpoints to all workflow files"
+run = "sh scripts/sync-harden-runner.sh"
+
+[tasks.sync-lock]
+description = "Synchronize and verify the unirtm.lock file across all platforms"
+run = "sh scripts/sync-lock.sh"
+
+[tasks.archive-changelog]
+description = "Archive major-version changelog entries"
+run = "sh scripts/archive-changelog.sh"
+
+[tasks.check-env]
+description = "Onboarding environment health check"
+run = "sh scripts/check-env.sh"
+
+[tasks.clean]
+description = "Remove temporary and generated files"
+run = "sh scripts/cleanup.sh"
+
+[tasks.license-add]
+description = "Add license headers to core source files (Safe Mode)"
+run = "addlicense -v -f .github/license-header.txt $(find src pkg internal cmd scripts tests \\( -path '*/vendor/*' -o -path '*/node_modules/*' -o -path '*/dist/*' -o -path '*/build/*' \\) -prune -o -type f \\( -name '*.go' -o -name '*.sh' -o -name '*.py' \\) -print 2>/dev/null)"
+
+[tasks.license-check]
+description = "Check for missing license headers"
+run = "addlicense -check -v -f .github/license-header.txt $(find src pkg internal cmd scripts tests \\( -path '*/vendor/*' -o -path '*/node_modules/*' -o -path '*/dist/*' -o -path '*/build/*' \\) -prune -o -type f \\( -name '*.go' -o -name '*.sh' -o -name '*.py' \\) -print 2>/dev/null)"
+
