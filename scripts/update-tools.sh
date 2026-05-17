@@ -30,7 +30,7 @@ show_help() {
   cat <<EOF
 Usage: $0 [OPTIONS]
 
-Intelligent tool version upgrader for Mise.
+Intelligent tool version upgrader for UniRTM.
 
 Options:
   --dry-run        Preview upgrades without applying them.
@@ -53,7 +53,7 @@ _get_latest_version() {
   # Use unirtm ls-remote to fetch versions.
   # We filter out typical pre-release keywords and common single-letter suffixes (a/b/rc).
   # We use sort -V to ensure semver-compliant ordering.
-  _LATEST=$(mise ls-remote "${_PROVIDER:-}" 2>/dev/null |
+  _LATEST=$(unirtm ls-remote "${_PROVIDER:-}" 2>/dev/null |
     grep -Ev "(rc|beta|alpha|dev|nightly|test|pre|-build|[0-9][ab][0-9])" |
     grep -E "^[v]?[0-9]" |
     sort -V |
@@ -65,7 +65,7 @@ _get_latest_version() {
 # Purpose: Main execution logic for upgrading versions.sh and .unirtm.toml.
 run_upgrade() {
   local _VERSIONS_FILE="scripts/lib/versions.sh"
-  local _MISE_FILE=".mise.toml"
+  local _MISE_FILE=".unirtm.toml"
   local _UPDATED_COUNT=0
   local _CHECK_COUNT=0
   local _SUMMARY_DATA=""
@@ -78,7 +78,7 @@ run_upgrade() {
     # shellcheck source=scripts/lib/versions.sh
     . "${_VERSIONS_FILE:-}"
 
-    _TMP_VARS=".mise.versions.tmp"
+    _TMP_VARS=".unirtm.versions.tmp"
     grep -E "^VER_[A-Z0-9_]+=" "${_VERSIONS_FILE:-}" >"${_TMP_VARS:-}"
 
     while IFS= read -r line; do
@@ -125,7 +125,7 @@ run_upgrade() {
     # We look for lines in the [tools] section: tool = "version"
     # Note: We only process lines that look like Assignments until we hit the next section
     _IN_TOOLS=0
-    _TMP_MISE_SCAN=".mise.toml.scan.tmp"
+    _TMP_MISE_SCAN=".unirtm.toml.scan.tmp"
     cp "${_MISE_FILE:-}" "${_TMP_MISE_SCAN:-}"
 
     # Process line by line from the scan file to avoid SC2094
@@ -156,7 +156,7 @@ run_upgrade() {
         _LATEST_VER=$(_get_latest_version "${_PROV_VAL:-}")
         if [ -n "${_LATEST_VER:-}" ] && [ "${_CUR_VER:-}" != "${_LATEST_VER:-}" ]; then
           log_success "✨ Upgrade [${_MISE_FILE:-}]: ${_TOOL_IDENT:-} ${_CUR_VER:-} -> ${_LATEST_VER:-}"
-          _SUMMARY_DATA="${_SUMMARY_DATA:-}| \`${_TOOL_IDENT:-}\` | \`${_CUR_VER:-}\` | \`${_LATEST_VER:-}\` | \`.mise.toml\` |\n"
+          _SUMMARY_DATA="${_SUMMARY_DATA:-}| \`${_TOOL_IDENT:-}\` | \`${_CUR_VER:-}\` | \`${_LATEST_VER:-}\` | \`.unirtm.toml\` |\n"
           if [ "${DRY_RUN:-0}" -eq 0 ]; then
             if [ "$(uname -s)" = "Darwin" ]; then
               sed -i '' "s#${_TOOL_IDENT:-} = \"${_CUR_VER:-}\"#${_TOOL_IDENT:-} = \"${_LATEST_VER:-}\"#" "${_MISE_FILE:-}"

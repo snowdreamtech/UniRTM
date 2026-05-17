@@ -8,7 +8,7 @@ set -eu
 # Purpose: Installs Erlang runtime via unirtm.
 install_runtime_erlang() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
-    log_debug "DRY_RUN: Would install Erlang via mise."
+    log_debug "DRY_RUN: Would install Erlang via unirtm."
     return 0
   fi
 

@@ -38,7 +38,7 @@ register_unirtm_tool() {
   local _UNIRTM_TOML
   _UNIRTM_TOML=$(get_project_root)/.unirtm.toml
   if [ ! -f "${_UNIRTM_TOML:-}" ]; then
-    _UNIRTM_TOML="$(get_project_root)/.mise.toml"
+    _UNIRTM_TOML="$(get_project_root)/.unirtm.toml"
   fi
 
   # Check if already in config file
@@ -84,7 +84,7 @@ register_unirtm_tool_complex() {
   local _UNIRTM_TOML
   _UNIRTM_TOML=$(get_project_root)/.unirtm.toml
   if [ ! -f "${_UNIRTM_TOML:-}" ]; then
-    _UNIRTM_TOML="$(get_project_root)/.mise.toml"
+    _UNIRTM_TOML="$(get_project_root)/.unirtm.toml"
   fi
 
   # Check if already in config file

@@ -101,10 +101,10 @@ resolve_bin_layer2() {
     local _MW
     if command -v run_with_timeout_robust >/dev/null 2>&1; then
       _MW=$(run_with_timeout_robust 1 unirtm which "${_BIN:-}" 2>/dev/null) ||
-        _MW=$(run_with_timeout_robust 1 mise which "${_BIN:-}" 2>/dev/null) || true
+        _MW=$(run_with_timeout_robust 1 unirtm which "${_BIN:-}" 2>/dev/null) || true
     else
       _MW=$(unirtm which "${_BIN:-}" 2>/dev/null) ||
-        _MW=$(mise which "${_BIN:-}" 2>/dev/null) || true
+        _MW=$(unirtm which "${_BIN:-}" 2>/dev/null) || true
     fi
 
     if [ -n "${_MW:-}" ] && [ -x "${_MW:-}" ]; then
@@ -154,10 +154,10 @@ resolve_bin_layer3() {
   local _MW
   if command -v run_with_timeout_robust >/dev/null 2>&1; then
     _MW=$(run_with_timeout_robust 5 unirtm which "${_BIN:-}" 2>/dev/null) ||
-      _MW=$(run_with_timeout_robust 5 mise which "${_BIN:-}" 2>/dev/null) || true
+      _MW=$(run_with_timeout_robust 5 unirtm which "${_BIN:-}" 2>/dev/null) || true
   else
     _MW=$(unirtm which "${_BIN:-}" 2>/dev/null) ||
-      _MW=$(mise which "${_BIN:-}" 2>/dev/null) || true
+      _MW=$(unirtm which "${_BIN:-}" 2>/dev/null) || true
   fi
 
   if [ -n "${_MW:-}" ] && [ -x "${_MW:-}" ]; then

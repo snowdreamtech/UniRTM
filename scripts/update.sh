@@ -91,7 +91,7 @@ update_node_manager_global() {
   npm)
     # Most npm versions are updated via npm itself, but since we use unirtm,
     # it's usually better to let unirtm handle it. We skip global self-update for npm here.
-    log_debug "Skipping global self-update for $NPM (managed via mise)."
+    log_debug "Skipping global self-update for $NPM (managed via unirtm)."
     ;;
   yarn)
     if command -v corepack >/dev/null 2>&1; then

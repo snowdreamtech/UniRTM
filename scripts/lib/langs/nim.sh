@@ -9,7 +9,7 @@ set -eu
 # Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_nim() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
-    log_debug "DRY_RUN: Would install Nim compiler via mise."
+    log_debug "DRY_RUN: Would install Nim compiler via unirtm."
     return 0
   fi
 

@@ -671,7 +671,7 @@ main() {
   log_info "── Toolchain Manager ──"
   if resolve_bin "unirtm" >/dev/null 2>&1; then
     log_success "✅ unirtm: Active ($(get_version unirtm))"
-  elif resolve_bin "mise" >/dev/null 2>&1; then
+  elif resolve_bin "unirtm" >/dev/null 2>&1; then
     log_success "✅ unirtm/unirtm (legacy fallback): Active ($(get_version unirtm))"
   else
     log_warn "❌ unirtm/unirtm: Not found. (Mandatory for toolchain management)"
@@ -717,7 +717,7 @@ main() {
   # 7. Project File Integrity
   log_info "── Project Integrity ──"
   local _f_chk _has_config=0
-  for _f_chk in ".unirtm.toml" ".mise.toml"; do
+  for _f_chk in ".unirtm.toml" ".unirtm.toml"; do
     if [ -f "${_f_chk:-}" ]; then
       _has_config=1
       break
@@ -726,7 +726,7 @@ main() {
   if [ "${_has_config:-0}" -eq 1 ]; then
     log_debug "Found configuration file"
   else
-    log_error "❌ Missing critical config file: .unirtm.toml or .mise.toml"
+    log_error "❌ Missing critical config file: .unirtm.toml or .unirtm.toml"
     HEALTHY_ST=1
     CORE_HEALTHY_ST=1
   fi

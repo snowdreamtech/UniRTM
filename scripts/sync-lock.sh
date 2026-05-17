@@ -26,11 +26,11 @@ run_sync_lock() {
   # 0. Clear unirtm cache to avoid stale provenance verification data
   # This prevents errors like "has no provenance verification" when attestations
   # are actually present but cached metadata is outdated.
-  log_debug "Clearing mise cache to refresh provenance verification data..."
-  mise cache clear >/dev/null 2>&1 || true
+  log_debug "Clearing unirtm cache to refresh provenance verification data..."
+  unirtm cache clear >/dev/null 2>&1 || true
 
   # 1. Manifest Aggregation
-  local _TMP_MANIFEST=".mise.toml.lock.temp"
+  local _TMP_MANIFEST=".unirtm.toml.lock.temp"
   "${_G_PROJECT_ROOT:-.}/scripts/gen-full-manifest.sh" >"${_TMP_MANIFEST:-}"
 
   # 2. List Extraction
@@ -56,20 +56,20 @@ run_sync_lock() {
   export MISE_AQUA_MINISIGN=0
 
   # shellcheck disable=SC2086
-  MISE_CONFIG="${_TMP_MANIFEST:-}" mise lock --platform linux-x64,linux-arm64,linux-x64-musl,linux-arm64-musl,macos-x64,macos-arm64,windows-x64 ${_TOOLS:-} "$@"
+  MISE_CONFIG="${_TMP_MANIFEST:-}" unirtm lock --platform linux-x64,linux-arm64,linux-x64-musl,linux-arm64-musl,macos-x64,macos-arm64,windows-x64 ${_TOOLS:-} "$@"
 
   # 4. Remove provenance fields from unirtm.lock to prevent attestation comparison errors
   # When a new version lacks attestations that the previous version had, unirtm will error out.
   # By removing all provenance fields, we prevent this comparison while still maintaining
   # checksum verification for security.
-  if [ -f "mise.lock" ]; then
-    log_debug "Removing provenance fields from mise.lock to prevent attestation errors..."
+  if [ -f "unirtm.lock" ]; then
+    log_debug "Removing provenance fields from unirtm.lock to prevent attestation errors..."
 
     # Use sed for POSIX compatibility (works on Linux, macOS, Windows Git Bash)
     # Create a temporary file to avoid in-place editing issues across platforms
-    _TMP_LOCK="mise.lock.tmp"
-    sed '/^provenance = /d' mise.lock >"${_TMP_LOCK:-}"
-    mv "${_TMP_LOCK:-}" mise.lock
+    _TMP_LOCK="unirtm.lock.tmp"
+    sed '/^provenance = /d' unirtm.lock >"${_TMP_LOCK:-}"
+    mv "${_TMP_LOCK:-}" unirtm.lock
   fi
 
   # 5. Cleanup

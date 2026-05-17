@@ -9,7 +9,7 @@ set -eu
 # Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_rescript() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
-    log_debug "DRY_RUN: Would install ReScript compiler via mise npm provider."
+    log_debug "DRY_RUN: Would install ReScript compiler via unirtm npm provider."
     return 0
   fi
 

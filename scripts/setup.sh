@@ -444,7 +444,7 @@ EOF
     fi
 
     if [ "${DRY_RUN:-0}" -eq 0 ]; then
-      if ! command -v unirtm >/dev/null 2>&1 && ! command -v mise >/dev/null 2>&1; then
+      if ! command -v unirtm >/dev/null 2>&1 && ! command -v unirtm >/dev/null 2>&1; then
         log_warn "Warning: unirtm/unirtm binary not found on PATH. You may need to restart your shell."
       fi
       printf "\n%bNext Actions:%b\n" "${YELLOW:-}" "${NC:-}"

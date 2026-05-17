@@ -84,7 +84,7 @@ _unirtm_install_tier1() {
   fi
 
   _TMP_SH="${TMPDIR:-/tmp}/mise_install_$.sh"
-  if curl --retry 5 --retry-delay 2 --retry-connrefused -sS -L "https://mise.jdx.dev/install.sh" -o"${_TMP_SH:-}"; then
+  if curl --retry 5 --retry-delay 2 --retry-connrefused -sS -L "https://unirtm.jdx.dev/install.sh" -o"${_TMP_SH:-}"; then
     if sh "${_TMP_SH:-}"; then
       rm -f "${_TMP_SH:-}"
       return 0
@@ -99,31 +99,31 @@ _unirtm_install_tier2() {
   log_info "Tier 2: Searching for system package managers..."
   if command -v brew >/dev/null 2>&1; then
     log_info "Detected Homebrew. Installing unirtm..."
-    brew install mise && return 0
+    brew install unirtm && return 0
   elif command -v port >/dev/null 2>&1; then
     log_info "Detected MacPorts. Installing unirtm..."
-    sudo port install mise && return 0
+    sudo port install unirtm && return 0
   elif command -v apk >/dev/null 2>&1; then
     log_info "Detected apk. Installing unirtm..."
-    sudo apk add mise && return 0
+    sudo apk add unirtm && return 0
   elif command -v apt-get >/dev/null 2>&1; then
     log_info "Detected apt. Installing unirtm..."
-    sudo apt-get update && sudo apt-get install -y mise && return 0
+    sudo apt-get update && sudo apt-get install -y unirtm && return 0
   elif command -v dnf >/dev/null 2>&1; then
     log_info "Detected dnf. Installing unirtm..."
-    sudo dnf install -y mise && return 0
+    sudo dnf install -y unirtm && return 0
   elif command -v pacman >/dev/null 2>&1; then
     log_info "Detected pacman. Installing unirtm..."
-    sudo pacman -S --noconfirm mise && return 0
+    sudo pacman -S --noconfirm unirtm && return 0
   elif command -v nix-env >/dev/null 2>&1; then
     log_info "Detected nix. Installing unirtm..."
-    nix-env -iA mise && return 0
+    nix-env -iA unirtm && return 0
   elif command -v yum >/dev/null 2>&1; then
     log_info "Detected yum. Installing unirtm..."
-    sudo yum install -y mise && return 0
+    sudo yum install -y unirtm && return 0
   elif command -v zypper >/dev/null 2>&1; then
     log_info "Detected zypper. Installing unirtm..."
-    sudo zypper install -y mise && return 0
+    sudo zypper install -y unirtm && return 0
   fi
   return 1
 }
@@ -133,18 +133,18 @@ _unirtm_install_tier3() {
   log_info "Tier 3: Searching for language-specific tools..."
   if command -v cargo >/dev/null 2>&1; then
     log_info "Detected Cargo. Installing unirtm..."
-    cargo install mise && return 0
+    cargo install unirtm && return 0
   else
     local _m_bs
     for _m_bs in pnpm npm bun; do
       if command -v "${_m_bs:-}" >/dev/null 2>&1; then
         log_info "Detected $_m_bs. Installing unirtm..."
-        "${_m_bs:-}" install -g @jdxcode/mise && return 0
+        "${_m_bs:-}" install -g @jdxcode/unirtm && return 0
       fi
     done
     if command -v yarn >/dev/null 2>&1; then
       log_info "Detected yarn. Installing unirtm..."
-      yarn global add @jdxcode/mise && return 0
+      yarn global add @jdxcode/unirtm && return 0
     fi
   fi
   return 1
@@ -157,14 +157,14 @@ _unirtm_install_tier4() {
   local _VER="${3:-}"
   log_info "Tier 4: Performing manual binary download for ${_OS:-}-${_ARCH:-} (v${_VER:-})..."
 
-  local _M_BIN_NAME="mise-v${_VER:-}-${_OS:-}-${_ARCH:-}"
+  local _M_BIN_NAME="unirtm-v${_VER:-}-${_OS:-}-${_ARCH:-}"
   local _EXT=""
   if [ "${_OS:-}" = "windows" ]; then _EXT=".zip"; fi
-  local _M_URL="https://github.com/jdx/mise/releases/download/v${_VER:-}/${_M_BIN_NAME:-}${_EXT:-}"
+  local _M_URL="https://github.com/jdx/unirtm/releases/download/v${_VER:-}/${_M_BIN_NAME:-}${_EXT:-}"
   if [ "${ENABLE_GITHUB_PROXY:-}" = "1" ] || [ "${ENABLE_GITHUB_PROXY:-}" = "true" ]; then
     _M_URL="${GITHUB_PROXY:-}${_M_URL:-}"
   fi
-  local _DEST="${_G_UNIRTM_BIN_BASE:-$HOME/.local/bin}/mise"
+  local _DEST="${_G_UNIRTM_BIN_BASE:-$HOME/.local/bin}/unirtm"
   if [ "${_OS:-}" = "windows" ]; then _DEST="${_DEST:-}.exe"; fi
 
   mkdir -p "$(dirname "${_DEST:-}")"
@@ -187,18 +187,18 @@ _unirtm_install_tier4() {
     fi
     local _TMP_DIR
     _TMP_DIR=$(mktemp -d 2>/dev/null || echo "/tmp/mise_win_extract_$")
-    local _TMP_ZIP="${_TMP_DIR:-}/mise.zip"
+    local _TMP_ZIP="${_TMP_DIR:-}/unirtm.zip"
 
     if _download "${_M_URL:-}" "${_TMP_ZIP:-}"; then
       if unzip -q "${_TMP_ZIP:-}" -d "${_TMP_DIR:-}"; then
         # Robustly find unirtm.exe and unirtm-shim.exe in any extracted path
         local _FOUND_BIN
-        _FOUND_BIN=$(find "${_TMP_DIR:-}" -maxdepth 3 -name "mise.exe" | head -n 1)
+        _FOUND_BIN=$(find "${_TMP_DIR:-}" -maxdepth 3 -name "unirtm.exe" | head -n 1)
         if [ -n "${_FOUND_BIN:-}" ]; then
           mv "${_FOUND_BIN:-}" "${_DEST:-}"
           local _FOUND_SHIM
-          _FOUND_SHIM=$(find "${_TMP_DIR:-}" -maxdepth 3 -name "mise-shim.exe" | head -n 1)
-          if [ -n "${_FOUND_SHIM:-}" ]; then mv "${_FOUND_SHIM:-}" "$(dirname "${_DEST:-}")/mise-shim.exe"; fi
+          _FOUND_SHIM=$(find "${_TMP_DIR:-}" -maxdepth 3 -name "unirtm-shim.exe" | head -n 1)
+          if [ -n "${_FOUND_SHIM:-}" ]; then mv "${_FOUND_SHIM:-}" "$(dirname "${_DEST:-}")/unirtm-shim.exe"; fi
           rm -rf "${_TMP_DIR:-}"
           return 0
         fi
@@ -230,23 +230,23 @@ _unirtm_setup_completions() {
   zsh)
     local _DIR="${ZDOTDIR:-${HOME:-}}/.zsh/completions"
     mkdir -p "${_DIR:-}"
-    mise completion zsh >"${_DIR:-}/_mise" 2>/dev/null || true
+    unirtm completion zsh >"${_DIR:-}/_mise" 2>/dev/null || true
     ;;
   bash)
     local _DIR="$HOME/.local/share/bash-completion/completions"
     mkdir -p "${_DIR:-}"
-    mise completion bash >"${_DIR:-}/mise" 2>/dev/null || true
+    unirtm completion bash >"${_DIR:-}/unirtm" 2>/dev/null || true
     ;;
   fish)
     local _DIR="$HOME/.config/fish/completions"
     mkdir -p "${_DIR:-}"
-    mise completion fish >"${_DIR:-}/mise.fish" 2>/dev/null || true
+    unirtm completion fish >"${_DIR:-}/unirtm.fish" 2>/dev/null || true
     ;;
   pwsh | powershell)
     local _DIR="$HOME/Documents/PowerShell/Completions"
     mkdir -p "${_DIR:-}"
     # unirtm completion supports 'powershell' (or 'pwsh' as alias in newer versions)
-    mise completion powershell >"${_DIR:-}/mise-completion.ps1" 2>/dev/null || true
+    unirtm completion powershell >"${_DIR:-}/unirtm-completion.ps1" 2>/dev/null || true
     ;;
   esac
 }
@@ -254,7 +254,7 @@ _unirtm_setup_completions() {
 # Run unirtm doctor to verify health.
 _unirtm_verify_health() {
   log_info "Verifying unirtm health..."
-  if ! run_quiet mise doctor; then
+  if ! run_quiet unirtm doctor; then
     log_warn "unirtm doctor reported some issues. Please check 'unirtm doctor' manually."
   else
     log_success "unirtm health check passed."
@@ -267,18 +267,18 @@ _unirtm_activate_bash() {
   local _RC="$HOME/.bashrc"
   [ -f "${_RC:-}" ] || return 0
   local _UNIRTM_BIN
-  _UNIRTM_BIN=$(command -v mise 2>/dev/null || echo "${_G_UNIRTM_BIN_BASE:-$HOME/.local/bin}/mise")
+  _UNIRTM_BIN=$(command -v unirtm 2>/dev/null || echo "${_G_UNIRTM_BIN_BASE:-$HOME/.local/bin}/unirtm")
   # shellcheck disable=SC2016
   # Check for any existing unirtm activate line (with or without full path)
-  if ! grep -qE '(mise|\.local/bin/mise) activate bash' "${_RC:-}"; then
+  if ! grep -qE '(unirtm|\.local/bin/unirtm) activate bash' "${_RC:-}"; then
     {
       echo ''
       echo '# unirtm activation (added by snowdreamtech/ai-ide-template setup)'
       echo "eval \"\$(${_UNIRTM_BIN} activate bash)\""
     } >>"${_RC:-}"
-    log_debug "Added mise activation to ${_RC:-}"
+    log_debug "Added unirtm activation to ${_RC:-}"
   else
-    log_debug "mise activation already present in ${_RC:-}"
+    log_debug "unirtm activation already present in ${_RC:-}"
   fi
 }
 
@@ -286,18 +286,18 @@ _unirtm_activate_zsh() {
   local _RC="${ZDOTDIR-$HOME}/.zshrc"
   [ -f "${_RC:-}" ] || return 0
   local _UNIRTM_BIN
-  _UNIRTM_BIN=$(command -v mise 2>/dev/null || echo "${_G_UNIRTM_BIN_BASE:-$HOME/.local/bin}/mise")
+  _UNIRTM_BIN=$(command -v unirtm 2>/dev/null || echo "${_G_UNIRTM_BIN_BASE:-$HOME/.local/bin}/unirtm")
   # shellcheck disable=SC2016
   # Check for any existing unirtm activate line (with or without full path)
-  if ! grep -qE '(mise|\.local/bin/mise) activate zsh' "${_RC:-}"; then
+  if ! grep -qE '(unirtm|\.local/bin/unirtm) activate zsh' "${_RC:-}"; then
     {
       echo ''
       echo '# unirtm activation (added by snowdreamtech/ai-ide-template setup)'
       echo "eval \"\$(${_UNIRTM_BIN} activate zsh)\""
     } >>"${_RC:-}"
-    log_debug "Added mise activation to ${_RC:-}"
+    log_debug "Added unirtm activation to ${_RC:-}"
   else
-    log_debug "mise activation already present in ${_RC:-}"
+    log_debug "unirtm activation already present in ${_RC:-}"
   fi
 }
 
@@ -305,17 +305,17 @@ _unirtm_activate_fish() {
   local _RC="$HOME/.config/fish/config.fish"
   mkdir -p "$(dirname "${_RC:-}")"
   local _UNIRTM_BIN
-  _UNIRTM_BIN=$(command -v mise 2>/dev/null || echo "${_G_UNIRTM_BIN_BASE:-$HOME/.local/bin}/mise")
+  _UNIRTM_BIN=$(command -v unirtm 2>/dev/null || echo "${_G_UNIRTM_BIN_BASE:-$HOME/.local/bin}/unirtm")
   # Check for any existing unirtm activate line
-  if ! grep -qE '(mise|\.local/bin/mise) activate fish' "${_RC:-}"; then
+  if ! grep -qE '(unirtm|\.local/bin/unirtm) activate fish' "${_RC:-}"; then
     {
       echo ''
       echo '# unirtm activation (added by snowdreamtech/ai-ide-template setup)'
       echo "${_UNIRTM_BIN} activate fish | source"
     } >>"${_RC:-}"
-    log_debug "Added mise activation to ${_RC:-}"
+    log_debug "Added unirtm activation to ${_RC:-}"
   else
-    log_debug "mise activation already present in ${_RC:-}"
+    log_debug "unirtm activation already present in ${_RC:-}"
   fi
 }
 
@@ -324,15 +324,15 @@ _unirtm_activate_pwsh() {
   local _RC="$HOME/Documents/PowerShell/Microsoft.PowerShell_profile.ps1"
   [ -d "$(dirname "${_RC:-}")" ] || mkdir -p "$(dirname "${_RC:-}")"
   # Check for any existing unirtm activate line
-  if ! grep -qE '(mise|\.local/bin/mise) activate pwsh' "${_RC:-}" 2>/dev/null; then
+  if ! grep -qE '(unirtm|\.local/bin/unirtm) activate pwsh' "${_RC:-}" 2>/dev/null; then
     {
       echo ''
       echo '# unirtm activation (added by snowdreamtech/ai-ide-template setup)'
-      echo '(&mise activate pwsh) | Out-String | Invoke-Expression'
+      echo '(&unirtm activate pwsh) | Out-String | Invoke-Expression'
     } >>"${_RC:-}"
-    log_debug "Added mise activation to ${_RC:-}"
+    log_debug "Added unirtm activation to ${_RC:-}"
   else
-    log_debug "mise activation already present in ${_RC:-}"
+    log_debug "unirtm activation already present in ${_RC:-}"
   fi
 }
 
@@ -342,16 +342,16 @@ _mise_activate_nu() {
   [ -d "${_NU_DIR:-}" ] || return 0
   local _ENV="${_NU_DIR:-}/env.nu"
   local _CONF="${_NU_DIR:-}/config.nu"
-  local _MISE_NU="${_NU_DIR:-}/mise.nu"
+  local _MISE_NU="${_NU_DIR:-}/unirtm.nu"
 
   if [ ! -f "${_MISE_NU:-}" ]; then
-    mise activate nu >"${_MISE_NU:-}" 2>/dev/null || true
+    unirtm activate nu >"${_MISE_NU:-}" 2>/dev/null || true
   fi
 
   # shellcheck disable=SC2016
-  grep -q "mise.nu" "${_ENV:-}" 2>/dev/null || printf "let mise_path = \$nu.default-config-dir | path join mise.nu\n^mise activate nu | save \$mise_path --force\n" >>"${_ENV:-}"
+  grep -q "unirtm.nu" "${_ENV:-}" 2>/dev/null || printf "let mise_path = \$nu.default-config-dir | path join unirtm.nu\n^unirtm activate nu | save \$mise_path --force\n" >>"${_ENV:-}"
   # shellcheck disable=SC2016
-  grep -q "mise.nu" "${_CONF:-}" 2>/dev/null || printf "use (\$nu.default-config-dir | path join mise.nu)\n" >>"${_CONF:-}"
+  grep -q "unirtm.nu" "${_CONF:-}" 2>/dev/null || printf "use (\$nu.default-config-dir | path join unirtm.nu)\n" >>"${_CONF:-}"
 }
 
 _unirtm_activate_xonsh() {
@@ -359,15 +359,15 @@ _unirtm_activate_xonsh() {
   [ -d "$(dirname "${_RC:-}")" ] || mkdir -p "$(dirname "${_RC:-}")"
   # shellcheck disable=SC2016
   # Check for any existing unirtm activate line
-  if ! grep -qE '(mise|\.local/bin/mise) activate xonsh' "${_RC:-}" 2>/dev/null; then
+  if ! grep -qE '(unirtm|\.local/bin/unirtm) activate xonsh' "${_RC:-}" 2>/dev/null; then
     {
       echo ''
       echo '# unirtm activation (added by snowdreamtech/ai-ide-template setup)'
-      echo 'execx($(mise activate xonsh))'
+      echo 'execx($(unirtm activate xonsh))'
     } >>"${_RC:-}"
-    log_debug "Added mise activation to ${_RC:-}"
+    log_debug "Added unirtm activation to ${_RC:-}"
   else
-    log_debug "mise activation already present in ${_RC:-}"
+    log_debug "unirtm activation already present in ${_RC:-}"
   fi
 }
 
@@ -376,15 +376,15 @@ _unirtm_activate_elvish() {
   [ -d "$(dirname "${_RC:-}")" ] || mkdir -p "$(dirname "${_RC:-}")"
   # shellcheck disable=SC2016
   # Check for any existing unirtm activate line
-  if ! grep -qE '(mise|\.local/bin/mise) activate elvish' "${_RC:-}" 2>/dev/null; then
+  if ! grep -qE '(unirtm|\.local/bin/unirtm) activate elvish' "${_RC:-}" 2>/dev/null; then
     {
       echo ''
       echo '# unirtm activation (added by snowdreamtech/ai-ide-template setup)'
-      echo 'eval (mise activate elvish | slurp)'
+      echo 'eval (unirtm activate elvish | slurp)'
     } >>"${_RC:-}"
-    log_debug "Added mise activation to ${_RC:-}"
+    log_debug "Added unirtm activation to ${_RC:-}"
   else
-    log_debug "mise activation already present in ${_RC:-}"
+    log_debug "unirtm activation already present in ${_RC:-}"
   fi
 }
 
@@ -428,7 +428,7 @@ _unirtm_apply_activation() {
     esac
   fi
 
-  log_debug "mise PATH synchronized for current session. Full activation will occur in new shell sessions."
+  log_debug "unirtm PATH synchronized for current session. Full activation will occur in new shell sessions."
 }
 
 bootstrap_unirtm() {
@@ -437,8 +437,8 @@ bootstrap_unirtm() {
     return 0
   fi
 
-  if command -v mise >/dev/null 2>&1; then
-    log_debug "mise is already installed."
+  if command -v unirtm >/dev/null 2>&1; then
+    log_debug "unirtm is already installed."
     _unirtm_apply_activation "$(_unirtm_detect_shell)"
     return 0
   fi
@@ -484,9 +484,9 @@ bootstrap_unirtm() {
   _unirtm_setup_completions "${_M_SHELL:-}"
 
   # Security & Automation: Trust project config
-  if [ -f ".mise.toml" ]; then
+  if [ -f ".unirtm.toml" ]; then
     log_info "Trusting local .unirtm.toml..."
-    mise trust ".mise.toml" >/dev/null 2>&1 || true
+    unirtm trust ".unirtm.toml" >/dev/null 2>&1 || true
   fi
 
   # Verify Health

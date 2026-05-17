@@ -9,7 +9,7 @@ set -eu
 # Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_solidity() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
-    log_debug "DRY_RUN: Would install Solidity compiler (solc) via mise."
+    log_debug "DRY_RUN: Would install Solidity compiler (solc) via unirtm."
     return 0
   fi
 

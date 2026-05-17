@@ -9,7 +9,7 @@ set -eu
 # Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_move() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
-    log_debug "DRY_RUN: Would install Aptos CLI (Move toolchain) via mise."
+    log_debug "DRY_RUN: Would install Aptos CLI (Move toolchain) via unirtm."
     return 0
   fi
 

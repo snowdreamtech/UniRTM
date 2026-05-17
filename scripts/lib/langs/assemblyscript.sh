@@ -9,7 +9,7 @@ set -eu
 # Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_assemblyscript() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
-    log_debug "DRY_RUN: Would install AssemblyScript (asc) via mise npm provider."
+    log_debug "DRY_RUN: Would install AssemblyScript (asc) via unirtm npm provider."
     return 0
   fi
 

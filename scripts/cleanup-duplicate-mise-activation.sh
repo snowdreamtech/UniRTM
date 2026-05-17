@@ -31,21 +31,21 @@ cleanup_rc_file() {
 
   # Count unirtm activation lines
   local _count
-  _count=$(grep -cE '(mise|\.local/bin/mise) activate' "${_file:-}" 2>/dev/null || echo "0")
+  _count=$(grep -cE '(unirtm|\.local/bin/unirtm) activate' "${_file:-}" 2>/dev/null || echo "0")
 
   if [ "${_count:-0}" -eq 0 ]; then
-    echo "  ✅ No mise activation lines found"
+    echo "  ✅ No unirtm activation lines found"
     return 0
   elif [ "${_count:-0}" -eq 1 ]; then
-    echo "  ✅ Single mise activation line (OK)"
+    echo "  ✅ Single unirtm activation line (OK)"
     return 0
   fi
 
-  echo "  ⚠️  Found ${_count:-} duplicate mise activation lines"
+  echo "  ⚠️  Found ${_count:-} duplicate unirtm activation lines"
 
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     echo "  📋 Would remove duplicates and keep one line"
-    grep -nE '(mise|\.local/bin/mise) activate' "${_file:-}" | head -5
+    grep -nE '(unirtm|\.local/bin/unirtm) activate' "${_file:-}" | head -5
     return 0
   fi
 
@@ -54,21 +54,21 @@ cleanup_rc_file() {
   echo "  💾 Created backup: ${_file:-}.backup-$(date +%Y%m%d-%H%M%S)"
 
   # Remove all unirtm activation lines and related comments
-  grep -vE '(mise|\.local/bin/mise) activate|# unirtm activation' "${_file:-}" >"${_file:-}.tmp" || true
+  grep -vE '(unirtm|\.local/bin/unirtm) activate|# unirtm activation' "${_file:-}" >"${_file:-}.tmp" || true
 
   # Add back a single unirtm activation line at the end
   # Try to detect unirtm binary location, fallback to standard location
   local _mise_bin
-  if command -v mise >/dev/null 2>&1; then
-    _mise_bin=$(command -v mise)
+  if command -v unirtm >/dev/null 2>&1; then
+    _mise_bin=$(command -v unirtm)
   else
     # Fallback: try common locations
-    if [ -f "$HOME/.local/bin/mise" ]; then
-      _mise_bin="$HOME/.local/bin/mise"
-    elif [ -f "$HOME/Library/Application Support/mise/bin/mise" ]; then
-      _mise_bin="$HOME/Library/Application Support/mise/bin/mise"
+    if [ -f "$HOME/.local/bin/unirtm" ]; then
+      _mise_bin="$HOME/.local/bin/unirtm"
+    elif [ -f "$HOME/Library/Application Support/unirtm/bin/unirtm" ]; then
+      _mise_bin="$HOME/Library/Application Support/unirtm/bin/unirtm"
     else
-      _mise_bin="mise" # Hope it's in PATH
+      _mise_bin="unirtm" # Hope it's in PATH
     fi
   fi
 
@@ -96,7 +96,7 @@ cleanup_rc_file() {
   echo "  ✅ Cleaned up duplicates, kept one activation line"
 }
 
-echo "🧹 Cleaning up duplicate mise activation lines..."
+echo "🧹 Cleaning up duplicate unirtm activation lines..."
 echo ""
 
 # Bash

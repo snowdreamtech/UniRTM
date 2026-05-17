@@ -169,7 +169,7 @@ measure_tool_time() {
     elapsed=0
   else
     # Run tool installation with timeout
-    if run_with_timeout "$TIMEOUT_PER_TOOL" mise install "$tool_name" >/dev/null 2>&1; then
+    if run_with_timeout "$TIMEOUT_PER_TOOL" unirtm install "$tool_name" >/dev/null 2>&1; then
       end_time=$(date +%s)
       elapsed=$((end_time - start_time))
       log_info "  ✓ $tool_name: ${elapsed}s" >&2
@@ -206,15 +206,15 @@ get_tools_by_category() {
     ;;
   runtimes)
     # Runtimes from .unirtm.toml
-    if [ -f .mise.toml ]; then
-      tools=$(grep -E '^\s*[a-z]' .mise.toml | grep -v '^\[' | cut -d'=' -f1 | tr -d '"' | tr -d ' ' | head -10)
+    if [ -f .unirtm.toml ]; then
+      tools=$(grep -E '^\s*[a-z]' .unirtm.toml | grep -v '^\[' | cut -d'=' -f1 | tr -d '"' | tr -d ' ' | head -10)
     fi
     ;;
   all)
     # Combine all categories
     tools="gitleaks osv-scanner zizmor shellcheck hadolint tflint actionlint yamllint shfmt prettier"
-    if [ -f .mise.toml ]; then
-      tools="$tools $(grep -E '^\s*[a-z]' .mise.toml | grep -v '^\[' | cut -d'=' -f1 | tr -d '"' | tr -d ' ' | head -10)"
+    if [ -f .unirtm.toml ]; then
+      tools="$tools $(grep -E '^\s*[a-z]' .unirtm.toml | grep -v '^\[' | cut -d'=' -f1 | tr -d '"' | tr -d ' ' | head -10)"
     fi
     ;;
   esac

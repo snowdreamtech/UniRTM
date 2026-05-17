@@ -66,12 +66,12 @@ Test Cases:
   2. Platform-Specific: ec-* patterns (editorconfig-checker)
   3. Windows Binary: *.exe extensions
   4. Versioned Binary: tool_vX.Y.Z patterns
-  5. Mise Shim: /mise/shims/* paths
+  5. UniRTM Shim: /unirtm/shims/* paths
 
 Measurement Points:
   - verify_binary_exists() execution time
   - resolve_bin() execution time
-  - mise which execution time
+  - unirtm which execution time
   - command -v execution time
   - find pattern matching time
 
@@ -209,8 +209,8 @@ measure_mise_which() {
     start_time=$(get_timestamp_ms)
 
     # Test unirtm which with timeout
-    if command -v mise >/dev/null 2>&1; then
-      if resolved_path=$(MISE_OFFLINE=1 run_with_timeout "$TIMEOUT_PLATFORM_RESOLVE" mise which "$tool_name" 2>/dev/null); then
+    if command -v unirtm >/dev/null 2>&1; then
+      if resolved_path=$(MISE_OFFLINE=1 run_with_timeout "$TIMEOUT_PLATFORM_RESOLVE" unirtm which "$tool_name" 2>/dev/null); then
         status="success"
       else
         status="not_found"
@@ -288,9 +288,9 @@ measure_find_pattern() {
     start_time=$(get_timestamp_ms)
 
     # Test find with pattern in unirtm installation directory
-    if command -v mise >/dev/null 2>&1; then
+    if command -v unirtm >/dev/null 2>&1; then
       local mise_installs
-      mise_installs=$(mise where 2>/dev/null || echo "")
+      mise_installs=$(unirtm where 2>/dev/null || echo "")
 
       if [ -n "$mise_installs" ] && [ -d "$mise_installs" ]; then
         found_count=$(run_with_timeout 10 find "$mise_installs" -type f -name "$pattern" 2>/dev/null | wc -l | tr -d ' ')

@@ -225,17 +225,17 @@ test_bin_resolver_module() {
   # Set unirtm paths based on OS (minimal environment for testing)
   case "$(uname -s)" in
   Darwin)
-    if [ -d "$HOME/Library/Application Support/mise/shims" ]; then
-      export _G_UNIRTM_SHIMS_BASE="$HOME/Library/Application Support/mise/shims"
+    if [ -d "$HOME/Library/Application Support/unirtm/shims" ]; then
+      export _G_UNIRTM_SHIMS_BASE="$HOME/Library/Application Support/unirtm/shims"
     else
-      export _G_UNIRTM_SHIMS_BASE="$HOME/.local/share/mise/shims"
+      export _G_UNIRTM_SHIMS_BASE="$HOME/.local/share/unirtm/shims"
     fi
     ;;
   MINGW* | MSYS* | CYGWIN*)
-    export _G_UNIRTM_SHIMS_BASE="$HOME/.local/share/mise/shims"
+    export _G_UNIRTM_SHIMS_BASE="$HOME/.local/share/unirtm/shims"
     ;;
   *)
-    export _G_UNIRTM_SHIMS_BASE="$HOME/.local/share/mise/shims"
+    export _G_UNIRTM_SHIMS_BASE="$HOME/.local/share/unirtm/shims"
     ;;
   esac
 

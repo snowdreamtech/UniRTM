@@ -56,8 +56,8 @@ install_runtime_node() {
     unirtm settings set node.compile false 2>/dev/null || log_warn "Failed to set node.compile setting"
 
     # Verify settings
-    log_debug "Node flavor: $(mise settings get node.flavor 2>/dev/null || echo 'not set')"
-    log_debug "Node compile: $(mise settings get node.compile 2>/dev/null || echo 'not set')"
+    log_debug "Node flavor: $(unirtm settings get node.flavor 2>/dev/null || echo 'not set')"
+    log_debug "Node compile: $(unirtm settings get node.compile 2>/dev/null || echo 'not set')"
   fi
 
   # Fix: Windows Node 20 has an old bundled corepack that doesn't recognise
@@ -71,12 +71,12 @@ install_runtime_node() {
 
   # Optimization: If pnpm/yarn are already managed by unirtm (via .unirtm.toml), skip corepack to avoid
   # redundant network calls and signature errors, especially in Node 22+.
-  if grep -qE "pnpm|yarn" .mise.toml 2>/dev/null; then
+  if grep -qE "pnpm|yarn" .unirtm.toml 2>/dev/null; then
     log_info "Package managers are already managed by unirtm. Skipping corepack."
-    if grep -q "npm:pnpm" .mise.toml 2>/dev/null; then
+    if grep -q "npm:pnpm" .unirtm.toml 2>/dev/null; then
       unirtm install npm:pnpm || log_warn "Failed to install npm:pnpm via unirtm"
     fi
-    if grep -q "npm:yarn" .mise.toml 2>/dev/null; then
+    if grep -q "npm:yarn" .unirtm.toml 2>/dev/null; then
       unirtm install npm:yarn || log_warn "Failed to install npm:yarn via unirtm"
     fi
   else

@@ -9,7 +9,7 @@ set -eu
 # Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_prolog() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
-    log_debug "DRY_RUN: Would install SWI-Prolog via mise."
+    log_debug "DRY_RUN: Would install SWI-Prolog via unirtm."
     return 0
   fi
 

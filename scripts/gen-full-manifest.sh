@@ -32,7 +32,7 @@ perl -ne '
   if ($in_tools && /^\s*([^#\s][^=\s]*)\s*=\s*(.*)/) {
     print "$1 = $2\n";
   }
-' "${SCRIPT_DIR:-}/../.mise.toml"
+' "${SCRIPT_DIR:-}/../.unirtm.toml"
 
 # 3. Add Tier 2 tools from versions.sh
 # We parse versions.sh for VER_*_PROVIDER variables.
@@ -65,7 +65,7 @@ grep -E "^VER_[A-Z0-9_]+=" "${SCRIPT_DIR:-}/lib/versions.sh" | while IFS= read -
     case "${tool_name:-}" in
     go | node | python | ruby | java | rust | kotlin | dotnet | bun | deno | zig)
       # Only add if NOT already in .unirtm.toml Tier 1
-      if ! grep -q "^\s*${tool_name:-}\s*=" "${SCRIPT_DIR:-}/../.mise.toml"; then
+      if ! grep -q "^\s*${tool_name:-}\s*=" "${SCRIPT_DIR:-}/../.unirtm.toml"; then
         echo "${tool_name:-} = \"${var_val:-}\""
       fi
       ;;

@@ -103,22 +103,22 @@ clear_mise_cache() {
   case "$(uname -s)" in
   Darwin)
     # macOS: Check both standard and XDG locations
-    if [ -d "$HOME/Library/Application Support/mise/installs" ]; then
-      mise_installs_dir="$HOME/Library/Application Support/mise/installs"
-    elif [ -d "$HOME/.local/share/mise/installs" ]; then
-      mise_installs_dir="$HOME/.local/share/mise/installs"
+    if [ -d "$HOME/Library/Application Support/unirtm/installs" ]; then
+      mise_installs_dir="$HOME/Library/Application Support/unirtm/installs"
+    elif [ -d "$HOME/.local/share/unirtm/installs" ]; then
+      mise_installs_dir="$HOME/.local/share/unirtm/installs"
     fi
     ;;
   Linux)
-    mise_installs_dir="$HOME/.local/share/mise/installs"
+    mise_installs_dir="$HOME/.local/share/unirtm/installs"
     ;;
   MINGW* | MSYS* | CYGWIN*)
     # Windows: Check both Git Bash and native Windows locations
-    if [ -d "$HOME/.local/share/mise/installs" ]; then
-      mise_installs_dir="$HOME/.local/share/mise/installs"
+    if [ -d "$HOME/.local/share/unirtm/installs" ]; then
+      mise_installs_dir="$HOME/.local/share/unirtm/installs"
     elif [ -n "${LOCALAPPDATA:-}" ]; then
       if command -v cygpath >/dev/null 2>&1; then
-        mise_installs_dir="$(cygpath -u "${LOCALAPPDATA}")/mise/installs"
+        mise_installs_dir="$(cygpath -u "${LOCALAPPDATA}")/unirtm/installs"
       fi
     fi
     ;;

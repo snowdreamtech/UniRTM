@@ -9,7 +9,7 @@ set -eu
 # Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_helm() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
-    log_debug "DRY_RUN: Would install Helm via mise."
+    log_debug "DRY_RUN: Would install Helm via unirtm."
     return 0
   fi
 

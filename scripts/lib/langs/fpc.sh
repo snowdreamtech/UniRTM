@@ -9,7 +9,7 @@ set -eu
 # Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_fpc() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
-    log_debug "DRY_RUN: Would install Free Pascal Compiler via mise."
+    log_debug "DRY_RUN: Would install Free Pascal Compiler via unirtm."
     return 0
   fi
 

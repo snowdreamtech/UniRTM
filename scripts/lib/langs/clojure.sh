@@ -9,7 +9,7 @@ set -eu
 # Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_clojure() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
-    log_debug "DRY_RUN: Would install Clojure and Leiningen via mise."
+    log_debug "DRY_RUN: Would install Clojure and Leiningen via unirtm."
     return 0
   fi
 
