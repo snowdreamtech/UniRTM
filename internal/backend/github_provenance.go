@@ -78,23 +78,10 @@ func VerifyArtifactProvenance(
 	ctx context.Context,
 	token, owner, repo, artifactPath string,
 ) (*ProvenanceResult, error) {
-	// Step 0: Inject proxy environment and network fallback settings for sigstore-go and internal API calls.
+	// Inject network fallback settings for sigstore-go and internal API calls.
 	// Many internal parts of sigstore-go (and our fetchers) use http.DefaultClient/Transport.
 	if trans, ok := http.DefaultTransport.(*http.Transport); ok {
-		// 1. Proxy injection
-		if env.Get("ENABLE_GITHUB_PROXY") == "1" {
-			proxyURL := env.Get("GITHUB_PROXY")
-			if proxyURL != "" {
-				if env.Get("HTTPS_PROXY") == "" {
-					os.Setenv("HTTPS_PROXY", proxyURL)
-					os.Setenv("HTTP_PROXY", proxyURL)
-					trans.Proxy = http.ProxyFromEnvironment
-					logger.Debug("provenance: injected proxy for sigstore verification", map[string]interface{}{"proxy": proxyURL})
-				}
-			}
-		}
-
-		// 2. HTTP/2 downgrade fallback
+		// HTTP/2 downgrade fallback
 		// Fixes "malformed HTTP response" errors caused by transparent proxies corrupting HTTP/2 ALPN frames.
 		if env.Get("HTTP2") == "0" {
 			pkgHttp.DisableHTTP2(trans)
