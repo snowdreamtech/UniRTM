@@ -196,7 +196,18 @@ func (h *HTTPDownloader) Download(ctx context.Context, url string, destination s
 			if transport, ok := h.client.Transport.(*http.Transport); ok {
 				newTransport := transport.Clone()
 				// Physically disable HTTP/2
+				newTransport.ForceAttemptHTTP2 = false
 				newTransport.TLSNextProto = make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)
+				
+				// Strip "h2" from ALPN negotiation to prevent the CDN from sending HTTP/2 frames
+				if newTransport.TLSClientConfig != nil {
+					newTransport.TLSClientConfig = newTransport.TLSClientConfig.Clone()
+					newTransport.TLSClientConfig.NextProtos = []string{"http/1.1"}
+				} else {
+					newTransport.TLSClientConfig = &tls.Config{
+						NextProtos: []string{"http/1.1"},
+					}
+				}
 				
 				originalClient = h.client
 				h.client = &http.Client{
