@@ -28,8 +28,8 @@ var runCmd = &cobra.Command{
 	Short: "Run a task using the multi-modal routing engine",
 	Long: `Run a task using the multi-modal routing engine.
 
-UniRTM delegates tasks to professional tools (go-task, make, just) 
-if their configuration files are detected, or falls back to executing 
+UniRTM delegates tasks to professional tools (go-task, make, just)
+if their configuration files are detected, or falls back to executing
 tasks defined in unirtm.toml.
 
 Examples:
@@ -81,7 +81,7 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 	configManager := config.NewConfigManager()
 	var cfg *config.Config
 	var err error
-	
+
 	if configPath != "" {
 		cfg, err = configManager.Load(ctx, configPath)
 	} else {

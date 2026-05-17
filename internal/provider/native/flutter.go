@@ -8,10 +8,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"runtime"
 	"strings"
 	"time"
+
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // FlutterHandler handles Flutter SDK versions via its official storage API.
@@ -38,7 +39,7 @@ func (h *FlutterHandler) ResolveVersions(ctx context.Context, baseURL string) ([
 	if platform == "darwin" {
 		platform = "macos"
 	}
-	
+
 	apiURL := fmt.Sprintf("https://storage.googleapis.com/flutter_infra_release/releases/releases_%s.json", platform)
 
 	client := pkgHttp.NewClientWithTimeout(10 * time.Second)
@@ -70,14 +71,14 @@ func (h *FlutterHandler) ResolveVersions(ctx context.Context, baseURL string) ([
 		if rel.Channel != "stable" {
 			continue // Prioritize stable releases
 		}
-		
+
 		if seen[rel.Version] {
 			continue
 		}
 		seen[rel.Version] = true
 
 		url := fmt.Sprintf("%s/%s", data.BaseURL, rel.Archive)
-		
+
 		// Determine arch from archive name (heuristics)
 		arch := "amd64"
 		if strings.Contains(rel.Archive, "arm64") {

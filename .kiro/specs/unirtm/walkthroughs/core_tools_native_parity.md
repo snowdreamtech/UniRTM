@@ -23,6 +23,7 @@
 ## 成果存放
 
 相关的设计与执行文档已同步至项目目录：
+
 - **Plan**: [.kiro/specs/unirtm/plans/core_tools_native_parity.md](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/.kiro/specs/unirtm/plans/core_tools_native_parity.md)
 - **Task**: [.kiro/specs/unirtm/tasks/core_tools_native_parity.md](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/.kiro/specs/unirtm/tasks/core_tools_native_parity.md)
 - **Walkthrough**: [.kiro/specs/unirtm/walkthroughs/core_tools_native_parity.md](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/.kiro/specs/unirtm/walkthroughs/core_tools_native_parity.md)

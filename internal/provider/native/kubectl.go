@@ -8,9 +8,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"strings"
 	"time"
+
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // KubectlHandler handles kubectl distribution via dl.k8s.io.
@@ -23,7 +24,7 @@ func (h *KubectlHandler) Name() string {
 func (h *KubectlHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
 	// Fetch latest stable version
 	stableURL := "https://dl.k8s.io/release/stable.txt"
-	
+
 	client := pkgHttp.NewClientWithTimeout(10 * time.Second)
 	req, err := http.NewRequestWithContext(ctx, "GET", stableURL, nil)
 	if err != nil {
@@ -46,7 +47,7 @@ func (h *KubectlHandler) ResolveVersions(ctx context.Context, baseURL string) ([
 	}
 
 	latestVersion := strings.TrimSpace(string(body))
-	
+
 	// For now, just return the latest version.
 	// In a full implementation, we could fetch historical versions.
 	versions := []VersionInfo{
@@ -61,7 +62,7 @@ func (h *KubectlHandler) ResolveVersions(ctx context.Context, baseURL string) ([
 
 func (h *KubectlHandler) generateAssets(version string) []Asset {
 	var assets []Asset
-	
+
 	// Supported OS/Arch combinations
 	platforms := []struct{ os, arch string }{
 		{"linux", "amd64"},
@@ -76,9 +77,9 @@ func (h *KubectlHandler) generateAssets(version string) []Asset {
 		if p.os == "windows" {
 			ext = ".exe"
 		}
-		
+
 		url := fmt.Sprintf("https://dl.k8s.io/release/%s/bin/%s/%s/kubectl%s", version, p.os, p.arch, ext)
-		
+
 		assets = append(assets, Asset{
 			Filename: "kubectl" + ext,
 			URL:      url,

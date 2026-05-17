@@ -39,7 +39,7 @@ Plugins are standalone executable binaries prefixed with 'unirtm-plugin-'
 placed in the plugins data directory.
 
 Use 'unirtm plugin list' to see loaded plugins.`,
-	Args: cobra.NoArgs,
+	Args:    cobra.NoArgs,
 	Aliases: []string{"p", "plugins"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()

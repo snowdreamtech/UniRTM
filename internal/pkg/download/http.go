@@ -21,8 +21,8 @@ import (
 
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/errors"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // ErrGPGSkipped is returned when a signature file is not found (404) and verification is skipped.
@@ -169,7 +169,7 @@ func (h *HTTPDownloader) Download(ctx context.Context, url string, destination s
 				newTransport := transport.Clone()
 				// Physically disable HTTP/2 and ALPN
 				pkgHttp.DisableHTTP2(newTransport)
-				
+
 				tempTransport = newTransport
 				localDownloader.client = &http.Client{
 					Timeout:       h.client.Timeout,
@@ -620,13 +620,13 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 	var wg sync.WaitGroup
 	var downloadErr error
 	var errOnce sync.Once
-	
+
 	// Create a cancellable context for all threads to enable Fail-Fast
 	workerCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	
+
 	downloadedBytes := int64(0)
-	
+
 	for i := 0; i < numThreads; i++ {
 		start := int64(i) * chunkSize
 		end := start + chunkSize - 1
@@ -637,7 +637,7 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 		wg.Add(1)
 		go func(start, end int64, threadID int) {
 			defer wg.Done()
-			
+
 			// Panic Recovery: Prevent a single thread from crashing the whole process
 			defer func() {
 				if r := recover(); r != nil {
@@ -647,32 +647,32 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 					cancel() // Trigger global meltdown
 				}
 			}()
-			
+
 			currentOffset := start
 			backoff := 1 * time.Second
 			for attempt := 0; attempt < 15; attempt++ {
 				if workerCtx.Err() != nil {
 					return // Context cancelled by another thread or user
 				}
-				
+
 				if currentOffset > end {
 					return // Already finished
 				}
-				
+
 				req, err := http.NewRequestWithContext(workerCtx, "GET", url, nil)
 				if err != nil {
 					continue
 				}
 				// Micro-resume: Request exactly from where we left off
 				req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", currentOffset, end))
-				
+
 				resp, err := h.client.Do(req)
 				if err != nil {
 					backoff = jitterBackoff(backoff)
 					time.Sleep(backoff)
 					continue
 				}
-				
+
 				// Handle servers that ignore Range headers
 				if resp.StatusCode == http.StatusOK && currentOffset > 0 {
 					resp.Body.Close()
@@ -680,14 +680,14 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 					cancel()
 					return
 				}
-				
+
 				if resp.StatusCode != http.StatusPartialContent && resp.StatusCode != http.StatusOK {
 					resp.Body.Close()
 					backoff = jitterBackoff(backoff)
 					time.Sleep(backoff)
 					continue
 				}
-				
+
 				buf := make([]byte, 32*1024)
 				var chunkSuccess bool
 				for {
@@ -696,13 +696,13 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 						chunkSuccess = true
 						break // Finished this chunk
 					}
-					
+
 					// Ensure we never read past our designated chunk boundary
 					toRead := int64(len(buf))
 					if toRead > bytesLeft {
 						toRead = bytesLeft
 					}
-					
+
 					n, readErr := resp.Body.Read(buf[:toRead])
 					if n > 0 {
 						_, writeErr := file.WriteAt(buf[:n], currentOffset)
@@ -730,11 +730,11 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 					}
 				}
 				resp.Body.Close()
-				
+
 				if chunkSuccess || currentOffset > end {
 					return // Thread fully succeeded
 				}
-				
+
 				backoff = jitterBackoff(backoff)
 				time.Sleep(backoff)
 			}

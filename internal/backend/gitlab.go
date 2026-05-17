@@ -9,10 +9,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
-	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"strings"
 	"time"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // GitlabBackend implements the Backend interface using GenericReleaseManager.
@@ -28,12 +29,12 @@ func NewGitlabBackend() *GitlabBackend {
 		baseURL = "https://gitlab.com/api/v4"
 	}
 	return &GitlabBackend{
-		client: pkgHttp.NewClientWithTimeout(15 * time.Second),
+		client:  pkgHttp.NewClientWithTimeout(15 * time.Second),
 		baseURL: baseURL,
 	}
 }
 
-func (b *GitlabBackend) Name() string            { return "gitlab" }
+func (b *GitlabBackend) Name() string { return "gitlab" }
 
 func (b *GitlabBackend) Dependencies() []string {
 	return nil

@@ -23,7 +23,7 @@ func (h *RubyHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 	// Re-use GithubHandler's logic but with custom platform detection
 	h.GithubHandler.Owner = "ruby"
 	h.GithubHandler.Repo = "ruby-builder"
-	
+
 	releases, err := h.GithubHandler.ResolveVersions(ctx, baseURL)
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (h *RubyHandler) isMatch(filename string) bool {
 	}
 
 	if os == "linux" {
-		// ruby-builder is very Ubuntu-centric. 
+		// ruby-builder is very Ubuntu-centric.
 		// We'll try to match ubuntu, but on other distros this might be risky.
 		return strings.Contains(filename, "ubuntu")
 	}

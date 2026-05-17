@@ -96,7 +96,7 @@ func mapPlatform(os, arch string) (string, string) {
 	// Map Julia OS/Arch names to standard ones
 	// Julia OS: mac, linux, win, freebsd
 	// Julia Arch: x86_64, aarch64, i686, armv7l
-	
+
 	var resOS, resArch string
 	switch os {
 	case "mac":

@@ -8,8 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"time"
+
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // PypiBackend implements the Backend interface for PyPI packages.
@@ -31,6 +32,7 @@ func (b *PypiBackend) Name() string {
 func (b *PypiBackend) Dependencies() []string {
 	return nil
 }
+
 type pypiRegistryResponse struct {
 	Info struct {
 		Version string `json:"version"`

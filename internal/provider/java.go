@@ -102,7 +102,7 @@ func (j *JavaProvider) DetectVersion(ctx context.Context, tool string, installPa
 // ListExecutables returns Java executables relative to installPath.
 func (j *JavaProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	javaHome := j.getJavaHome(installPath)
-	
+
 	// Get path relative to installPath
 	relHome, err := filepath.Rel(installPath, javaHome)
 	if err != nil {

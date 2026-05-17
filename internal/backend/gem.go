@@ -8,8 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"time"
+
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // GemBackend implements the Backend interface for RubyGems.

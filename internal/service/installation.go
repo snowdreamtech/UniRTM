@@ -161,7 +161,7 @@ func (im *InstallationManager) executeHook(ctx context.Context, cmdStr, tool, ve
 	}
 
 	fmt.Printf("➜ executing hook for %s@%s: %s\n", tool, version, cmdStr)
-	
+
 	// Create command
 	var shell, shellArg string
 	if runtime.GOOS == "windows" {
@@ -176,7 +176,7 @@ func (im *InstallationManager) executeHook(ctx context.Context, cmdStr, tool, ve
 	execCmd.Stdout = os.Stdout
 	execCmd.Stderr = os.Stderr
 	execCmd.Env = os.Environ()
-	
+
 	// Add context env vars
 	execCmd.Env = append(execCmd.Env, "UNIRTM_TOOL="+tool)
 	execCmd.Env = append(execCmd.Env, "UNIRTM_VERSION="+version)
@@ -368,12 +368,12 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		// Similar to how homebrew and mise handle incomplete downloads.
 		randSuffix, _ := env.RandomString(8)
 		downloadTmpPath := fmt.Sprintf("%s.tmp.%s", downloadPath, randSuffix)
-		
+
 		// Start a spinner for the connection/download phase
 		spinner, _ := pterm.DefaultSpinner.
 			WithText(fmt.Sprintf("Connecting to %s...", tool)).
 			Start()
-		
+
 		// Initialize progress bar
 		var progressbar *pterm.ProgressbarPrinter
 		var lastDownloaded int64
@@ -383,14 +383,14 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		opts.ProgressCallback = func(downloaded, total int64) {
 			progressMutex.Lock()
 			defer progressMutex.Unlock()
-			
-			// Stop the connection spinner once we start receiving bytes, 
+
+			// Stop the connection spinner once we start receiving bytes,
 			// BUT ONLY if we are going to start a progress bar.
 			if spinner != nil && total > 0 {
 				spinner.Stop()
 				spinner = nil
 			}
-			
+
 			// Initialize progress bar if not already done and total is known
 			if progressbar == nil && total > 0 {
 				progressbar, _ = pterm.DefaultProgressbar.
@@ -407,12 +407,12 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 				if progressbar != nil {
 					diff := downloaded - lastDownloaded
 					if diff != 0 {
-						// MUST update title BEFORE Add(). 
+						// MUST update title BEFORE Add().
 						// If Add() reaches 100%, pterm internally calls Stop() and freezes the UI.
 						// Any title update after Add() would be completely ignored on the final frame.
-						progressbar.UpdateTitle(fmt.Sprintf("Downloading %s (%s/%s)", 
-							tool, 
-							humanize.Bytes(uint64(downloaded)), 
+						progressbar.UpdateTitle(fmt.Sprintf("Downloading %s (%s/%s)",
+							tool,
+							humanize.Bytes(uint64(downloaded)),
 							humanize.Bytes(uint64(total))))
 
 						if diff < 0 {
@@ -422,7 +422,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 							progressbar.Add(int(diff))
 							lastDownloaded = downloaded
 						}
-						
+
 						lastUpdateTime = now
 					}
 					if total > 0 && downloaded >= total {
@@ -458,7 +458,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 			os.Remove(downloadTmpPath)
 			return fmt.Errorf("failed to finalize download: %w", err)
 		}
-		
+
 		pterm.FgGreen.Printf("✓ downloaded to %s\n", downloadPath)
 		defer func() {
 			if im.settings != nil && im.settings.AlwaysKeepDownload {
@@ -487,7 +487,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 		if (versionInfo.SignatureURL != "" || versionInfo.GPGSignature != "") && verifyMetadata && (im.settings == nil || im.settings.GPGVerify != "off") {
 			fmt.Printf("ℹ verifying GPG signature for %s@%s...\n", tool, version)
-			
+
 			sigPath := downloadPath + ".asc"
 			var downloadErr error
 			if versionInfo.GPGSignature != "" {
@@ -511,7 +511,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 				gpgStatus = "Failed (Download)"
 			} else {
 				defer os.Remove(sigPath)
-				
+
 				// Collect all trusted keys (Explicit + Bundled/Lockfile)
 				trustedKeys := make([]string, 0)
 				if im.settings != nil {
@@ -532,7 +532,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 						confirm, _ := pterm.DefaultInteractiveConfirm.
 							WithDefaultText(fmt.Sprintf("Do you want to trust and import GPG key %s from keyservers?", fp)).
 							Show()
-						
+
 						if confirm {
 							spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Importing GPG key %s...", fp))
 							if importErr := im.gpgVerifier.ImportKey(ctx, fp); importErr == nil {
@@ -863,9 +863,9 @@ func (im *InstallationManager) EnsureInstalled(ctx context.Context, tools map[st
 			version = tc.Version
 		}
 		specs[name] = ToolSpec{
-			Name:        toolName,
-			Version:     version,
-			BackendName: backendName,
+			Name:         toolName,
+			Version:      version,
+			BackendName:  backendName,
 			OriginalName: name,
 		}
 	}
@@ -1051,7 +1051,6 @@ func (im *InstallationManager) ResolveToolEnvBySpec(
 	return result
 }
 
-
 // archiveExtensions contains file extensions that are never directly executable.
 // Files with these extensions must never be passed to exec/syscall.Exec.
 var archiveExtensions = map[string]bool{
@@ -1196,7 +1195,6 @@ func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName st
 
 	return selected.exePath, envVars, nil
 }
-
 
 // ParseToolSpec parses a tool specification string (e.g., "node@20", "github:cli/cli@v2.0.0")
 // into its constituent parts: backend, tool name, version, and whether the version was explicit.

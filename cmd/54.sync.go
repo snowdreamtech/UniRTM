@@ -47,7 +47,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 
 	manager := args[0]
 	formatter.Info(fmt.Sprintf("Synchronizing tools from %s...", manager), nil)
-	
+
 	// Placeholder for actual sync logic.
 	pterm.Warning.Println("Sync logic is currently a placeholder for version manager integration.")
 	pterm.Info.Printf("Would look for external %s installations and link them to UniRTM.\n", manager)

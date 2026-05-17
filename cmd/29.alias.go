@@ -105,7 +105,7 @@ var aliasListCmd = &cobra.Command{
 		for _, tool := range tools {
 			aliases := cfg.Aliases[tool]
 			pterm.Bold.Printf("• %s\n", tool)
-			
+
 			var items []pterm.BulletListItem
 			var names []string
 			for n := range aliases {
@@ -127,10 +127,10 @@ var aliasListCmd = &cobra.Command{
 
 				items = append(items, pterm.BulletListItem{
 					Level: 1,
-					Text: fmt.Sprintf("%s %s %s %s", 
-						pterm.Cyan(name), 
-						pterm.Gray("→"), 
-						pterm.Green(version), 
+					Text: fmt.Sprintf("%s %s %s %s",
+						pterm.Cyan(name),
+						pterm.Gray("→"),
+						pterm.Green(version),
 						sourceTag),
 				})
 			}

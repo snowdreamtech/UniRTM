@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
@@ -320,7 +321,6 @@ func runWhich(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-
 	if len(matches) > 0 {
 		// If not --all, print the first one (prefer active)
 		if !whichAll {
@@ -369,7 +369,6 @@ func runWhich(cmd *cobra.Command, args []string) error {
 	// Find close matches using common utility
 	output.Suggest(os.Stderr, target, finalCandidates)
 
-
 	// Check if it exists as a tool but no installation
 	if _, ok := cfg.Tools[target]; ok {
 		fmt.Fprintf(os.Stderr, "\nTip: %s is defined in your config but not installed. Run 'unirtm install' to install it.\n", target)
@@ -377,7 +376,6 @@ func runWhich(cmd *cobra.Command, args []string) error {
 
 	return fmt.Errorf("not found: %s", target)
 }
-
 
 func printMatch(m match) {
 	if whichVersion {

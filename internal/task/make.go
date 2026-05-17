@@ -58,11 +58,11 @@ func (r *MakeRunner) ListTasks(dir string) ([]string, error) {
 		if len(line) == 0 || line[0] == '#' || line[0] == '\t' || line[0] == '.' || !strings.Contains(line, ":") {
 			continue
 		}
-		
+
 		// Targets start at the beginning of the line, followed by a colon
 		parts := strings.SplitN(line, ":", 2)
 		target := strings.TrimSpace(parts[0])
-		
+
 		// Ignore internal make targets, patterns, and uppercase variables
 		if target != "" && !strings.Contains(target, "=") && !strings.Contains(target, "+") && !strings.Contains(target, "$") && !strings.Contains(target, "%") && !isAllUpper(target) {
 			targets = append(targets, target)
@@ -87,10 +87,10 @@ func isAllUpper(s string) bool {
 func (r *MakeRunner) Run(ctx context.Context, dir string, taskName string, args []string, env []string) error {
 	cmdArgs := []string{taskName}
 	cmdArgs = append(cmdArgs, args...)
-	
+
 	cmd := exec.CommandContext(ctx, "make", cmdArgs...)
 	cmd.Dir = dir
-	
+
 	// Pass through the environment variables injected by UniRTM
 	cmd.Env = append(os.Environ(), env...)
 

@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
@@ -78,6 +79,75 @@ func (p *PypiProvider) Install(ctx context.Context, tool string, installPath str
 }
 
 func (p *PypiProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
+	// Since virtual environments write absolute paths into shebangs and activate scripts,
+	// and unirtm uses an atomic rename strategy (installing into <path>.unirtm-tmp first),
+	// we must rewrite all occurrences of the temporary install path to the final install path
+	// to make the virtual environment functional after the rename.
+	finalPath := strings.TrimSuffix(installPath, ".unirtm-tmp")
+	if finalPath == installPath {
+		return nil
+	}
+
+	binDir := filepath.Join(installPath, "bin")
+	if _, err := os.Stat(binDir); os.IsNotExist(err) {
+		binDir = filepath.Join(installPath, "Scripts") // Windows
+	}
+
+	entries, err := os.ReadDir(binDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		filePath := filepath.Join(binDir, entry.Name())
+		// Read file content
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			continue
+		}
+
+		// Only rewrite text files (like shell scripts or python shebang files)
+		// Binary files shouldn't start with '#'
+		if len(content) > 2 && content[0] == '#' && content[1] == '!' {
+			// Rewrite shebang
+			contentStr := string(content)
+			if strings.Contains(contentStr, installPath) {
+				logger.Debug("Rewriting shebang for virtualenv relocatability", map[string]interface{}{
+					"file": entry.Name(),
+					"from": installPath,
+					"to":   finalPath,
+				})
+				newContent := strings.ReplaceAll(contentStr, installPath, finalPath)
+				if err := os.WriteFile(filePath, []byte(newContent), 0755); err != nil {
+					return fmt.Errorf("failed to rewrite shebang for %s: %w", entry.Name(), err)
+				}
+			}
+		}
+	}
+
+	// Also rewrite activate scripts
+	activateFiles := []string{"activate", "activate.sh", "activate.bat", "activate.ps1"}
+	for _, act := range activateFiles {
+		filePath := filepath.Join(binDir, act)
+		if _, err := os.Stat(filePath); err == nil {
+			content, err := os.ReadFile(filePath)
+			if err == nil {
+				contentStr := string(content)
+				if strings.Contains(contentStr, installPath) {
+					newContent := strings.ReplaceAll(contentStr, installPath, finalPath)
+					_ = os.WriteFile(filePath, []byte(newContent), 0644)
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -142,7 +212,6 @@ func (p *PypiProvider) ListExecutables(tool string, installPath string, version 
 func (p *PypiProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	return []string{}, nil
 }
-
 
 // GetEnvVars returns the VIRTUAL_ENV environment variable.
 func (p *PypiProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {

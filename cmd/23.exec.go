@@ -243,10 +243,10 @@ func runExec(cmd *cobra.Command, args []string) error {
 					// Important: Ensure we match the backend used during install
 					backendName = installManager.AutoDetectBackend(toolName)
 				}
-				
+
 				// Resolve the version (might be a ref or alias)
 				version := toolSpec.Version
-				
+
 				// Gather env vars (PATH, GOROOT, etc.)
 				toolEnv := installManager.ResolveToolEnvBySpec(toolName, version, backendName)
 				if len(toolEnv) > 0 {

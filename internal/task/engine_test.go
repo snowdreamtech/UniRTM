@@ -20,7 +20,7 @@ type mockRunner struct {
 	called     bool
 }
 
-func (m *mockRunner) Name() string { return m.name }
+func (m *mockRunner) Name() string                                { return m.name }
 func (m *mockRunner) CanExecute(dir string, taskName string) bool { return m.canExecute }
 func (m *mockRunner) Run(ctx context.Context, dir string, taskName string, args []string, env []string) error {
 	m.called = true
@@ -58,17 +58,17 @@ func TestEngineRouting(t *testing.T) {
 func TestMakeRunnerCanExecute(t *testing.T) {
 	tmpDir := t.TempDir()
 	runner := task.NewMakeRunner()
-	
+
 	// Should be false initially
 	if runner.CanExecute(tmpDir, "test") {
 		t.Errorf("expected MakeRunner.CanExecute to be false when no Makefile exists")
 	}
-	
+
 	// Create a Makefile
 	if err := os.WriteFile(filepath.Join(tmpDir, "Makefile"), []byte("test:\n\techo test"), 0644); err != nil {
 		t.Fatalf("failed to write Makefile: %v", err)
 	}
-	
+
 	// Should be true now
 	if !runner.CanExecute(tmpDir, "test") {
 		t.Errorf("expected MakeRunner.CanExecute to be true when Makefile exists")
@@ -80,7 +80,7 @@ func TestNativeRunner(t *testing.T) {
 		"build": {Run: "echo 'building'"},
 	}
 	runner := task.NewNativeRunner(tasks, config.Settings{})
-	
+
 	if !runner.CanExecute(".", "build") {
 		t.Errorf("expected NativeRunner to return true for 'build' task")
 	}
@@ -88,7 +88,7 @@ func TestNativeRunner(t *testing.T) {
 	if runner.CanExecute(".", "missing") {
 		t.Errorf("expected NativeRunner to return false for 'missing' task")
 	}
-	
+
 	err := runner.Run(context.Background(), ".", "missing", nil, nil)
 	if err == nil {
 		t.Errorf("expected error for missing task")

@@ -67,9 +67,9 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 		}
 
 		// 3.1 Relativize all symlinks in the extracted directory.
-		// Some archives (like Node.js) might contain absolute symlinks or links 
-		// that become absolute during extraction/moving. We convert them to 
-		// relative paths so they remain valid after the atomic rename from 
+		// Some archives (like Node.js) might contain absolute symlinks or links
+		// that become absolute during extraction/moving. We convert them to
+		// relative paths so they remain valid after the atomic rename from
 		// .unirtm-tmp to the final versioned path.
 		if err := g.relativizeAllSymlinks(installPath); err != nil {
 			fmt.Printf("⚠️  failed to relativize symlinks: %v\n", err)
@@ -101,7 +101,7 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 		// 6. Ensure executables have +x and link them to binDir
 		for _, exe := range executables {
 			exePath := filepath.Join(installPath, exe)
-			
+
 			// Skip internal dependencies like node_modules
 			if strings.Contains(filepath.ToSlash(exe), "/node_modules/") {
 				continue
@@ -121,7 +121,7 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 
 				// Remove existing symlink if it exists (e.g. broken link)
 				os.Remove(dstPath)
-				
+
 				// Use relative symlink to avoid broken links after directory rename
 				relPath, err := filepath.Rel(binDir, exePath)
 				if err != nil {
@@ -317,7 +317,7 @@ func (g *GenericProvider) calculateExeScore(relPath string, toolName string) int
 
 	// 3. Format
 	ext := strings.ToLower(filepath.Ext(filename))
-	
+
 	// Filter out common non-executable files even if they have +x bit
 	nonExecExts := map[string]bool{
 		".pyc":  true,
@@ -410,14 +410,14 @@ func (g *GenericProvider) isExecutable(info os.FileInfo) bool {
 
 	// On Windows, check file extension
 	name := strings.ToLower(info.Name())
-	
+
 	// Skip common non-binary files
-	if strings.HasPrefix(name, ".") || 
-	   strings.HasSuffix(name, ".txt") || 
-	   strings.HasSuffix(name, ".md") ||
-	   strings.HasSuffix(name, "__init__.py") ||
-	   strings.HasSuffix(name, "_test.go") ||
-	   strings.Contains(name, "test") {
+	if strings.HasPrefix(name, ".") ||
+		strings.HasSuffix(name, ".txt") ||
+		strings.HasSuffix(name, ".md") ||
+		strings.HasSuffix(name, "__init__.py") ||
+		strings.HasSuffix(name, "_test.go") ||
+		strings.Contains(name, "test") {
 		return false
 	}
 
@@ -697,13 +697,13 @@ func (g *GenericProvider) flattenDirectory(dir string) error {
 		for _, entry := range subEntries {
 			oldPath := filepath.Join(subDir, entry.Name())
 			newPath := filepath.Join(dir, entry.Name())
-			
+
 			// If newPath already exists (unlikely in a clean install but possible on retry),
 			// remove it first to avoid rename errors.
 			if _, err := os.Stat(newPath); err == nil {
 				os.RemoveAll(newPath)
 			}
-			
+
 			if err := os.Rename(oldPath, newPath); err != nil {
 				return err
 			}

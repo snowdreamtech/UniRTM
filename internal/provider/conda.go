@@ -39,7 +39,7 @@ func (p *CondaProvider) Install(ctx context.Context, tool string, installPath st
 
 	// conda create -y -p <installPath> <tool>=<version>
 	args := []string{"create", "-y", "-p", installPath}
-	
+
 	pkgSpec := tool
 	if version != "latest" && version != "" {
 		pkgSpec = tool + "=" + version
@@ -86,9 +86,9 @@ func (p *CondaProvider) ListExecutables(tool string, installPath string, version
 
 	// Check bin for unix, Scripts for windows
 	dirsToCheck := []string{binDir, filepath.Join(installPath, "Scripts")}
-	
+
 	var executables []string
-	
+
 	for _, dir := range dirsToCheck {
 		entries, err := os.ReadDir(dir)
 		if err != nil {

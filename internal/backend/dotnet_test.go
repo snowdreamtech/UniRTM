@@ -24,10 +24,10 @@ func TestDotnetBackend_ResolveVersion(t *testing.T) {
 	defer server.Close()
 
 	b := NewDotnetBackend()
-	
+
 	ctx := context.Background()
 	p := Platform{OS: "linux", Arch: "amd64"}
-	
+
 	info, err := b.ResolveVersion(ctx, "dotnet-ef", "7.0.5", p)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

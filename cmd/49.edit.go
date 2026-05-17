@@ -35,7 +35,7 @@ var editCmd = &cobra.Command{
 	Short: "Open the config file in $EDITOR",
 	Long: `Open a UniRTM config file in your preferred editor.
 
-If no file is specified, it intelligently discovers all relevant config files 
+If no file is specified, it intelligently discovers all relevant config files
 in the current hierarchy and lets you choose interactively.
 
 Priority for finding an editor:
@@ -63,7 +63,7 @@ func runEdit(cmd *cobra.Command, args []string) error {
 	// 3. Find editor
 	cfg, _ := config.Load()
 	editor, source := getBestEditorWithSource(cfg)
-	
+
 	// Show editor info in header
 	pterm.DefaultHeader.WithFullWidth().
 		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
@@ -106,7 +106,7 @@ func runEdit(cmd *cobra.Command, args []string) error {
 				WithDefaultText("Select configuration file to edit").
 				WithOptions(options).
 				Show()
-			
+
 			targetFile = pathMap[selected]
 		}
 	}
@@ -128,7 +128,7 @@ func runEdit(cmd *cobra.Command, args []string) error {
 		c.Stdin = os.Stdin
 		c.Stdout = os.Stdout
 		c.Stderr = os.Stderr
-		
+
 		if err := c.Run(); err != nil {
 			return fmt.Errorf("editor failed: %w", err)
 		}
@@ -146,7 +146,7 @@ func runEdit(cmd *cobra.Command, args []string) error {
 				WithDefaultText("Do you want to re-edit to fix the error?").
 				WithDefaultValue(true).
 				Show()
-			
+
 			if confirm {
 				continue
 			} else {
@@ -169,7 +169,7 @@ type configCandidate struct {
 
 func discoverConfigFiles() []configCandidate {
 	var candidates []configCandidate
-	
+
 	// Local candidates
 	cwd, _ := os.Getwd()
 	localFiles := []string{".unirtm.toml", "unirtm.toml", ".mise.toml", "mise.toml"}
@@ -188,4 +188,3 @@ func discoverConfigFiles() []configCandidate {
 
 	return candidates
 }
-

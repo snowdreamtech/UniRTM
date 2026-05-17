@@ -79,7 +79,7 @@ func (r *RubyProvider) GenerateShims(tool string, installPath string, version st
 	for _, exe := range executables {
 		// Executables could be in bin/ or in gem-global/bin/
 		exePath := filepath.Join(installPath, "bin", exe)
-		
+
 		// If it's not in bin/, assume it's a global gem
 		if _, err := os.Stat(exePath); os.IsNotExist(err) {
 			exePath = filepath.Join(installPath, "gem-global", "bin", exe)

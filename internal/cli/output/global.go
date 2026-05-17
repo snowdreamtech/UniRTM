@@ -4,9 +4,10 @@
 package output
 
 import (
-	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"os"
 	"sync"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 var (

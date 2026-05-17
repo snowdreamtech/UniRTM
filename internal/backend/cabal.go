@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"time"
+
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 type CabalBackend struct {
@@ -26,6 +27,7 @@ func (b *CabalBackend) Name() string {
 func (b *CabalBackend) Dependencies() []string {
 	return nil
 }
+
 type hackageResponse []struct {
 	Version string `json:"version"`
 }

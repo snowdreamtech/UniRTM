@@ -67,7 +67,7 @@ func (m *ShellConfigManager) Inject(shell ShellType, marker string, content stri
 
 	searchPattern := fmt.Sprintf("unirtm %s activation", marker)
 	fullBlock := fmt.Sprintf("\n# %s\n%s\n", searchPattern, content)
-	
+
 	rawContentStr := string(rawContent)
 	if strings.Contains(rawContentStr, searchPattern) {
 		// Already present, check if we need to update
@@ -87,7 +87,7 @@ func (m *ShellConfigManager) Inject(shell ShellType, marker string, content stri
 		var newLines []string
 		inBlock := false
 		replaced := false
-		
+
 		for i := 0; i < len(lines); i++ {
 			if strings.Contains(lines[i], searchPattern) {
 				inBlock = true
@@ -99,7 +99,7 @@ func (m *ShellConfigManager) Inject(shell ShellType, marker string, content stri
 				}
 				continue
 			}
-			
+
 			if inBlock {
 				// We assume the block is the marker line + one activation line
 				// If the line contains the tool name and activate/eval, it's the activation line
@@ -143,7 +143,7 @@ func (m *ShellConfigManager) Inject(shell ShellType, marker string, content stri
 
 	// 3. Prepare content with consistent spacing
 	cleanContent := strings.TrimRight(rawContentStr, " \t\r\n")
-	
+
 	// 4. Append block
 	f, err := os.OpenFile(configFile, os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
@@ -193,7 +193,7 @@ func (m *ShellConfigManager) Remove(shell ShellType, marker string) error {
 	lines := strings.Split(string(content), "\n")
 	var newLines []string
 	removedCount := 0
-	
+
 	for _, line := range lines {
 		// Remove the comment marker line
 		if strings.Contains(line, searchPattern) {
@@ -202,10 +202,10 @@ func (m *ShellConfigManager) Remove(shell ShellType, marker string) error {
 		}
 		// Also remove the specific source/activation line if we find it
 		// Added PowerShell specific keywords: Invoke-Expression, Out-String
-		if strings.Contains(line, "unirtm") && strings.Contains(line, marker) && 
-			(strings.Contains(line, "source") || strings.Contains(line, "activate") || 
-			 strings.Contains(line, "eval") || strings.Contains(line, "Invoke-Expression") || 
-			 strings.Contains(line, "Out-String") || strings.Contains(line, "Invoke-RestMethod")) {
+		if strings.Contains(line, "unirtm") && strings.Contains(line, marker) &&
+			(strings.Contains(line, "source") || strings.Contains(line, "activate") ||
+				strings.Contains(line, "eval") || strings.Contains(line, "Invoke-Expression") ||
+				strings.Contains(line, "Out-String") || strings.Contains(line, "Invoke-RestMethod")) {
 			removedCount++
 			continue
 		}

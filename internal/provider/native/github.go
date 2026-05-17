@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // GithubHandler handles tools distributed via GitHub releases.
@@ -44,7 +44,7 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		}
 	}
 
-	// BaseURL for github is used to construct the API URL if needed, 
+	// BaseURL for github is used to construct the API URL if needed,
 	// but we primarily use Owner/Repo.
 	apiBase := env.Get("GITHUB_API_BASEURL")
 	if apiBase == "" {
@@ -66,7 +66,7 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		// GitHub API requires a User-Agent header
 		req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
 		req.Header.Set("Accept", "application/vnd.github+json")
-		
+
 		// Add GitHub token if available to increase rate limits
 		if token := env.Get("GITHUB_TOKEN"); token != "" {
 			req.Header.Set("Authorization", "Bearer "+token)
@@ -102,7 +102,7 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 	var versions []VersionInfo
 	for _, rel := range releases {
 		version := strings.TrimPrefix(rel.TagName, "v")
-		
+
 		// Map to store signatures for later matching
 		sigs := make(map[string]string)
 		for _, a := range rel.Assets {
@@ -163,13 +163,13 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 
 func (h *GithubHandler) detectPlatform(filename string) (string, string) {
 	filename = strings.ToLower(filename)
-	
+
 	// Skip installer formats and packages that UniRTM doesn't handle natively
-	if strings.HasSuffix(filename, ".dmg") || 
-	   strings.HasSuffix(filename, ".pkg") || 
-	   strings.HasSuffix(filename, ".msi") ||
-	   strings.HasSuffix(filename, ".deb") ||
-	   strings.HasSuffix(filename, ".rpm") {
+	if strings.HasSuffix(filename, ".dmg") ||
+		strings.HasSuffix(filename, ".pkg") ||
+		strings.HasSuffix(filename, ".msi") ||
+		strings.HasSuffix(filename, ".deb") ||
+		strings.HasSuffix(filename, ".rpm") {
 		return "", ""
 	}
 

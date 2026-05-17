@@ -38,9 +38,9 @@ func (p *VfoxProvider) Install(ctx context.Context, tool string, installPath str
 
 	// To correctly use vfox within unirtm install paths, we'd ideally configure vfox home.
 	// For now, we simulate an install by calling vfox and relying on standard vfox mechanisms,
-	// or telling it to install into our path if possible. 
+	// or telling it to install into our path if possible.
 	// The basic wrap: `vfox install tool@version`
-	
+
 	pkgSpec := tool
 	if version != "latest" && version != "" {
 		pkgSpec = tool + "@" + version

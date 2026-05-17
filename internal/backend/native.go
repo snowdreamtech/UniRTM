@@ -44,7 +44,7 @@ func (b *NativeBackend) ListVersions(ctx context.Context, tool string, platform 
 		vi := VersionInfo{
 			Version: v.Version,
 		}
-		
+
 		// Find matching asset to fill in details if possible
 		var bestAsset *native.Asset
 		bestScore := -1
@@ -72,7 +72,7 @@ func (b *NativeBackend) ListVersions(ctx context.Context, tool string, platform 
 			vi.Platform = platform
 			vi.Metadata = bestAsset.Metadata
 		}
-		
+
 		res = append(res, vi)
 	}
 	return res, nil

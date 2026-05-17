@@ -72,7 +72,7 @@ func runCompletion(cmd *cobra.Command, args []string) error {
 
 		shells := []service.ShellType{service.ShellZsh, service.ShellBash, service.ShellFish, service.ShellPowerShell}
 		scm := service.NewShellConfigManager(formatter, dryRun)
-		
+
 		for _, st := range shells {
 			if completionInstall {
 				// Only install if config file exists for --all mode to avoid cluttering unused shells
@@ -156,7 +156,7 @@ func installCompletion(formatter output.Formatter, cmd *cobra.Command, shellType
 	home, _ := os.UserHomeDir()
 	dataDir := env.GetDataDir()
 	compDir := filepath.Join(dataDir, "completions")
-	
+
 	if err := os.MkdirAll(compDir, 0755); err != nil {
 		return fmt.Errorf("failed to create completions directory: %w", err)
 	}
@@ -219,7 +219,7 @@ func installCompletion(formatter output.Formatter, cmd *cobra.Command, shellType
 		formatter.Success(fmt.Sprintf("UniRTM completion for %s is now enabled.", shellType))
 		fmt.Printf("\nPlease restart your shell or run: source %s\n", configFile)
 	}
-	
+
 	return nil
 }
 
@@ -227,7 +227,7 @@ func uninstallCompletion(formatter output.Formatter, shellType service.ShellType
 	home, _ := os.UserHomeDir()
 	dataDir := env.GetDataDir()
 	compDir := filepath.Join(dataDir, "completions")
-	
+
 	var compFile string
 	var configFile string
 

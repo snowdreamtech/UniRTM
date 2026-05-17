@@ -28,5 +28,6 @@
 ## 后续建议
 
 目前所有主流的后端都已经支持。如果需要进一步完善测试环境：
+
 1. 对于类似 **Conda, Gem, Dotnet** 这种依赖本地工具链的 Provider，在 CI 流水线中需要提前预装对应 CLI，否则在实际运行时会抛出 "xxx is required but not found in PATH"。
 2. 建议通过环境变量规范化类似 `GITLAB_TOKEN`, `FORGEJO_TOKEN` 的配置鉴权流程。

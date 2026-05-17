@@ -13,8 +13,8 @@ import (
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/config"
-	"github.com/snowdreamtech/unirtm/internal/pkg/errors"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/pkg/errors"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
@@ -294,7 +294,7 @@ func (m *AutoActivationManager) generateActivation(ctx context.Context, shell Sh
 // LoadConfigByDir loads UniRTM configuration from the specified directory.
 func (m *AutoActivationManager) LoadConfigByDir(projectDir string) (map[string]string, map[string]string, []string, error) {
 	toolVersions := make(map[string]string)
-	
+
 	cfg, err := config.LoadHierarchy(projectDir)
 	if err != nil {
 		// If LoadHierarchy fails, it might be because it didn't find any config files at all

@@ -17,10 +17,10 @@ func TestS3Backend_Name(t *testing.T) {
 
 func TestS3Backend_ResolveVersion(t *testing.T) {
 	b := NewS3Backend()
-	
+
 	ctx := context.Background()
 	p := Platform{OS: "linux", Arch: "amd64"}
-	
+
 	info, err := b.ResolveVersion(ctx, "mytool", "1.0.0", p)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

@@ -32,7 +32,7 @@ func (p *BunProvider) Install(ctx context.Context, tool string, installPath stri
 	}
 
 	// Bun releases are typically single binaries or zip files containing the binary.
-	// The generic extractor handles the artifact extraction. 
+	// The generic extractor handles the artifact extraction.
 	// We just need to ensure the binary is in the correct place and executable.
 	return nil
 }
@@ -63,7 +63,7 @@ func (p *BunProvider) DetectVersion(ctx context.Context, tool string, installPat
 func (p *BunProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	// Bun typically has 'bun' and 'bunx' (which is usually a symlink to bun)
 	var executables []string
-	
+
 	// Search recursively for 'bun' binary in installPath
 	err := filepath.Walk(installPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

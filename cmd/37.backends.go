@@ -182,7 +182,7 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 		if e.SupportsOffline {
 			offline = pterm.FgGreen.Sprint("✓")
 		}
-		
+
 		tableData = append(tableData, []string{
 			pterm.FgCyan.Sprint(e.Name),
 			recommended,
@@ -207,7 +207,7 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 	// Add Legend/Glossary at the bottom
 	fmt.Println()
 	pterm.NewStyle(pterm.FgCyan, pterm.Bold).Println("Legend & Column Meanings:")
-	
+
 	legendData := pterm.TableData{
 		{pterm.FgCyan.Sprint("RECOMMENDED"), "Official certification by UniRTM team for security and reliability."},
 		{pterm.FgCyan.Sprint("CHECKSUM"), "Integrity verification via hash files (sha256/sha512)."},
@@ -265,7 +265,7 @@ func runBackendsInfo(cmd *cobra.Command, args []string) error {
 		formatter.Success(fmt.Sprintf("Backend: %s", name), map[string]interface{}{
 			"name":              b.Name(),
 			"supports_checksum": b.SupportsChecksum(),
-			"supports_gpg":     b.SupportsGPG(),
+			"supports_gpg":      b.SupportsGPG(),
 		})
 		return nil
 	}

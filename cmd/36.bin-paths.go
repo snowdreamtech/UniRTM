@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -18,7 +19,6 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
-	"github.com/pterm/pterm"
 )
 
 func init() {
@@ -93,7 +93,7 @@ func runBinPaths(cmd *cobra.Command, args []string) error {
 		toolCfg := cfg.Tools[toolNameKey]
 		_, toolName, version, _ := im.ParseToolSpec(toolNameKey)
 		if toolCfg.Backend != "" {
-			// Backend in config is ignored if we already have it in DB, 
+			// Backend in config is ignored if we already have it in DB,
 			// but we keep the logic consistent.
 		}
 		if toolCfg.Version != "" {

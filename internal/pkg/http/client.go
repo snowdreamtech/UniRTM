@@ -78,4 +78,3 @@ func NewClientWithTimeout(timeout time.Duration) *http.Client {
 		Transport: DefaultTransport(),
 	}
 }
-

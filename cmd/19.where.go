@@ -55,7 +55,7 @@ func runWhere(cmd *cobra.Command, args []string) error {
 	// 1. Parse input: could be "node", "node@20", or a binary like "gofmt"
 	input := args[0]
 	var backendName, toolName, version string
-	
+
 	if len(args) == 2 {
 		toolName = args[0]
 		version = args[1]
@@ -80,7 +80,7 @@ func runWhere(cmd *cobra.Command, args []string) error {
 	// 3. SMART RESOLVE: If not found as a tool, try as a binary
 	fsName := env.GetFSToolName(toolName, backendName)
 	installPath := filepath.Join(env.GetInstallsDir(), fsName, version)
-	
+
 	if _, err := os.Stat(installPath); err != nil {
 		// Try resolving it as an executable first
 		platform := backend.CurrentPlatform()
@@ -112,7 +112,7 @@ func runWhere(cmd *cobra.Command, args []string) error {
 				dir = parent
 			}
 		}
-		
+
 		// If still not found, return the original error
 		return fmt.Errorf("tool %s@%s is not installed", toolName, version)
 	}

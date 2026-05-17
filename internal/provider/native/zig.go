@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // ZigHandler handles Zig tool versions via its official JSON API.

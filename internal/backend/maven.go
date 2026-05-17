@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"strings"
 	"time"
+
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 type MavenBackend struct {
@@ -27,6 +28,7 @@ func (b *MavenBackend) Name() string {
 func (b *MavenBackend) Dependencies() []string {
 	return nil
 }
+
 type mavenSearchResponse struct {
 	Response struct {
 		Docs []struct {

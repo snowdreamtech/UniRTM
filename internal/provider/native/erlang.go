@@ -19,6 +19,6 @@ func (h *ErlangHandler) Name() string {
 func (h *ErlangHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
 	h.Owner = "rabbitmq"
 	h.Repo = "erlang-relbin"
-	
+
 	return h.GithubHandler.ResolveVersions(ctx, baseURL)
 }

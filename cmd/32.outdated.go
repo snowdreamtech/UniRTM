@@ -47,11 +47,11 @@ Examples:
 
 // outdatedResult holds the comparison result for one installed tool.
 type outdatedResult struct {
-	Tool        string `json:"tool"`
-	Backend     string `json:"backend"`
-	Current     string `json:"current"`
-	Latest      string `json:"latest"`
-	Outdated    bool   `json:"outdated"`
+	Tool     string `json:"tool"`
+	Backend  string `json:"backend"`
+	Current  string `json:"current"`
+	Latest   string `json:"latest"`
+	Outdated bool   `json:"outdated"`
 }
 
 func runOutdated(cmd *cobra.Command, args []string) error {

@@ -13,10 +13,10 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
-	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/snowdreamtech/unirtm/internal/service"
@@ -119,7 +119,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			if tc.Version != "" {
 				version = tc.Version
 			}
-			
+
 			toolsToInstall[name] = service.ToolSpec{
 				Name:        toolName,
 				Version:     version,
@@ -272,13 +272,13 @@ func runInstall(cmd *cobra.Command, args []string) error {
 				pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", toolName, version)
 				continue
 			}
-			
+
 			pterm.Error.Printf("Installation failed for %s: %v\n", toolName, err)
 			return fmt.Errorf("install %s: %w", toolName, err)
 		}
 		pterm.FgGreen.Printf("✓ Successfully installed %s@%s\n", toolName, version)
 	}
-	
+
 	duration := time.Since(startTime)
 	if len(toolsToInstall) > 1 {
 		pterm.FgGreen.Printf("✓ All tools processed (took %s)\n", duration.Round(time.Millisecond).String())
@@ -301,4 +301,3 @@ func getBackendName() string {
 	}
 	return "" // Default to empty to allow auto-detection
 }
-

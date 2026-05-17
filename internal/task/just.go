@@ -57,10 +57,10 @@ func (r *JustRunner) ListTasks(dir string) ([]string, error) {
 func (r *JustRunner) Run(ctx context.Context, dir string, taskName string, args []string, env []string) error {
 	cmdArgs := []string{taskName}
 	cmdArgs = append(cmdArgs, args...)
-	
+
 	cmd := exec.CommandContext(ctx, "just", cmdArgs...)
 	cmd.Dir = dir
-	
+
 	// Pass through the environment variables injected by UniRTM
 	cmd.Env = append(os.Environ(), env...)
 

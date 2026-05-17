@@ -30,7 +30,7 @@ func TestJavaProvider_GenerateShims(t *testing.T) {
 	for _, exe := range expectedExecutables {
 		shim, ok := shims[exe]
 		assert.True(t, ok, "missing shim for %s", exe)
-		
+
 		if runtime.GOOS == "windows" {
 			assert.Contains(t, shim, "set \"JAVA_HOME=/fake/path\"")
 			assert.Contains(t, shim, filepath.Join("/fake/path", "bin", exe+".exe"))

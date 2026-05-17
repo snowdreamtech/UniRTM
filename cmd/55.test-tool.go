@@ -54,7 +54,7 @@ func runTestTool(cmd *cobra.Command, args []string) error {
 	}
 
 	formatter.Info(fmt.Sprintf("Testing tool %s@%s...", tool, version), nil)
-	
+
 	// We delegate to runInstall but could add cleanup logic here in the future.
 	err := runInstall(cmd, args)
 	if err != nil {

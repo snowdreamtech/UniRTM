@@ -39,7 +39,7 @@ func (r *RustProvider) Install(ctx context.Context, tool string, installPath str
 func (r *RustProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	cargoHome := filepath.Join(installPath, "cargo")
 	rustupHome := filepath.Join(installPath, "rustup")
-	
+
 	if err := os.MkdirAll(cargoHome, 0755); err != nil {
 		return NewProviderError("rust", "rust", version, "failed to create CARGO_HOME directory", err)
 	}
@@ -61,7 +61,7 @@ func (r *RustProvider) GenerateShims(tool string, installPath string, version st
 	for _, exe := range executables {
 		// Try bin/ directory first
 		exePath := filepath.Join(installPath, "bin", exe)
-		
+
 		// If not in bin/, try cargo/bin/
 		if _, err := os.Stat(exePath); os.IsNotExist(err) {
 			exePath = filepath.Join(installPath, "cargo", "bin", exe)
@@ -100,10 +100,10 @@ func (r *RustProvider) DetectVersion(ctx context.Context, tool string, installPa
 // ListExecutables returns Rust executables.
 func (r *RustProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	var executables []string
-	
+
 	// Default binaries
 	executables = append(executables, "rustc", "cargo", "rustdoc", "rustfmt", "rustup", "clippy-driver", "cargo-clippy", "cargo-fmt")
-	
+
 	// Read cargo/bin
 	cargoBinDir := filepath.Join(installPath, "cargo", "bin")
 	if entries, err := os.ReadDir(cargoBinDir); err == nil {
@@ -153,10 +153,10 @@ func (r *RustProvider) GetEnvVars(tool string, installPath string, version strin
 func (r *RustProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	cargoHome := filepath.Join(installPath, "cargo")
 	rustupHome := filepath.Join(installPath, "rustup")
-	
+
 	_ = os.RemoveAll(cargoHome)
 	_ = os.RemoveAll(rustupHome)
-	
+
 	return nil
 }
 

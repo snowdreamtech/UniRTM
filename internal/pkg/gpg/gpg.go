@@ -88,7 +88,7 @@ func (v *SystemGPGVerifier) Verify(ctx context.Context, sigPath, dataPath string
 func (v *SystemGPGVerifier) ImportKey(ctx context.Context, keyIDOrFingerprint string) error {
 	// Try fetching from common keyservers
 	keyservers := []string{"keys.openpgp.org", "keyserver.ubuntu.com", "pgp.mit.edu"}
-	
+
 	var lastErr error
 	for _, server := range keyservers {
 		cmd := exec.CommandContext(ctx, "gpg", "--keyserver", server, "--recv-keys", keyIDOrFingerprint)
@@ -98,6 +98,6 @@ func (v *SystemGPGVerifier) ImportKey(ctx context.Context, keyIDOrFingerprint st
 			lastErr = fmt.Errorf("failed to fetch from %s: %v (output: %s)", server, err, string(output))
 		}
 	}
-	
+
 	return lastErr
 }

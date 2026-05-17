@@ -84,7 +84,7 @@ func (v *provenanceVerifier) verify(
 
 	expectedRepo := owner + "/" + repo
 	repoRegex := "^https://github\\.com/" + owner + "/" + repo + "/"
-	
+
 	mainIdentity, err := verify.NewShortCertificateIdentity(
 		"https://token.actions.githubusercontent.com",
 		"",
@@ -127,7 +127,7 @@ var (
 func sigstoreTrustedRoots() ([]root.TrustedMaterial, error) {
 	trustedRootsOnce.Do(func() {
 		logger.Debug("provenance: initializing TUF trusted roots (GitHub + Public)")
-		
+
 		githubRoot, err := InitializeTUFRoot(
 			"github-tuf",
 			"https://tuf-repo.github.com",

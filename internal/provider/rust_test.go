@@ -33,7 +33,7 @@ func TestRustProvider_GenerateShims(t *testing.T) {
 		}
 		shim, ok := shims[exe]
 		assert.True(t, ok, "missing shim for %s", exe)
-		
+
 		if runtime.GOOS == "windows" {
 			assert.Contains(t, shim, "set \"CARGO_HOME=/fake/path/cargo\"")
 			assert.Contains(t, shim, "set \"RUSTUP_HOME=/fake/path/rustup\"")

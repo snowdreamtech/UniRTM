@@ -41,12 +41,12 @@ type CacheEntry struct {
 
 // AuditEntry represents an audit log entry
 type AuditEntry struct {
-	ID        int64     `db:"id"`
-	Timestamp time.Time `db:"timestamp"`
-	Operation string    `db:"operation"` // install, uninstall, activate, etc.
-	Tool      string    `db:"tool"`
-	Version   string    `db:"version"`
-	Status    string    `db:"status"` // success, failure
+	ID              int64     `db:"id"`
+	Timestamp       time.Time `db:"timestamp"`
+	Operation       string    `db:"operation"` // install, uninstall, activate, etc.
+	Tool            string    `db:"tool"`
+	Version         string    `db:"version"`
+	Status          string    `db:"status"` // success, failure
 	Error           string    `db:"error"`
 	Duration        int64     `db:"duration_ms"`
 	GpgVerification string    `db:"gpg_verification"`

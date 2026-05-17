@@ -59,10 +59,10 @@ func (p *FlutterProvider) DetectVersion(ctx context.Context, tool string, instal
 
 func (p *FlutterProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	var executables []string
-	
+
 	// Flutter binary is usually in bin/
 	// Dart is in bin/cache/dart-sdk/bin/
-	
+
 	binPath := filepath.Join(installPath, "bin")
 	if _, err := os.Stat(binPath); err == nil {
 		err = filepath.Walk(binPath, func(path string, info os.FileInfo, err error) error {

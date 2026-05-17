@@ -11,9 +11,9 @@ import (
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
-	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/snowdreamtech/unirtm/internal/service"
@@ -217,8 +217,8 @@ func runActivate(cmd *cobra.Command, args []string) error {
 				"error": err.Error(),
 			})
 		}
-		
-		// If we are activating "all" (no specific tool requested), 
+
+		// If we are activating "all" (no specific tool requested),
 		// use the tools defined in the configuration.
 		if len(args) == 0 {
 			// Reset toolVersions to only include what's in the config
@@ -285,7 +285,7 @@ func runActivate(cmd *cobra.Command, args []string) error {
 			}
 			fsToolName := env.GetFSToolName(toolName, backendName)
 			installPath := filepath.Join(installsDir, fsToolName, version)
-			
+
 			binPaths, err := p.GetBinPaths(toolName, installPath, version)
 			if err == nil {
 				injectedPaths = append(injectedPaths, binPaths...)
@@ -353,4 +353,3 @@ func resolveShellType(shellType string) (string, error) {
 	}
 	return string(detected), nil
 }
-

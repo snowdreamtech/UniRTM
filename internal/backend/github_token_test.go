@@ -74,8 +74,8 @@ github.mycompany.com:
     user: corp-user
 `
 	tests := []struct {
-		host  string
-		want  string
+		host string
+		want string
 	}{
 		{"github.com", "ghp_fromghcli"},
 		{"github.mycompany.com", "ghp_enterprise"},

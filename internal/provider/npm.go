@@ -46,13 +46,13 @@ func (p *NpmProvider) Install(ctx context.Context, tool string, installPath stri
 	cmd := exec.CommandContext(ctx, npmCmd, "install", "-g", pkgSpec, "--prefix", installPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	
+
 	// Extract extra domain from environment variables
 	var extraDomains []string
 	if d := DomainFromURL(env.Get("NPM_CONFIG_REGISTRY")); d != "" {
 		extraDomains = append(extraDomains, d)
 	}
-	
+
 	cmd.Env = GetNoProxyEnv(extraDomains...)
 
 	if err := cmd.Run(); err != nil {

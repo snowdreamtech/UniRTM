@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"time"
+
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 type DenoBackend struct {
@@ -26,6 +27,7 @@ func (b *DenoBackend) Name() string {
 func (b *DenoBackend) Dependencies() []string {
 	return nil
 }
+
 type denoVersionsResponse struct {
 	Latest   string   `json:"latest"`
 	Versions []string `json:"versions"`

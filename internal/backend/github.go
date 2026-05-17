@@ -8,10 +8,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"sort"
 	"strings"
 	"time"
+
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // GitHubBackend implements the Backend interface using GenericReleaseManager.
@@ -26,7 +27,7 @@ func NewGitHubBackend() *GitHubBackend {
 	}
 }
 
-func (g *GitHubBackend) Name() string            { return "github" }
+func (g *GitHubBackend) Name() string { return "github" }
 
 func (b *GitHubBackend) Dependencies() []string {
 	return nil

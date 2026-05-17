@@ -21,7 +21,7 @@ var (
 var disableCmd = &cobra.Command{
 	Use:     "disable [unirtm|mise]",
 	Aliases: []string{"dis"},
-	Short: "Remove UniRTM automatic startup from your shell",
+	Short:   "Remove UniRTM automatic startup from your shell",
 	Long: `Safely removes the UniRTM activation command from your shell configuration file (like .zshrc or .bashrc).
 
 This stops UniRTM from automatically managing your environment in future sessions without deleting your tools or data.

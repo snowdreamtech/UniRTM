@@ -17,10 +17,10 @@ func TestVfoxBackend_Name(t *testing.T) {
 
 func TestVfoxBackend_ResolveVersion(t *testing.T) {
 	b := NewVfoxBackend()
-	
+
 	ctx := context.Background()
 	p := Platform{OS: "linux", Arch: "amd64"}
-	
+
 	info, err := b.ResolveVersion(ctx, "java", "21.0.1", p)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

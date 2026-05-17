@@ -17,10 +17,10 @@ func TestCondaBackend_Name(t *testing.T) {
 
 func TestCondaBackend_ResolveVersion(t *testing.T) {
 	b := NewCondaBackend()
-	
+
 	ctx := context.Background()
 	p := Platform{OS: "linux", Arch: "amd64"}
-	
+
 	info, err := b.ResolveVersion(ctx, "numpy", "1.24.0", p)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

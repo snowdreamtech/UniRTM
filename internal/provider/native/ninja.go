@@ -20,7 +20,7 @@ func (h *NinjaHandler) Name() string {
 func (h *NinjaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
 	h.Owner = "ninja-build"
 	h.Repo = "ninja"
-	
+
 	versions, err := h.GithubHandler.ResolveVersions(ctx, baseURL)
 	if err != nil {
 		return nil, err

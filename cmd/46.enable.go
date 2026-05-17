@@ -24,7 +24,7 @@ var (
 var enableCmd = &cobra.Command{
 	Use:     "enable [unirtm|mise]",
 	Aliases: []string{"en"},
-	Short: "Setup UniRTM to start automatically in your shell",
+	Short:   "Setup UniRTM to start automatically in your shell",
 	Long: `Setup UniRTM to start automatically by adding it to your shell's configuration file (like .zshrc or .bashrc).
 
 This command auto-detects your shell and injects the activation command so you don't have to do it manually.
@@ -126,7 +126,7 @@ func getActivationCmd(targetTool string, shell service.ShellType, useShims bool)
 			}
 		}
 	}
-	
+
 	// Prepare flags
 	flags := ""
 	if useShims {

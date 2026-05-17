@@ -42,7 +42,7 @@ type ProvenanceResult struct {
 	BuilderID string
 }
 
-// SigstoreVerifier acts as the common orchestration engine for verifying 
+// SigstoreVerifier acts as the common orchestration engine for verifying
 // Sigstore bundles across different platforms (GitHub, GitLab, etc.)
 type SigstoreVerifier struct {
 	TrustedMaterials []root.TrustedMaterial
@@ -179,7 +179,7 @@ func (v *SigstoreVerifier) verifyBundle(rawBundle json.RawMessage, artifactDiges
 				hasExpectedRepo = true
 			}
 		}
-		
+
 		if !hasExpectedRepo {
 			return nil, fmt.Errorf("spoofed identity: expected repository %s not found in OIDC certificate (SAN=%s SourceRepositoryURI=%s) or signed statement", v.ExpectedRepo, cert.SubjectAlternativeName, cert.Extensions.SourceRepositoryURI)
 		}
@@ -258,7 +258,7 @@ func (f *tufFetcher) DownloadFile(urlPath string, maxLength int64, _ time.Durati
 // InitializeTUFRoot sets up a Sigstore TUF root with the specified parameters.
 func InitializeTUFRoot(cacheDirName, repoBaseURL string, customRoot []byte) (*root.LiveTrustedRoot, error) {
 	opts := tuf.DefaultOptions()
-	
+
 	if repoBaseURL != "" {
 		opts.RepositoryBaseURL = repoBaseURL
 	}

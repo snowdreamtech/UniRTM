@@ -19,13 +19,13 @@ func (h *RustHandler) Name() string {
 }
 
 func (h *RustHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
-	// For Rust, instead of a heavy TOML parser, we'll start with a curated list 
+	// For Rust, instead of a heavy TOML parser, we'll start with a curated list
 	// or use a simpler version discovery.
 	// For now, let's provide the recent stable versions.
 	// In a real implementation, we would fetch and parse the manifest.
-	
+
 	stableVersions := []string{"1.76.0", "1.75.0", "1.74.1", "1.74.0"}
-	
+
 	var versions []VersionInfo
 	for _, v := range stableVersions {
 		versions = append(versions, VersionInfo{

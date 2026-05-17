@@ -421,24 +421,28 @@ UniRTM (Universal Runtime Manager) is a development environment management tool 
 This section defines the long-term vision and advanced enterprise epics that will elevate UniRTM from a standard version manager to a next-generation "Enterprise Environment Engine". These are planned for post-1.0 development.
 
 ### A.1 Core Architecture & System Integration
+
 - **FUSE Virtual Filesystem (Zero-Overhead Shim)**: Mount a virtual directory (`~/.unirtm/bin`) using FUSE/macFUSE to eliminate PATH pollution and script shim overhead, achieving zero-latency environment switching.
 - **mmap & Zero-Copy Execution**: Utilize OS-level `mmap` to preload critical shared libraries for large SDKs (e.g., JVM, Android SDK) to drastically compress cold-start times.
 - **OS Package Manager Interception**: Intercept accidental `apt-get` or `brew` installations of global languages via system hooks, redirecting users to manage them via `.unirtm.toml`.
 - **Adaptive Resource Scheduling**: Dynamically detect system load and schedule CPU-intensive tasks (like compiling Node.js or downloading large artifacts) to E-cores or lower `nice` priorities when the developer's IDE is active.
 
 ### A.2 Ecosystem & Network Optimization
+
 - **Distributed Cache Network**: Introduce remote caching for compiled artifacts (e.g., Python, Ruby). Once compiled by one developer or CI runner, the artifact is hashed and shared globally across the enterprise network.
 - **Peer-to-Peer LAN Distribution**: Use mDNS and local P2P protocols to share downloaded binaries among colleagues in the same office/VLAN, reducing external bandwidth by 99% and accelerating team setup.
 - **Transparent Proxy & CA Injection**: Automatically inject corporate Root CAs and `HTTP_PROXY` variables into all managed toolchains (npm, pip, cargo) during environment activation to prevent corporate MITM TLS errors.
 - **Bidirectional Ecosystem Resolution**: Resolve OS-level dependencies required by language-level packages (e.g., auto-downloading glibc headers needed by a Python C-extension).
 
 ### A.3 Security & Compliance
+
 - **SLSA Provenance & SBOM Generation**: Automatically fetch and cryptographically verify SLSA provenance for all binaries, and allow one-click generation of a complete project SBOM.
 - **Vulnerability Scanning (CVE Audit)**: Integrate with OSV to continuously audit active `.unirtm.toml` configurations and alert developers if they are running a tool version with known critical CVEs.
 - **Hardware Enclave / YubiKey Integration**: Enforce hardware-backed 2FA (TouchID/YubiKey) before allowing the installation of unverified global tools or plugins on secure corporate endpoints.
 - **Plugin Sandbox Execution**: Run all third-party plugins and installation scripts inside a highly secure WASM (Wazero) or gVisor sandbox to prevent supply-chain malware from accessing the local filesystem.
 
 ### A.4 Developer Experience & AI Automation
+
 - **Time-Travel Environments**: Leverage SQLite to provide `unirtm checkout <time>`, instantly rolling back the entire local toolchain state to exactly how it was days or weeks ago.
 - **Zero-Config AI Environment Inference**: For legacy projects with no configuration, use AI to scan codebases, `package.json`, or error logs, and automatically infer and generate the optimal `.unirtm.toml`.
 - **AI-Driven Mutation Testing**: Automatically spawn isolated sandbox environments across multiple versions (e.g., Python 3.9, 3.10, 3.12) to execute test suites and verify upgrade compatibility matrices.
@@ -446,16 +450,19 @@ This section defines the long-term vision and advanced enterprise epics that wil
 - **Unified Polyglot REPL**: A smart `unirtm repl` command that detects the primary language of the project and instantly launches the correct interactive console with all environment context pre-loaded.
 
 ### A.5 Cloud-Native & DevOps
+
 - **Cloud-Native Env Mapping**: `unirtm containerize` translates local `.unirtm.toml` into highly optimized multi-stage Dockerfiles or DevContainer specs to ensure 100% production parity.
 - **Merkle Tree State Syncing**: Sync massive environments across CI runners or remote SSH sessions by comparing Merkle tree root hashes, transferring only the delta block differences.
 - **Polyglot Workspace Orchestration**: Natively support massive Monorepos (Turborepo, Nx) by mapping topological dependencies and concurrently initializing diverse environments across microservices.
 - **Configuration Drift Detection**: Use database audits and file hashing to detect when a developer's local environment has drifted from the committed `.unirtm.toml` and auto-heal the discrepancies.
 
 ### A.6 Web3 & Immutable Infrastructure
+
 - **Immutable Global Registry**: Integrate with IPFS/Blockchain networks to cryptographically guarantee that once a tool version is downloaded globally, it can never be deleted or altered (preventing `left-pad` incidents).
 - **Micropayment-based Maintainer Sponsorship**: Automatically track the real-world usage time of open-source compilers/plugins and proportionally allocate a monthly budget to their maintainers via Web3/Stripe APIs.
 
 ### A.7 OS-Level & Hardware Virtualization
+
 - **Host-to-Container Transparent Injection**: `unirtm inject <container-id>` automatically mounts the host's SQLite database and cached binaries directly into a running Docker container via zero-overhead bind mounts, eliminating the need to install languages inside Docker images.
 - **Unikernel Compilation Targeting**: Provide `unirtm build --unikernel` to statically link applications and their runtimes into bootable Unikernel images (OSv/NanoVMs), completely skipping the Linux OS layer for microsecond startup times.
 - **GPU & NPU Driver Orchestration**: Automatically sandbox and shim specific CUDA Toolkits, cuDNN versions, or NPU firmware per project, resolving global NVIDIA driver conflicts for AI engineers.
@@ -463,17 +470,20 @@ This section defines the long-term vision and advanced enterprise epics that wil
 - **Windows Registry & COM Virtualization**: Intercept and virtualize Registry/COM writes on Windows for massive toolchains (e.g., Visual Studio Build Tools) to completely prevent "DLL Hell" and system pollution.
 
 ### A.8 Advanced AI & Autonomous Sandboxing
+
 - **Local Sandboxes for Autonomous AI Agents**: Provide `unirtm agent-sandbox` to spin up ephemeral, network-isolated, CPU-limited environments for autonomous LLMs (like Devin) to safely execute code without risking the host OS.
 - **LLM-Native CLI Interaction**: `unirtm "set up a React and Go environment"` leverages local LLMs to translate natural language intents into optimal `.unirtm.toml` topologies instantly.
 - **In-Browser Full Environment via WASI**: Compile the entire UniRTM core into WASM, allowing it to run entirely within Web IDEs (e.g., VSCode Web) managing WebAssembly-compiled runtimes with zero servers.
 
 ### A.9 Enterprise Compliance & Advanced Cryptography
+
 - **Post-Quantum Cryptography Signatures**: Upgrade the existing GPG/RSA signature verification to Post-Quantum algorithms (e.g., Kyber, Dilithium) to future-proof the toolchain supply against quantum decryption.
 - **Fully Homomorphic Encryption (FHE) Audit**: Transmit enterprise SQLite audit logs using FHE, allowing organizations to run statistical queries (e.g., "usage of Node 18") without ever being able to decrypt the individual developer's privacy records.
 - **Automated OSS License Compliance Auditing**: Automatically block the installation of tools with restrictive licenses (e.g., AGPL) based on enterprise `.unirtm.policy.toml` and generate real-time compliance reports.
 - **macOS XPC Privilege Escalation Pool**: Securely handle `sudo` required operations (like root CA injection) via a verified XPC service, requiring TouchID once per session instead of constantly prompting.
 
 ### A.10 Extreme Performance & Deep Debugging
+
 - **"Matrix" Parallel Universe Execution**: `unirtm matrix run` executes code simultaneously across multiple sandboxed versions (e.g., Python 3.9, 3.10, 3.12) or architectures, highlighting memory/output regressions in real-time.
 - **Syscall Interception & Replay**: Use `ptrace` or `seccomp` to record every single syscall a tool makes during a build. Replay the exact syscall trace on another machine to deterministically prove environmental bugs.
 - **Polyglot Core Dump & Trace Analyzer**: Intercept Segfaults, automatically download the matching debug symbols (PDB/dSYM) for the exact tool version, and output a human-readable, cross-language stack trace.

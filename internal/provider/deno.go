@@ -59,7 +59,7 @@ func (p *DenoProvider) DetectVersion(ctx context.Context, tool string, installPa
 
 func (p *DenoProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	var executables []string
-	
+
 	err := filepath.Walk(installPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err

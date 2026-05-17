@@ -125,12 +125,12 @@ func NormalizePlatformKey(raw string) (string, error) {
 
 	// Accept mise-style aliases.
 	aliases := map[string]string{
-		"linux-x64":    "linux-amd64",
+		"linux-x64":      "linux-amd64",
 		"linux-x64-musl": "linux-amd64-musl",
-		"macos-x64":    "macos-amd64",
-		"windows-x64":  "windows-amd64",
-		"linux-aarch64": "linux-arm64",
-		"macos-aarch64": "macos-arm64",
+		"macos-x64":      "macos-amd64",
+		"windows-x64":    "windows-amd64",
+		"linux-aarch64":  "linux-arm64",
+		"macos-aarch64":  "macos-arm64",
 	}
 	if canonical, ok := aliases[key]; ok {
 		key = canonical

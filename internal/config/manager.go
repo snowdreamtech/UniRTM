@@ -171,7 +171,7 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 	// 3. Syntax Bridging (Jinja2 -> Pongo2)
 	// We use regex to replace common Jinja2 patterns that Pongo2 doesn't support natively.
 	content := bridgeJinja2(string(contentBytes))
-	
+
 	// Parse and execute template (Jinja2/Pongo2)
 	tpl, err := pongo2.FromString(content)
 	if err != nil {
@@ -226,8 +226,6 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 
 	// Process shorthand tool versions
 	config.PostLoad()
-
-
 
 	// Initialize maps if they are nil
 	if config.Tools == nil {
@@ -327,7 +325,7 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 	cwd, _ := os.Getwd()
 	curr := cwd
 	var projectConfigs []*Config
-	
+
 	// Helper to check if a path is a ceiling
 	isCeiling := func(path string) bool {
 		absPath, _ := filepath.Abs(path)
@@ -349,7 +347,7 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 			filepath.Join(curr, ".mise.yml"),
 			filepath.Join(curr, ".mise.yaml"),
 			filepath.Join(curr, ".mise.toml"),
-			
+
 			// 2. Standard UniRTM project files
 			filepath.Join(curr, "unirtm.yml"),
 			filepath.Join(curr, "unirtm.yaml"),
@@ -357,7 +355,7 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 			filepath.Join(curr, ".unirtm.yml"),
 			filepath.Join(curr, ".unirtm.yaml"),
 			filepath.Join(curr, ".unirtm.toml"),
-			
+
 			// 3. Local overrides (Highest precedence)
 			filepath.Join(curr, ".mise.local.yml"),
 			filepath.Join(curr, ".mise.local.yaml"),
@@ -377,7 +375,7 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 				dirConfigs = append(dirConfigs, cfg)
 			}
 		}
-		
+
 		// Add discovered configs from this directory to the front of projectConfigs
 		// (since deeper configs have higher precedence, and m.Merge(base, override) means override wins)
 		projectConfigs = append(dirConfigs, projectConfigs...)

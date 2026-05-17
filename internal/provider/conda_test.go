@@ -17,13 +17,13 @@ func TestCondaProvider_Name(t *testing.T) {
 
 func TestCondaProvider_DetectVersion(t *testing.T) {
 	p := NewCondaProvider()
-	
+
 	ctx := context.Background()
 	version, err := p.DetectVersion(ctx, "/fake/path/tool/1.2.3")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	
+
 	if version != "1.2.3" {
 		t.Errorf("expected version '1.2.3', got %s", version)
 	}

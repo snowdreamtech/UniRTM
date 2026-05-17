@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // JavaHandler handles Java distributions via Adoptium (Temurin) API.
@@ -42,15 +42,15 @@ type adoptiumRelease struct {
 func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
 	// Adoptium versions: 23 (GA), 21 (LTS), 17 (LTS), 11 (LTS), 8 (LTS)
 	majorVersions := []string{"23", "21", "17", "11", "8"}
-	
+
 	var allVersions []VersionInfo
-	
+
 	// Map OS/Arch to Adoptium values
 	os := runtime.GOOS
 	if os == "darwin" {
 		os = "mac"
 	}
-	
+
 	arch := runtime.GOARCH
 	if arch == "amd64" {
 		arch = "x64"
@@ -74,7 +74,7 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 		apiBase = strings.TrimSuffix(apiBase, "/")
 
 		url := fmt.Sprintf("%s/v3/assets/feature_releases/%s/ga?architecture=%s&heap_size=normal&image_type=%s&jvm_impl=hotspot&os=%s&project=jdk&vendor=eclipse", apiBase, v, arch, imageType, os)
-		
+
 		client := pkgHttp.NewClientWithTimeout(30 * time.Second)
 		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 		if err != nil {
@@ -105,7 +105,7 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 			if idx := strings.Index(version, "+"); idx != -1 {
 				version = version[:idx]
 			}
-			
+
 			for _, bin := range rel.Binaries {
 				assets := []Asset{
 					{
@@ -117,7 +117,7 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 						Metadata:     make(map[string]string),
 					},
 				}
-				
+
 				allVersions = append(allVersions, VersionInfo{
 					Version: version,
 					Assets:  assets,

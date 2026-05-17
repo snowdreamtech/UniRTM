@@ -62,10 +62,10 @@ func init() {
 that manages multiple development tool versions, provides declarative configuration
 management, supports multiple backends and providers, and offers comprehensive
 audit and logging capabilities.`,
-		PersistentPreRun: setupGlobalOptions,
-		SilenceUsage:     true,
-		SilenceErrors:    true,
-		Args:             cobra.ArbitraryArgs,
+		PersistentPreRun:           setupGlobalOptions,
+		SilenceUsage:               true,
+		SilenceErrors:              true,
+		Args:                       cobra.ArbitraryArgs,
 		SuggestionsMinimumDistance: 2,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {

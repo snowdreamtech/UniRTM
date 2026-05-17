@@ -111,10 +111,10 @@ func (r *NativeRunner) Run(ctx context.Context, dir string, taskName string, arg
 
 	cmd := exec.CommandContext(runCtx, shellCmd, shellArg, script)
 	cmd.Dir = dir
-	
+
 	// Inject process env + UniRTM env
 	cmd.Env = append(os.Environ(), env...)
-	
+
 	// Inject task-specific env defined in TOML
 	for k, v := range taskDef.Env {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))

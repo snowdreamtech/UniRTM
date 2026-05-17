@@ -88,7 +88,7 @@ func runUse(cmd *cobra.Command, args []string) error {
 	pairs := make([]toolVersion, 0, len(args))
 	for _, arg := range args {
 		backendName, toolName, version, explicit := im.ParseToolSpec(arg)
-		
+
 		// If no explicit version, try interactive selection
 		if !explicit || version == "latest" {
 			isTerminal := term.IsTerminal(int(os.Stdin.Fd()))

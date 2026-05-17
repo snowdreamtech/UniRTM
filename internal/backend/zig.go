@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"time"
+
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 type ZigBackend struct {
@@ -25,11 +26,12 @@ func (b *ZigBackend) Name() string {
 func (b *ZigBackend) Dependencies() []string {
 	return nil
 }
+
 type zigDownloadResponse map[string]interface{}
 
 func (b *ZigBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	// Zig compiler versions are listed at https://ziglang.org/download/index.json
-	// For zig packages, it's often github releases. 
+	// For zig packages, it's often github releases.
 	// For now we implement the compiler/core discovery.
 	url := "https://ziglang.org/download/index.json"
 

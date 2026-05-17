@@ -20,7 +20,7 @@ var (
 func init() {
 	implodeCmd.Flags().BoolVarP(&implodeYes, "yes", "y", false, "skip confirmation prompt")
 	implodeCmd.Flags().BoolVar(&implodeConfig, "config", false, "also remove configuration directory (~/.config/unirtm)")
-	
+
 	if rootCmd != nil {
 		rootCmd.AddCommand(implodeCmd)
 	}
@@ -108,7 +108,7 @@ func runImplode(cmd *cobra.Command, args []string) error {
 	multi := pterm.DefaultMultiPrinter
 	for _, t := range targets {
 		spinner, _ := pterm.DefaultSpinner.WithWriter(multi.NewWriter()).Start("Destroying " + t.name + "...")
-		
+
 		if _, err := os.Stat(t.path); os.IsNotExist(err) {
 			spinner.Info("Skipped (Already gone)")
 			continue
@@ -126,7 +126,7 @@ func runImplode(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 	pterm.DefaultHeader.WithBackgroundStyle(pterm.NewStyle(pterm.BgRed)).WithTextStyle(pterm.NewStyle(pterm.FgWhite)).Println("IMPLODE COMPLETE")
 	fmt.Println()
-	
+
 	pterm.Info.Println("To complete the cleanup, you may want to:")
 	pterm.BulletListPrinter{}.WithItems([]pterm.BulletListItem{
 		{Level: 0, Text: "Remove the 'unirtm' binary from your PATH."},

@@ -43,7 +43,7 @@ func runToolStub(cmd *cobra.Command, args []string) error {
 
 	file := args[0]
 	formatter.Info(fmt.Sprintf("Executing tool stub for %s...", file), nil)
-	
+
 	// Placeholder for actual stub logic.
 	pterm.Warning.Println("Tool stub logic is currently a placeholder.")
 	pterm.Info.Printf("In a full implementation, this would prompt to install the tool providing %s.\n", file)

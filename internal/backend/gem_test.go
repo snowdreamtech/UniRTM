@@ -31,10 +31,10 @@ func TestGemBackend_ResolveVersion(t *testing.T) {
 	b := NewGemBackend()
 	// Override the client's transport if we wanted to mock the URL, but here we just
 	// test the hardcoded explicit version logic since we can't easily inject the URL into NewGemBackend.
-	
+
 	ctx := context.Background()
 	p := Platform{OS: "linux", Arch: "amd64"}
-	
+
 	// Test explicit version (does not make HTTP request)
 	info, err := b.ResolveVersion(ctx, "bundler", "2.4.22", p)
 	if err != nil {

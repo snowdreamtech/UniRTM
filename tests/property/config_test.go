@@ -14,6 +14,8 @@ import (
 	"strings"
 	"testing"
 
+	"reflect"
+
 	"github.com/leanovate/gopter"
 	"github.com/leanovate/gopter/gen"
 	"github.com/leanovate/gopter/prop"
@@ -21,7 +23,6 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
-	"reflect"
 )
 
 // Feature: unirtm, Property 1: Configuration Round-Trip (TOML)

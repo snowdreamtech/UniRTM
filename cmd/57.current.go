@@ -78,19 +78,21 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 			// Robust detection engine
 			isInst := false
 			basePath := filepath.Join(env.GetInstallsDir(), env.GetFSToolName(name, toolCfg.Backend))
-			
+
 			// 1. Generate core variants (v, V, none)
 			pureVersion := v
 			if strings.HasPrefix(strings.ToLower(v), "v") {
 				pureVersion = v[1:]
 			}
-			
+
 			checkVariants := []string{v, pureVersion, "v" + pureVersion, "V" + pureVersion}
-			
+
 			// 2. Exact match check
 			seen := make(map[string]bool)
 			for _, variant := range checkVariants {
-				if variant == "" || seen[variant] { continue }
+				if variant == "" || seen[variant] {
+					continue
+				}
 				seen[variant] = true
 				if _, err := os.Stat(filepath.Join(basePath, variant)); err == nil {
 					isInst = true
@@ -103,14 +105,16 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 				normalizedReq := strings.NewReplacer("-", "", ".", "", "_", "").Replace(strings.ToLower(pureVersion))
 				entries, _ := os.ReadDir(basePath)
 				for _, entry := range entries {
-					if !entry.IsDir() { continue }
-					
+					if !entry.IsDir() {
+						continue
+					}
+
 					eName := entry.Name()
 					pureEName := eName
 					if strings.HasPrefix(strings.ToLower(eName), "v") {
 						pureEName = eName[1:]
 					}
-					
+
 					normalizedEntry := strings.NewReplacer("-", "", ".", "", "_", "").Replace(strings.ToLower(pureEName))
 					if normalizedReq == normalizedEntry {
 						isInst = true
@@ -139,7 +143,7 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 	// 3. Output Logic
 	// Determine if we should show the interactive TUI
 	isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput && filterTool == ""
-	
+
 	if !isTerminal {
 		// Plain mode (Mise style) or specific tool
 		for _, res := range results {
@@ -157,7 +161,7 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
 		WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
 		Println("UniRTM Active Versions")
-	
+
 	var tableData [][]string
 	tableData = append(tableData, []string{"Tool", "Version", "Status"})
 
@@ -169,12 +173,12 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 				status = pterm.LightRed("✗ missing")
 				hasMissing = true
 			}
-			
+
 			toolDisplay := res.name
 			if i > 0 {
-				toolDisplay = "" 
+				toolDisplay = ""
 			}
-			
+
 			tableData = append(tableData, []string{
 				pterm.Bold.Sprint(toolDisplay),
 				pterm.Cyan(v),

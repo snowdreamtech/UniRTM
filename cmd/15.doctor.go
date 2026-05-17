@@ -169,7 +169,9 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 
 			// Use TOML tag if available
 			tagName := field.Tag.Get("toml")
-			if tagName == "" { tagName = field.Name }
+			if tagName == "" {
+				tagName = field.Name
+			}
 			tagName = strings.Split(tagName, ",")[0]
 
 			settingsData = append(settingsData, []string{pterm.LightBlue(tagName), pterm.LightCyan(displayVal)})
@@ -190,7 +192,9 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		toolData = append(toolData, []string{"Tool", "Version", "Backend", "Install Status"})
 
 		keys := make([]string, 0, len(cfg.Tools))
-		for k := range cfg.Tools { keys = append(keys, k) }
+		for k := range cfg.Tools {
+			keys = append(keys, k)
+		}
 		sort.Strings(keys)
 
 		for _, name := range keys {
@@ -227,7 +231,9 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	pterm.DefaultSection.Println("🛤️  PATH Visualization")
 	for i, p := range pathItems {
 		prefix := "  "
-		if i == 0 { prefix = "-> " }
+		if i == 0 {
+			prefix = "-> "
+		}
 
 		if strings.EqualFold(p, shimsDir) {
 			pterm.Success.Printf("%s%s %s\n", prefix, p, pterm.LightMagenta("(UniRTM Shims)"))
@@ -242,7 +248,9 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	pterm.DefaultSection.Println("🔑 Environment Hierarchy (UNIRTM_ > MISE_ > Raw)")
 	relevantVars := make(map[string]bool)
 	configKeys := []string{"DATA_DIR", "CONFIG_DIR", "CACHE_DIR", "EXPERIMENTAL", "DEBUG", "GITHUB_TOKEN", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "ACTIVATION_SCOPE"}
-	for _, k := range configKeys { relevantVars[k] = true }
+	for _, k := range configKeys {
+		relevantVars[k] = true
+	}
 	for _, e := range os.Environ() {
 		pair := strings.SplitN(e, "=", 2)
 		if strings.HasPrefix(pair[0], "UNIRTM_") {
@@ -255,7 +263,9 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	var envData [][]string
 	envData = append(envData, []string{"Key", "Source", "Effective Value"})
 	sortedKeys := make([]string, 0, len(relevantVars))
-	for k := range relevantVars { sortedKeys = append(sortedKeys, k) }
+	for k := range relevantVars {
+		sortedKeys = append(sortedKeys, k)
+	}
 	sort.Strings(sortedKeys)
 
 	for _, k := range sortedKeys {
@@ -265,20 +275,33 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		resolved := env.Get(k)
 
 		source := "Raw"
-		if unirtmVal != "" { source = "UNIRTM_" } else if miseVal != "" { source = "MISE_" } else if rawVal == "" {
+		if unirtmVal != "" {
+			source = "UNIRTM_"
+		} else if miseVal != "" {
+			source = "MISE_"
+		} else if rawVal == "" {
 			source = "Default"
 			switch k {
-			case "DATA_DIR": resolved = env.GetDataDir()
-			case "CONFIG_DIR": resolved = env.GetConfigDir()
-			case "CACHE_DIR": resolved = env.GetCacheDir()
+			case "DATA_DIR":
+				resolved = env.GetDataDir()
+			case "CONFIG_DIR":
+				resolved = env.GetConfigDir()
+			case "CACHE_DIR":
+				resolved = env.GetCacheDir()
 			}
 		}
 
-		if resolved == "" && source == "Raw" { continue }
+		if resolved == "" && source == "Raw" {
+			continue
+		}
 
 		displayVal := resolved
-		if strings.Contains(k, "TOKEN") && displayVal != "" { displayVal = "******** [REDACTED]" }
-		if len(displayVal) > 45 { displayVal = displayVal[:42] + "..." }
+		if strings.Contains(k, "TOKEN") && displayVal != "" {
+			displayVal = "******** [REDACTED]"
+		}
+		if len(displayVal) > 45 {
+			displayVal = displayVal[:42] + "..."
+		}
 
 		envData = append(envData, []string{pterm.LightBlue(k), pterm.FgGray.Sprint(source), pterm.LightCyan(displayVal)})
 	}
@@ -291,7 +314,9 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		taskData = append(taskData, []string{"Task", "Description"})
 		for name, t := range cfg.Tasks {
 			desc := t.Description
-			if desc == "" { desc = pterm.FgGray.Sprint("(no description)") }
+			if desc == "" {
+				desc = pterm.FgGray.Sprint("(no description)")
+			}
 			taskData = append(taskData, []string{pterm.LightYellow(name), desc})
 		}
 		pterm.DefaultTable.WithHasHeader().WithData(taskData).Render()
@@ -361,7 +386,9 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		for name, t := range cfg.Tools {
 			slug := env.GetFSToolName(name, t.Backend)
 			v := t.Version
-			if ver, err := service.ParseVersion(v); err == nil { v = ver.String() }
+			if ver, err := service.ParseVersion(v); err == nil {
+				v = ver.String()
+			}
 			if _, err := os.Stat(filepath.Join(env.GetInstallsDir(), slug, v)); os.IsNotExist(err) {
 				missingTools++
 			}
@@ -384,7 +411,9 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 }
 
 func formatBoolStatus(b bool) string {
-	if b { return pterm.LightGreen("yes") }
+	if b {
+		return pterm.LightGreen("yes")
+	}
 	return pterm.LightRed("no")
 }
 
@@ -393,16 +422,22 @@ func formatTrustStatus() string {
 }
 
 func formatActiveEnv(cfg *config.Config) string {
-	if cfg == nil { return "none" }
+	if cfg == nil {
+		return "none"
+	}
 	e := env.Get("ENV")
-	if e == "" { return "base" }
+	if e == "" {
+		return "base"
+	}
 	return pterm.LightCyan(e)
 }
 
 func getDirSize(path string) string {
 	var size int64
 	_ = filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
-		if err == nil && !info.IsDir() { size += info.Size() }
+		if err == nil && !info.IsDir() {
+			size += info.Size()
+		}
 		return nil
 	})
 	return formatSize(size)
@@ -410,14 +445,20 @@ func getDirSize(path string) string {
 
 func getFileSize(path string) string {
 	info, err := os.Stat(path)
-	if err != nil { return "0 B" }
+	if err != nil {
+		return "0 B"
+	}
 	return formatSize(info.Size())
 }
 
 func formatSize(size int64) string {
-	if size == 0 { return "0 B" }
+	if size == 0 {
+		return "0 B"
+	}
 	const unit = 1024
-	if size < unit { return fmt.Sprintf("%d B", size) }
+	if size < unit {
+		return fmt.Sprintf("%d B", size)
+	}
 	div, exp := int64(unit), 0
 	for n := size / unit; n >= unit; n /= unit {
 		div *= unit

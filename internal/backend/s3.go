@@ -7,9 +7,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
-	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"time"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // S3Backend implements the Backend interface for Amazon S3 buckets.

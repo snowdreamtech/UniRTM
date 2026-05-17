@@ -59,7 +59,7 @@ func (p *ErlangProvider) DetectVersion(ctx context.Context, tool string, install
 
 func (p *ErlangProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	var executables []string
-	
+
 	// Erlang binaries are usually in bin/ directory
 	binPath := filepath.Join(installPath, "bin")
 	if _, err := os.Stat(binPath); err == nil {

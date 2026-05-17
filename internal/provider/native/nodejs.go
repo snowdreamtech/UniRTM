@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // NodeJSHandler handles the official Node.js download metadata from nodejs.org/dist/index.json.

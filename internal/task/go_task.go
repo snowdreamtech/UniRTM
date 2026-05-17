@@ -70,10 +70,10 @@ func (r *GoTaskRunner) ListTasks(dir string) ([]string, error) {
 func (r *GoTaskRunner) Run(ctx context.Context, dir string, taskName string, args []string, env []string) error {
 	// Temporarily inject environment variables since go-task inherently inherits from os.Environ
 	envMutex.Lock()
-	
+
 	// Save existing environment to restore later
 	originalEnv := os.Environ()
-	
+
 	// Apply the environment variables from UniRTM
 	for _, e := range env {
 		parts := strings.SplitN(e, "=", 2)
@@ -81,7 +81,7 @@ func (r *GoTaskRunner) Run(ctx context.Context, dir string, taskName string, arg
 			os.Setenv(parts[0], parts[1])
 		}
 	}
-	
+
 	defer func() {
 		// Restore the entire environment
 		os.Clearenv()
@@ -111,7 +111,7 @@ func (r *GoTaskRunner) Run(ctx context.Context, dir string, taskName string, arg
 	if taskName == "" {
 		taskName = "default"
 	}
-	
+
 	calls := []*gotask.Call{
 		{Task: taskName},
 	}

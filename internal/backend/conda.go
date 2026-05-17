@@ -8,9 +8,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"sort"
 	"time"
+
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // CondaBackend implements the Backend interface for Conda packages.
@@ -32,6 +33,7 @@ func (b *CondaBackend) Name() string {
 func (b *CondaBackend) Dependencies() []string {
 	return nil
 }
+
 type anacondaResponse struct {
 	Versions []string `json:"versions"`
 }

@@ -45,7 +45,7 @@ node = { version = "18.0.0" }
 	fileBytes, err := os.ReadFile(trustFilePath)
 	require.NoError(t, err)
 	assert.Contains(t, string(fileBytes), projectConfig, "Trust file should contain the absolute path")
-	
+
 	hash1, err := calculateHash(projectConfig)
 	require.NoError(t, err)
 	assert.Contains(t, string(fileBytes), hash1, "Trust file should contain the hash")

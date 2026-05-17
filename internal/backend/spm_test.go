@@ -17,10 +17,10 @@ func TestSpmBackend_Name(t *testing.T) {
 
 func TestSpmBackend_ResolveVersion(t *testing.T) {
 	b := NewSpmBackend()
-	
+
 	ctx := context.Background()
 	p := Platform{OS: "linux", Arch: "amd64"}
-	
+
 	info, err := b.ResolveVersion(ctx, "apple/swift-format", "509.0.0", p)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

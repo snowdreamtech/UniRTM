@@ -23,7 +23,7 @@ func init() {
 	fmtCmd.Flags().BoolVar(&fmtCheck, "check", false, "check if config is formatted without modifying it (exit 1 if not)")
 	fmtCmd.Flags().BoolVarP(&fmtRecursive, "recursive", "r", false, "format all unirtm.toml files in subdirectories")
 	fmtCmd.Flags().BoolVarP(&fmtAllConfigs, "all", "a", false, "format all supported config files (unirtm.toml, .tool-versions)")
-	
+
 	if rootCmd != nil {
 		rootCmd.AddCommand(fmtCmd)
 	}
@@ -84,7 +84,7 @@ func runFmt(cmd *cobra.Command, args []string) error {
 				}
 				return nil
 			}
-			
+
 			name := info.Name()
 			if name == "unirtm.toml" || name == ".unirtm.toml" || (fmtAllConfigs && name == ".tool-versions") {
 				files = append(files, path)
@@ -120,7 +120,7 @@ func runFmt(cmd *cobra.Command, args []string) error {
 			errorCount++
 			continue
 		}
-		
+
 		if isModified {
 			if fmtCheck {
 				pterm.Warning.Prefix = pterm.Prefix{Text: "CHECK", Style: pterm.NewStyle(pterm.BgYellow, pterm.FgBlack)}

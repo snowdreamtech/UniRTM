@@ -62,7 +62,7 @@ func NewRegistry() *Registry {
 	r.Register("kubectl", NewGenericProvider())
 	r.Register("maven", NewGenericProvider())
 	r.Register("gradle", NewGenericProvider())
-	
+
 	return r
 }
 

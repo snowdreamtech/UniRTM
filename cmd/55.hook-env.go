@@ -88,7 +88,7 @@ func runHookEnv(cmd *cobra.Command, args []string) error {
 
 	// 4. Handle directory change
 	pwd, _ := os.Getwd()
-	
+
 	event := service.DirectoryChangeEvent{
 		OldDir: oldPwd,
 		NewDir: pwd,
@@ -104,7 +104,7 @@ func runHookEnv(cmd *cobra.Command, args []string) error {
 	// 5. Output the script
 	if change.Action != service.ActionNone {
 		fmt.Print(change.Script)
-		
+
 		// Update project dir and old pwd in the shell
 		switch shellType {
 		case service.ShellFish:

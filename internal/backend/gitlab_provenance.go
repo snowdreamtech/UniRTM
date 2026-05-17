@@ -89,7 +89,7 @@ func (v *gitlabProvenanceVerifier) verify(
 	}
 
 	expectedRepo := owner + "/" + repo
-	
+
 	// GitLab Fulcio issuer is typically the GitLab domain itself.
 	issuer := env.Get("GITLAB_API_URL")
 	if issuer == "" {
@@ -169,9 +169,9 @@ func (v *gitlabProvenanceVerifier) fetchAttestations(
 	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
 		return nil, fmt.Errorf("provenance: decode API response: %w", err)
 	}
-	
+
 	fmt.Printf("ℹ provenance: found %d GitLab attestation(s)\n", len(apiResp))
-	
+
 	raw := make([]json.RawMessage, 0, len(apiResp))
 	for i, a := range apiResp {
 		if a.DownloadURL != "" {

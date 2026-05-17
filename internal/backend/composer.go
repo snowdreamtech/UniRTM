@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"sort"
 	"time"
+
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 type ComposerBackend struct {
@@ -27,6 +28,7 @@ func (b *ComposerBackend) Name() string {
 func (b *ComposerBackend) Dependencies() []string {
 	return nil
 }
+
 type packagistResponse struct {
 	Package struct {
 		Versions map[string]interface{} `json:"versions"`

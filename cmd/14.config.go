@@ -242,10 +242,10 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 			}
 
 			item := pterm.BulletListItem{Level: 0, Text: fmt.Sprintf("%s = %s", k, valStr)}
-			
+
 			// Detect mirrors/proxies
 			kUpper := strings.ToUpper(k)
-			if strings.Contains(kUpper, "MIRROR") || strings.Contains(kUpper, "PROXY") || 
+			if strings.Contains(kUpper, "MIRROR") || strings.Contains(kUpper, "PROXY") ||
 				strings.Contains(kUpper, "REGISTRY") || strings.Contains(kUpper, "SERVER") ||
 				strings.Contains(kUpper, "GOPROXY") || strings.Contains(kUpper, "INDEX_URL") {
 				mirrorItems = append(mirrorItems, item)

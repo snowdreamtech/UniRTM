@@ -60,7 +60,7 @@ func Execute() {
 			if len(os.Args) > 1 {
 				target = os.Args[len(os.Args)-1]
 			}
-			
+
 			// Suggest from ALL commands and subcommands
 			var candidates []string
 			var collectCmds func(*cobra.Command)
@@ -75,7 +75,7 @@ func Execute() {
 				}
 			}
 			collectCmds(rootCmd)
-			
+
 			// De-duplicate candidates
 			unique := make(map[string]struct{})
 			var finalCandidates []string
@@ -85,10 +85,10 @@ func Execute() {
 					finalCandidates = append(finalCandidates, c)
 				}
 			}
-			
+
 			output.Suggest(os.Stderr, target, finalCandidates)
 		}
-		
+
 		formatter := output.DefaultFormatter()
 		formatter.Error(err.Error(), nil)
 		os.Exit(1)

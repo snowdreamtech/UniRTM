@@ -9,10 +9,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"sort"
 	"strings"
 	"time"
+
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // AquaBackend implements the Backend interface for Aqua registry.
@@ -25,7 +26,7 @@ type AquaBackend struct {
 // NewAquaBackend creates a new Aqua backend.
 func NewAquaBackend() *AquaBackend {
 	return &AquaBackend{
-		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
+		client:      pkgHttp.NewClientWithTimeout(30 * time.Second),
 		registryURL: "https://raw.githubusercontent.com/aquaproj/aqua-registry/main/pkgs",
 	}
 }
@@ -38,6 +39,7 @@ func (a *AquaBackend) Name() string {
 func (b *AquaBackend) Dependencies() []string {
 	return nil
 }
+
 // aquaPackage represents an Aqua package definition.
 type aquaPackage struct {
 	Type          string            `json:"type"`

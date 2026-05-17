@@ -59,7 +59,7 @@ func (p *ElixirProvider) DetectVersion(ctx context.Context, tool string, install
 
 func (p *ElixirProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	var executables []string
-	
+
 	// Elixir binaries are usually in bin/ directory
 	binPath := filepath.Join(installPath, "bin")
 	if _, err := os.Stat(binPath); err == nil {

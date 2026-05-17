@@ -52,8 +52,8 @@ Examples:
 
   # JSON output
   unirtm list --json`,
-	Args:    cobra.NoArgs,
-	RunE:    runList,
+	Args: cobra.NoArgs,
+	RunE: runList,
 }
 
 // runList executes the list command.

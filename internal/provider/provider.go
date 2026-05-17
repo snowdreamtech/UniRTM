@@ -94,6 +94,7 @@ type ShimConfig struct {
 	Version        string            // Tool version
 	Environment    map[string]string // Additional environment variables
 }
+
 // GlobalNoProxy is a list of additional domains to skip proxy for, typically loaded from configuration.
 var GlobalNoProxy []string
 
@@ -102,16 +103,16 @@ var GlobalNoProxy []string
 // It also accepts additional domains (e.g. dynamically extracted from mirror URLs).
 func GetNoProxyEnv(extraDomains ...string) []string {
 	env := os.Environ()
-	
+
 	// Collect all domains to skip proxy for
 	domains := append([]string{}, pkgHttp.ProxyBypassDomains...)
-	
+
 	// Add global configuration domains
 	domains = append(domains, GlobalNoProxy...)
-	
+
 	// Add dynamically provided domains
 	domains = append(domains, extraDomains...)
-	
+
 	// Remove duplicates and empty strings
 	domainMap := make(map[string]bool)
 	var finalDomains []string
@@ -122,9 +123,9 @@ func GetNoProxyEnv(extraDomains ...string) []string {
 			finalDomains = append(finalDomains, d)
 		}
 	}
-	
+
 	mirrors := strings.Join(finalDomains, ",")
-	
+
 	found := false
 	for i, e := range env {
 		if strings.HasPrefix(strings.ToUpper(e), "NO_PROXY=") {
@@ -135,7 +136,7 @@ func GetNoProxyEnv(extraDomains ...string) []string {
 			if len(parts) > 1 {
 				current = parts[1]
 			}
-			
+
 			if current != "" {
 				env[i] = "NO_PROXY=" + current + "," + mirrors
 			} else {
@@ -145,7 +146,7 @@ func GetNoProxyEnv(extraDomains ...string) []string {
 			break
 		}
 	}
-	
+
 	if !found {
 		env = append(env, "NO_PROXY="+mirrors)
 	}
@@ -161,12 +162,12 @@ func DomainFromURL(u string) string {
 	if !strings.Contains(u, "://") {
 		u = "http://" + u
 	}
-	
+
 	importUrl, err := url.Parse(u)
 	if err != nil {
 		return ""
 	}
-	
+
 	host := importUrl.Host
 	// Remove port if present
 	if idx := strings.Index(host, ":"); idx != -1 {

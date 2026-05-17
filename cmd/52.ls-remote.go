@@ -70,7 +70,7 @@ func runLsRemote(cmd *cobra.Command, args []string) error {
 	if lsRemoteBackend != "" {
 		backendName = lsRemoteBackend
 	}
-	
+
 	if len(args) == 2 {
 		versionPrefix = args[1]
 	} else if !explicit {
@@ -133,11 +133,11 @@ func getLsRemoteBackendName(tool string) string {
 	if lsRemoteBackend != "" {
 		return lsRemoteBackend
 	}
-	
+
 	// If the tool is a known native tool, use the native backend by default
 	if native.IsNativeTool(tool) {
 		return "native"
 	}
-	
+
 	return "github" // Fallback to github
 }

@@ -22,11 +22,11 @@ import (
 //   - Generating / refreshing lockfile entries for multiple platforms
 //   - Enforcing strict mode (UNIRTM_LOCKED=1): fail if URL not in lockfile
 type LockService struct {
-	mu             sync.RWMutex
-	lf             *lockfile.LockFile
-	dirty          bool
-	strictMode     bool
-	lockfilePath   string
+	mu              sync.RWMutex
+	lf              *lockfile.LockFile
+	dirty           bool
+	strictMode      bool
+	lockfilePath    string
 	backendRegistry *backend.Registry
 }
 

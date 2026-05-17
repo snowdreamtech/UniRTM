@@ -14,30 +14,30 @@ import (
 )
 
 type Config struct {
-	Tools ToolMap `toml:"-" yaml:"-" mapstructure:"-"`
-	ToolsRaw map[string]interface{} `toml:"tools" yaml:"tools" mapstructure:"tools"`
-	Env map[string]interface{} `toml:"env" yaml:"env" mapstructure:"env"`
-	Settings Settings `toml:"settings" yaml:"settings" mapstructure:"settings"`
-	Tasks map[string]Task `toml:"tasks" yaml:"tasks" mapstructure:"tasks"`
+	Tools        ToolMap                      `toml:"-" yaml:"-" mapstructure:"-"`
+	ToolsRaw     map[string]interface{}       `toml:"tools" yaml:"tools" mapstructure:"tools"`
+	Env          map[string]interface{}       `toml:"env" yaml:"env" mapstructure:"env"`
+	Settings     Settings                     `toml:"settings" yaml:"settings" mapstructure:"settings"`
+	Tasks        map[string]Task              `toml:"tasks" yaml:"tasks" mapstructure:"tasks"`
 	Environments map[string]EnvironmentConfig `toml:"environments,omitempty" yaml:"environments,omitempty" mapstructure:"environments,omitempty"`
-	Aliases map[string]map[string]string `toml:"aliases,omitempty" yaml:"aliases,omitempty" mapstructure:"aliases,omitempty"`
+	Aliases      map[string]map[string]string `toml:"aliases,omitempty" yaml:"aliases,omitempty" mapstructure:"aliases,omitempty"`
 }
 
 type EnvironmentConfig struct {
-	Tools ToolMap `toml:"-" yaml:"-" mapstructure:"-"`
+	Tools    ToolMap                `toml:"-" yaml:"-" mapstructure:"-"`
 	ToolsRaw map[string]interface{} `toml:"tools,omitempty" yaml:"tools,omitempty" mapstructure:"tools,omitempty"`
-	Env map[string]interface{} `toml:"env,omitempty" yaml:"env,omitempty" mapstructure:"env,omitempty"`
-	Settings Settings `toml:"settings,omitempty" yaml:"settings,omitempty" mapstructure:"settings,omitempty"`
-	Tasks map[string]Task `toml:"tasks,omitempty" yaml:"tasks,omitempty" mapstructure:"tasks,omitempty"`
+	Env      map[string]interface{} `toml:"env,omitempty" yaml:"env,omitempty" mapstructure:"env,omitempty"`
+	Settings Settings               `toml:"settings,omitempty" yaml:"settings,omitempty" mapstructure:"settings,omitempty"`
+	Tasks    map[string]Task        `toml:"tasks,omitempty" yaml:"tasks,omitempty" mapstructure:"tasks,omitempty"`
 }
 
 type ToolConfig struct {
-	Version string `toml:"version" yaml:"version" mapstructure:"version"`
-	Backend string `toml:"backend,omitempty" yaml:"backend,omitempty" mapstructure:"backend,omitempty"`
-	Provider string `toml:"provider,omitempty" yaml:"provider,omitempty" mapstructure:"provider,omitempty"`
-	PreInstall string `toml:"pre_install,omitempty" yaml:"pre_install,omitempty" mapstructure:"pre_install,omitempty"`
-	PostInstall string `toml:"post_install,omitempty" yaml:"post_install,omitempty" mapstructure:"post_install,omitempty"`
-	GPGKeys []string `toml:"gpg_keys,omitempty" yaml:"gpg_keys,omitempty" mapstructure:"gpg_keys,omitempty"`
+	Version     string   `toml:"version" yaml:"version" mapstructure:"version"`
+	Backend     string   `toml:"backend,omitempty" yaml:"backend,omitempty" mapstructure:"backend,omitempty"`
+	Provider    string   `toml:"provider,omitempty" yaml:"provider,omitempty" mapstructure:"provider,omitempty"`
+	PreInstall  string   `toml:"pre_install,omitempty" yaml:"pre_install,omitempty" mapstructure:"pre_install,omitempty"`
+	PostInstall string   `toml:"post_install,omitempty" yaml:"post_install,omitempty" mapstructure:"post_install,omitempty"`
+	GPGKeys     []string `toml:"gpg_keys,omitempty" yaml:"gpg_keys,omitempty" mapstructure:"gpg_keys,omitempty"`
 }
 
 type ToolMap map[string]ToolConfig
@@ -110,32 +110,32 @@ func (tm ToolMap) MarshalTOML() (interface{}, error) {
 }
 
 type Settings struct {
-	CacheDir string `toml:"cache_dir" yaml:"cache_dir" mapstructure:"cache_dir"`
-	DataDir string `toml:"data_dir" yaml:"data_dir" mapstructure:"data_dir"`
-	CacheTTL int `toml:"cache_ttl" yaml:"cache_ttl" mapstructure:"cache_ttl"`
-	Concurrency int `toml:"concurrency" yaml:"concurrency" mapstructure:"concurrency"`
-	Lockfile bool `toml:"lockfile,omitempty" yaml:"lockfile,omitempty" mapstructure:"lockfile,omitempty"`
-	Locked bool `toml:"locked,omitempty" yaml:"locked,omitempty" mapstructure:"locked,omitempty"`
-	GitHubProxy string `toml:"github_proxy,omitempty" yaml:"github_proxy,omitempty" mapstructure:"github_proxy,omitempty"`
-	HttpProxy string `toml:"http_proxy,omitempty" yaml:"http_proxy,omitempty" mapstructure:"http_proxy,omitempty"`
-	HttpsProxy string `toml:"https_proxy,omitempty" yaml:"https_proxy,omitempty" mapstructure:"https_proxy,omitempty"`
-	GitHubToken string `toml:"github_token,omitempty" yaml:"github_token,omitempty" mapstructure:"github_token,omitempty"`
-	HTTPTimeout int `toml:"http_timeout,omitempty" yaml:"http_timeout,omitempty" mapstructure:"http_timeout,omitempty"`
-	TaskTimeout int `toml:"task_timeout,omitempty" yaml:"task_timeout,omitempty" mapstructure:"task_timeout,omitempty"`
-	TaskOutput string `toml:"task_output,omitempty" yaml:"task_output,omitempty" mapstructure:"task_output,omitempty"`
-	Experimental bool `toml:"experimental,omitempty" yaml:"experimental,omitempty" mapstructure:"experimental,omitempty"`
-	AutoInstall *bool `toml:"auto_install,omitempty" yaml:"auto_install,omitempty" mapstructure:"auto_install,omitempty"`
-	Color string `toml:"color,omitempty" yaml:"color,omitempty" mapstructure:"color,omitempty"`
-	Editor string `toml:"editor,omitempty" yaml:"editor,omitempty" mapstructure:"editor,omitempty"`
-	Shell string `toml:"shell,omitempty" yaml:"shell,omitempty" mapstructure:"shell,omitempty"`
-	AlwaysKeepDownload bool `toml:"always_keep_download,omitempty" yaml:"always_keep_download,omitempty" mapstructure:"always_keep_download,omitempty"`
-	CeilingPaths []string `toml:"ceiling_paths,omitempty" yaml:"ceiling_paths,omitempty" mapstructure:"ceiling_paths,omitempty"`
-	TrustedConfigPaths []string `toml:"trusted_config_paths,omitempty" yaml:"trusted_config_paths,omitempty" mapstructure:"trusted_config_paths,omitempty"`
-	GPGVerify string `toml:"gpg_verify" yaml:"gpg_verify" mapstructure:"gpg_verify"`
-	GPGKeys []string `toml:"gpg_keys" yaml:"gpg_keys" mapstructure:"gpg_keys"`
-	VerifyMetadata *bool `toml:"verify_metadata,omitempty" yaml:"verify_metadata,omitempty" mapstructure:"verify_metadata,omitempty"`
-	NoProxy []string `toml:"no_proxy,omitempty" yaml:"no_proxy,omitempty" mapstructure:"no_proxy,omitempty"`
-	Tools map[string]map[string]interface{} `toml:"tools,omitempty" yaml:"tools,omitempty" mapstructure:"tools,omitempty"`
+	CacheDir           string                            `toml:"cache_dir" yaml:"cache_dir" mapstructure:"cache_dir"`
+	DataDir            string                            `toml:"data_dir" yaml:"data_dir" mapstructure:"data_dir"`
+	CacheTTL           int                               `toml:"cache_ttl" yaml:"cache_ttl" mapstructure:"cache_ttl"`
+	Concurrency        int                               `toml:"concurrency" yaml:"concurrency" mapstructure:"concurrency"`
+	Lockfile           bool                              `toml:"lockfile,omitempty" yaml:"lockfile,omitempty" mapstructure:"lockfile,omitempty"`
+	Locked             bool                              `toml:"locked,omitempty" yaml:"locked,omitempty" mapstructure:"locked,omitempty"`
+	GitHubProxy        string                            `toml:"github_proxy,omitempty" yaml:"github_proxy,omitempty" mapstructure:"github_proxy,omitempty"`
+	HttpProxy          string                            `toml:"http_proxy,omitempty" yaml:"http_proxy,omitempty" mapstructure:"http_proxy,omitempty"`
+	HttpsProxy         string                            `toml:"https_proxy,omitempty" yaml:"https_proxy,omitempty" mapstructure:"https_proxy,omitempty"`
+	GitHubToken        string                            `toml:"github_token,omitempty" yaml:"github_token,omitempty" mapstructure:"github_token,omitempty"`
+	HTTPTimeout        int                               `toml:"http_timeout,omitempty" yaml:"http_timeout,omitempty" mapstructure:"http_timeout,omitempty"`
+	TaskTimeout        int                               `toml:"task_timeout,omitempty" yaml:"task_timeout,omitempty" mapstructure:"task_timeout,omitempty"`
+	TaskOutput         string                            `toml:"task_output,omitempty" yaml:"task_output,omitempty" mapstructure:"task_output,omitempty"`
+	Experimental       bool                              `toml:"experimental,omitempty" yaml:"experimental,omitempty" mapstructure:"experimental,omitempty"`
+	AutoInstall        *bool                             `toml:"auto_install,omitempty" yaml:"auto_install,omitempty" mapstructure:"auto_install,omitempty"`
+	Color              string                            `toml:"color,omitempty" yaml:"color,omitempty" mapstructure:"color,omitempty"`
+	Editor             string                            `toml:"editor,omitempty" yaml:"editor,omitempty" mapstructure:"editor,omitempty"`
+	Shell              string                            `toml:"shell,omitempty" yaml:"shell,omitempty" mapstructure:"shell,omitempty"`
+	AlwaysKeepDownload bool                              `toml:"always_keep_download,omitempty" yaml:"always_keep_download,omitempty" mapstructure:"always_keep_download,omitempty"`
+	CeilingPaths       []string                          `toml:"ceiling_paths,omitempty" yaml:"ceiling_paths,omitempty" mapstructure:"ceiling_paths,omitempty"`
+	TrustedConfigPaths []string                          `toml:"trusted_config_paths,omitempty" yaml:"trusted_config_paths,omitempty" mapstructure:"trusted_config_paths,omitempty"`
+	GPGVerify          string                            `toml:"gpg_verify" yaml:"gpg_verify" mapstructure:"gpg_verify"`
+	GPGKeys            []string                          `toml:"gpg_keys" yaml:"gpg_keys" mapstructure:"gpg_keys"`
+	VerifyMetadata     *bool                             `toml:"verify_metadata,omitempty" yaml:"verify_metadata,omitempty" mapstructure:"verify_metadata,omitempty"`
+	NoProxy            []string                          `toml:"no_proxy,omitempty" yaml:"no_proxy,omitempty" mapstructure:"no_proxy,omitempty"`
+	Tools              map[string]map[string]interface{} `toml:"tools,omitempty" yaml:"tools,omitempty" mapstructure:"tools,omitempty"`
 }
 
 func (s *Settings) LoadFromEnv() {
@@ -230,32 +230,50 @@ func (s *Settings) LoadFromEnv() {
 }
 
 type Task struct {
-	Description string `toml:"description" yaml:"description" mapstructure:"description"`
-	Run string `toml:"run" yaml:"run" mapstructure:"run"`
-	Env map[string]interface{} `toml:"env,omitempty" yaml:"env,omitempty" mapstructure:"env,omitempty"`
-	Depends []string `toml:"depends,omitempty" yaml:"depends,omitempty" mapstructure:"depends,omitempty"`
-	Timeout int `toml:"timeout,omitempty" yaml:"timeout,omitempty" mapstructure:"timeout,omitempty"`
-	Output string `toml:"output,omitempty" yaml:"output,omitempty" mapstructure:"output,omitempty"`
+	Description string                 `toml:"description" yaml:"description" mapstructure:"description"`
+	Run         string                 `toml:"run" yaml:"run" mapstructure:"run"`
+	Env         map[string]interface{} `toml:"env,omitempty" yaml:"env,omitempty" mapstructure:"env,omitempty"`
+	Depends     []string               `toml:"depends,omitempty" yaml:"depends,omitempty" mapstructure:"depends,omitempty"`
+	Timeout     int                    `toml:"timeout,omitempty" yaml:"timeout,omitempty" mapstructure:"timeout,omitempty"`
+	Output      string                 `toml:"output,omitempty" yaml:"output,omitempty" mapstructure:"output,omitempty"`
 }
 
 func (c *Config) Validate() error {
 	c.PostLoad()
 	var errs []string
-	if c.Tools == nil { c.Tools = make(ToolMap) }
+	if c.Tools == nil {
+		c.Tools = make(ToolMap)
+	}
 	for toolName, toolConfig := range c.Tools {
-		if err := toolConfig.Validate(); err != nil { errs = append(errs, fmt.Sprintf("tool %q: %v", toolName, err)) }
+		if err := toolConfig.Validate(); err != nil {
+			errs = append(errs, fmt.Sprintf("tool %q: %v", toolName, err))
+		}
 	}
-	if err := c.Settings.Validate(); err != nil { errs = append(errs, fmt.Sprintf("settings: %v", err)) }
-	if c.Tasks == nil { c.Tasks = make(map[string]Task) }
+	if err := c.Settings.Validate(); err != nil {
+		errs = append(errs, fmt.Sprintf("settings: %v", err))
+	}
+	if c.Tasks == nil {
+		c.Tasks = make(map[string]Task)
+	}
 	for taskName, task := range c.Tasks {
-		if err := task.Validate(); err != nil { errs = append(errs, fmt.Sprintf("task %q: %v", taskName, err)) }
+		if err := task.Validate(); err != nil {
+			errs = append(errs, fmt.Sprintf("task %q: %v", taskName, err))
+		}
 	}
-	if err := c.validateTaskDependencies(); err != nil { errs = append(errs, err.Error()) }
-	if c.Environments == nil { c.Environments = make(map[string]EnvironmentConfig) }
+	if err := c.validateTaskDependencies(); err != nil {
+		errs = append(errs, err.Error())
+	}
+	if c.Environments == nil {
+		c.Environments = make(map[string]EnvironmentConfig)
+	}
 	for envName, envConfig := range c.Environments {
-		if err := envConfig.Validate(); err != nil { errs = append(errs, fmt.Sprintf("environment %q: %v", envName, err)) }
+		if err := envConfig.Validate(); err != nil {
+			errs = append(errs, fmt.Sprintf("environment %q: %v", envName, err))
+		}
 	}
-	if len(errs) > 0 { return fmt.Errorf("configuration validation failed:\n  - %s", strings.Join(errs, "\n  - ")) }
+	if len(errs) > 0 {
+		return fmt.Errorf("configuration validation failed:\n  - %s", strings.Join(errs, "\n  - "))
+	}
 	return nil
 }
 
@@ -327,7 +345,9 @@ func (c *Config) validateTaskDependencies() error {
 	var errs []string
 	for taskName, task := range c.Tasks {
 		for _, dep := range task.Depends {
-			if _, exists := c.Tasks[dep]; !exists { errs = append(errs, fmt.Sprintf("task %q depends on non-existent task %q", taskName, dep)) }
+			if _, exists := c.Tasks[dep]; !exists {
+				errs = append(errs, fmt.Sprintf("task %q depends on non-existent task %q", taskName, dep))
+			}
 		}
 	}
 	visited := make(map[string]bool)
@@ -337,10 +357,14 @@ func (c *Config) validateTaskDependencies() error {
 		visited[taskName] = true
 		recStack[taskName] = true
 		task, exists := c.Tasks[taskName]
-		if !exists { return false }
+		if !exists {
+			return false
+		}
 		for _, dep := range task.Depends {
 			if !visited[dep] {
-				if hasCycle(dep) { return true }
+				if hasCycle(dep) {
+					return true
+				}
 			} else if recStack[dep] {
 				errs = append(errs, fmt.Sprintf("circular dependency detected involving task %q", taskName))
 				return true
@@ -350,40 +374,64 @@ func (c *Config) validateTaskDependencies() error {
 		return false
 	}
 	for taskName := range c.Tasks {
-		if !visited[taskName] { hasCycle(taskName) }
+		if !visited[taskName] {
+			hasCycle(taskName)
+		}
 	}
-	if len(errs) > 0 { return errors.New(strings.Join(errs, "; ")) }
+	if len(errs) > 0 {
+		return errors.New(strings.Join(errs, "; "))
+	}
 	return nil
 }
 
 func (tc *ToolConfig) Validate() error {
-	if tc.Version == "" { return errors.New("version is required") }
+	if tc.Version == "" {
+		return errors.New("version is required")
+	}
 	return nil
 }
 
 func (s *Settings) Validate() error {
 	var errs []string
-	if s.CacheTTL < 0 { errs = append(errs, "cache_ttl must be non-negative") }
-	if s.Concurrency < 0 { errs = append(errs, "concurrency must be non-negative") }
-	if s.HTTPTimeout < 0 { errs = append(errs, "http_timeout must be non-negative") }
-	if len(errs) > 0 { return errors.New(strings.Join(errs, "; ")) }
+	if s.CacheTTL < 0 {
+		errs = append(errs, "cache_ttl must be non-negative")
+	}
+	if s.Concurrency < 0 {
+		errs = append(errs, "concurrency must be non-negative")
+	}
+	if s.HTTPTimeout < 0 {
+		errs = append(errs, "http_timeout must be non-negative")
+	}
+	if len(errs) > 0 {
+		return errors.New(strings.Join(errs, "; "))
+	}
 	return nil
 }
 
 func (t *Task) Validate() error {
-	if t.Run == "" { return errors.New("run command is required") }
+	if t.Run == "" {
+		return errors.New("run command is required")
+	}
 	return nil
 }
 
 func (ec *EnvironmentConfig) Validate() error {
 	var errs []string
 	for toolName, toolConfig := range ec.Tools {
-		if err := toolConfig.Validate(); err != nil { errs = append(errs, fmt.Sprintf("tool %q: %v", toolName, err)) }
+		if err := toolConfig.Validate(); err != nil {
+			errs = append(errs, fmt.Sprintf("tool %q: %v", toolName, err))
+		}
 	}
-	if err := ec.Settings.Validate(); err != nil { errs = append(errs, fmt.Sprintf("settings: %v", err)) }
+	if err := ec.Settings.Validate(); err != nil {
+		errs = append(errs, fmt.Sprintf("settings: %v", err))
+	}
 	for taskName, task := range ec.Tasks {
-		if err := task.Validate(); err != nil { errs = append(errs, fmt.Sprintf("task %q: %v", taskName, err)) }
+		if err := task.Validate(); err != nil {
+			errs = append(errs, fmt.Sprintf("task %q: %v", taskName, err))
+		}
 	}
-	if len(errs) > 0 { return errors.New(strings.Join(errs, "; ")) }
+	if len(errs) > 0 {
+		return errors.New(strings.Join(errs, "; "))
+	}
 	return nil
 }

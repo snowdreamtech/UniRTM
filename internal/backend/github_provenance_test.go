@@ -92,7 +92,6 @@ func testFetchAttestationsFromJSON(data []byte) ([]json.RawMessage, error) {
 	return raw, nil
 }
 
-
 // ---------------------------------------------------------------------------
 // TUF trusted root singleton — smoke test (does not make network calls
 // if TUF cache already exists; skipped if no network connectivity)

@@ -8,9 +8,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"strings"
 	"time"
+
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // DotnetBackend implements the Backend interface for .NET tools (NuGet).
@@ -32,6 +33,7 @@ func (b *DotnetBackend) Name() string {
 func (b *DotnetBackend) Dependencies() []string {
 	return nil
 }
+
 type nugetVersionsResponse struct {
 	Versions []string `json:"versions"`
 }

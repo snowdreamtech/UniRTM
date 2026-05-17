@@ -8,10 +8,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"os"
 	"strings"
 	"time"
+
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 )
@@ -53,7 +54,7 @@ func (v *NativeGPGVerifier) Verify(ctx context.Context, sigPath, dataPath string
 	}
 
 	// We need the public key to verify.
-	
+
 	var lastErr error
 	for _, fp := range fingerprints {
 		keyObj, err := v.fetchKey(ctx, fp)

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // PythonHandler specifically handles python-build-standalone.
@@ -53,7 +53,7 @@ func (h *PythonHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 
 		req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
 		req.Header.Set("Accept", "application/vnd.github+json")
-		
+
 		if token := env.Get("GITHUB_TOKEN"); token != "" {
 			req.Header.Set("Authorization", "Bearer "+token)
 		}
@@ -137,7 +137,7 @@ func (h *PythonHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 					// If current is pgo+lto and existing is not, it's better
 					if strings.Contains(a.Name, "pgo+lto") && !strings.Contains(existing.Filename, "pgo+lto") {
 						isBetter = true
-						// We'll replace it later or just append. 
+						// We'll replace it later or just append.
 						// To keep it simple, we just don't add if not better.
 					}
 				}
@@ -166,12 +166,12 @@ func (h *PythonHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 
 func (h *PythonHandler) detectPlatform(filename string) (string, string) {
 	filename = strings.ToLower(filename)
-	
-	if strings.HasSuffix(filename, ".dmg") || 
-	   strings.HasSuffix(filename, ".pkg") || 
-	   strings.HasSuffix(filename, ".msi") ||
-	   strings.HasSuffix(filename, ".deb") ||
-	   strings.HasSuffix(filename, ".rpm") {
+
+	if strings.HasSuffix(filename, ".dmg") ||
+		strings.HasSuffix(filename, ".pkg") ||
+		strings.HasSuffix(filename, ".msi") ||
+		strings.HasSuffix(filename, ".deb") ||
+		strings.HasSuffix(filename, ".rpm") {
 		return "", ""
 	}
 

@@ -17,12 +17,12 @@ func (h *GradleHandler) Name() string {
 }
 
 type gradleVersion struct {
-	Version      string `json:"version"`
-	DownloadURL  string `json:"downloadUrl"`
-	Snapshot     bool   `json:"snapshot"`
-	Nightly      bool   `json:"nightly"`
-	ReleaseNightly bool `json:"releaseNightly"`
-	Broken       bool   `json:"broken"`
+	Version        string `json:"version"`
+	DownloadURL    string `json:"downloadUrl"`
+	Snapshot       bool   `json:"snapshot"`
+	Nightly        bool   `json:"nightly"`
+	ReleaseNightly bool   `json:"releaseNightly"`
+	Broken         bool   `json:"broken"`
 }
 
 func (h *GradleHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
@@ -82,11 +82,11 @@ func (h *MavenHandler) Name() string {
 }
 
 func (h *MavenHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
-	// Maven doesn't have a simple JSON API for all versions, 
+	// Maven doesn't have a simple JSON API for all versions,
 	// but we can use the archive page or a well-known pattern.
 	// For simplicity, we'll implement a basic version resolver or hardcode recent ones for now,
 	// or scrape the apache archive.
-	
+
 	// Better approach: use the Maven Central metadata for the distribution
 	commonArches := []string{"x86_64", "amd64", "arm64", "aarch64"}
 	var assets396 []Asset

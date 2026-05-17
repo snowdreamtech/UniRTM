@@ -8,10 +8,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
-	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"strings"
 	"time"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // ForgejoBackend implements the Backend interface using GenericReleaseManager.
@@ -27,12 +28,12 @@ func NewForgejoBackend() *ForgejoBackend {
 		baseURL = "https://codeberg.org/api/v1"
 	}
 	return &ForgejoBackend{
-		client: pkgHttp.NewClientWithTimeout(15 * time.Second),
+		client:  pkgHttp.NewClientWithTimeout(15 * time.Second),
 		baseURL: baseURL,
 	}
 }
 
-func (b *ForgejoBackend) Name() string            { return "forgejo" }
+func (b *ForgejoBackend) Name() string { return "forgejo" }
 
 func (b *ForgejoBackend) Dependencies() []string {
 	return nil

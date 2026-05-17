@@ -44,10 +44,10 @@ var envCmd = &cobra.Command{
 	Short: "Export shell environment variables for activated tools",
 	Long: `Display or export the environment variables for the current UniRTM context.
 
-When run in an interactive terminal, it provides a beautiful, data-rich dashboard 
+When run in an interactive terminal, it provides a beautiful, data-rich dashboard
 of your current environment, including PATH additions and variable sources.
 
-When redirected or used with 'eval', it outputs shell-specific export statements 
+When redirected or used with 'eval', it outputs shell-specific export statements
 suitable for shell integration.
 
 Examples:
@@ -72,12 +72,12 @@ func runEnv(cmd *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 	cfg, _ := config.LoadFull()
-	
+
 	// Collect environment data
 	shell := resolveShell(envShell)
 	shimsDir := env.GetShimsDir()
 	installsDir := env.GetInstallsDir()
-	
+
 	pathDirs := []string{shimsDir}
 	vars := []envVarEntry{}
 	var sources []string
@@ -90,7 +90,7 @@ func runEnv(cmd *cobra.Command, args []string) error {
 		defer db.Close()
 		installRepo, _ := sqlite.NewInstallationRepository(db.Conn())
 		installations, _ := installRepo.List(ctx)
-		
+
 		seen := make(map[string]bool)
 		for _, inst := range installations {
 			binDir := filepath.Join(installsDir, inst.Tool, inst.Version, "bin")
@@ -109,7 +109,9 @@ func runEnv(cmd *cobra.Command, args []string) error {
 		resolved, src, redacted, err := cfg.ResolveEnvironment()
 		if err == nil {
 			sources = src
-			for _, rk := range redacted { isRedacted[rk] = true }
+			for _, rk := range redacted {
+				isRedacted[rk] = true
+			}
 
 			for k, v := range resolved {
 				if k == "PATH" {
@@ -122,9 +124,11 @@ func runEnv(cmd *cobra.Command, args []string) error {
 					}
 					continue
 				}
-				
+
 				val := v
-				if isRedacted[k] { val = "[REDACTED]" }
+				if isRedacted[k] {
+					val = "[REDACTED]"
+				}
 				vars = append(vars, envVarEntry{Name: k, Value: val, Source: "config"})
 			}
 		}
@@ -136,7 +140,7 @@ func runEnv(cmd *cobra.Command, args []string) error {
 	// 2. No --shell flag is provided
 	// 3. No --json flag is provided
 	isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput && envShell == ""
-	
+
 	if isTerminal {
 		return renderInteractiveEnv(cfg, pathDirs, vars, sources)
 	}
@@ -164,7 +168,9 @@ func renderInteractiveEnv(cfg *config.Config, pathDirs []string, vars []envVarEn
 
 	// 1. Active Environment Info
 	activeEnv := "base"
-	if e := env.Get("ENV"); e != "" { activeEnv = e }
+	if e := env.Get("ENV"); e != "" {
+		activeEnv = e
+	}
 	pterm.DefaultSection.Printf("Context: %s\n", pterm.LightCyan(activeEnv))
 
 	// 2. PATH Hierarchy
@@ -177,7 +183,9 @@ func renderInteractiveEnv(cfg *config.Config, pathDirs []string, vars []envVarEn
 			label = pterm.LightBlue("(tool bin)")
 		}
 		prefix := "  "
-		if i == 0 { prefix = "-> " }
+		if i == 0 {
+			prefix = "-> "
+		}
 		fmt.Printf("%s%s %s\n", prefix, p, label)
 	}
 
@@ -187,10 +195,12 @@ func renderInteractiveEnv(cfg *config.Config, pathDirs []string, vars []envVarEn
 		var data [][]string
 		data = append(data, []string{"Variable", "Value", "Source"})
 		sort.Slice(vars, func(i, j int) bool { return vars[i].Name < vars[j].Name })
-		
+
 		for _, v := range vars {
 			displayVal := v.Value
-			if len(displayVal) > 50 { displayVal = displayVal[:47] + "..." }
+			if len(displayVal) > 50 {
+				displayVal = displayVal[:47] + "..."
+			}
 			data = append(data, []string{
 				pterm.Bold.Sprint(v.Name),
 				pterm.LightCyan(displayVal),
@@ -212,7 +222,7 @@ func renderInteractiveEnv(cfg *config.Config, pathDirs []string, vars []envVarEn
 
 	fmt.Println()
 	pterm.Info.Println("To apply this environment, run: " + pterm.LightMagenta("eval \"$(unirtm env)\""))
-	
+
 	return nil
 }
 
@@ -268,7 +278,9 @@ func emitShellEnv(shell string, pathDirs []string, vars []envVarEntry, sources [
 	case "powershell", "pwsh":
 		if len(pathDirs) > 0 {
 			separator := ";"
-			if runtime.GOOS != "windows" { separator = ":" }
+			if runtime.GOOS != "windows" {
+				separator = ":"
+			}
 			fmt.Printf("$env:PATH = %q\n",
 				strings.Join(pathDirs, separator)+separator+"$env:PATH")
 		}
@@ -295,24 +307,34 @@ func emitShellEnv(shell string, pathDirs []string, vars []envVarEntry, sources [
 }
 
 func resolveShell(flag string) string {
-	if flag != "" { return strings.ToLower(flag) }
+	if flag != "" {
+		return strings.ToLower(flag)
+	}
 	shellEnv := filepath.Base(env.Get("SHELL"))
 	switch shellEnv {
-	case "fish": return "fish"
-	case "nu", "nushell": return "nu"
-	case "powershell", "pwsh", "pwsh.exe", "powershell.exe": return "powershell"
-	default: return "bash"
+	case "fish":
+		return "fish"
+	case "nu", "nushell":
+		return "nu"
+	case "powershell", "pwsh", "pwsh.exe", "powershell.exe":
+		return "powershell"
+	default:
+		return "bash"
 	}
 }
 
 func quoteFish(dirs []string) []string {
 	out := make([]string, len(dirs))
-	for i, d := range dirs { out[i] = fmt.Sprintf("%q", d) }
+	for i, d := range dirs {
+		out[i] = fmt.Sprintf("%q", d)
+	}
 	return out
 }
 
 func quoteNu(dirs []string) []string {
 	out := make([]string, len(dirs))
-	for i, d := range dirs { out[i] = fmt.Sprintf("%q", d) }
+	for i, d := range dirs {
+		out[i] = fmt.Sprintf("%q", d)
+	}
 	return out
 }

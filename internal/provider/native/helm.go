@@ -19,6 +19,6 @@ func (h *HelmHandler) Name() string {
 func (h *HelmHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
 	h.Owner = "helm"
 	h.Repo = "helm"
-	
+
 	return h.GithubHandler.ResolveVersions(ctx, baseURL)
 }

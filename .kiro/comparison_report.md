@@ -49,9 +49,11 @@ Settings control the behavior of the tool itself. UniRTM targets the most freque
 ## 3. Advanced Comparison (Unique Capabilities)
 
 ### Mise Strengths
+
 - **Environment Caching**: [Experimental] Caches computed environments to disk for ultra-fast nested calls.
 
 ### UniRTM Alignment Level
+
 UniRTM has achieved **~95% functional parity** for the average developer's daily workflow. The missing features are primarily edge cases (Age encryption) or legacy compatibility (asdf_compat). With the addition of **Recursive Config Discovery**, **Ceiling Paths**, and **Version Aliases**, UniRTM now offers a nearly identical configuration experience to Mise.
 
 ---

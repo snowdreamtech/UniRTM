@@ -64,7 +64,7 @@ type Backend interface {
 	// SupportsGPG indicates whether this backend supports GPG signature verification.
 	SupportsGPG() bool
 
-	// AttestationType returns the type of build provenance or attestation 
+	// AttestationType returns the type of build provenance or attestation
 	// verification supported (e.g., "SLSA", "GitHub", "Cosign").
 	// Returns an empty string if not supported.
 	AttestationType() string

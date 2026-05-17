@@ -8,9 +8,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"strings"
 	"time"
+
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // ElixirHandler handles Elixir versions via GitHub releases.
@@ -25,7 +26,7 @@ func (h *ElixirHandler) Name() string {
 func (h *ElixirHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
 	h.Owner = "elixir-lang"
 	h.Repo = "elixir"
-	
+
 	// We call a modified logic that doesn't strictly filter by OS/Arch initially
 	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", h.Owner, h.Repo)
 
@@ -49,7 +50,7 @@ func (h *ElixirHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 	var versions []VersionInfo
 	for _, rel := range releases {
 		version := strings.TrimPrefix(rel.TagName, "v")
-		
+
 		var assets []Asset
 		for _, a := range rel.Assets {
 			// Elixir precompiled assets are platform-independent

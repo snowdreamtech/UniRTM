@@ -59,7 +59,7 @@ func (g *Generator) GenerateShim(ctx context.Context, tool string, executables .
 		if shimName == "." || shimName == "/" {
 			continue
 		}
-		
+
 		switch runtime.GOOS {
 		case "windows":
 			if err := g.generateWindowsShim(tool, shimName); err != nil {

@@ -7,9 +7,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"strings"
 	"time"
+
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // HTTPBackend implements the Backend interface for direct HTTP downloads.
@@ -33,6 +34,7 @@ func (h *HTTPBackend) Name() string {
 func (h *HTTPBackend) Dependencies() []string {
 	return nil
 }
+
 // HTTPConfig represents the configuration for an HTTP backend tool.
 // This should be provided in the tool configuration.
 type HTTPConfig struct {
@@ -198,8 +200,6 @@ func (h *HTTPBackend) buildURL(template string, version string, platform Platfor
 
 	return url
 }
-
-
 
 func (h *HTTPBackend) IsRecommended() bool {
 	return true

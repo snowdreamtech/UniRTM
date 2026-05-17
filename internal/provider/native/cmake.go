@@ -20,7 +20,7 @@ func (h *CMakeHandler) Name() string {
 func (h *CMakeHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
 	h.Owner = "Kitware"
 	h.Repo = "CMake"
-	
+
 	versions, err := h.GithubHandler.ResolveVersions(ctx, baseURL)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (h *CMakeHandler) ResolveVersions(ctx context.Context, baseURL string) ([]V
 				amd64Asset := a
 				amd64Asset.Arch = "amd64"
 				assets = append(assets, amd64Asset)
-				
+
 				// Also add as arm64
 				arm64Asset := a
 				arm64Asset.Arch = "arm64"

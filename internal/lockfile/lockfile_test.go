@@ -161,7 +161,7 @@ func TestNormalizePlatformKey(t *testing.T) {
 		wantErr bool
 	}{
 		{"linux-amd64", "linux-amd64", false},
-		{"linux-x64", "linux-amd64", false},   // mise-style alias
+		{"linux-x64", "linux-amd64", false}, // mise-style alias
 		{"macos-x64", "macos-amd64", false},
 		{"LINUX-AMD64", "linux-amd64", false}, // case-insensitive
 		{"invalid-os", "", true},

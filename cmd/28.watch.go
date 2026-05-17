@@ -23,7 +23,7 @@ var watchCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		taskName := args[0]
-		
+
 		// Run task immediately once
 		runWatchTask(taskName)
 
@@ -50,7 +50,7 @@ var watchCmd = &cobra.Command{
 			}
 			return watcher.Add(path)
 		})
-		
+
 		if err != nil {
 			pterm.Error.Printf("Failed to scan directories: %v\n", err)
 			os.Exit(1)

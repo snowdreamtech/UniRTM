@@ -65,16 +65,15 @@ export UNIRTM_NODE_COMPILE=""
 
 export UNIRTM_ACTIVATION_SCOPE="global"
 
-
 # UniRTM auto-activation hook
 _unirtm_hook() {
   local old_pwd="${UNIRTM_OLD_PWD:-}"
   local new_pwd="$PWD"
-  
+
   # Only run if directory changed
   if [ "$old_pwd" != "$new_pwd" ]; then
     export UNIRTM_OLD_PWD="$new_pwd"
-    
+
     # Call unirtm hook-env to get activation changes
     eval "$(/Users/snowdream/Workspace/snowdreamtech/UniRTM/unirtm hook-env --shell zsh)"
   fi
@@ -83,4 +82,3 @@ _unirtm_hook() {
 # Install the hook in zsh
 autoload -U add-zsh-hook
 add-zsh-hook precmd _unirtm_hook
-

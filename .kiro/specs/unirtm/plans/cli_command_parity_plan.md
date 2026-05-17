@@ -7,7 +7,8 @@
 本规划将所有缺口命令按优先级分阶段补齐，使 UniRTM 达到与 mise 的命令完整性对等。
 
 ### 参考资料
-- mise 命令参考：https://mise.jdx.dev/cli/
+
+- mise 命令参考：<https://mise.jdx.dev/cli/>
 - 对比分析：`.kiro/specs/unirtm/unirtm_vs_mise_commands.md`
 
 ---
@@ -16,6 +17,7 @@
 
 > [!IMPORTANT]
 > `env` 命令的现有实现与 mise 存在**根本性语义差异**：
+>
 > - mise `env`：导出激活的工具 PATH 变量，供 `eval "$(mise env)"` 使用，是 shell 集成的核心
 > - unirtm `env`（当前）：仅打印版本信息和配置路径
 >
@@ -96,7 +98,7 @@
 
 #### [MODIFY] `cmd/9.env.go` — `env` 命令语义升级
 
-**现状**：打印版本信息和配置路径  
+**现状**：打印版本信息和配置路径
 **目标**：输出可被 `eval` 消费的 Shell 环境变量导出语句
 
 ```bash
@@ -123,6 +125,7 @@ unirtm outdated --json      # JSON 输出
 ```
 
 输出格式（对标 mise）：
+
 ```
 Tool    Current  Latest   Backend
 node    20.0.0   22.14.0  github
@@ -379,18 +382,22 @@ unirtm mcp                  # 启动 MCP server（stdio 模式）
 ## Verification Plan
 
 ### 自动化测试
+
 每个新命令需提供对应测试文件 `cmd/XX_test.go`，覆盖：
+
 - 基本 flag 解析
 - 正常输出格式（文本 / JSON）
 - 错误路径（工具不存在、权限不足等）
 
 ### 集成测试
+
 - `env` 升级：`eval "$(unirtm env)"` 测试 PATH 注入
 - `outdated` + `latest`：mock backend 返回版本，验证对比逻辑
 - `set` / `unset`：修改后验证 TOML 文件内容
 - `tasks` 子命令：基于已有任务配置验证输出
 
 ### 手动验证
+
 - 在 macOS / Linux 分别运行每个命令
 - `--help` 输出格式与 mise 对齐
 

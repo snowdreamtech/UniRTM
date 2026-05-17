@@ -6,14 +6,15 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"regexp"
+	"runtime"
 	"strings"
+
 	"github.com/flosch/pongo2/v6"
 	"github.com/joho/godotenv"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
-	"path/filepath"
-	"regexp"
-	"runtime"
 )
 
 // Load loads the UniRTM project configuration from the current directory.
