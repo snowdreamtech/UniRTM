@@ -27,36 +27,32 @@ import (
 func DefaultTransport() *http.Transport {
 	trans := http.DefaultTransport.(*http.Transport).Clone()
 
-	// 1. Smart proxy bypass + UNIRTM_/MISE_ env prefix support + NO_PROXY
+	// 1. Smart proxy bypass + UNIRTM_/MISE_ env prefix support + NO_PROXY + ALL_PROXY
 	//
+	// Proxy config is resolved ONCE at transport creation time (not per request).
 	// httpproxy.Config is used to correctly enforce NO_PROXY rules alongside
-	// UNIRTM_/MISE_ prefixed proxy variables. The standard http.ProxyFromEnvironment
-	// only reads bare HTTP_PROXY/HTTPS_PROXY/NO_PROXY from os.Getenv, not our prefixes.
+	// UNIRTM_/MISE_ prefixed proxy variables.
+	httpProxy := env.Get("HTTP_PROXY")
+	httpsProxy := env.Get("HTTPS_PROXY")
+	if allProxy := env.Get("ALL_PROXY"); allProxy != "" {
+		if httpProxy == "" {
+			httpProxy = allProxy
+		}
+		if httpsProxy == "" {
+			httpsProxy = allProxy
+		}
+	}
+	proxyFunc := (&httpproxy.Config{
+		HTTPProxy:  httpProxy,
+		HTTPSProxy: httpsProxy,
+		NoProxy:    env.Get("NO_PROXY"),
+	}).ProxyFunc()
+
 	trans.Proxy = func(req *http.Request) (*url.URL, error) {
 		if ShouldBypassProxy(req.URL.Hostname()) {
 			return nil, nil // DIRECT connection for domestic mirrors
 		}
-
-		// Build a config from resolved env vars (UNIRTM_ > MISE_ > bare name > os.Getenv).
-		// ALL_PROXY acts as a fallback when the scheme-specific vars are unset,
-		// matching the behavior of curl, wget, and http.ProxyFromEnvironment.
-		// NO_PROXY is enforced by httpproxy.Config for all three variables.
-		httpProxy := env.Get("HTTP_PROXY")
-		httpsProxy := env.Get("HTTPS_PROXY")
-		if allProxy := env.Get("ALL_PROXY"); allProxy != "" {
-			if httpProxy == "" {
-				httpProxy = allProxy
-			}
-			if httpsProxy == "" {
-				httpsProxy = allProxy
-			}
-		}
-		cfg := &httpproxy.Config{
-			HTTPProxy:  httpProxy,
-			HTTPSProxy: httpsProxy,
-			NoProxy:    env.Get("NO_PROXY"),
-		}
-		return cfg.ProxyFunc()(req.URL)
+		return proxyFunc(req.URL)
 	}
 
 	// 2. Optional manual HTTP/2 opt-out for environments where proxy software
