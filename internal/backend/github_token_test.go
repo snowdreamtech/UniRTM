@@ -9,12 +9,17 @@ import (
 )
 
 func TestResolveGitHubToken_EnvPriority(t *testing.T) {
-	// Clean all relevant env vars before each sub-test
+	// Clean all relevant env vars before each sub-test to ensure strict isolation
 	envVars := []string{
 		"UNIRTM_GITHUB_TOKEN",
+		"MISE_GITHUB_TOKEN",
 		"GITHUB_TOKEN",
+		"UNIRTM_GITHUB_API_TOKEN",
+		"MISE_GITHUB_API_TOKEN",
 		"GITHUB_API_TOKEN",
 		"UNIRTM_GITHUB_CREDENTIAL_COMMAND",
+		"MISE_GITHUB_CREDENTIAL_COMMAND",
+		"GITHUB_CREDENTIAL_COMMAND",
 	}
 	for _, v := range envVars {
 		os.Unsetenv(v)

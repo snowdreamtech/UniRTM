@@ -571,14 +571,14 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 			gpgStatus = "NotSupported"
 		}
 
-		// Verify GitHub provenance (SLSA attestation) if the backend is github or ubi.
+		// Verify provenance (SLSA attestation) if the backend is github, ubi, or gitlab.
 		// If the project does not publish attestations, this is a no-op.
 		// If attestations exist, verification MUST pass to prevent supply chain attacks.
-		if (backendName == "github" || backendName == "ubi") && verifyMetadata {
+		if (backendName == "github" || backendName == "ubi" || backendName == "gitlab") && verifyMetadata {
 			// Extract owner/repo from tool string (expected format: "owner/repo").
-			provenanceStatus, provenanceErr := tryVerifyProvenance(ctx, tool, downloadPath)
+			provenanceStatus, provenanceErr := tryVerifyProvenance(ctx, backendName, tool, downloadPath)
 			if provenanceErr != nil {
-				return fmt.Errorf("github provenance verification failed: %w", provenanceErr)
+				return fmt.Errorf("%s provenance verification failed: %w", backendName, provenanceErr)
 			}
 			// Store result in versionInfo metadata for audit logging below.
 			if versionInfo.Metadata == nil {
@@ -943,7 +943,7 @@ func (im *InstallationManager) Uninstall(ctx context.Context, tool, version stri
 	return nil
 }
 
-// tryVerifyProvenance runs GitHub provenance (SLSA attestation) verification
+// tryVerifyProvenance runs GitHub/GitLab provenance (SLSA attestation) verification
 // for tools whose tool string is in "owner/repo" format.
 //
 // Returns a short status string for audit logging:
@@ -953,37 +953,45 @@ func (im *InstallationManager) Uninstall(ctx context.Context, tool, version stri
 //
 // An error is returned only when attestations exist but verification fails,
 // which is treated as a hard security failure.
-func tryVerifyProvenance(ctx context.Context, tool, artifactPath string) (string, error) {
+func tryVerifyProvenance(ctx context.Context, backendName, tool, artifactPath string) (string, error) {
 	// Support skipping provenance verification via environment variables
 	// (e.g. UNIRTM_VERIFY_PROVENANCE=0 or MISE_VERIFY_PROVENANCE=0).
 	// This is highly useful for users in offline or restricted network environments (like China).
 	if v := env.Get("VERIFY_PROVENANCE"); v == "0" || strings.ToLower(v) == "false" {
-		logger.Warn("⚠️ GitHub provenance verification is disabled via environment, skipping check")
+		logger.Warn("⚠️ provenance verification is disabled via environment, skipping check")
 		return "skipped", nil
 	}
 
-	// Provenance only applies to GitHub-hosted tools in "owner/repo" format.
 	parts := strings.SplitN(tool, "/", 2)
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
 		return "not_applicable", nil
 	}
 	owner, repo := parts[0], parts[1]
 
-	// Resolve a token (reuses the 6-tier resolver from the GitHub backend).
-	token := backend.ResolveGitHubTokenPublic("github.com")
+	var result *backend.ProvenanceResult
+	var err error
 
-	result, err := backend.VerifyArtifactProvenance(ctx, token, owner, repo, artifactPath)
+	if backendName == "gitlab" {
+		token := env.Get("GITLAB_TOKEN")
+		result, err = backend.VerifyGitlabArtifactProvenance(ctx, token, owner, repo, artifactPath)
+	} else {
+		// Resolve a token (reuses the 6-tier resolver from the GitHub backend).
+		token := backend.ResolveGitHubTokenPublic("github.com")
+		result, err = backend.VerifyArtifactProvenance(ctx, token, owner, repo, artifactPath)
+	}
+
 	if err != nil {
 		return "failed", err
 	}
 
 	if !result.Supported {
-		logger.Debug("GitHub provenance not supported, skipping", map[string]interface{}{"tool": tool})
+		logger.Debug("provenance not supported, skipping", map[string]interface{}{"tool": tool, "backend": backendName})
 		return "not_supported", nil
 	}
 
-	logger.Debug("GitHub provenance verified", map[string]interface{}{
+	logger.Debug("provenance verified", map[string]interface{}{
 		"tool":          tool,
+		"backend":       backendName,
 		"repository":    result.Repository,
 		"workflowRef":   result.WorkflowRef,
 		"predicateType": result.PredicateType,

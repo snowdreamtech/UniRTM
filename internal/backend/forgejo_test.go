@@ -21,7 +21,7 @@ func TestForgejoBackend_ResolveVersion(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/owner/repo/releases" {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`[{"tag_name":"v1.0.0"}]`))
+			w.Write([]byte(`[{"tag_name":"v1.0.0","assets":[{"name":"tool-linux-amd64.tar.gz","browser_download_url":"https://example.com/download"}]}]`))
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)

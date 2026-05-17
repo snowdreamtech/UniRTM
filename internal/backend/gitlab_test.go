@@ -21,7 +21,7 @@ func TestGitlabBackend_ResolveVersion(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/projects/owner/repo/releases" || r.URL.Path == "/projects/owner%2Frepo/releases" {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`[{"tag_name":"v1.0.0"}]`))
+			w.Write([]byte(`[{"tag_name":"v1.0.0","assets":{"links":[{"name":"tool-linux-amd64.tar.gz","url":"https://example.com/download"}]}}]`))
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)
