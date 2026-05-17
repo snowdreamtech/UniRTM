@@ -99,7 +99,7 @@ analyze_cache() {
     printf '  "recommendations": [\n'
     if [ "$(echo "$speedup" | awk '{print int($1)}')" -lt "$POOR_CACHE_THRESHOLD" ]; then
       printf '    "Consider pre-warming cache in CI",\n'
-      printf '    "Review mise cache configuration",\n'
+      printf '    "Review unirtm cache configuration",\n'
       printf '    "Check for network-dependent installations"\n'
     else
       printf '    "Cache effectiveness is good"\n'
@@ -122,7 +122,7 @@ Recommendations:
 "
     if [ "$(echo "$speedup" | awk '{print int($1)}')" -lt "$POOR_CACHE_THRESHOLD" ]; then
       echo "  • Consider pre-warming cache in CI"
-      echo "  • Review mise cache configuration"
+      echo "  • Review unirtm cache configuration"
       echo "  • Check for network-dependent installations"
     else
       echo "  • Cache effectiveness is good"

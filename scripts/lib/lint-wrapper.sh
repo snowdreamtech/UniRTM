@@ -98,7 +98,7 @@ main() {
       log_info "── Executing ${_LINTER_WRAP:-} (dynamic) ──"
       # Execute directly with unirtm exec
       # shellcheck disable=SC2093
-      exec mise exec "${_ZM_SPEC:-}" -- zizmor "$@"
+      exec unirtm exec "${_ZM_SPEC:-}" -- zizmor "$@"
     fi
 
     # CI Fallback: Try unirtm exec directly if tool not resolved
@@ -130,46 +130,46 @@ main() {
       local _EXEC_TARGET="${_MISE_TOOL_SPEC:-${_LINTER_BIN:-}}"
 
       # Step 1: Try to execute the tool first
-      log_debug "Step 1: Attempting mise exec..."
-      if mise exec "${_EXEC_TARGET:-}" -- "${_LINTER_BIN:-}" --version >/dev/null 2>&1; then
+      log_debug "Step 1: Attempting unirtm exec..."
+      if unirtm exec "${_EXEC_TARGET:-}" -- "${_LINTER_BIN:-}" --version >/dev/null 2>&1; then
         log_info "✓ Tool found via unirtm exec, executing..."
         # shellcheck disable=SC2093
-        exec mise exec "${_EXEC_TARGET:-}" -- "${_LINTER_BIN:-}" "$@"
+        exec unirtm exec "${_EXEC_TARGET:-}" -- "${_LINTER_BIN:-}" "$@"
       fi
       log_warn "✗ unirtm exec failed"
 
       # Step 2: Check if tool is installed in unirtm
-      log_debug "Step 2: Checking mise installation status..."
-      if mise list 2>/dev/null | grep -q "${_EXEC_TARGET:-}"; then
+      log_debug "Step 2: Checking unirtm installation status..."
+      if unirtm list 2>/dev/null | grep -q "${_EXEC_TARGET:-}"; then
         log_info "Tool is registered in unirtm, attempting uninstall..."
-        mise uninstall "${_EXEC_TARGET:-}" 2>/dev/null || true
+        unirtm uninstall "${_EXEC_TARGET:-}" 2>/dev/null || true
       else
         log_info "Tool not found in unirtm registry"
       fi
 
       # Step 3: Install the tool
       log_info "Step 3: Installing tool..."
-      if mise install "${_EXEC_TARGET:-}"; then
+      if unirtm install "${_EXEC_TARGET:-}"; then
         log_info "✓ Installation successful"
 
         # Step 4: Refresh unirtm state
-        log_debug "Step 4: Refreshing mise state..."
+        log_debug "Step 4: Refreshing unirtm state..."
         unirtm reshim 2>/dev/null || log_warn "reshim failed"
         sleep 1
 
         # Step 5: Try unirtm exec again
-        log_debug "Step 5: Retrying mise exec..."
-        if mise exec "${_EXEC_TARGET:-}" -- "${_LINTER_BIN:-}" --version >/dev/null 2>&1; then
+        log_debug "Step 5: Retrying unirtm exec..."
+        if unirtm exec "${_EXEC_TARGET:-}" -- "${_LINTER_BIN:-}" --version >/dev/null 2>&1; then
           log_info "✓ Tool now executable via unirtm exec"
           # shellcheck disable=SC2093
-          exec mise exec "${_EXEC_TARGET:-}" -- "${_LINTER_BIN:-}" "$@"
+          exec unirtm exec "${_EXEC_TARGET:-}" -- "${_LINTER_BIN:-}" "$@"
         fi
         log_warn "✗ unirtm exec still failed after installation"
 
         # Step 6: Try direct execution from install path
         log_debug "Step 6: Attempting direct execution..."
         local _INSTALL_PATH
-        _INSTALL_PATH=$(mise where "${_EXEC_TARGET:-}" 2>/dev/null || true)
+        _INSTALL_PATH=$(unirtm where "${_EXEC_TARGET:-}" 2>/dev/null || true)
         if [ -n "${_INSTALL_PATH:-}" ]; then
           log_info "Install path: ${_INSTALL_PATH:-}"
 
@@ -224,7 +224,7 @@ main() {
       log_info "   - Tool spec: ${_EXEC_TARGET:-}"
       log_info "   - Binary: ${_LINTER_BIN:-}"
       log_info "   - unirtm list output:"
-      mise list 2>&1 | grep -E "(${_EXEC_TARGET:-}|${_LINTER_BIN:-})" || echo "     (no matches)"
+      unirtm list 2>&1 | grep -E "(${_EXEC_TARGET:-}|${_LINTER_BIN:-})" || echo "     (no matches)"
       exit 1
     fi
     log_warn "⚠️  ${_LINTER_WRAP:-} not found locally. Skipping linting for this module."
