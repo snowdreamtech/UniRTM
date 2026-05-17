@@ -67,7 +67,17 @@ func (p *GoPkgProvider) Install(ctx context.Context, tool string, installPath st
 
 	// Use GOBIN to install the binary into our specific versioned directory
 	cmd := exec.CommandContext(ctx, goCmd, "install", pkgSpec)
-	cmd.Env = append(GetNoProxyEnv(extraDomains...), "GOBIN="+installPath)
+	cmdEnv := append(GetNoProxyEnv(extraDomains...), "GOBIN="+installPath)
+	if gosumdb := env.Get("GOSUMDB"); gosumdb != "" {
+		cmdEnv = append(cmdEnv, "GOSUMDB="+gosumdb)
+	}
+	if gonosumdb := env.Get("GONOSUMDB"); gonosumdb != "" {
+		cmdEnv = append(cmdEnv, "GONOSUMDB="+gonosumdb)
+	}
+	if goprivate := env.Get("GOPRIVATE"); goprivate != "" {
+		cmdEnv = append(cmdEnv, "GOPRIVATE="+goprivate)
+	}
+	cmd.Env = cmdEnv
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 

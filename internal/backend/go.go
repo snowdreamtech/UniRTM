@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"sort"
 	"strings"
 	"time"
@@ -29,11 +30,26 @@ func (b *GoBackend) Dependencies() []string {
 	return []string{"go"}
 }
 
+func getGoProxyBase() string {
+	goproxy := env.Get("GOPROXY")
+	if goproxy == "" {
+		return "https://proxy.golang.org"
+	}
+	for _, proxy := range strings.Split(goproxy, ",") {
+		proxy = strings.TrimSpace(proxy)
+		if proxy == "direct" || proxy == "off" || proxy == "" {
+			continue
+		}
+		return strings.TrimSuffix(proxy, "/")
+	}
+	return "https://proxy.golang.org"
+}
+
 func (b *GoBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	// Go proxy API: https://proxy.golang.org/<module>/@v/list
 	// The module name needs to be escaped (lowercase and replace uppercase with !lowercase)
 	// For simplicity, we assume the tool name is already a valid module path or we use it as is.
-	url := fmt.Sprintf("https://proxy.golang.org/%s/@v/list", tool)
+	url := fmt.Sprintf("%s/%s/@v/list", getGoProxyBase(), tool)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
