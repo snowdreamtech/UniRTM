@@ -8,7 +8,7 @@
 # Purpose:
 #   Provides robust binary resolution with timeout protection and caching.
 #   Implements a 4-layer lookup strategy to find executables across different
-#   environments (venv, node_modules, system PATH, mise, filesystem).
+#   environments (venv, node_modules, system PATH, unirtm, filesystem).
 #
 # Standards:
 #   - POSIX-compliant sh logic.
@@ -70,7 +70,7 @@ resolve_bin_layer1() {
 
 # ── 🔍 Layer 2: System PATH Lookup ───────────────────────────────────────────
 
-# Purpose: Searches for binaries in system PATH with mise shim validation
+# Purpose: Searches for binaries in system PATH with unirtm/mise shim validation
 # Params:
 #   $1 - Binary name
 # Returns:
@@ -135,9 +135,9 @@ resolve_bin_layer2() {
   esac
 }
 
-# ── 🔍 Layer 3: UniRTM / Mise Metadata Query ───────────────────────────────────
+# ── 🔍 Layer 3: UniRTM Metadata Query ───────────────────────────────────
 
-# Purpose: Queries unirtm/mise metadata for tool installation path
+# Purpose: Queries unirtm metadata for tool installation path
 # Params:
 #   $1 - Binary name
 # Returns:
@@ -170,7 +170,7 @@ resolve_bin_layer3() {
 
 # ── 🔍 Layer 4: Filesystem Search ────────────────────────────────────────────
 
-# Purpose: Searches filesystem for binary using mise cache metadata
+# Purpose: Searches filesystem for binary using unirtm cache metadata
 # Params:
 #   $1 - Binary name
 # Returns:
@@ -316,8 +316,8 @@ resolve_bin_cached() {
 
   _log_resolve_debug "resolve_bin_cached: Layer 2 FAILED - not found in system PATH or invalid shim"
 
-  # Layer 3: Mise metadata query - 5 seconds timeout
-  _log_resolve_debug "resolve_bin_cached: Layer 3 (mise metadata) - querying mise which (timeout: 5s)"
+  # Layer 3: UniRTM metadata query - 5 seconds timeout
+  _log_resolve_debug "resolve_bin_cached: Layer 3 (unirtm metadata) - querying unirtm which (timeout: 5s)"
 
   _RESULT=$(resolve_bin_layer3 "${_BIN:-}") && {
     _log_resolve_debug "resolve_bin_cached: Layer 3 SUCCESS - found '${_BIN:-}' at '${_RESULT:-}'"
@@ -327,7 +327,7 @@ resolve_bin_cached() {
     return 0
   }
 
-  _log_resolve_debug "resolve_bin_cached: Layer 3 FAILED - not found via mise metadata"
+  _log_resolve_debug "resolve_bin_cached: Layer 3 FAILED - not found via unirtm metadata"
 
   # Layer 4: Filesystem search - 10 seconds timeout
   _log_resolve_debug "resolve_bin_cached: Layer 4 (filesystem search) - searching with depth limit (timeout: 10s)"

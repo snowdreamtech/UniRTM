@@ -615,10 +615,10 @@ EOF
   export _NETWORK_OPTIMIZED=true
 }
 
-# Purpose: Extracts the configured version of a tool from .mise.toml or VER_* env vars.
+# Purpose: Extracts the configured version of a tool from .unirtm.toml, .mise.toml or VER_* env vars.
 # Lookup order:
-#   1. Exact key match in .mise.toml
-#   2. Basename match in .mise.toml  (e.g. "github:foo/bar" -> "bar")
+#   1. Exact key match in .unirtm.toml / .mise.toml
+#   2. Basename match in config files (e.g. "github:foo/bar" -> "bar")
 #   3. VER_<UPPER_NAME> env variable set by scripts/lib/versions.sh (Tier 2 tools)
 #   4. Fallback: "latest"
 # Params:
@@ -626,9 +626,9 @@ EOF
 # Returns:
 #   The pinned version string, or "latest" if not found anywhere.
 # Examples:
-#   VER=$(get_mise_tool_version "rust")      # -> VER_RUST from versions.sh
-#   VER=$(get_mise_tool_version "node")      # -> from .mise.toml
-get_mise_tool_version() {
+#   VER=$(get_unirtm_tool_version "rust")      # -> VER_RUST from versions.sh
+#   VER=$(get_unirtm_tool_version "node")      # -> from .unirtm.toml
+get_unirtm_tool_version() {
   local _TOOL_NAME_MISE="${1:-}"
   local _MISE_TOM_PATH
   if [ -f "$(get_project_root)/.unirtm.toml" ]; then
@@ -653,7 +653,7 @@ get_mise_tool_version() {
     fi
   fi
 
-  # 3. Check VER_<UPPER> env variable from versions.sh (Tier 2 tools not in .mise.toml)
+  # 3. Check VER_<UPPER> env variable from versions.sh (Tier 2 tools not in .unirtm.toml)
   if [ -z "${_VER:-}" ]; then
     # Normalize: strip provider prefix, take basename, uppercase, replace non-alnum with _
     local _VAR_KEY
@@ -671,6 +671,11 @@ get_mise_tool_version() {
 
   # 4. Fallback to 'latest' if no version is explicitly defined anywhere
   echo "${_VER:-latest}"
+}
+
+# Backward compatibility wrapper for get_mise_tool_version
+get_mise_tool_version() {
+  get_unirtm_tool_version "$@"
 }
 
 # ── 🔄 GITHUB_PATH Synchronization ──────────────────────────────────────────

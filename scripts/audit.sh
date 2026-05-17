@@ -57,7 +57,7 @@ EOF
 # Examples:
 #   main --verbose
 main() {
-  # Generate a temporary full manifest so unirtm/mise can resolve all locked versions.
+  # Generate a temporary full manifest so unirtm can resolve all locked versions.
   ./scripts/gen-full-manifest.sh >.unirtm.audit.toml
   UNIRTM_CONFIG="$(pwd)/.unirtm.audit.toml"
   MISE_CONFIG="$(pwd)/.unirtm.audit.toml"
@@ -137,14 +137,14 @@ main() {
         if [ -n "${GITHUB_TOKEN:-}" ]; then
           log_info "Zizmor: Attempting authenticated scan..."
           export GH_TOKEN="${GITHUB_TOKEN:-}"
-          if run_quiet run_mise exec "${_ZM_SPEC:-}" -- zizmor . --format plain --config .zizmor.yml --gh-token "${GITHUB_TOKEN:-}"; then
+          if run_quiet unirtm exec "${_ZM_SPEC:-}" -- zizmor . --format plain --config .zizmor.yml --gh-token "${GITHUB_TOKEN:-}"; then
             _ZM_OK=1
           fi
         fi
 
         if [ "${_ZM_OK:-}" -eq 0 ]; then
           log_info "Zizmor: Attempting offline scan (fallback)..."
-          if run_quiet run_mise exec "${_ZM_SPEC:-}" -- zizmor . --format plain --config .zizmor.yml --offline; then
+          if run_quiet unirtm exec "${_ZM_SPEC:-}" -- zizmor . --format plain --config .zizmor.yml --offline; then
             _ZM_OK=1
           fi
         fi
@@ -171,10 +171,10 @@ main() {
     local _NPM_BIN
     _NPM_BIN=$(resolve_bin "${NPM:-npm}") || true
 
-    # CI Fallback: Try mise exec if resolve_bin fails (Windows hollow shims issue)
+    # CI Fallback: Try unirtm exec if resolve_bin fails (Windows hollow shims issue)
     if [ -z "${_NPM_BIN:-}" ] && is_ci_env; then
-      log_info "Attempting to run ${NPM:-npm} via mise exec..."
-      # Determine mise tool spec for the package manager
+      log_info "Attempting to run ${NPM:-npm} via unirtm exec..."
+      # Determine unirtm tool spec for the package manager
       local _NPM_SPEC=""
       case "${NPM:-npm}" in
       pnpm) _NPM_SPEC="npm:pnpm" ;;
@@ -183,10 +183,10 @@ main() {
       *) _NPM_SPEC="node" ;;
       esac
 
-      # Test if mise exec works
-      if mise exec "${_NPM_SPEC:-}" -- "${NPM:-npm}" --version >/dev/null 2>&1; then
-        _NPM_BIN="mise_exec_wrapper"
-        log_info "Successfully validated ${NPM:-npm} via mise exec"
+      # Test if unirtm exec works
+      if unirtm exec "${_NPM_SPEC:-}" -- "${NPM:-npm}" --version >/dev/null 2>&1; then
+        _NPM_BIN="unirtm_exec_wrapper"
+        log_info "Successfully validated ${NPM:-npm} via unirtm exec"
       fi
     fi
 
@@ -202,7 +202,7 @@ main() {
         # npmmirror.com) do not implement the audit endpoint and return 404.
         local _AUDIT_REGISTRY="https://registry.npmjs.org"
 
-        # Determine mise tool spec for the package manager
+        # Determine unirtm tool spec for the package manager
         local _NPM_SPEC=""
         case "${NPM:-npm}" in
         pnpm) _NPM_SPEC="npm:pnpm" ;;
@@ -211,11 +211,11 @@ main() {
         *) _NPM_SPEC="node" ;;
         esac
 
-        # Execute audit command (use mise exec if resolve_bin failed)
+        # Execute audit command (use unirtm exec if resolve_bin failed)
         local _AUDIT_OK=0
-        if [ "${_NPM_BIN:-}" = "mise_exec_wrapper" ]; then
-          # Use mise exec for hollow shims on Windows
-          if run_quiet mise exec "${_NPM_SPEC:-}" -- "${NPM:-npm}" audit --registry="${_AUDIT_REGISTRY:-}"; then
+        if [ "${_NPM_BIN:-}" = "unirtm_exec_wrapper" ]; then
+          # Use unirtm exec for hollow shims on Windows
+          if run_quiet unirtm exec "${_NPM_SPEC:-}" -- "${NPM:-npm}" audit --registry="${_AUDIT_REGISTRY:-}"; then
             _AUDIT_OK=1
           fi
         else
@@ -257,7 +257,7 @@ main() {
         log_summary "Python" "pip-audit" "⚖️ Previewed" "-" "0"
       else
         local _PA_SPEC="${VER_PIP_AUDIT_PROVIDER:-pip-audit}@${VER_PIP_AUDIT:-latest}"
-        if run_quiet run_mise exec "${_PA_SPEC:-}" -- pip-audit; then
+        if run_quiet unirtm exec "${_PA_SPEC:-}" -- pip-audit; then
           log_summary "Python" "pip-audit" "✅ Secure" "$(get_version pip-audit --version)" "$(($(date +%s) - _T0_PY_AUD))"
         else
           log_summary "Python" "pip-audit" "❌ Vulnerable" "$(get_version pip-audit --version)" "$(($(date +%s) - _T0_PY_AUD))"
@@ -294,7 +294,7 @@ main() {
         log_summary "Security" "osv-scanner" "⚖️ Previewed" "-" "0"
       else
         local _OSV_SPEC="${VER_OSV_SCANNER_PROVIDER:-osv-scanner}@${VER_OSV_SCANNER:-latest}"
-        _OSV_OUT=$(run_mise exec "${_OSV_SPEC:-}" -- osv-scanner scan . --config .osv-scanner.toml --call-analysis=all --format table 2>&1) || _OSV_EXIT=$?
+        _OSV_OUT=$(unirtm exec "${_OSV_SPEC:-}" -- osv-scanner scan . --config .osv-scanner.toml --call-analysis=all --format table 2>&1) || _OSV_EXIT=$?
         [ -n "${_OSV_EXIT:-}" ] || _OSV_EXIT=0
         if [ "${_OSV_EXIT:-}" -eq 0 ]; then
           log_summary "Security" "osv-scanner" "✅ Secure" "$(get_version osv-scanner)" "$(($(date +%s) - _T0_OSV_AUD))"
@@ -329,7 +329,7 @@ main() {
         log_summary "Go" "govulncheck" "⚖️ Previewed" "-" "0"
       else
         local _GOV_SPEC="${VER_GOVULNCHECK_PROVIDER:-govulncheck}@${VER_GOVULNCHECK:-latest}"
-        if run_quiet run_mise exec "${_GOV_SPEC:-}" -- govulncheck ./...; then
+        if run_quiet unirtm exec "${_GOV_SPEC:-}" -- govulncheck ./...; then
           log_summary "Go" "govulncheck" "✅ Secure" "$(get_version govulncheck)" "$(($(date +%s) - _T0_GO_AUD))"
         else
           log_summary "Go" "govulncheck" "❌ Vulnerable" "$(get_version govulncheck)" "$(($(date +%s) - _T0_GO_AUD))"
@@ -359,7 +359,7 @@ main() {
         log_summary "Rust" "cargo-audit" "⚖️ Previewed" "-" "0"
       else
         local _RS_SPEC="${VER_CARGO_AUDIT_PROVIDER:-cargo-audit}@${VER_CARGO_AUDIT:-latest}"
-        if run_quiet run_mise exec "${_RS_SPEC:-}" -- cargo audit; then
+        if run_quiet unirtm exec "${_RS_SPEC:-}" -- cargo audit; then
           log_summary "Rust" "cargo-audit" "✅ Secure" "$(get_version cargo-audit)" "$(($(date +%s) - _T0_RS_AUD))"
         else
           log_summary "Rust" "cargo-audit" "❌ Vulnerable" "$(get_version cargo-audit)" "$(($(date +%s) - _T0_RS_AUD))"
@@ -387,7 +387,7 @@ main() {
     local _T_VER
     _T_VER=$(get_version "${_TRIVY_BIN:-}")
     local _R_VER
-    _R_VER=$(get_mise_tool_version "trivy")
+    _R_VER=$(get_unirtm_tool_version "trivy")
 
     log_info "\n── Generating SBOM (trivy fs) ──"
     log_info "Trivy: Using version ${_T_VER:-} (Required: ${_R_VER:-})"
