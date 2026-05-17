@@ -67,7 +67,7 @@ func NewHTTPDownloader() *HTTPDownloader {
 		Timeout: 0, // No overall timeout to allow large file downloads on slow networks
 		Transport: &http.Transport{
 			Proxy: func(req *http.Request) (*url.URL, error) {
-				// 智能代理分流：凡是国内常见的镜像站，强制绕过代理直连
+				// Smart proxy bypass: For common domestic mirror sites, forcefully bypass the proxy to establish a direct connection.
 				if env.ShouldBypassProxy(req.URL.Hostname()) {
 					return nil, nil // Return nil proxy URL means DIRECT connection
 				}
