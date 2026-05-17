@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
@@ -99,7 +100,16 @@ func (r *NativeRunner) Run(ctx context.Context, dir string, taskName string, arg
 		defer cancel()
 	}
 
-	cmd := exec.CommandContext(runCtx, "sh", "-c", script)
+	shellCmd := "sh"
+	shellArg := "-c"
+	if runtime.GOOS == "windows" {
+		if _, err := exec.LookPath("sh"); err != nil {
+			shellCmd = "cmd.exe"
+			shellArg = "/c"
+		}
+	}
+
+	cmd := exec.CommandContext(runCtx, shellCmd, shellArg, script)
 	cmd.Dir = dir
 	
 	// Inject process env + UniRTM env

@@ -26,6 +26,7 @@ func (m *mockRunner) Run(ctx context.Context, dir string, taskName string, args 
 	m.called = true
 	return nil
 }
+func (m *mockRunner) ListTasks(dir string) ([]string, error) { return nil, nil }
 
 func TestEngineRouting(t *testing.T) {
 	engine := task.NewEngine()
