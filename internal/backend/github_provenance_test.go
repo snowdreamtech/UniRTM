@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/sigstore/sigstore-go/pkg/verify"
 )
 
 // ---------------------------------------------------------------------------
@@ -116,4 +118,70 @@ func TestVerifyArtifactProvenance_FileNotFound(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for missing artifact file, got nil")
 	}
+}
+
+func TestPrintTufRoots(t *testing.T) {
+	roots, err := sigstoreTrustedRoots()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, r := range roots {
+		keys := []string{}
+		for k := range r.RekorLogs() {
+			keys = append(keys, k)
+		}
+		t.Logf("Root %d RekorLogs keys: %v", i, keys)
+	}
+}
+
+func TestVerifySyftBundleFromFile(t *testing.T) {
+	// Try root directory or '../../' to find the bundle file in go test
+	path := "sha256:24e4d34078ae81da7c82539616f0ccac3e226cf4f74a38ce6fb3463619e50a55.jsonl"
+	if _, err := os.Stat(path); err != nil {
+		path = "../../" + path
+	}
+	bundleBytes, err := os.ReadFile(path)
+	if err != nil {
+		t.Skipf("syft bundle file not found at %s, skipping local integration test", path)
+	}
+
+	roots, err := sigstoreTrustedRoots()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Prepare verifier with GitHub TUF roots and public Sigstore TUF roots.
+	// Since syft is a GitHub Attestation, it should be verified by the GitHub TUF root (Root 0).
+	mainIdentity, err := verify.NewShortCertificateIdentity(
+		"https://token.actions.githubusercontent.com",
+		"",
+		"",
+		"^https://github\\.com/anchore/syft/",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	globalIdentity, err := verify.NewShortCertificateIdentity(
+		"",
+		".*",
+		"",
+		"^https://dotcom\\.releases\\.github\\.com$",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	verifier := &SigstoreVerifier{
+		TrustedMaterials: roots,
+		Identities:       []verify.CertificateIdentity{mainIdentity, globalIdentity},
+		ExpectedRepo:     "anchore/syft",
+	}
+
+	res, err := verifier.VerifyBundles([]json.RawMessage{json.RawMessage(bundleBytes)}, "24e4d34078ae81da7c82539616f0ccac3e226cf4f74a38ce6fb3463619e50a55")
+	if err != nil {
+		t.Fatalf("failed to verify syft bundle: %v", err)
+	}
+
+	t.Logf("Verification succeeded! Res: %+v", res)
 }

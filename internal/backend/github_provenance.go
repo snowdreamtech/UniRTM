@@ -77,9 +77,9 @@ func (v *provenanceVerifier) verify(
 		return &ProvenanceResult{Supported: false}, nil
 	}
 
-	trustedMaterial, err := sigstoreTrustedRoot()
+	trustedMaterials, err := sigstoreTrustedRoots()
 	if err != nil {
-		return nil, fmt.Errorf("provenance: load TUF trusted root: %w", err)
+		return nil, fmt.Errorf("provenance: load TUF trusted roots: %w", err)
 	}
 
 	expectedRepo := owner + "/" + repo
@@ -106,45 +106,61 @@ func (v *provenanceVerifier) verify(
 	}
 
 	sigstoreVerifier := &SigstoreVerifier{
-		TrustedMaterial: trustedMaterial,
-		Identities:      []verify.CertificateIdentity{mainIdentity, globalIdentity},
-		ExpectedRepo:    expectedRepo,
+		TrustedMaterials: trustedMaterials,
+		Identities:       []verify.CertificateIdentity{mainIdentity, globalIdentity},
+		ExpectedRepo:     expectedRepo,
 	}
 
 	return sigstoreVerifier.VerifyBundles(bundles, digest)
 }
 
 // -----------------------------------------------------------------------------
-// TUF-backed Sigstore trusted root (singleton with 24 h refresh)
+// TUF-backed Sigstore trusted roots (singleton with 24 h refresh)
 // -----------------------------------------------------------------------------
 
 var (
-	liveTrustedRootOnce sync.Once
-	liveTrustedRoot     *root.LiveTrustedRoot
-	liveTrustedRootErr  error
+	trustedRootsOnce sync.Once
+	trustedRoots     []root.TrustedMaterial
+	trustedRootsErr  error
 )
 
-func sigstoreTrustedRoot() (*root.LiveTrustedRoot, error) {
-	liveTrustedRootOnce.Do(func() {
-		logger.Debug("provenance: initializing GitHub TUF trusted root")
-		liveTrustedRoot, liveTrustedRootErr = InitializeTUFRoot(
+func sigstoreTrustedRoots() ([]root.TrustedMaterial, error) {
+	trustedRootsOnce.Do(func() {
+		logger.Debug("provenance: initializing TUF trusted roots (GitHub + Public)")
+		
+		githubRoot, err := InitializeTUFRoot(
 			"github-tuf",
 			"https://tuf-repo.github.com",
 			githubTufRoot,
 		)
-		if liveTrustedRootErr != nil {
-			logger.Error("provenance: failed to initialize GitHub TUF root", map[string]interface{}{"error": liveTrustedRootErr.Error()})
+		if err != nil {
+			logger.Error("provenance: failed to initialize GitHub TUF root", map[string]interface{}{"error": err.Error()})
 		} else {
-			logger.Debug("provenance: GitHub TUF root initialized successfully")
+			trustedRoots = append(trustedRoots, githubRoot)
+		}
+
+		publicRoot, err := InitializeTUFRoot(
+			"public-sigstore-tuf",
+			"https://tuf-repo-cdn.sigstore.dev",
+			nil, // Sigstore-go automatically embeds the public initial root
+		)
+		if err != nil {
+			logger.Error("provenance: failed to initialize Public Sigstore TUF root", map[string]interface{}{"error": err.Error()})
+		} else {
+			trustedRoots = append(trustedRoots, publicRoot)
+		}
+
+		if len(trustedRoots) == 0 {
+			trustedRootsErr = fmt.Errorf("failed to initialize any TUF trust roots")
 		}
 	})
-	return liveTrustedRoot, liveTrustedRootErr
+	return trustedRoots, trustedRootsErr
 }
 
 func ResetTrustedRootForTest() {
-	liveTrustedRootOnce = sync.Once{}
-	liveTrustedRoot = nil
-	liveTrustedRootErr = nil
+	trustedRootsOnce = sync.Once{}
+	trustedRoots = nil
+	trustedRootsErr = nil
 }
 
 // -----------------------------------------------------------------------------

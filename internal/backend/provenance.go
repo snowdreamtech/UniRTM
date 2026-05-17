@@ -45,32 +45,34 @@ type ProvenanceResult struct {
 // SigstoreVerifier acts as the common orchestration engine for verifying 
 // Sigstore bundles across different platforms (GitHub, GitLab, etc.)
 type SigstoreVerifier struct {
-	TrustedMaterial root.TrustedMaterial
-	Identities      []verify.CertificateIdentity
-	ExpectedRepo    string
+	TrustedMaterials []root.TrustedMaterial
+	Identities       []verify.CertificateIdentity
+	ExpectedRepo     string
 }
 
-// VerifyBundles attempts to verify a list of bundles against the provided identities.
+// VerifyBundles attempts to verify a list of bundles against the provided identities and trust roots.
 // It returns the first successful verification result.
 func (v *SigstoreVerifier) VerifyBundles(bundles []json.RawMessage, artifactDigest string) (*ProvenanceResult, error) {
-	var lastErr error
+	var errs []string
 	for _, rawBundle := range bundles {
-		for _, identity := range v.Identities {
-			result, err := v.verifyBundle(rawBundle, artifactDigest, identity)
-			if err == nil {
-				return result, nil
+		for i, tm := range v.TrustedMaterials {
+			for j, identity := range v.Identities {
+				result, err := v.verifyBundle(rawBundle, artifactDigest, identity, tm)
+				if err == nil {
+					return result, nil
+				}
+				errs = append(errs, fmt.Sprintf("[Root%d/Id%d] %v", i, j, err))
 			}
-			lastErr = err
 		}
 	}
 
 	return nil, fmt.Errorf(
-		"provenance: all %d attestation bundle(s) failed verification for %s. Last error: %v",
-		len(bundles), v.ExpectedRepo, lastErr,
+		"provenance: all %d attestation bundle(s) failed verification for %s. Errors: %s",
+		len(bundles), v.ExpectedRepo, strings.Join(errs, "; "),
 	)
 }
 
-func (v *SigstoreVerifier) verifyBundle(rawBundle json.RawMessage, artifactDigest string, identity verify.CertificateIdentity) (*ProvenanceResult, error) {
+func (v *SigstoreVerifier) verifyBundle(rawBundle json.RawMessage, artifactDigest string, identity verify.CertificateIdentity, tm root.TrustedMaterial) (*ProvenanceResult, error) {
 	b := &bundle.Bundle{}
 	if err := b.UnmarshalJSON(rawBundle); err != nil {
 		return nil, fmt.Errorf("parse bundle JSON: %w", err)
@@ -79,39 +81,73 @@ func (v *SigstoreVerifier) verifyBundle(rawBundle json.RawMessage, artifactDiges
 	tlogThreshold := 1
 	if env.Get("SKIP_REKOR_VERIFY") == "1" {
 		tlogThreshold = 0
+	} else {
+		// Inspect the bundle to see if it actually contains transparency log entries.
+		// GitHub Attestations, for example, do not contain tlog entries and only use RFC 3161 timestamps.
+		if entries, err := b.TlogEntries(); err != nil || len(entries) == 0 {
+			tlogThreshold = 0
+		}
 	}
 
-	verifierOpts := []verify.VerifierOption{
-		verify.WithObserverTimestamps(1),
-	}
+	var optionSets [][]verify.VerifierOption
 	if tlogThreshold > 0 {
-		verifierOpts = append(verifierOpts, verify.WithTransparencyLog(tlogThreshold))
+		// Option Set 1: With Observer Timestamps + Transparency Log
+		optionSets = append(optionSets, []verify.VerifierOption{
+			verify.WithObserverTimestamps(1),
+			verify.WithTransparencyLog(tlogThreshold),
+		})
+		// Option Set 2: With Integrated Timestamps + Transparency Log
+		optionSets = append(optionSets, []verify.VerifierOption{
+			verify.WithIntegratedTimestamps(1),
+			verify.WithTransparencyLog(tlogThreshold),
+		})
+	} else {
+		// No Rekor log: We can only verify using Observer Timestamps (like RFC 3161 timestamps)
+		optionSets = append(optionSets, []verify.VerifierOption{
+			verify.WithObserverTimestamps(1),
+		})
 	}
 
-	verifier, err := verify.NewSignedEntityVerifier(v.TrustedMaterial, verifierOpts...)
-	if err != nil {
-		return nil, fmt.Errorf("build verifier: %w", err)
+	var result *verify.VerificationResult
+	var lastErr error
+
+	for i, opts := range optionSets {
+		verifier, err := verify.NewSignedEntityVerifier(tm, opts...)
+		if err != nil {
+			lastErr = fmt.Errorf("build verifier: %w", err)
+			continue
+		}
+
+		digestBytes, err := hex.DecodeString(artifactDigest)
+		if err != nil {
+			return nil, fmt.Errorf("decode artifact digest: %w", err)
+		}
+
+		policy := verify.NewPolicy(
+			verify.WithArtifactDigest("sha256", digestBytes),
+			verify.WithCertificateIdentity(identity),
+		)
+
+		logger.Debug("provenance: performing sigstore-go verification", map[string]interface{}{
+			"attempt":       i + 1,
+			"tlogThreshold": tlogThreshold,
+			"expectedRepo":  v.ExpectedRepo,
+		})
+
+		res, err := verifier.Verify(b, policy)
+		if err == nil {
+			result = res
+			break
+		}
+		logger.Debug("provenance: sigstore-go verification attempt failed", map[string]interface{}{
+			"attempt": i + 1,
+			"error":   err.Error(),
+		})
+		lastErr = fmt.Errorf("sigstore verification: %w", err)
 	}
 
-	digestBytes, err := hex.DecodeString(artifactDigest)
-	if err != nil {
-		return nil, fmt.Errorf("decode artifact digest: %w", err)
-	}
-
-	policy := verify.NewPolicy(
-		verify.WithArtifactDigest("sha256", digestBytes),
-		verify.WithCertificateIdentity(identity),
-	)
-
-	logger.Debug("provenance: performing sigstore-go verification", map[string]interface{}{
-		"tlogThreshold": tlogThreshold,
-		"expectedRepo":  v.ExpectedRepo,
-	})
-	
-	result, err := verifier.Verify(b, policy)
-	if err != nil {
-		logger.Debug("provenance: sigstore-go verification failed", map[string]interface{}{"error": err.Error()})
-		return nil, fmt.Errorf("sigstore verification: %w", err)
+	if result == nil {
+		return nil, lastErr
 	}
 
 	provResult := &ProvenanceResult{
@@ -134,10 +170,18 @@ func (v *SigstoreVerifier) verifyBundle(rawBundle json.RawMessage, artifactDiges
 			hasExpectedRepo = true
 		} else if strings.Contains(cert.Extensions.BuildSignerURI, v.ExpectedRepo) {
 			hasExpectedRepo = true
+		} else if result.Statement != nil {
+			// Check if the verified in-toto statement contains the expected repository.
+			// This is essential for global builders (like dotcom.releases.github.com)
+			// where repository identity is encoded in the signed release predicate.
+			stmtJSON, err := json.Marshal(result.Statement)
+			if err == nil && strings.Contains(string(stmtJSON), v.ExpectedRepo) {
+				hasExpectedRepo = true
+			}
 		}
 		
 		if !hasExpectedRepo {
-			return nil, fmt.Errorf("spoofed identity: expected repository %s not found in OIDC certificate", v.ExpectedRepo)
+			return nil, fmt.Errorf("spoofed identity: expected repository %s not found in OIDC certificate (SAN=%s SourceRepositoryURI=%s) or signed statement", v.ExpectedRepo, cert.SubjectAlternativeName, cert.Extensions.SourceRepositoryURI)
 		}
 	}
 
