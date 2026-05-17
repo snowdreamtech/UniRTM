@@ -317,7 +317,7 @@ resolve_bin_cached() {
   _log_resolve_debug "resolve_bin_cached: Layer 2 FAILED - not found in system PATH or invalid shim"
 
   # Layer 3: UniRTM metadata query - 5 seconds timeout
-  _log_resolve_debug "resolve_bin_cached: Layer 3 (unirtm metadata) - querying "${_G_UNIRTM_BIN:-unirtm}" which (timeout: 5s)"
+  _log_resolve_debug "resolve_bin_cached: Layer 3 (unirtm metadata) - querying ${_G_UNIRTM_BIN:-unirtm} which (timeout: 5s)"
 
   _RESULT=$(resolve_bin_layer3 "${_BIN:-}") && {
     _log_resolve_debug "resolve_bin_cached: Layer 3 SUCCESS - found '${_BIN:-}' at '${_RESULT:-}'"

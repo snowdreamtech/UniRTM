@@ -67,11 +67,6 @@ register_unirtm_tool() {
   ' "${_UNIRTM_TOML:-}" >"${_UNIRTM_TOML:-}.tmp" && mv "${_UNIRTM_TOML:-}.tmp" "${_UNIRTM_TOML:-}"
 }
 
-# Backward compatibility wrapper
-register_unirtm_tool() {
-  register_unirtm_tool "$@"
-}
-
 # Purpose: Registers a tool in config using a complex TOML value (e.g., dictionary with asset matches).
 # Params:
 #   $1 - Tool name (internal)
@@ -107,11 +102,6 @@ register_unirtm_tool_complex() {
   ' "${_UNIRTM_TOML:-}" >"${_UNIRTM_TOML:-}.tmp" && mv "${_UNIRTM_TOML:-}.tmp" "${_UNIRTM_TOML:-}"
 
   "${_G_UNIRTM_BIN:-unirtm}" install "${_TOOL:-}"
-}
-
-# Backward compatibility wrapper
-register_unirtm_tool_complex() {
-  register_unirtm_tool_complex "$@"
 }
 
 # --- Registry Data ---
