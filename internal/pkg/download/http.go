@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -557,6 +558,20 @@ func (pw *progressWriter) Write(p []byte) (int, error) {
 	return n, err
 }
 
+// jitterBackoff implements an Exponential Backoff with Equal Jitter.
+// It helps prevent the "thundering herd" problem where multiple threads
+// retry exactly at the same time after a network drop.
+func jitterBackoff(current time.Duration) time.Duration {
+	temp := current * 2
+	if temp > 15*time.Second {
+		temp = 15 * time.Second
+	}
+	half := temp / 2
+	// Use Int63n to avoid panic, +1 ensures no 0 panics. math/rand is auto-seeded in Go 1.20+
+	jitter := time.Duration(rand.Int63n(int64(half) + 1))
+	return half + jitter
+}
+
 // parseURL validates and parses a URL string.
 func parseURL(rawURL string) (*url.URL, error) {
 	u, err := url.Parse(rawURL)
@@ -696,11 +711,8 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 				
 				resp, err := h.client.Do(req)
 				if err != nil {
+					backoff = jitterBackoff(backoff)
 					time.Sleep(backoff)
-					backoff *= 2
-					if backoff > 5*time.Second {
-						backoff = 5 * time.Second
-					}
 					continue
 				}
 				
@@ -714,11 +726,8 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 				
 				if resp.StatusCode != http.StatusPartialContent && resp.StatusCode != http.StatusOK {
 					resp.Body.Close()
+					backoff = jitterBackoff(backoff)
 					time.Sleep(backoff)
-					backoff *= 2
-					if backoff > 5*time.Second {
-						backoff = 5 * time.Second
-					}
 					continue
 				}
 				
@@ -769,11 +778,8 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 					return // Thread fully succeeded
 				}
 				
+				backoff = jitterBackoff(backoff)
 				time.Sleep(backoff)
-				backoff *= 2
-				if backoff > 5*time.Second {
-					backoff = 5 * time.Second
-				}
 			}
 			// If we exhausted all retries for this chunk
 			errOnce.Do(func() { downloadErr = fmt.Errorf("thread %d failed after 15 retries", threadID) })
