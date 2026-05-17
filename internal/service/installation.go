@@ -406,9 +406,18 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 			if now.Sub(lastUpdateTime) > 100*time.Millisecond || downloaded >= total {
 				if progressbar != nil {
 					diff := downloaded - lastDownloaded
-					if diff > 0 {
-						progressbar.Add(int(diff))
-						lastDownloaded = downloaded
+					if diff != 0 {
+						if diff < 0 {
+							// Download was reset (e.g. fallback from concurrent to sequential)
+							// Some terminals/progress bars don't support negative additions, 
+							// so we just update the title and reset our local tracker.
+							// The progress bar will visually freeze until we catch up to the previous high-water mark,
+							// which is perfectly fine to indicate we are recovering lost progress.
+							lastDownloaded = downloaded
+						} else {
+							progressbar.Add(int(diff))
+							lastDownloaded = downloaded
+						}
 						
 						// Update title with current progress
 						progressbar.UpdateTitle(fmt.Sprintf("Downloading %s (%s/%s)", 
