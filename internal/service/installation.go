@@ -954,6 +954,14 @@ func (im *InstallationManager) Uninstall(ctx context.Context, tool, version stri
 // An error is returned only when attestations exist but verification fails,
 // which is treated as a hard security failure.
 func tryVerifyProvenance(ctx context.Context, tool, artifactPath string) (string, error) {
+	// Support skipping provenance verification via environment variables
+	// (e.g. UNIRTM_VERIFY_PROVENANCE=0 or MISE_VERIFY_PROVENANCE=0).
+	// This is highly useful for users in offline or restricted network environments (like China).
+	if v := env.Get("VERIFY_PROVENANCE"); v == "0" || strings.ToLower(v) == "false" {
+		logger.Warn("⚠️ GitHub provenance verification is disabled via environment, skipping check")
+		return "skipped", nil
+	}
+
 	// Provenance only applies to GitHub-hosted tools in "owner/repo" format.
 	parts := strings.SplitN(tool, "/", 2)
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
