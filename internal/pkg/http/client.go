@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"time"
 
+	"golang.org/x/net/http/httpproxy"
+
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
@@ -25,27 +27,24 @@ import (
 func DefaultTransport() *http.Transport {
 	trans := http.DefaultTransport.(*http.Transport).Clone()
 
-	// 1. Smart proxy bypass + UNIRTM_/MISE_ env prefix support
+	// 1. Smart proxy bypass + UNIRTM_/MISE_ env prefix support + NO_PROXY
+	//
+	// httpproxy.Config is used to correctly enforce NO_PROXY rules alongside
+	// UNIRTM_/MISE_ prefixed proxy variables. The standard http.ProxyFromEnvironment
+	// only reads bare HTTP_PROXY/HTTPS_PROXY/NO_PROXY from os.Getenv, not our prefixes.
 	trans.Proxy = func(req *http.Request) (*url.URL, error) {
 		if ShouldBypassProxy(req.URL.Hostname()) {
 			return nil, nil // DIRECT connection for domestic mirrors
 		}
 
-		// Resolve UNIRTM_HTTP_PROXY / MISE_HTTP_PROXY / HTTP_PROXY etc.
-		if req.URL.Scheme == "http" {
-			if v := env.Get("HTTP_PROXY"); v != "" {
-				return url.Parse(v)
-			}
-		} else if req.URL.Scheme == "https" {
-			if v := env.Get("HTTPS_PROXY"); v != "" {
-				return url.Parse(v)
-			}
+		// Build a config from resolved env vars (UNIRTM_ > MISE_ > bare name > os.Getenv).
+		// This preserves full NO_PROXY semantics for all three proxy variables.
+		cfg := &httpproxy.Config{
+			HTTPProxy:  env.Get("HTTP_PROXY"),
+			HTTPSProxy: env.Get("HTTPS_PROXY"),
+			NoProxy:    env.Get("NO_PROXY"),
 		}
-		if v := env.Get("ALL_PROXY"); v != "" {
-			return url.Parse(v)
-		}
-
-		return http.ProxyFromEnvironment(req)
+		return cfg.ProxyFunc()(req.URL)
 	}
 
 	// 2. Optional manual HTTP/2 opt-out for environments where proxy software
