@@ -63,7 +63,7 @@ type HTTPDownloader struct {
 func NewHTTPDownloader() *HTTPDownloader {
 	h := &HTTPDownloader{}
 	h.client = &http.Client{
-		Timeout: 30 * time.Minute, // Increased total timeout for large files
+		Timeout: 0, // No overall timeout to allow large file downloads on slow networks
 		Transport: &http.Transport{
 			Proxy: func(req *http.Request) (*url.URL, error) {
 				// Check UNIRTM_ or MISE_ prefixed env vars first via env.Get
@@ -678,7 +678,7 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 			
 			currentOffset := start
 			backoff := 1 * time.Second
-			for attempt := 0; attempt < 3; attempt++ {
+			for attempt := 0; attempt < 15; attempt++ {
 				if workerCtx.Err() != nil {
 					return // Context cancelled by another thread or user
 				}
@@ -698,6 +698,9 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 				if err != nil {
 					time.Sleep(backoff)
 					backoff *= 2
+					if backoff > 5*time.Second {
+						backoff = 5 * time.Second
+					}
 					continue
 				}
 				
@@ -713,6 +716,9 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 					resp.Body.Close()
 					time.Sleep(backoff)
 					backoff *= 2
+					if backoff > 5*time.Second {
+						backoff = 5 * time.Second
+					}
 					continue
 				}
 				
@@ -765,9 +771,12 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 				
 				time.Sleep(backoff)
 				backoff *= 2
+				if backoff > 5*time.Second {
+					backoff = 5 * time.Second
+				}
 			}
 			// If we exhausted all retries for this chunk
-			errOnce.Do(func() { downloadErr = fmt.Errorf("thread %d failed after 3 retries", threadID) })
+			errOnce.Do(func() { downloadErr = fmt.Errorf("thread %d failed after 15 retries", threadID) })
 			cancel() // Fail fast: stop other threads
 		}(start, end, i)
 	}
