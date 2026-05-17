@@ -99,10 +99,28 @@ func VerifyArtifactProvenance(
 		if env.Get("HTTP2") == "0" {
 			trans.ForceAttemptHTTP2 = false
 			trans.TLSNextProto = make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)
-			logger.Debug("provenance: globally disabled HTTP/2 for verification to prevent proxy framing errors")
+			logger.Debug("provenance: globally disabled HTTP/2 for verification (manual via env)")
 		}
 	}
 
+	result, err := doVerifyArtifactProvenance(ctx, token, owner, repo, artifactPath)
+	if err != nil && strings.Contains(err.Error(), "malformed HTTP response") {
+		// Smart downgrade: If we hit a malformed HTTP response (typically an HTTP/2 proxy framing error),
+		// disable HTTP/2 globally on the DefaultTransport and try exactly ONE more time.
+		if trans, ok := http.DefaultTransport.(*http.Transport); ok {
+			logger.Warn("provenance: detected malformed HTTP response, smartly downgrading to HTTP/1.1 and retrying...")
+			trans.ForceAttemptHTTP2 = false
+			trans.TLSNextProto = make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)
+			return doVerifyArtifactProvenance(ctx, token, owner, repo, artifactPath)
+		}
+	}
+	return result, err
+}
+
+func doVerifyArtifactProvenance(
+	ctx context.Context,
+	token, owner, repo, artifactPath string,
+) (*ProvenanceResult, error) {
 	// 1. Compute SHA-256 of the artifact on disk.
 	digest, err := sha256File(artifactPath)
 	if err != nil {
