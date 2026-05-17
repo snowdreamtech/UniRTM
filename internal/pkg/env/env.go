@@ -3,6 +3,7 @@ package env
 import (
 	"crypto/rand"
 	"os"
+	"strings"
 )
 
 // Get returns the value of the environment variable with the given key,
@@ -18,6 +19,45 @@ func Get(key string) string {
 	}
 	// 3. Raw key (Native)
 	return os.Getenv(key)
+}
+
+// ProxyBypassDomains contains a list of common domestic mirror domains
+// that should bypass any configured HTTP proxies to prevent connection drops.
+var ProxyBypassDomains = []string{
+	"aliyun.com",
+	"npmmirror.com",
+	"tencent.com",
+	"huaweicloud.com",
+	"163.com",
+	"ustc.edu.cn",
+	"tsinghua.edu.cn",
+	"sjtu.edu.cn",
+	"bfsu.edu.cn",
+	"lzu.edu.cn",
+	"nju.edu.cn",
+	"cqu.edu.cn",
+	"hit.edu.cn",
+	"zju.edu.cn",
+	"douban.com",
+	"rsproxy.cn",
+	"r.cnpmjs.org",
+	"goproxy.cn",
+	"goproxy.io",
+	"gems.ruby-china.com",
+	"sn0wdr1am.com",
+}
+
+// ShouldBypassProxy returns true if the given host should bypass the proxy.
+func ShouldBypassProxy(host string) bool {
+	if strings.Contains(host, "mirror") || strings.HasSuffix(host, ".cn") {
+		return true
+	}
+	for _, domain := range ProxyBypassDomains {
+		if strings.Contains(host, domain) {
+			return true
+		}
+	}
+	return false
 }
 
 var (

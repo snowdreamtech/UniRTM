@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"os"
 	"strings"
+
+	pkgEnv "github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // Provider defines the interface for tool-specific installation and management logic.
@@ -102,29 +104,7 @@ func GetNoProxyEnv(extraDomains ...string) []string {
 	env := os.Environ()
 	
 	// Collect all domains to skip proxy for
-	domains := []string{
-		"aliyun.com",
-		"npmmirror.com",
-		"tencent.com",
-		"huaweicloud.com",
-		"163.com",
-		"ustc.edu.cn",
-		"tsinghua.edu.cn",
-		"sjtu.edu.cn",
-		"bfsu.edu.cn",
-		"lzu.edu.cn",
-		"nju.edu.cn",
-		"cqu.edu.cn",
-		"hit.edu.cn",
-		"zju.edu.cn",
-		"douban.com",
-		"rsproxy.cn",
-		"r.cnpmjs.org",
-		"goproxy.cn",
-		"goproxy.io",
-		"gems.ruby-china.com",
-		"sn0wdr1am.com",
-	}
+	domains := append([]string{}, pkgEnv.ProxyBypassDomains...)
 	
 	// Add global configuration domains
 	domains = append(domains, GlobalNoProxy...)

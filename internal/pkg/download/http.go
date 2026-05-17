@@ -68,8 +68,7 @@ func NewHTTPDownloader() *HTTPDownloader {
 		Transport: &http.Transport{
 			Proxy: func(req *http.Request) (*url.URL, error) {
 				// 智能代理分流：凡是国内常见的镜像站，强制绕过代理直连
-				host := req.URL.Hostname()
-				if strings.Contains(host, "mirror") || strings.HasSuffix(host, ".cn") || strings.Contains(host, "aliyun.com") || strings.Contains(host, "tsinghua.edu.cn") || strings.Contains(host, "ustc.edu.cn") {
+				if env.ShouldBypassProxy(req.URL.Hostname()) {
 					return nil, nil // Return nil proxy URL means DIRECT connection
 				}
 
