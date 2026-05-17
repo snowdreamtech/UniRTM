@@ -14,7 +14,7 @@ install_runtime_racket() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "${VER_RACKET_PROVIDER:-}@${VER_RACKET:-}"
+  "${_G_UNIRTM_BIN:-unirtm}" install "${VER_RACKET_PROVIDER:-}@${VER_RACKET:-}"
 }
 
 # Purpose: Sets up Racket environment for project.

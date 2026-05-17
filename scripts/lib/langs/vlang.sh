@@ -14,7 +14,7 @@ install_runtime_vlang() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "vlang@$(get_unirtm_tool_version vlang)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "vlang@$(get_unirtm_tool_version vlang)"
 }
 
 # Purpose: Sets up Vlang environment for project.

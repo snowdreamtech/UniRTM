@@ -11,7 +11,7 @@ install_runtime_kotlin() {
     log_debug "DRY_RUN: Would install Kotlin runtime."
     return 0
   fi
-  unirtm install "kotlin@${VER_KOTLIN:-}"
+  "${_G_UNIRTM_BIN:-unirtm}" install "kotlin@${VER_KOTLIN:-}"
 }
 
 # Purpose: Installs ktlint (version pinned in scripts/lib/versions.sh).

@@ -12,7 +12,7 @@ install_runtime_zig() {
     log_debug "DRY_RUN: Would install Zig runtime."
     return 0
   fi
-  unirtm install zig
+  "${_G_UNIRTM_BIN:-unirtm}" install zig
 }
 
 # Purpose: Sets up Zig runtime.

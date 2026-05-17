@@ -13,7 +13,7 @@ install_runtime_r() {
     return 0
   fi
   # shellcheck disable=SC2154
-  unirtm install "R@$(get_unirtm_tool_version r)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "R@$(get_unirtm_tool_version r)"
 }
 
 # Purpose: Sets up R runtime.

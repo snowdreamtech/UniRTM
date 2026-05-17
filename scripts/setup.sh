@@ -268,7 +268,7 @@ EOF
 
     if [ "${_IS_ALL_MODULES:-}" = "true" ] && [ "$(uname -s)" != "Windows_NT" ]; then
       log_info "Performing full toolchain synchronization via unirtm..."
-      unirtm install
+      "${_G_UNIRTM_BIN:-unirtm}" install
     else
       log_info "Performing on-demand module installation..."
     fi

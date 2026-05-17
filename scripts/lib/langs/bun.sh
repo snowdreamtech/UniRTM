@@ -12,7 +12,7 @@ install_runtime_bun() {
     log_debug "DRY_RUN: Would install Bun runtime."
     return 0
   fi
-  unirtm install bun
+  "${_G_UNIRTM_BIN:-unirtm}" install bun
 }
 
 # Purpose: Sets up Bun runtime.

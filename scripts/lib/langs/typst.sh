@@ -14,7 +14,7 @@ install_runtime_typst() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "typst@$(get_unirtm_tool_version typst)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "typst@$(get_unirtm_tool_version typst)"
 }
 
 # Purpose: Sets up Typst environment for project.

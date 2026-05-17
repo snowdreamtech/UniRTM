@@ -13,7 +13,7 @@ install_runtime_lua() {
     return 0
   fi
   # shellcheck disable=SC2154
-  unirtm install "lua@$(get_unirtm_tool_version lua)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "lua@$(get_unirtm_tool_version lua)"
 }
 
 # Purpose: Installs stylua.

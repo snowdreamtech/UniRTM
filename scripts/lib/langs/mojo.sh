@@ -14,7 +14,7 @@ install_runtime_mojo() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "mojo@$(get_unirtm_tool_version mojo)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "mojo@$(get_unirtm_tool_version mojo)"
 }
 
 # Purpose: Sets up Mojo environment for project.

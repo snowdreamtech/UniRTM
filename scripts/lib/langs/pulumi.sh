@@ -13,7 +13,7 @@ install_runtime_pulumi() {
     return 0
   fi
   # shellcheck disable=SC2154
-  unirtm install "pulumi@$(get_unirtm_tool_version pulumi)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "pulumi@$(get_unirtm_tool_version pulumi)"
 }
 
 # Purpose: Sets up Pulumi IaC.

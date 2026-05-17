@@ -12,7 +12,7 @@ install_runtime_julia() {
     return 0
   fi
   # shellcheck disable=SC2154
-  unirtm install "julia@$(get_unirtm_tool_version julia)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "julia@$(get_unirtm_tool_version julia)"
 }
 
 # Purpose: Sets up Julia runtime.

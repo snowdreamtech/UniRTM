@@ -13,7 +13,7 @@ install_runtime_erlang() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "erlang@$(get_unirtm_tool_version erlang)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "erlang@$(get_unirtm_tool_version erlang)"
 }
 
 # Purpose: Sets up Erlang environment for project.

@@ -71,7 +71,7 @@ Test Cases:
 Measurement Points:
   - verify_binary_exists() execution time
   - resolve_bin() execution time
-  - unirtm which execution time
+  - "${_G_UNIRTM_BIN:-unirtm}" which execution time
   - command -v execution time
   - find pattern matching time
 
@@ -210,7 +210,7 @@ measure_unirtm_which() {
 
     # Test unirtm which with timeout
     if command -v unirtm >/dev/null 2>&1; then
-      if resolved_path=$(UNIRTM_OFFLINE=1 run_with_timeout "$TIMEOUT_PLATFORM_RESOLVE" unirtm which "$tool_name" 2>/dev/null); then
+      if resolved_path=$(UNIRTM_OFFLINE=1 run_with_timeout "$TIMEOUT_PLATFORM_RESOLVE" "${_G_UNIRTM_BIN:-unirtm}" which "$tool_name" 2>/dev/null); then
         status="success"
       else
         status="not_found"

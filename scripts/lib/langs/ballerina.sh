@@ -14,7 +14,7 @@ install_runtime_ballerina() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "ballerina@$(get_unirtm_tool_version ballerina)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "ballerina@$(get_unirtm_tool_version ballerina)"
 }
 
 # Purpose: Sets up Ballerina environment for project.

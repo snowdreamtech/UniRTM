@@ -169,7 +169,7 @@ measure_tool_time() {
     elapsed=0
   else
     # Run tool installation with timeout
-    if run_with_timeout "$TIMEOUT_PER_TOOL" unirtm install "$tool_name" >/dev/null 2>&1; then
+    if run_with_timeout "$TIMEOUT_PER_TOOL" "${_G_UNIRTM_BIN:-unirtm}" install "$tool_name" >/dev/null 2>&1; then
       end_time=$(date +%s)
       elapsed=$((end_time - start_time))
       log_info "  ✓ $tool_name: ${elapsed}s" >&2

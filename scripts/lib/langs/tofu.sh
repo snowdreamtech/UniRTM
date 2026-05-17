@@ -14,7 +14,7 @@ install_runtime_tofu() {
   fi
   # shellcheck disable=SC2154
   setup_registry_tofu
-  unirtm install "opentofu@$(get_unirtm_tool_version opentofu)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "opentofu@$(get_unirtm_tool_version opentofu)"
 }
 
 # Purpose: Sets up OpenTofu IaC.

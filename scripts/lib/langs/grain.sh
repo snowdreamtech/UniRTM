@@ -12,7 +12,7 @@ install_runtime_grain() {
     return 0
   fi
   # Version pinned in scripts/lib/versions.sh (VER_GRAIN_PROVIDER, VER_GRAIN)
-  unirtm install "${VER_GRAIN_PROVIDER:-}@${VER_GRAIN:-}"
+  "${_G_UNIRTM_BIN:-unirtm}" install "${VER_GRAIN_PROVIDER:-}@${VER_GRAIN:-}"
 }
 
 # Purpose: Sets up Grain environment for project.

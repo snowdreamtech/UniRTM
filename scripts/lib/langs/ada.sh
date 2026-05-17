@@ -15,7 +15,7 @@ install_runtime_ada() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "gnat@$(get_unirtm_tool_version ada)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "gnat@$(get_unirtm_tool_version ada)"
 }
 
 # Purpose: Sets up Ada environment for project.

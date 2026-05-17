@@ -14,7 +14,7 @@ install_runtime_terraform() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "terraform@$(get_unirtm_tool_version terraform)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "terraform@$(get_unirtm_tool_version terraform)"
 }
 
 # Purpose: Installs TFLint.

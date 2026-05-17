@@ -285,11 +285,11 @@ fi
 # ── ⏱️ Timeout Configuration ─────────────────────────────────────────────────
 # Default timeout values for various operations (seconds)
 # These can be overridden via environment variables
-TIMEOUT_RESOLVE_BIN="${TIMEOUT_RESOLVE_BIN:-5}"  # Binary resolution
-TIMEOUT_JSON_PARSE="${TIMEOUT_JSON_PARSE:-3}"    # JSON parsing
-TIMEOUT_UNIRTM_WHICH="${TIMEOUT_UNIRTM_WHICH:-5}"    # unirtm which command
-TIMEOUT_FIND_BINARY="${TIMEOUT_FIND_BINARY:-10}" # Filesystem search
-TIMEOUT_NETWORK="${TIMEOUT_NETWORK:-30}"         # Network operations
+TIMEOUT_RESOLVE_BIN="${TIMEOUT_RESOLVE_BIN:-5}"   # Binary resolution
+TIMEOUT_JSON_PARSE="${TIMEOUT_JSON_PARSE:-3}"     # JSON parsing
+TIMEOUT_UNIRTM_WHICH="${TIMEOUT_UNIRTM_WHICH:-5}" # unirtm which command
+TIMEOUT_FIND_BINARY="${TIMEOUT_FIND_BINARY:-10}"  # Filesystem search
+TIMEOUT_NETWORK="${TIMEOUT_NETWORK:-30}"          # Network operations
 
 # ── 🐛 Debug Mode Switches ───────────────────────────────────────────────────
 # Enable detailed debug logging for specific subsystems
@@ -949,7 +949,6 @@ unirtm() {
   run_unirtm "$@"
 }
 
-
 # ── 📢 Standardized Logging ──────────────────────────────────────────────────
 
 # Standardized logging functions for consistent colored output.
@@ -1081,7 +1080,7 @@ ensure_tool() {
   install_native_tool "${_TOOL:-}" && return 0
 
   if command -v unirtm >/dev/null 2>&1; then
-    unirtm install "${_PRV:-}" && return 0
+    "${_G_UNIRTM_BIN:-unirtm}" install "${_PRV:-}" && return 0
   fi
 
   return 1
@@ -1578,7 +1577,7 @@ if tool_key and isinstance(data[tool_key], list):
     # To prevent 'unirtm ERROR No version is set', we use 'unirtm exec' if it's a shim.
     case "${_LV_RESOLVED:-}" in
     *"${_G_UNIRTM_SHIMS_BASE:-}"*)
-      unirtm exec "${_M_PLUGIN:-latest}" -- "${_CMD_VER:-}" "${_ARG_VER:---version}" 2>/dev/null | grep -E -o "[0-9]+\.[0-9]+\.[0-9]+" | head -n 1
+      "${_G_UNIRTM_BIN:-unirtm}" exec "${_M_PLUGIN:-latest}" -- "${_CMD_VER:-}" "${_ARG_VER:---version}" 2>/dev/null | grep -E -o "[0-9]+\.[0-9]+\.[0-9]+" | head -n 1
       return 0
       ;;
     esac
@@ -2273,7 +2272,7 @@ install_tool_safe() {
   fi
 
   local _STAT="✅ unirtm"
-  if ! unirtm install "${_PROVIDER:-}@${_VERSION:-}"; then
+  if ! "${_G_UNIRTM_BIN:-unirtm}" install "${_PROVIDER:-}@${_VERSION:-}"; then
     _STAT="❌ Failed"
     log_error "Step 5: unirtm install FAILED"
     log_summary "Base" "${_DISPLAY_NAME:-}" "${_STAT:-}" "-" "$(($(date +%s) - _T0))"

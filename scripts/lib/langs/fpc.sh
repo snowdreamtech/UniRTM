@@ -14,7 +14,7 @@ install_runtime_fpc() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "fpc@$(get_unirtm_tool_version fpc)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "fpc@$(get_unirtm_tool_version fpc)"
 }
 
 # Purpose: Sets up FPC environment for project.

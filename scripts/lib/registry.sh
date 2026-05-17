@@ -53,7 +53,7 @@ register_unirtm_tool() {
   if _is_ci; then
     # We must explicitly install here because since it is not in config,
     # the general 'unirtm install' at the end of setup won't capture it.
-    if ! unirtm install "${_PROVIDER:-}@${_VERSION:-}"; then
+    if ! "${_G_UNIRTM_BIN:-unirtm}" install "${_PROVIDER:-}@${_VERSION:-}"; then
       log_error "Failed to install ${_NAME:-} (${_PROVIDER:-}@${_VERSION:-}) in CI."
       return 1
     fi
@@ -97,7 +97,7 @@ register_unirtm_tool_complex() {
   # In CI environment, we only install it but skip registry in config to keep it clean.
   # This prevents CI from dirtying the workspace and leaking CI-only tools back into the repo.
   if _is_ci; then
-    unirtm install "${_TOOL:-}"
+    "${_G_UNIRTM_BIN:-unirtm}" install "${_TOOL:-}"
     return 0
   fi
 
@@ -106,7 +106,7 @@ register_unirtm_tool_complex() {
     { print }
   ' "${_UNIRTM_TOML:-}" >"${_UNIRTM_TOML:-}.tmp" && mv "${_UNIRTM_TOML:-}.tmp" "${_UNIRTM_TOML:-}"
 
-  unirtm install "${_TOOL:-}"
+  "${_G_UNIRTM_BIN:-unirtm}" install "${_TOOL:-}"
 }
 
 # Backward compatibility wrapper

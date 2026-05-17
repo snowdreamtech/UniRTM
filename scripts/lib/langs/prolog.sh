@@ -14,7 +14,7 @@ install_runtime_prolog() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "swiprolog@$(get_unirtm_tool_version swiprolog)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "swiprolog@$(get_unirtm_tool_version swiprolog)"
 }
 
 # Purpose: Sets up Prolog environment for project.

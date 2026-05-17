@@ -14,7 +14,7 @@ install_runtime_ocaml() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "ocaml@$(get_unirtm_tool_version ocaml)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "ocaml@$(get_unirtm_tool_version ocaml)"
 }
 
 # Purpose: Sets up OCaml environment for project.

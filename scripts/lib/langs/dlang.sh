@@ -14,7 +14,7 @@ install_runtime_dlang() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "dmd@$(get_unirtm_tool_version dlang)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "dmd@$(get_unirtm_tool_version dlang)"
 }
 
 # Purpose: Sets up Dlang environment for project.

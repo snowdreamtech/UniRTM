@@ -14,7 +14,7 @@ install_runtime_terragrunt() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "terragrunt@$(get_unirtm_tool_version terragrunt)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "terragrunt@$(get_unirtm_tool_version terragrunt)"
 }
 
 # Purpose: Sets up Terragrunt environment for project.

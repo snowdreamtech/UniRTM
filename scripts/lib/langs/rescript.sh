@@ -14,7 +14,7 @@ install_runtime_rescript() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "npm:rescript@$(get_unirtm_tool_version rescript)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "npm:rescript@$(get_unirtm_tool_version rescript)"
 }
 
 # Purpose: Sets up ReScript environment for project.

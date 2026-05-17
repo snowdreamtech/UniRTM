@@ -11,7 +11,7 @@ install_runtime_java() {
     log_debug "DRY_RUN: Would install Java runtime."
     return 0
   fi
-  unirtm install "java@${VER_JAVA:-}"
+  "${_G_UNIRTM_BIN:-unirtm}" install "java@${VER_JAVA:-}"
 }
 
 # Purpose: Installs google-java-format for Java project linting (version in versions.sh).

@@ -14,7 +14,7 @@ install_runtime_lean() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "${VER_LEAN_PROVIDER:-}@${VER_LEAN:-}"
+  "${_G_UNIRTM_BIN:-unirtm}" install "${VER_LEAN_PROVIDER:-}@${VER_LEAN:-}"
 }
 
 # Purpose: Sets up Lean 4 environment for project.

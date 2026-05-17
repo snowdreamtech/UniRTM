@@ -14,7 +14,7 @@ install_runtime_move() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "${VER_APTOS_PROVIDER:-}@${VER_APTOS:-}"
+  "${_G_UNIRTM_BIN:-unirtm}" install "${VER_APTOS_PROVIDER:-}@${VER_APTOS:-}"
 }
 
 # Purpose: Sets up Move environment for project.

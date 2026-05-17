@@ -11,7 +11,7 @@ install_runtime_go() {
     log_debug "DRY_RUN: Would install Go runtime."
     return 0
   fi
-  unirtm install "go@${VER_GO:-}"
+  "${_G_UNIRTM_BIN:-unirtm}" install "go@${VER_GO:-}"
 }
 
 # Purpose: Installs golangci-lint for Go projects (version pinned in versions.sh).

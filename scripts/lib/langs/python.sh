@@ -43,7 +43,7 @@ install_runtime_python() {
 
   # 1. Runtime initialization
   local _VERSION="${VER_PYTHON:-}"
-  unirtm install "python@${_VERSION:-}"
+  "${_G_UNIRTM_BIN:-unirtm}" install "python@${_VERSION:-}"
 
   # 2. Virtualenv management
   if [ ! -d "${VENV:-}" ]; then

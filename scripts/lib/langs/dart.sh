@@ -12,7 +12,7 @@ install_runtime_dart() {
     log_debug "DRY_RUN: Would install Dart runtime."
     return 0
   fi
-  unirtm install dart
+  "${_G_UNIRTM_BIN:-unirtm}" install dart
 }
 
 # Purpose: Sets up Dart runtime.

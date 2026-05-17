@@ -13,7 +13,7 @@ install_runtime_swift() {
     return 0
   fi
   # shellcheck disable=SC2154
-  unirtm install "swift@$(get_unirtm_tool_version swift)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "swift@$(get_unirtm_tool_version swift)"
 }
 
 # Purpose: Sets up Swift runtime and mandatory linting tools.

@@ -98,7 +98,7 @@ main() {
       log_info "── Executing ${_LINTER_WRAP:-} (dynamic) ──"
       # Execute directly with unirtm exec
       # shellcheck disable=SC2093
-      exec unirtm exec "${_ZM_SPEC:-}" -- zizmor "$@"
+      exec "${_G_UNIRTM_BIN:-unirtm}" exec "${_ZM_SPEC:-}" -- zizmor "$@"
     fi
 
     # CI Fallback: Try unirtm exec directly if tool not resolved
@@ -131,10 +131,10 @@ main() {
 
       # Step 1: Try to execute the tool first
       log_debug "Step 1: Attempting unirtm exec..."
-      if unirtm exec "${_EXEC_TARGET:-}" -- "${_LINTER_BIN:-}" --version >/dev/null 2>&1; then
+      if "${_G_UNIRTM_BIN:-unirtm}" exec "${_EXEC_TARGET:-}" -- "${_LINTER_BIN:-}" --version >/dev/null 2>&1; then
         log_info "✓ Tool found via unirtm exec, executing..."
         # shellcheck disable=SC2093
-        exec unirtm exec "${_EXEC_TARGET:-}" -- "${_LINTER_BIN:-}" "$@"
+        exec "${_G_UNIRTM_BIN:-unirtm}" exec "${_EXEC_TARGET:-}" -- "${_LINTER_BIN:-}" "$@"
       fi
       log_warn "✗ unirtm exec failed"
 
@@ -149,7 +149,7 @@ main() {
 
       # Step 3: Install the tool
       log_info "Step 3: Installing tool..."
-      if unirtm install "${_EXEC_TARGET:-}"; then
+      if "${_G_UNIRTM_BIN:-unirtm}" install "${_EXEC_TARGET:-}"; then
         log_info "✓ Installation successful"
 
         # Step 4: Refresh unirtm state
@@ -159,10 +159,10 @@ main() {
 
         # Step 5: Try unirtm exec again
         log_debug "Step 5: Retrying unirtm exec..."
-        if unirtm exec "${_EXEC_TARGET:-}" -- "${_LINTER_BIN:-}" --version >/dev/null 2>&1; then
+        if "${_G_UNIRTM_BIN:-unirtm}" exec "${_EXEC_TARGET:-}" -- "${_LINTER_BIN:-}" --version >/dev/null 2>&1; then
           log_info "✓ Tool now executable via unirtm exec"
           # shellcheck disable=SC2093
-          exec unirtm exec "${_EXEC_TARGET:-}" -- "${_LINTER_BIN:-}" "$@"
+          exec "${_G_UNIRTM_BIN:-unirtm}" exec "${_EXEC_TARGET:-}" -- "${_LINTER_BIN:-}" "$@"
         fi
         log_warn "✗ unirtm exec still failed after installation"
 

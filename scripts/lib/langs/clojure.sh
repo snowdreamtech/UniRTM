@@ -13,9 +13,9 @@ install_runtime_clojure() {
     return 0
   fi
 
-  unirtm install clojure
+  "${_G_UNIRTM_BIN:-unirtm}" install clojure
   # shellcheck disable=SC2154
-  unirtm install "clojure@$(get_unirtm_tool_version clojure)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "clojure@$(get_unirtm_tool_version clojure)"
 }
 
 # Purpose: Sets up Clojure environment for project.

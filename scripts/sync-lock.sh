@@ -56,7 +56,7 @@ run_sync_lock() {
   export UNIRTM_AQUA_MINISIGN=0
 
   # shellcheck disable=SC2086
-  UNIRTM_CONFIG="${_TMP_MANIFEST:-}" unirtm lock --platform linux-x64,linux-arm64,linux-x64-musl,linux-arm64-musl,macos-x64,macos-arm64,windows-x64 ${_TOOLS:-} "$@"
+  UNIRTM_CONFIG="${_TMP_MANIFEST:-}" "${_G_UNIRTM_BIN:-unirtm}" lock --platform linux-x64,linux-arm64,linux-x64-musl,linux-arm64-musl,macos-x64,macos-arm64,windows-x64 ${_TOOLS:-} "$@"
 
   # 4. Remove provenance fields from unirtm.lock to prevent attestation comparison errors
   # When a new version lacks attestations that the previous version had, unirtm will error out.

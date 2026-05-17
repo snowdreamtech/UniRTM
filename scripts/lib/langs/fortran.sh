@@ -14,7 +14,7 @@ install_runtime_fortran() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "gcc@$(get_unirtm_tool_version gcc)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "gcc@$(get_unirtm_tool_version gcc)"
 }
 
 # Purpose: Sets up Fortran environment for project.

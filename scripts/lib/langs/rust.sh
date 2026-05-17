@@ -14,7 +14,7 @@ install_runtime_rust() {
   fi
 
   # Runtime initialization
-  unirtm install rust
+  "${_G_UNIRTM_BIN:-unirtm}" install rust
 }
 
 # Purpose: Sets up Rust runtime for project.

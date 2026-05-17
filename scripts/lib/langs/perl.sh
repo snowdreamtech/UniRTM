@@ -13,7 +13,7 @@ install_runtime_perl() {
     return 0
   fi
   # shellcheck disable=SC2154
-  unirtm install "perl@$(get_unirtm_tool_version perl)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "perl@$(get_unirtm_tool_version perl)"
 }
 
 # Purpose: Sets up Perl runtime.

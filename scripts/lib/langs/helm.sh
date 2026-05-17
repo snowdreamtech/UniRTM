@@ -14,7 +14,7 @@ install_runtime_helm() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "helm@$(get_unirtm_tool_version helm)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "helm@$(get_unirtm_tool_version helm)"
 }
 
 # Purpose: Installs kube-linter.

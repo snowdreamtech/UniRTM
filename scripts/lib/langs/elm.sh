@@ -14,7 +14,7 @@ install_runtime_elm() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "elm@$(get_unirtm_tool_version elm)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "elm@$(get_unirtm_tool_version elm)"
 }
 
 # Purpose: Sets up Elm environment for project.

@@ -66,7 +66,7 @@ install_runtime_node() {
   export COREPACK_INTEGRITY_KEYS=0
 
   # 1. Runtime initialization
-  unirtm install node
+  "${_G_UNIRTM_BIN:-unirtm}" install node
 
   # Optimization: If pnpm/yarn are already managed by unirtm (via .unirtm.toml), skip corepack to avoid
   # redundant network calls and signature errors, especially in Node 22+.
@@ -82,7 +82,7 @@ install_runtime_node() {
     log_info "Initializing Node.js package managers (corepack)..."
 
     # Check if corepack exists before enabling. If missing, try to install it.
-    if ! unirtm x -- corepack --version >/dev/null 2>&1; then
+    if ! "${_G_UNIRTM_BIN:-unirtm}" x -- corepack --version >/dev/null 2>&1; then
       log_warn "corepack not found. Attempting to install via npm..."
       npm install -g corepack@latest --force >/dev/null 2>&1 || true
     fi
@@ -96,13 +96,13 @@ install_runtime_node() {
     _V_YARN=$(get_unirtm_tool_version yarn)
 
     # Resilient pnpm installation
-    if ! unirtm x -- corepack prepare "pnpm@${_V_PNPM:-latest}" --activate 2>/dev/null; then
+    if ! "${_G_UNIRTM_BIN:-unirtm}" x -- corepack prepare "pnpm@${_V_PNPM:-latest}" --activate 2>/dev/null; then
       log_warn "Corepack failed for pnpm. Falling back to direct npm installation."
       npm install -g "pnpm@${_V_PNPM:-latest}" --force >/dev/null 2>&1 || true
     fi
 
     # Resilient yarn installation
-    if ! unirtm x -- corepack prepare "yarn@${_V_YARN:-latest}" --activate 2>/dev/null; then
+    if ! "${_G_UNIRTM_BIN:-unirtm}" x -- corepack prepare "yarn@${_V_YARN:-latest}" --activate 2>/dev/null; then
       log_warn "Corepack failed for yarn. Falling back to direct npm installation."
       npm install -g "yarn@${_V_YARN:-latest}" --force >/dev/null 2>&1 || true
     fi

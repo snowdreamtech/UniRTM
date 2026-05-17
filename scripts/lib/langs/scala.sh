@@ -13,7 +13,7 @@ install_runtime_scala() {
     return 0
   fi
   # shellcheck disable=SC2154
-  unirtm install "scala@$(get_unirtm_tool_version scala)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "scala@$(get_unirtm_tool_version scala)"
 }
 
 # Purpose: Installs Scala linter.

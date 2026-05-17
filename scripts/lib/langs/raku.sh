@@ -14,7 +14,7 @@ install_runtime_raku() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "rakudo@$(get_unirtm_tool_version raku)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "rakudo@$(get_unirtm_tool_version raku)"
 }
 
 # Purpose: Sets up Raku environment for project.

@@ -14,7 +14,7 @@ install_runtime_dotnet() {
   fi
 
   # Runtime initialization
-  unirtm install dotnet
+  "${_G_UNIRTM_BIN:-unirtm}" install dotnet
 }
 
 # Purpose: Sets up Dotnet runtime.

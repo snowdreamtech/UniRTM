@@ -14,7 +14,7 @@ install_runtime_wat() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "wasmtime@$(get_unirtm_tool_version wasmtime)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "wasmtime@$(get_unirtm_tool_version wasmtime)"
 }
 
 # Purpose: Sets up WAT environment for project.

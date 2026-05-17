@@ -13,7 +13,7 @@ install_runtime_groovy() {
     return 0
   fi
   # shellcheck disable=SC2154
-  unirtm install "groovy@$(get_unirtm_tool_version groovy)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "groovy@$(get_unirtm_tool_version groovy)"
 }
 
 # Purpose: Sets up Groovy runtime.

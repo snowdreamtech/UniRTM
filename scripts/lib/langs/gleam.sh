@@ -14,7 +14,7 @@ install_runtime_gleam() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "gleam@$(get_unirtm_tool_version gleam)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "gleam@$(get_unirtm_tool_version gleam)"
 }
 
 # Purpose: Sets up Gleam environment for project.

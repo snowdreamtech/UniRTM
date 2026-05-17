@@ -13,7 +13,7 @@ install_runtime_haskell() {
     return 0
   fi
   # shellcheck disable=SC2154
-  unirtm install "ghc@$(get_unirtm_tool_version ghc)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "ghc@$(get_unirtm_tool_version ghc)"
 }
 
 # Purpose: Installs Haskell linter (ormolu).

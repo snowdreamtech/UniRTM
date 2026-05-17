@@ -14,7 +14,7 @@ install_runtime_odin() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "odin@$(get_unirtm_tool_version odin)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "odin@$(get_unirtm_tool_version odin)"
 }
 
 # Purpose: Sets up Odin environment for project.

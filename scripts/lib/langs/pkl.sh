@@ -14,7 +14,7 @@ install_runtime_pkl() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "pkl@$(get_unirtm_tool_version pkl)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "pkl@$(get_unirtm_tool_version pkl)"
 }
 
 # Purpose: Sets up Pkl environment for project.

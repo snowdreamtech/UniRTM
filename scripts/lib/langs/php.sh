@@ -14,7 +14,7 @@ install_runtime_php() {
   fi
 
   # 1. Runtime initialization
-  unirtm install php
+  "${_G_UNIRTM_BIN:-unirtm}" install php
 
   # 2. Dependency resolution
   if [ -f "composer.json" ]; then

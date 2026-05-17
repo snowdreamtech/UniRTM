@@ -100,11 +100,11 @@ resolve_bin_layer2() {
     # Validate shim with timeout protection
     local _MW
     if command -v run_with_timeout_robust >/dev/null 2>&1; then
-      _MW=$(run_with_timeout_robust 1 unirtm which "${_BIN:-}" 2>/dev/null) ||
-        _MW=$(run_with_timeout_robust 1 unirtm which "${_BIN:-}" 2>/dev/null) || true
+      _MW=$(run_with_timeout_robust 1 "${_G_UNIRTM_BIN:-unirtm}" which "${_BIN:-}" 2>/dev/null) ||
+        _MW=$(run_with_timeout_robust 1 "${_G_UNIRTM_BIN:-unirtm}" which "${_BIN:-}" 2>/dev/null) || true
     else
-      _MW=$(unirtm which "${_BIN:-}" 2>/dev/null) ||
-        _MW=$(unirtm which "${_BIN:-}" 2>/dev/null) || true
+      _MW=$("${_G_UNIRTM_BIN:-unirtm}" which "${_BIN:-}" 2>/dev/null) ||
+        _MW=$("${_G_UNIRTM_BIN:-unirtm}" which "${_BIN:-}" 2>/dev/null) || true
     fi
 
     if [ -n "${_MW:-}" ] && [ -x "${_MW:-}" ]; then
@@ -153,11 +153,11 @@ resolve_bin_layer3() {
   # Try unirtm which or unirtm which with timeout protection
   local _MW
   if command -v run_with_timeout_robust >/dev/null 2>&1; then
-    _MW=$(run_with_timeout_robust 5 unirtm which "${_BIN:-}" 2>/dev/null) ||
-      _MW=$(run_with_timeout_robust 5 unirtm which "${_BIN:-}" 2>/dev/null) || true
+    _MW=$(run_with_timeout_robust 5 "${_G_UNIRTM_BIN:-unirtm}" which "${_BIN:-}" 2>/dev/null) ||
+      _MW=$(run_with_timeout_robust 5 "${_G_UNIRTM_BIN:-unirtm}" which "${_BIN:-}" 2>/dev/null) || true
   else
-    _MW=$(unirtm which "${_BIN:-}" 2>/dev/null) ||
-      _MW=$(unirtm which "${_BIN:-}" 2>/dev/null) || true
+    _MW=$("${_G_UNIRTM_BIN:-unirtm}" which "${_BIN:-}" 2>/dev/null) ||
+      _MW=$("${_G_UNIRTM_BIN:-unirtm}" which "${_BIN:-}" 2>/dev/null) || true
   fi
 
   if [ -n "${_MW:-}" ] && [ -x "${_MW:-}" ]; then
@@ -317,7 +317,7 @@ resolve_bin_cached() {
   _log_resolve_debug "resolve_bin_cached: Layer 2 FAILED - not found in system PATH or invalid shim"
 
   # Layer 3: UniRTM metadata query - 5 seconds timeout
-  _log_resolve_debug "resolve_bin_cached: Layer 3 (unirtm metadata) - querying unirtm which (timeout: 5s)"
+  _log_resolve_debug "resolve_bin_cached: Layer 3 (unirtm metadata) - querying "${_G_UNIRTM_BIN:-unirtm}" which (timeout: 5s)"
 
   _RESULT=$(resolve_bin_layer3 "${_BIN:-}") && {
     _log_resolve_debug "resolve_bin_cached: Layer 3 SUCCESS - found '${_BIN:-}' at '${_RESULT:-}'"

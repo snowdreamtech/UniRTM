@@ -14,7 +14,7 @@ install_runtime_spark() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "spark@$(get_unirtm_tool_version spark)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "spark@$(get_unirtm_tool_version spark)"
 }
 
 # Purpose: Sets up Apache Spark environment for project.

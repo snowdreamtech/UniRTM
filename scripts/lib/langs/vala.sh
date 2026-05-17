@@ -14,7 +14,7 @@ install_runtime_vala() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "${VER_VALA_PROVIDER:-}@${VER_VALA:-}"
+  "${_G_UNIRTM_BIN:-unirtm}" install "${VER_VALA_PROVIDER:-}@${VER_VALA:-}"
 }
 
 # Purpose: Sets up Vala environment for project.

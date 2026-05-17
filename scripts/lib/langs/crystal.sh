@@ -14,7 +14,7 @@ install_runtime_crystal() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "crystal@$(get_unirtm_tool_version crystal)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "crystal@$(get_unirtm_tool_version crystal)"
 }
 
 # Purpose: Sets up Crystal environment for project.

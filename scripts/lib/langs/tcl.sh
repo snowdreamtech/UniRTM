@@ -14,7 +14,7 @@ install_runtime_tcl() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "tcl@$(get_unirtm_tool_version tcl)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "tcl@$(get_unirtm_tool_version tcl)"
 }
 
 # Purpose: Sets up Tcl environment for project.

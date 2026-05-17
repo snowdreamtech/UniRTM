@@ -11,7 +11,7 @@ install_runtime_moonbit() {
     log_debug "DRY_RUN: Would install MoonBit via unirtm."
     return 0
   fi
-  unirtm install "${VER_MOONBIT_PROVIDER:-}@${VER_MOONBIT:-}"
+  "${_G_UNIRTM_BIN:-unirtm}" install "${VER_MOONBIT_PROVIDER:-}@${VER_MOONBIT:-}"
 }
 
 # Purpose: Sets up MoonBit environment for project.

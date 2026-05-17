@@ -14,7 +14,7 @@ install_runtime_jsonnet() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "go-jsonnet@$(get_unirtm_tool_version jsonnet)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "go-jsonnet@$(get_unirtm_tool_version jsonnet)"
 }
 
 # Purpose: Sets up Jsonnet environment for project.

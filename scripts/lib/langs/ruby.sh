@@ -14,7 +14,7 @@ install_runtime_ruby() {
   fi
 
   # Runtime initialization
-  unirtm install ruby
+  "${_G_UNIRTM_BIN:-unirtm}" install ruby
 
   # Project dependencies
   if [ -f "Gemfile" ]; then

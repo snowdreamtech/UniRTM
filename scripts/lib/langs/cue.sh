@@ -14,7 +14,7 @@ install_runtime_cue() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "cue@$(get_unirtm_tool_version cue)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "cue@$(get_unirtm_tool_version cue)"
 }
 
 # Purpose: Sets up CUE environment for project.

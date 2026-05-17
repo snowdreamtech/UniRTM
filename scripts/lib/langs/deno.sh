@@ -12,7 +12,7 @@ install_runtime_deno() {
     log_debug "DRY_RUN: Would install Deno runtime."
     return 0
   fi
-  unirtm install deno
+  "${_G_UNIRTM_BIN:-unirtm}" install deno
 }
 
 # Purpose: Sets up Deno runtime.

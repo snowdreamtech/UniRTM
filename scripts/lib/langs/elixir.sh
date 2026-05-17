@@ -13,9 +13,9 @@ install_runtime_elixir() {
     return 0
   fi
   # shellcheck disable=SC2154
-  unirtm install "erlang@$(get_unirtm_tool_version erlang)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "erlang@$(get_unirtm_tool_version erlang)"
   # shellcheck disable=SC2154
-  unirtm install "elixir@$(get_unirtm_tool_version elixir)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "elixir@$(get_unirtm_tool_version elixir)"
 }
 
 # Purpose: Sets up Elixir runtime and mandatory linting tools.

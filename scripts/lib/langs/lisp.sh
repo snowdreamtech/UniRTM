@@ -14,7 +14,7 @@ install_runtime_lisp() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "sbcl@$(get_unirtm_tool_version sbcl)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "sbcl@$(get_unirtm_tool_version sbcl)"
 }
 
 # Purpose: Sets up Common Lisp environment for project.

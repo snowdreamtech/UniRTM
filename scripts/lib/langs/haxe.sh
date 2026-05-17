@@ -14,7 +14,7 @@ install_runtime_haxe() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "haxe@$(get_unirtm_tool_version haxe)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "haxe@$(get_unirtm_tool_version haxe)"
 }
 
 # Purpose: Sets up Haxe environment for project.

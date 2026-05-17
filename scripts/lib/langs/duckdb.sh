@@ -14,7 +14,7 @@ install_runtime_duckdb() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "duckdb@$(get_unirtm_tool_version duckdb)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "duckdb@$(get_unirtm_tool_version duckdb)"
 }
 
 # Purpose: Sets up DuckDB environment for project.

@@ -11,7 +11,7 @@ install_runtime_kcl() {
     log_debug "DRY_RUN: Would install KCL via unirtm."
     return 0
   fi
-  unirtm install "${VER_KCL_PROVIDER:-}@${VER_KCL:-}"
+  "${_G_UNIRTM_BIN:-unirtm}" install "${VER_KCL_PROVIDER:-}@${VER_KCL:-}"
 }
 
 # Purpose: Sets up KCL environment for project.

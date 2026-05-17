@@ -14,7 +14,7 @@ install_runtime_assemblyscript() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "npm:assemblyscript@$(get_unirtm_tool_version assemblyscript)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "npm:assemblyscript@$(get_unirtm_tool_version assemblyscript)"
 }
 
 # Purpose: Sets up AssemblyScript environment for project.

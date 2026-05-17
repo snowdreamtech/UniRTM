@@ -14,7 +14,7 @@ install_runtime_nim() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "${VER_NIM_PROVIDER:-}@${VER_NIM:-}"
+  "${_G_UNIRTM_BIN:-unirtm}" install "${VER_NIM_PROVIDER:-}@${VER_NIM:-}"
 }
 
 # Purpose: Sets up Nim environment for project.

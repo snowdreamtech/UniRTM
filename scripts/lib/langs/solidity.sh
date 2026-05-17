@@ -14,7 +14,7 @@ install_runtime_solidity() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "solidity@$(get_unirtm_tool_version solidity)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "solidity@$(get_unirtm_tool_version solidity)"
 }
 
 # Purpose: Sets up Solidity environment for project.

@@ -14,7 +14,7 @@ install_runtime_luau() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "luau@$(get_unirtm_tool_version luau)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "luau@$(get_unirtm_tool_version luau)"
 }
 
 # Purpose: Sets up Luau environment for project.

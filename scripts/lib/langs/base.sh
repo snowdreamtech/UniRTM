@@ -94,7 +94,7 @@ install_runtime_hooks() {
     log_debug "DRY_RUN: Would install pre-commit via pipx."
     return 0
   fi
-  unirtm install pipx:pre-commit
+  "${_G_UNIRTM_BIN:-unirtm}" install pipx:pre-commit
 }
 
 # Purpose: Activates git pre-commit hooks.

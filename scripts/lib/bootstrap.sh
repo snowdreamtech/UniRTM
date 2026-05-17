@@ -223,7 +223,7 @@ _unirtm_setup_completions() {
   # However, it often hangs on Windows CI due to compilation or interactive prompts.
   # We skip 'usage' installation entirely in CI to guarantee fast bootstrap.
   if ! is_ci_env && [ "${USAGE_FORCE_INSTALL:-0}" -ne 1 ]; then
-    run_quiet unirtm install usage || true
+    run_quiet "${_G_UNIRTM_BIN:-unirtm}" install usage || true
   fi
 
   case "${_SHELL:-}" in

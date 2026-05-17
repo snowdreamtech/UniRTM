@@ -14,7 +14,7 @@ install_runtime_starlark() {
   fi
 
   # shellcheck disable=SC2154
-  unirtm install "bazel@$(get_unirtm_tool_version bazel)"
+  "${_G_UNIRTM_BIN:-unirtm}" install "bazel@$(get_unirtm_tool_version bazel)"
 }
 
 # Purpose: Sets up Starlark environment for project.
