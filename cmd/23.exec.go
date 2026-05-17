@@ -203,7 +203,7 @@ func runExec(cmd *cobra.Command, args []string) error {
 			programArgs = []string{"-c", execCommandStr}
 		}
 	} else {
-		if len(commandArgs) == 0 {
+		if len(commandArgs) == 0 || (len(commandArgs) == 1 && commandArgs[0] == "--") {
 			return fmt.Errorf(
 				"no command specified; usage: unirtm exec [tool@version...] -- <command> [args...]")
 		}

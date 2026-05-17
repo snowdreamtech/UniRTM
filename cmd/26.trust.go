@@ -19,7 +19,7 @@ var trustCmd = &cobra.Command{
 Trusted files are allowed to be automatically loaded and their environment variables applied.
 If no path is provided, it defaults to ./unirtm.toml in the current directory.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		path := "./unirtm.toml"
+		path := resolveConfigFilePath(false)
 		if len(args) > 0 {
 			path = args[0]
 		}

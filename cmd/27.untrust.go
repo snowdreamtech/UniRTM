@@ -19,7 +19,7 @@ var untrustCmd = &cobra.Command{
 Once untrusted, the file's environment variables and configuration will no longer be automatically loaded.
 If no path is provided, it defaults to ./unirtm.toml in the current directory.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		path := "./unirtm.toml"
+		path := resolveConfigFilePath(false)
 		if len(args) > 0 {
 			path = args[0]
 		}

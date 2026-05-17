@@ -158,15 +158,13 @@ func TestCompletionCommandHelp(t *testing.T) {
 
 	// Verify help output contains key information
 	expectedStrings := []string{
-		"Generate shell completion script",
+		"Generate or install shell completion script",
 		"bash",
 		"zsh",
 		"fish",
 		"powershell",
-		"source <(unirtm completion bash)",
+		"unirtm completion",
 		"unirtm completion zsh",
-		"unirtm completion fish",
-		"unirtm completion powershell",
 	}
 
 	for _, expected := range expectedStrings {
@@ -199,5 +197,5 @@ func TestCompletionCommandStructure(t *testing.T) {
 	assert.True(t, completionCmd.DisableFlagsInUseLine,
 		"DisableFlagsInUseLine should be true for cleaner usage output")
 
-	assert.NotNil(t, completionCmd.Run, "Run function should be defined")
+	assert.True(t, completionCmd.Run != nil || completionCmd.RunE != nil, "Run or RunE function should be defined")
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/provider"
+	"github.com/snowdreamtech/unirtm/internal/repository"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/snowdreamtech/unirtm/internal/transaction"
@@ -49,7 +50,7 @@ func RegisterUninstallCommand() {
 
 // uninstallCmd represents the uninstall command which removes a specific version of a tool.
 var uninstallCmd = &cobra.Command{
-	Use:     "uninstall <tool> <version>",
+	Use:     "uninstall <tool> [version]",
 	Aliases: []string{"un"},
 	Short:   "Uninstall a specific version of a development tool",
 	Long: `Uninstall a specific version of a development tool.
@@ -71,7 +72,7 @@ Examples:
 
   # Uninstall with JSON output
   unirtm uninstall go 1.21.0 --json --force`,
-	Args: cobra.ExactArgs(2),
+	Args: cobra.RangeArgs(1, 2),
 	RunE: runUninstall,
 }
 
@@ -82,7 +83,14 @@ Examples:
 // Validates: Requirements 8.2, 23.2
 func runUninstall(cmd *cobra.Command, args []string) error {
 	tool := args[0]
-	version := args[1]
+	var version string
+	if len(args) > 1 {
+		version = args[1]
+	} else if strings.Contains(tool, "@") {
+		parts := strings.SplitN(tool, "@", 2)
+		tool = parts[0]
+		version = parts[1]
+	}
 
 	// Create output formatter
 	formatter := output.NewFormatter(output.FormatterOptions{
@@ -97,11 +105,6 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 	if tool == "" {
 		formatter.Error("Tool name cannot be empty")
 		return fmt.Errorf("tool name is required")
-	}
-
-	if version == "" {
-		formatter.Error("Version cannot be empty")
-		return fmt.Errorf("version is required")
 	}
 
 	// Dry-run: show intent without side effects
@@ -139,6 +142,34 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 			"error": err.Error(),
 		})
 		return fmt.Errorf("create installation repository: %w", err)
+	}
+
+	if version == "" {
+		// List all installations to find matches for this tool
+		installations, err := installRepo.List(ctx)
+		if err != nil {
+			formatter.Error("Failed to list installations", map[string]any{"error": err.Error()})
+			return err
+		}
+		var matches []*repository.Installation
+		for _, inst := range installations {
+			if inst.Tool == tool {
+				matches = append(matches, inst)
+			}
+		}
+		if len(matches) == 0 {
+			formatter.Error(fmt.Sprintf("Tool %s is not installed", tool))
+			return fmt.Errorf("tool %s is not installed", tool)
+		} else if len(matches) == 1 {
+			version = matches[0].Version
+		} else {
+			var versions []string
+			for _, m := range matches {
+				versions = append(versions, m.Version)
+			}
+			formatter.Error(fmt.Sprintf("Multiple versions installed for tool %s: %s. Please specify a version to uninstall.", tool, strings.Join(versions, ", ")))
+			return fmt.Errorf("multiple versions installed for %s", tool)
+		}
 	}
 
 	// Check if the tool is installed

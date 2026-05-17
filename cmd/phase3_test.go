@@ -64,8 +64,8 @@ func TestGenerateShellAlias_Output(t *testing.T) {
 // ─── en ───────────────────────────────────────────────────────────────────────
 
 func TestEnCmdStructure(t *testing.T) {
-	assert.Contains(t, enCmd.Use, "en")
-	assert.NotNil(t, enCmd.RunE)
+	assert.Contains(t, enableCmd.Use, "enable")
+	assert.NotNil(t, enableCmd.RunE)
 }
 
 // ─── install-into ─────────────────────────────────────────────────────────────
@@ -108,7 +108,7 @@ func TestShellAliasCmdStructure(t *testing.T) {
 func TestShellAliasSubcommands(t *testing.T) {
 	assert.NotNil(t, aliasListCmd.RunE)
 	assert.NotNil(t, aliasSetCmd.RunE)
-	assert.NotNil(t, aliasDeleteCmd.RunE)
+	assert.NotNil(t, aliasUnsetCmd.RunE)
 }
 
 func TestShellAliasAddArgs(t *testing.T) {

@@ -118,7 +118,7 @@ _unirtm_clean_path() {
   local result=""
   local IFS=:
   for _p in $PATH; do
-    case ":$UNIRTM_PATH:$shimsDir:" in
+    case ":$UNIRTM_PATH:%s:" in
       *":$_p:"*) ;;
       *) result="${result:+$result:}$_p" ;;
     esac

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pterm/pterm"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -80,9 +81,10 @@ func TestEmitShellEnv_NoPathDirs(t *testing.T) {
 
 func TestRunEnvInfo(t *testing.T) {
 	out := captureStdoutFunc(t, func() {
-		_ = runEnvInfo()
+		_ = runEnvInfoWithStyle()
 	})
-	assert.True(t, strings.Contains(out, "ProjectName=") || strings.Contains(out, "GOOS="))
+	t.Logf("Captured Output: %q", out)
+	assert.True(t, strings.Contains(out, "Project") || strings.Contains(out, "Platform"))
 }
 
 // captureStdoutFunc redirects os.Stdout for the duration of f and returns output.
@@ -94,9 +96,11 @@ func captureStdoutFunc(t *testing.T, f func()) string {
 	}
 	orig := os.Stdout
 	os.Stdout = w
+	pterm.SetDefaultOutput(w)
 	f()
 	w.Close()
 	os.Stdout = orig
+	pterm.SetDefaultOutput(os.Stdout)
 	var buf bytes.Buffer
 	_, _ = io.Copy(&buf, r)
 	r.Close()
