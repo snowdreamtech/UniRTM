@@ -5,7 +5,7 @@ set -eu
 
 # Erlang Logic Module
 
-# Purpose: Installs Erlang runtime via mise.
+# Purpose: Installs Erlang runtime via unirtm.
 install_runtime_erlang() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Erlang via mise."
@@ -13,7 +13,7 @@ install_runtime_erlang() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "erlang@$(get_mise_tool_version erlang)"
+  unirtm install "erlang@$(get_unirtm_tool_version erlang)"
 }
 
 # Purpose: Sets up Erlang environment for project.
@@ -30,7 +30,7 @@ setup_erlang() {
   local _CUR_VER
   _CUR_VER=$(get_version erlang)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "erlang")
+  _REQ_VER=$(get_unirtm_tool_version "erlang")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Erlang" "✅ Detected" "${_CUR_VER:-}" "0"

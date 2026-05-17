@@ -672,9 +672,9 @@ main() {
   if resolve_bin "unirtm" >/dev/null 2>&1; then
     log_success "✅ unirtm: Active ($(get_version unirtm))"
   elif resolve_bin "mise" >/dev/null 2>&1; then
-    log_success "✅ unirtm/mise (legacy fallback): Active ($(get_version mise))"
+    log_success "✅ unirtm/unirtm (legacy fallback): Active ($(get_version unirtm))"
   else
-    log_warn "❌ unirtm/mise: Not found. (Mandatory for toolchain management)"
+    log_warn "❌ unirtm/unirtm: Not found. (Mandatory for toolchain management)"
     HEALTHY_ST=1
   fi
   printf "\n"
@@ -716,8 +716,22 @@ main() {
 
   # 7. Project File Integrity
   log_info "── Project Integrity ──"
-  local _f_chk
-  for _f_chk in ".unirtm.toml" "README.md" ".agent/rules/01-general.md"; do
+  local _f_chk _has_config=0
+  for _f_chk in ".unirtm.toml" ".mise.toml"; do
+    if [ -f "${_f_chk:-}" ]; then
+      _has_config=1
+      break
+    fi
+  done
+  if [ "${_has_config:-0}" -eq 1 ]; then
+    log_debug "Found configuration file"
+  else
+    log_error "❌ Missing critical config file: .unirtm.toml or .mise.toml"
+    HEALTHY_ST=1
+    CORE_HEALTHY_ST=1
+  fi
+
+  for _f_chk in "README.md" ".agent/rules/01-general.md"; do
     if [ -f "${_f_chk:-}" ]; then
       log_debug "Found $_f_chk"
     else

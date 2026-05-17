@@ -5,8 +5,8 @@ set -eu
 
 # Helm Logic Module
 
-# Purpose: Installs Helm via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Helm via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_helm() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Helm via mise."
@@ -14,11 +14,11 @@ install_runtime_helm() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "helm@$(get_mise_tool_version helm)"
+  unirtm install "helm@$(get_unirtm_tool_version helm)"
 }
 
 # Purpose: Installs kube-linter.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_kube_linter() {
   install_tool_safe "kube-linter" "${VER_KUBE_LINTER_PROVIDER:-}" "Kube-Linter" "version" 0 "CHARTS *.yaml *.yml" ""
 }
@@ -35,7 +35,7 @@ setup_helm() {
   local _CUR_VER
   _CUR_VER=$(get_version helm)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "helm")
+  _REQ_VER=$(get_unirtm_tool_version "helm")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "IaC" "Helm" "✅ Detected" "${_CUR_VER:-}" "0"

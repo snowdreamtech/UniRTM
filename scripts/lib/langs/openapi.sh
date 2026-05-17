@@ -6,7 +6,7 @@ set -eu
 # OpenAPI Logic Module
 
 # Purpose: Installs spectral for OpenAPI/AsyncAPI linting.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_spectral() {
   setup_registry_spectral
   install_tool_safe "spectral" "${VER_SPECTRAL_PROVIDER:-}" "Spectral" "--version" 0 "openapi.yaml openapi.json asyncapi.yaml asyncapi.json" ""

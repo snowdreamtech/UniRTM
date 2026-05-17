@@ -3,10 +3,10 @@ set -eu
 # Copyright (c) 2026 SnowdreamTech. All rights reserved.
 # Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-# scripts/sync-lock.sh - Mise Lockfile Synchronizer
+# scripts/sync-lock.sh - UniRTM Lockfile Synchronizer
 #
 # Purpose:
-#   Synchronizes mise.lock with the comprehensive manifest (Tier 1 + Tier 2).
+#   Synchronizes unirtm.lock with the comprehensive manifest (Tier 1 + Tier 2).
 #   Ensures all tools are cryptographically locked for all supported platforms.
 
 # ── Common Library ───────────────────────────────────────────────────────────
@@ -15,15 +15,15 @@ SCRIPT_DIR=$(cd "$(dirname "${0:-}")" && pwd)
 
 # ── Functions ────────────────────────────────────────────────────────────────
 
-# Purpose: Synchronizes mise.lock for all supported platforms.
+# Purpose: Synchronizes unirtm.lock for all supported platforms.
 # Params:
 #   $@ - Optional additional tools to lock
 # Examples:
 #   run_sync_lock
 run_sync_lock() {
-  log_info "Synchronizing mise.lock for all platforms..."
+  log_info "Synchronizing unirtm.lock for all platforms..."
 
-  # 0. Clear mise cache to avoid stale provenance verification data
+  # 0. Clear unirtm cache to avoid stale provenance verification data
   # This prevents errors like "has no provenance verification" when attestations
   # are actually present but cached metadata is outdated.
   log_debug "Clearing mise cache to refresh provenance verification data..."
@@ -41,14 +41,14 @@ run_sync_lock() {
   # Platforms: Ubuntu/Debian (glibc), Alpine (musl), macOS (x64/arm64), Windows (x64).
   # Disable paranoid mode as GitHub attestations are not universally adopted yet.
   # Many legitimate projects don't provide attestations, making this check too strict.
-  # We rely on mise's built-in checksum verification for security instead.
+  # We rely on unirtm's built-in checksum verification for security instead.
   export MISE_PARANOID=0
   export MISE_LOCKFILE_PARANOID=0
   export MISE_YES=1
 
   # Disable all attestation/provenance verification checks
   # This prevents errors when new tool versions lack attestations that previous versions had
-  # See: docs/troubleshooting/mise-attestation-error.md
+  # See: docs/troubleshooting/unirtm-attestation-error.md
   export MISE_SKIP_CHECKSUM=1
   export MISE_AQUA_GITHUB_ATTESTATIONS=0
   export MISE_AQUA_SLSA=0
@@ -58,8 +58,8 @@ run_sync_lock() {
   # shellcheck disable=SC2086
   MISE_CONFIG="${_TMP_MANIFEST:-}" mise lock --platform linux-x64,linux-arm64,linux-x64-musl,linux-arm64-musl,macos-x64,macos-arm64,windows-x64 ${_TOOLS:-} "$@"
 
-  # 4. Remove provenance fields from mise.lock to prevent attestation comparison errors
-  # When a new version lacks attestations that the previous version had, mise will error out.
+  # 4. Remove provenance fields from unirtm.lock to prevent attestation comparison errors
+  # When a new version lacks attestations that the previous version had, unirtm will error out.
   # By removing all provenance fields, we prevent this comparison while still maintaining
   # checksum verification for security.
   if [ -f "mise.lock" ]; then
@@ -75,7 +75,7 @@ run_sync_lock() {
   # 5. Cleanup
   rm -f "${_TMP_MANIFEST:-}"
 
-  log_success "mise.lock synchronized successfully for all platforms."
+  log_success "unirtm.lock synchronized successfully for all platforms."
 }
 
 # ── Main ─────────────────────────────────────────────────────────────────────

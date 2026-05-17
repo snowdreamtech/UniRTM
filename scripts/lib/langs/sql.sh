@@ -6,7 +6,7 @@ set -eu
 # SQL Logic Module
 
 # Purpose: Installs sqlfluff for SQL linting.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_sqlfluff() {
   install_tool_safe "sqlfluff" "${VER_SQLFLUFF_PROVIDER:-}" "Sqlfluff" "--version" 0 "*.sql" ""
 }

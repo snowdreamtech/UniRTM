@@ -5,13 +5,13 @@ set -eu
 
 # Java Logic Module
 
-# Purpose: Installs Java runtime via mise (version pinned in scripts/lib/versions.sh).
+# Purpose: Installs Java runtime via unirtm (version pinned in scripts/lib/versions.sh).
 install_runtime_java() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Java runtime."
     return 0
   fi
-  run_mise install "java@${VER_JAVA:-}"
+  unirtm install "java@${VER_JAVA:-}"
 }
 
 # Purpose: Installs google-java-format for Java project linting (version in versions.sh).
@@ -27,13 +27,13 @@ install_java_lint() {
 }
 
 # Purpose: Sets up Java runtime and mandatory linting tools.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 setup_java() {
   if ! has_lang_files "pom.xml build.gradle" "*.java"; then
     return 0
   fi
 
-  # Dynamically register Java in .mise.toml if not already present.
+  # Dynamically register Java in .unirtm.toml if not already present.
   setup_registry_java
 
   local _T0_JAVA_RT

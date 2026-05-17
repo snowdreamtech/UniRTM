@@ -5,8 +5,8 @@ set -eu
 
 # Solidity Logic Module
 
-# Purpose: Installs Solidity compiler (solc) via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Solidity compiler (solc) via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_solidity() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Solidity compiler (solc) via mise."
@@ -14,7 +14,7 @@ install_runtime_solidity() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "solidity@$(get_mise_tool_version solidity)"
+  unirtm install "solidity@$(get_unirtm_tool_version solidity)"
 }
 
 # Purpose: Sets up Solidity environment for project.
@@ -31,7 +31,7 @@ setup_solidity() {
   local _CUR_VER
   _CUR_VER=$(get_version solc)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "solc")
+  _REQ_VER=$(get_unirtm_tool_version "solc")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Solidity" "✅ Detected" "${_CUR_VER:-}" "0"

@@ -5,8 +5,8 @@ set -eu
 
 # Nim Logic Module
 
-# Purpose: Installs Nim compiler via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Nim compiler via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_nim() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Nim compiler via mise."
@@ -14,7 +14,7 @@ install_runtime_nim() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "${VER_NIM_PROVIDER:-}@${VER_NIM:-}"
+  unirtm install "${VER_NIM_PROVIDER:-}@${VER_NIM:-}"
 }
 
 # Purpose: Sets up Nim environment for project.
@@ -31,7 +31,7 @@ setup_nim() {
   local _CUR_VER
   _CUR_VER=$(get_version nim)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "nim")
+  _REQ_VER=$(get_unirtm_tool_version "nim")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Nim" "✅ Detected" "${_CUR_VER:-}" "0"

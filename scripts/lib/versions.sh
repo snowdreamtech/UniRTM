@@ -11,7 +11,7 @@ set -eu
 #
 # Cache Invalidation: 2026-04-01 (PATH management fix)
 #
-#   - Tier 1 (Core): SSoT is .mise.toml. Versions here serve as a
+#   - Tier 1 (Core): SSoT is .unirtm.toml. Versions here serve as a
 #     backup mirror and must stay in sync. update-tools.sh updates both.
 #   - Tier 2 (On-demand): SSoT is THIS FILE. Versions are pinned here
 #     and referenced by scripts/lib/langs/*.sh for dynamic registration.
@@ -19,7 +19,7 @@ set -eu
 # shellcheck disable=SC2034
 # (Variables are used by sourcing scripts: lang modules and setup.sh)
 
-# ── 🏗️ Tier 1: Core Runtimes (Mirror of .mise.toml) ──────────────────────────
+# ── 🏗️ Tier 1: Core Runtimes (Mirror of .unirtm.toml) ──────────────────────────
 # shellcheck disable=SC2034
 VER_GO="1.26.2"
 VER_NODE="25.9.0"
@@ -90,13 +90,13 @@ VER_VALA_PROVIDER="github:GNOME/vala"
 VER_APTOS="5.5.0"
 VER_APTOS_PROVIDER="github:aptos-labs/aptos-core"
 
-# ── 🔐 Tier 1: Security & Engineering (Mirror of .mise.toml) ─────────────────
+# ── 🔐 Tier 1: Security & Engineering (Mirror of .unirtm.toml) ─────────────────
 VER_GITLEAKS="8.30.1"
 VER_GITLEAKS_PROVIDER="github:gitleaks/gitleaks"
 VER_GH_CLI="2.92.0"
 VER_GH_CLI_PROVIDER="github:cli/cli"
 
-# ── 💎 Tier 1: Core Quality & Commit Tooling (Mirror of .mise.toml) ──────────
+# ── 💎 Tier 1: Core Quality & Commit Tooling (Mirror of .unirtm.toml) ──────────
 VER_CHECKMAKE="0.3.2"
 VER_CHECKMAKE_PROVIDER="github:checkmake/checkmake"
 VER_EDITORCONFIG_CHECKER="3.6.1"
@@ -256,7 +256,7 @@ VER_GORELEASER_PROVIDER="github:goreleaser/goreleaser"
 VER_BATS="1.13.0"
 VER_BATS_PROVIDER="npm:bats"
 
-# ── 🛠️ Mise Internal / Helpers ────────────────────────────────────────────────
+# ── 🛠️ UniRTM Internal / Helpers ────────────────────────────────────────────────
 VER_MISE="2026.4.15"
 VER_USAGE="3.3.0"
 VER_USAGE_PROVIDER="usage"

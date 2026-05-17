@@ -5,14 +5,14 @@ set -eu
 
 # Julia Logic Module
 
-# Purpose: Installs Julia runtime via mise.
+# Purpose: Installs Julia runtime via unirtm.
 install_runtime_julia() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Julia runtime."
     return 0
   fi
   # shellcheck disable=SC2154
-  run_mise install "julia@$(get_mise_tool_version julia)"
+  unirtm install "julia@$(get_unirtm_tool_version julia)"
 }
 
 # Purpose: Sets up Julia runtime.
@@ -29,7 +29,7 @@ setup_julia() {
   local _CUR_VER
   _CUR_VER=$(get_version julia)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "julia")
+  _REQ_VER=$(get_unirtm_tool_version "julia")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Julia" "✅ Detected" "${_CUR_VER:-}" "0"

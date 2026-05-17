@@ -5,8 +5,8 @@ set -eu
 
 # Starlark Logic Module
 
-# Purpose: Installs Bazel (for Starlark) via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Bazel (for Starlark) via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_starlark() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Bazel via mise."
@@ -14,7 +14,7 @@ install_runtime_starlark() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "bazel@$(get_mise_tool_version bazel)"
+  unirtm install "bazel@$(get_unirtm_tool_version bazel)"
 }
 
 # Purpose: Sets up Starlark environment for project.
@@ -31,7 +31,7 @@ setup_starlark() {
   local _CUR_VER
   _CUR_VER=$(get_version bazel)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "bazel")
+  _REQ_VER=$(get_unirtm_tool_version "bazel")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Starlark" "✅ Detected" "${_CUR_VER:-}" "0"

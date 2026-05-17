@@ -5,15 +5,15 @@ set -eu
 
 # Pulumi Logic Module
 
-# Purpose: Installs Pulumi CLI via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Pulumi CLI via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_pulumi() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Pulumi CLI."
     return 0
   fi
   # shellcheck disable=SC2154
-  run_mise install "pulumi@$(get_mise_tool_version pulumi)"
+  unirtm install "pulumi@$(get_unirtm_tool_version pulumi)"
 }
 
 # Purpose: Sets up Pulumi IaC.
@@ -28,7 +28,7 @@ setup_pulumi() {
   local _CUR_VER
   _CUR_VER=$(get_version pulumi)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "pulumi")
+  _REQ_VER=$(get_unirtm_tool_version "pulumi")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "IaC" "Pulumi" "✅ Detected" "${_CUR_VER:-}" "0"

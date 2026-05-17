@@ -6,14 +6,14 @@ set -eu
 # Runner Logic Module
 
 # Purpose: Installs Just (modern runner).
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_just() {
   setup_registry_just
   install_tool_safe "just" "${VER_JUST_PROVIDER:-}" "Just" "--version" 0 "JUST" ""
 }
 
 # Purpose: Installs Task (modern runner).
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_task() {
   setup_registry_task
   install_tool_safe "task" "${VER_TASK_PROVIDER:-}" "Task" "--version" 0 "TASK" ""

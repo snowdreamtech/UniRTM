@@ -5,15 +5,15 @@ set -eu
 
 # Groovy Logic Module
 
-# Purpose: Installs Groovy runtime via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Groovy runtime via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_groovy() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Groovy runtime."
     return 0
   fi
   # shellcheck disable=SC2154
-  run_mise install "groovy@$(get_mise_tool_version groovy)"
+  unirtm install "groovy@$(get_unirtm_tool_version groovy)"
 }
 
 # Purpose: Sets up Groovy runtime.
@@ -30,7 +30,7 @@ setup_groovy() {
   local _CUR_VER
   _CUR_VER=$(get_version groovy)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "groovy")
+  _REQ_VER=$(get_unirtm_tool_version "groovy")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Groovy" "✅ Detected" "${_CUR_VER:-}" "0"

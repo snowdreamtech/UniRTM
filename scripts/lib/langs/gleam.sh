@@ -5,8 +5,8 @@ set -eu
 
 # Gleam Logic Module
 
-# Purpose: Installs Gleam runtime via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Gleam runtime via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_gleam() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Gleam runtime via mise."
@@ -14,7 +14,7 @@ install_runtime_gleam() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "gleam@$(get_mise_tool_version gleam)"
+  unirtm install "gleam@$(get_unirtm_tool_version gleam)"
 }
 
 # Purpose: Sets up Gleam environment for project.
@@ -31,7 +31,7 @@ setup_gleam() {
   local _CUR_VER
   _CUR_VER=$(get_version gleam)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "gleam")
+  _REQ_VER=$(get_unirtm_tool_version "gleam")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Gleam" "✅ Detected" "${_CUR_VER:-}" "0"

@@ -5,8 +5,8 @@ set -eu
 
 # Pkl Logic Module
 
-# Purpose: Installs Pkl via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Pkl via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_pkl() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Pkl via mise."
@@ -14,7 +14,7 @@ install_runtime_pkl() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "pkl@$(get_mise_tool_version pkl)"
+  unirtm install "pkl@$(get_unirtm_tool_version pkl)"
 }
 
 # Purpose: Sets up Pkl environment for project.
@@ -31,7 +31,7 @@ setup_pkl() {
   local _CUR_VER
   _CUR_VER=$(get_version pkl)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "pkl")
+  _REQ_VER=$(get_unirtm_tool_version "pkl")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Pkl" "✅ Detected" "${_CUR_VER:-}" "0"

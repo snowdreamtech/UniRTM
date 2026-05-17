@@ -5,8 +5,8 @@ set -eu
 
 # DuckDB Logic Module
 
-# Purpose: Installs DuckDB via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs DuckDB via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_duckdb() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install DuckDB via mise."
@@ -14,7 +14,7 @@ install_runtime_duckdb() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "duckdb@$(get_mise_tool_version duckdb)"
+  unirtm install "duckdb@$(get_unirtm_tool_version duckdb)"
 }
 
 # Purpose: Sets up DuckDB environment for project.
@@ -29,7 +29,7 @@ setup_duckdb() {
   local _CUR_VER
   _CUR_VER=$(get_version duckdb)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "duckdb")
+  _REQ_VER=$(get_unirtm_tool_version "duckdb")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "DuckDB" "✅ Detected" "${_CUR_VER:-}" "0"

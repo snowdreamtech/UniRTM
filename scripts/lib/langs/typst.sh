@@ -5,8 +5,8 @@ set -eu
 
 # Typst Logic Module
 
-# Purpose: Installs Typst via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Typst via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_typst() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Typst via mise."
@@ -14,7 +14,7 @@ install_runtime_typst() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "typst@$(get_mise_tool_version typst)"
+  unirtm install "typst@$(get_unirtm_tool_version typst)"
 }
 
 # Purpose: Sets up Typst environment for project.
@@ -29,7 +29,7 @@ setup_typst() {
   local _CUR_VER
   _CUR_VER=$(get_version typst)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "typst")
+  _REQ_VER=$(get_unirtm_tool_version "typst")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Docs" "Typst" "✅ Detected" "${_CUR_VER:-}" "0"

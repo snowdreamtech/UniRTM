@@ -6,8 +6,8 @@ set -eu
 
 # Ada Logic Module
 
-# Purpose: Installs Ada (GNAT) via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Ada (GNAT) via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_ada() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Ada (GNAT) via mise."
@@ -15,7 +15,7 @@ install_runtime_ada() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "gnat@$(get_mise_tool_version ada)"
+  unirtm install "gnat@$(get_unirtm_tool_version ada)"
 }
 
 # Purpose: Sets up Ada environment for project.
@@ -32,7 +32,7 @@ setup_ada() {
   local _CUR_VER
   _CUR_VER=$(get_version gnat)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "gnat")
+  _REQ_VER=$(get_unirtm_tool_version "gnat")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Ada" "✅ Detected" "${_CUR_VER:-}" "0"

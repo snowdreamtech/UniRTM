@@ -5,17 +5,17 @@ set -eu
 
 # Clojure Logic Module
 
-# Purpose: Installs Clojure and Leiningen via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Clojure and Leiningen via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_clojure() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Clojure and Leiningen via mise."
     return 0
   fi
 
-  run_mise install clojure
+  unirtm install clojure
   # shellcheck disable=SC2154
-  run_mise install "clojure@$(get_mise_tool_version clojure)"
+  unirtm install "clojure@$(get_unirtm_tool_version clojure)"
 }
 
 # Purpose: Sets up Clojure environment for project.
@@ -32,7 +32,7 @@ setup_clojure() {
   local _CUR_VER
   _CUR_VER=$(get_version clojure)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "clojure")
+  _REQ_VER=$(get_unirtm_tool_version "clojure")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Clojure" "✅ Detected" "${_CUR_VER:-}" "0"

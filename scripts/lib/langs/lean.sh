@@ -5,8 +5,8 @@ set -eu
 
 # Lean 4 Logic Module
 
-# Purpose: Installs Lean 4 via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Lean 4 via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_lean() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Lean 4 via mise."
@@ -14,7 +14,7 @@ install_runtime_lean() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "${VER_LEAN_PROVIDER:-}@${VER_LEAN:-}"
+  unirtm install "${VER_LEAN_PROVIDER:-}@${VER_LEAN:-}"
 }
 
 # Purpose: Sets up Lean 4 environment for project.
@@ -31,7 +31,7 @@ setup_lean() {
   local _CUR_VER
   _CUR_VER=$(get_version lean)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "lean")
+  _REQ_VER=$(get_unirtm_tool_version "lean")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Lean 4" "✅ Detected" "${_CUR_VER:-}" "0"

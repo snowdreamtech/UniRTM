@@ -5,8 +5,8 @@ set -eu
 
 # CUE Logic Module
 
-# Purpose: Installs CUE via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs CUE via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_cue() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install CUE via mise."
@@ -14,11 +14,11 @@ install_runtime_cue() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "cue@$(get_mise_tool_version cue)"
+  unirtm install "cue@$(get_unirtm_tool_version cue)"
 }
 
 # Purpose: Sets up CUE environment for project.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 # Examples:
 #   setup_cue
 setup_cue() {
@@ -32,7 +32,7 @@ setup_cue() {
   local _CUR_VER
   _CUR_VER=$(get_version cue)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "cue")
+  _REQ_VER=$(get_unirtm_tool_version "cue")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "CUE" "✅ Detected" "${_CUR_VER:-}" "0"

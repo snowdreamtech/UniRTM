@@ -5,13 +5,13 @@ set -eu
 
 # KCL Logic Module
 
-# Purpose: Installs KCL via mise (version pinned in scripts/lib/versions.sh).
+# Purpose: Installs KCL via unirtm (version pinned in scripts/lib/versions.sh).
 install_runtime_kcl() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install KCL via mise."
     return 0
   fi
-  run_mise install "${VER_KCL_PROVIDER:-}@${VER_KCL:-}"
+  unirtm install "${VER_KCL_PROVIDER:-}@${VER_KCL:-}"
 }
 
 # Purpose: Sets up KCL environment for project.

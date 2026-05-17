@@ -5,8 +5,8 @@ set -eu
 
 # Prolog Logic Module
 
-# Purpose: Installs SWI-Prolog via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs SWI-Prolog via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_prolog() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install SWI-Prolog via mise."
@@ -14,7 +14,7 @@ install_runtime_prolog() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "swiprolog@$(get_mise_tool_version swiprolog)"
+  unirtm install "swiprolog@$(get_unirtm_tool_version swiprolog)"
 }
 
 # Purpose: Sets up Prolog environment for project.
@@ -31,7 +31,7 @@ setup_prolog() {
   local _CUR_VER
   _CUR_VER=$(get_version swipl)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "swipl")
+  _REQ_VER=$(get_unirtm_tool_version "swipl")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Prolog" "✅ Detected" "${_CUR_VER:-}" "0"

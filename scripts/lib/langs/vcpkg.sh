@@ -6,7 +6,7 @@ set -eu
 # VCPKG Logic Module
 
 # Purpose: Installs VCPKG (often used alongside C++).
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_vcpkg() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install VCPKG."
@@ -14,11 +14,11 @@ install_runtime_vcpkg() {
   fi
 
   # Note: vcpkg is often installed via git or system package manager.
-  # Here we look for asdf/mise plugin or system command.
+  # Here we look for asdf/unirtm plugin or system command.
   if ! resolve_bin "vcpkg" >/dev/null 2>&1; then
-    log_info "VCPKG not found. Attempting to install via mise (if plugin available)..."
+    log_info "VCPKG not found. Attempting to install via unirtm (if plugin available)..."
     # shellcheck disable=SC2154
-    run_mise install vcpkg || log_warn "Could not install vcpkg via mise. Please install it manually."
+    unirtm install vcpkg || log_warn "Could not install vcpkg via unirtm. Please install it manually."
   fi
 }
 
@@ -34,7 +34,7 @@ setup_vcpkg() {
   local _CUR_VER
   _CUR_VER=$(get_version vcpkg)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "vcpkg")
+  _REQ_VER=$(get_unirtm_tool_version "vcpkg")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "VCPKG" "✅ Detected" "${_CUR_VER:-}" "0"

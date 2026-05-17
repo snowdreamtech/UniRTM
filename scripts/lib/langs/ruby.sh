@@ -5,8 +5,8 @@ set -eu
 
 # Ruby Logic Module
 
-# Purpose: Installs Ruby runtime via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Ruby runtime via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_ruby() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Ruby runtime."
@@ -14,7 +14,7 @@ install_runtime_ruby() {
   fi
 
   # Runtime initialization
-  run_mise install ruby
+  unirtm install ruby
 
   # Project dependencies
   if [ -f "Gemfile" ]; then
@@ -37,7 +37,7 @@ install_ruby_lint() {
 }
 
 # Purpose: Sets up Ruby runtime and mandatory linting tools.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 setup_ruby() {
   if ! has_lang_files "Gemfile Gemfile.lock Rakefile" "*.rb *.rake"; then
     return 0
@@ -51,7 +51,7 @@ setup_ruby() {
   local _CUR_VER
   _CUR_VER=$(get_version ruby)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "ruby")
+  _REQ_VER=$(get_unirtm_tool_version "ruby")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Ruby" "✅ Detected" "${_CUR_VER:-}" "0"

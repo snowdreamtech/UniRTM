@@ -5,8 +5,8 @@ set -eu
 
 # PHP Logic Module
 
-# Purpose: Installs PHP runtime via mise.
-# Delegate: Managed via mise (.mise.toml) and composer.
+# Purpose: Installs PHP runtime via unirtm.
+# Delegate: Managed via unirtm (.unirtm.toml) and composer.
 install_runtime_php() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install PHP runtime."
@@ -14,7 +14,7 @@ install_runtime_php() {
   fi
 
   # 1. Runtime initialization
-  run_mise install php
+  unirtm install php
 
   # 2. Dependency resolution
   if [ -f "composer.json" ]; then
@@ -23,7 +23,7 @@ install_runtime_php() {
 }
 
 # Purpose: Sets up PHP runtime.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 setup_php() {
   if ! has_lang_files "composer.json composer.lock" "*.php"; then
     return 0
@@ -37,7 +37,7 @@ setup_php() {
   local _CUR_VER
   _CUR_VER=$(get_version php)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "php")
+  _REQ_VER=$(get_unirtm_tool_version "php")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "PHP" "✅ Detected" "${_CUR_VER:-}" "0"

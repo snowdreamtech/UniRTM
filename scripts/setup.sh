@@ -82,7 +82,7 @@ _log_setup() {
   local _TITLE="${1:-}"
   local _LOOKUP="${2:-}"
   local _VER=""
-  [ -n "${_LOOKUP:-}" ] && _VER=$(get_mise_tool_version "${_LOOKUP:-}")
+  [ -n "${_LOOKUP:-}" ] && _VER=$(get_unirtm_tool_version "${_LOOKUP:-}")
 
   if [ -n "${_VER:-}" ]; then
     log_info "── Setting up ${_TITLE:-} (${_VER:-}) ──"
@@ -160,7 +160,7 @@ EOF
 
       # Detect language runtimes only when corresponding project files exist.
       # This prevents spurious "⚠️ Warning" entries for unrelated runtimes
-      # caused by mise cache key substring mismatches (e.g. "go" matching "goreleaser").
+      # caused by unirtm cache key substring mismatches (e.g. "go" matching "goreleaser").
       for _r in node python; do
         local _v
         _v=$(get_version "${_r:-}")
@@ -168,7 +168,7 @@ EOF
           log_summary "Runtime" "${_r:-}" "✅ Detected" "${_v:-}" "0"
         fi
       done
-      # Only detect Go when go.mod is present (avoids mise cache key false-positive on "goreleaser/...")
+      # Only detect Go when go.mod is present (avoids unirtm cache key false-positive on "goreleaser/...")
       if has_lang_files "go.mod" "*.go"; then
         local _vgo
         _vgo=$(get_version "go")
@@ -256,19 +256,19 @@ EOF
   fi
 
   # 5. Bootstrap Toolchain Manager
-  bootstrap_mise || log_warn "Warning: mise bootstrap failed. Falling back to local tool installation."
+  bootstrap_mise || log_warn "Warning: unirtm/unirtm bootstrap failed. Falling back to local tool installation."
 
   # 6. Toolchain Manager Strategy
   if [ "${DRY_RUN:-0}" -eq 0 ]; then
     export GIT_PROTOCOL=version=2
     export MISE_GIT_ALWAYS_USE_GIX=0
 
-    # Performance Opt: Cache mise state once per session
+    # Performance Opt: Cache unirtm state once per session
     refresh_mise_cache
 
     if [ "${_IS_ALL_MODULES:-}" = "true" ] && [ "$(uname -s)" != "Windows_NT" ]; then
-      log_info "Performing full toolchain synchronization via mise..."
-      run_mise install
+      log_info "Performing full toolchain synchronization via unirtm..."
+      unirtm install
     else
       log_info "Performing on-demand module installation..."
     fi
@@ -423,29 +423,29 @@ EOF
     finalize_summary_table
     log_info "\n✨ Setup step complete!"
 
-    # CI PATH Persistence: Ensure mise paths are persisted after setup completes
+    # CI PATH Persistence: Ensure unirtm paths are persisted after setup completes
     # This is critical for Windows CI where tools are installed during setup
     if is_ci_env && [ "${DRY_RUN:-0}" -eq 0 ]; then
-      log_info "[CI-PATH] Persisting mise paths to CI..."
+      log_info "[CI-PATH] Persisting unirtm paths to CI..."
       if [ -d "${_G_MISE_BIN_BASE:-}" ] && [ -n "$(ls -A "${_G_MISE_BIN_BASE:-}" 2>/dev/null)" ]; then
         _persist_path_to_ci "${_G_MISE_BIN_BASE:-}"
         # Use echo to avoid printf issues with Windows paths
-        echo "  [OK] Persisted mise bin: ${_G_MISE_BIN_BASE:-}" >&2
+        echo "  [OK] Persisted unirtm bin: ${_G_MISE_BIN_BASE:-}" >&2
       else
-        echo "  [WARN] Mise bin directory not found or empty: ${_G_MISE_BIN_BASE:-}" >&2
+        echo "  [WARN] unirtm bin directory not found or empty: ${_G_MISE_BIN_BASE:-}" >&2
       fi
       if [ -d "${_G_MISE_SHIMS_BASE:-}" ] && [ -n "$(ls -A "${_G_MISE_SHIMS_BASE:-}" 2>/dev/null)" ]; then
         _persist_path_to_ci "${_G_MISE_SHIMS_BASE:-}"
         # Use echo to avoid printf issues with Windows paths
-        echo "  [OK] Persisted mise shims: ${_G_MISE_SHIMS_BASE:-}" >&2
+        echo "  [OK] Persisted unirtm shims: ${_G_MISE_SHIMS_BASE:-}" >&2
       else
-        echo "  [WARN] Mise shims directory not found or empty: ${_G_MISE_SHIMS_BASE:-}" >&2
+        echo "  [WARN] unirtm shims directory not found or empty: ${_G_MISE_SHIMS_BASE:-}" >&2
       fi
     fi
 
     if [ "${DRY_RUN:-0}" -eq 0 ]; then
-      if ! command -v mise >/dev/null 2>&1; then
-        log_warn "Warning: mise binary not found on PATH. You may need to restart your shell."
+      if ! command -v unirtm >/dev/null 2>&1 && ! command -v mise >/dev/null 2>&1; then
+        log_warn "Warning: unirtm/unirtm binary not found on PATH. You may need to restart your shell."
       fi
       printf "\n%bNext Actions:%b\n" "${YELLOW:-}" "${NC:-}"
       printf "  - Run %bmake install%b to install project dependencies.\n" "${GREEN:-}" "${NC:-}"

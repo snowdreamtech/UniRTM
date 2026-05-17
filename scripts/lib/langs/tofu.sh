@@ -5,8 +5,8 @@ set -eu
 
 # OpenTofu Logic Module
 
-# Purpose: Installs OpenTofu via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs OpenTofu via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_tofu() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install OpenTofu."
@@ -14,7 +14,7 @@ install_runtime_tofu() {
   fi
   # shellcheck disable=SC2154
   setup_registry_tofu
-  run_mise install "opentofu@$(get_mise_tool_version opentofu)"
+  unirtm install "opentofu@$(get_unirtm_tool_version opentofu)"
 }
 
 # Purpose: Sets up OpenTofu IaC.
@@ -29,7 +29,7 @@ setup_tofu() {
   local _CUR_VER
   _CUR_VER=$(get_version tofu)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "tofu")
+  _REQ_VER=$(get_unirtm_tool_version "tofu")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "IaC" "OpenTofu" "✅ Detected" "${_CUR_VER:-}" "0"

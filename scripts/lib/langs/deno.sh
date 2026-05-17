@@ -5,14 +5,14 @@ set -eu
 
 # Deno Logic Module
 
-# Purpose: Installs Deno runtime via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Deno runtime via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_deno() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Deno runtime."
     return 0
   fi
-  run_mise install deno
+  unirtm install deno
 }
 
 # Purpose: Sets up Deno runtime.
@@ -21,7 +21,7 @@ setup_deno() {
     return 0
   fi
 
-  # Dynamically register Deno in .mise.toml if not already present.
+  # Dynamically register Deno in .unirtm.toml if not already present.
   setup_registry_deno
 
   local _T0_DENO_RT
@@ -30,7 +30,7 @@ setup_deno() {
   local _CUR_VER
   _CUR_VER=$(get_version deno)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "deno")
+  _REQ_VER=$(get_unirtm_tool_version "deno")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Deno" "✅ Detected" "${_CUR_VER:-}" "0"

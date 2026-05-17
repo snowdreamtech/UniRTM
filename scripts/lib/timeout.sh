@@ -115,7 +115,7 @@ cleanup_process_tree() {
 #   Command exit code, or 124 if timeout occurred
 # Examples:
 #   run_with_timeout_robust 5 curl https://example.com
-#   run_with_timeout_robust 10 mise which node
+#   run_with_timeout_robust 10 unirtm which node
 run_with_timeout_robust() {
   local _TIMEOUT="${1:-}"
   shift

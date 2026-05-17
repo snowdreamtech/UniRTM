@@ -5,8 +5,8 @@ set -eu
 
 # Tcl Logic Module
 
-# Purpose: Installs Tcl via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Tcl via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_tcl() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Tcl via mise."
@@ -14,7 +14,7 @@ install_runtime_tcl() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "tcl@$(get_mise_tool_version tcl)"
+  unirtm install "tcl@$(get_unirtm_tool_version tcl)"
 }
 
 # Purpose: Sets up Tcl environment for project.
@@ -31,7 +31,7 @@ setup_tcl() {
   local _CUR_VER
   _CUR_VER=$(get_version tclsh)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "tclsh")
+  _REQ_VER=$(get_unirtm_tool_version "tclsh")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Tcl" "✅ Detected" "${_CUR_VER:-}" "0"

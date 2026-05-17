@@ -2,12 +2,12 @@
 # Copyright (c) 2026 SnowdreamTech. All rights reserved.
 # Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-# scripts/gen-full-manifest.sh — Mise Manifest Aggregator
+# scripts/gen-full-manifest.sh — UniRTM Manifest Aggregator
 #
 # Purpose:
-#   Programmatically generates a comprehensive mise.toml containing all
+#   Programmatically generates a comprehensive unirtm.toml containing all
 #   Tier 1 (Core) and Tier 2 (On-demand) tools. This manifest is used by
-#   'make sync-lock' to generate a unified mise.lock with 100% integrity.
+#   'make sync-lock' to generate a unified unirtm.lock with 100% integrity.
 
 set -eu
 
@@ -24,8 +24,8 @@ echo "# ------------------------------------------------------------"
 echo ""
 echo "[tools]"
 
-# 2. Extract Tier 1 tools from .mise.toml (excluding commented Tier 2 section)
-# We assume Tier 1 tools are in the first [tools] block of .mise.toml.
+# 2. Extract Tier 1 tools from .unirtm.toml (excluding commented Tier 2 section)
+# We assume Tier 1 tools are in the first [tools] block of .unirtm.toml.
 perl -ne '
   if (/^\[tools\]/) { $in_tools = 1; next }
   if (/^\[/ || /^# ── TIER 2/) { $in_tools = 0 }
@@ -58,13 +58,13 @@ grep -E "^VER_[A-Z0-9_]+=" "${SCRIPT_DIR:-}/lib/versions.sh" | while IFS= read -
     # Use the explicit provider (e.g., github:aquasecurity/trivy)
     echo "\"${provider_val:-}\" = \"${var_val:-}\""
   else
-    # Fallback to simple name (e.g., go, rust) if it's a core tool not in .mise.toml
+    # Fallback to simple name (e.g., go, rust) if it's a core tool not in .unirtm.toml
     # Usually these are already in Tier 1, so we avoid duplicates if they exist there.
     tool_name=$(echo "${var_name:-}" | sed 's/^VER_//' | tr '[:upper:]' '[:lower:]' | tr '_' '-')
     # Check if tool_name is one of the core runtimes
     case "${tool_name:-}" in
     go | node | python | ruby | java | rust | kotlin | dotnet | bun | deno | zig)
-      # Only add if NOT already in .mise.toml Tier 1
+      # Only add if NOT already in .unirtm.toml Tier 1
       if ! grep -q "^\s*${tool_name:-}\s*=" "${SCRIPT_DIR:-}/../.mise.toml"; then
         echo "${tool_name:-} = \"${var_val:-}\""
       fi

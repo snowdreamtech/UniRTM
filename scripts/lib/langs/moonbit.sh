@@ -5,13 +5,13 @@ set -eu
 
 # MoonBit Logic Module
 
-# Purpose: Installs MoonBit via mise (version pinned in scripts/lib/versions.sh).
+# Purpose: Installs MoonBit via unirtm (version pinned in scripts/lib/versions.sh).
 install_runtime_moonbit() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install MoonBit via mise."
     return 0
   fi
-  run_mise install "${VER_MOONBIT_PROVIDER:-}@${VER_MOONBIT:-}"
+  unirtm install "${VER_MOONBIT_PROVIDER:-}@${VER_MOONBIT:-}"
 }
 
 # Purpose: Sets up MoonBit environment for project.

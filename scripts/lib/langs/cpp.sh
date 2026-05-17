@@ -5,15 +5,15 @@ set -eu
 
 # C/C++ Logic Module
 
-# Purpose: Installs C/C++ toolchain via mise or system package manager.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs C/C++ toolchain via unirtm or system package manager.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_cpp() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install C/C++ toolchain (gcc, clang, cmake, ninja)."
     return 0
   fi
 
-  # Prefer native tools (brew/port/apt) for speed, fallback to mise for consistency
+  # Prefer native tools (brew/port/apt) for speed, fallback to unirtm for consistency
   ensure_tool cmake || return 1
   ensure_tool ninja || return 1
 
@@ -25,7 +25,7 @@ install_runtime_cpp() {
 }
 
 # Purpose: Installs clang-format.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_clang_format() {
   install_tool_safe "clang-format" "${VER_CLANG_FORMAT_PROVIDER:-}" "clang-format" "--version" 0 "*.c *.cpp *.h *.hpp *.cc *.m *.mm" ""
 }
@@ -42,7 +42,7 @@ setup_cpp() {
   local _CUR_VER
   _CUR_VER=$(get_version cpp)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "cpp")
+  _REQ_VER=$(get_unirtm_tool_version "cpp")
 
   if [ "${_CUR_VER:-}" != "-" ] && { [ "${_REQ_VER:-}" = "latest" ] || [ "${_CUR_VER:-}" = "${_REQ_VER:-}" ]; }; then
     log_summary "Runtime" "C/C++" "✅ Detected" "${_CUR_VER:-}" "0"

@@ -5,8 +5,8 @@ set -eu
 
 # Dlang Logic Module
 
-# Purpose: Installs Dlang (dmd) via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Dlang (dmd) via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_dlang() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Dlang (dmd) via mise."
@@ -14,7 +14,7 @@ install_runtime_dlang() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "dmd@$(get_mise_tool_version dlang)"
+  unirtm install "dmd@$(get_unirtm_tool_version dlang)"
 }
 
 # Purpose: Sets up Dlang environment for project.
@@ -31,7 +31,7 @@ setup_dlang() {
   local _CUR_VER
   _CUR_VER=$(get_version dmd)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "dmd")
+  _REQ_VER=$(get_unirtm_tool_version "dmd")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Dlang" "✅ Detected" "${_CUR_VER:-}" "0"

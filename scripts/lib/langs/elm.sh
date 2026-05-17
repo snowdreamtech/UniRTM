@@ -5,8 +5,8 @@ set -eu
 
 # Elm Logic Module
 
-# Purpose: Installs Elm via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Elm via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_elm() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Elm via mise."
@@ -14,7 +14,7 @@ install_runtime_elm() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "elm@$(get_mise_tool_version elm)"
+  unirtm install "elm@$(get_unirtm_tool_version elm)"
 }
 
 # Purpose: Sets up Elm environment for project.
@@ -31,7 +31,7 @@ setup_elm() {
   local _CUR_VER
   _CUR_VER=$(get_version elm)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "elm")
+  _REQ_VER=$(get_unirtm_tool_version "elm")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Elm" "✅ Detected" "${_CUR_VER:-}" "0"

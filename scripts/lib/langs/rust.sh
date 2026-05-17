@@ -5,8 +5,8 @@ set -eu
 
 # Rust Logic Module
 
-# Purpose: Installs Rust runtime via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Rust runtime via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_rust() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Rust runtime."
@@ -14,17 +14,17 @@ install_runtime_rust() {
   fi
 
   # Runtime initialization
-  run_mise install rust
+  unirtm install rust
 }
 
 # Purpose: Sets up Rust runtime for project.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 setup_rust() {
   if ! has_lang_files "Cargo.toml Cargo.lock" "*.rs"; then
     return 0
   fi
 
-  # Dynamically register Rust in .mise.toml if not already present.
+  # Dynamically register Rust in .unirtm.toml if not already present.
   setup_registry_rust
 
   local _T0_RUST_RT
@@ -36,7 +36,7 @@ setup_rust() {
   local _CUR_VER
   _CUR_VER=$(get_version rust)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "${_PROVIDER:-}")
+  _REQ_VER=$(get_unirtm_tool_version "${_PROVIDER:-}")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Rust" "✅ Detected" "${_CUR_VER:-}" "0"

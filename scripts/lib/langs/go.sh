@@ -5,13 +5,13 @@ set -eu
 
 # Go Logic Module
 
-# Purpose: Installs Go runtime via mise (version pinned in scripts/lib/versions.sh).
+# Purpose: Installs Go runtime via unirtm (version pinned in scripts/lib/versions.sh).
 install_runtime_go() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Go runtime."
     return 0
   fi
-  run_mise install "go@${VER_GO:-}"
+  unirtm install "go@${VER_GO:-}"
 }
 
 # Purpose: Installs golangci-lint for Go projects (version pinned in versions.sh).
@@ -41,11 +41,11 @@ install_govulncheck() {
 }
 
 # Purpose: Sets up Go runtime for project.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 setup_go() {
   # Go is a first-class citizen: setup is always performed.
 
-  # Dynamically register Go in .mise.toml if not already present.
+  # Dynamically register Go in .unirtm.toml if not already present.
   # This is essential for pre-provisioning (e.g., DevContainer builds)
   # where Go is explicitly requested before source files exist.
   setup_registry_go
@@ -59,7 +59,7 @@ setup_go() {
   local _CUR_VER
   _CUR_VER=$(get_version go)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "${_PROVIDER:-}")
+  _REQ_VER=$(get_unirtm_tool_version "${_PROVIDER:-}")
 
   # Always log setup start for consistency and test assertions
   _log_setup "${_TITLE:-}" "${_PROVIDER:-}"

@@ -6,7 +6,7 @@ set -eu
 # Protobuf Logic Module
 
 # Purpose: Installs buf for Protobuf linting/management.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_buf() {
   setup_registry_buf
   install_tool_safe "buf" "${VER_BUF_PROVIDER:-}" "Buf" "--version" 0 "PROTOC" ""

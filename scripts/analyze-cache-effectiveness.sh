@@ -5,7 +5,7 @@
 # scripts/analyze-cache-effectiveness.sh - Cache effectiveness analysis
 #
 # Purpose:
-#   Analyzes mise cache statistics and generates per-tool cache effectiveness
+#   Analyzes unirtm cache statistics and generates per-tool cache effectiveness
 #   reports. Identifies tools that don't benefit from caching and recommends
 #   optimization strategies.
 #

@@ -5,8 +5,8 @@ set -eu
 
 # Apache Spark Logic Module
 
-# Purpose: Installs Apache Spark via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Apache Spark via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_spark() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Apache Spark via mise."
@@ -14,7 +14,7 @@ install_runtime_spark() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "spark@$(get_mise_tool_version spark)"
+  unirtm install "spark@$(get_unirtm_tool_version spark)"
 }
 
 # Purpose: Sets up Apache Spark environment for project.
@@ -31,7 +31,7 @@ setup_spark() {
   local _CUR_VER
   _CUR_VER=$(get_version spark-shell)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "spark-shell")
+  _REQ_VER=$(get_unirtm_tool_version "spark-shell")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Apache Spark" "✅ Detected" "${_CUR_VER:-}" "0"

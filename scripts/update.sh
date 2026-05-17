@@ -89,8 +89,8 @@ update_node_manager_global() {
     fi
     ;;
   npm)
-    # Most npm versions are updated via npm itself, but since we use mise,
-    # it's usually better to let mise handle it. We skip global self-update for npm here.
+    # Most npm versions are updated via npm itself, but since we use unirtm,
+    # it's usually better to let unirtm handle it. We skip global self-update for npm here.
     log_debug "Skipping global self-update for $NPM (managed via mise)."
     ;;
   yarn)
@@ -198,14 +198,14 @@ update_cargo_deps() {
   fi
 }
 
-# Purpose: Upgrades Mise-managed tool versions in registry and config.
+# Purpose: Upgrades UniRTM-managed tool versions in registry and config.
 # Examples:
 #   update_mise_tool_versions
 update_mise_tool_versions() {
   if [ -f "${SCRIPT_DIR:-}/update-tools.sh" ]; then
-    log_info "Upgrading Mise tool versions..."
+    log_info "Upgrading UniRTM tool versions..."
     # Delegate to update-tools.sh, passing through relevant flags
-    sh "${SCRIPT_DIR:-}/update-tools.sh" "$@" || log_warn "Mise tool version upgrade failed."
+    sh "${SCRIPT_DIR:-}/update-tools.sh" "$@" || log_warn "UniRTM tool version upgrade failed."
   fi
 }
 

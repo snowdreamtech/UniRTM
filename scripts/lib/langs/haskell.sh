@@ -5,15 +5,15 @@ set -eu
 
 # Haskell Logic Module
 
-# Purpose: Installs Haskell (GHC) runtime via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Haskell (GHC) runtime via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_haskell() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Haskell runtime."
     return 0
   fi
   # shellcheck disable=SC2154
-  run_mise install "ghc@$(get_mise_tool_version ghc)"
+  unirtm install "ghc@$(get_unirtm_tool_version ghc)"
 }
 
 # Purpose: Installs Haskell linter (ormolu).
@@ -40,7 +40,7 @@ setup_haskell() {
   local _CUR_VER
   _CUR_VER=$(get_version haskell)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "haskell")
+  _REQ_VER=$(get_unirtm_tool_version "haskell")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Haskell" "✅ Detected" "${_CUR_VER:-}" "0"

@@ -44,7 +44,7 @@ TEST_RESULTS=""
 # 2. Platform-Specific: ec-linux-amd64, ec-darwin-arm64 (editorconfig-checker)
 # 3. Windows Binary: hadolint.exe
 # 4. Versioned Binary: shfmt_v3.13.1
-# 5. Mise Shim: /mise/shims/shellcheck
+# 5. UniRTM Shim: /unirtm/shims/shellcheck
 
 # ── Helper Functions ─────────────────────────────────────────────────────────
 
@@ -190,7 +190,7 @@ resolve_bin:$test_name:$bin_name:$elapsed_ms:$status:$resolved_path"
   [ "${VERBOSE:-1}" -ge 1 ] && log_info "    Result: $status (${elapsed_ms}ms) -> $resolved_path" >&2
 }
 
-# Purpose: Measure time for mise which command
+# Purpose: Measure time for unirtm which command
 # Params:
 #   $1 - Tool name
 #   $2 - Test case name
@@ -199,7 +199,7 @@ measure_mise_which() {
   local test_name="${2:-}"
   local start_time end_time elapsed_ms status resolved_path
 
-  [ "${VERBOSE:-1}" -ge 1 ] && log_info "  Testing mise which: $test_name" >&2
+  [ "${VERBOSE:-1}" -ge 1 ] && log_info "  Testing unirtm which: $test_name" >&2
 
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     elapsed_ms=0
@@ -208,7 +208,7 @@ measure_mise_which() {
   else
     start_time=$(get_timestamp_ms)
 
-    # Test mise which with timeout
+    # Test unirtm which with timeout
     if command -v mise >/dev/null 2>&1; then
       if resolved_path=$(MISE_OFFLINE=1 run_with_timeout "$TIMEOUT_PLATFORM_RESOLVE" mise which "$tool_name" 2>/dev/null); then
         status="success"
@@ -287,7 +287,7 @@ measure_find_pattern() {
   else
     start_time=$(get_timestamp_ms)
 
-    # Test find with pattern in mise installation directory
+    # Test find with pattern in unirtm installation directory
     if command -v mise >/dev/null 2>&1; then
       local mise_installs
       mise_installs=$(mise where 2>/dev/null || echo "")
@@ -369,8 +369,8 @@ run_test_cases() {
   log_info "Test Case 4: Versioned Binary (shfmt_v*)" >&2
   measure_find_pattern "shfmt_v*" "versioned_binary"
 
-  # Test Case 5: Mise Shim (shellcheck)
-  log_info "Test Case 5: Mise Shim (shellcheck)" >&2
+  # Test Case 5: UniRTM Shim (shellcheck)
+  log_info "Test Case 5: UniRTM Shim (shellcheck)" >&2
   measure_verify_binary "shellcheck" "mise_shim"
   measure_resolve_bin "shellcheck" "mise_shim"
   measure_mise_which "shellcheck" "mise_shim"

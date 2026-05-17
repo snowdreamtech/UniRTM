@@ -5,8 +5,8 @@ set -eu
 
 # Dotnet Logic Module
 
-# Purpose: Installs .NET runtime via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs .NET runtime via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_dotnet() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install .NET runtime."
@@ -14,7 +14,7 @@ install_runtime_dotnet() {
   fi
 
   # Runtime initialization
-  run_mise install dotnet
+  unirtm install dotnet
 }
 
 # Purpose: Sets up Dotnet runtime.
@@ -23,7 +23,7 @@ setup_dotnet() {
     return 0
   fi
 
-  # Dynamically register .NET in .mise.toml if not already present.
+  # Dynamically register .NET in .unirtm.toml if not already present.
   setup_registry_dotnet
 
   local _T0_DOTNET_RT
@@ -32,7 +32,7 @@ setup_dotnet() {
   local _CUR_VER
   _CUR_VER=$(get_version dotnet)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "dotnet")
+  _REQ_VER=$(get_unirtm_tool_version "dotnet")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" ".NET" "✅ Detected" "${_CUR_VER:-}" "0"
@@ -51,7 +51,7 @@ setup_dotnet() {
 }
 
 # Purpose: Installs dotnet-format for .NET linting.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_dotnet_format() {
   local _T0_DNF
   _T0_DNF=$(date +%s)

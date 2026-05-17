@@ -6,7 +6,7 @@ set -eu
 # Python Logic Module
 
 # Purpose: Installs the Python runtime, creates a venv, and installs dependencies.
-# Delegate: Managed via mise (.mise.toml) and pip.
+# Delegate: Managed via unirtm (.unirtm.toml) and pip.
 install_runtime_python() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Python runtime and virtual environment."
@@ -43,7 +43,7 @@ install_runtime_python() {
 
   # 1. Runtime initialization
   local _VERSION="${VER_PYTHON:-}"
-  run_mise install "python@${_VERSION:-}"
+  unirtm install "python@${_VERSION:-}"
 
   # 2. Virtualenv management
   if [ ! -d "${VENV:-}" ]; then
@@ -64,7 +64,7 @@ install_runtime_python() {
 }
 
 # Purpose: Installs Ruff.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_ruff() {
   if ! has_lang_files "requirements.txt pyproject.toml" "*.py"; then
     return 0
@@ -89,7 +89,7 @@ install_pip_audit() {
 }
 
 # Purpose: Sets up Python runtime for project.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 setup_python() {
   # Python is a first-class citizen: setup is always performed.
 
@@ -102,7 +102,7 @@ setup_python() {
   local _CUR_VER
   _CUR_VER=$(get_version python)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "${_PROVIDER:-}")
+  _REQ_VER=$(get_unirtm_tool_version "${_PROVIDER:-}")
 
   # Always log setup start for consistency and test assertions
   _log_setup "${_TITLE:-}" "${_PROVIDER:-}"

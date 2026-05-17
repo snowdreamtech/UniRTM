@@ -6,7 +6,7 @@ set -eu
 # Base Logic Module
 
 # Purpose: Installs pipx.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_pipx() {
   local _T0_PIPX
   _T0_PIPX=$(date +%s)
@@ -20,7 +20,7 @@ install_pipx() {
   _log_setup "${_TITLE:-}" "${_PROVIDER:-}"
 
   # Proactive pipx installation via pip (Universal fallback)
-  # This ensures pipx is available regardless of mise's provider compatibility.
+  # This ensures pipx is available regardless of unirtm's provider compatibility.
   if ! resolve_bin "pipx" >/dev/null 2>&1; then
     log_info "Ensuring pipx is available via pip..."
     # Use python -m pip to ensure we use the correct python instance
@@ -63,14 +63,14 @@ install_pipx() {
 
   fi
 
-  # Note: mise managed installation removed to avoid aqua backend non-Windows compatibility issues.
+  # Note: unirtm managed installation removed to avoid aqua backend non-Windows compatibility issues.
   # pipx is correctly available via the pip-based bypass above.
   local _STAT_PIPX="✅ pip"
   log_summary "Base" "Pipx" "${_STAT_PIPX:-}" "$(get_version pipx)" "$(($(date +%s) - _T0_PIPX))"
 }
 
 # Purpose: Installs Gitleaks for secrets scanning.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_gitleaks() {
   # In CI, always install. Locally, skip if not a git repository
   local _SKIP_CHECK=1
@@ -83,7 +83,7 @@ install_gitleaks() {
 }
 
 # Purpose: Installs checkmake for Makefile linting.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_checkmake() {
   install_tool_safe "checkmake" "${VER_CHECKMAKE_PROVIDER:-}" "Checkmake" "--version" 0 "Makefile *.make" ""
 }
@@ -94,7 +94,7 @@ install_runtime_hooks() {
     log_debug "DRY_RUN: Would install pre-commit via pipx."
     return 0
   fi
-  run_mise install pipx:pre-commit
+  unirtm install pipx:pre-commit
 }
 
 # Purpose: Activates git pre-commit hooks.
@@ -123,7 +123,7 @@ setup_hooks() {
 }
 
 # Purpose: Installs editorconfig-checker.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_editorconfig_checker() {
   # Skip if no .editorconfig file
   if [ ! -f ".editorconfig" ]; then

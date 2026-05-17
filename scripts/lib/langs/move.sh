@@ -5,8 +5,8 @@ set -eu
 
 # Move Logic Module
 
-# Purpose: Installs Move toolchain (via aptos CLI) via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Move toolchain (via aptos CLI) via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_move() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Aptos CLI (Move toolchain) via mise."
@@ -14,7 +14,7 @@ install_runtime_move() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "${VER_APTOS_PROVIDER:-}@${VER_APTOS:-}"
+  unirtm install "${VER_APTOS_PROVIDER:-}@${VER_APTOS:-}"
 }
 
 # Purpose: Sets up Move environment for project.
@@ -31,7 +31,7 @@ setup_move() {
   local _CUR_VER
   _CUR_VER=$(get_version aptos)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "aptos")
+  _REQ_VER=$(get_unirtm_tool_version "aptos")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Move" "✅ Detected" "${_CUR_VER:-}" "0"

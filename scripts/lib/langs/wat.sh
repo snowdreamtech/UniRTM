@@ -5,8 +5,8 @@ set -eu
 
 # WebAssembly Text (WAT) Logic Module
 
-# Purpose: Installs Wasmtime via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Wasmtime via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_wat() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Wasmtime via mise."
@@ -14,7 +14,7 @@ install_runtime_wat() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "wasmtime@$(get_mise_tool_version wasmtime)"
+  unirtm install "wasmtime@$(get_unirtm_tool_version wasmtime)"
 }
 
 # Purpose: Sets up WAT environment for project.
@@ -31,7 +31,7 @@ setup_wat() {
   local _CUR_VER
   _CUR_VER=$(get_version wasmtime)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "wasmtime")
+  _REQ_VER=$(get_unirtm_tool_version "wasmtime")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "WebAssembly" "✅ Detected" "${_CUR_VER:-}" "0"

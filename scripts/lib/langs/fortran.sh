@@ -5,8 +5,8 @@ set -eu
 
 # Fortran Logic Module
 
-# Purpose: Installs GFortran (via GCC) via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs GFortran (via GCC) via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_fortran() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install GFortran via mise."
@@ -14,7 +14,7 @@ install_runtime_fortran() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "gcc@$(get_mise_tool_version gcc)"
+  unirtm install "gcc@$(get_unirtm_tool_version gcc)"
 }
 
 # Purpose: Sets up Fortran environment for project.
@@ -29,7 +29,7 @@ setup_fortran() {
   local _CUR_VER
   _CUR_VER=$(get_version gfortran)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "gfortran")
+  _REQ_VER=$(get_unirtm_tool_version "gfortran")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Fortran" "✅ Detected" "${_CUR_VER:-}" "0"

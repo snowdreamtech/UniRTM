@@ -5,13 +5,13 @@ set -eu
 
 # Kotlin Logic Module
 
-# Purpose: Installs Kotlin runtime via mise (version pinned in scripts/lib/versions.sh).
+# Purpose: Installs Kotlin runtime via unirtm (version pinned in scripts/lib/versions.sh).
 install_runtime_kotlin() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Kotlin runtime."
     return 0
   fi
-  run_mise install "kotlin@${VER_KOTLIN:-}"
+  unirtm install "kotlin@${VER_KOTLIN:-}"
 }
 
 # Purpose: Installs ktlint (version pinned in scripts/lib/versions.sh).

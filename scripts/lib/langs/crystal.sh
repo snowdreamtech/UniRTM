@@ -5,8 +5,8 @@ set -eu
 
 # Crystal Logic Module
 
-# Purpose: Installs Crystal and Shards via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Crystal and Shards via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_crystal() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Crystal via mise."
@@ -14,7 +14,7 @@ install_runtime_crystal() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "crystal@$(get_mise_tool_version crystal)"
+  unirtm install "crystal@$(get_unirtm_tool_version crystal)"
 }
 
 # Purpose: Sets up Crystal environment for project.
@@ -31,7 +31,7 @@ setup_crystal() {
   local _CUR_VER
   _CUR_VER=$(get_version crystal)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "crystal")
+  _REQ_VER=$(get_unirtm_tool_version "crystal")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Crystal" "✅ Detected" "${_CUR_VER:-}" "0"

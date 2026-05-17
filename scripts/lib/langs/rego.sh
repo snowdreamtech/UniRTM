@@ -6,7 +6,7 @@ set -eu
 # Rego Logic Module
 
 # Purpose: Installs OPA/Rego.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_rego() {
   install_tool_safe "opa" "${VER_OPA_PROVIDER:-}" "Rego (OPA)" "version" 0 "REGO" ""
 }

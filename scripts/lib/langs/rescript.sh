@@ -5,8 +5,8 @@ set -eu
 
 # ReScript Logic Module
 
-# Purpose: Installs ReScript compiler (rescript) via mise (npm provider).
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs ReScript compiler (rescript) via unirtm (npm provider).
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_rescript() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install ReScript compiler via mise npm provider."
@@ -14,7 +14,7 @@ install_runtime_rescript() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "npm:rescript@$(get_mise_tool_version rescript)"
+  unirtm install "npm:rescript@$(get_unirtm_tool_version rescript)"
 }
 
 # Purpose: Sets up ReScript environment for project.
@@ -31,7 +31,7 @@ setup_rescript() {
   local _CUR_VER
   _CUR_VER=$(get_version rescript)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "rescript")
+  _REQ_VER=$(get_unirtm_tool_version "rescript")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "ReScript" "✅ Detected" "${_CUR_VER:-}" "0"

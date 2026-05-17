@@ -5,8 +5,8 @@ set -eu
 
 # Terragrunt Logic Module
 
-# Purpose: Installs Terragrunt via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Terragrunt via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_terragrunt() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Terragrunt via mise."
@@ -14,7 +14,7 @@ install_runtime_terragrunt() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "terragrunt@$(get_mise_tool_version terragrunt)"
+  unirtm install "terragrunt@$(get_unirtm_tool_version terragrunt)"
 }
 
 # Purpose: Sets up Terragrunt environment for project.
@@ -29,7 +29,7 @@ setup_terragrunt() {
   local _CUR_VER
   _CUR_VER=$(get_version terragrunt)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "terragrunt")
+  _REQ_VER=$(get_unirtm_tool_version "terragrunt")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Terragrunt" "✅ Detected" "${_CUR_VER:-}" "0"

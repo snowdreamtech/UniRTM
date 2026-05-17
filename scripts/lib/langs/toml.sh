@@ -6,7 +6,7 @@ set -eu
 # TOML Logic Module
 
 # Purpose: Installs Taplo.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_taplo() {
   install_tool_safe "taplo" "${VER_TAPLO_PROVIDER:-}" "Taplo" "--version" 0 "*.toml" ""
 }

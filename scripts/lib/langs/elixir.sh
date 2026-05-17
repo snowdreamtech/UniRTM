@@ -5,17 +5,17 @@ set -eu
 
 # Elixir Logic Module
 
-# Purpose: Installs Elixir/Erlang runtime via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Elixir/Erlang runtime via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_elixir() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Elixir/Erlang runtime."
     return 0
   fi
   # shellcheck disable=SC2154
-  run_mise install "erlang@$(get_mise_tool_version erlang)"
+  unirtm install "erlang@$(get_unirtm_tool_version erlang)"
   # shellcheck disable=SC2154
-  run_mise install "elixir@$(get_mise_tool_version elixir)"
+  unirtm install "elixir@$(get_unirtm_tool_version elixir)"
 }
 
 # Purpose: Sets up Elixir runtime and mandatory linting tools.
@@ -32,7 +32,7 @@ setup_elixir() {
   local _CUR_VER
   _CUR_VER=$(get_version elixir)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "elixir")
+  _REQ_VER=$(get_unirtm_tool_version "elixir")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Elixir" "✅ Detected" "${_CUR_VER:-}" "0"

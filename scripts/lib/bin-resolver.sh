@@ -70,7 +70,7 @@ resolve_bin_layer1() {
 
 # ── 🔍 Layer 2: System PATH Lookup ───────────────────────────────────────────
 
-# Purpose: Searches for binaries in system PATH with unirtm/mise shim validation
+# Purpose: Searches for binaries in system PATH with unirtm/unirtm shim validation
 # Params:
 #   $1 - Binary name
 # Returns:
@@ -94,7 +94,7 @@ resolve_bin_layer2() {
 
   [ -z "${_SP:-}" ] && return 1
 
-  # Check if this is a unirtm or mise shim
+  # Check if this is a unirtm or unirtm shim
   case "${_SP:-}" in
   *"${_G_MISE_SHIMS_BASE:-}"*)
     # Validate shim with timeout protection
@@ -150,7 +150,7 @@ resolve_bin_layer3() {
   local _BIN="${1:-}"
   [ -z "${_BIN:-}" ] && return 1
 
-  # Try unirtm which or mise which with timeout protection
+  # Try unirtm which or unirtm which with timeout protection
   local _MW
   if command -v run_with_timeout_robust >/dev/null 2>&1; then
     _MW=$(run_with_timeout_robust 5 unirtm which "${_BIN:-}" 2>/dev/null) ||
@@ -183,7 +183,7 @@ resolve_bin_layer4() {
   local _BIN="${1:-}"
   [ -z "${_BIN:-}" ] && return 1
 
-  # Ensure mise cache is populated
+  # Ensure unirtm cache is populated
   if [ -z "${_G_MISE_LS_JSON_CACHE:-}" ]; then
     if command -v refresh_mise_cache >/dev/null 2>&1; then
       refresh_mise_cache
@@ -192,7 +192,7 @@ resolve_bin_layer4() {
 
   [ -z "${_G_MISE_LS_JSON_CACHE:-}" ] && return 1
 
-  # Extract install path from mise cache using awk
+  # Extract install path from unirtm cache using awk
   local _MC_PATH
   _MC_PATH=$(echo "${_G_MISE_LS_JSON_CACHE:-}" | awk -v bin="${_BIN:-}" '
     BEGIN { found_bin = 0; }

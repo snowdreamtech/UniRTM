@@ -5,19 +5,19 @@ set -eu
 
 # Lua Logic Module
 
-# Purpose: Installs Lua runtime via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Lua runtime via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_lua() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Lua runtime."
     return 0
   fi
   # shellcheck disable=SC2154
-  run_mise install "lua@$(get_mise_tool_version lua)"
+  unirtm install "lua@$(get_unirtm_tool_version lua)"
 }
 
 # Purpose: Installs stylua.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_stylua() {
   setup_registry_stylua
   install_tool_safe "stylua" "${VER_STYLUA_PROVIDER:-}" "StyLua" "--version" 0 "*.lua" ""
@@ -37,7 +37,7 @@ setup_lua() {
   local _CUR_VER
   _CUR_VER=$(get_version lua)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "lua")
+  _REQ_VER=$(get_unirtm_tool_version "lua")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Lua" "✅ Detected" "${_CUR_VER:-}" "0"

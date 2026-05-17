@@ -5,8 +5,8 @@ set -eu
 
 # Vala Logic Module
 
-# Purpose: Installs Vala via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Vala via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_vala() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Vala via mise."
@@ -14,7 +14,7 @@ install_runtime_vala() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "${VER_VALA_PROVIDER:-}@${VER_VALA:-}"
+  unirtm install "${VER_VALA_PROVIDER:-}@${VER_VALA:-}"
 }
 
 # Purpose: Sets up Vala environment for project.
@@ -29,7 +29,7 @@ setup_vala() {
   local _CUR_VER
   _CUR_VER=$(get_version valac)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "valac")
+  _REQ_VER=$(get_unirtm_tool_version "valac")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Vala" "✅ Detected" "${_CUR_VER:-}" "0"

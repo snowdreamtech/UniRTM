@@ -5,14 +5,14 @@ set -eu
 
 # Bun Logic Module
 
-# Purpose: Installs Bun runtime via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Bun runtime via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_bun() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Bun runtime."
     return 0
   fi
-  run_mise install bun
+  unirtm install bun
 }
 
 # Purpose: Sets up Bun runtime.
@@ -21,7 +21,7 @@ setup_bun() {
     return 0
   fi
 
-  # Dynamically register Bun in .mise.toml if not already present.
+  # Dynamically register Bun in .unirtm.toml if not already present.
   setup_registry_bun
 
   local _T0_BUN_RT
@@ -30,7 +30,7 @@ setup_bun() {
   local _CUR_VER
   _CUR_VER=$(get_version bun)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "bun")
+  _REQ_VER=$(get_unirtm_tool_version "bun")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Bun" "✅ Detected" "${_CUR_VER:-}" "0"

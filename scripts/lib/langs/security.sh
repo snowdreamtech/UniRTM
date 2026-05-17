@@ -29,8 +29,8 @@ install_osv_scanner() {
 # This eliminates ~80MB GitHub Release downloads and prevents GitHub API 403 rate limits.
 
 # Purpose: Installs zizmor for GitHub Actions security linting.
-# Delegate: Managed by mise (.mise.toml)
-# NOTE: Zizmor is a Tier 1 tool in .mise.toml and should be installed in CI environments.
+# Delegate: Managed by unirtm (.unirtm.toml)
+# NOTE: Zizmor is a Tier 1 tool in .unirtm.toml and should be installed in CI environments.
 install_zizmor() {
   # CI-only: GH Actions security linter is rarely needed for local app code.
   # Tier 1 Tool in CI: Critical for GitHub Actions security scanning.
@@ -41,7 +41,7 @@ install_zizmor() {
     return 0
   fi
 
-  # In CI, install regardless of workflow file presence (Tier 1 tool in .mise.toml)
+  # In CI, install regardless of workflow file presence (Tier 1 tool in .unirtm.toml)
   # Locally, only install if workflow files exist
   if ! is_ci_env && ! has_lang_files ".github/workflows" "*.yaml *.yml"; then
     log_summary "Security" "Zizmor" "⏭️ Skipped (no workflows)" "-" "0"
@@ -54,7 +54,7 @@ install_zizmor() {
 
 # Purpose: Installs cargo-audit for Rust vulnerability scanning.
 # CI-only: Requires downloading the Rust Advisory DB (network-heavy). Local dev skips.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_cargo_audit() {
   if ! has_lang_files "Cargo.toml Cargo.lock" ""; then
     return 0

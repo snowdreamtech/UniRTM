@@ -5,14 +5,14 @@ set -eu
 
 # Grain Logic Module
 
-# Purpose: Installs Grain via mise.
+# Purpose: Installs Grain via unirtm.
 install_runtime_grain() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Grain via mise."
     return 0
   fi
   # Version pinned in scripts/lib/versions.sh (VER_GRAIN_PROVIDER, VER_GRAIN)
-  run_mise install "${VER_GRAIN_PROVIDER:-}@${VER_GRAIN:-}"
+  unirtm install "${VER_GRAIN_PROVIDER:-}@${VER_GRAIN:-}"
 }
 
 # Purpose: Sets up Grain environment for project.

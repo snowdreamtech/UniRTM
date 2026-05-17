@@ -5,8 +5,8 @@ set -eu
 
 # Terraform Logic Module
 
-# Purpose: Installs Terraform via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Terraform via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_terraform() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Terraform via mise."
@@ -14,11 +14,11 @@ install_runtime_terraform() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "terraform@$(get_mise_tool_version terraform)"
+  unirtm install "terraform@$(get_unirtm_tool_version terraform)"
 }
 
 # Purpose: Installs TFLint.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_tflint() {
   setup_registry_tflint
   install_tool_safe "tflint" "${VER_TFLINT_PROVIDER:-}" "TFLint" "--version" 0 "*.tf" ""
@@ -36,7 +36,7 @@ setup_terraform() {
   local _CUR_VER
   _CUR_VER=$(get_version terraform)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "terraform")
+  _REQ_VER=$(get_unirtm_tool_version "terraform")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Terraform" "✅ Detected" "${_CUR_VER:-}" "0"

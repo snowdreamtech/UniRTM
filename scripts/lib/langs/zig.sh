@@ -5,14 +5,14 @@ set -eu
 
 # Zig Logic Module
 
-# Purpose: Installs Zig runtime via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Zig runtime via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_zig() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Zig runtime."
     return 0
   fi
-  run_mise install zig
+  unirtm install zig
 }
 
 # Purpose: Sets up Zig runtime.
@@ -21,7 +21,7 @@ setup_zig() {
     return 0
   fi
 
-  # Dynamically register Zig in .mise.toml if not already present.
+  # Dynamically register Zig in .unirtm.toml if not already present.
   setup_registry_zig
 
   local _T0_ZIG_RT
@@ -30,7 +30,7 @@ setup_zig() {
   local _CUR_VER
   _CUR_VER=$(get_version zig)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "zig")
+  _REQ_VER=$(get_unirtm_tool_version "zig")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Zig" "✅ Detected" "${_CUR_VER:-}" "0"

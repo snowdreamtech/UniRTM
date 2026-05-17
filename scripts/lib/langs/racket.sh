@@ -5,8 +5,8 @@ set -eu
 
 # Racket Logic Module
 
-# Purpose: Installs Racket via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Racket via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_racket() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Racket via mise."
@@ -14,7 +14,7 @@ install_runtime_racket() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "${VER_RACKET_PROVIDER:-}@${VER_RACKET:-}"
+  unirtm install "${VER_RACKET_PROVIDER:-}@${VER_RACKET:-}"
 }
 
 # Purpose: Sets up Racket environment for project.
@@ -31,7 +31,7 @@ setup_racket() {
   local _CUR_VER
   _CUR_VER=$(get_version racket)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "racket")
+  _REQ_VER=$(get_unirtm_tool_version "racket")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Racket" "✅ Detected" "${_CUR_VER:-}" "0"

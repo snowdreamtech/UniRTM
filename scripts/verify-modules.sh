@@ -222,7 +222,7 @@ test_bin_resolver_module() {
   _G_OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
   export _G_OS
 
-  # Set mise paths based on OS (minimal environment for testing)
+  # Set unirtm paths based on OS (minimal environment for testing)
   case "$(uname -s)" in
   Darwin)
     if [ -d "$HOME/Library/Application Support/mise/shims" ]; then

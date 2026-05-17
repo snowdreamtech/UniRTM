@@ -71,9 +71,9 @@ case "${_G_UNAME:-}" in
 Darwin)
   _G_OS="macos"
   _G_VENV_BIN="bin"
-  # macOS: mise can install in multiple locations
-  # 1. Standard: ~/Library/Application Support/mise (default)
-  # 2. XDG-style: ~/.local/share/mise (if XDG_DATA_HOME is set)
+  # macOS: unirtm can install in multiple locations
+  # 1. Standard: ~/Library/Application Support/unirtm (default)
+  # 2. XDG-style: ~/.local/share/unirtm (if XDG_DATA_HOME is set)
   if [ -d "$HOME/Library/Application Support/mise/shims" ]; then
     _G_MISE_BIN_BASE="$HOME/.local/bin"
     _G_MISE_SHIMS_BASE="$HOME/Library/Application Support/mise/shims"
@@ -96,7 +96,7 @@ Linux)
 MINGW* | MSYS* | CYGWIN*)
   _G_OS="windows"
   _G_VENV_BIN="Scripts"
-  # In Windows-based POSIX shells, AppData/Local is the standard base for mise data
+  # In Windows-based POSIX shells, AppData/Local is the standard base for unirtm data
   if command -v cygpath >/dev/null 2>&1; then
     _G_APP_DATA_LOCAL=$(cygpath -u "${LOCALAPPDATA:-}")
   else
@@ -104,9 +104,9 @@ MINGW* | MSYS* | CYGWIN*)
     _G_APP_DATA_LOCAL=$(echo "${LOCALAPPDATA:-}" | sed 's/\\/\//g; s/:\(.*\)/\/\1/; s/^\([A-Za-z]\)\//\/\L\1\//')
   fi
 
-  # Mise on Windows can install in multiple locations - check in order of preference
-  # 1. Git Bash style: $HOME/.local/share/mise (most common in CI)
-  # 2. Windows style: %LOCALAPPDATA%\mise (native Windows installs)
+  # UniRTM on Windows can install in multiple locations - check in order of preference
+  # 1. Git Bash style: $HOME/.local/share/unirtm (most common in CI)
+  # 2. Windows style: %LOCALAPPDATA%\unirtm (native Windows installs)
   if [ -d "$HOME/.local/share/mise/shims" ]; then
     _G_MISE_BIN_BASE="$HOME/.local/bin"
     _G_MISE_SHIMS_BASE="$HOME/.local/share/mise/shims"
@@ -136,8 +136,8 @@ fi
 
 # ── 🪟 Windows Path Utilities ────────────────────────────────────────────────
 
-# Purpose: Get mise npm installs base path in Unix style (for NODE_PATH in CI)
-# Returns: Unix-style path to mise npm installs directory
+# Purpose: Get unirtm npm installs base path in Unix style (for NODE_PATH in CI)
+# Returns: Unix-style path to unirtm npm installs directory
 # Examples:
 #   NPM_BASE=$(get_mise_npm_base)
 #   export NODE_PATH="$NPM_BASE/npm-*/*/lib/node_modules"
@@ -164,7 +164,7 @@ get_mise_npm_base() {
   esac
 }
 
-# Purpose: Build NODE_PATH from mise npm installations
+# Purpose: Build NODE_PATH from unirtm npm installations
 # Returns: Colon-separated NODE_PATH string with all npm package node_modules
 # Examples:
 #   export NODE_PATH=$(build_mise_node_path)
@@ -196,7 +196,7 @@ VERBOSE=${VERBOSE:-1} # 0: quiet, 1: normal, 2: verbose
 DRY_RUN=${DRY_RUN:-0}
 
 # Enforce Non-Interactive Mode (For CI/CD and Headless Setup)
-# These prevent 'mise' from asking for user confirmation or trust prompts.
+# These prevent 'unirtm' from asking for user confirmation or trust prompts.
 # Ref: Rule 01 (General), Rule 08 (Dev Env)
 export MISE_YES=true
 export MISE_NON_INTERACTIVE=true
@@ -204,10 +204,10 @@ export MISE_QUIET=true
 export UNIRTM_YES=true
 export UNIRTM_NON_INTERACTIVE=true
 export UNIRTM_QUIET=true
-# Suppress mise's built-in update checker to avoid GitHub API calls on every invocation.
+# Suppress unirtm's built-in update checker to avoid GitHub API calls on every invocation.
 export MISE_CHECK_FOR_UPDATES=0
 export UNIRTM_CHECK_FOR_UPDATES=0
-# Force mise to use system git for better proxy/config compatibility
+# Force unirtm to use system git for better proxy/config compatibility
 export MISE_GIT_ALWAYS_USE_GIX=0
 export MISE_GIX=0
 export MISE_USE_GIX=0
@@ -281,7 +281,7 @@ fi
 # These can be overridden via environment variables
 TIMEOUT_RESOLVE_BIN="${TIMEOUT_RESOLVE_BIN:-5}"  # Binary resolution
 TIMEOUT_JSON_PARSE="${TIMEOUT_JSON_PARSE:-3}"    # JSON parsing
-TIMEOUT_MISE_WHICH="${TIMEOUT_MISE_WHICH:-5}"    # mise which command
+TIMEOUT_MISE_WHICH="${TIMEOUT_MISE_WHICH:-5}"    # unirtm which command
 TIMEOUT_FIND_BINARY="${TIMEOUT_FIND_BINARY:-10}" # Filesystem search
 TIMEOUT_NETWORK="${TIMEOUT_NETWORK:-30}"         # Network operations
 
@@ -321,8 +321,8 @@ if [ -f "${_G_LIB_DIR:-}/bin-resolver.sh" ]; then
   . "${_G_LIB_DIR:-}/bin-resolver.sh"
 fi
 
-# ── 🔍 Tooling Metadata Cache (Mise LS) ──────────────────────────────────────
-# Caching 'mise ls --json' results provides a massive performance boost for
+# ── 🔍 Tooling Metadata Cache (UniRTM LS) ──────────────────────────────────────
+# Caching 'unirtm ls --json' results provides a massive performance boost for
 # scripts that perform multiple version checks (like setup and check-env).
 # Initialized LAZILY at first tool resolution, or manually refreshed after installs.
 # shellcheck disable=SC2120
@@ -369,9 +369,9 @@ if [ -z "${CI_STEP_SUMMARY:-}" ]; then
 fi
 export CI_STEP_SUMMARY
 
-# In CI, prevent mise from fetching remote version lists from GitHub.
-# All versions are pinned in .mise.toml / versions.sh, so remote lookups are unnecessary
-# and are the biggest hidden source of GitHub API calls during `mise install`.
+# In CI, prevent unirtm from fetching remote version lists from GitHub.
+# All versions are pinned in .unirtm.toml / versions.sh, so remote lookups are unnecessary
+# and are the biggest hidden source of GitHub API calls during `unirtm install`.
 if [ "${CI:-}" = "true" ] || [ "${GITHUB_ACTIONS:-}" = "true" ]; then
   export MISE_FETCH_REMOTE_VERSIONS_TIMEOUT=30s
 fi
@@ -479,13 +479,13 @@ GITHUB_PROXY="${GITHUB_PROXY:-https://gh-proxy.sn0wdr1am.com/}"
 # shellcheck source=/dev/null
 . "${_G_LIB_DIR:-${_G_PROJECT_ROOT:-}/scripts/lib}/versions.sh"
 
-# Runtime versions (Managed via .mise.toml, but some logic might still reference these for bootstrap purposes)
+# Runtime versions (Managed via .unirtm.toml, but some logic might still reference these for bootstrap purposes)
 # Only MISE is hardcoded here to facilitate the zero-dependency bootstrap phase.
 MISE_VERSION="${MISE_VERSION:-${VER_MISE:-}}"
 
 # Note: All other tools (Gitleaks, Shellcheck, Shfmt, Java Format, etc.) are purely managed
-# by the project's .mise.toml file. Do not add hardcoded version variables here.
-# Any tool added below MUST have a corresponding entry in .mise.toml Tools section.
+# by the project's .unirtm.toml file. Do not add hardcoded version variables here.
+# Any tool added below MUST have a corresponding entry in .unirtm.toml Tools section.
 
 # Standardized library directory reference (calculated during early detection)
 _G_LIB_DIR="${_G_LIB_DIR:-${_G_PROJECT_ROOT:-}/scripts/lib}"
@@ -494,7 +494,7 @@ export _G_LIB_DIR
 # ── 🛣️ CI Persistence (GitHub Actions) ───────────────────────────────────────
 # Note: Moved to regulated block at the end of the file to satisfy ShellCheck SC2218
 
-# ── 🪄 Mise Bootstrap ────────────────────────────────────────────────────────
+# ── 🪄 UniRTM Bootstrap ────────────────────────────────────────────────────────
 # Logic extracted to ./lib/bootstrap.sh
 # shellcheck source=/dev/null
 . "${_G_LIB_DIR:-}/bootstrap.sh"
@@ -592,7 +592,7 @@ optimize_network() {
   fi
 
   # Apply Git optimization and GitHub Proxy if ENABLE_GITHUB_PROXY is active.
-  # Registry mirrors (npm, pip, etc.) are now always active via .mise.toml [env].
+  # Registry mirrors (npm, pip, etc.) are now always active via .unirtm.toml [env].
   if [ "${ENABLE_GITHUB_PROXY:-}" = "1" ] || [ "${ENABLE_GITHUB_PROXY:-}" = "true" ]; then
     log_info "Bypassing broken global git proxies and applying network optimization..."
 
@@ -609,15 +609,15 @@ EOF
     export GIT_CONFIG_SYSTEM="/dev/null"
   fi
 
-  # Ensure mise uses a long timeout for HTTP downloads regardless of proxy settings
+  # Ensure unirtm uses a long timeout for HTTP downloads regardless of proxy settings
   export MISE_HTTP_TIMEOUT="${MISE_HTTP_TIMEOUT:-300s}"
 
   export _NETWORK_OPTIMIZED=true
 }
 
-# Purpose: Extracts the configured version of a tool from .unirtm.toml, .mise.toml or VER_* env vars.
+# Purpose: Extracts the configured version of a tool from .unirtm.toml, .unirtm.toml or VER_* env vars.
 # Lookup order:
-#   1. Exact key match in .unirtm.toml / .mise.toml
+#   1. Exact key match in .unirtm.toml / .unirtm.toml
 #   2. Basename match in config files (e.g. "github:foo/bar" -> "bar")
 #   3. VER_<UPPER_NAME> env variable set by scripts/lib/versions.sh (Tier 2 tools)
 #   4. Fallback: "latest"
@@ -673,21 +673,23 @@ get_unirtm_tool_version() {
   echo "${_VER:-latest}"
 }
 
-# Backward compatibility wrapper for get_mise_tool_version
+# Backward compatibility wrapper for get_unirtm_tool_version
 get_mise_tool_version() {
   get_unirtm_tool_version "$@"
 }
 
 # ── 🔄 GITHUB_PATH Synchronization ──────────────────────────────────────────
 
-# Purpose: Executes a unirtm/mise command with retry logic and intelligent fallback.
+# Purpose: Executes a unirtm/unirtm command with retry logic and intelligent fallback.
 # Params:
-#   $@ - Command and arguments for unirtm/mise
+#   $@ - Command and arguments for unirtm/unirtm
 # Examples:
 #   run_unirtm install node
 run_unirtm() {
   local _CMD="${1:-}"
-  shift
+  if [ $# -gt 0 ]; then
+    shift
+  fi
 
   # Save the first argument (tool spec) for later use in PATH management
   local _TOOL_ARG="${1:-}"
@@ -721,7 +723,7 @@ run_unirtm() {
   local _EFFECTIVE_LOCKED="${MISE_LOCKED:-}"
   if [ "${_CMD:-}" = "install" ]; then
     if [ $# -eq 0 ]; then
-      # Full install (no args): check if .mise.toml contains any go: tools
+      # Full install (no args): check if .unirtm.toml contains any go: tools
       if grep -q '^"go:' "${_G_PROJECT_ROOT:-}/.mise.toml" 2>/dev/null; then
         _EFFECTIVE_LOCKED="0"
       fi
@@ -758,7 +760,7 @@ run_unirtm() {
   if [ "${_CMD:-}" = "install" ] && [ -n "${1:-}" ]; then
     local _T_CHECK="${1:-}"
     local _R_VER
-    _R_VER=$(get_mise_tool_version "${_T_CHECK:-}")
+    _R_VER=$(get_unirtm_tool_version "${_T_CHECK:-}")
     local _T_BASE
     _T_BASE=$(echo "${_T_CHECK:-}" | sed -E 's/^([^:]+:)?(@[^/]+\/)?//; s/.*\///') # Fast-path: Check version-aware existence
     local _C_VER
@@ -777,7 +779,7 @@ run_unirtm() {
     fi
 
     # Native/Backend Manager Awareness
-    # Ref: https://mise.jdx.dev/dev-tools/backends/
+    # Ref: https://unirtm.jdx.dev/dev-tools/backends/
     # Ensure required backend package managers are available before attempting installation
     case "${_T_CHECK:-}" in
     cargo:*)
@@ -849,7 +851,7 @@ run_unirtm() {
   else
     while [ ${_RETRY_COUNT:-} -lt ${_MAX_RETRIES:-} ]; do
       # Ensure MISE_HTTP_TIMEOUT is synchronized with the execution timeout
-      # to prevent internal unirtm/mise network calls from hanging the wrapper.
+      # to prevent internal unirtm/unirtm network calls from hanging the wrapper.
       export MISE_HTTP_TIMEOUT="${_T_OUT:-300}s"
 
       # Wrap in timeout utility (Standardized via run_with_timeout_robust)
@@ -864,7 +866,7 @@ run_unirtm() {
       if [ ${_RETRY_COUNT:-} -lt ${_MAX_RETRIES:-} ]; then
         # Exponential backoff: 1s, 2s, 4s... to recover from transient rate limits.
         local _BACKOFF=$((1 << (_RETRY_COUNT - 1)))
-        log_warn "unirtm/mise ${_CMD:-} failed (attempt ${_RETRY_COUNT:-}/${_MAX_RETRIES:-}). Retrying in ${_BACKOFF:-}s..."
+        log_warn "unirtm/unirtm ${_CMD:-} failed (attempt ${_RETRY_COUNT:-}/${_MAX_RETRIES:-}). Retrying in ${_BACKOFF:-}s..."
         sleep "${_BACKOFF:-}"
       fi
     done
@@ -877,7 +879,7 @@ run_unirtm() {
     unset GITHUB_TOKEN
   fi
   # Centralized Metadata Cache Refresh:
-  # If we just performed an installation, refresh the global unirtm/mise metadata cache
+  # If we just performed an installation, refresh the global unirtm/unirtm metadata cache
   # to ensure subsequent version checks (get_version) or resolution (resolve_bin)
   # see the newly available tools/binaries immediately.
   if [ ${_STATUS:-} -eq 0 ] &&
@@ -885,7 +887,7 @@ run_unirtm() {
     refresh_mise_cache
 
     # Unified PATH Management (Task 3.1):
-    # Automatically add unirtm/mise shims to PATH after successful installation
+    # Automatically add unirtm/unirtm shims to PATH after successful installation
     # if not already present. This ensures resolve_bin can immediately
     # locate newly installed tools without manual PATH manipulation.
     if [ -n "${_G_MISE_SHIMS_BASE:-}" ]; then
@@ -899,18 +901,18 @@ run_unirtm() {
     fi
 
     # Enhanced PATH Management for Dynamically Installed Tools:
-    # For tools installed but not activated (not in .mise.toml), unirtm/mise won't
+    # For tools installed but not activated (not in .unirtm.toml), unirtm/unirtm won't
     # create shims. We need to add the tool's actual bin directory to PATH.
-    # This supports the "dynamic install without .mise.toml pollution" pattern.
+    # This supports the "dynamic install without .unirtm.toml pollution" pattern.
     if [ -n "${_TOOL_ARG:-}" ]; then
       # Extract tool spec (remove version if present)
       local _TOOL_SPEC
       _TOOL_SPEC=$(echo "${_TOOL_ARG:-}" | sed 's/@.*//')
 
-      # Try to get the tool's bin directory from unirtm/mise
+      # Try to get the tool's bin directory from unirtm/unirtm
       if command -v unirtm >/dev/null 2>&1 || command -v mise >/dev/null 2>&1; then
         local _TOOL_BIN_DIR
-        # Use unirtm/mise where to get the installation path
+        # Use unirtm/unirtm where to get the installation path
         _TOOL_BIN_DIR=$("${_M_BIN:-}" where "${_TOOL_SPEC:-}" 2>/dev/null || true)
 
         if [ -n "${_TOOL_BIN_DIR:-}" ] && [ -d "${_TOOL_BIN_DIR:-}/bin" ]; then
@@ -932,7 +934,7 @@ run_unirtm() {
     fi
 
     # CI PATH Persistence (Task 3.2):
-    # In CI environments, persist unirtm/mise shims to ensure
+    # In CI environments, persist unirtm/unirtm shims to ensure
     # subsequent workflow steps can resolve tools installed in this step.
     if is_ci_env && [ -n "${_G_MISE_SHIMS_BASE:-}" ]; then
       _persist_path_to_ci "${_G_MISE_SHIMS_BASE:-}"
@@ -949,7 +951,7 @@ run_mise() {
   run_unirtm "$@"
 }
 
-# POSIX Shell Function wrapper to hijack direct 'mise' calls and redirect to unirtm
+# POSIX Shell Function wrapper to hijack direct 'unirtm' calls and redirect to unirtm
 mise() {
   run_unirtm "$@"
 }
@@ -1076,10 +1078,10 @@ install_native_tool() {
   return 1
 }
 
-# Purpose: Ensures a tool is available (Check system -> Try Native -> Try Mise).
+# Purpose: Ensures a tool is available (Check system -> Try Native -> Try UniRTM).
 # Params:
 #   $1 - Tool name
-#   $2 - Mise provider name (optional, defaults to tool name)
+#   $2 - UniRTM provider name (optional, defaults to tool name)
 ensure_tool() {
   local _TOOL="${1:-}"
   local _PRV="${2:-${_TOOL:-}}"
@@ -1091,7 +1093,7 @@ ensure_tool() {
   install_native_tool "${_TOOL:-}" && return 0
 
   if command -v mise >/dev/null 2>&1; then
-    run_mise install "${_PRV:-}" && return 0
+    unirtm install "${_PRV:-}" && return 0
   fi
 
   return 1
@@ -1457,7 +1459,7 @@ log_summary() {
 # Params:
 #   $1 - Binary or Command name to execute
 #   $2 - Argument to fetch version (default: --version)
-#   $3 - Optional: Exact Mise plugin/provider name for cache lookup
+#   $3 - Optional: Exact UniRTM plugin/provider name for cache lookup
 # Returns:
 #   Detected version string (stripped) or "-" if command fails/missing.
 # Examples:
@@ -1475,13 +1477,13 @@ get_version() {
   local _BIN_PATH
   _BIN_PATH=$(command -v "${_CMD_VER:-}" 2>/dev/null || true)
 
-  # 1. Try Mise First (Fast & Reliable for JIT tools)
-  # Check mise via cache first (fastest)
+  # 1. Try UniRTM First (Fast & Reliable for JIT tools)
+  # Check unirtm via cache first (fastest)
   if [ -z "${_G_MISE_LS_JSON_CACHE:-}" ]; then refresh_mise_cache; fi
   local _MISE_VER_OUT
 
   # Parse JSON using the new parse_json function with fallback to awk
-  # The mise ls --json structure is: { "tool-name": [{ "version": "x.y.z", "active": true/false, "installed": true/false }] }
+  # The unirtm ls --json structure is: { "tool-name": [{ "version": "x.y.z", "active": true/false, "installed": true/false }] }
   # We need to find the tool and extract the version from the first active or installed entry
 
   # Try using parse_json if available (requires custom logic for array handling)
@@ -1578,17 +1580,17 @@ if tool_key and isinstance(data[tool_key], list):
     echo "${_MISE_VER_OUT:-}" && return 0
   fi
 
-  # Fallback to system command or mise direct binary
+  # Fallback to system command or unirtm direct binary
   local _LV_RESOLVED
   _LV_RESOLVED=$(resolve_bin "${_CMD_VER:-}") || true
 
   if [ -n "${_LV_RESOLVED:-}" ]; then
-    # Guard: If binary is a mise shim but version wasn't found in cache,
-    # it likely means the tool is installed globally (pipx, etc.) but not in .mise.toml.
-    # To prevent 'mise ERROR No version is set', we use 'mise exec' if it's a shim.
+    # Guard: If binary is a unirtm shim but version wasn't found in cache,
+    # it likely means the tool is installed globally (pipx, etc.) but not in .unirtm.toml.
+    # To prevent 'unirtm ERROR No version is set', we use 'unirtm exec' if it's a shim.
     case "${_LV_RESOLVED:-}" in
     *"${_G_MISE_SHIMS_BASE:-}"*)
-      run_mise exec "${_M_PLUGIN:-latest}" -- "${_CMD_VER:-}" "${_ARG_VER:---version}" 2>/dev/null | grep -E -o "[0-9]+\.[0-9]+\.[0-9]+" | head -n 1
+      unirtm exec "${_M_PLUGIN:-latest}" -- "${_CMD_VER:-}" "${_ARG_VER:---version}" 2>/dev/null | grep -E -o "[0-9]+\.[0-9]+\.[0-9]+" | head -n 1
       return 0
       ;;
     esac
@@ -1630,13 +1632,13 @@ if tool_key and isinstance(data[tool_key], list):
 }
 
 # Purpose: Resolves the executable path for a tool across venv, node_modules,
-#          system PATH, and mise-managed environments (shim + direct install).
+#          system PATH, and unirtm-managed environments (shim + direct install).
 # Params:
 #   $1 - Binary name (e.g., "eslint", "pytest", "bats")
 # Returns:
 #   Echoes the resolved path. Exit 0 on success, 1 if not found.
 # Environments:
-#   - Local dev (with/without mise cache)
+#   - Local dev (with/without unirtm cache)
 #   - CI runners (clean or pre-cached)
 #   - Windows (Git Bash/MSYS2), macOS, Linux
 # Examples:
@@ -1718,13 +1720,13 @@ resolve_bin() {
   fi
 
   if [ -n "${_SP:-}" ]; then
-    # Guard: If it resolves to a mise shim, verify the tool is actually installed.
-    # Shims exist for ALL tools in .mise.toml, even uninstalled ones ("hollow shims").
+    # Guard: If it resolves to a unirtm shim, verify the tool is actually installed.
+    # Shims exist for ALL tools in .unirtm.toml, even uninstalled ones ("hollow shims").
     case "${_SP:-}" in
     *"${_G_MISE_SHIMS_BASE:-}"*)
-      # Use 'mise which' — the lightweight, jq-free way to validate a shim.
+      # Use 'unirtm which' — the lightweight, jq-free way to validate a shim.
       # Returns the real binary path if installed, non-zero if not.
-      # Guard: Add timeout and offline mode to prevent hangs in broken mise environments or lock contention.
+      # Guard: Add timeout and offline mode to prevent hangs in broken unirtm environments or lock contention.
       local _MW
       _MW=$(MISE_OFFLINE=1 run_with_timeout_robust 3 mise which "${_BIN:-}" 2>/dev/null) || true
       if [ -n "${_MW:-}" ] && [ -x "${_MW:-}" ]; then
@@ -1732,7 +1734,7 @@ resolve_bin() {
       fi
 
       # Shim is hollow — try to find another match in the path that is NOT a shim.
-      # This enables BATS mocks and system fallback when mise is inactive.
+      # This enables BATS mocks and system fallback when unirtm is inactive.
       local _OLD_IFS="$IFS"
       IFS=":"
       # shellcheck disable=SC2086
@@ -1751,17 +1753,17 @@ resolve_bin() {
     esac
   fi
 
-  # ── 4. Mise direct lookup (no shim in PATH, e.g., fresh CI) ──
-  # Covers: mise installed the tool but shims/PATH not yet activated.
+  # ── 4. UniRTM direct lookup (no shim in PATH, e.g., fresh CI) ──
+  # Covers: unirtm installed the tool but shims/PATH not yet activated.
   local _MW
   _MW=$(MISE_OFFLINE=1 run_with_timeout_robust 3 mise which "${_BIN:-}" 2>/dev/null) || true
   if [ -n "${_MW:-}" ] && [ -x "${_MW:-}" ]; then
     echo "${_MW:-}" && return 0
   fi
 
-  # ── 5. Mise Cache Fallback (Metadata-aware) ──
-  # Handles tools installed JIT (e.g., Tier 2) but not in active .mise.toml
-  # which causes 'mise which' to fail even if the tool exists on disk.
+  # ── 5. UniRTM Cache Fallback (Metadata-aware) ──
+  # Handles tools installed JIT (e.g., Tier 2) but not in active .unirtm.toml
+  # which causes 'unirtm which' to fail even if the tool exists on disk.
   if [ -z "${_G_MISE_LS_JSON_CACHE:-}" ]; then refresh_mise_cache; fi
   _MC_PATH=$(echo "${_G_MISE_LS_JSON_CACHE:-}" | awk -v bin="${_BIN:-}" '
     BEGIN { found_bin = 0; }
@@ -1846,7 +1848,7 @@ check_runtime() {
 
   # Priority 2: In audit mode, skip resolve_bin check entirely
   # The tool version was already checked by check_tool_version above.
-  # This prevents hanging on mise operations during environment health checks.
+  # This prevents hanging on unirtm operations during environment health checks.
   if [ "${_G_AUDIT_MODE:-0}" -eq 1 ]; then
     log_debug "Audit mode: Skipping runtime check for '${_RT_NAME:-}' (already verified by check_tool_version)"
     return 0
@@ -1862,7 +1864,7 @@ check_runtime() {
 
 # Purpose: Verify tool binary exists and is executable (lightweight check).
 # This is a fast pre-check before version detection to avoid false positives
-# from mise metadata that may be stale or incorrect.
+# from unirtm metadata that may be stale or incorrect.
 #
 # Parameters:
 #   $1 - Binary name (e.g., "shfmt")
@@ -1881,7 +1883,7 @@ verify_binary_exists() {
 
   [ -z "${_BIN:-}" ] && return 1
 
-  # Method 1: Check if mise can find it (most reliable in CI)
+  # Method 1: Check if unirtm can find it (most reliable in CI)
   if mise which "${_BIN:-}" >/dev/null 2>&1; then
     return 0
   fi
@@ -1892,14 +1894,14 @@ verify_binary_exists() {
   fi
 
   # Method 3: Try to execute it with timeout protection
-  # CRITICAL: For mise shims, direct execution may fail with "not currently active"
+  # CRITICAL: For unirtm shims, direct execution may fail with "not currently active"
   # We need to handle this gracefully by checking if it's a shim
   local _BIN_PATH
   _BIN_PATH=$(command -v "${_BIN:-}" 2>/dev/null)
 
-  # If it's a mise shim, it will be in the shims directory
+  # If it's a unirtm shim, it will be in the shims directory
   if echo "${_BIN_PATH:-}" | grep -q "/mise/shims/"; then
-    # For mise shims, we can't reliably test execution without mise exec
+    # For unirtm shims, we can't reliably test execution without unirtm exec
     # Just verify the shim file exists
     # On Windows, skip executable check (files are executable by extension)
     if [ -f "${_BIN_PATH:-}" ]; then
@@ -1926,13 +1928,13 @@ verify_binary_exists() {
 # Returns:
 #   0 - Tool is fully verified and usable
 #   1 - Tool verification failed
-# Purpose: Atomic verification for mise-installed tools with robust binary resolution.
+# Purpose: Atomic verification for unirtm-installed tools with robust binary resolution.
 # This function ensures a tool is fully functional through 5 verification steps,
-# using mise which as the primary resolution method for cross-platform compatibility.
+# using unirtm which as the primary resolution method for cross-platform compatibility.
 #
 # Parameters:
 #   $1 - Binary name (e.g., "shfmt", "editorconfig-checker")
-#   $2 - Mise provider (e.g., "github:mvdan/sh")
+#   $2 - UniRTM provider (e.g., "github:mvdan/sh")
 #   $3 - Display name (e.g., "Shfmt") [optional]
 #   $4 - Version flag (e.g., "--version") [optional, defaults to "--version"]
 #
@@ -1954,15 +1956,15 @@ verify_tool_atomic() {
 
   log_debug "=== Atomic Verification: ${_DISPLAY_NAME:-} ==="
 
-  # Step 1: Check if tool is registered in mise
+  # Step 1: Check if tool is registered in unirtm
   log_debug "Step 1/5: Checking mise registration..."
   if ! mise list 2>/dev/null | grep -q "${_PROVIDER:-}"; then
-    log_error "✗ ${_DISPLAY_NAME:-} not registered in mise"
+    log_error "✗ ${_DISPLAY_NAME:-} not registered in unirtm"
     return 1
   fi
   log_debug "✓ Registered in mise"
 
-  # Step 2: Resolve binary path using mise which (primary method)
+  # Step 2: Resolve binary path using unirtm which (primary method)
   # This handles platform-specific binaries, shims, and cross-platform compatibility
   log_debug "Step 2/5: Resolving binary path via mise which..."
   local _RESOLVED_PATH
@@ -1975,7 +1977,7 @@ verify_tool_atomic() {
     _RESOLVED_PATH=$(command -v "${_BIN_NAME:-}" 2>/dev/null) || _RESOLVED_PATH=""
 
     if [ -z "${_RESOLVED_PATH:-}" ]; then
-      # Fallback 2: Search in mise install directory
+      # Fallback 2: Search in unirtm install directory
       local _INSTALL_DIR
       _INSTALL_DIR=$(mise where "${_PROVIDER:-}" 2>/dev/null) || _INSTALL_DIR=""
       log_debug "mise where ${_PROVIDER:-} returned: ${_INSTALL_DIR:-<empty>}"
@@ -2004,7 +2006,7 @@ verify_tool_atomic() {
       fi
 
       if [ -z "${_RESOLVED_PATH:-}" ]; then
-        # Fallback 3: Try to find in mise installs directory by searching for provider pattern
+        # Fallback 3: Try to find in unirtm installs directory by searching for provider pattern
         log_debug "Searching in mise installs directory..."
         local _MISE_INSTALLS="${HOME}/.local/share/mise/installs"
         if [ -d "${_MISE_INSTALLS:-}" ]; then
@@ -2032,7 +2034,7 @@ verify_tool_atomic() {
 
     if [ -z "${_RESOLVED_PATH:-}" ]; then
       log_error "✗ ${_BIN_NAME:-} not found via any resolution method"
-      log_error "   Tried: mise which, command -v, mise where, directory search"
+      log_error "   Tried: unirtm which, command -v, unirtm where, directory search"
       return 1
     fi
     log_debug "✓ Resolved via fallback: ${_RESOLVED_PATH:-}"
@@ -2080,13 +2082,13 @@ verify_tool_atomic() {
   # Step 5: Run smoke test
   log_debug "Step 5/5: Running smoke test..."
 
-  # For mise shims, we need to use mise exec instead of direct execution
+  # For unirtm shims, we need to use unirtm exec instead of direct execution
   local _SMOKE_CMD
   local _SMOKE_OUTPUT
   local _SMOKE_EXIT=0
 
   if echo "${_RESOLVED_PATH:-}" | grep -q "/mise/shims/"; then
-    # It's a mise shim, use mise exec
+    # It's a unirtm shim, use unirtm exec
     _SMOKE_CMD="mise exec ${_PROVIDER:-} -- ${_BIN_NAME:-} ${_VERSION_FLAG:-}"
     log_debug "Using mise exec for shim: ${_SMOKE_CMD:-}"
     _SMOKE_OUTPUT=$(run_with_timeout_robust 5 sh -c "${_SMOKE_CMD:-}" 2>&1) || _SMOKE_EXIT=$?
@@ -2122,7 +2124,7 @@ verify_tool_atomic() {
 #   3. Install if needed
 #   4. Verify installation with aggressive cache refresh
 #
-# This prevents false positives from stale mise cache (GitHub Actions cache).
+# This prevents false positives from stale unirtm cache (GitHub Actions cache).
 #
 # Parameters:
 #   $1 - Binary name (e.g., "shfmt")
@@ -2156,11 +2158,11 @@ install_tool_safe() {
   _T0=$(date +%s)
 
   # Get version from provider
-  # CRITICAL: For tools with table syntax in .mise.toml like:
+  # CRITICAL: For tools with table syntax in .unirtm.toml like:
   #   "github:foo/bar" = { version = "1.0.0", bin = "foo" }
   # We need to extract just the version number, not the whole table
   local _VERSION
-  _VERSION=$(get_mise_tool_version "${_PROVIDER:-}")
+  _VERSION=$(get_unirtm_tool_version "${_PROVIDER:-}")
 
   # If version looks like a TOML table (contains "version ="), extract just the version
   # Use [^"]* instead of [^"]+ for better compatibility (handles empty strings)
@@ -2182,13 +2184,13 @@ install_tool_safe() {
     fi
   fi
 
-  # CRITICAL: In CI, refresh mise cache to avoid stale data from GitHub Actions cache
+  # CRITICAL: In CI, refresh unirtm cache to avoid stale data from GitHub Actions cache
   if is_ci_env; then
-    log_info "CI detected: Refreshing mise cache to avoid stale data"
+    log_info "CI detected: Refreshing unirtm cache to avoid stale data"
     refresh_mise_cache
   fi
 
-  # CRITICAL: Resolve actual binary name from mise installation
+  # CRITICAL: Resolve actual binary name from unirtm installation
   # For tools with platform-specific binaries (e.g., ec-linux-amd64), we need to find the real name
   local _ACTUAL_BIN="${_BIN_NAME:-}"
   local _INSTALL_DIR
@@ -2283,9 +2285,9 @@ install_tool_safe() {
   fi
 
   local _STAT="✅ mise"
-  if ! run_mise install "${_PROVIDER:-}@${_VERSION:-}"; then
+  if ! unirtm install "${_PROVIDER:-}@${_VERSION:-}"; then
     _STAT="❌ Failed"
-    log_error "Step 5: mise install FAILED"
+    log_error "Step 5: unirtm install FAILED"
     log_summary "Base" "${_DISPLAY_NAME:-}" "${_STAT:-}" "-" "$(($(date +%s) - _T0))"
     if is_ci_env; then
       return 1
@@ -2294,13 +2296,13 @@ install_tool_safe() {
     fi
   fi
 
-  log_info "Step 5: mise install succeeded"
+  log_info "Step 5: unirtm install succeeded"
 
   # Step 6: Post-install verification with aggressive cache refresh
   log_info "Step 6: Post-install verification"
   mise reshim 2>/dev/null || true
 
-  # CRITICAL: Refresh mise cache after installation to ensure get_version sees new binary
+  # CRITICAL: Refresh unirtm cache after installation to ensure get_version sees new binary
   refresh_mise_cache
 
   # Wait for filesystem sync (especially important in CI with network filesystems)
@@ -2352,7 +2354,7 @@ install_tool_safe() {
   log_info "Step 6a: Verifying binary existence"
 
   # On Windows, if the binary file exists in install dir but doesn't have .exe extension,
-  # skip command -v check (mise shims may not work for non-.exe files)
+  # skip command -v check (unirtm shims may not work for non-.exe files)
   local _SKIP_CMD_CHECK=0
   if [ "${_G_OS:-}" = "windows" ] && [ -n "${_INSTALL_DIR:-}" ]; then
     if [ -f "${_INSTALL_DIR:-}/${_ACTUAL_BIN:-}" ] || [ -f "${_INSTALL_DIR:-}/bin/${_ACTUAL_BIN:-}" ]; then
@@ -2370,8 +2372,8 @@ install_tool_safe() {
     fi
   fi
 
-  # CRITICAL: For mise bins (tools installed via mise but not through backends),
-  # mise which may fail even though the binary exists. Check install dir directly.
+  # CRITICAL: For unirtm bins (tools installed via unirtm but not through backends),
+  # unirtm which may fail even though the binary exists. Check install dir directly.
   if [ -n "${_INSTALL_DIR:-}" ]; then
     local _BIN_FILE=""
     if [ -f "${_INSTALL_DIR:-}/bin/${_ACTUAL_BIN:-}" ]; then
@@ -2395,8 +2397,8 @@ install_tool_safe() {
       log_error "  - Install dir: ${_INSTALL_DIR:-}"
       log_error "  - PATH: ${PATH:-}"
       log_error "  - command -v ${_ACTUAL_BIN:-}: $(command -v "${_ACTUAL_BIN:-}" 2>&1 || echo 'NOT FOUND')"
-      log_error "  - mise which ${_ACTUAL_BIN:-}: $(mise which "${_ACTUAL_BIN:-}" 2>&1 || echo 'NOT FOUND')"
-      log_error "  - mise where ${_PROVIDER:-}: $(mise where "${_PROVIDER:-}" 2>&1 || echo 'NOT FOUND')"
+      log_error "  - unirtm which ${_ACTUAL_BIN:-}: $(unirtm which "${_ACTUAL_BIN:-}" 2>&1 || echo 'NOT FOUND')"
+      log_error "  - unirtm where ${_PROVIDER:-}: $(unirtm where "${_PROVIDER:-}" 2>&1 || echo 'NOT FOUND')"
       if [ -n "${_INSTALL_DIR:-}" ] && [ -d "${_INSTALL_DIR:-}/bin" ]; then
         log_error "  - Binaries in install dir: $(ls -la "${_INSTALL_DIR:-}/bin" 2>&1 || echo 'FAILED')"
       fi
@@ -2580,7 +2582,7 @@ finalize_summary_table() {
 # Purpose: Checks if the current tool version matches the required version (prefix match).
 # Params:
 #   $1 - Current version (detected)
-#   $2 - Required version (from registry/.mise.toml)
+#   $2 - Required version (from registry/.unirtm.toml)
 # Returns:
 #   0 - Match
 #   1 - Mismatch
@@ -2792,9 +2794,9 @@ if is_ci_env && [ -z "${_G_CI_PATH_READ:-}" ]; then
   export _G_CI_PATH_READ=true
 fi
 
-# Step 2: Write mise paths to CI cache for future steps
+# Step 2: Write unirtm paths to CI cache for future steps
 if is_ci_env && [ -z "${_G_CI_PATH_SYNCED:-}" ]; then
-  # Proactively add mise paths to CI persistence
+  # Proactively add unirtm paths to CI persistence
   # Note: Use Unix-style paths even on Windows (GitHub Actions runs in Git Bash)
   _M_BIN_CI="${_G_MISE_BIN_BASE:-}"
   _M_SHIMS_CI="${_G_MISE_SHIMS_BASE:-}"

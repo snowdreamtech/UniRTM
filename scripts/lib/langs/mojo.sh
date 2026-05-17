@@ -5,8 +5,8 @@ set -eu
 
 # Mojo Logic Module
 
-# Purpose: Installs Mojo runtime via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Mojo runtime via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_mojo() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Mojo runtime via mise."
@@ -14,7 +14,7 @@ install_runtime_mojo() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "mojo@$(get_mise_tool_version mojo)"
+  unirtm install "mojo@$(get_unirtm_tool_version mojo)"
 }
 
 # Purpose: Sets up Mojo environment for project.
@@ -31,7 +31,7 @@ setup_mojo() {
   local _CUR_VER
   _CUR_VER=$(get_version mojo)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "mojo")
+  _REQ_VER=$(get_unirtm_tool_version "mojo")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Mojo" "✅ Detected" "${_CUR_VER:-}" "0"

@@ -5,8 +5,8 @@ set -eu
 
 # Node.js Logic Module
 
-# Purpose: Installs Node.js runtime via mise.
-# Delegate: Managed via mise (.mise.toml) and the best available manager.
+# Purpose: Installs Node.js runtime via unirtm.
+# Delegate: Managed via unirtm (.unirtm.toml) and the best available manager.
 install_runtime_node() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Node.js runtime and project dependencies."
@@ -16,18 +16,18 @@ install_runtime_node() {
   # Alpine/musl detection and configuration
   # CRITICAL: unofficial-builds.nodejs.org does NOT provide source tarballs
   # It only provides precompiled musl binaries with "-musl" suffix in filename
-  # We must configure mise to use the correct flavor BEFORE installation
+  # We must configure unirtm to use the correct flavor BEFORE installation
   if [ -f /etc/alpine-release ] || [ "${ALPINE_VERSION:-}" != "" ]; then
-    log_info "Alpine/musl environment detected. Configuring mise for musl binaries..."
+    log_info "Alpine/musl environment detected. Configuring unirtm for musl binaries..."
 
-    # Export ALPINE_VERSION for mise.toml template evaluation
+    # Export ALPINE_VERSION for unirtm.toml template evaluation
     # This ensures MISE_NODE_MIRROR_URL points to unofficial-builds
     if [ -z "${ALPINE_VERSION:-}" ]; then
       export ALPINE_VERSION="detected"
     fi
 
-    # Explicitly set mise environment variables for Node.js
-    # These override the .mise.toml template values
+    # Explicitly set unirtm environment variables for Node.js
+    # These override the .unirtm.toml template values
     export MISE_NODE_MIRROR_URL="https://unofficial-builds.nodejs.org/download/release/"
     export MISE_NODE_FLAVOR="musl"
     export MISE_NODE_COMPILE="false"
@@ -48,12 +48,12 @@ install_runtime_node() {
       fi
     fi
 
-    # Set node flavor to musl in mise settings (persists across commands)
-    mise settings set node.flavor musl 2>/dev/null || log_warn "Failed to set node.flavor setting"
+    # Set node flavor to musl in unirtm settings (persists across commands)
+    unirtm settings set node.flavor musl 2>/dev/null || log_warn "Failed to set node.flavor setting"
 
     # Disable source compilation (node.compile is a boolean, not "never")
-    # Setting to false forces mise to use precompiled binaries only
-    mise settings set node.compile false 2>/dev/null || log_warn "Failed to set node.compile setting"
+    # Setting to false forces unirtm to use precompiled binaries only
+    unirtm settings set node.compile false 2>/dev/null || log_warn "Failed to set node.compile setting"
 
     # Verify settings
     log_debug "Node flavor: $(mise settings get node.flavor 2>/dev/null || echo 'not set')"
@@ -67,43 +67,43 @@ install_runtime_node() {
   export COREPACK_INTEGRITY_KEYS=0
 
   # 1. Runtime initialization
-  run_mise install node
+  unirtm install node
 
-  # Optimization: If pnpm/yarn are already managed by mise (via .mise.toml), skip corepack to avoid
+  # Optimization: If pnpm/yarn are already managed by unirtm (via .unirtm.toml), skip corepack to avoid
   # redundant network calls and signature errors, especially in Node 22+.
   if grep -qE "pnpm|yarn" .mise.toml 2>/dev/null; then
-    log_info "Package managers are already managed by mise. Skipping corepack."
+    log_info "Package managers are already managed by unirtm. Skipping corepack."
     if grep -q "npm:pnpm" .mise.toml 2>/dev/null; then
-      run_mise install npm:pnpm || log_warn "Failed to install npm:pnpm via mise"
+      unirtm install npm:pnpm || log_warn "Failed to install npm:pnpm via unirtm"
     fi
     if grep -q "npm:yarn" .mise.toml 2>/dev/null; then
-      run_mise install npm:yarn || log_warn "Failed to install npm:yarn via mise"
+      unirtm install npm:yarn || log_warn "Failed to install npm:yarn via unirtm"
     fi
   else
     log_info "Initializing Node.js package managers (corepack)..."
 
     # Check if corepack exists before enabling. If missing, try to install it.
-    if ! run_mise x -- corepack --version >/dev/null 2>&1; then
+    if ! unirtm x -- corepack --version >/dev/null 2>&1; then
       log_warn "corepack not found. Attempting to install via npm..."
       npm install -g corepack@latest --force >/dev/null 2>&1 || true
     fi
 
     # Attempt to enable, but don't fail if it's fundamentally missing
-    run_mise x -- corepack enable >/dev/null 2>&1 || log_warn "Could not enable corepack. Proceeding with fallbacks."
+    unirtm x -- corepack enable >/dev/null 2>&1 || log_warn "Could not enable corepack. Proceeding with fallbacks."
 
     local _V_PNPM
-    _V_PNPM=$(get_mise_tool_version pnpm)
+    _V_PNPM=$(get_unirtm_tool_version pnpm)
     local _V_YARN
-    _V_YARN=$(get_mise_tool_version yarn)
+    _V_YARN=$(get_unirtm_tool_version yarn)
 
     # Resilient pnpm installation
-    if ! run_mise x -- corepack prepare "pnpm@${_V_PNPM:-latest}" --activate 2>/dev/null; then
+    if ! unirtm x -- corepack prepare "pnpm@${_V_PNPM:-latest}" --activate 2>/dev/null; then
       log_warn "Corepack failed for pnpm. Falling back to direct npm installation."
       npm install -g "pnpm@${_V_PNPM:-latest}" --force >/dev/null 2>&1 || true
     fi
 
     # Resilient yarn installation
-    if ! run_mise x -- corepack prepare "yarn@${_V_YARN:-latest}" --activate 2>/dev/null; then
+    if ! unirtm x -- corepack prepare "yarn@${_V_YARN:-latest}" --activate 2>/dev/null; then
       log_warn "Corepack failed for yarn. Falling back to direct npm installation."
       npm install -g "yarn@${_V_YARN:-latest}" --force >/dev/null 2>&1 || true
     fi
@@ -118,7 +118,7 @@ install_runtime_node() {
 }
 
 # Purpose: Installs sort-package-json.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_sort_package_json() {
   if ! has_lang_files "package.json" ""; then
     return 0
@@ -128,7 +128,7 @@ install_sort_package_json() {
 }
 
 # Purpose: Installs eslint.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_eslint() {
   if ! has_lang_files "package.json" "*.js *.ts *.jsx *.tsx *.vue *.svelte *.astro"; then
     return 0
@@ -138,7 +138,7 @@ install_eslint() {
 }
 
 # Purpose: Installs stylelint.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_stylelint() {
   if ! has_lang_files "package.json" "*.css *.scss *.sass *.less"; then
     return 0
@@ -148,7 +148,7 @@ install_stylelint() {
 }
 
 # Purpose: Installs vitepress.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_vitepress() {
   if [ ! -d docs ] && ! grep -q '"vitepress"' "${PACKAGE_JSON:-}" 2>/dev/null; then
     return 0
@@ -158,25 +158,25 @@ install_vitepress() {
 }
 
 # Purpose: Installs prettier.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_prettier() {
   install_tool_safe "prettier" "${VER_PRETTIER_PROVIDER:-}" "Prettier" "--version" 1
 }
 
 # Purpose: Installs commitlint.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_commitlint() {
   install_tool_safe "commitlint" "${VER_COMMITLINT_PROVIDER:-}" "Commitlint" "--version" 1
 }
 
 # Purpose: Installs commitizen.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_commitizen() {
   install_tool_safe "commitizen" "${VER_COMMITIZEN_PROVIDER:-}" "Commitizen" "--version" 1
 }
 
 # Purpose: Sets up Node.js runtime for project.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 setup_node() {
   # Node.js is a first-class citizen: setup is always performed.
 
@@ -189,7 +189,7 @@ setup_node() {
   local _CUR_VER
   _CUR_VER=$(get_version node)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "${_PROVIDER:-}")
+  _REQ_VER=$(get_unirtm_tool_version "${_PROVIDER:-}")
 
   # Always log setup start for consistency and test assertions
   _log_setup "${_TITLE:-}" "${_PROVIDER:-}"

@@ -5,8 +5,8 @@ set -eu
 
 # AssemblyScript Logic Module
 
-# Purpose: Installs AssemblyScript (asc) via mise (npm provider).
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs AssemblyScript (asc) via unirtm (npm provider).
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_assemblyscript() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install AssemblyScript (asc) via mise npm provider."
@@ -14,7 +14,7 @@ install_runtime_assemblyscript() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "npm:assemblyscript@$(get_mise_tool_version assemblyscript)"
+  unirtm install "npm:assemblyscript@$(get_unirtm_tool_version assemblyscript)"
 }
 
 # Purpose: Sets up AssemblyScript environment for project.
@@ -29,7 +29,7 @@ setup_assemblyscript() {
   local _CUR_VER
   _CUR_VER=$(get_version asc)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "asc")
+  _REQ_VER=$(get_unirtm_tool_version "asc")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "AssemblyScript" "✅ Detected" "${_CUR_VER:-}" "0"

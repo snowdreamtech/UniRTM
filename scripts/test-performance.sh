@@ -183,7 +183,7 @@ measure_tool_time() {
   echo "$elapsed"
 }
 
-# Purpose: Get tools by category from .mise.toml
+# Purpose: Get tools by category from .unirtm.toml
 # Params:
 #   $1 - Category name
 # Returns: Space-separated list of tools
@@ -205,7 +205,7 @@ get_tools_by_category() {
     tools="shfmt prettier"
     ;;
   runtimes)
-    # Runtimes from .mise.toml
+    # Runtimes from .unirtm.toml
     if [ -f .mise.toml ]; then
       tools=$(grep -E '^\s*[a-z]' .mise.toml | grep -v '^\[' | cut -d'=' -f1 | tr -d '"' | tr -d ' ' | head -10)
     fi

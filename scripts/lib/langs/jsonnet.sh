@@ -5,8 +5,8 @@ set -eu
 
 # Jsonnet Logic Module
 
-# Purpose: Installs go-jsonnet via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs go-jsonnet via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_jsonnet() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install go-jsonnet via mise."
@@ -14,11 +14,11 @@ install_runtime_jsonnet() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "go-jsonnet@$(get_mise_tool_version jsonnet)"
+  unirtm install "go-jsonnet@$(get_unirtm_tool_version jsonnet)"
 }
 
 # Purpose: Sets up Jsonnet environment for project.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 # Examples:
 #   setup_jsonnet
 setup_jsonnet() {
@@ -32,7 +32,7 @@ setup_jsonnet() {
   local _CUR_VER
   _CUR_VER=$(get_version jsonnet)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "jsonnet")
+  _REQ_VER=$(get_unirtm_tool_version "jsonnet")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Jsonnet" "✅ Detected" "${_CUR_VER:-}" "0"

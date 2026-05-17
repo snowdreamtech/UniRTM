@@ -6,7 +6,7 @@ set -eu
 # Testing Logic Module
 
 # Purpose: Installs bats (Bash Automated Testing System).
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_bats() {
   install_tool_safe "bats" "${VER_BATS_PROVIDER:-npm:bats}" "Bats" "--version" 0 "*.bats" ""
 }

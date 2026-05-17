@@ -5,15 +5,15 @@ set -eu
 
 # Perl Logic Module
 
-# Purpose: Installs Perl runtime via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Perl runtime via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_perl() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Perl runtime."
     return 0
   fi
   # shellcheck disable=SC2154
-  run_mise install "perl@$(get_mise_tool_version perl)"
+  unirtm install "perl@$(get_unirtm_tool_version perl)"
 }
 
 # Purpose: Sets up Perl runtime.
@@ -30,7 +30,7 @@ setup_perl() {
   local _CUR_VER
   _CUR_VER=$(get_version perl)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "perl")
+  _REQ_VER=$(get_unirtm_tool_version "perl")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Perl" "✅ Detected" "${_CUR_VER:-}" "0"

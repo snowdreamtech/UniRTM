@@ -94,11 +94,11 @@ detect_platform() {
   esac
 }
 
-# Purpose: Clear mise cache for cold cache measurement
+# Purpose: Clear unirtm cache for cold cache measurement
 clear_mise_cache() {
-  log_info "Clearing mise cache for cold cache measurement..."
+  log_info "Clearing unirtm cache for cold cache measurement..."
 
-  # Clear mise installs directory
+  # Clear unirtm installs directory
   local mise_installs_dir
   case "$(uname -s)" in
   Darwin)
@@ -129,7 +129,7 @@ clear_mise_cache() {
     rm -rf "${mise_installs_dir:?}"/*
     log_success "  Cache cleared successfully"
   else
-    log_warn "  Mise installs directory not found, skipping cache clear"
+    log_warn "  UniRTM installs directory not found, skipping cache clear"
   fi
 }
 

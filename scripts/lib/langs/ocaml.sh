@@ -5,8 +5,8 @@ set -eu
 
 # OCaml Logic Module
 
-# Purpose: Installs OCaml and OPAM via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs OCaml and OPAM via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_ocaml() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install OCaml via mise."
@@ -14,7 +14,7 @@ install_runtime_ocaml() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "ocaml@$(get_mise_tool_version ocaml)"
+  unirtm install "ocaml@$(get_unirtm_tool_version ocaml)"
 }
 
 # Purpose: Sets up OCaml environment for project.
@@ -31,7 +31,7 @@ setup_ocaml() {
   local _CUR_VER
   _CUR_VER=$(get_version ocaml)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "ocaml")
+  _REQ_VER=$(get_unirtm_tool_version "ocaml")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "OCaml" "✅ Detected" "${_CUR_VER:-}" "0"

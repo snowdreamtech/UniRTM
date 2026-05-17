@@ -5,15 +5,15 @@ set -eu
 
 # Scala Logic Module
 
-# Purpose: Installs Scala runtime via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Scala runtime via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_scala() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Scala runtime."
     return 0
   fi
   # shellcheck disable=SC2154
-  run_mise install "scala@$(get_mise_tool_version scala)"
+  unirtm install "scala@$(get_unirtm_tool_version scala)"
 }
 
 # Purpose: Installs Scala linter.
@@ -40,7 +40,7 @@ setup_scala() {
   local _CUR_VER
   _CUR_VER=$(get_version scala)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "scala")
+  _REQ_VER=$(get_unirtm_tool_version "scala")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Scala" "✅ Detected" "${_CUR_VER:-}" "0"

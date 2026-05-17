@@ -5,8 +5,8 @@ set -eu
 
 # Raku Logic Module
 
-# Purpose: Installs Raku (via rakudo) via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Raku (via rakudo) via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_raku() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Raku (rakudo) via mise."
@@ -14,7 +14,7 @@ install_runtime_raku() {
   fi
 
   # shellcheck disable=SC2154
-  run_mise install "rakudo@$(get_mise_tool_version raku)"
+  unirtm install "rakudo@$(get_unirtm_tool_version raku)"
 }
 
 # Purpose: Sets up Raku environment for project.
@@ -31,7 +31,7 @@ setup_raku() {
   local _CUR_VER
   _CUR_VER=$(get_version raku)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "raku")
+  _REQ_VER=$(get_unirtm_tool_version "raku")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Raku" "✅ Detected" "${_CUR_VER:-}" "0"

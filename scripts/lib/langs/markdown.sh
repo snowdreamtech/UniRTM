@@ -6,7 +6,7 @@ set -eu
 # Markdown Logic Module
 
 # Purpose: Installs markdownlint for Markdown linting.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_markdownlint() {
   install_tool_safe "markdownlint-cli2" "${VER_MARKDOWNLINT_PROVIDER:-}" "Markdownlint" "--version" 0 "*.md" ""
 }

@@ -2,15 +2,15 @@
 # Copyright (c) 2026 SnowdreamTech. All rights reserved.
 # Licensed under the MIT License.
 
-# scripts/cleanup-duplicate-mise-activation.sh
+# scripts/cleanup-duplicate-unirtm-activation.sh
 #
-# Purpose: Remove duplicate mise activation lines from shell RC files
+# Purpose: Remove duplicate unirtm activation lines from shell RC files
 #
 # Usage:
-#   sh scripts/cleanup-duplicate-mise-activation.sh [--dry-run]
+#   sh scripts/cleanup-duplicate-unirtm-activation.sh [--dry-run]
 #
 # This script fixes the issue where multiple 'make setup' runs created
-# duplicate mise activation lines in shell configuration files.
+# duplicate unirtm activation lines in shell configuration files.
 
 set -eu
 
@@ -29,7 +29,7 @@ cleanup_rc_file() {
 
   echo "Checking ${_file:-}..."
 
-  # Count mise activation lines
+  # Count unirtm activation lines
   local _count
   _count=$(grep -cE '(mise|\.local/bin/mise) activate' "${_file:-}" 2>/dev/null || echo "0")
 
@@ -53,11 +53,11 @@ cleanup_rc_file() {
   cp "${_file:-}" "${_file:-}.backup-$(date +%Y%m%d-%H%M%S)"
   echo "  💾 Created backup: ${_file:-}.backup-$(date +%Y%m%d-%H%M%S)"
 
-  # Remove all mise activation lines and related comments
-  grep -vE '(mise|\.local/bin/mise) activate|# mise activation' "${_file:-}" >"${_file:-}.tmp" || true
+  # Remove all unirtm activation lines and related comments
+  grep -vE '(mise|\.local/bin/mise) activate|# unirtm activation' "${_file:-}" >"${_file:-}.tmp" || true
 
-  # Add back a single mise activation line at the end
-  # Try to detect mise binary location, fallback to standard location
+  # Add back a single unirtm activation line at the end
+  # Try to detect unirtm binary location, fallback to standard location
   local _mise_bin
   if command -v mise >/dev/null 2>&1; then
     _mise_bin=$(command -v mise)
@@ -75,7 +75,7 @@ cleanup_rc_file() {
   {
     cat "${_file:-}.tmp"
     echo ""
-    echo "# mise activation (added by snowdreamtech/ai-ide-template setup)"
+    echo "# unirtm activation (added by snowdreamtech/ai-ide-template setup)"
     case "${_shell:-}" in
     bash)
       echo "eval \"\$(${_mise_bin} activate bash)\""

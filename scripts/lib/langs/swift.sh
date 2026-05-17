@@ -5,15 +5,15 @@ set -eu
 
 # Swift Logic Module
 
-# Purpose: Installs Swift runtime via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Swift runtime via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_swift() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Swift runtime."
     return 0
   fi
   # shellcheck disable=SC2154
-  run_mise install "swift@$(get_mise_tool_version swift)"
+  unirtm install "swift@$(get_unirtm_tool_version swift)"
 }
 
 # Purpose: Sets up Swift runtime and mandatory linting tools.
@@ -31,7 +31,7 @@ setup_swift() {
   local _CUR_VER
   _CUR_VER=$(get_version swift)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "swift")
+  _REQ_VER=$(get_unirtm_tool_version "swift")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Swift" "✅ Detected" "${_CUR_VER:-}" "0"
@@ -51,7 +51,7 @@ setup_swift() {
 }
 
 # Purpose: Installs swiftformat for Swift linting.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_swiftformat() {
   if ! has_lang_files "Package.swift" "*.swift"; then
     return 0
@@ -62,7 +62,7 @@ install_swiftformat() {
 }
 
 # Purpose: Installs swiftlint for Swift linting.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_swiftlint() {
   if ! has_lang_files "Package.swift" "*.swift"; then
     return 0

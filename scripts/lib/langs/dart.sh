@@ -5,14 +5,14 @@ set -eu
 
 # Dart Logic Module
 
-# Purpose: Installs Dart runtime via mise.
-# Delegate: Managed by mise (.mise.toml)
+# Purpose: Installs Dart runtime via unirtm.
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_runtime_dart() {
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_debug "DRY_RUN: Would install Dart runtime."
     return 0
   fi
-  run_mise install dart
+  unirtm install dart
 }
 
 # Purpose: Sets up Dart runtime.
@@ -29,7 +29,7 @@ setup_dart() {
   local _CUR_VER
   _CUR_VER=$(get_version dart)
   local _REQ_VER
-  _REQ_VER=$(get_mise_tool_version "dart")
+  _REQ_VER=$(get_unirtm_tool_version "dart")
 
   if is_version_match "${_CUR_VER:-}" "${_REQ_VER:-}"; then
     log_summary "Runtime" "Dart" "✅ Detected" "${_CUR_VER:-}" "0"

@@ -6,13 +6,13 @@ set -eu
 # YAML Logic Module
 
 # Purpose: Installs yamllint for YAML linting.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_yamllint() {
   install_tool_safe "yamllint" "${VER_YAMLLINT_PROVIDER:-}" "Yamllint" "--version" 0 "*.yaml *.yml" ""
 }
 
 # Purpose: Installs dotenv-linter for .env file linting.
-# Delegate: Managed by mise (.mise.toml)
+# Delegate: Managed by unirtm (.unirtm.toml)
 install_dotenv_linter() {
   install_tool_safe "dotenv-linter" "${VER_DOTENV_LINTER_PROVIDER:-}" "Dotenv-Linter" "--version" 0 "" ".env .env.example .env.template"
 }

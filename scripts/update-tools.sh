@@ -2,11 +2,11 @@
 # Copyright (c) 2026 SnowdreamTech. All rights reserved.
 # Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-# scripts/update-tools.sh - Intelligent Mise Tool Version Upgrader
+# scripts/update-tools.sh - Intelligent UniRTM Tool Version Upgrader
 #
 # Purpose:
-#   Automatically detects the latest upstream versions for all Mise-managed tools
-#   using 'mise ls-remote' and updates the project's version registry (versions.sh).
+#   Automatically detects the latest upstream versions for all UniRTM-managed tools
+#   using 'unirtm ls-remote' and updates the project's version registry (versions.sh).
 #
 # Usage:
 #   sh scripts/update-tools.sh [OPTIONS]
@@ -50,7 +50,7 @@ _get_latest_version() {
   local _PROVIDER="${1:-}"
   local _LATEST=""
 
-  # Use mise ls-remote to fetch versions.
+  # Use unirtm ls-remote to fetch versions.
   # We filter out typical pre-release keywords and common single-letter suffixes (a/b/rc).
   # We use sort -V to ensure semver-compliant ordering.
   _LATEST=$(mise ls-remote "${_PROVIDER:-}" 2>/dev/null |
@@ -62,7 +62,7 @@ _get_latest_version() {
   echo "${_LATEST:-}"
 }
 
-# Purpose: Main execution logic for upgrading versions.sh and .mise.toml.
+# Purpose: Main execution logic for upgrading versions.sh and .unirtm.toml.
 run_upgrade() {
   local _VERSIONS_FILE="scripts/lib/versions.sh"
   local _MISE_FILE=".mise.toml"
@@ -119,7 +119,7 @@ run_upgrade() {
     rm -f "${_TMP_VARS:-}"
   fi
 
-  # --- Phase 2: Update .mise.toml (Tier 1 & Static Global Tools) ---
+  # --- Phase 2: Update .unirtm.toml (Tier 1 & Static Global Tools) ---
   if [ -f "${_MISE_FILE:-}" ]; then
     log_debug "Scanning ${_MISE_FILE:-}..."
     # We look for lines in the [tools] section: tool = "version"
