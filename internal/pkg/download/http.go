@@ -190,8 +190,11 @@ func (h *HTTPDownloader) Download(ctx context.Context, url string, destination s
 			return errors.NewExternalError(fmt.Sprintf("download cancelled after %d attempts", attempt-1), err)
 		}
 
+		// Create a local copy of the downloader to ensure thread-safety when modifying the client
+		localDownloader := *h
+		var tempTransport *http.Transport
+
 		// If forced to HTTP/1.1, ensure client is configured properly for this attempt
-		var originalClient *http.Client
 		if forceHTTP11 {
 			if transport, ok := h.client.Transport.(*http.Transport); ok {
 				newTransport := transport.Clone()
@@ -209,25 +212,21 @@ func (h *HTTPDownloader) Download(ctx context.Context, url string, destination s
 					}
 				}
 				
-				originalClient = h.client
-				h.client = &http.Client{
-					Timeout:       originalClient.Timeout,
-					CheckRedirect: originalClient.CheckRedirect,
+				tempTransport = newTransport
+				localDownloader.client = &http.Client{
+					Timeout:       h.client.Timeout,
+					CheckRedirect: h.client.CheckRedirect,
 					Transport:     newTransport,
 				}
 			}
 		}
 
-		// Attempt download
-		err := h.downloadOnce(ctx, url, destination, opts)
+		// Attempt download using the thread-safe local copy
+		err := localDownloader.downloadOnce(ctx, url, destination, opts)
 
-		// Restore client immediately if it was swapped
-		if originalClient != nil {
-			// Close idle connections of the temporary transport to be clean
-			if tempTransport, ok := h.client.Transport.(*http.Transport); ok {
-				tempTransport.CloseIdleConnections()
-			}
-			h.client = originalClient
+		// Close idle connections of the temporary transport to prevent resource leaks
+		if tempTransport != nil {
+			tempTransport.CloseIdleConnections()
 		}
 		if err == nil {
 			// Success - verify checksum if specified
