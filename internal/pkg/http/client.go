@@ -8,26 +8,30 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
-// DefaultTransport returns a customized http.Transport that includes UniRTM's
-// intelligent proxy bypass and HTTP/2 fallback configurations.
+// DefaultTransport returns UniRTM's standard http.Transport.
+//
+// It customizes two behaviors that Go's default transport cannot provide:
+//
+//  1. Smart Proxy Bypass: domestic mirror domains (aliyun.com, npmmirror.com, etc.)
+//     are forced to use DIRECT connections, preventing local proxy software from
+//     returning "Bad Request" errors when routing Chinese CDN traffic.
+//
+//  2. UNIRTM_/MISE_ env prefix support: reads HTTP_PROXY/HTTPS_PROXY/ALL_PROXY
+//     through env.Get(), which resolves UNIRTM_HTTP_PROXY and MISE_HTTP_PROXY
+//     in addition to the standard names that http.ProxyFromEnvironment covers.
+//
+// All other settings (connection pool, timeouts) are inherited from Go's
+// http.DefaultTransport via Clone(), so they stay in sync with upstream defaults.
 func DefaultTransport() *http.Transport {
-	// Start with a clone of Go's default transport
 	trans := http.DefaultTransport.(*http.Transport).Clone()
 
-	// Reinforce network resilience with extended timeouts suitable for both API and large file downloads
-	trans.MaxIdleConns = 100
-	trans.IdleConnTimeout = 90 * time.Second
-	trans.TLSHandshakeTimeout = 30 * time.Second
-	trans.ResponseHeaderTimeout = 30 * time.Second
-	trans.ExpectContinueTimeout = 5 * time.Second
-
-	// 1. Configure Smart Proxy Bypass
+	// 1. Smart proxy bypass + UNIRTM_/MISE_ env prefix support
 	trans.Proxy = func(req *http.Request) (*url.URL, error) {
 		if ShouldBypassProxy(req.URL.Hostname()) {
-			return nil, nil // DIRECT connection
+			return nil, nil // DIRECT connection for domestic mirrors
 		}
 
-		// Support custom UNIRTM_ and MISE_ prefixes for proxies via env.Get
+		// Resolve UNIRTM_HTTP_PROXY / MISE_HTTP_PROXY / HTTP_PROXY etc.
 		if req.URL.Scheme == "http" {
 			if v := env.Get("HTTP_PROXY"); v != "" {
 				return url.Parse(v)
@@ -41,11 +45,11 @@ func DefaultTransport() *http.Transport {
 			return url.Parse(v)
 		}
 
-		// Fallback to standard HTTP_PROXY/HTTPS_PROXY
 		return http.ProxyFromEnvironment(req)
 	}
 
-	// 2. Configure HTTP/2 Fallback
+	// 2. Optional manual HTTP/2 opt-out for environments where proxy software
+	//    corrupts HTTP/2 ALPN frames (smart auto-downgrade is handled at call sites).
 	if env.Get("HTTP2") == "0" {
 		DisableHTTP2(trans)
 	}
@@ -67,3 +71,4 @@ func NewClientWithTimeout(timeout time.Duration) *http.Client {
 		Transport: DefaultTransport(),
 	}
 }
+
