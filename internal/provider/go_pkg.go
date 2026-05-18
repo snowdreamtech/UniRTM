@@ -35,10 +35,10 @@ func (p *GoPkgProvider) Install(ctx context.Context, tool string, installPath st
 		return err
 	}
 
-	// We use the system's go to install the package.
-	goCmd, err := exec.LookPath("go")
+	// We use go to install the package.
+	goCmd, err := p.findGo()
 	if err != nil {
-		return NewProviderError(p.Name(), tool, version, "go is required to install go packages but was not found in PATH", err)
+		return NewProviderError(p.Name(), tool, version, "go is required to install go packages but was not found", err)
 	}
 
 	// Construct package spec: path@version
@@ -153,3 +153,38 @@ func (p *GoPkgProvider) Uninstall(ctx context.Context, tool string, installPath 
 func (p *GoPkgProvider) Verify(ctx context.Context, tool, version, path string) error {
 	return nil
 }
+
+func (p *GoPkgProvider) findGo() (string, error) {
+	// 1. Try to find a UniRTM-managed Go installation first
+	goInstallsDir := filepath.Join(env.GetInstallsDir(), "go")
+	if entries, err := os.ReadDir(goInstallsDir); err == nil {
+		var bestVer string
+		var bestPath string
+		for _, entry := range entries {
+			if entry.IsDir() {
+				verDir := filepath.Join(goInstallsDir, entry.Name())
+				candidates := []string{
+					filepath.Join(verDir, "bin", "go"),
+					filepath.Join(verDir, "bin", "go.exe"),
+					filepath.Join(verDir, "go.exe"),
+				}
+				for _, cand := range candidates {
+					if info, err := os.Stat(cand); err == nil && !info.IsDir() {
+						if bestVer == "" || entry.Name() > bestVer {
+							bestVer = entry.Name()
+							bestPath = cand
+						}
+						break
+					}
+				}
+			}
+		}
+		if bestPath != "" {
+			return bestPath, nil
+		}
+	}
+
+	// 2. Fallback to system PATH
+	return exec.LookPath("go")
+}
+
