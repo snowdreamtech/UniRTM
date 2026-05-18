@@ -159,7 +159,7 @@ var aliasSetCmd = &cobra.Command{
 
 		// 2. Load config
 		cfgPath := resolveConfigFilePath(aliasGlobal)
-		m, err := loadRawTOML(cfgPath)
+		m, err := config.LoadRawTOML(cfgPath)
 		if err != nil {
 			return err
 		}
@@ -178,7 +178,7 @@ var aliasSetCmd = &cobra.Command{
 
 		toolAliases[alias] = version
 
-		if err := saveRawTOML(cfgPath, m); err != nil {
+		if err := config.SaveRawTOML(cfgPath, m); err != nil {
 			return fmt.Errorf("failed to save alias: %w", err)
 		}
 
@@ -204,7 +204,7 @@ var aliasUnsetCmd = &cobra.Command{
 		tool, alias := args[0], args[1]
 
 		cfgPath := resolveConfigFilePath(aliasGlobal)
-		m, err := loadRawTOML(cfgPath)
+		m, err := config.LoadRawTOML(cfgPath)
 		if err != nil {
 			return err
 		}
@@ -234,7 +234,7 @@ var aliasUnsetCmd = &cobra.Command{
 			delete(m, "aliases")
 		}
 
-		if err := saveRawTOML(cfgPath, m); err != nil {
+		if err := config.SaveRawTOML(cfgPath, m); err != nil {
 			return fmt.Errorf("failed to save alias: %w", err)
 		}
 

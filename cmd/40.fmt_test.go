@@ -1,6 +1,3 @@
-// Copyright (c) 2026 SnowdreamTech. All rights reserved.
-// Licensed under the MIT License. See LICENSE file in the project root for full license information.
-
 package cmd
 
 import (
@@ -8,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,12 +17,17 @@ func TestFmtCommandStructure(t *testing.T) {
 }
 
 func TestFormatTOML_Order(t *testing.T) {
-	m := map[string]interface{}{
-		"settings": map[string]interface{}{"lockfile": true},
-		"env":      map[string]interface{}{"FOO": "bar"},
-		"tools":    map[string]interface{}{"node": "22"},
-	}
-	out, err := formatTOML(m)
+	input := `
+[settings]
+lockfile = true
+
+[env]
+FOO = "bar"
+
+[tools]
+node = "22"
+`
+	out, err := config.FormatTOML(input)
 	require.NoError(t, err)
 
 	content := string(out)
@@ -38,10 +41,11 @@ func TestFormatTOML_Order(t *testing.T) {
 }
 
 func TestFormatTOML_RoundTrip(t *testing.T) {
-	m := map[string]interface{}{
-		"env": map[string]interface{}{"NODE_ENV": "production"},
-	}
-	out, err := formatTOML(m)
+	input := `
+[env]
+NODE_ENV = "production"
+`
+	out, err := config.FormatTOML(input)
 	require.NoError(t, err)
 	assert.Contains(t, string(out), "NODE_ENV")
 }

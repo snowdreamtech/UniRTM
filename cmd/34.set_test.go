@@ -1,6 +1,3 @@
-// Copyright (c) 2026 SnowdreamTech. All rights reserved.
-// Licensed under the MIT License. See LICENSE file in the project root for full license information.
-
 package cmd
 
 import (
@@ -8,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,7 +22,7 @@ func TestUnsetCommandStructure(t *testing.T) {
 }
 
 func TestLoadRawTOML_Missing(t *testing.T) {
-	m, err := loadRawTOML("/nonexistent/path/unirtm.toml")
+	m, err := config.LoadRawTOML("/nonexistent/path/unirtm.toml")
 	require.NoError(t, err)
 	assert.NotNil(t, m)
 	assert.Empty(t, m)
@@ -35,7 +33,7 @@ func TestLoadRawTOML_Valid(t *testing.T) {
 	path := filepath.Join(tmp, "unirtm.toml")
 	require.NoError(t, os.WriteFile(path, []byte("[env]\nFOO = \"bar\"\n"), 0o644))
 
-	m, err := loadRawTOML(path)
+	m, err := config.LoadRawTOML(path)
 	require.NoError(t, err)
 	envMap, ok := m["env"].(map[string]interface{})
 	require.True(t, ok)
@@ -49,7 +47,7 @@ func TestSaveRawTOML(t *testing.T) {
 	m := map[string]interface{}{
 		"env": map[string]interface{}{"NODE_ENV": "test"},
 	}
-	require.NoError(t, saveRawTOML(path, m))
+	require.NoError(t, config.SaveRawTOML(path, m))
 
 	data, err := os.ReadFile(path)
 	require.NoError(t, err)
@@ -57,30 +55,24 @@ func TestSaveRawTOML(t *testing.T) {
 }
 
 func TestSetUnsetRoundTrip(t *testing.T) {
-	tmp := t.TempDir()
-	path := filepath.Join(tmp, "unirtm.toml")
+	content := `[tools]
+node = "20"
+`
 
 	// Set FOO=bar
-	m, _ := loadRawTOML(path)
-	envSection(m)["FOO"] = "bar"
-	require.NoError(t, saveRawTOML(path, m))
+	content = config.UpsertEnvVar(content, "FOO", "bar")
+	assert.Contains(t, content, `FOO = "bar"`)
 
-	// Reload and verify
-	m2, _ := loadRawTOML(path)
-	envMap := envSection(m2)
-	assert.Equal(t, "bar", envMap["FOO"])
+	// Set another BAZ=qux
+	content = config.UpsertEnvVar(content, "BAZ", "qux")
+	assert.Contains(t, content, `BAZ = "qux"`)
 
 	// Unset FOO
-	delete(envMap, "FOO")
-	if len(envMap) == 0 {
-		delete(m2, "env")
-	}
-	require.NoError(t, saveRawTOML(path, m2))
-
-	// Verify removed
-	m3, _ := loadRawTOML(path)
-	_, hasEnv := m3["env"]
-	assert.False(t, hasEnv)
+	var removed bool
+	content, removed = config.UnsetEnvVar(content, "FOO")
+	assert.True(t, removed)
+	assert.NotContains(t, content, `FOO = "bar"`)
+	assert.Contains(t, content, `BAZ = "qux"`)
 }
 
 func TestResolveConfigFilePath_Default(t *testing.T) {

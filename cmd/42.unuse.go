@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
@@ -79,7 +80,7 @@ func runUnuse(cmd *cobra.Command, args []string) error {
 
 	// Also update [tools] section of config file.
 	cfgPath := resolveConfigFilePath(false)
-	cfgMap, _ := loadRawTOML(cfgPath)
+	cfgMap, _ := config.LoadRawTOML(cfgPath)
 	toolsSection, _ := cfgMap["tools"].(map[string]interface{})
 	if toolsSection == nil {
 		toolsSection = make(map[string]interface{})
@@ -139,7 +140,7 @@ func runUnuse(cmd *cobra.Command, args []string) error {
 		if len(toolsSection) == 0 {
 			delete(cfgMap, "tools")
 		}
-		if err := saveRawTOML(cfgPath, cfgMap); err != nil {
+		if err := config.SaveRawTOML(cfgPath, cfgMap); err != nil {
 			formatter.Warning(fmt.Sprintf("Could not update %s: %v", cfgPath, err))
 		}
 	}

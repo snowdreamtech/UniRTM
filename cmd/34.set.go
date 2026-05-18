@@ -4,13 +4,12 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/pelletier/go-toml/v2"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
 )
@@ -87,48 +86,6 @@ func resolveConfigFilePath(global bool) string {
 	return "unirtm.toml"
 }
 
-// loadRawTOML reads a TOML file into a generic map.
-// Returns an empty map when the file does not yet exist.
-func loadRawTOML(path string) (map[string]interface{}, error) {
-	data, err := os.ReadFile(path)
-	if os.IsNotExist(err) {
-		return make(map[string]interface{}), nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("read %s: %w", path, err)
-	}
-	var m map[string]interface{}
-	if err := toml.Unmarshal(data, &m); err != nil {
-		return nil, fmt.Errorf("parse %s: %w", path, err)
-	}
-	if m == nil {
-		m = make(map[string]interface{})
-	}
-	return m, nil
-}
-
-// saveRawTOML writes a generic map to a TOML file.
-func saveRawTOML(path string, m map[string]interface{}) error {
-	var buf bytes.Buffer
-	enc := toml.NewEncoder(&buf)
-	if err := enc.Encode(m); err != nil {
-		return fmt.Errorf("encode TOML: %w", err)
-	}
-	return os.WriteFile(path, buf.Bytes(), 0o644)
-}
-
-// envSection returns (or creates) the [env] sub-map.
-func envSection(m map[string]interface{}) map[string]interface{} {
-	if raw, ok := m["env"]; ok {
-		if envMap, ok := raw.(map[string]interface{}); ok {
-			return envMap
-		}
-	}
-	envMap := make(map[string]interface{})
-	m["env"] = envMap
-	return envMap
-}
-
 // ─── set ──────────────────────────────────────────────────────────────────────
 
 func runSet(cmd *cobra.Command, args []string) error {
@@ -151,21 +108,23 @@ func runSet(cmd *cobra.Command, args []string) error {
 	}
 
 	cfgPath := resolveConfigFilePath(setGlobal)
-	m, err := loadRawTOML(cfgPath)
+	content, err := config.ReadFileOrEmpty(cfgPath)
 	if err != nil {
 		formatter.Error(fmt.Sprintf("Failed to load config: %v", err))
 		return err
 	}
 
-	envMap := envSection(m)
 	for k, v := range pairs {
-		envMap[k] = v
+		content = config.UpsertEnvVar(content, k, v)
 	}
 
-	if err := saveRawTOML(cfgPath, m); err != nil {
+	if err := os.WriteFile(cfgPath, []byte(content), 0o644); err != nil {
 		formatter.Error(fmt.Sprintf("Failed to save config: %v", err))
 		return err
 	}
+	
+	// Apply canonical format and taplo formatting to ensure correct block order
+	_, _ = config.FormatFile(cfgPath, false)
 
 	for k, v := range pairs {
 		formatter.Success(fmt.Sprintf("Set %s=%s in %s", k, v, cfgPath), nil)
@@ -185,29 +144,32 @@ func runUnset(cmd *cobra.Command, args []string) error {
 	})
 
 	cfgPath := resolveConfigFilePath(setGlobal)
-	m, err := loadRawTOML(cfgPath)
+	content, err := config.ReadFileOrEmpty(cfgPath)
 	if err != nil {
 		formatter.Error(fmt.Sprintf("Failed to load config: %v", err))
 		return err
 	}
 
-	envMap := envSection(m)
+	anyRemoved := false
 	for _, key := range args {
-		if _, exists := envMap[key]; !exists {
+		var removed bool
+		content, removed = config.UnsetEnvVar(content, key)
+		if removed {
+			anyRemoved = true
+			formatter.Success(fmt.Sprintf("Unset %s from %s", key, cfgPath), nil)
+		} else {
 			formatter.Warning(fmt.Sprintf("Key %q not found in [env] of %s", key, cfgPath))
-			continue
 		}
-		delete(envMap, key)
-		formatter.Success(fmt.Sprintf("Unset %s from %s", key, cfgPath), nil)
 	}
 
-	if len(envMap) == 0 {
-		delete(m, "env")
-	}
-
-	if err := saveRawTOML(cfgPath, m); err != nil {
-		formatter.Error(fmt.Sprintf("Failed to save config: %v", err))
-		return err
+	if anyRemoved {
+		if err := os.WriteFile(cfgPath, []byte(content), 0o644); err != nil {
+			formatter.Error(fmt.Sprintf("Failed to save config: %v", err))
+			return err
+		}
+		
+		// Apply canonical format and taplo formatting
+		_, _ = config.FormatFile(cfgPath, false)
 	}
 	return nil
 }

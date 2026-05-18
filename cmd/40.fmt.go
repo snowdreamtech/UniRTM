@@ -4,15 +4,13 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
-	"github.com/pelletier/go-toml/v2"
 	"github.com/pterm/pterm"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -55,16 +53,6 @@ Examples:
   unirtm fmt --check`,
 	Args: cobra.NoArgs,
 	RunE: runFmt,
-}
-
-// canonicalSectionOrder defines the preferred top-level key order in unirtm.toml.
-var canonicalSectionOrder = []string{
-	"env",
-	"tools",
-	"tasks",
-	"settings",
-	"plugins",
-	"alias",
 }
 
 func runFmt(cmd *cobra.Command, args []string) error {
@@ -116,7 +104,7 @@ func runFmt(cmd *cobra.Command, args []string) error {
 
 	var modifiedCount, errorCount int
 	for _, path := range files {
-		isModified, err := formatFile(path)
+		isModified, err := config.FormatFile(path, fmtCheck)
 		if err != nil {
 			pterm.Error.Prefix = pterm.Prefix{Text: "FAILED", Style: pterm.NewStyle(pterm.BgRed, pterm.FgWhite)}
 			pterm.Error.Printf("%s: %v\n", path, err)
@@ -156,74 +144,4 @@ func runFmt(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-}
-
-func formatFile(path string) (bool, error) {
-	original, err := os.ReadFile(path)
-	if err != nil {
-		return false, err
-	}
-
-	var formatted []byte
-	if strings.HasSuffix(path, ".toml") {
-		var m map[string]interface{}
-		if err := toml.Unmarshal(original, &m); err != nil {
-			return false, fmt.Errorf("parse TOML: %w", err)
-		}
-		if m == nil {
-			m = make(map[string]interface{})
-		}
-		formatted, err = formatTOML(m)
-		if err != nil {
-			return false, fmt.Errorf("format TOML: %w", err)
-		}
-	} else {
-		// Just trim whitespace for other files for now
-		formatted = []byte(strings.TrimSpace(string(original)) + "\n")
-	}
-
-	if bytes.Equal(original, formatted) {
-		return false, nil
-	}
-
-	if !fmtCheck {
-		if err := os.WriteFile(path, formatted, 0o644); err != nil {
-			return false, err
-		}
-	}
-
-	return true, nil
-}
-
-func formatTOML(m map[string]interface{}) ([]byte, error) {
-	ordered := make([]string, 0, len(m))
-	inCanonical := make(map[string]bool)
-	for _, k := range canonicalSectionOrder {
-		if _, ok := m[k]; ok {
-			ordered = append(ordered, k)
-			inCanonical[k] = true
-		}
-	}
-	rest := make([]string, 0)
-	for k := range m {
-		if !inCanonical[k] {
-			rest = append(rest, k)
-		}
-	}
-	sort.Strings(rest)
-	ordered = append(ordered, rest...)
-
-	var buf bytes.Buffer
-	for i, k := range ordered {
-		single := map[string]interface{}{k: m[k]}
-		enc := toml.NewEncoder(&buf)
-		// Custom formatting: Ensure top-level indentation is nice
-		if err := enc.Encode(single); err != nil {
-			return nil, err
-		}
-		if i < len(ordered)-1 {
-			buf.WriteByte('\n')
-		}
-	}
-	return buf.Bytes(), nil
 }

@@ -166,20 +166,23 @@ func runUse(cmd *cobra.Command, args []string) error {
 	}
 
 	// Read existing content or create empty
-	content, err := readFileOrEmpty(configFile)
+	content, err := config.ReadFileOrEmpty(configFile)
 	if err != nil {
 		return fmt.Errorf("read config file: %w", err)
 	}
 
 	// Apply each tool@version into the [tools] section
 	for _, p := range pairs {
-		content = upsertToolVersion(content, p.key, p.version)
+		content = config.UpsertToolVersion(content, p.key, p.version)
 	}
 
 	// Write back
 	if err := os.WriteFile(configFile, []byte(content), 0644); err != nil {
 		return fmt.Errorf("write config file %s: %w", configFile, err)
 	}
+
+	// Apply canonical format and taplo formatting to ensure correct block order
+	_, _ = config.FormatFile(configFile, false)
 
 	for _, p := range pairs {
 		formatter.Success(fmt.Sprintf("Set %s = %q in %s", p.key, p.version, configFile), map[string]interface{}{
@@ -202,81 +205,4 @@ func findOrCreateConfigFile(dir string) string {
 		}
 	}
 	return filepath.Join(dir, "unirtm.toml")
-}
-
-// readFileOrEmpty reads a file content or returns an empty string if the file doesn't exist.
-func readFileOrEmpty(path string) (string, error) {
-	data, err := os.ReadFile(path)
-	if os.IsNotExist(err) {
-		return "", nil
-	}
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
-}
-
-// upsertToolVersion adds or updates a tool version entry in the TOML [tools] section.
-// It handles three cases:
-//  1. [tools] section exists with this tool key → update the version
-//  2. [tools] section exists but tool key is missing → append entry
-//  3. No [tools] section → append the whole section
-func upsertToolVersion(content, tool, version string) string {
-	lines := strings.Split(content, "\n")
-	newEntry := fmt.Sprintf("%s = %q", tool, version)
-
-	// Look for [tools] section
-	inTools := false
-	toolsStart := -1
-	toolsEnd := -1
-	toolLineIdx := -1
-
-	for i, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "[tools]" {
-			inTools = true
-			toolsStart = i
-			continue
-		}
-		if inTools {
-			if strings.HasPrefix(trimmed, "[") && trimmed != "[tools]" {
-				// New section started
-				toolsEnd = i
-				inTools = false
-				break
-			}
-			if strings.HasPrefix(trimmed, tool+"=") || strings.HasPrefix(trimmed, tool+" =") {
-				toolLineIdx = i
-			}
-		}
-	}
-	if inTools {
-		toolsEnd = len(lines)
-	}
-
-	if toolsStart == -1 {
-		// No [tools] section — append it
-		if content != "" && !strings.HasSuffix(content, "\n") {
-			content += "\n"
-		}
-		content += "\n[tools]\n" + newEntry + "\n"
-		return content
-	}
-
-	if toolLineIdx != -1 {
-		// Update existing line
-		lines[toolLineIdx] = newEntry
-		return strings.Join(lines, "\n")
-	}
-
-	// Insert before toolsEnd
-	insertAt := toolsEnd
-	if inTools || toolsEnd == len(lines) {
-		insertAt = toolsEnd
-	}
-	newLines := make([]string, 0, len(lines)+1)
-	newLines = append(newLines, lines[:insertAt]...)
-	newLines = append(newLines, newEntry)
-	newLines = append(newLines, lines[insertAt:]...)
-	return strings.Join(newLines, "\n")
 }
