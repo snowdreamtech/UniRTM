@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
@@ -30,9 +31,9 @@ func (p *CondaProvider) Install(ctx context.Context, tool string, installPath st
 		return err
 	}
 
-	condaCmd, err := exec.LookPath("conda")
+	condaCmd, err := p.findConda()
 	if err != nil {
-		return NewProviderError(p.Name(), tool, version, "conda is required to install conda packages but was not found in PATH", err)
+		return NewProviderError(p.Name(), tool, version, "conda is required to install conda packages but was not found", err)
 	}
 
 	logger.Debug("Installing Conda package", map[string]interface{}{"tool": tool, "version": version, "installDir": installPath})
@@ -131,3 +132,43 @@ func (p *CondaProvider) GetEnvVars(tool string, installPath string, version stri
 func (p *CondaProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
+
+func (p *CondaProvider) findConda() (string, error) {
+	// 1. Try to find a UniRTM-managed Conda/Miniconda installation first
+	// Conda tool could be named conda or miniconda
+	condaTools := []string{"conda", "miniconda"}
+	for _, toolName := range condaTools {
+		condaInstallsDir := filepath.Join(env.GetInstallsDir(), toolName)
+		if entries, err := os.ReadDir(condaInstallsDir); err == nil {
+			var bestVer string
+			var bestPath string
+			for _, entry := range entries {
+				if entry.IsDir() {
+					verDir := filepath.Join(condaInstallsDir, entry.Name())
+					candidates := []string{
+						filepath.Join(verDir, "bin", "conda"),
+						filepath.Join(verDir, "conda"),
+						filepath.Join(verDir, "conda.exe"),
+						filepath.Join(verDir, "Scripts", "conda.exe"),
+					}
+					for _, cand := range candidates {
+						if info, err := os.Stat(cand); err == nil && !info.IsDir() {
+							if bestVer == "" || entry.Name() > bestVer {
+								bestVer = entry.Name()
+								bestPath = cand
+							}
+							break
+						}
+					}
+				}
+			}
+			if bestPath != "" {
+				return bestPath, nil
+			}
+		}
+	}
+
+	// 2. Fallback to system PATH
+	return exec.LookPath("conda")
+}
+
