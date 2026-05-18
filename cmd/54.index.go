@@ -73,11 +73,6 @@ func runIndexUpdate(cmd *cobra.Command, args []string) error {
 		Verbose: verbose,
 	})
 
-	pterm.DefaultHeader.WithFullWidth().
-		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
-		WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
-		Println("UniRTM Tool Index Update")
-
 	ctx := context.Background()
 
 	dbPath := env.GetDatabasePath()
@@ -230,11 +225,6 @@ func runIndexClear(cmd *cobra.Command, args []string) error {
 		Quiet:   quiet,
 		Verbose: verbose,
 	})
-
-	pterm.DefaultHeader.WithFullWidth().
-		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
-		WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
-		Println("UniRTM Tool Index Clear")
 
 	ctx := context.Background()
 
