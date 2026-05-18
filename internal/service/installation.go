@@ -31,11 +31,15 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/transaction"
 )
 
+// ProgressReporter is a callback for concurrent download progress reporting.
+type ProgressReporter func(tool string, downloaded, total int64)
+
 // ContextKey represents key types for context values.
 type ContextKey string
 
 const (
-	ContextKeyQuietProgress ContextKey = "quietProgress"
+	ContextKeyQuietProgress    ContextKey = "quietProgress"
+	ContextKeyProgressReporter ContextKey = "concurrentProgressReporter"
 )
 
 // ErrAlreadyInstalled is returned when a tool version is already installed.
@@ -415,6 +419,9 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 		opts.ProgressCallback = func(downloaded, total int64) {
 			if quietProgress {
+				if reporter, ok := ctx.Value(ContextKeyProgressReporter).(ProgressReporter); ok {
+					reporter(tool, downloaded, total)
+				}
 				return
 			}
 			progressMutex.Lock()

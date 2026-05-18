@@ -10,8 +10,10 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
@@ -316,25 +318,88 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		}
 
 		// 2. Create ConcurrentManager
+		var (
+			spinners   = make(map[string]*pterm.SpinnerPrinter)
+			spinnersMu sync.Mutex
+			multi      *pterm.MultiPrinter
+			useMulti   = pterm.PrintColor && pterm.RawOutput && !jsonOutput
+		)
+
+		if useMulti {
+			multi = &pterm.DefaultMultiPrinter
+			go func() {
+				_, _ = multi.Start()
+			}()
+		}
+
 		progressFn := func(tool, version, status string) {
 			if jsonOutput {
 				return
 			}
 			switch status {
 			case "starting":
-				pterm.Info.Printf("Starting installation of %s@%s...\n", tool, version)
+				if useMulti {
+					spinnersMu.Lock()
+					spinner, _ := pterm.DefaultSpinner.
+						WithWriter(multi.NewWriter()).
+						Start(fmt.Sprintf("Installing %s@%s...", tool, version))
+					spinners[tool] = spinner
+					spinnersMu.Unlock()
+				} else {
+					pterm.Info.Printf("Starting installation of %s@%s...\n", tool, version)
+				}
 			case "done":
-				pterm.FgGreen.Printf("✓ Successfully installed %s@%s\n", tool, version)
+				if useMulti {
+					spinnersMu.Lock()
+					spinner, exists := spinners[tool]
+					spinnersMu.Unlock()
+					if exists && spinner != nil {
+						spinner.Success(fmt.Sprintf("Successfully installed %s@%s", tool, version))
+					}
+				} else {
+					pterm.FgGreen.Printf("✓ Successfully installed %s@%s\n", tool, version)
+				}
 			default:
 				if strings.HasPrefix(status, "failed:") {
 					errMsg := strings.TrimPrefix(status, "failed: ")
 					if errMsg == service.ErrAlreadyInstalled.Error() || strings.Contains(errMsg, "already installed") {
-						pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", tool, version)
+						if useMulti {
+							spinnersMu.Lock()
+							spinner, exists := spinners[tool]
+							spinnersMu.Unlock()
+							if exists && spinner != nil {
+								spinner.Success(fmt.Sprintf("%s@%s (already installed)", tool, version))
+							} else {
+								pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", tool, version)
+							}
+						} else {
+							pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", tool, version)
+						}
 					} else {
-						pterm.Error.Printf("Failed to install %s@%s: %s\n", tool, version, errMsg)
+						if useMulti {
+							spinnersMu.Lock()
+							spinner, exists := spinners[tool]
+							spinnersMu.Unlock()
+							if exists && spinner != nil {
+								spinner.Fail(fmt.Sprintf("Failed to install %s@%s: %s", tool, version, errMsg))
+							} else {
+								pterm.Error.Printf("Failed to install %s@%s: %s\n", tool, version, errMsg)
+							}
+						} else {
+							pterm.Error.Printf("Failed to install %s@%s: %s\n", tool, version, errMsg)
+						}
 					}
 				} else {
-					pterm.Info.Printf("%s@%s: %s\n", tool, version, status)
+					if useMulti {
+						spinnersMu.Lock()
+						spinner, exists := spinners[tool]
+						spinnersMu.Unlock()
+						if exists && spinner != nil {
+							spinner.UpdateText(fmt.Sprintf("%s@%s: %s", tool, version, status))
+						}
+					} else {
+						pterm.Info.Printf("%s@%s: %s\n", tool, version, status)
+					}
 				}
 			}
 		}
@@ -344,6 +409,30 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			ProgressFn:     progressFn,
 		}
 		cm := service.NewConcurrentManager(installManager, concurrentConfig)
+
+		// Set up ProgressReporter for live concurrent download updates
+		if useMulti {
+			reporter := func(toolName string, downloaded, total int64) {
+				spinnersMu.Lock()
+				spinner, exists := spinners[toolName]
+				spinnersMu.Unlock()
+				if exists && spinner != nil {
+					if total > 0 {
+						percent := (downloaded * 100) / total
+						spinner.UpdateText(fmt.Sprintf("Downloading %s: %s/%s (%d%%)", 
+							toolName, 
+							humanize.Bytes(uint64(downloaded)), 
+							humanize.Bytes(uint64(total)), 
+							percent))
+					} else {
+						spinner.UpdateText(fmt.Sprintf("Downloading %s: %s", 
+							toolName, 
+							humanize.Bytes(uint64(downloaded))))
+					}
+				}
+			}
+			ctx = context.WithValue(ctx, service.ContextKeyProgressReporter, service.ProgressReporter(reporter))
+		}
 
 		// 3. Execute installation
 		startTime := time.Now()
