@@ -169,4 +169,3 @@ func (p *NpmProvider) findNpm() (string, error) {
 	// 2. Fallback to system PATH
 	return exec.LookPath("npm")
 }
-

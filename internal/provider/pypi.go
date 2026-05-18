@@ -264,4 +264,3 @@ func (p *PypiProvider) findPython() (string, error) {
 	}
 	return "", fmt.Errorf("python not found in PATH")
 }
-

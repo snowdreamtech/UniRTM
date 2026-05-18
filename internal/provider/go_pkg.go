@@ -187,4 +187,3 @@ func (p *GoPkgProvider) findGo() (string, error) {
 	// 2. Fallback to system PATH
 	return exec.LookPath("go")
 }
-

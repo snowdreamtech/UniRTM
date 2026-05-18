@@ -159,4 +159,3 @@ func (p *CargoProvider) findCargo() (string, error) {
 	// 2. Fallback to system PATH
 	return exec.LookPath("cargo")
 }
-
