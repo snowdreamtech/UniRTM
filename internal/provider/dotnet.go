@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
@@ -29,9 +30,9 @@ func (p *DotnetProvider) Install(ctx context.Context, tool string, installPath s
 	if err := os.MkdirAll(installPath, 0755); err != nil {
 	}
 
-	dotnetCmd, err := exec.LookPath("dotnet")
+	dotnetCmd, err := p.findDotnet()
 	if err != nil {
-		return NewProviderError(p.Name(), tool, version, "dotnet is required to install .NET tools but was not found in PATH", err)
+		return NewProviderError(p.Name(), tool, version, "dotnet is required to install .NET tools but was not found", err)
 	}
 
 	logger.Debug("Installing .NET tool", map[string]interface{}{"tool": tool, "version": version, "installDir": installPath})
@@ -115,3 +116,38 @@ func (p *DotnetProvider) GetEnvVars(tool string, installPath string, version str
 func (p *DotnetProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
+
+func (p *DotnetProvider) findDotnet() (string, error) {
+	// 1. Try to find a UniRTM-managed .NET installation first
+	dotnetInstallsDir := filepath.Join(env.GetInstallsDir(), "dotnet")
+	if entries, err := os.ReadDir(dotnetInstallsDir); err == nil {
+		var bestVer string
+		var bestPath string
+		for _, entry := range entries {
+			if entry.IsDir() {
+				verDir := filepath.Join(dotnetInstallsDir, entry.Name())
+				candidates := []string{
+					filepath.Join(verDir, "bin", "dotnet"),
+					filepath.Join(verDir, "dotnet"),
+					filepath.Join(verDir, "dotnet.exe"),
+				}
+				for _, cand := range candidates {
+					if info, err := os.Stat(cand); err == nil && !info.IsDir() {
+						if bestVer == "" || entry.Name() > bestVer {
+							bestVer = entry.Name()
+							bestPath = cand
+						}
+						break
+					}
+				}
+			}
+		}
+		if bestPath != "" {
+			return bestPath, nil
+		}
+	}
+
+	// 2. Fallback to system PATH
+	return exec.LookPath("dotnet")
+}
+
