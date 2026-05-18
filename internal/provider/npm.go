@@ -33,11 +33,10 @@ func (p *NpmProvider) Install(ctx context.Context, tool string, installPath stri
 		return err
 	}
 
-	// We use the system's npm to install the package globally into the specific prefix.
-	// This requires npm to be available in PATH.
-	npmCmd, err := exec.LookPath("npm")
+	// We use npm to install the package globally into the specific prefix.
+	npmCmd, err := p.findNpm()
 	if err != nil {
-		return NewProviderError(p.Name(), tool, version, "npm is required to install npm packages but was not found in PATH", err)
+		return NewProviderError(p.Name(), tool, version, "npm is required to install npm packages but was not found", err)
 	}
 
 	pkgSpec := fmt.Sprintf("%s@%s", tool, version)
@@ -136,3 +135,38 @@ func (p *NpmProvider) Uninstall(ctx context.Context, tool string, installPath st
 	// Let UniRTM delete the directory
 	return nil
 }
+
+func (p *NpmProvider) findNpm() (string, error) {
+	// 1. Try to find a UniRTM-managed Node/npm installation first
+	nodeInstallsDir := filepath.Join(env.GetInstallsDir(), "node")
+	if entries, err := os.ReadDir(nodeInstallsDir); err == nil {
+		var bestVer string
+		var bestPath string
+		for _, entry := range entries {
+			if entry.IsDir() {
+				verDir := filepath.Join(nodeInstallsDir, entry.Name())
+				candidates := []string{
+					filepath.Join(verDir, "bin", "npm"),
+					filepath.Join(verDir, "npm"),
+					filepath.Join(verDir, "npm.cmd"),
+				}
+				for _, cand := range candidates {
+					if info, err := os.Stat(cand); err == nil && !info.IsDir() {
+						if bestVer == "" || entry.Name() > bestVer {
+							bestVer = entry.Name()
+							bestPath = cand
+						}
+						break
+					}
+				}
+			}
+		}
+		if bestPath != "" {
+			return bestPath, nil
+		}
+	}
+
+	// 2. Fallback to system PATH
+	return exec.LookPath("npm")
+}
+
