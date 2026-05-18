@@ -168,7 +168,7 @@ func runIndexStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	pterm.DefaultHeader.WithFullWidth().
-		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightCyan)).
+		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
 		WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
 		Println("UniRTM Local Tool Index Status")
 
