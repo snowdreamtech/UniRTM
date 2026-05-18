@@ -64,11 +64,7 @@ func runEdit(cmd *cobra.Command, args []string) error {
 	cfg, _ := config.Load()
 	editor, source := getBestEditorWithSource(cfg)
 
-	// Show editor info in header
-	pterm.DefaultHeader.WithFullWidth().
-		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
-		WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
-		Printf("UniRTM Config Editor (using %s via %s)\n", pterm.Bold.Sprint(editor), source)
+	pterm.Info.Printf("Opening configuration editor (using %s via %s)...\n", pterm.Bold.Sprint(editor), source)
 
 	// Add a tip if we are using a fallback/system default
 	if source == "system default" || source == "fallback" {

@@ -234,8 +234,8 @@ type envVarEntry struct {
 
 func runEnvInfoWithStyle() error {
 	pterm.DefaultHeader.WithFullWidth().
-		WithBackgroundStyle(pterm.NewStyle(pterm.BgGray)).
-		WithTextStyle(pterm.NewStyle(pterm.FgWhite)).
+		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
+		WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
 		Println("UniRTM Build & Version Info")
 
 	data := [][]string{

@@ -56,8 +56,7 @@ Examples:
 }
 
 func runFmt(cmd *cobra.Command, args []string) error {
-	pterm.DefaultHeader.WithFullWidth().WithBackgroundStyle(pterm.NewStyle(pterm.BgCyan)).WithTextStyle(pterm.NewStyle(pterm.FgBlack)).Println("UniRTM Formatter")
-	fmt.Println()
+	// Transactional command: Keep it clean and quiet without the verbose header
 
 	spinner, _ := pterm.DefaultSpinner.Start("Scanning configuration files...")
 

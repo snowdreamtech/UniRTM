@@ -11,14 +11,12 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 )
 
 func init() {
@@ -143,15 +141,6 @@ func runBinPaths(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput
-	if isTerminal {
-		pterm.DefaultHeader.
-			WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
-			WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
-			WithMargin(10).
-			Println("UniRTM Active Bin Paths")
-	}
-
 	if jsonOutput {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
@@ -159,11 +148,7 @@ func runBinPaths(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, p := range paths {
-		if isTerminal {
-			pterm.Println(pterm.FgGray.Sprint(p))
-		} else {
-			fmt.Println(p)
-		}
+		fmt.Println(p)
 	}
 	return nil
 }
