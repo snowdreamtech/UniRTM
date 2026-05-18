@@ -34,12 +34,9 @@ import (
 // ProgressReporter is a callback for concurrent download progress reporting.
 type ProgressReporter func(tool string, downloaded, total int64)
 
-// ContextKey represents key types for context values.
-type ContextKey string
-
 const (
-	ContextKeyQuietProgress    ContextKey = "quietProgress"
-	ContextKeyProgressReporter ContextKey = "concurrentProgressReporter"
+	ContextKeyQuietProgress    = "quietProgress"
+	ContextKeyProgressReporter = "concurrentProgressReporter"
 )
 
 // ErrAlreadyInstalled is returned when a tool version is already installed.
@@ -674,13 +671,17 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 	p := im.providerRegistry.GetWithBackend(tool, backendName)
 
-	fmt.Printf("ℹ extracting %s@%s...\n", tool, version)
+	if !quietProgress {
+		fmt.Printf("ℹ extracting %s@%s...\n", tool, version)
+	}
 	if err := p.Install(ctx, tool, tmpInstallPath, downloadPath, version); err != nil {
 		os.RemoveAll(tmpInstallPath)
 		return fmt.Errorf("installation failed: %w", err)
 	}
 
-	fmt.Printf("ℹ running post-install hooks for %s@%s...\n", tool, version)
+	if !quietProgress {
+		fmt.Printf("ℹ running post-install hooks for %s@%s...\n", tool, version)
+	}
 	if err := p.PostInstall(ctx, tool, tmpInstallPath, version); err != nil {
 		os.RemoveAll(tmpInstallPath)
 		return fmt.Errorf("post-install failed: %w", err)
@@ -692,7 +693,9 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		return fmt.Errorf("failed to finalize installation: %w", err)
 	}
 
-	fmt.Printf("ℹ recording %s@%s to database...\n", tool, version)
+	if !quietProgress {
+		fmt.Printf("ℹ recording %s@%s to database...\n", tool, version)
+	}
 	// Record installation
 	installation := &repository.Installation{
 		Tool:        tool,

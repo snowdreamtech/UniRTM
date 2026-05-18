@@ -61,9 +61,11 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 	} else {
 		// 3. Flatten the directory if it contains only one top-level directory
 		// This must happen BEFORE creating the bin directory.
-		if err := g.flattenDirectory(installPath); err != nil {
+		if err := g.flattenDirectory(ctx, installPath); err != nil {
 			// Log error but continue, not a fatal failure
-			fmt.Printf("⚠️  failed to flatten directory: %v\n", err)
+			if ctx == nil || ctx.Value("quietProgress") != true {
+				fmt.Printf("⚠️  failed to flatten directory: %v\n", err)
+			}
 		}
 
 		// 3.1 Relativize all symlinks in the extracted directory.
@@ -72,7 +74,9 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 		// relative paths so they remain valid after the atomic rename from
 		// .unirtm-tmp to the final versioned path.
 		if err := g.relativizeAllSymlinks(installPath); err != nil {
-			fmt.Printf("⚠️  failed to relativize symlinks: %v\n", err)
+			if ctx == nil || ctx.Value("quietProgress") != true {
+				fmt.Printf("⚠️  failed to relativize symlinks: %v\n", err)
+			}
 		}
 
 		// 3.5 Validate security (Zip Slip, dangerous symlinks)
@@ -652,20 +656,31 @@ func (g *GenericProvider) extractTar(r io.Reader, dstDir string) error {
 
 // flattenDirectory checks if the directory contains only one sub-directory and no files.
 // If so, it moves everything from that sub-directory up one level.
-func (g *GenericProvider) flattenDirectory(dir string) error {
+func (g *GenericProvider) flattenDirectory(ctx context.Context, dir string) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return err
 	}
 
+	quietProgress := false
+	if ctx != nil {
+		if val, ok := ctx.Value("quietProgress").(bool); ok && val {
+			quietProgress = true
+		}
+	}
+
 	// Filter out hidden files (like .DS_Store) and metadata directories
 	var visibleEntries []os.DirEntry
-	fmt.Printf("ℹ checking directory content for flattening: %s\n", dir)
+	if !quietProgress {
+		fmt.Printf("ℹ checking directory content for flattening: %s\n", dir)
+	}
 	for _, entry := range entries {
 		name := entry.Name()
 		if !strings.HasPrefix(name, ".") && name != "__MACOSX" {
 			visibleEntries = append(visibleEntries, entry)
-			fmt.Printf("  - found: %s (isDir: %v)\n", name, entry.IsDir())
+			if !quietProgress {
+				fmt.Printf("  - found: %s (isDir: %v)\n", name, entry.IsDir())
+			}
 		}
 	}
 
@@ -686,7 +701,9 @@ func (g *GenericProvider) flattenDirectory(dir string) error {
 			return nil
 		}
 
-		fmt.Printf("ℹ flattening redundant directory: %s\n", subDirName)
+		if !quietProgress {
+			fmt.Printf("ℹ flattening redundant directory: %s\n", subDirName)
+		}
 		subDir := filepath.Join(dir, subDirName)
 		subEntries, err := os.ReadDir(subDir)
 		if err != nil {
@@ -712,11 +729,13 @@ func (g *GenericProvider) flattenDirectory(dir string) error {
 		// Remove the now-empty subDir
 		if err := os.Remove(subDir); err != nil {
 			// If removal fails, it might not be empty (hidden files?), just log and continue
-			fmt.Printf("⚠️  failed to remove empty directory %s: %v\n", subDir, err)
+			if !quietProgress {
+				fmt.Printf("⚠️  failed to remove empty directory %s: %v\n", subDir, err)
+			}
 		}
 
 		// Recursive call to handle double-nested directories (e.g. tool-v1/tool-v1/bin)
-		return g.flattenDirectory(dir)
+		return g.flattenDirectory(ctx, dir)
 	}
 
 	return nil
