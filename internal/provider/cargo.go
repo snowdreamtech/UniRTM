@@ -32,11 +32,10 @@ func (p *CargoProvider) Install(ctx context.Context, tool string, installPath st
 		return err
 	}
 
-	// We use the system's cargo to install the package globally into the specific prefix.
-	// This requires cargo to be available in PATH.
-	cargoCmd, err := exec.LookPath("cargo")
+	// We use cargo to install the package globally into the specific prefix.
+	cargoCmd, err := p.findCargo()
 	if err != nil {
-		return NewProviderError(p.Name(), tool, version, "cargo is required to install crates but was not found in PATH", err)
+		return NewProviderError(p.Name(), tool, version, "cargo is required to install crates but was not found", err)
 	}
 
 	logger.Debug("Installing cargo crate", map[string]interface{}{"crate": tool, "version": version, "root": installPath})
@@ -126,3 +125,38 @@ func (p *CargoProvider) Uninstall(ctx context.Context, tool string, installPath 
 	// Let UniRTM delete the directory
 	return nil
 }
+
+func (p *CargoProvider) findCargo() (string, error) {
+	// 1. Try to find a UniRTM-managed Rust/Cargo installation first
+	rustInstallsDir := filepath.Join(env.GetInstallsDir(), "rust")
+	if entries, err := os.ReadDir(rustInstallsDir); err == nil {
+		var bestVer string
+		var bestPath string
+		for _, entry := range entries {
+			if entry.IsDir() {
+				verDir := filepath.Join(rustInstallsDir, entry.Name())
+				candidates := []string{
+					filepath.Join(verDir, "bin", "cargo"),
+					filepath.Join(verDir, "bin", "cargo.exe"),
+					filepath.Join(verDir, "cargo.exe"),
+				}
+				for _, cand := range candidates {
+					if info, err := os.Stat(cand); err == nil && !info.IsDir() {
+						if bestVer == "" || entry.Name() > bestVer {
+							bestVer = entry.Name()
+							bestPath = cand
+						}
+						break
+					}
+				}
+			}
+		}
+		if bestPath != "" {
+			return bestPath, nil
+		}
+	}
+
+	// 2. Fallback to system PATH
+	return exec.LookPath("cargo")
+}
+
