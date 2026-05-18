@@ -378,7 +378,7 @@ func TestGenerateHookEnvScript_Bash(t *testing.T) {
 	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
-	script, err := autoMgr.GenerateHookEnvScript(ShellBash)
+	script, err := autoMgr.GenerateHookEnvScript(ShellBash, "/usr/local/bin/unirtm")
 	require.NoError(t, err)
 
 	assert.Contains(t, script, "# UniRTM auto-activation hook")
@@ -392,7 +392,7 @@ func TestGenerateHookEnvScript_Zsh(t *testing.T) {
 	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
-	script, err := autoMgr.GenerateHookEnvScript(ShellZsh)
+	script, err := autoMgr.GenerateHookEnvScript(ShellZsh, "/usr/local/bin/unirtm")
 	require.NoError(t, err)
 
 	assert.Contains(t, script, "# UniRTM auto-activation hook")
@@ -406,7 +406,7 @@ func TestGenerateHookEnvScript_Fish(t *testing.T) {
 	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
-	script, err := autoMgr.GenerateHookEnvScript(ShellFish)
+	script, err := autoMgr.GenerateHookEnvScript(ShellFish, "/usr/local/bin/unirtm")
 	require.NoError(t, err)
 
 	assert.Contains(t, script, "# UniRTM auto-activation hook for fish")
@@ -418,7 +418,7 @@ func TestGenerateHookEnvScript_PowerShell(t *testing.T) {
 	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
-	script, err := autoMgr.GenerateHookEnvScript(ShellPowerShell)
+	script, err := autoMgr.GenerateHookEnvScript(ShellPowerShell, "/usr/local/bin/unirtm")
 	require.NoError(t, err)
 
 	assert.Contains(t, script, "# UniRTM auto-activation hook for PowerShell")
@@ -432,7 +432,7 @@ func TestGenerateHookEnvScript_UnsupportedShell(t *testing.T) {
 	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
-	_, err := autoMgr.GenerateHookEnvScript("unsupported")
+	_, err := autoMgr.GenerateHookEnvScript("unsupported", "/usr/local/bin/unirtm")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported shell type")
 }

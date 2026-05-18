@@ -18,7 +18,7 @@ func TestDenoProvider_Name(t *testing.T) {
 func TestDenoProvider_DetectVersion(t *testing.T) {
 	p := NewDenoProvider()
 	ctx := context.Background()
-	version, err := p.DetectVersion(ctx, "/tmp/unirtm/deno/1.37.0")
+	version, err := p.DetectVersion(ctx, "deno", "/tmp/unirtm/deno/1.37.0")
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}

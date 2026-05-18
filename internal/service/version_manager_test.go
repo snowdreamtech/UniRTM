@@ -27,6 +27,34 @@ func (m *mockBackend) Name() string {
 	return m.name
 }
 
+func (m *mockBackend) AttestationType() string {
+	return ""
+}
+
+func (m *mockBackend) Dependencies() []string {
+	return nil
+}
+
+func (m *mockBackend) GetReach() string {
+	return ""
+}
+
+func (m *mockBackend) IsRecommended() bool {
+	return false
+}
+
+func (m *mockBackend) IsScriptless() bool {
+	return false
+}
+
+func (m *mockBackend) IsStable() bool {
+	return true
+}
+
+func (m *mockBackend) SupportsOffline() bool {
+	return false
+}
+
 func (m *mockBackend) ListVersions(ctx context.Context, tool string, platform backend.Platform) ([]backend.VersionInfo, error) {
 	if m.listVersionsFunc != nil {
 		return m.listVersionsFunc(ctx, tool, platform)

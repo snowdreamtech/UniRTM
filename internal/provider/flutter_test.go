@@ -18,7 +18,7 @@ func TestFlutterProvider_Name(t *testing.T) {
 func TestFlutterProvider_DetectVersion(t *testing.T) {
 	p := NewFlutterProvider()
 	ctx := context.Background()
-	version, err := p.DetectVersion(ctx, "/tmp/unirtm/flutter/3.13.0")
+	version, err := p.DetectVersion(ctx, "flutter", "/tmp/unirtm/flutter/3.13.0")
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}

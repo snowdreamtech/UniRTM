@@ -115,7 +115,7 @@ func (r *RubyProvider) DetectVersion(ctx context.Context, tool string, installPa
 	return "", NewProviderError("ruby", "ruby", "", "failed to parse version", nil)
 }
 
-// ListExecutables returns Ruby executables relative to installPath.
+// ListExecutables returns Ruby executables.
 func (r *RubyProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	var executables []string
 
@@ -124,7 +124,7 @@ func (r *RubyProvider) ListExecutables(tool string, installPath string, version 
 	if entries, err := os.ReadDir(coreBinDir); err == nil {
 		for _, entry := range entries {
 			if !entry.IsDir() {
-				executables = append(executables, filepath.Join("bin", entry.Name()))
+				executables = append(executables, entry.Name())
 			}
 		}
 	}
@@ -138,13 +138,13 @@ func (r *RubyProvider) ListExecutables(tool string, installPath string, version 
 				// Avoid duplicates if already in bin/
 				found := false
 				for _, e := range executables {
-					if filepath.Base(e) == name {
+					if e == name {
 						found = true
 						break
 					}
 				}
 				if !found {
-					executables = append(executables, filepath.Join("gem-global", "bin", name))
+					executables = append(executables, name)
 				}
 			}
 		}

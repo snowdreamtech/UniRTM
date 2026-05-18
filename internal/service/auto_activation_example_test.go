@@ -69,7 +69,7 @@ func ExampleAutoActivationManager_GenerateHookEnvScript() {
 	autoMgr := service.NewAutoActivationManager(activationMgr)
 
 	// Generate hook script for bash
-	hookScript, err := autoMgr.GenerateHookEnvScript(service.ShellBash)
+	hookScript, err := autoMgr.GenerateHookEnvScript(service.ShellBash, "/usr/local/bin/unirtm")
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return

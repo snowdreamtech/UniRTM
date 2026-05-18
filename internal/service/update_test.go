@@ -36,6 +36,34 @@ func (m *mockUpdateBackend) Name() string {
 	return m.name
 }
 
+func (m *mockUpdateBackend) AttestationType() string {
+	return ""
+}
+
+func (m *mockUpdateBackend) Dependencies() []string {
+	return nil
+}
+
+func (m *mockUpdateBackend) GetReach() string {
+	return ""
+}
+
+func (m *mockUpdateBackend) IsRecommended() bool {
+	return false
+}
+
+func (m *mockUpdateBackend) IsScriptless() bool {
+	return false
+}
+
+func (m *mockUpdateBackend) IsStable() bool {
+	return true
+}
+
+func (m *mockUpdateBackend) SupportsOffline() bool {
+	return false
+}
+
 func (m *mockUpdateBackend) ListVersions(ctx context.Context, tool string, platform backend.Platform) ([]backend.VersionInfo, error) {
 	if m.listErr != nil {
 		return nil, m.listErr
@@ -92,28 +120,36 @@ func (m *mockProvider) Name() string {
 	return m.name
 }
 
-func (m *mockProvider) Install(ctx context.Context, installPath, artifactPath, version string) error {
+func (m *mockProvider) Install(ctx context.Context, tool string, installPath, artifactPath, version string) error {
 	return m.installErr
 }
 
-func (m *mockProvider) PostInstall(ctx context.Context, installPath, version string) error {
+func (m *mockProvider) PostInstall(ctx context.Context, tool string, installPath, version string) error {
 	return m.postInstallErr
 }
 
-func (m *mockProvider) Uninstall(ctx context.Context, installPath, version string) error {
+func (m *mockProvider) Uninstall(ctx context.Context, tool string, installPath, version string) error {
 	return m.uninstallErr
 }
 
-func (m *mockProvider) DetectVersion(ctx context.Context, installPath string) (string, error) {
+func (m *mockProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	return "", nil
 }
 
-func (m *mockProvider) GenerateShims(installPath, version string) (map[string]string, error) {
+func (m *mockProvider) GenerateShims(tool string, installPath, version string) (map[string]string, error) {
 	return map[string]string{}, nil
 }
 
-func (m *mockProvider) ListExecutables(installPath, version string) ([]string, error) {
+func (m *mockProvider) ListExecutables(tool string, installPath, version string) ([]string, error) {
 	return []string{}, nil
+}
+
+func (m *mockProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
+	return []string{}, nil
+}
+
+func (m *mockProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
+	return map[string]string{}, nil
 }
 
 type mockProviderRegistry struct {
@@ -180,6 +216,10 @@ func (m *mockInstallationRepo) Create(ctx context.Context, installation *reposit
 	key := installation.Tool + "-" + installation.Version
 	m.installations[key] = installation
 	return nil
+}
+
+func (m *mockInstallationRepo) Upsert(ctx context.Context, installation *repository.Installation) error {
+	return m.Create(ctx, installation)
 }
 
 func (m *mockInstallationRepo) FindByToolAndVersion(ctx context.Context, tool string, version string) (*repository.Installation, error) {

@@ -18,7 +18,7 @@ func TestElixirProvider_Name(t *testing.T) {
 func TestElixirProvider_DetectVersion(t *testing.T) {
 	p := NewElixirProvider()
 	ctx := context.Background()
-	version, err := p.DetectVersion(ctx, "/tmp/unirtm/elixir/1.15.4")
+	version, err := p.DetectVersion(ctx, "elixir", "/tmp/unirtm/elixir/1.15.4")
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}

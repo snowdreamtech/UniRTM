@@ -18,7 +18,7 @@ func TestBunProvider_Name(t *testing.T) {
 func TestBunProvider_DetectVersion(t *testing.T) {
 	p := NewBunProvider()
 	ctx := context.Background()
-	version, err := p.DetectVersion(ctx, "/tmp/unirtm/bun/1.0.0")
+	version, err := p.DetectVersion(ctx, "bun", "/tmp/unirtm/bun/1.0.0")
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}

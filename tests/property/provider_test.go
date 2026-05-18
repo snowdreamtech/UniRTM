@@ -33,7 +33,7 @@ func TestProperty18_ShimGenerationCompleteness(t *testing.T) {
 			installPath := "/tmp/test-install"
 
 			// Generate shims (may fail if install path doesn't exist, which is OK)
-			shims, err := p.GenerateShims(installPath, version)
+			shims, err := p.GenerateShims(providerName, installPath, version)
 			if err != nil {
 				// Shim generation failure is acceptable in property tests
 				return true

@@ -19,7 +19,7 @@ func TestCondaProvider_DetectVersion(t *testing.T) {
 	p := NewCondaProvider()
 
 	ctx := context.Background()
-	version, err := p.DetectVersion(ctx, "/fake/path/tool/1.2.3")
+	version, err := p.DetectVersion(ctx, "conda", "/fake/path/tool/1.2.3")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

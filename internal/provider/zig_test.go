@@ -18,7 +18,7 @@ func TestZigProvider_Name(t *testing.T) {
 func TestZigProvider_DetectVersion(t *testing.T) {
 	p := NewZigProvider()
 	ctx := context.Background()
-	version, err := p.DetectVersion(ctx, "/tmp/unirtm/zig/0.11.0")
+	version, err := p.DetectVersion(ctx, "zig", "/tmp/unirtm/zig/0.11.0")
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}

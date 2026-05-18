@@ -70,6 +70,34 @@ func (m *MockBackend) Name() string {
 	return m.name
 }
 
+func (m *MockBackend) AttestationType() string {
+	return ""
+}
+
+func (m *MockBackend) Dependencies() []string {
+	return nil
+}
+
+func (m *MockBackend) GetReach() string {
+	return ""
+}
+
+func (m *MockBackend) IsRecommended() bool {
+	return false
+}
+
+func (m *MockBackend) IsScriptless() bool {
+	return false
+}
+
+func (m *MockBackend) IsStable() bool {
+	return true
+}
+
+func (m *MockBackend) SupportsOffline() bool {
+	return false
+}
+
 func (m *MockBackend) ListVersions(ctx context.Context, tool string, platform backend.Platform) ([]backend.VersionInfo, error) {
 	return nil, nil
 }

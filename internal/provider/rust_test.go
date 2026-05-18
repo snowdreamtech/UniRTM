@@ -23,7 +23,7 @@ func TestRustProvider_GenerateShims(t *testing.T) {
 	installPath := "/fake/path"
 	version := "1.70.0"
 
-	shims, err := p.GenerateShims(installPath, version)
+	shims, err := p.GenerateShims("rust", installPath, version)
 	assert.NoError(t, err)
 
 	expectedExecutables := []string{"rustc", "cargo", "rustdoc", "rustfmt", "rustup"}
@@ -47,7 +47,7 @@ func TestRustProvider_GenerateShims(t *testing.T) {
 
 func TestRustProvider_ListExecutables(t *testing.T) {
 	p := NewRustProvider()
-	execs, err := p.ListExecutables("/fake/path", "1.70.0")
+	execs, err := p.ListExecutables("rust", "/fake/path", "1.70.0")
 	assert.NoError(t, err)
 
 	if runtime.GOOS == "windows" {
@@ -63,7 +63,7 @@ func TestRustProvider_DetectVersionError(t *testing.T) {
 	p := NewRustProvider()
 	ctx := context.Background()
 
-	_, err := p.DetectVersion(ctx, "/fake/nonexistent/path")
+	_, err := p.DetectVersion(ctx, "rust", "/fake/nonexistent/path")
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "failed to detect version"))
 }

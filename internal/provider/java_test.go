@@ -23,7 +23,7 @@ func TestJavaProvider_GenerateShims(t *testing.T) {
 	installPath := "/fake/path"
 	version := "17.0.0"
 
-	shims, err := p.GenerateShims(installPath, version)
+	shims, err := p.GenerateShims("java", installPath, version)
 	assert.NoError(t, err)
 
 	expectedExecutables := []string{"java", "javac", "jar", "javadoc"}
@@ -43,7 +43,7 @@ func TestJavaProvider_GenerateShims(t *testing.T) {
 
 func TestJavaProvider_ListExecutables(t *testing.T) {
 	p := NewJavaProvider()
-	execs, err := p.ListExecutables("/fake/path", "17.0.0")
+	execs, err := p.ListExecutables("java", "/fake/path", "17.0.0")
 	assert.NoError(t, err)
 
 	if runtime.GOOS == "windows" {
@@ -59,7 +59,7 @@ func TestJavaProvider_DetectVersionError(t *testing.T) {
 	p := NewJavaProvider()
 	ctx := context.Background()
 
-	_, err := p.DetectVersion(ctx, "/fake/nonexistent/path")
+	_, err := p.DetectVersion(ctx, "java", "/fake/nonexistent/path")
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "failed to detect version"))
 }

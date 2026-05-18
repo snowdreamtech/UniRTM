@@ -22,7 +22,7 @@ func TestUbiProvider_DetectVersion(t *testing.T) {
 	ctx := context.Background()
 	installPath := "/fake/path/to/installs/houseabsolute/precious/0.0.12"
 
-	version, err := provider.DetectVersion(ctx, installPath)
+	version, err := provider.DetectVersion(ctx, "ubi", installPath)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -47,7 +47,7 @@ func TestUbiProvider_GenerateShims(t *testing.T) {
 		t.Fatalf("Failed to create mock executable: %v", err)
 	}
 
-	shims, err := provider.GenerateShims(tmpDir, "0.0.12")
+	shims, err := provider.GenerateShims("ubi", tmpDir, "0.0.12")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}

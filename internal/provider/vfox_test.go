@@ -19,7 +19,7 @@ func TestVfoxProvider_DetectVersion(t *testing.T) {
 	p := NewVfoxProvider()
 
 	ctx := context.Background()
-	version, err := p.DetectVersion(ctx, "/fake/path/tool/1.2.3")
+	version, err := p.DetectVersion(ctx, "vfox", "/fake/path/tool/1.2.3")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

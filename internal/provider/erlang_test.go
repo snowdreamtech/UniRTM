@@ -18,7 +18,7 @@ func TestErlangProvider_Name(t *testing.T) {
 func TestErlangProvider_DetectVersion(t *testing.T) {
 	p := NewErlangProvider()
 	ctx := context.Background()
-	version, err := p.DetectVersion(ctx, "/tmp/unirtm/erlang/26.0")
+	version, err := p.DetectVersion(ctx, "erlang", "/tmp/unirtm/erlang/26.0")
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}

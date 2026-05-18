@@ -18,7 +18,7 @@ func TestSwiftProvider_Name(t *testing.T) {
 func TestSwiftProvider_DetectVersion(t *testing.T) {
 	p := NewSwiftProvider()
 	ctx := context.Background()
-	version, err := p.DetectVersion(ctx, "/tmp/unirtm/swift/5.9.0")
+	version, err := p.DetectVersion(ctx, "swift", "/tmp/unirtm/swift/5.9.0")
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
