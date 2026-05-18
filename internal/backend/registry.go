@@ -128,3 +128,20 @@ func List() []string {
 func Has(name string) bool {
 	return DefaultRegistry.Has(name)
 }
+
+// Backends returns a copy of all registered backends.
+func (r *Registry) Backends() map[string]Backend {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	backends := make(map[string]Backend, len(r.backends))
+	for k, v := range r.backends {
+		backends[k] = v
+	}
+	return backends
+}
+
+// Backends returns a copy of all registered backends from the default registry.
+func Backends() map[string]Backend {
+	return DefaultRegistry.Backends()
+}

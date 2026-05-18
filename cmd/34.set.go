@@ -122,7 +122,7 @@ func runSet(cmd *cobra.Command, args []string) error {
 		formatter.Error(fmt.Sprintf("Failed to save config: %v", err))
 		return err
 	}
-	
+
 	// Apply canonical format and taplo formatting to ensure correct block order
 	_, _ = config.FormatFile(cfgPath, false)
 
@@ -167,7 +167,7 @@ func runUnset(cmd *cobra.Command, args []string) error {
 			formatter.Error(fmt.Sprintf("Failed to save config: %v", err))
 			return err
 		}
-		
+
 		// Apply canonical format and taplo formatting
 		_, _ = config.FormatFile(cfgPath, false)
 	}
