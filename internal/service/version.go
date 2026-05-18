@@ -394,3 +394,60 @@ func (s *SemVer) Equal(other *SemVer) bool {
 		s.Prerelease == other.Prerelease &&
 		s.Build == other.Build
 }
+
+// Compare compares s to other.
+// Returns:
+//   -1 if s < other
+//    0 if s == other
+//    1 if s > other
+func (s *SemVer) Compare(other *SemVer) int {
+	if s == nil && other == nil {
+		return 0
+	}
+	if s == nil {
+		return -1
+	}
+	if other == nil {
+		return 1
+	}
+
+	if s.Major != other.Major {
+		if s.Major < other.Major {
+			return -1
+		}
+		return 1
+	}
+
+	if s.Minor != other.Minor {
+		if s.Minor < other.Minor {
+			return -1
+		}
+		return 1
+	}
+
+	if s.Patch != other.Patch {
+		if s.Patch < other.Patch {
+			return -1
+		}
+		return 1
+	}
+
+	// Simple prerelease comparison:
+	// A release version is greater than a prerelease version.
+	if s.Prerelease == "" && other.Prerelease != "" {
+		return 1
+	}
+	if s.Prerelease != "" && other.Prerelease == "" {
+		return -1
+	}
+	if s.Prerelease != "" && other.Prerelease != "" {
+		if s.Prerelease < other.Prerelease {
+			return -1
+		}
+		if s.Prerelease > other.Prerelease {
+			return 1
+		}
+	}
+
+	return 0
+}

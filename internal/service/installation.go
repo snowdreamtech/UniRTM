@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -135,10 +136,24 @@ func (im *InstallationManager) SelectVersionInteractive(ctx context.Context, too
 		return "", fmt.Errorf("no versions found for %s", tool)
 	}
 
-	// 3. Convert to string slice (in reverse order so the newest version is at the top of the menu)
+	// 3. Sort versions in descending order (newest first)
+	sort.SliceStable(versionInfos, func(i, j int) bool {
+		vI, errI := parseSemVer(versionInfos[i].Version)
+		vJ, errJ := parseSemVer(versionInfos[j].Version)
+
+		if errI == nil && errJ == nil {
+			// Both are valid SemVer, sort descending
+			return vI.Compare(vJ) > 0
+		}
+
+		// Fallback to alphabetical comparison for date-based versions and tags, sort descending
+		return versionInfos[i].Version > versionInfos[j].Version
+	})
+
+	// 4. Convert to string slice
 	versions := make([]string, len(versionInfos))
 	for i, info := range versionInfos {
-		versions[len(versionInfos)-1-i] = info.Version
+		versions[i] = info.Version
 	}
 
 	// 4. Show interactive menu
