@@ -85,6 +85,9 @@ func (cm *ConcurrentManager) InstallAll(ctx context.Context, requests []ToolInst
 		return nil, nil
 	}
 
+	// Suppress individual interactive download/resolve progress UI during concurrent execution
+	ctx = context.WithValue(ctx, ContextKeyQuietProgress, true)
+
 	// Topological sort to determine installation layers
 	layers, err := topoSort(requests)
 	if err != nil {

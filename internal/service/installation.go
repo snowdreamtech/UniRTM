@@ -31,6 +31,13 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/transaction"
 )
 
+// ContextKey represents key types for context values.
+type ContextKey string
+
+const (
+	ContextKeyQuietProgress ContextKey = "quietProgress"
+)
+
 // ErrAlreadyInstalled is returned when a tool version is already installed.
 var ErrAlreadyInstalled = fmt.Errorf("already installed")
 
@@ -249,6 +256,8 @@ func (im *InstallationManager) IsInstalled(ctx context.Context, tool, version, b
 // Install performs the complete installation workflow for a tool.
 // Workflow: check → download → verify → extract → activate → record
 func (im *InstallationManager) Install(ctx context.Context, tool, version, backendName string) error {
+	quietProgress, _ := ctx.Value(ContextKeyQuietProgress).(bool)
+
 	// Standardize tool name for filesystem check
 	fsToolName := env.GetFSToolName(tool, backendName)
 
@@ -310,13 +319,17 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 	if versionInfo == nil {
 		// Lockfile miss — fall back to the remote backend.
-		fmt.Printf("ℹ resolving download info for %s@%s...\n", tool, version)
+		if !quietProgress {
+			fmt.Printf("ℹ resolving download info for %s@%s...\n", tool, version)
+		}
 		info, err := b.ResolveVersion(ctx, tool, version, platform)
 		if err != nil {
 			return fmt.Errorf("failed to resolve version: %w", err)
 		}
 		version = info.Version // Update to the concrete resolved version
-		pterm.FgGreen.Printf("✓ resolved %s to version %s\n", tool, version)
+		if !quietProgress {
+			pterm.FgGreen.Printf("✓ resolved %s to version %s\n", tool, version)
+		}
 		versionInfo = info
 	}
 
@@ -347,7 +360,9 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		}
 
 		downloadPath = filepath.Join(env.GetDownloadsDir(), fmt.Sprintf("%s-%s%s", tool, version, ext))
-		fmt.Printf("ℹ downloading %s@%s to %s...\n", tool, version, downloadPath)
+		if !quietProgress {
+			fmt.Printf("ℹ downloading %s@%s to %s...\n", tool, version, downloadPath)
+		}
 		if err := os.MkdirAll(filepath.Dir(downloadPath), 0755); err != nil {
 			return fmt.Errorf("failed to create downloads directory: %w", err)
 		}
@@ -385,9 +400,12 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		downloadTmpPath := fmt.Sprintf("%s.tmp.%s", downloadPath, randSuffix)
 
 		// Start a spinner for the connection/download phase
-		spinner, _ := pterm.DefaultSpinner.
-			WithText(fmt.Sprintf("Connecting to %s...", tool)).
-			Start()
+		var spinner *pterm.SpinnerPrinter
+		if !quietProgress {
+			spinner, _ = pterm.DefaultSpinner.
+				WithText(fmt.Sprintf("Connecting to %s...", tool)).
+				Start()
+		}
 
 		// Initialize progress bar
 		var progressbar *pterm.ProgressbarPrinter
@@ -396,6 +414,9 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 		var progressMutex sync.Mutex
 
 		opts.ProgressCallback = func(downloaded, total int64) {
+			if quietProgress {
+				return
+			}
 			progressMutex.Lock()
 			defer progressMutex.Unlock()
 
@@ -474,7 +495,9 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 			return fmt.Errorf("failed to finalize download: %w", err)
 		}
 
-		pterm.FgGreen.Printf("✓ downloaded to %s\n", downloadPath)
+		if !quietProgress {
+			pterm.FgGreen.Printf("✓ downloaded to %s\n", downloadPath)
+		}
 		defer func() {
 			if im.settings != nil && im.settings.AlwaysKeepDownload {
 				logger.Debug("AlwaysKeepDownload is enabled, keeping artifact", map[string]interface{}{"path": downloadPath})
@@ -522,7 +545,9 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 				if im.settings != nil && im.settings.GPGVerify == "strict" {
 					return fmt.Errorf("GPG signature required in strict mode: %w", downloadErr)
 				}
-				pterm.FgYellow.Printf("⚠️  WARNING: %s. Continuing anyway (GPGVerify=%s)\n", msg, im.settings.GPGVerify)
+				if !quietProgress {
+					pterm.FgYellow.Printf("⚠️  WARNING: %s. Continuing anyway (GPGVerify=%s)\n", msg, im.settings.GPGVerify)
+				}
 				gpgStatus = "Failed (Download)"
 			} else {
 				defer os.Remove(sigPath)
@@ -559,7 +584,9 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 							}
 						}
 					} else {
-						pterm.FgYellow.Printf("⚠️  GPG verification skipped: missing public key (Non-interactive mode)\n")
+						if !quietProgress {
+							pterm.FgYellow.Printf("⚠️  GPG verification skipped: missing public key (Non-interactive mode)\n")
+						}
 						gpgStatus = "Failed (Missing Key)"
 					}
 				}
@@ -569,10 +596,14 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 					if im.settings != nil && im.settings.GPGVerify == "strict" {
 						return fmt.Errorf("SECURITY ERROR: %s", msg)
 					}
-					pterm.FgYellow.Printf("⚠️  SECURITY WARNING: %s. Continuing anyway (GPGVerify=%s)\n", msg, im.settings.GPGVerify)
+					if !quietProgress {
+						pterm.FgYellow.Printf("⚠️  SECURITY WARNING: %s. Continuing anyway (GPGVerify=%s)\n", msg, im.settings.GPGVerify)
+					}
 					gpgStatus = "Failed (Invalid)"
 				} else {
-					pterm.FgGreen.Printf("✓ GPG signature verified successfully\n")
+					if !quietProgress {
+						pterm.FgGreen.Printf("✓ GPG signature verified successfully\n")
+					}
 					gpgStatus = "Verified"
 				}
 			}
@@ -582,7 +613,9 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 			if len(versionInfo.GPGKeys) > 0 {
 				return fmt.Errorf("GPG security violation: trusted fingerprints exist for %s but no signature URL found in strict mode", tool)
 			}
-			fmt.Printf("ℹ %s does not appear to support GPG signatures. Falling back to strong SHA256 checksum verification.\n", tool)
+			if !quietProgress {
+				fmt.Printf("ℹ %s does not appear to support GPG signatures. Falling back to strong SHA256 checksum verification.\n", tool)
+			}
 			gpgStatus = "NotSupported"
 		}
 
@@ -709,14 +742,20 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 	}
 
 	// 12. Generate shims for the tool executables
-	fmt.Printf("ℹ generating shims for %s...\n", tool)
+	if !quietProgress {
+		fmt.Printf("ℹ generating shims for %s...\n", tool)
+	}
 	execs, _ := p.ListExecutables(tool, installPath, version)
 	if err := im.shimGenerator.GenerateShim(ctx, tool, execs...); err != nil {
-		pterm.FgYellow.Printf("⚠️  WARNING: failed to generate shims for %s: %v\n", tool, err)
+		if !quietProgress {
+			pterm.FgYellow.Printf("⚠️  WARNING: failed to generate shims for %s: %v\n", tool, err)
+		}
 		// Non-fatal, don't return error
 	}
 
-	pterm.FgGreen.Printf("✓ %s@%s installed successfully to %s\n", tool, version, installPath)
+	if !quietProgress {
+		pterm.FgGreen.Printf("✓ %s@%s installed successfully to %s\n", tool, version, installPath)
+	}
 	return nil
 }
 
