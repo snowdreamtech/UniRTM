@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"strings"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
@@ -127,6 +128,21 @@ func (cm *ConcurrentManager) InstallAll(ctx context.Context, requests []ToolInst
 				continue
 			}
 
+			// Skip if already installed
+			isInstalled, _ := cm.installManager.IsInstalled(ctx, req.Tool, req.Version, req.Backend)
+			if isInstalled {
+				resultsMu.Lock()
+				results = append(results, ConcurrentInstallResult{
+					Tool:    req.Tool,
+					Version: req.Version,
+					Success: true,
+					Error:   ErrAlreadyInstalled.Error(),
+				})
+				resultsMu.Unlock()
+				cm.reportProgress(req.Tool, req.Version, "failed: "+ErrAlreadyInstalled.Error())
+				continue
+			}
+
 			g.Go(func() error {
 				// Acquire semaphore slot
 				select {
@@ -145,13 +161,20 @@ func (cm *ConcurrentManager) InstallAll(ctx context.Context, requests []ToolInst
 				result.Tool = req.Tool
 				result.Version = req.Version
 
-				if installErr != nil {
+				isAlreadyInstalled := installErr != nil && (installErr == ErrAlreadyInstalled || strings.Contains(installErr.Error(), "already installed"))
+
+				if installErr != nil && !isAlreadyInstalled {
 					result.Success = false
 					result.Error = installErr.Error()
 					cm.reportProgress(req.Tool, req.Version, "failed: "+installErr.Error())
 				} else {
 					result.Success = true
-					cm.reportProgress(req.Tool, req.Version, "done")
+					if isAlreadyInstalled {
+						result.Error = installErr.Error()
+						cm.reportProgress(req.Tool, req.Version, "failed: "+installErr.Error())
+					} else {
+						cm.reportProgress(req.Tool, req.Version, "done")
+					}
 				}
 
 				resultsMu.Lock()
