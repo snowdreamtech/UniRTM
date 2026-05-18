@@ -5,8 +5,10 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 
@@ -136,6 +138,17 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			explicitVersion = true
 		}
 
+		// If version is not explicit, try to resolve from configuration file first
+		if !explicitVersion && cfg != nil {
+			if tc, ok := cfg.Tools[tool]; ok && tc.Version != "" {
+				version = tc.Version
+				explicitVersion = true
+				if tc.Backend != "" {
+					backendName = tc.Backend
+				}
+			}
+		}
+
 		if tool == "" {
 			formatter.Error("Tool name cannot be empty")
 			return fmt.Errorf("tool name is required")
@@ -257,31 +270,145 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	// Sort tools by dependency to ensure runtimes are installed first
 	sortedTools := installManager.SortToolsFromSpecs(toolsToInstall)
 
-	// Perform installations
-	startTime := time.Now()
-	for _, t := range sortedTools {
-		toolName := t.OriginalName
-		tool := t.ToolName
-		version := t.Version
-		backendName := t.BackendName
-
-		err = installManager.Install(ctx, tool, version, backendName)
-		if err != nil {
-			// Check if already installed (Style C: Single line green check)
-			if err == service.ErrAlreadyInstalled || strings.Contains(err.Error(), "already installed") {
-				pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", toolName, version)
-				continue
-			}
-
-			pterm.Error.Printf("Installation failed for %s: %v\n", toolName, err)
-			return fmt.Errorf("install %s: %w", toolName, err)
+	// Decide concurrency
+	concurrencyLimit := jobs
+	if concurrencyLimit <= 0 {
+		if cfg != nil && cfg.Settings.Concurrency > 0 {
+			concurrencyLimit = cfg.Settings.Concurrency
+		} else {
+			concurrencyLimit = runtime.NumCPU()
 		}
-		pterm.FgGreen.Printf("✓ Successfully installed %s@%s\n", toolName, version)
 	}
 
-	duration := time.Since(startTime)
-	if len(toolsToInstall) > 1 {
-		pterm.FgGreen.Printf("✓ All tools processed (took %s)\n", duration.Round(time.Millisecond).String())
+	// We run concurrently if there are multiple tools and concurrency limit > 1
+	runConcurrent := len(toolsToInstall) > 1 && concurrencyLimit > 1
+
+	if runConcurrent {
+		formatter.Info(fmt.Sprintf("Installing %d tool(s) concurrently (max %d parallel jobs)...", len(toolsToInstall), concurrencyLimit))
+
+		// 1. Build tool list for ConcurrentManager
+		var requests []service.ToolInstallRequest
+		
+		// Create a map of toolName -> ToolSpec to check for dependencies within the list
+		specsMap := make(map[string]service.ToolSpec)
+		for _, spec := range toolsToInstall {
+			specsMap[spec.Name] = spec
+		}
+
+		for _, t := range sortedTools {
+			// Find dependencies for this tool
+			var dependsOn []string
+			if b, err := backendRegistry.Get(t.BackendName); err == nil {
+				for _, dep := range b.Dependencies() {
+					// If the dependency is also scheduled to be installed, record it
+					if _, exists := specsMap[dep]; exists {
+						dependsOn = append(dependsOn, dep)
+					}
+				}
+			}
+
+			requests = append(requests, service.ToolInstallRequest{
+				Tool:      t.ToolName,
+				Version:   t.Version,
+				Backend:   t.BackendName,
+				DependsOn: dependsOn,
+			})
+		}
+
+		// 2. Create ConcurrentManager
+		progressFn := func(tool, version, status string) {
+			if jsonOutput {
+				return
+			}
+			switch status {
+			case "starting":
+				pterm.Info.Printf("Starting installation of %s@%s...\n", tool, version)
+			case "done":
+				pterm.FgGreen.Printf("✓ Successfully installed %s@%s\n", tool, version)
+			default:
+				if strings.HasPrefix(status, "failed:") {
+					errMsg := strings.TrimPrefix(status, "failed: ")
+					if errMsg == service.ErrAlreadyInstalled.Error() || strings.Contains(errMsg, "already installed") {
+						pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", tool, version)
+					} else {
+						pterm.Error.Printf("Failed to install %s@%s: %s\n", tool, version, errMsg)
+					}
+				} else {
+					pterm.Info.Printf("%s@%s: %s\n", tool, version, status)
+				}
+			}
+		}
+
+		concurrentConfig := service.ConcurrentManagerConfig{
+			MaxConcurrency: concurrencyLimit,
+			ProgressFn:     progressFn,
+		}
+		cm := service.NewConcurrentManager(installManager, concurrentConfig)
+
+		// 3. Execute installation
+		startTime := time.Now()
+		results, err := cm.InstallAll(ctx, requests)
+		if err != nil {
+			formatter.Error("Concurrent installation failed", map[string]interface{}{
+				"error": err.Error(),
+			})
+			return fmt.Errorf("concurrent install: %w", err)
+		}
+
+		// Check for failures
+		var failedTools []string
+		for _, r := range results {
+			if !r.Success {
+				// "already installed" is not a failure
+				if r.Error != service.ErrAlreadyInstalled.Error() && !strings.Contains(r.Error, "already installed") {
+					failedTools = append(failedTools, fmt.Sprintf("%s@%s (%s)", r.Tool, r.Version, r.Error))
+				}
+			}
+		}
+
+		duration := time.Since(startTime)
+		if len(failedTools) > 0 {
+			pterm.Error.Printf("Installation finished with errors (took %s):\n", duration.Round(time.Millisecond).String())
+			for _, f := range failedTools {
+				pterm.FgRed.Printf("  • %s\n", f)
+			}
+			return fmt.Errorf("some installations failed: %s", strings.Join(failedTools, ", "))
+		}
+
+		if !jsonOutput {
+			pterm.FgGreen.Printf("✓ All tools processed successfully (took %s)\n", duration.Round(time.Millisecond).String())
+		} else {
+			// If JSON output, render the results JSON
+			outputData, _ := json.MarshalIndent(results, "", "  ")
+			fmt.Println(string(outputData))
+		}
+	} else {
+		// Sequential installation (better for single tool interactive output)
+		startTime := time.Now()
+		for _, t := range sortedTools {
+			toolName := t.OriginalName
+			tool := t.ToolName
+			version := t.Version
+			backendName := t.BackendName
+
+			err = installManager.Install(ctx, tool, version, backendName)
+			if err != nil {
+				// Check if already installed
+				if err == service.ErrAlreadyInstalled || strings.Contains(err.Error(), "already installed") {
+					pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", toolName, version)
+					continue
+				}
+
+				pterm.Error.Printf("Installation failed for %s: %v\n", toolName, err)
+				return fmt.Errorf("install %s: %w", toolName, err)
+			}
+			pterm.FgGreen.Printf("✓ Successfully installed %s@%s\n", toolName, version)
+		}
+
+		duration := time.Since(startTime)
+		if len(toolsToInstall) > 1 {
+			pterm.FgGreen.Printf("✓ All tools processed (took %s)\n", duration.Round(time.Millisecond).String())
+		}
 	}
 
 	return nil
