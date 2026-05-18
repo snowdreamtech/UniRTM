@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
@@ -32,9 +33,9 @@ func (p *SpmProvider) Install(ctx context.Context, tool string, installPath stri
 	if err := os.MkdirAll(installPath, 0755); err != nil {
 	}
 
-	swiftCmd, err := exec.LookPath("swift")
+	swiftCmd, err := p.findSwift()
 	if err != nil {
-		return NewProviderError(p.Name(), tool, version, "swift is required to install spm packages but was not found in PATH", err)
+		return NewProviderError(p.Name(), tool, version, "swift is required to install spm packages but was not found", err)
 	}
 	gitCmd, err := exec.LookPath("git")
 	if err != nil {
@@ -180,3 +181,38 @@ func (p *SpmProvider) GetEnvVars(tool string, installPath string, version string
 func (p *SpmProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
+
+func (p *SpmProvider) findSwift() (string, error) {
+	// 1. Try to find a UniRTM-managed Swift installation first
+	swiftInstallsDir := filepath.Join(env.GetInstallsDir(), "swift")
+	if entries, err := os.ReadDir(swiftInstallsDir); err == nil {
+		var bestVer string
+		var bestPath string
+		for _, entry := range entries {
+			if entry.IsDir() {
+				verDir := filepath.Join(swiftInstallsDir, entry.Name())
+				candidates := []string{
+					filepath.Join(verDir, "bin", "swift"),
+					filepath.Join(verDir, "swift"),
+					filepath.Join(verDir, "swift.exe"),
+				}
+				for _, cand := range candidates {
+					if info, err := os.Stat(cand); err == nil && !info.IsDir() {
+						if bestVer == "" || entry.Name() > bestVer {
+							bestVer = entry.Name()
+							bestPath = cand
+						}
+						break
+					}
+				}
+			}
+		}
+		if bestPath != "" {
+			return bestPath, nil
+		}
+	}
+
+	// 2. Fallback to system PATH
+	return exec.LookPath("swift")
+}
+
