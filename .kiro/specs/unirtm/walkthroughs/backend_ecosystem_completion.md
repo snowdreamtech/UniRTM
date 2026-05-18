@@ -21,6 +21,8 @@
 > **原子化提交流程**
 > 本次重构我们严格遵循了原子化原则：每新增一个生态支持（包括 `Backend`, `Provider` 及其 `_test.go`），我们都通过隔离的 Commit 进行提交，总共生成了 8 个语义化 Commit（例如 `feat(ecosystem): add gem backend and provider...`）。这使得整个项目的变更历史非常清晰且可追溯。
 
+<!-- separator -->
+
 > [!NOTE]
 > **接口驱动与高内聚**
 > 所有的扩展点都实现了 `internal/backend/backend.go` 和 `internal/provider/provider.go` 中定义的标准接口，并在 `registry.go` 中进行统一的注册。未来即便要增减生态，只需要在对应的独立文件中修改，**完全不会影响系统的主干逻辑**。

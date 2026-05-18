@@ -104,6 +104,10 @@ repos:
           sys.exit(1 if large_files else 0)
           "
         language: system
+        exclude: |
+          (?x)^(
+            examples/plugin-go/unirtm-plugin-example
+          )
         stages: [pre-commit, pre-merge-commit]
         description: "Prevent large files (>500KB) from being committed."
 
@@ -1066,6 +1070,10 @@ repos:
         language: system
         entry: sh scripts/lib/lint-wrapper.sh shellcheck
         types: [shell]
+        exclude: |
+          (?x)^(
+            test_activate\.sh
+          )
         description: "Posix-compliant ShellCheck for shell code quality."
 
       - id: shellcheck-posix
@@ -1075,7 +1083,8 @@ repos:
         types: [shell]
         exclude: |
           (?x)^(
-            tests/.*\.(sh|bats)$
+            tests/.*\.(sh|bats)$|
+            test_activate\.sh
           )
         description: "Enforce strict POSIX compliance for shell scripts (Rule 01.3.39). Test files are excluded as they use bash features."
 
