@@ -31,9 +31,9 @@ func (p *GemProvider) Install(ctx context.Context, tool string, installPath stri
 		return err
 	}
 
-	gemCmd, err := exec.LookPath("gem")
+	gemCmd, err := p.findGem()
 	if err != nil {
-		return NewProviderError(p.Name(), tool, version, "gem is required to install rubygems but was not found in PATH", err)
+		return NewProviderError(p.Name(), tool, version, "gem is required to install rubygems but was not found", err)
 	}
 
 	logger.Debug("Installing rubygem", map[string]interface{}{"gem": tool, "version": version, "installDir": installPath})
@@ -126,3 +126,38 @@ func (p *GemProvider) GetEnvVars(tool string, installPath string, version string
 func (p *GemProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
 }
+
+func (p *GemProvider) findGem() (string, error) {
+	// 1. Try to find a UniRTM-managed Ruby/Gem installation first
+	rubyInstallsDir := filepath.Join(env.GetInstallsDir(), "ruby")
+	if entries, err := os.ReadDir(rubyInstallsDir); err == nil {
+		var bestVer string
+		var bestPath string
+		for _, entry := range entries {
+			if entry.IsDir() {
+				verDir := filepath.Join(rubyInstallsDir, entry.Name())
+				candidates := []string{
+					filepath.Join(verDir, "bin", "gem"),
+					filepath.Join(verDir, "bin", "gem.exe"),
+					filepath.Join(verDir, "gem.exe"),
+				}
+				for _, cand := range candidates {
+					if info, err := os.Stat(cand); err == nil && !info.IsDir() {
+						if bestVer == "" || entry.Name() > bestVer {
+							bestVer = entry.Name()
+							bestPath = cand
+						}
+						break
+					}
+				}
+			}
+		}
+		if bestPath != "" {
+			return bestPath, nil
+		}
+	}
+
+	// 2. Fallback to system PATH
+	return exec.LookPath("gem")
+}
+
