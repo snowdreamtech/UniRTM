@@ -7,9 +7,10 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"text/tabwriter"
+	"sort"
 	"time"
 
+	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/database"
@@ -166,9 +167,14 @@ func runIndexStatus(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fmt.Println("\x1b[1;36m=== UniRTM Local Tool Index Status ===\x1b[0m")
-	fmt.Printf("Database Path:  %s\n", dbPath)
-	fmt.Printf("Database Size:  %.2f KB\n", float64(fileSize)/1024.0)
+	pterm.DefaultHeader.WithFullWidth().
+		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightCyan)).
+		WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
+		Println("UniRTM Local Tool Index Status")
+
+	pterm.DefaultSection.Println("📊 Database Information")
+	fmt.Printf("  Database Path:  %s\n", dbPath)
+	fmt.Printf("  Database Size:  %.2f KB\n", float64(fileSize)/1024.0)
 
 	statusStr := "\x1b[1;32mHealthy (Up-to-date)\x1b[0m"
 	if isStale {
@@ -177,24 +183,34 @@ func runIndexStatus(cmd *cobra.Command, args []string) error {
 	if len(entries) == 0 {
 		statusStr = "\x1b[1;31mEmpty (Requires Initialization)\x1b[0m"
 	}
-	fmt.Printf("Index Health:   %s\n", statusStr)
-	fmt.Printf("Total Tools:    %d\n", len(entries))
+	fmt.Printf("  Index Health:   %s\n", statusStr)
+	fmt.Printf("  Total Tools:    %d\n", len(entries))
 
 	if !lastUpdated.IsZero() {
-		fmt.Printf("Last Updated:   %s (%s ago)\n", lastUpdated.Format(time.RFC1123), time.Since(lastUpdated).Round(time.Second))
+		fmt.Printf("  Last Updated:   %s (%s ago)\n", lastUpdated.Format(time.RFC1123), time.Since(lastUpdated).Round(time.Second))
 	} else {
-		fmt.Printf("Last Updated:   Never\n")
+		fmt.Printf("  Last Updated:   Never\n")
 	}
 
 	if len(backendCounts) > 0 {
-		fmt.Println("\n\x1b[1;34mTools by Backend:\x1b[0m")
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 4, ' ', 0)
-		fmt.Fprintln(w, "  BACKEND\tCOUNT")
-		fmt.Fprintln(w, "  -------\t-----")
-		for b, count := range backendCounts {
-			fmt.Fprintf(w, "  %s\t%d\n", b, count)
+		pterm.DefaultSection.Println("🔌 Tools by Registered Backend")
+		var tableData [][]string
+		tableData = append(tableData, []string{"Backend", "Indexed Tools Count"})
+
+		// Sort backends to be deterministic
+		var sortedBackends []string
+		for b := range backendCounts {
+			sortedBackends = append(sortedBackends, b)
 		}
-		w.Flush()
+		sort.Strings(sortedBackends)
+
+		for _, b := range sortedBackends {
+			tableData = append(tableData, []string{
+				pterm.Bold.Sprint(b),
+				pterm.LightCyan(fmt.Sprintf("%d", backendCounts[b])),
+			})
+		}
+		pterm.DefaultTable.WithHasHeader().WithData(tableData).Render()
 	}
 
 	fmt.Println()
