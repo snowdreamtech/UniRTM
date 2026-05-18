@@ -225,6 +225,37 @@ func (p *PypiProvider) Uninstall(ctx context.Context, tool string, installPath s
 }
 
 func (p *PypiProvider) findPython() (string, error) {
+	// 1. Try to find a UniRTM-managed Python installation first
+	pythonInstallsDir := filepath.Join(env.GetInstallsDir(), "python")
+	if entries, err := os.ReadDir(pythonInstallsDir); err == nil {
+		var bestVer string
+		var bestPath string
+		for _, entry := range entries {
+			if entry.IsDir() {
+				verDir := filepath.Join(pythonInstallsDir, entry.Name())
+				candidates := []string{
+					filepath.Join(verDir, "bin", "python3"),
+					filepath.Join(verDir, "bin", "python"),
+					filepath.Join(verDir, "python.exe"),
+					filepath.Join(verDir, "Scripts", "python.exe"),
+				}
+				for _, cand := range candidates {
+					if info, err := os.Stat(cand); err == nil && !info.IsDir() {
+						if bestVer == "" || entry.Name() > bestVer {
+							bestVer = entry.Name()
+							bestPath = cand
+						}
+						break
+					}
+				}
+			}
+		}
+		if bestPath != "" {
+			return bestPath, nil
+		}
+	}
+
+	// 2. Fallback to system PATH
 	cmds := []string{"python3", "python"}
 	for _, cmd := range cmds {
 		if path, err := exec.LookPath(cmd); err == nil {
@@ -233,3 +264,4 @@ func (p *PypiProvider) findPython() (string, error) {
 	}
 	return "", fmt.Errorf("python not found in PATH")
 }
+
