@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/database"
@@ -48,14 +49,14 @@ func RegisterUninstallCommand() {
 	}
 }
 
-// uninstallCmd represents the uninstall command which removes a specific version of a tool.
+// uninstallCmd represents the uninstall command which removes specified versions of tools.
 var uninstallCmd = &cobra.Command{
-	Use:     "uninstall <tool> [version]",
+	Use:     "uninstall [tool[@version]...]",
 	Aliases: []string{"un"},
-	Short:   "Uninstall a specific version of a development tool",
-	Long: `Uninstall a specific version of a development tool.
+	Short:   "Uninstall development tools and package specifications",
+	Long: `Uninstall development tools and package specifications.
 
-The uninstall command removes the specified version of a tool, including:
+The uninstall command removes specified versions of tools, including:
 - The tool installation directory
 - Shim scripts
 - Database records
@@ -70,9 +71,12 @@ Examples:
   # Uninstall Python version 3.11.5 without confirmation
   unirtm uninstall python 3.11.5 --force
 
+  # Uninstall multiple tools concurrently
+  unirtm uninstall node@20.11.0 go@1.22.1 python@3.12.0 --force
+
   # Uninstall with JSON output
   unirtm uninstall go 1.21.0 --json --force`,
-	Args: cobra.RangeArgs(1, 2),
+	Args: cobra.ArbitraryArgs,
 	RunE: runUninstall,
 }
 
@@ -82,16 +86,6 @@ Examples:
 //
 // Validates: Requirements 8.2, 23.2
 func runUninstall(cmd *cobra.Command, args []string) error {
-	tool := args[0]
-	var version string
-	if len(args) > 1 {
-		version = args[1]
-	} else if strings.Contains(tool, "@") {
-		parts := strings.SplitN(tool, "@", 2)
-		tool = parts[0]
-		version = parts[1]
-	}
-
 	// Create output formatter
 	formatter := output.NewFormatter(output.FormatterOptions{
 		Format:  getOutputFormat(),
@@ -101,20 +95,9 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 		Verbose: verbose,
 	})
 
-	// Validate input
-	if tool == "" {
-		formatter.Error("Tool name cannot be empty")
-		return fmt.Errorf("tool name is required")
-	}
-
-	// Dry-run: show intent without side effects
-	if dryRun {
-		formatter.Info(fmt.Sprintf("[dry-run] Would uninstall %s@%s — no changes made", tool, version), map[string]interface{}{
-			"tool":    tool,
-			"version": version,
-			"dry_run": true,
-		})
-		return nil
+	if len(args) == 0 {
+		formatter.Error("Tool specification is required")
+		return fmt.Errorf("tool specification is required")
 	}
 
 	// Initialize dependencies
@@ -144,72 +127,6 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("create installation repository: %w", err)
 	}
 
-	if version == "" {
-		// List all installations to find matches for this tool
-		installations, err := installRepo.List(ctx)
-		if err != nil {
-			formatter.Error("Failed to list installations", map[string]any{"error": err.Error()})
-			return err
-		}
-		var matches []*repository.Installation
-		for _, inst := range installations {
-			if inst.Tool == tool {
-				matches = append(matches, inst)
-			}
-		}
-		if len(matches) == 0 {
-			formatter.Error(fmt.Sprintf("Tool %s is not installed", tool))
-			return fmt.Errorf("tool %s is not installed", tool)
-		} else if len(matches) == 1 {
-			version = matches[0].Version
-		} else {
-			var versions []string
-			for _, m := range matches {
-				versions = append(versions, m.Version)
-			}
-			formatter.Error(fmt.Sprintf("Multiple versions installed for tool %s: %s. Please specify a version to uninstall.", tool, strings.Join(versions, ", ")))
-			return fmt.Errorf("multiple versions installed for %s", tool)
-		}
-	}
-
-	// Check if the tool is installed
-	installation, err := installRepo.FindByToolAndVersion(ctx, tool, version)
-	if err != nil {
-		formatter.Error(fmt.Sprintf("Tool %s@%s is not installed", tool, version), map[string]any{
-			"tool":    tool,
-			"version": version,
-			"error":   err.Error(),
-		})
-		return fmt.Errorf("tool %s@%s not found: %w", tool, version, err)
-	}
-
-	// Display information about what will be uninstalled
-	formatter.Info(fmt.Sprintf("Tool to uninstall: %s@%s", tool, version), map[string]any{
-		"tool":         tool,
-		"version":      version,
-		"install_path": installation.InstallPath,
-		"backend":      installation.Backend,
-	})
-
-	// Require explicit confirmation unless --force flag is used
-	if !uninstallForce && !quiet {
-		confirmed, err := promptConfirmation(fmt.Sprintf("Are you sure you want to uninstall %s@%s? This action cannot be undone.", tool, version))
-		if err != nil {
-			formatter.Error("Failed to read confirmation", map[string]any{
-				"error": err.Error(),
-			})
-			return fmt.Errorf("confirmation failed: %w", err)
-		}
-
-		if !confirmed {
-			formatter.Info("Uninstall cancelled by user", map[string]any{
-				"tool":    tool,
-				"version": version,
-			})
-			return nil
-		}
-	}
-
 	// Create backend registry
 	backendRegistry := backend.NewRegistry()
 
@@ -234,31 +151,167 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 		nil,
 	)
 
-	// Perform uninstallation
-	formatter.Info(fmt.Sprintf("Uninstalling %s@%s", tool, version), map[string]any{
-		"tool":    tool,
-		"version": version,
-	})
+	type uninstallTarget struct {
+		toolName    string
+		version     string
+		backendName string
+		original    string
+	}
+	var targets []uninstallTarget
 
-	startTime := time.Now()
-	err = installManager.Uninstall(ctx, tool, version)
-	duration := time.Since(startTime)
-
-	if err != nil {
-		formatter.Error(fmt.Sprintf("Uninstallation failed: %s", err.Error()), map[string]any{
-			"tool":     tool,
-			"version":  version,
-			"duration": duration.String(),
-		})
-		return fmt.Errorf("uninstall %s@%s: %w", tool, version, err)
+	// Determine if we should treat it as a single tool + version (backward compatibility)
+	isLegacySingleTool := false
+	if len(args) == 2 {
+		firstArg := args[0]
+		secondArg := args[1]
+		if !strings.Contains(firstArg, "@") && !strings.Contains(firstArg, ":") &&
+			!strings.Contains(secondArg, "@") {
+			isLegacySingleTool = true
+		}
 	}
 
-	// Display success message
-	formatter.Success(fmt.Sprintf("Successfully uninstalled %s@%s", tool, version), map[string]any{
-		"tool":     tool,
-		"version":  version,
-		"duration": duration.String(),
-	})
+	if isLegacySingleTool {
+		_, tool, _, _ := installManager.ParseToolSpec(args[0])
+		version := args[1]
+
+		if tool == "" {
+			formatter.Error("Tool name cannot be empty")
+			return fmt.Errorf("tool name is required")
+		}
+		if version == "" {
+			formatter.Error("Version cannot be empty")
+			return fmt.Errorf("version is required")
+		}
+
+		// Verify the exact tool/version is installed
+		installation, err := installRepo.FindByToolAndVersion(ctx, tool, version)
+		if err != nil {
+			formatter.Error(fmt.Sprintf("Tool %s@%s is not installed", tool, version))
+			return fmt.Errorf("tool %s@%s not found: %w", tool, version, err)
+		}
+
+		targets = append(targets, uninstallTarget{
+			toolName:    tool,
+			version:     version,
+			backendName: installation.Backend,
+			original:    args[0] + "@" + version,
+		})
+	} else {
+		for _, arg := range args {
+			backendName, tool, version, explicitVersion := installManager.ParseToolSpec(arg)
+
+			if tool == "" {
+				formatter.Error("Tool name cannot be empty")
+				return fmt.Errorf("tool name is required")
+			}
+
+			// If version is not explicit, resolve it
+			if !explicitVersion || version == "latest" {
+				installations, err := installRepo.List(ctx)
+				if err != nil {
+					formatter.Error("Failed to list installations", map[string]any{"error": err.Error()})
+					return err
+				}
+				var matches []*repository.Installation
+				for _, inst := range installations {
+					if inst.Tool == tool {
+						matches = append(matches, inst)
+					}
+				}
+				if len(matches) == 0 {
+					formatter.Error(fmt.Sprintf("Tool %s is not installed", tool))
+					return fmt.Errorf("tool %s is not installed", tool)
+				} else if len(matches) == 1 {
+					version = matches[0].Version
+					backendName = matches[0].Backend
+				} else {
+					var versions []string
+					for _, m := range matches {
+						versions = append(versions, m.Version)
+					}
+					formatter.Error(fmt.Sprintf("Multiple versions installed for tool %s: %s. Please specify a version to uninstall.", tool, strings.Join(versions, ", ")))
+					return fmt.Errorf("multiple versions installed for %s", tool)
+				}
+			} else {
+				// Verify exact tool/version is installed
+				installation, err := installRepo.FindByToolAndVersion(ctx, tool, version)
+				if err != nil {
+					formatter.Error(fmt.Sprintf("Tool %s@%s is not installed", tool, version))
+					return fmt.Errorf("tool %s@%s not found: %w", tool, version, err)
+				}
+				backendName = installation.Backend
+			}
+
+			targets = append(targets, uninstallTarget{
+				toolName:    tool,
+				version:     version,
+				backendName: backendName,
+				original:    arg,
+			})
+		}
+	}
+
+	// Dry-run: show intent without side effects
+	if dryRun {
+		for _, t := range targets {
+			formatter.Info(fmt.Sprintf("[dry-run] Would uninstall %s@%s — no changes made", t.toolName, t.version), map[string]interface{}{
+				"tool":    t.toolName,
+				"version": t.version,
+				"dry_run": true,
+			})
+		}
+		return nil
+	}
+
+	// Require explicit confirmation unless --force flag is used
+	if !uninstallForce && !quiet {
+		var confirmMsg string
+		if len(targets) == 1 {
+			confirmMsg = fmt.Sprintf("Are you sure you want to uninstall %s@%s? This action cannot be undone.", targets[0].toolName, targets[0].version)
+		} else {
+			confirmMsg = "The following tool(s) will be uninstalled:\n"
+			for _, t := range targets {
+				confirmMsg += fmt.Sprintf("  • %s@%s\n", t.toolName, t.version)
+			}
+			confirmMsg += "\nAre you sure you want to uninstall these tools? This action cannot be undone."
+		}
+
+		confirmed, err := promptConfirmation(confirmMsg)
+		if err != nil {
+			formatter.Error("Failed to read confirmation", map[string]any{
+				"error": err.Error(),
+			})
+			return fmt.Errorf("confirmation failed: %w", err)
+		}
+
+		if !confirmed {
+			formatter.Info("Uninstall cancelled by user")
+			return nil
+		}
+	}
+
+	// Perform uninstallations
+	if !quiet {
+		formatter.Info(fmt.Sprintf("Uninstalling %d tool(s)...", len(targets)))
+	}
+
+	startTime := time.Now()
+	for _, t := range targets {
+		if !quiet {
+			formatter.Info(fmt.Sprintf("Uninstalling %s@%s...", t.toolName, t.version))
+		}
+		err = installManager.Uninstall(ctx, t.toolName, t.version)
+		if err != nil {
+			formatter.Error(fmt.Sprintf("Uninstallation failed for %s@%s: %s", t.toolName, t.version, err.Error()))
+			return fmt.Errorf("uninstall %s@%s: %w", t.toolName, t.version, err)
+		}
+		pterm.Success.Printf("✓ Successfully uninstalled %s@%s\n", t.toolName, t.version)
+	}
+	duration := time.Since(startTime)
+
+	if len(targets) > 1 && !quiet {
+		pterm.Success.Printf("✓ All tools uninstalled (took %s)\n", duration.Round(time.Millisecond).String())
+	}
 
 	return nil
 }

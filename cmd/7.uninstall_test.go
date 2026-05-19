@@ -6,6 +6,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -58,7 +59,7 @@ func TestUninstallCommand(t *testing.T) {
 
 	// Test uninstall command structure
 	t.Run("command structure", func(t *testing.T) {
-		assert.Equal(t, "uninstall <tool> [version]", uninstallCmd.Use)
+		assert.Equal(t, "uninstall [tool[@version]...]", uninstallCmd.Use)
 		assert.NotEmpty(t, uninstallCmd.Short)
 		assert.NotEmpty(t, uninstallCmd.Long)
 		assert.NotNil(t, uninstallCmd.RunE)
@@ -175,14 +176,14 @@ func TestUninstallCommandValidation(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "missing tool and version",
+			name:        "missing tool is an error (handled in RunE)",
 			args:        []string{},
 			expectError: true,
 		},
 		{
-			name:        "too many arguments",
-			args:        []string{"node", "20.0.0", "extra"},
-			expectError: true,
+			name:        "multiple arguments are valid",
+			args:        []string{"node@20.0.0", "go@1.22.1", "python@3.12.0"},
+			expectError: false,
 		},
 	}
 
@@ -191,9 +192,12 @@ func TestUninstallCommandValidation(t *testing.T) {
 			// Create a temporary root command for testing
 			testRootCmd := &cobra.Command{Use: "unirtm"}
 			testUninstallCmd := &cobra.Command{
-				Use:  "uninstall <tool> [version]",
-				Args: cobra.RangeArgs(1, 2),
+				Use:  "uninstall [tool[@version]...]",
+				Args: cobra.ArbitraryArgs,
 				RunE: func(cmd *cobra.Command, args []string) error {
+					if len(args) == 0 {
+						return fmt.Errorf("tool specification is required")
+					}
 					return nil
 				},
 			}
