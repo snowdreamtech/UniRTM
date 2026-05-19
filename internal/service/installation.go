@@ -996,6 +996,12 @@ func (im *InstallationManager) Uninstall(ctx context.Context, tool, version stri
 		return fmt.Errorf("failed to remove installation directory: %w", err)
 	}
 
+	// Clean up parent directory if empty
+	parentDir := filepath.Dir(installation.InstallPath)
+	if files, err := os.ReadDir(parentDir); err == nil && len(files) == 0 {
+		_ = os.Remove(parentDir)
+	}
+
 	// Start transaction for removal
 	tx, err := im.txManager.Begin(ctx)
 	if err != nil {
@@ -1011,6 +1017,23 @@ func (im *InstallationManager) Uninstall(ctx context.Context, tool, version stri
 	// Commit transaction
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	// Check if other versions of this tool are still installed
+	installations, err := im.installRepo.List(ctx)
+	otherVersionsExist := false
+	if err == nil {
+		for _, inst := range installations {
+			if inst.Tool == tool && inst.Version != version {
+				otherVersionsExist = true
+				break
+			}
+		}
+	}
+
+	// If no other versions exist, remove the shim files for this tool
+	if !otherVersionsExist {
+		_ = im.shimGenerator.RemoveShim(ctx, tool)
 	}
 
 	// Remove from lockfile
