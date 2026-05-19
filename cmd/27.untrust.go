@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
@@ -16,21 +17,25 @@ var untrustCmd = &cobra.Command{
 	Use:   "untrust [path]",
 	Short: "Revoke trust from a configuration file",
 	Long: `Revokes trust from a previously trusted configuration file.
-Once untrusted, the file's environment variables and configuration will no longer be automatically loaded.
-If no path is provided, it defaults to ./unirtm.toml in the current directory.`,
+Once untrusted, the file's environment variables and configuration will no longer be automatically loaded.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		path := resolveConfigFilePath(false)
 		if len(args) > 0 {
 			path = args[0]
 		}
 
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			absPath = path
+		}
+
 		trustManager := config.NewTrustManager()
-		if err := trustManager.Untrust(path); err != nil {
+		if err := trustManager.Untrust(absPath); err != nil {
 			pterm.Error.Printfln("Failed to untrust configuration file: %v", err)
 			os.Exit(1)
 		}
 
-		pterm.FgGreen.Printfln("✅ Untrusted configuration file: %s", path)
+		pterm.Success.Printfln("Untrusted configuration file: %s", pterm.LightGreen(absPath))
 	},
 }
 

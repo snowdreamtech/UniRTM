@@ -4,7 +4,10 @@
 package cmd
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"os"
+	"path/filepath"
 
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
@@ -17,25 +20,67 @@ var trustCmd = &cobra.Command{
 	Short: "Mark a configuration file as trusted",
 	Long: `Marks a configuration file (like unirtm.toml) as trusted.
 Trusted files are allowed to be automatically loaded and their environment variables applied.
-If no path is provided, it defaults to ./unirtm.toml in the current directory.`,
+If no path is provided, it lists all currently trusted configuration files.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		path := resolveConfigFilePath(false)
-		if len(args) > 0 {
-			path = args[0]
+		trustManager := config.NewTrustManager()
+
+		if len(args) == 0 {
+			// List all trusted files
+			trusted, err := trustManager.List()
+			if err != nil {
+				pterm.Error.Printfln("Failed to list trusted files: %v", err)
+				os.Exit(1)
+			}
+			if len(trusted) == 0 {
+				pterm.Info.Println("No trusted configuration files found.")
+				return
+			}
+			pterm.DefaultSection.Println("Trusted Configuration Files")
+			tableData := pterm.TableData{
+				{"Configuration File Path", "SHA-256 Content Hash"},
+			}
+			for p, h := range trusted {
+				hashStr := h
+				if hashStr == "" {
+					hashStr = pterm.FgYellow.Sprint("Legacy / No Hash")
+				} else {
+					if len(hashStr) > 16 {
+						hashStr = hashStr[:16] + "..."
+					}
+					hashStr = pterm.FgGray.Sprint(hashStr)
+				}
+				tableData = append(tableData, []string{pterm.FgCyan.Sprint(p), hashStr})
+			}
+			pterm.DefaultTable.WithHasHeader().WithData(tableData).Render()
+			return
 		}
 
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			pterm.Error.Printfln("Configuration file not found: %s", path)
+		path := args[0]
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			absPath = path
+		}
+
+		if _, err := os.Stat(absPath); os.IsNotExist(err) {
+			pterm.Error.Printfln("Configuration file not found: %s", absPath)
 			os.Exit(1)
 		}
 
-		trustManager := config.NewTrustManager()
-		if err := trustManager.Trust(path); err != nil {
+		if err := trustManager.Trust(absPath); err != nil {
 			pterm.Error.Printfln("Failed to trust configuration file: %v", err)
 			os.Exit(1)
 		}
 
-		pterm.FgGreen.Printfln("✅ Trusted configuration file: %s", path)
+		// Calculate SHA-256 hash to display
+		hash := ""
+		if data, err := os.ReadFile(absPath); err == nil {
+			h := sha256.Sum256(data)
+			hash = hex.EncodeToString(h[:])
+		}
+		if len(hash) > 16 {
+			hash = hash[:16] + "..."
+		}
+		pterm.Success.Printfln("Trusted configuration file: %s (hash: %s)", pterm.LightGreen(absPath), pterm.FgGray.Sprint(hash))
 	},
 }
 

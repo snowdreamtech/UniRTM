@@ -18,6 +18,7 @@ type mockTrustManager struct{}
 func (m *mockTrustManager) TrustStatus(path string) TrustStatus { return TrustStatusTrusted }
 func (m *mockTrustManager) Trust(path string) error             { return nil }
 func (m *mockTrustManager) Untrust(path string) error           { return nil }
+func (m *mockTrustManager) List() (map[string]string, error)    { return nil, nil }
 
 func newTestConfigManager() *defaultConfigManager {
 	m := NewConfigManager().(*defaultConfigManager)

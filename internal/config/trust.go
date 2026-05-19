@@ -41,6 +41,9 @@ type TrustManager interface {
 
 	// Untrust removes the specified configuration file from the trusted list.
 	Untrust(path string) error
+
+	// List returns all currently trusted configuration files.
+	List() (map[string]string, error)
 }
 
 type fileTrustManager struct {
@@ -222,3 +225,10 @@ func (m *fileTrustManager) Untrust(path string) error {
 	delete(paths, absPath)
 	return m.saveTrustedPaths(paths)
 }
+
+func (m *fileTrustManager) List() (map[string]string, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.loadTrustedPaths()
+}
+
