@@ -335,11 +335,11 @@ func (mm *MigrationManager) parseMiseToml(path string) ([]MigrationTool, map[str
 	// 4. Migrate Settings (partial mapping)
 	if settingsData, ok := raw["settings"].(map[string]interface{}); ok {
 		if ttl, ok := settingsData["cache_ttl"].(int64); ok {
-			settings.CacheTTL = int(ttl)
+			settings.CacheTTL = config.DurationOrInt(ttl)
 		} else if ttlStr, ok := settingsData["cache_ttl"].(string); ok {
 			// Try to parse duration if it's a string like "1h"
 			if d, err := time.ParseDuration(ttlStr); err == nil {
-				settings.CacheTTL = int(d.Seconds())
+				settings.CacheTTL = config.DurationOrInt(d.Seconds())
 			}
 		}
 

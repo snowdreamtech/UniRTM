@@ -263,7 +263,7 @@ func genSettings() gopter.Gen {
 		return config.Settings{
 			CacheDir:    values[0].(string),
 			DataDir:     values[1].(string),
-			CacheTTL:    values[2].(int),
+			CacheTTL:    config.DurationOrInt(values[2].(int)),
 		}
 	})
 }

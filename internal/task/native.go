@@ -90,7 +90,7 @@ func (r *NativeRunner) Run(ctx context.Context, dir string, taskName string, arg
 	// Resolve timeout: task override > global setting
 	timeout := r.settings.TaskTimeout
 	if taskDef.Timeout > 0 {
-		timeout = taskDef.Timeout
+		timeout = config.DurationOrInt(taskDef.Timeout)
 	}
 
 	runCtx := ctx

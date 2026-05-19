@@ -76,7 +76,7 @@ run = "npm test"
 		// Verify Settings
 		assert.Equal(t, "/tmp/cache", config.Settings.CacheDir)
 		assert.Equal(t, "/tmp/data", config.Settings.DataDir)
-		assert.Equal(t, 3600, config.Settings.CacheTTL)
+		assert.Equal(t, 3600, int(config.Settings.CacheTTL))
 
 
 		// Verify Tasks
@@ -164,7 +164,7 @@ tasks:
 
 		// Verify Settings
 		assert.Equal(t, "/tmp/cache", config.Settings.CacheDir)
-		assert.Equal(t, 3600, config.Settings.CacheTTL)
+		assert.Equal(t, 3600, int(config.Settings.CacheTTL))
 	})
 
 	t.Run("file not found", func(t *testing.T) {
@@ -292,7 +292,7 @@ cache_ttl = 7200
 		assert.Equal(t, "true", config.Env["DEBUG"], "debug should come from local")
 
 		// Verify settings merging
-		assert.Equal(t, 7200, config.Settings.CacheTTL, "cache_ttl should come from project")
+		assert.Equal(t, 7200, int(config.Settings.CacheTTL), "cache_ttl should come from project")
 
 	})
 
@@ -536,7 +536,7 @@ func TestConfigManager_Merge(t *testing.T) {
 		// Verify Settings merging
 		assert.Equal(t, "/tmp/cache1", merged.Settings.CacheDir, "CacheDir from config1")
 		assert.Equal(t, "/tmp/data2", merged.Settings.DataDir, "DataDir from config2")
-		assert.Equal(t, 3600, merged.Settings.CacheTTL, "CacheTTL from config1")
+		assert.Equal(t, 3600, int(merged.Settings.CacheTTL), "CacheTTL from config1")
 
 
 		// Verify Tasks merging
@@ -632,7 +632,7 @@ func TestConfigManager_Merge(t *testing.T) {
 		// Note: keys are set directly in Go code - they are lowercase
 		assert.Equal(t, "development", merged.Env["node_env"], "node_env from local")
 		assert.Equal(t, "/project/cache", merged.Settings.CacheDir, "CacheDir from project")
-		assert.Equal(t, 86400, merged.Settings.CacheTTL, "CacheTTL from system")
+		assert.Equal(t, 86400, int(merged.Settings.CacheTTL), "CacheTTL from system")
 	})
 }
 
@@ -694,7 +694,7 @@ cache_ttl = 3600
 		// Verify merged result
 		assert.Equal(t, "20.0.0", merged.Tools["node"].Version)
 		assert.Equal(t, "3.11.0", merged.Tools["python"].Version)
-		assert.Equal(t, 3600, merged.Settings.CacheTTL)
+		assert.Equal(t, 3600, int(merged.Settings.CacheTTL))
 
 	})
 }
@@ -759,7 +759,7 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 
 		// Verify settings overrides
 		assert.Equal(t, "/dev/cache", result.Settings.CacheDir, "CacheDir should be overridden")
-		assert.Equal(t, 7200, result.Settings.CacheTTL, "CacheTTL should be preserved")
+		assert.Equal(t, 7200, int(result.Settings.CacheTTL), "CacheTTL should be preserved")
 
 
 		// Verify task overrides
@@ -789,7 +789,7 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 		require.NotNil(t, result)
 
 		// Verify settings overrides
-		assert.Equal(t, 7200, result.Settings.CacheTTL, "CacheTTL should be overridden")
+		assert.Equal(t, 7200, int(result.Settings.CacheTTL), "CacheTTL should be overridden")
 
 
 		// Verify tools are preserved
@@ -828,7 +828,7 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 		assert.Equal(t, "20.0.0", result.Tools["node"].Version)
 		assert.Equal(t, "production", result.Env["NODE_ENV"])
 		assert.Equal(t, "true", result.Env["ENABLE_CACHE"])
-		assert.Equal(t, 86400, result.Settings.CacheTTL)
+		assert.Equal(t, 86400, int(result.Settings.CacheTTL))
 
 	})
 
@@ -895,7 +895,7 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 		// Base config should be preserved
 		assert.Equal(t, "20.0.0", result.Tools["node"].Version)
 		assert.Equal(t, "production", result.Env["NODE_ENV"])
-		assert.Equal(t, 3600, result.Settings.CacheTTL)
+		assert.Equal(t, 3600, int(result.Settings.CacheTTL))
 	})
 }
 
@@ -955,7 +955,7 @@ cache_ttl = 3600
 		// Note: keys are set directly in Go code - they are lowercase
 		assert.Equal(t, "development", config.Env["NODE_ENV"], "NODE_ENV should be overridden")
 		assert.Equal(t, "true", config.Env["DEBUG"], "DEBUG should be added")
-		assert.Equal(t, 3600, config.Settings.CacheTTL, "CacheTTL should be overridden")
+		assert.Equal(t, 3600, int(config.Settings.CacheTTL), "CacheTTL should be overridden")
 	})
 
 	t.Run("load without environment", func(t *testing.T) {
@@ -1112,7 +1112,7 @@ cache_ttl = 172800
 		assert.Equal(t, "debug", devConfig.Env["LOG_LEVEL"])
 		assert.Equal(t, "true", devConfig.Env["DEBUG"])
 		assert.Equal(t, "/dev/cache", devConfig.Settings.CacheDir)
-		assert.Equal(t, 3600, devConfig.Settings.CacheTTL)
+		assert.Equal(t, 3600, int(devConfig.Settings.CacheTTL))
 
 		assert.Equal(t, "Build for development", devConfig.Tasks["build"].Description)
 		assert.Equal(t, "npm run dev", devConfig.Tasks["build"].Run)
@@ -1128,7 +1128,7 @@ cache_ttl = 172800
 		assert.Equal(t, "staging", stagingConfig.Env["NODE_ENV"])
 		assert.Equal(t, "info", stagingConfig.Env["LOG_LEVEL"])
 		assert.Equal(t, "/prod/cache", stagingConfig.Settings.CacheDir)
-		assert.Equal(t, 43200, stagingConfig.Settings.CacheTTL)
+		assert.Equal(t, 43200, int(stagingConfig.Settings.CacheTTL))
 
 
 		// Test production environment
@@ -1144,7 +1144,7 @@ cache_ttl = 172800
 		assert.Equal(t, "warn", prodConfig.Env["LOG_LEVEL"])
 		assert.Equal(t, "true", prodConfig.Env["ENABLE_MONITORING"])
 		assert.Equal(t, "/prod/cache", prodConfig.Settings.CacheDir)
-		assert.Equal(t, 172800, prodConfig.Settings.CacheTTL)
+		assert.Equal(t, 172800, int(prodConfig.Settings.CacheTTL))
 
 
 		// Validate all configurations

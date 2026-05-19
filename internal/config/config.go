@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
@@ -112,15 +113,15 @@ func (tm ToolMap) MarshalTOML() (interface{}, error) {
 type Settings struct {
 	CacheDir           string                            `toml:"cache_dir" yaml:"cache_dir" mapstructure:"cache_dir"`
 	DataDir            string                            `toml:"data_dir" yaml:"data_dir" mapstructure:"data_dir"`
-	CacheTTL           int                               `toml:"cache_ttl" yaml:"cache_ttl" mapstructure:"cache_ttl"`
+	CacheTTL           DurationOrInt                     `toml:"cache_ttl" yaml:"cache_ttl" mapstructure:"cache_ttl"`
 	Lockfile           bool                              `toml:"lockfile,omitempty" yaml:"lockfile,omitempty" mapstructure:"lockfile,omitempty"`
 	Locked             bool                              `toml:"locked,omitempty" yaml:"locked,omitempty" mapstructure:"locked,omitempty"`
 	GitHubProxy        string                            `toml:"github_proxy,omitempty" yaml:"github_proxy,omitempty" mapstructure:"github_proxy,omitempty"`
 	HttpProxy          string                            `toml:"http_proxy,omitempty" yaml:"http_proxy,omitempty" mapstructure:"http_proxy,omitempty"`
 	HttpsProxy         string                            `toml:"https_proxy,omitempty" yaml:"https_proxy,omitempty" mapstructure:"https_proxy,omitempty"`
 	GitHubToken        string                            `toml:"github_token,omitempty" yaml:"github_token,omitempty" mapstructure:"github_token,omitempty"`
-	HTTPTimeout        int                               `toml:"http_timeout,omitempty" yaml:"http_timeout,omitempty" mapstructure:"http_timeout,omitempty"`
-	TaskTimeout        int                               `toml:"task_timeout,omitempty" yaml:"task_timeout,omitempty" mapstructure:"task_timeout,omitempty"`
+	HTTPTimeout        DurationOrInt                     `toml:"http_timeout,omitempty" yaml:"http_timeout,omitempty" mapstructure:"http_timeout,omitempty"`
+	TaskTimeout        DurationOrInt                     `toml:"task_timeout,omitempty" yaml:"task_timeout,omitempty" mapstructure:"task_timeout,omitempty"`
 	TaskOutput         string                            `toml:"task_output,omitempty" yaml:"task_output,omitempty" mapstructure:"task_output,omitempty"`
 	Experimental       bool                              `toml:"experimental,omitempty" yaml:"experimental,omitempty" mapstructure:"experimental,omitempty"`
 	AutoInstall        *bool                             `toml:"auto_install,omitempty" yaml:"auto_install,omitempty" mapstructure:"auto_install,omitempty"`
@@ -147,7 +148,9 @@ func (s *Settings) LoadFromEnv() {
 	}
 	if v := env.Get("CACHE_TTL"); v != "" {
 		if i, err := strconv.Atoi(v); err == nil {
-			s.CacheTTL = i
+			s.CacheTTL = DurationOrInt(i)
+		} else if sec, err := parseDurationToSeconds(v); err == nil {
+			s.CacheTTL = DurationOrInt(sec)
 		}
 	}
 	if v := env.Get("LOCKFILE"); v != "" {
@@ -170,12 +173,16 @@ func (s *Settings) LoadFromEnv() {
 	}
 	if v := env.Get("HTTP_TIMEOUT"); v != "" {
 		if i, err := strconv.Atoi(v); err == nil {
-			s.HTTPTimeout = i
+			s.HTTPTimeout = DurationOrInt(i)
+		} else if sec, err := parseDurationToSeconds(v); err == nil {
+			s.HTTPTimeout = DurationOrInt(sec)
 		}
 	}
 	if v := env.Get("TASK_TIMEOUT"); v != "" {
 		if i, err := strconv.Atoi(v); err == nil {
-			s.TaskTimeout = i
+			s.TaskTimeout = DurationOrInt(i)
+		} else if sec, err := parseDurationToSeconds(v); err == nil {
+			s.TaskTimeout = DurationOrInt(sec)
 		}
 	}
 	if v := env.Get("TASK_OUTPUT"); v != "" {
@@ -434,4 +441,102 @@ func (ec *EnvironmentConfig) Validate() error {
 		return errors.New(strings.Join(errs, "; "))
 	}
 	return nil
+}
+
+// DurationOrInt represents a duration in seconds, which can be parsed from
+// either an integer number of seconds or a duration string (e.g. "30s", "1h", "20m").
+type DurationOrInt int
+
+func (d *DurationOrInt) UnmarshalText(text []byte) error {
+	s := string(text)
+	if val, err := strconv.Atoi(s); err == nil {
+		*d = DurationOrInt(val)
+		return nil
+	}
+	val, err := parseDurationToSeconds(s)
+	if err == nil {
+		*d = DurationOrInt(val)
+		return nil
+	}
+	return fmt.Errorf("invalid duration or integer: %q", s)
+}
+
+func (d *DurationOrInt) UnmarshalYAML(value *yaml.Node) error {
+	var s string
+	if err := value.Decode(&s); err == nil {
+		if val, err := strconv.Atoi(s); err == nil {
+			*d = DurationOrInt(val)
+			return nil
+		}
+		val, err := parseDurationToSeconds(s)
+		if err == nil {
+			*d = DurationOrInt(val)
+			return nil
+		}
+	}
+	var i int
+	if err := value.Decode(&i); err == nil {
+		*d = DurationOrInt(i)
+		return nil
+	}
+	return fmt.Errorf("invalid duration or integer: %s", value.Value)
+}
+
+func (d *DurationOrInt) UnmarshalJSON(data []byte) error {
+	s := string(data)
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		s = s[1 : len(s)-1]
+	}
+	if val, err := strconv.Atoi(s); err == nil {
+		*d = DurationOrInt(val)
+		return nil
+	}
+	val, err := parseDurationToSeconds(s)
+	if err == nil {
+		*d = DurationOrInt(val)
+		return nil
+	}
+	return fmt.Errorf("invalid duration or integer: %q", string(data))
+}
+
+func parseDurationToSeconds(s string) (int, error) {
+	s = strings.TrimSpace(strings.ToLower(s))
+	if s == "" {
+		return 0, nil
+	}
+
+	var numStr string
+	var unit string
+	for i, r := range s {
+		if (r >= '0' && r <= '9') || r == '-' || r == '+' {
+			numStr += string(r)
+		} else {
+			unit = s[i:]
+			break
+		}
+	}
+
+	if numStr == "" {
+		return 0, fmt.Errorf("no number in duration %q", s)
+	}
+
+	val, err := strconv.Atoi(numStr)
+	if err != nil {
+		return 0, err
+	}
+
+	switch unit {
+	case "", "s", "sec", "second", "seconds":
+		return val, nil
+	case "m", "min", "minute", "minutes":
+		return val * 60, nil
+	case "h", "hr", "hour", "hours":
+		return val * 3600, nil
+	case "d", "day", "days":
+		return val * 86400, nil
+	case "w", "week", "weeks":
+		return val * 86400 * 7, nil
+	default:
+		return 0, fmt.Errorf("unknown duration unit %q", unit)
+	}
 }
