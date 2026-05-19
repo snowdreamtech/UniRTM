@@ -22,12 +22,18 @@ var (
 	useGlobal bool
 	// usePath specifies the directory to write the config file into
 	usePath string
+	// useForce forces reinstallation of the tool version
+	useForce bool
+	// useEnv specifies an environment-specific config file (e.g. unirtm.<env>.toml)
+	useEnv string
 )
 
 // init registers the use command to the root command.
 func init() {
 	useCmd.Flags().BoolVarP(&useGlobal, "global", "g", false, "write to global config (~/.config/unirtm/config.toml)")
 	useCmd.Flags().StringVarP(&usePath, "path", "p", "", "directory to write config file into (default: current directory)")
+	useCmd.Flags().BoolVarP(&useForce, "force", "f", false, "force reinstall even if the tool is already installed")
+	useCmd.Flags().StringVarP(&useEnv, "env", "e", "", "environment-specific config file (e.g. unirtm.<env>.toml)")
 
 	if rootCmd != nil {
 		rootCmd.AddCommand(useCmd)
@@ -151,7 +157,7 @@ func runUse(cmd *cobra.Command, args []string) error {
 	}
 
 	// Find or create the config file in targetDir
-	configFile := findOrCreateConfigFile(targetDir)
+	configFile := findOrCreateConfigFile(targetDir, useEnv)
 
 	if dryRun {
 		for _, p := range pairs {
@@ -204,12 +210,23 @@ func runUse(cmd *cobra.Command, args []string) error {
 				toolName = parts[1]
 			}
 
+			// If force is enabled, perform clean uninstallation first if it is installed
+			if useForce {
+				alreadyOnDisk, _ := im.IsInstalled(ctx, toolName, p.version, backendName)
+				if alreadyOnDisk {
+					formatter.Info(fmt.Sprintf("Tool %s@%s is already installed. [force] Uninstalling first...", toolName, p.version), nil)
+					_ = im.Uninstall(ctx, toolName, p.version)
+				}
+			}
+
 			isInstalled, _ := im.IsInstalled(ctx, toolName, p.version, backendName)
 			if !isInstalled {
 				formatter.Info(fmt.Sprintf("Tool %s@%s is not installed. Installing now...", toolName, p.version), nil)
 				if err := im.Install(ctx, toolName, p.version, backendName); err != nil {
 					return fmt.Errorf("failed to automatically install %s@%s: %w", toolName, p.version, err)
 				}
+			} else {
+				formatter.Success(fmt.Sprintf("Tool %s@%s is already installed", toolName, p.version), nil)
 			}
 		}
 	}
@@ -218,13 +235,22 @@ func runUse(cmd *cobra.Command, args []string) error {
 }
 
 // findOrCreateConfigFile finds an existing config file in the directory,
-// or returns the path to a new unirtm.toml to be created.
-func findOrCreateConfigFile(dir string) string {
-	for _, name := range []string{".unirtm.toml", "unirtm.toml"} {
+// or returns the path to a new unirtm.toml to be created, supporting env-specific name config.
+func findOrCreateConfigFile(dir, envName string) string {
+	var names []string
+	if envName != "" {
+		names = []string{fmt.Sprintf(".unirtm.%s.toml", envName), fmt.Sprintf("unirtm.%s.toml", envName)}
+	} else {
+		names = []string{".unirtm.toml", "unirtm.toml"}
+	}
+	for _, name := range names {
 		p := filepath.Join(dir, name)
 		if _, err := os.Stat(p); err == nil {
 			return p
 		}
+	}
+	if envName != "" {
+		return filepath.Join(dir, fmt.Sprintf("unirtm.%s.toml", envName))
 	}
 	return filepath.Join(dir, "unirtm.toml")
 }
