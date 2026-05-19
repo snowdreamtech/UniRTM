@@ -334,30 +334,17 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 		// 2. Create ConcurrentManager
 		var (
-			spinners         = make(map[string]*pterm.SpinnerPrinter)
-			spinnersMu       sync.Mutex
-			multi            *pterm.MultiPrinter
-			useMulti         = pterm.PrintColor && !pterm.RawOutput && !jsonOutput && term.IsTerminal(int(os.Stdout.Fd())) && len(requests) <= 10
-			bufferedMessages []string
-			bufferedMu       sync.Mutex
-			multiStopped     bool
+			spinnerMgr *concurrentSpinnerManager
+			useMulti   = pterm.PrintColor && !pterm.RawOutput && !jsonOutput && term.IsTerminal(int(os.Stdout.Fd())) && len(requests) <= 10
 		)
 
 		if useMulti {
-			multi = &pterm.DefaultMultiPrinter
-			go func() {
-				_, _ = multi.Start()
-			}()
+			spinnerMgr = newConcurrentSpinnerManager()
+			spinnerMgr.Start()
 			defer func() {
-				if !multiStopped {
-					time.Sleep(50 * time.Millisecond)
-					_, _ = multi.Stop()
+				if spinnerMgr != nil {
+					spinnerMgr.Stop()
 				}
-				bufferedMu.Lock()
-				for _, msg := range bufferedMessages {
-					pterm.Println(msg)
-				}
-				bufferedMu.Unlock()
 			}()
 		}
 
@@ -365,72 +352,32 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			if jsonOutput {
 				return
 			}
-			switch status {
-			case "starting":
-				if useMulti {
-					spinnersMu.Lock()
-					spinner, _ := pterm.DefaultSpinner.
-						WithWriter(multi.NewWriter()).
-						Start(fmt.Sprintf("Installing %s@%s...", tool, version))
-					spinner.SuccessPrinter = pterm.Success.WithWriter(spinner.Writer)
-					spinner.FailPrinter = pterm.Error.WithWriter(spinner.Writer)
-					spinners[tool] = spinner
-					spinnersMu.Unlock()
-				} else {
-					pterm.Info.Printf("Starting installation of %s@%s...\n", tool, version)
-				}
-			case "done":
-				if useMulti {
-					spinnersMu.Lock()
-					spinner, exists := spinners[tool]
-					spinnersMu.Unlock()
-					if exists && spinner != nil {
-						spinner.Success(fmt.Sprintf("Successfully installed %s@%s", tool, version))
-					}
-				} else {
-					pterm.FgGreen.Printf("✓ Successfully installed %s@%s\n", tool, version)
-				}
-			default:
-				if strings.HasPrefix(status, "failed:") {
-					errMsg := strings.TrimPrefix(status, "failed: ")
-					if errMsg == service.ErrAlreadyInstalled.Error() || strings.Contains(errMsg, "already installed") {
-						if useMulti {
-							spinnersMu.Lock()
-							spinner, exists := spinners[tool]
-							spinnersMu.Unlock()
-							if exists && spinner != nil {
-								spinner.Success(fmt.Sprintf("%s@%s (already installed)", tool, version))
-							} else {
-								bufferedMu.Lock()
-								bufferedMessages = append(bufferedMessages, pterm.FgGreen.Sprintf("✓ %s@%s (already installed)", tool, version))
-								bufferedMu.Unlock()
-							}
-						} else {
-							pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", tool, version)
-						}
+			if useMulti {
+				switch status {
+				case "starting":
+					spinnerMgr.Add(tool, version)
+				case "done":
+					spinnerMgr.Complete(tool, version, "done")
+				default:
+					if strings.HasPrefix(status, "failed:") {
+						spinnerMgr.Complete(tool, version, status)
 					} else {
-						if useMulti {
-							spinnersMu.Lock()
-							spinner, exists := spinners[tool]
-							spinnersMu.Unlock()
-							if exists && spinner != nil {
-								spinner.Fail(fmt.Sprintf("Failed to install %s@%s: %s", tool, version, errMsg))
-							} else {
-								bufferedMu.Lock()
-								bufferedMessages = append(bufferedMessages, pterm.Error.Sprintf("Failed to install %s@%s: %s", tool, version, errMsg))
-								bufferedMu.Unlock()
-							}
+						spinnerMgr.Update(tool, status)
+					}
+				}
+			} else {
+				switch status {
+				case "starting":
+					pterm.Info.Printf("Starting installation of %s@%s...\n", tool, version)
+				case "done":
+					pterm.FgGreen.Printf("✓ Successfully installed %s@%s\n", tool, version)
+				default:
+					if strings.HasPrefix(status, "failed:") {
+						errMsg := strings.TrimPrefix(status, "failed: ")
+						if errMsg == service.ErrAlreadyInstalled.Error() || strings.Contains(errMsg, "already installed") {
+							pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", tool, version)
 						} else {
 							pterm.Error.Printf("Failed to install %s@%s: %s\n", tool, version, errMsg)
-						}
-					}
-				} else {
-					if useMulti {
-						spinnersMu.Lock()
-						spinner, exists := spinners[tool]
-						spinnersMu.Unlock()
-						if exists && spinner != nil {
-							spinner.UpdateText(fmt.Sprintf("%s@%s: %s", tool, version, status))
 						}
 					} else {
 						pterm.Info.Printf("%s@%s: %s\n", tool, version, status)
@@ -448,22 +395,15 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		// Set up ProgressReporter for live concurrent download updates
 		if useMulti {
 			reporter := func(toolName string, downloaded, total int64) {
-				spinnersMu.Lock()
-				spinner, exists := spinners[toolName]
-				spinnersMu.Unlock()
-				if exists && spinner != nil {
-					if total > 0 {
-						percent := (downloaded * 100) / total
-						spinner.UpdateText(fmt.Sprintf("Downloading %s: %s/%s (%d%%)", 
-							toolName, 
-							humanize.Bytes(uint64(downloaded)), 
-							humanize.Bytes(uint64(total)), 
-							percent))
-					} else {
-						spinner.UpdateText(fmt.Sprintf("Downloading %s: %s", 
-							toolName, 
-							humanize.Bytes(uint64(downloaded))))
-					}
+				if total > 0 {
+					percent := (downloaded * 100) / total
+					spinnerMgr.Update(toolName, fmt.Sprintf("Downloading %s/%s (%d%%)", 
+						humanize.Bytes(uint64(downloaded)), 
+						humanize.Bytes(uint64(total)), 
+						percent))
+				} else {
+					spinnerMgr.Update(toolName, fmt.Sprintf("Downloading %s", 
+						humanize.Bytes(uint64(downloaded))))
 				}
 			}
 			ctx = context.WithValue(ctx, service.ContextKeyProgressReporter, service.ProgressReporter(reporter))
@@ -530,10 +470,8 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		startTime := time.Now()
 		results, err := cm.InstallAll(ctx, requests)
 		
-		if useMulti && multi != nil {
-			time.Sleep(50 * time.Millisecond)
-			_, _ = multi.Stop()
-			multiStopped = true
+		if useMulti && spinnerMgr != nil {
+			spinnerMgr.Stop()
 		}
 
 		if err != nil {
@@ -616,3 +554,149 @@ func getBackendName() string {
 	}
 	return "" // Default to empty to allow auto-detection
 }
+
+type concurrentSpinnerFrame struct {
+	tool    string
+	version string
+	status  string
+}
+
+type concurrentSpinnerManager struct {
+	mu          sync.Mutex
+	active      []*concurrentSpinnerFrame
+	activeMap   map[string]*concurrentSpinnerFrame
+	ticker      *time.Ticker
+	done        chan struct{}
+	frames      []string
+	frameCount  int
+	lastHeight  int
+}
+
+func newConcurrentSpinnerManager() *concurrentSpinnerManager {
+	return &concurrentSpinnerManager{
+		activeMap: make(map[string]*concurrentSpinnerFrame),
+		done:      make(chan struct{}),
+		frames:    []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"},
+	}
+}
+
+func (m *concurrentSpinnerManager) Start() {
+	m.ticker = time.NewTicker(100 * time.Millisecond)
+	go func() {
+		for {
+			select {
+			case <-m.ticker.C:
+				m.render()
+			case <-m.done:
+				return
+			}
+		}
+	}()
+}
+
+func (m *concurrentSpinnerManager) Add(tool, version string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	frame := &concurrentSpinnerFrame{
+		tool:    tool,
+		version: version,
+		status:  "starting",
+	}
+	m.active = append(m.active, frame)
+	m.activeMap[tool] = frame
+}
+
+func (m *concurrentSpinnerManager) Update(tool, status string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if frame, exists := m.activeMap[tool]; exists {
+		frame.status = status
+	}
+}
+
+func (m *concurrentSpinnerManager) Complete(tool, version, status string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Clear previous output first
+	m.renderClear()
+
+	// Print static status message based on status
+	switch status {
+	case "done":
+		pterm.Success.Printf("Successfully installed %s@%s\n", tool, version)
+	default:
+		if strings.HasPrefix(status, "failed:") {
+			errMsg := strings.TrimPrefix(status, "failed: ")
+			if errMsg == service.ErrAlreadyInstalled.Error() || strings.Contains(errMsg, "already installed") {
+				pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", tool, version)
+			} else {
+				pterm.Error.Printf("Failed to install %s@%s: %s\n", tool, version, errMsg)
+			}
+		} else {
+			pterm.Info.Printf("%s@%s: %s\n", tool, version, status)
+		}
+	}
+
+	// Remove from active list
+	var newActive []*concurrentSpinnerFrame
+	for _, f := range m.active {
+		if f.tool != tool {
+			newActive = append(newActive, f)
+		}
+	}
+	m.active = newActive
+	delete(m.activeMap, tool)
+
+	// Re-render remaining active spinners immediately
+	m.renderWrite()
+}
+
+func (m *concurrentSpinnerManager) Stop() {
+	if m.ticker != nil {
+		m.ticker.Stop()
+		// Safe channel closing check
+		select {
+		case <-m.done:
+		default:
+			close(m.done)
+		}
+	}
+	m.mu.Lock()
+	m.renderClear()
+	m.mu.Unlock()
+}
+
+func (m *concurrentSpinnerManager) render() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.renderClear()
+	m.renderWrite()
+}
+
+func (m *concurrentSpinnerManager) renderClear() {
+	if m.lastHeight > 0 {
+		for i := 0; i < m.lastHeight; i++ {
+			fmt.Print("\033[A\033[K")
+		}
+		m.lastHeight = 0
+	}
+}
+
+func (m *concurrentSpinnerManager) renderWrite() {
+	if len(m.active) == 0 {
+		return
+	}
+
+	spinnerChar := m.frames[m.frameCount%len(m.frames)]
+	m.frameCount++
+
+	for _, f := range m.active {
+		pterm.Printf("%s  %s: %s\n", pterm.FgCyan.Sprint(spinnerChar), pterm.FgLightBlue.Sprint(f.tool), f.status)
+		m.lastHeight++
+	}
+}
+
