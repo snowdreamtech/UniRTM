@@ -6,6 +6,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
@@ -16,11 +17,19 @@ import (
 
 var (
 	setGlobal bool
+	setPath   string
+	setEnv    string
 )
 
 func init() {
-	setCmd.Flags().BoolVar(&setGlobal, "global", false, "write to global config (~/.config/unirtm/unirtm.toml)")
-	unsetCmd.Flags().BoolVar(&setGlobal, "global", false, "write to global config (~/.config/unirtm/unirtm.toml)")
+	setCmd.Flags().BoolVarP(&setGlobal, "global", "g", false, "write to global config (~/.config/unirtm/unirtm.toml)")
+	setCmd.Flags().StringVarP(&setPath, "path", "p", "", "directory to write config file into (default: current directory)")
+	setCmd.Flags().StringVarP(&setEnv, "env", "e", "", "environment-specific config file (e.g. unirtm.<env>.toml)")
+
+	unsetCmd.Flags().BoolVarP(&setGlobal, "global", "g", false, "write to global config (~/.config/unirtm/unirtm.toml)")
+	unsetCmd.Flags().StringVarP(&setPath, "path", "p", "", "directory to write config file into (default: current directory)")
+	unsetCmd.Flags().StringVarP(&setEnv, "env", "e", "", "environment-specific config file (e.g. unirtm.<env>.toml)")
+
 	if rootCmd != nil {
 		rootCmd.AddCommand(setCmd)
 		rootCmd.AddCommand(unsetCmd)
@@ -86,6 +95,29 @@ func resolveConfigFilePath(global bool) string {
 	return "unirtm.toml"
 }
 
+// resolveConfigFilePathWithOpts returns the config file to edit with custom path/env options.
+func resolveConfigFilePathWithOpts(global bool, pathOpt string, envOpt string) string {
+	if global {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return env.GetGlobalConfigPath()
+		}
+		return filepath.Join(homeDir, ".config", "unirtm", "unirtm.toml")
+	}
+	targetDir := pathOpt
+	if targetDir == "" {
+		if configPath != "" {
+			return configPath
+		}
+		var err error
+		targetDir, err = os.Getwd()
+		if err != nil {
+			targetDir = "."
+		}
+	}
+	return findOrCreateConfigFile(targetDir, envOpt)
+}
+
 // ─── set ──────────────────────────────────────────────────────────────────────
 
 func runSet(cmd *cobra.Command, args []string) error {
@@ -107,7 +139,7 @@ func runSet(cmd *cobra.Command, args []string) error {
 		pairs[arg[:idx]] = arg[idx+1:]
 	}
 
-	cfgPath := resolveConfigFilePath(setGlobal)
+	cfgPath := resolveConfigFilePathWithOpts(setGlobal, setPath, setEnv)
 	content, err := config.ReadFileOrEmpty(cfgPath)
 	if err != nil {
 		formatter.Error(fmt.Sprintf("Failed to load config: %v", err))
@@ -143,7 +175,7 @@ func runUnset(cmd *cobra.Command, args []string) error {
 		Verbose: verbose,
 	})
 
-	cfgPath := resolveConfigFilePath(setGlobal)
+	cfgPath := resolveConfigFilePathWithOpts(setGlobal, setPath, setEnv)
 	content, err := config.ReadFileOrEmpty(cfgPath)
 	if err != nil {
 		formatter.Error(fmt.Sprintf("Failed to load config: %v", err))
