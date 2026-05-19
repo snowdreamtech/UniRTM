@@ -23,27 +23,24 @@ func TestInstallCommand_ArgumentParsing(t *testing.T) {
 		errContains string
 	}{
 		{
-			name:    "valid arguments",
+			name:    "valid legacy arguments",
 			args:    []string{"node", "20.0.0"},
 			wantErr: false,
 		},
 		{
-			name:        "missing version",
-			args:        []string{"node"},
-			wantErr:     true,
-			errContains: "accepts 2 arg(s), received 1",
+			name:    "valid package specifications",
+			args:    []string{"node@20.0.0", "go@1.22.1"},
+			wantErr: false,
 		},
 		{
-			name:        "missing tool and version",
-			args:        []string{},
-			wantErr:     true,
-			errContains: "accepts 2 arg(s), received 0",
+			name:    "no arguments",
+			args:    []string{},
+			wantErr: false,
 		},
 		{
-			name:        "too many arguments",
-			args:        []string{"node", "20.0.0", "extra"},
-			wantErr:     true,
-			errContains: "accepts 2 arg(s), received 3",
+			name:    "many arguments",
+			args:    []string{"node@20.0.0", "go@1.22.1", "python@3.12.0"},
+			wantErr: false,
 		},
 	}
 
@@ -51,8 +48,8 @@ func TestInstallCommand_ArgumentParsing(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a new command instance for each test
 			cmd := &cobra.Command{
-				Use:  "install <tool> <version>",
-				Args: cobra.ExactArgs(2),
+				Use:  "install [tool[@version]...]",
+				Args: cobra.ArbitraryArgs,
 				RunE: func(cmd *cobra.Command, args []string) error {
 					return nil
 				},

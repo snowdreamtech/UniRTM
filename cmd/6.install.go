@@ -32,12 +32,15 @@ import (
 var (
 	// installBackend specifies the backend to use for installation
 	installBackend string
+	// installForce forces reinstallation of tools even if already installed
+	installForce   bool
 )
 
 // init registers the install command to the root command.
 func init() {
 	// Register command flags
 	installCmd.Flags().StringVarP(&installBackend, "backend", "b", "", "backend to use for installation (default: auto-detect)")
+	installCmd.Flags().BoolVarP(&installForce, "force", "f", false, "force installation even if already installed")
 
 	// Add command to root - this will be called after rootCmd is initialized
 	if rootCmd != nil {
@@ -55,12 +58,12 @@ func RegisterInstallCommand() {
 
 // installCmd represents the install command which installs a specific version of a tool.
 var installCmd = &cobra.Command{
-	Use:   "install <tool> <version>",
-	Short: "Install a specific version of a development tool",
-	Long: `Install a specific version of a development tool.
+	Use:   "install [tool[@version]...]",
+	Short: "Install development tools and package specifications",
+	Long: `Install development tools and package specifications.
 
-The install command downloads and installs the specified version of a tool
-using the appropriate backend. It validates the installation, records it in
+The install command downloads and installs one or more specified versions of tools
+using the appropriate backends. It validates the installation, records it in
 the database, and generates shim scripts.
 
 Examples:
@@ -70,10 +73,16 @@ Examples:
   # Install Python version 3.11.5 using a specific backend
   unirtm install python 3.11.5 --backend github
 
+  # Install multiple tools concurrently with package syntax
+  unirtm install node@20.11.0 go@1.22.1 python@3.12.0
+
+  # Force reinstall a tool even if already installed
+  unirtm install node@20.11.0 --force
+
   # Install with JSON output
   unirtm install go 1.21.0 --json`,
 	Aliases: []string{"i"},
-	Args:    cobra.MaximumNArgs(2),
+	Args:    cobra.ArbitraryArgs,
 	RunE:    runInstall,
 }
 
@@ -132,66 +141,112 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			}
 		}
 	} else {
-		// Use centralized ToolSpec parsing
-		backendName, tool, version, explicitVersion := im.ParseToolSpec(args[0])
+		toolsToInstall = make(map[string]service.ToolSpec)
 
-		// Override with explicit version if provided as second argument
+		// Determine if we should treat it as a single tool + version (backward compatibility)
+		// e.g. "unirtm install node 20.0.0"
+		isLegacySingleTool := false
 		if len(args) == 2 {
-			version = args[1]
-			explicitVersion = true
-		}
+			firstArg := args[0]
+			secondArg := args[1]
 
-		// If version is not explicit, try to resolve from configuration file first
-		if !explicitVersion && cfg != nil {
-			if tc, ok := cfg.Tools[tool]; ok && tc.Version != "" {
-				version = tc.Version
-				explicitVersion = true
-				if tc.Backend != "" {
-					backendName = tc.Backend
-				}
+			if !strings.Contains(firstArg, "@") && !strings.Contains(firstArg, ":") &&
+				!strings.Contains(secondArg, "@") {
+				isLegacySingleTool = true
 			}
 		}
 
-		if tool == "" {
-			formatter.Error("Tool name cannot be empty")
-			return fmt.Errorf("tool name is required")
-		}
-		if version == "" {
-			formatter.Error("Version cannot be empty")
-			return fmt.Errorf("version is required")
-		}
+		if isLegacySingleTool {
+			backendName, tool, _, _ := im.ParseToolSpec(args[0])
+			version := args[1]
 
-		if !explicitVersion && !jsonOutput {
-			// Check if stdin is a terminal
-			if stat, _ := os.Stdin.Stat(); (stat.Mode() & os.ModeCharDevice) != 0 {
-				selected, err := im.SelectVersionInteractive(ctx, tool, backendName)
-				if err == nil {
-					version = selected
-				} else {
-					pterm.Warning.Printf("Interactive selection failed: %v, falling back to latest\n", err)
-				}
+			if tool == "" {
+				formatter.Error("Tool name cannot be empty")
+				return fmt.Errorf("tool name is required")
 			}
-		}
 
-		toolsToInstall = map[string]service.ToolSpec{
-			tool: {
+			if version == "" {
+				formatter.Error("Version cannot be empty")
+				return fmt.Errorf("version is required")
+			}
+
+			if installBackend != "" {
+				backendName = installBackend
+			}
+
+			toolsToInstall[tool] = service.ToolSpec{
 				Name:        tool,
 				Version:     version,
 				BackendName: backendName,
-			},
+			}
+		} else {
+			// Parse each argument as a separate tool spec
+			for _, arg := range args {
+				backendName, tool, version, explicitVersion := im.ParseToolSpec(arg)
+
+				if installBackend != "" {
+					backendName = installBackend
+				}
+
+				// If version is not explicit, try to resolve from configuration file first
+				if !explicitVersion && cfg != nil {
+					if tc, ok := cfg.Tools[tool]; ok && tc.Version != "" {
+						version = tc.Version
+						explicitVersion = true
+						if tc.Backend != "" {
+							backendName = tc.Backend
+						}
+					}
+				}
+
+				if tool == "" {
+					formatter.Error("Tool name cannot be empty")
+					return fmt.Errorf("tool name is required")
+				}
+				if version == "" {
+					version = "latest"
+				}
+
+				if !explicitVersion && !jsonOutput {
+					// Check if stdin is a terminal
+					if stat, _ := os.Stdin.Stat(); (stat.Mode() & os.ModeCharDevice) != 0 {
+						selected, err := im.SelectVersionInteractive(ctx, tool, backendName)
+						if err == nil {
+							version = selected
+						} else {
+							pterm.Warning.Printf("Interactive selection failed for %s: %v, falling back to latest\n", tool, err)
+						}
+					}
+				}
+
+				key := tool
+				if backendName != "" && backendName != "asdf" {
+					key = backendName + ":" + tool
+				}
+				toolsToInstall[key] = service.ToolSpec{
+					Name:        tool,
+					Version:     version,
+					BackendName: backendName,
+				}
+			}
 		}
 	}
 
 	// Display start message
-	if len(args) > 0 {
-		tool := args[0] // original arg for display
-		formatter.Info(fmt.Sprintf("Installing %s", tool), map[string]interface{}{
-			"args": args,
-		})
+	if !jsonOutput {
+		pterm.Println()
+		pterm.DefaultHeader.WithBackgroundStyle(pterm.NewStyle(pterm.BgCyan)).WithTextStyle(pterm.NewStyle(pterm.FgBlack)).Println("🚀 UniRTM Installation Plan")
+		pterm.Println()
 	} else {
-		formatter.Info("Installing all tools from configuration", map[string]interface{}{
-			"count": len(toolsToInstall),
-		})
+		if len(args) > 0 {
+			formatter.Info(fmt.Sprintf("Installing %d tool(s)", len(toolsToInstall)), map[string]interface{}{
+				"args": args,
+			})
+		} else {
+			formatter.Info("Installing all tools from configuration", map[string]interface{}{
+				"count": len(toolsToInstall),
+			})
+		}
 	}
 
 	// Dry-run: show intent without side effects
@@ -268,20 +323,58 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		settings,
 	)
 
-	formatter.Info(fmt.Sprintf("Processing %d tool(s)...", len(toolsToInstall)))
-
 	// Sort tools by dependency to ensure runtimes are installed first
 	sortedTools := installManager.SortToolsFromSpecs(toolsToInstall)
+
+	// Display installation plan table if not in JSON mode
+	if !jsonOutput && len(sortedTools) > 0 {
+		tableData := [][]string{
+			{"📦 Tool", "🏷️ Target Version", "🔌 Backend", "🔗 Status"},
+		}
+		for _, t := range sortedTools {
+			statusStr := "Pending"
+			isInstalled, _ := installManager.IsInstalled(ctx, t.ToolName, t.Version, t.BackendName)
+			if isInstalled {
+				if installForce {
+					statusStr = pterm.FgYellow.Sprint("Reinstall")
+				} else {
+					statusStr = pterm.FgGreen.Sprint("Installed")
+				}
+			}
+			tableData = append(tableData, []string{
+				pterm.FgLightBlue.Sprint(t.ToolName),
+				pterm.FgLightCyan.Sprint(t.Version),
+				pterm.FgLightMagenta.Sprint(t.BackendName),
+				statusStr,
+			})
+		}
+		table, _ := pterm.DefaultTable.WithHasHeader().WithData(tableData).Srender()
+		pterm.Println(table)
+		pterm.Println("────────────────────────────────────────────────────────────────────────────────")
+	}
 
 	// Pre-filter already installed tools to prevent them from corrupting the MultiPrinter UI
 	var activeTools []service.ToolToInstall
 	for _, t := range sortedTools {
-		isInstalled, _ := installManager.IsInstalled(ctx, t.ToolName, t.Version, t.BackendName)
+		isInstalled := false
+		if !installForce {
+			isInstalled, _ = installManager.IsInstalled(ctx, t.ToolName, t.Version, t.BackendName)
+		}
+
 		if isInstalled {
 			if !jsonOutput {
-				pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", t.OriginalName, t.Version)
+				pterm.Success.Printf("✓ %s@%s (already installed, use --force to reinstall)\n", t.ToolName, t.Version)
 			}
 		} else {
+			if installForce {
+				alreadyOnDisk, _ := installManager.IsInstalled(ctx, t.ToolName, t.Version, t.BackendName)
+				if alreadyOnDisk {
+					if !jsonOutput {
+						pterm.Warning.Printf("⚠️  [force] Uninstalling existing %s@%s before reinstallation...\n", t.ToolName, t.Version)
+					}
+					_ = installManager.Uninstall(ctx, t.ToolName, t.Version)
+				}
+			}
 			activeTools = append(activeTools, t)
 		}
 	}
@@ -302,7 +395,11 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	runConcurrent := len(sortedTools) > 1 && concurrencyLimit > 1
 
 	if runConcurrent {
-		formatter.Info(fmt.Sprintf("Installing %d tool(s) concurrently (max %d parallel jobs)...", len(sortedTools), concurrencyLimit))
+		if !jsonOutput {
+			pterm.Println()
+			pterm.DefaultSection.Printf("Installing %d tool(s) concurrently (max %d parallel jobs)...", len(sortedTools), concurrencyLimit)
+			pterm.Println()
+		}
 
 		// 1. Build tool list for ConcurrentManager
 		var requests []service.ToolInstallRequest
@@ -503,7 +600,13 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		}
 
 		if !jsonOutput {
-			pterm.FgGreen.Printf("✓ All tools processed successfully (took %s)\n", duration.Round(time.Millisecond).String())
+			pterm.Println()
+			pterm.DefaultBox.
+				WithTitle(pterm.FgGreen.Sprint("✓ Installation Completed Successfully")).
+				WithTitleBottomRight().
+				WithBoxStyle(pterm.NewStyle(pterm.FgGreen)).
+				Printf("All planned tools have been processed and integrated successfully!\nTotal Time: %s", duration.Round(time.Millisecond).String())
+			pterm.Println()
 		} else {
 			// If JSON output, render the results JSON
 			outputData, _ := json.MarshalIndent(results, "", "  ")
@@ -522,19 +625,24 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				// Check if already installed
 				if err == service.ErrAlreadyInstalled || strings.Contains(err.Error(), "already installed") {
-					pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", toolName, version)
+					pterm.Success.Printf("✓ %s@%s (already installed)\n", toolName, version)
 					continue
 				}
 
 				pterm.Error.Printf("Installation failed for %s: %v\n", toolName, err)
 				return fmt.Errorf("install %s: %w", toolName, err)
 			}
-			pterm.FgGreen.Printf("✓ Successfully installed %s@%s\n", toolName, version)
+			pterm.Success.Printf("✓ Successfully installed %s@%s\n", toolName, version)
 		}
 
 		duration := time.Since(startTime)
-		if len(toolsToInstall) > 1 {
-			pterm.FgGreen.Printf("✓ All tools processed (took %s)\n", duration.Round(time.Millisecond).String())
+		if len(toolsToInstall) > 1 && !jsonOutput {
+			pterm.Println()
+			pterm.DefaultBox.
+				WithTitle(pterm.FgGreen.Sprint("✓ Batch Process Success")).
+				WithBoxStyle(pterm.NewStyle(pterm.FgGreen)).
+				Printf("All planned tools processed successfully!\nTotal Time: %s", duration.Round(time.Millisecond).String())
+			pterm.Println()
 		}
 	}
 
