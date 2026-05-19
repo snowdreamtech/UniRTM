@@ -233,20 +233,14 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	}
 
 	// Display start message
-	if !jsonOutput {
-		pterm.Println()
-		pterm.DefaultHeader.WithBackgroundStyle(pterm.NewStyle(pterm.BgCyan)).WithTextStyle(pterm.NewStyle(pterm.FgBlack)).Println("🚀 UniRTM Installation Plan")
-		pterm.Println()
+	if len(args) > 0 {
+		formatter.Info(fmt.Sprintf("Installing %d tool(s)", len(toolsToInstall)), map[string]interface{}{
+			"args": args,
+		})
 	} else {
-		if len(args) > 0 {
-			formatter.Info(fmt.Sprintf("Installing %d tool(s)", len(toolsToInstall)), map[string]interface{}{
-				"args": args,
-			})
-		} else {
-			formatter.Info("Installing all tools from configuration", map[string]interface{}{
-				"count": len(toolsToInstall),
-			})
-		}
+		formatter.Info("Installing all tools from configuration", map[string]interface{}{
+			"count": len(toolsToInstall),
+		})
 	}
 
 	// Dry-run: show intent without side effects
@@ -326,33 +320,6 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	// Sort tools by dependency to ensure runtimes are installed first
 	sortedTools := installManager.SortToolsFromSpecs(toolsToInstall)
 
-	// Display installation plan table if not in JSON mode
-	if !jsonOutput && len(sortedTools) > 0 {
-		tableData := [][]string{
-			{"📦 Tool", "🏷️ Target Version", "🔌 Backend", "🔗 Status"},
-		}
-		for _, t := range sortedTools {
-			statusStr := "Pending"
-			isInstalled, _ := installManager.IsInstalled(ctx, t.ToolName, t.Version, t.BackendName)
-			if isInstalled {
-				if installForce {
-					statusStr = pterm.FgYellow.Sprint("Reinstall")
-				} else {
-					statusStr = pterm.FgGreen.Sprint("Installed")
-				}
-			}
-			tableData = append(tableData, []string{
-				pterm.FgLightBlue.Sprint(t.ToolName),
-				pterm.FgLightCyan.Sprint(t.Version),
-				pterm.FgLightMagenta.Sprint(t.BackendName),
-				statusStr,
-			})
-		}
-		table, _ := pterm.DefaultTable.WithHasHeader().WithData(tableData).Srender()
-		pterm.Println(table)
-		pterm.Println("────────────────────────────────────────────────────────────────────────────────")
-	}
-
 	// Pre-filter already installed tools to prevent them from corrupting the MultiPrinter UI
 	var activeTools []service.ToolToInstall
 	for _, t := range sortedTools {
@@ -396,9 +363,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 	if runConcurrent {
 		if !jsonOutput {
-			pterm.Println()
-			pterm.DefaultSection.Printf("Installing %d tool(s) concurrently (max %d parallel jobs)...", len(sortedTools), concurrencyLimit)
-			pterm.Println()
+			pterm.Info.Printf("Installing %d tool(s) concurrently (max %d parallel jobs)...\n", len(sortedTools), concurrencyLimit)
 		}
 
 		// 1. Build tool list for ConcurrentManager
@@ -600,13 +565,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		}
 
 		if !jsonOutput {
-			pterm.Println()
-			pterm.DefaultBox.
-				WithTitle(pterm.FgGreen.Sprint("✓ Installation Completed Successfully")).
-				WithTitleBottomRight().
-				WithBoxStyle(pterm.NewStyle(pterm.FgGreen)).
-				Printf("All planned tools have been processed and integrated successfully!\nTotal Time: %s", duration.Round(time.Millisecond).String())
-			pterm.Println()
+			pterm.Success.Printf("✓ All tools processed successfully (took %s)\n", duration.Round(time.Millisecond).String())
 		} else {
 			// If JSON output, render the results JSON
 			outputData, _ := json.MarshalIndent(results, "", "  ")
@@ -637,12 +596,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 		duration := time.Since(startTime)
 		if len(toolsToInstall) > 1 && !jsonOutput {
-			pterm.Println()
-			pterm.DefaultBox.
-				WithTitle(pterm.FgGreen.Sprint("✓ Batch Process Success")).
-				WithBoxStyle(pterm.NewStyle(pterm.FgGreen)).
-				Printf("All planned tools processed successfully!\nTotal Time: %s", duration.Round(time.Millisecond).String())
-			pterm.Println()
+			pterm.Success.Printf("✓ All tools processed (took %s)\n", duration.Round(time.Millisecond).String())
 		}
 	}
 
