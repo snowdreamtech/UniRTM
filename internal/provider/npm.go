@@ -43,8 +43,13 @@ func (p *NpmProvider) Install(ctx context.Context, tool string, installPath stri
 	logger.Debug("Installing npm package", map[string]interface{}{"pkg": pkgSpec, "prefix": installPath})
 
 	cmd := exec.CommandContext(ctx, npmCmd, "install", "-g", pkgSpec, "--prefix", installPath)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	if ctx != nil && ctx.Value("quietProgress") == true {
+		cmd.Stdout = nil
+		cmd.Stderr = nil
+	} else {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
 
 	// Extract extra domain from environment variables
 	var extraDomains []string

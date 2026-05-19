@@ -49,8 +49,13 @@ func (p *VfoxProvider) Install(ctx context.Context, tool string, installPath str
 	args := []string{"install", pkgSpec}
 
 	cmd := exec.CommandContext(ctx, vfoxCmd, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	if ctx != nil && ctx.Value("quietProgress") == true {
+		cmd.Stdout = nil
+		cmd.Stderr = nil
+	} else {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
 	cmd.Env = GetNoProxyEnv()
 
 	// Optional: force vfox to use installPath as its base via environment variables if vfox supports it.

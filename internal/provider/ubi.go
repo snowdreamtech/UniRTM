@@ -50,8 +50,13 @@ func (p *UbiProvider) Install(ctx context.Context, tool string, installPath stri
 	}
 
 	cmd := exec.CommandContext(ctx, ubiCmd, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	if ctx != nil && ctx.Value("quietProgress") == true {
+		cmd.Stdout = nil
+		cmd.Stderr = nil
+	} else {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
 	if err := cmd.Run(); err != nil {
 		if tag != version {
 			logger.Debug("Retrying ubi without 'v' prefix", map[string]interface{}{"tool": tool, "version": version})

@@ -44,8 +44,13 @@ func (p *DotnetProvider) Install(ctx context.Context, tool string, installPath s
 	}
 
 	cmd := exec.CommandContext(ctx, dotnetCmd, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	if ctx != nil && ctx.Value("quietProgress") == true {
+		cmd.Stdout = nil
+		cmd.Stderr = nil
+	} else {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
 
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "dotnet tool install failed", err)

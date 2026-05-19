@@ -67,8 +67,13 @@ func (p *PypiProvider) Install(ctx context.Context, tool string, installPath str
 	pkgSpec := fmt.Sprintf("%s==%s", tool, version)
 	logger.Debug("Installing pypi package", map[string]interface{}{"pkg": pkgSpec, "venv": installPath})
 	cmd := exec.CommandContext(ctx, pipCmd, "install", pkgSpec)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	if ctx != nil && ctx.Value("quietProgress") == true {
+		cmd.Stdout = nil
+		cmd.Stderr = nil
+	} else {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
 	cmd.Env = GetNoProxyEnv(extraDomains...)
 
 	if err := cmd.Run(); err != nil {

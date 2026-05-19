@@ -51,8 +51,13 @@ func (p *GemProvider) Install(ctx context.Context, tool string, installPath stri
 	}
 
 	cmd := exec.CommandContext(ctx, gemCmd, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	if ctx != nil && ctx.Value("quietProgress") == true {
+		cmd.Stdout = nil
+		cmd.Stderr = nil
+	} else {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
 	cmd.Env = GetNoProxyEnv(extraDomains...)
 
 	if err := cmd.Run(); err != nil {

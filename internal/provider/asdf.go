@@ -103,8 +103,13 @@ func (p *AsdfProvider) Install(ctx context.Context, tool string, installPath str
 		cmd := exec.CommandContext(ctx, downloadScript)
 		cmd.Env = cmdEnv
 		cmd.Dir = installPath
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		if ctx != nil && ctx.Value("quietProgress") == true {
+			cmd.Stdout = nil
+			cmd.Stderr = nil
+		} else {
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+		}
 		if err := cmd.Run(); err != nil {
 			return NewProviderError(p.Name(), tool, version, "bin/download failed", err)
 		}
@@ -117,8 +122,13 @@ func (p *AsdfProvider) Install(ctx context.Context, tool string, installPath str
 		cmd := exec.CommandContext(ctx, installScript)
 		cmd.Env = cmdEnv
 		cmd.Dir = installPath
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		if ctx != nil && ctx.Value("quietProgress") == true {
+			cmd.Stdout = nil
+			cmd.Stderr = nil
+		} else {
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+		}
 		if err := cmd.Run(); err != nil {
 			return NewProviderError(p.Name(), tool, version, "bin/install failed", err)
 		}
@@ -143,8 +153,13 @@ func (p *AsdfProvider) PostInstall(ctx context.Context, tool string, installPath
 			"ASDF_INSTALL_PATH="+installPath,
 		)
 		cmd.Dir = installPath
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		if ctx != nil && ctx.Value("quietProgress") == true {
+			cmd.Stdout = nil
+			cmd.Stderr = nil
+		} else {
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+		}
 		if err := cmd.Run(); err != nil {
 			return NewProviderError(p.Name(), tool, version, "bin/post-install failed", err)
 		}

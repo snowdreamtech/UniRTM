@@ -183,7 +183,14 @@ func (im *InstallationManager) executeHook(ctx context.Context, cmdStr, tool, ve
 		return nil
 	}
 
-	fmt.Printf("➜ executing hook for %s@%s: %s\n", tool, version, cmdStr)
+	quietProgress := false
+	if val, ok := ctx.Value(ContextKeyQuietProgress).(bool); ok && val {
+		quietProgress = true
+	}
+
+	if !quietProgress {
+		fmt.Printf("➜ executing hook for %s@%s: %s\n", tool, version, cmdStr)
+	}
 
 	// Create command
 	var shell, shellArg string
@@ -196,8 +203,15 @@ func (im *InstallationManager) executeHook(ctx context.Context, cmdStr, tool, ve
 	}
 
 	execCmd := exec.CommandContext(ctx, shell, shellArg, cmdStr)
-	execCmd.Stdout = os.Stdout
-	execCmd.Stderr = os.Stderr
+	if quietProgress {
+		execCmd.Stdout = nil
+		execCmd.Stderr = nil
+	} else {
+		execCmd.Stdout = os.Stdout
+		execCmd.Stderr = os.Stderr
+	}
+
+	// Set required environment variables
 	execCmd.Env = os.Environ()
 
 	// Add context env vars

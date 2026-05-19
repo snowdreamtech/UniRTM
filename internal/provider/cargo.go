@@ -50,8 +50,13 @@ func (p *CargoProvider) Install(ctx context.Context, tool string, installPath st
 	}
 
 	cmd := exec.CommandContext(ctx, cargoCmd, "install", tool, "--version", version, "--root", installPath)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	if ctx != nil && ctx.Value("quietProgress") == true {
+		cmd.Stdout = nil
+		cmd.Stderr = nil
+	} else {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
 	cmd.Env = GetNoProxyEnv(extraDomains...)
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "cargo install failed", err)

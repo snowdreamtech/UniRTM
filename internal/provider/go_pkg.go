@@ -78,8 +78,13 @@ func (p *GoPkgProvider) Install(ctx context.Context, tool string, installPath st
 		cmdEnv = append(cmdEnv, "GOPRIVATE="+goprivate)
 	}
 	cmd.Env = cmdEnv
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	if ctx != nil && ctx.Value("quietProgress") == true {
+		cmd.Stdout = nil
+		cmd.Stderr = nil
+	} else {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
 
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "go install failed", err)
