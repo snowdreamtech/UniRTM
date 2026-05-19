@@ -337,9 +337,10 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			spinners         = make(map[string]*pterm.SpinnerPrinter)
 			spinnersMu       sync.Mutex
 			multi            *pterm.MultiPrinter
-			useMulti         = pterm.PrintColor && !pterm.RawOutput && !jsonOutput && term.IsTerminal(int(os.Stdout.Fd()))
+			useMulti         = pterm.PrintColor && !pterm.RawOutput && !jsonOutput && term.IsTerminal(int(os.Stdout.Fd())) && len(requests) <= 10
 			bufferedMessages []string
 			bufferedMu       sync.Mutex
+			multiStopped     bool
 		)
 
 		if useMulti {
@@ -348,8 +349,10 @@ func runInstall(cmd *cobra.Command, args []string) error {
 				_, _ = multi.Start()
 			}()
 			defer func() {
-				time.Sleep(50 * time.Millisecond)
-				_, _ = multi.Stop()
+				if !multiStopped {
+					time.Sleep(50 * time.Millisecond)
+					_, _ = multi.Stop()
+				}
 				bufferedMu.Lock()
 				for _, msg := range bufferedMessages {
 					pterm.Println(msg)
@@ -469,6 +472,13 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		// 3. Execute installation
 		startTime := time.Now()
 		results, err := cm.InstallAll(ctx, requests)
+		
+		if useMulti && multi != nil {
+			time.Sleep(50 * time.Millisecond)
+			_, _ = multi.Stop()
+			multiStopped = true
+		}
+
 		if err != nil {
 			formatter.Error("Concurrent installation failed", map[string]interface{}{
 				"error": err.Error(),
