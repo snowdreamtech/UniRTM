@@ -135,14 +135,24 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 
 	// Preview mode — show what would be updated
 	if updatePreview {
-		formatter.Info("Checking for available updates...", nil)
+		var spinner *pterm.SpinnerPrinter
+		if !quiet {
+			spinner, _ = pterm.DefaultSpinner.Start("Checking for available updates...")
+		}
 
 		preview, err := updateManager.PreviewUpdates(ctx)
 		if err != nil {
+			if spinner != nil {
+				spinner.Fail("Failed to check for updates: " + err.Error())
+			}
 			formatter.Error("Failed to check for updates", map[string]interface{}{
 				"error": err.Error(),
 			})
 			return fmt.Errorf("check for updates: %w", err)
+		}
+
+		if spinner != nil {
+			spinner.Success("Update check complete!")
 		}
 
 		if preview.TotalUpdates == 0 {
@@ -159,21 +169,22 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 			return nil
 		}
 
+		pterm.DefaultSection.Println("Available Updates")
 		tableData := pterm.TableData{
 			{"TOOL", "CURRENT", "LATEST", "BACKEND"},
 		}
 		for _, u := range preview.Updates {
 			tableData = append(tableData, []string{
-				u.Tool,
-				pterm.Gray(u.CurrentVersion),
-				pterm.Green(u.LatestVersion),
-				u.Backend,
+				pterm.FgCyan.Sprint(u.Tool),
+				pterm.FgGray.Sprint(u.CurrentVersion),
+				pterm.FgGreen.Sprint(u.LatestVersion),
+				pterm.FgMagenta.Sprint(u.Backend),
 			})
 		}
 
 		_ = pterm.DefaultTable.WithHasHeader().WithData(tableData).Render()
-		fmt.Printf("\nEstimated time: %s\n", pterm.Cyan(preview.EstimatedTime))
-		fmt.Println("\nRun without " + pterm.LightYellow("--preview") + " to apply updates.")
+		pterm.Info.Printfln("Estimated time: %s", pterm.LightCyan(preview.EstimatedTime))
+		pterm.Printf("\nRun without %s to apply updates.\n", pterm.LightYellow("--preview"))
 		return nil
 	}
 
@@ -184,11 +195,6 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		if len(args) == 2 {
 			targetVersion = args[1]
 		}
-
-		formatter.Info(fmt.Sprintf("Updating %s to %s...", tool, targetVersion), map[string]interface{}{
-			"tool":    tool,
-			"version": targetVersion,
-		})
 
 		if !updateForce && !quiet {
 			confirmed, err := promptConfirmation(fmt.Sprintf("Update %s to %s?", tool, targetVersion))
@@ -201,13 +207,25 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 			}
 		}
 
+		var spinner *pterm.SpinnerPrinter
+		if !quiet {
+			spinner, _ = pterm.DefaultSpinner.Start(fmt.Sprintf("Updating %s to %s...", tool, targetVersion))
+		}
+
 		result, err := updateManager.UpdateTool(ctx, tool, targetVersion)
 		if err != nil {
+			if spinner != nil {
+				spinner.Fail(fmt.Sprintf("Failed to update %s: %s", tool, err.Error()))
+			}
 			formatter.Error(fmt.Sprintf("Failed to update %s", tool), map[string]interface{}{
 				"tool":  tool,
 				"error": err.Error(),
 			})
 			return fmt.Errorf("update %s: %w", tool, err)
+		}
+
+		if spinner != nil {
+			spinner.Success(fmt.Sprintf("Successfully updated %s", tool))
 		}
 
 		if jsonOutput {
@@ -218,21 +236,34 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 				"duration":    result.Duration.String(),
 			})
 		} else {
-			fmt.Printf("✓ Updated %s: %s → %s (%s)\n",
-				result.Tool, result.OldVersion, result.NewVersion, result.Duration)
+			pterm.Success.Printfln("Updated %s: %s → %s (%s)",
+				pterm.LightGreen(result.Tool),
+				pterm.FgGray.Sprint(result.OldVersion),
+				pterm.LightGreen(result.NewVersion),
+				pterm.FgCyan.Sprint(result.Duration))
 		}
 		return nil
 	}
 
 	// Update all tools
-	formatter.Info("Checking for available updates...", nil)
+	var spinner *pterm.SpinnerPrinter
+	if !quiet {
+		spinner, _ = pterm.DefaultSpinner.Start("Checking for available updates...")
+	}
 
 	preview, err := updateManager.PreviewUpdates(ctx)
 	if err != nil {
+		if spinner != nil {
+			spinner.Fail("Failed to check for updates: " + err.Error())
+		}
 		formatter.Error("Failed to check for updates", map[string]interface{}{
 			"error": err.Error(),
 		})
 		return fmt.Errorf("check for updates: %w", err)
+	}
+
+	if spinner != nil {
+		spinner.Success("Update check complete!")
 	}
 
 	if preview.TotalUpdates == 0 {
@@ -242,11 +273,11 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 
 	// Show preview and ask for confirmation
 	if !updateForce && !quiet {
-		fmt.Printf("\n%d update(s) available:\n", preview.TotalUpdates)
+		pterm.DefaultSection.Printfln("%d update(s) available:", preview.TotalUpdates)
 		for _, u := range preview.Updates {
-			fmt.Printf("  • %s: %s → %s\n", u.Tool, u.CurrentVersion, u.LatestVersion)
+			pterm.Println(fmt.Sprintf("  • %s: %s → %s", pterm.FgCyan.Sprint(u.Tool), pterm.FgGray.Sprint(u.CurrentVersion), pterm.FgGreen.Sprint(u.LatestVersion)))
 		}
-		fmt.Println()
+		pterm.Println()
 
 		confirmed, err := promptConfirmation("Apply all updates?")
 		if err != nil {
@@ -258,10 +289,22 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	var updateSpinner *pterm.SpinnerPrinter
+	if !quiet {
+		updateSpinner, _ = pterm.DefaultSpinner.Start("Applying all updates...")
+	}
+
 	results, err := updateManager.UpdateAll(ctx)
 	if err != nil {
+		if updateSpinner != nil {
+			updateSpinner.Fail("Update failed: " + err.Error())
+		}
 		formatter.Error("Update failed", map[string]interface{}{"error": err.Error()})
 		return fmt.Errorf("update all: %w", err)
+	}
+
+	if updateSpinner != nil {
+		updateSpinner.Success("All updates processed!")
 	}
 
 	// Display results
@@ -271,11 +314,15 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		if r.Success {
 			successCount++
 			if !quiet {
-				fmt.Printf("✓ Updated %s: %s → %s (%s)\n", r.Tool, r.OldVersion, r.NewVersion, r.Duration)
+				pterm.Success.Printfln("Updated %s: %s → %s (%s)",
+					pterm.LightGreen(r.Tool),
+					pterm.FgGray.Sprint(r.OldVersion),
+					pterm.LightGreen(r.NewVersion),
+					pterm.FgCyan.Sprint(r.Duration))
 			}
 		} else {
 			failCount++
-			fmt.Fprintf(os.Stderr, "✗ Failed to update %s: %s\n", r.Tool, r.Error)
+			pterm.Error.Printfln("Failed to update %s: %s", pterm.LightRed(r.Tool), pterm.LightRed(r.Error))
 		}
 	}
 
@@ -286,7 +333,12 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 			"results": results,
 		})
 	} else {
-		fmt.Printf("\nDone: %d updated, %d failed\n", successCount, failCount)
+		pterm.Println()
+		if failCount == 0 {
+			pterm.Success.Printfln("All updates complete: %d tools updated successfully.", successCount)
+		} else {
+			pterm.Warning.Printfln("Update finished: %d succeeded, %d failed.", successCount, failCount)
+		}
 	}
 
 	if failCount > 0 {
