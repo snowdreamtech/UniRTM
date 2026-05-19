@@ -1002,10 +1002,19 @@ func (im *InstallationManager) Uninstall(ctx context.Context, tool, version stri
 		return fmt.Errorf("failed to remove installation directory: %w", err)
 	}
 
-	// Clean up parent directory if empty
+	// Clean up parent directory if empty (ignoring system/hidden files like .DS_Store)
 	parentDir := filepath.Dir(installation.InstallPath)
-	if files, err := os.ReadDir(parentDir); err == nil && len(files) == 0 {
-		_ = os.Remove(parentDir)
+	if entries, err := os.ReadDir(parentDir); err == nil {
+		isEmpty := true
+		for _, entry := range entries {
+			if !strings.HasPrefix(entry.Name(), ".") {
+				isEmpty = false
+				break
+			}
+		}
+		if isEmpty {
+			_ = os.RemoveAll(parentDir)
+		}
 	}
 
 	// Start transaction for removal
