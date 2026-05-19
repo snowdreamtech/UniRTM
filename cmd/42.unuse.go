@@ -18,11 +18,17 @@ import (
 )
 
 var (
-	unuseAll bool
+	unuseAll    bool
+	unuseGlobal bool
+	unusePath   string
+	unuseEnv    string
 )
 
 func init() {
 	unuseCmd.Flags().BoolVar(&unuseAll, "all", false, "remove all versions of the tool from the config")
+	unuseCmd.Flags().BoolVarP(&unuseGlobal, "global", "g", false, "remove from global config (~/.config/unirtm/unirtm.toml)")
+	unuseCmd.Flags().StringVarP(&unusePath, "path", "p", "", "directory of config file to edit")
+	unuseCmd.Flags().StringVarP(&unuseEnv, "env", "e", "", "environment-specific config file")
 	if rootCmd != nil {
 		rootCmd.AddCommand(unuseCmd)
 	}
@@ -79,7 +85,7 @@ func runUnuse(cmd *cobra.Command, args []string) error {
 	}
 
 	// Also update [tools] section of config file.
-	cfgPath := resolveConfigFilePath(false)
+	cfgPath := resolveConfigFilePathWithOpts(unuseGlobal, unusePath, unuseEnv)
 	cfgMap, _ := config.LoadRawTOML(cfgPath)
 	toolsSection, _ := cfgMap["tools"].(map[string]interface{})
 	if toolsSection == nil {
