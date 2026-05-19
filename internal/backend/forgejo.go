@@ -110,9 +110,16 @@ func (b *ForgejoBackend) FetchReleases(ctx context.Context, tool string) ([]Comm
 
 	res := make([]CommonRelease, len(releases))
 	for i, r := range releases {
+		var publishedAt time.Time
+		if r.CreatedAt != "" {
+			if t, err := time.Parse(time.RFC3339, r.CreatedAt); err == nil {
+				publishedAt = t
+			}
+		}
 		res[i] = CommonRelease{
-			Tag:    r.TagName,
-			Assets: b.toCommonAssets(r.Assets),
+			Tag:         r.TagName,
+			Assets:      b.toCommonAssets(r.Assets),
+			PublishedAt: publishedAt,
 		}
 	}
 	return res, nil
@@ -143,9 +150,16 @@ func (b *ForgejoBackend) FetchReleaseByTag(ctx context.Context, tool string, tag
 		return nil, err
 	}
 
+	var publishedAt time.Time
+	if r.CreatedAt != "" {
+		if t, err := time.Parse(time.RFC3339, r.CreatedAt); err == nil {
+			publishedAt = t
+		}
+	}
 	return &CommonRelease{
-		Tag:    r.TagName,
-		Assets: b.toCommonAssets(r.Assets),
+		Tag:         r.TagName,
+		Assets:      b.toCommonAssets(r.Assets),
+		PublishedAt: publishedAt,
 	}, nil
 }
 
@@ -158,8 +172,9 @@ func (b *ForgejoBackend) toCommonAssets(assets []forgejoAsset) []CommonAsset {
 }
 
 type forgejoRelease struct {
-	TagName string         `json:"tag_name"`
-	Assets  []forgejoAsset `json:"assets"`
+	TagName   string         `json:"tag_name"`
+	CreatedAt string         `json:"created_at"`
+	Assets    []forgejoAsset `json:"assets"`
 }
 
 type forgejoAsset struct {

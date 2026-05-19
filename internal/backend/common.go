@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // CommonAsset represents a generic asset from a hosting platform.
@@ -253,9 +254,10 @@ type HostingProvider interface {
 
 // CommonRelease represents a generic release from any hosting platform.
 type CommonRelease struct {
-	Tag        string
-	Prerelease bool
-	Assets     []CommonAsset
+	Tag         string
+	Prerelease  bool
+	Assets      []CommonAsset
+	PublishedAt time.Time
 }
 
 // GenericResolveVersion implements the common logic for resolving a version request.
@@ -278,6 +280,7 @@ func GenericResolveVersion(ctx context.Context, p HostingProvider, tool string, 
 			Version:     v,
 			DownloadURL: bestAsset.URL,
 			Platform:    platform,
+			PublishedAt:  release.PublishedAt,
 			Metadata: map[string]string{
 				"prerelease": fmt.Sprintf("%t", release.Prerelease),
 			},
@@ -338,6 +341,7 @@ func GenericGetDownloadInfo(ctx context.Context, p HostingProvider, tool string,
 		DownloadURL: bestAsset.URL,
 		Checksum:    checksum,
 		Platform:    platform,
+		PublishedAt:  release.PublishedAt,
 		Metadata: map[string]string{
 			"gpg_signature_url": gpgSigURL,
 		},

@@ -112,9 +112,16 @@ func (b *GitlabBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 
 	res := make([]CommonRelease, len(releases))
 	for i, r := range releases {
+		var publishedAt time.Time
+		if r.ReleasedAt != "" {
+			if t, err := time.Parse(time.RFC3339, r.ReleasedAt); err == nil {
+				publishedAt = t
+			}
+		}
 		res[i] = CommonRelease{
-			Tag:    r.TagName,
-			Assets: b.toCommonAssets(r.Assets.Links),
+			Tag:         r.TagName,
+			Assets:      b.toCommonAssets(r.Assets.Links),
+			PublishedAt: publishedAt,
 		}
 	}
 	return res, nil
@@ -146,9 +153,16 @@ func (b *GitlabBackend) FetchReleaseByTag(ctx context.Context, tool string, tag 
 		return nil, err
 	}
 
+	var publishedAt time.Time
+	if r.ReleasedAt != "" {
+		if t, err := time.Parse(time.RFC3339, r.ReleasedAt); err == nil {
+			publishedAt = t
+		}
+	}
 	return &CommonRelease{
-		Tag:    r.TagName,
-		Assets: b.toCommonAssets(r.Assets.Links),
+		Tag:         r.TagName,
+		Assets:      b.toCommonAssets(r.Assets.Links),
+		PublishedAt: publishedAt,
 	}, nil
 }
 
@@ -161,8 +175,9 @@ func (b *GitlabBackend) toCommonAssets(assets []gitlabAsset) []CommonAsset {
 }
 
 type gitlabRelease struct {
-	TagName string `json:"tag_name"`
-	Assets  struct {
+	TagName    string `json:"tag_name"`
+	ReleasedAt string `json:"released_at"`
+	Assets     struct {
 		Links []gitlabAsset `json:"links"`
 	} `json:"assets"`
 }

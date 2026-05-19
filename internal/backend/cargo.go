@@ -38,7 +38,8 @@ type cargoRegistryResponse struct {
 		MaxVersion string `json:"max_version"`
 	} `json:"crate"`
 	Versions []struct {
-		Num string `json:"num"`
+		Num       string `json:"num"`
+		CreatedAt string `json:"created_at"`
 	} `json:"versions"`
 }
 
@@ -73,9 +74,16 @@ func (b *CargoBackend) ListVersions(ctx context.Context, tool string, platform P
 
 	var versions []VersionInfo
 	for _, v := range registry.Versions {
+		var publishedAt time.Time
+		if v.CreatedAt != "" {
+			if t, err := time.Parse(time.RFC3339, v.CreatedAt); err == nil {
+				publishedAt = t
+			}
+		}
 		versions = append(versions, VersionInfo{
-			Version:  v.Num,
-			Platform: platform,
+			Version:     v.Num,
+			Platform:    platform,
+			PublishedAt: publishedAt,
 		})
 	}
 

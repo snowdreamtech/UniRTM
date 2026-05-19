@@ -66,9 +66,16 @@ func (b *NpmBackend) ListVersions(ctx context.Context, tool string, platform Pla
 
 	var versions []VersionInfo
 	for v := range registry.Versions {
+		var publishedAt time.Time
+		if timeStr, ok := registry.Time[v]; ok && timeStr != "" {
+			if t, err := time.Parse(time.RFC3339, timeStr); err == nil {
+				publishedAt = t
+			}
+		}
 		versions = append(versions, VersionInfo{
-			Version:  v,
-			Platform: platform,
+			Version:     v,
+			Platform:    platform,
+			PublishedAt: publishedAt,
 		})
 	}
 

@@ -111,10 +111,17 @@ func (g *GitHubBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 
 	res := make([]CommonRelease, len(releases))
 	for i, r := range releases {
+		var publishedAt time.Time
+		if r.CreatedAt != "" {
+			if t, err := time.Parse(time.RFC3339, r.CreatedAt); err == nil {
+				publishedAt = t
+			}
+		}
 		res[i] = CommonRelease{
-			Tag:        r.TagName,
-			Prerelease: r.Prerelease,
-			Assets:     g.toCommonAssets(r.Assets),
+			Tag:         r.TagName,
+			Prerelease:  r.Prerelease,
+			Assets:      g.toCommonAssets(r.Assets),
+			PublishedAt: publishedAt,
 		}
 	}
 	return res, nil
@@ -146,10 +153,18 @@ func (g *GitHubBackend) FetchReleaseByTag(ctx context.Context, tool string, tag 
 		return nil, err
 	}
 
+	var publishedAt time.Time
+	if r.CreatedAt != "" {
+		if t, err := time.Parse(time.RFC3339, r.CreatedAt); err == nil {
+			publishedAt = t
+		}
+	}
+
 	return &CommonRelease{
-		Tag:        r.TagName,
-		Prerelease: r.Prerelease,
-		Assets:     g.toCommonAssets(r.Assets),
+		Tag:         r.TagName,
+		Prerelease:  r.Prerelease,
+		Assets:      g.toCommonAssets(r.Assets),
+		PublishedAt: publishedAt,
 	}, nil
 }
 

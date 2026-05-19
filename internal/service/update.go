@@ -110,6 +110,33 @@ func (um *UpdateManager) CheckForUpdates(ctx context.Context) ([]UpdateInfo, err
 			continue
 		}
 
+		// Determine effective minimum_release_age: per-tool config takes precedence
+		// over the global settings value.
+		minAgeStr := ""
+		if um.configManager != nil {
+			if um.configManager.Settings.MinimumReleaseAge != "" {
+				minAgeStr = um.configManager.Settings.MinimumReleaseAge
+			}
+			if toolConfig, exists := um.configManager.Tools[installation.Tool]; exists {
+				if toolConfig.MinimumReleaseAge != "" {
+					minAgeStr = toolConfig.MinimumReleaseAge
+				}
+			}
+		}
+
+		// If a minimum release age is configured, enforce the quarantine window.
+		if minAgeStr != "" && !latestInfo.PublishedAt.IsZero() {
+			ageSecs, err := config.ParseDurationToSeconds(minAgeStr)
+			if err == nil && ageSecs > 0 {
+				quarantineUntil := latestInfo.PublishedAt.Add(time.Duration(ageSecs) * time.Second)
+				if time.Now().Before(quarantineUntil) {
+					// This version is too new; skip it to protect against
+					// supply-chain attacks on freshly-published releases.
+					continue
+				}
+			}
+		}
+
 		// Check if update is available
 		updateRequired := latestInfo.Version != installation.Version
 

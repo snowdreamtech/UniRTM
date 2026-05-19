@@ -6,6 +6,7 @@ package backend
 import (
 	"context"
 	"runtime"
+	"time"
 )
 
 // Platform represents the operating system and architecture information.
@@ -37,6 +38,7 @@ type VersionInfo struct {
 	GPGKeys      []string          // Trusted GPG fingerprints for this version
 	Platform     Platform          // Target platform for this artifact
 	Metadata     map[string]string // Additional metadata (e.g., release date, notes)
+	PublishedAt  time.Time         // The time this version was published/released
 }
 
 // Backend defines the interface for tool version management backends.

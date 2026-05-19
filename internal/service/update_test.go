@@ -409,6 +409,91 @@ func TestUpdateManager_CheckForUpdates(t *testing.T) {
 			wantUpdates: 1,
 			wantErr:     false,
 		},
+		{
+			name: "minimum_release_age global: blocks too-new release",
+			installations: []*repository.Installation{
+				{Tool: "node", Version: "18.0.0", Backend: "github"},
+			},
+			backends: map[string]backend.Backend{
+				"github": &mockUpdateBackend{
+					name: "github",
+					versions: map[string]*backend.VersionInfo{
+						// Published 1 hour ago — within the 7-day quarantine.
+						"latest": {Version: "20.0.0", PublishedAt: time.Now().Add(-1 * time.Hour)},
+					},
+				},
+			},
+			config: &config.Config{
+				Settings: config.Settings{MinimumReleaseAge: "7d"},
+			},
+			// The only candidate version is quarantined, so no updates returned.
+			wantUpdates: 0,
+			wantErr:     false,
+		},
+		{
+			name: "minimum_release_age global: allows old-enough release",
+			installations: []*repository.Installation{
+				{Tool: "node", Version: "18.0.0", Backend: "github"},
+			},
+			backends: map[string]backend.Backend{
+				"github": &mockUpdateBackend{
+					name: "github",
+					versions: map[string]*backend.VersionInfo{
+						// Published 10 days ago — outside the 7-day quarantine.
+						"latest": {Version: "20.0.0", PublishedAt: time.Now().Add(-10 * 24 * time.Hour)},
+					},
+				},
+			},
+			config: &config.Config{
+				Settings: config.Settings{MinimumReleaseAge: "7d"},
+			},
+			wantUpdates: 1,
+			wantErr:     false,
+		},
+		{
+			name: "minimum_release_age per-tool overrides global",
+			installations: []*repository.Installation{
+				{Tool: "node", Version: "18.0.0", Backend: "github"},
+			},
+			backends: map[string]backend.Backend{
+				"github": &mockUpdateBackend{
+					name: "github",
+					versions: map[string]*backend.VersionInfo{
+						// Published 2 days ago — within global 7d but outside per-tool 1d.
+						"latest": {Version: "20.0.0", PublishedAt: time.Now().Add(-2 * 24 * time.Hour)},
+					},
+				},
+			},
+			config: &config.Config{
+				Settings: config.Settings{MinimumReleaseAge: "7d"},
+				Tools: map[string]config.ToolConfig{
+					"node": {MinimumReleaseAge: "1d"},
+				},
+			},
+			// Per-tool 1d allows the release; tool shows as having an update.
+			wantUpdates: 1,
+			wantErr:     false,
+		},
+		{
+			name: "minimum_release_age: zero PublishedAt passes through",
+			installations: []*repository.Installation{
+				{Tool: "node", Version: "18.0.0", Backend: "github"},
+			},
+			backends: map[string]backend.Backend{
+				"github": &mockUpdateBackend{
+					name: "github",
+					versions: map[string]*backend.VersionInfo{
+						// No PublishedAt set — backend doesn't provide date, filter skipped.
+						"latest": {Version: "20.0.0"},
+					},
+				},
+			},
+			config: &config.Config{
+				Settings: config.Settings{MinimumReleaseAge: "7d"},
+			},
+			wantUpdates: 1,
+			wantErr:     false,
+		},
 	}
 
 	for _, tt := range tests {

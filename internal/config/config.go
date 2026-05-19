@@ -33,12 +33,13 @@ type EnvironmentConfig struct {
 }
 
 type ToolConfig struct {
-	Version     string   `toml:"version" yaml:"version" mapstructure:"version"`
-	Backend     string   `toml:"backend,omitempty" yaml:"backend,omitempty" mapstructure:"backend,omitempty"`
-	Provider    string   `toml:"provider,omitempty" yaml:"provider,omitempty" mapstructure:"provider,omitempty"`
-	PreInstall  string   `toml:"pre_install,omitempty" yaml:"pre_install,omitempty" mapstructure:"pre_install,omitempty"`
-	PostInstall string   `toml:"post_install,omitempty" yaml:"post_install,omitempty" mapstructure:"post_install,omitempty"`
-	GPGKeys     []string `toml:"gpg_keys,omitempty" yaml:"gpg_keys,omitempty" mapstructure:"gpg_keys,omitempty"`
+	Version           string   `toml:"version" yaml:"version" mapstructure:"version"`
+	Backend           string   `toml:"backend,omitempty" yaml:"backend,omitempty" mapstructure:"backend,omitempty"`
+	Provider          string   `toml:"provider,omitempty" yaml:"provider,omitempty" mapstructure:"provider,omitempty"`
+	PreInstall        string   `toml:"pre_install,omitempty" yaml:"pre_install,omitempty" mapstructure:"pre_install,omitempty"`
+	PostInstall       string   `toml:"post_install,omitempty" yaml:"post_install,omitempty" mapstructure:"post_install,omitempty"`
+	GPGKeys           []string `toml:"gpg_keys,omitempty" yaml:"gpg_keys,omitempty" mapstructure:"gpg_keys,omitempty"`
+	MinimumReleaseAge string   `toml:"minimum_release_age,omitempty" yaml:"minimum_release_age,omitempty" mapstructure:"minimum_release_age,omitempty"`
 }
 
 type ToolMap map[string]ToolConfig
@@ -94,6 +95,9 @@ func parseToolConfig(v interface{}) ToolConfig {
 				}
 			}
 		}
+		if minAge, ok := val["minimum_release_age"].(string); ok {
+			tc.MinimumReleaseAge = minAge
+		}
 	}
 	return tc
 }
@@ -101,7 +105,7 @@ func parseToolConfig(v interface{}) ToolConfig {
 func (tm ToolMap) MarshalTOML() (interface{}, error) {
 	raw := make(map[string]interface{})
 	for k, tc := range tm {
-		if tc.Backend == "" && tc.Provider == "" && tc.PreInstall == "" && tc.PostInstall == "" && len(tc.GPGKeys) == 0 {
+		if tc.Backend == "" && tc.Provider == "" && tc.PreInstall == "" && tc.PostInstall == "" && len(tc.GPGKeys) == 0 && tc.MinimumReleaseAge == "" {
 			raw[k] = tc.Version
 		} else {
 			raw[k] = tc
@@ -128,7 +132,7 @@ type Settings struct {
 	Color              string                            `toml:"color,omitempty" yaml:"color,omitempty" mapstructure:"color,omitempty"`
 	Editor             string                            `toml:"editor,omitempty" yaml:"editor,omitempty" mapstructure:"editor,omitempty"`
 	Shell              string                            `toml:"shell,omitempty" yaml:"shell,omitempty" mapstructure:"shell,omitempty"`
-	AlwaysKeepDownload bool                              `toml:"always_keep_download,omitempty" yaml:"always_keep_download,omitempty" mapstructure:"always_keep_download,omitempty"`
+		AlwaysKeepDownload bool                              `toml:"always_keep_download,omitempty" yaml:"always_keep_download,omitempty" mapstructure:"always_keep_download,omitempty"`
 	CeilingPaths       []string                          `toml:"ceiling_paths,omitempty" yaml:"ceiling_paths,omitempty" mapstructure:"ceiling_paths,omitempty"`
 	TrustedConfigPaths []string                          `toml:"trusted_config_paths,omitempty" yaml:"trusted_config_paths,omitempty" mapstructure:"trusted_config_paths,omitempty"`
 	GPGVerify          string                            `toml:"gpg_verify" yaml:"gpg_verify" mapstructure:"gpg_verify"`
@@ -137,6 +141,7 @@ type Settings struct {
 	NoProxy            []string                          `toml:"no_proxy,omitempty" yaml:"no_proxy,omitempty" mapstructure:"no_proxy,omitempty"`
 	Jobs               int                               `toml:"jobs,omitempty" yaml:"jobs,omitempty" mapstructure:"jobs,omitempty"`
 	Tools              map[string]map[string]interface{} `toml:"tools,omitempty" yaml:"tools,omitempty" mapstructure:"tools,omitempty"`
+	MinimumReleaseAge  string                            `toml:"minimum_release_age,omitempty" yaml:"minimum_release_age,omitempty" mapstructure:"minimum_release_age,omitempty"`
 }
 
 func (s *Settings) LoadFromEnv() {
@@ -233,6 +238,9 @@ func (s *Settings) LoadFromEnv() {
 		if i, err := strconv.Atoi(v); err == nil {
 			s.Jobs = i
 		}
+	}
+	if v := env.Get("MINIMUM_RELEASE_AGE"); v != "" {
+		s.MinimumReleaseAge = v
 	}
 }
 
@@ -497,6 +505,13 @@ func (d *DurationOrInt) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	return fmt.Errorf("invalid duration or integer: %q", string(data))
+}
+
+// ParseDurationToSeconds parses a human-readable duration string (e.g., "7d", "24h",
+// "30m", "60s") into a number of seconds. It is exported so that service-layer code
+// can parse minimum_release_age values without duplicating the logic.
+func ParseDurationToSeconds(s string) (int, error) {
+	return parseDurationToSeconds(s)
 }
 
 func parseDurationToSeconds(s string) (int, error) {
