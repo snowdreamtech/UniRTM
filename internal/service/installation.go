@@ -985,8 +985,14 @@ func (im *InstallationManager) Uninstall(ctx context.Context, tool, version stri
 		return fmt.Errorf("installation not found: %w", err)
 	}
 
-	// Run provider uninstall
+	// Retrieve provider and list all executables before removing the directory
 	p := im.providerRegistry.GetWithBackend(tool, installation.Backend)
+	execs, _ := p.ListExecutables(tool, installation.InstallPath, version)
+	if len(execs) == 0 {
+		execs = []string{tool}
+	}
+
+	// Run provider uninstall
 	if err := p.Uninstall(ctx, tool, installation.InstallPath, version); err != nil {
 		return fmt.Errorf("provider uninstall failed: %w", err)
 	}
@@ -1031,9 +1037,11 @@ func (im *InstallationManager) Uninstall(ctx context.Context, tool, version stri
 		}
 	}
 
-	// If no other versions exist, remove the shim files for this tool
+	// If no other versions exist, remove the shim files for all executables of this tool
 	if !otherVersionsExist {
-		_ = im.shimGenerator.RemoveShim(ctx, tool)
+		for _, exe := range execs {
+			_ = im.shimGenerator.RemoveShim(ctx, exe)
+		}
 	}
 
 	// Remove from lockfile
