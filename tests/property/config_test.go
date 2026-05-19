@@ -22,7 +22,6 @@ import (
 	"github.com/pelletier/go-toml/v2"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
 )
 
 // Feature: unirtm, Property 1: Configuration Round-Trip (TOML)
@@ -60,6 +59,7 @@ func TestProperty_ConfigurationRoundTrip_TOML(t *testing.T) {
 			}
 
 			// Step 1: Serialize original config to TOML
+			original.PostLoad()
 			var buf1 bytes.Buffer
 			encoder1 := toml.NewEncoder(&buf1)
 			err := encoder1.Encode(&original)
@@ -77,6 +77,7 @@ func TestProperty_ConfigurationRoundTrip_TOML(t *testing.T) {
 				t.Logf("Failed to decode TOML: %v", err)
 				return false
 			}
+			parsed.PostLoad()
 
 			// Normalize parsed config to handle empty maps
 			if parsed.Tools == nil {
@@ -123,115 +124,7 @@ func TestProperty_ConfigurationRoundTrip_TOML(t *testing.T) {
 	properties.TestingRun(t)
 }
 
-// Feature: unirtm, Property 2: Configuration Round-Trip (YAML)
-//
-// **Validates: Requirements 1.2, 26.2, 26.5, 26.8**
-//
-// For any valid Configuration object, serializing to YAML, parsing back, and
-// serializing again SHALL produce an equivalent Configuration object and
-// identical YAML output.
-//
-// This property ensures that:
-// 1. YAML serialization is deterministic
-// 2. YAML parsing is lossless
-// 3. The round-trip preserves all configuration data
-// 4. No data corruption occurs during serialization/deserialization
-func TestProperty_ConfigurationRoundTrip_YAML(t *testing.T) {
-	parameters := gopter.DefaultTestParameters()
-	parameters.MinSuccessfulTests = 100
-	parameters.MaxSize = 20
-
-	properties := gopter.NewProperties(parameters)
-
-	properties.Property("Configuration round-trip through YAML preserves data", prop.ForAll(
-		func(original config.Config) bool {
-			// Normalize the config to handle empty maps consistently
-			// YAML encoder may omit empty maps, so we need to ensure they're initialized
-			if original.Tools == nil {
-				original.Tools = make(map[string]config.ToolConfig)
-			}
-			if original.Env == nil {
-				original.Env = make(map[string]interface{})
-			}
-			if original.Tasks == nil {
-				original.Tasks = make(map[string]config.Task)
-			}
-
-			// Step 1: Serialize original config to YAML
-			var buf1 bytes.Buffer
-			encoder1 := yaml.NewEncoder(&buf1)
-			encoder1.SetIndent(2) // Use consistent indentation
-			err := encoder1.Encode(&original)
-			if err != nil {
-				t.Logf("Failed to encode original config: %v", err)
-				return false
-			}
-			err = encoder1.Close()
-			if err != nil {
-				t.Logf("Failed to close encoder: %v", err)
-				return false
-			}
-			yaml1 := buf1.String()
-
-			// Step 2: Parse YAML back into a Config object
-			var parsed config.Config
-			decoder := yaml.NewDecoder(bytes.NewReader(buf1.Bytes()))
-			err = decoder.Decode(&parsed)
-			if err != nil {
-				t.Logf("Failed to decode YAML: %v", err)
-				return false
-			}
-
-			// Normalize parsed config to handle empty maps
-			if parsed.Tools == nil {
-				parsed.Tools = make(map[string]config.ToolConfig)
-			}
-			if parsed.Env == nil {
-				parsed.Env = make(map[string]interface{})
-			}
-			if parsed.Tasks == nil {
-				parsed.Tasks = make(map[string]config.Task)
-			}
-
-			// Step 3: Serialize parsed config to YAML again
-			var buf2 bytes.Buffer
-			encoder2 := yaml.NewEncoder(&buf2)
-			encoder2.SetIndent(2) // Use consistent indentation
-			err = encoder2.Encode(&parsed)
-			if err != nil {
-				t.Logf("Failed to encode parsed config: %v", err)
-				return false
-			}
-			err = encoder2.Close()
-			if err != nil {
-				t.Logf("Failed to close encoder: %v", err)
-				return false
-			}
-			yaml2 := buf2.String()
-
-			// Step 4: Verify structural equivalence
-			if !configsEqual(original, parsed) {
-				t.Logf("Configs not structurally equal after round-trip")
-				t.Logf("Original: %+v", original)
-				t.Logf("Parsed: %+v", parsed)
-				return false
-			}
-
-			// Step 5: Verify YAML output is identical
-			if yaml1 != yaml2 {
-				t.Logf("YAML output differs after round-trip")
-				t.Logf("First serialization:\n%s", yaml1)
-				t.Logf("Second serialization:\n%s", yaml2)
-				return false
-			}
-
-			return true
-		},
-		genConfig(),
-	))
-
-	properties.TestingRun(t)
-}
+// YAML configuration is unsupported in UniRTM natively, we only use TOML.
 
 // genConfig generates random Config objects for property-based testing.
 //
@@ -257,8 +150,25 @@ func genConfig() gopter.Gen {
 		for k, v := range values[1].(map[string]string) {
 			env[k] = v
 		}
+		tools := values[0].(map[string]config.ToolConfig)
+		var toolsRaw map[string]interface{}
+		if len(tools) > 0 {
+			toolsRaw = make(map[string]interface{})
+			for k, v := range tools {
+				toolRaw := make(map[string]interface{})
+				toolRaw["version"] = v.Version
+				if v.Backend != "" {
+					toolRaw["backend"] = v.Backend
+				}
+				if v.Provider != "" {
+					toolRaw["provider"] = v.Provider
+				}
+				toolsRaw[k] = toolRaw
+			}
+		}
 		return config.Config{
-			Tools:    values[0].(map[string]config.ToolConfig),
+			Tools:    tools,
+			ToolsRaw: toolsRaw,
 			Env:      env,
 			Settings: values[2].(config.Settings),
 			Tasks:    values[3].(map[string]config.Task),
@@ -563,15 +473,19 @@ func TestProperty_ConfigurationValidationCompleteness(t *testing.T) {
 
 	properties.Property("Configuration validation identifies all missing required fields", prop.ForAll(
 		func(cfg config.Config) bool {
-			// Create invalid configurations by removing required fields
-			// Test 1: Tool with empty version
-			invalidCfg1 := cfg
-			if len(invalidCfg1.Tools) == 0 {
-				invalidCfg1.Tools = make(map[string]config.ToolConfig)
+			// Test 1: Tool with empty version — use a clean config plus one invalid tool
+			clean1 := config.Config{
+				Tools:    make(config.ToolMap),
+				Env:      make(map[string]interface{}),
+				Tasks:    make(map[string]config.Task),
+				Settings: cfg.Settings,
 			}
-			invalidCfg1.Tools["invalid-tool"] = config.ToolConfig{Version: ""} // Empty version is invalid
+			clean1.Settings.CacheTTL = 0 // ensure settings are valid
+			clean1.Settings.Concurrency = 0
+			clean1.Settings.HTTPTimeout = 0
+			clean1.Tools["invalid-tool"] = config.ToolConfig{Version: ""}
 
-			err := invalidCfg1.Validate()
+			err := clean1.Validate()
 			if err == nil {
 				t.Logf("Expected validation error for tool with empty version")
 				return false
@@ -581,14 +495,19 @@ func TestProperty_ConfigurationValidationCompleteness(t *testing.T) {
 				return false
 			}
 
-			// Test 2: Task with empty run command
-			invalidCfg2 := cfg
-			if invalidCfg2.Tasks == nil {
-				invalidCfg2.Tasks = make(map[string]config.Task)
+			// Test 2: Task with empty run command — use a clean config plus one invalid task
+			clean2 := config.Config{
+				Tools:    make(config.ToolMap),
+				Env:      make(map[string]interface{}),
+				Tasks:    make(map[string]config.Task),
+				Settings: cfg.Settings,
 			}
-			invalidCfg2.Tasks["invalid-task"] = config.Task{Run: ""} // Empty run is invalid
+			clean2.Settings.CacheTTL = 0
+			clean2.Settings.Concurrency = 0
+			clean2.Settings.HTTPTimeout = 0
+			clean2.Tasks["invalid-task"] = config.Task{Run: ""}
 
-			err = invalidCfg2.Validate()
+			err = clean2.Validate()
 			if err == nil {
 				t.Logf("Expected validation error for task with empty run command")
 				return false
@@ -599,10 +518,15 @@ func TestProperty_ConfigurationValidationCompleteness(t *testing.T) {
 			}
 
 			// Test 3: Settings with negative values
-			invalidCfg3 := cfg
-			invalidCfg3.Settings.CacheTTL = -1 // Negative TTL is invalid
+			clean3 := config.Config{
+				Tools:    make(config.ToolMap),
+				Env:      make(map[string]interface{}),
+				Tasks:    make(map[string]config.Task),
+				Settings: cfg.Settings,
+			}
+			clean3.Settings.CacheTTL = -1
 
-			err = invalidCfg3.Validate()
+			err = clean3.Validate()
 			if err == nil {
 				t.Logf("Expected validation error for negative cache TTL")
 				return false
@@ -613,24 +537,23 @@ func TestProperty_ConfigurationValidationCompleteness(t *testing.T) {
 			}
 
 			// Test 4: Multiple validation errors should all be reported
-			invalidCfg4 := cfg
-			if invalidCfg4.Tools == nil {
-				invalidCfg4.Tools = make(map[string]config.ToolConfig)
+			clean4 := config.Config{
+				Tools:    make(config.ToolMap),
+				Env:      make(map[string]interface{}),
+				Tasks:    make(map[string]config.Task),
+				Settings: cfg.Settings,
 			}
-			if invalidCfg4.Tasks == nil {
-				invalidCfg4.Tasks = make(map[string]config.Task)
-			}
-			invalidCfg4.Tools["bad-tool"] = config.ToolConfig{Version: ""}
-			invalidCfg4.Tasks["bad-task"] = config.Task{Run: ""}
-			invalidCfg4.Settings.CacheTTL = -1
-			invalidCfg4.Settings.Concurrency = -1
+			clean4.Settings.CacheTTL = -1
+			clean4.Settings.Concurrency = -1
+			clean4.Settings.HTTPTimeout = 0
+			clean4.Tools["bad-tool"] = config.ToolConfig{Version: ""}
+			clean4.Tasks["bad-task"] = config.Task{Run: ""}
 
-			err = invalidCfg4.Validate()
+			err = clean4.Validate()
 			if err == nil {
 				t.Logf("Expected validation error for multiple invalid fields")
 				return false
 			}
-			// Should report all errors
 			errStr := err.Error()
 			hasToolError := strings.Contains(errStr, "bad-tool")
 			hasTaskError := strings.Contains(errStr, "bad-task")
@@ -698,47 +621,6 @@ func TestProperty_InvalidSyntaxErrorReporting(t *testing.T) {
 				strings.Contains(errStr, "parse") ||
 				strings.Contains(errStr, "syntax") ||
 				strings.Contains(errStr, "decode")
-
-			if !hasParseInfo {
-				t.Logf("Error should be descriptive: %v", err)
-				return false
-			}
-
-			return true
-		},
-		gen.IntRange(0, 1000),
-	))
-
-	properties.Property("Invalid YAML syntax produces descriptive errors", prop.ForAll(
-		func(seed int) bool {
-			// Generate various invalid YAML syntax patterns
-			invalidYAMLs := []string{
-				"tools:\n  node:\n    version: 20.0.0\n  python\n    version: 3.11", // Missing colon
-				"tools:\n  node:\n    version: \"20.0.0\n    backend: github",       // Unclosed quote
-				"tools:\n  - node:\n      version: 20.0.0",                          // Mixed mapping/sequence
-				"tools:\n  node:\n  version: 20.0.0",                                // Invalid indentation
-			}
-
-			// Pick one based on seed
-			invalidYAML := invalidYAMLs[seed%len(invalidYAMLs)]
-
-			// Try to parse it
-			var cfg config.Config
-			decoder := yaml.NewDecoder(strings.NewReader(invalidYAML))
-			err := decoder.Decode(&cfg)
-
-			// Should produce an error
-			if err == nil {
-				t.Logf("Expected parsing error for invalid YAML")
-				return false
-			}
-
-			// Error should be descriptive
-			errStr := strings.ToLower(err.Error())
-			hasParseInfo := strings.Contains(errStr, "yaml") ||
-				strings.Contains(errStr, "parse") ||
-				strings.Contains(errStr, "unmarshal") ||
-				strings.Contains(errStr, "line")
 
 			if !hasParseInfo {
 				t.Logf("Error should be descriptive: %v", err)
@@ -1139,9 +1021,10 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 		{
 			name: "empty config",
 			config: config.Config{
-				Tools: map[string]config.ToolConfig{},
-				Env:   map[string]interface{}{},
-				Tasks: map[string]config.Task{},
+				Tools:    map[string]config.ToolConfig{},
+				ToolsRaw: nil,
+				Env:      nil,
+				Tasks:    nil,
 			},
 		},
 		{
@@ -1149,6 +1032,9 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 			config: config.Config{
 				Tools: map[string]config.ToolConfig{
 					"node": {Version: "20.0.0"},
+				},
+				ToolsRaw: map[string]interface{}{
+					"node": map[string]interface{}{"version": "20.0.0"},
 				},
 				Env: map[string]interface{}{
 					"PATH":        "/usr/local/bin:/usr/bin",
@@ -1175,6 +1061,16 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 					"java":      {Version: "17.0.0"},
 					"terraform": {Version: "1.5.0"},
 					"kubectl":   {Version: "1.27.0"},
+				},
+				ToolsRaw: map[string]interface{}{
+					"node":      map[string]interface{}{"version": "20.0.0", "backend": "github", "provider": "node"},
+					"python":    map[string]interface{}{"version": "3.11.5", "backend": "aqua", "provider": "python"},
+					"go":        map[string]interface{}{"version": "1.21.0", "backend": "http", "provider": "generic"},
+					"ruby":      map[string]interface{}{"version": "3.2.0"},
+					"rust":      map[string]interface{}{"version": "1.70.0"},
+					"java":      map[string]interface{}{"version": "17.0.0"},
+					"terraform": map[string]interface{}{"version": "1.5.0"},
+					"kubectl":   map[string]interface{}{"version": "1.27.0"},
 				},
 				Env: map[string]interface{}{
 					"PATH":       "/usr/local/bin",
@@ -1211,6 +1107,9 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 				Tools: map[string]config.ToolConfig{
 					"node": {Version: "20.0.0", Backend: "", Provider: ""},
 				},
+				ToolsRaw: map[string]interface{}{
+					"node": map[string]interface{}{"version": "20.0.0"},
+				},
 				Env: map[string]interface{}{
 					"EMPTY": "",
 				},
@@ -1246,6 +1145,7 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 			}
 
 			// Step 1: Serialize to TOML
+			tc.config.PostLoad()
 			var buf1 bytes.Buffer
 			encoder1 := toml.NewEncoder(&buf1)
 			err := encoder1.Encode(&tc.config)
@@ -1257,6 +1157,7 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 			decoder := toml.NewDecoder(bytes.NewReader(buf1.Bytes()))
 			err = decoder.Decode(&parsed)
 			require.NoError(t, err, "Failed to decode TOML")
+			parsed.PostLoad()
 
 			// Normalize parsed config
 			if parsed.Tools == nil {
@@ -1277,7 +1178,12 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 			toml2 := buf2.String()
 
 			// Step 4: Verify structural equivalence
-			require.True(t, configsEqual(tc.config, parsed), "Configs not structurally equal")
+			if !configsEqual(tc.config, parsed) {
+				t.Logf("Configs not structurally equal after round-trip")
+				t.Logf("Original: %+v", tc.config)
+				t.Logf("Parsed: %+v", parsed)
+				t.Fail()
+			}
 
 			// Step 5: Verify TOML output is identical
 			require.Equal(t, toml1, toml2, "TOML output differs after round-trip")

@@ -369,7 +369,7 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 		for _, path := range files {
 			cfg, err := m.tryLoad(ctx, path, true, &initialMerged.Settings)
 			if err != nil {
-				continue
+				return nil, fmt.Errorf("failed to load configuration from %s: %w", path, err)
 			}
 			if cfg != nil {
 				dirConfigs = append(dirConfigs, cfg)

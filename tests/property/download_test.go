@@ -33,11 +33,15 @@ func TestProperty13_DownloadRetryBehavior(t *testing.T) {
 	for _, failCount := range []int{0, 1} {
 		failCount := failCount // capture
 		t.Run(fmt.Sprintf("failCount=%d", failCount), func(t *testing.T) {
-			attempts := 0
+			getAttempts := 0
 
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				attempts++
-				if attempts <= failCount {
+				if r.Method == http.MethodHead {
+					w.WriteHeader(http.StatusMethodNotAllowed)
+					return
+				}
+				getAttempts++
+				if getAttempts <= failCount {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
@@ -63,10 +67,10 @@ func TestProperty13_DownloadRetryBehavior(t *testing.T) {
 				t.Fatalf("expected success after %d retries, got: %v", failCount, err)
 			}
 
-			// Verify total attempt count: failCount failures + 1 success
+			// Verify GET attempt count: failCount failures + 1 success
 			expectedAttempts := failCount + 1
-			if attempts != expectedAttempts {
-				t.Fatalf("expected %d attempts, got %d", expectedAttempts, attempts)
+			if getAttempts != expectedAttempts {
+				t.Fatalf("expected %d GET attempts, got %d", expectedAttempts, getAttempts)
 			}
 		})
 	}

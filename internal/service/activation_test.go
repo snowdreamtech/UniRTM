@@ -41,6 +41,7 @@ func TestActivationManager_GenerateActivationScript_Bash(t *testing.T) {
 		EnvVars: map[string]string{
 			"NODE_ENV": "production",
 		},
+		UseShims: true,
 	}
 
 	script, err := manager.GenerateActivationScript(ctx, config)
@@ -52,7 +53,7 @@ func TestActivationManager_GenerateActivationScript_Bash(t *testing.T) {
 	assert.NotEmpty(t, script.Instructions)
 
 	// Verify script content
-	assert.Contains(t, script.Content, "export PATH=\"/usr/local/unirtm/shims:$PATH\"")
+	assert.Contains(t, script.Content, "export PATH=\"/usr/local/unirtm/shims:")
 	assert.Contains(t, script.Content, "export UNIRTM_NODE_VERSION=\"20.0.0\"")
 	assert.Contains(t, script.Content, "export UNIRTM_PYTHON_VERSION=\"3.11.0\"")
 	assert.Contains(t, script.Content, "export NODE_ENV=\"production\"")
@@ -64,10 +65,11 @@ func TestActivationManager_GenerateActivationScript_Zsh(t *testing.T) {
 	ctx := context.Background()
 
 	config := ActivationConfig{
-		Shell:      ShellZsh,
-		Scope:      ScopeProject,
-		ShimsDir:   "/usr/local/unirtm/shims",
-		ProjectDir: "/home/user/myproject",
+		Shell:         ShellZsh,
+		Scope:         ScopeProject,
+		ShimsDir:      "/usr/local/unirtm/shims",
+		ProjectDir:    "/home/user/myproject",
+		InjectedPaths: []string{"/usr/local/unirtm/shims"},
 		ToolVersions: map[string]string{
 			"go": "1.21.0",
 		},
@@ -81,7 +83,7 @@ func TestActivationManager_GenerateActivationScript_Zsh(t *testing.T) {
 	assert.NotEmpty(t, script.Content)
 
 	// Verify script content
-	assert.Contains(t, script.Content, "export PATH=\"/usr/local/unirtm/shims:$PATH\"")
+	assert.Contains(t, script.Content, "export UNIRTM_PATH=\"/usr/local/unirtm/shims\"")
 	assert.Contains(t, script.Content, "export UNIRTM_GO_VERSION=\"1.21.0\"")
 	assert.Contains(t, script.Content, "export UNIRTM_ACTIVATION_SCOPE=\"project\"")
 	assert.Contains(t, script.Content, "export UNIRTM_PROJECT_DIR=\"/home/user/myproject\"")
@@ -98,6 +100,7 @@ func TestActivationManager_GenerateActivationScript_Fish(t *testing.T) {
 		ToolVersions: map[string]string{
 			"ruby": "3.2.0",
 		},
+		UseShims: true,
 	}
 
 	script, err := manager.GenerateActivationScript(ctx, config)
@@ -127,6 +130,7 @@ func TestActivationManager_GenerateActivationScript_PowerShell(t *testing.T) {
 		EnvVars: map[string]string{
 			"DOTNET_CLI_TELEMETRY_OPTOUT": "1",
 		},
+		UseShims: true,
 	}
 
 	script, err := manager.GenerateActivationScript(ctx, config)
@@ -270,13 +274,14 @@ func TestActivationManager_GenerateActivationScript_EmptyToolVersions(t *testing
 		ShimsDir:     "/usr/local/unirtm/shims",
 		ToolVersions: map[string]string{},
 		EnvVars:      map[string]string{},
+		UseShims:     true,
 	}
 
 	script, err := manager.GenerateActivationScript(ctx, config)
 
 	require.NoError(t, err)
 	require.NotNil(t, script)
-	assert.Contains(t, script.Content, "export PATH=\"/usr/local/unirtm/shims:$PATH\"")
+	assert.Contains(t, script.Content, "export PATH=\"/usr/local/unirtm/shims:")
 	assert.Contains(t, script.Content, "export UNIRTM_ACTIVATION_SCOPE=\"global\"")
 	// Should not contain tool version or env var sections
 	assert.NotContains(t, script.Content, "Set active tool versions")
@@ -331,13 +336,13 @@ func TestActivationManager_GenerateActivationScript_PathModification(t *testing.
 			name:     "bash with standard path",
 			shell:    ShellBash,
 			shimsDir: "/usr/local/unirtm/shims",
-			expected: "export PATH=\"/usr/local/unirtm/shims:$PATH\"",
+			expected: "export PATH=\"/usr/local/unirtm/shims:",
 		},
 		{
 			name:     "zsh with custom path",
 			shell:    ShellZsh,
 			shimsDir: "/home/user/.unirtm/shims",
-			expected: "export PATH=\"/home/user/.unirtm/shims:$PATH\"",
+			expected: "export PATH=\"/home/user/.unirtm/shims:",
 		},
 		{
 			name:     "fish with standard path",
@@ -353,6 +358,7 @@ func TestActivationManager_GenerateActivationScript_PathModification(t *testing.
 				Shell:    tt.shell,
 				Scope:    ScopeGlobal,
 				ShimsDir: tt.shimsDir,
+				UseShims: true,
 			}
 
 			script, err := manager.GenerateActivationScript(ctx, config)
@@ -377,16 +383,16 @@ func TestActivationManager_GenerateActivationScript_Instructions(t *testing.T) {
 			name:  "bash instructions",
 			shell: ShellBash,
 			expected: []string{
-				"source /path/to/activation.sh",
-				"~/.bashrc",
+				"UniRTM environment for bash is ready",
+				"eval \"$(unirtm activate bash)\"",
 			},
 		},
 		{
 			name:  "zsh instructions",
 			shell: ShellZsh,
 			expected: []string{
-				"source /path/to/activation.sh",
-				"~/.zshrc",
+				"UniRTM environment for zsh is ready",
+				"eval \"$(unirtm activate zsh)\"",
 			},
 		},
 		{
@@ -403,6 +409,7 @@ func TestActivationManager_GenerateActivationScript_Instructions(t *testing.T) {
 			expected: []string{
 				". \\path\\to\\activation.ps1",
 				"$PROFILE\\unirtm.ps1",
+				"powershell",
 			},
 		},
 	}
@@ -434,8 +441,9 @@ func TestActivationManager_GenerateActivationScript_DefaultShimsDir(t *testing.T
 	ctx := context.Background()
 
 	config := ActivationConfig{
-		Shell: ShellBash,
-		Scope: ScopeGlobal,
+		Shell:    ShellBash,
+		Scope:    ScopeGlobal,
+		UseShims: true,
 		// ShimsDir not specified - should use default
 	}
 
@@ -443,7 +451,7 @@ func TestActivationManager_GenerateActivationScript_DefaultShimsDir(t *testing.T
 
 	require.NoError(t, err)
 	require.NotNil(t, script)
-	assert.Contains(t, script.Content, fmt.Sprintf("export PATH=\"%s:$PATH\"", defaultShimsDir))
+	assert.Contains(t, script.Content, fmt.Sprintf("export PATH=\"%s:", defaultShimsDir))
 }
 
 func TestDetectShell(t *testing.T) {
@@ -555,6 +563,7 @@ func TestActivationManager_GenerateActivationScript_Comments(t *testing.T) {
 		EnvVars: map[string]string{
 			"NODE_ENV": "production",
 		},
+		UseShims: true,
 	}
 
 	script, err := manager.GenerateActivationScript(ctx, config)

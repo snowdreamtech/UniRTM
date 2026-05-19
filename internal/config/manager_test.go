@@ -70,9 +70,9 @@ run = "npm test"
 
 		// Verify Env
 		assert.Len(t, config.Env, 2)
-		// Note: Viper lowercases all keys by default
-		assert.Equal(t, "development", config.Env["node_env"])
-		assert.Equal(t, "/usr/local/bin/python", config.Env["python_path"])
+		// TOML parsing preserves key case (unlike Viper which lowercases)
+		assert.Equal(t, "development", config.Env["NODE_ENV"])
+		assert.Equal(t, "/usr/local/bin/python", config.Env["PYTHON_PATH"])
 
 		// Verify Settings
 		assert.Equal(t, "/tmp/cache", config.Settings.CacheDir)
@@ -99,9 +99,9 @@ run = "npm test"
 node = { version = "20.0.0" }
 
 [env]
-CUSTOM_PATH = "{{ .Env.UNIRTM_TEST_VAR }}/bin"
-OS_NAME = "{{ .OS }}"
-ARCH_NAME = "{{ .Arch }}"
+CUSTOM_PATH = "{{ env.UNIRTM_TEST_VAR }}/bin"
+OS_NAME = "{{ os }}"
+ARCH_NAME = "{{ arch }}"
 `
 		err := os.WriteFile(configPath, []byte(tomlContent), 0644)
 		require.NoError(t, err)
@@ -110,10 +110,10 @@ ARCH_NAME = "{{ .Arch }}"
 		require.NoError(t, err)
 		require.NotNil(t, config)
 
-		// Note: Viper lowercases keys by default
-		assert.Equal(t, "test_value_from_env/bin", config.Env["custom_path"])
-		assert.NotEmpty(t, config.Env["os_name"])
-		assert.NotEmpty(t, config.Env["arch_name"])
+		// TOML parsing preserves key case
+		assert.Equal(t, "test_value_from_env/bin", config.Env["CUSTOM_PATH"])
+		assert.NotEmpty(t, config.Env["OS_NAME"])
+		assert.NotEmpty(t, config.Env["ARCH_NAME"])
 	})
 
 	t.Run("load valid YAML file", func(t *testing.T) {
@@ -160,7 +160,7 @@ tasks:
 
 		// Verify Env
 		assert.Len(t, config.Env, 2)
-		// Note: Viper lowercases all keys by default
+		// Note: YAML through Viper lowercases all keys
 		assert.Equal(t, "development", config.Env["node_env"])
 
 		// Verify Settings
@@ -289,8 +289,8 @@ concurrency = 8
 
 		// Verify env merging
 		// Note: Viper lowercases all keys by default
-		assert.Equal(t, "development", config.Env["node_env"], "local should override project for node_env")
-		assert.Equal(t, "true", config.Env["debug"], "debug should come from local")
+		assert.Equal(t, "development", config.Env["NODE_ENV"], "local should override project for node_env")
+		assert.Equal(t, "true", config.Env["DEBUG"], "debug should come from local")
 
 		// Verify settings merging
 		assert.Equal(t, 7200, config.Settings.CacheTTL, "cache_ttl should come from project")
@@ -338,9 +338,9 @@ concurrency = 8
 
 		manager := newTestConfigManager()
 		config, err := manager.LoadHierarchy(ctx)
-		assert.Error(t, err)
-		assert.Nil(t, config)
-		assert.Contains(t, err.Error(), "failed to load configuration")
+		require.Error(t, err)
+		require.Nil(t, config)
+		require.Contains(t, err.Error(), "failed to load configuration")
 	})
 }
 
@@ -544,7 +544,7 @@ func TestConfigManager_Merge(t *testing.T) {
 
 		// Verify Env merging
 		assert.Len(t, merged.Env, 3)
-		// Note: Viper lowercases all keys by default
+		// Note: keys are set directly in Go code - they are lowercase
 		assert.Equal(t, "development", merged.Env["node_env"], "node_env should be overridden")
 		assert.Equal(t, "false", merged.Env["debug"], "debug should be preserved")
 		assert.Equal(t, "/usr/local/bin", merged.Env["path"], "path should be added")
@@ -645,7 +645,7 @@ func TestConfigManager_Merge(t *testing.T) {
 		// Verify precedence: local > project > global > system
 		assert.Equal(t, "20.0.0", merged.Tools["node"].Version, "node from project")
 		assert.Equal(t, "3.10.0", merged.Tools["python"].Version, "python from global")
-		// Note: Viper lowercases all keys by default
+		// Note: keys are set directly in Go code - they are lowercase
 		assert.Equal(t, "development", merged.Env["node_env"], "node_env from local")
 		assert.Equal(t, "/project/cache", merged.Settings.CacheDir, "CacheDir from project")
 		assert.Equal(t, 4, merged.Settings.Concurrency, "Concurrency from global")
@@ -973,8 +973,8 @@ cache_ttl = 3600
 		assert.Equal(t, "18.0.0", config.Tools["node"].Version, "node should be overridden")
 		assert.Equal(t, "3.11.0", config.Tools["python"].Version, "python should be preserved")
 		// Note: Viper lowercases all keys by default
-		assert.Equal(t, "development", config.Env["node_env"], "NODE_ENV should be overridden")
-		assert.Equal(t, "true", config.Env["debug"], "DEBUG should be added")
+		assert.Equal(t, "development", config.Env["NODE_ENV"], "NODE_ENV should be overridden")
+		assert.Equal(t, "true", config.Env["DEBUG"], "DEBUG should be added")
 		assert.Equal(t, 3600, config.Settings.CacheTTL, "CacheTTL should be overridden")
 	})
 
@@ -1131,10 +1131,10 @@ concurrency = 32
 		assert.Equal(t, "18.0.0", devConfig.Tools["node"].Version)
 		assert.Equal(t, "3.11.0", devConfig.Tools["python"].Version)
 		assert.Equal(t, "1.21.0", devConfig.Tools["go"].Version)
-		// Note: Viper lowercases all keys by default
-		assert.Equal(t, "development", devConfig.Env["node_env"])
-		assert.Equal(t, "debug", devConfig.Env["log_level"])
-		assert.Equal(t, "true", devConfig.Env["debug"])
+		// TOML parsing preserves key case
+		assert.Equal(t, "development", devConfig.Env["NODE_ENV"])
+		assert.Equal(t, "debug", devConfig.Env["LOG_LEVEL"])
+		assert.Equal(t, "true", devConfig.Env["DEBUG"])
 		assert.Equal(t, "/dev/cache", devConfig.Settings.CacheDir)
 		assert.Equal(t, 3600, devConfig.Settings.CacheTTL)
 		assert.Equal(t, 4, devConfig.Settings.Concurrency)
@@ -1148,9 +1148,9 @@ concurrency = 32
 		require.NotNil(t, stagingConfig)
 
 		assert.Equal(t, "20.0.0", stagingConfig.Tools["node"].Version)
-		// Note: Viper lowercases all keys by default
-		assert.Equal(t, "staging", stagingConfig.Env["node_env"])
-		assert.Equal(t, "info", stagingConfig.Env["log_level"])
+		// TOML parsing preserves key case
+		assert.Equal(t, "staging", stagingConfig.Env["NODE_ENV"])
+		assert.Equal(t, "info", stagingConfig.Env["LOG_LEVEL"])
 		assert.Equal(t, "/prod/cache", stagingConfig.Settings.CacheDir)
 		assert.Equal(t, 43200, stagingConfig.Settings.CacheTTL)
 		assert.Equal(t, 8, stagingConfig.Settings.Concurrency)
@@ -1163,10 +1163,10 @@ concurrency = 32
 		assert.Equal(t, "20.0.0", prodConfig.Tools["node"].Version)
 		assert.Equal(t, "3.11.0", prodConfig.Tools["python"].Version)
 		assert.Equal(t, "1.22.0", prodConfig.Tools["go"].Version)
-		// Note: Viper lowercases all keys by default
-		assert.Equal(t, "production", prodConfig.Env["node_env"])
-		assert.Equal(t, "warn", prodConfig.Env["log_level"])
-		assert.Equal(t, "true", prodConfig.Env["enable_monitoring"])
+		// TOML parsing preserves key case
+		assert.Equal(t, "production", prodConfig.Env["NODE_ENV"])
+		assert.Equal(t, "warn", prodConfig.Env["LOG_LEVEL"])
+		assert.Equal(t, "true", prodConfig.Env["ENABLE_MONITORING"])
 		assert.Equal(t, "/prod/cache", prodConfig.Settings.CacheDir)
 		assert.Equal(t, 172800, prodConfig.Settings.CacheTTL)
 		assert.Equal(t, 32, prodConfig.Settings.Concurrency)

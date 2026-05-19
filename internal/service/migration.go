@@ -117,17 +117,24 @@ func (mm *MigrationManager) MigrateFile(ctx context.Context, sourcePath string, 
 
 	// Generate UniRTM configuration content
 	newCfg := &config.Config{
-		Tools:    make(map[string]config.ToolConfig),
+		Tools:    make(config.ToolMap),
+		ToolsRaw: make(map[string]interface{}),
 		Env:      envVars,
 		Tasks:    tasks,
 		Settings: settings,
 	}
 
 	for _, t := range tools {
-		newCfg.Tools[t.Name] = config.ToolConfig{
+		tc := config.ToolConfig{
 			Version:  t.Version,
 			Backend:  t.Backend,
 			Provider: t.Provider,
+		}
+		newCfg.Tools[t.Name] = tc
+		if tc.Backend == "" && tc.Provider == "" {
+			newCfg.ToolsRaw[t.Name] = tc.Version
+		} else {
+			newCfg.ToolsRaw[t.Name] = tc
 		}
 	}
 

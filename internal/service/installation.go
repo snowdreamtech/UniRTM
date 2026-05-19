@@ -570,7 +570,7 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 				err := im.gpgVerifier.Verify(ctx, sigPath, downloadPath, trustedKeys)
 				if err != nil && strings.Contains(err.Error(), "missing public key") && len(trustedKeys) > 0 {
 					// Handle missing public key: Ask user in TTY, or fail in CI
-					if pterm.PrintColor && pterm.RawOutput { // Check if we are likely in a TTY
+					if pterm.PrintColor && !pterm.RawOutput { // Check if we are likely in a TTY
 						pterm.FgYellow.Printf("⚠️  GPG signature found but public key is missing locally.\n")
 						fp := trustedKeys[0] // Try first fingerprint
 						confirm, _ := pterm.DefaultInteractiveConfirm.

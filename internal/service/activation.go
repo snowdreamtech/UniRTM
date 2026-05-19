@@ -158,6 +158,7 @@ func (m *ActivationManager) GenerateGlobalActivation(ctx context.Context, shell 
 		ShimsDir:     m.shimsDir,
 		ToolVersions: toolVersions,
 		EnvVars:      make(map[string]string),
+		UseShims:     true,
 	}
 
 	return m.GenerateActivationScript(ctx, config)

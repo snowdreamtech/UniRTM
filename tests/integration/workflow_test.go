@@ -197,9 +197,9 @@ go = "1.21.0"
 	// Output file must exist and contain tool sections
 	content, readErr := os.ReadFile(outputFile)
 	require.NoError(t, readErr)
-	assert.Contains(t, string(content), "[tools.node]")
-	assert.Contains(t, string(content), "[tools.python]")
-	assert.Contains(t, string(content), "[tools.go]")
+	assert.Contains(t, string(content), "node = '20.0.0'")
+	assert.Contains(t, string(content), "python = '3.11.0'")
+	assert.Contains(t, string(content), "go = '1.21.0'")
 }
 
 // TestMigration_ToolVersions verifies that a .tool-versions file is correctly parsed.

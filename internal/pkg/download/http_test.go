@@ -275,6 +275,10 @@ func TestHTTPDownloader_Download_RetryLogic(t *testing.T) {
 
 	// Create test server that fails first attempts
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodHead {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		attempts++
 		if attempts < maxAttempts {
 			w.WriteHeader(http.StatusInternalServerError)

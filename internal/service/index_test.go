@@ -244,12 +244,12 @@ func TestIndexManager_UpsertTool(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := &MockIndexRepository{}
+			manager, err := NewIndexManager(mockRepo, &MockAuditRepository{}, nil, IndexManagerConfig{})
+			require.NoError(t, err)
+
 			if tt.setupMock != nil {
 				tt.setupMock(mockRepo)
 			}
-
-			manager, err := NewIndexManager(mockRepo, &MockAuditRepository{}, nil, IndexManagerConfig{})
-			require.NoError(t, err)
 
 			err = manager.UpsertTool(ctx, tt.tool, tt.description, tt.homepage, tt.license, tt.backend, tt.metadata)
 

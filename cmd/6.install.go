@@ -26,6 +26,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/snowdreamtech/unirtm/internal/transaction"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 var (
@@ -272,6 +273,20 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	// Sort tools by dependency to ensure runtimes are installed first
 	sortedTools := installManager.SortToolsFromSpecs(toolsToInstall)
 
+	// Pre-filter already installed tools to prevent them from corrupting the MultiPrinter UI
+	var activeTools []service.ToolToInstall
+	for _, t := range sortedTools {
+		isInstalled, _ := installManager.IsInstalled(ctx, t.ToolName, t.Version, t.BackendName)
+		if isInstalled {
+			if !jsonOutput {
+				pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", t.OriginalName, t.Version)
+			}
+		} else {
+			activeTools = append(activeTools, t)
+		}
+	}
+	sortedTools = activeTools
+
 	// Decide concurrency
 	concurrencyLimit := jobs
 	if concurrencyLimit <= 0 {
@@ -283,10 +298,10 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	}
 
 	// We run concurrently if there are multiple tools and concurrency limit > 1
-	runConcurrent := len(toolsToInstall) > 1 && concurrencyLimit > 1
+	runConcurrent := len(sortedTools) > 1 && concurrencyLimit > 1
 
 	if runConcurrent {
-		formatter.Info(fmt.Sprintf("Installing %d tool(s) concurrently (max %d parallel jobs)...", len(toolsToInstall), concurrencyLimit))
+		formatter.Info(fmt.Sprintf("Installing %d tool(s) concurrently (max %d parallel jobs)...", len(sortedTools), concurrencyLimit))
 
 		// 1. Build tool list for ConcurrentManager
 		var requests []service.ToolInstallRequest
@@ -319,16 +334,27 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 		// 2. Create ConcurrentManager
 		var (
-			spinners   = make(map[string]*pterm.SpinnerPrinter)
-			spinnersMu sync.Mutex
-			multi      *pterm.MultiPrinter
-			useMulti   = pterm.PrintColor && pterm.RawOutput && !jsonOutput
+			spinners         = make(map[string]*pterm.SpinnerPrinter)
+			spinnersMu       sync.Mutex
+			multi            *pterm.MultiPrinter
+			useMulti         = pterm.PrintColor && !pterm.RawOutput && !jsonOutput && term.IsTerminal(int(os.Stdout.Fd()))
+			bufferedMessages []string
+			bufferedMu       sync.Mutex
 		)
 
 		if useMulti {
 			multi = &pterm.DefaultMultiPrinter
 			go func() {
 				_, _ = multi.Start()
+			}()
+			defer func() {
+				time.Sleep(50 * time.Millisecond)
+				_, _ = multi.Stop()
+				bufferedMu.Lock()
+				for _, msg := range bufferedMessages {
+					pterm.Println(msg)
+				}
+				bufferedMu.Unlock()
 			}()
 		}
 
@@ -343,6 +369,8 @@ func runInstall(cmd *cobra.Command, args []string) error {
 					spinner, _ := pterm.DefaultSpinner.
 						WithWriter(multi.NewWriter()).
 						Start(fmt.Sprintf("Installing %s@%s...", tool, version))
+					spinner.SuccessPrinter = pterm.Success.WithWriter(spinner.Writer)
+					spinner.FailPrinter = pterm.Error.WithWriter(spinner.Writer)
 					spinners[tool] = spinner
 					spinnersMu.Unlock()
 				} else {
@@ -370,7 +398,9 @@ func runInstall(cmd *cobra.Command, args []string) error {
 							if exists && spinner != nil {
 								spinner.Success(fmt.Sprintf("%s@%s (already installed)", tool, version))
 							} else {
-								pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", tool, version)
+								bufferedMu.Lock()
+								bufferedMessages = append(bufferedMessages, pterm.FgGreen.Sprintf("✓ %s@%s (already installed)", tool, version))
+								bufferedMu.Unlock()
 							}
 						} else {
 							pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", tool, version)
@@ -383,7 +413,9 @@ func runInstall(cmd *cobra.Command, args []string) error {
 							if exists && spinner != nil {
 								spinner.Fail(fmt.Sprintf("Failed to install %s@%s: %s", tool, version, errMsg))
 							} else {
-								pterm.Error.Printf("Failed to install %s@%s: %s\n", tool, version, errMsg)
+								bufferedMu.Lock()
+								bufferedMessages = append(bufferedMessages, pterm.Error.Sprintf("Failed to install %s@%s: %s", tool, version, errMsg))
+								bufferedMu.Unlock()
 							}
 						} else {
 							pterm.Error.Printf("Failed to install %s@%s: %s\n", tool, version, errMsg)
