@@ -19,8 +19,8 @@ func (m *mockTrustManager) TrustStatus(path string) TrustStatus { return TrustSt
 func (m *mockTrustManager) Trust(path string) error             { return nil }
 func (m *mockTrustManager) Untrust(path string) error           { return nil }
 
-func newTestConfigManager() *viperConfigManager {
-	m := NewConfigManager().(*viperConfigManager)
+func newTestConfigManager() *defaultConfigManager {
+	m := NewConfigManager().(*defaultConfigManager)
 	m.trustManager = &mockTrustManager{}
 	return m
 }
@@ -70,7 +70,7 @@ run = "npm test"
 
 		// Verify Env
 		assert.Len(t, config.Env, 2)
-		// TOML parsing preserves key case (unlike Viper which lowercases)
+		// TOML parsing preserves key case
 		assert.Equal(t, "development", config.Env["NODE_ENV"])
 		assert.Equal(t, "/usr/local/bin/python", config.Env["PYTHON_PATH"])
 
@@ -160,8 +160,9 @@ tasks:
 
 		// Verify Env
 		assert.Len(t, config.Env, 2)
-		// Note: YAML through Viper lowercases all keys
-		assert.Equal(t, "development", config.Env["node_env"])
+		// go-yaml/v3 preserves key case (NODE_ENV stays NODE_ENV)
+		assert.Equal(t, "development", config.Env["NODE_ENV"])
+		assert.Equal(t, "/usr/local/bin/python", config.Env["PYTHON_PATH"])
 
 		// Verify Settings
 		assert.Equal(t, "/tmp/cache", config.Settings.CacheDir)
@@ -288,7 +289,7 @@ concurrency = 8
 		assert.Equal(t, "3.10.0", config.Tools["python"].Version, "python should come from project")
 
 		// Verify env merging
-		// Note: Viper lowercases all keys by default
+		// Note: keys are set directly in Go code - they are lowercase
 		assert.Equal(t, "development", config.Env["NODE_ENV"], "local should override project for node_env")
 		assert.Equal(t, "true", config.Env["DEBUG"], "debug should come from local")
 
@@ -972,7 +973,7 @@ cache_ttl = 3600
 		// Verify environment overrides were applied
 		assert.Equal(t, "18.0.0", config.Tools["node"].Version, "node should be overridden")
 		assert.Equal(t, "3.11.0", config.Tools["python"].Version, "python should be preserved")
-		// Note: Viper lowercases all keys by default
+		// Note: keys are set directly in Go code - they are lowercase
 		assert.Equal(t, "development", config.Env["NODE_ENV"], "NODE_ENV should be overridden")
 		assert.Equal(t, "true", config.Env["DEBUG"], "DEBUG should be added")
 		assert.Equal(t, 3600, config.Settings.CacheTTL, "CacheTTL should be overridden")

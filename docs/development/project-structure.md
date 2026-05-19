@@ -15,7 +15,7 @@ UniRTM/
 │   └── *.go               # Cobra command definitions
 │
 ├── internal/              # Private application code
-│   ├── config/           # Configuration management (Viper, TOML/YAML)
+│   ├── config/           # Configuration management (go-toml, YAML)
 │   ├── service/          # Business logic layer
 │   ├── backend/          # Backend system (GitHub, Aqua, HTTP)
 │   ├── provider/         # Provider system (tool-specific logic)
@@ -63,7 +63,7 @@ UniRTM/
 
 ### Configuration Layer (`internal/config/`)
 
-- TOML/YAML parsing using Viper
+- TOML/YAML parsing using native libraries (go-toml/v2, go-yaml/v3)
 - Hierarchical configuration loading (system → global → project → local)
 - Environment-specific overrides
 - Configuration validation and schema enforcement
@@ -107,7 +107,7 @@ UniRTM/
 
 - **Language**: Go 1.21+
 - **CLI Framework**: Cobra
-- **Configuration**: Viper (TOML/YAML)
+- **Configuration**: go-toml/v2, go-yaml/v3 (TOML/YAML)
 - **Database**: SQLite with mattn/go-sqlite3
 - **Logging**: zerolog (in `internal/pkg/logger`)
 - **Testing**: testify, gopter (for property-based tests)

@@ -1,6 +1,6 @@
 # Configuration Layer
 
-This package handles all configuration management for UniRTM using Viper.
+This package handles all configuration management for UniRTM.
 
 ## Responsibilities
 
@@ -97,7 +97,7 @@ go test -race -cover ./internal/config/
 ## Status
 
 - ✅ **Task 2.1 Complete**: Configuration data structures with TOML/YAML tags and validation methods
-- 🚧 **Task 2.2 Planned**: ConfigManager interface with Viper integration
+- 🚧 **Task 2.2 Planned**: ConfigManager interface with go-toml/yaml.v3 integration
 - 🚧 **Task 2.3-2.6 Planned**: Property-based tests and environment overrides
 
 ## Requirements

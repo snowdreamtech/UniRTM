@@ -14,7 +14,7 @@ Task 1 has been successfully completed. The UniRTM project foundation and infras
 - Go version: 1.26.2
 - Dependencies added:
   - `github.com/spf13/cobra` v1.10.2 (CLI framework)
-  - `github.com/spf13/viper` v1.20.0 (configuration management)
+  - `github.com/pelletier/go-toml/v2` and `gopkg.in/yaml.v3` (configuration management)
   - `github.com/mattn/go-sqlite3` v1.14.24 (SQLite driver)
   - `github.com/stretchr/testify` v1.10.0 (testing framework)
   - `github.com/rs/zerolog` v1.35.1 (logging - already present)
@@ -26,7 +26,7 @@ Task 1 has been successfully completed. The UniRTM project foundation and infras
 
 ```
 internal/
-├── config/          # Configuration management (Viper, TOML/YAML)
+├── config/          # Configuration management (go-toml/yaml.v3)
 ├── service/         # Business logic layer
 ├── backend/         # Backend system (GitHub, Aqua, HTTP)
 ├── provider/        # Provider system (tool-specific logic)
@@ -148,7 +148,7 @@ With Task 1 complete, the project is ready for:
 
 1. **Task 2**: Core configuration management module implementation
    - Implement configuration data structures
-   - Implement ConfigManager with Viper
+   - Implement ConfigManager with go-toml/yaml.v3
    - Write property tests for configuration round-trip
 
 2. **Task 3**: SQLite database layer and repository pattern
@@ -162,7 +162,7 @@ With Task 1 complete, the project is ready for:
 - [tott project](https://github.com/evilmartians/tott)
 - [golangci-lint documentation](https://golangci-lint.run/)
 - [Cobra CLI framework](https://github.com/spf13/cobra)
-- [Viper configuration](https://github.com/spf13/viper)
+- [go-toml documentation](https://github.com/pelletier/go-toml)
 
 ## Requirements Satisfied
 

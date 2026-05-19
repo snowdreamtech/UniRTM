@@ -11,12 +11,13 @@ import (
 	"strings"
 
 	"github.com/pterm/pterm"
+	"github.com/pelletier/go-toml/v2"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"golang.org/x/term"
+	"gopkg.in/yaml.v3"
 )
 
 // init registers the config command and its subcommands.
@@ -282,10 +283,43 @@ func runConfigGet(cmd *cobra.Command, args []string) error {
 
 	key := args[0]
 
-	v := viper.New()
-	loadViperConfigHierarchy(v)
+	ctx := cmd.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	cm := config.NewConfigManager()
+	cfg, err := cm.LoadHierarchy(ctx)
+	if err != nil || cfg == nil {
+		cfg = &config.Config{}
+	}
 
-	value := v.Get(key)
+	// Resolve dotted key into the config struct using a simple top-level section lookup
+	parts := strings.SplitN(key, ".", 2)
+	var value interface{}
+	switch parts[0] {
+	case "tools":
+		if len(parts) > 1 {
+			sub := strings.SplitN(parts[1], ".", 2)
+			if t, ok := cfg.Tools[sub[0]]; ok {
+				value = t
+			}
+		} else {
+			value = cfg.Tools
+		}
+	case "settings":
+		value = cfg.Settings
+	case "env":
+		if len(parts) > 1 {
+			value = cfg.Env[parts[1]]
+		} else {
+			value = cfg.Env
+		}
+	case "tasks":
+		value = cfg.Tasks
+	default:
+		value = nil
+	}
+
 	if value == nil {
 		formatter.Error(fmt.Sprintf("Key %q not found in configuration", key), nil)
 		return fmt.Errorf("key %q not found", key)
@@ -322,7 +356,6 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 	if configPath != "" {
 		localConfigFile = configPath
 	} else {
-		// If no specific path is provided, find the existing config file, prioritizing TOML
 		for _, f := range []string{".unirtm.toml", ".unirtm.yaml", ".unirtm.yml", "unirtm.toml", "unirtm.yaml", "unirtm.yml"} {
 			if _, err := os.Stat(f); err == nil {
 				localConfigFile = f
@@ -331,19 +364,44 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	v := viper.New()
-	v.SetConfigFile(localConfigFile)
-	ext := filepath.Ext(localConfigFile)
-	configType := strings.TrimPrefix(ext, ".")
-	if configType == "" {
-		configType = "toml"
+	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(localConfigFile), "."))
+	if ext == "" {
+		ext = "toml"
 	}
-	v.SetConfigType(configType)
-	_ = v.ReadInConfig()
 
-	v.Set(key, value)
+	// Read existing content as a generic map to preserve unknown keys
+	existing := make(map[string]interface{})
+	if data, err := os.ReadFile(localConfigFile); err == nil {
+		switch ext {
+		case "toml":
+			_ = toml.Unmarshal(data, &existing)
+		case "yaml", "yml":
+			_ = yaml.Unmarshal(data, &existing)
+		}
+	}
 
-	if err := v.WriteConfigAs(localConfigFile); err != nil {
+	// Set the value at the dotted key path
+	setNestedKey(existing, strings.Split(key, "."), value)
+
+	// Serialize back to file
+	var out []byte
+	var writeErr error
+	switch ext {
+	case "toml":
+		out, writeErr = toml.Marshal(existing)
+	case "yaml", "yml":
+		out, writeErr = yaml.Marshal(existing)
+	default:
+		writeErr = fmt.Errorf("unsupported config format: %s", ext)
+	}
+	if writeErr != nil {
+		formatter.Error("Failed to serialize configuration", map[string]interface{}{
+			"error": writeErr.Error(),
+		})
+		return fmt.Errorf("serialize config: %w", writeErr)
+	}
+
+	if err := os.WriteFile(localConfigFile, out, 0644); err != nil {
 		formatter.Error("Failed to write configuration", map[string]interface{}{
 			"file":  localConfigFile,
 			"error": err.Error(),
@@ -353,6 +411,20 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 
 	formatter.Success(fmt.Sprintf("Set %s = %s in %s", key, value, localConfigFile), nil)
 	return nil
+}
+
+// setNestedKey sets a value in a nested map at the given key path.
+func setNestedKey(m map[string]interface{}, keys []string, value interface{}) {
+	if len(keys) == 1 {
+		m[keys[0]] = value
+		return
+	}
+	sub, ok := m[keys[0]].(map[string]interface{})
+	if !ok {
+		sub = make(map[string]interface{})
+	}
+	setNestedKey(sub, keys[1:], value)
+	m[keys[0]] = sub
 }
 
 // runConfigGenerate generates a default configuration file.
@@ -411,28 +483,3 @@ cache_ttl = "168h"
 	return nil
 }
 
-// loadViperConfigHierarchy loads configuration hierarchy into a viper instance.
-func loadViperConfigHierarchy(v *viper.Viper) {
-	// Order matters for MergeInConfig: later files override earlier files.
-	// By putting TOML last, it takes precedence over YAML if both exist in the same directory.
-	candidates := []string{
-		"unirtm.yml", "unirtm.yaml", "unirtm.toml",
-		".unirtm.yml", ".unirtm.yaml", ".unirtm.toml",
-	}
-	if configPath != "" {
-		// Command line flag has highest priority
-		candidates = append(candidates, configPath)
-	}
-	for _, f := range candidates {
-		if _, err := os.Stat(f); err == nil {
-			v.SetConfigFile(f)
-			ext := filepath.Ext(f)
-			configType := strings.TrimPrefix(ext, ".")
-			if configType == "" {
-				configType = "toml"
-			}
-			v.SetConfigType(configType)
-			_ = v.MergeInConfig()
-		}
-	}
-}

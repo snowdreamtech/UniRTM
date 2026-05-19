@@ -47,7 +47,7 @@ UniRTM/
 │   │   └── registry.go     # Backend registry
 │   ├── config/             # Configuration management
 │   │   ├── config.go       # Data structures
-│   │   └── manager.go      # ConfigManager (Viper-based)
+│   │   └── manager.go      # ConfigManager (go-toml/yaml.v3-based)
 │   ├── database/           # SQLite database layer
 │   │   ├── database.go     # Connection management
 │   │   ├── migration.go    # Schema migration

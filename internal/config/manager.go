@@ -5,7 +5,6 @@
 package config
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -18,7 +17,7 @@ import (
 	"github.com/flosch/pongo2/v6"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
-	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 // ConfigManager defines the interface for configuration management operations.
@@ -54,8 +53,8 @@ type ConfigManager interface {
 	ApplyEnvironment(config *Config, environment string) (*Config, error)
 }
 
-// viperConfigManager implements ConfigManager using Viper for TOML/YAML parsing.
-type viperConfigManager struct {
+// defaultConfigManager implements ConfigManager using native parsers for TOML/YAML.
+type defaultConfigManager struct {
 	// homeDir is the user's home directory for resolving global config paths
 	homeDir      string
 	trustManager TrustManager
@@ -63,11 +62,11 @@ type viperConfigManager struct {
 
 // NewConfigManager creates a new ConfigManager instance.
 //
-// It uses Viper for parsing TOML and YAML configuration files and supports
+// It parses TOML and YAML configuration files and supports
 // hierarchical configuration loading with proper precedence rules.
 func NewConfigManager() ConfigManager {
 	homeDir, _ := os.UserHomeDir()
-	return &viperConfigManager{
+	return &defaultConfigManager{
 		homeDir:      homeDir,
 		trustManager: NewTrustManager(),
 	}
@@ -83,7 +82,7 @@ func NewConfigManager() ConfigManager {
 //   - The file cannot be read
 //   - The file contains invalid syntax
 //   - The file format is not supported
-func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, error) {
+func (m *defaultConfigManager) Load(ctx context.Context, path string) (*Config, error) {
 	// Check if file exists
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, fmt.Errorf("configuration file not found: %s", path)
@@ -185,43 +184,26 @@ func (m *viperConfigManager) Load(ctx context.Context, path string) (*Config, er
 
 	renderedBytes := []byte(rendered)
 
-	// Create a new Viper instance for this file
-	v := viper.New()
-
 	// Determine config type from extension
 	ext := filepath.Ext(path)
 	configType := strings.TrimPrefix(ext, ".")
 	if configType == "" {
 		configType = "toml" // default
 	}
-	v.SetConfigType(configType)
 
-	// Read the configuration file from buffer
-	if err := v.ReadConfig(bytes.NewReader(renderedBytes)); err != nil {
-		// Provide descriptive error messages for common issues
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			return nil, fmt.Errorf("configuration file not found: %s", path)
-		}
-		// Check for syntax errors
-		if strings.Contains(err.Error(), "toml") || strings.Contains(err.Error(), "yaml") {
+	// Unmarshal into Config struct preserving key case
+	var config Config
+	switch configType {
+	case "toml":
+		if err := toml.Unmarshal(renderedBytes, &config); err != nil {
 			return nil, fmt.Errorf("invalid syntax in configuration file %s: %w", path, err)
 		}
-		return nil, fmt.Errorf("failed to parse rendered configuration file %s: %w", path, err)
-	}
-
-	// Unmarshal into Config struct
-	var config Config
-
-	if configType == "toml" {
-		if err := toml.Unmarshal(renderedBytes, &config); err != nil {
-			return nil, fmt.Errorf("failed to parse TOML configuration file %s: %w", path, err)
+	case "yaml", "yml":
+		if err := yaml.Unmarshal(renderedBytes, &config); err != nil {
+			return nil, fmt.Errorf("invalid syntax in configuration file %s: %w", path, err)
 		}
-	} else {
-		// Configure Viper to use the correct struct tags
-		// Viper uses mapstructure by default, but we need to support both toml and yaml tags
-		if err := v.Unmarshal(&config); err != nil {
-			return nil, fmt.Errorf("failed to parse configuration file %s: %w", path, err)
-		}
+	default:
+		return nil, fmt.Errorf("unsupported configuration file format %q in %s", configType, path)
 	}
 
 	// Process shorthand tool versions
@@ -281,7 +263,7 @@ func (c *Config) ResolveAlias(tool, version string) string {
 // are silently skipped (not an error).
 //
 // Returns the merged configuration or an error if any existing file fails to parse.
-func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error) {
+func (m *defaultConfigManager) LoadHierarchy(ctx context.Context) (*Config, error) {
 	var configs []*Config
 
 	// 1. Load System configuration
@@ -408,7 +390,7 @@ func (m *viperConfigManager) LoadHierarchy(ctx context.Context) (*Config, error)
 }
 
 // tryLoad attempts to load a config file if it exists and satisfies trust requirements.
-func (m *viperConfigManager) tryLoad(ctx context.Context, path string, enforceTrust bool, initialSettings *Settings) (*Config, error) {
+func (m *defaultConfigManager) tryLoad(ctx context.Context, path string, enforceTrust bool, initialSettings *Settings) (*Config, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, nil
 	}
@@ -467,7 +449,7 @@ func (m *viperConfigManager) tryLoad(ctx context.Context, path string, enforceTr
 //
 // Returns the merged configuration with environment overrides applied, or an error
 // if loading or merging fails.
-func (m *viperConfigManager) LoadWithEnvironment(ctx context.Context, environment string) (*Config, error) {
+func (m *defaultConfigManager) LoadWithEnvironment(ctx context.Context, environment string) (*Config, error) {
 	// Load base configuration from hierarchy
 	config, err := m.LoadHierarchy(ctx)
 	if err != nil {
@@ -491,7 +473,7 @@ func (m *viperConfigManager) LoadWithEnvironment(ctx context.Context, environmen
 // validation of all configuration fields and returns all validation errors.
 //
 // Returns an error if validation fails, with all validation errors reported.
-func (m *viperConfigManager) Validate(ctx context.Context, config *Config) error {
+func (m *defaultConfigManager) Validate(ctx context.Context, config *Config) error {
 	if config == nil {
 		return fmt.Errorf("configuration is nil")
 	}
@@ -512,7 +494,7 @@ func (m *viperConfigManager) Validate(ctx context.Context, config *Config) error
 //   - Settings: Non-zero values from later configs override earlier values
 //
 // Returns the merged configuration or an error if merging fails.
-func (m *viperConfigManager) Merge(configs ...*Config) (*Config, error) {
+func (m *defaultConfigManager) Merge(configs ...*Config) (*Config, error) {
 	if len(configs) == 0 {
 		return nil, fmt.Errorf("no configurations to merge")
 	}
@@ -644,7 +626,7 @@ func (m *viperConfigManager) Merge(configs ...*Config) (*Config, error) {
 //   - Settings: Non-zero environment settings override base settings
 //
 // Returns a new configuration with the environment overrides applied.
-func (m *viperConfigManager) ApplyEnvironment(config *Config, environment string) (*Config, error) {
+func (m *defaultConfigManager) ApplyEnvironment(config *Config, environment string) (*Config, error) {
 	if config == nil {
 		return nil, fmt.Errorf("configuration is nil")
 	}
