@@ -52,6 +52,9 @@ The update command checks for available updates and applies them.
 It respects version constraints defined in configuration files.
 
 Examples:
+  # Preview all available updates (no changes applied)
+  unirtm update --preview
+
   # Update a specific tool to its latest version
   unirtm update node
 
@@ -61,7 +64,7 @@ Examples:
   # Update all installed tools
   unirtm update --all
 
-  # Preview what would be updated without applying
+  # Preview what would be updated for all tools (explicit)
   unirtm update --all --preview
 
   # Update with JSON output
@@ -84,8 +87,8 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		Verbose: verbose,
 	})
 
-	// Validate arguments
-	if len(args) == 0 && !updateAll {
+	// Validate arguments: require a tool name OR --all OR --preview (preview implies all tools)
+	if len(args) == 0 && !updateAll && !updatePreview {
 		return fmt.Errorf("specify a tool name or use --all to update all tools")
 	}
 
