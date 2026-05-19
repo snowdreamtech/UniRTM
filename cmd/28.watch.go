@@ -4,10 +4,12 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -15,103 +17,252 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	watchGlobs    []string
+	watchIgnores  []string
+	watchClear    bool
+	watchDebounce int
+	watchShell    bool
+
+	runningTaskCmd *exec.Cmd
+	cmdMutex       sync.Mutex
+)
+
+// watchCmd represents the watch command which watches files and runs a task on changes.
 var watchCmd = &cobra.Command{
 	Use:     "watch <task>",
 	Short:   "Watch files and run task on changes",
 	Long:    `Watch files in the current directory and automatically run the specified task when changes occur.`,
 	Aliases: []string{"w"},
 	Args:    cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		taskName := args[0]
-
-		// Run task immediately once
-		runWatchTask(taskName)
-
-		watcher, err := fsnotify.NewWatcher()
-		if err != nil {
-			pterm.Error.Printf("Failed to create watcher: %v\n", err)
-			os.Exit(1)
-		}
-		defer watcher.Close()
-
-		// Add directories recursively
-		err = filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if !info.IsDir() {
-				return nil
-			}
-			// Skip hidden directories and common vendor dirs
-			base := filepath.Base(path)
-			// Ensure we don't skip the current directory "."
-			if path != "." && (strings.HasPrefix(base, ".") || base == "node_modules" || base == "vendor") {
-				return filepath.SkipDir
-			}
-			return watcher.Add(path)
-		})
-
-		if err != nil {
-			pterm.Error.Printf("Failed to scan directories: %v\n", err)
-			os.Exit(1)
-		}
-
-		pterm.Info.Printf("Watching for file changes. Press Ctrl+C to stop.\n")
-
-		// Debounce logic
-		var timer *time.Timer
-		debounceDuration := 500 * time.Millisecond
-
-		for {
-			select {
-			case event, ok := <-watcher.Events:
-				if !ok {
-					return
-				}
-				// Ignore chmod events
-				if event.Op&fsnotify.Chmod == fsnotify.Chmod {
-					continue
-				}
-
-				if timer != nil {
-					timer.Stop()
-				}
-				timer = time.AfterFunc(debounceDuration, func() {
-					pterm.Info.Printf("File changed: %s. Restarting task %s...\n", event.Name, taskName)
-					runWatchTask(taskName)
-				})
-
-			case err, ok := <-watcher.Errors:
-				if !ok {
-					return
-				}
-				pterm.Error.Printf("Watch error: %v\n", err)
-			}
-		}
-	},
+	RunE:    runWatch,
 }
 
+func init() {
+	watchCmd.Flags().StringSliceVarP(&watchGlobs, "glob", "g", []string{}, "Watch only files matching these glob patterns (e.g. *.go)")
+	watchCmd.Flags().StringSliceVarP(&watchIgnores, "ignore", "i", []string{}, "Ignore files matching these patterns")
+	watchCmd.Flags().BoolVarP(&watchClear, "clear", "c", false, "Clear the screen before running the task")
+	watchCmd.Flags().IntVarP(&watchDebounce, "debounce", "d", 500, "Debounce delay in milliseconds")
+	watchCmd.Flags().BoolVarP(&watchShell, "shell", "s", false, "Run task inside a shell")
+
+	if rootCmd != nil {
+		rootCmd.AddCommand(watchCmd)
+	}
+}
+
+func runWatch(cmd *cobra.Command, args []string) error {
+	taskName := args[0]
+	debounceDuration := time.Duration(watchDebounce) * time.Millisecond
+
+	// Premium Visual Header UI
+	pterm.DefaultHeader.WithBackgroundStyle(pterm.NewStyle(pterm.BgCyan)).WithTextStyle(pterm.NewStyle(pterm.FgBlack)).Println("UniRTM Watcher 🚀")
+	pterm.Println()
+
+	// Print beautiful settings box
+	pterm.DefaultSection.Println("Watcher Settings")
+	pterm.Info.Printf("Task to execute:   %s\n", pterm.LightCyan(taskName))
+	pterm.Info.Printf("Debounce delay:    %s\n", pterm.LightYellow(debounceDuration.String()))
+	if len(watchGlobs) > 0 {
+		pterm.Info.Printf("Watch globs:       %s\n", pterm.LightMagenta(strings.Join(watchGlobs, ", ")))
+	} else {
+		pterm.Info.Printf("Watch directories: %s (recursive)\n", pterm.LightGreen("."))
+	}
+	if len(watchIgnores) > 0 {
+		pterm.Info.Printf("Ignore patterns:   %s\n", pterm.LightRed(strings.Join(watchIgnores, ", ")))
+	}
+	if watchClear {
+		pterm.Info.Println("Screen clearing:   Enabled")
+	}
+	if watchShell {
+		pterm.Info.Println("Shell execution:   Enabled")
+	}
+
+	pterm.Println(pterm.FgGray.Sprint(strings.Repeat("─", 60)))
+	pterm.Info.Println("Watching for file changes. Press Ctrl+C to stop.")
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return fmt.Errorf("create watcher: %w", err)
+	}
+	defer watcher.Close()
+
+	// Add directories recursively
+	err = filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			return nil
+		}
+		base := filepath.Base(path)
+		// Skip hidden directories and common vendor dirs
+		if path != "." && (strings.HasPrefix(base, ".") || base == "node_modules" || base == "vendor") {
+			return filepath.SkipDir
+		}
+		return watcher.Add(path)
+	})
+
+	if err != nil {
+		return fmt.Errorf("scan directories: %w", err)
+	}
+
+	// Run task immediately once at startup
+	if watchClear {
+		clearScreen()
+	}
+	runWatchTask(taskName)
+
+	// Debounce logic
+	var timer *time.Timer
+	var timerMutex sync.Mutex
+
+	for {
+		select {
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return nil
+			}
+			// Ignore chmod events as they are usually metadata adjustments
+			if event.Op&fsnotify.Chmod == fsnotify.Chmod {
+				continue
+			}
+
+			// Apply glob & ignore filtering
+			if !isMatched(event.Name, watchGlobs, watchIgnores) {
+				continue
+			}
+
+			timerMutex.Lock()
+			if timer != nil {
+				timer.Stop()
+			}
+			timer = time.AfterFunc(debounceDuration, func() {
+				// Clear screen if requested before starting the task
+				if watchClear {
+					clearScreen()
+				}
+				pterm.Println(pterm.FgGray.Sprint(strings.Repeat("─", 60)))
+				pterm.Info.Printf("Change detected in: %s\n", pterm.LightYellow(event.Name))
+				pterm.Info.Printf("Restarting task %s...\n", pterm.LightCyan(taskName))
+
+				// Kill currently running task if active to support hot-reloading (Surpassing mise!)
+				killCurrentCmd()
+
+				runWatchTask(taskName)
+			})
+			timerMutex.Unlock()
+
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return nil
+			}
+			pterm.Error.Printf("Watch error: %v\n", err)
+		}
+	}
+}
+
+// runWatchTask executes the task while properly managing the current command pointer.
 func runWatchTask(taskName string) {
-	// Call unirtm run using os.Executable to ensure proper isolation and prevent os.Exit from terminating the watcher
 	exe, err := os.Executable()
 	if err != nil {
 		pterm.Error.Printf("Failed to find executable: %v\n", err)
 		return
 	}
 
-	cmd := exec.Command(exe, "run", taskName)
+	var cmd *exec.Cmd
+	if watchShell {
+		shell := os.Getenv("SHELL")
+		if shell == "" {
+			shell = "/bin/sh"
+		}
+		cmd = exec.Command(shell, "-c", fmt.Sprintf("%q run %q", exe, taskName))
+	} else {
+		cmd = exec.Command(exe, "run", taskName)
+	}
+
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 
+	cmdMutex.Lock()
+	runningTaskCmd = cmd
+	cmdMutex.Unlock()
+
+	startTime := time.Now()
 	err = cmd.Run()
+	duration := time.Since(startTime)
+
+	cmdMutex.Lock()
+	// Only set to nil if it is still the same running command (prevents overwriting newer runs)
+	if runningTaskCmd == cmd {
+		runningTaskCmd = nil
+	}
+	cmdMutex.Unlock()
+
 	if err != nil {
-		pterm.Warning.Printf("Task %s failed: %v\n", taskName, err)
+		// If command was killed (exit status -1/killed), print a friendly reload indicator
+		if strings.Contains(err.Error(), "killed") || strings.Contains(err.Error(), "exit status -1") || strings.Contains(err.Error(), "signal: killed") {
+			pterm.FgYellow.Printf("🔄 Task %s interrupted & reloaded.\n", taskName)
+		} else {
+			pterm.Warning.Printf("Task %s failed: %v (took %v)\n", taskName, err, duration.Round(time.Millisecond))
+		}
 	} else {
-		pterm.FgGreen.Printf("✅ Task %s completed.\n", taskName)
+		pterm.FgGreen.Printf("✅ Task %s completed successfully in %v.\n", taskName, duration.Round(time.Millisecond))
 	}
 }
 
-func init() {
-	rootCmd.AddCommand(watchCmd)
+// killCurrentCmd terminates the currently running task if any (Surpassing mise!).
+func killCurrentCmd() {
+	cmdMutex.Lock()
+	defer cmdMutex.Unlock()
+	if runningTaskCmd != nil && runningTaskCmd.Process != nil {
+		pterm.Info.Println("Killing running task execution to restart...")
+		_ = runningTaskCmd.Process.Kill()
+	}
+}
+
+// clearScreen clears the terminal screen cleanly across platforms.
+func clearScreen() {
+	fmt.Print("\033[H\033[2J")
+}
+
+// isMatched performs robust glob and ignore checking.
+func isMatched(path string, globs, ignores []string) bool {
+	base := filepath.Base(path)
+
+	// 1. Check ignore list
+	for _, ignore := range ignores {
+		if matched, _ := filepath.Match(ignore, base); matched {
+			return false
+		}
+		if matched, _ := filepath.Match(ignore, path); matched {
+			return false
+		}
+		if strings.Contains(path, ignore) {
+			return false
+		}
+	}
+
+	// 2. If no globs are specified, everything is accepted
+	if len(globs) == 0 {
+		return true
+	}
+
+	// 3. Check glob list
+	for _, glob := range globs {
+		if matched, _ := filepath.Match(glob, base); matched {
+			return true
+		}
+		if matched, _ := filepath.Match(glob, path); matched {
+			return true
+		}
+		if strings.HasSuffix(glob, "/*") {
+			prefix := glob[:len(glob)-2]
+			if strings.HasPrefix(path, prefix) {
+				return true
+			}
+		}
+	}
+
+	return false
 }
