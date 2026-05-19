@@ -26,6 +26,8 @@ var (
 	useForce bool
 	// useEnv specifies an environment-specific config file (e.g. unirtm.<env>.toml)
 	useEnv string
+	// usePin resolves fuzzy/prefix versions to precise concrete versions in the config file
+	usePin bool
 )
 
 // init registers the use command to the root command.
@@ -34,6 +36,7 @@ func init() {
 	useCmd.Flags().StringVarP(&usePath, "path", "p", "", "directory to write config file into (default: current directory)")
 	useCmd.Flags().BoolVarP(&useForce, "force", "f", false, "force reinstall even if the tool is already installed")
 	useCmd.Flags().StringVarP(&useEnv, "env", "e", "", "environment-specific config file (e.g. unirtm.<env>.toml)")
+	useCmd.Flags().BoolVarP(&usePin, "pin", "P", false, "resolve prefix/alias/range to precise concrete version")
 
 	if rootCmd != nil {
 		rootCmd.AddCommand(useCmd)
@@ -113,6 +116,15 @@ func runUse(cmd *cobra.Command, args []string) error {
 					if info, err := b.ResolveVersion(cmd.Context(), toolName, "latest", platform); err == nil && info != nil {
 						version = info.Version
 					}
+				}
+			}
+		} else if usePin {
+			// Resolve fuzzy/range/prefix/alias to exact concrete version
+			b, err := backendRegistry.Get(backendName)
+			if err == nil {
+				platform := backend.CurrentPlatform()
+				if info, err := b.ResolveVersion(cmd.Context(), toolName, version, platform); err == nil && info != nil {
+					version = info.Version
 				}
 			}
 		}
