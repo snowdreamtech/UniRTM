@@ -467,6 +467,63 @@ func runInstall(cmd *cobra.Command, args []string) error {
 				}
 			}
 			ctx = context.WithValue(ctx, service.ContextKeyProgressReporter, service.ProgressReporter(reporter))
+		} else {
+			// Throttled progress reporter to prevent terminal flooding in non-multi/large-batch mode
+			var (
+				lastPercentMu sync.Mutex
+				lastPercent   = make(map[string]int64)
+			)
+			reporter := func(toolName string, downloaded, total int64) {
+				if total <= 0 {
+					// Throttled by size: report every 10MB
+					const tenMB = 10 * 1024 * 1024
+					lastPercentMu.Lock()
+					prevSize, exists := lastPercent[toolName]
+					if !exists || downloaded-prevSize >= tenMB {
+						lastPercent[toolName] = downloaded
+						lastPercentMu.Unlock()
+						pterm.Info.Printf("Downloading %s: %s\n", 
+							toolName, 
+							humanize.Bytes(uint64(downloaded)))
+					} else {
+						lastPercentMu.Unlock()
+					}
+					return
+				}
+
+				percent := (downloaded * 100) / total
+
+				// Only report progress at 25%, 50%, 75%, and 90%+ intervals to be clean
+				var shouldReport bool
+				lastPercentMu.Lock()
+				prev, exists := lastPercent[toolName]
+				if !exists {
+					shouldReport = true
+					lastPercent[toolName] = percent
+				} else if percent >= 100 && prev < 100 {
+					shouldReport = true
+					lastPercent[toolName] = 100
+				} else {
+					// Report if crossed a 25% threshold
+					for _, threshold := range []int64{25, 50, 75, 90} {
+						if percent >= threshold && prev < threshold {
+							shouldReport = true
+							lastPercent[toolName] = percent
+							break
+						}
+					}
+				}
+				lastPercentMu.Unlock()
+
+				if shouldReport {
+					pterm.Info.Printf("Downloading %s: %s/%s (%d%%)\n", 
+						toolName, 
+						humanize.Bytes(uint64(downloaded)), 
+						humanize.Bytes(uint64(total)), 
+						percent)
+				}
+			}
+			ctx = context.WithValue(ctx, service.ContextKeyProgressReporter, service.ProgressReporter(reporter))
 		}
 
 		// 3. Execute installation
