@@ -28,7 +28,6 @@ func ExampleConfig() {
 			CacheDir:    "/tmp/unirtm/cache",
 			DataDir:     "/tmp/unirtm/data",
 			CacheTTL:    3600,
-			Concurrency: 4,
 		},
 		Tasks: map[string]config.Task{
 			"build": {
@@ -75,7 +74,6 @@ func ExampleSettings() {
 		CacheDir:    "/var/cache/unirtm",
 		DataDir:     "/var/lib/unirtm",
 		CacheTTL:    86400, // 24 hours
-		Concurrency: 8,
 	}
 
 	if err := settings.Validate(); err != nil {

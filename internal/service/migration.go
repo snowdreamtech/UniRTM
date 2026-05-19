@@ -343,9 +343,7 @@ func (mm *MigrationManager) parseMiseToml(path string) ([]MigrationTool, map[str
 			}
 		}
 
-		if jobs, ok := settingsData["jobs"].(int64); ok {
-			settings.Concurrency = int(jobs)
-		}
+
 
 		if locked, ok := settingsData["locked"].(bool); ok {
 			settings.Locked = locked

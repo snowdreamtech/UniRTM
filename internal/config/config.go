@@ -113,7 +113,6 @@ type Settings struct {
 	CacheDir           string                            `toml:"cache_dir" yaml:"cache_dir" mapstructure:"cache_dir"`
 	DataDir            string                            `toml:"data_dir" yaml:"data_dir" mapstructure:"data_dir"`
 	CacheTTL           int                               `toml:"cache_ttl" yaml:"cache_ttl" mapstructure:"cache_ttl"`
-	Concurrency        int                               `toml:"concurrency" yaml:"concurrency" mapstructure:"concurrency"`
 	Lockfile           bool                              `toml:"lockfile,omitempty" yaml:"lockfile,omitempty" mapstructure:"lockfile,omitempty"`
 	Locked             bool                              `toml:"locked,omitempty" yaml:"locked,omitempty" mapstructure:"locked,omitempty"`
 	GitHubProxy        string                            `toml:"github_proxy,omitempty" yaml:"github_proxy,omitempty" mapstructure:"github_proxy,omitempty"`
@@ -135,6 +134,7 @@ type Settings struct {
 	GPGKeys            []string                          `toml:"gpg_keys" yaml:"gpg_keys" mapstructure:"gpg_keys"`
 	VerifyMetadata     *bool                             `toml:"verify_metadata,omitempty" yaml:"verify_metadata,omitempty" mapstructure:"verify_metadata,omitempty"`
 	NoProxy            []string                          `toml:"no_proxy,omitempty" yaml:"no_proxy,omitempty" mapstructure:"no_proxy,omitempty"`
+	Jobs               int                               `toml:"jobs,omitempty" yaml:"jobs,omitempty" mapstructure:"jobs,omitempty"`
 	Tools              map[string]map[string]interface{} `toml:"tools,omitempty" yaml:"tools,omitempty" mapstructure:"tools,omitempty"`
 }
 
@@ -148,11 +148,6 @@ func (s *Settings) LoadFromEnv() {
 	if v := env.Get("CACHE_TTL"); v != "" {
 		if i, err := strconv.Atoi(v); err == nil {
 			s.CacheTTL = i
-		}
-	}
-	if v := env.Get("CONCURRENCY"); v != "" {
-		if i, err := strconv.Atoi(v); err == nil {
-			s.Concurrency = i
 		}
 	}
 	if v := env.Get("LOCKFILE"); v != "" {
@@ -226,6 +221,11 @@ func (s *Settings) LoadFromEnv() {
 	}
 	if v := env.Get("NO_PROXY"); v != "" {
 		s.NoProxy = strings.Split(v, ",")
+	}
+	if v := env.Get("JOBS"); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			s.Jobs = i
+		}
 	}
 }
 
@@ -396,11 +396,11 @@ func (s *Settings) Validate() error {
 	if s.CacheTTL < 0 {
 		errs = append(errs, "cache_ttl must be non-negative")
 	}
-	if s.Concurrency < 0 {
-		errs = append(errs, "concurrency must be non-negative")
-	}
 	if s.HTTPTimeout < 0 {
 		errs = append(errs, "http_timeout must be non-negative")
+	}
+	if s.Jobs < 0 {
+		errs = append(errs, "jobs must be non-negative")
 	}
 	if len(errs) > 0 {
 		return errors.New(strings.Join(errs, "; "))

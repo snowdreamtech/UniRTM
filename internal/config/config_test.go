@@ -31,7 +31,6 @@ func TestConfig_Validate(t *testing.T) {
 					CacheDir:    "/tmp/cache",
 					DataDir:     "/tmp/data",
 					CacheTTL:    3600,
-					Concurrency: 4,
 				},
 				Tasks: map[string]Task{
 					"build": {
@@ -80,16 +79,7 @@ func TestConfig_Validate(t *testing.T) {
 			wantErr: true,
 			errMsg:  "cache_ttl must be non-negative",
 		},
-		{
-			name: "invalid settings - negative concurrency",
-			config: Config{
-				Settings: Settings{
-					Concurrency: -5,
-				},
-			},
-			wantErr: true,
-			errMsg:  "concurrency must be non-negative",
-		},
+
 		{
 			name: "invalid task - missing run command",
 			config: Config{
@@ -145,7 +135,6 @@ func TestConfig_Validate(t *testing.T) {
 				},
 				Settings: Settings{
 					CacheTTL:    -100,
-					Concurrency: -5,
 				},
 				Tasks: map[string]Task{
 					"build": {Run: ""},
@@ -249,7 +238,6 @@ func TestSettings_Validate(t *testing.T) {
 				CacheDir:    "/tmp/cache",
 				DataDir:     "/tmp/data",
 				CacheTTL:    3600,
-				Concurrency: 4,
 			},
 			wantErr: false,
 		},
@@ -257,7 +245,6 @@ func TestSettings_Validate(t *testing.T) {
 			name: "valid with zero values",
 			config: Settings{
 				CacheTTL:    0,
-				Concurrency: 0,
 			},
 			wantErr: false,
 		},
@@ -270,23 +257,6 @@ func TestSettings_Validate(t *testing.T) {
 			name: "invalid - negative cache TTL",
 			config: Settings{
 				CacheTTL: -100,
-			},
-			wantErr: true,
-			errMsg:  "cache_ttl must be non-negative",
-		},
-		{
-			name: "invalid - negative concurrency",
-			config: Settings{
-				Concurrency: -5,
-			},
-			wantErr: true,
-			errMsg:  "concurrency must be non-negative",
-		},
-		{
-			name: "invalid - both negative",
-			config: Settings{
-				CacheTTL:    -100,
-				Concurrency: -5,
 			},
 			wantErr: true,
 			errMsg:  "cache_ttl must be non-negative",

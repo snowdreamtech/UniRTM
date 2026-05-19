@@ -15,7 +15,7 @@ DATABASE_URL = "postgres://prod-db:5432/myapp"
 [settings]
 cache_dir = "/var/cache/unirtm"
 cache_ttl = 86400               # 24 hours
-concurrency = 16
+jobs = 16
 
 [tasks.build]
 description = "Build for production"
@@ -43,7 +43,7 @@ DATABASE_URL = "postgres://localhost:5432/myapp_dev"
 [environments.development.settings]
 cache_dir = "/tmp/unirtm-dev"
 cache_ttl = 3600              # 1 hour
-concurrency = 4
+jobs = 4
 
 [environments.development.tasks.build]
 description = "Build for development with hot reload"
@@ -62,7 +62,7 @@ DATABASE_URL = "postgres://staging-db:5432/myapp"
 
 [environments.staging.settings]
 cache_ttl = 43200 # 12 hours
-concurrency = 8
+jobs = 8
 
 [environments.staging.tasks.deploy]
 description = "Deploy to staging environment"
@@ -83,7 +83,7 @@ DATABASE_URL = "postgres://prod-db:5432/myapp"
 
 [environments.production.settings]
 cache_ttl = 172800 # 48 hours
-concurrency = 32
+jobs = 32
 
 [environments.production.tasks.deploy]
 description = "Deploy to production with blue-green deployment"

@@ -29,7 +29,6 @@ func TestProperty_ConfigUpdateAtomicity(t *testing.T) {
 	// Write an initial valid config
 	initial := `[settings]
 cache_ttl = 3600
-concurrency = 4
 
 [tools.node]
 version = "20.0.0"

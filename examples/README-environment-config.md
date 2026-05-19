@@ -8,7 +8,7 @@ Environment-specific configuration allows you to:
 
 - Use different tool versions across environments
 - Override environment variables per environment
-- Adjust settings (cache TTL, concurrency) based on environment needs
+- Adjust settings (cache TTL, jobs) based on environment needs
 - Define environment-specific tasks
 
 ## Configuration Structure
@@ -182,18 +182,18 @@ DATABASE_URL = "postgres://staging-db:5432/myapp"
 
 ```toml
 [settings]
-concurrency = 16
 cache_ttl = 86400
+jobs = 16
 
 [environments.development]
 [environments.development.settings]
-concurrency = 4      # Lower concurrency for local development
 cache_ttl = 3600     # Shorter cache for faster iteration
+jobs = 4             # Lower concurrent jobs for local dev
 
 [environments.production]
 [environments.production.settings]
-concurrency = 32     # Higher concurrency for production load
 cache_ttl = 172800   # Longer cache for better performance
+jobs = 32            # Higher concurrent jobs for CI/CD pipelines
 ```
 
 ### Environment-Specific Tasks

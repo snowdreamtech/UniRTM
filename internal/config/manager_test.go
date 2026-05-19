@@ -48,7 +48,6 @@ PYTHON_PATH = "/usr/local/bin/python"
 cache_dir = "/tmp/cache"
 data_dir = "/tmp/data"
 cache_ttl = 3600
-concurrency = 4
 
 [tasks.test]
 description = "Run tests"
@@ -78,7 +77,7 @@ run = "npm test"
 		assert.Equal(t, "/tmp/cache", config.Settings.CacheDir)
 		assert.Equal(t, "/tmp/data", config.Settings.DataDir)
 		assert.Equal(t, 3600, config.Settings.CacheTTL)
-		assert.Equal(t, 4, config.Settings.Concurrency)
+
 
 		// Verify Tasks
 		assert.Len(t, config.Tasks, 1)
@@ -137,7 +136,6 @@ settings:
   cache_dir: "/tmp/cache"
   data_dir: "/tmp/data"
   cache_ttl: 3600
-  concurrency: 4
 
 tasks:
   test:
@@ -265,7 +263,7 @@ NODE_ENV = "development"
 DEBUG = "true"
 
 [settings]
-concurrency = 8
+cache_ttl = 7200
 `
 		err = os.WriteFile(localConfig, []byte(localContent), 0644)
 		require.NoError(t, err)
@@ -295,7 +293,7 @@ concurrency = 8
 
 		// Verify settings merging
 		assert.Equal(t, 7200, config.Settings.CacheTTL, "cache_ttl should come from project")
-		assert.Equal(t, 8, config.Settings.Concurrency, "concurrency should come from local")
+
 	})
 
 	t.Run("load hierarchy with no config files", func(t *testing.T) {
@@ -362,7 +360,6 @@ func TestConfigManager_Validate(t *testing.T) {
 				CacheDir:    "/tmp/cache",
 				DataDir:     "/tmp/data",
 				CacheTTL:    3600,
-				Concurrency: 4,
 			},
 			Tasks: map[string]Task{
 				"test": {
@@ -409,20 +406,7 @@ func TestConfigManager_Validate(t *testing.T) {
 		assert.Contains(t, err.Error(), "cache_ttl must be non-negative")
 	})
 
-	t.Run("validate configuration with negative concurrency", func(t *testing.T) {
-		config := &Config{
-			Tools: map[string]ToolConfig{
-				"node": {Version: "20.0.0"},
-			},
-			Settings: Settings{
-				Concurrency: -4, // Negative value
-			},
-		}
 
-		err := manager.Validate(ctx, config)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "concurrency must be non-negative")
-	})
 
 	t.Run("validate configuration with missing task run command", func(t *testing.T) {
 		config := &Config{
@@ -523,7 +507,6 @@ func TestConfigManager_Merge(t *testing.T) {
 			},
 			Settings: Settings{
 				DataDir:     "/tmp/data2",
-				Concurrency: 8,
 			},
 			Tasks: map[string]Task{
 				"build": {
@@ -554,7 +537,7 @@ func TestConfigManager_Merge(t *testing.T) {
 		assert.Equal(t, "/tmp/cache1", merged.Settings.CacheDir, "CacheDir from config1")
 		assert.Equal(t, "/tmp/data2", merged.Settings.DataDir, "DataDir from config2")
 		assert.Equal(t, 3600, merged.Settings.CacheTTL, "CacheTTL from config1")
-		assert.Equal(t, 8, merged.Settings.Concurrency, "Concurrency from config2")
+
 
 		// Verify Tasks merging
 		assert.Len(t, merged.Tasks, 2)
@@ -620,7 +603,7 @@ func TestConfigManager_Merge(t *testing.T) {
 				"python": {Version: "3.10.0"},
 			},
 			Settings: Settings{
-				Concurrency: 4,
+				CacheTTL: 86400,
 			},
 		}
 
@@ -649,7 +632,6 @@ func TestConfigManager_Merge(t *testing.T) {
 		// Note: keys are set directly in Go code - they are lowercase
 		assert.Equal(t, "development", merged.Env["node_env"], "node_env from local")
 		assert.Equal(t, "/project/cache", merged.Settings.CacheDir, "CacheDir from project")
-		assert.Equal(t, 4, merged.Settings.Concurrency, "Concurrency from global")
 		assert.Equal(t, 86400, merged.Settings.CacheTTL, "CacheTTL from system")
 	})
 }
@@ -682,7 +664,7 @@ node = { version = "20.0.0" }
 python = { version = "3.11.0" }
 
 [settings]
-concurrency = 8
+cache_ttl = 3600
 `
 		err = os.WriteFile(overrideConfigPath, []byte(overrideContent), 0644)
 		require.NoError(t, err)
@@ -713,7 +695,7 @@ concurrency = 8
 		assert.Equal(t, "20.0.0", merged.Tools["node"].Version)
 		assert.Equal(t, "3.11.0", merged.Tools["python"].Version)
 		assert.Equal(t, 3600, merged.Settings.CacheTTL)
-		assert.Equal(t, 8, merged.Settings.Concurrency)
+
 	})
 }
 
@@ -734,7 +716,6 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 			Settings: Settings{
 				CacheDir:    "/prod/cache",
 				CacheTTL:    7200,
-				Concurrency: 4,
 			},
 			Tasks: map[string]Task{
 				"build": {
@@ -779,7 +760,7 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 		// Verify settings overrides
 		assert.Equal(t, "/dev/cache", result.Settings.CacheDir, "CacheDir should be overridden")
 		assert.Equal(t, 7200, result.Settings.CacheTTL, "CacheTTL should be preserved")
-		assert.Equal(t, 4, result.Settings.Concurrency, "Concurrency should be preserved")
+
 
 		// Verify task overrides
 		assert.Equal(t, "Build for development", result.Tasks["build"].Description)
@@ -798,7 +779,6 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 				"staging": {
 					Settings: Settings{
 						CacheTTL:    7200,
-						Concurrency: 8,
 					},
 				},
 			},
@@ -810,7 +790,7 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 
 		// Verify settings overrides
 		assert.Equal(t, 7200, result.Settings.CacheTTL, "CacheTTL should be overridden")
-		assert.Equal(t, 8, result.Settings.Concurrency, "Concurrency should be set")
+
 
 		// Verify tools are preserved
 		assert.Equal(t, "20.0.0", result.Tools["node"].Version)
@@ -835,7 +815,6 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 					},
 					Settings: Settings{
 						CacheTTL:    86400,
-						Concurrency: 16,
 					},
 				},
 			},
@@ -850,7 +829,7 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 		assert.Equal(t, "production", result.Env["NODE_ENV"])
 		assert.Equal(t, "true", result.Env["ENABLE_CACHE"])
 		assert.Equal(t, 86400, result.Settings.CacheTTL)
-		assert.Equal(t, 16, result.Settings.Concurrency)
+
 	})
 
 	t.Run("environment not found", func(t *testing.T) {
@@ -1061,7 +1040,6 @@ LOG_LEVEL = "info"
 [settings]
 cache_dir = "/prod/cache"
 cache_ttl = 86400
-concurrency = 16
 
 [tasks.build]
 description = "Build for production"
@@ -1083,7 +1061,6 @@ DEBUG = "true"
 [environments.development.settings]
 cache_dir = "/dev/cache"
 cache_ttl = 3600
-concurrency = 4
 
 [environments.development.tasks.build]
 description = "Build for development"
@@ -1095,7 +1072,6 @@ NODE_ENV = "staging"
 
 [environments.staging.settings]
 cache_ttl = 43200
-concurrency = 8
 
 [environments.production]
 [environments.production.tools]
@@ -1109,7 +1085,6 @@ ENABLE_MONITORING = "true"
 
 [environments.production.settings]
 cache_ttl = 172800
-concurrency = 32
 `
 		err := os.WriteFile(filepath.Join(tmpDir, "unirtm.toml"), []byte(baseContent), 0644)
 		require.NoError(t, err)
@@ -1138,7 +1113,7 @@ concurrency = 32
 		assert.Equal(t, "true", devConfig.Env["DEBUG"])
 		assert.Equal(t, "/dev/cache", devConfig.Settings.CacheDir)
 		assert.Equal(t, 3600, devConfig.Settings.CacheTTL)
-		assert.Equal(t, 4, devConfig.Settings.Concurrency)
+
 		assert.Equal(t, "Build for development", devConfig.Tasks["build"].Description)
 		assert.Equal(t, "npm run dev", devConfig.Tasks["build"].Run)
 		assert.Equal(t, "Run tests", devConfig.Tasks["test"].Description)
@@ -1154,7 +1129,7 @@ concurrency = 32
 		assert.Equal(t, "info", stagingConfig.Env["LOG_LEVEL"])
 		assert.Equal(t, "/prod/cache", stagingConfig.Settings.CacheDir)
 		assert.Equal(t, 43200, stagingConfig.Settings.CacheTTL)
-		assert.Equal(t, 8, stagingConfig.Settings.Concurrency)
+
 
 		// Test production environment
 		prodConfig, err := manager.LoadWithEnvironment(ctx, "production")
@@ -1170,7 +1145,7 @@ concurrency = 32
 		assert.Equal(t, "true", prodConfig.Env["ENABLE_MONITORING"])
 		assert.Equal(t, "/prod/cache", prodConfig.Settings.CacheDir)
 		assert.Equal(t, 172800, prodConfig.Settings.CacheTTL)
-		assert.Equal(t, 32, prodConfig.Settings.Concurrency)
+
 
 		// Validate all configurations
 		err = manager.Validate(ctx, devConfig)

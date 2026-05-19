@@ -554,9 +554,10 @@ func (m *defaultConfigManager) Merge(configs ...*Config) (*Config, error) {
 		if config.Settings.CacheTTL != 0 {
 			merged.Settings.CacheTTL = config.Settings.CacheTTL
 		}
-		if config.Settings.Concurrency != 0 {
-			merged.Settings.Concurrency = config.Settings.Concurrency
+		if config.Settings.Jobs != 0 {
+			merged.Settings.Jobs = config.Settings.Jobs
 		}
+
 		if config.Settings.GitHubProxy != "" {
 			merged.Settings.GitHubProxy = config.Settings.GitHubProxy
 		}
@@ -704,9 +705,10 @@ func (m *defaultConfigManager) ApplyEnvironment(config *Config, environment stri
 	if envConfig.Settings.CacheTTL != 0 {
 		result.Settings.CacheTTL = envConfig.Settings.CacheTTL
 	}
-	if envConfig.Settings.Concurrency != 0 {
-		result.Settings.Concurrency = envConfig.Settings.Concurrency
+	if envConfig.Settings.Jobs != 0 {
+		result.Settings.Jobs = envConfig.Settings.Jobs
 	}
+
 	if envConfig.Settings.GitHubProxy != "" {
 		result.Settings.GitHubProxy = envConfig.Settings.GitHubProxy
 	}

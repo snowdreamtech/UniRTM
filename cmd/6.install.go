@@ -289,12 +289,13 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 	// Decide concurrency
 	concurrencyLimit := jobs
-	if concurrencyLimit <= 0 {
-		if cfg != nil && cfg.Settings.Concurrency > 0 {
-			concurrencyLimit = cfg.Settings.Concurrency
-		} else {
-			concurrencyLimit = runtime.NumCPU()
+	if !cmd.Flags().Changed("jobs") && cmd.Root() != nil && !cmd.Root().PersistentFlags().Changed("jobs") {
+		if cfg != nil && cfg.Settings.Jobs > 0 {
+			concurrencyLimit = cfg.Settings.Jobs
 		}
+	}
+	if concurrencyLimit <= 0 {
+		concurrencyLimit = runtime.NumCPU()
 	}
 
 	// We run concurrently if there are multiple tools and concurrency limit > 1

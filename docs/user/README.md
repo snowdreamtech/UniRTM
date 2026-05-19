@@ -55,7 +55,7 @@ UniRTM uses TOML configuration files. Configuration is merged from multiple leve
 ```toml
 [settings]
 cache_ttl = 3600          # Cache TTL in seconds
-concurrency = 4           # Parallel install limit
+jobs = 4                  # Parallel install limit (number of jobs)
 
 [tools.node]
 version = "20.0.0"
@@ -164,8 +164,8 @@ Manage configuration values.
 ```bash
 unirtm config validate              # Validate current config
 unirtm config show                  # Display merged config
-unirtm config get settings.cache_ttl
-unirtm config set settings.concurrency 8
+unirtm config get settings.jobs
+unirtm config set settings.jobs 8
 ```
 
 ### `unirtm doctor`

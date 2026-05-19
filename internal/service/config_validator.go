@@ -166,11 +166,11 @@ func (cv *ConfigValidator) Validate(ctx context.Context, cfg *config.Config) *Co
 			Message:  "cache_ttl must be non-negative",
 		})
 	}
-	if cfg.Settings.Concurrency < 0 {
+	if cfg.Settings.Jobs < 0 {
 		result.Issues = append(result.Issues, ValidationIssue{
 			Severity: SeverityError,
-			Field:    "settings.concurrency",
-			Message:  "concurrency must be non-negative",
+			Field:    "settings.jobs",
+			Message:  "jobs must be non-negative",
 		})
 	}
 

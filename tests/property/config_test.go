@@ -259,13 +259,11 @@ func genSettings() gopter.Gen {
 		gen.OneConstOf("", "/tmp/cache", "/var/cache/unirtm", "~/.cache/unirtm"),
 		gen.OneConstOf("", "/var/lib/unirtm", "~/.local/share/unirtm"),
 		gen.IntRange(0, 604800), // 0 to 7 days in seconds
-		gen.IntRange(0, 32),     // 0 to 32 concurrent operations
 	).Map(func(values []interface{}) config.Settings {
 		return config.Settings{
 			CacheDir:    values[0].(string),
 			DataDir:     values[1].(string),
 			CacheTTL:    values[2].(int),
-			Concurrency: values[3].(int),
 		}
 	})
 }
@@ -398,8 +396,7 @@ func stringMapsEqual(a, b map[string]interface{}) bool {
 func settingsEqual(a, b config.Settings) bool {
 	return a.CacheDir == b.CacheDir &&
 		a.DataDir == b.DataDir &&
-		a.CacheTTL == b.CacheTTL &&
-		a.Concurrency == b.Concurrency
+		a.CacheTTL == b.CacheTTL
 }
 
 // taskMapsEqual compares two task maps.
@@ -481,7 +478,6 @@ func TestProperty_ConfigurationValidationCompleteness(t *testing.T) {
 				Settings: cfg.Settings,
 			}
 			clean1.Settings.CacheTTL = 0 // ensure settings are valid
-			clean1.Settings.Concurrency = 0
 			clean1.Settings.HTTPTimeout = 0
 			clean1.Tools["invalid-tool"] = config.ToolConfig{Version: ""}
 
@@ -503,7 +499,6 @@ func TestProperty_ConfigurationValidationCompleteness(t *testing.T) {
 				Settings: cfg.Settings,
 			}
 			clean2.Settings.CacheTTL = 0
-			clean2.Settings.Concurrency = 0
 			clean2.Settings.HTTPTimeout = 0
 			clean2.Tasks["invalid-task"] = config.Task{Run: ""}
 
@@ -544,7 +539,6 @@ func TestProperty_ConfigurationValidationCompleteness(t *testing.T) {
 				Settings: cfg.Settings,
 			}
 			clean4.Settings.CacheTTL = -1
-			clean4.Settings.Concurrency = -1
 			clean4.Settings.HTTPTimeout = 0
 			clean4.Tools["bad-tool"] = config.ToolConfig{Version: ""}
 			clean4.Tasks["bad-task"] = config.Task{Run: ""}
@@ -557,7 +551,7 @@ func TestProperty_ConfigurationValidationCompleteness(t *testing.T) {
 			errStr := err.Error()
 			hasToolError := strings.Contains(errStr, "bad-tool")
 			hasTaskError := strings.Contains(errStr, "bad-task")
-			hasSettingsError := strings.Contains(errStr, "cache_ttl") || strings.Contains(errStr, "concurrency")
+			hasSettingsError := strings.Contains(errStr, "cache_ttl")
 
 			if !hasToolError || !hasTaskError || !hasSettingsError {
 				t.Logf("Error should report all validation failures: %v", err)
@@ -739,10 +733,7 @@ func TestProperty_ConfigurationMergePrecedence(t *testing.T) {
 				t.Logf("Settings.CacheTTL: override value not preserved")
 				return false
 			}
-			if override.Settings.Concurrency != 0 && merged.Settings.Concurrency != override.Settings.Concurrency {
-				t.Logf("Settings.Concurrency: override value not preserved")
-				return false
-			}
+
 
 			// Base values should be preserved for keys not in override
 			for toolName, baseTool := range base.Tools {
@@ -1044,7 +1035,6 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 					CacheDir:    "/tmp/cache with spaces",
 					DataDir:     "/var/lib/unirtm",
 					CacheTTL:    86400,
-					Concurrency: 4,
 				},
 				Tasks: map[string]config.Task{},
 			},
@@ -1085,7 +1075,6 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 					CacheDir:    "/var/cache/unirtm",
 					DataDir:     "/var/lib/unirtm",
 					CacheTTL:    604800,
-					Concurrency: 32,
 				},
 				Tasks: map[string]config.Task{
 					"build": {
@@ -1117,7 +1106,6 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 					CacheDir:    "",
 					DataDir:     "",
 					CacheTTL:    0,
-					Concurrency: 0,
 				},
 				Tasks: map[string]config.Task{
 					"noop": {
