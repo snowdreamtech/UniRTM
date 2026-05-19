@@ -192,6 +192,28 @@ func runUse(cmd *cobra.Command, args []string) error {
 		})
 	}
 
+	// Automatically install the tool versions if they are not already installed
+	if im != nil {
+		for _, p := range pairs {
+			// Extract tool name and backend name from key
+			toolName := p.key
+			backendName := ""
+			if strings.Contains(toolName, ":") {
+				parts := strings.SplitN(toolName, ":", 2)
+				backendName = parts[0]
+				toolName = parts[1]
+			}
+
+			isInstalled, _ := im.IsInstalled(ctx, toolName, p.version, backendName)
+			if !isInstalled {
+				formatter.Info(fmt.Sprintf("Tool %s@%s is not installed. Installing now...", toolName, p.version), nil)
+				if err := im.Install(ctx, toolName, p.version, backendName); err != nil {
+					return fmt.Errorf("failed to automatically install %s@%s: %w", toolName, p.version, err)
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
