@@ -96,7 +96,6 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 	})
 
 	if len(args) == 0 {
-		formatter.Error("Tool specification is required")
 		return fmt.Errorf("tool specification is required")
 	}
 
@@ -110,21 +109,14 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 		WALMode: true,
 	})
 	if err != nil {
-		formatter.Error("Failed to initialize database", map[string]any{
-			"error": err.Error(),
-			"path":  dbPath,
-		})
-		return fmt.Errorf("initialize database: %w", err)
+		return fmt.Errorf("failed to initialize database: %w", err)
 	}
 	defer db.Close()
 
 	// Create repositories
 	installRepo, err := sqlite.NewInstallationRepository(db.Conn())
 	if err != nil {
-		formatter.Error("Failed to create installation repository", map[string]any{
-			"error": err.Error(),
-		})
-		return fmt.Errorf("create installation repository: %w", err)
+		return fmt.Errorf("failed to create installation repository: %w", err)
 	}
 
 	// Create backend registry
@@ -175,19 +167,16 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 		version := args[1]
 
 		if tool == "" {
-			formatter.Error("Tool name cannot be empty")
 			return fmt.Errorf("tool name is required")
 		}
 		if version == "" {
-			formatter.Error("Version cannot be empty")
 			return fmt.Errorf("version is required")
 		}
 
 		// Verify the exact tool/version is installed
 		installation, err := installRepo.FindByToolAndVersion(ctx, tool, version)
 		if err != nil {
-			formatter.Error(fmt.Sprintf("Tool %s@%s is not installed", tool, version))
-			return fmt.Errorf("tool %s@%s not found: %w", tool, version, err)
+			return fmt.Errorf("Tool %s@%s is not installed", tool, version)
 		}
 
 		targets = append(targets, uninstallTarget{
@@ -201,7 +190,6 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 			backendName, tool, version, explicitVersion := installManager.ParseToolSpec(arg)
 
 			if tool == "" {
-				formatter.Error("Tool name cannot be empty")
 				return fmt.Errorf("tool name is required")
 			}
 
@@ -209,8 +197,7 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 			if !explicitVersion || version == "latest" {
 				installations, err := installRepo.List(ctx)
 				if err != nil {
-					formatter.Error("Failed to list installations", map[string]any{"error": err.Error()})
-					return err
+					return fmt.Errorf("failed to list installations: %w", err)
 				}
 				var matches []*repository.Installation
 				for _, inst := range installations {
@@ -219,8 +206,7 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 					}
 				}
 				if len(matches) == 0 {
-					formatter.Error(fmt.Sprintf("Tool %s is not installed", tool))
-					return fmt.Errorf("tool %s is not installed", tool)
+					return fmt.Errorf("Tool %s is not installed", tool)
 				} else if len(matches) == 1 {
 					version = matches[0].Version
 					backendName = matches[0].Backend
@@ -229,15 +215,13 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 					for _, m := range matches {
 						versions = append(versions, m.Version)
 					}
-					formatter.Error(fmt.Sprintf("Multiple versions installed for tool %s: %s. Please specify a version to uninstall.", tool, strings.Join(versions, ", ")))
-					return fmt.Errorf("multiple versions installed for %s", tool)
+					return fmt.Errorf("Multiple versions installed for tool %s: %s. Please specify a version to uninstall.", tool, strings.Join(versions, ", "))
 				}
 			} else {
 				// Verify exact tool/version is installed
 				installation, err := installRepo.FindByToolAndVersion(ctx, tool, version)
 				if err != nil {
-					formatter.Error(fmt.Sprintf("Tool %s@%s is not installed", tool, version))
-					return fmt.Errorf("tool %s@%s not found: %w", tool, version, err)
+					return fmt.Errorf("Tool %s@%s is not installed", tool, version)
 				}
 				backendName = installation.Backend
 			}
