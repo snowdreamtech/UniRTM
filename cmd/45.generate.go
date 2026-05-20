@@ -17,9 +17,13 @@ var (
 
 func init() {
 	generateGithubActionCmd.Flags().StringVarP(&generateOutput, "output", "o", "", "write to file instead of stdout")
+	generateGitlabCiCmd.Flags().StringVarP(&generateOutput, "output", "o", "", "write to file instead of stdout")
+	generateDockerfileCmd.Flags().StringVarP(&generateOutput, "output", "o", "", "write to file instead of stdout")
 	generatePreCommitCmd.Flags().StringVarP(&generateOutput, "output", "o", "", "write to file instead of stdout")
 
 	generateCmd.AddCommand(generateGithubActionCmd)
+	generateCmd.AddCommand(generateGitlabCiCmd)
+	generateCmd.AddCommand(generateDockerfileCmd)
 	generateCmd.AddCommand(generatePreCommitCmd)
 	generateCmd.AddCommand(generateShellAliasCmd)
 	if rootCmd != nil {
@@ -36,11 +40,15 @@ var generateCmd = &cobra.Command{
 
 Sub-commands:
   github-action   Generate a GitHub Actions workflow step
+  gitlab-ci       Generate a GitLab CI script snippet
+  dockerfile      Generate a Dockerfile snippet for UniRTM
   pre-commit      Generate a .pre-commit-hooks.yaml snippet
   shell-alias     Print shell alias definitions
 
 Examples:
   unirtm generate github-action
+  unirtm generate gitlab-ci
+  unirtm generate dockerfile
   unirtm generate pre-commit --output .pre-commit-hooks.yaml
   unirtm generate shell-alias >> ~/.zshrc`,
 	Args: cobra.NoArgs,
@@ -74,6 +82,52 @@ const githubActionTemplate = `# Add this step to your GitHub Actions workflow to
 func runGenerateGithubAction(cmd *cobra.Command, args []string) error {
 	return writeOrPrint(generateOutput, githubActionTemplate)
 }
+
+// ─── gitlab-ci ────────────────────────────────────────────────────────────────
+
+var generateGitlabCiCmd = &cobra.Command{
+	Use:   "gitlab-ci",
+	Short: "Generate a GitLab CI script snippet for UniRTM",
+	Args:  cobra.NoArgs,
+	RunE:  runGenerateGitlabCi,
+}
+
+const gitlabCiTemplate = `# Add this to your .gitlab-ci.yml to install UniRTM:
+.unirtm-setup:
+  before_script:
+    - curl -fsSL https://github.com/snowdreamtech/unirtm/raw/main/install.sh | sh
+    - export PATH="$HOME/.local/share/unirtm/shims:$PATH"
+    - unirtm install
+    - unirtm lock --check
+`
+
+func runGenerateGitlabCi(cmd *cobra.Command, args []string) error {
+	return writeOrPrint(generateOutput, gitlabCiTemplate)
+}
+
+// ─── dockerfile ───────────────────────────────────────────────────────────────
+
+var generateDockerfileCmd = &cobra.Command{
+	Use:   "dockerfile",
+	Short: "Generate a Dockerfile snippet for UniRTM",
+	Args:  cobra.NoArgs,
+	RunE:  runGenerateDockerfile,
+}
+
+const dockerfileTemplate = `# Add UniRTM to your Dockerfile:
+RUN curl -fsSL https://github.com/snowdreamtech/unirtm/raw/main/install.sh | sh
+ENV PATH="/root/.local/share/unirtm/shims:$PATH"
+
+# Copy configuration and install tools
+COPY .unirtm.toml ./
+# COPY unirtm.lock ./
+RUN unirtm install
+`
+
+func runGenerateDockerfile(cmd *cobra.Command, args []string) error {
+	return writeOrPrint(generateOutput, dockerfileTemplate)
+}
+
 
 // ─── pre-commit ───────────────────────────────────────────────────────────────
 
