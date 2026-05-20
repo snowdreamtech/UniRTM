@@ -117,8 +117,14 @@ func runTasksList(cmd *cobra.Command, args []string) error {
 	cfg, _ := loadTasksConfig()
 
 	if len(cfg.Tasks) == 0 {
-		cfgPath := filepath.Base(resolveConfigFilePath(false))
-		formatter.Info(fmt.Sprintf("No tasks defined. Add [tasks] to %s.", cfgPath), nil)
+		cfgPath := resolveConfigFilePath(false)
+		tm := config.NewTrustManager()
+		if tm.TrustStatus(cfgPath) == config.TrustStatusModified {
+			formatter.Warning(fmt.Sprintf("Tasks from %s were ignored because the file was modified.\nRun 'unirtm trust %s' to approve the changes.", filepath.Base(cfgPath), filepath.Base(cfgPath)))
+			return nil
+		}
+		
+		formatter.Info(fmt.Sprintf("No tasks defined. Add [tasks] to %s.", filepath.Base(cfgPath)), nil)
 		return nil
 	}
 
