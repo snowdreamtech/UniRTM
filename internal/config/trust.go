@@ -227,8 +227,27 @@ func (m *fileTrustManager) Untrust(path string) error {
 }
 
 func (m *fileTrustManager) List() (map[string]string, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	return m.loadTrustedPaths()
-}
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
+	paths, err := m.loadTrustedPaths()
+	if err != nil {
+		return nil, err
+	}
+
+	changed := false
+	existingPaths := make(map[string]string)
+	for path, hash := range paths {
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			changed = true
+			continue
+		}
+		existingPaths[path] = hash
+	}
+
+	if changed {
+		_ = m.saveTrustedPaths(existingPaths)
+	}
+
+	return existingPaths, nil
+}
