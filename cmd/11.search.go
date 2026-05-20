@@ -123,11 +123,25 @@ func runSearch(cmd *cobra.Command, args []string) error {
 	}
 
 	// Perform search
+	var spinner *pterm.SpinnerPrinter
+	if !jsonOutput && !quiet {
+		spinner, _ = pterm.DefaultSpinner.Start("Searching tool index for " + pterm.FgCyan.Sprint(query) + "...")
+	}
+
 	results, err := indexManager.SearchTools(ctx, service.SearchOptions{
 		Query:   query,
 		Backend: searchBackend,
 		Limit:   searchLimit,
 	})
+	
+	if spinner != nil {
+		if err != nil {
+			spinner.Fail("Search failed")
+		} else {
+			spinner.Success("Search complete")
+		}
+	}
+
 	if err != nil {
 		formatter.Error("Search failed", map[string]interface{}{
 			"query": query,
