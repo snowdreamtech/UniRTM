@@ -72,7 +72,7 @@ GIT_BRANCH      := $(shell git branch --show-current 2>/dev/null || echo "not a 
 # =============================================================================
 # Targets
 # =============================================================================
-.PHONY: all help init setup install lint format test build clean commit verify release env update audit health bench docs archive-changelog check-env sync-docs precommit license-add license-check gen-dependabot sync-harden-runner update-tools
+.PHONY: all help init setup install lint format test build clean commit verify release env update audit bench docs archive-changelog check-env sync-docs precommit license-add license-check gen-dependabot sync-harden-runner update-tools
 
 # Default target: display help
 all: help
@@ -189,12 +189,7 @@ else
 	@sh scripts/audit.sh $(SCRIPT_ARGS) $(ARGS)
 endif
 
-health: ## Generate unified project health dashboard
-ifeq ($(OS_NAME),Windows)
-	@scripts/health.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/health.sh $(SCRIPT_ARGS) $(ARGS)
-endif
+
 
 bench: ## Run performance benchmarks
 ifeq ($(OS_NAME),Windows)
