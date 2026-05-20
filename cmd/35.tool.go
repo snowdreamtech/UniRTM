@@ -78,6 +78,8 @@ type toolInfo struct {
 	ConfigSource string                 `json:"config_source,omitempty"`
 	ToolOptions  map[string]interface{} `json:"tool_options,omitempty"`
 	Security     []string               `json:"security"`
+	ShimPath     string                 `json:"shim_path,omitempty"`
+	InstallDir   string                 `json:"install_dir,omitempty"`
 }
 
 func runTool(cmd *cobra.Command, args []string) error {
@@ -198,6 +200,11 @@ func runTool(cmd *cobra.Command, args []string) error {
 		activeVersions = append(activeVersions, activeVersion)
 	}
 
+	shimPath := detectShimPath(shimsDir, toolName)
+	if installDir == "" {
+		installDir = filepath.Join(installsDir, toolName)
+	}
+
 	info := toolInfo{
 		Tool:         toolName,
 		Backend:      detectedBackend,
@@ -207,6 +214,8 @@ func runTool(cmd *cobra.Command, args []string) error {
 		ConfigSource: configSource,
 		ToolOptions:  toolOpts,
 		Security:     []string{},
+		ShimPath:     shimPath,
+		InstallDir:   installDir,
 	}
 
 	// Get backend features
@@ -292,50 +301,65 @@ func runTool(cmd *cobra.Command, args []string) error {
 
 	// Full Human-readable Table output
 	fmt.Println()
+	pterm.DefaultSection.Printf("Tool: %s\n", pterm.FgCyan.Sprint(info.Tool))
+	
 	rows := pterm.TableData{
-		{"Backend:", pterm.FgDefault.Sprint(info.Backend)},
+		{"Backend", pterm.FgMagenta.Sprint(info.Backend)},
+		{"Install dir", info.InstallDir},
+		{"Shim", info.ShimPath},
 	}
 
 	if info.Description != "" {
-		rows = append(rows, []string{"Description:", info.Description})
+		rows = append(rows, []string{"Description", info.Description})
 	}
 
-	rows = append(rows, []string{"Installed Versions:", formatInstalledWithActive(info.Installed, info.Active)})
+	rows = append(rows, []string{"Installed", formatInstalledWithActive(info.Installed, info.Active)})
 
 	if len(info.Active) > 0 {
-		rows = append(rows, []string{"Active Version:", pterm.FgGreen.Sprint(strings.Join(info.Active, " "))})
+		rows = append(rows, []string{"Active", pterm.FgGreen.Sprint(strings.Join(info.Active, " "))})
 	} else {
-		rows = append(rows, []string{"Active Version:", "[none]"})
+		rows = append(rows, []string{"Active", pterm.FgDefault.Sprint("(none)")})
 	}
 
 	if len(info.Requested) > 0 {
-		rows = append(rows, []string{"Requested Version:", strings.Join(info.Requested, " ")})
+		rows = append(rows, []string{"Requested", pterm.FgLightBlue.Sprint(strings.Join(info.Requested, " "))})
 	}
 
 	if info.ConfigSource != "" {
-		rows = append(rows, []string{"Config Source:", info.ConfigSource})
+		rows = append(rows, []string{"Config Source", pterm.FgLightCyan.Sprint(info.ConfigSource)})
 	}
 
 	if len(info.ToolOptions) == 0 {
-		rows = append(rows, []string{"Tool Options:", "[none]"})
+		rows = append(rows, []string{"Tool Options", pterm.FgDefault.Sprint("(none)")})
 	} else {
 		var optsStr []string
 		for k, v := range info.ToolOptions {
-			optsStr = append(optsStr, fmt.Sprintf("%s=%v", k, v))
+			optsStr = append(optsStr, pterm.FgCyan.Sprintf("%s=", k) + fmt.Sprintf("%v", v))
 		}
-		rows = append(rows, []string{"Tool Options:", strings.Join(optsStr, ", ")})
+		rows = append(rows, []string{"Tool Options", strings.Join(optsStr, ", ")})
 	}
 
 	if len(info.Security) == 0 {
-		rows = append(rows, []string{"Security:", "[none]"})
+		rows = append(rows, []string{"Security", pterm.FgDefault.Sprint("(none)")})
 	} else {
-		rows = append(rows, []string{"Security:", strings.Join(info.Security, ", ")})
+		rows = append(rows, []string{"Security", pterm.FgLightGreen.Sprint(strings.Join(info.Security, ", "))})
 	}
 
 	pterm.DefaultTable.
 		WithSeparator("   ").
 		WithData(rows).
 		Render()
+
+	// Verify backend knows about this tool.
+	if b, err := backendRegistry.Get(info.Backend); err == nil {
+		platform := backend.CurrentPlatform()
+		if latest, err := b.ResolveVersion(ctx, toolName, "latest", platform); err == nil && latest != nil {
+			fmt.Printf("\n%s Latest available: %s\n",
+				pterm.FgDefault.Sprint("→"),
+				pterm.FgGreen.Sprint(latest.Version),
+			)
+		}
+	}
 
 	return nil
 }
@@ -347,7 +371,7 @@ func outputJSON(data interface{}) {
 
 func formatInstalledWithActive(installed, active []string) string {
 	if len(installed) == 0 {
-		return "[none]"
+		return pterm.FgYellow.Sprint("(none)")
 	}
 	
 	activeMap := make(map[string]bool)
@@ -358,9 +382,9 @@ func formatInstalledWithActive(installed, active []string) string {
 	var res []string
 	for _, v := range installed {
 		if activeMap[v] {
-			res = append(res, pterm.FgGreen.Sprint(v))
+			res = append(res, pterm.FgGreen.Sprint(v+" ✓ active"))
 		} else {
-			res = append(res, v)
+			res = append(res, pterm.FgYellow.Sprint(v))
 		}
 	}
 	
