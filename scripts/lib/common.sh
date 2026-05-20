@@ -261,7 +261,7 @@ if [ -z "${_G_PROJECT_ROOT:-}" ]; then
 fi
 # Resolve global UniRTM binary absolute path early for reliable invocation in subshells and timeouts
 if [ -z "${_G_UNIRTM_BIN:-}" ]; then
-  if [ -f "${_G_PROJECT_ROOT:-}/unirtm" ]; then
+  if [ -f "${_G_PROJECT_ROOT:-}/unirtm" ] && ! head -n 1 "${_G_PROJECT_ROOT:-}/unirtm" 2>/dev/null | grep -q "^#!"; then
     _G_UNIRTM_BIN="${_G_PROJECT_ROOT:-}/unirtm"
   elif [ -f "${_G_PROJECT_ROOT:-}/unirtm.exe" ]; then
     _G_UNIRTM_BIN="${_G_PROJECT_ROOT:-}/unirtm.exe"
@@ -1465,106 +1465,13 @@ get_version() {
   _BIN_PATH=$(command -v "${_CMD_VER:-}" 2>/dev/null || true)
 
   # 1. Try UniRTM First (Fast & Reliable for JIT tools)
-  # Check unirtm via cache first (fastest)
-  if [ -z "${_G_UNIRTM_LS_JSON_CACHE:-}" ]; then refresh_unirtm_cache; fi
+  # Query unirtm current directly to check version
   local _UNIRTM_VER_OUT
-
-  # Parse JSON using the new parse_json function with fallback to awk
-  # The unirtm ls --json structure is: { "tool-name": [{ "version": "x.y.z", "active": true/false, "installed": true/false }] }
-  # We need to find the tool and extract the version from the first active or installed entry
-
-  # Try using parse_json if available (requires custom logic for array handling)
-  # For now, use a helper script approach with Node.js/Python that can handle the complex structure
-  if command -v node >/dev/null 2>&1 && [ -f "${_G_LIB_DIR:-}/json-parser.cjs" ]; then
-    _UNIRTM_VER_OUT=$(echo "${_G_UNIRTM_LS_JSON_CACHE:-}" | node -e "
-      const data = JSON.parse(require('fs').readFileSync(0, 'utf-8'));
-      const plugin = '${_M_PLUGIN:-}';
-
-      // Find tool by exact match or suffix match (e.g., 'go' matches 'go', 'cargo:go', 'github:org/go')
-      const toolKey = Object.keys(data).find(k =>
-        k === plugin || k.endsWith(':' + plugin) || k.endsWith('/' + plugin)
-      );
-
-      if (toolKey && Array.isArray(data[toolKey])) {
-        // Prefer active version, fallback to first installed
-        const active = data[toolKey].find(v => v.active === true);
-        const installed = data[toolKey].find(v => v.installed === true);
-        const version = (active || installed)?.version;
-        if (version) console.log(version);
-      }
-    " 2>/dev/null || true)
-  elif command -v python3 >/dev/null 2>&1; then
-    _UNIRTM_VER_OUT=$(echo "${_G_UNIRTM_LS_JSON_CACHE:-}" | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-plugin = '${_M_PLUGIN:-}'
-
-# Find tool by exact match or suffix match
-tool_key = next((k for k in data.keys() if k == plugin or k.endswith(':' + plugin) or k.endswith('/' + plugin)), None)
-
-if tool_key and isinstance(data[tool_key], list):
-    # Prefer active version, fallback to first installed
-    active = next((v for v in data[tool_key] if v.get('active') == True), None)
-    installed = next((v for v in data[tool_key] if v.get('installed') == True), None)
-    version = (active or installed or {}).get('version')
-    if version:
-        print(version)
-" 2>/dev/null || true)
-  else
-    # Fallback to awk for cross-platform compatibility (original implementation)
-    _UNIRTM_VER_OUT=$(echo "${_G_UNIRTM_LS_JSON_CACHE:-}" | awk -v plugin="${_M_PLUGIN:-}" '
-      BEGIN {
-        in_tool = 0;
-        active_ver = "";
-        installed_ver = "";
-        buffer = "";
-      }
-      # 1. Match tool key: exact match or suffix match with : or /
-      $0 ~ "\"" plugin "\"[[:space:]]*:" || $0 ~ "[:/]" plugin "\"[[:space:]]*:" {
-        in_tool = 1;
-        buffer = $0;
-        next;
-      }
-      # 2. Accumulate lines only while inside the target tool block
-      in_tool {
-        buffer = buffer " " $0;
-
-        # Check for active-true vs installed-true within the context
-        if ($0 ~ /"active"[[:space:]]*:[[:space:]]*true/ && active_ver == "") {
-          if (match(buffer, /"version"[[:space:]]*:[[:space:]]*"[0-9]+\.[0-9]+[^"]*"/) > 0) {
-            res = substr(buffer, RSTART, RLENGTH);
-            sub(/.*"version"[[:space:]]*:[[:space:]]*"/, "", res);
-            sub(/"$/, "", res);
-            active_ver = res;
-          }
-        }
-        if ($0 ~ /"installed"[[:space:]]*:[[:space:]]*true/ && installed_ver == "") {
-          if (match(buffer, /"version"[[:space:]]*:[[:space:]]*"[0-9]+\.[0-9]+[^"]*"/) > 0) {
-            res = substr(buffer, RSTART, RLENGTH);
-            sub(/.*"version"[[:space:]]*:[[:space:]]*"/, "", res);
-            sub(/"$/, "", res);
-            installed_ver = res;
-          }
-        }
-
-        # 3. Detect end of tool array block
-        if ($0 ~ /^[[:space:]]*\]/) {
-          in_tool = 0;
-          buffer = "";
-          if (active_ver != "" || installed_ver != "") {
-            exit;
-          }
-        }
-      }
-      END {
-        if (active_ver != "") print active_ver;
-        else if (installed_ver != "") print installed_ver;
-      }
-    ' 2>/dev/null | head -n 1 || true)
-  fi
-
-  if [ -n "${_UNIRTM_VER_OUT:-}" ] && [ "${_UNIRTM_VER_OUT:-}" != "null" ]; then
-    echo "${_UNIRTM_VER_OUT:-}" && return 0
+  if _UNIRTM_VER_OUT=$(UNIRTM_OFFLINE=1 "${_G_UNIRTM_BIN:-unirtm}" current "${_M_PLUGIN:-${_CMD_VER:-}}" 2>/dev/null) && \
+     [ -n "${_UNIRTM_VER_OUT:-}" ] && \
+     [ "${_UNIRTM_VER_OUT:-}" != "null" ] && \
+     ! echo "${_UNIRTM_VER_OUT:-}" | grep -q "✗"; then
+    echo "${_UNIRTM_VER_OUT:-}" | tr -d '\r' && return 0
   fi
 
   # Fallback to system command or unirtm direct binary
@@ -1752,27 +1659,21 @@ resolve_bin() {
   # which causes 'unirtm which' to fail even if the tool exists on disk.
   if [ -z "${_G_UNIRTM_LS_JSON_CACHE:-}" ]; then refresh_unirtm_cache; fi
   _MC_PATH=$(echo "${_G_UNIRTM_LS_JSON_CACHE:-}" | awk -v bin="${_BIN:-}" '
-    BEGIN { found_bin = 0; }
-    # Portable matching of tool key: matches "bin", "prefix:bin", or "prefix:owner/bin"
-    # Matches strings ending in "bin" preceded by " , : or /
-    $0 ~ "(\"|:|/)" bin "\"" && $0 ~ ":" && $0 ~ "\\[" {
-      found_bin = 1;
-      next;
-    }
-    found_bin {
-      if ($0 ~ "\"install_path\":") {
-        match($0, /"install_path":[[:space:]]*"[^"]+"/);
-        if (RSTART > 0) {
-          res = substr($0, RSTART, RLENGTH);
-          # Extract between quotes: "install_path": "PATH"
-          sub(/.*"install_path":[[:space:]]*"/, "", res);
-          sub(/"$/, "", res);
-          print res;
-        }
+    $0 ~ "\"tool\":" {
+      match($0, /"tool":[[:space:]]*"[^"]+"/);
+      if (RSTART > 0) {
+        curr_tool = substr($0, RSTART, RLENGTH);
+        sub(/.*"tool":[[:space:]]*"/, "", curr_tool);
+        sub(/"$/, "", curr_tool);
       }
-      # Stop if we hit a new tool key or end of array
-      if ($0 ~ /^[[:space:]]*\],?/ || $0 ~ /^[[:space:]]*\}/ || ($0 ~ /^  "[^"]+": \[/ && !($0 ~ bin))) {
-        found_bin = 0;
+    }
+    $0 ~ "\"install_path\":" && (curr_tool == bin || curr_tool ~ ("/" bin "$") || curr_tool ~ (":" bin "$")) {
+      match($0, /"install_path":[[:space:]]*"[^"]+"/);
+      if (RSTART > 0) {
+        res = substr($0, RSTART, RLENGTH);
+        sub(/.*"install_path":[[:space:]]*"/, "", res);
+        sub(/"$/, "", res);
+        print res;
       }
     }
   ' 2>/dev/null | sort -V | tail -n 1 || true)
