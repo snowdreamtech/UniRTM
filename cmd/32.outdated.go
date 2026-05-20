@@ -18,7 +18,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	outdatedInteractive bool
+)
+
 func init() {
+	outdatedCmd.Flags().BoolVarP(&outdatedInteractive, "interactive", "i", false, "interactively select tools to upgrade")
 	if rootCmd != nil {
 		rootCmd.AddCommand(outdatedCmd)
 	}
@@ -33,12 +38,17 @@ var outdatedCmd = &cobra.Command{
 Queries each backend for the latest available version and compares it to
 what is currently installed. Useful before running 'unirtm update'.
 
+Use --interactive / -i to select which outdated tools to upgrade immediately.
+
 Examples:
   # Check all installed tools
   unirtm outdated
 
   # Check specific tool(s)
   unirtm outdated cli/cli
+
+  # Interactively select tools to upgrade
+  unirtm outdated --interactive
 
   # JSON output
   unirtm outdated --json`,
@@ -188,6 +198,80 @@ func runOutdated(cmd *cobra.Command, args []string) error {
 		WithHeaderStyle(pterm.NewStyle(pterm.FgCyan, pterm.Bold)).
 		WithData(tableData).
 		Render()
+
+	fmt.Println()
+
+	// Interactive upgrade mode.
+	if outdatedInteractive {
+		// Build options list: only truly outdated tools.
+		outdatedOnly := make([]outdatedResult, 0)
+		for _, r := range display {
+			if r.Outdated {
+				outdatedOnly = append(outdatedOnly, r)
+			}
+		}
+
+		if len(outdatedOnly) == 0 {
+			formatter.Info("No outdated tools to upgrade.", nil)
+			return nil
+		}
+
+		options := make([]string, 0, len(outdatedOnly))
+		for _, r := range outdatedOnly {
+			options = append(options, fmt.Sprintf("%s  %s → %s",
+				pterm.FgCyan.Sprint(r.Tool),
+				pterm.FgYellow.Sprint(r.Current),
+				pterm.FgGreen.Sprint(r.Latest),
+			))
+		}
+
+		selectedLabels, err := pterm.DefaultInteractiveMultiselect.
+			WithOptions(options).
+			WithDefaultOptions(options). // Pre-select all by default.
+			WithFilter(false).
+			Show("Select tools to upgrade (Space to toggle, Enter to confirm)")
+		if err != nil || len(selectedLabels) == 0 {
+			formatter.Info("No tools selected for upgrade.", nil)
+			return nil
+		}
+
+		// Build a set of selected tool names.
+		selectedSet := make(map[string]bool)
+		for _, label := range selectedLabels {
+			for _, r := range outdatedOnly {
+				optionLabel := fmt.Sprintf("%s  %s → %s",
+					pterm.FgCyan.Sprint(r.Tool),
+					pterm.FgYellow.Sprint(r.Current),
+					pterm.FgGreen.Sprint(r.Latest),
+				)
+				if label == optionLabel {
+					selectedSet[r.Tool] = true
+				}
+			}
+		}
+
+		// Run install for each selected tool.
+		fmt.Println()
+		for _, r := range outdatedOnly {
+			if !selectedSet[r.Tool] {
+				continue
+			}
+			upgradeSpinner, _ := pterm.DefaultSpinner.Start(
+				fmt.Sprintf("Upgrading %s %s → %s ...",
+					pterm.FgCyan.Sprint(r.Tool),
+					pterm.FgYellow.Sprint(r.Current),
+					pterm.FgGreen.Sprint(r.Latest),
+				),
+			)
+			// Delegate to the install command runner with tool@latest.
+			installErr := runInstall(cmd, []string{fmt.Sprintf("%s@%s", r.Tool, r.Latest)})
+			if installErr != nil {
+				upgradeSpinner.Fail(fmt.Sprintf("Failed to upgrade %s: %v", r.Tool, installErr))
+			} else {
+				upgradeSpinner.Success(fmt.Sprintf("Upgraded %s to %s", pterm.FgCyan.Sprint(r.Tool), pterm.FgGreen.Sprint(r.Latest)))
+			}
+		}
+	}
 
 	return nil
 }
