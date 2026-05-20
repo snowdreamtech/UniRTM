@@ -165,7 +165,11 @@ func runTool(cmd *cobra.Command, args []string) error {
 	cfg, _ := cfgMgr.LoadHierarchy(ctx)
 
 	var requestedVersions []string
-	var configSource = "Merged Hierarchy Config"
+	configSources := findToolConfigSources(ctx, toolName)
+	configSourceStr := ""
+	if len(configSources) > 0 {
+		configSourceStr = strings.Join(configSources, "\n")
+	}
 	var toolOpts map[string]interface{}
 	
 	if cfg != nil && cfg.Tools != nil {
@@ -211,7 +215,7 @@ func runTool(cmd *cobra.Command, args []string) error {
 		Installed:    versions,
 		Requested:    requestedVersions,
 		Active:       activeVersions,
-		ConfigSource: configSource,
+		ConfigSource: configSourceStr,
 		ToolOptions:  toolOpts,
 		Security:     []string{},
 		ShimPath:     shimPath,
@@ -425,4 +429,87 @@ func detectShimPath(shimsDir, toolName string) string {
 		return candidate
 	}
 	return filepath.Join(shimsDir, "(see install dir)")
+}
+
+// findToolConfigSources returns a list of paths to all config files that define the given tool.
+func findToolConfigSources(ctx context.Context, toolName string) []string {
+	var sources []string
+	cfgMgr := config.NewConfigManager()
+
+	// 1. System
+	systemPaths := []string{
+		"/etc/unirtm/config.toml",
+		"/etc/unirtm/config.yaml",
+		"/etc/unirtm/config.yml",
+	}
+	for _, p := range systemPaths {
+		if cfg, err := cfgMgr.Load(ctx, p); err == nil && cfg != nil && cfg.ToolsRaw != nil {
+			if _, ok := cfg.ToolsRaw[toolName]; ok {
+				sources = append(sources, p)
+			}
+		}
+	}
+
+	// 2. Global
+	globalPaths := []string{
+		filepath.Join(env.GetConfigDir(), "config.toml"),
+		filepath.Join(env.GetConfigDir(), "config.yaml"),
+		filepath.Join(env.GetConfigDir(), "config.yml"),
+	}
+	for _, p := range globalPaths {
+		if cfg, err := cfgMgr.Load(ctx, p); err == nil && cfg != nil && cfg.ToolsRaw != nil {
+			if _, ok := cfg.ToolsRaw[toolName]; ok {
+				sources = append(sources, p)
+			}
+		}
+	}
+
+	// 3. Project and Local (traverse from cwd up to root)
+	cwd, err := os.Getwd()
+	if err == nil {
+		curr := cwd
+		for {
+			files := []string{
+				filepath.Join(curr, ".mise.yml"),
+				filepath.Join(curr, ".mise.yaml"),
+				filepath.Join(curr, ".mise.toml"),
+				filepath.Join(curr, "unirtm.yml"),
+				filepath.Join(curr, "unirtm.yaml"),
+				filepath.Join(curr, "unirtm.toml"),
+				filepath.Join(curr, ".unirtm.yml"),
+				filepath.Join(curr, ".unirtm.yaml"),
+				filepath.Join(curr, ".unirtm.toml"),
+				filepath.Join(curr, ".mise.local.yml"),
+				filepath.Join(curr, ".mise.local.yaml"),
+				filepath.Join(curr, ".mise.local.toml"),
+				filepath.Join(curr, "unirtm.local.yml"),
+				filepath.Join(curr, "unirtm.local.yaml"),
+				filepath.Join(curr, "unirtm.local.toml"),
+				filepath.Join(curr, ".unirtm.local.yml"),
+				filepath.Join(curr, ".unirtm.local.yaml"),
+				filepath.Join(curr, ".unirtm.local.toml"),
+			}
+			var dirSources []string
+			for _, p := range files {
+				if cfg, err := cfgMgr.Load(ctx, p); err == nil && cfg != nil && cfg.ToolsRaw != nil {
+					if _, ok := cfg.ToolsRaw[toolName]; ok {
+						dirSources = append(dirSources, p)
+					}
+				}
+			}
+			// Prepend to list since closer to cwd = higher precedence, but usually printed top-down or bottom-up?
+			// Let's just append them. The order of resolution in LoadHierarchy goes system -> global -> project -> local,
+			// where local overrides project. We'll just collect them in traversal order (local -> global) 
+			// and then reverse them or just return them. Appending is fine.
+			sources = append(sources, dirSources...)
+
+			parent := filepath.Dir(curr)
+			if parent == curr {
+				break
+			}
+			curr = parent
+		}
+	}
+
+	return sources
 }
