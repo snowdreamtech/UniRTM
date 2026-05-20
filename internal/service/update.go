@@ -111,8 +111,8 @@ func (um *UpdateManager) CheckForUpdates(ctx context.Context) ([]UpdateInfo, err
 		}
 
 		// Determine effective minimum_release_age: per-tool config takes precedence
-		// over the global settings value.
-		minAgeStr := ""
+		// over the global settings value. Default to "7d" to mitigate supply-chain attacks.
+		minAgeStr := "7d"
 		if um.configManager != nil {
 			if um.configManager.Settings.MinimumReleaseAge != "" {
 				minAgeStr = um.configManager.Settings.MinimumReleaseAge
