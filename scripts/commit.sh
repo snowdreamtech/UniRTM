@@ -62,14 +62,6 @@ main() {
 
   log_info "📝 Starting Structured Commit Guide...\n"
 
-  # 2. Pre-check: Environment
-  if command -v sh >/dev/null 2>&1 && [ -f "scripts/check-env.sh" ]; then
-    log_info "Running quick environment check..."
-    sh scripts/check-env.sh --quiet || {
-      log_warn "Warning: Environment check found issues. Committing anyway..."
-    }
-  fi
-
   # 3. Check for staged files
   if [ "${DRY_RUN:-0}" -eq 0 ]; then
     if ! git diff --cached --quiet; then
@@ -84,7 +76,7 @@ main() {
         log_info "Modified files:"
         git status --porcelain | grep -E '^ [MADRC]' || true
         printf "\n"
-        log_info "💡 Run 'git add <file>' or 'make format' (which stages some files) before committing."
+        log_info "💡 Run 'git add <file>' before committing."
         exit 0
       fi
     fi

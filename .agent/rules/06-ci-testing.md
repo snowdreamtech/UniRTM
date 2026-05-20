@@ -174,7 +174,6 @@ Designed for absolute stability and zero-redundancy distribution on the `main` b
 All CI workflows **MUST** invoke logic through `Makefile` targets rather than direct script calls. This ensures:
 
 - **Local-CI Parity**: Developers can run `make verify` locally to get the exact same result as the CI.
-- **Health Checks**: Every workflow initialization MUST include `make check-env` to validate the runner environment before execution.
 
 ### 6.4 Matrix vs. Primary Runner Philosophy
 

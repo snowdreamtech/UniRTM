@@ -44,7 +44,7 @@ EOF
 }
 
 # Purpose: Main entry point for the verification engine.
-#          Coordinates check-env, lint, test, and audit scripts.
+#          Coordinates lint, test, and audit scripts.
 # Params:
 #   $@ - Command line arguments
 # Examples:
@@ -60,24 +60,16 @@ main() {
 
   local _EXIT_VERIFY=0
 
-  # 3. Environment Health Check
-  log_info "\n── Phase 1: Environment Health ──"
-  if [ "${DRY_RUN:-0}" -eq 1 ]; then
-    log_success "DRY-RUN: Would run sh scripts/check-env.sh"
-  else
-    sh "${SCRIPT_DIR:-}/check-env.sh" || _EXIT_VERIFY=$?
-  fi
-
-  # 4. Standardized Linting (Pre-commit)
-  log_info "\n── Phase 2: Static Analysis (Lint) ──"
+  # 3. Standardized Linting (Pre-commit)
+  log_info "\n── Phase 1: Static Analysis (Lint) ──"
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_success "DRY-RUN: Would run sh scripts/lint.sh"
   else
     sh "${SCRIPT_DIR:-}/lint.sh" || _EXIT_VERIFY=$?
   fi
 
-  # 5. Unified Test Runner
-  log_info "\n── Phase 3: Functional Testing ──"
+  # 4. Unified Test Runner
+  log_info "\n── Phase 2: Functional Testing ──"
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_success "DRY-RUN: Would run sh scripts/test.sh"
   else

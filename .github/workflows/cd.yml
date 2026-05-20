@@ -153,25 +153,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
-      - name: "🩺 Verify Environment Health"
-        shell: sh
-        # Run in a separate step so GITHUB_PATH entries written by unirtm install
-        # (mise shims) are visible in this step's PATH.
-        run: |
-          # Ensure mise shims are on PATH
-          if [ -d "$HOME/.local/share/mise/shims" ]; then
-            export PATH="$HOME/.local/share/mise/shims:$PATH"
-          fi
-          if command -v cygpath >/dev/null 2>&1 && [ -n "${LOCALAPPDATA:-}" ]; then
-            _local_app=$(cygpath -u "${LOCALAPPDATA}")
-            if [ -d "${_local_app}/mise/shims" ]; then
-              export PATH="${_local_app}/mise/shims:$PATH"
-            fi
-          fi
-
-          make check-env
-        env:
-          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
       - name: "📝 Validate Commit Convention (Commitlint)"
         shell: sh

@@ -75,19 +75,13 @@ sh scripts/verify.sh
 | :--------------------- | :---------------------------- | :---------------------------- |
 | `setup.sh`             | Install system-level tools    | 20+ languages (via lib/langs) |
 | `install.sh`           | Install project dependencies  | pnpm, pip, pre-commit         |
-| `check-env.sh`         | Validate tool versions        | Runtimes, Quality Tools       |
-| `verify.sh`            | Full project verification     | env, test, lint, audit        |
-| `update.sh`            | Update all tooling            | managers, hooks, deps         |
-| `build.sh`             | Build project artifacts       | goreleaser, tsc, pyproject    |
+| `verify.sh`            | Full project verification     | lint, test, audit             |
 | `lint.sh`              | Run linters and fixers        | pre-commit, auto-fix          |
-| `test.sh`              | Execute test suites           | bats, pytest, vitest, vitest  |
+| `test.sh`              | Execute test suites           | bats, pytest, vitest          |
 | `audit.sh`             | Security & vulnerability scan | gitleaks, osv-scanner         |
 | `commit.sh`            | Guided conventional commit    | commitizen (cz)               |
 | `release.sh`           | Standardized tagged release   | git tag (v-prefix), auto-sync |
 | `docs.sh`              | Manage documentation site     | vitepress                     |
-| `env.sh`               | Manage environment variables  | .env synchronization          |
-| `format.sh`            | Unified code formatting       | shfmt, prettier, ruff, gofmt  |
-| `cleanup.sh`           | Remove build/temp artifacts   | build, dist, cache, .venv     |
 | `init-project.sh`      | Rebrand template              | placeholders, git init        |
 | `archive-changelog.sh` | Archive old versions          | major version rotation        |
 
@@ -95,7 +89,7 @@ sh scripts/verify.sh
 
 1. **Onboarding**: `setup.sh` → `install.sh` → `verify.sh`.
 2. **Daily Development**: Work → `lint.sh` → `test.sh` → `commit.sh`.
-3. **Continuous Integration**: `check-env.sh` → `test.sh` → `build.sh`.
+3. **Continuous Integration**: `test.sh` → `audit.sh`.
 
 ### Directory Structure
 

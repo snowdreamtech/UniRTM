@@ -76,19 +76,13 @@ sh scripts/verify.sh
 | :--------------------- | :----------------- | :--------------------------- |
 | `setup.sh`             | 安装系统级工具     | node, python, go, rust 等    |
 | `install.sh`           | 安装项目依赖       | pnpm, pip, pre-commit        |
-| `check-env.sh`         | 验证工具版本       | 运行时、质量工具             |
-| `verify.sh`            | 完整项目验证       | 环境、测试、代码检查、审计   |
-| `update.sh`            | 更新所有工具链     | 管理器、钩子、依赖           |
-| `build.sh`             | 构建项目产物       | goreleaser, tsc, pyproject   |
+| `verify.sh`            | 完整项目验证       | 测试、代码检查、审计         |
 | `lint.sh`              | 执行代码静态检查   | pre-commit, 自动修复         |
-| `test.sh`              | 执行测试套件       | bats, pytest, vitest, pester |
+| `test.sh`              | 执行测试套件       | bats, pytest, vitest         |
 | `audit.sh`             | 安全与脆弱性扫描   | gitleaks, osv-scanner        |
 | `commit.sh`            | 引导式规范化提交   | commitizen (cz)              |
 | `release.sh`           | 标准化标签发布     | git tag (v-prefix), 自动同步 |
 | `docs.sh`              | 文档网站管理       | vitepress                    |
-| `env.sh`               | 环境变量管理       | .env 同步与校验              |
-| `format.sh`            | 统一代码格式化     | shfmt, prettier, ruff, gofmt |
-| `cleanup.sh`           | 清理构建与临时产物 | build, dist, cache, .venv    |
 | `init-project.sh`      | 修改模板品牌       | 占位符替换、git 初始化       |
 | `archive-changelog.sh` | 归档旧版本         | 主版本更迭轮转               |
 
@@ -96,7 +90,7 @@ sh scripts/verify.sh
 
 1. **项目初始化**: `setup.sh` → `install.sh` → `verify.sh`。
 2. **日常开发**: 编码 → `lint.sh` → `test.sh` → `commit.sh`。
-3. **持续集成 (CI)**: `check-env.sh` → `test.sh` → `build.sh`。
+3. **持续集成 (CI)**: `test.sh` → `audit.sh`。
 
 ### 目录结构
 

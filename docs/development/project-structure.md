@@ -120,11 +120,9 @@ UniRTM/
 ### Makefile Targets
 
 - `unirtm install` - Install all development tools and dependencies
-- `make build` - Build project artifacts
 - `make test` - Run test suite
 - `make lint` - Run linters
 - `make verify` - Run full verification (lint + test + audit)
-- `make clean` - Remove temporary and generated files
 
 ### Go Commands
 
@@ -151,7 +149,6 @@ goimports -w .
 3. **Format**: Auto-format on save (goimports)
 4. **Lint**: `make lint` (runs pre-commit hooks)
 5. **Test**: `make test`
-6. **Build**: `make build`
 7. **Commit**: `make commit` (Commitizen)
 8. **Verify**: `make verify` (full check before PR)
 

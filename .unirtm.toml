@@ -40,17 +40,7 @@ description = 'Run security audit and vulnerability scans'
 run = 'sh scripts/audit.sh'
 
 
-[tasks.build]
-description = 'Build project artifacts'
-run = 'sh scripts/build.sh'
 
-[tasks.check-env]
-description = 'Onboarding environment health check'
-run = 'sh scripts/check-env.sh'
-
-[tasks.clean]
-description = 'Remove temporary and generated files'
-run = 'sh scripts/cleanup.sh'
 
 [tasks.commit]
 description = 'Start the interactive Commitizen CLI'
@@ -60,13 +50,6 @@ run = 'sh scripts/commit.sh'
 description = 'Documentation site manager (dev/build/preview)'
 run = 'sh scripts/docs.sh'
 
-[tasks.env]
-description = 'Environment configuration manager (.env)'
-run = 'sh scripts/env.sh'
-
-[tasks.format]
-description = 'Auto-format code (ruff, prettier, shfmt, etc.)'
-run = 'sh scripts/format.sh'
 
 [tasks.gen-dependabot]
 description = 'Auto-generate dependabot.yml from detected ecosystems'
@@ -110,9 +93,6 @@ run = 'sh scripts/release.sh'
 description = 'Install system-level development tools'
 run = 'sh scripts/setup.sh'
 
-[tasks.sync-docs]
-description = 'Synchronize documentation between versions'
-run = 'sh scripts/sync-docs.sh'
 
 [tasks.sync-harden-runner]
 description = 'Synchronize Harden Runner endpoints to all workflow files'
@@ -130,13 +110,6 @@ run = 'sh scripts/sync-lock.sh'
 description = 'Run unified test suite'
 run = 'sh scripts/test.sh'
 
-[tasks.update]
-description = 'Update all tools, dependencies, and hooks'
-run = 'sh scripts/update.sh'
-
-[tasks.update-tools]
-description = 'Upgrade UniRTM-managed tool versions'
-run = 'sh scripts/update-tools.sh'
 
 [tasks.verify]
 description = 'Run full local verification (env, lint, test, audit)'

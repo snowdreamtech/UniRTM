@@ -30,13 +30,6 @@
       "problemMatcher": []
     },
     {
-      "label": "📦 build: Build project",
-      "type": "shell",
-      "command": "make build",
-      "group": "build",
-      "problemMatcher": []
-    },
-    {
       "label": "🔄 sync-rules: Update IDE rules",
       "type": "shell",
       "command": "make sync-rules",

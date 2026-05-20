@@ -220,14 +220,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
-      - name: "🩺 Verify Environment Health"
-        shell: sh
-        # Run in a separate step so GITHUB_PATH entries written by unirtm install
-        # (mise shims) are visible in this step's PATH.
-        run: |
-          make check-env
-        env:
-          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
       - name: "🔍 Inspect Code Quality (Lint)"
         shell: sh
@@ -363,14 +355,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
-      - name: "🩺 Verify Environment Health"
-        shell: sh
-        # Run in a separate step so GITHUB_PATH entries written by unirtm install
-        # (mise shims) are visible in this step's PATH.
-        run: |
-          make check-env
-        env:
-          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
       - name: "🧪 Execute Multi-Stack Test Suite"
         shell: sh
@@ -475,14 +459,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
-      - name: "🩺 Verify Environment Health"
-        shell: sh
-        # Run in a separate step so GITHUB_PATH entries written by unirtm install
-        # (mise shims) are visible in this step's PATH.
-        run: |
-          make check-env
-        env:
-          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
       - name: "📝 Validate Commit Convention (Commitlint)"
         shell: sh

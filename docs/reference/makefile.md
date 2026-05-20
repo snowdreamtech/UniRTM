@@ -14,16 +14,8 @@ unirtm install  # Install all configured development tools and dependencies
 
 ```bash
 make lint     # Run ALL linting checks (pre-commit hooks)
-make format   # Auto-format code across all languages
 make test     # Run the test suite
 make check    # Run lint + test in sequence
-```
-
-## Build & Release
-
-```bash
-make build    # Build the project binary/artifacts
-make clean    # Remove build artifacts and temporary files
 ```
 
 ## Reference
@@ -32,8 +24,7 @@ make clean    # Remove build artifacts and temporary files
 | --------- | ---------------------------------------------------------- |
 | `help`    | Show all available targets and their descriptions          |
 | `lint`    | Run all pre-commit hooks against all files                 |
-| `format`  | Auto-format all source files                               |
-| `test`    | Execute test suite                                         |
+|| `test`    | Execute test suite                                         |
 | `build`   | Build production artifacts                                 |
 | `check`   | Combined lint + test                                       |
 | `clean`   | Remove generated files and caches                          |

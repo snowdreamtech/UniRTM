@@ -66,17 +66,7 @@ EOF
 #   run_release_verify
 run_release_verify() {
   log_info "── Verification: Running pre-flight checks ──"
-  if [ -f "${_G_PROJECT_ROOT:-.}/scripts/check-env.sh" ]; then
-    local _VFY_ARGS="--quiet"
-    [ "${DRY_RUN:-0}" -eq 1 ] && _VFY_ARGS="${_VFY_ARGS:-} --dry-run"
-    # shellcheck disable=SC2086
-    sh "${_G_PROJECT_ROOT:-.}/scripts/check-env.sh" ${_VFY_ARGS:-} || {
-      log_error "Error: Environment check failed. Cannot proceed with release."
-      exit 1
-    }
-  else
-    log_warn "Warning: scripts/check-env.sh not found. Proceeding with caution."
-  fi
+  log_info "Skipping environment check (check-env removed)."
 }
 
 # Purpose: Handles the actual git tagging and remote synchronization logic.

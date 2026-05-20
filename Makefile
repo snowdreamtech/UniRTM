@@ -72,7 +72,7 @@ GIT_BRANCH      := $(shell git branch --show-current 2>/dev/null || echo "not a 
 # =============================================================================
 # Targets
 # =============================================================================
-.PHONY: all help init lint format test build clean commit verify release env update audit docs archive-changelog check-env sync-docs precommit license-add license-check gen-dependabot sync-harden-runner update-tools
+.PHONY: all help init lint test commit verify release audit docs archive-changelog gen-dependabot sync-harden-runner precommit license-add license-check
 
 # Default target: display help
 all: help
@@ -95,8 +95,6 @@ else
 	@sh scripts/init-project.sh $(SCRIPT_ARGS) $(ARGS)
 endif
 
-
-
 lint: ## Run standardized linter (pre-commit)
 ifeq ($(OS_NAME),Windows)
 	@scripts/lint.bat $(SCRIPT_ARGS) $(ARGS)
@@ -106,25 +104,11 @@ endif
 
 precommit: lint ## Alias for lint (Run pre-commit hooks)
 
-format: ## Auto-format code (ruff, prettier, shfmt, etc.)
-ifeq ($(OS_NAME),Windows)
-	@scripts/format.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/format.sh $(SCRIPT_ARGS) $(ARGS)
-endif
-
 test: ## Run unified test suite
 ifeq ($(OS_NAME),Windows)
 	@scripts/test.bat $(SCRIPT_ARGS) $(ARGS)
 else
 	@sh scripts/test.sh $(SCRIPT_ARGS) $(ARGS)
-endif
-
-build: ## Build project artifacts
-ifeq ($(OS_NAME),Windows)
-	@scripts/build.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/build.sh $(SCRIPT_ARGS) $(ARGS)
 endif
 
 commit: ## Start the interactive Commitizen CLI
@@ -135,7 +119,7 @@ else
 endif
 
 .NOTPARALLEL: verify
-verify: ## Run full local verification (env, lint, test, audit)
+verify: ## Run full local verification (lint, test, audit)
 ifeq ($(OS_NAME),Windows)
 	@scripts/verify.bat $(SCRIPT_ARGS) $(ARGS)
 else
@@ -149,39 +133,11 @@ else
 	@sh scripts/release.sh $(SCRIPT_ARGS) $(ARGS)
 endif
 
-env: ## Environment configuration manager (.env)
-ifeq ($(OS_NAME),Windows)
-	@scripts/env.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/env.sh $(SCRIPT_ARGS) $(ARGS)
-endif
-
-update-tools: ## Upgrade Mise-managed tool versions (Tier 1 & 2)
-ifeq ($(OS_NAME),Windows)
-	@scripts/update-tools.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/update-tools.sh $(SCRIPT_ARGS) $(ARGS)
-endif
-
-update: ## Update all tools, dependencies, and hooks (Inc. Mise tool versions)
-ifeq ($(OS_NAME),Windows)
-	@scripts/update.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/update.sh $(SCRIPT_ARGS) $(ARGS)
-endif
-
 audit: ## Run security audit and vulnerability scans
 ifeq ($(OS_NAME),Windows)
 	@scripts/audit.bat $(SCRIPT_ARGS) $(ARGS)
 else
 	@sh scripts/audit.sh $(SCRIPT_ARGS) $(ARGS)
-endif
-
-sync-docs: ## Synchronize documentation between versions
-ifeq ($(OS_NAME),Windows)
-	@scripts/sync-docs.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/sync-docs.sh $(SCRIPT_ARGS) $(ARGS)
 endif
 
 license-add: ## Add license headers to core source files (Safe Mode)
@@ -217,31 +173,9 @@ else
 	@sh scripts/sync-harden-runner.sh $(SCRIPT_ARGS) $(ARGS)
 endif
 
-
-
 archive-changelog: ## Archive major-version changelog entries
 ifeq ($(OS_NAME),Windows)
 	@scripts/archive-changelog.bat $(SCRIPT_ARGS) $(ARGS)
 else
 	@sh scripts/archive-changelog.sh $(SCRIPT_ARGS) $(ARGS)
 endif
-
-check-env: ## Onboarding environment health check
-ifeq ($(OS_NAME),Windows)
-	@scripts/check-env.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/check-env.sh $(SCRIPT_ARGS) $(ARGS)
-endif
-
-clean: ## Remove temporary and generated files
-ifeq ($(OS_NAME),Windows)
-	@scripts/cleanup.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/cleanup.sh $(SCRIPT_ARGS) $(ARGS)
-endif
-
-fix: ## Automatically fix common issues (line endings, typos)
-	@printf "$(BLUE)Applying automated fixes...$(NC)\n"
-	@find scripts -name "*.bat" -o -name "*.ps1" | xargs perl -pi -e 's/\r\n/\n/g; s/\n/\r\n/g'
-	@git add --renormalize .
-	@printf "$(GREEN)Fixes applied!$(NC)\n"

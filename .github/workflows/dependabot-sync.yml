@@ -93,14 +93,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
-      - name: "🩺 Verify Environment Health"
-        shell: sh
-        # Run in a separate step so GITHUB_PATH entries written by unirtm install
-        # (mise shims) are visible in this step's PATH.
-        run: |
-          make check-env
-        env:
-          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
       - name: "🧪 Run Generator Smoke Test"
         shell: sh
@@ -117,7 +109,6 @@ jobs:
       - name: "🔧 Update Mise Toolchain & Lockfile"
         shell: sh
         run: |
-          make update-tools
           unirtm lock
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}

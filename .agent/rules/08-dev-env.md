@@ -215,14 +215,9 @@
 
 - Track **onboarding time**: periodically measure how long it takes a new developer to go from `git clone` to a passing test run. The target is **≤ 15 minutes**. Failures to meet this SLA MUST be treated as developer experience bugs.
 
-- Automate dependency **health checks** using a `scripts/check-env.sh` script. This script MUST follow an **Intelligent Priority Health Check** strategy to balance strictness and robustness:
+- Track **onboarding time**: periodically measure how long it takes a new developer to go from `git clone` to a passing test run. The target is **≤ 15 minutes**. Failures to meet this SLA MUST be treated as developer experience bugs.
 
-  | Priority Class | Tools / Runtimes | Health Check Behavior |
-  | :--- | :--- | :--- |
-  | **Primary (First-Class)** | Node, Python, Git, Make | **Strict**: Exit with `1` (BROKEN) if missing or version too low. |
-  | **Secondary (On-Demand)** | Go, PHP, Java, Rust, Docker, etc. | **Robust**: Skip with `⏭️` or warn but exit with `0` (FUNCTIONAL). |
-
-- **Language-Aware & Dynamic Detection**: Health checks and tool installations MUST be context-sensitive.
+- **Language-Aware & Dynamic Detection**: Tool installations MUST be context-sensitive.
   - **Prerequisite Detection**: Secondary tools (e.g., `golangci-lint`, `asdf:ghc`) MUST only be installed if corresponding source files or manifests are detected.
   - **Dynamic Heavy Tools Execution**: To avoid the "Mise Tax" (slow compilation or resolution of massive security tools like `zizmor`), do NOT add them permanently to the global `.mise.toml`. Instead, track their versions in a central manifest (e.g., `scripts/lib/versions.sh`) and execute them strictly on-demand using `mise exec tool@version -- cmd`. This ensures the core environment remains maximally lightweight.
   - **Availability-First Detection (Security)**: Security scanners (e.g., `osv-scanner`, `zizmor`) MUST prioritize local availability. If the tool is present in the local environment, it MUST be reported as `✅ Active` and participate in the audit workflow, even if categorized as a Tier 3/CI-only tool.
@@ -254,8 +249,7 @@ Follow this order when setting up a new repository or onboarding to a new machin
 Follow this iterative cycle for consistent delivery:
 
 1. **unirtm install**: Ensure local dependencies are synchronized with the lockfile.
-2. **make format**: Apply automated formatting before every commit.
-3. **make lint**: Verify code adherence to project rules.
-4. **make test**: Ensure logic integrity.
-5. **make audit**: Run security and vulnerability scans (Mandatory before PR).
-6. **make commit**: Use the standardized commit CLI for versioning.
+2. **make lint**: Verify code adherence to project rules.
+3. **make test**: Ensure logic integrity.
+4. **make audit**: Run security and vulnerability scans (Mandatory before PR).
+5. **make commit**: Use the standardized commit CLI for versioning.
