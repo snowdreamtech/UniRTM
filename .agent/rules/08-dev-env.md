@@ -252,4 +252,3 @@ Follow this iterative cycle for consistent delivery:
 2. **make lint**: Verify code adherence to project rules.
 3. **make test**: Ensure logic integrity.
 4. **make audit**: Run security and vulnerability scans (Mandatory before PR).
-5. **make commit**: Use the standardized commit CLI for versioning.

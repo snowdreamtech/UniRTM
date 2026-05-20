@@ -42,9 +42,6 @@ run = 'sh scripts/audit.sh'
 
 
 
-[tasks.commit]
-description = 'Start the interactive Commitizen CLI'
-run = 'sh scripts/commit.sh'
 
 [tasks.docs]
 description = 'Documentation site manager (dev/build/preview)'

@@ -346,7 +346,6 @@ main() {
   # 8. Standardized Next Actions
   if [ "${DRY_RUN:-0}" -eq 0 ] && [ "${_IS_TOP_LEVEL:-}" = "true" ]; then
     printf "\n%bNext Actions:%b\n" "${YELLOW:-}" "${NC:-}"
-    printf "  - Run %bmake commit%b to finalize the archival changes.\n" "${GREEN:-}" "${NC:-}"
   fi
 }
 

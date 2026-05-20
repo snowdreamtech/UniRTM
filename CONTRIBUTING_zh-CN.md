@@ -24,7 +24,7 @@
 2. **Clone** 您 fork 的仓库到本地。
 3. 从 `main` **创建分支**，使用具有描述性的分支名称（例如：`feat/add-new-ai-rule`, `fix/ci-memory-leak`）。
 4. **开发** 您的特性或修复 bug。
-5. 遵循我们的 [Conventional Commits](https://www.conventionalcommits.org/zh-hans/) 标准进行 **Commit**。我们强烈建议使用我们的交互式 Commitizen CLI 来自动组装 commit 消息。只需运行 `make commit` (或 `npm run commit`) 即可启动交互式提示。
+5. 遵循我们的 [Conventional Commits](https://www.conventionalcommits.org/zh-hans/) 标准进行 **Commit**。我们强烈建议使用我们的交互式 Commitizen CLI 来自动组装 commit 消息。只需运行 `npm run commit` 或使用 `git commit` 手动撰写规范化消息。
 6. **Push** 到您的 fork。
 7. 对我们的 `main` 分支提交 **Pull Request (PR)**。
 
@@ -38,7 +38,6 @@
 git commit -s -m "fix(script): resolve posix portability issue"
 ```
 
-> **提示：** 如果您使用 `make commit`，可以通过全局配置 git 来添加签署标志：`git config --global commit.gpgsign true` 或 `git config --global format.signOff true`。
 
 ### 4. 代码与架构规范
 

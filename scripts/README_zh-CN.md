@@ -80,7 +80,6 @@ sh scripts/verify.sh
 | `lint.sh`              | 执行代码静态检查   | pre-commit, 自动修复         |
 | `test.sh`              | 执行测试套件       | bats, pytest, vitest         |
 | `audit.sh`             | 安全与脆弱性扫描   | gitleaks, osv-scanner        |
-| `commit.sh`            | 引导式规范化提交   | commitizen (cz)              |
 | `release.sh`           | 标准化标签发布     | git tag (v-prefix), 自动同步 |
 | `docs.sh`              | 文档网站管理       | vitepress                    |
 | `init-project.sh`      | 修改模板品牌       | 占位符替换、git 初始化       |
@@ -89,7 +88,7 @@ sh scripts/verify.sh
 ### 工作流模式
 
 1. **项目初始化**: `setup.sh` → `install.sh` → `verify.sh`。
-2. **日常开发**: 编码 → `lint.sh` → `test.sh` → `commit.sh`。
+2. **日常开发**: 编码 → `lint.sh` → `test.sh`。
 3. **持续集成 (CI)**: `test.sh` → `audit.sh`。
 
 ### 目录结构

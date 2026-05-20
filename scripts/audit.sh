@@ -482,7 +482,6 @@ main() {
       log_success "\n✨ Security audit finished successfully."
       if [ "${DRY_RUN:-0}" -eq 0 ]; then
         printf "\n%bNext Actions:%b\n" "${YELLOW:-}" "${NC:-}"
-        printf "  - Run %bmake commit%b to record your verified changes.\n" "${GREEN:-}" "${NC:-}"
       fi
     else
       log_error "\n⚠️ Security audit finished with vulnerabilities or leaks found."

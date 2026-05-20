@@ -79,7 +79,6 @@ sh scripts/verify.sh
 | `lint.sh`              | Run linters and fixers        | pre-commit, auto-fix          |
 | `test.sh`              | Execute test suites           | bats, pytest, vitest          |
 | `audit.sh`             | Security & vulnerability scan | gitleaks, osv-scanner         |
-| `commit.sh`            | Guided conventional commit    | commitizen (cz)               |
 | `release.sh`           | Standardized tagged release   | git tag (v-prefix), auto-sync |
 | `docs.sh`              | Manage documentation site     | vitepress                     |
 | `init-project.sh`      | Rebrand template              | placeholders, git init        |
@@ -88,7 +87,7 @@ sh scripts/verify.sh
 ### Workflow Patterns
 
 1. **Onboarding**: `setup.sh` → `install.sh` → `verify.sh`.
-2. **Daily Development**: Work → `lint.sh` → `test.sh` → `commit.sh`.
+2. **Daily Development**: Work → `lint.sh` → `test.sh`.
 3. **Continuous Integration**: `test.sh` → `audit.sh`.
 
 ### Directory Structure

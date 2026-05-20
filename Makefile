@@ -72,7 +72,7 @@ GIT_BRANCH      := $(shell git branch --show-current 2>/dev/null || echo "not a 
 # =============================================================================
 # Targets
 # =============================================================================
-.PHONY: all help init lint test commit verify release audit docs archive-changelog gen-dependabot sync-harden-runner precommit license-add license-check
+.PHONY: all help init lint test verify release audit docs archive-changelog gen-dependabot sync-harden-runner license-add license-check
 
 # Default target: display help
 all: help
@@ -102,20 +102,11 @@ else
 	@sh scripts/lint.sh $(SCRIPT_ARGS) $(ARGS)
 endif
 
-precommit: lint ## Alias for lint (Run pre-commit hooks)
-
 test: ## Run unified test suite
 ifeq ($(OS_NAME),Windows)
 	@scripts/test.bat $(SCRIPT_ARGS) $(ARGS)
 else
 	@sh scripts/test.sh $(SCRIPT_ARGS) $(ARGS)
-endif
-
-commit: ## Start the interactive Commitizen CLI
-ifeq ($(OS_NAME),Windows)
-	@scripts/commit.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/commit.sh $(SCRIPT_ARGS) $(ARGS)
 endif
 
 .NOTPARALLEL: verify

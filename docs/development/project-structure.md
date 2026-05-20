@@ -149,7 +149,6 @@ goimports -w .
 3. **Format**: Auto-format on save (goimports)
 4. **Lint**: `make lint` (runs pre-commit hooks)
 5. **Test**: `make test`
-7. **Commit**: `make commit` (Commitizen)
 8. **Verify**: `make verify` (full check before PR)
 
 ## Code Style
