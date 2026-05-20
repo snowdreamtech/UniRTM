@@ -193,6 +193,96 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	// 0. Active Configuration Files Section
+	if !isTerminal {
+		pterm.DefaultSection.Println("Active Configuration Files")
+	} else {
+		pterm.DefaultSection.Println("Config Files")
+	}
+
+	var activeFiles []string
+	systemPaths := []string{
+		"/etc/unirtm/config.toml",
+		"/etc/unirtm/config.yaml",
+		"/etc/unirtm/config.yml",
+	}
+	for _, p := range systemPaths {
+		if _, err := os.Stat(p); err == nil {
+			activeFiles = append(activeFiles, p)
+		}
+	}
+
+	globalPaths := []string{
+		filepath.Join(env.GetConfigDir(), "config.toml"),
+		filepath.Join(env.GetConfigDir(), "config.yaml"),
+		filepath.Join(env.GetConfigDir(), "config.yml"),
+	}
+	for _, p := range globalPaths {
+		if _, err := os.Stat(p); err == nil {
+			activeFiles = append(activeFiles, p)
+		}
+	}
+
+	cwd, _ := os.Getwd()
+	curr := cwd
+	var projectFiles []string
+
+	isCeiling := func(path string) bool {
+		absPath, _ := filepath.Abs(path)
+		for _, cp := range cfg.Settings.CeilingPaths {
+			absCP, _ := filepath.Abs(cp)
+			if absPath == absCP {
+				return true
+			}
+		}
+		parent := filepath.Dir(absPath)
+		return parent == absPath
+	}
+
+	for {
+		files := []string{
+			filepath.Join(curr, ".mise.yml"),
+			filepath.Join(curr, ".mise.yaml"),
+			filepath.Join(curr, ".mise.toml"),
+			filepath.Join(curr, "unirtm.yml"),
+			filepath.Join(curr, "unirtm.yaml"),
+			filepath.Join(curr, "unirtm.toml"),
+			filepath.Join(curr, ".unirtm.yml"),
+			filepath.Join(curr, ".unirtm.yaml"),
+			filepath.Join(curr, ".unirtm.toml"),
+			filepath.Join(curr, ".mise.local.yml"),
+			filepath.Join(curr, ".mise.local.yaml"),
+			filepath.Join(curr, ".mise.local.toml"),
+			filepath.Join(curr, ".unirtm.local.yml"),
+			filepath.Join(curr, ".unirtm.local.yaml"),
+			filepath.Join(curr, ".unirtm.local.toml"),
+		}
+		
+		var dirFiles []string
+		for _, p := range files {
+			if _, err := os.Stat(p); err == nil {
+				dirFiles = append(dirFiles, p)
+			}
+		}
+		projectFiles = append(dirFiles, projectFiles...)
+
+		if isCeiling(curr) {
+			break
+		}
+		curr = filepath.Dir(curr)
+	}
+	activeFiles = append(activeFiles, projectFiles...)
+
+	if len(activeFiles) == 0 {
+		pterm.Info.Println("  (no configuration files found)")
+	} else {
+		var fileItems []pterm.BulletListItem
+		for _, f := range activeFiles {
+			fileItems = append(fileItems, pterm.BulletListItem{Level: 0, Text: pterm.FgCyan.Sprint(f)})
+		}
+		pterm.DefaultBulletList.WithItems(fileItems).Render()
+	}
+
 	// 1. Tool Section
 	if !isTerminal {
 		pterm.DefaultSection.Println("Tools Configuration")
