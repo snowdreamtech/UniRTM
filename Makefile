@@ -106,23 +106,11 @@ else
 endif
 
 license-add: ## Add license headers to core source files (Safe Mode)
-	@mise x -- addlicense -v -f .github/license-header.txt \
-		$$(find src pkg internal cmd app lib include scripts tests \
-		\( -path "*/vendor/*" -o -path "*/node_modules/*" -o -path "*/dist/*" -o -path "*/build/*" \) -prune -o \
-		-type f \( -name "*.go" -o -name "*.sh" -o -name "*.py" -o -name "*.js" -o -name "*.mjs" -o -name "*.ts" -o -name "*.tsx" -o -name "*.jsx" -o -name "*.vue" -o -name "*.svelte" -o -name "*.astro" -o -name "*.java" -o -name "*.kt" -o -name "*.swift" -o -name "*.m" -o -name "*.mm" -o -name "*.c" -o -name "*.cpp" -o -name "*.cc" -o -name "*.h" -o -name "*.hpp" -o -name "*.rs" -o -name "*.rb" -o -name "*.php" -o -name "*.cs" -o -name "*.fs" -o -name "*.dart" -o -name "*.rego" -o -name "*.proto" -o -name "*.tf" -o -name "*.tfvars" -o -name "*.kcl" -o -name "*.pkl" -o -name "*.cue" \) -print 2>/dev/null)
+	@unirtm license add -v -f .github/license-header.txt src pkg internal cmd app lib include scripts tests
 
 license-check: ## Check for missing license headers
-	@mise x -- addlicense -check -v -f .github/license-header.txt \
-		$$(find src pkg internal cmd app lib include scripts tests \
-		\( -path "*/vendor/*" -o -path "*/node_modules/*" -o -path "*/dist/*" -o -path "*/build/*" \) -prune -o \
-		-type f \( -name "*.go" -o -name "*.sh" -o -name "*.py" -o -name "*.js" -o -name "*.mjs" -o -name "*.ts" -o -name "*.tsx" -o -name "*.jsx" -o -name "*.vue" -o -name "*.svelte" -o -name "*.astro" -o -name "*.java" -o -name "*.kt" -o -name "*.swift" -o -name "*.m" -o -name "*.mm" -o -name "*.c" -o -name "*.cpp" -o -name "*.cc" -o -name "*.h" -o -name "*.hpp" -o -name "*.rs" -o -name "*.rb" -o -name "*.php" -o -name "*.cs" -o -name "*.fs" -o -name "*.dart" -o -name "*.rego" -o -name "*.proto" -o -name "*.tf" -o -name "*.tfvars" -o -name "*.kcl" -o -name "*.pkl" -o -name "*.cue" \) -print 2>/dev/null)
+	@unirtm license check -f .github/license-header.txt src pkg internal cmd app lib include scripts tests
 
-
-ifeq ($(OS_NAME),Windows)
-	@scripts/docs.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/docs.sh $(SCRIPT_ARGS) $(ARGS)
-endif
 
 gen-dependabot: ## Auto-generate dependabot.yml from detected ecosystems
 ifeq ($(OS_NAME),Windows)
@@ -138,9 +126,3 @@ else
 	@sh scripts/sync-harden-runner.sh $(SCRIPT_ARGS) $(ARGS)
 endif
 
-
-ifeq ($(OS_NAME),Windows)
-	@scripts/archive-changelog.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/archive-changelog.sh $(SCRIPT_ARGS) $(ARGS)
-endif

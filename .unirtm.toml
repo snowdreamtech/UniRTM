@@ -46,11 +46,11 @@ run = 'sh scripts/gen-dependabot.sh'
 
 [tasks.license-add]
 description = 'Add license headers to core source files (Safe Mode)'
-run = "addlicense -v -f .github/license-header.txt $(find src pkg internal cmd scripts tests \\( -path '*/vendor/*' -o -path '*/node_modules/*' -o -path '*/dist/*' -o -path '*/build/*' \\) -prune -o -type f \\( -name '*.go' -o -name '*.sh' -o -name '*.py' \\) -print 2>/dev/null)"
+run = 'unirtm license add -v -f .github/license-header.txt src pkg internal cmd app lib include scripts tests'
 
 [tasks.license-check]
 description = 'Check for missing license headers'
-run = "addlicense -check -v -f .github/license-header.txt $(find src pkg internal cmd scripts tests \\( -path '*/vendor/*' -o -path '*/node_modules/*' -o -path '*/dist/*' -o -path '*/build/*' \\) -prune -o -type f \\( -name '*.go' -o -name '*.sh' -o -name '*.py' \\) -print 2>/dev/null)"
+run = 'unirtm license check -f .github/license-header.txt src pkg internal cmd app lib include scripts tests'
 
 [tasks.lint]
 description = 'Run standardized linter (pre-commit)'
@@ -72,7 +72,6 @@ run = 'sh scripts/verify.sh'
 'github:dotenv-linter/dotenv-linter' = '4.0.0'
 'github:editorconfig-checker/editorconfig-checker' = '3.6.1'
 'github:gitleaks/gitleaks' = '8.30.1'
-'github:google/addlicense' = '1.2.0'
 'github:google/osv-scanner' = '2.3.5'
 'github:hadolint/hadolint' = '2.14.0'
 'github:koalaman/shellcheck' = '0.11.0'

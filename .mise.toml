@@ -27,7 +27,6 @@ python = "3.14.4"
 # Tools invoked by pre-commit hooks or universally needed.
 "github:checkmake/checkmake" = "v0.3.2"
 "github:editorconfig-checker/editorconfig-checker" = { version = "3.6.1", bin = "ec-*" }
-"github:google/addlicense" = "1.2.0"
 
 # Git / commit workflow
 "npm:@commitlint/cli" = "20.5.3"

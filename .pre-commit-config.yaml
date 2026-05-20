@@ -913,7 +913,7 @@ repos:
       - id: license-check
         name: check license headers
         language: system
-        entry: sh scripts/lib/lint-wrapper.sh addlicense -check -v -f .github/license-header.txt
+        entry: unirtm license check -f .github/license-header.txt
         files: ^(src|pkg|internal|cmd|app|lib|include|tests)/
         types_or:
           [
