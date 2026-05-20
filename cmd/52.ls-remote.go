@@ -6,21 +6,29 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/backend"
+	"github.com/snowdreamtech/unirtm/internal/database"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/provider/native"
+	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/spf13/cobra"
 )
 
 var (
 	// lsRemoteBackend specifies the backend to use for listing versions
 	lsRemoteBackend string
+	// lsRemoteLimit limits the number of versions returned
+	lsRemoteLimit int
 )
 
 func init() {
 	// Register command flags
 	lsRemoteCmd.Flags().StringVarP(&lsRemoteBackend, "backend", "b", "", "backend to use for listing versions (default: auto-detect)")
+	lsRemoteCmd.Flags().IntVarP(&lsRemoteLimit, "limit", "l", 0, "limit the number of versions displayed (0 = all)")
 
 	// Add command to root
 	if rootCmd != nil {
@@ -36,10 +44,14 @@ var lsRemoteCmd = &cobra.Command{
 	Long: `List runtime versions available for install from the backend.
 
 The results are fetched from the remote backend and may be cached locally.
+Installed versions are highlighted with a green ✓ checkmark.
 
 Examples:
   # List all available versions of Node.js
   unirtm ls-remote node
+
+  # List the latest 20 versions
+  unirtm ls-remote node --limit 20
 
   # List versions matching a prefix
   unirtm ls-remote node 20
@@ -103,6 +115,11 @@ func runLsRemote(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Apply --limit flag
+	if lsRemoteLimit > 0 && len(filteredVersions) > lsRemoteLimit {
+		filteredVersions = filteredVersions[:lsRemoteLimit]
+	}
+
 	if jsonOutput {
 		formatter.Success(fmt.Sprintf("Available versions for %s", tool), map[string]interface{}{
 			"tool":     tool,
@@ -121,11 +138,86 @@ func runLsRemote(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	// Collect installed versions for the tool to mark with ✓
+	installedSet := collectInstalledVersions(ctx, tool)
+
+	// Human-readable table with INSTALLED column
+	tableData := pterm.TableData{
+		{"VERSION", "INSTALLED", "PUBLISHED"},
+	}
+
 	for _, v := range filteredVersions {
-		fmt.Println(v.Version)
+		installedMark := pterm.FgDefault.Sprint("  ")
+		if _, ok := installedSet[v.Version]; ok {
+			installedMark = pterm.FgGreen.Sprint("✓")
+		}
+
+		publishedAt := ""
+		if !v.PublishedAt.IsZero() {
+			publishedAt = v.PublishedAt.Format("2006-01-02")
+		}
+
+		tableData = append(tableData, []string{
+			pterm.FgCyan.Sprint(v.Version),
+			installedMark,
+			pterm.FgDefault.Sprint(publishedAt),
+		})
+	}
+
+	// Print header
+	fmt.Println()
+	pterm.EnableColor()
+	fmt.Fprintf(os.Stdout, " Showing %d versions for %s (backend: %s)\n",
+		len(filteredVersions),
+		pterm.FgCyan.Sprint(tool),
+		pterm.FgMagenta.Sprint(backendName),
+	)
+	fmt.Println()
+
+	pterm.DefaultTable.
+		WithHasHeader(true).
+		WithSeparator("   ").
+		WithHeaderStyle(pterm.NewStyle(pterm.FgCyan, pterm.Bold)).
+		WithData(tableData).
+		Render()
+
+	// Show legend if any installed versions exist
+	if len(installedSet) > 0 {
+		fmt.Println()
+		pterm.FgGreen.Print("✓")
+		pterm.FgDefault.Println(" = already installed")
 	}
 
 	return nil
+}
+
+// collectInstalledVersions returns a set of installed version strings for the given tool.
+func collectInstalledVersions(ctx context.Context, tool string) map[string]struct{} {
+	result := make(map[string]struct{})
+
+	dbPath := env.GetDatabasePath()
+	db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true})
+	if err != nil {
+		return result
+	}
+	defer db.Close()
+
+	repo, err := sqlite.NewInstallationRepository(db.Conn())
+	if err != nil {
+		return result
+	}
+
+	installations, err := repo.List(ctx)
+	if err != nil {
+		return result
+	}
+
+	for _, inst := range installations {
+		if inst.Tool == tool {
+			result[inst.Version] = struct{}{}
+		}
+	}
+	return result
 }
 
 // getLsRemoteBackendName returns the backend name to use.
