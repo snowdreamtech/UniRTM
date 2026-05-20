@@ -112,7 +112,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
         run: |
           make setup
-          make install
 
       - name: "🚀 compile documentation artifacts"
         shell: sh

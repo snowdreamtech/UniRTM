@@ -130,7 +130,6 @@ jobs:
           fi
 
           make setup
-          make install
 
           # Debug: Show what was written to GITHUB_PATH
           echo "=== DEBUG: GITHUB_PATH Contents ==="

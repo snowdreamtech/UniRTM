@@ -90,7 +90,6 @@ jobs:
         shell: sh
         run: |
           make setup
-          make install
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 

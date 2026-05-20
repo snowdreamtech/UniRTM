@@ -197,7 +197,6 @@ jobs:
           fi
 
           make setup
-          make install
 
           # Debug: Show what was written to GITHUB_PATH
           echo "=== DEBUG: GITHUB_PATH Contents ==="
@@ -361,7 +360,6 @@ jobs:
         shell: sh
         run: |
           make setup
-          make install
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
@@ -474,7 +472,6 @@ jobs:
         shell: sh
         run: |
           make setup
-          make install
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
