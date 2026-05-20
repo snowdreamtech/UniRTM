@@ -52,18 +52,9 @@ run = 'sh scripts/docs.sh'
 description = 'Auto-generate dependabot.yml from detected ecosystems'
 run = 'sh scripts/gen-dependabot.sh'
 
-[tasks.health]
-description = 'Generate unified project health dashboard'
-run = 'sh scripts/health.sh'
-
 [tasks.init]
 description = 'Hydrate project from template (rename placeholders)'
 run = 'sh scripts/init-project.sh'
-
-[tasks.install]
-depends = ['setup']
-description = 'Install project-level dependencies (pip, npm)'
-run = 'sh scripts/install.sh'
 
 [tasks.license-add]
 description = 'Add license headers to core source files (Safe Mode)'
@@ -77,32 +68,12 @@ run = "addlicense -check -v -f .github/license-header.txt $(find src pkg interna
 description = 'Run standardized linter (pre-commit)'
 run = 'sh scripts/lint.sh'
 
-[tasks.precommit]
-depends = ['lint']
-description = 'Alias for lint (Run pre-commit hooks)'
-run = "echo 'Pre-commit checks passed!'"
-
-
-[tasks.setup]
-description = 'Install system-level development tools'
-run = 'sh scripts/setup.sh'
-
-
 [tasks.sync-harden-runner]
 description = 'Synchronize Harden Runner endpoints to all workflow files'
 run = 'sh scripts/sync-harden-runner.sh'
 
-[tasks.sync-labels]
-description = 'Synchronize and brand repository labels'
-run = 'sh scripts/sync-labels.sh'
-
-[tasks.sync-lock]
-description = 'Synchronize and verify the unirtm.lock file across all platforms'
-run = 'sh scripts/sync-lock.sh'
-
-
 [tasks.verify]
-description = 'Run full local verification (env, lint, test, audit)'
+description = 'Run full local verification (lint, audit)'
 run = 'sh scripts/verify.sh'
 
 [tools]
