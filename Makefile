@@ -72,7 +72,7 @@ GIT_BRANCH      := $(shell git branch --show-current 2>/dev/null || echo "not a 
 # =============================================================================
 # Targets
 # =============================================================================
-.PHONY: all help init lint format test build clean commit verify release env update audit bench docs archive-changelog check-env sync-docs precommit license-add license-check gen-dependabot sync-harden-runner update-tools
+.PHONY: all help init lint format test build clean commit verify release env update audit docs archive-changelog check-env sync-docs precommit license-add license-check gen-dependabot sync-harden-runner update-tools
 
 # Default target: display help
 all: help
@@ -175,15 +175,6 @@ ifeq ($(OS_NAME),Windows)
 	@scripts/audit.bat $(SCRIPT_ARGS) $(ARGS)
 else
 	@sh scripts/audit.sh $(SCRIPT_ARGS) $(ARGS)
-endif
-
-
-
-bench: ## Run performance benchmarks
-ifeq ($(OS_NAME),Windows)
-	@scripts/bench.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/bench.sh $(SCRIPT_ARGS) $(ARGS)
 endif
 
 sync-docs: ## Synchronize documentation between versions

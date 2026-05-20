@@ -39,9 +39,6 @@ run = 'sh scripts/archive-changelog.sh'
 description = 'Run security audit and vulnerability scans'
 run = 'sh scripts/audit.sh'
 
-[tasks.bench]
-description = 'Run performance benchmarks'
-run = 'sh scripts/bench.sh'
 
 [tasks.build]
 description = 'Build project artifacts'

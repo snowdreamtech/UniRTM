@@ -82,7 +82,6 @@ UniRTM/
 ├── tests/
 │   ├── property/           # Property-based tests (gopter)
 │   ├── integration/        # Integration tests
-│   └── bench/              # Performance benchmarks
 └── docs/                   # Documentation
 ```
 
@@ -113,7 +112,6 @@ make lint
 | Unit | `internal/**/*_test.go` | Package-level correctness |
 | Property | `tests/property/` | Universal invariants (gopter) |
 | Integration | `tests/integration/` | Cross-layer workflows |
-| Benchmark | `tests/bench/` | Performance regression detection |
 
 ```bash
 # Unit + integration tests
@@ -121,9 +119,6 @@ go test ./...
 
 # Property tests (may take longer)
 go test ./tests/property/... -timeout 120s
-
-# Benchmarks
-go test ./tests/bench/... -bench=. -benchmem
 ```
 
 ## Key Design Principles

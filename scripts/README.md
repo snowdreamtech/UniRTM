@@ -81,7 +81,6 @@ sh scripts/verify.sh
 | `build.sh`             | Build project artifacts       | goreleaser, tsc, pyproject    |
 | `lint.sh`              | Run linters and fixers        | pre-commit, auto-fix          |
 | `test.sh`              | Execute test suites           | bats, pytest, vitest, vitest  |
-| `bench.sh`             | Run performance benchmarks    | pytest-benchmark, k6          |
 | `audit.sh`             | Security & vulnerability scan | gitleaks, osv-scanner         |
 | `commit.sh`            | Guided conventional commit    | commitizen (cz)               |
 | `release.sh`           | Standardized tagged release   | git tag (v-prefix), auto-sync |
