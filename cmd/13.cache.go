@@ -54,10 +54,7 @@ If no subcommand is provided, it displays the path to the cache directory.`,
 
 		isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput
 		if isTerminal {
-			pterm.DefaultHeader.WithFullWidth().
-				WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
-				WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
-				Println("UniRTM Cache Information")
+			pterm.DefaultSection.Println("Cache Information")
 		}
 
 		sizeStr := fmt.Sprintf("%.2f MB", float64(totalSize)/(1024*1024))
@@ -202,10 +199,7 @@ func runCacheList(cmd *cobra.Command, args []string) error {
 
 	isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput
 	if isTerminal {
-		pterm.DefaultHeader.WithFullWidth().
-			WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
-			WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
-			Println("UniRTM Cache List")
+		pterm.DefaultSection.Println("Cache List")
 	}
 
 	if jsonOutput {
@@ -323,10 +317,7 @@ func runCacheStats(cmd *cobra.Command, args []string) error {
 
 	isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput
 	if isTerminal {
-		pterm.DefaultHeader.WithFullWidth().
-			WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
-			WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
-			Println("UniRTM Cache Statistics")
+		pterm.DefaultSection.Println("Cache Statistics")
 	}
 
 	if jsonOutput {

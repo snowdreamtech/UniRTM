@@ -127,7 +127,7 @@ func runImplode(cmd *cobra.Command, args []string) error {
 
 	// 5. Final Message
 	fmt.Println()
-	pterm.DefaultHeader.WithBackgroundStyle(pterm.NewStyle(pterm.BgRed)).WithTextStyle(pterm.NewStyle(pterm.FgWhite)).Println("IMPLODE COMPLETE")
+	pterm.Success.Println("Implode complete.")
 	fmt.Println()
 
 	pterm.Info.Println("To complete the cleanup, you may want to:")

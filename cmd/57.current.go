@@ -157,11 +157,6 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 	}
 
 	// [Surpass] Interactive UI
-	pterm.DefaultHeader.WithFullWidth().
-		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
-		WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
-		Println("UniRTM Active Versions")
-
 	var tableData [][]string
 	tableData = append(tableData, []string{"Tool", "Version", "Status"})
 

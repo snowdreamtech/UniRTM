@@ -167,11 +167,6 @@ func runIndexStatus(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	pterm.DefaultHeader.WithFullWidth().
-		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
-		WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
-		Println("UniRTM Local Tool Index Status")
-
 	pterm.DefaultSection.Println("📊 Database Information")
 	fmt.Printf("  Database Path:  %s\n", dbPath)
 	fmt.Printf("  Database Size:  %.2f KB\n", float64(fileSize)/1024.0)

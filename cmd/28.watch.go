@@ -54,12 +54,8 @@ func runWatch(cmd *cobra.Command, args []string) error {
 	taskName := args[0]
 	debounceDuration := time.Duration(watchDebounce) * time.Millisecond
 
-	// Premium Visual Header UI
-	pterm.DefaultHeader.WithBackgroundStyle(pterm.NewStyle(pterm.BgCyan)).WithTextStyle(pterm.NewStyle(pterm.FgBlack)).Println("UniRTM Watcher 🚀")
-	pterm.Println()
-
-	// Print beautiful settings box
 	pterm.DefaultSection.Println("Watcher Settings")
+
 	pterm.Info.Printf("Task to execute:   %s\n", pterm.LightCyan(taskName))
 	pterm.Info.Printf("Debounce delay:    %s\n", pterm.LightYellow(debounceDuration.String()))
 	if len(watchGlobs) > 0 {

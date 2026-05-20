@@ -161,11 +161,6 @@ func runEnv(cmd *cobra.Command, args []string) error {
 }
 
 func renderInteractiveEnv(cfg *config.Config, pathDirs []string, vars []envVarEntry, sources []string) error {
-	pterm.DefaultHeader.WithFullWidth().
-		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
-		WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
-		Println("UniRTM Active Environment")
-
 	// 1. Active Environment Info
 	activeEnv := "base"
 	if e := env.Get("ENV"); e != "" {
@@ -233,11 +228,6 @@ type envVarEntry struct {
 }
 
 func runEnvInfoWithStyle() error {
-	pterm.DefaultHeader.WithFullWidth().
-		WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
-		WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
-		Println("UniRTM Build & Version Info")
-
 	data := [][]string{
 		{"Project", env.ProjectName},
 		{"Version", env.GitTag},

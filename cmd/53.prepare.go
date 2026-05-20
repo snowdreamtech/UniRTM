@@ -74,9 +74,8 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 		targetTool = strings.ToLower(strings.TrimSpace(args[0]))
 	}
 
-	pterm.Println()
-	pterm.DefaultHeader.WithFullWidth().Println("UniRTM Project Preparation Check")
-	pterm.Println()
+	pterm.DefaultSection.Println("Project Preparation Check")
+
 
 	// 1. Run local project structural checks (Node, Go, Python)
 	detectProjectStructure(cwd, targetTool)
@@ -195,10 +194,8 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// 4. Print preparation summary
-	pterm.Println()
-	pterm.DefaultHeader.WithFullWidth().Println("Preparation Summary")
-	pterm.Println()
+	pterm.DefaultSection.Println("Preparation Summary")
+
 
 	allSuccess := true
 	for _, r := range results {

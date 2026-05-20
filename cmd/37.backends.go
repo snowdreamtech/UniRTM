@@ -118,10 +118,7 @@ func runBackendsList(cmd *cobra.Command, args []string) error {
 
 	isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput
 	if isTerminal {
-		pterm.DefaultHeader.WithFullWidth().
-			WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
-			WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
-			Println("UniRTM Registered Backends")
+		pterm.DefaultSection.Println("Registered Backends")
 	}
 
 	if jsonOutput {
@@ -255,10 +252,7 @@ func runBackendsInfo(cmd *cobra.Command, args []string) error {
 
 	isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput
 	if isTerminal {
-		pterm.DefaultHeader.WithFullWidth().
-			WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
-			WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
-			Printf("UniRTM Backend: %s\n", name)
+		pterm.DefaultSection.Printf("Backend: %s\n", name)
 	}
 
 	if jsonOutput {

@@ -113,10 +113,7 @@ Examples:
 func runConfigValidate(cmd *cobra.Command, args []string) error {
 	isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput
 	if isTerminal {
-		pterm.DefaultHeader.WithFullWidth().
-			WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
-			WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
-			Println("UniRTM Config Validation")
+		pterm.DefaultSection.Println("Config Validation")
 	}
 
 	formatter := output.NewFormatter(output.FormatterOptions{
@@ -167,10 +164,7 @@ func runConfigValidate(cmd *cobra.Command, args []string) error {
 func runConfigShow(cmd *cobra.Command, args []string) error {
 	isTerminal := term.IsTerminal(int(os.Stdout.Fd())) && !jsonOutput
 	if isTerminal {
-		pterm.DefaultHeader.WithFullWidth().
-			WithBackgroundStyle(pterm.NewStyle(pterm.BgLightMagenta)).
-			WithTextStyle(pterm.NewStyle(pterm.FgBlack)).
-			Println("UniRTM Configuration")
+		pterm.DefaultSection.Println("Configuration")
 	}
 
 	formatter := output.NewFormatter(output.FormatterOptions{
