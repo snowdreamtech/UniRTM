@@ -101,6 +101,42 @@ Use --list to view all currently trusted configuration files.`,
 			hash = hash[:16] + "..."
 		}
 		pterm.Success.Printfln("Trusted configuration file: %s (hash: %s)", pterm.LightGreen(absPath), pterm.FgGray.Sprint(hash))
+
+		// Show the full updated trusted files table
+		trusted, err := trustManager.List()
+		if err != nil {
+			return
+		}
+		if len(trusted) == 0 {
+			return
+		}
+		pterm.DefaultSection.Println("Trusted Configuration Files")
+		tableData := pterm.TableData{
+			{"Configuration File Path", "SHA-256 Content Hash", "Status"},
+		}
+		for p, h := range trusted {
+			status := trustManager.TrustStatus(p)
+			statusStr := ""
+			switch status {
+			case config.TrustStatusTrusted:
+				statusStr = pterm.FgGreen.Sprint("Trusted")
+			case config.TrustStatusModified:
+				statusStr = pterm.FgRed.Sprint("Modified")
+			case config.TrustStatusUntrusted:
+				statusStr = pterm.FgYellow.Sprint("Untrusted")
+			}
+			hashStr := h
+			if hashStr == "" {
+				hashStr = pterm.FgYellow.Sprint("Legacy / No Hash")
+			} else {
+				if len(hashStr) > 16 {
+					hashStr = hashStr[:16] + "..."
+				}
+				hashStr = pterm.FgGray.Sprint(hashStr)
+			}
+			tableData = append(tableData, []string{pterm.FgCyan.Sprint(p), hashStr, statusStr})
+		}
+		pterm.DefaultTable.WithHasHeader().WithData(tableData).Render()
 	},
 }
 
