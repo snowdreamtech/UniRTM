@@ -37,9 +37,20 @@ If no path is provided, it lists all currently trusted configuration files.`,
 			}
 			pterm.DefaultSection.Println("Trusted Configuration Files")
 			tableData := pterm.TableData{
-				{"Configuration File Path", "SHA-256 Content Hash"},
+				{"Configuration File Path", "SHA-256 Content Hash", "Status"},
 			}
 			for p, h := range trusted {
+				status := trustManager.TrustStatus(p)
+				statusStr := ""
+				switch status {
+				case config.TrustStatusTrusted:
+					statusStr = pterm.FgGreen.Sprint("Trusted")
+				case config.TrustStatusModified:
+					statusStr = pterm.FgRed.Sprint("Modified")
+				case config.TrustStatusUntrusted:
+					statusStr = pterm.FgYellow.Sprint("Untrusted")
+				}
+
 				hashStr := h
 				if hashStr == "" {
 					hashStr = pterm.FgYellow.Sprint("Legacy / No Hash")
@@ -49,7 +60,7 @@ If no path is provided, it lists all currently trusted configuration files.`,
 					}
 					hashStr = pterm.FgGray.Sprint(hashStr)
 				}
-				tableData = append(tableData, []string{pterm.FgCyan.Sprint(p), hashStr})
+				tableData = append(tableData, []string{pterm.FgCyan.Sprint(p), hashStr, statusStr})
 			}
 			pterm.DefaultTable.WithHasHeader().WithData(tableData).Render()
 			return
