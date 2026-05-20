@@ -14,10 +14,10 @@ set -eu
 #   - Tier 1 (Core): SSoT is .unirtm.toml. Versions here serve as a
 #     backup mirror and must stay in sync. update-tools.sh updates both.
 #   - Tier 2 (On-demand): SSoT is THIS FILE. Versions are pinned here
-#     and referenced by scripts/lib/langs/*.sh for dynamic registration.
+#     for reference and auditing purposes.
 #
 # shellcheck disable=SC2034
-# (Variables are used by sourcing scripts: lang modules and setup.sh)
+# (Variables are used by sourcing scripts: setup.sh, update-tools.sh)
 
 # ── 🏗️ Tier 1: Core Runtimes (Mirror of .unirtm.toml) ──────────────────────────
 # shellcheck disable=SC2034

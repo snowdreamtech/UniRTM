@@ -2315,12 +2315,6 @@ install_tool_safe() {
   return 0
 }
 
-# Purpose: Installs the Node.js runtime and project dependencies.
-# language-specific modules will be loaded dynamically below
-
-# Logic extracted to modules in ./langs/
-
-# Logic extracted to modules in ./langs/
 
 # Purpose: Installs git hooks using pre-commit.
 # Delegate: Managed via pipx (pre-commit).
