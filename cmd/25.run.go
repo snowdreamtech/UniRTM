@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pterm/pterm"
+	"golang.org/x/term"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -24,7 +26,7 @@ func init() {
 
 // runCmd represents the run command which executes a task via the routing engine.
 var runCmd = &cobra.Command{
-	Use:   "run <task> [args...]",
+	Use:   "run [task] [args...]",
 	Short: "Run a task using the multi-modal routing engine",
 	Long: `Run a task using the multi-modal routing engine.
 
@@ -32,14 +34,19 @@ UniRTM delegates tasks to professional tools (go-task, make, just)
 if their configuration files are detected, or falls back to executing
 tasks defined in unirtm.toml.
 
+If no task is provided, it lists all available tasks.
+
 Examples:
+  # List all available tasks
+  unirtm run
+
   # Run a build task
   unirtm run build
 
   # Run a task with arguments
   unirtm run test -- -v`,
 	Aliases:            []string{"r"},
-	Args:               cobra.MinimumNArgs(1),
+	Args:               cobra.MinimumNArgs(0),
 	DisableFlagParsing: false,
 	RunE:               runTaskCommand,
 	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -68,13 +75,6 @@ Examples:
 
 // runTaskCommand executes the task routing.
 func runTaskCommand(cmd *cobra.Command, args []string) error {
-	taskName := args[0]
-	taskArgs := args[1:]
-
-	// Separate args if there's a "--" separator, but cobra handles arguments
-	// after -- properly into args depending on config, but if they put it we might need to parse.
-	// Actually args[1:] is fine.
-
 	ctx := context.Background()
 
 	// Load configuration
@@ -125,6 +125,31 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
+
+	if len(args) == 0 {
+		tasks := engine.ListTasks(cwd)
+		if len(tasks) == 0 {
+			pterm.Info.Println("No tasks available in current context.")
+			return nil
+		}
+		
+		isTerminal := term.IsTerminal(int(os.Stdout.Fd()))
+		if isTerminal {
+			pterm.DefaultSection.Println("Available Tasks")
+		} else {
+			fmt.Println("Available Tasks:")
+		}
+		
+		var taskItems []pterm.BulletListItem
+		for _, t := range tasks {
+			taskItems = append(taskItems, pterm.BulletListItem{Level: 0, Text: pterm.FgCyan.Sprint(t)})
+		}
+		pterm.DefaultBulletList.WithItems(taskItems).Render()
+		return nil
+	}
+
+	taskName := args[0]
+	taskArgs := args[1:]
 
 	// Prepare environment injects
 	shimsDir := env.GetShimsDir()
