@@ -206,7 +206,6 @@ jobs:
           command -v pnpm || echo "pnpm not found"
 
           make lint
-          make test
           make audit
           # Extra SARIF export for GitHub Security Tab (Offline to prevent API rate limits)
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then

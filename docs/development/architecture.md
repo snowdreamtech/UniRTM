@@ -96,7 +96,6 @@ cd unirtm
 go mod download
 
 # Run all tests
-make test
 
 # Build
 go build -o unirtm ./cmd/internal/

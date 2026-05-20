@@ -21,9 +21,6 @@ jobs = 16
 description = "Build for production"
 run = "npm run build"
 
-[tasks.test]
-description = "Run tests"
-run = "npm test"
 
 [tasks.deploy]
 description = "Deploy to production"

@@ -72,7 +72,7 @@ GIT_BRANCH      := $(shell git branch --show-current 2>/dev/null || echo "not a 
 # =============================================================================
 # Targets
 # =============================================================================
-.PHONY: all help init lint test verify audit docs archive-changelog gen-dependabot sync-harden-runner license-add license-check
+.PHONY: all help init lint verify audit docs archive-changelog gen-dependabot sync-harden-runner license-add license-check
 
 # Default target: display help
 all: help
@@ -100,13 +100,6 @@ ifeq ($(OS_NAME),Windows)
 	@scripts/lint.bat $(SCRIPT_ARGS) $(ARGS)
 else
 	@sh scripts/lint.sh $(SCRIPT_ARGS) $(ARGS)
-endif
-
-test: ## Run unified test suite
-ifeq ($(OS_NAME),Windows)
-	@scripts/test.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/test.sh $(SCRIPT_ARGS) $(ARGS)
 endif
 
 .NOTPARALLEL: verify

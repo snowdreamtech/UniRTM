@@ -87,8 +87,8 @@ sh scripts/verify.sh
 ### 工作流模式
 
 1. **项目初始化**: `setup.sh` → `install.sh` → `verify.sh`。
-2. **日常开发**: 编码 → `lint.sh` → `test.sh`。
-3. **持续集成 (CI)**: `test.sh` → `audit.sh`。
+2. **日常开发**: 编码 → `lint.sh`。
+3. **持续集成 (CI)**: `audit.sh`。
 
 ### 目录结构
 

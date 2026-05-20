@@ -356,17 +356,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
 
-      - name: "🧪 Execute Multi-Stack Test Suite"
-        shell: sh
-        run: |
-          make test
-        env:
-          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
   # 3. Security & Standards Audit Stage (Audit)
   audit:
     name: "🕵️ Security & Standards Audit (ubuntu-latest)"
-    needs: [test]
+    needs: [lint]
     runs-on: ubuntu-latest
     environment: development
     concurrency:

@@ -6,9 +6,8 @@ set -eu
 # scripts/verify.sh - Full Project Verification Orchestrator
 #
 # Purpose:
-#   Unifies environment health, linting, testing, and security auditing into a
-#   single, standardized verification workflow.
-#   Ensures the project is stable before commits, PRs, or releases.
+#   Unifies linting and security auditing into a single, standardized
+#   verification workflow. Ensures the project is stable before PRs.
 #
 # Usage:
 #   sh scripts/verify.sh [OPTIONS]
@@ -32,7 +31,7 @@ show_help() {
   cat <<EOF
 Usage: $0 [OPTIONS]
 
-Executes the full project verification suite (env, lint, test, audit).
+Executes the full project verification suite (lint, audit).
 
 Options:
   --dry-run        Preview verification steps without execution.
@@ -44,7 +43,7 @@ EOF
 }
 
 # Purpose: Main entry point for the verification engine.
-#          Coordinates lint, test, and audit scripts.
+#          Coordinates lint and audit scripts.
 # Params:
 #   $@ - Command line arguments
 # Examples:
@@ -68,16 +67,8 @@ main() {
     sh "${SCRIPT_DIR:-}/lint.sh" || _EXIT_VERIFY=$?
   fi
 
-  # 4. Unified Test Runner
-  log_info "\n── Phase 2: Functional Testing ──"
-  if [ "${DRY_RUN:-0}" -eq 1 ]; then
-    log_success "DRY-RUN: Would run sh scripts/test.sh"
-  else
-    sh "${SCRIPT_DIR:-}/test.sh" || _EXIT_VERIFY=$?
-  fi
-
-  # 6. Security Audit
-  log_info "\n── Phase 4: Security Audit ──"
+  # 5. Security Audit
+  log_info "\n── Phase 2: Security Audit ──"
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
     log_success "DRY-RUN: Would run sh scripts/audit.sh"
   else

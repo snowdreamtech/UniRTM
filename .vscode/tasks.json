@@ -23,13 +23,6 @@
       "problemMatcher": []
     },
     {
-      "label": "🧪 test: Run test suite",
-      "type": "shell",
-      "command": "make test",
-      "group": "test",
-      "problemMatcher": []
-    },
-    {
       "label": "🔄 sync-rules: Update IDE rules",
       "type": "shell",
       "command": "make sync-rules",

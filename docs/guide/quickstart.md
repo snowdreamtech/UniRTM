@@ -81,7 +81,6 @@ Your AI assistant will now follow the project rules automatically. Jump in:
 
 ```bash
 make lint    # Run all linters
-make test    # Run tests
 ```
 
 ::: tip

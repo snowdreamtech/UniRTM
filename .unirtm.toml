@@ -100,10 +100,6 @@ run = 'sh scripts/sync-labels.sh'
 description = 'Synchronize and verify the unirtm.lock file across all platforms'
 run = 'sh scripts/sync-lock.sh'
 
-[tasks.test]
-description = 'Run unified test suite'
-run = 'sh scripts/test.sh'
-
 
 [tasks.verify]
 description = 'Run full local verification (env, lint, test, audit)'

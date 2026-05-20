@@ -14,7 +14,6 @@ unirtm install  # Install all configured development tools and dependencies
 
 ```bash
 make lint     # Run ALL linting checks (pre-commit hooks)
-make test     # Run the test suite
 make check    # Run lint + test in sequence
 ```
 

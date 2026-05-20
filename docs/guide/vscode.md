@@ -18,7 +18,6 @@ Access via `Terminal` → `Run Task`:
 | Task                 | Command         |
 | -------------------- | --------------- |
 | `🔧 make: lint`      | `make lint`     |
-| `🔧 make: test`      | `make test`     |
 | `🔧 unirtm: install`  | `unirtm install` |
 | `🌐 web: dev server` | `npm run dev`   |
 | `🏗️ web: build`      | `npm run build` |

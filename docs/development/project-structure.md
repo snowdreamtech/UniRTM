@@ -120,7 +120,6 @@ UniRTM/
 ### Makefile Targets
 
 - `unirtm install` - Install all development tools and dependencies
-- `make test` - Run test suite
 - `make lint` - Run linters
 - `make verify` - Run full verification (lint + test + audit)
 
@@ -148,7 +147,6 @@ goimports -w .
 2. **Develop**: Write code following Go conventions
 3. **Format**: Auto-format on save (goimports)
 4. **Lint**: `make lint` (runs pre-commit hooks)
-5. **Test**: `make test`
 8. **Verify**: `make verify` (full check before PR)
 
 ## Code Style

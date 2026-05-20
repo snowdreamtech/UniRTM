@@ -86,8 +86,8 @@ sh scripts/verify.sh
 ### Workflow Patterns
 
 1. **Onboarding**: `setup.sh` → `install.sh` → `verify.sh`.
-2. **Daily Development**: Work → `lint.sh` → `test.sh`.
-3. **Continuous Integration**: `test.sh` → `audit.sh`.
+2. **Daily Development**: Work → `lint.sh`.
+3. **Continuous Integration**: `audit.sh`.
 
 ### Directory Structure
 

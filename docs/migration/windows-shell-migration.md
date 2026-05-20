@@ -44,7 +44,6 @@ Git Bash is included with [Git for Windows](https://git-scm.com/download/win) an
 ```bash
 # All scripts work directly
 ./scripts/setup.sh
-./scripts/test.sh
 make lint
 ```
 
@@ -92,7 +91,6 @@ Windows Terminal provides a modern terminal experience.
 | ---------------------------- | -------------------------- |
 | `.\scripts\setup.ps1`        | `./scripts/setup.sh`       |
 | `scripts\setup.bat`          | `./scripts/setup.sh`       |
-| `.\scripts\test.ps1`         | `./scripts/test.sh`        |
 | `scripts\test.bat`           | `./scripts/test.sh`        |
 | `.\scripts\docs.ps1`         | `./scripts/docs.sh`        |
 | `scripts\docs.bat`           | `./scripts/docs.sh`        |
