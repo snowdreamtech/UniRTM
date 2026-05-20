@@ -192,17 +192,13 @@ func runTool(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Active versions handling
-	var activeVersions []string
-	
-	// Detect active version via shim.
+	// Active versions are those that are requested AND installed in the current context.
+	// Since UniRTM shims are symlinks to the unirtm binary (not specific versions),
+	// we compute active versions logically rather than inspecting shim symlink targets.
+	activeVersions := detectActiveVersions(requestedVersions, versions)
+
 	shimsDir := env.GetShimsDir()
 	installsDir := env.GetInstallsDir()
-	activeVersion := detectActiveVersion(shimsDir, installsDir, toolName, versions)
-	
-	if activeVersion != "" {
-		activeVersions = append(activeVersions, activeVersion)
-	}
 
 	shimPath := detectShimPath(shimsDir, toolName)
 	if installDir == "" {
@@ -395,27 +391,25 @@ func formatInstalledWithActive(installed, active []string) string {
 	return strings.Join(res, " ")
 }
 
-// detectActiveVersion returns the active version for a tool by checking shim symlinks.
-func detectActiveVersion(shimsDir, installsDir, toolName string, versions []string) string {
-	for _, v := range versions {
-		binDir := filepath.Join(installsDir, toolName, v, "bin")
-		entries, err := os.ReadDir(binDir)
-		if err != nil {
-			continue
-		}
-		for _, e := range entries {
-			shimPath := filepath.Join(shimsDir, e.Name())
-			target, err := os.Readlink(shimPath)
-			if err != nil {
-				continue
-			}
-			versionDir := filepath.Join(installsDir, toolName, v)
-			if strings.HasPrefix(filepath.Clean(target), filepath.Clean(versionDir)) {
-				return v
+// detectActiveVersions computes the active versions by checking which of the requested versions
+// are currently installed. It supports exact matching and prefix matching (e.g. req "20" matches "20.12.0").
+func detectActiveVersions(requestedVersions []string, installedVersions []string) []string {
+	var active []string
+	seen := make(map[string]bool)
+
+	for _, req := range requestedVersions {
+		// Find the best match among installed versions
+		for _, v := range installedVersions {
+			if v == req || strings.HasPrefix(v, req) || strings.HasPrefix(v, "v"+req) {
+				if !seen[v] {
+					active = append(active, v)
+					seen[v] = true
+				}
+				break
 			}
 		}
 	}
-	return ""
+	return active
 }
 
 // detectShimPath returns the path of the first shim binary for a tool.
