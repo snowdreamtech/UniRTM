@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -116,7 +117,8 @@ func runTasksList(cmd *cobra.Command, args []string) error {
 	cfg, _ := loadTasksConfig()
 
 	if len(cfg.Tasks) == 0 {
-		formatter.Info("No tasks defined. Add [tasks] to unirtm.toml.", nil)
+		cfgPath := filepath.Base(resolveConfigFilePath(false))
+		formatter.Info(fmt.Sprintf("No tasks defined. Add [tasks] to %s.", cfgPath), nil)
 		return nil
 	}
 
