@@ -183,17 +183,8 @@ main() {
   # 7. Infrastructure Synchronization (New Branding Architecture)
   log_info "\nStep 3: Synchronizing Project Infrastructure..."
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
-    log_warn "DRY-RUN: Would run make sync-labels and scripts/gen-dependabot.sh."
+    log_warn "DRY-RUN: Would run scripts/gen-dependabot.sh."
   else
-    # Sync Labels (Branding)
-    if resolve_bin "gh" >/dev/null 2>&1; then
-      log_info "  - Synchronizing repository labels (SnowdreamTech Branded)..."
-      # Try to sync, but don't fail if repo doesn't exist yet on GitHub
-      sh "${SCRIPT_DIR:-}/sync-labels.sh" || log_warn "Label sync skipped (repository might not be on GitHub yet)."
-    else
-      log_warn "  - GitHub CLI (gh) not found. Skipping label sync."
-    fi
-
     # Sync Dependabot
     log_info "  - Generating tailored Dependabot configuration..."
     sh "${SCRIPT_DIR:-}/gen-dependabot.sh"
