@@ -334,7 +334,7 @@ remove_tool_from_path() {
   echo "#" >&3
   echo "# Impact:" >&3
   echo "# - Affects ALL 20+ tools installed via mise in CI" >&3
-  echo "# - Breaks same-step workflows: make setup && make install && make check-env" >&3
+  echo "# - Breaks same-step workflows: unirtm install && make check-env" >&3
   echo "# - Security scanners (Gitleaks, Zizmor, OSV-Scanner) not found" >&3
   echo "# - Code quality tools (Shellcheck, Shfmt, Actionlint) not found" >&3
   echo "#" >&3
@@ -354,7 +354,7 @@ remove_tool_from_path() {
   echo "# Affected Scenarios:" >&3
   echo "#" >&3
   echo "# Scenario 1: Same-step tool verification" >&3
-  echo "#   Command: make setup && make install && make check-env" >&3
+  echo "#   Command: unirtm install && make check-env" >&3
   echo "#   Expected: check-env finds all installed tools" >&3
   echo "#   Actual (unfixed): check-env reports tools not found" >&3
   echo "#" >&3

@@ -10,12 +10,11 @@ We welcome contributions of all kinds, including bug fixes, new AI agent rules, 
 
 Our project uses a standardized environment targeting **Node.js 22** and **Python 3.12**.
 
-To set up your local development environment, follow the unified 4-step sequence:
+To set up your local development environment, follow the unified sequence:
 
 1. **Initialize**: `make init` (Hydrate project branding)
-2. **Setup**: `make setup` (Install system-level linter/security tools)
-3. **Install**: `make install` (Install dependencies and activate git hooks)
-4. **Verify**: `make verify` (Final project health check)
+2. **Setup & Install**: `unirtm install` (Install development tools and activate git hooks)
+3. **Verify**: `make verify` (Final project health check)
 
 Run `make help` for a complete automation matrix.
 

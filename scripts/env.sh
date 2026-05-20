@@ -197,8 +197,7 @@ main() {
   # 4. Standardized Next Actions
   if [ "${DRY_RUN:-0}" -eq 0 ] && [ "${_IS_TOP_LEVEL:-}" = "true" ]; then
     printf "\n%bNext Actions:%b\n" "${YELLOW:-}" "${NC:-}"
-    printf "  - Run %bmake setup%b to prepare your development environment.\n" "${GREEN:-}" "${NC:-}"
-    printf "  - Run %bmake install%b to synchronize project dependencies.\n" "${GREEN:-}" "${NC:-}"
+    printf "  - Run %bunirtm install%b to prepare your development environment and synchronize project dependencies.\n" "${GREEN:-}" "${NC:-}"
   fi
 }
 

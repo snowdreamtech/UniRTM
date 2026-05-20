@@ -1199,7 +1199,7 @@ fi
 #   if has_lang_files "package.json" "*.ts *.js"; then echo "Node project"; fi
 has_lang_files() {
   # Support for pre-provisioning: Skip file detection if force mode is active.
-  # This allows 'make setup <lang>' to work in headless/empty environments.
+  # This allows pre-provisioning to work in headless/empty environments.
   if [ "${FORCE_SETUP:-0}" -eq 1 ]; then
     return 0
   fi

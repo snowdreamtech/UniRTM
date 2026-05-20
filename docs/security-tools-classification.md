@@ -29,7 +29,7 @@ These tools provide universal security coverage regardless of project language o
 
 ```bash
 # In CI workflows
-make setup security
+unirtm install
 ```
 
 ---
@@ -55,12 +55,9 @@ These tools are language-specific and only relevant when the corresponding langu
 
 **Installation**:
 
+All configured security tools are installed via:
 ```bash
-# Installed automatically when language files are detected
-make setup go      # Installs govulncheck
-make setup rust    # Installs cargo-audit
-make setup node    # npm-audit is part of npm
-make setup python  # Installs pip-audit
+unirtm install
 ```
 
 ---
@@ -137,42 +134,26 @@ fi
 
 ### For Workflows Using Universal Security Scanners
 
-Workflows that require universal security scanning must explicitly install these tools:
-
-```yaml
-- name: "🔒 Install Security Tools"
-  shell: sh
-  run: |
-    make setup security
-```
-
-Or include in the main setup:
+Workflows that require universal security scanning can install these tools via:
 
 ```yaml
 - name: "🚀 Initialize Development Environment"
   shell: sh
   run: |
-    make setup security  # Install universal security tools
-    make install
+    unirtm install
     make check-env
 ```
 
 ### For Workflows Not Using Security Scanners
 
-If a workflow doesn't need security scanning (e.g., documentation builds), it will fail at `make check-env` unless security tools are installed. Options:
+If a workflow doesn't need security scanning (e.g., documentation builds), it will run `unirtm install` to set up basic tools:
 
-1. **Install security tools** (recommended):
-
-   ```yaml
-   run: make setup security && make check-env
-   ```
-
-2. **Skip check-env** (not recommended):
-
-   ```yaml
-   run: make setup && make install
-   # Skip check-env
-   ```
+```yaml
+- name: "🚀 Initialize Development Environment"
+  shell: sh
+  run: |
+    unirtm install
+```
 
 ---
 
@@ -260,7 +241,7 @@ If you have existing workflows that relied on the old Optional CI-only behavior 
 
 ```yaml
 - name: "Install Security Tools"
-  run: make setup security
+  run: unirtm install
 
 - name: "Check Environment"
   run: make check-env
@@ -294,5 +275,4 @@ CI=true make check-env
 ## References
 
 - Implementation details in `scripts/check-env.sh`
-- Security tool installation in `scripts/lib/langs/security.sh`
 - Tool version definitions in `scripts/lib/versions.sh`

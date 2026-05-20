@@ -83,10 +83,8 @@ graph TD
 
 ### Quick Start
 
-1. **Prerequisites**: [mise](https://mise.jdx.dev/) is highly recommended for global tool management (automatically installed during setup).
-2. **Initialize**: `make setup` (bootstraps mise and core tools).
-3. **Install**: `make install` (installs project dependencies).
-4. **Verify**: `make verify` (ensures everything is green).
+1. **Initialize & Install**: `unirtm install` (installs all project tools and dependencies).
+2. **Verify**: `make verify` (ensures everything is green).
 
 ### Configuration Reference
 
@@ -126,15 +124,15 @@ project-root/
 
 ### Troubleshooting
 
-- **Problem**: `make install` fails on Windows.
+- **Problem**: `unirtm install` fails on Windows.
   - **Diagnosis**: Check if `ExecutionPolicy` allows script execution.
   - **Solution**: Run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`.
 - **Problem**: Gitleaks detects false positives.
   - **Diagnosis**: Check `.gitleaks.toml` allowlist.
   - **Solution**: Add fingerprint to `.gitleaksignore`.
-- **Problem**: Pre-commit hooks fail on macOS after `make install` with Python errors.
+- **Problem**: Pre-commit hooks fail on macOS after `unirtm install` with Python errors.
   - **Diagnosis**: Check if the venv exists: `ls .venv/bin/python`.
-  - **Solution**: Rebuild the venv: `rm -rf .venv && make install`.
+  - **Solution**: Rebuild the venv: `rm -rf .venv && unirtm install`.
 
 ---
 
@@ -192,8 +190,7 @@ project-root/
 git clone <repo>
 cd <repo>
 git config core.ignorecase false  # MANDATORY for Mac/Windows
-make setup
-make install
+unirtm install
 ```
 
 ### References

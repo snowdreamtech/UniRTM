@@ -4,33 +4,11 @@ All common tasks are unified under `make`. Run `make help` to see all available 
 
 ## Setup & Installation
 
-```bash
-make setup    # Install system-level tools (Homebrew/APT/Scoop depending on OS)
-make install  # Install project language dependencies
-```
-
-### On-Demand Module Installation
-
-By default, `make setup` installs only commonly-used tools. For specialized tools, install them explicitly:
+All tools and dependencies are managed and installed via UniRTM.
 
 ```bash
-# Install SQL linting tools (when working with .sql files)
-make setup sql
-
-# Install API contract tools (when working with OpenAPI/Swagger specs)
-make setup openapi
-
-# Install Protobuf tools (when working with .proto files)
-make setup protobuf
-
-# Install task runners (when using Taskfile or justfile)
-make setup runners
-
-# Install multiple modules at once
-make setup sql openapi protobuf
+unirtm install  # Install all configured development tools and dependencies
 ```
-
-These tools are automatically detected and installed when relevant files exist in your project.
 
 ## Quality Gates
 
@@ -53,8 +31,6 @@ make clean    # Remove build artifacts and temporary files
 | Target    | Description                                                |
 | --------- | ---------------------------------------------------------- |
 | `help`    | Show all available targets and their descriptions          |
-| `setup`   | Install system tools (cross-platform: macOS/Linux/Windows) |
-| `install` | Install project dependencies                               |
 | `lint`    | Run all pre-commit hooks against all files                 |
 | `format`  | Auto-format all source files                               |
 | `test`    | Execute test suite                                         |

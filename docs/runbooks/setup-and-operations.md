@@ -43,8 +43,7 @@ behavioral rules distributed to 50+ IDEs via a symlink/redirect pattern.
 git clone <repo-url>
 cd <repo>
 git config core.ignorecase false   # MANDATORY on macOS/Windows
-make setup                          # installs mise + core tools
-make install                        # installs project dependencies (Node, Python venv)
+unirtm install                      # installs tools and project dependencies
 make verify                         # validates everything is green
 ```
 
@@ -113,7 +112,7 @@ make lint 2>&1 | grep -A5 "error\|failed"
 
 ### Pre-commit Hook Fails on macOS
 
-**Symptom**: `make install` completes but hooks fail with Python/binary not found errors.
+**Symptom**: `unirtm install` completes but hooks fail with Python/binary not found errors.
 
 **Diagnosis**:
 
@@ -128,7 +127,7 @@ pre-commit --version
 ```bash
 # Rebuild the venv
 rm -rf .venv
-make install
+unirtm install
 ```
 
 ---
@@ -165,8 +164,8 @@ find . -xtype l   # list broken symlinks
 **Solution**:
 
 ```bash
-# Re-initialize symlinks
-make setup
+# Re-initialize environment
+unirtm install
 ```
 
 ---
@@ -189,8 +188,7 @@ make setup
 git stash                    # save local changes
 git checkout main            # switch to main
 git pull origin main         # fetch latest
-make setup                   # re-initialize toolchain
-make install                 # re-install dependencies
+unirtm install               # re-install tools and dependencies
 make verify                  # confirm clean state
 ```
 

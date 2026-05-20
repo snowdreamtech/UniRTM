@@ -35,10 +35,10 @@ Invoke with `/snowdreamtech.init` in any AI IDE.
 - Checks all required tools are available on `PATH`
 - Reports any missing or misconfigured tools
 
-## Equivalent Makefile Command
+## Equivalent Command
 
 ```bash
-make setup
+unirtm install
 ```
 
 ## Manual Steps (if needed)

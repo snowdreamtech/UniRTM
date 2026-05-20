@@ -213,15 +213,13 @@ main() {
 
   # 9. Automated Environment Setup
   if [ "${DRY_RUN:-0}" -eq 0 ] && [ "${_IS_TOP_LEVEL:-}" = "true" ] && [ "${_AUTO_CON_HYD:-0}" -eq 0 ]; then
-    printf "\n%bWould you like to run 'make setup' and 'make install' now? (y/N): %b" "${YELLOW:-}" "${NC:-}"
+    printf "\n%bWould you like to run 'unirtm install' now? (y/N): %b" "${YELLOW:-}" "${NC:-}"
     local _DO_SETUP_HYD
     read -r _DO_SETUP_HYD
     case "${_DO_SETUP_HYD:-}" in
     [yY]*)
-      log_info "\nRunning 'make setup'..."
-      make setup
-      log_info "\nRunning 'make install'..."
-      make install
+      log_info "\nRunning 'unirtm install'..."
+      unirtm install
       ;;
     *) ;;
     esac

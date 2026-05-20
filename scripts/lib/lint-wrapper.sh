@@ -228,7 +228,7 @@ main() {
       exit 1
     fi
     log_warn "⚠️  ${_LINTER_WRAP:-} not found locally. Skipping linting for this module."
-    log_info "💡 Run 'make setup' to install required tools."
+    log_info "💡 Run 'unirtm install' to install required tools."
     exit 0
   fi
 

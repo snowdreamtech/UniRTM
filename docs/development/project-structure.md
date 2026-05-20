@@ -119,8 +119,7 @@ UniRTM/
 
 ### Makefile Targets
 
-- `make setup` - Install system-level development tools
-- `make install` - Install project-level dependencies
+- `unirtm install` - Install all development tools and dependencies
 - `make build` - Build project artifacts
 - `make test` - Run test suite
 - `make lint` - Run linters
@@ -147,7 +146,7 @@ goimports -w .
 
 ## Development Workflow
 
-1. **Setup**: `make setup && make install`
+1. **Setup**: `unirtm install`
 2. **Develop**: Write code following Go conventions
 3. **Format**: Auto-format on save (goimports)
 4. **Lint**: `make lint` (runs pre-commit hooks)

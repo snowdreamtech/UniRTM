@@ -31,10 +31,9 @@ The CI pipeline (`.github/workflows/lint.yml`) acts as the ultimate gatekeeper a
 
 ### 3. Cross-Platform Delegation (Windows Support)
 
-To maintain a single source of truth for tool installation (`scripts/setup.sh`) across Linux, macOS, and Windows:
+To maintain a single source of truth for tool installation across Linux, macOS, and Windows:
 
-- Windows setup (`scripts/setup.ps1` -> `scripts/setup.bat`) acts purely as a delegation chain. It searches for a POSIX-compliant shell (e.g., Git Bash) and passes execution to `setup.sh`.
-- `setup.sh` handles dynamic OS/Architecture detection (e.g., downloading `.zip` or `.exe` releases for Windows binaries like `tflint` and `kube-linter` directly) to ensure absolute cross-platform parity.
+- Tool installation is managed via `unirtm install` which handles dynamic OS/Architecture detection to ensure absolute cross-platform parity.
 
 ## Consequences
 
@@ -42,7 +41,7 @@ To maintain a single source of truth for tool installation (`scripts/setup.sh`) 
 
 - **Developer Velocity:** Local commits remain lightning fast (typically sub-second) since heavy analysis is deferred.
 - **Uncompromised Quality:** The CI pipeline guarantees that no code is merged without passing industry-standard deep static analysis (`golangci-lint`, `hadolint`).
-- **Zero Configuration:** Developers across Windows, macOS, and Linux can simply run `make setup` or `pnpm install` and immediately receive identical local protection shields without manual intervention.
+- **Zero Configuration:** Developers across Windows, macOS, and Linux can simply run `unirtm install` and immediately receive identical local protection shields without manual intervention.
 
 ### Negative
 

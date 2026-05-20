@@ -2,14 +2,14 @@
 # Purpose: Unified entry point for cross-platform project orchestration and developer governance.
 # Design:
 #   - POSIX-compliant shell delegation with Windows-specific Batch abstractions.
-#   - Standardized lifecycle targets: init -> setup -> install -> verify -> audit.
+#   - Standardized lifecycle targets: init -> unirtm install -> verify -> audit.
 #   - "World Class" AI documentation style (English-only technical metadata).
 
 # =============================================================================
 # Global Options
 # =============================================================================
 # Verbosity level: 0 (quiet), 1 (normal), 2 (verbose)
-# Supports: make setup VERBOSE=2 or make setup V=2
+# Supports: unirtm install --verbose or V=2
 V ?= 1
 VERBOSE ?= $(V)
 export VERBOSE
@@ -72,7 +72,7 @@ GIT_BRANCH      := $(shell git branch --show-current 2>/dev/null || echo "not a 
 # =============================================================================
 # Targets
 # =============================================================================
-.PHONY: all help init setup lint format test build clean commit verify release env update audit bench docs archive-changelog check-env sync-docs precommit license-add license-check gen-dependabot sync-harden-runner update-tools
+.PHONY: all help init lint format test build clean commit verify release env update audit bench docs archive-changelog check-env sync-docs precommit license-add license-check gen-dependabot sync-harden-runner update-tools
 
 # Default target: display help
 all: help
@@ -93,13 +93,6 @@ ifeq ($(OS_NAME),Windows)
 	@scripts/init-project.bat $(SCRIPT_ARGS) $(ARGS)
 else
 	@sh scripts/init-project.sh $(SCRIPT_ARGS) $(ARGS)
-endif
-
-setup: ## Install system-level development tools
-ifeq ($(OS_NAME),Windows)
-	@scripts/setup.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/setup.sh $(SCRIPT_ARGS) $(ARGS)
 endif
 
 

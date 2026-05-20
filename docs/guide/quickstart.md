@@ -56,10 +56,9 @@ This triggers the AI agent to:
 Follow the standardized sequence for a robust environment:
 
 ```bash
-make init     # Step 1: Hydrate project from template
-make setup    # Step 2: Install system-level tools (binaries)
-make install  # Step 3: Install project dependencies & hooks
-make verify   # Step 4: Run comprehensive health check
+make init        # Step 1: Hydrate project from template
+unirtm install   # Step 2: Install all tools, dependencies & hooks
+make verify      # Step 3: Run comprehensive health check
 ```
 
 ## Step 4: Open in DevContainer

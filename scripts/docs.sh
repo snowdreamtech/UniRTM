@@ -104,7 +104,7 @@ main() {
     _VITEPRESS_BIN=$(resolve_bin "vitepress" "${DOCS_DIR:-}/node_modules/.bin") || true
 
     if [ -z "${_VITEPRESS_BIN:-}" ]; then
-      log_error "Error: vitepress not found. Please run 'make setup' first."
+      log_error "Error: vitepress not found. Please run 'unirtm install' first."
       exit 1
     fi
   fi

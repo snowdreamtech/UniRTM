@@ -6,8 +6,7 @@
 #
 # Purpose:
 #   Tests complete setup flows including:
-#   - make setup executes without hangs
-#   - make install completes successfully
+#   - unirtm install executes without hangs
 #   - make verify validates installation
 #
 # Requirements: 5.2, 8.1

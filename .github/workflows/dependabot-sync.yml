@@ -89,13 +89,13 @@ jobs:
       - name: "🚀 Initialize Development Environment"
         shell: sh
         run: |
-          make setup
+          unirtm install
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
       - name: "🩺 Verify Environment Health"
         shell: sh
-        # Run in a separate step so GITHUB_PATH entries written by make setup
+        # Run in a separate step so GITHUB_PATH entries written by unirtm install
         # (mise shims) are visible in this step's PATH.
         run: |
           make check-env

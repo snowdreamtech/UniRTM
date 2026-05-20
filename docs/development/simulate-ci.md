@@ -133,8 +133,8 @@ env CI=true GITHUB_ACTIONS=true make audit
 # 启用 CI 模式
 source scripts/simulate-ci.sh
 
-# 测试 setup 脚本（CI 模式下会严格验证）
-make setup
+# 测试工具安装（CI 模式下会严格验证）
+unirtm install
 
 # 检查是否所有工具都正确安装
 make verify

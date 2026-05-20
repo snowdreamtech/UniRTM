@@ -141,8 +141,8 @@ simulate_ci_environment() {
   echo "# - mise cache: $_G_MISE_LS_JSON_CACHE" >&3
   echo "# - mise/shims in PATH: $(echo "$PATH" | grep -c 'mise/shims' || echo '0')" >&3
 
-  # Install gitleaks via mise (simulating make setup)
-  echo "# Installing gitleaks via mise..." >&3
+  # Install gitleaks via unirtm (simulating unirtm install)
+  echo "# Installing gitleaks via unirtm..." >&3
   run run_mise install gitleaks
 
   # Log installation result

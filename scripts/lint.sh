@@ -60,7 +60,7 @@ run_pre_commit_lint() {
       log_warn "DRY-RUN: pre-commit not found. Using placeholder for preview."
       _PRE_COMMIT_LNT="pre-commit"
     else
-      log_error "Error: pre-commit not found. Please run 'make setup' first."
+      log_error "Error: pre-commit not found. Please run 'unirtm install' first."
       exit 1
     fi
   fi
@@ -153,7 +153,7 @@ main() {
       printf "\n%bRecommended Actions:%b\n" "${YELLOW:-}" "${NC:-}"
       printf "  - Review the errors above and fix them manually.\n"
       printf "  - Some issues cannot be auto-fixed and require manual intervention.\n"
-      printf "  - Run %bmake setup%b if tools are missing.\n" "${GREEN:-}" "${NC:-}"
+      printf "  - Run %bunirtm install%b if tools are missing.\n" "${GREEN:-}" "${NC:-}"
     fi
   fi
 

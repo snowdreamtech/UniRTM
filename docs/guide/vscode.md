@@ -21,7 +21,7 @@ Access via `Terminal` → `Run Task`:
 | `🔧 make: format`    | `make format`   |
 | `🔧 make: test`      | `make test`     |
 | `🔧 make: build`     | `make build`    |
-| `🔧 make: setup`     | `make setup`    |
+| `🔧 unirtm: install`  | `unirtm install` |
 | `🌐 web: dev server` | `npm run dev`   |
 | `🏗️ web: build`      | `npm run build` |
 

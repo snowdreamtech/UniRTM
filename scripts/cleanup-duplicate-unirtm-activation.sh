@@ -9,7 +9,7 @@
 # Usage:
 #   sh scripts/cleanup-duplicate-unirtm-activation.sh [--dry-run]
 #
-# This script fixes the issue where multiple 'make setup' runs created
+# This script fixes the issue where multiple setup runs created
 # duplicate unirtm activation lines in shell configuration files.
 
 set -eu

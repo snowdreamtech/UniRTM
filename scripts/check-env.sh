@@ -776,7 +776,7 @@ main() {
     exit 0
   elif [ "${CORE_HEALTHY_ST:-0}" -eq 0 ]; then
     log_warn "\n🛠️  Environment is FUNCTIONAL but has warnings (missing recommended/optional tools)."
-    log_warn "💡 Run 'unirtm run setup' to address the warnings above."
+    log_warn "💡 Run 'unirtm install' to address the warnings above."
     exit 0
   else
     log_error "\n❌ Environment is BROKEN. Critical tools or files are missing."

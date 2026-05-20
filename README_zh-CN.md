@@ -84,10 +84,8 @@ graph TD
 
 ### 快速开始
 
-1. **前提条件**：推荐安装 [mise](https://mise.jdx.dev/) 以实现全局工具管理（脚本会在 setup 阶段自动引导安装）。
-2. **初始化**：`make setup`（引导安装 mise 及核心工具）。
-3. **安装**：`make install`（同步项目依赖）。
-4. **验证**：`make verify`（确保环境健康）。
+1. **初始化与安装**：`unirtm install`（安装开发所需核心工具与项目依赖）。
+2. **验证**：`make verify`（确保环境健康）。
 
 ### 配置参考
 
@@ -127,15 +125,15 @@ project-root/
 
 ### 故障排除
 
-- **问题**: `make install` 在 Windows 上失败。
+- **问题**: `unirtm install` 在 Windows 上失败。
   - **诊断**: 检查 `ExecutionPolicy` 是否允许脚本执行。
   - **解决方案**: 运行 `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`。
 - **问题**: Gitleaks 检测到误报。
   - **诊断**: 检查 `.gitleaks.toml` 白名单。
   - **解决方案**: 将特征码添加到 `.gitleaksignore`。
-- **问题**: `make install` 后，macOS 上的 Pre-commit 钩子出现 Python 报错。
+- **问题**: `unirtm install` 后，macOS 上的 Pre-commit 钩子出现 Python 报错。
   - **诊断**: 检查 venv 是否存在：`ls .venv/bin/python`。
-  - **解决方案**: 重建 venv：`rm -rf .venv && make install`。
+  - **解决方案**: 重建 venv：`rm -rf .venv && unirtm install`。
 
 ---
 
@@ -193,8 +191,7 @@ project-root/
 git clone <repo>
 cd <repo>
 git config core.ignorecase false  # Mac/Windows 用户必须执行此设置
-make setup
-make install
+unirtm install
 ```
 
 ### 参考资料

@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-The template's shell scripts (`scripts/setup.sh`, `scripts/lib/`, etc.) form the backbone of the
+The template's shell scripts (under scripts/, scripts/lib/, etc.) form the backbone of the
 automated developer experience across all platforms. Without guiding principles, automation scripts
 tend to degrade into fragile, poorly observable, incompatible black boxes that fail silently and in
 opaque ways.
@@ -22,7 +22,7 @@ scripts in `scripts/`:
 
 ### Principle 1: Idempotency
 
-Every script MUST be safely re-executable without side effects or errors. Running `make setup` ten
+Every script MUST be safely re-executable without side effects or errors. Running `unirtm install` ten
 times must produce the same result as running it once. This means:
 
 - Tools are only installed if not already present at the required version.
@@ -35,7 +35,7 @@ Scripts MUST run identically across all three target OS families without manual 
 
 - **macOS**: Homebrew (primary), MacPorts (fallback).
 - **Linux**: Debian/Ubuntu (`apt-get`), RedHat/Fedora (`dnf`/`yum`), Alpine (`apk`).
-- **Windows**: Via delegation chain (`setup.bat` → `setup.ps1` → Git Bash → `setup.sh`).
+- **Windows**: Native support.
 
 The OS and CPU architecture are detected dynamically at runtime. No function may hard-code a
 platform-specific path or binary name without a corresponding runtime guard.
@@ -93,9 +93,9 @@ Maintain separate scripts for macOS, Linux, and Windows with no shared code.
 Use a higher-level language (Python or Node.js) for all automation to gain native cross-platform
 support and richer libraries.
 
-- **Reason rejected:** Requires Python or Node.js to be pre-installed before `make setup` can run,
-  creating a bootstrapping paradox. POSIX shell is universally available on all target platforms and
-  has zero external dependencies.
+- **Reason rejected:** Requires Python or Node.js to be pre-installed before `unirtm install` can run,
+  creating a bootstrapping paradox. POSIX shell and compiled binaries are universally available on all target platforms and
+  have zero external dependencies.
 
 ### Option C: Makefile-only Automation
 

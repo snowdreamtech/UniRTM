@@ -2,16 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "🛠️ setup: Install system tools",
+      "label": "🛠️ install: Install all tools & dependencies",
       "type": "shell",
-      "command": "make setup",
-      "group": "build",
-      "problemMatcher": []
-    },
-    {
-      "label": "🫐 install: Install dependencies",
-      "type": "shell",
-      "command": "make install",
+      "command": "unirtm install",
       "group": "build",
       "problemMatcher": []
     },
