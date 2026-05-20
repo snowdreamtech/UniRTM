@@ -15,16 +15,21 @@ import (
 )
 
 // trustCmd represents the trust command
+var (
+	trustList bool
+)
+
 var trustCmd = &cobra.Command{
 	Use:   "trust [path]",
 	Short: "Mark a configuration file as trusted",
 	Long: `Marks a configuration file (like unirtm.toml) as trusted.
 Trusted files are allowed to be automatically loaded and their environment variables applied.
-If no path is provided, it lists all currently trusted configuration files.`,
+If no path is provided, it automatically trusts the configuration file in the current directory.
+Use --list to view all currently trusted configuration files.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		trustManager := config.NewTrustManager()
 
-		if len(args) == 0 {
+		if trustList {
 			// List all trusted files
 			trusted, err := trustManager.List()
 			if err != nil {
@@ -66,7 +71,11 @@ If no path is provided, it lists all currently trusted configuration files.`,
 			return
 		}
 
-		path := args[0]
+		path := resolveConfigFilePath(false)
+		if len(args) > 0 {
+			path = args[0]
+		}
+		
 		absPath, err := filepath.Abs(path)
 		if err != nil {
 			absPath = path
@@ -96,5 +105,6 @@ If no path is provided, it lists all currently trusted configuration files.`,
 }
 
 func init() {
+	trustCmd.Flags().BoolVarP(&trustList, "list", "l", false, "list all trusted configuration files")
 	rootCmd.AddCommand(trustCmd)
 }
