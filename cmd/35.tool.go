@@ -305,8 +305,8 @@ func runTool(cmd *cobra.Command, args []string) error {
 	
 	rows := pterm.TableData{
 		{"Backend", pterm.FgMagenta.Sprint(info.Backend)},
-		{"Install dir", info.InstallDir},
-		{"Shim", info.ShimPath},
+		{"Install dir", pterm.FgLightCyan.Sprint(info.InstallDir)},
+		{"Shim", pterm.FgLightCyan.Sprint(info.ShimPath)},
 	}
 
 	if info.Description != "" {
