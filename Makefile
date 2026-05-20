@@ -72,7 +72,7 @@ GIT_BRANCH      := $(shell git branch --show-current 2>/dev/null || echo "not a 
 # =============================================================================
 # Targets
 # =============================================================================
-.PHONY: all help init setup install lint format test build clean commit verify release env update audit bench docs archive-changelog check-env sync-docs precommit license-add license-check gen-dependabot sync-harden-runner update-tools
+.PHONY: all help init setup lint format test build clean commit verify release env update audit bench docs archive-changelog check-env sync-docs precommit license-add license-check gen-dependabot sync-harden-runner update-tools
 
 # Default target: display help
 all: help
@@ -102,12 +102,7 @@ else
 	@sh scripts/setup.sh $(SCRIPT_ARGS) $(ARGS)
 endif
 
-install: setup ## Install project-level dependencies (pip, npm)
-ifeq ($(OS_NAME),Windows)
-	@scripts/install.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/install.sh $(SCRIPT_ARGS) $(ARGS)
-endif
+
 
 lint: ## Run standardized linter (pre-commit)
 ifeq ($(OS_NAME),Windows)
