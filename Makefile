@@ -72,28 +72,16 @@ GIT_BRANCH      := $(shell git branch --show-current 2>/dev/null || echo "not a 
 # =============================================================================
 # Targets
 # =============================================================================
-.PHONY: all help init lint verify audit docs archive-changelog gen-dependabot sync-harden-runner license-add license-check
+.PHONY: all help lint verify audit gen-dependabot sync-harden-runner license-add license-check
 
 # Default target: display help
 all: help
 
 help: ## Show this help message
-	@printf "$(BLUE)Snowdream Tech AI IDE Template$(NC) ($(GREEN)v$(PROJECT_VERSION)$(NC))\n"
-	@printf "%-16s $(GREEN)$(OS_NAME)$(NC) ($(ARCH_NAME))\n" "Detected OS:"
-	@printf "%-16s $(GREEN)$(SHELL_NAME)$(NC)\n" "Current Shell:"
-	@printf "%-16s $(GREEN)$(GIT_BRANCH)$(NC)\n\n" "Git Branch:"
-	@printf "$(YELLOW)Usage:$(NC)\n"
-	@printf "  make $(GREEN)<target>$(NC) [ARGS=\"...\"] [V=1|2] [VARIABLE=value]\n\n"
-	@printf "$(YELLOW)Main Lifecycle Targets:$(NC)\n"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-18s$(NC) %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
 
 # Lifecycle Targets
-init: ## Hydrate project from template (rename placeholders)
-ifeq ($(OS_NAME),Windows)
-	@scripts/init-project.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/init-project.sh $(SCRIPT_ARGS) $(ARGS)
-endif
 
 lint: ## Run standardized linter (pre-commit)
 ifeq ($(OS_NAME),Windows)
@@ -129,7 +117,7 @@ license-check: ## Check for missing license headers
 		\( -path "*/vendor/*" -o -path "*/node_modules/*" -o -path "*/dist/*" -o -path "*/build/*" \) -prune -o \
 		-type f \( -name "*.go" -o -name "*.sh" -o -name "*.py" -o -name "*.js" -o -name "*.mjs" -o -name "*.ts" -o -name "*.tsx" -o -name "*.jsx" -o -name "*.vue" -o -name "*.svelte" -o -name "*.astro" -o -name "*.java" -o -name "*.kt" -o -name "*.swift" -o -name "*.m" -o -name "*.mm" -o -name "*.c" -o -name "*.cpp" -o -name "*.cc" -o -name "*.h" -o -name "*.hpp" -o -name "*.rs" -o -name "*.rb" -o -name "*.php" -o -name "*.cs" -o -name "*.fs" -o -name "*.dart" -o -name "*.rego" -o -name "*.proto" -o -name "*.tf" -o -name "*.tfvars" -o -name "*.kcl" -o -name "*.pkl" -o -name "*.cue" \) -print 2>/dev/null)
 
-docs: ## Documentation site manager (dev/build/preview)
+
 ifeq ($(OS_NAME),Windows)
 	@scripts/docs.bat $(SCRIPT_ARGS) $(ARGS)
 else
@@ -150,7 +138,7 @@ else
 	@sh scripts/sync-harden-runner.sh $(SCRIPT_ARGS) $(ARGS)
 endif
 
-archive-changelog: ## Archive major-version changelog entries
+
 ifeq ($(OS_NAME),Windows)
 	@scripts/archive-changelog.bat $(SCRIPT_ARGS) $(ARGS)
 else

@@ -12,11 +12,9 @@ Our project uses a standardized environment targeting **Node.js 22** and **Pytho
 
 To set up your local development environment, follow the unified sequence:
 
-1. **Initialize**: `make init` (Hydrate project branding)
 2. **Setup & Install**: `unirtm install` (Install development tools and activate git hooks)
 3. **Verify**: `make verify` (Final project health check)
 
-Run `make help` for a complete automation matrix.
 
 ### 2. General Workflow
 

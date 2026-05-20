@@ -34,7 +34,6 @@ project-root/
 ├── ... (50+ more)
 │
 ├── scripts/
-│   └── init-project.sh       # 💧 Project hydration / instantiation script
 │
 ├── docs/                     # 📖 VitePress documentation site (this site)
 │

@@ -31,10 +31,6 @@ jobs = 0
 data_dir = ''
 
 [tasks]
-[tasks.archive-changelog]
-description = 'Archive major-version changelog entries'
-run = 'sh scripts/archive-changelog.sh'
-
 [tasks.audit]
 description = 'Run security audit and vulnerability scans'
 run = 'sh scripts/audit.sh'
@@ -43,18 +39,10 @@ run = 'sh scripts/audit.sh'
 
 
 
-[tasks.docs]
-description = 'Documentation site manager (dev/build/preview)'
-run = 'sh scripts/docs.sh'
-
 
 [tasks.gen-dependabot]
 description = 'Auto-generate dependabot.yml from detected ecosystems'
 run = 'sh scripts/gen-dependabot.sh'
-
-[tasks.init]
-description = 'Hydrate project from template (rename placeholders)'
-run = 'sh scripts/init-project.sh'
 
 [tasks.license-add]
 description = 'Add license headers to core source files (Safe Mode)'

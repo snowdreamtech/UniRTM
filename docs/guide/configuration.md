@@ -5,7 +5,6 @@
 After cloning from the template, run the hydration script to replace all placeholder values:
 
 ```bash
-bash scripts/init-project.sh
 ```
 
 The script walks you through:

@@ -117,7 +117,7 @@ jobs:
         shell: sh
         run: |
           # executes the documentation manager to install dependencies and build site.
-          make docs ARGS="build"
+          npx vitepress build docs
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 

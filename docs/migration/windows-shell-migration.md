@@ -92,8 +92,6 @@ Windows Terminal provides a modern terminal experience.
 | `.\scripts\setup.ps1`        | `./scripts/setup.sh`       |
 | `scripts\setup.bat`          | `./scripts/setup.sh`       |
 | `scripts\test.bat`           | `./scripts/test.sh`        |
-| `.\scripts\docs.ps1`         | `./scripts/docs.sh`        |
-| `scripts\docs.bat`           | `./scripts/docs.sh`        |
 
 **Pattern**: Replace `.\scripts\<name>.ps1` or `scripts\<name>.bat` with `./scripts/<name>.sh`
 

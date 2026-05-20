@@ -1,6 +1,6 @@
 # Makefile Commands
 
-All common tasks are unified under `make`. Run `make help` to see all available targets.
+All common tasks are unified under `make`.
 
 ## Setup & Installation
 

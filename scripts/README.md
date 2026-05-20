@@ -79,9 +79,6 @@ sh scripts/verify.sh
 | `lint.sh`              | Run linters and fixers        | pre-commit, auto-fix          |
 | `test.sh`              | Execute test suites           | bats, pytest, vitest          |
 | `audit.sh`             | Security & vulnerability scan | gitleaks, osv-scanner         |
-| `docs.sh`              | Manage documentation site     | vitepress                     |
-| `init-project.sh`      | Rebrand template              | placeholders, git init        |
-| `archive-changelog.sh` | Archive old versions          | major version rotation        |
 
 ### Workflow Patterns
 

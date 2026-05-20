@@ -80,9 +80,6 @@ sh scripts/verify.sh
 | `lint.sh`              | 执行代码静态检查   | pre-commit, 自动修复         |
 | `test.sh`              | 执行测试套件       | bats, pytest, vitest         |
 | `audit.sh`             | 安全与脆弱性扫描   | gitleaks, osv-scanner        |
-| `docs.sh`              | 文档网站管理       | vitepress                    |
-| `init-project.sh`      | 修改模板品牌       | 占位符替换、git 初始化       |
-| `archive-changelog.sh` | 归档旧版本         | 主版本更迭轮转               |
 
 ### 工作流模式
 

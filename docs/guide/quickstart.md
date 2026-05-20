@@ -23,7 +23,6 @@ git config core.ignorecase false  # MANDATORY for Mac/Windows
 Run the project hydration script to replace template placeholders with your project's actual identity:
 
 ```bash
-bash scripts/init-project.sh
 ```
 
 This will interactively prompt for:
@@ -56,7 +55,6 @@ This triggers the AI agent to:
 Follow the standardized sequence for a robust environment:
 
 ```bash
-make init        # Step 1: Hydrate project from template
 unirtm install   # Step 2: Install all tools, dependencies & hooks
 make verify      # Step 3: Run comprehensive health check
 ```
@@ -84,5 +82,4 @@ make lint    # Run all linters
 ```
 
 ::: tip
-Run `make help` to see all available commands.
 :::

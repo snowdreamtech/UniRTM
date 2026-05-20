@@ -240,7 +240,6 @@ To maintain consistency and high quality, developers and AI agents MUST follow t
 
 Follow this order when setting up a new repository or onboarding to a new machine:
 
-1. **make init**: Hydrate the project and set identity.
 2. **unirtm install**: Install all toolchains, project dependencies, and activate git hooks.
 3. **make verify**: Perform a final comprehensive health and quality check.
 
