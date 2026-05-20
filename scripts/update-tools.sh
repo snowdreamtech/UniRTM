@@ -192,7 +192,7 @@ run_upgrade() {
   if [ "${_UPDATED_COUNT:-}" -gt 0 ]; then
     if [ "${DRY_RUN:-0}" -eq 0 ]; then
       log_success "\n✅ Successfully updated ${_UPDATED_COUNT:-} tool(s) across registry and config."
-      log_info "💡 Next: Run 'make sync-lock' to update cryptographic hashes."
+      log_info "💡 Next: Run 'unirtm lock' to update cryptographic hashes."
     else
       log_info "\n[DRY-RUN] Process completed. ${_UPDATED_COUNT:-} tool(s) have pending updates."
     fi

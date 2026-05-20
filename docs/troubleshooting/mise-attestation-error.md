@@ -2,7 +2,7 @@
 
 ## 问题描述
 
-在运行 `make sync-lock` 或 `mise install` 时，可能会遇到以下错误：
+在运行 `unirtm lock` 或 `mise install` 时，可能会遇到以下错误：
 
 ```
 mise ERROR github:astral-sh/ruff@0.15.10 has no provenance verification on linux-x64-musl,
@@ -139,7 +139,7 @@ MISE_VERBOSE=1 mise install github:astral-sh/ruff@0.15.10 2>&1 | grep -i "aqua\|
 
 ```bash
 export MISE_SKIP_CHECKSUM=1
-make sync-lock
+unirtm lock
 ```
 
 **警告**: 这会跳过所有完整性验证，存在安全风险。

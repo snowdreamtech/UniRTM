@@ -119,7 +119,7 @@ jobs:
         shell: sh
         run: |
           make update-tools
-          make sync-lock
+          unirtm lock
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 

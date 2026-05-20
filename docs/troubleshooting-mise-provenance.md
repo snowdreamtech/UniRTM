@@ -2,7 +2,7 @@
 
 ## Problem
 
-When running `make sync-lock` or `mise lock`, you may encounter an error like:
+When running `unirtm lock` or `mise install`, you may encounter an error like:
 
 ```
 mise ERROR github:astral-sh/ruff@0.15.9 has no provenance verification on macos-x64,
@@ -22,7 +22,7 @@ The issue is caused by stale cached metadata in mise's cache directory. When mis
 
 ## Solution
 
-Clear the mise cache before synchronizing the lockfile. This has been implemented in `scripts/sync-lock.sh`:
+Clear the mise cache before synchronizing the lockfile.
 
 ```sh
 # Clear mise cache to avoid stale provenance verification data
@@ -52,8 +52,7 @@ gh attestation verify <file-path> --repo astral-sh/ruff
 
 The fix is now automated in the CI/CD pipeline:
 
-- The "🔄 Sync Dependabot Config" workflow runs `make sync-lock`
-- `scripts/sync-lock.sh` automatically clears the cache before locking
+- The "🔄 Sync Dependabot Config" workflow runs `unirtm lock`
 - This prevents stale provenance verification errors
 
 ## Related Issues
