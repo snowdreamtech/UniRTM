@@ -482,13 +482,14 @@ GITHUB_PROXY="${GITHUB_PROXY:-https://gh-proxy.sn0wdr1am.com/}"
 
 # ── 🔨 SSoT Tool Versions ────────────────────────────────────────────────────
 
-# Source version registry
+# Source version registry (optional — versions are now managed via .unirtm.toml)
 # shellcheck source=/dev/null
-. "${_G_LIB_DIR:-${_G_PROJECT_ROOT:-}/scripts/lib}/versions.sh"
+if [ -f "${_G_LIB_DIR:-${_G_PROJECT_ROOT:-}/scripts/lib}/versions.sh" ]; then
+  . "${_G_LIB_DIR:-${_G_PROJECT_ROOT:-}/scripts/lib}/versions.sh"
+fi
 
-# Runtime versions (Managed via .unirtm.toml, but some logic might still reference these for bootstrap purposes)
-# Only unirtm is hardcoded here to facilitate the zero-dependency bootstrap phase.
-UNIRTM_VERSION="${UNIRTM_VERSION:-${VER_UNIRTM:-}}"
+# Runtime versions (Managed via .unirtm.toml)
+UNIRTM_VERSION="${UNIRTM_VERSION:-}"
 
 # Note: All other tools (Gitleaks, Shellcheck, Shfmt, Java Format, etc.) are purely managed
 # by the project's .unirtm.toml file. Do not add hardcoded version variables here.
@@ -504,7 +505,9 @@ export _G_LIB_DIR
 # ── 🪄 UniRTM Bootstrap ────────────────────────────────────────────────────────
 # Logic extracted to ./lib/bootstrap.sh
 # shellcheck source=/dev/null
-. "${_G_LIB_DIR:-}/bootstrap.sh"
+if [ -f "${_G_LIB_DIR:-}/bootstrap.sh" ]; then
+  . "${_G_LIB_DIR:-}/bootstrap.sh"
+fi
 
 # Purpose: Runs a command with a timeout, handling gtimeout (macOS), timeout (Linux), or Bash fallback.
 # Params:
