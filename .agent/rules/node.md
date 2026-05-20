@@ -39,7 +39,7 @@
 ## 3. Tool Execution (Performance First)
 
 - **Anti-npx Policy**: Avoid `npx` for frequently used tools (lint, format, test). Its startup overhead is significant.
-- **Preferred Method**: Use direct execution of pre-installed binaries (via `make setup` or `npm run <command>`).
+- **Preferred Method**: Use direct execution of pre-installed binaries (via `unirtm install` or `npm run <command>`).
 
 ## 4. Coding Style
 

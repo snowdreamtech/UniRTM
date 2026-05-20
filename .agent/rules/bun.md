@@ -32,7 +32,7 @@
   }
   ```
 
-- Use **`bunx`** (Bun's `npx` equivalent) sparingly and only for one-off commands. For repeated linting/formatting in this project, prefer direct execution after `make setup` for maximum performance.
+- Use **`bunx`** (Bun's `npx` equivalent) sparingly and only for one-off commands. For repeated linting/formatting in this project, prefer direct execution after `unirtm install` for maximum performance.
 
   ```bash
   bunx prisma generate

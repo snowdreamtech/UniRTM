@@ -101,13 +101,13 @@ You **MUST** consider the user input before proceeding (if not empty).
    - Install and activate `pre-commit` hooks to enforce code quality checks before every commit:
 
      ```bash
-     # pre-commit is installed as part of `make setup`
+     # pre-commit is installed as part of `unirtm install`
      pre-commit install --hook-type pre-commit --hook-type pre-merge-commit --hook-type commit-msg
      ```
 
    - **Install Project Dependencies**:
-     Finally, install project-specific node and python packages (e.g., `bats`, `commitizen`):
+     Finally, install all project toolchains and dependencies:
 
      ```bash
-     make install
+     unirtm install
      ```

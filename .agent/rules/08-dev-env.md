@@ -111,7 +111,7 @@
   ```
 
 - Scripts MUST use explicit exit codes (`0` = success, non-zero = failure). Always `set -euo pipefail` (bash) to prevent silent failures.
-- Use cross-platform compatible tooling (`python`, Node.js scripts, or direct binaries via `make setup`) when the project targets Windows contributors. Avoid `npx` startup overhead.
+- Use cross-platform compatible tooling (`python`, Node.js scripts, or direct binaries via `unirtm install`) when the project targets Windows contributors. Avoid `npx` startup overhead.
 
 ## 4. Pre-commit Hooks
 
@@ -204,22 +204,14 @@
 
 ## 6. Onboarding Automation
 
-- Provide a **`scripts/setup.sh` (or `setup.ps1`)** that automates the full onboarding sequence: runtime installation, tool setup, and repository hydration. This project uses a modularized setup script based on a POSIX shell core:
+- Provide a **`scripts/setup.sh` (or `setup.ps1`)** that automates the full onboarding sequence: runtime installation, tool setup, and repository hydration. This project uses `unirtm install` as the unified entry point:
 
   ```bash
-  #!/usr/bin/env sh
-  # scripts/setup.sh - Modularized Project Setup Script
-  . "scripts/lib/common.sh"
-
-  # Standardized entry point supporting multiple modules
-  # sh scripts/setup.sh [module1] [module2] ...
-  install_python_deps
-  install_node_deps
-  install_iac_lint
-  ...
+  # Install all toolchains and project dependencies in one command
+  unirtm install
   ```
 
-- **Modular Setup Principle**: Language-specific setup logic MUST reside in `scripts/lib/langs/` as independent modules. The main `scripts/setup.sh` MUST NOT contain legacy setup functions that override modular logic. This ensures a single source of truth for detection and installation logic.
+- **Unified Install Principle**: All setup, dependency installation, and hook activation are unified under `unirtm install`. Language-specific installation logic is handled transparently by unirtm backends based on `.unirtm.toml` declarations. This eliminates the need for per-language shell script modules and reduces maintenance overhead.
 
 - Track **onboarding time**: periodically measure how long it takes a new developer to go from `git clone` to a passing test run. The target is **≤ 15 minutes**. Failures to meet this SLA MUST be treated as developer experience bugs.
 
@@ -254,15 +246,14 @@ To maintain consistency and high quality, developers and AI agents MUST follow t
 Follow this order when setting up a new repository or onboarding to a new machine:
 
 1. **make init**: Hydrate the project and set identity.
-2. **make setup**: Install required system binaries and global tools.
-3. **make install**: Install project dependencies and activate git hooks.
-4. **make verify**: Perform a final comprehensive health and quality check.
+2. **unirtm install**: Install all toolchains, project dependencies, and activate git hooks.
+3. **make verify**: Perform a final comprehensive health and quality check.
 
 ### Daily Development Loop (日常开发循环)
 
 Follow this iterative cycle for consistent delivery:
 
-1. **make install**: Ensure local dependencies are synchronized with the lockfile.
+1. **unirtm install**: Ensure local dependencies are synchronized with the lockfile.
 2. **make format**: Apply automated formatting before every commit.
 3. **make lint**: Verify code adherence to project rules.
 4. **make test**: Ensure logic integrity.

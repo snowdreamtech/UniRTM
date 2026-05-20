@@ -1,4 +1,4 @@
-- **Virtual Environments REQUIRED**: All development and testing MUST be performed within a virtual environment. Use `make setup` to create and configure the environment (defaulting to `.venv`).
+- **Virtual Environments REQUIRED**: All development and testing MUST be performed within a virtual environment. Use `unirtm install` to create and configure the environment (defaulting to `.venv`).
 - **Dependency Management**: Dev dependencies (linters, testers) MUST be locked in `requirements-dev.txt`.
 
 > Objective: Define standards for modern, clean, and maintainable Python code, covering version management, tooling, type hints, code style, async patterns, and testing.

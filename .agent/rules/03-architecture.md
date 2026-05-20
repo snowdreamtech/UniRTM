@@ -7,7 +7,7 @@
 - **Path Handling**: Always use `path.join()` or equivalent cross-platform path functions. Never hard-code `/` or `\` separators.
 - **Line Endings**: Configure `.gitattributes` to normalize line endings (`* text=auto`). This prevents CRLF/LF conflicts across platforms.
 - **Shell Scripts**: When shell scripts are necessary, provide both `.sh` (Unix/POSIX) and `.ps1` or `.cmd` (Windows) variants, or use cross-platform runners (e.g., `python`, `node`).
-  - **Preferred Method**: Use direct execution of pre-installed binaries (via `make setup`).
+  - **Preferred Method**: Use direct execution of pre-installed binaries (via `unirtm install`).
   - **Local Path**: For project-specific tools, use `npm run <command>` which safely includes `node_modules/.bin` in the path without `npx` overhead.
 - **Environment Variables**:
   - Use `.env` files with a `.env.example` template. Never commit actual `.env.local` files.
@@ -22,7 +22,7 @@
 ## 2. Runtime & Dependency Strategy
 
 - **Runtime Classes**: To balance environment readiness with lean installation, runtimes are classified into two tiers:
-  - **Primary (First-Class)**: **Node.js** and **Python**. These are required for the vast majority of CLI tools, linters, and core automation. They are ALWAYS installed during `make setup`.
+  - **Primary (First-Class)**: **Node.js** and **Python**. These are required for the vast majority of CLI tools, linters, and core automation. They are ALWAYS installed during `unirtm install`.
   - **Secondary (On-Demand)**: **Go**, **Rust**, **Java**, **Swift**, **PHP**, etc. These are installed only when project-specific source files (e.g., `go.mod`, `pom.xml`, `Cargo.toml`) are detected.
 - **Dependency Isolation**: All project-level dependencies MUST be isolated.
   - **Node.js**: Use local `node_modules`.

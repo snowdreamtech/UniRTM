@@ -390,7 +390,7 @@ The `verify_tool_atomic` function uses a **layered resolution strategy** to hand
 When adding new tools:
 
 1. **Use the atomic verification pattern** shown in §7.2
-2. **Test locally first**: Run `make setup` to verify no regressions
+2. **Test locally first**: Run `unirtm install` to verify no regressions
 3. **Test in CI**: Push to a test branch and verify CI passes on all platforms (Linux, macOS, Windows)
 4. **Verify error scenarios**: Temporarily break mise to ensure error handling works correctly
 5. **Commit atomically**: Group related tool fixes together with descriptive commit messages
