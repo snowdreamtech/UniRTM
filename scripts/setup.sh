@@ -36,15 +36,20 @@ SCRIPT_DIR=$(cd "$(dirname "${0:-}")" && pwd)
 . "${SCRIPT_DIR:-}/lib/github-api-info.sh"
 
 # ── Extension Modules Sourcing ───────────────────────────────────────────────
-# Dynamically load all language-specific setup modules.
-# shellcheck source=/dev/null
-for _lang_mod in "${SCRIPT_DIR:-}/lib/langs"/*.sh; do
-  if [ -f "${_lang_mod:-}" ]; then
-    # shellcheck disable=SC1090
-    . "${_lang_mod:-}"
+# Dynamically load language-specific setup modules on demand (Lazy Sourcing).
+_LOADED_SETUP_MODULES=""
+run_setup() {
+  local _suffix="$1"
+  case " ${_LOADED_SETUP_MODULES:-} " in *" ${_suffix} "*) return 0 ;; esac
+  if [ -f "${SCRIPT_DIR:-}/lib/langs/${_suffix}.sh" ]; then
+    # shellcheck source=/dev/null
+    . "${SCRIPT_DIR:-}/lib/langs/${_suffix}.sh"
+    _LOADED_SETUP_MODULES="${_LOADED_SETUP_MODULES:-} ${_suffix}"
+    "setup_${_suffix}"
+  else
+    log_error "Setup module not found: ${_suffix}"
   fi
-done
-unset _lang_mod
+}
 
 # ── Configuration ────────────────────────────────────────────────────────────
 # Global variables (VENV, PYTHON, etc.) are sourced from common.sh
@@ -306,107 +311,107 @@ EOF
 
     # Dispatch to modular setup functions
     case $_cur_module in
-    base) setup_base ;;
-    shell) setup_shell ;;
-    toml) setup_toml ;;
-    yaml) setup_yaml ;;
-    markdown) setup_markdown ;;
-    node) setup_node ;;
-    python) setup_python ;;
-    go) setup_go ;;
-    rust) setup_rust ;;
-    java) setup_java ;;
-    kotlin) setup_kotlin ;;
-    php) setup_php ;;
-    ruby) setup_ruby ;;
-    dart) setup_dart ;;
-    swift) setup_swift ;;
-    lua) setup_lua ;;
-    cpp) setup_cpp ;;
-    terraform) setup_terraform ;;
-    solidity) setup_solidity ;;
-    perl) setup_perl ;;
-    julia) setup_julia ;;
-    r) setup_r ;;
-    groovy) setup_groovy ;;
-    dotnet) setup_dotnet ;;
-    zig) setup_zig ;;
-    elixir) setup_elixir ;;
-    haskell) setup_haskell ;;
-    scala) setup_scala ;;
-    ada) setup_ada ;;
-    assemblyscript) setup_assemblyscript ;;
-    ballerina) setup_ballerina ;;
-    bun) setup_bun ;;
-    clojure) setup_clojure ;;
-    crystal) setup_crystal ;;
-    deno) setup_deno ;;
-    dlang) setup_dlang ;;
-    duckdb) setup_duckdb ;;
-    elm) setup_elm ;;
-    erlang) setup_erlang ;;
-    fortran) setup_fortran ;;
-    fpc) setup_fpc ;;
-    gleam) setup_gleam ;;
-    grain) setup_grain ;;
-    haxe) setup_haxe ;;
-    jsonnet) setup_jsonnet ;;
-    kcl) setup_kcl ;;
-    lean) setup_lean ;;
-    lisp) setup_lisp ;;
-    luau) setup_luau ;;
-    mojo) setup_mojo ;;
-    moonbit) setup_moonbit ;;
-    move) setup_move ;;
-    nim) setup_nim ;;
-    ocaml) setup_ocaml ;;
-    odin) setup_odin ;;
-    pkl) setup_pkl ;;
-    prolog) setup_prolog ;;
-    pulumi) setup_pulumi ;;
-    racket) setup_racket ;;
-    raku) setup_raku ;;
-    rescript) setup_rescript ;;
-    starlark) setup_starlark ;;
-    tcl) setup_tcl ;;
-    tofu) setup_tofu ;;
-    typst) setup_typst ;;
-    vala) setup_vala ;;
-    vcpkg) setup_vcpkg ;;
-    vlang) setup_vlang ;;
-    wat) setup_wat ;;
-    docker) setup_docker ;;
-    sql) setup_sql ;;
-    openapi) setup_openapi ;;
-    protobuf) setup_protobuf ;;
-    security) setup_security ;;
-    runners) setup_runners ;;
-    testing) setup_testing ;;
-    docs) setup_docs ;;
-    ai) setup_ai ;;
-    helm | k8s) setup_helm ;;
-    terragrunt) setup_terragrunt ;;
+    base) run_setup base ;;
+    shell) run_setup shell ;;
+    toml) run_setup toml ;;
+    yaml) run_setup yaml ;;
+    markdown) run_setup markdown ;;
+    node) run_setup node ;;
+    python) run_setup python ;;
+    go) run_setup go ;;
+    rust) run_setup rust ;;
+    java) run_setup java ;;
+    kotlin) run_setup kotlin ;;
+    php) run_setup php ;;
+    ruby) run_setup ruby ;;
+    dart) run_setup dart ;;
+    swift) run_setup swift ;;
+    lua) run_setup lua ;;
+    cpp) run_setup cpp ;;
+    terraform) run_setup terraform ;;
+    solidity) run_setup solidity ;;
+    perl) run_setup perl ;;
+    julia) run_setup julia ;;
+    r) run_setup r ;;
+    groovy) run_setup groovy ;;
+    dotnet) run_setup dotnet ;;
+    zig) run_setup zig ;;
+    elixir) run_setup elixir ;;
+    haskell) run_setup haskell ;;
+    scala) run_setup scala ;;
+    ada) run_setup ada ;;
+    assemblyscript) run_setup assemblyscript ;;
+    ballerina) run_setup ballerina ;;
+    bun) run_setup bun ;;
+    clojure) run_setup clojure ;;
+    crystal) run_setup crystal ;;
+    deno) run_setup deno ;;
+    dlang) run_setup dlang ;;
+    duckdb) run_setup duckdb ;;
+    elm) run_setup elm ;;
+    erlang) run_setup erlang ;;
+    fortran) run_setup fortran ;;
+    fpc) run_setup fpc ;;
+    gleam) run_setup gleam ;;
+    grain) run_setup grain ;;
+    haxe) run_setup haxe ;;
+    jsonnet) run_setup jsonnet ;;
+    kcl) run_setup kcl ;;
+    lean) run_setup lean ;;
+    lisp) run_setup lisp ;;
+    luau) run_setup luau ;;
+    mojo) run_setup mojo ;;
+    moonbit) run_setup moonbit ;;
+    move) run_setup move ;;
+    nim) run_setup nim ;;
+    ocaml) run_setup ocaml ;;
+    odin) run_setup odin ;;
+    pkl) run_setup pkl ;;
+    prolog) run_setup prolog ;;
+    pulumi) run_setup pulumi ;;
+    racket) run_setup racket ;;
+    raku) run_setup raku ;;
+    rescript) run_setup rescript ;;
+    starlark) run_setup starlark ;;
+    tcl) run_setup tcl ;;
+    tofu) run_setup tofu ;;
+    typst) run_setup typst ;;
+    vala) run_setup vala ;;
+    vcpkg) run_setup vcpkg ;;
+    vlang) run_setup vlang ;;
+    wat) run_setup wat ;;
+    docker) run_setup docker ;;
+    sql) run_setup sql ;;
+    openapi) run_setup openapi ;;
+    protobuf) run_setup protobuf ;;
+    security) run_setup security ;;
+    runners) run_setup runners ;;
+    testing) run_setup testing ;;
+    docs) run_setup docs ;;
+    ai) run_setup ai ;;
+    helm | k8s) run_setup helm ;;
+    terragrunt) run_setup terragrunt ;;
     # Legacy/Mapping aliases
-    hadolint | dockerfile-utils) setup_docker ;;
-    sqlfluff) setup_sql ;;
-    markdownlint) setup_markdown ;;
-    yamllint | dotenv-linter) setup_yaml ;;
-    osv-scanner | zizmor | cargo-audit) setup_security ;;
-    spectral) setup_openapi ;;
-    buf) setup_protobuf ;;
-    ghc | stack | cabal) setup_haskell ;;
-    v | v-lang) setup_vlang ;;
-    kt | kts) setup_kotlin ;;
-    py) setup_python ;;
-    ts | js) setup_node ;;
-    rb) setup_ruby ;;
-    pl) setup_perl ;;
-    pipx) setup_base ;;
-    just | task) setup_runners ;;
-    playwright | cypress | vitest | bats | bats-libs) setup_testing ;;
-    docusaurus | mkdocs | sphinx) setup_docs ;;
-    jupyter | dvc) setup_ai ;;
-    cue) setup_cue ;;
+    hadolint | dockerfile-utils) run_setup docker ;;
+    sqlfluff) run_setup sql ;;
+    markdownlint) run_setup markdown ;;
+    yamllint | dotenv-linter) run_setup yaml ;;
+    osv-scanner | zizmor | cargo-audit) run_setup security ;;
+    spectral) run_setup openapi ;;
+    buf) run_setup protobuf ;;
+    ghc | stack | cabal) run_setup haskell ;;
+    v | v-lang) run_setup vlang ;;
+    kt | kts) run_setup kotlin ;;
+    py) run_setup python ;;
+    ts | js) run_setup node ;;
+    rb) run_setup ruby ;;
+    pl) run_setup perl ;;
+    pipx) run_setup base ;;
+    just | task) run_setup runners ;;
+    playwright | cypress | vitest | bats | bats-libs) run_setup testing ;;
+    docusaurus | mkdocs | sphinx) run_setup docs ;;
+    jupyter | dvc) run_setup ai ;;
+    cue) run_setup cue ;;
     *) log_error "Unknown module: $_cur_module" ;;
     esac
   done
