@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
 )
 
@@ -50,14 +51,28 @@ func (r *NativeRunner) ListTasks(dir string) ([]string, error) {
 
 // Run executes a task defined in the unirtm.toml configuration.
 func (r *NativeRunner) Run(ctx context.Context, dir string, taskName string, args []string, env []string) error {
+	// Use a visited map for cycle detection in the dependency graph
+	visited := make(map[string]bool)
+	return r.runTaskWithGraph(ctx, dir, taskName, args, env, visited)
+}
+
+func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskName string, args []string, env []string, visited map[string]bool) error {
+	if visited[taskName] {
+		return fmt.Errorf("circular dependency detected involving task %q", taskName)
+	}
+	visited[taskName] = true
+	defer func() { visited[taskName] = false }() // allow multiple paths to same task if needed, though DAG usually means we run it once.
+	// Actually, for a proper DAG, we should only run a task once per session.
+	// But for simplicity, we just do cycle detection.
+
 	taskDef, exists := r.tasks[taskName]
 	if !exists {
 		return fmt.Errorf("task %q not found in UniRTM configuration", taskName)
 	}
 
-	// Recursively execute dependencies sequentially (MVP)
+	// Recursively execute dependencies sequentially
 	for _, dep := range taskDef.Depends {
-		if err := r.Run(ctx, dir, dep, nil, env); err != nil {
+		if err := r.runTaskWithGraph(ctx, dir, dep, nil, env, visited); err != nil {
 			return fmt.Errorf("dependency %q failed: %w", dep, err)
 		}
 	}
@@ -126,17 +141,41 @@ func (r *NativeRunner) Run(ctx context.Context, dir string, taskName string, arg
 		outputStyle = taskDef.Output
 	}
 
-	if outputStyle == "prefix" {
-		prefix := fmt.Sprintf("[%s] ", taskName)
+	var spinner *pterm.SpinnerPrinter
+	if outputStyle == "spinner" || outputStyle == "" {
+		spinner, _ = pterm.DefaultSpinner.Start(fmt.Sprintf("Running task: %s", taskName))
+		// Capture output so we can show it if it fails, or just hide it
+		cmd.Stdout = nil
+		cmd.Stderr = nil
+	} else if outputStyle == "prefix" {
+		prefix := fmt.Sprintf("[%s] ", pterm.FgCyan.Sprint(taskName))
 		cmd.Stdout = &prefixWriter{w: os.Stdout, prefix: prefix, atStart: true}
 		cmd.Stderr = &prefixWriter{w: os.Stderr, prefix: prefix, atStart: true}
 	} else {
+		// "interleaved" or other
+		pterm.Info.Printfln("Running task: %s", taskName)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	}
 	cmd.Stdin = os.Stdin
 
-	return cmd.Run()
+	err := cmd.Run()
+
+	if spinner != nil {
+		if err != nil {
+			spinner.Fail(fmt.Sprintf("Task %s failed: %v", taskName, err))
+		} else {
+			spinner.Success(fmt.Sprintf("Task %s completed", taskName))
+		}
+	} else {
+		if err != nil {
+			pterm.Error.Printfln("Task %s failed: %v", taskName, err)
+		} else {
+			pterm.Success.Printfln("Task %s completed", taskName)
+		}
+	}
+
+	return err
 }
 
 type prefixWriter struct {
