@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -39,12 +40,14 @@ func init() {
 // Equivalent to `mise prune`.
 var pruneCmd = &cobra.Command{
 	Use:   "prune",
-	Short: "Remove unused (non-latest) tool installations",
+	Short: "Remove unused (non-latest) tool installations and show freed disk space",
 	Long: `Remove unused tool installations to free up disk space.
 
 The prune command identifies tool versions that are installed but are not
 the latest version of their tool, then removes them. The latest installed
 version of each tool is always kept.
+
+After pruning, the total amount of freed disk space is reported.
 
 Examples:
   # Preview what would be pruned (dry-run)
@@ -63,7 +66,8 @@ Examples:
 }
 
 // runPrune executes the prune command.
-// It finds all non-latest tool installations and removes them.
+// It finds all non-latest tool installations and removes them,
+// then reports the total disk space freed.
 func runPrune(cmd *cobra.Command, args []string) error {
 	formatter := output.NewFormatter(output.FormatterOptions{
 		Format:  getOutputFormat(),
@@ -116,14 +120,17 @@ func runPrune(cmd *cobra.Command, args []string) error {
 		tool        string
 		version     string
 		installPath string
+		sizeBytes   int64
 	}
 	var candidates []pruneCandidate
 	for _, inst := range installations {
 		if inst.Version != latestByTool[inst.Tool] {
+			sz, _ := dirSize(inst.InstallPath)
 			candidates = append(candidates, pruneCandidate{
 				tool:        inst.Tool,
 				version:     inst.Version,
 				installPath: inst.InstallPath,
+				sizeBytes:   sz,
 			})
 		}
 	}
@@ -133,11 +140,33 @@ func runPrune(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Show what will be pruned
-	formatter.Info(fmt.Sprintf("Found %d installation(s) to prune:", len(candidates)), nil)
+	// Calculate total size to be freed
+	var totalBytes int64
 	for _, c := range candidates {
-		fmt.Printf("  - %s@%s  (%s)\n", c.tool, c.version, c.installPath)
+		totalBytes += c.sizeBytes
 	}
+
+	// Show a rich table of what will be pruned
+	pterm.DefaultSection.Printfln("Found %d installation(s) to prune  (~%s to free)", len(candidates), formatBytes(totalBytes))
+
+	tableData := pterm.TableData{
+		{"Tool", "Version", "Install Path", "Size"},
+	}
+	for _, c := range candidates {
+		tableData = append(tableData, []string{
+			pterm.FgYellow.Sprint(c.tool),
+			c.version,
+			c.installPath,
+			pterm.FgCyan.Sprint(formatBytes(c.sizeBytes)),
+		})
+	}
+	_ = pterm.DefaultTable.
+		WithHasHeader(true).
+		WithSeparator("  ").
+		WithData(tableData).
+		Render()
+
+	fmt.Printf("\n  Total to free: %s\n\n", pterm.FgRed.Sprint(formatBytes(totalBytes)))
 
 	if dryRun {
 		formatter.Info("[dry-run] No changes made", nil)
@@ -146,7 +175,7 @@ func runPrune(cmd *cobra.Command, args []string) error {
 
 	// Confirm unless --yes
 	if !pruneYes {
-		fmt.Print("\nProceed with pruning? [y/N] ")
+		fmt.Print("Proceed with pruning? [y/N] ")
 		scanner := bufio.NewScanner(os.Stdin)
 		scanner.Scan()
 		answer := strings.TrimSpace(strings.ToLower(scanner.Text()))
@@ -156,26 +185,44 @@ func runPrune(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Create prune records
+	// Prune with a progress bar
+	progressBar, _ := pterm.DefaultProgressbar.
+		WithTotal(len(candidates)).
+		WithTitle("Pruning").
+		Start()
+
 	pruned := 0
+	var freedBytes int64
 	for _, c := range candidates {
+		progressBar.UpdateTitle(fmt.Sprintf("Removing %s@%s", c.tool, c.version))
+
 		// Remove from database
 		if err := installRepo.Delete(ctx, c.tool, c.version); err != nil {
 			formatter.Warning(fmt.Sprintf("Failed to remove DB record for %s@%s: %v", c.tool, c.version, err), nil)
+			progressBar.Increment()
 			continue
 		}
 		// Remove install directory from filesystem
 		if c.installPath != "" {
 			if err := os.RemoveAll(c.installPath); err != nil {
 				formatter.Warning(fmt.Sprintf("Failed to remove files for %s@%s: %v", c.tool, c.version, err), nil)
+			} else {
+				freedBytes += c.sizeBytes
 			}
 		}
 		pruned++
-		formatter.Info(fmt.Sprintf("Removed %s@%s", c.tool, c.version), nil)
+		progressBar.Increment()
 	}
 
-	formatter.Success(fmt.Sprintf("Pruned %d installation(s)", pruned), map[string]interface{}{
-		"pruned": pruned,
-	})
+	progressBar.Stop()
+
+	formatter.Success(
+		fmt.Sprintf("Pruned %d installation(s)  ·  freed %s", pruned, pterm.FgGreen.Sprint(formatBytes(freedBytes))),
+		map[string]interface{}{
+			"pruned":       pruned,
+			"freed_bytes":  freedBytes,
+			"freed_human":  formatBytes(freedBytes),
+		},
+	)
 	return nil
 }
