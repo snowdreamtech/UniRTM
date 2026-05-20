@@ -49,13 +49,14 @@ func TestDetectActiveVersion_NoShims(t *testing.T) {
 
 func TestToolInfo_Struct(t *testing.T) {
 	info := toolInfo{
-		Tool:      "cli/cli",
-		Backend:   "github",
-		Installed: []string{"2.70.0", "2.72.0"},
-		Active:    "2.72.0",
-		ShimPath:  "/usr/local/share/unirtm/shims/gh",
+		Tool:         "cli/cli",
+		Backend:      "github",
+		Installed:    []string{"2.70.0", "2.72.0"},
+		Active:       []string{"2.72.0"},
+		ConfigSource: "Merged Hierarchy Config",
 	}
 	assert.Equal(t, "github", info.Backend)
 	assert.Len(t, info.Installed, 2)
-	assert.Equal(t, "2.72.0", info.Active)
+	assert.Equal(t, []string{"2.72.0"}, info.Active)
+	assert.Equal(t, "Merged Hierarchy Config", info.ConfigSource)
 }

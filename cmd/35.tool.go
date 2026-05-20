@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
@@ -23,7 +25,25 @@ func init() {
 	if rootCmd != nil {
 		rootCmd.AddCommand(toolCmd)
 	}
+
+	toolCmd.Flags().BoolVar(&toolActive, "active", false, "Only show active versions")
+	toolCmd.Flags().BoolVar(&toolBackend, "backend", false, "Only show backend field")
+	toolCmd.Flags().BoolVar(&toolConfigSource, "config-source", false, "Only show config source")
+	toolCmd.Flags().BoolVar(&toolDescription, "description", false, "Only show description field")
+	toolCmd.Flags().BoolVar(&toolInstalled, "installed", false, "Only show installed versions")
+	toolCmd.Flags().BoolVar(&toolRequested, "requested", false, "Only show requested versions")
+	toolCmd.Flags().BoolVar(&toolToolOptions, "tool-options", false, "Only show tool options")
 }
+
+var (
+	toolActive       bool
+	toolBackend      bool
+	toolConfigSource bool
+	toolDescription  bool
+	toolInstalled    bool
+	toolRequested    bool
+	toolToolOptions  bool
+)
 
 // toolCmd displays detailed information about a specific tool.
 var toolCmd = &cobra.Command{
@@ -49,12 +69,15 @@ Examples:
 
 // toolInfo holds the aggregated information about a single tool.
 type toolInfo struct {
-	Tool       string   `json:"tool"`
-	Backend    string   `json:"backend"`
-	Installed  []string `json:"installed"`
-	Active     string   `json:"active"`
-	ShimPath   string   `json:"shim_path"`
-	InstallDir string   `json:"install_dir"`
+	Tool         string                 `json:"-"`
+	Backend      string                 `json:"backend"`
+	Description  string                 `json:"description,omitempty"`
+	Installed    []string               `json:"installed_versions"`
+	Requested    []string               `json:"requested_versions,omitempty"`
+	Active       []string               `json:"active_versions,omitempty"`
+	ConfigSource string                 `json:"config_source,omitempty"`
+	ToolOptions  map[string]interface{} `json:"tool_options,omitempty"`
+	Security     []string               `json:"security"`
 }
 
 func runTool(cmd *cobra.Command, args []string) error {
@@ -129,70 +152,184 @@ func runTool(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Detect active version via shim.
-	shimsDir := env.GetShimsDir()
-	installsDir := env.GetInstallsDir()
-	activeVersion := detectActiveVersion(shimsDir, installsDir, toolName, versions)
-
-	// Shim path (first binary shim for this tool).
-	shimPath := detectShimPath(shimsDir, toolName)
-
 	// Check if backend supports the tool.
 	backendRegistry := backend.NewRegistry()
 	if detectedBackend == "" {
 		detectedBackend = getBackendName()
 	}
 
-	info := toolInfo{
-		Tool:       toolName,
-		Backend:    detectedBackend,
-		Installed:  versions,
-		Active:     activeVersion,
-		ShimPath:   shimPath,
-		InstallDir: filepath.Join(installsDir, toolName),
-	}
+	// Load Config to get requested versions, tool options
+	cfgMgr := config.NewConfigManager()
+	cfg, _ := cfgMgr.LoadHierarchy(ctx)
 
-	// JSON output.
-	if jsonOutput {
-		formatter.Success(fmt.Sprintf("Tool info: %s", toolName), map[string]interface{}{
-			"tool":        info.Tool,
-			"backend":     info.Backend,
-			"installed":   info.Installed,
-			"active":      info.Active,
-			"shim_path":   info.ShimPath,
-			"install_dir": info.InstallDir,
-		})
-		return nil
-	}
-
-	// Human-readable output.
-	fmt.Println()
-	pterm.DefaultSection.Printf("Tool: %s", pterm.FgCyan.Sprint(toolName))
-
-	rows := pterm.TableData{
-		{"Backend", pterm.FgMagenta.Sprint(info.Backend)},
-		{"Install dir", info.InstallDir},
-		{"Shim", shimPath},
-	}
-
-	if len(info.Installed) == 0 {
-		rows = append(rows, []string{"Installed", pterm.FgYellow.Sprint("(none)")})
-	} else {
-		for i, v := range info.Installed {
-			label := "Installed"
-			if i > 0 {
-				label = ""
+	var requestedVersions []string
+	var configSource = "Merged Hierarchy Config"
+	var toolOpts map[string]interface{}
+	
+	if cfg != nil && cfg.Tools != nil {
+		if tc, ok := cfg.Tools[toolName]; ok {
+			if tc.Version != "" {
+				requestedVersions = append(requestedVersions, tc.Version)
 			}
-			vStr := pterm.FgYellow.Sprint(v)
-			if v == info.Active {
-				vStr = pterm.FgGreen.Sprint(v + " ✓ active")
+			
+			// Try to build tool options
+			toolOpts = make(map[string]interface{})
+			if tc.Backend != "" {
+				toolOpts["backend"] = tc.Backend
 			}
-			rows = append(rows, []string{label, vStr})
+			if tc.Provider != "" {
+				toolOpts["provider"] = tc.Provider
+			}
+			if len(tc.GPGKeys) > 0 {
+				toolOpts["gpg_keys"] = tc.GPGKeys
+			}
 		}
 	}
 
-	if info.Active == "" {
-		rows = append(rows, []string{"Active", pterm.FgDefault.Sprint("(none)")})
+	// Active versions handling
+	var activeVersions []string
+	
+	// Detect active version via shim.
+	shimsDir := env.GetShimsDir()
+	installsDir := env.GetInstallsDir()
+	activeVersion := detectActiveVersion(shimsDir, installsDir, toolName, versions)
+	
+	if activeVersion != "" {
+		activeVersions = append(activeVersions, activeVersion)
+	}
+
+	info := toolInfo{
+		Tool:         toolName,
+		Backend:      detectedBackend,
+		Installed:    versions,
+		Requested:    requestedVersions,
+		Active:       activeVersions,
+		ConfigSource: configSource,
+		ToolOptions:  toolOpts,
+		Security:     []string{},
+	}
+
+	// Get backend features
+	if b, err := backendRegistry.Get(info.Backend); err == nil {
+		if b.SupportsChecksum() {
+			info.Security = append(info.Security, "checksum")
+		}
+		if b.SupportsGPG() {
+			info.Security = append(info.Security, "gpg")
+		}
+		if att := b.AttestationType(); att != "" {
+			info.Security = append(info.Security, strings.ToLower(att))
+		}
+	}
+
+	// JSON Output Handling with Filters
+	if jsonOutput {
+		if toolBackend {
+			outputJSON(info.Backend)
+		} else if toolDescription {
+			outputJSON(info.Description)
+		} else if toolInstalled {
+			outputJSON(info.Installed)
+		} else if toolActive {
+			outputJSON(info.Active)
+		} else if toolRequested {
+			outputJSON(info.Requested)
+		} else if toolConfigSource {
+			outputJSON(info.ConfigSource)
+		} else if toolToolOptions {
+			outputJSON(info.ToolOptions)
+		} else {
+			outputJSON(info)
+		}
+		return nil
+	}
+
+	// Human-readable filtered output
+	if toolBackend {
+		fmt.Println(info.Backend)
+		return nil
+	} else if toolDescription {
+		if info.Description != "" {
+			fmt.Println(info.Description)
+		} else {
+			fmt.Println("[none]")
+		}
+		return nil
+	} else if toolInstalled {
+		fmt.Println(formatInstalledWithActive(info.Installed, info.Active))
+		return nil
+	} else if toolActive {
+		if len(info.Active) > 0 {
+			fmt.Println(strings.Join(info.Active, " "))
+		} else {
+			fmt.Println("[none]")
+		}
+		return nil
+	} else if toolRequested {
+		if len(info.Requested) > 0 {
+			fmt.Println(strings.Join(info.Requested, " "))
+		} else {
+			fmt.Println("[none]")
+		}
+		return nil
+	} else if toolConfigSource {
+		if info.ConfigSource != "" {
+			fmt.Println(info.ConfigSource)
+		} else {
+			fmt.Println("[none]")
+		}
+		return nil
+	} else if toolToolOptions {
+		if len(info.ToolOptions) == 0 {
+			fmt.Println("[none]")
+		} else {
+			for k, v := range info.ToolOptions {
+				fmt.Printf("%s=%v\n", k, v)
+			}
+		}
+		return nil
+	}
+
+	// Full Human-readable Table output
+	fmt.Println()
+	rows := pterm.TableData{
+		{"Backend:", pterm.FgDefault.Sprint(info.Backend)},
+	}
+
+	if info.Description != "" {
+		rows = append(rows, []string{"Description:", info.Description})
+	}
+
+	rows = append(rows, []string{"Installed Versions:", formatInstalledWithActive(info.Installed, info.Active)})
+
+	if len(info.Active) > 0 {
+		rows = append(rows, []string{"Active Version:", pterm.FgGreen.Sprint(strings.Join(info.Active, " "))})
+	} else {
+		rows = append(rows, []string{"Active Version:", "[none]"})
+	}
+
+	if len(info.Requested) > 0 {
+		rows = append(rows, []string{"Requested Version:", strings.Join(info.Requested, " ")})
+	}
+
+	if info.ConfigSource != "" {
+		rows = append(rows, []string{"Config Source:", info.ConfigSource})
+	}
+
+	if len(info.ToolOptions) == 0 {
+		rows = append(rows, []string{"Tool Options:", "[none]"})
+	} else {
+		var optsStr []string
+		for k, v := range info.ToolOptions {
+			optsStr = append(optsStr, fmt.Sprintf("%s=%v", k, v))
+		}
+		rows = append(rows, []string{"Tool Options:", strings.Join(optsStr, ", ")})
+	}
+
+	if len(info.Security) == 0 {
+		rows = append(rows, []string{"Security:", "[none]"})
+	} else {
+		rows = append(rows, []string{"Security:", strings.Join(info.Security, ", ")})
 	}
 
 	pterm.DefaultTable.
@@ -200,18 +337,34 @@ func runTool(cmd *cobra.Command, args []string) error {
 		WithData(rows).
 		Render()
 
-	// Verify backend knows about this tool.
-	if b, err := backendRegistry.Get(info.Backend); err == nil {
-		platform := backend.CurrentPlatform()
-		if latest, err := b.ResolveVersion(ctx, toolName, "latest", platform); err == nil && latest != nil {
-			fmt.Printf("\n%s Latest available: %s\n",
-				pterm.FgDefault.Sprint("→"),
-				pterm.FgGreen.Sprint(latest.Version),
-			)
+	return nil
+}
+
+func outputJSON(data interface{}) {
+	b, _ := json.MarshalIndent(data, "", "  ")
+	fmt.Println(string(b))
+}
+
+func formatInstalledWithActive(installed, active []string) string {
+	if len(installed) == 0 {
+		return "[none]"
+	}
+	
+	activeMap := make(map[string]bool)
+	for _, a := range active {
+		activeMap[a] = true
+	}
+	
+	var res []string
+	for _, v := range installed {
+		if activeMap[v] {
+			res = append(res, pterm.FgGreen.Sprint(v))
+		} else {
+			res = append(res, v)
 		}
 	}
-
-	return nil
+	
+	return strings.Join(res, " ")
 }
 
 // detectActiveVersion returns the active version for a tool by checking shim symlinks.
