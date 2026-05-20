@@ -82,9 +82,6 @@ depends = ['lint']
 description = 'Alias for lint (Run pre-commit hooks)'
 run = "echo 'Pre-commit checks passed!'"
 
-[tasks.release]
-description = 'Standardized release manager (versioning & tagging)'
-run = 'sh scripts/release.sh'
 
 [tasks.setup]
 description = 'Install system-level development tools'

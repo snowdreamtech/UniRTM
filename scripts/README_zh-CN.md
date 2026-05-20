@@ -80,7 +80,6 @@ sh scripts/verify.sh
 | `lint.sh`              | 执行代码静态检查   | pre-commit, 自动修复         |
 | `test.sh`              | 执行测试套件       | bats, pytest, vitest         |
 | `audit.sh`             | 安全与脆弱性扫描   | gitleaks, osv-scanner        |
-| `release.sh`           | 标准化标签发布     | git tag (v-prefix), 自动同步 |
 | `docs.sh`              | 文档网站管理       | vitepress                    |
 | `init-project.sh`      | 修改模板品牌       | 占位符替换、git 初始化       |
 | `archive-changelog.sh` | 归档旧版本         | 主版本更迭轮转               |
@@ -104,7 +103,6 @@ sh scripts/verify.sh
 1. [ ] 运行 `sh scripts/check-env.sh` 确保运行时环境一致。
 2. [ ] 运行 `sh scripts/verify.sh` 进行最终 QA 验收。
 3. [ ] 运行 `sh scripts/audit.sh` 确保无敏感信息泄漏或严重漏洞。
-4. [ ] 验证版本号：运行 `make release`（审计本地状态并同步 Manifest 版本）。
 
 ### 性能考量
 

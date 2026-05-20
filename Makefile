@@ -72,7 +72,7 @@ GIT_BRANCH      := $(shell git branch --show-current 2>/dev/null || echo "not a 
 # =============================================================================
 # Targets
 # =============================================================================
-.PHONY: all help init lint test verify release audit docs archive-changelog gen-dependabot sync-harden-runner license-add license-check
+.PHONY: all help init lint test verify audit docs archive-changelog gen-dependabot sync-harden-runner license-add license-check
 
 # Default target: display help
 all: help
@@ -115,13 +115,6 @@ ifeq ($(OS_NAME),Windows)
 	@scripts/verify.bat $(SCRIPT_ARGS) $(ARGS)
 else
 	@sh scripts/verify.sh $(SCRIPT_ARGS) $(ARGS)
-endif
-
-release: ## Standardized release manager (versioning & tagging)
-ifeq ($(OS_NAME),Windows)
-	@scripts/release.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/release.sh $(SCRIPT_ARGS) $(ARGS)
 endif
 
 audit: ## Run security audit and vulnerability scans

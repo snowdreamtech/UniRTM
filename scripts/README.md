@@ -79,7 +79,6 @@ sh scripts/verify.sh
 | `lint.sh`              | Run linters and fixers        | pre-commit, auto-fix          |
 | `test.sh`              | Execute test suites           | bats, pytest, vitest          |
 | `audit.sh`             | Security & vulnerability scan | gitleaks, osv-scanner         |
-| `release.sh`           | Standardized tagged release   | git tag (v-prefix), auto-sync |
 | `docs.sh`              | Manage documentation site     | vitepress                     |
 | `init-project.sh`      | Rebrand template              | placeholders, git init        |
 | `archive-changelog.sh` | Archive old versions          | major version rotation        |
@@ -103,7 +102,6 @@ sh scripts/verify.sh
 1. [ ] Run `sh scripts/check-env.sh` to ensure runtime parity.
 2. [ ] Run `sh scripts/verify.sh` for final QA pass.
 3. [ ] Run `sh scripts/audit.sh` to ensure no secrets or critical vulnerabilities.
-4. [ ] Verify versioning: Run `make release` (Audits local state and syncs manifest version).
 
 ### Performance Considerations
 
