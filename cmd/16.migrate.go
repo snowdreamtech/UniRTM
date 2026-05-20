@@ -7,7 +7,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
+	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
@@ -31,7 +33,7 @@ func init() {
 // migrateCmd converts mise/.tool-versions config to UniRTM format.
 var migrateCmd = &cobra.Command{
 	Use:   "migrate [source]",
-	Short: "Migrate from mise or asdf configuration",
+	Short: "Migrate from mise or asdf configuration with visual side-by-side diff",
 	Long: `Convert mise or asdf configuration to UniRTM format.
 
 Supported source formats:
@@ -40,7 +42,8 @@ Supported source formats:
   • .tool-versions — asdf/mise version pin file
 
 If no source file is specified, the current directory is scanned
-automatically.
+automatically. The migration report shows a visual side-by-side
+comparison of what was found in the source and what will be written.
 
 Examples:
   unirtm migrate
@@ -80,7 +83,7 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 				"error":  migrateErr.Error(),
 			})
 			if report != nil {
-				fmt.Println(mm.FormatReport(report))
+				printMigrateReport(report, isDryRun)
 			}
 			return migrateErr
 		}
@@ -137,9 +140,9 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// ── Human-readable output ──────────────────────────────────────────────────
+	// ── Visual pterm output ────────────────────────────────────────────────────
 	for _, report := range reports {
-		fmt.Println(mm.FormatReport(report))
+		printMigrateReport(report, isDryRun)
 	}
 
 	for _, r := range reports {
@@ -149,8 +152,122 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 	}
 
 	if isDryRun {
-		formatter.Info("Dry-run complete — no files were written", nil)
+		pterm.Info.Println("Dry-run complete — no files were written")
 	}
 
 	return nil
+}
+
+// printMigrateReport renders a rich pterm migration report with a side-by-side diff table.
+func printMigrateReport(report *service.MigrationReport, isDryRun bool) {
+	mode := "live"
+	if isDryRun {
+		mode = pterm.FgYellow.Sprint("dry-run")
+	}
+
+	pterm.DefaultSection.Printfln("Migration Report  [mode: %s]", mode)
+
+	// ── Meta info panel ──────────────────────────────────────────────────────
+	_ = pterm.DefaultTable.
+		WithData(pterm.TableData{
+			{"Source", pterm.FgCyan.Sprint(report.Source)},
+			{"Output", pterm.FgGreen.Sprint(report.OutputFile)},
+			{"Tools found", fmt.Sprintf("%d", len(report.Tools))},
+		}).
+		WithSeparator("  →  ").
+		Render()
+	fmt.Println()
+
+	if len(report.Tools) == 0 {
+		pterm.Warning.Println("No tools were found to migrate.")
+		return
+	}
+
+	// ── Side-by-side diff table ───────────────────────────────────────────────
+	pterm.DefaultSection.WithLevel(2).Println("Tool Mapping  (Source → UniRTM)")
+
+	tableData := pterm.TableData{
+		{"#", "TOOL", "SOURCE VERSION", "→", "UNIRTM FORMAT", "BACKEND"},
+	}
+	for i, t := range report.Tools {
+		sourceEntry := fmt.Sprintf("%s = \"%s\"", t.Name, t.Version) // .tool-versions style
+		if report.Source == "mise.toml" {
+			sourceEntry = fmt.Sprintf("[tools.%s]\nversion = \"%s\"", t.Name, t.Version) // mise style
+		}
+
+		unirtmEntry := fmt.Sprintf("%s = \"%s\"", t.Name, t.Version)
+		if t.Backend != "" || t.Provider != "" {
+			unirtmEntry = fmt.Sprintf("%s.version = \"%s\"", t.Name, t.Version)
+		}
+
+		backend := t.Backend
+		if backend == "" {
+			backend = pterm.FgGray.Sprint("auto")
+		} else {
+			backend = pterm.FgMagenta.Sprint(backend)
+		}
+
+		tableData = append(tableData, []string{
+			fmt.Sprintf("%d", i+1),
+			pterm.FgCyan.Sprint(t.Name),
+			pterm.FgYellow.Sprint(sourceEntry),
+			pterm.FgGreen.Sprint("→"),
+			pterm.FgGreen.Sprint(unirtmEntry),
+			backend,
+		})
+	}
+
+	_ = pterm.DefaultTable.
+		WithHasHeader(true).
+		WithSeparator("  ").
+		WithHeaderStyle(pterm.NewStyle(pterm.FgLightCyan, pterm.Bold)).
+		WithData(tableData).
+		Render()
+
+	// ── Warnings ──────────────────────────────────────────────────────────────
+	if len(report.UnsupportedFields) > 0 {
+		fmt.Println()
+		pterm.DefaultSection.WithLevel(2).Println("Warnings (manual review needed)")
+		for _, w := range report.UnsupportedFields {
+			pterm.Warning.Println(w)
+		}
+	}
+
+	// ── Errors ────────────────────────────────────────────────────────────────
+	if len(report.Errors) > 0 {
+		fmt.Println()
+		pterm.DefaultSection.WithLevel(2).Println("Errors")
+		for _, e := range report.Errors {
+			pterm.Error.Println(e)
+		}
+		return
+	}
+
+	// ── Success summary ───────────────────────────────────────────────────────
+	fmt.Println()
+	if isDryRun {
+		pterm.Info.Printfln("Would write %d tool(s) to %s", len(report.Tools), pterm.FgGreen.Sprint(report.OutputFile))
+		fmt.Println()
+		pterm.DefaultBox.
+			WithTitle("Preview Output").
+			WithTitleTopLeft().
+			Println(buildTomlPreview(report))
+	} else {
+		pterm.Success.Printfln(
+			"Migrated %d tool(s)  →  %s",
+			len(report.Tools),
+			pterm.FgGreen.Sprint(report.OutputFile),
+		)
+		pterm.Info.Println("Review the generated file and remove any unwanted entries.")
+	}
+}
+
+// buildTomlPreview builds a short TOML preview string for dry-run display.
+func buildTomlPreview(report *service.MigrationReport) string {
+	var sb strings.Builder
+	sb.WriteString("# UniRTM configuration (preview)\n\n[tools]\n")
+	for _, t := range report.Tools {
+		sb.WriteString(fmt.Sprintf("  %s = %q\n", t.Name, t.Version))
+	}
+	return sb.String()
 }
