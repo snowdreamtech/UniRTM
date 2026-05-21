@@ -37,18 +37,8 @@ jobs:
       statuses: write # Required to post status check results
     timeout-minutes: 30 # Title linting is near-instant
     steps:
-      - name: "🔒 Harden Runner (Security Egress Audit)"
-        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
-        with:
-          egress-policy: block
-          allowed-endpoints: >
-            api.github.com:443
-            *.githubusercontent.com:443
-            github.com:443
-            mise.run:443
-            install.mise.jdx.dev:443
-            *.mise.jdx.dev:443
-
+      - name: "🔒 Harden Runner (Minimal)"
+        uses: ./.github/actions/harden-runner/minimal
       - name: "🔍 Validate PR Title Integrity"
         uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
         env:

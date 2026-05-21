@@ -32,56 +32,8 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: "🔒 Harden Runner (Security Egress Audit)"
-        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
-        with:
-          egress-policy: block
-          allowed-endpoints: >
-            api.github.com:443
-            *.githubusercontent.com:443
-            github.com:443
-            mise.run:443
-            install.mise.jdx.dev:443
-            *.mise.jdx.dev:443
-            packages.microsoft.com:443
-            *.ubuntu.com:80
-            *.ubuntu.com:443
-            *.debian.org:80
-            *.debian.org:443
-            *.rockylinux.org:443
-            *.centos.org:443
-            *.redhat.com:443
-            dl-cdn.alpinelinux.org:443
-            registry.npmjs.org:443
-            registry.yarnpkg.com:443
-            pypi.org:443
-            files.pythonhosted.org:443
-            proxy.golang.org:443
-            sum.golang.org:443
-            index.crates.io:443
-            static.rust-lang.org:443
-            packagist.org:443
-            repo.maven.apache.org:443
-            rubygems.org:443
-            registry.terraform.io:443
-            formulae.brew.sh:443
-            repo.yarnpkg.com:443
-            mise.jdx.dev:443
-            ghcr.io:443
-            pkg-containers.githubusercontent.com:443
-            public.ecr.aws:443
-            production.cloudflare.docker.com:443
-            *.gcr.io:443
-            *.pkg.dev:443
-            *.quay.io:443
-            *.dkr.ecr.*.amazonaws.com:443
-            *.azurecr.io:443
-            osv-vulnerabilities.storage.googleapis.com:443
-            api.osv.dev:443
-            get.trivy.dev:443
-            *.aquasecurity.github.io:443
-            *.sigstore.dev:443
-
+      - name: "🔒 Harden Runner (Full)"
+        uses: ./.github/actions/harden-runner/full
       - name: "📂 Checkout Repository Code"
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -113,55 +65,7 @@ jobs:
     steps:
       - name: "🔒 Harden Runner (Security Egress Audit)"
         if: matrix.os == 'ubuntu-latest'
-        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
-        with:
-          egress-policy: block
-          allowed-endpoints: >
-            api.github.com:443
-            *.githubusercontent.com:443
-            github.com:443
-            mise.run:443
-            install.mise.jdx.dev:443
-            *.mise.jdx.dev:443
-            packages.microsoft.com:443
-            *.ubuntu.com:80
-            *.ubuntu.com:443
-            *.debian.org:80
-            *.debian.org:443
-            *.rockylinux.org:443
-            *.centos.org:443
-            *.redhat.com:443
-            dl-cdn.alpinelinux.org:443
-            registry.npmjs.org:443
-            registry.yarnpkg.com:443
-            pypi.org:443
-            files.pythonhosted.org:443
-            proxy.golang.org:443
-            sum.golang.org:443
-            index.crates.io:443
-            static.rust-lang.org:443
-            packagist.org:443
-            repo.maven.apache.org:443
-            rubygems.org:443
-            registry.terraform.io:443
-            formulae.brew.sh:443
-            repo.yarnpkg.com:443
-            mise.jdx.dev:443
-            ghcr.io:443
-            pkg-containers.githubusercontent.com:443
-            public.ecr.aws:443
-            production.cloudflare.docker.com:443
-            *.gcr.io:443
-            *.pkg.dev:443
-            *.quay.io:443
-            *.dkr.ecr.*.amazonaws.com:443
-            *.azurecr.io:443
-            osv-vulnerabilities.storage.googleapis.com:443
-            api.osv.dev:443
-            get.trivy.dev:443
-            *.aquasecurity.github.io:443
-            *.sigstore.dev:443
-
+        uses: ./.github/actions/harden-runner/full
       - name: "📂 Checkout Repository Code"
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -250,55 +154,7 @@ jobs:
     steps:
       - name: "🔒 Harden Runner (Security Egress Audit)"
         if: matrix.os == 'ubuntu-latest'
-        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
-        with:
-          egress-policy: block
-          allowed-endpoints: >
-            api.github.com:443
-            *.githubusercontent.com:443
-            github.com:443
-            mise.run:443
-            install.mise.jdx.dev:443
-            *.mise.jdx.dev:443
-            packages.microsoft.com:443
-            *.ubuntu.com:80
-            *.ubuntu.com:443
-            *.debian.org:80
-            *.debian.org:443
-            *.rockylinux.org:443
-            *.centos.org:443
-            *.redhat.com:443
-            dl-cdn.alpinelinux.org:443
-            registry.npmjs.org:443
-            registry.yarnpkg.com:443
-            pypi.org:443
-            files.pythonhosted.org:443
-            proxy.golang.org:443
-            sum.golang.org:443
-            index.crates.io:443
-            static.rust-lang.org:443
-            packagist.org:443
-            repo.maven.apache.org:443
-            rubygems.org:443
-            registry.terraform.io:443
-            formulae.brew.sh:443
-            repo.yarnpkg.com:443
-            mise.jdx.dev:443
-            ghcr.io:443
-            pkg-containers.githubusercontent.com:443
-            public.ecr.aws:443
-            production.cloudflare.docker.com:443
-            *.gcr.io:443
-            *.pkg.dev:443
-            *.quay.io:443
-            *.dkr.ecr.*.amazonaws.com:443
-            *.azurecr.io:443
-            osv-vulnerabilities.storage.googleapis.com:443
-            api.osv.dev:443
-            get.trivy.dev:443
-            *.aquasecurity.github.io:443
-            *.sigstore.dev:443
-
+        uses: ./.github/actions/harden-runner/full
       - name: "📂 Checkout Repository Code"
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -373,56 +229,8 @@ jobs:
       VENV: ".venv"
       PYTHONUTF8: 1
     steps:
-      - name: "🔒 Harden Runner (Security Egress Audit)"
-        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
-        with:
-          egress-policy: block
-          allowed-endpoints: >
-            api.github.com:443
-            *.githubusercontent.com:443
-            github.com:443
-            mise.run:443
-            install.mise.jdx.dev:443
-            *.mise.jdx.dev:443
-            packages.microsoft.com:443
-            *.ubuntu.com:80
-            *.ubuntu.com:443
-            *.debian.org:80
-            *.debian.org:443
-            *.rockylinux.org:443
-            *.centos.org:443
-            *.redhat.com:443
-            dl-cdn.alpinelinux.org:443
-            registry.npmjs.org:443
-            registry.yarnpkg.com:443
-            pypi.org:443
-            files.pythonhosted.org:443
-            proxy.golang.org:443
-            sum.golang.org:443
-            index.crates.io:443
-            static.rust-lang.org:443
-            packagist.org:443
-            repo.maven.apache.org:443
-            rubygems.org:443
-            registry.terraform.io:443
-            formulae.brew.sh:443
-            repo.yarnpkg.com:443
-            mise.jdx.dev:443
-            ghcr.io:443
-            pkg-containers.githubusercontent.com:443
-            public.ecr.aws:443
-            production.cloudflare.docker.com:443
-            *.gcr.io:443
-            *.pkg.dev:443
-            *.quay.io:443
-            *.dkr.ecr.*.amazonaws.com:443
-            *.azurecr.io:443
-            osv-vulnerabilities.storage.googleapis.com:443
-            api.osv.dev:443
-            get.trivy.dev:443
-            *.aquasecurity.github.io:443
-            *.sigstore.dev:443
-
+      - name: "🔒 Harden Runner (Full)"
+        uses: ./.github/actions/harden-runner/full
       - name: "📂 Checkout Repository Code"
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:

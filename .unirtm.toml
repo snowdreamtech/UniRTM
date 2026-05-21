@@ -120,10 +120,6 @@ fi
 description = 'Full lint: Check all project files (used in CI or verify)'
 run = 'pre-commit run --all-files || (echo "⚠️  First pass failed. Running second check..." && pre-commit run --all-files)'
 
-[tasks.sync-harden-runner]
-description = 'Synchronize Harden Runner endpoints to all workflow files'
-run = 'python3 -m pip install --quiet PyYAML && python3 scripts/sync-harden-runner.py'
-
 [tasks.test]
 description = 'Run Go unit tests for all packages recursively'
 run = 'go test -race -v ./...'
