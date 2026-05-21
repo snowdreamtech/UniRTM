@@ -61,7 +61,7 @@ jobs:
             ~/.local/share/mise
             ~/Library/Application Support/mise
             ~/AppData/Local/mise
-          key: ${{ runner.os }}-mise-${{ hashFiles('.mise.toml', 'mise.lock', 'scripts/lib/versions.sh') }}
+          key: ${{ runner.os }}-mise-${{ hashFiles('.mise.toml', 'mise.lock') }}
           restore-keys: |
             ${{ runner.os }}-mise-
             ${{ runner.os }}-
@@ -119,12 +119,7 @@ jobs:
           echo "PATH (first 10):"
           echo "$PATH" | tr ':' '\n' | head -10
 
-          # Source common.sh to get helper functions
-          . scripts/lib/common.sh
 
-          # Build NODE_PATH from mise npm installations (avoid SC2155)
-          _node_path=$(build_mise_node_path)
-          export NODE_PATH="${_node_path}"
 
           if [ "$EVENT_NAME" = "pull_request" ]; then
             mise exec -- commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose

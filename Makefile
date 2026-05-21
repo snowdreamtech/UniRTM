@@ -102,18 +102,8 @@ license-check: ## Check for missing license headers
 
 
 gen-dependabot: ## Auto-generate dependabot.yml from detected ecosystems
-ifeq ($(OS_NAME),Windows)
-	@scripts/gen-dependabot.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@mise x -- sh scripts/gen-dependabot.sh $(SCRIPT_ARGS) $(ARGS)
-endif
+	@unirtm generate dependabot $(SCRIPT_ARGS) $(ARGS)
 
 clean: ## Clean build artifacts
 	@echo "Nothing to clean"
 
-sync-harden-runner: ## Synchronize Harden Runner endpoints to all workflow files
-ifeq ($(OS_NAME),Windows)
-	@scripts/sync-harden-runner.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/sync-harden-runner.sh $(SCRIPT_ARGS) $(ARGS)
-endif

@@ -3,7 +3,7 @@
 # Purpose: Automatically regenerates .github/dependabot.yml based on detected ecosystems.
 # Trigger: Push to dev/main (manifest file changes), monthly schedule, or manual dispatch.
 # Design:
-#   - Uses scripts/gen-dependabot.sh to scan for manifest files via git ls-files.
+#   - Uses .unirtm.toml to scan for manifest files via git ls-files.
 #   - Only commits if the generated config differs from the current one.
 #   - Uses native git commands — no third-party commit Actions.
 
@@ -35,7 +35,7 @@ name: "🤖 Dependabot Smart Sync"
       - "**/devcontainer.json"
       - ".pre-commit-config.yaml"
       - "Chart.yaml"
-      - "scripts/gen-dependabot.sh"
+      - ".unirtm.toml"
       # Mise toolchain configuration
       - ".mise.toml"
       - ".github/workflows/dependabot-sync.yml"
@@ -72,7 +72,7 @@ jobs:
             ~/.local/share/mise
             ~/Library/Application Support/mise
             ~/AppData/Local/mise
-          key: ${{ runner.os }}-mise-${{ hashFiles('.mise.toml', 'mise.lock', 'scripts/lib/versions.sh') }}
+          key: ${{ runner.os }}-mise-${{ hashFiles('.mise.toml', 'mise.lock') }}
           restore-keys: |
             ${{ runner.os }}-mise-
 
@@ -108,12 +108,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
           GITHUB_REF: ${{ github.ref }}
         run: |
-          if git diff --quiet .github/dependabot.yml mise.lock scripts/lib/versions.sh .mise.toml 2>/dev/null; then
+          if git diff --quiet .github/dependabot.yml mise.lock .mise.toml 2>/dev/null; then
             echo "✅ No changes detected. Dependabot config and Mise toolchain are up-to-date."
           else
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add .github/dependabot.yml mise.lock scripts/lib/versions.sh .mise.toml
+            git add .github/dependabot.yml mise.lock .mise.toml
             git commit --signoff -m "chore(deps): sync dependabot config and mise toolchain [skip ci]"
             git push origin HEAD:"$GITHUB_REF"
             echo "✅ Dependabot config and Mise toolchain updated and pushed."
