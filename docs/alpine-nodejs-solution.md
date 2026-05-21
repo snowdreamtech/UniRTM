@@ -116,7 +116,7 @@ COPY .mise.toml package*.json ./
 RUN mise install
 
 # 安装项目依赖
-RUN mise exec -- npm ci --production
+RUN unirtm exec -- npm ci --production
 
 # ============================================
 # 阶段 2: 运行阶段（最小化镜像）

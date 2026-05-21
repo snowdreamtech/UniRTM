@@ -23,7 +23,7 @@ name: "✅ PR Title Check"
 permissions: {}
 
 env:
-  MISE_LOCKED: 1
+  UNIRTM_LOCKED: 1
 
 jobs:
   commitlint:

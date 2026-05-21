@@ -210,7 +210,7 @@ RUN mise install
 # 构建应用
 WORKDIR /app
 COPY . .
-RUN mise exec -- npm ci --production
+RUN unirtm exec -- npm ci --production
 
 # ============================================
 # 阶段 2: 运行阶段（最小化）

@@ -12,7 +12,7 @@ name: "✍️ DCO"
 permissions: {}
 
 env:
-  MISE_LOCKED: 1
+  UNIRTM_LOCKED: 1
 
 jobs:
   dco:

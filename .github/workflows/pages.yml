@@ -33,7 +33,7 @@ name: "📄 Deploy Docs to GitHub Pages"
 permissions: {}
 
 env:
-  MISE_LOCKED: 1
+  UNIRTM_LOCKED: 1
 
 jobs:
   build:
@@ -61,17 +61,17 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: "⚡ Cache Mise Tools"
+      - name: "⚡ Cache UniRTM Tools"
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.local/bin
-            ~/.local/share/mise
-            ~/Library/Application Support/mise
-            ~/AppData/Local/mise
-          key: ${{ runner.os }}-mise-${{ hashFiles('.mise.toml', 'mise.lock') }}
+            ~/.local/share/unirtm
+            ~/Library/Application Support/unirtm
+            ~/AppData/Local/unirtm
+          key: ${{ runner.os }}-unirtm-${{ hashFiles('.unirtm.toml', 'unirtm.lock') }}
           restore-keys: |
-            ${{ runner.os }}-mise-
+            ${{ runner.os }}-unirtm-
 
       - name: "🚀 Initialize Development Environment"
         shell: sh # POSIX compliant

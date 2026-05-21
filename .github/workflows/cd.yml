@@ -20,7 +20,7 @@ permissions:
   contents: read
 
 env:
-  MISE_LOCKED: 1
+  UNIRTM_LOCKED: 1
 
 jobs:
   # 1. Project Verification Stage (Verify)
@@ -53,17 +53,17 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: "⚡ Cache Mise Tools"
+      - name: "⚡ Cache UniRTM Tools"
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             ~/.local/bin
-            ~/.local/share/mise
-            ~/Library/Application Support/mise
-            ~/AppData/Local/mise
-          key: ${{ runner.os }}-mise-${{ hashFiles('.mise.toml', 'mise.lock') }}
+            ~/.local/share/unirtm
+            ~/Library/Application Support/unirtm
+            ~/AppData/Local/unirtm
+          key: ${{ runner.os }}-unirtm-${{ hashFiles('.unirtm.toml', 'unirtm.lock') }}
           restore-keys: |
-            ${{ runner.os }}-mise-
+            ${{ runner.os }}-unirtm-
             ${{ runner.os }}-
 
       - name: "🚀 Initialize Development Environment"
@@ -93,11 +93,11 @@ jobs:
           fi
           echo "=== DEBUG: Current PATH (first 20) ==="
           echo "$PATH" | tr ':' '\n' | head -20
-          echo "=== DEBUG: Mise Installation ==="
-          ls -la "$HOME/.local/share/mise/shims" 2>/dev/null || echo "$HOME/.local/share/mise/shims not found"
+          echo "=== DEBUG: UniRTM Installation ==="
+          ls -la "$HOME/.local/share/unirtm/shims" 2>/dev/null || echo "$HOME/.local/share/unirtm/shims not found"
           if command -v cygpath >/dev/null 2>&1 && [ -n "${LOCALAPPDATA:-}" ]; then
             _local_app=$(cygpath -u "${LOCALAPPDATA}")
-            ls -la "${_local_app}/mise/shims" 2>/dev/null || echo "${_local_app}/mise/shims not found"
+            ls -la "${_local_app}/unirtm/shims" 2>/dev/null || echo "${_local_app}/unirtm/shims not found"
           fi
           echo "=== DEBUG: Tool Check (prettier) ==="
           which prettier || echo "prettier not in PATH"
@@ -122,40 +122,40 @@ jobs:
 
 
           if [ "$EVENT_NAME" = "pull_request" ]; then
-            mise exec -- commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+            unirtm exec -- commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
           else
-            mise exec -- commitlint --last --verbose
+            unirtm exec -- commitlint --last --verbose
           fi
 
       - name: "🧪 Execute Full Quality & Safety Verification"
         shell: sh
         run: |
-          # Ensure mise shims are on PATH for all commands
-          # Add both possible mise shims locations
-          if [ -d "$HOME/.local/share/mise/shims" ]; then
-            export PATH="$HOME/.local/share/mise/shims:$PATH"
-            echo "Added to PATH: $HOME/.local/share/mise/shims"
+          # Ensure unirtm shims are on PATH for all commands
+          # Add both possible unirtm shims locations
+          if [ -d "$HOME/.local/share/unirtm/shims" ]; then
+            export PATH="$HOME/.local/share/unirtm/shims:$PATH"
+            echo "Added to PATH: $HOME/.local/share/unirtm/shims"
           fi
           if command -v cygpath >/dev/null 2>&1 && [ -n "${LOCALAPPDATA:-}" ]; then
             _local_app=$(cygpath -u "${LOCALAPPDATA}")
-            if [ -d "${_local_app}/mise/shims" ]; then
-              export PATH="${_local_app}/mise/shims:$PATH"
-              echo "Added to PATH: ${_local_app}/mise/shims"
+            if [ -d "${_local_app}/unirtm/shims" ]; then
+              export PATH="${_local_app}/unirtm/shims:$PATH"
+              echo "Added to PATH: ${_local_app}/unirtm/shims"
             fi
           fi
 
           # Debug: Verify PATH and tool availability
-          echo "=== DEBUG: PATH after mise shims addition ==="
+          echo "=== DEBUG: PATH after unirtm shims addition ==="
           echo "$PATH" | tr ':' '\n' | head -10
           echo "=== DEBUG: Tool availability check ==="
           command -v prettier || echo "prettier not found"
           command -v pnpm || echo "pnpm not found"
 
-          make lint
-          make audit
+          unirtm run lint
+          unirtm run audit
           # Extra SARIF export for GitHub Security Tab (Offline to prevent API rate limits)
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            mise exec -- zizmor . --format sarif --offline --config .zizmor.yml > zizmor-results.sarif
+            unirtm exec -- zizmor . --format sarif --offline --config .zizmor.yml > zizmor-results.sarif
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}

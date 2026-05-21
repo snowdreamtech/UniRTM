@@ -99,7 +99,7 @@ graph TD
 ### 发布前检查清单
 
 1. 确保所有工作流变更均通过 `actionlint` 校验。
-2. 确保 `make verify` 在本地运行通过。
+2. 确保 `unirtm run verify` 在本地运行通过。
 3. 检查新工作流的 `GITHUB_TOKEN` 权限。
 
 ### 性能考量
@@ -113,7 +113,7 @@ graph TD
   - **诊断**：检查 Job 定义中的 `permissions` 块。
   - **解决方案**：在 Job 或工作流级别授予所需的权限作用域（如 `contents: write`）。
 - **问题**：`lint` 任务在特定文件上失败。
-  - **诊断**：本地运行 `make lint` 以定位具体的格式或语法错误。
+  - **诊断**：本地运行 `unirtm run lint` 以定位具体的格式或语法错误。
   - **解决方案**：修复文件并重新推送，CI 会自动重新触发。
 - **问题**：`test` 任务超过超时限制。
   - **诊断**：查看日志确认是否有测试用例挂起。
@@ -151,7 +151,7 @@ graph TD
 
 1. 安装 `actionlint`: `brew install actionlint`.
 2. 校验工作流: `actionlint .github/workflows/*.yml`.
-3. 验证项目健康状况: `make verify`.
+3. 验证项目健康状况: `unirtm run verify`.
 
 ### 参考资料
 

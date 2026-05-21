@@ -76,7 +76,7 @@ Regularly verify that installed tools match expected sources:
 mise list
 
 # Verify binary checksums against official releases
-mise exec -- <tool> --version
+unirtm exec -- <tool> --version
 ```
 
 #### 3. Use mise.lock for Reproducibility
