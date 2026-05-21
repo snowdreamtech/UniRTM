@@ -92,11 +92,6 @@ trivy fs --format cyclonedx --output sbom.json . || true
 trivy sbom sbom.json || true
 '''
 
-
-[tasks.gen-dependabot]
-description = 'Auto-generate dependabot.yml from detected ecosystems'
-run = 'unirtm generate dependabot --output .github/dependabot.yml'
-
 [tasks.lint]
 description = 'Fast lint: Check only modified files (staged & unstaged)'
 run = '''
