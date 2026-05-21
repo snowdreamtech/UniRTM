@@ -97,14 +97,6 @@ trivy sbom sbom.json || true
 description = 'Auto-generate dependabot.yml from detected ecosystems'
 run = 'unirtm generate dependabot --output .github/dependabot.yml'
 
-[tasks.license-add]
-description = 'Add license headers to core source files (Safe Mode)'
-run = 'unirtm license add -v -f .github/license-header.txt src pkg internal cmd app lib include scripts tests'
-
-[tasks.license-check]
-description = 'Check for missing license headers'
-run = 'unirtm license check -f .github/license-header.txt src pkg internal cmd app lib include scripts tests'
-
 [tasks.lint]
 description = 'Fast lint: Check only modified files (staged & unstaged)'
 run = '''
