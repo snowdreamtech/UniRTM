@@ -106,12 +106,12 @@ description = 'Check for missing license headers'
 run = 'unirtm license check -f .github/license-header.txt src pkg internal cmd app lib include scripts tests'
 
 [tasks.lint]
-description = 'Run standardized linter (pre-commit)'
-run = 'sh scripts/lint.sh'
+description = 'Run standardized linter (pre-commit) with auto-fix fallback'
+run = 'pre-commit run --all-files || (echo "⚠️  First pass failed. Running second check..." && pre-commit run --all-files)'
 
 [tasks.sync-harden-runner]
 description = 'Synchronize Harden Runner endpoints to all workflow files'
-run = 'sh scripts/sync-harden-runner.sh'
+run = 'python3 -m pip install --quiet PyYAML && python3 scripts/sync-harden-runner.py'
 
 [tasks.test]
 description = 'Run Go unit tests for all packages recursively'
@@ -119,7 +119,7 @@ run = 'go test -race -v ./...'
 
 [tasks.verify]
 description = 'Run full local verification (lint, test, audit)'
-run = 'sh scripts/verify.sh'
+depends_on = ['lint', 'test', 'audit']
 
 [tools]
 'github:anchore/syft' = '1.44.0'
