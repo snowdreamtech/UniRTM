@@ -25,9 +25,9 @@ func ExampleConfig() {
 			"NODE_ENV": "development",
 		},
 		Settings: config.Settings{
-			CacheDir:    "/tmp/unirtm/cache",
-			DataDir:     "/tmp/unirtm/data",
-			CacheTTL:    3600,
+			CacheDir: "/tmp/unirtm/cache",
+			DataDir:  "/tmp/unirtm/data",
+			CacheTTL: 3600,
 		},
 		Tasks: map[string]config.Task{
 			"build": {
@@ -71,9 +71,9 @@ func ExampleToolConfig() {
 // ExampleSettings demonstrates settings configuration.
 func ExampleSettings() {
 	settings := config.Settings{
-		CacheDir:    "/var/cache/unirtm",
-		DataDir:     "/var/lib/unirtm",
-		CacheTTL:    86400, // 24 hours
+		CacheDir: "/var/cache/unirtm",
+		DataDir:  "/var/lib/unirtm",
+		CacheTTL: 86400, // 24 hours
 	}
 
 	if err := settings.Validate(); err != nil {

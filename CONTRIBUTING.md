@@ -12,9 +12,8 @@ Our project uses a standardized environment targeting **Node.js 22** and **Pytho
 
 To set up your local development environment, follow the unified sequence:
 
-2. **Setup & Install**: `unirtm install` (Install development tools and activate git hooks)
-3. **Verify**: `make verify` (Final project health check)
-
+1. **Setup & Install**: `unirtm install` (Install development tools and activate git hooks)
+2. **Verify**: `make verify` (Final project health check)
 
 ### 2. General Workflow
 
@@ -35,7 +34,6 @@ You can easily sign off your commits by using the `-s` or `--signoff` flag:
 ```bash
 git commit -s -m "fix(script): resolve posix portability issue"
 ```
-
 
 ### 4. Code & Architecture Standards
 

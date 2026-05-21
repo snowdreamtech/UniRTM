@@ -128,7 +128,6 @@ func runGenerateDockerfile(cmd *cobra.Command, args []string) error {
 	return writeOrPrint(generateOutput, dockerfileTemplate)
 }
 
-
 // ─── pre-commit ───────────────────────────────────────────────────────────────
 
 var generatePreCommitCmd = &cobra.Command{

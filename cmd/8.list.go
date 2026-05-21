@@ -21,7 +21,7 @@ import (
 
 var (
 	// listToolFilter filters list output by tool name.
-	listToolFilter string
+	listToolFilter  string
 	listCurrentOnly bool
 )
 

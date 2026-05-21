@@ -334,7 +334,7 @@ func runTool(cmd *cobra.Command, args []string) error {
 	} else {
 		var optsStr []string
 		for k, v := range info.ToolOptions {
-			optsStr = append(optsStr, pterm.FgCyan.Sprintf("%s=", k) + fmt.Sprintf("%v", v))
+			optsStr = append(optsStr, pterm.FgCyan.Sprintf("%s=", k)+fmt.Sprintf("%v", v))
 		}
 		rows = append(rows, []string{"Tool Options", strings.Join(optsStr, ", ")})
 	}

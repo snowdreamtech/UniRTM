@@ -261,9 +261,9 @@ func genSettings() gopter.Gen {
 		gen.IntRange(0, 604800), // 0 to 7 days in seconds
 	).Map(func(values []interface{}) config.Settings {
 		return config.Settings{
-			CacheDir:    values[0].(string),
-			DataDir:     values[1].(string),
-			CacheTTL:    config.DurationOrInt(values[2].(int)),
+			CacheDir: values[0].(string),
+			DataDir:  values[1].(string),
+			CacheTTL: config.DurationOrInt(values[2].(int)),
 		}
 	})
 }
@@ -734,7 +734,6 @@ func TestProperty_ConfigurationMergePrecedence(t *testing.T) {
 				return false
 			}
 
-
 			// Base values should be preserved for keys not in override
 			for toolName, baseTool := range base.Tools {
 				if _, inOverride := override.Tools[toolName]; !inOverride {
@@ -1032,9 +1031,9 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 					"DESCRIPTION": "A tool with \"quotes\" and 'apostrophes'",
 				},
 				Settings: config.Settings{
-					CacheDir:    "/tmp/cache with spaces",
-					DataDir:     "/var/lib/unirtm",
-					CacheTTL:    86400,
+					CacheDir: "/tmp/cache with spaces",
+					DataDir:  "/var/lib/unirtm",
+					CacheTTL: 86400,
 				},
 				Tasks: map[string]config.Task{},
 			},
@@ -1072,9 +1071,9 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 					"PYTHON_ENV": "production",
 				},
 				Settings: config.Settings{
-					CacheDir:    "/var/cache/unirtm",
-					DataDir:     "/var/lib/unirtm",
-					CacheTTL:    604800,
+					CacheDir: "/var/cache/unirtm",
+					DataDir:  "/var/lib/unirtm",
+					CacheTTL: 604800,
 				},
 				Tasks: map[string]config.Task{
 					"build": {
@@ -1103,9 +1102,9 @@ func TestConfigRoundTrip_EdgeCases(t *testing.T) {
 					"EMPTY": "",
 				},
 				Settings: config.Settings{
-					CacheDir:    "",
-					DataDir:     "",
-					CacheTTL:    0,
+					CacheDir: "",
+					DataDir:  "",
+					CacheTTL: 0,
 				},
 				Tasks: map[string]config.Task{
 					"noop": {

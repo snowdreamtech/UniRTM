@@ -1470,10 +1470,10 @@ get_version() {
   # 1. Try UniRTM First (Fast & Reliable for JIT tools)
   # Query unirtm current directly to check version
   local _UNIRTM_VER_OUT
-  if _UNIRTM_VER_OUT=$(UNIRTM_OFFLINE=1 "${_G_UNIRTM_BIN:-unirtm}" current "${_M_PLUGIN:-${_CMD_VER:-}}" 2>/dev/null) && \
-     [ -n "${_UNIRTM_VER_OUT:-}" ] && \
-     [ "${_UNIRTM_VER_OUT:-}" != "null" ] && \
-     ! echo "${_UNIRTM_VER_OUT:-}" | grep -q "✗"; then
+  if _UNIRTM_VER_OUT=$(UNIRTM_OFFLINE=1 "${_G_UNIRTM_BIN:-unirtm}" current "${_M_PLUGIN:-${_CMD_VER:-}}" 2>/dev/null) &&
+    [ -n "${_UNIRTM_VER_OUT:-}" ] &&
+    [ "${_UNIRTM_VER_OUT:-}" != "null" ] &&
+    ! echo "${_UNIRTM_VER_OUT:-}" | grep -q "✗"; then
     echo "${_UNIRTM_VER_OUT:-}" | tr -d '\r' && return 0
   fi
 
@@ -2317,7 +2317,6 @@ install_tool_safe() {
   log_info "=== install_tool_safe: ${_DISPLAY_NAME:-} completed successfully ==="
   return 0
 }
-
 
 # Purpose: Installs git hooks using pre-commit.
 # Delegate: Managed via pipx (pre-commit).

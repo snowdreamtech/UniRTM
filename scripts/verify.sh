@@ -62,17 +62,17 @@ main() {
   # 3. Standardized Linting (Pre-commit)
   log_info "\n── Phase 1: Static Analysis (Lint) ──"
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
-    log_success "DRY-RUN: Would run sh scripts/lint.sh"
+    log_success "DRY-RUN: Would run unirtm run lint"
   else
-    sh "${SCRIPT_DIR:-}/lint.sh" || _EXIT_VERIFY=$?
+    command unirtm run lint || _EXIT_VERIFY=$?
   fi
 
   # 5. Security Audit
   log_info "\n── Phase 2: Security Audit ──"
   if [ "${DRY_RUN:-0}" -eq 1 ]; then
-    log_success "DRY-RUN: Would run sh scripts/audit.sh"
+    log_success "DRY-RUN: Would run unirtm run audit"
   else
-    sh "${SCRIPT_DIR:-}/audit.sh" || _EXIT_VERIFY=$?
+    command unirtm run audit || _EXIT_VERIFY=$?
   fi
 
   # 7. Final Status Report

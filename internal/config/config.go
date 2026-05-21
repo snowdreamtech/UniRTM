@@ -132,7 +132,7 @@ type Settings struct {
 	Color              string                            `toml:"color,omitempty" yaml:"color,omitempty" mapstructure:"color,omitempty"`
 	Editor             string                            `toml:"editor,omitempty" yaml:"editor,omitempty" mapstructure:"editor,omitempty"`
 	Shell              string                            `toml:"shell,omitempty" yaml:"shell,omitempty" mapstructure:"shell,omitempty"`
-		AlwaysKeepDownload bool                              `toml:"always_keep_download,omitempty" yaml:"always_keep_download,omitempty" mapstructure:"always_keep_download,omitempty"`
+	AlwaysKeepDownload bool                              `toml:"always_keep_download,omitempty" yaml:"always_keep_download,omitempty" mapstructure:"always_keep_download,omitempty"`
 	CeilingPaths       []string                          `toml:"ceiling_paths,omitempty" yaml:"ceiling_paths,omitempty" mapstructure:"ceiling_paths,omitempty"`
 	TrustedConfigPaths []string                          `toml:"trusted_config_paths,omitempty" yaml:"trusted_config_paths,omitempty" mapstructure:"trusted_config_paths,omitempty"`
 	GPGVerify          string                            `toml:"gpg_verify" yaml:"gpg_verify" mapstructure:"gpg_verify"`

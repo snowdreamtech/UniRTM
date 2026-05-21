@@ -397,9 +397,10 @@ func (s *SemVer) Equal(other *SemVer) bool {
 
 // Compare compares s to other.
 // Returns:
-//   -1 if s < other
-//    0 if s == other
-//    1 if s > other
+//
+//	-1 if s < other
+//	 0 if s == other
+//	 1 if s > other
 func (s *SemVer) Compare(other *SemVer) int {
 	if s == nil && other == nil {
 		return 0

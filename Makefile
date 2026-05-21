@@ -72,7 +72,7 @@ GIT_BRANCH      := $(shell git branch --show-current 2>/dev/null || echo "not a 
 # =============================================================================
 # Targets
 # =============================================================================
-.PHONY: all help lint test verify audit gen-dependabot sync-harden-runner license-add license-check
+.PHONY: all help lint test verify audit gen-dependabot sync-harden-runner license-add license-check clean
 
 # Default target: display help
 all: help
@@ -84,35 +84,21 @@ help: ## Show this help message
 # Lifecycle Targets
 
 lint: ## Run standardized linter (pre-commit)
-ifeq ($(OS_NAME),Windows)
-	@scripts/lint.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/lint.sh $(SCRIPT_ARGS) $(ARGS)
-endif
+	@./unirtm run lint $(SCRIPT_ARGS) $(ARGS)
 
 test: ## Run Go unit tests for all packages recursively
 	@go test -race -v ./... $(ARGS)
 
 .NOTPARALLEL: verify
 verify: ## Run full local verification (lint, test, audit)
-ifeq ($(OS_NAME),Windows)
-	@scripts/verify.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/verify.sh $(SCRIPT_ARGS) $(ARGS)
-endif
+	@./unirtm run verify $(SCRIPT_ARGS) $(ARGS)
 
-audit: ## Run security audit and vulnerability scans
-ifeq ($(OS_NAME),Windows)
-	@scripts/audit.bat $(SCRIPT_ARGS) $(ARGS)
-else
-	@sh scripts/audit.sh $(SCRIPT_ARGS) $(ARGS)
-endif
 
 license-add: ## Add license headers to core source files (Safe Mode)
-	@unirtm license add -v -f .github/license-header.txt src pkg internal cmd app lib include scripts tests
+	@./unirtm license add -v -f .github/license-header.txt src pkg internal cmd app lib include scripts tests
 
 license-check: ## Check for missing license headers
-	@unirtm license check -f .github/license-header.txt src pkg internal cmd app lib include scripts tests
+	@./unirtm license check -f .github/license-header.txt src pkg internal cmd app lib include scripts tests
 
 
 gen-dependabot: ## Auto-generate dependabot.yml from detected ecosystems
@@ -121,6 +107,9 @@ ifeq ($(OS_NAME),Windows)
 else
 	@mise x -- sh scripts/gen-dependabot.sh $(SCRIPT_ARGS) $(ARGS)
 endif
+
+clean: ## Clean build artifacts
+	@echo "Nothing to clean"
 
 sync-harden-runner: ## Synchronize Harden Runner endpoints to all workflow files
 ifeq ($(OS_NAME),Windows)

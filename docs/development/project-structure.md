@@ -147,7 +147,7 @@ goimports -w .
 2. **Develop**: Write code following Go conventions
 3. **Format**: Auto-format on save (goimports)
 4. **Lint**: `make lint` (runs pre-commit hooks)
-8. **Verify**: `make verify` (full check before PR)
+5. **Verify**: `make verify` (full check before PR)
 
 ## Code Style
 

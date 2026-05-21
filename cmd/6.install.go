@@ -33,7 +33,7 @@ var (
 	// installBackend specifies the backend to use for installation
 	installBackend string
 	// installForce forces reinstallation of tools even if already installed
-	installForce   bool
+	installForce bool
 )
 
 // init registers the install command to the root command.
@@ -625,14 +625,14 @@ type concurrentSpinnerFrame struct {
 }
 
 type concurrentSpinnerManager struct {
-	mu          sync.Mutex
-	active      []*concurrentSpinnerFrame
-	activeMap   map[string]*concurrentSpinnerFrame
-	ticker      *time.Ticker
-	done        chan struct{}
-	frames      []string
-	frameCount  int
-	lastHeight  int
+	mu         sync.Mutex
+	active     []*concurrentSpinnerFrame
+	activeMap  map[string]*concurrentSpinnerFrame
+	ticker     *time.Ticker
+	done       chan struct{}
+	frames     []string
+	frameCount int
+	lastHeight int
 }
 
 func newConcurrentSpinnerManager() *concurrentSpinnerManager {

@@ -76,7 +76,6 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 
 	pterm.DefaultSection.Println("Project Preparation Check")
 
-
 	// 1. Run local project structural checks (Node, Go, Python)
 	detectProjectStructure(cwd, targetTool)
 
@@ -195,7 +194,6 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 	}
 
 	pterm.DefaultSection.Println("Preparation Summary")
-
 
 	allSuccess := true
 	for _, r := range results {

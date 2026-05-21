@@ -240,8 +240,8 @@ To maintain consistency and high quality, developers and AI agents MUST follow t
 
 Follow this order when setting up a new repository or onboarding to a new machine:
 
-2. **unirtm install**: Install all toolchains, project dependencies, and activate git hooks.
-3. **make verify**: Perform a final comprehensive health and quality check.
+1. **unirtm install**: Install all toolchains, project dependencies, and activate git hooks.
+2. **make verify**: Perform a final comprehensive health and quality check.
 
 ### Daily Development Loop (日常开发循环)
 

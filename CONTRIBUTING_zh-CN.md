@@ -12,9 +12,8 @@
 
 请按照以下统一的顺序设置您的本地开发环境：
 
-2. **环境准备与依赖安装**: `unirtm install` (安装开发所需核心工具与项目依赖)
-3. **验证**: `make verify` (最终项目健康检查)
-
+1. **环境准备与依赖安装**: `unirtm install` (安装开发所需核心工具与项目依赖)
+2. **验证**: `make verify` (最终项目健康检查)
 
 ### 2. 一般工作流
 
@@ -35,7 +34,6 @@
 ```bash
 git commit -s -m "fix(script): resolve posix portability issue"
 ```
-
 
 ### 4. 代码与架构规范
 

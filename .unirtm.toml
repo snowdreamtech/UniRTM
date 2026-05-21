@@ -32,12 +32,65 @@ data_dir = ''
 
 [tasks]
 [tasks.audit]
-description = 'Run security audit and vulnerability scans'
-run = 'sh scripts/audit.sh'
+description = 'Run comprehensive security audit (parallelized)'
+depends = [
+  "audit:gitleaks",
+  "audit:zizmor",
+  "audit:osv",
+  "audit:npm",
+  "audit:pip",
+  "audit:govulncheck",
+  "audit:trivy",
+]
 
+[tasks."audit:gitleaks"]
+description = 'Scan for hardcoded secrets'
+run = 'gitleaks detect --source . --no-banner'
 
+[tasks."audit:zizmor"]
+description = 'Audit GitHub Actions workflows for security flaws'
+run = 'zizmor . --format plain --config .zizmor.yml || true'
 
+[tasks."audit:osv"]
+description = 'Generic vulnerability scan across lockfiles'
+run = 'osv-scanner scan . --config .osv-scanner.toml || true'
 
+[tasks."audit:npm"]
+description = 'Node.js dependency audit'
+run = '''
+if [ -f "package.json" ]; then
+    npm audit --registry="https://registry.npmjs.org" || true
+else
+    echo "⏭️  Skipped (no package.json)"
+fi
+'''
+
+[tasks."audit:pip"]
+description = 'Python dependency audit'
+run = '''
+if [ -f "requirements.txt" ] || [ -f "pyproject.toml" ]; then
+    pip-audit || true
+else
+    echo "⏭️  Skipped (no python requirements)"
+fi
+'''
+
+[tasks."audit:govulncheck"]
+description = 'Go dependency audit'
+run = '''
+if [ -f "go.mod" ]; then
+    govulncheck ./... || true
+else
+    echo "⏭️  Skipped (no go.mod)"
+fi
+'''
+
+[tasks."audit:trivy"]
+description = 'Generate and scan SBOM using Trivy'
+run = '''
+trivy fs --format cyclonedx --output sbom.json . || true
+trivy sbom sbom.json || true
+'''
 
 
 [tasks.gen-dependabot]

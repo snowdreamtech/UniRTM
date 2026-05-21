@@ -28,9 +28,9 @@ func TestConfig_Validate(t *testing.T) {
 					"NODE_ENV": "development",
 				},
 				Settings: Settings{
-					CacheDir:    "/tmp/cache",
-					DataDir:     "/tmp/data",
-					CacheTTL:    3600,
+					CacheDir: "/tmp/cache",
+					DataDir:  "/tmp/data",
+					CacheTTL: 3600,
 				},
 				Tasks: map[string]Task{
 					"build": {
@@ -134,7 +134,7 @@ func TestConfig_Validate(t *testing.T) {
 					"python": {Version: "3.11.0"},
 				},
 				Settings: Settings{
-					CacheTTL:    -100,
+					CacheTTL: -100,
 				},
 				Tasks: map[string]Task{
 					"build": {Run: ""},
@@ -235,16 +235,16 @@ func TestSettings_Validate(t *testing.T) {
 		{
 			name: "valid with all fields",
 			config: Settings{
-				CacheDir:    "/tmp/cache",
-				DataDir:     "/tmp/data",
-				CacheTTL:    3600,
+				CacheDir: "/tmp/cache",
+				DataDir:  "/tmp/data",
+				CacheTTL: 3600,
 			},
 			wantErr: false,
 		},
 		{
 			name: "valid with zero values",
 			config: Settings{
-				CacheTTL:    0,
+				CacheTTL: 0,
 			},
 			wantErr: false,
 		},

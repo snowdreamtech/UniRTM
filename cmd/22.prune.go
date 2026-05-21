@@ -219,9 +219,9 @@ func runPrune(cmd *cobra.Command, args []string) error {
 	formatter.Success(
 		fmt.Sprintf("Pruned %d installation(s)  ·  freed %s", pruned, pterm.FgGreen.Sprint(formatBytes(freedBytes))),
 		map[string]interface{}{
-			"pruned":       pruned,
-			"freed_bytes":  freedBytes,
-			"freed_human":  formatBytes(freedBytes),
+			"pruned":      pruned,
+			"freed_bytes": freedBytes,
+			"freed_human": formatBytes(freedBytes),
 		},
 	)
 	return nil

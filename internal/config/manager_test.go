@@ -79,7 +79,6 @@ run = "npm test"
 		assert.Equal(t, "/tmp/data", config.Settings.DataDir)
 		assert.Equal(t, 3600, int(config.Settings.CacheTTL))
 
-
 		// Verify Tasks
 		assert.Len(t, config.Tasks, 1)
 		assert.Equal(t, "Run tests", config.Tasks["test"].Description)
@@ -358,9 +357,9 @@ func TestConfigManager_Validate(t *testing.T) {
 				"NODE_ENV": "production",
 			},
 			Settings: Settings{
-				CacheDir:    "/tmp/cache",
-				DataDir:     "/tmp/data",
-				CacheTTL:    3600,
+				CacheDir: "/tmp/cache",
+				DataDir:  "/tmp/data",
+				CacheTTL: 3600,
 			},
 			Tasks: map[string]Task{
 				"test": {
@@ -406,8 +405,6 @@ func TestConfigManager_Validate(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "cache_ttl must be non-negative")
 	})
-
-
 
 	t.Run("validate configuration with missing task run command", func(t *testing.T) {
 		config := &Config{
@@ -507,7 +504,7 @@ func TestConfigManager_Merge(t *testing.T) {
 				"path":     "/usr/local/bin",
 			},
 			Settings: Settings{
-				DataDir:     "/tmp/data2",
+				DataDir: "/tmp/data2",
 			},
 			Tasks: map[string]Task{
 				"build": {
@@ -538,7 +535,6 @@ func TestConfigManager_Merge(t *testing.T) {
 		assert.Equal(t, "/tmp/cache1", merged.Settings.CacheDir, "CacheDir from config1")
 		assert.Equal(t, "/tmp/data2", merged.Settings.DataDir, "DataDir from config2")
 		assert.Equal(t, 3600, int(merged.Settings.CacheTTL), "CacheTTL from config1")
-
 
 		// Verify Tasks merging
 		assert.Len(t, merged.Tasks, 2)
@@ -715,8 +711,8 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 				"DEBUG":    "false",
 			},
 			Settings: Settings{
-				CacheDir:    "/prod/cache",
-				CacheTTL:    7200,
+				CacheDir: "/prod/cache",
+				CacheTTL: 7200,
 			},
 			Tasks: map[string]Task{
 				"build": {
@@ -762,7 +758,6 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 		assert.Equal(t, "/dev/cache", result.Settings.CacheDir, "CacheDir should be overridden")
 		assert.Equal(t, 7200, int(result.Settings.CacheTTL), "CacheTTL should be preserved")
 
-
 		// Verify task overrides
 		assert.Equal(t, "Build for development", result.Tasks["build"].Description)
 		assert.Equal(t, "npm run dev", result.Tasks["build"].Run)
@@ -779,7 +774,7 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 			Environments: map[string]EnvironmentConfig{
 				"staging": {
 					Settings: Settings{
-						CacheTTL:    7200,
+						CacheTTL: 7200,
 					},
 				},
 			},
@@ -791,7 +786,6 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 
 		// Verify settings overrides
 		assert.Equal(t, 7200, int(result.Settings.CacheTTL), "CacheTTL should be overridden")
-
 
 		// Verify tools are preserved
 		assert.Equal(t, "20.0.0", result.Tools["node"].Version)
@@ -815,7 +809,7 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 						"ENABLE_CACHE": "true",
 					},
 					Settings: Settings{
-						CacheTTL:    86400,
+						CacheTTL: 86400,
 					},
 				},
 			},
@@ -1131,7 +1125,6 @@ cache_ttl = 172800
 		assert.Equal(t, "/prod/cache", stagingConfig.Settings.CacheDir)
 		assert.Equal(t, 43200, int(stagingConfig.Settings.CacheTTL))
 
-
 		// Test production environment
 		prodConfig, err := manager.LoadWithEnvironment(ctx, "production")
 		require.NoError(t, err)
@@ -1146,7 +1139,6 @@ cache_ttl = 172800
 		assert.Equal(t, "true", prodConfig.Env["ENABLE_MONITORING"])
 		assert.Equal(t, "/prod/cache", prodConfig.Settings.CacheDir)
 		assert.Equal(t, 172800, int(prodConfig.Settings.CacheTTL))
-
 
 		// Validate all configurations
 		err = manager.Validate(ctx, devConfig)

@@ -58,7 +58,6 @@ func TestDetectActiveVersions_PrefixMatch(t *testing.T) {
 	assert.Equal(t, "2.70.0", got[0])
 }
 
-
 func TestToolInfo_Struct(t *testing.T) {
 	info := toolInfo{
 		Tool:         "cli/cli",

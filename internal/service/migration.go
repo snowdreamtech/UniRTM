@@ -343,8 +343,6 @@ func (mm *MigrationManager) parseMiseToml(path string) ([]MigrationTool, map[str
 			}
 		}
 
-
-
 		if locked, ok := settingsData["locked"].(bool); ok {
 			settings.Locked = locked
 		}

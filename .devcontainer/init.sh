@@ -74,7 +74,7 @@ if command -v unirtm >/dev/null 2>&1; then
     if unirtm trust -a 2>/dev/null; then
       log_detail "unirtm configuration pre-trusted (attempt $UNIRTM_TRUST_ATTEMPTS)"
       break
-    elif [ $UNIRTM_TRUST_ATTEMPTS -lt $UNIRTM_TRUST_MAX ]; do
+    elif [ $UNIRTM_TRUST_ATTEMPTS -lt $UNIRTM_TRUST_MAX ]; then
       log_detail "unirtm trust attempt $UNIRTM_TRUST_ATTEMPTS/$UNIRTM_TRUST_MAX failed, retrying..."
       sleep 1
     else

@@ -36,9 +36,9 @@ var toolStubCmd = &cobra.Command{
 
 Stubs are placeholders for tools that are not yet installed but are available
 in the registry. When a stub is executed, UniRTM prompts to install the tool.`,
-	Args: cobra.MinimumNArgs(1),
+	Args:               cobra.MinimumNArgs(1),
 	DisableFlagParsing: true,
-	RunE: runToolStub,
+	RunE:               runToolStub,
 }
 
 // toolStubConfig represents the TOML configuration inside a tool stub.

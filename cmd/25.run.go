@@ -9,12 +9,12 @@ import (
 	"os"
 
 	"github.com/pterm/pterm"
-	"golang.org/x/term"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/task"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 // init registers the run command to the root command.
