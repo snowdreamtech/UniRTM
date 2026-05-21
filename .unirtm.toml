@@ -60,8 +60,12 @@ run = 'sh scripts/lint.sh'
 description = 'Synchronize Harden Runner endpoints to all workflow files'
 run = 'sh scripts/sync-harden-runner.sh'
 
+[tasks.test]
+description = 'Run Go unit tests for all packages recursively'
+run = 'go test -race -v ./...'
+
 [tasks.verify]
-description = 'Run full local verification (lint, audit)'
+description = 'Run full local verification (lint, test, audit)'
 run = 'sh scripts/verify.sh'
 
 [tools]

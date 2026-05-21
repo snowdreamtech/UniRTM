@@ -72,7 +72,7 @@ GIT_BRANCH      := $(shell git branch --show-current 2>/dev/null || echo "not a 
 # =============================================================================
 # Targets
 # =============================================================================
-.PHONY: all help lint verify audit gen-dependabot sync-harden-runner license-add license-check
+.PHONY: all help lint test verify audit gen-dependabot sync-harden-runner license-add license-check
 
 # Default target: display help
 all: help
@@ -89,6 +89,9 @@ ifeq ($(OS_NAME),Windows)
 else
 	@sh scripts/lint.sh $(SCRIPT_ARGS) $(ARGS)
 endif
+
+test: ## Run Go unit tests for all packages recursively
+	@go test -race -v ./... $(ARGS)
 
 .NOTPARALLEL: verify
 verify: ## Run full local verification (lint, test, audit)

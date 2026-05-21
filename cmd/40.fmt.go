@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"testing"
 
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
@@ -58,7 +59,31 @@ Examples:
 func runFmt(cmd *cobra.Command, args []string) error {
 	// Transactional command: Keep it clean and quiet without the verbose header
 
-	spinner, _ := pterm.DefaultSpinner.Start("Scanning configuration files...")
+	// pterm.SpinnerPrinter.Start() in v0.12.83 unconditionally spawns a goroutine
+	// that reads IsActive in a tight loop, while Stop() writes IsActive without
+	// synchronisation — a data race detected by 'go test -race'. Skip the spinner
+	// entirely when running under 'go test'; use plain pterm printers instead.
+	var spinner *pterm.SpinnerPrinter
+	if !testing.Testing() {
+		spinner, _ = pterm.DefaultSpinner.Start("Scanning configuration files...")
+	}
+
+	// spinnerWarn / spinnerSuccess are helpers that route to the spinner when
+	// available, or fall back to plain pterm printers in test mode.
+	spinnerWarn := func(msg string) {
+		if spinner != nil {
+			spinner.Warning(msg)
+		} else {
+			pterm.Warning.Println(msg)
+		}
+	}
+	spinnerSuccess := func(msg string) {
+		if spinner != nil {
+			spinner.Success(msg)
+		} else {
+			pterm.Success.Println(msg)
+		}
+	}
 
 	var files []string
 	if fmtRecursive {
@@ -94,11 +119,11 @@ func runFmt(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(files) == 0 {
-		spinner.Warning("No configuration files found to format.")
+		spinnerWarn("No configuration files found to format.")
 		return nil
 	}
 
-	spinner.Success(fmt.Sprintf("Found %d file(s)", len(files)))
+	spinnerSuccess(fmt.Sprintf("Found %d file(s)", len(files)))
 	fmt.Println()
 
 	var modifiedCount, errorCount int

@@ -40,12 +40,24 @@ func TestDetectShimPath_Found(t *testing.T) {
 	assert.NotEmpty(t, got)
 }
 
-func TestDetectActiveVersion_NoShims(t *testing.T) {
-	tmp := t.TempDir()
-	// No shims dir entries → should return ""
-	got := detectActiveVersion(tmp, tmp, "cli/cli", []string{"2.70.0", "2.72.0"})
-	assert.Equal(t, "", got)
+func TestDetectActiveVersions_NoMatch(t *testing.T) {
+	// Requested versions that are not in the installed list → empty result.
+	got := detectActiveVersions([]string{"1.0.0"}, []string{"2.70.0", "2.72.0"})
+	assert.Empty(t, got)
 }
+
+func TestDetectActiveVersions_ExactMatch(t *testing.T) {
+	got := detectActiveVersions([]string{"2.72.0"}, []string{"2.70.0", "2.72.0"})
+	assert.Equal(t, []string{"2.72.0"}, got)
+}
+
+func TestDetectActiveVersions_PrefixMatch(t *testing.T) {
+	// Requested "2" should match installed "2.72.0" via prefix.
+	got := detectActiveVersions([]string{"2"}, []string{"2.70.0", "2.72.0"})
+	assert.Len(t, got, 1)
+	assert.Equal(t, "2.70.0", got[0])
+}
+
 
 func TestToolInfo_Struct(t *testing.T) {
 	info := toolInfo{

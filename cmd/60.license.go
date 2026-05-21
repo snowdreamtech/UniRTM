@@ -54,10 +54,14 @@ Examples:
 func addLicenseFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&licenseType, "license", "l", "", "license type: MIT, Apache-2.0, MPL-2.0, bsd (mutually exclusive with --file)")
 	cmd.Flags().StringVarP(&licenseFile, "file", "f", "", "path to a custom license header template file")
-	cmd.Flags().StringVarP(&licenseHolder, "holder", "c", "", "copyright holder name (used with -l)")
-	cmd.Flags().StringVarP(&licenseYear, "year", "y", fmt.Sprint(time.Now().Year()), "copyright year (default: current year)")
+	// Note: no -c shorthand (conflicts with global -c/--config)
+	cmd.Flags().StringVar(&licenseHolder, "holder", "", "copyright holder name (used with --license)")
+	// Note: no -y shorthand (conflicts with global -y/--yes)
+	cmd.Flags().StringVar(&licenseYear, "year", fmt.Sprint(time.Now().Year()), "copyright year (default: current year)")
 	cmd.Flags().StringArrayVar(&licenseIgnore, "ignore", nil, "file pattern to ignore (repeatable, supports ** glob)")
-	cmd.Flags().BoolVarP(&licenseVerbose, "verbose", "v", false, "print each modified file")
+	// Note: no -v shorthand (conflicts with global -v/--verbose)
+	cmd.Flags().BoolVar(&licenseVerbose, "verbose", false, "print each modified/checked file")
+
 	cmd.Flags().StringVar(&licenseSPDX, "spdx", "off", "SPDX identifier mode: off | on | only")
 }
 
