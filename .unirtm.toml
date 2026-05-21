@@ -115,6 +115,7 @@ run = 'pre-commit run --all-files || (echo "⚠️  First pass failed. Running s
 [tasks.test]
 description = 'Run Go unit tests for all packages recursively'
 run = 'go test -race -v ./...'
+output = 'interleaved'
 
 [tasks.verify]
 description = 'Run full local verification (lint-all, test, audit)'
