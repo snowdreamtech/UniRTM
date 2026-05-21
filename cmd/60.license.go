@@ -54,8 +54,8 @@ Examples:
 func addLicenseFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&licenseType, "license", "l", "", "license type: MIT, Apache-2.0, MPL-2.0, bsd (mutually exclusive with --file)")
 	cmd.Flags().StringVarP(&licenseFile, "file", "f", "", "path to a custom license header template file")
-	// Note: no -c shorthand (conflicts with global -c/--config)
-	cmd.Flags().StringVar(&licenseHolder, "holder", "", "copyright holder name (used with --license)")
+	// -H for Holder (-h is reserved by cobra for --help, -c conflicts with global --config)
+	cmd.Flags().StringVarP(&licenseHolder, "holder", "H", "", "copyright holder name (used with --license)")
 	// Note: no -y shorthand (conflicts with global -y/--yes)
 	cmd.Flags().StringVar(&licenseYear, "year", fmt.Sprint(time.Now().Year()), "copyright year (default: current year)")
 	cmd.Flags().StringArrayVar(&licenseIgnore, "ignore", nil, "file pattern to ignore (repeatable, supports ** glob)")
