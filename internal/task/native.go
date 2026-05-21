@@ -142,6 +142,26 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 		outputStyle = taskDef.Output
 	}
 
+	// Scheme 4: Check environment variable override (UNIRTM_TASK_OUTPUT)
+	if envOutput := os.Getenv("UNIRTM_TASK_OUTPUT"); envOutput != "" {
+		outputStyle = envOutput
+	}
+
+	// Scheme 5: Auto-detect CI environment and use interleaved mode
+	if outputStyle == "spinner" || outputStyle == "" {
+		isCIEnv := os.Getenv("CI") != "" ||
+			os.Getenv("GITHUB_ACTIONS") != "" ||
+			os.Getenv("GITLAB_CI") != "" ||
+			os.Getenv("CIRCLECI") != "" ||
+			os.Getenv("TRAVIS") != "" ||
+			os.Getenv("JENKINS_URL") != "" ||
+			os.Getenv("BUILDKITE") != "" ||
+			os.Getenv("DRONE") != ""
+		if isCIEnv {
+			outputStyle = "interleaved"
+		}
+	}
+
 	var spinner *pterm.SpinnerPrinter
 	var buf bytes.Buffer
 	if outputStyle == "spinner" || outputStyle == "" {
@@ -171,6 +191,10 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 			}
 		} else {
 			spinner.Success(fmt.Sprintf("Task %s completed", taskName))
+			// Scheme 2: Show success output if captured
+			if buf.Len() > 0 {
+				fmt.Println(buf.String())
+			}
 		}
 	} else {
 		if err != nil {

@@ -22,6 +22,9 @@ func init() {
 	if rootCmd != nil {
 		rootCmd.AddCommand(runCmd)
 	}
+
+	// Scheme 3: Add --output flag for task output mode selection
+	runCmd.Flags().String("output", "", "Task output mode: spinner, prefix, or interleaved (default: auto-detect)")
 }
 
 // runCmd represents the run command which executes a task via the routing engine.
@@ -44,7 +47,10 @@ Examples:
   unirtm run build
 
   # Run a task with arguments
-  unirtm run test -- -v`,
+  unirtm run test -- -v
+
+  # Run with custom output mode
+  unirtm run test --output interleaved`,
 	Aliases:            []string{"r"},
 	Args:               cobra.MinimumNArgs(0),
 	DisableFlagParsing: false,
@@ -76,6 +82,12 @@ Examples:
 // runTaskCommand executes the task routing.
 func runTaskCommand(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
+
+	// Scheme 3: Get output mode from flag and set environment variable
+	outputMode, _ := cmd.Flags().GetString("output")
+	if outputMode != "" {
+		os.Setenv("UNIRTM_TASK_OUTPUT", outputMode)
+	}
 
 	// Load configuration
 	configManager := config.NewConfigManager()
