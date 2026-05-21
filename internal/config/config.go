@@ -46,6 +46,7 @@ type ToolMap map[string]ToolConfig
 
 func (c *Config) PostLoad() {
 	c.Settings.LoadFromEnv()
+	c.Settings.SetDefaults()
 	if c.ToolsRaw != nil {
 		c.Tools = make(ToolMap)
 		for k, v := range c.ToolsRaw {
@@ -241,6 +242,15 @@ func (s *Settings) LoadFromEnv() {
 	}
 	if v := env.Get("MINIMUM_RELEASE_AGE"); v != "" {
 		s.MinimumReleaseAge = v
+	}
+}
+
+// SetDefaults applies sensible defaults for settings that were not provided
+// either via config file or environment variables.
+func (s *Settings) SetDefaults() {
+	if s.TaskOutput == "" {
+		// Default to interleaved so tasks stream logs by default
+		s.TaskOutput = "interleaved"
 	}
 }
 
