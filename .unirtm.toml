@@ -95,7 +95,7 @@ trivy sbom sbom.json || true
 
 [tasks.gen-dependabot]
 description = 'Auto-generate dependabot.yml from detected ecosystems'
-run = 'sh scripts/gen-dependabot.sh'
+run = 'unirtm generate dependabot --output .github/dependabot.yml'
 
 [tasks.license-add]
 description = 'Add license headers to core source files (Safe Mode)'
