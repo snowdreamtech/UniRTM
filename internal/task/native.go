@@ -4,6 +4,7 @@
 package task
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -142,11 +143,12 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 	}
 
 	var spinner *pterm.SpinnerPrinter
+	var buf bytes.Buffer
 	if outputStyle == "spinner" || outputStyle == "" {
 		spinner, _ = pterm.DefaultSpinner.Start(fmt.Sprintf("Running task: %s", taskName))
 		// Capture output so we can show it if it fails, or just hide it
-		cmd.Stdout = nil
-		cmd.Stderr = nil
+		cmd.Stdout = &buf
+		cmd.Stderr = &buf
 	} else if outputStyle == "prefix" {
 		prefix := fmt.Sprintf("[%s] ", pterm.FgCyan.Sprint(taskName))
 		cmd.Stdout = &prefixWriter{w: os.Stdout, prefix: prefix, atStart: true}
@@ -164,6 +166,9 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 	if spinner != nil {
 		if err != nil {
 			spinner.Fail(fmt.Sprintf("Task %s failed: %v", taskName, err))
+			if buf.Len() > 0 {
+				fmt.Fprintln(os.Stderr, buf.String())
+			}
 		} else {
 			spinner.Success(fmt.Sprintf("Task %s completed", taskName))
 		}
