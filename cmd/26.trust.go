@@ -75,7 +75,7 @@ Use --list to view all currently trusted configuration files.`,
 		if len(args) > 0 {
 			path = args[0]
 		}
-		
+
 		absPath, err := filepath.Abs(path)
 		if err != nil {
 			absPath = path

@@ -133,7 +133,7 @@ func runSearch(cmd *cobra.Command, args []string) error {
 		Backend: searchBackend,
 		Limit:   searchLimit,
 	})
-	
+
 	if spinner != nil {
 		if err != nil {
 			spinner.Fail("Search failed")

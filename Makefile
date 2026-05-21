@@ -128,4 +128,3 @@ ifeq ($(OS_NAME),Windows)
 else
 	@sh scripts/sync-harden-runner.sh $(SCRIPT_ARGS) $(ARGS)
 endif
-

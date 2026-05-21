@@ -24,10 +24,10 @@ func TestRubyProvider_GenerateShims(t *testing.T) {
 	p := NewRubyProvider(NewNativeProvider())
 	installPath := t.TempDir()
 	version := "3.2.2"
-	
+
 	os.MkdirAll(filepath.Join(installPath, "bin"), 0755)
 	os.MkdirAll(filepath.Join(installPath, "gem-global", "bin"), 0755)
-	
+
 	if runtime.GOOS == "windows" {
 		os.WriteFile(filepath.Join(installPath, "bin", "ruby.exe"), []byte(""), 0755)
 		os.WriteFile(filepath.Join(installPath, "gem-global", "bin", "gem.exe"), []byte(""), 0755)
@@ -71,7 +71,7 @@ func TestRubyProvider_ListExecutables(t *testing.T) {
 	installPath := t.TempDir()
 	os.MkdirAll(filepath.Join(installPath, "bin"), 0755)
 	os.MkdirAll(filepath.Join(installPath, "gem-global", "bin"), 0755)
-	
+
 	if runtime.GOOS == "windows" {
 		os.WriteFile(filepath.Join(installPath, "bin", "ruby.exe"), []byte(""), 0755)
 		os.WriteFile(filepath.Join(installPath, "gem-global", "bin", "gem.exe"), []byte(""), 0755)
@@ -79,7 +79,7 @@ func TestRubyProvider_ListExecutables(t *testing.T) {
 		os.WriteFile(filepath.Join(installPath, "bin", "ruby"), []byte(""), 0755)
 		os.WriteFile(filepath.Join(installPath, "gem-global", "bin", "gem"), []byte(""), 0755)
 	}
-	
+
 	execs, err := p.ListExecutables("ruby", installPath, "3.2.2")
 	assert.NoError(t, err)
 

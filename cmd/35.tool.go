@@ -171,13 +171,13 @@ func runTool(cmd *cobra.Command, args []string) error {
 		configSourceStr = strings.Join(configSources, "\n")
 	}
 	var toolOpts map[string]interface{}
-	
+
 	if cfg != nil && cfg.Tools != nil {
 		if tc, ok := cfg.Tools[toolName]; ok {
 			if tc.Version != "" {
 				requestedVersions = append(requestedVersions, tc.Version)
 			}
-			
+
 			// Try to build tool options
 			toolOpts = make(map[string]interface{})
 			if tc.Backend != "" {
@@ -302,7 +302,7 @@ func runTool(cmd *cobra.Command, args []string) error {
 	// Full Human-readable Table output
 	fmt.Println()
 	pterm.DefaultSection.Printf("Tool: %s\n", pterm.FgCyan.Sprint(info.Tool))
-	
+
 	rows := pterm.TableData{
 		{"Backend", pterm.FgMagenta.Sprint(info.Backend)},
 		{"Install dir", pterm.FgLightCyan.Sprint(info.InstallDir)},
@@ -373,12 +373,12 @@ func formatInstalledWithActive(installed, active []string) string {
 	if len(installed) == 0 {
 		return pterm.FgYellow.Sprint("(none)")
 	}
-	
+
 	activeMap := make(map[string]bool)
 	for _, a := range active {
 		activeMap[a] = true
 	}
-	
+
 	var res []string
 	for _, v := range installed {
 		if activeMap[v] {
@@ -387,7 +387,7 @@ func formatInstalledWithActive(installed, active []string) string {
 			res = append(res, pterm.FgYellow.Sprint(v))
 		}
 	}
-	
+
 	return strings.Join(res, " ")
 }
 
@@ -493,7 +493,7 @@ func findToolConfigSources(ctx context.Context, toolName string) []string {
 			}
 			// Prepend to list since closer to cwd = higher precedence, but usually printed top-down or bottom-up?
 			// Let's just append them. The order of resolution in LoadHierarchy goes system -> global -> project -> local,
-			// where local overrides project. We'll just collect them in traversal order (local -> global) 
+			// where local overrides project. We'll just collect them in traversal order (local -> global)
 			// and then reverse them or just return them. Appending is fine.
 			sources = append(sources, dirSources...)
 

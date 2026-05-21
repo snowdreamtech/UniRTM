@@ -164,7 +164,7 @@ func runTestTool(cmd *cobra.Command, args []string) error {
 		backendName := spec.BackendName
 
 		fsName := env.GetFSToolName(toolName, backendName)
-		
+
 		// If the version is "latest", runInstall resolved it dynamically.
 		// We can find the installed version by finding the newest directory.
 		if version == "latest" {
@@ -256,11 +256,11 @@ func testExecutable(exePath string, cmdEnv []string) error {
 		cmd := exec.Command(exePath, flags...)
 		cmd.Env = cmdEnv
 		output, err := cmd.CombinedOutput()
-		
+
 		if err == nil {
 			return nil // Success
 		}
-		
+
 		lastErr = err
 		lastOutput = strings.TrimSpace(string(output))
 		// Truncate output if it's too long
@@ -274,4 +274,3 @@ func testExecutable(exePath string, cmdEnv []string) error {
 	}
 	return lastErr
 }
-

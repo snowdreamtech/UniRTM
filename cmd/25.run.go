@@ -132,14 +132,14 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 			pterm.Info.Println("No tasks available in current context.")
 			return nil
 		}
-		
+
 		isTerminal := term.IsTerminal(int(os.Stdout.Fd()))
 		if isTerminal {
 			pterm.DefaultSection.Println("Available Tasks")
 		} else {
 			fmt.Println("Available Tasks:")
 		}
-		
+
 		var taskItems []pterm.BulletListItem
 		for _, t := range tasks {
 			taskItems = append(taskItems, pterm.BulletListItem{Level: 0, Text: pterm.FgCyan.Sprint(t)})

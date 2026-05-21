@@ -257,7 +257,7 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 			filepath.Join(curr, ".unirtm.local.yaml"),
 			filepath.Join(curr, ".unirtm.local.toml"),
 		}
-		
+
 		var dirFiles []string
 		for _, p := range files {
 			if _, err := os.Stat(p); err == nil {
@@ -566,4 +566,3 @@ cache_ttl = "168h"
 	formatter.Success(fmt.Sprintf("Generated default configuration in %s", targetFile), nil)
 	return nil
 }
-

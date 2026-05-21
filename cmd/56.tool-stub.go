@@ -141,7 +141,7 @@ func runToolStub(cmd *cobra.Command, args []string) error {
 	if len(toolEnv) > 0 {
 		mergeEnvMaps(additionalEnv, toolEnv)
 	}
-	
+
 	// Add install env overrides
 	for k, v := range stub.InstallEnv {
 		additionalEnv[k] = v

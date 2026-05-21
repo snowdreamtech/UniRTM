@@ -368,7 +368,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 		// 1. Build tool list for ConcurrentManager
 		var requests []service.ToolInstallRequest
-		
+
 		// Create a map of toolName -> ToolSpec to check for dependencies within the list
 		specsMap := make(map[string]service.ToolSpec)
 		for _, spec := range toolsToInstall {
@@ -460,12 +460,12 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			reporter := func(toolName string, downloaded, total int64) {
 				if total > 0 {
 					percent := (downloaded * 100) / total
-					spinnerMgr.Update(toolName, fmt.Sprintf("Downloading %s/%s (%d%%)", 
-						humanize.Bytes(uint64(downloaded)), 
-						humanize.Bytes(uint64(total)), 
+					spinnerMgr.Update(toolName, fmt.Sprintf("Downloading %s/%s (%d%%)",
+						humanize.Bytes(uint64(downloaded)),
+						humanize.Bytes(uint64(total)),
 						percent))
 				} else {
-					spinnerMgr.Update(toolName, fmt.Sprintf("Downloading %s", 
+					spinnerMgr.Update(toolName, fmt.Sprintf("Downloading %s",
 						humanize.Bytes(uint64(downloaded))))
 				}
 			}
@@ -485,8 +485,8 @@ func runInstall(cmd *cobra.Command, args []string) error {
 					if !exists || downloaded-prevSize >= tenMB {
 						lastPercent[toolName] = downloaded
 						lastPercentMu.Unlock()
-						pterm.Info.Printf("Downloading %s: %s\n", 
-							toolName, 
+						pterm.Info.Printf("Downloading %s: %s\n",
+							toolName,
 							humanize.Bytes(uint64(downloaded)))
 					} else {
 						lastPercentMu.Unlock()
@@ -519,10 +519,10 @@ func runInstall(cmd *cobra.Command, args []string) error {
 				lastPercentMu.Unlock()
 
 				if shouldReport {
-					pterm.Info.Printf("Downloading %s: %s/%s (%d%%)\n", 
-						toolName, 
-						humanize.Bytes(uint64(downloaded)), 
-						humanize.Bytes(uint64(total)), 
+					pterm.Info.Printf("Downloading %s: %s/%s (%d%%)\n",
+						toolName,
+						humanize.Bytes(uint64(downloaded)),
+						humanize.Bytes(uint64(total)),
 						percent)
 				}
 			}
@@ -532,7 +532,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		// 3. Execute installation
 		startTime := time.Now()
 		results, err := cm.InstallAll(ctx, requests)
-		
+
 		if useMulti && spinnerMgr != nil {
 			spinnerMgr.Stop()
 		}
@@ -762,4 +762,3 @@ func (m *concurrentSpinnerManager) renderWrite() {
 		m.lastHeight++
 	}
 }
-

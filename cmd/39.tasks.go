@@ -123,7 +123,7 @@ func runTasksList(cmd *cobra.Command, args []string) error {
 			formatter.Warning(fmt.Sprintf("Tasks from %s were ignored because the file was modified.\nRun 'unirtm trust %s' to approve the changes.", filepath.Base(cfgPath), filepath.Base(cfgPath)))
 			return nil
 		}
-		
+
 		formatter.Info(fmt.Sprintf("No tasks defined. Add [tasks] to %s.", filepath.Base(cfgPath)), nil)
 		return nil
 	}

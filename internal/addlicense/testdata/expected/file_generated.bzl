@@ -19,4 +19,3 @@ def raze_fetch_remote_crates():
         strip_prefix = "log-0.4.11",
         build_file = Label("//bazel/cargo/remote:log-0.4.11.BUILD"),
     )
-

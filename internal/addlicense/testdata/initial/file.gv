@@ -6,4 +6,4 @@ graph ethane {
     C_1 -- H_3;
     C_1 -- H_4;
     C_1 -- H_5;
-} 
+}
