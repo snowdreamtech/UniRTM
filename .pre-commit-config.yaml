@@ -1207,8 +1207,6 @@ repos:
           (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
         description: "Lint SQL dialects for syntax and style."
 
-
-
       # -- Git Message Flow --------------------------------------------------
       - id: commitlint
         name: check commit message format
