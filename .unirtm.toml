@@ -113,8 +113,14 @@ run = 'go test -race -v ./...'
 output = 'interleaved'
 
 [tasks.verify]
-description = 'Run full local verification (lint-all, test, audit)'
-depends_on = ['lint-all', 'test', 'audit']
+description = 'Run full local verification (lint-all, test, audit) - runs subchecks in parallel'
+run = '''
+# Run the three verification subtasks in parallel and wait for them to finish
+unirtm run lint-all &
+unirtm run test &
+unirtm run audit &
+wait
+'''
 
 [tools]
 'github:anchore/syft' = '1.44.0'
