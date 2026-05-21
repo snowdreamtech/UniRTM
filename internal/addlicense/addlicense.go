@@ -47,6 +47,10 @@ type Options struct {
 	SPDX SpdxFlag
 	// IgnorePatterns is a list of doublestar glob patterns to skip.
 	IgnorePatterns []string
+	// SkipExtensions is a list of file extensions to skip (without leading dot,
+	// e.g. "rb", "py"). Comparison is case-insensitive. Equivalent to the
+	// upstream -skip flag in google/addlicense.
+	SkipExtensions []string
 	// Verbose enables per-file logging.
 	Verbose bool
 }
@@ -108,7 +112,7 @@ func processFiles(paths []string, opts Options, checkOnly bool) (int, error) {
 	// producer: walk all paths
 	go func() {
 		for _, p := range paths {
-			if err := walk(ch, p, opts.IgnorePatterns, opts.Verbose); err != nil {
+			if err := walk(ch, p, opts.IgnorePatterns, opts.SkipExtensions, opts.Verbose); err != nil {
 				results <- result{err: err}
 			}
 		}
@@ -182,7 +186,13 @@ type file struct {
 	mode os.FileMode
 }
 
-func walk(ch chan<- *file, start string, ignorePatterns []string, verbose bool) error {
+func walk(ch chan<- *file, start string, ignorePatterns []string, skipExts []string, verbose bool) error {
+	// Build a normalized set of extensions to skip (lowercase, no leading dot).
+	skipSet := make(map[string]struct{}, len(skipExts))
+	for _, e := range skipExts {
+		skipSet[strings.ToLower(strings.TrimPrefix(e, "."))] = struct{}{}
+	}
+
 	return filepath.Walk(start, func(path string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return nil
@@ -195,6 +205,15 @@ func walk(ch chan<- *file, start string, ignorePatterns []string, verbose bool) 
 				fmt.Printf("skipping: %s\n", path)
 			}
 			return nil
+		}
+		if len(skipSet) > 0 {
+			ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(path), "."))
+			if _, skip := skipSet[ext]; skip {
+				if verbose {
+					fmt.Printf("skipping (ext): %s\n", path)
+				}
+				return nil
+			}
 		}
 		ch <- &file{path, fi.Mode()}
 		return nil

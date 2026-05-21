@@ -20,6 +20,7 @@ var (
 	licenseHolder string
 	licenseYear   string
 	licenseIgnore []string
+	licenseSkip   []string
 	licenseSPDX   string
 )
 
@@ -58,7 +59,8 @@ func addLicenseFlags(cmd *cobra.Command) {
 	// -Y for Year (-y conflicts with global -y/--yes)
 	cmd.Flags().StringVarP(&licenseYear, "year", "Y", fmt.Sprint(time.Now().Year()), "copyright year (default: current year)")
 	cmd.Flags().StringArrayVar(&licenseIgnore, "ignore", nil, "file pattern to ignore (repeatable, supports ** glob)")
-	cmd.Flags().StringVar(&licenseSPDX, "spdx", "off", "SPDX identifier mode: off | on | only")
+	cmd.Flags().StringArrayVar(&licenseSkip, "skip", nil, "file extension to skip (repeatable, e.g. rb, py)")
+	cmd.Flags().StringVarP(&licenseSPDX, "spdx", "s", "off", "SPDX identifier mode: off | on | only")
 	// --verbose is inherited from root as a persistent flag (-v/--verbose); no local flag needed.
 }
 
@@ -153,6 +155,7 @@ func buildOpts() (addlicense.Options, error) {
 		Year:           licenseYear,
 		SPDX:           spdx,
 		IgnorePatterns: licenseIgnore,
+		SkipExtensions: licenseSkip,
 		Verbose:        verbose, // reuse global -v/--verbose persistent flag
 	}, nil
 }
