@@ -106,7 +106,18 @@ description = 'Check for missing license headers'
 run = 'unirtm license check -f .github/license-header.txt src pkg internal cmd app lib include scripts tests'
 
 [tasks.lint]
-description = 'Run standardized linter (pre-commit) with auto-fix fallback'
+description = 'Fast lint: Check only modified files (staged & unstaged)'
+run = '''
+FILES=$(git ls-files -m -o --exclude-standard)
+if [ -z "$FILES" ]; then
+    echo "✨ No changed files to lint."
+else
+    pre-commit run --files $FILES || (echo "⚠️  First pass failed. Running second check..." && pre-commit run --files $FILES)
+fi
+'''
+
+[tasks.lint-all]
+description = 'Full lint: Check all project files (used in CI or verify)'
 run = 'pre-commit run --all-files || (echo "⚠️  First pass failed. Running second check..." && pre-commit run --all-files)'
 
 [tasks.sync-harden-runner]
@@ -118,8 +129,8 @@ description = 'Run Go unit tests for all packages recursively'
 run = 'go test -race -v ./...'
 
 [tasks.verify]
-description = 'Run full local verification (lint, test, audit)'
-depends_on = ['lint', 'test', 'audit']
+description = 'Run full local verification (lint-all, test, audit)'
+depends_on = ['lint-all', 'test', 'audit']
 
 [tools]
 'github:anchore/syft' = '1.44.0'
