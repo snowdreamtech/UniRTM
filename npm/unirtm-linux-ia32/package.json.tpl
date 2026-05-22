@@ -6,7 +6,7 @@
   "homepage": "https://github.com/snowdreamtech/unirtm",
   "repository": {
     "type": "git",
-    "url": "https://github.com/snowdreamtech/unirtm"
+    "url": "git+https://github.com/snowdreamtech/unirtm.git"
   },
   "bugs": {
     "url": "https://github.com/snowdreamtech/unirtm/issues"
