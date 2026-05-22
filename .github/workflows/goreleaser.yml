@@ -226,9 +226,11 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         shell: sh
         run: |
-          # Copy binaries from dist/ into npm/*/bin/ and generate package.json files
-          # Must run after GoReleaser has built all platform binaries
-          sh npm/scripts/build.sh --version "${{ github.ref_name }}"
+          # Read the clean version from GoReleaser's metadata (already normalized:
+          # v-prefix stripped, date formats converted, etc.)
+          VERSION=$(jq -r '.version' dist/metadata.json)
+          echo "Building npm packages for version: ${VERSION}"
+          sh npm/scripts/build.sh --version "${VERSION}"
 
       - name: "🚀 Publish npm Platform Packages"
         if: startsWith(github.ref, 'refs/tags/')
