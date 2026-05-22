@@ -131,11 +131,6 @@ changelog:
 sboms:
   - artifacts: archive
 
-after:
-  hooks:
-    # Build npm platform packages after GoReleaser finishes
-    # This copies binaries from dist/ into npm/*/bin/ and generates package.json files
-    - sh npm/scripts/build.sh --version {{ .Version }}
 
 # signs:
 #   - artifacts: checksum

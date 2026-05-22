@@ -222,6 +222,14 @@ jobs:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
+      - name: "🔨 Build npm Platform Packages"
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: sh
+        run: |
+          # Copy binaries from dist/ into npm/*/bin/ and generate package.json files
+          # Must run after GoReleaser has built all platform binaries
+          sh npm/scripts/build.sh --version "${{ github.ref_name }}"
+
       - name: "🚀 Publish npm Platform Packages"
         if: startsWith(github.ref, 'refs/tags/')
         shell: sh
