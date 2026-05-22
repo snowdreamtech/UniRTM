@@ -1,3 +1,4 @@
+---
 name: "🔒 Harden Runner (Minimal)"
 description: "Security Egress Audit using minimal profile"
 runs:

@@ -1,3 +1,4 @@
+---
 name: "🔒 Harden Runner (Full)"
 description: "Security Egress Audit using full profile"
 runs:

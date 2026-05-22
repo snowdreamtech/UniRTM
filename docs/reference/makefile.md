@@ -23,7 +23,7 @@ make check    # Run lint + test in sequence
 | --------- | ---------------------------------------------------------- |
 | `help`    | Show all available targets and their descriptions          |
 | `lint`    | Run all pre-commit hooks against all files                 |
-|| `test`    | Execute test suite                                         |
+| `test`    | Execute test suite                                         |
 | `build`   | Build production artifacts                                 |
 | `check`   | Combined lint + test                                       |
 | `clean`   | Remove generated files and caches                          |

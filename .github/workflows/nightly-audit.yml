@@ -28,7 +28,7 @@ jobs:
           persist-credentials: false
 
       - name: "⚡ Setup unirtm (Tool Manager)"
-        uses: jdx/unirtm-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
 
       - name: "🛡️ Run Security Audit"
         shell: sh

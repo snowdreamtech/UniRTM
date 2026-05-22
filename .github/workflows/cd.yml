@@ -119,8 +119,6 @@ jobs:
           echo "PATH (first 10):"
           echo "$PATH" | tr ':' '\n' | head -10
 
-
-
           if [ "$EVENT_NAME" = "pull_request" ]; then
             unirtm exec -- commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
           else
