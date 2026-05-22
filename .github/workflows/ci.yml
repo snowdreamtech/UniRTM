@@ -127,7 +127,7 @@ jobs:
       - name: "🔍 Inspect Code Quality (Lint)"
         shell: sh
         run: |
-          unirtm run lint
+          unirtm run lint-all
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
@@ -207,6 +207,13 @@ jobs:
         shell: sh
         run: |
           unirtm install
+        env:
+          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+
+      - name: "🧪 Execute Unit Tests"
+        shell: sh
+        run: |
+          unirtm run test
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 

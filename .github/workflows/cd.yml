@@ -151,8 +151,7 @@ jobs:
           command -v prettier || echo "prettier not found"
           command -v pnpm || echo "pnpm not found"
 
-          unirtm run lint
-          unirtm run audit
+          unirtm run verify
           # Extra SARIF export for GitHub Security Tab (Offline to prevent API rate limits)
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             unirtm exec -- zizmor . --format sarif --offline --config .zizmor.yml > zizmor-results.sarif
