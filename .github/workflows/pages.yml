@@ -50,6 +50,11 @@ jobs:
       PYTHONUTF8: 1
 
     steps:
+      - name: "📥 Bootstrap Local Actions"
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
       - name: "🔒 Harden Runner (Standard)"
         uses: ./.github/actions/harden-runner/standard
       - name: "📂 Checkout Repository Code"
@@ -109,6 +114,11 @@ jobs:
       cancel-in-progress: false
     timeout-minutes: 40
     steps:
+      - name: "📥 Bootstrap Local Actions"
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
       - name: "🔒 Harden Runner (Standard)"
         uses: ./.github/actions/harden-runner/standard
       - name: "🚀 Deploy to GitHub Pages"

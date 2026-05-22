@@ -37,6 +37,11 @@ jobs:
       contents: read # Required for repository metadata access
     timeout-minutes: 40 # 10m is more than enough for cache list/delete operations
     steps:
+      - name: "📥 Bootstrap Local Actions"
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
       - name: "🔒 Harden Runner (Minimal)"
         uses: ./.github/actions/harden-runner/minimal
       - name: "🧹 Prune Inactive GitHub Caches"

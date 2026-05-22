@@ -32,6 +32,11 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: "📥 Bootstrap Local Actions"
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
       - name: "🔒 Harden Runner (Full)"
         uses: ./.github/actions/harden-runner/full
       - name: "📂 Checkout Repository Code"
@@ -63,6 +68,11 @@ jobs:
       VENV: ".venv"
       PYTHONUTF8: 1
     steps:
+      - name: "📥 Bootstrap Local Actions"
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
       - name: "🔒 Harden Runner (Security Egress Audit)"
         if: matrix.os == 'ubuntu-latest'
         uses: ./.github/actions/harden-runner/full
@@ -152,6 +162,11 @@ jobs:
       VENV: ".venv"
       PYTHONUTF8: 1
     steps:
+      - name: "📥 Bootstrap Local Actions"
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
       - name: "🔒 Harden Runner (Security Egress Audit)"
         if: matrix.os == 'ubuntu-latest'
         uses: ./.github/actions/harden-runner/full
@@ -236,6 +251,11 @@ jobs:
       VENV: ".venv"
       PYTHONUTF8: 1
     steps:
+      - name: "📥 Bootstrap Local Actions"
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
       - name: "🔒 Harden Runner (Full)"
         uses: ./.github/actions/harden-runner/full
       - name: "📂 Checkout Repository Code"

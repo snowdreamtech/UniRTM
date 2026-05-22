@@ -18,6 +18,11 @@ jobs:
     environment: development
     timeout-minutes: 120
     steps:
+      - name: "📥 Bootstrap Local Actions"
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/actions
+          persist-credentials: false
       - name: "🔒 Harden Runner (Audit)"
         uses: ./.github/actions/harden-runner/audit
       - name: "📂 Checkout Repository Code"
