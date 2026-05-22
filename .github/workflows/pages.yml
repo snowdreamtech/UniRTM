@@ -50,13 +50,45 @@ jobs:
       PYTHONUTF8: 1
 
     steps:
-      - name: "📥 Bootstrap Local Actions"
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          sparse-checkout: .github/actions
-          persist-credentials: false
       - name: "🔒 Harden Runner (Standard)"
-        uses: ./.github/actions/harden-runner/standard
+        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.10.2
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            *.githubusercontent.com:443
+            mise.run:443
+            *.mise.jdx.dev:443
+            packages.microsoft.com:443
+            *.ubuntu.com:80
+            *.ubuntu.com:443
+            *.debian.org:80
+            *.debian.org:443
+            *.rockylinux.org:443
+            *.centos.org:443
+            *.redhat.com:443
+            dl-cdn.alpinelinux.org:443
+            registry.npmjs.org:443
+            registry.yarnpkg.com:443
+            pypi.org:443
+            files.pythonhosted.org:443
+            proxy.golang.org:443
+            sum.golang.org:443
+            index.crates.io:443
+            static.rust-lang.org:443
+            packagist.org:443
+            repo.maven.apache.org:443
+            rubygems.org:443
+            registry.terraform.io:443
+            formulae.brew.sh:443
+            repo.yarnpkg.com:443
+            nodejs.org:443
+            deno.land:443
+            cdn.deno.land:443
+            downloads.gradle.org:443
+            services.gradle.org:443
+            downloads.gradle-dn.com:443
       - name: "📂 Checkout Repository Code"
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         # Fetches source documentation and site assets for the build process.
@@ -114,13 +146,45 @@ jobs:
       cancel-in-progress: false
     timeout-minutes: 40
     steps:
-      - name: "📥 Bootstrap Local Actions"
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          sparse-checkout: .github/actions
-          persist-credentials: false
       - name: "🔒 Harden Runner (Standard)"
-        uses: ./.github/actions/harden-runner/standard
+        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.10.2
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            *.githubusercontent.com:443
+            mise.run:443
+            *.mise.jdx.dev:443
+            packages.microsoft.com:443
+            *.ubuntu.com:80
+            *.ubuntu.com:443
+            *.debian.org:80
+            *.debian.org:443
+            *.rockylinux.org:443
+            *.centos.org:443
+            *.redhat.com:443
+            dl-cdn.alpinelinux.org:443
+            registry.npmjs.org:443
+            registry.yarnpkg.com:443
+            pypi.org:443
+            files.pythonhosted.org:443
+            proxy.golang.org:443
+            sum.golang.org:443
+            index.crates.io:443
+            static.rust-lang.org:443
+            packagist.org:443
+            repo.maven.apache.org:443
+            rubygems.org:443
+            registry.terraform.io:443
+            formulae.brew.sh:443
+            repo.yarnpkg.com:443
+            nodejs.org:443
+            deno.land:443
+            cdn.deno.land:443
+            downloads.gradle.org:443
+            services.gradle.org:443
+            downloads.gradle-dn.com:443
       - name: "🚀 Deploy to GitHub Pages"
         id: deployment
         uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

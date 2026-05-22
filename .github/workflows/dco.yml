@@ -34,13 +34,16 @@ jobs:
       contents: read
     timeout-minutes: 30
     steps:
-      - name: "📥 Bootstrap Local Actions"
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          sparse-checkout: .github/actions
-          persist-credentials: false
       - name: "🔒 Harden Runner (Minimal)"
-        uses: ./.github/actions/harden-runner/minimal
+        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.10.2
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            *.githubusercontent.com:443
+            mise.run:443
+            *.mise.jdx.dev:443
       - name: "🛡️ Check DCO Signature"
         uses: tisonkun/actions-dco@f1024cd563550b5632e754df11b7d30b73be54a5 # v1.1
         # This action fails if any commit in the PR lacks a 'Signed-off-by' line.
