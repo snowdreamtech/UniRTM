@@ -228,7 +228,8 @@ jobs:
         run: |
           # Read the clean version from GoReleaser's metadata (already normalized:
           # v-prefix stripped, date formats converted, etc.)
-          VERSION=$(jq -r '.version' dist/metadata.json)
+          # Use node (already set up) instead of jq to avoid tool dependency
+          VERSION=$(node -p "require('./dist/metadata.json').version")
           echo "Building npm packages for version: ${VERSION}"
           sh npm/scripts/build.sh --version "${VERSION}"
 
