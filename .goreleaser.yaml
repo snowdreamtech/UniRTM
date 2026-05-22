@@ -82,11 +82,18 @@ release:
   skip_upload: false
   github:
     owner: snowdreamtech
-    name: unirtm
+    name: UniRTM
   header: |
-    **UniRTM** is an enterprise-grade, foundational project designed for multi-AI IDE collaboration.
+    **UniRTM** (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager inspired by [mise](https://github.com/jdx/mise).
 
-    This repository serves as a **Single Source of Truth** for AI agent rules, workflows, and project configurations, supporting over 50 different AI-assisted IDEs with massive multi-language support.
+    It manages runtimes, tools, and tasks across Linux, macOS, and Windows — while serving as the **Single Source of Truth** for AI agent rules, workflows, and project configurations across 50+ AI-assisted IDEs (Cursor, Windsurf, GitHub Copilot, Gemini, Claude, Cline, and more).
+
+    **Key capabilities:**
+    - 📦 Manage runtimes & tools (Go, Node.js, Python, Rust, and more) with version pinning
+    - 🤖 Unified rule engine for 50+ AI-assisted IDEs via a single `.agent/rules/` directory
+    - 🔁 Smart SpecKit workflows (`speckit.plan`, `speckit.analyze`, `speckit.implement`)
+    - 🛡️ Triple-guarantee quality gates: IDE → pre-commit → GitHub Actions CI/CD
+    - 🌐 Cross-platform: Linux (Debian/Alpine/RHEL), macOS, Windows
 
 source:
   enabled: true
