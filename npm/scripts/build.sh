@@ -27,36 +27,36 @@ VERSION_FILE="${PROJECT_ROOT}/VERSION"
 # ---------------------------------------------------------------------------
 VERSION=""
 while [ $# -gt 0 ]; do
-	case "$1" in
-	--version)
-		VERSION="$2"
-		shift 2
-		;;
-	--dist-dir)
-		DIST_DIR="$2"
-		shift 2
-		;;
-	--npm-dir)
-		NPM_DIR="$2"
-		shift 2
-		;;
-	*)
-		printf 'Unknown argument: %s\n' "$1" >&2
-		exit 1
-		;;
-	esac
+  case "$1" in
+  --version)
+    VERSION="$2"
+    shift 2
+    ;;
+  --dist-dir)
+    DIST_DIR="$2"
+    shift 2
+    ;;
+  --npm-dir)
+    NPM_DIR="$2"
+    shift 2
+    ;;
+  *)
+    printf 'Unknown argument: %s\n' "$1" >&2
+    exit 1
+    ;;
+  esac
 done
 
 # ---------------------------------------------------------------------------
 # Resolve version
 # ---------------------------------------------------------------------------
 if [ -z "${VERSION}" ]; then
-	if [ -f "${VERSION_FILE}" ]; then
-		VERSION="$(cat "${VERSION_FILE}" | tr -d '[:space:]')"
-	else
-		printf 'ERROR: VERSION file not found and --version not specified.\n' >&2
-		exit 1
-	fi
+  if [ -f "${VERSION_FILE}" ]; then
+    VERSION="$(cat "${VERSION_FILE}" | tr -d '[:space:]')"
+  else
+    printf 'ERROR: VERSION file not found and --version not specified.\n' >&2
+    exit 1
+  fi
 fi
 
 # Strip leading 'v' for npm semver compatibility
@@ -92,32 +92,32 @@ unirtm-windows-ia32|unirtm_windows_386_sse2|unirtm.exe
 # Helper: generate package.json from .tpl file
 # ---------------------------------------------------------------------------
 generate_package_json() {
-	local _pkg_dir="$1"
-	local _version="$2"
-	local _tpl="${_pkg_dir}/package.json.tpl"
-	local _out="${_pkg_dir}/package.json"
+  local _pkg_dir="$1"
+  local _version="$2"
+  local _tpl="${_pkg_dir}/package.json.tpl"
+  local _out="${_pkg_dir}/package.json"
 
-	if [ ! -f "${_tpl}" ]; then
-		printf '  ⚠️  Template not found: %s (skipping package.json generation)\n' "${_tpl}"
-		return 0
-	fi
+  if [ ! -f "${_tpl}" ]; then
+    printf '  ⚠️  Template not found: %s (skipping package.json generation)\n' "${_tpl}"
+    return 0
+  fi
 
-	# Replace {{VERSION}} placeholder
-	sed "s/{{VERSION}}/${_version}/g" "${_tpl}" >"${_out}"
-	printf '  ✅ Generated: %s\n' "${_out#"${PROJECT_ROOT}"/}"
+  # Replace {{VERSION}} placeholder
+  sed "s/{{VERSION}}/${_version}/g" "${_tpl}" >"${_out}"
+  printf '  ✅ Generated: %s\n' "${_out#"${PROJECT_ROOT}"/}"
 }
 
 # ---------------------------------------------------------------------------
 # Helper: copy documentation files
 # ---------------------------------------------------------------------------
 copy_docs() {
-	local _pkg_dir="$1"
+  local _pkg_dir="$1"
 
-	for _doc in LICENSE README.md README_zh-CN.md; do
-		if [ -f "${PROJECT_ROOT}/${_doc}" ]; then
-			cp "${PROJECT_ROOT}/${_doc}" "${_pkg_dir}/${_doc}"
-		fi
-	done
+  for _doc in LICENSE README.md README_zh-CN.md; do
+    if [ -f "${PROJECT_ROOT}/${_doc}" ]; then
+      cp "${PROJECT_ROOT}/${_doc}" "${_pkg_dir}/${_doc}"
+    fi
+  done
 }
 
 # ---------------------------------------------------------------------------
@@ -126,38 +126,38 @@ copy_docs() {
 printf '\n📦 Processing platform packages...\n'
 
 printf '%s' "${PLATFORMS}" | grep -v '^$' | while IFS='|' read -r _npm_pkg _dist_subdir _binary; do
-	_pkg_dir="${NPM_DIR}/${_npm_pkg}"
-	_src_binary="${DIST_DIR}/${_dist_subdir}/${_binary}"
-	_bin_dir="${_pkg_dir}/bin"
-	_dst_binary="${_bin_dir}/${_binary}"
+  _pkg_dir="${NPM_DIR}/${_npm_pkg}"
+  _src_binary="${DIST_DIR}/${_dist_subdir}/${_binary}"
+  _bin_dir="${_pkg_dir}/bin"
+  _dst_binary="${_bin_dir}/${_binary}"
 
-	printf '\n🔧 %s\n' "${_npm_pkg}"
+  printf '\n🔧 %s\n' "${_npm_pkg}"
 
-	# Verify source binary exists
-	if [ ! -f "${_src_binary}" ]; then
-		printf '  ❌ Source binary not found: %s\n' "${_src_binary}"
-		printf '     Skipping (run GoReleaser build first)\n'
-		continue
-	fi
+  # Verify source binary exists
+  if [ ! -f "${_src_binary}" ]; then
+    printf '  ❌ Source binary not found: %s\n' "${_src_binary}"
+    printf '     Skipping (run GoReleaser build first)\n'
+    continue
+  fi
 
-	# Create bin directory
-	mkdir -p "${_bin_dir}"
+  # Create bin directory
+  mkdir -p "${_bin_dir}"
 
-	# Copy binary
-	cp "${_src_binary}" "${_dst_binary}"
+  # Copy binary
+  cp "${_src_binary}" "${_dst_binary}"
 
-	# Set executable permission (no-op on Windows binaries, harmless)
-	chmod +x "${_dst_binary}"
+  # Set executable permission (no-op on Windows binaries, harmless)
+  chmod +x "${_dst_binary}"
 
-	printf '  ✅ Binary: %s -> %s\n' \
-		"${_src_binary#"${PROJECT_ROOT}"/}" \
-		"${_dst_binary#"${PROJECT_ROOT}"/}"
+  printf '  ✅ Binary: %s -> %s\n' \
+    "${_src_binary#"${PROJECT_ROOT}"/}" \
+    "${_dst_binary#"${PROJECT_ROOT}"/}"
 
-	# Generate package.json from template
-	generate_package_json "${_pkg_dir}" "${VERSION_NPM}"
+  # Generate package.json from template
+  generate_package_json "${_pkg_dir}" "${VERSION_NPM}"
 
-	# Copy documentation
-	copy_docs "${_pkg_dir}"
+  # Copy documentation
+  copy_docs "${_pkg_dir}"
 done
 
 # ---------------------------------------------------------------------------

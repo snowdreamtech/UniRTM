@@ -6,6 +6,7 @@
 ## Summary
 
 为 UniRTM 建立 Python wheel 发布体系。pip 的分发机制与 npm 有本质差异：
+
 - **npm**：一个根包 + N 个平台子包，通过 `optionalDependencies` + `os/cpu` 字段筛选
 - **pip**：N 个平台专属 wheel 文件，通过 wheel **文件名中的 platform tag** 自动匹配
 

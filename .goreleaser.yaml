@@ -131,7 +131,6 @@ changelog:
 sboms:
   - artifacts: archive
 
-
 # signs:
 #   - artifacts: checksum
 #     args:
