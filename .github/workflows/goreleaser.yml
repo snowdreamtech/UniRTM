@@ -215,6 +215,36 @@ jobs:
           version: "~> v2" # Pins to the latest stable v2 series binary
           args: ${{ startsWith(github.ref, 'refs/tags/') && 'release --clean' || 'release --snapshot --clean --skip=publish' }}
 
+      - name: "📦 Setup Node.js for npm Publishing"
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: "🚀 Publish npm Platform Packages"
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: sh
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          # npm/scripts/build.sh was already executed by GoReleaser after_hooks.
+          # Platform packages (npm/unirtm-*/bin/) and package.json files are ready.
+          echo "=== Publishing platform sub-packages ==="
+          for pkg in npm/unirtm-*/; do
+            pkg_name=$(node -p "require('./${pkg}package.json').name" 2>/dev/null || echo "${pkg}")
+            echo "📦 Publishing ${pkg_name} ..."
+            npm publish "${pkg}" --access public
+          done
+
+          echo ""
+          echo "=== Publishing root package ==="
+          echo "📦 Publishing @snowdreamtech/unirtm ..."
+          npm publish npm/unirtm/ --access public
+
+          echo ""
+          echo "✅ All npm packages published successfully!"
+
       - name: "🛡️ Attest Build Provenance (SLSA)"
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
