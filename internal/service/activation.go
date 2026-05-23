@@ -216,8 +216,14 @@ func (m *ActivationManager) GenerateProjectActivation(ctx context.Context, shell
 		toolEnvVars, err := p.GetEnvVars(toolName, installPath, version)
 		if err == nil {
 			for k, v := range toolEnvVars {
-				if _, exists := envVars[k]; !exists {
+				if existing, exists := envVars[k]; !exists {
 					envVars[k] = v
+				} else if k == "NODE_PATH" {
+					// Concatenate NODE_PATH for multiple npm tools so they can share plugins
+					sep := string(os.PathListSeparator)
+					if !strings.Contains(existing+sep, v+sep) {
+						envVars[k] = existing + sep + v
+					}
 				}
 			}
 		}

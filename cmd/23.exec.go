@@ -111,6 +111,16 @@ func mergeEnvMaps(dst, src map[string]string) {
 			} else {
 				dst["PATH"] = v
 			}
+		} else if k == "NODE_PATH" {
+			if dst["NODE_PATH"] != "" {
+				// Avoid duplicates
+				sep := string(os.PathListSeparator)
+				if !strings.Contains(dst["NODE_PATH"]+sep, v+sep) {
+					dst["NODE_PATH"] = dst["NODE_PATH"] + sep + v
+				}
+			} else {
+				dst["NODE_PATH"] = v
+			}
 		} else {
 			dst[k] = v
 		}
@@ -126,6 +136,13 @@ func applyEnvMap(envMap map[string]string) {
 			existing := os.Getenv("PATH")
 			if existing != "" {
 				os.Setenv(k, v+string(os.PathListSeparator)+existing)
+			} else {
+				os.Setenv(k, v)
+			}
+		} else if k == "NODE_PATH" && v != "" {
+			existing := os.Getenv("NODE_PATH")
+			if existing != "" {
+				os.Setenv(k, existing+string(os.PathListSeparator)+v)
 			} else {
 				os.Setenv(k, v)
 			}
