@@ -306,17 +306,17 @@ jobs:
           echo "=== Publishing platform sub-packages ==="
           for pkg in npm/unirtm-*/; do
             pkg_name=$(node -p "require('./${pkg}package.json').name" 2>/dev/null || echo "${pkg}")
-            echo "📦 Publishing ${pkg_name} ..."
+            echo "[publish] ${pkg_name} ..."
             npm publish "${pkg}" --access public --registry=https://registry.npmjs.org
           done
 
           echo ""
           echo "=== Publishing root package ==="
-          echo "📦 Publishing @snowdreamtech/unirtm ..."
+          echo "[publish] @snowdreamtech/unirtm ..."
           npm publish npm/unirtm/ --access public --registry=https://registry.npmjs.org
 
           echo ""
-          echo "✅ All npm packages published successfully!"
+          echo "[done] All npm packages published successfully!"
 
       - name: "🛡️ Attest Build Provenance (SLSA)"
         if: startsWith(github.ref, 'refs/tags/')
