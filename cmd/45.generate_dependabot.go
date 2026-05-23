@@ -213,12 +213,53 @@ func scanForEcosystems() []DepEntry {
 
 		name := d.Name()
 		if d.IsDir() {
-			// Skip well-known non-ecosystem directories.
-			// .devcontainer is handled exclusively by the devcontainers ecosystem
-			// (detected in the root singletons phase above) and must not be
-			// re-scanned here, otherwise docker-compose.yml inside it would
-			// produce a spurious "docker" entry with directory "/.devcontainer".
-			if name == ".git" || name == "node_modules" || name == "vendor" || name == ".terraform" || name == "testdata" || name == "fixtures" || name == ".devcontainer" {
+			// --- Category A: Directories handled exclusively by root singletons ---
+			// These are detected in the singletons phase above and must NOT be
+			// re-scanned here to avoid spurious entries in wrong directories.
+			//
+			//   .devcontainer  → devcontainers ecosystem at "/"
+			//                    (docker-compose.yml inside would emit docker:/.devcontainer)
+			//   .github        → github-actions ecosystem at "/"
+			//                    (environment.yml inside would emit conda:/.github/workflows)
+			//
+			// --- Category B: Build artifacts, caches, and virtual environments ---
+			// These directories are never source manifests; scanning them produces
+			// noisy, incorrect ecosystem entries and slows down detection.
+			//
+			//   VCS / tooling:  .git
+			//   JS deps:        node_modules, bower_components
+			//   Go/Rust deps:   vendor
+			//   IaC:            .terraform
+			//   Build outputs:  dist, build, out, target, _build, .build
+			//   Python venvs:   .venv, venv, virtualenv
+			//   Python cache:   __pycache__, .eggs, .tox, .mypy_cache, .ruff_cache, .pytest_cache
+			//   Test coverage:  coverage, .nyc_output, .coverage
+			//   General cache:  .cache, .tmp, tmp
+			//   Test fixtures:  testdata, fixtures
+			switch name {
+			case
+				// Category A – singleton-handled
+				".devcontainer", ".github",
+				// VCS / IDE
+				".git",
+				// JavaScript / Node.js
+				"node_modules", "bower_components",
+				// Go, Rust, PHP (dependency mirrors)
+				"vendor",
+				// Terraform / OpenTofu provider cache
+				".terraform",
+				// Build outputs (language-agnostic)
+				"dist", "build", "out", "target", "_build", ".build",
+				// Python virtual environments
+				".venv", "venv", "virtualenv",
+				// Python build/cache artifacts
+				"__pycache__", ".eggs", ".tox", ".mypy_cache", ".ruff_cache", ".pytest_cache",
+				// Test coverage artifacts
+				"coverage", ".nyc_output",
+				// General caches and temp directories
+				".cache", ".tmp", "tmp",
+				// Test data
+				"testdata", "fixtures":
 				return filepath.SkipDir
 			}
 			return nil
