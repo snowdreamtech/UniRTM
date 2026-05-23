@@ -90,7 +90,10 @@ func (h *HTTPBackend) GetDownloadInfoWithConfig(ctx context.Context, tool string
 	// Fetch checksum if URL provided
 	checksum := ""
 	if checksumURL != "" {
-		checksumMap := FetchAndParseChecksumFile(ctx, h.client, checksumURL)
+		checksumMap, err := FetchAndParseChecksumFile(ctx, h.client, checksumURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch checksum file: %w", err)
+		}
 		if checksumMap != nil {
 			// Try to find by filename or just take the first one if it's a single-file checksum
 			fileName := h.extractFileName(downloadURL)

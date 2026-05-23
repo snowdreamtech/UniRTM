@@ -150,24 +150,27 @@ func FindBestAsset(assets []CommonAsset, platform Platform, toolName string) (*C
 }
 
 // FetchAndParseChecksumFile downloads and parses a checksum file from a URL.
-func FetchAndParseChecksumFile(ctx context.Context, client *http.Client, url string) map[string]string {
+func FetchAndParseChecksumFile(ctx context.Context, client *http.Client, url string) (map[string]string, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
 	if resp.StatusCode != http.StatusOK {
-		return nil
+		return nil, fmt.Errorf("failed to fetch checksum file: HTTP %d", resp.StatusCode)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	checksums := make(map[string]string)
@@ -189,13 +192,13 @@ func FetchAndParseChecksumFile(ctx context.Context, client *http.Client, url str
 		}
 	}
 
-	return checksums
+	return checksums, nil
 }
 
 // FindChecksumForAsset attempts to find a matching checksum for an asset from a list of all assets.
-func FindChecksumForAsset(ctx context.Context, client *http.Client, assets []CommonAsset, targetAsset *CommonAsset) string {
+func FindChecksumForAsset(ctx context.Context, client *http.Client, assets []CommonAsset, targetAsset *CommonAsset) (string, error) {
 	if targetAsset == nil {
-		return ""
+		return "", nil
 	}
 
 	// 1. Look for a checksum file
@@ -212,16 +215,19 @@ func FindChecksumForAsset(ctx context.Context, client *http.Client, assets []Com
 	}
 
 	if checksumAsset != nil {
-		checksumMap := FetchAndParseChecksumFile(ctx, client, checksumAsset.URL)
+		checksumMap, err := FetchAndParseChecksumFile(ctx, client, checksumAsset.URL)
+		if err != nil {
+			return "", err
+		}
 		if checksumMap != nil {
 			// Try exact match first
 			if c, ok := checksumMap[targetAsset.Name]; ok {
-				return c
+				return c, nil
 			}
 		}
 	}
 
-	return ""
+	return "", nil
 }
 
 // FindGPGSignatureForAsset attempts to find a matching GPG signature for an asset.
@@ -333,7 +339,10 @@ func GenericGetDownloadInfo(ctx context.Context, p HostingProvider, tool string,
 		return nil, NewBackendError(p.Name(), tool, "no matching asset", nil)
 	}
 
-	checksum := FindChecksumForAsset(ctx, p.GetClient(), release.Assets, bestAsset)
+	checksum, err := FindChecksumForAsset(ctx, p.GetClient(), release.Assets, bestAsset)
+	if err != nil {
+		return nil, NewBackendError(p.Name(), tool, "failed to fetch checksum file", err)
+	}
 	gpgSigURL := FindGPGSignatureForAsset(release.Assets, bestAsset)
 
 	return &VersionInfo{
