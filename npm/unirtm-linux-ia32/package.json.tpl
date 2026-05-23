@@ -13,9 +13,6 @@
   },
   "os": ["linux"],
   "cpu": ["ia32"],
-  "bin": {
-    "unirtm": "bin/unirtm"
-  },
   "files": [
     "bin/",
     "LICENSE",

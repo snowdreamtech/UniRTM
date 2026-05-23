@@ -13,9 +13,6 @@
   },
   "os": ["linux"],
   "cpu": ["arm"],
-  "bin": {
-    "unirtm": "bin/unirtm"
-  },
   "files": [
     "bin/",
     "LICENSE",

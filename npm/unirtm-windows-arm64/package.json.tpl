@@ -13,9 +13,6 @@
   },
   "os": ["win32"],
   "cpu": ["arm64"],
-  "bin": {
-    "unirtm": "bin/unirtm.exe"
-  },
   "files": [
     "bin/",
     "LICENSE",

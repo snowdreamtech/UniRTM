@@ -13,9 +13,6 @@
   },
   "os": ["linux"],
   "cpu": ["s390x"],
-  "bin": {
-    "unirtm": "bin/unirtm"
-  },
   "files": [
     "bin/",
     "LICENSE",
