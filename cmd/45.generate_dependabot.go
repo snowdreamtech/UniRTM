@@ -355,34 +355,39 @@ func isIgnoredDir(name string) bool {
 	switch name {
 	case
 		// Category A – handled exclusively by root singletons
-		".devcontainer", ".github",
+		".devcontainer", ".github", ".gitlab", ".circleci", ".husky",
 		// VCS
-		".git",
+		".git", ".svn", ".hg", ".bzr",
+		// IDE / Editor
+		".idea", ".vscode", ".fleet",
 		// JavaScript / Node.js
-		"node_modules", "bower_components",
-		// Go / Rust / PHP dependency mirrors
-		"vendor",
-		// Terraform / OpenTofu provider cache
-		".terraform",
-		// Build outputs (language-agnostic)
-		"dist", "build", "out", "target", "_build", ".build",
+		"node_modules", "bower_components", "jspm_packages",
+		// Dependency mirrors / ecosystems
+		"vendor", "Pods",
+		// Infrastructure as Code
+		".terraform", ".terragrunt-cache", ".serverless", ".pulumi",
+		// Build outputs (language-agnostic / generic)
+		"dist", "build", "out", "target", "_build", ".build", "bin", "obj",
+		// Java / JVM
+		".gradle", ".m2", ".mvn",
+		// C / C++
+		"cmake-build-debug", "cmake-build-release", "CMakeFiles",
 		// Framework build outputs
-		".next", ".nuxt", ".output", ".svelte-kit", ".astro",
-		// Bundler / deployment caches
-		".parcel-cache", ".turbo", ".vercel", ".netlify",
+		".next", ".nuxt", ".output", ".svelte-kit", ".astro", ".vuepress", ".vitepress", ".docusaurus",
+		// Bundler / Monorepo / Deployment caches
+		".parcel-cache", ".turbo", ".vercel", ".netlify", ".webpack", ".nx", ".expo",
 		// Python virtual environments
-		".venv", "venv", "virtualenv",
+		".venv", "venv", "virtualenv", "env", ".env",
 		// Python build / cache artifacts
-		"__pycache__", ".eggs", ".tox",
-		".mypy_cache", ".ruff_cache", ".pytest_cache",
-		// Language-specific caches
-		"elm-stuff", ".bundle", ".stack-work", "storybook-static",
+		"__pycache__", ".eggs", ".tox", ".mypy_cache", ".ruff_cache", ".pytest_cache", ".hypothesis",
+		// Other Language-specific caches
+		"elm-stuff", ".bundle", ".stack-work", "storybook-static", ".cabal-sandbox",
 		// Test coverage artifacts
 		"coverage", ".nyc_output",
 		// General caches and temp directories
-		".cache", ".tmp", "tmp",
-		// Test data
-		"testdata", "fixtures":
+		".cache", ".tmp", "tmp", "temp",
+		// Test data and mocks
+		"testdata", "fixtures", "mocks", "__mocks__":
 		return true
 	}
 	return false
