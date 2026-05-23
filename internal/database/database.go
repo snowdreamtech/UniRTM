@@ -36,8 +36,9 @@ func Open(ctx context.Context, config Config) (*DB, error) {
 		return nil, fmt.Errorf("create database directory: %w", err)
 	}
 
-	// Open the database connection with busy_timeout
-	dsn := fmt.Sprintf("%s?_busy_timeout=5000", config.Path)
+	// Open the database connection with busy_timeout and WAL mode
+	// _txlock=immediate is required for concurrent writes to prevent SQLITE_BUSY deadlocks
+	dsn := fmt.Sprintf("%s?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_txlock=immediate", config.Path)
 	conn, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
