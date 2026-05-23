@@ -114,6 +114,8 @@ jobs:
         uses: snowdreamtech/setup-unirtm@v0.0.12
         with:
           install: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "📝 Validate Commit Convention (Commitlint)"
         shell: sh
