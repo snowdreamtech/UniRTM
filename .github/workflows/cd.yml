@@ -117,6 +117,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
+      - name: "✅ Trust Repository Config"
+        run: unirtm trust
+
       - name: "📝 Validate Commit Convention (Commitlint)"
         shell: sh
         env:
