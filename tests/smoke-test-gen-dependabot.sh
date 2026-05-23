@@ -9,7 +9,6 @@
 set -e
 
 SCRIPT_DIR=$(cd "$(dirname "$0")/.." && pwd)
-GEN_SCRIPT="$SCRIPT_DIR/scripts/gen-dependabot.sh"
 TEMP_DIR=$(mktemp -d)
 
 echo "🧪 Starting Dependabot Generator Smoke Test..."
@@ -50,7 +49,7 @@ git commit -m "initial" -q
 # Run the script and capture output (using --dry-run to get STDOUT)
 echo "🏃 Running generator..."
 OUTPUT_FILE="$TEMP_DIR/dependabot.yml"
-sh "$GEN_SCRIPT" --dry-run >"$OUTPUT_FILE"
+unirtm generate dependabot --dry-run >"$OUTPUT_FILE"
 
 # Debug: Show generated file if test fails
 on_failure() {
