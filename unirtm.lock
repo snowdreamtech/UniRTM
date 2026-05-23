@@ -5,12 +5,18 @@
 version = "1.44.0"
 backend = "github"
 
+[tools."anchore/syft"."platforms.linux-amd64"]
+url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_linux_amd64.tar.gz"
+
 [tools."anchore/syft"."platforms.macos-amd64"]
 url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_darwin_amd64.tar.gz"
 
 [[tools."astral-sh/ruff"]]
 version = "0.15.12"
 backend = "github"
+
+[tools."astral-sh/ruff"."platforms.linux-amd64"]
+url = "https://github.com/astral-sh/ruff/releases/download/0.15.12/ruff-x86_64-unknown-linux-gnu.tar.gz"
 
 [tools."astral-sh/ruff"."platforms.macos-amd64"]
 url = "https://github.com/astral-sh/ruff/releases/download/0.15.12/ruff-x86_64-apple-darwin.tar.gz"
@@ -19,12 +25,18 @@ url = "https://github.com/astral-sh/ruff/releases/download/0.15.12/ruff-x86_64-a
 version = "0.3.2"
 backend = "github"
 
+[tools."checkmake/checkmake"."platforms.linux-amd64"]
+url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.linux.amd64"
+
 [tools."checkmake/checkmake"."platforms.macos-amd64"]
 url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.darwin.amd64"
 
 [[tools."cli/cli"]]
 version = "2.92.0"
 backend = "github"
+
+[tools."cli/cli"."platforms.linux-amd64"]
+url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_linux_amd64.tar.gz"
 
 [tools."cli/cli"."platforms.macos-amd64"]
 url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_macOS_amd64.zip"
@@ -41,6 +53,9 @@ gpg_key = "CBA23971357C2E6590D9EFD3EC8FEF3A7BFB4EDA"
 version = "4.0.0"
 backend = "github"
 
+[tools."dotenv-linter/dotenv-linter"."platforms.linux-amd64"]
+url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-linux-x86_64.tar.gz"
+
 [tools."dotenv-linter/dotenv-linter"."platforms.macos-amd64"]
 url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-darwin-x86_64.tar.gz"
 
@@ -48,32 +63,241 @@ url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/d
 version = "3.6.1"
 backend = "github"
 
+[tools."editorconfig-checker/editorconfig-checker"."platforms.linux-amd64"]
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/editorconfig-checker-linux-amd64.tar.gz"
+
 [tools."editorconfig-checker/editorconfig-checker"."platforms.macos-amd64"]
 url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/ec-darwin-amd64.tar.gz"
+
+[[tools."github:anchore/syft"]]
+version = "1.44.0"
+backend = "github"
+
+[tools."github:anchore/syft"."platforms.linux-amd64"]
+checksum = "0e91737aee2b5baf1d255b959630194a302335d848ff97bb07921eb6205b5f5a"
+url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_linux_amd64.tar.gz"
+
+[tools."github:anchore/syft"."platforms.linux-amd64-musl"]
+checksum = "0e91737aee2b5baf1d255b959630194a302335d848ff97bb07921eb6205b5f5a"
+url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_linux_amd64.tar.gz"
+
+[tools."github:anchore/syft"."platforms.linux-arm64"]
+checksum = "6f6cdcdc695721d91ce756e3b5bc3e3416599c464101f5e32e9c3f33054ee6d9"
+url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_linux_arm64.tar.gz"
+
+[tools."github:anchore/syft"."platforms.linux-arm64-musl"]
+checksum = "6f6cdcdc695721d91ce756e3b5bc3e3416599c464101f5e32e9c3f33054ee6d9"
+url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_linux_arm64.tar.gz"
+
+[tools."github:anchore/syft"."platforms.macos-amd64"]
+checksum = "c40ece5407927327f94f35901727dbc604b46857e04f04ec94a310845fb71bde"
+url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_darwin_amd64.tar.gz"
+
+[tools."github:anchore/syft"."platforms.macos-arm64"]
+checksum = "24e4d34078ae81da7c82539616f0ccac3e226cf4f74a38ce6fb3463619e50a55"
+url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_darwin_arm64.tar.gz"
+
+[tools."github:anchore/syft"."platforms.windows-amd64"]
+checksum = "c40ece5407927327f94f35901727dbc604b46857e04f04ec94a310845fb71bde"
+url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_darwin_amd64.tar.gz"
+
+[tools."github:anchore/syft"."platforms.windows-arm64"]
+checksum = "24e4d34078ae81da7c82539616f0ccac3e226cf4f74a38ce6fb3463619e50a55"
+url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_darwin_arm64.tar.gz"
 
 [[tools."github:astral-sh/ruff"]]
 version = "0.15.12"
 backend = "github"
 
+[tools."github:astral-sh/ruff"."platforms.linux-amd64"]
+url = "https://github.com/astral-sh/ruff/releases/download/0.15.12/ruff-x86_64-unknown-linux-gnu.tar.gz"
+
+[tools."github:astral-sh/ruff"."platforms.linux-amd64-musl"]
+url = "https://github.com/astral-sh/ruff/releases/download/0.15.12/ruff-x86_64-unknown-linux-gnu.tar.gz"
+
+[tools."github:astral-sh/ruff"."platforms.linux-arm64"]
+url = "https://github.com/astral-sh/ruff/releases/download/0.15.12/ruff-aarch64-unknown-linux-gnu.tar.gz"
+
+[tools."github:astral-sh/ruff"."platforms.linux-arm64-musl"]
+url = "https://github.com/astral-sh/ruff/releases/download/0.15.12/ruff-aarch64-unknown-linux-gnu.tar.gz"
+
+[tools."github:astral-sh/ruff"."platforms.macos-amd64"]
+url = "https://github.com/astral-sh/ruff/releases/download/0.15.12/ruff-x86_64-apple-darwin.tar.gz"
+
+[tools."github:astral-sh/ruff"."platforms.macos-arm64"]
+checksum = "bd59107e125f9c9f64a75be13b6ff21bf7cbc61c4b9529bbb75c8184e3dd6c3c"
+url = "https://github.com/astral-sh/ruff/releases/download/0.15.12/ruff-aarch64-apple-darwin.tar.gz"
+
+[tools."github:astral-sh/ruff"."platforms.windows-amd64"]
+url = "https://github.com/astral-sh/ruff/releases/download/0.15.12/ruff-x86_64-apple-darwin.tar.gz"
+
+[tools."github:astral-sh/ruff"."platforms.windows-arm64"]
+checksum = "bd59107e125f9c9f64a75be13b6ff21bf7cbc61c4b9529bbb75c8184e3dd6c3c"
+url = "https://github.com/astral-sh/ruff/releases/download/0.15.12/ruff-aarch64-apple-darwin.tar.gz"
+
 [[tools."github:checkmake/checkmake"]]
-version = "0.3.2"
+version = "v0.3.2"
 backend = "github"
+
+[tools."github:checkmake/checkmake"."platforms.linux-amd64"]
+url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.linux.amd64"
+
+[tools."github:checkmake/checkmake"."platforms.linux-amd64-musl"]
+url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.linux.amd64"
+
+[tools."github:checkmake/checkmake"."platforms.linux-arm64"]
+url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.linux.arm64"
+
+[tools."github:checkmake/checkmake"."platforms.linux-arm64-musl"]
+url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.linux.arm64"
+
+[tools."github:checkmake/checkmake"."platforms.macos-amd64"]
+url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.darwin.amd64"
+
+[tools."github:checkmake/checkmake"."platforms.macos-arm64"]
+url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.darwin.arm64"
+
+[tools."github:checkmake/checkmake"."platforms.windows-amd64"]
+url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.darwin.amd64"
+
+[tools."github:checkmake/checkmake"."platforms.windows-arm64"]
+url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.darwin.arm64"
 
 [[tools."github:cli/cli"]]
 version = "2.92.0"
 backend = "github"
 
+[tools."github:cli/cli"."platforms.linux-amd64"]
+checksum = "b57848131bdf0c229cd35e1f2a51aa718199858b2e728410b37e89a428943ec4"
+url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_linux_amd64.tar.gz"
+
+[tools."github:cli/cli"."platforms.linux-amd64-musl"]
+checksum = "b57848131bdf0c229cd35e1f2a51aa718199858b2e728410b37e89a428943ec4"
+url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_linux_amd64.tar.gz"
+
+[tools."github:cli/cli"."platforms.linux-arm64"]
+checksum = "c2248526dd0160c08d3fccca2332c3c1a07c15a78b23978e77735f1b5a18cfee"
+url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_linux_arm64.tar.gz"
+
+[tools."github:cli/cli"."platforms.linux-arm64-musl"]
+checksum = "c2248526dd0160c08d3fccca2332c3c1a07c15a78b23978e77735f1b5a18cfee"
+url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_linux_arm64.tar.gz"
+
+[tools."github:cli/cli"."platforms.macos-amd64"]
+checksum = "ae9bb327ab0d91071bdada79f8f14034a2a0f19b0e001835a782eafa519d2af0"
+url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_macOS_amd64.zip"
+
+[tools."github:cli/cli"."platforms.macos-arm64"]
+checksum = "b11c54f6bd7d15ed6590475079e5b2fcf36f45d3991a80041b29c9d0cc1f1d07"
+url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_macOS_arm64.zip"
+
+[tools."github:cli/cli"."platforms.windows-amd64"]
+checksum = "b6a8df3c8c6b9c80f290906387673bc4d272840f3789c5650e0e4e6e75522785"
+url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_windows_amd64.zip"
+
+[tools."github:cli/cli"."platforms.windows-arm64"]
+checksum = "fa4da50182f6d37a0555b4b48e828c57b1b23cbbd1a7e3a9ce6b65513f13836c"
+url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_windows_arm64.zip"
+
 [[tools."github:dotenv-linter/dotenv-linter"]]
 version = "4.0.0"
 backend = "github"
+
+[tools."github:dotenv-linter/dotenv-linter"."platforms.linux-amd64"]
+url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-linux-x86_64.tar.gz"
+
+[tools."github:dotenv-linter/dotenv-linter"."platforms.linux-amd64-musl"]
+url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-linux-x86_64.tar.gz"
+
+[tools."github:dotenv-linter/dotenv-linter"."platforms.linux-arm64"]
+url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-linux-aarch64.tar.gz"
+
+[tools."github:dotenv-linter/dotenv-linter"."platforms.linux-arm64-musl"]
+url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-linux-aarch64.tar.gz"
+
+[tools."github:dotenv-linter/dotenv-linter"."platforms.macos-amd64"]
+url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-darwin-x86_64.tar.gz"
+
+[tools."github:dotenv-linter/dotenv-linter"."platforms.macos-arm64"]
+url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-darwin-arm64.tar.gz"
+
+[tools."github:dotenv-linter/dotenv-linter"."platforms.windows-amd64"]
+url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-darwin-x86_64.tar.gz"
+
+[tools."github:dotenv-linter/dotenv-linter"."platforms.windows-arm64"]
+url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-darwin-arm64.tar.gz"
 
 [[tools."github:editorconfig-checker/editorconfig-checker"]]
 version = "3.6.1"
 backend = "github"
 
+[tools."github:editorconfig-checker/editorconfig-checker"."platforms.linux-amd64"]
+checksum = "9c3a046b1f17933b292044645e048764f56f8d687c9c8c7d9c7358153f8e3b65"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/editorconfig-checker-linux-amd64.tar.gz"
+
+[tools."github:editorconfig-checker/editorconfig-checker"."platforms.linux-amd64-musl"]
+checksum = "9c3a046b1f17933b292044645e048764f56f8d687c9c8c7d9c7358153f8e3b65"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/editorconfig-checker-linux-amd64.tar.gz"
+
+[tools."github:editorconfig-checker/editorconfig-checker"."platforms.linux-arm64"]
+checksum = "4cad4a95c829b655d923c9475546b97e16cee5e824a98c26a25daba91987e26c"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/editorconfig-checker-linux-arm64.tar.gz"
+
+[tools."github:editorconfig-checker/editorconfig-checker"."platforms.linux-arm64-musl"]
+checksum = "4cad4a95c829b655d923c9475546b97e16cee5e824a98c26a25daba91987e26c"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/editorconfig-checker-linux-arm64.tar.gz"
+
+[tools."github:editorconfig-checker/editorconfig-checker"."platforms.macos-amd64"]
+checksum = "6d7882e2f8a0884953f6bb8782b482ce8a6dd4ab2f25086a57046ef937f7625d"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/ec-darwin-amd64.tar.gz"
+
+[tools."github:editorconfig-checker/editorconfig-checker"."platforms.macos-arm64"]
+checksum = "64f6006e4ae880ef140ac175f30b5b4cab72fa92b3708d9104006441fb7ed723"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/ec-darwin-arm64.tar.gz"
+
+[tools."github:editorconfig-checker/editorconfig-checker"."platforms.windows-amd64"]
+checksum = "56db2b7ec660b9094eb8726dccfa2d2991437884b8a6d4215df5bbcbe3b3f366"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/editorconfig-checker-windows-amd64.tar.gz"
+
+[tools."github:editorconfig-checker/editorconfig-checker"."platforms.windows-arm64"]
+checksum = "f72f04a70a97a26b780ee9fc1f27ce3b621e9c34dc44eba0985c94b120c9fd98"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/editorconfig-checker-windows-arm64.tar.gz"
+
 [[tools."github:gitleaks/gitleaks"]]
 version = "8.30.1"
 backend = "github"
+
+[tools."github:gitleaks/gitleaks"."platforms.linux-amd64"]
+checksum = "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz"
+
+[tools."github:gitleaks/gitleaks"."platforms.linux-amd64-musl"]
+checksum = "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz"
+
+[tools."github:gitleaks/gitleaks"."platforms.linux-arm64"]
+checksum = "e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080"
+url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_arm64.tar.gz"
+
+[tools."github:gitleaks/gitleaks"."platforms.linux-arm64-musl"]
+checksum = "e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080"
+url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_arm64.tar.gz"
+
+[tools."github:gitleaks/gitleaks"."platforms.macos-amd64"]
+checksum = "dfe101a4db2255fc85120ac7f3d25e4342c3c20cf749f2c20a18081af1952709"
+url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_darwin_x64.tar.gz"
+
+[tools."github:gitleaks/gitleaks"."platforms.macos-arm64"]
+checksum = "b40ab0ae55c505963e365f271a8d3846efbc170aa17f2607f13df610a9aeb6a5"
+url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_darwin_arm64.tar.gz"
+
+[tools."github:gitleaks/gitleaks"."platforms.windows-amd64"]
+checksum = "dfe101a4db2255fc85120ac7f3d25e4342c3c20cf749f2c20a18081af1952709"
+url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_darwin_x64.tar.gz"
+
+[tools."github:gitleaks/gitleaks"."platforms.windows-arm64"]
+checksum = "b40ab0ae55c505963e365f271a8d3846efbc170aa17f2607f13df610a9aeb6a5"
+url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_darwin_arm64.tar.gz"
 
 [[tools."github:google/addlicense"]]
 version = "1.2.0"
@@ -83,41 +307,214 @@ backend = "github"
 version = "2.3.5"
 backend = "github"
 
+[tools."github:google/osv-scanner"."platforms.linux-amd64"]
+checksum = "bb30c580afe5e757d3e959f4afd08a4795ea505ef84c46962b9a738aa573b41b"
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_linux_amd64"
+
+[tools."github:google/osv-scanner"."platforms.linux-amd64-musl"]
+checksum = "bb30c580afe5e757d3e959f4afd08a4795ea505ef84c46962b9a738aa573b41b"
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_linux_amd64"
+
+[tools."github:google/osv-scanner"."platforms.linux-arm64"]
+checksum = "fa46ad2b3954db5d5335303d45de921613393285d9a93c140b63b40e35e9ce50"
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_linux_arm64"
+
+[tools."github:google/osv-scanner"."platforms.linux-arm64-musl"]
+checksum = "fa46ad2b3954db5d5335303d45de921613393285d9a93c140b63b40e35e9ce50"
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_linux_arm64"
+
+[tools."github:google/osv-scanner"."platforms.macos-amd64"]
+checksum = "3b1c72d59dcbad99fa4eb2c72bf2e82017f83e0268340e4b00af76a1fea32c85"
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_darwin_amd64"
+
+[tools."github:google/osv-scanner"."platforms.macos-arm64"]
+checksum = "b740efe0b08fb817865e818a498997d5f042f14b8eeafb6393176ce84dd09cf6"
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_darwin_arm64"
+
+[tools."github:google/osv-scanner"."platforms.windows-amd64"]
+checksum = "3b1c72d59dcbad99fa4eb2c72bf2e82017f83e0268340e4b00af76a1fea32c85"
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_darwin_amd64"
+
+[tools."github:google/osv-scanner"."platforms.windows-arm64"]
+checksum = "b740efe0b08fb817865e818a498997d5f042f14b8eeafb6393176ce84dd09cf6"
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_darwin_arm64"
+
 [[tools."github:hadolint/hadolint"]]
 version = "2.14.0"
 backend = "github"
+
+[tools."github:hadolint/hadolint"."platforms.linux-amd64"]
+url = "https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-linux-x86_64"
+
+[tools."github:hadolint/hadolint"."platforms.linux-amd64-musl"]
+url = "https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-linux-x86_64"
+
+[tools."github:hadolint/hadolint"."platforms.linux-arm64"]
+checksum = "331f1d3511b84a4f1e3d18d52fec284723e4019552f4f47b19322a53ce9a40ed"
+url = "https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-linux-arm64"
+
+[tools."github:hadolint/hadolint"."platforms.linux-arm64-musl"]
+checksum = "331f1d3511b84a4f1e3d18d52fec284723e4019552f4f47b19322a53ce9a40ed"
+url = "https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-linux-arm64"
+
+[tools."github:hadolint/hadolint"."platforms.macos-amd64"]
+url = "https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-macos-x86_64"
+
+[tools."github:hadolint/hadolint"."platforms.macos-arm64"]
+url = "https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-macos-arm64"
+
+[tools."github:hadolint/hadolint"."platforms.windows-amd64"]
+url = "https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-windows-x86_64.exe"
 
 [[tools."github:koalaman/shellcheck"]]
 version = "0.11.0"
 backend = "github"
 
+[tools."github:koalaman/shellcheck"."platforms.linux-amd64"]
+url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.gz"
+
+[tools."github:koalaman/shellcheck"."platforms.linux-amd64-musl"]
+url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.gz"
+
+[tools."github:koalaman/shellcheck"."platforms.linux-arm64"]
+url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.aarch64.tar.gz"
+
+[tools."github:koalaman/shellcheck"."platforms.linux-arm64-musl"]
+url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.aarch64.tar.gz"
+
+[tools."github:koalaman/shellcheck"."platforms.macos-amd64"]
+url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.x86_64.tar.gz"
+
+[tools."github:koalaman/shellcheck"."platforms.macos-arm64"]
+url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.aarch64.tar.gz"
+
+[tools."github:koalaman/shellcheck"."platforms.windows-amd64"]
+url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.x86_64.tar.gz"
+
+[tools."github:koalaman/shellcheck"."platforms.windows-arm64"]
+url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.aarch64.tar.gz"
+
 [[tools."github:mvdan/sh"]]
 version = "3.13.1"
 backend = "github"
+
+[tools."github:mvdan/sh"."platforms.linux-amd64"]
+url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_linux_amd64"
+
+[tools."github:mvdan/sh"."platforms.linux-amd64-musl"]
+url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_linux_amd64"
+
+[tools."github:mvdan/sh"."platforms.linux-arm64"]
+url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_linux_arm64"
+
+[tools."github:mvdan/sh"."platforms.linux-arm64-musl"]
+url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_linux_arm64"
+
+[tools."github:mvdan/sh"."platforms.macos-amd64"]
+url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_darwin_amd64"
+
+[tools."github:mvdan/sh"."platforms.macos-arm64"]
+url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_darwin_arm64"
+
+[tools."github:mvdan/sh"."platforms.windows-amd64"]
+url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_darwin_amd64"
+
+[tools."github:mvdan/sh"."platforms.windows-arm64"]
+url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_darwin_arm64"
 
 [[tools."github:rhysd/actionlint"]]
 version = "1.7.12"
 backend = "github"
 
+[tools."github:rhysd/actionlint"."platforms.linux-amd64"]
+checksum = "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz"
+
+[tools."github:rhysd/actionlint"."platforms.linux-amd64-musl"]
+checksum = "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz"
+
+[tools."github:rhysd/actionlint"."platforms.linux-arm64"]
+checksum = "325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6"
+url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_arm64.tar.gz"
+
+[tools."github:rhysd/actionlint"."platforms.linux-arm64-musl"]
+checksum = "325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6"
+url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_arm64.tar.gz"
+
+[tools."github:rhysd/actionlint"."platforms.macos-amd64"]
+checksum = "5b44c3bc2255115c9b69e30efc0fecdf498fdb63c5d58e17084fd5f16324c644"
+url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_darwin_amd64.tar.gz"
+
+[tools."github:rhysd/actionlint"."platforms.macos-arm64"]
+checksum = "aba9ced2dee8d27fecca3dc7feb1a7f9a52caefa1eb46f3271ea66b6e0e6953f"
+url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_darwin_arm64.tar.gz"
+
+[tools."github:rhysd/actionlint"."platforms.windows-amd64"]
+checksum = "5b44c3bc2255115c9b69e30efc0fecdf498fdb63c5d58e17084fd5f16324c644"
+url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_darwin_amd64.tar.gz"
+
+[tools."github:rhysd/actionlint"."platforms.windows-arm64"]
+checksum = "aba9ced2dee8d27fecca3dc7feb1a7f9a52caefa1eb46f3271ea66b6e0e6953f"
+url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_darwin_arm64.tar.gz"
+
 [[tools."github:zizmorcore/zizmor"]]
 version = "1.24.1"
 backend = "github"
 
+[tools."github:zizmorcore/zizmor"."platforms.linux-amd64"]
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+
+[tools."github:zizmorcore/zizmor"."platforms.linux-amd64-musl"]
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+
+[tools."github:zizmorcore/zizmor"."platforms.linux-arm64"]
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-aarch64-unknown-linux-gnu.tar.gz"
+
+[tools."github:zizmorcore/zizmor"."platforms.linux-arm64-musl"]
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-aarch64-unknown-linux-gnu.tar.gz"
+
+[tools."github:zizmorcore/zizmor"."platforms.macos-amd64"]
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-x86_64-apple-darwin.tar.gz"
+
+[tools."github:zizmorcore/zizmor"."platforms.macos-arm64"]
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-aarch64-apple-darwin.tar.gz"
+
+[tools."github:zizmorcore/zizmor"."platforms.windows-amd64"]
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-x86_64-apple-darwin.tar.gz"
+
+[tools."github:zizmorcore/zizmor"."platforms.windows-arm64"]
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-aarch64-apple-darwin.tar.gz"
+
 [[tools."gitleaks/gitleaks"]]
 version = "8.30.1"
 backend = "github"
+
+[tools."gitleaks/gitleaks"."platforms.linux-amd64"]
+url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz"
 
 [tools."gitleaks/gitleaks"."platforms.macos-amd64"]
 url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_darwin_x64.tar.gz"
 
 [[tools."go"]]
 version = "1.26.2"
-backend = "native"
+backend = "asdf"
+
+[tools."go"."platforms.linux-amd64"]
+
+[tools."go"."platforms.linux-amd64-musl"]
+
+[tools."go"."platforms.linux-arm64"]
+
+[tools."go"."platforms.linux-arm64-musl"]
 
 [tools."go"."platforms.macos-amd64"]
-checksum = "bc3f1500d9968c36d705442d90ba91addf9271665033748b82532682e90a7966"
-url = "https://mirrors.aliyun.com/golang/go1.26.2.darwin-amd64.tar.gz"
-gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
+
+[tools."go"."platforms.macos-arm64"]
+
+[tools."go"."platforms.windows-amd64"]
+
+[tools."go"."platforms.windows-arm64"]
 
 [[tools."google/addlicense"]]
 version = "1.2.0"
@@ -129,6 +526,9 @@ url = "https://github.com/google/addlicense/releases/download/v1.2.0/addlicense_
 [[tools."google/osv-scanner"]]
 version = "2.3.5"
 backend = "github"
+
+[tools."google/osv-scanner"."platforms.linux-amd64"]
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_linux_amd64"
 
 [tools."google/osv-scanner"."platforms.macos-amd64"]
 url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_darwin_amd64"
@@ -152,6 +552,9 @@ gpg_key = "1BD97A6A154E7810EE0BC832E2F38302C8075E3D"
 [[tools."hadolint/hadolint"]]
 version = "2.14.0"
 backend = "github"
+
+[tools."hadolint/hadolint"."platforms.linux-amd64"]
+url = "https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-linux-x86_64"
 
 [tools."hadolint/hadolint"."platforms.macos-amd64"]
 url = "https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-macos-x86_64"
@@ -193,6 +596,9 @@ gpg_key = "3673DF529D9049477F76B37566E3C7DC03D6E495"
 version = "0.11.0"
 backend = "github"
 
+[tools."koalaman/shellcheck"."platforms.linux-amd64"]
+url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.gz"
+
 [tools."koalaman/shellcheck"."platforms.macos-amd64"]
 url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.x86_64.tar.gz"
 
@@ -208,99 +614,378 @@ gpg_key = "29BEA2A645F2D6CED7FB12E02B172E3E156466E8"
 version = "3.13.1"
 backend = "github"
 
+[tools."mvdan/sh"."platforms.linux-amd64"]
+url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_linux_amd64"
+
 [tools."mvdan/sh"."platforms.macos-amd64"]
 url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_darwin_amd64"
 
 [[tools."node"]]
 version = "26.1.0"
-backend = "native"
+backend = "asdf"
+
+[tools."node"."platforms.linux-amd64"]
+
+[tools."node"."platforms.linux-amd64-musl"]
+
+[tools."node"."platforms.linux-arm64"]
+
+[tools."node"."platforms.linux-arm64-musl"]
 
 [tools."node"."platforms.macos-amd64"]
-url = "https://npmmirror.com/mirrors/node/v26.1.0/node-v26.1.0-darwin-x64.tar.gz"
-gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
-[[tools."node"]]
-version = "25.9.0"
-backend = "native"
+[tools."node"."platforms.macos-arm64"]
 
-[tools."node"."platforms.macos-amd64"]
-url = "https://npmmirror.com/mirrors/node/v25.9.0/node-v25.9.0-darwin-x64.tar.gz"
-gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
+[tools."node"."platforms.windows-amd64"]
+
+[tools."node"."platforms.windows-arm64"]
 
 [[tools."npm:@commitlint/cli"]]
 version = "20.5.3"
 backend = "npm"
 
+[tools."npm:@commitlint/cli"."platforms.linux-amd64"]
+
+[tools."npm:@commitlint/cli"."platforms.linux-amd64-musl"]
+
+[tools."npm:@commitlint/cli"."platforms.linux-arm64"]
+
+[tools."npm:@commitlint/cli"."platforms.linux-arm64-musl"]
+
+[tools."npm:@commitlint/cli"."platforms.macos-amd64"]
+
+[tools."npm:@commitlint/cli"."platforms.macos-arm64"]
+
+[tools."npm:@commitlint/cli"."platforms.windows-amd64"]
+
+[tools."npm:@commitlint/cli"."platforms.windows-arm64"]
+
 [[tools."npm:@commitlint/config-conventional"]]
 version = "20.5.3"
 backend = "npm"
+
+[tools."npm:@commitlint/config-conventional"."platforms.linux-amd64"]
+
+[tools."npm:@commitlint/config-conventional"."platforms.linux-amd64-musl"]
+
+[tools."npm:@commitlint/config-conventional"."platforms.linux-arm64"]
+
+[tools."npm:@commitlint/config-conventional"."platforms.linux-arm64-musl"]
+
+[tools."npm:@commitlint/config-conventional"."platforms.macos-amd64"]
+
+[tools."npm:@commitlint/config-conventional"."platforms.macos-arm64"]
+
+[tools."npm:@commitlint/config-conventional"."platforms.windows-amd64"]
+
+[tools."npm:@commitlint/config-conventional"."platforms.windows-arm64"]
 
 [[tools."npm:@taplo/cli"]]
 version = "0.7.0"
 backend = "npm"
 
+[tools."npm:@taplo/cli"."platforms.linux-amd64"]
+
+[tools."npm:@taplo/cli"."platforms.linux-amd64-musl"]
+
+[tools."npm:@taplo/cli"."platforms.linux-arm64"]
+
+[tools."npm:@taplo/cli"."platforms.linux-arm64-musl"]
+
+[tools."npm:@taplo/cli"."platforms.macos-amd64"]
+
+[tools."npm:@taplo/cli"."platforms.macos-arm64"]
+
+[tools."npm:@taplo/cli"."platforms.windows-amd64"]
+
+[tools."npm:@taplo/cli"."platforms.windows-arm64"]
+
 [[tools."npm:bats"]]
 version = "1.13.0"
 backend = "npm"
+
+[tools."npm:bats"."platforms.linux-amd64"]
+
+[tools."npm:bats"."platforms.linux-amd64-musl"]
+
+[tools."npm:bats"."platforms.linux-arm64"]
+
+[tools."npm:bats"."platforms.linux-arm64-musl"]
+
+[tools."npm:bats"."platforms.macos-amd64"]
+
+[tools."npm:bats"."platforms.macos-arm64"]
+
+[tools."npm:bats"."platforms.windows-amd64"]
+
+[tools."npm:bats"."platforms.windows-arm64"]
 
 [[tools."npm:commitizen"]]
 version = "4.3.1"
 backend = "npm"
 
+[tools."npm:commitizen"."platforms.linux-amd64"]
+
+[tools."npm:commitizen"."platforms.linux-amd64-musl"]
+
+[tools."npm:commitizen"."platforms.linux-arm64"]
+
+[tools."npm:commitizen"."platforms.linux-arm64-musl"]
+
+[tools."npm:commitizen"."platforms.macos-amd64"]
+
+[tools."npm:commitizen"."platforms.macos-arm64"]
+
+[tools."npm:commitizen"."platforms.windows-amd64"]
+
+[tools."npm:commitizen"."platforms.windows-arm64"]
+
 [[tools."npm:cz-conventional-changelog"]]
 version = "3.3.0"
 backend = "npm"
+
+[tools."npm:cz-conventional-changelog"."platforms.linux-amd64"]
+
+[tools."npm:cz-conventional-changelog"."platforms.linux-amd64-musl"]
+
+[tools."npm:cz-conventional-changelog"."platforms.linux-arm64"]
+
+[tools."npm:cz-conventional-changelog"."platforms.linux-arm64-musl"]
+
+[tools."npm:cz-conventional-changelog"."platforms.macos-amd64"]
+
+[tools."npm:cz-conventional-changelog"."platforms.macos-arm64"]
+
+[tools."npm:cz-conventional-changelog"."platforms.windows-amd64"]
+
+[tools."npm:cz-conventional-changelog"."platforms.windows-arm64"]
 
 [[tools."npm:dockerfile-utils"]]
 version = "0.16.3"
 backend = "npm"
 
+[tools."npm:dockerfile-utils"."platforms.linux-amd64"]
+
+[tools."npm:dockerfile-utils"."platforms.linux-amd64-musl"]
+
+[tools."npm:dockerfile-utils"."platforms.linux-arm64"]
+
+[tools."npm:dockerfile-utils"."platforms.linux-arm64-musl"]
+
+[tools."npm:dockerfile-utils"."platforms.macos-amd64"]
+
+[tools."npm:dockerfile-utils"."platforms.macos-arm64"]
+
+[tools."npm:dockerfile-utils"."platforms.windows-amd64"]
+
+[tools."npm:dockerfile-utils"."platforms.windows-arm64"]
+
 [[tools."npm:eslint"]]
 version = "10.3.0"
 backend = "npm"
+
+[tools."npm:eslint"."platforms.linux-amd64"]
+
+[tools."npm:eslint"."platforms.linux-amd64-musl"]
+
+[tools."npm:eslint"."platforms.linux-arm64"]
+
+[tools."npm:eslint"."platforms.linux-arm64-musl"]
+
+[tools."npm:eslint"."platforms.macos-amd64"]
+
+[tools."npm:eslint"."platforms.macos-arm64"]
+
+[tools."npm:eslint"."platforms.windows-amd64"]
+
+[tools."npm:eslint"."platforms.windows-arm64"]
 
 [[tools."npm:markdownlint-cli2"]]
 version = "0.22.1"
 backend = "npm"
 
+[tools."npm:markdownlint-cli2"."platforms.linux-amd64"]
+
+[tools."npm:markdownlint-cli2"."platforms.linux-amd64-musl"]
+
+[tools."npm:markdownlint-cli2"."platforms.linux-arm64"]
+
+[tools."npm:markdownlint-cli2"."platforms.linux-arm64-musl"]
+
+[tools."npm:markdownlint-cli2"."platforms.macos-amd64"]
+
+[tools."npm:markdownlint-cli2"."platforms.macos-arm64"]
+
+[tools."npm:markdownlint-cli2"."platforms.windows-amd64"]
+
+[tools."npm:markdownlint-cli2"."platforms.windows-arm64"]
+
 [[tools."npm:pnpm"]]
 version = "11.0.4"
 backend = "npm"
+
+[tools."npm:pnpm"."platforms.linux-amd64"]
+
+[tools."npm:pnpm"."platforms.linux-amd64-musl"]
+
+[tools."npm:pnpm"."platforms.linux-arm64"]
+
+[tools."npm:pnpm"."platforms.linux-arm64-musl"]
+
+[tools."npm:pnpm"."platforms.macos-amd64"]
+
+[tools."npm:pnpm"."platforms.macos-arm64"]
+
+[tools."npm:pnpm"."platforms.windows-amd64"]
+
+[tools."npm:pnpm"."platforms.windows-arm64"]
 
 [[tools."npm:prettier"]]
 version = "3.8.3"
 backend = "npm"
 
+[tools."npm:prettier"."platforms.linux-amd64"]
+
+[tools."npm:prettier"."platforms.linux-amd64-musl"]
+
+[tools."npm:prettier"."platforms.linux-arm64"]
+
+[tools."npm:prettier"."platforms.linux-arm64-musl"]
+
+[tools."npm:prettier"."platforms.macos-amd64"]
+
+[tools."npm:prettier"."platforms.macos-arm64"]
+
+[tools."npm:prettier"."platforms.windows-amd64"]
+
+[tools."npm:prettier"."platforms.windows-arm64"]
+
 [[tools."npm:sort-package-json"]]
 version = "3.6.1"
 backend = "npm"
+
+[tools."npm:sort-package-json"."platforms.linux-amd64"]
+
+[tools."npm:sort-package-json"."platforms.linux-amd64-musl"]
+
+[tools."npm:sort-package-json"."platforms.linux-arm64"]
+
+[tools."npm:sort-package-json"."platforms.linux-arm64-musl"]
+
+[tools."npm:sort-package-json"."platforms.macos-amd64"]
+
+[tools."npm:sort-package-json"."platforms.macos-arm64"]
+
+[tools."npm:sort-package-json"."platforms.windows-amd64"]
+
+[tools."npm:sort-package-json"."platforms.windows-arm64"]
 
 [[tools."npm:stylelint"]]
 version = "17.10.0"
 backend = "npm"
 
+[tools."npm:stylelint"."platforms.linux-amd64"]
+
+[tools."npm:stylelint"."platforms.linux-amd64-musl"]
+
+[tools."npm:stylelint"."platforms.linux-arm64"]
+
+[tools."npm:stylelint"."platforms.linux-arm64-musl"]
+
+[tools."npm:stylelint"."platforms.macos-amd64"]
+
+[tools."npm:stylelint"."platforms.macos-arm64"]
+
+[tools."npm:stylelint"."platforms.windows-amd64"]
+
+[tools."npm:stylelint"."platforms.windows-arm64"]
+
 [[tools."pipx:clang-format"]]
 version = "22.1.4"
-backend = "pypi"
+backend = "pipx"
+
+[tools."pipx:clang-format"."platforms.linux-amd64"]
+
+[tools."pipx:clang-format"."platforms.linux-amd64-musl"]
+
+[tools."pipx:clang-format"."platforms.linux-arm64"]
+
+[tools."pipx:clang-format"."platforms.linux-arm64-musl"]
+
+[tools."pipx:clang-format"."platforms.macos-amd64"]
+
+[tools."pipx:clang-format"."platforms.macos-arm64"]
+
+[tools."pipx:clang-format"."platforms.windows-amd64"]
+
+[tools."pipx:clang-format"."platforms.windows-arm64"]
 
 [[tools."pipx:pre-commit"]]
 version = "4.6.0"
-backend = "pypi"
+backend = "pipx"
+
+[tools."pipx:pre-commit"."platforms.linux-amd64"]
+
+[tools."pipx:pre-commit"."platforms.linux-amd64-musl"]
+
+[tools."pipx:pre-commit"."platforms.linux-arm64"]
+
+[tools."pipx:pre-commit"."platforms.linux-arm64-musl"]
+
+[tools."pipx:pre-commit"."platforms.macos-amd64"]
+
+[tools."pipx:pre-commit"."platforms.macos-arm64"]
+
+[tools."pipx:pre-commit"."platforms.windows-amd64"]
+
+[tools."pipx:pre-commit"."platforms.windows-arm64"]
 
 [[tools."pipx:yamllint"]]
 version = "1.38.0"
-backend = "pypi"
+backend = "pipx"
+
+[tools."pipx:yamllint"."platforms.linux-amd64"]
+
+[tools."pipx:yamllint"."platforms.linux-amd64-musl"]
+
+[tools."pipx:yamllint"."platforms.linux-arm64"]
+
+[tools."pipx:yamllint"."platforms.linux-arm64-musl"]
+
+[tools."pipx:yamllint"."platforms.macos-amd64"]
+
+[tools."pipx:yamllint"."platforms.macos-arm64"]
+
+[tools."pipx:yamllint"."platforms.windows-amd64"]
+
+[tools."pipx:yamllint"."platforms.windows-arm64"]
 
 [[tools."python"]]
 version = "3.14.4"
 backend = "asdf"
 
+[tools."python"."platforms.linux-amd64"]
+
+[tools."python"."platforms.linux-amd64-musl"]
+
+[tools."python"."platforms.linux-arm64"]
+
+[tools."python"."platforms.linux-arm64-musl"]
+
 [tools."python"."platforms.macos-amd64"]
-url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260414/cpython-3.14.4%2B20260414-x86_64-apple-darwin-debug-full.tar.zst"
+
+[tools."python"."platforms.macos-arm64"]
+
+[tools."python"."platforms.windows-amd64"]
+
+[tools."python"."platforms.windows-arm64"]
 
 [[tools."rhysd/actionlint"]]
 version = "1.7.12"
 backend = "github"
+
+[tools."rhysd/actionlint"."platforms.linux-amd64"]
+url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz"
 
 [tools."rhysd/actionlint"."platforms.macos-amd64"]
 url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_darwin_amd64.tar.gz"
@@ -309,5 +994,9 @@ url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_
 version = "1.24.1"
 backend = "github"
 
+[tools."zizmorcore/zizmor"."platforms.linux-amd64"]
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+
 [tools."zizmorcore/zizmor"."platforms.macos-amd64"]
 url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-x86_64-apple-darwin.tar.gz"
+
