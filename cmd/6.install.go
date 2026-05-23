@@ -388,6 +388,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			}
 
 			requests = append(requests, service.ToolInstallRequest{
+				ToolKey:   t.OriginalName,
 				Tool:      t.ToolName,
 				Version:   t.Version,
 				Backend:   t.BackendName,
@@ -575,23 +576,23 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		// Sequential installation (better for single tool interactive output)
 		startTime := time.Now()
 		for _, t := range sortedTools {
-			toolName := t.OriginalName
+			toolKey := t.OriginalName
 			tool := t.ToolName
 			version := t.Version
 			backendName := t.BackendName
 
-			err = installManager.Install(ctx, tool, version, backendName)
+			err = installManager.Install(ctx, toolKey, tool, version, backendName)
 			if err != nil {
 				// Check if already installed
 				if err == service.ErrAlreadyInstalled || strings.Contains(err.Error(), "already installed") {
-					pterm.Success.Printf("✓ %s@%s (already installed)\n", toolName, version)
+					pterm.Success.Printf("✓ %s@%s (already installed)\n", tool, version)
 					continue
 				}
 
-				pterm.Error.Printf("Installation failed for %s: %v\n", toolName, err)
-				return fmt.Errorf("install %s: %w", toolName, err)
+				pterm.Error.Printf("Installation failed for %s: %v\n", tool, err)
+				return fmt.Errorf("install %s: %w", tool, err)
 			}
-			pterm.Success.Printf("✓ Successfully installed %s@%s\n", toolName, version)
+			pterm.Success.Printf("✓ Successfully installed %s@%s\n", tool, version)
 		}
 
 		duration := time.Since(startTime)

@@ -270,7 +270,7 @@ func (im *InstallationManager) IsInstalled(ctx context.Context, tool, version, b
 
 // Install performs the complete installation workflow for a tool.
 // Workflow: check → download → verify → extract → activate → record
-func (im *InstallationManager) Install(ctx context.Context, tool, version, backendName string) error {
+func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, version, backendName string) error {
 	quietProgress, _ := ctx.Value(ContextKeyQuietProgress).(bool)
 
 	// Standardize tool name for filesystem check
@@ -318,13 +318,13 @@ func (im *InstallationManager) Install(ctx context.Context, tool, version, backe
 
 	if im.lockService != nil {
 		// Enforce strict mode before any API call.
-		if err := im.lockService.CheckStrict(tool, version, platform); err != nil {
+		if err := im.lockService.CheckStrict(toolKey, version, platform); err != nil {
 			return err
 		}
 		// Try to resolve directly from the lockfile.
-		if info, ok := im.lockService.Resolve(tool, version, platform); ok {
+		if info, ok := im.lockService.Resolve(toolKey, version, platform); ok {
 			logger.Debug("lockfile hit: using cached URL", map[string]interface{}{
-				"tool":     tool,
+				"tool":     toolKey,
 				"version":  version,
 				"platform": platform.String(),
 			})
@@ -968,7 +968,7 @@ func (im *InstallationManager) EnsureInstalledFromSpecs(ctx context.Context, too
 
 		// Not installed, proceed with installation
 		fmt.Printf("ℹ auto-installing missing tool: %s@%s\n", toolName, version)
-		if err := im.Install(ctx, toolName, version, backendName); err != nil {
+		if err := im.Install(ctx, t.OriginalName, toolName, version, backendName); err != nil {
 			if err == ErrAlreadyInstalled {
 				continue
 			}

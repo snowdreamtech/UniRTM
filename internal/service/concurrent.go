@@ -63,9 +63,10 @@ func NewConcurrentManager(im *InstallationManager, config ConcurrentManagerConfi
 
 // ToolInstallRequest specifies a tool and version to install.
 type ToolInstallRequest struct {
-	Tool    string
-	Version string
-	Backend string
+	ToolKey   string // The full key as specified in the configuration
+	Tool      string // The stripped tool name
+	Version   string
+	Backend   string
 	// DependsOn lists tool names that must be installed before this one.
 	DependsOn []string
 }
@@ -158,7 +159,7 @@ func (cm *ConcurrentManager) InstallAll(ctx context.Context, requests []ToolInst
 				cm.reportProgress(req.Tool, req.Version, "starting")
 
 				// Validates Req 18.3: serialized database writes handled by InstallationManager internally
-				installErr := cm.installManager.Install(gctx, req.Tool, req.Version, req.Backend)
+				installErr := cm.installManager.Install(gctx, req.ToolKey, req.Tool, req.Version, req.Backend)
 
 				var result ConcurrentInstallResult
 				result.Tool = req.Tool

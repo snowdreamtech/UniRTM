@@ -234,7 +234,7 @@ func runUse(cmd *cobra.Command, args []string) error {
 			isInstalled, _ := im.IsInstalled(ctx, toolName, p.version, backendName)
 			if !isInstalled {
 				formatter.Info(fmt.Sprintf("Tool %s@%s is not installed. Installing now...", toolName, p.version), nil)
-				if err := im.Install(ctx, toolName, p.version, backendName); err != nil {
+				if err := im.Install(ctx, p.key, toolName, p.version, backendName); err != nil {
 					return fmt.Errorf("failed to automatically install %s@%s: %w", toolName, p.version, err)
 				}
 			} else {
