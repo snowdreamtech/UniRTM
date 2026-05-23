@@ -4,10 +4,12 @@
 package cmd
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -205,131 +207,45 @@ func scanForEcosystems() []DepEntry {
 		emit("devcontainers", "/")
 	}
 
-	// 2. Walk tree for standard ecosystems
-	_ = filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return nil
-		}
-
-		name := d.Name()
-		if d.IsDir() {
-			// --- Category A: Directories handled exclusively by root singletons ---
-			// These are detected in the singletons phase above and must NOT be
-			// re-scanned here to avoid spurious entries in wrong directories.
-			//
-			//   .devcontainer  → devcontainers ecosystem at "/"
-			//                    (docker-compose.yml inside would emit docker:/.devcontainer)
-			//   .github        → github-actions ecosystem at "/"
-			//                    (environment.yml inside would emit conda:/.github/workflows)
-			//
-			// --- Category B: Build artifacts, caches, and virtual environments ---
-			// These directories are never source manifests; scanning them produces
-			// noisy, incorrect ecosystem entries and slows down detection.
-			//
-			//   VCS / tooling:  .git
-			//   JS deps:        node_modules, bower_components
-			//   Go/Rust deps:   vendor
-			//   IaC:            .terraform
-			//   Build outputs:  dist, build, out, target, _build, .build
-			//   Python venvs:   .venv, venv, virtualenv
-			//   Python cache:   __pycache__, .eggs, .tox, .mypy_cache, .ruff_cache, .pytest_cache
-			//   Test coverage:  coverage, .nyc_output, .coverage
-			//   General cache:  .cache, .tmp, tmp
-			//   Test fixtures:  testdata, fixtures
-			switch name {
-			case
-				// Category A – singleton-handled
-				".devcontainer", ".github",
-				// VCS / IDE
-				".git",
-				// JavaScript / Node.js
-				"node_modules", "bower_components",
-				// Go, Rust, PHP (dependency mirrors)
-				"vendor",
-				// Terraform / OpenTofu provider cache
-				".terraform",
-				// Build outputs (language-agnostic)
-				"dist", "build", "out", "target", "_build", ".build",
-				// Python virtual environments
-				".venv", "venv", "virtualenv",
-				// Python build/cache artifacts
-				"__pycache__", ".eggs", ".tox", ".mypy_cache", ".ruff_cache", ".pytest_cache",
-				// Test coverage artifacts
-				"coverage", ".nyc_output",
-				// General caches and temp directories
-				".cache", ".tmp", "tmp",
-				// Test data
-				"testdata", "fixtures":
-				return filepath.SkipDir
+	// 2. Enumerate source files and classify ecosystems.
+	//
+	// Strategy: prefer "git ls-files" when inside a git repository because it
+	// automatically respects .gitignore, excluding build artifacts, caches,
+	// virtual environments, and any other generated directories — no static
+	// skip-list required.  Fall back to filepath.WalkDir with a curated skip
+	// list when git is unavailable (e.g. a freshly unpacked tarball).
+	if paths, err := gitTrackedFiles(); err == nil {
+		// Git-aware path: only tracked (committed + staged) files are visited.
+		for _, path := range paths {
+			// Even if tracked, we must ignore Category A (handled by singletons)
+			// and accidentally committed vendor/ build outputs.
+			ignored := false
+			for _, part := range strings.Split(filepath.ToSlash(path), "/") {
+				if isIgnoredDir(part) {
+					ignored = true
+					break
+				}
 			}
+			if !ignored {
+				classifyFile(path, emit)
+			}
+		}
+	} else {
+		// Fallback: filesystem walk with a best-effort skip list.
+		_ = filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return nil
+			}
+			if d.IsDir() {
+				if isIgnoredDir(d.Name()) {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			classifyFile(path, emit)
 			return nil
-		}
-
-		dir := filepath.Dir(path)
-		ext := filepath.Ext(name)
-
-		switch name {
-		case "package.json":
-			emit("npm", dir)
-		case "requirements.txt", "requirements-dev.txt", "setup.py", "setup.cfg", "Pipfile":
-			emit("pip", dir)
-		case "go.mod":
-			emit("gomod", dir)
-		case "Cargo.toml":
-			emit("cargo", dir)
-		case "composer.json":
-			emit("composer", dir)
-		case "Gemfile":
-			emit("bundler", dir)
-		case "Dockerfile":
-			emit("docker", dir)
-		case "docker-compose.yml", "docker-compose.yaml":
-			emit("docker", dir)
-		case "mix.exs":
-			emit("mix", dir)
-		case "elm.json":
-			emit("elm", dir)
-		case "build.gradle", "build.gradle.kts":
-			emit("gradle", dir)
-		case "pom.xml":
-			emit("maven", dir)
-		case "packages.config":
-			emit("nuget", dir)
-		case "pubspec.yaml":
-			emit("pub", dir)
-		case "Package.swift":
-			emit("swift", dir)
-		case "WORKSPACE", "MODULE.bazel":
-			emit("bazel", dir)
-		case "bun.lockb", "bunfig.toml":
-			emit("bun", dir)
-		case "environment.yml", "environment.yaml":
-			emit("conda", dir)
-		case "Chart.yaml":
-			emit("helm", dir)
-		case "Project.toml":
-			emit("julia", dir)
-		case "uv.lock":
-			emit("uv", dir)
-		case "vcpkg.json":
-			emit("vcpkg", dir)
-		case "global.json":
-			emit("dotnet-sdk", dir)
-		}
-
-		switch ext {
-		case ".tf":
-			emit("terraform", dir)
-		case ".csproj", ".fsproj":
-			emit("nuget", dir)
-		}
-
-		if strings.HasPrefix(name, "Dockerfile.") {
-			emit("docker", dir)
-		}
-
-		return nil
-	})
+		})
+	}
 
 	// Sort entries for deterministic output
 	sort.Slice(entries, func(i, j int) bool {
@@ -430,4 +346,131 @@ func hasSubdirFiles(parentDir, filename string) bool {
 		}
 	}
 	return false
+}
+
+// isIgnoredDir checks if a directory name should be excluded from ecosystem scans.
+// This prevents spurious detection of manifests in build artifacts, caches,
+// and singletons like .devcontainer that are handled elsewhere.
+func isIgnoredDir(name string) bool {
+	switch name {
+	case
+		// Category A – handled exclusively by root singletons
+		".devcontainer", ".github",
+		// VCS
+		".git",
+		// JavaScript / Node.js
+		"node_modules", "bower_components",
+		// Go / Rust / PHP dependency mirrors
+		"vendor",
+		// Terraform / OpenTofu provider cache
+		".terraform",
+		// Build outputs (language-agnostic)
+		"dist", "build", "out", "target", "_build", ".build",
+		// Framework build outputs
+		".next", ".nuxt", ".output", ".svelte-kit", ".astro",
+		// Bundler / deployment caches
+		".parcel-cache", ".turbo", ".vercel", ".netlify",
+		// Python virtual environments
+		".venv", "venv", "virtualenv",
+		// Python build / cache artifacts
+		"__pycache__", ".eggs", ".tox",
+		".mypy_cache", ".ruff_cache", ".pytest_cache",
+		// Language-specific caches
+		"elm-stuff", ".bundle", ".stack-work", "storybook-static",
+		// Test coverage artifacts
+		"coverage", ".nyc_output",
+		// General caches and temp directories
+		".cache", ".tmp", "tmp",
+		// Test data
+		"testdata", "fixtures":
+		return true
+	}
+	return false
+}
+
+// gitTrackedFiles returns a list of files tracked by git in the current directory.
+// Returns an error if git is not available or the current directory is not a git repo.
+func gitTrackedFiles() ([]string, error) {
+	cmd := exec.Command("git", "ls-files")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
+		return nil, err
+	}
+
+	var paths []string
+	scanner := bufio.NewScanner(&out)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line != "" {
+			paths = append(paths, line)
+		}
+	}
+	return paths, scanner.Err()
+}
+
+// classifyFile inspects a file path and emits a dependabot ecosystem entry
+// if it matches a known manifest pattern.
+func classifyFile(path string, emit func(ecosystem, directory string)) {
+	name := filepath.Base(path)
+	dir := filepath.Dir(path)
+	ext := filepath.Ext(name)
+
+	switch name {
+	case "package.json":
+		emit("npm", dir)
+	case "requirements.txt", "requirements-dev.txt", "setup.py", "setup.cfg", "Pipfile":
+		emit("pip", dir)
+	case "go.mod":
+		emit("gomod", dir)
+	case "Cargo.toml":
+		emit("cargo", dir)
+	case "composer.json":
+		emit("composer", dir)
+	case "Gemfile":
+		emit("bundler", dir)
+	case "Dockerfile", "docker-compose.yml", "docker-compose.yaml":
+		emit("docker", dir)
+	case "mix.exs":
+		emit("mix", dir)
+	case "elm.json":
+		emit("elm", dir)
+	case "build.gradle", "build.gradle.kts":
+		emit("gradle", dir)
+	case "pom.xml":
+		emit("maven", dir)
+	case "packages.config":
+		emit("nuget", dir)
+	case "pubspec.yaml":
+		emit("pub", dir)
+	case "Package.swift":
+		emit("swift", dir)
+	case "WORKSPACE", "MODULE.bazel":
+		emit("bazel", dir)
+	case "bun.lockb", "bunfig.toml":
+		emit("bun", dir)
+	case "environment.yml", "environment.yaml":
+		emit("conda", dir)
+	case "Chart.yaml":
+		emit("helm", dir)
+	case "Project.toml":
+		emit("julia", dir)
+	case "uv.lock":
+		emit("uv", dir)
+	case "vcpkg.json":
+		emit("vcpkg", dir)
+	case "global.json":
+		emit("dotnet-sdk", dir)
+	}
+
+	switch ext {
+	case ".tf":
+		emit("terraform", dir)
+	case ".csproj", ".fsproj":
+		emit("nuget", dir)
+	}
+
+	if strings.HasPrefix(name, "Dockerfile.") {
+		emit("docker", dir)
+	}
 }
