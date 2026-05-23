@@ -100,6 +100,8 @@ jobs:
 
       - name: "⚡ Setup UniRTM"
         uses: snowdreamtech/setup-unirtm@v0.0.12
+        with:
+          install: true
 
       - name: "🚀 compile documentation artifacts"
         shell: sh

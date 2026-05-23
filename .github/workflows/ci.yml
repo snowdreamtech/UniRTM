@@ -183,6 +183,8 @@ jobs:
 
       - name: "⚡ Setup UniRTM"
         uses: snowdreamtech/setup-unirtm@v0.0.12
+        with:
+          install: true
 
       - name: "🔍 Inspect Code Quality (Lint)"
         shell: sh
@@ -278,6 +280,8 @@ jobs:
 
       - name: "⚡ Setup UniRTM"
         uses: snowdreamtech/setup-unirtm@v0.0.12
+        with:
+          install: true
 
       - name: "📦 Cache Language Dependencies (Advanced)"
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
@@ -402,6 +406,8 @@ jobs:
 
       - name: "⚡ Setup UniRTM"
         uses: snowdreamtech/setup-unirtm@v0.0.12
+        with:
+          install: true
 
       - name: "📝 Validate Commit Convention (Commitlint)"
         shell: sh
