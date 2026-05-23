@@ -38,7 +38,8 @@ func Open(ctx context.Context, config Config) (*DB, error) {
 
 	// Open the database connection with busy_timeout and WAL mode
 	// _txlock=immediate is required for concurrent writes to prevent SQLITE_BUSY deadlocks
-	dsn := fmt.Sprintf("%s?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_txlock=immediate", config.Path)
+	// Set a generous 30s timeout to ensure extreme robustness on slow CI disks
+	dsn := fmt.Sprintf("%s?_pragma=busy_timeout(30000)&_pragma=journal_mode(WAL)&_txlock=immediate", config.Path)
 	conn, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
