@@ -72,24 +72,8 @@ jobs:
           persist-credentials: true
           ref: ${{ github.ref }}
 
-      - name: "⚡ Cache UniRTM Tools"
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: |
-            ~/.local/bin
-            ~/.local/share/unirtm
-            ~/Library/Application Support/unirtm
-            ~/AppData/Local/unirtm
-          key: ${{ runner.os }}-unirtm-${{ hashFiles('.unirtm.toml', 'unirtm.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-unirtm-
-
-      - name: "🚀 Initialize Development Environment"
-        shell: sh
-        run: |
-          unirtm install
-        env:
-          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+      - name: "⚡ Setup UniRTM"
+        uses: snowdreamtech/setup-unirtm@v0.0.12
 
       - name: "🧪 Run Generator Smoke Test"
         shell: sh

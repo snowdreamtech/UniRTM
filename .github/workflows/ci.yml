@@ -181,56 +181,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
 
-      - name: "⚡ Cache UniRTM Tools"
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: |
-            ~/.local/bin
-            ~/.local/share/unirtm
-            ~/Library/Application Support/unirtm
-            ~/AppData/Local/unirtm
-          key: ${{ runner.os }}-unirtm-${{ hashFiles('.unirtm.toml', 'unirtm.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-unirtm-
-
-      - name: "🚀 Initialize Development Environment"
-        shell: sh
-        run: |
-          # Debug: Show environment before setup
-          echo "=== DEBUG: Environment Detection ==="
-          echo "GITHUB_PATH: ${GITHUB_PATH:-}"
-          echo "GITHUB_ACTIONS: ${GITHUB_ACTIONS:-}"
-          echo "OS (uname): $(uname -s)"
-          echo "HOME: $HOME"
-          echo "LOCALAPPDATA: ${LOCALAPPDATA:-}"
-          echo "cygpath: $(command -v cygpath >/dev/null 2>&1 && echo yes || echo no)"
-          if command -v cygpath >/dev/null 2>&1 && [ -n "${LOCALAPPDATA:-}" ]; then
-            echo "LOCALAPPDATA (Unix): $(cygpath -u "${LOCALAPPDATA}")"
-          fi
-
-          unirtm install
-
-          # Debug: Show what was written to GITHUB_PATH
-          echo "=== DEBUG: GITHUB_PATH Contents ==="
-          if [ -f "${GITHUB_PATH:-}" ]; then
-            cat "${GITHUB_PATH}"
-            echo "--- Lines: $(wc -l < "${GITHUB_PATH}") ---"
-          else
-            echo "GITHUB_PATH file not found"
-          fi
-          echo "=== DEBUG: Current PATH (first 20) ==="
-          echo "$PATH" | tr ':' '\n' | head -20
-          echo "=== DEBUG: UniRTM Installation ==="
-          ls -la "$HOME/.local/share/unirtm/shims" 2>/dev/null || echo "$HOME/.local/share/unirtm/shims not found"
-          if command -v cygpath >/dev/null 2>&1 && [ -n "${LOCALAPPDATA:-}" ]; then
-            _local_app=$(cygpath -u "${LOCALAPPDATA}")
-            ls -la "${_local_app}/unirtm/shims" 2>/dev/null || echo "${_local_app}/unirtm/shims not found"
-          fi
-          echo "=== DEBUG: Tool Check (prettier) ==="
-          which prettier || echo "prettier not in PATH"
-          command -v prettier || echo "prettier not found"
-        env:
-          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+      - name: "⚡ Setup UniRTM"
+        uses: snowdreamtech/setup-unirtm@v0.0.12
 
       - name: "🔍 Inspect Code Quality (Lint)"
         shell: sh
@@ -324,17 +276,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
 
-      - name: "⚡ Cache UniRTM Tools"
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: |
-            ~/.local/bin
-            ~/.local/share/unirtm
-            ~/Library/Application Support/unirtm
-            ~/AppData/Local/unirtm
-          key: ${{ runner.os }}-unirtm-${{ hashFiles('.unirtm.toml', 'unirtm.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-unirtm-
+      - name: "⚡ Setup UniRTM"
+        uses: snowdreamtech/setup-unirtm@v0.0.12
 
       - name: "📦 Cache Language Dependencies (Advanced)"
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
@@ -365,12 +308,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-lang-
 
-      - name: "🚀 Initialize Development Environment"
-        shell: sh
-        run: |
-          unirtm install
-        env:
-          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+
 
       - name: "🧪 Execute Unit Tests"
         shell: sh
@@ -462,24 +400,8 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: "⚡ Cache UniRTM Tools"
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: |
-            ~/.local/share/unirtm
-            ~/Library/Application Support/unirtm
-            ~/AppData/Local/unirtm
-            .trivycache
-          key: ${{ runner.os }}-unirtm-audit-${{ hashFiles('.unirtm.toml', 'unirtm.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-unirtm-audit-
-
-      - name: "🚀 Initialize Development Environment"
-        shell: sh
-        run: |
-          unirtm install
-        env:
-          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+      - name: "⚡ Setup UniRTM"
+        uses: snowdreamtech/setup-unirtm@v0.0.12
 
       - name: "📝 Validate Commit Convention (Commitlint)"
         shell: sh

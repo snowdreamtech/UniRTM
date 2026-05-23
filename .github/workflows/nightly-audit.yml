@@ -50,8 +50,8 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: "⚡ Setup unirtm (Tool Manager)"
-        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+      - name: "⚡ Setup UniRTM"
+        uses: snowdreamtech/setup-unirtm@v0.0.12
 
       - name: "🛡️ Run Security Audit"
         shell: sh
