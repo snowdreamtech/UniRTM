@@ -6,6 +6,7 @@ version = "1.44.0"
 backend = "github"
 
 [tools."anchore/syft"."platforms.linux-amd64"]
+checksum = "0e91737aee2b5baf1d255b959630194a302335d848ff97bb07921eb6205b5f5a"
 url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_linux_amd64.tar.gz"
 
 [tools."anchore/syft"."platforms.macos-amd64"]
@@ -31,11 +32,19 @@ url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake
 [tools."checkmake/checkmake"."platforms.macos-amd64"]
 url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.darwin.amd64"
 
+[[tools."checkmake/checkmake"]]
+version = "v0.3.2"
+backend = "github"
+
+[tools."checkmake/checkmake"."platforms.linux-amd64"]
+url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.linux.amd64"
+
 [[tools."cli/cli"]]
 version = "2.92.0"
 backend = "github"
 
 [tools."cli/cli"."platforms.linux-amd64"]
+checksum = "b57848131bdf0c229cd35e1f2a51aa718199858b2e728410b37e89a428943ec4"
 url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_linux_amd64.tar.gz"
 
 [tools."cli/cli"."platforms.macos-amd64"]
@@ -64,6 +73,7 @@ version = "3.6.1"
 backend = "github"
 
 [tools."editorconfig-checker/editorconfig-checker"."platforms.linux-amd64"]
+checksum = "9c3a046b1f17933b292044645e048764f56f8d687c9c8c7d9c7358153f8e3b65"
 url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/editorconfig-checker-linux-amd64.tar.gz"
 
 [tools."editorconfig-checker/editorconfig-checker"."platforms.macos-amd64"]
@@ -491,6 +501,7 @@ version = "8.30.1"
 backend = "github"
 
 [tools."gitleaks/gitleaks"."platforms.linux-amd64"]
+checksum = "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
 url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz"
 
 [tools."gitleaks/gitleaks"."platforms.macos-amd64"]
@@ -528,6 +539,7 @@ version = "2.3.5"
 backend = "github"
 
 [tools."google/osv-scanner"."platforms.linux-amd64"]
+checksum = "bb30c580afe5e757d3e959f4afd08a4795ea505ef84c46962b9a738aa573b41b"
 url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_linux_amd64"
 
 [tools."google/osv-scanner"."platforms.macos-amd64"]
@@ -985,6 +997,7 @@ version = "1.7.12"
 backend = "github"
 
 [tools."rhysd/actionlint"."platforms.linux-amd64"]
+checksum = "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
 url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz"
 
 [tools."rhysd/actionlint"."platforms.macos-amd64"]
