@@ -28,6 +28,9 @@ jobs:
             *.githubusercontent.com:443
             mise.run:443
             *.mise.jdx.dev:443
+            registry.npmjs.org:443
+            proxy.golang.org:443
+            sum.golang.org:443
             ghcr.io:443
             pkg-containers.githubusercontent.com:443
             public.ecr.aws:443
