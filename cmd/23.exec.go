@@ -253,19 +253,21 @@ func runExec(cmd *cobra.Command, args []string) error {
 	if installManager != nil {
 		// 5.1 First, inject tools from configuration (lower priority)
 		if cfg != nil {
-			for toolName, toolSpec := range cfg.Tools {
-				// Use backend defined in config, or auto-detect if missing
+			for rawToolName, toolSpec := range cfg.Tools {
+				// Parse the tool name using InstallationManager to correctly extract backend and tool
+				parsedBackend, parsedTool, _, _ := installManager.ParseToolSpec(rawToolName)
+
+				// Use backend defined in config, or fallback to the parsed backend
 				backendName := toolSpec.Backend
 				if backendName == "" {
-					// Important: Ensure we match the backend used during install
-					backendName = installManager.AutoDetectBackend(toolName)
+					backendName = parsedBackend
 				}
 
 				// Resolve the version (might be a ref or alias)
 				version := toolSpec.Version
 
-				// Gather env vars (PATH, GOROOT, etc.)
-				toolEnv := installManager.ResolveToolEnvBySpec(toolName, version, backendName)
+				// Gather env vars (PATH, GOROOT, etc.) using the parsed tool name
+				toolEnv := installManager.ResolveToolEnvBySpec(parsedTool, version, backendName)
 				if len(toolEnv) > 0 {
 					mergeEnvMaps(additionalEnv, toolEnv)
 				}
