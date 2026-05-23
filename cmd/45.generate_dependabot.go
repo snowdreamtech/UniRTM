@@ -213,7 +213,12 @@ func scanForEcosystems() []DepEntry {
 
 		name := d.Name()
 		if d.IsDir() {
-			if name == ".git" || name == "node_modules" || name == "vendor" || name == ".terraform" || name == "testdata" || name == "fixtures" {
+			// Skip well-known non-ecosystem directories.
+			// .devcontainer is handled exclusively by the devcontainers ecosystem
+			// (detected in the root singletons phase above) and must not be
+			// re-scanned here, otherwise docker-compose.yml inside it would
+			// produce a spurious "docker" entry with directory "/.devcontainer".
+			if name == ".git" || name == "node_modules" || name == "vendor" || name == ".terraform" || name == "testdata" || name == "fixtures" || name == ".devcontainer" {
 				return filepath.SkipDir
 			}
 			return nil
