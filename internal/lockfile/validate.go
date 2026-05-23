@@ -96,15 +96,43 @@ func isValidChecksumFormat(s string) bool {
 		strings.HasPrefix(s, "sha512:")
 }
 
-// CheckStrict verifies that the lockfile contains a URL for each tool/platform
-// pair in the required set. Used to enforce UNIRTM_LOCKED=1 / settings.locked=true.
+// CheckStrict verifies that the lockfile contains a valid entry for each tool/platform
+// pair in the required set. For URL-based backends, it ensures a URL is present.
+// Used to enforce UNIRTM_LOCKED=1 / settings.locked=true.
 //
 // required is a slice of (toolKey, version, platformKey) tuples.
 func (lf *LockFile) CheckStrict(required []LockRequirement) error {
 	ve := &ValidationError{}
 
 	for _, r := range required {
-		if !lf.HasURL(r.ToolKey, r.Version, r.PlatformKey) {
+		entry := lf.GetEntry(r.ToolKey, r.Version)
+		if entry == nil {
+			ve.add(
+				"strict mode: no locked entry for tool=%q version=%q — run `unirtm lock` first",
+				r.ToolKey, r.Version,
+			)
+			continue
+		}
+
+		pe := lf.GetPlatform(r.ToolKey, r.Version, r.PlatformKey)
+		if pe == nil {
+			ve.add(
+				"strict mode: no locked platform %q for tool=%q version=%q — run `unirtm lock` first",
+				r.PlatformKey, r.ToolKey, r.Version,
+			)
+			continue
+		}
+
+		// Backends that download from explicit URLs must have the URL locked.
+		// Package manager backends (npm, pipx, asdf, cargo, go) delegate resolution
+		// natively so they legitimately have an empty URL.
+		needsURL := true
+		switch entry.Backend {
+		case "npm", "pipx", "asdf", "cargo", "go":
+			needsURL = false
+		}
+
+		if needsURL && pe.URL == "" {
 			ve.add(
 				"strict mode: no locked URL for tool=%q version=%q platform=%q — run `unirtm lock` first",
 				r.ToolKey, r.Version, r.PlatformKey,
