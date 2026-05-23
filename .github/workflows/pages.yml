@@ -123,7 +123,7 @@ jobs:
         with:
           install: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
       - name: "🚀 compile documentation artifacts"
         shell: sh
