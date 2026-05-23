@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
@@ -164,10 +165,18 @@ func (p *NpmProvider) findNpm() (string, error) {
 		for _, entry := range entries {
 			if entry.IsDir() {
 				verDir := filepath.Join(nodeInstallsDir, entry.Name())
-				candidates := []string{
-					filepath.Join(verDir, "bin", "npm"),
-					filepath.Join(verDir, "npm"),
-					filepath.Join(verDir, "npm.cmd"),
+				var candidates []string
+				if runtime.GOOS == "windows" {
+					candidates = []string{
+						filepath.Join(verDir, "npm.cmd"),
+						filepath.Join(verDir, "bin", "npm.cmd"),
+						filepath.Join(verDir, "npm"),
+					}
+				} else {
+					candidates = []string{
+						filepath.Join(verDir, "bin", "npm"),
+						filepath.Join(verDir, "npm"),
+					}
 				}
 				for _, cand := range candidates {
 					if info, err := os.Stat(cand); err == nil && !info.IsDir() {

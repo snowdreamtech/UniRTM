@@ -54,9 +54,15 @@ func (n *NodeProvider) GenerateShims(tool string, installPath string, version st
 	// Generate shims for node, npm, npx
 	executables := []string{"node", "npm", "npx"}
 	for _, exe := range executables {
-		exePath := filepath.Join(installPath, "bin", exe)
+		var exePath string
 		if runtime.GOOS == "windows" {
-			exePath += ".exe"
+			if exe == "node" {
+				exePath = filepath.Join(installPath, "node.exe")
+			} else {
+				exePath = filepath.Join(installPath, exe+".cmd")
+			}
+		} else {
+			exePath = filepath.Join(installPath, "bin", exe)
 		}
 
 		shimContent := n.generateNodeShim(tool, exe, exePath, installPath, version)
