@@ -18,7 +18,9 @@ err := im.gpgVerifier.Verify(ctx, sigPath, downloadPath, versionInfo.GPGKeys)
 ### 2. 交互式 Key 管理
 
 支持 TTY 环境下的动态导入：
-![GPG Import Prompt](https://via.placeholder.com/600x150?text=Do+you+want+to+trust+and+import+GPG+key+...?)
+> When you install a tool using GPG verification, you will see a prompt similar to this asking you whether you want to trust the key:
+> 
+> `Do you want to trust and import GPG key 0123456789ABCDEF for author@example.com? [y/N]`
 *注：UniRTM 会从 keys.openpgp.org 等主流服务器自动拉取 Key。*
 
 ### 3. CI/CD 兼容性 (Lockfile Pinning)

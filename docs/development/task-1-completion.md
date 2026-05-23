@@ -159,7 +159,6 @@ With Task 1 complete, the project is ready for:
 ## References
 
 - [Standard Go Project Layout](https://github.com/golang-standards/project-layout)
-- [tott project](https://github.com/evilmartians/tott)
 - [golangci-lint documentation](https://golangci-lint.run/)
 - [Cobra CLI framework](https://github.com/spf13/cobra)
 - [go-toml documentation](https://github.com/pelletier/go-toml)

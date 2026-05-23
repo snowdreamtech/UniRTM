@@ -4,7 +4,7 @@ This document describes the directory structure and organization of the UniRTM p
 
 ## Overview
 
-UniRTM follows the [Standard Go Project Layout](https://github.com/golang-standards/project-layout) conventions, inspired by the [tott project](https://github.com/evilmartians/tott) for code style and organization.
+UniRTM follows the [Standard Go Project Layout](https://github.com/golang-standards/project-layout) conventions for code style and organization.
 
 ## Directory Structure
 
@@ -151,7 +151,7 @@ goimports -w .
 
 ## Code Style
 
-UniRTM follows the code style conventions from the [tott project](https://github.com/evilmartians/tott):
+UniRTM follows standard Go code style conventions:
 
 - Use `goimports` for formatting (includes `gofmt`)
 - Follow [Effective Go](https://golang.org/doc/effective_go.html)
@@ -174,6 +174,5 @@ All tests should be in `*_test.go` files alongside the code they test.
 ## References
 
 - [Standard Go Project Layout](https://github.com/golang-standards/project-layout)
-- [tott project](https://github.com/evilmartians/tott)
 - [Effective Go](https://golang.org/doc/effective_go.html)
 - [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)

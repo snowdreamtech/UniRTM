@@ -770,7 +770,7 @@ The `doctor` command performs comprehensive health checks:
 ### Reference Implementations
 
 - **mise**: <https://github.com/jdx/mise> - Reference architecture and concepts
-- **tott**: <https://github.com/evilmartians/tott> - Reference Go code style
+- **Standard Go Layout**: <https://github.com/golang-standards/project-layout> - Reference Go code style
 
 ### Technology Stack
 
