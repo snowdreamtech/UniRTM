@@ -6,6 +6,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0](https://github.com/snowdreamtech/UniRTM/compare/v0.0.9...v0.1.0) (2026-05-24)
+
+
+### Features
+
+* **tasks:** add --fix flag to unirtm run ([7544bec](https://github.com/snowdreamtech/UniRTM/commit/7544bec82ec2754393a819b9a686c9c172752c9a))
+
+
+### Bug Fixes
+
+* **cli:** do not suggest alternatives if command fails with non-zero exit code ([ae936d6](https://github.com/snowdreamtech/UniRTM/commit/ae936d60a4ecaaedf1db953430b55a98eaf0b4c9))
+* prevent silent installation of corrupted archives ([50ac2cd](https://github.com/snowdreamtech/UniRTM/commit/50ac2cd277bf6b58bb3961f680c4b0bf53831c55))
+* **provider:** auto-rename primary executable to standard tool name ([440c100](https://github.com/snowdreamtech/UniRTM/commit/440c100965a665364c827fc536f7c03ef1ae3616))
+* **provider:** replace hardcoded extension list with heuristic ([74e7070](https://github.com/snowdreamtech/UniRTM/commit/74e7070426c97eec46d0f73d3fa52e3fbad2e93a))
+* resolve editorconfig-checker false positives for Go and testdata ([7f7797d](https://github.com/snowdreamtech/UniRTM/commit/7f7797dffe96a9519a4fb8c6b27b97990a299e59))
+* **tasks:** remove os.Expand from native runner ([92a89a5](https://github.com/snowdreamtech/UniRTM/commit/92a89a5736fc7f58268aa37d8a74d1a1e930772e))
+
 ## [0.13.1](https://github.com/snowdreamtech/template/compare/v0.13.0...v0.13.1) (2026-04-29)
 
 
