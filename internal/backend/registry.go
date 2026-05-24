@@ -46,6 +46,7 @@ func NewRegistry() *Registry {
 	r.Register(NewS3Backend())
 	r.Register(NewPipxBackend())
 	r.Register(NewNativeBackend())
+	r.Register(NewGoPkgBackend())
 
 	return r
 }
