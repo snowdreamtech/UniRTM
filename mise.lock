@@ -569,7 +569,7 @@ url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-x86
 url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/395578624"
 
 [[tools.go]]
-version = "1.26.2"
+version = "1.26.3"
 backend = "core:go"
 
 [tools.go."platforms.linux-arm64"]

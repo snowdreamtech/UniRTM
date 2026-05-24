@@ -50,10 +50,10 @@ mise install node@25.9.0
 mise install python@3.14.3
 
 # 安装 Go
-mise install go@1.26.2
+mise install go@1.26.3
 
 # 激活工具
-mise use node@25.9.0 python@3.14.3 go@1.26.2
+mise use node@25.9.0 python@3.14.3 go@1.26.3
 ```
 
 ## 完整 Dockerfile 示例

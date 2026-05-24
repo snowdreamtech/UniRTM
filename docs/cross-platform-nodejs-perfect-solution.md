@@ -35,7 +35,7 @@ $ mise install node@25.9.0
 [tools]
 node = "25.9.0"
 python = "3.14.3"
-go = "1.26.2"
+go = "1.26.3"
 
 [env]
 # Alpine 自动检测：官方 Alpine 镜像会设置 ALPINE_VERSION
@@ -174,7 +174,7 @@ file $(mise which node)
 [tools]
 node = "25.9.0"
 python = "3.14.3"
-go = "1.26.2"
+go = "1.26.3"
 
 [env]
 # 自动检测 Alpine

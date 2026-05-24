@@ -520,6 +520,9 @@ backend = "asdf"
 [tools."go"."platforms.linux-arm64-musl"]
 
 [tools."go"."platforms.macos-amd64"]
+checksum = "278d580b32e299fe4a9c990fcf2d02acfe538c7e551a6ee18f9c7164573d2c63"
+url = "https://mirrors.aliyun.com/golang/go1.26.3.darwin-amd64.tar.gz"
+gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
 
 [tools."go"."platforms.macos-arm64"]
 

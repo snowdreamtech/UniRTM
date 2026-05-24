@@ -72,7 +72,7 @@ RUN mise install
 [tools]
 node = "25.9.0"  # 可以指定精确版本
 python = "3.14.3"
-go = "1.26.2"
+go = "1.26.3"
 
 # ⚠️ 不要在这里设置 node.flavor
 # [settings]
@@ -161,7 +161,7 @@ mise 支持根据环境变量选择不同的配置文件。
 [tools]
 node = "25.9.0"
 python = "3.14.3"
-go = "1.26.2"
+go = "1.26.3"
 
 # 默认不设置 flavor（使用 glibc）
 ```
@@ -172,7 +172,7 @@ go = "1.26.2"
 [tools]
 node = "25.9.0"
 python = "3.14.3"
-go = "1.26.2"
+go = "1.26.3"
 
 [settings]
 node.mirror_url = "https://unofficial-builds.nodejs.org/download/release/"
@@ -235,7 +235,7 @@ RUN mise install
 [tools]
 # node = "25.9.0"  # ⚠️ 注释掉，使用 Docker 镜像自带的
 python = "3.14.3"
-go = "1.26.2"
+go = "1.26.3"
 
 # 其他开发工具
 "github:astral-sh/ruff" = "0.15.9"
@@ -282,7 +282,7 @@ go = "1.26.2"
 [tools]
 node = "25.9.0"
 python = "3.14.3"
-go = "1.26.2"
+go = "1.26.3"
 
 # 开发工具
 "github:astral-sh/ruff" = "0.15.9"

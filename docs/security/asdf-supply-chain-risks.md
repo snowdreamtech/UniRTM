@@ -142,7 +142,7 @@ env | grep -E '(API|TOKEN|KEY|PASSWORD|SECRET)' | \
 # 1. 内置后端（最安全）
 node = "25.9.0"
 python = "3.14.3"
-go = "1.26.2"
+go = "1.26.3"
 
 # 2. GitHub Releases（较安全）
 "github:cli/cli" = "2.89.0"
