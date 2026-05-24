@@ -119,7 +119,7 @@ jobs:
           persist-credentials: false
 
       - name: "⚡ Setup UniRTM"
-        uses: snowdreamtech/setup-unirtm@v0.0.13
+        uses: snowdreamtech/setup-unirtm@v0.1.13
         with:
           install: true
           trust: true
