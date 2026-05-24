@@ -63,10 +63,10 @@ func NewConcurrentManager(im *InstallationManager, config ConcurrentManagerConfi
 
 // ToolInstallRequest specifies a tool and version to install.
 type ToolInstallRequest struct {
-	ToolKey   string // The full key as specified in the configuration
-	Tool      string // The stripped tool name
-	Version   string
-	Backend   string
+	ToolKey string // The full key as specified in the configuration
+	Tool    string // The stripped tool name
+	Version string
+	Backend string
 	// DependsOn lists tool names that must be installed before this one.
 	DependsOn []string
 }

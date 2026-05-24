@@ -64,6 +64,7 @@ Examples:
 		configManager := config.NewConfigManager()
 		cfg, err := configManager.LoadHierarchy(ctx)
 		if err != nil {
+			fmt.Println("Config error:", err)
 			cfg = &config.Config{}
 		}
 
@@ -103,6 +104,7 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		// Log error but continue with an empty config, since external runners
 		// (go-task, make, just) might not need unirtm.toml to work.
+		fmt.Println("Config error:", err)
 		cfg = &config.Config{
 			Tasks: make(map[string]config.Task),
 		}

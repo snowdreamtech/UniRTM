@@ -6,7 +6,7 @@ ENABLE_GITHUB_PROXY = '{% if env.CI is defined %}0{% else %}1{% endif %}'
 GITHUB_PROXY = 'https://gh-proxy.sn0wdr1am.com/'
 GONOSUMDB = ''
 GOPRIVATE = ''
-GOPROXY = '{% if env.CI is defined %}https://proxy.golang.org,direct{% else %}https://mirrors.aliyun.com/goproxy/,direct{% endif %}'
+GOPROXY = '{% if env.CI is defined %}https://proxy.golang.org,direct{% else %}https://goproxy.cn,direct{% endif %}'
 GOSUMDB = '{% if env.CI is defined %}sum.golang.org{% else %}sum.golang.google.cn{% endif %}'
 NODEJS_ORG_MIRROR = '{% if env.CI is defined %}https://nodejs.org/dist/{% else %}https://npmmirror.com/mirrors/node/{% endif %}'
 NPM_CONFIG_REGISTRY = '{% if env.CI is defined %}https://registry.npmjs.org{% else %}https://registry.npmmirror.com{% endif %}'
@@ -113,6 +113,7 @@ run = 'pre-commit run --all-files || (echo "⚠️  First pass failed. Running s
 description = 'Run Go unit tests for all packages recursively'
 run = 'go test -race -v ./...'
 output = 'interleaved'
+env = { GOTOOLCHAIN = 'local' }
 
 [tasks.verify]
 description = 'Run full local verification (lint-all, test, audit) - runs subchecks in parallel'

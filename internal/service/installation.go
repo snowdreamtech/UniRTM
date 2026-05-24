@@ -1230,6 +1230,16 @@ func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName st
 	var candidates []candidate
 
 	for _, inst := range installations {
+		// If the tool is configured in the current context, only consider the active version.
+		if tc, ok := im.toolConfigs[inst.Tool]; ok {
+			expectedVersion := im.resolveAlias(inst.Tool, tc.Version)
+			// Parse the expected version out in case it's a path@version format
+			_, _, parsedVersion, explicit := im.ParseToolSpec(inst.Tool + "@" + expectedVersion)
+			if explicit && inst.Version != parsedVersion {
+				continue
+			}
+		}
+
 		p := im.providerRegistry.GetWithBackend(inst.Tool, inst.Backend)
 		if p == nil {
 			continue

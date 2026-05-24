@@ -44,6 +44,10 @@ func (p *GoPkgProvider) Install(ctx context.Context, tool string, installPath st
 	// Construct package spec: path@version
 	pkgSpec := tool
 	if version != "" && version != "latest" {
+		// Many go tools require the "v" prefix if not latest and not a commit hash
+		if !strings.HasPrefix(version, "v") {
+			version = "v" + version
+		}
 		pkgSpec = fmt.Sprintf("%s@%s", tool, version)
 	} else {
 		pkgSpec = fmt.Sprintf("%s@latest", tool)
@@ -67,7 +71,17 @@ func (p *GoPkgProvider) Install(ctx context.Context, tool string, installPath st
 
 	// Use GOBIN to install the binary into our specific versioned directory
 	cmd := exec.CommandContext(ctx, goCmd, "install", pkgSpec)
-	cmdEnv := append(GetNoProxyEnv(extraDomains...), "GOBIN="+installPath)
+
+	// Filter out any system GOROOT which might conflict with the Go binary we are using
+	var cmdEnv []string
+	for _, env := range GetNoProxyEnv(extraDomains...) {
+		if !strings.HasPrefix(env, "GOROOT=") {
+			cmdEnv = append(cmdEnv, env)
+		}
+	}
+
+	cmdEnv = append(cmdEnv, "GOBIN="+installPath)
+	cmdEnv = append(cmdEnv, "GOTOOLCHAIN=local")
 	if gosumdb := env.Get("GOSUMDB"); gosumdb != "" {
 		cmdEnv = append(cmdEnv, "GOSUMDB="+gosumdb)
 	}

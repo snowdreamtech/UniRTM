@@ -135,7 +135,7 @@ func (p *NpmProvider) GetBinPaths(tool string, installPath string, version strin
 // GetEnvVars returns NODE_PATH for npm tools so plugins can be resolved.
 func (p *NpmProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	envVars := make(map[string]string)
-	
+
 	// Set NODE_PATH to the node_modules directory so that global plugins
 	// (like @commitlint/config-conventional for @commitlint/cli) can be resolved.
 	nodeModulesDir := filepath.Join(installPath, "lib", "node_modules")
@@ -143,11 +143,11 @@ func (p *NpmProvider) GetEnvVars(tool string, installPath string, version string
 		// Fallback for Windows
 		nodeModulesDir = filepath.Join(installPath, "node_modules")
 	}
-	
+
 	if info, err := os.Stat(nodeModulesDir); err == nil && info.IsDir() {
 		envVars["NODE_PATH"] = nodeModulesDir
 	}
-	
+
 	return envVars, nil
 }
 
