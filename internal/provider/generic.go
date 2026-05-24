@@ -51,7 +51,21 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 			return NewProviderError("generic", "unknown", version, "failed to create bin directory", err)
 		}
 
-		dstPath := filepath.Join(binDir, filepath.Base(artifactPath))
+		// Standardize single-file executables to use the tool name (e.g. google/osv-scanner -> osv-scanner)
+		binName := filepath.Base(tool)
+		lowerPath := strings.ToLower(artifactPath)
+		if strings.HasSuffix(lowerPath, ".exe") {
+			binName += ".exe"
+		} else if strings.HasSuffix(lowerPath, ".bat") {
+			binName += ".bat"
+		} else if strings.HasSuffix(lowerPath, ".cmd") {
+			binName += ".cmd"
+		} else if strings.HasSuffix(lowerPath, ".sh") {
+			binName += ".sh"
+		} else if strings.HasSuffix(lowerPath, ".py") {
+			binName += ".py"
+		}
+		dstPath := filepath.Join(binDir, binName)
 		if err := g.copyFile(artifactPath, dstPath); err != nil {
 			return NewProviderError("generic", "unknown", version, "failed to copy executable", err)
 		}
@@ -103,7 +117,7 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 		executables := g.pickBestExecutables(allExecs, toolName)
 
 		// 6. Ensure executables have +x and link them to binDir
-		for _, exe := range executables {
+		for i, exe := range executables {
 			exePath := filepath.Join(installPath, exe)
 
 			// Skip internal dependencies like node_modules
@@ -116,6 +130,22 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 			}
 
 			dstPath := filepath.Join(binDir, filepath.Base(exe))
+			
+			// Auto-rename primary executable to the standard tool name if it differs
+			if i == 0 {
+				primaryName := filepath.Base(tool)
+				if ext := filepath.Ext(exe); ext != "" {
+					primaryName += ext
+				}
+				standardPath := filepath.Join(binDir, primaryName)
+				if standardPath != dstPath {
+					if _, err := os.Stat(standardPath); err != nil {
+						relPath, _ := filepath.Rel(binDir, exePath)
+						os.Symlink(relPath, standardPath)
+					}
+				}
+			}
+
 			if filepath.Dir(exePath) != binDir {
 				// If a file already exists at dstPath, don't overwrite it
 				// This preserves original symlinks/binaries from the archive
