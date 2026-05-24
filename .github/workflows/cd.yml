@@ -229,6 +229,7 @@ jobs:
         if: ${{ steps.release.outputs.pr && hashFiles('pnpm-lock.yaml') != '' }}
         uses: pnpm/action-setup@903f9c1a6ebcba6cf41d87230be49611ac97822e # v6.0.3
         with:
+          version: "latest"
           run_install: false
 
       - name: "🔗 Synchronize Manifests & Lockfiles"
