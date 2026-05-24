@@ -44,7 +44,11 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 	}
 
 	// 2. Extract artifact if it is an archive
-	if err := g.extractArtifact(ctx, artifactPath, installPath); err != nil {
+	err := g.extractArtifact(ctx, artifactPath, installPath)
+	if err != nil {
+		if !strings.HasPrefix(err.Error(), "unsupported archive type") {
+			return NewProviderError("generic", "unknown", version, "failed to extract archive artifact", err)
+		}
 		// If it's not an archive, we just copy it to a new bin directory
 		binDir := filepath.Join(installPath, "bin")
 		if err := os.MkdirAll(binDir, 0755); err != nil {
