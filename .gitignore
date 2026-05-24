@@ -718,3 +718,8 @@ test-results/
 npm/unirtm-*/bin/
 npm/unirtm/bin/
 npm/*/package.json
+
+# =============================================================================
+# Agent Scratch Directory (DO NOT COMMIT)
+# =============================================================================
+scratch/
