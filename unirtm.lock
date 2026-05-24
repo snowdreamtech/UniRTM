@@ -508,7 +508,7 @@ url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8
 url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_darwin_x64.tar.gz"
 
 [[tools."go"]]
-version = "1.26.2"
+version = "1.26.3"
 backend = "asdf"
 
 [tools."go"."platforms.linux-amd64"]
