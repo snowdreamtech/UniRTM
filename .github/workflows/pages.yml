@@ -122,12 +122,9 @@ jobs:
         uses: snowdreamtech/setup-unirtm@v0.0.12
         with:
           install: true
+          trust: true
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
-
-      - name: "✅ Trust Repository Config"
-        run: unirtm trust
-
       - name: "🚀 compile documentation artifacts"
         shell: sh
         run: |

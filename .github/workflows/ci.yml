@@ -191,12 +191,9 @@ jobs:
         uses: snowdreamtech/setup-unirtm@v0.0.12
         with:
           install: true
+          trust: true
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
-
-      - name: "✅ Trust Repository Config"
-        run: unirtm trust
-
       - name: "🔍 Inspect Code Quality (Lint)"
         shell: sh
         run: |
@@ -296,12 +293,9 @@ jobs:
         uses: snowdreamtech/setup-unirtm@v0.0.12
         with:
           install: true
+          trust: true
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
-
-      - name: "✅ Trust Repository Config"
-        run: unirtm trust
-
       - name: "📦 Cache Language Dependencies (Advanced)"
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
@@ -430,12 +424,9 @@ jobs:
         uses: snowdreamtech/setup-unirtm@v0.0.12
         with:
           install: true
+          trust: true
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
-
-      - name: "✅ Trust Repository Config"
-        run: unirtm trust
-
       - name: "📝 Validate Commit Convention (Commitlint)"
         shell: sh
         env:

@@ -88,12 +88,9 @@ jobs:
         uses: snowdreamtech/setup-unirtm@v0.0.12
         with:
           install: true
+          trust: true
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
-
-      - name: "✅ Trust Repository Config"
-        run: unirtm trust
-
       - name: "🛡️ Run Security Audit"
         shell: sh
         env:
