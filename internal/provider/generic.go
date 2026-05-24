@@ -53,17 +53,8 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 
 		// Standardize single-file executables to use the tool name (e.g. google/osv-scanner -> osv-scanner)
 		binName := filepath.Base(tool)
-		lowerPath := strings.ToLower(artifactPath)
-		if strings.HasSuffix(lowerPath, ".exe") {
-			binName += ".exe"
-		} else if strings.HasSuffix(lowerPath, ".bat") {
-			binName += ".bat"
-		} else if strings.HasSuffix(lowerPath, ".cmd") {
-			binName += ".cmd"
-		} else if strings.HasSuffix(lowerPath, ".sh") {
-			binName += ".sh"
-		} else if strings.HasSuffix(lowerPath, ".py") {
-			binName += ".py"
+		if ext := filepath.Ext(artifactPath); isExecutableExtension(ext) {
+			binName += ext
 		}
 		dstPath := filepath.Join(binDir, binName)
 		if err := g.copyFile(artifactPath, dstPath); err != nil {
@@ -134,7 +125,7 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 			// Auto-rename primary executable to the standard tool name if it differs
 			if i == 0 {
 				primaryName := filepath.Base(tool)
-				if ext := filepath.Ext(exe); ext != "" {
+				if ext := filepath.Ext(exe); isExecutableExtension(ext) {
 					primaryName += ext
 				}
 				standardPath := filepath.Join(binDir, primaryName)
@@ -875,4 +866,29 @@ func (g *GenericProvider) relativizeAllSymlinks(dir string) error {
 
 		return nil
 	})
+}
+
+// isExecutableExtension checks if the given string is likely a file extension (e.g. .exe, .sh, .py, .ps1)
+// rather than a version number suffix (like .5 in tool-1.2.5 or .beta in tool-1.0.beta).
+func isExecutableExtension(ext string) bool {
+	if len(ext) < 2 || len(ext) > 6 {
+		return false
+	}
+	// Must start with a dot followed by a letter
+	if ext[0] != '.' || !(ext[1] >= 'a' && ext[1] <= 'z' || ext[1] >= 'A' && ext[1] <= 'Z') {
+		return false
+	}
+	// Remaining characters must be alphanumeric
+	for i := 2; i < len(ext); i++ {
+		c := ext[i]
+		if !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9') {
+			return false
+		}
+	}
+	// Exclude common version strings
+	lower := strings.ToLower(ext)
+	if lower == ".rc" || lower == ".beta" || lower == ".alpha" || lower == ".pre" || lower == ".dev" {
+		return false
+	}
+	return true
 }
