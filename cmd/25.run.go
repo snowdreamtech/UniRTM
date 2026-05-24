@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
@@ -173,22 +174,24 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 
 	// Execute task
 	if err := engine.Execute(ctx, cwd, taskName, taskArgs, envInjects); err != nil {
-		// Suggest similar tasks or commands if not found
-		var candidates []string
-		for name := range cfg.Tasks {
-			candidates = append(candidates, name)
-		}
-		if rootCmd != nil {
-			for _, cmd := range rootCmd.Commands() {
-				candidates = append(candidates, cmd.Name())
-				candidates = append(candidates, cmd.Aliases...)
+		if strings.Contains(err.Error(), "no suitable task runner found") {
+			// Suggest similar tasks or commands if not found
+			var candidates []string
+			for name := range cfg.Tasks {
+				candidates = append(candidates, name)
 			}
-		}
-		for name := range cfg.Tools {
-			candidates = append(candidates, name)
-		}
+			if rootCmd != nil {
+				for _, cmd := range rootCmd.Commands() {
+					candidates = append(candidates, cmd.Name())
+					candidates = append(candidates, cmd.Aliases...)
+				}
+			}
+			for name := range cfg.Tools {
+				candidates = append(candidates, name)
+			}
 
-		output.Suggest(os.Stderr, taskName, candidates)
+			output.Suggest(os.Stderr, taskName, candidates)
+		}
 
 		return fmt.Errorf("task execution failed: %w", err)
 	}
