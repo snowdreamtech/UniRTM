@@ -121,7 +121,7 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 			}
 
 			dstPath := filepath.Join(binDir, filepath.Base(exe))
-			
+
 			// Auto-rename primary executable to the standard tool name if it differs
 			if i == 0 {
 				primaryName := filepath.Base(tool)
