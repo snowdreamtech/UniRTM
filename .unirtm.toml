@@ -126,6 +126,7 @@ wait
 
 [tools]
 'github:anchore/syft' = '1.44.0'
+'github:aquasecurity/trivy' = '0.70.0'
 'github:astral-sh/ruff' = '0.15.12'
 'github:checkmake/checkmake' = 'v0.3.2'
 'github:cli/cli' = '2.92.0'
