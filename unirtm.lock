@@ -569,6 +569,26 @@ backend = "asdf"
 
 [tools."go"."platforms.windows-arm64"]
 
+[[tools."go:golang.org/x/vuln/cmd/govulncheck"]]
+version = "1.1.4"
+backend = "go"
+
+[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.linux-amd64"]
+
+[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.linux-amd64-musl"]
+
+[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.linux-arm64"]
+
+[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.linux-arm64-musl"]
+
+[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.macos-amd64"]
+
+[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.macos-arm64"]
+
+[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.windows-amd64"]
+
+[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.windows-arm64"]
+
 [[tools."google/addlicense"]]
 version = "1.2.0"
 backend = "github"
@@ -973,6 +993,26 @@ backend = "pipx"
 [tools."pipx:clang-format"."platforms.windows-amd64"]
 
 [tools."pipx:clang-format"."platforms.windows-arm64"]
+
+[[tools."pipx:pip-audit"]]
+version = "2.8.0"
+backend = "pipx"
+
+[tools."pipx:pip-audit"."platforms.linux-amd64"]
+
+[tools."pipx:pip-audit"."platforms.linux-amd64-musl"]
+
+[tools."pipx:pip-audit"."platforms.linux-arm64"]
+
+[tools."pipx:pip-audit"."platforms.linux-arm64-musl"]
+
+[tools."pipx:pip-audit"."platforms.macos-amd64"]
+
+[tools."pipx:pip-audit"."platforms.macos-arm64"]
+
+[tools."pipx:pip-audit"."platforms.windows-amd64"]
+
+[tools."pipx:pip-audit"."platforms.windows-arm64"]
 
 [[tools."pipx:pre-commit"]]
 version = "4.6.0"
