@@ -51,17 +51,17 @@ run = 'gitleaks detect --source . --no-banner'
 
 [tasks."audit:zizmor"]
 description = 'Audit GitHub Actions workflows for security flaws'
-run = 'zizmor . --format plain --config .zizmor.yml || true'
+run = 'zizmor . --format plain --config .zizmor.yml'
 
 [tasks."audit:osv"]
 description = 'Generic vulnerability scan across lockfiles'
-run = 'osv-scanner scan . --config .osv-scanner.toml || true'
+run = 'osv-scanner scan . --config .osv-scanner.toml'
 
 [tasks."audit:npm"]
 description = 'Node.js dependency audit'
 run = '''
 if [ -f "package.json" ]; then
-    npm audit --registry="https://registry.npmjs.org" || true
+    npm audit --registry="https://registry.npmjs.org"
 else
     echo "⏭️  Skipped (no package.json)"
 fi
