@@ -26,6 +26,7 @@ func init() {
 
 	// Scheme 3: Add --output flag for task output mode selection
 	runCmd.Flags().String("output", "", "Task output mode: spinner, prefix, or interleaved (default: auto-detect)")
+	runCmd.Flags().Bool("fix", false, "Apply automatic fixes if supported by the task")
 }
 
 // runCmd represents the run command which executes a task via the routing engine.
@@ -170,6 +171,11 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 	shimsDir := env.GetShimsDir()
 	envInjects := []string{
 		fmt.Sprintf("PATH=%s:%s", shimsDir, env.Get("PATH")),
+	}
+
+	isFix, _ := cmd.Flags().GetBool("fix")
+	if isFix {
+		envInjects = append(envInjects, "UNIRTM_FIX=1")
 	}
 
 	// Execute task

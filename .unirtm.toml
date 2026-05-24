@@ -51,7 +51,13 @@ run = 'gitleaks detect --source . --no-banner'
 
 [tasks."audit:zizmor"]
 description = 'Audit GitHub Actions workflows for security flaws'
-run = 'zizmor . --format plain --config .zizmor.yml'
+run = '''
+CMD="zizmor . --format plain --config .zizmor.yml"
+if [ "$UNIRTM_FIX" = "1" ]; then
+    CMD="$CMD --fix=all"
+fi
+$CMD
+'''
 
 [tasks."audit:osv"]
 description = 'Generic vulnerability scan across lockfiles'
@@ -60,8 +66,12 @@ run = 'osv-scanner scan . --config .osv-scanner.toml'
 [tasks."audit:npm"]
 description = 'Node.js dependency audit'
 run = '''
+CMD="npm audit"
+if [ "$UNIRTM_FIX" = "1" ]; then
+    CMD="npm audit fix"
+fi
 if [ -f "package.json" ]; then
-    npm audit --registry="https://registry.npmjs.org"
+    $CMD --registry="https://registry.npmjs.org"
 else
     echo "⏭️  Skipped (no package.json)"
 fi
@@ -70,8 +80,12 @@ fi
 [tasks."audit:pip"]
 description = 'Python dependency audit'
 run = '''
+CMD="pip-audit"
+if [ "$UNIRTM_FIX" = "1" ]; then
+    CMD="pip-audit --fix"
+fi
 if [ -f "requirements.txt" ] || [ -f "pyproject.toml" ]; then
-    pip-audit
+    $CMD
 else
     echo "⏭️  Skipped (no python requirements)"
 fi
