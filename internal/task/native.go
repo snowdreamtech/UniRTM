@@ -84,24 +84,7 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 		script = script + " " + strings.Join(args, " ")
 	}
 
-	// Apply shell-style expansion to the script
-	envMap := make(map[string]string)
-	for _, e := range os.Environ() {
-		parts := strings.SplitN(e, "=", 2)
-		if len(parts) == 2 {
-			envMap[parts[0]] = parts[1]
-		}
-	}
-	// Overlay UniRTM resolved env
-	for _, e := range env {
-		parts := strings.SplitN(e, "=", 2)
-		if len(parts) == 2 {
-			envMap[parts[0]] = parts[1]
-		}
-	}
-	script = os.Expand(script, func(k string) string {
-		return envMap[k]
-	})
+
 
 	// Resolve timeout: task override > global setting
 	timeout := r.settings.TaskTimeout
