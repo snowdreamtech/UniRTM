@@ -290,6 +290,22 @@ func runActivate(cmd *cobra.Command, args []string) error {
 			if err == nil {
 				injectedPaths = append(injectedPaths, binPaths...)
 			}
+
+			// Add provider-specific environment variables (e.g., GOROOT)
+			toolEnvVars, err := p.GetEnvVars(toolName, installPath, version)
+			if err == nil {
+				for k, v := range toolEnvVars {
+					if existing, exists := envVars[k]; !exists {
+						envVars[k] = v
+					} else if k == "NODE_PATH" {
+						// Concatenate NODE_PATH for multiple npm tools
+						sep := string(os.PathListSeparator)
+						if !strings.Contains(existing+sep, v+sep) {
+							envVars[k] = existing + sep + v
+						}
+					}
+				}
+			}
 		}
 	}
 

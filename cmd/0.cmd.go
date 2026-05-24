@@ -154,6 +154,12 @@ func invokeShimMode(exeName string) {
 		os.Setenv(k, v)
 	}
 
+	// Filter out host environment variables that might pollute the unirtm managed tools.
+	// E.g., if the user has GOROOT set for a system Go installation, it will break unirtm's Go.
+	if exeName == "go" || exeName == "gofmt" {
+		os.Unsetenv("GOROOT")
+	}
+
 	// Prepare for execution
 	args := os.Args
 	if len(args) > 0 {

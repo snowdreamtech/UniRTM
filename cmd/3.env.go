@@ -4,7 +4,6 @@
 package cmd
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -15,9 +14,8 @@ import (
 
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
-	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
-	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
+	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -70,7 +68,6 @@ func runEnv(cmd *cobra.Command, args []string) error {
 		return runEnvInfoWithStyle()
 	}
 
-	ctx := context.Background()
 	cfg, _ := config.LoadFull()
 
 	// Collect environment data
@@ -83,25 +80,76 @@ func runEnv(cmd *cobra.Command, args []string) error {
 	var sources []string
 	isRedacted := make(map[string]bool)
 
-	// Load tools from database
-	dbPath := env.GetDatabasePath()
-	db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true})
-	if err == nil {
-		defer db.Close()
-		installRepo, _ := sqlite.NewInstallationRepository(db.Conn())
-		installations, _ := installRepo.List(ctx)
-
-		seen := make(map[string]bool)
-		for _, inst := range installations {
-			binDir := filepath.Join(installsDir, inst.Tool, inst.Version, "bin")
-			if _, statErr := os.Stat(binDir); statErr == nil && !seen[binDir] {
-				pathDirs = append(pathDirs, binDir)
-				seen[binDir] = true
-			}
-			// Add version variables
-			varName := "UNIRTM_" + strings.ToUpper(strings.ReplaceAll(inst.Tool, "-", "_")) + "_VERSION"
-			vars = append(vars, envVarEntry{Name: varName, Value: inst.Version, Source: "tool:" + inst.Tool})
+	// Get active tools from configuration
+	toolVersions := make(map[string]string)
+	if cfg != nil {
+		for name, tc := range cfg.Tools {
+			toolVersions[name] = tc.Version
 		}
+	}
+
+	registry := provider.DefaultRegistry
+	seen := make(map[string]bool)
+	providerEnvVars := make(map[string]string)
+
+	for toolNameKey, version := range toolVersions {
+		toolName := toolNameKey
+		backendName := ""
+
+		if idx := strings.Index(toolNameKey, ":"); idx != -1 {
+			backendName = toolNameKey[:idx]
+			toolName = toolNameKey[idx+1:]
+		} else if strings.Contains(toolNameKey, "/") {
+			backendName = "github"
+		}
+
+		if backendName == "go" || strings.HasPrefix(toolNameKey, "go:") {
+			backendName = "go-pkg"
+			if strings.HasPrefix(toolNameKey, "go:") {
+				toolName = strings.TrimPrefix(toolNameKey, "go:")
+			}
+		}
+
+		p := registry.GetWithBackend(toolName, backendName)
+		if p == nil {
+			continue
+		}
+		fsToolName := env.GetFSToolName(toolName, backendName)
+		installPath := filepath.Join(installsDir, fsToolName, version)
+
+		// Add bin paths
+		binPaths, err := p.GetBinPaths(toolName, installPath, version)
+		if err == nil {
+			for _, binDir := range binPaths {
+				if _, statErr := os.Stat(binDir); statErr == nil && !seen[binDir] {
+					pathDirs = append(pathDirs, binDir)
+					seen[binDir] = true
+				}
+			}
+		}
+
+		// Add version variables
+		varName := "UNIRTM_" + strings.ToUpper(strings.ReplaceAll(fsToolName, "-", "_")) + "_VERSION"
+		vars = append(vars, envVarEntry{Name: varName, Value: version, Source: "tool:" + toolNameKey})
+
+		// Add provider env vars
+		toolEnvVars, err := p.GetEnvVars(toolName, installPath, version)
+		if err == nil {
+			for k, v := range toolEnvVars {
+				if existing, exists := providerEnvVars[k]; !exists {
+					providerEnvVars[k] = v
+				} else if k == "NODE_PATH" {
+					sep := string(os.PathListSeparator)
+					if !strings.Contains(existing+sep, v+sep) {
+						providerEnvVars[k] = existing + sep + v
+					}
+				}
+			}
+		}
+	}
+
+	for k, v := range providerEnvVars {
+		vars = append(vars, envVarEntry{Name: k, Value: v, Source: "provider"})
 	}
 
 	// Load config [env] variables
