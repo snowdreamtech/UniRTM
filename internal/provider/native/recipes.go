@@ -12,7 +12,7 @@ func GetBuiltinRecipes() map[string]Recipe {
 			Handler: &GolangHandler{},
 			BaseURL: "https://go.dev/dl",
 			Aliases: map[string]string{
-				"latest": "1.26.2",
+				"latest": "1.26.3",
 			},
 			GPGKeys: []string{
 				"EB4C1BF148A2C440F831EE8752D905A67D74191C", // Google Go Release Team
