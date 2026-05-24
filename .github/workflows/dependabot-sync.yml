@@ -143,7 +143,7 @@ jobs:
       - name: "🔧 Update UniRTM Toolchain & Lockfile"
         shell: sh
         run: |
-          unirtm lock
+          unirtm lock --all-platforms
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
