@@ -51,7 +51,7 @@ jobs:
 
     steps:
       - name: "🔒 Harden Runner"
-        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.10.2
+        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -119,7 +119,7 @@ jobs:
           persist-credentials: false
 
       - name: "⚡ Setup UniRTM"
-        uses: snowdreamtech/setup-unirtm@v0.1.13
+        uses: snowdreamtech/setup-unirtm@16c6613c4b2cf3dcd447a3ed364e67aab09f1a3f # v0.1.13
         with:
           install: true
           trust: true
@@ -155,7 +155,7 @@ jobs:
     timeout-minutes: 40
     steps:
       - name: "🔒 Harden Runner"
-        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.10.2
+        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
         with:
           egress-policy: block
           allowed-endpoints: >
