@@ -71,7 +71,7 @@ fi
 description = 'Python dependency audit'
 run = '''
 if [ -f "requirements.txt" ] || [ -f "pyproject.toml" ]; then
-    pip-audit || true
+    pip-audit
 else
     echo "⏭️  Skipped (no python requirements)"
 fi
@@ -81,7 +81,7 @@ fi
 description = 'Go dependency audit'
 run = '''
 if [ -f "go.mod" ]; then
-    govulncheck ./... || true
+    govulncheck ./...
 else
     echo "⏭️  Skipped (no go.mod)"
 fi
@@ -90,8 +90,8 @@ fi
 [tasks."audit:trivy"]
 description = 'Generate and scan SBOM using Trivy'
 run = '''
-trivy fs --format cyclonedx --output sbom.json . || true
-trivy sbom sbom.json || true
+trivy fs --format cyclonedx --output sbom.json .
+trivy sbom sbom.json
 '''
 
 [tasks.lint]
