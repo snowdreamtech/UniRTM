@@ -134,9 +134,9 @@ This command implements the following requirements:
 
 ## Related Commands
 
-- [`install`](./install.md) - Install a specific version of a tool
-- [`list`](./list.md) - List all installed tools
-- [`doctor`](./doctor.md) - Verify system health and installed tools
+- [`install`](../index.md) - Install a specific version of a tool
+- [`list`](../index.md) - List all installed tools
+- [`doctor`](../index.md) - Verify system health and installed tools
 
 ## Notes
 
@@ -184,6 +184,6 @@ ps aux | grep unirtm
 
 ## See Also
 
-- [Installation Guide](../installation.md)
-- [Configuration Reference](../configuration.md)
-- [CLI Reference](../cli-reference.md)
+- [Installation Guide](../index.md)
+- [Configuration Reference](../index.md)
+- [CLI Reference](../index.md)

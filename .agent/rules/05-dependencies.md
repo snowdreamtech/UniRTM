@@ -42,7 +42,7 @@
   - **Mechanism**: The `run_mise` wrapper in [common.sh](../../.unirtm.toml) automatically unsets the mandatory locking requirement for any tool using the `go:` prefix, allowing them to resolve via `GOPROXY` while keeping binaries strictly locked.
 
 - **Manifest Aggregation & Locking**:
-  - To ensure Tier 2 tools are cryptographically locked in `mise.lock` without bloating the root config, the project uses a **Manifest Aggregator** ([scripts/build.sh](../../scripts/build.sh)).
+  - To ensure Tier 2 tools are cryptographically locked in `mise.lock` without bloating the root config, the project uses a **Manifest Aggregator** (.unirtm.toml).
   - **The Lock Ritual**: Running `make sync-lock` dynamically merges Tier 1 and Tier 2 definitions into a temporary "Full Manifest" to update the global `mise.lock`.
   - **CI/Audit Compliance**: All security audits and CI workflows MUST use the locked versions defined in `mise.lock` by activating the tiered configuration via `MISE_CONFIG`.
 

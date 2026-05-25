@@ -784,7 +784,7 @@ The `doctor` command performs comprehensive health checks:
 
 ### Glossary
 
-See [requirements.md](./requirements.md) for complete glossary of terms.
+See README.md for complete glossary of terms.
 
 ## Correctness Properties
 
