@@ -30,7 +30,7 @@ exclude = [
 # Accept status codes
 # 200-299: Success
 # 429: Too Many Requests (rate limiting, will retry)
-accept = [200, 429]
+accept = [200, 202, 429]
 
 # Retry configuration
 max_retries = 3

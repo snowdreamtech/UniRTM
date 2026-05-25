@@ -284,7 +284,7 @@ Remove the line sourcing `unirtm.ps1` from your PowerShell profile, then delete 
 
 ## Additional Resources
 
-- [Cobra Shell Completions](https://github.com/spf13/cobra/blob/main/shell_completions.md)
+- [Cobra Shell Completions](https://cobra.dev/#shell-completions)
 - [Bash Completion Documentation](https://github.com/scop/bash-completion)
 - [Zsh Completion System](http://zsh.sourceforge.net/Doc/Release/Completion-System.html)
 - [Fish Completion Documentation](https://fishshell.com/docs/current/completions.html)
