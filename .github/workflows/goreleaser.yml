@@ -157,11 +157,10 @@ jobs:
       group: goreleaser-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: false # Release processes must complete to avoid partial releases
     permissions:
-      contents: write # Required to create GitHub Releases, upload assets, and push tags
-      packages: write # Required for container registry publishing if configured
+      contents: write
+      id-token: write # Required for keyless signing via Sigstore if configured
       statuses: write # Required for updating commit statuses
       security-events: write # Required if release includes security reports
-      id-token: write # Required for requesting the JWT for SLSA attestation
       attestations: write # Required for uploading attestations
     timeout-minutes: 30 # Go compilation and asset upload usually completes in <10m
     steps:
@@ -232,35 +231,6 @@ jobs:
           # Required: Fetch all tags and historical context for GoReleaser to accurately determine the next version.
           fetch-depth: 0
           persist-credentials: false
-
-      - name: "🩺 Verify Docker Daemon Health"
-        shell: sh
-        run: |
-          echo "=== Docker Version ==="
-          docker version
-          echo ""
-          echo "=== Docker Info ==="
-          docker info
-          echo ""
-          echo "=== Cleanup Stale Buildx Builders ==="
-          docker buildx ls || true
-          # Remove any stale builders to prevent conflicts
-          docker buildx rm --all-inactive --force || true
-          echo ""
-          echo "=== Docker System Prune ==="
-          docker system prune -f --volumes || true
-
-      - name: "🐳 Set up Docker Buildx"
-        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
-        with:
-          driver: docker-container
-          driver-opts: |
-            image=moby/buildkit:latest
-            network=host
-          buildkitd-flags: --oci-worker-no-cache
-          cache-binary: false
-          cleanup: true
-        timeout-minutes: 5
 
       - name: "⚡ Setup UniRTM"
         uses: snowdreamtech/setup-unirtm@16c6613c4b2cf3dcd447a3ed364e67aab09f1a3f # v0.1.13

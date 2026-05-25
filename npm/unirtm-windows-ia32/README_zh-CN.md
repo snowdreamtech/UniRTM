@@ -196,8 +196,8 @@ unirtm install
 
 ### 参考资料
 
-- [完整文档](https://github.com/snowdreamtech/UniRTM/blob/main/docs/index.md)
-- [项目术语表](https://github.com/snowdreamtech/UniRTM/blob/main/docs/glossary.md)
+- [完整文档](docs/index.md)
+- [项目术语表](docs/glossary.md)
 - [约定式提交](https://www.conventionalcommits.org/)
 
 ### 🚀 代理使用场景
