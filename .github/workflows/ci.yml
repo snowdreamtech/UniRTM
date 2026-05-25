@@ -27,7 +27,6 @@ jobs:
   # 0. Security Guard Stage (PR Only)
   dependency-review:
     name: "🛡️ Dependency Review"
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -98,11 +97,13 @@ jobs:
           persist-credentials: false
 
       - name: "🔍 Dependency Review"
+        if: github.event_name == 'pull_request'
         uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
 
   # 1. Code Quality Stage (Lint)
   lint:
     name: "🛡️ Quality Assurance Gate (${{ matrix.os }})"
+    needs: [dependency-review]
     runs-on: ${{ matrix.os }}
     environment: development
     concurrency:
