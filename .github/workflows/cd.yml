@@ -134,10 +134,6 @@ jobs:
         shell: sh
         run: |
           unirtm run verify
-          # Extra SARIF export for GitHub Security Tab (Offline to prevent API rate limits)
-          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-            unirtm exec -- zizmor . --format sarif --offline --config .zizmor.yml > zizmor-results.sarif
-          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PYTHONUTF8: 1
