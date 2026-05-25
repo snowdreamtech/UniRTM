@@ -230,7 +230,7 @@ go test -v ./internal/service -run TestDependencyResolver
 
 ## References
 
-- [Design Document](../../.kiro/specs/unirtm/design.md)
-- [Requirements Document](../../.kiro/specs/unirtm/requirements.md)
+- [Design Document](../../README.md)
+- [Requirements Document](../../README.md)
 - [Service Layer README](./README.md)
 - [Provider System](../provider/provider.go)

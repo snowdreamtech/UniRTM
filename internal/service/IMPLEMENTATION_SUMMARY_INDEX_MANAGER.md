@@ -358,5 +358,5 @@ The implementation provides a solid foundation for tool index management in UniR
 
 - [Index Manager Documentation](./INDEX_MANAGER.md)
 - [Service Layer README](./README.md)
-- [Design Document](../../.kiro/specs/unirtm/design.md)
-- [Requirements Document](../../.kiro/specs/unirtm/requirements.md) - Requirement 11
+- [Design Document](../../README.md)
+- [Requirements Document](../../README.md) - Requirement 11

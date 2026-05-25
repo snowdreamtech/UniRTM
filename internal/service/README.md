@@ -442,8 +442,8 @@ The audit service validates the following requirements:
 
 ## References
 
-- [Design Document](../../.kiro/specs/unirtm/design.md)
-- [Requirements Document](../../.kiro/specs/unirtm/requirements.md)
+- [Design Document](../../README.md)
+- [Requirements Document](../../README.md)
 - [Repository Layer](../repository/README.md)
 - [Error Handling](../pkg/errors/errors.go)
 - [Logger](../pkg/logger/logger.go)

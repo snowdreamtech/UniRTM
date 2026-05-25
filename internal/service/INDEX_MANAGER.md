@@ -415,8 +415,8 @@ For large indexes:
 
 ## References
 
-- [Design Document](../../.kiro/specs/unirtm/design.md)
-- [Requirements Document](../../.kiro/specs/unirtm/requirements.md) - Requirement 11
+- [Design Document](../../README.md)
+- [Requirements Document](../../README.md) - Requirement 11
 - [Repository Layer](../repository/README.md)
 - [Backend System](../backend/README.md)
 - [Service Layer README](./README.md)
