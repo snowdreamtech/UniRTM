@@ -237,6 +237,14 @@ jobs:
           trust: true
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+
+      - name: "🧹 Clean Git State (Discard Lockfile Changes)"
+        shell: sh
+        run: |
+          # setup-unirtm runs 'unirtm install' which might update unirtm.lock if version bumped.
+          # GoReleaser requires a strict clean state, so we discard these auto-updates.
+          git restore unirtm.lock package-lock.json pnpm-lock.yaml yarn.lock 2>/dev/null || true
+          git clean -fd 2>/dev/null || true
       - name: "🚀 Distribute Artifacts (GoReleaser)"
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
         env:
