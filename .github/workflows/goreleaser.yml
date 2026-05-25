@@ -245,6 +245,10 @@ jobs:
           # GoReleaser requires a strict clean state, so we forcefully reset the working tree.
           git reset --hard HEAD
           git clean -fd
+
+      - name: "📦 Install Syft (for GoReleaser SBOM)"
+        uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+
       - name: "🚀 Distribute Artifacts (GoReleaser)"
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
         env:
