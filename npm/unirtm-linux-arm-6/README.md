@@ -91,7 +91,7 @@ graph TD
 | Parameter      | Purpose                                                           | Location                |
 | :------------- | :---------------------------------------------------------------- | :---------------------- |
 | `PROJECT_NAME` | Project identity                                                  | `init-project.sh`       |
-| `GITHUB_PROXY` | Network optimization (See [Proxy Usage](#-proxy-usage-scenarios)) | `scripts/lib/common.sh` |
+| `GITHUB_PROXY` | Network optimization (See [Proxy Usage](#-proxy-usage-scenarios)) | `.unirtm.toml` |
 | `VERSION`      | Semantic versioning                                               | `package.json`          |
 
 ### File Structure
@@ -195,8 +195,8 @@ unirtm install
 
 ### References
 
-- [Full Documentation](docs/index.md)
-- [Project Glossary](docs/glossary.md)
+- [Full Documentation](https://github.com/snowdreamtech/UniRTM/blob/main/docs/index.md)
+- [Project Glossary](https://github.com/snowdreamtech/UniRTM/blob/main/docs/glossary.md)
 - [Conventional Commits](https://www.conventionalcommits.org/)
 
 ### 🚀 Proxy Usage Scenarios

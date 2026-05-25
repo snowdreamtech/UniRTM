@@ -49,7 +49,7 @@ setup() {
   export _G_LIB_DIR="$TEMP_DIR/scripts/lib"
 
   # shellcheck disable=SC1091
-  . "$TEMP_DIR/scripts/lib/common.sh"
+
 }
 
 teardown() {

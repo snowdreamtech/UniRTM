@@ -67,7 +67,7 @@ test_start "Property 2.1: Centralized provider variables are defined in versions
 set +u
 if [ -f "${SCRIPT_DIR}/lib/versions.sh" ]; then
   # shellcheck disable=SC1091
-  . "${SCRIPT_DIR}/lib/versions.sh" || {
+
     fail "Failed to source versions.sh" "Script exited with error"
     exit 1
   }

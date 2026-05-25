@@ -91,7 +91,7 @@ graph TD
 | Parameter      | Purpose                                                           | Location                |
 | :------------- | :---------------------------------------------------------------- | :---------------------- |
 | `PROJECT_NAME` | Project identity                                                  | `init-project.sh`       |
-| `GITHUB_PROXY` | Network optimization (See [Proxy Usage](#-proxy-usage-scenarios)) | `scripts/lib/common.sh` |
+| `GITHUB_PROXY` | Network optimization (See [Proxy Usage](#-proxy-usage-scenarios)) | `.unirtm.toml` |
 | `VERSION`      | Semantic versioning                                               | `package.json`          |
 
 ### File Structure

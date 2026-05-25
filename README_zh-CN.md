@@ -92,7 +92,7 @@ graph TD
 | 参数           | 用途                                       | 位置                    |
 | :------------- | :----------------------------------------- | :---------------------- |
 | `PROJECT_NAME` | 项目身份                                   | `init-project.sh`       |
-| `GITHUB_PROXY` | 网络优化 (见 [代理使用场](#-代理使用场景)) | `scripts/lib/common.sh` |
+| `GITHUB_PROXY` | 网络优化 (见 [代理使用场](#-代理使用场景)) | `.unirtm.toml` |
 | `VERSION`      | 语义化版本                                 | `package.json`          |
 
 ### 目录结构

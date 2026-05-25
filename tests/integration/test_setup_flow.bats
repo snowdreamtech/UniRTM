@@ -28,7 +28,7 @@ setup() {
   export _G_LIB_DIR="$SCRIPT_DIR/scripts/lib"
 
   # shellcheck source=scripts/lib/common.sh
-  . "$SCRIPT_DIR/scripts/lib/common.sh"
+
 }
 
 teardown() {

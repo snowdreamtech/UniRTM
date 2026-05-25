@@ -34,7 +34,7 @@ setup() {
   export ORIGINAL_GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 
   # shellcheck source=scripts/lib/common.sh
-  . "$SCRIPT_DIR/scripts/lib/common.sh"
+
 }
 
 teardown() {

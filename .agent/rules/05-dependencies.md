@@ -34,15 +34,15 @@
   | Tier | Classification | Storage | Management |
   | :--- | :--- | :--- | :--- |
   | **Tier 1** | **Core/Global** | [.mise.toml](../../.mise.toml) | Statically defined; local `mise install` default. |
-  | **Tier 2** | **On-Demand** | [versions.sh](../../scripts/lib/versions.sh) | Defined as shell variables; JIT-installed by scripts. |
+  | **Tier 2** | **On-Demand** | [versions.sh](../../.unirtm.toml) | Defined as shell variables; JIT-installed by scripts. |
 
 - **Adaptive Lock Forgiveness (ALF)**:
   - **The Problem**: Pre-compiled binaries (`github:`, `core:`) have stable hashes, but source-compiled tools (`go:`) depend on local builds, making `mise.lock` entries impossible to predict for all platforms.
   - **The Strategy**: To maintain a strict Security Lockdown (`MISE_LOCKED=1`) without breaking source-based providers or encountering "GitHub Traffic Walls," the project implements **ALF**.
-  - **Mechanism**: The `run_mise` wrapper in [common.sh](../../scripts/lib/common.sh) automatically unsets the mandatory locking requirement for any tool using the `go:` prefix, allowing them to resolve via `GOPROXY` while keeping binaries strictly locked.
+  - **Mechanism**: The `run_mise` wrapper in [common.sh](../../.unirtm.toml) automatically unsets the mandatory locking requirement for any tool using the `go:` prefix, allowing them to resolve via `GOPROXY` while keeping binaries strictly locked.
 
 - **Manifest Aggregation & Locking**:
-  - To ensure Tier 2 tools are cryptographically locked in `mise.lock` without bloating the root config, the project uses a **Manifest Aggregator** ([scripts/gen-full-manifest.sh](../../scripts/gen-full-manifest.sh)).
+  - To ensure Tier 2 tools are cryptographically locked in `mise.lock` without bloating the root config, the project uses a **Manifest Aggregator** ([scripts/build.sh](../../scripts/build.sh)).
   - **The Lock Ritual**: Running `make sync-lock` dynamically merges Tier 1 and Tier 2 definitions into a temporary "Full Manifest" to update the global `mise.lock`.
   - **CI/Audit Compliance**: All security audits and CI workflows MUST use the locked versions defined in `mise.lock` by activating the tiered configuration via `MISE_CONFIG`.
 
@@ -70,11 +70,11 @@
 ## 2. Dependency Sources & Integrity
 
 - Prioritize **official registries** (npm, PyPI, crates.io, Maven Central, Go module proxy). For enterprise or air-gapped environments, use internal proxies with upstream mirroring (Nexus, Artifactory, Verdaccio).
-- When downloading external resources in scripts or CI, verify downloaded artifacts with **SHA-256 checksum** before use. Prefer the project's standardized functions in `scripts/lib/common.sh`:
+- When downloading external resources in scripts or CI, verify downloaded artifacts with **SHA-256 checksum** before use. Prefer the project's standardized functions in `.unirtm.toml`:
 
   ```bash
   # Standardized download with integrity check (POSIX sh)
-  . "scripts/lib/common.sh"
+  . ".unirtm.toml"
   download_url "$URL" "output.tar.gz" "my-tool"
   verify_checksum "output.tar.gz" "$EXPECTED_SHA256"
   ```

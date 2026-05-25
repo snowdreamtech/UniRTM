@@ -22,8 +22,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# shellcheck source=../scripts/lib/common.sh
-. "$PROJECT_ROOT/scripts/lib/common.sh"
+
+
 
 # Test counters
 TESTS_RUN=0
@@ -90,7 +90,7 @@ test_non_ci_environment_unchanged() {
   export _G_PROJECT_ROOT="$TEMP_DIR"
   export _G_LIB_DIR="$TEMP_DIR/scripts/lib"
   # shellcheck disable=SC1091
-  . "$TEMP_DIR/scripts/lib/common.sh"
+
 
   # Test: run_mise should work without GITHUB_PATH
   local STATUS=0

@@ -11,14 +11,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# shellcheck source=../../scripts/lib/common.sh
-. "$PROJECT_ROOT/scripts/lib/common.sh"
+
+
 # shellcheck source=../../scripts/lib/timeout.sh
 . "$PROJECT_ROOT/scripts/lib/timeout.sh"
 # shellcheck source=../../scripts/lib/registry.sh
 . "$PROJECT_ROOT/scripts/lib/registry.sh"
-# shellcheck source=../../scripts/lib/versions.sh
-. "$PROJECT_ROOT/scripts/lib/versions.sh"
+
+
 
 # Test counters
 TESTS_RUN=0

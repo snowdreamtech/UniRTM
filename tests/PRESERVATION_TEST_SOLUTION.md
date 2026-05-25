@@ -2,7 +2,7 @@
 
 ## Problem
 
-The original `tests/preservation-property.bats` test was hanging when executed. The test setup function was sourcing `scripts/lib/versions.sh`, which appeared to trigger some operation that hung indefinitely.
+The original `tests/preservation-property.bats` test was hanging when executed. The test setup function was sourcing `.unirtm.toml`, which appeared to trigger some operation that hung indefinitely.
 
 ## Root Cause Analysis
 

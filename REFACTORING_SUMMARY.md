@@ -8,7 +8,7 @@ This document summarizes the refactoring effort to migrate all tool installation
 
 ### Phase 1: Core Infrastructure (Completed)
 
-- ✅ Created `install_tool_safe()` function in `scripts/lib/common.sh`
+- ✅ Created `install_tool_safe()` function in `.unirtm.toml`
 - ✅ Implemented binary-first detection logic
 - ✅ Added platform-specific binary name resolution (ec-*, .exe, etc.)
 - ✅ Integrated mise shim detection and handling
@@ -225,6 +225,6 @@ a6f3942 refactor(ci): migrate hadolint and dockerfile-utils to install_tool_safe
 
 ## References
 
-- Main implementation: `scripts/lib/common.sh` (lines 2040-2280)
+- Main implementation: `.unirtm.toml` (lines 2040-2280)
 - Documentation: `.agent/rules/06-ci-testing.md` (§7.8)
 - Analysis document: `REFACTORING_ANALYSIS.md`

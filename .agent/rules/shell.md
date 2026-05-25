@@ -24,7 +24,7 @@ When Bash-specific features are genuinely required, the script MUST:
 
 ### Global Library (MANDATORY)
 
-To ensure consistency in logging, colors, and argument parsing, ALL functional scripts MUST source the **`scripts/lib/common.sh`** library:
+To ensure consistency in logging, colors, and argument parsing, ALL functional scripts MUST source the **`.unirtm.toml`** library:
 
 ```sh
 #!/usr/bin/env sh
@@ -465,7 +465,7 @@ fi
 
 For system-level utilities and linters, prefer **natively managed binaries** in `scripts/setup.sh` over npm/pip wrappers.
 
-- **Rationale**: Avoids API rate limits (e.g., GitHub API downloads during npm install), reduces runtime dependency bloat, and ensures strict version control via `scripts/lib/common.sh`.
+- **Rationale**: Avoids API rate limits (e.g., GitHub API downloads during npm install), reduces runtime dependency bloat, and ensures strict version control via `.unirtm.toml`.
 - **Example**: `editorconfig-checker` should be installed as a CGO/Go binary via `curl`, not via `npm install`.
 
 ### Language-Aware Health Check Pattern

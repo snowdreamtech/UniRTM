@@ -164,7 +164,7 @@ If a workflow doesn't need security scanning (e.g., documentation builds), it wi
 
 If adding a new universal security scanner (applicable to all projects):
 
-1. Add to `scripts/lib/versions.sh`:
+1. Add to `.unirtm.toml`:
 
    ```bash
    VER_NEWTOOL="1.0.0"
@@ -276,4 +276,4 @@ CI=true make check-env
 ## References
 
 - Implementation details in `scripts/check-env.sh`
-- Tool version definitions in `scripts/lib/versions.sh`
+- Tool version definitions in `.unirtm.toml`

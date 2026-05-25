@@ -122,7 +122,7 @@ This approach ensures:
 
 ## Why Shell Scripts Instead of Bats?
 
-The original preservation test was written using the bats testing framework but encountered hanging issues when sourcing `scripts/lib/versions.sh`. After investigation, we replaced it with a standalone shell script because:
+The original preservation test was written using the bats testing framework but encountered hanging issues when sourcing `.unirtm.toml`. After investigation, we replaced it with a standalone shell script because:
 
 1. **No External Dependencies**: Pure POSIX shell scripts work everywhere
 2. **No Hanging Issues**: Direct execution without complex framework setup

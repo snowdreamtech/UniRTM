@@ -92,7 +92,7 @@ graph TD
 | 参数           | 用途                                       | 位置                    |
 | :------------- | :----------------------------------------- | :---------------------- |
 | `PROJECT_NAME` | 项目身份                                   | `init-project.sh`       |
-| `GITHUB_PROXY` | 网络优化 (见 [代理使用场](#-代理使用场景)) | `scripts/lib/common.sh` |
+| `GITHUB_PROXY` | 网络优化 (见 [代理使用场](#-代理使用场景)) | `.unirtm.toml` |
 | `VERSION`      | 语义化版本                                 | `package.json`          |
 
 ### 目录结构
@@ -196,8 +196,8 @@ unirtm install
 
 ### 参考资料
 
-- [完整文档](docs/index.md)
-- [项目术语表](docs/glossary.md)
+- [完整文档](https://github.com/snowdreamtech/UniRTM/blob/main/docs/index.md)
+- [项目术语表](https://github.com/snowdreamtech/UniRTM/blob/main/docs/glossary.md)
 - [约定式提交](https://www.conventionalcommits.org/)
 
 ### 🚀 代理使用场景

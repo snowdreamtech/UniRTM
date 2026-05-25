@@ -16,7 +16,7 @@ set -eu
 
 # ── Common Library ───────────────────────────────────────────────────────────
 SCRIPT_DIR=$(cd "$(dirname "$0")/.." && pwd)
-. "$SCRIPT_DIR/scripts/lib/common.sh"
+
 
 # Test counters
 TESTS_RUN=0

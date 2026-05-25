@@ -43,8 +43,8 @@ echo "=========================================="
 echo ""
 
 # Source common library for helper functions
-# shellcheck source=../scripts/lib/common.sh
-. "${PROJECT_ROOT}/scripts/lib/common.sh"
+
+
 
 # Test counters
 TESTS_RUN=0

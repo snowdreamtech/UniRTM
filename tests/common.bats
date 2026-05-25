@@ -16,7 +16,7 @@ setup() {
   cat <<EOF >"$TEMP_DIR/test_script.sh"
 #!/usr/bin/env sh
 SCRIPT_DIR=\$(cd "\$(dirname "\$0")" && pwd)
-. "\$SCRIPT_DIR/scripts/lib/common.sh"
+
 
 case "\$1" in
   guard) guard_project_root ;;
