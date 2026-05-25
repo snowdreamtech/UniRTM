@@ -93,7 +93,6 @@ jobs:
       - name: "📂 Checkout Repository Code"
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
 
       - name: "🔍 Dependency Review"
@@ -184,8 +183,6 @@ jobs:
       - name: "📂 Checkout Repository Code"
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          # Pass GitHub Token to avoid triggering Rate Limit when accessing github.com links
-          token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
 
       - name: "⚡ Setup UniRTM"
@@ -286,8 +283,6 @@ jobs:
       - name: "📂 Checkout Repository Code"
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          # Pass GitHub Token to avoid triggering Rate Limit when accessing github.com links
-          token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
 
       - name: "⚡ Setup UniRTM"
@@ -414,8 +409,6 @@ jobs:
       - name: "📂 Checkout Repository Code"
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          # Pass GitHub Token to avoid triggering Rate Limit when accessing github.com links
-          token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
           fetch-depth: 0
 

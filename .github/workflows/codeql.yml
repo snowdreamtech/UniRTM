@@ -54,7 +54,7 @@ jobs:
         language:
           - actions
           # Uncomment the following lines when source files exist in the repo:
-          # - go                    # Go (*.go) — golangci-lint, gofmt
+          - go                    # Go (*.go) — golangci-lint, gofmt
           # - python                # Python (*.py) — ruff, ansible-lint
           # - javascript-typescript # JS/TS (*.js, *.ts, *.jsx, *.tsx) — eslint
           # - c-cpp                 # C/C++/Obj-C (*.c, *.cpp, *.h) — clang-format
@@ -126,10 +126,6 @@ jobs:
       - name: "📂 Checkout Repository Code"
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          # Pass GitHub Token to avoid triggering Rate Limit when accessing github.com links
-          token: ${{ secrets.GITHUB_TOKEN }}
-          # Required to provide the full source tree for deep semantic analysis.
-          fetch-depth: 0
           persist-credentials: false
 
       - name: "🛡️ Initialize CodeQL Engine"
