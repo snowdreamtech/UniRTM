@@ -262,7 +262,7 @@ Potential improvements for future versions:
 
 ## References
 
-- **Requirements**: See `requirements.md` section 15 (Environment Activation)
-- **Design**: See `design.md` section on Activation Manager
+- **Requirements**: See `../../README.md` section 15 (Environment Activation)
+- **Design**: See `../../README.md` section on Activation Manager
 - **Related Code**: `activation.go` (base Activation Manager)
 - **Tests**: `auto_activation_test.go`

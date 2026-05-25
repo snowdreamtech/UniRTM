@@ -218,6 +218,6 @@ Potential future improvements:
 
 ## References
 
-- Design Document: `.kiro/specs/unirtm/design.md` (Download System section)
-- Requirements: `.kiro/specs/unirtm/requirements.md` (Requirement 4: Generic Download Interface)
+- Design Document: `../../../../README.md` (Download System section)
+- Requirements: `../../../../README.md` (Requirement 4: Generic Download Interface)
 - Error Handling: `internal/pkg/errors/README.md`
