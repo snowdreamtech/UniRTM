@@ -8,7 +8,7 @@
 #   - group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }} (Scoped to PR/ref).
 #   - cancel-in-progress: true (Immediate feedback on updated PR titles).
 # Design:
-#   - Uses 'pull_request_target' to allow linting even from fork contributions.
+#   - Uses 'pull_request' to ensure safety by preventing access to repository secrets from forks.
 #   - Near-instant global verification to maintain repository history purity.
 
 name: "✅ PR Title Check"
