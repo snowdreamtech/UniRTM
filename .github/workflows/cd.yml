@@ -110,7 +110,7 @@ jobs:
           fetch-depth: 0
 
       - name: "⚡ Setup UniRTM"
-        uses: snowdreamtech/setup-unirtm@16c6613c4b2cf3dcd447a3ed364e67aab09f1a3f # v0.1.13
+        uses: snowdreamtech/setup-unirtm@ea420ef6c856dba7e1a3cf4f38d2fb51e2824e48 # v0.1.15
         with:
           install: true
           trust: true
