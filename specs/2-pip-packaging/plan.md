@@ -1,6 +1,6 @@
 # Implementation Plan: pip Platform Packaging
 
-**Branch**: `2-pip-packaging` | **Date**: 2026-05-22 | **Spec**: [spec.md](spec.md)
+**Branch**: `2-pip-packaging` | **Date**: 2026-05-22 | **Spec**: spec.md
 **Input**: 参考 npm 打包发布方案，为 UniRTM 建立 PyPI 发布体系
 
 ## Summary

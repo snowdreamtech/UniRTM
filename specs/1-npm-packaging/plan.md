@@ -1,6 +1,6 @@
 # Implementation Plan: npm Platform Packaging
 
-**Branch**: `1-npm-packaging` | **Date**: 2026-05-22 | **Spec**: [spec.md](spec.md)
+**Branch**: `1-npm-packaging` | **Date**: 2026-05-22 | **Spec**: spec.md
 **Input**: npm 跨平台二进制包发布需求
 
 ## Summary
