@@ -199,7 +199,7 @@ jobs:
         run: |
           unirtm run lint-all
         env:
-          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # 2. Automated Testing Stage (Test)
   test:
@@ -330,7 +330,7 @@ jobs:
         run: |
           unirtm run test
         env:
-          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # 3. Security & Standards Audit Stage (Audit)
   audit:
@@ -447,7 +447,7 @@ jobs:
           # Extra SARIF export for GitHub Security Tab (Offline to prevent API rate limits)
           unirtm exec -- zizmor . --format sarif --offline --config .zizmor.yml > zizmor-results.sarif
         env:
-          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TRIVY_CACHE_DIR: .trivycache
 
       - name: "⚡ Cache Documentation Links (Lychee)"

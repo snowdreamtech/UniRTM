@@ -139,7 +139,7 @@ jobs:
             unirtm exec -- zizmor . --format sarif --offline --config .zizmor.yml > zizmor-results.sarif
           fi
         env:
-          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PYTHONUTF8: 1
           TRIVY_CACHE_DIR: .trivycache
 

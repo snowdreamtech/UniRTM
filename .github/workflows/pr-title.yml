@@ -99,7 +99,7 @@ jobs:
       - name: "🔍 Validate PR Title Integrity"
         uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
         env:
-          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           # Ensures PR titles follow Conventional Commits to maintain repository history purity.
           requireScope: false

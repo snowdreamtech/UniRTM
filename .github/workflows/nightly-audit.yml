@@ -94,7 +94,7 @@ jobs:
       - name: "🛡️ Run Security Audit"
         shell: sh
         env:
-          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # We run unirtm run audit which includes gitleaks, osv-scanner, etc.
           unirtm run audit
