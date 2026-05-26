@@ -47,6 +47,11 @@ func NewRegistry() *Registry {
 	r.Register(NewPipxBackend())
 	r.Register(NewNativeBackend())
 	r.Register(NewGoPkgBackend())
+	r.Register(NewContainerBackend("docker"))
+	r.Register(NewContainerBackend("podman"))
+	r.Register(NewContainerBackend("nerdctl"))
+	r.Register(NewContainerBackend("container"))
+	r.Register(NewContainerBackend("oci"))
 
 	return r
 }
