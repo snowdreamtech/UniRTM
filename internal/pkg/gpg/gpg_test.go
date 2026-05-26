@@ -1,0 +1,300 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+package gpg
+
+import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
+)
+
+// generateTestKeyAndSig creates a test key, signs data, and returns key, sig, data, and fingerprint
+func generateTestKeyAndSig(t *testing.T) (armoredKey, armoredSig, data string, fingerprint string) {
+	// 1. Generate a key
+	key, err := crypto.GenerateKey("test", "test@example.com", "rsa", 2048)
+	if err != nil {
+		t.Fatalf("Failed to generate test key: %v", err)
+	}
+
+	armoredKey, err = key.Armor()
+	if err != nil {
+		t.Fatalf("Failed to armor key: %v", err)
+	}
+	fingerprint = key.GetFingerprint()
+
+	// 2. Sign some data
+	data = "test data for signature verification"
+	msg := crypto.NewPlainMessageFromString(data)
+
+	keyRing, err := crypto.NewKeyRing(key)
+	if err != nil {
+		t.Fatalf("Failed to create keyring: %v", err)
+	}
+
+	sig, err := keyRing.SignDetached(msg)
+	if err != nil {
+		t.Fatalf("Failed to sign data: %v", err)
+	}
+
+	armoredSig, err = sig.GetArmored()
+	if err != nil {
+		t.Fatalf("Failed to armor signature: %v", err)
+	}
+
+	return armoredKey, armoredSig, data, fingerprint
+}
+
+func TestNewVerifier(t *testing.T) {
+	v := NewVerifier()
+	if _, ok := v.(*NativeGPGVerifier); !ok {
+		t.Errorf("NewVerifier should return a NativeGPGVerifier by default")
+	}
+}
+
+func TestNativeGPGVerifier_IsAvailable(t *testing.T) {
+	v := NewNativeGPGVerifier()
+	if !v.IsAvailable(context.Background()) {
+		t.Errorf("NativeGPGVerifier should always be available")
+	}
+}
+
+func TestNativeGPGVerifier_Verify(t *testing.T) {
+	v := NewNativeGPGVerifier()
+	ctx := context.Background()
+
+	armoredKey, armoredSig, data, fingerprint := generateTestKeyAndSig(t)
+
+	// Create test files
+	dir := t.TempDir()
+	dataPath := filepath.Join(dir, "data.txt")
+	sigPath := filepath.Join(dir, "data.txt.sig")
+
+	os.WriteFile(dataPath, []byte(data), 0644)
+	os.WriteFile(sigPath, []byte(armoredSig), 0644)
+
+	// Mock the HTTP server for fetching the key
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, strings.ToUpper(fingerprint)) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(armoredKey))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer ts.Close()
+
+	// Inject the mock transport into the verifier's client
+	v.client = ts.Client()
+	// Override the keyservers to use our mock server for testing
+	// We need to temporarily modify fetchKey logic by overriding the URLs in the test
+	// But since keyservers is hardcoded, we will just use a custom RoundTripper
+
+	v.client.Transport = &mockTransport{
+		tsURL:      ts.URL,
+		armoredKey: armoredKey,
+		fp:         strings.ToUpper(fingerprint),
+	}
+
+	// 1. Valid verification
+	err := v.Verify(ctx, sigPath, dataPath, []string{fingerprint})
+	if err != nil {
+		t.Errorf("expected verification to succeed, got: %v", err)
+	}
+
+	// 2. Missing sig file
+	err = v.Verify(ctx, "non_existent.sig", dataPath, []string{fingerprint})
+	if err == nil {
+		t.Errorf("expected error for missing sig file")
+	}
+
+	// 3. Missing data file
+	err = v.Verify(ctx, sigPath, "non_existent.txt", []string{fingerprint})
+	if err == nil {
+		t.Errorf("expected error for missing data file")
+	}
+
+	// 4. Invalid fingerprint (will fail to fetch key)
+	err = v.Verify(ctx, sigPath, dataPath, []string{"invalid_fp"})
+	if err == nil {
+		t.Errorf("expected error for invalid fingerprint")
+	}
+
+	// 5. Corrupted signature
+	badSigPath := filepath.Join(dir, "bad.sig")
+	os.WriteFile(badSigPath, []byte("NOT A VALID SIG"), 0644)
+	err = v.Verify(ctx, badSigPath, dataPath, []string{fingerprint})
+	if err == nil {
+		t.Errorf("expected error for corrupted signature")
+	}
+}
+
+func TestNativeGPGVerifier_ImportKey(t *testing.T) {
+	v := NewNativeGPGVerifier()
+	ctx := context.Background()
+
+	armoredKey, _, _, fingerprint := generateTestKeyAndSig(t)
+
+	v.client.Transport = &mockTransport{
+		armoredKey: armoredKey,
+		fp:         strings.ToUpper(fingerprint),
+	}
+
+	err := v.ImportKey(ctx, fingerprint)
+	if err != nil {
+		t.Errorf("expected ImportKey to succeed, got: %v", err)
+	}
+
+	err = v.ImportKey(ctx, "invalid")
+	if err == nil {
+		t.Errorf("expected ImportKey to fail with invalid fingerprint")
+	}
+}
+
+// mockTransport intercepts requests and returns our mocked key
+type mockTransport struct {
+	tsURL      string
+	armoredKey string
+	fp         string
+}
+
+func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if strings.Contains(req.URL.String(), m.fp) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       newMockBody(m.armoredKey),
+			Header:     make(http.Header),
+		}, nil
+	}
+	return &http.Response{
+		StatusCode: http.StatusNotFound,
+		Body:       newMockBody(""),
+		Header:     make(http.Header),
+	}, nil
+}
+
+type mockBody struct {
+	data *strings.Reader
+}
+
+func newMockBody(s string) *mockBody {
+	return &mockBody{data: strings.NewReader(s)}
+}
+func (m *mockBody) Read(p []byte) (n int, err error) { return m.data.Read(p) }
+func (m *mockBody) Close() error                     { return nil }
+
+// --- SystemGPGVerifier Tests ---
+
+func TestSystemGPGVerifier(t *testing.T) {
+	v := NewSystemGPGVerifier()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// 1. Test when gpg is NOT in PATH
+	// We do this by temporarily setting a broken PATH
+	oldPath := os.Getenv("PATH")
+	os.Setenv("PATH", "/invalid/path/for/test")
+	defer os.Setenv("PATH", oldPath)
+
+	if v.IsAvailable(ctx) {
+		t.Errorf("IsAvailable should return false when gpg is missing")
+	}
+
+	err := v.Verify(ctx, "sig", "data", nil)
+	if err == nil || !strings.Contains(err.Error(), "gpg command not found") {
+		t.Errorf("expected 'gpg command not found', got %v", err)
+	}
+	os.Setenv("PATH", oldPath) // restore early
+
+	// 2. Create a mock gpg executable
+	mockGpgDir := t.TempDir()
+	mockGpgPath := filepath.Join(mockGpgDir, "gpg")
+	
+	// Create the mock script
+	mockScript := `#!/bin/sh
+	if [ "$1" = "--verify" ]; then
+		if [ "$4" = "bad_key.sig" ]; then
+			echo "NO_PUBKEY 123456"
+			exit 2
+		fi
+		if [ "$4" = "bad_sig.sig" ]; then
+			echo "BADSIG"
+			exit 1
+		fi
+		if [ "$4" = "good_sig_no_match.sig" ]; then
+			echo "[GNUPG:] VALIDSIG ABCDEF"
+			echo "GOODSIG"
+			exit 0
+		fi
+		if [ "$4" = "good_sig_match.sig" ]; then
+			echo "[GNUPG:] VALIDSIG MYFINGERPRINT"
+			echo "GOODSIG"
+			exit 0
+		fi
+		if [ "$4" = "no_goodsig.sig" ]; then
+			echo "Something else"
+			exit 0
+		fi
+	fi
+	if [ "$1" = "--keyserver" ]; then
+		if [ "$4" = "fail_key" ]; then
+			exit 1
+		fi
+		exit 0
+	fi
+	`
+	os.WriteFile(mockGpgPath, []byte(mockScript), 0755)
+
+	// Prepend mock to PATH
+	os.Setenv("PATH", mockGpgDir+string(os.PathListSeparator)+oldPath)
+	defer os.Setenv("PATH", oldPath)
+
+	// 3. Test Verify NO_PUBKEY
+	err = v.Verify(ctx, "bad_key.sig", "data.txt", nil)
+	if err == nil || !strings.Contains(err.Error(), "missing public key") {
+		t.Errorf("expected missing public key error, got %v", err)
+	}
+
+	// 4. Test Verify BADSIG
+	err = v.Verify(ctx, "bad_sig.sig", "data.txt", nil)
+	if err == nil || !strings.Contains(err.Error(), "verification failed") {
+		t.Errorf("expected verification failed error, got %v", err)
+	}
+
+	// 5. Test Verify GOODSIG but unmatched fingerprint
+	err = v.Verify(ctx, "good_sig_no_match.sig", "data.txt", []string{"MYFINGERPRINT"})
+	if err == nil || !strings.Contains(err.Error(), "security violation") {
+		t.Errorf("expected security violation error, got %v", err)
+	}
+
+	// 6. Test Verify GOODSIG and matched fingerprint
+	err = v.Verify(ctx, "good_sig_match.sig", "data.txt", []string{"MYFINGERPRINT"})
+	if err != nil {
+		t.Errorf("expected success, got %v", err)
+	}
+
+	// 7. Test Verify with output missing GOODSIG
+	err = v.Verify(ctx, "no_goodsig.sig", "data.txt", nil)
+	if err == nil || !strings.Contains(err.Error(), "no valid signature found") {
+		t.Errorf("expected no valid signature found error, got %v", err)
+	}
+
+	// 8. Test ImportKey Success
+	err = v.ImportKey(ctx, "MYFINGERPRINT")
+	if err != nil {
+		t.Errorf("expected ImportKey success, got %v", err)
+	}
+
+	// 9. Test ImportKey Fail
+	err = v.ImportKey(ctx, "fail_key")
+	if err == nil {
+		t.Errorf("expected ImportKey to fail")
+	}
+}
