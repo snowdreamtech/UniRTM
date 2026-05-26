@@ -6,18 +6,14 @@ package task
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
-	"sync"
-
-	gotask "github.com/go-task/task/v3"
 )
 
-// GoTaskRunner delegates task execution directly to the embedded `go-task` engine
-// if a Taskfile.yml or Taskfile.yaml is detected in the working directory.
+// GoTaskRunner delegates task execution to the system's `task` command
+// if a Taskfile.yml, Taskfile.yaml or Taskfile.dist.yml is detected in the working directory.
 type GoTaskRunner struct{}
-
-var envMutex sync.Mutex
 
 // NewGoTaskRunner creates a new GoTaskRunner instance.
 func NewGoTaskRunner() *GoTaskRunner {
@@ -51,70 +47,48 @@ func (r *GoTaskRunner) ListTasks(dir string) ([]string, error) {
 		return nil, nil
 	}
 
-	e := &gotask.Executor{
-		Dir: dir,
+	// Use task --list-all to list all tasks
+	cmd := exec.Command("task", "--list-all")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, nil // Silently fail if task is not installed or error occurs
 	}
 
-	if err := e.Setup(); err != nil {
-		return nil, nil // Silently fail for completion
-	}
-
-	tasks := make([]string, 0, e.Taskfile.Tasks.Len())
-	for name := range e.Taskfile.Tasks.All(nil) {
-		tasks = append(tasks, name)
+	var tasks []string
+	lines := strings.Split(string(out), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		// go-task --list-all usually outputs: "* task-name:   Description"
+		if strings.HasPrefix(line, "* ") {
+			parts := strings.SplitN(line[2:], ":", 2)
+			taskName := strings.TrimSpace(parts[0])
+			if taskName != "" {
+				tasks = append(tasks, taskName)
+			}
+		}
 	}
 	return tasks, nil
 }
 
-// Run executes the task by delegating directly to the go-task library.
+// Run executes the task by delegating to `task <taskName>`.
 func (r *GoTaskRunner) Run(ctx context.Context, dir string, taskName string, args []string, env []string) error {
-	// Temporarily inject environment variables since go-task inherently inherits from os.Environ
-	envMutex.Lock()
-
-	// Save existing environment to restore later
-	originalEnv := os.Environ()
-
-	// Apply the environment variables from UniRTM
-	for _, e := range env {
-		parts := strings.SplitN(e, "=", 2)
-		if len(parts) == 2 {
-			os.Setenv(parts[0], parts[1])
-		}
-	}
-
-	defer func() {
-		// Restore the entire environment
-		os.Clearenv()
-		for _, e := range originalEnv {
-			parts := strings.SplitN(e, "=", 2)
-			if len(parts) == 2 {
-				os.Setenv(parts[0], parts[1])
-			}
-		}
-		envMutex.Unlock()
-	}()
-
-	// Initialize the executor
-	e := &gotask.Executor{
-		Dir:    dir,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-		Stdin:  os.Stdin,
-	}
-
-	if err := e.Setup(); err != nil {
-		return err
-	}
-
-	// Prepare task calls
-	// If no task is specified, default is often "default" or empty.
 	if taskName == "" {
 		taskName = "default"
 	}
+	
+	cmdArgs := []string{taskName}
+	cmdArgs = append(cmdArgs, args...)
 
-	calls := []*gotask.Call{
-		{Task: taskName},
-	}
+	cmd := exec.CommandContext(ctx, "task", cmdArgs...)
+	cmd.Dir = dir
 
-	return e.Run(ctx, calls...)
+	// Pass through the environment variables injected by UniRTM
+	cmd.Env = append(os.Environ(), env...)
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	return cmd.Run()
 }
