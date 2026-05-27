@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
@@ -239,15 +240,89 @@ func TestGetDefaultDatabasePath(t *testing.T) {
 	})
 }
 
-// TestInstallCommand_Integration tests the full install command integration.
-// This is a placeholder for integration tests that would require a real database and backend.
-func TestInstallCommand_Integration(t *testing.T) {
-	t.Skip("Integration test requires database and backend setup")
+func TestConcurrentSpinnerManager(t *testing.T) {
+	// Capture stdout to avoid polluting test output, though it uses pterm and fmt
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
 
-	// TODO: Implement integration tests with:
-	// - Mock database
-	// - Mock backend
-	// - Mock provider
-	// - Mock download manager
-	// - Verify full workflow: parse → validate → download → install → record
+	mgr := newConcurrentSpinnerManager()
+	assert.NotNil(t, mgr)
+
+	mgr.Start()
+
+	mgr.Add("node", "20.0.0")
+	mgr.Add("go", "1.21.0")
+
+	assert.Equal(t, 2, len(mgr.active))
+	assert.Equal(t, "starting", mgr.activeMap["node"].status)
+
+	mgr.Update("node", "downloading")
+	assert.Equal(t, "downloading", mgr.activeMap["node"].status)
+
+	time.Sleep(150 * time.Millisecond) // Let it render at least once
+
+	mgr.Complete("node", "20.0.0", "done")
+	assert.Equal(t, 1, len(mgr.active))
+	assert.Nil(t, mgr.activeMap["node"])
+
+	mgr.Complete("go", "1.21.0", "failed: network error")
+	assert.Equal(t, 0, len(mgr.active))
+
+	mgr.Stop()
+
+	// Restore stdout
+	w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	buf.ReadFrom(r)
+}
+
+func TestRunInstall_Execution(t *testing.T) {
+	tmpDir := t.TempDir()
+	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	defer os.Unsetenv("UNIRTM_DATA_DIR")
+
+	// Set quiet mode to suppress output during tests
+	originalQuiet := quiet
+	quiet = true
+	defer func() { quiet = originalQuiet }()
+
+	// Create a dummy config so we test config resolution
+	configFile := tmpDir + "/.unirtm.toml"
+	os.WriteFile(configFile, []byte("[tools]\ndummy-tool = { version = \"20.0.0\" }"), 0644)
+	
+	oldDir, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldDir)
+
+	cmd := &cobra.Command{}
+
+	// Test case: 0 args, config used
+	err := runInstall(cmd, []string{})
+	// Will fail because "dummy-tool" is an unsupported tool (no provider registered in the default list) or download fails
+	assert.Error(t, err)
+
+	// Test case: 1 arg, multiple tools via parsing
+	err = runInstall(cmd, []string{"dummy-tool@20.0.0"})
+	assert.Error(t, err)
+
+	// Test case: 1 arg, version from config
+	err = runInstall(cmd, []string{"dummy-tool"})
+	assert.Error(t, err)
+	
+	// Test case: json output
+	jsonOutput = true
+	err = runInstall(cmd, []string{"dummy-tool@20.0.0"})
+	assert.Error(t, err)
+	jsonOutput = false
+	
+	// Test case: multi install
+	err = runInstall(cmd, []string{"dummy-tool@20.0.0", "another-tool@1.21.0"})
+	assert.Error(t, err)
+
+	// Test case: legacy install args
+	err = runInstall(cmd, []string{"dummy-tool", "20.0.0"})
+	assert.Error(t, err)
 }

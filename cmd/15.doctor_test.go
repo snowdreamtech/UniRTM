@@ -4,6 +4,8 @@
 package cmd
 
 import (
+	"bytes"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,4 +15,17 @@ func TestDoctorStructure(t *testing.T) {
 	assert.Contains(t, doctorCmd.Use, "doctor", "doctorCmd command use should contain 'doctor'")
 	assert.NotEmpty(t, doctorCmd.Short, "doctorCmd command short description should not be empty")
 	assert.True(t, doctorCmd.Run != nil || doctorCmd.RunE != nil, "Run or RunE function should be set for doctorCmd")
+}
+
+func TestRunDoctor(t *testing.T) {
+	tmpDir := t.TempDir()
+	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	defer os.Unsetenv("UNIRTM_DATA_DIR")
+
+	cmd := doctorCmd
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+
+	err := runDoctor(cmd, []string{})
+	assert.NoError(t, err)
 }

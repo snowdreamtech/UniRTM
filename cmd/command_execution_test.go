@@ -28,20 +28,20 @@ func TestInstallCommand_EarlyReturns(t *testing.T) {
 	assert.Contains(t, err.Error(), "tool name is required")
 
 	// Test 3: Missing version
-	err = runInstall(installCmd, []string{"node", ""})
+	err = runInstall(installCmd, []string{"dummy-tool", ""})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "version is required")
 
 	// Test 4: Dry run with valid args
-	err = runInstall(installCmd, []string{"node", "20.0.0"})
+	err = runInstall(installCmd, []string{"dummy-tool", "20.0.0"})
 	assert.NoError(t, err)
 
 	// Test 5: Concurrent spinner manager
 	mgr := newConcurrentSpinnerManager()
 	mgr.Start()
-	mgr.Add("node", "20.0.0")
-	mgr.Update("node", "downloading")
-	mgr.Complete("node", "20.0.0", "done")
+	mgr.Add("dummy-tool", "20.0.0")
+	mgr.Update("dummy-tool", "downloading")
+	mgr.Complete("dummy-tool", "20.0.0", "done")
 	mgr.Add("go", "1.21.0")
 	mgr.Complete("go", "1.21.0", "failed: error")
 	mgr.Stop()

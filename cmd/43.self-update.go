@@ -21,6 +21,7 @@ import (
 var (
 	selfUpdateVersion string
 	selfUpdateYes     bool
+	execCommand       = exec.Command
 )
 
 func init() {
@@ -118,7 +119,7 @@ type githubRelease struct {
 	Body    string `json:"body"`
 }
 
-func fetchGitHubRelease(version string) (*githubRelease, error) {
+var fetchGitHubRelease = func(version string) (*githubRelease, error) {
 	url := "https://api.github.com/repos/snowdreamtech/unirtm/releases/latest"
 	if version != "latest" {
 		url = fmt.Sprintf("https://api.github.com/repos/snowdreamtech/unirtm/releases/tags/%s", version)
@@ -168,7 +169,7 @@ func selfUpdateUnix(formatter output.Formatter, version string) error {
 	}
 
 	_ = curlArgs
-	c := exec.Command("sh", "-c", shellCmd)
+	c := execCommand("sh", "-c", shellCmd)
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	if err := c.Run(); err != nil {
@@ -188,7 +189,7 @@ func selfUpdateWindows(formatter output.Formatter, version string) error {
 	}
 
 	formatter.Info("Downloading and executing install script…", nil)
-	c := exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-Command", psScript)
+	c := execCommand("powershell", "-ExecutionPolicy", "Bypass", "-Command", psScript)
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	if err := c.Run(); err != nil {

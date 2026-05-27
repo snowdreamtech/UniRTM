@@ -4,6 +4,8 @@
 package cmd
 
 import (
+	"bytes"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,4 +15,25 @@ func TestReshimStructure(t *testing.T) {
 	assert.Contains(t, reshimCmd.Use, "reshim", "reshimCmd command use should contain 'reshim'")
 	assert.NotEmpty(t, reshimCmd.Short, "reshimCmd command short description should not be empty")
 	assert.True(t, reshimCmd.Run != nil || reshimCmd.RunE != nil, "Run or RunE function should be set for reshimCmd")
+}
+
+func TestRunReshim(t *testing.T) {
+	tmpDir := t.TempDir()
+	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	defer os.Unsetenv("UNIRTM_DATA_DIR")
+
+	cmd := reshimCmd
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+
+	err := runReshim(cmd, []string{})
+	assert.NoError(t, err)
+
+	reshimTool = "dummy"
+	err = runReshim(cmd, []string{})
+	assert.NoError(t, err)
+
+	reshimClean = true
+	err = runReshim(cmd, []string{})
+	assert.NoError(t, err)
 }

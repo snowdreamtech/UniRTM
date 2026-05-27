@@ -38,14 +38,14 @@ func TestUninstallCommand(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a test installation
-	testInstallPath := filepath.Join(tmpDir, "tools", "node", "20.0.0")
+	testInstallPath := filepath.Join(tmpDir, "tools", "dummy-tool", "20.0.0")
 	err = os.MkdirAll(testInstallPath, 0755)
 	require.NoError(t, err)
 
 	installation := &repository.Installation{
-		Tool:        "node",
+		Tool:        "dummy-tool",
 		Version:     "20.0.0",
-		Backend:     "github",
+		Backend:     "native",
 		InstallPath: testInstallPath,
 		Checksum:    "abc123",
 	}
@@ -53,7 +53,7 @@ func TestUninstallCommand(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify installation exists
-	found, err := installRepo.FindByToolAndVersion(ctx, "node", "20.0.0")
+	found, err := installRepo.FindByToolAndVersion(ctx, "dummy-tool", "20.0.0")
 	require.NoError(t, err)
 	require.NotNil(t, found)
 
@@ -162,17 +162,17 @@ func TestUninstallCommandValidation(t *testing.T) {
 	}{
 		{
 			name:        "valid arguments with version",
-			args:        []string{"node", "20.0.0"},
+			args:        []string{"dummy-tool", "20.0.0"},
 			expectError: false,
 		},
 		{
 			name:        "valid arguments with at syntax",
-			args:        []string{"node@20.0.0"},
+			args:        []string{"dummy-tool@20.0.0"},
 			expectError: false,
 		},
 		{
 			name:        "missing version is valid for args validation",
-			args:        []string{"node"},
+			args:        []string{"dummy-tool"},
 			expectError: false,
 		},
 		{
@@ -182,7 +182,7 @@ func TestUninstallCommandValidation(t *testing.T) {
 		},
 		{
 			name:        "multiple arguments are valid",
-			args:        []string{"node@20.0.0", "go@1.22.1", "python@3.12.0"},
+			args:        []string{"dummy-tool@20.0.0", "go@1.22.1", "python@3.12.0"},
 			expectError: false,
 		},
 	}
@@ -221,4 +221,116 @@ func TestUninstallCommandValidation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRunUninstallExecution(t *testing.T) {
+	tmpDir := t.TempDir()
+	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	defer os.Unsetenv("UNIRTM_DATA_DIR")
+
+	dbPath := filepath.Join(tmpDir, "unirtm.db")
+	db, err := database.Open(context.Background(), database.Config{Path: dbPath})
+	require.NoError(t, err)
+	defer db.Close()
+
+	repo, err := sqlite.NewInstallationRepository(db.Conn())
+	require.NoError(t, err)
+	
+	testInstallPath := filepath.Join(tmpDir, "tools", "dummy-tool", "20.0.0")
+	err = os.MkdirAll(testInstallPath, 0755)
+	require.NoError(t, err)
+	
+	err = repo.Create(context.Background(), &repository.Installation{Tool: "dummy-tool", Version: "20.0.0", Backend: "native", InstallPath: testInstallPath})
+	require.NoError(t, err)
+
+	uninstallForce = true
+	
+	cmd := uninstallCmd
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+
+	err = runUninstall(cmd, []string{"dummy-tool", "20.0.0"})
+	assert.NoError(t, err)
+	
+	_, err = repo.FindByToolAndVersion(context.Background(), "dummy-tool", "20.0.0")
+	assert.Error(t, err) // Should be uninstalled
+}
+
+func TestRunUninstallExecution_DryRun(t *testing.T) {
+	tmpDir := t.TempDir()
+	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	defer os.Unsetenv("UNIRTM_DATA_DIR")
+
+	dbPath := filepath.Join(tmpDir, "unirtm.db")
+	db, err := database.Open(context.Background(), database.Config{Path: dbPath})
+	require.NoError(t, err)
+	defer db.Close()
+
+	repo, err := sqlite.NewInstallationRepository(db.Conn())
+	require.NoError(t, err)
+	
+	testInstallPath := filepath.Join(tmpDir, "tools", "dummy-tool", "20.0.0")
+	err = os.MkdirAll(testInstallPath, 0755)
+	require.NoError(t, err)
+	
+	err = repo.Create(context.Background(), &repository.Installation{Tool: "dummy-tool", Version: "20.0.0", Backend: "native", InstallPath: testInstallPath})
+	require.NoError(t, err)
+
+	uninstallForce = true
+	dryRun = true
+	defer func() { dryRun = false }()
+	
+	cmd := uninstallCmd
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+
+	err = runUninstall(cmd, []string{"dummy-tool", "20.0.0"})
+	assert.NoError(t, err)
+	
+	found, err := repo.FindByToolAndVersion(context.Background(), "dummy-tool", "20.0.0")
+	assert.NoError(t, err) 
+	assert.NotNil(t, found) // Still installed
+}
+
+func TestRunUninstallExecution_Multi(t *testing.T) {
+	tmpDir := t.TempDir()
+	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	defer os.Unsetenv("UNIRTM_DATA_DIR")
+
+	dbPath := filepath.Join(tmpDir, "unirtm.db")
+	db, err := database.Open(context.Background(), database.Config{Path: dbPath})
+	require.NoError(t, err)
+	defer db.Close()
+
+	repo, err := sqlite.NewInstallationRepository(db.Conn())
+	require.NoError(t, err)
+	
+	testInstallPath := filepath.Join(tmpDir, "tools", "dummy-tool", "20.0.0")
+	err = os.MkdirAll(testInstallPath, 0755)
+	require.NoError(t, err)
+	
+	err = repo.Create(context.Background(), &repository.Installation{Tool: "dummy-tool", Version: "20.0.0", Backend: "native", InstallPath: testInstallPath})
+	require.NoError(t, err)
+
+	testInstallPath2 := filepath.Join(tmpDir, "tools", "dummy-tool2", "1.0.0")
+	err = os.MkdirAll(testInstallPath2, 0755)
+	require.NoError(t, err)
+	
+	err = repo.Create(context.Background(), &repository.Installation{Tool: "dummy-tool2", Version: "1.0.0", Backend: "native", InstallPath: testInstallPath2})
+	require.NoError(t, err)
+
+	uninstallForce = true
+	
+	cmd := uninstallCmd
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+
+	err = runUninstall(cmd, []string{"dummy-tool@20.0.0", "dummy-tool2@1.0.0"})
+	assert.NoError(t, err)
+	
+	_, err = repo.FindByToolAndVersion(context.Background(), "dummy-tool", "20.0.0")
+	assert.Error(t, err)
+	
+	_, err = repo.FindByToolAndVersion(context.Background(), "dummy-tool2", "1.0.0")
+	assert.Error(t, err)
 }

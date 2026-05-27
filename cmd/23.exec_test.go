@@ -148,10 +148,14 @@ func TestExecAcceptsArbitraryArgs(t *testing.T) {
 // ─── Dry-run integration test ────────────────────────────────────────────────
 
 func TestExecDryRunDoesNotExecute(t *testing.T) {
-	// Save and restore global dryRun flag.
 	previous := dryRun
 	dryRun = true
 	t.Cleanup(func() { dryRun = previous })
+
+	// Also disable auto-install to prevent hanging
+	prevNoDeps := execNoDeps
+	execNoDeps = true
+	t.Cleanup(func() { execNoDeps = prevNoDeps })
 
 	// execCmd with dry-run should return nil without actually running anything.
 	// We pass a harmless command that would fail if actually executed.
@@ -165,6 +169,10 @@ func TestExecCommandNotFound(t *testing.T) {
 	previous := dryRun
 	dryRun = false
 	t.Cleanup(func() { dryRun = previous })
+
+	prevNoDeps := execNoDeps
+	execNoDeps = true
+	t.Cleanup(func() { execNoDeps = prevNoDeps })
 
 	err := runExec(execCmd, []string{"--", "__unirtm_nonexistent_cmd_12345__"})
 	require.Error(t, err)

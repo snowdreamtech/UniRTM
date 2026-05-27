@@ -723,3 +723,13 @@ npm/*/package.json
 # Agent Scratch Directory (DO NOT COMMIT)
 # =============================================================================
 scratch/
+
+# =============================================================================
+# UniRTM Local/Test Data
+# =============================================================================
+unirtm_data/
+unirtm_config/
+dummy2/
+gin.log
+coverage.out
+cmd/.unirtm.toml

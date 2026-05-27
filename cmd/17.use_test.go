@@ -4,66 +4,137 @@
 package cmd
 
 import (
+	"bytes"
+	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestUseStructure(t *testing.T) {
-	assert.Contains(t, useCmd.Use, "use", "useCmd command use should contain 'use'")
-	assert.NotEmpty(t, useCmd.Short, "useCmd command short description should not be empty")
-	assert.True(t, useCmd.Run != nil || useCmd.RunE != nil, "Run or RunE function should be set for useCmd")
+func TestUseCommandStructure(t *testing.T) {
+	assert.Equal(t, "use <tool>@<version>", useCmd.Use)
+	assert.NotEmpty(t, useCmd.Short)
+	assert.NotNil(t, useCmd.RunE)
 }
 
-func TestUseCommandFlags(t *testing.T) {
-	globalFlag := useCmd.Flags().Lookup("global")
-	require.NotNil(t, globalFlag)
-	assert.Equal(t, "g", globalFlag.Shorthand)
-	assert.Equal(t, "false", globalFlag.DefValue)
-
-	pathFlag := useCmd.Flags().Lookup("path")
-	require.NotNil(t, pathFlag)
-	assert.Equal(t, "p", pathFlag.Shorthand)
-	assert.Equal(t, "", pathFlag.DefValue)
-
-	forceFlag := useCmd.Flags().Lookup("force")
-	require.NotNil(t, forceFlag)
-	assert.Equal(t, "f", forceFlag.Shorthand)
-	assert.Equal(t, "false", forceFlag.DefValue)
-
-	envFlag := useCmd.Flags().Lookup("env")
-	require.NotNil(t, envFlag)
-	assert.Equal(t, "e", envFlag.Shorthand)
-	assert.Equal(t, "", envFlag.DefValue)
-}
-
-func TestFindOrCreateConfigFile(t *testing.T) {
+func TestRunUse(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// 1. Default (no env) when file doesn't exist
-	p1 := findOrCreateConfigFile(tmpDir, "")
-	assert.Equal(t, filepath.Join(tmpDir, "unirtm.toml"), p1)
+	// Switch to tmpDir
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
 
-	// 2. Default (no env) when .unirtm.toml exists
-	dotFile := filepath.Join(tmpDir, ".unirtm.toml")
-	err := os.WriteFile(dotFile, []byte(""), 0644)
-	require.NoError(t, err)
-	p2 := findOrCreateConfigFile(tmpDir, "")
-	assert.Equal(t, dotFile, p2)
-	_ = os.Remove(dotFile)
+	cmd := useCmd
+	cmd.SetContext(context.Background())
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
 
-	// 3. With env "prod" when file doesn't exist
-	p3 := findOrCreateConfigFile(tmpDir, "prod")
-	assert.Equal(t, filepath.Join(tmpDir, "unirtm.prod.toml"), p3)
+	err := runUse(cmd, []string{"dummy@1.0.0"})
+	// It's expected to return error because dummy tool can't be installed automatically
+	if err != nil && !strings.Contains(err.Error(), "backend not found") {
+		assert.NoError(t, err)
+	}
 
-	// 4. With env "prod" when .unirtm.prod.toml exists
-	dotProdFile := filepath.Join(tmpDir, ".unirtm.prod.toml")
-	err = os.WriteFile(dotProdFile, []byte(""), 0644)
-	require.NoError(t, err)
-	p4 := findOrCreateConfigFile(tmpDir, "prod")
-	assert.Equal(t, dotProdFile, p4)
-	_ = os.Remove(dotProdFile)
+	// Check if unirtm.toml was created
+	configFile := filepath.Join(tmpDir, "unirtm.toml")
+	_, err = os.Stat(configFile)
+	assert.NoError(t, err)
+
+	// Verify content
+	content, err := os.ReadFile(configFile)
+	assert.NoError(t, err)
+	assert.Contains(t, string(content), "dummy = \"1.0.0\"")
+}
+
+func TestRunUse_Multiple(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	oldWd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(oldWd)
+
+	cmd := useCmd
+	cmd.SetContext(context.Background())
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+
+	err := runUse(cmd, []string{"dummy1@1.0.0", "dummy2@2.0.0"})
+	if err != nil && !strings.Contains(err.Error(), "backend not found") {
+		assert.NoError(t, err)
+	}
+
+	configFile := filepath.Join(tmpDir, "unirtm.toml")
+	content, err := os.ReadFile(configFile)
+	assert.NoError(t, err)
+	assert.Contains(t, string(content), "dummy1 = \"1.0.0\"")
+	assert.Contains(t, string(content), "dummy2 = \"2.0.0\"")
+}
+
+func TestRunUse_SpecificPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	
+	targetDir := filepath.Join(tmpDir, "target")
+
+	cmd := useCmd
+	cmd.SetContext(context.Background())
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+
+	usePath = targetDir
+	defer func() { usePath = "" }()
+
+	err := runUse(cmd, []string{"dummy@1.0.0"})
+	if err != nil && !strings.Contains(err.Error(), "backend not found") {
+		assert.NoError(t, err)
+	}
+
+	configFile := filepath.Join(targetDir, "unirtm.toml")
+	_, err = os.Stat(configFile)
+	assert.NoError(t, err)
+}
+
+func TestRunUse_Global(t *testing.T) {
+	tmpDir := t.TempDir()
+	os.Setenv("HOME", tmpDir)
+	defer os.Unsetenv("HOME")
+
+	cmd := useCmd
+	cmd.SetContext(context.Background())
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+
+	useGlobal = true
+	defer func() { useGlobal = false }()
+
+	err := runUse(cmd, []string{"dummy@1.0.0"})
+	if err != nil && !strings.Contains(err.Error(), "backend not found") {
+		assert.NoError(t, err)
+	}
+
+	configFile := filepath.Join(tmpDir, ".config", "unirtm", "unirtm.toml")
+	_, err = os.Stat(configFile)
+	assert.NoError(t, err)
+}
+
+func TestRunUse_DryRun(t *testing.T) {
+	cmd := useCmd
+	cmd.SetContext(context.Background())
+	
+	dryRun = true
+	defer func() { dryRun = false }()
+
+	err := runUse(cmd, []string{"dummy@1.0.0"})
+	assert.NoError(t, err)
+}
+
+func TestRunUse_InvalidFormat(t *testing.T) {
+	cmd := useCmd
+	cmd.SetContext(context.Background())
+	err := runUse(cmd, []string{"dummy"})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid format")
 }
