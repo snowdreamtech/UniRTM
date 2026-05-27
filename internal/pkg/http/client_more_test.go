@@ -44,3 +44,48 @@ func TestDefaultTransport_EnvVars(t *testing.T) {
 		t.Fatalf("expected nil proxy for mirror, got %v", proxyUrlMirror)
 	}
 }
+
+// Test proxy logic without ALL_PROXY
+func TestDefaultTransport_EnvVars_NoAllProxy(t *testing.T) {
+	origAll := os.Getenv("ALL_PROXY")
+	origHttp := os.Getenv("HTTP_PROXY")
+	origHttps := os.Getenv("HTTPS_PROXY")
+	defer func() {
+		os.Setenv("ALL_PROXY", origAll)
+		os.Setenv("HTTP_PROXY", origHttp)
+		os.Setenv("HTTPS_PROXY", origHttps)
+	}()
+
+	os.Setenv("ALL_PROXY", "")
+	os.Setenv("HTTP_PROXY", "http://127.0.0.1:8080")
+	os.Setenv("HTTPS_PROXY", "http://127.0.0.1:8080")
+
+	tr := DefaultTransport()
+	if tr == nil {
+		t.Fatal("expected transport")
+	}
+
+	req, _ := http.NewRequest("GET", "https://example.com", nil)
+	proxyUrl, _ := tr.Proxy(req)
+	if proxyUrl == nil || proxyUrl.String() != "http://127.0.0.1:8080" {
+		t.Fatalf("expected proxyUrl to be http://127.0.0.1:8080, got %v", proxyUrl)
+	}
+}
+
+// Test MockTransport logic
+func TestDefaultTransport_MockTransport(t *testing.T) {
+	oldMock := MockTransport
+	defer func() {
+		MockTransport = oldMock
+	}()
+
+	// Create a dummy RoundTripper
+	mockRt := http.DefaultTransport
+	MockTransport = mockRt
+
+	// Should not panic, should register protocols
+	tr := DefaultTransport()
+	if tr == nil {
+		t.Fatal("expected transport")
+	}
+}
