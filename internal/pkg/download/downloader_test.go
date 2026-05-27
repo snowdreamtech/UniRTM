@@ -261,3 +261,12 @@ func TestDownloadOptions_MultipleProgressCallbacks(t *testing.T) {
 	assert.Equal(t, int64(500), updates[1])
 	assert.Equal(t, int64(1000), updates[2])
 }
+
+func TestDownloadOptions_WithVerifyGPG(t *testing.T) {
+	opts := download.DefaultDownloadOptions()
+	var result download.GPGResult
+	newOpts := opts.WithVerifyGPG(true, &result)
+	
+	require.True(t, newOpts.VerifyGPG)
+	require.Equal(t, &result, newOpts.GPGResult)
+}

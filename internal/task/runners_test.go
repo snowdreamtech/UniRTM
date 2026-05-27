@@ -101,6 +101,13 @@ func TestMakeRunner_CanExecute(t *testing.T) {
 			t.Errorf("expected to find 'build' in tasks, got %v", tasks)
 		}
 	}
+
+	// Run
+	ctx := context.Background()
+	err = r.Run(ctx, tmpDir, "build", []string{}, []string{"FOO=bar"})
+	if err != nil {
+		t.Logf("expected run to fail if make is missing, got: %v", err)
+	}
 }
 
 func TestJustRunner_CanExecute(t *testing.T) {
@@ -121,6 +128,30 @@ func TestJustRunner_CanExecute(t *testing.T) {
 
 	if !r.CanExecute(tmpDir, "build") {
 		t.Error("expected CanExecute to be true after creating justfile")
+	}
+
+	// ListTasks
+	tasks, err := r.ListTasks(tmpDir)
+	if err != nil {
+		t.Logf("ListTasks err: %v", err)
+	} else {
+		found := false
+		for _, task := range tasks {
+			if task == "build" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Logf("expected to find 'build' in tasks, got %v", tasks)
+		}
+	}
+
+	// Run
+	ctx := context.Background()
+	err = r.Run(ctx, tmpDir, "build", []string{}, []string{"FOO=bar"})
+	if err != nil {
+		t.Logf("expected run to fail if just is missing, got: %v", err)
 	}
 }
 

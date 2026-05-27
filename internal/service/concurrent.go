@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/snowdreamtech/unirtm/internal/repository"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -22,6 +23,12 @@ type ConcurrentInstallResult struct {
 	Error   string
 }
 
+// Installer defines the installation interface required by ConcurrentManager.
+type Installer interface {
+	IsInstalled(ctx context.Context, tool, version, backend string) (bool, *repository.Installation)
+	Install(ctx context.Context, toolKey, tool, version, backend string) error
+}
+
 // ConcurrentManager manages parallel tool installations with controlled concurrency.
 //
 // It respects dependency order, limits concurrent operations to avoid resource
@@ -29,8 +36,8 @@ type ConcurrentInstallResult struct {
 //
 // Validates Requirements: 18.1, 18.2, 18.3, 18.4, 18.5, 18.6, 18.7
 type ConcurrentManager struct {
-	// installManager handles the actual installation of each tool.
-	installManager *InstallationManager
+	// installer handles the actual installation of each tool.
+	installer Installer
 	// maxConcurrency is the maximum number of parallel installations.
 	maxConcurrency int
 	// progressFn is an optional callback for progress reporting.
@@ -48,14 +55,14 @@ type ConcurrentManagerConfig struct {
 // NewConcurrentManager creates a new ConcurrentManager.
 //
 // Validates Requirement: 18.2 (configurable concurrency limit)
-func NewConcurrentManager(im *InstallationManager, config ConcurrentManagerConfig) *ConcurrentManager {
+func NewConcurrentManager(im Installer, config ConcurrentManagerConfig) *ConcurrentManager {
 	maxConcurrency := config.MaxConcurrency
 	if maxConcurrency <= 0 {
 		maxConcurrency = runtime.NumCPU()
 	}
 
 	return &ConcurrentManager{
-		installManager: im,
+		installer:      im,
 		maxConcurrency: maxConcurrency,
 		progressFn:     config.ProgressFn,
 	}
@@ -133,7 +140,7 @@ func (cm *ConcurrentManager) InstallAll(ctx context.Context, requests []ToolInst
 			}
 
 			// Skip if already installed
-			isInstalled, _ := cm.installManager.IsInstalled(ctx, req.Tool, req.Version, req.Backend)
+			isInstalled, _ := cm.installer.IsInstalled(ctx, req.Tool, req.Version, req.Backend)
 			if isInstalled {
 				resultsMu.Lock()
 				results = append(results, ConcurrentInstallResult{
@@ -159,7 +166,7 @@ func (cm *ConcurrentManager) InstallAll(ctx context.Context, requests []ToolInst
 				cm.reportProgress(req.Tool, req.Version, "starting")
 
 				// Validates Req 18.3: serialized database writes handled by InstallationManager internally
-				installErr := cm.installManager.Install(gctx, req.ToolKey, req.Tool, req.Version, req.Backend)
+				installErr := cm.installer.Install(gctx, req.ToolKey, req.Tool, req.Version, req.Backend)
 
 				var result ConcurrentInstallResult
 				result.Tool = req.Tool

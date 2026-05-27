@@ -6,6 +6,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -223,6 +224,7 @@ func (m *mockInstallationRepo) Upsert(ctx context.Context, installation *reposit
 }
 
 func (m *mockInstallationRepo) FindByToolAndVersion(ctx context.Context, tool string, version string) (*repository.Installation, error) {
+	fmt.Printf("MOCK: FindByToolAndVersion called with tool=%s, version=%s\n", tool, version)
 	if m.findErr != nil {
 		return nil, m.findErr
 	}

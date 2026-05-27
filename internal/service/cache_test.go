@@ -531,13 +531,18 @@ func TestCacheManager_ResetStats(t *testing.T) {
 		stats := cm.GetStats()
 		assert.Equal(t, int64(1), stats.Hits)
 
-		// Reset stats
+		// Test ResetStats
 		cm.ResetStats()
-
-		// Verify stats after reset
 		stats = cm.GetStats()
-		assert.Equal(t, int64(0), stats.Hits)
-		assert.Equal(t, int64(0), stats.Misses)
+		if stats.Hits != 0 || stats.Misses != 0 {
+			t.Errorf("expected stats to be reset, got hits: %d, misses: %d", stats.Hits, stats.Misses)
+		}
+
+		// Test PurgeByPrefix
+		err = cm.PurgeByPrefix(ctx, "prefix")
+		if err == nil {
+			t.Error("expected PurgeByPrefix to return an error since it is not implemented")
+		}
 
 		mockRepo.AssertExpectations(t)
 	})

@@ -69,15 +69,19 @@ func (v *NativeGPGVerifier) Verify(ctx context.Context, sigPath, dataPath string
 			continue
 		}
 
-		// Create signature object
-		signature := crypto.NewPGPSignature(sigData)
-		if signature == nil {
-			// Try armored
-			var err error
-			signature, err = crypto.NewPGPSignatureFromArmored(string(sigData))
-			if err != nil {
-				return fmt.Errorf("invalid signature format: %v", err)
+		var signature *crypto.PGPSignature
+		var sigErr error
+		if strings.Contains(string(sigData), "-----BEGIN PGP") {
+			signature, sigErr = crypto.NewPGPSignatureFromArmored(string(sigData))
+		} else {
+			signature = crypto.NewPGPSignature(sigData)
+			if signature == nil {
+				sigErr = fmt.Errorf("invalid binary signature format")
 			}
+		}
+
+		if sigErr != nil {
+			return fmt.Errorf("invalid signature format: %v", sigErr)
 		}
 
 		// Verify

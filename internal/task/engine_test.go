@@ -53,6 +53,12 @@ func TestEngineRouting(t *testing.T) {
 	if mock3.called {
 		t.Errorf("expected mock3 not to be called")
 	}
+
+	// ListTasks
+	tasks := engine.ListTasks(".")
+	if len(tasks) != 0 {
+		t.Errorf("expected empty tasks from mock runners")
+	}
 }
 
 func TestMakeRunnerCanExecute(t *testing.T) {
