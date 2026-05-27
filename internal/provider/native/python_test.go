@@ -1,10 +1,11 @@
 package native
 
 import (
-	"bytes"
 	"context"
+	"bytes"
 	"io"
 	"net/http"
+	"runtime"
 	"testing"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
@@ -12,23 +13,44 @@ import (
 )
 
 func TestPythonHandler_ResolveVersions(t *testing.T) {
-	mockRt := &mockRoundTripper{
+	oldMock := pkgHttp.MockTransport
+	defer func() { pkgHttp.MockTransport = oldMock }()
+
+	pkgHttp.MockTransport = &mockRoundTripper{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			resp := `[
+				{
+					"tag_name": "20230507",
+					"assets": [
+						{"name": "cpython-3.11.3+20230507-x86_64-unknown-linux-gnu-install_only.tar.gz", "browser_download_url": "https://example.com/python.tar.gz"}
+					]
+				}
+			]`
 			return &http.Response{
 				StatusCode: 200,
-				Body:       io.NopCloser(bytes.NewBufferString(`[{"tag_name":"20230507","assets":[{"name":"cpython-3.10.11+20230507-x86_64-unknown-linux-gnu-install_only.tar.gz","browser_download_url":"url"}]}]`)),
+				Body:       io.NopCloser(bytes.NewBufferString(resp)),
+				Header:     make(http.Header),
 			}, nil
 		},
 	}
-	oldMock := pkgHttp.MockTransport
-	pkgHttp.MockTransport = mockRt
-	defer func() { pkgHttp.MockTransport = oldMock }()
 
 	h := &PythonHandler{}
 	versions, err := h.ResolveVersions(context.Background(), "")
 	assert.NoError(t, err)
-	// It parses the asset name "cpython-3.10.11+20230507..." to version "3.10.11"
-	if len(versions) > 0 {
-		assert.Equal(t, "3.10.11", versions[0].Version)
+	assert.Len(t, versions, 1)
+	assert.Equal(t, "3.11.3", versions[0].Version)
+	
+	// Test detectPlatform locally
+	osName, arch := h.detectPlatform("cpython-3.11.3+20230507-x86_64-unknown-linux-gnu-install_only.tar.gz")
+	assert.Equal(t, "linux", osName)
+	assert.Equal(t, "amd64", arch)
+
+	osName, arch = h.detectPlatform("cpython-3.11.3-aarch64-apple-darwin-install_only.tar.gz")
+	assert.Equal(t, "darwin", osName)
+	assert.Equal(t, "arm64", arch)
+
+	// Ensure the returned assets match current os/arch if they happen to match it
+	if runtime.GOOS == "linux" && runtime.GOARCH == "amd64" {
+		assert.Len(t, versions[0].Assets, 1)
 	}
 }

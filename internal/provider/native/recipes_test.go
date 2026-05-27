@@ -178,3 +178,9 @@ func TestMapPlatform(t *testing.T) {
 	assert.Equal(t, "linux", os)
 	assert.Equal(t, "386", arch)
 }
+
+func TestIsNativeTool(t *testing.T) {
+	assert.True(t, IsNativeTool("go"))
+	assert.True(t, IsNativeTool("python"))
+	assert.False(t, IsNativeTool("nonexistent_tool_123"))
+}

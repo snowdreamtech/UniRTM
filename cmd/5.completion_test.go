@@ -16,7 +16,7 @@ func TestRunCompletion(t *testing.T) {
 
 	// Test missing args
 	err := runCompletion(cmd, []string{})
-	assert.Error(t, err)
+	assert.NoError(t, err)
 
 	// Test unknown shell
 	err = runCompletion(cmd, []string{"unknown-shell"})

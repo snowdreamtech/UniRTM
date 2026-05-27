@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 type GradleHandler struct{}
@@ -27,7 +29,11 @@ type gradleVersion struct {
 
 func (h *GradleHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
 	// Gradle provides a nice JSON API
-	resp, err := http.Get("https://services.gradle.org/versions/all")
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://services.gradle.org/versions/all", nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := pkgHttp.NewClient().Do(req)
 	if err != nil {
 		return nil, err
 	}
