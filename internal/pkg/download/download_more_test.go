@@ -108,7 +108,6 @@ func TestHTTPDownloader_VerifyGPGSignature_500(t *testing.T) {
 	// Mock valid keyring but fetch fails
 	os.Setenv("UNIRTM_DATA_DIR", dir)
 	defer os.Unsetenv("UNIRTM_DATA_DIR")
-	keyringPath := filepath.Join(dir, "keyring.gpg")
 	// An empty file will trigger "failed to parse keyring", but we want it to parse
 	// Actually we just test what happens if keyring fails to parse, wait we already did that.
 	// We want to hit the 500 error branch:
