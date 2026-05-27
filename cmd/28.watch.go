@@ -41,7 +41,7 @@ var watchCmd = &cobra.Command{
 func init() {
 	watchCmd.Flags().StringSliceVarP(&watchGlobs, "glob", "g", []string{}, "Watch only files matching these glob patterns (e.g. *.go)")
 	watchCmd.Flags().StringSliceVarP(&watchIgnores, "ignore", "i", []string{}, "Ignore files matching these patterns")
-	watchCmd.Flags().BoolVarP(&watchClear, "clear", "c", false, "Clear the screen before running the task")
+	watchCmd.Flags().BoolVar(&watchClear, "clear", false, "Clear the screen before running the task")
 	watchCmd.Flags().IntVarP(&watchDebounce, "debounce", "d", 500, "Debounce delay in milliseconds")
 	watchCmd.Flags().BoolVarP(&watchShell, "shell", "s", false, "Run task inside a shell")
 
