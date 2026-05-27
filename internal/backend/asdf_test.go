@@ -5,6 +5,8 @@ package backend
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -19,8 +21,54 @@ func TestAsdfBackend_Interface(t *testing.T) {
 	var _ Backend = (*AsdfBackend)(nil)
 }
 
+func TestAsdfBackend_Properties(t *testing.T) {
+	b := NewAsdfBackend()
+	if b.Dependencies() != nil {
+		t.Errorf("expected nil dependencies")
+	}
+	if b.SupportsChecksum() || b.SupportsGPG() || b.AttestationType() != "" || b.IsRecommended() || b.IsScriptless() || b.GetReach() != "Huge" || b.IsStable() || b.SupportsOffline() {
+		t.Errorf("properties not returning expected values")
+	}
+}
+
+func TestAsdfBackend_ListVersions(t *testing.T) {
+	b := NewAsdfBackend()
+	tmpDir := t.TempDir()
+	b.pluginsPath = tmpDir
+	b.registryPath = filepath.Join(tmpDir, "registry")
+
+	toolDir := filepath.Join(tmpDir, "nodejs")
+	os.MkdirAll(filepath.Join(toolDir, "bin"), 0755)
+
+	scriptContent := "#!/bin/sh\necho '18.0.0\n20.0.0'"
+	scriptPath := filepath.Join(toolDir, "bin", "list-all")
+	os.WriteFile(scriptPath, []byte(scriptContent), 0755)
+
+	ctx := context.Background()
+	platform := Platform{OS: "linux", Arch: "amd64"}
+
+	versions, err := b.ListVersions(ctx, "nodejs", platform)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(versions) != 2 {
+		t.Fatalf("expected 2 versions, got %d", len(versions))
+	}
+}
+
 func TestAsdfBackend_ResolveVersion(t *testing.T) {
 	b := NewAsdfBackend()
+	tmpDir := t.TempDir()
+	b.pluginsPath = tmpDir
+	b.registryPath = filepath.Join(tmpDir, "registry")
+
+	toolDir := filepath.Join(tmpDir, "nodejs")
+	os.MkdirAll(filepath.Join(toolDir, "bin"), 0755)
+
+	scriptContent := "#!/bin/sh\necho '20.0.0\n21.0.0'"
+	scriptPath := filepath.Join(toolDir, "bin", "list-all")
+	os.WriteFile(scriptPath, []byte(scriptContent), 0755)
+
 	ctx := context.Background()
 	platform := Platform{OS: "linux", Arch: "amd64"}
 
@@ -30,5 +78,35 @@ func TestAsdfBackend_ResolveVersion(t *testing.T) {
 	}
 	if info.Version != "20.0.0" {
 		t.Errorf("expected version 20.0.0, got %s", info.Version)
+	}
+
+	infoLatest, err := b.ResolveVersion(ctx, "nodejs", "latest", platform)
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+	// "21.0.0" comes last in "lines" which means it's pushed to [0] because ListVersions loops backwards
+	if infoLatest.Version != "21.0.0" {
+		t.Errorf("expected latest version 21.0.0, got %s", infoLatest.Version)
+	}
+}
+
+func TestAsdfBackend_GetDownloadInfo(t *testing.T) {
+	b := NewAsdfBackend()
+	tmpDir := t.TempDir()
+	b.pluginsPath = tmpDir
+	b.registryPath = filepath.Join(tmpDir, "registry")
+
+	toolDir := filepath.Join(tmpDir, "nodejs")
+	os.MkdirAll(toolDir, 0755)
+
+	ctx := context.Background()
+	p := Platform{OS: "linux", Arch: "amd64"}
+
+	info, err := b.GetDownloadInfo(ctx, "nodejs", "20.0.0", p)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info.Version != "20.0.0" {
+		t.Errorf("expected 20.0.0, got %s", info.Version)
 	}
 }

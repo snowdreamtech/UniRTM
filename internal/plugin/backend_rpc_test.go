@@ -149,3 +149,92 @@ func TestBackendRPC_SupportsGPG(t *testing.T) {
 	assert.True(t, client.SupportsGPG())
 	mockB.AssertExpectations(t)
 }
+
+func TestBackendRPC_ListVersions(t *testing.T) {
+	mockB := new(mockBackend)
+	expected := []backend.VersionInfo{{Version: "1.0"}}
+	mockB.On("ListVersions", mock.Anything, "go", backend.Platform{OS: "linux", Arch: "amd64"}).
+		Return(expected, nil)
+	client := setupBackendRPCClientServer(t, mockB)
+	res, err := client.ListVersions(context.Background(), "go", backend.Platform{OS: "linux", Arch: "amd64"})
+	assert.NoError(t, err)
+	assert.Equal(t, expected, res)
+	mockB.AssertExpectations(t)
+}
+
+func TestBackendRPC_GetDownloadInfo(t *testing.T) {
+	mockB := new(mockBackend)
+	expected := &backend.VersionInfo{Version: "1.0"}
+	mockB.On("GetDownloadInfo", mock.Anything, "go", "1.0", backend.Platform{OS: "linux", Arch: "amd64"}).
+		Return(expected, nil)
+	client := setupBackendRPCClientServer(t, mockB)
+	res, err := client.GetDownloadInfo(context.Background(), "go", "1.0", backend.Platform{OS: "linux", Arch: "amd64"})
+	assert.NoError(t, err)
+	assert.Equal(t, expected, res)
+	mockB.AssertExpectations(t)
+}
+
+func TestBackendRPC_SupportsChecksum(t *testing.T) {
+	mockB := new(mockBackend)
+	mockB.On("SupportsChecksum").Return(true)
+	client := setupBackendRPCClientServer(t, mockB)
+	assert.True(t, client.SupportsChecksum())
+	mockB.AssertExpectations(t)
+}
+
+func TestBackendRPC_AttestationType(t *testing.T) {
+	mockB := new(mockBackend)
+	mockB.On("AttestationType").Return("pgp")
+	client := setupBackendRPCClientServer(t, mockB)
+	assert.Equal(t, "pgp", client.AttestationType())
+	mockB.AssertExpectations(t)
+}
+
+func TestBackendRPC_IsRecommended(t *testing.T) {
+	mockB := new(mockBackend)
+	mockB.On("IsRecommended").Return(true)
+	client := setupBackendRPCClientServer(t, mockB)
+	assert.True(t, client.IsRecommended())
+	mockB.AssertExpectations(t)
+}
+
+func TestBackendRPC_IsScriptless(t *testing.T) {
+	mockB := new(mockBackend)
+	mockB.On("IsScriptless").Return(true)
+	client := setupBackendRPCClientServer(t, mockB)
+	assert.True(t, client.IsScriptless())
+	mockB.AssertExpectations(t)
+}
+
+func TestBackendRPC_GetReach(t *testing.T) {
+	mockB := new(mockBackend)
+	mockB.On("GetReach").Return("global")
+	client := setupBackendRPCClientServer(t, mockB)
+	assert.Equal(t, "global", client.GetReach())
+	mockB.AssertExpectations(t)
+}
+
+func TestBackendRPC_IsStable(t *testing.T) {
+	mockB := new(mockBackend)
+	mockB.On("IsStable").Return(true)
+	client := setupBackendRPCClientServer(t, mockB)
+	assert.True(t, client.IsStable())
+	mockB.AssertExpectations(t)
+}
+
+func TestBackendRPC_SupportsOffline(t *testing.T) {
+	mockB := new(mockBackend)
+	mockB.On("SupportsOffline").Return(true)
+	client := setupBackendRPCClientServer(t, mockB)
+	assert.True(t, client.SupportsOffline())
+	mockB.AssertExpectations(t)
+}
+
+func TestBackendRPC_Dependencies(t *testing.T) {
+	mockB := new(mockBackend)
+	expected := []string{"dep1"}
+	mockB.On("Dependencies").Return(expected)
+	client := setupBackendRPCClientServer(t, mockB)
+	assert.Equal(t, expected, client.Dependencies())
+	mockB.AssertExpectations(t)
+}

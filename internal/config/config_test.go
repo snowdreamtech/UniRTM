@@ -5,6 +5,7 @@ package config
 
 import (
 	"testing"
+	"gopkg.in/yaml.v3"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -610,5 +611,61 @@ func TestConfig_ValidateWithEnvironments(t *testing.T) {
 				require.NoError(t, err)
 			}
 		})
+	}
+}
+
+func TestDurationOrInt(t *testing.T) {
+	var d DurationOrInt
+
+	// Test UnmarshalText
+	err := d.UnmarshalText([]byte("42"))
+	if err != nil || d != 42 {
+		t.Errorf("UnmarshalText 42 failed: %v, %v", err, d)
+	}
+
+	err = d.UnmarshalText([]byte("24h"))
+	if err != nil || d != 86400 {
+		t.Errorf("UnmarshalText 24h failed: %v, %v", err, d)
+	}
+
+	err = d.UnmarshalText([]byte("invalid"))
+	if err == nil {
+		t.Errorf("UnmarshalText invalid should fail")
+	}
+
+	// Test UnmarshalJSON
+	err = d.UnmarshalJSON([]byte(`42`))
+	if err != nil || d != 42 {
+		t.Errorf("UnmarshalJSON 42 failed: %v, %v", err, d)
+	}
+
+	err = d.UnmarshalJSON([]byte(`"24h"`))
+	if err != nil || d != 86400 {
+		t.Errorf("UnmarshalJSON 24h failed: %v, %v", err, d)
+	}
+
+	err = d.UnmarshalJSON([]byte(`"invalid"`))
+	if err == nil {
+		t.Errorf("UnmarshalJSON invalid should fail")
+	}
+
+	// Test UnmarshalYAML
+	type Config struct {
+		Val DurationOrInt `yaml:"val"`
+	}
+	var c Config
+	err = yaml.Unmarshal([]byte("val: 42"), &c)
+	if err != nil || c.Val != 42 {
+		t.Errorf("UnmarshalYAML 42 failed: %v, %v", err, c.Val)
+	}
+
+	err = yaml.Unmarshal([]byte("val: 24h"), &c)
+	if err != nil || c.Val != 86400 {
+		t.Errorf("UnmarshalYAML 24h failed: %v, %v", err, c.Val)
+	}
+
+	err = yaml.Unmarshal([]byte("val: invalid"), &c)
+	if err == nil {
+		t.Errorf("UnmarshalYAML invalid should fail")
 	}
 }

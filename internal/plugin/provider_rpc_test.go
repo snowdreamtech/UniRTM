@@ -123,3 +123,70 @@ func TestProviderRPC_GetBinPaths(t *testing.T) {
 	assert.Equal(t, []string{"/path/bin"}, paths)
 	mockP.AssertExpectations(t)
 }
+
+func TestProviderRPC_PostInstall(t *testing.T) {
+	mockP := new(mockProvider)
+	mockP.On("PostInstall", mock.Anything, "go", "/path", "1.20").Return(nil)
+	client := setupRPCClientServer(t, mockP)
+
+	err := client.PostInstall(context.Background(), "go", "/path", "1.20")
+	assert.NoError(t, err)
+	mockP.AssertExpectations(t)
+}
+
+func TestProviderRPC_GenerateShims(t *testing.T) {
+	mockP := new(mockProvider)
+	expected := map[string]string{"go": "go"}
+	mockP.On("GenerateShims", "go", "/path", "1.20").Return(expected, nil)
+	client := setupRPCClientServer(t, mockP)
+
+	res, err := client.GenerateShims("go", "/path", "1.20")
+	assert.NoError(t, err)
+	assert.Equal(t, expected, res)
+	mockP.AssertExpectations(t)
+}
+
+func TestProviderRPC_DetectVersion(t *testing.T) {
+	mockP := new(mockProvider)
+	mockP.On("DetectVersion", mock.Anything, "go", "/path").Return("1.20", nil)
+	client := setupRPCClientServer(t, mockP)
+
+	res, err := client.DetectVersion(context.Background(), "go", "/path")
+	assert.NoError(t, err)
+	assert.Equal(t, "1.20", res)
+	mockP.AssertExpectations(t)
+}
+
+func TestProviderRPC_ListExecutables(t *testing.T) {
+	mockP := new(mockProvider)
+	expected := []string{"go", "gofmt"}
+	mockP.On("ListExecutables", "go", "/path", "1.20").Return(expected, nil)
+	client := setupRPCClientServer(t, mockP)
+
+	res, err := client.ListExecutables("go", "/path", "1.20")
+	assert.NoError(t, err)
+	assert.Equal(t, expected, res)
+	mockP.AssertExpectations(t)
+}
+
+func TestProviderRPC_GetEnvVars(t *testing.T) {
+	mockP := new(mockProvider)
+	expected := map[string]string{"GOROOT": "/path"}
+	mockP.On("GetEnvVars", "go", "/path", "1.20").Return(expected, nil)
+	client := setupRPCClientServer(t, mockP)
+
+	res, err := client.GetEnvVars("go", "/path", "1.20")
+	assert.NoError(t, err)
+	assert.Equal(t, expected, res)
+	mockP.AssertExpectations(t)
+}
+
+func TestProviderRPC_Uninstall(t *testing.T) {
+	mockP := new(mockProvider)
+	mockP.On("Uninstall", mock.Anything, "go", "/path", "1.20").Return(nil)
+	client := setupRPCClientServer(t, mockP)
+
+	err := client.Uninstall(context.Background(), "go", "/path", "1.20")
+	assert.NoError(t, err)
+	mockP.AssertExpectations(t)
+}

@@ -4,9 +4,11 @@
 package backend
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"net/http"
-	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -49,39 +51,69 @@ func TestAquaBackend_Properties(t *testing.T) {
 	}
 }
 
-func TestAquaBackend_FetchPackageMetadata(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/aquaproj/aqua/pkg.yaml" {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{
-				"type": "github_release",
-				"repo_owner": "aquaproj",
-				"repo_name": "aqua",
-				"asset": "aqua_{{.OS}}_{{.Arch}}.tar.gz"
-			}`))
-			return
-		}
-		w.WriteHeader(http.StatusNotFound)
-	}))
-	defer ts.Close()
-
+func TestAquaBackend_ResolveVersion(t *testing.T) {
 	b := NewAquaBackend()
-	b.registryURL = ts.URL // Point to our mock server
-
+	b.registryURL = "https://raw.githubusercontent.com/aquaproj/aqua-registry/main/pkgs"
+	
+	b.client.Transport = &mockCargoTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			if strings.Contains(req.URL.Path, "aquaproj/aqua/pkg.yaml") {
+				body := `{"type": "github_release", "repo_owner": "aquaproj", "repo_name": "aqua", "asset": "aqua_{{.OS}}_{{.Arch}}.tar.gz"}`
+				return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewBufferString(body))}, nil
+			} else if strings.Contains(req.URL.Path, "repos/aquaproj/aqua/releases") {
+				body := `[{"tag_name": "v2.0.1", "name": "v2.0.1"}, {"tag_name": "v2.0.0", "name": "v2.0.0"}]`
+				return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewBufferString(body))}, nil
+			}
+			return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(bytes.NewBufferString(""))}, nil
+		},
+	}
+	
 	ctx := context.Background()
+	platform := Platform{OS: "linux", Arch: "amd64"}
 
-	// Test successful fetch
-	pkg, err := b.fetchPackageMetadata(ctx, "aquaproj/aqua")
+	// Test exact match
+	info, err := b.ResolveVersion(ctx, "aquaproj/aqua", "2.0.0", platform)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if info.Version != "2.0.0" {
+		t.Errorf("expected 2.0.0, got %s", info.Version)
+	}
+
+	// Test latest
+	infoLatest, err := b.ResolveVersion(ctx, "aquaproj/aqua", "latest", platform)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if infoLatest.Version != "2.0.1" {
+		t.Errorf("expected 2.0.1, got %s", infoLatest.Version)
+	}
+}
+
+func TestAquaBackend_GetDownloadInfo(t *testing.T) {
+	b := NewAquaBackend()
+	b.registryURL = "https://raw.githubusercontent.com/aquaproj/aqua-registry/main/pkgs"
+	
+	b.client.Transport = &mockCargoTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			if strings.Contains(req.URL.Path, "aquaproj/aqua/pkg.yaml") {
+				body := `{"type": "github_release", "repo_owner": "aquaproj", "repo_name": "aqua", "asset": "aqua_{{.OS}}_{{.Arch}}.tar.gz"}`
+				return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewBufferString(body))}, nil
+			} else if strings.Contains(req.URL.Path, "repos/aquaproj/aqua/releases") {
+				body := `[{"tag_name": "v2.0.0", "name": "v2.0.0"}]`
+				return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewBufferString(body))}, nil
+			}
+			return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(bytes.NewBufferString(""))}, nil
+		},
+	}
+	ctx := context.Background()
+	p := Platform{OS: "linux", Arch: "amd64"}
+
+	info, err := b.GetDownloadInfo(ctx, "aquaproj/aqua", "2.0.0", p)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if pkg.Type != "github_release" {
-		t.Errorf("expected github_release, got %s", pkg.Type)
-	}
-
-	// Test not found
-	_, err = b.fetchPackageMetadata(ctx, "nonexistent/tool")
-	if err == nil {
-		t.Fatal("expected error for nonexistent tool, got nil")
+	if info.Version != "2.0.0" {
+		t.Errorf("expected 2.0.0, got %s", info.Version)
 	}
 }

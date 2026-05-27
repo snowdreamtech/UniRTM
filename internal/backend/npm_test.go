@@ -4,9 +4,11 @@
 package backend
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"net/http"
-	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -15,43 +17,61 @@ func TestNpmBackend_Name(t *testing.T) {
 	if b.Name() != "npm" {
 		t.Errorf("expected 'npm', got '%s'", b.Name())
 	}
+	if len(b.Dependencies()) != 1 || b.Dependencies()[0] != "node" {
+		t.Errorf("expected [node] dependencies, got %v", b.Dependencies())
+	}
+	if !b.SupportsChecksum() || b.SupportsGPG() || b.AttestationType() != "" || !b.IsRecommended() || !b.IsScriptless() || b.GetReach() != "Huge" || !b.IsStable() || !b.SupportsOffline() {
+		t.Errorf("properties not returning expected values")
+	}
+}
+
+func TestNpmBackend_Interface(t *testing.T) {
+	var _ Backend = (*NpmBackend)(nil)
 }
 
 func TestNpmBackend_ListVersions(t *testing.T) {
-	// Create a mock npm registry
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/typescript" {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"versions": {"5.0.0": {}, "5.1.0": {}}}`))
-			return
-		}
-		w.WriteHeader(http.StatusNotFound)
-	}))
-	defer server.Close()
-
 	b := NewNpmBackend()
-	// override the URL internally if possible, but since it's hardcoded to registry.npmjs.org,
-	// we will just test that it fails cleanly when the network is unavailable or package not found.
-	// For this test, we will just test the error paths since we can't easily inject the URL.
-
+	b.client.Transport = &mockCargoTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			if strings.Contains(req.URL.Path, "typescript") {
+				body := `{"versions": {"5.0.0": {}, "5.1.0": {}}}`
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       io.NopCloser(bytes.NewBufferString(body)),
+				}, nil
+			}
+			return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(bytes.NewBufferString(""))}, nil
+		},
+	}
 	ctx := context.Background()
 	platform := Platform{OS: "linux", Arch: "amd64"}
 
-	// Test unknown package (will actually hit the real registry or fail network)
-	// We'll skip the real network call if possible, but let's just let it run
-	// against a dummy package that doesn't exist.
-	_, err := b.ListVersions(ctx, "this-package-definitely-does-not-exist-12345", platform)
-	if err == nil {
-		t.Error("expected error for non-existent package, got nil")
+	versions, err := b.ListVersions(ctx, "typescript", platform)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(versions) != 2 {
+		t.Fatalf("expected 2 versions, got %d", len(versions))
 	}
 }
 
 func TestNpmBackend_ResolveVersion(t *testing.T) {
 	b := NewNpmBackend()
+	b.client.Transport = &mockCargoTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			if strings.Contains(req.URL.Path, "typescript/latest") {
+				body := `{"version": "5.1.0"}`
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       io.NopCloser(bytes.NewBufferString(body)),
+				}, nil
+			}
+			return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(bytes.NewBufferString(""))}, nil
+		},
+	}
 	ctx := context.Background()
 	platform := Platform{OS: "linux", Arch: "amd64"}
 
-	// Test explicit version resolution
 	info, err := b.ResolveVersion(ctx, "typescript", "5.0.0", platform)
 	if err != nil {
 		t.Errorf("expected no error, got %v", err)
@@ -59,9 +79,26 @@ func TestNpmBackend_ResolveVersion(t *testing.T) {
 	if info.Version != "5.0.0" {
 		t.Errorf("expected version 5.0.0, got %s", info.Version)
 	}
+
+	infoLatest, err := b.ResolveVersion(ctx, "typescript", "latest", platform)
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+	if infoLatest.Version != "5.1.0" {
+		t.Errorf("expected latest version 5.1.0, got %s", infoLatest.Version)
+	}
 }
 
-func TestNpmBackend_Interface(t *testing.T) {
-	// Ensure it implements Backend interface
-	var _ Backend = (*NpmBackend)(nil)
+func TestNpmBackend_GetDownloadInfo(t *testing.T) {
+	b := NewNpmBackend()
+	ctx := context.Background()
+	p := Platform{OS: "linux", Arch: "amd64"}
+
+	info, err := b.GetDownloadInfo(ctx, "typescript", "5.0.0", p)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info.Version != "5.0.0" {
+		t.Errorf("expected 5.0.0, got %s", info.Version)
+	}
 }

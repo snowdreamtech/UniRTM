@@ -4,16 +4,58 @@
 package provider
 
 import (
+	"context"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
-func TestCargoProvider_Name(t *testing.T) {
+func TestCargoProvider_Interface(t *testing.T) {
+	var _ Provider = (*CargoProvider)(nil)
+}
+
+func TestCargoProvider_FindCargo(t *testing.T) {
 	p := NewCargoProvider()
-	if p.Name() != "cargo" {
-		t.Errorf("expected 'cargo', got '%s'", p.Name())
+	tmpDir := t.TempDir()
+
+	binDir := filepath.Join(tmpDir, "bin")
+	os.MkdirAll(binDir, 0755)
+
+	scriptPath := filepath.Join(binDir, "cargo")
+	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho cargo"), 0755)
+
+	oldPath := os.Getenv("PATH")
+	os.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+	defer os.Setenv("PATH", oldPath)
+
+	cargo, err := p.findCargo()
+	if err != nil {
+		t.Fatalf("expected to find cargo, but got error: %v", err)
+	}
+	if cargo != scriptPath {
+		t.Errorf("expected %s, got %s", scriptPath, cargo)
 	}
 }
 
-func TestCargoProvider_Interface(t *testing.T) {
-	var _ Provider = (*CargoProvider)(nil)
+func TestCargoProvider_Install(t *testing.T) {
+	p := NewCargoProvider()
+	tmpDir := t.TempDir()
+
+	binDir := filepath.Join(tmpDir, "bin")
+	os.MkdirAll(binDir, 0755)
+	scriptPath := filepath.Join(binDir, "cargo")
+	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho installing..."), 0755)
+
+	oldPath := os.Getenv("PATH")
+	os.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+	defer os.Setenv("PATH", oldPath)
+
+	installPath := filepath.Join(tmpDir, "install")
+
+	ctx := context.Background()
+
+	err := p.Install(ctx, "cargo-binstall", installPath, "", "1.0.0")
+	if err != nil {
+		t.Fatalf("install failed: %v", err)
+	}
 }

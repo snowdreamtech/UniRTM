@@ -3,6 +3,6 @@ verbose = 'true'
 
 
 [tools]
-node = "20"
+node = '20'
 [settings]
 verbose = 'true'

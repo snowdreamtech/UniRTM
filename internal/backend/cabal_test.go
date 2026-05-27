@@ -96,12 +96,39 @@ func TestCabalBackend_ListVersions(t *testing.T) {
 }
 
 func TestCabalBackend_ResolveVersion(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/package/pandoc.json" {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`[
+				{"version": "2.19"},
+				{"version": "3.0"},
+				{"version": "3.1"}
+			]`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer ts.Close()
+
 	b := NewCabalBackend()
+	b.client.Transport = &mockTransport{
+		rt:  http.DefaultTransport,
+		url: ts.URL,
+	}
+
 	ctx := context.Background()
 	platform := Platform{OS: "linux", Arch: "amd64"}
 
-	// Note: Testing "latest" would hit the real network or require mock transport
-	// Since we mock specific requests in ListVersions, we can just test exact version resolution here.
+	// Test latest
+	vLatest, err := b.ResolveVersion(ctx, "pandoc", "latest", platform)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if vLatest.Version != "3.1" {
+		t.Errorf("expected 3.1, got %s", vLatest.Version)
+	}
+
+	// Test specific
 	v, err := b.ResolveVersion(ctx, "pandoc", "3.1", platform)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

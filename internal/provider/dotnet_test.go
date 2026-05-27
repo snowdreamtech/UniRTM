@@ -5,26 +5,57 @@ package provider
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
-func TestDotnetProvider_Name(t *testing.T) {
+func TestDotnetProvider_Interface(t *testing.T) {
+	var _ Provider = (*DotnetProvider)(nil)
+}
+
+func TestDotnetProvider_FindDotnet(t *testing.T) {
 	p := NewDotnetProvider()
-	if p.Name() != "dotnet" {
-		t.Errorf("expected name 'dotnet', got %s", p.Name())
+	tmpDir := t.TempDir()
+
+	binDir := filepath.Join(tmpDir, "bin")
+	os.MkdirAll(binDir, 0755)
+
+	scriptPath := filepath.Join(binDir, "dotnet")
+	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho dotnet"), 0755)
+
+	oldPath := os.Getenv("PATH")
+	os.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+	defer os.Setenv("PATH", oldPath)
+
+	dotnet, err := p.findDotnet()
+	if err != nil {
+		t.Fatalf("expected to find dotnet, but got error: %v", err)
+	}
+	if dotnet != scriptPath {
+		t.Errorf("expected %s, got %s", scriptPath, dotnet)
 	}
 }
 
-func TestDotnetProvider_DetectVersion(t *testing.T) {
+func TestDotnetProvider_Install(t *testing.T) {
 	p := NewDotnetProvider()
+	tmpDir := t.TempDir()
+
+	binDir := filepath.Join(tmpDir, "bin")
+	os.MkdirAll(binDir, 0755)
+	scriptPath := filepath.Join(binDir, "dotnet")
+	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho installing..."), 0755)
+
+	oldPath := os.Getenv("PATH")
+	os.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+	defer os.Setenv("PATH", oldPath)
+
+	installPath := filepath.Join(tmpDir, "install")
 
 	ctx := context.Background()
-	version, err := p.DetectVersion(ctx, "dotnet", "/fake/path/tool/1.2.3")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
 
-	if version != "1.2.3" {
-		t.Errorf("expected version '1.2.3', got %s", version)
+	err := p.Install(ctx, "tool", installPath, "", "1.0.0")
+	if err != nil {
+		t.Fatalf("install failed: %v", err)
 	}
 }
