@@ -13,6 +13,10 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
+// MockTransport can be set during tests to intercept all HTTP/HTTPS requests
+// created by UniRTM's DefaultTransport.
+var MockTransport http.RoundTripper
+
 // DefaultTransport returns UniRTM's standard http.Transport.
 //
 // It customizes two behaviors that Go's default transport cannot provide:
@@ -62,6 +66,11 @@ func DefaultTransport() *http.Transport {
 	//    corrupts HTTP/2 ALPN frames (smart auto-downgrade is handled at call sites).
 	if env.Get("HTTP2") == "0" {
 		DisableHTTP2(trans)
+	}
+
+	if MockTransport != nil {
+		trans.RegisterProtocol("http", MockTransport)
+		trans.RegisterProtocol("https", MockTransport)
 	}
 
 	return trans

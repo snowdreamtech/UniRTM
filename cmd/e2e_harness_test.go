@@ -3,27 +3,56 @@ package cmd
 import (
 	"bytes"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/pterm/pterm"
+	internalhttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 type E2EHarness struct {
-	t      *testing.T
-	TmpDir string
+	t        *testing.T
+	TmpDir   string
+	MockHTTP map[string]func(req *http.Request) (*http.Response, error)
 }
 
 func NewE2EHarness(t *testing.T) *E2EHarness {
 	tmpDir := t.TempDir()
 	return &E2EHarness{
-		t:      t,
-		TmpDir: tmpDir,
+		t:        t,
+		TmpDir:   tmpDir,
+		MockHTTP: make(map[string]func(req *http.Request) (*http.Response, error)),
 	}
+}
+
+// RoundTrip implements http.RoundTripper
+func (h *E2EHarness) RoundTrip(req *http.Request) (*http.Response, error) {
+	url := req.URL.String()
+	h.t.Logf("[MOCK HTTP] Requested: %s", url)
+	if handler, ok := h.MockHTTP[url]; ok {
+		return handler(req)
+	}
+	// Default to 404 for unmocked requests to prevent real network calls
+	return &http.Response{
+		StatusCode: 404,
+		Body:       io.NopCloser(bytes.NewBufferString("Not Found (Mocked)")),
+		Header:     make(http.Header),
+		Request:    req,
+	}, nil
 }
 
 // Run executes a command in the isolated environment and returns stdout/stderr.
 func (h *E2EHarness) Run(args ...string) (stdout string, stderr string, err error) {
 	h.t.Helper()
+
+	// Intercept all HTTP requests globally
+	oldMockTransport := internalhttp.MockTransport
+	internalhttp.MockTransport = h
+	defer func() {
+		internalhttp.MockTransport = oldMockTransport
+	}()
 
 	// Isolate Environment
 	h.t.Setenv("UNIRTM_HOME", h.TmpDir)
@@ -49,6 +78,9 @@ func (h *E2EHarness) Run(args ...string) (stdout string, stderr string, err erro
 	yes = true
 	locked = false
 	silent = false
+
+	// Capture pterm output
+	pterm.SetDefaultOutput(wOut)
 
 	rootCmd.SetArgs(args)
 	err = rootCmd.Execute()
