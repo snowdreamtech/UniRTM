@@ -79,3 +79,31 @@ func TestCargoProvider_findCargo(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, cargoPath, found)
 }
+
+func TestCargoProvider_Install_CargoNotFound(t *testing.T) {
+	t.Setenv("PATH", "")
+
+	p := NewCargoProvider()
+	installPath := filepath.Join(t.TempDir(), "cargo_install", "test_pkg")
+
+	err := p.Install(context.Background(), "test_pkg", installPath, "", "1.0.0")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "cargo is required")
+}
+
+func TestCargoProvider_ListExecutables(t *testing.T) {
+	p := NewCargoProvider()
+	tmpDir := t.TempDir()
+
+	binDir := filepath.Join(tmpDir, "bin")
+	err := os.MkdirAll(binDir, 0755)
+	require.NoError(t, err)
+
+	os.WriteFile(filepath.Join(binDir, "dummy1"), []byte(""), 0755)
+	os.WriteFile(filepath.Join(binDir, "dummy2"), []byte(""), 0644)
+
+	exes, err := p.ListExecutables("test_pkg", tmpDir, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, exes, 1)
+	require.Contains(t, exes, filepath.Join(binDir, "dummy1"))
+}

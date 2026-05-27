@@ -5,7 +5,12 @@ package provider
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestGoPkgProvider_Name(t *testing.T) {
@@ -84,10 +89,55 @@ func TestGoPkgProvider_ListExecutables(t *testing.T) {
 	// Wait, we don't have to test all OS variations here since we know the logic.
 	
 	execs, err := p.ListExecutables("tool", tmpDir, "1.0")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 	if len(execs) != 0 {
 		t.Errorf("expected 0 executables initially, got %d", len(execs))
 	}
+
+	// Add an executable
+	os.WriteFile(filepath.Join(tmpDir, "dummy1"), []byte(""), 0755)
+	os.WriteFile(filepath.Join(tmpDir, "dummy2"), []byte(""), 0644)
+	execs, err = p.ListExecutables("tool", tmpDir, "1.0")
+	require.NoError(t, err)
+	require.Len(t, execs, 1)
+	require.Contains(t, execs, filepath.Join(tmpDir, "dummy1"))
+}
+
+func TestGoPkgProvider_Install_Success(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping bash-based mock test on windows")
+	}
+	tmpDir := t.TempDir()
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+
+	goInstallsDir := filepath.Join(tmpDir, "installs", "go", "1.20.0", "bin")
+	err := os.MkdirAll(goInstallsDir, 0755)
+	require.NoError(t, err)
+
+	goScript := filepath.Join(goInstallsDir, "go")
+	mockGo := `#!/bin/sh
+# Mock go install
+exit 0
+`
+	err = os.WriteFile(goScript, []byte(mockGo), 0755)
+	require.NoError(t, err)
+
+	p := NewGoPkgProvider()
+	installPath := filepath.Join(tmpDir, "go_install", "test_pkg")
+
+	err = p.Install(context.Background(), "test_pkg", installPath, "", "1.0.0")
+	require.NoError(t, err)
+}
+
+func TestGoPkgProvider_Install_GoNotFound(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	t.Setenv("PATH", "")
+
+	p := NewGoPkgProvider()
+	installPath := filepath.Join(tmpDir, "go_install", "test_pkg")
+
+	err := p.Install(context.Background(), "test_pkg", installPath, "", "1.0.0")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "go is required")
 }

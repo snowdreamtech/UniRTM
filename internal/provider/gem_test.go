@@ -79,3 +79,33 @@ func TestGemProvider_findGem(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, gemPath, found)
 }
+
+func TestGemProvider_Install_GemNotFound(t *testing.T) {
+	os.Setenv("PATH", "")
+	defer os.Unsetenv("PATH")
+
+	p := NewGemProvider()
+	installPath := filepath.Join(t.TempDir(), "gem_install", "test_pkg")
+
+	err := p.Install(context.Background(), "test_pkg", installPath, "", "1.0.0")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "gem is required")
+}
+
+func TestGemProvider_ListExecutables(t *testing.T) {
+	p := NewGemProvider()
+	tmpDir := t.TempDir()
+
+	binDir := filepath.Join(tmpDir, "bin")
+	err := os.MkdirAll(binDir, 0755)
+	require.NoError(t, err)
+
+	os.WriteFile(filepath.Join(binDir, "dummy1"), []byte(""), 0755)
+	os.WriteFile(filepath.Join(binDir, "dummy2"), []byte(""), 0644)
+
+	exes, err := p.ListExecutables("test_pkg", tmpDir, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, exes, 1)
+	require.Contains(t, exes, filepath.Join(binDir, "dummy1"))
+}
+
