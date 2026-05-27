@@ -305,7 +305,7 @@ func (c *Config) Validate() error {
 // Merge merges another configuration into this one.
 // The current configuration takes precedence over the other one (deep merge).
 func (c *Config) Merge(other *Config) {
-	if other == nil {
+	if c == nil || other == nil {
 		return
 	}
 

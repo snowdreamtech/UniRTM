@@ -14,7 +14,7 @@ import (
 
 // ReadFileOrEmpty reads a file content or returns an empty string if the file doesn't exist.
 func ReadFileOrEmpty(path string) (string, error) {
-	data, err := os.ReadFile(path)
+	data, err := OsReadFile(path)
 	if os.IsNotExist(err) {
 		return "", nil
 	}
@@ -171,7 +171,7 @@ func UpsertToolVersion(content, tool, version string) string {
 // LoadRawTOML reads a TOML file into a generic map.
 // Returns an empty map when the file does not yet exist.
 func LoadRawTOML(path string) (map[string]interface{}, error) {
-	data, err := os.ReadFile(path)
+	data, err := OsReadFile(path)
 	if os.IsNotExist(err) {
 		return make(map[string]interface{}), nil
 	}
@@ -195,7 +195,7 @@ func SaveRawTOML(path string, m map[string]interface{}) error {
 	if err := enc.Encode(m); err != nil {
 		return fmt.Errorf("encode TOML: %w", err)
 	}
-	if err := os.WriteFile(path, buf.Bytes(), 0o644); err != nil {
+	if err := OsWriteFile(path, buf.Bytes(), 0o644); err != nil {
 		return err
 	}
 	// Always format the file to enforce standard section ordering

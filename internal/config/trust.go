@@ -63,10 +63,10 @@ func NewTrustManager() TrustManager {
 // ensureTrustFileExists creates the directory and file if they do not exist.
 func (m *fileTrustManager) ensureTrustFileExists() error {
 	dir := filepath.Dir(m.trustFilePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := OsMkdirAll(dir, 0755); err != nil {
 		return err
 	}
-	f, err := os.OpenFile(m.trustFilePath, os.O_CREATE|os.O_RDONLY, 0644)
+	f, err := OsOpenFile(m.trustFilePath, os.O_CREATE|os.O_RDONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (m *fileTrustManager) loadTrustedPaths() (map[string]string, error) {
 		return nil, err
 	}
 
-	f, err := os.Open(m.trustFilePath)
+	f, err := OsOpen(m.trustFilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (m *fileTrustManager) saveTrustedPaths(paths map[string]string) error {
 		return err
 	}
 
-	f, err := os.OpenFile(m.trustFilePath, os.O_WRONLY|os.O_TRUNC, 0644)
+	f, err := OsOpenFile(m.trustFilePath, os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func (m *fileTrustManager) saveTrustedPaths(paths map[string]string) error {
 
 // calculateHash computes the SHA256 hash of a file's contents.
 func calculateHash(path string) (string, error) {
-	f, err := os.Open(path)
+	f, err := OsOpen(path)
 	if err != nil {
 		return "", err
 	}
@@ -147,7 +147,7 @@ func (m *fileTrustManager) TrustStatus(path string) TrustStatus {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	absPath, err := filepath.Abs(path)
+	absPath, err := FilepathAbs(path)
 	if err != nil {
 		return TrustStatusUntrusted
 	}
@@ -179,7 +179,7 @@ func (m *fileTrustManager) Trust(path string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	absPath, err := filepath.Abs(path)
+	absPath, err := FilepathAbs(path)
 	if err != nil {
 		return fmt.Errorf("failed to resolve absolute path: %w", err)
 	}
@@ -207,7 +207,7 @@ func (m *fileTrustManager) Untrust(path string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	absPath, err := filepath.Abs(path)
+	absPath, err := FilepathAbs(path)
 	if err != nil {
 		return fmt.Errorf("failed to resolve absolute path: %w", err)
 	}
@@ -238,7 +238,7 @@ func (m *fileTrustManager) List() (map[string]string, error) {
 	changed := false
 	existingPaths := make(map[string]string)
 	for path, hash := range paths {
-		if _, err := os.Stat(path); os.IsNotExist(err) {
+		if _, err := OsStat(path); os.IsNotExist(err) {
 			changed = true
 			continue
 		}

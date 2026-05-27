@@ -78,13 +78,15 @@ var (
 
 	// Silent indicates whether to suppress all output and non-error messages.
 	Silent bool
+
+	CryptoRandRead = rand.Read
 )
 
 // RandomString returns a random string of the specified length.
 func RandomString(n int) (string, error) {
 	const letters = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	bytes := make([]byte, n)
-	if _, err := rand.Read(bytes); err != nil {
+	if _, err := CryptoRandRead(bytes); err != nil {
 		return "", err
 	}
 	for i, b := range bytes {

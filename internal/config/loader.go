@@ -36,7 +36,7 @@ func LoadFull() (*Config, error) {
 // LoadGlobal loads only the global UniRTM configuration.
 func LoadGlobal() (*Config, error) {
 	globalPath := GetGlobalConfigPath()
-	data, err := os.ReadFile(globalPath)
+	data, err := OsReadFile(globalPath)
 	if err != nil {
 		return &Config{}, err
 	}
@@ -71,7 +71,7 @@ func LoadHierarchy(startDir string) (*Config, error) {
 
 	// 2. Load global config
 	globalPath := GetGlobalConfigPath()
-	if data, err := os.ReadFile(globalPath); err == nil {
+	if data, err := OsReadFile(globalPath); err == nil {
 		globalCfg := &Config{}
 		if err := toml.Unmarshal(data, globalCfg); err == nil {
 			globalCfg.PostLoad()
@@ -101,7 +101,7 @@ func LoadFromDir(dir string) (*Config, error) {
 
 	for _, fileName := range configFiles {
 		p := filepath.Join(dir, fileName)
-		data, err = os.ReadFile(p)
+		data, err = OsReadFile(p)
 		if err == nil {
 			foundFile = p
 			break
@@ -256,7 +256,7 @@ func (c *Config) ResolveEnvironment() (map[string]string, []string, []string, er
 					}
 
 					// Check if venv exists and activate it
-					if _, err := os.Stat(absPath); err == nil {
+					if _, err := OsStat(absPath); err == nil {
 						// Determine bin directory
 						binDir := "bin"
 						if runtime.GOOS == "windows" {

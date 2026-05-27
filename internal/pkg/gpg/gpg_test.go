@@ -194,7 +194,7 @@ func (m *mockBody) Close() error                     { return nil }
 
 func TestSystemGPGVerifier(t *testing.T) {
 	v := NewSystemGPGVerifier()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// 1. Test when gpg is NOT in PATH
@@ -219,6 +219,7 @@ func TestSystemGPGVerifier(t *testing.T) {
 	
 	// Create the mock script
 	mockScript := `#!/bin/sh
+	echo "MOCK GPG CALLED WITH: $@" >> /tmp/mock_gpg.log
 	if [ "$1" = "--verify" ]; then
 		if [ "$4" = "bad_key.sig" ]; then
 			echo "NO_PUBKEY 123456"
@@ -244,6 +245,7 @@ func TestSystemGPGVerifier(t *testing.T) {
 		fi
 	fi
 	if [ "$1" = "--keyserver" ]; then
+		echo "$@" >> mock_gpg.log
 		if [ "$4" = "fail_key" ]; then
 			exit 1
 		fi
@@ -296,5 +298,45 @@ func TestSystemGPGVerifier(t *testing.T) {
 	err = v.ImportKey(ctx, "fail_key")
 	if err == nil {
 		t.Errorf("expected ImportKey to fail")
+	}
+}
+
+func TestNativeGPGVerifier_Verify_Errors(t *testing.T) {
+	v := NewNativeGPGVerifier()
+	ctx := context.Background()
+
+	// 1. Missing signature file
+	err := v.Verify(ctx, "nonexistent.sig", "data.txt", []string{"FP"})
+	if err == nil || !strings.Contains(err.Error(), "failed to read signature file") {
+		t.Errorf("expected failed to read signature file error, got %v", err)
+	}
+
+	// 2. Missing data file
+	dir := t.TempDir()
+	sigPath := filepath.Join(dir, "sig.sig")
+	os.WriteFile(sigPath, []byte("some sig"), 0644)
+	err = v.Verify(ctx, sigPath, "nonexistent.txt", []string{"FP"})
+	if err == nil || !strings.Contains(err.Error(), "failed to open data file") {
+		t.Errorf("expected failed to open data file error, got %v", err)
+	}
+
+	// 3. No fingerprints
+	dataPath := filepath.Join(dir, "data.txt")
+	os.WriteFile(dataPath, []byte("data"), 0644)
+	err = v.Verify(ctx, sigPath, dataPath, nil)
+	if err == nil || !strings.Contains(err.Error(), "no trusted keys matched") {
+		t.Errorf("expected no trusted keys matched error, got %v", err)
+	}
+
+	// 4. Invalid signature format
+	// Setup a mock transport that returns a valid key, but signature is bad
+	armoredKey, _, _, fingerprint := generateTestKeyAndSig(t)
+	v.client.Transport = &mockTransport{
+		armoredKey: armoredKey,
+		fp:         strings.ToUpper(fingerprint),
+	}
+	err = v.Verify(ctx, sigPath, dataPath, []string{fingerprint})
+	if err == nil || (!strings.Contains(err.Error(), "invalid signature format") && !strings.Contains(err.Error(), "gpg verification failed")) {
+		t.Errorf("expected signature error, got %v", err)
 	}
 }

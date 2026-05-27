@@ -83,7 +83,7 @@ build = """
 func TestFormatFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	tomlFile := filepath.Join(tmpDir, "test.toml")
-	
+
 	input := `
 [tools]
 node = "18"

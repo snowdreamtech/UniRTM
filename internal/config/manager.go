@@ -84,12 +84,12 @@ func NewConfigManager() ConfigManager {
 //   - The file format is not supported
 func (m *defaultConfigManager) Load(ctx context.Context, path string) (*Config, error) {
 	// Check if file exists
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	if _, err := OsStat(path); os.IsNotExist(err) {
 		return nil, fmt.Errorf("configuration file not found: %s", path)
 	}
 
 	// Read file contents
-	contentBytes, err := os.ReadFile(path)
+	contentBytes, err := OsReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read configuration file %s: %w", path, err)
 	}
@@ -155,7 +155,7 @@ func (m *defaultConfigManager) Load(ctx context.Context, path string) (*Config, 
 	}
 
 	templateCtx["file"] = func(path string) string {
-		data, err := os.ReadFile(path)
+		data, err := OsReadFile(path)
 		if err != nil {
 			return ""
 		}
@@ -163,7 +163,7 @@ func (m *defaultConfigManager) Load(ctx context.Context, path string) (*Config, 
 	}
 
 	templateCtx["exists"] = func(path string) bool {
-		_, err := os.Stat(path)
+		_, err := OsStat(path)
 		return err == nil
 	}
 
@@ -310,9 +310,9 @@ func (m *defaultConfigManager) LoadHierarchy(ctx context.Context) (*Config, erro
 
 	// Helper to check if a path is a ceiling
 	isCeiling := func(path string) bool {
-		absPath, _ := filepath.Abs(path)
+		absPath, _ := FilepathAbs(path)
 		for _, cp := range initialMerged.Settings.CeilingPaths {
-			absCP, _ := filepath.Abs(cp)
+			absCP, _ := FilepathAbs(cp)
 			if absPath == absCP {
 				return true
 			}
@@ -391,7 +391,7 @@ func (m *defaultConfigManager) LoadHierarchy(ctx context.Context) (*Config, erro
 
 // tryLoad attempts to load a config file if it exists and satisfies trust requirements.
 func (m *defaultConfigManager) tryLoad(ctx context.Context, path string, enforceTrust bool, initialSettings *Settings) (*Config, error) {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	if _, err := OsStat(path); os.IsNotExist(err) {
 		return nil, nil
 	}
 
@@ -400,7 +400,7 @@ func (m *defaultConfigManager) tryLoad(ctx context.Context, path string, enforce
 		trustedPaths := initialSettings.TrustedConfigPaths
 		isGloballyTrusted := false
 		for _, tp := range trustedPaths {
-			absTP, _ := filepath.Abs(tp)
+			absTP, _ := FilepathAbs(tp)
 			if path == absTP {
 				isGloballyTrusted = true
 				break

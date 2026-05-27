@@ -6,7 +6,6 @@ package config
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"os/exec"
 	"regexp"
 	"sort"
@@ -17,7 +16,7 @@ import (
 // It returns true if the file content was modified, and an error if one occurred.
 // If fmtCheck is true, it does not write changes back to the disk.
 func FormatFile(path string, fmtCheck bool) (bool, error) {
-	original, err := os.ReadFile(path)
+	original, err := OsReadFile(path)
 	if err != nil {
 		return false, err
 	}
@@ -49,7 +48,7 @@ func FormatFile(path string, fmtCheck bool) (bool, error) {
 	}
 
 	if !fmtCheck {
-		if err := os.WriteFile(path, formatted, 0o644); err != nil {
+		if err := OsWriteFile(path, formatted, 0o644); err != nil {
 			return false, err
 		}
 	}

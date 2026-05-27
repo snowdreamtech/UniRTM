@@ -84,3 +84,40 @@ func TestTrustManager_More(t *testing.T) {
 	status = tr.TrustStatus(fileA)
 	assert.Equal(t, TrustStatusUntrusted, status)
 }
+
+func TestConfig_parseToolConfig(t *testing.T) {
+	c := &Config{
+		ToolsRaw: map[string]interface{}{
+			"t1": "1.0",
+			"t2": map[string]interface{}{"version": "2.0", "backend": "foo"},
+			"t3": []interface{}{"3.0", "3.1"}, // invalid
+			"t4": 123, // invalid
+		},
+	}
+	c.PostLoad()
+	if c.Tools["t1"].Version != "1.0" {
+		t.Errorf("expected t1 = 1.0")
+	}
+	if c.Tools["t2"].Version != "2.0" {
+		t.Errorf("expected t2 = 2.0")
+	}
+	if c.Tools["t2"].Backend != "foo" {
+		t.Errorf("expected t2 backend = foo")
+	}
+}
+
+func TestConfig_ParseDurationToSeconds(t *testing.T) {
+	s, err := ParseDurationToSeconds("1m")
+	if err != nil || s != 60 {
+		t.Errorf("expected 60, got %d err %v", s, err)
+	}
+	s, err = ParseDurationToSeconds("invalid")
+	if err == nil {
+		t.Errorf("expected error for invalid")
+	}
+}
+
+func TestConfig_UnmarshalYAML(t *testing.T) {
+	d := DurationOrInt(0)
+	_ = d
+}

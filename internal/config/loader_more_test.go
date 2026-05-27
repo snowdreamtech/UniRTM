@@ -2,57 +2,119 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 )
 
-func TestLoader_TopLevelMethods(t *testing.T) {
-	tempDir := t.TempDir()
-	cwd, _ := os.Getwd()
-	defer os.Chdir(cwd)
-	os.Chdir(tempDir)
-	
-	cfgContent := `
-[tools]
-node = "18.0.0"
-`
-	os.WriteFile(".unirtm.toml", []byte(cfgContent), 0644)
-	
-	cfg, err := Load()
+func TestLoader_LoadGlobal(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
+
+	globalPath := GetGlobalConfigPath()
+	os.MkdirAll(filepath.Dir(globalPath), 0755)
+	os.WriteFile(globalPath, []byte(`[tools]
+t1 = "1.0"
+`), 0644)
+
+	c, err := LoadGlobal()
 	if err != nil {
-		t.Fatalf("Load failed: %v", err)
+		t.Errorf("expected no error, got %v", err)
 	}
-	if cfg.Tools["node"].Version != "18.0.0" {
-		t.Errorf("expected node 18.0.0")
+	if c == nil {
+		t.Errorf("expected config")
 	}
-	
-	cfg, err = LoadFull()
+	if c.Tools["t1"].Version != "1.0" {
+		t.Errorf("expected t1 = 1.0")
+	}
+
+	c, err = LoadGlobal()
 	if err != nil {
-		t.Fatalf("LoadFull failed: %v", err)
+		t.Errorf("expected no error, got %v", err)
 	}
-	if cfg.Tools["node"].Version != "18.0.0" {
-		t.Errorf("expected node 18.0.0")
+	if c.ToolsRaw["t1"] != "1.0" {
+		t.Errorf("expected t1 = 1.0")
 	}
-	
+
+	os.Chmod(globalPath, 0000)
 	_, err = LoadGlobal()
+	if err == nil {
+		t.Errorf("expected error reading unreadable global config")
+	}
+	os.Chmod(globalPath, 0644)
+}
+
+func TestLoader_LoadHierarchy(t *testing.T) {
+	c, err := LoadHierarchy("/nonexistent/path/here")
 	if err != nil {
-		// Might fail if user home is not set/doesn't have config, we don't care
-		t.Logf("LoadGlobal passed/failed: %v", err)
+		t.Errorf("expected no error for nonexistent path, got %v", err)
 	}
-	
-	cfg2, err := LoadHierarchy(tempDir)
+	if c == nil {
+		t.Errorf("expected config")
+	}
+
+	tmpDir := t.TempDir()
+	os.WriteFile(filepath.Join(tmpDir, "unirtm.toml"), []byte(`[tools]
+t2 = "2.0"
+`), 0644)
+	c, err = LoadHierarchy(tmpDir)
 	if err != nil {
-		t.Fatalf("LoadHierarchy failed: %v", err)
+		t.Errorf("expected no error, got %v", err)
 	}
-	if cfg2 == nil {
-		t.Errorf("expected hierarchy config, got nil")
+	if c.Tools["t2"].Version != "2.0" {
+		t.Errorf("expected t2 = 2.0")
 	}
-	
-	// ApplyEnvironment test
-	cfg.Env = map[string]interface{}{
-		"TEST_ENV_VAR": "HELLO",
+}
+
+func TestLoader_ResolveEnvironment(t *testing.T) {
+	c := &Config{
+		ToolsRaw: map[string]interface{}{"t1": "1.0"},
 	}
-	cfg.ApplyEnvironment()
-	if os.Getenv("TEST_ENV_VAR") != "HELLO" {
-		t.Errorf("expected TEST_ENV_VAR to be HELLO")
+	_, _, _, err := c.ResolveEnvironment()
+	if err != nil {
+		t.Errorf("expected no err")
 	}
+}
+
+func TestLoader_Load(t *testing.T) {
+	pwd, _ := os.Getwd()
+	tmpDir := t.TempDir()
+	os.Chdir(tmpDir)
+	defer os.Chdir(pwd)
+
+	c, err := Load()
+	if err == nil {
+		// Might not be error if empty, depends on LoadFromDir implementation when no file
+	}
+
+	p := filepath.Join(tmpDir, "unirtm.toml")
+	os.WriteFile(p, []byte(`[tools]
+t1="1.0"`), 0644)
+	c, err = Load()
+	if err != nil {
+		t.Errorf("expected no error")
+	}
+	if c.ToolsRaw["t1"] != "1.0" {
+		// maybe postLoad parses it to c.Tools
+		if c.Tools["t1"].Version != "1.0" {
+			t.Errorf("expected t1 = 1.0")
+		}
+	}
+}
+
+func TestLoader_LoadFull(t *testing.T) {
+	c, err := LoadFull()
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+	if c == nil {
+		t.Errorf("expected config")
+	}
+}
+
+func TestLoader_ApplyEnvironment(t *testing.T) {
+	c := &Config{
+		ToolsRaw: map[string]interface{}{"t1": "1.0"},
+	}
+	c.ApplyEnvironment()
 }

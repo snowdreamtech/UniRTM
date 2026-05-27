@@ -10,6 +10,14 @@ import (
 	"strings"
 )
 
+// Exported for testing override
+var (
+	OsUserHomeDir   = os.UserHomeDir
+	OsUserConfigDir = os.UserConfigDir
+	OsGetwd         = os.Getwd
+	RuntimeGOOS     = runtime.GOOS
+)
+
 // GetFSToolName returns a sanitized tool name for use in filesystem paths.
 // It implements Scheme B: provider-tool-name, replacing colons and slashes with hyphens.
 func GetFSToolName(tool, backend string) string {
@@ -39,13 +47,13 @@ func GetConfigDir() string {
 		return filepath.Join(configHome, "unirtm")
 	}
 
-	homeDir, err := os.UserHomeDir()
+	homeDir, err := OsUserHomeDir()
 	if err != nil {
 		return "./unirtm_config"
 	}
 
-	if runtime.GOOS == "windows" {
-		if appData, err := os.UserConfigDir(); err == nil {
+	if RuntimeGOOS == "windows" {
+		if appData, err := OsUserConfigDir(); err == nil {
 			return filepath.Join(appData, "unirtm")
 		}
 	}
@@ -67,12 +75,12 @@ func GetDataDir() string {
 		return filepath.Join(dataHome, "unirtm")
 	}
 
-	homeDir, err := os.UserHomeDir()
+	homeDir, err := OsUserHomeDir()
 	if err != nil {
 		return "./unirtm_data" // Fallback if home directory cannot be determined
 	}
 
-	if runtime.GOOS == "windows" {
+	if RuntimeGOOS == "windows" {
 		// Windows stores data in Local AppData
 		if localAppData := Get("LOCALAPPDATA"); localAppData != "" {
 			return filepath.Join(localAppData, "unirtm")
@@ -121,17 +129,17 @@ func GetCacheDir() string {
 		return filepath.Join(cacheHome, "unirtm")
 	}
 
-	homeDir, err := os.UserHomeDir()
+	homeDir, err := OsUserHomeDir()
 	if err != nil {
 		return "./unirtm_cache"
 	}
 
-	if runtime.GOOS == "darwin" {
+	if RuntimeGOOS == "darwin" {
 		// macOS standard cache directory
 		return filepath.Join(homeDir, "Library", "Caches", "unirtm")
 	}
 
-	if runtime.GOOS == "windows" {
+	if RuntimeGOOS == "windows" {
 		// Windows uses Local AppData for cache too, but usually in a 'cache' subfolder
 		return filepath.Join(GetDataDir(), "cache")
 	}
@@ -148,7 +156,7 @@ func GetLockFilePath() string {
 	if custom := Get("LOCK_FILE"); custom != "" {
 		return custom
 	}
-	wd, err := os.Getwd()
+	wd, err := OsGetwd()
 	if err != nil {
 		return "unirtm.lock"
 	}

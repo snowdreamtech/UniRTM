@@ -4,59 +4,86 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
-func TestAddLicense_More(t *testing.T) {
+func TestAddlicense_CheckLicenseInFiles(t *testing.T) {
 	tmpDir := t.TempDir()
-
-	// Create a test file
-	validFile := filepath.Join(tmpDir, "test.go")
-	os.WriteFile(validFile, []byte("package main\n"), 0644)
-
-	// Create a dir to skip
-	subDir := filepath.Join(tmpDir, "skipdir")
-	os.Mkdir(subDir, 0755)
-
-	// Create a file to skip by pattern
-	skipFile := filepath.Join(tmpDir, "test.ignored.go")
-	os.WriteFile(skipFile, []byte("package main\n"), 0644)
-
-	// Create a file to skip by extension
-	extFile := filepath.Join(tmpDir, "test.txt")
-	os.WriteFile(extFile, []byte("hello\n"), 0644)
-
+	
+	p := filepath.Join(tmpDir, "test.go")
+	os.WriteFile(p, []byte("package main\n\nfunc main() {}\n"), 0644)
+	
 	opts := Options{
-		Year:           "2026",
-		Holder:         "Test",
-		License:        "MIT",
-		IgnorePatterns: []string{"**/*.ignored.go"},
-		SkipExtensions: []string{".txt"},
-		Verbose:        true, // for print lines
+		License: "mit",
+		Holder: "test",
+		Year: "2026",
 	}
-
+	
+	missing, err := CheckLicenseInFiles([]string{tmpDir}, opts)
+	if err != nil {
+		t.Errorf("expected no error running CheckLicenseInFiles")
+	}
+	if missing == 0 {
+		t.Errorf("expected missing to be > 0 because license is missing")
+	}
+	
 	count, err := AddLicenseToFiles([]string{tmpDir}, opts)
-	assert.NoError(t, err)
-	assert.Equal(t, 1, count)
-
-	// check fileHasLicense
-	has, err := fileHasLicense(validFile)
-	assert.NoError(t, err)
-	assert.True(t, has)
-
-	// check fileHasLicense on not found
-	has, err = fileHasLicense(filepath.Join(tmpDir, "nonexistent.go"))
-	assert.Error(t, err)
-	assert.False(t, has)
-
-	// AddLicenseToFiles on non-existent dir to cover walk error
-	_, err = AddLicenseToFiles([]string{filepath.Join(tmpDir, "nonexistent")}, opts)
-	assert.NoError(t, err) // Walk ignores root if it's passed but yields error? wait AddLicense treats it as unreadable? 
+	if err != nil {
+		t.Errorf("expected no error adding license")
+	}
+	if count == 0 {
+		t.Errorf("expected count > 0")
+	}
+	
+	missing, err = CheckLicenseInFiles([]string{tmpDir}, opts)
+	if err != nil {
+		t.Errorf("expected no error checking license because license is added")
+	}
+	if missing != 0 {
+		t.Errorf("expected missing to be 0 after adding")
+	}
 }
 
-func TestTemplates_More(t *testing.T) {
-    // unknown template
-    _, err := fetchTemplate("unknown", "", 0)
-    assert.Error(t, err)
+func TestAddlicense_walk(t *testing.T) {
+	tmpDir := t.TempDir()
+	
+	// nested
+	sub := filepath.Join(tmpDir, "sub")
+	os.Mkdir(sub, 0755)
+	
+	os.WriteFile(filepath.Join(sub, "test.go"), []byte("package sub\n"), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "test.sh"), []byte("#!/bin/sh\n"), 0644)
+	os.WriteFile(filepath.Join(tmpDir, "test.txt"), []byte("some text\n"), 0644) // unhandled extension probably
+	
+	opts := Options{
+		License: "mit",
+		Holder: "test",
+		Year: "2026",
+	}
+	
+	count, _ := AddLicenseToFiles([]string{tmpDir}, opts)
+	if count != 2 {
+		t.Errorf("expected 2 files added, got %d", count)
+	}
+}
+
+func TestAddlicense_IgnorePatterns(t *testing.T) {
+	opts := Options{
+		License: "mit",
+		Holder: "test",
+		Year: "2026",
+		IgnorePatterns: []string{"[invalidpattern"}, // invalid pattern to trigger doublestar error
+	}
+	_, err := CheckLicenseInFiles([]string{"."}, opts)
+	if err == nil {
+		t.Errorf("expected error for invalid ignore pattern")
+	}
+	
+	opts.IgnorePatterns = []string{"**/*.go"} // Valid pattern
+	tmpDir := t.TempDir()
+	os.WriteFile(filepath.Join(tmpDir, "test.go"), []byte("package main\n"), 0644)
+	
+	count, _ := AddLicenseToFiles([]string{tmpDir}, opts)
+	if count != 0 {
+		t.Errorf("expected 0 because test.go is ignored, got %d", count)
+	}
 }

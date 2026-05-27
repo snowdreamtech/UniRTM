@@ -12,6 +12,13 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 )
 
+var (
+	newInstallationRepo = sqlite.NewInstallationRepository
+	newCacheRepo        = sqlite.NewCacheRepository
+	newAuditRepo        = sqlite.NewAuditRepository
+	newIndexRepo        = sqlite.NewIndexRepository
+)
+
 // TransactionManager manages database transactions
 // Validates Requirements: 2.8 (Use transactions for all write operations)
 type TransactionManager interface {
@@ -61,25 +68,25 @@ func (m *sqliteTransactionManager) Begin(ctx context.Context) (Transaction, erro
 	}
 
 	// Create transaction-scoped repositories
-	installationRepo, err := sqlite.NewInstallationRepository(tx)
+	installationRepo, err := newInstallationRepo(tx)
 	if err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("create installation repository: %w", err)
 	}
 
-	cacheRepo, err := sqlite.NewCacheRepository(tx)
+	cacheRepo, err := newCacheRepo(tx)
 	if err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("create cache repository: %w", err)
 	}
 
-	auditRepo, err := sqlite.NewAuditRepository(tx)
+	auditRepo, err := newAuditRepo(tx)
 	if err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("create audit repository: %w", err)
 	}
 
-	indexRepo, err := sqlite.NewIndexRepository(tx)
+	indexRepo, err := newIndexRepo(tx)
 	if err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("create index repository: %w", err)

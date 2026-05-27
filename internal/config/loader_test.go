@@ -40,11 +40,11 @@ func TestResolveEnvironment(t *testing.T) {
 		},
 	}
 
-	// Preset RM_VAR in env to test removal (we don't actually check os.Environ here, 
+	// Preset RM_VAR in env to test removal (we don't actually check os.Environ here,
 	// but we check the returned resolved map)
-	
+
 	resolved, sources, redacted, err := c.ResolveEnvironment()
-	
+
 	if err == nil {
 		t.Error("expected error for required variable REQ_VAR, but got nil")
 	}
@@ -102,7 +102,7 @@ func TestResolveEnvironment(t *testing.T) {
 	if !foundSource {
 		t.Error("expected /etc/profile in sources slice")
 	}
-	
+
 	path := resolved["PATH"]
 	if !stringsContainsAll(path, "/usr/local/bin", "/opt/bin") {
 		t.Errorf("expected PATH to contain /usr/local/bin and /opt/bin, got %s", path)
@@ -126,7 +126,7 @@ func stringsContains(s, sub string) bool {
 func TestLoadFromDir(t *testing.T) {
 	tmpDir := t.TempDir()
 	tomlPath := filepath.Join(tmpDir, "unirtm.toml")
-	
+
 	content := `
 [tools]
 node = "18"
@@ -147,7 +147,7 @@ node = "18"
 	if cfg.Tools["node"].Version != "18" {
 		t.Errorf("expected node=18, got %v", cfg.Tools["node"].Version)
 	}
-	
+
 	// Test failure on empty dir
 	emptyDir := t.TempDir()
 	_, err = LoadFromDir(emptyDir)
