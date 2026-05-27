@@ -1,0 +1,8 @@
+get = 'verbose'
+verbose = 'true'
+
+
+[tools]
+node = "20"
+[settings]
+verbose = 'true'
