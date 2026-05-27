@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestGemProvider_Interface(t *testing.T) {
@@ -58,4 +60,22 @@ func TestGemProvider_Install(t *testing.T) {
 	if err != nil {
 		t.Fatalf("install failed: %v", err)
 	}
+}
+
+func TestGemProvider_findGem(t *testing.T) {
+	tmpData := t.TempDir()
+	os.Setenv("UNIRTM_DATA_DIR", tmpData)
+	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	
+	p := NewGemProvider()
+	
+	// Create fake gem installation
+	gemDir := filepath.Join(tmpData, "installs", "ruby", "3.2.2", "bin")
+	os.MkdirAll(gemDir, 0755)
+	gemPath := filepath.Join(gemDir, "gem")
+	os.WriteFile(gemPath, []byte("fake binary"), 0755)
+	
+	found, err := p.findGem()
+	require.NoError(t, err)
+	require.Equal(t, gemPath, found)
 }

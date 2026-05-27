@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestCargoProvider_Interface(t *testing.T) {
@@ -58,4 +60,22 @@ func TestCargoProvider_Install(t *testing.T) {
 	if err != nil {
 		t.Fatalf("install failed: %v", err)
 	}
+}
+
+func TestCargoProvider_findCargo(t *testing.T) {
+	tmpData := t.TempDir()
+	os.Setenv("UNIRTM_DATA_DIR", tmpData)
+	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	
+	p := NewCargoProvider()
+	
+	// Create fake rust installation
+	rustDir := filepath.Join(tmpData, "installs", "rust", "1.70.0", "bin")
+	os.MkdirAll(rustDir, 0755)
+	cargoPath := filepath.Join(rustDir, "cargo")
+	os.WriteFile(cargoPath, []byte("fake binary"), 0755)
+	
+	found, err := p.findCargo()
+	require.NoError(t, err)
+	require.Equal(t, cargoPath, found)
 }

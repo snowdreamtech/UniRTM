@@ -44,3 +44,58 @@ func TestForgejoBackend_ResolveVersion(t *testing.T) {
 		t.Errorf("expected version '1.0.0', got %s", info.Version)
 	}
 }
+
+func TestForgejoBackend_ListVersions(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`[
+			{"tag_name":"v2.0.0","assets":[{"name":"tool-linux-amd64.tar.gz","browser_download_url":"https://example.com/download2"}]},
+			{"tag_name":"v1.0.0","assets":[{"name":"tool-linux-amd64.tar.gz","browser_download_url":"https://example.com/download"}]}
+		]`))
+	}))
+	defer server.Close()
+
+	b := &ForgejoBackend{
+		client:  server.Client(),
+		baseURL: server.URL,
+	}
+
+	ctx := context.Background()
+	p := Platform{OS: "linux", Arch: "amd64"}
+
+	versions, err := b.ListVersions(ctx, "owner/repo", p)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(versions) != 2 {
+		t.Fatalf("expected 2 versions, got %d", len(versions))
+	}
+	if versions[0].Version != "2.0.0" {
+		t.Errorf("expected 2.0.0, got %s", versions[0].Version)
+	}
+}
+
+func TestForgejoBackend_Properties(t *testing.T) {
+	b := NewForgejoBackend()
+	if b.Dependencies() != nil {
+		t.Errorf("expected nil dependencies")
+	}
+	if !b.SupportsChecksum() || !b.SupportsGPG() {
+		t.Errorf("expected checksum and gpg support")
+	}
+	if b.AttestationType() != "SLSA" || b.GetAttestationType() != "SLSA" {
+		t.Errorf("expected SLSA attestation")
+	}
+	if b.GetClient() == nil {
+		t.Errorf("expected non-nil client")
+	}
+	if !b.IsRecommended() || !b.IsScriptless() || !b.IsStable() {
+		t.Errorf("expected true for boolean properties")
+	}
+	if b.SupportsOffline() {
+		t.Errorf("expected false for SupportsOffline")
+	}
+	if b.GetReach() != "Large" {
+		t.Errorf("expected Large for Reach")
+	}
+}

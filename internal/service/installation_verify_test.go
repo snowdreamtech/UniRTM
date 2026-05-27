@@ -27,4 +27,15 @@ func Test_tryVerifyProvenance(t *testing.T) {
 	status, err = tryVerifyProvenance(context.Background(), "unknown", "node", "/tmp/some-nonexistent-path")
 	require.NoError(t, err)
 	require.Equal(t, "not_applicable", status)
+
+
+	// Test github backend with non-existent file to trigger error
+	status, err = tryVerifyProvenance(context.Background(), "github", "foo/bar", "/tmp/non-existent-artifact.tar.gz")
+	require.Error(t, err)
+	require.Equal(t, "failed", status)
+
+	// Test gitlab backend with non-existent file to trigger error
+	status, err = tryVerifyProvenance(context.Background(), "gitlab", "foo/bar", "/tmp/non-existent-artifact.tar.gz")
+	require.Error(t, err)
+	require.Equal(t, "failed", status)
 }

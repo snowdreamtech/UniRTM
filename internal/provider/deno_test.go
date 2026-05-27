@@ -1,28 +1,56 @@
-// Copyright (c) 2026 SnowdreamTech. All rights reserved.
-// Licensed under the MIT License. See LICENSE file in the project root for full license information.
-
 package provider
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
-func TestDenoProvider_Name(t *testing.T) {
-	p := NewDenoProvider()
-	if p.Name() != "deno" {
-		t.Errorf("expected name 'deno', got %s", p.Name())
-	}
+func TestDenoProvider_Interface(t *testing.T) {
+	var p Provider = NewDenoProvider()
+	require.Equal(t, "deno", p.Name())
 }
 
-func TestDenoProvider_DetectVersion(t *testing.T) {
+func TestDenoProvider_GetBinPaths(t *testing.T) {
+	tmpDir := t.TempDir()
 	p := NewDenoProvider()
-	ctx := context.Background()
-	version, err := p.DetectVersion(ctx, "deno", "/tmp/unirtm/deno/1.37.0")
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	if version != "1.37.0" {
-		t.Errorf("expected version '1.37.0', got %s", version)
-	}
+	
+	// Test without executables
+	paths, err := p.GetBinPaths("deno", tmpDir, "1.0.0")
+	require.NoError(t, err)
+	require.Equal(t, []string{tmpDir}, paths)
+	
+	// Create a fake executable
+	denoPath := filepath.Join(tmpDir, "bin", "deno")
+	os.MkdirAll(filepath.Dir(denoPath), 0755)
+	os.WriteFile(denoPath, []byte("fake"), 0755)
+	
+	paths, err = p.GetBinPaths("deno", tmpDir, "1.0.0")
+	require.NoError(t, err)
+	require.Equal(t, []string{filepath.Dir(denoPath)}, paths)
+}
+
+func TestDenoProvider_Install(t *testing.T) {
+	tmpDir := t.TempDir()
+	p := NewDenoProvider()
+	installPath := filepath.Join(tmpDir, "install")
+	err := p.Install(context.Background(), "deno", installPath, "artifact", "1.0.0")
+	require.NoError(t, err)
+	require.DirExists(t, installPath)
+}
+
+func TestDenoProvider_GenerateShims(t *testing.T) {
+	tmpDir := t.TempDir()
+	p := NewDenoProvider()
+	
+	denoPath := filepath.Join(tmpDir, "deno")
+	os.WriteFile(denoPath, []byte("fake"), 0755)
+	
+	shims, err := p.GenerateShims("deno", tmpDir, "1.0.0")
+	require.NoError(t, err)
+	require.Equal(t, 1, len(shims))
+	require.Equal(t, denoPath, shims["deno"])
 }

@@ -110,3 +110,40 @@ func TestAsdfBackend_GetDownloadInfo(t *testing.T) {
 		t.Errorf("expected 20.0.0, got %s", info.Version)
 	}
 }
+
+func TestAsdfBackend_EnsurePlugin_UpdateRegistryAndClone(t *testing.T) {
+	oldPath := os.Getenv("PATH")
+	os.Setenv("PATH", "/tmp:"+oldPath)
+	defer os.Setenv("PATH", oldPath)
+
+	b := NewAsdfBackend()
+	tmpDir := t.TempDir()
+	b.pluginsPath = tmpDir
+	b.registryPath = filepath.Join(tmpDir, "registry")
+
+	ctx := context.Background()
+
+	// 1. Should update registry and clone the plugin successfully
+	pluginDir, err := b.ensurePlugin(ctx, "fake-tool")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if pluginDir != filepath.Join(tmpDir, "fake-tool") {
+		t.Errorf("expected %s, got %s", filepath.Join(tmpDir, "fake-tool"), pluginDir)
+	}
+
+	// 2. Try again to hit the "already cloned" path
+	pluginDir2, err := b.ensurePlugin(ctx, "fake-tool")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if pluginDir2 != pluginDir {
+		t.Errorf("expected same dir")
+	}
+	
+	// 3. Try with an unknown tool which will fail the fallback git clone
+	_, err = b.ensurePlugin(ctx, "unknown-tool")
+	if err == nil {
+		t.Errorf("expected error for unknown tool clone")
+	}
+}

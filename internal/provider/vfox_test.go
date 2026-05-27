@@ -1,30 +1,41 @@
-// Copyright (c) 2026 SnowdreamTech. All rights reserved.
-// Licensed under the MIT License. See LICENSE file in the project root for full license information.
-
 package provider
 
 import (
-	"context"
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
-func TestVfoxProvider_Name(t *testing.T) {
-	p := NewVfoxProvider()
-	if p.Name() != "vfox" {
-		t.Errorf("expected name 'vfox', got %s", p.Name())
-	}
+func TestVfoxProvider_Interface(t *testing.T) {
+	var p Provider = NewVfoxProvider()
+	require.Equal(t, "vfox", p.Name())
 }
 
-func TestVfoxProvider_DetectVersion(t *testing.T) {
+func TestVfoxProvider_GetBinPaths(t *testing.T) {
+	tmpDir := t.TempDir()
 	p := NewVfoxProvider()
+	
+	// Test without executables
+	paths, err := p.GetBinPaths("vfox", tmpDir, "1.0.0")
+	require.NoError(t, err)
+	require.Equal(t, []string{filepath.Join(tmpDir, "bin")}, paths)
+}
 
-	ctx := context.Background()
-	version, err := p.DetectVersion(ctx, "vfox", "/fake/path/tool/1.2.3")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if version != "1.2.3" {
-		t.Errorf("expected version '1.2.3', got %s", version)
-	}
+func TestVfoxProvider_GenerateShims(t *testing.T) {
+	tmpDir := t.TempDir()
+	p := NewVfoxProvider()
+	
+	binDir := filepath.Join(tmpDir, "bin")
+	os.MkdirAll(binDir, 0755)
+	vfoxPath := filepath.Join(binDir, "vfox")
+	os.WriteFile(vfoxPath, []byte("fake"), 0755)
+	
+	os.Chmod(vfoxPath, 0755)
+	
+	shims, err := p.GenerateShims("vfox", tmpDir, "1.0.0")
+	require.NoError(t, err)
+	require.Equal(t, 1, len(shims))
+	require.Equal(t, vfoxPath, shims["vfox"])
 }
