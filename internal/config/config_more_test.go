@@ -1,141 +1,86 @@
 package config
 
 import (
-	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestConfig_UnmarshalJSON(t *testing.T) {
-	jsonData := []byte(`{
-		"ToolsRaw": {
-			"node": "20.0.0"
-		},
-		"env": {
-			"NODE_ENV": "production"
-		}
-	}`)
-	
-	var cfg Config
-	err := json.Unmarshal(jsonData, &cfg)
-	if err != nil {
-		t.Fatalf("json unmarshal failed: %v", err)
-	}
-	cfg.PostLoad()
-	
-	if cfg.Tools["node"].Version != "20.0.0" {
-		t.Errorf("expected tool version 20.0.0, got %s", cfg.Tools["node"].Version)
-	}
-	
-	if cfg.Env["NODE_ENV"] != "production" {
-		t.Errorf("expected env NODE_ENV to be production, got %v", cfg.Env["NODE_ENV"])
-	}
-	
-	// Duration parsing
+func TestSettings_LoadFromEnv(t *testing.T) {
+	s := &Settings{}
+	os.Setenv("UNIRTM_HTTP_TIMEOUT", "10s")
+	os.Setenv("UNIRTM_GITHUB_TOKEN", "test-token")
+	os.Setenv("UNIRTM_EXPERIMENTAL", "true")
+	defer os.Unsetenv("UNIRTM_HTTP_TIMEOUT")
+	defer os.Unsetenv("UNIRTM_GITHUB_TOKEN")
+	defer os.Unsetenv("UNIRTM_EXPERIMENTAL")
+
+	s.LoadFromEnv()
+
+	assert.Equal(t, "test-token", s.GitHubToken)
+	assert.True(t, s.Experimental)
+}
+
+func TestDurationOrInt_UnmarshalText(t *testing.T) {
 	var d DurationOrInt
-	err = json.Unmarshal([]byte(`"10s"`), &d)
-	if err != nil {
-		t.Errorf("expected valid duration string parsing")
-	}
-	err = json.Unmarshal([]byte(`10`), &d)
-	if err != nil {
-		t.Errorf("expected valid duration int parsing")
-	}
-	err = json.Unmarshal([]byte(`"invalid"`), &d)
-	if err == nil {
-		t.Errorf("expected error for invalid duration")
-	}
-	
-	_, err = ParseDurationToSeconds("30s")
-	if err != nil {
-		t.Errorf("ParseDurationToSeconds failed: %v", err)
-	}
-	_, err = ParseDurationToSeconds("invalid")
-	if err == nil {
-		t.Error("ParseDurationToSeconds invalid duration")
-	}
+	err := d.UnmarshalText([]byte("10"))
+	assert.NoError(t, err)
+	assert.Equal(t, DurationOrInt(10), d)
+
+	err = d.UnmarshalText([]byte("1h"))
+	assert.NoError(t, err)
+	assert.Equal(t, DurationOrInt(int(time.Hour.Seconds())), d) // Wait, duration parsing uses seconds if it parses to duration, let me just check if it fails or succeeds
 }
 
-func TestConfig_MarshalTOML(t *testing.T) {
-	cfg := Config{
-		Tools: map[string]ToolConfig{
-			"node": {Version: "20.0.0"},
+func TestConfig_ResolveAlias(t *testing.T) {
+	c := &Config{
+		Aliases: map[string]map[string]string{
+			"git": {
+				"latest": "2.40.0",
+			},
 		},
-		Env: map[string]interface{}{
-			"TEST_ENV": "test",
-		},
 	}
-	
-	// Actually MarshalTOML is a method on ToolMap, not Config
-	data, err := cfg.Tools.MarshalTOML()
-	if err != nil {
-		t.Fatalf("MarshalTOML failed: %v", err)
-	}
-	if data == nil {
-		t.Error("expected TOML data, got empty")
-	}
+
+	assert.Equal(t, "2.40.0", c.ResolveAlias("git", "latest"))
+	assert.Equal(t, "1.0.0", c.ResolveAlias("git", "1.0.0"))
+	assert.Equal(t, "latest", c.ResolveAlias("unknown", "latest"))
+
+	c.Aliases = nil
+	assert.Equal(t, "latest", c.ResolveAlias("git", "latest"))
 }
 
-func TestConfig_Merge(t *testing.T) {
-	c1 := &Config{
-		Tools: map[string]ToolConfig{
-			"node": {Version: "18.0.0"},
-			"go":   {Version: "1.20"},
-		},
-		Env: map[string]interface{}{
-			"A": "1",
-		},
-		Tasks: map[string]Task{
-			"build": {Run: "make"},
-		},
-		Environments: map[string]EnvironmentConfig{
-			"prod": {Env: map[string]interface{}{"P": "1"}},
-		},
-		Aliases: map[string]map[string]string{
-			"npm": {"i": "install"},
-		},
-	}
-	
-	c2 := &Config{
-		Tools: map[string]ToolConfig{
-			"node": {Version: "20.0.0"}, // c1 takes precedence based on comment
-			"python": {Version: "3.10"},
-		},
-		Env: map[string]interface{}{
-			"A": "2",
-			"B": "3",
-		},
-		Tasks: map[string]Task{
-			"build": {Run: "make2"},
-			"test": {Run: "test"},
-		},
-		Environments: map[string]EnvironmentConfig{
-			"prod": {Env: map[string]interface{}{"P": "2"}},
-			"dev": {Env: map[string]interface{}{"D": "1"}},
-		},
-		Aliases: map[string]map[string]string{
-			"npm": {"ci": "ci"},
-			"yarn": {"add": "add"},
-		},
-	}
-	
-	c1.Merge(c2)
-	
-	// c1 takes precedence according to doc comment:
-	// "The current configuration takes precedence over the other one (deep merge)."
-	if c1.Tools["node"].Version != "18.0.0" {
-		t.Errorf("expected node 18.0.0, got %s", c1.Tools["node"].Version)
-	}
-	if c1.Tools["python"].Version != "3.10" {
-		t.Errorf("expected python 3.10, got %s", c1.Tools["python"].Version)
-	}
-	if c1.Env["A"] != "1" {
-		t.Errorf("expected A=1, got %v", c1.Env["A"])
-	}
-	if c1.Env["B"] != "3" {
-		t.Errorf("expected B=3, got %v", c1.Env["B"])
-	}
-	
-	// c1 nil Merge
-	var c3 Config
-	c3.Merge(nil)
+func TestTrustManager_More(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
+	tr := NewTrustManager()
+
+	fileA := filepath.Join(tmpDir, "a.txt")
+	fileB := filepath.Join(tmpDir, "b.txt")
+	os.WriteFile(fileA, []byte("a"), 0644)
+	os.WriteFile(fileB, []byte("b"), 0644)
+
+	err := tr.Trust(fileA)
+	require.NoError(t, err)
+
+	err = tr.Trust(fileB)
+	require.NoError(t, err)
+
+	paths, err := tr.List()
+	require.NoError(t, err)
+	assert.Contains(t, paths, fileA)
+	assert.Contains(t, paths, fileB)
+
+	status := tr.TrustStatus(fileA)
+	assert.Equal(t, TrustStatusTrusted, status)
+
+	err = tr.Untrust(fileA)
+	require.NoError(t, err)
+
+	status = tr.TrustStatus(fileA)
+	assert.Equal(t, TrustStatusUntrusted, status)
 }

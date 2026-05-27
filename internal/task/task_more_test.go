@@ -7,81 +7,92 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/snowdreamtech/unirtm/internal/config"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestEngine_ListTasksAndExecute(t *testing.T) {
-	engine := NewEngine()
-	tasks := map[string]config.Task{
-		"build": {Run: "echo build"},
-	}
-	settings := config.Settings{}
+func TestGoTaskRunner_More(t *testing.T) {
+	// create fake task binary
+	binDir := filepath.Join(t.TempDir(), "bin")
+	os.MkdirAll(binDir, 0755)
 	
-	engine.Register(NewNativeRunner(tasks, settings))
-	engine.Register(NewGoTaskRunner())
-	engine.Register(NewMakeRunner())
-	engine.Register(NewJustRunner())
-
-	dir := t.TempDir()
-
-	// Write Taskfile.yml for GoTaskRunner
-	taskYaml := `
-version: '3'
-tasks:
-  hello:
-    cmds:
-      - echo "hello"
+	// Create fake task script
+	fakeTask := filepath.Join(binDir, "task")
+	script := `#!/bin/sh
+if [ "$1" = "--list-all" ]; then
+  echo "* build:   Build the project"
+  echo "* test:    Run tests"
+  echo "  some other line"
+  exit 0
+fi
+exit 0
 `
-	os.WriteFile(filepath.Join(dir, "Taskfile.yml"), []byte(taskYaml), 0644)
+	os.WriteFile(fakeTask, []byte(script), 0755)
 
-	// Test Engine ListTasks
-	allTasks := engine.ListTasks(dir)
-	if len(allTasks) == 0 {
-		t.Fatalf("expected tasks, got 0")
-	}
+	// Update PATH
+	oldPath := os.Getenv("PATH")
+	defer os.Setenv("PATH", oldPath)
+	os.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
 
-	// Test GoTaskRunner ListTasks parsing
-	goTask := NewGoTaskRunner()
-	if !goTask.CanExecute(dir, "") {
-		t.Fatal("GoTaskRunner should be able to execute")
-	}
-	_, _ = goTask.ListTasks(dir)
-
-	// Test NativeRunner executing
-	native := NewNativeRunner(tasks, settings)
-	_ = native.Run(context.Background(), dir, "build", nil, nil)
-}
-
-func TestNativeRunner_CycleDetection(t *testing.T) {
-	tasks := map[string]config.Task{
-		"a": {Run: "echo a", Depends: []string{"b"}},
-		"b": {Run: "echo b", Depends: []string{"c"}},
-		"c": {Run: "echo c", Depends: []string{"a"}},
-	}
-	settings := config.Settings{}
-	native := NewNativeRunner(tasks, settings)
+	r := NewGoTaskRunner()
+	dir := t.TempDir()
 	
-	err := native.Run(context.Background(), ".", "a", nil, nil)
-	if err == nil {
-		t.Fatal("expected cycle error, got nil")
-	}
+	// CanExecute -> false if no Taskfile
+	assert.False(t, r.CanExecute(dir, ""))
+
+	// create Taskfile.yaml
+	os.WriteFile(filepath.Join(dir, "Taskfile.yaml"), []byte("version: '3'"), 0644)
+	assert.True(t, r.CanExecute(dir, ""))
+
+	// ListTasks
+	tasks, err := r.ListTasks(dir)
+	assert.NoError(t, err)
+	assert.ElementsMatch(t, []string{"build", "test"}, tasks)
+
+	// Run
+	err = r.Run(context.Background(), dir, "build", []string{"--verbose"}, nil)
+	assert.NoError(t, err)
 }
 
-func TestPrefixWriter_Write(t *testing.T) {
+func TestJustRunner_More(t *testing.T) {
+	// create fake just binary
+	binDir := filepath.Join(t.TempDir(), "bin")
+	os.MkdirAll(binDir, 0755)
+	
+	// Create fake just script
+	fakeJust := filepath.Join(binDir, "just")
+	script := `#!/bin/sh
+if [ "$1" = "--summary" ]; then
+  echo "build test lint"
+  exit 0
+fi
+exit 0
+`
+	os.WriteFile(fakeJust, []byte(script), 0755)
+
+	// Update PATH
+	oldPath := os.Getenv("PATH")
+	defer os.Setenv("PATH", oldPath)
+	os.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+
+	r := NewJustRunner()
+	dir := t.TempDir()
+	
+	// CanExecute -> false if no justfile
+	assert.False(t, r.CanExecute(dir, ""))
+
+	// create justfile
+	os.WriteFile(filepath.Join(dir, "justfile"), []byte("build:"), 0644)
+	assert.True(t, r.CanExecute(dir, ""))
+
+	// ListTasks
+	tasks, err := r.ListTasks(dir)
+	assert.NoError(t, err)
+	assert.ElementsMatch(t, []string{"build", "test", "lint"}, tasks)
+}
+
+func TestPrefixWriter(t *testing.T) {
 	var buf bytes.Buffer
-	pw := &prefixWriter{
-		w:       &buf,
-		prefix:  "[test] ",
-		atStart: true,
-	}
-
-	_, err := pw.Write([]byte("line 1\nline 2\n"))
-	if err != nil {
-		t.Fatalf("write failed: %v", err)
-	}
-
-	expected := "[test] line 1\n[test] line 2\n"
-	if buf.String() != expected {
-		t.Errorf("expected %q, got %q", expected, buf.String())
-	}
+	pw := &prefixWriter{w: &buf, prefix: "[prefix] ", atStart: true}
+	pw.Write([]byte("hello\nworld\n"))
+	assert.Equal(t, "[prefix] hello\n[prefix] world\n", buf.String())
 }

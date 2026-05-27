@@ -84,3 +84,16 @@ func TestDefaultTransport(t *testing.T) {
 		t.Error("expected non-nil proxy func")
 	}
 }
+
+func TestDisableHTTP2_Nil(t *testing.T) {
+	// Should not panic
+	DisableHTTP2(nil)
+}
+
+func TestDisableHTTP2_NoTLS(t *testing.T) {
+	trans := &http.Transport{}
+	DisableHTTP2(trans)
+	if trans.TLSClientConfig == nil {
+		t.Error("expected TLSClientConfig to be initialized")
+	}
+}

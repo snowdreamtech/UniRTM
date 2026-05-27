@@ -7,7 +7,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/repository"
 )
@@ -153,22 +152,4 @@ func (r *AuditRepository) Close() error {
 	return nil
 }
 
-// buildQueryWithFilters is a helper to build dynamic queries (not used in current implementation)
-// Kept for reference if more complex query building is needed
-func buildQueryWithFilters(baseQuery string, filters map[string]interface{}) (string, []interface{}) {
-	var conditions []string
-	var args []interface{}
 
-	for key, value := range filters {
-		if value != nil {
-			conditions = append(conditions, fmt.Sprintf("%s = ?", key))
-			args = append(args, value)
-		}
-	}
-
-	if len(conditions) > 0 {
-		baseQuery += " WHERE " + strings.Join(conditions, " AND ")
-	}
-
-	return baseQuery, args
-}

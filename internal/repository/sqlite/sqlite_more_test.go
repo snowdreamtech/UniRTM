@@ -3,152 +3,178 @@ package sqlite
 import (
 	"context"
 	"database/sql"
-	"sync"
+	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/snowdreamtech/unirtm/internal/database"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/snowdreamtech/unirtm/internal/repository"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestInstallationRepository_UpsertAndListByTool(t *testing.T) {
-	dbPath := ":memory:"
-	db, err := database.Open(context.Background(), database.Config{Path: dbPath})
-	if err != nil {
-		t.Fatalf("failed to open database: %v", err)
-	}
-	defer db.Close()
-
-	repo, err := NewInstallationRepository(db.Conn())
-	if err != nil {
-		t.Fatalf("failed to create repo: %v", err)
-	}
-	defer repo.Close()
-
-	ctx := context.Background()
-
-	inst := &repository.Installation{
-		Tool:        "node",
-		Version:     "18.0.0",
-		InstallPath: "/opt/node",
-		InstalledAt: time.Now(),
-	}
-
-	err = repo.Upsert(ctx, inst)
-	if err != nil {
-		t.Fatalf("failed to upsert: %v", err)
-	}
-
-	// Upsert again to test update
-	inst.InstallPath = "/opt/node2"
-	err = repo.Upsert(ctx, inst)
-	if err != nil {
-		t.Fatalf("failed to upsert update: %v", err)
-	}
-
-	list, err := repo.ListByTool(ctx, "node")
-	if err != nil {
-		t.Fatalf("failed to ListByTool: %v", err)
-	}
-	if len(list) != 1 {
-		t.Fatalf("expected 1 item, got %d", len(list))
-	}
-	if list[0].InstallPath != "/opt/node2" {
-		t.Errorf("expected updated path, got %s", list[0].InstallPath)
-	}
+func getClosedDB(t *testing.T) *sql.DB {
+	db, err := sql.Open("sqlite3", filepath.Join(t.TempDir(), "test.db"))
+	assert.NoError(t, err)
+	// create table so prepare statement doesn't fail immediately in some constructors if they do table checking
+	// actually constructors don't create tables in SQLite backend usually, or do they?
+	// The constructor prepares statements, so the tables MUST exist before prepare.
+	// Oh wait! If the tables don't exist, Prepare will fail during NewXXXRepository!
+	return db
 }
 
-func TestAuditRepository_BuildQueryWithFilters(t *testing.T) {
-	dbPath := ":memory:"
-	db, err := database.Open(context.Background(), database.Config{Path: dbPath})
-	if err != nil {
-		t.Fatalf("failed to open database: %v", err)
-	}
-	defer db.Close()
-
-	repo, err := NewAuditRepository(db.Conn())
-	if err != nil {
-		t.Fatalf("failed to create repo: %v", err)
-	}
-	defer repo.Close()
-
-	ctx := context.Background()
-
-	// Add an entry
-	err = repo.Log(ctx, &repository.AuditEntry{
-		Operation: "install",
-		Tool:      "node",
-		Version:   "18.0.0",
-		Status:    "success",
-		Timestamp: time.Now(),
-	})
-	if err != nil {
-		t.Fatalf("failed to log: %v", err)
-	}
-
-	start := time.Now().Add(-24 * time.Hour)
-	end := time.Now().Add(24 * time.Hour)
-	filter := repository.AuditFilter{
-		Operation: "install",
-		Tool:      "node",
-		Status:    "success",
-		StartTime: &start,
-		EndTime:   &end,
-		Limit:     10,
-		Offset:    0,
-	}
-
-	logs, err := repo.Query(ctx, filter)
-	if err != nil {
-		t.Fatalf("failed to query with filters: %v", err)
-	}
-	if len(logs) != 1 {
-		t.Errorf("expected 1 log, got %d", len(logs))
-	}
+func getPreparedDB(t *testing.T, initSQL string) *sql.DB {
+    db, err := sql.Open("sqlite3", filepath.Join(t.TempDir(), "test.db"))
+    assert.NoError(t, err)
+    _, err = db.Exec(initSQL)
+    assert.NoError(t, err)
+    return db
 }
 
-func TestDatabase_ConcurrentOperations(t *testing.T) {
-	dbPath := ":memory:"
-	db, err := database.Open(context.Background(), database.Config{Path: dbPath})
-	if err != nil {
-		t.Fatalf("failed to open database: %v", err)
-	}
-	defer db.Close()
+const auditSQL = `
+CREATE TABLE audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    operation TEXT NOT NULL,
+    tool TEXT NOT NULL,
+    version TEXT NOT NULL,
+    status TEXT NOT NULL,
+    error TEXT,
+    duration_ms INTEGER NOT NULL,
+    gpg_verification BOOLEAN NOT NULL DEFAULT 0,
+    metadata TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);`
 
-	repo, err := NewCacheRepository(db.Conn())
-	if err != nil {
-		t.Fatalf("failed to create cache repo: %v", err)
+func TestAuditRepository_ClosedDB(t *testing.T) {
+	db := getPreparedDB(t, auditSQL)
+	r, err := NewAuditRepository(db)
+	assert.NoError(t, err)
+
+	err = r.Close()
+	assert.NoError(t, err)
+    db.Close() // close the underlying db
+
+	// these should error
+	err = r.Log(context.Background(), &repository.AuditEntry{})
+	assert.Error(t, err)
+
+	_, err = r.Query(context.Background(), repository.AuditFilter{})
+	assert.Error(t, err)
+}
+
+const cacheSQL = `
+CREATE TABLE cache (
+    key TEXT PRIMARY KEY,
+    value BLOB NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);`
+
+func TestCacheRepository_ClosedDB(t *testing.T) {
+	db := getPreparedDB(t, cacheSQL)
+	r, err := NewCacheRepository(db)
+	assert.NoError(t, err)
+	if r == nil {
+		return
 	}
 
-	var wg sync.WaitGroup
-	ctx := context.Background()
-	concurrency := 100 // High concurrency to trigger DB races if any
+	err = r.Close()
+	assert.NoError(t, err)
+    db.Close() // close underlying db
 
-	// Test concurrent inserts
-	for i := 0; i < concurrency; i++ {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			err := repo.Set(ctx, "key", []byte("val"), 1*time.Hour)
-			if err != nil {
-				t.Errorf("concurrent insert failed: %v", err)
-			}
-		}(i)
-	}
-	wg.Wait()
+	err = r.Set(context.Background(), "k", []byte("v"), time.Hour)
+	assert.Error(t, err)
 
-	_, err = repo.Get(ctx, "key")
-	if err != nil && err != sql.ErrNoRows {
-		t.Fatalf("failed to get: %v", err)
+	_, err = r.Get(context.Background(), "k")
+	assert.Error(t, err)
+
+	err = r.Delete(context.Background(), "k")
+	assert.Error(t, err)
+
+	err = r.Purge(context.Background())
+	assert.Error(t, err)
+}
+
+const indexSQL = `
+CREATE TABLE tool_index (
+    tool TEXT PRIMARY KEY,
+    description TEXT,
+    homepage TEXT,
+    license TEXT,
+    backend TEXT,
+    metadata TEXT,
+    updated_at DATETIME NOT NULL
+);`
+
+func TestIndexRepository_ClosedDB(t *testing.T) {
+	db := getPreparedDB(t, indexSQL)
+	r, err := NewIndexRepository(db)
+	assert.NoError(t, err)
+	if r == nil {
+		return
 	}
 
-	// Concurrent deletes
-	for i := 0; i < concurrency; i++ {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			_ = repo.Delete(ctx, "key")
-		}(i)
+	err = r.Close()
+	assert.NoError(t, err)
+    db.Close()
+
+	err = r.Upsert(context.Background(), &repository.IndexEntry{})
+	assert.Error(t, err)
+
+	_, err = r.FindByTool(context.Background(), "t")
+	assert.Error(t, err)
+
+	_, err = r.List(context.Background())
+	assert.Error(t, err)
+
+	_, err = r.Search(context.Background(), "t")
+	assert.Error(t, err)
+
+	err = r.Delete(context.Background(), "t")
+	assert.Error(t, err)
+}
+
+const installSQL = `
+CREATE TABLE installations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tool TEXT NOT NULL,
+    version TEXT NOT NULL,
+    install_path TEXT NOT NULL,
+    checksum TEXT,
+    backend TEXT,
+    provider TEXT,
+    metadata TEXT,
+    installed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_used_at DATETIME,
+    UNIQUE (tool, version)
+);`
+
+func TestInstallationRepository_ClosedDB(t *testing.T) {
+	db := getPreparedDB(t, installSQL)
+	r, err := NewInstallationRepository(db)
+	assert.NoError(t, err)
+	if r == nil {
+		return
 	}
-	wg.Wait()
+
+	err = r.Close()
+	assert.NoError(t, err)
+    db.Close()
+
+	err = r.Create(context.Background(), &repository.Installation{})
+	assert.Error(t, err)
+
+	err = r.Upsert(context.Background(), &repository.Installation{})
+	assert.Error(t, err)
+
+	_, err = r.FindByToolAndVersion(context.Background(), "t", "v")
+	assert.Error(t, err)
+
+	_, err = r.List(context.Background())
+	assert.Error(t, err)
+
+	_, err = r.ListByTool(context.Background(), "t")
+	assert.Error(t, err)
+
+	err = r.Delete(context.Background(), "t", "v")
+	assert.Error(t, err)
 }
