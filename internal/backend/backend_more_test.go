@@ -49,8 +49,11 @@ func TestAllBackends_Properties(t *testing.T) {
 		_ = b.IsStable()
 		_ = b.SupportsOffline()
 
-		// Call the unimplemented methods to cover the errors
-		ctx := context.Background()
+		// Call the unimplemented methods to cover the errors.
+		// Use a canceled context so that if a method is actually implemented and makes network requests,
+		// it will fail immediately rather than hanging or retrying.
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel() // Cancel immediately
 		plat := Platform{}
 		_, _ = b.ListVersions(ctx, "", plat)
 		_, _ = b.ResolveVersion(ctx, "", "", plat)
