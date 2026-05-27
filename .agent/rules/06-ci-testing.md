@@ -80,6 +80,10 @@
   });
   ```
 
+- **Strict Environment Sandboxing (Zero Source Pollution)**: Tests **MUST NOT** generate temporary files, configuration fragments, or cache data in the project's source code directory, preventing Git index pollution.
+  - Always use language-provided temporary directory utilities (e.g., Go's `t.TempDir()`, Node's `fs.mkdtempSync`, Python's `tempfile.TemporaryDirectory`).
+  - Override critical path variables (e.g., `DATA_DIR`, `CONFIG_DIR`, `CACHE_DIR`) to point to the temporary sandbox directory, ensuring complete isolation of test artifacts.
+
 - **PII in test data is strictly prohibited**. Anonymize or synthesize any data derived from production. Treat synthetic test data containing realistic PII patterns with the same controls as real PII.
 - Use **Testcontainers** (or Docker Compose) for integration tests that require real databases, caches, or message queues — avoid mocking infrastructure at the integration level:
 

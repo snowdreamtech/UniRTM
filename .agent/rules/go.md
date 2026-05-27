@@ -189,6 +189,9 @@
   ```
 
 - Use **Testify** (`github.com/stretchr/testify`) for assertions: `require.NoError(t, err)` (fails immediately), `assert.Equal(t, expected, actual)` (continues on failure).
+- **Test Sandboxing & Environment Isolation**: Tests **MUST NOT** generate temporary files, config files, or cache data in the project's source code directory, preventing Git index pollution.
+  - Always use `t.TempDir()` to create a sandbox directory that is automatically cleaned up by the Go testing framework.
+  - Override critical path variables within tests (e.g., `t.Setenv("UNIRTM_DATA_DIR", tmpDir)`) to ensure all test artifacts remain strictly isolated.
 - Use **Testcontainers** for integration tests requiring real databases, Redis, Kafka, or other services. Spin up containers per-test-suite, not per-test.
 - Use **`net/http/httptest`** for HTTP handler tests without running a real server. Use `httptest.NewServer()` for full-server integration tests.
 - Generate mocks with **`mockery`** or **`gomock`** from interface definitions. Avoid hand-written mocks.
