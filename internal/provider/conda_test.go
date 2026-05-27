@@ -59,3 +59,36 @@ func TestCondaProvider_Install(t *testing.T) {
 		t.Fatalf("install failed: %v", err)
 	}
 }
+
+func TestCondaProvider_Install_CondaNotFound(t *testing.T) {
+	os.Setenv("PATH", "")
+	defer os.Unsetenv("PATH")
+
+	p := NewCondaProvider()
+	installPath := filepath.Join(t.TempDir(), "conda_install", "test_pkg")
+
+	err := p.Install(context.Background(), "test_pkg", installPath, "", "1.0.0")
+	if err == nil {
+		t.Fatalf("expected error when conda is not found")
+	}
+}
+
+func TestCondaProvider_ListExecutables(t *testing.T) {
+	p := NewCondaProvider()
+	tmpDir := t.TempDir()
+
+	binDir := filepath.Join(tmpDir, "bin")
+	os.MkdirAll(binDir, 0755)
+
+	os.WriteFile(filepath.Join(binDir, "dummy1"), []byte(""), 0755)
+	os.WriteFile(filepath.Join(binDir, "dummy2"), []byte(""), 0644)
+
+	exes, err := p.ListExecutables("test_pkg", tmpDir, "1.0.0")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(exes) != 1 {
+		t.Errorf("expected 1 executable, got %d", len(exes))
+	}
+}
+

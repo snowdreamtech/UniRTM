@@ -79,3 +79,35 @@ func TestDotnetProvider_findDotnet(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, dotnetPath, found)
 }
+
+func TestDotnetProvider_Install_DotnetNotFound(t *testing.T) {
+	os.Setenv("PATH", "")
+	defer os.Unsetenv("PATH")
+
+	p := NewDotnetProvider()
+	installPath := filepath.Join(t.TempDir(), "dotnet_install", "test_pkg")
+
+	err := p.Install(context.Background(), "test_pkg", installPath, "", "1.0.0")
+	if err == nil {
+		t.Fatalf("expected error when dotnet is not found")
+	}
+}
+
+func TestDotnetProvider_ListExecutables(t *testing.T) {
+	p := NewDotnetProvider()
+	tmpDir := t.TempDir()
+
+	binDir := filepath.Join(tmpDir, "bin") // Wait, dotnet usually returns bin or root dir?
+	os.MkdirAll(binDir, 0755)
+
+	os.WriteFile(filepath.Join(binDir, "dummy1"), []byte(""), 0755)
+	os.WriteFile(filepath.Join(binDir, "dummy2"), []byte(""), 0644)
+
+	exes, err := p.ListExecutables("test_pkg", tmpDir, "1.0.0")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(exes) != 1 {
+		t.Errorf("expected 1 executable, got %d", len(exes))
+	}
+}

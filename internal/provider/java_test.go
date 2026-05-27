@@ -5,6 +5,7 @@ package provider
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -63,3 +64,54 @@ func TestJavaProvider_DetectVersionError(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "failed to detect version"))
 }
+
+func TestJavaProvider_getJavaHome(t *testing.T) {
+	p := NewJavaProvider()
+	tmpDir := t.TempDir()
+
+	// Default case
+	home1 := p.getJavaHome(tmpDir)
+	assert.Equal(t, tmpDir, home1)
+
+	// macOS case
+	macOSPath := filepath.Join(tmpDir, "Contents", "Home", "bin")
+	err := os.MkdirAll(macOSPath, 0755)
+	assert.NoError(t, err)
+
+	home2 := p.getJavaHome(tmpDir)
+	assert.Equal(t, filepath.Join(tmpDir, "Contents", "Home"), home2)
+}
+
+func TestJavaProvider_DetectVersionSuccess(t *testing.T) {
+	p := NewJavaProvider()
+	tmpDir := t.TempDir()
+
+	binDir := filepath.Join(tmpDir, "bin")
+	err := os.MkdirAll(binDir, 0755)
+	assert.NoError(t, err)
+
+	javaPath := filepath.Join(binDir, "java")
+	if runtime.GOOS == "windows" {
+		javaPath += ".exe"
+	}
+
+	// Mock java output to stderr
+	mockJava := `#!/bin/sh
+echo 'openjdk version "17.0.8" 2023-07-18 LTS' >&2
+exit 0
+`
+	if runtime.GOOS == "windows" {
+		mockJava = `@echo off
+echo openjdk version "17.0.8" 2023-07-18 LTS 1>&2
+exit 0
+`
+	}
+	err = os.WriteFile(javaPath, []byte(mockJava), 0755)
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+	version, err := p.DetectVersion(ctx, "java", tmpDir)
+	assert.NoError(t, err)
+	assert.Equal(t, "17.0.8", version)
+}
+

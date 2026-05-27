@@ -54,3 +54,31 @@ func TestBunProvider_GenerateShims(t *testing.T) {
 	require.Equal(t, 1, len(shims))
 	require.Equal(t, bunPath, shims["bun"])
 }
+
+func TestBunProvider_ListExecutables(t *testing.T) {
+	tmpDir := t.TempDir()
+	p := NewBunProvider()
+
+	// Error path
+	_, err := p.ListExecutables("bun", "/fake/nonexistent/path/that/fails/walk", "1.0.0")
+	require.Error(t, err)
+
+	// Success path
+	bunPath := filepath.Join(tmpDir, "bun")
+	os.WriteFile(bunPath, []byte("fake"), 0755)
+
+	bunExePath := filepath.Join(tmpDir, "bun.exe")
+	os.WriteFile(bunExePath, []byte("fake"), 0755)
+
+	exes, err := p.ListExecutables("bun", tmpDir, "1.0.0")
+	require.NoError(t, err)
+	require.Len(t, exes, 2)
+}
+
+func TestBunProvider_DetectVersion(t *testing.T) {
+	p := NewBunProvider()
+	version, err := p.DetectVersion(context.Background(), "bun", "/fake/path/v1.0.0")
+	require.NoError(t, err)
+	require.Equal(t, "v1.0.0", version)
+}
+
