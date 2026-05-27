@@ -506,3 +506,102 @@ func TestHTTPDownloader_Download_CleanupOnFailure(t *testing.T) {
 	_, err = os.Stat(destination)
 	assert.True(t, os.IsNotExist(err), "Partial download should be cleaned up")
 }
+
+func TestHTTPDownloader_DownloadConcurrent(t *testing.T) {
+	content := []byte(strings.Repeat("0123456789", 500000)) // 5MB
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Accept-Ranges", "bytes")
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(content)))
+		if r.Method == http.MethodHead {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		
+		rangeHeader := r.Header.Get("Range")
+		if rangeHeader == "" {
+			w.WriteHeader(http.StatusOK)
+			w.Write(content)
+			return
+		}
+
+		// Handle range
+		var start, end int64
+		_, err := fmt.Sscanf(rangeHeader, "bytes=%d-%d", &start, &end)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if start < 0 || end >= int64(len(content)) || start > end {
+			w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+			return
+		}
+
+		w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, len(content)))
+		w.WriteHeader(http.StatusPartialContent)
+		w.Write(content[start : end+1])
+	}))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	destination := filepath.Join(tmpDir, "concurrent_test.txt")
+
+	downloader := download.NewHTTPDownloader()
+	opts := download.DefaultDownloadOptions()
+
+	err := downloader.Download(context.Background(), server.URL, destination, opts)
+	require.NoError(t, err)
+
+	downloaded, err := os.ReadFile(destination)
+	require.NoError(t, err)
+	assert.Equal(t, len(content), len(downloaded))
+	assert.Equal(t, content[:100], downloaded[:100])
+}
+
+func TestHTTPDownloader_VerifyGPGSignature_NoKeyring(t *testing.T) {
+	// Create test server
+	content := []byte("test file content")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(content)))
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(content)
+	}))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir) // keyring not found
+	
+	downloader := download.NewHTTPDownloader()
+	res := &download.GPGResult{}
+	err := downloader.Download(context.Background(), server.URL+"/file", filepath.Join(tmpDir, "dst"), download.DefaultDownloadOptions().WithVerifyGPG(true, res))
+	require.Error(t, err) // keyring not found error
+}
+
+func TestHTTPDownloader_VerifyGPGSignature_Skipped(t *testing.T) {
+	// Create test server
+	content := []byte("test file content")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, ".sig") || strings.HasSuffix(r.URL.Path, ".asc") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(content)))
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(content)
+	}))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	// Create a dummy keyring file so it passes the open check, but it might fail to parse keyring.
+	keyringPath := filepath.Join(tmpDir, "keyring.gpg")
+	os.WriteFile(keyringPath, []byte{}, 0644)
+
+	downloader := download.NewHTTPDownloader()
+	res := &download.GPGResult{}
+	opts := download.DefaultDownloadOptions().WithVerifyGPG(true, res)
+	
+	err := downloader.Download(context.Background(), server.URL+"/file", filepath.Join(tmpDir, "file"), opts)
+	require.NoError(t, err)
+	assert.Equal(t, "Skipped", res.Status)
+}
