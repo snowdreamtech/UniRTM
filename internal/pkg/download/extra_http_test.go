@@ -44,6 +44,7 @@ func TestHTTPDownloader_CheckRedirect(t *testing.T) {
 	defer redirectServer.Close()
 
 	opts := DefaultDownloadOptions()
+	opts.MaxRetries = 1
 	opts.GitHubProxy = "https://proxy.example.com/"
 	dest := filepath.Join(t.TempDir(), "proxy.txt")
 	// This will fail because https://proxy.example.com/https://github.com/foo doesn't exist, but it will trigger the redirect logic

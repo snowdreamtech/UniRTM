@@ -669,7 +669,11 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 				resp, err := h.client.Do(req)
 				if err != nil {
 					backoff = jitterBackoff(backoff)
-					time.Sleep(backoff)
+					select {
+					case <-workerCtx.Done():
+						return
+					case <-time.After(backoff):
+					}
 					continue
 				}
 
@@ -684,7 +688,11 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 				if resp.StatusCode != http.StatusPartialContent && resp.StatusCode != http.StatusOK {
 					resp.Body.Close()
 					backoff = jitterBackoff(backoff)
-					time.Sleep(backoff)
+					select {
+					case <-workerCtx.Done():
+						return
+					case <-time.After(backoff):
+					}
 					continue
 				}
 
@@ -736,7 +744,11 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 				}
 
 				backoff = jitterBackoff(backoff)
-				time.Sleep(backoff)
+				select {
+				case <-workerCtx.Done():
+					return
+				case <-time.After(backoff):
+				}
 			}
 			// If we exhausted all retries for this chunk
 			errOnce.Do(func() { downloadErr = fmt.Errorf("thread %d failed after 15 retries", threadID) })
@@ -745,6 +757,13 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 	}
 
 	wg.Wait()
+	if downloadErr == nil {
+		if ctx.Err() != nil {
+			downloadErr = ctx.Err()
+		} else if atomic.LoadInt64(&downloadedBytes) != totalSize {
+			downloadErr = fmt.Errorf("concurrent download incomplete")
+		}
+	}
 	// Clean up file on failure
 	if downloadErr != nil {
 		_ = os.Remove(destination)
