@@ -472,6 +472,30 @@ func TestCacheManager_PurgeAll(t *testing.T) {
 		assert.NoError(t, err)
 		mockRepo.AssertExpectations(t)
 	})
+
+	t.Run("returns error when repository fails to purge all", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		mockRepo := new(MockCacheRepository)
+		mockAuditRepo := &MockAuditRepository{}
+
+		config := CacheManagerConfig{
+			CacheDir:     tmpDir,
+			MaxCacheSize: 1024 * 1024,
+		}
+
+		cm, err := NewCacheManager(mockRepo, mockAuditRepo, config)
+		require.NoError(t, err)
+
+		ctx := context.Background()
+
+		expectedErr := errors.New("database error")
+		mockRepo.On("Purge", ctx).Return(expectedErr)
+
+		err = cm.PurgeAll(ctx)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "database error")
+		mockRepo.AssertExpectations(t)
+	})
 }
 
 func TestCacheManager_GetStats(t *testing.T) {
@@ -650,5 +674,34 @@ func TestCacheManager_AutoCleanup(t *testing.T) {
 
 		// Verify Purge was not called
 		mockRepo.AssertNotCalled(t, "Purge", ctx)
+	})
+
+	t.Run("returns error when AutoCleanup fails due to db error", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		mockRepo := new(MockCacheRepository)
+		mockAuditRepo := &MockAuditRepository{}
+
+		config := CacheManagerConfig{
+			CacheDir:     tmpDir,
+			MaxCacheSize: 10, // 10 bytes
+		}
+
+		cm, err := NewCacheManager(mockRepo, mockAuditRepo, config)
+		require.NoError(t, err)
+
+		// Create a file that exceeds the threshold
+		testFile := filepath.Join(tmpDir, "large-file.txt")
+		err = os.WriteFile(testFile, []byte("this is a large file content"), 0644)
+		require.NoError(t, err)
+
+		ctx := context.Background()
+
+		expectedErr := errors.New("database error")
+		mockRepo.On("Purge", ctx).Return(expectedErr)
+
+		err = cm.AutoCleanup(ctx)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "database error")
+		mockRepo.AssertExpectations(t)
 	})
 }

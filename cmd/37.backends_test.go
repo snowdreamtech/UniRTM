@@ -32,3 +32,19 @@ func TestBackendEntry_Struct(t *testing.T) {
 	assert.True(t, e.SupportsChecksum)
 	assert.False(t, e.SupportsGPG)
 }
+
+func TestBackendsListRun(t *testing.T) {
+	err := backendsListCmd.RunE(backendsListCmd, []string{})
+	assert.NoError(t, err)
+}
+
+func TestBackendsInfoRun(t *testing.T) {
+	// Info on an existing backend
+	err := backendsInfoCmd.RunE(backendsInfoCmd, []string{"github"})
+	assert.NoError(t, err)
+
+	// Info on a non-existent backend
+	err = backendsInfoCmd.RunE(backendsInfoCmd, []string{"nonexistent-backend-1234"})
+	assert.Error(t, err)
+}
+

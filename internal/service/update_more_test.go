@@ -6,6 +6,7 @@ package service
 import (
 	"context"
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,6 +19,10 @@ import (
 )
 
 func TestUpdateManager_UpdateAll(t *testing.T) {
+	tempDataDir := t.TempDir()
+	os.Setenv("UNIRTM_DATA_DIR", tempDataDir)
+	defer os.Unsetenv("UNIRTM_DATA_DIR")
+
 	tests := []struct {
 		name          string
 		installations []*repository.Installation

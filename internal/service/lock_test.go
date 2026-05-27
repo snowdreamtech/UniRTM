@@ -136,3 +136,21 @@ func TestDefaultLockFilePath(t *testing.T) {
 		t.Error("expected non-empty path")
 	}
 }
+
+func TestLockService_backendForSpec(t *testing.T) {
+	opts := LockServiceOptions{}
+	ls, _ := NewLockService(opts)
+
+	_, err := ls.backendForSpec("tool", "mock")
+	if err == nil || err.Error() != "no backend registry configured" {
+		t.Errorf("expected no backend registry configured error, got: %v", err)
+	}
+
+	registry := backend.NewRegistry()
+	ls.SetBackendRegistry(registry)
+
+	_, err = ls.backendForSpec("tool", "non-existent")
+	if err == nil {
+		t.Error("expected error for non-existent backend")
+	}
+}

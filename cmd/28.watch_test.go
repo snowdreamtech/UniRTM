@@ -14,3 +14,28 @@ func TestWatchStructure(t *testing.T) {
 	assert.NotEmpty(t, watchCmd.Short, "watchCmd command short description should not be empty")
 	assert.True(t, watchCmd.Run != nil || watchCmd.RunE != nil, "Run or RunE function should be set for watchCmd")
 }
+
+func TestWatchIsMatched(t *testing.T) {
+	// 1. empty globs matches anything unless ignored
+	assert.True(t, isMatched("foo.txt", []string{}, []string{}))
+	
+	// 2. ignored
+	assert.False(t, isMatched("foo.txt", []string{}, []string{"*.txt"}))
+	
+	// 3. glob matched
+	assert.True(t, isMatched("foo.go", []string{"*.go"}, []string{}))
+	
+	// 4. glob not matched
+	assert.False(t, isMatched("foo.txt", []string{"*.go"}, []string{}))
+}
+
+func TestWatchClearScreen(t *testing.T) {
+	// Just executing for coverage
+	clearScreen()
+}
+
+func TestWatchKillCurrentCmd(t *testing.T) {
+	// Should not panic if cmd is nil
+	killCurrentCmd()
+}
+

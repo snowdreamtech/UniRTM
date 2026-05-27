@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -122,7 +123,11 @@ func (m *mockProvider) Name() string {
 }
 
 func (m *mockProvider) Install(ctx context.Context, tool string, installPath, artifactPath, version string) error {
-	return m.installErr
+	if m.installErr != nil {
+		return m.installErr
+	}
+	os.MkdirAll(installPath, 0755)
+	return nil
 }
 
 func (m *mockProvider) PostInstall(ctx context.Context, tool string, installPath, version string) error {
@@ -543,6 +548,10 @@ func TestUpdateManager_CheckForUpdates(t *testing.T) {
 // Test UpdateTool
 
 func TestUpdateManager_UpdateTool(t *testing.T) {
+	tempDataDir := t.TempDir()
+	os.Setenv("UNIRTM_DATA_DIR", tempDataDir)
+	defer os.Unsetenv("UNIRTM_DATA_DIR")
+
 	tests := []struct {
 		name          string
 		tool          string
@@ -646,9 +655,58 @@ func TestUpdateManager_UpdateTool(t *testing.T) {
 			wantSuccess: false,
 			wantErr:     true,
 		},
+		{
+			name:          "install provider fails",
+			tool:          "node",
+			targetVersion: "20.0.0",
+			installation: &repository.Installation{
+				Tool:        "node",
+				Version:     "18.0.0",
+				Backend:     "github",
+				InstallPath: "/opt/unirtm/tools/node/18.0.0",
+			},
+			backend: &mockUpdateBackend{
+				name: "github",
+				versions: map[string]*backend.VersionInfo{
+					"20.0.0": {
+						Version:     "20.0.0",
+						DownloadURL: "https://example.com/node-20.0.0.tar.gz",
+					},
+				},
+			},
+			provider:    &mockProvider{name: "node", installErr: errors.New("install error")},
+			downloader:  &mockDownloader{},
+			wantSuccess: false,
+			wantErr:     true,
+		},
+		{
+			name:          "post-install provider fails",
+			tool:          "node",
+			targetVersion: "20.0.0",
+			installation: &repository.Installation{
+				Tool:        "node",
+				Version:     "18.0.0",
+				Backend:     "github",
+				InstallPath: "/opt/unirtm/tools/node/18.0.0",
+			},
+			backend: &mockUpdateBackend{
+				name: "github",
+				versions: map[string]*backend.VersionInfo{
+					"20.0.0": {
+						Version:     "20.0.0",
+						DownloadURL: "https://example.com/node-20.0.0.tar.gz",
+					},
+				},
+			},
+			provider:    &mockProvider{name: "node", postInstallErr: errors.New("post-install error")},
+			downloader:  &mockDownloader{},
+			wantSuccess: false,
+			wantErr:     true,
+		},
 	}
 
 	for _, tt := range tests {
+
 		t.Run(tt.name, func(t *testing.T) {
 			installRepo := &mockInstallationRepo{
 				installations: make(map[string]*repository.Installation),

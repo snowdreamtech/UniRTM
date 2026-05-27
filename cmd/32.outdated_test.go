@@ -37,3 +37,12 @@ func TestOutdatedResult_UpToDate(t *testing.T) {
 	}
 	assert.False(t, r.Outdated)
 }
+
+func TestOutdatedRun_EmptyDB(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+
+	err := outdatedCmd.RunE(outdatedCmd, []string{})
+	assert.NoError(t, err)
+}
+

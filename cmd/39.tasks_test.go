@@ -35,3 +35,31 @@ func TestTasksEditSubcommand(t *testing.T) {
 	err := tasksEditCmd.Args(tasksEditCmd, []string{"test"})
 	assert.NoError(t, err)
 }
+
+func TestTasksListRun(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	t.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
+
+	err := tasksListCmd.RunE(tasksListCmd, []string{})
+	assert.NoError(t, err)
+}
+
+func TestTasksInfoRun(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	t.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
+
+	err := tasksInfoCmd.RunE(tasksInfoCmd, []string{"dummy-task"})
+	assert.Error(t, err)
+}
+
+func TestTasksDepsRun(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	t.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
+
+	err := tasksDepsCmd.RunE(tasksDepsCmd, []string{"dummy-task"})
+	assert.NoError(t, err)
+}
+
