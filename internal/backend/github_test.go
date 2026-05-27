@@ -177,3 +177,73 @@ func TestGitHubBackend_ListVersions(t *testing.T) {
 		t.Errorf("expected 1.2.0, got %s", versions[0].Version)
 	}
 }
+
+func TestGitHubBackend_ResolveVersion(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/repos/owner/repo/releases" {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`[
+				{
+					"tag_name": "v1.2.0",
+					"assets": [
+						{"name": "tool-linux-amd64.tar.gz", "browser_download_url": "https://example.com/asset.tar.gz"}
+					]
+				}
+			]`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer ts.Close()
+
+	b := NewGitHubBackend()
+	b.client.Transport = &mockTransport{
+		rt:  http.DefaultTransport,
+		url: ts.URL,
+	}
+
+	ctx := context.Background()
+	platform := Platform{OS: "linux", Arch: "amd64"}
+
+	info, err := b.ResolveVersion(ctx, "owner/repo", "1.2.0", platform)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil || info.Version != "1.2.0" {
+		t.Errorf("expected version 1.2.0, got %v", info)
+	}
+}
+
+func TestGitHubBackend_GetDownloadInfo(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/repos/owner/repo/releases" || r.URL.Path == "/repos/owner/repo/releases/tags/v1.2.0" {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{
+				"tag_name": "v1.2.0",
+				"assets": [
+					{"name": "tool-linux-amd64.tar.gz", "browser_download_url": "https://example.com/asset.tar.gz"}
+				]
+			}`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer ts.Close()
+
+	b := NewGitHubBackend()
+	b.client.Transport = &mockTransport{
+		rt:  http.DefaultTransport,
+		url: ts.URL,
+	}
+
+	ctx := context.Background()
+	platform := Platform{OS: "linux", Arch: "amd64"}
+
+	info, err := b.GetDownloadInfo(ctx, "owner/repo", "1.2.0", platform)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil || info.Version != "1.2.0" {
+		t.Errorf("expected version 1.2.0, got %v", info)
+	}
+}
