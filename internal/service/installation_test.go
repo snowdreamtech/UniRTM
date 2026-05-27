@@ -1,7 +1,10 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -10,13 +13,34 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/lockfile"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
+	unirtmhttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+type mockRoundTripper struct {
+	roundTripFunc func(req *http.Request) (*http.Response, error)
+}
+
+func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if m.roundTripFunc != nil {
+		return m.roundTripFunc(req)
+	}
+	return &http.Response{
+		StatusCode: 200,
+		Body:       io.NopCloser(bytes.NewBufferString("mocked response")),
+		Header:     make(http.Header),
+	}, nil
+}
+
 func TestInstallationManager_Install_WithLockfileStrict(t *testing.T) {
+	// Set up global MockTransport to avoid hanging network calls
+	oldMock := unirtmhttp.MockTransport
+	defer func() { unirtmhttp.MockTransport = oldMock }()
+	unirtmhttp.MockTransport = &mockRoundTripper{}
+
 	// Create a temporary directory for our lockfile
 	tempDir := t.TempDir()
 	lockfilePath := filepath.Join(tempDir, "unirtm.lock")

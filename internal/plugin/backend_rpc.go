@@ -101,6 +101,69 @@ func (m *BackendRPCClient) SupportsGPG() bool {
 	return resp
 }
 
+func (m *BackendRPCClient) AttestationType() string {
+	var resp string
+	err := m.client.Call("Plugin.AttestationType", new(interface{}), &resp)
+	if err != nil {
+		return ""
+	}
+	return resp
+}
+
+func (m *BackendRPCClient) IsRecommended() bool {
+	var resp bool
+	err := m.client.Call("Plugin.IsRecommended", new(interface{}), &resp)
+	if err != nil {
+		return false
+	}
+	return resp
+}
+
+func (m *BackendRPCClient) IsScriptless() bool {
+	var resp bool
+	err := m.client.Call("Plugin.IsScriptless", new(interface{}), &resp)
+	if err != nil {
+		return false
+	}
+	return resp
+}
+
+func (m *BackendRPCClient) GetReach() string {
+	var resp string
+	err := m.client.Call("Plugin.GetReach", new(interface{}), &resp)
+	if err != nil {
+		return ""
+	}
+	return resp
+}
+
+func (m *BackendRPCClient) IsStable() bool {
+	var resp bool
+	err := m.client.Call("Plugin.IsStable", new(interface{}), &resp)
+	if err != nil {
+		return false
+	}
+	return resp
+}
+
+func (m *BackendRPCClient) SupportsOffline() bool {
+	var resp bool
+	err := m.client.Call("Plugin.SupportsOffline", new(interface{}), &resp)
+	if err != nil {
+		return false
+	}
+	return resp
+}
+
+func (m *BackendRPCClient) Dependencies() []string {
+	var resp []string
+	err := m.client.Call("Plugin.Dependencies", new(interface{}), &resp)
+	if err != nil {
+		return nil
+	}
+	return resp
+}
+
 // BackendRPCServer is the RPC server that BackendRPCClient talks to, conforming to
 // the requirements of net/rpc.
 type BackendRPCServer struct {
@@ -142,6 +205,41 @@ func (s *BackendRPCServer) SupportsChecksum(args interface{}, resp *bool) error 
 
 func (s *BackendRPCServer) SupportsGPG(args interface{}, resp *bool) error {
 	*resp = s.Impl.SupportsGPG()
+	return nil
+}
+
+func (s *BackendRPCServer) AttestationType(args interface{}, resp *string) error {
+	*resp = s.Impl.AttestationType()
+	return nil
+}
+
+func (s *BackendRPCServer) IsRecommended(args interface{}, resp *bool) error {
+	*resp = s.Impl.IsRecommended()
+	return nil
+}
+
+func (s *BackendRPCServer) IsScriptless(args interface{}, resp *bool) error {
+	*resp = s.Impl.IsScriptless()
+	return nil
+}
+
+func (s *BackendRPCServer) GetReach(args interface{}, resp *string) error {
+	*resp = s.Impl.GetReach()
+	return nil
+}
+
+func (s *BackendRPCServer) IsStable(args interface{}, resp *bool) error {
+	*resp = s.Impl.IsStable()
+	return nil
+}
+
+func (s *BackendRPCServer) SupportsOffline(args interface{}, resp *bool) error {
+	*resp = s.Impl.SupportsOffline()
+	return nil
+}
+
+func (s *BackendRPCServer) Dependencies(args interface{}, resp *[]string) error {
+	*resp = s.Impl.Dependencies()
 	return nil
 }
 

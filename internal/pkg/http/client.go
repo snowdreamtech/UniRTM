@@ -68,25 +68,28 @@ func DefaultTransport() *http.Transport {
 		DisableHTTP2(trans)
 	}
 
-	if MockTransport != nil {
-		trans.RegisterProtocol("http", MockTransport)
-		trans.RegisterProtocol("https", MockTransport)
-	}
-
 	return trans
 }
 
 // NewClient returns an http.Client pre-configured with UniRTM's robust transport.
 func NewClient() *http.Client {
+	var tr http.RoundTripper = DefaultTransport()
+	if MockTransport != nil {
+		tr = MockTransport
+	}
 	return &http.Client{
-		Transport: DefaultTransport(),
+		Transport: tr,
 	}
 }
 
 // NewClientWithTimeout returns an http.Client with a timeout and the robust transport.
 func NewClientWithTimeout(timeout time.Duration) *http.Client {
+	var tr http.RoundTripper = DefaultTransport()
+	if MockTransport != nil {
+		tr = MockTransport
+	}
 	return &http.Client{
 		Timeout:   timeout,
-		Transport: DefaultTransport(),
+		Transport: tr,
 	}
 }

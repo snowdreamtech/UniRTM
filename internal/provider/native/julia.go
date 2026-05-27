@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
+	unirtmhttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // JuliaHandler handles Julia language versions via official versions.json.
@@ -37,7 +39,7 @@ func (h *JuliaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]V
 		return nil, err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := unirtmhttp.NewClient().Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("julia: fetch metadata: %w", err)
 	}

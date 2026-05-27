@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	unirtmhttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // GolangHandler handles the official Go download metadata from go.dev/dl/?mode=json.
@@ -52,7 +53,7 @@ func (h *GolangHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		return nil, err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := unirtmhttp.NewClient().Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("golang: fetch metadata: %w", err)
 	}
