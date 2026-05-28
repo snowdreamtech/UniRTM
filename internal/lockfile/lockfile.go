@@ -210,9 +210,13 @@ func (lf *LockFile) Save() error {
 		}
 	}
 
+	// Ensure exactly one trailing newline
+	out := bytes.TrimRight(buf.Bytes(), "\n")
+	out = append(out, '\n')
+
 	// Atomic write: temp file → rename.
 	tmp := lf.path + ".tmp"
-	if err := os.WriteFile(tmp, buf.Bytes(), 0644); err != nil {
+	if err := os.WriteFile(tmp, out, 0644); err != nil {
 		return fmt.Errorf("lockfile: write temp: %w", err)
 	}
 	if err := os.Rename(tmp, lf.path); err != nil {
