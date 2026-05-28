@@ -95,8 +95,34 @@ func TestResolveConfigFilePath_ExistingFile(t *testing.T) {
 	require.NoError(t, os.Chdir(tmp))
 	defer os.Chdir(orig)
 
-	// Create .unirtm.toml — should be preferred over default unirtm.toml
 	require.NoError(t, os.WriteFile(".unirtm.toml", []byte(""), 0o644))
 	got := resolveConfigFilePath(false)
 	assert.Equal(t, ".unirtm.toml", got)
+}
+
+func TestRunSet(t *testing.T) {
+	orig, _ := os.Getwd()
+	tmp := t.TempDir()
+	require.NoError(t, os.Chdir(tmp))
+	defer os.Chdir(orig)
+
+	// Test invalid format
+	err := runSet(setCmd, []string{"INVALID"})
+	assert.Error(t, err)
+
+	// Test valid set
+	err = runSet(setCmd, []string{"MY_VAR=hello"})
+	assert.NoError(t, err)
+
+	data, err := os.ReadFile("unirtm.toml")
+	assert.NoError(t, err)
+	assert.Contains(t, string(data), `MY_VAR = "hello"`)
+
+	// Test runUnset
+	err = runUnset(unsetCmd, []string{"MY_VAR"})
+	assert.NoError(t, err)
+
+	data2, err := os.ReadFile("unirtm.toml")
+	assert.NoError(t, err)
+	assert.NotContains(t, string(data2), "MY_VAR")
 }
