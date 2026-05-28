@@ -125,8 +125,9 @@ jobs:
       - name: "🚀 compile documentation artifacts"
         shell: sh
         run: |
-          # executes the documentation manager to install dependencies and build site.
-          npx vitepress build docs
+          cd docs
+          pnpm install
+          pnpm run docs:build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
