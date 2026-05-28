@@ -176,36 +176,48 @@ func isGoInstall(normalizedPath string) bool {
 	return false
 }
 
-// installMethodHint returns a human-readable upgrade hint for a given install method.
-func installMethodHint(method installMethod) string {
+// officialChannelHint returns the upgrade command for officially supported
+// distribution channels. Channels not listed here are NOT officially published
+// and must NOT be given an upgrade command to avoid directing users to
+// potentially malicious third-party packages.
+//
+// Officially supported channels:
+//   - Script install (install.sh / install.ps1) → handled by self-update directly
+//   - npm  (published to npmjs.com)
+//   - pip  (published to PyPI)
+//
+// NOT supported (no official package published):
+//   Homebrew, Scoop, Chocolatey, Cargo, nix, snap, asdf, MacPorts, pkgx, go install
+func officialChannelHint(method installMethod) string {
 	switch method {
 	case installMethodNpm:
 		return "npm update -g unirtm"
 	case installMethodPip:
 		return "pip install --upgrade unirtm"
-	case installMethodBrew:
-		return "brew upgrade unirtm"
-	case installMethodScoop:
-		return "scoop update unirtm"
-	case installMethodChoco:
-		return "choco upgrade unirtm"
-	case installMethodCargo:
-		return "cargo install unirtm --force"
-	case installMethodGo:
-		return "go install github.com/snowdreamtech/unirtm@latest"
-	case installMethodNix:
-		return "nix-env -uA nixpkgs.unirtm"
-	case installMethodSnap:
-		return "snap refresh unirtm"
-	case installMethodAsdf:
-		return "asdf install unirtm latest && asdf global unirtm latest"
-	case installMethodMacPorts:
-		return "sudo port upgrade unirtm"
-	case installMethodPkgx:
-		return "pkgx install unirtm"
 	default:
 		return ""
 	}
+}
+
+// isUnsupportedThirdPartyInstall returns true when the binary was installed via
+// a channel that UniRTM has NOT officially published to. Self-updating from
+// such a source is dangerous: a malicious actor could have published a
+// counterfeit package there.
+func isUnsupportedThirdPartyInstall(method installMethod) bool {
+	switch method {
+	case installMethodBrew,
+		installMethodScoop,
+		installMethodChoco,
+		installMethodCargo,
+		installMethodGo,
+		installMethodNix,
+		installMethodSnap,
+		installMethodAsdf,
+		installMethodMacPorts,
+		installMethodPkgx:
+		return true
+	}
+	return false
 }
 
 // normalizeVersion strips a leading 'v' or 'V' prefix for comparison.
@@ -230,9 +242,27 @@ func runSelfUpdate(cmd *cobra.Command, args []string) error {
 			execPath = resolved
 		}
 		method := detectInstallMethod(execPath)
-		if hint := installMethodHint(method); hint != "" {
+
+		// Block self-update for channels UniRTM has NOT officially published to.
+		// Guiding users to upgrade via brew/scoop/cargo/nix/etc. is dangerous
+		// because a malicious actor could publish a counterfeit package there.
+		if isUnsupportedThirdPartyInstall(method) && !selfUpdateYes {
 			pterm.Warning.Printfln(
-				"UniRTM appears to have been installed via a package manager.\n"+
+				"UniRTM has NOT been officially published to the package manager\n"+
+					"that installed this binary. Self-updating from an unverified\n"+
+					"source may install a malicious package.\n\n"+
+					"  ✅  Please install from an official channel instead:\n"+
+					"       https://github.com/snowdreamtech/UniRTM#installation\n\n"+
+					"  If you know what you are doing, use --yes to bypass this check.",
+			)
+			return nil
+		}
+
+		// For officially supported package managers (npm, pip), show the correct
+		// upgrade command instead of running the install script directly.
+		if hint := officialChannelHint(method); hint != "" {
+			pterm.Warning.Printfln(
+				"UniRTM was installed via a package manager.\n"+
 					"Running self-update may conflict with your package manager.\n\n"+
 					"  👉  To upgrade safely, please run:\n\n"+
 					"      %s\n\n"+

@@ -188,25 +188,69 @@ func TestNormalizeVersion(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// installMethodHint
+// officialChannelHint (formerly installMethodHint)
 // ---------------------------------------------------------------------------
 
-func TestInstallMethodHint(t *testing.T) {
-	assert.Contains(t, installMethodHint(installMethodNpm), "npm")
-	assert.Contains(t, installMethodHint(installMethodPip), "pip")
-	assert.Contains(t, installMethodHint(installMethodBrew), "brew")
-	assert.Contains(t, installMethodHint(installMethodScoop), "scoop")
-	assert.Contains(t, installMethodHint(installMethodChoco), "choco")
-	assert.Contains(t, installMethodHint(installMethodCargo), "cargo")
-	assert.Contains(t, installMethodHint(installMethodGo), "go")
-	assert.Contains(t, installMethodHint(installMethodNix), "nix")
-	assert.Contains(t, installMethodHint(installMethodSnap), "snap")
-	assert.Contains(t, installMethodHint(installMethodAsdf), "asdf")
-	assert.Contains(t, installMethodHint(installMethodMacPorts), "port")
-	assert.Contains(t, installMethodHint(installMethodPkgx), "pkgx")
-	assert.Empty(t, installMethodHint(installMethodScript))
-	assert.Empty(t, installMethodHint(installMethodUnknown))
+func TestOfficialChannelHint(t *testing.T) {
+	// Only officially supported channels return an upgrade command
+	assert.Contains(t, officialChannelHint(installMethodNpm), "npm")
+	assert.Contains(t, officialChannelHint(installMethodPip), "pip")
+
+	// All unsupported channels must return empty — we do NOT guide users
+	// to channels that have no official UniRTM package published there.
+	unsupported := []installMethod{
+		installMethodBrew,
+		installMethodScoop,
+		installMethodChoco,
+		installMethodCargo,
+		installMethodGo,
+		installMethodNix,
+		installMethodSnap,
+		installMethodAsdf,
+		installMethodMacPorts,
+		installMethodPkgx,
+		installMethodScript,
+		installMethodUnknown,
+	}
+	for _, m := range unsupported {
+		assert.Empty(t, officialChannelHint(m), "method %d should have no hint", m)
+	}
 }
+
+// ---------------------------------------------------------------------------
+// isUnsupportedThirdPartyInstall
+// ---------------------------------------------------------------------------
+
+func TestIsUnsupportedThirdPartyInstall(t *testing.T) {
+	// Must block
+	blocked := []installMethod{
+		installMethodBrew,
+		installMethodScoop,
+		installMethodChoco,
+		installMethodCargo,
+		installMethodGo,
+		installMethodNix,
+		installMethodSnap,
+		installMethodAsdf,
+		installMethodMacPorts,
+		installMethodPkgx,
+	}
+	for _, m := range blocked {
+		assert.True(t, isUnsupportedThirdPartyInstall(m), "method %d should be blocked", m)
+	}
+
+	// Must allow
+	allowed := []installMethod{
+		installMethodScript,
+		installMethodNpm,
+		installMethodPip,
+		installMethodUnknown,
+	}
+	for _, m := range allowed {
+		assert.False(t, isUnsupportedThirdPartyInstall(m), "method %d should NOT be blocked", m)
+	}
+}
+
 
 // ---------------------------------------------------------------------------
 // runSelfUpdate (integration-style with mocks)
