@@ -110,7 +110,6 @@ func runImplode(cmd *cobra.Command, args []string) error {
 	pterm.Println(pterm.LightRed("Self-destruct sequence active..."))
 	fmt.Println()
 
-
 	for _, t := range targets {
 		spinner, _ := output.StartSpinner("Destroying " + t.name + "...")
 
@@ -125,7 +124,6 @@ func runImplode(cmd *cobra.Command, args []string) error {
 			spinner.Success("Erased: " + t.name)
 		}
 	}
-
 
 	// 5. Final Message
 	fmt.Println()
