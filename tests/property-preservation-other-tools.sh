@@ -15,7 +15,7 @@
 set -eu
 
 # ── Common Library ───────────────────────────────────────────────────────────
-SCRIPT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+
 
 # Test counters
 TESTS_RUN=0

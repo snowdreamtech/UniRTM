@@ -8,7 +8,7 @@
 
 set -e
 
-SCRIPT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+
 TEMP_DIR=$(mktemp -d)
 
 echo "🧪 Starting Dependabot Generator Smoke Test..."

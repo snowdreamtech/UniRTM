@@ -130,6 +130,7 @@ env = { GOTOOLCHAIN = 'local' }
 [tasks.verify]
 description = 'Run full local verification (lint-all, test, audit) - runs subchecks in parallel'
 depends = ["lint-all", "test", "audit"]
+run = "echo \"All verifications passed\""
 
 [tools]
 'github:anchore/syft' = '1.44.0'

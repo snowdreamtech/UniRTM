@@ -58,7 +58,6 @@ setup() {
   export _G_PROJECT_ROOT="$TEMP_DIR"
   export _G_LIB_DIR="$TEMP_DIR/scripts/lib"
 
-  # shellcheck disable=SC1091
 
 }
 

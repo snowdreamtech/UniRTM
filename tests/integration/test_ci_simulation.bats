@@ -33,7 +33,6 @@ setup() {
   export ORIGINAL_GITHUB_ACTIONS="${GITHUB_ACTIONS:-}"
   export ORIGINAL_GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 
-  # shellcheck source=scripts/lib/common.sh
 
 }
 

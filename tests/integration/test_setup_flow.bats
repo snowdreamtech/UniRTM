@@ -27,7 +27,6 @@ setup() {
   export _G_PROJECT_ROOT="$SCRIPT_DIR"
   export _G_LIB_DIR="$SCRIPT_DIR/scripts/lib"
 
-  # shellcheck source=scripts/lib/common.sh
 
 }
 

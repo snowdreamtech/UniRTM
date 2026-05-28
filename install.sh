@@ -306,6 +306,7 @@ suggest_path() {
   esac
 
   warn "Add the following to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
+  # shellcheck disable=SC2016
   printf '  export PATH="%s:$PATH"\n' "$INSTALL_DIR"
 }
 
