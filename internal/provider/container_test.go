@@ -22,7 +22,7 @@ func TestContainerProvider_Name(t *testing.T) {
 func TestContainerProvider_Install(t *testing.T) {
 	// Create a temporary directory for our mock environment
 	tempDir := t.TempDir()
-	
+
 	// Create a fake docker executable to bypass engine detection and pull
 	fakeDockerDir := filepath.Join(tempDir, "fake-bin")
 	if err := os.MkdirAll(fakeDockerDir, 0755); err != nil {
@@ -88,7 +88,7 @@ func TestContainerProvider_Install(t *testing.T) {
 
 func TestContainerProvider_Install_Digest(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	fakeDockerDir := filepath.Join(tempDir, "fake-bin")
 	os.MkdirAll(fakeDockerDir, 0755)
 
@@ -165,7 +165,7 @@ func TestContainerProvider_Methods(t *testing.T) {
 	if len(execs) != 1 {
 		t.Fatalf("expected 1 executable, got %d", len(execs))
 	}
-	
+
 	expectedExec := "trivy"
 	if runtime.GOOS == "windows" {
 		expectedExec = "trivy.cmd"

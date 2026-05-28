@@ -37,15 +37,15 @@ func TestSpmProvider_findSwift(t *testing.T) {
 	tmpData := t.TempDir()
 	os.Setenv("UNIRTM_DATA_DIR", tmpData)
 	defer os.Unsetenv("UNIRTM_DATA_DIR")
-	
+
 	p := NewSpmProvider()
-	
+
 	// Create fake swift installation
 	swiftDir := filepath.Join(tmpData, "installs", "swift", "5.8", "bin")
 	os.MkdirAll(swiftDir, 0755)
 	swiftPath := filepath.Join(swiftDir, "swift")
 	os.WriteFile(swiftPath, []byte("fake binary"), 0755)
-	
+
 	found, err := p.findSwift()
 	require.NoError(t, err)
 	require.Equal(t, swiftPath, found)

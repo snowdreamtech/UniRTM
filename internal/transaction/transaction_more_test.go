@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +17,7 @@ func TestSQLiteTransactionManager_BeginError(t *testing.T) {
 	assert.NoError(t, err)
 
 	m := NewSQLiteTransactionManager(db)
-	
+
 	// close db so BeginTx fails
 	db.Close()
 

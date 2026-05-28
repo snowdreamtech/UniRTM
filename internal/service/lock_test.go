@@ -38,15 +38,14 @@ func TestLockService_Lifecycle(t *testing.T) {
 
 	// Record Install
 	info := &backend.VersionInfo{
-		Version:      "1.0.0",
-		DownloadURL:  "https://example.com/tool-v1.0.0-linux-amd64.tar.gz",
-		Checksum:     "sha256:12345",
+		Version:     "1.0.0",
+		DownloadURL: "https://example.com/tool-v1.0.0-linux-amd64.tar.gz",
+		Checksum:    "sha256:12345",
 		Platform: backend.Platform{
 			OS:   "linux",
 			Arch: "amd64",
 		},
 	}
-
 
 	// Make sure we pass backendName. Let's use "native".
 	// Wait, we need to mock or ensure RecordInstall uses the platform we want?

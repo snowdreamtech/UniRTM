@@ -6,9 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 )
+
 func TestManager_tryLoad(t *testing.T) {
 	m := NewConfigManager()
-	
+
 	// Create a dummy config file
 	f, _ := os.CreateTemp("", "unirtm-*.toml")
 	f.WriteString(`[tools]
@@ -64,14 +65,14 @@ func TestManager_MergeConfig(t *testing.T) {
 	}
 }
 
-
 type mockTrustManagerMore struct {
 	status TrustStatus
 }
-func (m *mockTrustManagerMore) Trust(path string) error { return nil }
-func (m *mockTrustManagerMore) Untrust(path string) error { return nil }
+
+func (m *mockTrustManagerMore) Trust(path string) error             { return nil }
+func (m *mockTrustManagerMore) Untrust(path string) error           { return nil }
 func (m *mockTrustManagerMore) TrustStatus(path string) TrustStatus { return m.status }
-func (m *mockTrustManagerMore) List() (map[string]string, error) { return nil, nil }
+func (m *mockTrustManagerMore) List() (map[string]string, error)    { return nil, nil }
 
 func TestManager_tryLoadTrust(t *testing.T) {
 	tmpDir := t.TempDir()
@@ -86,10 +87,10 @@ run = "echo"
 
 	m := NewConfigManager().(*defaultConfigManager)
 	m.trustManager = &mockTrustManagerMore{status: TrustStatusUntrusted}
-	
+
 	ctx := context.Background()
 	initialSettings := &Settings{}
-	
+
 	// Untrusted
 	cfg, err := m.tryLoad(ctx, p, true, initialSettings)
 	if err != nil {
@@ -98,7 +99,7 @@ run = "echo"
 	if cfg != nil {
 		t.Errorf("expected nil cfg for untrusted")
 	}
-	
+
 	// Modified
 	m.trustManager = &mockTrustManagerMore{status: TrustStatusModified}
 	cfg, err = m.tryLoad(ctx, p, true, initialSettings)
@@ -111,7 +112,7 @@ run = "echo"
 	if len(cfg.Env) != 0 || len(cfg.Tasks) != 0 {
 		t.Errorf("expected stripped env and tasks")
 	}
-	
+
 	// Trusted
 	m.trustManager = &mockTrustManagerMore{status: TrustStatusTrusted}
 	cfg, err = m.tryLoad(ctx, p, true, initialSettings)

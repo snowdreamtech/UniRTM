@@ -17,9 +17,11 @@ A core difference between UniRTM and legacy tool managers is how it fetches soft
 
 - **Core Plugins**: UniRTM ships with core plugins compiled directly into its Go binary. Tools like Node.js, Go, and Python have native support with maximum download speeds and checksum validation.
 - **GitHub Backend**: You can install almost any tool directly from GitHub releases without needing a custom plugin.
+
   ```bash
   unirtm use github:cli/cli@latest
   ```
+
 - **Cargo/NPM/Pip Backends**: UniRTM can proxy installations through other package managers, managing the resulting binary versions independently per project.
 
 ## Tool Resolution Order

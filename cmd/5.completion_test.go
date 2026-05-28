@@ -48,7 +48,7 @@ func TestRunCompletion_Install(t *testing.T) {
 
 	err = runCompletion(cmd, []string{"zsh"})
 	assert.NoError(t, err)
-	
+
 	// Check completion file was created
 	compFile := filepath.Join(tmpDir, "completions", "unirtm.zsh")
 	_, err = os.Stat(compFile)
@@ -79,7 +79,7 @@ func TestRunCompletion_Uninstall(t *testing.T) {
 
 	err = runCompletion(cmd, []string{"zsh"})
 	assert.NoError(t, err)
-	
+
 	// Check completion file was removed
 	_, err = os.Stat(compFile)
 	assert.Error(t, err)
@@ -110,7 +110,7 @@ func TestRunCompletion_All(t *testing.T) {
 
 	err = runCompletion(cmd, []string{})
 	assert.NoError(t, err)
-	
+
 	// Check completion file was created
 	compFile := filepath.Join(tmpDir, "completions", "unirtm.zsh")
 	_, err = os.Stat(compFile)

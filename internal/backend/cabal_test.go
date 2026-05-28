@@ -66,10 +66,10 @@ func TestCabalBackend_ListVersions(t *testing.T) {
 
 	// Override URL creation in test by mocking client Transport
 	b := NewCabalBackend()
-	
+
 	// Temporarily hijack http request using a custom transport for testing
 	b.client.Transport = &mockTransport{
-		rt: http.DefaultTransport,
+		rt:  http.DefaultTransport,
 		url: ts.URL,
 	}
 

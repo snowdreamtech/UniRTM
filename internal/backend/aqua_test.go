@@ -54,7 +54,7 @@ func TestAquaBackend_Properties(t *testing.T) {
 func TestAquaBackend_ResolveVersion(t *testing.T) {
 	b := NewAquaBackend()
 	b.registryURL = "https://raw.githubusercontent.com/aquaproj/aqua-registry/main/pkgs"
-	
+
 	b.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
 			if strings.Contains(req.URL.Path, "aquaproj/aqua/pkg.yaml") {
@@ -67,7 +67,7 @@ func TestAquaBackend_ResolveVersion(t *testing.T) {
 			return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(bytes.NewBufferString(""))}, nil
 		},
 	}
-	
+
 	ctx := context.Background()
 	platform := Platform{OS: "linux", Arch: "amd64"}
 
@@ -93,7 +93,7 @@ func TestAquaBackend_ResolveVersion(t *testing.T) {
 func TestAquaBackend_GetDownloadInfo(t *testing.T) {
 	b := NewAquaBackend()
 	b.registryURL = "https://raw.githubusercontent.com/aquaproj/aqua-registry/main/pkgs"
-	
+
 	b.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
 			if strings.Contains(req.URL.Path, "aquaproj/aqua/pkg.yaml") {

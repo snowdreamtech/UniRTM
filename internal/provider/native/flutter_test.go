@@ -38,7 +38,7 @@ func TestFlutterHandler_ResolveVersions(t *testing.T) {
 	assert.Len(t, versions, 1)
 	assert.Equal(t, "3.10.0", versions[0].Version)
 	assert.Len(t, versions[0].Assets, 1)
-	
+
 	// Flutter asset OS depends on the platform running the test
 	osName := runtime.GOOS
 	assert.Equal(t, osName, versions[0].Assets[0].OS)

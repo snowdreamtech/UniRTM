@@ -17,17 +17,17 @@ func TestZigProvider_Interface(t *testing.T) {
 func TestZigProvider_GetBinPaths(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewZigProvider()
-	
+
 	// Test without executables
 	paths, err := p.GetBinPaths("zig", tmpDir, "0.11.0")
 	require.NoError(t, err)
 	require.Equal(t, []string{tmpDir}, paths)
-	
+
 	// Create a fake executable
 	zigPath := filepath.Join(tmpDir, "bin", "zig")
 	os.MkdirAll(filepath.Dir(zigPath), 0755)
 	os.WriteFile(zigPath, []byte("fake"), 0755)
-	
+
 	paths, err = p.GetBinPaths("zig", tmpDir, "0.11.0")
 	require.NoError(t, err)
 	require.Equal(t, []string{filepath.Dir(zigPath)}, paths)
@@ -45,10 +45,10 @@ func TestZigProvider_Install(t *testing.T) {
 func TestZigProvider_GenerateShims(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewZigProvider()
-	
+
 	zigPath := filepath.Join(tmpDir, "zig")
 	os.WriteFile(zigPath, []byte("fake"), 0755)
-	
+
 	shims, err := p.GenerateShims("zig", tmpDir, "0.11.0")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(shims))

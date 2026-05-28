@@ -9,6 +9,7 @@
 当你请求一个非核心插件的工具时（例如 `kubectl`、`terraform`），UniRTM 会将安装逻辑委托给后端的插件处理。
 
 ### GitHub 后端（推荐）
+
 如果你需要的工具在 GitHub Releases 上发布了编译好的二进制文件，你根本不需要任何插件。UniRTM 能够根据你的操作系统和 CPU 架构，原生地计算出应该下载哪个文件并自动解压配置。
 
 ```bash
@@ -17,6 +18,7 @@ unirtm use github:cli/cli@latest
 ```
 
 ### ASDF 兼容后端
+
 如果该工具需要复杂的源码编译（比如 Erlang）或者特定的构建标志，你可以直接利用成千上万现成的 `asdf` 插件。
 
 ```bash

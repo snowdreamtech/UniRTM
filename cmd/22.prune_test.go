@@ -31,7 +31,7 @@ func TestRunPrune(t *testing.T) {
 	cmd := pruneCmd
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
-	
+
 	// Open DB and add some fake installations
 	ctx := context.Background()
 	db, err := database.Open(ctx, database.Config{Path: env.GetDatabasePath(), WALMode: true})
@@ -43,7 +43,7 @@ func TestRunPrune(t *testing.T) {
 	installPath1 := filepath.Join(tmpDir, "dummy1")
 	os.MkdirAll(installPath1, 0755)
 	os.WriteFile(filepath.Join(installPath1, "file"), []byte("data"), 0644)
-	
+
 	installPath2 := filepath.Join(tmpDir, "dummy2")
 	os.MkdirAll(installPath2, 0755)
 

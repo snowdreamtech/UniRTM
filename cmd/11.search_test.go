@@ -78,9 +78,8 @@ func TestRunSearch_JsonOutput(t *testing.T) {
 
 	err := runSearch(searchCmd, []string{"nonexistent_tool"})
 	assert.NoError(t, err)
-	
+
 	setupSearchDB(t)
 	err = runSearch(searchCmd, []string{"dummy"})
 	assert.NoError(t, err)
 }
-

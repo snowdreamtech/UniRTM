@@ -182,7 +182,7 @@ func TestGenericProvider_RelativizeAllSymlinks(t *testing.T) {
 
 func TestGenericProvider_ValidateInstallDir(t *testing.T) {
 	p := NewGenericProvider()
-	
+
 	err := p.validateInstallDir("nonexistent")
 	if err == nil {
 		t.Errorf("expected error for nonexistent dir")
@@ -249,7 +249,7 @@ func TestGenericProvider_PickBestExecutables(t *testing.T) {
 func TestGenericProvider_Install(t *testing.T) {
 	p := NewGenericProvider()
 	ctx := context.Background()
-	
+
 	tmpDir := t.TempDir()
 	installPath := filepath.Join(tmpDir, "install")
 
@@ -260,7 +260,7 @@ func TestGenericProvider_Install(t *testing.T) {
 	}
 
 	zipPath := createTestZip(t, tmpDir)
-	
+
 	err = p.Install(ctx, "tool", installPath, zipPath, "1.0.0")
 	if err != nil {
 		t.Errorf("expected no error for valid zip artifact install, got: %v", err)
@@ -269,7 +269,7 @@ func TestGenericProvider_Install(t *testing.T) {
 	// Also test non-archive file copy
 	exePath := filepath.Join(tmpDir, "mytool.exe")
 	os.WriteFile(exePath, []byte("binary"), 0755)
-	
+
 	installPath2 := filepath.Join(tmpDir, "install2")
 	err = p.Install(ctx, "tool", installPath2, exePath, "1.0.0")
 	if err != nil {

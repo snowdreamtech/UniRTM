@@ -45,4 +45,3 @@ func TestOutdatedRun_EmptyDB(t *testing.T) {
 	err := outdatedCmd.RunE(outdatedCmd, []string{})
 	assert.NoError(t, err)
 }
-

@@ -7,7 +7,7 @@ import (
 
 func TestConfig_DurationOrInt(t *testing.T) {
 	var d DurationOrInt
-	
+
 	// Test UnmarshalText string
 	err := d.UnmarshalText([]byte("2h"))
 	if err != nil {
@@ -35,23 +35,37 @@ func TestConfig_DurationOrInt(t *testing.T) {
 
 func TestParseToolConfig_Map(t *testing.T) {
 	val := map[string]interface{}{
-		"version": "1.0.0",
-		"backend": "github",
-		"provider": "github",
-		"pre_install": "echo pre",
-		"post_install": "echo post",
-		"gpg_keys": []interface{}{"key1", "key2"},
+		"version":             "1.0.0",
+		"backend":             "github",
+		"provider":            "github",
+		"pre_install":         "echo pre",
+		"post_install":        "echo post",
+		"gpg_keys":            []interface{}{"key1", "key2"},
 		"minimum_release_age": "7d",
 	}
 
 	tc := parseToolConfig(val)
-	if tc.Version != "1.0.0" { t.Fatalf("bad version") }
-	if tc.Backend != "github" { t.Fatalf("bad backend") }
-	if tc.Provider != "github" { t.Fatalf("bad provider") }
-	if tc.PreInstall != "echo pre" { t.Fatalf("bad pre_install") }
-	if tc.PostInstall != "echo post" { t.Fatalf("bad post_install") }
-	if len(tc.GPGKeys) != 2 || tc.GPGKeys[0] != "key1" { t.Fatalf("bad gpg_keys") }
-	if tc.MinimumReleaseAge != "7d" { t.Fatalf("bad min age") }
+	if tc.Version != "1.0.0" {
+		t.Fatalf("bad version")
+	}
+	if tc.Backend != "github" {
+		t.Fatalf("bad backend")
+	}
+	if tc.Provider != "github" {
+		t.Fatalf("bad provider")
+	}
+	if tc.PreInstall != "echo pre" {
+		t.Fatalf("bad pre_install")
+	}
+	if tc.PostInstall != "echo post" {
+		t.Fatalf("bad post_install")
+	}
+	if len(tc.GPGKeys) != 2 || tc.GPGKeys[0] != "key1" {
+		t.Fatalf("bad gpg_keys")
+	}
+	if tc.MinimumReleaseAge != "7d" {
+		t.Fatalf("bad min age")
+	}
 }
 
 func TestConfig_Merge_Extra(t *testing.T) {
@@ -75,7 +89,7 @@ func TestConfig_Merge_Extra(t *testing.T) {
 	}
 
 	c1.Merge(c2)
-	
+
 	if c1.Tools["node"].Version != "18" { // Merge doesn't overwrite if existing? Wait, usually it merges in.
 		// Actually let's just test that it runs without panic and merges something.
 	}

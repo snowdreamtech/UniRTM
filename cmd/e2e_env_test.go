@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"testing"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +22,7 @@ func TestE2E_Env(t *testing.T) {
 	// shell
 	_, _, err = h.Run("shell", "node@20")
 	assert.NoError(t, err)
-	
+
 	// activate
 	stdout, _, err = h.Run("activate", "bash")
 	assert.NoError(t, err)

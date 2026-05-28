@@ -53,7 +53,7 @@ func TestGenericProvider_IsExecutable(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		exePath += ".exe"
 	}
-	
+
 	f, err := os.Create(exePath)
 	if err != nil {
 		t.Fatal(err)
@@ -86,7 +86,7 @@ func TestGenericProvider_IsExecutable(t *testing.T) {
 func TestGenericProvider_ListExecutables_Empty(t *testing.T) {
 	p := NewGenericProvider()
 	tmpDir := t.TempDir()
-	
+
 	execs, err := p.ListExecutables("tool", tmpDir, "1.0")
 	if err == nil {
 		t.Error("expected error when no executables found")
@@ -99,14 +99,14 @@ func TestGenericProvider_ListExecutables_Empty(t *testing.T) {
 func TestGenericProvider_GetBinPaths(t *testing.T) {
 	p := NewGenericProvider()
 	tmpDir := t.TempDir()
-	
+
 	os.MkdirAll(filepath.Join(tmpDir, "bin"), 0755)
-	
+
 	paths, err := p.GetBinPaths("tool", tmpDir, "1.0")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	
+
 	if len(paths) != 2 {
 		t.Errorf("expected 2 paths (root and bin), got %d", len(paths))
 	}
@@ -126,10 +126,10 @@ func TestGenericProvider_GetEnvVars(t *testing.T) {
 func TestGenericProvider_GenerateShims(t *testing.T) {
 	p := NewGenericProvider()
 	tmpDir := t.TempDir()
-	
+
 	binDir := filepath.Join(tmpDir, "bin")
 	os.MkdirAll(binDir, 0755)
-	
+
 	exePath := filepath.Join(binDir, "mytool")
 	if runtime.GOOS == "windows" {
 		exePath += ".exe"
@@ -139,17 +139,17 @@ func TestGenericProvider_GenerateShims(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		os.Chmod(exePath, 0755)
 	}
-	
+
 	shims, err := p.GenerateShims("mytool", tmpDir, "1.0")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	
+
 	exeName := filepath.Join("bin", "mytool")
 	if runtime.GOOS == "windows" {
 		exeName += ".exe"
 	}
-	
+
 	if content, ok := shims[exeName]; !ok {
 		t.Errorf("expected shim for %s, got shims: %v", exeName, shims)
 	} else if len(content) == 0 {

@@ -1,6 +1,6 @@
 # Task Runner Overview
 
-UniRTM includes a built-in task runner designed to replace standard toolchain wrappers like `make`, `npm scripts`, or `just`. 
+UniRTM includes a built-in task runner designed to replace standard toolchain wrappers like `make`, `npm scripts`, or `just`.
 
 By integrating the task runner directly into the tool manager, UniRTM guarantees that tasks execute within the exact environment and toolchain defined by your `.unirtm.toml`, solving the "it works on my machine" problem permanently.
 
@@ -41,7 +41,7 @@ $ unirtm run test
 You can run multiple tasks sequentially by providing multiple arguments:
 
 ```bash
-$ unirtm run lint test build
+unirtm run lint test build
 ```
 
 If a task fails, the entire execution chain halts immediately with a non-zero exit code.

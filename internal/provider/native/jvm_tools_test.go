@@ -31,7 +31,7 @@ func TestGradleHandler_ResolveVersions(t *testing.T) {
 	assert.Len(t, versions, 1)
 	assert.Equal(t, "1.0.0", versions[0].Version)
 	assert.NotEmpty(t, versions[0].Assets)
-	
+
 	assert.Equal(t, "gradle", h.Name())
 	assert.True(t, h.IsMatch("gradle-1.0.0-src.zip", "linux", "amd64"))
 	assert.True(t, h.IsMatch("gradle-1.0.0-bin.zip", "linux", "amd64"))
@@ -57,7 +57,7 @@ func TestMavenHandler_ResolveVersions(t *testing.T) {
 	assert.Len(t, versions, 1)
 	assert.Equal(t, "3.9.6", versions[0].Version)
 	assert.NotEmpty(t, versions[0].Assets)
-	
+
 	assert.Equal(t, "maven", h.Name())
 	assert.False(t, h.IsMatch("apache-maven-3.9.6-src.zip", "linux", "amd64"))
 	assert.True(t, h.IsMatch("apache-maven-3.9.6-bin.zip", "linux", "amd64"))

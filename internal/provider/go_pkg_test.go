@@ -71,7 +71,7 @@ func TestGoPkgProvider_Verify(t *testing.T) {
 
 func TestGoPkgProvider_GenerateShims(t *testing.T) {
 	p := NewGoPkgProvider()
-	
+
 	// Because GenerateShims calls ListExecutables which reads the directory,
 	// let's just make sure it returns an error if the directory doesn't exist.
 	_, err := p.GenerateShims("tool", "/nonexistent_dir_for_test", "1.0")
@@ -83,11 +83,11 @@ func TestGoPkgProvider_GenerateShims(t *testing.T) {
 func TestGoPkgProvider_ListExecutables(t *testing.T) {
 	p := NewGoPkgProvider()
 	tmpDir := t.TempDir()
-	
+
 	// Create an executable
 	// For GoPkgProvider, ListExecutables checks for executable bit or .exe
 	// Wait, we don't have to test all OS variations here since we know the logic.
-	
+
 	execs, err := p.ListExecutables("tool", tmpDir, "1.0")
 	require.NoError(t, err)
 	if len(execs) != 0 {

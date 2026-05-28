@@ -40,4 +40,3 @@ func TestRunInstallInto(t *testing.T) {
 	err = runInstallInto(installIntoCmd, []string{"third_tool", installPath3})
 	assert.NoError(t, err)
 }
-

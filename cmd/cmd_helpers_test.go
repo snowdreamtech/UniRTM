@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 	"testing"
+
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,13 +21,13 @@ func TestIsUniRTMBinary(t *testing.T) {
 func TestGetBestEditorWithSource(t *testing.T) {
 	os.Setenv("UNIRTM_EDITOR", "myeditor")
 	defer os.Unsetenv("UNIRTM_EDITOR")
-	
+
 	editor, source := getBestEditorWithSource(nil)
 	assert.Equal(t, "myeditor", editor)
 	assert.Equal(t, "$UNIRTM_EDITOR", source)
 
 	os.Unsetenv("UNIRTM_EDITOR")
-	
+
 	cfg := &config.Config{
 		Settings: config.Settings{
 			Editor: "cfg_editor",

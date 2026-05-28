@@ -73,7 +73,7 @@ func TestCurrentCommand(t *testing.T) {
 	err = runCurrent(currentCmd, []string{"invalid_tool"})
 	// It should error because invalid_tool is not in config
 	assert.Error(t, err)
-	
+
 	// Test json output / plain mode
 	originalJson := jsonOutput
 	jsonOutput = true

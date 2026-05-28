@@ -49,7 +49,7 @@ func TestRunTaskCommand_WithArgs(t *testing.T) {
 	configFile := filepath.Join(tmpDir, "unirtm.toml")
 	_ = os.WriteFile(configFile, []byte(`[tasks.echo]
 run = "echo hello"`), 0o644)
-	
+
 	// Temporarily change directory to tmpDir to pick up unirtm.toml
 	cwd, _ := os.Getwd()
 	os.Chdir(tmpDir)
@@ -74,4 +74,3 @@ func TestRunTaskCommand_NotFound(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "task execution failed")
 }
-

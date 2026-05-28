@@ -76,7 +76,7 @@ func TestRunUse_Multiple(t *testing.T) {
 
 func TestRunUse_SpecificPath(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	targetDir := filepath.Join(tmpDir, "target")
 
 	cmd := useCmd
@@ -123,7 +123,7 @@ func TestRunUse_Global(t *testing.T) {
 func TestRunUse_DryRun(t *testing.T) {
 	cmd := useCmd
 	cmd.SetContext(context.Background())
-	
+
 	dryRun = true
 	defer func() { dryRun = false }()
 

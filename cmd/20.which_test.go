@@ -27,7 +27,7 @@ func TestWhichCommandStructure(t *testing.T) {
 
 func TestIsExecutableFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	// Create a regular non-executable file
 	file1 := filepath.Join(tmpDir, "file1.txt")
 	os.WriteFile(file1, []byte(""), 0644)
@@ -36,7 +36,7 @@ func TestIsExecutableFile(t *testing.T) {
 	// Create an executable file
 	file2 := filepath.Join(tmpDir, "file2.sh")
 	os.WriteFile(file2, []byte(""), 0755)
-	
+
 	// Archive extensions
 	file3 := filepath.Join(tmpDir, "file3.tar.gz")
 	os.WriteFile(file3, []byte(""), 0755)
@@ -59,7 +59,7 @@ func TestRunWhich(t *testing.T) {
 
 	installPath := filepath.Join(tmpDir, "installs", "dummy", "1.0.0")
 	os.MkdirAll(filepath.Join(installPath, "bin"), 0755)
-	
+
 	// Since we don't mock providers completely, the fallback might look into the disk.
 	// But actually, without a provider it might skip. However, "dummy" provider doesn't exist.
 	// Wait, we can test the case where the tool is NOT found.
@@ -78,8 +78,8 @@ func TestRunWhich(t *testing.T) {
 	cmd := whichCmd
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
-	
-	// Since "dummy" tool doesn't have a real provider in DefaultRegistry that lists executables, 
+
+	// Since "dummy" tool doesn't have a real provider in DefaultRegistry that lists executables,
 	// it will likely fall back to "not found".
 	err = runWhich(cmd, []string{"dummy"})
 	assert.Error(t, err)

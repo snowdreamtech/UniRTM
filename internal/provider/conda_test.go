@@ -91,4 +91,3 @@ func TestCondaProvider_ListExecutables(t *testing.T) {
 		t.Errorf("expected 1 executable, got %d", len(exes))
 	}
 }
-

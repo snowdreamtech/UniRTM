@@ -12,8 +12,7 @@ import (
 
 	"github.com/pterm/pterm"
 	"github.com/stretchr/testify/assert"
-
-	)
+)
 
 func TestEnvCommandStructure(t *testing.T) {
 	assert.Contains(t, envCmd.Use, "env")

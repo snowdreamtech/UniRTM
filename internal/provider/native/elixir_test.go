@@ -1,8 +1,8 @@
 package native
 
 import (
-	"context"
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"testing"
@@ -41,7 +41,7 @@ func TestElixirHandler_ResolveVersions(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, versions, 1)
 	assert.Equal(t, "1.15.0", versions[0].Version)
-	
+
 	// Each asset matching adds 4 universal OS/arch combinations
 	assert.Len(t, versions[0].Assets, 8)
 }

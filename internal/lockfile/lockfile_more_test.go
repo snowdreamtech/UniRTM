@@ -25,7 +25,7 @@ func TestLockFile_More_LoadSave(t *testing.T) {
 
 func TestLockFile_More_Get(t *testing.T) {
 	lf := New("dummy")
-	
+
 	e := lf.GetEntry("notfound", "1.0")
 	assert.Nil(t, e)
 
@@ -39,7 +39,7 @@ func TestLockFile_More_Get(t *testing.T) {
 
 func TestLockFile_More_Upsert(t *testing.T) {
 	lf := New("dummy")
-	
+
 	// empty name
 	lf.UpsertEntry("", &ToolLockEntry{Version: "1.0"})
 	assert.NotNil(t, lf.GetEntry("", "1.0"))
@@ -69,4 +69,3 @@ func TestPlatformKey_More(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, keys)
 }
-

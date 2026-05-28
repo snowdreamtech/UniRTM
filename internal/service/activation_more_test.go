@@ -26,7 +26,7 @@ func TestActivationManager_GenerateProjectActivation_More(t *testing.T) {
 	script, err := m.GenerateProjectActivation(ctx, ShellBash, "/project", toolVersions, nil)
 	require.NoError(t, err)
 	assert.NotNil(t, script)
-	
+
 	// Test Fish and PowerShell scripts
 	config := ActivationConfig{
 		Shell:         ShellFish,
@@ -39,7 +39,7 @@ func TestActivationManager_GenerateProjectActivation_More(t *testing.T) {
 		Sources:       []string{"/path/to/source.fish"},
 		UseShims:      false,
 	}
-	
+
 	fishScript, err := m.GenerateActivationScript(ctx, config)
 	require.NoError(t, err)
 	assert.Contains(t, fishScript.Content, "set -gx UNIRTM_PATH /data/installs/node/20.0.0/bin")
@@ -54,15 +54,15 @@ func TestActivationManager_GenerateProjectActivation_More(t *testing.T) {
 	assert.Contains(t, psScript.Content, "$env:UNIRTM_NODE_VERSION = \"20.0.0\"")
 	assert.Contains(t, psScript.Content, "$env:FOO = \"bar\"")
 	assert.Contains(t, psScript.Content, ". \"/path/to/source.fish\"")
-	
+
 	// Test UseShims for Fish and PowerShell
 	config.UseShims = true
-	
+
 	config.Shell = ShellFish
 	fishScript, err = m.GenerateActivationScript(ctx, config)
 	require.NoError(t, err)
 	assert.Contains(t, fishScript.Content, "set -gx PATH \"/shims\" $PATH")
-	
+
 	config.Shell = ShellPowerShell
 	psScript, err = m.GenerateActivationScript(ctx, config)
 	require.NoError(t, err)

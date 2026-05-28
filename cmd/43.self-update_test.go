@@ -101,7 +101,7 @@ func TestDetectInstallMethod_Go(t *testing.T) {
 	// Set a mock GOPATH so we can deterministically test detection
 	// without relying on os.UserHomeDir (which fails if $HOME is not set).
 	t.Setenv("GOPATH", "/mock/gopath")
-	
+
 	paths := []string{
 		"/mock/gopath/bin/unirtm",
 	}
@@ -111,7 +111,7 @@ func TestDetectInstallMethod_Go(t *testing.T) {
 
 	// Paths that look like /go/bin/ but are project dirs — must NOT match
 	nonGoPaths := []string{
-		"/usr/local/go/bin/unirtm",      // Go SDK, not go install target
+		"/usr/local/go/bin/unirtm",        // Go SDK, not go install target
 		"/home/user/projects/go/bin/tool", // project subdir
 	}
 	for _, p := range nonGoPaths {
@@ -249,7 +249,6 @@ func TestIsUnsupportedThirdPartyInstall(t *testing.T) {
 		assert.False(t, isUnsupportedThirdPartyInstall(m), "method %d should NOT be blocked", m)
 	}
 }
-
 
 // ---------------------------------------------------------------------------
 // runSelfUpdate (integration-style with mocks)

@@ -87,7 +87,7 @@ func (p *ContainerProvider) Install(ctx context.Context, tool string, installPat
 	basename := parts[len(parts)-1]
 
 	wrapperPath := filepath.Join(binDir, basename)
-	
+
 	if runtime.GOOS == "windows" {
 		wrapperPath += ".cmd"
 		// Simple Windows batch wrapper
@@ -151,7 +151,7 @@ func (p *ContainerProvider) DetectVersion(ctx context.Context, tool string, inst
 func (p *ContainerProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	parts := strings.Split(tool, "/")
 	basename := parts[len(parts)-1]
-	
+
 	if runtime.GOOS == "windows" {
 		return []string{basename + ".cmd"}, nil
 	}

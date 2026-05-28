@@ -14,7 +14,7 @@ func TestLogger_Init(t *testing.T) {
 	dir := t.TempDir()
 	errLog := filepath.Join(dir, "err.log")
 	ginLog := filepath.Join(dir, "gin.log")
-	
+
 	// Test InitLogger
 	InitLogger(errLog, ginLog)
 
@@ -39,7 +39,7 @@ func TestLogger_Levels(t *testing.T) {
 	WithFields("key", "val").Debug().Msg("debug with fields")
 	WithFields("key").Debug().Msg("debug with odd fields") // test odd fields error
 	WithError(errors.New("test err")).Error().Msg("error with err")
-	
+
 	// Methods from Trace to Error
 	Trace("trace", map[string]interface{}{"a": 1})
 	Trace("trace2")
@@ -50,7 +50,7 @@ func TestLogger_Levels(t *testing.T) {
 	Warn("warn2")
 	Error("error", map[string]interface{}{"a": 1})
 	ErrorWithErr(errors.New("err"), "error with err", map[string]interface{}{"a": 1})
-	
+
 	// Test UniRTMErrorHook manually
 	hook := UniRTMErrorHook{}
 	event := Logger.Info()

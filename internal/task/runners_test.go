@@ -189,7 +189,7 @@ func TestNativeRunner(t *testing.T) {
 	if err := r.Run(ctx, tmpDir, "test", []string{}, []string{"TEST_ENV=1"}); err != nil {
 		t.Errorf("expected run to succeed, got %v", err)
 	}
-	
+
 	// Error on unknown task
 	if err := r.Run(ctx, tmpDir, "nonexistent", []string{}, []string{}); err == nil {
 		t.Error("expected error when running non-existent task")

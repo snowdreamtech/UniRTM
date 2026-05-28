@@ -32,4 +32,3 @@ func TestRunGenerateDependabot(t *testing.T) {
 
 	_ = generateDependabotCmd.RunE(generateDependabotCmd, []string{})
 }
-

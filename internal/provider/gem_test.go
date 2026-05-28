@@ -66,15 +66,15 @@ func TestGemProvider_findGem(t *testing.T) {
 	tmpData := t.TempDir()
 	os.Setenv("UNIRTM_DATA_DIR", tmpData)
 	defer os.Unsetenv("UNIRTM_DATA_DIR")
-	
+
 	p := NewGemProvider()
-	
+
 	// Create fake gem installation
 	gemDir := filepath.Join(tmpData, "installs", "ruby", "3.2.2", "bin")
 	os.MkdirAll(gemDir, 0755)
 	gemPath := filepath.Join(gemDir, "gem")
 	os.WriteFile(gemPath, []byte("fake binary"), 0755)
-	
+
 	found, err := p.findGem()
 	require.NoError(t, err)
 	require.Equal(t, gemPath, found)
@@ -108,4 +108,3 @@ func TestGemProvider_ListExecutables(t *testing.T) {
 	require.Len(t, exes, 1)
 	require.Contains(t, exes, filepath.Join(binDir, "dummy1"))
 }
-

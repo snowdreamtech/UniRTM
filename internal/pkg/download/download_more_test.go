@@ -60,7 +60,7 @@ func TestHTTPDownloader_DownloadConcurrent_Errors(t *testing.T) {
 	defer ts2.Close()
 
 	dest2 := filepath.Join(dir, "panic.txt")
-	
+
 	// Temporarily limit retries to fail fast
 	os.Setenv("JOBS", "1")
 	defer os.Setenv("JOBS", "")
@@ -76,7 +76,7 @@ func TestHTTPDownloader_DownloadConcurrent_Errors(t *testing.T) {
 func TestHTTPDownloader_VerifyGPGSignature_Skipped(t *testing.T) {
 	dl := NewHTTPDownloader()
 	dir := t.TempDir()
-	
+
 	// Mock 404
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
@@ -95,7 +95,7 @@ func TestHTTPDownloader_VerifyGPGSignature_Skipped(t *testing.T) {
 func TestHTTPDownloader_VerifyGPGSignature_500(t *testing.T) {
 	dl := NewHTTPDownloader()
 	dir := t.TempDir()
-	
+
 	// Mock 500
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)

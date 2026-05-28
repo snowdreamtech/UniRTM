@@ -79,7 +79,7 @@ run = "go test ./..."
 Run it with:
 
 ```bash
-$ unirtm run test
+unirtm run test
 ```
 
 ## Next Steps

@@ -76,7 +76,7 @@ func (r *GoTaskRunner) Run(ctx context.Context, dir string, taskName string, arg
 	if taskName == "" {
 		taskName = "default"
 	}
-	
+
 	cmdArgs := []string{taskName}
 	cmdArgs = append(cmdArgs, args...)
 

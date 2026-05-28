@@ -1,8 +1,8 @@
 package native
 
 import (
-	"context"
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"testing"

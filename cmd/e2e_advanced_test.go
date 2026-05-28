@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"testing"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,8 +13,6 @@ func TestE2E_Tasks(t *testing.T) {
 	assert.NoError(t, err)
 	_ = stdout
 }
-
-
 
 func TestE2E_BinPaths(t *testing.T) {
 	h := NewE2EHarness(t)
@@ -39,4 +38,3 @@ func TestE2E_Run(t *testing.T) {
 	// Task won't exist
 	_ = err
 }
-

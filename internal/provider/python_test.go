@@ -47,7 +47,7 @@ func TestPythonProvider_GetEnvVars(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	
+
 	venv := filepath.Join("/tmp/py", "venv")
 	if val, ok := vars["VIRTUAL_ENV"]; !ok || val != venv {
 		t.Errorf("expected VIRTUAL_ENV=%s, got %s", venv, val)

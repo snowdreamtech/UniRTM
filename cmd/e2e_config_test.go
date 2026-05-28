@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
-	"os"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -22,14 +22,14 @@ func TestE2E_Config(t *testing.T) {
 	stdout, _, err := h.Run("config", "get", "settings.verbose")
 	assert.NoError(t, err)
 	_ = stdout
-	
+
 	// Trust
 	dummyConfig := filepath.Join(h.TmpDir, ".unirtm.toml")
 	os.WriteFile(dummyConfig, []byte(""), 0644)
-	
+
 	_, _, err = h.Run("trust", dummyConfig)
 	assert.NoError(t, err)
-	
+
 	_, _, err = h.Run("untrust", dummyConfig)
 	assert.NoError(t, err)
 }

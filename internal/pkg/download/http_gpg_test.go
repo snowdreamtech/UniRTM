@@ -5,12 +5,13 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
 	"github.com/stretchr/testify/require"
 )
 
 func TestHTTPDownloader_VerifyGPG_NoKeyring(t *testing.T) {
 	downloader := NewHTTPDownloader()
-	
+
 	// Set a custom env dir so keyring.gpg doesn't exist
 	tmpDir := t.TempDir()
 	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
@@ -22,7 +23,7 @@ func TestHTTPDownloader_VerifyGPG_NoKeyring(t *testing.T) {
 
 func TestHTTPDownloader_VerifyGPG_InvalidKeyring(t *testing.T) {
 	downloader := NewHTTPDownloader()
-	
+
 	tmpDir := t.TempDir()
 	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 

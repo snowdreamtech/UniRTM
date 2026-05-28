@@ -151,5 +151,3 @@ func (r *AuditRepository) Close() error {
 	}
 	return nil
 }
-
-

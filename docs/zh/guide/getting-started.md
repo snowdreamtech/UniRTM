@@ -79,7 +79,7 @@ run = "go test ./..."
 执行它：
 
 ```bash
-$ unirtm run test
+unirtm run test
 ```
 
 ## 下一步

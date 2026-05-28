@@ -23,7 +23,7 @@ func TestRunEnable(t *testing.T) {
 	tmpDir := t.TempDir()
 	os.Setenv("HOME", tmpDir)
 	defer os.Unsetenv("HOME")
-	
+
 	// Create a dummy shell config
 	err := os.WriteFile(filepath.Join(tmpDir, ".zshrc"), []byte("# init\n"), 0644)
 	require.NoError(t, err)
@@ -44,7 +44,7 @@ func TestRunEnable_All(t *testing.T) {
 	tmpDir := t.TempDir()
 	os.Setenv("HOME", tmpDir)
 	defer os.Unsetenv("HOME")
-	
+
 	err := os.WriteFile(filepath.Join(tmpDir, ".zshrc"), []byte("# init\n"), 0644)
 	require.NoError(t, err)
 	err = os.WriteFile(filepath.Join(tmpDir, ".bashrc"), []byte("# init\n"), 0644)

@@ -13,7 +13,7 @@ import (
 func TestMigrationManager_MigrateFile_ToolVersions(t *testing.T) {
 	tmpDir := t.TempDir()
 	sourcePath := filepath.Join(tmpDir, ".tool-versions")
-	
+
 	content := []byte("nodejs 20.0.0\ngo 1.21.0\n# comment\n")
 	if err := os.WriteFile(sourcePath, content, 0644); err != nil {
 		t.Fatalf("failed to write test file: %v", err)
@@ -44,7 +44,7 @@ func TestMigrationManager_MigrateFile_ToolVersions(t *testing.T) {
 func TestMigrationManager_MigrateFile_MiseToml(t *testing.T) {
 	tmpDir := t.TempDir()
 	sourcePath := filepath.Join(tmpDir, ".mise.toml")
-	
+
 	content := []byte(`
 [tools]
 node = "20.0.0"
@@ -88,7 +88,7 @@ cache_ttl = 3600
 func TestMigrationManager_MigrateDirectory(t *testing.T) {
 	tmpDir := t.TempDir()
 	sourcePath := filepath.Join(tmpDir, ".mise.toml")
-	
+
 	content := []byte(`
 [tools]
 node = "20.0.0"
@@ -98,7 +98,7 @@ node = "20.0.0"
 	}
 
 	mm := NewMigrationManager()
-	
+
 	reports, err := mm.MigrateDirectory(context.Background(), tmpDir, true) // dry run
 	if err != nil {
 		t.Fatalf("MigrateDirectory failed: %v", err)

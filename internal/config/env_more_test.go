@@ -39,7 +39,7 @@ func TestSettings_LoadFromEnv2(t *testing.T) {
 
 	for k, v := range envVars {
 		os.Setenv("UNIRTM_"+k, v)
-		defer os.Unsetenv("UNIRTM_"+k)
+		defer os.Unsetenv("UNIRTM_" + k)
 	}
 
 	s := &Settings{}

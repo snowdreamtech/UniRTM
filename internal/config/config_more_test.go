@@ -91,7 +91,7 @@ func TestConfig_parseToolConfig(t *testing.T) {
 			"t1": "1.0",
 			"t2": map[string]interface{}{"version": "2.0", "backend": "foo"},
 			"t3": []interface{}{"3.0", "3.1"}, // invalid
-			"t4": 123, // invalid
+			"t4": 123,                         // invalid
 		},
 	}
 	c.PostLoad()

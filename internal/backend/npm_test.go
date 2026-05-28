@@ -95,7 +95,7 @@ func TestNpmBackend_ListVersions(t *testing.T) {
 	if err == nil {
 		t.Error("expected bad json error")
 	}
-	
+
 	// time parse
 	bTime := NewNpmBackend()
 	bTime.client.Transport = &mockCargoTransport{

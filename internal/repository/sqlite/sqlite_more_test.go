@@ -23,11 +23,11 @@ func getClosedDB(t *testing.T) *sql.DB {
 }
 
 func getPreparedDB(t *testing.T, initSQL string) *sql.DB {
-    db, err := sql.Open("sqlite3", filepath.Join(t.TempDir(), "test.db"))
-    assert.NoError(t, err)
-    _, err = db.Exec(initSQL)
-    assert.NoError(t, err)
-    return db
+	db, err := sql.Open("sqlite3", filepath.Join(t.TempDir(), "test.db"))
+	assert.NoError(t, err)
+	_, err = db.Exec(initSQL)
+	assert.NoError(t, err)
+	return db
 }
 
 const auditSQL = `
@@ -51,7 +51,7 @@ func TestAuditRepository_ClosedDB(t *testing.T) {
 
 	err = r.Close()
 	assert.NoError(t, err)
-    db.Close() // close the underlying db
+	db.Close() // close the underlying db
 
 	// these should error
 	err = r.Log(context.Background(), &repository.AuditEntry{})
@@ -79,7 +79,7 @@ func TestCacheRepository_ClosedDB(t *testing.T) {
 
 	err = r.Close()
 	assert.NoError(t, err)
-    db.Close() // close underlying db
+	db.Close() // close underlying db
 
 	err = r.Set(context.Background(), "k", []byte("v"), time.Hour)
 	assert.Error(t, err)
@@ -115,7 +115,7 @@ func TestIndexRepository_ClosedDB(t *testing.T) {
 
 	err = r.Close()
 	assert.NoError(t, err)
-    db.Close()
+	db.Close()
 
 	err = r.Upsert(context.Background(), &repository.IndexEntry{})
 	assert.Error(t, err)
@@ -158,7 +158,7 @@ func TestInstallationRepository_ClosedDB(t *testing.T) {
 
 	err = r.Close()
 	assert.NoError(t, err)
-    db.Close()
+	db.Close()
 
 	err = r.Create(context.Background(), &repository.Installation{})
 	assert.Error(t, err)

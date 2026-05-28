@@ -51,7 +51,7 @@ func TestSpmBackend_Properties(t *testing.T) {
 func TestSpmBackend_ListVersions(t *testing.T) {
 	// Create a dummy local git repository with tags
 	tmpDir := t.TempDir()
-	
+
 	// Create git repo
 	exec.Command("git", "-C", tmpDir, "init").Run()
 	exec.Command("git", "-C", tmpDir, "commit", "--allow-empty", "-m", "init").Run()
@@ -69,7 +69,7 @@ func TestSpmBackend_ListVersions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	
+
 	if len(versions) != 2 {
 		t.Fatalf("expected 2 versions, got %d", len(versions))
 	}

@@ -101,7 +101,7 @@ func (h *E2EHarness) Run(args ...string) (stdout string, stderr string, err erro
 
 func (h *E2EHarness) SetupMockTool(tool, version string) {
 	h.t.Helper()
-	
+
 	toolPath := filepath.Join(h.TmpDir, "installs", tool, version)
 	err := os.MkdirAll(toolPath, 0755)
 	if err != nil {

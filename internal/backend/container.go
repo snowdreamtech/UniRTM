@@ -53,7 +53,7 @@ func (b *ContainerBackend) ResolveVersion(ctx context.Context, tool string, vers
 func (b *ContainerBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
 	// The `tool` parameter contains the registry and image path, e.g. "ghcr.io/aquasec/trivy".
 	// The prefix like "docker:" has already been stripped by UniRTM config parsing.
-	
+
 	// If the version is a digest (e.g., sha256:abcd...), treat it as Checksum and use it in the URL construction if needed.
 	checksum := ""
 	if strings.HasPrefix(version, "sha256:") {
@@ -61,7 +61,7 @@ func (b *ContainerBackend) GetDownloadInfo(ctx context.Context, tool string, ver
 	}
 
 	return &VersionInfo{
-		Version:     version,
+		Version: version,
 		// DownloadURL is deliberately empty because this backend does not download an artifact over HTTP.
 		// Instead, the provider handles `docker pull`.
 		DownloadURL: "",

@@ -13,10 +13,10 @@ func TestGet(t *testing.T) {
 	// Setup
 	os.Setenv("UNIRTM_TEST_KEY_1", "val1")
 	defer os.Unsetenv("UNIRTM_TEST_KEY_1")
-	
+
 	os.Setenv("MISE_TEST_KEY_2", "val2")
 	defer os.Unsetenv("MISE_TEST_KEY_2")
-	
+
 	os.Setenv("TEST_KEY_3", "val3")
 	defer os.Unsetenv("TEST_KEY_3")
 
@@ -57,7 +57,7 @@ func TestRandomString(t *testing.T) {
 	if len(str) != 10 {
 		t.Errorf("expected length 10, got %d", len(str))
 	}
-	
+
 	// Test randomness/uniqueness (basic)
 	str2, _ := RandomString(10)
 	if str == str2 {
@@ -92,47 +92,47 @@ func TestGetFSToolName(t *testing.T) {
 
 func TestDirFunctions(t *testing.T) {
 	// Just test that they return strings and don't panic
-	
+
 	configDir := GetConfigDir()
 	if configDir == "" {
 		t.Error("expected non-empty config dir")
 	}
-	
+
 	dataDir := GetDataDir()
 	if dataDir == "" {
 		t.Error("expected non-empty data dir")
 	}
-	
+
 	if !strings.HasPrefix(GetDatabasePath(), dataDir) {
 		t.Error("expected database path to be inside data dir")
 	}
-	
+
 	if !strings.HasPrefix(GetShimsDir(), dataDir) {
 		t.Error("expected shims dir to be inside data dir")
 	}
-	
+
 	if !strings.HasPrefix(GetInstallsDir(), dataDir) {
 		t.Error("expected installs dir to be inside data dir")
 	}
-	
+
 	if !strings.HasPrefix(GetDownloadsDir(), dataDir) {
 		t.Error("expected downloads dir to be inside data dir")
 	}
-	
+
 	if !strings.HasPrefix(GetPluginsDir(), dataDir) {
 		t.Error("expected plugins dir to be inside data dir")
 	}
-	
+
 	cacheDir := GetCacheDir()
 	if cacheDir == "" {
 		t.Error("expected non-empty cache dir")
 	}
-	
+
 	lockFile := GetLockFilePath()
 	if lockFile == "" {
 		t.Error("expected non-empty lock file path")
 	}
-	
+
 	if !strings.HasPrefix(GetGlobalConfigPath(), configDir) {
 		t.Error("expected global config path to be inside config dir")
 	}

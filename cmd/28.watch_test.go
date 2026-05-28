@@ -18,13 +18,13 @@ func TestWatchStructure(t *testing.T) {
 func TestWatchIsMatched(t *testing.T) {
 	// 1. empty globs matches anything unless ignored
 	assert.True(t, isMatched("foo.txt", []string{}, []string{}))
-	
+
 	// 2. ignored
 	assert.False(t, isMatched("foo.txt", []string{}, []string{"*.txt"}))
-	
+
 	// 3. glob matched
 	assert.True(t, isMatched("foo.go", []string{"*.go"}, []string{}))
-	
+
 	// 4. glob not matched
 	assert.False(t, isMatched("foo.txt", []string{"*.go"}, []string{}))
 }
@@ -38,4 +38,3 @@ func TestWatchKillCurrentCmd(t *testing.T) {
 	// Should not panic if cmd is nil
 	killCurrentCmd()
 }
-

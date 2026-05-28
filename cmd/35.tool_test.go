@@ -82,8 +82,6 @@ func TestRunTool_NoBackend(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-
-
 func TestOutputJSON(t *testing.T) {
 	// Not easy to capture stdout directly without a helper, but we can call it to hit coverage.
 	outputJSON(map[string]string{"key": "value"})
@@ -109,7 +107,7 @@ func TestFindToolConfigSources(t *testing.T) {
 
 	ctx := context.Background()
 	sources := findToolConfigSources(ctx, "cli/cli")
-	
+
 	// Since we override GetConfigDir(), one of the sources should be the one we just wrote.
 	// NOTE: findToolConfigSources searches from cwd up to root for local configs, which might pick up real files,
 	// but we're mostly testing if it hits the global config path correctly for coverage.

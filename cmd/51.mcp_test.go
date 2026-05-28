@@ -14,7 +14,7 @@ func TestHandleMCPTool(t *testing.T) {
 	tmpDir := t.TempDir()
 	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
 	defer os.Unsetenv("UNIRTM_DATA_DIR")
-	
+
 	os.MkdirAll(filepath.Dir(env.GetDatabasePath()), 0755)
 
 	ctx := context.Background()

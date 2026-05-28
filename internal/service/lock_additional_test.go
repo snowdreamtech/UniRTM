@@ -17,19 +17,19 @@ func TestLockService_Generate(t *testing.T) {
 	require.NoError(t, err)
 
 	ls.init()
-	
+
 	// Create a minimal backend registry
 	reg := backend.NewRegistry()
 	ls.SetBackendRegistry(reg)
-	
+
 	ctx := context.Background()
 	// Test generate empty
 	err = ls.Generate(ctx, nil, GenerateOptions{})
 	require.NoError(t, err)
-	
+
 	// Test buildSubset
 	specs := map[string]ToolSpec{
-		"go": {Name: "go", Version: "1.20"},
+		"go":   {Name: "go", Version: "1.20"},
 		"node": {Name: "node", Version: "18"},
 	}
 	subset := buildSubset(specs, []string{"go"})
@@ -59,7 +59,7 @@ func TestLockService_Save(t *testing.T) {
 	}
 	ls, err := NewLockService(opts)
 	require.NoError(t, err)
-	
+
 	err = ls.save()
 	require.NoError(t, err)
 }
@@ -71,7 +71,7 @@ func TestLockService_BackendForSpec(t *testing.T) {
 	}
 	ls, err := NewLockService(opts)
 	require.NoError(t, err)
-	
+
 	reg := backend.NewRegistry()
 	ls.SetBackendRegistry(reg)
 

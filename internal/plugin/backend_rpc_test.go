@@ -131,7 +131,7 @@ func TestBackendRPC_ResolveVersion(t *testing.T) {
 	}
 	mockB.On("ResolveVersion", mock.Anything, "go", "latest", backend.Platform{OS: "linux", Arch: "amd64"}).
 		Return(expectedInfo, nil)
-	
+
 	client := setupBackendRPCClientServer(t, mockB)
 
 	info, err := client.ResolveVersion(context.Background(), "go", "latest", backend.Platform{OS: "linux", Arch: "amd64"})
@@ -143,7 +143,7 @@ func TestBackendRPC_ResolveVersion(t *testing.T) {
 func TestBackendRPC_SupportsGPG(t *testing.T) {
 	mockB := new(mockBackend)
 	mockB.On("SupportsGPG").Return(true)
-	
+
 	client := setupBackendRPCClientServer(t, mockB)
 
 	assert.True(t, client.SupportsGPG())

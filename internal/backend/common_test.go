@@ -21,7 +21,7 @@ func TestCalculateAssetScore(t *testing.T) {
 	}{
 		{"Linux AMD64 zip", "tool-linux-amd64.zip", "tool", 240},
 		{"Linux x86_64 tar.gz", "tool-linux-x86_64.tar.gz", "tool", 250},
-		{"Linux ARM64", "tool-linux-arm64.zip", "tool", -1}, // arch mismatch
+		{"Linux ARM64", "tool-linux-arm64.zip", "tool", -1},   // arch mismatch
 		{"Windows zip", "tool-windows-amd64.zip", "tool", -1}, // os mismatch
 		{"Hard exclude", "tool-linux-amd64.zip.sha256", "tool", -1},
 		{"Source exclude", "tool-source.tar.gz", "tool", -1},
@@ -122,7 +122,7 @@ func TestFindChecksumForAsset(t *testing.T) {
 	}
 
 	target := &CommonAsset{Name: "app-darwin-amd64", URL: "http://example.com/app"}
-	
+
 	// Test success
 	checksum, err := FindChecksumForAsset(context.Background(), client, assets, target)
 	if err != nil {
@@ -181,7 +181,7 @@ func TestFindGPGSignatureForAsset(t *testing.T) {
 	}
 
 	target := &CommonAsset{Name: "app-darwin-amd64", URL: "http://example.com/app"}
-	
+
 	sig := FindGPGSignatureForAsset(assets, target)
 	if sig == "" {
 		t.Errorf("expected signature url, got empty")
@@ -197,15 +197,21 @@ func TestFindGPGSignatureForAsset(t *testing.T) {
 func TestCalculateAssetScore_Linux(t *testing.T) {
 	platform := Platform{OS: "linux", Arch: "amd64"}
 	score := CalculateAssetScore("app-linux-amd64.tar.gz", platform, "app")
-	if score <= 0 { t.Errorf("expected positive score, got %d", score) }
+	if score <= 0 {
+		t.Errorf("expected positive score, got %d", score)
+	}
 }
 func TestCalculateAssetScore_Windows(t *testing.T) {
 	platform := Platform{OS: "windows", Arch: "amd64"}
 	score := CalculateAssetScore("app-windows-amd64.zip", platform, "app")
-	if score <= 0 { t.Errorf("expected positive score, got %d", score) }
-	
+	if score <= 0 {
+		t.Errorf("expected positive score, got %d", score)
+	}
+
 	score = CalculateAssetScore("app-windows-x86_64.exe", platform, "app")
-	if score <= 0 { t.Errorf("expected positive score, got %d", score) }
+	if score <= 0 {
+		t.Errorf("expected positive score, got %d", score)
+	}
 }
 
 func TestCalculateAssetScore_Darwin(t *testing.T) {

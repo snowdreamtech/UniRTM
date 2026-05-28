@@ -31,7 +31,7 @@ func TestIsPathUnder(t *testing.T) {
 
 func TestDirSize(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	err := os.WriteFile(filepath.Join(tmpDir, "file1.txt"), []byte("12345"), 0644)
 	assert.NoError(t, err)
 
@@ -133,7 +133,7 @@ func TestRunList(t *testing.T) {
 	db2, _ := database.Open(context.Background(), database.Config{Path: dbPath, WALMode: true})
 	sqlite.NewInstallationRepository(db2.Conn())
 	db2.Close()
-	
+
 	err = runList(listCmd, []string{})
 	assert.NoError(t, err)
 }

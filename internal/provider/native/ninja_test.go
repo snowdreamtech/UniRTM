@@ -1,8 +1,8 @@
 package native
 
 import (
-	"context"
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"testing"
@@ -42,7 +42,7 @@ func TestNinjaHandler_ResolveVersions(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, versions, 1)
 	assert.Equal(t, "1.11.1", versions[0].Version)
-	
+
 	// ninja creates an asset for each major platform
 	assert.Len(t, versions[0].Assets, 3)
 }

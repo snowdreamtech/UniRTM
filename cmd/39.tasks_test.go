@@ -62,4 +62,3 @@ func TestTasksDepsRun(t *testing.T) {
 	err := tasksDepsCmd.RunE(tasksDepsCmd, []string{"dummy-task"})
 	assert.NoError(t, err)
 }
-

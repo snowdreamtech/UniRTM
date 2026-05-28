@@ -9,12 +9,12 @@ import (
 
 func TestRegistry_RegisterAndGet(t *testing.T) {
 	r := NewRegistry()
-	
+
 	// Create a dummy provider
 	p := NewGenericProvider()
-	
+
 	r.Register("dummytool", p)
-	
+
 	retrieved, err := r.GetExact("dummytool")
 	if err != nil {
 		t.Fatalf("expected to get dummytool, got error: %v", err)
@@ -22,7 +22,7 @@ func TestRegistry_RegisterAndGet(t *testing.T) {
 	if retrieved.Name() != p.Name() {
 		t.Errorf("expected %s, got %s", p.Name(), retrieved.Name())
 	}
-	
+
 	_, err = r.GetExact("nonexistent")
 	if err == nil {
 		t.Error("expected error for nonexistent tool")
@@ -42,13 +42,13 @@ func TestRegistry_GetWithFallback(t *testing.T) {
 
 func TestRegistry_GetWithBackend(t *testing.T) {
 	r := NewRegistry()
-	
+
 	// 'node' is registered to NodeProvider
 	p1 := r.GetWithBackend("mytool", "node")
 	if p1.Name() != "node" {
 		t.Errorf("expected node provider, got %s", p1.Name())
 	}
-	
+
 	// 'npm:prettier' should resolve to npm
 	p2 := r.Get("npm:prettier")
 	if p2.Name() != "npm" {
@@ -60,13 +60,13 @@ func TestRegistry_HasAndUnregister(t *testing.T) {
 	r := NewRegistry()
 	p := NewGenericProvider()
 	r.Register("dummytool", p)
-	
+
 	if !r.Has("dummytool") {
 		t.Error("expected registry to have dummytool")
 	}
-	
+
 	r.Unregister("dummytool")
-	
+
 	if r.Has("dummytool") {
 		t.Error("expected registry to not have dummytool after unregister")
 	}
@@ -74,20 +74,20 @@ func TestRegistry_HasAndUnregister(t *testing.T) {
 
 func TestDefaultRegistry(t *testing.T) {
 	p := NewGenericProvider()
-	
+
 	Register("dummytool2", p)
-	
+
 	if !Has("dummytool2") {
 		t.Error("expected default registry to have dummytool2")
 	}
-	
+
 	retrieved := Get("dummytool2")
 	if retrieved.Name() != "generic" { // 'generic' is the name of GenericProvider
 		t.Errorf("expected generic, got %s", retrieved.Name())
 	}
-	
+
 	Unregister("dummytool2")
-	
+
 	if Has("dummytool2") {
 		t.Error("expected default registry to not have dummytool2 after unregister")
 	}

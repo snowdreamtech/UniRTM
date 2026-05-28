@@ -163,10 +163,10 @@ func TestVerifyBundle_InvalidDigestHex(t *testing.T) {
 	// A valid empty bundle structure to bypass JSON parsing
 	emptyBundle := `{"mediaType": "application/vnd.dev.sigstore.bundle+json;version=0.3"}`
 	v := &SigstoreVerifier{}
-	
+
 	// Set SKIP_REKOR_VERIFY to bypass tlog checking which would otherwise error early or use different path
 	t.Setenv("UNIRTM_SKIP_REKOR_VERIFY", "1")
-	
+
 	dummyIdentity, _ := verify.NewShortCertificateIdentity("https://dummy", "", "", ".*")
 	_, err := v.verifyBundle(json.RawMessage(emptyBundle), "invalid-hex-%%%", dummyIdentity, nil)
 	if err == nil {

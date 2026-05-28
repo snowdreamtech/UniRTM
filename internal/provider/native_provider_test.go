@@ -60,7 +60,7 @@ func TestNativeProvider_ListVersions_Success(t *testing.T) {
 	p := NewNativeProvider()
 	versions, err := p.ListVersions(context.Background(), "go") // "go" is golang's alias or use "golang"
 	// Wait, recipes use "golang" not "go" directly. Let's use "golang".
-	
+
 	// Actually "go" is an alias? Recipes register map for tools. Let's test nodejs to be safe.
 	mockRtNode := &mockRoundTripper{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -90,7 +90,7 @@ func TestNativeProvider_Install_EmptyArtifact(t *testing.T) {
 func TestNativeProvider_PostInstall(t *testing.T) {
 	p := NewNativeProvider()
 	tmpDir := t.TempDir()
-	
+
 	// Create a mock executable in root of tmpDir
 	exeName := "mytool"
 	if runtime.GOOS == "windows" {
@@ -119,7 +119,7 @@ func TestNativeProvider_Verify(t *testing.T) {
 
 func TestNativeProvider_IsExecutable(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	// Non-executable
 	f, err := os.CreateTemp(tmpDir, "test")
 	assert.NoError(t, err)
@@ -136,7 +136,7 @@ func TestNativeProvider_IsExecutable(t *testing.T) {
 	exePath := filepath.Join(tmpDir, exeName)
 	err = os.WriteFile(exePath, []byte("test"), 0755)
 	assert.NoError(t, err)
-	
+
 	infoExe, err := os.Stat(exePath)
 	assert.NoError(t, err)
 	assert.True(t, isExecutable(infoExe))
@@ -144,9 +144,9 @@ func TestNativeProvider_IsExecutable(t *testing.T) {
 
 func TestNativeProvider_DelegatedMethods(t *testing.T) {
 	p := NewNativeProvider()
-	
+
 	tmpDir := t.TempDir()
-	
+
 	// Create a dummy bin dir and executable so generic provider doesn't fail
 	err := os.MkdirAll(filepath.Join(tmpDir, "bin"), 0755)
 	assert.NoError(t, err)
@@ -156,7 +156,7 @@ func TestNativeProvider_DelegatedMethods(t *testing.T) {
 	}
 	err = os.WriteFile(exePath, []byte("echo hi"), 0755)
 	assert.NoError(t, err)
-	
+
 	// GenerateShims
 	_, err = p.GenerateShims("tool", tmpDir, "1.0")
 	assert.NoError(t, err)
@@ -164,7 +164,7 @@ func TestNativeProvider_DelegatedMethods(t *testing.T) {
 	// DetectVersion
 	_, err = p.DetectVersion(context.Background(), "tool", tmpDir)
 	// It might return error since it's an empty dir, but we just check it doesn't panic
-	
+
 	// ListExecutables
 	_, err = p.ListExecutables("tool", tmpDir, "1.0")
 	assert.NoError(t, err)

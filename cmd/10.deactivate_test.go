@@ -59,7 +59,7 @@ func TestRunDeactivate_ShellSpecific(t *testing.T) {
 			deactivateShell = shell
 			err := runDeactivate(cmd, []string{})
 			deactivateShell = "" // Reset
-			
+
 			assert.NoError(t, err)
 
 			w.Close()

@@ -187,7 +187,8 @@ func isGoInstall(normalizedPath string) bool {
 //   - pip  (published to PyPI)
 //
 // NOT supported (no official package published):
-//   Homebrew, Scoop, Chocolatey, Cargo, nix, snap, asdf, MacPorts, pkgx, go install
+//
+//	Homebrew, Scoop, Chocolatey, Cargo, nix, snap, asdf, MacPorts, pkgx, go install
 func officialChannelHint(method installMethod) string {
 	switch method {
 	case installMethodNpm:
@@ -248,11 +249,11 @@ func runSelfUpdate(cmd *cobra.Command, args []string) error {
 		// because a malicious actor could publish a counterfeit package there.
 		if isUnsupportedThirdPartyInstall(method) && !selfUpdateYes {
 			output.Warningf(
-				"UniRTM has NOT been officially published to the package manager\n"+
-					"that installed this binary. Self-updating from an unverified\n"+
-					"source may install a malicious package.\n\n"+
-					"  ✅  Please install from an official channel instead:\n"+
-					"       https://github.com/snowdreamtech/UniRTM#installation\n\n"+
+				"UniRTM has NOT been officially published to the package manager\n" +
+					"that installed this binary. Self-updating from an unverified\n" +
+					"source may install a malicious package.\n\n" +
+					"  ✅  Please install from an official channel instead:\n" +
+					"       https://github.com/snowdreamtech/UniRTM#installation\n\n" +
 					"  If you know what you are doing, use --yes to bypass this check.",
 			)
 			return nil

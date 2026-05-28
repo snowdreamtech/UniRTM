@@ -34,13 +34,13 @@ data_dir = ''
 [tasks.audit]
 description = 'Run comprehensive security audit (parallelized)'
 depends = [
-    "audit:gitleaks",
-    "audit:zizmor",
-    "audit:osv",
-    "audit:npm",
-    "audit:pip",
-    "audit:govulncheck",
-    "audit:trivy"
+  "audit:gitleaks",
+  "audit:zizmor",
+  "audit:osv",
+  "audit:npm",
+  "audit:pip",
+  "audit:govulncheck",
+  "audit:trivy",
 ]
 
 [tasks."audit:gitleaks"]

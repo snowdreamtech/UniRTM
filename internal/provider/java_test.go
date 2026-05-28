@@ -114,4 +114,3 @@ exit 0
 	assert.NoError(t, err)
 	assert.Equal(t, "17.0.8", version)
 }
-

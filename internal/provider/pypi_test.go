@@ -69,9 +69,9 @@ func TestPypiProvider_ListExecutables(t *testing.T) {
 
 	// Create some dummy files
 	os.WriteFile(filepath.Join(binDir, "dummy1"), []byte(""), 0755)
-	os.WriteFile(filepath.Join(binDir, "dummy2"), []byte(""), 0644) // not executable
-	os.WriteFile(filepath.Join(binDir, "pip"), []byte(""), 0755) // Should be excluded
-	os.WriteFile(filepath.Join(binDir, "python"), []byte(""), 0755) // Should be excluded
+	os.WriteFile(filepath.Join(binDir, "dummy2"), []byte(""), 0644)       // not executable
+	os.WriteFile(filepath.Join(binDir, "pip"), []byte(""), 0755)          // Should be excluded
+	os.WriteFile(filepath.Join(binDir, "python"), []byte(""), 0755)       // Should be excluded
 	os.WriteFile(filepath.Join(binDir, "Activate.ps1"), []byte(""), 0755) // Should be excluded
 
 	exes, err := p.ListExecutables("test_pkg", tmpDir, "1.0.0")

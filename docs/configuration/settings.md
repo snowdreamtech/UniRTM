@@ -23,14 +23,17 @@ log_level = "info"
 ```
 
 ## Environment Variables
+
 You can also override settings using environment variables by prefixing the setting name with `UNIRTM_`.
 
 For example, to temporarily enable trace logging:
+
 ```bash
 UNIRTM_LOG_LEVEL=trace unirtm install
 ```
 
 To temporarily disable legacy version file parsing:
+
 ```bash
 UNIRTM_LEGACY_VERSION_FILE=false unirtm run build
 ```

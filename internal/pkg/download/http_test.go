@@ -516,7 +516,7 @@ func TestHTTPDownloader_DownloadConcurrent(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		
+
 		rangeHeader := r.Header.Get("Range")
 		if rangeHeader == "" {
 			w.WriteHeader(http.StatusOK)
@@ -570,7 +570,7 @@ func TestHTTPDownloader_VerifyGPGSignature_NoKeyring(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	t.Setenv("UNIRTM_DATA_DIR", tmpDir) // keyring not found
-	
+
 	downloader := download.NewHTTPDownloader()
 	res := &download.GPGResult{}
 	err := downloader.Download(context.Background(), server.URL+"/file", filepath.Join(tmpDir, "dst"), download.DefaultDownloadOptions().WithVerifyGPG(true, res))
@@ -600,7 +600,7 @@ func TestHTTPDownloader_VerifyGPGSignature_Skipped(t *testing.T) {
 	downloader := download.NewHTTPDownloader()
 	res := &download.GPGResult{}
 	opts := download.DefaultDownloadOptions().WithVerifyGPG(true, res)
-	
+
 	err := downloader.Download(context.Background(), server.URL+"/file", filepath.Join(tmpDir, "file"), opts)
 	require.NoError(t, err)
 	assert.Equal(t, "Skipped", res.Status)

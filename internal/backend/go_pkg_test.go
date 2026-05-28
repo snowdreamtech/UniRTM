@@ -19,7 +19,7 @@ func TestGoPkgBackend_Name(t *testing.T) {
 
 func TestGoPkgBackend_Methods(t *testing.T) {
 	b := NewGoPkgBackend()
-	
+
 	deps := b.Dependencies()
 	if len(deps) != 1 || deps[0] != "go" {
 		t.Errorf("expected [go], got %v", deps)

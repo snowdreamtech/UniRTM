@@ -68,7 +68,7 @@ func TestNativeRunner_runTaskWithGraph_OutputStyles(t *testing.T) {
 	defer os.Unsetenv("UNIRTM_TASK_OUTPUT")
 	err = runner.Run(context.Background(), ".", "hello_env", nil, nil)
 	assert.NoError(t, err)
-	
+
 	// Test CI override
 	os.Setenv("CI", "true")
 	os.Unsetenv("UNIRTM_TASK_OUTPUT")

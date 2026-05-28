@@ -43,7 +43,7 @@ func TestNodeProvider_GetEnvVars(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	
+
 	npmGlobal := filepath.Join("/tmp/node", "npm-global")
 	if val, ok := vars["NPM_CONFIG_PREFIX"]; !ok || val != npmGlobal {
 		t.Errorf("expected NPM_CONFIG_PREFIX=%s, got %s", npmGlobal, val)

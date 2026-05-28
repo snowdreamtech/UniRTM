@@ -19,14 +19,14 @@ func TestNodeProvider_GenMethods(t *testing.T) {
 	if p == nil {
 		t.Fatal("provider is nil")
 	}
-	
+
 	_ = p.Name()
 
-    // skip network installers Install for now to avoid hanging tests
+	// skip network installers Install for now to avoid hanging tests
 	if "node" != "npm" && "node" != "go_pkg" && "node" != "spm" && "node" != "gem" && "node" != "cargo" {
-	    _ = p.Install(ctx, tool, installPath, artifactPath, version)
+		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
-	
+
 	_ = p.PostInstall(ctx, tool, installPath, version)
 	_, _ = p.GetEnvVars(tool, installPath, version)
 	_, _ = p.ListExecutables(tool, installPath, version)

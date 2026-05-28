@@ -3,10 +3,12 @@ package backend
 import (
 	"context"
 	"testing"
+
 	"github.com/snowdreamtech/unirtm/internal/provider/native"
 )
 
 type mockRecipeHandler struct{}
+
 func (m *mockRecipeHandler) Name() string { return "mock" }
 func (m *mockRecipeHandler) ResolveVersions(ctx context.Context, baseURL string) ([]native.VersionInfo, error) {
 	return []native.VersionInfo{
@@ -27,7 +29,7 @@ func (m *mockRecipeHandler) ResolveVersions(ctx context.Context, baseURL string)
 func (m *mockRecipeHandler) BuildURL(version, os, arch, baseURL string) string {
 	return "http://test/" + version
 }
-func (m *mockRecipeHandler) SupportedOS() []string { return []string{"linux"} }
+func (m *mockRecipeHandler) SupportedOS() []string   { return []string{"linux"} }
 func (m *mockRecipeHandler) SupportedArch() []string { return []string{"amd64"} }
 
 func TestNativeBackend_ResolveVersion(t *testing.T) {
@@ -46,25 +48,43 @@ func TestNativeBackend_ResolveVersion(t *testing.T) {
 
 	// Test alias
 	vi, err := b.ResolveVersion(ctx, "test-tool", "stable", platform)
-	if err != nil { t.Errorf("unexpected err: %v", err) }
-	if vi.Version != "1.1.0" { t.Errorf("expected 1.1.0, got %s", vi.Version) }
+	if err != nil {
+		t.Errorf("unexpected err: %v", err)
+	}
+	if vi.Version != "1.1.0" {
+		t.Errorf("expected 1.1.0, got %s", vi.Version)
+	}
 
 	// Test latest
 	vi, err = b.ResolveVersion(ctx, "test-tool", "latest", platform)
-	if err != nil { t.Errorf("unexpected err: %v", err) }
-	if vi.Version != "1.0.0" { t.Errorf("expected 1.0.0, got %s", vi.Version) } // first in array is 1.0.0
+	if err != nil {
+		t.Errorf("unexpected err: %v", err)
+	}
+	if vi.Version != "1.0.0" {
+		t.Errorf("expected 1.0.0, got %s", vi.Version)
+	} // first in array is 1.0.0
 
 	// Test exact version
 	vi, err = b.ResolveVersion(ctx, "test-tool", "1.0.0", platform)
-	if err != nil { t.Errorf("unexpected err: %v", err) }
-	if vi.Version != "1.0.0" { t.Errorf("expected 1.0.0, got %s", vi.Version) }
+	if err != nil {
+		t.Errorf("unexpected err: %v", err)
+	}
+	if vi.Version != "1.0.0" {
+		t.Errorf("expected 1.0.0, got %s", vi.Version)
+	}
 
 	// Test GetDownloadInfo
 	_, err = b.GetDownloadInfo(ctx, "test-tool", "1.0.0", platform)
-	if err != nil { t.Errorf("unexpected err: %v", err) }
+	if err != nil {
+		t.Errorf("unexpected err: %v", err)
+	}
 
 	// Test ListVersions
 	versions, err := b.ListVersions(ctx, "test-tool", platform)
-	if err != nil { t.Errorf("unexpected err: %v", err) }
-	if len(versions) != 2 { t.Errorf("expected 2 versions, got %d", len(versions)) }
+	if err != nil {
+		t.Errorf("unexpected err: %v", err)
+	}
+	if len(versions) != 2 {
+		t.Errorf("expected 2 versions, got %d", len(versions))
+	}
 }

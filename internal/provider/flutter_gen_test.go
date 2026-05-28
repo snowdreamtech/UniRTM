@@ -19,14 +19,14 @@ func TestFlutterProvider_GenMethods(t *testing.T) {
 	if p == nil {
 		t.Fatal("provider is nil")
 	}
-	
+
 	_ = p.Name()
 
-    // skip network installers Install for now to avoid hanging tests
+	// skip network installers Install for now to avoid hanging tests
 	if "flutter" != "npm" && "flutter" != "go_pkg" && "flutter" != "spm" && "flutter" != "gem" && "flutter" != "cargo" {
-	    _ = p.Install(ctx, tool, installPath, artifactPath, version)
+		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
-	
+
 	_ = p.PostInstall(ctx, tool, installPath, version)
 	_, _ = p.GetEnvVars(tool, installPath, version)
 	_, _ = p.ListExecutables(tool, installPath, version)

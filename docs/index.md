@@ -36,9 +36,10 @@ features:
 
 <br><br>
 
-## The Menu: One CLI for the whole project setup.
+## The Menu: One CLI for the whole project setup
 
 ### 🔪 01. Dev Tools
+
 Install project tools, pin versions, and switch automatically as you move between directories. No more guessing which version of Node or Python you need.
 
 ```bash
@@ -50,6 +51,7 @@ $ unirtm install
 ```
 
 ### 🫕 02. Environments
+
 Load project-specific environment variables from `.unirtm.toml`, `.env` files, shell commands, and more. Stop cluttering your global bash profile.
 
 ```bash
@@ -61,6 +63,7 @@ export DATABASE_URL=postgres://localhost/orders
 ```
 
 ### 🍳 03. Tasks
+
 Define build, test, lint, and deploy commands next to the tools and env vars they need. A modern replacement for complex Makefiles or npm scripts.
 
 ```bash
@@ -95,8 +98,9 @@ Designed from the ground up for seamless operation on **macOS**, **Linux**, and 
 <div align="center">
   <h2>Ready When You Are</h2>
   <p><em>Allez,</em> prep your station.</p>
-  
+
   ```bash
   curl -sL https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.sh | bash
   ```
+
 </div>

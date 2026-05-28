@@ -12,7 +12,7 @@ import (
 
 func TestPluginManager_LoadAll_NotExist(t *testing.T) {
 	pm := NewPluginManager("/non/existent/dir/for/plugins", nil, nil)
-	
+
 	err := pm.LoadAll(context.Background())
 	if err != nil {
 		t.Fatalf("expected nil error for non-existent directory, got %v", err)
@@ -29,14 +29,14 @@ func TestPluginManager_LoadAll_NotExist(t *testing.T) {
 
 func TestPluginManager_LoadAll_SkipsNonPlugins(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	// Create some non-plugin files and directories
 	os.WriteFile(filepath.Join(tmpDir, "not-a-plugin.txt"), []byte("test"), 0644)
 	os.WriteFile(filepath.Join(tmpDir, "unirtm-plugin-"), []byte("test"), 0644) // Should match prefix but will fail to load, which is fine since loadPlugin logs and skips. Wait, it doesn't fail the whole LoadAll.
-	os.Mkdir(filepath.Join(tmpDir, "unirtm-plugin-dir"), 0755) // directory, should be skipped
-	
+	os.Mkdir(filepath.Join(tmpDir, "unirtm-plugin-dir"), 0755)                  // directory, should be skipped
+
 	pm := NewPluginManager(tmpDir, nil, nil)
-	
+
 	err := pm.LoadAll(context.Background())
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)

@@ -10,7 +10,7 @@ func TestPipxBackend_GenMethods(t *testing.T) {
 	if b == nil {
 		t.Fatal("backend is nil")
 	}
-	
+
 	_ = b.Name()
 	_ = b.Dependencies()
 	_ = b.SupportsChecksum()

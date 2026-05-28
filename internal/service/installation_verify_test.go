@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"testing"
 	"os"
+	"testing"
 
 	"github.com/stretchr/testify/require"
 )
@@ -27,7 +27,6 @@ func Test_tryVerifyProvenance(t *testing.T) {
 	status, err = tryVerifyProvenance(context.Background(), "unknown", "node", "/tmp/some-nonexistent-path")
 	require.NoError(t, err)
 	require.Equal(t, "not_applicable", status)
-
 
 	// Test github backend with non-existent file to trigger error
 	status, err = tryVerifyProvenance(context.Background(), "github", "foo/bar", "/tmp/non-existent-artifact.tar.gz")

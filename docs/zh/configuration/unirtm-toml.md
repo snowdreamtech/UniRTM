@@ -40,19 +40,24 @@ legacy_version_file = true
 ## 模块解析
 
 ### `[env]`
+
 定义当你 `cd` 进入该目录时，自动注入到你的 Shell 中的环境变量。
+
 - 支持静态字符串 (`KEY = "value"`)。
 - 支持动态执行命令取值 (`KEY = { run = "command" }`)。
 
 ### `[tools]`
+
 列出在该项目上工作所需的工具依赖。
 UniRTM 支持映射到内部插件的标准简写（如 `node`、`go`）。它还原生支持使用 `github:org/repo` 语法直接从 GitHub 提取原生二进制文件。
 
 ### `[tasks.*]`
+
 定义任务运行器的配置。
 任务可以配置依赖项 (`depends`)、别名以及特定的环境变量覆盖。请参阅 [任务运行器概览](../tasks/overview.md) 了解更多细节。
 
 ### `[settings]`
+
 允许你在项目级别覆盖定义在 `~/.config/unirtm/config.toml` 中的全局 UniRTM 设置。
 
 ## 加载顺序与层级

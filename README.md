@@ -35,12 +35,11 @@
 - Define and run **tasks** for building, testing, linting, and deploying projects.
 
 While taking heavy inspiration from the brilliant tool `mise` (dev tools, env vars, and tasks in one CLI), UniRTM introduces several distinct architectural choices:
+
 - **Pure Go Engine**: Extreme parallel downloading capabilities leveraging goroutines.
 - **Zero Shims**: UniRTM strictly avoids bash shims. It directly prepends the absolute paths of installed tools to your `$PATH`, ensuring 100% execution speed and transparency for IDEs.
 - **Native Security**: Built-in integration with Trivy and Syft to generate SBOMs and scan for vulnerabilities whenever you install a tool.
 - **Absolute Locking**: Generates a `unirtm.lock` file that pins the exact checksums and versions of your downloaded tools for reproducible environments.
-
-
 
 ## Quickstart
 

@@ -66,15 +66,15 @@ func TestDotnetProvider_findDotnet(t *testing.T) {
 	tmpData := t.TempDir()
 	os.Setenv("UNIRTM_DATA_DIR", tmpData)
 	defer os.Unsetenv("UNIRTM_DATA_DIR")
-	
+
 	p := NewDotnetProvider()
-	
+
 	// Create fake dotnet installation
 	dotnetDir := filepath.Join(tmpData, "installs", "dotnet", "7.0.0")
 	os.MkdirAll(dotnetDir, 0755)
 	dotnetPath := filepath.Join(dotnetDir, "dotnet")
 	os.WriteFile(dotnetPath, []byte("fake binary"), 0755)
-	
+
 	found, err := p.findDotnet()
 	require.NoError(t, err)
 	require.Equal(t, dotnetPath, found)

@@ -34,5 +34,3 @@ func TestAllNativeProviders_Name(t *testing.T) {
 		})
 	}
 }
-
-

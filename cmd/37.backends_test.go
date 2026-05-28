@@ -47,4 +47,3 @@ func TestBackendsInfoRun(t *testing.T) {
 	err = backendsInfoCmd.RunE(backendsInfoCmd, []string{"nonexistent-backend-1234"})
 	assert.Error(t, err)
 }
-

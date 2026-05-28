@@ -77,7 +77,7 @@ func TestRunShell_InvalidFormat(t *testing.T) {
 
 func TestRunShell_DryRun(t *testing.T) {
 	cmd := shellCmd
-	
+
 	dryRun = true
 	defer func() { dryRun = false }()
 

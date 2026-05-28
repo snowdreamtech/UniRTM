@@ -14,7 +14,7 @@ func TestGoTaskRunner_More(t *testing.T) {
 	// create fake task binary
 	binDir := filepath.Join(t.TempDir(), "bin")
 	os.MkdirAll(binDir, 0755)
-	
+
 	// Create fake task script
 	fakeTask := filepath.Join(binDir, "task")
 	script := `#!/bin/sh
@@ -35,7 +35,7 @@ exit 0
 
 	r := NewGoTaskRunner()
 	dir := t.TempDir()
-	
+
 	// CanExecute -> false if no Taskfile
 	assert.False(t, r.CanExecute(dir, ""))
 
@@ -57,7 +57,7 @@ func TestJustRunner_More(t *testing.T) {
 	// create fake just binary
 	binDir := filepath.Join(t.TempDir(), "bin")
 	os.MkdirAll(binDir, 0755)
-	
+
 	// Create fake just script
 	fakeJust := filepath.Join(binDir, "just")
 	script := `#!/bin/sh
@@ -76,7 +76,7 @@ exit 0
 
 	r := NewJustRunner()
 	dir := t.TempDir()
-	
+
 	// CanExecute -> false if no justfile
 	assert.False(t, r.CanExecute(dir, ""))
 

@@ -2,16 +2,18 @@ package task
 
 import (
 	"context"
-	"testing"
 	"errors"
+	"testing"
 )
 
 type errorRunner struct{}
 
 func (e *errorRunner) CanExecute(dir, task string) bool { return false }
-func (e *errorRunner) Run(ctx context.Context, dir, task string, args, env []string) error { return nil }
+func (e *errorRunner) Run(ctx context.Context, dir, task string, args, env []string) error {
+	return nil
+}
 func (e *errorRunner) ListTasks(dir string) ([]string, error) { return nil, errors.New("err") }
-func (e *errorRunner) Name() string { return "errorRunner" }
+func (e *errorRunner) Name() string                           { return "errorRunner" }
 
 func TestEngine_Execute_NotFound(t *testing.T) {
 	eng := NewEngine()
@@ -24,7 +26,7 @@ func TestEngine_Execute_NotFound(t *testing.T) {
 func TestEngine_ListTasks_Error(t *testing.T) {
 	eng := NewEngine()
 	eng.runners = append(eng.runners, &errorRunner{})
-	
+
 	// Error from runner should be ignored
 	eng.ListTasks(".")
 }

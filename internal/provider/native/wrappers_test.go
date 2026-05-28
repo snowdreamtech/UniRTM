@@ -17,7 +17,7 @@ func TestNativeWrappers_ResolveVersions(t *testing.T) {
 			// Mocking GitHub release API
 			return &http.Response{
 				StatusCode: 200,
-				Body:       io.NopCloser(bytes.NewBufferString(`[
+				Body: io.NopCloser(bytes.NewBufferString(`[
 					{"tag_name":"v1.2.3", "assets": [
 						{"name": "repo-darwin-amd64.tar.gz", "browser_download_url": "http://example.com/dl"},
 						{"name": "repo-macos-universal.tar.gz", "browser_download_url": "http://example.com/dl2"}
@@ -26,7 +26,7 @@ func TestNativeWrappers_ResolveVersions(t *testing.T) {
 			}, nil
 		},
 	}
-	
+
 	oldMock := pkgHttp.MockTransport
 	pkgHttp.MockTransport = mockRt
 	defer func() { pkgHttp.MockTransport = oldMock }()

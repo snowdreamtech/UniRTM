@@ -58,7 +58,7 @@ func TestGetNoProxyEnv(t *testing.T) {
 	GlobalNoProxy = []string{"global.example.com"}
 
 	env := GetNoProxyEnv("extra.example.com")
-	
+
 	found := false
 	for _, e := range env {
 		if strings.HasPrefix(strings.ToUpper(e), "NO_PROXY=") {
@@ -72,7 +72,7 @@ func TestGetNoProxyEnv(t *testing.T) {
 			break
 		}
 	}
-	
+
 	if !found {
 		t.Error("expected to find NO_PROXY in environment")
 	}

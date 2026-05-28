@@ -17,7 +17,7 @@ import (
 
 func TestHTTPDownloader_CheckRedirect(t *testing.T) {
 	d := NewHTTPDownloader()
-	
+
 	// Too many redirects
 	via := make([]*http.Request, 10)
 	err := d.client.CheckRedirect(&http.Request{}, via)
@@ -115,7 +115,7 @@ func TestHTTPDownloader_VerifyGPGSignature(t *testing.T) {
 	// override UNIRTM_DATA_DIR to a fake directory
 	os.Setenv("UNIRTM_DATA_DIR", filepath.Join(dir, "nonexistent"))
 	defer os.Unsetenv("UNIRTM_DATA_DIR")
-	
+
 	err := d.verifyGPGSignature(ctx, ts.URL, dest)
 	if err == nil || !strings.Contains(err.Error(), "keyring not found") {
 		t.Errorf("expected keyring not found error, got %v", err)

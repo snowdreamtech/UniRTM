@@ -36,17 +36,17 @@ func TestShouldBypassProxy(t *testing.T) {
 
 func TestDisableHTTP2(t *testing.T) {
 	trans := http.DefaultTransport.(*http.Transport).Clone()
-	
+
 	DisableHTTP2(trans)
-	
+
 	if trans.ForceAttemptHTTP2 {
 		t.Error("expected ForceAttemptHTTP2 to be false")
 	}
-	
+
 	if trans.TLSNextProto == nil {
 		t.Error("expected TLSNextProto to be initialized")
 	}
-	
+
 	if trans.TLSClientConfig == nil {
 		t.Error("expected TLSClientConfig to be initialized")
 	} else if len(trans.TLSClientConfig.NextProtos) != 1 || trans.TLSClientConfig.NextProtos[0] != "http/1.1" {

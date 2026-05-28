@@ -41,7 +41,7 @@ $ unirtm run test
 你可以通过传入多个参数来顺序执行多个任务：
 
 ```bash
-$ unirtm run lint test build
+unirtm run lint test build
 ```
 
 如果在执行链中任何一个任务失败，整个流程会立即停止并返回非零的退出码。

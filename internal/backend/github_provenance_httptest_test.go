@@ -327,4 +327,3 @@ func TestFetchAttestations_BundleDownloadFails(t *testing.T) {
 		t.Errorf("expected 0 bundles when download fails, got %d", len(bundles))
 	}
 }
-

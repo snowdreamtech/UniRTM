@@ -29,7 +29,7 @@ func TestRunLsRemote(t *testing.T) {
 	cmd := lsRemoteCmd
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
-	
+
 	// Prevent network calls by using an unknown backend
 	lsRemoteBackend = "unknown"
 	defer func() { lsRemoteBackend = "" }()

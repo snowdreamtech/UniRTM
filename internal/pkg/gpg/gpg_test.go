@@ -216,7 +216,7 @@ func TestSystemGPGVerifier(t *testing.T) {
 	// 2. Create a mock gpg executable
 	mockGpgDir := t.TempDir()
 	mockGpgPath := filepath.Join(mockGpgDir, "gpg")
-	
+
 	// Create the mock script
 	mockScript := `#!/bin/sh
 	echo "MOCK GPG CALLED WITH: $@" >> /tmp/mock_gpg.log

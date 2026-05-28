@@ -97,7 +97,7 @@ func TestEnv_PathsFallback(t *testing.T) {
 func TestEnv_GetLockFilePath(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
-	
+
 	// Create a dummy lockfile in tmpDir so it finds it, instead of searching up to repo root
 	dummyLock := filepath.Join(tmpDir, ".unirtm.lock")
 	os.WriteFile(dummyLock, []byte(""), 0644)

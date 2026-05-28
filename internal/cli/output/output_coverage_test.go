@@ -72,7 +72,7 @@ func TestProgressIndicator_Coverage(t *testing.T) {
 	p.Start()
 	p.SetMessage("hello")
 	p.Update(50, 100)
-	
+
 	p.(*progressIndicator).render()
 	output := buf.String()
 	assert.Contains(t, output, "hello")
@@ -83,7 +83,7 @@ func TestProgressIndicator_Coverage(t *testing.T) {
 	buf.Reset()
 	p.(*progressIndicator).total = 0
 	p.(*progressIndicator).render()
-	
+
 	// test fail path
 	p.Fail(errors.New("fake error"))
 	assert.Contains(t, buf.String(), "fake error")

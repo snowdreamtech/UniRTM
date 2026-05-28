@@ -14,7 +14,7 @@ import (
 func TestOfflineManager_IsOnline(t *testing.T) {
 	om := NewOfflineManager()
 
-	// Initially we don't know if online without actual network, 
+	// Initially we don't know if online without actual network,
 	// but we can test with a mocked local server.
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -22,7 +22,7 @@ func TestOfflineManager_IsOnline(t *testing.T) {
 	defer ts.Close()
 
 	om.probeURLs = []string{ts.URL}
-	
+
 	if !om.IsOnline(context.Background()) {
 		t.Error("expected IsOnline to return true with working server")
 	}
@@ -42,7 +42,7 @@ func TestOfflineManager_IsOnline(t *testing.T) {
 
 func TestOfflineManager_RequireOnline(t *testing.T) {
 	om := NewOfflineManager()
-	
+
 	om.cachedStatus = new(bool)
 	*om.cachedStatus = true
 	om.cachedAt = time.Now()

@@ -44,7 +44,7 @@ func TestInstallIntoCommand_EarlyReturns(t *testing.T) {
 func TestListCommand(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
 	t.Setenv("UNIRTM_HOME", t.TempDir())
-	
+
 	originalJson := jsonOutput
 	jsonOutput = true
 	defer func() { jsonOutput = originalJson }()

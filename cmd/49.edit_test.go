@@ -21,7 +21,7 @@ func TestEditCommandStructure(t *testing.T) {
 
 func TestDiscoverConfigFiles(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	// Create some dummy config files
 	err := os.WriteFile(filepath.Join(tmpDir, ".unirtm.toml"), []byte(""), 0644)
 	require.NoError(t, err)
@@ -34,10 +34,10 @@ func TestDiscoverConfigFiles(t *testing.T) {
 	defer os.Chdir(oldWd)
 
 	candidates := discoverConfigFiles()
-	
+
 	// Since we created 2 local files, we expect at least 2
 	assert.GreaterOrEqual(t, len(candidates), 2)
-	
+
 	foundUnirtm := false
 	foundMise := false
 	for _, c := range candidates {
@@ -60,14 +60,14 @@ func TestRunEdit_SpecificFile(t *testing.T) {
 	defer os.Unsetenv("UNIRTM_EDITOR")
 
 	targetFile := filepath.Join(tmpDir, "unirtm.toml")
-	
+
 	cmd := editCmd
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 
 	err := runEdit(cmd, []string{targetFile})
 	assert.NoError(t, err)
-	
+
 	// The file should have been created since it didn't exist
 	_, err = os.Stat(targetFile)
 	assert.NoError(t, err)
@@ -82,14 +82,14 @@ func TestRunEdit_GlobalFile(t *testing.T) {
 
 	editGlobal = true
 	defer func() { editGlobal = false }()
-	
+
 	cmd := editCmd
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 
 	err := runEdit(cmd, []string{})
 	assert.NoError(t, err)
-	
+
 	// It should create the global config
 	globalPath := filepath.Join(tmpDir, "unirtm.toml")
 	_, err = os.Stat(globalPath)

@@ -86,8 +86,6 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 		script = script + " " + strings.Join(args, " ")
 	}
 
-
-
 	// Resolve timeout: task override > global setting
 	timeout := r.settings.TaskTimeout
 	if taskDef.Timeout > 0 {

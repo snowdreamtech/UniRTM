@@ -292,7 +292,7 @@ func TestRunInstall_Execution(t *testing.T) {
 	// Create a dummy config so we test config resolution
 	configFile := tmpDir + "/.unirtm.toml"
 	os.WriteFile(configFile, []byte("[tools]\ndummy-tool = { version = \"20.0.0\" }"), 0644)
-	
+
 	oldDir, _ := os.Getwd()
 	os.Chdir(tmpDir)
 	defer os.Chdir(oldDir)
@@ -311,13 +311,13 @@ func TestRunInstall_Execution(t *testing.T) {
 	// Test case: 1 arg, version from config
 	err = runInstall(cmd, []string{"dummy-tool"})
 	assert.Error(t, err)
-	
+
 	// Test case: json output
 	jsonOutput = true
 	err = runInstall(cmd, []string{"dummy-tool@20.0.0"})
 	assert.Error(t, err)
 	jsonOutput = false
-	
+
 	// Test case: multi install
 	err = runInstall(cmd, []string{"dummy-tool@20.0.0", "another-tool@1.21.0"})
 	assert.Error(t, err)

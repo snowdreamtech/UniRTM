@@ -235,23 +235,23 @@ func TestRunUninstallExecution(t *testing.T) {
 
 	repo, err := sqlite.NewInstallationRepository(db.Conn())
 	require.NoError(t, err)
-	
+
 	testInstallPath := filepath.Join(tmpDir, "tools", "dummy-tool", "20.0.0")
 	err = os.MkdirAll(testInstallPath, 0755)
 	require.NoError(t, err)
-	
+
 	err = repo.Create(context.Background(), &repository.Installation{Tool: "dummy-tool", Version: "20.0.0", Backend: "native", InstallPath: testInstallPath})
 	require.NoError(t, err)
 
 	uninstallForce = true
-	
+
 	cmd := uninstallCmd
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 
 	err = runUninstall(cmd, []string{"dummy-tool", "20.0.0"})
 	assert.NoError(t, err)
-	
+
 	_, err = repo.FindByToolAndVersion(context.Background(), "dummy-tool", "20.0.0")
 	assert.Error(t, err) // Should be uninstalled
 }
@@ -268,27 +268,27 @@ func TestRunUninstallExecution_DryRun(t *testing.T) {
 
 	repo, err := sqlite.NewInstallationRepository(db.Conn())
 	require.NoError(t, err)
-	
+
 	testInstallPath := filepath.Join(tmpDir, "tools", "dummy-tool", "20.0.0")
 	err = os.MkdirAll(testInstallPath, 0755)
 	require.NoError(t, err)
-	
+
 	err = repo.Create(context.Background(), &repository.Installation{Tool: "dummy-tool", Version: "20.0.0", Backend: "native", InstallPath: testInstallPath})
 	require.NoError(t, err)
 
 	uninstallForce = true
 	dryRun = true
 	defer func() { dryRun = false }()
-	
+
 	cmd := uninstallCmd
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 
 	err = runUninstall(cmd, []string{"dummy-tool", "20.0.0"})
 	assert.NoError(t, err)
-	
+
 	found, err := repo.FindByToolAndVersion(context.Background(), "dummy-tool", "20.0.0")
-	assert.NoError(t, err) 
+	assert.NoError(t, err)
 	assert.NotNil(t, found) // Still installed
 }
 
@@ -304,33 +304,33 @@ func TestRunUninstallExecution_Multi(t *testing.T) {
 
 	repo, err := sqlite.NewInstallationRepository(db.Conn())
 	require.NoError(t, err)
-	
+
 	testInstallPath := filepath.Join(tmpDir, "tools", "dummy-tool", "20.0.0")
 	err = os.MkdirAll(testInstallPath, 0755)
 	require.NoError(t, err)
-	
+
 	err = repo.Create(context.Background(), &repository.Installation{Tool: "dummy-tool", Version: "20.0.0", Backend: "native", InstallPath: testInstallPath})
 	require.NoError(t, err)
 
 	testInstallPath2 := filepath.Join(tmpDir, "tools", "dummy-tool2", "1.0.0")
 	err = os.MkdirAll(testInstallPath2, 0755)
 	require.NoError(t, err)
-	
+
 	err = repo.Create(context.Background(), &repository.Installation{Tool: "dummy-tool2", Version: "1.0.0", Backend: "native", InstallPath: testInstallPath2})
 	require.NoError(t, err)
 
 	uninstallForce = true
-	
+
 	cmd := uninstallCmd
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 
 	err = runUninstall(cmd, []string{"dummy-tool@20.0.0", "dummy-tool2@1.0.0"})
 	assert.NoError(t, err)
-	
+
 	_, err = repo.FindByToolAndVersion(context.Background(), "dummy-tool", "20.0.0")
 	assert.Error(t, err)
-	
+
 	_, err = repo.FindByToolAndVersion(context.Background(), "dummy-tool2", "1.0.0")
 	assert.Error(t, err)
 }

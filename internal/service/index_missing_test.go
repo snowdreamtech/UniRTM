@@ -3,8 +3,9 @@ package service
 import (
 	"context"
 	"testing"
-	"github.com/stretchr/testify/require"
+
 	"github.com/snowdreamtech/unirtm/internal/repository"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIndexManager_MissingMethods(t *testing.T) {
@@ -24,7 +25,7 @@ func TestIndexManager_MissingMethods(t *testing.T) {
 
 	// UpdateFromBackend
 	manager.UpdateFromBackend(ctx, "native")
-	
+
 	// UpdateFromAllBackends
 	manager.UpdateFromAllBackends(ctx)
 

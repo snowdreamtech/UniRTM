@@ -19,12 +19,12 @@ func TestGolangProvider_Name(t *testing.T) {
 func TestGolangProvider_PostInstall(t *testing.T) {
 	p := NewGolangProvider()
 	tmpDir := t.TempDir()
-	
+
 	err := p.PostInstall(context.Background(), "go", tmpDir, "1.22.0")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	
+
 	// Check if GOPATH directories were created
 	gopath := filepath.Join(tmpDir, "gopath")
 	dirs := []string{"bin", "pkg", "src"}
@@ -63,12 +63,12 @@ func TestGolangProvider_GetBinPaths(t *testing.T) {
 
 func TestGolangProvider_GetEnvVars(t *testing.T) {
 	p := NewGolangProvider()
-	
+
 	vars, err := p.GetEnvVars("go", "/tmp/go1.22", "1.22.0")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	
+
 	// By default GO_SET_GOROOT is not "0", so GOROOT should be set
 	if val, ok := vars["GOROOT"]; !ok || val != "/tmp/go1.22" {
 		t.Errorf("expected GOROOT=/tmp/go1.22, got %s", val)
@@ -89,12 +89,12 @@ func TestGolangProvider_GenerateShims(t *testing.T) {
 func TestGolangProvider_Uninstall(t *testing.T) {
 	p := NewGolangProvider()
 	tmpDir := t.TempDir()
-	
+
 	err := p.PostInstall(context.Background(), "go", tmpDir, "1.22.0")
 	if err != nil {
 		t.Fatalf("failed to run PostInstall: %v", err)
 	}
-	
+
 	err = p.Uninstall(context.Background(), "go", tmpDir, "1.22.0")
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)

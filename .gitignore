@@ -740,3 +740,6 @@ test_*.go
 gen_*.go
 test_*.json
 coverage.html
+trivy-out.txt
+coverage_report.md
+coverage.svg

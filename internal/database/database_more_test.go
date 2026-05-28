@@ -50,9 +50,9 @@ func TestDatabase_EdgeCases(t *testing.T) {
 	if version < 0 {
 		t.Errorf("Invalid version %d", version)
 	}
-	
+
 	db.Close()
-	
+
 	// Double close should be fine or return an error gracefully
 	_ = db.Close()
 
@@ -61,7 +61,7 @@ func TestDatabase_EdgeCases(t *testing.T) {
 	invalidPathDir := filepath.Join(tempDir, "file_as_dir")
 	os.WriteFile(invalidPathDir, []byte("content"), 0644)
 	invalidConfig := Config{Path: filepath.Join(invalidPathDir, "test.db")}
-	
+
 	_, err = Open(ctx, invalidConfig)
 	if err == nil {
 		t.Error("Expected error opening db where parent is a file")
@@ -79,14 +79,14 @@ func TestMigrationManager_Rollback(t *testing.T) {
 	defer db.Close()
 
 	m := NewMigrationManager(db.Conn())
-	
+
 	// Open runs ApplyMigrations, so we have some migrations.
 	// Let's get current version
 	v, err := m.GetCurrentVersion(ctx)
 	if err != nil {
 		t.Fatalf("GetCurrentVersion: %v", err)
 	}
-	
+
 	if v == 0 {
 		// Insert a fake migration record if none
 		_, err := db.Conn().ExecContext(ctx, "CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, description TEXT)")
@@ -94,12 +94,12 @@ func TestMigrationManager_Rollback(t *testing.T) {
 			db.Conn().ExecContext(ctx, "INSERT INTO schema_migrations (version, description) VALUES (9999, 'Test')")
 		}
 	}
-	
+
 	err = m.Rollback(ctx)
 	if err != nil {
 		t.Logf("Rollback error (expected if down sql is missing or migration not found): %v", err)
 	}
-	
+
 	// Create a table schema_migrations manually if GetCurrentVersion fails
 	db2, _ := Open(ctx, Config{Path: filepath.Join(tempDir, "test2.db")})
 	defer db2.Close()

@@ -39,6 +39,7 @@ features:
 ## 核心菜单：一个命令，搞定整个项目环境
 
 ### 🔪 01. 开发工具管理
+
 安装项目工具，锁定版本，并在不同的项目目录之间平滑切换。再也不用去猜当前项目到底需要哪个版本的 Node 或者 Python。
 
 ```bash
@@ -50,6 +51,7 @@ $ unirtm install
 ```
 
 ### 🫕 02. 环境变量
+
 从 `.unirtm.toml`、`.env` 文件或者 Shell 脚本中加载项目专属的环境变量。告别混乱的全局 Bash 配置文件。
 
 ```bash
@@ -61,6 +63,7 @@ export DATABASE_URL=postgres://localhost/orders
 ```
 
 ### 🍳 03. 任务运行器
+
 在依赖的开发工具和环境变量旁定义构建、测试、代码检查和部署任务。全面替代复杂的 Makefile 和 npm scripts。
 
 ```bash
@@ -95,8 +98,9 @@ $ unirtm run deploy
 <div align="center">
   <h2>准备就绪，即刻开始</h2>
   <p><em>Allez,</em> 准备好你的工作台。</p>
-  
+
   ```bash
   curl -sL https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.sh | bash
   ```
+
 </div>

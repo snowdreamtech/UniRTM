@@ -84,7 +84,7 @@ func TestFatalWithErrWithFieldsSubprocess(t *testing.T) {
 }
 
 func TestWithFieldsCoverage(t *testing.T) {
-    // Testing the loop branch inside WithFields when len > 0
-    l := WithFields(map[string]interface{}{"foo": "bar"})
-    assert.NotNil(t, l)
+	// Testing the loop branch inside WithFields when len > 0
+	l := WithFields(map[string]interface{}{"foo": "bar"})
+	assert.NotNil(t, l)
 }

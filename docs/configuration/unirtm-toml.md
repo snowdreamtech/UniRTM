@@ -40,20 +40,25 @@ legacy_version_file = true
 ## Section Breakdown
 
 ### `[env]`
-Defines environment variables that are injected into your shell when you `cd` into the directory. 
+
+Defines environment variables that are injected into your shell when you `cd` into the directory.
+
 - UniRTM supports static strings (`KEY = "value"`).
 - It also supports dynamic execution (`KEY = { run = "command" }`).
 
 ### `[tools]`
+
 Lists the dependencies required to work on this project.
 UniRTM supports standard shortnames (e.g., `node`, `go`) mapped to our internal plugins. It also natively supports pulling raw binaries from GitHub using the `github:org/repo` syntax.
 
 ### `[tasks.*]`
+
 Defines your task runner configuration.
 Tasks can have dependencies (`depends`), aliases, and specific environment overrides. See [Task Runner Overview](../tasks/overview.md) for a deep dive.
 
 ### `[settings]`
-Allows you to override global UniRTM settings defined in `~/.config/unirtm/config.toml` at a per-project level. 
+
+Allows you to override global UniRTM settings defined in `~/.config/unirtm/config.toml` at a per-project level.
 
 ## Loading Order
 

@@ -23,14 +23,17 @@ log_level = "info"
 ```
 
 ## 环境变量覆盖
+
 你也可以使用环境变量来临时覆盖全局设置，只需在设置名称前加上 `UNIRTM_` 前缀即可。
 
 例如，临时开启详细追踪日志：
+
 ```bash
 UNIRTM_LOG_LEVEL=trace unirtm install
 ```
 
 临时禁用对传统版本文件的解析：
+
 ```bash
 UNIRTM_LEGACY_VERSION_FILE=false unirtm run build
 ```

@@ -1,8 +1,8 @@
 package native
 
 import (
-	"context"
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"runtime"
@@ -39,7 +39,7 @@ func TestPythonHandler_ResolveVersions(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, versions, 1)
 	assert.Equal(t, "3.11.3", versions[0].Version)
-	
+
 	// Test detectPlatform locally
 	osName, arch := h.detectPlatform("cpython-3.11.3+20230507-x86_64-unknown-linux-gnu-install_only.tar.gz")
 	assert.Equal(t, "linux", osName)

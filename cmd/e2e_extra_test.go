@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"testing"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -52,8 +53,6 @@ func TestE2E_Implode(t *testing.T) {
 	_ = err
 }
 
-
-
 func TestE2E_Migrate(t *testing.T) {
 	h := NewE2EHarness(t)
 	_, _, err := h.Run("migrate")
@@ -78,8 +77,8 @@ func TestE2E_Reshim(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-
-func TestE2E_SelfUpdate(t *testing.T) { t.Skip("Skipping self update in coverage")
+func TestE2E_SelfUpdate(t *testing.T) {
+	t.Skip("Skipping self update in coverage")
 	h := NewE2EHarness(t)
 	_, _, err := h.Run("self-update")
 	_ = err
@@ -97,7 +96,6 @@ func TestE2E_Sync(t *testing.T) {
 	_, _, err := h.Run("sync")
 	_ = err
 }
-
 
 func TestE2E_Dependabot(t *testing.T) {
 	h := NewE2EHarness(t)

@@ -54,7 +54,7 @@ func TestOS_MockErrors(t *testing.T) {
 		_, err := m.Load(context.Background(), "some_path")
 		assert.Error(t, err)
 	})
-	
+
 	t.Run("LoadGlobal read error", func(t *testing.T) {
 		orig := OsReadFile
 		defer func() { OsReadFile = orig }()

@@ -44,8 +44,6 @@ echo ""
 
 # Source common library for helper functions
 
-
-
 # Test counters
 TESTS_RUN=0
 TESTS_PASSED=0

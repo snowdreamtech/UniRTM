@@ -140,7 +140,7 @@ func TestAsdfBackend_EnsurePlugin_UpdateRegistryAndClone(t *testing.T) {
 	if pluginDir2 != pluginDir {
 		t.Errorf("expected same dir")
 	}
-	
+
 	// 3. Try with an unknown tool which will fail the fallback git clone
 	_, err = b.ensurePlugin(ctx, "unknown-tool")
 	if err == nil {

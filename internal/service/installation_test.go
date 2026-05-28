@@ -3,10 +3,10 @@ package service
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"os"
-	"errors"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -275,7 +275,6 @@ func TestInstall_Errors(t *testing.T) {
 	assert.Contains(t, err.Error(), "mock install error")
 }
 
-
 func TestSelectVersionInteractive(t *testing.T) {
 	ctx := context.Background()
 	backendRegistry := backend.NewRegistry()
@@ -350,8 +349,6 @@ func TestInstall_Success(t *testing.T) {
 	err := im.Install(ctx, "tool", "tool", "1.0.0", "test-backend")
 	assert.NoError(t, err)
 }
-
-
 
 func TestInstall_Uninstall(t *testing.T) {
 	ctx := context.Background()

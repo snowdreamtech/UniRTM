@@ -266,7 +266,7 @@ func TestDownloadOptions_WithVerifyGPG(t *testing.T) {
 	opts := download.DefaultDownloadOptions()
 	var result download.GPGResult
 	newOpts := opts.WithVerifyGPG(true, &result)
-	
+
 	require.True(t, newOpts.VerifyGPG)
 	require.Equal(t, &result, newOpts.GPGResult)
 }

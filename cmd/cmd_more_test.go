@@ -20,7 +20,7 @@ func collectAllCommands(cmd *cobra.Command) []*cobra.Command {
 
 func TestAllCommandsStructureAndHelp(t *testing.T) {
 	allCmds := collectAllCommands(rootCmd)
-	
+
 	for _, cmd := range allCmds {
 		t.Run(fmt.Sprintf("CmdStructure_%s", cmd.CommandPath()), func(t *testing.T) {
 			assert.NotEmpty(t, cmd.Use, "Use should not be empty")
@@ -28,17 +28,17 @@ func TestAllCommandsStructureAndHelp(t *testing.T) {
 			_ = cmd.Short
 			_ = cmd.Long
 			_ = cmd.Example
-			
+
 			// Test execution with --help to trigger flag parsing and initialization logic
 			// Create a buffer to capture output to avoid spamming the test log
 			buf := new(bytes.Buffer)
-			
+
 			// We only want to test --help if the command can actually accept it without failing
 			// Just call cmd.Help() to test the help generation without mutating flag state heavily
 			cmd.SetOut(buf)
 			cmd.SetErr(buf)
 			// _ = cmd.Help()
-			
+
 			// Restore to nil so we don't pollute other tests that rely on default output inheritance
 			cmd.SetOut(nil)
 			cmd.SetErr(nil)
@@ -156,7 +156,7 @@ func TestMoreDirectFunctionsForCoverage(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 	t.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
-	
+
 	_ = getDefaultCacheDir()
 	_ = maskToken("12345678")
 

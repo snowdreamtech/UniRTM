@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"testing"
+
 	"github.com/stretchr/testify/assert"
 )
-
 
 func TestE2E_Uninstall(t *testing.T) {
 	h := NewE2EHarness(t)
@@ -34,5 +34,3 @@ func TestE2E_CacheClean(t *testing.T) {
 	_ = stdout
 	_ = stderr
 }
-
-
