@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // GoTaskRunner delegates task execution to the system's `task` command
@@ -48,7 +49,9 @@ func (r *GoTaskRunner) ListTasks(dir string) ([]string, error) {
 	}
 
 	// Use task --list-all to list all tasks
-	cmd := exec.Command("task", "--list-all")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "task", "--list-all")
 	cmd.Dir = dir
 	out, err := cmd.Output()
 	if err != nil {

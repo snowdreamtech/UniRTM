@@ -119,7 +119,7 @@ fi
 
 [tasks.lint-all]
 description = 'Full lint: Check all project files (used in CI or verify)'
-run = 'unirtm exec -- pre-commit run --all-files || (echo "⚠️  First pass failed. Running second check..." && unirtm exec -- pre-commit run --all-files)'
+run = 'unirtm exec -- pre-commit run --all-files > p1.log 2>&1 || (cat p1.log; echo "⚠️  First pass failed. Running second check..."; unirtm exec -- pre-commit run --all-files > p2.log 2>&1 || (cat p2.log; exit 1))'
 
 [tasks.test]
 description = 'Run Go unit tests for all packages recursively'
