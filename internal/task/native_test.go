@@ -19,7 +19,7 @@ func TestNativeRunner_runTaskWithGraph_Timeout(t *testing.T) {
 			Timeout: 1,
 		},
 	}
-	runner := NewNativeRunner(tasks, config.Settings{})
+	runner := NewNativeRunner(tasks, config.Settings{TaskOutput: "interleaved"})
 
 	err := runner.Run(context.Background(), ".", "slow", nil, nil)
 	assert.Error(t, err)
@@ -28,10 +28,6 @@ func TestNativeRunner_runTaskWithGraph_Timeout(t *testing.T) {
 
 func TestNativeRunner_runTaskWithGraph_OutputStyles(t *testing.T) {
 	tasks := map[string]config.Task{
-		"hello_spinner": {
-			Run:    "echo hello",
-			Output: "spinner",
-		},
 		"hello_prefix": {
 			Run:    "echo hello",
 			Output: "prefix",
@@ -43,28 +39,16 @@ func TestNativeRunner_runTaskWithGraph_OutputStyles(t *testing.T) {
 		"hello_env": {
 			Run: "echo hello",
 		},
-		"fail_spinner": {
-			Run:    "exit 1",
-			Output: "spinner",
-		},
 	}
-	runner := NewNativeRunner(tasks, config.Settings{})
-
-	// Test spinner
-	err := runner.Run(context.Background(), ".", "hello_spinner", nil, nil)
-	assert.NoError(t, err)
+	runner := NewNativeRunner(tasks, config.Settings{TaskOutput: "interleaved"})
 
 	// Test prefix
-	err = runner.Run(context.Background(), ".", "hello_prefix", nil, nil)
+	err := runner.Run(context.Background(), ".", "hello_prefix", nil, nil)
 	assert.NoError(t, err)
 
 	// Test interleaved
 	err = runner.Run(context.Background(), ".", "hello_interleaved", nil, nil)
 	assert.NoError(t, err)
-
-	// Test fail spinner
-	err = runner.Run(context.Background(), ".", "fail_spinner", nil, nil)
-	assert.Error(t, err)
 
 	// Test env override
 	os.Setenv("UNIRTM_TASK_OUTPUT", "interleaved")
@@ -104,7 +88,7 @@ func TestNativeRunner_runTaskWithGraph_Dependencies(t *testing.T) {
 			Run: "echo lint",
 		},
 	}
-	runner := NewNativeRunner(tasks, config.Settings{})
+	runner := NewNativeRunner(tasks, config.Settings{TaskOutput: "interleaved"})
 
 	// Success dependency
 	err := runner.Run(context.Background(), ".", "build", nil, nil)

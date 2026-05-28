@@ -85,7 +85,7 @@ func TestNativeRunner(t *testing.T) {
 	tasks := map[string]config.Task{
 		"build": {Run: "echo 'building'"},
 	}
-	runner := task.NewNativeRunner(tasks, config.Settings{})
+	runner := task.NewNativeRunner(tasks, config.Settings{TaskOutput: "interleaved"})
 
 	if !runner.CanExecute(".", "build") {
 		t.Errorf("expected NativeRunner to return true for 'build' task")

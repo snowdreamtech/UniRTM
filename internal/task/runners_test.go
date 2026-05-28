@@ -160,7 +160,7 @@ func TestNativeRunner(t *testing.T) {
 		"build": {Run: "echo build"},
 		"test":  {Run: "echo test", Depends: []string{"build"}},
 	}
-	r := NewNativeRunner(tasks, config.Settings{})
+	r := NewNativeRunner(tasks, config.Settings{TaskOutput: "interleaved"})
 	if r.Name() != "native" {
 		t.Errorf("expected native, got %s", r.Name())
 	}

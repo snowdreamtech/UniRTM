@@ -20,6 +20,7 @@ func TestNativeRunner_runTaskWithGraph(t *testing.T) {
 			"cycle2":  {Depends: []string{"cycle1"}},
 			"bad_dep": {Depends: []string{"nonexistent"}},
 		},
+		settings: config.Settings{TaskOutput: "interleaved"},
 	}
 
 	ctx := context.Background()
