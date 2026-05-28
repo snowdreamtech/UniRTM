@@ -50,11 +50,11 @@ run = 'unirtm exec -- gitleaks detect --source . --no-banner'
 [tasks."audit:zizmor"]
 description = 'Audit GitHub Actions workflows for security flaws'
 run = '''
-if [ "$UNIRTM_FIX" = "1" ]; then
-    unirtm exec -- zizmor . --format plain --config .zizmor.yml --fix=all
-else
-    unirtm exec -- zizmor . --format plain --config .zizmor.yml
-fi
+python -c "
+import os, sys
+cmd = 'unirtm exec -- zizmor . --format plain --config .zizmor.yml --fix=all' if os.environ.get('UNIRTM_FIX') == '1' else 'unirtm exec -- zizmor . --format plain --config .zizmor.yml'
+sys.exit(os.system(cmd))
+"
 '''
 
 [tasks."audit:osv"]
@@ -64,39 +64,39 @@ run = 'unirtm exec -- osv-scanner scan . --config .osv-scanner.toml'
 [tasks."audit:npm"]
 description = 'Node.js dependency audit'
 run = '''
-if [ -f "package.json" ]; then
-    if [ "$UNIRTM_FIX" = "1" ]; then
-        unirtm exec -- npm audit fix --registry="https://registry.npmjs.org"
-    else
-        unirtm exec -- npm audit --registry="https://registry.npmjs.org"
-    fi
-else
-    echo "⏭️  Skipped (no package.json)"
-fi
+python -c "
+import os, sys
+if os.path.exists('package.json'):
+    cmd = 'unirtm exec -- npm audit fix' if os.environ.get('UNIRTM_FIX') == '1' else 'unirtm exec -- npm audit'
+    sys.exit(os.system(cmd + ' --registry=https://registry.npmjs.org'))
+else:
+    print('⏭️  Skipped (no package.json)')
+"
 '''
 
 [tasks."audit:pip"]
 description = 'Python dependency audit'
 run = '''
-if [ -f "requirements.txt" ] || [ -f "pyproject.toml" ]; then
-    if [ "$UNIRTM_FIX" = "1" ]; then
-        unirtm exec -- pip-audit --fix
-    else
-        unirtm exec -- pip-audit
-    fi
-else
-    echo "⏭️  Skipped (no python requirements)"
-fi
+python -c "
+import os, sys
+if os.path.exists('requirements.txt') or os.path.exists('pyproject.toml'):
+    cmd = 'unirtm exec -- pip-audit --fix' if os.environ.get('UNIRTM_FIX') == '1' else 'unirtm exec -- pip-audit'
+    sys.exit(os.system(cmd))
+else:
+    print('⏭️  Skipped (no python requirements)')
+"
 '''
 
 [tasks."audit:govulncheck"]
 description = 'Go dependency audit'
 run = '''
-if [ -f "go.mod" ]; then
-    unirtm exec -- govulncheck ./...
-else
-    echo "⏭️  Skipped (no go.mod)"
-fi
+python -c "
+import os, sys
+if os.path.exists('go.mod'):
+    sys.exit(os.system('unirtm exec -- govulncheck ./...'))
+else:
+    print('⏭️  Skipped (no go.mod)')
+"
 '''
 
 [tasks."audit:trivy"]
@@ -109,17 +109,23 @@ unirtm exec -- trivy sbom sbom.json
 [tasks.lint]
 description = 'Fast lint: Check only modified files (staged & unstaged)'
 run = '''
-FILES=$(git ls-files -m -o --exclude-standard)
-if [ -z "$FILES" ]; then
-    echo "✨ No changed files to lint."
-else
-    unirtm exec -- pre-commit run --files $FILES || (echo "⚠️  First pass failed. Running second check..." && unirtm exec -- pre-commit run --files $FILES)
-fi
+python -c "
+import os, sys, subprocess
+files = subprocess.check_output(['git', 'ls-files', '-m', '-o', '--exclude-standard']).decode('utf-8').split()
+if not files:
+    print('✨ No changed files to lint.')
+else:
+    cmd = ['unirtm', 'exec', '--', 'pre-commit', 'run', '--files'] + files
+    res = subprocess.run(cmd)
+    if res.returncode != 0:
+        print('⚠️  First pass failed. Running second check...')
+        sys.exit(subprocess.run(cmd).returncode)
+"
 '''
 
 [tasks.lint-all]
 description = 'Full lint: Check all project files (used in CI or verify)'
-run = 'unirtm exec -- pre-commit run --all-files > p1.log 2>&1 || (cat p1.log; echo "⚠️  First pass failed. Running second check..."; unirtm exec -- pre-commit run --all-files > p2.log 2>&1 || (cat p2.log; exit 1))'
+run = 'unirtm exec -- pre-commit run --all-files'
 
 [tasks.test]
 description = 'Run Go unit tests for all packages recursively'
