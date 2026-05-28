@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/service"
@@ -78,7 +77,7 @@ func runCompletion(cmd *cobra.Command, args []string) error {
 				// Only install if config file exists for --all mode to avoid cluttering unused shells
 				configPath, _ := scm.GetConfigPath(st)
 				if _, err := os.Stat(configPath); err == nil {
-					spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Installing completion for %s...", st))
+					spinner, _ := output.StartSpinner(fmt.Sprintf("Installing completion for %s...", st))
 					if err := installCompletion(formatter, cmd, st); err != nil {
 						spinner.Warning(fmt.Sprintf("Failed to install completion for %s: %v", st, err))
 					} else {
@@ -86,7 +85,7 @@ func runCompletion(cmd *cobra.Command, args []string) error {
 					}
 				}
 			} else if completionUninstall {
-				spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Uninstalling completion for %s...", st))
+				spinner, _ := output.StartSpinner(fmt.Sprintf("Uninstalling completion for %s...", st))
 				if err := uninstallCompletion(formatter, st); err != nil {
 					spinner.Warning(fmt.Sprintf("Failed to uninstall completion for %s: %v", st, err))
 				} else {
@@ -111,7 +110,7 @@ func runCompletion(cmd *cobra.Command, args []string) error {
 
 	// 3. If uninstalling
 	if completionUninstall {
-		spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Uninstalling completion for %s...", shellType))
+		spinner, _ := output.StartSpinner(fmt.Sprintf("Uninstalling completion for %s...", shellType))
 		err := uninstallCompletion(formatter, shellType)
 		if err != nil {
 			spinner.Fail(err.Error())
@@ -127,7 +126,7 @@ func runCompletion(cmd *cobra.Command, args []string) error {
 	}
 
 	// 5. Install persistently (Plan B style)
-	spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Installing completion for %s...", shellType))
+	spinner, _ := output.StartSpinner(fmt.Sprintf("Installing completion for %s...", shellType))
 	err := installCompletion(formatter, cmd, shellType)
 	if err != nil {
 		spinner.Fail(err.Error())

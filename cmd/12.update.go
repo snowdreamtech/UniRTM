@@ -140,7 +140,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	if updatePreview {
 		var spinner *pterm.SpinnerPrinter
 		if !quiet {
-			spinner, _ = pterm.DefaultSpinner.Start("Checking for available updates...")
+			spinner, _ = output.StartSpinner("Checking for available updates...")
 		}
 
 		preview, err := updateManager.PreviewUpdates(ctx)
@@ -212,7 +212,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 
 		var spinner *pterm.SpinnerPrinter
 		if !quiet {
-			spinner, _ = pterm.DefaultSpinner.Start(fmt.Sprintf("Updating %s to %s...", tool, targetVersion))
+			spinner, _ = output.StartSpinner(fmt.Sprintf("Updating %s to %s...", tool, targetVersion))
 		}
 
 		result, err := updateManager.UpdateTool(ctx, tool, targetVersion)
@@ -251,7 +251,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	// Update all tools
 	var spinner *pterm.SpinnerPrinter
 	if !quiet {
-		spinner, _ = pterm.DefaultSpinner.Start("Checking for available updates...")
+		spinner, _ = output.StartSpinner("Checking for available updates...")
 	}
 
 	preview, err := updateManager.PreviewUpdates(ctx)
@@ -294,7 +294,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 
 	var updateSpinner *pterm.SpinnerPrinter
 	if !quiet {
-		updateSpinner, _ = pterm.DefaultSpinner.Start("Applying all updates...")
+		updateSpinner, _ = output.StartSpinner("Applying all updates...")
 	}
 
 	results, err := updateManager.UpdateAll(ctx)

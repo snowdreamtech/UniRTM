@@ -15,7 +15,6 @@ require (
 	github.com/hashicorp/go-plugin v1.8.0
 	github.com/joho/godotenv v1.5.1
 	github.com/klauspost/compress v1.18.5
-	github.com/leanovate/gopter v0.2.11
 	github.com/lithammer/fuzzysearch v1.1.8
 	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/pelletier/go-toml/v2 v2.3.1

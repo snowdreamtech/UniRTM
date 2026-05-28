@@ -119,7 +119,7 @@ func runOutdated(cmd *cobra.Command, args []string) error {
 	backendRegistry := backend.NewRegistry()
 	platform := backend.CurrentPlatform()
 
-	spinner, _ := pterm.DefaultSpinner.Start("Checking for newer versions...")
+	spinner, _ := output.StartSpinner("Checking for newer versions...")
 
 	var results []outdatedResult
 	for _, inst := range installations {
@@ -256,7 +256,7 @@ func runOutdated(cmd *cobra.Command, args []string) error {
 			if !selectedSet[r.Tool] {
 				continue
 			}
-			upgradeSpinner, _ := pterm.DefaultSpinner.Start(
+			upgradeSpinner, _ := output.StartSpinner(
 				fmt.Sprintf("Upgrading %s %s → %s ...",
 					pterm.FgCyan.Sprint(r.Tool),
 					pterm.FgYellow.Sprint(r.Current),

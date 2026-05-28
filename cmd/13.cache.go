@@ -241,7 +241,7 @@ func runCacheClear(cmd *cobra.Command, args []string) error {
 
 	if len(args) == 1 {
 		tool := args[0]
-		spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Clearing cache for %s...", tool))
+		spinner, _ := output.StartSpinner(fmt.Sprintf("Clearing cache for %s...", tool))
 
 		if err := cm.PurgeByPrefix(ctx, tool); err != nil {
 			spinner.Warning(fmt.Sprintf("Tool-specific cache clearing requires manual deletion from %s", env.GetCacheDir()))
@@ -251,7 +251,7 @@ func runCacheClear(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	spinner, _ := pterm.DefaultSpinner.Start("Clearing all cache...")
+	spinner, _ := output.StartSpinner("Clearing all cache...")
 	if err := cm.PurgeAll(ctx); err != nil {
 		spinner.Fail(fmt.Sprintf("Failed to clear cache: %v", err))
 		return fmt.Errorf("clear cache: %w", err)
@@ -280,7 +280,7 @@ func runCachePurge(cmd *cobra.Command, args []string) error {
 	}
 	defer db.Close()
 
-	spinner, _ := pterm.DefaultSpinner.Start("Removing expired cache entries...")
+	spinner, _ := output.StartSpinner("Removing expired cache entries...")
 	if err := cm.PurgeExpired(ctx); err != nil {
 		spinner.Fail(fmt.Sprintf("Failed to purge cache: %v", err))
 		return fmt.Errorf("purge cache: %w", err)

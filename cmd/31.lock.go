@@ -203,7 +203,7 @@ func runLock(cmd *cobra.Command, args []string) error {
 	lockSvc.SetBackendRegistry(backendRegistry)
 
 	// ── Progress display ──────────────────────────────────────────────────────
-	spinner, _ := pterm.DefaultSpinner.Start(
+	spinner, _ := output.StartSpinner(
 		fmt.Sprintf("Resolving %d tool(s) for %d platform(s)...", len(tools), len(platforms)),
 	)
 

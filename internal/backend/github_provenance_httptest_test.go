@@ -83,6 +83,9 @@ func TestFetchExternalBundle_Snappy(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
+	os.Setenv("UNIRTM_ENABLE_GITHUB_PROXY", "0")
+	defer os.Unsetenv("UNIRTM_ENABLE_GITHUB_PROXY")
+
 	verifier := &provenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
 	}
@@ -116,6 +119,8 @@ func TestFetchAttestations_WithExternalBundle(t *testing.T) {
 
 	os.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
 	defer os.Unsetenv("UNIRTM_GITHUB_API_BASEURL")
+	os.Setenv("UNIRTM_ENABLE_GITHUB_PROXY", "0")
+	defer os.Unsetenv("UNIRTM_ENABLE_GITHUB_PROXY")
 
 	verifier := &provenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(30 * time.Second),

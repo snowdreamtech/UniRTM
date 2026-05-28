@@ -288,7 +288,7 @@ func runSelfUpdate(cmd *cobra.Command, args []string) error {
 	}
 
 	// --- Fetch release info ---
-	spinner, _ := pterm.DefaultSpinner.Start("Checking for updates...")
+	spinner, _ := output.StartSpinner("Checking for updates...")
 	releaseInfo, fetchErr := fetchGitHubRelease(target)
 	if fetchErr != nil {
 		spinner.Warning(fmt.Sprintf("Could not fetch release info: %v", fetchErr))

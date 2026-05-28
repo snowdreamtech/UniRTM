@@ -133,7 +133,7 @@ func (im *InstallationManager) SelectVersionInteractive(ctx context.Context, too
 	}
 
 	// 2. List remote versions
-	spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Fetching versions for %s...", tool))
+	spinner, _ := output.StartSpinner(fmt.Sprintf("Fetching versions for %s...", tool))
 	platform := backend.CurrentPlatform()
 	versionInfos, err := b.ListVersions(ctx, tool, platform)
 	if err != nil {
@@ -419,9 +419,7 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 		// Start a spinner for the connection/download phase
 		var spinner *pterm.SpinnerPrinter
 		if !quietProgress {
-			spinner, _ = pterm.DefaultSpinner.
-				WithText(fmt.Sprintf("Connecting to %s...", tool)).
-				Start()
+			spinner, _ = output.StartSpinner(fmt.Sprintf("Connecting to %s...", tool))
 		}
 
 		// Initialize progress bar
@@ -594,7 +592,7 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 							Show()
 
 						if confirm {
-							spinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Importing GPG key %s...", fp))
+							spinner, _ := output.StartSpinner(fmt.Sprintf("Importing GPG key %s...", fp))
 							if importErr := im.gpgVerifier.ImportKey(ctx, fp); importErr == nil {
 								spinner.Success("GPG key imported successfully")
 								// Retry verification

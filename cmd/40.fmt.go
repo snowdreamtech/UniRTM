@@ -67,7 +67,7 @@ func runFmt(cmd *cobra.Command, args []string) error {
 	// entirely when running under 'go test'; use plain pterm printers instead.
 	var spinner *pterm.SpinnerPrinter
 	if !testing.Testing() {
-		spinner, _ = pterm.DefaultSpinner.Start("Scanning configuration files...")
+		spinner, _ = output.StartSpinner("Scanning configuration files...")
 	}
 
 	// spinnerWarn / spinnerSuccess are helpers that route to the spinner when

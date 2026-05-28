@@ -156,8 +156,7 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 	var buf bytes.Buffer
 	if outputStyle == "spinner" || outputStyle == "" {
 		// Create a local copy to avoid data races when tasks run concurrently
-		sp := pterm.DefaultSpinner
-		spinner, _ = sp.Start(fmt.Sprintf("Running task: %s", taskName))
+		spinner, _ = output.StartSpinner(fmt.Sprintf("Running task: %s", taskName))
 		// Capture output so we can show it if it fails, or just hide it
 		if cmd != nil {
 			cmd.Stdout = &buf

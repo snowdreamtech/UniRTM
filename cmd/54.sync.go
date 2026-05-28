@@ -83,7 +83,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 	}
 
 	pterm.Println()
-	spinner, _ := pterm.DefaultSpinner.Start("Scanning for external tool installations...")
+	spinner, _ := output.StartSpinner("Scanning for external tool installations...")
 
 	detected := scanExternalTools(targetTool)
 	spinner.Stop()
@@ -169,7 +169,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 	providerRegistry := provider.NewRegistry()
 
 	for _, d := range toSync {
-		syncSpinner, _ := pterm.DefaultSpinner.Start(fmt.Sprintf("Syncing %s@%s from %s...", d.Tool, d.Version, d.Source))
+		syncSpinner, _ := output.StartSpinner(fmt.Sprintf("Syncing %s@%s from %s...", d.Tool, d.Version, d.Source))
 
 		targetDir := filepath.Join(installsDir, d.Tool, d.Version)
 

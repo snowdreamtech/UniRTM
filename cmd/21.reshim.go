@@ -184,9 +184,7 @@ func runReshim(cmd *cobra.Command, args []string) error {
 	// ── Phase 2: Concurrent shim generation ───────────────────────────────────
 	pterm.DefaultSection.Printfln("Regenerating %d shim(s)", len(installations))
 
-	spinner, _ := pterm.DefaultSpinner.
-		WithSequence("⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏").
-		Start("Generating shims in parallel…")
+	spinner, _ := output.StartSpinner("Generating shims in parallel…")
 
 	var (
 		shimCount atomic.Int64

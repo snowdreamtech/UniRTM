@@ -76,7 +76,7 @@ func TestInstallationManager_ExecuteHook(t *testing.T) {
 	im := &InstallationManager{}
 
 	// Test empty command
-	err := im.executeHook(context.Background(), "", "node", "18.0.0")
+	err := im.executeHook(context.WithValue(context.Background(), ContextKeyQuietProgress, true), "", "node", "18.0.0")
 	require.NoError(t, err)
 
 	// Test a simple echo command that shouldn't fail
@@ -89,7 +89,7 @@ func TestInstallationManager_ExecuteHook(t *testing.T) {
 	}
 
 	// Create context with quiet progress to test both branches
-	ctx := context.WithValue(context.Background(), ContextKeyQuietProgress, true)
+	ctx := context.WithValue(context.WithValue(context.Background(), ContextKeyQuietProgress, true), ContextKeyQuietProgress, true)
 
 	err = im.executeHook(ctx, cmd, "node", "18.0.0")
 	require.NoError(t, err)
@@ -100,7 +100,7 @@ func TestInstallationManager_ExecuteHook(t *testing.T) {
 	assert.Contains(t, string(content), "success")
 
 	// Test failing command
-	err = im.executeHook(context.Background(), "exit 1", "node", "18.0.0")
+	err = im.executeHook(context.WithValue(context.Background(), ContextKeyQuietProgress, true), "exit 1", "node", "18.0.0")
 	if os.PathSeparator != '\\' {
 		require.Error(t, err)
 	}
@@ -141,17 +141,17 @@ func TestInstallationManager_IsInstalled(t *testing.T) {
 
 	// Test basic lookup
 	t.Logf("Checking node 18.0.0")
-	installed, inst := im.IsInstalled(context.Background(), "node", "18.0.0", "github")
+	installed, inst := im.IsInstalled(context.WithValue(context.Background(), ContextKeyQuietProgress, true), "node", "18.0.0", "github")
 	assert.True(t, installed)
 	assert.NotNil(t, inst)
 
 	// Test alias lookup
-	installed, inst = im.IsInstalled(context.Background(), "node", "lts", "github")
+	installed, inst = im.IsInstalled(context.WithValue(context.Background(), ContextKeyQuietProgress, true), "node", "lts", "github")
 	assert.True(t, installed)
 	assert.NotNil(t, inst)
 
 	// Test missing
-	installed, inst = im.IsInstalled(context.Background(), "node", "19.0.0", "github")
+	installed, inst = im.IsInstalled(context.WithValue(context.Background(), ContextKeyQuietProgress, true), "node", "19.0.0", "github")
 	assert.False(t, installed)
 	assert.Nil(t, inst)
 }
@@ -188,11 +188,11 @@ func TestInstallationManager_Uninstall(t *testing.T) {
 	)
 
 	// First uninstall (success)
-	err := im.Uninstall(context.Background(), "node", "18.0.0")
+	err := im.Uninstall(context.WithValue(context.Background(), ContextKeyQuietProgress, true), "node", "18.0.0")
 	require.NoError(t, err)
 
 	// Second uninstall (not found error)
-	err = im.Uninstall(context.Background(), "node", "18.0.0")
+	err = im.Uninstall(context.WithValue(context.Background(), ContextKeyQuietProgress, true), "node", "18.0.0")
 	require.ErrorIs(t, err, repository.ErrNotFound)
 }
 
@@ -418,24 +418,24 @@ func TestInstallationManager_ResolveExecutable(t *testing.T) {
 	im.providerRegistry.Register("github", mp)
 
 	// 1. Exact match
-	exePath, envVars, err := im.ResolveExecutable(context.Background(), "node", backend.Platform{})
+	exePath, envVars, err := im.ResolveExecutable(context.WithValue(context.Background(), ContextKeyQuietProgress, true), "node", backend.Platform{})
 	require.NoError(t, err)
 	assert.Equal(t, nodeExec, exePath)
 	assert.Equal(t, "node", envVars["ENV_VAR"])
 
 	// 2. Prefix match
-	exePath, envVars, err = im.ResolveExecutable(context.Background(), "python", backend.Platform{})
+	exePath, envVars, err = im.ResolveExecutable(context.WithValue(context.Background(), ContextKeyQuietProgress, true), "python", backend.Platform{})
 	require.NoError(t, err)
 	assert.Equal(t, pyExec, exePath)
 	assert.Equal(t, "python", envVars["ENV_VAR"])
 
 	// 3. Not found
-	_, _, err = im.ResolveExecutable(context.Background(), "ruby", backend.Platform{})
+	_, _, err = im.ResolveExecutable(context.WithValue(context.Background(), ContextKeyQuietProgress, true), "ruby", backend.Platform{})
 	require.Error(t, err)
 
 	// 4. Test toolConfigs filtering
 	im.toolConfigs["node"] = config.ToolConfig{Version: "20.0.0"}
-	_, _, err = im.ResolveExecutable(context.Background(), "node", backend.Platform{})
+	_, _, err = im.ResolveExecutable(context.WithValue(context.Background(), ContextKeyQuietProgress, true), "node", backend.Platform{})
 	require.Error(t, err) // Version 18.0.0 should be filtered out
 }
 
@@ -471,7 +471,7 @@ func TestInstallationManager_EnsureInstalled(t *testing.T) {
 	})
 
 	// Ensure EnsureInstalled routes to EnsureInstalledFromSpecs and succeeds (or errors)
-	err := im.EnsureInstalled(context.Background(), map[string]config.ToolConfig{
+	err := im.EnsureInstalled(context.WithValue(context.Background(), ContextKeyQuietProgress, true), map[string]config.ToolConfig{
 		"node": {Version: "18.0.0"},
 	})
 	// It should succeed since all mocks are properly set up
@@ -510,13 +510,13 @@ func TestInstallationManager_EnsureInstalledFromSpecs(t *testing.T) {
 	}
 
 	// Installed tool
-	err := im.EnsureInstalledFromSpecs(context.Background(), map[string]ToolSpec{
+	err := im.EnsureInstalledFromSpecs(context.WithValue(context.Background(), ContextKeyQuietProgress, true), map[string]ToolSpec{
 		"node": {Name: "node", Version: "18.0.0", BackendName: "native", OriginalName: "node"},
 	})
 	require.NoError(t, err)
 
 	// Not installed tool
-	err = im.EnsureInstalledFromSpecs(context.Background(), map[string]ToolSpec{
+	err = im.EnsureInstalledFromSpecs(context.WithValue(context.Background(), ContextKeyQuietProgress, true), map[string]ToolSpec{
 		"dummy-tool": {Name: "dummy-tool", Version: "3.9", BackendName: "native", OriginalName: "dummy-tool"},
 	})
 	require.NoError(t, err) // Should succeed with mocks

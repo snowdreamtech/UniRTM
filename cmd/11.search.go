@@ -125,7 +125,7 @@ func runSearch(cmd *cobra.Command, args []string) error {
 	// Perform search
 	var spinner *pterm.SpinnerPrinter
 	if !jsonOutput && !quiet {
-		spinner, _ = pterm.DefaultSpinner.Start("Searching tool index for " + pterm.FgCyan.Sprint(query) + "...")
+		spinner, _ = output.StartSpinner("Searching tool index for " + pterm.FgCyan.Sprint(query) + "...")
 	}
 
 	results, err := indexManager.SearchTools(ctx, service.SearchOptions{

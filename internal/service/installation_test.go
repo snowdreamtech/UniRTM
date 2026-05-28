@@ -109,7 +109,7 @@ checksum = "123"
 		&config.Settings{},
 	)
 
-	ctx := context.Background()
+	ctx := context.WithValue(context.Background(), ContextKeyQuietProgress, true)
 
 	// Scenario 1: Using the stripped tool name (simulating the old bug).
 	// CheckStrict should fail because it won't find "foo/bar" in the lockfile.
@@ -130,7 +130,7 @@ checksum = "123"
 }
 
 func TestTryVerifyProvenance(t *testing.T) {
-	ctx := context.Background()
+	ctx := context.WithValue(context.Background(), ContextKeyQuietProgress, true)
 
 	t.Run("skipped via env", func(t *testing.T) {
 		os.Setenv("UNIRTM_VERIFY_PROVENANCE", "0")
@@ -227,7 +227,7 @@ func TestSortTools(t *testing.T) {
 }
 
 func TestInstall_Errors(t *testing.T) {
-	ctx := context.Background()
+	ctx := context.WithValue(context.Background(), ContextKeyQuietProgress, true)
 	backendRegistry := backend.NewRegistry()
 	mockBackend := &mockUpdateBackend{
 		name: "test-backend",
@@ -279,7 +279,7 @@ func TestInstall_Errors(t *testing.T) {
 }
 
 func TestSelectVersionInteractive(t *testing.T) {
-	ctx := context.Background()
+	ctx := context.WithValue(context.Background(), ContextKeyQuietProgress, true)
 	backendRegistry := backend.NewRegistry()
 	mockBackend := &mockUpdateBackend{
 		name: "test-backend",
@@ -306,7 +306,7 @@ func TestSelectVersionInteractive(t *testing.T) {
 }
 
 func TestInstall_Success(t *testing.T) {
-	ctx := context.Background()
+	ctx := context.WithValue(context.Background(), ContextKeyQuietProgress, true)
 	backendRegistry := backend.NewRegistry()
 	mockBackend := &mockUpdateBackend{
 		name: "test-backend",
@@ -354,7 +354,7 @@ func TestInstall_Success(t *testing.T) {
 }
 
 func TestInstall_Uninstall(t *testing.T) {
-	ctx := context.Background()
+	ctx := context.WithValue(context.Background(), ContextKeyQuietProgress, true)
 	installPath := filepath.Join(t.TempDir(), "tool", "1.0.0")
 	os.MkdirAll(installPath, 0755)
 	installRepo := &mockInstallationRepo{
