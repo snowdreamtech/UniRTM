@@ -23,7 +23,7 @@ func TestNativeRunner_runTaskWithGraph_Timeout(t *testing.T) {
 
 	err := runner.Run(context.Background(), ".", "slow", nil, nil)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "killed") // Or context deadline exceeded
+	assert.Contains(t, err.Error(), "context deadline exceeded")
 }
 
 func TestNativeRunner_runTaskWithGraph_OutputStyles(t *testing.T) {

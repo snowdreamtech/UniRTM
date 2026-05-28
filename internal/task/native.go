@@ -9,13 +9,14 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
-	"runtime"
 	"strings"
 	"time"
 
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
+	"mvdan.cc/sh/v3/expand"
+	"mvdan.cc/sh/v3/interp"
+	"mvdan.cc/sh/v3/syntax"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 )
@@ -103,26 +104,20 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 		defer cancel()
 	}
 
-	shellCmd := "sh"
-	shellArg := "-c"
-	if runtime.GOOS == "windows" {
-		if _, err := exec.LookPath("sh"); err != nil {
-			shellCmd = "cmd.exe"
-			shellArg = "/c"
-		}
+	// Inject process env + UniRTM env
+	fullEnv := append(os.Environ(), env...)
+	// Inject task-specific env defined in TOML
+	for k, v := range taskDef.Env {
+		fullEnv = append(fullEnv, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	var cmd *exec.Cmd
+	var file *syntax.File
+	var err error
 	if strings.TrimSpace(script) != "" {
-		cmd = exec.CommandContext(runCtx, shellCmd, shellArg, script)
-		cmd.Dir = dir
-
-		// Inject process env + UniRTM env
-		cmd.Env = append(os.Environ(), env...)
-
-		// Inject task-specific env defined in TOML
-		for k, v := range taskDef.Env {
-			cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+		parser := syntax.NewParser()
+		file, err = parser.Parse(strings.NewReader(script), "")
+		if err != nil {
+			return fmt.Errorf("failed to parse task script: %w", err)
 		}
 	}
 
@@ -154,33 +149,40 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 
 	var spinner *pterm.SpinnerPrinter
 	var buf bytes.Buffer
+	var stdout, stderr io.Writer
+	stdout = os.Stdout
+	stderr = os.Stderr
+
 	if outputStyle == "spinner" || outputStyle == "" {
 		// Create a local copy to avoid data races when tasks run concurrently
 		spinner, _ = output.StartSpinner(fmt.Sprintf("Running task: %s", taskName))
 		// Capture output so we can show it if it fails, or just hide it
-		if cmd != nil {
-			cmd.Stdout = &buf
-			cmd.Stderr = &buf
+		if file != nil {
+			stdout = &buf
+			stderr = &buf
 		}
 	} else if outputStyle == "prefix" {
 		prefix := fmt.Sprintf("[%s] ", pterm.FgCyan.Sprint(taskName))
-		if cmd != nil {
-			cmd.Stdout = &prefixWriter{w: os.Stdout, prefix: prefix, atStart: true}
-			cmd.Stderr = &prefixWriter{w: os.Stderr, prefix: prefix, atStart: true}
+		if file != nil {
+			stdout = &prefixWriter{w: os.Stdout, prefix: prefix, atStart: true}
+			stderr = &prefixWriter{w: os.Stderr, prefix: prefix, atStart: true}
 		}
 	} else {
 		// "interleaved" or other
 		output.Infof("Running task: %s", taskName)
-		if cmd != nil {
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-		}
 	}
 
-	var err error
-	if cmd != nil {
-		cmd.Stdin = os.Stdin
-		err = cmd.Run()
+	if file != nil {
+		runner, runnerErr := interp.New(
+			interp.Env(expand.ListEnviron(fullEnv...)),
+			interp.Dir(dir),
+			interp.StdIO(os.Stdin, stdout, stderr),
+		)
+		if runnerErr != nil {
+			err = fmt.Errorf("failed to create shell runner: %w", runnerErr)
+		} else {
+			err = runner.Run(runCtx, file)
+		}
 	}
 
 	if spinner != nil {

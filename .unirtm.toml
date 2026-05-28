@@ -90,13 +90,11 @@ else:
 [tasks."audit:govulncheck"]
 description = 'Go dependency audit'
 run = '''
-python -c "
-import os, sys
-if os.path.exists('go.mod'):
-    sys.exit(os.system('unirtm exec -- govulncheck ./...'))
-else:
-    print('⏭️  Skipped (no go.mod)')
-"
+if [ -f "go.mod" ]; then
+    unirtm exec -- govulncheck ./...
+else
+    echo "⏭️  Skipped (no go.mod)"
+fi
 '''
 
 [tasks."audit:trivy"]
