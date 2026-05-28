@@ -40,14 +40,7 @@
 - **原生安全检测**: 底层原生集成了 Trivy 和 Syft。当你下载工具时，会自动生成 SBOM 并扫描已知的安全漏洞。
 - **强制版本锁定**: 自动生成 `unirtm.lock` 锁文件，不仅锁定版本号，还精确锁定所有下载包的校验和，从而保障团队环境的绝对可复现。
 
-## 功能演示 (Demo)
 
-下面的演示展示了如何安装并使用 `UniRTM` 在同一台系统上管理多个版本的 `node` 和 `go`。
-需要注意的是，当你运行 `which node` 时，它返回的是真实的绝对路径，而不是一个虚假的垫片脚本！
-
-[![demo](./docs/public/demo.gif)](https://unirtm.snowdream.tech/zh/demo.html)
-
-查看 [演示脚本与详情](https://unirtm.snowdream.tech/zh/demo.html)。
 
 ## 快速入门
 

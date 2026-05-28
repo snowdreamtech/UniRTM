@@ -40,14 +40,7 @@ While taking heavy inspiration from the brilliant tool `mise` (dev tools, env va
 - **Native Security**: Built-in integration with Trivy and Syft to generate SBOMs and scan for vulnerabilities whenever you install a tool.
 - **Absolute Locking**: Generates a `unirtm.lock` file that pins the exact checksums and versions of your downloaded tools for reproducible environments.
 
-## Demo
 
-The following demo shows how to install and use `UniRTM` to manage multiple versions of `node` and `go` on the same system.
-Note that calling `which node` gives us a real absolute path to node, not a shim!
-
-[![demo](./docs/public/demo.gif)](https://unirtm.snowdream.tech/demo.html)
-
-See [demo transcript](https://unirtm.snowdream.tech/demo.html).
 
 ## Quickstart
 
