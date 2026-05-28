@@ -733,3 +733,10 @@ dummy2/
 gin.log
 coverage.out
 cmd/.unirtm.toml
+*.patch
+*.rej
+coverage_*.txt
+test_*.go
+gen_*.go
+test_*.json
+coverage.html
