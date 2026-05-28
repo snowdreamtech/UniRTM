@@ -66,7 +66,7 @@ func runEdit(cmd *cobra.Command, args []string) error {
 	cfg, _ := config.Load()
 	editor, source := getBestEditorWithSource(cfg)
 
-	output.Infof("Opening configuration editor (using %s via %s)...\n", pterm.Bold.Sprint(editor), source)
+	output.Infof("Opening configuration editor (using %s via %s)...", pterm.Bold.Sprint(editor), source)
 
 	// Add a tip if we are using a fallback/system default
 	if source == "system default" || source == "fallback" {

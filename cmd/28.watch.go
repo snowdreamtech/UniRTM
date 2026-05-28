@@ -63,7 +63,7 @@ func runWatch(cmd *cobra.Command, args []string) error {
 	if len(watchGlobs) > 0 {
 		output.Infof("Watch globs:       %s", pterm.LightMagenta(strings.Join(watchGlobs, ", ")))
 	} else {
-		output.Infof("Watch directories: %s (recursive)\n", pterm.LightGreen("."))
+		output.Infof("Watch directories: %s (recursive)", pterm.LightGreen("."))
 	}
 	if len(watchIgnores) > 0 {
 		output.Infof("Ignore patterns:   %s", pterm.LightRed(strings.Join(watchIgnores, ", ")))
@@ -200,12 +200,12 @@ func runWatchTask(taskName string) {
 	if err != nil {
 		// If command was killed (exit status -1/killed), print a friendly reload indicator
 		if strings.Contains(err.Error(), "killed") || strings.Contains(err.Error(), "exit status -1") || strings.Contains(err.Error(), "signal: killed") {
-			output.Warningf("🔄 Task %s interrupted & reloaded.", taskName)
+			output.Warningf("Task %s interrupted & reloaded.", taskName)
 		} else {
-			output.Warningf("Task %s failed: %v (took %v)\n", taskName, err, duration.Round(time.Millisecond))
+			output.Warningf("Task %s failed: %v (took %v)", taskName, err, duration.Round(time.Millisecond))
 		}
 	} else {
-		output.Successf("✅ Task %s completed successfully in %v.", taskName, duration.Round(time.Millisecond))
+		output.Successf("Task %s completed successfully in %v.", taskName, duration.Round(time.Millisecond))
 	}
 }
 

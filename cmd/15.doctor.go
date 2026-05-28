@@ -329,7 +329,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		output.Errorf("Database: %v", err)
 	} else {
 		defer db.Close()
-		output.Successf("Database: %s (Size: %s)\n", pterm.FgGray.Sprint(dbPath), getFileSize(dbPath))
+		output.Successf("Database: %s (Size: %s)", pterm.FgGray.Sprint(dbPath), getFileSize(dbPath))
 	}
 
 	// Network & Rate Limit
@@ -340,13 +340,13 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 
 	if resp, err := client.Do(req); err == nil {
-		output.Successf("GitHub API: Connected (HTTP %d)\n", resp.StatusCode)
+		output.Successf("GitHub API: Connected (HTTP %d)", resp.StatusCode)
 		limit := resp.Header.Get("X-RateLimit-Limit")
 		remaining := resp.Header.Get("X-RateLimit-Remaining")
 		reset := resp.Header.Get("X-RateLimit-Reset")
 
 		if limit != "" {
-			output.Infof("GitHub Rate Limit: %s/%s (Resets in %s)\n",
+			output.Infof("GitHub Rate Limit: %s/%s (Resets in %s)",
 				pterm.LightCyan(remaining), pterm.LightCyan(limit),
 				time.Until(time.Unix(parseInt(reset), 0)).Round(time.Minute))
 		}
@@ -373,7 +373,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 	if !isActivated {
 		output.Warningf("UniRTM environment is not activated.")
-		output.Infof("Fix: Run '%s enable --shims' to setup automatic activation.\n", exe)
+		output.Infof("Fix: Run '%s enable --shims' to setup automatic activation.", exe)
 		suggestions++
 	}
 
@@ -393,7 +393,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 	if missingTools > 0 {
 		output.Warningf("Found %d missing tools.", missingTools)
-		output.Infof("Fix: Run 'unirtm install' to install all missing tools.\n")
+		output.Infof("Fix: Run 'unirtm install' to install all missing tools.")
 		suggestions++
 	}
 

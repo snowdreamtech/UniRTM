@@ -288,12 +288,12 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 			formatter.Error(fmt.Sprintf("Uninstallation failed for %s@%s: %s", t.toolName, t.version, err.Error()))
 			return fmt.Errorf("uninstall %s@%s: %w", t.toolName, t.version, err)
 		}
-		output.Successf("✓ Successfully uninstalled %s@%s", t.toolName, t.version)
+		output.Successf("Successfully uninstalled %s@%s", t.toolName, t.version)
 	}
 	duration := time.Since(startTime)
 
 	if len(targets) > 1 && !quiet {
-		output.Successf("✓ All tools uninstalled (took %s)\n", duration.Round(time.Millisecond).String())
+		output.Successf("All tools uninstalled (took %s)", duration.Round(time.Millisecond).String())
 	}
 
 	return nil

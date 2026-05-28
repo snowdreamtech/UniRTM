@@ -149,7 +149,7 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 	}
 
 	pterm.Println()
-	output.Infof("Found %d tool(s) to install/prepare...\n", len(requests))
+	output.Infof("Found %d tool(s) to install/prepare...", len(requests))
 	pterm.Println()
 
 	// 3. Execute parallel automatic download and installation
@@ -166,12 +166,12 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 		case "starting":
 			output.Infof("Preparing %s@%s...", tool, version)
 		case "done":
-			output.Successf("✓ Ready: %s@%s", tool, version)
+			output.Successf("Ready: %s@%s", tool, version)
 		default:
 			if strings.HasPrefix(status, "failed:") {
 				errMsg := strings.TrimPrefix(status, "failed: ")
 				if errMsg == service.ErrAlreadyInstalled.Error() || strings.Contains(errMsg, "already installed") {
-					output.Successf("✓ Ready: %s@%s (already installed)\n", tool, version)
+					output.Successf("Ready: %s@%s (already installed)", tool, version)
 				} else {
 					output.Errorf("Failed to prepare %s@%s: %s", tool, version, errMsg)
 				}
@@ -226,7 +226,7 @@ func detectProjectStructure(cwd string, targetTool string) {
 			if _, err := os.Stat(filepath.Join(cwd, "node_modules")); os.IsNotExist(err) {
 				output.Warning("  node_modules missing. Suggestion: run 'npm install' or 'pnpm install'")
 			} else {
-				output.Success("  ✅ node_modules present")
+				output.Success("node_modules present")
 			}
 		}
 	}
@@ -236,7 +236,7 @@ func detectProjectStructure(cwd string, targetTool string) {
 		if _, err := os.Stat(filepath.Join(cwd, "go.mod")); err == nil {
 			found = true
 			output.Info("Detected Go project")
-			output.Success("  ✅ go.mod present")
+			output.Success("go.mod present")
 		}
 	}
 

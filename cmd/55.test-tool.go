@@ -221,10 +221,10 @@ func runTestTool(cmd *cobra.Command, args []string) error {
 		for _, exe := range execs {
 			err := testExecutable(exe, cmdEnv)
 			if err != nil {
-				output.Errorf("  ✗ %s (failed: %v)\n", filepath.Base(exe), err)
+				output.Errorf("  %s (failed: %v)", filepath.Base(exe), err)
 				hasError = true
 			} else {
-				output.Successf("  ✓ %s", filepath.Base(exe))
+				output.Successf("%s", filepath.Base(exe))
 			}
 		}
 	}
@@ -233,7 +233,7 @@ func runTestTool(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("one or more tools failed the execution test")
 	}
 
-	output.Successf("\n✅ All tested tools executed successfully")
+	output.Successf("All tested tools executed successfully")
 	return nil
 }
 

@@ -51,7 +51,7 @@ func (p *ContainerProvider) Install(ctx context.Context, tool string, installPat
 		if runtime.GOOS == "linux" {
 			recommendation = "podman or docker"
 		}
-		output.Errorf("✖ No container engine found. Please install %s to use container tools.", recommendation)
+		output.Errorf("No container engine found. Please install %s to use container tools.", recommendation)
 		return fmt.Errorf("container engine not found in PATH")
 	}
 
