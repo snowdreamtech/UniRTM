@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -99,12 +98,12 @@ func TestDetectInstallMethod_Cargo(t *testing.T) {
 }
 
 func TestDetectInstallMethod_Go(t *testing.T) {
-	// isGoInstall checks against actual GOPATH/bin or ~/go/bin, so construct
-	// paths using the real home directory so the assertion is reliable.
-	home, err := os.UserHomeDir()
-	require.NoError(t, err)
+	// Set a mock GOPATH so we can deterministically test detection
+	// without relying on os.UserHomeDir (which fails if $HOME is not set).
+	t.Setenv("GOPATH", "/mock/gopath")
+	
 	paths := []string{
-		filepath.Join(home, "go", "bin", "unirtm"),
+		"/mock/gopath/bin/unirtm",
 	}
 	for _, p := range paths {
 		assert.Equal(t, installMethodGo, detectInstallMethod(p), "path: %s", p)
