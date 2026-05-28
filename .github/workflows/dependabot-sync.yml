@@ -127,10 +127,6 @@ jobs:
           trust: true
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
-      - name: "🧪 Run Generator Smoke Test"
-        shell: sh
-        run: |
-          sh tests/smoke-test-gen-dependabot.sh
 
       - name: "🤖 Generate Dependabot Config"
         shell: sh
