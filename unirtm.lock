@@ -591,6 +591,26 @@ backend = "go"
 
 [tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.windows-arm64"]
 
+[[tools."go:mvdan.cc/sh/v3/cmd/shfmt"]]
+version = "v3.13.1"
+backend = "go"
+
+[tools."go:mvdan.cc/sh/v3/cmd/shfmt"."platforms.linux-amd64"]
+
+[tools."go:mvdan.cc/sh/v3/cmd/shfmt"."platforms.linux-amd64-musl"]
+
+[tools."go:mvdan.cc/sh/v3/cmd/shfmt"."platforms.linux-arm64"]
+
+[tools."go:mvdan.cc/sh/v3/cmd/shfmt"."platforms.linux-arm64-musl"]
+
+[tools."go:mvdan.cc/sh/v3/cmd/shfmt"."platforms.macos-amd64"]
+
+[tools."go:mvdan.cc/sh/v3/cmd/shfmt"."platforms.macos-arm64"]
+
+[tools."go:mvdan.cc/sh/v3/cmd/shfmt"."platforms.windows-amd64"]
+
+[tools."go:mvdan.cc/sh/v3/cmd/shfmt"."platforms.windows-arm64"]
+
 [[tools."google/addlicense"]]
 version = "1.2.0"
 backend = "github"
@@ -1096,3 +1116,4 @@ url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-x86
 
 [tools."zizmorcore/zizmor"."platforms.macos-amd64"]
 url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-x86_64-apple-darwin.tar.gz"
+
