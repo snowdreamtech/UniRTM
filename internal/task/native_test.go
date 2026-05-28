@@ -94,6 +94,12 @@ func TestNativeRunner_runTaskWithGraph_Dependencies(t *testing.T) {
 			Run:     "echo c2",
 			Depends: []string{"cycle1"},
 		},
+		"verify": {
+			Depends: []string{"lint", "test"},
+		},
+		"lint": {
+			Run: "echo lint",
+		},
 	}
 	runner := NewNativeRunner(tasks, config.Settings{})
 
@@ -105,4 +111,8 @@ func TestNativeRunner_runTaskWithGraph_Dependencies(t *testing.T) {
 	err = runner.Run(context.Background(), ".", "cycle1", nil, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "circular dependency detected")
+
+	// Task with only depends and no run
+	err = runner.Run(context.Background(), ".", "verify", nil, nil)
+	assert.NoError(t, err)
 }

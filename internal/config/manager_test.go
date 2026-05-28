@@ -421,7 +421,7 @@ func TestConfigManager_Validate(t *testing.T) {
 
 		err := manager.Validate(ctx, config)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "run command is required")
+		assert.Contains(t, err.Error(), "run command or depends is required")
 	})
 
 	t.Run("validate configuration with circular task dependencies", func(t *testing.T) {

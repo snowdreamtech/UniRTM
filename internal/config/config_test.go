@@ -94,7 +94,7 @@ func TestConfig_Validate(t *testing.T) {
 				Settings: Settings{},
 			},
 			wantErr: true,
-			errMsg:  "run command is required",
+			errMsg:  "run command or depends is required",
 		},
 		{
 			name: "invalid task dependency - non-existent task",
@@ -305,13 +305,21 @@ func TestTask_Validate(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "valid with only depends",
+			task: Task{
+				Description: "Run full local verification",
+				Depends:     []string{"lint-all", "test", "audit"},
+			},
+			wantErr: false,
+		},
+		{
 			name: "invalid - empty run command",
 			task: Task{
 				Description: "Build the project",
 				Run:         "",
 			},
 			wantErr: true,
-			errMsg:  "run command is required",
+			errMsg:  "run command or depends is required",
 		},
 		{
 			name: "invalid - whitespace only run command",
@@ -536,7 +544,7 @@ func TestEnvironmentConfig_Validate(t *testing.T) {
 				},
 			},
 			wantErr: true,
-			errMsg:  "run command is required",
+			errMsg:  "run command or depends is required",
 		},
 	}
 

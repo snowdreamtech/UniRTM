@@ -83,7 +83,11 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 	// Prepare the script. If there are args, append them directly.
 	script := taskDef.Run
 	if len(args) > 0 {
-		script = script + " " + strings.Join(args, " ")
+		if script != "" {
+			script = script + " " + strings.Join(args, " ")
+		} else {
+			script = strings.Join(args, " ")
+		}
 	}
 
 	// Resolve timeout: task override > global setting
@@ -108,15 +112,18 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 		}
 	}
 
-	cmd := exec.CommandContext(runCtx, shellCmd, shellArg, script)
-	cmd.Dir = dir
+	var cmd *exec.Cmd
+	if strings.TrimSpace(script) != "" {
+		cmd = exec.CommandContext(runCtx, shellCmd, shellArg, script)
+		cmd.Dir = dir
 
-	// Inject process env + UniRTM env
-	cmd.Env = append(os.Environ(), env...)
+		// Inject process env + UniRTM env
+		cmd.Env = append(os.Environ(), env...)
 
-	// Inject task-specific env defined in TOML
-	for k, v := range taskDef.Env {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+		// Inject task-specific env defined in TOML
+		for k, v := range taskDef.Env {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+		}
 	}
 
 	// Bind IO streams based on output style
@@ -150,21 +157,30 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 	if outputStyle == "spinner" || outputStyle == "" {
 		spinner, _ = pterm.DefaultSpinner.Start(fmt.Sprintf("Running task: %s", taskName))
 		// Capture output so we can show it if it fails, or just hide it
-		cmd.Stdout = &buf
-		cmd.Stderr = &buf
+		if cmd != nil {
+			cmd.Stdout = &buf
+			cmd.Stderr = &buf
+		}
 	} else if outputStyle == "prefix" {
 		prefix := fmt.Sprintf("[%s] ", pterm.FgCyan.Sprint(taskName))
-		cmd.Stdout = &prefixWriter{w: os.Stdout, prefix: prefix, atStart: true}
-		cmd.Stderr = &prefixWriter{w: os.Stderr, prefix: prefix, atStart: true}
+		if cmd != nil {
+			cmd.Stdout = &prefixWriter{w: os.Stdout, prefix: prefix, atStart: true}
+			cmd.Stderr = &prefixWriter{w: os.Stderr, prefix: prefix, atStart: true}
+		}
 	} else {
 		// "interleaved" or other
 		output.Infof("Running task: %s", taskName)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		if cmd != nil {
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+		}
 	}
-	cmd.Stdin = os.Stdin
-
-	err := cmd.Run()
+	
+	var err error
+	if cmd != nil {
+		cmd.Stdin = os.Stdin
+		err = cmd.Run()
+	}
 
 	if spinner != nil {
 		if err != nil {

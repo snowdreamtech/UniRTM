@@ -434,8 +434,8 @@ func (s *Settings) Validate() error {
 }
 
 func (t *Task) Validate() error {
-	if t.Run == "" {
-		return errors.New("run command is required")
+	if t.Run == "" && len(t.Depends) == 0 {
+		return errors.New("run command or depends is required")
 	}
 	return nil
 }
