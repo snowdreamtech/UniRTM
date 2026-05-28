@@ -225,7 +225,7 @@ func runTestTool(cmd *cobra.Command, args []string) error {
 				pterm.Error.Printf("  ✗ %s (failed: %v)\n", filepath.Base(exe), err)
 				hasError = true
 			} else {
-				pterm.Success.Printf("  ✓ %s\n", filepath.Base(exe))
+				pterm.FgGreen.Printf("  ✓ %s\n", filepath.Base(exe))
 			}
 		}
 	}

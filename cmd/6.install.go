@@ -330,7 +330,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 		if isInstalled {
 			if !jsonOutput {
-				pterm.Success.Printf("✓ %s@%s (already installed, use --force to reinstall)\n", t.ToolName, t.Version)
+				pterm.FgGreen.Printf("✓ %s@%s (already installed, use --force to reinstall)\n", t.ToolName, t.Version)
 			}
 		} else {
 			if installForce {
@@ -566,7 +566,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		}
 
 		if !jsonOutput {
-			pterm.Success.Printf("✓ All tools processed successfully (took %s)\n", duration.Round(time.Millisecond).String())
+			pterm.FgGreen.Printf("✓ All tools processed successfully (took %s)\n", duration.Round(time.Millisecond).String())
 		} else {
 			// If JSON output, render the results JSON
 			outputData, _ := json.MarshalIndent(results, "", "  ")
@@ -585,19 +585,19 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				// Check if already installed
 				if err == service.ErrAlreadyInstalled || strings.Contains(err.Error(), "already installed") {
-					pterm.Success.Printf("✓ %s@%s (already installed)\n", tool, version)
+					pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", tool, version)
 					continue
 				}
 
 				pterm.Error.Printf("Installation failed for %s: %v\n", tool, err)
 				return fmt.Errorf("install %s: %w", tool, err)
 			}
-			pterm.Success.Printf("✓ Successfully installed %s@%s\n", tool, version)
+			pterm.FgGreen.Printf("✓ Successfully installed %s@%s\n", tool, version)
 		}
 
 		duration := time.Since(startTime)
 		if len(toolsToInstall) > 1 && !jsonOutput {
-			pterm.Success.Printf("✓ All tools processed (took %s)\n", duration.Round(time.Millisecond).String())
+			pterm.FgGreen.Printf("✓ All tools processed (took %s)\n", duration.Round(time.Millisecond).String())
 		}
 	}
 
@@ -690,7 +690,7 @@ func (m *concurrentSpinnerManager) Complete(tool, version, status string) {
 	// Print static status message based on status
 	switch status {
 	case "done":
-		pterm.Success.Printf("Successfully installed %s@%s\n", tool, version)
+		pterm.FgGreen.Printf("Successfully installed %s@%s\n", tool, version)
 	default:
 		if strings.HasPrefix(status, "failed:") {
 			errMsg := strings.TrimPrefix(status, "failed: ")

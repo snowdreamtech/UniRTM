@@ -89,7 +89,7 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 	if cfg == nil || len(cfg.Tools) == 0 {
 		pterm.Info.Println("No UniRTM tools configured in project manifest.")
 		pterm.Println()
-		pterm.Success.Println("Project preparation check complete!")
+		pterm.FgGreen.Println("Project preparation check complete!")
 		return nil
 	}
 
@@ -144,7 +144,7 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 
 	if len(requests) == 0 {
 		pterm.Println()
-		pterm.Success.Println("All configured UniRTM tools are already installed and ready!")
+		pterm.FgGreen.Println("All configured UniRTM tools are already installed and ready!")
 		return nil
 	}
 
@@ -201,13 +201,13 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 			allSuccess = false
 			pterm.Error.Printf("  %s@%s: %s\n", r.Tool, r.Version, r.Error)
 		} else {
-			pterm.Success.Printf("  %s@%s is ready\n", r.Tool, r.Version)
+			pterm.FgGreen.Printf("  %s@%s is ready\n", r.Tool, r.Version)
 		}
 	}
 
 	pterm.Println()
 	if allSuccess {
-		pterm.Success.Println("Project preparation complete! All dependencies are ready.")
+		pterm.FgGreen.Println("Project preparation complete! All dependencies are ready.")
 	} else {
 		pterm.Warning.Println("Some project dependencies failed to prepare. Please review the errors above.")
 	}

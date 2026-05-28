@@ -259,7 +259,7 @@ func renderInteractiveEnv(cfg *config.Config, pathDirs []string, vars []envVarEn
 	if len(sources) > 0 {
 		pterm.DefaultSection.Println("📝 Loaded Config Sources")
 		for _, s := range sources {
-			pterm.Success.Println(pterm.FgGray.Sprint(s))
+			pterm.FgGreen.Println(pterm.FgGray.Sprint(s))
 		}
 	}
 

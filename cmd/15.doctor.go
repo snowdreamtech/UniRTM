@@ -124,7 +124,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		}
 		for _, c := range configs {
 			if _, err := os.Stat(c); err == nil {
-				pterm.Success.Printf("Loaded: %s\n", pterm.FgGray.Sprint(c))
+				pterm.FgGreen.Printf("Loaded: %s\n", pterm.FgGray.Sprint(c))
 			}
 		}
 
@@ -231,7 +231,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		}
 
 		if strings.EqualFold(p, shimsDir) {
-			pterm.Success.Printf("%s%s %s\n", prefix, p, pterm.LightMagenta("(UniRTM Shims)"))
+			pterm.FgGreen.Printf("%s%s %s\n", prefix, p, pterm.LightMagenta("(UniRTM Shims)"))
 		} else if strings.Contains(p, "unirtm") {
 			pterm.Info.Printf("%s%s %s\n", prefix, p, pterm.LightCyan("(UniRTM Managed)"))
 		} else {
@@ -327,7 +327,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		pterm.Error.Printf("Database: %v\n", err)
 	} else {
 		defer db.Close()
-		pterm.Success.Printf("Database: %s (Size: %s)\n", pterm.FgGray.Sprint(dbPath), getFileSize(dbPath))
+		pterm.FgGreen.Printf("Database: %s (Size: %s)\n", pterm.FgGray.Sprint(dbPath), getFileSize(dbPath))
 	}
 
 	// Network & Rate Limit
@@ -338,7 +338,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 
 	if resp, err := client.Do(req); err == nil {
-		pterm.Success.Printf("GitHub API: Connected (HTTP %d)\n", resp.StatusCode)
+		pterm.FgGreen.Printf("GitHub API: Connected (HTTP %d)\n", resp.StatusCode)
 		limit := resp.Header.Get("X-RateLimit-Limit")
 		remaining := resp.Header.Get("X-RateLimit-Remaining")
 		reset := resp.Header.Get("X-RateLimit-Reset")
@@ -396,7 +396,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 
 	if suggestions == 0 {
-		pterm.Success.Println("No critical issues found. Your environment looks healthy!")
+		pterm.FgGreen.Println("No critical issues found. Your environment looks healthy!")
 	}
 
 	fmt.Println()

@@ -151,7 +151,7 @@ func runEdit(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		pterm.Success.Printf("Configuration saved and validated: %s\n", targetFile)
+		pterm.FgGreen.Printf("Configuration saved and validated: %s\n", targetFile)
 		break
 	}
 

@@ -474,7 +474,7 @@ func selfUpdateUnix(formatter output.Formatter, tag string) error {
 		return fmt.Errorf("execute install script: %w", err)
 	}
 
-	pterm.Success.Println("UniRTM updated successfully.")
+	pterm.FgGreen.Println("UniRTM updated successfully.")
 	return verifySelfUpdate()
 }
 
@@ -510,7 +510,7 @@ func selfUpdateWindows(formatter output.Formatter, tag string) error {
 		return fmt.Errorf("execute install script: %w", err)
 	}
 
-	pterm.Success.Println("UniRTM updated successfully.")
+	pterm.FgGreen.Println("UniRTM updated successfully.")
 	return verifySelfUpdate()
 }
 

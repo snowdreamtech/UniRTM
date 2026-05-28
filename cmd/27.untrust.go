@@ -35,7 +35,7 @@ Once untrusted, the file's environment variables and configuration will no longe
 			os.Exit(1)
 		}
 
-		pterm.Success.Printfln("Untrusted configuration file: %s", pterm.LightGreen(absPath))
+		pterm.FgGreen.Printfln("Untrusted configuration file: %s", pterm.LightGreen(absPath))
 	},
 }
 

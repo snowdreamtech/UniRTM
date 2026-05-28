@@ -154,7 +154,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 
 	if len(toSync) == 0 {
 		pterm.Println()
-		pterm.Success.Println("All detected versions are already synchronized!")
+		pterm.FgGreen.Println("All detected versions are already synchronized!")
 		return nil
 	}
 

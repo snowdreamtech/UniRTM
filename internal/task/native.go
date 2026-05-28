@@ -183,7 +183,7 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 		if err != nil {
 			pterm.Error.Printfln("Task %s failed: %v", taskName, err)
 		} else {
-			pterm.Success.Printfln("Task %s completed", taskName)
+			pterm.FgGreen.Printfln("Task %s completed", taskName)
 		}
 	}
 

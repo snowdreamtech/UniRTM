@@ -239,7 +239,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 				"duration":    result.Duration.String(),
 			})
 		} else {
-			pterm.Success.Printfln("Updated %s: %s → %s (%s)",
+			pterm.FgGreen.Printfln("Updated %s: %s → %s (%s)",
 				pterm.LightGreen(result.Tool),
 				pterm.FgGray.Sprint(result.OldVersion),
 				pterm.LightGreen(result.NewVersion),
@@ -317,7 +317,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		if r.Success {
 			successCount++
 			if !quiet {
-				pterm.Success.Printfln("Updated %s: %s → %s (%s)",
+				pterm.FgGreen.Printfln("Updated %s: %s → %s (%s)",
 					pterm.LightGreen(r.Tool),
 					pterm.FgGray.Sprint(r.OldVersion),
 					pterm.LightGreen(r.NewVersion),
@@ -338,7 +338,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	} else {
 		pterm.Println()
 		if failCount == 0 {
-			pterm.Success.Printfln("All updates complete: %d tools updated successfully.", successCount)
+			pterm.FgGreen.Printfln("All updates complete: %d tools updated successfully.", successCount)
 		} else {
 			pterm.Warning.Printfln("Update finished: %d succeeded, %d failed.", successCount, failCount)
 		}

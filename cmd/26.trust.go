@@ -100,7 +100,7 @@ Use --list to view all currently trusted configuration files.`,
 		if len(hash) > 16 {
 			hash = hash[:16] + "..."
 		}
-		pterm.Success.Printfln("Trusted configuration file: %s (hash: %s)", pterm.LightGreen(absPath), pterm.FgGray.Sprint(hash))
+		pterm.FgGreen.Printfln("Trusted configuration file: %s (hash: %s)", pterm.LightGreen(absPath), pterm.FgGray.Sprint(hash))
 
 		// Show the full updated trusted files table
 		trusted, err := trustManager.List()

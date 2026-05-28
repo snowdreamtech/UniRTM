@@ -81,7 +81,7 @@ func runFmt(cmd *cobra.Command, args []string) error {
 		if spinner != nil {
 			spinner.Success(msg)
 		} else {
-			pterm.Success.Println(msg)
+			pterm.FgGreen.Println(msg)
 		}
 	}
 
@@ -142,7 +142,7 @@ func runFmt(cmd *cobra.Command, args []string) error {
 				pterm.Warning.Printf("%s: Needs formatting\n", path)
 				modifiedCount++
 			} else {
-				pterm.Success.Printf("%s: Formatted ✓\n", path)
+				pterm.FgGreen.Printf("%s: Formatted ✓\n", path)
 				modifiedCount++
 			}
 		} else {

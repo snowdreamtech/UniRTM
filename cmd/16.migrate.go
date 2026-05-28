@@ -253,7 +253,7 @@ func printMigrateReport(report *service.MigrationReport, isDryRun bool) {
 			WithTitleTopLeft().
 			Println(buildTomlPreview(report))
 	} else {
-		pterm.Success.Printfln(
+		pterm.FgGreen.Printfln(
 			"Migrated %d tool(s)  →  %s",
 			len(report.Tools),
 			pterm.FgGreen.Sprint(report.OutputFile),
