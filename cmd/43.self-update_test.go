@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -78,7 +79,8 @@ func TestDetectInstallMethod_Brew(t *testing.T) {
 
 func TestDetectInstallMethod_Scoop(t *testing.T) {
 	paths := []string{
-		"C:\\Users\\user\\scoop\\apps\\unirtm\\current\\unirtm.exe",
+		// Forward-slash form (as produced by filepath.ToSlash on any OS)
+		"c:/users/user/scoop/apps/unirtm/current/unirtm.exe",
 	}
 	for _, p := range paths {
 		assert.Equal(t, installMethodScoop, detectInstallMethod(p), "path: %s", p)
@@ -88,7 +90,8 @@ func TestDetectInstallMethod_Scoop(t *testing.T) {
 func TestDetectInstallMethod_Cargo(t *testing.T) {
 	paths := []string{
 		"/home/user/.cargo/bin/unirtm",
-		"C:\\Users\\user\\.cargo\\bin\\unirtm.exe",
+		// Forward-slash form for Windows paths
+		"c:/users/user/.cargo/bin/unirtm.exe",
 	}
 	for _, p := range paths {
 		assert.Equal(t, installMethodCargo, detectInstallMethod(p), "path: %s", p)
@@ -96,12 +99,72 @@ func TestDetectInstallMethod_Cargo(t *testing.T) {
 }
 
 func TestDetectInstallMethod_Go(t *testing.T) {
+	// isGoInstall checks against actual GOPATH/bin or ~/go/bin, so construct
+	// paths using the real home directory so the assertion is reliable.
+	home, err := os.UserHomeDir()
+	require.NoError(t, err)
 	paths := []string{
-		"/home/user/go/bin/unirtm",
-		"/usr/local/go/bin/unirtm",
+		filepath.Join(home, "go", "bin", "unirtm"),
 	}
 	for _, p := range paths {
 		assert.Equal(t, installMethodGo, detectInstallMethod(p), "path: %s", p)
+	}
+
+	// Paths that look like /go/bin/ but are project dirs — must NOT match
+	nonGoPaths := []string{
+		"/usr/local/go/bin/unirtm",      // Go SDK, not go install target
+		"/home/user/projects/go/bin/tool", // project subdir
+	}
+	for _, p := range nonGoPaths {
+		result := detectInstallMethod(p)
+		assert.NotEqual(t, installMethodGo, result, "should NOT detect as go install: %s", p)
+	}
+}
+
+func TestDetectInstallMethod_Nix(t *testing.T) {
+	paths := []string{
+		"/nix/store/abc123-unirtm-1.0/bin/unirtm",
+		"/home/user/.nix-profile/bin/unirtm",
+	}
+	for _, p := range paths {
+		assert.Equal(t, installMethodNix, detectInstallMethod(p), "path: %s", p)
+	}
+}
+
+func TestDetectInstallMethod_Snap(t *testing.T) {
+	paths := []string{
+		"/snap/unirtm/current/bin/unirtm",
+	}
+	for _, p := range paths {
+		assert.Equal(t, installMethodSnap, detectInstallMethod(p), "path: %s", p)
+	}
+}
+
+func TestDetectInstallMethod_Asdf(t *testing.T) {
+	paths := []string{
+		"/home/user/.asdf/installs/unirtm/1.0.0/bin/unirtm",
+		"/home/user/.asdf/shims/unirtm",
+	}
+	for _, p := range paths {
+		assert.Equal(t, installMethodAsdf, detectInstallMethod(p), "path: %s", p)
+	}
+}
+
+func TestDetectInstallMethod_MacPorts(t *testing.T) {
+	paths := []string{
+		"/opt/local/bin/unirtm",
+	}
+	for _, p := range paths {
+		assert.Equal(t, installMethodMacPorts, detectInstallMethod(p), "path: %s", p)
+	}
+}
+
+func TestDetectInstallMethod_Pkgx(t *testing.T) {
+	paths := []string{
+		"/home/user/.pkgx/unirtm.org/v1.0.0/bin/unirtm",
+	}
+	for _, p := range paths {
+		assert.Equal(t, installMethodPkgx, detectInstallMethod(p), "path: %s", p)
 	}
 }
 
@@ -136,6 +199,11 @@ func TestInstallMethodHint(t *testing.T) {
 	assert.Contains(t, installMethodHint(installMethodChoco), "choco")
 	assert.Contains(t, installMethodHint(installMethodCargo), "cargo")
 	assert.Contains(t, installMethodHint(installMethodGo), "go")
+	assert.Contains(t, installMethodHint(installMethodNix), "nix")
+	assert.Contains(t, installMethodHint(installMethodSnap), "snap")
+	assert.Contains(t, installMethodHint(installMethodAsdf), "asdf")
+	assert.Contains(t, installMethodHint(installMethodMacPorts), "port")
+	assert.Contains(t, installMethodHint(installMethodPkgx), "pkgx")
 	assert.Empty(t, installMethodHint(installMethodScript))
 	assert.Empty(t, installMethodHint(installMethodUnknown))
 }

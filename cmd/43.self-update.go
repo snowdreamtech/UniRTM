@@ -32,15 +32,20 @@ var (
 type installMethod int
 
 const (
-	installMethodUnknown installMethod = iota
-	installMethodScript                // installed via install.sh / install.ps1
-	installMethodNpm                   // npm install -g unirtm
-	installMethodPip                   // pip install unirtm
-	installMethodBrew                  // brew install unirtm
-	installMethodScoop                 // scoop install unirtm
-	installMethodChoco                 // choco install unirtm
-	installMethodCargo                 // cargo install unirtm
-	installMethodGo                    // go install unirtm
+	installMethodUnknown  installMethod = iota
+	installMethodScript                 // installed via install.sh / install.ps1
+	installMethodNpm                    // npm install -g unirtm
+	installMethodPip                    // pip install unirtm
+	installMethodBrew                   // brew install unirtm
+	installMethodScoop                  // scoop install unirtm
+	installMethodChoco                  // choco install unirtm
+	installMethodCargo                  // cargo install unirtm
+	installMethodGo                     // go install unirtm
+	installMethodNix                    // nix-env -iA nixpkgs.unirtm
+	installMethodSnap                   // snap install unirtm
+	installMethodAsdf                   // asdf install unirtm latest
+	installMethodMacPorts               // port install unirtm
+	installMethodPkgx                   // pkgx unirtm
 )
 
 func init() {
@@ -76,47 +81,99 @@ Examples:
 }
 
 // detectInstallMethod inspects the executable's path to infer how it was installed.
+// After filepath.ToSlash, all path separators are '/', so only forward-slash patterns
+// are needed — backslash patterns are dead code and must not be used.
 func detectInstallMethod(execPath string) installMethod {
+	// Normalize: lowercase + convert OS separators to '/' for uniform matching.
 	normalized := filepath.ToSlash(strings.ToLower(execPath))
 
 	switch {
+	// npm / pnpm / yarn
 	case strings.Contains(normalized, "node_modules") ||
 		strings.Contains(normalized, "/npm/") ||
 		strings.Contains(normalized, "/pnpm/") ||
 		strings.Contains(normalized, "/yarn/"):
 		return installMethodNpm
 
+	// pip / virtualenv / conda
 	case strings.Contains(normalized, "site-packages") ||
-		strings.Contains(normalized, "/pip/") ||
 		strings.Contains(normalized, "dist-packages") ||
+		strings.Contains(normalized, "/pip/") ||
 		strings.Contains(normalized, "/venv/") ||
-		strings.Contains(normalized, ".venv"):
+		strings.Contains(normalized, "/.venv/"):
 		return installMethodPip
 
+	// Homebrew (macOS and Linux)
 	case strings.Contains(normalized, "homebrew") ||
 		strings.Contains(normalized, "linuxbrew") ||
 		strings.Contains(normalized, "/cellar/"):
 		return installMethodBrew
 
-	case strings.Contains(normalized, "\\scoop\\") ||
-		strings.Contains(normalized, "/scoop/"):
+	// Scoop (Windows)
+	case strings.Contains(normalized, "/scoop/"):
 		return installMethodScoop
 
-	case strings.Contains(normalized, "\\chocolatey\\") ||
-		strings.Contains(normalized, "/chocolatey/") ||
-		strings.Contains(normalized, "\\choco\\"):
+	// Chocolatey (Windows)
+	case strings.Contains(normalized, "/chocolatey/") ||
+		strings.Contains(normalized, "/choco/"):
 		return installMethodChoco
 
-	case strings.Contains(normalized, "/.cargo/") ||
-		strings.Contains(normalized, "\\.cargo\\"):
+	// Nix / nixpkgs
+	case strings.Contains(normalized, "/nix/store/") ||
+		strings.Contains(normalized, "/.nix-profile/"):
+		return installMethodNix
+
+	// Snap (Linux)
+	case strings.Contains(normalized, "/snap/") &&
+		strings.Contains(normalized, "/bin/"):
+		return installMethodSnap
+
+	// asdf (version manager, cross-platform)
+	case strings.Contains(normalized, "/.asdf/"):
+		return installMethodAsdf
+
+	// MacPorts (/opt/local/bin)
+	case strings.Contains(normalized, "/opt/local/"):
+		return installMethodMacPorts
+
+	// pkgx (~/.pkgx/)
+	case strings.Contains(normalized, "/.pkgx/"):
+		return installMethodPkgx
+
+	// Cargo (Rust toolchain)
+	case strings.Contains(normalized, "/.cargo/"):
 		return installMethodCargo
 
-	case strings.Contains(normalized, "/go/bin/") ||
-		strings.Contains(normalized, "\\go\\bin\\"):
+	// go install: verify against GOPATH/bin or default ~/go/bin to avoid false positives.
+	// Do NOT rely on "/go/bin/" alone — it can match project subdirectories.
+	case isGoInstall(normalized):
 		return installMethodGo
 	}
 
 	return installMethodScript
+}
+
+// isGoInstall returns true when the executable path matches a known `go install` bin directory.
+// It checks against $GOPATH/bin and the default ~/go/bin to avoid false positives from
+// project directories that happen to contain "/go/bin/" in their path.
+func isGoInstall(normalizedPath string) bool {
+	// Check $GOPATH/bin
+	if gopath := os.Getenv("GOPATH"); gopath != "" {
+		gopathBin := filepath.ToSlash(strings.ToLower(filepath.Join(gopath, "bin")))
+		if strings.HasPrefix(normalizedPath, gopathBin) {
+			return true
+		}
+	}
+
+	// Check default ~/go/bin (Go's default when GOPATH is not set)
+	if home, err := os.UserHomeDir(); err == nil {
+		defaultBin := filepath.ToSlash(strings.ToLower(filepath.Join(home, "go", "bin")))
+		if strings.HasPrefix(normalizedPath, defaultBin) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // installMethodHint returns a human-readable upgrade hint for a given install method.
@@ -136,6 +193,16 @@ func installMethodHint(method installMethod) string {
 		return "cargo install unirtm --force"
 	case installMethodGo:
 		return "go install github.com/snowdreamtech/unirtm@latest"
+	case installMethodNix:
+		return "nix-env -uA nixpkgs.unirtm"
+	case installMethodSnap:
+		return "snap refresh unirtm"
+	case installMethodAsdf:
+		return "asdf install unirtm latest && asdf global unirtm latest"
+	case installMethodMacPorts:
+		return "sudo port upgrade unirtm"
+	case installMethodPkgx:
+		return "pkgx install unirtm"
 	default:
 		return ""
 	}
