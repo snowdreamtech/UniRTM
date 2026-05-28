@@ -914,7 +914,7 @@ repos:
       - id: license-check
         name: check license headers
         language: system
-        entry: ./unirtm license check -f .github/license-header.txt
+        entry: unirtm license check -f .github/license-header.txt
         files: ^(src|pkg|internal|cmd|app|lib|include|tests)/
         types_or:
           [

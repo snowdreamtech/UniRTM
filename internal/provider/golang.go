@@ -123,6 +123,11 @@ func (g *GolangProvider) GetEnvVars(tool string, installPath string, version str
 		vars["GOPATH"] = filepath.Join(installPath, "gopath")
 	}
 
+	// Force Go to use the locally installed toolchain instead of auto-downloading based on go.mod
+	if env.Get("GO_SET_GOTOOLCHAIN") != "0" {
+		vars["GOTOOLCHAIN"] = "local"
+	}
+
 	return vars, nil
 }
 

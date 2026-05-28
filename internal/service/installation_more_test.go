@@ -448,7 +448,7 @@ func TestInstallationManager_EnsureInstalled(t *testing.T) {
 		name: "native",
 		versions: map[string]*backend.VersionInfo{
 			"18.0.0": {Version: "18.0.0", DownloadURL: "https://example.com/node"},
-			"3.9":    {Version: "3.9", DownloadURL: "https://example.com/python"},
+			"3.9":    {Version: "3.9", DownloadURL: "https://example.com/dummy-tool"},
 		},
 	})
 	dm1 := download.NewManager()
@@ -490,7 +490,7 @@ func TestInstallationManager_EnsureInstalledFromSpecs(t *testing.T) {
 		name: "native",
 		versions: map[string]*backend.VersionInfo{
 			"18.0.0": {Version: "18.0.0", DownloadURL: "https://example.com/node"},
-			"3.9":    {Version: "3.9", DownloadURL: "https://example.com/python"},
+			"3.9":    {Version: "3.9", DownloadURL: "https://example.com/dummy-tool"},
 		},
 	})
 	dm2 := download.NewManager()
@@ -517,7 +517,7 @@ func TestInstallationManager_EnsureInstalledFromSpecs(t *testing.T) {
 
 	// Not installed tool
 	err = im.EnsureInstalledFromSpecs(context.Background(), map[string]ToolSpec{
-		"python": {Name: "python", Version: "3.9", BackendName: "native", OriginalName: "python"},
+		"dummy-tool": {Name: "dummy-tool", Version: "3.9", BackendName: "native", OriginalName: "dummy-tool"},
 	})
 	require.NoError(t, err) // Should succeed with mocks
 }

@@ -98,7 +98,10 @@ func (r *Registry) GetWithBackend(toolName string, backendName string) Provider 
 	defer r.mu.RUnlock()
 
 	// Try backend match (e.g., "asdf", "npm", "cargo")
-	if backendName != "" {
+	// If the backend is "native", we skip this step and prefer the tool-specific
+	// provider first, because tool-specific providers (like GolangProvider) ARE
+	// the native implementations for those tools.
+	if backendName != "" && backendName != "native" {
 		if provider, ok := r.providers[strings.ToLower(backendName)]; ok {
 			return provider
 		}
@@ -107,6 +110,13 @@ func (r *Registry) GetWithBackend(toolName string, backendName string) Provider 
 	// Try exact match
 	if provider, ok := r.providers[strings.ToLower(toolName)]; ok {
 		return provider
+	}
+
+	// If backend was explicitly "native" and no specific tool provider was found, return native provider
+	if backendName == "native" {
+		if provider, ok := r.providers["native"]; ok {
+			return provider
+		}
 	}
 
 	// Try partial match (e.g., "node@18" -> "node")
