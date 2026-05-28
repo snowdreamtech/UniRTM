@@ -50,11 +50,11 @@ run = 'unirtm exec -- gitleaks detect --source . --no-banner'
 [tasks."audit:zizmor"]
 description = 'Audit GitHub Actions workflows for security flaws'
 run = '''
-python -c "
-import os, sys
-cmd = 'unirtm exec -- zizmor . --format plain --config .zizmor.yml --fix=all' if os.environ.get('UNIRTM_FIX') == '1' else 'unirtm exec -- zizmor . --format plain --config .zizmor.yml'
-sys.exit(os.system(cmd))
-"
+if [ "$UNIRTM_FIX" = "1" ]; then
+    unirtm exec -- zizmor . --format plain --config .zizmor.yml --fix=all
+else
+    unirtm exec -- zizmor . --format plain --config .zizmor.yml
+fi
 '''
 
 [tasks."audit:osv"]
@@ -64,27 +64,29 @@ run = 'unirtm exec -- osv-scanner scan . --config .osv-scanner.toml'
 [tasks."audit:npm"]
 description = 'Node.js dependency audit'
 run = '''
-python -c "
-import os, sys
-if os.path.exists('package.json'):
-    cmd = 'unirtm exec -- npm audit fix' if os.environ.get('UNIRTM_FIX') == '1' else 'unirtm exec -- npm audit'
-    sys.exit(os.system(cmd + ' --registry=https://registry.npmjs.org'))
-else:
-    print('⏭️  Skipped (no package.json)')
-"
+if [ -f "package.json" ]; then
+    if [ "$UNIRTM_FIX" = "1" ]; then
+        unirtm exec -- npm audit fix --registry=https://registry.npmjs.org
+    else
+        unirtm exec -- npm audit --registry=https://registry.npmjs.org
+    fi
+else
+    echo "⏭️  Skipped (no package.json)"
+fi
 '''
 
 [tasks."audit:pip"]
 description = 'Python dependency audit'
 run = '''
-python -c "
-import os, sys
-if os.path.exists('requirements.txt') or os.path.exists('pyproject.toml'):
-    cmd = 'unirtm exec -- pip-audit --fix' if os.environ.get('UNIRTM_FIX') == '1' else 'unirtm exec -- pip-audit'
-    sys.exit(os.system(cmd))
-else:
-    print('⏭️  Skipped (no python requirements)')
-"
+if [ -f "requirements.txt" ] || [ -f "pyproject.toml" ]; then
+    if [ "$UNIRTM_FIX" = "1" ]; then
+        unirtm exec -- pip-audit --fix
+    else
+        unirtm exec -- pip-audit
+    fi
+else
+    echo "⏭️  Skipped (no python requirements)"
+fi
 '''
 
 [tasks."audit:govulncheck"]
@@ -107,18 +109,15 @@ unirtm exec -- trivy sbom sbom.json
 [tasks.lint]
 description = 'Fast lint: Check only modified files (staged & unstaged)'
 run = '''
-python -c "
-import os, sys, subprocess
-files = subprocess.check_output(['git', 'ls-files', '-m', '-o', '--exclude-standard']).decode('utf-8').split()
-if not files:
-    print('✨ No changed files to lint.')
-else:
-    cmd = ['unirtm', 'exec', '--', 'pre-commit', 'run', '--files'] + files
-    res = subprocess.run(cmd)
-    if res.returncode != 0:
-        print('⚠️  First pass failed. Running second check...')
-        sys.exit(subprocess.run(cmd).returncode)
-"
+files=$(git ls-files -m -o --exclude-standard)
+if [ -z "$files" ]; then
+    echo '✨ No changed files to lint.'
+else
+    unirtm exec -- pre-commit run --files $files || {
+        echo '⚠️  First pass failed. Running second check...'
+        unirtm exec -- pre-commit run --files $files
+    }
+fi
 '''
 
 [tasks.lint-all]
