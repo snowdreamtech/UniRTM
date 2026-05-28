@@ -24,8 +24,8 @@
 
 相关的设计与执行文档已同步至项目目录：
 
-- **Plan**: [.kiro/specs/unirtm/plans/core_tools_native_parity.md](#)
-- **Task**: [.kiro/specs/unirtm/tasks/core_tools_native_parity.md](#)
-- **Walkthrough**: [.kiro/specs/unirtm/walkthroughs/core_tools_native_parity.md](#)
+- **Plan**: [Plan](../plans/core_tools_native_parity.md)
+- **Task**: [Task](../tasks/core_tools_native_parity.md)
+- **Walkthrough**: [Walkthrough](./core_tools_native_parity.md)
 
 UniRTM 现在已经是一个完全自洽、原生支持主流全开发生态的现代化版本管理工具。🚀

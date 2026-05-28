@@ -19,8 +19,8 @@
 
 相关的设计与执行文档已同步至项目目录：
 
-- **Plan**: [.kiro/specs/unirtm/plans/extended_ecosystem_php_flutter.md](#)
-- **Task**: [.kiro/specs/unirtm/tasks/extended_ecosystem_php_flutter.md](#)
-- **Walkthrough**: [.kiro/specs/unirtm/walkthroughs/extended_ecosystem_php_flutter.md](#)
+- **Plan**: [Plan](../plans/extended_ecosystem_php_flutter.md)
+- **Task**: [Task](../tasks/extended_ecosystem_php_flutter.md)
+- **Walkthrough**: [Walkthrough](./extended_ecosystem_php_flutter.md)
 
 UniRTM 现在不仅对齐了 `mise` 的所有核心工具，还通过 PHP 和 Flutter 的原生化，在工具链丰富度上更进一步。🚀
