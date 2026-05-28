@@ -132,3 +132,67 @@ func TestHTTPBackend_BuildURL(t *testing.T) {
 		t.Errorf("expected %s, got %s", expected, url)
 	}
 }
+
+func TestHTTPBackend_BuildURL_WindowsAnd386(t *testing.T) {
+	b := NewHTTPBackend()
+
+	// Test windows OS alt
+	platform := Platform{OS: "windows", Arch: "386"}
+	template := "https://example.com/{{.os_alt}}-{{.OS_ALT}}-{{.arch_alt}}-{{.ARCH_ALT}}"
+	url := b.buildURL(template, "1.0.0", platform, nil)
+	expected := "https://example.com/win-Win-i386-i386"
+	if url != expected {
+		t.Errorf("expected %s, got %s", expected, url)
+	}
+}
+
+func TestHTTPBackend_BuildURL_LinuxAndArm(t *testing.T) {
+	b := NewHTTPBackend()
+
+	// Test linux (default case) OS alt + arm64 (default arch)
+	platform := Platform{OS: "linux", Arch: "arm64"}
+	template := "https://example.com/{{.os_alt}}-{{.arch_alt}}"
+	url := b.buildURL(template, "2.0.0", platform, nil)
+	expected := "https://example.com/linux-arm64"
+	if url != expected {
+		t.Errorf("expected %s, got %s", expected, url)
+	}
+}
+
+func TestHTTPBackend_BuildURL_CustomReplacements(t *testing.T) {
+	b := NewHTTPBackend()
+
+	platform := Platform{OS: "linux", Arch: "amd64"}
+	template := "https://example.com/${custom}"
+	url := b.buildURL(template, "1.0.0", platform, map[string]string{"custom": "value"})
+	expected := "https://example.com/value"
+	if url != expected {
+		t.Errorf("expected %s, got %s", expected, url)
+	}
+}
+
+func TestHTTPBackend_GetDownloadInfoWithConfig_NoTemplate(t *testing.T) {
+	b := NewHTTPBackend()
+	ctx := context.Background()
+	platform := Platform{OS: "linux", Arch: "amd64"}
+
+	_, err := b.GetDownloadInfoWithConfig(ctx, "tool", "1.0.0", platform, HTTPConfig{})
+	if err == nil {
+		t.Error("expected error when URLTemplate is empty")
+	}
+}
+
+func TestHTTPBackend_GetDownloadInfoWithConfig_URLNotAccessible(t *testing.T) {
+	b := NewHTTPBackend()
+	ctx := context.Background()
+	platform := Platform{OS: "linux", Arch: "amd64"}
+
+	// Use a URL that is not accessible
+	config := HTTPConfig{
+		URLTemplate: "http://localhost:12345/no-such-file",
+	}
+	_, err := b.GetDownloadInfoWithConfig(ctx, "tool", "1.0.0", platform, config)
+	if err == nil {
+		t.Error("expected error when URL is not accessible")
+	}
+}

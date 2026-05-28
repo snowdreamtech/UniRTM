@@ -7,6 +7,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
 
@@ -97,5 +98,55 @@ func TestGitlabBackend_Properties(t *testing.T) {
 	}
 	if b.GetReach() != "Large" {
 		t.Errorf("expected Large for Reach")
+	}
+}
+
+func TestGitlabFetchReleaseByTag(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/projects/owner%2Frepo/releases/v1.0.0", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{
+			"tag_name": "v1.0.0",
+			"assets": {
+				"links": [
+					{"name": "app-darwin-amd64", "url": "http://example.com/app", "direct_asset_url": "http://example.com/app"}
+				]
+			}
+		}`))
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	os.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
+	defer os.Unsetenv("UNIRTM_GITLAB_API_URL")
+
+	backend := NewGitlabBackend()
+	release, err := backend.FetchReleaseByTag(context.Background(), "owner/repo", "v1.0.0")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if release.Tag != "v1.0.0" {
+		t.Errorf("expected v1.0.0, got %s", release.Tag)
+	}
+	if len(release.Assets) != 1 {
+		t.Errorf("expected 1 asset link, got %d", len(release.Assets))
+	}
+}
+
+func TestGitlabFetchReleaseByTag_NotFound(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/projects/owner%2Frepo/releases/v1.0.0", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	os.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
+	defer os.Unsetenv("UNIRTM_GITLAB_API_URL")
+
+	backend := NewGitlabBackend()
+	_, err := backend.FetchReleaseByTag(context.Background(), "owner/repo", "v1.0.0")
+	if err == nil {
+		t.Errorf("expected error for not found")
 	}
 }

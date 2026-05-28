@@ -7,6 +7,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
 
@@ -97,5 +98,53 @@ func TestForgejoBackend_Properties(t *testing.T) {
 	}
 	if b.GetReach() != "Large" {
 		t.Errorf("expected Large for Reach")
+	}
+}
+
+func TestForgejoFetchReleaseByTag(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/repos/owner/repo/releases/tags/v1.0.0", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{
+			"tag_name": "v1.0.0",
+			"assets": [
+				{"name": "app-darwin-amd64", "browser_download_url": "http://example.com/app"}
+			]
+		}`))
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	os.Setenv("UNIRTM_FORGEJO_API_URL", server.URL)
+	defer os.Unsetenv("UNIRTM_FORGEJO_API_URL")
+
+	backend := NewForgejoBackend()
+	release, err := backend.FetchReleaseByTag(context.Background(), "owner/repo", "v1.0.0")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if release.Tag != "v1.0.0" {
+		t.Errorf("expected v1.0.0, got %s", release.Tag)
+	}
+	if len(release.Assets) != 1 {
+		t.Errorf("expected 1 asset, got %d", len(release.Assets))
+	}
+}
+
+func TestForgejoFetchReleaseByTag_NotFound(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/repos/owner/repo/releases/tags/v1.0.0", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	os.Setenv("UNIRTM_FORGEJO_API_URL", server.URL)
+	defer os.Unsetenv("UNIRTM_FORGEJO_API_URL")
+
+	backend := NewForgejoBackend()
+	_, err := backend.FetchReleaseByTag(context.Background(), "owner/repo", "v1.0.0")
+	if err == nil {
+		t.Errorf("expected error for not found")
 	}
 }

@@ -53,6 +53,54 @@ func TestPypiBackend_ListVersions(t *testing.T) {
 	if len(versions) != 2 {
 		t.Fatalf("expected 2 versions, got %d", len(versions))
 	}
+
+	// Not found
+	_, err = b.ListVersions(ctx, "notfound", platform)
+	if err == nil {
+		t.Error("expected error for not found")
+	}
+
+	// execution error
+	bErr := NewPypiBackend()
+	bErr.client.Transport = &mockCargoTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			return nil, context.DeadlineExceeded
+		},
+	}
+	_, err = bErr.ListVersions(ctx, "black", platform)
+	if err == nil {
+		t.Error("expected execution error")
+	}
+
+	// internal error
+	bInternal := NewPypiBackend()
+	bInternal.client.Transport = &mockCargoTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			return &http.Response{StatusCode: http.StatusInternalServerError, Body: io.NopCloser(bytes.NewBufferString(""))}, nil
+		},
+	}
+	_, err = bInternal.ListVersions(ctx, "black", platform)
+	if err == nil {
+		t.Error("expected status code error")
+	}
+
+	// bad json
+	bJSON := NewPypiBackend()
+	bJSON.client.Transport = &mockCargoTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewBufferString("invalid"))}, nil
+		},
+	}
+	_, err = bJSON.ListVersions(ctx, "black", platform)
+	if err == nil {
+		t.Error("expected bad json error")
+	}
+
+	// bad request
+	_, err = b.ListVersions(nil, "black", platform)
+	if err == nil {
+		t.Error("expected request creation error with nil context")
+	}
 }
 
 func TestPypiBackend_ResolveVersion(t *testing.T) {
@@ -86,6 +134,42 @@ func TestPypiBackend_ResolveVersion(t *testing.T) {
 	}
 	if infoLatest.Version != "23.3.0" {
 		t.Errorf("expected latest version 23.3.0, got %s", infoLatest.Version)
+	}
+
+	// execution error
+	bErr := NewPypiBackend()
+	bErr.client.Transport = &mockCargoTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			return nil, context.DeadlineExceeded
+		},
+	}
+	_, err = bErr.ResolveVersion(ctx, "black", "latest", platform)
+	if err == nil {
+		t.Error("expected execution error")
+	}
+
+	// bad json
+	bJSON := NewPypiBackend()
+	bJSON.client.Transport = &mockCargoTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewBufferString("invalid"))}, nil
+		},
+	}
+	_, err = bJSON.ResolveVersion(ctx, "black", "latest", platform)
+	if err == nil {
+		t.Error("expected bad json error")
+	}
+
+	// not found latest
+	_, err = b.ResolveVersion(ctx, "notfound", "latest", platform)
+	if err == nil {
+		t.Error("expected not found latest error")
+	}
+
+	// bad request latest
+	_, err = b.ResolveVersion(nil, "black", "latest", platform)
+	if err == nil {
+		t.Error("expected request creation error with nil context")
 	}
 }
 

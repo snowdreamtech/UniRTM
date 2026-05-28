@@ -4,6 +4,7 @@
 package backend
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -183,4 +184,20 @@ func TestVerifySyftBundleFromFile(t *testing.T) {
 	}
 
 	t.Logf("Verification succeeded! Res: %+v", res)
+}
+
+func TestVerifyArtifactProvenance_Failure(t *testing.T) {
+	// Test error cases for coverage
+	_, err := VerifyArtifactProvenance(context.Background(), "token", "owner", "repo", "non_existent_file.txt")
+	if err == nil {
+		t.Errorf("expected error on missing file")
+	}
+}
+
+func TestVerifyGitlabArtifactProvenance_Failure(t *testing.T) {
+	// Test error cases for coverage
+	_, err := VerifyGitlabArtifactProvenance(context.Background(), "token", "owner", "repo", "non_existent_file.txt")
+	if err == nil {
+		t.Errorf("expected error on missing file")
+	}
 }
