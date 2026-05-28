@@ -33,17 +33,15 @@ data_dir = ''
 [tasks]
 [tasks.audit]
 description = 'Run comprehensive security audit (parallelized)'
-run = '''
-# Run all audit subchecks in parallel and wait for them to finish
-unirtm run audit:gitleaks &
-unirtm run audit:zizmor &
-unirtm run audit:osv &
-unirtm run audit:npm &
-unirtm run audit:pip &
-unirtm run audit:govulncheck &
-unirtm run audit:trivy &
-wait
-'''
+depends = [
+    "audit:gitleaks",
+    "audit:zizmor",
+    "audit:osv",
+    "audit:npm",
+    "audit:pip",
+    "audit:govulncheck",
+    "audit:trivy"
+]
 
 [tasks."audit:gitleaks"]
 description = 'Scan for hardcoded secrets'
@@ -131,13 +129,7 @@ env = { GOTOOLCHAIN = 'local' }
 
 [tasks.verify]
 description = 'Run full local verification (lint-all, test, audit) - runs subchecks in parallel'
-run = '''
-# Run the three verification subtasks in parallel and wait for them to finish
-unirtm run lint-all &
-unirtm run test &
-unirtm run audit &
-wait
-'''
+depends = ["lint-all", "test", "audit"]
 
 [tools]
 'github:anchore/syft' = '1.44.0'
@@ -151,7 +143,7 @@ wait
 'github:google/osv-scanner' = '2.3.5'
 'github:hadolint/hadolint' = '2.14.0'
 'github:koalaman/shellcheck' = '0.11.0'
-'github:mvdan/sh' = '3.13.1'
+'go:mvdan.cc/sh/v3/cmd/shfmt' = 'v3.13.1'
 'github:rhysd/actionlint' = '1.7.12'
 'github:zizmorcore/zizmor' = '1.24.1'
 go = '1.26.3'
