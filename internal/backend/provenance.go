@@ -4,6 +4,7 @@
 package backend
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -220,7 +221,7 @@ type tufFetcher struct {
 
 var _ fetcher.Fetcher = (*tufFetcher)(nil)
 
-func (f *tufFetcher) DownloadFile(urlPath string, maxLength int64, _ time.Duration) ([]byte, error) {
+func (f *tufFetcher) DownloadFile(urlPath string, maxLength int64, timeout time.Duration) ([]byte, error) {
 	finalURL := urlPath
 	if !strings.HasPrefix(urlPath, "http") {
 		baseURL := f.repositoryBaseURL
@@ -232,7 +233,14 @@ func (f *tufFetcher) DownloadFile(urlPath string, maxLength int64, _ time.Durati
 
 	logger.Debug("provenance: TUF fetching", map[string]interface{}{"url": finalURL, "max_length": maxLength})
 
-	req, err := http.NewRequest(http.MethodGet, finalURL, nil)
+	ctx := context.Background()
+	if timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, finalURL, nil)
 	if err != nil {
 		return nil, err
 	}

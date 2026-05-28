@@ -9,10 +9,12 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/repository"
+	"golang.org/x/sync/errgroup"
 )
 
 // IndexManager manages tool index storage, retrieval, and updates
@@ -266,30 +268,44 @@ func (im *IndexManager) UpdateFromBackend(ctx context.Context, backendName strin
 // UpdateFromAllBackends updates the index from all registered backends
 // Validates Requirement: 11.2 (Update from multiple sources)
 func (im *IndexManager) UpdateFromAllBackends(ctx context.Context) error {
-	im.mu.Lock()
-	defer im.mu.Unlock()
+	im.mu.RLock()
+	// Collect backends to update safely while holding a read lock
+	backendNames := make([]string, 0, len(im.backends))
+	for backendName := range im.backends {
+		backendNames = append(backendNames, backendName)
+	}
+	im.mu.RUnlock()
 
 	startTime := time.Now()
-	successCount := 0
-	errorCount := 0
-	errors := make([]string, 0)
+	var successCount int32
+	var errorCount int32
+	var mu sync.Mutex
+	var errorsList []string
 
-	for backendName := range im.backends {
-		// Unlock for the update call, then relock
-		im.mu.Unlock()
-		err := im.UpdateFromBackend(ctx, backendName)
-		im.mu.Lock()
+	g, gCtx := errgroup.WithContext(ctx)
 
-		if err != nil {
-			errorCount++
-			errors = append(errors, fmt.Sprintf("%s: %v", backendName, err))
-		} else {
-			successCount++
-		}
+	for _, name := range backendNames {
+		backendName := name // capture loop variable
+		g.Go(func() error {
+			// UpdateFromBackend handles its own locking internally
+			err := im.UpdateFromBackend(gCtx, backendName)
+			if err != nil {
+				atomic.AddInt32(&errorCount, 1)
+				mu.Lock()
+				errorsList = append(errorsList, fmt.Sprintf("%s: %v", backendName, err))
+				mu.Unlock()
+			} else {
+				atomic.AddInt32(&successCount, 1)
+			}
+			return nil // Don't return error to errgroup to allow all to finish even if one fails
+		})
 	}
 
+	_ = g.Wait() // wait for all backend updates to finish
+
 	// Always trigger a refresh/re-seed of all default tools to ensure complete Parity and database health
-	_ = im.seedDefaultToolsLockless(ctx, "")
+	// We call the locked version here because we are not holding the lock
+	_ = im.seedDefaultTools(ctx)
 
 	duration := time.Since(startTime)
 
@@ -297,9 +313,9 @@ func (im *IndexManager) UpdateFromAllBackends(ctx context.Context) error {
 	if im.auditRepo != nil {
 		status := "success"
 		errorMsg := ""
-		if errorCount > 0 {
+		if atomic.LoadInt32(&errorCount) > 0 {
 			status = "partial_failure"
-			errorMsg = fmt.Sprintf("failed backends: %v", errors)
+			errorMsg = fmt.Sprintf("failed backends: %v", errorsList)
 		}
 
 		_ = im.auditRepo.Log(ctx, &repository.AuditEntry{
@@ -308,12 +324,12 @@ func (im *IndexManager) UpdateFromAllBackends(ctx context.Context) error {
 			Status:    status,
 			Error:     errorMsg,
 			Duration:  duration.Milliseconds(),
-			Metadata:  fmt.Sprintf(`{"success_count":%d,"error_count":%d}`, successCount, errorCount),
+			Metadata:  fmt.Sprintf(`{"success_count":%d,"error_count":%d}`, atomic.LoadInt32(&successCount), atomic.LoadInt32(&errorCount)),
 		})
 	}
 
-	if errorCount > 0 {
-		return fmt.Errorf("index update completed with %d errors: %v", errorCount, errors)
+	if atomic.LoadInt32(&errorCount) > 0 {
+		return fmt.Errorf("index update completed with %d errors: %v", atomic.LoadInt32(&errorCount), errorsList)
 	}
 
 	return nil
