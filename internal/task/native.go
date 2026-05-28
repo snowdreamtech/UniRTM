@@ -175,7 +175,7 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 			cmd.Stderr = os.Stderr
 		}
 	}
-	
+
 	var err error
 	if cmd != nil {
 		cmd.Stdin = os.Stdin
