@@ -155,7 +155,7 @@ func runSearch(cmd *cobra.Command, args []string) error {
 			fmt.Println("[]")
 		} else {
 			formatter.Info(fmt.Sprintf("No tools found matching %q", query), nil)
-			pterm.Info.Println("Tip: Run 'unirtm index update' to refresh the tool index.")
+			output.Info("Tip: Run 'unirtm index update' to refresh the tool index.")
 		}
 		return nil
 	}
@@ -252,7 +252,7 @@ func runSearch(cmd *cobra.Command, args []string) error {
 			Show()
 		if err != nil {
 			// User pressed ESC or cancelled — not an error
-			pterm.Info.Println("Installation skipped.")
+			output.Info("Installation skipped.")
 			return nil
 		}
 
@@ -265,7 +265,7 @@ func runSearch(cmd *cobra.Command, args []string) error {
 		}
 		version = strings.TrimSpace(version)
 
-		pterm.Info.Printfln("Installing %s@%s…", pterm.FgCyan.Sprint(selectedTool), version)
+		output.Infof("Installing %s@%s…", pterm.FgCyan.Sprint(selectedTool), version)
 
 		// Delegate to the install command logic
 		installArgs := []string{fmt.Sprintf("%s@%s", selectedTool, version)}
@@ -273,6 +273,6 @@ func runSearch(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println()
-	pterm.Info.Printfln("Use 'unirtm install <tool>@<version>' or run 'unirtm search %s --install' for quick install.", query)
+	output.Infof("Use 'unirtm install <tool>@<version>' or run 'unirtm search %s --install' for quick install.", query)
 	return nil
 }

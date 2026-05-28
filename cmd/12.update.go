@@ -186,7 +186,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		}
 
 		_ = pterm.DefaultTable.WithHasHeader().WithData(tableData).Render()
-		pterm.Info.Printfln("Estimated time: %s", pterm.LightCyan(preview.EstimatedTime))
+		output.Infof("Estimated time: %s", pterm.LightCyan(preview.EstimatedTime))
 		pterm.Printf("\nRun without %s to apply updates.\n", pterm.LightYellow("--preview"))
 		return nil
 	}
@@ -239,7 +239,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 				"duration":    result.Duration.String(),
 			})
 		} else {
-			pterm.FgGreen.Printfln("Updated %s: %s → %s (%s)",
+			output.Successf("Updated %s: %s → %s (%s)",
 				pterm.LightGreen(result.Tool),
 				pterm.FgGray.Sprint(result.OldVersion),
 				pterm.LightGreen(result.NewVersion),
@@ -317,7 +317,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		if r.Success {
 			successCount++
 			if !quiet {
-				pterm.FgGreen.Printfln("Updated %s: %s → %s (%s)",
+				output.Successf("Updated %s: %s → %s (%s)",
 					pterm.LightGreen(r.Tool),
 					pterm.FgGray.Sprint(r.OldVersion),
 					pterm.LightGreen(r.NewVersion),
@@ -325,7 +325,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 			}
 		} else {
 			failCount++
-			pterm.Error.Printfln("Failed to update %s: %s", pterm.LightRed(r.Tool), pterm.LightRed(r.Error))
+			output.Errorf("Failed to update %s: %s", pterm.LightRed(r.Tool), pterm.LightRed(r.Error))
 		}
 	}
 
@@ -338,9 +338,9 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	} else {
 		pterm.Println()
 		if failCount == 0 {
-			pterm.FgGreen.Printfln("All updates complete: %d tools updated successfully.", successCount)
+			output.Successf("All updates complete: %d tools updated successfully.", successCount)
 		} else {
-			pterm.Warning.Printfln("Update finished: %d succeeded, %d failed.", successCount, failCount)
+			output.Warningf("Update finished: %d succeeded, %d failed.", successCount, failCount)
 		}
 	}
 

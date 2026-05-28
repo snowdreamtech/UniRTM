@@ -214,7 +214,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 						if err == nil {
 							version = selected
 						} else {
-							pterm.Warning.Printf("Interactive selection failed for %s: %v, falling back to latest\n", tool, err)
+							output.Warningf("Interactive selection failed for %s: %v, falling back to latest", tool, err)
 						}
 					}
 				}
@@ -330,14 +330,14 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 		if isInstalled {
 			if !jsonOutput {
-				pterm.FgGreen.Printf("✓ %s@%s (already installed, use --force to reinstall)\n", t.ToolName, t.Version)
+				output.Successf("✓ %s@%s (already installed, use --force to reinstall)\n", t.ToolName, t.Version)
 			}
 		} else {
 			if installForce {
 				alreadyOnDisk, _ := installManager.IsInstalled(ctx, t.ToolName, t.Version, t.BackendName)
 				if alreadyOnDisk {
 					if !jsonOutput {
-						pterm.Warning.Printf("⚠️  [force] Uninstalling existing %s@%s before reinstallation...\n", t.ToolName, t.Version)
+						output.Warningf("⚠️  [force] Uninstalling existing %s@%s before reinstallation...", t.ToolName, t.Version)
 					}
 					_ = installManager.Uninstall(ctx, t.ToolName, t.Version)
 				}
@@ -363,7 +363,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 	if runConcurrent {
 		if !jsonOutput {
-			pterm.Info.Printf("Installing %d tool(s) concurrently (max %d parallel jobs)...\n", len(sortedTools), concurrencyLimit)
+			output.Infof("Installing %d tool(s) concurrently (max %d parallel jobs)...\n", len(sortedTools), concurrencyLimit)
 		}
 
 		// 1. Build tool list for ConcurrentManager
@@ -432,19 +432,19 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			} else {
 				switch status {
 				case "starting":
-					pterm.Info.Printf("Starting installation of %s@%s...\n", tool, version)
+					output.Infof("Starting installation of %s@%s...", tool, version)
 				case "done":
-					pterm.FgGreen.Printf("✓ Successfully installed %s@%s\n", tool, version)
+					output.Successf("✓ Successfully installed %s@%s", tool, version)
 				default:
 					if strings.HasPrefix(status, "failed:") {
 						errMsg := strings.TrimPrefix(status, "failed: ")
 						if errMsg == service.ErrAlreadyInstalled.Error() || strings.Contains(errMsg, "already installed") {
-							pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", tool, version)
+							output.Successf("✓ %s@%s (already installed)\n", tool, version)
 						} else {
-							pterm.Error.Printf("Failed to install %s@%s: %s\n", tool, version, errMsg)
+							output.Errorf("Failed to install %s@%s: %s", tool, version, errMsg)
 						}
 					} else {
-						pterm.Info.Printf("%s@%s: %s\n", tool, version, status)
+						output.Infof("%s@%s: %s", tool, version, status)
 					}
 				}
 			}
@@ -486,7 +486,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 					if !exists || downloaded-prevSize >= tenMB {
 						lastPercent[toolName] = downloaded
 						lastPercentMu.Unlock()
-						pterm.Info.Printf("Downloading %s: %s\n",
+						output.Infof("Downloading %s: %s",
 							toolName,
 							humanize.Bytes(uint64(downloaded)))
 					} else {
@@ -520,7 +520,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 				lastPercentMu.Unlock()
 
 				if shouldReport {
-					pterm.Info.Printf("Downloading %s: %s/%s (%d%%)\n",
+					output.Infof("Downloading %s: %s/%s (%d%%)\n",
 						toolName,
 						humanize.Bytes(uint64(downloaded)),
 						humanize.Bytes(uint64(total)),
@@ -558,15 +558,15 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 		duration := time.Since(startTime)
 		if len(failedTools) > 0 {
-			pterm.Error.Printf("Installation finished with errors (took %s):\n", duration.Round(time.Millisecond).String())
+			output.Errorf("Installation finished with errors (took %s):\n", duration.Round(time.Millisecond).String())
 			for _, f := range failedTools {
-				pterm.FgRed.Printf("  • %s\n", f)
+				output.Errorf("  • %s", f)
 			}
 			return fmt.Errorf("some installations failed: %s", strings.Join(failedTools, ", "))
 		}
 
 		if !jsonOutput {
-			pterm.FgGreen.Printf("✓ All tools processed successfully (took %s)\n", duration.Round(time.Millisecond).String())
+			output.Successf("✓ All tools processed successfully (took %s)\n", duration.Round(time.Millisecond).String())
 		} else {
 			// If JSON output, render the results JSON
 			outputData, _ := json.MarshalIndent(results, "", "  ")
@@ -585,19 +585,19 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				// Check if already installed
 				if err == service.ErrAlreadyInstalled || strings.Contains(err.Error(), "already installed") {
-					pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", tool, version)
+					output.Successf("✓ %s@%s (already installed)\n", tool, version)
 					continue
 				}
 
-				pterm.Error.Printf("Installation failed for %s: %v\n", tool, err)
+				output.Errorf("Installation failed for %s: %v", tool, err)
 				return fmt.Errorf("install %s: %w", tool, err)
 			}
-			pterm.FgGreen.Printf("✓ Successfully installed %s@%s\n", tool, version)
+			output.Successf("✓ Successfully installed %s@%s", tool, version)
 		}
 
 		duration := time.Since(startTime)
 		if len(toolsToInstall) > 1 && !jsonOutput {
-			pterm.FgGreen.Printf("✓ All tools processed (took %s)\n", duration.Round(time.Millisecond).String())
+			output.Successf("✓ All tools processed (took %s)\n", duration.Round(time.Millisecond).String())
 		}
 	}
 
@@ -690,17 +690,17 @@ func (m *concurrentSpinnerManager) Complete(tool, version, status string) {
 	// Print static status message based on status
 	switch status {
 	case "done":
-		pterm.FgGreen.Printf("Successfully installed %s@%s\n", tool, version)
+		output.Successf("Successfully installed %s@%s", tool, version)
 	default:
 		if strings.HasPrefix(status, "failed:") {
 			errMsg := strings.TrimPrefix(status, "failed: ")
 			if errMsg == service.ErrAlreadyInstalled.Error() || strings.Contains(errMsg, "already installed") {
-				pterm.FgGreen.Printf("✓ %s@%s (already installed)\n", tool, version)
+				output.Successf("✓ %s@%s (already installed)\n", tool, version)
 			} else {
-				pterm.Error.Printf("Failed to install %s@%s: %s\n", tool, version, errMsg)
+				output.Errorf("Failed to install %s@%s: %s", tool, version, errMsg)
 			}
 		} else {
-			pterm.Info.Printf("%s@%s: %s\n", tool, version, status)
+			output.Infof("%s@%s: %s", tool, version, status)
 		}
 	}
 

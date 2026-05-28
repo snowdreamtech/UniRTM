@@ -15,6 +15,8 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
+
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 )
 
 var (
@@ -56,25 +58,25 @@ func runWatch(cmd *cobra.Command, args []string) error {
 
 	pterm.DefaultSection.Println("Watcher Settings")
 
-	pterm.Info.Printf("Task to execute:   %s\n", pterm.LightCyan(taskName))
-	pterm.Info.Printf("Debounce delay:    %s\n", pterm.LightYellow(debounceDuration.String()))
+	output.Infof("Task to execute:   %s", pterm.LightCyan(taskName))
+	output.Infof("Debounce delay:    %s", pterm.LightYellow(debounceDuration.String()))
 	if len(watchGlobs) > 0 {
-		pterm.Info.Printf("Watch globs:       %s\n", pterm.LightMagenta(strings.Join(watchGlobs, ", ")))
+		output.Infof("Watch globs:       %s", pterm.LightMagenta(strings.Join(watchGlobs, ", ")))
 	} else {
-		pterm.Info.Printf("Watch directories: %s (recursive)\n", pterm.LightGreen("."))
+		output.Infof("Watch directories: %s (recursive)\n", pterm.LightGreen("."))
 	}
 	if len(watchIgnores) > 0 {
-		pterm.Info.Printf("Ignore patterns:   %s\n", pterm.LightRed(strings.Join(watchIgnores, ", ")))
+		output.Infof("Ignore patterns:   %s", pterm.LightRed(strings.Join(watchIgnores, ", ")))
 	}
 	if watchClear {
-		pterm.Info.Println("Screen clearing:   Enabled")
+		output.Info("Screen clearing:   Enabled")
 	}
 	if watchShell {
-		pterm.Info.Println("Shell execution:   Enabled")
+		output.Info("Shell execution:   Enabled")
 	}
 
 	pterm.Println(pterm.FgGray.Sprint(strings.Repeat("─", 60)))
-	pterm.Info.Println("Watching for file changes. Press Ctrl+C to stop.")
+	output.Info("Watching for file changes. Press Ctrl+C to stop.")
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -138,8 +140,8 @@ func runWatch(cmd *cobra.Command, args []string) error {
 					clearScreen()
 				}
 				pterm.Println(pterm.FgGray.Sprint(strings.Repeat("─", 60)))
-				pterm.Info.Printf("Change detected in: %s\n", pterm.LightYellow(event.Name))
-				pterm.Info.Printf("Restarting task %s...\n", pterm.LightCyan(taskName))
+				output.Infof("Change detected in: %s", pterm.LightYellow(event.Name))
+				output.Infof("Restarting task %s...", pterm.LightCyan(taskName))
 
 				// Kill currently running task if active to support hot-reloading (Surpassing mise!)
 				killCurrentCmd()
@@ -152,7 +154,7 @@ func runWatch(cmd *cobra.Command, args []string) error {
 			if !ok {
 				return nil
 			}
-			pterm.Error.Printf("Watch error: %v\n", err)
+			output.Errorf("Watch error: %v", err)
 		}
 	}
 }
@@ -161,7 +163,7 @@ func runWatch(cmd *cobra.Command, args []string) error {
 func runWatchTask(taskName string) {
 	exe, err := os.Executable()
 	if err != nil {
-		pterm.Error.Printf("Failed to find executable: %v\n", err)
+		output.Errorf("Failed to find executable: %v", err)
 		return
 	}
 
@@ -198,12 +200,12 @@ func runWatchTask(taskName string) {
 	if err != nil {
 		// If command was killed (exit status -1/killed), print a friendly reload indicator
 		if strings.Contains(err.Error(), "killed") || strings.Contains(err.Error(), "exit status -1") || strings.Contains(err.Error(), "signal: killed") {
-			pterm.FgYellow.Printf("🔄 Task %s interrupted & reloaded.\n", taskName)
+			output.Warningf("🔄 Task %s interrupted & reloaded.", taskName)
 		} else {
-			pterm.Warning.Printf("Task %s failed: %v (took %v)\n", taskName, err, duration.Round(time.Millisecond))
+			output.Warningf("Task %s failed: %v (took %v)\n", taskName, err, duration.Round(time.Millisecond))
 		}
 	} else {
-		pterm.FgGreen.Printf("✅ Task %s completed successfully in %v.\n", taskName, duration.Round(time.Millisecond))
+		output.Successf("✅ Task %s completed successfully in %v.", taskName, duration.Round(time.Millisecond))
 	}
 }
 
@@ -212,7 +214,7 @@ func killCurrentCmd() {
 	cmdMutex.Lock()
 	defer cmdMutex.Unlock()
 	if runningTaskCmd != nil && runningTaskCmd.Process != nil {
-		pterm.Info.Println("Killing running task execution to restart...")
+		output.Info("Killing running task execution to restart...")
 		_ = runningTaskCmd.Process.Kill()
 	}
 }

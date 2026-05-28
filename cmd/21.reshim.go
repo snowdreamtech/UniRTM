@@ -149,7 +149,7 @@ func runReshim(cmd *cobra.Command, args []string) error {
 			if !knownShims[baseName] {
 				shimPath := filepath.Join(shimsDir, name)
 				if dryRun {
-					pterm.Warning.Printfln("[dry-run] Would remove dead shim: %s", name)
+					output.Warningf("[dry-run] Would remove dead shim: %s", name)
 					deadRemoved++
 					continue
 				}
@@ -159,7 +159,7 @@ func runReshim(cmd *cobra.Command, args []string) error {
 				}
 				deadRemoved++
 				if verbose {
-					pterm.Info.Printfln("Removed dead shim: %s", name)
+					output.Infof("Removed dead shim: %s", name)
 				}
 			}
 		}
@@ -176,7 +176,7 @@ func runReshim(cmd *cobra.Command, args []string) error {
 
 	if dryRun {
 		for _, inst := range installations {
-			pterm.Info.Printfln("[dry-run] Would regenerate shim for %s@%s", inst.Tool, inst.Version)
+			output.Infof("[dry-run] Would regenerate shim for %s@%s", inst.Tool, inst.Version)
 		}
 		return nil
 	}
@@ -257,7 +257,7 @@ func runReshim(cmd *cobra.Command, args []string) error {
 
 	// Print any warnings
 	for _, w := range warnings {
-		pterm.Warning.Println(w)
+		output.Warning(w)
 	}
 
 	// ── Summary ───────────────────────────────────────────────────────────────

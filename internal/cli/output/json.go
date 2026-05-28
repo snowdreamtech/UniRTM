@@ -56,6 +56,11 @@ func (j *JSONFormatter) Info(message string, fields ...map[string]interface{}) {
 	j.writeJSON(msg)
 }
 
+// Infof outputs an informational message in JSON format with string formatting
+func (j *JSONFormatter) Infof(format string, a ...interface{}) {
+	j.Info(fmt.Sprintf(format, a...))
+}
+
 // Success outputs a success message in JSON format
 func (j *JSONFormatter) Success(message string, fields ...map[string]interface{}) {
 	msg := OutputMessage{
@@ -69,6 +74,11 @@ func (j *JSONFormatter) Success(message string, fields ...map[string]interface{}
 	}
 
 	j.writeJSON(msg)
+}
+
+// Successf outputs a success message in JSON format with string formatting
+func (j *JSONFormatter) Successf(format string, a ...interface{}) {
+	j.Success(fmt.Sprintf(format, a...))
 }
 
 // Warning outputs a warning message in JSON format
@@ -86,6 +96,11 @@ func (j *JSONFormatter) Warning(message string, fields ...map[string]interface{}
 	j.writeJSON(msg)
 }
 
+// Warningf outputs a warning message in JSON format with string formatting
+func (j *JSONFormatter) Warningf(format string, a ...interface{}) {
+	j.Warning(fmt.Sprintf(format, a...))
+}
+
 // Error outputs an error message in JSON format
 func (j *JSONFormatter) Error(message string, fields ...map[string]interface{}) {
 	msg := OutputMessage{
@@ -99,6 +114,11 @@ func (j *JSONFormatter) Error(message string, fields ...map[string]interface{}) 
 	}
 
 	j.writeJSON(msg)
+}
+
+// Errorf outputs an error message in JSON format with string formatting
+func (j *JSONFormatter) Errorf(format string, a ...interface{}) {
+	j.Error(fmt.Sprintf(format, a...))
 }
 
 // Data outputs structured data in JSON format

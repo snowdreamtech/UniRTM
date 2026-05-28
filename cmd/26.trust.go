@@ -12,6 +12,8 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/spf13/cobra"
+
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 )
 
 // trustCmd represents the trust command
@@ -33,11 +35,11 @@ Use --list to view all currently trusted configuration files.`,
 			// List all trusted files
 			trusted, err := trustManager.List()
 			if err != nil {
-				pterm.Error.Printfln("Failed to list trusted files: %v", err)
+				output.Errorf("Failed to list trusted files: %v", err)
 				os.Exit(1)
 			}
 			if len(trusted) == 0 {
-				pterm.Info.Println("No trusted configuration files found.")
+				output.Info("No trusted configuration files found.")
 				return
 			}
 			pterm.DefaultSection.Println("Trusted Configuration Files")
@@ -82,12 +84,12 @@ Use --list to view all currently trusted configuration files.`,
 		}
 
 		if _, err := os.Stat(absPath); os.IsNotExist(err) {
-			pterm.Error.Printfln("Configuration file not found: %s", absPath)
+			output.Errorf("Configuration file not found: %s", absPath)
 			os.Exit(1)
 		}
 
 		if err := trustManager.Trust(absPath); err != nil {
-			pterm.Error.Printfln("Failed to trust configuration file: %v", err)
+			output.Errorf("Failed to trust configuration file: %v", err)
 			os.Exit(1)
 		}
 
@@ -100,7 +102,7 @@ Use --list to view all currently trusted configuration files.`,
 		if len(hash) > 16 {
 			hash = hash[:16] + "..."
 		}
-		pterm.FgGreen.Printfln("Trusted configuration file: %s (hash: %s)", pterm.LightGreen(absPath), pterm.FgGray.Sprint(hash))
+		output.Successf("Trusted configuration file: %s (hash: %s)", pterm.LightGreen(absPath), pterm.FgGray.Sprint(hash))
 
 		// Show the full updated trusted files table
 		trusted, err := trustManager.List()

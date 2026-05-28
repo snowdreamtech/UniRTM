@@ -192,7 +192,7 @@ func runCacheList(cmd *cobra.Command, args []string) error {
 		if jsonOutput {
 			fmt.Println("[]")
 		} else {
-			pterm.Info.Println("Cache is empty")
+			output.Info("Cache is empty")
 		}
 		return nil
 	}

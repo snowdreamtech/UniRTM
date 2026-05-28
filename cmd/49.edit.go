@@ -14,6 +14,8 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
+
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 )
 
 var (
@@ -64,7 +66,7 @@ func runEdit(cmd *cobra.Command, args []string) error {
 	cfg, _ := config.Load()
 	editor, source := getBestEditorWithSource(cfg)
 
-	pterm.Info.Printf("Opening configuration editor (using %s via %s)...\n", pterm.Bold.Sprint(editor), source)
+	output.Infof("Opening configuration editor (using %s via %s)...\n", pterm.Bold.Sprint(editor), source)
 
 	// Add a tip if we are using a fallback/system default
 	if source == "system default" || source == "fallback" {
@@ -84,7 +86,7 @@ func runEdit(cmd *cobra.Command, args []string) error {
 		// Discover files interactively
 		candidates := discoverConfigFiles()
 		if len(candidates) == 0 {
-			pterm.Info.Println("No configuration files found. Creating a new one in the current directory.")
+			output.Info("No configuration files found. Creating a new one in the current directory.")
 			targetFile = "unirtm.toml"
 		} else if len(candidates) == 1 {
 			targetFile = candidates[0].Path
@@ -109,7 +111,7 @@ func runEdit(cmd *cobra.Command, args []string) error {
 
 	// 2. Ensure file exists
 	if _, err := os.Stat(targetFile); os.IsNotExist(err) {
-		pterm.Info.Printf("Creating new config file: %s\n", targetFile)
+		output.Infof("Creating new config file: %s", targetFile)
 		if err := os.MkdirAll(filepath.Dir(targetFile), 0755); err != nil {
 			return fmt.Errorf("failed to create directory: %w", err)
 		}
@@ -137,7 +139,7 @@ func runEdit(cmd *cobra.Command, args []string) error {
 
 		var m map[string]interface{}
 		if err := toml.Unmarshal(data, &m); err != nil {
-			pterm.Error.Printf("Invalid TOML syntax: %v\n", err)
+			output.Errorf("Invalid TOML syntax: %v", err)
 			confirm, _ := pterm.DefaultInteractiveConfirm.
 				WithDefaultText("Do you want to re-edit to fix the error?").
 				WithDefaultValue(true).
@@ -146,12 +148,12 @@ func runEdit(cmd *cobra.Command, args []string) error {
 			if confirm {
 				continue
 			} else {
-				pterm.Warning.Println("Changes saved with syntax errors. They may fail to load.")
+				output.Warning("Changes saved with syntax errors. They may fail to load.")
 				break
 			}
 		}
 
-		pterm.FgGreen.Printf("Configuration saved and validated: %s\n", targetFile)
+		output.Successf("Configuration saved and validated: %s", targetFile)
 		break
 	}
 

@@ -14,6 +14,8 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
+
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 )
 
 var (
@@ -47,7 +49,7 @@ var aliasResolveCmd = &cobra.Command{
 			}
 		}
 
-		pterm.Error.Printf("Alias %s not found for tool %s\n", alias, tool)
+		output.Errorf("Alias %s not found for tool %s", alias, tool)
 		return fmt.Errorf("alias not found")
 	},
 }
@@ -81,7 +83,7 @@ var aliasListCmd = &cobra.Command{
 		}
 
 		if len(cfg.Aliases) == 0 {
-			pterm.Info.Println("No aliases configured.")
+			output.Info("No aliases configured.")
 			return nil
 		}
 
@@ -182,13 +184,13 @@ var aliasSetCmd = &cobra.Command{
 			return fmt.Errorf("failed to save alias: %w", err)
 		}
 
-		pterm.FgGreen.Printf("Set alias %s=%s for tool %s in %s\n", alias, version, tool, cfgPath)
+		output.Successf("Set alias %s=%s for tool %s in %s", alias, version, tool, cfgPath)
 
 		// [Surpass] Validation: Check if version exists (optional warning)
 		fsToolName := env.GetFSToolName(toolName, backendName)
 		installPath := filepath.Join(env.GetInstallsDir(), fsToolName, version)
 		if _, err := os.Stat(installPath); os.IsNotExist(err) {
-			pterm.Warning.Printf("Version %s for %s is not currently installed. You may need to run 'unirtm install' later.\n", version, tool)
+			output.Warningf("Version %s for %s is not currently installed. You may need to run 'unirtm install' later.", version, tool)
 		}
 
 		return nil
@@ -211,18 +213,18 @@ var aliasUnsetCmd = &cobra.Command{
 
 		rawAliases, ok := m["aliases"].(map[string]interface{})
 		if !ok {
-			pterm.Warning.Println("No aliases found.")
+			output.Warning("No aliases found.")
 			return nil
 		}
 
 		toolAliases, ok := rawAliases[tool].(map[string]interface{})
 		if !ok {
-			pterm.Warning.Printf("No aliases found for tool %s\n", tool)
+			output.Warningf("No aliases found for tool %s", tool)
 			return nil
 		}
 
 		if _, ok := toolAliases[alias]; !ok {
-			pterm.Warning.Printf("Alias %s not found for tool %s\n", alias, tool)
+			output.Warningf("Alias %s not found for tool %s", alias, tool)
 			return nil
 		}
 
@@ -238,7 +240,7 @@ var aliasUnsetCmd = &cobra.Command{
 			return fmt.Errorf("failed to save alias: %w", err)
 		}
 
-		pterm.FgGreen.Printf("Deleted alias %s for tool %s in %s\n", alias, tool, cfgPath)
+		output.Successf("Deleted alias %s for tool %s in %s", alias, tool, cfgPath)
 		return nil
 	},
 }

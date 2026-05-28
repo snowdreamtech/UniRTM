@@ -23,6 +23,8 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
+
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 )
 
 func init() {
@@ -124,7 +126,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		}
 		for _, c := range configs {
 			if _, err := os.Stat(c); err == nil {
-				pterm.FgGreen.Printf("Loaded: %s\n", pterm.FgGray.Sprint(c))
+				output.Successf("Loaded: %s", pterm.FgGray.Sprint(c))
 			}
 		}
 
@@ -132,7 +134,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 			fmt.Println(pterm.Bold.Sprint("\nAliases:"))
 			for tool, aliases := range cfg.Aliases {
 				for alias, target := range aliases {
-					pterm.Info.Printf("  %s -> %s %s\n", pterm.LightBlue(alias), pterm.LightCyan(target), pterm.FgGray.Sprint("("+tool+")"))
+					output.Infof("  %s -> %s %s", pterm.LightBlue(alias), pterm.LightCyan(target), pterm.FgGray.Sprint("("+tool+")"))
 				}
 			}
 		}
@@ -219,7 +221,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		}
 		pterm.DefaultTable.WithHasHeader().WithData(toolData).Render()
 	} else {
-		pterm.Info.Println("No tools defined in active configuration.")
+		output.Info("No tools defined in active configuration.")
 	}
 
 	// 9. PATH Visualization
@@ -231,9 +233,9 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		}
 
 		if strings.EqualFold(p, shimsDir) {
-			pterm.FgGreen.Printf("%s%s %s\n", prefix, p, pterm.LightMagenta("(UniRTM Shims)"))
+			output.Successf("%s%s %s", prefix, p, pterm.LightMagenta("(UniRTM Shims)"))
 		} else if strings.Contains(p, "unirtm") {
-			pterm.Info.Printf("%s%s %s\n", prefix, p, pterm.LightCyan("(UniRTM Managed)"))
+			output.Infof("%s%s %s", prefix, p, pterm.LightCyan("(UniRTM Managed)"))
 		} else {
 			pterm.FgGray.Printf("%s%s\n", prefix, p)
 		}
@@ -324,10 +326,10 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	dbPath := env.GetDatabasePath()
 	db, err := database.Open(ctx, database.Config{Path: dbPath, WALMode: true})
 	if err != nil {
-		pterm.Error.Printf("Database: %v\n", err)
+		output.Errorf("Database: %v", err)
 	} else {
 		defer db.Close()
-		pterm.FgGreen.Printf("Database: %s (Size: %s)\n", pterm.FgGray.Sprint(dbPath), getFileSize(dbPath))
+		output.Successf("Database: %s (Size: %s)\n", pterm.FgGray.Sprint(dbPath), getFileSize(dbPath))
 	}
 
 	// Network & Rate Limit
@@ -338,13 +340,13 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 
 	if resp, err := client.Do(req); err == nil {
-		pterm.FgGreen.Printf("GitHub API: Connected (HTTP %d)\n", resp.StatusCode)
+		output.Successf("GitHub API: Connected (HTTP %d)\n", resp.StatusCode)
 		limit := resp.Header.Get("X-RateLimit-Limit")
 		remaining := resp.Header.Get("X-RateLimit-Remaining")
 		reset := resp.Header.Get("X-RateLimit-Reset")
 
 		if limit != "" {
-			pterm.Info.Printf("GitHub Rate Limit: %s/%s (Resets in %s)\n",
+			output.Infof("GitHub Rate Limit: %s/%s (Resets in %s)\n",
 				pterm.LightCyan(remaining), pterm.LightCyan(limit),
 				time.Until(time.Unix(parseInt(reset), 0)).Round(time.Minute))
 		}
@@ -364,14 +366,14 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 
 	if !shimsOnPath {
-		pterm.Warning.Printf("UniRTM shims directory is not in your PATH.\n")
-		pterm.Info.Printf("Fix: Run the following command to setup shims in your shell config:\n")
+		output.Warningf("UniRTM shims directory is not in your PATH.")
+		output.Infof("Fix: Run the following command to setup shims in your shell config:")
 		pterm.FgMagenta.Printf("     %s enable --shims\n\n", exe)
 		suggestions++
 	}
 	if !isActivated {
-		pterm.Warning.Printf("UniRTM environment is not activated.\n")
-		pterm.Info.Printf("Fix: Run '%s enable --shims' to setup automatic activation.\n\n", exe)
+		output.Warningf("UniRTM environment is not activated.")
+		output.Infof("Fix: Run '%s enable --shims' to setup automatic activation.\n", exe)
 		suggestions++
 	}
 
@@ -390,13 +392,13 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		}
 	}
 	if missingTools > 0 {
-		pterm.Warning.Printf("Found %d missing tools.\n", missingTools)
-		pterm.Info.Printf("Fix: Run 'unirtm install' to install all missing tools.\n\n")
+		output.Warningf("Found %d missing tools.", missingTools)
+		output.Infof("Fix: Run 'unirtm install' to install all missing tools.\n")
 		suggestions++
 	}
 
 	if suggestions == 0 {
-		pterm.FgGreen.Println("No critical issues found. Your environment looks healthy!")
+		output.Success("No critical issues found. Your environment looks healthy!")
 	}
 
 	fmt.Println()

@@ -13,12 +13,13 @@ import (
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
-	"github.com/pterm/pterm"
-	"github.com/snowdreamtech/unirtm/internal/backend"
+		"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
+
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 )
 
 func init() {
@@ -131,7 +132,7 @@ func runToolStub(cmd *cobra.Command, args []string) error {
 			},
 		}
 		if err := installManager.EnsureInstalledFromSpecs(ctx, spec); err != nil {
-			pterm.Warning.Printf("Failed to install context tool %s: %v\n", toolName, err)
+			output.Warningf("Failed to install context tool %s: %v", toolName, err)
 		}
 	}
 

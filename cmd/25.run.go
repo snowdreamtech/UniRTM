@@ -145,7 +145,7 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		tasks := engine.ListTasks(cwd)
 		if len(tasks) == 0 {
-			pterm.Info.Println("No tasks available in current context.")
+			output.Info("No tasks available in current context.")
 			return nil
 		}
 

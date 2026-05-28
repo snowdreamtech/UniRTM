@@ -104,7 +104,7 @@ func runCompletion(cmd *cobra.Command, args []string) error {
 	} else {
 		shellType, _ = service.DetectShell()
 		if shellType == "" {
-			pterm.Error.Println("Failed to detect shell. Please specify shell as argument (bash|zsh|fish|powershell)")
+			output.Error("Failed to detect shell. Please specify shell as argument (bash|zsh|fish|powershell)")
 			return fmt.Errorf("shell detection failed")
 		}
 	}

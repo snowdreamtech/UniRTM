@@ -152,7 +152,7 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 	}
 
 	if isDryRun {
-		pterm.Info.Println("Dry-run complete — no files were written")
+		output.Info("Dry-run complete — no files were written")
 	}
 
 	return nil
@@ -179,7 +179,7 @@ func printMigrateReport(report *service.MigrationReport, isDryRun bool) {
 	fmt.Println()
 
 	if len(report.Tools) == 0 {
-		pterm.Warning.Println("No tools were found to migrate.")
+		output.Warning("No tools were found to migrate.")
 		return
 	}
 
@@ -229,7 +229,7 @@ func printMigrateReport(report *service.MigrationReport, isDryRun bool) {
 		fmt.Println()
 		pterm.DefaultSection.WithLevel(2).Println("Warnings (manual review needed)")
 		for _, w := range report.UnsupportedFields {
-			pterm.Warning.Println(w)
+			output.Warning(w)
 		}
 	}
 
@@ -238,7 +238,7 @@ func printMigrateReport(report *service.MigrationReport, isDryRun bool) {
 		fmt.Println()
 		pterm.DefaultSection.WithLevel(2).Println("Errors")
 		for _, e := range report.Errors {
-			pterm.Error.Println(e)
+			output.Error(e)
 		}
 		return
 	}
@@ -246,19 +246,19 @@ func printMigrateReport(report *service.MigrationReport, isDryRun bool) {
 	// ── Success summary ───────────────────────────────────────────────────────
 	fmt.Println()
 	if isDryRun {
-		pterm.Info.Printfln("Would write %d tool(s) to %s", len(report.Tools), pterm.FgGreen.Sprint(report.OutputFile))
+		output.Infof("Would write %d tool(s) to %s", len(report.Tools), pterm.FgGreen.Sprint(report.OutputFile))
 		fmt.Println()
 		pterm.DefaultBox.
 			WithTitle("Preview Output").
 			WithTitleTopLeft().
 			Println(buildTomlPreview(report))
 	} else {
-		pterm.FgGreen.Printfln(
+		output.Successf(
 			"Migrated %d tool(s)  →  %s",
 			len(report.Tools),
 			pterm.FgGreen.Sprint(report.OutputFile),
 		)
-		pterm.Info.Println("Review the generated file and remove any unwanted entries.")
+		output.Info("Review the generated file and remove any unwanted entries.")
 	}
 }
 

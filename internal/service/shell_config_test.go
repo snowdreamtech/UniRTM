@@ -153,3 +153,8 @@ func TestShellConfigManager_DryRun(t *testing.T) {
 		t.Errorf("expected file to not be modified in dry run")
 	}
 }
+
+func (m *mockFormatter) Infof(format string, a ...interface{}) {}
+func (m *mockFormatter) Successf(format string, a ...interface{}) {}
+func (m *mockFormatter) Warningf(format string, a ...interface{}) {}
+func (m *mockFormatter) Errorf(format string, a ...interface{}) {}

@@ -154,12 +154,12 @@ func runSync(cmd *cobra.Command, args []string) error {
 
 	if len(toSync) == 0 {
 		pterm.Println()
-		pterm.FgGreen.Println("All detected versions are already synchronized!")
+		output.Success("All detected versions are already synchronized!")
 		return nil
 	}
 
 	pterm.Println()
-	pterm.Info.Printf("Synchronizing %d new versions...\n", len(toSync))
+	output.Infof("Synchronizing %d new versions...", len(toSync))
 	pterm.Println()
 
 	installsDir := env.GetInstallsDir()

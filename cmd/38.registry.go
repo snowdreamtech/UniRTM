@@ -225,6 +225,6 @@ func runRegistry(cmd *cobra.Command, args []string) error {
 		Render()
 
 	fmt.Println()
-	pterm.Info.Printfln("Use 'unirtm install <tool>@<version>' to install any tool above.")
+	output.Infof("Use 'unirtm install <tool>@<version>' to install any tool above.")
 	return nil
 }

@@ -13,6 +13,8 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/spf13/cobra"
+
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 )
 
 var (
@@ -74,14 +76,14 @@ func runFmt(cmd *cobra.Command, args []string) error {
 		if spinner != nil {
 			spinner.Warning(msg)
 		} else {
-			pterm.Warning.Println(msg)
+			output.Warning(msg)
 		}
 	}
 	spinnerSuccess := func(msg string) {
 		if spinner != nil {
 			spinner.Success(msg)
 		} else {
-			pterm.FgGreen.Println(msg)
+			output.Success(msg)
 		}
 	}
 
@@ -131,7 +133,7 @@ func runFmt(cmd *cobra.Command, args []string) error {
 		isModified, err := config.FormatFile(path, fmtCheck)
 		if err != nil {
 			pterm.Error.Prefix = pterm.Prefix{Text: "FAILED", Style: pterm.NewStyle(pterm.BgRed, pterm.FgWhite)}
-			pterm.Error.Printf("%s: %v\n", path, err)
+			output.Errorf("%s: %v", path, err)
 			errorCount++
 			continue
 		}
@@ -139,14 +141,14 @@ func runFmt(cmd *cobra.Command, args []string) error {
 		if isModified {
 			if fmtCheck {
 				pterm.Warning.Prefix = pterm.Prefix{Text: "CHECK", Style: pterm.NewStyle(pterm.BgYellow, pterm.FgBlack)}
-				pterm.Warning.Printf("%s: Needs formatting\n", path)
+				output.Warningf("%s: Needs formatting", path)
 				modifiedCount++
 			} else {
-				pterm.FgGreen.Printf("%s: Formatted ✓\n", path)
+				output.Successf("%s: Formatted ✓", path)
 				modifiedCount++
 			}
 		} else {
-			pterm.Info.Printf("%s: Already formatted\n", path)
+			output.Infof("%s: Already formatted", path)
 		}
 	}
 

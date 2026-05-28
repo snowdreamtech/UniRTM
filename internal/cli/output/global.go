@@ -42,9 +42,19 @@ func Info(message string, fields ...map[string]interface{}) {
 	GetGlobalFormatter().Info(message, fields...)
 }
 
+// Infof outputs an informational message with string formatting using the global formatter
+func Infof(format string, a ...interface{}) {
+	GetGlobalFormatter().Infof(format, a...)
+}
+
 // Success outputs a success message using the global formatter
 func Success(message string, fields ...map[string]interface{}) {
 	GetGlobalFormatter().Success(message, fields...)
+}
+
+// Successf outputs a success message with string formatting using the global formatter
+func Successf(format string, a ...interface{}) {
+	GetGlobalFormatter().Successf(format, a...)
 }
 
 // Warning outputs a warning message using the global formatter
@@ -52,9 +62,19 @@ func Warning(message string, fields ...map[string]interface{}) {
 	GetGlobalFormatter().Warning(message, fields...)
 }
 
+// Warningf outputs a warning message with string formatting using the global formatter
+func Warningf(format string, a ...interface{}) {
+	GetGlobalFormatter().Warningf(format, a...)
+}
+
 // Error outputs an error message using the global formatter
 func Error(message string, fields ...map[string]interface{}) {
 	GetGlobalFormatter().Error(message, fields...)
+}
+
+// Errorf outputs an error message with string formatting using the global formatter
+func Errorf(format string, a ...interface{}) {
+	GetGlobalFormatter().Errorf(format, a...)
 }
 
 // Data outputs structured data using the global formatter

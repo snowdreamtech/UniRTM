@@ -13,6 +13,8 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
+
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 )
 
 var (
@@ -77,7 +79,7 @@ func runImplode(cmd *cobra.Command, args []string) error {
 	// 2. Confirmation
 	if !implodeYes {
 		pterm.Warning.Prefix = pterm.Prefix{Text: "WARNING", Style: pterm.NewStyle(pterm.BgRed, pterm.FgWhite)}
-		pterm.Warning.Println("This will permanently destroy ALL UniRTM data and tools.")
+		output.Warning("This will permanently destroy ALL UniRTM data and tools.")
 		fmt.Printf("\nSelected Targets:\n")
 		for _, t := range targets {
 			pterm.BulletListPrinter{}.WithItems([]pterm.BulletListItem{
@@ -91,14 +93,14 @@ func runImplode(cmd *cobra.Command, args []string) error {
 		answer, _ := reader.ReadString('\n')
 		answer = strings.TrimSpace(strings.ToLower(answer))
 		if answer != "yes" {
-			pterm.Info.Println("Implode aborted. You live to fight another day.")
+			output.Info("Implode aborted. You live to fight another day.")
 			return nil
 		}
 
 		// 3. Countdown
 		fmt.Println()
 		for i := 3; i > 0; i-- {
-			pterm.Info.Printf("Initiating sequence in %d...\r", i)
+			output.Infof("Initiating sequence in %d...\r", i)
 			time.Sleep(1 * time.Second)
 		}
 		fmt.Println()
@@ -127,10 +129,10 @@ func runImplode(cmd *cobra.Command, args []string) error {
 
 	// 5. Final Message
 	fmt.Println()
-	pterm.FgGreen.Println("Implode complete.")
+	output.Success("Implode complete.")
 	fmt.Println()
 
-	pterm.Info.Println("To complete the cleanup, you may want to:")
+	output.Info("To complete the cleanup, you may want to:")
 	pterm.BulletListPrinter{}.WithItems([]pterm.BulletListItem{
 		{Level: 0, Text: "Remove the 'unirtm' binary from your PATH."},
 		{Level: 0, Text: "Remove UniRTM activation code from your .zshrc/.bashrc if present."},

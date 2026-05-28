@@ -15,6 +15,8 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
+
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 )
 
 func init() {
@@ -136,7 +138,7 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 		if filterTool != "" {
 			return fmt.Errorf("tool %s is not defined in current configuration", filterTool)
 		}
-		pterm.Info.Println("No tools defined in current configuration.")
+		output.Info("No tools defined in current configuration.")
 		return nil
 	}
 
@@ -186,7 +188,7 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 
 	if hasMissing {
 		fmt.Println()
-		pterm.Warning.Printfln("Some versions are specified but not installed. Run '%s' to fix.", pterm.LightMagenta("unirtm install"))
+		output.Warningf("Some versions are specified but not installed. Run '%s' to fix.", pterm.LightMagenta("unirtm install"))
 	}
 
 	return nil

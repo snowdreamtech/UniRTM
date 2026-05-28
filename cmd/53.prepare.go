@@ -87,9 +87,9 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 	}
 
 	if cfg == nil || len(cfg.Tools) == 0 {
-		pterm.Info.Println("No UniRTM tools configured in project manifest.")
+		output.Info("No UniRTM tools configured in project manifest.")
 		pterm.Println()
-		pterm.FgGreen.Println("Project preparation check complete!")
+		output.Success("Project preparation check complete!")
 		return nil
 	}
 
@@ -139,17 +139,17 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 
 	// Report already installed tools
 	if len(alreadyInstalled) > 0 {
-		pterm.Info.Printf("Configured tools already installed: %s\n", strings.Join(alreadyInstalled, ", "))
+		output.Infof("Configured tools already installed: %s", strings.Join(alreadyInstalled, ", "))
 	}
 
 	if len(requests) == 0 {
 		pterm.Println()
-		pterm.FgGreen.Println("All configured UniRTM tools are already installed and ready!")
+		output.Success("All configured UniRTM tools are already installed and ready!")
 		return nil
 	}
 
 	pterm.Println()
-	pterm.Info.Printf("Found %d tool(s) to install/prepare...\n", len(requests))
+	output.Infof("Found %d tool(s) to install/prepare...\n", len(requests))
 	pterm.Println()
 
 	// 3. Execute parallel automatic download and installation
@@ -164,19 +164,19 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 		}
 		switch status {
 		case "starting":
-			pterm.Info.Printf("Preparing %s@%s...\n", tool, version)
+			output.Infof("Preparing %s@%s...", tool, version)
 		case "done":
-			pterm.FgGreen.Printf("✓ Ready: %s@%s\n", tool, version)
+			output.Successf("✓ Ready: %s@%s", tool, version)
 		default:
 			if strings.HasPrefix(status, "failed:") {
 				errMsg := strings.TrimPrefix(status, "failed: ")
 				if errMsg == service.ErrAlreadyInstalled.Error() || strings.Contains(errMsg, "already installed") {
-					pterm.FgGreen.Printf("✓ Ready: %s@%s (already installed)\n", tool, version)
+					output.Successf("✓ Ready: %s@%s (already installed)\n", tool, version)
 				} else {
-					pterm.Error.Printf("Failed to prepare %s@%s: %s\n", tool, version, errMsg)
+					output.Errorf("Failed to prepare %s@%s: %s", tool, version, errMsg)
 				}
 			} else {
-				pterm.Info.Printf("%s@%s: %s\n", tool, version, status)
+				output.Infof("%s@%s: %s", tool, version, status)
 			}
 		}
 	}
@@ -189,7 +189,7 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 
 	results, err := cmManager.InstallAll(ctx, requests)
 	if err != nil {
-		pterm.Error.Printf("Preparation failed: %v\n", err)
+		output.Errorf("Preparation failed: %v", err)
 		return err
 	}
 
@@ -199,17 +199,17 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 	for _, r := range results {
 		if !r.Success && r.Error != service.ErrAlreadyInstalled.Error() && !strings.Contains(r.Error, "already installed") {
 			allSuccess = false
-			pterm.Error.Printf("  %s@%s: %s\n", r.Tool, r.Version, r.Error)
+			output.Errorf("  %s@%s: %s", r.Tool, r.Version, r.Error)
 		} else {
-			pterm.FgGreen.Printf("  %s@%s is ready\n", r.Tool, r.Version)
+			output.Successf("  %s@%s is ready", r.Tool, r.Version)
 		}
 	}
 
 	pterm.Println()
 	if allSuccess {
-		pterm.FgGreen.Println("Project preparation complete! All dependencies are ready.")
+		output.Success("Project preparation complete! All dependencies are ready.")
 	} else {
-		pterm.Warning.Println("Some project dependencies failed to prepare. Please review the errors above.")
+		output.Warning("Some project dependencies failed to prepare. Please review the errors above.")
 	}
 
 	return nil
@@ -222,11 +222,11 @@ func detectProjectStructure(cwd string, targetTool string) {
 	if targetTool == "" || targetTool == "node" || targetTool == "nodejs" {
 		if _, err := os.Stat(filepath.Join(cwd, "package.json")); err == nil {
 			found = true
-			pterm.Info.Println("Detected Node.js project")
+			output.Info("Detected Node.js project")
 			if _, err := os.Stat(filepath.Join(cwd, "node_modules")); os.IsNotExist(err) {
-				pterm.Warning.Println("  node_modules missing. Suggestion: run 'npm install' or 'pnpm install'")
+				output.Warning("  node_modules missing. Suggestion: run 'npm install' or 'pnpm install'")
 			} else {
-				pterm.FgGreen.Println("  ✅ node_modules present")
+				output.Success("  ✅ node_modules present")
 			}
 		}
 	}
@@ -235,8 +235,8 @@ func detectProjectStructure(cwd string, targetTool string) {
 	if targetTool == "" || targetTool == "go" || targetTool == "golang" {
 		if _, err := os.Stat(filepath.Join(cwd, "go.mod")); err == nil {
 			found = true
-			pterm.Info.Println("Detected Go project")
-			pterm.FgGreen.Println("  ✅ go.mod present")
+			output.Info("Detected Go project")
+			output.Success("  ✅ go.mod present")
 		}
 	}
 
@@ -244,11 +244,11 @@ func detectProjectStructure(cwd string, targetTool string) {
 	if targetTool == "" || targetTool == "python" {
 		if _, err := os.Stat(filepath.Join(cwd, "requirements.txt")); err == nil {
 			found = true
-			pterm.Info.Println("Detected Python project (requirements.txt)")
+			output.Info("Detected Python project (requirements.txt)")
 		}
 		if _, err := os.Stat(filepath.Join(cwd, "pyproject.toml")); err == nil {
 			found = true
-			pterm.Info.Println("Detected Python project (pyproject.toml)")
+			output.Info("Detected Python project (pyproject.toml)")
 		}
 	}
 

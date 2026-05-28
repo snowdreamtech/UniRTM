@@ -18,6 +18,8 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
+
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 )
 
 var (
@@ -232,7 +234,7 @@ func runExec(cmd *cobra.Command, args []string) error {
 
 	installManager, imErr := getInstallationManager(ctx, cfg)
 	if imErr != nil && verbose {
-		pterm.Warning.Printf("Failed to initialise installation manager: %v\n", imErr)
+		output.Warningf("Failed to initialise installation manager: %v", imErr)
 	}
 
 	// ── 4. Auto-install config tools if enabled ───────────────────────────────
@@ -241,7 +243,7 @@ func runExec(cmd *cobra.Command, args []string) error {
 
 	if installManager != nil && autoInstall && !execNoDeps && cfg != nil && len(cfg.Tools) > 0 {
 		if err := installManager.EnsureInstalled(ctx, cfg.Tools); err != nil && verbose {
-			pterm.Warning.Printf("Auto-install failed: %v\n", err)
+			output.Warningf("Auto-install failed: %v", err)
 		}
 	}
 
@@ -288,7 +290,7 @@ func runExec(cmd *cobra.Command, args []string) error {
 					},
 				}
 				if err := installManager.EnsureInstalledFromSpecs(ctx, spec); err != nil && verbose {
-					pterm.Warning.Printf("Failed to install context tool %s: %v\n", arg, err)
+					output.Warningf("Failed to install context tool %s: %v", arg, err)
 				}
 			}
 
@@ -328,19 +330,19 @@ func runExec(cmd *cobra.Command, args []string) error {
 		if len(programArgs) > 0 {
 			displayCmd += " " + strings.Join(programArgs, " ")
 		}
-		pterm.Info.Printf("Executing: %s\n", displayCmd)
+		output.Infof("Executing: %s", displayCmd)
 		if len(contextTools) > 0 {
-			pterm.Info.Printf("Tool context: %s\n",
+			output.Infof("Tool context: %s",
 				pterm.LightCyan(strings.Join(contextTools, ", ")))
 		}
 		if execFreshEnv {
-			pterm.Info.Println("fresh-env: environment cache cleared")
+			output.Info("fresh-env: environment cache cleared")
 		}
 		if execNoDeps {
-			pterm.Info.Println("no-deps: dependency installation skipped")
+			output.Info("no-deps: dependency installation skipped")
 		}
 		if execRaw {
-			pterm.Info.Println("raw: direct I/O pipe active")
+			output.Info("raw: direct I/O pipe active")
 		}
 	}
 
@@ -351,11 +353,11 @@ func runExec(cmd *cobra.Command, args []string) error {
 		if len(programArgs) > 0 {
 			displayCmd += " " + strings.Join(programArgs, " ")
 		}
-		pterm.Info.Printf("[dry-run] Would execute: %s\n", displayCmd)
+		output.Infof("[dry-run] Would execute: %s", displayCmd)
 		if verbose && len(additionalEnv) > 0 {
-			pterm.Info.Println("[dry-run] Injected environment:")
+			output.Info("[dry-run] Injected environment:")
 			for k, v := range additionalEnv {
-				pterm.Info.Printf("  %s=%s\n", k, v)
+				output.Infof("  %s=%s", k, v)
 			}
 		}
 		return nil

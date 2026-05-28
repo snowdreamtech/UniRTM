@@ -11,8 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pterm/pterm"
-	"github.com/snowdreamtech/unirtm/internal/backend"
+		"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
@@ -289,12 +288,12 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 			formatter.Error(fmt.Sprintf("Uninstallation failed for %s@%s: %s", t.toolName, t.version, err.Error()))
 			return fmt.Errorf("uninstall %s@%s: %w", t.toolName, t.version, err)
 		}
-		pterm.FgGreen.Printf("✓ Successfully uninstalled %s@%s\n", t.toolName, t.version)
+		output.Successf("✓ Successfully uninstalled %s@%s", t.toolName, t.version)
 	}
 	duration := time.Since(startTime)
 
 	if len(targets) > 1 && !quiet {
-		pterm.FgGreen.Printf("✓ All tools uninstalled (took %s)\n", duration.Round(time.Millisecond).String())
+		output.Successf("✓ All tools uninstalled (took %s)\n", duration.Round(time.Millisecond).String())
 	}
 
 	return nil

@@ -54,6 +54,11 @@ func (h *HumanFormatter) Info(message string, fields ...map[string]interface{}) 
 	fmt.Fprintln(h.writer)
 }
 
+// Infof outputs an informational message with string formatting
+func (h *HumanFormatter) Infof(format string, a ...interface{}) {
+	h.Info(fmt.Sprintf(format, a...))
+}
+
 // Success outputs a success message
 func (h *HumanFormatter) Success(message string, fields ...map[string]interface{}) {
 	prefix := h.colorize("✓", colorGreen)
@@ -64,6 +69,11 @@ func (h *HumanFormatter) Success(message string, fields ...map[string]interface{
 	}
 
 	fmt.Fprintln(h.writer)
+}
+
+// Successf outputs a success message with string formatting
+func (h *HumanFormatter) Successf(format string, a ...interface{}) {
+	h.Success(fmt.Sprintf(format, a...))
 }
 
 // Warning outputs a warning message
@@ -78,6 +88,11 @@ func (h *HumanFormatter) Warning(message string, fields ...map[string]interface{
 	fmt.Fprintln(h.writer)
 }
 
+// Warningf outputs a warning message with string formatting
+func (h *HumanFormatter) Warningf(format string, a ...interface{}) {
+	h.Warning(fmt.Sprintf(format, a...))
+}
+
 // Error outputs an error message
 func (h *HumanFormatter) Error(message string, fields ...map[string]interface{}) {
 	prefix := h.colorize("✗", colorRed)
@@ -88,6 +103,11 @@ func (h *HumanFormatter) Error(message string, fields ...map[string]interface{})
 	}
 
 	fmt.Fprintln(h.writer)
+}
+
+// Errorf outputs an error message with string formatting
+func (h *HumanFormatter) Errorf(format string, a ...interface{}) {
+	h.Error(fmt.Sprintf(format, a...))
 }
 
 // Data outputs structured data in a human-readable format

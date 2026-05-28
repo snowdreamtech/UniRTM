@@ -10,6 +10,8 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/spf13/cobra"
+
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 )
 
 // untrustCmd represents the untrust command
@@ -31,11 +33,11 @@ Once untrusted, the file's environment variables and configuration will no longe
 
 		trustManager := config.NewTrustManager()
 		if err := trustManager.Untrust(absPath); err != nil {
-			pterm.Error.Printfln("Failed to untrust configuration file: %v", err)
+			output.Errorf("Failed to untrust configuration file: %v", err)
 			os.Exit(1)
 		}
 
-		pterm.FgGreen.Printfln("Untrusted configuration file: %s", pterm.LightGreen(absPath))
+		output.Successf("Untrusted configuration file: %s", pterm.LightGreen(absPath))
 	},
 }
 

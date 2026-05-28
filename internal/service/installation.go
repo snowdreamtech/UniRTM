@@ -29,6 +29,8 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/provider/native"
 	"github.com/snowdreamtech/unirtm/internal/repository"
 	"github.com/snowdreamtech/unirtm/internal/transaction"
+
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 )
 
 // ProgressReporter is a callback for concurrent download progress reporting.
@@ -290,7 +292,7 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 
 	// 3. Run PreInstall hook
 	if preInstall != "" {
-		pterm.FgYellow.Printf("⚠️  SECURITY: executing pre_install hook for %s: %s\n", tool, preInstall)
+		output.Warningf("⚠️  SECURITY: executing pre_install hook for %s: %s", tool, preInstall)
 		if err := im.executeHook(ctx, preInstall, tool, version); err != nil {
 			return fmt.Errorf("pre_install hook failed: %w", err)
 		}
@@ -343,7 +345,7 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 		}
 		version = info.Version // Update to the concrete resolved version
 		if !quietProgress {
-			pterm.FgGreen.Printf("✓ resolved %s to version %s\n", tool, version)
+			output.Successf("✓ resolved %s to version %s", tool, version)
 		}
 		versionInfo = info
 	}
@@ -514,7 +516,7 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 		}
 
 		if !quietProgress {
-			pterm.FgGreen.Printf("✓ downloaded to %s\n", downloadPath)
+			output.Successf("✓ downloaded to %s", downloadPath)
 		}
 		defer func() {
 			if im.settings != nil && im.settings.AlwaysKeepDownload {
@@ -564,7 +566,7 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 					return fmt.Errorf("GPG signature required in strict mode: %w", downloadErr)
 				}
 				if !quietProgress {
-					pterm.FgYellow.Printf("⚠️  WARNING: %s. Continuing anyway (GPGVerify=%s)\n", msg, im.settings.GPGVerify)
+					output.Warningf("⚠️  WARNING: %s. Continuing anyway (GPGVerify=%s)\n", msg, im.settings.GPGVerify)
 				}
 				gpgStatus = "Failed (Download)"
 			} else {
@@ -585,7 +587,7 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 				if err != nil && strings.Contains(err.Error(), "missing public key") && len(trustedKeys) > 0 {
 					// Handle missing public key: Ask user in TTY, or fail in CI
 					if pterm.PrintColor && !pterm.RawOutput { // Check if we are likely in a TTY
-						pterm.FgYellow.Printf("⚠️  GPG signature found but public key is missing locally.\n")
+						output.Warningf("⚠️  GPG signature found but public key is missing locally.")
 						fp := trustedKeys[0] // Try first fingerprint
 						confirm, _ := pterm.DefaultInteractiveConfirm.
 							WithDefaultText(fmt.Sprintf("Do you want to trust and import GPG key %s from keyservers?", fp)).
@@ -603,7 +605,7 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 						}
 					} else {
 						if !quietProgress {
-							pterm.FgYellow.Printf("⚠️  GPG verification skipped: missing public key (Non-interactive mode)\n")
+							output.Warningf("⚠️  GPG verification skipped: missing public key (Non-interactive mode)\n")
 						}
 						gpgStatus = "Failed (Missing Key)"
 					}
@@ -615,12 +617,12 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 						return fmt.Errorf("SECURITY ERROR: %s", msg)
 					}
 					if !quietProgress {
-						pterm.FgYellow.Printf("⚠️  SECURITY WARNING: %s. Continuing anyway (GPGVerify=%s)\n", msg, im.settings.GPGVerify)
+						output.Warningf("⚠️  SECURITY WARNING: %s. Continuing anyway (GPGVerify=%s)\n", msg, im.settings.GPGVerify)
 					}
 					gpgStatus = "Failed (Invalid)"
 				} else {
 					if !quietProgress {
-						pterm.FgGreen.Printf("✓ GPG signature verified successfully\n")
+						output.Successf("✓ GPG signature verified successfully")
 					}
 					gpgStatus = "Verified"
 				}
@@ -759,7 +761,7 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 
 	// 11. Run PostInstall hook
 	if postInstall != "" {
-		pterm.FgYellow.Printf("⚠️  SECURITY: executing post_install hook for %s: %s\n", tool, postInstall)
+		output.Warningf("⚠️  SECURITY: executing post_install hook for %s: %s", tool, postInstall)
 		if err := im.executeHook(ctx, postInstall, tool, version); err != nil {
 			return fmt.Errorf("post_install hook failed: %w", err)
 		}
@@ -772,13 +774,13 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 	execs, _ := p.ListExecutables(tool, installPath, version)
 	if err := im.shimGenerator.GenerateShim(ctx, tool, execs...); err != nil {
 		if !quietProgress {
-			pterm.FgYellow.Printf("⚠️  WARNING: failed to generate shims for %s: %v\n", tool, err)
+			output.Warningf("⚠️  WARNING: failed to generate shims for %s: %v", tool, err)
 		}
 		// Non-fatal, don't return error
 	}
 
 	if !quietProgress {
-		pterm.FgGreen.Printf("✓ %s@%s installed successfully to %s\n", tool, version, installPath)
+		output.Successf("✓ %s@%s installed successfully to %s", tool, version, installPath)
 	}
 	return nil
 }

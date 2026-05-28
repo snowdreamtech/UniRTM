@@ -13,6 +13,8 @@ import (
 	"strings"
 
 	"github.com/pterm/pterm"
+
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 )
 
 // ContainerProvider implements the Provider interface for container-backed tools.
@@ -49,7 +51,7 @@ func (p *ContainerProvider) Install(ctx context.Context, tool string, installPat
 		if runtime.GOOS == "linux" {
 			recommendation = "podman or docker"
 		}
-		pterm.FgRed.Printf("✖ No container engine found. Please install %s to use container tools.\n", recommendation)
+		output.Errorf("✖ No container engine found. Please install %s to use container tools.", recommendation)
 		return fmt.Errorf("container engine not found in PATH")
 	}
 

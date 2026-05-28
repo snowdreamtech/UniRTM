@@ -11,8 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pterm/pterm"
-	"github.com/snowdreamtech/unirtm/internal/cli/output"
+		"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/provider"
@@ -73,7 +72,7 @@ func runTestTool(cmd *cobra.Command, args []string) error {
 	// runInstall will handle parsing, fallback to config, and actual installation
 	err := runInstall(cmd, args)
 	if err != nil {
-		pterm.Error.Printf("Test failed: installation step failed: %v\n", err)
+		output.Errorf("Test failed: installation step failed: %v", err)
 		return err
 	}
 
@@ -190,7 +189,7 @@ func runTestTool(cmd *cobra.Command, args []string) error {
 		// Use IsInstalled to get the actual resolved version (e.g. adding 'v' prefix if needed)
 		installed, resolvedInst := im.IsInstalled(ctx, toolName, version, backendName)
 		if !installed {
-			pterm.Error.Printf("Tool %s@%s is not properly installed, skipping execution test.\n", toolName, version)
+			output.Errorf("Tool %s@%s is not properly installed, skipping execution test.", toolName, version)
 			hasError = true
 			continue
 		}
@@ -199,7 +198,7 @@ func runTestTool(cmd *cobra.Command, args []string) error {
 
 		p := provider.NewRegistry().GetWithBackend(toolName, backendName)
 		if p == nil {
-			pterm.Warning.Printf("No provider found for %s, skipping execution test.\n", toolName)
+			output.Warningf("No provider found for %s, skipping execution test.", toolName)
 			continue
 		}
 
@@ -207,7 +206,7 @@ func runTestTool(cmd *cobra.Command, args []string) error {
 
 		execs, err := p.ListExecutables(toolName, installPath, resolvedVersion)
 		if err != nil || len(execs) == 0 {
-			pterm.Warning.Printf("No executables found for %s@%s to test.\n", toolName, resolvedVersion)
+			output.Warningf("No executables found for %s@%s to test.", toolName, resolvedVersion)
 			continue
 		}
 
@@ -218,14 +217,14 @@ func runTestTool(cmd *cobra.Command, args []string) error {
 			cmdEnv = append(cmdEnv, k+"="+v)
 		}
 
-		pterm.Info.Printf("Testing %s@%s executables:\n", toolName, resolvedVersion)
+		output.Infof("Testing %s@%s executables:", toolName, resolvedVersion)
 		for _, exe := range execs {
 			err := testExecutable(exe, cmdEnv)
 			if err != nil {
-				pterm.Error.Printf("  ✗ %s (failed: %v)\n", filepath.Base(exe), err)
+				output.Errorf("  ✗ %s (failed: %v)\n", filepath.Base(exe), err)
 				hasError = true
 			} else {
-				pterm.FgGreen.Printf("  ✓ %s\n", filepath.Base(exe))
+				output.Successf("  ✓ %s", filepath.Base(exe))
 			}
 		}
 	}
@@ -234,7 +233,7 @@ func runTestTool(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("one or more tools failed the execution test")
 	}
 
-	pterm.FgGreen.Printf("\n✅ All tested tools executed successfully\n")
+	output.Successf("\n✅ All tested tools executed successfully")
 	return nil
 }
 

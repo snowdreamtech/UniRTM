@@ -181,7 +181,7 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 	cfg, err := cm.LoadHierarchy(ctx)
 	if err != nil {
 		if verbose {
-			pterm.Info.Printf("No configuration files found, using defaults: %v\n", err)
+			output.Infof("No configuration files found, using defaults: %v", err)
 		}
 		cfg = &config.Config{}
 	}
@@ -274,7 +274,7 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 	activeFiles = append(activeFiles, projectFiles...)
 
 	if len(activeFiles) == 0 {
-		pterm.Info.Println("  (no configuration files found)")
+		output.Info("  (no configuration files found)")
 	} else {
 		var fileItems []pterm.BulletListItem
 		for _, f := range activeFiles {
@@ -290,7 +290,7 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 		pterm.DefaultSection.Println("Tools")
 	}
 	if len(cfg.Tools) == 0 {
-		pterm.Info.Println("  (no tools defined)")
+		output.Info("  (no tools defined)")
 	} else {
 		var toolItems []pterm.BulletListItem
 		for name, tool := range cfg.Tools {

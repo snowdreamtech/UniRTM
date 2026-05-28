@@ -16,6 +16,8 @@ import (
 
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
+
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 )
 
 // NativeRunner is the fallback task runner that executes tasks defined
@@ -158,7 +160,7 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 		cmd.Stderr = &prefixWriter{w: os.Stderr, prefix: prefix, atStart: true}
 	} else {
 		// "interleaved" or other
-		pterm.Info.Printfln("Running task: %s", taskName)
+		output.Infof("Running task: %s", taskName)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	}
@@ -181,9 +183,9 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 		}
 	} else {
 		if err != nil {
-			pterm.Error.Printfln("Task %s failed: %v", taskName, err)
+			output.Errorf("Task %s failed: %v", taskName, err)
 		} else {
-			pterm.FgGreen.Printfln("Task %s completed", taskName)
+			output.Successf("Task %s completed", taskName)
 		}
 	}
 

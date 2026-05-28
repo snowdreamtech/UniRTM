@@ -18,6 +18,8 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
+
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 )
 
 var (
@@ -252,19 +254,19 @@ func renderInteractiveEnv(cfg *config.Config, pathDirs []string, vars []envVarEn
 		}
 		pterm.DefaultTable.WithHasHeader().WithData(data).Render()
 	} else {
-		pterm.Info.Println("No additional variables exported.")
+		output.Info("No additional variables exported.")
 	}
 
 	// 4. Configuration Sources
 	if len(sources) > 0 {
 		pterm.DefaultSection.Println("📝 Loaded Config Sources")
 		for _, s := range sources {
-			pterm.FgGreen.Println(pterm.FgGray.Sprint(s))
+			output.Success(pterm.FgGray.Sprint(s))
 		}
 	}
 
 	fmt.Println()
-	pterm.Info.Println("To apply this environment, run: " + pterm.LightMagenta("eval \"$(unirtm env)\""))
+	output.Info("To apply this environment, run: " + pterm.LightMagenta("eval \"$(unirtm env)\""))
 
 	return nil
 }

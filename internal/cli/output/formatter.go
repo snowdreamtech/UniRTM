@@ -29,14 +29,26 @@ type Formatter interface {
 	// Info outputs an informational message
 	Info(message string, fields ...map[string]interface{})
 
+	// Infof outputs an informational message with string formatting
+	Infof(format string, a ...interface{})
+
 	// Success outputs a success message
 	Success(message string, fields ...map[string]interface{})
+
+	// Successf outputs a success message with string formatting
+	Successf(format string, a ...interface{})
 
 	// Warning outputs a warning message
 	Warning(message string, fields ...map[string]interface{})
 
+	// Warningf outputs a warning message with string formatting
+	Warningf(format string, a ...interface{})
+
 	// Error outputs an error message
 	Error(message string, fields ...map[string]interface{})
+
+	// Errorf outputs an error message with string formatting
+	Errorf(format string, a ...interface{})
 
 	// Data outputs structured data
 	Data(data interface{})

@@ -247,7 +247,7 @@ func runSelfUpdate(cmd *cobra.Command, args []string) error {
 		// Guiding users to upgrade via brew/scoop/cargo/nix/etc. is dangerous
 		// because a malicious actor could publish a counterfeit package there.
 		if isUnsupportedThirdPartyInstall(method) && !selfUpdateYes {
-			pterm.Warning.Printfln(
+			output.Warningf(
 				"UniRTM has NOT been officially published to the package manager\n"+
 					"that installed this binary. Self-updating from an unverified\n"+
 					"source may install a malicious package.\n\n"+
@@ -261,7 +261,7 @@ func runSelfUpdate(cmd *cobra.Command, args []string) error {
 		// For officially supported package managers (npm, pip), show the correct
 		// upgrade command instead of running the install script directly.
 		if hint := officialChannelHint(method); hint != "" {
-			pterm.Warning.Printfln(
+			output.Warningf(
 				"UniRTM was installed via a package manager.\n"+
 					"Running self-update may conflict with your package manager.\n\n"+
 					"  👉  To upgrade safely, please run:\n\n"+
@@ -292,7 +292,7 @@ func runSelfUpdate(cmd *cobra.Command, args []string) error {
 	if fetchErr != nil {
 		spinner.Warning(fmt.Sprintf("Could not fetch release info: %v", fetchErr))
 		if !selfUpdateYes {
-			pterm.Warning.Println("Use --yes to force update without version information.")
+			output.Warning("Use --yes to force update without version information.")
 			return fmt.Errorf("fetch release info: %w", fetchErr)
 		}
 	} else {
@@ -300,7 +300,7 @@ func runSelfUpdate(cmd *cobra.Command, args []string) error {
 
 		// Version comparison with normalized tags (strip leading 'v')
 		if target == "latest" && normalizeVersion(current) == normalizeVersion(releaseInfo.TagName) {
-			pterm.Info.Printfln("You are already using the latest version (%s).", current)
+			output.Infof("You are already using the latest version (%s).", current)
 			if !selfUpdateYes {
 				return nil
 			}
@@ -319,7 +319,7 @@ func runSelfUpdate(cmd *cobra.Command, args []string) error {
 			WithDefaultText("Do you want to continue with the update?").
 			Show()
 		if promptErr != nil || !confirm {
-			pterm.Info.Println("Update cancelled.")
+			output.Info("Update cancelled.")
 			return nil
 		}
 	}
@@ -474,7 +474,7 @@ func selfUpdateUnix(formatter output.Formatter, tag string) error {
 		return fmt.Errorf("execute install script: %w", err)
 	}
 
-	pterm.FgGreen.Println("UniRTM updated successfully.")
+	output.Success("UniRTM updated successfully.")
 	return verifySelfUpdate()
 }
 
@@ -510,13 +510,13 @@ func selfUpdateWindows(formatter output.Formatter, tag string) error {
 		return fmt.Errorf("execute install script: %w", err)
 	}
 
-	pterm.FgGreen.Println("UniRTM updated successfully.")
+	output.Success("UniRTM updated successfully.")
 	return verifySelfUpdate()
 }
 
 // verifySelfUpdate runs `unirtm version` to confirm the new binary is functional.
 func verifySelfUpdate() error {
-	pterm.Info.Println("Verifying installation...")
+	output.Info("Verifying installation...")
 
 	// Prefer the binary at the standard install location
 	candidates := []string{"unirtm"}
@@ -539,6 +539,6 @@ func verifySelfUpdate() error {
 		}
 	}
 
-	pterm.Warning.Println("Could not verify installed version. Restart your terminal and run 'unirtm version' manually.")
+	output.Warning("Could not verify installed version. Restart your terminal and run 'unirtm version' manually.")
 	return nil
 }
