@@ -743,3 +743,4 @@ coverage.html
 trivy-out.txt
 coverage_report.md
 coverage.svg
+sbom.json
