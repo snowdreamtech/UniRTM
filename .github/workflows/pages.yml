@@ -126,8 +126,8 @@ jobs:
         shell: sh
         run: |
           cd docs
-          pnpm install
-          pnpm run docs:build
+          unirtm exec -- pnpm install
+          unirtm exec -- pnpm run docs:build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
