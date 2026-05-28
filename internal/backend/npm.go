@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
@@ -39,7 +40,11 @@ type npmRegistryResponse struct {
 }
 
 func (b *NpmBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
-	url := fmt.Sprintf("https://registry.npmjs.org/%s", tool)
+	baseURL := env.Get("NPM_REGISTRY_URL")
+	if baseURL == "" {
+		baseURL = "https://registry.npmjs.org"
+	}
+	url := fmt.Sprintf("%s/%s", baseURL, tool)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -88,7 +93,11 @@ func (b *NpmBackend) ListVersions(ctx context.Context, tool string, platform Pla
 
 func (b *NpmBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
 	if versionRequest == "latest" {
-		url := fmt.Sprintf("https://registry.npmjs.org/%s/latest", tool)
+		baseURL := env.Get("NPM_REGISTRY_URL")
+		if baseURL == "" {
+			baseURL = "https://registry.npmjs.org"
+		}
+		url := fmt.Sprintf("%s/%s/latest", baseURL, tool)
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
 			return nil, err

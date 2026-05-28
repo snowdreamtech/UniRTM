@@ -28,12 +28,6 @@ func VerifyArtifactProvenance(
 	ctx context.Context,
 	token, owner, repo, artifactPath string,
 ) (*ProvenanceResult, error) {
-	if trans, ok := http.DefaultTransport.(*http.Transport); ok {
-		if env.Get("HTTP2") == "0" {
-			pkgHttp.DisableHTTP2(trans)
-			logger.Debug("provenance: globally disabled HTTP/2 for verification (manual via env)")
-		}
-	}
 
 	verifier := &provenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
@@ -41,14 +35,14 @@ func VerifyArtifactProvenance(
 
 	result, err := verifier.verify(ctx, token, owner, repo, artifactPath)
 	if err != nil && strings.Contains(err.Error(), "malformed HTTP response") {
-		if trans, ok := http.DefaultTransport.(*http.Transport); ok {
-			logger.Warn("provenance: detected malformed HTTP response, smartly downgrading to HTTP/1.1 and retrying...")
-			pkgHttp.DisableHTTP2(trans)
-			verifier = &provenanceVerifier{
-				client: pkgHttp.NewClientWithTimeout(30 * time.Second),
-			}
-			return verifier.verify(ctx, token, owner, repo, artifactPath)
+		logger.Warn("provenance: detected malformed HTTP response, smartly downgrading to HTTP/1.1 and retrying...")
+		verifier = &provenanceVerifier{
+			client: pkgHttp.NewClientWithTimeout(30 * time.Second),
 		}
+		if trans, ok := verifier.client.Transport.(*http.Transport); ok {
+			pkgHttp.DisableHTTP2(trans)
+		}
+		return verifier.verify(ctx, token, owner, repo, artifactPath)
 	}
 	return result, err
 }
