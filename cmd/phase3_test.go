@@ -14,7 +14,10 @@ import (
 
 func TestSelfUpdateCommandStructure(t *testing.T) {
 	assert.Contains(t, selfUpdateCmd.Use, "self-update")
-	assert.Contains(t, selfUpdateCmd.Aliases, "upgrade")
+	// Aliases changed: 'upgrade' removed to avoid conflict with 'update' command
+	assert.Contains(t, selfUpdateCmd.Aliases, "self-upgrade")
+	assert.Contains(t, selfUpdateCmd.Aliases, "self-up")
+	assert.NotContains(t, selfUpdateCmd.Aliases, "upgrade")
 	assert.NotNil(t, selfUpdateCmd.RunE)
 	assert.NotNil(t, selfUpdateCmd.Flags().Lookup("version"))
 }

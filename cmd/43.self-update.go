@@ -6,15 +6,19 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/spf13/cobra"
 )
 
@@ -22,6 +26,21 @@ var (
 	selfUpdateVersion string
 	selfUpdateYes     bool
 	execCommand       = exec.Command
+)
+
+// installMethod represents the detected installation source.
+type installMethod int
+
+const (
+	installMethodUnknown installMethod = iota
+	installMethodScript                // installed via install.sh / install.ps1
+	installMethodNpm                   // npm install -g unirtm
+	installMethodPip                   // pip install unirtm
+	installMethodBrew                  // brew install unirtm
+	installMethodScoop                 // scoop install unirtm
+	installMethodChoco                 // choco install unirtm
+	installMethodCargo                 // cargo install unirtm
+	installMethodGo                    // go install unirtm
 )
 
 func init() {
@@ -36,7 +55,7 @@ func init() {
 var selfUpdateCmd = &cobra.Command{
 	Use:     "self-update",
 	Short:   "Update UniRTM to the latest (or specified) version",
-	Aliases: []string{"upgrade"},
+	Aliases: []string{"self-upgrade", "self-up"},
 	Long: `Update UniRTM to the latest (or specified) version.
 
 Checks the latest release on GitHub, displays release notes, and
@@ -56,6 +75,77 @@ Examples:
 	RunE: runSelfUpdate,
 }
 
+// detectInstallMethod inspects the executable's path to infer how it was installed.
+func detectInstallMethod(execPath string) installMethod {
+	normalized := filepath.ToSlash(strings.ToLower(execPath))
+
+	switch {
+	case strings.Contains(normalized, "node_modules") ||
+		strings.Contains(normalized, "/npm/") ||
+		strings.Contains(normalized, "/pnpm/") ||
+		strings.Contains(normalized, "/yarn/"):
+		return installMethodNpm
+
+	case strings.Contains(normalized, "site-packages") ||
+		strings.Contains(normalized, "/pip/") ||
+		strings.Contains(normalized, "dist-packages") ||
+		strings.Contains(normalized, "/venv/") ||
+		strings.Contains(normalized, ".venv"):
+		return installMethodPip
+
+	case strings.Contains(normalized, "homebrew") ||
+		strings.Contains(normalized, "linuxbrew") ||
+		strings.Contains(normalized, "/cellar/"):
+		return installMethodBrew
+
+	case strings.Contains(normalized, "\\scoop\\") ||
+		strings.Contains(normalized, "/scoop/"):
+		return installMethodScoop
+
+	case strings.Contains(normalized, "\\chocolatey\\") ||
+		strings.Contains(normalized, "/chocolatey/") ||
+		strings.Contains(normalized, "\\choco\\"):
+		return installMethodChoco
+
+	case strings.Contains(normalized, "/.cargo/") ||
+		strings.Contains(normalized, "\\.cargo\\"):
+		return installMethodCargo
+
+	case strings.Contains(normalized, "/go/bin/") ||
+		strings.Contains(normalized, "\\go\\bin\\"):
+		return installMethodGo
+	}
+
+	return installMethodScript
+}
+
+// installMethodHint returns a human-readable upgrade hint for a given install method.
+func installMethodHint(method installMethod) string {
+	switch method {
+	case installMethodNpm:
+		return "npm update -g unirtm"
+	case installMethodPip:
+		return "pip install --upgrade unirtm"
+	case installMethodBrew:
+		return "brew upgrade unirtm"
+	case installMethodScoop:
+		return "scoop update unirtm"
+	case installMethodChoco:
+		return "choco upgrade unirtm"
+	case installMethodCargo:
+		return "cargo install unirtm --force"
+	case installMethodGo:
+		return "go install github.com/snowdreamtech/unirtm@latest"
+	default:
+		return ""
+	}
+}
+
+// normalizeVersion strips a leading 'v' or 'V' prefix for comparison.
+func normalizeVersion(v string) string {
+	return strings.TrimPrefix(strings.TrimPrefix(v, "v"), "V")
+}
+
 func runSelfUpdate(cmd *cobra.Command, args []string) error {
 	formatter := output.NewFormatter(output.FormatterOptions{
 		Format:  getOutputFormat(),
@@ -65,6 +155,30 @@ func runSelfUpdate(cmd *cobra.Command, args []string) error {
 		Verbose: verbose,
 	})
 
+	// --- Detect installation source ---
+	execPath, err := os.Executable()
+	if err == nil {
+		// Resolve symlinks so we get the real path
+		if resolved, rerr := filepath.EvalSymlinks(execPath); rerr == nil {
+			execPath = resolved
+		}
+		method := detectInstallMethod(execPath)
+		if hint := installMethodHint(method); hint != "" {
+			pterm.Warning.Printfln(
+				"UniRTM appears to have been installed via a package manager.\n"+
+					"Running self-update may conflict with your package manager.\n\n"+
+					"  👉  To upgrade safely, please run:\n\n"+
+					"      %s\n\n"+
+					"  Use --yes to force self-update anyway.",
+				pterm.LightCyan(hint),
+			)
+			if !selfUpdateYes {
+				return nil
+			}
+		}
+	}
+
+	// --- Resolve current and target versions ---
 	current := env.GitTag
 	if current == "" {
 		current = "dev"
@@ -75,127 +189,259 @@ func runSelfUpdate(cmd *cobra.Command, args []string) error {
 		target = "latest"
 	}
 
-	// Fetch release notes from GitHub API
+	// --- Fetch release info ---
 	spinner, _ := pterm.DefaultSpinner.Start("Checking for updates...")
-	releaseInfo, err := fetchGitHubRelease(target)
-	if err != nil {
-		spinner.Warning(fmt.Sprintf("Could not fetch release info: %v. Proceeding blindly...", err))
+	releaseInfo, fetchErr := fetchGitHubRelease(target)
+	if fetchErr != nil {
+		spinner.Warning(fmt.Sprintf("Could not fetch release info: %v", fetchErr))
+		if !selfUpdateYes {
+			pterm.Warning.Println("Use --yes to force update without version information.")
+			return fmt.Errorf("fetch release info: %w", fetchErr)
+		}
 	} else {
-		spinner.Success(fmt.Sprintf("Found %s release: %s", target, releaseInfo.TagName))
+		spinner.Success(fmt.Sprintf("Found release: %s", releaseInfo.TagName))
 
-		if target == "latest" && current == releaseInfo.TagName {
+		// Version comparison with normalized tags (strip leading 'v')
+		if target == "latest" && normalizeVersion(current) == normalizeVersion(releaseInfo.TagName) {
 			pterm.Info.Printfln("You are already using the latest version (%s).", current)
 			if !selfUpdateYes {
 				return nil
 			}
 		}
 
+		// Show release notes
 		fmt.Println()
 		pterm.DefaultSection.Printfln("Release Notes for %s", releaseInfo.TagName)
 		fmt.Println(pterm.FgGray.Sprint(strings.TrimSpace(releaseInfo.Body)))
 		fmt.Println()
 	}
 
-	if !selfUpdateYes && !(yes) {
-		confirm, err := pterm.DefaultInteractiveConfirm.WithDefaultText("Do you want to continue with the update?").Show()
-		if err != nil || !confirm {
+	// --- User confirmation ---
+	if !selfUpdateYes && !yes {
+		confirm, promptErr := pterm.DefaultInteractiveConfirm.
+			WithDefaultText("Do you want to continue with the update?").
+			Show()
+		if promptErr != nil || !confirm {
 			pterm.Info.Println("Update cancelled.")
 			return nil
 		}
 	}
 
-	// Determine install method based on OS.
+	// Resolve the resolved tag for anchoring the script URL
+	resolvedTag := target
+	if releaseInfo != nil {
+		resolvedTag = releaseInfo.TagName
+	}
+
+	// --- Execute platform-specific update ---
 	switch runtime.GOOS {
 	case "windows":
-		return selfUpdateWindows(formatter, target)
+		return selfUpdateWindows(formatter, resolvedTag)
 	default:
-		return selfUpdateUnix(formatter, target)
+		return selfUpdateUnix(formatter, resolvedTag)
 	}
 }
 
+// githubRelease holds the subset of GitHub Release API fields we need.
 type githubRelease struct {
 	TagName string `json:"tag_name"`
 	Name    string `json:"name"`
 	Body    string `json:"body"`
 }
 
+// fetchGitHubRelease retrieves release metadata from the GitHub API.
+// Uses pkgHttp.NewClientWithTimeout for timeout + proxy support.
 var fetchGitHubRelease = func(version string) (*githubRelease, error) {
 	url := "https://api.github.com/repos/snowdreamtech/unirtm/releases/latest"
 	if version != "latest" {
-		url = fmt.Sprintf("https://api.github.com/repos/snowdreamtech/unirtm/releases/tags/%s", version)
+		// Normalize version tag for URL
+		tag := version
+		if !strings.HasPrefix(tag, "v") {
+			tag = "v" + tag
+		}
+		url = fmt.Sprintf("https://api.github.com/repos/snowdreamtech/unirtm/releases/tags/%s", tag)
 	}
 
-	resp, err := http.Get(url)
+	client := pkgHttp.NewClientWithTimeout(30 * time.Second)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
+	req.Header.Set("Accept", "application/vnd.github+json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("http request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
+		return nil, fmt.Errorf("GitHub API returned HTTP %d", resp.StatusCode)
 	}
 
 	var release githubRelease
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decode response: %w", err)
 	}
 
 	return &release, nil
 }
 
-func selfUpdateUnix(formatter output.Formatter, version string) error {
-	// Use curl to download and run the install script.
-	scriptURL := "https://github.com/snowdreamtech/unirtm/raw/main/install.sh"
+// downloadToTempFn is the function used to download a URL to a temp file.
+// It is a variable so that tests can replace it with a mock.
+var downloadToTempFn = downloadToTempImpl
 
-	var curlArgs []string
-	if version != "latest" {
-		curlArgs = []string{"-fsSL", scriptURL, "|", "sh", "-s", "--", "--version", version}
-	} else {
-		curlArgs = []string{"-fsSL", scriptURL}
+// downloadToTempImpl downloads a URL into a temporary file and returns its path.
+// The caller is responsible for removing the file.
+func downloadToTempImpl(url, suffix string) (string, error) {
+	client := pkgHttp.NewClientWithTimeout(120 * time.Second)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return "", fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("download: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("download returned HTTP %d", resp.StatusCode)
 	}
 
-	// Check if curl is available.
+	tmpFile, err := os.CreateTemp("", "unirtm-install-*"+suffix)
+	if err != nil {
+		return "", fmt.Errorf("create temp file: %w", err)
+	}
+	defer tmpFile.Close()
+
+	n, err := io.Copy(tmpFile, resp.Body)
+	if err != nil {
+		_ = os.Remove(tmpFile.Name())
+		return "", fmt.Errorf("write temp file: %w", err)
+	}
+	if n == 0 {
+		_ = os.Remove(tmpFile.Name())
+		return "", fmt.Errorf("downloaded script is empty (0 bytes)")
+	}
+
+	return tmpFile.Name(), nil
+}
+
+// selfUpdateUnix downloads and executes the install.sh anchored to the given tag.
+func selfUpdateUnix(formatter output.Formatter, tag string) error {
+	// Check if curl is available
 	if _, err := exec.LookPath("curl"); err != nil {
-		formatter.Error("curl is required for self-update but was not found in PATH")
+		formatter.Error("curl is required for self-update but was not found in PATH", nil)
 		return fmt.Errorf("curl not found")
 	}
 
-	formatter.Info("Downloading and executing install script…", nil)
+	// Anchor the script URL to the specific release tag (not main branch)
+	scriptURL := fmt.Sprintf("https://raw.githubusercontent.com/snowdreamtech/UniRTM/%s/install.sh", tag)
 
-	// Build: curl -fsSL <url> | sh
-	shellCmd := fmt.Sprintf("curl -fsSL %s | sh", scriptURL)
-	if version != "latest" {
-		shellCmd = fmt.Sprintf("curl -fsSL %s | sh -s -- --version %s", scriptURL, version)
+	formatter.Info(fmt.Sprintf("Downloading install script for %s...", tag), nil)
+
+	// Download to temp file first (safe: avoids curl | sh pipe risk)
+	tmpScript, err := downloadToTempFn(scriptURL, ".sh")
+	if err != nil {
+		formatter.Error("Failed to download install script", map[string]interface{}{"error": err.Error(), "url": scriptURL})
+		return fmt.Errorf("download install script: %w", err)
+	}
+	defer os.Remove(tmpScript)
+
+	// Make executable
+	if err := os.Chmod(tmpScript, 0o755); err != nil {
+		return fmt.Errorf("chmod install script: %w", err)
 	}
 
-	_ = curlArgs
-	c := execCommand("sh", "-c", shellCmd)
+	// Build the command: sh <tmpscript> [--version <tag>]
+	scriptArgs := []string{tmpScript}
+	if tag != "latest" {
+		scriptArgs = append(scriptArgs, "--version", tag)
+	}
+
+	formatter.Info("Executing install script...", nil)
+
+	c := execCommand("sh", scriptArgs...)
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
+	c.Stdin = os.Stdin
+
 	if err := c.Run(); err != nil {
 		formatter.Error("Self-update failed", map[string]interface{}{"error": err.Error()})
-		return err
+		return fmt.Errorf("execute install script: %w", err)
 	}
 
-	pterm.Success.Println("UniRTM updated successfully. Restart your shell to use the new version.")
-	return nil
+	pterm.Success.Println("UniRTM updated successfully.")
+	return verifySelfUpdate()
 }
 
-func selfUpdateWindows(formatter output.Formatter, version string) error {
-	psScript := `irm https://github.com/snowdreamtech/unirtm/raw/main/install.ps1 | iex`
-	if version != "latest" {
-		psScript = fmt.Sprintf(`$env:UNIRTM_VERSION='%s'; irm https://github.com/snowdreamtech/unirtm/raw/main/install.ps1 | iex`,
-			strings.ReplaceAll(version, "'", "''"))
+// selfUpdateWindows downloads and executes the install.ps1 anchored to the given tag.
+func selfUpdateWindows(formatter output.Formatter, tag string) error {
+	scriptURL := fmt.Sprintf("https://raw.githubusercontent.com/snowdreamtech/UniRTM/%s/install.ps1", tag)
+
+	formatter.Info(fmt.Sprintf("Downloading install script for %s...", tag), nil)
+
+	// Download to temp file first
+	tmpScript, err := downloadToTempFn(scriptURL, ".ps1")
+	if err != nil {
+		formatter.Error("Failed to download install script", map[string]interface{}{"error": err.Error(), "url": scriptURL})
+		return fmt.Errorf("download install script: %w", err)
+	}
+	defer os.Remove(tmpScript)
+
+	// Build PowerShell args
+	psArgs := []string{"-NoProfile", "-ExecutionPolicy", "Bypass", "-File", tmpScript}
+	if tag != "latest" {
+		psArgs = append(psArgs, "-Version", tag)
 	}
 
-	formatter.Info("Downloading and executing install script…", nil)
-	c := execCommand("powershell", "-ExecutionPolicy", "Bypass", "-Command", psScript)
+	formatter.Info("Executing install script...", nil)
+
+	c := execCommand("powershell", psArgs...)
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
+	c.Stdin = os.Stdin
+
 	if err := c.Run(); err != nil {
 		formatter.Error("Self-update failed", map[string]interface{}{"error": err.Error()})
-		return err
+		return fmt.Errorf("execute install script: %w", err)
 	}
-	pterm.Success.Println("UniRTM updated successfully. Restart your shell to use the new version.")
+
+	pterm.Success.Println("UniRTM updated successfully.")
+	return verifySelfUpdate()
+}
+
+// verifySelfUpdate runs `unirtm version` to confirm the new binary is functional.
+func verifySelfUpdate() error {
+	pterm.Info.Println("Verifying installation...")
+
+	// Prefer the binary at the standard install location
+	candidates := []string{"unirtm"}
+	if home, err := os.UserHomeDir(); err == nil {
+		candidates = append([]string{
+			filepath.Join(home, ".unirtm", "bin", "unirtm"),
+			filepath.Join(home, ".local", "bin", "unirtm"),
+			"/usr/local/bin/unirtm",
+		}, candidates...)
+	}
+
+	for _, candidate := range candidates {
+		if _, err := exec.LookPath(candidate); err == nil || filepath.IsAbs(candidate) {
+			c := execCommand(candidate, "version")
+			c.Stdout = os.Stdout
+			c.Stderr = os.Stderr
+			if err := c.Run(); err == nil {
+				return nil
+			}
+		}
+	}
+
+	pterm.Warning.Println("Could not verify installed version. Restart your terminal and run 'unirtm version' manually.")
 	return nil
 }
