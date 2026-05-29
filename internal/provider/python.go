@@ -70,6 +70,23 @@ func (p *PythonProvider) PostInstall(ctx context.Context, tool string, installPa
 
 	venvDir := filepath.Join(installPath, "venv")
 	cmd := exec.CommandContext(ctx, pythonPath, "-m", "venv", venvDir)
+
+	// Ensure the DLLs in installPath are discoverable by the newly created venv
+	// python executable during ensurepip.
+	env := os.Environ()
+	pathVar := "PATH"
+	for i, e := range env {
+		if strings.HasPrefix(strings.ToUpper(e), "PATH=") {
+			env[i] = "PATH=" + installPath + string(os.PathListSeparator) + e[5:]
+			pathVar = ""
+			break
+		}
+	}
+	if pathVar != "" {
+		env = append(env, "PATH="+installPath)
+	}
+	cmd.Env = env
+
 	if err := cmd.Run(); err != nil {
 		return NewProviderError("python", "python", version, "failed to create virtual environment", err)
 	}
@@ -172,8 +189,9 @@ func (p *PythonProvider) generatePythonShim(name, exePath, installPath, version 
 		return fmt.Sprintf(`@echo off
 REM UniRTM shim for %s (version %s)
 set "VIRTUAL_ENV=%s"
+set "PATH=%s;%%PATH%%"
 "%s" %%*
-`, name, version, venvDir, exePath)
+`, name, version, venvDir, installPath, exePath)
 	}
 
 	return fmt.Sprintf(`#!/bin/sh
