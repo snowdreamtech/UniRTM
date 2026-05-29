@@ -41,13 +41,25 @@ func (p *PythonProvider) Install(ctx context.Context, tool string, installPath s
 // since vcruntime140.dll is next to the real binary, not the symlink.
 func (p *PythonProvider) getRealPythonPath(installPath string) string {
 	if runtime.GOOS == "windows" {
+		binPy := filepath.Join(installPath, "bin", "python.exe")
+		if realPy, err := filepath.EvalSymlinks(binPy); err == nil {
+			return realPy
+		}
+
 		// python-build-standalone on Windows often extracts python.exe to the root
 		rootPy := filepath.Join(installPath, "python.exe")
 		if _, err := os.Stat(rootPy); err == nil {
 			return rootPy
 		}
+
+		// Fallback for some standalone builds
+		installPy := filepath.Join(installPath, "install", "python.exe")
+		if _, err := os.Stat(installPy); err == nil {
+			return installPy
+		}
+
 		// Try bin just in case
-		return filepath.Join(installPath, "bin", "python.exe")
+		return binPy
 	}
 	return filepath.Join(installPath, "bin", "python3")
 }
