@@ -13,6 +13,7 @@ NPM_CONFIG_REGISTRY = '{% if env.CI is defined %}https://registry.npmjs.org{% el
 PIP_INDEX_URL = '{% if env.CI is defined %}https://pypi.org/simple{% else %}https://mirrors.aliyun.com/pypi/simple{% endif %}'
 PIP_TRUSTED_HOST = '{% if env.CI is defined %}pypi.org{% else %}mirrors.aliyun.com{% endif %}'
 PYTHONUTF8 = '1'
+PYTHONUNBUFFERED = '1'
 PYTHON_BUILD_MIRROR_URL = '{% if env.CI is defined %}https://www.python.org/ftp/python/{% else %}https://mirrors.aliyun.com/python/{% endif %}'
 RUBY_BUILD_MIRROR_URL = '{% if env.CI is defined %}https://cache.ruby-lang.org/pub/ruby/{% else %}https://mirrors.aliyun.com/ruby-build/{% endif %}'
 RUSTUP_DIST_SERVER = '{% if env.CI is defined %}https://static.rust-lang.org{% else %}https://mirrors.aliyun.com/rustup{% endif %}'
@@ -142,6 +143,7 @@ else
     }
 fi
 '''
+output = 'interleaved'
 
 [tasks.lint-all]
 description = 'Full lint: Check all project files (used in CI or verify)'
@@ -151,6 +153,7 @@ unirtm exec -- pre-commit run --all-files || {
     unirtm exec -- pre-commit run --all-files
 }
 '''
+output = 'interleaved'
 
 [tasks.test]
 description = 'Run Go unit tests for all packages recursively'
