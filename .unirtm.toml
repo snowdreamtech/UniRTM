@@ -43,10 +43,12 @@ depends = [
   "audit:govulncheck",
   "audit:trivy",
 ]
+output = 'interleaved'
 
 [tasks."audit:gitleaks"]
 description = 'Scan for hardcoded secrets'
 run = 'unirtm exec -- gitleaks detect --source . --no-banner'
+output = 'interleaved'
 
 [tasks."audit:zizmor"]
 description = 'Audit GitHub Actions workflows for security flaws'
@@ -57,6 +59,7 @@ else
     unirtm exec -- zizmor . --format plain --config .zizmor.yml
 fi
 '''
+output = 'interleaved'
 
 [tasks."audit:osv"]
 description = 'Generic vulnerability scan across lockfiles'
@@ -84,6 +87,7 @@ else
     exit 1
 fi
 '''
+output = 'interleaved'
 
 [tasks."audit:npm"]
 description = 'Node.js dependency audit'
@@ -98,6 +102,7 @@ else
     echo "⏭️  Skipped (no package.json)"
 fi
 '''
+output = 'interleaved'
 
 [tasks."audit:pip"]
 description = 'Python dependency audit'
@@ -112,6 +117,7 @@ else
     echo "⏭️  Skipped (no python requirements)"
 fi
 '''
+output = 'interleaved'
 
 [tasks."audit:govulncheck"]
 description = 'Go dependency audit'
@@ -122,6 +128,7 @@ else
     echo "⏭️  Skipped (no go.mod)"
 fi
 '''
+output = 'interleaved'
 
 [tasks."audit:trivy"]
 description = 'Generate and scan SBOM using Trivy'
@@ -129,6 +136,7 @@ run = '''
 unirtm exec -- trivy fs --format cyclonedx --output sbom.json .
 unirtm exec -- trivy sbom sbom.json
 '''
+output = 'interleaved'
 
 [tasks.lint]
 description = 'Fast lint: Check only modified files (staged & unstaged)'
