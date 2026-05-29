@@ -33,16 +33,16 @@ data_dir = ''
 
 [tasks]
 [tasks.audit]
-description = 'Run comprehensive security audit (parallelized)'
-depends = [
-  "audit:gitleaks",
-  "audit:zizmor",
-  "audit:osv",
-  "audit:npm",
-  "audit:pip",
-  "audit:govulncheck",
-  "audit:trivy",
-]
+description = 'Run comprehensive security audit sequentially'
+run = '''
+unirtm run audit:gitleaks
+unirtm run audit:zizmor
+unirtm run audit:osv
+unirtm run audit:npm
+unirtm run audit:pip
+unirtm run audit:govulncheck
+unirtm run audit:trivy
+'''
 output = 'interleaved'
 
 [tasks."audit:gitleaks"]
@@ -174,8 +174,12 @@ output = 'interleaved'
 env = { GOTOOLCHAIN = 'local', CGO_ENABLED = '0' }
 
 [tasks.verify]
-description = 'Run full local verification (lint-all, test, audit) - runs subchecks in parallel'
-depends = ["lint-all", "test", "audit"]
+description = 'Run full local verification sequentially (lint-all, test, audit) to prevent CI OOM'
+run = '''
+unirtm run lint-all
+unirtm run test
+unirtm run audit
+'''
 
 [tools]
 'github:anchore/syft' = '1.44.0'
