@@ -186,6 +186,7 @@ jobs:
         with:
           install: true
           trust: true
+          version: "latest"
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
       - name: "🔍 Inspect Code Quality (Lint)"
@@ -285,6 +286,7 @@ jobs:
         with:
           install: true
           trust: true
+          version: "latest"
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
       - name: "📦 Cache Language Dependencies (Advanced)"
@@ -411,6 +413,7 @@ jobs:
         with:
           install: true
           trust: true
+          version: "latest"
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
       - name: "📝 Validate Commit Convention (Commitlint)"

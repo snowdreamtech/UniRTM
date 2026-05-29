@@ -233,6 +233,7 @@ jobs:
         with:
           install: true
           trust: true
+          version: "latest"
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
