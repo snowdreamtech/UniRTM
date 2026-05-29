@@ -134,6 +134,7 @@ jobs:
           unirtm generate dependabot --output .github/dependabot.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UNIRTM_YES: 1
 
       - name: "🔧 Update UniRTM Toolchain & Lockfile"
         shell: sh
@@ -141,6 +142,7 @@ jobs:
           unirtm lock --all-platforms
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+          UNIRTM_YES: 1
 
       - name: "📝 Commit Changes (if any)"
         shell: sh
