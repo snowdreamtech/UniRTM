@@ -502,6 +502,13 @@ func selfUpdateUnix(formatter output.Formatter, tag string) error {
 	c.Stderr = os.Stderr
 	c.Stdin = os.Stdin
 
+	// Pass the current executable directory as INSTALL_DIR so it updates in-place
+	if exePath, err := os.Executable(); err == nil {
+		c.Env = append(os.Environ(), "INSTALL_DIR="+filepath.Dir(exePath))
+	} else {
+		c.Env = os.Environ()
+	}
+
 	if err := c.Run(); err != nil {
 		formatter.Error("Self-update failed", map[string]interface{}{"error": err.Error()})
 		return fmt.Errorf("execute install script: %w", err)
@@ -537,6 +544,13 @@ func selfUpdateWindows(formatter output.Formatter, tag string) error {
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	c.Stdin = os.Stdin
+
+	// Pass the current executable directory as INSTALL_DIR so it updates in-place
+	if exePath, err := os.Executable(); err == nil {
+		c.Env = append(os.Environ(), "INSTALL_DIR="+filepath.Dir(exePath))
+	} else {
+		c.Env = os.Environ()
+	}
 
 	if err := c.Run(); err != nil {
 		formatter.Error("Self-update failed", map[string]interface{}{"error": err.Error()})
