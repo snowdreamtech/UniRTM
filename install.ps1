@@ -304,7 +304,7 @@ function Main {
     $resolvedVersion = Resolve-Version
 
     if (-not $InstallDir) {
-        $InstallDir = Join-Path $HOME ".unirtm\bin"
+        $InstallDir = Join-Path $HOME "AppData\Local\unirtm\bin"
     }
 
     $download    = Download-And-Verify -ResolvedVersion $resolvedVersion -Arch $arch

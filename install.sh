@@ -268,7 +268,7 @@ install_binary() {
     if [ "$(id -u)" = "0" ]; then
       INSTALL_DIR="/usr/local/bin"
     else
-      INSTALL_DIR="$HOME/.unirtm/bin"
+      INSTALL_DIR="$HOME/.local/bin"
     fi
   fi
 
