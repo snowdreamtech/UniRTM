@@ -129,6 +129,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PYTHONUTF8: 1
           TRIVY_CACHE_DIR: .trivycache
+          UNIRTM_YES: 1
 
       - name: "⚡ Cache Documentation Links (Lychee)"
         if: matrix.os == 'ubuntu-latest'
