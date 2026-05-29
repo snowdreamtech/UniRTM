@@ -18,6 +18,9 @@ func TestRunLockCheck(t *testing.T) {
 	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 	t.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
 
+	// Reset global flags to prevent leakage from other tests
+	lockCheck = false
+
 	// Since there is no config file, it should just return no error
 	err := lockCmd.RunE(lockCmd, []string{})
 	assert.NoError(t, err)

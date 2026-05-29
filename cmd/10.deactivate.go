@@ -65,16 +65,17 @@ func runDeactivate(cmd *cobra.Command, args []string) error {
 
 	// Detect shell if not specified
 	// Detect shell if not specified in flags
-	if deactivateShell == "" && len(args) > 0 {
+	shellToUse := deactivateShell
+	if shellToUse == "" && len(args) > 0 {
 		firstArg := strings.ToLower(args[0])
 		// Check if first arg is a known shell name
 		if firstArg == "bash" || firstArg == "zsh" || firstArg == "fish" || firstArg == "powershell" || firstArg == "pwsh" {
-			deactivateShell = firstArg
+			shellToUse = firstArg
 			args = args[1:] // Shift args
 		}
 	}
 
-	shellType, err := resolveShellType(deactivateShell)
+	shellType, err := resolveShellType(shellToUse)
 	if err != nil {
 		formatter.Error("Failed to detect shell", map[string]interface{}{
 			"error": err.Error(),
