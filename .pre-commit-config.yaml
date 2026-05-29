@@ -61,7 +61,7 @@ repos:
         types: [text]
         exclude: |
           (?x)^(
-            \.md$|
+            \.md$|.*\.lock$|go\.sum$|
             (\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
           )
         stages: [pre-commit, pre-merge-commit]
@@ -90,6 +90,7 @@ repos:
         types: [text]
         exclude: |
           (?x)^(
+            .*\.lock$|go\.sum$|
             (\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
           )
         stages: [pre-commit, pre-merge-commit]
