@@ -25,6 +25,8 @@ func TestRubyHandler_ResolveVersions(t *testing.T) {
 			osName := runtime.GOOS
 			if osName == "darwin" {
 				osName = "macos"
+			} else if osName == "linux" {
+				osName = "ubuntu"
 			}
 			filename := fmt.Sprintf("ruby-3.2.0-%s-%s.tar.gz", osName, runtime.GOARCH)
 			resp := fmt.Sprintf(`[

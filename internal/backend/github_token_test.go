@@ -352,7 +352,11 @@ func TestFindGhHostsFile_HomeDirFallback(t *testing.T) {
 	os.WriteFile(hostsFile, []byte("github.com:\n  oauth_token: ghp_test"), 0600)
 
 	t.Setenv("UNIRTM_GH_CONFIG_DIR", "")
+	t.Setenv("MISE_GH_CONFIG_DIR", "")
+	t.Setenv("GH_CONFIG_DIR", "")
 	t.Setenv("UNIRTM_XDG_CONFIG_HOME", "")
+	t.Setenv("MISE_XDG_CONFIG_HOME", "")
+	t.Setenv("XDG_CONFIG_HOME", "")
 	t.Setenv("HOME", homeDir)
 
 	f := findGhHostsFile()
@@ -369,7 +373,11 @@ func TestFindGhHostsFile_MacosFallback(t *testing.T) {
 	os.WriteFile(hostsFile, []byte("github.com:\n  oauth_token: ghp_test"), 0600)
 
 	t.Setenv("UNIRTM_GH_CONFIG_DIR", "")
+	t.Setenv("MISE_GH_CONFIG_DIR", "")
+	t.Setenv("GH_CONFIG_DIR", "")
 	t.Setenv("UNIRTM_XDG_CONFIG_HOME", "")
+	t.Setenv("MISE_XDG_CONFIG_HOME", "")
+	t.Setenv("XDG_CONFIG_HOME", "")
 	t.Setenv("HOME", homeDir)
 
 	f := findGhHostsFile()

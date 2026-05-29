@@ -54,6 +54,8 @@ func TestSpmBackend_ListVersions(t *testing.T) {
 
 	// Create git repo
 	exec.Command("git", "-C", tmpDir, "init").Run()
+	exec.Command("git", "-C", tmpDir, "config", "user.email", "test@example.com").Run()
+	exec.Command("git", "-C", tmpDir, "config", "user.name", "Test User").Run()
 	exec.Command("git", "-C", tmpDir, "commit", "--allow-empty", "-m", "init").Run()
 	exec.Command("git", "-C", tmpDir, "tag", "v1.0.0").Run()
 	exec.Command("git", "-C", tmpDir, "tag", "v1.1.0").Run()
@@ -98,6 +100,8 @@ func TestSpmBackend_ResolveVersion(t *testing.T) {
 	// Test latest with fake repo
 	tmpDir := t.TempDir()
 	exec.Command("git", "-C", tmpDir, "init").Run()
+	exec.Command("git", "-C", tmpDir, "config", "user.email", "test@example.com").Run()
+	exec.Command("git", "-C", tmpDir, "config", "user.name", "Test User").Run()
 	exec.Command("git", "-C", tmpDir, "commit", "--allow-empty", "-m", "init").Run()
 	exec.Command("git", "-C", tmpDir, "tag", "v2.0.0").Run()
 

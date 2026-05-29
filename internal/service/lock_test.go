@@ -13,6 +13,7 @@ import (
 )
 
 func TestLockService_Lifecycle(t *testing.T) {
+	t.Setenv("UNIRTM_LOCKED", "0")
 	tmpDir := t.TempDir()
 	lockPath := filepath.Join(tmpDir, "unirtm.lock")
 
