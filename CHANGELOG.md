@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.5](https://github.com/snowdreamtech/UniRTM/compare/v0.2.4...v0.2.5) (2026-05-29)
+
+
+### Bug Fixes
+
+* **ci:** show interleaved output for verify task to diagnose windows failures ([bc714a6](https://github.com/snowdreamtech/UniRTM/commit/bc714a6ac6cd2748d28d6310de0bd8ac22178cb1))
+
 ## [0.2.4](https://github.com/snowdreamtech/UniRTM/compare/v0.2.3...v0.2.4) (2026-05-29)
 
 
