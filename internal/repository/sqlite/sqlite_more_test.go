@@ -10,13 +10,13 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite" // Use pure-Go SQLite driver (same as production code) to avoid CGO compilation overhead in CI
 	"github.com/snowdreamtech/unirtm/internal/repository"
 	"github.com/stretchr/testify/assert"
 )
 
 func getClosedDB(t *testing.T) *sql.DB {
-	db, err := sql.Open("sqlite3", filepath.Join(t.TempDir(), "test.db"))
+	db, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "test.db"))
 	assert.NoError(t, err)
 	// create table so prepare statement doesn't fail immediately in some constructors if they do table checking
 	// actually constructors don't create tables in SQLite backend usually, or do they?
@@ -26,7 +26,7 @@ func getClosedDB(t *testing.T) *sql.DB {
 }
 
 func getPreparedDB(t *testing.T, initSQL string) *sql.DB {
-	db, err := sql.Open("sqlite3", filepath.Join(t.TempDir(), "test.db"))
+	db, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "test.db"))
 	assert.NoError(t, err)
 	_, err = db.Exec(initSQL)
 	assert.NoError(t, err)

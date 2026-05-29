@@ -52,6 +52,9 @@ linters:
     - gocognit # cognitive complexity
 
     # Best practices
+    # Dependency enforcement
+    - depguard # block forbidden imports (e.g., CGO SQLite)
+
     - bodyclose # ensure HTTP response bodies are closed
     - noctx # ensure context is passed for HTTP requests
     - contextcheck # context propagation checks
@@ -124,6 +127,31 @@ linters-settings:
       - name: unused-parameter
       - name: unreachable-code
       - name: redefines-builtin-id
+
+  # ── SQLite Driver Policy ────────────────────────────────────────────────────
+  # RULE: Only modernc.org/sqlite (pure-Go) is allowed.
+  # REASON: CGO SQLite libraries (e.g., mattn/go-sqlite3) require a C compiler,
+  #         consume 5-10x more memory under -race, and complicate cross-compilation.
+  #         In CI (GitHub Actions ubuntu-latest, ~7GB RAM) this causes OOM kills.
+  depguard:
+    rules:
+      no-cgo-sqlite:
+        list-mode: lax
+        deny:
+          - pkg: "github.com/mattn/go-sqlite3"
+            desc: >-
+              Forbidden: CGO SQLite. Use 'modernc.org/sqlite' (pure-Go) instead.
+              Reason: CGO requires a C compiler, uses 5-10x RAM under -race, and
+              causes OOM kills in CI. See .golangci.yml for the policy.
+          - pkg: "github.com/gwenn/gosqlite"
+            desc: >-
+              Forbidden: CGO SQLite. Use 'modernc.org/sqlite' (pure-Go) instead.
+          - pkg: "github.com/mxk/go-sqlite"
+            desc: >-
+              Forbidden: CGO SQLite. Use 'modernc.org/sqlite' (pure-Go) instead.
+          - pkg: "github.com/jmoiron/sqlx"
+            desc: >-
+              Avoid sqlx with CGO SQLite drivers. Use database/sql + modernc.org/sqlite.
 
   gosec:
     excludes:

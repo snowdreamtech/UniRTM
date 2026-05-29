@@ -10,13 +10,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite" // Use pure-Go SQLite driver (same as production code) to avoid CGO compilation overhead in CI
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSQLiteTransactionManager_BeginError(t *testing.T) {
-	db, err := sql.Open("sqlite3", filepath.Join(t.TempDir(), "test.db"))
+	db, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "test.db"))
 	assert.NoError(t, err)
 
 	m := NewSQLiteTransactionManager(db)
@@ -30,7 +30,7 @@ func TestSQLiteTransactionManager_BeginError(t *testing.T) {
 }
 
 func TestSQLiteTransactionManager_BeginRepoErrors(t *testing.T) {
-	db, err := sql.Open("sqlite3", filepath.Join(t.TempDir(), "test.db"))
+	db, err := sql.Open("sqlite", filepath.Join(t.TempDir(), "test.db"))
 	assert.NoError(t, err)
 	defer db.Close()
 

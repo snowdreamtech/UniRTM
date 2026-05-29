@@ -154,9 +154,13 @@ unirtm exec -- pre-commit run --all-files || {
 
 [tasks.test]
 description = 'Run Go unit tests for all packages recursively'
-run = 'unirtm exec -- go test -race -v ./...'
+# -timeout 10m : prevent a single hung test from consuming the entire CI budget (default: 10m)
+# -p 4         : limit the number of packages compiled/tested in parallel to prevent CI OOM
+#                (GitHub Actions ubuntu-latest has ~7GB RAM; -race multiplies usage 5-10x)
+# CGO_ENABLED=0: force pure-Go build — all test files must use modernc.org/sqlite, not mattn/go-sqlite3
+run = 'unirtm exec -- go test -race -v -timeout 10m -p 4 ./...'
 output = 'interleaved'
-env = { GOTOOLCHAIN = 'local' }
+env = { GOTOOLCHAIN = 'local', CGO_ENABLED = '0' }
 
 [tasks.verify]
 description = 'Run full local verification (lint-all, test, audit) - runs subchecks in parallel'
