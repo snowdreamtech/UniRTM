@@ -29,8 +29,8 @@ CURL_MAX_TIME=120
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-info() { printf '\033[0;32m[INFO]\033[0m  %s\n' "$*"; }
-warn() { printf '\033[0;33m[WARN]\033[0m  %s\n' "$*"; }
+info() { printf '\033[0;32m[INFO]\033[0m  %s\n' "$*" >&2; }
+warn() { printf '\033[0;33m[WARN]\033[0m  %s\n' "$*" >&2; }
 error() { printf '\033[0;31m[ERROR]\033[0m %s\n' "$*" >&2; }
 die() {
   error "$*"
@@ -235,7 +235,7 @@ download_and_verify() {
   if curl_with_retry "$CHECKSUM_URL" "$CHECKSUM_PATH" 2>/dev/null; then
     info "Verifying checksum..."
     # Extract the expected checksum for our archive
-    EXPECTED="$(grep "${ARCHIVE_NAME}" "$CHECKSUM_PATH" | awk '{print $1}')"
+    EXPECTED="$(grep -E "[[:space:]]${ARCHIVE_NAME}[[:space:]]*\$" "$CHECKSUM_PATH" | awk '{print $1}')"
     if [ -z "$EXPECTED" ]; then
       warn "Checksum entry not found for ${ARCHIVE_NAME}, skipping verification."
     else

@@ -181,7 +181,7 @@ function Download-And-Verify {
     try {
         Invoke-DownloadWithRetry -Url $ChecksumUrl -OutFile $ChecksumPath
         $checksumContent = Get-Content $ChecksumPath -Raw
-        $entry = ($checksumContent -split "`n") | Where-Object { $_ -match [regex]::Escape($ArchiveName) }
+        $entry = ($checksumContent -split "`r?`n") | Where-Object { $_ -match ('\s' + [regex]::Escape($ArchiveName) + '$') }
         if ($entry) {
             $expected = ($entry -split '\s+')[0].Trim()
             $actual   = (Get-FileHash -Algorithm SHA256 $ArchivePath).Hash.ToLower()
