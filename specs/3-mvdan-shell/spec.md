@@ -1,8 +1,8 @@
 # Feature Specification: Built-in Cross-Platform Shell (mvdan-shell)
 
-**Feature Branch**: `003-mvdan-shell`  
-**Created**: 2026-05-28  
-**Status**: Draft  
+**Feature Branch**: `003-mvdan-shell`
+**Created**: 2026-05-28
+**Status**: Draft
 **Input**: User description: "业界还有一个非常优雅的“终极跨平台 Shell”解决方案： 内置一个纯 Go 语言实现的跨平台 Shell 解释器（例如 mvdan.cc/sh） ，作为feature，在spec文件夹创建规范，并逐步实施"
 
 ## User Scenarios & Testing *(mandatory)*
