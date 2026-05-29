@@ -791,6 +791,7 @@ repos:
         entry: bash -c 'if unirtm which trivy >/dev/null 2>&1; then exec unirtm exec -- trivy fs . --scanners vuln,misconfig,secret --skip-dirs internal/addlicense/testdata --db-repository public.ecr.aws/aquasecurity/trivy-db --java-db-repository public.ecr.aws/aquasecurity/trivy-java-db:1 --checks-bundle-repository public.ecr.aws/aquasecurity/trivy-checks --timeout 15m --exit-code 1 --severity HIGH,CRITICAL "$@"; else echo "Skipped trivy not found"; fi' --
         always_run: true
         pass_filenames: false
+        stages: [manual, pre-push] # Skip in local pre-commit, run in CI or manually
         description: "Comprehensive security scan for vulnerabilities, misconfigurations, and secrets using Trivy."
 
       - id: checkov
@@ -799,14 +800,13 @@ repos:
         entry: bash -c 'if unirtm which checkov >/dev/null 2>&1; then exec unirtm exec -- checkov --directory . --quiet --compact --soft-fail-on HIGH "$@"; else echo "Skipped checkov not found"; fi' --
         types_or: [yaml, dockerfile, terraform]
         pass_filenames: false
+        stages: [manual, pre-push] # Skip in local pre-commit, run in CI or manually
         description: "Audit Infrastructure-as-Code (Terraform, K8s, Docker) for security best practices."
 
       - id: semgrep
         name: semgrep security scan
         language: system
         entry: bash -c 'if unirtm which semgrep >/dev/null 2>&1; then exec unirtm exec -- semgrep scan --config auto --error --quiet "$@"; else echo "Skipped semgrep not found"; fi' --
-        always_run: true
-        pass_filenames: false
         description: "Multi-language static analysis for security, bugs, and best practices using Semgrep."
 
       - id: bandit
