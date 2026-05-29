@@ -67,6 +67,3 @@ asdf_compat = true
 ```
 
 For detailed mise configuration guidelines, see:
-
-- [Mise Configuration Best Practices](../reference/mise-configuration.md)
-- [Mise Attestation Error Troubleshooting](../troubleshooting/mise-attestation-error.md)

@@ -52,7 +52,7 @@ AI agents (including Antigravity, Cursor, etc.) MUST strictly follow these execu
   - This ensures the developer retains final control over the remote state and can perform a final local review/test before sharing changes.
 - **Universal Tiered Mise Protocol (UTTP - 分层工具协议)**:
   - The project uses a tiered toolchain strategy to balance performance and security:
-    - **Tier 1 (Core)**: Minimal set of essential tools defined statically in [.mise.toml](../../.mise.toml). Installed by default.
+    - **Tier 1 (Core)**: Minimal set of essential tools defined statically in .mise.toml. Installed by default.
     - **Tier 2 (On-demand)**: 80+ language runtimes and security scanners defined in [.unirtm.toml](../../.unirtm.toml). Installed only when needed.
   - **Lock Ritual Protocol**: AI agents MUST NOT manually edit lockfiles for Tier 2 tools. Instead, they MUST use the `make sync-lock` command, which uses a **Manifest Aggregator** to generate a unified, secure `mise.lock` for all tiers.
   - **Minimal Local Bootstrap**: AI agents MUST ensure that standard local installations remain fast by keeping the root `.mise.toml` lean.

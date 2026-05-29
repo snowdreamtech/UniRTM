@@ -33,7 +33,7 @@
 
   | Tier | Classification | Storage | Management |
   | :--- | :--- | :--- | :--- |
-  | **Tier 1** | **Core/Global** | [.mise.toml](../../.mise.toml) | Statically defined; local `mise install` default. |
+  | **Tier 1** | **Core/Global** | .mise.toml | Statically defined; local `mise install` default. |
   | **Tier 2** | **On-Demand** | [versions.sh](../../.unirtm.toml) | Defined as shell variables; JIT-installed by scripts. |
 
 - **Adaptive Lock Forgiveness (ALF)**:
