@@ -292,9 +292,21 @@ install_binary() {
 
   chmod +x "$BINARY_PATH"
 
-  # Prevent 'Text file busy' error when replacing a currently running binary
-  rm -f "${INSTALL_DIR}/${BINARY}" 2>/dev/null || true
-  cp "$BINARY_PATH" "${INSTALL_DIR}/${BINARY}"
+  # Prevent 'Text file busy' error and ensure rollback on failure
+  if [ -f "${INSTALL_DIR}/${BINARY}" ]; then
+    mv "${INSTALL_DIR}/${BINARY}" "${INSTALL_DIR}/${BINARY}.old" 2>/dev/null || true
+  fi
+
+  if ! cp "$BINARY_PATH" "${INSTALL_DIR}/${BINARY}"; then
+    error "Failed to copy new binary to ${INSTALL_DIR}"
+    if [ -f "${INSTALL_DIR}/${BINARY}.old" ]; then
+      mv "${INSTALL_DIR}/${BINARY}.old" "${INSTALL_DIR}/${BINARY}" 2>/dev/null || true
+      warn "Rolled back to previous version."
+    fi
+    exit 1
+  fi
+
+  rm -f "${INSTALL_DIR}/${BINARY}.old" 2>/dev/null || true
 
   info "Installed ${BINARY} to ${INSTALL_DIR}/${BINARY}"
 }

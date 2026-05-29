@@ -225,6 +225,7 @@ function Install-Binary {
     $Destination = Join-Path $InstallDirPath "${Binary}.exe"
 
     # Prevent 'File in use' error when replacing a running binary on Windows
+    # and provide a rollback mechanism in case of failure.
     if (Test-Path $Destination) {
         $OldDestination = "${Destination}.old"
         if (Test-Path $OldDestination) {
@@ -233,8 +234,22 @@ function Install-Binary {
         Rename-Item -Path $Destination -NewName "${Binary}.exe.old" -Force -ErrorAction SilentlyContinue
     }
 
-    Copy-Item -Path $BinaryFile.FullName -Destination $Destination -Force
-    Write-Info "Installed ${Binary}.exe to $Destination"
+    try {
+        Copy-Item -Path $BinaryFile.FullName -Destination $Destination -Force -ErrorAction Stop
+        Write-Info "Installed ${Binary}.exe to $Destination"
+
+        # Cleanup backup on success
+        if (Test-Path "${Destination}.old") {
+            Remove-Item -Path "${Destination}.old" -Force -ErrorAction SilentlyContinue
+        }
+    } catch {
+        Write-Warn "Failed to copy new binary: $_"
+        if (Test-Path "${Destination}.old") {
+            Write-Info "Rolling back to previous version..."
+            Rename-Item -Path "${Destination}.old" -NewName "${Binary}.exe" -Force -ErrorAction SilentlyContinue
+        }
+        Abort "Installation failed."
+    }
 
     # Cleanup
     Remove-Item -Recurse -Force $TmpDir -ErrorAction SilentlyContinue
