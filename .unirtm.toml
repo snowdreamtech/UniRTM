@@ -180,6 +180,7 @@ unirtm run lint-all
 unirtm run test
 unirtm run audit
 '''
+output = 'interleaved'
 
 [tools]
 'github:anchore/syft' = '1.44.0'
