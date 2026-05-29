@@ -176,12 +176,15 @@ func (h *GithubHandler) detectPlatform(filename string) (string, string) {
 	var os, arch string
 
 	// OS Detection
-	if strings.Contains(filename, "linux") {
-		os = "linux"
-	} else if strings.Contains(filename, "darwin") || strings.Contains(filename, "macos") || strings.Contains(filename, "apple") || strings.Contains(filename, "mac") {
+	if strings.Contains(filename, "darwin") || strings.Contains(filename, "macos") || strings.Contains(filename, "apple") || strings.Contains(filename, "mac") {
 		os = "darwin"
 	} else if strings.Contains(filename, "windows") || strings.Contains(filename, "win") {
 		os = "windows"
+	} else {
+		// Fallback: Linux distributions and libc variants are so fragmented
+		// (ubuntu, alpine, debian, centos, rhel, musl, glibc, el8, etc.)
+		// that it's safest to assume any non-Mac/Win binary is for Linux.
+		os = "linux"
 	}
 
 	// Arch Detection
