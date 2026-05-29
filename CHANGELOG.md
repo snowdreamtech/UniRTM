@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4](https://github.com/snowdreamtech/UniRTM/compare/v0.2.3...v0.2.4) (2026-05-29)
+
+
+### Bug Fixes
+
+* **backend:** support ubuntu asset detection in github handler ([6c1a902](https://github.com/snowdreamtech/UniRTM/commit/6c1a902f61c7efa978801ba8486d7cb15e9a5934))
+* **ci:** add interleaved output to audit tasks to prevent log swallowing on timeout ([c177de6](https://github.com/snowdreamtech/UniRTM/commit/c177de6e202645c3c89d89fb85ed8f9d66b74b1a))
+* **ci:** fix missing task and python logs on windows CI ([984a87a](https://github.com/snowdreamtech/UniRTM/commit/984a87a16902d18c81371f464d50527a735ea23f))
+* **ci:** run verification and audit tasks sequentially to prevent runner OOM ([51e156d](https://github.com/snowdreamtech/UniRTM/commit/51e156dc38943c7d9b4ea9550d58e542f317ca96))
+
 ## [0.1.0](https://github.com/snowdreamtech/UniRTM/compare/v0.0.10...v0.1.0) (2026-05-25)
 
 
