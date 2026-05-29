@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	_ "modernc.org/sqlite" // Use pure-Go SQLite driver (same as production code) to avoid CGO compilation overhead in CI
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	_ "modernc.org/sqlite" // Use pure-Go SQLite driver (same as production code) to avoid CGO compilation overhead in CI
 )
 
 // setupTestDB creates a temporary test database

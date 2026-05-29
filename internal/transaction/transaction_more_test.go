@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	_ "modernc.org/sqlite" // Use pure-Go SQLite driver (same as production code) to avoid CGO compilation overhead in CI
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/stretchr/testify/assert"
+	_ "modernc.org/sqlite" // Use pure-Go SQLite driver (same as production code) to avoid CGO compilation overhead in CI
 )
 
 func TestSQLiteTransactionManager_BeginError(t *testing.T) {
