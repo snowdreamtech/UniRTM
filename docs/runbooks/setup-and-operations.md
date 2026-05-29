@@ -59,7 +59,7 @@ make verify        # run all checks in sequence
 
 ```bash
 # Node packages (documentation)
-cd docs && pnpm update
+cd docs && npm update
 
 # Python packages (pre-commit hooks)
 pre-commit autoupdate
@@ -71,8 +71,8 @@ mise upgrade
 ### Build Documentation
 
 ```bash
-cd docs && pnpm run build       # production build
-cd docs && pnpm run dev         # development server (hot-reload)
+cd docs && npm run build       # production build
+cd docs && npm run dev         # development server (hot-reload)
 ```
 
 ### Create a Release

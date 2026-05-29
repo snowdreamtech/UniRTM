@@ -16,8 +16,8 @@ Invoke with `/snowdreamtech.init` in any AI IDE.
 
 1. **Installs tools** required by the development workflow:
 
-- `corepack enable` — enables zero-config `pnpm`
-- `pnpm install` — installs all project-local linters/formatters:
+- `corepack enable` — enables zero-config `npm`
+- `npm install` — installs all project-local linters/formatters:
   - `commitlint`
   - `markdownlint-cli2`
   - `prettier`
@@ -44,11 +44,11 @@ unirtm install
 ## Manual Steps (if needed)
 
 ```bash
-# Enable Zero-Config pnpm
+# Enable Zero-Config npm
 corepack enable
 
 # Install all project tools
-pnpm install
+npm install
 
 # Install pre-commit
 pip install pre-commit
@@ -67,8 +67,8 @@ After initialization, verify everything works:
 pre-commit run --all-files
 
 # Test commit message validation
-echo "feat: test" | pnpm exec commitlint
+echo "feat: test" | npm exec commitlint
 
 # Test formatting
-pnpm exec prettier --check .
+npm exec prettier --check .
 ```
