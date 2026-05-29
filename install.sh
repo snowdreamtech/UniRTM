@@ -258,8 +258,7 @@ download_and_verify() {
     warn "Could not download checksums.txt. Skipping checksum verification."
   fi
 
-  echo "$ARCHIVE_PATH"
-  echo "$TMP_DIR"
+  echo "$ARCHIVE_PATH $TMP_DIR"
 }
 
 # ---------------------------------------------------------------------------
