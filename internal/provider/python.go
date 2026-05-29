@@ -35,12 +35,26 @@ func (p *PythonProvider) Install(ctx context.Context, tool string, installPath s
 	return p.generic.Install(ctx, tool, installPath, artifactPath, version)
 }
 
+// getRealPythonPath resolves the actual Python binary path.
+// This is necessary on Windows because generic.Install creates symlinks in bin/,
+// and executing a symlink on Windows causes DLL resolution failures (0xc0000135)
+// since vcruntime140.dll is next to the real binary, not the symlink.
+func (p *PythonProvider) getRealPythonPath(installPath string) string {
+	if runtime.GOOS == "windows" {
+		// python-build-standalone on Windows often extracts python.exe to the root
+		rootPy := filepath.Join(installPath, "python.exe")
+		if _, err := os.Stat(rootPy); err == nil {
+			return rootPy
+		}
+		// Try bin just in case
+		return filepath.Join(installPath, "bin", "python.exe")
+	}
+	return filepath.Join(installPath, "bin", "python3")
+}
+
 // PostInstall creates a virtual environment.
 func (p *PythonProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
-	pythonPath := filepath.Join(installPath, "bin", "python3")
-	if runtime.GOOS == "windows" {
-		pythonPath = filepath.Join(installPath, "bin", "python.exe")
-	}
+	pythonPath := p.getRealPythonPath(installPath)
 
 	venvDir := filepath.Join(installPath, "venv")
 	cmd := exec.CommandContext(ctx, pythonPath, "-m", "venv", venvDir)
@@ -57,9 +71,14 @@ func (p *PythonProvider) GenerateShims(tool string, installPath string, version 
 
 	executables := []string{"python", "python3", "pip", "pip3"}
 	for _, exe := range executables {
-		exePath := filepath.Join(installPath, "bin", exe)
+		var exePath string
+		// Point the shim directly to the venv executables.
+		// This natively solves the Windows symlink DLL resolution issue
+		// and ensures the tool inherently uses its isolated environment.
 		if runtime.GOOS == "windows" {
-			exePath += ".exe"
+			exePath = filepath.Join(installPath, "venv", "Scripts", exe+".exe")
+		} else {
+			exePath = filepath.Join(installPath, "venv", "bin", exe)
 		}
 
 		shimContent := p.generatePythonShim(exe, exePath, installPath, version)
@@ -71,10 +90,7 @@ func (p *PythonProvider) GenerateShims(tool string, installPath string, version 
 
 // DetectVersion detects Python version.
 func (p *PythonProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
-	pythonPath := filepath.Join(installPath, "bin", "python3")
-	if runtime.GOOS == "windows" {
-		pythonPath = filepath.Join(installPath, "bin", "python.exe")
-	}
+	pythonPath := p.getRealPythonPath(installPath)
 
 	cmd := exec.CommandContext(ctx, pythonPath, "--version")
 	output, err := cmd.Output()
@@ -89,15 +105,21 @@ func (p *PythonProvider) DetectVersion(ctx context.Context, tool string, install
 
 // ListExecutables returns Python executables relative to installPath.
 func (p *PythonProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
-	executables := []string{
-		filepath.Join("bin", "python"),
-		filepath.Join("bin", "python3"),
-		filepath.Join("bin", "pip"),
-		filepath.Join("bin", "pip3"),
-	}
+	// Expose the venv executables so they can be discovered by generic logic if needed
+	var executables []string
 	if runtime.GOOS == "windows" {
-		for i := range executables {
-			executables[i] += ".exe"
+		executables = []string{
+			filepath.Join("venv", "Scripts", "python.exe"),
+			filepath.Join("venv", "Scripts", "python3.exe"),
+			filepath.Join("venv", "Scripts", "pip.exe"),
+			filepath.Join("venv", "Scripts", "pip3.exe"),
+		}
+	} else {
+		executables = []string{
+			filepath.Join("venv", "bin", "python"),
+			filepath.Join("venv", "bin", "python3"),
+			filepath.Join("venv", "bin", "pip"),
+			filepath.Join("venv", "bin", "pip3"),
 		}
 	}
 	return executables, nil
