@@ -53,12 +53,24 @@ func TestSpmBackend_ListVersions(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create git repo
-	exec.Command("git", "-C", tmpDir, "init").Run()
-	exec.Command("git", "-C", tmpDir, "config", "user.email", "test@example.com").Run()
-	exec.Command("git", "-C", tmpDir, "config", "user.name", "Test User").Run()
-	exec.Command("git", "-C", tmpDir, "commit", "--allow-empty", "-m", "init").Run()
-	exec.Command("git", "-C", tmpDir, "tag", "v1.0.0").Run()
-	exec.Command("git", "-C", tmpDir, "tag", "v1.1.0").Run()
+	if out, err := exec.Command("git", "-C", tmpDir, "init").CombinedOutput(); err != nil {
+		t.Fatalf("git init failed: %v, output: %s", err, string(out))
+	}
+	if out, err := exec.Command("git", "-C", tmpDir, "config", "user.email", "test@example.com").CombinedOutput(); err != nil {
+		t.Fatalf("git config email failed: %v, output: %s", err, string(out))
+	}
+	if out, err := exec.Command("git", "-C", tmpDir, "config", "user.name", "Test User").CombinedOutput(); err != nil {
+		t.Fatalf("git config name failed: %v, output: %s", err, string(out))
+	}
+	if out, err := exec.Command("git", "-C", tmpDir, "commit", "--allow-empty", "-m", "init").CombinedOutput(); err != nil {
+		t.Fatalf("git commit failed: %v, output: %s", err, string(out))
+	}
+	if out, err := exec.Command("git", "-C", tmpDir, "tag", "v1.0.0").CombinedOutput(); err != nil {
+		t.Fatalf("git tag v1.0.0 failed: %v, output: %s", err, string(out))
+	}
+	if out, err := exec.Command("git", "-C", tmpDir, "tag", "v1.1.0").CombinedOutput(); err != nil {
+		t.Fatalf("git tag v1.1.0 failed: %v, output: %s", err, string(out))
+	}
 
 	b := NewSpmBackend()
 	ctx := context.Background()
@@ -99,11 +111,21 @@ func TestSpmBackend_ResolveVersion(t *testing.T) {
 
 	// Test latest with fake repo
 	tmpDir := t.TempDir()
-	exec.Command("git", "-C", tmpDir, "init").Run()
-	exec.Command("git", "-C", tmpDir, "config", "user.email", "test@example.com").Run()
-	exec.Command("git", "-C", tmpDir, "config", "user.name", "Test User").Run()
-	exec.Command("git", "-C", tmpDir, "commit", "--allow-empty", "-m", "init").Run()
-	exec.Command("git", "-C", tmpDir, "tag", "v2.0.0").Run()
+	if out, err := exec.Command("git", "-C", tmpDir, "init").CombinedOutput(); err != nil {
+		t.Fatalf("git init failed: %v, output: %s", err, string(out))
+	}
+	if out, err := exec.Command("git", "-C", tmpDir, "config", "user.email", "test@example.com").CombinedOutput(); err != nil {
+		t.Fatalf("git config email failed: %v, output: %s", err, string(out))
+	}
+	if out, err := exec.Command("git", "-C", tmpDir, "config", "user.name", "Test User").CombinedOutput(); err != nil {
+		t.Fatalf("git config name failed: %v, output: %s", err, string(out))
+	}
+	if out, err := exec.Command("git", "-C", tmpDir, "commit", "--allow-empty", "-m", "init").CombinedOutput(); err != nil {
+		t.Fatalf("git commit failed: %v, output: %s", err, string(out))
+	}
+	if out, err := exec.Command("git", "-C", tmpDir, "tag", "v2.0.0").CombinedOutput(); err != nil {
+		t.Fatalf("git tag failed: %v, output: %s", err, string(out))
+	}
 
 	repoURL := "file://" + tmpDir
 
