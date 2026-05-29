@@ -5,6 +5,7 @@
 exclude_path = [
   ".git",
   "node_modules",
+  "cmd/unirtm_data",
   ".venv",
   "venv",
   "env",
