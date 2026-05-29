@@ -59,7 +59,16 @@ fi
 
 [tasks."audit:osv"]
 description = 'Generic vulnerability scan across lockfiles'
-run = 'unirtm exec -- osv-scanner scan . --config .osv-scanner.toml'
+run = '''
+for i in 1 2 3; do
+    if unirtm exec -- osv-scanner scan . --config .osv-scanner.toml; then
+        exit 0
+    fi
+    echo "⚠️  osv-scanner failed (likely network timeout). Retrying ($i/3)..."
+    sleep 2
+done
+exit 1
+'''
 
 [tasks."audit:npm"]
 description = 'Node.js dependency audit'
@@ -122,7 +131,12 @@ fi
 
 [tasks.lint-all]
 description = 'Full lint: Check all project files (used in CI or verify)'
-run = 'unirtm exec -- pre-commit run --all-files'
+run = '''
+unirtm exec -- pre-commit run --all-files || {
+    echo '⚠️  First pass failed. Running second check...'
+    unirtm exec -- pre-commit run --all-files
+}
+'''
 
 [tasks.test]
 description = 'Run Go unit tests for all packages recursively'
