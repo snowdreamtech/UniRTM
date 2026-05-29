@@ -160,6 +160,7 @@ func (p *PythonProvider) GetBinPaths(tool string, installPath string, version st
 	venvBin := filepath.Join(installPath, "venv", "bin")
 	if runtime.GOOS == "windows" {
 		venvBin = filepath.Join(installPath, "venv", "Scripts")
+		return []string{binDir, venvBin, installPath}, nil
 	}
 	return []string{binDir, venvBin}, nil
 }
