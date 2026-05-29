@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -112,8 +113,55 @@ func TestAsdfBackend_GetDownloadInfo(t *testing.T) {
 }
 
 func TestAsdfBackend_EnsurePlugin_UpdateRegistryAndClone(t *testing.T) {
+	gitMockDir := t.TempDir()
+	gitMockPath := filepath.Join(gitMockDir, "git")
+
+	gitMockScript := `#!/bin/sh
+if [ "$1" = "clone" ]; then
+  if echo "$@" | grep "asdf-plugins" > /dev/null; then
+    mkdir -p "$3/.git"
+    mkdir -p "$3/plugins"
+    echo "repository = https://github.com/fake/fake-tool.git" > "$3/plugins/fake-tool"
+    exit 0
+  fi
+  # for plugin clone
+  if echo "$@" | grep "fake-tool" > /dev/null; then
+    mkdir -p "$3"
+    exit 0
+  fi
+  exit 1
+fi
+exit 0
+`
+	if runtime.GOOS == "windows" {
+		gitMockPath += ".cmd"
+		gitMockScript = `@echo off
+if "%~1"=="clone" (
+	echo %* | findstr "asdf-plugins" >nul
+	if not errorlevel 1 (
+		mkdir "%~3\.git"
+		mkdir "%~3\plugins"
+		echo repository = https://github.com/fake/fake-tool.git > "%~3\plugins\fake-tool"
+		exit /b 0
+	)
+	echo %* | findstr "fake-tool" >nul
+	if not errorlevel 1 (
+		mkdir "%~3"
+		exit /b 0
+	)
+	exit /b 1
+)
+exit /b 0
+`
+	}
+
+	err := os.WriteFile(gitMockPath, []byte(gitMockScript), 0755)
+	if err != nil {
+		t.Fatalf("failed to create mock git: %v", err)
+	}
+
 	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", "/tmp:"+oldPath)
+	os.Setenv("PATH", gitMockDir+string(os.PathListSeparator)+oldPath)
 	defer os.Setenv("PATH", oldPath)
 
 	b := NewAsdfBackend()
