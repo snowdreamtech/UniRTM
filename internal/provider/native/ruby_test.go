@@ -14,6 +14,7 @@ import (
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRubyHandler_ResolveVersions(t *testing.T) {
@@ -47,17 +48,19 @@ func TestRubyHandler_ResolveVersions(t *testing.T) {
 
 	h := &RubyHandler{}
 	versions, err := h.ResolveVersions(context.Background(), "")
-	assert.NoError(t, err)
-	assert.Len(t, versions, 1)
+	require.NoError(t, err)
+	require.Len(t, versions, 1)
 	assert.Equal(t, "3.2.0", versions[0].Version)
 	assert.Len(t, versions[0].Assets, 1)
 
 	// test isMatch
-	osName := runtime.GOOS
-	if osName == "darwin" {
-		osName = "macos"
+	osName2 := runtime.GOOS
+	if osName2 == "darwin" {
+		osName2 = "macos"
+	} else if osName2 == "linux" {
+		osName2 = "ubuntu"
 	}
-	filename := fmt.Sprintf("ruby-3.2.0-%s-%s.tar.gz", osName, runtime.GOARCH)
+	filename := fmt.Sprintf("ruby-3.2.0-%s-%s.tar.gz", osName2, runtime.GOARCH)
 	assert.True(t, h.isMatch(filename))
 	assert.False(t, h.isMatch("ruby-3.2.0-linux-amd64.zip"))
 	assert.False(t, h.isMatch("ruby-3.2.0-preview1-linux-amd64.tar.gz"))
