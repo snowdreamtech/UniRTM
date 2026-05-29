@@ -431,6 +431,38 @@ func downloadToTempImpl(url, suffix string) (string, error) {
 	return tmpFile.Name(), nil
 }
 
+// applyGitHubProxy prepends the GITHUB_PROXY URL if the target is a GitHub resource.
+func applyGitHubProxy(rawURL string) string {
+	if !strings.HasPrefix(rawURL, "https://github.com/") &&
+		!strings.HasPrefix(rawURL, "https://objects.githubusercontent.com/") &&
+		!strings.HasPrefix(rawURL, "https://raw.githubusercontent.com/") {
+		return rawURL
+	}
+
+	proxy := os.Getenv("GITHUB_PROXY")
+	if proxy == "" {
+		proxy = "https://gh-proxy.sn0wdr1am.com/"
+	}
+	return proxy + rawURL
+}
+
+// downloadScriptWithProxyFallback attempts to download via proxy, falling back to direct URL.
+func downloadScriptWithProxyFallback(scriptURL, suffix string, formatter output.Formatter) (string, error) {
+	proxiedURL := applyGitHubProxy(scriptURL)
+
+	// Try proxy first if it differs
+	if proxiedURL != scriptURL {
+		tmpScript, err := downloadToTempFn(proxiedURL, suffix)
+		if err == nil {
+			return tmpScript, nil
+		}
+		formatter.Warning(fmt.Sprintf("Failed to download via proxy (%s), falling back to direct URL...", proxiedURL), nil)
+	}
+
+	// Direct download fallback
+	return downloadToTempFn(scriptURL, suffix)
+}
+
 // selfUpdateUnix downloads and executes the install.sh anchored to the given tag.
 func selfUpdateUnix(formatter output.Formatter, tag string) error {
 	// Check if curl is available
@@ -445,7 +477,7 @@ func selfUpdateUnix(formatter output.Formatter, tag string) error {
 	formatter.Info(fmt.Sprintf("Downloading install script for %s...", tag), nil)
 
 	// Download to temp file first (safe: avoids curl | sh pipe risk)
-	tmpScript, err := downloadToTempFn(scriptURL, ".sh")
+	tmpScript, err := downloadScriptWithProxyFallback(scriptURL, ".sh", formatter)
 	if err != nil {
 		formatter.Error("Failed to download install script", map[string]interface{}{"error": err.Error(), "url": scriptURL})
 		return fmt.Errorf("download install script: %w", err)
@@ -486,7 +518,7 @@ func selfUpdateWindows(formatter output.Formatter, tag string) error {
 	formatter.Info(fmt.Sprintf("Downloading install script for %s...", tag), nil)
 
 	// Download to temp file first
-	tmpScript, err := downloadToTempFn(scriptURL, ".ps1")
+	tmpScript, err := downloadScriptWithProxyFallback(scriptURL, ".ps1", formatter)
 	if err != nil {
 		formatter.Error("Failed to download install script", map[string]interface{}{"error": err.Error(), "url": scriptURL})
 		return fmt.Errorf("download install script: %w", err)
