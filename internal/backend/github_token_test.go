@@ -23,14 +23,12 @@ func TestResolveGitHubToken_EnvPriority(t *testing.T) {
 		"GITHUB_CREDENTIAL_COMMAND",
 	}
 	for _, v := range envVars {
-		os.Unsetenv(v)
+		t.Setenv(v, "")
 	}
 
 	t.Run("UNIRTM_GITHUB_TOKEN takes priority", func(t *testing.T) {
-		os.Setenv("UNIRTM_GITHUB_TOKEN", "unirtm-token")
-		os.Setenv("GITHUB_TOKEN", "github-token")
-		defer os.Unsetenv("UNIRTM_GITHUB_TOKEN")
-		defer os.Unsetenv("GITHUB_TOKEN")
+		t.Setenv("UNIRTM_GITHUB_TOKEN", "unirtm-token")
+		t.Setenv("GITHUB_TOKEN", "github-token")
 
 		got := resolveGitHubToken("github.com")
 		if got != "unirtm-token" {
@@ -39,8 +37,7 @@ func TestResolveGitHubToken_EnvPriority(t *testing.T) {
 	})
 
 	t.Run("GITHUB_TOKEN used when UNIRTM_GITHUB_TOKEN not set", func(t *testing.T) {
-		os.Setenv("GITHUB_TOKEN", "ci-token")
-		defer os.Unsetenv("GITHUB_TOKEN")
+		t.Setenv("GITHUB_TOKEN", "ci-token")
 
 		got := resolveGitHubToken("github.com")
 		if got != "ci-token" {
@@ -49,8 +46,7 @@ func TestResolveGitHubToken_EnvPriority(t *testing.T) {
 	})
 
 	t.Run("GITHUB_API_TOKEN used as fallback", func(t *testing.T) {
-		os.Setenv("GITHUB_API_TOKEN", "api-token")
-		defer os.Unsetenv("GITHUB_API_TOKEN")
+		t.Setenv("GITHUB_API_TOKEN", "api-token")
 
 		got := resolveGitHubToken("github.com")
 		if got != "api-token" {
@@ -96,8 +92,7 @@ github.mycompany.com:
 func TestReadGitHubTokensFile(t *testing.T) {
 	// Create a temp config dir with github_tokens.toml
 	dir := t.TempDir()
-	os.Setenv("UNIRTM_CONFIG_DIR", dir)
-	defer os.Unsetenv("UNIRTM_CONFIG_DIR")
+	t.Setenv("UNIRTM_CONFIG_DIR", dir)
 
 	tomlContent := `[tokens]
 [tokens."github.com"]
@@ -180,25 +175,24 @@ func TestRunCredentialCommand(t *testing.T) {
 
 func TestResolveGitHubToken_EmptyHost(t *testing.T) {
 	// Empty host should default to github.com and not panic
-	os.Unsetenv("GITHUB_TOKEN")
-	os.Unsetenv("GITHUB_API_TOKEN")
-	os.Unsetenv("GITHUB_CREDENTIAL_COMMAND")
-	os.Unsetenv("UNIRTM_GITHUB_TOKEN")
-	os.Unsetenv("MISE_GITHUB_TOKEN")
+	t.Setenv("GITHUB_TOKEN", "")
+	t.Setenv("GITHUB_API_TOKEN", "")
+	t.Setenv("GITHUB_CREDENTIAL_COMMAND", "")
+	t.Setenv("UNIRTM_GITHUB_TOKEN", "")
+	t.Setenv("MISE_GITHUB_TOKEN", "")
 	// Just test it doesn't panic with empty host
 	_ = resolveGitHubToken("")
 }
 
 func TestResolveGitHubToken_CredentialCommand(t *testing.T) {
-	os.Unsetenv("GITHUB_TOKEN")
-	os.Unsetenv("GITHUB_API_TOKEN")
-	os.Unsetenv("UNIRTM_GITHUB_TOKEN")
-	os.Unsetenv("MISE_GITHUB_TOKEN")
-	os.Unsetenv("UNIRTM_GITHUB_API_TOKEN")
-	os.Unsetenv("MISE_GITHUB_API_TOKEN")
+	t.Setenv("GITHUB_TOKEN", "")
+	t.Setenv("GITHUB_API_TOKEN", "")
+	t.Setenv("UNIRTM_GITHUB_TOKEN", "")
+	t.Setenv("MISE_GITHUB_TOKEN", "")
+	t.Setenv("UNIRTM_GITHUB_API_TOKEN", "")
+	t.Setenv("MISE_GITHUB_API_TOKEN", "")
 	// env.Get("GITHUB_CREDENTIAL_COMMAND") checks UNIRTM_GITHUB_CREDENTIAL_COMMAND first
-	os.Setenv("UNIRTM_GITHUB_CREDENTIAL_COMMAND", "echo cred-token")
-	defer os.Unsetenv("UNIRTM_GITHUB_CREDENTIAL_COMMAND")
+	t.Setenv("UNIRTM_GITHUB_CREDENTIAL_COMMAND", "echo cred-token")
 
 	token := resolveGitHubToken("github.com")
 	// The credential command 'echo cred-token' should return 'cred-token'
@@ -219,10 +213,9 @@ token = "ghp_from_xdg"
 	os.WriteFile(unirtmDir+"/github_tokens.toml", []byte(tomlContent), 0600)
 
 	// Ensure CONFIG_DIR is not set
-	os.Unsetenv("UNIRTM_CONFIG_DIR")
-	os.Unsetenv("CONFIG_DIR")
-	os.Setenv("UNIRTM_XDG_CONFIG_HOME", dir)
-	defer os.Unsetenv("UNIRTM_XDG_CONFIG_HOME")
+	t.Setenv("UNIRTM_CONFIG_DIR", "")
+	t.Setenv("CONFIG_DIR", "")
+	t.Setenv("UNIRTM_XDG_CONFIG_HOME", dir)
 
 	got := readGitHubTokensFile("github.com")
 	// May or may not work depending on env alias resolution - just ensure no panic
@@ -231,8 +224,7 @@ token = "ghp_from_xdg"
 
 func TestReadGitHubTokensFile_InvalidToml(t *testing.T) {
 	dir := t.TempDir()
-	os.Setenv("UNIRTM_CONFIG_DIR", dir)
-	defer os.Unsetenv("UNIRTM_CONFIG_DIR")
+	t.Setenv("UNIRTM_CONFIG_DIR", dir)
 
 	// Write invalid TOML
 	os.WriteFile(dir+"/github_tokens.toml", []byte("not valid toml [[["), 0600)
@@ -245,7 +237,7 @@ func TestReadGitHubTokensFile_InvalidToml(t *testing.T) {
 
 func TestFindGhHostsFile_NotFound(t *testing.T) {
 	// Unset all env vars and use a non-existent home
-	os.Unsetenv("GH_CONFIG_DIR")
+	t.Setenv("GH_CONFIG_DIR", "")
 	// Even if not found, function should return empty string without panic
 	// We can't easily override home directory but we can at least test the path
 	t.Setenv("GH_CONFIG_DIR", "/nonexistent/path")

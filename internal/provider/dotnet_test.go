@@ -27,7 +27,7 @@ func TestDotnetProvider_FindDotnet(t *testing.T) {
 	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho dotnet"), 0755)
 
 	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
 	defer os.Setenv("PATH", oldPath)
 
 	dotnet, err := p.findDotnet()
@@ -49,7 +49,7 @@ func TestDotnetProvider_Install(t *testing.T) {
 	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho installing..."), 0755)
 
 	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
 	defer os.Setenv("PATH", oldPath)
 
 	installPath := filepath.Join(tmpDir, "install")
@@ -64,8 +64,7 @@ func TestDotnetProvider_Install(t *testing.T) {
 
 func TestDotnetProvider_findDotnet(t *testing.T) {
 	tmpData := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpData)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpData)
 
 	p := NewDotnetProvider()
 
@@ -81,8 +80,7 @@ func TestDotnetProvider_findDotnet(t *testing.T) {
 }
 
 func TestDotnetProvider_Install_DotnetNotFound(t *testing.T) {
-	os.Setenv("PATH", "")
-	defer os.Unsetenv("PATH")
+	t.Setenv("PATH", "")
 
 	p := NewDotnetProvider()
 	installPath := filepath.Join(t.TempDir(), "dotnet_install", "test_pkg")

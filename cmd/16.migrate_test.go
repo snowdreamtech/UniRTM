@@ -20,8 +20,7 @@ func TestMigrateStructure(t *testing.T) {
 
 func TestRunMigrate(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	cmd := migrateCmd
 	var buf bytes.Buffer

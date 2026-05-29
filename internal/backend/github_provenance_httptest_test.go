@@ -31,8 +31,7 @@ func TestFetchAttestations_LiveMock(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	os.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITHUB_API_BASEURL")
+	t.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
 
 	verifier := &provenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
@@ -56,8 +55,7 @@ func TestFetchAttestations_NotFound(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	os.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITHUB_API_BASEURL")
+	t.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
 
 	verifier := &provenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
@@ -83,8 +81,7 @@ func TestFetchExternalBundle_Snappy(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	os.Setenv("UNIRTM_ENABLE_GITHUB_PROXY", "0")
-	defer os.Unsetenv("UNIRTM_ENABLE_GITHUB_PROXY")
+	t.Setenv("UNIRTM_ENABLE_GITHUB_PROXY", "0")
 
 	verifier := &provenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
@@ -117,10 +114,8 @@ func TestFetchAttestations_WithExternalBundle(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	os.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITHUB_API_BASEURL")
-	os.Setenv("UNIRTM_ENABLE_GITHUB_PROXY", "0")
-	defer os.Unsetenv("UNIRTM_ENABLE_GITHUB_PROXY")
+	t.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
+	t.Setenv("UNIRTM_ENABLE_GITHUB_PROXY", "0")
 
 	verifier := &provenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
@@ -152,8 +147,7 @@ func TestVerifyArtifactProvenance_MalformedResponse(t *testing.T) {
 	})
 	server := httptest.NewServer(mux)
 	defer server.Close()
-	os.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITHUB_API_BASEURL")
+	t.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
 
 	tmpFile, _ := os.CreateTemp("", "artifact")
 	defer os.Remove(tmpFile.Name())
@@ -176,8 +170,7 @@ func TestVerifyArtifactProvenance_InvalidBundle(t *testing.T) {
 	})
 	server := httptest.NewServer(mux)
 	defer server.Close()
-	os.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITHUB_API_BASEURL")
+	t.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
 
 	tmpFile, _ := os.CreateTemp("", "artifact")
 	defer os.Remove(tmpFile.Name())
@@ -188,16 +181,14 @@ func TestVerifyArtifactProvenance_InvalidBundle(t *testing.T) {
 }
 
 func TestVerifyArtifactProvenance_HTTP2Disabled(t *testing.T) {
-	os.Setenv("UNIRTM_HTTP2", "0")
-	defer os.Unsetenv("UNIRTM_HTTP2")
+	t.Setenv("UNIRTM_HTTP2", "0")
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	})
 	server := httptest.NewServer(mux)
 	defer server.Close()
-	os.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITHUB_API_BASEURL")
+	t.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
 
 	tmpFile, _ := os.CreateTemp("", "artifact")
 	defer os.Remove(tmpFile.Name())
@@ -217,8 +208,7 @@ func TestFetchAttestations_NonOKStatus(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	os.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITHUB_API_BASEURL")
+	t.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
 
 	verifier := &provenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
@@ -240,8 +230,7 @@ func TestFetchAttestations_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	os.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITHUB_API_BASEURL")
+	t.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
 
 	verifier := &provenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
@@ -263,10 +252,8 @@ func TestFetchExternalBundle_WithGitHubProxy(t *testing.T) {
 	defer server.Close()
 
 	// Test GITHUB_PROXY path
-	os.Setenv("UNIRTM_GITHUB_PROXY", server.URL+"/")
-	os.Setenv("UNIRTM_ENABLE_GITHUB_PROXY", "1")
-	defer os.Unsetenv("UNIRTM_GITHUB_PROXY")
-	defer os.Unsetenv("UNIRTM_ENABLE_GITHUB_PROXY")
+	t.Setenv("UNIRTM_GITHUB_PROXY", server.URL+"/")
+	t.Setenv("UNIRTM_ENABLE_GITHUB_PROXY", "1")
 
 	verifier := &provenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
@@ -316,8 +303,7 @@ func TestFetchAttestations_BundleDownloadFails(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	os.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITHUB_API_BASEURL")
+	t.Setenv("UNIRTM_GITHUB_API_BASEURL", server.URL)
 
 	verifier := &provenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(5 * time.Second),

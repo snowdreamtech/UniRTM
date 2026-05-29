@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"bytes"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,8 +18,7 @@ func TestUpdateStructure(t *testing.T) {
 
 func TestRunUpdate(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	cmd := updateCmd
 	var buf bytes.Buffer

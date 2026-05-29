@@ -34,7 +34,7 @@ exit 0
 	// Update PATH
 	oldPath := os.Getenv("PATH")
 	defer os.Setenv("PATH", oldPath)
-	os.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
 
 	r := NewGoTaskRunner()
 	dir := t.TempDir()
@@ -75,7 +75,7 @@ exit 0
 	// Update PATH
 	oldPath := os.Getenv("PATH")
 	defer os.Setenv("PATH", oldPath)
-	os.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
 
 	r := NewJustRunner()
 	dir := t.TempDir()

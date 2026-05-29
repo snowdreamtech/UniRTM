@@ -6,7 +6,6 @@ package cmd
 import (
 	"bytes"
 	"context"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -50,8 +49,7 @@ func TestResolveShellType(t *testing.T) {
 
 func TestRunActivate_SpecificTool(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	dbPath := filepath.Join(tmpDir, "unirtm.db")
 	db, err := database.Open(context.Background(), database.Config{Path: dbPath})
@@ -76,8 +74,7 @@ func TestRunActivate_SpecificTool(t *testing.T) {
 
 func TestRunActivate_AllTools(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	dbPath := filepath.Join(tmpDir, "unirtm.db")
 	db, err := database.Open(context.Background(), database.Config{Path: dbPath})
@@ -104,8 +101,7 @@ func TestRunActivate_AllTools(t *testing.T) {
 
 func TestRunActivate_LatestTool(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	dbPath := filepath.Join(tmpDir, "unirtm.db")
 	db, err := database.Open(context.Background(), database.Config{Path: dbPath})
@@ -130,8 +126,7 @@ func TestRunActivate_LatestTool(t *testing.T) {
 
 func TestRunActivate_Errors(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	dbPath := filepath.Join(tmpDir, "unirtm.db")
 	db, err := database.Open(context.Background(), database.Config{Path: dbPath})

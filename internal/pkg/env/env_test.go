@@ -11,21 +11,15 @@ import (
 
 func TestGet(t *testing.T) {
 	// Setup
-	os.Setenv("UNIRTM_TEST_KEY_1", "val1")
-	defer os.Unsetenv("UNIRTM_TEST_KEY_1")
+	t.Setenv("UNIRTM_TEST_KEY_1", "val1")
 
-	os.Setenv("MISE_TEST_KEY_2", "val2")
-	defer os.Unsetenv("MISE_TEST_KEY_2")
+	t.Setenv("MISE_TEST_KEY_2", "val2")
 
-	os.Setenv("TEST_KEY_3", "val3")
-	defer os.Unsetenv("TEST_KEY_3")
+	t.Setenv("TEST_KEY_3", "val3")
 
-	os.Setenv("UNIRTM_TEST_KEY_4", "val4_unirtm")
-	os.Setenv("MISE_TEST_KEY_4", "val4_mise")
-	os.Setenv("TEST_KEY_4", "val4_raw")
-	defer os.Unsetenv("UNIRTM_TEST_KEY_4")
-	defer os.Unsetenv("MISE_TEST_KEY_4")
-	defer os.Unsetenv("TEST_KEY_4")
+	t.Setenv("UNIRTM_TEST_KEY_4", "val4_unirtm")
+	t.Setenv("MISE_TEST_KEY_4", "val4_mise")
+	t.Setenv("TEST_KEY_4", "val4_raw")
 
 	tests := []struct {
 		key      string

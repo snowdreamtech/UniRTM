@@ -21,8 +21,7 @@ func TestEnableCommandStructure(t *testing.T) {
 
 func TestRunEnable(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("HOME", tmpDir)
-	defer os.Unsetenv("HOME")
+	t.Setenv("HOME", tmpDir)
 
 	// Create a dummy shell config
 	err := os.WriteFile(filepath.Join(tmpDir, ".zshrc"), []byte("# init\n"), 0644)
@@ -33,8 +32,7 @@ func TestRunEnable(t *testing.T) {
 	cmd.SetOut(&buf)
 
 	// We'll set the shell env for DetectShell
-	os.Setenv("SHELL", "/bin/zsh")
-	defer os.Unsetenv("SHELL")
+	t.Setenv("SHELL", "/bin/zsh")
 
 	err = runEnable(cmd, []string{"unirtm"})
 	assert.NoError(t, err)
@@ -42,8 +40,7 @@ func TestRunEnable(t *testing.T) {
 
 func TestRunEnable_All(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("HOME", tmpDir)
-	defer os.Unsetenv("HOME")
+	t.Setenv("HOME", tmpDir)
 
 	err := os.WriteFile(filepath.Join(tmpDir, ".zshrc"), []byte("# init\n"), 0644)
 	require.NoError(t, err)

@@ -5,7 +5,6 @@ package task
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/snowdreamtech/unirtm/internal/config"
@@ -51,15 +50,13 @@ func TestNativeRunner_runTaskWithGraph_OutputStyles(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Test env override
-	os.Setenv("UNIRTM_TASK_OUTPUT", "interleaved")
-	defer os.Unsetenv("UNIRTM_TASK_OUTPUT")
+	t.Setenv("UNIRTM_TASK_OUTPUT", "interleaved")
 	err = runner.Run(context.Background(), ".", "hello_env", nil, nil)
 	assert.NoError(t, err)
 
 	// Test CI override
-	os.Setenv("CI", "true")
-	os.Unsetenv("UNIRTM_TASK_OUTPUT")
-	defer os.Unsetenv("CI")
+	t.Setenv("CI", "true")
+	t.Setenv("UNIRTM_TASK_OUTPUT", "")
 	err = runner.Run(context.Background(), ".", "hello_env", nil, nil)
 	assert.NoError(t, err)
 }

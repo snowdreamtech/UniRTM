@@ -7,7 +7,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 )
 
@@ -117,8 +116,7 @@ func TestGitlabFetchReleaseByTag(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	os.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITLAB_API_URL")
+	t.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
 
 	backend := NewGitlabBackend()
 	release, err := backend.FetchReleaseByTag(context.Background(), "owner/repo", "v1.0.0")
@@ -141,8 +139,7 @@ func TestGitlabFetchReleaseByTag_NotFound(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	os.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITLAB_API_URL")
+	t.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
 
 	backend := NewGitlabBackend()
 	_, err := backend.FetchReleaseByTag(context.Background(), "owner/repo", "v1.0.0")

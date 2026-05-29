@@ -25,7 +25,7 @@ func TestCondaProvider_FindConda(t *testing.T) {
 	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho conda"), 0755)
 
 	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
 	defer os.Setenv("PATH", oldPath)
 
 	conda, err := p.findConda()
@@ -47,7 +47,7 @@ func TestCondaProvider_Install(t *testing.T) {
 	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho installing..."), 0755)
 
 	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
 	defer os.Setenv("PATH", oldPath)
 
 	installPath := filepath.Join(tmpDir, "install")
@@ -61,8 +61,7 @@ func TestCondaProvider_Install(t *testing.T) {
 }
 
 func TestCondaProvider_Install_CondaNotFound(t *testing.T) {
-	os.Setenv("PATH", "")
-	defer os.Unsetenv("PATH")
+	t.Setenv("PATH", "")
 
 	p := NewCondaProvider()
 	installPath := filepath.Join(t.TempDir(), "conda_install", "test_pkg")

@@ -27,8 +27,7 @@ func TestGitlabFetchAttestations_LiveMock(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	os.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITLAB_API_URL")
+	t.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
 
 	verifier := &gitlabProvenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
@@ -55,8 +54,7 @@ func TestGitlabFetchAttestations_NotFound(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	os.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITLAB_API_URL")
+	t.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
 
 	verifier := &gitlabProvenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
@@ -85,8 +83,7 @@ func TestVerifyGitlabArtifactProvenance_MalformedResponse(t *testing.T) {
 	})
 	server := httptest.NewServer(mux)
 	defer server.Close()
-	os.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITLAB_API_URL")
+	t.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
 
 	tmpFile, _ := os.CreateTemp("", "artifact")
 	defer os.Remove(tmpFile.Name())
@@ -107,8 +104,7 @@ func TestVerifyGitlabArtifactProvenance_InvalidBundle(t *testing.T) {
 	})
 	server := httptest.NewServer(mux)
 	defer server.Close()
-	os.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITLAB_API_URL")
+	t.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
 
 	tmpFile, _ := os.CreateTemp("", "artifact")
 	defer os.Remove(tmpFile.Name())
@@ -119,16 +115,14 @@ func TestVerifyGitlabArtifactProvenance_InvalidBundle(t *testing.T) {
 }
 
 func TestVerifyGitlabArtifactProvenance_HTTP2Disabled(t *testing.T) {
-	os.Setenv("UNIRTM_HTTP2", "0")
-	defer os.Unsetenv("UNIRTM_HTTP2")
+	t.Setenv("UNIRTM_HTTP2", "0")
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	})
 	server := httptest.NewServer(mux)
 	defer server.Close()
-	os.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITLAB_API_URL")
+	t.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
 
 	tmpFile, _ := os.CreateTemp("", "artifact")
 	defer os.Remove(tmpFile.Name())
@@ -148,8 +142,7 @@ func TestGitlabFetchAttestations_NonOKStatus(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	os.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITLAB_API_URL")
+	t.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
 
 	verifier := &gitlabProvenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
@@ -171,8 +164,7 @@ func TestGitlabFetchAttestations_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	os.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITLAB_API_URL")
+	t.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
 
 	verifier := &gitlabProvenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
@@ -241,8 +233,7 @@ func TestGitlabFetchAttestations_BundleDownloadFails(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	os.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
-	defer os.Unsetenv("UNIRTM_GITLAB_API_URL")
+	t.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
 
 	verifier := &gitlabProvenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(5 * time.Second),
@@ -273,8 +264,7 @@ func TestGitlabFetchAttestations_WithCustomIssuer(t *testing.T) {
 	defer server.Close()
 
 	// Test the issuer logic: with /api/v4 suffix
-	os.Setenv("UNIRTM_GITLAB_API_URL", server.URL+"/api/v4")
-	defer os.Unsetenv("UNIRTM_GITLAB_API_URL")
+	t.Setenv("UNIRTM_GITLAB_API_URL", server.URL+"/api/v4")
 
 	verifier := &gitlabProvenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(30 * time.Second),

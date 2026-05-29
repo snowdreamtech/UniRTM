@@ -25,8 +25,7 @@ func TestPruneStructure(t *testing.T) {
 
 func TestRunPrune(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	cmd := pruneCmd
 	var buf bytes.Buffer

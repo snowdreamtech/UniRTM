@@ -295,8 +295,7 @@ func TestRunSelfUpdate_AlreadyLatest(t *testing.T) {
 
 func TestRunSelfUpdate_Mocked(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	cmd := selfUpdateCmd
 	var buf bytes.Buffer

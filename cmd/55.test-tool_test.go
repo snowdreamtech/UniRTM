@@ -46,10 +46,8 @@ exit 1
 // Test RunTestTool with no tools
 func TestRunTestTool_Empty(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
-	os.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_CONFIG_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	t.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
 
 	// Empty config
 	origWd, _ := os.Getwd()

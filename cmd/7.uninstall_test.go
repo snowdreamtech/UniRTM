@@ -225,8 +225,7 @@ func TestUninstallCommandValidation(t *testing.T) {
 
 func TestRunUninstallExecution(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	dbPath := filepath.Join(tmpDir, "unirtm.db")
 	db, err := database.Open(context.Background(), database.Config{Path: dbPath})
@@ -258,8 +257,7 @@ func TestRunUninstallExecution(t *testing.T) {
 
 func TestRunUninstallExecution_DryRun(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	dbPath := filepath.Join(tmpDir, "unirtm.db")
 	db, err := database.Open(context.Background(), database.Config{Path: dbPath})
@@ -294,8 +292,7 @@ func TestRunUninstallExecution_DryRun(t *testing.T) {
 
 func TestRunUninstallExecution_Multi(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	dbPath := filepath.Join(tmpDir, "unirtm.db")
 	db, err := database.Open(context.Background(), database.Config{Path: dbPath})

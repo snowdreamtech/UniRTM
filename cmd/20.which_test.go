@@ -45,8 +45,7 @@ func TestIsExecutableFile(t *testing.T) {
 
 func TestRunWhich(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	dbPath := env.GetDatabasePath()
 	os.MkdirAll(filepath.Dir(dbPath), 0755)
@@ -88,8 +87,7 @@ func TestRunWhich(t *testing.T) {
 
 func TestRunWhich_WithVersionArg(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	cmd := whichCmd
 	var buf bytes.Buffer

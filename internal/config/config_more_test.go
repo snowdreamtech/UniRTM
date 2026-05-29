@@ -15,12 +15,9 @@ import (
 
 func TestSettings_LoadFromEnv(t *testing.T) {
 	s := &Settings{}
-	os.Setenv("UNIRTM_HTTP_TIMEOUT", "10s")
-	os.Setenv("UNIRTM_GITHUB_TOKEN", "test-token")
-	os.Setenv("UNIRTM_EXPERIMENTAL", "true")
-	defer os.Unsetenv("UNIRTM_HTTP_TIMEOUT")
-	defer os.Unsetenv("UNIRTM_GITHUB_TOKEN")
-	defer os.Unsetenv("UNIRTM_EXPERIMENTAL")
+	t.Setenv("UNIRTM_HTTP_TIMEOUT", "10s")
+	t.Setenv("UNIRTM_GITHUB_TOKEN", "test-token")
+	t.Setenv("UNIRTM_EXPERIMENTAL", "true")
 
 	s.LoadFromEnv()
 

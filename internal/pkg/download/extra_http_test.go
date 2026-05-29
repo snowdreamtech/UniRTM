@@ -113,8 +113,7 @@ func TestHTTPDownloader_VerifyGPGSignature(t *testing.T) {
 
 	// 1. Keyring not found
 	// override UNIRTM_DATA_DIR to a fake directory
-	os.Setenv("UNIRTM_DATA_DIR", filepath.Join(dir, "nonexistent"))
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", filepath.Join(dir, "nonexistent"))
 
 	err := d.verifyGPGSignature(ctx, ts.URL, dest)
 	if err == nil || !strings.Contains(err.Error(), "keyring not found") {
@@ -122,7 +121,7 @@ func TestHTTPDownloader_VerifyGPGSignature(t *testing.T) {
 	}
 
 	// 2. Keyring exists but invalid format
-	os.Setenv("UNIRTM_DATA_DIR", dir)
+	t.Setenv("UNIRTM_DATA_DIR", dir)
 	keyringPath := filepath.Join(dir, "keyring.gpg")
 	os.WriteFile(keyringPath, []byte("invalid keyring data"), 0644)
 

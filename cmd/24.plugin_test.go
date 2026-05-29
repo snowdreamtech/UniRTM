@@ -20,8 +20,7 @@ func TestPluginStructure(t *testing.T) {
 
 func TestRunPluginList(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	cmd := pluginListCmd
 	var buf bytes.Buffer
@@ -33,8 +32,7 @@ func TestRunPluginList(t *testing.T) {
 
 func TestRunPluginInstallAndRemove(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	srcFile := filepath.Join(tmpDir, "unirtm-plugin-dummy")
 	err := os.WriteFile(srcFile, []byte("dummy plugin"), 0755)
@@ -66,8 +64,7 @@ func TestRunPluginInstallAndRemove(t *testing.T) {
 
 func TestRunPluginInstall_DryRun(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	srcFile := filepath.Join(tmpDir, "unirtm-plugin-dummy")
 	err := os.WriteFile(srcFile, []byte("dummy plugin"), 0755)
@@ -91,8 +88,7 @@ func TestRunPluginInstall_DryRun(t *testing.T) {
 
 func TestRunPluginList_Json(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	jsonOutput = true
 	defer func() { jsonOutput = false }()

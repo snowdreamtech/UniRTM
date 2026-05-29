@@ -200,7 +200,7 @@ func TestSystemGPGVerifier(t *testing.T) {
 	// 1. Test when gpg is NOT in PATH
 	// We do this by temporarily setting a broken PATH
 	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", "/invalid/path/for/test")
+	t.Setenv("PATH", "/invalid/path/for/test")
 	defer os.Setenv("PATH", oldPath)
 
 	if v.IsAvailable(ctx) {
@@ -255,7 +255,7 @@ func TestSystemGPGVerifier(t *testing.T) {
 	os.WriteFile(mockGpgPath, []byte(mockScript), 0755)
 
 	// Prepend mock to PATH
-	os.Setenv("PATH", mockGpgDir+string(os.PathListSeparator)+oldPath)
+	t.Setenv("PATH", mockGpgDir+string(os.PathListSeparator)+oldPath)
 	defer os.Setenv("PATH", oldPath)
 
 	// 3. Test Verify NO_PUBKEY

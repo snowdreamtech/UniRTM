@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"bytes"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,8 +18,7 @@ func TestCacheStructure(t *testing.T) {
 
 func TestRunCacheList(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	cmd := cacheListCmd
 	var buf bytes.Buffer
@@ -38,8 +36,7 @@ func TestRunCacheList(t *testing.T) {
 
 func TestRunCacheStats(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	cmd := cacheStatsCmd
 	var buf bytes.Buffer
@@ -56,8 +53,7 @@ func TestRunCacheStats(t *testing.T) {
 
 func TestRunCacheClear(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	cmd := cacheClearCmd
 	var buf bytes.Buffer
@@ -72,8 +68,7 @@ func TestRunCacheClear(t *testing.T) {
 
 func TestRunCachePurge(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	cmd := cachePurgeCmd
 	var buf bytes.Buffer
@@ -85,8 +80,7 @@ func TestRunCachePurge(t *testing.T) {
 
 func TestCachePathCmd(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	cmd := cachePathCmd
 	var buf bytes.Buffer
@@ -98,8 +92,7 @@ func TestCachePathCmd(t *testing.T) {
 
 func TestCacheCmd(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	cmd := cacheCmd
 	var buf bytes.Buffer

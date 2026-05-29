@@ -133,32 +133,28 @@ func TestTryVerifyProvenance(t *testing.T) {
 	ctx := context.WithValue(context.Background(), ContextKeyQuietProgress, true)
 
 	t.Run("skipped via env", func(t *testing.T) {
-		os.Setenv("UNIRTM_VERIFY_PROVENANCE", "0")
-		defer os.Unsetenv("UNIRTM_VERIFY_PROVENANCE")
+		t.Setenv("UNIRTM_VERIFY_PROVENANCE", "0")
 		status, err := tryVerifyProvenance(ctx, "github", "foo/bar", "dummy.tar.gz")
 		assert.NoError(t, err)
 		assert.Equal(t, "skipped", status)
 	})
 
 	t.Run("not applicable - invalid tool format", func(t *testing.T) {
-		os.Setenv("UNIRTM_VERIFY_PROVENANCE", "1")
-		defer os.Unsetenv("UNIRTM_VERIFY_PROVENANCE")
+		t.Setenv("UNIRTM_VERIFY_PROVENANCE", "1")
 		status, err := tryVerifyProvenance(ctx, "github", "invalid-tool", "dummy.tar.gz")
 		assert.NoError(t, err)
 		assert.Equal(t, "not_applicable", status)
 	})
 
 	t.Run("failed - github missing file", func(t *testing.T) {
-		os.Setenv("UNIRTM_VERIFY_PROVENANCE", "1")
-		defer os.Unsetenv("UNIRTM_VERIFY_PROVENANCE")
+		t.Setenv("UNIRTM_VERIFY_PROVENANCE", "1")
 		status, err := tryVerifyProvenance(ctx, "github", "foo/bar", "nonexistent.tar.gz")
 		assert.Error(t, err)
 		assert.Equal(t, "failed", status)
 	})
 
 	t.Run("failed - gitlab missing file", func(t *testing.T) {
-		os.Setenv("UNIRTM_VERIFY_PROVENANCE", "1")
-		defer os.Unsetenv("UNIRTM_VERIFY_PROVENANCE")
+		t.Setenv("UNIRTM_VERIFY_PROVENANCE", "1")
 		status, err := tryVerifyProvenance(ctx, "gitlab", "foo/bar", "nonexistent.tar.gz")
 		assert.Error(t, err)
 		assert.Equal(t, "failed", status)
@@ -342,12 +338,10 @@ func TestInstall_Success(t *testing.T) {
 	im := NewInstallationManager(backendRegistry, providerRegistry, downloadManager, installRepo, txManager, nil)
 
 	// Disable verification to avoid git network calls
-	os.Setenv("UNIRTM_VERIFY_PROVENANCE", "0")
-	defer os.Unsetenv("UNIRTM_VERIFY_PROVENANCE")
+	t.Setenv("UNIRTM_VERIFY_PROVENANCE", "0")
 
 	tempDataDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tempDataDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tempDataDir)
 
 	err := im.Install(ctx, "tool", "tool", "1.0.0", "test-backend")
 	assert.NoError(t, err)

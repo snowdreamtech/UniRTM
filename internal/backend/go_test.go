@@ -7,7 +7,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 )
 
@@ -35,14 +34,13 @@ func TestGoBackend_Properties(t *testing.T) {
 }
 
 func TestGoBackend_GetGoProxyBase(t *testing.T) {
-	os.Setenv("GOPROXY", "https://proxy.example.com,direct")
-	defer os.Unsetenv("GOPROXY")
+	t.Setenv("GOPROXY", "https://proxy.example.com,direct")
 	base := getGoProxyBase()
 	if base != "https://proxy.example.com" {
 		t.Errorf("expected https://proxy.example.com, got %s", base)
 	}
 
-	os.Setenv("GOPROXY", "")
+	t.Setenv("GOPROXY", "")
 	base = getGoProxyBase()
 	if base != "https://proxy.golang.org" {
 		t.Errorf("expected https://proxy.golang.org, got %s", base)
@@ -60,8 +58,7 @@ func TestGoBackend_ListVersions(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	os.Setenv("GOPROXY", ts.URL)
-	defer os.Unsetenv("GOPROXY")
+	t.Setenv("GOPROXY", ts.URL)
 
 	b := NewGoBackend()
 	b.client.Transport = http.DefaultTransport
@@ -98,8 +95,7 @@ func TestGoBackend_ResolveVersion(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	os.Setenv("GOPROXY", ts.URL)
-	defer os.Unsetenv("GOPROXY")
+	t.Setenv("GOPROXY", ts.URL)
 
 	b := NewGoBackend()
 	ctx := context.Background()

@@ -20,12 +20,9 @@ func TestRunStructure(t *testing.T) {
 
 func TestRunRun(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	os.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
-	os.Setenv("UNIRTM_CACHE_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
-	defer os.Unsetenv("UNIRTM_CONFIG_DIR")
-	defer os.Unsetenv("UNIRTM_CACHE_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	t.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
+	t.Setenv("UNIRTM_CACHE_DIR", tmpDir)
 
 	cmd := runCmd
 	var buf bytes.Buffer

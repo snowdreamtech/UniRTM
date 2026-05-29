@@ -90,8 +90,7 @@ run = "npm test"
 		configPath := filepath.Join(tmpDir, "config_tmpl.toml")
 
 		// Set a test environment variable
-		os.Setenv("UNIRTM_TEST_VAR", "test_value_from_env")
-		defer os.Unsetenv("UNIRTM_TEST_VAR")
+		t.Setenv("UNIRTM_TEST_VAR", "test_value_from_env")
 
 		tomlContent := `
 [tools]

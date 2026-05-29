@@ -15,8 +15,7 @@ import (
 func TestRunInstallInto(t *testing.T) {
 	// Set up isolated environment
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	// Ensure DB parent directory is initialized
 	os.MkdirAll(filepath.Dir(env.GetDatabasePath()), 0755)

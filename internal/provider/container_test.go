@@ -40,7 +40,7 @@ func TestContainerProvider_Install(t *testing.T) {
 	// Prepend fake bin dir to PATH
 	originalPath := os.Getenv("PATH")
 	defer os.Setenv("PATH", originalPath)
-	os.Setenv("PATH", fakeDockerDir+string(os.PathListSeparator)+originalPath)
+	t.Setenv("PATH", fakeDockerDir+string(os.PathListSeparator)+originalPath)
 
 	p := NewContainerProvider("docker")
 	ctx := context.Background()
@@ -102,7 +102,7 @@ func TestContainerProvider_Install_Digest(t *testing.T) {
 
 	originalPath := os.Getenv("PATH")
 	defer os.Setenv("PATH", originalPath)
-	os.Setenv("PATH", fakeDockerDir+string(os.PathListSeparator)+originalPath)
+	t.Setenv("PATH", fakeDockerDir+string(os.PathListSeparator)+originalPath)
 
 	p := NewContainerProvider("docker")
 	ctx := context.Background()

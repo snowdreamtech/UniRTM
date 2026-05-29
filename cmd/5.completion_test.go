@@ -30,10 +30,8 @@ func TestRunCompletion_Generate(t *testing.T) {
 
 func TestRunCompletion_Install(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	os.Setenv("HOME", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
-	defer os.Unsetenv("HOME")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	t.Setenv("HOME", tmpDir)
 
 	// Create dummy shell config
 	err := os.WriteFile(filepath.Join(tmpDir, ".zshrc"), []byte(""), 0644)
@@ -57,10 +55,8 @@ func TestRunCompletion_Install(t *testing.T) {
 
 func TestRunCompletion_Uninstall(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	os.Setenv("HOME", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
-	defer os.Unsetenv("HOME")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	t.Setenv("HOME", tmpDir)
 
 	// Create dummy completion file
 	compDir := filepath.Join(tmpDir, "completions")
@@ -88,10 +84,8 @@ func TestRunCompletion_Uninstall(t *testing.T) {
 
 func TestRunCompletion_All(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	os.Setenv("HOME", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
-	defer os.Unsetenv("HOME")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	t.Setenv("HOME", tmpDir)
 
 	// Create dummy shell config
 	err := os.WriteFile(filepath.Join(tmpDir, ".zshrc"), []byte(""), 0644)

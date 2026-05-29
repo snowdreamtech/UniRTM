@@ -27,7 +27,7 @@ func TestGemProvider_FindGem(t *testing.T) {
 	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho gem"), 0755)
 
 	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
 	defer os.Setenv("PATH", oldPath)
 
 	gem, err := p.findGem()
@@ -49,7 +49,7 @@ func TestGemProvider_Install(t *testing.T) {
 	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho installing..."), 0755)
 
 	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
 	defer os.Setenv("PATH", oldPath)
 
 	installPath := filepath.Join(tmpDir, "install")
@@ -64,8 +64,7 @@ func TestGemProvider_Install(t *testing.T) {
 
 func TestGemProvider_findGem(t *testing.T) {
 	tmpData := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpData)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpData)
 
 	p := NewGemProvider()
 
@@ -81,8 +80,7 @@ func TestGemProvider_findGem(t *testing.T) {
 }
 
 func TestGemProvider_Install_GemNotFound(t *testing.T) {
-	os.Setenv("PATH", "")
-	defer os.Unsetenv("PATH")
+	t.Setenv("PATH", "")
 
 	p := NewGemProvider()
 	installPath := filepath.Join(t.TempDir(), "gem_install", "test_pkg")

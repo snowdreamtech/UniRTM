@@ -15,12 +15,12 @@ func TestDefaultTransport_EnvVars(t *testing.T) {
 	origAll := os.Getenv("ALL_PROXY")
 	origH2 := os.Getenv("HTTP2")
 	defer func() {
-		os.Setenv("ALL_PROXY", origAll)
-		os.Setenv("HTTP2", origH2)
+		t.Setenv("ALL_PROXY", origAll)
+		t.Setenv("HTTP2", origH2)
 	}()
 
-	os.Setenv("ALL_PROXY", "socks5://127.0.0.1:1080")
-	os.Setenv("HTTP2", "0")
+	t.Setenv("ALL_PROXY", "socks5://127.0.0.1:1080")
+	t.Setenv("HTTP2", "0")
 
 	tr := DefaultTransport()
 	if tr == nil {
@@ -54,14 +54,14 @@ func TestDefaultTransport_EnvVars_NoAllProxy(t *testing.T) {
 	origHttp := os.Getenv("HTTP_PROXY")
 	origHttps := os.Getenv("HTTPS_PROXY")
 	defer func() {
-		os.Setenv("ALL_PROXY", origAll)
-		os.Setenv("HTTP_PROXY", origHttp)
-		os.Setenv("HTTPS_PROXY", origHttps)
+		t.Setenv("ALL_PROXY", origAll)
+		t.Setenv("HTTP_PROXY", origHttp)
+		t.Setenv("HTTPS_PROXY", origHttps)
 	}()
 
-	os.Setenv("ALL_PROXY", "")
-	os.Setenv("HTTP_PROXY", "http://127.0.0.1:8080")
-	os.Setenv("HTTPS_PROXY", "http://127.0.0.1:8080")
+	t.Setenv("ALL_PROXY", "")
+	t.Setenv("HTTP_PROXY", "http://127.0.0.1:8080")
+	t.Setenv("HTTPS_PROXY", "http://127.0.0.1:8080")
 
 	tr := DefaultTransport()
 	if tr == nil {

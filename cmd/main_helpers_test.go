@@ -4,7 +4,6 @@
 package cmd
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,10 +11,9 @@ import (
 
 func TestSyncEnv(t *testing.T) {
 	// ensure NO_COLOR is not set in os
-	os.Unsetenv("NO_COLOR")
+	t.Setenv("NO_COLOR", "")
 	// simulate it being set in env (unirtm env)
-	os.Setenv("UNIRTM_NO_COLOR", "1")
-	defer os.Unsetenv("UNIRTM_NO_COLOR")
+	t.Setenv("UNIRTM_NO_COLOR", "1")
 
 	syncEnv()
 	// Actually, syncEnv reads from env.Get(v) which usually reads from os.Getenv(v) or .env file

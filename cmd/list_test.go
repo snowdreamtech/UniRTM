@@ -55,8 +55,7 @@ func TestResolveActiveVersions(t *testing.T) {
 	installsDir := filepath.Join(tmpDir, "installs")
 	shimsDir := filepath.Join(tmpDir, "shims")
 
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	os.MkdirAll(filepath.Join(installsDir, "node", "20.0.0", "bin"), 0755)
 	os.MkdirAll(shimsDir, 0755)
@@ -80,8 +79,7 @@ func TestResolveActiveVersions(t *testing.T) {
 
 func TestRunList(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	dbPath := env.GetDatabasePath()
 	os.MkdirAll(filepath.Dir(dbPath), 0755)

@@ -103,7 +103,16 @@ func TestMergeEnvMapsMultipleSources(t *testing.T) {
 
 func TestApplyEnvMapSetsVars(t *testing.T) {
 	const key = "UNIRTM_TEST_EXEC_VAR"
-	t.Cleanup(func() { os.Unsetenv(key) })
+	// Ensure the key is absent before we start, and restored after.
+	prev, hadPrev := os.LookupEnv(key)
+	os.Unsetenv(key)
+	t.Cleanup(func() {
+		if hadPrev {
+			os.Setenv(key, prev)
+		} else {
+			os.Unsetenv(key)
+		}
+	})
 
 	applyEnvMap(map[string]string{key: "hello"})
 	assert.Equal(t, "hello", os.Getenv(key))
@@ -113,9 +122,8 @@ func TestApplyEnvMapPrependsPath(t *testing.T) {
 	const testDir = "/unirtm/test/bin"
 	sep := string(os.PathListSeparator)
 
-	// Snapshot and restore PATH.
-	original := os.Getenv("PATH")
-	t.Cleanup(func() { os.Setenv("PATH", original) })
+	// Snapshot and restore PATH via t.Setenv (auto-restores on cleanup).
+	t.Setenv("PATH", os.Getenv("PATH"))
 
 	applyEnvMap(map[string]string{"PATH": testDir})
 
@@ -126,7 +134,10 @@ func TestApplyEnvMapPrependsPath(t *testing.T) {
 
 func TestApplyEnvMapSkipsEmptyValues(t *testing.T) {
 	const key = "UNIRTM_TEST_EMPTY_KEY"
+	// Ensure the key does NOT exist before the call, so we can verify
+	// that applyEnvMap skips empty values (i.e. does not call os.Setenv).
 	os.Unsetenv(key)
+	t.Cleanup(func() { os.Unsetenv(key) })
 
 	applyEnvMap(map[string]string{key: ""})
 	_, set := os.LookupEnv(key)

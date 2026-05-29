@@ -7,7 +7,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 )
 
@@ -115,8 +114,7 @@ func TestForgejoFetchReleaseByTag(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	os.Setenv("UNIRTM_FORGEJO_API_URL", server.URL)
-	defer os.Unsetenv("UNIRTM_FORGEJO_API_URL")
+	t.Setenv("UNIRTM_FORGEJO_API_URL", server.URL)
 
 	backend := NewForgejoBackend()
 	release, err := backend.FetchReleaseByTag(context.Background(), "owner/repo", "v1.0.0")
@@ -139,8 +137,7 @@ func TestForgejoFetchReleaseByTag_NotFound(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	os.Setenv("UNIRTM_FORGEJO_API_URL", server.URL)
-	defer os.Unsetenv("UNIRTM_FORGEJO_API_URL")
+	t.Setenv("UNIRTM_FORGEJO_API_URL", server.URL)
 
 	backend := NewForgejoBackend()
 	_, err := backend.FetchReleaseByTag(context.Background(), "owner/repo", "v1.0.0")

@@ -161,7 +161,7 @@ exit /b 0
 	}
 
 	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", gitMockDir+string(os.PathListSeparator)+oldPath)
+	t.Setenv("PATH", gitMockDir+string(os.PathListSeparator)+oldPath)
 	defer os.Setenv("PATH", oldPath)
 
 	b := NewAsdfBackend()

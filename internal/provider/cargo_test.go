@@ -27,7 +27,7 @@ func TestCargoProvider_FindCargo(t *testing.T) {
 	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho cargo"), 0755)
 
 	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
 	defer os.Setenv("PATH", oldPath)
 
 	cargo, err := p.findCargo()
@@ -49,7 +49,7 @@ func TestCargoProvider_Install(t *testing.T) {
 	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho installing..."), 0755)
 
 	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
 	defer os.Setenv("PATH", oldPath)
 
 	installPath := filepath.Join(tmpDir, "install")
@@ -64,8 +64,7 @@ func TestCargoProvider_Install(t *testing.T) {
 
 func TestCargoProvider_findCargo(t *testing.T) {
 	tmpData := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpData)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpData)
 
 	p := NewCargoProvider()
 

@@ -5,7 +5,6 @@ package output
 
 import (
 	"bytes"
-	"os"
 	"testing"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -219,8 +218,8 @@ func TestIsColorSupported(t *testing.T) {
 	originalNoColor := env.Get("NO_COLOR")
 	originalTerm := env.Get("TERM")
 	defer func() {
-		os.Setenv("NO_COLOR", originalNoColor)
-		os.Setenv("TERM", originalTerm)
+		t.Setenv("NO_COLOR", originalNoColor)
+		t.Setenv("TERM", originalTerm)
 	}()
 
 	tests := []struct {
@@ -257,8 +256,8 @@ func TestIsColorSupported(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			os.Setenv("NO_COLOR", tt.noColor)
-			os.Setenv("TERM", tt.term)
+			t.Setenv("NO_COLOR", tt.noColor)
+			t.Setenv("TERM", tt.term)
 
 			got := IsColorSupported()
 			assert.Equal(t, tt.want, got)

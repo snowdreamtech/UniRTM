@@ -4,7 +4,6 @@
 package config
 
 import (
-	"os"
 	"testing"
 )
 
@@ -41,8 +40,7 @@ func TestSettings_LoadFromEnv2(t *testing.T) {
 	}
 
 	for k, v := range envVars {
-		os.Setenv("UNIRTM_"+k, v)
-		defer os.Unsetenv("UNIRTM_" + k)
+		t.Setenv("UNIRTM_"+k, v)
 	}
 
 	s := &Settings{}
@@ -59,9 +57,9 @@ func TestSettings_LoadFromEnv2(t *testing.T) {
 	}
 
 	// Also test integer durations and integer parse failures
-	os.Setenv("UNIRTM_CACHE_TTL", "300")
-	os.Setenv("UNIRTM_HTTP_TIMEOUT", "60")
-	os.Setenv("UNIRTM_TASK_TIMEOUT", "120")
+	t.Setenv("UNIRTM_CACHE_TTL", "300")
+	t.Setenv("UNIRTM_HTTP_TIMEOUT", "60")
+	t.Setenv("UNIRTM_TASK_TIMEOUT", "120")
 	s2 := &Settings{}
 	s2.LoadFromEnv()
 	if s2.CacheTTL != 300 {

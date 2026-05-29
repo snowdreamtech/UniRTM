@@ -35,8 +35,7 @@ func TestSpmProvider_DetectVersion(t *testing.T) {
 
 func TestSpmProvider_findSwift(t *testing.T) {
 	tmpData := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpData)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpData)
 
 	p := NewSpmProvider()
 

@@ -28,8 +28,7 @@ func TestRunShell(t *testing.T) {
 	cmd.SetOut(&buf)
 
 	// Ensure shell resolves to something specific
-	os.Setenv("SHELL", "/bin/bash")
-	defer os.Unsetenv("SHELL")
+	t.Setenv("SHELL", "/bin/bash")
 
 	err := runShell(cmd, []string{"node@20.0.0"})
 	assert.NoError(t, err)
@@ -52,8 +51,7 @@ func TestRunShell_MultipleTools(t *testing.T) {
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 
-	os.Setenv("SHELL", "/bin/bash")
-	defer os.Unsetenv("SHELL")
+	t.Setenv("SHELL", "/bin/bash")
 
 	err := runShell(cmd, []string{"node@20.0.0", "python@3.11.0"})
 	assert.NoError(t, err)

@@ -65,7 +65,7 @@ func TestHTTPDownloader_DownloadConcurrent_Errors(t *testing.T) {
 	dest2 := filepath.Join(dir, "panic.txt")
 
 	// Temporarily limit retries to fail fast
-	os.Setenv("JOBS", "1")
+	t.Setenv("JOBS", "1")
 	defer os.Setenv("JOBS", "")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -109,8 +109,7 @@ func TestHTTPDownloader_VerifyGPGSignature_500(t *testing.T) {
 	os.WriteFile(dest, []byte("data"), 0644)
 
 	// Mock valid keyring but fetch fails
-	os.Setenv("UNIRTM_DATA_DIR", dir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", dir)
 	// An empty file will trigger "failed to parse keyring", but we want it to parse
 	// Actually we just test what happens if keyring fails to parse, wait we already did that.
 	// We want to hit the 500 error branch:

@@ -54,10 +54,8 @@ func TestDiscoverConfigFiles(t *testing.T) {
 
 func TestRunEdit_SpecificFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 	os.Setenv("UNIRTM_EDITOR", "cat") // Use a non-blocking "editor" that just exits
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
-	defer os.Unsetenv("UNIRTM_EDITOR")
 
 	targetFile := filepath.Join(tmpDir, "unirtm.toml")
 
@@ -75,10 +73,8 @@ func TestRunEdit_SpecificFile(t *testing.T) {
 
 func TestRunEdit_GlobalFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
-	os.Setenv("UNIRTM_EDITOR", "cat")
-	defer os.Unsetenv("UNIRTM_CONFIG_DIR")
-	defer os.Unsetenv("UNIRTM_EDITOR")
+	t.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
+	t.Setenv("UNIRTM_EDITOR", "cat")
 
 	editGlobal = true
 	defer func() { editGlobal = false }()

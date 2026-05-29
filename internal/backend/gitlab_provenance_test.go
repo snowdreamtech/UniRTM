@@ -88,8 +88,7 @@ func TestVerifyGitlabArtifactProvenance_MockServer(t *testing.T) {
 	}))
 	defer server.Close()
 
-	os.Setenv("GITLAB_API_URL", server.URL)
-	defer os.Unsetenv("GITLAB_API_URL")
+	t.Setenv("GITLAB_API_URL", server.URL)
 
 	// Set mock client in verifier so it calls httptest server
 	verifier := &gitlabProvenanceVerifier{

@@ -549,8 +549,7 @@ func TestUpdateManager_CheckForUpdates(t *testing.T) {
 
 func TestUpdateManager_UpdateTool(t *testing.T) {
 	tempDataDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tempDataDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tempDataDir)
 
 	tests := []struct {
 		name          string

@@ -313,8 +313,7 @@ func TestInstallationManager_ResolveToolEnvBySpec(t *testing.T) {
 
 	// Mock environment
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	// 1. Not installed
 	envMap := im.ResolveToolEnvBySpec("node", "18.0.0", "mock")

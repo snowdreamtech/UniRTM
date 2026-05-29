@@ -99,8 +99,7 @@ func TestRunUse_SpecificPath(t *testing.T) {
 
 func TestRunUse_Global(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("HOME", tmpDir)
-	defer os.Unsetenv("HOME")
+	t.Setenv("HOME", tmpDir)
 
 	cmd := useCmd
 	cmd.SetContext(context.Background())

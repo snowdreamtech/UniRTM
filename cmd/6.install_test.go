@@ -211,15 +211,15 @@ func TestGetDefaultDatabasePath(t *testing.T) {
 	originalXDGDataHome := env.Get("XDG_DATA_HOME")
 	defer func() {
 		if originalXDGDataHome != "" {
-			os.Setenv("XDG_DATA_HOME", originalXDGDataHome)
+			t.Setenv("XDG_DATA_HOME", originalXDGDataHome)
 		} else {
-			os.Unsetenv("XDG_DATA_HOME")
+			t.Setenv("XDG_DATA_HOME", "")
 		}
 	}()
 
 	t.Run("with XDG_DATA_HOME set", func(t *testing.T) {
 		testDir := "/tmp/test-xdg-data"
-		os.Setenv("XDG_DATA_HOME", testDir)
+		t.Setenv("XDG_DATA_HOME", testDir)
 
 		path := env.GetDatabasePath()
 
@@ -229,7 +229,7 @@ func TestGetDefaultDatabasePath(t *testing.T) {
 	})
 
 	t.Run("without XDG_DATA_HOME", func(t *testing.T) {
-		os.Unsetenv("XDG_DATA_HOME")
+		t.Setenv("XDG_DATA_HOME", "")
 
 		path := env.GetDatabasePath()
 
@@ -281,8 +281,7 @@ func TestConcurrentSpinnerManager(t *testing.T) {
 
 func TestRunInstall_Execution(t *testing.T) {
 	tmpDir := t.TempDir()
-	os.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	defer os.Unsetenv("UNIRTM_DATA_DIR")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	// Set quiet mode to suppress output during tests
 	originalQuiet := quiet

@@ -11,8 +11,7 @@ import (
 
 func TestResolveEnvironment(t *testing.T) {
 	// Set up basic env vars for testing
-	os.Setenv("TEST_BASE", "base_val")
-	defer os.Unsetenv("TEST_BASE")
+	t.Setenv("TEST_BASE", "base_val")
 
 	c := &Config{
 		Env: map[string]interface{}{
