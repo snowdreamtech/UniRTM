@@ -94,6 +94,7 @@ jobs:
         shell: sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UNIRTM_YES: 1
         run: |
           # We run unirtm run audit which includes gitleaks, osv-scanner, etc.
           unirtm run audit

@@ -198,6 +198,7 @@ jobs:
           unirtm run lint-all
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UNIRTM_YES: 1
 
   # 2. Automated Testing Stage (Test)
   test:
@@ -327,6 +328,7 @@ jobs:
           unirtm run test
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UNIRTM_YES: 1
 
   # 3. Security & Standards Audit Stage (Audit)
   audit:
@@ -441,6 +443,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TRIVY_CACHE_DIR: .trivycache
+          UNIRTM_YES: 1
 
       - name: "⚡ Cache Documentation Links (Lychee)"
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
