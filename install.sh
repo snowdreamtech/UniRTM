@@ -212,16 +212,13 @@ curl_with_retry() {
 # Download and verify checksum
 # ---------------------------------------------------------------------------
 download_and_verify() {
+  TMP_DIR="$1"
   ARCHIVE_NAME="${BINARY}_${OS_NAME}_${ARCH_NAME}.tar.gz"
   ARCHIVE_URL="https://github.com/${REPO}/releases/download/${VERSION}/${ARCHIVE_NAME}"
   CHECKSUM_URL="https://github.com/${REPO}/releases/download/${VERSION}/checksums.txt"
 
-  TMP_DIR="$(mktemp -d)"
   ARCHIVE_PATH="${TMP_DIR}/${ARCHIVE_NAME}"
   CHECKSUM_PATH="${TMP_DIR}/checksums.txt"
-
-  # Ensure cleanup on exit
-  trap 'rm -rf "$TMP_DIR"' EXIT
 
   info "Downloading ${ARCHIVE_NAME}..."
   curl_with_retry "$ARCHIVE_URL" "$ARCHIVE_PATH"
@@ -257,8 +254,6 @@ download_and_verify() {
   else
     warn "Could not download checksums.txt. Skipping checksum verification."
   fi
-
-  echo "$ARCHIVE_PATH $TMP_DIR"
 }
 
 # ---------------------------------------------------------------------------
@@ -349,9 +344,16 @@ main() {
 
   detect_platform
   resolve_version
-  read -r ARCHIVE_PATH TMP_DIR <<EOF
-$(download_and_verify)
-EOF
+
+  TMP_DIR="$(mktemp -d)"
+  # Ensure cleanup on exit
+  trap 'rm -rf "$TMP_DIR"' EXIT
+
+  download_and_verify "$TMP_DIR"
+
+  ARCHIVE_NAME="${BINARY}_${OS_NAME}_${ARCH_NAME}.tar.gz"
+  ARCHIVE_PATH="${TMP_DIR}/${ARCHIVE_NAME}"
+
   install_binary "$ARCHIVE_PATH" "$TMP_DIR"
   suggest_path
   verify_install
