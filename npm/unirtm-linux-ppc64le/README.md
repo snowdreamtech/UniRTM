@@ -1,7 +1,5 @@
 # UniRTM (Universal Runtime Manager)
 
-Inspired by [mise](https://github.com/jdx/mise) (licensed under MIT). Special thanks to jdx and the mise community for the great ideas.
-
 [![CI Pipeline](https://img.shields.io/github/actions/workflow/status/snowdreamtech/template/ci.yml?branch=main&label=CI%20Pipeline)](https://github.com/snowdreamtech/template/actions/workflows/ci.yml)
 [![CD Pipeline](https://img.shields.io/github/actions/workflow/status/snowdreamtech/template/cd.yml?branch=main&label=CD%20Pipeline)](https://github.com/snowdreamtech/template/actions/workflows/cd.yml)
 [![GitHub Pages](https://img.shields.io/github/actions/workflow/status/snowdreamtech/template/pages.yml?branch=main&label=Docs&logo=github)](https://github.com/snowdreamtech/template/actions/workflows/pages.yml)
@@ -212,7 +210,6 @@ The `GITHUB_PROXY` (default: `https://gh-proxy.sn0wdr1am.com/`) is optimized for
 | **Project Folders**   | ❌ **No**  | Browsing/cloning via proxy is not supported.           |
 
 > [!IMPORTANT]
-> To prevent breaking toolchains (like `mise` or `asdf`), this template explicitly disables Git redirection via this proxy. Use it only for direct HTTP downloads in scripts.
 
 ## 📄 License
 

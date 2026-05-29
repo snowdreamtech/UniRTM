@@ -53,7 +53,7 @@ const sidebarEn = [
     text: "Dev Tools",
     items: [
       { text: "Dev Tools Overview", link: "/dev-tools/overview" },
-      { text: "Comparison to asdf/mise", link: "/dev-tools/comparison-to-asdf" },
+      { text: "Comparison to asdf", link: "/dev-tools/comparison-to-asdf" },
       { text: "Shims & PATH", link: "/dev-tools/shims" },
       { text: "Lockfile (unirtm.lock)", link: "/dev-tools/unirtm-lock" },
       { text: "Security (Trivy & Syft)", link: "/dev-tools/security" },
@@ -133,7 +133,7 @@ const sidebarZh = [
     text: "开发工具 (Dev Tools)",
     items: [
       { text: "工具管理概览", link: "/zh/dev-tools/overview" },
-      { text: "与 asdf/mise 的对比", link: "/zh/dev-tools/comparison-to-asdf" },
+      { text: "与 asdf 的对比", link: "/zh/dev-tools/comparison-to-asdf" },
       { text: "Shims 与 PATH 劫持", link: "/zh/dev-tools/shims" },
       { text: "锁定文件 (unirtm.lock)", link: "/zh/dev-tools/unirtm-lock" },
       { text: "安全检测 (Trivy & Syft)", link: "/zh/dev-tools/security" },

@@ -44,7 +44,6 @@ jobs:
             *.dkr.ecr.*.amazonaws.com:443
             *.gcr.io:443
             *.githubusercontent.com:443
-            *.mise.jdx.dev:443
             *.pkg.dev:443
             *.quay.io:443
             *.redhat.com:443
@@ -68,7 +67,6 @@ jobs:
             github.com:443
             index.crates.io:443
             index.docker.io:443
-            mise.run:443
             nodejs.org:443
             oss-fuzz-build-logs.storage.googleapis.com:443
             osv-vulnerabilities.storage.googleapis.com:443
@@ -134,7 +132,6 @@ jobs:
             *.dkr.ecr.*.amazonaws.com:443
             *.gcr.io:443
             *.githubusercontent.com:443
-            *.mise.jdx.dev:443
             *.pkg.dev:443
             *.quay.io:443
             *.redhat.com:443
@@ -158,7 +155,6 @@ jobs:
             github.com:443
             index.crates.io:443
             index.docker.io:443
-            mise.run:443
             nodejs.org:443
             oss-fuzz-build-logs.storage.googleapis.com:443
             osv-vulnerabilities.storage.googleapis.com:443
@@ -235,7 +231,6 @@ jobs:
             *.dkr.ecr.*.amazonaws.com:443
             *.gcr.io:443
             *.githubusercontent.com:443
-            *.mise.jdx.dev:443
             *.pkg.dev:443
             *.quay.io:443
             *.redhat.com:443
@@ -259,7 +254,6 @@ jobs:
             github.com:443
             index.crates.io:443
             index.docker.io:443
-            mise.run:443
             nodejs.org:443
             oss-fuzz-build-logs.storage.googleapis.com:443
             osv-vulnerabilities.storage.googleapis.com:443
@@ -362,7 +356,6 @@ jobs:
             *.dkr.ecr.*.amazonaws.com:443
             *.gcr.io:443
             *.githubusercontent.com:443
-            *.mise.jdx.dev:443
             *.pkg.dev:443
             *.quay.io:443
             *.redhat.com:443
@@ -386,7 +379,6 @@ jobs:
             github.com:443
             index.crates.io:443
             index.docker.io:443
-            mise.run:443
             nodejs.org:443
             oss-fuzz-build-logs.storage.googleapis.com:443
             osv-vulnerabilities.storage.googleapis.com:443

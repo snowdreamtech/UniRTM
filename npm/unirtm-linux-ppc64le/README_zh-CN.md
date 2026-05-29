@@ -1,7 +1,5 @@
 # UniRTM (Universal Runtime Manager)
 
-受 [mise](https://github.com/jdx/mise) 启发（采用 MIT 协议）。特别感谢 jdx 和 mise 社区提供的优秀创意。
-
 [![CI 流水线](https://img.shields.io/github/actions/workflow/status/snowdreamtech/template/ci.yml?branch=main&label=CI%20Pipeline)](https://github.com/snowdreamtech/template/actions/workflows/ci.yml)
 [![CD 自动化发布](https://img.shields.io/github/actions/workflow/status/snowdreamtech/template/cd.yml?branch=main&label=CD%20Pipeline)](https://github.com/snowdreamtech/template/actions/workflows/cd.yml)
 [![文档站点](https://img.shields.io/github/actions/workflow/status/snowdreamtech/template/pages.yml?branch=main&label=%E6%96%87%E6%A1%A3&logo=github)](https://github.com/snowdreamtech/template/actions/workflows/pages.yml)
@@ -213,7 +211,6 @@ unirtm install
 | **项目文件夹**         | ❌ **不支持** | 不支持通过代理进行项目文件夹的浏览或克隆。     |
 
 > [!IMPORTANT]
-> 为了防止破坏工具链（如 `mise` 或 `asdf`），本模板显式禁用了通过此代理进行的 Git 重定向。请仅在脚本中进行直接 HTTP 下载时使用它。
 
 ---
 
