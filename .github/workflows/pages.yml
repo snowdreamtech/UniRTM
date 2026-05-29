@@ -22,7 +22,7 @@ name: "📄 Deploy Docs to GitHub Pages"
     paths:
       - "docs/**"
       - "package.json"
-      - "pnpm-lock.yaml"
+      - "package-lock.json"
   workflow_dispatch:
     inputs:
       venv:
@@ -126,8 +126,8 @@ jobs:
         shell: sh
         run: |
           cd docs
-          unirtm exec -- pnpm install
-          unirtm exec -- pnpm run docs:build
+          unirtm exec -- npm install
+          unirtm exec -- npm run docs:build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
