@@ -119,7 +119,7 @@ jobs:
           ref: ${{ github.ref }}
 
       - name: "⚡ Setup UniRTM"
-        uses: snowdreamtech/setup-unirtm@d519f47af5a1f4c8b4d950ccd0283011b014260d # v0.2.0
+        uses: snowdreamtech/setup-unirtm@7179307932d80de895332764c96db439fc161361 # v0.2.1
         with:
           install: true
           trust: true
