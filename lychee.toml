@@ -23,7 +23,10 @@ exclude_path = [
 # Exclude URL patterns
 # Ignore unreleased version compare links in CHANGELOG
 exclude = [
-  # Unreleased version compare links (tags don't exist yet)
+  "https://unirtm.snowdream.tech.*",
+  "https://github.com/snowdreamtech/UniRTM/discussions",
+  ".*docs/glossary.md",
+  ".*docs/index.md",                                        # Unreleased version compare links (tags don't exist yet)
   'https://github\.com/.*/compare/.*\.\.\.v\d+\.\d+\.\d+$',
 ]
 

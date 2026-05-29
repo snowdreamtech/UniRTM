@@ -195,8 +195,8 @@ unirtm install
 
 ### References
 
-- [Full Documentation](docs/index.md)
-- [Project Glossary](docs/glossary.md)
+- [Full Documentation](https://github.com/snowdreamtech/UniRTM/tree/main/docs/index.md)
+- [Project Glossary](https://github.com/snowdreamtech/UniRTM/tree/main/docs/glossary.md)
 - [Conventional Commits](https://www.conventionalcommits.org/)
 
 ### 🚀 Proxy Usage Scenarios
