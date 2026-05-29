@@ -352,10 +352,6 @@ url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8
 checksum = "b40ab0ae55c505963e365f271a8d3846efbc170aa17f2607f13df610a9aeb6a5"
 url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_darwin_arm64.tar.gz"
 
-[[tools."github:google/addlicense"]]
-version = "1.2.0"
-backend = "github"
-
 [[tools."github:google/osv-scanner"]]
 version = "2.3.5"
 backend = "github"
@@ -610,13 +606,6 @@ backend = "go"
 [tools."go:mvdan.cc/sh/v3/cmd/shfmt"."platforms.windows-amd64"]
 
 [tools."go:mvdan.cc/sh/v3/cmd/shfmt"."platforms.windows-arm64"]
-
-[[tools."google/addlicense"]]
-version = "1.2.0"
-backend = "github"
-
-[tools."google/addlicense"."platforms.macos-amd64"]
-url = "https://github.com/google/addlicense/releases/download/v1.2.0/addlicense_v1.2.0_macOS_x86_64.tar.gz"
 
 [[tools."google/osv-scanner"]]
 version = "2.3.5"
@@ -915,26 +904,6 @@ backend = "npm"
 [tools."npm:markdownlint-cli2"."platforms.windows-amd64"]
 
 [tools."npm:markdownlint-cli2"."platforms.windows-arm64"]
-
-[[tools."npm:pnpm"]]
-version = "11.0.4"
-backend = "npm"
-
-[tools."npm:pnpm"."platforms.linux-amd64"]
-
-[tools."npm:pnpm"."platforms.linux-amd64-musl"]
-
-[tools."npm:pnpm"."platforms.linux-arm64"]
-
-[tools."npm:pnpm"."platforms.linux-arm64-musl"]
-
-[tools."npm:pnpm"."platforms.macos-amd64"]
-
-[tools."npm:pnpm"."platforms.macos-arm64"]
-
-[tools."npm:pnpm"."platforms.windows-amd64"]
-
-[tools."npm:pnpm"."platforms.windows-arm64"]
 
 [[tools."npm:prettier"]]
 version = "3.8.3"

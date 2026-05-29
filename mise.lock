@@ -274,45 +274,6 @@ checksum = "sha256:d29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332af
 url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_windows_x64.zip"
 url_api = "https://api.github.com/repos/gitleaks/gitleaks/releases/assets/378333178"
 
-[[tools."github:google/addlicense"]]
-version = "1.2.0"
-backend = "github:google/addlicense"
-
-[tools."github:google/addlicense"."platforms.linux-arm64"]
-checksum = "sha256:b14dde867a6dbcd41fdf45096831bc0f6500bf0134693d38c56701e179f3f353"
-url = "https://github.com/google/addlicense/releases/download/v1.2.0/addlicense_v1.2.0_Linux_arm64.tar.gz"
-url_api = "https://api.github.com/repos/google/addlicense/releases/assets/282300422"
-
-[tools."github:google/addlicense"."platforms.linux-arm64-musl"]
-checksum = "sha256:b14dde867a6dbcd41fdf45096831bc0f6500bf0134693d38c56701e179f3f353"
-url = "https://github.com/google/addlicense/releases/download/v1.2.0/addlicense_v1.2.0_Linux_arm64.tar.gz"
-url_api = "https://api.github.com/repos/google/addlicense/releases/assets/282300422"
-
-[tools."github:google/addlicense"."platforms.linux-x64"]
-checksum = "sha256:6924296771234b1ba6c969e109b4459cff75e15b259676b61df874a92734b242"
-url = "https://github.com/google/addlicense/releases/download/v1.2.0/addlicense_v1.2.0_Linux_x86_64.tar.gz"
-url_api = "https://api.github.com/repos/google/addlicense/releases/assets/282300421"
-
-[tools."github:google/addlicense"."platforms.linux-x64-musl"]
-checksum = "sha256:6924296771234b1ba6c969e109b4459cff75e15b259676b61df874a92734b242"
-url = "https://github.com/google/addlicense/releases/download/v1.2.0/addlicense_v1.2.0_Linux_x86_64.tar.gz"
-url_api = "https://api.github.com/repos/google/addlicense/releases/assets/282300421"
-
-[tools."github:google/addlicense"."platforms.macos-arm64"]
-checksum = "sha256:0597305c619f7349748e830e38322dbe7d13cf86cf415b289c70f5cecbb4bf63"
-url = "https://github.com/google/addlicense/releases/download/v1.2.0/addlicense_v1.2.0_macOS_arm64.tar.gz"
-url_api = "https://api.github.com/repos/google/addlicense/releases/assets/282300420"
-
-[tools."github:google/addlicense"."platforms.macos-x64"]
-checksum = "sha256:335b47a28bab66e39494222f711c22b140d14d6f6d0a08ab9ea7c6f315588c83"
-url = "https://github.com/google/addlicense/releases/download/v1.2.0/addlicense_v1.2.0_macOS_x86_64.tar.gz"
-url_api = "https://api.github.com/repos/google/addlicense/releases/assets/282300427"
-
-[tools."github:google/addlicense"."platforms.windows-x64"]
-checksum = "sha256:fe4f4a54daa4a750ffa7d1b0da471d077ac24f09d04d7c1f307e7b7950969d25"
-url = "https://github.com/google/addlicense/releases/download/v1.2.0/addlicense_v1.2.0_Windows_x86_64.zip"
-url_api = "https://api.github.com/repos/google/addlicense/releases/assets/282300418"
-
 [[tools."github:google/osv-scanner"]]
 version = "2.3.5"
 backend = "github:google/osv-scanner"
@@ -604,9 +565,6 @@ url = "https://dl.google.com/go/go1.26.2.windows-amd64.zip"
 version = "25.9.0"
 backend = "core:node"
 
-[tools.node.options]
-flavor = ""
-
 [[tools."npm:@commitlint/cli"]]
 version = "20.5.3"
 backend = "npm:@commitlint/cli"
@@ -642,10 +600,6 @@ backend = "npm:eslint"
 [[tools."npm:markdownlint-cli2"]]
 version = "0.22.1"
 backend = "npm:markdownlint-cli2"
-
-[[tools."npm:pnpm"]]
-version = "11.0.4"
-backend = "npm:pnpm"
 
 [[tools."npm:prettier"]]
 version = "3.8.3"
