@@ -223,6 +223,16 @@ function Install-Binary {
     }
 
     $Destination = Join-Path $InstallDirPath "${Binary}.exe"
+
+    # Prevent 'File in use' error when replacing a running binary on Windows
+    if (Test-Path $Destination) {
+        $OldDestination = "${Destination}.old"
+        if (Test-Path $OldDestination) {
+            Remove-Item -Path $OldDestination -Force -ErrorAction SilentlyContinue
+        }
+        Rename-Item -Path $Destination -NewName "${Binary}.exe.old" -Force -ErrorAction SilentlyContinue
+    }
+
     Copy-Item -Path $BinaryFile.FullName -Destination $Destination -Force
     Write-Info "Installed ${Binary}.exe to $Destination"
 

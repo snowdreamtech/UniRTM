@@ -291,6 +291,9 @@ install_binary() {
   fi
 
   chmod +x "$BINARY_PATH"
+
+  # Prevent 'Text file busy' error when replacing a currently running binary
+  rm -f "${INSTALL_DIR}/${BINARY}" 2>/dev/null || true
   cp "$BINARY_PATH" "${INSTALL_DIR}/${BINARY}"
 
   info "Installed ${BINARY} to ${INSTALL_DIR}/${BINARY}"
