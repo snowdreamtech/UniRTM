@@ -14,6 +14,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
+	"github.com/snowdreamtech/unirtm/internal/pkg/version"
 )
 
 // GoPkgProvider implements the Provider interface for Go packages (via go install).
@@ -189,7 +190,7 @@ func (p *GoPkgProvider) findGo() (string, error) {
 				}
 				for _, cand := range candidates {
 					if info, err := os.Stat(cand); err == nil && !info.IsDir() {
-						if bestVer == "" || entry.Name() > bestVer {
+						if bestVer == "" || version.CompareVersions(entry.Name(), bestVer) > 0 {
 							bestVer = entry.Name()
 							bestPath = cand
 						}

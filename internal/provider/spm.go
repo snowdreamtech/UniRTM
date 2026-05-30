@@ -13,6 +13,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
+	"github.com/snowdreamtech/unirtm/internal/pkg/version"
 )
 
 // SpmProvider implements the Provider interface for Swift Package Manager.
@@ -198,7 +199,7 @@ func (p *SpmProvider) findSwift() (string, error) {
 				}
 				for _, cand := range candidates {
 					if info, err := os.Stat(cand); err == nil && !info.IsDir() {
-						if bestVer == "" || entry.Name() > bestVer {
+						if bestVer == "" || version.CompareVersions(entry.Name(), bestVer) > 0 {
 							bestVer = entry.Name()
 							bestPath = cand
 						}

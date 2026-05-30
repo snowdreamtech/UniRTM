@@ -11,6 +11,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
+	"github.com/snowdreamtech/unirtm/internal/pkg/version"
 )
 
 // CargoProvider implements the Provider interface for Cargo packages.
@@ -147,7 +148,7 @@ func (p *CargoProvider) findCargo() (string, error) {
 				}
 				for _, cand := range candidates {
 					if info, err := os.Stat(cand); err == nil && !info.IsDir() {
-						if bestVer == "" || entry.Name() > bestVer {
+						if bestVer == "" || version.CompareVersions(entry.Name(), bestVer) > 0 {
 							bestVer = entry.Name()
 							bestPath = cand
 						}
