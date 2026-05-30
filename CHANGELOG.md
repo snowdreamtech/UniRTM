@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.7](https://github.com/snowdreamtech/UniRTM/compare/v0.2.6...v0.2.7) (2026-05-30)
+
+
+### Bug Fixes
+
+* **ci:** restore version: latest to setup-unirtm actions to fetch the correct dll fix ([dd57ff2](https://github.com/snowdreamtech/UniRTM/commit/dd57ff234d15f6b55b74ebdcfb75055cd2ab8748))
+
 ## [0.2.6](https://github.com/snowdreamtech/UniRTM/compare/v0.2.5...v0.2.6) (2026-05-29)
 
 
