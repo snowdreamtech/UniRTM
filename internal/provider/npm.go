@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -172,32 +173,22 @@ func (p *NpmProvider) rewriteCmdNodePath(cmdPath, nodePath string) error {
 	content := string(data)
 
 	// Bail out quickly if neither known pattern is present.
-	if !strings.Contains(content, `%dp0%\node.exe`) &&
-		!strings.Contains(content, `%~dp0\node.exe`) {
+	if !strings.Contains(content, "node.exe") {
 		return nil
 	}
 
 	replacement := fmt.Sprintf(`SET "_prog=%s"`, nodePath)
 
 	// Pattern 1 — npm 7+ conditional block (CRLF or LF tolerant).
-	// Find "IF EXIST "%dp0%\node.exe" (" and replace through the closing ")".
-	const ifExistMarker = `IF EXIST "%dp0%\node.exe" (`
-	if idx := strings.Index(content, ifExistMarker); idx != -1 {
-		// The block ends at the next bare ")" on its own line.
-		// npm formats it as "\r\n)" (Windows) or "\n)" (Unix editors).
-		after := content[idx:]
-		// Look for the closing ")" — it follows a newline and is the first non-space char.
-		closingIdx := -1
-		for _, nl := range []string{"\r\n)", "\n)"} {
-			if ci := strings.Index(after, nl); ci != -1 {
-				if closingIdx == -1 || ci < closingIdx {
-					closingIdx = ci + len(nl)
-				}
-			}
-		}
-		if closingIdx != -1 {
-			content = content[:idx] + replacement + content[idx+closingIdx:]
-		}
+	// Match:
+	// IF EXIST "%dp0%\node.exe" (
+	//   ...
+	// ) ELSE (
+	//   ...
+	// )
+	reNpm7 := regexp.MustCompile(`(?i)IF EXIST "%~?dp0%?\\node\.exe" \([\s\S]*?\) ELSE \([\s\S]*?\)`)
+	if reNpm7.MatchString(content) {
+		content = reNpm7.ReplaceAllString(content, replacement)
 	}
 
 	// Pattern 2 — older npm one-liner: "%~dp0\node.exe" …
