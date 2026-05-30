@@ -19,6 +19,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"github.com/snowdreamtech/unirtm/internal/pkg/version"
 	"github.com/spf13/cobra"
 )
 
@@ -299,11 +300,14 @@ func runSelfUpdate(cmd *cobra.Command, args []string) error {
 	} else {
 		spinner.Success(fmt.Sprintf("Found release: %s", releaseInfo.TagName))
 
-		// Version comparison with normalized tags (strip leading 'v')
-		if target == "latest" && normalizeVersion(current) == normalizeVersion(releaseInfo.TagName) {
-			output.Infof("You are already using the latest version (%s).", current)
-			if !selfUpdateYes {
-				return nil
+		// Version comparison: avoid downgrading if the current version is newer or equal
+		if target == "latest" {
+			cmp := version.CompareVersions(current, releaseInfo.TagName)
+			if cmp >= 0 {
+				output.Infof("You are already using the latest version (%s).", current)
+				if !selfUpdateYes {
+					return nil
+				}
 			}
 		}
 
