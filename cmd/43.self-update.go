@@ -565,15 +565,26 @@ func selfUpdateWindows(formatter output.Formatter, tag string) error {
 func verifySelfUpdate() error {
 	output.Info("Verifying installation...")
 
-	// Prefer the binary at the standard install location
-	candidates := []string{"unirtm"}
-	if home, err := os.UserHomeDir(); err == nil {
-		candidates = append([]string{
-			filepath.Join(home, ".unirtm", "bin", "unirtm"),
-			filepath.Join(home, ".local", "bin", "unirtm"),
-			"/usr/local/bin/unirtm",
-		}, candidates...)
+	var candidates []string
+
+	// Prioritize the currently executing binary path (which was just overwritten in-place)
+	if exePath, err := os.Executable(); err == nil {
+		if resolved, rerr := filepath.EvalSymlinks(exePath); rerr == nil {
+			candidates = append(candidates, resolved)
+		} else {
+			candidates = append(candidates, exePath)
+		}
 	}
+
+	// Fallbacks
+	if home, err := os.UserHomeDir(); err == nil {
+		candidates = append(candidates,
+			filepath.Join(home, ".local", "bin", "unirtm"),  // Prefer modern default
+			filepath.Join(home, ".unirtm", "bin", "unirtm"), // Legacy path
+			"/usr/local/bin/unirtm",
+		)
+	}
+	candidates = append(candidates, "unirtm") // System PATH as last resort
 
 	for _, candidate := range candidates {
 		if _, err := exec.LookPath(candidate); err == nil || filepath.IsAbs(candidate) {
