@@ -14,6 +14,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/pkg/envpath"
 	"github.com/snowdreamtech/unirtm/internal/pkg/errors"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
@@ -418,10 +419,7 @@ func (m *AutoActivationManager) generatePosixDeactivation(sb *strings.Builder, s
 		sb.WriteString("\n")
 	} else {
 		// No previous path known, clean up what we injected
-		posixShimsDir := m.activationManager.shimsDir
-		if runtime.GOOS == "windows" {
-			posixShimsDir = filepath.ToSlash(posixShimsDir)
-		}
+		posixShimsDir := envpath.FormatDirForPosix(m.activationManager.shimsDir)
 		sb.WriteString("# Clean up UniRTM paths from PATH\n")
 		sb.WriteString("_unirtm_clean_path() {\n")
 		sb.WriteString("  local result=\"\"\n")

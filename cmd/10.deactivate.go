@@ -12,6 +12,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/pkg/envpath"
 	"github.com/spf13/cobra"
 )
 
@@ -113,10 +114,7 @@ func generateDeactivationScript(shellType string) string {
 
 // generatePosixDeactivationScript generates a POSIX-compatible deactivation script.
 func generatePosixDeactivationScript(shimsDir string) string {
-	posixShimsDir := shimsDir
-	if runtime.GOOS == "windows" {
-		posixShimsDir = filepath.ToSlash(posixShimsDir)
-	}
+	posixShimsDir := envpath.FormatDirForPosix(shimsDir)
 	return fmt.Sprintf(`# UniRTM deactivation script
 # 1. Clean up shims and injected paths from PATH
 _unirtm_clean_path() {

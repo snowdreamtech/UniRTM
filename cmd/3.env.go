@@ -15,6 +15,7 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/pkg/envpath"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -317,12 +318,9 @@ func emitShellEnv(shell string, pathDirs []string, vars []envVarEntry, sources [
 		}
 	case "powershell", "pwsh":
 		if len(pathDirs) > 0 {
-			separator := ";"
-			if runtime.GOOS != "windows" {
-				separator = ":"
-			}
+			separator := string(os.PathListSeparator)
 			fmt.Printf("$env:PATH = %q\n",
-				strings.Join(pathDirs, separator)+separator+"$env:PATH")
+				envpath.JoinForPowerShell(pathDirs)+separator+"$env:PATH")
 		}
 		for _, v := range vars {
 			fmt.Printf("$env:%s = %q\n", v.Name, v.Value)
@@ -333,16 +331,8 @@ func emitShellEnv(shell string, pathDirs []string, vars []envVarEntry, sources [
 	default:
 		// bash / zsh / posix sh
 		if len(pathDirs) > 0 {
-			var posixPaths []string
-			for _, p := range pathDirs {
-				if runtime.GOOS == "windows" {
-					posixPaths = append(posixPaths, filepath.ToSlash(p))
-				} else {
-					posixPaths = append(posixPaths, p)
-				}
-			}
 			fmt.Printf("export PATH=%q\n",
-				strings.Join(posixPaths, ":")+":$PATH")
+				envpath.JoinForPosix(pathDirs)+":$PATH")
 		}
 		for _, v := range vars {
 			fmt.Printf("export %s=%q\n", v.Name, v.Value)

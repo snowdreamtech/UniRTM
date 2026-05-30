@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/pkg/envpath"
 	"github.com/snowdreamtech/unirtm/internal/pkg/errors"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 	"github.com/snowdreamtech/unirtm/internal/provider"
@@ -279,24 +280,13 @@ func (m *ActivationManager) generatePosixScript(config ActivationConfig) (*Activ
 		// Add shims directory to PATH
 		sb.WriteString("# Add UniRTM shims to PATH\n")
 		// Clean up existing shims from PATH to avoid duplicates
-		posixShimsDir := config.ShimsDir
-		if runtime.GOOS == "windows" {
-			posixShimsDir = filepath.ToSlash(posixShimsDir)
-		}
+		posixShimsDir := envpath.FormatDirForPosix(config.ShimsDir)
 		sb.WriteString(fmt.Sprintf(`export PATH="%s:$(echo "$PATH" | sed -E 's|%s:?||g' | sed 's|:$||')"`+"\n", posixShimsDir, posixShimsDir))
 		sb.WriteString("\n")
 	} else if len(config.InjectedPaths) > 0 {
 		// PATH mode activation
 		sb.WriteString("# UniRTM PATH mode activation\n")
-		var posixPaths []string
-		for _, p := range config.InjectedPaths {
-			if runtime.GOOS == "windows" {
-				posixPaths = append(posixPaths, filepath.ToSlash(p))
-			} else {
-				posixPaths = append(posixPaths, p)
-			}
-		}
-		injectedPath := strings.Join(posixPaths, ":")
+		injectedPath := envpath.JoinForPosix(config.InjectedPaths)
 
 		// Use UNIRTM_PATH to track injected paths.
 		// Use a shell loop to filter out existing UNIRTM-managed entries from PATH,

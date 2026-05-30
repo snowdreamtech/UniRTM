@@ -13,6 +13,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/pkg/envpath"
 	"github.com/snowdreamtech/unirtm/internal/task"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -174,23 +175,7 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 	newPath := shimsDir + string(os.PathListSeparator) + env.Get("PATH")
 
 	// Deduplicate inline to keep PATH clean
-	parts := strings.Split(newPath, string(os.PathListSeparator))
-	seen := make(map[string]bool)
-	var result []string
-	for _, p := range parts {
-		if p == "" {
-			continue
-		}
-		key := p
-		if string(os.PathSeparator) == "\\" { // Windows check
-			key = strings.ToLower(p)
-		}
-		if !seen[key] {
-			seen[key] = true
-			result = append(result, p)
-		}
-	}
-	cleanPath := strings.Join(result, string(os.PathListSeparator))
+	cleanPath := envpath.DeduplicateOSPaths(newPath)
 
 	envInjects := []string{
 		fmt.Sprintf("PATH=%s", cleanPath),
