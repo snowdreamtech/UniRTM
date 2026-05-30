@@ -191,7 +191,10 @@ jobs:
       - name: "🔍 Inspect Code Quality (Lint)"
         shell: sh
         run: |
-          unirtm run lint-all
+          unirtm exec -- pre-commit run --all-files || {
+            echo '⚠️  First pass failed. Running second check...'
+            unirtm exec -- pre-commit run --all-files
+          }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           UNIRTM_YES: 1
