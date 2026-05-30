@@ -72,3 +72,94 @@ func TestNpmProvider_ListExecutables(t *testing.T) {
 	assert.Len(t, exes, 1)
 	assert.Contains(t, exes, filepath.Join(binDir, "dummy1"))
 }
+
+// TestNpmProvider_RewriteCmdNodePath_npm7Format tests that the npm 7+ IF EXIST
+// conditional block is rewritten to use the absolute node.exe path.
+func TestNpmProvider_RewriteCmdNodePath_npm7Format(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows-only .cmd rewrite test")
+	}
+	p := provider.NewNpmProvider()
+	tmpDir := t.TempDir()
+
+	// npm 7+ generated .cmd content (CRLF line endings like Windows)
+	cmdContent := "@ECHO off\r\nGOTO start\r\n:find_dp0\r\nSET dp0=%~dp0\r\nEXIT /b\r\n:start\r\nSETLOCAL\r\nCALL :find_dp0\r\nIF EXIST \"%dp0%\\node.exe\" (\r\n  SET \"_prog=%dp0%\\node.exe\"\r\n) ELSE (\r\n  SET \"_prog=node\"\r\n  SET PATHEXT=%PATHEXT:;.JS;=;%\r\n)\r\nendLocal & goto #_undefined_# 2>NUL || title %COMSPEC% & \"%_prog%\"  \"%dp0%\\..\\lib\\node_modules\\prettier\\bin\\prettier.cjs\" %*\r\n"
+	cmdFile := filepath.Join(tmpDir, "prettier.cmd")
+	require.NoError(t, os.WriteFile(cmdFile, []byte(cmdContent), 0644))
+
+	// Create a fake node.exe so fixWindowsCmdWrappers can find it
+	nodeDir := filepath.Join(tmpDir, "installs", "node", "26.1.0")
+	require.NoError(t, os.MkdirAll(nodeDir, 0755))
+	nodePath := filepath.Join(nodeDir, "node.exe")
+	require.NoError(t, os.WriteFile(nodePath, []byte(""), 0755))
+
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+
+	require.NoError(t, p.PostInstall(context.Background(), "prettier", tmpDir, "3.8.3"))
+
+	result, err := os.ReadFile(cmdFile)
+	require.NoError(t, err)
+	content := string(result)
+
+	// The IF EXIST block should be replaced with a direct SET
+	assert.Contains(t, content, `SET "_prog=`+nodePath+`"`)
+	assert.NotContains(t, content, `IF EXIST "%dp0%\node.exe"`)
+	assert.NotContains(t, content, `SET "_prog=node"`)
+	// The script path portion must remain intact
+	assert.Contains(t, content, "prettier.cjs")
+}
+
+// TestNpmProvider_RewriteCmdNodePath_LegacyFormat tests the older npm one-liner
+// format ("%~dp0\node.exe") is rewritten correctly.
+func TestNpmProvider_RewriteCmdNodePath_LegacyFormat(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows-only .cmd rewrite test")
+	}
+	p := provider.NewNpmProvider()
+	tmpDir := t.TempDir()
+
+	cmdContent := "@ECHO OFF\r\n\"%~dp0\\node.exe\"  \"%~dp0\\..\\node_modules\\prettier\\bin\\prettier.js\" %*\r\n"
+	cmdFile := filepath.Join(tmpDir, "prettier.cmd")
+	require.NoError(t, os.WriteFile(cmdFile, []byte(cmdContent), 0644))
+
+	nodeDir := filepath.Join(tmpDir, "installs", "node", "26.1.0")
+	require.NoError(t, os.MkdirAll(nodeDir, 0755))
+	nodePath := filepath.Join(nodeDir, "node.exe")
+	require.NoError(t, os.WriteFile(nodePath, []byte(""), 0755))
+
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+
+	require.NoError(t, p.PostInstall(context.Background(), "prettier", tmpDir, "3.8.3"))
+
+	result, err := os.ReadFile(cmdFile)
+	require.NoError(t, err)
+	content := string(result)
+
+	assert.Contains(t, content, `"`+nodePath+`"`)
+	assert.NotContains(t, content, `%~dp0\node.exe`)
+}
+
+// TestNpmProvider_RewriteCmdNodePath_NoNodePattern tests that .cmd files
+// without any node.exe pattern are left untouched.
+func TestNpmProvider_RewriteCmdNodePath_NoNodePattern(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows-only .cmd rewrite test")
+	}
+	p := provider.NewNpmProvider()
+	tmpDir := t.TempDir()
+
+	original := "@ECHO OFF\r\nsome-other-tool.exe %*\r\n"
+	cmdFile := filepath.Join(tmpDir, "tool.cmd")
+	require.NoError(t, os.WriteFile(cmdFile, []byte(original), 0644))
+
+	nodeDir := filepath.Join(tmpDir, "installs", "node", "26.1.0")
+	require.NoError(t, os.MkdirAll(nodeDir, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(nodeDir, "node.exe"), []byte(""), 0755))
+
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	require.NoError(t, p.PostInstall(context.Background(), "tool", tmpDir, "1.0.0"))
+
+	result, err := os.ReadFile(cmdFile)
+	require.NoError(t, err)
+	assert.Equal(t, original, string(result))
+}

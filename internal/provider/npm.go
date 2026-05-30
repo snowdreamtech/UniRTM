@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
@@ -68,7 +69,145 @@ func (p *NpmProvider) Install(ctx context.Context, tool string, installPath stri
 }
 
 func (p *NpmProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
+	// On Windows, npm generates .cmd wrappers that reference node.exe relative to the .cmd
+	// file's own directory (using %dp0%\node.exe). Since UniRTM installs Node.js and npm
+	// packages in separate, isolated directories, node.exe is never adjacent to these .cmd
+	// files. This causes all node-based tools (prettier, eslint, taplo, etc.) to fail with
+	// '"node"' is not recognized as an internal or external command'.
+	//
+	// Fix: rewrite every .cmd in the install directory to use the absolute path to the
+	// UniRTM-managed node.exe, replacing the broken relative-path fallback.
+	if runtime.GOOS != "windows" {
+		return nil
+	}
+	return p.fixWindowsCmdWrappers(installPath)
+}
+
+// fixWindowsCmdWrappers rewrites all npm-generated .cmd files in installPath to use
+// an absolute path to the UniRTM-managed node.exe.
+func (p *NpmProvider) fixWindowsCmdWrappers(installPath string) error {
+	nodePath, err := p.findNodeExe()
+	if err != nil || nodePath == "" {
+		// Cannot locate node.exe — skip rewrite silently.
+		// The .cmd files may still work if node is on the system PATH.
+		return nil
+	}
+
+	entries, err := os.ReadDir(installPath)
+	if err != nil {
+		return nil
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		if !strings.EqualFold(filepath.Ext(entry.Name()), ".cmd") {
+			continue
+		}
+		cmdFile := filepath.Join(installPath, entry.Name())
+		if rewriteErr := p.rewriteCmdNodePath(cmdFile, nodePath); rewriteErr != nil {
+			logger.Debug("npm: failed to rewrite .cmd wrapper", map[string]interface{}{
+				"file":  cmdFile,
+				"error": rewriteErr.Error(),
+			})
+		}
+	}
 	return nil
+}
+
+// findNodeExe returns the absolute path to node.exe in UniRTM's managed node installation.
+// It prefers the highest-version managed install and falls back to the system PATH.
+func (p *NpmProvider) findNodeExe() (string, error) {
+	nodeInstallsDir := filepath.Join(env.GetInstallsDir(), "node")
+	entries, err := os.ReadDir(nodeInstallsDir)
+	if err == nil {
+		var bestVer, bestPath string
+		for _, entry := range entries {
+			if !entry.IsDir() || strings.HasSuffix(entry.Name(), ".unirtm-tmp") {
+				continue
+			}
+			nodePath := filepath.Join(nodeInstallsDir, entry.Name(), "node.exe")
+			if info, statErr := os.Stat(nodePath); statErr == nil && !info.IsDir() {
+				if bestVer == "" || entry.Name() > bestVer {
+					bestVer = entry.Name()
+					bestPath = nodePath
+				}
+			}
+		}
+		if bestPath != "" {
+			return bestPath, nil
+		}
+	}
+	// Fallback: search system PATH
+	return exec.LookPath("node.exe")
+}
+
+// rewriteCmdNodePath rewrites a single npm-generated .cmd file so that it uses
+// the given absolute nodePath instead of the relative %dp0%\node.exe that npm embeds.
+//
+// npm 7+ generates a conditional block:
+//
+//	IF EXIST "%dp0%\node.exe" (
+//	  SET "_prog=%dp0%\node.exe"
+//	) ELSE (
+//	  SET "_prog=node"
+//	  SET PATHEXT=%PATHEXT:;.JS;=;%
+//	)
+//
+// We replace that entire block with:
+//
+//	SET "_prog=<absolute nodePath>"
+//
+// Older npm versions use a simpler one-liner:
+//
+//	"%~dp0\node.exe" "...\script.js" %*
+//
+// We replace "%~dp0\node.exe" with "<absolute nodePath>".
+func (p *NpmProvider) rewriteCmdNodePath(cmdPath, nodePath string) error {
+	data, err := os.ReadFile(cmdPath)
+	if err != nil {
+		return err
+	}
+	content := string(data)
+
+	// Bail out quickly if neither known pattern is present.
+	if !strings.Contains(content, `%dp0%\node.exe`) &&
+		!strings.Contains(content, `%~dp0\node.exe`) {
+		return nil
+	}
+
+	replacement := fmt.Sprintf(`SET "_prog=%s"`, nodePath)
+
+	// Pattern 1 — npm 7+ conditional block (CRLF or LF tolerant).
+	// Find "IF EXIST "%dp0%\node.exe" (" and replace through the closing ")".
+	const ifExistMarker = `IF EXIST "%dp0%\node.exe" (`
+	if idx := strings.Index(content, ifExistMarker); idx != -1 {
+		// The block ends at the next bare ")" on its own line.
+		// npm formats it as "\r\n)" (Windows) or "\n)" (Unix editors).
+		after := content[idx:]
+		// Look for the closing ")" — it follows a newline and is the first non-space char.
+		closingIdx := -1
+		for _, nl := range []string{"\r\n)", "\n)"} {
+			if ci := strings.Index(after, nl); ci != -1 {
+				if closingIdx == -1 || ci < closingIdx {
+					closingIdx = ci + len(nl)
+				}
+			}
+		}
+		if closingIdx != -1 {
+			content = content[:idx] + replacement + content[idx+closingIdx:]
+		}
+	}
+
+	// Pattern 2 — older npm one-liner: "%~dp0\node.exe" …
+	content = strings.ReplaceAll(
+		content,
+		`"%~dp0\node.exe"`,
+		fmt.Sprintf(`"%s"`, nodePath),
+	)
+
+	return os.WriteFile(cmdPath, []byte(content), 0644)
 }
 
 func (p *NpmProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
