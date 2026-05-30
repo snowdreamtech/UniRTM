@@ -177,6 +177,7 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 			interp.Env(expand.ListEnviron(fullEnv...)),
 			interp.Dir(dir),
 			interp.StdIO(os.Stdin, stdout, stderr),
+			interp.Params("-e"),
 		)
 		if runnerErr != nil {
 			err = fmt.Errorf("failed to create shell runner: %w", runnerErr)
