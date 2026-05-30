@@ -199,14 +199,22 @@ func (g *Generator) generateWindowsShim(tool, executable string) error {
 	_ = os.Remove(filepath.Join(g.shimsDir, executable+".ps1"))
 
 	// 3. Create a Hard Link to the UniRTM binary
-	if err := os.Link(unirtmPath, shimPath); err != nil {
-		// Fallback to minimal wrapper script if hard link fails (e.g. cross-partition)
-		cmdContent := fmt.Sprintf("@echo off\n\"%s\" shim \"%%~n0\" %%*\n", unirtmPath)
-		cmdPath := filepath.Join(g.shimsDir, executable+".cmd")
-		return os.WriteFile(cmdPath, []byte(cmdContent), 0644)
+	// On Windows, you cannot delete a hard link to a running executable.
+	// In tests, unirtmPath is the test runner (.test.exe), so creating a hard link
+	// causes t.TempDir() cleanup to fail with "Access is denied".
+	// We fallback to .cmd if we are in a test environment.
+	isTest := strings.HasSuffix(unirtmPath, ".test.exe") || strings.HasSuffix(unirtmPath, ".test")
+
+	if !isTest {
+		if err := os.Link(unirtmPath, shimPath); err == nil {
+			return nil
+		}
 	}
 
-	return nil
+	// Fallback to minimal wrapper script if hard link fails (e.g. cross-partition) or if in tests
+	cmdContent := fmt.Sprintf("@echo off\n\"%s\" shim \"%%~n0\" %%*\n", unirtmPath)
+	cmdPath := filepath.Join(g.shimsDir, executable+".cmd")
+	return os.WriteFile(cmdPath, []byte(cmdContent), 0644)
 }
 
 // toolVersionEnvVar returns the environment variable name for a tool's active version.
