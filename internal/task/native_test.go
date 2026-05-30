@@ -5,7 +5,6 @@ package task
 
 import (
 	"context"
-	"runtime"
 	"testing"
 
 	"github.com/snowdreamtech/unirtm/internal/config"
@@ -13,15 +12,10 @@ import (
 )
 
 func TestNativeRunner_runTaskWithGraph_Timeout(t *testing.T) {
-	runCmd := "sleep 5"
-	if runtime.GOOS == "windows" {
-		// Use PowerShell to sleep on Windows since 'sleep' command does not exist natively
-		runCmd = "powershell -Command Start-Sleep -Seconds 5"
-	}
-
 	tasks := map[string]config.Task{
 		"slow": {
-			Run:     runCmd,
+			// A pure shell infinite loop ensures cross-platform blocking without needing external executables
+			Run:     "while true; do :; done",
 			Timeout: 1,
 		},
 	}
