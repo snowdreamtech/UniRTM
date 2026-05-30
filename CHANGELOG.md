@@ -6,6 +6,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0](https://github.com/snowdreamtech/UniRTM/compare/v0.2.7...v0.3.0) (2026-05-30)
+
+
+### Features
+
+* **task:** enable errexit (set -e) by default for native shell tasks ([add9283](https://github.com/snowdreamtech/UniRTM/commit/add92837723af5b03214cdf986141592ab2e69b8))
+
+
+### Bug Fixes
+
+* **ci:** bypass unirtm task runner to capture pre-commit output on windows ([e32c9d8](https://github.com/snowdreamtech/UniRTM/commit/e32c9d841aa62ebd8de8e76bc82c0acb80f256aa))
+* **ci:** disable step-security harden-runner on non-ubuntu OSes ([2f78a32](https://github.com/snowdreamtech/UniRTM/commit/2f78a321d308e7c2d933d9ece155149af4d3d890))
+
 ## [0.2.7](https://github.com/snowdreamtech/UniRTM/compare/v0.2.6...v0.2.7) (2026-05-30)
 
 
