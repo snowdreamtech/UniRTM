@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1](https://github.com/snowdreamtech/UniRTM/compare/v0.3.0...v0.3.1) (2026-05-30)
+
+
+### Bug Fixes
+
+* **install:** skip atomic rename for Python providers to avoid PE executable corruption ([f0a80bb](https://github.com/snowdreamtech/UniRTM/commit/f0a80bbc7b8601484aaba57e97b6f7bfecba45cd))
+
 ## [0.3.0](https://github.com/snowdreamtech/UniRTM/compare/v0.2.7...v0.3.0) (2026-05-30)
 
 
