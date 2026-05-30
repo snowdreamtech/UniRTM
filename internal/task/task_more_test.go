@@ -8,6 +8,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,7 +20,7 @@ func TestGoTaskRunner_More(t *testing.T) {
 	os.MkdirAll(binDir, 0755)
 
 	// Create fake task script
-	fakeTask := filepath.Join(binDir, "task")
+	exeName := "task"
 	script := `#!/bin/sh
 if [ "$1" = "--list-all" ]; then
   echo "* build:   Build the project"
@@ -29,6 +30,19 @@ if [ "$1" = "--list-all" ]; then
 fi
 exit 0
 `
+	if runtime.GOOS == "windows" {
+		exeName = "task.cmd"
+		script = `@echo off
+if "%1"=="--list-all" (
+  echo * build:   Build the project
+  echo * test:    Run tests
+  echo   some other line
+  exit /b 0
+)
+exit /b 0
+`
+	}
+	fakeTask := filepath.Join(binDir, exeName)
 	os.WriteFile(fakeTask, []byte(script), 0755)
 
 	// Update PATH
@@ -62,7 +76,7 @@ func TestJustRunner_More(t *testing.T) {
 	os.MkdirAll(binDir, 0755)
 
 	// Create fake just script
-	fakeJust := filepath.Join(binDir, "just")
+	exeName := "just"
 	script := `#!/bin/sh
 if [ "$1" = "--summary" ]; then
   echo "build test lint"
@@ -70,6 +84,17 @@ if [ "$1" = "--summary" ]; then
 fi
 exit 0
 `
+	if runtime.GOOS == "windows" {
+		exeName = "just.cmd"
+		script = `@echo off
+if "%1"=="--summary" (
+  echo build test lint
+  exit /b 0
+)
+exit /b 0
+`
+	}
+	fakeJust := filepath.Join(binDir, exeName)
 	os.WriteFile(fakeJust, []byte(script), 0755)
 
 	// Update PATH
