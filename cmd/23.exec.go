@@ -103,25 +103,42 @@ Examples:
 	RunE: runExec,
 }
 
+func deduplicatePathString(pathStr string) string {
+	parts := strings.Split(pathStr, string(os.PathListSeparator))
+	var result []string
+	seen := make(map[string]bool)
+	for _, p := range parts {
+		if p == "" {
+			continue
+		}
+		// On Windows, paths are case-insensitive, so we use lower case for deduplication.
+		key := p
+		if runtime.GOOS == "windows" {
+			key = strings.ToLower(p)
+		}
+		if !seen[key] {
+			seen[key] = true
+			result = append(result, p)
+		}
+	}
+	return strings.Join(result, string(os.PathListSeparator))
+}
+
 // mergeEnvMaps merges src into dst.  PATH values are combined additively so
 // that each tool's bin directory is prepended in order.
 func mergeEnvMaps(dst, src map[string]string) {
 	for k, v := range src {
 		if k == "PATH" {
 			if dst["PATH"] != "" {
-				dst["PATH"] = v + string(os.PathListSeparator) + dst["PATH"]
+				dst["PATH"] = deduplicatePathString(v + string(os.PathListSeparator) + dst["PATH"])
 			} else {
-				dst["PATH"] = v
+				dst["PATH"] = deduplicatePathString(v)
 			}
 		} else if k == "NODE_PATH" {
 			if dst["NODE_PATH"] != "" {
-				// Avoid duplicates
-				sep := string(os.PathListSeparator)
-				if !strings.Contains(dst["NODE_PATH"]+sep, v+sep) {
-					dst["NODE_PATH"] = dst["NODE_PATH"] + sep + v
-				}
+				dst["NODE_PATH"] = deduplicatePathString(dst["NODE_PATH"] + string(os.PathListSeparator) + v)
 			} else {
-				dst["NODE_PATH"] = v
+				dst["NODE_PATH"] = deduplicatePathString(v)
 			}
 		} else {
 			dst[k] = v
@@ -137,16 +154,16 @@ func applyEnvMap(envMap map[string]string) {
 		if k == "PATH" && v != "" {
 			existing := os.Getenv("PATH")
 			if existing != "" {
-				os.Setenv(k, v+string(os.PathListSeparator)+existing)
+				os.Setenv(k, deduplicatePathString(v+string(os.PathListSeparator)+existing))
 			} else {
-				os.Setenv(k, v)
+				os.Setenv(k, deduplicatePathString(v))
 			}
 		} else if k == "NODE_PATH" && v != "" {
 			existing := os.Getenv("NODE_PATH")
 			if existing != "" {
-				os.Setenv(k, existing+string(os.PathListSeparator)+v)
+				os.Setenv(k, deduplicatePathString(existing+string(os.PathListSeparator)+v))
 			} else {
-				os.Setenv(k, v)
+				os.Setenv(k, deduplicatePathString(v))
 			}
 		} else if v != "" {
 			os.Setenv(k, v)
