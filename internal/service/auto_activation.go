@@ -418,13 +418,16 @@ func (m *AutoActivationManager) generatePosixDeactivation(sb *strings.Builder, s
 		sb.WriteString("\n")
 	} else {
 		// No previous path known, clean up what we injected
-		shimsDir := m.activationManager.shimsDir
+		posixShimsDir := m.activationManager.shimsDir
+		if runtime.GOOS == "windows" {
+			posixShimsDir = filepath.ToSlash(posixShimsDir)
+		}
 		sb.WriteString("# Clean up UniRTM paths from PATH\n")
 		sb.WriteString("_unirtm_clean_path() {\n")
 		sb.WriteString("  local result=\"\"\n")
 		sb.WriteString("  local IFS=:\n")
 		sb.WriteString("  for _p in $PATH; do\n")
-		sb.WriteString(fmt.Sprintf("    case \":$UNIRTM_PATH:%s:\" in\n", shimsDir))
+		sb.WriteString(fmt.Sprintf("    case \":$UNIRTM_PATH:%s:\" in\n", posixShimsDir))
 		sb.WriteString("      *\":$_p:\"*) ;;\n")
 		sb.WriteString("      *) result=\"${result:+$result:}$_p\" ;;\n")
 		sb.WriteString("    esac\n")

@@ -113,6 +113,10 @@ func generateDeactivationScript(shellType string) string {
 
 // generatePosixDeactivationScript generates a POSIX-compatible deactivation script.
 func generatePosixDeactivationScript(shimsDir string) string {
+	posixShimsDir := shimsDir
+	if runtime.GOOS == "windows" {
+		posixShimsDir = filepath.ToSlash(posixShimsDir)
+	}
 	return fmt.Sprintf(`# UniRTM deactivation script
 # 1. Clean up shims and injected paths from PATH
 _unirtm_clean_path() {
@@ -142,7 +146,7 @@ done
 # 4. Remove hook if present
 unset -f unirtm
 unset -f _unirtm_hook
-`, shimsDir)
+`, posixShimsDir)
 }
 
 // generateFishDeactivationScript generates a fish shell deactivation script.
