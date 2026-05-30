@@ -974,6 +974,21 @@ func (im *InstallationManager) EnsureInstalledFromSpecs(ctx context.Context, too
 		// Check if already installed using robust variant detection
 		installed, _ := im.IsInstalled(ctx, toolName, version, backendName)
 		if installed {
+			// On Windows, npm-generated .cmd wrappers may have been restored from
+			// a cache that was built before PostInstall was implemented. Re-run
+			// PostInstall unconditionally for npm tools on Windows — it is idempotent
+			// (reads & rewrites .cmd files) and a no-op on non-Windows platforms.
+			if runtime.GOOS == "windows" && backendName == "npm" {
+				p := im.providerRegistry.GetWithBackend(toolName, backendName)
+				fsName := env.GetFSToolName(toolName, backendName)
+				installPath := filepath.Join(env.GetInstallsDir(), fsName, version)
+				if postErr := p.PostInstall(ctx, toolName, installPath, version); postErr != nil {
+					logger.Debug("npm PostInstall repair skipped", map[string]interface{}{
+						"tool":  toolName,
+						"error": postErr.Error(),
+					})
+				}
+			}
 			continue
 		}
 
