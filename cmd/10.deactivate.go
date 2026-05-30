@@ -184,10 +184,10 @@ func generatePowerShellDeactivationScript(shimsDir string) string {
 # 1. Clean up PATH
 $unirtmPaths = @()
 if ($env:UNIRTM_PATH) {
-    $unirtmPaths = $env:UNIRTM_PATH -split ';'
+    $unirtmPaths = $env:UNIRTM_PATH -split '%c'
 }
 $shimsDir = "%s"
-$env:PATH = ($env:PATH -split ';' | Where-Object { $unirtmPaths -notcontains $_ -and $_ -ne $shimsDir }) -join ';'
+$env:PATH = ($env:PATH -split '%c' | Where-Object { $unirtmPaths -notcontains $_ -and $_ -ne $shimsDir }) -join '%c'
 
 # 2. Unset environment variables
 Remove-Item Env:\UNIRTM_PATH -ErrorAction SilentlyContinue
@@ -201,5 +201,5 @@ Get-ChildItem Env: | Where-Object { $_.Name -match '^UNIRTM_.*_VERSION$' } | For
 
 # 4. Remove hook
 if (Test-Path Function:\unirtm) { Remove-Item Function:\unirtm }
-`, shimsDir)
+`, os.PathListSeparator, shimsDir, os.PathListSeparator, os.PathListSeparator)
 }

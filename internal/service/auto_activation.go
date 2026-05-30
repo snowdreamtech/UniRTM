@@ -518,9 +518,9 @@ func (m *AutoActivationManager) generatePowerShellDeactivation(sb *strings.Build
 		}
 		sb.WriteString("# Clean up UniRTM paths from PATH\n")
 		sb.WriteString("$unirtmPaths = @()\n")
-		sb.WriteString("if ($env:UNIRTM_PATH) { $unirtmPaths = $env:UNIRTM_PATH -split ';' }\n")
+		sb.WriteString(fmt.Sprintf("if ($env:UNIRTM_PATH) { $unirtmPaths = $env:UNIRTM_PATH -split '%c' }\n", os.PathListSeparator))
 		sb.WriteString(fmt.Sprintf("$shimsDir = \"%s\"\n", shimsDir))
-		sb.WriteString("$env:PATH = ($env:PATH -split ';' | Where-Object { $unirtmPaths -notcontains $_ -and $_ -ne $shimsDir }) -join ';'\n")
+		sb.WriteString(fmt.Sprintf("$env:PATH = ($env:PATH -split '%c' | Where-Object { $unirtmPaths -notcontains $_ -and $_ -ne $shimsDir }) -join '%c'\n", os.PathListSeparator, os.PathListSeparator))
 		sb.WriteString("\n")
 	}
 

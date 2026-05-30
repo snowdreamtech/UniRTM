@@ -5,6 +5,8 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -53,7 +55,7 @@ func TestActivationManager_GenerateProjectActivation_More(t *testing.T) {
 	config.Shell = ShellPowerShell
 	psScript, err := m.GenerateActivationScript(ctx, config)
 	require.NoError(t, err)
-	assert.Contains(t, psScript.Content, "$env:UNIRTM_PATH = $unirtmPaths -join ';'")
+	assert.Contains(t, psScript.Content, fmt.Sprintf("$env:UNIRTM_PATH = $unirtmPaths -join '%c'", os.PathListSeparator))
 	assert.Contains(t, psScript.Content, "$env:UNIRTM_NODE_VERSION = \"20.0.0\"")
 	assert.Contains(t, psScript.Content, "$env:FOO = \"bar\"")
 	assert.Contains(t, psScript.Content, ". \"/path/to/source.fish\"")

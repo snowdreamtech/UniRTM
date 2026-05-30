@@ -481,7 +481,7 @@ func (m *ActivationManager) generatePowerShellScript(config ActivationConfig) (*
 			shimsDir = filepath.FromSlash(shimsDir)
 		}
 		sb.WriteString(fmt.Sprintf("$shimsDir = \"%s\"\n", shimsDir))
-		sb.WriteString("$env:PATH = \"$shimsDir;\" + (($env:PATH -split ';') | Where-Object { $_ -ne $shimsDir } -join ';')\n")
+		sb.WriteString(fmt.Sprintf("$env:PATH = \"$shimsDir%c\" + (($env:PATH -split '%c') | Where-Object { $_ -ne $shimsDir } -join '%c')\n", os.PathListSeparator, os.PathListSeparator, os.PathListSeparator))
 		sb.WriteString("\n")
 	} else if len(config.InjectedPaths) > 0 {
 		// PATH mode activation
@@ -494,10 +494,10 @@ func (m *ActivationManager) generatePowerShellScript(config ActivationConfig) (*
 			}
 			paths = append(paths, path)
 		}
-		injectedPath := strings.Join(paths, ";")
-		sb.WriteString(fmt.Sprintf("$unirtmPaths = \"%s\" -split ';'\n", injectedPath))
-		sb.WriteString("$env:UNIRTM_PATH = $unirtmPaths -join ';'\n")
-		sb.WriteString("$env:PATH = ($env:UNIRTM_PATH + ';' + (($env:PATH -split ';') | Where-Object { $unirtmPaths -notcontains $_ } -join ';'))\n")
+		injectedPath := strings.Join(paths, string(os.PathListSeparator))
+		sb.WriteString(fmt.Sprintf("$unirtmPaths = \"%s\" -split '%c'\n", injectedPath, os.PathListSeparator))
+		sb.WriteString(fmt.Sprintf("$env:UNIRTM_PATH = $unirtmPaths -join '%c'\n", os.PathListSeparator))
+		sb.WriteString(fmt.Sprintf("$env:PATH = ($env:UNIRTM_PATH + '%c' + (($env:PATH -split '%c') | Where-Object { $unirtmPaths -notcontains $_ } -join '%c'))\n", os.PathListSeparator, os.PathListSeparator, os.PathListSeparator))
 		sb.WriteString("\n")
 	}
 
