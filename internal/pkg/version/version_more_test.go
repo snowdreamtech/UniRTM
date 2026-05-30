@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package service
+package version
 
 import (
 	"testing"
@@ -33,7 +33,7 @@ func TestParseSemVerPartial(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			v, err := parseSemVerPartial(tt.input)
+			v, err := ParseSemVerPartial(tt.input)
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("expected error for %s", tt.input)
@@ -80,8 +80,8 @@ func TestSemVer_Compare_Full(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.v1+"_"+tt.v2, func(t *testing.T) {
-			v1, _ := parseSemVer(tt.v1)
-			v2, _ := parseSemVer(tt.v2)
+			v1, _ := ParseSemVer(tt.v1)
+			v2, _ := ParseSemVer(tt.v2)
 
 			res := v1.Compare(v2)
 			if res != tt.expected {
@@ -93,7 +93,7 @@ func TestSemVer_Compare_Full(t *testing.T) {
 	// Test nils
 	var n1 *SemVer
 	var n2 *SemVer
-	v, _ := parseSemVer("1.0.0")
+	v, _ := ParseSemVer("1.0.0")
 
 	if n1.Compare(n2) != 0 {
 		t.Error("expected 0")

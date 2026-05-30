@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
+	"github.com/snowdreamtech/unirtm/internal/pkg/version"
 )
 
 // VersionManager handles version constraint parsing and resolution.
@@ -29,17 +30,17 @@ func NewVersionManager(backends map[string]backend.Backend) *VersionManager {
 // Returns an error if:
 // - The version string is empty (explicit version required)
 // - The version string is invalid
-func (vm *VersionManager) ParseVersionConstraint(versionStr string) (*Version, error) {
+func (vm *VersionManager) ParseVersionConstraint(versionStr string) (*version.Version, error) {
 	if versionStr == "" {
 		return nil, fmt.Errorf("version specification is required: must be an exact version (e.g., 1.20.0), range (e.g., >=1.20.0, ^3.11, ~2.7.0), or alias (latest, lts, stable)")
 	}
 
-	version, err := ParseVersion(versionStr)
+	ver, err := version.ParseVersion(versionStr)
 	if err != nil {
 		return nil, fmt.Errorf("parse version constraint: %w", err)
 	}
 
-	return version, nil
+	return ver, nil
 }
 
 // ResolveVersion resolves a version specification to a concrete version using the specified backend.
@@ -66,7 +67,7 @@ func (vm *VersionManager) ResolveVersion(ctx context.Context, backendName, tool,
 	}
 
 	// Parse the version specification
-	version, err := vm.ParseVersionConstraint(versionSpec)
+	ver, err := vm.ParseVersionConstraint(versionSpec)
 	if err != nil {
 		return nil, fmt.Errorf("resolve version for tool '%s': %w", tool, err)
 	}
@@ -78,16 +79,16 @@ func (vm *VersionManager) ResolveVersion(ctx context.Context, backendName, tool,
 	}
 
 	// Resolve based on version type
-	switch version.Type {
-	case VersionTypeExact:
+	switch ver.Type {
+	case version.VersionTypeExact:
 		// For exact versions, get download info directly
-		versionInfo, err := b.GetDownloadInfo(ctx, tool, version.String(), platform)
+		versionInfo, err := b.GetDownloadInfo(ctx, tool, ver.String(), platform)
 		if err != nil {
-			return nil, fmt.Errorf("get download info for tool '%s' version '%s': %w", tool, version.String(), err)
+			return nil, fmt.Errorf("get download info for tool '%s' version '%s': %w", tool, ver.String(), err)
 		}
 		return versionInfo, nil
 
-	case VersionTypeAlias, VersionTypeRange:
+	case version.VersionTypeAlias, version.VersionTypeRange:
 		// For aliases and ranges, delegate to backend resolution
 		versionInfo, err := b.ResolveVersion(ctx, tool, versionSpec, platform)
 		if err != nil {
@@ -96,7 +97,7 @@ func (vm *VersionManager) ResolveVersion(ctx context.Context, backendName, tool,
 		return versionInfo, nil
 
 	default:
-		return nil, fmt.Errorf("unknown version type %d for tool '%s'", version.Type, tool)
+		return nil, fmt.Errorf("unknown version type %d for tool '%s'", ver.Type, tool)
 	}
 }
 
@@ -109,7 +110,7 @@ func (vm *VersionManager) ValidateVersionConstraint(versionStr string) error {
 		return fmt.Errorf("version specification cannot be empty")
 	}
 
-	_, err := ParseVersion(versionStr)
+	_, err := version.ParseVersion(versionStr)
 	if err != nil {
 		return fmt.Errorf("invalid version constraint: %w", err)
 	}

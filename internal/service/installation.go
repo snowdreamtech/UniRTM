@@ -25,6 +25,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/gpg"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
+	"github.com/snowdreamtech/unirtm/internal/pkg/version"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/provider/native"
 	"github.com/snowdreamtech/unirtm/internal/repository"
@@ -148,8 +149,8 @@ func (im *InstallationManager) SelectVersionInteractive(ctx context.Context, too
 
 	// 3. Sort versions in descending order (newest first)
 	sort.SliceStable(versionInfos, func(i, j int) bool {
-		vI, errI := parseSemVer(versionInfos[i].Version)
-		vJ, errJ := parseSemVer(versionInfos[j].Version)
+		vI, errI := version.ParseSemVer(versionInfos[i].Version)
+		vJ, errJ := version.ParseSemVer(versionInfos[j].Version)
 
 		if errI == nil && errJ == nil {
 			// Both are valid SemVer, sort descending
@@ -228,31 +229,31 @@ func (im *InstallationManager) executeHook(ctx context.Context, cmdStr, tool, ve
 }
 
 // IsInstalled checks if a tool version is installed, considering version variants (v-prefix).
-func (im *InstallationManager) IsInstalled(ctx context.Context, tool, version, backendName string) (bool, *repository.Installation) {
+func (im *InstallationManager) IsInstalled(ctx context.Context, tool, versionSpec, backendName string) (bool, *repository.Installation) {
 	// 1. Resolve aliases
-	version = im.resolveAlias(tool, version)
+	versionSpec = im.resolveAlias(tool, versionSpec)
 
 	// 2. Standardize tool name for filesystem check
 	fsToolName := env.GetFSToolName(tool, backendName)
 
 	// 3. Prepare variants to check (original, and normalized if it's a semver)
-	variants := []string{version}
-	if v, err := ParseVersion(version); err == nil && v.Type == VersionTypeExact {
+	variants := []string{versionSpec}
+	if v, err := version.ParseVersion(versionSpec); err == nil && v.Type == version.VersionTypeExact {
 		normalized := v.String()
-		if normalized != version {
+		if normalized != versionSpec {
 			variants = append(variants, normalized)
 		}
 		// If input didn't have 'v' but parse was successful, try adding 'v' just in case
 		// though our standard is usually no 'v' in the directory name.
-		if !strings.HasPrefix(version, "v") && !strings.HasPrefix(version, "V") {
+		if !strings.HasPrefix(versionSpec, "v") && !strings.HasPrefix(versionSpec, "V") {
 			variants = append(variants, "v"+normalized)
 		}
 	} else {
 		// Not a standard semver, try basic v-stripping as fallback
-		if strings.HasPrefix(version, "v") || strings.HasPrefix(version, "V") {
-			variants = append(variants, version[1:])
+		if strings.HasPrefix(versionSpec, "v") || strings.HasPrefix(versionSpec, "V") {
+			variants = append(variants, versionSpec[1:])
 		} else {
-			variants = append(variants, "v"+version)
+			variants = append(variants, "v"+versionSpec)
 		}
 	}
 

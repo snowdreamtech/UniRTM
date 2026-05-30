@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package service
+package version
 
 import (
 	"fmt"
@@ -128,7 +128,7 @@ func ParseVersion(versionStr string) (*Version, error) {
 
 	// Check for caret range (^)
 	if matches := caretRegex.FindStringSubmatch(versionStr); matches != nil {
-		semver, err := parseSemVer(matches[1])
+		semver, err := ParseSemVer(matches[1])
 		if err != nil {
 			return nil, fmt.Errorf("invalid caret range version: %w", err)
 		}
@@ -142,7 +142,7 @@ func ParseVersion(versionStr string) (*Version, error) {
 	// Check for tilde range (~)
 	if matches := tildeRegex.FindStringSubmatch(versionStr); matches != nil {
 		// Try full semver parser first (handles prerelease and build metadata)
-		semver, err := parseSemVer(matches[1])
+		semver, err := ParseSemVer(matches[1])
 		if err == nil {
 			// Full semver parse succeeded
 			return &Version{
@@ -153,7 +153,7 @@ func ParseVersion(versionStr string) (*Version, error) {
 		}
 
 		// Fall back to partial parser for cases like ~1 or ~1.2
-		semver, err = parseSemVerPartial(matches[1])
+		semver, err = ParseSemVerPartial(matches[1])
 		if err != nil {
 			return nil, fmt.Errorf("invalid tilde range version: %w", err)
 		}
@@ -166,7 +166,7 @@ func ParseVersion(versionStr string) (*Version, error) {
 
 	// Check for comparison range (>=, >, <=, <, =)
 	if matches := rangeRegex.FindStringSubmatch(versionStr); matches != nil {
-		semver, err := parseSemVer(matches[2])
+		semver, err := ParseSemVer(matches[2])
 		if err != nil {
 			return nil, fmt.Errorf("invalid range version: %w", err)
 		}
@@ -178,9 +178,13 @@ func ParseVersion(versionStr string) (*Version, error) {
 	}
 
 	// Try to parse as exact semver
-	semver, err := parseSemVer(versionStr)
+	semver, err := ParseSemVer(versionStr)
 	if err != nil {
-		return nil, fmt.Errorf("invalid version string '%s': must be a valid semver (e.g., 1.2.3), range (e.g., >=1.2.0, ^1.2.3, ~1.2.0), or alias (latest, lts, stable): %w", versionStr, err)
+		// Fallback to partial semver for robustness (e.g. "18.2" or "1")
+		semver, err = ParseSemVerPartial(versionStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid version string '%s': must be a valid semver (e.g., 1.2.3), partial semver (e.g., 1.2), range (e.g., >=1.2.0, ^1.2.3, ~1.2.0), or alias (latest, lts, stable): %w", versionStr, err)
+		}
 	}
 
 	return &Version{
@@ -189,8 +193,8 @@ func ParseVersion(versionStr string) (*Version, error) {
 	}, nil
 }
 
-// parseSemVer parses a semantic version string into a SemVer struct
-func parseSemVer(versionStr string) (*SemVer, error) {
+// ParseSemVer parses a semantic version string into a SemVer struct
+func ParseSemVer(versionStr string) (*SemVer, error) {
 	// Remove optional 'v' prefix
 	versionStr = strings.TrimPrefix(versionStr, "v")
 	versionStr = strings.TrimPrefix(versionStr, "V")
@@ -224,9 +228,9 @@ func parseSemVer(versionStr string) (*SemVer, error) {
 	}, nil
 }
 
-// parseSemVerPartial parses a partial semantic version string (for tilde ranges)
+// ParseSemVerPartial parses a partial semantic version string (for tilde ranges)
 // Supports: 1, 1.2, 1.2.3, 1.2.3-alpha, etc.
-func parseSemVerPartial(versionStr string) (*SemVer, error) {
+func ParseSemVerPartial(versionStr string) (*SemVer, error) {
 	// Remove optional 'v' prefix
 	versionStr = strings.TrimPrefix(versionStr, "v")
 	versionStr = strings.TrimPrefix(versionStr, "V")

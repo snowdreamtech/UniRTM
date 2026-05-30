@@ -13,10 +13,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/blang/semver"
-
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
+	"github.com/snowdreamtech/unirtm/internal/pkg/version"
 )
 
 // NpmProvider implements the Provider interface for npm packages.
@@ -132,7 +131,7 @@ func (p *NpmProvider) findNodeExe() (string, error) {
 			}
 			nodePath := filepath.Join(nodeInstallsDir, entry.Name(), "node.exe")
 			if info, statErr := os.Stat(nodePath); statErr == nil && !info.IsDir() {
-				if bestVer == "" || compareVersions(entry.Name(), bestVer) > 0 {
+				if bestVer == "" || version.CompareVersions(entry.Name(), bestVer) > 0 {
 					bestVer = entry.Name()
 					bestPath = nodePath
 				}
@@ -368,7 +367,7 @@ func (p *NpmProvider) findNpm() (string, error) {
 				}
 				for _, cand := range candidates {
 					if info, err := os.Stat(cand); err == nil && !info.IsDir() {
-						if bestVer == "" || compareVersions(entry.Name(), bestVer) > 0 {
+						if bestVer == "" || version.CompareVersions(entry.Name(), bestVer) > 0 {
 							bestVer = entry.Name()
 							bestPath = cand
 						}
@@ -384,28 +383,4 @@ func (p *NpmProvider) findNpm() (string, error) {
 
 	// 2. Fallback to system PATH
 	return exec.LookPath("npm")
-}
-
-// compareVersions parses and compares two version strings using semver.
-// Returns 1 if v1 > v2, -1 if v1 < v2, and 0 if v1 == v2.
-// It uses ParseTolerant to handle 'v' prefixes and fallbacks to string comparison if parsing fails.
-func compareVersions(v1, v2 string) int {
-	s1, err1 := semver.ParseTolerant(v1)
-	s2, err2 := semver.ParseTolerant(v2)
-	if err1 == nil && err2 == nil {
-		return s1.Compare(s2)
-	}
-	if err1 == nil {
-		return 1
-	}
-	if err2 == nil {
-		return -1
-	}
-	if v1 > v2 {
-		return 1
-	}
-	if v1 < v2 {
-		return -1
-	}
-	return 0
 }

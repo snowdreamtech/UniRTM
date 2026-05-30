@@ -21,7 +21,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
-	"github.com/snowdreamtech/unirtm/internal/service"
+	"github.com/snowdreamtech/unirtm/internal/pkg/version"
 	"github.com/spf13/cobra"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
@@ -202,7 +202,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 
 			// Normalize version using official service package logic
 			v := t.Version
-			if ver, err := service.ParseVersion(v); err == nil {
+			if ver, err := version.ParseVersion(v); err == nil {
 				v = ver.String()
 			}
 
@@ -383,7 +383,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		for name, t := range cfg.Tools {
 			slug := env.GetFSToolName(name, t.Backend)
 			v := t.Version
-			if ver, err := service.ParseVersion(v); err == nil {
+			if ver, err := version.ParseVersion(v); err == nil {
 				v = ver.String()
 			}
 			if _, err := os.Stat(filepath.Join(env.GetInstallsDir(), slug, v)); os.IsNotExist(err) {

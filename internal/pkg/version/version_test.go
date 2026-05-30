@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package service
+package version
 
 import (
 	"testing"
@@ -86,6 +86,16 @@ func TestParseSemVer(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:    "invalid format - missing patch",
+			input:   "1.2",
+			wantErr: true,
+		},
+		{
+			name:    "invalid format - non-numeric",
+			input:   "1.2.x",
+			wantErr: true,
+		},
+		{
 			name:    "empty string",
 			input:   "",
 			wantErr: true,
@@ -94,7 +104,7 @@ func TestParseSemVer(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseSemVer(tt.input)
+			got, err := ParseSemVer(tt.input)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
+	"github.com/snowdreamtech/unirtm/internal/pkg/version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -102,56 +103,56 @@ func TestVersionManager_ParseVersionConstraint(t *testing.T) {
 	tests := []struct {
 		name        string
 		versionStr  string
-		wantType    VersionType
+		wantType    version.VersionType
 		wantErr     bool
 		errContains string
 	}{
 		{
 			name:       "exact version",
 			versionStr: "1.20.0",
-			wantType:   VersionTypeExact,
+			wantType:   version.VersionTypeExact,
 			wantErr:    false,
 		},
 		{
 			name:       "exact version with v prefix",
 			versionStr: "v1.20.0",
-			wantType:   VersionTypeExact,
+			wantType:   version.VersionTypeExact,
 			wantErr:    false,
 		},
 		{
 			name:       "range with >=",
 			versionStr: ">=1.20.0",
-			wantType:   VersionTypeRange,
+			wantType:   version.VersionTypeRange,
 			wantErr:    false,
 		},
 		{
 			name:       "caret range",
 			versionStr: "^3.11.0",
-			wantType:   VersionTypeRange,
+			wantType:   version.VersionTypeRange,
 			wantErr:    false,
 		},
 		{
 			name:       "tilde range",
 			versionStr: "~2.7.0",
-			wantType:   VersionTypeRange,
+			wantType:   version.VersionTypeRange,
 			wantErr:    false,
 		},
 		{
 			name:       "latest alias",
 			versionStr: "latest",
-			wantType:   VersionTypeAlias,
+			wantType:   version.VersionTypeAlias,
 			wantErr:    false,
 		},
 		{
 			name:       "lts alias",
 			versionStr: "lts",
-			wantType:   VersionTypeAlias,
+			wantType:   version.VersionTypeAlias,
 			wantErr:    false,
 		},
 		{
 			name:       "stable alias",
 			versionStr: "stable",
-			wantType:   VersionTypeAlias,
+			wantType:   version.VersionTypeAlias,
 			wantErr:    false,
 		},
 		{
