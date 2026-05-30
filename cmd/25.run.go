@@ -169,8 +169,31 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 
 	// Prepare environment injects
 	shimsDir := env.GetShimsDir()
+
+	// Safe PATH merging to avoid hardcoded colons and exponential explosion on Windows
+	newPath := shimsDir + string(os.PathListSeparator) + env.Get("PATH")
+
+	// Deduplicate inline to keep PATH clean
+	parts := strings.Split(newPath, string(os.PathListSeparator))
+	seen := make(map[string]bool)
+	var result []string
+	for _, p := range parts {
+		if p == "" {
+			continue
+		}
+		key := p
+		if string(os.PathSeparator) == "\\" { // Windows check
+			key = strings.ToLower(p)
+		}
+		if !seen[key] {
+			seen[key] = true
+			result = append(result, p)
+		}
+	}
+	cleanPath := strings.Join(result, string(os.PathListSeparator))
+
 	envInjects := []string{
-		fmt.Sprintf("PATH=%s:%s", shimsDir, env.Get("PATH")),
+		fmt.Sprintf("PATH=%s", cleanPath),
 	}
 
 	isFix, _ := cmd.Flags().GetBool("fix")
