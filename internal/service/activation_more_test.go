@@ -47,7 +47,7 @@ func TestActivationManager_GenerateProjectActivation_More(t *testing.T) {
 
 	fishScript, err := m.GenerateActivationScript(ctx, config)
 	require.NoError(t, err)
-	assert.Contains(t, fishScript.Content, "set -gx UNIRTM_PATH /data/installs/node/20.0.0/bin")
+	assert.Contains(t, fishScript.Content, "set -gx UNIRTM_PATH \"/data/installs/node/20.0.0/bin\"")
 	assert.Contains(t, fishScript.Content, "set -gx UNIRTM_NODE_VERSION \"20.0.0\"")
 	assert.Contains(t, fishScript.Content, "set -gx FOO \"bar\"")
 	assert.Contains(t, fishScript.Content, "source \"/path/to/source.fish\"")

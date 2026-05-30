@@ -386,7 +386,11 @@ func (m *ActivationManager) generateFishScript(config ActivationConfig) (*Activa
 		// PATH mode activation
 		sb.WriteString("# UniRTM PATH mode activation\n")
 		// In fish, PATH is a list. We filter out existing UniRTM paths to avoid duplicates.
-		injectedPath := strings.Join(config.InjectedPaths, " ")
+		var quotedPaths []string
+		for _, p := range config.InjectedPaths {
+			quotedPaths = append(quotedPaths, fmt.Sprintf("%q", p))
+		}
+		injectedPath := strings.Join(quotedPaths, " ")
 		sb.WriteString(fmt.Sprintf("set -gx UNIRTM_PATH %s\n", injectedPath))
 		sb.WriteString("set -l new_path\n")
 		sb.WriteString("for p in $PATH\n")

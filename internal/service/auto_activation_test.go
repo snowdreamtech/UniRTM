@@ -346,7 +346,7 @@ func TestGenerateDeactivationScript_Fish(t *testing.T) {
 	script := autoMgr.generateDeactivationScript(ShellFish, state)
 
 	assert.Contains(t, script, "# UniRTM deactivation script")
-	assert.Contains(t, script, "set -gx PATH /usr/bin /bin")
+	assert.Contains(t, script, "set -gx PATH \"/usr/bin\" \"/bin\"")
 	assert.Contains(t, script, "set -e UNIRTM_GO_VERSION")
 	assert.Contains(t, script, "set -e UNIRTM_ACTIVATION_SCOPE")
 	assert.Contains(t, script, "set -e UNIRTM_PROJECT_DIR")

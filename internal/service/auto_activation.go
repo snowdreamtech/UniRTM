@@ -407,7 +407,14 @@ func (m *AutoActivationManager) generatePosixDeactivation(sb *strings.Builder, s
 	// Restore PATH or clean up injected paths
 	if state.PreviousPath != "" {
 		sb.WriteString("# Restore previous PATH\n")
-		sb.WriteString(fmt.Sprintf("export PATH=\"%s\"\n", state.PreviousPath))
+		// state.PreviousPath is captured via env.Get("PATH").
+		// On Windows, this uses os.PathListSeparator (;).
+		// But for POSIX shells (bash/zsh) we must always use ':'.
+		posixPath := state.PreviousPath
+		if runtime.GOOS == "windows" {
+			posixPath = strings.ReplaceAll(posixPath, string(os.PathListSeparator), ":")
+		}
+		sb.WriteString(fmt.Sprintf("export PATH=\"%s\"\n", posixPath))
 		sb.WriteString("\n")
 	} else {
 		// No previous path known, clean up what we injected
@@ -460,9 +467,16 @@ func (m *AutoActivationManager) generateFishDeactivation(sb *strings.Builder, st
 	// Restore PATH or clean up
 	if state.PreviousPath != "" {
 		sb.WriteString("# Restore previous PATH\n")
-		// In fish, PATH is a list. We assume PreviousPath is colon-separated or space-separated based on how it was captured.
-		// If it's from env.Get("PATH"), it's likely colon-separated.
-		fishPath := strings.ReplaceAll(state.PreviousPath, ":", " ")
+		// In fish, PATH is a list. PreviousPath is captured via env.Get("PATH")
+		// and is separated by os.PathListSeparator. We need to split and quote elements.
+		parts := strings.Split(state.PreviousPath, string(os.PathListSeparator))
+		var quotedParts []string
+		for _, p := range parts {
+			if p != "" {
+				quotedParts = append(quotedParts, fmt.Sprintf("%q", p))
+			}
+		}
+		fishPath := strings.Join(quotedParts, " ")
 		sb.WriteString(fmt.Sprintf("set -gx PATH %s\n", fishPath))
 		sb.WriteString("\n")
 	} else {
