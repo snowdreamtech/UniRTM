@@ -333,8 +333,16 @@ func emitShellEnv(shell string, pathDirs []string, vars []envVarEntry, sources [
 	default:
 		// bash / zsh / posix sh
 		if len(pathDirs) > 0 {
+			var posixPaths []string
+			for _, p := range pathDirs {
+				if runtime.GOOS == "windows" {
+					posixPaths = append(posixPaths, filepath.ToSlash(p))
+				} else {
+					posixPaths = append(posixPaths, p)
+				}
+			}
 			fmt.Printf("export PATH=%q\n",
-				strings.Join(pathDirs, string(os.PathListSeparator))+string(os.PathListSeparator)+"$PATH")
+				strings.Join(posixPaths, ":")+":$PATH")
 		}
 		for _, v := range vars {
 			fmt.Printf("export %s=%q\n", v.Name, v.Value)
