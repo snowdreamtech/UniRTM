@@ -255,6 +255,9 @@ func getInstallationManager(ctx context.Context, cfg *config.Config) (*service.I
 		lockSvc,
 		settings,
 	)
+	// Transfer ownership of the DB to the manager so callers can close it
+	// via im.Close() when the command finishes.
+	im.SetDB(db)
 
 	if cfg != nil {
 		im.SetAliases(cfg.Aliases)

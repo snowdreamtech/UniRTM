@@ -120,6 +120,10 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 	if cfg.Settings.AutoInstall == nil || *cfg.Settings.AutoInstall {
 		installManager, err := getInstallationManager(ctx, cfg)
 		if err == nil {
+			// Close the database connection when runRun returns to prevent
+			// file-lock errors on Windows (the db file must be released before
+			// any test TempDir cleanup can delete it).
+			defer installManager.Close()
 			if err := installManager.EnsureInstalled(ctx, cfg.Tools); err != nil {
 				// Log warning but continue
 				fmt.Fprintf(os.Stderr, "⚠ auto-install warning: %v\n", err)

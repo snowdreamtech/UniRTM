@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -30,6 +31,7 @@ func TestRunDeactivate(t *testing.T) {
 	cmd.SetOut(&buf)
 
 	// Test default execution (usually bash/zsh depending on env)
+	// On Windows the shell auto-detects to powershell
 	err := runDeactivate(cmd, []string{})
 	assert.NoError(t, err)
 
@@ -39,8 +41,15 @@ func TestRunDeactivate(t *testing.T) {
 	out, _ := io.ReadAll(r)
 	script := string(out)
 
-	assert.Contains(t, script, "unset UNIRTM_PATH")
-	assert.Contains(t, script, "unset UNIRTM_ACTIVATION_SCOPE")
+	if runtime.GOOS == "windows" {
+		// Windows: auto-detected shell is powershell
+		assert.Contains(t, script, "Remove-Item Env:\\UNIRTM_PATH")
+		assert.Contains(t, script, "Remove-Item Env:\\UNIRTM_ACTIVATION_SCOPE")
+	} else {
+		// Unix: auto-detected shell is bash/zsh
+		assert.Contains(t, script, "unset UNIRTM_PATH")
+		assert.Contains(t, script, "unset UNIRTM_ACTIVATION_SCOPE")
+	}
 }
 
 func TestRunDeactivate_ShellSpecific(t *testing.T) {

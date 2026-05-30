@@ -21,6 +21,7 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/config"
+	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/gpg"
@@ -58,6 +59,7 @@ type InstallationManager struct {
 	toolConfigs      map[string]config.ToolConfig
 	gpgVerifier      gpg.Verifier
 	shimGenerator    *Generator
+	db               *database.DB // underlying DB connection; closed by Close()
 }
 
 // NewInstallationManager creates a new installation manager without lockfile support.
@@ -110,6 +112,22 @@ func (im *InstallationManager) SetAliases(aliases map[string]map[string]string) 
 // SetToolConfigs sets the tool configurations for hooks.
 func (im *InstallationManager) SetToolConfigs(toolConfigs map[string]config.ToolConfig) {
 	im.toolConfigs = toolConfigs
+}
+
+// SetDB stores the underlying database handle so it can be closed with Close().
+// This must be called after NewInstallationManagerWithLock when the caller
+// owns the database lifetime.
+func (im *InstallationManager) SetDB(db *database.DB) {
+	im.db = db
+}
+
+// Close releases the underlying database connection held by the manager.
+// It is safe to call Close on a nil or already-closed manager.
+func (im *InstallationManager) Close() error {
+	if im != nil && im.db != nil {
+		return im.db.Close()
+	}
+	return nil
 }
 
 // resolveAlias resolves a version alias for a tool.
