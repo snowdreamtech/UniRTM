@@ -30,6 +30,12 @@ func (p *PythonProvider) Name() string {
 	return "python"
 }
 
+// SkipAtomicRename indicates that this provider requires installing directly into the final path.
+// This is necessary because Python virtualenvs hardcode absolute paths in executable PE wrappers on Windows.
+func (p *PythonProvider) SkipAtomicRename() bool {
+	return true
+}
+
 // Install performs Python-specific installation.
 func (p *PythonProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	return p.generic.Install(ctx, tool, installPath, artifactPath, version)

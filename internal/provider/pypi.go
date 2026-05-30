@@ -28,6 +28,12 @@ func (p *PypiProvider) Name() string {
 	return "pypi"
 }
 
+// SkipAtomicRename indicates that this provider requires installing directly into the final path.
+// This is necessary because Python virtualenvs hardcode absolute paths in executable PE wrappers on Windows.
+func (p *PypiProvider) SkipAtomicRename() bool {
+	return true
+}
+
 func (p *PypiProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	// Ensure parent dir exists
 	if err := os.MkdirAll(filepath.Dir(installPath), 0755); err != nil {

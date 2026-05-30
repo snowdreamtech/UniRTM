@@ -673,38 +673,49 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 	installPath := filepath.Join(env.GetInstallsDir(), fsToolName, version)
 	tmpInstallPath := installPath + ".unirtm-tmp"
 
-	// Clean up any stale directories from previous failed attempts
-	os.RemoveAll(tmpInstallPath)
-	// If final path exists but we reached here, it means it's not in the database.
-	// We'll overwrite it to be safe.
-	os.RemoveAll(installPath)
+	p := im.providerRegistry.GetWithBackend(tool, backendName)
 
-	if err := os.MkdirAll(filepath.Dir(tmpInstallPath), 0755); err != nil {
-		return fmt.Errorf("failed to create installs directory: %w", err)
+	var actualInstallPath string
+	if skippable, ok := p.(interface{ SkipAtomicRename() bool }); ok && skippable.SkipAtomicRename() {
+		actualInstallPath = installPath
+	} else {
+		actualInstallPath = tmpInstallPath
 	}
 
-	p := im.providerRegistry.GetWithBackend(tool, backendName)
+	// Clean up any stale directories from previous failed attempts
+	os.RemoveAll(actualInstallPath)
+	if actualInstallPath != installPath {
+		// If final path exists but we reached here, it means it's not in the database.
+		// We'll overwrite it to be safe.
+		os.RemoveAll(installPath)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(actualInstallPath), 0755); err != nil {
+		return fmt.Errorf("failed to create installs directory: %w", err)
+	}
 
 	if !quietProgress {
 		fmt.Printf("ℹ extracting %s@%s...\n", tool, version)
 	}
-	if err := p.Install(ctx, tool, tmpInstallPath, downloadPath, version); err != nil {
-		os.RemoveAll(tmpInstallPath)
+	if err := p.Install(ctx, tool, actualInstallPath, downloadPath, version); err != nil {
+		os.RemoveAll(actualInstallPath)
 		return fmt.Errorf("installation failed: %w", err)
 	}
 
 	if !quietProgress {
 		fmt.Printf("ℹ running post-install hooks for %s@%s...\n", tool, version)
 	}
-	if err := p.PostInstall(ctx, tool, tmpInstallPath, version); err != nil {
-		os.RemoveAll(tmpInstallPath)
+	if err := p.PostInstall(ctx, tool, actualInstallPath, version); err != nil {
+		os.RemoveAll(actualInstallPath)
 		return fmt.Errorf("post-install failed: %w", err)
 	}
 
-	// Atomic rename from temp to final path
-	if err := os.Rename(tmpInstallPath, installPath); err != nil {
-		os.RemoveAll(tmpInstallPath)
-		return fmt.Errorf("failed to finalize installation: %w", err)
+	if actualInstallPath != installPath {
+		// Atomic rename from temp to final path
+		if err := os.Rename(actualInstallPath, installPath); err != nil {
+			os.RemoveAll(actualInstallPath)
+			return fmt.Errorf("failed to finalize installation: %w", err)
+		}
 	}
 
 	if !quietProgress {
