@@ -117,6 +117,7 @@ jobs:
     env:
       VENV: ".venv"
       PYTHONUTF8: 1
+      STEP_SECURITY_DISABLE: ${{ matrix.os != 'ubuntu-latest' }}
     steps:
       - name: "🔒 Harden Runner"
         if: matrix.os == 'ubuntu-latest'
