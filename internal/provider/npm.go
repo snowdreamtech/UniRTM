@@ -262,16 +262,55 @@ func (p *NpmProvider) ListExecutables(tool string, installPath string, version s
 	return executables, nil
 }
 
-// GetBinPaths returns the absolute path to the bin directory.
+// GetBinPaths returns the absolute path(s) to the directories containing the
+// tool's executables.
+//
+// On Windows, we also append the directory containing node.exe from the
+// UniRTM-managed Node.js installation. This provides a second safety net:
+// even if PostInstall's .cmd rewrite is skipped for any reason, the npm .cmd
+// fallback path (SET "_prog=node") will still resolve because node.exe's
+// directory is on PATH.
 func (p *NpmProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
+	var paths []string
+
+	// Primary bin directory for the npm package itself.
 	binDir := filepath.Join(installPath, "bin")
 	if _, err := os.Stat(binDir); os.IsNotExist(err) {
-		return []string{installPath}, nil
+		paths = append(paths, installPath)
+	} else {
+		paths = append(paths, binDir)
 	}
-	return []string{binDir}, nil
+
+	// Windows only: also expose the node.exe directory so that npm-generated
+	// .cmd wrappers can find the node runtime via PATH as a last resort.
+	if runtime.GOOS == "windows" {
+		if nodeBin := p.findNodeBinDir(); nodeBin != "" {
+			paths = append(paths, nodeBin)
+		}
+	}
+
+	return paths, nil
 }
 
-// GetEnvVars returns NODE_PATH for npm tools so plugins can be resolved.
+// findNodeBinDir returns the directory containing node.exe in the
+// UniRTM-managed installation. On Windows, node.exe lives directly in the
+// version directory (no bin/ subdirectory).
+func (p *NpmProvider) findNodeBinDir() string {
+	nodePath, err := p.findNodeExe()
+	if err != nil || nodePath == "" {
+		return ""
+	}
+	return filepath.Dir(nodePath)
+}
+
+// GetEnvVars returns environment variables that should be set when this npm
+// tool is active.
+//
+//   - NODE_PATH: lets Node.js resolve globally-installed peer plugins
+//     (e.g. @commitlint/config-conventional for @commitlint/cli).
+//   - NPM_CONFIG_PREFIX (Windows-only): aligns npm's prefix with the package
+//     install directory so any subsequent `npm` invocations inside the tool
+//     do not create files in unexpected locations.
 func (p *NpmProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
 	envVars := make(map[string]string)
 
@@ -279,12 +318,19 @@ func (p *NpmProvider) GetEnvVars(tool string, installPath string, version string
 	// (like @commitlint/config-conventional for @commitlint/cli) can be resolved.
 	nodeModulesDir := filepath.Join(installPath, "lib", "node_modules")
 	if _, err := os.Stat(nodeModulesDir); os.IsNotExist(err) {
-		// Fallback for Windows
+		// Fallback for Windows: npm with --prefix puts modules directly under prefix.
 		nodeModulesDir = filepath.Join(installPath, "node_modules")
 	}
 
 	if info, err := os.Stat(nodeModulesDir); err == nil && info.IsDir() {
 		envVars["NODE_PATH"] = nodeModulesDir
+	}
+
+	// Windows-only: set NPM_CONFIG_PREFIX so that npm resolves the correct
+	// global prefix when called within the context of this tool. Without this,
+	// npm would fall back to a system-wide or user-home prefix.
+	if runtime.GOOS == "windows" {
+		envVars["NPM_CONFIG_PREFIX"] = installPath
 	}
 
 	return envVars, nil
