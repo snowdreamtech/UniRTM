@@ -182,11 +182,10 @@ jobs:
           persist-credentials: false
 
       - name: "⚡ Setup UniRTM"
-        uses: snowdreamtech/setup-unirtm@7179307932d80de895332764c96db439fc161361 # v0.2.1
+        uses: snowdreamtech/setup-unirtm@c773417d14a0d94177e00ba00f7a730d87437ebc # v0.2.2
         with:
           install: true
           trust: true
-          version: "latest"
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
       - name: "🔍 Inspect Code Quality (Lint)"
@@ -282,11 +281,10 @@ jobs:
           persist-credentials: false
 
       - name: "⚡ Setup UniRTM"
-        uses: snowdreamtech/setup-unirtm@7179307932d80de895332764c96db439fc161361 # v0.2.1
+        uses: snowdreamtech/setup-unirtm@c773417d14a0d94177e00ba00f7a730d87437ebc # v0.2.2
         with:
           install: true
           trust: true
-          version: "latest"
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
       - name: "📦 Cache Language Dependencies (Advanced)"
@@ -409,11 +407,10 @@ jobs:
           fetch-depth: 0
 
       - name: "⚡ Setup UniRTM"
-        uses: snowdreamtech/setup-unirtm@v0.2.1
+        uses: snowdreamtech/setup-unirtm@c773417d14a0d94177e00ba00f7a730d87437ebc # v0.2.2
         with:
           install: true
           trust: true
-          version: "latest"
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
       - name: "📝 Validate Commit Convention (Commitlint)"
