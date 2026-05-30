@@ -187,16 +187,26 @@ func (p *NpmProvider) rewriteCmdNodePath(cmdPath, nodePath string) error {
 	//   ...
 	// )
 	reNpm7 := regexp.MustCompile(`(?i)IF EXIST "%~?dp0%?\\node\.exe" \([\s\S]*?\) ELSE \([\s\S]*?\)`)
+	modified := false
 	if reNpm7.MatchString(content) {
 		content = reNpm7.ReplaceAllString(content, replacement)
+		modified = true
 	}
 
 	// Pattern 2 — older npm one-liner: "%~dp0\node.exe" …
-	content = strings.ReplaceAll(
+	newContent := strings.ReplaceAll(
 		content,
 		`"%~dp0\node.exe"`,
 		fmt.Sprintf(`"%s"`, nodePath),
 	)
+	if newContent != content {
+		content = newContent
+		modified = true
+	}
+
+	if !modified {
+		return nil
+	}
 
 	return os.WriteFile(cmdPath, []byte(content), 0644)
 }
