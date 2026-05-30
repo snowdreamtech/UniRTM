@@ -29,12 +29,14 @@ func TestContainerProvider_Install(t *testing.T) {
 		t.Fatalf("failed to create fake bin dir: %v", err)
 	}
 
-	fakeDockerPath := filepath.Join(fakeDockerDir, "docker")
-	if runtime.GOOS == "windows" {
-		fakeDockerPath += ".bat"
-		os.WriteFile(fakeDockerPath, []byte("@echo off\nexit 0"), 0755)
-	} else {
-		os.WriteFile(fakeDockerPath, []byte("#!/bin/sh\nexit 0"), 0755)
+	for _, bin := range []string{"podman", "docker", "nerdctl"} {
+		fakePath := filepath.Join(fakeDockerDir, bin)
+		if runtime.GOOS == "windows" {
+			fakePath += ".bat"
+			os.WriteFile(fakePath, []byte("@echo off\nexit 0"), 0755)
+		} else {
+			os.WriteFile(fakePath, []byte("#!/bin/sh\nexit 0"), 0755)
+		}
 	}
 
 	// Prepend fake bin dir to PATH
@@ -92,12 +94,14 @@ func TestContainerProvider_Install_Digest(t *testing.T) {
 	fakeDockerDir := filepath.Join(tempDir, "fake-bin")
 	os.MkdirAll(fakeDockerDir, 0755)
 
-	fakeDockerPath := filepath.Join(fakeDockerDir, "docker")
-	if runtime.GOOS == "windows" {
-		fakeDockerPath += ".bat"
-		os.WriteFile(fakeDockerPath, []byte("@echo off\nexit 0"), 0755)
-	} else {
-		os.WriteFile(fakeDockerPath, []byte("#!/bin/sh\nexit 0"), 0755)
+	for _, bin := range []string{"podman", "docker", "nerdctl"} {
+		fakePath := filepath.Join(fakeDockerDir, bin)
+		if runtime.GOOS == "windows" {
+			fakePath += ".bat"
+			os.WriteFile(fakePath, []byte("@echo off\nexit 0"), 0755)
+		} else {
+			os.WriteFile(fakePath, []byte("#!/bin/sh\nexit 0"), 0755)
+		}
 	}
 
 	originalPath := os.Getenv("PATH")
