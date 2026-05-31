@@ -197,19 +197,36 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		for _, name := range keys {
 			t := cfg.Tools[name]
 
-			// Use official normalization logic from env package (slugification)
-			slug := env.GetFSToolName(name, t.Backend)
-
-			// Normalize version using official service package logic
-			v := t.Version
-			if ver, err := version.ParseVersion(v); err == nil {
-				v = ver.String()
+			// 1. Resolve correct backend name if embedded in the tool spec
+			backendName := t.Backend
+			toolName := name
+			if backendName == "" {
+				if idx := strings.Index(name, ":"); idx != -1 {
+					backendName = name[:idx]
+					toolName = name[idx+1:]
+					if backendName == "go" {
+						backendName = "go-pkg"
+					}
+				}
 			}
 
-			installStatus := pterm.LightGreen("✓ installed")
-			toolPath := filepath.Join(env.GetInstallsDir(), slug, v)
-			if _, err := os.Stat(toolPath); os.IsNotExist(err) {
-				installStatus = pterm.LightRed("✗ missing")
+			// Use official normalization logic from env package (slugification)
+			slug := env.GetFSToolName(toolName, backendName)
+
+			// 2. Normalize version correctly (some backends strip 'v', some don't)
+			v := t.Version
+			installStatus := pterm.LightRed("✗ missing")
+
+			toolPathExact := filepath.Join(env.GetInstallsDir(), slug, v)
+			if _, err := os.Stat(toolPathExact); err == nil {
+				installStatus = pterm.LightGreen("✓ installed")
+			} else {
+				if ver, err := version.ParseVersion(v); err == nil {
+					toolPathNorm := filepath.Join(env.GetInstallsDir(), slug, ver.String())
+					if _, err := os.Stat(toolPathNorm); err == nil {
+						installStatus = pterm.LightGreen("✓ installed")
+					}
+				}
 			}
 
 			toolData = append(toolData, []string{
@@ -381,13 +398,32 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	missingTools := 0
 	if cfg != nil {
 		for name, t := range cfg.Tools {
-			slug := env.GetFSToolName(name, t.Backend)
-			v := t.Version
-			if ver, err := version.ParseVersion(v); err == nil {
-				v = ver.String()
+			backendName := t.Backend
+			toolName := name
+			if backendName == "" {
+				if idx := strings.Index(name, ":"); idx != -1 {
+					backendName = name[:idx]
+					toolName = name[idx+1:]
+					if backendName == "go" {
+						backendName = "go-pkg"
+					}
+				}
 			}
-			if _, err := os.Stat(filepath.Join(env.GetInstallsDir(), slug, v)); os.IsNotExist(err) {
-				missingTools++
+			slug := env.GetFSToolName(toolName, backendName)
+			v := t.Version
+
+			toolPathExact := filepath.Join(env.GetInstallsDir(), slug, v)
+			if _, err := os.Stat(toolPathExact); os.IsNotExist(err) {
+				found := false
+				if ver, err := version.ParseVersion(v); err == nil {
+					toolPathNorm := filepath.Join(env.GetInstallsDir(), slug, ver.String())
+					if _, err := os.Stat(toolPathNorm); err == nil {
+						found = true
+					}
+				}
+				if !found {
+					missingTools++
+				}
 			}
 		}
 	}
