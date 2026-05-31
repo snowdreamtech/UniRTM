@@ -78,6 +78,9 @@ func runTestTool(cmd *cobra.Command, args []string) error {
 
 	// 2. Parse exactly which tools we are meant to test (duplicating parsing logic from install.go)
 	im, err := getInstallationManager(ctx, cfg)
+	if im != nil {
+		defer im.Close()
+	}
 	if err != nil {
 		return fmt.Errorf("failed to get installation manager: %w", err)
 	}

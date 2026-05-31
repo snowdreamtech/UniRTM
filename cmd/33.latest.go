@@ -63,6 +63,9 @@ func runLatest(cmd *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 	im, _ := getInstallationManager(ctx, nil)
+	if im != nil {
+		defer im.Close()
+	}
 
 	backendName, tool, versionPrefix, explicit := im.ParseToolSpec(args[0])
 	if latestBackend != "" {

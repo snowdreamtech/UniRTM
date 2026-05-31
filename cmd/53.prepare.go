@@ -81,6 +81,9 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 
 	// 2. Load installation manager and check UniRTM tools
 	im, err := getInstallationManager(ctx, cfg)
+	if im != nil {
+		defer im.Close()
+	}
 	if err != nil {
 		formatter.Error("Failed to initialize installation manager", map[string]interface{}{"error": err.Error()})
 		return err

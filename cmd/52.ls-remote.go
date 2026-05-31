@@ -77,6 +77,9 @@ func runLsRemote(cmd *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 	im, _ := getInstallationManager(ctx, cfg)
+	if im != nil {
+		defer im.Close()
+	}
 
 	backendName, tool, versionPrefix, explicit := im.ParseToolSpec(args[0])
 	if lsRemoteBackend != "" {

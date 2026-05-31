@@ -232,6 +232,9 @@ func runExec(cmd *cobra.Command, args []string) error {
 	// ── 3. Initialise installation manager ───────────────────────────────────
 
 	installManager, imErr := getInstallationManager(ctx, cfg)
+	if installManager != nil {
+		defer installManager.Close()
+	}
 	if imErr != nil && verbose {
 		output.Warningf("Failed to initialise installation manager: %v", imErr)
 	}
@@ -382,6 +385,14 @@ func runExec(cmd *cobra.Command, args []string) error {
 	}
 
 	// ── 10. Execute ──────────────────────────────────────────────────────────
+
+	// Explicitly close the installation manager (and its database connection) 
+	// BEFORE spawning the child process. On Windows, child processes block the
+	// parent process. If the parent holds the SQLite lock, any child process
+	// that tries to use unirtm will fail with 'database is locked'.
+	if installManager != nil {
+		installManager.Close()
+	}
 
 	if runtime.GOOS != "windows" {
 		// Unix: replace the current process image — zero overhead, no wrapper.

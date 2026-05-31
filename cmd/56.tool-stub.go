@@ -115,6 +115,9 @@ func runToolStub(cmd *cobra.Command, args []string) error {
 
 	cfg, _ := config.LoadFull()
 	installManager, err := getInstallationManager(ctx, cfg)
+	if installManager != nil {
+		defer installManager.Close()
+	}
 	if err != nil {
 		return fmt.Errorf("failed to init installation manager: %w", err)
 	}

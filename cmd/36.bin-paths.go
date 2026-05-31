@@ -87,6 +87,9 @@ func runBinPaths(cmd *cobra.Command, args []string) error {
 
 	// Iterate over tools defined in current config
 	im, _ := getInstallationManager(ctx, cfg)
+	if im != nil {
+		defer im.Close()
+	}
 	for _, toolNameKey := range toolNames {
 		toolCfg := cfg.Tools[toolNameKey]
 		_, toolName, version, _ := im.ParseToolSpec(toolNameKey)

@@ -133,6 +133,9 @@ func invokeShimMode(exeName string) {
 
 	// 2. Get installation manager
 	im, err := getInstallationManager(ctx, cfg)
+	if im != nil {
+		defer im.Close()
+	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: failed to initialize installation manager for shim %s: %v\n", exeName, err)
 		os.Exit(1)

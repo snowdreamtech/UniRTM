@@ -48,6 +48,9 @@ func runWhere(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	cfg, _ := config.LoadFull()
 	im, err := getInstallationManager(ctx, cfg)
+	if im != nil {
+		defer im.Close()
+	}
 	if err != nil {
 		return err
 	}

@@ -110,6 +110,9 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 	// Get installation manager early for parsing and selection
 	im, err := getInstallationManager(ctx, cfg)
+	if im != nil {
+		defer im.Close()
+	}
 	if err != nil {
 		formatter.Error("Failed to initialize installation manager", map[string]interface{}{
 			"error": err.Error(),

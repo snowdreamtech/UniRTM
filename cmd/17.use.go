@@ -88,6 +88,9 @@ func runUse(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	backendRegistry := backend.NewRegistry()
 	im, _ := getInstallationManager(ctx, cfg)
+	if im != nil {
+		defer im.Close()
+	}
 
 	// Parse tool@version pairs
 	type toolVersion struct {
