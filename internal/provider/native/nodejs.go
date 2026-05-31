@@ -73,15 +73,15 @@ func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		}
 
 		for _, f := range v.Files {
-			osName, archName, rawArch, isSupported := parseNodeFile(f)
+			osName, archName, rawArch, ext, isSupported := parseNodeFile(f)
 			if !isSupported {
 				continue
 			}
 
-			downloadURL := fmt.Sprintf("%s/%s/node-%s-%s-%s.tar.gz", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, rawArch)
+			downloadURL := fmt.Sprintf("%s/%s/node-%s-%s-%s%s", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, rawArch, ext)
 			if flavor == "musl" {
 				// unofficial-builds naming convention: node-vX.Y.Z-linux-ARCH-musl.tar.gz
-				downloadURL = fmt.Sprintf("%s/%s/node-%s-%s-%s-musl.tar.gz", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, rawArch)
+				downloadURL = fmt.Sprintf("%s/%s/node-%s-%s-%s-musl%s", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, rawArch, ext)
 			}
 
 			vi.Assets = append(vi.Assets, Asset{
@@ -105,15 +105,34 @@ func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 	return versions, nil
 }
 
-func parseNodeFile(f string) (string, string, string, bool) {
-	// Node files format: os-arch (e.g., linux-x64, osx-arm64)
+func parseNodeFile(f string) (string, string, string, string, bool) {
+	// Node files format: os-arch (e.g., linux-x64, osx-arm64, win-x64-zip)
 	parts := strings.Split(f, "-")
 	if len(parts) < 2 {
-		return "", "", "", false
+		return "", "", "", "", false
 	}
 
 	osName := parts[0]
 	rawArch := parts[1]
+	ext := ".tar.gz"
+
+	if len(parts) >= 3 {
+		format := parts[2]
+		switch format {
+		case "zip":
+			ext = ".zip"
+		case "7z":
+			ext = ".7z"
+		case "msi":
+			ext = ".msi"
+		case "pkg":
+			ext = ".pkg"
+		case "exe":
+			ext = ".exe"
+		case "tar":
+			ext = ".tar.gz"
+		}
+	}
 
 	// Map osx to darwin
 	if osName == "osx" {
@@ -129,10 +148,10 @@ func parseNodeFile(f string) (string, string, string, bool) {
 		archName = "386"
 	}
 
-	// Skip non-tar.gz formats for now (like .msi, .pkg, .exe)
-	if strings.Contains(f, "zip") || strings.Contains(f, "7z") || strings.Contains(f, "msi") || strings.Contains(f, "pkg") {
-		return "", "", "", false
+	// Skip non-tar.gz and non-zip formats for now
+	if ext == ".7z" || ext == ".msi" || ext == ".pkg" || ext == ".exe" {
+		return "", "", "", "", false
 	}
 
-	return osName, archName, rawArch, true
+	return osName, archName, rawArch, ext, true
 }
