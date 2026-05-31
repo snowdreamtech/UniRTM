@@ -7,6 +7,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -59,7 +60,7 @@ func runCompletion(cmd *cobra.Command, args []string) error {
 	formatter := output.NewFormatter(output.FormatterOptions{
 		Format:  getOutputFormat(),
 		NoColor: false,
-		Writer:  os.Stdout,
+		Writer:  cmd.OutOrStdout(),
 		Quiet:   quiet,
 	})
 
@@ -122,7 +123,7 @@ func runCompletion(cmd *cobra.Command, args []string) error {
 
 	// 4. If not installing, just print to stdout
 	if !completionInstall {
-		return generateCompletion(cmd, shellType, os.Stdout)
+		return generateCompletion(cmd, shellType, cmd.OutOrStdout())
 	}
 
 	// 5. Install persistently (Plan B style)
@@ -136,7 +137,7 @@ func runCompletion(cmd *cobra.Command, args []string) error {
 	return err
 }
 
-func generateCompletion(cmd *cobra.Command, shellType service.ShellType, out *os.File) error {
+func generateCompletion(cmd *cobra.Command, shellType service.ShellType, out io.Writer) error {
 	switch shellType {
 	case service.ShellBash:
 		return cmd.Root().GenBashCompletion(out)
