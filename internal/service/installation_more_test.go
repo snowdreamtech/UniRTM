@@ -387,14 +387,18 @@ func TestInstallationManager_ResolveExecutable(t *testing.T) {
 	}
 
 	// Create executable files
+	ext := ""
+	if runtime.GOOS == "windows" {
+		ext = ".exe"
+	}
 	nodeDir := filepath.Join(tmpDir, "node", "bin")
 	os.MkdirAll(nodeDir, 0755)
-	nodeExec := filepath.Join(nodeDir, "node")
+	nodeExec := filepath.Join(nodeDir, "node"+ext)
 	os.WriteFile(nodeExec, []byte("exec"), 0755)
 
 	pyDir := filepath.Join(tmpDir, "python", "bin")
 	os.MkdirAll(pyDir, 0755)
-	pyExec := filepath.Join(pyDir, "python-3.9")
+	pyExec := filepath.Join(pyDir, "python-3.9"+ext)
 	os.WriteFile(pyExec, []byte("exec"), 0755)
 
 	// Mock provider

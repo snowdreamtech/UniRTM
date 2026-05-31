@@ -334,18 +334,20 @@ func TestGenerateDeactivationScript_Fish(t *testing.T) {
 	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
 	autoMgr := NewAutoActivationManager(activationMgr)
 
+	pathList := "/usr/bin" + string(os.PathListSeparator) + "/bin"
 	state := &EnvironmentState{
 		ProjectDir: "/home/user/project",
 		ToolVersions: map[string]string{
 			"go": "1.21.0",
 		},
 		EnvVars:      make(map[string]string),
-		PreviousPath: "/usr/bin:/bin",
+		PreviousPath: pathList,
 	}
 
 	script := autoMgr.generateDeactivationScript(ShellFish, state)
 
 	assert.Contains(t, script, "# UniRTM deactivation script")
+	// the generated script quotes each element and separates by space
 	assert.Contains(t, script, "set -gx PATH \"/usr/bin\" \"/bin\"")
 	assert.Contains(t, script, "set -e UNIRTM_GO_VERSION")
 	assert.Contains(t, script, "set -e UNIRTM_ACTIVATION_SCOPE")
