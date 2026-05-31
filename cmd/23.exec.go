@@ -386,7 +386,7 @@ func runExec(cmd *cobra.Command, args []string) error {
 
 	// ── 10. Execute ──────────────────────────────────────────────────────────
 
-	// Explicitly close the installation manager (and its database connection) 
+	// Explicitly close the installation manager (and its database connection)
 	// BEFORE spawning the child process. On Windows, child processes block the
 	// parent process. If the parent holds the SQLite lock, any child process
 	// that tries to use unirtm will fail with 'database is locked'.
