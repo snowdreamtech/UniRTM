@@ -32,6 +32,7 @@ func TestRunCompletion_Install(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
 
 	// Create dummy shell config
 	err := os.WriteFile(filepath.Join(tmpDir, ".zshrc"), []byte(""), 0644)
@@ -57,6 +58,7 @@ func TestRunCompletion_Uninstall(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
 
 	// Create dummy completion file
 	compDir := filepath.Join(tmpDir, "completions")
@@ -86,6 +88,7 @@ func TestRunCompletion_All(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
 
 	// Create dummy shell config
 	err := os.WriteFile(filepath.Join(tmpDir, ".zshrc"), []byte(""), 0644)
