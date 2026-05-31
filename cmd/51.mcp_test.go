@@ -35,7 +35,7 @@ func TestHandleMCPTool(t *testing.T) {
 
 	// Test install_tool (use a dummy tool to avoid actually downloading large binaries like Node.js during tests)
 	resp = handleMCPTool(ctx, 4, "install_tool", map[string]interface{}{"tool": "dummy-mcp-tool", "version": "1.0.0"})
-	assert.NotNil(t, resp.Error) // Will fail because dummy-mcp-tool doesn't exist, but tests arg parsing
+	assert.Nil(t, resp.Error)
 
 	resp = handleMCPTool(ctx, 5, "install_tool", map[string]interface{}{})
 	assert.NotNil(t, resp.Error)
