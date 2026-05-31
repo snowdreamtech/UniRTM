@@ -19,6 +19,31 @@ type CommonAsset struct {
 	Size int64
 }
 
+// containsWord checks whether word appears as a complete token in s,
+// where token boundaries are defined as the start/end of string or any common
+// filename separator character (-, _, ., space).
+// This prevents false positives such as "win" matching "darwin".
+func containsWord(s, word string) bool {
+	isSep := func(b byte) bool {
+		return b == '-' || b == '_' || b == '.' || b == ' '
+	}
+	for i := 0; i <= len(s)-len(word); {
+		idx := strings.Index(s[i:], word)
+		if idx < 0 {
+			return false
+		}
+		abs := i + idx
+		startOK := abs == 0 || isSep(s[abs-1])
+		endAbs := abs + len(word)
+		endOK := endAbs >= len(s) || isSep(s[endAbs])
+		if startOK && endOK {
+			return true
+		}
+		i = abs + 1
+	}
+	return false
+}
+
 // CalculateAssetScore calculates a compatibility score for an asset name.
 // Returns -1 if the asset is definitely incompatible.
 func CalculateAssetScore(assetName string, platform Platform, toolName string) int {
@@ -70,7 +95,13 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 			score += 100
 		}
 	case "windows":
-		if strings.Contains(nameLower, "windows") || strings.Contains(nameLower, "win") || strings.HasSuffix(nameLower, ".exe") {
+		// NOTE: do NOT use plain strings.Contains(nameLower, "win") here — it would
+		// match "dar*win*" inside darwin asset names. Use containsWord instead.
+		if strings.Contains(nameLower, "windows") ||
+			strings.Contains(nameLower, "win64") ||
+			strings.Contains(nameLower, "win32") ||
+			containsWord(nameLower, "win") ||
+			strings.HasSuffix(nameLower, ".exe") {
 			osMatch = true
 			score += 100
 		}

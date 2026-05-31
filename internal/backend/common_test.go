@@ -308,11 +308,56 @@ func TestCalculateAssetScore_TarXz(t *testing.T) {
 }
 
 func TestCalculateAssetScore_Win(t *testing.T) {
-	// "win" substring
+	// "win" as a whole token should match Windows
 	platform := Platform{OS: "windows", Arch: "amd64"}
 	score := CalculateAssetScore("app-win-amd64.zip", platform, "app")
 	if score <= 0 {
 		t.Errorf("expected positive score for win substring, got %d", score)
+	}
+}
+
+// TestCalculateAssetScore_DarwinNotMatchWindows is a regression test for the bug where
+// "win" inside "darwin" caused darwin assets to be selected on Windows runners.
+// See: gitleaks_8.30.1_darwin_x64.tar.gz being downloaded on windows-latest.
+func TestCalculateAssetScore_DarwinNotMatchWindows(t *testing.T) {
+	platform := Platform{OS: "windows", Arch: "amd64"}
+
+	darwinAssets := []string{
+		"gitleaks_8.30.1_darwin_x64.tar.gz",
+		"app-darwin-amd64.tar.gz",
+		"app-darwin-arm64.zip",
+		"tool_darwin_x86_64.tar.gz",
+	}
+	for _, name := range darwinAssets {
+		score := CalculateAssetScore(name, platform, "app")
+		if score != -1 {
+			t.Errorf("darwin asset %q must NOT match Windows (got score %d, want -1)", name, score)
+		}
+	}
+}
+
+func TestContainsWord(t *testing.T) {
+	tests := []struct {
+		s, word string
+		want    bool
+	}{
+		// Should match
+		{"app-win-amd64.zip", "win", true},
+		{"win-amd64.zip", "win", true}, // at start
+		{"app-win", "win", true},       // at end
+		{"win", "win", true},           // exact
+		{"app_win_x64.tar.gz", "win", true},
+		// Should NOT match ("win" is part of a larger token)
+		{"gitleaks_8.30.1_darwin_x64.tar.gz", "win", false}, // darwin contains "win"
+		{"app-darwin-amd64.tar.gz", "win", false},
+		{"app-windows-amd64.zip", "win", false}, // "win" is prefix of "windows"
+		{"app-darwin-arm64.zip", "win", false},
+	}
+	for _, tc := range tests {
+		got := containsWord(tc.s, tc.word)
+		if got != tc.want {
+			t.Errorf("containsWord(%q, %q) = %v, want %v", tc.s, tc.word, got, tc.want)
+		}
 	}
 }
 
