@@ -119,12 +119,12 @@ checksum = "24e4d34078ae81da7c82539616f0ccac3e226cf4f74a38ce6fb3463619e50a55"
 url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_darwin_arm64.tar.gz"
 
 [tools."github:anchore/syft"."platforms.windows-amd64"]
-checksum = "c40ece5407927327f94f35901727dbc604b46857e04f04ec94a310845fb71bde"
-url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_darwin_amd64.tar.gz"
+checksum = "195e786eb84ec145854f20528992e86637c77d1968731dfe6ce850c90e28f47a"
+url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_windows_amd64.zip"
 
 [tools."github:anchore/syft"."platforms.windows-arm64"]
-checksum = "24e4d34078ae81da7c82539616f0ccac3e226cf4f74a38ce6fb3463619e50a55"
-url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_darwin_arm64.tar.gz"
+checksum = "3ebcde4f1bdfd3149c4527b85279cfc725ba7660ccf54b68b51be06a9271808e"
+url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_windows_arm64.zip"
 
 [[tools."github:aquasecurity/trivy"]]
 version = "0.70.0"
@@ -182,11 +182,10 @@ checksum = "bd59107e125f9c9f64a75be13b6ff21bf7cbc61c4b9529bbb75c8184e3dd6c3c"
 url = "https://github.com/astral-sh/ruff/releases/download/0.15.12/ruff-aarch64-apple-darwin.tar.gz"
 
 [tools."github:astral-sh/ruff"."platforms.windows-amd64"]
-url = "https://github.com/astral-sh/ruff/releases/download/0.15.12/ruff-x86_64-apple-darwin.tar.gz"
+url = "https://github.com/astral-sh/ruff/releases/download/0.15.12/ruff-x86_64-pc-windows-msvc.zip"
 
 [tools."github:astral-sh/ruff"."platforms.windows-arm64"]
-checksum = "bd59107e125f9c9f64a75be13b6ff21bf7cbc61c4b9529bbb75c8184e3dd6c3c"
-url = "https://github.com/astral-sh/ruff/releases/download/0.15.12/ruff-aarch64-apple-darwin.tar.gz"
+url = "https://github.com/astral-sh/ruff/releases/download/0.15.12/ruff-aarch64-pc-windows-msvc.zip"
 
 [[tools."github:checkmake/checkmake"]]
 version = "v0.3.2"
@@ -211,10 +210,10 @@ url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake
 url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.darwin.arm64"
 
 [tools."github:checkmake/checkmake"."platforms.windows-amd64"]
-url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.darwin.amd64"
+url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.windows.amd64.exe"
 
 [tools."github:checkmake/checkmake"."platforms.windows-arm64"]
-url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.darwin.arm64"
+url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.windows.arm64.exe"
 
 [[tools."github:cli/cli"]]
 version = "2.92.0"
@@ -275,10 +274,10 @@ url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/d
 url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-darwin-arm64.tar.gz"
 
 [tools."github:dotenv-linter/dotenv-linter"."platforms.windows-amd64"]
-url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-darwin-x86_64.tar.gz"
+url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-win-x64.zip"
 
 [tools."github:dotenv-linter/dotenv-linter"."platforms.windows-arm64"]
-url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-darwin-arm64.tar.gz"
+url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-win-aarch64.zip"
 
 [[tools."github:editorconfig-checker/editorconfig-checker"]]
 version = "3.6.1"
@@ -345,12 +344,12 @@ checksum = "b40ab0ae55c505963e365f271a8d3846efbc170aa17f2607f13df610a9aeb6a5"
 url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_darwin_arm64.tar.gz"
 
 [tools."github:gitleaks/gitleaks"."platforms.windows-amd64"]
-checksum = "dfe101a4db2255fc85120ac7f3d25e4342c3c20cf749f2c20a18081af1952709"
-url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_darwin_x64.tar.gz"
+checksum = "d29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332afc4e"
+url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_windows_x64.zip"
 
 [tools."github:gitleaks/gitleaks"."platforms.windows-arm64"]
-checksum = "b40ab0ae55c505963e365f271a8d3846efbc170aa17f2607f13df610a9aeb6a5"
-url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_darwin_arm64.tar.gz"
+checksum = "b95f5e4f5c425cedca7ee203d9afd29597e692c4924a12ed42f970537c72cc0f"
+url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_windows_arm64.zip"
 
 [[tools."github:google/osv-scanner"]]
 version = "2.3.5"
@@ -381,12 +380,12 @@ checksum = "b740efe0b08fb817865e818a498997d5f042f14b8eeafb6393176ce84dd09cf6"
 url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_darwin_arm64"
 
 [tools."github:google/osv-scanner"."platforms.windows-amd64"]
-checksum = "3b1c72d59dcbad99fa4eb2c72bf2e82017f83e0268340e4b00af76a1fea32c85"
-url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_darwin_amd64"
+checksum = "b165d33c08bda663119a459f5187e096d2525f888503495f5f34925741e981a2"
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_windows_amd64.exe"
 
 [tools."github:google/osv-scanner"."platforms.windows-arm64"]
-checksum = "b740efe0b08fb817865e818a498997d5f042f14b8eeafb6393176ce84dd09cf6"
-url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_darwin_arm64"
+checksum = "a3d2ffa712fd2376e88a02c98b917a87885c761d0d21980b8f5eabfb910cbcb8"
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_windows_arm64.exe"
 
 [[tools."github:hadolint/hadolint"]]
 version = "2.14.0"
@@ -435,12 +434,6 @@ url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellche
 url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.x86_64.tar.gz"
 
 [tools."github:koalaman/shellcheck"."platforms.macos-arm64"]
-url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.aarch64.tar.gz"
-
-[tools."github:koalaman/shellcheck"."platforms.windows-amd64"]
-url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.x86_64.tar.gz"
-
-[tools."github:koalaman/shellcheck"."platforms.windows-arm64"]
 url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.aarch64.tar.gz"
 
 [[tools."github:mvdan/sh"]]
@@ -500,12 +493,12 @@ checksum = "aba9ced2dee8d27fecca3dc7feb1a7f9a52caefa1eb46f3271ea66b6e0e6953f"
 url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_darwin_arm64.tar.gz"
 
 [tools."github:rhysd/actionlint"."platforms.windows-amd64"]
-checksum = "5b44c3bc2255115c9b69e30efc0fecdf498fdb63c5d58e17084fd5f16324c644"
-url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_darwin_amd64.tar.gz"
+checksum = "6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9"
+url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_windows_amd64.zip"
 
 [tools."github:rhysd/actionlint"."platforms.windows-arm64"]
-checksum = "aba9ced2dee8d27fecca3dc7feb1a7f9a52caefa1eb46f3271ea66b6e0e6953f"
-url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_darwin_arm64.tar.gz"
+checksum = "cadcf7ea4efe3a68728893813643cebe1185e5b1d4be5b96245f65c9a4d5ea41"
+url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_windows_arm64.zip"
 
 [[tools."github:zizmorcore/zizmor"]]
 version = "1.24.1"
@@ -530,10 +523,7 @@ url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-x86
 url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-aarch64-apple-darwin.tar.gz"
 
 [tools."github:zizmorcore/zizmor"."platforms.windows-amd64"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-x86_64-apple-darwin.tar.gz"
-
-[tools."github:zizmorcore/zizmor"."platforms.windows-arm64"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-aarch64-apple-darwin.tar.gz"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-x86_64-pc-windows-msvc.zip"
 
 [[tools."gitleaks/gitleaks"]]
 version = "8.30.1"
