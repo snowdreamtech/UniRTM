@@ -17,6 +17,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/provider/native"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/spf13/cobra"
 )
@@ -149,6 +150,8 @@ func runTool(cmd *cobra.Command, args []string) error {
 		// Try to infer backend from the tool name format.
 		if strings.Contains(toolName, "/") {
 			detectedBackend = "github"
+		} else if native.IsNativeTool(toolName) {
+			detectedBackend = "native"
 		} else {
 			detectedBackend = "asdf"
 		}

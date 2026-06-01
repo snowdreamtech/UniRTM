@@ -15,6 +15,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/lockfile"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/provider/native"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
 )
@@ -145,6 +146,8 @@ func runLock(cmd *cobra.Command, args []string) error {
 					toolName = name[idx+1:]
 				} else if strings.Contains(name, "/") {
 					backendName = "github"
+				} else if native.IsNativeTool(name) {
+					backendName = "native"
 				} else {
 					backendName = "asdf"
 				}
@@ -177,7 +180,13 @@ func runLock(cmd *cobra.Command, args []string) error {
 					version = "latest"
 				}
 				if backendName == "" {
-					backendName = "github"
+					if strings.Contains(toolName, "/") {
+						backendName = "github"
+					} else if native.IsNativeTool(toolName) {
+						backendName = "native"
+					} else {
+						backendName = "asdf"
+					}
 				}
 				subset[toolName] = service.ToolSpec{Version: version, BackendName: backendName}
 			}
