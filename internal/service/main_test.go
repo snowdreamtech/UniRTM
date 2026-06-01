@@ -7,11 +7,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/pterm/pterm"
 	"github.com/rs/zerolog"
 )
 
 func TestMain(m *testing.M) {
 	// Disable logging during tests to prevent log output from interfering with Example test Output checks
 	zerolog.SetGlobalLevel(zerolog.Disabled)
+	pterm.DisableOutput()
 	os.Exit(m.Run())
 }

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/pterm/pterm"
+	"github.com/rs/zerolog"
 )
 
 // TestMain is the entry point for all tests in the cmd package.
@@ -21,5 +22,6 @@ import (
 // from being created and eliminates the DATA RACE entirely.
 func TestMain(m *testing.M) {
 	pterm.DisableStyling()
+	zerolog.SetGlobalLevel(zerolog.Disabled)
 	os.Exit(m.Run())
 }
