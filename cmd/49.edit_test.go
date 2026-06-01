@@ -66,7 +66,7 @@ func TestRunEdit_SpecificFile(t *testing.T) {
 		dummyEditor = filepath.Join(tmpDir, "dummy_editor.sh")
 		_ = os.WriteFile(dummyEditor, []byte("#!/bin/sh\nexit 0"), 0755)
 	}
-	os.Setenv("UNIRTM_EDITOR", dummyEditor)
+	t.Setenv("UNIRTM_EDITOR", dummyEditor)
 
 	targetFile := filepath.Join(tmpDir, "unirtm.toml")
 
