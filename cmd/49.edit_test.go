@@ -55,7 +55,17 @@ func TestDiscoverConfigFiles(t *testing.T) {
 func TestRunEdit_SpecificFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
-	os.Setenv("UNIRTM_EDITOR", "cat") // Use a non-blocking "editor" that just exits
+
+	// Create a non-blocking cross-platform dummy editor
+	var dummyEditor string
+	if runtime.GOOS == "windows" {
+		dummyEditor = filepath.Join(tmpDir, "dummy_editor.bat")
+		_ = os.WriteFile(dummyEditor, []byte("@echo off\nexit 0"), 0755)
+	} else {
+		dummyEditor = filepath.Join(tmpDir, "dummy_editor.sh")
+		_ = os.WriteFile(dummyEditor, []byte("#!/bin/sh\nexit 0"), 0755)
+	}
+	os.Setenv("UNIRTM_EDITOR", dummyEditor)
 
 	targetFile := filepath.Join(tmpDir, "unirtm.toml")
 
@@ -74,7 +84,16 @@ func TestRunEdit_SpecificFile(t *testing.T) {
 func TestRunEdit_GlobalFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
-	t.Setenv("UNIRTM_EDITOR", "cat")
+
+	var dummyEditor string
+	if runtime.GOOS == "windows" {
+		dummyEditor = filepath.Join(tmpDir, "dummy_editor.bat")
+		_ = os.WriteFile(dummyEditor, []byte("@echo off\nexit 0"), 0755)
+	} else {
+		dummyEditor = filepath.Join(tmpDir, "dummy_editor.sh")
+		_ = os.WriteFile(dummyEditor, []byte("#!/bin/sh\nexit 0"), 0755)
+	}
+	t.Setenv("UNIRTM_EDITOR", dummyEditor)
 
 	editGlobal = true
 	defer func() { editGlobal = false }()
