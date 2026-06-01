@@ -6,7 +6,6 @@ package service_test
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/service"
@@ -116,7 +115,7 @@ func Example_versionManager_basicUsage() {
 
 	versionInfo, err := vm.ResolveVersion(ctx, "github", "node", "20.0.0", platform)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	fmt.Printf("Version: %s\n", versionInfo.Version)
@@ -141,7 +140,7 @@ func Example_versionManager_resolveAlias() {
 	// Resolve "latest" alias
 	versionInfo, err := vm.ResolveVersion(ctx, "github", "node", "latest", platform)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	fmt.Printf("Latest version: %s\n", versionInfo.Version)
@@ -164,7 +163,7 @@ func Example_versionManager_resolveRange() {
 	// Resolve caret range
 	versionInfo, err := vm.ResolveVersion(ctx, "github", "node", "^20.0.0", platform)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	fmt.Printf("Resolved ^20.0.0 to: %s\n", versionInfo.Version)
@@ -214,7 +213,7 @@ func Example_versionManager_listVersions() {
 	// List available versions
 	versions, err := vm.ListAvailableVersions(ctx, "github", "node", platform)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	fmt.Println("Available versions:")

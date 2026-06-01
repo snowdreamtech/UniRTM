@@ -6,7 +6,6 @@ package service_test
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/snowdreamtech/unirtm/internal/service"
 )
@@ -26,7 +25,7 @@ func ExampleIndexManager_basic() {
 		service.IndexManagerConfig{},
 	)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	// Add a tool to the index
@@ -43,13 +42,13 @@ func ExampleIndexManager_basic() {
 		},
 	)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	// Retrieve the tool
 	entry, err := indexManager.GetTool(ctx, "node")
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	fmt.Printf("Tool: %s\n", entry.Tool)
@@ -69,7 +68,7 @@ func ExampleIndexManager_search() {
 		service.IndexManagerConfig{},
 	)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	// Search for tools
@@ -77,7 +76,7 @@ func ExampleIndexManager_search() {
 		Query: "javascript",
 	})
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	for _, tool := range results {
@@ -97,13 +96,13 @@ func ExampleIndexManager_filterByBackend() {
 		service.IndexManagerConfig{},
 	)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	// Filter tools by backend
 	githubTools, err := indexManager.FilterByBackend(ctx, "github")
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	fmt.Printf("Found %d tools from GitHub backend\n", len(githubTools))
@@ -123,20 +122,20 @@ func ExampleIndexManager_staleDetection() {
 		},
 	)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	// Check if index is stale
 	isStale, err := indexManager.IsStale(ctx)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	if isStale {
 		fmt.Println("Index is stale, updating...")
 		err = indexManager.UpdateFromAllBackends(ctx)
 		if err != nil {
-			log.Printf("Failed to update index: %v", err)
+			fmt.Printf("Failed to update index: %v", err)
 		}
 	}
 }
@@ -153,13 +152,13 @@ func ExampleIndexManager_offline() {
 		service.IndexManagerConfig{},
 	)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	// Check if offline operation is possible
 	capable, err := indexManager.IsOfflineCapable(ctx)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	if !capable {
@@ -172,7 +171,7 @@ func ExampleIndexManager_offline() {
 		Query: "python",
 	})
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	fmt.Printf("Found %d tools matching 'python'\n", len(results))
@@ -190,7 +189,7 @@ func ExampleIndexManager_pagination() {
 		service.IndexManagerConfig{},
 	)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	// Search with pagination
@@ -204,7 +203,7 @@ func ExampleIndexManager_pagination() {
 			Offset: page * pageSize,
 		})
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(err)
 		}
 
 		if len(results) == 0 {
@@ -232,13 +231,13 @@ func ExampleIndexManager_metadata() {
 		service.IndexManagerConfig{},
 	)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	// Get tool metadata
 	metadata, err := indexManager.GetToolMetadata(ctx, "node")
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	fmt.Printf("Available versions: %v\n", metadata.AvailableVersions)
@@ -256,7 +255,7 @@ func ExampleIndexManager_backendManagement() {
 		service.IndexManagerConfig{},
 	)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 	// Register a backend
