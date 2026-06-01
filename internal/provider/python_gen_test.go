@@ -23,7 +23,7 @@ func TestPythonProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "python" != "npm" && "python" != "go_pkg" && "python" != "spm" && "python" != "gem" && "python" != "cargo" {
+	if "python" != "npm" && "python" != "go_pkg" && "python" != "spm" && "python" != "gem" && "python" != "cargo" && "python" != "pypi" && "python" != "conda" && "python" != "container" && "python" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

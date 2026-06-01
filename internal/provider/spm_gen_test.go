@@ -23,7 +23,7 @@ func TestSpmProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "spm" != "npm" && "spm" != "go_pkg" && "spm" != "spm" && "spm" != "gem" && "spm" != "cargo" {
+	if "spm" != "npm" && "spm" != "go_pkg" && "spm" != "spm" && "spm" != "gem" && "spm" != "cargo" && "spm" != "pypi" && "spm" != "conda" && "spm" != "container" && "spm" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

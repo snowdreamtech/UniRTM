@@ -23,7 +23,7 @@ func TestDenoProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "deno" != "npm" && "deno" != "go_pkg" && "deno" != "spm" && "deno" != "gem" && "deno" != "cargo" {
+	if "deno" != "npm" && "deno" != "go_pkg" && "deno" != "spm" && "deno" != "gem" && "deno" != "cargo" && "deno" != "pypi" && "deno" != "conda" && "deno" != "container" && "deno" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

@@ -23,7 +23,7 @@ func TestCondaProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "conda" != "npm" && "conda" != "go_pkg" && "conda" != "spm" && "conda" != "gem" && "conda" != "cargo" {
+	if "conda" != "npm" && "conda" != "go_pkg" && "conda" != "spm" && "conda" != "gem" && "conda" != "cargo" && "conda" != "pypi" && "conda" != "conda" && "conda" != "container" && "conda" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

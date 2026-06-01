@@ -23,7 +23,7 @@ func TestElixirProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "elixir" != "npm" && "elixir" != "go_pkg" && "elixir" != "spm" && "elixir" != "gem" && "elixir" != "cargo" {
+	if "elixir" != "npm" && "elixir" != "go_pkg" && "elixir" != "spm" && "elixir" != "gem" && "elixir" != "cargo" && "elixir" != "pypi" && "elixir" != "conda" && "elixir" != "container" && "elixir" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

@@ -23,7 +23,7 @@ func TestBunProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "bun" != "npm" && "bun" != "go_pkg" && "bun" != "spm" && "bun" != "gem" && "bun" != "cargo" {
+	if "bun" != "npm" && "bun" != "go_pkg" && "bun" != "spm" && "bun" != "gem" && "bun" != "cargo" && "bun" != "pypi" && "bun" != "conda" && "bun" != "container" && "bun" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

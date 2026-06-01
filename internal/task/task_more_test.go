@@ -33,7 +33,7 @@ exit 0
 	if runtime.GOOS == "windows" {
 		exeName = "task.cmd"
 		script = `@echo off
-if "%1"=="--list-all" (
+if "%~1"=="--list-all" (
   echo * build:   Build the project
   echo * test:    Run tests
   echo   some other line
@@ -87,7 +87,7 @@ exit 0
 	if runtime.GOOS == "windows" {
 		exeName = "just.cmd"
 		script = `@echo off
-if "%1"=="--summary" (
+if "%~1"=="--summary" (
   echo build test lint
   exit /b 0
 )

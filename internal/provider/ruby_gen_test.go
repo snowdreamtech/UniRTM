@@ -23,7 +23,7 @@ func TestRubyProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "ruby" != "npm" && "ruby" != "go_pkg" && "ruby" != "spm" && "ruby" != "gem" && "ruby" != "cargo" {
+	if "ruby" != "npm" && "ruby" != "go_pkg" && "ruby" != "spm" && "ruby" != "gem" && "ruby" != "cargo" && "ruby" != "pypi" && "ruby" != "conda" && "ruby" != "container" && "ruby" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

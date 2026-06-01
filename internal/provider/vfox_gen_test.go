@@ -23,7 +23,7 @@ func TestVfoxProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "vfox" != "npm" && "vfox" != "go_pkg" && "vfox" != "spm" && "vfox" != "gem" && "vfox" != "cargo" {
+	if "vfox" != "npm" && "vfox" != "go_pkg" && "vfox" != "spm" && "vfox" != "gem" && "vfox" != "cargo" && "vfox" != "pypi" && "vfox" != "conda" && "vfox" != "container" && "vfox" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

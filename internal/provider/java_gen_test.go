@@ -23,7 +23,7 @@ func TestJavaProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "java" != "npm" && "java" != "go_pkg" && "java" != "spm" && "java" != "gem" && "java" != "cargo" {
+	if "java" != "npm" && "java" != "go_pkg" && "java" != "spm" && "java" != "gem" && "java" != "cargo" && "java" != "pypi" && "java" != "conda" && "java" != "container" && "java" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

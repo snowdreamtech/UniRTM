@@ -23,7 +23,7 @@ func TestGemProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "gem" != "npm" && "gem" != "go_pkg" && "gem" != "spm" && "gem" != "gem" && "gem" != "cargo" {
+	if "gem" != "npm" && "gem" != "go_pkg" && "gem" != "spm" && "gem" != "gem" && "gem" != "cargo" && "gem" != "pypi" && "gem" != "conda" && "gem" != "container" && "gem" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

@@ -23,7 +23,7 @@ func TestUbiProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "ubi" != "npm" && "ubi" != "go_pkg" && "ubi" != "spm" && "ubi" != "gem" && "ubi" != "cargo" {
+	if "ubi" != "npm" && "ubi" != "go_pkg" && "ubi" != "spm" && "ubi" != "gem" && "ubi" != "cargo" && "ubi" != "pypi" && "ubi" != "conda" && "ubi" != "container" && "ubi" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

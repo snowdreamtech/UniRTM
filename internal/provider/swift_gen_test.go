@@ -23,7 +23,7 @@ func TestSwiftProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "swift" != "npm" && "swift" != "go_pkg" && "swift" != "spm" && "swift" != "gem" && "swift" != "cargo" {
+	if "swift" != "npm" && "swift" != "go_pkg" && "swift" != "spm" && "swift" != "gem" && "swift" != "cargo" && "swift" != "pypi" && "swift" != "conda" && "swift" != "container" && "swift" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

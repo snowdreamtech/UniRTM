@@ -23,7 +23,7 @@ func TestDotnetProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "dotnet" != "npm" && "dotnet" != "go_pkg" && "dotnet" != "spm" && "dotnet" != "gem" && "dotnet" != "cargo" {
+	if "dotnet" != "npm" && "dotnet" != "go_pkg" && "dotnet" != "spm" && "dotnet" != "gem" && "dotnet" != "cargo" && "dotnet" != "pypi" && "dotnet" != "conda" && "dotnet" != "container" && "dotnet" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

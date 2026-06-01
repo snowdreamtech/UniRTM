@@ -23,7 +23,7 @@ func TestGoPkgProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "go_pkg" != "npm" && "go_pkg" != "go_pkg" && "go_pkg" != "spm" && "go_pkg" != "gem" && "go_pkg" != "cargo" {
+	if "go_pkg" != "npm" && "go_pkg" != "go_pkg" && "go_pkg" != "spm" && "go_pkg" != "gem" && "go_pkg" != "cargo" && "go_pkg" != "pypi" && "go_pkg" != "conda" && "go_pkg" != "container" && "go_pkg" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

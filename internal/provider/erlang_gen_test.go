@@ -23,7 +23,7 @@ func TestErlangProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "erlang" != "npm" && "erlang" != "go_pkg" && "erlang" != "spm" && "erlang" != "gem" && "erlang" != "cargo" {
+	if "erlang" != "npm" && "erlang" != "go_pkg" && "erlang" != "spm" && "erlang" != "gem" && "erlang" != "cargo" && "erlang" != "pypi" && "erlang" != "conda" && "erlang" != "container" && "erlang" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

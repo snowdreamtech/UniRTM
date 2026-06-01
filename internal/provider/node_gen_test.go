@@ -23,7 +23,7 @@ func TestNodeProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "node" != "npm" && "node" != "go_pkg" && "node" != "spm" && "node" != "gem" && "node" != "cargo" {
+	if "node" != "npm" && "node" != "go_pkg" && "node" != "spm" && "node" != "gem" && "node" != "cargo" && "node" != "pypi" && "node" != "conda" && "node" != "container" && "node" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

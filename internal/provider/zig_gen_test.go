@@ -23,7 +23,7 @@ func TestZigProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "zig" != "npm" && "zig" != "go_pkg" && "zig" != "spm" && "zig" != "gem" && "zig" != "cargo" {
+	if "zig" != "npm" && "zig" != "go_pkg" && "zig" != "spm" && "zig" != "gem" && "zig" != "cargo" && "zig" != "pypi" && "zig" != "conda" && "zig" != "container" && "zig" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

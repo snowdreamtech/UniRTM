@@ -23,7 +23,7 @@ func TestGolangProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "golang" != "npm" && "golang" != "go_pkg" && "golang" != "spm" && "golang" != "gem" && "golang" != "cargo" {
+	if "golang" != "npm" && "golang" != "go_pkg" && "golang" != "spm" && "golang" != "gem" && "golang" != "cargo" && "golang" != "pypi" && "golang" != "conda" && "golang" != "container" && "golang" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

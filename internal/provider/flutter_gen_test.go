@@ -23,7 +23,7 @@ func TestFlutterProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "flutter" != "npm" && "flutter" != "go_pkg" && "flutter" != "spm" && "flutter" != "gem" && "flutter" != "cargo" {
+	if "flutter" != "npm" && "flutter" != "go_pkg" && "flutter" != "spm" && "flutter" != "gem" && "flutter" != "cargo" && "flutter" != "pypi" && "flutter" != "conda" && "flutter" != "container" && "flutter" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

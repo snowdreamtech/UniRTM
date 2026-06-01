@@ -23,7 +23,7 @@ func TestRustProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "rust" != "npm" && "rust" != "go_pkg" && "rust" != "spm" && "rust" != "gem" && "rust" != "cargo" {
+	if "rust" != "npm" && "rust" != "go_pkg" && "rust" != "spm" && "rust" != "gem" && "rust" != "cargo" && "rust" != "pypi" && "rust" != "conda" && "rust" != "container" && "rust" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 

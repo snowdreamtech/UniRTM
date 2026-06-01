@@ -23,7 +23,7 @@ func TestAsdfProvider_GenMethods(t *testing.T) {
 	_ = p.Name()
 
 	// skip network installers Install for now to avoid hanging tests
-	if "asdf" != "npm" && "asdf" != "go_pkg" && "asdf" != "spm" && "asdf" != "gem" && "asdf" != "cargo" {
+	if "asdf" != "npm" && "asdf" != "go_pkg" && "asdf" != "spm" && "asdf" != "gem" && "asdf" != "cargo" && "asdf" != "pypi" && "asdf" != "conda" && "asdf" != "container" && "asdf" != "asdf" {
 		_ = p.Install(ctx, tool, installPath, artifactPath, version)
 	}
 
