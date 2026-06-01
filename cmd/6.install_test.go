@@ -218,7 +218,7 @@ func TestGetDefaultDatabasePath(t *testing.T) {
 	}()
 
 	t.Run("with XDG_DATA_HOME set", func(t *testing.T) {
-		testDir := "/tmp/test-xdg-data"
+		testDir := filepath.FromSlash("/tmp/test-xdg-data")
 		t.Setenv("XDG_DATA_HOME", testDir)
 
 		path := env.GetDatabasePath()

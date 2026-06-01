@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -215,43 +216,78 @@ func TestSystemGPGVerifier(t *testing.T) {
 
 	// 2. Create a mock gpg executable
 	mockGpgDir := t.TempDir()
-	mockGpgPath := filepath.Join(mockGpgDir, "gpg")
 
 	// Create the mock script
-	mockScript := `#!/bin/sh
-	echo "MOCK GPG CALLED WITH: $@" >> /tmp/mock_gpg.log
-	if [ "$1" = "--verify" ]; then
-		if [ "$4" = "bad_key.sig" ]; then
-			echo "NO_PUBKEY 123456"
-			exit 2
-		fi
-		if [ "$4" = "bad_sig.sig" ]; then
-			echo "BADSIG"
-			exit 1
-		fi
-		if [ "$4" = "good_sig_no_match.sig" ]; then
-			echo "[GNUPG:] VALIDSIG ABCDEF"
-			echo "GOODSIG"
-			exit 0
-		fi
-		if [ "$4" = "good_sig_match.sig" ]; then
-			echo "[GNUPG:] VALIDSIG MYFINGERPRINT"
-			echo "GOODSIG"
-			exit 0
-		fi
-		if [ "$4" = "no_goodsig.sig" ]; then
-			echo "Something else"
-			exit 0
-		fi
-	fi
-	if [ "$1" = "--keyserver" ]; then
-		echo "$@" >> mock_gpg.log
-		if [ "$4" = "fail_key" ]; then
-			exit 1
-		fi
-		exit 0
-	fi
-	`
+	var mockScript, ext string
+	if runtime.GOOS == "windows" {
+		ext = ".bat"
+		mockScript = `@echo off
+echo %* | findstr /C:"bad_key.sig" >nul
+if %errorlevel% equ 0 (
+    echo NO_PUBKEY 123456
+    exit /b 2
+)
+echo %* | findstr /C:"bad_sig.sig" >nul
+if %errorlevel% equ 0 (
+    echo BADSIG
+    exit /b 1
+)
+echo %* | findstr /C:"good_sig_no_match.sig" >nul
+if %errorlevel% equ 0 (
+    echo [GNUPG:] VALIDSIG ABCDEF
+    echo GOODSIG
+    exit /b 0
+)
+echo %* | findstr /C:"good_sig_match.sig" >nul
+if %errorlevel% equ 0 (
+    echo [GNUPG:] VALIDSIG MYFINGERPRINT
+    echo GOODSIG
+    exit /b 0
+)
+echo %* | findstr /C:"no_goodsig.sig" >nul
+if %errorlevel% equ 0 (
+    echo Something else
+    exit /b 0
+)
+echo %* | findstr /C:"fail_key" >nul
+if %errorlevel% equ 0 (
+    exit /b 1
+)
+exit /b 0
+`
+	} else {
+		mockScript = `#!/bin/sh
+case "$*" in
+    *bad_key.sig*)
+        echo "NO_PUBKEY 123456"
+        exit 2
+        ;;
+    *bad_sig.sig*)
+        echo "BADSIG"
+        exit 1
+        ;;
+    *good_sig_no_match.sig*)
+        echo "[GNUPG:] VALIDSIG ABCDEF"
+        echo "GOODSIG"
+        exit 0
+        ;;
+    *good_sig_match.sig*)
+        echo "[GNUPG:] VALIDSIG MYFINGERPRINT"
+        echo "GOODSIG"
+        exit 0
+        ;;
+    *no_goodsig.sig*)
+        echo "Something else"
+        exit 0
+        ;;
+    *fail_key*)
+        exit 1
+        ;;
+esac
+exit 0
+`
+	}
+	mockGpgPath := filepath.Join(mockGpgDir, "gpg"+ext)
 	os.WriteFile(mockGpgPath, []byte(mockScript), 0755)
 
 	// Prepend mock to PATH

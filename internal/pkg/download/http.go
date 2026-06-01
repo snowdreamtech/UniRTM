@@ -336,12 +336,14 @@ func (h *HTTPDownloader) downloadOnce(ctx context.Context, url string, destinati
 	n, err := io.Copy(writer, resp.Body)
 	if err != nil {
 		// Clean up partial download
+		file.Close()
 		_ = os.Remove(destination)
 		return errors.NewExternalError(fmt.Sprintf("download from %q", url), err)
 	}
 
 	// Verify that we downloaded the expected amount of data
 	if totalBytes > 0 && n != totalBytes {
+		file.Close()
 		_ = os.Remove(destination)
 		return errors.NewExternalError(fmt.Sprintf("download from %q", url), fmt.Errorf("size mismatch: expected %d bytes, got %d", totalBytes, n))
 	}
@@ -402,6 +404,7 @@ func (h *HTTPDownloader) VerifyChecksum(ctx context.Context, file string, expect
 	// Compare checksums (case-insensitive)
 	if !strings.EqualFold(actualHash, expectedHash) {
 		// Delete file on checksum mismatch
+		f.Close()
 		_ = os.Remove(file)
 		return errors.Wrap(
 			errors.ErrChecksumMismatch,
@@ -766,6 +769,7 @@ func (h *HTTPDownloader) downloadConcurrent(ctx context.Context, url string, des
 	}
 	// Clean up file on failure
 	if downloadErr != nil {
+		file.Close()
 		_ = os.Remove(destination)
 	}
 	return downloadErr
