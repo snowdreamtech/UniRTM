@@ -439,9 +439,6 @@ url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellche
 [tools."github:koalaman/shellcheck"."platforms.windows-amd64"]
 url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.zip"
 
-[tools."github:koalaman/shellcheck"."platforms.windows-arm64"]
-url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.zip"
-
 [[tools."github:mvdan/sh"]]
 version = "3.13.1"
 backend = "github"
