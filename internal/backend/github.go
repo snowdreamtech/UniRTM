@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"sort"
 	"strings"
@@ -81,27 +82,51 @@ func (g *GitHubBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 	tool = strings.TrimPrefix(tool, "github:")
 	url := fmt.Sprintf("https://api.github.com/repos/%s/releases", tool)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-	if token := resolveGitHubToken("github.com"); token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
+	var resp *http.Response
+	var err error
+	var bodyBytes []byte
+
+	for i := 0; i < 3; i++ {
+		req, reqErr := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if reqErr != nil {
+			return nil, reqErr
+		}
+		req.Header.Set("Accept", "application/vnd.github.v3+json")
+		if token := resolveGitHubToken("github.com"); token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+
+		resp, err = g.client.Do(req)
+		if err != nil {
+			time.Sleep(time.Duration(i+1) * time.Second)
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			time.Sleep(time.Duration(i+1) * time.Second)
+			continue
+		}
+
+		bodyBytes, err = io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			time.Sleep(time.Duration(i+1) * time.Second)
+			continue
+		}
+
+		break
 	}
 
-	resp, err := g.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("GitHub API status %d", resp.StatusCode)
+	if len(bodyBytes) == 0 {
+		if resp != nil && resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("GitHub API status %d", resp.StatusCode)
+		}
+		return nil, fmt.Errorf("GitHub API request failed: %v", err)
 	}
 
 	var releases []githubRelease
-	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
+	if err := json.Unmarshal(bodyBytes, &releases); err != nil {
 		return nil, err
 	}
 
@@ -132,24 +157,51 @@ func (g *GitHubBackend) FetchReleaseByTag(ctx context.Context, tool string, tag 
 	tool = strings.TrimPrefix(tool, "github:")
 	url := fmt.Sprintf("https://api.github.com/repos/%s/releases/tags/%s", tool, tag)
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-	if token := resolveGitHubToken("github.com"); token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
+	var resp *http.Response
+	var err error
+	var bodyBytes []byte
+
+	for i := 0; i < 3; i++ {
+		req, reqErr := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if reqErr != nil {
+			return nil, reqErr
+		}
+		req.Header.Set("Accept", "application/vnd.github.v3+json")
+		if token := resolveGitHubToken("github.com"); token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+
+		resp, err = g.client.Do(req)
+		if err != nil {
+			time.Sleep(time.Duration(i+1) * time.Second)
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			time.Sleep(time.Duration(i+1) * time.Second)
+			continue
+		}
+
+		bodyBytes, err = io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			time.Sleep(time.Duration(i+1) * time.Second)
+			continue
+		}
+
+		break
 	}
 
-	resp, err := g.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status %d", resp.StatusCode)
+	if len(bodyBytes) == 0 {
+		if resp != nil && resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("status %d", resp.StatusCode)
+		}
+		return nil, fmt.Errorf("GitHub API request failed: %v", err)
 	}
 
 	var r githubRelease
-	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
+	if err := json.Unmarshal(bodyBytes, &r); err != nil {
 		return nil, err
 	}
 

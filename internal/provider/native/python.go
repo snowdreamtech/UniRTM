@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"regexp"
 	"strings"
@@ -46,6 +47,7 @@ func (h *PythonHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 
 	var resp *http.Response
 	var lastErr error
+	var bodyBytes []byte
 
 	for i := 0; i < 3; i++ {
 		client := pkgHttp.NewClientWithTimeout(60 * time.Second)
@@ -62,30 +64,37 @@ func (h *PythonHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		}
 
 		resp, err = client.Do(req)
-		if err == nil && resp.StatusCode == http.StatusOK {
-			lastErr = nil
-			break
-		}
-
 		if err != nil {
-			lastErr = fmt.Errorf("attempt %d: %w", i+1, err)
-		} else {
-			lastErr = fmt.Errorf("attempt %d: github api returned status %d", i+1, resp.StatusCode)
-			if resp != nil && resp.Body != nil {
-				resp.Body.Close()
-			}
+			lastErr = fmt.Errorf("attempt %d: request failed: %w", i+1, err)
+			time.Sleep(time.Duration(i+1) * time.Second)
+			continue
 		}
 
-		time.Sleep(time.Duration(i+1) * time.Second)
+		if resp.StatusCode != http.StatusOK {
+			lastErr = fmt.Errorf("attempt %d: github api returned status %d", i+1, resp.StatusCode)
+			resp.Body.Close()
+			time.Sleep(time.Duration(i+1) * time.Second)
+			continue
+		}
+
+		bodyBytes, err = io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			lastErr = fmt.Errorf("attempt %d: reading body failed: %w", i+1, err)
+			time.Sleep(time.Duration(i+1) * time.Second)
+			continue
+		}
+
+		lastErr = nil
+		break
 	}
 
 	if lastErr != nil {
 		return nil, fmt.Errorf("github api call failed after 3 attempts (base: %s): %w", apiBase, lastErr)
 	}
-	defer resp.Body.Close()
 
 	var releases []ghRelease
-	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
+	if err := json.Unmarshal(bodyBytes, &releases); err != nil {
 		return nil, err
 	}
 

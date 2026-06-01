@@ -172,12 +172,6 @@ func (p *PypiProvider) GenerateShims(tool string, installPath string, version st
 	shims := make(map[string]string)
 	for _, exe := range executables {
 		name := filepath.Base(exe)
-
-		// Skip internal venv python/pip binaries to avoid polluting global bin
-		if name == "python" || name == "python3" || name == "pip" || name == "pip3" || name == "python.exe" || name == "pip.exe" {
-			continue
-		}
-
 		shims[name] = exe
 	}
 
@@ -208,7 +202,22 @@ func (p *PypiProvider) ListExecutables(tool string, installPath string, version 
 			info, err := entry.Info()
 			if err == nil {
 				if info.Mode()&0111 != 0 || filepath.Ext(entry.Name()) == ".cmd" || filepath.Ext(entry.Name()) == ".exe" {
-					executables = append(executables, filepath.Join(binDir, entry.Name()))
+					name := entry.Name()
+					baseName := strings.TrimSuffix(name, ".exe")
+
+					isVenvBin := false
+					if baseName == "python" || baseName == "pythonw" || baseName == "pip" {
+						isVenvBin = true
+					} else if strings.HasPrefix(baseName, "python") {
+						isVenvBin = isOnlyDigitsAndDots(baseName[6:])
+					} else if strings.HasPrefix(baseName, "pip") {
+						isVenvBin = isOnlyDigitsAndDots(baseName[3:])
+					}
+
+					if isVenvBin {
+						continue
+					}
+					executables = append(executables, filepath.Join(binDir, name))
 				}
 			}
 		}
@@ -275,4 +284,16 @@ func (p *PypiProvider) findPython() (string, error) {
 		}
 	}
 	return "", fmt.Errorf("python not found in PATH")
+}
+
+func isOnlyDigitsAndDots(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		if (c < '0' || c > '9') && c != '.' {
+			return false
+		}
+	}
+	return true
 }
