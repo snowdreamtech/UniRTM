@@ -257,6 +257,8 @@ func (p *PypiProvider) findPython() (string, error) {
 				candidates := []string{
 					filepath.Join(verDir, "bin", "python3"),
 					filepath.Join(verDir, "bin", "python"),
+					filepath.Join(verDir, "install", "python.exe"),
+					filepath.Join(verDir, "install", "python3.exe"),
 					filepath.Join(verDir, "python.exe"),
 					filepath.Join(verDir, "Scripts", "python.exe"),
 				}
