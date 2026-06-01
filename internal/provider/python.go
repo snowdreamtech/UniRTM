@@ -73,6 +73,20 @@ func (p *PythonProvider) getRealPythonPath(installPath string) string {
 // PostInstall creates a virtual environment.
 func (p *PythonProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	pythonPath := p.getRealPythonPath(installPath)
+	
+	if runtime.GOOS == "windows" {
+		// python-build-standalone on Windows ships with a python*._pth file
+		// which puts Python in isolated mode, breaking venv and pip.
+		// We must delete it to restore standard behavior.
+		pythonDir := filepath.Dir(pythonPath)
+		files, _ := os.ReadDir(pythonDir)
+		for _, file := range files {
+			name := file.Name()
+			if strings.HasPrefix(name, "python") && strings.HasSuffix(name, "._pth") {
+				os.Remove(filepath.Join(pythonDir, name))
+			}
+		}
+	}
 
 	venvDir := filepath.Join(installPath, "venv")
 	cmd := exec.CommandContext(ctx, pythonPath, "-m", "venv", venvDir)
