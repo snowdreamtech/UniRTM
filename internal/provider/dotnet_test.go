@@ -23,8 +23,14 @@ func TestDotnetProvider_FindDotnet(t *testing.T) {
 	binDir := filepath.Join(tmpDir, "bin")
 	os.MkdirAll(binDir, 0755)
 
-	scriptPath := filepath.Join(binDir, "dotnet")
-	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho dotnet"), 0755)
+	dotnetName := "dotnet"
+	scriptContent := []byte("#!/bin/sh\necho dotnet")
+	if runtime.GOOS == "windows" {
+		dotnetName = "dotnet.bat"
+		scriptContent = []byte("@echo dotnet")
+	}
+	scriptPath := filepath.Join(binDir, dotnetName)
+	os.WriteFile(scriptPath, scriptContent, 0755)
 
 	oldPath := os.Getenv("PATH")
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
@@ -45,8 +51,14 @@ func TestDotnetProvider_Install(t *testing.T) {
 
 	binDir := filepath.Join(tmpDir, "bin")
 	os.MkdirAll(binDir, 0755)
-	scriptPath := filepath.Join(binDir, "dotnet")
-	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho installing..."), 0755)
+	dotnetName := "dotnet"
+	scriptContent := []byte("#!/bin/sh\necho installing...")
+	if runtime.GOOS == "windows" {
+		dotnetName = "dotnet.bat"
+		scriptContent = []byte("@echo installing...")
+	}
+	scriptPath := filepath.Join(binDir, dotnetName)
+	os.WriteFile(scriptPath, scriptContent, 0755)
 
 	oldPath := os.Getenv("PATH")
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
@@ -98,8 +110,14 @@ func TestDotnetProvider_ListExecutables(t *testing.T) {
 	binDir := filepath.Join(tmpDir, "bin") // Wait, dotnet usually returns bin or root dir?
 	os.MkdirAll(binDir, 0755)
 
-	os.WriteFile(filepath.Join(binDir, "dummy1"), []byte(""), 0755)
-	os.WriteFile(filepath.Join(binDir, "dummy2"), []byte(""), 0644)
+	dummy1Name := "dummy1"
+	dummy2Name := "dummy2"
+	if runtime.GOOS == "windows" {
+		dummy1Name = "dummy1.exe"
+		dummy2Name = "dummy2.exe"
+	}
+	os.WriteFile(filepath.Join(binDir, dummy1Name), []byte(""), 0755)
+	os.WriteFile(filepath.Join(binDir, dummy2Name), []byte(""), 0644)
 
 	exes, err := p.ListExecutables("test_pkg", tmpDir, "1.0.0")
 	if err != nil {

@@ -49,7 +49,7 @@ func TestGenericProvider_IsExecutable(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	exePath := filepath.Join(tmpDir, "testexe")
+	exePath := filepath.Join(tmpDir, "myprog")
 	if runtime.GOOS == "windows" {
 		exePath += ".exe"
 	}

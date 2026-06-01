@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -42,7 +43,11 @@ func TestSpmProvider_findSwift(t *testing.T) {
 	// Create fake swift installation
 	swiftDir := filepath.Join(tmpData, "installs", "swift", "5.8", "bin")
 	os.MkdirAll(swiftDir, 0755)
-	swiftPath := filepath.Join(swiftDir, "swift")
+	swiftName := "swift"
+	if runtime.GOOS == "windows" {
+		swiftName += ".exe"
+	}
+	swiftPath := filepath.Join(swiftDir, swiftName)
 	os.WriteFile(swiftPath, []byte("fake binary"), 0755)
 
 	found, err := p.findSwift()

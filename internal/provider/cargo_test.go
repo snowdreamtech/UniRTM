@@ -25,11 +25,13 @@ func TestCargoProvider_FindCargo(t *testing.T) {
 	os.MkdirAll(binDir, 0755)
 
 	cargoName := "cargo"
+	scriptContent := []byte("#!/bin/sh\necho cargo")
 	if runtime.GOOS == "windows" {
-		cargoName = "cargo.exe"
+		cargoName = "cargo.bat"
+		scriptContent = []byte("@echo cargo")
 	}
 	scriptPath := filepath.Join(binDir, cargoName)
-	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho cargo"), 0755)
+	os.WriteFile(scriptPath, scriptContent, 0755)
 
 	oldPath := os.Getenv("PATH")
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
@@ -51,11 +53,13 @@ func TestCargoProvider_Install(t *testing.T) {
 	binDir := filepath.Join(tmpDir, "bin")
 	os.MkdirAll(binDir, 0755)
 	cargoName := "cargo"
+	scriptContent := []byte("#!/bin/sh\necho installing...")
 	if runtime.GOOS == "windows" {
-		cargoName = "cargo.exe"
+		cargoName = "cargo.bat"
+		scriptContent = []byte("@echo installing...")
 	}
 	scriptPath := filepath.Join(binDir, cargoName)
-	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho installing..."), 0755)
+	os.WriteFile(scriptPath, scriptContent, 0755)
 
 	oldPath := os.Getenv("PATH")
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)

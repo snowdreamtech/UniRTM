@@ -33,7 +33,7 @@ func TestJavaProvider_GenerateShims(t *testing.T) {
 		assert.True(t, ok, "missing shim for %s", exe)
 
 		if runtime.GOOS == "windows" {
-			assert.Contains(t, shim, "set \"JAVA_HOME=/fake/path\"")
+			assert.Contains(t, shim, "set \"JAVA_HOME="+filepath.FromSlash("/fake/path")+"\"")
 			assert.Contains(t, shim, filepath.Join("/fake/path", "bin", exe+".exe"))
 		} else {
 			assert.Contains(t, shim, "export JAVA_HOME=\"/fake/path\"")
@@ -92,7 +92,7 @@ func TestJavaProvider_DetectVersionSuccess(t *testing.T) {
 
 	javaPath := filepath.Join(binDir, "java")
 	if runtime.GOOS == "windows" {
-		javaPath += ".exe"
+		javaPath += ".bat"
 	}
 
 	// Mock java output to stderr

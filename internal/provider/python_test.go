@@ -5,6 +5,7 @@ package provider
 
 import (
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -32,8 +33,12 @@ func TestPythonProvider_GetBinPaths(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(paths) != 2 {
-		t.Errorf("expected 2 paths, got %d", len(paths))
+	expectedLen := 2
+	if runtime.GOOS == "windows" {
+		expectedLen = 3
+	}
+	if len(paths) != expectedLen {
+		t.Errorf("expected %d paths, got %d", expectedLen, len(paths))
 	}
 	expected := filepath.Join("/tmp/py", "bin")
 	if paths[0] != expected {

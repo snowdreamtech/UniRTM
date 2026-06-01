@@ -64,13 +64,17 @@ func TestNpmProvider_ListExecutables(t *testing.T) {
 	err := os.MkdirAll(binDir, 0755)
 	require.NoError(t, err)
 
-	os.WriteFile(filepath.Join(binDir, "dummy1"), []byte(""), 0755)
+	dummy1 := "dummy1"
+	if runtime.GOOS == "windows" {
+		dummy1 += ".cmd"
+	}
+	os.WriteFile(filepath.Join(binDir, dummy1), []byte(""), 0755)
 	os.WriteFile(filepath.Join(binDir, "dummy2"), []byte(""), 0644) // not executable
 
 	exes, err := p.ListExecutables("test_pkg", tmpDir, "1.0.0")
 	require.NoError(t, err)
 	assert.Len(t, exes, 1)
-	assert.Contains(t, exes, filepath.Join(binDir, "dummy1"))
+	assert.Contains(t, exes, filepath.Join(binDir, dummy1))
 }
 
 // TestNpmProvider_RewriteCmdNodePath_npm7Format tests that the npm 7+ IF EXIST

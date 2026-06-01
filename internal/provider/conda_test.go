@@ -21,8 +21,14 @@ func TestCondaProvider_FindConda(t *testing.T) {
 	binDir := filepath.Join(tmpDir, "bin")
 	os.MkdirAll(binDir, 0755)
 
-	scriptPath := filepath.Join(binDir, "conda")
-	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho conda"), 0755)
+	condaName := "conda"
+	scriptContent := []byte("#!/bin/sh\necho conda")
+	if runtime.GOOS == "windows" {
+		condaName = "conda.bat"
+		scriptContent = []byte("@echo conda")
+	}
+	scriptPath := filepath.Join(binDir, condaName)
+	os.WriteFile(scriptPath, scriptContent, 0755)
 
 	oldPath := os.Getenv("PATH")
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
@@ -43,8 +49,14 @@ func TestCondaProvider_Install(t *testing.T) {
 
 	binDir := filepath.Join(tmpDir, "bin")
 	os.MkdirAll(binDir, 0755)
-	scriptPath := filepath.Join(binDir, "conda")
-	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho installing..."), 0755)
+	condaName := "conda"
+	scriptContent := []byte("#!/bin/sh\necho installing...")
+	if runtime.GOOS == "windows" {
+		condaName = "conda.bat"
+		scriptContent = []byte("@echo installing...")
+	}
+	scriptPath := filepath.Join(binDir, condaName)
+	os.WriteFile(scriptPath, scriptContent, 0755)
 
 	oldPath := os.Getenv("PATH")
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)

@@ -71,7 +71,11 @@ func TestPypiProvider_ListExecutables(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create some dummy files
-	os.WriteFile(filepath.Join(binDir, "dummy1"), []byte(""), 0755)
+	dummy1 := "dummy1"
+	if runtime.GOOS == "windows" {
+		dummy1 += ".exe"
+	}
+	os.WriteFile(filepath.Join(binDir, dummy1), []byte(""), 0755)
 	os.WriteFile(filepath.Join(binDir, "dummy2"), []byte(""), 0644)       // not executable
 	os.WriteFile(filepath.Join(binDir, "pip"), []byte(""), 0755)          // Should be excluded
 	os.WriteFile(filepath.Join(binDir, "python"), []byte(""), 0755)       // Should be excluded
@@ -84,6 +88,6 @@ func TestPypiProvider_ListExecutables(t *testing.T) {
 	exes, err := p.ListExecutables("test_pkg", tmpDir, "1.0.0")
 	require.NoError(t, err)
 	assert.Len(t, exes, 2)
-	assert.Contains(t, exes, filepath.Join(binDir, "dummy1"))
+	assert.Contains(t, exes, filepath.Join(binDir, dummy1))
 	assert.Contains(t, exes, filepath.Join(binDir, "Activate.ps1"))
 }

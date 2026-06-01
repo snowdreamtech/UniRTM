@@ -23,8 +23,14 @@ func TestGemProvider_FindGem(t *testing.T) {
 	binDir := filepath.Join(tmpDir, "bin")
 	os.MkdirAll(binDir, 0755)
 
-	scriptPath := filepath.Join(binDir, "gem")
-	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho gem"), 0755)
+	gemName := "gem"
+	scriptContent := []byte("#!/bin/sh\necho gem")
+	if runtime.GOOS == "windows" {
+		gemName = "gem.bat"
+		scriptContent = []byte("@echo gem")
+	}
+	scriptPath := filepath.Join(binDir, gemName)
+	os.WriteFile(scriptPath, scriptContent, 0755)
 
 	oldPath := os.Getenv("PATH")
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
@@ -45,8 +51,14 @@ func TestGemProvider_Install(t *testing.T) {
 
 	binDir := filepath.Join(tmpDir, "bin")
 	os.MkdirAll(binDir, 0755)
-	scriptPath := filepath.Join(binDir, "gem")
-	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho installing..."), 0755)
+	gemName := "gem"
+	scriptContent := []byte("#!/bin/sh\necho installing...")
+	if runtime.GOOS == "windows" {
+		gemName = "gem.bat"
+		scriptContent = []byte("@echo installing...")
+	}
+	scriptPath := filepath.Join(binDir, gemName)
+	os.WriteFile(scriptPath, scriptContent, 0755)
 
 	oldPath := os.Getenv("PATH")
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
@@ -98,11 +110,17 @@ func TestGemProvider_ListExecutables(t *testing.T) {
 	err := os.MkdirAll(binDir, 0755)
 	require.NoError(t, err)
 
-	os.WriteFile(filepath.Join(binDir, "dummy1"), []byte(""), 0755)
-	os.WriteFile(filepath.Join(binDir, "dummy2"), []byte(""), 0644)
+	dummy1Name := "dummy1"
+	dummy2Name := "dummy2"
+	if runtime.GOOS == "windows" {
+		dummy1Name = "dummy1.exe"
+		dummy2Name = "dummy2.exe"
+	}
+	os.WriteFile(filepath.Join(binDir, dummy1Name), []byte(""), 0755)
+	os.WriteFile(filepath.Join(binDir, dummy2Name), []byte(""), 0644)
 
 	exes, err := p.ListExecutables("test_pkg", tmpDir, "1.0.0")
 	require.NoError(t, err)
 	require.Len(t, exes, 1)
-	require.Contains(t, exes, filepath.Join(binDir, "dummy1"))
+	require.Contains(t, exes, filepath.Join(binDir, dummy1Name))
 }

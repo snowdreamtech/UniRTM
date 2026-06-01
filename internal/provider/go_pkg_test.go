@@ -95,12 +95,16 @@ func TestGoPkgProvider_ListExecutables(t *testing.T) {
 	}
 
 	// Add an executable
-	os.WriteFile(filepath.Join(tmpDir, "dummy1"), []byte(""), 0755)
+	dummy1 := "dummy1"
+	if runtime.GOOS == "windows" {
+		dummy1 += ".exe"
+	}
+	os.WriteFile(filepath.Join(tmpDir, dummy1), []byte(""), 0755)
 	os.WriteFile(filepath.Join(tmpDir, "dummy2"), []byte(""), 0644)
 	execs, err = p.ListExecutables("tool", tmpDir, "1.0")
 	require.NoError(t, err)
 	require.Len(t, execs, 1)
-	require.Contains(t, execs, filepath.Join(tmpDir, "dummy1"))
+	require.Contains(t, execs, filepath.Join(tmpDir, dummy1))
 }
 
 func TestGoPkgProvider_Install_Success(t *testing.T) {
