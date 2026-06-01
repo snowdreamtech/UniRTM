@@ -21,6 +21,7 @@ func TestInitUniRTMLogger(t *testing.T) {
 
 	// Initialize logger
 	opWriter, errWriter := InitUniRTMLogger(operationLogPath, errorLogPath)
+	defer Close()
 
 	// Verify writers are not nil
 	assert.NotNil(t, opWriter)
@@ -55,6 +56,7 @@ func TestInitUniRTMLoggerWithDefaults(t *testing.T) {
 
 	// Initialize logger with empty paths (should use defaults)
 	opWriter, errWriter := InitUniRTMLogger("", "")
+	defer Close()
 
 	// Verify writers are not nil
 	assert.NotNil(t, opWriter)
@@ -114,6 +116,7 @@ func TestLogLevels(t *testing.T) {
 
 	// Initialize logger
 	InitUniRTMLogger(operationLogPath, errorLogPath)
+	defer Close()
 
 	// Set log level to trace to capture all logs
 	zerolog.SetGlobalLevel(zerolog.TraceLevel)
@@ -153,6 +156,7 @@ func TestErrorWithErr(t *testing.T) {
 
 	// Initialize logger
 	InitUniRTMLogger(operationLogPath, errorLogPath)
+	defer Close()
 
 	// Test error logging with error object
 	testErr := assert.AnError
@@ -179,6 +183,7 @@ func TestUniRTMErrorHook(t *testing.T) {
 
 	// Initialize logger
 	InitUniRTMLogger(operationLogPath, errorLogPath)
+	defer Close()
 
 	// Log an error to trigger the hook
 	Logger.Error().Msg("test error with stack trace")

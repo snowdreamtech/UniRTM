@@ -47,6 +47,10 @@ var (
 
 	// errorLogWriter is the writer for error logs (error.log)
 	errorLogWriter io.Writer
+
+	// Global pointers to lumberjack loggers for closing
+	operationLumberjack *lumberjack.Logger
+	errorLumberjack     *lumberjack.Logger
 )
 
 // InitLogger initializes the logger with the specified error and gin log paths.
@@ -107,6 +111,7 @@ func InitUniRTMLogger(operationLogPath, errorLogPath string) (operationWriter io
 		MaxAge:     30,   // days
 		Compress:   true, // compress rotated files
 	}
+	operationLumberjack = operationLog
 
 	// Initialize error log with rotating file writer
 	errorLog := &lumberjack.Logger{
@@ -116,6 +121,7 @@ func InitUniRTMLogger(operationLogPath, errorLogPath string) (operationWriter io
 		MaxAge:     30,   // days
 		Compress:   true, // compress rotated files
 	}
+	errorLumberjack = errorLog
 
 	// Create multi-writers for operation logs (file + stderr)
 	operationWriter = io.MultiWriter(operationLog, os.Stderr)
@@ -531,4 +537,25 @@ func FatalWithErr(err error, msg string, fields ...map[string]interface{}) {
 	} else {
 		Logger.Fatal().Err(err).Msg(msg)
 	}
+}
+
+// Close closes any open log files.
+func Close() error {
+	var errs []error
+	if operationLumberjack != nil {
+		if err := operationLumberjack.Close(); err != nil {
+			errs = append(errs, err)
+		}
+		operationLumberjack = nil
+	}
+	if errorLumberjack != nil {
+		if err := errorLumberjack.Close(); err != nil {
+			errs = append(errs, err)
+		}
+		errorLumberjack = nil
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("failed to close log files: %v", errs)
+	}
+	return nil
 }

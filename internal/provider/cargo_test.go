@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -23,7 +24,11 @@ func TestCargoProvider_FindCargo(t *testing.T) {
 	binDir := filepath.Join(tmpDir, "bin")
 	os.MkdirAll(binDir, 0755)
 
-	scriptPath := filepath.Join(binDir, "cargo")
+	cargoName := "cargo"
+	if runtime.GOOS == "windows" {
+		cargoName = "cargo.exe"
+	}
+	scriptPath := filepath.Join(binDir, cargoName)
 	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho cargo"), 0755)
 
 	oldPath := os.Getenv("PATH")
@@ -45,7 +50,11 @@ func TestCargoProvider_Install(t *testing.T) {
 
 	binDir := filepath.Join(tmpDir, "bin")
 	os.MkdirAll(binDir, 0755)
-	scriptPath := filepath.Join(binDir, "cargo")
+	cargoName := "cargo"
+	if runtime.GOOS == "windows" {
+		cargoName = "cargo.exe"
+	}
+	scriptPath := filepath.Join(binDir, cargoName)
 	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho installing..."), 0755)
 
 	oldPath := os.Getenv("PATH")
@@ -71,7 +80,11 @@ func TestCargoProvider_findCargo(t *testing.T) {
 	// Create fake rust installation
 	rustDir := filepath.Join(tmpData, "installs", "rust", "1.70.0", "bin")
 	os.MkdirAll(rustDir, 0755)
-	cargoPath := filepath.Join(rustDir, "cargo")
+	cargoName := "cargo"
+	if runtime.GOOS == "windows" {
+		cargoName = "cargo.exe"
+	}
+	cargoPath := filepath.Join(rustDir, cargoName)
 	os.WriteFile(cargoPath, []byte("fake binary"), 0755)
 
 	found, err := p.findCargo()
@@ -98,11 +111,17 @@ func TestCargoProvider_ListExecutables(t *testing.T) {
 	err := os.MkdirAll(binDir, 0755)
 	require.NoError(t, err)
 
-	os.WriteFile(filepath.Join(binDir, "dummy1"), []byte(""), 0755)
-	os.WriteFile(filepath.Join(binDir, "dummy2"), []byte(""), 0644)
+	dummy1Name := "dummy1"
+	dummy2Name := "dummy2"
+	if runtime.GOOS == "windows" {
+		dummy1Name = "dummy1.exe"
+		dummy2Name = "dummy2.exe"
+	}
+	os.WriteFile(filepath.Join(binDir, dummy1Name), []byte(""), 0755)
+	os.WriteFile(filepath.Join(binDir, dummy2Name), []byte(""), 0644)
 
 	exes, err := p.ListExecutables("test_pkg", tmpDir, "1.0.0")
 	require.NoError(t, err)
 	require.Len(t, exes, 1)
-	require.Contains(t, exes, filepath.Join(binDir, "dummy1"))
+	require.Contains(t, exes, filepath.Join(binDir, dummy1Name))
 }

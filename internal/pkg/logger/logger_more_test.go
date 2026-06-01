@@ -23,6 +23,7 @@ func TestLogger_Init(t *testing.T) {
 
 	// Test InitUniRTMLogger
 	InitUniRTMLogger(filepath.Join(dir, "unirtm.log"), filepath.Join(dir, "error.log"))
+	defer Close()
 
 	// Test zero logger
 	initZeroLogger(os.Stdout)

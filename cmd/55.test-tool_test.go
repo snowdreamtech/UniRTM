@@ -6,6 +6,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,10 +16,14 @@ func TestTestExecutable_Success(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create a dummy executable that always succeeds
-	exePath := filepath.Join(tmpDir, "dummy")
-	script := `#!/bin/sh
-exit 0
-`
+	var script, ext string
+	if runtime.GOOS == "windows" {
+		ext = ".bat"
+		script = "@echo off\r\nexit 0\r\n"
+	} else {
+		script = "#!/bin/sh\nexit 0\n"
+	}
+	exePath := filepath.Join(tmpDir, "dummy"+ext)
 	err := os.WriteFile(exePath, []byte(script), 0755)
 	assert.NoError(t, err)
 
@@ -30,11 +35,14 @@ func TestTestExecutable_Failure(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create a dummy executable that always fails
-	exePath := filepath.Join(tmpDir, "dummy_fail")
-	script := `#!/bin/sh
-echo "some error output"
-exit 1
-`
+	var script, ext string
+	if runtime.GOOS == "windows" {
+		ext = ".bat"
+		script = "@echo off\r\necho some error output\r\nexit 1\r\n"
+	} else {
+		script = "#!/bin/sh\necho \"some error output\"\nexit 1\n"
+	}
+	exePath := filepath.Join(tmpDir, "dummy_fail"+ext)
 	err := os.WriteFile(exePath, []byte(script), 0755)
 	assert.NoError(t, err)
 
