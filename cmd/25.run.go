@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/pterm/pterm"
@@ -177,6 +178,13 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 
 	// Safe PATH merging to avoid hardcoded colons and exponential explosion on Windows
 	newPath := shimsDir + string(os.PathListSeparator) + env.Get("PATH")
+	
+	// Also inject the directory of the current unirtm executable so scripts can find it
+	exePath, err := os.Executable()
+	if err == nil {
+		exeDir := filepath.Dir(exePath)
+		newPath = shimsDir + string(os.PathListSeparator) + exeDir + string(os.PathListSeparator) + env.Get("PATH")
+	}
 
 	// Deduplicate inline to keep PATH clean
 	cleanPath := envpath.DeduplicateOSPaths(newPath)
@@ -193,6 +201,19 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 	// Execute task
 	if err := engine.Execute(ctx, cwd, taskName, taskArgs, envInjects); err != nil {
 		if strings.Contains(err.Error(), "no suitable task runner found") {
+			// Check if local config is untrusted/modified and print a friendly hint
+			tm := config.NewTrustManager()
+			for _, f := range []string{".unirtm.toml", "unirtm.toml"} {
+				p := filepath.Join(cwd, f)
+				if _, err := os.Stat(p); err == nil {
+					status := tm.TrustStatus(p)
+					if status != config.TrustStatusTrusted {
+						pterm.Warning.Printf("Tasks in %s are ignored because the configuration file is not trusted.\nPlease run 'unirtm trust' to enable them.\n\n", f)
+						break
+					}
+				}
+			}
+
 			// Suggest similar tasks or commands if not found
 			var candidates []string
 			for name := range cfg.Tasks {

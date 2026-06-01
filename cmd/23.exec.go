@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"syscall"
@@ -307,12 +308,22 @@ func runExec(cmd *cobra.Command, args []string) error {
 	// ── 6. Ensure tool binaries take precedence over shims ────────────────────
 
 	shimsDir := env.GetShimsDir()
+	exePath, err := os.Executable()
+	exeDir := ""
+	if err == nil {
+		exeDir = filepath.Dir(exePath)
+	}
+
 	// Tool bins are already in additionalEnv["PATH"]. We want them to be searched FIRST.
-	// Then shims, then the original system PATH.
+	// Then shims, then the unirtm binary directory, then the original system PATH.
 	if existing := additionalEnv["PATH"]; existing != "" {
 		additionalEnv["PATH"] = existing + string(os.PathListSeparator) + shimsDir
 	} else {
 		additionalEnv["PATH"] = shimsDir
+	}
+	
+	if exeDir != "" {
+		additionalEnv["PATH"] += string(os.PathListSeparator) + exeDir
 	}
 
 	// Apply all collected env overrides onto the current process.
