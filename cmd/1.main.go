@@ -7,6 +7,7 @@
 package cmd
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -117,6 +118,9 @@ func setupGlobalOptions(cmd *cobra.Command, args []string) {
 
 	// Synchronize prefixed environment variables to native ones
 	syncEnv()
+
+	// Warn if the built-in command shadows a user-defined task
+	checkTaskShadowing(cmd)
 }
 
 // syncEnv synchronizes prefixed environment variables (UNIRTM_ and MISE_) to native ones
@@ -141,6 +145,22 @@ func syncEnv() {
 		if os.Getenv(v) == "" {
 			if val := env.Get(v); val != "" {
 				os.Setenv(v, val)
+			}
+		}
+	}
+}
+
+// checkTaskShadowing detects if the executed built-in command shadows a user-defined task.
+func checkTaskShadowing(cmd *cobra.Command) {
+	if cmd == nil {
+		return
+	}
+	calledAs := cmd.CalledAs()
+	if calledAs != "" && calledAs != "unirtm" && calledAs != "help" && calledAs != "run" {
+		ctx := context.Background()
+		if cfg, err := loadConfig(ctx); err == nil && cfg != nil && cfg.Tasks != nil {
+			if _, exists := cfg.Tasks[calledAs]; exists {
+				pterm.Warning.Printf("Built-in command %q is shadowing your custom task %q.\nIf you meant to run the task, please use: unirtm run %s\n\n", calledAs, calledAs, calledAs)
 			}
 		}
 	}
