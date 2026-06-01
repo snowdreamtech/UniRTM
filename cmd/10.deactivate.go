@@ -119,13 +119,18 @@ func generatePosixDeactivationScript(shimsDir string) string {
 # 1. Clean up shims and injected paths from PATH
 _unirtm_clean_path() {
   local result=""
+  local old_ifs="$IFS"
   local IFS=:
+  if [ -n "${ZSH_VERSION:-}" ]; then
+    setopt localoptions shwordsplit 2>/dev/null
+  fi
   for _p in $PATH; do
     case ":$UNIRTM_PATH:%s:" in
       *":$_p:"*) ;;
       *) result="${result:+$result:}$_p" ;;
     esac
   done
+  IFS="$old_ifs"
   echo "$result"
 }
 export PATH="$(_unirtm_clean_path)"

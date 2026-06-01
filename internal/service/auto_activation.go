@@ -229,7 +229,7 @@ func (m *AutoActivationManager) determineAction(oldProjectDir, newProjectDir, cu
 //
 // Requirements: 15.6
 func (m *AutoActivationManager) generateActivation(ctx context.Context, shell ShellType, projectDir string, currentState *EnvironmentState) (*ActivationChange, error) {
-	logger.Info("Generating project activation", map[string]interface{}{
+	logger.Debug("Generating project activation", map[string]interface{}{
 		"project_dir": projectDir,
 		"shell":       shell,
 	})
@@ -321,7 +321,7 @@ func (m *AutoActivationManager) LoadConfigByDir(projectDir string) (map[string]s
 //
 // Requirements: 15.7
 func (m *AutoActivationManager) generateDeactivation(ctx context.Context, shell ShellType, currentState *EnvironmentState) (*ActivationChange, error) {
-	logger.Info("Generating project deactivation", map[string]interface{}{
+	logger.Debug("Generating project deactivation", map[string]interface{}{
 		"project_dir": currentState.ProjectDir,
 		"shell":       shell,
 	})
@@ -348,10 +348,10 @@ func (m *AutoActivationManager) generateDeactivation(ctx context.Context, shell 
 //
 // Requirements: 15.6, 15.7
 func (m *AutoActivationManager) generateSwitch(ctx context.Context, shell ShellType, oldProjectDir, newProjectDir string, currentState *EnvironmentState) (*ActivationChange, error) {
-	logger.Info("Generating project switch", map[string]interface{}{
-		"old_project": oldProjectDir,
-		"new_project": newProjectDir,
-		"shell":       shell,
+	logger.Debug("Generating project switch", map[string]interface{}{
+		"old_project_dir": oldProjectDir,
+		"new_project_dir": newProjectDir,
+		"shell":           shell,
 	})
 
 	// First deactivate the old project
@@ -423,13 +423,18 @@ func (m *AutoActivationManager) generatePosixDeactivation(sb *strings.Builder, s
 		sb.WriteString("# Clean up UniRTM paths from PATH\n")
 		sb.WriteString("_unirtm_clean_path() {\n")
 		sb.WriteString("  local result=\"\"\n")
+		sb.WriteString("  local old_ifs=\"$IFS\"\n")
 		sb.WriteString("  local IFS=:\n")
+		sb.WriteString("  if [ -n \"${ZSH_VERSION:-}\" ]; then\n")
+		sb.WriteString("    setopt localoptions shwordsplit 2>/dev/null\n")
+		sb.WriteString("  fi\n")
 		sb.WriteString("  for _p in $PATH; do\n")
 		sb.WriteString(fmt.Sprintf("    case \":$UNIRTM_PATH:%s:\" in\n", posixShimsDir))
 		sb.WriteString("      *\":$_p:\"*) ;;\n")
 		sb.WriteString("      *) result=\"${result:+$result:}$_p\" ;;\n")
 		sb.WriteString("    esac\n")
 		sb.WriteString("  done\n")
+		sb.WriteString("  IFS=\"$old_ifs\"\n")
 		sb.WriteString("  echo \"$result\"\n")
 		sb.WriteString("}\n")
 		sb.WriteString("export PATH=\"$(_unirtm_clean_path)\"\n")
@@ -602,10 +607,10 @@ func (m *AutoActivationManager) generatePosixHook(sb *strings.Builder, shell She
 	sb.WriteString("  \n")
 	sb.WriteString("  # Only run if directory changed\n")
 	sb.WriteString("  if [ \"$old_pwd\" != \"$new_pwd\" ]; then\n")
-	sb.WriteString("    export UNIRTM_OLD_PWD=\"$new_pwd\"\n")
-	sb.WriteString("    \n")
-	sb.WriteString("    # Call unirtm hook-env to get activation changes\n")
+	sb.WriteString("    # Call unirtm hook-env to get activation changes using current UNIRTM_OLD_PWD\n")
 	sb.WriteString(fmt.Sprintf("    eval \"$(%s hook-env --shell %s)\"\n", exePath, shell))
+	sb.WriteString("    \n")
+	sb.WriteString("    export UNIRTM_OLD_PWD=\"$new_pwd\"\n")
 	sb.WriteString("  fi\n")
 	sb.WriteString("}\n")
 	sb.WriteString("\n")
@@ -641,13 +646,12 @@ func (m *AutoActivationManager) generatePowerShellHook(sb *strings.Builder, exeP
 	sb.WriteString("  $newPwd = $PWD.Path\n")
 	sb.WriteString("  \n")
 	sb.WriteString("  if ($oldPwd -ne $newPwd) {\n")
-	sb.WriteString("    $env:UNIRTM_OLD_PWD = $newPwd\n")
-	sb.WriteString("    \n")
 	sb.WriteString("    # Call unirtm hook-env to get activation changes\n")
 	sb.WriteString(fmt.Sprintf("    $script = %s hook-env --shell powershell\n", exePath))
 	sb.WriteString("    if ($script) {\n")
 	sb.WriteString("      Invoke-Expression $script\n")
 	sb.WriteString("    }\n")
+	sb.WriteString("    $env:UNIRTM_OLD_PWD = $newPwd\n")
 	sb.WriteString("  }\n")
 	sb.WriteString("}\n")
 	sb.WriteString("\n")
