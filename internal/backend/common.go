@@ -101,10 +101,12 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 			strings.Contains(nameLower, "win64") ||
 			strings.Contains(nameLower, "win32") ||
 			containsWord(nameLower, "win") ||
-			strings.HasSuffix(nameLower, ".exe") ||
-			(strings.HasSuffix(nameLower, ".zip") && !strings.Contains(nameLower, "linux") && !strings.Contains(nameLower, "darwin") && !strings.Contains(nameLower, "macos") && !strings.Contains(nameLower, "apple")) {
+			strings.HasSuffix(nameLower, ".exe") {
 			osMatch = true
 			score += 100
+		} else if strings.HasSuffix(nameLower, ".zip") && !strings.Contains(nameLower, "linux") && !strings.Contains(nameLower, "darwin") && !strings.Contains(nameLower, "macos") && !strings.Contains(nameLower, "apple") {
+			osMatch = true
+			score += 50
 		}
 	}
 
@@ -117,10 +119,12 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 	switch platform.Arch {
 	case "amd64":
 		if strings.Contains(nameLower, "amd64") || strings.Contains(nameLower, "x86_64") || strings.Contains(nameLower, "x64") || strings.Contains(nameLower, "64bit") ||
-			(platform.OS == "darwin" && strings.Contains(nameLower, "universal")) ||
-			(platform.OS == "windows" && strings.HasSuffix(nameLower, ".zip") && !strings.Contains(nameLower, "386") && !strings.Contains(nameLower, "arm64")) {
+			(platform.OS == "darwin" && strings.Contains(nameLower, "universal")) {
 			archMatch = true
 			score += 100
+		} else if platform.OS == "windows" && strings.HasSuffix(nameLower, ".zip") && !strings.Contains(nameLower, "386") && !strings.Contains(nameLower, "arm64") && !strings.Contains(nameLower, "aarch64") && !strings.Contains(nameLower, "armv8") {
+			archMatch = true
+			score += 50
 		}
 	case "arm64":
 		if strings.Contains(nameLower, "arm64") || strings.Contains(nameLower, "aarch64") || strings.Contains(nameLower, "armv8") ||
