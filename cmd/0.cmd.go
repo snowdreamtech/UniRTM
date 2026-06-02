@@ -99,6 +99,7 @@ func Execute() {
 func isUniRTMBinary(name string) bool {
 	// Remove path and extension
 	name = filepath.Base(name)
+	name = strings.ToLower(name)
 	name = strings.TrimSuffix(name, ".exe")
 	return name == "unirtm" || name == "unirtm-test" || name == "main" || name == "unirtm-debug"
 }
