@@ -76,7 +76,7 @@ func (b *AsdfBackend) ListVersions(ctx context.Context, tool string, platform Pl
 		return nil, NewBackendError(b.Name(), tool, "plugin does not support list-all", err)
 	}
 
-	cmd := exec.CommandContext(ctx, listAllScript)
+	cmd := exec.CommandContext(ctx, "sh", listAllScript)
 	cmd.Dir = pluginDir
 	var out bytes.Buffer
 	cmd.Stdout = &out

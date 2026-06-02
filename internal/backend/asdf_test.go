@@ -83,7 +83,7 @@ func TestAsdfBackend_ResolveVersion(t *testing.T) {
 
 	infoLatest, err := b.ResolveVersion(ctx, "nodejs", "latest", platform)
 	if err != nil {
-		t.Errorf("expected no error, got %v", err)
+		t.Fatalf("expected no error, got %v", err)
 	}
 	// "21.0.0" comes last in "lines" which means it's pushed to [0] because ListVersions loops backwards
 	if infoLatest.Version != "21.0.0" {

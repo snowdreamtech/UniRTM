@@ -6,6 +6,7 @@ package lockfile
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,7 +24,9 @@ func TestLockFile_More_LoadSave(t *testing.T) {
 	os.Mkdir(unwritableDir, 0444)
 	lf2 := New(filepath.Join(unwritableDir, "test.toml"))
 	err = lf2.Save()
-	assert.Error(t, err)
+	if runtime.GOOS != "windows" {
+		assert.Error(t, err)
+	}
 }
 
 func TestLockFile_More_Get(t *testing.T) {

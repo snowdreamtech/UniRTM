@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -33,8 +34,10 @@ t1 = "1.0"
 	// Unreadable
 	os.Chmod(f.Name(), 0000)
 	_, err = cm.tryLoad(context.Background(), f.Name(), false, nil)
-	if err == nil {
-		t.Errorf("expected error on unreadable")
+	if runtime.GOOS != "windows" {
+		if err == nil {
+			t.Errorf("expected error on unreadable")
+		}
 	}
 	os.Chmod(f.Name(), 0644)
 

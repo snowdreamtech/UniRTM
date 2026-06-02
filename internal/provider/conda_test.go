@@ -92,14 +92,26 @@ func TestCondaProvider_ListExecutables(t *testing.T) {
 	binDir := filepath.Join(tmpDir, "bin")
 	os.MkdirAll(binDir, 0755)
 
-	os.WriteFile(filepath.Join(binDir, "dummy1"), []byte(""), 0755)
-	os.WriteFile(filepath.Join(binDir, "dummy2"), []byte(""), 0644)
+	dummy1Name := "dummy1"
+	dummy2Name := "dummy2"
+	if runtime.GOOS == "windows" {
+		dummy1Name = "dummy1.exe"
+		dummy2Name = "dummy2.exe"
+	}
+	os.WriteFile(filepath.Join(binDir, dummy1Name), []byte(""), 0755)
+	os.WriteFile(filepath.Join(binDir, dummy2Name), []byte(""), 0644)
 
 	exes, err := p.ListExecutables("test_pkg", tmpDir, "1.0.0")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(exes) != 1 {
-		t.Errorf("expected 1 executable, got %d", len(exes))
+	if runtime.GOOS == "windows" {
+		if len(exes) != 2 {
+			t.Errorf("expected 2 executables on windows, got %d", len(exes))
+		}
+	} else {
+		if len(exes) != 1 {
+			t.Errorf("expected 1 executable, got %d", len(exes))
+		}
 	}
 }

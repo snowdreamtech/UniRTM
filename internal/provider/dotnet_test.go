@@ -124,7 +124,13 @@ func TestDotnetProvider_ListExecutables(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(exes) != 1 {
-		t.Errorf("expected 1 executable, got %d", len(exes))
+	if runtime.GOOS == "windows" {
+		if len(exes) != 2 {
+			t.Errorf("expected 2 executables on windows, got %d", len(exes))
+		}
+	} else {
+		if len(exes) != 1 {
+			t.Errorf("expected 1 executable, got %d", len(exes))
+		}
 	}
 }

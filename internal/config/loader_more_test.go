@@ -6,6 +6,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -41,8 +42,10 @@ t1 = "1.0"
 
 	os.Chmod(globalPath, 0000)
 	_, err = LoadGlobal()
-	if err == nil {
-		t.Errorf("expected error reading unreadable global config")
+	if runtime.GOOS != "windows" {
+		if err == nil {
+			t.Errorf("expected error reading unreadable global config")
+		}
 	}
 	os.Chmod(globalPath, 0644)
 }

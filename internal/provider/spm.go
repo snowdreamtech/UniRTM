@@ -194,6 +194,7 @@ func (p *SpmProvider) findSwift() (string, error) {
 				verDir := filepath.Join(swiftInstallsDir, entry.Name())
 				candidates := []string{
 					filepath.Join(verDir, "bin", "swift"),
+					filepath.Join(verDir, "bin", "swift.exe"),
 					filepath.Join(verDir, "swift"),
 					filepath.Join(verDir, "swift.exe"),
 				}

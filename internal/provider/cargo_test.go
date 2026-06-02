@@ -126,6 +126,12 @@ func TestCargoProvider_ListExecutables(t *testing.T) {
 
 	exes, err := p.ListExecutables("test_pkg", tmpDir, "1.0.0")
 	require.NoError(t, err)
-	require.Len(t, exes, 1)
-	require.Contains(t, exes, filepath.Join(binDir, dummy1Name))
+	if runtime.GOOS == "windows" {
+		require.Len(t, exes, 2)
+		require.Contains(t, exes, filepath.Join(binDir, dummy1Name))
+		require.Contains(t, exes, filepath.Join(binDir, dummy2Name))
+	} else {
+		require.Len(t, exes, 1)
+		require.Contains(t, exes, filepath.Join(binDir, dummy1Name))
+	}
 }
