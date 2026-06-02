@@ -160,10 +160,15 @@ func TestResolveGitHubTokenPublic(t *testing.T) {
 }
 
 func TestRunCredentialCommand(t *testing.T) {
-	// Test with a real command that produces output
+	var expected string
+	if runtime.GOOS == "windows" {
+		expected = "mytoken github.com"
+	} else {
+		expected = "mytoken"
+	}
 	token := runCredentialCommand("echo mytoken", "github.com")
-	if token != "mytoken" {
-		t.Errorf("expected 'mytoken', got %q", token)
+	if token != expected {
+		t.Errorf("expected %q, got %q", expected, token)
 	}
 
 	// Test with a failing command
@@ -195,9 +200,17 @@ func TestResolveGitHubToken_CredentialCommand(t *testing.T) {
 	t.Setenv("UNIRTM_GITHUB_CREDENTIAL_COMMAND", "echo cred-token")
 
 	token := resolveGitHubToken("github.com")
-	// The credential command 'echo cred-token' should return 'cred-token'
-	if token != "cred-token" {
-		t.Logf("token from credential command: %q", token)
+
+	var expected string
+	if runtime.GOOS == "windows" {
+		expected = "cred-token github.com"
+	} else {
+		expected = "cred-token"
+	}
+
+	// The credential command 'echo cred-token' should return expected value
+	if token != expected {
+		t.Logf("token from credential command: %q (expected %q)", token, expected)
 	}
 }
 

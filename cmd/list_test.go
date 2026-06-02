@@ -66,7 +66,10 @@ func TestResolveActiveVersions(t *testing.T) {
 
 	// Create a shim symlink pointing to the binary
 	shimFile := filepath.Join(shimsDir, "node")
-	os.Symlink(binFile, shimFile)
+	err := os.Symlink(binFile, shimFile)
+	if err != nil {
+		t.Skipf("Skipping test because symlink creation failed (requires Developer Mode on Windows): %v", err)
+	}
 
 	installations := []*repository.Installation{
 		{Tool: "node", Version: "20.0.0", InstallPath: filepath.Join(installsDir, "node", "20.0.0")},
