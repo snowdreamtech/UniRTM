@@ -4,7 +4,6 @@
 # Usage:
 #   sh npm/scripts/build.sh [--version <version>] [--dist-dir <path>] [--npm-dir <path>]
 #
-# Reads version from VERSION file if not specified.
 # Must be run from the project root.
 
 set -eu
@@ -20,7 +19,6 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 # ---------------------------------------------------------------------------
 DIST_DIR="${PROJECT_ROOT}/dist"
 NPM_DIR="${PROJECT_ROOT}/npm"
-VERSION_FILE="${PROJECT_ROOT}/VERSION"
 
 # ---------------------------------------------------------------------------
 # Parse arguments
@@ -51,12 +49,8 @@ done
 # Resolve version
 # ---------------------------------------------------------------------------
 if [ -z "${VERSION}" ]; then
-  if [ -f "${VERSION_FILE}" ]; then
-    VERSION="$(cat "${VERSION_FILE}" | tr -d '[:space:]')"
-  else
-    printf 'ERROR: VERSION file not found and --version not specified.\n' >&2
-    exit 1
-  fi
+  printf 'ERROR: --version not specified.\n' >&2
+  exit 1
 fi
 
 # Strip leading 'v' for npm semver compatibility
