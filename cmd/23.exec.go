@@ -321,7 +321,7 @@ func runExec(cmd *cobra.Command, args []string) error {
 	} else {
 		additionalEnv["PATH"] = shimsDir
 	}
-	
+
 	if exeDir != "" {
 		additionalEnv["PATH"] += string(os.PathListSeparator) + exeDir
 	}

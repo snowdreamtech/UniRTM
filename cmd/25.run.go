@@ -178,7 +178,7 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 
 	// Safe PATH merging to avoid hardcoded colons and exponential explosion on Windows
 	newPath := shimsDir + string(os.PathListSeparator) + env.Get("PATH")
-	
+
 	// Also inject the directory of the current unirtm executable so scripts can find it
 	exePath, err := os.Executable()
 	if err == nil {
