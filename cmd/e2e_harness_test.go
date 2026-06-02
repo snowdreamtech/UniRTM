@@ -85,6 +85,20 @@ func (h *E2EHarness) Run(args ...string) (stdout string, stderr string, err erro
 	// Capture pterm output
 	pterm.SetDefaultOutput(wOut)
 
+	var bufOut bytes.Buffer
+	var bufErr bytes.Buffer
+	outDone := make(chan struct{})
+	errDone := make(chan struct{})
+
+	go func() {
+		io.Copy(&bufOut, rOut)
+		close(outDone)
+	}()
+	go func() {
+		io.Copy(&bufErr, rErr)
+		close(errDone)
+	}()
+
 	rootCmd.SetArgs(args)
 	err = rootCmd.Execute()
 
@@ -94,10 +108,8 @@ func (h *E2EHarness) Run(args ...string) (stdout string, stderr string, err erro
 	os.Stdout = oldStdout
 	os.Stderr = oldStderr
 
-	var bufOut bytes.Buffer
-	var bufErr bytes.Buffer
-	io.Copy(&bufOut, rOut)
-	io.Copy(&bufErr, rErr)
+	<-outDone
+	<-errDone
 
 	return bufOut.String(), bufErr.String(), err
 }

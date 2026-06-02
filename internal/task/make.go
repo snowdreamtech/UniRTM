@@ -49,6 +49,9 @@ func (r *MakeRunner) ListTasks(dir string) ([]string, error) {
 	if err != nil {
 		// some make versions return exit code 1 even with -qp if there are errors in Makefile
 		// but they might still output the database
+		if _, ok := err.(*exec.Error); ok {
+			return nil, err
+		}
 	}
 
 	var targets []string

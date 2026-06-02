@@ -88,6 +88,7 @@ func (p *UbiProvider) GenerateShims(tool string, installPath string, version str
 	shims := make(map[string]string)
 	for _, exe := range executables {
 		name := filepath.Base(exe)
+		name = strings.TrimSuffix(name, ".exe")
 		shims[name] = exe
 	}
 

@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
@@ -71,7 +72,12 @@ func resolveGitHubToken(host string) string {
 
 // runCredentialCommand executes the configured credential command and returns its stdout.
 func runCredentialCommand(command, host string) string {
-	cmd := exec.Command("sh", "-c", command, "--", host) // #nosec G204
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("cmd", "/c", command+" "+host)
+	} else {
+		cmd = exec.Command("sh", "-c", command, "--", host) // #nosec G204
+	}
 	out, err := cmd.Output()
 	if err != nil {
 		return ""

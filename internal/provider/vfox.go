@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
@@ -81,6 +82,7 @@ func (p *VfoxProvider) GenerateShims(tool string, installPath string, version st
 	shims := make(map[string]string)
 	for _, exe := range executables {
 		name := filepath.Base(exe)
+		name = strings.TrimSuffix(name, ".exe")
 		shims[name] = exe
 	}
 

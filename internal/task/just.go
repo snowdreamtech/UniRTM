@@ -47,6 +47,9 @@ func (r *JustRunner) ListTasks(dir string) ([]string, error) {
 	cmd.Dir = dir
 	out, err := cmd.Output()
 	if err != nil {
+		if _, ok := err.(*exec.Error); ok {
+			return nil, err
+		}
 		return nil, nil
 	}
 
