@@ -83,7 +83,7 @@ func TestMakeRunnerCanExecute(t *testing.T) {
 
 func TestNativeRunner(t *testing.T) {
 	tasks := map[string]config.Task{
-		"build": {Run: "echo 'building'"},
+		"build": {Run: config.StringArray{"echo 'building'"}},
 	}
 	runner := task.NewNativeRunner(tasks, config.Settings{TaskOutput: "interleaved"})
 

@@ -15,7 +15,7 @@ func TestNativeRunner_runTaskWithGraph(t *testing.T) {
 		tasks: map[string]config.Task{
 			"t1":      {Depends: []string{"t2"}},
 			"t2":      {Depends: []string{"t3"}},
-			"t3":      {Run: "echo t3"},
+			"t3":      {Run: config.StringArray{"echo t3"}},
 			"cycle1":  {Depends: []string{"cycle2"}},
 			"cycle2":  {Depends: []string{"cycle1"}},
 			"bad_dep": {Depends: []string{"nonexistent"}},

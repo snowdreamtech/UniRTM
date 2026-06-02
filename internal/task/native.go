@@ -82,7 +82,7 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 	}
 
 	// Prepare the script. If there are args, append them directly.
-	script := taskDef.Run
+	script := taskDef.Run.Script()
 	if len(args) > 0 {
 		if script != "" {
 			script = script + " " + strings.Join(args, " ")

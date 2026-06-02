@@ -57,10 +57,10 @@ func TestParseToolConfig_Map(t *testing.T) {
 	if tc.Provider != "github" {
 		t.Fatalf("bad provider")
 	}
-	if tc.PreInstall != "echo pre" {
-		t.Fatalf("bad pre_install")
+	if tc.PreInstall.Script() != "echo pre" {
+		t.Errorf("expected PreInstall 'echo pre', got %q", tc.PreInstall.Script())
 	}
-	if tc.PostInstall != "echo post" {
+	if tc.PostInstall.Script() != "echo post" {
 		t.Fatalf("bad post_install")
 	}
 	if len(tc.GPGKeys) != 2 || tc.GPGKeys[0] != "key1" {

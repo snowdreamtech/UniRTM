@@ -71,12 +71,12 @@ func TestConfig_Merge(t *testing.T) {
 	c1 := &Config{
 		Tools: ToolMap{"t1": ToolConfig{Version: "1.0"}},
 		Env:   map[string]interface{}{"E1": "V1"},
-		Tasks: map[string]Task{"task1": {Run: "echo 1"}},
+		Tasks: map[string]Task{"task1": {Run: StringArray{"echo 1"}}},
 	}
 	c2 := &Config{
 		Tools: ToolMap{"t1": ToolConfig{Version: "2.0"}, "t2": ToolConfig{Version: "2.0"}},
 		Env:   map[string]interface{}{"E1": "V2", "E2": "V2"},
-		Tasks: map[string]Task{"task1": {Run: "echo 2"}, "task2": {Run: "echo 2"}},
+		Tasks: map[string]Task{"task1": {Run: StringArray{"echo 2"}}, "task2": {Run: StringArray{"echo 2"}}},
 	}
 
 	c1.Merge(c2)
@@ -95,10 +95,10 @@ func TestConfig_Merge(t *testing.T) {
 		t.Errorf("expected E2 V2")
 	}
 
-	if c1.Tasks["task1"].Run != "echo 1" {
-		t.Errorf("expected task1 Script echo 1")
+	if c1.Tasks["task1"].Run.Script() != "echo 1" {
+		t.Errorf("expected task1 run 'echo 1', got %q", c1.Tasks["task1"].Run.Script())
 	}
-	if c1.Tasks["task2"].Run != "echo 2" {
+	if c1.Tasks["task2"].Run.Script() != "echo 2" {
 		t.Errorf("expected task2 Script echo 2")
 	}
 

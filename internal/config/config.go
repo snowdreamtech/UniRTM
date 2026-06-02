@@ -4,6 +4,7 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -33,13 +34,13 @@ type EnvironmentConfig struct {
 }
 
 type ToolConfig struct {
-	Version           string   `toml:"version" yaml:"version" mapstructure:"version"`
-	Backend           string   `toml:"backend,omitempty" yaml:"backend,omitempty" mapstructure:"backend,omitempty"`
-	Provider          string   `toml:"provider,omitempty" yaml:"provider,omitempty" mapstructure:"provider,omitempty"`
-	PreInstall        string   `toml:"pre_install,omitempty" yaml:"pre_install,omitempty" mapstructure:"pre_install,omitempty"`
-	PostInstall       string   `toml:"post_install,omitempty" yaml:"post_install,omitempty" mapstructure:"post_install,omitempty"`
-	GPGKeys           []string `toml:"gpg_keys,omitempty" yaml:"gpg_keys,omitempty" mapstructure:"gpg_keys,omitempty"`
-	MinimumReleaseAge string   `toml:"minimum_release_age,omitempty" yaml:"minimum_release_age,omitempty" mapstructure:"minimum_release_age,omitempty"`
+	Version           string      `toml:"version" yaml:"version" mapstructure:"version"`
+	Backend           string      `toml:"backend,omitempty" yaml:"backend,omitempty" mapstructure:"backend,omitempty"`
+	Provider          string      `toml:"provider,omitempty" yaml:"provider,omitempty" mapstructure:"provider,omitempty"`
+	PreInstall        StringArray `toml:"pre_install,omitempty" yaml:"pre_install,omitempty" mapstructure:"pre_install,omitempty"`
+	PostInstall       StringArray `toml:"post_install,omitempty" yaml:"post_install,omitempty" mapstructure:"post_install,omitempty"`
+	GPGKeys           []string    `toml:"gpg_keys,omitempty" yaml:"gpg_keys,omitempty" mapstructure:"gpg_keys,omitempty"`
+	MinimumReleaseAge string      `toml:"minimum_release_age,omitempty" yaml:"minimum_release_age,omitempty" mapstructure:"minimum_release_age,omitempty"`
 }
 
 type ToolMap map[string]ToolConfig
@@ -84,10 +85,22 @@ func parseToolConfig(v interface{}) ToolConfig {
 			tc.Provider = provider
 		}
 		if preInstall, ok := val["pre_install"].(string); ok {
-			tc.PreInstall = preInstall
+			tc.PreInstall = []string{preInstall}
+		} else if preInstallArr, ok := val["pre_install"].([]interface{}); ok {
+			for _, item := range preInstallArr {
+				if s, ok := item.(string); ok {
+					tc.PreInstall = append(tc.PreInstall, s)
+				}
+			}
 		}
 		if postInstall, ok := val["post_install"].(string); ok {
-			tc.PostInstall = postInstall
+			tc.PostInstall = []string{postInstall}
+		} else if postInstallArr, ok := val["post_install"].([]interface{}); ok {
+			for _, item := range postInstallArr {
+				if s, ok := item.(string); ok {
+					tc.PostInstall = append(tc.PostInstall, s)
+				}
+			}
 		}
 		if gpgKeys, ok := val["gpg_keys"].([]interface{}); ok {
 			for _, gk := range gpgKeys {
@@ -106,7 +119,7 @@ func parseToolConfig(v interface{}) ToolConfig {
 func (tm ToolMap) MarshalTOML() (interface{}, error) {
 	raw := make(map[string]interface{})
 	for k, tc := range tm {
-		if tc.Backend == "" && tc.Provider == "" && tc.PreInstall == "" && tc.PostInstall == "" && len(tc.GPGKeys) == 0 && tc.MinimumReleaseAge == "" {
+		if tc.Backend == "" && tc.Provider == "" && len(tc.PreInstall) == 0 && len(tc.PostInstall) == 0 && len(tc.GPGKeys) == 0 && tc.MinimumReleaseAge == "" {
 			raw[k] = tc.Version
 		} else {
 			raw[k] = tc
@@ -256,7 +269,7 @@ func (s *Settings) SetDefaults() {
 
 type Task struct {
 	Description string                 `toml:"description" yaml:"description" mapstructure:"description"`
-	Run         string                 `toml:"run" yaml:"run" mapstructure:"run"`
+	Run         StringArray            `toml:"run" yaml:"run" mapstructure:"run"`
 	Env         map[string]interface{} `toml:"env,omitempty" yaml:"env,omitempty" mapstructure:"env,omitempty"`
 	Depends     []string               `toml:"depends,omitempty" yaml:"depends,omitempty" mapstructure:"depends,omitempty"`
 	Timeout     int                    `toml:"timeout,omitempty" yaml:"timeout,omitempty" mapstructure:"timeout,omitempty"`
@@ -434,8 +447,17 @@ func (s *Settings) Validate() error {
 }
 
 func (t *Task) Validate() error {
-	if t.Run == "" && len(t.Depends) == 0 {
-		return errors.New("run command or depends is required")
+	if len(t.Depends) == 0 {
+		isEmpty := true
+		for _, r := range t.Run {
+			if r != "" {
+				isEmpty = false
+				break
+			}
+		}
+		if isEmpty {
+			return errors.New("run command or depends is required")
+		}
 	}
 	return nil
 }
@@ -564,4 +586,44 @@ func parseDurationToSeconds(s string) (int, error) {
 	default:
 		return 0, fmt.Errorf("unknown duration unit %q", unit)
 	}
+}
+
+// StringArray is a custom type for parsing TOML/YAML string or arrays of strings.
+type StringArray []string
+
+func (sa *StringArray) UnmarshalText(text []byte) error {
+	*sa = []string{string(text)}
+	return nil
+}
+
+func (sa *StringArray) UnmarshalYAML(value *yaml.Node) error {
+	var s string
+	if err := value.Decode(&s); err == nil {
+		*sa = []string{s}
+		return nil
+	}
+	var arr []string
+	if err := value.Decode(&arr); err == nil {
+		*sa = arr
+		return nil
+	}
+	return fmt.Errorf("StringArray must be string or []string")
+}
+
+func (sa *StringArray) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		*sa = []string{s}
+		return nil
+	}
+	var arr []string
+	if err := json.Unmarshal(data, &arr); err == nil {
+		*sa = arr
+		return nil
+	}
+	return fmt.Errorf("StringArray must be string or []string")
+}
+
+func (sa StringArray) Script() string {
+	return strings.Join(sa, "\n")
 }

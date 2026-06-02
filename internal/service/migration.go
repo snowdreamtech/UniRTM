@@ -303,11 +303,17 @@ func (mm *MigrationManager) parseMiseToml(path string) ([]MigrationTool, map[str
 		for name, val := range tasksData {
 			switch v := val.(type) {
 			case string:
-				tasks[name] = config.Task{Run: v}
+				tasks[name] = config.Task{Run: config.StringArray{v}}
 			case map[string]interface{}:
 				task := config.Task{}
 				if run, ok := v["run"].(string); ok {
-					task.Run = run
+					task.Run = config.StringArray{run}
+				} else if runArr, ok := v["run"].([]interface{}); ok {
+					for _, item := range runArr {
+						if s, ok := item.(string); ok {
+							task.Run = append(task.Run, s)
+						}
+					}
 				}
 				if desc, ok := v["description"].(string); ok {
 					task.Description = desc
@@ -325,7 +331,7 @@ func (mm *MigrationManager) parseMiseToml(path string) ([]MigrationTool, map[str
 						task.Env[ek] = ev
 					}
 				}
-				if task.Run != "" {
+				if len(task.Run) > 0 {
 					tasks[name] = task
 				}
 			}

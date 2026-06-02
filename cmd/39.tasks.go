@@ -234,8 +234,8 @@ func runTasksInfo(cmd *cobra.Command, args []string) error {
 		pterm.DefaultTable.WithSeparator("   ").WithData(rows).Render()
 	}
 
-	if t.Run != "" {
-		fmt.Printf("\n%s\n%s\n", pterm.FgDefault.Sprint("Run:"), pterm.FgYellow.Sprint(t.Run))
+	if len(t.Run) > 0 {
+		fmt.Printf("\n%s\n%s\n", pterm.FgDefault.Sprint("Run: config.StringArray{"), pterm.FgYellow.Sprint(t.Run.Script()))
 	}
 	return nil
 }
@@ -246,7 +246,7 @@ func runTasksDeps(cmd *cobra.Command, args []string) error {
 	cfg, _ := loadTasksConfig()
 
 	if len(cfg.Tasks) == 0 {
-		fmt.Println("No tasks defined.")
+		fmt.Println("}No tasks defined.")
 		return nil
 	}
 

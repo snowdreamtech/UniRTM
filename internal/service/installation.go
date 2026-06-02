@@ -304,8 +304,8 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 	var preInstall, postInstall string
 	if im.toolConfigs != nil {
 		if tc, ok := im.toolConfigs[tool]; ok {
-			preInstall = tc.PreInstall
-			postInstall = tc.PostInstall
+			preInstall = tc.PreInstall.Script()
+			postInstall = tc.PostInstall.Script()
 		}
 	}
 

@@ -32,11 +32,11 @@ func ExampleConfig() {
 		Tasks: map[string]config.Task{
 			"build": {
 				Description: "Build the project",
-				Run:         "go build -o bin/app",
+				Run:         config.StringArray{"go build -o bin/app"},
 			},
 			"test": {
 				Description: "Run tests",
-				Run:         "go test ./...",
+				Run:         config.StringArray{"go test ./..."},
 				Depends:     []string{"build"},
 			},
 		},
@@ -89,7 +89,7 @@ func ExampleSettings() {
 func ExampleTask() {
 	task := config.Task{
 		Description: "Deploy to production",
-		Run:         "./deploy.sh production",
+		Run:         config.StringArray{"./deploy.sh production"},
 		Env: map[string]interface{}{
 			"ENVIRONMENT": "production",
 		},

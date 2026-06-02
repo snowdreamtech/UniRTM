@@ -37,7 +37,7 @@ func TestConfig_Validate(t *testing.T) {
 				Tasks: map[string]Task{
 					"build": {
 						Description: "Build the project",
-						Run:         "go build",
+						Run:         StringArray{"go build"},
 					},
 				},
 			},
@@ -88,7 +88,7 @@ func TestConfig_Validate(t *testing.T) {
 				Tasks: map[string]Task{
 					"build": {
 						Description: "Build the project",
-						Run:         "",
+						Run:         StringArray{""},
 					},
 				},
 				Settings: Settings{},
@@ -101,7 +101,7 @@ func TestConfig_Validate(t *testing.T) {
 			config: Config{
 				Tasks: map[string]Task{
 					"build": {
-						Run:     "go build",
+						Run:     StringArray{"go build"},
 						Depends: []string{"test"},
 					},
 				},
@@ -115,11 +115,11 @@ func TestConfig_Validate(t *testing.T) {
 			config: Config{
 				Tasks: map[string]Task{
 					"build": {
-						Run:     "go build",
+						Run:     StringArray{"go build"},
 						Depends: []string{"test"},
 					},
 					"test": {
-						Run:     "go test",
+						Run:     StringArray{"go test"},
 						Depends: []string{"build"},
 					},
 				},
@@ -139,7 +139,7 @@ func TestConfig_Validate(t *testing.T) {
 					CacheTTL: -100,
 				},
 				Tasks: map[string]Task{
-					"build": {Run: ""},
+					"build": {Run: StringArray{""}},
 				},
 			},
 			wantErr: true,
@@ -289,7 +289,7 @@ func TestTask_Validate(t *testing.T) {
 			name: "valid with all fields",
 			task: Task{
 				Description: "Build the project",
-				Run:         "go build",
+				Run:         StringArray{"go build"},
 				Env: map[string]interface{}{
 					"CGO_ENABLED": "0",
 				},
@@ -300,7 +300,7 @@ func TestTask_Validate(t *testing.T) {
 		{
 			name: "valid with minimal fields",
 			task: Task{
-				Run: "go build",
+				Run: StringArray{"go build"},
 			},
 			wantErr: false,
 		},
@@ -316,7 +316,7 @@ func TestTask_Validate(t *testing.T) {
 			name: "invalid - empty run command",
 			task: Task{
 				Description: "Build the project",
-				Run:         "",
+				Run:         StringArray{""},
 			},
 			wantErr: true,
 			errMsg:  "run command or depends is required",
@@ -324,7 +324,7 @@ func TestTask_Validate(t *testing.T) {
 		{
 			name: "invalid - whitespace only run command",
 			task: Task{
-				Run: "   ",
+				Run: StringArray{"   "},
 			},
 			wantErr: false, // Whitespace is technically a non-empty string
 		},
@@ -354,8 +354,8 @@ func TestConfig_ValidateTaskDependencies(t *testing.T) {
 			name: "valid - no dependencies",
 			config: Config{
 				Tasks: map[string]Task{
-					"build": {Run: "go build"},
-					"test":  {Run: "go test"},
+					"build": {Run: StringArray{"go build"}},
+					"test":  {Run: StringArray{"go test"}},
 				},
 			},
 			wantErr: false,
@@ -364,13 +364,13 @@ func TestConfig_ValidateTaskDependencies(t *testing.T) {
 			name: "valid - linear dependencies",
 			config: Config{
 				Tasks: map[string]Task{
-					"build": {Run: "go build"},
+					"build": {Run: StringArray{"go build"}},
 					"test": {
-						Run:     "go test",
+						Run:     StringArray{"go test"},
 						Depends: []string{"build"},
 					},
 					"deploy": {
-						Run:     "deploy.sh",
+						Run:     StringArray{"deploy.sh"},
 						Depends: []string{"test"},
 					},
 				},
@@ -381,11 +381,11 @@ func TestConfig_ValidateTaskDependencies(t *testing.T) {
 			name: "valid - multiple dependencies",
 			config: Config{
 				Tasks: map[string]Task{
-					"lint":  {Run: "golangci-lint run"},
-					"test":  {Run: "go test"},
-					"build": {Run: "go build"},
+					"lint":  {Run: StringArray{"golangci-lint run"}},
+					"test":  {Run: StringArray{"go test"}},
+					"build": {Run: StringArray{"go build"}},
 					"deploy": {
-						Run:     "deploy.sh",
+						Run:     StringArray{"deploy.sh"},
 						Depends: []string{"lint", "test", "build"},
 					},
 				},
@@ -397,7 +397,7 @@ func TestConfig_ValidateTaskDependencies(t *testing.T) {
 			config: Config{
 				Tasks: map[string]Task{
 					"build": {
-						Run:     "go build",
+						Run:     StringArray{"go build"},
 						Depends: []string{"test"},
 					},
 				},
@@ -410,11 +410,11 @@ func TestConfig_ValidateTaskDependencies(t *testing.T) {
 			config: Config{
 				Tasks: map[string]Task{
 					"build": {
-						Run:     "go build",
+						Run:     StringArray{"go build"},
 						Depends: []string{"test"},
 					},
 					"test": {
-						Run:     "go test",
+						Run:     StringArray{"go test"},
 						Depends: []string{"build"},
 					},
 				},
@@ -427,15 +427,15 @@ func TestConfig_ValidateTaskDependencies(t *testing.T) {
 			config: Config{
 				Tasks: map[string]Task{
 					"a": {
-						Run:     "task a",
+						Run:     StringArray{"task a"},
 						Depends: []string{"b"},
 					},
 					"b": {
-						Run:     "task b",
+						Run:     StringArray{"task b"},
 						Depends: []string{"c"},
 					},
 					"c": {
-						Run:     "task c",
+						Run:     StringArray{"task c"},
 						Depends: []string{"a"},
 					},
 				},
@@ -448,7 +448,7 @@ func TestConfig_ValidateTaskDependencies(t *testing.T) {
 			config: Config{
 				Tasks: map[string]Task{
 					"build": {
-						Run:     "go build",
+						Run:     StringArray{"go build"},
 						Depends: []string{"build"},
 					},
 				},
@@ -506,7 +506,7 @@ func TestEnvironmentConfig_Validate(t *testing.T) {
 					CacheTTL: 7200,
 				},
 				Tasks: map[string]Task{
-					"build": {Run: "npm run build"},
+					"build": {Run: StringArray{"npm run build"}},
 				},
 			},
 			wantErr: false,
@@ -540,7 +540,7 @@ func TestEnvironmentConfig_Validate(t *testing.T) {
 			name: "invalid task in environment config",
 			config: EnvironmentConfig{
 				Tasks: map[string]Task{
-					"build": {Run: ""},
+					"build": {Run: StringArray{""}},
 				},
 			},
 			wantErr: true,

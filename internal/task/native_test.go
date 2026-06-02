@@ -15,7 +15,7 @@ func TestNativeRunner_runTaskWithGraph_Timeout(t *testing.T) {
 	tasks := map[string]config.Task{
 		"slow": {
 			// A pure shell infinite loop ensures cross-platform blocking without needing external executables
-			Run:     "while true; do :; done",
+			Run:     config.StringArray{"while true; do :; done"},
 			Timeout: 1,
 		},
 	}
@@ -29,15 +29,15 @@ func TestNativeRunner_runTaskWithGraph_Timeout(t *testing.T) {
 func TestNativeRunner_runTaskWithGraph_OutputStyles(t *testing.T) {
 	tasks := map[string]config.Task{
 		"hello_prefix": {
-			Run:    "echo hello",
+			Run:    config.StringArray{"echo hello"},
 			Output: "prefix",
 		},
 		"hello_interleaved": {
-			Run:    "echo hello",
+			Run:    config.StringArray{"echo hello"},
 			Output: "interleaved",
 		},
 		"hello_env": {
-			Run: "echo hello",
+			Run: config.StringArray{"echo hello"},
 		},
 	}
 	runner := NewNativeRunner(tasks, config.Settings{TaskOutput: "interleaved"})
@@ -65,25 +65,25 @@ func TestNativeRunner_runTaskWithGraph_OutputStyles(t *testing.T) {
 func TestNativeRunner_runTaskWithGraph_Dependencies(t *testing.T) {
 	tasks := map[string]config.Task{
 		"build": {
-			Run:     "echo build",
+			Run:     config.StringArray{"echo build"},
 			Depends: []string{"test"},
 		},
 		"test": {
-			Run: "echo test",
+			Run: config.StringArray{"echo test"},
 		},
 		"cycle1": {
-			Run:     "echo c1",
+			Run:     config.StringArray{"echo c1"},
 			Depends: []string{"cycle2"},
 		},
 		"cycle2": {
-			Run:     "echo c2",
+			Run:     config.StringArray{"echo c2"},
 			Depends: []string{"cycle1"},
 		},
 		"verify": {
 			Depends: []string{"lint", "test"},
 		},
 		"lint": {
-			Run: "echo lint",
+			Run: config.StringArray{"echo lint"},
 		},
 	}
 	runner := NewNativeRunner(tasks, config.Settings{TaskOutput: "interleaved"})

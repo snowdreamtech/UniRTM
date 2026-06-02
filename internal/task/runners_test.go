@@ -157,8 +157,8 @@ func TestJustRunner_CanExecute(t *testing.T) {
 
 func TestNativeRunner(t *testing.T) {
 	tasks := map[string]config.Task{
-		"build": {Run: "echo build"},
-		"test":  {Run: "echo test", Depends: []string{"build"}},
+		"build": {Run: config.StringArray{"echo build"}},
+		"test":  {Run: config.StringArray{"echo test"}, Depends: []string{"build"}},
 	}
 	r := NewNativeRunner(tasks, config.Settings{TaskOutput: "interleaved"})
 	if r.Name() != "native" {

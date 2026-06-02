@@ -82,7 +82,7 @@ run = "npm test"
 		// Verify Tasks
 		assert.Len(t, config.Tasks, 1)
 		assert.Equal(t, "Run tests", config.Tasks["test"].Description)
-		assert.Equal(t, "npm test", config.Tasks["test"].Run)
+		assert.Equal(t, StringArray{"npm test"}, config.Tasks["test"].Run)
 	})
 
 	t.Run("load valid TOML file with template variables", func(t *testing.T) {
@@ -363,7 +363,7 @@ func TestConfigManager_Validate(t *testing.T) {
 			Tasks: map[string]Task{
 				"test": {
 					Description: "Run tests",
-					Run:         "npm test",
+					Run:         StringArray{"npm test"},
 				},
 			},
 		}
@@ -413,7 +413,7 @@ func TestConfigManager_Validate(t *testing.T) {
 			Tasks: map[string]Task{
 				"test": {
 					Description: "Run tests",
-					Run:         "", // Missing run command
+					Run:         StringArray{""}, // Missing run command
 				},
 			},
 		}
@@ -431,12 +431,12 @@ func TestConfigManager_Validate(t *testing.T) {
 			Tasks: map[string]Task{
 				"task1": {
 					Description: "Task 1",
-					Run:         "echo task1",
+					Run:         StringArray{"echo task1"},
 					Depends:     []string{"task2"},
 				},
 				"task2": {
 					Description: "Task 2",
-					Run:         "echo task2",
+					Run:         StringArray{"echo task2"},
 					Depends:     []string{"task1"}, // Circular dependency
 				},
 			},
@@ -455,7 +455,7 @@ func TestConfigManager_Validate(t *testing.T) {
 			Tasks: map[string]Task{
 				"task1": {
 					Description: "Task 1",
-					Run:         "echo task1",
+					Run:         StringArray{"echo task1"},
 					Depends:     []string{"nonexistent"}, // Non-existent task
 				},
 			},
@@ -488,7 +488,7 @@ func TestConfigManager_Merge(t *testing.T) {
 			Tasks: map[string]Task{
 				"test": {
 					Description: "Run tests",
-					Run:         "npm test",
+					Run:         StringArray{"npm test"},
 				},
 			},
 		}
@@ -508,7 +508,7 @@ func TestConfigManager_Merge(t *testing.T) {
 			Tasks: map[string]Task{
 				"build": {
 					Description: "Build project",
-					Run:         "npm run build",
+					Run:         StringArray{"npm run build"},
 				},
 			},
 		}
@@ -716,7 +716,7 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 			Tasks: map[string]Task{
 				"build": {
 					Description: "Build for production",
-					Run:         "npm run build",
+					Run:         StringArray{"npm run build"},
 				},
 			},
 			Environments: map[string]EnvironmentConfig{
@@ -734,7 +734,7 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 					Tasks: map[string]Task{
 						"build": {
 							Description: "Build for development",
-							Run:         "npm run dev",
+							Run:         StringArray{"npm run dev"},
 						},
 					},
 				},
@@ -759,7 +759,7 @@ func TestConfigManager_ApplyEnvironment(t *testing.T) {
 
 		// Verify task overrides
 		assert.Equal(t, "Build for development", result.Tasks["build"].Description)
-		assert.Equal(t, "npm run dev", result.Tasks["build"].Run)
+		assert.Equal(t, StringArray{"npm run dev"}, result.Tasks["build"].Run)
 	})
 
 	t.Run("apply staging environment", func(t *testing.T) {
@@ -1109,7 +1109,7 @@ cache_ttl = 172800
 		assert.Equal(t, 3600, int(devConfig.Settings.CacheTTL))
 
 		assert.Equal(t, "Build for development", devConfig.Tasks["build"].Description)
-		assert.Equal(t, "npm run dev", devConfig.Tasks["build"].Run)
+		assert.Equal(t, StringArray{"npm run dev"}, devConfig.Tasks["build"].Run)
 		assert.Equal(t, "Run tests", devConfig.Tasks["test"].Description)
 
 		// Test staging environment

@@ -64,7 +64,7 @@ func TestInstallationManager_ToolConfigs(t *testing.T) {
 
 	configs := map[string]config.ToolConfig{
 		"node": {
-			PostInstall: "npm install -g yarn",
+			PostInstall: config.StringArray{"npm install -g yarn"},
 		},
 	}
 	im.SetToolConfigs(configs)
