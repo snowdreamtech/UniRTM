@@ -7,6 +7,8 @@
 <p>
   <a href="https://github.com/snowdreamtech/UniRTM/blob/main/LICENSE"><img alt="GitHub" src="https://img.shields.io/github/license/snowdreamtech/UniRTM?style=for-the-badge&color=6B7F4E"></a>
   <a href="https://github.com/snowdreamtech/UniRTM/actions/workflows/pages.yml"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/snowdreamtech/UniRTM/pages.yml?style=for-the-badge&color=C5975B"></a>
+  <a href="https://github.com/snowdreamtech/UniRTM/actions/workflows/ci.yml"><img alt="Continuous Integration" src="https://github.com/snowdreamtech/UniRTM/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/snowdreamtech/UniRTM/actions/workflows/cd.yml"><img alt="Continuous Delivery" src="https://github.com/snowdreamtech/UniRTM/actions/workflows/cd.yml/badge.svg"></a>
 </p>
 
 <p><b>Dev tools, env vars, and tasks in one CLI with built-in security.</b><br><i>Inspired by and paying tribute to <a href="https://github.com/jdx/mise">mise</a>.</i></p>
