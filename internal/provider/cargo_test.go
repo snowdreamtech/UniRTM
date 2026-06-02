@@ -83,13 +83,11 @@ func TestCargoProvider_findCargo(t *testing.T) {
 
 	// Create fake rust installation
 	rustDir := filepath.Join(tmpData, "installs", "rust", "1.70.0", "bin")
-	os.MkdirAll(rustDir, 0755)
-	cargoName := "cargo"
-	if runtime.GOOS == "windows" {
-		cargoName = "cargo.exe"
-	}
-	cargoPath := filepath.Join(rustDir, cargoName)
-	os.WriteFile(cargoPath, []byte("fake binary"), 0755)
+	err := os.MkdirAll(rustDir, 0755)
+	require.NoError(t, err)
+	cargoPath := filepath.Join(rustDir, "cargo")
+	err = os.WriteFile(cargoPath, []byte("fake binary"), 0755)
+	require.NoError(t, err)
 
 	found, err := p.findCargo()
 	require.NoError(t, err)

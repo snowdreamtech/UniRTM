@@ -217,6 +217,10 @@ func (p *PypiProvider) ListExecutables(tool string, installPath string, version 
 					if isVenvBin {
 						continue
 					}
+					lowName := strings.ToLower(baseName)
+					if strings.HasPrefix(lowName, "activate") {
+						continue
+					}
 					executables = append(executables, filepath.Join(binDir, name))
 				}
 			}

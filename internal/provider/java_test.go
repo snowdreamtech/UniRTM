@@ -6,6 +6,7 @@ package provider
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -92,22 +93,20 @@ func TestJavaProvider_DetectVersionSuccess(t *testing.T) {
 
 	javaPath := filepath.Join(binDir, "java")
 	if runtime.GOOS == "windows" {
-		javaPath += ".bat"
-	}
-
-	// Mock java output to stderr
-	mockJava := `#!/bin/sh
+		javaPath += ".exe"
+		mockJavaSrc := filepath.Join(tmpDir, "mock_java.go")
+		err = os.WriteFile(mockJavaSrc, []byte(`package main; import "fmt"; import "os"; func main() { fmt.Fprintln(os.Stderr, "openjdk version \"17.0.8\" 2023-07-18 LTS") }`), 0644)
+		assert.NoError(t, err)
+		err = exec.Command("go", "build", "-o", javaPath, mockJavaSrc).Run()
+		assert.NoError(t, err)
+	} else {
+		mockJava := `#!/bin/sh
 echo 'openjdk version "17.0.8" 2023-07-18 LTS' >&2
 exit 0
 `
-	if runtime.GOOS == "windows" {
-		mockJava = `@echo off
-echo openjdk version "17.0.8" 2023-07-18 LTS 1>&2
-exit 0
-`
+		err = os.WriteFile(javaPath, []byte(mockJava), 0755)
+		assert.NoError(t, err)
 	}
-	err = os.WriteFile(javaPath, []byte(mockJava), 0755)
-	assert.NoError(t, err)
 
 	ctx := context.Background()
 	version, err := p.DetectVersion(ctx, "java", tmpDir)

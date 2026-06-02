@@ -309,7 +309,7 @@ func TestFindGhHostsFile_XDGPath(t *testing.T) {
 	dir := t.TempDir()
 	ghDir := dir + "/gh"
 	os.MkdirAll(ghDir, 0755)
-	hostsFile := ghDir + "/hosts.yml"
+	hostsFile := filepath.Join(ghDir, "hosts.yml")
 	os.WriteFile(hostsFile, []byte(""), 0644)
 
 	t.Setenv("GH_CONFIG_DIR", "")
@@ -350,6 +350,7 @@ func TestFindGhHostsFile_HomeDirFallback(t *testing.T) {
 	t.Setenv("MISE_XDG_CONFIG_HOME", "")
 	t.Setenv("XDG_CONFIG_HOME", "")
 	t.Setenv("HOME", homeDir)
+	t.Setenv("USERPROFILE", homeDir)
 
 	f := findGhHostsFile()
 	if f != hostsFile {
@@ -371,6 +372,7 @@ func TestFindGhHostsFile_MacosFallback(t *testing.T) {
 	t.Setenv("MISE_XDG_CONFIG_HOME", "")
 	t.Setenv("XDG_CONFIG_HOME", "")
 	t.Setenv("HOME", homeDir)
+	t.Setenv("USERPROFILE", homeDir)
 
 	f := findGhHostsFile()
 	if f != hostsFile {

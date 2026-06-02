@@ -6,6 +6,7 @@ package provider
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -32,7 +33,11 @@ func TestUbiProvider_GenerateShims(t *testing.T) {
 
 	binDir := filepath.Join(tmpDir, "bin")
 	os.MkdirAll(binDir, 0755)
-	ubiPath := filepath.Join(binDir, "ubi")
+	ubiName := "ubi"
+	if runtime.GOOS == "windows" {
+		ubiName += ".exe"
+	}
+	ubiPath := filepath.Join(binDir, ubiName)
 	os.WriteFile(ubiPath, []byte("fake"), 0755)
 
 	// Note: ListExecutables looks for executables

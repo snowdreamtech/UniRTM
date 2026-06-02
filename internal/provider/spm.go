@@ -159,7 +159,7 @@ func (p *SpmProvider) ListExecutables(tool string, installPath string, version s
 		if !entry.IsDir() {
 			info, err := entry.Info()
 			if err == nil {
-				if info.Mode()&0111 != 0 {
+				if info.Mode()&0111 != 0 || filepath.Ext(entry.Name()) == ".exe" {
 					executables = append(executables, filepath.Join(binDir, entry.Name()))
 				}
 			}

@@ -81,5 +81,9 @@ func (h *RubyHandler) isMatch(filename string) bool {
 		return strings.Contains(filename, "ubuntu")
 	}
 
+	if os == "windows" {
+		return strings.Contains(filename, "windows")
+	}
+
 	return false
 }

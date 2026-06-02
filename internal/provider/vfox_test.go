@@ -6,6 +6,7 @@ package provider
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -32,7 +33,11 @@ func TestVfoxProvider_GenerateShims(t *testing.T) {
 
 	binDir := filepath.Join(tmpDir, "bin")
 	os.MkdirAll(binDir, 0755)
-	vfoxPath := filepath.Join(binDir, "vfox")
+	vfoxName := "vfox"
+	if runtime.GOOS == "windows" {
+		vfoxName += ".exe"
+	}
+	vfoxPath := filepath.Join(binDir, vfoxName)
 	os.WriteFile(vfoxPath, []byte("fake"), 0755)
 
 	os.Chmod(vfoxPath, 0755)

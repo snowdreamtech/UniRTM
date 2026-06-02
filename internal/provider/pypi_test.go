@@ -87,7 +87,6 @@ func TestPypiProvider_ListExecutables(t *testing.T) {
 
 	exes, err := p.ListExecutables("test_pkg", tmpDir, "1.0.0")
 	require.NoError(t, err)
-	assert.Len(t, exes, 2)
+	assert.Len(t, exes, 1)
 	assert.Contains(t, exes, filepath.Join(binDir, dummy1))
-	assert.Contains(t, exes, filepath.Join(binDir, "Activate.ps1"))
 }

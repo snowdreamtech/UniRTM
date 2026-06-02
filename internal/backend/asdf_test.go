@@ -33,6 +33,9 @@ func TestAsdfBackend_Properties(t *testing.T) {
 }
 
 func TestAsdfBackend_ListVersions(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows because it requires sh")
+	}
 	b := NewAsdfBackend()
 	tmpDir := t.TempDir()
 	b.pluginsPath = tmpDir
@@ -58,6 +61,9 @@ func TestAsdfBackend_ListVersions(t *testing.T) {
 }
 
 func TestAsdfBackend_ResolveVersion(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows because it requires sh")
+	}
 	b := NewAsdfBackend()
 	tmpDir := t.TempDir()
 	b.pluginsPath = tmpDir
