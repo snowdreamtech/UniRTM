@@ -237,7 +237,7 @@ jobs:
       - name: "⚡ Setup UniRTM"
         uses: snowdreamtech/setup-unirtm@2f268be27fe61f17109f04e5f27f68526c92b29b # v0.3.0
         with:
-          unirtm-version: '0.3.13'
+          unirtm-version: "0.3.13"
           install: true
           trust: true
         env:
