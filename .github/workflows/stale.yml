@@ -40,6 +40,7 @@ jobs:
       - name: "🔒 Harden Runner"
         uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
         with:
+          disable-sudo: true
           egress-policy: block
           allowed-endpoints: >
             *.aquasecurity.github.io:443
@@ -94,6 +95,11 @@ jobs:
             static.rust-lang.org:443
             sum.golang.org:443
             www.bestpractices.dev:443
+            storage.googleapis.com:443
+            go.dev:443
+            golang.org:443
+            *.actions.githubusercontent.com:443
+            *.blob.core.windows.net:443
       - name: "🧹 Mark Inactive Issues & PRs (Stale)"
         uses: actions/stale@b5d41d4e1d5dceea10e7104786b73624c18a190f # v10.2.0
         with:
