@@ -382,7 +382,20 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 	}
 	var downloadPath string
 	var gpgStatus string = "NotRequested"
-	if versionInfo.DownloadURL != "" {
+	
+	// Support UNIRTM_<TOOL>_DOWNLOAD_URL override (with template support)
+	toolEnvKey := fmt.Sprintf("%s_DOWNLOAD_URL", strings.ToUpper(strings.NewReplacer("-", "_", ":", "_", "/", "_").Replace(tool)))
+	if overrideURL := env.Get(toolEnvKey); overrideURL != "" {
+		overrideURL = strings.ReplaceAll(overrideURL, "{{version}}", version)
+		overrideURL = strings.ReplaceAll(overrideURL, "{{os}}", platform.OS)
+		overrideURL = strings.ReplaceAll(overrideURL, "{{arch}}", platform.Arch)
+		if versionInfo == nil {
+			versionInfo = &backend.VersionInfo{Version: version}
+		}
+		versionInfo.DownloadURL = overrideURL
+	}
+
+	if versionInfo != nil && versionInfo.DownloadURL != "" {
 		// Extract extension from URL if possible
 		ext := ""
 		if u, err := url.Parse(versionInfo.DownloadURL); err == nil {
