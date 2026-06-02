@@ -201,9 +201,13 @@ func (p *PypiProvider) ListExecutables(tool string, installPath string, version 
 		if !entry.IsDir() {
 			info, err := entry.Info()
 			if err == nil {
-				if info.Mode()&0111 != 0 || filepath.Ext(entry.Name()) == ".cmd" || filepath.Ext(entry.Name()) == ".exe" {
+				ext := strings.ToLower(filepath.Ext(entry.Name()))
+				if info.Mode()&0111 != 0 || ext == ".cmd" || ext == ".exe" {
 					name := entry.Name()
-					baseName := strings.TrimSuffix(name, ".exe")
+					baseName := name
+					if strings.HasSuffix(strings.ToLower(name), ".exe") {
+						baseName = name[:len(name)-4]
+					}
 
 					isVenvBin := false
 					if baseName == "python" || baseName == "pythonw" || baseName == "pip" {

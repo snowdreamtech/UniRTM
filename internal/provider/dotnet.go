@@ -99,7 +99,7 @@ func (p *DotnetProvider) ListExecutables(tool string, installPath string, versio
 		if !entry.IsDir() {
 			info, err := entry.Info()
 			if err == nil {
-				if info.Mode()&0111 != 0 || filepath.Ext(entry.Name()) == ".exe" {
+				if info.Mode()&0111 != 0 || strings.EqualFold(filepath.Ext(entry.Name()), ".exe") {
 					executables = append(executables, filepath.Join(binDir, entry.Name()))
 				}
 			}

@@ -125,7 +125,8 @@ func (r *RustProvider) ListExecutables(tool string, installPath string, version 
 
 	if runtime.GOOS == "windows" {
 		for i := range executables {
-			if !strings.HasSuffix(executables[i], ".exe") && !strings.HasSuffix(executables[i], ".bat") && !strings.HasSuffix(executables[i], ".cmd") {
+			lowerExe := strings.ToLower(executables[i])
+			if !strings.HasSuffix(lowerExe, ".exe") && !strings.HasSuffix(lowerExe, ".bat") && !strings.HasSuffix(lowerExe, ".cmd") {
 				executables[i] += ".exe"
 			}
 		}

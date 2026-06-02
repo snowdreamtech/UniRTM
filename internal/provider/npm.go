@@ -254,7 +254,8 @@ func (p *NpmProvider) ListExecutables(tool string, installPath string, version s
 			info, err := entry.Info()
 			if err == nil {
 				// On Unix, check executable bit. On Windows, assume .cmd/.exe are executable.
-				if info.Mode()&0111 != 0 || filepath.Ext(entry.Name()) == ".cmd" || filepath.Ext(entry.Name()) == ".exe" || filepath.Ext(entry.Name()) == ".ps1" {
+				ext := strings.ToLower(filepath.Ext(entry.Name()))
+				if info.Mode()&0111 != 0 || ext == ".cmd" || ext == ".exe" || ext == ".ps1" {
 					executables = append(executables, filepath.Join(binDir, entry.Name()))
 				}
 			}

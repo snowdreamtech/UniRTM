@@ -75,7 +75,7 @@ func (pm *PluginManager) LoadAll(ctx context.Context) error {
 
 	for _, entry := range entries {
 		// Validates Requirement: 22.5 (isolate plugin failures — one bad plugin doesn't block others)
-		if entry.IsDir() || (!strings.HasPrefix(entry.Name(), "unirtm-plugin-") && !strings.HasSuffix(entry.Name(), ".exe")) {
+		if entry.IsDir() || (!strings.HasPrefix(entry.Name(), "unirtm-plugin-") && !strings.HasSuffix(strings.ToLower(entry.Name()), ".exe")) {
 			continue
 		}
 		if !strings.HasPrefix(entry.Name(), "unirtm-plugin-") {

@@ -109,7 +109,8 @@ func (p *CondaProvider) ListExecutables(tool string, installPath string, version
 			if !entry.IsDir() {
 				info, err := entry.Info()
 				if err == nil {
-					if info.Mode()&0111 != 0 || filepath.Ext(entry.Name()) == ".exe" || filepath.Ext(entry.Name()) == ".bat" {
+					ext := strings.ToLower(filepath.Ext(entry.Name()))
+					if info.Mode()&0111 != 0 || ext == ".exe" || ext == ".bat" {
 						executables = append(executables, filepath.Join(dir, entry.Name()))
 					}
 				}

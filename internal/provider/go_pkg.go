@@ -123,7 +123,9 @@ func (p *GoPkgProvider) GenerateShims(tool string, installPath string, version s
 		name := filepath.Base(exe)
 		// On Windows, remove extension for the shim name
 		if runtime.GOOS == "windows" {
-			name = strings.TrimSuffix(name, ".exe")
+			if strings.HasSuffix(strings.ToLower(name), ".exe") {
+				name = name[:len(name)-4]
+			}
 		}
 		shims[name] = exe
 	}

@@ -143,7 +143,10 @@ func runReshim(cmd *cobra.Command, args []string) error {
 			// Strip platform-specific extensions to get base name
 			baseName := name
 			if runtime.GOOS == "windows" {
-				baseName = strings.TrimSuffix(strings.TrimSuffix(strings.TrimSuffix(name, ".exe"), ".cmd"), ".ps1")
+				lowerName := strings.ToLower(name)
+				if strings.HasSuffix(lowerName, ".exe") || strings.HasSuffix(lowerName, ".cmd") || strings.HasSuffix(lowerName, ".ps1") {
+					baseName = name[:len(name)-4]
+				}
 			}
 
 			if !knownShims[baseName] {

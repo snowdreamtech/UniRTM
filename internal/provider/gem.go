@@ -107,7 +107,8 @@ func (p *GemProvider) ListExecutables(tool string, installPath string, version s
 		if !entry.IsDir() {
 			info, err := entry.Info()
 			if err == nil {
-				if info.Mode()&0111 != 0 || filepath.Ext(entry.Name()) == ".bat" || filepath.Ext(entry.Name()) == ".cmd" || filepath.Ext(entry.Name()) == ".exe" {
+				ext := strings.ToLower(filepath.Ext(entry.Name()))
+				if info.Mode()&0111 != 0 || ext == ".bat" || ext == ".cmd" || ext == ".exe" {
 					executables = append(executables, filepath.Join(binDir, entry.Name()))
 				}
 			}

@@ -88,7 +88,9 @@ func (p *UbiProvider) GenerateShims(tool string, installPath string, version str
 	shims := make(map[string]string)
 	for _, exe := range executables {
 		name := filepath.Base(exe)
-		name = strings.TrimSuffix(name, ".exe")
+		if strings.HasSuffix(strings.ToLower(name), ".exe") {
+			name = name[:len(name)-4]
+		}
 		shims[name] = exe
 	}
 
@@ -115,7 +117,7 @@ func (p *UbiProvider) ListExecutables(tool string, installPath string, version s
 		if !entry.IsDir() {
 			info, err := entry.Info()
 			if err == nil {
-				if info.Mode()&0111 != 0 || filepath.Ext(entry.Name()) == ".exe" {
+				if info.Mode()&0111 != 0 || strings.EqualFold(filepath.Ext(entry.Name()), ".exe") {
 					executables = append(executables, filepath.Join(binDir, entry.Name()))
 				}
 			}

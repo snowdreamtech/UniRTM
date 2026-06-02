@@ -115,7 +115,8 @@ func isExecutable(info os.FileInfo) bool {
 		return info.Mode()&0111 != 0
 	}
 	name := strings.ToLower(info.Name())
-	return strings.HasSuffix(name, ".exe") || strings.HasSuffix(name, ".bat") || strings.HasSuffix(name, ".cmd")
+	lowerName := strings.ToLower(name)
+	return strings.HasSuffix(lowerName, ".exe") || strings.HasSuffix(lowerName, ".bat") || strings.HasSuffix(lowerName, ".cmd")
 }
 
 func (p *NativeProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
