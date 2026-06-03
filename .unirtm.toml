@@ -137,6 +137,7 @@ unirtm exec -- trivy fs --format cyclonedx --output sbom.json .
 unirtm exec -- trivy sbom sbom.json
 '''
 output = 'interleaved'
+env = { TRIVY_SKIP_DB_UPDATE = "true", TRIVY_SKIP_JAVA_DB_UPDATE = "true", TRIVY_SKIP_CHECK_UPDATE = "true", TRIVY_OFFLINE_SCAN = "true", TRIVY_SKIP_VERSION_CHECK = "true" }
 
 [tasks.lint]
 description = 'Fast lint: Check only modified files (staged & unstaged)'
