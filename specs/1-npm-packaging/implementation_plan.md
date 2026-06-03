@@ -17,15 +17,15 @@
 
 ## Proposed Changes
 ### Root Package
-#### [NEW] [package.json.tpl](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/npm/unirtm/package.json.tpl)
+#### [NEW] `package.json.tpl`
 - npm 包模板，包含 `{{VERSION}}` 用于 CI 替换。
-#### [NEW] [install.js](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/npm/unirtm/install.js)
+#### [NEW] `install.js`
 - 运行时平台检测并启动相应子包二进制。
 
 ### CI & Build
-#### [NEW] [build.sh](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/npm/scripts/build.sh)
+#### [NEW] `build.sh`
 - 核心构建脚本，负责将二进制从 dist/ 复制到各自的 npm 子包中。
-#### [MODIFY] [.goreleaser.yaml](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/.goreleaser.yaml)
+#### [MODIFY] `.goreleaser.yaml`
 - 增加 `after.hooks` 触发 npm 的构建与发布流程。
 
 ## Verification Plan

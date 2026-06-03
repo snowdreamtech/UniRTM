@@ -14,17 +14,17 @@
 
 ## Proposed Changes
 ### New Package
-#### [NEW] [internal/pkg/envpath/envpath.go](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/internal/pkg/envpath/envpath.go)
+#### [NEW] `internal/pkg/envpath/envpath.go`
 - 实现根据上下文动态转换的路径组装和格式化函数。
 
 ### Refactored Call Sites
-#### [MODIFY] [cmd/25.run.go](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/cmd/25.run.go)
+#### [MODIFY] `cmd/25.run.go`
 - 将原生操作的 `strings.Join` 替换为 `envpath.JoinForOS`。
-#### [MODIFY] [cmd/23.exec.go](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/cmd/23.exec.go)
+#### [MODIFY] `cmd/23.exec.go`
 - 替换路径组装。
-#### [MODIFY] [internal/service/activation.go](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/internal/service/activation.go)
+#### [MODIFY] `internal/service/activation.go`
 - 使用 `envpath.JoinForPosix` 处理 bash/zsh 的脚本路径替换。
-#### [MODIFY] [cmd/3.env.go](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/cmd/3.env.go)
+#### [MODIFY] `cmd/3.env.go`
 - 提取 shell 输出环境变量的行为。
 
 ## Verification Plan

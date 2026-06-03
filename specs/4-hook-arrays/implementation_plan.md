@@ -14,14 +14,14 @@
 
 ## Proposed Changes
 ### Configuration Parser
-#### [MODIFY] [internal/config/config.go](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/internal/config/config.go)
+#### [MODIFY] `internal/config/config.go`
 - 添加 `StringArray` 类型解析器，支持从单字符串和字符串数组解析到 `[]string`。
 - 修改 `PreInstall`, `PostInstall`, 和 `Task.Run` 字段为 `StringArray`。
 
 ### Execution Logic
-#### [MODIFY] [internal/service/installation.go](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/internal/service/installation.go)
+#### [MODIFY] `internal/service/installation.go`
 - 调用 `Script()` 方法组合数组元素执行。
-#### [MODIFY] [internal/task/native.go](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/internal/task/native.go)
+#### [MODIFY] `internal/task/native.go`
 - 调用 `Script()` 方法处理 `run` 的数组指令。
 
 ## Verification Plan

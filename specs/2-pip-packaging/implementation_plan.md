@@ -16,13 +16,13 @@
 
 ## Proposed Changes
 ### Pip Package Structure
-#### [NEW] [setup.py](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/pip/setup.py)
+#### [NEW] `setup.py`
 - 配置 setuptools 构建流程，实现 wheel 打包配置。
-#### [NEW] [pyproject.toml](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/pip/pyproject.toml)
+#### [NEW] `pyproject.toml`
 - 现代 Python 打包标准配置。
 
 ### CI Integration
-#### [MODIFY] [.github/workflows/release.yml](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/.github/workflows/release.yml)
+#### [MODIFY] `.github/workflows/release.yml`
 - 添加 `twine upload` 任务，自动发布到 PyPI。
 
 ## Verification Plan

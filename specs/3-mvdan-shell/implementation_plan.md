@@ -15,9 +15,9 @@
 
 ## Proposed Changes
 ### Core Execution
-#### [MODIFY] [internal/task/native.go](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/internal/task/native.go)
+#### [MODIFY] `internal/task/native.go`
 - 将基于 `exec.Command("sh", "-c", ...)` 的执行方式替换为调用 `mvdan.cc/sh/v3/interp`。
-#### [MODIFY] [go.mod](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/go.mod)
+#### [MODIFY] `go.mod`
 - 引入 `mvdan.cc/sh/v3` 依赖库。
 
 ## Verification Plan
