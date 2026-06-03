@@ -559,7 +559,7 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 		}()
 
 		// Verify checksum
-		if versionInfo.Checksum != "" && versionInfo.Metadata["skip_checksum"] != "1" {
+		if versionInfo.Checksum != "" && versionInfo.Metadata["skip_checksum"] != "1" && env.Get("SKIP_CHECKSUM") != "true" && env.Get("SKIP_CHECKSUM") != "1" {
 			if err := downloader.VerifyChecksum(ctx, downloadPath, versionInfo.Checksum); err != nil {
 				return fmt.Errorf("checksum verification failed: %w", err)
 			}
