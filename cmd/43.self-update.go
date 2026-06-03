@@ -301,7 +301,7 @@ func runSelfUpdate(cmd *cobra.Command, args []string) error {
 		spinner.Success(fmt.Sprintf("Found release: %s", releaseInfo.TagName))
 
 		// Version comparison: avoid downgrading if the current version is newer or equal
-		if target == "latest" {
+		if target == "latest" && current != "N/A" && current != "dev" {
 			cmp := version.CompareVersions(current, releaseInfo.TagName)
 			if cmp >= 0 {
 				output.Infof("You are already using the latest version (%s).", current)
