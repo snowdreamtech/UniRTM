@@ -6,6 +6,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0](https://github.com/snowdreamtech/UniRTM/compare/v0.4.0...v0.5.0) (2026-06-03)
+
+
+### Features
+
+* **cli:** support --version/-v flags and change verbose shorthand to -V ([a5b1af2](https://github.com/snowdreamtech/UniRTM/commit/a5b1af26c020ffbf1b856ec96c863df64c4b2a12))
+* **config:** add audit:trivy-update task for manual database refreshes ([03e1b32](https://github.com/snowdreamtech/UniRTM/commit/03e1b329a803243a7c28298e8e2be8fc2ca3d55a))
+* **install:** add --quiet and --log-file support to install scripts ([d2f080e](https://github.com/snowdreamtech/UniRTM/commit/d2f080e6c0b95f7d3bba8b1e2feeef92f52861e2))
+
+
+### Bug Fixes
+
+* **build:** correct trivy fallback condition to rely on sbom scan ([7fcb45c](https://github.com/snowdreamtech/UniRTM/commit/7fcb45cc3cfa2a59de1cf2195aba376a94f9d3dc))
+* **build:** remove unsupported skip-check-update flag from trivy sbom command ([e7325f7](https://github.com/snowdreamtech/UniRTM/commit/e7325f7e2064499dae0a5f6e290241f21d7a09bf))
+* **cli:** resolve flag shorthand collision in which command ([bd7c608](https://github.com/snowdreamtech/UniRTM/commit/bd7c6084c06cc5a4f0d0ec490307f2d4f34ef3ec))
+* **config:** add missing trivy checks bundle repository variable to update task ([081d1ef](https://github.com/snowdreamtech/UniRTM/commit/081d1ef0c85cee3481063dc667936d91bfa3db36))
+* **install:** correctly parse version output excluding ascii art ([c8fd078](https://github.com/snowdreamtech/UniRTM/commit/c8fd078551e84c9af2fc1c0353f388ef9cc98c2e))
+* **self-update:** skip version comparison for unversioned dev builds ([0540a97](https://github.com/snowdreamtech/UniRTM/commit/0540a9720c208fe259d91a0a9bd064ad27aff882))
+
 ## [0.4.0](https://github.com/snowdreamtech/UniRTM/compare/v0.3.13...v0.4.0) (2026-06-03)
 
 
