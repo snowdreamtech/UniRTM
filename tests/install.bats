@@ -7,7 +7,7 @@ setup() {
 
   # Mock curl
   cat <<'EOF' >"${MOCK_BIN_DIR}/curl"
-#!/bin/sh
+#!/usr/bin/env bash
 ORIG_ARGS="$*"
 if [[ "$ORIG_ARGS" == *"api.github.com"* ]]; then
     echo '{"tag_name": "v99.9.9"}'
@@ -40,7 +40,7 @@ EOF
 
   # Mock tar
   cat <<'EOF' >"${MOCK_BIN_DIR}/tar"
-#!/bin/sh
+#!/usr/bin/env bash
 # Mock tar just creates a fake unirtm binary in the target directory
 TARGET_DIR="${@: -1}"
 mkdir -p "$TARGET_DIR"
