@@ -50,6 +50,9 @@ var (
 
 	// silent indicates whether to suppress all output and non-error messages
 	silent bool
+
+	// showVersion indicates whether to display version information
+	showVersion bool
 )
 
 // init initializes the root command for the UniRTM CLI application.
@@ -69,6 +72,10 @@ audit and logging capabilities.`,
 		Args:                       cobra.ArbitraryArgs,
 		SuggestionsMinimumDistance: 2,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if showVersion {
+				runVersion(cmd, args)
+				return nil
+			}
 			if len(args) > 0 {
 				// If the first argument is not a known command, treat it as a task name.
 				// We delegate to the 'run' command implementation.
@@ -175,7 +182,10 @@ func buildFlags() {
 	rootCmd.PersistentFlags().StringVarP(&configPath, "config", "c", "", "config file path (default: .unirtm.toml or unirtm.toml)")
 
 	// Verbose flag: Enables verbose output with debug logging
-	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "enable verbose output (debug logging)")
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "V", false, "enable verbose output (debug logging)")
+
+	// Version flag: Displays version information
+	rootCmd.Flags().BoolVarP(&showVersion, "version", "v", false, "display version information")
 
 	// Quiet flag: Enables quiet mode with minimal output
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "enable quiet mode (minimal output)")
