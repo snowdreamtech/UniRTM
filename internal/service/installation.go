@@ -382,7 +382,7 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 	}
 	var downloadPath string
 	var gpgStatus string = "NotRequested"
-	
+
 	// Support UNIRTM_<TOOL>_DOWNLOAD_URL override (with template support)
 	toolEnvKey := fmt.Sprintf("%s_DOWNLOAD_URL", strings.ToUpper(strings.NewReplacer("-", "_", ":", "_", "/", "_").Replace(tool)))
 	if overrideURL := env.Get(toolEnvKey); overrideURL != "" {
