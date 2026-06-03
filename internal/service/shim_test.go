@@ -116,3 +116,27 @@ func TestShimPaths(t *testing.T) {
 		}
 	}
 }
+
+func TestGenerator_GenerateUnixShim_Direct(t *testing.T) {
+	tmpDir := t.TempDir()
+	shimsDir := filepath.Join(tmpDir, "shims")
+	installsDir := filepath.Join(tmpDir, "installs")
+
+	g := NewGenerator(shimsDir, installsDir)
+	err := g.generateUnixShim("go", "go")
+	if err != nil {
+		t.Fatalf("generateUnixShim failed: %v", err)
+	}
+}
+
+func TestGenerator_GenerateWindowsShim_Direct(t *testing.T) {
+	tmpDir := t.TempDir()
+	shimsDir := filepath.Join(tmpDir, "shims")
+	installsDir := filepath.Join(tmpDir, "installs")
+
+	g := NewGenerator(shimsDir, installsDir)
+	err := g.generateWindowsShim("go", "go")
+	if err != nil {
+		t.Fatalf("generateWindowsShim failed: %v", err)
+	}
+}
