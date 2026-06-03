@@ -45,3 +45,33 @@ func TestJoinForPowerShell(t *testing.T) {
 	expected := "dir1" + string(os.PathListSeparator) + "dir2"
 	assert.Equal(t, expected, result)
 }
+
+func TestDeduplicateOSPaths(t *testing.T) {
+	// 1. Empty string
+	assert.Equal(t, "", DeduplicateOSPaths(""))
+
+	sep := string(os.PathListSeparator)
+
+	// 2. No duplicates
+	input := "dir1" + sep + "dir2"
+	assert.Equal(t, "dir1"+sep+"dir2", DeduplicateOSPaths(input))
+
+	// 3. Exact duplicates
+	input = "dir1" + sep + "dir2" + sep + "dir1"
+	assert.Equal(t, "dir1"+sep+"dir2", DeduplicateOSPaths(input))
+
+	// 4. Consecutive separators / empty parts
+	input = "dir1" + sep + sep + "dir2"
+	assert.Equal(t, "dir1"+sep+"dir2", DeduplicateOSPaths(input))
+
+	// 5. Case sensitivity testing
+	if runtime.GOOS == "windows" {
+		// On Windows, case-insensitive
+		input = "C:\\dir1" + sep + "c:\\DIR1" + sep + "D:\\dir2"
+		assert.Equal(t, "C:\\dir1"+sep+"D:\\dir2", DeduplicateOSPaths(input))
+	} else {
+		// On POSIX, case-sensitive
+		input = "/dir1" + sep + "/DIR1" + sep + "/dir2"
+		assert.Equal(t, "/dir1"+sep+"/DIR1"+sep+"/dir2", DeduplicateOSPaths(input))
+	}
+}
