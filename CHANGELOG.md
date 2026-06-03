@@ -6,6 +6,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0](https://github.com/snowdreamtech/UniRTM/compare/v0.3.13...v0.4.0) (2026-06-03)
+
+
+### Features
+
+* add support for UNIRTM_SKIP_CHECKSUM to bypass checksum verification ([788985b](https://github.com/snowdreamtech/UniRTM/commit/788985bf0890d9bbbe4297deadc7442e25a57420))
+* support hook script arrays ([87964e5](https://github.com/snowdreamtech/UniRTM/commit/87964e56fd12c0f0d35c20b35c707b5cb8b41f23))
+* support UNIRTM_&lt;TOOL&gt;_DOWNLOAD_URL env var override for downloads ([9cda193](https://github.com/snowdreamtech/UniRTM/commit/9cda1936d325ec02f1d4d13d5f467618df5f8ad5))
+
+
+### Bug Fixes
+
+* use official mirrors in unirtm.lock for CI ([3652b56](https://github.com/snowdreamtech/UniRTM/commit/3652b560eca20e47326b46923570c26b58097581))
+
 ## [0.3.1](https://github.com/snowdreamtech/UniRTM/compare/v0.3.0...v0.3.1) (2026-05-30)
 
 
