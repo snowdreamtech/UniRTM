@@ -4,7 +4,7 @@ BeforeAll {
 
 Describe "install.ps1" {
     It "Should run with -Help without errors" {
-        $output = & $InstallScript -Help
+        $output = & $InstallScript -Help *>&1 | Out-String
         $output | Should -Match "Usage"
     }
 }
