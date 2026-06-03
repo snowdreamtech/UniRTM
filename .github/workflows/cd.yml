@@ -137,6 +137,24 @@ jobs:
           TRIVY_CACHE_DIR: .trivycache
           UNIRTM_YES: 1
 
+      - name: "🧪 Execute Shell Tests (Bats)"
+        if: matrix.os != 'windows-latest'
+        shell: sh
+        run: |
+          unirtm run test:shell
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UNIRTM_YES: 1
+
+      - name: "🧪 Execute PowerShell Tests (Pester)"
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          unirtm run test:powershell
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UNIRTM_YES: 1
+
       - name: "⚡ Cache Documentation Links (Lychee)"
         if: matrix.os == 'ubuntu-latest'
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
