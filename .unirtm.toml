@@ -133,20 +133,24 @@ output = 'interleaved'
 [tasks."audit:trivy"]
 description = 'Generate and scan SBOM using Trivy'
 run = '''
-if [ "${CI:-}" = "true" ] || [ "${GITHUB_ACTIONS:-}" = "true" ]; then
-    export TRIVY_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-db"
-    export TRIVY_JAVA_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-java-db:1"
-    export TRIVY_CHECKS_BUNDLE_REPOSITORY="public.ecr.aws/aquasecurity/trivy-checks"
-else
-    export TRIVY_SKIP_DB_UPDATE="true"
-    export TRIVY_SKIP_JAVA_DB_UPDATE="true"
-    export TRIVY_SKIP_CHECK_UPDATE="true"
-    export TRIVY_OFFLINE_SCAN="true"
-fi
 export TRIVY_SKIP_VERSION_CHECK="true"
+export TRIVY_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-db"
+export TRIVY_JAVA_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-java-db:1"
+export TRIVY_CHECKS_BUNDLE_REPOSITORY="public.ecr.aws/aquasecurity/trivy-checks"
 
-unirtm exec -- trivy fs --format cyclonedx --output sbom.json .
-unirtm exec -- trivy sbom sbom.json
+if [ "${CI:-}" = "true" ] || [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+    unirtm exec -- trivy fs --format cyclonedx --output sbom.json .
+    unirtm exec -- trivy sbom sbom.json
+else
+    # Try offline mode first. If missing DB, it will fail and we fallback to online.
+    if unirtm exec -- trivy fs --skip-db-update --skip-java-db-update --skip-check-update --offline-scan --format cyclonedx --output sbom.json . >/dev/null 2>&1; then
+        unirtm exec -- trivy sbom --skip-db-update --skip-java-db-update --skip-check-update --offline-scan sbom.json
+    else
+        echo "⚠️  Local Trivy DB missing. Downloading from AWS ECR fallback..."
+        unirtm exec -- trivy fs --format cyclonedx --output sbom.json .
+        unirtm exec -- trivy sbom sbom.json
+    fi
+fi
 '''
 output = 'interleaved'
 
