@@ -358,7 +358,7 @@ verify_install() {
     die "Verification failed: binary not found at ${INSTALLED}"
   fi
 
-  INSTALLED_VER="$("$INSTALLED" version 2>/dev/null | head -1 || echo 'unknown')"
+  INSTALLED_VER="$("$INSTALLED" version 2>/dev/null | grep '^unirtm version' || echo 'unknown')"
   info "Installed version: ${INSTALLED_VER}"
   info "Installation complete!"
 }

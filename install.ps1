@@ -184,7 +184,8 @@ if (-not ($env:Path -split ";" | Where-Object { $_ -eq $InstallDir })) {
 if (Test-Path $targetPath) {
     try {
         $verOutput = & $targetPath version 2>$null | Out-String
-        $installedVer = $verOutput -split "`n" | Select-Object -First 1
+        $installedVer = $verOutput -split "`n" | Where-Object { $_ -match "^unirtm version" } | Select-Object -First 1
+        if ([string]::IsNullOrWhiteSpace($installedVer)) { $installedVer = "unknown" }
         Write-Info "Installed version: $installedVer"
         Write-Info "Installation complete!"
     } catch {
