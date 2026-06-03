@@ -1,317 +1,197 @@
-<#
-.SYNOPSIS
-    UniRTM installer for Windows (PowerShell).
+# PowerShell installer script for UniRTM (install.ps1)
+# Compatible with Windows PowerShell and PowerShell Core
+# Usage:
+#   Invoke-WebRequest -Uri https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 -OutFile install.ps1; .\install.ps1 --version v0.0.10
+#   .\install.ps1 --install-dir $HOME\bin --no-proxy
 
-.DESCRIPTION
-    Downloads and installs the unirtm binary from GitHub Releases.
-
-.PARAMETER Version
-    Target version to install (e.g. "v0.0.10"). Defaults to latest.
-
-.PARAMETER InstallDir
-    Directory to install the binary. Defaults to "$HOME\.unirtm\bin".
-
-.PARAMETER NoProxy
-    Disable the GitHub proxy.
-
-.EXAMPLE
-    # Install latest
-    irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex
-
-    # Install specific version
-    $env:UNIRTM_VERSION="v0.0.10"; irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex
-#>
-[CmdletBinding()]
 param(
-    [string]$Version     = $env:UNIRTM_VERSION,
-    [string]$InstallDir  = "",
-    [string]$GithubProxy = $env:GITHUB_PROXY,
-    [switch]$NoProxy
+    [Alias('v')][string]$Version,
+    [string]$InstallDir,
+    [switch]$NoProxy,
+    [Alias('q')][switch]$Quiet,
+    [string]$LogFile,
+    [Alias('h')][switch]$Help
 )
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
-
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-$Repo   = "snowdreamtech/UniRTM"
-$Binary = "unirtm"
-
-if (-not $GithubProxy) {
-    $GithubProxy = "https://gh-proxy.sn0wdr1am.com/"
-}
-if ($NoProxy) {
-    $GithubProxy = ""
-}
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-function Write-Info  { param($Msg) Write-Host "[INFO]  $Msg" -ForegroundColor Green }
-function Write-Warn  { param($Msg) Write-Host "[WARN]  $Msg" -ForegroundColor Yellow }
-function Write-Err   { param($Msg) Write-Host "[ERROR] $Msg" -ForegroundColor Red }
-function Abort       { param($Msg) Write-Err $Msg; exit 1 }
-
-function Apply-Proxy {
-    param([string]$Url)
-    if ($GithubProxy -and ($Url -match "^https://github\.com/" -or $Url -match "^https://objects\.githubusercontent\.com/" -or $Url -match "^https://raw\.githubusercontent\.com/")) {
-        return "${GithubProxy}${Url}"
-    }
-    return $Url
-}
-
-function Invoke-DownloadWithRetry {
+function Write-Log {
     param(
-        [string]$Url,
-        [string]$OutFile,
-        [int]$MaxRetries = 5,
-        [int]$RetryDelay = 3
+        [string]$Level,
+        [string]$Message,
+        [ConsoleColor]$Color
     )
-
-    $ProxiedUrl = Apply-Proxy $Url
-    $Urls = @($ProxiedUrl)
-    if ($ProxiedUrl -ne $Url) { $Urls += $Url }
-
-    foreach ($TargetUrl in $Urls) {
-        $attempt = 0
-        while ($attempt -lt $MaxRetries) {
-            try {
-                $attempt++
-                Write-Info "Downloading from: $TargetUrl (attempt $attempt/$MaxRetries)"
-                $webClient = New-Object System.Net.WebClient
-                $webClient.Headers.Add("User-Agent", "unirtm-installer/1.0")
-                if ($OutFile) {
-                    $webClient.DownloadFile($TargetUrl, $OutFile)
-                    if ((Get-Item $OutFile).Length -gt 0) { return }
-                    throw "Downloaded file is empty"
-                } else {
-                    return $webClient.DownloadString($TargetUrl)
-                }
-            } catch {
-                Write-Warn "Attempt $attempt failed: $_"
-                if ($attempt -lt $MaxRetries) {
-                    $sleep = $RetryDelay * $attempt
-                    Write-Info "Retrying in ${sleep}s..."
-                    Start-Sleep -Seconds $sleep
-                }
-            }
-        }
-        if ($TargetUrl -eq $ProxiedUrl -and $ProxiedUrl -ne $Url) {
-            Write-Warn "Proxy downloads failed, switching to direct download..."
-        } else {
-            Abort "All download attempts failed for: $Url"
-        }
+    if ($LogFile) {
+        "[$Level] $Message" | Out-File -FilePath $LogFile -Append -Encoding UTF8
     }
-}
-
-# ---------------------------------------------------------------------------
-# Detect Architecture
-# ---------------------------------------------------------------------------
-function Detect-Arch {
-    $arch = $env:PROCESSOR_ARCHITECTURE
-    # Also check PROCESSOR_ARCHITEW6432 for WOW64
-    if ($env:PROCESSOR_ARCHITEW6432) { $arch = $env:PROCESSOR_ARCHITEW6432 }
-    switch -Wildcard ($arch) {
-        "AMD64"  { return "x86_64" }
-        "ARM64"  { return "arm64" }
-        "x86"    { return "i386" }
-        default  { Abort "Unsupported architecture: $arch" }
+    if ($Quiet -and ($Level -eq 'INFO' -or $Level -eq 'WARN')) {
+        return
     }
-}
-
-# ---------------------------------------------------------------------------
-# Resolve version
-# ---------------------------------------------------------------------------
-function Resolve-Version {
-    if ($Version) {
-        if (-not $Version.StartsWith("v")) { $Version = "v$Version" }
-        Write-Info "Target version: $Version"
-        return $Version
-    }
-
-    Write-Info "Fetching latest release from GitHub API..."
-    $ApiUrl = "https://api.github.com/repos/$Repo/releases/latest"
-    $ProxiedApiUrl = Apply-Proxy $ApiUrl
-
-    $urls = @($ProxiedApiUrl)
-    if ($ProxiedApiUrl -ne $ApiUrl) { $urls += $ApiUrl }
-
-    foreach ($url in $urls) {
-        try {
-            $wc = New-Object System.Net.WebClient
-            $wc.Headers.Add("User-Agent", "unirtm-installer/1.0")
-            $json = $wc.DownloadString($url)
-            if ($json -match '"tag_name"\s*:\s*"([^"]+)"') {
-                $tag = $Matches[1]
-                Write-Info "Latest version: $tag"
-                return $tag
-            }
-        } catch {
-            Write-Warn "Failed to fetch from ${url}: $_"
-        }
-    }
-    Abort "Could not determine latest version. Please use -Version to specify one."
-}
-
-# ---------------------------------------------------------------------------
-# Download and verify
-# ---------------------------------------------------------------------------
-function Download-And-Verify {
-    param([string]$ResolvedVersion, [string]$Arch)
-
-    $ArchiveName  = "${Binary}_Windows_${Arch}.zip"
-    $ArchiveUrl   = "https://github.com/${Repo}/releases/download/${ResolvedVersion}/${ArchiveName}"
-    $ChecksumUrl  = "https://github.com/${Repo}/releases/download/${ResolvedVersion}/checksums.txt"
-
-    $TmpDir = Join-Path $env:TEMP "unirtm_install_$([System.IO.Path]::GetRandomFileName())"
-    New-Item -ItemType Directory -Path $TmpDir | Out-Null
-
-    $ArchivePath  = Join-Path $TmpDir $ArchiveName
-    $ChecksumPath = Join-Path $TmpDir "checksums.txt"
-
-    Write-Info "Downloading $ArchiveName..."
-    Invoke-DownloadWithRetry -Url $ArchiveUrl -OutFile $ArchivePath
-
-    if (-not (Test-Path $ArchivePath) -or (Get-Item $ArchivePath).Length -eq 0) {
-        Abort "Downloaded archive is empty or missing: $ArchivePath"
-    }
-
-    # Try to download and verify checksum
-    try {
-        Invoke-DownloadWithRetry -Url $ChecksumUrl -OutFile $ChecksumPath
-        $checksumContent = Get-Content $ChecksumPath -Raw
-        $entry = ($checksumContent -split "`r?`n") | Where-Object { $_ -match ('\s' + [regex]::Escape($ArchiveName) + '$') }
-        if ($entry) {
-            $expected = ($entry -split '\s+')[0].Trim()
-            $actual   = (Get-FileHash -Algorithm SHA256 $ArchivePath).Hash.ToLower()
-            if ($expected -ne $actual) {
-                Abort "Checksum mismatch! Expected: $expected, Got: $actual"
-            }
-            Write-Info "Checksum verified OK."
-        } else {
-            Write-Warn "Checksum entry not found for $ArchiveName, skipping verification."
-        }
-    } catch {
-        Write-Warn "Could not verify checksum: $_"
-    }
-
-    return @{ TmpDir = $TmpDir; ArchivePath = $ArchivePath }
-}
-
-# ---------------------------------------------------------------------------
-# Install binary
-# ---------------------------------------------------------------------------
-function Install-Binary {
-    param([hashtable]$Download, [string]$InstallDirPath)
-
-    $TmpDir      = $Download.TmpDir
-    $ArchivePath = $Download.ArchivePath
-
-    Write-Info "Extracting archive..."
-    Expand-Archive -Path $ArchivePath -DestinationPath $TmpDir -Force
-
-    # Find the binary
-    $BinaryFile = Get-ChildItem -Path $TmpDir -Recurse -Filter "${Binary}.exe" | Select-Object -First 1
-    if (-not $BinaryFile) {
-        Abort "Binary '${Binary}.exe' not found in archive."
-    }
-
-    # Ensure install dir exists
-    if (-not (Test-Path $InstallDirPath)) {
-        New-Item -ItemType Directory -Path $InstallDirPath | Out-Null
-    }
-
-    $Destination = Join-Path $InstallDirPath "${Binary}.exe"
-
-    # Prevent 'File in use' error when replacing a running binary on Windows
-    # and provide a rollback mechanism in case of failure.
-    if (Test-Path $Destination) {
-        $OldDestination = "${Destination}.old"
-        if (Test-Path $OldDestination) {
-            Remove-Item -Path $OldDestination -Force -ErrorAction SilentlyContinue
-        }
-        Rename-Item -Path $Destination -NewName "${Binary}.exe.old" -Force -ErrorAction SilentlyContinue
-    }
-
-    try {
-        Copy-Item -Path $BinaryFile.FullName -Destination $Destination -Force -ErrorAction Stop
-        Write-Info "Installed ${Binary}.exe to $Destination"
-
-        # Cleanup backup on success
-        if (Test-Path "${Destination}.old") {
-            Remove-Item -Path "${Destination}.old" -Force -ErrorAction SilentlyContinue
-        }
-    } catch {
-        Write-Warn "Failed to copy new binary: $_"
-        if (Test-Path "${Destination}.old") {
-            Write-Info "Rolling back to previous version..."
-            Rename-Item -Path "${Destination}.old" -NewName "${Binary}.exe" -Force -ErrorAction SilentlyContinue
-        }
-        Abort "Installation failed."
-    }
-
-    # Cleanup
-    Remove-Item -Recurse -Force $TmpDir -ErrorAction SilentlyContinue
-
-    return $Destination
-}
-
-# ---------------------------------------------------------------------------
-# Update user PATH
-# ---------------------------------------------------------------------------
-function Update-UserPath {
-    param([string]$DirToAdd)
-
-    $currentPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-    if ($currentPath -notlike "*${DirToAdd}*") {
-        [Environment]::SetEnvironmentVariable("PATH", "${currentPath};${DirToAdd}", "User")
-        $env:PATH = "${env:PATH};${DirToAdd}"
-        Write-Info "Added $DirToAdd to your user PATH."
-        Write-Warn "Restart your terminal for PATH changes to take effect."
+    if ($Level -eq 'ERROR') {
+        Write-Host "[$Level] $Message" -ForegroundColor $Color
     } else {
-        Write-Info "$DirToAdd is already in PATH."
+        Write-Host "[$Level]  $Message" -ForegroundColor $Color
     }
 }
 
-# ---------------------------------------------------------------------------
-# Post-install verification
-# ---------------------------------------------------------------------------
-function Verify-Install {
-    param([string]$BinaryPath)
+function Write-Info   { param([string]$msg) Write-Log -Level 'INFO' -Message $msg -Color Green }
+function Write-Warn   { param([string]$msg) Write-Log -Level 'WARN' -Message $msg -Color Yellow }
+function Write-Error  { param([string]$msg) Write-Log -Level 'ERROR' -Message $msg -Color Red }
 
-    if (-not (Test-Path $BinaryPath)) {
-        Abort "Verification failed: binary not found at $BinaryPath"
+function Show-Help {
+    Write-Info "Usage: install.ps1 [--version <tag>] [--install-dir <dir>] [--no-proxy] [--quiet] [--log-file <path>] [--help]"
+    Write-Info "  --version, -v   Target version (default: latest release)"
+    Write-Info "  --install-dir   Directory to place the binary (default: `$HOME\bin for normal user, C:\Program Files\UniRTM for admin)"
+    Write-Info "  --no-proxy      Disable GitHub proxy"
+    Write-Info "  --quiet, -q     Suppress INFO and WARN output"
+    Write-Info "  --log-file      Write logs to the specified file"
+    Write-Info "  --help, -h      Show this help message"
+    exit 0
+}
+
+if ($Help) { Show-Help }
+
+# Configuration
+$Repo = "snowdreamtech/UniRTM"
+$Binary = "unirtm"
+$GitHubProxy = $env:GITHUB_PROXY
+if (-not $GitHubProxy) { $GitHubProxy = "https://gh-proxy.sn0wdr1am.com/" }
+if ($NoProxy) { $GitHubProxy = "" }
+
+# Retry settings for Invoke-WebRequest
+$RetryCount = 5
+$RetryDelay = 2
+
+function Invoke-WithRetry {
+    param(
+        [string]$Uri,
+        [string]$OutFile = $null
+    )
+    $attempt = 0
+    while ($attempt -lt $RetryCount) {
+        try {
+            if ($OutFile) {
+                Invoke-WebRequest -Uri $Uri -OutFile $OutFile -UseBasicParsing -ErrorAction Stop
+            } else {
+                Invoke-WebRequest -Uri $Uri -UseBasicParsing -ErrorAction Stop | Out-String
+            }
+            return $true
+        } catch {
+            $attempt++
+            Write-Warn "Download attempt $attempt failed for $Uri. Retrying in $RetryDelay seconds..."
+            Start-Sleep -Seconds $RetryDelay
+        }
     }
+    return $false
+}
 
+# Resolve version
+if ($Version) {
+    if (-not $Version.StartsWith('v')) { $Version = "v$Version" }
+    Write-Info "Target version: $Version"
+} else {
+    Write-Info "Fetching latest release from GitHub API..."
+    $apiUrl = "https://api.github.com/repos/$Repo/releases/latest"
+    $response = Invoke-WithRetry -Uri $apiUrl
+    if (-not $response) { Write-Error "Failed to fetch latest version. Specify with --version"; exit 1 }
+    $json = Invoke-WebRequest -Uri $apiUrl -UseBasicParsing | ConvertFrom-Json
+    $Version = $json.tag_name
+    Write-Info "Latest version: $Version"
+}
+
+# Detect platform and architecture
+$os = $(Get-CimInstance -ClassName Win32_OperatingSystem).Caption
+$arch = $(Get-CimInstance -ClassName Win32_Processor).AddressWidth
+if ($arch -eq 64) { $archName = "x86_64" } else { $archName = "i386" }
+Write-Info "Detected platform: Windows/${archName}"
+
+# Build URLs
+$archiveName = "${Binary}_Windows_${archName}.zip"
+$archiveUrl = "https://github.com/${Repo}/releases/download/${Version}/${archiveName}"
+$checksumUrl = "https://github.com/${Repo}/releases/download/${Version}/checksums.txt"
+if ($GitHubProxy) { $archiveUrl = "$GitHubProxy$archiveUrl"; $checksumUrl = "$GitHubProxy$checksumUrl" }
+
+# Temporary folder
+$tmpDir = New-Item -ItemType Directory -Path ([System.IO.Path]::GetTempPath()) -Name ([System.Guid]::NewGuid().ToString()) -Force
+# Ensure cleanup on exit
+$script:cleanup = { Remove-Item -Recurse -Force $tmpDir }
+Register-EngineEvent PowerShell.Exiting -Action $cleanup | Out-Null
+
+# Download archive
+$archivePath = Join-Path $tmpDir $archiveName
+Write-Info "Downloading $archiveName..."
+if (-not (Invoke-WithRetry -Uri $archiveUrl -OutFile $archivePath)) {
+    Write-Error "Failed to download archive"; exit 1
+}
+if (-not (Test-Path $archivePath) -or (Get-Item $archivePath).Length -eq 0) {
+    Write-Error "Downloaded archive is empty"; exit 1
+}
+
+# Download checksum file
+$checksumPath = Join-Path $tmpDir "checksums.txt"
+Write-Info "Downloading checksums..."
+$checksumOk = Invoke-WithRetry -Uri $checksumUrl -OutFile $checksumPath
+if ($checksumOk) {
+    $expected = (Select-String -Path $checksumPath -Pattern "\s$archiveName$" | ForEach-Object { $_.Line.Split(' ')[0] })
+    if ($expected) {
+        $actual = (Get-FileHash -Algorithm SHA256 -Path $archivePath).Hash.ToLower()
+        if ($expected.ToLower() -ne $actual) {
+            Write-Error "Checksum mismatch! Expected $expected, got $actual"
+            exit 1
+        }
+        Write-Info "Checksum verified OK."
+    } else {
+        Write-Warn "Checksum entry not found for $archiveName, skipping verification."
+    }
+} else {
+    Write-Warn "Could not download checksums.txt, skipping verification."
+}
+
+# Determine install directory
+if (-not $InstallDir) {
+    if (([Security.Principal.WindowsIdentity]::GetCurrent()).Groups -match "S-1-5-32-544") {
+        $InstallDir = "C:\Program Files\UniRTM"
+    } else {
+        $InstallDir = "$HOME\bin"
+    }
+}
+Write-Info "Installing to $InstallDir..."
+New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
+
+# Extract archive (zip)
+Expand-Archive -Path $archivePath -DestinationPath $tmpDir -Force
+# Find binary
+$binaryPath = Get-ChildItem -Path $tmpDir -Recurse -Filter $Binary -File | Select-Object -First 1
+if (-not $binaryPath) { Write-Error "Binary '$Binary' not found in archive"; exit 1 }
+# Move/replace binary
+$targetPath = Join-Path $InstallDir $Binary + ".exe"
+if (Test-Path $targetPath) {
+    Move-Item -Path $targetPath -Destination "${targetPath}.old" -Force
+}
+Copy-Item -Path $binaryPath.FullName -Destination $targetPath -Force
+# Ensure executable flag (Windows binaries are executable by default)
+
+# Cleanup old backup if succeeded
+if (Test-Path "${targetPath}.old") { Remove-Item "${targetPath}.old" -Force }
+
+Write-Info "Installed $Binary to $targetPath"
+
+# PATH hint
+if (-not ($env:Path -split ";" | Where-Object { $_ -eq $InstallDir })) {
+    Write-Warn "Add the following to your PowerShell profile to include the install directory in PATH:"
+    Write-Host "    `$env:Path = \"$InstallDir;`$env:Path\""
+}
+
+# Verify installation
+if (Test-Path $targetPath) {
     try {
-        $verOutput = & $BinaryPath version 2>&1 | Select-Object -First 1
-        Write-Info "Installed version: $verOutput"
+        $verOutput = & $targetPath version 2>$null | Out-String
+        $installedVer = $verOutput -split "`n" | Select-Object -First 1
+        Write-Info "Installed version: $installedVer"
+        Write-Info "Installation complete!"
     } catch {
-        Write-Warn "Could not verify installed version: $_"
+        Write-Error "Verification failed: unable to execute installed binary"
+        exit 1
     }
-
-    Write-Info "Installation complete!"
+} else {
+    Write-Error "Verification failed: binary not found at $targetPath"
+    exit 1
 }
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-function Main {
-    $arch = Detect-Arch
-    Write-Info "Detected architecture: $arch"
-
-    $resolvedVersion = Resolve-Version
-
-    if (-not $InstallDir) {
-        $InstallDir = Join-Path $HOME "AppData\Local\unirtm\bin"
-    }
-
-    $download    = Download-And-Verify -ResolvedVersion $resolvedVersion -Arch $arch
-    $binaryPath  = Install-Binary -Download $download -InstallDirPath $InstallDir
-
-    Update-UserPath -DirToAdd $InstallDir
-    Verify-Install -BinaryPath $binaryPath
-}
-
-Main

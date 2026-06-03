@@ -26,12 +26,35 @@ CURL_RETRY_DELAY=2
 CURL_CONNECT_TIMEOUT=15
 CURL_MAX_TIME=120
 
+QUIET=0
+LOG_FILE=""
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-info() { printf '\033[0;32m[INFO]\033[0m  %s\n' "$*" >&2; }
-warn() { printf '\033[0;33m[WARN]\033[0m  %s\n' "$*" >&2; }
-error() { printf '\033[0;31m[ERROR]\033[0m %s\n' "$*" >&2; }
+log_msg() {
+  level="$1"
+  color="$2"
+  shift 2
+
+  if [ -n "$LOG_FILE" ]; then
+    printf '[%s] %s\n' "$level" "$*" >> "$LOG_FILE"
+  fi
+
+  if [ "$QUIET" -eq 1 ] && { [ "$level" = "INFO" ] || [ "$level" = "WARN" ]; }; then
+    return
+  fi
+
+  if [ "$level" = "ERROR" ]; then
+    printf '\033[0;%sm[%s]\033[0m %s\n' "$color" "$level" "$*" >&2
+  else
+    printf '\033[0;%sm[%s]\033[0m  %s\n' "$color" "$level" "$*" >&2
+  fi
+}
+
+info() { log_msg "INFO" "32" "$*"; }
+warn() { log_msg "WARN" "33" "$*"; }
+error() { log_msg "ERROR" "31" "$*"; }
 die() {
   error "$*"
   exit 1
@@ -60,8 +83,15 @@ parse_args() {
     --no-proxy)
       GITHUB_PROXY=""
       ;;
+    --quiet | -q)
+      QUIET=1
+      ;;
+    --log-file)
+      shift
+      LOG_FILE="$1"
+      ;;
     --help | -h)
-      printf 'Usage: install.sh [--version <tag>] [--install-dir <dir>] [--no-proxy]\n'
+      printf 'Usage: install.sh [--version <tag>] [--install-dir <dir>] [--no-proxy] [--quiet] [--log-file <path>]\n'
       exit 0
       ;;
     *)
