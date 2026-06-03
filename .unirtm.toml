@@ -144,7 +144,7 @@ if [ "${CI:-}" = "true" ] || [ "${GITHUB_ACTIONS:-}" = "true" ]; then
 else
     # Try offline mode first. If missing DB, it will fail and we fallback to online.
     if unirtm exec -- trivy fs --skip-db-update --skip-java-db-update --skip-check-update --offline-scan --format cyclonedx --output sbom.json . >/dev/null 2>&1; then
-        unirtm exec -- trivy sbom --skip-db-update --skip-java-db-update --skip-check-update --offline-scan sbom.json
+        unirtm exec -- trivy sbom --skip-db-update --skip-java-db-update --offline-scan sbom.json
     else
         echo "⚠️  Local Trivy DB missing. Downloading from AWS ECR fallback..."
         unirtm exec -- trivy fs --format cyclonedx --output sbom.json .
