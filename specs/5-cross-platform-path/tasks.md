@@ -1,21 +1,25 @@
-# Implementation Tasks: Path Handling Refactoring
+# 任务列表（Tasks）
 
-- [ ] 1. **Create `internal/pkg/envpath` package**
-  - Implement `JoinForOS` to handle native OS execution (e.g. `cmd.Env`).
-  - Implement `JoinForPosix` to handle Bash/Zsh POSIX scripting path assembly (uses `:` and forward slashes on Windows).
-  - Implement `FormatDirForPosix` for single directory string adjustments.
-  - Implement unit tests for `envpath` to ensure absolute correctness.
+1. **创建 `internal/pkg/envpath` 工具包**
+   - Owner: snowdream
+   - Due: 2026-06-25
+   - Dependencies: 无
+   - Status: [ ] 未开始
 
-- [ ] 2. **Refactor Native OS Execution commands (`cmd` package)**
-  - Update `cmd/25.run.go` to use `envpath.JoinForOS` where paths are natively injected.
-  - Update `cmd/23.exec.go` to use `envpath.JoinForOS` and abstract away custom `deduplicatePathString` logic using `envpath` if possible, or just call `JoinForOS` instead of manual `os.PathListSeparator` joins.
+2. **重构原生系统环境下的路径注入逻辑 (`cmd` package)**
+   - Owner: snowdream
+   - Due: 2026-06-26
+   - Dependencies: 创建包
+   - Status: [ ] 未开始
 
-- [ ] 3. **Refactor Shell Script Generation logic (`internal/service` and `cmd` package)**
-  - Update `internal/service/activation.go` (generatePosixScript) to invoke `envpath.JoinForPosix` and `envpath.FormatDirForPosix`.
-  - Update `internal/service/auto_activation.go` (generatePosixDeactivation) to invoke `envpath.FormatDirForPosix`.
-  - Update `cmd/10.deactivate.go` (generatePosixDeactivationScript) to invoke `envpath.FormatDirForPosix`.
-  - Update `cmd/3.env.go` (cmd.PrintEnv) to invoke `envpath.JoinForPosix` for posix shells, removing the inline Windows logic.
+3. **重构 Shell 脚本生成逻辑 (`internal/service` 及 `cmd/env.go`)**
+   - Owner: snowdream
+   - Due: 2026-06-27
+   - Dependencies: 原生重构完成
+   - Status: [ ] 未开始
 
-- [ ] 4. **Run Verification**
-  - Run `go test ./...` across the entire codebase to ensure existing tests pass.
-  - Perform Git commit atomically `feat: introduce envpath for centralized cross-platform path handling`.
+4. **进行全局单元测试验证并提交变更**
+   - Owner: QA
+   - Due: 2026-06-28
+   - Dependencies: 所有重构完成
+   - Status: [ ] 未开始

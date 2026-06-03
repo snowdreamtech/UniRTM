@@ -1,13 +1,25 @@
-# Tasks: 支持 Hook 脚本数组
+# 任务列表（Tasks）
 
-- [x] **Task 1:** Update `ToolConfig` to support `StringArray` for `PreInstall` and `PostInstall`.
-  - Modify `internal/config/config.go`.
-- [x] **Task 2:** Update `Task` to support `StringArray` for `Run`.
-  - Modify `internal/config/config.go`.
-- [x] **Task 3:** Update Hook execution to use `.Script()`.
-  - Modify `internal/service/installation.go`.
-- [x] **Task 4:** Update Task execution to use `.Script()`.
-  - Modify `internal/task/native.go`. 中的任务执行逻辑，调用 `.Script()`。
-- [x] 5. 修正由于类型更改而在其他服务文件（如 `migration.go`）中造成的类型不匹配。
-- [x] 6. 修正并补充单元测试（`config_test.go`, `installation_test.go` 等）。
-- [x] 7. 手动验证功能：运行带有数组形式脚本的测试配置文件。
+1. **更新 `ToolConfig` 与 `Task` 以支持 `StringArray`**
+   - Owner: snowdream
+   - Due: 2026-06-18
+   - Dependencies: 无
+   - Status: [x] 已完成
+
+2. **更新 Hook 与 Task 的执行逻辑以调用 `.Script()`**
+   - Owner: snowdream
+   - Due: 2026-06-19
+   - Dependencies: 更新类型解析
+   - Status: [x] 已完成
+
+3. **修正类型更改导致的服务端编译错误**
+   - Owner: snowdream
+   - Due: 2026-06-20
+   - Dependencies: 更新执行逻辑
+   - Status: [x] 已完成
+
+4. **补充并完善单元测试 (`config_test.go` 等)**
+   - Owner: QA
+   - Due: 2026-06-21
+   - Dependencies: 修正编译错误
+   - Status: [x] 已完成
