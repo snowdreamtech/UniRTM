@@ -546,42 +546,42 @@ backend = "native"
 
 [tools."go"."platforms.linux-amd64"]
 checksum = "1153d3d50e0ac764b447adfe05c2bcf08e889d42a02e0fe0259bd47f6733ad7f"
-url = "https://mirrors.aliyun.com/golang/go1.26.4.linux-amd64.tar.gz"
+url = "https://dl.google.com/go/go1.26.4.linux-amd64.tar.gz"
 gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
 
 [tools."go"."platforms.linux-amd64-musl"]
 checksum = "1153d3d50e0ac764b447adfe05c2bcf08e889d42a02e0fe0259bd47f6733ad7f"
-url = "https://mirrors.aliyun.com/golang/go1.26.4.linux-amd64.tar.gz"
+url = "https://dl.google.com/go/go1.26.4.linux-amd64.tar.gz"
 gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
 
 [tools."go"."platforms.linux-arm64"]
 checksum = "ef758ae7c6cf9267c9c0ef080b8965f453d89ab2d25d9eb22de4405925238768"
-url = "https://mirrors.aliyun.com/golang/go1.26.4.linux-arm64.tar.gz"
+url = "https://dl.google.com/go/go1.26.4.linux-arm64.tar.gz"
 gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
 
 [tools."go"."platforms.linux-arm64-musl"]
 checksum = "ef758ae7c6cf9267c9c0ef080b8965f453d89ab2d25d9eb22de4405925238768"
-url = "https://mirrors.aliyun.com/golang/go1.26.4.linux-arm64.tar.gz"
+url = "https://dl.google.com/go/go1.26.4.linux-arm64.tar.gz"
 gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
 
 [tools."go"."platforms.macos-amd64"]
 checksum = "05dc9b5f9997744520aaebb3d5deaa7c755371aebbfb7f97c2511a9f3367538d"
-url = "https://mirrors.aliyun.com/golang/go1.26.4.darwin-amd64.tar.gz"
+url = "https://dl.google.com/go/go1.26.4.darwin-amd64.tar.gz"
 gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
 
 [tools."go"."platforms.macos-arm64"]
 checksum = "b62ad2b6d7d2464f12a5bcad7ff47f19d08325773b5efd21610e445a05a9bf53"
-url = "https://mirrors.aliyun.com/golang/go1.26.4.darwin-arm64.tar.gz"
+url = "https://dl.google.com/go/go1.26.4.darwin-arm64.tar.gz"
 gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
 
 [tools."go"."platforms.windows-amd64"]
 checksum = "3ca8fb4630b07c419cbdd51f754e31363cfcfb83b3a5354d9e895c90be2cc345"
-url = "https://mirrors.aliyun.com/golang/go1.26.4.windows-amd64.zip"
+url = "https://dl.google.com/go/go1.26.4.windows-amd64.zip"
 gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
 
 [tools."go"."platforms.windows-arm64"]
 checksum = "62247f56fb7d7b827d237152c4e3fcd69a24d0fa9430dc73dbda7593ae82bc8d"
-url = "https://mirrors.aliyun.com/golang/go1.26.4.windows-arm64.zip"
+url = "https://dl.google.com/go/go1.26.4.windows-arm64.zip"
 gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
 
 [[tools."go:golang.org/x/vuln/cmd/govulncheck"]]
@@ -727,35 +727,35 @@ version = "26.1.0"
 backend = "native"
 
 [tools."node"."platforms.linux-amd64"]
-url = "https://npmmirror.com/mirrors/node/v26.1.0/node-v26.1.0-linux-x64.tar.gz"
+url = "https://nodejs.org/dist/v26.1.0/node-v26.1.0-linux-x64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.linux-amd64-musl"]
-url = "https://npmmirror.com/mirrors/node/v26.1.0/node-v26.1.0-linux-x64.tar.gz"
+url = "https://nodejs.org/dist/v26.1.0/node-v26.1.0-linux-x64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.linux-arm64"]
-url = "https://npmmirror.com/mirrors/node/v26.1.0/node-v26.1.0-linux-arm64.tar.gz"
+url = "https://nodejs.org/dist/v26.1.0/node-v26.1.0-linux-arm64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.linux-arm64-musl"]
-url = "https://npmmirror.com/mirrors/node/v26.1.0/node-v26.1.0-linux-arm64.tar.gz"
+url = "https://nodejs.org/dist/v26.1.0/node-v26.1.0-linux-arm64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.macos-amd64"]
-url = "https://npmmirror.com/mirrors/node/v26.1.0/node-v26.1.0-darwin-x64.tar.gz"
+url = "https://nodejs.org/dist/v26.1.0/node-v26.1.0-darwin-x64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.macos-arm64"]
-url = "https://npmmirror.com/mirrors/node/v26.1.0/node-v26.1.0-darwin-arm64.tar.gz"
+url = "https://nodejs.org/dist/v26.1.0/node-v26.1.0-darwin-arm64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.windows-amd64"]
-url = "https://npmmirror.com/mirrors/node/v26.1.0/node-v26.1.0-win-x64.zip"
+url = "https://nodejs.org/dist/v26.1.0/node-v26.1.0-win-x64.zip"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.windows-arm64"]
-url = "https://npmmirror.com/mirrors/node/v26.1.0/node-v26.1.0-win-arm64.zip"
+url = "https://nodejs.org/dist/v26.1.0/node-v26.1.0-win-arm64.zip"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [[tools."npm:@commitlint/cli"]]
