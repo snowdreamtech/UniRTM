@@ -42,6 +42,8 @@ func (r *GoTaskRunner) CanExecute(dir string, taskName string) bool {
 	return false
 }
 
+var goTaskExe = "task"
+
 // ListTasks returns all tasks defined in the Taskfile.
 func (r *GoTaskRunner) ListTasks(dir string) ([]string, error) {
 	if !r.CanExecute(dir, "") {
@@ -51,7 +53,7 @@ func (r *GoTaskRunner) ListTasks(dir string) ([]string, error) {
 	// Use task --list-all to list all tasks
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "task", "--list-all")
+	cmd := exec.CommandContext(ctx, goTaskExe, "--list-all")
 	cmd.Dir = dir
 	out, err := cmd.Output()
 	if err != nil {
@@ -86,7 +88,7 @@ func (r *GoTaskRunner) Run(ctx context.Context, dir string, taskName string, arg
 	cmdArgs := []string{taskName}
 	cmdArgs = append(cmdArgs, args...)
 
-	cmd := exec.CommandContext(ctx, "task", cmdArgs...)
+	cmd := exec.CommandContext(ctx, goTaskExe, cmdArgs...)
 	cmd.Dir = dir
 
 	// Pass through the environment variables injected by UniRTM

@@ -36,6 +36,8 @@ func (r *JustRunner) CanExecute(dir string, taskName string) bool {
 	return false
 }
 
+var justExe = "just"
+
 // ListTasks returns all targets defined in the Justfile.
 func (r *JustRunner) ListTasks(dir string) ([]string, error) {
 	if !r.CanExecute(dir, "") {
@@ -43,7 +45,7 @@ func (r *JustRunner) ListTasks(dir string) ([]string, error) {
 	}
 
 	// Use just --summary to list all targets
-	cmd := exec.Command("just", "--summary")
+	cmd := exec.Command(justExe, "--summary")
 	cmd.Dir = dir
 	out, err := cmd.Output()
 	if err != nil {
@@ -61,7 +63,7 @@ func (r *JustRunner) Run(ctx context.Context, dir string, taskName string, args 
 	cmdArgs := []string{taskName}
 	cmdArgs = append(cmdArgs, args...)
 
-	cmd := exec.CommandContext(ctx, "just", cmdArgs...)
+	cmd := exec.CommandContext(ctx, justExe, cmdArgs...)
 	cmd.Dir = dir
 
 	// Pass through the environment variables injected by UniRTM

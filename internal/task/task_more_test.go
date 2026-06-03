@@ -45,10 +45,10 @@ exit /b 0
 	fakeTask := filepath.Join(binDir, exeName)
 	os.WriteFile(fakeTask, []byte(script), 0755)
 
-	// Update PATH
-	oldPath := os.Getenv("PATH")
-	defer os.Setenv("PATH", oldPath)
-	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+	// Update exe variable
+	oldTaskExe := goTaskExe
+	defer func() { goTaskExe = oldTaskExe }()
+	goTaskExe = fakeTask
 
 	r := NewGoTaskRunner()
 	dir := t.TempDir()
@@ -97,10 +97,10 @@ exit /b 0
 	fakeJust := filepath.Join(binDir, exeName)
 	os.WriteFile(fakeJust, []byte(script), 0755)
 
-	// Update PATH
-	oldPath := os.Getenv("PATH")
-	defer os.Setenv("PATH", oldPath)
-	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
+	// Update exe variable
+	oldJustExe := justExe
+	defer func() { justExe = oldJustExe }()
+	justExe = fakeJust
 
 	r := NewJustRunner()
 	dir := t.TempDir()
