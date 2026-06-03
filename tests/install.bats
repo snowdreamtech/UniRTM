@@ -31,7 +31,13 @@ case "$ORIG_ARGS" in
     */releases/download/*)
         case "$ORIG_ARGS" in
             *checksums.txt*)
-                echo "fakechecksum unirtm_Darwin_arm64.tar.gz" > "$OUTFILE"
+                HASH="d26e6e9ad7595a49744a86f770536eddb0b1beaee70844b8bfbdf6ae620a07fe"
+                printf "%s  %s\n" "$HASH" "unirtm_Darwin_arm64.tar.gz" \
+                       "$HASH" "unirtm_Darwin_x86_64.tar.gz" \
+                       "$HASH" "unirtm_Linux_arm64.tar.gz" \
+                       "$HASH" "unirtm_Linux_x86_64.tar.gz" \
+                       "$HASH" "unirtm_Windows_arm64.zip" \
+                       "$HASH" "unirtm_Windows_x86_64.zip" > "$OUTFILE"
                 ;;
             *)
                 echo "dummy archive content" > "$OUTFILE"
