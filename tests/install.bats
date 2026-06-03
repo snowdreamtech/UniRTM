@@ -7,12 +7,14 @@ setup() {
 
   # Mock curl
   cat <<'EOF' >"${MOCK_BIN_DIR}/curl"
-#!/usr/bin/env bash
+#!/bin/sh
 ORIG_ARGS="$*"
-if [[ "$ORIG_ARGS" == *"api.github.com"* ]]; then
-    echo '{"tag_name": "v99.9.9"}'
-    exit 0
-fi
+case "$ORIG_ARGS" in
+    *api.github.com*)
+        echo '{"tag_name": "v99.9.9"}'
+        exit 0
+        ;;
+esac
 
 # Find the -o argument value
 OUTFILE=""
@@ -25,14 +27,19 @@ while [ $# -gt 0 ]; do
     fi
 done
 
-if [[ "$ORIG_ARGS" == *"/releases/download/"* ]]; then
-    if [[ "$ORIG_ARGS" == *"checksums.txt"* ]]; then
-        echo "fakechecksum unirtm_Darwin_arm64.tar.gz" > "$OUTFILE"
-    else
-        echo "dummy archive content" > "$OUTFILE"
-    fi
-    exit 0
-fi
+case "$ORIG_ARGS" in
+    */releases/download/*)
+        case "$ORIG_ARGS" in
+            *checksums.txt*)
+                echo "fakechecksum unirtm_Darwin_arm64.tar.gz" > "$OUTFILE"
+                ;;
+            *)
+                echo "dummy archive content" > "$OUTFILE"
+                ;;
+        esac
+        exit 0
+        ;;
+esac
 echo "Mock curl called: $ORIG_ARGS" >&2
 exit 0
 EOF
@@ -40,9 +47,11 @@ EOF
 
   # Mock tar
   cat <<'EOF' >"${MOCK_BIN_DIR}/tar"
-#!/usr/bin/env bash
+#!/bin/sh
 # Mock tar just creates a fake unirtm binary in the target directory
-TARGET_DIR="${@: -1}"
+for arg in "$@"; do
+    TARGET_DIR="$arg"
+done
 mkdir -p "$TARGET_DIR"
 touch "$TARGET_DIR/unirtm"
 chmod +x "$TARGET_DIR/unirtm"
