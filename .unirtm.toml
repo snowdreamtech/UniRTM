@@ -196,6 +196,20 @@ unirtm run audit
 '''
 output = 'interleaved'
 
+[tasks."audit:trivy-update"]
+description = 'Update Trivy vulnerability databases locally'
+run = '''
+export TRIVY_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-db"
+export TRIVY_JAVA_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-java-db:1"
+
+echo "Downloading main vulnerability DB..."
+unirtm exec -- trivy image --download-db-only
+
+echo "Downloading Java index DB..."
+unirtm exec -- trivy image --download-java-db-only
+'''
+output = 'interleaved'
+
 [tools]
 'github:anchore/syft' = '1.44.0'
 'github:aquasecurity/trivy' = '0.70.0'
