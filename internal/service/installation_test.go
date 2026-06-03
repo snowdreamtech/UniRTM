@@ -11,13 +11,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/lockfile"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	unirtmhttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository"
@@ -179,14 +179,14 @@ func TestIsExecutableFile(t *testing.T) {
 	execFile := filepath.Join(tempDir, "my-exec")
 	os.WriteFile(execFile, []byte("echo hi"), 0755)
 	// On Unix, this should be true. (Windows may be different based on GOOS logic).
-	if runtime.GOOS != "windows" {
+	if env.RuntimeGOOS != "windows" {
 		assert.True(t, isExecutableFile(execFile))
 	}
 
 	// 5. Non-executable regular file
 	nonExecFile := filepath.Join(tempDir, "my-file.txt")
 	os.WriteFile(nonExecFile, []byte("hello"), 0644)
-	if runtime.GOOS != "windows" {
+	if env.RuntimeGOOS != "windows" {
 		assert.False(t, isExecutableFile(nonExecFile))
 	}
 }

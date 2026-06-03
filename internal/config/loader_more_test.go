@@ -6,8 +6,9 @@ package config
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 func TestLoader_LoadGlobal(t *testing.T) {
@@ -42,7 +43,7 @@ t1 = "1.0"
 
 	os.Chmod(globalPath, 0000)
 	_, err = LoadGlobal()
-	if runtime.GOOS != "windows" {
+	if env.RuntimeGOOS != "windows" {
 		if err == nil {
 			t.Errorf("expected error reading unreadable global config")
 		}

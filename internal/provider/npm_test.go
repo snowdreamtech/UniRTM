@@ -7,16 +7,16 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNpmProvider_Install_Success(t *testing.T) {
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		t.Skip("Skipping bash-based mock test on windows")
 	}
 	tmpDir := t.TempDir()
@@ -65,7 +65,7 @@ func TestNpmProvider_ListExecutables(t *testing.T) {
 	require.NoError(t, err)
 
 	dummy1 := "dummy1"
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		dummy1 += ".cmd"
 	}
 	os.WriteFile(filepath.Join(binDir, dummy1), []byte(""), 0755)
@@ -80,7 +80,7 @@ func TestNpmProvider_ListExecutables(t *testing.T) {
 // TestNpmProvider_RewriteCmdNodePath_npm7Format tests that the npm 7+ IF EXIST
 // conditional block is rewritten to use the absolute node.exe path.
 func TestNpmProvider_RewriteCmdNodePath_npm7Format(t *testing.T) {
-	if runtime.GOOS != "windows" {
+	if env.RuntimeGOOS != "windows" {
 		t.Skip("Windows-only .cmd rewrite test")
 	}
 	p := provider.NewNpmProvider()
@@ -116,7 +116,7 @@ func TestNpmProvider_RewriteCmdNodePath_npm7Format(t *testing.T) {
 // TestNpmProvider_RewriteCmdNodePath_LegacyFormat tests the older npm one-liner
 // format ("%~dp0\node.exe") is rewritten correctly.
 func TestNpmProvider_RewriteCmdNodePath_LegacyFormat(t *testing.T) {
-	if runtime.GOOS != "windows" {
+	if env.RuntimeGOOS != "windows" {
 		t.Skip("Windows-only .cmd rewrite test")
 	}
 	p := provider.NewNpmProvider()
@@ -146,7 +146,7 @@ func TestNpmProvider_RewriteCmdNodePath_LegacyFormat(t *testing.T) {
 // TestNpmProvider_RewriteCmdNodePath_NoNodePattern tests that .cmd files
 // without any node.exe pattern are left untouched.
 func TestNpmProvider_RewriteCmdNodePath_NoNodePattern(t *testing.T) {
-	if runtime.GOOS != "windows" {
+	if env.RuntimeGOOS != "windows" {
 		t.Skip("Windows-only .cmd rewrite test")
 	}
 	p := provider.NewNpmProvider()

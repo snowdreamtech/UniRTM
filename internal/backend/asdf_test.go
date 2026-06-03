@@ -7,8 +7,9 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 func TestAsdfBackend_Name(t *testing.T) {
@@ -33,7 +34,7 @@ func TestAsdfBackend_Properties(t *testing.T) {
 }
 
 func TestAsdfBackend_ListVersions(t *testing.T) {
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		t.Skip("skipping on windows because it requires sh")
 	}
 	b := NewAsdfBackend()
@@ -61,7 +62,7 @@ func TestAsdfBackend_ListVersions(t *testing.T) {
 }
 
 func TestAsdfBackend_ResolveVersion(t *testing.T) {
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		t.Skip("skipping on windows because it requires sh")
 	}
 	b := NewAsdfBackend()
@@ -139,7 +140,7 @@ if [ "$1" = "clone" ]; then
 fi
 exit 0
 `
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		gitMockPath += ".cmd"
 		gitMockScript = `@echo off
 if "%~1"=="clone" (

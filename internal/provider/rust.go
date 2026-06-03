@@ -9,8 +9,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // RustProvider implements the Provider interface for Rust.
@@ -77,7 +78,7 @@ func (r *RustProvider) GenerateShims(tool string, installPath string, version st
 // DetectVersion detects Rust version.
 func (r *RustProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	rustcPath := filepath.Join(installPath, "bin", "rustc")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		rustcPath += ".exe"
 	}
 
@@ -123,7 +124,7 @@ func (r *RustProvider) ListExecutables(tool string, installPath string, version 
 		}
 	}
 
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		for i := range executables {
 			lowerExe := strings.ToLower(executables[i])
 			if !strings.HasSuffix(lowerExe, ".exe") && !strings.HasSuffix(lowerExe, ".bat") && !strings.HasSuffix(lowerExe, ".cmd") {
@@ -166,7 +167,7 @@ func (r *RustProvider) generateRustShim(name, exePath, installPath, version stri
 	cargoHome := filepath.Join(installPath, "cargo")
 	rustupHome := filepath.Join(installPath, "rustup")
 
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		return fmt.Sprintf(`@echo off
 REM UniRTM shim for %s (version %s)
 set "CARGO_HOME=%s"

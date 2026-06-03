@@ -7,9 +7,9 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,7 +26,7 @@ func TestDotnetProvider_FindDotnet(t *testing.T) {
 
 	dotnetName := "dotnet"
 	scriptContent := []byte("#!/bin/sh\necho dotnet")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		dotnetName = "dotnet.bat"
 		scriptContent = []byte("@echo dotnet")
 	}
@@ -54,7 +54,7 @@ func TestDotnetProvider_Install(t *testing.T) {
 	os.MkdirAll(binDir, 0755)
 	dotnetName := "dotnet"
 	scriptContent := []byte("#!/bin/sh\necho installing...")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		dotnetName = "dotnet.bat"
 		scriptContent = []byte("@echo installing...")
 	}
@@ -113,7 +113,7 @@ func TestDotnetProvider_ListExecutables(t *testing.T) {
 
 	dummy1Name := "dummy1"
 	dummy2Name := "dummy2"
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		dummy1Name = "dummy1.exe"
 		dummy2Name = "dummy2.exe"
 	}
@@ -124,7 +124,7 @@ func TestDotnetProvider_ListExecutables(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		if len(exes) != 2 {
 			t.Errorf("expected 2 executables on windows, got %d", len(exes))
 		}

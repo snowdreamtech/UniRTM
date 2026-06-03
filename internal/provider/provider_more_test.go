@@ -7,8 +7,9 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 func TestAllProviders_Properties(t *testing.T) {
@@ -46,41 +47,41 @@ func TestAllProviders_Properties(t *testing.T) {
 	tmpBinDir := t.TempDir()
 
 	dummies := map[string]string{
-		"vfox":   `#!/bin/sh\nexit 0\n`,
-		"ubi":    `#!/bin/sh\nexit 0\n`,
-		"swift":  `#!/bin/sh\nif [ "$1" = "build" ]; then mkdir -p .build/release; touch .build/release/mockbin; chmod +x .build/release/mockbin; fi\nexit 0\n`,
-		"rustup": `#!/bin/sh\nexit 0\n`,
-		"cargo":  `#!/bin/sh\nexit 0\n`,
-		"rustc":  `#!/bin/sh\necho "rustc 1.70.0 (90c541806 2023-05-31)"\nexit 0\n`,
-		"ruby":   `#!/bin/sh\necho "ruby 3.2.2 (2023-03-30 revision e51014f4c1) [x86_64-linux]"\nexit 0\n`,
-		"gem":    `#!/bin/sh\nexit 0\n`,
-		"deno":   `#!/bin/sh\nexit 0\n`,
-		"dotnet": `#!/bin/sh\nexit 0\n`,
-		"npm":    `#!/bin/sh\nexit 0\n`,
-		"pip":    `#!/bin/sh\nexit 0\n`,
-		"python": `#!/bin/sh\necho "Python 3.10.12"\nexit 0\n`,
+		"vfox":    `#!/bin/sh\nexit 0\n`,
+		"ubi":     `#!/bin/sh\nexit 0\n`,
+		"swift":   `#!/bin/sh\nif [ "$1" = "build" ]; then mkdir -p .build/release; touch .build/release/mockbin; chmod +x .build/release/mockbin; fi\nexit 0\n`,
+		"rustup":  `#!/bin/sh\nexit 0\n`,
+		"cargo":   `#!/bin/sh\nexit 0\n`,
+		"rustc":   `#!/bin/sh\necho "rustc 1.70.0 (90c541806 2023-05-31)"\nexit 0\n`,
+		"ruby":    `#!/bin/sh\necho "ruby 3.2.2 (2023-03-30 revision e51014f4c1) [x86_64-linux]"\nexit 0\n`,
+		"gem":     `#!/bin/sh\nexit 0\n`,
+		"deno":    `#!/bin/sh\nexit 0\n`,
+		"dotnet":  `#!/bin/sh\nexit 0\n`,
+		"npm":     `#!/bin/sh\nexit 0\n`,
+		"pip":     `#!/bin/sh\nexit 0\n`,
+		"python":  `#!/bin/sh\necho "Python 3.10.12"\nexit 0\n`,
 		"python3": `#!/bin/sh\necho "Python 3.10.12"\nexit 0\n`,
-		"conda":  `#!/bin/sh\necho "conda 23.5.0"\nexit 0\n`,
-		"docker": `#!/bin/sh\nexit 0\n`,
-		"podman": `#!/bin/sh\nexit 0\n`,
-		"elixir": `#!/bin/sh\nexit 0\n`,
-		"go":     `#!/bin/sh\necho "go version go1.21.0 darwin/arm64"\nexit 0\n`,
-		"java":   `#!/bin/sh\nexit 0\n`,
-		"erl":    `#!/bin/sh\nexit 0\n`,
-		"asdf":   `#!/bin/sh\nexit 0\n`,
-		"bun":    `#!/bin/sh\nexit 0\n`,
+		"conda":   `#!/bin/sh\necho "conda 23.5.0"\nexit 0\n`,
+		"docker":  `#!/bin/sh\nexit 0\n`,
+		"podman":  `#!/bin/sh\nexit 0\n`,
+		"elixir":  `#!/bin/sh\nexit 0\n`,
+		"go":      `#!/bin/sh\necho "go version go1.21.0 darwin/arm64"\nexit 0\n`,
+		"java":    `#!/bin/sh\nexit 0\n`,
+		"erl":     `#!/bin/sh\nexit 0\n`,
+		"asdf":    `#!/bin/sh\nexit 0\n`,
+		"bun":     `#!/bin/sh\nexit 0\n`,
 		"flutter": `#!/bin/sh\nexit 0\n`,
-		"zig":    `#!/bin/sh\nexit 0\n`,
-		"git":    `#!/bin/sh\nexit 0\n`,
+		"zig":     `#!/bin/sh\nexit 0\n`,
+		"git":     `#!/bin/sh\nexit 0\n`,
 	}
 
 	for cmd, script := range dummies {
 		name := cmd
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			name += ".exe"
 		}
 		path := filepath.Join(tmpBinDir, name)
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			_ = os.WriteFile(path, []byte(""), 0755)
 		} else {
 			_ = os.WriteFile(path, []byte(script), 0755)
@@ -97,11 +98,11 @@ func TestAllProviders_Properties(t *testing.T) {
 
 		for cmd, script := range dummies {
 			name := cmd
-			if runtime.GOOS == "windows" {
+			if env.RuntimeGOOS == "windows" {
 				name += ".exe"
 			}
 			path := filepath.Join(binDir, name)
-			if runtime.GOOS == "windows" {
+			if env.RuntimeGOOS == "windows" {
 				_ = os.WriteFile(path, []byte(""), 0755)
 			} else {
 				_ = os.WriteFile(path, []byte(script), 0755)
@@ -110,7 +111,7 @@ func TestAllProviders_Properties(t *testing.T) {
 
 		cargoBin := filepath.Join(installPath, "cargo", "bin")
 		os.MkdirAll(cargoBin, 0755)
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			_ = os.WriteFile(filepath.Join(cargoBin, "dummy.exe"), []byte(""), 0755)
 		} else {
 			_ = os.WriteFile(filepath.Join(cargoBin, "dummy"), []byte("#!/bin/sh\nexit 0\n"), 0755)

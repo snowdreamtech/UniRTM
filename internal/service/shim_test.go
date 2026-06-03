@@ -6,8 +6,9 @@ package service
 import (
 	"context"
 	"path/filepath"
-	"runtime"
 	"testing"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 func TestGenerator_GenerateShim(t *testing.T) {
@@ -106,7 +107,7 @@ func TestShimPaths(t *testing.T) {
 	if len(paths) == 0 {
 		t.Error("expected at least one path")
 	}
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		if len(paths) != 2 {
 			t.Errorf("expected 2 paths on Windows, got %d", len(paths))
 		}

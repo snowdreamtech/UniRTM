@@ -7,8 +7,9 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 func TestGenericProvider_Name(t *testing.T) {
@@ -50,7 +51,7 @@ func TestGenericProvider_IsExecutable(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	exePath := filepath.Join(tmpDir, "myprog")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		exePath += ".exe"
 	}
 
@@ -60,7 +61,7 @@ func TestGenericProvider_IsExecutable(t *testing.T) {
 	}
 	f.Close()
 
-	if runtime.GOOS != "windows" {
+	if env.RuntimeGOOS != "windows" {
 		os.Chmod(exePath, 0755)
 	}
 
@@ -131,12 +132,12 @@ func TestGenericProvider_GenerateShims(t *testing.T) {
 	os.MkdirAll(binDir, 0755)
 
 	exePath := filepath.Join(binDir, "mytool")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		exePath += ".exe"
 	}
 	f, _ := os.Create(exePath)
 	f.Close()
-	if runtime.GOOS != "windows" {
+	if env.RuntimeGOOS != "windows" {
 		os.Chmod(exePath, 0755)
 	}
 
@@ -146,7 +147,7 @@ func TestGenericProvider_GenerateShims(t *testing.T) {
 	}
 
 	exeName := filepath.Join("bin", "mytool")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		exeName += ".exe"
 	}
 

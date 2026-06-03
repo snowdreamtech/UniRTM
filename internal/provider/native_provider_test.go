@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/stretchr/testify/assert"
 )
@@ -96,7 +96,7 @@ func TestNativeProvider_PostInstall(t *testing.T) {
 
 	// Create a mock executable in root of tmpDir
 	exeName := "mytool"
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		exeName = "mytool.exe"
 	}
 	exePath := filepath.Join(tmpDir, exeName)
@@ -133,7 +133,7 @@ func TestNativeProvider_IsExecutable(t *testing.T) {
 
 	// Executable
 	exeName := "test_exe"
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		exeName = "test_exe.exe"
 	}
 	exePath := filepath.Join(tmpDir, exeName)
@@ -154,7 +154,7 @@ func TestNativeProvider_DelegatedMethods(t *testing.T) {
 	err := os.MkdirAll(filepath.Join(tmpDir, "bin"), 0755)
 	assert.NoError(t, err)
 	exePath := filepath.Join(tmpDir, "bin", "dummy")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		exePath += ".exe"
 	}
 	err = os.WriteFile(exePath, []byte("echo hi"), 0755)

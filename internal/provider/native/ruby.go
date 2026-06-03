@@ -7,6 +7,8 @@ import (
 	"context"
 	"runtime"
 	"strings"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // RubyHandler handles Ruby distributions via ruby/ruby-builder.
@@ -57,7 +59,7 @@ func (h *RubyHandler) isMatch(filename string) bool {
 		return false
 	}
 
-	os := runtime.GOOS
+	os := env.RuntimeGOOS
 	arch := runtime.GOARCH
 
 	// Arch check: ruby-builder binaries are mostly x64 (amd64)

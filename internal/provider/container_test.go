@@ -7,9 +7,10 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 func TestContainerProvider_Name(t *testing.T) {
@@ -31,7 +32,7 @@ func TestContainerProvider_Install(t *testing.T) {
 
 	for _, bin := range []string{"podman", "docker", "nerdctl"} {
 		fakePath := filepath.Join(fakeDockerDir, bin)
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			fakePath += ".bat"
 			os.WriteFile(fakePath, []byte("@echo off\nexit 0"), 0755)
 		} else {
@@ -57,7 +58,7 @@ func TestContainerProvider_Install(t *testing.T) {
 	// Verify wrapper script was created
 	basename := "trivy"
 	wrapperName := basename
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		wrapperName += ".cmd"
 	}
 	wrapperPath := filepath.Join(installPath, "bin", wrapperName)
@@ -74,7 +75,7 @@ func TestContainerProvider_Install(t *testing.T) {
 	if !strings.Contains(contentStr, "IMAGE=") {
 		t.Errorf("Wrapper script missing IMAGE variable")
 	}
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		if !strings.Contains(contentStr, "ghcr.io/aquasec/trivy:0.48.0") {
 			t.Errorf("Wrapper script missing correct image tag")
 		}
@@ -96,7 +97,7 @@ func TestContainerProvider_Install_Digest(t *testing.T) {
 
 	for _, bin := range []string{"podman", "docker", "nerdctl"} {
 		fakePath := filepath.Join(fakeDockerDir, bin)
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			fakePath += ".bat"
 			os.WriteFile(fakePath, []byte("@echo off\nexit 0"), 0755)
 		} else {
@@ -119,7 +120,7 @@ func TestContainerProvider_Install_Digest(t *testing.T) {
 	}
 
 	wrapperName := "alpine"
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		wrapperName += ".cmd"
 	}
 	wrapperPath := filepath.Join(installPath, "bin", wrapperName)
@@ -171,7 +172,7 @@ func TestContainerProvider_Methods(t *testing.T) {
 	}
 
 	expectedExec := "trivy"
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		expectedExec = "trivy.cmd"
 	}
 	if execs[0] != expectedExec {

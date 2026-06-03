@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // StandardPlatforms is the canonical list of platforms that `unirtm lock --all-platforms`
@@ -40,7 +42,7 @@ var archNames = map[string]string{
 // CurrentPlatformKey returns the platform key for the running OS/arch,
 // e.g. "linux-amd64", "macos-arm64", "windows-amd64".
 func CurrentPlatformKey() string {
-	return PlatformKey(runtime.GOOS, runtime.GOARCH, false)
+	return PlatformKey(env.RuntimeGOOS, runtime.GOARCH, false)
 }
 
 // PlatformKey builds a canonical lockfile platform key from GOOS/GOARCH components.

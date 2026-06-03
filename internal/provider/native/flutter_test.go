@@ -8,9 +8,9 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"runtime"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/stretchr/testify/assert"
 )
@@ -43,6 +43,6 @@ func TestFlutterHandler_ResolveVersions(t *testing.T) {
 	assert.Len(t, versions[0].Assets, 1)
 
 	// Flutter asset OS depends on the platform running the test
-	osName := runtime.GOOS
+	osName := env.RuntimeGOOS
 	assert.Equal(t, osName, versions[0].Assets[0].OS)
 }

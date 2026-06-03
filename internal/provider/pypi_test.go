@@ -7,16 +7,16 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPypiProvider_Install_Success(t *testing.T) {
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		t.Skip("Skipping bash-based mock test on windows")
 	}
 	tmpDir := t.TempDir()
@@ -72,7 +72,7 @@ func TestPypiProvider_ListExecutables(t *testing.T) {
 
 	// Create some dummy files
 	dummy1 := "dummy1"
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		dummy1 += ".exe"
 	}
 	os.WriteFile(filepath.Join(binDir, dummy1), []byte(""), 0755)

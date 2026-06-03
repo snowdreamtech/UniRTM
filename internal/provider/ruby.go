@@ -9,8 +9,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // RubyProvider implements the Provider interface for Ruby.
@@ -37,7 +38,7 @@ func (r *RubyProvider) Name() string {
 // Install performs Ruby-specific installation with native-first fallback.
 func (r *RubyProvider) Install(ctx context.Context, tool string, installPath string, artifactPath string, version string) error {
 	// Check if we are on a platform likely to support native binaries
-	isNativeSupported := runtime.GOOS == "darwin" || strings.Contains(strings.ToLower(artifactPath), "ubuntu")
+	isNativeSupported := env.RuntimeGOOS == "darwin" || strings.Contains(strings.ToLower(artifactPath), "ubuntu")
 
 	if isNativeSupported {
 		// 1. Try Native installation first
@@ -95,7 +96,7 @@ func (r *RubyProvider) GenerateShims(tool string, installPath string, version st
 // DetectVersion detects Ruby version.
 func (r *RubyProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	rubyPath := filepath.Join(installPath, "bin", "ruby")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		rubyPath += ".exe"
 	}
 
@@ -181,7 +182,7 @@ func (r *RubyProvider) Uninstall(ctx context.Context, tool string, installPath s
 func (r *RubyProvider) generateRubyShim(tool string, name, exePath, installPath, version string) string {
 	gemHome := filepath.Join(installPath, "gem-global")
 
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		return fmt.Sprintf(`@echo off
 REM UniRTM shim for %s (version %s)
 set "GEM_HOME=%s"

@@ -97,7 +97,7 @@ func (m *defaultConfigManager) Load(ctx context.Context, path string) (*Config, 
 	// 1. Smart Type Casting for Environment Variables
 	// Convert common boolean strings to actual booleans to support logical checks in templates
 	templateCtx := pongo2.Context{
-		"os":   runtime.GOOS,
+		"os":   env.RuntimeGOOS,
 		"arch": runtime.GOARCH,
 	}
 

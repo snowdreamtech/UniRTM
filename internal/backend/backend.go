@@ -7,6 +7,8 @@ import (
 	"context"
 	"runtime"
 	"time"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // Platform represents the operating system and architecture information.
@@ -18,7 +20,7 @@ type Platform struct {
 // CurrentPlatform returns the platform information for the current system.
 func CurrentPlatform() Platform {
 	return Platform{
-		OS:   runtime.GOOS,
+		OS:   env.RuntimeGOOS,
 		Arch: runtime.GOARCH,
 	}
 }

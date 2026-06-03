@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 
 	"github.com/flosch/pongo2/v6"
@@ -259,7 +258,7 @@ func (c *Config) ResolveEnvironment() (map[string]string, []string, []string, er
 					if _, err := OsStat(absPath); err == nil {
 						// Determine bin directory
 						binDir := "bin"
-						if runtime.GOOS == "windows" {
+						if env.RuntimeGOOS == "windows" {
 							binDir = "Scripts"
 						}
 						venvBin := filepath.Join(absPath, binDir)

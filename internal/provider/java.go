@@ -9,8 +9,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // JavaProvider implements the Provider interface for Java.
@@ -58,7 +59,7 @@ func (j *JavaProvider) GenerateShims(tool string, installPath string, version st
 	executables := []string{"java", "javac", "jar", "javadoc"}
 	for _, exe := range executables {
 		exePath := filepath.Join(javaHome, "bin", exe)
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			exePath += ".exe"
 		}
 
@@ -73,7 +74,7 @@ func (j *JavaProvider) GenerateShims(tool string, installPath string, version st
 func (j *JavaProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	javaHome := j.getJavaHome(installPath)
 	javaPath := filepath.Join(javaHome, "bin", "java")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		javaPath += ".exe"
 	}
 
@@ -105,7 +106,7 @@ func (j *JavaProvider) ListExecutables(tool string, installPath string, version 
 	executables := []string{"java", "javac", "jar", "javadoc"}
 	var results []string
 	for _, exe := range executables {
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			exe += ".exe"
 		}
 		results = append(results, exe)
@@ -134,7 +135,7 @@ func (j *JavaProvider) Uninstall(ctx context.Context, tool string, installPath s
 
 // generateJavaShim generates a Java-specific shim.
 func (j *JavaProvider) generateJavaShim(name, exePath, javaHome, version string) string {
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		return fmt.Sprintf(`@echo off
 REM UniRTM shim for %s (version %s)
 set "JAVA_HOME=%s"

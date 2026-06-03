@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -59,7 +58,7 @@ func (g *GolangProvider) GenerateShims(tool string, installPath string, version 
 	executables := []string{"go", "gofmt"}
 	for _, exe := range executables {
 		exePath := filepath.Join(installPath, "bin", exe)
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			exePath += ".exe"
 		}
 
@@ -73,7 +72,7 @@ func (g *GolangProvider) GenerateShims(tool string, installPath string, version 
 // DetectVersion detects Go version.
 func (g *GolangProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	goPath := filepath.Join(installPath, "bin", "go")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		goPath += ".exe"
 	}
 
@@ -96,7 +95,7 @@ func (g *GolangProvider) DetectVersion(ctx context.Context, tool string, install
 // ListExecutables returns Go executables relative to installPath.
 func (g *GolangProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	executables := []string{filepath.Join("bin", "go"), filepath.Join("bin", "gofmt")}
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		for i := range executables {
 			executables[i] += ".exe"
 		}
@@ -144,7 +143,7 @@ func (g *GolangProvider) Uninstall(ctx context.Context, tool string, installPath
 func (g *GolangProvider) generateGoShim(tool, name, exePath, installPath, version string) string {
 	vars, _ := g.GetEnvVars(tool, installPath, version)
 
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		var sb strings.Builder
 		sb.WriteString("@echo off\n")
 		sb.WriteString(fmt.Sprintf("REM UniRTM shim for %s (version %s)\n", name, version))

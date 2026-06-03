@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/provider/native"
 )
 
@@ -111,7 +111,7 @@ func (p *NativeProvider) PostInstall(ctx context.Context, tool string, installPa
 
 // Helper to avoid duplicate logic from generic.go for now
 func isExecutable(info os.FileInfo) bool {
-	if runtime.GOOS != "windows" {
+	if env.RuntimeGOOS != "windows" {
 		return info.Mode()&0111 != 0
 	}
 	name := strings.ToLower(info.Name())

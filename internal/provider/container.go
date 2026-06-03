@@ -9,12 +9,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/pterm/pterm"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // ContainerProvider implements the Provider interface for container-backed tools.
@@ -48,7 +48,7 @@ func (p *ContainerProvider) Install(ctx context.Context, tool string, installPat
 	if activeEngine == "" {
 		// No container engine found. Abort and recommend.
 		recommendation := "Docker Desktop or Podman"
-		if runtime.GOOS == "linux" {
+		if env.RuntimeGOOS == "linux" {
 			recommendation = "podman or docker"
 		}
 		output.Errorf("No container engine found. Please install %s to use container tools.", recommendation)
@@ -88,7 +88,7 @@ func (p *ContainerProvider) Install(ctx context.Context, tool string, installPat
 
 	wrapperPath := filepath.Join(binDir, basename)
 
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		wrapperPath += ".cmd"
 		// Simple Windows batch wrapper
 		scriptContent := fmt.Sprintf(`@echo off
@@ -152,7 +152,7 @@ func (p *ContainerProvider) ListExecutables(tool string, installPath string, ver
 	parts := strings.Split(tool, "/")
 	basename := parts[len(parts)-1]
 
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		return []string{basename + ".cmd"}, nil
 	}
 	return []string{basename}, nil

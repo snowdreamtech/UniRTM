@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -122,7 +121,7 @@ func (p *GoPkgProvider) GenerateShims(tool string, installPath string, version s
 	for _, exe := range executables {
 		name := filepath.Base(exe)
 		// On Windows, remove extension for the shim name
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			if strings.HasSuffix(strings.ToLower(name), ".exe") {
 				name = name[:len(name)-4]
 			}

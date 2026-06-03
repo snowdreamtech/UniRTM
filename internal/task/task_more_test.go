@@ -8,9 +8,9 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,7 +30,7 @@ if [ "$1" = "--list-all" ]; then
 fi
 exit 0
 `
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		exeName = "task.cmd"
 		script = `@echo off
 if "%~1"=="--list-all" (
@@ -84,7 +84,7 @@ if [ "$1" = "--summary" ]; then
 fi
 exit 0
 `
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		exeName = "just.cmd"
 		script = `@echo off
 if "%~1"=="--summary" (

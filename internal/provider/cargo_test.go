@@ -7,9 +7,9 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,7 +26,7 @@ func TestCargoProvider_FindCargo(t *testing.T) {
 
 	cargoName := "cargo"
 	scriptContent := []byte("#!/bin/sh\necho cargo")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		cargoName = "cargo.bat"
 		scriptContent = []byte("@echo cargo")
 	}
@@ -54,7 +54,7 @@ func TestCargoProvider_Install(t *testing.T) {
 	os.MkdirAll(binDir, 0755)
 	cargoName := "cargo"
 	scriptContent := []byte("#!/bin/sh\necho installing...")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		cargoName = "cargo.bat"
 		scriptContent = []byte("@echo installing...")
 	}
@@ -115,7 +115,7 @@ func TestCargoProvider_ListExecutables(t *testing.T) {
 
 	dummy1Name := "dummy1"
 	dummy2Name := "dummy2"
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		dummy1Name = "dummy1.exe"
 		dummy2Name = "dummy2.exe"
 	}
@@ -124,7 +124,7 @@ func TestCargoProvider_ListExecutables(t *testing.T) {
 
 	exes, err := p.ListExecutables("test_pkg", tmpDir, "1.0.0")
 	require.NoError(t, err)
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		require.Len(t, exes, 2)
 		require.Contains(t, exes, filepath.Join(binDir, dummy1Name))
 		require.Contains(t, exes, filepath.Join(binDir, dummy2Name))

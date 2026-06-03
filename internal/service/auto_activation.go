@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/config"
@@ -412,7 +411,7 @@ func (m *AutoActivationManager) generatePosixDeactivation(sb *strings.Builder, s
 		// On Windows, this uses os.PathListSeparator (;).
 		// But for POSIX shells (bash/zsh) we must always use ':'.
 		posixPath := state.PreviousPath
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			posixPath = strings.ReplaceAll(posixPath, string(os.PathListSeparator), ":")
 		}
 		sb.WriteString(fmt.Sprintf("export PATH=\"%s\"\n", posixPath))
@@ -533,7 +532,7 @@ func (m *AutoActivationManager) generatePowerShellDeactivation(sb *strings.Build
 		sb.WriteString("\n")
 	} else {
 		shimsDir := m.activationManager.shimsDir
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			shimsDir = filepath.FromSlash(shimsDir)
 		}
 		sb.WriteString("# Clean up UniRTM paths from PATH\n")

@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/stretchr/testify/assert"
 )
@@ -53,7 +54,7 @@ func TestPythonHandler_ResolveVersions(t *testing.T) {
 	assert.Equal(t, "arm64", arch)
 
 	// Ensure the returned assets match current os/arch if they happen to match it
-	if runtime.GOOS == "linux" && runtime.GOARCH == "amd64" {
+	if env.RuntimeGOOS == "linux" && runtime.GOARCH == "amd64" {
 		assert.Len(t, versions[0].Assets, 1)
 	}
 }

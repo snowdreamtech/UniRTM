@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -215,7 +214,7 @@ func (im *InstallationManager) executeHook(ctx context.Context, cmdStr, tool, ve
 
 	// Create command
 	var shell, shellArg string
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		shell = "cmd"
 		shellArg = "/c"
 	} else {
@@ -1010,7 +1009,7 @@ func (im *InstallationManager) EnsureInstalledFromSpecs(ctx context.Context, too
 			// a cache that was built before PostInstall was implemented. Re-run
 			// PostInstall unconditionally for npm tools on Windows — it is idempotent
 			// (reads & rewrites .cmd files) and a no-op on non-Windows platforms.
-			if runtime.GOOS == "windows" && backendName == "npm" {
+			if env.RuntimeGOOS == "windows" && backendName == "npm" {
 				p := im.providerRegistry.GetWithBackend(toolName, backendName)
 				fsName := env.GetFSToolName(toolName, backendName)
 				installPath := filepath.Join(env.GetInstallsDir(), fsName, version)
@@ -1260,7 +1259,7 @@ func isExecutableFile(path string) bool {
 	}
 
 	// On Unix, verify the execute permission bit is set.
-	if runtime.GOOS != "windows" {
+	if env.RuntimeGOOS != "windows" {
 		return fi.Mode()&0111 != 0
 	}
 

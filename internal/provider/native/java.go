@@ -46,7 +46,7 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 	var allVersions []VersionInfo
 
 	// Map OS/Arch to Adoptium values
-	os := runtime.GOOS
+	os := env.RuntimeGOOS
 	if os == "darwin" {
 		os = "mac"
 	}
@@ -112,7 +112,7 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 						Filename:     bin.Package.Name,
 						URL:          bin.Package.Link,
 						SignatureURL: bin.SignatureLink,
-						OS:           runtime.GOOS,
+						OS:           env.RuntimeGOOS,
 						Arch:         runtime.GOARCH,
 						Metadata:     make(map[string]string),
 					},

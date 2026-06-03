@@ -8,10 +8,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"runtime"
 	"strings"
 	"time"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
@@ -35,7 +35,7 @@ type flutterReleases struct {
 
 func (h *FlutterHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
 	// Flutter requires platform-specific JSON URLs
-	platform := runtime.GOOS
+	platform := env.RuntimeGOOS
 	if platform == "darwin" {
 		platform = "macos"
 	}
@@ -91,7 +91,7 @@ func (h *FlutterHandler) ResolveVersions(ctx context.Context, baseURL string) ([
 				{
 					Filename: filepathBase(url),
 					URL:      url,
-					OS:       runtime.GOOS, // This JSON is already platform-specific
+					OS:       env.RuntimeGOOS,
 					Arch:     arch,
 				},
 			},

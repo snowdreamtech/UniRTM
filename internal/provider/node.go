@@ -9,8 +9,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // NodeProvider implements the Provider interface for Node.js.
@@ -55,7 +56,7 @@ func (n *NodeProvider) GenerateShims(tool string, installPath string, version st
 	executables := []string{"node", "npm", "npx"}
 	for _, exe := range executables {
 		var exePath string
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			if exe == "node" {
 				exePath = filepath.Join(installPath, "node.exe")
 			} else {
@@ -75,7 +76,7 @@ func (n *NodeProvider) GenerateShims(tool string, installPath string, version st
 // DetectVersion detects Node.js version.
 func (n *NodeProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	nodePath := filepath.Join(installPath, "bin", "node")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		nodePath += ".exe"
 	}
 
@@ -93,7 +94,7 @@ func (n *NodeProvider) DetectVersion(ctx context.Context, tool string, installPa
 // ListExecutables returns Node.js executables relative to installPath.
 func (n *NodeProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	executables := []string{filepath.Join("bin", "node"), filepath.Join("bin", "npm"), filepath.Join("bin", "npx")}
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		executables = []string{"node.exe", "npm.cmd", "npx.cmd"}
 	}
 	return executables, nil
@@ -101,7 +102,7 @@ func (n *NodeProvider) ListExecutables(tool string, installPath string, version 
 
 // GetBinPaths returns the absolute path to the bin directory and the npm-global bin directory.
 func (n *NodeProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		return []string{
 			installPath,
 			filepath.Join(installPath, "npm-global"),
@@ -134,7 +135,7 @@ func (n *NodeProvider) Uninstall(ctx context.Context, tool string, installPath s
 func (n *NodeProvider) generateNodeShim(tool string, name, exePath, installPath, version string) string {
 	npmGlobalDir := filepath.Join(installPath, "npm-global")
 
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		return fmt.Sprintf(`@echo off
 REM UniRTM shim for %s (version %s)
 set "NPM_CONFIG_PREFIX=%s"

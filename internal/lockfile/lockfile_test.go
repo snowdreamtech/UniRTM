@@ -6,9 +6,10 @@ package lockfile
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // ─── LockFile read/write round-trip ──────────────────────────────────────────
@@ -145,9 +146,9 @@ func TestCurrentPlatformKey(t *testing.T) {
 		t.Error("CurrentPlatformKey returned empty string")
 	}
 	// Must contain the current GOOS (mapped).
-	wantOS := osNames[runtime.GOOS]
+	wantOS := osNames[env.RuntimeGOOS]
 	if wantOS == "" {
-		wantOS = runtime.GOOS
+		wantOS = env.RuntimeGOOS
 	}
 	if !strings.HasPrefix(key, wantOS) {
 		t.Errorf("CurrentPlatformKey %q does not start with %q", key, wantOS)

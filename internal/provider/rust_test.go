@@ -6,10 +6,10 @@ package provider
 import (
 	"context"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,13 +28,13 @@ func TestRustProvider_GenerateShims(t *testing.T) {
 
 	expectedExecutables := []string{"rustc", "cargo", "rustdoc", "rustfmt", "rustup"}
 	for _, exe := range expectedExecutables {
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			exe += ".exe"
 		}
 		shim, ok := shims[exe]
 		assert.True(t, ok, "missing shim for %s", exe)
 
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			assert.Contains(t, shim, "set \"CARGO_HOME="+filepath.FromSlash("/fake/path/cargo")+"\"")
 			assert.Contains(t, shim, "set \"RUSTUP_HOME="+filepath.FromSlash("/fake/path/rustup")+"\"")
 		} else {
@@ -50,7 +50,7 @@ func TestRustProvider_ListExecutables(t *testing.T) {
 	execs, err := p.ListExecutables("rust", "/fake/path", "1.70.0")
 	assert.NoError(t, err)
 
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		assert.Contains(t, execs, "rustc.exe")
 		assert.Contains(t, execs, "cargo.exe")
 	} else {

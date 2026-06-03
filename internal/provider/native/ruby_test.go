@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,7 +24,7 @@ func TestRubyHandler_ResolveVersions(t *testing.T) {
 
 	pkgHttp.MockTransport = &mockRoundTripper{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
-			osName := runtime.GOOS
+			osName := env.RuntimeGOOS
 			if osName == "darwin" {
 				osName = "macos"
 			} else if osName == "linux" {
@@ -54,7 +55,7 @@ func TestRubyHandler_ResolveVersions(t *testing.T) {
 	assert.Len(t, versions[0].Assets, 1)
 
 	// test isMatch
-	osName2 := runtime.GOOS
+	osName2 := env.RuntimeGOOS
 	if osName2 == "darwin" {
 		osName2 = "macos"
 	} else if osName2 == "linux" {

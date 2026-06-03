@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -487,7 +486,7 @@ func (m *ActivationManager) generatePowerShellScript(config ActivationConfig) (*
 		// Add shims directory to PATH
 		sb.WriteString("# Add UniRTM shims to PATH\n")
 		shimsDir := config.ShimsDir
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			// Convert forward slashes to backslashes on Windows
 			shimsDir = filepath.FromSlash(shimsDir)
 		}
@@ -500,7 +499,7 @@ func (m *ActivationManager) generatePowerShellScript(config ActivationConfig) (*
 		var paths []string
 		for _, p := range config.InjectedPaths {
 			path := p
-			if runtime.GOOS == "windows" {
+			if env.RuntimeGOOS == "windows" {
 				path = filepath.FromSlash(p)
 			}
 			paths = append(paths, path)
@@ -537,7 +536,7 @@ func (m *ActivationManager) generatePowerShellScript(config ActivationConfig) (*
 		for _, s := range config.Sources {
 			// In PowerShell, use dot-sourcing
 			path := s
-			if runtime.GOOS == "windows" {
+			if env.RuntimeGOOS == "windows" {
 				path = filepath.FromSlash(s)
 			}
 			sb.WriteString(fmt.Sprintf(". \"%s\"\n", path))
@@ -550,7 +549,7 @@ func (m *ActivationManager) generatePowerShellScript(config ActivationConfig) (*
 	sb.WriteString(fmt.Sprintf("$env:UNIRTM_ACTIVATION_SCOPE = \"%s\"\n", config.Scope))
 	if config.ProjectDir != "" {
 		projectDir := config.ProjectDir
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			projectDir = filepath.FromSlash(projectDir)
 		}
 		sb.WriteString(fmt.Sprintf("$env:UNIRTM_PROJECT_DIR = \"%s\"\n", projectDir))
@@ -618,7 +617,7 @@ func DetectShell() (ShellType, error) {
 	}
 
 	// On Windows, default to PowerShell if SHELL is not set or not recognized
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		return ShellPowerShell, nil
 	}
 

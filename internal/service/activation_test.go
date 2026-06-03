@@ -6,10 +6,10 @@ package service
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -460,7 +460,7 @@ func TestDetectShell(t *testing.T) {
 	require.NoError(t, err)
 
 	// On Windows, should detect PowerShell
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		assert.Equal(t, ShellPowerShell, shell)
 	} else {
 		// On Unix-like systems, should detect a POSIX shell or default to bash

@@ -6,8 +6,9 @@ package backend
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 func TestResolveGitHubToken_EnvPriority(t *testing.T) {
@@ -162,7 +163,7 @@ func TestResolveGitHubTokenPublic(t *testing.T) {
 
 func TestRunCredentialCommand(t *testing.T) {
 	var expected string
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		expected = "mytoken github.com"
 	} else {
 		expected = "mytoken"
@@ -203,7 +204,7 @@ func TestResolveGitHubToken_CredentialCommand(t *testing.T) {
 	token := resolveGitHubToken("github.com")
 
 	var expected string
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		expected = "cred-token github.com"
 	} else {
 		expected = "cred-token"

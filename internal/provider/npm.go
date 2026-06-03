@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -79,7 +78,7 @@ func (p *NpmProvider) PostInstall(ctx context.Context, tool string, installPath 
 	//
 	// Fix: rewrite every .cmd in the install directory to use the absolute path to the
 	// UniRTM-managed node.exe, replacing the broken relative-path fallback.
-	if runtime.GOOS != "windows" {
+	if env.RuntimeGOOS != "windows" {
 		return nil
 	}
 	return p.fixWindowsCmdWrappers(installPath)
@@ -286,7 +285,7 @@ func (p *NpmProvider) GetBinPaths(tool string, installPath string, version strin
 
 	// Windows only: also expose the node.exe directory so that npm-generated
 	// .cmd wrappers can find the node runtime via PATH as a last resort.
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		if nodeBin := p.findNodeBinDir(); nodeBin != "" {
 			paths = append(paths, nodeBin)
 		}
@@ -332,7 +331,7 @@ func (p *NpmProvider) GetEnvVars(tool string, installPath string, version string
 	// Windows-only: set NPM_CONFIG_PREFIX so that npm resolves the correct
 	// global prefix when called within the context of this tool. Without this,
 	// npm would fall back to a system-wide or user-home prefix.
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		envVars["NPM_CONFIG_PREFIX"] = installPath
 	}
 
@@ -354,7 +353,7 @@ func (p *NpmProvider) findNpm() (string, error) {
 			if entry.IsDir() {
 				verDir := filepath.Join(nodeInstallsDir, entry.Name())
 				var candidates []string
-				if runtime.GOOS == "windows" {
+				if env.RuntimeGOOS == "windows" {
 					candidates = []string{
 						filepath.Join(verDir, "npm.cmd"),
 						filepath.Join(verDir, "bin", "npm.cmd"),

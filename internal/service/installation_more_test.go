@@ -5,9 +5,10 @@ package service
 
 import (
 	"context"
+	"testing"
+
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/provider"
-	"testing"
 )
 
 func TestInstallationManager_More(t *testing.T) {

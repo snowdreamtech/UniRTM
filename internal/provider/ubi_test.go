@@ -6,9 +6,9 @@ package provider
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,7 +34,7 @@ func TestUbiProvider_GenerateShims(t *testing.T) {
 	binDir := filepath.Join(tmpDir, "bin")
 	os.MkdirAll(binDir, 0755)
 	ubiName := "ubi"
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		ubiName += ".exe"
 	}
 	ubiPath := filepath.Join(binDir, ubiName)

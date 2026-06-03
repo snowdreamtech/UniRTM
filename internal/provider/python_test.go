@@ -5,8 +5,9 @@ package provider
 
 import (
 	"path/filepath"
-	"runtime"
 	"testing"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 func TestPythonProvider_Name(t *testing.T) {
@@ -34,7 +35,7 @@ func TestPythonProvider_GetBinPaths(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	expectedLen := 2
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		expectedLen = 3
 	}
 	if len(paths) != expectedLen {

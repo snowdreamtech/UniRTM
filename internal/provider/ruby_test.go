@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,7 +28,7 @@ func TestRubyProvider_GenerateShims(t *testing.T) {
 	os.MkdirAll(filepath.Join(installPath, "bin"), 0755)
 	os.MkdirAll(filepath.Join(installPath, "gem-global", "bin"), 0755)
 
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		os.WriteFile(filepath.Join(installPath, "bin", "ruby.exe"), []byte(""), 0755)
 		os.WriteFile(filepath.Join(installPath, "gem-global", "bin", "gem.exe"), []byte(""), 0755)
 		os.WriteFile(filepath.Join(installPath, "gem-global", "bin", "irb.exe"), []byte(""), 0755)
@@ -47,13 +47,13 @@ func TestRubyProvider_GenerateShims(t *testing.T) {
 	expectedExecutables := []string{"ruby", "gem", "irb", "bundle"}
 	for _, exe := range expectedExecutables {
 		// on windows it might append .exe depending on logic, let's just test exact base
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			exe += ".exe"
 		}
 		shim, ok := shims[exe]
 		assert.True(t, ok, "missing shim for %s", exe)
 
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			assert.Contains(t, shim, fmt.Sprintf("set \"GEM_HOME=%s\"", filepath.Join(installPath, "gem-global")))
 		} else {
 			assert.Contains(t, shim, fmt.Sprintf("export GEM_HOME=\"%s\"", filepath.Join(installPath, "gem-global")))
@@ -72,7 +72,7 @@ func TestRubyProvider_ListExecutables(t *testing.T) {
 	os.MkdirAll(filepath.Join(installPath, "bin"), 0755)
 	os.MkdirAll(filepath.Join(installPath, "gem-global", "bin"), 0755)
 
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		os.WriteFile(filepath.Join(installPath, "bin", "ruby.exe"), []byte(""), 0755)
 		os.WriteFile(filepath.Join(installPath, "gem-global", "bin", "gem.exe"), []byte(""), 0755)
 	} else {
@@ -83,7 +83,7 @@ func TestRubyProvider_ListExecutables(t *testing.T) {
 	execs, err := p.ListExecutables("ruby", installPath, "3.2.2")
 	assert.NoError(t, err)
 
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		assert.Contains(t, execs, "ruby.exe")
 		assert.Contains(t, execs, "gem.exe")
 	} else {

@@ -14,11 +14,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 
 	"github.com/klauspost/compress/zstd"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/ulikunitz/xz"
 )
 
@@ -386,7 +386,7 @@ func (g *GenericProvider) calculateExeScore(relPath string, toolName string) int
 		return -100 // Very low score for these
 	}
 
-	if runtime.GOOS != "windows" {
+	if env.RuntimeGOOS != "windows" {
 		if ext == "" {
 			score += 20 // Prefer extensionless binaries on Unix
 		} else if ext == ".sh" || ext == ".py" || ext == ".pl" || ext == ".rb" {
@@ -433,7 +433,7 @@ func (g *GenericProvider) findExecutables(root string) ([]string, error) {
 // isExecutable checks if a file is executable.
 func (g *GenericProvider) isExecutable(info os.FileInfo) bool {
 	// On Unix, check executable bit
-	if runtime.GOOS != "windows" {
+	if env.RuntimeGOOS != "windows" {
 		return info.Mode()&0111 != 0
 	}
 
@@ -478,7 +478,7 @@ func (g *GenericProvider) copyFile(src, dst string) error {
 
 // generateShimScript generates a shim script for an executable.
 func (g *GenericProvider) generateShimScript(exePath string, version string) string {
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		return g.generateWindowsShim(exePath, version)
 	}
 	return g.generateUnixShim(exePath, version)

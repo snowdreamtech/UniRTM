@@ -7,8 +7,9 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 func TestManager_tryLoad(t *testing.T) {
@@ -34,7 +35,7 @@ t1 = "1.0"
 	// Unreadable
 	os.Chmod(f.Name(), 0000)
 	_, err = cm.tryLoad(context.Background(), f.Name(), false, nil)
-	if runtime.GOOS != "windows" {
+	if env.RuntimeGOOS != "windows" {
 		if err == nil {
 			t.Errorf("expected error on unreadable")
 		}

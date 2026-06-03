@@ -7,8 +7,9 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 func TestCondaProvider_Interface(t *testing.T) {
@@ -24,7 +25,7 @@ func TestCondaProvider_FindConda(t *testing.T) {
 
 	condaName := "conda"
 	scriptContent := []byte("#!/bin/sh\necho conda")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		condaName = "conda.bat"
 		scriptContent = []byte("@echo conda")
 	}
@@ -52,7 +53,7 @@ func TestCondaProvider_Install(t *testing.T) {
 	os.MkdirAll(binDir, 0755)
 	condaName := "conda"
 	scriptContent := []byte("#!/bin/sh\necho installing...")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		condaName = "conda.bat"
 		scriptContent = []byte("@echo installing...")
 	}
@@ -94,7 +95,7 @@ func TestCondaProvider_ListExecutables(t *testing.T) {
 
 	dummy1Name := "dummy1"
 	dummy2Name := "dummy2"
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		dummy1Name = "dummy1.exe"
 		dummy2Name = "dummy2.exe"
 	}
@@ -105,7 +106,7 @@ func TestCondaProvider_ListExecutables(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		if len(exes) != 2 {
 			t.Errorf("expected 2 executables on windows, got %d", len(exes))
 		}

@@ -7,8 +7,9 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 func TestVfoxBackend_Name(t *testing.T) {
@@ -54,7 +55,7 @@ func TestVfoxBackend_ListVersions(t *testing.T) {
 	// Create a fake vfox executable
 	tmpDir := t.TempDir()
 	vfoxPath := filepath.Join(tmpDir, "vfox")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		vfoxPath += ".bat"
 		os.WriteFile(vfoxPath, []byte("@echo off\nif \"%1\"==\"list\" if \"%2\"==\"all\" (\n  echo Available versions\n  echo 20.0.1\n  echo 21.0.0\n  echo 21.0.1\n)\n"), 0755)
 	} else {
@@ -87,7 +88,7 @@ func TestVfoxBackend_ResolveVersion(t *testing.T) {
 	// Create a fake vfox executable for testing latest
 	tmpDir := t.TempDir()
 	vfoxPath := filepath.Join(tmpDir, "vfox")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		vfoxPath += ".bat"
 		os.WriteFile(vfoxPath, []byte("@echo off\nif \"%1\"==\"list\" if \"%2\"==\"all\" (\n  echo Available versions\n  echo 20.0.1\n  echo 21.0.0\n  echo 22.0.1\n)\n"), 0755)
 	} else {

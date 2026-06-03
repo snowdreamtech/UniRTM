@@ -9,8 +9,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // PythonProvider implements the Provider interface for Python.
@@ -46,7 +47,7 @@ func (p *PythonProvider) Install(ctx context.Context, tool string, installPath s
 // and executing a symlink on Windows causes DLL resolution failures (0xc0000135)
 // since vcruntime140.dll is next to the real binary, not the symlink.
 func (p *PythonProvider) getRealPythonPath(installPath string) string {
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		binPy := filepath.Join(installPath, "bin", "python.exe")
 		if realPy, err := filepath.EvalSymlinks(binPy); err == nil {
 			return realPy
@@ -74,7 +75,7 @@ func (p *PythonProvider) getRealPythonPath(installPath string) string {
 func (p *PythonProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	pythonPath := p.getRealPythonPath(installPath)
 
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		// python-build-standalone on Windows ships with a python*._pth file
 		// which puts Python in isolated mode, breaking venv and pip.
 		// We must delete it to restore standard behavior.
@@ -124,7 +125,7 @@ func (p *PythonProvider) GenerateShims(tool string, installPath string, version 
 		// Point the shim directly to the venv executables.
 		// This natively solves the Windows symlink DLL resolution issue
 		// and ensures the tool inherently uses its isolated environment.
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			exePath = filepath.Join(installPath, "venv", "Scripts", exe+".exe")
 		} else {
 			exePath = filepath.Join(installPath, "venv", "bin", exe)
@@ -156,7 +157,7 @@ func (p *PythonProvider) DetectVersion(ctx context.Context, tool string, install
 func (p *PythonProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	// Expose the venv executables so they can be discovered by generic logic if needed
 	var executables []string
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		executables = []string{
 			filepath.Join("venv", "Scripts", "python.exe"),
 			filepath.Join("venv", "Scripts", "python3.exe"),
@@ -178,7 +179,7 @@ func (p *PythonProvider) ListExecutables(tool string, installPath string, versio
 func (p *PythonProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	binDir := filepath.Join(installPath, "bin")
 	venvBin := filepath.Join(installPath, "venv", "bin")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		venvBin = filepath.Join(installPath, "venv", "Scripts")
 		return []string{binDir, venvBin, installPath}, nil
 	}
@@ -206,7 +207,7 @@ func (p *PythonProvider) Uninstall(ctx context.Context, tool string, installPath
 func (p *PythonProvider) generatePythonShim(name, exePath, installPath, version string) string {
 	venvDir := filepath.Join(installPath, "venv")
 
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		return fmt.Sprintf(`@echo off
 REM UniRTM shim for %s (version %s)
 set "VIRTUAL_ENV=%s"

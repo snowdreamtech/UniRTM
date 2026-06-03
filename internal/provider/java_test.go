@@ -8,10 +8,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,7 +33,7 @@ func TestJavaProvider_GenerateShims(t *testing.T) {
 		shim, ok := shims[exe]
 		assert.True(t, ok, "missing shim for %s", exe)
 
-		if runtime.GOOS == "windows" {
+		if env.RuntimeGOOS == "windows" {
 			assert.Contains(t, shim, "set \"JAVA_HOME=/fake/path\"")
 			assert.Contains(t, shim, filepath.Join("/fake/path", "bin", exe+".exe"))
 		} else {
@@ -48,7 +48,7 @@ func TestJavaProvider_ListExecutables(t *testing.T) {
 	execs, err := p.ListExecutables("java", "/fake/path", "17.0.0")
 	assert.NoError(t, err)
 
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		assert.Contains(t, execs, "java.exe")
 		assert.Contains(t, execs, "javac.exe")
 	} else {
@@ -92,7 +92,7 @@ func TestJavaProvider_DetectVersionSuccess(t *testing.T) {
 	assert.NoError(t, err)
 
 	javaPath := filepath.Join(binDir, "java")
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		javaPath += ".exe"
 		mockJavaSrc := filepath.Join(tmpDir, "mock_java.go")
 		err = os.WriteFile(mockJavaSrc, []byte(`package main; import "fmt"; import "os"; func main() { fmt.Fprintln(os.Stderr, "openjdk version \"17.0.8\" 2023-07-18 LTS") }`), 0644)

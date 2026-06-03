@@ -7,9 +7,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 type mockFormatter struct{}
@@ -63,7 +64,7 @@ func TestShellConfigManager_GetConfigPath_Unsupported(t *testing.T) {
 func TestShellConfigManager_InjectAndRemove(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		t.Setenv("USERPROFILE", tmpDir)
 	}
 
@@ -131,7 +132,7 @@ func TestShellConfigManager_InjectAndRemove(t *testing.T) {
 func TestShellConfigManager_DryRun(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		t.Setenv("USERPROFILE", tmpDir)
 	}
 

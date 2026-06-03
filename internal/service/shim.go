@@ -16,9 +16,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"syscall"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // Generator creates shim scripts for installed tools.
@@ -60,7 +61,7 @@ func (g *Generator) GenerateShim(ctx context.Context, tool string, executables .
 			continue
 		}
 
-		switch runtime.GOOS {
+		switch env.RuntimeGOOS {
 		case "windows":
 			if err := g.generateWindowsShim(tool, shimName); err != nil {
 				return err
@@ -132,7 +133,7 @@ func (g *Generator) ListShims() ([]string, error) {
 func (g *Generator) shimPaths(tool string) []string {
 	// Flatten tool name for lookup to match flat shims directory
 	flatName := filepath.Base(tool)
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		return []string{
 			filepath.Join(g.shimsDir, flatName+".cmd"),
 			filepath.Join(g.shimsDir, flatName+".ps1"),
@@ -226,7 +227,7 @@ func toolVersionEnvVar(tool string) string {
 
 // ExecuteBinary executes a binary with arguments, replacing the current process on Unix.
 func ExecuteBinary(binPath string, args []string) error {
-	if runtime.GOOS == "windows" {
+	if env.RuntimeGOOS == "windows" {
 		// On Windows, we must use exec.Command because syscall.Exec is not available
 		cmd := exec.Command(binPath, args[1:]...)
 		cmd.Stdin = os.Stdin
