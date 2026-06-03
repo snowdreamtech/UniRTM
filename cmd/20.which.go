@@ -43,7 +43,7 @@ func init() {
 	}
 	whichCmd.Flags().BoolVarP(&whichAll, "all", "a", false, "Show all matches")
 	whichCmd.Flags().StringVarP(&whichTool, "tool", "t", "", "Filter by specific tool")
-	whichCmd.Flags().BoolVarP(&whichVersion, "version", "V", false, "Show version instead of path")
+	whichCmd.Flags().BoolVarP(&whichVersion, "version", "v", false, "Show version instead of path")
 	whichCmd.Flags().BoolVarP(&whichProvider, "provider", "p", false, "Show provider instead of path")
 	whichCmd.Flags().BoolVar(&whichProvider, "plugin", false, "Alias for --provider")
 }
