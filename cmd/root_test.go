@@ -58,20 +58,24 @@ func TestRootCommand(t *testing.T) {
 // TestGlobalFlags tests that global flags are properly registered
 func TestGlobalFlags(t *testing.T) {
 	tests := []struct {
-		name     string
-		flagName string
+		name      string
+		flagName  string
+		shorthand string
 	}{
 		{
-			name:     "config flag",
-			flagName: "config",
+			name:      "config flag",
+			flagName:  "config",
+			shorthand: "c",
 		},
 		{
-			name:     "verbose flag",
-			flagName: "verbose",
+			name:      "verbose flag",
+			flagName:  "verbose",
+			shorthand: "V", // Ensures verbose uses uppercase V
 		},
 		{
-			name:     "quiet flag",
-			flagName: "quiet",
+			name:      "quiet flag",
+			flagName:  "quiet",
+			shorthand: "q",
 		},
 	}
 
@@ -79,6 +83,30 @@ func TestGlobalFlags(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			flag := rootCmd.PersistentFlags().Lookup(tt.flagName)
 			require.NotNil(t, flag, "flag %s should be registered", tt.flagName)
+			assert.Equal(t, tt.shorthand, flag.Shorthand, "flag %s should have shorthand %s", tt.flagName, tt.shorthand)
+		})
+	}
+}
+
+// TestLocalFlags tests that root command specific (non-persistent) flags are properly registered
+func TestLocalFlags(t *testing.T) {
+	tests := []struct {
+		name      string
+		flagName  string
+		shorthand string
+	}{
+		{
+			name:      "version flag",
+			flagName:  "version",
+			shorthand: "v", // Ensures version uses lowercase v
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			flag := rootCmd.Flags().Lookup(tt.flagName)
+			require.NotNil(t, flag, "flag %s should be registered", tt.flagName)
+			assert.Equal(t, tt.shorthand, flag.Shorthand, "flag %s should have shorthand %s", tt.flagName, tt.shorthand)
 		})
 	}
 }
