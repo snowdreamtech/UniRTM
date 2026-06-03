@@ -38,7 +38,7 @@ log_msg() {
   shift 2
 
   if [ -n "$LOG_FILE" ]; then
-    printf '[%s] %s\n' "$level" "$*" >> "$LOG_FILE"
+    printf '[%s] %s\n' "$level" "$*" >>"$LOG_FILE"
   fi
 
   if [ "$QUIET" -eq 1 ] && { [ "$level" = "INFO" ] || [ "$level" = "WARN" ]; }; then
