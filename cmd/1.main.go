@@ -178,7 +178,7 @@ func checkTaskShadowing(cmd *cobra.Command) {
 // Each flag is bound to a specific variable that will be set when the flag is used.
 func buildFlags() {
 	// Override default help flag to not use -h globally, freeing it up for subcommands.
-	rootCmd.PersistentFlags().Bool("help", false, "help for this command")
+	rootCmd.PersistentFlags().BoolP("help", "", false, "help for this command")
 
 	// Config flag: Specifies the path to the configuration file
 	// Default: .unirtm.toml or unirtm.toml in the current directory

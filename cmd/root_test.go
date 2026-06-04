@@ -55,8 +55,8 @@ func TestRootCommand(t *testing.T) {
 	}
 }
 
-// TestGlobalFlags tests that global flags are properly registered
-func TestGlobalFlags(t *testing.T) {
+// TestPersistentFlags tests that global flags are properly registered
+func TestPersistentFlags(t *testing.T) {
 	tests := []struct {
 		name      string
 		flagName  string
@@ -76,6 +76,11 @@ func TestGlobalFlags(t *testing.T) {
 			name:      "quiet flag",
 			flagName:  "quiet",
 			shorthand: "q",
+		},
+		{
+			name:      "help flag",
+			flagName:  "help",
+			shorthand: "", // Ensures help has no shorthand
 		},
 	}
 

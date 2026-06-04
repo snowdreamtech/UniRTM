@@ -14,6 +14,18 @@ func TestLicenseStructure(t *testing.T) {
 	assert.Contains(t, licenseCmd.Use, "license", "licenseCmd command use should contain 'license'")
 	assert.NotEmpty(t, licenseCmd.Short, "licenseCmd command short description should not be empty")
 	assert.True(t, licenseCmd.HasSubCommands(), "licenseCmd should have subcommands")
+
+	// Verify add command flags
+	flag := licenseAddCmd.Flags().Lookup("holder")
+	if flag != nil {
+		assert.Equal(t, "h", flag.Shorthand, "flag holder should have shorthand h on add cmd")
+	}
+
+	// Verify check command flags
+	flag2 := licenseCheckCmd.Flags().Lookup("holder")
+	if flag2 != nil {
+		assert.Equal(t, "h", flag2.Shorthand, "flag holder should have shorthand h on check cmd")
+	}
 }
 
 func TestRunLicenseAdd(t *testing.T) {
