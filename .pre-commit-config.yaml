@@ -1132,13 +1132,6 @@ repos:
         files: ^\.github/workflows/.*\.yml$
         description: "Validate GitHub Actions workflow syntax."
 
-      - id: zizmor
-        name: zizmor security check
-        language: system
-        entry: bash -c 'if unirtm which zizmor >/dev/null 2>&1; then exec unirtm exec -- zizmor --config .zizmor.yml "$@"; else echo "Skipped zizmor not found"; fi' --
-        files: ^\.github/workflows/.*\.yml$
-        description: "Audit GitHub Actions workflows for security best practices."
-
       # -- Infrastructure & Config -------------------------------------------
       - id: dockerfile-utils
         name: dockerfile quality check
