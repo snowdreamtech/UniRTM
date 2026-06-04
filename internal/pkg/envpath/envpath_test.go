@@ -75,3 +75,17 @@ func TestDeduplicateOSPaths(t *testing.T) {
 		assert.Equal(t, "/dir1"+sep+"/DIR1"+sep+"/dir2", DeduplicateOSPaths(input))
 	}
 }
+
+func TestWindowsMode(t *testing.T) {
+	orig := isWindowsMode
+	isWindowsMode = true
+	defer func() { isWindowsMode = orig }()
+
+	// Test FormatDirForPosix
+	assert.Equal(t, "C:/foo/bar", FormatDirForPosix("C:\\foo\\bar"))
+
+	// Test DeduplicateOSPaths
+	sep := string(os.PathListSeparator)
+	input := "C:\\dir1" + sep + "c:\\DIR1" + sep + "D:\\dir2"
+	assert.Equal(t, "C:\\dir1"+sep+"D:\\dir2", DeduplicateOSPaths(input))
+}

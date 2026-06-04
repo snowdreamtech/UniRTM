@@ -5,10 +5,11 @@ package envpath
 
 import (
 	"os"
-	"path/filepath"
 	"runtime"
 	"strings"
 )
+
+var isWindowsMode = runtime.GOOS == "windows"
 
 // JoinForOS joins multiple paths into a single string using the native operating system's
 // list separator (e.g. ';' on Windows, ':' on Posix). This must be used when injecting
@@ -31,8 +32,8 @@ func JoinForPosix(paths []string) string {
 // FormatDirForPosix ensures that a single directory path is safe for injection into
 // POSIX shell scripts (Bash, Zsh). On Windows, it converts backslashes to forward slashes.
 func FormatDirForPosix(dir string) string {
-	if runtime.GOOS == "windows" {
-		return filepath.ToSlash(dir)
+	if isWindowsMode {
+		return strings.ReplaceAll(dir, "\\", "/")
 	}
 	return dir
 }
@@ -57,7 +58,7 @@ func DeduplicateOSPaths(pathStr string) string {
 			continue
 		}
 		key := p
-		if runtime.GOOS == "windows" {
+		if isWindowsMode {
 			key = strings.ToLower(p)
 		}
 		if !seen[key] {
