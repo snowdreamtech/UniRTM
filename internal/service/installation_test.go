@@ -387,3 +387,74 @@ func TestInstall_Uninstall(t *testing.T) {
 	_, err = installRepo.FindByToolAndVersion(ctx, "tool", "1.0.0")
 	assert.Error(t, err)
 }
+
+func TestInstallationManager_executeHook(t *testing.T) {
+	ctx := context.WithValue(context.Background(), ContextKeyQuietProgress, true)
+	im := NewInstallationManager(nil, nil, nil, nil, nil, nil)
+
+	// 1. Empty command
+	err := im.executeHook(ctx, "", "tool", "1.0.0")
+	assert.NoError(t, err)
+
+	// 2. Valid command
+	err = im.executeHook(ctx, "echo test", "tool", "1.0.0")
+	assert.NoError(t, err)
+
+	// 3. Invalid command
+	err = im.executeHook(ctx, "invalid-command-that-does-not-exist", "tool", "1.0.0")
+	assert.Error(t, err)
+}
+
+func TestInstallationManager_removeEmptyDirs(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create a nested structure: root/a/b/c
+	nestedDir := filepath.Join(tempDir, "a", "b", "c")
+	err := os.MkdirAll(nestedDir, 0755)
+	require.NoError(t, err)
+
+	// Put a file in "a" so "a" won't be empty
+	fileInA := filepath.Join(tempDir, "a", "file.txt")
+	os.WriteFile(fileInA, []byte("test"), 0644)
+
+	im := NewInstallationManager(nil, nil, nil, nil, nil, nil)
+
+	// remove from "c" up to tempDir
+	// "c" and "b" should be removed, "a" should remain because it has a file
+	im.removeEmptyDirs(filepath.Join(nestedDir, "dummy"), tempDir)
+
+	_, err = os.Stat(nestedDir)
+	assert.True(t, os.IsNotExist(err), "c should be removed")
+
+	_, err = os.Stat(filepath.Join(tempDir, "a", "b"))
+	assert.True(t, os.IsNotExist(err), "b should be removed")
+
+	_, err = os.Stat(filepath.Join(tempDir, "a"))
+	assert.NoError(t, err, "a should NOT be removed because it is not empty")
+}
+
+func TestInstallationManager_SetAliases(t *testing.T) {
+	im := NewInstallationManager(nil, nil, nil, nil, nil, &config.Settings{})
+	im.SetAliases(map[string]map[string]string{})
+}
+
+func TestInstallationManager_SetToolConfigs(t *testing.T) {
+	im := NewInstallationManager(nil, nil, nil, nil, nil, &config.Settings{})
+	im.SetToolConfigs(map[string]config.ToolConfig{})
+}
+
+func TestInstallationManager_EnsureInstalled(t *testing.T) {
+	im := NewInstallationManager(nil, nil, nil, nil, nil, &config.Settings{})
+	err := im.EnsureInstalled(context.Background(), nil)
+	if err != nil {
+		t.Errorf("expected nil error for empty config, got %v", err)
+	}
+}
+
+func TestInstallationManager_SortToolsFromSpecs(t *testing.T) {
+	im := NewInstallationManager(nil, nil, nil, nil, nil, &config.Settings{})
+	res := im.SortToolsFromSpecs(nil)
+	if len(res) != 0 {
+		t.Errorf("expected empty result, got %v", res)
+	}
+}

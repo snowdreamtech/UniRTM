@@ -616,3 +616,34 @@ func TestGenerateSwitch_CombinesScripts(t *testing.T) {
 	assert.True(t, foundActivation, "Script should contain activation comment")
 	assert.Equal(t, project2Dir, change.NewState.ProjectDir)
 }
+
+func TestGenerateActivation_MalformedConfig(t *testing.T) {
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
+	autoMgr := NewAutoActivationManager(activationMgr)
+
+	tmpDir := t.TempDir()
+	projectDir := filepath.Join(tmpDir, "project")
+	os.MkdirAll(projectDir, 0755)
+	os.WriteFile(filepath.Join(projectDir, "unirtm.toml"), []byte("invalid \n toml"), 0644)
+
+	state := &EnvironmentState{PreviousPath: ""}
+	_, err := autoMgr.generateActivation(context.Background(), ShellBash, projectDir, state)
+	assert.NoError(t, err)
+}
+
+func TestGenerateFishDeactivation_Branches(t *testing.T) {
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
+	autoMgr := NewAutoActivationManager(activationMgr)
+
+	fishState := &EnvironmentState{
+		ToolVersions: map[string]string{"go": "1.20"},
+		EnvVars:      map[string]string{"FOO": "bar"},
+		PreviousPath: "",
+	}
+	var sb strings.Builder
+	autoMgr.generateFishDeactivation(&sb, fishState)
+	script := sb.String()
+	assert.Contains(t, script, "set -e UNIRTM_GO_VERSION")
+	assert.Contains(t, script, "set -e FOO")
+	assert.Contains(t, script, "set -gx PATH $new_path")
+}

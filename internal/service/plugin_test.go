@@ -69,3 +69,13 @@ func TestPluginManager_LoadPlugin_Fails(t *testing.T) {
 		t.Fatal("expected error loading invalid plugin binary, got nil")
 	}
 }
+
+func TestPluginManager_LoadPlugin_EmptyPath(t *testing.T) {
+	pm := NewPluginManager("/tmp/plugins", nil, nil)
+	ctx := context.Background()
+
+	err := pm.loadPlugin(ctx, "")
+	if err == nil {
+		t.Errorf("expected error when loading empty path plugin")
+	}
+}

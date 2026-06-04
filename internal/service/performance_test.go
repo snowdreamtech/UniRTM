@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/repository"
+	"github.com/stretchr/testify/assert"
 )
 
 // performanceMockAuditRepo for testing PerformanceMonitor
@@ -168,4 +169,28 @@ func TestPerformanceMonitor_percentile(t *testing.T) {
 	if p95 != 50*time.Millisecond {
 		t.Errorf("expected p95=50ms, got %v", p95)
 	}
+}
+
+func TestPerformanceMonitor_percentile_Empty(t *testing.T) {
+	if p := percentile(nil, 50); p != 0 {
+		t.Errorf("expected 0, got %v", p)
+	}
+}
+
+func TestPerformanceMonitor_FormatReport_Empty(t *testing.T) {
+	pm := NewPerformanceMonitor(nil)
+	report := &PerformanceReport{Phase: PhaseDownload, Count: 0}
+	str := pm.FormatReport(report)
+	if str == "" {
+		t.Errorf("expected non-empty format string")
+	}
+}
+
+func TestPerformanceMonitor_percentile_idx(t *testing.T) {
+	sorted := []time.Duration{100, 200, 300}
+	p0 := percentile(sorted, 0)
+	assert.Equal(t, time.Duration(100), p0)
+
+	pMax := percentile(sorted, 200)
+	assert.Equal(t, time.Duration(300), pMax)
 }

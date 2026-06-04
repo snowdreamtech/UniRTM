@@ -506,3 +506,30 @@ func TestAuditService_LogOperation_InvalidMetadata(t *testing.T) {
 	err := service.LogOperation(context.Background(), entry)
 	require.NoError(t, err)
 }
+
+func TestAuditService_ErrorPaths(t *testing.T) {
+	repo := &MockAuditRepository{}
+	service := NewAuditService(repo)
+	expectedErr := errors.New("mock error")
+
+	err := service.LogCachePurge(context.Background(), 0, 0, expectedErr)
+	assert.NoError(t, err)
+
+	err = service.LogConfigLoad(context.Background(), "", 0, expectedErr)
+	assert.NoError(t, err)
+
+	err = service.LogConfigUpdate(context.Background(), "", 0, expectedErr)
+	assert.NoError(t, err)
+
+	err = service.LogIndexUpdate(context.Background(), "", 0, 0, expectedErr)
+	assert.NoError(t, err)
+
+	err = service.LogVersionResolve(context.Background(), "", "", "", 0, expectedErr)
+	assert.NoError(t, err)
+
+	// Verify that the status of each is "failure"
+	for _, entry := range repo.entries {
+		assert.Equal(t, string(StatusFailure), entry.Status)
+		assert.Equal(t, expectedErr.Error(), entry.Error)
+	}
+}

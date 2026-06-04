@@ -4,6 +4,7 @@
 package service
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -152,5 +153,30 @@ func TestLockService_backendForSpec(t *testing.T) {
 	_, err = ls.backendForSpec("tool", "non-existent")
 	if err == nil {
 		t.Error("expected error for non-existent backend")
+	}
+}
+
+func TestLockService_init(t *testing.T) {
+	ls := &LockService{}
+	ls.init()
+}
+
+func TestLockService_Generate_Empty(t *testing.T) {
+	opts := LockServiceOptions{}
+	ls, _ := NewLockService(opts)
+
+	// MUST set registry, otherwise ls.backendRegistry.List() panics in Generate
+	registry := backend.NewRegistry()
+	ls.SetBackendRegistry(registry)
+
+	ctx := context.Background()
+	tools := map[string]ToolSpec{
+		"go": {Name: "go", Version: "1.20", BackendName: "mock"},
+	}
+
+	// Backend not found in registry, should skip smoothly
+	err := ls.Generate(ctx, tools, GenerateOptions{})
+	if err != nil {
+		t.Fatalf("expected no error for skipping unconfigured backend, got %v", err)
 	}
 }
