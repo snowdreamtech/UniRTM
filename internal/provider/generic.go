@@ -757,6 +757,8 @@ func (g *GenericProvider) flattenDirectory(ctx context.Context, dir string) erro
 			if !quietProgress {
 				fmt.Printf("⚠️  failed to remove empty directory %s: %v\n", subDir, err)
 			}
+			// Avoid infinite recursion if subDir cannot be removed
+			return nil
 		}
 
 		// Recursive call to handle double-nested directories (e.g. tool-v1/tool-v1/bin)
