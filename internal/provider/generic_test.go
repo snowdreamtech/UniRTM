@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -43,6 +44,31 @@ func TestGenericProvider_CalculateExeScore(t *testing.T) {
 			}
 		})
 	}
+
+	// Test Windows behavior
+	oldGOOS := env.RuntimeGOOS
+	env.RuntimeGOOS = "windows"
+
+	winTests := []struct {
+		name     string
+		toolName string
+		minScore int
+	}{
+		{"tool.exe", "tool", 120}, // 100 + 30 + 20 = 150 (since it checks prefix? Wait, exact match is 100. Then location 30. Then ext 20. So 150. minScore 120 is fine)
+		{"tool.bat", "tool", 70},  // prefix 50 + location 30 - ext 10 = 70
+		{"tool.cmd", "tool", 70},  // prefix 50 + location 30 - ext 10 = 70
+	}
+
+	for _, tc := range winTests {
+		t.Run(tc.name+"_win", func(t *testing.T) {
+			score := p.calculateExeScore(tc.name, tc.toolName)
+			if score < tc.minScore {
+				t.Errorf("expected score >= %d for %s on Windows, got %d", tc.minScore, tc.name, score)
+			}
+		})
+	}
+
+	env.RuntimeGOOS = oldGOOS
 }
 
 func TestGenericProvider_IsExecutable(t *testing.T) {
@@ -73,6 +99,29 @@ func TestGenericProvider_IsExecutable(t *testing.T) {
 	if !p.isExecutable(info) {
 		t.Errorf("expected %s to be recognized as executable", exePath)
 	}
+
+	// Test Windows behavior for isExecutable
+	oldGOOS := env.RuntimeGOOS
+	env.RuntimeGOOS = "windows"
+
+	winExePath := filepath.Join(tmpDir, "prog.exe")
+	f3, _ := os.Create(winExePath)
+	f3.Close()
+	info3, _ := os.Stat(winExePath)
+	if !p.isExecutable(info3) {
+		t.Errorf("expected %s to be recognized as executable on Windows", winExePath)
+	}
+
+	winBatPath := filepath.Join(tmpDir, "prog.bat")
+	f4, _ := os.Create(winBatPath)
+	f4.Close()
+	info4, _ := os.Stat(winBatPath)
+	if !p.isExecutable(info4) {
+		t.Errorf("expected %s to be recognized as executable on Windows", winBatPath)
+	}
+
+	// Restore RuntimeGOOS
+	env.RuntimeGOOS = oldGOOS
 
 	txtPath := filepath.Join(tmpDir, "test.txt")
 	f2, _ := os.Create(txtPath)
@@ -188,6 +237,23 @@ func TestGenericProvider_CopyFile(t *testing.T) {
 	}
 }
 
+func TestGenericProvider_GenerateWindowsShim(t *testing.T) {
+	p := NewGenericProvider()
+
+	shim := p.generateWindowsShim("bin.exe", "1.0.0")
+	expectedLines := []string{
+		"@echo off",
+		"REM UniRTM shim for bin.exe (version 1.0.0)",
+		"\"bin.exe\" %*",
+		"",
+	}
+	expected := strings.Join(expectedLines, "\n")
+
+	if shim != expected {
+		t.Errorf("expected %q, got %q", expected, shim)
+	}
+}
+
 func TestGenericProvider_ValidateInstallDir(t *testing.T) {
 	p := NewGenericProvider()
 	tmpDir := t.TempDir()
@@ -248,6 +314,30 @@ func TestGenericProvider_FlattenDirectory(t *testing.T) {
 	if _, err := os.Stat(subDir); !os.IsNotExist(err) {
 		t.Error("subdir was not removed")
 	}
+
+	// Test double-nested case (flattenDirectory recursion)
+	ctx := context.Background()
+	doubleNestedPath := filepath.Join(tmpDir, "double_nested")
+	os.MkdirAll(filepath.Join(doubleNestedPath, "tool-v1", "tool-v2"), 0755)
+	os.WriteFile(filepath.Join(doubleNestedPath, "tool-v1", "tool-v2", "file.txt"), []byte("data"), 0644)
+	err = p.flattenDirectory(ctx, doubleNestedPath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(doubleNestedPath, "file.txt")); os.IsNotExist(err) {
+		t.Errorf("expected double nested file.txt to be lifted")
+	}
+
+	// Test flattenDirectory fails to remove (unremovable dir, e.g. permission issue or dummy mock? we can skip, or just standard dir skip)
+	standardDirs := []string{"bin", "lib", "include", "share", "etc", "man"}
+	for _, sd := range standardDirs {
+		stdPath := filepath.Join(tmpDir, "std_"+sd)
+		os.MkdirAll(filepath.Join(stdPath, sd), 0755)
+		p.flattenDirectory(ctx, stdPath)
+		if _, err := os.Stat(filepath.Join(stdPath, sd)); os.IsNotExist(err) {
+			t.Errorf("expected standard dir %s to not be flattened", sd)
+		}
+	}
 }
 
 func TestGenericProvider_RelativizeAllSymlinks(t *testing.T) {
@@ -279,6 +369,26 @@ func TestGenericProvider_RelativizeAllSymlinks(t *testing.T) {
 	}
 	if linkTarget != "target.txt" {
 		t.Errorf("expected target.txt, got %s", linkTarget)
+	}
+
+	// Test already relative link skip
+	relLinkPath := filepath.Join(tmpDir, "rel_link")
+	os.Symlink("target.txt", relLinkPath)
+	p.relativizeAllSymlinks(tmpDir)
+	relTarget, _ := os.Readlink(relLinkPath)
+	if relTarget != "target.txt" {
+		t.Errorf("expected target.txt, got %s", relTarget)
+	}
+
+	// Test absolute link outside directory
+	outsideTarget := filepath.Join(t.TempDir(), "outside.txt")
+	os.WriteFile(outsideTarget, []byte("outside"), 0644)
+	outLinkPath := filepath.Join(tmpDir, "out_link")
+	os.Symlink(outsideTarget, outLinkPath)
+	p.relativizeAllSymlinks(tmpDir)
+	outTarget, _ := os.Readlink(outLinkPath)
+	if outTarget != outsideTarget {
+		t.Errorf("expected %s, got %s", outsideTarget, outTarget)
 	}
 }
 
