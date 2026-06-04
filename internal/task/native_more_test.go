@@ -5,47 +5,64 @@ package task
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/snowdreamtech/unirtm/internal/config"
+	"github.com/stretchr/testify/require"
 )
 
-func TestNativeRunner_runTaskWithGraph(t *testing.T) {
-	r := &NativeRunner{
-		tasks: map[string]config.Task{
-			"t1":      {Depends: []string{"t2"}},
-			"t2":      {Depends: []string{"t3"}},
-			"t3":      {Run: config.StringArray{"echo t3"}},
-			"cycle1":  {Depends: []string{"cycle2"}},
-			"cycle2":  {Depends: []string{"cycle1"}},
-			"bad_dep": {Depends: []string{"nonexistent"}},
-		},
-		settings: config.Settings{TaskOutput: "interleaved"},
+func TestNativeRunner_runTaskWithGraph_Cycle(t *testing.T) {
+	tasks := map[string]config.Task{
+		"A": {Run: config.StringArray{"echo A"}, Depends: []string{"B"}},
+		"B": {Run: config.StringArray{"echo B"}, Depends: []string{"A"}},
+	}
+	runner := NewNativeRunner(tasks, config.Settings{})
+
+	err := runner.Run(context.Background(), "/tmp", "A", nil, nil)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "circular dependency")
+}
+
+func TestNativeRunner_runTaskWithGraph_MissingDep(t *testing.T) {
+	tasks := map[string]config.Task{
+		"A": {Run: config.StringArray{"echo A"}, Depends: []string{"B"}},
+	}
+	runner := NewNativeRunner(tasks, config.Settings{})
+
+	err := runner.Run(context.Background(), "/tmp", "A", nil, nil)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "dependency")
+}
+
+func TestPrefixWriter_Write(t *testing.T) {
+	pw := &prefixWriter{
+		prefix: "PREFIX",
+		w:      os.Stdout,
 	}
 
-	ctx := context.Background()
+	n, err := pw.Write([]byte("hello\nworld\n"))
+	require.NoError(t, err)
+	require.Equal(t, 12, n)
+}
 
-	// success
-	err := r.Run(ctx, ".", "t1", nil, nil)
-	if err != nil {
-		t.Errorf("expected no error running t1")
+func TestNativeRunner_runTaskWithGraph_Normal(t *testing.T) {
+	tasks := map[string]config.Task{
+		"A": {Run: config.StringArray{"echo A"}, Env: map[string]interface{}{"FOO": "BAR"}, Timeout: 5, Output: "interleaved"},
 	}
+	runner := NewNativeRunner(tasks, config.Settings{})
 
-	// cycle
-	err = r.Run(ctx, ".", "cycle1", nil, nil)
-	if err == nil {
-		t.Errorf("expected error for circular dependency")
-	}
+	err := runner.Run(context.Background(), "/tmp", "A", []string{"arg1"}, []string{"ENV1=1"})
+	require.NoError(t, err)
+}
 
-	// task not found
-	err = r.Run(ctx, ".", "nonexistent", nil, nil)
-	if err == nil {
-		t.Errorf("expected error for nonexistent task")
+func TestNativeRunner_runTaskWithGraph_InvalidScript(t *testing.T) {
+	tasks := map[string]config.Task{
+		"A": {Run: config.StringArray{"echo \"unclosed quote"}, Output: "prefix"},
 	}
+	runner := NewNativeRunner(tasks, config.Settings{})
 
-	// dependency not found
-	err = r.Run(ctx, ".", "bad_dep", nil, nil)
-	if err == nil {
-		t.Errorf("expected error for missing dependency")
-	}
+	err := runner.Run(context.Background(), "/tmp", "A", nil, nil)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to parse task script")
 }
