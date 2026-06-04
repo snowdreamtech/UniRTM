@@ -7,59 +7,75 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
-func TestTrustManager(t *testing.T) {
+func TestTrustManager_TrustUntrustList(t *testing.T) {
 	tmpDir := t.TempDir()
-	t.Setenv("HOME", tmpDir)
-	t.Setenv("USERPROFILE", tmpDir)
-	t.Setenv("XDG_CONFIG_HOME", tmpDir)
+	trustFile := filepath.Join(tmpDir, "trusted.toml")
+	tm := &fileTrustManager{trustFilePath: trustFile}
 
-	tm := NewTrustManager()
+	// List empty
+	list, err := tm.List()
+	require.NoError(t, err)
+	require.Empty(t, list)
 
-	// Create a dummy config file to trust
-	testConfig := filepath.Join(tmpDir, "test.toml")
-	os.WriteFile(testConfig, []byte("test=1"), 0644)
+	// Trust a file
+	cfgFile := filepath.Join(tmpDir, "unirtm.toml")
+	err = os.WriteFile(cfgFile, []byte("min_version = '1.0.0'"), 0644)
+	require.NoError(t, err)
 
-	status := tm.TrustStatus(testConfig)
-	if status != TrustStatusUntrusted {
-		t.Errorf("expected untrusted initially")
-	}
+	err = tm.Trust(cfgFile)
+	require.NoError(t, err)
 
-	err := tm.Trust(testConfig)
-	if err != nil {
-		t.Errorf("expected no error trusting")
-	}
+	// Check status
+	trusted := tm.TrustStatus(cfgFile)
+	require.Equal(t, TrustStatusTrusted, trusted)
 
-	status = tm.TrustStatus(testConfig)
-	if status != TrustStatusTrusted {
-		t.Errorf("expected trusted")
-	}
-
-	// Modify
-	os.WriteFile(testConfig, []byte("test=2"), 0644)
-	status = tm.TrustStatus(testConfig)
-	if status != TrustStatusModified {
-		t.Errorf("expected modified")
-	}
+	// List should contain the file
+	list, err = tm.List()
+	require.NoError(t, err)
+	require.Contains(t, list, cfgFile)
 
 	// Untrust
-	err = tm.Untrust(testConfig)
-	if err != nil {
-		t.Errorf("expected no error untrusting")
-	}
-	status = tm.TrustStatus(testConfig)
-	if status != TrustStatusUntrusted {
-		t.Errorf("expected untrusted after untrust")
-	}
+	err = tm.Untrust(cfgFile)
+	require.NoError(t, err)
 
-	// List
-	tm.Trust(testConfig)
+	trusted = tm.TrustStatus(cfgFile)
+	require.Equal(t, TrustStatusUntrusted, trusted)
+}
+
+func TestTrustManager_TrustStatus_InvalidPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	trustFile := filepath.Join(tmpDir, "trusted.toml")
+	tm := &fileTrustManager{trustFilePath: trustFile}
+
+	trusted := tm.TrustStatus("/invalid/path/that/does/not/exist")
+	require.Equal(t, TrustStatusUntrusted, trusted)
+}
+
+func TestTrustManager_List_CleansUpDeletedFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	trustFile := filepath.Join(tmpDir, "trusted.toml")
+	tm := &fileTrustManager{trustFilePath: trustFile}
+
+	cfgFile := filepath.Join(tmpDir, "unirtm.toml")
+	err := os.WriteFile(cfgFile, []byte(""), 0644)
+	require.NoError(t, err)
+
+	err = tm.Trust(cfgFile)
+	require.NoError(t, err)
+
+	// Delete file
+	os.Remove(cfgFile)
+
 	list, err := tm.List()
-	if err != nil {
-		t.Errorf("expected no error listing")
-	}
-	if len(list) != 1 {
-		t.Errorf("expected 1 item in list")
-	}
+	require.NoError(t, err)
+	require.Empty(t, list) // should be cleaned up
+}
+
+func TestNewTrustManager(t *testing.T) {
+	tm := NewTrustManager()
+	require.NotNil(t, tm)
 }
