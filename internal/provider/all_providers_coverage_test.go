@@ -5,6 +5,8 @@ package provider
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -61,6 +63,13 @@ func TestAllProviders_Coverage(t *testing.T) {
 				if pypi, ok := p.(*PypiProvider); ok {
 					pypi.SkipAtomicRename()
 				}
+
+				// Trigger MkdirAll / path errors using a file path
+				dummyFile := filepath.Join(t.TempDir(), "dummy")
+				_ = os.WriteFile(dummyFile, []byte("test"), 0644)
+				_ = p.Install(ctx, p.Name(), dummyFile, "invalid", version)
+				_, _ = p.ListExecutables(p.Name(), dummyFile, version)
+				_, _ = p.GetBinPaths(p.Name(), dummyFile, version)
 			})
 		}
 	}

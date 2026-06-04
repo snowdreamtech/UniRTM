@@ -286,3 +286,92 @@ func TestHasURL(t *testing.T) {
 		t.Error("HasURL: expected false for unknown platform")
 	}
 }
+
+// ─── Additional Coverage ──────────────────────────────────────────────────────
+
+func TestLockFile_SaveErrors(t *testing.T) {
+	dir := t.TempDir()
+	fileAsDir := filepath.Join(dir, "notadir")
+	os.WriteFile(fileAsDir, []byte("data"), 0644)
+
+	lf := New(filepath.Join(fileAsDir, "unirtm.lock"))
+	lf.UpsertEntry("github:cli/cli", &ToolLockEntry{Version: "1.0", Backend: "github"})
+	if err := lf.Save(); err == nil {
+		t.Error("expected error saving to a path where parent is a file")
+	}
+}
+
+func TestLockFile_OptionsAndGPGKey(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "unirtm.lock")
+
+	lf := New(path)
+	lf.UpsertEntry("github:cli/cli", &ToolLockEntry{
+		Version: "1.0.0",
+		Backend: "github",
+		Options: map[string]string{"exe": "gh"},
+		Platforms: map[string]*PlatformEntry{
+			"linux-amd64": {
+				Checksum: "sha256:abc123",
+				GPGKey:   "KEY123",
+			},
+		},
+	})
+
+	if err := lf.Save(); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	lf2, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	e := lf2.GetEntry("github:cli/cli", "1.0.0")
+	if e == nil {
+		t.Fatal("expected entry")
+	}
+	if e.Options["exe"] != "gh" {
+		t.Errorf("expected option exe=gh, got %q", e.Options["exe"])
+	}
+
+	pe := lf2.GetPlatform("github:cli/cli", "1.0.0", "linux-amd64")
+	if pe == nil {
+		t.Fatal("expected platform entry")
+	}
+	if pe.GPGKey != "KEY123" {
+		t.Errorf("expected GPGKey KEY123, got %q", pe.GPGKey)
+	}
+}
+
+func TestLockFile_NilEntries(t *testing.T) {
+	lf := New("/tmp/test.lock")
+	lf.UpsertEntry("test", nil)
+
+	// manually inject a nil entry to test GetEntry and encoding nil protection
+	lf.Tools["test"] = append(lf.Tools["test"], nil)
+	if e := lf.GetEntry("test", "1.0.0"); e != nil {
+		t.Error("expected nil")
+	}
+
+	// Save should ignore nil entries and not crash
+	dir := t.TempDir()
+	lf.path = filepath.Join(dir, "unirtm.lock")
+	if err := lf.Save(); err != nil {
+		t.Errorf("Save with nil entry failed: %v", err)
+	}
+}
+
+func TestPlatformKey_Unknown(t *testing.T) {
+	got := PlatformKey("unknownos", "unknownarch", false)
+	if got != "unknownos-unknownarch" {
+		t.Errorf("expected unknownos-unknownarch, got %q", got)
+	}
+}
+
+func TestParsePlatformKeys_Error(t *testing.T) {
+	_, err := ParsePlatformKeys("linux-amd64,invalid-os")
+	if err == nil {
+		t.Error("expected error for invalid-os")
+	}
+}

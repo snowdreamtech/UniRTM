@@ -91,4 +91,14 @@ func TestDefaultTransport_MockTransport(t *testing.T) {
 	if tr == nil {
 		t.Fatal("expected transport")
 	}
+
+	client := NewClient()
+	if client.Transport != mockRt {
+		t.Fatal("expected client.Transport to be mockRt")
+	}
+
+	clientTimeout := NewClientWithTimeout(5 * time.Second)
+	if clientTimeout.Transport != mockRt {
+		t.Fatal("expected clientTimeout.Transport to be mockRt")
+	}
 }
