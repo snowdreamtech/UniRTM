@@ -5,6 +5,7 @@ package service
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -94,13 +95,36 @@ func TestGenerator_GenerateShim_MultipleExecutables(t *testing.T) {
 }
 
 func TestExecuteBinary_NotExists(t *testing.T) {
-	// Execute a non-existent binary to test the error path
+	origGOOS := env.RuntimeGOOS
+	defer func() { env.RuntimeGOOS = origGOOS }()
+
+	env.RuntimeGOOS = "linux"
 	err := ExecuteBinary(filepath.Join(t.TempDir(), "non-existent-binary"), []string{"binary"})
 	if err == nil {
-		t.Error("expected error when executing non-existent binary")
+		t.Error("expected error when executing non-existent binary on linux")
+	}
+
+	env.RuntimeGOOS = "windows"
+	err = ExecuteBinary(filepath.Join(t.TempDir(), "non-existent-binary.exe"), []string{"binary.exe"})
+	if err == nil {
+		t.Error("expected error when executing non-existent binary on windows")
 	}
 }
 
+func TestGenerator_generateUnixShim_Fallback(t *testing.T) {
+	tmpDir := t.TempDir()
+	shimsDir := filepath.Join(tmpDir, "shims")
+	g := NewGenerator(shimsDir, "/installs")
+
+	// Create directory but make it read-only so writes fail
+	os.MkdirAll(shimsDir, 0500)
+	defer os.Chmod(shimsDir, 0755)
+
+	err := g.generateUnixShim("go", "go")
+	if err == nil {
+		t.Error("expected error when creating shim in read-only directory")
+	}
+}
 func TestShimPaths(t *testing.T) {
 	g := NewGenerator("/shims", "/installs")
 	paths := g.shimPaths("go")

@@ -5,6 +5,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -178,5 +179,69 @@ func TestLockService_Generate_Empty(t *testing.T) {
 	err := ls.Generate(ctx, tools, GenerateOptions{})
 	if err != nil {
 		t.Fatalf("expected no error for skipping unconfigured backend, got %v", err)
+	}
+}
+
+type mockGenerateBackend struct{}
+
+func (m *mockGenerateBackend) Name() string { return "mockGen" }
+func (m *mockGenerateBackend) ListVersions(ctx context.Context, tool string, platform backend.Platform) ([]backend.VersionInfo, error) {
+	return nil, nil
+}
+func (m *mockGenerateBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform backend.Platform) (*backend.VersionInfo, error) {
+	return nil, nil
+}
+func (m *mockGenerateBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform backend.Platform) (*backend.VersionInfo, error) {
+	if tool == "fail" {
+		return nil, fmt.Errorf("simulated error")
+	}
+	return &backend.VersionInfo{
+		Version:      "1.0",
+		DownloadURL:  "http://example.com/url",
+		Checksum:     "sha256:1234",
+		GPGSignature: "sig",
+	}, nil
+}
+func (m *mockGenerateBackend) SupportsChecksum() bool  { return true }
+func (m *mockGenerateBackend) SupportsGPG() bool       { return true }
+func (m *mockGenerateBackend) AttestationType() string { return "" }
+func (m *mockGenerateBackend) IsRecommended() bool     { return false }
+func (m *mockGenerateBackend) IsScriptless() bool      { return true }
+func (m *mockGenerateBackend) GetReach() string        { return "Small" }
+func (m *mockGenerateBackend) IsStable() bool          { return true }
+func (m *mockGenerateBackend) SupportsOffline() bool   { return false }
+func (m *mockGenerateBackend) Dependencies() []string  { return nil }
+
+func TestLockService_Generate_SuccessAndErrorPaths(t *testing.T) {
+	tmpDir := t.TempDir()
+	lfPath := filepath.Join(tmpDir, "unirtm.lock")
+	opts := LockServiceOptions{LockfilePath: lfPath}
+	ls, _ := NewLockService(opts)
+
+	registry := backend.NewRegistry()
+	registry.Register(&mockGenerateBackend{})
+	ls.SetBackendRegistry(registry)
+
+	ctx := context.Background()
+	tools := map[string]ToolSpec{
+		"success": {Name: "success", Version: "1.0", BackendName: "mockGen"},
+		"fail":    {Name: "fail", Version: "1.0", BackendName: "mockGen"},
+	}
+
+	err := ls.Generate(ctx, tools, GenerateOptions{
+		Platforms: []string{"linux-amd64", "windows-amd64"},
+	})
+	if err != nil {
+		t.Fatalf("expected Generate to handle backend errors internally and return nil, got %v", err)
+	}
+
+	// Read lockfile to verify success tool was generated
+	parsed, err := lockfile.Load(lfPath)
+	if err != nil {
+		t.Fatalf("failed to load lockfile: %v", err)
+	}
+
+	if parsed.GetEntry("success", "1.0") == nil {
+		t.Error("expected 'success' tool in lockfile")
 	}
 }
