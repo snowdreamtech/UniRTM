@@ -33,21 +33,21 @@
 
   | Tier | Classification | Storage | Management |
   | :--- | :--- | :--- | :--- |
-  | **Tier 1** | **Core/Global** | .mise.toml | Statically defined; local `mise install` default. |
+  | **Tier 1** | **Core/Global** | .unirtm.toml | Statically defined; local `unirtm install` default. |
   | **Tier 2** | **On-Demand** | [versions.sh](../../.unirtm.toml) | Defined as shell variables; JIT-installed by scripts. |
 
 - **Adaptive Lock Forgiveness (ALF)**:
-  - **The Problem**: Pre-compiled binaries (`github:`, `core:`) have stable hashes, but source-compiled tools (`go:`) depend on local builds, making `mise.lock` entries impossible to predict for all platforms.
-  - **The Strategy**: To maintain a strict Security Lockdown (`MISE_LOCKED=1`) without breaking source-based providers or encountering "GitHub Traffic Walls," the project implements **ALF**.
-  - **Mechanism**: The `run_mise` wrapper in [common.sh](../../.unirtm.toml) automatically unsets the mandatory locking requirement for any tool using the `go:` prefix, allowing them to resolve via `GOPROXY` while keeping binaries strictly locked.
+  - **The Problem**: Pre-compiled binaries (`github:`, `core:`) have stable hashes, but source-compiled tools (`go:`) depend on local builds, making `unirtm.lock` entries impossible to predict for all platforms.
+  - **The Strategy**: To maintain a strict Security Lockdown (`UNIRTM_LOCKED=1`) without breaking source-based providers or encountering "GitHub Traffic Walls," the project implements **ALF**.
+  - **Mechanism**: The `run_unirtm` wrapper in [common.sh](../../.unirtm.toml) automatically unsets the mandatory locking requirement for any tool using the `go:` prefix, allowing them to resolve via `GOPROXY` while keeping binaries strictly locked.
 
 - **Manifest Aggregation & Locking**:
-  - To ensure Tier 2 tools are cryptographically locked in `mise.lock` without bloating the root config, the project uses a **Manifest Aggregator** (.unirtm.toml).
-  - **The Lock Ritual**: Running `make sync-lock` dynamically merges Tier 1 and Tier 2 definitions into a temporary "Full Manifest" to update the global `mise.lock`.
-  - **CI/Audit Compliance**: All security audits and CI workflows MUST use the locked versions defined in `mise.lock` by activating the tiered configuration via `MISE_CONFIG`.
+  - To ensure Tier 2 tools are cryptographically locked in `unirtm.lock` without bloating the root config, the project uses a **Manifest Aggregator** (.unirtm.toml).
+  - **The Lock Ritual**: Running `make sync-lock` dynamically merges Tier 1 and Tier 2 definitions into a temporary "Full Manifest" to update the global `unirtm.lock`.
+  - **CI/Audit Compliance**: All security audits and CI workflows MUST use the locked versions defined in `unirtm.lock` by activating the tiered configuration via `UNIRTM_CONFIG`.
 
   ```toml
-  # .mise.toml — Standard Tier 1 config (example)
+  # .unirtm.toml — Standard Tier 1 config (example)
   [tools]
   node   = "20.18.3"
   pnpm   = "10.5.2"

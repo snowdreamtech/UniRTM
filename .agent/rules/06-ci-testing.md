@@ -228,9 +228,9 @@ verify_tool_atomic() {
   local _TOOL_NAME="${1:-}"
   local _VERSION_FLAG="${2:---version}"
 
-  # Step 1: Check mise registration
-  if ! mise list | grep -q "${_TOOL_NAME}"; then
-    log_error "Step 1/5 Failed: ${_TOOL_NAME} not registered in mise"
+  # Step 1: Check unirtm registration
+  if ! unirtm list | grep -q "${_TOOL_NAME}"; then
+    log_error "Step 1/5 Failed: ${_TOOL_NAME} not registered in unirtm"
     return 1
   fi
 
@@ -288,11 +288,11 @@ install_tool() {
     return 0
   fi
 
-  # Install via mise
-  local _STAT="✅ mise"
-  run_mise install "${_PROVIDER:-}@${_VERSION:-}" || _STAT="❌ Failed"
+  # Install via unirtm
+  local _STAT="✅ unirtm"
+  run_unirtm install "${_PROVIDER:-}@${_VERSION:-}" || _STAT="❌ Failed"
 
-  # CRITICAL: Atomic verification using mise which for robust binary resolution
+  # CRITICAL: Atomic verification using unirtm which for robust binary resolution
   if ! verify_tool_atomic "tool" "${_PROVIDER:-}" "Tool Name" "--version"; then
     _STAT="❌ Not Executable"
     log_summary "Category" "Tool" "${_STAT:-}" "-" "$(($(date +%s) - _T0))"
@@ -310,14 +310,14 @@ The `verify_tool_atomic` function uses a **layered resolution strategy** to hand
 
 #### Resolution Layers (in order of priority)
 
-1. **mise which** (Primary Method)
+1. **unirtm which** (Primary Method)
 
    ```bash
-   MISE_OFFLINE=1 run_with_timeout_robust 3 mise which "tool-name"
+   UNIRTM_OFFLINE=1 run_with_timeout_robust 3 unirtm which "tool-name"
    ```
 
    - Handles platform-specific binaries (e.g., `ec-linux-amd64`, `ec-darwin-amd64`)
-   - Works with mise shims and direct installations
+   - Works with unirtm shims and direct installations
    - Timeout-protected to prevent hangs
    - Offline mode to avoid network delays
 
@@ -330,14 +330,14 @@ The `verify_tool_atomic` function uses a **layered resolution strategy** to hand
    - For tools already in PATH
    - Fast and reliable for standard installations
 
-3. **mise where + find** (Fallback 2)
+3. **unirtm where + find** (Fallback 2)
 
    ```bash
-   INSTALL_DIR=$(mise where "provider")
+   INSTALL_DIR=$(unirtm where "provider")
    find "$INSTALL_DIR/bin" -name "tool-name*" -type f | head -n 1
    ```
 
-   - Searches mise installation directory
+   - Searches unirtm installation directory
    - Handles pattern matching (e.g., `ec-*` for editorconfig-checker)
    - Works when shims are not yet activated
    - BSD find compatible (no `-executable` flag)
@@ -346,7 +346,7 @@ The `verify_tool_atomic` function uses a **layered resolution strategy** to hand
 
 - **Cross-Platform**: Handles Linux, macOS, Windows binary naming differences
 - **Robust**: Multiple fallbacks prevent false negatives
-- **Fast**: Primary method (mise which) is optimized and cached
+- **Fast**: Primary method (unirtm which) is optimized and cached
 - **Reliable**: Works in fresh CI environments before PATH is fully configured
 - **Compatible**: BSD find support for macOS runners
 
@@ -373,7 +373,7 @@ The `verify_tool_atomic` function uses a **layered resolution strategy** to hand
 
   ```
   [DEBUG] === Atomic Verification: Shfmt ===
-  [DEBUG] Step 1/5: Checking mise registration... ✓
+  [DEBUG] Step 1/5: Checking unirtm registration... ✓
   [DEBUG] Step 2/5: Checking binary existence... ✓
   [DEBUG] Step 3/5: Checking path resolution... ✓
   [DEBUG] Step 4/5: Checking executability... ✓
@@ -383,7 +383,7 @@ The `verify_tool_atomic` function uses a **layered resolution strategy** to hand
 
 - **Status Reporting**: Use consistent status indicators in log summaries:
   - `✅ Exists` - Tool already installed and verified
-  - `✅ mise` - Tool successfully installed via mise
+  - `✅ unirtm` - Tool successfully installed via unirtm
   - `❌ Failed` - Installation failed
   - `❌ Not Executable` - Installed but failed atomic verification
   - `⚖️ Previewed` - Dry-run mode
@@ -395,14 +395,14 @@ When adding new tools:
 1. **Use the atomic verification pattern** shown in §7.2
 2. **Test locally first**: Run `unirtm install` to verify no regressions
 3. **Test in CI**: Push to a test branch and verify CI passes on all platforms (Linux, macOS, Windows)
-4. **Verify error scenarios**: Temporarily break mise to ensure error handling works correctly
+4. **Verify error scenarios**: Temporarily break unirtm to ensure error handling works correctly
 5. **Commit atomically**: Group related tool fixes together with descriptive commit messages
 
 ### 7.7 Common Pitfalls to Avoid
 
-- ❌ **Don't** assume a tool is usable just because `mise install` succeeded
+- ❌ **Don't** assume a tool is usable just because `unirtm install` succeeded
 - ❌ **Don't** skip atomic verification in CI environments
-- ❌ **Don't** use hardcoded paths - always use `resolve_bin` or `mise which`
+- ❌ **Don't** use hardcoded paths - always use `resolve_bin` or `unirtm which`
 - ❌ **Don't** forget timeout protection on tool execution
 - ❌ **Don't** ignore platform-specific binary naming (`.exe`, `ec-*`, etc.)
 
@@ -466,10 +466,10 @@ install_spectral() {
 1. **Binary-First Detection**: Checks if binary exists and is executable BEFORE checking version
 2. **Version Verification**: Only checks version if binary exists (prevents false positives from stale cache)
 3. **Smart Installation**: Determines if installation is needed based on binary existence + version match
-4. **Cache Refresh**: In CI, refreshes mise cache to avoid stale data from GitHub Actions cache
+4. **Cache Refresh**: In CI, refreshes unirtm cache to avoid stale data from GitHub Actions cache
 5. **Platform-Specific Binary Resolution**: Handles `ec-linux-amd64`, `ec-darwin-arm64`, `.exe` extensions
 6. **Post-Install Verification**: Runs full atomic verification after installation
-7. **Mise Shim Detection**: Detects shims in `/mise/shims/` and uses `mise exec` for smoke tests
+7. **UniRTM Shim Detection**: Detects shims in `/unirtm/shims/` and uses `unirtm exec` for smoke tests
 8. **Comprehensive Error Reporting**: Provides detailed debugging information on failure
 
 #### Migration Status

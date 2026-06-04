@@ -4,10 +4,10 @@
 
 ## 1. Environment Consistency
 
-- Use **`mise`** as the **mandatory polyglot toolchain orchestrator** to pin exact runtime versions and Tool Executors. Versions MUST be committed to the repository in `.mise.toml`.
+- Use **`unirtm`** as the **mandatory polyglot toolchain orchestrator** to pin exact runtime versions and Tool Executors. Versions MUST be committed to the repository in `.unirtm.toml`.
 
   ```toml
-  # .mise.toml — polyglot version manager (Single Source of Truth)
+  # .unirtm.toml — polyglot version manager (Single Source of Truth)
   [tools]
   node   = "20.18.3"
   python = "3.12.9"
@@ -17,12 +17,12 @@
 
   Other managers (`nvm`, `pyenv`, `asdf`) are **deprecated** in this project to prevent toolchain fragmentation.
 
-- All three of these SHOULD agree to avoid version ambiguity between tools: `.nvmrc` / `.node-version`, `engines` field in `package.json`, and `.mise.toml`.
+- All three of these SHOULD agree to avoid version ambiguity between tools: `.nvmrc` / `.node-version`, `engines` field in `package.json`, and `.unirtm.toml`.
 
 ### Cross-Platform Tooling & Providers
 
-- **Avoid Legacy `asdf` Plugins**: When specifying tools in `.mise.toml`, strictly avoid using `asdf:` prefixed plugins (e.g., `asdf:mise-plugins/mise-pipx`). `asdf` plugins are heavily reliant on POSIX Bash scripts (`bin/download`, `bin/install`), which inherently fail on native Windows CI environments (e.g., GitHub Actions `windows-latest` running `pwsh`) due to path translation conflicts, missing POSIX utilities, and symlink permission restrictions.
-- **Prefer Native & Universal Providers**: Always default to `mise`'s built-in core backends (e.g., `pipx`, `node`, `python`, `go`) which are written in Rust and provide flawless cross-platform support. If a core backend is unavailable, use native package manager providers (`npm:`, `cargo:`, `go:`) or direct GitHub releases (`github:`) over complex wrapper systems to guarantee execution speed and reliability across macOS, Linux, and Windows.
+- **Avoid Legacy `asdf` Plugins**: When specifying tools in `.unirtm.toml`, strictly avoid using `asdf:` prefixed plugins (e.g., `asdf:unirtm-plugins/unirtm-pipx`). `asdf` plugins are heavily reliant on POSIX Bash scripts (`bin/download`, `bin/install`), which inherently fail on native Windows CI environments (e.g., GitHub Actions `windows-latest` running `pwsh`) due to path translation conflicts, missing POSIX utilities, and symlink permission restrictions.
+- **Prefer Native & Universal Providers**: Always default to `unirtm`'s built-in core backends (e.g., `pipx`, `node`, `python`, `go`) which are written in Rust and provide flawless cross-platform support. If a core backend is unavailable, use native package manager providers (`npm:`, `cargo:`, `go:`) or direct GitHub releases (`github:`) over complex wrapper systems to guarantee execution speed and reliability across macOS, Linux, and Windows.
 
 ### Environment Variables
 
@@ -219,7 +219,7 @@
 
 - **Language-Aware & Dynamic Detection**: Tool installations MUST be context-sensitive.
   - **Prerequisite Detection**: Secondary tools (e.g., `golangci-lint`, `asdf:ghc`) MUST only be installed if corresponding source files or manifests are detected.
-  - **Dynamic Heavy Tools Execution**: To avoid the "Mise Tax" (slow compilation or resolution of massive security tools like `zizmor`), do NOT add them permanently to the global `.mise.toml`. Instead, track their versions in a central manifest (e.g., `.unirtm.toml`) and execute them strictly on-demand using `mise exec tool@version -- cmd`. This ensures the core environment remains maximally lightweight.
+  - **Dynamic Heavy Tools Execution**: To avoid the "UniRTM Tax" (slow compilation or resolution of massive security tools like `zizmor`), do NOT add them permanently to the global `.unirtm.toml`. Instead, track their versions in a central manifest (e.g., `.unirtm.toml`) and execute them strictly on-demand using `unirtm exec tool@version -- cmd`. This ensures the core environment remains maximally lightweight.
   - **Availability-First Detection (Security)**: Security scanners (e.g., `osv-scanner`, `zizmor`) MUST prioritize local availability. If the tool is present in the local environment, it MUST be reported as `✅ Active` and participate in the audit workflow, even if categorized as a Tier 3/CI-only tool.
   - **Strict CI vs. Permissive Local Orchestration**: All audit and linting scripts MUST be environment-aware (e.g., via `is_ci_env`). In CI pipelines, missing required tools MUST trigger a strict, fatal error (`exit 1`) to enforce security gates. In local development, the absence of those same tools MUST degrade gracefully to a non-blocking warning (e.g., `⏭️ Skipped`) to preserve developer velocity.
 

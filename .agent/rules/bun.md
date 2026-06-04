@@ -6,7 +6,7 @@
 
 - Bun is an **all-in-one toolkit**: runtime (JavaScriptCore-based), package manager, bundler, and test runner. Prefer Bun's built-in tools over third-party equivalents where they meet your needs — it reduces toolchain complexity and significantly improves performance.
 - **Pin the Bun version** for reproducibility across developers and CI. Use one of:
-  - `.mise.toml`: `[tools]\nbun = "1.1.38"`
+  - `.unirtm.toml`: `[tools]\nbun = "1.1.38"`
   - `.tool-versions` (asdf): `bun 1.1.38`
   - GitHub Actions: `oven-sh/setup-bun@v2` with `bun-version: "1.1.38"`
   - Never rely on a system-wide Bun installation of unknown version.

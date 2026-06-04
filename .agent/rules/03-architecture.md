@@ -11,7 +11,7 @@
   - **Local Path**: For project-specific tools, use `npm run <command>` which safely includes `node_modules/.bin` in the path without `npx` overhead.
 - **Environment Variables**:
   - Use `.env` files with a `.env.example` template. Never commit actual `.env.local` files.
-  - **UniRTM Prefix Strategy**: All internal configuration MUST support a hierarchical lookup via `internal/pkg/env.Get()`: `UNIRTM_KEY` > `MISE_KEY` > `KEY`.
+  - **UniRTM Prefix Strategy**: All internal configuration MUST support a hierarchical lookup via `internal/pkg/env.Get()`: `UNIRTM_KEY` > `UNIRTM_KEY` > `KEY`.
   - **Network Synchronization**: On startup, prefixed variables (e.g., `UNIRTM_HTTP_PROXY`) MUST be synchronized to native ones (e.g., `HTTP_PROXY`) if native ones are missing, to ensure compatibility with standard libraries.
 - **OS Detection**: Detect the operating system at runtime for conditional logic. Use `runtime.GOOS` (Go). Never hard-code OS-specific command paths.
 - **Scripting Architecture (SSO)**: All automation tools must follow a **Triple-Entry Unified Pattern**:
