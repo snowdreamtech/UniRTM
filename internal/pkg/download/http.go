@@ -333,19 +333,12 @@ func (h *HTTPDownloader) downloadOnce(ctx context.Context, url string, destinati
 	}
 
 	// Copy response body to file
-	n, err := io.Copy(writer, resp.Body)
+	_, err = io.Copy(writer, resp.Body)
 	if err != nil {
 		// Clean up partial download
 		file.Close()
 		_ = os.Remove(destination)
 		return errors.NewExternalError(fmt.Sprintf("download from %q", url), err)
-	}
-
-	// Verify that we downloaded the expected amount of data
-	if totalBytes > 0 && n != totalBytes {
-		file.Close()
-		_ = os.Remove(destination)
-		return errors.NewExternalError(fmt.Sprintf("download from %q", url), fmt.Errorf("size mismatch: expected %d bytes, got %d", totalBytes, n))
 	}
 
 	// Final progress callback (100%)
