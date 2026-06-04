@@ -104,3 +104,18 @@ teardown() {
 
   rm -rf "$TEST_INSTALL_DIR"
 }
+
+@test "install.sh runs successfully with --skip-checksum" {
+  TEST_INSTALL_DIR="$(mktemp -d)"
+  run ./install.sh --install-dir "$TEST_INSTALL_DIR" --skip-checksum
+
+  if [ "$status" -ne 0 ]; then
+    echo "Failed Output: $output" >&3
+  fi
+
+  [ "$status" -eq 0 ]
+  [[ $output == *"Skipping checksum verification"* ]]
+  [ -f "${TEST_INSTALL_DIR}/unirtm" ]
+
+  rm -rf "$TEST_INSTALL_DIR"
+}

@@ -28,6 +28,7 @@ CURL_MAX_TIME=120
 
 QUIET=0
 LOG_FILE=""
+SKIP_CHECKSUM=0
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -86,12 +87,15 @@ parse_args() {
     --quiet | -q)
       QUIET=1
       ;;
+    --skip-checksum)
+      SKIP_CHECKSUM=1
+      ;;
     --log-file)
       shift
       LOG_FILE="$1"
       ;;
     --help | -h)
-      printf 'Usage: install.sh [--version <tag>] [--install-dir <dir>] [--no-proxy] [--quiet] [--log-file <path>]\n'
+      printf 'Usage: install.sh [--version <tag>] [--install-dir <dir>] [--no-proxy] [--quiet] [--skip-checksum] [--log-file <path>]\n'
       exit 0
       ;;
     *)
@@ -259,7 +263,9 @@ download_and_verify() {
   fi
 
   info "Downloading checksums..."
-  if curl_with_retry "$CHECKSUM_URL" "$CHECKSUM_PATH" 2>/dev/null; then
+  if [ "$SKIP_CHECKSUM" -eq 1 ]; then
+    warn "Skipping checksum verification due to --skip-checksum flag."
+  elif curl_with_retry "$CHECKSUM_URL" "$CHECKSUM_PATH" 2>/dev/null; then
     info "Verifying checksum..."
     # Extract the expected checksum for our archive
     EXPECTED="$(grep -E "[[:space:]]${ARCHIVE_NAME}[[:space:]]*\$" "$CHECKSUM_PATH" | awk '{print $1}')"

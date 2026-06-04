@@ -9,6 +9,7 @@ param(
     [string]$InstallDir,
     [switch]$NoProxy,
     [Alias('q')][switch]$Quiet,
+    [switch]$SkipChecksum,
     [string]$LogFile,
     [Alias('h')][switch]$Help
 )
@@ -37,11 +38,12 @@ function Write-Warn   { param([string]$msg) Write-Log -Level 'WARN' -Message $ms
 function Write-Error  { param([string]$msg) Write-Log -Level 'ERROR' -Message $msg -Color Red }
 
 function Show-Help {
-    Write-Info "Usage: install.ps1 [--version <tag>] [--install-dir <dir>] [--no-proxy] [--quiet] [--log-file <path>] [--help]"
+    Write-Info "Usage: install.ps1 [--version <tag>] [--install-dir <dir>] [--no-proxy] [--quiet] [--skip-checksum] [--log-file <path>] [--help]"
     Write-Info "  --version, -v   Target version (default: latest release)"
     Write-Info "  --install-dir   Directory to place the binary (default: `$HOME\bin for normal user, C:\Program Files\UniRTM for admin)"
     Write-Info "  --no-proxy      Disable GitHub proxy"
     Write-Info "  --quiet, -q     Suppress INFO and WARN output"
+    Write-Info "  --skip-checksum Skip SHA256 checksum verification"
     Write-Info "  --log-file      Write logs to the specified file"
     Write-Info "  --help, -h      Show this help message"
     exit 0
@@ -126,23 +128,27 @@ if (-not (Test-Path $archivePath) -or (Get-Item $archivePath).Length -eq 0) {
 }
 
 # Download checksum file
-$checksumPath = Join-Path $tmpDir "checksums.txt"
-Write-Info "Downloading checksums..."
-$checksumOk = Invoke-WithRetry -Uri $checksumUrl -OutFile $checksumPath
-if ($checksumOk) {
-    $expected = (Select-String -Path $checksumPath -Pattern "\s$archiveName$" | ForEach-Object { $_.Line.Split(' ')[0] })
-    if ($expected) {
-        $actual = (Get-FileHash -Algorithm SHA256 -Path $archivePath).Hash.ToLower()
-        if ($expected.ToLower() -ne $actual) {
-            Write-Error "Checksum mismatch! Expected $expected, got $actual"
-            exit 1
-        }
-        Write-Info "Checksum verified OK."
-    } else {
-        Write-Warn "Checksum entry not found for $archiveName, skipping verification."
-    }
+if ($SkipChecksum) {
+    Write-Warn "Skipping checksum verification due to --skip-checksum flag."
 } else {
-    Write-Warn "Could not download checksums.txt, skipping verification."
+    $checksumPath = Join-Path $tmpDir "checksums.txt"
+    Write-Info "Downloading checksums..."
+    $checksumOk = Invoke-WithRetry -Uri $checksumUrl -OutFile $checksumPath
+    if ($checksumOk) {
+        $expected = (Select-String -Path $checksumPath -Pattern "\s$archiveName$" | ForEach-Object { $_.Line.Split(' ')[0] })
+        if ($expected) {
+            $actual = (Get-FileHash -Algorithm SHA256 -Path $archivePath).Hash.ToLower()
+            if ($expected.ToLower() -ne $actual) {
+                Write-Error "Checksum mismatch! Expected $expected, got $actual"
+                exit 1
+            }
+            Write-Info "Checksum verified OK."
+        } else {
+            Write-Warn "Checksum entry not found for $archiveName, skipping verification."
+        }
+    } else {
+        Write-Warn "Could not download checksums.txt, skipping verification."
+    }
 }
 
 # Determine install directory
