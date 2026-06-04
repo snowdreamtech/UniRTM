@@ -13,6 +13,8 @@ import (
 
 	"github.com/pterm/pterm"
 	internalhttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 type E2EHarness struct {
@@ -64,15 +66,19 @@ func (h *E2EHarness) Run(args ...string) (stdout string, stderr string, err erro
 	h.t.Setenv("HOME", h.TmpDir)
 	h.t.Setenv("USERPROFILE", h.TmpDir)
 
-	// Intercept os.Stdout and os.Stderr
+	// Intercept os.Stdout, os.Stderr, and os.Stdin
 	oldStdout := os.Stdout
 	oldStderr := os.Stderr
+	oldStdin := os.Stdin
 	rOut, wOut, _ := os.Pipe()
 	rErr, wErr, _ := os.Pipe()
+	rIn, wIn, _ := os.Pipe()
+	wIn.Close() // Immediately close it so reads return EOF
 	os.Stdout = wOut
 	os.Stderr = wErr
+	os.Stdin = rIn
 
-	// Reset global state
+	// Reset global state variables
 	cwd = ""
 	configPath = ""
 	verbose = false
@@ -82,6 +88,23 @@ func (h *E2EHarness) Run(args ...string) (stdout string, stderr string, err erro
 	yes = true
 	locked = false
 	silent = false
+
+	// Reset all cobra flags to prevent cross-test pollution
+	var resetFlags func(c *cobra.Command)
+	resetFlags = func(c *cobra.Command) {
+		c.Flags().VisitAll(func(f *pflag.Flag) {
+			f.Value.Set(f.DefValue)
+			f.Changed = false
+		})
+		c.PersistentFlags().VisitAll(func(f *pflag.Flag) {
+			f.Value.Set(f.DefValue)
+			f.Changed = false
+		})
+		for _, sub := range c.Commands() {
+			resetFlags(sub)
+		}
+	}
+	resetFlags(rootCmd)
 
 	// Capture pterm output
 	pterm.SetDefaultOutput(wOut)
@@ -103,11 +126,13 @@ func (h *E2EHarness) Run(args ...string) (stdout string, stderr string, err erro
 	rootCmd.SetArgs(args)
 	err = rootCmd.Execute()
 
-	// Restore Stdout/Stderr
+	// Restore Stdout/Stderr/Stdin
 	wOut.Close()
 	wErr.Close()
+	rIn.Close()
 	os.Stdout = oldStdout
 	os.Stderr = oldStderr
+	os.Stdin = oldStdin
 
 	<-outDone
 	<-errDone

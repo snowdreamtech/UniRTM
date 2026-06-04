@@ -118,7 +118,7 @@ func TestE2E_ToolStub(t *testing.T) {
 
 func TestE2E_TestTool(t *testing.T) {
 	h := NewE2EHarness(t)
-	_, _, _ = h.Run("test-tool", "dummy")
+	_, _, _ = h.Run("test-tool", "github:snowdreamtech/test-tool")
 }
 
 func TestE2E_LockCheck(t *testing.T) {

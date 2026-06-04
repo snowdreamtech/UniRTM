@@ -63,6 +63,7 @@ func TestRunActivate_SpecificTool(t *testing.T) {
 
 	activateShell = "bash"
 	activateScope = "global"
+	defer func() { activateShell = ""; activateScope = "global" }()
 
 	cmd := activateCmd
 	var buf bytes.Buffer
@@ -90,6 +91,7 @@ func TestRunActivate_AllTools(t *testing.T) {
 
 	activateShell = "bash"
 	activateScope = "global"
+	defer func() { activateShell = ""; activateScope = "global" }()
 
 	cmd := activateCmd
 	var buf bytes.Buffer
@@ -115,6 +117,7 @@ func TestRunActivate_LatestTool(t *testing.T) {
 
 	activateShell = "bash"
 	activateScope = "global"
+	defer func() { activateShell = ""; activateScope = "global" }()
 
 	cmd := activateCmd
 	var buf bytes.Buffer
@@ -135,6 +138,7 @@ func TestRunActivate_Errors(t *testing.T) {
 
 	activateShell = "bash"
 	activateScope = "global"
+	defer func() { activateShell = ""; activateScope = "global" }()
 
 	// 1. Tool not found specific version
 	err = runActivate(activateCmd, []string{"dummy-tool", "20.0.0"})
@@ -148,6 +152,7 @@ func TestRunActivate_Errors(t *testing.T) {
 
 	// 3. Shell error
 	activateShell = "invalid-shell"
+	defer func() { activateShell = "" }()
 	err = runActivate(activateCmd, []string{})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported shell")
