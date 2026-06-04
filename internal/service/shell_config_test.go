@@ -38,6 +38,7 @@ func TestShellConfigManager_GetConfigPath(t *testing.T) {
 		{ShellZsh, filepath.Join(home, ".zshrc")},
 		{ShellBash, filepath.Join(home, ".bashrc")},
 		{ShellFish, filepath.Join(home, ".config/fish/config.fish")},
+		{ShellPowerShell, filepath.Join(home, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1")},
 	}
 
 	for _, tt := range tests {
@@ -58,6 +59,18 @@ func TestShellConfigManager_GetConfigPath_Unsupported(t *testing.T) {
 	_, err := sm.GetConfigPath(ShellType("unknown"))
 	if err == nil {
 		t.Error("expected error for unsupported shell")
+	}
+}
+
+func TestShellConfigManager_GetConfigPath_PowerShellProfile(t *testing.T) {
+	t.Setenv("PROFILE", "/custom/profile.ps1")
+	sm := NewShellConfigManager(&mockFormatter{}, false)
+	path, err := sm.GetConfigPath(ShellPowerShell)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if path != "/custom/profile.ps1" {
+		t.Errorf("expected /custom/profile.ps1, got %s", path)
 	}
 }
 
@@ -157,8 +170,51 @@ func TestShellConfigManager_DryRun(t *testing.T) {
 	}
 
 	content, _ := os.ReadFile(configPath)
-	if !strings.Contains(string(content), "unirtm test activation") {
-		t.Errorf("expected file to not be modified in dry run")
+	if !strings.Contains(string(content), "eval") {
+		t.Errorf("expected config file to not be modified in dry run")
+	}
+}
+
+func TestShellConfigManager_Remove_Fallback(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+
+	sm := NewShellConfigManager(&mockFormatter{}, false)
+	configPath := filepath.Join(tmpDir, ".bashrc")
+
+	// Create file with old pattern
+	content := []byte("# unirtm test\neval \"$(unirtm test activate bash)\"\n")
+	os.WriteFile(configPath, content, 0644)
+
+	err := sm.Remove(ShellBash, "test")
+	if err != nil {
+		t.Fatalf("Remove fallback failed: %v", err)
+	}
+
+	readContent, _ := os.ReadFile(configPath)
+	if strings.Contains(string(readContent), "unirtm test") {
+		t.Errorf("expected old pattern to be removed")
+	}
+}
+
+func TestShellConfigManager_Inject_DryRun_Update(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	sm := NewShellConfigManager(&mockFormatter{}, true)
+	configPath := filepath.Join(tmpDir, ".bashrc")
+
+	// Create file with block
+	content := []byte("# unirtm test activation\nold_content\n")
+	os.WriteFile(configPath, content, 0644)
+
+	err := sm.Inject(ShellBash, "test", "new_content")
+	if err != nil {
+		t.Fatalf("Inject dry-run failed: %v", err)
+	}
+
+	readContent, _ := os.ReadFile(configPath)
+	if !strings.Contains(string(readContent), "old_content") {
+		t.Errorf("expected dry-run to not update file")
 	}
 }
 
