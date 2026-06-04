@@ -9,127 +9,182 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/stretchr/testify/require"
 )
 
-func TestManager_tryLoad(t *testing.T) {
-	m := NewConfigManager()
+func TestConfigManager_ApplyEnvironment_Error(t *testing.T) {
+	cm := NewConfigManager()
+	
+	// Nil config
+	_, err := cm.ApplyEnvironment(nil, "dev")
+	require.Error(t, err)
 
-	// Create a dummy config file
-	f, _ := os.CreateTemp("", "unirtm-*.toml")
-	f.WriteString(`[tools]
-t1 = "1.0"
-`)
-	f.Close()
-	defer os.Remove(f.Name())
+	// Empty env
+	cfg := &Config{}
+	_, err = cm.ApplyEnvironment(cfg, "")
+	require.Error(t, err)
 
-	cm := m.(*defaultConfigManager)
-	c, err := cm.tryLoad(context.Background(), f.Name(), false, nil)
-	if err != nil {
-		t.Errorf("expected no error, got %v", err)
-	}
-	if c.ToolsRaw["t1"] != "1.0" {
-		t.Errorf("expected t1 version 1.0")
-	}
-
-	// Unreadable
-	os.Chmod(f.Name(), 0000)
-	_, err = cm.tryLoad(context.Background(), f.Name(), false, nil)
-	if env.RuntimeGOOS != "windows" {
-		if err == nil {
-			t.Errorf("expected error on unreadable")
-		}
-	}
-	os.Chmod(f.Name(), 0644)
-
-	// Missing
-	cMissing, err := cm.tryLoad(context.Background(), f.Name()+".missing", false, nil)
-	if err != nil || cMissing != nil {
-		t.Errorf("expected nil error and nil config on missing")
-	}
+	// Env not found
+	_, err = cm.ApplyEnvironment(cfg, "prod")
+	require.Error(t, err)
 }
 
-func TestManager_renderTemplate(t *testing.T) {
-	s := renderTemplate("hello {{ env.USER }}", nil)
-	if s == "" {
-		t.Errorf("expected non-empty string")
-	}
-
-	s = renderTemplate("hello {{ env.USER ", nil)
-	if s == "" {
-		// Just checking it doesn't panic
-	}
-}
-
-func TestManager_MergeConfig(t *testing.T) {
-	m := NewConfigManager()
-	c1 := &Config{Env: map[string]interface{}{"A": "1"}}
-	c2 := &Config{Env: map[string]interface{}{"B": "2"}}
-	cm := m.(*defaultConfigManager)
-	c3, _ := cm.Merge(c1, c2)
-	if c3.Env["B"] != "2" {
-		t.Errorf("Merge failed")
-	}
-}
-
-type mockTrustManagerMore struct {
-	status TrustStatus
-}
-
-func (m *mockTrustManagerMore) Trust(path string) error             { return nil }
-func (m *mockTrustManagerMore) Untrust(path string) error           { return nil }
-func (m *mockTrustManagerMore) TrustStatus(path string) TrustStatus { return m.status }
-func (m *mockTrustManagerMore) List() (map[string]string, error)    { return nil, nil }
-
-func TestManager_tryLoadTrust(t *testing.T) {
+func TestConfigManager_LoadHierarchy_LoadError(t *testing.T) {
 	tmpDir := t.TempDir()
-	p := filepath.Join(tmpDir, "unirtm.toml")
-	os.WriteFile(p, []byte(`[tools]
-t1="1.0"
-[env]
-a="b"
-[tasks.test]
-run = "echo"
-`), 0644)
+	tmpDir, _ = filepath.EvalSymlinks(tmpDir)
+	invalidToml := filepath.Join(tmpDir, "unirtm.toml")
+	err := os.WriteFile(invalidToml, []byte("invalid = = toml"), 0644)
+	require.NoError(t, err)
 
-	m := NewConfigManager().(*defaultConfigManager)
-	m.trustManager = &mockTrustManagerMore{status: TrustStatusUntrusted}
+	oldCwd, _ := os.Getwd()
+	defer os.Chdir(oldCwd)
+	os.Chdir(tmpDir)
 
+	cm := NewConfigManager()
+	// Trust it first!
+	err = cm.(*defaultConfigManager).trustManager.Trust(invalidToml)
+	require.NoError(t, err)
+	
 	ctx := context.Background()
-	initialSettings := &Settings{}
+	_, err = cm.LoadHierarchy(ctx)
+	// It should fail because the unirtm.toml is invalid
+	require.Error(t, err)
+}
 
-	// Untrusted
-	cfg, err := m.tryLoad(ctx, p, true, initialSettings)
-	if err != nil {
-		t.Errorf("expected no error")
-	}
-	if cfg != nil {
-		t.Errorf("expected nil cfg for untrusted")
-	}
+func TestConfigManager_tryLoad(t *testing.T) {
+	cm := NewConfigManager().(*defaultConfigManager)
+	
+	// Test file that does not exist
+	cfg, err := cm.tryLoad(context.Background(), "/does/not/exist.toml", false, nil)
+	require.NoError(t, err)
+	require.Nil(t, cfg)
+}
 
-	// Modified
-	m.trustManager = &mockTrustManagerMore{status: TrustStatusModified}
-	cfg, err = m.tryLoad(ctx, p, true, initialSettings)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-	if cfg == nil {
-		t.Fatalf("expected cfg")
-	}
-	if len(cfg.Env) != 0 || len(cfg.Tasks) != 0 {
-		t.Errorf("expected stripped env and tasks")
-	}
+func TestConfigManager_Merge_Errors(t *testing.T) {
+	cm := NewConfigManager()
+	
+	_, err := cm.Merge()
+	require.Error(t, err)
 
-	// Trusted
-	m.trustManager = &mockTrustManagerMore{status: TrustStatusTrusted}
-	cfg, err = m.tryLoad(ctx, p, true, initialSettings)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+	_, err = cm.Merge(&Config{}, nil)
+	require.Error(t, err)
+}
+
+func TestConfigManager_Validate_Error(t *testing.T) {
+	cm := NewConfigManager()
+	err := cm.Validate(context.Background(), nil)
+	require.Error(t, err)
+}
+
+func TestConfigManager_LoadWithEnvironment_Error(t *testing.T) {
+	cm := NewConfigManager()
+	_, err := cm.LoadWithEnvironment(context.Background(), "missing_env")
+	// Since LoadHierarchy doesn't fail, but ApplyEnvironment fails
+	require.Error(t, err)
+}
+
+func TestConfigManager_ApplyEnvironment_MergeSettings(t *testing.T) {
+	cm := NewConfigManager()
+	base := &Config{
+		Environments: map[string]EnvironmentConfig{
+			"dev": {
+				Settings: Settings{
+					CacheDir: "/tmp/cache",
+					DataDir: "/tmp/data",
+					CacheTTL: 3600,
+					Jobs: 4,
+					GitHubProxy: "proxy",
+					HttpProxy: "http",
+					HttpsProxy: "https",
+					GitHubToken: "token",
+					HTTPTimeout: 10,
+					TaskTimeout: 10,
+					TaskOutput: "interleaved",
+					AutoInstall: func() *bool { b := true; return &b }(),
+					Color: "always",
+					AlwaysKeepDownload: true,
+					VerifyMetadata: func() *bool { b := true; return &b }(),
+				},
+				Tools: map[string]ToolConfig{"node": {Version: "18"}},
+				Env: map[string]interface{}{"FOO": "bar"},
+				Tasks: map[string]Task{"build": {Run: StringArray{"make"}}},
+			},
+		},
+		Aliases: map[string]map[string]string{
+			"node": {"lts": "20"},
+		},
 	}
-	if cfg == nil {
-		t.Fatalf("expected cfg")
+	
+	envCfg, err := cm.ApplyEnvironment(base, "dev")
+	require.NoError(t, err)
+	require.Equal(t, "/tmp/cache", envCfg.Settings.CacheDir)
+	require.Equal(t, "/tmp/data", envCfg.Settings.DataDir)
+	require.Equal(t, "token", envCfg.Settings.GitHubToken)
+}
+
+func TestResolveAlias(t *testing.T) {
+	cfg := &Config{
+		Aliases: map[string]map[string]string{
+			"node": {"lts": "20.x"},
+		},
 	}
-	if len(cfg.Env) == 0 || len(cfg.Tasks) == 0 {
-		t.Errorf("expected env and tasks present")
+	require.Equal(t, "20.x", cfg.ResolveAlias("node", "lts"))
+	require.Equal(t, "18.x", cfg.ResolveAlias("node", "18.x"))
+	require.Equal(t, "1.x", cfg.ResolveAlias("go", "1.x"))
+
+	cfgNil := &Config{}
+	require.Equal(t, "1.x", cfgNil.ResolveAlias("node", "1.x"))
+}
+
+func TestRenderTemplate_Error(t *testing.T) {
+	// Test error parsing template
+	res := renderTemplate("{{ foo", nil)
+	require.Equal(t, "{{ foo", res)
+
+	// Test bridgeJinja2
+	res2 := bridgeJinja2("foo is defined")
+	require.Equal(t, "foo", res2)
+}
+
+func TestConfigManager_tryLoad_Branches(t *testing.T) {
+	tmpDir, _ := filepath.EvalSymlinks(t.TempDir())
+	path := filepath.Join(tmpDir, "unirtm.toml")
+	err := os.WriteFile(path, []byte("min_version = '1.0.0'"), 0644)
+	require.NoError(t, err)
+
+	cm := NewConfigManager().(*defaultConfigManager)
+
+	// 1. enforceTrust = false
+	cfg, err := cm.tryLoad(context.Background(), path, false, nil)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	// 2. globally trusted
+	settings := &Settings{
+		TrustedConfigPaths: []string{path},
 	}
+	cfg, err = cm.tryLoad(context.Background(), path, true, settings)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	// 3. Untrusted (not globally trusted, not in trustManager)
+	cfg, err = cm.tryLoad(context.Background(), path, true, &Settings{})
+	require.NoError(t, err)
+	require.Nil(t, cfg) // returns nil, nil for untrusted
+
+	// 4. Trusted
+	err = cm.trustManager.Trust(path)
+	require.NoError(t, err)
+	cfg, err = cm.tryLoad(context.Background(), path, true, &Settings{})
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	// 5. Modified
+	err = os.WriteFile(path, []byte("[env]\nSECRET='123'\n[tasks.build]\nrun=['make']"), 0644)
+	require.NoError(t, err)
+	cfg, err = cm.tryLoad(context.Background(), path, true, &Settings{})
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	require.Empty(t, cfg.Env) // Should be stripped
+	require.Empty(t, cfg.Tasks) // Should be stripped
 }
