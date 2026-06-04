@@ -195,7 +195,7 @@ jobs:
           persist-credentials: false
 
       - name: "⚡ Setup UniRTM"
-        uses: snowdreamtech/setup-unirtm@2f268be27fe61f17109f04e5f27f68526c92b29b # v0.3.0
+        uses: snowdreamtech/setup-unirtm@cacfb4d739ee46d4a4b2528b02b508df2f560706 # v0.4.0
         with:
           unirtm-version: "0.4.0"
           install: true
@@ -304,7 +304,7 @@ jobs:
           persist-credentials: false
 
       - name: "⚡ Setup UniRTM"
-        uses: snowdreamtech/setup-unirtm@2f268be27fe61f17109f04e5f27f68526c92b29b # v0.3.0
+        uses: snowdreamtech/setup-unirtm@cacfb4d739ee46d4a4b2528b02b508df2f560706 # v0.4.0
         with:
           unirtm-version: "0.4.0"
           install: true
@@ -455,7 +455,7 @@ jobs:
           fetch-depth: 0
 
       - name: "⚡ Setup UniRTM"
-        uses: snowdreamtech/setup-unirtm@2f268be27fe61f17109f04e5f27f68526c92b29b # v0.3.0
+        uses: snowdreamtech/setup-unirtm@cacfb4d739ee46d4a4b2528b02b508df2f560706 # v0.4.0
         with:
           unirtm-version: "0.4.0"
           install: true
