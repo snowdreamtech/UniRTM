@@ -4,9 +4,14 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestResolveEnvironment(t *testing.T) {
@@ -38,9 +43,6 @@ func TestResolveEnvironment(t *testing.T) {
 			},
 		},
 	}
-
-	// Preset RM_VAR in env to test removal (we don't actually check os.Environ here,
-	// but we check the returned resolved map)
 
 	resolved, sources, redacted, err := c.ResolveEnvironment()
 
@@ -160,4 +162,285 @@ func TestGetGlobalConfigPath(t *testing.T) {
 	if path == "" {
 		t.Error("expected non-empty global config path")
 	}
+}
+
+// TestResolveEnvironment_NilEnv tests that nil Env is handled gracefully.
+func TestResolveEnvironment_NilEnv(t *testing.T) {
+	c := &Config{Env: nil}
+	resolved, sources, redacted, err := c.ResolveEnvironment()
+	assert.NoError(t, err)
+	assert.Empty(t, resolved)
+	assert.Empty(t, sources)
+	assert.Empty(t, redacted)
+}
+
+// TestResolveEnvironment_PathString tests _.path with a plain string value.
+func TestResolveEnvironment_PathString(t *testing.T) {
+	c := &Config{
+		Env: map[string]interface{}{
+			"_.path": "/my/custom/bin",
+		},
+	}
+	resolved, _, _, err := c.ResolveEnvironment()
+	assert.NoError(t, err)
+	assert.Contains(t, resolved["PATH"], "/my/custom/bin")
+}
+
+// TestResolveEnvironment_PathTemplate tests _.path with a Jinja2 template.
+func TestResolveEnvironment_PathTemplate(t *testing.T) {
+	t.Setenv("MY_HOME", "/home/user")
+	c := &Config{
+		Env: map[string]interface{}{
+			"_.path": "{{ env.MY_HOME }}/bin",
+		},
+	}
+	resolved, _, _, err := c.ResolveEnvironment()
+	assert.NoError(t, err)
+	assert.Contains(t, resolved["PATH"], "/home/user/bin")
+}
+
+// TestResolveEnvironment_SourceTemplate tests _.source with a Jinja2 template.
+func TestResolveEnvironment_SourceTemplate(t *testing.T) {
+	t.Setenv("PROFILE_DIR", "/etc")
+	c := &Config{
+		Env: map[string]interface{}{
+			"_.source": "{{ env.PROFILE_DIR }}/profile.d/myapp.sh",
+		},
+	}
+	_, sources, _, err := c.ResolveEnvironment()
+	assert.NoError(t, err)
+	assert.Contains(t, sources, "/etc/profile.d/myapp.sh")
+}
+
+// TestResolveEnvironment_PythonVenv tests _.python_venv with an existing venv directory.
+func TestResolveEnvironment_PythonVenv(t *testing.T) {
+	tmpDir := t.TempDir()
+	// Create a mock venv structure
+	venvBin := filepath.Join(tmpDir, "venv", "bin")
+	require.NoError(t, os.MkdirAll(venvBin, 0755))
+
+	c := &Config{
+		Env: map[string]interface{}{
+			"_.python_venv": filepath.Join(tmpDir, "venv"),
+		},
+	}
+	resolved, _, _, err := c.ResolveEnvironment()
+	assert.NoError(t, err)
+	assert.Contains(t, resolved["PATH"], venvBin)
+	assert.Equal(t, filepath.Join(tmpDir, "venv"), resolved["VIRTUAL_ENV"])
+}
+
+// TestResolveEnvironment_PythonVenv_Nonexistent tests _.python_venv when the venv dir doesn't exist.
+func TestResolveEnvironment_PythonVenv_Nonexistent(t *testing.T) {
+	c := &Config{
+		Env: map[string]interface{}{
+			"_.python_venv": "/nonexistent/venv/path",
+		},
+	}
+	resolved, _, _, err := c.ResolveEnvironment()
+	assert.NoError(t, err)
+	assert.Empty(t, resolved["VIRTUAL_ENV"], "VIRTUAL_ENV should not be set for non-existent venv")
+}
+
+// TestResolveEnvironment_PythonVenv_RelativePath tests _.python_venv with a relative path.
+func TestResolveEnvironment_PythonVenv_RelativePath(t *testing.T) {
+	tmpDir := t.TempDir()
+	venvBin := filepath.Join(tmpDir, ".venv", "bin")
+	require.NoError(t, os.MkdirAll(venvBin, 0755))
+
+	// Change into tmpDir so the relative path resolves correctly
+	origDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer os.Chdir(origDir)
+	require.NoError(t, os.Chdir(tmpDir))
+
+	c := &Config{
+		Env: map[string]interface{}{
+			"_.python_venv": ".venv",
+		},
+	}
+	resolved, _, _, err := c.ResolveEnvironment()
+	assert.NoError(t, err)
+	assert.Contains(t, resolved["VIRTUAL_ENV"], ".venv")
+}
+
+// TestResolveEnvironment_File tests the _.file directive with a dotenv file.
+func TestResolveEnvironment_File(t *testing.T) {
+	tmpDir := t.TempDir()
+	envFile := filepath.Join(tmpDir, ".env")
+	require.NoError(t, os.WriteFile(envFile, []byte("FROM_FILE=hello\nSECOND=world\n"), 0644))
+
+	c := &Config{
+		Env: map[string]interface{}{
+			"_.file": envFile,
+		},
+	}
+	resolved, _, _, err := c.ResolveEnvironment()
+	assert.NoError(t, err)
+	assert.Equal(t, "hello", resolved["FROM_FILE"])
+	assert.Equal(t, "world", resolved["SECOND"])
+}
+
+// TestResolveEnvironment_File_InvalidPath tests the _.file directive with a non-existent file.
+func TestResolveEnvironment_File_InvalidPath(t *testing.T) {
+	c := &Config{
+		Env: map[string]interface{}{
+			"_.file": "/nonexistent/.env",
+		},
+	}
+	// Should not error - godotenv.Read errors are silently ignored
+	_, _, _, err := c.ResolveEnvironment()
+	assert.NoError(t, err)
+}
+
+// TestResolveEnvironment_RequiredWithHelp tests that the help text is included in the error message.
+func TestResolveEnvironment_RequiredWithHelp(t *testing.T) {
+	c := &Config{
+		Env: map[string]interface{}{
+			"API_KEY": map[string]interface{}{
+				"required": true,
+				"value":    "",
+				"help":     "Set your API key from https://example.com/api",
+			},
+		},
+	}
+	_, _, _, err := c.ResolveEnvironment()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "API_KEY")
+	assert.Contains(t, err.Error(), "https://example.com/api")
+}
+
+// TestResolveEnvironment_IsDefined tests the 'is defined' Jinja2-like syntax.
+func TestResolveEnvironment_IsDefined(t *testing.T) {
+	t.Setenv("EXISTING_VAR", "exists")
+	os.Unsetenv("MISSING_VAR")
+
+	c := &Config{
+		Env: map[string]interface{}{
+			// 'is defined' syntax: if EXISTING_VAR is defined, use 'yes'
+			"DEFINED_RESULT": "{% if env.EXISTING_VAR is defined %}yes{% else %}no{% endif %}",
+			// 'is not defined' syntax
+			"NOT_DEFINED_RESULT": "{% if env.MISSING_VAR is not defined %}missing{% else %}present{% endif %}",
+		},
+	}
+	resolved, _, _, err := c.ResolveEnvironment()
+	assert.NoError(t, err)
+	assert.Equal(t, "yes", resolved["DEFINED_RESULT"])
+	assert.Equal(t, "missing", resolved["NOT_DEFINED_RESULT"])
+}
+
+// TestResolveEnvironment_DictRmFalse tests dict env var with rm=false and value field.
+func TestResolveEnvironment_DictRmFalse(t *testing.T) {
+	c := &Config{
+		Env: map[string]interface{}{
+			"STAY_VAR": map[string]interface{}{
+				"value": "stay",
+				"rm":    false,
+			},
+		},
+	}
+	resolved, _, _, err := c.ResolveEnvironment()
+	assert.NoError(t, err)
+	assert.Equal(t, "stay", resolved["STAY_VAR"])
+}
+
+// TestResolveEnvironment_PathPrependsExistingPATH tests that existing PATH is prepended.
+func TestResolveEnvironment_PathPrependsExistingPATH(t *testing.T) {
+	origPath := os.Getenv("PATH")
+	t.Setenv("PATH", "/existing/path")
+	defer t.Setenv("PATH", origPath)
+
+	c := &Config{
+		Env: map[string]interface{}{
+			"_.path": "/new/bin",
+		},
+	}
+	resolved, _, _, err := c.ResolveEnvironment()
+	assert.NoError(t, err)
+	path := resolved["PATH"]
+	assert.True(t, strings.HasPrefix(path, "/new/bin"), "new path should be prepended, got: %s", path)
+	assert.Contains(t, path, "/existing/path")
+}
+
+// TestApplyEnvironment tests that ApplyEnvironment sets env vars on the process.
+func TestApplyEnvironment(t *testing.T) {
+	c := &Config{
+		Env: map[string]interface{}{
+			"APPLY_TEST_VAR": "applied_value",
+		},
+	}
+
+	os.Unsetenv("APPLY_TEST_VAR")
+	c.ApplyEnvironment()
+	assert.Equal(t, "applied_value", os.Getenv("APPLY_TEST_VAR"))
+	os.Unsetenv("APPLY_TEST_VAR")
+}
+
+// TestApplyEnvironment_WithRequired tests ApplyEnvironment still applies vars even if required fails.
+func TestApplyEnvironment_WithRequired(t *testing.T) {
+	c := &Config{
+		Env: map[string]interface{}{
+			"PARTIAL_VAR": "partial_value",
+			"MISSING_REQ": map[string]interface{}{
+				"required": true,
+				"value":    "",
+			},
+		},
+	}
+
+	os.Unsetenv("PARTIAL_VAR")
+	// ApplyEnvironment should not panic or crash even if resolution has errors
+	c.ApplyEnvironment()
+	assert.Equal(t, "partial_value", os.Getenv("PARTIAL_VAR"))
+	os.Unsetenv("PARTIAL_VAR")
+}
+
+// TestLoadFull_InEmptyDir tests LoadFull in a directory with no config files.
+func TestLoadFull_InEmptyDir(t *testing.T) {
+	tmpDir := t.TempDir()
+	origDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer os.Chdir(origDir)
+
+	require.NoError(t, os.Chdir(tmpDir))
+
+	cfg, err := LoadFull()
+	// With no config file, should succeed with empty config
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+}
+
+// TestLoadGlobal_FileNotFound tests LoadGlobal when the global config file doesn't exist.
+func TestLoadGlobal_FileNotFound(t *testing.T) {
+	origReadFile := OsReadFile
+	defer func() { OsReadFile = origReadFile }()
+	OsReadFile = func(filename string) ([]byte, error) {
+		return nil, os.ErrNotExist
+	}
+
+	cfg, err := LoadGlobal()
+	// When file not found, should return empty config with error
+	assert.Error(t, err)
+	assert.NotNil(t, cfg)
+}
+
+// TestLoadFromDir_InvalidTOML tests that invalid TOML in a config file returns an error.
+func TestLoadFromDir_InvalidTOML(t *testing.T) {
+	tmpDir := t.TempDir()
+	require.NoError(t, os.WriteFile(
+		filepath.Join(tmpDir, "unirtm.toml"),
+		[]byte("[invalid toml syntax{{{{"),
+		0644,
+	))
+	_, err := LoadFromDir(tmpDir)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to unmarshal config")
+}
+
+// TestGetGlobalConfigPath_HomeDir tests GetGlobalConfigPath format.
+func TestGetGlobalConfigPath_HomeDir(t *testing.T) {
+	path := GetGlobalConfigPath()
+	assert.True(t, strings.HasSuffix(path, "unirtm.toml"),
+		fmt.Sprintf("expected path to end with unirtm.toml, got: %s", path))
+	assert.Contains(t, path, "unirtm")
 }

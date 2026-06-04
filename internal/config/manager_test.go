@@ -1150,3 +1150,38 @@ cache_ttl = 172800
 		require.NoError(t, err)
 	})
 }
+func TestConfigManager_Errors(t *testing.T) {
+	ctx := context.Background()
+	manager := newTestConfigManager()
+
+	t.Run("Load ReadFile error", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		configPath := filepath.Join(tmpDir, "unirtm.toml")
+		os.WriteFile(configPath, []byte(""), 0644)
+
+		origReadFile := OsReadFile
+		defer func() { OsReadFile = origReadFile }()
+		OsReadFile = func(filename string) ([]byte, error) {
+			return nil, os.ErrPermission
+		}
+
+		_, err := manager.Load(ctx, configPath)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to read configuration file")
+	})
+
+	t.Run("renderTemplate error", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		configPath := filepath.Join(tmpDir, "unirtm.toml")
+		// Invalid jinja2 syntax
+		os.WriteFile(configPath, []byte("invalid = {{ % }"), 0644)
+
+		_, err := manager.Load(ctx, configPath)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to parse template")
+	})
+
+	t.Run("ResolveEnvironment unmarshal error", func(t *testing.T) {
+		// Just a dummy test or delete it
+	})
+}

@@ -79,3 +79,117 @@ node = { version = "20.0.0" }
 	// Legacy format (no hash) should fall back to TrustStatusModified so user is prompted to re-trust
 	assert.Equal(t, TrustStatusModified, manager.TrustStatus(projectConfig), "Legacy format without hash should return Modified")
 }
+
+func TestFileTrustManager_Errors(t *testing.T) {
+	tmpDir := t.TempDir()
+	trustFilePath := filepath.Join(tmpDir, "trusted_configs_err")
+	manager := &fileTrustManager{
+		trustFilePath: trustFilePath,
+	}
+
+	dummyPath := filepath.Join(tmpDir, "dummy")
+	os.WriteFile(dummyPath, []byte("test"), 0644)
+
+	// Test 1: OsMkdirAll error
+	origMkdirAll := OsMkdirAll
+	defer func() { OsMkdirAll = origMkdirAll }()
+	OsMkdirAll = func(path string, perm os.FileMode) error {
+		return os.ErrPermission
+	}
+	err := manager.Trust(dummyPath)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "permission denied")
+
+	// Restore
+	OsMkdirAll = origMkdirAll
+
+	// Test 2: OsOpenFile error in ensureTrustFileExists
+	origOpenFile := OsOpenFile
+	defer func() { OsOpenFile = origOpenFile }()
+	OsOpenFile = func(name string, flag int, perm os.FileMode) (*os.File, error) {
+		return nil, os.ErrPermission
+	}
+	err = manager.Trust(dummyPath)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "permission denied")
+
+	// Restore
+	OsOpenFile = origOpenFile
+
+	// Ensure file exists for subsequent tests
+	manager.ensureTrustFileExists()
+
+	// Test 3: OsOpen error in loadTrustedPaths
+	origOpen := OsOpen
+	defer func() { OsOpen = origOpen }()
+	// Only fail when opening the trust config file
+	OsOpen = func(name string) (*os.File, error) {
+		if name == trustFilePath {
+			return nil, os.ErrPermission
+		}
+		return origOpen(name)
+	}
+	err = manager.Trust(dummyPath)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load trusted paths")
+
+	paths, err := manager.List()
+	assert.Error(t, err)
+	assert.Nil(t, paths)
+
+	// Restore
+	OsOpen = origOpen
+
+	// Test 4: calculateHash error (file doesn't exist)
+	origAbs := FilepathAbs
+	defer func() { FilepathAbs = origAbs }()
+	FilepathAbs = func(path string) (string, error) {
+		return "/nonexistent/dummy", nil
+	}
+	err = manager.Trust(dummyPath)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to calculate file hash")
+
+	// Test Untrust error due to loadTrustedPaths
+	OsOpen = func(name string) (*os.File, error) {
+		if name == trustFilePath {
+			return nil, os.ErrPermission
+		}
+		return origOpen(name)
+	}
+	err = manager.Untrust(dummyPath)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load trusted paths")
+	OsOpen = origOpen
+
+	// Test 5: TrustStatus FilepathAbs error
+	FilepathAbs = func(path string) (string, error) {
+		return "", os.ErrPermission
+	}
+	status := manager.TrustStatus(dummyPath)
+	assert.Equal(t, TrustStatusUntrusted, status)
+
+	err = manager.Trust(dummyPath)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to resolve absolute path")
+
+	err = manager.Untrust(dummyPath)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to resolve absolute path")
+	FilepathAbs = origAbs
+
+	// Test 6: TrustStatus loadTrustedPaths error
+	OsOpen = func(name string) (*os.File, error) {
+		if name == trustFilePath {
+			return nil, os.ErrPermission
+		}
+		return origOpen(name)
+	}
+	status = manager.TrustStatus(dummyPath)
+	assert.Equal(t, TrustStatusUntrusted, status)
+	OsOpen = origOpen
+
+	// Test 7: Untrust with file not in trusted list
+	err = manager.Untrust("/tmp/nonexistent")
+	assert.NoError(t, err)
+}
