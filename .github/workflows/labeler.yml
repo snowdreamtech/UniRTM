@@ -36,7 +36,7 @@ jobs:
     timeout-minutes: 30 # Path-based labeling is extremely fast
     steps:
       - name: "🔒 Harden Runner"
-        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           disable-sudo: true
           egress-policy: block
@@ -99,7 +99,7 @@ jobs:
             *.actions.githubusercontent.com:443
             *.blob.core.windows.net:443
       - name: "🔍 Triage Pull Request (Labeler)"
-        uses: actions/labeler@634933edcd8ababfe52f92936142cc22ac488b1b # v6.0.1
+        uses: actions/labeler@f27b608878404679385c85cfa523b85ccb86e213 # v6.1.0
         with:
           # Automatically applies labels based on file path changes to improve maintenance visibility.
           repo-token: ${{ secrets.GITHUB_TOKEN }}
