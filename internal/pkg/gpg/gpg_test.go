@@ -183,13 +183,19 @@ func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 type mockBody struct {
 	data *strings.Reader
+	err  bool
 }
 
 func newMockBody(s string) *mockBody {
 	return &mockBody{data: strings.NewReader(s)}
 }
-func (m *mockBody) Read(p []byte) (n int, err error) { return m.data.Read(p) }
-func (m *mockBody) Close() error                     { return nil }
+func (m *mockBody) Read(p []byte) (n int, err error) {
+	if m.err {
+		return 0, os.ErrClosed
+	}
+	return m.data.Read(p)
+}
+func (m *mockBody) Close() error { return nil }
 
 // --- SystemGPGVerifier Tests ---
 
