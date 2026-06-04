@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1](https://github.com/snowdreamtech/UniRTM/compare/v0.5.0...v0.5.1) (2026-06-04)
+
+
+### Bug Fixes
+
+* update quic-go to v0.59.1 to resolve OSV vulnerability GHSA-vvgj-x9jq-8cj9 ([73c53cc](https://github.com/snowdreamtech/UniRTM/commit/73c53ccf2e6c5374432e929d19c545fbd8c536e7))
+
 ## [0.5.0](https://github.com/snowdreamtech/UniRTM/compare/v0.4.0...v0.5.0) (2026-06-03)
 
 
