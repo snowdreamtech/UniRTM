@@ -81,5 +81,5 @@ func init() {
 	if rootCmd != nil {
 		rootCmd.AddCommand(dfCmd)
 	}
-	dfCmd.Flags().BoolVarP(&dfHumanReadable, "human-readable", "H", false, "print sizes in powers of 1024 (e.g., 1023M)")
+	dfCmd.Flags().BoolVarP(&dfHumanReadable, "human-readable", "h", false, "print sizes in powers of 1024 (e.g., 1023M)")
 }
