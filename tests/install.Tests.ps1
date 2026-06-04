@@ -29,10 +29,10 @@ Describe "install.ps1" {
         } -ModuleName $null
 
         $tmpDir = New-Item -ItemType Directory -Path ([System.IO.Path]::GetTempPath()) -Name ([System.Guid]::NewGuid().ToString()) -Force
-        
+
         $output = & $InstallScript -InstallDir $tmpDir -SkipChecksum *>&1 | Out-String
         $output | Should -Match "Skipping checksum verification"
-        
+
         Remove-Item -Recurse -Force $tmpDir
     }
 }
