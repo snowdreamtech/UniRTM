@@ -28,13 +28,20 @@ func TestAsdfBackend_EdgeCases(t *testing.T) {
 	b.registryPath = filepath.Join(tempDir, "registry")
 	b.pluginsPath = filepath.Join(tempDir, "plugins")
 
+	// Pre-create the registry path and the FETCH_HEAD file to pretend we recently fetched
+	// This avoids "git clone" in tests
+	gitDir := filepath.Join(b.registryPath, ".git")
+	err := os.MkdirAll(gitDir, 0755)
+	require.NoError(t, err)
+	fetchHead := filepath.Join(gitDir, "FETCH_HEAD")
+	err = os.WriteFile(fetchHead, []byte("recent"), 0644)
+	require.NoError(t, err)
+
 	ctx := context.Background()
 
 	t.Run("ResolveVersion ListVersions Error", func(t *testing.T) {
 		// Mock pluginsPath to an unwritable directory to force ensurePlugin error -> ListVersions error
 		b.pluginsPath = filepath.Join(tempDir, "unwritable_plugins")
-		// Make it a file instead of a directory to cause MkdirAll to fail or Stat to fail?
-		// Actually, let's just make MkdirAll fail by creating a file with the same name
 		err := os.WriteFile(b.pluginsPath, []byte("file"), 0644)
 		require.NoError(t, err)
 
@@ -49,15 +56,19 @@ func TestAsdfBackend_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("UpdateRegistry MkdirAll Error", func(t *testing.T) {
+		oldRegistry := b.registryPath
 		b.registryPath = filepath.Join(tempDir, "unwritable_registry", "registry")
 		err := os.WriteFile(filepath.Join(tempDir, "unwritable_registry"), []byte("file"), 0644)
 		require.NoError(t, err)
 
 		err = b.updateRegistry(ctx)
 		assert.Error(t, err)
+
+		b.registryPath = oldRegistry
 	})
 
 	t.Run("UpdateRegistry FETCH_HEAD recent", func(t *testing.T) {
+		oldRegistry := b.registryPath
 		b.registryPath = filepath.Join(tempDir, "registry_recent")
 		gitDir := filepath.Join(b.registryPath, ".git")
 		err := os.MkdirAll(gitDir, 0755)
@@ -74,9 +85,12 @@ func TestAsdfBackend_EdgeCases(t *testing.T) {
 		// It should return nil early without doing anything since it's < 24h
 		err = b.updateRegistry(ctx)
 		assert.NoError(t, err)
+
+		b.registryPath = oldRegistry
 	})
 
 	t.Run("LookupPluginURL empty", func(t *testing.T) {
+		oldRegistry := b.registryPath
 		b.registryPath = filepath.Join(tempDir, "registry_empty")
 		pluginsDir := filepath.Join(b.registryPath, "plugins")
 		err := os.MkdirAll(pluginsDir, 0755)
@@ -90,5 +104,7 @@ func TestAsdfBackend_EdgeCases(t *testing.T) {
 		url, err := b.lookupPluginURL("emptytool")
 		assert.Error(t, err)
 		assert.Equal(t, "", url)
+
+		b.registryPath = oldRegistry
 	})
 }
