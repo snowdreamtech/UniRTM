@@ -192,4 +192,26 @@ func TestFileTrustManager_Errors(t *testing.T) {
 	// Test 7: Untrust with file not in trusted list
 	err = manager.Untrust("/tmp/nonexistent")
 	assert.NoError(t, err)
+
+	// Test 8: SaveTrustedPaths write error
+	manager.Trust(dummyPath) // Trust it first so Untrust will try to save
+
+	// We can't easily mock bufio or os.File write methods, but we can make OsOpenFile fail on write
+	OsOpenFile = func(name string, flag int, perm os.FileMode) (*os.File, error) {
+		if name == trustFilePath && flag == os.O_WRONLY|os.O_TRUNC {
+			return nil, os.ErrPermission
+		}
+		return origOpenFile(name, flag, perm)
+	}
+	err = manager.Untrust(dummyPath) // Untrust calls saveTrustedPaths
+	assert.Error(t, err)
+	OsOpenFile = origOpenFile
+
+	// Test 9: calculateHash error
+	OsOpen = func(name string) (*os.File, error) {
+		return nil, os.ErrPermission
+	}
+	_, err = calculateHash(dummyPath)
+	assert.Error(t, err)
+	OsOpen = origOpen
 }

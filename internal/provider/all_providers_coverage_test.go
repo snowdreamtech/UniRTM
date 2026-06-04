@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
@@ -31,7 +32,8 @@ func TestAllProviders_Coverage(t *testing.T) {
 		NewJavaProvider(),
 	}
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
 	testPath := "test_path"
 	version := "1.0.0"
 

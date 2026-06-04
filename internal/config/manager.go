@@ -272,8 +272,8 @@ func (m *defaultConfigManager) LoadHierarchy(ctx context.Context) (*Config, erro
 		"/etc/unirtm/config.yaml",
 		"/etc/unirtm/config.yml",
 	}
-	for _, path := range systemPaths {
-		if cfg, err := m.tryLoad(ctx, path, false, nil); cfg != nil && err == nil {
+	for _, file := range systemPaths {
+		if cfg, err := m.tryLoad(ctx, file, false, nil); cfg != nil && err == nil {
 			configs = append(configs, cfg)
 			break
 		}

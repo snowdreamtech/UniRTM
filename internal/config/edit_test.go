@@ -4,6 +4,7 @@
 package config
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -76,5 +77,56 @@ func TestUpsertToolVersion(t *testing.T) {
 	res = UpsertToolVersion(content, "node", "18")
 	if !strings.Contains(res, "node = \"18\"") || strings.Contains(res, "node = \"16\"") {
 		t.Errorf("UpsertToolVersion failed to update existing tool: %s", res)
+	}
+}
+
+func TestLoadRawTOML(t *testing.T) {
+	dir := t.TempDir()
+
+	// 1. File does not exist
+	m, err := LoadRawTOML(dir + "/missing.toml")
+	if err != nil {
+		t.Errorf("Expected nil error for missing file, got %v", err)
+	}
+	if len(m) != 0 {
+		t.Errorf("Expected empty map for missing file, got %v", m)
+	}
+
+	// 2. Invalid TOML
+	invalidPath := dir + "/invalid.toml"
+	os.WriteFile(invalidPath, []byte("invalid \n toml"), 0644)
+	_, err = LoadRawTOML(invalidPath)
+	if err == nil {
+		t.Errorf("Expected error for invalid TOML, got nil")
+	}
+}
+
+func TestSaveRawTOML(t *testing.T) {
+	dir := t.TempDir()
+
+	// 1. Successful save
+	path := dir + "/config.toml"
+	m := map[string]interface{}{
+		"env": map[string]interface{}{
+			"FOO": "bar",
+		},
+	}
+	err := SaveRawTOML(path, m)
+	if err != nil {
+		t.Errorf("Expected nil error for successful save, got %v", err)
+	}
+
+	// 2. Unencodable map
+	err = SaveRawTOML(path, map[string]interface{}{
+		"bad": make(chan int),
+	})
+	if err == nil {
+		t.Errorf("Expected error for unencodable map, got nil")
+	}
+
+	// 3. Write error (directory as file)
+	err = SaveRawTOML(dir, m)
+	if err == nil {
+		t.Errorf("Expected error for write error, got nil")
 	}
 }

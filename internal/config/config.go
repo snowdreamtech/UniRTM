@@ -514,11 +514,7 @@ func (d *DurationOrInt) UnmarshalYAML(value *yaml.Node) error {
 			return nil
 		}
 	}
-	var i int
-	if err := value.Decode(&i); err == nil {
-		*d = DurationOrInt(i)
-		return nil
-	}
+
 	return fmt.Errorf("invalid duration or integer: %s", value.Value)
 }
 
