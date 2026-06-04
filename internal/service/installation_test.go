@@ -167,10 +167,18 @@ func TestIsExecutableFile(t *testing.T) {
 	// 1. Directory
 	assert.False(t, isExecutableFile(tempDir))
 
-	// 2. Archive
+	// 2. Archive extensions
 	archiveFile := filepath.Join(tempDir, "test.tar.gz")
 	os.WriteFile(archiveFile, []byte("data"), 0644)
 	assert.False(t, isExecutableFile(archiveFile))
+
+	bz2File := filepath.Join(tempDir, "test.tar.bz2")
+	os.WriteFile(bz2File, []byte("data"), 0644)
+	assert.False(t, isExecutableFile(bz2File))
+
+	debFile := filepath.Join(tempDir, "test.deb")
+	os.WriteFile(debFile, []byte("data"), 0644)
+	assert.False(t, isExecutableFile(debFile))
 
 	// 3. Non-existent
 	assert.False(t, isExecutableFile(filepath.Join(tempDir, "does-not-exist")))
@@ -456,5 +464,71 @@ func TestInstallationManager_SortToolsFromSpecs(t *testing.T) {
 	res := im.SortToolsFromSpecs(nil)
 	if len(res) != 0 {
 		t.Errorf("expected empty result, got %v", res)
+	}
+}
+
+func TestInstallationManager_ResolveToolEnvBySpec(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Setenv("UNIRTM_DATA_DIR", tempDir)
+
+	providerRegistry := provider.NewRegistry()
+	mockProv := &mockProvider{
+		name: "envtool",
+	}
+	providerRegistry.Register("envtool", mockProv)
+
+	im := NewInstallationManager(nil, providerRegistry, nil, nil, nil, &config.Settings{})
+
+	// Tool not installed
+	envMap := im.ResolveToolEnvBySpec("envtool", "1.0.0", "hashicorp")
+	if len(envMap) != 0 {
+		t.Errorf("expected empty env for not installed tool")
+	}
+
+	// Tool installed
+	toolName := "envtool"
+	version := "1.0.0"
+	backendName := "hashicorp"
+
+	fsName := env.GetFSToolName(toolName, backendName)
+	installPath := filepath.Join(env.GetInstallsDir(), fsName, version)
+	err := os.MkdirAll(filepath.Join(installPath, "bin"), 0755)
+	require.NoError(t, err)
+
+	res := im.ResolveToolEnvBySpec(toolName, version, backendName)
+	if res["UNIRTM_ENVTOOL_VERSION"] != version {
+		t.Errorf("expected UNIRTM_ENVTOOL_VERSION=%s, got %s", version, res["UNIRTM_ENVTOOL_VERSION"])
+	}
+	if res["PATH"] == "" {
+		t.Errorf("expected PATH to be set")
+	}
+}
+
+func TestInstallationManager_ResolveExecutable(t *testing.T) {
+	ctx := context.Background()
+	installRepo := &mockInstallationRepo{
+		installations: map[string]*repository.Installation{
+			"tool1-1.0.0": {
+				Tool:        "tool1",
+				Version:     "1.0.0",
+				Backend:     "test-backend",
+				InstallPath: filepath.Join(t.TempDir(), "tool1"),
+			},
+		},
+	}
+
+	providerRegistry := provider.NewRegistry()
+	mockProviderInstance := &mockProvider{name: "tool1"}
+	providerRegistry.Register("tool1", mockProviderInstance)
+
+	im := NewInstallationManager(nil, providerRegistry, nil, installRepo, nil, &config.Settings{})
+
+	// Create mock dir
+	err := os.MkdirAll(filepath.Join(t.TempDir(), "tool1", "bin"), 0755)
+	require.NoError(t, err)
+
+	_, _, err = im.ResolveExecutable(ctx, "nonexistent", backend.Platform{OS: "linux", Arch: "amd64"})
+	if err == nil {
+		t.Error("expected error for not found executable")
 	}
 }
