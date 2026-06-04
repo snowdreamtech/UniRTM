@@ -894,7 +894,7 @@ func (im *InstallationManager) SortTools(tools map[string]config.ToolConfig) []T
 			tempVisited[t.ToolName] = true
 
 			// Get backend dependencies
-			if b, err := backend.Get(t.BackendName); err == nil {
+			if b, err := im.backendRegistry.Get(t.BackendName); err == nil {
 				for _, dep := range b.Dependencies() {
 					// Check if this dependency is also in our tools list
 					if depTool, ok := toolMap[dep]; ok {
@@ -948,7 +948,7 @@ func (im *InstallationManager) SortToolsFromSpecs(tools map[string]ToolSpec) []T
 		if !visited[t.ToolName] {
 			tempVisited[t.ToolName] = true
 
-			if b, err := backend.Get(t.BackendName); err == nil {
+			if b, err := im.backendRegistry.Get(t.BackendName); err == nil {
 				for _, dep := range b.Dependencies() {
 					if depTool, ok := toolMap[dep]; ok {
 						visit(*depTool)

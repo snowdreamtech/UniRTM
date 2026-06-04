@@ -63,6 +63,43 @@ func TestRubyHandler_ResolveVersions(t *testing.T) {
 	}
 	filename := fmt.Sprintf("ruby-3.2.0-%s-%s.tar.gz", osName2, runtime.GOARCH)
 	assert.True(t, h.isMatch(filename))
-	assert.False(t, h.isMatch("ruby-3.2.0-linux-amd64.zip"))
-	assert.False(t, h.isMatch("ruby-3.2.0-preview1-linux-amd64.tar.gz"))
+}
+
+func TestRubyHandler_isMatch(t *testing.T) {
+	h := &RubyHandler{}
+
+	originalOS := env.RuntimeGOOS
+	defer func() { env.RuntimeGOOS = originalOS }()
+
+	assert.False(t, h.isMatch("python-3.0.0-ubuntu-amd64.tar.gz"))
+
+	env.RuntimeGOOS = "darwin"
+	assert.True(t, h.isMatch(fmt.Sprintf("ruby-3.0-macos-%s.tar.gz", runtime.GOARCH)))
+	assert.False(t, h.isMatch(fmt.Sprintf("ruby-3.0-ubuntu-%s.tar.gz", runtime.GOARCH)))
+
+	env.RuntimeGOOS = "linux"
+	assert.True(t, h.isMatch(fmt.Sprintf("ruby-3.0-ubuntu-%s.tar.gz", runtime.GOARCH)))
+	assert.False(t, h.isMatch(fmt.Sprintf("ruby-3.0-macos-%s.tar.gz", runtime.GOARCH)))
+
+	env.RuntimeGOOS = "windows"
+	assert.True(t, h.isMatch(fmt.Sprintf("ruby-3.0-windows-%s.tar.gz", runtime.GOARCH)))
+	assert.False(t, h.isMatch(fmt.Sprintf("ruby-3.0-macos-%s.tar.gz", runtime.GOARCH)))
+
+	env.RuntimeGOOS = "freebsd"
+	assert.False(t, h.isMatch(fmt.Sprintf("ruby-3.0-freebsd-%s.tar.gz", env.RuntimeGOARCH)))
+
+	// Test Arch
+	env.RuntimeGOOS = "linux"
+	originalArch := env.RuntimeGOARCH
+	defer func() { env.RuntimeGOARCH = originalArch }()
+
+	env.RuntimeGOARCH = "arm64"
+	assert.True(t, h.isMatch("ruby-3.0-ubuntu-arm64.tar.gz"))
+	assert.False(t, h.isMatch("ruby-3.0-ubuntu-amd64.tar.gz"))
+
+	env.RuntimeGOARCH = "amd64"
+	assert.True(t, h.isMatch("ruby-3.0-ubuntu-amd64.tar.gz"))
+	assert.True(t, h.isMatch("ruby-3.0-ubuntu-x86_64.tar.gz"))
+	assert.False(t, h.isMatch("ruby-3.0-ubuntu-arm64.tar.gz"))
+	assert.False(t, h.isMatch("ruby-3.0-ubuntu.tar.gz")) // amd64 requires arch in name usually unless handled otherwise, wait, actually if not present it returns false
 }

@@ -35,3 +35,20 @@ func TestKubectlHandler_ResolveVersions(t *testing.T) {
 	assert.Equal(t, "v1.28.0", versions[0].Version)
 	assert.NotEmpty(t, versions[0].Assets)
 }
+
+func TestKubectlHandler_ResolveVersions_Failures(t *testing.T) {
+	mockRt := &mockRoundTripper{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			return &http.Response{StatusCode: 500, Body: io.NopCloser(bytes.NewBufferString(`Internal Error`))}, nil
+		},
+	}
+	oldMock := pkgHttp.MockTransport
+	pkgHttp.MockTransport = mockRt
+	defer func() { pkgHttp.MockTransport = oldMock }()
+
+	h := &KubectlHandler{}
+	_, err := h.ResolveVersions(context.Background(), "")
+	assert.Error(t, err)
+
+	// Invalid body isn't explicitly tested for kubectl because it's just strings.Split, so it's a valid empty list.
+}

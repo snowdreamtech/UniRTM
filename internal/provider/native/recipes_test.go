@@ -136,6 +136,27 @@ func TestGolangHandler_ResolveVersions(t *testing.T) {
 	assert.Equal(t, "go1.20.linux-amd64.tar.gz", versions[0].Assets[0].Filename)
 }
 
+func TestGolangHandler_ResolveVersions_Failures(t *testing.T) {
+	mockRt := &mockRoundTripper{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			return &http.Response{StatusCode: 500, Body: io.NopCloser(bytes.NewBufferString(`Error`))}, nil
+		},
+	}
+	oldMock := unirtmhttp.MockTransport
+	unirtmhttp.MockTransport = mockRt
+	defer func() { unirtmhttp.MockTransport = oldMock }()
+
+	h := &GolangHandler{}
+	_, err := h.ResolveVersions(context.Background(), "")
+	assert.Error(t, err)
+
+	mockRt.roundTripFunc = func(req *http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: 200, Body: io.NopCloser(bytes.NewBufferString(`invalid`))}, nil
+	}
+	_, err = h.ResolveVersions(context.Background(), "")
+	assert.Error(t, err)
+}
+
 func TestJuliaHandler_ResolveVersions(t *testing.T) {
 	oldMock := unirtmhttp.MockTransport
 	defer func() { unirtmhttp.MockTransport = oldMock }()
@@ -166,6 +187,27 @@ func TestJuliaHandler_ResolveVersions(t *testing.T) {
 	assert.Len(t, versions[0].Assets, 1)
 	assert.Equal(t, "darwin", versions[0].Assets[0].OS)
 	assert.Equal(t, "arm64", versions[0].Assets[0].Arch)
+}
+
+func TestJuliaHandler_ResolveVersions_Failures(t *testing.T) {
+	mockRt := &mockRoundTripper{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			return &http.Response{StatusCode: 500, Body: io.NopCloser(bytes.NewBufferString(`Error`))}, nil
+		},
+	}
+	oldMock := unirtmhttp.MockTransport
+	unirtmhttp.MockTransport = mockRt
+	defer func() { unirtmhttp.MockTransport = oldMock }()
+
+	h := &JuliaHandler{}
+	_, err := h.ResolveVersions(context.Background(), "")
+	assert.Error(t, err)
+
+	mockRt.roundTripFunc = func(req *http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: 200, Body: io.NopCloser(bytes.NewBufferString(`invalid`))}, nil
+	}
+	_, err = h.ResolveVersions(context.Background(), "")
+	assert.Error(t, err)
 }
 
 func TestMapPlatform(t *testing.T) {

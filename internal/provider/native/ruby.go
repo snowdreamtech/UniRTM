@@ -5,7 +5,6 @@ package native
 
 import (
 	"context"
-	"runtime"
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -60,7 +59,7 @@ func (h *RubyHandler) isMatch(filename string) bool {
 	}
 
 	os := env.RuntimeGOOS
-	arch := runtime.GOARCH
+	arch := env.RuntimeGOARCH
 
 	// Arch check: ruby-builder binaries are mostly x64 (amd64)
 	if arch != "amd64" && !strings.Contains(filename, arch) {
@@ -68,9 +67,8 @@ func (h *RubyHandler) isMatch(filename string) bool {
 		if arch == "arm64" && !strings.Contains(filename, "arm64") {
 			return false
 		}
-		if arch == "amd64" && !strings.Contains(filename, "x86_64") && !strings.Contains(filename, "amd64") {
-			return false
-		}
+	} else if arch == "amd64" && !strings.Contains(filename, "x86_64") && !strings.Contains(filename, "amd64") {
+		return false
 	}
 
 	if os == "darwin" {

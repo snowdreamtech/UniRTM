@@ -34,3 +34,20 @@ func TestJavaHandler_ResolveVersions(t *testing.T) {
 	assert.Len(t, versions, 5)
 	assert.Equal(t, "17.0.2", versions[0].Version)
 }
+
+func TestJavaHandler_ResolveVersions_Failures(t *testing.T) {
+	mockRt := &mockRoundTripper{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			return &http.Response{StatusCode: 500, Body: io.NopCloser(bytes.NewBufferString(`Error`))}, nil
+		},
+	}
+	oldMock := pkgHttp.MockTransport
+	pkgHttp.MockTransport = mockRt
+	defer func() { pkgHttp.MockTransport = oldMock }()
+
+	h := &JavaHandler{}
+	versions, err := h.ResolveVersions(context.Background(), "")
+	// It continues on error so it shouldn't return error
+	assert.NoError(t, err)
+	assert.Len(t, versions, 0)
+}

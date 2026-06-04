@@ -16,6 +16,7 @@ var (
 	OsUserConfigDir = os.UserConfigDir
 	OsGetwd         = os.Getwd
 	RuntimeGOOS     = runtime.GOOS
+	RuntimeGOARCH   = runtime.GOARCH
 )
 
 // GetFSToolName returns a sanitized tool name for use in filesystem paths.
