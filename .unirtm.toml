@@ -53,10 +53,15 @@ output = 'interleaved'
 [tasks."audit:zizmor"]
 description = 'Audit GitHub Actions workflows for security flaws'
 run = '''
+OFFLINE_FLAG="--offline"
+if [ "${CI:-}" = "true" ] || [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+    OFFLINE_FLAG=""
+fi
+
 if [ "$UNIRTM_FIX" = "1" ]; then
-    unirtm exec -- zizmor . --format plain --config .zizmor.yml --fix=all
+    unirtm exec -- zizmor . --format plain --config .zizmor.yml $OFFLINE_FLAG --fix=all
 else
-    unirtm exec -- zizmor . --format plain --config .zizmor.yml
+    unirtm exec -- zizmor . --format plain --config .zizmor.yml $OFFLINE_FLAG
 fi
 '''
 output = 'interleaved'
