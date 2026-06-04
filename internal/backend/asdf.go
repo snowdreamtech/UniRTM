@@ -177,6 +177,7 @@ func (b *AsdfBackend) ensurePlugin(ctx context.Context, tool string) (string, er
 		// Fallback heuristics
 		repoURL = fmt.Sprintf("https://github.com/asdf-community/asdf-%s.git", tool)
 	}
+	repoURL = b.applyGithubProxy(repoURL)
 
 	logger.Info("Cloning asdf plugin", map[string]interface{}{"tool": tool, "url": repoURL})
 
@@ -190,6 +191,7 @@ func (b *AsdfBackend) ensurePlugin(ctx context.Context, tool string) (string, er
 		// Try alternative fallback
 		if strings.Contains(repoURL, "asdf-community") {
 			altURL := fmt.Sprintf("https://github.com/asdf-vm/asdf-%s.git", tool)
+			altURL = b.applyGithubProxy(altURL)
 			logger.Info("Fallback clone asdf plugin", map[string]interface{}{"tool": tool, "url": altURL})
 			cmd = exec.CommandContext(ctx, "git", "clone", altURL, pluginDir)
 			cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
@@ -210,7 +212,8 @@ func (b *AsdfBackend) updateRegistry(ctx context.Context) error {
 		if err := os.MkdirAll(filepath.Dir(b.registryPath), 0755); err != nil {
 			return err
 		}
-		cmd := exec.CommandContext(ctx, "git", "clone", "https://github.com/asdf-vm/asdf-plugins.git", b.registryPath)
+		repoURL := b.applyGithubProxy("https://github.com/asdf-vm/asdf-plugins.git")
+		cmd := exec.CommandContext(ctx, "git", "clone", repoURL, b.registryPath)
 		cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
 		return cmd.Run()
 	}
@@ -261,4 +264,22 @@ func (b *AsdfBackend) IsStable() bool {
 
 func (b *AsdfBackend) SupportsOffline() bool {
 	return false
+}
+
+// applyGithubProxy prepends the github proxy if configured and the url is a github url.
+func (b *AsdfBackend) applyGithubProxy(url string) string {
+	if !strings.HasPrefix(url, "https://github.com/") {
+		return url
+	}
+	proxy := os.Getenv("GITHUB_PROXY")
+	if proxy == "" {
+		proxy = os.Getenv("github_proxy")
+	}
+	if proxy != "" {
+		if !strings.HasSuffix(proxy, "/") {
+			proxy += "/"
+		}
+		return proxy + url
+	}
+	return url
 }

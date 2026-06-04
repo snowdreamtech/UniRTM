@@ -20,6 +20,7 @@ func TestGithubHandler_Name(t *testing.T) {
 }
 
 func TestGithubHandler_ResolveVersions(t *testing.T) {
+	t.Setenv("ENABLE_GITHUB_PROXY", "0")
 	// Setup mock transport using mockRoundTripper from recipes_test.go
 	mockRt := &mockRoundTripper{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -100,6 +101,7 @@ func TestGithubHandler_ResolveVersions_Failures(t *testing.T) {
 }
 
 func TestGithubHandler_ResolveVersions_Signatures(t *testing.T) {
+	t.Setenv("ENABLE_GITHUB_PROXY", "0")
 	mockRt := &mockRoundTripper{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
 			return &http.Response{StatusCode: 200, Body: io.NopCloser(bytes.NewBufferString(`[
