@@ -451,20 +451,94 @@ func TestInstallationManager_SetToolConfigs(t *testing.T) {
 	im.SetToolConfigs(map[string]config.ToolConfig{})
 }
 
-func TestInstallationManager_EnsureInstalled(t *testing.T) {
-	im := NewInstallationManager(nil, nil, nil, nil, nil, &config.Settings{})
-	err := im.EnsureInstalled(context.Background(), nil)
-	if err != nil {
-		t.Errorf("expected nil error for empty config, got %v", err)
-	}
-}
-
 func TestInstallationManager_SortToolsFromSpecs(t *testing.T) {
 	im := NewInstallationManager(nil, nil, nil, nil, nil, &config.Settings{})
+
+	// Empty case
 	res := im.SortToolsFromSpecs(nil)
 	if len(res) != 0 {
 		t.Errorf("expected empty result, got %v", res)
 	}
+
+	type mockSortBackend struct {
+		backend.Backend
+		name string
+		deps []string
+	}
+
+	// Normal case with dependencies
+	backendRegistry := backend.NewRegistry()
+
+	backendRegistry.Register(&mockUpdateBackend{name: "b1"})
+
+	// We need something that implements Dependencies
+	backendRegistry.Register(&mockSortDepsBackend{name: "b2", deps: []string{"tool1"}})
+
+	im.backendRegistry = backendRegistry
+
+	specs := map[string]ToolSpec{
+		"tool1": {Name: "tool1", BackendName: "b1", Version: "1.0"},
+		"tool2": {Name: "tool2", BackendName: "b2", Version: "1.0"},
+	}
+
+	sorted := im.SortToolsFromSpecs(specs)
+	if len(sorted) != 2 {
+		t.Errorf("expected 2 tools, got %v", len(sorted))
+	}
+	if sorted[0].ToolName != "tool1" {
+		t.Errorf("expected tool1 to be first, got %s", sorted[0].ToolName)
+	}
+}
+
+type mockSortDepsBackend struct {
+	backend.Backend // Panics if other methods are called
+	name            string
+	deps            []string
+}
+
+func (m *mockSortDepsBackend) Name() string           { return m.name }
+func (m *mockSortDepsBackend) Dependencies() []string { return m.deps }
+
+func TestInstallationManager_EnsureInstalled(t *testing.T) {
+	ctx := context.Background()
+	installRepo := &mockInstallationRepo{
+		installations: map[string]*repository.Installation{
+			"tool1-1.0.0": {
+				Tool:    "tool1",
+				Version: "1.0.0",
+				Backend: "test-backend",
+			},
+		},
+	}
+
+	backendRegistry := backend.NewRegistry()
+	mockBackend := &mockUpdateBackend{
+		name: "test-backend",
+		versions: map[string]*backend.VersionInfo{
+			"1.0.0": {Version: "1.0.0"},
+		},
+	}
+	backendRegistry.Register(mockBackend)
+
+	providerRegistry := provider.NewRegistry()
+	mockProviderInstance := &mockProvider{name: "tool1"}
+	providerRegistry.Register("tool1", mockProviderInstance)
+
+	txManager := &mockTransactionManager{
+		tx: &mockTransaction{
+			installationRepo: installRepo,
+			auditRepo:        &mockAuditRepo{},
+		},
+	}
+
+	im := NewInstallationManager(backendRegistry, providerRegistry, download.NewManager(), installRepo, txManager, &config.Settings{})
+
+	tools := map[string]config.ToolConfig{
+		"tool1@1.0.0": {Backend: "test-backend", Version: "1.0.0"},
+	}
+
+	err := im.EnsureInstalled(ctx, tools)
+	assert.NoError(t, err)
 }
 
 func TestInstallationManager_ResolveToolEnvBySpec(t *testing.T) {
