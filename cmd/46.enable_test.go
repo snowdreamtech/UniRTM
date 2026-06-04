@@ -22,6 +22,7 @@ func TestEnableCommandStructure(t *testing.T) {
 func TestRunEnable(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
 
 	// Create a dummy shell config
 	err := os.WriteFile(filepath.Join(tmpDir, ".zshrc"), []byte("# init\n"), 0644)
@@ -41,6 +42,7 @@ func TestRunEnable(t *testing.T) {
 func TestRunEnable_All(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
 
 	err := os.WriteFile(filepath.Join(tmpDir, ".zshrc"), []byte("# init\n"), 0644)
 	require.NoError(t, err)

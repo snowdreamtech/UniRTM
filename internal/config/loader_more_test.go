@@ -14,6 +14,7 @@ import (
 func TestLoader_LoadGlobal(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
 	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	globalPath := GetGlobalConfigPath()

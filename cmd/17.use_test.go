@@ -8,7 +8,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -103,9 +102,7 @@ func TestRunUse_Global(t *testing.T) {
 	// HOME is used by os.UserHomeDir() on Unix.
 	// On Windows, os.UserHomeDir() reads USERPROFILE (or HOMEDRIVE+HOMEPATH).
 	t.Setenv("HOME", tmpDir)
-	if runtime.GOOS == "windows" {
-		t.Setenv("USERPROFILE", tmpDir)
-	}
+	t.Setenv("USERPROFILE", tmpDir)
 
 	cmd := useCmd
 	cmd.SetContext(context.Background())

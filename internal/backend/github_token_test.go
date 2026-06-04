@@ -385,7 +385,6 @@ func TestFindGhHostsFile_MacosFallback(t *testing.T) {
 	t.Setenv("GH_CONFIG_DIR", "")
 	t.Setenv("UNIRTM_XDG_CONFIG_HOME", "")
 	t.Setenv("MISE_XDG_CONFIG_HOME", "")
-	t.Setenv("XDG_CONFIG_HOME", "")
 	t.Setenv("HOME", homeDir)
 	t.Setenv("USERPROFILE", homeDir)
 

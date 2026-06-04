@@ -62,6 +62,7 @@ func (h *E2EHarness) Run(args ...string) (stdout string, stderr string, err erro
 	h.t.Setenv("XDG_DATA_HOME", h.TmpDir)
 	h.t.Setenv("XDG_CONFIG_HOME", h.TmpDir)
 	h.t.Setenv("HOME", h.TmpDir)
+	h.t.Setenv("USERPROFILE", h.TmpDir)
 
 	// Intercept os.Stdout and os.Stderr
 	oldStdout := os.Stdout

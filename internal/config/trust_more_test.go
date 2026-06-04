@@ -12,6 +12,7 @@ import (
 func TestTrustManager(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
 	t.Setenv("XDG_CONFIG_HOME", tmpDir)
 
 	tm := NewTrustManager()

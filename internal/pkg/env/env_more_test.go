@@ -78,6 +78,7 @@ func TestEnv_PathsFallback(t *testing.T) {
 	// keep HOME so os.UserHomeDir works, otherwise it might panic or error
 	homeDir, _ := os.UserHomeDir()
 	t.Setenv("HOME", homeDir)
+	t.Setenv("USERPROFILE", homeDir)
 
 	cfg := GetConfigDir()
 	assert.NotEmpty(t, cfg)
