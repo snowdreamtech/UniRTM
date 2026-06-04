@@ -14,7 +14,7 @@ import (
 
 func TestConfigManager_ApplyEnvironment_Error(t *testing.T) {
 	cm := NewConfigManager()
-	
+
 	// Nil config
 	_, err := cm.ApplyEnvironment(nil, "dev")
 	require.Error(t, err)
@@ -44,7 +44,7 @@ func TestConfigManager_LoadHierarchy_LoadError(t *testing.T) {
 	// Trust it first!
 	err = cm.(*defaultConfigManager).trustManager.Trust(invalidToml)
 	require.NoError(t, err)
-	
+
 	ctx := context.Background()
 	_, err = cm.LoadHierarchy(ctx)
 	// It should fail because the unirtm.toml is invalid
@@ -53,7 +53,7 @@ func TestConfigManager_LoadHierarchy_LoadError(t *testing.T) {
 
 func TestConfigManager_tryLoad(t *testing.T) {
 	cm := NewConfigManager().(*defaultConfigManager)
-	
+
 	// Test file that does not exist
 	cfg, err := cm.tryLoad(context.Background(), "/does/not/exist.toml", false, nil)
 	require.NoError(t, err)
@@ -62,7 +62,7 @@ func TestConfigManager_tryLoad(t *testing.T) {
 
 func TestConfigManager_Merge_Errors(t *testing.T) {
 	cm := NewConfigManager()
-	
+
 	_, err := cm.Merge()
 	require.Error(t, err)
 
@@ -89,24 +89,24 @@ func TestConfigManager_ApplyEnvironment_MergeSettings(t *testing.T) {
 		Environments: map[string]EnvironmentConfig{
 			"dev": {
 				Settings: Settings{
-					CacheDir: "/tmp/cache",
-					DataDir: "/tmp/data",
-					CacheTTL: 3600,
-					Jobs: 4,
-					GitHubProxy: "proxy",
-					HttpProxy: "http",
-					HttpsProxy: "https",
-					GitHubToken: "token",
-					HTTPTimeout: 10,
-					TaskTimeout: 10,
-					TaskOutput: "interleaved",
-					AutoInstall: func() *bool { b := true; return &b }(),
-					Color: "always",
+					CacheDir:           "/tmp/cache",
+					DataDir:            "/tmp/data",
+					CacheTTL:           3600,
+					Jobs:               4,
+					GitHubProxy:        "proxy",
+					HttpProxy:          "http",
+					HttpsProxy:         "https",
+					GitHubToken:        "token",
+					HTTPTimeout:        10,
+					TaskTimeout:        10,
+					TaskOutput:         "interleaved",
+					AutoInstall:        func() *bool { b := true; return &b }(),
+					Color:              "always",
 					AlwaysKeepDownload: true,
-					VerifyMetadata: func() *bool { b := true; return &b }(),
+					VerifyMetadata:     func() *bool { b := true; return &b }(),
 				},
 				Tools: map[string]ToolConfig{"node": {Version: "18"}},
-				Env: map[string]interface{}{"FOO": "bar"},
+				Env:   map[string]interface{}{"FOO": "bar"},
 				Tasks: map[string]Task{"build": {Run: StringArray{"make"}}},
 			},
 		},
@@ -114,7 +114,7 @@ func TestConfigManager_ApplyEnvironment_MergeSettings(t *testing.T) {
 			"node": {"lts": "20"},
 		},
 	}
-	
+
 	envCfg, err := cm.ApplyEnvironment(base, "dev")
 	require.NoError(t, err)
 	require.Equal(t, "/tmp/cache", envCfg.Settings.CacheDir)
@@ -185,6 +185,6 @@ func TestConfigManager_tryLoad_Branches(t *testing.T) {
 	cfg, err = cm.tryLoad(context.Background(), path, true, &Settings{})
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
-	require.Empty(t, cfg.Env) // Should be stripped
+	require.Empty(t, cfg.Env)   // Should be stripped
 	require.Empty(t, cfg.Tasks) // Should be stripped
 }
