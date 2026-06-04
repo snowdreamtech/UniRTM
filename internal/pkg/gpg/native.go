@@ -75,9 +75,6 @@ func (v *NativeGPGVerifier) Verify(ctx context.Context, sigPath, dataPath string
 			signature, sigErr = crypto.NewPGPSignatureFromArmored(string(sigData))
 		} else {
 			signature = crypto.NewPGPSignature(sigData)
-			if signature == nil {
-				sigErr = fmt.Errorf("invalid binary signature format")
-			}
 		}
 
 		if sigErr != nil {
