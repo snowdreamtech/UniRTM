@@ -1,5 +1,6 @@
 # Output destination
 Output docs/tapes/demo.gif
+Output docs/tapes/demo.mp4
 
 # Setup Terminal Options
 Set FontSize 22
