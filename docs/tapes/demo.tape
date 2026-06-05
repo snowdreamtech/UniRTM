@@ -10,13 +10,6 @@ Set Theme "Catppuccin Macchiato"
 Set WindowBar Colorful
 Set Framerate 24
 
-# Set up a fake environment or clear screen if needed
-Hide
-Type 'export PATH=$(echo $PATH | tr ":" "\n" | grep -v "go" | grep -v "node" | grep -v "python" | paste -sd ":" -)'
-Enter
-Type "clear"
-Enter
-Show
 
 # Initial wait before starting
 Sleep 1.5s
