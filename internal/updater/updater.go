@@ -138,6 +138,10 @@ func CheckUpdateAsync(currentVersion string) {
 		return
 	}
 
+	if currentVersion == "N/A" || currentVersion == "dev" || currentVersion == "" {
+		return
+	}
+
 	go func() {
 		cache, err := readCache()
 		if err != nil {
@@ -170,6 +174,10 @@ func PromptIfAvailable(currentVersion string, cmdName string) {
 	}
 
 	if commandBlacklist[cmdName] {
+		return
+	}
+
+	if currentVersion == "N/A" || currentVersion == "dev" || currentVersion == "" {
 		return
 	}
 
