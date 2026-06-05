@@ -113,16 +113,19 @@ func TestExecuteBinary_NotExists(t *testing.T) {
 
 func TestGenerator_generateUnixShim_Fallback(t *testing.T) {
 	tmpDir := t.TempDir()
-	shimsDir := filepath.Join(tmpDir, "shims")
+	shimsDir := filepath.Join(tmpDir, "shims_is_a_file")
 	g := NewGenerator(shimsDir, "/installs")
 
-	// Create directory but make it read-only so writes fail
-	os.MkdirAll(shimsDir, 0500)
-	defer os.Chmod(shimsDir, 0755)
+	// Create a file instead of a directory to guarantee write failure cross-platform
+	f, err := os.Create(shimsDir)
+	if err != nil {
+		t.Fatalf("failed to create dummy file: %v", err)
+	}
+	f.Close()
 
-	err := g.generateUnixShim("go", "go")
+	err = g.generateUnixShim("go", "go")
 	if err == nil {
-		t.Error("expected error when creating shim in read-only directory")
+		t.Error("expected error when creating shim in invalid/read-only directory")
 	}
 }
 func TestShimPaths(t *testing.T) {
