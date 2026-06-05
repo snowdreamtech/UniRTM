@@ -14,6 +14,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"github.com/snowdreamtech/unirtm/internal/sysinfo"
 )
 
 // JavaHandler handles Java distributions via Adoptium (Temurin) API.
@@ -49,6 +50,8 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 	os := env.RuntimeGOOS
 	if os == "darwin" {
 		os = "mac"
+	} else if os == "linux" && sysinfo.IsMusl() {
+		os = "alpine-linux"
 	}
 
 	arch := runtime.GOARCH
