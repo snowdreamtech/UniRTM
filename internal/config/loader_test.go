@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -215,8 +216,14 @@ func TestResolveEnvironment_SourceTemplate(t *testing.T) {
 // TestResolveEnvironment_PythonVenv tests _.python_venv with an existing venv directory.
 func TestResolveEnvironment_PythonVenv(t *testing.T) {
 	tmpDir := t.TempDir()
+	
+	binDirName := "bin"
+	if runtime.GOOS == "windows" {
+		binDirName = "Scripts"
+	}
+
 	// Create a mock venv structure
-	venvBin := filepath.Join(tmpDir, "venv", "bin")
+	venvBin := filepath.Join(tmpDir, "venv", binDirName)
 	require.NoError(t, os.MkdirAll(venvBin, 0755))
 
 	c := &Config{
@@ -245,7 +252,13 @@ func TestResolveEnvironment_PythonVenv_Nonexistent(t *testing.T) {
 // TestResolveEnvironment_PythonVenv_RelativePath tests _.python_venv with a relative path.
 func TestResolveEnvironment_PythonVenv_RelativePath(t *testing.T) {
 	tmpDir := t.TempDir()
-	venvBin := filepath.Join(tmpDir, ".venv", "bin")
+	
+	binDirName := "bin"
+	if runtime.GOOS == "windows" {
+		binDirName = "Scripts"
+	}
+	
+	venvBin := filepath.Join(tmpDir, ".venv", binDirName)
 	require.NoError(t, os.MkdirAll(venvBin, 0755))
 
 	// Change into tmpDir so the relative path resolves correctly
