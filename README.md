@@ -48,7 +48,7 @@ While taking heavy inspiration from the brilliant tool `mise` (dev tools, env va
 The following demo shows how to use `UniRTM` to install a specific version of `go` globally.
 Notice the speed and the built-in vulnerability scanning!
 
-[![demo](./docs/tapes/demo.gif)](./docs/tapes/demo.mp4)
+[![demo](https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/docs/tapes/demo.gif)](https://github.com/snowdreamtech/UniRTM/blob/main/docs/tapes/demo.mp4)
 
 ## Quickstart
 

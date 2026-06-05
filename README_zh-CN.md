@@ -48,7 +48,7 @@
 以下演示展示了如何使用 `UniRTM` 全局安装指定版本的 `go`。
 请注意安装的速度以及内置的安全漏洞扫描功能！
 
-[![demo](./docs/tapes/demo.gif)](./docs/tapes/demo.mp4)
+[![demo](https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/docs/tapes/demo.gif)](https://github.com/snowdreamtech/UniRTM/blob/main/docs/tapes/demo.mp4)
 
 ## 快速入门
 
