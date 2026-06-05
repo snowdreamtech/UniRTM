@@ -208,7 +208,7 @@ We believe in making deliberate architectural choices to support modern enterpri
 
 | Feature | `asdf` | `mise` | `UniRTM` | Details |
 | :--- | :--- | :--- | :--- | :--- |
-| **Windows Support** | Limited | Supported | **Native (Ground-up)** | Engineered natively for a flawless Windows and Cygdrive experience. |
+| **Windows Support** | WSL/MSYS Dependent | Supported | **Native (Ground-up)** | Engineered natively for a flawless Windows and Cygdrive experience. |
 | **Alpine/Musl** | Partial | Supported | **Hardcore Supported** | Runs flawlessly in minimal `musl`/Alpine containers without `glibc` overhead. |
 | **Reproducibility** | Versions | `mise.lock` | **`unirtm.lock`** | Strictly pins exact checksums to ensure reproducible team environments. |
 
@@ -217,9 +217,9 @@ We believe in making deliberate architectural choices to support modern enterpri
 | Feature | `asdf` | `mise` | `UniRTM` | Details |
 | :--- | :--- | :--- | :--- | :--- |
 | **Hybrid Path Resolution** | ❌ | Partial | **Deeply Supported** | Dedicated optimizations for translating paths seamlessly across Windows Git Bash / Cygdrive environments. |
-| **External Dependencies** | High (Bash/Curl) | Low | **Absolute Zero** | Core plugins are compiled directly into the binary. Drop it into any minimal OS and it runs out of the box. |
-| **Shim Overhead** | High (Bash script) | Low (Rust binary) | **Completely Eliminated** | Zero-shim design guarantees zero nanosecond overhead and prevents debugger detachment in complex IDEs. |
-| **DevOps Integration** | Difficult | Moderate | **Native Synergy** | Go-based architecture naturally aligns with cloud-native infrastructure, making custom integrations frictionless. |
+| **External Dependencies** | Bash Ecosystem | Minimal | **Absolute Zero** | Core plugins are compiled directly into the binary. Drop it into any minimal OS and it runs out of the box. |
+| **Shim Overhead** | Standard (Bash script) | Optimized (Rust binary) | **Completely Eliminated** | Zero-shim design guarantees zero nanosecond overhead and prevents debugger detachment in complex IDEs. |
+| **DevOps Integration** | Custom Scripts | Good | **Native Synergy** | Go-based architecture naturally aligns with cloud-native infrastructure, making custom integrations frictionless. |
 
 
 ## GitHub Issues & Discussions
