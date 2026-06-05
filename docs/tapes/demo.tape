@@ -29,7 +29,7 @@ Enter
 
 # Wait for UniRTM to download, install, and run security scans (Trivy/Syft).
 # Adjust the Sleep time if your actual installation takes longer or shorter.
-Sleep 45s
+Sleep 60s
 
 # 3. Verify successful installation
 Type "go version"
