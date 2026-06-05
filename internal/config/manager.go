@@ -365,7 +365,13 @@ func (m *defaultConfigManager) LoadHierarchy(ctx context.Context) (*Config, erro
 		if isCeiling(curr) {
 			break
 		}
-		curr = filepath.Dir(curr)
+
+		next := filepath.Dir(curr)
+		// Prevent infinite loop if Dir returns the same path (e.g. for "." or "/")
+		if curr == next {
+			break
+		}
+		curr = next
 	}
 
 	configs = append(configs, projectConfigs...)
