@@ -14,6 +14,7 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/rs/zerolog"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/updater"
 	"github.com/spf13/cobra"
 )
 
@@ -66,7 +67,10 @@ func init() {
 that manages multiple development tool versions, provides declarative configuration
 management, supports multiple backends and providers, and offers comprehensive
 audit and logging capabilities.`,
-		PersistentPreRun:           setupGlobalOptions,
+		PersistentPreRun: setupGlobalOptions,
+		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+			updater.PromptIfAvailable(env.GitTag, cmd.Name())
+		},
 		SilenceUsage:               true,
 		SilenceErrors:              true,
 		Args:                       cobra.ArbitraryArgs,
@@ -128,6 +132,9 @@ func setupGlobalOptions(cmd *cobra.Command, args []string) {
 
 	// Warn if the built-in command shadows a user-defined task
 	checkTaskShadowing(cmd)
+
+	// Trigger async update check
+	updater.CheckUpdateAsync(env.GitTag)
 }
 
 // syncEnv synchronizes prefixed environment variables (UNIRTM_ and MISE_) to native ones
