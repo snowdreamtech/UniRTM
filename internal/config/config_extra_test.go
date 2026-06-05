@@ -564,7 +564,10 @@ MY_EXEC_FAIL = "{{ exec('non_existent_command_12345') }}"
 MY_WHICH = "{{ which('echo') != '' }}"
 MY_WHICH_FAIL = "{{ which('non_existent_command_12345') }}"
 `
-	content := strings.ReplaceAll(template, "SECRET_FILE", secretFile)
+	// Use forward slashes to avoid Windows backslash being interpreted as
+	// escape sequences (e.g. \U, \A) by the pongo2 template engine.
+	secretFileSlash := filepath.ToSlash(secretFile)
+	content := strings.ReplaceAll(template, "SECRET_FILE", secretFileSlash)
 
 	os.WriteFile(configPath, []byte(content), 0644)
 
