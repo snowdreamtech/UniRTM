@@ -1,6 +1,6 @@
 module github.com/snowdreamtech/unirtm
 
-go 1.26.4
+go 1.26.3
 
 require (
 	github.com/ProtonMail/go-crypto v1.4.1

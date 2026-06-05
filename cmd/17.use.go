@@ -94,8 +94,10 @@ func runUse(cmd *cobra.Command, args []string) error {
 
 	// Parse tool@version pairs
 	type toolVersion struct {
-		key     string // key in config (e.g. github:org/repo)
-		version string
+		key         string // key in config (e.g. github:org/repo)
+		toolName    string
+		backendName string
+		version     string
 	}
 	pairs := make([]toolVersion, 0, len(args))
 	for _, arg := range args {
@@ -151,7 +153,12 @@ func runUse(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		pairs = append(pairs, toolVersion{key: configKey, version: version})
+		pairs = append(pairs, toolVersion{
+			key:         configKey,
+			toolName:    toolName,
+			backendName: backendName,
+			version:     version,
+		})
 	}
 
 	// Resolve target directory
@@ -216,14 +223,8 @@ func runUse(cmd *cobra.Command, args []string) error {
 	// Automatically install the tool versions if they are not already installed
 	if im != nil {
 		for _, p := range pairs {
-			// Extract tool name and backend name from key
-			toolName := p.key
-			backendName := ""
-			if strings.Contains(toolName, ":") {
-				parts := strings.SplitN(toolName, ":", 2)
-				backendName = parts[0]
-				toolName = parts[1]
-			}
+			toolName := p.toolName
+			backendName := p.backendName
 
 			// If force is enabled, perform clean uninstallation first if it is installed
 			if useForce {
