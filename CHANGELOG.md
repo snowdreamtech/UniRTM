@@ -6,6 +6,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0](https://github.com/snowdreamtech/UniRTM/compare/v0.5.1...v0.6.0) (2026-06-05)
+
+
+### Features
+
+* add --skip-checksum flag to install scripts and add tests ([4a884a2](https://github.com/snowdreamtech/UniRTM/commit/4a884a2f7e4028ad3855ef4df37457dc1d425262))
+* add df command to show disk usage statistics using pterm ([5d4956d](https://github.com/snowdreamtech/UniRTM/commit/5d4956da01a67ad55dc316112079ad26e696c05b))
+* **trust:** redesign trust command with project-wide and global config support ([39183c1](https://github.com/snowdreamtech/UniRTM/commit/39183c10579ef26af6c78dcb24da092e1f928d29))
+
+
+### Bug Fixes
+
+* add context timeout to backend resolve version tests to prevent hangs ([7938930](https://github.com/snowdreamtech/UniRTM/commit/7938930248753d1cceb26a27846edde4f670ed66))
+* Add t.Setenv("USERPROFILE", tmpDir) conditionally on Windows for the missing tests. ([10d66b9](https://github.com/snowdreamtech/UniRTM/commit/10d66b9519aa30a7adba7292bb0c5f884a3a3fc3))
+* **audit:** auto-enable offline mode for zizmor local execution ([76f71f0](https://github.com/snowdreamtech/UniRTM/commit/76f71f043780473b0a93c9357a9c76c60f7eca6e))
+* **backend:** apply github proxy for asdf and fix github provider tests ([dfebc35](https://github.com/snowdreamtech/UniRTM/commit/dfebc3571f1f61ffd9a2bd786235bc1aa3ceeca9))
+* **config:** use env.GetGlobalConfigPath() to respect UNIRTM_CONFIG_DIR on all platforms ([ca1a7ef](https://github.com/snowdreamtech/UniRTM/commit/ca1a7ef676b569a7f743d6d303783f497ec4e270))
+* **config:** use filepath.ToSlash() when embedding paths in pongo2 templates ([6bebbf0](https://github.com/snowdreamtech/UniRTM/commit/6bebbf0e4faf5f39c673373c2329dd1c6ebd4b6e))
+* **lint:** remove duplicate zizmor hook causing network errors ([79c2621](https://github.com/snowdreamtech/UniRTM/commit/79c2621323f7c6bb0a1956c7d37f1af8d0b71ef2))
+* override global help flag to free up -h shorthand for subcommands like df and license ([ec83ebc](https://github.com/snowdreamtech/UniRTM/commit/ec83ebcc6462bed118b040dd91dc12276b7ea0f6))
+* prevent infinite loop in LoadHierarchy when os.Getwd fails ([7fce333](https://github.com/snowdreamtech/UniRTM/commit/7fce333f20d35364125c19a4cd16203b0c306028))
+* respect context cancellation in github backend retry backoffs ([34cd09a](https://github.com/snowdreamtech/UniRTM/commit/34cd09ac3c7a0db2d8c4b493017b89435a427686))
+* **test:** inject timeout and improve config test coverage ([2896040](https://github.com/snowdreamtech/UniRTM/commit/289604000dc560ef808cbe17d9c769dbb31e3156))
+* **trust:** clean up stale db records when config file has been deleted ([13a6edd](https://github.com/snowdreamtech/UniRTM/commit/13a6edd0a4b53a204d6c97531b86e36aa65e90e1))
+
 ## [0.5.1](https://github.com/snowdreamtech/UniRTM/compare/v0.5.0...v0.5.1) (2026-06-04)
 
 
