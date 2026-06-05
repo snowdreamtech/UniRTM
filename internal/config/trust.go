@@ -186,6 +186,14 @@ func (m *fileTrustManager) Trust(path string) error {
 
 	hash, err := calculateHash(absPath)
 	if err != nil {
+		// File does not exist or is unreadable — clean up any stale record
+		paths, loadErr := m.loadTrustedPaths()
+		if loadErr == nil {
+			if _, exists := paths[absPath]; exists {
+				delete(paths, absPath)
+				_ = m.saveTrustedPaths(paths)
+			}
+		}
 		return fmt.Errorf("failed to calculate file hash: %w", err)
 	}
 

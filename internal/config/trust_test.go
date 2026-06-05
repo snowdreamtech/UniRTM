@@ -215,3 +215,40 @@ func TestFileTrustManager_Errors(t *testing.T) {
 	assert.Error(t, err)
 	OsOpen = origOpen
 }
+
+// TestTrust_CleansStaleRecordWhenFileDeleted verifies that calling Trust on a
+// file that has been deleted removes its stale entry from the trusted_configs database.
+func TestTrust_CleansStaleRecordWhenFileDeleted(t *testing.T) {
+	tmpDir := t.TempDir()
+	trustFilePath := filepath.Join(tmpDir, "trusted_configs")
+	manager := &fileTrustManager{
+		trustFilePath: trustFilePath,
+	}
+
+	// Create and trust a config file
+	configFile := filepath.Join(tmpDir, "unirtm.toml")
+	os.WriteFile(configFile, []byte("[tools]\n"), 0644)
+
+	err := manager.Trust(configFile)
+	require.NoError(t, err)
+	assert.Equal(t, TrustStatusTrusted, manager.TrustStatus(configFile), "file should be trusted before deletion")
+
+	// Verify the record is in the database
+	paths, err := manager.loadTrustedPaths()
+	require.NoError(t, err)
+	absConfig, _ := filepath.Abs(configFile)
+	assert.Contains(t, paths, absConfig, "stale record should exist before deletion")
+
+	// Delete the file
+	os.Remove(configFile)
+
+	// Call Trust on the now-deleted file — should fail but also clean up the stale record
+	err = manager.Trust(configFile)
+	assert.Error(t, err, "Trust on a deleted file should return an error")
+	assert.Contains(t, err.Error(), "failed to calculate file hash")
+
+	// Verify the stale record has been removed from the database
+	paths, err = manager.loadTrustedPaths()
+	require.NoError(t, err)
+	assert.NotContains(t, paths, absConfig, "stale record should be cleaned up after Trust on deleted file")
+}
