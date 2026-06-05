@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/sysinfo"
 )
 
 // RustHandler handles Rust distributions from static.rust-lang.org.
@@ -49,11 +50,17 @@ func (h *RustHandler) generateAssets(version string) []Asset {
 
 	// Common Rust targets
 	targets := map[string]struct{ os, arch string }{
-		"x86_64-unknown-linux-gnu":  {"linux", "amd64"},
-		"aarch64-unknown-linux-gnu": {"linux", "arm64"},
-		"x86_64-apple-darwin":       {"darwin", "amd64"},
-		"aarch64-apple-darwin":      {"darwin", "arm64"},
-		"x86_64-pc-windows-msvc":    {"windows", "amd64"},
+		"x86_64-apple-darwin":    {"darwin", "amd64"},
+		"aarch64-apple-darwin":   {"darwin", "arm64"},
+		"x86_64-pc-windows-msvc": {"windows", "amd64"},
+	}
+
+	if env.RuntimeGOOS == "linux" && sysinfo.IsMusl() {
+		targets["x86_64-unknown-linux-musl"] = struct{ os, arch string }{"linux", "amd64"}
+		targets["aarch64-unknown-linux-musl"] = struct{ os, arch string }{"linux", "arm64"}
+	} else {
+		targets["x86_64-unknown-linux-gnu"] = struct{ os, arch string }{"linux", "amd64"}
+		targets["aarch64-unknown-linux-gnu"] = struct{ os, arch string }{"linux", "arm64"}
 	}
 
 	for target, platform := range targets {

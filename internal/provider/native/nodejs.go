@@ -14,6 +14,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"github.com/snowdreamtech/unirtm/internal/sysinfo"
 )
 
 // NodeJSHandler handles the official Node.js download metadata from nodejs.org/dist/index.json.
@@ -60,6 +61,9 @@ func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 	}
 
 	flavor := env.Get("MISE_NODE_FLAVOR")
+	if flavor == "" && env.RuntimeGOOS == "linux" && sysinfo.IsMusl() {
+		flavor = "musl"
+	}
 
 	var versions []VersionInfo
 	for _, v := range nv {
