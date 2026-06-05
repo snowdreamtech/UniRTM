@@ -28,7 +28,7 @@
 </div>
 
 > [!TIP]
-> UniRTM 将 SBOM 自动生成与 Trivy/Syft 安全漏洞扫描直接无缝集成到了你的工具安装流程中！
+> UniRTM 强大的任务编排能力让你能够极其轻松地将 Trivy、Syft 等安全工具无缝集成到你的日常构建和部署流程中。
 
 ## 介绍
 
@@ -42,7 +42,7 @@
 
 - **纯 Go 引擎**: 底层完全由 Go 语言编写，利用 goroutines 实现了极致的并发下载能力。
 - **无 Shims 垫片**: UniRTM 严格避免使用 Bash 垫片（Shims）。它直接将安装工具的绝对路径前置插入到你的 `$PATH` 变量中，保证了 100% 的执行性能，并对各种 IDE 完全透明。
-- **原生安全检测**: 底层原生集成了 Trivy 和 Syft。当你下载工具时，会自动生成 SBOM 并扫描已知的安全漏洞。
+- **任务无缝集成安全工具**: 虽然保持了引擎本身的极致精简，但你能在项目中利用 UniRTM 的任务系统，丝滑地串联 Trivy、Syft 等安全漏洞扫描工作流。
 - **强制版本锁定**: 自动生成 `unirtm.lock` 锁文件，不仅锁定版本号，还精确锁定所有下载包的校验和，从而保障团队环境的绝对可复现。
 
 ## 支持的操作系统 (Supported Platforms)
@@ -176,7 +176,7 @@ run = "terraform apply -auto-approve"
 你可以这样运行：
 
 ```sh-session
-unirtm install # 安装所需要的所有工具，并自动在底层生成安全 SBOM
+unirtm install # 安装所需要的所有开发工具
 unirtm run deploy # 在部署前，将自动按顺序并行执行校验和安全审查任务
 ```
 

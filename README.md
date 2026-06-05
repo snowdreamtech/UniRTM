@@ -28,7 +28,7 @@
 </div>
 
 > [!TIP]
-> UniRTM introduces native SBOM generation and security scanning via Trivy & Syft directly into your dev tools installation flow!
+> UniRTM's powerful task runner empowers you to orchestrate deep security scans (like Trivy & Syft) perfectly alongside your environments.
 
 ## What is it?
 
@@ -42,7 +42,7 @@ While taking heavy inspiration from the brilliant tool `mise` (dev tools, env va
 
 - **Pure Go Engine**: Extreme parallel downloading capabilities leveraging goroutines.
 - **Zero Shims**: UniRTM strictly avoids bash shims. It directly prepends the absolute paths of installed tools to your `$PATH`, ensuring 100% execution speed and transparency for IDEs.
-- **Native Security**: Built-in integration with Trivy and Syft to generate SBOMs and scan for vulnerabilities whenever you install a tool.
+- **Unifying Security via Tasks**: While keeping the core engine minimal, UniRTM allows you to perfectly integrate external security scanners like Trivy or Syft into your reproducible task workflows.
 - **Absolute Locking**: Generates a `unirtm.lock` file that pins the exact checksums and versions of your downloaded tools for reproducible environments.
 
 ## Supported Platforms
@@ -176,7 +176,7 @@ run = "terraform apply -auto-approve"
 Run it with:
 
 ```sh-session
-unirtm install # install tools specified in .unirtm.toml with automatic SBOM generation
+unirtm install # install all required tools specified in .unirtm.toml
 unirtm run deploy # automatically runs validation and audit dependencies first
 ```
 
