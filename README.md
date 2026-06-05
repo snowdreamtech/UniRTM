@@ -45,14 +45,33 @@ While taking heavy inspiration from the brilliant tool `mise` (dev tools, env va
 - **Native Security**: Built-in integration with Trivy and Syft to generate SBOMs and scan for vulnerabilities whenever you install a tool.
 - **Absolute Locking**: Generates a `unirtm.lock` file that pins the exact checksums and versions of your downloaded tools for reproducible environments.
 
-### Comparison
+### Architecture & Environments Comparison
 
-| Feature | `asdf` | `mise` | `UniRTM` |
-| :--- | :---: | :---: | :---: |
-| Unified Tools, Env & Tasks | ❌ | ✅ | ✅ |
-| Strictly Zero Shims (Direct PATH) | ❌ | ❌ | ✅ |
-| Goroutine Parallel Downloading | ❌ | ❌ | ✅ |
-| Core Engine Language | Bash | Rust | **Go** |
+We believe in making deliberate architectural choices to support modern enterprise environments. Here is how `UniRTM` compares to ecosystem pioneers like `mise` and `asdf` across multiple dimensions:
+
+#### 1. Core Architecture & Execution
+
+| Dimension | `asdf` (Bash) | `mise` (Rust) | `UniRTM` (Go) | Why it matters |
+| :--- | :--- | :--- | :--- | :--- |
+| **Execution Path** | Shims | Shims (Default) / PATH | **Strictly Direct PATH** | UniRTM injects absolute paths directly into your `$PATH`, guaranteeing zero execution overhead and perfect IDE transparency. |
+| **Concurrency Model** | None | OS Threads | **Goroutines** | Go's ultra-lightweight goroutines provide extreme parallel throughput during massive toolchain downloads. |
+| **Config Hierarchy** | `.tool-versions` | `mise.toml` | **`.unirtm.toml`** | Standardized, unified TOML configs across your entire project. |
+
+#### 2. Environment & Context
+
+| Feature | `asdf` | `mise` | `UniRTM` | Details |
+| :--- | :--- | :--- | :--- | :--- |
+| **Scope Management** | Tools only | Tools + Env + Tasks | **Tools + Env + Tasks** | Seamlessly manage environments contextually per directory. |
+| **`.env` Parsing** | ❌ | Native | **Native** | Reads traditional `.env` files automatically without external loaders. |
+| **Secrets Engine** | ❌ | Plugins / Integrations | **Native SOPS** | Treats secure secret management as a first-class citizen using native SOPS integration. |
+
+#### 3. Cross-Platform & Resilience
+
+| Feature | `asdf` | `mise` | `UniRTM` | Details |
+| :--- | :--- | :--- | :--- | :--- |
+| **Windows Support** | Limited | Supported | **Native (Ground-up)** | Engineered natively for a flawless Windows and Cygdrive experience. |
+| **Alpine/Musl** | Partial | Supported | **Hardcore Supported** | Runs flawlessly in minimal `musl`/Alpine containers without `glibc` overhead. |
+| **Reproducibility** | Versions | `mise.lock` | **`unirtm.lock`** | Strictly pins exact checksums to ensure reproducible team environments. |
 
 ## Supported Platforms
 
