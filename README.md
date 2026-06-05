@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="./docs/public/logo.svg" width="200" alt="UniRTM Logo" />
+
 <h1 align="center">
     UniRTM
 </h1>
