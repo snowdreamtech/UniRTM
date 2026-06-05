@@ -5,11 +5,15 @@ package envpath
 
 import (
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 var isWindowsMode = runtime.GOOS == "windows"
+var winDriveRegex = regexp.MustCompile(`^([A-Za-z]):[\\/](.*)$`)
 
 // JoinForOS joins multiple paths into a single string using the native operating system's
 // list separator (e.g. ';' on Windows, ':' on Posix). This must be used when injecting
@@ -30,10 +34,22 @@ func JoinForPosix(paths []string) string {
 }
 
 // FormatDirForPosix ensures that a single directory path is safe for injection into
-// POSIX shell scripts (Bash, Zsh). On Windows, it converts backslashes to forward slashes.
+// POSIX shell scripts (Bash, Zsh). On Windows, it converts backslashes to forward slashes,
+// and supports UNIRTM_CYGDRIVE_PREFIX for Git Bash/MSYS2 path conversions.
 func FormatDirForPosix(dir string) string {
 	if isWindowsMode {
-		return strings.ReplaceAll(dir, "\\", "/")
+		dir = strings.ReplaceAll(dir, "\\", "/")
+
+		prefix := env.Get("CYGDRIVE_PREFIX")
+		if prefix != "" {
+			if matches := winDriveRegex.FindStringSubmatch(dir); len(matches) == 3 {
+				drive := strings.ToLower(matches[1])
+				rest := matches[2]
+				prefix = strings.TrimRight(prefix, "/")
+				return prefix + "/" + drive + "/" + rest
+			}
+		}
+		return dir
 	}
 	return dir
 }

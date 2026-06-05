@@ -81,8 +81,13 @@ func TestWindowsMode(t *testing.T) {
 	isWindowsMode = true
 	defer func() { isWindowsMode = orig }()
 
-	// Test FormatDirForPosix
+	// Test FormatDirForPosix without prefix
 	assert.Equal(t, "C:/foo/bar", FormatDirForPosix("C:\\foo\\bar"))
+
+	// Test FormatDirForPosix with CYGDRIVE_PREFIX
+	os.Setenv("UNIRTM_CYGDRIVE_PREFIX", "/cygdrive/")
+	assert.Equal(t, "/cygdrive/c/foo/bar", FormatDirForPosix("C:\\foo\\bar"))
+	os.Unsetenv("UNIRTM_CYGDRIVE_PREFIX")
 
 	// Test DeduplicateOSPaths
 	sep := string(os.PathListSeparator)
