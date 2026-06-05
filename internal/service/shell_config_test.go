@@ -178,6 +178,9 @@ func TestShellConfigManager_DryRun(t *testing.T) {
 func TestShellConfigManager_Remove_Fallback(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
+	if env.RuntimeGOOS == "windows" {
+		t.Setenv("USERPROFILE", tmpDir)
+	}
 
 	sm := NewShellConfigManager(&mockFormatter{}, false)
 	configPath := filepath.Join(tmpDir, ".bashrc")
@@ -200,6 +203,9 @@ func TestShellConfigManager_Remove_Fallback(t *testing.T) {
 func TestShellConfigManager_Inject_DryRun_Update(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
+	if env.RuntimeGOOS == "windows" {
+		t.Setenv("USERPROFILE", tmpDir)
+	}
 	sm := NewShellConfigManager(&mockFormatter{}, true)
 	configPath := filepath.Join(tmpDir, ".bashrc")
 
