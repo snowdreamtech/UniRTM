@@ -86,7 +86,11 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		}
 
 		// Backoff before retry
-		time.Sleep(time.Duration(i+1) * time.Second)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(time.Duration(i+1) * time.Second):
+		}
 	}
 
 	if lastErr != nil {

@@ -98,20 +98,32 @@ func (g *GitHubBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 
 		resp, err = g.client.Do(req)
 		if err != nil {
-			time.Sleep(time.Duration(i+1) * time.Second)
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(time.Duration(i+1) * time.Second):
+			}
 			continue
 		}
 
 		if resp.StatusCode != http.StatusOK {
 			resp.Body.Close()
-			time.Sleep(time.Duration(i+1) * time.Second)
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(time.Duration(i+1) * time.Second):
+			}
 			continue
 		}
 
 		bodyBytes, err = io.ReadAll(resp.Body)
 		resp.Body.Close()
 		if err != nil {
-			time.Sleep(time.Duration(i+1) * time.Second)
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(time.Duration(i+1) * time.Second):
+			}
 			continue
 		}
 
@@ -173,20 +185,32 @@ func (g *GitHubBackend) FetchReleaseByTag(ctx context.Context, tool string, tag 
 
 		resp, err = g.client.Do(req)
 		if err != nil {
-			time.Sleep(time.Duration(i+1) * time.Second)
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(time.Duration(i+1) * time.Second):
+			}
 			continue
 		}
 
 		if resp.StatusCode != http.StatusOK {
 			resp.Body.Close()
-			time.Sleep(time.Duration(i+1) * time.Second)
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(time.Duration(i+1) * time.Second):
+			}
 			continue
 		}
 
 		bodyBytes, err = io.ReadAll(resp.Body)
 		resp.Body.Close()
 		if err != nil {
-			time.Sleep(time.Duration(i+1) * time.Second)
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(time.Duration(i+1) * time.Second):
+			}
 			continue
 		}
 

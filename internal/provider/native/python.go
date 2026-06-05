@@ -66,14 +66,22 @@ func (h *PythonHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		resp, err = client.Do(req)
 		if err != nil {
 			lastErr = fmt.Errorf("attempt %d: request failed: %w", i+1, err)
-			time.Sleep(time.Duration(i+1) * time.Second)
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(time.Duration(i+1) * time.Second):
+			}
 			continue
 		}
 
 		if resp.StatusCode != http.StatusOK {
 			lastErr = fmt.Errorf("attempt %d: github api returned status %d", i+1, resp.StatusCode)
 			resp.Body.Close()
-			time.Sleep(time.Duration(i+1) * time.Second)
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(time.Duration(i+1) * time.Second):
+			}
 			continue
 		}
 
@@ -81,7 +89,11 @@ func (h *PythonHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		resp.Body.Close()
 		if err != nil {
 			lastErr = fmt.Errorf("attempt %d: reading body failed: %w", i+1, err)
-			time.Sleep(time.Duration(i+1) * time.Second)
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(time.Duration(i+1) * time.Second):
+			}
 			continue
 		}
 
