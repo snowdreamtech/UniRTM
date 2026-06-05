@@ -23,8 +23,6 @@
 
 <hr />
 
-<img src="docs/tapes/demo.gif" alt="UniRTM Demo" />
-
 </div>
 
 > [!TIP]
@@ -44,6 +42,13 @@ While taking heavy inspiration from the brilliant tool `mise` (dev tools, env va
 - **Zero Shims**: UniRTM strictly avoids bash shims. It directly prepends the absolute paths of installed tools to your `$PATH`, ensuring 100% execution speed and transparency for IDEs.
 - **Native Security**: Built-in integration with Trivy and Syft to generate SBOMs and scan for vulnerabilities whenever you install a tool.
 - **Absolute Locking**: Generates a `unirtm.lock` file that pins the exact checksums and versions of your downloaded tools for reproducible environments.
+
+## Demo
+
+The following demo shows how to use `UniRTM` to install a specific version of `go` globally.
+Notice the speed and the built-in vulnerability scanning!
+
+[![demo](./docs/tapes/demo.gif)](./docs/tapes/demo.mp4)
 
 ## Quickstart
 
