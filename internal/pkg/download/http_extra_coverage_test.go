@@ -20,7 +20,7 @@ import (
 func TestHTTPDownloader_VerifyChecksum_OpenError(t *testing.T) {
 	downloader := download.NewHTTPDownloader()
 	tmpDir := t.TempDir()
-	
+
 	// Use a directory to guarantee a read error cross-platform (since Windows ignores 0000 permissions)
 	dirAsFile := filepath.Join(tmpDir, "directory_not_file")
 	require.NoError(t, os.Mkdir(dirAsFile, 0755))

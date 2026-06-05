@@ -110,13 +110,13 @@ func TestResolveExecutable_PrefixMatch(t *testing.T) {
 	pr := provider.NewRegistry()
 
 	tempDir := t.TempDir()
-	
+
 	exeName := "testbin-1.0"
 	if runtime.GOOS == "windows" {
 		exeName += ".exe"
 	}
 	exePath := filepath.Join(tempDir, exeName)
-	
+
 	// create dummy file and make it executable
 	f, err := os.Create(exePath)
 	require.NoError(t, err)
