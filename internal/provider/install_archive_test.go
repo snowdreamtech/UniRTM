@@ -185,8 +185,9 @@ func TestGenericProvider_ExtractArtifactMoreCoverage(t *testing.T) {
 	}
 
 	// Test extracting into a read-only directory to trigger os.MkdirAll / os.OpenFile errors
-	readOnlyDir := filepath.Join(tmpDir, "readonly")
-	os.MkdirAll(readOnlyDir, 0555) // Read and execute only, no write
+	if runtime.GOOS != "windows" {
+		readOnlyDir := filepath.Join(tmpDir, "readonly")
+		os.MkdirAll(readOnlyDir, 0555) // Read and execute only, no write
 
 	// Create a dummy zip file
 	zipPath := filepath.Join(tmpDir, "test_readonly.zip")
@@ -209,6 +210,7 @@ func TestGenericProvider_ExtractArtifactMoreCoverage(t *testing.T) {
 		t.Error("Expected error when extracting tar to read-only directory, got nil")
 	}
 
-	// Reset permissions so tmpDir cleanup doesn't fail
-	os.Chmod(readOnlyDir, 0755)
+		// Reset permissions so tmpDir cleanup doesn't fail
+		os.Chmod(readOnlyDir, 0755)
+	}
 }

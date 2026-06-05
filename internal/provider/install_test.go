@@ -38,7 +38,7 @@ func TestGenericProvider_InstallCoverage(t *testing.T) {
 	}
 
 	// Test 3: isExecutable test
-	tmpFile := filepath.Join(tmpDir, "exec")
+	tmpFile := filepath.Join(tmpDir, "exec.exe")
 	os.WriteFile(tmpFile, []byte("data"), 0755)
 	fi, err := os.Stat(tmpFile)
 	if err != nil {
