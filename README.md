@@ -45,6 +45,19 @@ While taking heavy inspiration from the brilliant tool `mise` (dev tools, env va
 - **Native Security**: Built-in integration with Trivy and Syft to generate SBOMs and scan for vulnerabilities whenever you install a tool.
 - **Absolute Locking**: Generates a `unirtm.lock` file that pins the exact checksums and versions of your downloaded tools for reproducible environments.
 
+### Comparison
+
+| Feature | `asdf` | `mise` | `UniRTM` |
+| :--- | :---: | :---: | :---: |
+| Unified Tools, Env & Tasks | ❌ | ✅ | ✅ |
+| Strictly Zero Shims (Direct PATH) | ❌ | ❌ | ✅ |
+| Goroutine Parallel Downloading | ❌ | ❌ | ✅ |
+| Core Engine Language | Bash | Rust | **Go** |
+
+## Supported Platforms
+
+*Fully supported on macOS (Apple Silicon / Intel), Linux (glibc & musl/Alpine), and Windows.*
+
 ## Demo
 
 The following demo shows how to use `UniRTM` to install a specific version of `go` globally.

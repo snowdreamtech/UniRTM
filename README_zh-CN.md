@@ -45,6 +45,19 @@
 - **原生安全检测**: 底层原生集成了 Trivy 和 Syft。当你下载工具时，会自动生成 SBOM 并扫描已知的安全漏洞。
 - **强制版本锁定**: 自动生成 `unirtm.lock` 锁文件，不仅锁定版本号，还精确锁定所有下载包的校验和，从而保障团队环境的绝对可复现。
 
+### 核心优势对比 (Comparison)
+
+| 核心特性 | `asdf` | `mise` | `UniRTM` |
+| :--- | :---: | :---: | :---: |
+| 工具 / 环境 / 任务统一管理 | ❌ | ✅ | ✅ |
+| 强制零垫片 (Strictly Zero Shims) | ❌ | ❌ | ✅ |
+| Goroutine 原生并发下载机制 | ❌ | ❌ | ✅ |
+| 核心引擎语言 | Bash | Rust | **Go** |
+
+## 支持的操作系统 (Supported Platforms)
+
+*完全支持 macOS (Apple Silicon / Intel)、Linux (glibc & musl/Alpine) 以及 Windows 平台。*
+
 ## 演示 (Demo)
 
 以下演示展示了如何使用 `UniRTM` 全局安装指定版本的 `go`。
