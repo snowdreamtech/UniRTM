@@ -16,11 +16,11 @@
 <p><b>集开发工具、环境变量和任务管理于一体的 CLI（内置安全扫描）。</b><br><i>灵感来源于出色的 <a href="https://github.com/jdx/mise">mise</a> 项目，在此向其致敬。</i></p>
 
 <p align="center">
-  <a href="https://unirtm.snowdream.tech/zh/guide/getting-started.html">快速开始</a> •
-  <a href="https://unirtm.snowdream.tech/zh/">官方文档</a> •
-  <a href="https://unirtm.snowdream.tech/zh/dev-tools/overview.html">开发工具</a> •
-  <a href="https://unirtm.snowdream.tech/zh/environments/overview.html">环境变量</a> •
-  <a href="https://unirtm.snowdream.tech/zh/tasks/overview.html">任务系统</a>
+  <a href="https://snowdreamtech.github.io/UniRTM/zh/guide/getting-started.html">快速开始</a> •
+  <a href="https://snowdreamtech.github.io/UniRTM/zh/">官方文档</a> •
+  <a href="https://snowdreamtech.github.io/UniRTM/zh/dev-tools/overview.html">开发工具</a> •
+  <a href="https://snowdreamtech.github.io/UniRTM/zh/environments/overview.html">环境变量</a> •
+  <a href="https://snowdreamtech.github.io/UniRTM/zh/tasks/overview.html">任务系统</a>
 </p>
 
 <hr />
@@ -45,34 +45,6 @@
 - **原生安全检测**: 底层原生集成了 Trivy 和 Syft。当你下载工具时，会自动生成 SBOM 并扫描已知的安全漏洞。
 - **强制版本锁定**: 自动生成 `unirtm.lock` 锁文件，不仅锁定版本号，还精确锁定所有下载包的校验和，从而保障团队环境的绝对可复现。
 
-### 多维度深度对比 (Architecture & Environments)
-
-为了满足现代企业级和高并发容器化环境的严苛要求，`UniRTM` 在底层架构上做出了极具针对性的设计抉择。以下是我们在多个关键维度上与优秀的生态前辈 (`mise`, `asdf`) 的深度对比：
-
-#### 1. 核心架构与执行路径
-
-| 对比维度 | `asdf` (Bash) | `mise` (Rust) | `UniRTM` (Go) | 核心优势与意义 |
-| :--- | :--- | :--- | :--- | :--- |
-| **命令执行路径** | 垫片 (Shims) | 垫片(默认) / PATH | **绝对零垫片 (Strict PATH)** | 直接将绝对路径注入环境变量，保证了 **100% 无损的执行性能** 和绝对的 IDE 透明度。 |
-| **并发下载模型** | 无 | 操作系统线程 | **原生 Goroutines** | 依托 Go 语言极其轻量的协程机制，在海量工具链下载更新时实现极致的并发吞吐量。 |
-| **配置层级** | `.tool-versions` | `mise.toml` | **`.unirtm.toml`** | 使用标准化的 TOML 文件统一管理项目的工具、环境和任务。 |
-
-#### 2. 环境变量与上下文管理
-
-| 功能特性 | `asdf` | `mise` | `UniRTM` | 详细说明 |
-| :--- | :--- | :--- | :--- | :--- |
-| **统一管理范畴** | 仅开发工具 | 工具+环境+任务 | **工具+环境+任务** | 根据当前所在目录，自动且无缝地切换整体上下文环境。 |
-| **`.env` 文件解析** | ❌ | 原生支持 | **原生支持** | 告别额外的环境变量加载器，内置完美解析传统 `.env` 文件。 |
-| **密钥加密管理** | ❌ | 插件集成体系 | **内置 SOPS 原生支持** | 将基于 SOPS 的加密环境变量作为一等公民，提供开箱即用的敏感信息保护。 |
-
-#### 3. 跨平台兼容与系统韧性
-
-| 功能特性 | `asdf` | `mise` | `UniRTM` | 详细说明 |
-| :--- | :--- | :--- | :--- | :--- |
-| **Windows 原生支持** | 局限性大 | 支持 | **自底向上原生设计** | 从设计之初就兼顾 Windows 与 Cygdrive，提供极其丝滑的原生跨平台体验。 |
-| **Alpine / Musl 兼容** | 部分支持 | 支持 | **硬核底层兼容** | 完美无缝运行在没有任何 `glibc` 依赖的极简 Alpine 容器环境之中。 |
-| **版本与校验锁定** | 仅版本号 | `mise.lock` | **`unirtm.lock` 严格锁定** | 锁定版本的同时严格校验所有底层文件的 Hash，彻底杜绝“在我的电脑上能跑”的问题。 |
-
 ## 支持的操作系统 (Supported Platforms)
 
 *完全支持 macOS (Apple Silicon / Intel)、Linux (glibc & musl/Alpine) 以及 Windows 平台。*
@@ -88,7 +60,7 @@
 
 ### 安装 UniRTM
 
-你可以通过多种方式安装 UniRTM，详见 [快速开始](https://unirtm.snowdream.tech/zh/guide/getting-started.html)。
+你可以通过多种方式安装 UniRTM，详见 [快速开始](https://snowdreamtech.github.io/UniRTM/zh/guide/getting-started.html)。
 
 ```sh-session
 $ curl -sL https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.sh | bash
@@ -123,7 +95,7 @@ $ go version
 go version go1.22.x macos/arm64
 ```
 
-查看 [开发工具指南](https://unirtm.snowdream.tech/zh/dev-tools/) 获取更多示例。
+查看 [开发工具指南](https://snowdreamtech.github.io/UniRTM/zh/dev-tools/) 获取更多示例。
 
 ### 管理环境变量
 
@@ -139,7 +111,7 @@ $ echo $SOME_VAR
 bar
 ```
 
-此外，`UniRTM` 同样可以自动读取本地的 [`.env` 文件](https://unirtm.snowdream.tech/zh/environments/#env-directives)。
+此外，`UniRTM` 同样可以自动读取本地的 [`.env` 文件](https://snowdreamtech.github.io/UniRTM/zh/environments/#env-directives)。
 
 ### 运行任务
 
@@ -155,7 +127,7 @@ $ unirtm run build
 building...
 ```
 
-查看 [任务系统指南](https://unirtm.snowdream.tech/zh/tasks/) 获取更多高级用法。
+查看 [任务系统指南](https://snowdreamtech.github.io/UniRTM/zh/tasks/) 获取更多高级用法。
 
 ### UniRTM 综合实战配置
 
@@ -210,7 +182,36 @@ unirtm run deploy # 在部署前，将自动按顺序并行执行校验和安全
 
 ## 官方文档
 
-完整的架构解析与高级配置指南请前往官网：[unirtm.snowdream.tech](https://unirtm.snowdream.tech/zh/)
+完整的架构解析与高级配置指南请前往官网：[snowdreamtech.github.io/UniRTM](https://snowdreamtech.github.io/UniRTM/zh/)
+
+### 多维度深度对比 (Architecture & Environments)
+
+为了满足现代企业级和高并发容器化环境的严苛要求，`UniRTM` 在底层架构上做出了极具针对性的设计抉择。以下是我们在多个关键维度上与优秀的生态前辈 (`mise`, `asdf`) 的深度对比：
+
+#### 1. 核心架构与执行路径
+
+| 对比维度 | `asdf` (Bash) | `mise` (Rust) | `UniRTM` (Go) | 核心优势与意义 |
+| :--- | :--- | :--- | :--- | :--- |
+| **命令执行路径** | 垫片 (Shims) | 垫片(默认) / PATH | **绝对零垫片 (Strict PATH)** | 直接将绝对路径注入环境变量，保证了 **100% 无损的执行性能** 和绝对的 IDE 透明度。 |
+| **并发下载模型** | 无 | 操作系统线程 | **原生 Goroutines** | 依托 Go 语言极其轻量的协程机制，在海量工具链下载更新时实现极致的并发吞吐量。 |
+| **配置层级** | `.tool-versions` | `mise.toml` | **`.unirtm.toml`** | 使用标准化的 TOML 文件统一管理项目的工具、环境和任务。 |
+
+#### 2. 环境变量与上下文管理
+
+| 功能特性 | `asdf` | `mise` | `UniRTM` | 详细说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| **统一管理范畴** | 仅开发工具 | 工具+环境+任务 | **工具+环境+任务** | 根据当前所在目录，自动且无缝地切换整体上下文环境。 |
+| **`.env` 文件解析** | ❌ | 原生支持 | **原生支持** | 告别额外的环境变量加载器，内置完美解析传统 `.env` 文件。 |
+| **密钥加密管理** | ❌ | 插件集成体系 | **内置 SOPS 原生支持** | 将基于 SOPS 的加密环境变量作为一等公民，提供开箱即用的敏感信息保护。 |
+
+#### 3. 跨平台兼容与系统韧性
+
+| 功能特性 | `asdf` | `mise` | `UniRTM` | 详细说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| **Windows 原生支持** | 局限性大 | 支持 | **自底向上原生设计** | 从设计之初就兼顾 Windows 与 Cygdrive，提供极其丝滑的原生跨平台体验。 |
+| **Alpine / Musl 兼容** | 部分支持 | 支持 | **硬核底层兼容** | 完美无缝运行在没有任何 `glibc` 依赖的极简 Alpine 容器环境之中。 |
+| **版本与校验锁定** | 仅版本号 | `mise.lock` | **`unirtm.lock` 严格锁定** | 锁定版本的同时严格校验所有底层文件的 Hash，彻底杜绝“在我的电脑上能跑”的问题。 |
+
 
 ## 社区支持与 Issues
 

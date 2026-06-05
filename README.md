@@ -16,11 +16,11 @@
 <p><b>Dev tools, env vars, and tasks in one CLI with built-in security.</b><br><i>Inspired by and paying tribute to <a href="https://github.com/jdx/mise">mise</a>.</i></p>
 
 <p align="center">
-  <a href="https://unirtm.snowdream.tech/guide/getting-started.html">Getting Started</a> •
-  <a href="https://unirtm.snowdream.tech">Documentation</a> •
-  <a href="https://unirtm.snowdream.tech/dev-tools/overview.html">Dev Tools</a> •
-  <a href="https://unirtm.snowdream.tech/environments/overview.html">Environments</a> •
-  <a href="https://unirtm.snowdream.tech/tasks/overview.html">Tasks</a>
+  <a href="https://snowdreamtech.github.io/UniRTM/guide/getting-started.html">Getting Started</a> •
+  <a href="https://snowdreamtech.github.io/UniRTM">Documentation</a> •
+  <a href="https://snowdreamtech.github.io/UniRTM/dev-tools/overview.html">Dev Tools</a> •
+  <a href="https://snowdreamtech.github.io/UniRTM/environments/overview.html">Environments</a> •
+  <a href="https://snowdreamtech.github.io/UniRTM/tasks/overview.html">Tasks</a>
 </p>
 
 <hr />
@@ -45,34 +45,6 @@ While taking heavy inspiration from the brilliant tool `mise` (dev tools, env va
 - **Native Security**: Built-in integration with Trivy and Syft to generate SBOMs and scan for vulnerabilities whenever you install a tool.
 - **Absolute Locking**: Generates a `unirtm.lock` file that pins the exact checksums and versions of your downloaded tools for reproducible environments.
 
-### Architecture & Environments Comparison
-
-We believe in making deliberate architectural choices to support modern enterprise environments. Here is how `UniRTM` compares to ecosystem pioneers like `mise` and `asdf` across multiple dimensions:
-
-#### 1. Core Architecture & Execution
-
-| Dimension | `asdf` (Bash) | `mise` (Rust) | `UniRTM` (Go) | Why it matters |
-| :--- | :--- | :--- | :--- | :--- |
-| **Execution Path** | Shims | Shims (Default) / PATH | **Strictly Direct PATH** | UniRTM injects absolute paths directly into your `$PATH`, guaranteeing zero execution overhead and perfect IDE transparency. |
-| **Concurrency Model** | None | OS Threads | **Goroutines** | Go's ultra-lightweight goroutines provide extreme parallel throughput during massive toolchain downloads. |
-| **Config Hierarchy** | `.tool-versions` | `mise.toml` | **`.unirtm.toml`** | Standardized, unified TOML configs across your entire project. |
-
-#### 2. Environment & Context
-
-| Feature | `asdf` | `mise` | `UniRTM` | Details |
-| :--- | :--- | :--- | :--- | :--- |
-| **Scope Management** | Tools only | Tools + Env + Tasks | **Tools + Env + Tasks** | Seamlessly manage environments contextually per directory. |
-| **`.env` Parsing** | ❌ | Native | **Native** | Reads traditional `.env` files automatically without external loaders. |
-| **Secrets Engine** | ❌ | Plugins / Integrations | **Native SOPS** | Treats secure secret management as a first-class citizen using native SOPS integration. |
-
-#### 3. Cross-Platform & Resilience
-
-| Feature | `asdf` | `mise` | `UniRTM` | Details |
-| :--- | :--- | :--- | :--- | :--- |
-| **Windows Support** | Limited | Supported | **Native (Ground-up)** | Engineered natively for a flawless Windows and Cygdrive experience. |
-| **Alpine/Musl** | Partial | Supported | **Hardcore Supported** | Runs flawlessly in minimal `musl`/Alpine containers without `glibc` overhead. |
-| **Reproducibility** | Versions | `mise.lock` | **`unirtm.lock`** | Strictly pins exact checksums to ensure reproducible team environments. |
-
 ## Supported Platforms
 
 *Fully supported on macOS (Apple Silicon / Intel), Linux (glibc & musl/Alpine), and Windows.*
@@ -88,7 +60,7 @@ Notice the speed and the built-in vulnerability scanning!
 
 ### Install UniRTM
 
-See [Getting started](https://unirtm.snowdream.tech/guide/getting-started.html) for more options.
+See [Getting started](https://snowdreamtech.github.io/UniRTM/guide/getting-started.html) for more options.
 
 ```sh-session
 $ curl -sL https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.sh | bash
@@ -123,7 +95,7 @@ $ go version
 go version go1.22.x macos/arm64
 ```
 
-See [dev tools](https://unirtm.snowdream.tech/dev-tools/) for more examples.
+See [dev tools](https://snowdreamtech.github.io/UniRTM/dev-tools/) for more examples.
 
 ### Manage environment variables
 
@@ -139,7 +111,7 @@ $ echo $SOME_VAR
 bar
 ```
 
-Note that `UniRTM` can also [load `.env` files](https://unirtm.snowdream.tech/environments/#env-directives).
+Note that `UniRTM` can also [load `.env` files](https://snowdreamtech.github.io/UniRTM/environments/#env-directives).
 
 ### Run tasks
 
@@ -155,7 +127,7 @@ $ unirtm run build
 building...
 ```
 
-See [tasks](https://unirtm.snowdream.tech/tasks/) for more information.
+See [tasks](https://snowdreamtech.github.io/UniRTM/tasks/) for more information.
 
 ### Example UniRTM project
 
@@ -210,7 +182,36 @@ unirtm run deploy # automatically runs validation and audit dependencies first
 
 ## Full Documentation
 
-See [unirtm.snowdream.tech](https://unirtm.snowdream.tech)
+See [snowdreamtech.github.io/UniRTM](https://snowdreamtech.github.io/UniRTM)
+
+### Architecture & Environments Comparison
+
+We believe in making deliberate architectural choices to support modern enterprise environments. Here is how `UniRTM` compares to ecosystem pioneers like `mise` and `asdf` across multiple dimensions:
+
+#### 1. Core Architecture & Execution
+
+| Dimension | `asdf` (Bash) | `mise` (Rust) | `UniRTM` (Go) | Why it matters |
+| :--- | :--- | :--- | :--- | :--- |
+| **Execution Path** | Shims | Shims (Default) / PATH | **Strictly Direct PATH** | UniRTM injects absolute paths directly into your `$PATH`, guaranteeing zero execution overhead and perfect IDE transparency. |
+| **Concurrency Model** | None | OS Threads | **Goroutines** | Go's ultra-lightweight goroutines provide extreme parallel throughput during massive toolchain downloads. |
+| **Config Hierarchy** | `.tool-versions` | `mise.toml` | **`.unirtm.toml`** | Standardized, unified TOML configs across your entire project. |
+
+#### 2. Environment & Context
+
+| Feature | `asdf` | `mise` | `UniRTM` | Details |
+| :--- | :--- | :--- | :--- | :--- |
+| **Scope Management** | Tools only | Tools + Env + Tasks | **Tools + Env + Tasks** | Seamlessly manage environments contextually per directory. |
+| **`.env` Parsing** | ❌ | Native | **Native** | Reads traditional `.env` files automatically without external loaders. |
+| **Secrets Engine** | ❌ | Plugins / Integrations | **Native SOPS** | Treats secure secret management as a first-class citizen using native SOPS integration. |
+
+#### 3. Cross-Platform & Resilience
+
+| Feature | `asdf` | `mise` | `UniRTM` | Details |
+| :--- | :--- | :--- | :--- | :--- |
+| **Windows Support** | Limited | Supported | **Native (Ground-up)** | Engineered natively for a flawless Windows and Cygdrive experience. |
+| **Alpine/Musl** | Partial | Supported | **Hardcore Supported** | Runs flawlessly in minimal `musl`/Alpine containers without `glibc` overhead. |
+| **Reproducibility** | Versions | `mise.lock` | **`unirtm.lock`** | Strictly pins exact checksums to ensure reproducible team environments. |
+
 
 ## GitHub Issues & Discussions
 
