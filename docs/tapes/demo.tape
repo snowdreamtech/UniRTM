@@ -27,19 +27,9 @@ Sleep 500ms
 Enter
 Sleep 1.5s
 
-Type "node -v"
-Sleep 500ms
-Enter
-Sleep 1.5s
-
-Type "python --version"
-Sleep 500ms
-Enter
-Sleep 1.5s
-
 # 2. Run UniRTM to install the tools
 # Notice the speed and the built-in vulnerability scan!
-Type "unirtm use --global go@1.26.3 node@22.2.0 python@3.12.3"
+Type "unirtm use --global go@1.26.3"
 Sleep 1s
 Enter
 
@@ -53,15 +43,6 @@ Sleep 500ms
 Enter
 Sleep 1s
 
-Type "node -v"
-Sleep 500ms
-Enter
-Sleep 1s
-
-Type "python --version"
-Sleep 500ms
-Enter
-Sleep 3s
 
 # Clear screen and end
 Type "clear"
