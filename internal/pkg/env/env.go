@@ -3,10 +3,6 @@ package env
 import (
 	"crypto/rand"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"sync"
 )
 
 // Get returns the value of the environment variable with the given key,
@@ -97,43 +93,4 @@ func RandomString(n int) (string, error) {
 		bytes[i] = letters[b%byte(len(letters))]
 	}
 	return string(bytes), nil
-}
-
-var (
-	isMuslCached bool
-	isMuslOnce   sync.Once
-)
-
-// IsMusl detects if the underlying Linux system uses the musl libc (e.g. Alpine Linux).
-func IsMusl() bool {
-	if RuntimeGOOS != "linux" {
-		return false
-	}
-	isMuslOnce.Do(func() {
-		isMuslCached = checkMusl()
-	})
-	return isMuslCached
-}
-
-func checkMusl() bool {
-	// 1. Check for Alpine release file
-	if _, err := os.Stat("/etc/alpine-release"); err == nil {
-		return true
-	}
-
-	// 2. Check for common musl dynamic linker paths
-	matches, err := filepath.Glob("/lib/ld-musl-*.so.1")
-	if err == nil && len(matches) > 0 {
-		return true
-	}
-
-	// 3. Check ldd output
-	cmd := exec.Command("ldd", "--version")
-	out, err := cmd.CombinedOutput()
-	// ldd --version might exit with 1 on musl, but it still prints to stdout/stderr
-	if strings.Contains(strings.ToLower(string(out)), "musl") {
-		return true
-	}
-
-	return false
 }

@@ -1,4 +1,4 @@
-- [x] 1. 检查 `internal/pkg/env/env.go` 现有结构。
+- [x] 1. 检查 `internal/sysinfo/env.go` 现有结构。
 - [x] 2. 编写 `IsMusl()` 探测逻辑（通过检测 `/etc/alpine-release` 及 `/lib/ld-musl*` 等特征）。
-- [x] 3. 编写 `internal/pkg/env/env_test.go` 相关单元测试。
-- [x] 4. 运行 `go test ./internal/pkg/env` 确保测试通过。
+- [x] 3. 编写 `internal/sysinfo/env_test.go` 相关单元测试。
+- [x] 4. 运行 `go test ./internal/sysinfo` 确保测试通过。
