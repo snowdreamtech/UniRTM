@@ -1,15 +1,16 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
-
 package backend
 
 import (
 	"context"
 	"testing"
+	"time"
 )
 
 func TestBackends_ResolveVersion(t *testing.T) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 	platform := Platform{OS: "linux", Arch: "amd64"}
 
 	backends := []Backend{
