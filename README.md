@@ -192,7 +192,7 @@ We believe in making deliberate architectural choices to support modern enterpri
 
 | Dimension | `asdf` (Bash) | `mise` (Rust) | `UniRTM` (Go) | Why it matters |
 | :--- | :--- | :--- | :--- | :--- |
-| **Execution Path** | Shims | Shims (Default) / PATH | **Strictly Direct PATH** | UniRTM injects absolute paths directly into your `$PATH`, guaranteeing zero execution overhead and perfect IDE transparency. |
+| **Execution Path** | Shims | Shims (Default) / PATH | **Strictly Direct PATH** | UniRTM injects absolute paths directly into your `$PATH`, providing a minimal execution path and transparent IDE experience. |
 | **Concurrency Model** | None | OS Threads | **Goroutines** | Go's ultra-lightweight goroutines provide extreme parallel throughput during massive toolchain downloads. |
 | **Config Hierarchy** | `.tool-versions` | `mise.toml` | **`.unirtm.toml`** | Standardized, unified TOML configs across your entire project. |
 
@@ -210,7 +210,7 @@ We believe in making deliberate architectural choices to support modern enterpri
 | :--- | :--- | :--- | :--- | :--- |
 | **Windows Support** | WSL/MSYS Dependent | Supported | **Native (Ground-up)** | Engineered natively for a flawless Windows and Cygdrive experience. |
 | **Alpine/Musl** | Partial | Supported | **Hardcore Supported** | Runs flawlessly in minimal `musl`/Alpine containers without `glibc` overhead. |
-| **Reproducibility** | Versions | `mise.lock` | **`unirtm.lock`** | Strictly pins exact checksums to ensure reproducible team environments. |
+| **Reproducibility** | Versions | `mise.lock` (Supported) | **`unirtm.lock` (Default)** | Strictly pins exact checksums to ensure reproducible team environments. |
 
 #### 4. Ecosystem Affinity & Minimalism
 
@@ -218,7 +218,7 @@ We believe in making deliberate architectural choices to support modern enterpri
 | :--- | :--- | :--- | :--- | :--- |
 | **Hybrid Path Resolution** | ❌ | Partial | **Deeply Supported** | Dedicated optimizations for translating paths seamlessly across Windows Git Bash / Cygdrive environments. |
 | **External Dependencies** | Bash Ecosystem | Minimal | **Absolute Zero** | Core plugins are compiled directly into the binary. Drop it into any minimal OS and it runs out of the box. |
-| **Shim Overhead** | Standard (Bash script) | Optimized (Rust binary) | **Completely Eliminated** | Zero-shim design guarantees zero nanosecond overhead and prevents debugger detachment in complex IDEs. |
+| **Shim Overhead** | Standard (Bash script) | Optimized (Rust binary) | **Completely Eliminated** | Pure PATH injection design executes the real binary directly, which is highly compatible with complex IDE debuggers. |
 | **DevOps Integration** | Custom Scripts | Good | **Native Synergy** | Go-based architecture naturally aligns with cloud-native infrastructure, making custom integrations frictionless. |
 
 
