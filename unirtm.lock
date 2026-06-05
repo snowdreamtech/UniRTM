@@ -584,6 +584,15 @@ checksum = "62247f56fb7d7b827d237152c4e3fcd69a24d0fa9430dc73dbda7593ae82bc8d"
 url = "https://dl.google.com/go/go1.26.4.windows-arm64.zip"
 gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
 
+[[tools."go"]]
+version = "1.26.3"
+backend = "native"
+
+[tools."go"."platforms.macos-amd64"]
+checksum = "278d580b32e299fe4a9c990fcf2d02acfe538c7e551a6ee18f9c7164573d2c63"
+url = "https://mirrors.aliyun.com/golang/go1.26.3.darwin-amd64.tar.gz"
+gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
+
 [[tools."go:golang.org/x/vuln/cmd/govulncheck"]]
 version = "1.1.4"
 backend = "go"
