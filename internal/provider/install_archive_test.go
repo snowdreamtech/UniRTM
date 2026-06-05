@@ -10,11 +10,16 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
 
 func TestGenericProvider_InstallArchiveCoverage(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping symlink and unix permissions test on Windows")
+	}
+
 	p := NewGenericProvider()
 	ctx := context.Background()
 

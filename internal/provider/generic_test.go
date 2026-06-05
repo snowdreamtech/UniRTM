@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -255,6 +256,10 @@ func TestGenericProvider_GenerateWindowsShim(t *testing.T) {
 }
 
 func TestGenericProvider_ValidateInstallDir(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping symlink test on Windows")
+	}
+
 	p := NewGenericProvider()
 	tmpDir := t.TempDir()
 
@@ -341,6 +346,10 @@ func TestGenericProvider_FlattenDirectory(t *testing.T) {
 }
 
 func TestGenericProvider_RelativizeAllSymlinks(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping symlink test on Windows")
+	}
+
 	p := NewGenericProvider()
 	tmpDir := t.TempDir()
 
