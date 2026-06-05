@@ -14,9 +14,10 @@ import (
 
 // CommonAsset represents a generic asset from a hosting platform.
 type CommonAsset struct {
-	Name string
-	URL  string
-	Size int64
+	Name            string
+	URL             string
+	Size            int64
+	IsGlibcFallback bool
 }
 
 // containsWord checks whether word appears as a complete token in s,
@@ -190,6 +191,14 @@ func FindBestAsset(assets []CommonAsset, platform Platform, toolName string) (*C
 			bestAsset = asset
 		}
 	}
+
+	if bestAsset != nil && platform.Musl {
+		nameLower := strings.ToLower(bestAsset.Name)
+		if !strings.Contains(nameLower, "musl") && !strings.Contains(nameLower, "alpine") {
+			bestAsset.IsGlibcFallback = true
+		}
+	}
+
 	return bestAsset, bestScore
 }
 
@@ -332,7 +341,8 @@ func GenericResolveVersion(ctx context.Context, p HostingProvider, tool string, 
 			Platform:    platform,
 			PublishedAt: release.PublishedAt,
 			Metadata: map[string]string{
-				"prerelease": fmt.Sprintf("%t", release.Prerelease),
+				"prerelease":      fmt.Sprintf("%t", release.Prerelease),
+				"IsGlibcFallback": fmt.Sprintf("%t", bestAsset.IsGlibcFallback),
 			},
 		})
 	}
@@ -397,6 +407,7 @@ func GenericGetDownloadInfo(ctx context.Context, p HostingProvider, tool string,
 		PublishedAt: release.PublishedAt,
 		Metadata: map[string]string{
 			"gpg_signature_url": gpgSigURL,
+			"IsGlibcFallback":   fmt.Sprintf("%t", bestAsset.IsGlibcFallback),
 		},
 	}, nil
 }

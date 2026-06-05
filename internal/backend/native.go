@@ -6,6 +6,7 @@ package backend
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/provider/native"
 )
@@ -60,6 +61,16 @@ func (b *NativeBackend) ListVersions(ctx context.Context, tool string, platform 
 					bestScore = score
 					bestAsset = &a
 				}
+			}
+		}
+
+		if bestAsset != nil && platform.Musl {
+			nameLower := strings.ToLower(bestAsset.Filename)
+			if !strings.Contains(nameLower, "musl") && !strings.Contains(nameLower, "alpine") {
+				if bestAsset.Metadata == nil {
+					bestAsset.Metadata = make(map[string]string)
+				}
+				bestAsset.Metadata["IsGlibcFallback"] = "true"
 			}
 		}
 
@@ -146,6 +157,16 @@ func (b *NativeBackend) GetDownloadInfo(ctx context.Context, tool, version strin
 				bestScore = score
 				bestAsset = &a
 			}
+		}
+	}
+
+	if bestAsset != nil && platform.Musl {
+		nameLower := strings.ToLower(bestAsset.Filename)
+		if !strings.Contains(nameLower, "musl") && !strings.Contains(nameLower, "alpine") {
+			if bestAsset.Metadata == nil {
+				bestAsset.Metadata = make(map[string]string)
+			}
+			bestAsset.Metadata["IsGlibcFallback"] = "true"
 		}
 	}
 

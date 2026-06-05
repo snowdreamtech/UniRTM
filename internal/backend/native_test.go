@@ -91,3 +91,24 @@ func TestNativeBackend_ResolveVersion(t *testing.T) {
 		t.Errorf("expected 2 versions, got %d", len(versions))
 	}
 }
+
+func TestNativeBackend_MuslFallback(t *testing.T) {
+	b := NewNativeBackend()
+	b.recipes["test-tool"] = native.Recipe{
+		BaseURL: "http://test",
+		Handler: &mockRecipeHandler{}, // Returns asset "tool-linux-amd64" (glibc)
+	}
+
+	ctx := context.Background()
+	// Simulate running on a Musl platform (e.g. Alpine)
+	platform := Platform{OS: "linux", Arch: "amd64", Musl: true}
+
+	vi, err := b.GetDownloadInfo(ctx, "test-tool", "1.0.0", platform)
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+
+	if vi.Metadata == nil || vi.Metadata["IsGlibcFallback"] != "true" {
+		t.Errorf("expected IsGlibcFallback to be 'true', got %v", vi.Metadata["IsGlibcFallback"])
+	}
+}

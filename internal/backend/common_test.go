@@ -60,6 +60,33 @@ func TestFindBestAsset(t *testing.T) {
 	}
 }
 
+func TestFindBestAsset_MuslFallback(t *testing.T) {
+	assets := []CommonAsset{
+		{Name: "tool-windows-amd64.zip", URL: "url1"},
+		{Name: "tool-linux-amd64.tar.gz", URL: "url2"}, // This is glibc
+	}
+
+	p := Platform{OS: "linux", Arch: "amd64", Musl: true}
+	best, _ := FindBestAsset(assets, p, "tool")
+
+	if best == nil {
+		t.Fatalf("failed to find best asset")
+	}
+	if !best.IsGlibcFallback {
+		t.Errorf("expected IsGlibcFallback to be true for glibc asset on musl platform")
+	}
+
+	// Now test with a native musl asset
+	assetsWithMusl := append(assets, CommonAsset{Name: "tool-linux-amd64-musl.tar.gz", URL: "url3"})
+	best2, _ := FindBestAsset(assetsWithMusl, p, "tool")
+	if best2 == nil || best2.URL != "url3" {
+		t.Fatalf("failed to select musl asset")
+	}
+	if best2.IsGlibcFallback {
+		t.Errorf("expected IsGlibcFallback to be false for native musl asset")
+	}
+}
+
 func TestProbeURL(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/good" {

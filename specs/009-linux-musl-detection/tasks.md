@@ -1,4 +1,9 @@
-- [x] 1. 检查 `internal/sysinfo/env.go` 现有结构。
-- [x] 2. 编写 `IsMusl()` 探测逻辑（通过检测 `/etc/alpine-release` 及 `/lib/ld-musl*` 等特征）。
-- [x] 3. 编写 `internal/sysinfo/env_test.go` 相关单元测试。
-- [x] 4. 运行 `go test ./internal/sysinfo` 确保测试通过。
+- [x] Create the `internal/sysinfo` package if it doesn't exist.
+- [x] Implement the `IsMusl()` logic using file path checks (`/etc/alpine-release`, `ld-musl*.so`).
+- [x] Write tests for `IsMusl()` in `env_test.go`.
+- [x] Add tests with missing or mock files to ensure fallback defaults to `glibc`.
+- [x] Add `IsGlibcFallback` boolean to `CommonAsset` in `internal/backend/common.go`.
+- [x] In `FindBestAsset`, set `IsGlibcFallback = true` if running on Musl but asset name lacks "musl".
+- [x] Propagate `IsGlibcFallback` to `VersionInfo.Metadata` in GitHub, Forgejo, GitLab backends.
+- [x] Add logic in `internal/service/installation.go` to print a warning when `IsGlibcFallback` is "true".
+- [x] Ensure specific providers (like `golang.go`, `ruby.go`) inject this metadata manually when resolving versions.

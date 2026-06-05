@@ -368,6 +368,11 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 		versionInfo = info
 	}
 
+	// Warning for Musl Glibc fallback
+	if versionInfo != nil && versionInfo.Metadata != nil && versionInfo.Metadata["IsGlibcFallback"] == "true" {
+		output.Warningf("⚠️ COMPATIBILITY WARNING: The official binary for %s is built for glibc. Since your system uses musl (e.g., Alpine Linux), you may need to install a compatibility layer like 'gcompat' (apk add gcompat) for it to run successfully.", tool)
+	}
+
 	// 5. Check if already installed (AFTER resolving concrete version)
 	// Note: We use im.installRepo (non-transactional) here to avoid holding a transaction during download.
 	existing, err := im.installRepo.FindByToolAndVersion(ctx, tool, version)
