@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
@@ -109,7 +110,13 @@ func TestResolveExecutable_PrefixMatch(t *testing.T) {
 	pr := provider.NewRegistry()
 
 	tempDir := t.TempDir()
-	exePath := filepath.Join(tempDir, "testbin-1.0")
+	
+	exeName := "testbin-1.0"
+	if runtime.GOOS == "windows" {
+		exeName += ".exe"
+	}
+	exePath := filepath.Join(tempDir, exeName)
+	
 	// create dummy file and make it executable
 	f, err := os.Create(exePath)
 	require.NoError(t, err)
