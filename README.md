@@ -41,7 +41,7 @@
 While taking heavy inspiration from the brilliant tool `mise` (dev tools, env vars, and tasks in one CLI), UniRTM introduces several distinct architectural choices:
 
 - **Pure Go Engine**: Extreme parallel downloading capabilities leveraging goroutines.
-- **Zero Shims**: UniRTM strictly avoids bash shims. It directly prepends the absolute paths of installed tools to your `$PATH`, ensuring 100% execution speed and transparency for IDEs.
+- **Lightweight Native Shims**: Replaces sluggish bash shims with a unified, high-performance Go router. This prevents `$PATH` explosion while maintaining near-native execution speeds.
 - **Unifying Security via Tasks**: While keeping the core engine minimal, UniRTM allows you to perfectly integrate external security scanners like Trivy or Syft into your reproducible task workflows.
 - **Absolute Locking**: Generates a `unirtm.lock` file that pins the exact checksums and versions of your downloaded tools for reproducible environments.
 
@@ -192,7 +192,7 @@ We believe in making deliberate architectural choices to support modern enterpri
 
 | Dimension | `asdf` (Bash) | `mise` (Rust) | `UniRTM` (Go) | Why it matters |
 | :--- | :--- | :--- | :--- | :--- |
-| **Execution Path** | Shims | Shims (Default) / PATH | **Strictly Direct PATH** | UniRTM injects absolute paths directly into your `$PATH`, providing a minimal execution path and transparent IDE experience. |
+| **Execution Path** | Bash Shims | Rust Shims / PATH | **Lightweight Go Shims** | Uses a single compiled Go binary as a router to perfectly solve the performance issues of Bash shims and ensure cross-platform compatibility. |
 | **Concurrency Model** | None | OS Threads | **Goroutines** | Go's ultra-lightweight goroutines provide extreme parallel throughput during massive toolchain downloads. |
 | **Config Hierarchy** | `.tool-versions` | `mise.toml` | **`.unirtm.toml`** | Standardized, unified TOML configs across your entire project. |
 
@@ -218,7 +218,7 @@ We believe in making deliberate architectural choices to support modern enterpri
 | :--- | :--- | :--- | :--- | :--- |
 | **Hybrid Path Resolution** | ❌ | Partial | **Deeply Supported** | Dedicated optimizations for translating paths seamlessly across Windows Git Bash / Cygdrive environments. |
 | **External Dependencies** | Bash Ecosystem | Minimal | **Absolute Zero** | Core plugins are compiled directly into the binary. Drop it into any minimal OS and it runs out of the box. |
-| **Shim Overhead** | Standard (Bash script) | Optimized (Rust binary) | **Completely Eliminated** | Pure PATH injection design executes the real binary directly, which is highly compatible with complex IDE debuggers. |
+| **Shim Overhead** | Standard (Bash script) | Optimized (Rust binary) | **Lightning Fast (Go)** | All tools symlink back to the unirtm engine for instant routing, perfectly preventing `$PATH` explosion. |
 | **DevOps Integration** | Custom Scripts | Good | **Native Synergy** | Go-based architecture naturally aligns with cloud-native infrastructure, making custom integrations frictionless. |
 
 

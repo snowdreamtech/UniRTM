@@ -1,3 +1,3 @@
 # Shims & PATH
 
-Unlike traditional tool managers, UniRTM strictly avoids using bash shims. When changing directories, UniRTM prepends the exact path of the installed tool to your `$PATH`. This ensures 100% execution speed and transparency.
+Unlike traditional tool managers that rely on slow bash scripts, UniRTM uses native, lightweight symlink shims. By pointing all tools back to the high-performance Go `unirtm` binary, it achieves near-zero overhead routing while completely preventing your `$PATH` from exploding with dozens of tool directories.
