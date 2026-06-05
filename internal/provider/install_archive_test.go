@@ -189,26 +189,26 @@ func TestGenericProvider_ExtractArtifactMoreCoverage(t *testing.T) {
 		readOnlyDir := filepath.Join(tmpDir, "readonly")
 		os.MkdirAll(readOnlyDir, 0555) // Read and execute only, no write
 
-	// Create a dummy zip file
-	zipPath := filepath.Join(tmpDir, "test_readonly.zip")
-	fZip, _ := os.Create(zipPath)
-	zw := zip.NewWriter(fZip)
-	fWriter, _ := zw.Create("file.txt")
-	fWriter.Write([]byte("data"))
-	zw.Close()
-	fZip.Close()
+		// Create a dummy zip file
+		zipPath := filepath.Join(tmpDir, "test_readonly.zip")
+		fZip, _ := os.Create(zipPath)
+		zw := zip.NewWriter(fZip)
+		fWriter, _ := zw.Create("file.txt")
+		fWriter.Write([]byte("data"))
+		zw.Close()
+		fZip.Close()
 
-	// zip extraction error
-	err = p.extractArtifact(ctx, zipPath, readOnlyDir)
-	if err == nil {
-		t.Error("Expected error when extracting zip to read-only directory, got nil")
-	}
+		// zip extraction error
+		err = p.extractArtifact(ctx, zipPath, readOnlyDir)
+		if err == nil {
+			t.Error("Expected error when extracting zip to read-only directory, got nil")
+		}
 
-	// tar extraction error
-	err = p.extractArtifact(ctx, tarPath, readOnlyDir)
-	if err == nil {
-		t.Error("Expected error when extracting tar to read-only directory, got nil")
-	}
+		// tar extraction error
+		err = p.extractArtifact(ctx, tarPath, readOnlyDir)
+		if err == nil {
+			t.Error("Expected error when extracting tar to read-only directory, got nil")
+		}
 
 		// Reset permissions so tmpDir cleanup doesn't fail
 		os.Chmod(readOnlyDir, 0755)
