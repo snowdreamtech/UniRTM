@@ -163,8 +163,15 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 		score += 50
 	}
 
-	if strings.Contains(nameLower, "musl") {
-		score -= 10
+	hasMusl := strings.Contains(nameLower, "musl")
+	if platform.Musl {
+		if hasMusl {
+			score += 50
+		} else if platform.OS == "linux" {
+			score -= 10
+		}
+	} else if hasMusl {
+		score -= 50
 	}
 
 	return score

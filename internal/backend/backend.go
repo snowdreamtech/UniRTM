@@ -9,12 +9,14 @@ import (
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/sysinfo"
 )
 
 // Platform represents the operating system and architecture information.
 type Platform struct {
 	OS   string // e.g., "linux", "darwin", "windows"
 	Arch string // e.g., "amd64", "arm64", "386"
+	Musl bool   // true if libc is musl (e.g., Alpine Linux)
 }
 
 // CurrentPlatform returns the platform information for the current system.
@@ -22,11 +24,15 @@ func CurrentPlatform() Platform {
 	return Platform{
 		OS:   env.RuntimeGOOS,
 		Arch: runtime.GOARCH,
+		Musl: env.RuntimeGOOS == "linux" && sysinfo.IsMusl(),
 	}
 }
 
 // String returns a string representation of the platform (e.g., "linux-amd64").
 func (p Platform) String() string {
+	if p.Musl {
+		return p.OS + "-" + p.Arch + "-musl"
+	}
 	return p.OS + "-" + p.Arch
 }
 

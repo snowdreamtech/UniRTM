@@ -285,12 +285,22 @@ func TestCalculateAssetScore_RawBinary(t *testing.T) {
 }
 
 func TestCalculateAssetScore_MuslPenalty(t *testing.T) {
-	// musl builds get a penalty
-	platform := Platform{OS: "linux", Arch: "amd64"}
+	// musl builds get a heavy penalty on non-musl platform
+	platform := Platform{OS: "linux", Arch: "amd64", Musl: false}
 	scoreMusl := CalculateAssetScore("app-linux-amd64-musl.tar.gz", platform, "app")
 	scoreNormal := CalculateAssetScore("app-linux-amd64.tar.gz", platform, "app")
 	if scoreMusl >= scoreNormal {
-		t.Errorf("expected musl score (%d) < normal score (%d)", scoreMusl, scoreNormal)
+		t.Errorf("expected musl score (%d) < normal score (%d) on non-musl platform", scoreMusl, scoreNormal)
+	}
+}
+
+func TestCalculateAssetScore_MuslPreferredOnMusl(t *testing.T) {
+	// musl builds get a bonus on musl platform
+	platform := Platform{OS: "linux", Arch: "amd64", Musl: true}
+	scoreMusl := CalculateAssetScore("app-linux-amd64-musl.tar.gz", platform, "app")
+	scoreNormal := CalculateAssetScore("app-linux-amd64.tar.gz", platform, "app")
+	if scoreMusl <= scoreNormal {
+		t.Errorf("expected musl score (%d) > normal score (%d) on musl platform", scoreMusl, scoreNormal)
 	}
 }
 
