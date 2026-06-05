@@ -82,13 +82,9 @@ func LoadHierarchy(startDir string) (*Config, error) {
 }
 
 // GetGlobalConfigPath returns the path to the global unirtm.toml configuration file.
-// (Copied from env package to avoid circular dependency if needed, or just use full path)
+// It delegates to env.GetGlobalConfigPath() which respects UNIRTM_CONFIG_DIR override.
 func GetGlobalConfigPath() string {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return ""
-	}
-	return filepath.Join(homeDir, ".config", "unirtm", "unirtm.toml")
+	return env.GetGlobalConfigPath()
 }
 
 // LoadFromDir loads the UniRTM project configuration from the specified directory.

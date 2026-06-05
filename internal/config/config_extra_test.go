@@ -264,14 +264,13 @@ func TestManagerLoad_TemplateFuncErrors(t *testing.T) {
 }
 
 func TestLoadHierarchy_GlobalConfig(t *testing.T) {
-	// Create a dummy global config file
-	origHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", origHome)
+	tmpDir := t.TempDir()
 
-	tmpHome := t.TempDir()
-	os.Setenv("HOME", tmpHome)
+	// Use UNIRTM_CONFIG_DIR to override the global config directory.
+	// This works cross-platform (HOME doesn't affect Windows path resolution).
+	globalConfigDir := filepath.Join(tmpDir, "config")
+	t.Setenv("UNIRTM_CONFIG_DIR", globalConfigDir)
 
-	globalConfigDir := filepath.Join(tmpHome, ".config", "unirtm")
 	OsMkdirAll(globalConfigDir, 0755)
 
 	globalPath := filepath.Join(globalConfigDir, "unirtm.toml")
