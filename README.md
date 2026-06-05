@@ -23,6 +23,8 @@
 
 <hr />
 
+<img src="docs/tapes/demo.gif" alt="UniRTM Demo" />
+
 </div>
 
 > [!TIP]
