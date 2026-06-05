@@ -62,7 +62,7 @@ func TestSpmBackend_ListVersions(t *testing.T) {
 	if out, err := exec.Command("git", "-C", tmpDir, "config", "user.name", "Test User").CombinedOutput(); err != nil {
 		t.Fatalf("git config name failed: %v, output: %s", err, string(out))
 	}
-	if out, err := exec.Command("git", "-C", tmpDir, "commit", "--allow-empty", "-m", "init").CombinedOutput(); err != nil {
+	if out, err := exec.Command("git", "-c", "commit.gpgsign=false", "-C", tmpDir, "commit", "--allow-empty", "-m", "init").CombinedOutput(); err != nil {
 		t.Fatalf("git commit failed: %v, output: %s", err, string(out))
 	}
 	if out, err := exec.Command("git", "-C", tmpDir, "tag", "v1.0.0").CombinedOutput(); err != nil {
@@ -120,7 +120,7 @@ func TestSpmBackend_ResolveVersion(t *testing.T) {
 	if out, err := exec.Command("git", "-C", tmpDir, "config", "user.name", "Test User").CombinedOutput(); err != nil {
 		t.Fatalf("git config name failed: %v, output: %s", err, string(out))
 	}
-	if out, err := exec.Command("git", "-C", tmpDir, "commit", "--allow-empty", "-m", "init").CombinedOutput(); err != nil {
+	if out, err := exec.Command("git", "-c", "commit.gpgsign=false", "-C", tmpDir, "commit", "--allow-empty", "-m", "init").CombinedOutput(); err != nil {
 		t.Fatalf("git commit failed: %v, output: %s", err, string(out))
 	}
 	if out, err := exec.Command("git", "-C", tmpDir, "tag", "v2.0.0").CombinedOutput(); err != nil {
