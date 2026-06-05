@@ -19,7 +19,7 @@ func TestNativeRunner_runTaskWithGraph_Cycle(t *testing.T) {
 	}
 	runner := NewNativeRunner(tasks, config.Settings{})
 
-	err := runner.Run(context.Background(), "/tmp", "A", nil, nil)
+	err := runner.Run(context.Background(), t.TempDir(), "A", nil, nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "circular dependency")
 }
@@ -30,7 +30,7 @@ func TestNativeRunner_runTaskWithGraph_MissingDep(t *testing.T) {
 	}
 	runner := NewNativeRunner(tasks, config.Settings{})
 
-	err := runner.Run(context.Background(), "/tmp", "A", nil, nil)
+	err := runner.Run(context.Background(), t.TempDir(), "A", nil, nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "dependency")
 }
@@ -52,7 +52,7 @@ func TestNativeRunner_runTaskWithGraph_Normal(t *testing.T) {
 	}
 	runner := NewNativeRunner(tasks, config.Settings{})
 
-	err := runner.Run(context.Background(), "/tmp", "A", []string{"arg1"}, []string{"ENV1=1"})
+	err := runner.Run(context.Background(), t.TempDir(), "A", []string{"arg1"}, []string{"ENV1=1"})
 	require.NoError(t, err)
 }
 
@@ -62,7 +62,7 @@ func TestNativeRunner_runTaskWithGraph_InvalidScript(t *testing.T) {
 	}
 	runner := NewNativeRunner(tasks, config.Settings{})
 
-	err := runner.Run(context.Background(), "/tmp", "A", nil, nil)
+	err := runner.Run(context.Background(), t.TempDir(), "A", nil, nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to parse task script")
 }
