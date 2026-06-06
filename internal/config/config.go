@@ -21,6 +21,7 @@ type Config struct {
 	Env          map[string]interface{}       `toml:"env" yaml:"env" mapstructure:"env"`
 	Settings     Settings                     `toml:"settings" yaml:"settings" mapstructure:"settings"`
 	Tasks        map[string]Task              `toml:"tasks" yaml:"tasks" mapstructure:"tasks"`
+	Hooks        map[string]string            `toml:"hooks,omitempty" yaml:"hooks,omitempty" mapstructure:"hooks,omitempty"`
 	Environments map[string]EnvironmentConfig `toml:"environments,omitempty" yaml:"environments,omitempty" mapstructure:"environments,omitempty"`
 	Aliases      map[string]map[string]string `toml:"aliases,omitempty" yaml:"aliases,omitempty" mapstructure:"aliases,omitempty"`
 }
@@ -31,6 +32,7 @@ type EnvironmentConfig struct {
 	Env      map[string]interface{} `toml:"env,omitempty" yaml:"env,omitempty" mapstructure:"env,omitempty"`
 	Settings Settings               `toml:"settings,omitempty" yaml:"settings,omitempty" mapstructure:"settings,omitempty"`
 	Tasks    map[string]Task        `toml:"tasks,omitempty" yaml:"tasks,omitempty" mapstructure:"tasks,omitempty"`
+	Hooks    map[string]string      `toml:"hooks,omitempty" yaml:"hooks,omitempty" mapstructure:"hooks,omitempty"`
 }
 
 type ToolConfig struct {
