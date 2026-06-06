@@ -31,9 +31,10 @@ type UpdateInfo struct {
 
 // UpdatePreview represents a preview of what will be updated.
 type UpdatePreview struct {
-	Updates       []UpdateInfo  // List of tools that will be updated
-	TotalUpdates  int           // Total number of updates
-	EstimatedTime time.Duration // Estimated time for all updates
+	Updates        []UpdateInfo  // List of tools that will be updated
+	TotalUpdates   int           // Total number of updates
+	TotalInstalled int           // Total number of installed tools checked
+	EstimatedTime  time.Duration // Estimated time for all updates
 }
 
 // UpdateResult represents the result of an update operation.
@@ -178,7 +179,7 @@ func (um *UpdateManager) UpdateTool(ctx context.Context, tool, targetVersion str
 	// Get current installation
 	installation, err := um.installRepo.FindByToolAndVersion(ctx, tool, "")
 	if err != nil {
-		return nil, fmt.Errorf("tool %s not installed: %w", tool, err)
+		return nil, fmt.Errorf("tool %s not installed (run 'unirtm install' first): %w", tool, err)
 	}
 
 	oldVersion := installation.Version
@@ -380,9 +381,10 @@ func (um *UpdateManager) PreviewUpdates(ctx context.Context) (*UpdatePreview, er
 	estimatedTime := time.Duration(len(requiredUpdates)) * 30 * time.Second
 
 	return &UpdatePreview{
-		Updates:       requiredUpdates,
-		TotalUpdates:  len(requiredUpdates),
-		EstimatedTime: estimatedTime,
+		Updates:        requiredUpdates,
+		TotalUpdates:   len(requiredUpdates),
+		TotalInstalled: len(updates),
+		EstimatedTime:  estimatedTime,
 	}, nil
 }
 

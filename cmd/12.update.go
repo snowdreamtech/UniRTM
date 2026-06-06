@@ -175,7 +175,11 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		}
 
 		if preview.TotalUpdates == 0 {
-			formatter.Info("All tools are up to date", nil)
+			if preview.TotalInstalled == 0 {
+				formatter.Warning("No tools are currently installed. Please run 'unirtm install' first.", nil)
+			} else {
+				formatter.Info("All tools are up to date", nil)
+			}
 			return nil
 		}
 
@@ -286,7 +290,11 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	}
 
 	if preview.TotalUpdates == 0 {
-		formatter.Info("All tools are up to date", nil)
+		if preview.TotalInstalled == 0 {
+			formatter.Warning("No tools are currently installed. Please run 'unirtm install' first.", nil)
+		} else {
+			formatter.Info("All tools are up to date", nil)
+		}
 		return nil
 	}
 
