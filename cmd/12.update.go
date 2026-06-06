@@ -12,6 +12,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -110,6 +111,12 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 
 	// Initialize dependencies
 	ctx := context.Background()
+	
+	// Load config and apply environment variables
+	cfg, err := config.Load()
+	if err == nil && cfg != nil {
+		cfg.ApplyEnvironment()
+	}
 
 	dbPath := env.GetDatabasePath()
 	db, err := database.Open(ctx, database.Config{

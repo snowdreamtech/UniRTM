@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -42,8 +43,13 @@ type npmRegistryResponse struct {
 func (b *NpmBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	baseURL := env.Get("NPM_REGISTRY_URL")
 	if baseURL == "" {
+		baseURL = env.Get("NPM_CONFIG_REGISTRY")
+	}
+	if baseURL == "" {
 		baseURL = "https://registry.npmjs.org"
 	}
+	// NPM_CONFIG_REGISTRY might have a trailing slash
+	baseURL = strings.TrimRight(baseURL, "/")
 	url := fmt.Sprintf("%s/%s", baseURL, tool)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -95,8 +101,12 @@ func (b *NpmBackend) ResolveVersion(ctx context.Context, tool string, versionReq
 	if versionRequest == "latest" {
 		baseURL := env.Get("NPM_REGISTRY_URL")
 		if baseURL == "" {
+			baseURL = env.Get("NPM_CONFIG_REGISTRY")
+		}
+		if baseURL == "" {
 			baseURL = "https://registry.npmjs.org"
 		}
+		baseURL = strings.TrimRight(baseURL, "/")
 		url := fmt.Sprintf("%s/%s/latest", baseURL, tool)
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
