@@ -1,0 +1,19 @@
+package hook
+
+import "context"
+
+// HookRunner defines the interface for all supported git-hook engines
+type HookRunner interface {
+	// Detect returns true if this engine's config exists in the workspace
+	Detect(dir string) bool
+
+	// Install injects the bridge script into .git/hooks/ or runs engine-specific setup
+	Install(ctx context.Context, dir string) error
+
+	// Run executes the specific hook (e.g., "pre-commit", "commit-msg")
+	// args contains any trailing arguments passed by Git
+	Run(ctx context.Context, hookName string, args []string) error
+
+	// Name returns the identifier of the engine
+	Name() string
+}
