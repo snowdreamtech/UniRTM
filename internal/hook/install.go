@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 const bridgeScript = `#!/bin/sh
@@ -24,15 +26,28 @@ fi
 
 // InstallBridgeScript writes the standard UniRTM bridge script to .git/hooks/
 func InstallBridgeScript(ctx context.Context, dir string, hookName string) error {
-	gitDir := filepath.Join(dir, ".git", "hooks")
-	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
-		return fmt.Errorf(".git/hooks directory not found in %s", dir)
+	cmd := exec.CommandContext(ctx, "git", "rev-parse", "--git-path", "hooks")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to resolve git hooks directory: %w", err)
 	}
 
-	hookPath := filepath.Join(gitDir, hookName)
+	hooksDir := strings.TrimSpace(string(out))
+	if !filepath.IsAbs(hooksDir) {
+		hooksDir = filepath.Join(dir, hooksDir)
+	}
+
+	if _, err := os.Stat(hooksDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(hooksDir, 0755); err != nil {
+			return fmt.Errorf("git hooks directory does not exist and could not be created: %w", err)
+		}
+	}
+
+	hookPath := filepath.Join(hooksDir, hookName)
 	
 	// Create or overwrite the hook
-	err := os.WriteFile(hookPath, []byte(bridgeScript), 0755)
+	err = os.WriteFile(hookPath, []byte(bridgeScript), 0755)
 	if err != nil {
 		return fmt.Errorf("failed to write git hook %s: %w", hookName, err)
 	}

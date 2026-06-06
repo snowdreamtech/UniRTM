@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/config"
 )
