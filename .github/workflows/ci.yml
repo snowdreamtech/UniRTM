@@ -203,7 +203,7 @@ jobs:
       - name: "⚡ Setup UniRTM"
         uses: snowdreamtech/setup-unirtm@cacfb4d739ee46d4a4b2528b02b508df2f560706 # v0.4.0
         with:
-          unirtm-version: "0.7.0"
+          unirtm-version: "0.8.0"
           install: true
           trust: true
         env:
@@ -312,7 +312,7 @@ jobs:
       - name: "⚡ Setup UniRTM"
         uses: snowdreamtech/setup-unirtm@cacfb4d739ee46d4a4b2528b02b508df2f560706 # v0.4.0
         with:
-          unirtm-version: "0.7.0"
+          unirtm-version: "0.8.0"
           install: true
           trust: true
         env:
@@ -463,7 +463,7 @@ jobs:
       - name: "⚡ Setup UniRTM"
         uses: snowdreamtech/setup-unirtm@cacfb4d739ee46d4a4b2528b02b508df2f560706 # v0.4.0
         with:
-          unirtm-version: "0.7.0"
+          unirtm-version: "0.8.0"
           install: true
           trust: true
         env:
