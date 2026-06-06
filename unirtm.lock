@@ -238,40 +238,40 @@ url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake
 url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.windows.arm64.exe"
 
 [[tools."github:cli/cli"]]
-version = "2.92.0"
+version = "2.93.0"
 backend = "github"
 
 [tools."github:cli/cli"."platforms.linux-amd64"]
-checksum = "b57848131bdf0c229cd35e1f2a51aa718199858b2e728410b37e89a428943ec4"
-url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_linux_amd64.tar.gz"
+checksum = "02d1290eba130e0b896f3709ffff22e1c75a51475ddb70476a85abc6b5807af0"
+url = "https://github.com/cli/cli/releases/download/v2.93.0/gh_2.93.0_linux_amd64.tar.gz"
 
 [tools."github:cli/cli"."platforms.linux-amd64-musl"]
-checksum = "b57848131bdf0c229cd35e1f2a51aa718199858b2e728410b37e89a428943ec4"
-url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_linux_amd64.tar.gz"
+checksum = "02d1290eba130e0b896f3709ffff22e1c75a51475ddb70476a85abc6b5807af0"
+url = "https://github.com/cli/cli/releases/download/v2.93.0/gh_2.93.0_linux_amd64.tar.gz"
 
 [tools."github:cli/cli"."platforms.linux-arm64"]
-checksum = "c2248526dd0160c08d3fccca2332c3c1a07c15a78b23978e77735f1b5a18cfee"
-url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_linux_arm64.tar.gz"
+checksum = "c55feb33684abba57e9909737340d5b39282257c0363e1edde6785ac4a413be7"
+url = "https://github.com/cli/cli/releases/download/v2.93.0/gh_2.93.0_linux_arm64.tar.gz"
 
 [tools."github:cli/cli"."platforms.linux-arm64-musl"]
-checksum = "c2248526dd0160c08d3fccca2332c3c1a07c15a78b23978e77735f1b5a18cfee"
-url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_linux_arm64.tar.gz"
+checksum = "c55feb33684abba57e9909737340d5b39282257c0363e1edde6785ac4a413be7"
+url = "https://github.com/cli/cli/releases/download/v2.93.0/gh_2.93.0_linux_arm64.tar.gz"
 
 [tools."github:cli/cli"."platforms.macos-amd64"]
-checksum = "ae9bb327ab0d91071bdada79f8f14034a2a0f19b0e001835a782eafa519d2af0"
-url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_macOS_amd64.zip"
+checksum = "009425b9d175c482037fe25181817fd6b1ea3ae1f51cfae0e18f29f33d3152ac"
+url = "https://github.com/cli/cli/releases/download/v2.93.0/gh_2.93.0_macOS_amd64.zip"
 
 [tools."github:cli/cli"."platforms.macos-arm64"]
-checksum = "b11c54f6bd7d15ed6590475079e5b2fcf36f45d3991a80041b29c9d0cc1f1d07"
-url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_macOS_arm64.zip"
+checksum = "a86be4e0a86c26456cf71177d6572d6f1165cf1679e532b72f7f15918ee51fd2"
+url = "https://github.com/cli/cli/releases/download/v2.93.0/gh_2.93.0_macOS_arm64.zip"
 
 [tools."github:cli/cli"."platforms.windows-amd64"]
-checksum = "b6a8df3c8c6b9c80f290906387673bc4d272840f3789c5650e0e4e6e75522785"
-url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_windows_amd64.zip"
+checksum = "77aa01ed7317295ad550de0ad04f3f276b1ef0e9272e3d002ac28dd99853d211"
+url = "https://github.com/cli/cli/releases/download/v2.93.0/gh_2.93.0_windows_amd64.zip"
 
 [tools."github:cli/cli"."platforms.windows-arm64"]
-checksum = "fa4da50182f6d37a0555b4b48e828c57b1b23cbbd1a7e3a9ce6b65513f13836c"
-url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_windows_arm64.zip"
+checksum = "1d2ab9d48f01a86c7156dae3008428743d6cd716a51fc50410078d51dec3dea4"
+url = "https://github.com/cli/cli/releases/download/v2.93.0/gh_2.93.0_windows_arm64.zip"
 
 [[tools."github:dotenv-linter/dotenv-linter"]]
 version = "4.0.0"
@@ -302,40 +302,40 @@ url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/d
 url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-win-aarch64.zip"
 
 [[tools."github:editorconfig-checker/editorconfig-checker"]]
-version = "3.6.1"
+version = "3.7.0"
 backend = "github"
 
 [tools."github:editorconfig-checker/editorconfig-checker"."platforms.linux-amd64"]
-checksum = "9c3a046b1f17933b292044645e048764f56f8d687c9c8c7d9c7358153f8e3b65"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/editorconfig-checker-linux-amd64.tar.gz"
+checksum = "4b0eeb52a1b337cdd6d23a38dd0b1d9d4fc8e66840939819af32ae8388770fb4"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/editorconfig-checker-linux-amd64.tar.gz"
 
 [tools."github:editorconfig-checker/editorconfig-checker"."platforms.linux-amd64-musl"]
-checksum = "9c3a046b1f17933b292044645e048764f56f8d687c9c8c7d9c7358153f8e3b65"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/editorconfig-checker-linux-amd64.tar.gz"
+checksum = "4b0eeb52a1b337cdd6d23a38dd0b1d9d4fc8e66840939819af32ae8388770fb4"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/editorconfig-checker-linux-amd64.tar.gz"
 
 [tools."github:editorconfig-checker/editorconfig-checker"."platforms.linux-arm64"]
-checksum = "4cad4a95c829b655d923c9475546b97e16cee5e824a98c26a25daba91987e26c"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/editorconfig-checker-linux-arm64.tar.gz"
+checksum = "8c29f86796192439beea1ccbe91df9d6fc4eaab23d50486b6a0d36dc40ad3660"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/editorconfig-checker-linux-arm64.tar.gz"
 
 [tools."github:editorconfig-checker/editorconfig-checker"."platforms.linux-arm64-musl"]
-checksum = "4cad4a95c829b655d923c9475546b97e16cee5e824a98c26a25daba91987e26c"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/editorconfig-checker-linux-arm64.tar.gz"
+checksum = "8c29f86796192439beea1ccbe91df9d6fc4eaab23d50486b6a0d36dc40ad3660"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/editorconfig-checker-linux-arm64.tar.gz"
 
 [tools."github:editorconfig-checker/editorconfig-checker"."platforms.macos-amd64"]
-checksum = "6d7882e2f8a0884953f6bb8782b482ce8a6dd4ab2f25086a57046ef937f7625d"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/ec-darwin-amd64.tar.gz"
+checksum = "6cd2e4aa2a374d391e3baeaae43fc28906fd15b09490f5669eee206a63eef00a"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/ec-darwin-amd64.tar.gz"
 
 [tools."github:editorconfig-checker/editorconfig-checker"."platforms.macos-arm64"]
-checksum = "64f6006e4ae880ef140ac175f30b5b4cab72fa92b3708d9104006441fb7ed723"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/ec-darwin-arm64.tar.gz"
+checksum = "727e6ef506c6fbe7719cc29c69b495715b64514a00059f3f179077bfad0580e5"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/ec-darwin-arm64.tar.gz"
 
 [tools."github:editorconfig-checker/editorconfig-checker"."platforms.windows-amd64"]
-checksum = "56db2b7ec660b9094eb8726dccfa2d2991437884b8a6d4215df5bbcbe3b3f366"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/editorconfig-checker-windows-amd64.tar.gz"
+checksum = "497628bc3492645b018b16311f3f1164a058d1325ba57d03ad0863641c61994d"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/editorconfig-checker-windows-amd64.tar.gz"
 
 [tools."github:editorconfig-checker/editorconfig-checker"."platforms.windows-arm64"]
-checksum = "f72f04a70a97a26b780ee9fc1f27ce3b621e9c34dc44eba0985c94b120c9fd98"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/editorconfig-checker-windows-arm64.tar.gz"
+checksum = "b12dff5382bb871298ac88a2ad3b86cab159afd9f73dcf51020ef69f2ca675ec"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.7.0/editorconfig-checker-windows-arm64.tar.gz"
 
 [[tools."github:gitleaks/gitleaks"]]
 version = "8.30.1"
@@ -374,40 +374,40 @@ checksum = "b95f5e4f5c425cedca7ee203d9afd29597e692c4924a12ed42f970537c72cc0f"
 url = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_windows_arm64.zip"
 
 [[tools."github:google/osv-scanner"]]
-version = "2.3.5"
+version = "2.3.8"
 backend = "github"
 
 [tools."github:google/osv-scanner"."platforms.linux-amd64"]
-checksum = "bb30c580afe5e757d3e959f4afd08a4795ea505ef84c46962b9a738aa573b41b"
-url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_linux_amd64"
+checksum = "bc98e15319ed0d515e3f9235287ba53cdc5535d576d24fd573978ecfe9ab92dc"
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.8/osv-scanner_linux_amd64"
 
 [tools."github:google/osv-scanner"."platforms.linux-amd64-musl"]
-checksum = "bb30c580afe5e757d3e959f4afd08a4795ea505ef84c46962b9a738aa573b41b"
-url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_linux_amd64"
+checksum = "bc98e15319ed0d515e3f9235287ba53cdc5535d576d24fd573978ecfe9ab92dc"
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.8/osv-scanner_linux_amd64"
 
 [tools."github:google/osv-scanner"."platforms.linux-arm64"]
-checksum = "fa46ad2b3954db5d5335303d45de921613393285d9a93c140b63b40e35e9ce50"
-url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_linux_arm64"
+checksum = "8158b18edd2d03b1a30d905ca91b032bc62262167be8f206c27114f08823e27c"
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.8/osv-scanner_linux_arm64"
 
 [tools."github:google/osv-scanner"."platforms.linux-arm64-musl"]
-checksum = "fa46ad2b3954db5d5335303d45de921613393285d9a93c140b63b40e35e9ce50"
-url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_linux_arm64"
+checksum = "8158b18edd2d03b1a30d905ca91b032bc62262167be8f206c27114f08823e27c"
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.8/osv-scanner_linux_arm64"
 
 [tools."github:google/osv-scanner"."platforms.macos-amd64"]
-checksum = "3b1c72d59dcbad99fa4eb2c72bf2e82017f83e0268340e4b00af76a1fea32c85"
-url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_darwin_amd64"
+checksum = "b8a80a9f14ca4c0cd0fc2d351b28f740da9e6a5b18385ac9f9d083360b5b504e"
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.8/osv-scanner_darwin_amd64"
 
 [tools."github:google/osv-scanner"."platforms.macos-arm64"]
-checksum = "b740efe0b08fb817865e818a498997d5f042f14b8eeafb6393176ce84dd09cf6"
-url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_darwin_arm64"
+checksum = "a8cd6507b06239f463a7642430cfd2d154882f150f6e30cdc0653e28dfc34216"
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.8/osv-scanner_darwin_arm64"
 
 [tools."github:google/osv-scanner"."platforms.windows-amd64"]
-checksum = "b165d33c08bda663119a459f5187e096d2525f888503495f5f34925741e981a2"
-url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_windows_amd64.exe"
+checksum = "cb04e79dd9698a7bc821bbfdddec916a416d1409fda79c927c509d37d00c9716"
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.8/osv-scanner_windows_amd64.exe"
 
 [tools."github:google/osv-scanner"."platforms.windows-arm64"]
-checksum = "a3d2ffa712fd2376e88a02c98b917a87885c761d0d21980b8f5eabfb910cbcb8"
-url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_windows_arm64.exe"
+checksum = "285d1fbcf2c69ab5ee38ae3a850ab46e83f32ef1cd5f3c4c9eb161cc493f6d52"
+url = "https://github.com/google/osv-scanner/releases/download/v2.3.8/osv-scanner_windows_arm64.exe"
 
 [[tools."github:hadolint/hadolint"]]
 version = "2.14.0"
@@ -526,29 +526,29 @@ checksum = "cadcf7ea4efe3a68728893813643cebe1185e5b1d4be5b96245f65c9a4d5ea41"
 url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_windows_arm64.zip"
 
 [[tools."github:zizmorcore/zizmor"]]
-version = "1.24.1"
+version = "1.25.2"
 backend = "github"
 
 [tools."github:zizmorcore/zizmor"."platforms.linux-amd64"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.25.2/zizmor-x86_64-unknown-linux-gnu.tar.gz"
 
 [tools."github:zizmorcore/zizmor"."platforms.linux-amd64-musl"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.25.2/zizmor-x86_64-unknown-linux-gnu.tar.gz"
 
 [tools."github:zizmorcore/zizmor"."platforms.linux-arm64"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-aarch64-unknown-linux-gnu.tar.gz"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.25.2/zizmor-aarch64-unknown-linux-gnu.tar.gz"
 
 [tools."github:zizmorcore/zizmor"."platforms.linux-arm64-musl"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-aarch64-unknown-linux-gnu.tar.gz"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.25.2/zizmor-aarch64-unknown-linux-gnu.tar.gz"
 
 [tools."github:zizmorcore/zizmor"."platforms.macos-amd64"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-x86_64-apple-darwin.tar.gz"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.25.2/zizmor-x86_64-apple-darwin.tar.gz"
 
 [tools."github:zizmorcore/zizmor"."platforms.macos-arm64"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-aarch64-apple-darwin.tar.gz"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.25.2/zizmor-aarch64-apple-darwin.tar.gz"
 
 [tools."github:zizmorcore/zizmor"."platforms.windows-amd64"]
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.24.1/zizmor-x86_64-pc-windows-msvc.zip"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.25.2/zizmor-x86_64-pc-windows-msvc.zip"
 
 [[tools."gitleaks/gitleaks"]]
 version = "8.30.1"
@@ -754,11 +754,11 @@ version = "26.3.0"
 backend = "native"
 
 [tools."node"."platforms.linux-amd64"]
-url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-linux-x64.tar.gz"
+url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-linux-x64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.linux-amd64-musl"]
-url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-linux-x64.tar.gz"
+url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-linux-x64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.linux-arm64"]
@@ -766,27 +766,23 @@ url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-linux-arm64.tar.g
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.linux-arm64-musl"]
-url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-linux-arm64.tar.gz"
+url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-linux-arm64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.macos-amd64"]
-url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-darwin-x64.tar.gz"
+url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-darwin-x64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.macos-arm64"]
-url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-darwin-arm64.tar.gz"
+url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-darwin-arm64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.windows-amd64"]
-url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-win-x64.zip"
-gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
-
-[tools."node"."platforms.windows-arm64"]
-url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-win-arm64.zip"
+url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-win-x64.zip"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [[tools."npm:@commitlint/cli"]]
-version = "20.5.3"
+version = "21.0.2"
 backend = "npm"
 
 [tools."npm:@commitlint/cli"."platforms.linux-amd64"]
@@ -806,7 +802,7 @@ backend = "npm"
 [tools."npm:@commitlint/cli"."platforms.windows-arm64"]
 
 [[tools."npm:@commitlint/config-conventional"]]
-version = "20.5.3"
+version = "21.0.2"
 backend = "npm"
 
 [tools."npm:@commitlint/config-conventional"."platforms.linux-amd64"]
@@ -926,7 +922,7 @@ backend = "npm"
 [tools."npm:dockerfile-utils"."platforms.windows-arm64"]
 
 [[tools."npm:eslint"]]
-version = "10.3.0"
+version = "10.4.1"
 backend = "npm"
 
 [tools."npm:eslint"."platforms.linux-amd64"]
@@ -986,7 +982,7 @@ backend = "npm"
 [tools."npm:prettier"."platforms.windows-arm64"]
 
 [[tools."npm:sort-package-json"]]
-version = "3.6.1"
+version = "4.0.0"
 backend = "npm"
 
 [tools."npm:sort-package-json"."platforms.linux-amd64"]
@@ -1006,7 +1002,7 @@ backend = "npm"
 [tools."npm:sort-package-json"."platforms.windows-arm64"]
 
 [[tools."npm:stylelint"]]
-version = "17.10.0"
+version = "17.12.0"
 backend = "npm"
 
 [tools."npm:stylelint"."platforms.linux-amd64"]
@@ -1026,7 +1022,7 @@ backend = "npm"
 [tools."npm:stylelint"."platforms.windows-arm64"]
 
 [[tools."pipx:clang-format"]]
-version = "22.1.4"
+version = "22.1.5"
 backend = "pipx"
 
 [tools."pipx:clang-format"."platforms.linux-amd64"]
@@ -1046,7 +1042,7 @@ backend = "pipx"
 [tools."pipx:clang-format"."platforms.windows-arm64"]
 
 [[tools."pipx:pip-audit"]]
-version = "2.8.0"
+version = "2.10.0"
 backend = "pipx"
 
 [tools."pipx:pip-audit"."platforms.linux-amd64"]
@@ -1110,28 +1106,28 @@ version = "3.14.5"
 backend = "native"
 
 [tools."python"."platforms.linux-amd64"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-unknown-linux-gnu-debug-full.tar.zst"
+url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-unknown-linux-gnu-debug-full.tar.zst"
 
 [tools."python"."platforms.linux-amd64-musl"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-unknown-linux-gnu-debug-full.tar.zst"
+url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-unknown-linux-gnu-debug-full.tar.zst"
 
 [tools."python"."platforms.linux-arm64"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-unknown-linux-gnu-debug-full.tar.zst"
+url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-unknown-linux-gnu-debug-full.tar.zst"
 
 [tools."python"."platforms.linux-arm64-musl"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-unknown-linux-gnu-debug-full.tar.zst"
+url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-unknown-linux-gnu-debug-full.tar.zst"
 
 [tools."python"."platforms.macos-amd64"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-apple-darwin-debug-full.tar.zst"
+url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-apple-darwin-debug-full.tar.zst"
 
 [tools."python"."platforms.macos-arm64"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-apple-darwin-debug-full.tar.zst"
+url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-apple-darwin-debug-full.tar.zst"
 
 [tools."python"."platforms.windows-amd64"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-pc-windows-msvc-freethreaded%2Bpgo-full.tar.zst"
+url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-pc-windows-msvc-freethreaded%2Bpgo-full.tar.zst"
 
 [tools."python"."platforms.windows-arm64"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-pc-windows-msvc-freethreaded%2Bpgo-full.tar.zst"
+url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-pc-windows-msvc-freethreaded%2Bpgo-full.tar.zst"
 
 [[tools."rhysd/actionlint"]]
 version = "1.7.12"
