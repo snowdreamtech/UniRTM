@@ -110,10 +110,19 @@ func UnsetEnvVar(content, key string) (string, bool) {
 	return content, false
 }
 
-// UpsertToolVersion adds or updates a tool version entry in the TOML [tools] section.
-func UpsertToolVersion(content, tool, version string) string {
+func quoteTOMLKey(key string) string {
+	for _, c := range key {
+		if !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
+			return fmt.Sprintf("'%s'", key) // Use single quotes for tools like 'npm:xyz' for cleanliness
+		}
+	}
+	return key
+}
+
+// UpsertToolVersion updates or inserts a tool version in the [tools] section of a TOML file.
+func UpsertToolVersion(content string, tool string, version string) string {
 	lines := strings.Split(content, "\n")
-	newEntry := fmt.Sprintf("%s = %q", tool, version)
+	newEntry := fmt.Sprintf("%s = %q", quoteTOMLKey(tool), version)
 
 	// Look for [tools] section
 	inTools := false

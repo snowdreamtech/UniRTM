@@ -157,7 +157,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		installRepo,
 		auditRepo,
 		txManager,
-		nil, // no config manager for now
+		cfg, // Pass config manager for GPG keys and settings
 	)
 
 	// Preview mode — show what would be updated
