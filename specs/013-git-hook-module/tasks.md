@@ -48,3 +48,30 @@
 - [x] T013 [US5] Add unit tests for `install.go`
 - [x] T014 [US5] Add unit tests for `native.go`
 - [x] T015 [US5] Add unit tests for `router.go`
+
+## Phase 6: Security Hardening
+
+**Purpose**: Fix security vulnerabilities found in code review.
+
+- [ ] T016 [US6] Add `ValidateHookName()` whitelist in `internal/hook/validate.go`
+- [ ] T017 [US6] Call `ValidateHookName()` in `cmd/62.hook.go` entry points
+- [ ] T018 [US6] Fix Bridge Script nested-quote issue in `internal/hook/install.go`
+- [ ] T019 [US6] Fix `plan.md` doc: `source` → `.`, fix bridge script example
+
+## Phase 7: Cross-Platform Compatibility
+
+**Purpose**: Ensure Windows / Linux / macOS / POSIX shell compatibility.
+
+- [ ] T020 [US7] Create `internal/hook/shell.go` with cross-platform `GetShell()` helper
+- [ ] T021 [US7] Refactor `NativeRunner.Run` to use `GetShell()` instead of hardcoded `"sh"`
+- [ ] T022 [US7] Refactor `NativeRunner.Run` to accept explicit `dir` param (remove os.Chdir dependency)
+
+## Phase 8: Test Suite Improvements
+
+**Purpose**: Fix thread-safety issues and improve coverage.
+
+- [ ] T023 [US8] Rewrite `install_test.go`: verify file content and `0755` permissions
+- [ ] T024 [US8] Rewrite `native_test.go`: pass `dir` explicitly, remove `os.Chdir`
+- [ ] T025 [US8] Add `validate_test.go`: whitelist allow/deny test cases
+- [ ] T026 [US8] Add `shell_test.go`: verify `GetShell()` per platform
+- [ ] T027 [US8] Add `husky_test.go`: verify path traversal rejection
