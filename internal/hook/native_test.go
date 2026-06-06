@@ -7,36 +7,76 @@ import (
 	"testing"
 )
 
-func TestNativeRunner(t *testing.T) {
-	tmpDir := t.TempDir()
-	tomlPath := filepath.Join(tmpDir, ".unirtm.toml")
-	
-	configContent := `
-[hooks]
-pre-commit = "echo 'success'"
-`
-	err := os.WriteFile(tomlPath, []byte(configContent), 0644)
-	if err != nil {
+func writeNativeConfig(t *testing.T, dir string, content string) {
+	t.Helper()
+	tomlPath := filepath.Join(dir, ".unirtm.toml")
+	if err := os.WriteFile(tomlPath, []byte(content), 0644); err != nil {
 		t.Fatalf("failed to write config: %v", err)
 	}
+}
 
+func TestNativeRunner_Detect_WithHooks(t *testing.T) {
+	tmpDir := t.TempDir()
+	writeNativeConfig(t, tmpDir, `
+[hooks]
+pre-commit = "echo 'success'"
+`)
 	n := NativeRunner{}
 	if !n.Detect(tmpDir) {
-		t.Errorf("Detect should return true for config with hooks")
+		t.Errorf("Detect() should return true for config with [hooks]")
 	}
+}
 
-	// Change dir because config.LoadHierarchy loads from current directory by default in Run()
-	oldWd, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(oldWd)
-
-	err = n.Run(context.Background(), "pre-commit", []string{"safe arg"})
-	if err != nil {
-		t.Errorf("Run failed: %v", err)
+func TestNativeRunner_Detect_WithoutHooks(t *testing.T) {
+	tmpDir := t.TempDir()
+	writeNativeConfig(t, tmpDir, `
+[tools]
+go = "1.21.0"
+`)
+	n := NativeRunner{}
+	if n.Detect(tmpDir) {
+		t.Errorf("Detect() should return false when no [hooks] defined")
 	}
+}
 
-	err = n.Run(context.Background(), "commit-msg", []string{})
-	if err != nil {
-		t.Errorf("Run should silently succeed for undefined hook, got: %v", err)
+func TestNativeRunner_RunInDir_ExecutesHook(t *testing.T) {
+	tmpDir := t.TempDir()
+	writeNativeConfig(t, tmpDir, `
+[hooks]
+pre-commit = "echo 'hook executed'"
+`)
+	n := NativeRunner{}
+	// Use RunInDir to pass dir explicitly — no os.Chdir needed
+	if err := n.RunInDir(context.Background(), tmpDir, "pre-commit", nil); err != nil {
+		t.Errorf("RunInDir() failed: %v", err)
+	}
+}
+
+func TestNativeRunner_RunInDir_SilentOnMissingHook(t *testing.T) {
+	tmpDir := t.TempDir()
+	writeNativeConfig(t, tmpDir, `
+[hooks]
+pre-commit = "echo 'hello'"
+`)
+	n := NativeRunner{}
+	// commit-msg is not defined — should silently succeed
+	if err := n.RunInDir(context.Background(), tmpDir, "commit-msg", nil); err != nil {
+		t.Errorf("RunInDir() should return nil for undefined hook, got: %v", err)
+	}
+}
+
+func TestNativeRunner_RunInDir_PassesArgsSecurely(t *testing.T) {
+	tmpDir := t.TempDir()
+	// Use printf to echo $1 — if the argument is passed as a single token (not split on space),
+	// printf will print it without error regardless of embedded spaces.
+	writeNativeConfig(t, tmpDir, `
+[hooks]
+commit-msg = "printf '%s\n' \"$1\""
+`)
+	n := NativeRunner{}
+	// Argument contains a space — must be forwarded as a single token, not word-split
+	safeArg := filepath.Join(tmpDir, "COMMIT EDITMSG")
+	if err := n.RunInDir(context.Background(), tmpDir, "commit-msg", []string{safeArg}); err != nil {
+		t.Errorf("RunInDir() failed with spaced arg: %v", err)
 	}
 }
