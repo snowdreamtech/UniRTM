@@ -31,14 +31,18 @@ var (
 	updateForce bool
 )
 
-// init registers the update command to the root command.
 func init() {
 	updateCmd.Flags().BoolVarP(&updateAll, "all", "a", false, "update all installed tools")
 	updateCmd.Flags().BoolVarP(&updatePreview, "preview", "p", false, "show what would be updated without applying changes")
 	updateCmd.Flags().BoolVarP(&updateForce, "force", "f", false, "skip confirmation prompt")
 
+	upgradeCmd.Flags().BoolVarP(&updateAll, "all", "a", false, "update all installed tools")
+	upgradeCmd.Flags().BoolVarP(&updatePreview, "preview", "p", false, "show what would be updated without applying changes")
+	upgradeCmd.Flags().BoolVarP(&updateForce, "force", "f", false, "skip confirmation prompt")
+
 	if rootCmd != nil {
 		rootCmd.AddCommand(updateCmd)
+		rootCmd.AddCommand(upgradeCmd)
 	}
 }
 
@@ -69,7 +73,19 @@ Examples:
 
   # Update with JSON output
   unirtm update node --json`,
-	Aliases: []string{"up", "upgrade"},
+	Aliases: []string{"up"},
+	Args:    cobra.MaximumNArgs(2),
+	RunE:    runUpdate,
+}
+
+// upgradeCmd represents the upgrade command, which is an exact alias for update.
+var upgradeCmd = &cobra.Command{
+	Use:   "upgrade [tool] [version]",
+	Short: "Upgrade installed development tools (alias for update)",
+	Long: `Upgrade installed development tools to newer versions.
+
+This command is exactly the same as 'unirtm update' and is provided for compatibility.`,
+	Aliases: []string{"upg"},
 	Args:    cobra.MaximumNArgs(2),
 	RunE:    runUpdate,
 }
