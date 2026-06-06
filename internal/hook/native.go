@@ -27,21 +27,31 @@ func (n NativeRunner) Detect(dir string) bool {
 }
 
 func (n NativeRunner) Install(ctx context.Context, dir string) error {
-	// Bridge script logic is shared across runners, so InstallHook is called from CLI
+	// Bridge script logic is shared across runners; InstallBridgeScript is called from CLI
 	return nil
 }
 
 func (n NativeRunner) Run(ctx context.Context, hookName string, args []string) error {
-	cfg, err := config.LoadHierarchy(".")
+	return n.RunInDir(ctx, ".", hookName, args)
+}
+
+// RunInDir executes the hook defined in the config at the given directory.
+// Separating dir from Run() eliminates the need for os.Chdir in tests,
+// making the function safe for concurrent test execution.
+func (n NativeRunner) RunInDir(ctx context.Context, dir string, hookName string, args []string) error {
+	cfg, err := config.LoadHierarchy(dir)
 	if err != nil {
 		return err
 	}
 
 	hookCmd, ok := cfg.Hooks[hookName]
 	if !ok || hookCmd == "" {
-		return nil // No hook defined for this event, silent success
+		return nil // No hook defined for this event — silent success
 	}
 
+	// Build sh arguments safely:
+	//   sh -c '<command> "$@"' -- arg1 arg2 ...
+	// The shell receives $@ as positional params, never interpolated into the script string.
 	cmdStr := hookCmd
 	if len(args) > 0 {
 		cmdStr += ` "$@"`
@@ -50,7 +60,9 @@ func (n NativeRunner) Run(ctx context.Context, hookName string, args []string) e
 	shArgs := []string{"-c", cmdStr, "--"}
 	shArgs = append(shArgs, args...)
 
-	cmd := exec.CommandContext(ctx, "sh", shArgs...)
+	shell := GetShell()
+	cmd := exec.CommandContext(ctx, shell, shArgs...)
+	cmd.Dir = dir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
