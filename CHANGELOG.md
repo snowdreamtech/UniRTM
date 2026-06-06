@@ -6,6 +6,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0](https://github.com/snowdreamtech/UniRTM/compare/v0.7.0...v0.8.0) (2026-06-06)
+
+
+### Features
+
+* **hook/compat:** add GetShell() for cross-platform shell resolution ([38e08c9](https://github.com/snowdreamtech/UniRTM/commit/38e08c94c6ff7e43ab2597896a3218c4b7cc17dc))
+* **hook/security:** add ValidateHookName whitelist to prevent path traversal ([b48586d](https://github.com/snowdreamtech/UniRTM/commit/b48586dd5b12b7fb59cbba66922aaab7805e82dc))
+* **hook/security:** enforce hook name whitelist at CLI entry points ([9c94c18](https://github.com/snowdreamtech/UniRTM/commit/9c94c18c362ff4ac9e77f34b983e90f5501a386c))
+* **hook:** add bridge script generation logic ([d98e488](https://github.com/snowdreamtech/UniRTM/commit/d98e4887e099ca8571e7389f6d6434da60759f8b))
+* **hook:** add CLI hook command and subcommands ([2ab7573](https://github.com/snowdreamtech/UniRTM/commit/2ab757348ecea0356080a9de680a56767befefa6))
+* **hook:** add HookRunner interface ([60b7edd](https://github.com/snowdreamtech/UniRTM/commit/60b7edd9fd9432df2a60e166b29ea5f7bf7a7e8e))
+* **hook:** add PreCommitRunner, HuskyRunner and LefthookRunner ([2071be3](https://github.com/snowdreamtech/UniRTM/commit/2071be3fb208a031072d1c500f8ae38c27c9cb29))
+* **hook:** add router loop logic ([1cb8da1](https://github.com/snowdreamtech/UniRTM/commit/1cb8da192c1d490f24e850fc4a39391f5e6bc412))
+* **hook:** implement NativeRunner & add Hooks to config ([6fa1b5a](https://github.com/snowdreamtech/UniRTM/commit/6fa1b5adeb14a7486c262350330cc0a2dd0d03fa))
+
+
+### Bug Fixes
+
+* **config:** add Hooks to Config.Merge() - was missing after field addition ([b6eeea1](https://github.com/snowdreamtech/UniRTM/commit/b6eeea15501671182493ae11c934bb53dc5f055e))
+* **hook/security:** fix POSIX bridge script nested-quote and HOME variable ([88c8118](https://github.com/snowdreamtech/UniRTM/commit/88c81186281d73ca9f8149f2e94bc89a46215cad))
+* **hook:** define explicit priority order in router to ensure deterministic execution ([e54484e](https://github.com/snowdreamtech/UniRTM/commit/e54484e969944c21018cd4f8185612559f6ecbce))
+* **hook:** prevent shell injection in NativeRunner ([b3b603c](https://github.com/snowdreamtech/UniRTM/commit/b3b603c0264277c9e88667142c048624de2a9dac))
+* **hook:** resolve hooks dir dynamically via git rev-parse ([12ea0f0](https://github.com/snowdreamtech/UniRTM/commit/12ea0f0f1cee841cf905e5c1b454d9e3b246164b))
+* **hook:** skip POSIX executable bit check on Windows for InstallBridgeScript test ([6a05627](https://github.com/snowdreamtech/UniRTM/commit/6a05627472666c6203b3dede386889eccb78c334))
+* resolve editorconfig crlf and indentation issues in ps1 files ([6f18d90](https://github.com/snowdreamtech/UniRTM/commit/6f18d90612cd199447bba3e1447df81698555a39))
+
 ## [0.7.0](https://github.com/snowdreamtech/UniRTM/compare/v0.6.0...v0.7.0) (2026-06-06)
 
 
