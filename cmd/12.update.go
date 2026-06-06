@@ -112,7 +112,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 
 	// Initialize dependencies
 	ctx := context.Background()
-	
+
 	// Load config and apply environment variables
 	cfg, err := config.Load()
 	if err == nil && cfg != nil {
@@ -383,7 +383,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 								}
 							}
 						}
-						
+
 						if keyToUpdate != "" {
 							content = config.UpsertToolVersion(content, keyToUpdate, r.NewVersion)
 							modified = true
