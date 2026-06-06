@@ -1,0 +1,36 @@
+package hook
+
+import (
+	"context"
+	"os"
+	"os/exec"
+	"path/filepath"
+)
+
+type PreCommitRunner struct{}
+
+func init() {
+	RegisterRunner(PreCommitRunner{})
+}
+
+func (p PreCommitRunner) Name() string {
+	return "pre-commit"
+}
+
+func (p PreCommitRunner) Detect(dir string) bool {
+	_, err := os.Stat(filepath.Join(dir, ".pre-commit-config.yaml"))
+	return err == nil
+}
+
+func (p PreCommitRunner) Install(ctx context.Context, dir string) error {
+	return nil
+}
+
+func (p PreCommitRunner) Run(ctx context.Context, hookName string, args []string) error {
+	cmdArgs := append([]string{"exec", "--", "pre-commit", "run", hookName}, args...)
+	cmd := exec.CommandContext(ctx, "unirtm", cmdArgs...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	return cmd.Run()
+}
