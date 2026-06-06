@@ -2,7 +2,7 @@
 # install.sh — UniRTM installer for Linux and macOS
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.sh | sh
-#   sh install.sh --version v0.0.10
+#   sh install.sh --version v0.7.0
 #
 # Environment variables:
 #   GITHUB_PROXY  — Optional proxy prefix for GitHub downloads

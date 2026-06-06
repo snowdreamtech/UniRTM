@@ -1,7 +1,7 @@
 # PowerShell installer script for UniRTM (install.ps1)
 # Compatible with Windows PowerShell and PowerShell Core
 # Usage:
-#   Invoke-WebRequest -Uri https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 -OutFile install.ps1; .\install.ps1 --version v0.0.10
+#   Invoke-WebRequest -Uri https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 -OutFile install.ps1; .\install.ps1 --version v0.7.0
 #   .\install.ps1 --install-dir $HOME\bin --no-proxy
 
 param(
