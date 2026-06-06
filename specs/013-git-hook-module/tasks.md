@@ -37,3 +37,14 @@
 - Phase 1 must be completed first.
 - Phase 2 and 3 can be done in parallel once Phase 1 is done.
 - Phase 4 depends on all previous phases.
+
+## Phase 5: Testing and Bugfixes
+
+**Purpose**: Fix critical edge-cases found in review and ensure robust test coverage.
+
+- [x] T010 [US5] Fix shell injection vulnerability in `internal/hook/native.go`
+- [x] T011 [US5] Fix `.git/hooks` path resolution in `internal/hook/install.go` using `git rev-parse`
+- [x] T012 [US5] Define explicit priority order in `internal/hook/router.go`
+- [x] T013 [US5] Add unit tests for `install.go`
+- [x] T014 [US5] Add unit tests for `native.go`
+- [x] T015 [US5] Add unit tests for `router.go`
