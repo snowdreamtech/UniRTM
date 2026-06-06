@@ -94,6 +94,9 @@ type InstallationRepository interface {
 	// FindByToolAndVersion finds an installation by tool and version
 	FindByToolAndVersion(ctx context.Context, tool string, version string) (*Installation, error)
 
+	// ListByTool lists all installations for a specific tool
+	ListByTool(ctx context.Context, tool string) ([]*Installation, error)
+
 	// List lists all installations
 	List(ctx context.Context) ([]*Installation, error)
 

@@ -209,6 +209,7 @@ type mockInstallationRepo struct {
 	installations map[string]*repository.Installation
 	createErr     error
 	findErr       error
+	listErr       error
 	deleteErr     error
 }
 
@@ -258,6 +259,19 @@ func (m *mockInstallationRepo) List(ctx context.Context) ([]*repository.Installa
 		installations = append(installations, inst)
 	}
 	return installations, nil
+}
+
+func (m *mockInstallationRepo) ListByTool(ctx context.Context, tool string) ([]*repository.Installation, error) {
+	if m.listErr != nil {
+		return nil, m.listErr
+	}
+	var res []*repository.Installation
+	for _, inst := range m.installations {
+		if inst.Tool == tool {
+			res = append(res, inst)
+		}
+	}
+	return res, nil
 }
 
 func (m *mockInstallationRepo) Delete(ctx context.Context, tool string, version string) error {
@@ -741,7 +755,7 @@ func TestUpdateManager_UpdateTool(t *testing.T) {
 				nil,
 			)
 
-			result, err := um.UpdateTool(context.Background(), tt.tool, tt.targetVersion)
+			result, err := um.UpdateTool(context.Background(), tt.tool, "", tt.targetVersion)
 
 			if tt.wantErr {
 				require.Error(t, err)

@@ -235,7 +235,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 			spinner, _ = output.StartSpinner(fmt.Sprintf("Updating %s to %s...", tool, targetVersion))
 		}
 
-		result, err := updateManager.UpdateTool(ctx, tool, targetVersion)
+		result, err := updateManager.UpdateTool(ctx, tool, "", targetVersion)
 		if err != nil {
 			if spinner != nil {
 				spinner.Fail(fmt.Sprintf("Failed to update %s: %s", tool, err.Error()))

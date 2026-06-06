@@ -174,16 +174,32 @@ func (um *UpdateManager) CheckForUpdates(ctx context.Context) ([]UpdateInfo, err
 //
 // Validates Requirement 25.2: Support updating a specific tool to a specific version
 // Validates Requirement 25.7: Rollback to the previous version when an update fails
-func (um *UpdateManager) UpdateTool(ctx context.Context, tool, targetVersion string) (*UpdateResult, error) {
+func (um *UpdateManager) UpdateTool(ctx context.Context, tool, oldVersion, targetVersion string) (*UpdateResult, error) {
 	startTime := time.Now()
 
-	// Get current installation
-	installation, err := um.installRepo.FindByToolAndVersion(ctx, tool, "")
-	if err != nil {
-		return nil, fmt.Errorf("tool %s not installed (run 'unirtm install' first): %w", tool, err)
+	var installation *repository.Installation
+	var err error
+
+	if oldVersion != "" {
+		// Get specific installation
+		installation, err = um.installRepo.FindByToolAndVersion(ctx, tool, oldVersion)
+		if err != nil {
+			return nil, fmt.Errorf("tool %s@%s not installed: %w", tool, oldVersion, err)
+		}
+	} else {
+		// Find most recent installation if oldVersion is not specified
+		var installations []*repository.Installation
+		installations, err = um.installRepo.ListByTool(ctx, tool)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list installations for %s: %w", tool, err)
+		}
+		if len(installations) == 0 {
+			return nil, fmt.Errorf("tool %s not installed (run 'unirtm install' first)", tool)
+		}
+		installation = installations[0]
+		oldVersion = installation.Version
 	}
 
-	oldVersion := installation.Version
 	oldInstallPath := installation.InstallPath
 
 	// Check if already at target version
@@ -342,7 +358,7 @@ func (um *UpdateManager) UpdateAll(ctx context.Context) ([]UpdateResult, error) 
 			continue
 		}
 
-		result, err := um.UpdateTool(ctx, update.Tool, update.LatestVersion)
+		result, err := um.UpdateTool(ctx, update.Tool, update.CurrentVersion, update.LatestVersion)
 		if err != nil {
 			// Continue with other updates even if one fails
 			results = append(results, UpdateResult{

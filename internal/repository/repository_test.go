@@ -168,6 +168,10 @@ func (m *mockInstallationRepository) List(ctx context.Context) ([]*Installation,
 	return nil, nil
 }
 
+func (m *mockInstallationRepository) ListByTool(ctx context.Context, tool string) ([]*Installation, error) {
+	return nil, nil
+}
+
 func (m *mockInstallationRepository) Delete(ctx context.Context, tool string, version string) error {
 	return nil
 }
