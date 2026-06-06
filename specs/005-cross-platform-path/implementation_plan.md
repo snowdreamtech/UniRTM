@@ -1,7 +1,7 @@
 # Cross-Platform Path Handling Refactoring Plan
 
 ## Goal
-
+>
 >
 ## User Review Required
 >
@@ -15,11 +15,11 @@
 
 ## Open Questions
 >
-
-> [!WARNING]
-
 >
-
+> [!WARNING]
+>
+>
+>
 > - 旧版本中注入 `cmd/23.exec.go` 的路径是否存在针对特定用户场景的硬编码？（重构后应当统一）。
 
 ## Proposed Changes

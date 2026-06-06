@@ -8,7 +8,7 @@ Implement a runtime detection mechanism to distinguish between `musl` and `glibc
 
 ## Proposed Changes
 
-# `internal/sysinfo/env.go`
+## `internal/sysinfo/env.go`
 
 * **Logic**:
     1. Check for the existence of `/etc/alpine-release`. If it exists, return `true` (musl).
@@ -16,11 +16,11 @@ Implement a runtime detection mechanism to distinguish between `musl` and `glibc
 
     3. (Optional) Run `ldd --version` and parse the output for the string "musl".
 
-### `internal/sysinfo/env_test.go`
+## `internal/sysinfo/env_test.go`
 
 * d unit tests for `IsMusl()` mocking or validating the filesystem states.
 
-### M  Glibc Fallback Warning (Enhancement)
+## M  Glibc Fallback Warning (Enhancement)
 
 * **G**: Warn users explicitly when downloading a `glibc` compiled binary on an Alpine (`musl`) system to prevent cryptic `not found` errors at runtime.
 * `internal/backend/common.go`**:

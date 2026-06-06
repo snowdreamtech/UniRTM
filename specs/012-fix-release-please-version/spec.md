@@ -6,7 +6,7 @@
 
 The user reported that the `VERSION` file is not updated during releases despite having the `x-release-please-start-version` and `x-release-please-end` generic annotations. This happens because `release-please` does not automatically parse files named `VERSION` without an extension unless a type is explicitly specified in the configuration.
 
-# . Requirements
+## 3. Requirements
 
 * **Backward Compatibility:** No other release mechanisms should be affected.
 

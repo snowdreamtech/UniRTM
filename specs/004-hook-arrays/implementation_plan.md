@@ -1,7 +1,7 @@
 # Hook Arrays Support Implementation Plan
 
 ## Goal
-
+>
 >
 ## User Review Required
 >
@@ -15,11 +15,11 @@
 
 ## Open Questions
 >
-
-> [!WARNING]
-
 >
-
+> [!WARNING]
+>
+>
+>
 > - 数组元素之间的执行环境状态（如 `cd` 或 `export` 变量）是否需要跨数组元素共享？（通常建议用 `&&` 连结或视作同一 session 执行）。
 
 ## Proposed Changes

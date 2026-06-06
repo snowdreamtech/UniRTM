@@ -1,7 +1,7 @@
 # npm Platform Packaging Implementation Plan
 
 ## Goal
-
+>
 >
 ## User Review Required
 >
@@ -18,22 +18,22 @@
 ## Open Questions
 >
 > [!WARNING]
-
 >
-
+>
+>
 > - 是否需要发布测试（beta）版本？
-
+>
 > - 根包的 `install.js` 异常情况（找不到对应二进制）处理逻辑。
 
 ## Proposed Changes
 
-#### [NEW] `package.json.tpl`
+### [NEW] `package.json.tpl`
 
 - npm 包模板，包含 `{{VERSION}}` 用于 CI 替换。
 
 - 运行时平台检测并启动相应子包二进制。
 
-#### [NEW] `build.sh`
+### [NEW] `build.sh`
 
 - 核心构建脚本，负责将二进制从 dist/ 复制到各自的 npm 子包中。
 

@@ -8,15 +8,15 @@ Support environment variables like `UNIRTM_CYGDRIVE_PREFIX` (or default to `/c/`
 
 ## Proposed Changes
 
-# `internal/pkg/envpath/envpath.go`
+## `internal/pkg/envpath/envpath.go`
 
 * Upd  `FormatDirForPosix(dir string)` logic:
     * If `runtime.GOOS == "windows"`, intercept paths starting with `C:\` or `[A-Z]:\`.
     * Convert `C:\foo\bar` into `<prefix>/c/foo/bar`.
 
-  * If `UNIRTM_CYGDRIVE_PREFIX` is empty, use standard forward-slash replacement (as it currently does: `C:/foo/bar`) to prevent breaking non-bash Windows environments, or attempt to auto-detect bash.
+    * If `UNIRTM_CYGDRIVE_PREFIX` is empty, use standard forward-slash replacement (as it currently does: `C:/foo/bar`) to prevent breaking non-bash Windows environments, or attempt to auto-detect bash.
 
-### `internal/pkg/envpath/envpath_test.go`
+## `internal/pkg/envpath/envpath_test.go`
 
 * Add test cases validating the conversion logic when the cygdrive prefix is set.
 

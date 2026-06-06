@@ -1,7 +1,7 @@
 # Mvdan-shell Integration Implementation Plan
 
 ## Goal
-
+>
 >
 ## User Review Required
 >
@@ -16,16 +16,16 @@
 
 ## Open Questions
 >
-
-> [!WARNING]
-
 >
-
+> [!WARNING]
+>
+>
+>
 > - 原有依赖本机 `bash` 执行的系统特性（如特殊的 GNU ext）可能会有解析差异，是否需要回退选项？
 
 ## Proposed Changes
 
-#### [MODIFY] `internal/task/native.go`
+### [MODIFY] `internal/task/native.go`
 
 - 将基于 `exec.Command("sh", "-c", ...)` 的执行方式替换为调用 `mvdan.cc/sh/v3/interp`。
 

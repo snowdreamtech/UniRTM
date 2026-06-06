@@ -6,7 +6,7 @@
 
 Windows developers frequently use Git Bash or similar environments. When UniRTM interacts with or generates paths intended for the shell (for example, setting environment variables or constructing execution paths), passing raw `C:\` paths often breaks the Bash environment. Allowing users to configure an explicit mount prefix (`UNIRTM_CYGDRIVE_PREFIX`) enables flawless interoperability.
 
-# . Requirements
+## 3. Requirements
 
 * **Opt-in Customization:** Must respect the `UNIRTM_CYGDRIVE_PREFIX` environment variable.
 

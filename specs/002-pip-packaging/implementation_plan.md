@@ -1,7 +1,7 @@
 # Pip Platform Packaging Implementation Plan
 
 ## Goal
-
+>
 >
 ## User Review Required
 >
@@ -17,16 +17,16 @@
 ## Open Questions
 >
 > [!WARNING]
-
 >
-
+>
+>
 > - PyPI token 是否已配置至 GitHub Actions 密钥？
-
+>
 > - 有哪些目标 Python 版本需要特殊声明兼容性？
 
 ## Proposed Changes
 
-#### [NEW] `setup.py`
+### [NEW] `setup.py`
 
 - 配置 setuptools 构建流程，实现 wheel 打包配置。
 

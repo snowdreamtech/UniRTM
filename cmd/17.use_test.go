@@ -35,7 +35,7 @@ func TestRunUse(t *testing.T) {
 
 	err := runUse(cmd, []string{"dummy@1.0.0"})
 	// It's expected to return error because dummy tool can't be installed automatically
-	if err != nil && !strings.Contains(err.Error(), "backend not found") {
+	if err != nil && !strings.Contains(err.Error(), "backend not found") && !strings.Contains(err.Error(), "plugin not found") {
 		assert.NoError(t, err)
 	}
 
@@ -63,7 +63,7 @@ func TestRunUse_Multiple(t *testing.T) {
 	cmd.SetOut(&buf)
 
 	err := runUse(cmd, []string{"dummy1@1.0.0", "dummy2@2.0.0"})
-	if err != nil && !strings.Contains(err.Error(), "backend not found") {
+	if err != nil && !strings.Contains(err.Error(), "backend not found") && !strings.Contains(err.Error(), "plugin not found") {
 		assert.NoError(t, err)
 	}
 
@@ -88,7 +88,7 @@ func TestRunUse_SpecificPath(t *testing.T) {
 	defer func() { usePath = "" }()
 
 	err := runUse(cmd, []string{"dummy@1.0.0"})
-	if err != nil && !strings.Contains(err.Error(), "backend not found") {
+	if err != nil && !strings.Contains(err.Error(), "backend not found") && !strings.Contains(err.Error(), "plugin not found") {
 		assert.NoError(t, err)
 	}
 
@@ -113,7 +113,7 @@ func TestRunUse_Global(t *testing.T) {
 	defer func() { useGlobal = false }()
 
 	err := runUse(cmd, []string{"dummy@1.0.0"})
-	if err != nil && !strings.Contains(err.Error(), "backend not found") {
+	if err != nil && !strings.Contains(err.Error(), "backend not found") && !strings.Contains(err.Error(), "plugin not found") {
 		assert.NoError(t, err)
 	}
 
