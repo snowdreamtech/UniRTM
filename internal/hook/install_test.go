@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -52,8 +53,10 @@ func TestInstallBridgeScript_FilePermissions(t *testing.T) {
 
 	// Must be executable (0755)
 	perm := info.Mode().Perm()
-	if perm != 0755 {
-		t.Errorf("expected permissions 0755, got %04o", perm)
+	if runtime.GOOS != "windows" {
+		if perm != 0755 {
+			t.Errorf("expected permissions 0755, got %04o", perm)
+		}
 	}
 }
 
