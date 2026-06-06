@@ -357,6 +357,19 @@ func GenericResolveVersion(ctx context.Context, p HostingProvider, tool string, 
 	// Resolution logic
 	switch versionRequest {
 	case "latest", "stable":
+		// Filter out floating tags to prevent them from breaking SemVer latest detection
+		var validVersions []VersionInfo
+		for _, v := range versions {
+			lower := strings.ToLower(v.Version)
+			if lower == "stable" || lower == "latest" || lower == "nightly" || lower == "master" || lower == "main" {
+				continue
+			}
+			validVersions = append(validVersions, v)
+		}
+		if len(validVersions) > 0 {
+			versions = validVersions
+		}
+
 		// Sort versions in descending order using SemVer logic
 		sort.Slice(versions, func(i, j int) bool {
 			return version.CompareVersions(versions[i].Version, versions[j].Version) > 0
