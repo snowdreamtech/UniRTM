@@ -23,6 +23,9 @@ var hookInstallCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		hookName := args[0]
+		if err := hook.ValidateHookName(hookName); err != nil {
+			return err
+		}
 		pwd, err := os.Getwd()
 		if err != nil {
 			return err
@@ -45,6 +48,9 @@ var hookRunCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		hookName := args[0]
+		if err := hook.ValidateHookName(hookName); err != nil {
+			return err
+		}
 		hookArgs := args[1:]
 		
 		pwd, err := os.Getwd()
@@ -52,7 +58,6 @@ var hookRunCmd = &cobra.Command{
 			return err
 		}
 
-		// Disable output buffering for hooks if necessary
 		return hook.Run(context.Background(), pwd, hookName, hookArgs)
 	},
 }
