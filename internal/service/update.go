@@ -247,34 +247,35 @@ func (um *UpdateManager) UpdateTool(ctx context.Context, tool, oldVersion, targe
 	}
 
 	// Download new version
-	downloadPath := filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s", tool, targetVersion))
-	downloader, err := um.downloadManager.Get("https")
-	if err != nil {
-		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to get downloader: %w", err), false, "")
-	}
+	var downloadPath string
+	if versionInfo.DownloadURL != "" {
+		downloadPath = filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s", tool, targetVersion))
+		downloader, err := um.downloadManager.Get("https")
+		if err != nil {
+			return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to get downloader: %w", err), false, "")
+		}
 
-	opts := download.DefaultDownloadOptions()
-	if versionInfo.Checksum != "" {
-		opts = opts.WithChecksum(versionInfo.Checksum)
-	}
-	gpgResult := &download.GPGResult{}
-	opts = opts.WithVerifyGPG(true, gpgResult)
+		opts := download.DefaultDownloadOptions()
+		if versionInfo.Checksum != "" {
+			opts = opts.WithChecksum(versionInfo.Checksum)
+		}
 
-	if err := downloader.Download(ctx, versionInfo.DownloadURL, downloadPath, opts); err != nil {
-		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to download: %w", err), false, "")
-	}
-	defer os.Remove(downloadPath)
+		if err := downloader.Download(ctx, versionInfo.DownloadURL, downloadPath, opts); err != nil {
+			return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to download: %w", err), false, "")
+		}
+		defer os.Remove(downloadPath)
 
-	// Verify checksum
-	if versionInfo.Checksum != "" {
-		if err := downloader.VerifyChecksum(ctx, downloadPath, versionInfo.Checksum); err != nil {
-			return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("checksum verification failed: %w", err), false, "")
+		// Verify checksum
+		if versionInfo.Checksum != "" {
+			if err := downloader.VerifyChecksum(ctx, downloadPath, versionInfo.Checksum); err != nil {
+				return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("checksum verification failed: %w", err), false, "")
+			}
 		}
 	}
 
 	// Install new version
 	newInstallPath := filepath.Join(filepath.Dir(oldInstallPath), targetVersion)
-	p := um.providerRegistry.Get(tool)
+	p := um.providerRegistry.GetWithBackend(tool, installation.Backend)
 
 	if err := p.Install(ctx, tool, newInstallPath, downloadPath, targetVersion); err != nil {
 		os.RemoveAll(newInstallPath)
@@ -304,10 +305,10 @@ func (um *UpdateManager) UpdateTool(ctx context.Context, tool, oldVersion, targe
 		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to delete old installation record: %w", err), false, "")
 	}
 
-	// Create new installation record
-	if err := tx.InstallationRepo().Create(ctx, newInstallation); err != nil {
+	// Upsert new installation record
+	if err := tx.InstallationRepo().Upsert(ctx, newInstallation); err != nil {
 		os.RemoveAll(newInstallPath)
-		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to create installation record: %w", err), true, "database update failed")
+		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to upsert installation record: %w", err), true, "database update failed")
 	}
 
 	// Commit transaction
@@ -325,7 +326,7 @@ func (um *UpdateManager) UpdateTool(ctx context.Context, tool, oldVersion, targe
 	// Update audit log: success
 	auditEntry.Status = "success"
 	auditEntry.Duration = time.Since(startTime).Milliseconds()
-	auditEntry.GpgVerification = gpgResult.Status
+	auditEntry.GpgVerification = "NotRequested"
 	if err := um.auditRepo.Log(ctx, auditEntry); err != nil {
 		// Log but don't fail - the update was successful
 	}
