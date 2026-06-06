@@ -10,6 +10,7 @@ checksum = "0e91737aee2b5baf1d255b959630194a302335d848ff97bb07921eb6205b5f5a"
 url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_linux_amd64.tar.gz"
 
 [tools."anchore/syft"."platforms.macos-amd64"]
+checksum = "c40ece5407927327f94f35901727dbc604b46857e04f04ec94a310845fb71bde"
 url = "https://github.com/anchore/syft/releases/download/v1.44.0/syft_1.44.0_darwin_amd64.tar.gz"
 
 [[tools."aquasecurity/trivy"]]
@@ -21,6 +22,7 @@ checksum = "8b4376d5d6befe5c24d503f10ff136d9e0c49f9127a4279fd110b727929a5aa9"
 url = "https://github.com/aquasecurity/trivy/releases/download/v0.70.0/trivy_0.70.0_Linux-64bit.tar.gz"
 
 [tools."aquasecurity/trivy"."platforms.macos-amd64"]
+checksum = "52d531452b19e7593da29366007d02a810e1e0080d02f9cf6a1afb46c35aaa93"
 url = "https://github.com/aquasecurity/trivy/releases/download/v0.70.0/trivy_0.70.0_macOS-64bit.tar.gz"
 
 [[tools."astral-sh/ruff"]]
@@ -50,6 +52,9 @@ backend = "github"
 [tools."checkmake/checkmake"."platforms.linux-amd64"]
 url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.linux.amd64"
 
+[tools."checkmake/checkmake"."platforms.macos-amd64"]
+url = "https://github.com/checkmake/checkmake/releases/download/v0.3.2/checkmake-v0.3.2.darwin.amd64"
+
 [[tools."cli/cli"]]
 version = "2.92.0"
 backend = "github"
@@ -59,6 +64,7 @@ checksum = "b57848131bdf0c229cd35e1f2a51aa718199858b2e728410b37e89a428943ec4"
 url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_linux_amd64.tar.gz"
 
 [tools."cli/cli"."platforms.macos-amd64"]
+checksum = "ae9bb327ab0d91071bdada79f8f14034a2a0f19b0e001835a782eafa519d2af0"
 url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_macOS_amd64.zip"
 
 [[tools."cmake"]]
@@ -88,6 +94,7 @@ checksum = "9c3a046b1f17933b292044645e048764f56f8d687c9c8c7d9c7358153f8e3b65"
 url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/editorconfig-checker-linux-amd64.tar.gz"
 
 [tools."editorconfig-checker/editorconfig-checker"."platforms.macos-amd64"]
+checksum = "6d7882e2f8a0884953f6bb8782b482ce8a6dd4ab2f25086a57046ef937f7625d"
 url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.6.1/ec-darwin-amd64.tar.gz"
 
 [[tools."github:anchore/syft"]]
@@ -585,12 +592,12 @@ url = "https://dl.google.com/go/go1.26.4.windows-arm64.zip"
 gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
 
 [[tools."go"]]
-version = "1.26.3"
+version = "1.26.4"
 backend = "native"
 
 [tools."go"."platforms.macos-amd64"]
 checksum = "278d580b32e299fe4a9c990fcf2d02acfe538c7e551a6ee18f9c7164573d2c63"
-url = "https://mirrors.aliyun.com/golang/go1.26.3.darwin-amd64.tar.gz"
+url = "https://mirrors.aliyun.com/golang/go1.26.4.darwin-amd64.tar.gz"
 gpg_key = "EB4C1BF148A2C440F831EE8752D905A67D74191C"
 
 [[tools."go:golang.org/x/vuln/cmd/govulncheck"]]
@@ -642,6 +649,7 @@ checksum = "bb30c580afe5e757d3e959f4afd08a4795ea505ef84c46962b9a738aa573b41b"
 url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_linux_amd64"
 
 [tools."google/osv-scanner"."platforms.macos-amd64"]
+checksum = "3b1c72d59dcbad99fa4eb2c72bf2e82017f83e0268340e4b00af76a1fea32c85"
 url = "https://github.com/google/osv-scanner/releases/download/v2.3.5/osv-scanner_darwin_amd64"
 
 [[tools."gradle"]]
@@ -1123,6 +1131,13 @@ url = "https://github.com/astral-sh/python-build-standalone/releases/download/20
 [tools."python"."platforms.windows-arm64"]
 url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260414/cpython-3.14.4%2B20260414-aarch64-pc-windows-msvc-freethreaded%2Bpgo-full.tar.zst"
 
+[[tools."python"]]
+version = "3.12.13"
+backend = "native"
+
+[tools."python"."platforms.macos-amd64"]
+url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.12.13%2B20260602-x86_64-apple-darwin-debug-full.tar.zst"
+
 [[tools."rhysd/actionlint"]]
 version = "1.7.12"
 backend = "github"
@@ -1132,6 +1147,7 @@ checksum = "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
 url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz"
 
 [tools."rhysd/actionlint"."platforms.macos-amd64"]
+checksum = "5b44c3bc2255115c9b69e30efc0fecdf498fdb63c5d58e17084fd5f16324c644"
 url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_darwin_amd64.tar.gz"
 
 [[tools."zizmorcore/zizmor"]]

@@ -7,9 +7,9 @@
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Show human readable disk usage (Priority: P1)
-As a user, I want to run `unirtm df` to see the disk usage of various folders in the `unirtm` data directory, so that I can understand how much space is being consumed. The output should be formatted nicely using `pterm` and should support the `-h` or `--human-readable` flag by default or explicitly.
 
 ## Requirements
+
 1. Add a `df` command to the CLI (`cmd/df.go`).
 2. Command should calculate the size of directories within the `unirtm` data directory.
 3. The calculation should summarize usage (similar to standard `df -h`).

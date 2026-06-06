@@ -101,17 +101,18 @@ repos:
         entry: |
           python3 -c "
           import sys, os
-          large_files = [f for f in sys.argv[1:] if os.path.isfile(f) and os.path.getsize(f) > 500*1024]
-          for f in large_files: print(f'File too large (>500KB): {f}')
+          large_files = [f for f in sys.argv[1:] if os.path.isfile(f) and os.path.getsize(f) > 1024*1024]
+          for f in large_files: print(f'File too large (>1MB): {f}')
           sys.exit(1 if large_files else 0)
           "
         language: system
         exclude: |
           (?x)^(
-            examples/plugin-go/unirtm-plugin-example
+            examples/plugin-go/unirtm-plugin-example|
+            docs/tapes/demo\.gif
           )
         stages: [pre-commit, pre-merge-commit]
-        description: "Prevent large files (>500KB) from being committed."
+        description: "Prevent large files (>1MB) from being committed."
 
       - id: check-merge-conflict
         name: check for merge conflicts

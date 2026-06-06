@@ -23,7 +23,7 @@ Sleep 1.5s
 
 # 2. Run UniRTM to install the tools
 # Notice the speed and the built-in vulnerability scan!
-Type "unirtm use --global go@1.26.3"
+Type "unirtm use --global go@1.26.4"
 Sleep 1s
 Enter
 

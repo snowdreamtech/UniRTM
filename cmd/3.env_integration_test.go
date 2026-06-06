@@ -20,7 +20,7 @@ func TestEnvCommand_InjectsProviderEnvVars(t *testing.T) {
 	// Write a mock .unirtm.toml
 	tomlContent := `
 [tools]
-go = "1.26.3"
+go = "1.26.4"
 `
 	err = os.WriteFile(filepath.Join(tempDir, ".unirtm.toml"), []byte(tomlContent), 0644)
 	assert.NoError(t, err)
@@ -45,5 +45,5 @@ go = "1.26.3"
 
 	// Assert that GOROOT is present in the output
 	assert.Contains(t, out, "GOROOT")
-	assert.Contains(t, out, "1.26.3")
+	assert.Contains(t, out, "1.26.4")
 }

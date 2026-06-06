@@ -221,11 +221,6 @@ We believe in making deliberate architectural choices to support modern enterpri
 | **Shim Overhead** | Standard (Bash script) | Optimized (Rust binary) | **Lightning Fast (Go)** | All tools symlink back to the unirtm engine for instant routing, perfectly preventing `$PATH` explosion. |
 | **DevOps Integration** | Custom Scripts | Good | **Native Synergy** | Go-based architecture naturally aligns with cloud-native infrastructure, making custom integrations frictionless. |
 
-
-## GitHub Issues & Discussions
-
-For feature requests, bug reports, and community support:
-
 - [Discussions](https://github.com/snowdreamtech/UniRTM/discussions)
 - [Issues](https://github.com/snowdreamtech/UniRTM/issues)
 

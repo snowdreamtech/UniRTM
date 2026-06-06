@@ -221,11 +221,6 @@ unirtm run deploy # 在部署前，将自动按顺序并行执行校验和安全
 | **垫片开销** | 常规 (Bash 脚本) | 已优化 (Rust 二进制) | **极速 (Go 二进制)** | 所有工具软链回 unirtm 引擎进行毫秒级极速路由，彻底杜绝 PATH 爆炸问题。 |
 | **DevOps 集成** | 自定义脚本 | 良好 | **原生级无缝集成** | Go 语言血统，天生匹配云原生基础设施，极其适合企业内部自研平台的二次集成。 |
 
-
-## 社区支持与 Issues
-
-如果你遇到任何 bug 或有新功能提议，欢迎在 GitHub 提交：
-
 - [Discussions (讨论区)](https://github.com/snowdreamtech/UniRTM/discussions)
 - [Issues (问题追踪)](https://github.com/snowdreamtech/UniRTM/issues)
 
