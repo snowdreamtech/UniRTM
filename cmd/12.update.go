@@ -15,6 +15,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
+	"github.com/snowdreamtech/unirtm/internal/lockfile"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/provider"
@@ -259,6 +260,8 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 			spinner.Success(fmt.Sprintf("Successfully updated %s", tool))
 		}
 
+		updateConfigAndLockfile(ctx, cfg, backendRegistry, []service.UpdateResult{*result})
+
 		if jsonOutput {
 			formatter.Success("Update complete", map[string]interface{}{
 				"tool":        result.Tool,
@@ -361,8 +364,47 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Update config file if any updates succeeded
-	if successCount > 0 && cfg != nil && cfg.ToolsRaw != nil {
+	updateConfigAndLockfile(ctx, cfg, backendRegistry, results)
+
+	if jsonOutput {
+		formatter.Success("Update complete", map[string]interface{}{
+			"success": successCount,
+			"failed":  failCount,
+			"results": results,
+		})
+	} else {
+		pterm.Println()
+		if failCount == 0 {
+			output.Successf("All updates complete: %d tools updated successfully.", successCount)
+		} else {
+			output.Warningf("Update finished: %d succeeded, %d failed.", successCount, failCount)
+		}
+	}
+
+	if failCount > 0 {
+		return fmt.Errorf("%d tool(s) failed to update", failCount)
+	}
+	return nil
+}
+
+func updateConfigAndLockfile(ctx context.Context, cfg *config.Config, backendRegistry *backend.Registry, results []service.UpdateResult) {
+	if len(results) == 0 {
+		return
+	}
+
+	successCount := 0
+	for _, r := range results {
+		if r.Success {
+			successCount++
+		}
+	}
+
+	if successCount == 0 {
+		return
+	}
+
+	// 1. Update .unirtm.toml
+	if cfg != nil && cfg.ToolsRaw != nil {
 		cwd, err := os.Getwd()
 		if err == nil {
 			configFile := findOrCreateConfigFile(cwd, "")
@@ -400,23 +442,51 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if jsonOutput {
-		formatter.Success("Update complete", map[string]interface{}{
-			"success": successCount,
-			"failed":  failCount,
-			"results": results,
+	// 2. Update unirtm.lock
+	lockPath := env.GetLockFilePath()
+	if _, err := os.Stat(lockPath); err == nil {
+		lockSvc, err := service.NewLockService(service.LockServiceOptions{
+			LockfilePath: lockPath,
 		})
-	} else {
-		pterm.Println()
-		if failCount == 0 {
-			output.Successf("All updates complete: %d tools updated successfully.", successCount)
-		} else {
-			output.Warningf("Update finished: %d succeeded, %d failed.", successCount, failCount)
+		if err == nil {
+			lockSvc.SetBackendRegistry(backendRegistry)
+
+			updatedTools := make(map[string]service.ToolSpec)
+			for _, r := range results {
+				if r.Success {
+					backendName := ""
+					if cfg != nil {
+						if toolCfg, ok := cfg.Tools[r.Tool]; ok {
+							backendName = toolCfg.Backend
+						} else {
+							for k, v := range cfg.Tools {
+								if strings.HasSuffix(k, ":"+r.Tool) || strings.HasSuffix(k, "/"+r.Tool) {
+									backendName = v.Backend
+									break
+								}
+							}
+						}
+					}
+					if backendName == "" {
+						if strings.Contains(r.Tool, "/") {
+							backendName = "github"
+						} else {
+							backendName = "asdf"
+						}
+					}
+					updatedTools[r.Tool] = service.ToolSpec{
+						Name:        r.Tool,
+						Version:     r.NewVersion,
+						BackendName: backendName,
+					}
+				}
+			}
+
+			if len(updatedTools) > 0 {
+				_ = lockSvc.Generate(ctx, updatedTools, service.GenerateOptions{
+					Platforms: lockfile.StandardPlatforms,
+				})
+			}
 		}
 	}
-
-	if failCount > 0 {
-		return fmt.Errorf("%d tool(s) failed to update", failCount)
-	}
-	return nil
 }
