@@ -45,14 +45,13 @@ func (n NativeRunner) Run(ctx context.Context, hookName string, args []string) e
 
 	cmdStr := hookCmd
 	if len(args) > 0 {
-		// Escape or append arguments to the command
-		// In a real shell execution context, passing arguments directly requires care,
-		// but simple appending works for basic sh -c wrappers.
-		// A safer way is to define functions or use "$@" in bash.
-		cmdStr = cmdStr + " " + strings.Join(args, " ")
+		cmdStr += ` "$@"`
 	}
 
-	cmd := exec.CommandContext(ctx, "sh", "-c", cmdStr)
+	shArgs := []string{"-c", cmdStr, "--"}
+	shArgs = append(shArgs, args...)
+
+	cmd := exec.CommandContext(ctx, "sh", shArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
