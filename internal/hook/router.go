@@ -3,9 +3,25 @@ package hook
 import (
 	"context"
 	"fmt"
+	"sort"
 )
 
 var runners []HookRunner
+
+func getPriority(name string) int {
+	switch name {
+	case "lefthook":
+		return 100
+	case "husky":
+		return 90
+	case "pre-commit":
+		return 80
+	case "unirtm":
+		return 10
+	default:
+		return 0
+	}
+}
 
 // RegisterRunner adds a hook engine to the router.
 // This is typically called in init() functions of specific runners.
@@ -16,6 +32,11 @@ func RegisterRunner(r HookRunner) {
 // Run iterates through registered runners, detecting the appropriate engine,
 // and delegates the execution of the hook to it.
 func Run(ctx context.Context, dir string, hookName string, args []string) error {
+	// Sort runners by priority descending to ensure deterministic execution
+	sort.SliceStable(runners, func(i, j int) bool {
+		return getPriority(runners[i].Name()) > getPriority(runners[j].Name())
+	})
+
 	for _, r := range runners {
 		if r.Detect(dir) {
 			fmt.Printf("🔧 UniRTM Hook: Delegating to %s\n", r.Name())
