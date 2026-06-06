@@ -6,6 +6,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0](https://github.com/snowdreamtech/UniRTM/compare/v0.6.0...v0.7.0) (2026-06-06)
+
+
+### Features
+
+* add musl glibc fallback detection and warning ([d819de8](https://github.com/snowdreamtech/UniRTM/commit/d819de861de8e7a1b9cd3ed485a4411066b70c3b))
+* automatically update configuration file during unirtm update ([2e12dcc](https://github.com/snowdreamtech/UniRTM/commit/2e12dcc30300204c747441157392ab67b961187c))
+* **backend:** add context-aware musl asset scoring ([016f26a](https://github.com/snowdreamtech/UniRTM/commit/016f26a90ec8e7923a5ef63807f57f114ae12444))
+* **cli:** add upgrade subcommand as alias to update ([dba23ff](https://github.com/snowdreamtech/UniRTM/commit/dba23ffdd349c8c711546b38076cce14d166a897))
+* complete musl-aware binary selection across lockfile and providers ([9517318](https://github.com/snowdreamtech/UniRTM/commit/9517318afc02372e189d06ab787707a0e7eceaf1))
+* **env:** add IsMusl detection for linux libc ([bad2db0](https://github.com/snowdreamtech/UniRTM/commit/bad2db0dc1c37a0e90dc752fd7906a2757fa6274))
+* **envpath:** support CYGDRIVE_PREFIX for Git Bash on Windows ([8744d60](https://github.com/snowdreamtech/UniRTM/commit/8744d600d6d628326970e61701487a4f8db60edb))
+* implement auto update prompt with background check ([843364e](https://github.com/snowdreamtech/UniRTM/commit/843364e512aaf7e12fe451434fe372cc608c9fe4))
+* implement GPG signature verification for downloaded tool updates ([a040a25](https://github.com/snowdreamtech/UniRTM/commit/a040a25eb5333938a04cf6247431c0f8290bf916))
+* **update:** add helpful warning when no tools are installed ([12742c3](https://github.com/snowdreamtech/UniRTM/commit/12742c3b14a85e560f16ab2b9c32f5aceb9d84ef))
+
+
+### Bug Fixes
+
+* **backend:** ignore floating tags like stable when resolving latest version ([d8c44cc](https://github.com/snowdreamtech/UniRTM/commit/d8c44ccf57b50b74085e601200b84e6e07d84fba))
+* **cli:** resolve backend not found error by persisting backendName in toolVersion struct during unirtm use ([5cccc24](https://github.com/snowdreamtech/UniRTM/commit/5cccc243fd68e4ccf23b89d25e177c2925825e49))
+* **cmd:** apply config environment variables in update command ([9a9cf86](https://github.com/snowdreamtech/UniRTM/commit/9a9cf86d779accf715d9b5f4938abfce68791457))
+* **core:** resolve python/pre-commit installation and shim docs ([d4ba1a1](https://github.com/snowdreamtech/UniRTM/commit/d4ba1a103f61370936a7421173242fd7ec0c3e26))
+* disable git and gcm interactive prompts globally to prevent popup blocking during tests ([c817ab3](https://github.com/snowdreamtech/UniRTM/commit/c817ab3ed4c9e6d309a57dd19b7be08bc19ce197))
+* enforce GIT_ASKPASS to prevent all credential manager popups during tests ([2eeb65a](https://github.com/snowdreamtech/UniRTM/commit/2eeb65a199ebf0885e1a3c8aefe000a7bd16305a))
+* make disableGitPrompts conditional on test environment so users can authenticate to private repos ([63d77bd](https://github.com/snowdreamtech/UniRTM/commit/63d77bd98cf05652a127e27f793fdd32fc835e16))
+* **provider:** enhance archive detection with magic bytes and prevent data loss in decompression ([d243cff](https://github.com/snowdreamtech/UniRTM/commit/d243cff72c65199d3ced8a2fe261856bb7dfe434))
+* **provider:** java needs alpine-linux os parameter for musl ([f140469](https://github.com/snowdreamtech/UniRTM/commit/f140469a5056b0058287672f23a42199e01fda66))
+* skip auto update prompt for dev builds (N/A version) ([2d1e398](https://github.com/snowdreamtech/UniRTM/commit/2d1e3988649a4ffe87107f2a5021347b2a42f216))
+* sync unirtm.lock when updating tools via update command ([7e9ef9d](https://github.com/snowdreamtech/UniRTM/commit/7e9ef9d36b6a3573f6e95d36bc19b6188088493f))
+* **update:** resolve missing GPG verification and broken TOML config updates ([470c94a](https://github.com/snowdreamtech/UniRTM/commit/470c94a759b14fc37d51a7318bd0aed36bf18e52))
+* **update:** solve provider and upsert errors during update ([43e432d](https://github.com/snowdreamtech/UniRTM/commit/43e432d53d3e0f20609513b7d3e506b36c8a3f18))
+* **update:** solve update -a failure by tracking old version in UpdateTool ([b7e34bb](https://github.com/snowdreamtech/UniRTM/commit/b7e34bb035a147ecf65314c26b7c49ef0058b710))
+* **update:** use semver comparison to prevent downgrades and correctly identify latest versions ([e9dc3cc](https://github.com/snowdreamtech/UniRTM/commit/e9dc3cc9d4ae73d1cca570b965fdd762d24e71ef))
+
 ## [0.6.0](https://github.com/snowdreamtech/UniRTM/compare/v0.5.1...v0.6.0) (2026-06-05)
 
 
