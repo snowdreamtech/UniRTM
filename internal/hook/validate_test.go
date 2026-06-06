@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 package hook
 
 import (
@@ -35,9 +38,9 @@ func TestValidateHookName_InvalidNames(t *testing.T) {
 		"../../evil",
 		"",
 		"notahook",
-		"pre_commit",      // underscore instead of dash
-		"PRE-COMMIT",      // uppercase
-		"pre-commit\x00",  // null byte
+		"pre_commit",           // underscore instead of dash
+		"PRE-COMMIT",           // uppercase
+		"pre-commit\x00",       // null byte
 		"pre-commit; rm -rf /", // shell injection attempt
 		"/etc/passwd",
 		".",

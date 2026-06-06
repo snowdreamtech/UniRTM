@@ -1,4 +1,9 @@
 #!/usr/bin/env node
+/**
+ * Copyright (c) 2026 SnowdreamTech. All rights reserved.
+ * Licensed under the MIT License. See LICENSE file in the project root for full license information.
+ */
+
 // install.js - Root package entry point for @snowdreamtech/unirtm
 //
 // This script is both the `bin` entry and the `postinstall` hook.

@@ -49,7 +49,7 @@ func InstallBridgeScript(ctx context.Context, dir string, hookName string) error
 	}
 
 	hookPath := filepath.Join(hooksDir, hookName)
-	
+
 	// Create or overwrite the hook
 	err = os.WriteFile(hookPath, []byte(bridgeScript), 0755)
 	if err != nil {

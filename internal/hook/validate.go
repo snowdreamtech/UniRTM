@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 package hook
 
 import "fmt"
@@ -6,29 +9,29 @@ import "fmt"
 // Only these names are permitted to prevent path traversal attacks.
 var validHookNames = map[string]struct{}{
 	// Commit-workflow hooks
-	"pre-commit":        {},
+	"pre-commit":         {},
 	"prepare-commit-msg": {},
-	"commit-msg":        {},
-	"post-commit":       {},
+	"commit-msg":         {},
+	"post-commit":        {},
 	// Email-workflow hooks
-	"applypatch-msg":    {},
-	"pre-applypatch":    {},
-	"post-applypatch":   {},
+	"applypatch-msg":  {},
+	"pre-applypatch":  {},
+	"post-applypatch": {},
 	// Other client hooks
-	"pre-rebase":        {},
-	"pre-push":          {},
-	"post-checkout":     {},
-	"post-merge":        {},
-	"post-rewrite":      {},
-	"pre-auto-gc":       {},
+	"pre-rebase":         {},
+	"pre-push":           {},
+	"post-checkout":      {},
+	"post-merge":         {},
+	"post-rewrite":       {},
+	"pre-auto-gc":        {},
 	"fsmonitor-watchman": {},
 	// Server-side hooks
-	"pre-receive":       {},
-	"update":            {},
-	"post-receive":      {},
-	"post-update":       {},
-	"push-to-checkout":  {},
-	"pre-receive-hook":  {},
+	"pre-receive":      {},
+	"update":           {},
+	"post-receive":     {},
+	"post-update":      {},
+	"push-to-checkout": {},
+	"pre-receive-hook": {},
 }
 
 // ValidateHookName returns an error if hookName is not a known Git hook.

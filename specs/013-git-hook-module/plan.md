@@ -22,6 +22,7 @@ Add native Git Hook management to UniRTM using a multi-engine runner architectur
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+
 - **Idempotency**: `unirtm hook install` must be safely re-runnable without duplicating code.
 - **Cross-Platform Compatibility**: The injected hook script must execute cleanly under Windows (git-bash), macOS, and Linux.
 
@@ -65,7 +66,7 @@ graph TD
     C -- Detects lefthook.yml --> E[LefthookRunner]
     C -- Detects .husky/ --> F[HuskyRunner]
     C -- Fallback to .unirtm.toml --> G[NativeRunner]
-    
+
     D --> H[unirtm exec -- pre-commit run]
     E --> I[unirtm exec -- lefthook run]
     F --> J[npm run / npx husky run]
@@ -81,17 +82,17 @@ import "context"
 
 // HookRunner defines the interface for all supported git-hook engines
 type HookRunner interface {
-	// Detect returns true if this engine's config exists in the workspace
-	Detect(dir string) bool
-	
-	// Install injects the bridge script into .git/hooks/ or runs engine-specific setup
-	Install(ctx context.Context, dir string) error
-	
-	// Run executes the specific hook (e.g., "pre-commit", "commit-msg")
-	Run(ctx context.Context, hookName string, args []string) error
-	
-	// Name returns the identifier of the engine
-	Name() string
+ // Detect returns true if this engine's config exists in the workspace
+ Detect(dir string) bool
+
+ // Install injects the bridge script into .git/hooks/ or runs engine-specific setup
+ Install(ctx context.Context, dir string) error
+
+ // Run executes the specific hook (e.g., "pre-commit", "commit-msg")
+ Run(ctx context.Context, hookName string, args []string) error
+
+ // Name returns the identifier of the engine
+ Name() string
 }
 ```
 
@@ -122,6 +123,7 @@ fi
 ## Routing Logic
 
 When `unirtm hook run <hookName>` is invoked:
+
 1. Iterate through `[]HookRunner{PreCommitRunner{}, LefthookRunner{}, HuskyRunner{}, NativeRunner{}}`.
 2. Call `Detect(cwd)` sequentially.
 3. The first runner that returns `true` is selected.

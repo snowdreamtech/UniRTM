@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 package hook
 
 import (
@@ -13,8 +16,8 @@ type mockRunner struct {
 	called bool
 }
 
-func (m *mockRunner) Name() string { return m.name }
-func (m *mockRunner) Detect(dir string) bool { return m.detect }
+func (m *mockRunner) Name() string                                  { return m.name }
+func (m *mockRunner) Detect(dir string) bool                        { return m.detect }
 func (m *mockRunner) Install(ctx context.Context, dir string) error { return nil }
 func (m *mockRunner) Run(ctx context.Context, hookName string, args []string) error {
 	m.called = true

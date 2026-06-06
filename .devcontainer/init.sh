@@ -1,4 +1,7 @@
 #!/bin/sh
+# Copyright (c) 2026 SnowdreamTech. All rights reserved.
+# Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 # .devcontainer/init.sh — Devcontainer initialization script
 # Purpose: Set up unirtm, GPG, and git configuration for development environment
 # Compatibility: POSIX shell (sh, bash, zsh, dash)

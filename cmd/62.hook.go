@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 package cmd
 
 import (
@@ -35,7 +38,7 @@ var hookInstallCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to install hook %s: %w", hookName, err)
 		}
-		
+
 		fmt.Printf("✨ Successfully installed UniRTM bridge script for hook: %s\n", hookName)
 		return nil
 	},
@@ -52,7 +55,7 @@ var hookRunCmd = &cobra.Command{
 			return err
 		}
 		hookArgs := args[1:]
-		
+
 		pwd, err := os.Getwd()
 		if err != nil {
 			return err
