@@ -15,6 +15,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
+	"github.com/snowdreamtech/unirtm/internal/pkg/version"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository"
 	"github.com/snowdreamtech/unirtm/internal/transaction"
@@ -139,7 +140,7 @@ func (um *UpdateManager) CheckForUpdates(ctx context.Context) ([]UpdateInfo, err
 		}
 
 		// Check if update is available
-		updateRequired := latestInfo.Version != installation.Version
+		updateRequired := version.CompareVersions(latestInfo.Version, installation.Version) > 0
 
 		// Check version constraints from config if available
 		if um.configManager != nil {
@@ -151,7 +152,7 @@ func (um *UpdateManager) CheckForUpdates(ctx context.Context) ([]UpdateInfo, err
 					if err == nil {
 						// Use the configured version as the target
 						latestInfo = configInfo
-						updateRequired = configInfo.Version != installation.Version
+						updateRequired = version.CompareVersions(configInfo.Version, installation.Version) > 0
 					}
 				}
 			}

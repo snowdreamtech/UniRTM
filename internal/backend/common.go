@@ -8,8 +8,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/version"
 )
 
 // CommonAsset represents a generic asset from a hosting platform.
@@ -354,6 +357,10 @@ func GenericResolveVersion(ctx context.Context, p HostingProvider, tool string, 
 	// Resolution logic
 	switch versionRequest {
 	case "latest", "stable":
+		// Sort versions in descending order using SemVer logic
+		sort.Slice(versions, func(i, j int) bool {
+			return version.CompareVersions(versions[i].Version, versions[j].Version) > 0
+		})
 		for _, v := range versions {
 			if v.Metadata["prerelease"] == "false" {
 				return &v, nil
