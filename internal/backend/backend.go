@@ -5,7 +5,11 @@ package backend
 
 import (
 	"context"
+	"flag"
+	"os"
+	"os/exec"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -128,4 +132,25 @@ func NewBackendError(backend, tool, message string, cause error) *BackendError {
 		Message: message,
 		Cause:   cause,
 	}
+}
+
+// disableGitPrompts explicitly disables any interactive credential prompt for a Git command.
+// This is ONLY applied during unit tests to prevent automated test runs from hanging or
+// popping up GUI credential requests when a private repository or non-existent repository is accessed.
+// In production, we want to allow users to authenticate to private repos!
+func disableGitPrompts(cmd *exec.Cmd) {
+	isTest := strings.HasSuffix(os.Args[0], ".test") || strings.HasSuffix(os.Args[0], ".test.exe") || flag.Lookup("test.v") != nil
+	if !isTest {
+		return
+	}
+
+	if cmd.Env == nil {
+		cmd.Env = os.Environ()
+	}
+	cmd.Env = append(cmd.Env,
+		"GIT_TERMINAL_PROMPT=0",
+		"GCM_INTERACTIVE=false",
+		"GIT_ASKPASS=__disabled__",
+		"SSH_ASKPASS=__disabled__",
+	)
 }

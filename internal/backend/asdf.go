@@ -186,7 +186,7 @@ func (b *AsdfBackend) ensurePlugin(ctx context.Context, tool string) (string, er
 	}
 
 	cmd := exec.CommandContext(ctx, "git", "clone", repoURL, pluginDir)
-	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+	disableGitPrompts(cmd)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		// Try alternative fallback
 		if strings.Contains(repoURL, "asdf-community") {
@@ -194,7 +194,7 @@ func (b *AsdfBackend) ensurePlugin(ctx context.Context, tool string) (string, er
 			altURL = b.applyGithubProxy(altURL)
 			logger.Info("Fallback clone asdf plugin", map[string]interface{}{"tool": tool, "url": altURL})
 			cmd = exec.CommandContext(ctx, "git", "clone", altURL, pluginDir)
-			cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+			disableGitPrompts(cmd)
 			if _, err := cmd.CombinedOutput(); err != nil {
 				return "", fmt.Errorf("git clone failed: %s", string(out))
 			}
@@ -214,7 +214,7 @@ func (b *AsdfBackend) updateRegistry(ctx context.Context) error {
 		}
 		repoURL := b.applyGithubProxy("https://github.com/asdf-vm/asdf-plugins.git")
 		cmd := exec.CommandContext(ctx, "git", "clone", repoURL, b.registryPath)
-		cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+		disableGitPrompts(cmd)
 		return cmd.Run()
 	}
 
@@ -225,7 +225,7 @@ func (b *AsdfBackend) updateRegistry(ctx context.Context) error {
 	}
 
 	cmd := exec.CommandContext(ctx, "git", "-C", b.registryPath, "pull")
-	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+	disableGitPrompts(cmd)
 	return cmd.Run()
 }
 

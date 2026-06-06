@@ -29,6 +29,7 @@ func (b *SpmBackend) ListVersions(ctx context.Context, tool string, platform Pla
 	// For SPM, tool is usually a git repo URL.
 	// We use git ls-remote to fetch tags.
 	cmd := exec.CommandContext(ctx, "git", "ls-remote", "--tags", tool)
+	disableGitPrompts(cmd)
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, NewBackendError(b.Name(), tool, "git ls-remote failed", err)
