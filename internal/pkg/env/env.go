@@ -11,6 +11,8 @@ func init() {
 	// blocking automated tasks or tests (e.g., when trying to git clone an unknown repo).
 	os.Setenv("GIT_TERMINAL_PROMPT", "0")
 	os.Setenv("GCM_INTERACTIVE", "false")
+	os.Setenv("GIT_ASKPASS", "__disabled__")
+	os.Setenv("SSH_ASKPASS", "__disabled__")
 }
 
 // Get returns the value of the environment variable with the given key,
