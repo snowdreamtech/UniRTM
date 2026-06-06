@@ -379,6 +379,16 @@ func (c *Config) Merge(other *Config) {
 			}
 		}
 	}
+
+	// Merge hooks
+	if c.Hooks == nil {
+		c.Hooks = make(map[string]string)
+	}
+	for k, v := range other.Hooks {
+		if _, exists := c.Hooks[k]; !exists {
+			c.Hooks[k] = v
+		}
+	}
 }
 
 func (c *Config) validateTaskDependencies() error {
