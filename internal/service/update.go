@@ -10,11 +10,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
+	"github.com/snowdreamtech/unirtm/internal/pkg/gpg"
 	"github.com/snowdreamtech/unirtm/internal/pkg/version"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository"
@@ -61,6 +64,7 @@ type UpdateManager struct {
 	auditRepo        repository.AuditRepository
 	txManager        transaction.TransactionManager
 	configManager    *config.Config
+	gpgVerifier      gpg.Verifier
 }
 
 // NewUpdateManager creates a new update manager.
@@ -81,6 +85,7 @@ func NewUpdateManager(
 		auditRepo:        auditRepo,
 		txManager:        txManager,
 		configManager:    configManager,
+		gpgVerifier:      gpg.NewVerifier(),
 	}
 }
 
@@ -269,6 +274,66 @@ func (um *UpdateManager) UpdateTool(ctx context.Context, tool, oldVersion, targe
 		if versionInfo.Checksum != "" {
 			if err := downloader.VerifyChecksum(ctx, downloadPath, versionInfo.Checksum); err != nil {
 				return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("checksum verification failed: %w", err), false, "")
+			}
+		}
+
+		// Verify GPG signature if configured
+		verifyMetadata := true
+		if (versionInfo.SignatureURL != "" || versionInfo.GPGSignature != "") && verifyMetadata && (um.configManager == nil || um.configManager.Settings.GPGVerify != "off") {
+			sigPath := downloadPath + ".asc"
+			var downloadErr error
+			if versionInfo.GPGSignature != "" {
+				// Use embedded signature
+				if err := os.WriteFile(sigPath, []byte(versionInfo.GPGSignature), 0644); err != nil {
+					downloadErr = fmt.Errorf("failed to save embedded GPG signature: %w", err)
+				}
+			} else {
+				// Download signature file
+				sigOpts := download.DefaultDownloadOptions()
+				downloadErr = downloader.Download(ctx, versionInfo.SignatureURL, sigPath, sigOpts)
+			}
+
+			if downloadErr != nil {
+				msg := fmt.Sprintf("failed to obtain GPG signature: %v", downloadErr)
+				if um.configManager != nil && um.configManager.Settings.GPGVerify == "strict" {
+					return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("GPG signature required in strict mode: %w", downloadErr), false, "")
+				}
+				output.Warningf("WARNING: %s. Continuing anyway", msg)
+			} else {
+				defer os.Remove(sigPath)
+
+				// Collect all trusted keys
+				trustedKeys := make([]string, 0)
+				if um.configManager != nil {
+					trustedKeys = append(trustedKeys, um.configManager.Settings.GPGKeys...)
+					if tc, ok := um.configManager.Tools[tool]; ok {
+						trustedKeys = append(trustedKeys, tc.GPGKeys...)
+					}
+				}
+				trustedKeys = append(trustedKeys, versionInfo.GPGKeys...)
+
+				// Verify signature
+				err := um.gpgVerifier.Verify(ctx, sigPath, downloadPath, trustedKeys)
+				if err != nil && strings.Contains(err.Error(), "missing public key") && len(trustedKeys) > 0 {
+					// Handle missing public key: try to automatically import if TTY, but for update we'll just try importing
+					fp := trustedKeys[0] // Try first fingerprint
+					if importErr := um.gpgVerifier.ImportKey(ctx, fp); importErr == nil {
+						// Retry verification
+						err = um.gpgVerifier.Verify(ctx, sigPath, downloadPath, trustedKeys)
+					}
+				}
+
+				if err != nil {
+					msg := fmt.Sprintf("GPG verification failed: %v", err)
+					if um.configManager != nil && um.configManager.Settings.GPGVerify == "strict" {
+						return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("SECURITY ERROR: %s", msg), false, "")
+					}
+					output.Warningf("SECURITY WARNING: %s. Continuing anyway", msg)
+				}
+			}
+		} else if versionInfo.SignatureURL == "" && um.configManager != nil && um.configManager.Settings.GPGVerify == "strict" {
+			if len(versionInfo.GPGKeys) > 0 {
+				return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("GPG security violation: trusted fingerprints exist for %s but no signature URL found in strict mode", tool), false, "")
 			}
 		}
 	}
