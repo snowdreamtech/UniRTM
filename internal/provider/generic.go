@@ -7,6 +7,8 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"bufio"
+	"bytes"
+	"compress/bzip2"
 	"compress/gzip"
 	"context"
 	"fmt"
@@ -49,6 +51,13 @@ func (g *GenericProvider) Install(ctx context.Context, tool string, installPath 
 		if !strings.HasPrefix(err.Error(), "unsupported archive type") {
 			return NewProviderError("generic", "unknown", version, "failed to extract archive artifact", err)
 		}
+
+		// Sanity Check: Ensure the file doesn't have an archive signature
+		// This prevents silent fallback copying of corrupt/unsupported archives
+		if isArchive, _ := g.isArchiveFile(artifactPath); isArchive {
+			return NewProviderError("generic", "unknown", version, "artifact has archive signature but failed to extract or is unsupported", err)
+		}
+
 		// If it's not an archive, we just copy it to a new bin directory
 		binDir := filepath.Join(installPath, "bin")
 		if err := os.MkdirAll(binDir, 0755); err != nil {
@@ -500,6 +509,73 @@ REM UniRTM shim for %s (version %s)
 `, filepath.Base(exePath), version, exePath)
 }
 
+// isArchiveFile checks if the file has magic bytes of a known archive format.
+func (g *GenericProvider) isArchiveFile(filePath string) (bool, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	magicBuf := make([]byte, 512)
+	n, _ := io.ReadFull(f, magicBuf)
+	if n == 0 {
+		return false, nil
+	}
+	magic := magicBuf[:n]
+
+	// Gzip: \x1f\x8b
+	if bytes.HasPrefix(magic, []byte{0x1f, 0x8b}) {
+		return true, nil
+	}
+	// Zip: PK\x03\x04
+	if bytes.HasPrefix(magic, []byte{0x50, 0x4b, 0x03, 0x04}) {
+		return true, nil
+	}
+	// XZ: \xfd7zXZ\x00
+	if bytes.HasPrefix(magic, []byte{0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00}) {
+		return true, nil
+	}
+	// Zstd: \x28\xb5\x2f\xfd
+	if bytes.HasPrefix(magic, []byte{0x28, 0xb5, 0x2f, 0xfd}) {
+		return true, nil
+	}
+	// Tar: "ustar" at offset 257
+	if n >= 262 && string(magic[257:262]) == "ustar" {
+		return true, nil
+	}
+	// Bzip2: BZh
+	if bytes.HasPrefix(magic, []byte("BZh")) {
+		return true, nil
+	}
+	// RAR: Rar!\x1a\x07
+	if bytes.HasPrefix(magic, []byte("Rar!\x1a\x07")) {
+		return true, nil
+	}
+	// 7z: 7z\xbc\xaf\x27\x1c
+	if bytes.HasPrefix(magic, []byte{'7', 'z', 0xbc, 0xaf, 0x27, 0x1c}) {
+		return true, nil
+	}
+	// LZ4: \x04\x22\x4d\x18
+	if bytes.HasPrefix(magic, []byte{0x04, 0x22, 0x4d, 0x18}) {
+		return true, nil
+	}
+	// CAB: MSCF
+	if bytes.HasPrefix(magic, []byte("MSCF")) {
+		return true, nil
+	}
+	// ar/deb: !<arch>\n
+	if bytes.HasPrefix(magic, []byte("!<arch>\n")) {
+		return true, nil
+	}
+	// Lzip: LZIP
+	if bytes.HasPrefix(magic, []byte("LZIP")) {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 // extractArtifact attempts to extract an archive to the destination directory.
 // Returns an error if the file is not a supported archive or extraction fails.
 // extractArtifact attempts to extract an archive to the destination directory.
@@ -512,10 +588,21 @@ func (g *GenericProvider) extractArtifact(ctx context.Context, artifactPath stri
 	}
 	defer f.Close()
 
+	// Read magic bytes
+	magicBuf := make([]byte, 512)
+	n, _ := io.ReadFull(f, magicBuf)
+	magic := magicBuf[:n]
+
+	// Rewind file
+	if _, err := f.Seek(0, 0); err != nil {
+		return err
+	}
+
 	base := strings.ToLower(filepath.Base(artifactPath))
 
+	isZip := bytes.HasPrefix(magic, []byte{0x50, 0x4b, 0x03, 0x04})
 	// 1. Handle ZIP
-	if strings.HasSuffix(base, ".zip") {
+	if strings.HasSuffix(base, ".zip") || isZip {
 		return g.extractZip(artifactPath, dstDir)
 	}
 
@@ -523,7 +610,12 @@ func (g *GenericProvider) extractArtifact(ctx context.Context, artifactPath stri
 	var r io.Reader = f
 	var compressed = false
 
-	if strings.HasSuffix(base, ".tar.gz") || strings.HasSuffix(base, ".tgz") || strings.HasSuffix(base, ".gz") {
+	isGz := bytes.HasPrefix(magic, []byte{0x1f, 0x8b})
+	isXz := bytes.HasPrefix(magic, []byte{0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00})
+	isZstd := bytes.HasPrefix(magic, []byte{0x28, 0xb5, 0x2f, 0xfd})
+	isBz2 := bytes.HasPrefix(magic, []byte("BZh"))
+
+	if strings.HasSuffix(base, ".tar.gz") || strings.HasSuffix(base, ".tgz") || strings.HasSuffix(base, ".gz") || isGz {
 		gz, err := gzip.NewReader(f)
 		if err != nil {
 			return err
@@ -531,14 +623,14 @@ func (g *GenericProvider) extractArtifact(ctx context.Context, artifactPath stri
 		defer gz.Close()
 		r = gz
 		compressed = true
-	} else if strings.HasSuffix(base, ".tar.xz") || strings.HasSuffix(base, ".txz") || strings.HasSuffix(base, ".xz") {
+	} else if strings.HasSuffix(base, ".tar.xz") || strings.HasSuffix(base, ".txz") || strings.HasSuffix(base, ".xz") || isXz {
 		xzr, err := xz.NewReader(f)
 		if err != nil {
 			return err
 		}
 		r = xzr
 		compressed = true
-	} else if strings.HasSuffix(base, ".tar.zst") || strings.HasSuffix(base, ".zst") {
+	} else if strings.HasSuffix(base, ".tar.zst") || strings.HasSuffix(base, ".zst") || isZstd {
 		zsr, err := zstd.NewReader(f)
 		if err != nil {
 			return err
@@ -546,19 +638,24 @@ func (g *GenericProvider) extractArtifact(ctx context.Context, artifactPath stri
 		defer zsr.Close()
 		r = zsr
 		compressed = true
+	} else if strings.HasSuffix(base, ".tar.bz2") || strings.HasSuffix(base, ".tbz2") || strings.HasSuffix(base, ".bz2") || isBz2 {
+		r = bzip2.NewReader(f)
+		compressed = true
 	}
+
+	isRawTar := n >= 262 && string(magic[257:262]) == "ustar"
 
 	// 3. Smart Sniffing: Check if the decompressed stream is a TAR archive
 	// We use a buffered reader to peek at the first 512 bytes (tar header size)
 	br := bufio.NewReader(r)
-	isTar := strings.HasSuffix(base, ".tar")
-	if !isTar && compressed {
+	isTar := strings.HasSuffix(base, ".tar") || isRawTar
+	if !isTar {
 		// Peek for tar magic numbers (ustar)
 		header, _ := br.Peek(512)
 		if len(header) >= 263 {
 			// Look for "ustar" magic string at offset 257
-			magic := string(header[257:262])
-			if magic == "ustar" {
+			magicStr := string(header[257:262])
+			if magicStr == "ustar" {
 				isTar = true
 			}
 		}
@@ -583,7 +680,8 @@ func (g *GenericProvider) extractArtifact(ctx context.Context, artifactPath stri
 			return err
 		}
 		defer outF.Close()
-		_, err = io.Copy(outF, r)
+		// ROBUSTNESS FIX: Must read from br instead of r to include the 4096 bytes buffered by Peek
+		_, err = io.Copy(outF, br)
 		return err
 	}
 
