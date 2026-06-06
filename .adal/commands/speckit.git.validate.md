@@ -1,0 +1,1 @@
+../../.agents/commands/speckit.git.validate.md

@@ -1,0 +1,1 @@
+../../.agent/workflows/speckit.git.commit.md
