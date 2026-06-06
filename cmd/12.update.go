@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/pterm/pterm"
 
@@ -357,6 +358,45 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		} else {
 			failCount++
 			output.Errorf("Failed to update %s: %s", pterm.LightRed(r.Tool), pterm.LightRed(r.Error))
+		}
+	}
+
+	// Update config file if any updates succeeded
+	if successCount > 0 && cfg != nil && cfg.ToolsRaw != nil {
+		cwd, err := os.Getwd()
+		if err == nil {
+			configFile := findOrCreateConfigFile(cwd, "")
+			content, readErr := config.ReadFileOrEmpty(configFile)
+			if readErr == nil {
+				modified := false
+				for _, r := range results {
+					if r.Success {
+						// Find matching key in config
+						keyToUpdate := ""
+						if _, ok := cfg.ToolsRaw[r.Tool]; ok {
+							keyToUpdate = r.Tool
+						} else {
+							for k := range cfg.ToolsRaw {
+								if strings.HasSuffix(k, ":"+r.Tool) || strings.HasSuffix(k, "/"+r.Tool) {
+									keyToUpdate = k
+									break
+								}
+							}
+						}
+						
+						if keyToUpdate != "" {
+							content = config.UpsertToolVersion(content, keyToUpdate, r.NewVersion)
+							modified = true
+						}
+					}
+				}
+
+				if modified {
+					if writeErr := os.WriteFile(configFile, []byte(content), 0644); writeErr == nil {
+						_, _ = config.FormatFile(configFile, false)
+					}
+				}
+			}
 		}
 	}
 

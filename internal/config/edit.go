@@ -137,6 +137,15 @@ func UpsertToolVersion(content, tool, version string) string {
 			}
 			if strings.HasPrefix(trimmed, tool+"=") || strings.HasPrefix(trimmed, tool+" =") {
 				toolLineIdx = i
+			} else {
+				parts := strings.SplitN(trimmed, "=", 2)
+				if len(parts) == 2 {
+					keyPart := strings.TrimSpace(parts[0])
+					keyPart = strings.Trim(keyPart, `"'`)
+					if keyPart == tool {
+						toolLineIdx = i
+					}
+				}
 			}
 		}
 	}
