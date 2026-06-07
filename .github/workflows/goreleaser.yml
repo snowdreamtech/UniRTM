@@ -237,6 +237,9 @@ jobs:
             dashboard.snapcraft.io:443
             login.ubuntu.com:443
             *.snapcraftcontent.com:443
+            dl.flathub.org:443
+            *.freedesktop.org:443
+            ostree.freedesktop.org:443
       - name: "📂 Checkout Repository Code"
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -268,6 +271,17 @@ jobs:
         shell: sh
         run: |
           sudo snap install snapcraft --classic
+
+      - name: "📦 Install Flatpak (for GoReleaser Flatpak packages)"
+        run: |
+          sudo apt update -q
+          sudo apt install -yq flatpak flatpak-builder
+          sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          sudo flatpak install -y --noninteractive flathub \
+            org.freedesktop.Platform/x86_64/24.08 \
+            org.freedesktop.Sdk/x86_64/24.08 \
+            org.freedesktop.Platform/aarch64/24.08 \
+            org.freedesktop.Sdk/aarch64/24.08
 
       - name: "🚀 Distribute Artifacts (GoReleaser)"
         uses: goreleaser/goreleaser-action@5daf1e915a5f0af01ddbcd89a43b8061ff4f1a89 # v7.2.2
