@@ -138,14 +138,55 @@ changelog:
     - title: "♻️ Miscellaneous Chores"
       order: 9999
 
+
+nfpms:
+  - id: default
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    builds:
+      - unirtm
+    homepage: https://github.com/snowdreamtech/unirtm
+    maintainer: "Snowdream Tech <snowdreamtech@qq.com>"
+    description: |-
+      UniRTM (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager.
+      It manages runtimes, tools, and tasks across Linux, macOS, and Windows.
+    license: MIT
+    vendor: SnowdreamTech
+    bindir: /usr/bin
+    formats:
+      - apk
+      - deb
+      - rpm
+      - archlinux
+
+snapcrafts:
+  - name_template: "{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    summary: UniRTM (Uni Runtime and Tools Manager)
+    description: |
+      UniRTM manages runtimes, tools, and tasks across Linux, macOS, and Windows.
+    grade: stable
+    confinement: classic
+    publish: false
+
+flatpak:
+  - app_id: com.snowdreamtech.UniRTM
+    runtime: org.freedesktop.Platform
+    runtime_version: "24.08"
+    sdk: org.freedesktop.Sdk
+    finish_args:
+      - --share=network
+      - --filesystem=host
+
+universal_binaries:
+  - replace: false
+
 sboms:
   - artifacts: archive
 
-# signs:
-#   - artifacts: checksum
-#     args:
-#       - "sign-blob"
-#       - "--output-certificate=${certificate}"
-#       - "--output-signature=${signature}"
-#       - "${artifact}"
-#       - "--yes" # Enables keyless signing via OIDC token
+signs:
+  - artifacts: checksum
+    args:
+      - "sign-blob"
+      - "--output-certificate=${certificate}"
+      - "--output-signature=${signature}"
+      - "${artifact}"
+      - "--yes" # Enables keyless signing via OIDC token
