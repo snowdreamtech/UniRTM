@@ -173,7 +173,7 @@ jobs:
       - name: "🔒 Harden Runner"
         uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
-          disable-sudo: true
+          disable-sudo: false
           egress-policy: block
           allowed-endpoints: >
             *.aquasecurity.github.io:443
@@ -233,6 +233,10 @@ jobs:
             golang.org:443
             *.actions.githubusercontent.com:443
             *.blob.core.windows.net:443
+            api.snapcraft.io:443
+            dashboard.snapcraft.io:443
+            login.ubuntu.com:443
+            *.snapcraftcontent.com:443
       - name: "📂 Checkout Repository Code"
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -259,6 +263,11 @@ jobs:
 
       - name: "📦 Install Syft (for GoReleaser SBOM)"
         uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+
+      - name: "📦 Install Snapcraft (for GoReleaser Snap packages)"
+        shell: sh
+        run: |
+          sudo snap install snapcraft --classic
 
       - name: "🚀 Distribute Artifacts (GoReleaser)"
         uses: goreleaser/goreleaser-action@5daf1e915a5f0af01ddbcd89a43b8061ff4f1a89 # v7.2.2

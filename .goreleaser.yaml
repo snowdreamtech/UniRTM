@@ -21,7 +21,8 @@ before:
     # - go generate ./...
 
 builds:
-  - binary: unirtm
+  - id: unirtm
+    binary: unirtm
     env:
       - CGO_ENABLED=0
     flags:
@@ -53,8 +54,43 @@ builds:
       - "5"
       - "6"
       - "7"
+
+  # Dedicated build for Linux packages (deb/rpm/apk/archlinux).
+  # Uses goarm "7" only to avoid duplicate arm filenames (arm5/arm6 map to same
+  # 'arm' arch name in package managers, causing publishing conflicts).
+  - id: unirtm-pkg
+    binary: unirtm
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.ProjectName=unirtm'
+      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.Author=Snowdream Tech <snowdreamtech@qq.com>'
+      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.BuildTime={{.Date}}
+      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.CommitHash={{.ShortCommit}}
+      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.CommitHashFull={{.FullCommit}}
+      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.GitTag={{.Tag}}
+      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.COPYRIGHT=Copyright (c) 2023-present SnowdreamTech Inc.'
+      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.LICENSE=MIT <https://github.com/snowdreamtech/unirtm/blob/main/LICENSE>'
+    goos:
+      - linux
+    goarch:
+      - "386"
+      - amd64
+      - arm
+      - arm64
+      - loong64
+      - ppc64le
+      - riscv64
+      - s390x
+    goarm:
+      - "7"
 archives:
-  - formats: [tar.gz]
+  - ids:
+      - unirtm
+    formats: [tar.gz]
     # This name template makes the OS and Arch compatible with uname and includes the version.
     name_template: >-
       {{- .ProjectName }}_
@@ -141,8 +177,9 @@ changelog:
 nfpms:
   - id: default
     file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    builds:
-      - unirtm
+    # Reference the linux-only build with goarm "7" to avoid duplicate arm filenames
+    ids:
+      - unirtm-pkg
     homepage: https://github.com/snowdreamtech/unirtm
     maintainer: "Snowdream Tech <snowdreamtech@qq.com>"
     description: |-
