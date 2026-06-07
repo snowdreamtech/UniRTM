@@ -26,3 +26,16 @@
 - [x] T005 [P] [US1] Add `universal_binaries` for macOS in `.goreleaser.yaml`
 
 ---
+
+## Phase 3: Future Publishing Integrations (Out of Scope for MVP)
+
+**Purpose**: External platform synchronizations that require tokens and accounts.
+
+- [ ] T006 Investigate and setup GitHub PATs for external repositories (Homebrew Tap, Scoop Bucket, Winget)
+- [ ] T007 Configure `homebrew_casks`, `scoops`, and `winget` in `.goreleaser.yaml`
+- [ ] T008 Setup AUR SSH keys in GitHub Secrets and configure `aurs`
+- [ ] T009 Register NPM and Gemfury tokens and configure `npms` and `gemfury`
+- [ ] T010 Setup Docker registry authentication and configure `dockers_v2`
+- [ ] T011 Investigate Apple Developer account requirements for `notarize`
+- [ ] T012 Configure `announce` for community platforms (Discord, Telegram, etc.)
+- [ ] T013 Implement `nightly` build CI triggers and GoReleaser configuration
