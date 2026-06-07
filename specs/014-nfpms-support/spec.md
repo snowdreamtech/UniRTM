@@ -54,7 +54,9 @@ As a Linux user or system administrator, I want to install UniRTM using standard
 The following capabilities are present in the GoReleaser ecosystem but are currently out of scope because they require external platform synchronization, accounts, or tokens. They are documented here for future tracking:
 
 ### 1. External Package Manager Publishing (Repository Sync)
+
 这些功能不会生成直接可供下载的安装包，而是生成配置脚本（如 `.rb`, `JSON`, `PKGBUILD`），并通过 Git/API 自动推送到第三方的仓库中。
+
 - **`homebrew_casks`**: 自动向 macOS 的 Homebrew Tap 仓库推送更新。
 - **`winget`**: 自动向微软的 Windows 官方包仓库提交 PR。
 - **`scoops`**: 自动向 Windows 的 Scoop Bucket 仓库推送更新。
@@ -64,14 +66,18 @@ The following capabilities are present in the GoReleaser ecosystem but are curre
 - **`gemfury`**: 自动向 Gemfury 托管平台推送包。
 
 ### 2. Container Images (容器镜像)
+
 - **`dockers_v2` & `docker_signs`**: 根据编译好的二进制文件打包出对应的 Docker 镜像，并自动 push 到 GitHub Container Registry (ghcr.io) 及 Docker Hub，同时用 Cosign 为镜像签名。
 
 ### 3. macOS Official Notarization (苹果官方公证)
+
 - **`notarize`**: 使用苹果开发者证书对 macOS 二进制文件进行签名并送交苹果公证服务器进行安全检查。这需要付费的苹果开发者账号。
 
 ### 4. Community and Announcements (社区联动与公告自动分发)
+
 - **`announce`**: 每次发布完成后，自动向 Mastodon, Discord, Telegram 等社交平台发送新版本广播，集成 OpenCollective。
 - **`milestones`**: 自动根据 Tag 版本号关闭 GitHub 上对应的 Milestone。
 
 ### 5. Testing and Nightly Builds (测试与每日构建)
+
 - **`nightly`**: 针对 Nightly 版本的特殊标签规则，允许通过 CI 定期生成不稳定预览版。
