@@ -6,6 +6,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0](https://github.com/snowdreamtech/UniRTM/compare/v0.8.0...v0.9.0) (2026-06-07)
+
+
+### Features
+
+* **goreleaser:** add nfpms, snapcraft, flatpak and universal binaries support ([536b380](https://github.com/snowdreamtech/UniRTM/commit/536b380c69be75dc0977cb5fb973d24b6e7a74db))
+* **goreleaser:** enable cosign keyless signing for checksums ([362dd27](https://github.com/snowdreamtech/UniRTM/commit/362dd27da7b714bf75067e3b7b62a40b563c9033))
+
+
+### Bug Fixes
+
+* **goreleaser:** resolve nfpms duplicate arm artifacts and snapcraft missing in CI ([5bbf6d4](https://github.com/snowdreamtech/UniRTM/commit/5bbf6d4a8bd68a4d2f71714ec524f3cc6197dd7f))
+
 ## [0.8.0](https://github.com/snowdreamtech/UniRTM/compare/v0.7.0...v0.8.0) (2026-06-06)
 
 
