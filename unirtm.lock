@@ -425,6 +425,42 @@ url = "https://github.com/google/osv-scanner/releases/download/v2.3.8/osv-scanne
 checksum = "285d1fbcf2c69ab5ee38ae3a850ab46e83f32ef1cd5f3c4c9eb161cc493f6d52"
 url = "https://github.com/google/osv-scanner/releases/download/v2.3.8/osv-scanner_windows_arm64.exe"
 
+[[tools."github:goreleaser/goreleaser"]]
+version = "2.16.0"
+backend = "github"
+
+[tools."github:goreleaser/goreleaser"."platforms.linux-amd64"]
+checksum = "eaae05b5eba07533bd0f06846b68c808399504784df00c62eb219541fc04e5e2"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Linux_x86_64.tar.gz"
+
+[tools."github:goreleaser/goreleaser"."platforms.linux-amd64-musl"]
+checksum = "eaae05b5eba07533bd0f06846b68c808399504784df00c62eb219541fc04e5e2"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Linux_x86_64.tar.gz"
+
+[tools."github:goreleaser/goreleaser"."platforms.linux-arm64"]
+checksum = "0102d974373fcdeb77042d1f5897caffa193be36620fdc6c1da43a01ef8e10d3"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Linux_arm64.tar.gz"
+
+[tools."github:goreleaser/goreleaser"."platforms.linux-arm64-musl"]
+checksum = "0102d974373fcdeb77042d1f5897caffa193be36620fdc6c1da43a01ef8e10d3"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Linux_arm64.tar.gz"
+
+[tools."github:goreleaser/goreleaser"."platforms.macos-amd64"]
+checksum = "2b82d8319ee517d4242b48a858114b267c621f1dd1fe51a14680902b18a5dac8"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Darwin_x86_64.tar.gz"
+
+[tools."github:goreleaser/goreleaser"."platforms.macos-arm64"]
+checksum = "8f6898256f35531165d90f2db581c5ee0d32bda83ebc25ac231ff5bdb9d2071a"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Darwin_arm64.tar.gz"
+
+[tools."github:goreleaser/goreleaser"."platforms.windows-amd64"]
+checksum = "6fe5eda11f0bcac8069aff3ef3dcb0b11816c9e95f89773595564697a5278bc9"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Windows_x86_64.zip"
+
+[tools."github:goreleaser/goreleaser"."platforms.windows-arm64"]
+checksum = "1183c81863044ce9baa89c1393c258949390b8df683df7ca959e9c718d7723c9"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Windows_arm64.zip"
+
 [[tools."github:hadolint/hadolint"]]
 version = "2.14.0"
 backend = "github"
@@ -785,35 +821,31 @@ version = "26.3.0"
 backend = "native"
 
 [tools."node"."platforms.linux-amd64"]
-url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-linux-x64.tar.gz"
+url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-linux-x64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.linux-amd64-musl"]
-url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-linux-x64.tar.gz"
+url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-linux-x64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.linux-arm64"]
-url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-linux-arm64.tar.gz"
+url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-linux-arm64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.linux-arm64-musl"]
-url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-linux-arm64.tar.gz"
+url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-linux-arm64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.macos-amd64"]
-url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-darwin-x64.tar.gz"
+url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-darwin-x64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.macos-arm64"]
-url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-darwin-arm64.tar.gz"
+url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-darwin-arm64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.windows-amd64"]
-url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-win-x64.zip"
-gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
-
-[tools."node"."platforms.windows-arm64"]
-url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-win-arm64.zip"
+url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-win-x64.zip"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [[tools."npm:@commitlint/cli"]]
@@ -1141,28 +1173,28 @@ version = "3.14.5"
 backend = "native"
 
 [tools."python"."platforms.linux-amd64"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-unknown-linux-gnu-debug-full.tar.zst"
+url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-unknown-linux-gnu-debug-full.tar.zst"
 
 [tools."python"."platforms.linux-amd64-musl"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-unknown-linux-gnu-debug-full.tar.zst"
+url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-unknown-linux-gnu-debug-full.tar.zst"
 
 [tools."python"."platforms.linux-arm64"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-unknown-linux-gnu-debug-full.tar.zst"
+url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-unknown-linux-gnu-debug-full.tar.zst"
 
 [tools."python"."platforms.linux-arm64-musl"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-unknown-linux-gnu-debug-full.tar.zst"
+url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-unknown-linux-gnu-debug-full.tar.zst"
 
 [tools."python"."platforms.macos-amd64"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-apple-darwin-debug-full.tar.zst"
+url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-apple-darwin-debug-full.tar.zst"
 
 [tools."python"."platforms.macos-arm64"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-apple-darwin-debug-full.tar.zst"
+url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-apple-darwin-debug-full.tar.zst"
 
 [tools."python"."platforms.windows-amd64"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-pc-windows-msvc-freethreaded%2Bpgo-full.tar.zst"
+url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-pc-windows-msvc-freethreaded%2Bpgo-full.tar.zst"
 
 [tools."python"."platforms.windows-arm64"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-pc-windows-msvc-freethreaded%2Bpgo-full.tar.zst"
+url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-pc-windows-msvc-freethreaded%2Bpgo-full.tar.zst"
 
 [[tools."rhysd/actionlint"]]
 version = "1.7.12"
