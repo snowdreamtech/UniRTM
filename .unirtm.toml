@@ -234,7 +234,7 @@ output = 'interleaved'
 
 [tasks."test:powershell"]
 description = 'Run Pester tests for install.ps1'
-run = 'pwsh -NoProfile -Command "Invoke-Pester -Path tests/install.Tests.ps1"'
+run = 'pwsh -NoProfile -Command "Invoke-Pester -Path tests/install.Tests.ps1 -EnableExit"'
 output = 'interleaved'
 
 [tasks.verify]

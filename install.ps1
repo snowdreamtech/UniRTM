@@ -207,7 +207,7 @@ Write-Info "Installed $Binary to $targetPath"
 # PATH hint
 if (-not ($env:Path -split ";" | Where-Object { $_ -eq $InstallDir })) {
     Write-Warn "Add the following to your PowerShell profile to include the install directory in PATH:"
-    Write-Host "    `$env:Path = \"$InstallDir;`$env:Path\""
+    Write-Host "    `$env:Path = `"$InstallDir;`$env:Path`""
 }
 
 # Verify installation
