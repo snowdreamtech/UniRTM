@@ -55,7 +55,7 @@ builds:
       - "6"
       - "7"
 
-  # Dedicated build for Linux packages (deb/rpm/apk/archlinux).
+  # Dedicated build for Linux packages (deb/rpm/apk/archlinux/snap/flatpak).
   # Uses goarm "7" only to avoid duplicate arm filenames (arm5/arm6 map to same
   # 'arm' arch name in package managers, causing publishing conflicts).
   - id: unirtm-pkg
@@ -219,7 +219,10 @@ flatpak:
       - --filesystem=host
 
 universal_binaries:
-  - replace: false
+  - # Only apply to the multi-platform build; unirtm-pkg is linux-only and has no darwin artifacts
+    ids:
+      - unirtm
+    replace: false
 
 sboms:
   - artifacts: archive
