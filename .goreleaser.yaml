@@ -196,6 +196,9 @@ nfpms:
 
 snapcrafts:
   - name_template: "{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    # Reference the linux-only build with goarm "7" to avoid duplicate arm filenames
+    ids:
+      - unirtm-pkg
     summary: UniRTM (Uni Runtime and Tools Manager)
     description: |
       UniRTM manages runtimes, tools, and tasks across Linux, macOS, and Windows.
