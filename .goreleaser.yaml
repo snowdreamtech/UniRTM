@@ -16,6 +16,11 @@ gomod:
 metadata:
   mod_timestamp: "{{ .CommitTimestamp }}"
 
+git:
+  ignore_tags:
+    - nightly
+    - "*-nightly"
+
 before:
   hooks:
     # You may remove this if you don't use go modules.
@@ -139,7 +144,8 @@ checksum:
   name_template: "checksums.txt"
 
 release:
-  skip_upload: false
+  name_template: "{{ .Tag }}"
+  prerelease: auto
   github:
     owner: snowdreamtech
     name: UniRTM
