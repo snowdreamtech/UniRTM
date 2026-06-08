@@ -686,6 +686,13 @@ backend = "github"
 checksum = "bc98e15319ed0d515e3f9235287ba53cdc5535d576d24fd573978ecfe9ab92dc"
 url = "https://github.com/google/osv-scanner/releases/download/v2.3.8/osv-scanner_linux_amd64"
 
+[[tools."goreleaser/goreleaser"]]
+version = "2.16.0"
+backend = "github"
+
+[tools."goreleaser/goreleaser"."platforms.linux-arm64"]
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Linux_arm64.tar.gz"
+
 [[tools."gradle"]]
 version = "8.14.5"
 backend = "native"
