@@ -6,7 +6,7 @@
 CONFIG_AUTO_UPDATE = '1'
 COREPACK_INTEGRITY_KEYS = '0'
 ENABLE_GITHUB_PROXY = '{% if env.CI is defined %}0{% else %}1{% endif %}'
-GITHUB_PROXY = 'https://gh-proxy.sn0wdr1am.com/'
+GITHUB_PROXY = '{% if env.CI is defined %}{% else %}https://gh-proxy.sn0wdr1am.com/{% endif %}'
 GONOSUMDB = ''
 GOPRIVATE = ''
 GOPROXY = '{% if env.CI is defined %}https://proxy.golang.org,direct{% else %}https://goproxy.cn,direct{% endif %}'

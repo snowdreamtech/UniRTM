@@ -181,7 +181,10 @@ func (s *Settings) LoadFromEnv() {
 		s.Locked = strings.ToLower(v) == "true" || v == "1"
 	}
 	if v := env.Get("GITHUB_PROXY"); v != "" {
-		s.GitHubProxy = v
+		enableProxy := env.Get("ENABLE_GITHUB_PROXY")
+		if enableProxy != "0" && strings.ToLower(enableProxy) != "false" {
+			s.GitHubProxy = v
+		}
 	}
 	if v := env.Get("HTTP_PROXY"); v != "" {
 		s.HttpProxy = v
