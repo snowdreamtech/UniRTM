@@ -208,6 +208,9 @@ snapcrafts:
 
 flatpak:
   - app_id: com.snowdreamtech.UniRTM
+    # Reference the linux-only build with goarm "7" to avoid duplicate arm filenames
+    ids:
+      - unirtm-pkg
     runtime: org.freedesktop.Platform
     runtime_version: "24.08"
     sdk: org.freedesktop.Sdk
