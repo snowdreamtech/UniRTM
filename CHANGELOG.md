@@ -6,6 +6,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0](https://github.com/snowdreamtech/UniRTM/compare/v0.8.0...v0.9.0) (2026-06-08)
+
+
+### Features
+
+* add wget fallback to install.sh for environments without curl ([307d14f](https://github.com/snowdreamtech/UniRTM/commit/307d14f786ddbb7bcca3e1a80333f5a75f674fa8))
+* **goreleaser:** add nfpms, snapcraft, flatpak and universal binaries support ([536b380](https://github.com/snowdreamtech/UniRTM/commit/536b380c69be75dc0977cb5fb973d24b6e7a74db))
+* **goreleaser:** enable cosign keyless signing for checksums ([362dd27](https://github.com/snowdreamtech/UniRTM/commit/362dd27da7b714bf75067e3b7b62a40b563c9033))
+
+
+### Bug Fixes
+
+* correct goreleaser tool source identifier in configuration ([4f09cd1](https://github.com/snowdreamtech/UniRTM/commit/4f09cd1b22d2ddca24aec9bb27b2830ccf5c2b5d))
+* **goreleaser:** add explicit IDs to SBOM definitions ([77a208d](https://github.com/snowdreamtech/UniRTM/commit/77a208d200f24afa841fbc03e7c307cb3480d180))
+* **goreleaser:** explicitly bind universal_binaries to unirtm build id ([116d4e6](https://github.com/snowdreamtech/UniRTM/commit/116d4e62732ac695533229e70e50dae9fab13ef6))
+* **goreleaser:** resolve nfpms duplicate arm artifacts and snapcraft missing in CI ([5bbf6d4](https://github.com/snowdreamtech/UniRTM/commit/5bbf6d4a8bd68a4d2f71714ec524f3cc6197dd7f))
+* **goreleaser:** specify unirtm-pkg id for flatpak to avoid duplicate arm filenames ([2515d8f](https://github.com/snowdreamtech/UniRTM/commit/2515d8f72856465758e3f3bf1661276a3d73e666))
+* **goreleaser:** specify unirtm-pkg id for snapcraft to avoid duplicate arm filenames ([c9f448e](https://github.com/snowdreamtech/UniRTM/commit/c9f448e17fb9a8c83e0017a623bdaf5d3738404c))
+* improve installer robustness and init workflow network compliance ([93de91b](https://github.com/snowdreamtech/UniRTM/commit/93de91b2f0bdd5c9d0cdc2b3b749f1ab6c9d2b3d))
+* **install:** correct architecture mapping and sync ci node versions ([c88cb37](https://github.com/snowdreamtech/UniRTM/commit/c88cb3700df16c28f3f11bbc8d691ad3e5e02479))
+* **release:** comprehensive cross-file issue fixes ([5a76752](https://github.com/snowdreamtech/UniRTM/commit/5a767523b1f13de12a1c9de3263038003c6380e5))
+
 ## [0.8.0](https://github.com/snowdreamtech/UniRTM/compare/v0.7.0...v0.8.0) (2026-06-06)
 
 
