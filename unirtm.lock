@@ -738,6 +738,10 @@ url = "https://github.com/google/osv-scanner/releases/download/v2.3.8/osv-scanne
 version = "2.16.0"
 backend = "github"
 
+[tools."goreleaser/goreleaser"."platforms.linux-amd64"]
+checksum = "eaae05b5eba07533bd0f06846b68c808399504784df00c62eb219541fc04e5e2"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Linux_x86_64.tar.gz"
+
 [tools."goreleaser/goreleaser"."platforms.linux-arm64"]
 url = "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Linux_arm64.tar.gz"
 
@@ -837,31 +841,35 @@ version = "26.3.0"
 backend = "native"
 
 [tools."node"."platforms.linux-amd64"]
-url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-linux-x64.tar.gz"
+url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-linux-x64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.linux-amd64-musl"]
-url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-linux-x64.tar.gz"
+url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-linux-x64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.linux-arm64"]
-url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-linux-arm64.tar.gz"
+url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-linux-arm64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.linux-arm64-musl"]
-url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-linux-arm64.tar.gz"
+url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-linux-arm64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.macos-amd64"]
-url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-darwin-x64.tar.gz"
+url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-darwin-x64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.macos-arm64"]
-url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-darwin-arm64.tar.gz"
+url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-darwin-arm64.tar.gz"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [tools."node"."platforms.windows-amd64"]
-url = "https://npmmirror.com/mirrors/node/v26.3.0/node-v26.3.0-win-x64.zip"
+url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-win-x64.zip"
+gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
+
+[tools."node"."platforms.windows-arm64"]
+url = "https://nodejs.org/dist/v26.3.0/node-v26.3.0-win-arm64.zip"
 gpg_key = "C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8"
 
 [[tools."npm:@commitlint/cli"]]
