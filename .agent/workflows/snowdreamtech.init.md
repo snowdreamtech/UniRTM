@@ -63,33 +63,38 @@ You **MUST** consider the user input before proceeding (if not empty).
      GITHUB_PROXY="${GITHUB_PROXY:-https://gh-proxy.sn0wdr1am.com/}"
 
      # actionlint (latest version, dynamically fetched)
-     ACTIONLINT_VER=$(curl -sSf https://api.github.com/repos/rhysd/actionlint/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+     ACTIONLINT_VER=$(curl -sSf --retry 5 --retry-delay 2 --retry-connrefused --connect-timeout 10 --max-time 60 \
+       "${GITHUB_PROXY}https://api.github.com/repos/rhysd/actionlint/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
      OS=$(uname -s | tr '[:upper:]' '[:lower:]'); ARCH=$(uname -m)
-     curl -fL --retry 3 \
+     curl -fL --retry 5 --retry-delay 2 --retry-connrefused --connect-timeout 10 --max-time 120 \
        "${GITHUB_PROXY}https://github.com/rhysd/actionlint/releases/download/${ACTIONLINT_VER}/actionlint_${ACTIONLINT_VER#v}_${OS}_${ARCH}.tar.gz" \
        | tar -xz -C ~/.local/bin actionlint
 
      # hadolint (latest version, dynamically fetched)
-     HADOLINT_VER=$(curl -sSf https://api.github.com/repos/hadolint/hadolint/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+     HADOLINT_VER=$(curl -sSf --retry 5 --retry-delay 2 --retry-connrefused --connect-timeout 10 --max-time 60 \
+       "${GITHUB_PROXY}https://api.github.com/repos/hadolint/hadolint/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
      ARCH=$(uname -m); if [ "$ARCH" = "arm64" ]; then HA="arm64"; else HA="x86_64"; fi
-     curl -fL --retry 3 \
+     curl -fL --retry 5 --retry-delay 2 --retry-connrefused --connect-timeout 10 --max-time 120 \
        "${GITHUB_PROXY}https://github.com/hadolint/hadolint/releases/download/${HADOLINT_VER}/hadolint-$(uname -s)-${HA}" \
        -o ~/.local/bin/hadolint && chmod +x ~/.local/bin/hadolint
 
      # gitleaks (latest version, dynamically fetched)
-     GITLEAKS_VER=$(curl -sSf https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+     GITLEAKS_VER=$(curl -sSf --retry 5 --retry-delay 2 --retry-connrefused --connect-timeout 10 --max-time 60 \
+       "${GITHUB_PROXY}https://api.github.com/repos/gitleaks/gitleaks/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
      OS=$(uname -s | tr '[:upper:]' '[:lower:]'); ARCH=$(uname -m)
      if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "amd64" ]; then GA="x64"; elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then GA="arm64"; else GA=$ARCH; fi
      if [ "$OS" = "darwin" ]; then GL="darwin"; else GL="linux"; fi
-     curl -fL --retry 3 \
+     curl -fL --retry 5 --retry-delay 2 --retry-connrefused --connect-timeout 10 --max-time 120 \
        "${GITHUB_PROXY}https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VER}/gitleaks_${GITLEAKS_VER#v}_${GL}_${GA}.tar.gz" \
        | tar -xz -C ~/.local/bin gitleaks
 
      # dotenv-linter
-     curl -fLsS "${GITHUB_PROXY}https://raw.githubusercontent.com/dotenv-linter/dotenv-linter/master/install.sh" | sh -s -- -b ~/.local/bin
+     curl -fLsS --retry 5 --retry-delay 2 --retry-connrefused --connect-timeout 10 --max-time 120 \
+       "${GITHUB_PROXY}https://raw.githubusercontent.com/dotenv-linter/dotenv-linter/master/install.sh" | sh -s -- -b ~/.local/bin
 
      # golangci-lint
-     curl -fLsS "${GITHUB_PROXY}https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh" | sh -s -- -b ~/.local/bin
+     curl -fLsS --retry 5 --retry-delay 2 --retry-connrefused --connect-timeout 10 --max-time 120 \
+       "${GITHUB_PROXY}https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh" | sh -s -- -b ~/.local/bin
      ```
 
      Ensure `~/.local/bin` is in your `PATH`:

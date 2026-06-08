@@ -176,7 +176,7 @@ curl_with_retry() {
   # Apply proxy prefix to github.com URLs
   PROXIED_URL="$URL"
   case "$URL" in
-  https://github.com/* | https://objects.githubusercontent.com/* | https://raw.githubusercontent.com/*)
+  https://github.com/* | https://objects.githubusercontent.com/* | https://raw.githubusercontent.com/* | https://api.github.com/*)
     if [ -n "$GITHUB_PROXY" ]; then
       PROXIED_URL="${GITHUB_PROXY}${URL}"
     fi
@@ -370,7 +370,13 @@ verify_install() {
   fi
 
   INSTALLED_VER="$("$INSTALLED" version 2>/dev/null | grep '^unirtm version' || echo 'unknown')"
-  info "Installed version: ${INSTALLED_VER}"
+  printf '\033[0;32m\n'
+  printf '  ==============================\n'
+  printf '  UniRTM %s installed!\n' "${VERSION}"
+  printf '  Binary : %s/%s\n' "${INSTALL_DIR}" "${BINARY}"
+  printf '  Version: %s\n' "${INSTALLED_VER}"
+  printf '  ==============================\n'
+  printf '\033[0m\n'
   info "Installation complete!"
 }
 

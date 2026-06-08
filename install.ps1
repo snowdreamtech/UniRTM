@@ -76,18 +76,19 @@ function Invoke-WithRetry {
     while ($attempt -lt $RetryCount) {
         try {
             if ($OutFile) {
-                Invoke-WebRequest -Uri $Uri -OutFile $OutFile -UseBasicParsing -ErrorAction Stop
+                Invoke-WebRequest -Uri $Uri -OutFile $OutFile -UseBasicParsing -ErrorAction Stop | Out-Null
+                return $true
             } else {
-                Invoke-WebRequest -Uri $Uri -UseBasicParsing -ErrorAction Stop | Out-String
+                # Return response content as string so callers can parse it directly
+                return (Invoke-WebRequest -Uri $Uri -UseBasicParsing -ErrorAction Stop).Content
             }
-            return $true
         } catch {
             $attempt++
             Write-Warn "Download attempt $attempt failed for $Uri. Retrying in $RetryDelay seconds..."
             Start-Sleep -Seconds $RetryDelay
         }
     }
-    return $false
+    return $null
 }
 
 # Resolve version
@@ -97,9 +98,20 @@ if ($Version) {
 } else {
     Write-Info "Fetching latest release from GitHub API..."
     $apiUrl = "https://api.github.com/repos/$Repo/releases/latest"
-    $response = Invoke-WithRetry -Uri $apiUrl
-    if (-not $response) { Write-Error "Failed to fetch latest version. Specify with --version"; exit 1 }
-    $json = Invoke-WebRequest -Uri $apiUrl -UseBasicParsing | ConvertFrom-Json
+    # Apply proxy prefix to GitHub API URL
+    $proxiedApiUrl = if ($GitHubProxy) { "$GitHubProxy$apiUrl" } else { $apiUrl }
+    $responseContent = Invoke-WithRetry -Uri $proxiedApiUrl
+    if (-not $responseContent) {
+        # Fallback: retry without proxy
+        if ($proxiedApiUrl -ne $apiUrl) {
+            Write-Warn "Proxy API request failed, retrying without proxy..."
+            $responseContent = Invoke-WithRetry -Uri $apiUrl
+        }
+        if (-not $responseContent) {
+            Write-Error "Failed to fetch latest version. Specify with --version"; exit 1
+        }
+    }
+    $json = $responseContent | ConvertFrom-Json
     $Version = $json.tag_name
     Write-Info "Latest version: $Version"
 }
@@ -164,7 +176,8 @@ if ($SkipChecksum) {
 
 # Determine install directory
 if (-not $InstallDir) {
-    if (([Security.Principal.WindowsIdentity]::GetCurrent()).Groups -match "S-1-5-32-544") {
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    if ($isAdmin) {
         $InstallDir = "C:\Program Files\UniRTM"
     } else {
         $InstallDir = "$HOME\bin"
