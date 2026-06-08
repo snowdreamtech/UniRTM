@@ -10,6 +10,12 @@ project_name: unirtm
 
 report_sizes: true
 
+gomod:
+  proxy: true
+
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
+
 before:
   hooks:
     # You may remove this if you don't use go modules.
