@@ -43,6 +43,7 @@ UNIRTM_NODE_MIRROR_URL = '{% if env.ALPINE_VERSION is defined %}https://unoffici
 'go:mvdan.cc/sh/v3/cmd/shfmt' = 'v3.13.1'
 'github:rhysd/actionlint' = '1.7.12'
 'github:zizmorcore/zizmor' = "1.25.2"
+'github:goreleaser/goreleaser' = "2.16.0"
 go = '1.26.4'
 node = '26.3.0'
 'npm:@commitlint/cli' = "21.0.2"
