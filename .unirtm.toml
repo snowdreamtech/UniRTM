@@ -234,7 +234,12 @@ output = 'interleaved'
 
 [tasks."test:powershell"]
 description = 'Run Pester tests for install.ps1'
-run = 'pwsh -NoProfile -File scripts/run-pester.ps1'
+# Encoded equivalent of:
+#   $c = New-PesterConfiguration
+#   $c.Run.Path = 'tests/install.Tests.ps1'
+#   $c.Run.Exit = $true
+#   Invoke-Pester -Configuration $c
+run = 'pwsh -NoProfile -EncodedCommand JABjACAAPQAgAE4AZQB3AC0AUABlAHMAdABlAHIAQwBvAG4AZgBpAGcAdQByAGEAdABpAG8AbgA7ACAAJABjAC4AUgB1AG4ALgBQAGEAdABoACAAPQAgACcAdABlAHMAdABzAC8AaQBuAHMAdABhAGwAbAAuAFQAZQBzAHQAcwAuAHAAcwAxACcAOwAgACQAYwAuAFIAdQBuAC4ARQB4AGkAdAAgAD0AIAAkAHQAcgB1AGUAOwAgAEkAbgB2AG8AawBlAC0AUABlAHMAdABlAHIAIAAtAEMAbwBuAGYAaQBnAHUAcgBhAHQAaQBvAG4AIAAkAGMA'
 output = 'interleaved'
 
 [tasks.verify]
