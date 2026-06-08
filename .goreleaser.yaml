@@ -27,6 +27,8 @@ before:
     - go mod tidy
     # Generate shell completion scripts dynamically before building packages
     - go run ./main.go completion -d ./completions --all
+    # Generate manpages
+    - go run ./main.go generate manpage -d ./manpages
 
 builds:
   - id: unirtm
@@ -142,6 +144,12 @@ archives:
           owner: root
           group: root
           mtime: "{{ .CommitDate }}"
+      - src: "manpages/*"
+        dst: "manpages"
+        info:
+          owner: root
+          group: root
+          mtime: "{{ .CommitDate }}"
 
 snapshot:
   version_template: SNAPSHOT-{{ .Commit }}
@@ -239,6 +247,10 @@ nfpms:
         dst: /usr/share/fish/vendor_completions.d/unirtm.fish
         file_info:
           mode: 0644
+      - src: ./manpages/*
+        dst: /usr/share/man/man1/
+        file_info:
+          mode: 0644
 
 snapcrafts:
   - name_template: "{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
@@ -304,4 +316,5 @@ brews:
       bash_completion.install "completions/unirtm.bash" => "unirtm"
       zsh_completion.install "completions/unirtm.zsh" => "_unirtm"
       fish_completion.install "completions/unirtm.fish"
+      man1.install Dir["manpages/*.1"]
 
