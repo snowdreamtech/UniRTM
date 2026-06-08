@@ -238,19 +238,19 @@ nfpms:
       - src: ./completions/unirtm.bash
         dst: /usr/share/bash-completion/completions/unirtm
         file_info:
-          mode: 0644
+          mode: 0o644
       - src: ./completions/unirtm.zsh
         dst: /usr/share/zsh/vendor-completions/_unirtm
         file_info:
-          mode: 0644
+          mode: 0o644
       - src: ./completions/unirtm.fish
         dst: /usr/share/fish/vendor_completions.d/unirtm.fish
         file_info:
-          mode: 0644
+          mode: 0o644
       - src: ./manpages/*
         dst: /usr/share/man/man1/
         file_info:
-          mode: 0644
+          mode: 0o644
 
 snapcrafts:
   - name_template: "{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
@@ -300,21 +300,19 @@ signs:
       - "${artifact}"
       - --yes # Enables keyless signing via OIDC token
 
-brews:
+homebrew_casks:
   - name: unirtm
     ids:
       - unirtm
     repository:
       owner: snowdreamtech
       name: homebrew-tap
-    directory: Formula
     homepage: "https://github.com/snowdreamtech/UniRTM"
     description: "UniRTM (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager."
     license: "MIT"
-    install: |
-      bin.install "unirtm"
-      bash_completion.install "completions/unirtm.bash" => "unirtm"
-      zsh_completion.install "completions/unirtm.zsh" => "_unirtm"
-      fish_completion.install "completions/unirtm.fish"
-      man1.install Dir["manpages/*.1"]
-
+    completions:
+      bash: completions/unirtm.bash
+      zsh: completions/unirtm.zsh
+      fish: completions/unirtm.fish
+    manpages:
+      - manpages/unirtm.1

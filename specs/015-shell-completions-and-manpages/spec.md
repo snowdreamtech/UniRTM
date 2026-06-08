@@ -1,6 +1,7 @@
 # Specification: Shell Completions and Manpages Auto-generation
 
 ## Overview
+
 The goal is to provide a fully automated generation and distribution pipeline for shell completions (Zsh, Bash, Fish, PowerShell) and Manpages. These artifacts should be generated automatically during the build process and seamlessly integrated into release archives, native Linux packages (nfpm), and Homebrew formulae.
 
 ## Requirements
