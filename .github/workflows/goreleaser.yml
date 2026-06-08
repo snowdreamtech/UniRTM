@@ -360,7 +360,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
         with:
-          subject-path: "dist/**"
+          subject-path: "dist/checksums.txt"
 
       - name: "🧹 Cleanup on Failure (Rollback)"
         if: failure() && startsWith(github.ref, 'refs/tags/')
