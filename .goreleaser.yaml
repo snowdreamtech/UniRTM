@@ -221,8 +221,10 @@ universal_binaries:
 
 sboms:
   # Generate SBOMs for all release artifacts: archives (tar.gz/zip) and Linux packages (deb/rpm/apk/archlinux)
-  - artifacts: archive
-  - artifacts: package
+  - id: archive
+    artifacts: archive
+  - id: package
+    artifacts: package
 
 signs:
   - artifacts: checksum
