@@ -238,19 +238,19 @@ nfpms:
       - src: ./completions/unirtm.bash
         dst: /usr/share/bash-completion/completions/unirtm
         file_info:
-          mode: 420
+          mode: 0644
       - src: ./completions/unirtm.zsh
         dst: /usr/share/zsh/vendor-completions/_unirtm
         file_info:
-          mode: 420
+          mode: 0644
       - src: ./completions/unirtm.fish
         dst: /usr/share/fish/vendor_completions.d/unirtm.fish
         file_info:
-          mode: 420
+          mode: 0644
       - src: ./manpages/*
         dst: /usr/share/man/man1/
         file_info:
-          mode: 420
+          mode: 0644
 
 snapcrafts:
   - name_template: "{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"

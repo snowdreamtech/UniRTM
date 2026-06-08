@@ -52,8 +52,6 @@ rules:
   braces:
     min-spaces-inside: 0
     max-spaces-inside: 1
-  octal-values:
-    forbid-implicit-octal: true
-    forbid-explicit-octal: true
+  octal-values: disable
   colons:
     max-spaces-after: -1
