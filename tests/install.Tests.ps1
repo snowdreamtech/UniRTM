@@ -15,7 +15,7 @@ Describe "install.ps1" {
 
     It "Should bypass checksum with -SkipChecksum" {
         Mock Invoke-WebRequest {
-            if ($Uri -match "api.github.com") { return '{ "tag_name": "v99.9.9" }' }
+            if ($Uri -match "api.github.com") { return [PSCustomObject]@{ Content = '{ "tag_name": "v99.9.9" }' } }
             if ($Uri -match "\.zip") {
                 # Create dummy zip with unirtm.exe
                 $zipPath = $OutFile
