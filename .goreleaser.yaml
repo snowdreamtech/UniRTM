@@ -228,10 +228,11 @@ sboms:
 
 signs:
   - cmd: cosign
+    signature: "${artifact}.sigstore.json"
+    output: '{{ not (isEnvSet "CI") }}'
     artifacts: checksum
     args:
-      - "sign-blob"
-      - "--output-certificate=${certificate}"
-      - "--output-signature=${signature}"
+      - sign-blob
+      - "--bundle=${signature}"
       - "${artifact}"
-      - "--yes" # Enables keyless signing via OIDC token
+      - --yes # Enables keyless signing via OIDC token
