@@ -183,67 +183,111 @@ curl_with_retry() {
     ;;
   esac
 
-  if [ -n "$OUTPUT" ]; then
-    curl \
-      --retry "$CURL_RETRY_COUNT" \
-      --retry-delay "$CURL_RETRY_DELAY" \
-      --retry-connrefused \
-      --connect-timeout "$CURL_CONNECT_TIMEOUT" \
-      --max-time "$CURL_MAX_TIME" \
-      --fail \
-      --location \
-      --silent \
-      --show-error \
-      -o "$OUTPUT" \
-      "$PROXIED_URL" || {
-      # On failure, retry without proxy
-      if [ "$PROXIED_URL" != "$URL" ]; then
-        warn "Proxy download failed, retrying without proxy..."
-        curl \
-          --retry "$CURL_RETRY_COUNT" \
-          --retry-delay "$CURL_RETRY_DELAY" \
-          --retry-connrefused \
-          --connect-timeout "$CURL_CONNECT_TIMEOUT" \
-          --max-time "$CURL_MAX_TIME" \
-          --fail \
-          --location \
-          --silent \
-          --show-error \
-          -o "$OUTPUT" \
-          "$URL"
-      else
-        return 1
-      fi
-    }
+  # Choose fetcher based on availability
+  if command -v curl >/dev/null 2>&1; then
+    if [ -n "$OUTPUT" ]; then
+      curl \
+        --retry "$CURL_RETRY_COUNT" \
+        --retry-delay "$CURL_RETRY_DELAY" \
+        --retry-connrefused \
+        --connect-timeout "$CURL_CONNECT_TIMEOUT" \
+        --max-time "$CURL_MAX_TIME" \
+        --fail \
+        --location \
+        --silent \
+        --show-error \
+        -o "$OUTPUT" \
+        "$PROXIED_URL" || {
+        # On failure, retry without proxy
+        if [ "$PROXIED_URL" != "$URL" ]; then
+          warn "Proxy download failed, retrying without proxy..."
+          curl \
+            --retry "$CURL_RETRY_COUNT" \
+            --retry-delay "$CURL_RETRY_DELAY" \
+            --retry-connrefused \
+            --connect-timeout "$CURL_CONNECT_TIMEOUT" \
+            --max-time "$CURL_MAX_TIME" \
+            --fail \
+            --location \
+            --silent \
+            --show-error \
+            -o "$OUTPUT" \
+            "$URL"
+        else
+          return 1
+        fi
+      }
+    else
+      curl \
+        --retry "$CURL_RETRY_COUNT" \
+        --retry-delay "$CURL_RETRY_DELAY" \
+        --retry-connrefused \
+        --connect-timeout "$CURL_CONNECT_TIMEOUT" \
+        --max-time "$CURL_MAX_TIME" \
+        --fail \
+        --location \
+        --silent \
+        --show-error \
+        "$PROXIED_URL" || {
+        if [ "$PROXIED_URL" != "$URL" ]; then
+          warn "Proxy request failed, retrying without proxy..."
+          curl \
+            --retry "$CURL_RETRY_COUNT" \
+            --retry-delay "$CURL_RETRY_DELAY" \
+            --retry-connrefused \
+            --connect-timeout "$CURL_CONNECT_TIMEOUT" \
+            --max-time "$CURL_MAX_TIME" \
+            --fail \
+            --location \
+            --silent \
+            --show-error \
+            "$URL"
+        else
+          return 1
+        fi
+      }
+    fi
   else
-    curl \
-      --retry "$CURL_RETRY_COUNT" \
-      --retry-delay "$CURL_RETRY_DELAY" \
-      --retry-connrefused \
-      --connect-timeout "$CURL_CONNECT_TIMEOUT" \
-      --max-time "$CURL_MAX_TIME" \
-      --fail \
-      --location \
-      --silent \
-      --show-error \
-      "$PROXIED_URL" || {
-      if [ "$PROXIED_URL" != "$URL" ]; then
-        warn "Proxy request failed, retrying without proxy..."
-        curl \
-          --retry "$CURL_RETRY_COUNT" \
-          --retry-delay "$CURL_RETRY_DELAY" \
-          --retry-connrefused \
-          --connect-timeout "$CURL_CONNECT_TIMEOUT" \
-          --max-time "$CURL_MAX_TIME" \
-          --fail \
-          --location \
-          --silent \
-          --show-error \
-          "$URL"
-      else
-        return 1
-      fi
-    }
+    # Fallback to wget
+    if [ -n "$OUTPUT" ]; then
+      wget \
+        --tries="$CURL_RETRY_COUNT" \
+        --waitretry="$CURL_RETRY_DELAY" \
+        --timeout="$CURL_CONNECT_TIMEOUT" \
+        -q -O "$OUTPUT" \
+        "$PROXIED_URL" || {
+        if [ "$PROXIED_URL" != "$URL" ]; then
+          warn "Proxy download failed, retrying without proxy..."
+          wget \
+            --tries="$CURL_RETRY_COUNT" \
+            --waitretry="$CURL_RETRY_DELAY" \
+            --timeout="$CURL_CONNECT_TIMEOUT" \
+            -q -O "$OUTPUT" \
+            "$URL"
+        else
+          return 1
+        fi
+      }
+    else
+      wget \
+        --tries="$CURL_RETRY_COUNT" \
+        --waitretry="$CURL_RETRY_DELAY" \
+        --timeout="$CURL_CONNECT_TIMEOUT" \
+        -q -O - \
+        "$PROXIED_URL" || {
+        if [ "$PROXIED_URL" != "$URL" ]; then
+          warn "Proxy request failed, retrying without proxy..."
+          wget \
+            --tries="$CURL_RETRY_COUNT" \
+            --waitretry="$CURL_RETRY_DELAY" \
+            --timeout="$CURL_CONNECT_TIMEOUT" \
+            -q -O - \
+            "$URL"
+        else
+          return 1
+        fi
+      }
+    fi
   fi
 }
 
@@ -386,7 +430,9 @@ verify_install() {
 main() {
   parse_args "$@"
 
-  need_cmd curl
+  if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
+    die "Required command not found: curl or wget. Please install one of them and try again."
+  fi
   need_cmd tar
 
   detect_platform
