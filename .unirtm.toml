@@ -234,7 +234,7 @@ output = 'interleaved'
 
 [tasks."test:powershell"]
 description = 'Run Pester tests for install.ps1'
-run = '''pwsh -NoProfile -Command "$c = New-PesterConfiguration; $c.Run.Path = 'tests/install.Tests.ps1'; $c.Run.Exit = $true; Invoke-Pester -Configuration $c"'''
+run = 'pwsh -NoProfile -File scripts/run-pester.ps1'
 output = 'interleaved'
 
 [tasks.verify]
