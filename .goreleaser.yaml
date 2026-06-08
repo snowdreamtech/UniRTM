@@ -268,3 +268,19 @@ signs:
       - "--bundle=${signature}"
       - "${artifact}"
       - --yes # Enables keyless signing via OIDC token
+
+homebrew_casks:
+  - name: unirtm
+    repository:
+      owner: snowdreamtech
+      name: homebrew-tap
+    directory: Casks
+    homepage: "https://github.com/snowdreamtech/UniRTM"
+    description: "UniRTM is an AI Agent workflow engine."
+    license: "MIT"
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/unirtm"]
+          end
