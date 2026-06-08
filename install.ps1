@@ -106,8 +106,14 @@ if ($Version) {
 
 # Detect platform and architecture
 $os = $(Get-CimInstance -ClassName Win32_OperatingSystem).Caption
-$arch = $(Get-CimInstance -ClassName Win32_Processor).AddressWidth
-if ($arch -eq 64) { $archName = "x86_64" } else { $archName = "i386" }
+$archEnv = $env:PROCESSOR_ARCHITECTURE
+if ($archEnv -eq "AMD64") {
+    $archName = "x86_64"
+} elseif ($archEnv -eq "ARM64") {
+    $archName = "arm64"
+} else {
+    $archName = "i386"
+}
 Write-Info "Detected platform: Windows/${archName}"
 
 # Build URLs

@@ -125,7 +125,9 @@ detect_platform() {
   case "$ARCH" in
   x86_64 | amd64) ARCH_NAME="x86_64" ;;
   aarch64 | arm64) ARCH_NAME="arm64" ;;
-  armv7* | armv6*) ARCH_NAME="armv7" ;;
+  armv7*) ARCH_NAME="armv7" ;;
+  armv6*) ARCH_NAME="armv6" ;;
+  armv5*) ARCH_NAME="armv5" ;;
   i386 | i686) ARCH_NAME="i386" ;;
   *) die "Unsupported architecture: $ARCH" ;;
   esac
