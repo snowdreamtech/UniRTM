@@ -170,10 +170,10 @@ New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 # Extract archive (zip)
 Expand-Archive -Path $archivePath -DestinationPath $tmpDir -Force
 # Find binary
-$binaryPath = Get-ChildItem -Path $tmpDir -Recurse -Filter $Binary -File | Select-Object -First 1
+$binaryPath = Get-ChildItem -Path $tmpDir -Recurse -Filter "$Binary.exe" -File | Select-Object -First 1
 if (-not $binaryPath) { Write-Error "Binary '$Binary' not found in archive"; exit 1 }
 # Move/replace binary
-$targetPath = Join-Path $InstallDir $Binary + ".exe"
+$targetPath = Join-Path $InstallDir "$Binary.exe"
 if (Test-Path $targetPath) {
     Move-Item -Path $targetPath -Destination "${targetPath}.old" -Force
 }
