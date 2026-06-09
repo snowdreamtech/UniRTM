@@ -300,21 +300,27 @@ signs:
       - "${artifact}"
       - --yes # Enables keyless signing via OIDC token
 
-brews:
+homebrew_casks:
   - name: unirtm
     ids:
       - unirtm
+    binaries:
+      - unirtm
+    manpages:
+      - manpages/unirtm.1
+    completions:
+      bash: completions/unirtm.bash
+      zsh: completions/unirtm.zsh
+      fish: completions/unirtm.fish
     repository:
       owner: snowdreamtech
       name: homebrew-tap
     homepage: "https://github.com/snowdreamtech/UniRTM"
     description: "UniRTM (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager."
     license: "MIT"
-    install: |
-      bin.install "unirtm"
-      bash_completion.install "completions/unirtm.bash" => "unirtm"
-      zsh_completion.install "completions/unirtm.zsh" => "_unirtm"
-      fish_completion.install "completions/unirtm.fish"
-      man1.install Dir["manpages/*.1"]
-    test: |
-      system "#{bin}/unirtm", "version"
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/unirtm"]
+          end
