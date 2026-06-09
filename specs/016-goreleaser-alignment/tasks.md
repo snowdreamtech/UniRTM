@@ -50,7 +50,7 @@
 
 > Windows 用户的主要包管理器，覆盖面广。
 
-- [ ] T010 ⚠️ P1 添加 `winget` 分发（自动向 microsoft/winget-pkgs 提交 PR）
+- [x] T010 ⚠️ P1 添加 `winget` 分发（自动向 microsoft/winget-pkgs 提交 PR）
       > 需配置 GitHub PAT 并 fork microsoft/winget-pkgs
 - [ ] T011 🔹 P2 添加 `scoops` 分发（Windows 备选包管理器）
       > 需创建 Scoop Bucket 仓库

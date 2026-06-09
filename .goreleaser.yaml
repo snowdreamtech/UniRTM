@@ -246,12 +246,12 @@ nfpms:
       lintian_overrides:
         - statically-linked-binary
         - changelog-file-missing-in-native-package
-      suggests:
-        - golang
-        - rustup
-        - zig
-        - deno
-        - bun
+    suggests:
+      - golang
+      - rustup
+      - zig
+      - deno
+      - bun
 
 snapcrafts:
   - name_template: "{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
@@ -307,8 +307,9 @@ homebrew_casks:
       owner: snowdreamtech
       name: homebrew-tap
     homepage: "https://github.com/snowdreamtech/UniRTM"
-    url: "https://github.com/snowdreamtech/UniRTM/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
-    url.verified: "github.com/snowdreamtech/"
+    url:
+      template: "https://github.com/snowdreamtech/UniRTM/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+      verified: "github.com/snowdreamtech/"
     description: "UniRTM (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager."
     license: "MIT"
     hooks:
@@ -317,3 +318,21 @@ homebrew_casks:
           if OS.mac?
             system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/unirtm"]
           end
+
+winget:
+  - name: unirtm
+    publisher: SnowdreamTech
+    license: MIT
+    homepage: https://github.com/snowdreamtech/UniRTM
+    short_description: Cross-platform developer toolchain manager
+    repository:
+      owner: snowdreamtech
+      name: winget-pkgs
+      token: "{{ .Env.WORKFLOW_SECRET }}"
+      branch: "unirtm-{{.Version}}"
+      pull_request:
+        enabled: true
+        base:
+          owner: microsoft
+          name: winget-pkgs
+          branch: master
