@@ -68,14 +68,14 @@
 
 ---
 
-## Phase 4: CI/CD 工作流增强（按需实施）
+## ~~Phase 4: CI/CD 工作流增强（按需实施）~~ 已取消
 
-> 增强发布流程的健壮性和可验证性。
+> ~~增强发布流程的健壮性和可验证性。~~
 
-- [-] T014 🔹 P2 ~~添加 `changelog.format` 含 SHA + 作者~~（`{{ .Logins }}` 需 Pro，取消）
-- [ ] T015 🔹 P3 添加 `nightly` 发布支持（开发者可获取最新构建）
-- [ ] T016 🔹 P3 添加 `announce` 通知（Discord/Telegram 自动通知新版本）
-- [ ] T017 🔹 P3 添加 `milestones.close: true`（自动关闭对应 Milestone）
+- [-] T014 ~~🔹 P2 添加 `changelog.format` 含 SHA + 作者~~（`{{ .Logins }}` 需 Pro，取消）
+- [-] T015 ~~🔹 P3 添加 `nightly` 发布支持~~（暂不实施，取消）
+- [-] T016 ~~🔹 P3 添加 `announce` 通知~~（暂不实施，取消）
+- [-] T017 ~~🔹 P3 添加 `milestones.close: true`~~（暂不实施，取消）
 
 ---
 
