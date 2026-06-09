@@ -370,7 +370,6 @@ signs:
       - "${artifact}"
       - --yes # Enables keyless signing via OIDC token
 
-
 homebrew_casks:
   - name: unirtm
     ids:
