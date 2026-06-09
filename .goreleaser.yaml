@@ -49,6 +49,7 @@ builds:
       - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.LICENSE=MIT <https://github.com/snowdreamtech/unirtm/blob/main/LICENSE>'
     goos:
       - linux
+      - darwin
       - windows
     goarch:
       - "386"
@@ -60,73 +61,10 @@ builds:
       - riscv64
       - s390x
     goarm:
-      - "5"
-      - "6"
       - "7"
-    mod_timestamp: "{{ .CommitTimestamp }}"
-
-  # Dedicated build for Linux packages (deb/rpm/apk/archlinux/snap/flatpak).
-  # Uses goarm "7" only to avoid duplicate arm filenames (arm5/arm6 map to same
-  # 'arm' arch name in package managers, causing publishing conflicts).
-  - id: unirtm-pkg
-    binary: unirtm
-    env:
-      - CGO_ENABLED=0
-    flags:
-      - -trimpath
-    ldflags:
-      - -s -w
-      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.ProjectName=unirtm'
-      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.Author=Snowdream Tech <snowdreamtech@qq.com>'
-      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.BuildTime={{.Date}}
-      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.CommitHash={{.ShortCommit}}
-      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.CommitHashFull={{.FullCommit}}
-      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.GitTag={{.Tag}}
-      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.COPYRIGHT=Copyright (c) 2023-present SnowdreamTech Inc.'
-      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.LICENSE=MIT <https://github.com/snowdreamtech/unirtm/blob/main/LICENSE>'
-    goos:
-      - linux
-    goarch:
-      - "386"
-      - amd64
-      - arm
-      - arm64
-      - loong64
-      - ppc64le
-      - riscv64
-      - s390x
-    goarm:
-      - "7"
-    mod_timestamp: "{{ .CommitTimestamp }}"
-
-  # Dedicated build for Homebrew Cask (macOS only, amd64 and arm64 only)
-  # homebrew_casks only supports darwin with amd64/arm64 architectures
-  - id: unirtm-cask
-    binary: unirtm
-    env:
-      - CGO_ENABLED=0
-    flags:
-      - -trimpath
-    ldflags:
-      - -s -w
-      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.ProjectName=unirtm'
-      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.Author=Snowdream Tech <snowdreamtech@qq.com>'
-      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.BuildTime={{.Date}}
-      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.CommitHash={{.ShortCommit}}
-      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.CommitHashFull={{.FullCommit}}
-      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.GitTag={{.Tag}}
-      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.COPYRIGHT=Copyright (c) 2023-present SnowdreamTech Inc.'
-      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.LICENSE=MIT <https://github.com/snowdreamtech/unirtm/blob/main/LICENSE>'
-    goos:
-      - darwin
-    goarch:
-      - amd64
-      - arm64
     mod_timestamp: "{{ .CommitTimestamp }}"
 archives:
   - id: unirtm
-    ids:
-      - unirtm
     formats: [tar.gz]
     # This name template makes the OS and Arch compatible with uname and includes the version.
     name_template: >-
@@ -147,50 +85,6 @@ archives:
       - goos: windows
         formats: [zip]
     # Include all relevant standard documentation arrays using Globs
-    files:
-      - src: "LICENSE*"
-        info:
-          owner: root
-          group: root
-          mtime: "{{ .CommitDate }}"
-      - src: "README*"
-        info:
-          owner: root
-          group: root
-          mtime: "{{ .CommitDate }}"
-      - src: "CHANGELOG*"
-        info:
-          owner: root
-          group: root
-          mtime: "{{ .CommitDate }}"
-      - src: "completions/*"
-        dst: "completions"
-        info:
-          owner: root
-          group: root
-          mtime: "{{ .CommitDate }}"
-      - src: "manpages/*"
-        dst: "manpages"
-        info:
-          owner: root
-          group: root
-          mtime: "{{ .CommitDate }}"
-
-  # Dedicated archive for Homebrew Cask (macOS tar.gz with completions and manpages)
-  - id: unirtm-cask
-    ids:
-      - unirtm-cask
-    formats: [tar.gz]
-    name_template: >-
-      {{- .ProjectName }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else }}{{ .Arch }}{{ end }}
-    wrap_in_directory: true
-    builds_info:
-      group: root
-      owner: root
-      mtime: "{{ .CommitDate }}"
     files:
       - src: "LICENSE*"
         info:
@@ -287,9 +181,6 @@ changelog:
 nfpms:
   - id: default
     file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    # Reference the linux-only build with goarm "7" to avoid duplicate arm filenames
-    ids:
-      - unirtm-pkg
     homepage: https://github.com/snowdreamtech/unirtm
     maintainer: "Snowdream Tech <snowdreamtech@qq.com>"
     description: |-
@@ -323,9 +214,6 @@ nfpms:
 
 snapcrafts:
   - name_template: "{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
-    # Reference the linux-only build with goarm "7" to avoid duplicate arm filenames
-    ids:
-      - unirtm-pkg
     summary: UniRTM (Uni Runtime and Tools Manager)
     description: |
       UniRTM manages runtimes, tools, and tasks across Linux, macOS, and Windows.
@@ -335,9 +223,6 @@ snapcrafts:
 
 flatpak:
   - app_id: com.snowdreamtech.UniRTM
-    # Reference the linux-only build with goarm "7" to avoid duplicate arm filenames
-    ids:
-      - unirtm-pkg
     runtime: org.freedesktop.Platform
     runtime_version: "24.08"
     sdk: org.freedesktop.Sdk
@@ -346,10 +231,7 @@ flatpak:
       - --filesystem=host
 
 universal_binaries:
-  - # Only apply to the macOS-specific build; unirtm and unirtm-pkg are linux/windows only
-    ids:
-      - unirtm-cask
-    replace: false
+  - replace: false
 
 sboms:
   # Generate SBOMs for all release artifacts: archives (tar.gz/zip) and Linux packages (deb/rpm/apk/archlinux)
@@ -371,8 +253,6 @@ signs:
 
 homebrew_casks:
   - name: unirtm
-    ids:
-      - unirtm-cask
     binaries:
       - unirtm
     manpages:
