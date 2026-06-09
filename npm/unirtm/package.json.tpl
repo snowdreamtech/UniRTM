@@ -38,8 +38,6 @@
     "@snowdreamtech/unirtm-linux-arm64": "{{VERSION}}",
     "@snowdreamtech/unirtm-linux-ia32": "{{VERSION}}",
     "@snowdreamtech/unirtm-linux-arm": "{{VERSION}}",
-    "@snowdreamtech/unirtm-linux-arm-5": "{{VERSION}}",
-    "@snowdreamtech/unirtm-linux-arm-6": "{{VERSION}}",
     "@snowdreamtech/unirtm-linux-loong64": "{{VERSION}}",
     "@snowdreamtech/unirtm-linux-ppc64le": "{{VERSION}}",
     "@snowdreamtech/unirtm-linux-riscv64": "{{VERSION}}",

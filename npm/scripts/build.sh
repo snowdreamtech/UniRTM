@@ -74,8 +74,6 @@ unirtm-linux-x64|unirtm_linux_amd64_v1|unirtm
 unirtm-linux-arm64|unirtm_linux_arm64_v8.0|unirtm
 unirtm-linux-ia32|unirtm_linux_386_sse2|unirtm
 unirtm-linux-arm|unirtm_linux_arm_7|unirtm
-unirtm-linux-arm-5|unirtm_linux_arm_5|unirtm
-unirtm-linux-arm-6|unirtm_linux_arm_6|unirtm
 unirtm-linux-loong64|unirtm_linux_loong64|unirtm
 unirtm-linux-ppc64le|unirtm_linux_ppc64le_power8|unirtm
 unirtm-linux-riscv64|unirtm_linux_riscv64_rva20u64|unirtm

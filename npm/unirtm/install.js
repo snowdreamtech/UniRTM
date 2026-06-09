@@ -30,10 +30,6 @@ function getPlatformPackageSuffix() {
   const platform = process.platform; // 'darwin' | 'linux' | 'win32'
   const arch = process.arch; // 'x64' | 'arm64' | 'arm' | 'ia32'
 
-  // ARM sub-arch detection (armv5/armv6/armv7)
-  // process.config.variables.arm_version is available in some Node builds
-  const armVersion = (process.config && process.config.variables && process.config.variables.arm_version) || "";
-
   if (platform === "darwin") {
     if (arch === "arm64") return "darwin-arm64";
     if (arch === "x64") return "darwin-x64";
@@ -44,9 +40,7 @@ function getPlatformPackageSuffix() {
     if (arch === "arm64") return "linux-arm64";
     if (arch === "ia32") return "linux-ia32";
     if (arch === "arm") {
-      if (armVersion === "5") return "linux-arm-5";
-      if (armVersion === "6") return "linux-arm-6";
-      return "linux-arm"; // armv7 default
+      return "linux-arm"; // armv7
     }
     if (arch === "loong64") return "linux-loong64";
     if (arch === "ppc64") return "linux-ppc64le";
