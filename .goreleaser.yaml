@@ -99,8 +99,34 @@ builds:
     goarm:
       - "7"
     mod_timestamp: "{{ .CommitTimestamp }}"
+
+  # Dedicated build for Homebrew Cask (macOS only, amd64 and arm64 only)
+  # homebrew_casks only supports darwin with amd64/arm64 architectures
+  - id: unirtm-cask
+    binary: unirtm
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.ProjectName=unirtm'
+      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.Author=Snowdream Tech <snowdreamtech@qq.com>'
+      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.BuildTime={{.Date}}
+      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.CommitHash={{.ShortCommit}}
+      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.CommitHashFull={{.FullCommit}}
+      - -X github.com/snowdreamtech/unirtm/internal/pkg/env.GitTag={{.Tag}}
+      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.COPYRIGHT=Copyright (c) 2023-present SnowdreamTech Inc.'
+      - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.LICENSE=MIT <https://github.com/snowdreamtech/unirtm/blob/main/LICENSE>'
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    mod_timestamp: "{{ .CommitTimestamp }}"
 archives:
-  - ids:
+  - id: unirtm
+    ids:
       - unirtm
     formats: [tar.gz]
     # This name template makes the OS and Arch compatible with uname and includes the version.
@@ -122,6 +148,50 @@ archives:
       - goos: windows
         formats: [zip]
     # Include all relevant standard documentation arrays using Globs
+    files:
+      - src: "LICENSE*"
+        info:
+          owner: root
+          group: root
+          mtime: "{{ .CommitDate }}"
+      - src: "README*"
+        info:
+          owner: root
+          group: root
+          mtime: "{{ .CommitDate }}"
+      - src: "CHANGELOG*"
+        info:
+          owner: root
+          group: root
+          mtime: "{{ .CommitDate }}"
+      - src: "completions/*"
+        dst: "completions"
+        info:
+          owner: root
+          group: root
+          mtime: "{{ .CommitDate }}"
+      - src: "manpages/*"
+        dst: "manpages"
+        info:
+          owner: root
+          group: root
+          mtime: "{{ .CommitDate }}"
+
+  # Dedicated archive for Homebrew Cask (macOS tar.gz with completions and manpages)
+  - id: unirtm-cask
+    ids:
+      - unirtm-cask
+    formats: [tar.gz]
+    name_template: >-
+      {{- .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else }}{{ .Arch }}{{ end }}
+    wrap_in_directory: true
+    builds_info:
+      group: root
+      owner: root
+      mtime: "{{ .CommitDate }}"
     files:
       - src: "LICENSE*"
         info:
@@ -300,10 +370,11 @@ signs:
       - "${artifact}"
       - --yes # Enables keyless signing via OIDC token
 
+
 homebrew_casks:
   - name: unirtm
     ids:
-      - unirtm
+      - unirtm-cask
     binaries:
       - unirtm
     manpages:
