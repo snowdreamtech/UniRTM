@@ -73,7 +73,7 @@ archives:
       {{- if eq .Arch "amd64" }}x86_64
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end -}}
     # Wraps the files inside a top-level directory within the archive to prevent tarbombing (Best Practice)
     wrap_in_directory: true
     builds_info:
@@ -189,6 +189,8 @@ nfpms:
     license: MIT
     vendor: SnowdreamTech
     bindir: /usr/bin
+    section: utils
+    mtime: "{{ .CommitDate }}"
     formats:
       - apk
       - deb
@@ -199,18 +201,26 @@ nfpms:
         dst: /usr/share/bash-completion/completions/unirtm
         file_info:
           mode: 0644
+          mtime: "{{ .CommitDate }}"
       - src: ./completions/unirtm.zsh
         dst: /usr/share/zsh/vendor-completions/_unirtm
         file_info:
           mode: 0644
+          mtime: "{{ .CommitDate }}"
       - src: ./completions/unirtm.fish
         dst: /usr/share/fish/vendor_completions.d/unirtm.fish
         file_info:
           mode: 0644
+          mtime: "{{ .CommitDate }}"
       - src: ./manpages/*
         dst: /usr/share/man/man1/
         file_info:
           mode: 0644
+          mtime: "{{ .CommitDate }}"
+    deb:
+      lintian_overrides:
+        - statically-linked-binary
+        - changelog-file-missing-in-native-package
 
 snapcrafts:
   - name_template: "{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
@@ -220,6 +230,7 @@ snapcrafts:
     grade: stable
     confinement: classic
     publish: false
+    disable: "{{ if .IsNightly }}true{{ end }}"
 
 flatpak:
   - app_id: com.snowdreamtech.UniRTM
