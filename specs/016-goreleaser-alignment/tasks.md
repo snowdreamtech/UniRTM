@@ -79,14 +79,14 @@
 
 ---
 
-## Phase 5: 高级功能（长期目标）
+## ~~Phase 5: 高级功能（长期目标）~~ 已取消
 
-> 需要外部账号、付费服务或额外基础设施。
+> ~~需要外部账号、付费服务或额外基础设施。~~
 
-- [ ] T018 🔹 P3 macOS `notarize`（需 Apple 开发者账号，$99/年）
-- [ ] T019 🔹 P3 `dockers_v2` + `docker_signs`（需配置 Docker Hub/GHCR 凭据）
-- [ ] T020 🔹 P3 `gemfury` 包分发（需 Gemfury 账号）
-- [ ] T021 ❌ P4 `pro: true`（需 GoReleaser Pro 付费许可）
+- [-] T018 ~~🔹 P3 macOS `notarize`~~（暂不实施，取消）
+- [-] T019 ~~🔹 P3 `dockers_v2` + `docker_signs`~~（暂不实施，取消）
+- [-] T020 ~~🔹 P3 `gemfury` 包分发~~（暂不实施，取消）
+- [-] T021 ~~❌ P4 `pro: true`~~（暂不实施，取消）
 
 ---
 
