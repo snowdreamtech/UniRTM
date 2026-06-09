@@ -57,10 +57,7 @@
     "setup.py",
     "shard.yml",
     "sonar-project.properties",
-    {
-      "type": "xml",
-      "path": "VERSION"
-    },
+    "VERSION",
     "yarn.lock"
   ],
   "bump-minor-pre-major": true,
