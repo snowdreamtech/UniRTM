@@ -336,3 +336,19 @@ winget:
           owner: microsoft
           name: winget-pkgs
           branch: master
+
+scoops:
+  - repository:
+      owner: snowdreamtech
+      name: scoop-bucket
+      token: "{{ .Env.WORKFLOW_SECRET }}"
+      branch: "scoop-{{.Version}}"
+      pull_request:
+        enabled: true
+        base:
+          owner: snowdreamtech
+          name: scoop-bucket
+          branch: master
+    homepage: https://github.com/snowdreamtech/UniRTM
+    description: UniRTM (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager.
+    license: MIT
