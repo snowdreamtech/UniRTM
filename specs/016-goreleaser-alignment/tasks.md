@@ -14,30 +14,30 @@
 
 ### 1.1 Builds 修复
 
-- [ ] T001 ⚠️ P1 添加 `builds.ignore` 忽略 `goos: windows` + `goarch: arm`（Go 官方已废弃）
+- [x] T001 ⚠️ P1 添加 `builds.ignore` 忽略 `goos: windows` + `goarch: arm`（Go 官方已废弃）
       > 参考 goreleaser: `ignore: - goos: windows goarch: arm`
 
 ### 1.2 NFPMs 增强
 
-- [ ] T002 ⚠️ P1 添加 `nfpms.dependencies: [git]`（工具链管理器通常需要 git）
-- [ ] T003 ⚠️ P1 为 deb 包添加 `copyright` 文件（Debian 规范要求）
+- [x] T002 ⚠️ P1 添加 `nfpms.dependencies: [git]`（工具链管理器通常需要 git）
+- [x] T003 ⚠️ P1 为 deb 包添加 `copyright` 文件（Debian 规范要求）
       > 参考 goreleaser: `contents: - src: LICENSE dst: /usr/share/doc/unirtm/copyright`
-- [ ] T004 🔹 P2 添加 `deb.suggests`（golang, rustup, zig, deno, bun 等可选依赖）
+- [x] T004 🔹 P2 添加 `deb.suggests`（golang, rustup, zig, deno, bun 等可选依赖）
 
 ### 1.3 Homebrew Casks 增强
 
-- [ ] T005 ⚠️ P1 添加 `url.verified: "github.com/snowdreamtech/"`（防 Supply Chain 攻击）
+- [x] T005 ⚠️ P1 添加 `url.verified: "github.com/snowdreamtech/"`（防 Supply Chain 攻击）
 
 ### 1.4 Changelog 增强
 
-- [ ] T006 ⚠️ P1 补充 `changelog.filters.exclude` 排除规则（参考 goreleaser 的 14 条模式）
+- [x] T006 ⚠️ P1 补充 `changelog.filters.exclude` 排除规则（参考 goreleaser 的 14 条模式）
       > 当前 7 条，建议补充: go mod tidy, go generate, chore, build(deps), ci, test, docs 等
 - [ ] T007 🔹 P2 添加 `changelog.format` 含 SHA + 作者信息
       > 参考 goreleaser: `{{ .SHA }}: {{ .Message }} ({{ .Logins }})`
 
 ### 1.5 Release 增强
 
-- [ ] T008 ⚠️ P1 添加 `release.footer`（changelog 链接 + 帮助信息）
+- [x] T008 ⚠️ P1 添加 `release.footer`（changelog 链接 + 帮助信息）
       > 参考 goreleaser: `Full Changelog: v0.14.0...v0.15.0`
 
 ### 1.6 Snapcrafts
