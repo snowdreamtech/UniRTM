@@ -32,8 +32,7 @@
 
 - [x] T006 ⚠️ P1 补充 `changelog.filters.exclude` 排除规则（参考 goreleaser 的 14 条模式）
       > 当前 7 条，建议补充: go mod tidy, go generate, chore, build(deps), ci, test, docs 等
-- [ ] T007 🔹 P2 添加 `changelog.format` 含 SHA + 作者信息
-      > 参考 goreleaser: `{{ .SHA }}: {{ .Message }} ({{ .Logins }})`
+- [-] T007 🔹 P2 ~~添加 `changelog.format` 含 SHA + 作者信息~~（`{{ .Logins }}` 需 Pro，取消）
 
 ### 1.5 Release 增强
 
@@ -73,7 +72,7 @@
 
 > 增强发布流程的健壮性和可验证性。
 
-- [ ] T014 🔹 P2 添加 `changelog.format` 含 SHA + 作者
+- [-] T014 🔹 P2 ~~添加 `changelog.format` 含 SHA + 作者~~（`{{ .Logins }}` 需 Pro，取消）
 - [ ] T015 🔹 P3 添加 `nightly` 发布支持（开发者可获取最新构建）
 - [ ] T016 🔹 P3 添加 `announce` 通知（Discord/Telegram 自动通知新版本）
 - [ ] T017 🔹 P3 添加 `milestones.close: true`（自动关闭对应 Milestone）
