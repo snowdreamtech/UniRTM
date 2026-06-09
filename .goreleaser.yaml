@@ -49,7 +49,6 @@ builds:
       - -X 'github.com/snowdreamtech/unirtm/internal/pkg/env.LICENSE=MIT <https://github.com/snowdreamtech/unirtm/blob/main/LICENSE>'
     goos:
       - linux
-      - darwin
       - windows
     goarch:
       - "386"
@@ -347,9 +346,9 @@ flatpak:
       - --filesystem=host
 
 universal_binaries:
-  - # Only apply to the multi-platform build; unirtm-pkg is linux-only and has no darwin artifacts
+  - # Only apply to the macOS-specific build; unirtm and unirtm-pkg are linux/windows only
     ids:
-      - unirtm
+      - unirtm-cask
     replace: false
 
 sboms:
