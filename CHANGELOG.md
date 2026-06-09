@@ -6,6 +6,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0](https://github.com/snowdreamtech/UniRTM/compare/v0.11.0...v0.12.0) (2026-06-09)
+
+
+### Features
+
+* **cli:** add generate manpage command ([856ae25](https://github.com/snowdreamtech/UniRTM/commit/856ae252b971bd73a600b56abb2b9e61fa2c49be))
+* **cli:** enhance completion command with export dir and fix --all installation logic ([52eb3be](https://github.com/snowdreamtech/UniRTM/commit/52eb3be344585122582bd5a09a2cea6d2e94232e))
+
+
+### Bug Fixes
+
+* **lint:** disable yamllint octal-values rule, restore readable 0644 file mode notation ([574bba0](https://github.com/snowdreamtech/UniRTM/commit/574bba041b5eee66fedb8272593b9bd32068407e))
+* **release:** use decimal mode 420 instead of octal to satisfy yamllint ([cfb5f45](https://github.com/snowdreamtech/UniRTM/commit/cfb5f45c8028c29e9c5324bc45ce6c1bbf2aa02c))
+* **release:** use homebrew_casks instead of deprecated brews and reuse WORKFLOW_SECRET ([bd4c131](https://github.com/snowdreamtech/UniRTM/commit/bd4c13198059a1c79c6faf3a7fdee2aa77664638))
+* **test:** correct powershell escaping and fail CI on pester test errors ([ed6a1bb](https://github.com/snowdreamtech/UniRTM/commit/ed6a1bb5b18dc6ff53b0eccc2bfaaf466874b025))
+* **test:** extract PowerShell Pester runner to scripts/run-pester.ps1 to fix Windows CI quoting issue ([9280271](https://github.com/snowdreamtech/UniRTM/commit/92802719bbfb0742e7e0fc9cc32109f9d950ad1e))
+
 ## [0.11.0](https://github.com/snowdreamtech/UniRTM/compare/v0.10.0...v0.11.0) (2026-06-08)
 
 
