@@ -62,6 +62,9 @@ builds:
       - s390x
     goarm:
       - "7"
+    ignore:
+      - goos: windows
+        goarch: arm
     mod_timestamp: "{{ .CommitTimestamp }}"
 archives:
   - id: unirtm
@@ -137,6 +140,16 @@ release:
     - 🔁 Smart SpecKit workflows (`speckit.plan`, `speckit.analyze`, `speckit.implement`)
     - 🛡️ Triple-guarantee quality gates: IDE → pre-commit → GitHub Actions CI/CD
     - 🌐 Cross-platform: Linux (Debian/Alpine/RHEL), macOS, Windows
+  footer: |
+    **Full Changelog**: https://github.com/snowdreamtech/UniRTM/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+    ## 📦 Installation
+
+    See the [Installation Guide](https://github.com/snowdreamtech/UniRTM#-installation) for all available methods.
+
+    ## 🤝 Contributing
+
+    Contributions are welcome! Please read our [Contributing Guide](https://github.com/snowdreamtech/UniRTM/blob/main/CONTRIBUTING.md) first.
 
 source:
   enabled: true
@@ -152,10 +165,15 @@ changelog:
       - "(?i)^build"
       - "(?i)^style"
       - "(?i)^revert"
+      - "(?i)^chore"
+      - "(?i)^deps"
       - "^Merge pull request"
       - "^Merge remote-tracking branch"
       - "^Merge branch"
       - "merge conflict"
+      - "^WIP"
+      - "^\\[skip ci\\]"
+      - "^Bump version"
   groups:
     - title: "🚀 Features"
       regexp: "^.*(?i)feat[(\\w)]*:+.*$"
@@ -196,6 +214,8 @@ nfpms:
       - deb
       - rpm
       - archlinux
+    dependencies:
+      - git
     contents:
       - src: ./completions/unirtm.bash
         dst: /usr/share/bash-completion/completions/unirtm
@@ -217,10 +237,21 @@ nfpms:
         file_info:
           mode: 0644
           mtime: "{{ .CommitDate }}"
+      - src: LICENSE
+        dst: /usr/share/doc/unirtm/copyright
+        file_info:
+          mode: 0644
+          mtime: "{{ .CommitDate }}"
     deb:
       lintian_overrides:
         - statically-linked-binary
         - changelog-file-missing-in-native-package
+      suggests:
+        - golang
+        - rustup
+        - zig
+        - deno
+        - bun
 
 snapcrafts:
   - name_template: "{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
@@ -276,6 +307,8 @@ homebrew_casks:
       owner: snowdreamtech
       name: homebrew-tap
     homepage: "https://github.com/snowdreamtech/UniRTM"
+    url: "https://github.com/snowdreamtech/UniRTM/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    url.verified: "github.com/snowdreamtech/"
     description: "UniRTM (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager."
     license: "MIT"
     hooks:
