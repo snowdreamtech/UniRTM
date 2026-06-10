@@ -367,5 +367,5 @@ nix:
           branch: master
     homepage: https://github.com/snowdreamtech/UniRTM
     description: UniRTM (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager.
-    license: MIT
+    license: mit
     skip_upload: auto
