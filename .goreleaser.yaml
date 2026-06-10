@@ -264,7 +264,7 @@ snapcrafts:
     disable: "{{ if .IsNightly }}true{{ end }}"
 
 flatpak:
-  - app_id: com.snowdreamtech.UniRTM
+  - app_id: io.github.snowdreamtech.UniRTM
     runtime: org.freedesktop.Platform
     runtime_version: "24.08"
     sdk: org.freedesktop.Sdk
