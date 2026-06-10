@@ -63,7 +63,7 @@
 
 - [ ] T012 🔹 P2 添加 `aurs` 分发（Arch Linux 用户需要）
       > 需配置 AUR SSH 密钥到 GitHub Secrets
-- [ ] T013 🔹 P3 添加 `nix` 分发（NixOS 用户需要）
+- [x] T013 🔹 P3 添加 `nix` 分发（NixOS 用户需要）
       > 需创建 NUR 仓库
 
 ---

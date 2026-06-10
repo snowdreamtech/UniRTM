@@ -352,3 +352,20 @@ scoops:
     homepage: https://github.com/snowdreamtech/UniRTM
     description: UniRTM (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager.
     license: MIT
+
+nix:
+  - repository:
+      owner: snowdreamtech
+      name: nur
+      token: "{{ .Env.WORKFLOW_SECRET }}"
+      branch: "nix-{{.Version}}"
+      pull_request:
+        enabled: true
+        base:
+          owner: snowdreamtech
+          name: nur
+          branch: master
+    homepage: https://github.com/snowdreamtech/UniRTM
+    description: UniRTM (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager.
+    license: MIT
+    skip_upload: auto
