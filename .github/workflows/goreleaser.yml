@@ -241,6 +241,7 @@ jobs:
             dl.flathub.org:443
             *.freedesktop.org:443
             ostree.freedesktop.org:443
+            aur.archlinux.org:22
       - name: "🧹 Free Disk Space (Ubuntu)"
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # main
         with:
@@ -315,6 +316,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
           WORKFLOW_SECRET: ${{ secrets.WORKFLOW_SECRET }}
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+          AUR_KEY: ${{ secrets.AUR_KEY }}
         with:
           # Orchestrates the optimized build and distribution of cross-compiled Go binaries.
           distribution: goreleaser

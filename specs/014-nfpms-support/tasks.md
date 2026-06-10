@@ -33,7 +33,7 @@
 
 - [ ] T006 Investigate and setup GitHub PATs for external repositories (Homebrew Tap, Scoop Bucket, Winget)
 - [ ] T007 Configure `homebrew_casks`, `scoops`, and `winget` in `.goreleaser.yaml`
-- [ ] T008 Setup AUR SSH keys in GitHub Secrets and configure `aurs`
+- [x] T008 Setup AUR SSH keys in GitHub Secrets and configure `aurs`
 - [ ] T009 Register NPM and Gemfury tokens and configure `npms` and `gemfury`
 - [ ] T010 Setup Docker registry authentication and configure `dockers_v2`
 - [ ] T011 Investigate Apple Developer account requirements for `notarize`

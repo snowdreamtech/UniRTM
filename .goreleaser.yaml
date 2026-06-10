@@ -369,3 +369,29 @@ nix:
     description: UniRTM (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager.
     license: mit
     skip_upload: auto
+
+aurs:
+  - homepage: https://github.com/snowdreamtech/UniRTM
+    description: UniRTM (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager.
+    maintainers:
+      - "Snowdream Tech <snowdreamtech@qq.com>"
+    license: MIT
+    private_key: "{{ .Env.AUR_KEY }}"
+    git_url: "ssh://aur@aur.archlinux.org/unirtm-bin.git"
+    package: |-
+      # bin
+      install -Dm755 "./unirtm" "${pkgdir}/usr/bin/unirtm"
+
+      # license
+      install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/unirtm/LICENSE"
+
+      # completions
+      mkdir -p "${pkgdir}/usr/share/bash-completion/completions/"
+      mkdir -p "${pkgdir}/usr/share/zsh/site-functions/"
+      mkdir -p "${pkgdir}/usr/share/fish/vendor_completions.d/"
+      install -Dm644 "./completions/unirtm.bash" "${pkgdir}/usr/share/bash-completion/completions/unirtm"
+      install -Dm644 "./completions/unirtm.zsh" "${pkgdir}/usr/share/zsh/site-functions/_unirtm"
+      install -Dm644 "./completions/unirtm.fish" "${pkgdir}/usr/share/fish/vendor_completions.d/unirtm.fish"
+
+      # man pages
+      install -Dm644 "./manpages/unirtm.1.gz" "${pkgdir}/usr/share/man/man1/unirtm.1.gz"

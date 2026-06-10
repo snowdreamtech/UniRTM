@@ -61,8 +61,8 @@
 
 > 扩大 Linux 用户覆盖面。
 
-- [ ] T012 🔹 P2 添加 `aurs` 分发（Arch Linux 用户需要）
-      > 需配置 AUR SSH 密钥到 GitHub Secrets
+- [x] T012 🔹 P2 添加 `aurs` 分发（Arch Linux 用户需要）
+      > 已配置 AUR SSH 密钥到 GitHub Secrets（需手动设置 AUR_KEY）
 - [x] T013 🔹 P3 添加 `nix` 分发（NixOS 用户需要）
       > 需创建 NUR 仓库
 
