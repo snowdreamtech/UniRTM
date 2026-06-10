@@ -235,6 +235,7 @@ jobs:
             *.blob.core.windows.net:443
             api.snapcraft.io:443
             dashboard.snapcraft.io:443
+            upload.snapcraft.io:443
             login.ubuntu.com:443
             *.snapcraftcontent.com:443
             dl.flathub.org:443
@@ -313,6 +314,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
           WORKFLOW_SECRET: ${{ secrets.WORKFLOW_SECRET }}
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
         with:
           # Orchestrates the optimized build and distribution of cross-compiled Go binaries.
           distribution: goreleaser
