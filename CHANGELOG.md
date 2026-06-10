@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.1](https://github.com/snowdreamtech/UniRTM/compare/v0.16.0...v0.16.1) (2026-06-10)
+
+
+### Bug Fixes
+
+* **goreleaser:** use nix license identifier format for nixpkgs compatibility ([a2280a1](https://github.com/snowdreamtech/UniRTM/commit/a2280a1168cd589188649ec8daa5684216cecd19))
+
 ## [0.16.0](https://github.com/snowdreamtech/UniRTM/compare/v0.15.1...v0.16.0) (2026-06-10)
 
 
