@@ -20,13 +20,18 @@ CURSOR_RULES_DIR="$REPO_ROOT/.cursor/rules"
 # Ensure target directories exist
 mkdir -p "$AGENT_WORKFLOWS_DIR"
 
+# Step 0: Global Cleanup of Legacy/Broken Symlinks
+# The v1 script used symlinks which break when repositories are cloned or directories move.
+# Find and delete all speckit*.md symlinks in any top-level hidden directory to start fresh.
+find "$REPO_ROOT" -maxdepth 3 -type l -name "speckit*.md" -path "$REPO_ROOT/.*" -delete 2>/dev/null || true
+
 # Step 1: Collect Active Commands (macOS Bash 3.2 compatible string array)
 ACTIVE_COMMANDS_STRING=" "
 
 if [[ -d "$COMMANDS_DIR" ]]; then
     for cmd_file in "$COMMANDS_DIR"/*.md; do
         [[ -f "$cmd_file" ]] || continue
-        base_name="$(basename "$cmd_file")"
+        base_name="${cmd_file##*/}"
         ACTIVE_COMMANDS_STRING="${ACTIVE_COMMANDS_STRING}${base_name} "
     done
 fi
@@ -45,15 +50,23 @@ is_active_command() {
 write_idempotent() {
     local target_file="$1"
     local content="$2"
-    local temp_file="${target_file}.tmp.$$"
-
-    echo "$content" > "$temp_file"
     
-    if [[ ! -f "$target_file" ]] || ! cmp -s "$temp_file" "$target_file"; then
-        mv "$temp_file" "$target_file"
-    else
-        rm "$temp_file"
+    # If target is a symlink, remove it first
+    if [[ -L "$target_file" ]]; then
+        rm -f "$target_file"
     fi
+    
+    # If file exists, read it entirely into a variable for fast comparison
+    if [[ -f "$target_file" ]]; then
+        local existing_content
+        existing_content="$(< "$target_file")"
+        if [[ "$existing_content" == "$content" ]]; then
+            return 0
+        fi
+    fi
+    
+    # Write the new content
+    echo "$content" > "$target_file"
 }
 
 # Helper function to inject global pointers into IDE-specific system prompts
@@ -90,7 +103,7 @@ ensure_global_pointer() {
 if [[ -d "$COMMANDS_DIR" ]]; then
     for cmd_file in "$COMMANDS_DIR"/*.md; do
         [[ -f "$cmd_file" ]] || continue
-        base_name="$(basename "$cmd_file")"
+        base_name="${cmd_file##*/}"
         content="---
 description: Proxy for $base_name
 ---
@@ -106,9 +119,9 @@ fi
 # Clean Orphans in .agent/workflows/
 for existing_file in "$AGENT_WORKFLOWS_DIR"/*.md; do
     [[ -f "$existing_file" ]] || continue
-    base_name="$(basename "$existing_file")"
+    base_name="${existing_file##*/}"
     if ! is_active_command "$base_name"; then
-        rm "$existing_file"
+        rm -f "$existing_file"
     fi
 done
 
@@ -120,7 +133,7 @@ if [[ -d "$REPO_ROOT/.cursor" ]]; then
     if [[ -d "$COMMANDS_DIR" ]]; then
         for cmd_file in "$COMMANDS_DIR"/*.md; do
             [[ -f "$cmd_file" ]] || continue
-            base_name="$(basename "$cmd_file")"
+            base_name="${cmd_file##*/}"
             cmd_id="${base_name%.md}"
             content="---
 description: Proxy for the ${cmd_id} workflow
@@ -139,22 +152,62 @@ When the user asks to run \`/${cmd_id}\`, you MUST read \`.specify/commands/${ba
     for existing_file in "$CURSOR_RULES_DIR"/speckit_*.mdc; do
         [[ -f "$existing_file" ]] || continue
         # Extract original base_name from speckit_*.mdc
-        filename="$(basename "$existing_file")"
+        filename="${existing_file##*/}"
         cmd_id="${filename#speckit_}"
         cmd_id="${cmd_id%.mdc}"
         base_name="${cmd_id}.md"
         
         if ! is_active_command "$base_name"; then
-            rm "$existing_file"
+            rm -f "$existing_file"
         fi
     done
 fi
 
-# Step 4: Inject Global Pointers for other mainstream AI IDEs
+# Step 4: Generate Files & Clean Orphans for All Other AI IDEs
+# Dynamically find any hidden directory starting with '.' containing a 'workflows', 'commands', or 'prompts' subdirectory.
+
+if [[ -d "$COMMANDS_DIR" ]]; then
+    while IFS= read -r -d '' target_dir; do
+        # Skip directories we already handle natively or ignore
+        if [[ "$target_dir" == *".specify"* ]] || [[ "$target_dir" == *".cursor"* ]] || [[ "$target_dir" == *".agent"* ]] || [[ "$target_dir" == *".git/"* ]] || [[ "$target_dir" == *".github"* ]]; then
+            continue
+        fi
+        
+        # 1. Delete old broken symlinks for speckit files
+        find "$target_dir" -type l -name "speckit*.md" -delete 2>/dev/null || true
+        
+        # 2. Generate proxy files
+        for cmd_file in "$COMMANDS_DIR"/*.md; do
+            [[ -f "$cmd_file" ]] || continue
+            base_name="${cmd_file##*/}"
+            content="---
+description: Proxy for $base_name
+---
+
+## Execute Command
+
+Please read \`.specify/commands/$base_name\` and execute its instructions exactly."
+            
+            write_idempotent "$target_dir/$base_name" "$content"
+        done
+        
+        # 3. Clean Orphans in this directory
+        for existing_file in "$target_dir"/speckit*.md; do
+            [[ -f "$existing_file" ]] || continue
+            base_name="${existing_file##*/}"
+            if ! is_active_command "$base_name"; then
+                rm -f "$existing_file"
+            fi
+        done
+    done < <(find "$REPO_ROOT" -maxdepth 2 -type d \( -name "workflows" -o -name "commands" -o -name "prompts" \) -path "$REPO_ROOT/.*" -print0)
+fi
+
+# Step 5: Inject Global Pointers for other mainstream AI IDEs
 ensure_global_pointer ".clinerules"
 ensure_global_pointer ".roo-rules"
 ensure_global_pointer ".windsurfrules"
 ensure_global_pointer ".traerules"
 ensure_global_pointer ".github/copilot-instructions.md"
 
+echo -e "\033[0;32m✓ [Spec Kit] IDE adapters synchronized successfully.\033[0m"
 exit 0
