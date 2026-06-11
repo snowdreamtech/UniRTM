@@ -44,7 +44,7 @@ func (h HuskyRunner) Run(ctx context.Context, hookName string, stage string, arg
 		}
 	}
 
-	hookScript := filepath.Join(".husky", targetScript)
+	hookScript := filepath.Join(".husky", filepath.Base(targetScript))
 	if _, err := os.Stat(hookScript); os.IsNotExist(err) {
 		return nil // Hook not defined in Husky
 	}

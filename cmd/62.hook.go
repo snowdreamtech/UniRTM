@@ -73,11 +73,24 @@ var hookRunCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		hookName := args[0]
-		if hookName != "all" {
-			if err := hook.ValidateHookName(hookName); err != nil {
-				return err
+
+		// Smart inference for legacy usage:
+		// If stage is not specified, and the first argument is a valid Git stage name (e.g., pre-commit, commit-msg),
+		// we assume the user wants to run all hooks for that stage.
+		if hookStage == "" && hookName != "all" {
+			if err := hook.ValidateHookName(hookName); err == nil {
+				hookStage = hookName
+				hookName = "all"
 			}
 		}
+
+		// Validate the stage if provided
+		if hookStage != "" {
+			if err := hook.ValidateHookName(hookStage); err != nil {
+				return fmt.Errorf("invalid stage %q: %w", hookStage, err)
+			}
+		}
+
 		hookArgs := args[1:]
 
 		pwd, err := os.Getwd()
