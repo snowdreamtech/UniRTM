@@ -42,7 +42,6 @@ func (p PreCommitRunner) Run(ctx context.Context, hookName string, stage string,
 			cmdArgs = append(cmdArgs, "--hook-stage", stage)
 		}
 	}
-	cmdArgs = append(cmdArgs, "--")
 	cmdArgs = append(cmdArgs, args...)
 
 	cmd := exec.CommandContext(ctx, "unirtm", cmdArgs...)
