@@ -130,7 +130,7 @@ _phase=$(echo "$EVENT_NAME" | grep -q '^before_' && echo 'before' || echo 'after
 
 # Use custom message if configured, otherwise default
 if [ -z "$_commit_msg" ]; then
-    _commit_msg="[Spec Kit] Auto-commit ${_phase} ${_command_name}"
+    _commit_msg="chore(speckit): auto-commit ${_phase} ${_command_name}"
 fi
 
 # Stage and commit

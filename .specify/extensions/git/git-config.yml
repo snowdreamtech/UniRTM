@@ -12,6 +12,9 @@ init_commit_message: "chore: initial commit"
 # Each key can be true/false. Message is customizable per-command.
 auto_commit:
   default: true
+  manual:
+    enabled: true
+    message: "chore(speckit): manual auto-commit trigger"
   before_clarify:
     enabled: true
     message: "chore(speckit): save progress before clarification"
