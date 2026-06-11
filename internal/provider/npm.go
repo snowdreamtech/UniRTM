@@ -5,6 +5,7 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -45,7 +46,7 @@ func (p *NpmProvider) Install(ctx context.Context, tool string, installPath stri
 	pkgSpec := fmt.Sprintf("%s@%s", tool, version)
 	logger.Debug("Installing npm package", map[string]interface{}{"pkg": pkgSpec, "prefix": installPath})
 
-	cmd := exec.CommandContext(ctx, npmCmd, "install", "-g", pkgSpec, "--prefix", installPath)
+	cmd := exec.CommandContext(ctx, npmCmd, "install", "-g", pkgSpec, "--prefix", installPath, "--ignore-scripts=true")
 	if ctx != nil && ctx.Value("quietProgress") == true {
 		cmd.Stdout = nil
 		cmd.Stderr = nil
@@ -65,6 +66,8 @@ func (p *NpmProvider) Install(ctx context.Context, tool string, installPath stri
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "npm install failed", err)
 	}
+
+	p.checkAndWarnLifecycleScripts(tool, installPath)
 
 	return nil
 }
@@ -383,4 +386,32 @@ func (p *NpmProvider) findNpm() (string, error) {
 
 	// 2. Fallback to system PATH
 	return exec.LookPath("npm")
+}
+
+// checkAndWarnLifecycleScripts reads package.json and issues a warning if lifecycle scripts are found.
+func (p *NpmProvider) checkAndWarnLifecycleScripts(tool string, installPath string) {
+	var pkgJsonPath string
+	if env.RuntimeGOOS == "windows" {
+		pkgJsonPath = filepath.Join(installPath, "node_modules", tool, "package.json")
+	} else {
+		pkgJsonPath = filepath.Join(installPath, "lib", "node_modules", tool, "package.json")
+	}
+
+	data, err := os.ReadFile(pkgJsonPath)
+	if err != nil {
+		return
+	}
+
+	var pkg struct {
+		Scripts map[string]string `json:"scripts"`
+	}
+	if err := json.Unmarshal(data, &pkg); err != nil {
+		return
+	}
+
+	if _, hasPre := pkg.Scripts["preinstall"]; hasPre || pkg.Scripts["postinstall"] != "" {
+		logger.Warn("⚠️ WARNING: For security reasons, UniRTM has intercepted the installation scripts for this tool. If the tool fails to run, it may rely on lifecycle scripts. Please manually verify its safety.")
+	} else if _, hasPost := pkg.Scripts["postinstall"]; hasPost {
+		logger.Warn("⚠️ WARNING: For security reasons, UniRTM has intercepted the installation scripts for this tool. If the tool fails to run, it may rely on lifecycle scripts. Please manually verify its safety.")
+	}
 }

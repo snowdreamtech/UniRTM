@@ -21,8 +21,8 @@ func TestNodeProvider_ListExecutables(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(execs) != 3 {
-		t.Errorf("expected 3 executables, got %d", len(execs))
+	if len(execs) != 8 {
+		t.Errorf("expected 8 executables, got %d", len(execs))
 	}
 }
 
@@ -56,7 +56,7 @@ func TestNodeProvider_GenerateShims(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(shims) != 3 {
-		t.Errorf("expected 3 shims, got %d", len(shims))
+	if len(shims) != 8 {
+		t.Errorf("expected 8 shims, got %d", len(shims))
 	}
 }

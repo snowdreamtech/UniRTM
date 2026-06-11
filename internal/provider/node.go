@@ -52,18 +52,26 @@ func (n *NodeProvider) PostInstall(ctx context.Context, tool string, installPath
 func (n *NodeProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
 	shims := make(map[string]string)
 
-	// Generate shims for node, npm, npx
-	executables := []string{"node", "npm", "npx"}
+	// Generate shims for node, npm, npx, corepack, and its proxies
+	executables := []string{"node", "npm", "npx", "corepack", "yarn", "yarnpkg", "pnpm", "pnpx"}
 	for _, exe := range executables {
 		var exePath string
+		isCorepackProxy := exe == "yarn" || exe == "yarnpkg" || exe == "pnpm" || exe == "pnpx"
+
 		if env.RuntimeGOOS == "windows" {
 			if exe == "node" {
 				exePath = filepath.Join(installPath, "node.exe")
+			} else if isCorepackProxy {
+				exePath = filepath.Join(installPath, "corepack.cmd")
 			} else {
 				exePath = filepath.Join(installPath, exe+".cmd")
 			}
 		} else {
-			exePath = filepath.Join(installPath, "bin", exe)
+			if isCorepackProxy {
+				exePath = filepath.Join(installPath, "bin", "corepack")
+			} else {
+				exePath = filepath.Join(installPath, "bin", exe)
+			}
 		}
 
 		shimContent := n.generateNodeShim(tool, exe, exePath, installPath, version)
@@ -93,9 +101,16 @@ func (n *NodeProvider) DetectVersion(ctx context.Context, tool string, installPa
 
 // ListExecutables returns Node.js executables relative to installPath.
 func (n *NodeProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
-	executables := []string{filepath.Join("bin", "node"), filepath.Join("bin", "npm"), filepath.Join("bin", "npx")}
+	executables := []string{
+		filepath.Join("bin", "node"), filepath.Join("bin", "npm"), filepath.Join("bin", "npx"),
+		filepath.Join("bin", "corepack"), filepath.Join("bin", "yarn"), filepath.Join("bin", "yarnpkg"),
+		filepath.Join("bin", "pnpm"), filepath.Join("bin", "pnpx"),
+	}
 	if env.RuntimeGOOS == "windows" {
-		executables = []string{"node.exe", "npm.cmd", "npx.cmd"}
+		executables = []string{
+			"node.exe", "npm.cmd", "npx.cmd", "corepack.cmd",
+			"yarn.cmd", "yarnpkg.cmd", "pnpm.cmd", "pnpx.cmd",
+		}
 	}
 	return executables, nil
 }
@@ -135,17 +150,22 @@ func (n *NodeProvider) Uninstall(ctx context.Context, tool string, installPath s
 func (n *NodeProvider) generateNodeShim(tool string, name, exePath, installPath, version string) string {
 	npmGlobalDir := filepath.Join(installPath, "npm-global")
 
+	corepackPrefix := ""
+	if name == "yarn" || name == "yarnpkg" || name == "pnpm" || name == "pnpx" {
+		corepackPrefix = `"` + name + `" `
+	}
+
 	if env.RuntimeGOOS == "windows" {
 		return fmt.Sprintf(`@echo off
 REM UniRTM shim for %s (version %s)
 set "NPM_CONFIG_PREFIX=%s"
-"%s" %%*
-`, name, version, npmGlobalDir, exePath)
+"%s" %s%%*
+`, name, version, npmGlobalDir, exePath, corepackPrefix)
 	}
 
 	return fmt.Sprintf(`#!/bin/sh
 # UniRTM shim for %s (version %s)
 export NPM_CONFIG_PREFIX="%s"
-exec "%s" "$@"
-`, name, version, npmGlobalDir, exePath)
+exec "%s" %s"$@"
+`, name, version, npmGlobalDir, exePath, corepackPrefix)
 }
