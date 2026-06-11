@@ -146,7 +146,7 @@ $phase = if ($EventName -match '^before_') { 'before' } else { 'after' }
 
 # Use custom message if configured, otherwise default
 if (-not $commitMsg) {
-    $commitMsg = "[Spec Kit] Auto-commit $phase $commandName"
+    $commitMsg = "chore(speckit): auto-commit $phase $commandName"
 }
 
 # Stage and commit

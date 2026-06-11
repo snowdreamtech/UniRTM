@@ -137,4 +137,4 @@ tags:
 config:
   defaults:
     branch_numbering: sequential
-    init_commit_message: "[Spec Kit] Initial commit"
+    init_commit_message: "chore(speckit): initial commit"
