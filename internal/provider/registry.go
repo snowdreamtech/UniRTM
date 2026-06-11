@@ -62,6 +62,8 @@ func NewRegistry() *Registry {
 	r.Register("kubectl", NewGenericProvider())
 	r.Register("maven", NewGenericProvider())
 	r.Register("gradle", NewGenericProvider())
+	r.Register("maven-pkg", NewMavenPkgProvider())
+	r.Register("gradle-pkg", NewGradlePkgProvider())
 	r.Register("docker", NewContainerProvider("docker"))
 	r.Register("podman", NewContainerProvider("podman"))
 	r.Register("nerdctl", NewContainerProvider("nerdctl"))
