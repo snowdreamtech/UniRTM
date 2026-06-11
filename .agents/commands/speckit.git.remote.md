@@ -1,1 +1,0 @@
-../../.agent/workflows/speckit.git.remote.md

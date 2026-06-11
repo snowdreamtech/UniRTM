@@ -30,5 +30,9 @@ the actual rules live in `.agent/rules/` as the Single Source of Truth.
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan at specs/019-hook-install-hybrid-resolution/plan.md
+shell commands, and other important information, read the current plan at specs/020-ai-ide-integration/plan.md
 <!-- SPECKIT END -->
+
+## Slash Commands / Workflows
+
+All AI slash commands and standard operating procedures (SOPs) are located in `.agent/workflows/`. If the user invokes a command like `/speckit.plan`, execute the corresponding markdown file in that directory.

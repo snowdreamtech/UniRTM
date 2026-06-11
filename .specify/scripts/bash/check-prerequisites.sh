@@ -83,6 +83,11 @@ _paths_output=$(get_feature_paths) || { echo "ERROR: Failed to resolve feature p
 eval "$_paths_output"
 unset _paths_output
 
+# Auto-sync IDE adapters (Universal Compiler) in background
+if [[ -x "$SCRIPT_DIR/compile-ide-adapters.sh" ]]; then
+    "$SCRIPT_DIR/compile-ide-adapters.sh" &>/dev/null &
+fi
+
 # If paths-only mode, output paths and exit (no validation)
 if $PATHS_ONLY; then
     if $JSON_MODE; then
