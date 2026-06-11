@@ -10,15 +10,19 @@ Validate that the AI IDE integration architecture has been applied successfully.
 ## Scenario 2: Validate Workflow Relocation
 
 1. Check that the `.agents` directory has been removed:
+
    ```bash
    ls -la .agents
    ```
+
    **Expected Outcome:** `ls: .agents: No such file or directory`
 
 2. Check that `.agent/workflows` contains the Spec Kit workflows:
+
    ```bash
    ls -la .agent/workflows | grep speckit
    ```
+
    **Expected Outcome:** Lists multiple `.md` files like `speckit.plan.md`, `speckit.specify.md`, etc.
 
 ## Scenario 3: Execution Validation

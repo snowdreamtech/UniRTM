@@ -8,6 +8,12 @@
 
 **Input**: User description: "总结上面的讨论和方案，总结出计划"
 
+## Clarifications
+
+### Session 2026-06-11
+
+- Q: 脚本增强健壮性：对于列表中的文件夹（crush, cody, junie 等），只有存在才会继续操作，没有则需要跳过。是否应采用硬编码白名单限制？ → A: 保持动态发现机制（Option A）。自动扫描所有已经存在的隐藏层级 `commands`/`workflows`/`prompts` 目录并下发代理，天然跳过不存在的文件夹，且能自动支持未来的新 IDE，无需维护硬编码白名单。
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Unified Execution via Workflows (Priority: P1)
@@ -59,8 +65,9 @@ As a repository maintainer, I want to eliminate redundant command directories (`
 - **FR-003**: System MUST update all IDE-specific root files (e.g., `.cursorrules`, `.windsurfrules`, `.cline/mcp.json`) to serve solely as redirect pointers to `.agent/rules/00-index.md` and `.agent/workflows/`.
 - **FR-004**: System MUST remove the `.agents` folder completely to prevent naming collisions and AI hallucination.
 - **FR-005**: All workflow definitions MUST be written as intelligent Standard Operating Procedures (SOPs) that guide the AI to invoke the correct `.specify/scripts/` logic.
+- **FR-006**: System MUST use a dynamic directory discovery mechanism (e.g., `find`) to locate target AI IDE integration folders. It MUST NOT rely on a hardcoded whitelist of IDE names. This robust approach inherently guarantees that operations only occur on existing directories and automatically extends support to future IDEs with matching directory structures without manual updates.
 
-### Key Entities 
+### Key Entities
 
 - **Unified Routing Layer**: The collection of `.cursorrules`, `AGENTS.md`, and other IDE-specific files acting as pointers.
 - **AI Interface Layer**: The `.agent/` directory, exposing `rules/` and `workflows/`.

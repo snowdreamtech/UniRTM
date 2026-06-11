@@ -71,9 +71,11 @@ specs/020-ai-ide-integration/
 **Structure Decision**: A unified proxy structure using `.agent/workflows/` as the primary AI interface, while treating IDE-specific config files as thin pointers. The redundant `.agents/` folder is completely removed.
 
 ### Phase 2: Universal Compiler (Auto-Sync)
+
 To solve the maintenance burden of proxy files and support 50+ AI IDEs natively, we introduce a `compile-ide-adapters.sh` script.
 
 #### [NEW] .specify/scripts/bash/compile-ide-adapters.sh
+
 - **Purpose**: Scans `.specify/commands/*.md` and generates corresponding adapter files.
 - **Logic**:
   1. For every `cmd.md` in `.specify/commands/`, creates an `.agent/workflows/cmd.md` proxy file.
@@ -81,9 +83,11 @@ To solve the maintenance burden of proxy files and support 50+ AI IDEs natively,
   3. Detects `.cline/`, `.roo/`, `.windsurf/`, `.github/` and auto-compiles instructions if necessary (Phase 2 targets `.agent/workflows` as primary, `.cursor/rules` as secondary native target).
 
 #### [MODIFY] .specify/scripts/bash/check-prerequisites.sh
+
 - **Change**: Invoke `compile-ide-adapters.sh` silently to ensure workflows are always up-to-date before any Spec Kit command executes.
 
 ### Phase 3: Universal Compiler V2 (Production-Grade)
+
 Refactoring the compiler script (`compile-ide-adapters.sh`) to support intelligent orphan cleanup, idempotent execution, and global pointers.
 
 - **Sync & Prune**: Tracks active commands in `.specify/commands/`. Deletes any `.agent/workflows/*.md` or `.cursor/rules/speckit_*.mdc` files that correspond to deleted commands.

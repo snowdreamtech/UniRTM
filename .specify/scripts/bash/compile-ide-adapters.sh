@@ -73,10 +73,10 @@ write_idempotent() {
 ensure_global_pointer() {
     local target_file="$1"
     local content="
-# --- Spec Kit AI IDE Integration ---
-# This project uses Spec Kit. 
-# CRITICAL: If you need to execute workflows or commands, refer to the files in \`.agent/workflows/\`.
-# CRITICAL: For project governance and rules, refer to \`.agent/rules/00-index.md\`.
+> **Spec Kit AI IDE Integration**
+> This project uses Spec Kit. 
+> CRITICAL: If you need to execute workflows or commands, refer to the files in \`.agent/workflows/\`.
+> CRITICAL: For project governance and rules, refer to \`.agent/rules/00-index.md\`.
 "
     
     # Check if the directory containing the target file exists (e.g. .github/)
