@@ -6,6 +6,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -747,9 +748,13 @@ func TestActivationManager_GenerateProjectActivation_Paths(t *testing.T) {
 					assert.Contains(t, content, "if not contains $p $UNIRTM_PATH", "Missing contains check in deduplication for fish")
 				} else if shell == ShellPowerShell {
 					for _, p := range tt.wantPaths {
+						expectedPath := p
+						if env.RuntimeGOOS == "windows" {
+							expectedPath = filepath.FromSlash(p)
+						}
 						// For powershell, paths are separated by comma in array before joining, but let's just check the string exists
 						// Note: filepath.Join or similar might use backslashes on Windows, so we check for presence
-						assert.Contains(t, content, p, "Expected path %s in script content for shell %s", p, shell)
+						assert.Contains(t, content, expectedPath, "Expected path %s in script content for shell %s", expectedPath, shell)
 					}
 					assert.Contains(t, content, "Where-Object { $unirtmPaths -notcontains $_ }", "Missing UNIRTM_PATH check in deduplication for powershell")
 				}
