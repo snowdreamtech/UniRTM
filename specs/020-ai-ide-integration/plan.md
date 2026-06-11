@@ -82,3 +82,10 @@ To solve the maintenance burden of proxy files and support 50+ AI IDEs natively,
 
 #### [MODIFY] .specify/scripts/bash/check-prerequisites.sh
 - **Change**: Invoke `compile-ide-adapters.sh` silently to ensure workflows are always up-to-date before any Spec Kit command executes.
+
+### Phase 3: Universal Compiler V2 (Production-Grade)
+Refactoring the compiler script (`compile-ide-adapters.sh`) to support intelligent orphan cleanup, idempotent execution, and global pointers.
+
+- **Sync & Prune**: Tracks active commands in `.specify/commands/`. Deletes any `.agent/workflows/*.md` or `.cursor/rules/speckit_*.mdc` files that correspond to deleted commands.
+- **Idempotency**: Generates proxy content in a temp file and uses `cmp -s` to only overwrite if contents have changed, minimizing I/O and preserving timestamps.
+- **Universal Adapters**: Automatically creates or appends standard `.agent/` pointers to `.clinerules`, `.windsurfrules`, `.roo-rules`, `.traerules`, and `.github/copilot-instructions.md` if the target IDE environment exists.

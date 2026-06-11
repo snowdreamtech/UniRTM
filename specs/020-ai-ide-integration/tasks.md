@@ -123,3 +123,11 @@
 - [x] T016 Add `.cursor/rules/*.mdc` generator logic inside the compiler script
 - [x] T017 Hook `compile-ide-adapters.sh` into `check-prerequisites.sh` for auto-sync
 - [x] T018 Test compiler by generating proxies for existing `.specify/commands/*.md`
+
+## Phase 8: Universal Compiler V2 (Priority: P1)
+
+- [x] T019 Implement orphan cleanup logic for `.agent/workflows/`
+- [x] T019 Implement orphan cleanup logic for `.cursor/rules/speckit_*.mdc`
+- [x] T020 Refactor file generation to be idempotent using `cmp -s`
+- [x] T021 Add universal adapter injector for `.clinerules`, `.windsurfrules`, `.roo-rules`, `.traerules`, and `.github/copilot-instructions.md`
+- [x] T022 Test V2 compiler

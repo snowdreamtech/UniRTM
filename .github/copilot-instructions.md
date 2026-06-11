@@ -35,3 +35,9 @@ Continue, Junie, etc.). This file is a redirect entry point —
 the actual rules live in `.agent/rules/` as the Single Source of Truth.
 
 > **Failure to follow the rules inside `.agent/rules/` is completely unacceptable.**
+
+# --- Spec Kit AI IDE Integration ---
+# This project uses Spec Kit. 
+# CRITICAL: If you need to execute workflows or commands, refer to the files in `.agent/workflows/`.
+# CRITICAL: For project governance and rules, refer to `.agent/rules/00-index.md`.
+
