@@ -1,1 +1,3 @@
-{"feature_directory": "specs/021-unify-hook-run"}
+{
+  "feature_directory": "specs/022-hook-exec"
+}
