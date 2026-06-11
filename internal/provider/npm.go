@@ -46,7 +46,15 @@ func (p *NpmProvider) Install(ctx context.Context, tool string, installPath stri
 	pkgSpec := fmt.Sprintf("%s@%s", tool, version)
 	logger.Debug("Installing npm package", map[string]interface{}{"pkg": pkgSpec, "prefix": installPath})
 
-	cmd := exec.CommandContext(ctx, npmCmd, "install", "-g", pkgSpec, "--prefix", installPath, "--ignore-scripts=true")
+	cmdArgs := []string{"install", "-g", pkgSpec, "--prefix", installPath}
+	allowScripts := env.Get("NPM_ALLOW_SCRIPTS")
+	isAllowed := allowScripts == "1" || allowScripts == "true" || allowScripts == "yes"
+
+	if !isAllowed {
+		cmdArgs = append(cmdArgs, "--ignore-scripts=true")
+	}
+
+	cmd := exec.CommandContext(ctx, npmCmd, cmdArgs...)
 	if ctx != nil && ctx.Value("quietProgress") == true {
 		cmd.Stdout = nil
 		cmd.Stderr = nil
@@ -67,7 +75,9 @@ func (p *NpmProvider) Install(ctx context.Context, tool string, installPath stri
 		return NewProviderError(p.Name(), tool, version, "npm install failed", err)
 	}
 
-	p.checkAndWarnLifecycleScripts(tool, installPath)
+	if !isAllowed {
+		p.checkAndWarnLifecycleScripts(tool, installPath)
+	}
 
 	return nil
 }

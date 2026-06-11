@@ -23,6 +23,7 @@ The `preinstall` and `postinstall` lifecycle scripts in the global npm ecosystem
 
 #### Technical Solution
 - **Mandatory Isolation**: Inject the `--ignore-scripts=true` parameter during global installations in `internal/provider/npm.go` to enforce indiscriminate interception.
+- **Escape Hatch**: Developers can explicitly bypass this security interception and allow lifecycle scripts to execute by setting the `UNIRTM_NPM_ALLOW_SCRIPTS=1` environment variable.
 - **Intelligent Diagnostic Warnings**: After installation (atomic directory writing), read the `package.json` located in the respective component directory:
   - UNIX: `lib/node_modules/<tool>/package.json`
   - Windows: `node_modules/<tool>/package.json`
