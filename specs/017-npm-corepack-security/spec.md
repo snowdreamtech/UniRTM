@@ -11,6 +11,7 @@
 ## Overview
 
 Implement atomic development mechanisms across platforms (POSIX/Windows) to achieve UniRTM's core concepts of "Security by Default" and "Ultimate Developer Experience":
+
 1. **Block Zero-Day Supply Chain Attacks**: Intercept high-risk lifecycle scripts during npm package installations, balancing transparency and security.
 2. **Zero-Configuration Node Ecosystem Support**: Provide native bridge support for Corepack to enable seamless invocation of `yarn` and `pnpm`.
 
@@ -19,9 +20,11 @@ Implement atomic development mechanisms across platforms (POSIX/Windows) to achi
 ### 1. Interception and Warning for npm Lifecycle Scripts
 
 #### Security Pain Points
+
 The `preinstall` and `postinstall` lifecycle scripts in the global npm ecosystem are frequent vectors for supply chain poisoning. An atomic execution mechanism with "isolation by default, explicit authorization" must be enforced.
 
 #### Technical Solution
+
 - **Mandatory Isolation**: Inject the `--ignore-scripts=true` parameter during global installations in `internal/provider/npm.go` to enforce indiscriminate interception.
 - **Escape Hatch**: Developers can explicitly bypass this security interception and allow lifecycle scripts to execute by setting the `UNIRTM_NPM_ALLOW_SCRIPTS=1` environment variable.
 - **Intelligent Diagnostic Warnings**: After installation (atomic directory writing), read the `package.json` located in the respective component directory:
@@ -33,9 +36,11 @@ The `preinstall` and `postinstall` lifecycle scripts in the global npm ecosystem
 ### 2. Native Support for Corepack Package Management
 
 #### Cross-Platform Experience Consistency
+
 Eliminate the need for developers to manually execute `corepack enable`. UniRTM's version switching will automatically support environment-aware execution for `yarn`, `yarnpkg`, `pnpm`, and `pnpx`.
 
 #### Technical Solution
+
 - **Shim Mounting**: Modify `internal/provider/node.go`.
 - Add `corepack`, `yarn`, `yarnpkg`, `pnpm`, and `pnpx` to the `ListExecutables` whitelist and `GenerateShims` target generation list.
 - **Delegate Execution**: For the generation of specialized shims like `yarn`/`pnpm`:

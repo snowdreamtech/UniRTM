@@ -23,9 +23,9 @@ func TestNpmProvider_checkAndWarnLifecycleScripts_POSIX(t *testing.T) {
 	// Mock package.json path for POSIX: lib/node_modules/test_pkg/package.json
 	pkgDir := filepath.Join(tmpDir, "lib", "node_modules", "test_pkg")
 	require.NoError(t, os.MkdirAll(pkgDir, 0755))
-	
+
 	pkgJsonPath := filepath.Join(pkgDir, "package.json")
-	
+
 	// Test 1: No lifecycle scripts
 	err := os.WriteFile(pkgJsonPath, []byte(`{"name":"test_pkg","version":"1.0.0"}`), 0644)
 	require.NoError(t, err)
@@ -49,9 +49,9 @@ func TestNpmProvider_checkAndWarnLifecycleScripts_Windows(t *testing.T) {
 	// Mock package.json path for Windows: node_modules/test_pkg/package.json
 	pkgDir := filepath.Join(tmpDir, "node_modules", "test_pkg")
 	require.NoError(t, os.MkdirAll(pkgDir, 0755))
-	
+
 	pkgJsonPath := filepath.Join(pkgDir, "package.json")
-	
+
 	// Test 1: No lifecycle scripts
 	err := os.WriteFile(pkgJsonPath, []byte(`{"name":"test_pkg","version":"1.0.0"}`), 0644)
 	require.NoError(t, err)
