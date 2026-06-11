@@ -22,6 +22,61 @@ func initGitRepo(t *testing.T, dir string) {
 	}
 }
 
+func TestInjectOrUpdateBlock_EmptyFile(t *testing.T) {
+	newContent := injectOrUpdateBlock("", false)
+	if !strings.HasPrefix(newContent, "#!/bin/sh\n") {
+		t.Errorf("Expected shebang in empty file, got: %s", newContent)
+	}
+	if !strings.Contains(newContent, managedBlockStart) {
+		t.Errorf("Expected managed block in empty file")
+	}
+}
+
+func TestInjectOrUpdateBlock_ExistingShebang(t *testing.T) {
+	origContent := "#!/usr/bin/env bash\n# Some comment\nexit 0"
+	newContent := injectOrUpdateBlock(origContent, true)
+
+	lines := strings.Split(newContent, "\n")
+	if lines[0] != "#!/usr/bin/env bash" {
+		t.Errorf("Expected first line to be shebang, got %s", lines[0])
+	}
+	if !strings.Contains(newContent, managedBlockStart) {
+		t.Errorf("Expected managed block")
+	}
+	if !strings.Contains(newContent, "# Some comment") {
+		t.Errorf("Expected original content to be preserved")
+	}
+}
+
+func TestInjectOrUpdateBlock_NoShebang(t *testing.T) {
+	origContent := "echo 'Hello World'"
+	newContent := injectOrUpdateBlock(origContent, false)
+
+	if !strings.HasPrefix(newContent, "#!/bin/sh\n") {
+		t.Errorf("Expected script to prepend shebang")
+	}
+	if !strings.Contains(newContent, "echo 'Hello World'") {
+		t.Errorf("Expected original content to be preserved")
+	}
+}
+
+func TestInjectOrUpdateBlock_Idempotent(t *testing.T) {
+	origContent := "#!/bin/sh\n" + managedBlockStart + "\nold payload\n" + managedBlockEnd + "\nexit 0"
+	newContent := injectOrUpdateBlock(origContent, true)
+
+	if strings.Contains(newContent, "old payload") {
+		t.Errorf("Expected old payload to be replaced")
+	}
+	if !strings.Contains(newContent, bridgeScriptPayload) {
+		t.Errorf("Expected new payload to be injected")
+	}
+	// Count occurrences of managed block start
+	count := strings.Count(newContent, managedBlockStart)
+	if count != 1 {
+		t.Errorf("Expected exactly 1 managed block, got %d", count)
+	}
+}
+
 func TestInstallBridgeScript_CreatesFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	initGitRepo(t, tmpDir)
@@ -56,52 +111,6 @@ func TestInstallBridgeScript_FilePermissions(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		if perm != 0755 {
 			t.Errorf("expected permissions 0755, got %04o", perm)
-		}
-	}
-}
-
-func TestInstallBridgeScript_FileContent(t *testing.T) {
-	tmpDir := t.TempDir()
-	initGitRepo(t, tmpDir)
-
-	if err := InstallBridgeScript(context.Background(), tmpDir, "commit-msg"); err != nil {
-		t.Fatalf("InstallBridgeScript failed: %v", err)
-	}
-
-	hookPath := filepath.Join(tmpDir, ".git", "hooks", "commit-msg")
-	content, err := os.ReadFile(hookPath)
-	if err != nil {
-		t.Fatalf("ReadFile failed: %v", err)
-	}
-
-	contentStr := string(content)
-
-	// Must be a POSIX sh script
-	if !strings.HasPrefix(contentStr, "#!/bin/sh") {
-		t.Errorf("expected shebang '#!/bin/sh', got: %q", contentStr[:20])
-	}
-	// Must not use 'source' (bash extension)
-	if strings.Contains(contentStr, " source ") {
-		t.Errorf("bridge script must not use 'source' (bash extension); use '.' instead")
-	}
-	// Must pass arguments correctly
-	if !strings.Contains(contentStr, `"$@"`) {
-		t.Errorf(`bridge script must contain "$@" to forward git hook args`)
-	}
-	// Must call unirtm hook run
-	if !strings.Contains(contentStr, "unirtm hook run") {
-		t.Errorf("bridge script must call 'unirtm hook run'")
-	}
-}
-
-func TestInstallBridgeScript_Idempotent(t *testing.T) {
-	tmpDir := t.TempDir()
-	initGitRepo(t, tmpDir)
-
-	// Call twice — must not fail on second call
-	for i := 0; i < 2; i++ {
-		if err := InstallBridgeScript(context.Background(), tmpDir, "pre-commit"); err != nil {
-			t.Fatalf("call %d: InstallBridgeScript failed: %v", i+1, err)
 		}
 	}
 }

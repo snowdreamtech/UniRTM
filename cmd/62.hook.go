@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var hookAll bool
+
 var hookCmd = &cobra.Command{
 	Use:   "hook",
 	Short: "Manage and execute git hooks",
@@ -22,15 +24,34 @@ This allows you to seamlessly integrate pre-commit, husky, lefthook, or native U
 var hookInstallCmd = &cobra.Command{
 	Use:   "install [hookName]",
 	Short: "Install a git hook bridge script",
-	Long:  `Injects the UniRTM bridge script into .git/hooks/<hookName> to enable routing.`,
-	Args:  cobra.ExactArgs(1),
+	Long: `Injects the UniRTM bridge script into .git/hooks/<hookName> to enable routing.
+Use the -a/--all flag to install the bridge script to all non-sample hooks in .git/hooks.`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		hookName := args[0]
-		if err := hook.ValidateHookName(hookName); err != nil {
-			return err
-		}
 		pwd, err := os.Getwd()
 		if err != nil {
+			return err
+		}
+
+		if hookAll {
+			updated, err := hook.InstallAllBridgeScripts(cmd.Context(), pwd)
+			if err != nil {
+				return fmt.Errorf("failed to install hooks: %w", err)
+			}
+			if len(updated) == 0 {
+				fmt.Println("No active hooks found to update.")
+			} else {
+				fmt.Printf("✨ Successfully installed UniRTM bridge script for hooks: %v\n", updated)
+			}
+			return nil
+		}
+
+		if len(args) == 0 {
+			return fmt.Errorf("requires at least 1 arg(s), only received 0")
+		}
+
+		hookName := args[0]
+		if err := hook.ValidateHookName(hookName); err != nil {
 			return err
 		}
 
@@ -67,6 +88,7 @@ var hookRunCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(hookCmd)
+	hookInstallCmd.Flags().BoolVarP(&hookAll, "all", "a", false, "Install bridge scripts to all non-sample hooks in .git/hooks")
 	hookCmd.AddCommand(hookInstallCmd)
 	hookCmd.AddCommand(hookRunCmd)
 }
