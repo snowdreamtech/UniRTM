@@ -22,8 +22,8 @@ mkdir -p "$AGENT_WORKFLOWS_DIR"
 
 # Step 0: Global Cleanup of Legacy/Broken Symlinks
 # The v1 script used symlinks which break when repositories are cloned or directories move.
-# Find and delete all speckit*.md symlinks in any top-level hidden directory to start fresh.
-find "$REPO_ROOT" -maxdepth 3 -type l -name "speckit*.md" -path "$REPO_ROOT/.*" -delete 2>/dev/null || true
+# Find and delete all speckit*.md and snowdreamtech*.md symlinks in any top-level hidden directory to start fresh.
+find "$REPO_ROOT" -maxdepth 3 -type l \( -name "speckit*.md" -o -name "snowdreamtech*.md" \) -path "$REPO_ROOT/.*" -delete 2>/dev/null || true
 
 # Step 1: Collect Active Commands (macOS Bash 3.2 compatible string array)
 ACTIVE_COMMANDS_STRING=" "
@@ -192,7 +192,7 @@ Please read \`.specify/commands/$base_name\` and execute its instructions exactl
         done
         
         # 3. Clean Orphans in this directory
-        for existing_file in "$target_dir"/speckit*.md; do
+        for existing_file in "$target_dir"/speckit*.md "$target_dir"/snowdreamtech*.md; do
             [[ -f "$existing_file" ]] || continue
             base_name="${existing_file##*/}"
             if ! is_active_command "$base_name"; then
