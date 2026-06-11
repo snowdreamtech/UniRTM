@@ -229,6 +229,10 @@ func (m *ActivationManager) GenerateProjectActivation(ctx context.Context, shell
 		}
 	}
 
+	// ALWAYS append shimsDir as the last fallback path in PATH mode
+	// This ensures tools that don't expose bin paths (like pipx) are still accessible via their shims
+	injectedPaths = append(injectedPaths, m.shimsDir)
+
 	config := ActivationConfig{
 		Shell:         shell,
 		Scope:         ScopeProject,

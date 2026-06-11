@@ -616,3 +616,144 @@ func TestActivationManager_GenerateActivationScript_AllShells(t *testing.T) {
 		})
 	}
 }
+
+// pathMockProvider is a mock provider specifically for testing GetBinPaths variations
+type pathMockProvider struct {
+	name     string
+	binPaths []string
+}
+
+func (m *pathMockProvider) Name() string { return m.name }
+func (m *pathMockProvider) Install(ctx context.Context, tool string, installPath, artifactPath, version string) error {
+	return nil
+}
+func (m *pathMockProvider) PostInstall(ctx context.Context, tool string, installPath, version string) error {
+	return nil
+}
+func (m *pathMockProvider) Uninstall(ctx context.Context, tool string, installPath, version string) error {
+	return nil
+}
+func (m *pathMockProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
+	return "", nil
+}
+func (m *pathMockProvider) GenerateShims(tool string, installPath, version string) (map[string]string, error) {
+	return map[string]string{}, nil
+}
+func (m *pathMockProvider) ListExecutables(tool string, installPath, version string) ([]string, error) {
+	return []string{}, nil
+}
+func (m *pathMockProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
+	return m.binPaths, nil
+}
+func (m *pathMockProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
+	return map[string]string{}, nil
+}
+
+func TestActivationManager_GenerateProjectActivation_Paths(t *testing.T) {
+	ctx := context.Background()
+	shimsDir := "/usr/local/unirtm/shims"
+	dataDir := "/var/lib/unirtm"
+
+	tests := []struct {
+		name         string
+		toolVersions map[string]string
+		setupMock    func(*provider.Registry)
+		wantPaths    []string // Expected paths to be found in UNIRTM_PATH or equivalent
+	}{
+		{
+			name: "Standard Tools Only",
+			toolVersions: map[string]string{
+				"node": "20.0.0",
+			},
+			setupMock: func(r *provider.Registry) {
+				r.Register("node", &pathMockProvider{
+					name:     "node",
+					binPaths: []string{"/var/lib/unirtm/installs/node/20.0.0/bin"},
+				})
+			},
+			wantPaths: []string{
+				"/var/lib/unirtm/installs/node/20.0.0/bin",
+				"/usr/local/unirtm/shims",
+			},
+		},
+		{
+			name: "Shim-Only Tools (e.g. pipx)",
+			toolVersions: map[string]string{
+				"pipx-pre-commit": "4.6.0",
+			},
+			setupMock: func(r *provider.Registry) {
+				r.Register("pipx-pre-commit", &pathMockProvider{
+					name:     "pipx-pre-commit",
+					binPaths: []string{}, // pipx provider returns no bin paths
+				})
+			},
+			wantPaths: []string{
+				"/usr/local/unirtm/shims", // shimsDir must be injected
+			},
+		},
+		{
+			name: "Mixed Tools",
+			toolVersions: map[string]string{
+				"node": "20.0.0",
+				"pipx": "1.7.0",
+			},
+			setupMock: func(r *provider.Registry) {
+				r.Register("node", &pathMockProvider{
+					name:     "node",
+					binPaths: []string{"/var/lib/unirtm/installs/node/20.0.0/bin"},
+				})
+				r.Register("pipx", &pathMockProvider{
+					name:     "pipx",
+					binPaths: []string{},
+				})
+			},
+			wantPaths: []string{
+				"/var/lib/unirtm/installs/node/20.0.0/bin",
+				"/usr/local/unirtm/shims",
+			},
+		},
+	}
+
+	shells := []ShellType{ShellBash, ShellZsh, ShellFish, ShellPowerShell}
+
+	for _, tt := range tests {
+		for _, shell := range shells {
+			t.Run(fmt.Sprintf("%s_%s", tt.name, shell), func(t *testing.T) {
+				registry := provider.NewRegistry()
+				tt.setupMock(registry)
+
+				manager := NewActivationManager(shimsDir, dataDir, registry)
+				script, err := manager.GenerateProjectActivation(ctx, shell, "/home/user/project", tt.toolVersions, nil)
+
+				require.NoError(t, err)
+				require.NotNil(t, script)
+
+				content := script.Content
+
+				// Assert specific path structure depending on shell
+				if shell == ShellBash || shell == ShellZsh {
+					// Check UNIRTM_PATH export
+					for _, p := range tt.wantPaths {
+						assert.Contains(t, content, p, "Expected path %s in script content for shell %s", p, shell)
+					}
+					// Also verify that deduplication logic exists
+					assert.Contains(t, content, "for _p in", "Missing PATH deduplication logic")
+					assert.Contains(t, content, "case \":$UNIRTM_PATH:\"", "Missing UNIRTM_PATH check in deduplication")
+				} else if shell == ShellFish {
+					for _, p := range tt.wantPaths {
+						assert.Contains(t, content, p, "Expected path %s in script content for shell %s", p, shell)
+					}
+					assert.Contains(t, content, "for p in $PATH", "Missing PATH deduplication logic in fish")
+					assert.Contains(t, content, "if not contains $p $UNIRTM_PATH", "Missing contains check in deduplication for fish")
+				} else if shell == ShellPowerShell {
+					for _, p := range tt.wantPaths {
+						// For powershell, paths are separated by comma in array before joining, but let's just check the string exists
+						// Note: filepath.Join or similar might use backslashes on Windows, so we check for presence
+						assert.Contains(t, content, p, "Expected path %s in script content for shell %s", p, shell)
+					}
+					assert.Contains(t, content, "Where-Object { $unirtmPaths -notcontains $_ }", "Missing UNIRTM_PATH check in deduplication for powershell")
+				}
+			})
+		}
+	}
+}
