@@ -69,7 +69,7 @@ func TestHuskyRunner_Run_SilentOnMissingScript(t *testing.T) {
 
 	h := HuskyRunner{}
 	// Must succeed silently (no hook script defined)
-	if err := h.Run(context.Background(), "pre-commit", nil); err != nil {
+	if err := h.Run(context.Background(), "pre-commit", "", nil); err != nil {
 		t.Errorf("Run() should return nil when hook script does not exist, got: %v", err)
 	}
 }

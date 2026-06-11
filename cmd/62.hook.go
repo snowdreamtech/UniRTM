@@ -13,6 +13,7 @@ import (
 )
 
 var hookAll bool
+var hookStage string
 
 var hookCmd = &cobra.Command{
 	Use:   "hook",
@@ -66,14 +67,16 @@ Use the -a/--all flag to install the bridge script to all non-sample hooks in .g
 }
 
 var hookRunCmd = &cobra.Command{
-	Use:   "run [hookName]",
+	Use:   "run [hookName] [--stage stage] [args...]",
 	Short: "Run a specific git hook",
 	Long:  `Executes the specified git hook by routing it to the detected runner engine.`,
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		hookName := args[0]
-		if err := hook.ValidateHookName(hookName); err != nil {
-			return err
+		if hookName != "all" {
+			if err := hook.ValidateHookName(hookName); err != nil {
+				return err
+			}
 		}
 		hookArgs := args[1:]
 
@@ -82,13 +85,15 @@ var hookRunCmd = &cobra.Command{
 			return err
 		}
 
-		return hook.Run(context.Background(), pwd, hookName, hookArgs)
+		return hook.Run(context.Background(), pwd, hookName, hookStage, hookArgs)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(hookCmd)
 	hookInstallCmd.Flags().BoolVarP(&hookAll, "all", "a", false, "Install bridge scripts to all non-sample hooks in .git/hooks")
+	hookRunCmd.Flags().StringVar(&hookStage, "stage", "", "Git lifecycle stage (e.g. pre-commit)")
+	hookRunCmd.Flags().SetInterspersed(false)
 	hookCmd.AddCommand(hookInstallCmd)
 	hookCmd.AddCommand(hookRunCmd)
 }

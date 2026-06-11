@@ -29,8 +29,23 @@ func (l LefthookRunner) Install(ctx context.Context, dir string) error {
 	return nil
 }
 
-func (l LefthookRunner) Run(ctx context.Context, hookName string, args []string) error {
-	cmdArgs := append([]string{"exec", "--", "lefthook", "run", hookName}, args...)
+func (l LefthookRunner) Run(ctx context.Context, hookName string, stage string, args []string) error {
+	var cmdArgs []string
+	if hookName == "all" {
+		if stage == "" {
+			cmdArgs = []string{"exec", "--", "lefthook", "run"}
+		} else {
+			cmdArgs = []string{"exec", "--", "lefthook", "run", stage}
+		}
+	} else {
+		if stage == "" {
+			cmdArgs = []string{"exec", "--", "lefthook", "run", hookName}
+		} else {
+			cmdArgs = []string{"exec", "--", "lefthook", "run", stage, "--commands", hookName}
+		}
+	}
+	cmdArgs = append(cmdArgs, args...)
+
 	cmd := exec.CommandContext(ctx, "unirtm", cmdArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

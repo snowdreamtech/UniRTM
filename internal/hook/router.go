@@ -34,7 +34,7 @@ func RegisterRunner(r HookRunner) {
 
 // Run iterates through registered runners, detecting the appropriate engine,
 // and delegates the execution of the hook to it.
-func Run(ctx context.Context, dir string, hookName string, args []string) error {
+func Run(ctx context.Context, dir string, hookName string, stage string, args []string) error {
 	// Sort runners by priority descending to ensure deterministic execution
 	sort.SliceStable(runners, func(i, j int) bool {
 		return getPriority(runners[i].Name()) > getPriority(runners[j].Name())
@@ -43,7 +43,7 @@ func Run(ctx context.Context, dir string, hookName string, args []string) error 
 	for _, r := range runners {
 		if r.Detect(dir) {
 			fmt.Printf("🔧 UniRTM Hook: Delegating to %s\n", r.Name())
-			return r.Run(ctx, hookName, args)
+			return r.Run(ctx, hookName, stage, args)
 		}
 	}
 

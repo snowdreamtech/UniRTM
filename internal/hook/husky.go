@@ -29,8 +29,22 @@ func (h HuskyRunner) Install(ctx context.Context, dir string) error {
 	return nil
 }
 
-func (h HuskyRunner) Run(ctx context.Context, hookName string, args []string) error {
-	hookScript := filepath.Join(".husky", hookName)
+func (h HuskyRunner) Run(ctx context.Context, hookName string, stage string, args []string) error {
+	var targetScript string
+	if hookName == "all" {
+		if stage == "" {
+			return nil
+		}
+		targetScript = stage
+	} else {
+		if stage != "" {
+			targetScript = stage
+		} else {
+			targetScript = hookName
+		}
+	}
+
+	hookScript := filepath.Join(".husky", targetScript)
 	if _, err := os.Stat(hookScript); os.IsNotExist(err) {
 		return nil // Hook not defined in Husky
 	}

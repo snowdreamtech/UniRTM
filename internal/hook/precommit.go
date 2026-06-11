@@ -29,8 +29,22 @@ func (p PreCommitRunner) Install(ctx context.Context, dir string) error {
 	return nil
 }
 
-func (p PreCommitRunner) Run(ctx context.Context, hookName string, args []string) error {
-	cmdArgs := append([]string{"exec", "--", "pre-commit", "run", hookName}, args...)
+func (p PreCommitRunner) Run(ctx context.Context, hookName string, stage string, args []string) error {
+	var cmdArgs []string
+	if hookName == "all" {
+		cmdArgs = []string{"exec", "--", "pre-commit", "run"}
+		if stage != "" {
+			cmdArgs = append(cmdArgs, "--hook-stage", stage)
+		}
+	} else {
+		cmdArgs = []string{"exec", "--", "pre-commit", "run", hookName}
+		if stage != "" {
+			cmdArgs = append(cmdArgs, "--hook-stage", stage)
+		}
+	}
+	cmdArgs = append(cmdArgs, "--")
+	cmdArgs = append(cmdArgs, args...)
+
 	cmd := exec.CommandContext(ctx, "unirtm", cmdArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

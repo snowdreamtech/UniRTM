@@ -19,7 +19,7 @@ type mockRunner struct {
 func (m *mockRunner) Name() string                                  { return m.name }
 func (m *mockRunner) Detect(dir string) bool                        { return m.detect }
 func (m *mockRunner) Install(ctx context.Context, dir string) error { return nil }
-func (m *mockRunner) Run(ctx context.Context, hookName string, args []string) error {
+func (m *mockRunner) Run(ctx context.Context, hookName string, stage string, args []string) error {
 	m.called = true
 	return m.runErr
 }
@@ -71,7 +71,7 @@ func TestRouterRunFallback(t *testing.T) {
 	mPrecommit := &mockRunner{name: "pre-commit", detect: false}
 	RegisterRunner(mPrecommit)
 
-	err := Run(context.Background(), ".", "pre-commit", nil)
+	err := Run(context.Background(), ".", "pre-commit", "", nil)
 	if err != nil {
 		t.Errorf("expected no error when no runners detect, got %v", err)
 	}

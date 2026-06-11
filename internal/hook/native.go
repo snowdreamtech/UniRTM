@@ -34,20 +34,34 @@ func (n NativeRunner) Install(ctx context.Context, dir string) error {
 	return nil
 }
 
-func (n NativeRunner) Run(ctx context.Context, hookName string, args []string) error {
-	return n.RunInDir(ctx, ".", hookName, args)
+func (n NativeRunner) Run(ctx context.Context, hookName string, stage string, args []string) error {
+	return n.RunInDir(ctx, ".", hookName, stage, args)
 }
 
 // RunInDir executes the hook defined in the config at the given directory.
 // Separating dir from Run() eliminates the need for os.Chdir in tests,
 // making the function safe for concurrent test execution.
-func (n NativeRunner) RunInDir(ctx context.Context, dir string, hookName string, args []string) error {
+func (n NativeRunner) RunInDir(ctx context.Context, dir string, hookName string, stage string, args []string) error {
 	cfg, err := config.LoadHierarchy(dir)
 	if err != nil {
 		return err
 	}
 
-	hookCmd, ok := cfg.Hooks[hookName]
+	var targetHook string
+	if hookName == "all" {
+		if stage == "" {
+			return nil
+		}
+		targetHook = stage
+	} else {
+		if stage != "" {
+			targetHook = hookName // Native maps actual command to hookName key
+		} else {
+			targetHook = hookName
+		}
+	}
+
+	hookCmd, ok := cfg.Hooks[targetHook]
 	if !ok || hookCmd == "" {
 		return nil // No hook defined for this event — silent success
 	}

@@ -13,9 +13,9 @@ type HookRunner interface {
 	// Install injects the bridge script into .git/hooks/ or runs engine-specific setup
 	Install(ctx context.Context, dir string) error
 
-	// Run executes the specific hook (e.g., "pre-commit", "commit-msg")
+	// Run executes the specific hook (e.g., "shellcheck") or stage (e.g., "pre-commit")
 	// args contains any trailing arguments passed by Git
-	Run(ctx context.Context, hookName string, args []string) error
+	Run(ctx context.Context, hookName string, stage string, args []string) error
 
 	// Name returns the identifier of the engine
 	Name() string
