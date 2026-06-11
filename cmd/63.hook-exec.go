@@ -11,13 +11,13 @@ import (
 )
 
 func init() {
-	if hookCmd != nil {
-		hookCmd.AddCommand(hookExecCmd)
+	if rootCmd != nil {
+		rootCmd.AddCommand(hookExecCmd)
 	}
 }
 
 var hookExecCmd = &cobra.Command{
-	Use:   "exec <tool> [args...]",
+	Use:   "hook-exec <tool> [args...]",
 	Short: "Execution wrapper specifically designed for git hooks",
 	Long: `A transparent execution wrapper for git hooks (like pre-commit).
 It automatically chunks file arguments on Windows to bypass the 8191 character
