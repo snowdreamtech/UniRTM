@@ -50,7 +50,7 @@ pre-commit = "echo 'hook executed'"
 `)
 	n := NativeRunner{}
 	// Use RunInDir to pass dir explicitly — no os.Chdir needed
-	if err := n.RunInDir(context.Background(), tmpDir, "pre-commit", nil); err != nil {
+	if err := n.RunInDir(context.Background(), tmpDir, "pre-commit", "", nil); err != nil {
 		t.Errorf("RunInDir() failed: %v", err)
 	}
 }
@@ -63,7 +63,7 @@ pre-commit = "echo 'hello'"
 `)
 	n := NativeRunner{}
 	// commit-msg is not defined — should silently succeed
-	if err := n.RunInDir(context.Background(), tmpDir, "commit-msg", nil); err != nil {
+	if err := n.RunInDir(context.Background(), tmpDir, "commit-msg", "", nil); err != nil {
 		t.Errorf("RunInDir() should return nil for undefined hook, got: %v", err)
 	}
 }
@@ -79,7 +79,7 @@ commit-msg = "printf '%s\n' \"$1\""
 	n := NativeRunner{}
 	// Argument contains a space — must be forwarded as a single token, not word-split
 	safeArg := filepath.Join(tmpDir, "COMMIT EDITMSG")
-	if err := n.RunInDir(context.Background(), tmpDir, "commit-msg", []string{safeArg}); err != nil {
+	if err := n.RunInDir(context.Background(), tmpDir, "commit-msg", "", []string{safeArg}); err != nil {
 		t.Errorf("RunInDir() failed with spaced arg: %v", err)
 	}
 }
