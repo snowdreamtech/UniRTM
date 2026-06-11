@@ -70,9 +70,17 @@ var hookRunCmd = &cobra.Command{
 	Use:   "run [hookName] [--stage stage] [args...]",
 	Short: "Run a specific git hook",
 	Long:  `Executes the specified git hook by routing it to the detected runner engine.`,
-	Args:  cobra.MinimumNArgs(1),
+	Args:  cobra.MinimumNArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		hookName := args[0]
+		var hookName string
+		var hookArgs []string
+
+		if len(args) == 0 {
+			hookName = "all"
+		} else {
+			hookName = args[0]
+			hookArgs = args[1:]
+		}
 
 		// Smart inference for legacy usage:
 		// If stage is not specified, and the first argument is a valid Git stage name (e.g., pre-commit, commit-msg),
@@ -90,8 +98,6 @@ var hookRunCmd = &cobra.Command{
 				return fmt.Errorf("invalid stage %q: %w", hookStage, err)
 			}
 		}
-
-		hookArgs := args[1:]
 
 		pwd, err := os.Getwd()
 		if err != nil {
