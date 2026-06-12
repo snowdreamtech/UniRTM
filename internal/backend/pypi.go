@@ -34,16 +34,16 @@ func (b *PypiBackend) Dependencies() []string {
 }
 
 type pypiRegistryResponse struct {
-	Info struct {
+	Releases map[string]interface{} `json:"releases"`
+	Info     struct {
 		Version string `json:"version"`
 	} `json:"info"`
-	Releases map[string]interface{} `json:"releases"`
 }
 
 func (b *PypiBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	url := fmt.Sprintf("https://pypi.org/pypi/%s/json", tool)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, NewBackendError(b.Name(), tool, "create request", err)
 	}
@@ -77,10 +77,11 @@ func (b *PypiBackend) ListVersions(ctx context.Context, tool string, platform Pl
 	return versions, nil
 }
 
-func (b *PypiBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *PypiBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
+	versionRequest = NormalizeVersionPrefix(versionRequest, false)
 	if versionRequest == "latest" {
 		url := fmt.Sprintf("https://pypi.org/pypi/%s/json", tool)
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 		if err != nil {
 			return nil, err
 		}
@@ -112,7 +113,8 @@ func (b *PypiBackend) ResolveVersion(ctx context.Context, tool string, versionRe
 	}, nil
 }
 
-func (b *PypiBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (b *PypiBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
+	version = NormalizeVersionPrefix(version, false)
 	return &VersionInfo{
 		Version:  version,
 		Platform: platform,

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/sigstore/sigstore-go/pkg/verify"
+
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
@@ -26,7 +27,6 @@ func VerifyGitlabArtifactProvenance(
 	ctx context.Context,
 	token, owner, repo, artifactPath string,
 ) (*ProvenanceResult, error) {
-
 	verifier := &gitlabProvenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
 	}
@@ -50,11 +50,11 @@ type gitlabProvenanceVerifier struct {
 }
 
 type gitlabAttestationResponse struct {
-	ID            int    `json:"id"`
-	IID           int    `json:"iid"`
 	Status        string `json:"status"`
 	PredicateType string `json:"predicate_type"`
 	DownloadURL   string `json:"download_url"`
+	ID            int    `json:"id"`
+	IID           int    `json:"iid"`
 }
 
 func (v *gitlabProvenanceVerifier) verify(
@@ -135,7 +135,7 @@ func (v *gitlabProvenanceVerifier) fetchAttestations(
 		baseURL, encodedRepo, digest,
 	)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, urlStr, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, urlStr, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("provenance: create request: %w", err)
 	}
@@ -185,7 +185,7 @@ func (v *gitlabProvenanceVerifier) fetchAttestations(
 }
 
 func (v *gitlabProvenanceVerifier) downloadBundle(ctx context.Context, token, downloadURL string) (json.RawMessage, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

@@ -271,50 +271,6 @@ repos:
         exclude: '\.(editorconfig|\.vscode/.*\.json)$'
         description: "Verify that INI and property files are well-formed."
 
-      - id: check-plist
-        name: check plist well-formedness
-        entry: |
-          python3 -c "
-          import sys, os, plistlib
-          errors = []
-          for f in sys.argv[1:]:
-              if os.path.isfile(f) and os.path.getsize(f) < 2*1024*1024:
-                  try:
-                      with open(f, 'rb') as fh: plistlib.load(fh)
-                  except Exception as e: errors.append(f'{f} ({e})')
-          for e in errors: print(f'Malformed Plist: {e}')
-          sys.exit(1 if errors else 0)
-          "
-        language: system
-        files: '\.plist$'
-        description: "Verify that Apple Plist files (XML or Binary) are well-formed."
-
-      - id: check-csv
-        name: check csv consistency
-        entry: |
-          python3 -c "
-          import sys, os, csv
-          errors = []
-          for f in sys.argv[1:]:
-              if os.path.isfile(f) and os.path.getsize(f) < 5*1024*1024:
-                  try:
-                      with open(f, 'r', encoding='utf-8', newline='') as fh:
-                          reader = csv.reader(fh)
-                          header = next(reader, None)
-                          if header:
-                              cols = len(header)
-                              for i, row in enumerate(reader, 2):
-                                  if len(row) != cols:
-                                      errors.append(f'{f}:{i} (expected {cols} columns, got {len(row)})')
-                                      break
-                  except Exception as e: errors.append(f'{f} ({e})')
-          for e in errors: print(f'CSV/TSV inconsistency: {e}')
-          sys.exit(1 if errors else 0)
-          "
-        language: system
-        files: '\.(csv|tsv)$'
-        description: "Verify that CSV/TSV files have consistent column counts across all rows."
-
       - id: check-jsonc
         name: check jsonc well-formedness
         entry: |
@@ -359,241 +315,6 @@ repos:
         files: '\.svg$'
         description: "Verify that SVG files are well-formed and free of malicious script injections."
 
-      - id: check-rego
-        name: check rego policy
-        language: system
-        entry: bash -c 'if unirtm which opa >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- opa parse; else echo "Skipped opa not found"; fi' --
-        files: '\.rego$'
-        description: "Verify that Rego policy files are well-formed (uses 'opa parse')."
-
-      - id: buf-lint
-        name: buf lint
-        language: system
-        entry: bash -c 'if unirtm which buf >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- buf lint; else echo "Skipped buf not found"; fi' --
-        files: \.proto$
-        exclude: |
-          (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
-        description: "Lint Protobuf files using Buf."
-
-      - id: buf-format
-        name: buf format
-        language: system
-        entry: bash -c 'if unirtm which buf >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- buf format -d --exit-code; else echo "Skipped buf not found"; fi' --
-        files: \.proto$
-        exclude: |
-          (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
-        description: "Verify Protobuf file formatting using Buf."
-
-      - id: check-jinja2
-        name: check jinja2 syntax
-        entry: |
-          python3 -c "
-          import sys, os
-          try:
-              from jinja2 import Environment
-              env = Environment()
-          except ImportError: env = None
-          errors = []
-          for f in sys.argv[1:]:
-              if os.path.isfile(f) and os.path.getsize(f) < 1024*1024:
-                  with open(f, 'r', encoding='utf-8') as fh:
-                      content = fh.read()
-                      if env:
-                          try: env.parse(content)
-                          except Exception as e: errors.append(f'{f} ({e})')
-                      else:
-                          if content.count('{{') != content.count('}}') or content.count('{%') != content.count('%}'):
-                              errors.append(f'{f} (unbalanced delimiters)')
-          for e in errors: print(f'Malformed Jinja2: {e}')
-          sys.exit(1 if errors else 0)
-          "
-        language: system
-        files: '\.(j2|jinja2|gotmpl|tmpl)$'
-        description: "Verify that Jinja2/Template files have valid syntax (uses 'jinja2' if available)."
-
-      - id: check-nix
-        name: check nix well-formedness
-        entry: |
-          python3 -c "
-          import sys, os
-          errors = []
-          for f in sys.argv[1:]:
-              if os.path.isfile(f) and os.path.getsize(f) < 1024*1024:
-                  with open(f, 'r', encoding='utf-8') as fh:
-                      content = fh.read()
-                      if content.count('{') != content.count('}') or content.count('[') != content.count(']'):
-                          errors.append(f'{f} (unbalanced braces/brackets)')
-                      if '=' in content and ';' not in content and '{' not in content:
-                          errors.append(f'{f} (potential missing semicolon)')
-          for e in errors: print(f'Malformed Nix: {e}')
-          sys.exit(1 if errors else 0)
-          "
-        language: system
-        files: '\.nix$'
-        description: "Verify that Nix files are well-formed (basic structural check)."
-
-      - id: zig-fmt
-        name: check zig style
-        language: system
-        entry: bash -c 'if unirtm which zig >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- zig fmt --check; else echo "Skipped zig not found"; fi' --
-        files: '\.zig$'
-        exclude: |
-          (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
-        description: "Verify Zig code formatting using 'zig fmt'."
-
-      - id: check-justfile
-        name: check justfile well-formedness
-        language: system
-        entry: bash -c 'if unirtm which just >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- just --check --justfile; else echo "Skipped just not found"; fi' --
-        files: "justfile$"
-        description: "Verify that justfile (Task runner) files are well-formed."
-
-      - id: cue-fmt
-        name: check cue style
-        language: system
-        entry: bash -c 'if unirtm which cue >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- cue fmt; else echo "Skipped cue not found"; fi' --
-        files: '\.cue$'
-        exclude: |
-          (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
-        description: "Verify CUE configuration formatting."
-
-      - id: jsonnet-fmt
-        name: check jsonnet style
-        language: system
-        entry: bash -c 'if unirtm which jsonnetfmt >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- jsonnetfmt -i; else echo "Skipped jsonnetfmt not found"; fi' --
-        files: '\.jsonnet$'
-        exclude: |
-          (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
-        description: "Verify Jsonnet configuration formatting."
-
-      - id: check-webserver-config
-        name: check web server config
-        entry: |
-          python3 -c "
-          import sys, os
-          errors = []
-          for f in sys.argv[1:]:
-              if os.path.isfile(f) and os.path.getsize(f) < 1024*1024:
-                  with open(f, 'r', encoding='utf-8') as fh:
-                      content = fh.read()
-                      if content.count('{') != content.count('}'):
-                          errors.append(f'{f} (unbalanced braces)')
-          for e in errors: print(f'Malformed Config: {e}')
-          sys.exit(1 if errors else 0)
-          "
-        language: system
-        files: '(Caddyfile$|\.conf$)'
-        description: "Verify that Caddyfile and Nginx/Web server configurations are well-formed."
-
-      - id: check-brewfile
-        name: check brewfile
-        entry: |
-          python3 -c "
-          import sys, os
-          errors = []
-          allowed = {'tap', 'brew', 'cask', 'mas', 'vscode', 'whalebrew'}
-          for f in sys.argv[1:]:
-              if os.path.isfile(f) and os.path.getsize(f) < 1024*1024:
-                  with open(f, 'r', encoding='utf-8') as fh:
-                      for i, line in enumerate(fh, 1):
-                          line = line.strip()
-                          if not line or line.startswith('#'): continue
-                          cmd = line.split()[0] if line.split() else ''
-                          if cmd not in allowed:
-                              errors.append(f'{f}:{i} (unknown command: {cmd})')
-          for e in errors: print(f'Malformed Brewfile: {e}')
-          sys.exit(1 if errors else 0)
-          "
-        language: system
-        files: "Brewfile$"
-        description: "Verify that Brewfile (Homebrew Bundle) files follow the correct DSL."
-
-      - id: check-prisma
-        name: check prisma schema
-        entry: |
-          python3 -c "
-          import sys, os
-          errors = []
-          for f in sys.argv[1:]:
-              if os.path.isfile(f) and os.path.getsize(f) < 1024*1024:
-                  with open(f, 'r', encoding='utf-8') as fh:
-                      content = fh.read()
-                      if content.count('{') != content.count('}'):
-                          errors.append(f'{f} (unbalanced braces)')
-                      if 'datasource' in content and 'provider' not in content:
-                          errors.append(f'{f} (datasource missing provider)')
-          for e in errors: print(f'Malformed Prisma: {e}')
-          sys.exit(1 if errors else 0)
-          "
-        language: system
-        files: '\.prisma$'
-        description: "Verify that Prisma schema files are well-formed (basic structural check)."
-
-      - id: check-jupyter
-        name: check jupyter notebooks
-        entry: |
-          python3 -c "
-          import sys, os, json
-          errors = []
-          for f in sys.argv[1:]:
-              if os.path.isfile(f) and os.path.getsize(f) < 10*1024*1024:
-                  try:
-                      with open(f, 'r', encoding='utf-8') as fh:
-                          nb = json.load(fh)
-                          if 'cells' not in nb: errors.append(f'{f} (missing cells)')
-                          for i, cell in enumerate(nb.get('cells', [])):
-                              if len(str(cell.get('outputs', []))) > 100000:
-                                  errors.append(f'{f}:cell {i} (output too large, please strip)')
-                  except Exception as e: errors.append(f'{f} ({e})')
-          for e in errors: print(f'Malformed/Heavy Jupyter Notebook: {e}')
-          sys.exit(1 if errors else 0)
-          "
-        language: system
-        files: '\.ipynb$'
-        description: "Verify that Jupyter Notebooks are well-formed and don't contain excessive output data."
-
-      - id: check-pulumi
-        name: check pulumi config
-        entry: |
-          python3 -c "
-          import sys, os, yaml
-          errors = []
-          for f in sys.argv[1:]:
-              if os.path.isfile(f):
-                  try:
-                      with open(f, 'r') as fh:
-                          cfg = yaml.safe_load(fh)
-                          if 'name' not in cfg or 'runtime' not in cfg:
-                              errors.append(f'{f} (missing name or runtime)')
-                  except Exception as e: errors.append(f'{f} ({e})')
-          for e in errors: print(f'Malformed Pulumi Config: {e}')
-          sys.exit(1 if errors else 0)
-          "
-        language: system
-        files: 'Pulumi\.yaml$'
-        description: "Verify that Pulumi configuration files are well-formed."
-
-      - id: check-crossplane
-        name: check crossplane manifests
-        entry: |
-          python3 -c "
-          import sys, os, yaml
-          errors = []
-          for f in sys.argv[1:]:
-              if os.path.isfile(f):
-                  try:
-                      with open(f, 'r') as fh:
-                          for doc in yaml.safe_load_all(fh):
-                              if doc and 'apiVersion' in doc and 'crossplane.io' in doc['apiVersion']:
-                                  if 'kind' not in doc: errors.append(f'{f} (metadata incomplete)')
-                  except Exception as e: errors.append(f'{f} ({e})')
-          for e in errors: print(f'Malformed Crossplane Manifest: {e}')
-          sys.exit(1 if errors else 0)
-          "
-        language: system
-        files: '.*crossplane.*\.ya?ml$'
-        description: "Verify that Crossplane manifests follow basic Kubernetes/Crossplane structure."
-
       - id: check-env-safety
         name: check environment safety
         entry: |
@@ -622,7 +343,7 @@ repos:
       - id: prettier
         name: prettier format
         language: system
-        entry: bash -c 'if unirtm which prettier >/dev/null 2>&1; then printf "%s\0" "$@" | xargs -0 -s 7000 unirtm exec -- prettier --write; else echo "Skipped prettier not found"; fi' --
+        entry: unirtm hook-exec prettier --write
         types_or:
           - json
           - yaml
@@ -645,35 +366,14 @@ repos:
       - id: zizmor
         name: zizmor security audit
         language: system
-        entry: bash -c 'if unirtm which zizmor >/dev/null 2>&1; then exec unirtm exec -- zizmor --config .zizmor.yml --no-online-audits "$@"; else echo "Skipped zizmor not found"; fi' --
+        entry: unirtm hook-exec zizmor --config .zizmor.yml --no-online-audits
         files: ^\.github/workflows/.*\.yml$
         description: "Audit GitHub Actions workflows for security vulnerabilities (offline; full online audit runs in CI audit job)."
-
-      - id: check-taskfile
-        name: check taskfile
-        language: system
-        entry: bash -c 'if unirtm which task >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- task --list --taskfile; else echo "Skipped task not found"; fi' --
-        files: 'Taskfile\.ya?ml$'
-        description: "Verify that Taskfile (Task runner) files are well-formed."
-
-      - id: check-dvc
-        name: check dvc pipeline
-        language: system
-        entry: bash -c 'if unirtm which dvc >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- dvc dag; else echo "Skipped dvc not found"; fi' --
-        files: 'dvc\.yaml$'
-        description: "Verify that DVC pipeline files are valid and the DAG is correct."
-
-      - id: check-nix-fmt
-        name: check nix style
-        language: system
-        entry: bash -c 'if unirtm which nixpkgs-fmt >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- nixpkgs-fmt --check; else echo "Skipped nixpkgs-fmt not found"; fi' --
-        files: '\.nix$'
-        description: "Verify Nix code compliance with nixpkgs-fmt."
 
       - id: shfmt
         name: shfmt format
         language: system
-        entry: bash -c 'if unirtm which shfmt >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- shfmt -w -s -i 2; else echo "Skipped shfmt not found"; fi' --
+        entry: unirtm hook-exec shfmt -w -s -i 2
         types: [shell]
         exclude: |
           (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
@@ -682,32 +382,16 @@ repos:
       - id: taplo
         name: taplo format
         language: system
-        entry: bash -c 'if unirtm which taplo >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- taplo format; else echo "Skipped taplo not found"; fi' --
+        entry: unirtm hook-exec taplo format
         types: [toml]
         exclude: |
           (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
         description: "Format TOML files using Taplo."
 
-      - id: ruff-format
-        name: ruff format
-        language: system
-        entry: bash -c 'if unirtm which ruff >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- ruff format; else echo "Skipped ruff not found"; fi' --
-        types_or: [python, pyi]
-        exclude: |
-          (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
-        description: "Fast Python code formatter."
-
-      - id: clang-format
-        name: clang-format
-        language: system
-        entry: bash -c 'if unirtm which clang-format >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- clang-format -i; else echo "Skipped clang-format not found"; fi' --
-        types_or: [objective-c, c, c++]
-        description: "Format C/C++ family source files."
-
       - id: gofmt
         name: gofmt
         language: system
-        entry: bash -c 'if unirtm which gofmt >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- gofmt -w; else echo "Skipped gofmt not found"; fi' --
+        entry: unirtm hook-exec gofmt -w
         types: [go]
         exclude: |
           (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
@@ -716,7 +400,7 @@ repos:
       - id: goimports
         name: goimports
         language: system
-        entry: bash -c 'if unirtm which goimports >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- goimports -w; else echo "Skipped goimports not found"; fi' --
+        entry: unirtm hook-exec goimports -w
         types: [go]
         exclude: |
           (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
@@ -725,28 +409,17 @@ repos:
       - id: golangci-lint
         name: golangci-lint
         language: system
-        entry: bash -c 'if unirtm which golangci-lint >/dev/null 2>&1; then exec unirtm exec -- golangci-lint run --fix "$@"; else echo "Skipped golangci-lint not found"; fi' --
+        entry: unirtm hook-exec golangci-lint run --fix
         types: [go]
         pass_filenames: false
         exclude: |
           (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
         description: "Comprehensive Go linter aggregator."
 
-      - id: cargo-fmt
-        name: cargo format
-        language: system
-        entry: bash -c 'if unirtm which cargo >/dev/null 2>&1; then exec unirtm exec -- cargo fmt --all -- "$@"; else echo "Skipped cargo not found"; fi' --
-        types: [rust]
-        exclude: |
-          (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
-        pass_filenames: false
-        description: "Format Rust code using the official Cargo toolchain."
-
-      # -- Secret Scanning ----------------------------------------------------
       - id: gitleaks
         name: gitleaks quality check
         language: system
-        entry: bash -c 'if unirtm which gitleaks >/dev/null 2>&1; then exec unirtm exec -- gitleaks protect --verbose --redact --staged --config .gitleaks.toml "$@"; else echo "Skipped gitleaks not found"; fi' --
+        entry: unirtm hook-exec gitleaks protect --verbose --redact --staged --config .gitleaks.toml
         always_run: true
         pass_filenames: false
         description: "Prevent secret leaks using Gitleaks."
@@ -770,18 +443,10 @@ repos:
         exclude: '\.pre-commit-config\.yaml$'
         description: "Prevent accidental staging of sensitive private keys."
 
-      - id: hadolint
-        name: hadolint quality check
-        language: system
-        entry: bash -c 'if unirtm which hadolint >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- hadolint; else echo "Skipped hadolint not found"; fi' --
-        files: "Dockerfile.*"
-        description: "Audit Dockerfiles for best practices and security vulnerabilities."
-
-      # -- Deep Security & Vulnerability Audits -------------------------------
       - id: osv-scanner
         name: osv-scanner vulnerability audit
         language: system
-        entry: bash -c 'if unirtm which osv_scanner >/dev/null 2>&1; then exec unirtm exec -- osv_scanner --config .osv-scanner.toml --call-analysis=all --format table --lockfile "$@"; else echo "Skipped osv_scanner not found"; fi' --
+        entry: unirtm hook-exec osv_scanner --config .osv-scanner.toml --call-analysis=all --format table --lockfile
         files: '(pnpm-lock\.yaml|go\.mod|Cargo\.lock|package-lock\.json|yarn\.lock|bun\.lockb)$'
         description: "Audit project dependencies for known vulnerabilities using Google OSV-Scanner."
         stages: [manual, pre-push] # Skip in local pre-commit, run in CI or manually
@@ -789,7 +454,7 @@ repos:
       - id: trivy
         name: trivy security scan
         language: system
-        entry: bash -c 'if unirtm which trivy >/dev/null 2>&1; then exec unirtm exec -- trivy fs . --scanners vuln,misconfig,secret --skip-dirs internal/addlicense/testdata --db-repository public.ecr.aws/aquasecurity/trivy-db --java-db-repository public.ecr.aws/aquasecurity/trivy-java-db:1 --checks-bundle-repository public.ecr.aws/aquasecurity/trivy-checks --timeout 15m --exit-code 1 --severity HIGH,CRITICAL "$@"; else echo "Skipped trivy not found"; fi' --
+        entry: unirtm hook-exec trivy fs . --scanners vuln,misconfig,secret --skip-dirs internal/addlicense/testdata --db-repository public.ecr.aws/aquasecurity/trivy-db --java-db-repository public.ecr.aws/aquasecurity/trivy-java-db:1 --checks-bundle-repository public.ecr.aws/aquasecurity/trivy-checks --timeout 15m --exit-code 1 --severity HIGH,CRITICAL
         always_run: true
         pass_filenames: false
         stages: [manual, pre-push] # Skip in local pre-commit, run in CI or manually
@@ -798,30 +463,16 @@ repos:
       - id: checkov
         name: checkov iac security audit
         language: system
-        entry: bash -c 'if unirtm which checkov >/dev/null 2>&1; then exec unirtm exec -- checkov --directory . --quiet --compact --soft-fail-on HIGH "$@"; else echo "Skipped checkov not found"; fi' --
+        entry: unirtm hook-exec checkov --directory . --quiet --compact --soft-fail-on HIGH
         types_or: [yaml, dockerfile, terraform]
         pass_filenames: false
         stages: [manual, pre-push] # Skip in local pre-commit, run in CI or manually
         description: "Audit Infrastructure-as-Code (Terraform, K8s, Docker) for security best practices."
 
-      - id: semgrep
-        name: semgrep security scan
-        language: system
-        entry: bash -c 'if unirtm which semgrep >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- semgrep scan --config auto --error --quiet; else echo "Skipped semgrep not found"; fi' --
-        description: "Multi-language static analysis for security, bugs, and best practices using Semgrep."
-
-      - id: bandit
-        name: bandit python security check
-        language: system
-        entry: bash -c 'if unirtm which bandit >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- bandit -r -ll; else echo "Skipped bandit not found"; fi' --
-        types: [python]
-        exclude: ^tests/
-        description: "Find common security issues in Python code using Bandit."
-
       - id: gosec
         name: gosec go security scan
         language: system
-        entry: bash -c 'if unirtm which gosec >/dev/null 2>&1; then exec unirtm exec -- gosec -quiet ./... "$@"; else echo "Skipped gosec not found"; fi' --
+        entry: unirtm hook-exec gosec -quiet ./...
         types: [go]
         pass_filenames: false
         description: "Audit Go source code for security vulnerabilities using Gosec."
@@ -829,23 +480,15 @@ repos:
       - id: govulncheck
         name: govulncheck go vulnerability audit
         language: system
-        entry: bash -c 'if unirtm which govulncheck >/dev/null 2>&1; then exec unirtm exec -- govulncheck ./... "$@"; else echo "Skipped govulncheck not found"; fi' --
+        entry: unirtm hook-exec govulncheck ./...
         types: [go]
         pass_filenames: false
         description: "Official Go vulnerability checker for source code and dependencies."
 
-      - id: cargo-audit
-        name: cargo audit rust dependencies
-        language: system
-        entry: bash -c 'if unirtm which cargo-audit >/dev/null 2>&1; then exec unirtm exec -- cargo-audit audit "$@"; else echo "Skipped cargo-audit not found"; fi' --
-        files: 'Cargo\.lock$'
-        pass_filenames: false
-        description: "Audit Rust dependencies for known security vulnerabilities."
-
       - id: npm-pnpm-audit
         name: node ecosystem audit
         language: system
-        entry: bash -c 'if unirtm which node-audit >/dev/null 2>&1; then exec unirtm exec -- node-audit "$@"; else echo "Skipped node-audit not found"; fi' --
+        entry: unirtm hook-exec node-audit
         files: '(pnpm-lock\.yaml|package-lock\.json|yarn\.lock|bun\.lockb)$'
         pass_filenames: false
         stages: [manual] # Temporarily disabled due to pnpm 10.30.3 audit API compatibility issue
@@ -1017,7 +660,7 @@ repos:
       - id: eslint
         name: eslint quality check
         language: system
-        entry: bash -c 'if unirtm which eslint >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- eslint --fix; else echo "Skipped eslint not found"; fi' --
+        entry: unirtm hook-exec eslint --fix
         types_or:
           - javascript
           - ts
@@ -1028,31 +671,10 @@ repos:
           (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
         description: "Find and fix problems in JavaScript/TypeScript/Vue code."
 
-      - id: stylelint
-        name: stylelint quality check
-        language: system
-        entry: bash -c 'if unirtm which stylelint >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- stylelint --fix; else echo "Skipped stylelint not found"; fi' --
-        types_or:
-          - css
-          - scss
-          - less
-        exclude: |
-          (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
-        description: "Lint style sheets for CSS/SCSS/Less quality."
-
-      - id: ruff
-        name: ruff check
-        language: system
-        entry: bash -c 'if unirtm which ruff >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- ruff check --fix; else echo "Skipped ruff not found"; fi' --
-        types_or: [python, pyi]
-        exclude: |
-          (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
-        description: "Highly performant Python linter with auto-fix capability."
-
       - id: yamllint
         name: yamllint
         language: system
-        entry: bash -c 'if unirtm which yamllint >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- yamllint --config-file .yamllint.yml; else echo "Skipped yamllint not found"; fi' --
+        entry: unirtm hook-exec yamllint --config-file .yamllint.yml
         types: [yaml]
         exclude: |
           (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
@@ -1068,7 +690,7 @@ repos:
       - id: shellcheck
         name: shellcheck
         language: system
-        entry: bash -c 'if unirtm which shellcheck >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- shellcheck; else echo "Skipped shellcheck not found"; fi' --
+        entry: unirtm hook-exec shellcheck
         types: [shell]
         exclude: |
           (?x)^(
@@ -1079,7 +701,7 @@ repos:
       - id: shellcheck-posix
         name: shellcheck posix
         language: system
-        entry: bash -c 'if unirtm which shellcheck >/dev/null 2>&1; then exec unirtm exec -- shellcheck --shell=sh "$@"; else echo "Skipped shellcheck not found"; fi' --
+        entry: unirtm hook-exec shellcheck --shell=sh
         types: [shell]
         exclude: |
           (?x)^(
@@ -1088,60 +710,18 @@ repos:
           )
         description: "Enforce strict POSIX compliance for shell scripts (Rule 01.3.39). Test files are excluded as they use bash features."
 
-      - id: psscriptanalyzer
-        name: PSScriptAnalyzer
-        language: system
-        entry: bash -c 'if unirtm which psscriptanalyzer >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- psscriptanalyzer; else echo "Skipped psscriptanalyzer not found"; fi' --
-        args:
-          - -NoProfile
-          - -Command
-          - "& { if (!(Get-Command Invoke-ScriptAnalyzer -ErrorAction SilentlyContinue)) { exit 0 }; $r = $args | ForEach-Object { Invoke-ScriptAnalyzer -Path $_ -Settings PSScriptAnalyzerSettings.psd1 -Severity Error,Warning }; if ($r) { $r | Format-Table -AutoSize; exit 1 } }"
-        types: [powershell]
-        description: "PowerShell static analysis tool (macOS/Windows)."
-
-      - id: checkmake
-        name: check makefile
-        language: system
-        entry: bash -c 'if unirtm which checkmake >/dev/null 2>&1; then exec unirtm exec -- checkmake --config .checkmake.ini "$@"; else echo "Skipped checkmake not found"; fi' --
-        files: ^Makefile$
-        description: "Linter for Makefile best practices."
-
-      - id: tflint
-        name: check terraform
-        language: system
-        entry: bash -c 'if unirtm which tflint >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- tflint; else echo "Skipped tflint not found"; fi' --
-        types: [terraform]
-        description: "Linter for Terraform code."
-
-      - id: kube-linter
-        name: kube-linter quality check
-        language: system
-        entry: bash -c 'if unirtm which kube-linter >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- kube-linter lint; else echo "Skipped kube-linter not found"; fi' --
-        types: [yaml]
-        files: '.*(kube|k8s|manifest).*\.ya?ml$'
-        exclude: |
-          (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
-        description: "Lint Kubernetes manifests for security and best practices."
-
       - id: actionlint
         name: check github actions
         language: system
-        entry: bash -c 'if unirtm which actionlint >/dev/null 2>&1; then exec unirtm exec -- actionlint --shellcheck= "$@"; else echo "Skipped actionlint not found"; fi' --
+        entry: unirtm hook-exec actionlint --shellcheck=
         files: ^\.github/workflows/.*\.yml$
         description: "Validate GitHub Actions workflow syntax."
 
       # -- Infrastructure & Config -------------------------------------------
-      - id: dockerfile-utils
-        name: dockerfile quality check
-        language: system
-        entry: bash -c 'if unirtm which dockerfile-utils >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- dockerfile-utils lint; else echo "Skipped dockerfile-utils not found"; fi' --
-        files: Dockerfile
-        description: "Validate Dockerfile syntax and best practices."
-
       - id: editorconfig-checker
         name: editorconfig quality check
         language: system
-        entry: bash -c 'if unirtm which editorconfig-checker >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- editorconfig-checker; else echo "Skipped editorconfig-checker not found"; fi' --
+        entry: unirtm hook-exec editorconfig-checker
         exclude: |
           (?x)^(
             \.(venv|git|github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|specify|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml|idx|continue|history|vscode-test)/.*|
@@ -1153,56 +733,15 @@ repos:
       - id: goreleaser-check
         name: goreleaser check
         language: system
-        entry: bash -c 'if unirtm which goreleaser >/dev/null 2>&1; then exec unirtm exec -- goreleaser check "$@"; else echo "Skipped goreleaser not found"; fi' --
+        entry: unirtm hook-exec goreleaser check
         files: ^\.goreleaser\.ya?ml$
         pass_filenames: false
         description: "Check GoReleaser configuration."
 
-      - id: spectral
-        name: spectral quality check
-        language: system
-        entry: bash -c 'if unirtm which spectral >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- spectral lint; else echo "Skipped spectral not found"; fi' --
-        types_or: [json, yaml]
-        files: '(?i)(openapi|swagger|asyncapi).*\.(json|yaml|yml)$'
-        pass_filenames: true
-        exclude: |
-          (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
-        description: "Lint API contracts using Spectral (OpenAPI/Swagger/AsyncAPI)."
-
-      - id: sort-package-json
-        name: sort package-json
-        language: system
-        entry: bash -c 'if unirtm which sort-package-json >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- sort-package-json; else echo "Skipped sort-package-json not found"; fi' --
-        files: ^package\.json$
-        pass_filenames: true
-        description: "Maintain a deterministic property order in package.json."
-
-      - id: dotenv-linter
-        name: dotenv quality check
-        language: system
-        entry: bash -c 'if unirtm which dotenv-linter >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- dotenv-linter; else echo "Skipped dotenv-linter not found"; fi' --
-        files: '(\.env|\.env\.example|\.env\.sample)$'
-        pass_filenames: true
-        exclude: |
-          (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
-        description: "Validate the structure of environment variable files."
-
-      # -- Extensibility (Optional Runtime Hooks) ---------------------------
-      # The following hooks skip gracefully if their runtime is missing.
-      - id: sqlfluff
-        name: sqlfluff lint
-        language: system
-        entry: bash -c 'if unirtm which sqlfluff >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- sqlfluff lint --dialect postgres; else echo "Skipped sqlfluff not found"; fi' --
-        types_or: [sql]
-        exclude: |
-          (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
-        description: "Lint SQL dialects for syntax and style."
-
-      # -- Git Message Flow --------------------------------------------------
       - id: commitlint
         name: check commit message format
         language: system
-        entry: bash -c 'if unirtm which commitlint >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- commitlint --edit; else echo "Skipped commitlint not found"; fi' --
+        entry: unirtm hook-exec commitlint --edit
         always_run: true
         stages: [commit-msg]
         description: "Enforce Conventional Commits specification for commit messages."

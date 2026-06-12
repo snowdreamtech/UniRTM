@@ -32,11 +32,13 @@ func (b *PipxBackend) ListVersions(ctx context.Context, tool string, platform Pl
 	return b.pypi.ListVersions(ctx, tool, platform)
 }
 
-func (b *PipxBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *PipxBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
+	versionRequest = NormalizeVersionPrefix(versionRequest, false)
 	return b.pypi.ResolveVersion(ctx, tool, versionRequest, platform)
 }
 
-func (b *PipxBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (b *PipxBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
+	version = NormalizeVersionPrefix(version, false)
 	// Provider handles actual installation via pipx cli
 	return &VersionInfo{
 		Version:  version,

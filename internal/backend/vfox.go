@@ -10,8 +10,7 @@ import (
 )
 
 // VfoxBackend implements the Backend interface for vfox plugins.
-type VfoxBackend struct {
-}
+type VfoxBackend struct{}
 
 // NewVfoxBackend creates a new vfox backend.
 func NewVfoxBackend() *VfoxBackend {
@@ -25,6 +24,7 @@ func (b *VfoxBackend) Name() string {
 func (b *VfoxBackend) Dependencies() []string {
 	return nil
 }
+
 func (b *VfoxBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	// Since we don't have a Lua VM to run vfox plugins, we shell out to vfox if installed.
 	cmd := exec.CommandContext(ctx, "vfox", "list", "all", tool)
@@ -53,7 +53,7 @@ func (b *VfoxBackend) ListVersions(ctx context.Context, tool string, platform Pl
 	return versions, nil
 }
 
-func (b *VfoxBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *VfoxBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
 	if versionRequest == "latest" {
 		versions, err := b.ListVersions(ctx, tool, platform)
 		if err != nil {
@@ -72,7 +72,7 @@ func (b *VfoxBackend) ResolveVersion(ctx context.Context, tool string, versionRe
 	}, nil
 }
 
-func (b *VfoxBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (b *VfoxBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
 	return &VersionInfo{
 		Version:  version,
 		Platform: platform,

@@ -113,8 +113,8 @@ func TestGoBackend_ResolveVersion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if info.Version != "1.1.0" {
-		t.Errorf("expected 1.1.0, got %s", info.Version)
+	if info.Version != "v1.1.0" {
+		t.Errorf("expected v1.1.0, got %s", info.Version)
 	}
 }
 
@@ -124,7 +124,7 @@ func TestGoBackend_GetDownloadInfo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if info.Version != "1.0.0" {
-		t.Errorf("expected 1.0.0")
+	if info.Version != "v1.0.0" {
+		t.Errorf("expected v1.0.0, got %s", info.Version)
 	}
 }

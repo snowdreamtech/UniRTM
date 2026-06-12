@@ -41,7 +41,7 @@ func (b *ContainerBackend) ListVersions(ctx context.Context, tool string, platfo
 }
 
 // ResolveVersion resolves a version request.
-func (b *ContainerBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *ContainerBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
 	if versionRequest == "" {
 		versionRequest = "latest"
 	}
@@ -50,7 +50,7 @@ func (b *ContainerBackend) ResolveVersion(ctx context.Context, tool string, vers
 }
 
 // GetDownloadInfo returns metadata needed by the ContainerProvider.
-func (b *ContainerBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (b *ContainerBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
 	// The `tool` parameter contains the registry and image path, e.g. "ghcr.io/aquasec/trivy".
 	// The prefix like "docker:" has already been stripped by UniRTM config parsing.
 

@@ -17,10 +17,12 @@ func (d *dummyBackend) Dependencies() []string { return nil }
 func (d *dummyBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	return nil, nil
 }
-func (d *dummyBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+
+func (d *dummyBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
 	return nil, nil
 }
-func (d *dummyBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+
+func (d *dummyBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
 	return nil, nil
 }
 func (d *dummyBackend) SupportsChecksum() bool  { return false }

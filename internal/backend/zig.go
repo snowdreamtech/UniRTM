@@ -38,7 +38,7 @@ func (b *ZigBackend) ListVersions(ctx context.Context, tool string, platform Pla
 	// For now we implement the compiler/core discovery.
 	url := "https://ziglang.org/download/index.json"
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, NewBackendError(b.Name(), tool, "create request", err)
 	}
@@ -65,7 +65,7 @@ func (b *ZigBackend) ListVersions(ctx context.Context, tool string, platform Pla
 	return versions, nil
 }
 
-func (b *ZigBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *ZigBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
 	if versionRequest == "latest" {
 		return &VersionInfo{
 			Version:  "master", // Zig calls latest 'master' or we pick from index
@@ -79,7 +79,7 @@ func (b *ZigBackend) ResolveVersion(ctx context.Context, tool string, versionReq
 	}, nil
 }
 
-func (b *ZigBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (b *ZigBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
 	return &VersionInfo{
 		Version:  version,
 		Platform: platform,

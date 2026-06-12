@@ -152,7 +152,7 @@ func TestCabalBackend_GetDownloadInfo(t *testing.T) {
 	}
 }
 
-// mockTransport intercepts requests and routes them to the test server
+// mockTransport intercepts requests and routes them to the test server.
 type mockTransport struct {
 	rt  http.RoundTripper
 	url string

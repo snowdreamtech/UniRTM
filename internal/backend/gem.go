@@ -40,7 +40,7 @@ type gemVersion struct {
 func (b *GemBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	url := fmt.Sprintf("https://rubygems.org/api/v1/versions/%s.json", tool)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, NewBackendError(b.Name(), tool, "create request", err)
 	}
@@ -74,10 +74,11 @@ func (b *GemBackend) ListVersions(ctx context.Context, tool string, platform Pla
 	return versions, nil
 }
 
-func (b *GemBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *GemBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
+	versionRequest = NormalizeVersionPrefix(versionRequest, false)
 	if versionRequest == "latest" {
 		url := fmt.Sprintf("https://rubygems.org/api/v1/gems/%s.json", tool)
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 		if err != nil {
 			return nil, err
 		}
@@ -112,7 +113,8 @@ func (b *GemBackend) ResolveVersion(ctx context.Context, tool string, versionReq
 	}, nil
 }
 
-func (b *GemBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (b *GemBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
+	version = NormalizeVersionPrefix(version, false)
 	// Provider handles actual downloading via gem cli
 	return &VersionInfo{
 		Version:  version,

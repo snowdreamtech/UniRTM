@@ -29,6 +29,7 @@ func (m *mockRecipeHandler) ResolveVersions(ctx context.Context, baseURL string)
 		},
 	}, nil
 }
+
 func (m *mockRecipeHandler) BuildURL(version, os, arch, baseURL string) string {
 	return "http://test/" + version
 }

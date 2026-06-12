@@ -43,7 +43,7 @@ func (b *DotnetBackend) ListVersions(ctx context.Context, tool string, platform 
 	pkg := strings.ToLower(tool)
 	url := fmt.Sprintf("https://api.nuget.org/v3-flatcontainer/%s/index.json", pkg)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, NewBackendError(b.Name(), tool, "create request", err)
 	}
@@ -78,7 +78,8 @@ func (b *DotnetBackend) ListVersions(ctx context.Context, tool string, platform 
 	return versions, nil
 }
 
-func (b *DotnetBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *DotnetBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
+	versionRequest = NormalizeVersionPrefix(versionRequest, false)
 	if versionRequest == "latest" {
 		versions, err := b.ListVersions(ctx, tool, platform)
 		if err != nil {
@@ -96,7 +97,8 @@ func (b *DotnetBackend) ResolveVersion(ctx context.Context, tool string, version
 	}, nil
 }
 
-func (b *DotnetBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (b *DotnetBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
+	version = NormalizeVersionPrefix(version, false)
 	// Provider handles actual downloading via dotnet cli
 	return &VersionInfo{
 		Version:  version,

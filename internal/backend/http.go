@@ -38,10 +38,10 @@ func (h *HTTPBackend) Dependencies() []string {
 // HTTPConfig represents the configuration for an HTTP backend tool.
 // This should be provided in the tool configuration.
 type HTTPConfig struct {
-	URLTemplate      string            // URL template with placeholders (e.g., "https://example.com/{{.version}}/{{.os}}-{{.arch}}.tar.gz")
-	Versions         []string          // List of available versions
-	ChecksumTemplate string            // Optional checksum URL template
-	Replacements     map[string]string // Custom placeholder replacements
+	Replacements     map[string]string
+	URLTemplate      string
+	ChecksumTemplate string
+	Versions         []string
 }
 
 // ListVersions returns all available versions for an HTTP backend tool.
@@ -53,7 +53,7 @@ func (h *HTTPBackend) ListVersions(ctx context.Context, tool string, platform Pl
 }
 
 // ResolveVersion resolves a version request to a concrete version.
-func (h *HTTPBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (h *HTTPBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
 	// For HTTP backend, we assume the version is explicitly provided
 	// and construct the download URL from the template
 	return h.GetDownloadInfo(ctx, tool, versionRequest, platform)
@@ -61,14 +61,14 @@ func (h *HTTPBackend) ResolveVersion(ctx context.Context, tool string, versionRe
 
 // GetDownloadInfo retrieves download information for a specific version.
 // This constructs the download URL from the configured template.
-func (h *HTTPBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (h *HTTPBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
 	// In a real implementation, this would read the HTTPConfig from configuration
 	// For now, we return an error indicating configuration is required
 	return nil, NewBackendError("http", tool, "HTTP backend requires URL template configuration", nil)
 }
 
 // GetDownloadInfoWithConfig retrieves download information using explicit configuration.
-func (h *HTTPBackend) GetDownloadInfoWithConfig(ctx context.Context, tool string, version string, platform Platform, config HTTPConfig) (*VersionInfo, error) {
+func (h *HTTPBackend) GetDownloadInfoWithConfig(ctx context.Context, tool, version string, platform Platform, config HTTPConfig) (*VersionInfo, error) {
 	if config.URLTemplate == "" {
 		return nil, NewBackendError("http", tool, "URL template is required", nil)
 	}
@@ -150,7 +150,7 @@ func (h *HTTPBackend) AttestationType() string {
 }
 
 // buildURL constructs a URL from a template with placeholders.
-func (h *HTTPBackend) buildURL(template string, version string, platform Platform, customReplacements map[string]string) string {
+func (h *HTTPBackend) buildURL(template, version string, platform Platform, customReplacements map[string]string) string {
 	// Standard replacements
 	replacements := map[string]string{
 		"version": version,

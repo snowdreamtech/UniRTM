@@ -10,8 +10,7 @@ import (
 )
 
 // SpmBackend implements the Backend interface for Swift Package Manager.
-type SpmBackend struct {
-}
+type SpmBackend struct{}
 
 // NewSpmBackend creates a new spm backend.
 func NewSpmBackend() *SpmBackend {
@@ -25,6 +24,7 @@ func (b *SpmBackend) Name() string {
 func (b *SpmBackend) Dependencies() []string {
 	return nil
 }
+
 func (b *SpmBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	// For SPM, tool is usually a git repo URL.
 	// We use git ls-remote to fetch tags.
@@ -56,7 +56,7 @@ func (b *SpmBackend) ListVersions(ctx context.Context, tool string, platform Pla
 	return versions, nil
 }
 
-func (b *SpmBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *SpmBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
 	if versionRequest == "latest" {
 		versions, err := b.ListVersions(ctx, tool, platform)
 		if err != nil {
@@ -75,7 +75,7 @@ func (b *SpmBackend) ResolveVersion(ctx context.Context, tool string, versionReq
 	}, nil
 }
 
-func (b *SpmBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (b *SpmBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
 	return &VersionInfo{
 		Version:  version,
 		Platform: platform,

@@ -10,8 +10,8 @@ import (
 
 // Registry manages backend implementations and provides discovery by name.
 type Registry struct {
-	mu       sync.RWMutex
 	backends map[string]Backend
+	mu       sync.RWMutex
 }
 
 // NewRegistry creates a new backend registry with default backends registered.

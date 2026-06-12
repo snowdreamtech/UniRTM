@@ -73,11 +73,11 @@ func (b *GitlabBackend) ListVersions(ctx context.Context, tool string, platform 
 	return versions, nil
 }
 
-func (b *GitlabBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *GitlabBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
 	return GenericResolveVersion(ctx, b, tool, versionRequest, platform)
 }
 
-func (b *GitlabBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (b *GitlabBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
 	return GenericGetDownloadInfo(ctx, b, tool, version, platform)
 }
 
@@ -87,7 +87,7 @@ func (b *GitlabBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 	encodedRepo := url.PathEscape(tool)
 	apiURL := fmt.Sprintf("%s/projects/%s/releases", b.baseURL, encodedRepo)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -128,12 +128,12 @@ func (b *GitlabBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 }
 
 // FetchReleaseByTag implements HostingProvider.
-func (b *GitlabBackend) FetchReleaseByTag(ctx context.Context, tool string, tag string) (*CommonRelease, error) {
+func (b *GitlabBackend) FetchReleaseByTag(ctx context.Context, tool, tag string) (*CommonRelease, error) {
 	tool = strings.TrimPrefix(tool, "gitlab:")
 	encodedRepo := url.PathEscape(tool)
 	apiURL := fmt.Sprintf("%s/projects/%s/releases/%s", b.baseURL, encodedRepo, url.PathEscape(tag))
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
 	if token := env.Get("GITLAB_TOKEN"); token != "" {
 		req.Header.Set("PRIVATE-TOKEN", token)
 	}

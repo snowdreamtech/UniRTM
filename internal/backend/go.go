@@ -55,7 +55,7 @@ func (b *GoBackend) ListVersions(ctx context.Context, tool string, platform Plat
 	// For simplicity, we assume the tool name is already a valid module path or we use it as is.
 	url := fmt.Sprintf("%s/%s/@v/list", getGoProxyBase(), tool)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, NewBackendError(b.Name(), tool, "create request", err)
 	}
@@ -93,7 +93,8 @@ func (b *GoBackend) ListVersions(ctx context.Context, tool string, platform Plat
 	return versions, nil
 }
 
-func (b *GoBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *GoBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
+	versionRequest = NormalizeVersionPrefix(versionRequest, true)
 	if versionRequest == "latest" {
 		versions, err := b.ListVersions(ctx, tool, platform)
 		if err != nil {
@@ -111,7 +112,8 @@ func (b *GoBackend) ResolveVersion(ctx context.Context, tool string, versionRequ
 	}, nil
 }
 
-func (b *GoBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (b *GoBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
+	version = NormalizeVersionPrefix(version, true)
 	return &VersionInfo{
 		Version:  version,
 		Platform: platform,

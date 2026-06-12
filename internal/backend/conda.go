@@ -42,7 +42,7 @@ func (b *CondaBackend) ListVersions(ctx context.Context, tool string, platform P
 	// We use the Anaconda API to fetch package metadata
 	url := fmt.Sprintf("https://api.anaconda.org/package/anaconda/%s", tool)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, NewBackendError(b.Name(), tool, "create request", err)
 	}
@@ -81,7 +81,7 @@ func (b *CondaBackend) ListVersions(ctx context.Context, tool string, platform P
 	return versions, nil
 }
 
-func (b *CondaBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *CondaBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
 	if versionRequest == "latest" {
 		versions, err := b.ListVersions(ctx, tool, platform)
 		if err != nil {
@@ -99,7 +99,7 @@ func (b *CondaBackend) ResolveVersion(ctx context.Context, tool string, versionR
 	}, nil
 }
 
-func (b *CondaBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (b *CondaBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
 	return &VersionInfo{
 		Version:  version,
 		Platform: platform,

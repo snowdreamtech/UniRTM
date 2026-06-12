@@ -54,7 +54,7 @@ node = '26.3.0'
 'npm:cz-conventional-changelog' = '3.3.0'
 'npm:dockerfile-utils' = '0.16.3'
 'npm:eslint' = "10.4.1"
-'npm:markdownlint-cli2' = '0.22.1'
+'npm:markdownlint-cli2' = 'v0.17.2'
 
 'npm:prettier' = '3.8.3'
 'npm:sort-package-json' = "4.0.0"
@@ -65,6 +65,10 @@ node = '26.3.0'
 'pipx:yamllint' = '1.38.0'
 python = '3.14.5'
 'go:golang.org/x/vuln/cmd/govulncheck' = '1.1.4'
+
+'go:golang.org/x/tools/cmd/goimports' = '0.30.0'
+'go:github.com/golangci/golangci-lint/cmd/golangci-lint' = 'v1.64.4'
+'go:github.com/securego/gosec/v2/cmd/gosec' = 'v2.22.1'
 
 [tasks]
 [tasks.audit]

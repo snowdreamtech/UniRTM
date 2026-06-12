@@ -42,16 +42,16 @@ func (b *AquaBackend) Dependencies() []string {
 
 // aquaPackage represents an Aqua package definition.
 type aquaPackage struct {
+	Replacements  map[string]string `json:"replacements,omitempty"`
 	Type          string            `json:"type"`
 	RepoOwner     string            `json:"repo_owner"`
 	RepoName      string            `json:"repo_name"`
 	Asset         string            `json:"asset,omitempty"`
-	Files         []aquaFile        `json:"files,omitempty"`
-	Replacements  map[string]string `json:"replacements,omitempty"`
 	Format        string            `json:"format,omitempty"`
-	Overrides     []aquaOverride    `json:"overrides,omitempty"`
 	VersionFilter string            `json:"version_filter,omitempty"`
 	VersionPrefix string            `json:"version_prefix,omitempty"`
+	Files         []aquaFile        `json:"files,omitempty"`
+	Overrides     []aquaOverride    `json:"overrides,omitempty"`
 }
 
 // aquaFile represents a file entry in an Aqua package.
@@ -65,8 +65,8 @@ type aquaOverride struct {
 	GOOS   string     `json:"goos,omitempty"`
 	GOARCH string     `json:"goarch,omitempty"`
 	Asset  string     `json:"asset,omitempty"`
-	Files  []aquaFile `json:"files,omitempty"`
 	Format string     `json:"format,omitempty"`
+	Files  []aquaFile `json:"files,omitempty"`
 }
 
 // ListVersions returns all available versions from Aqua registry.
@@ -85,7 +85,7 @@ func (a *AquaBackend) ListVersions(ctx context.Context, tool string, platform Pl
 }
 
 // ResolveVersion resolves a version request to a concrete version.
-func (a *AquaBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (a *AquaBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
 	versions, err := a.ListVersions(ctx, tool, platform)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func (a *AquaBackend) ResolveVersion(ctx context.Context, tool string, versionRe
 }
 
 // GetDownloadInfo retrieves download information for a specific version.
-func (a *AquaBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (a *AquaBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
 	return a.ResolveVersion(ctx, tool, version, platform)
 }
 
@@ -144,7 +144,7 @@ func (a *AquaBackend) fetchPackageMetadata(ctx context.Context, tool string) (*a
 		registryPath = fmt.Sprintf("%s/%s/pkg.yaml", a.registryURL, tool)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", registryPath, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", registryPath, http.NoBody)
 	if err != nil {
 		return nil, NewBackendError("aqua", tool, "failed to create request", err)
 	}
@@ -177,7 +177,7 @@ func (a *AquaBackend) listGitHubVersions(ctx context.Context, tool string, pkg *
 	repoPath := fmt.Sprintf("%s/%s", pkg.RepoOwner, pkg.RepoName)
 	url := fmt.Sprintf("https://api.github.com/repos/%s/releases", repoPath)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return nil, NewBackendError("aqua", tool, "failed to create request", err)
 	}

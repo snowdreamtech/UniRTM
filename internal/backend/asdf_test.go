@@ -43,11 +43,11 @@ func TestAsdfBackend_ListVersions(t *testing.T) {
 	b.registryPath = filepath.Join(tmpDir, "registry")
 
 	toolDir := filepath.Join(tmpDir, "nodejs")
-	os.MkdirAll(filepath.Join(toolDir, "bin"), 0755)
+	os.MkdirAll(filepath.Join(toolDir, "bin"), 0o755)
 
 	scriptContent := "#!/bin/sh\necho '18.0.0\n20.0.0'"
 	scriptPath := filepath.Join(toolDir, "bin", "list-all")
-	os.WriteFile(scriptPath, []byte(scriptContent), 0755)
+	os.WriteFile(scriptPath, []byte(scriptContent), 0o755)
 
 	ctx := context.Background()
 	platform := Platform{OS: "linux", Arch: "amd64"}
@@ -71,11 +71,11 @@ func TestAsdfBackend_ResolveVersion(t *testing.T) {
 	b.registryPath = filepath.Join(tmpDir, "registry")
 
 	toolDir := filepath.Join(tmpDir, "nodejs")
-	os.MkdirAll(filepath.Join(toolDir, "bin"), 0755)
+	os.MkdirAll(filepath.Join(toolDir, "bin"), 0o755)
 
 	scriptContent := "#!/bin/sh\necho '20.0.0\n21.0.0'"
 	scriptPath := filepath.Join(toolDir, "bin", "list-all")
-	os.WriteFile(scriptPath, []byte(scriptContent), 0755)
+	os.WriteFile(scriptPath, []byte(scriptContent), 0o755)
 
 	ctx := context.Background()
 	platform := Platform{OS: "linux", Arch: "amd64"}
@@ -105,7 +105,7 @@ func TestAsdfBackend_GetDownloadInfo(t *testing.T) {
 	b.registryPath = filepath.Join(tmpDir, "registry")
 
 	toolDir := filepath.Join(tmpDir, "nodejs")
-	os.MkdirAll(toolDir, 0755)
+	os.MkdirAll(toolDir, 0o755)
 
 	ctx := context.Background()
 	p := Platform{OS: "linux", Arch: "amd64"}
@@ -162,7 +162,7 @@ exit /b 0
 `
 	}
 
-	err := os.WriteFile(gitMockPath, []byte(gitMockScript), 0755)
+	err := os.WriteFile(gitMockPath, []byte(gitMockScript), 0o755)
 	if err != nil {
 		t.Fatalf("failed to create mock git: %v", err)
 	}

@@ -57,9 +57,9 @@ func TestVfoxBackend_ListVersions(t *testing.T) {
 	vfoxPath := filepath.Join(tmpDir, "vfox")
 	if env.RuntimeGOOS == "windows" {
 		vfoxPath += ".bat"
-		os.WriteFile(vfoxPath, []byte("@echo off\nif \"%1\"==\"list\" if \"%2\"==\"all\" (\n  echo Available versions\n  echo 20.0.1\n  echo 21.0.0\n  echo 21.0.1\n)\n"), 0755)
+		os.WriteFile(vfoxPath, []byte("@echo off\nif \"%1\"==\"list\" if \"%2\"==\"all\" (\n  echo Available versions\n  echo 20.0.1\n  echo 21.0.0\n  echo 21.0.1\n)\n"), 0o755)
 	} else {
-		os.WriteFile(vfoxPath, []byte("#!/bin/sh\nif [ \"$1\" = \"list\" ] && [ \"$2\" = \"all\" ]; then\n  echo \"Available versions\"\n  echo \"20.0.1\"\n  echo \"21.0.0\"\n  echo \"21.0.1\"\nfi\n"), 0755)
+		os.WriteFile(vfoxPath, []byte("#!/bin/sh\nif [ \"$1\" = \"list\" ] && [ \"$2\" = \"all\" ]; then\n  echo \"Available versions\"\n  echo \"20.0.1\"\n  echo \"21.0.0\"\n  echo \"21.0.1\"\nfi\n"), 0o755)
 	}
 
 	t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))
@@ -90,9 +90,9 @@ func TestVfoxBackend_ResolveVersion(t *testing.T) {
 	vfoxPath := filepath.Join(tmpDir, "vfox")
 	if env.RuntimeGOOS == "windows" {
 		vfoxPath += ".bat"
-		os.WriteFile(vfoxPath, []byte("@echo off\nif \"%1\"==\"list\" if \"%2\"==\"all\" (\n  echo Available versions\n  echo 20.0.1\n  echo 21.0.0\n  echo 22.0.1\n)\n"), 0755)
+		os.WriteFile(vfoxPath, []byte("@echo off\nif \"%1\"==\"list\" if \"%2\"==\"all\" (\n  echo Available versions\n  echo 20.0.1\n  echo 21.0.0\n  echo 22.0.1\n)\n"), 0o755)
 	} else {
-		os.WriteFile(vfoxPath, []byte("#!/bin/sh\nif [ \"$1\" = \"list\" ] && [ \"$2\" = \"all\" ]; then\n  echo \"Available versions\"\n  echo \"20.0.1\"\n  echo \"21.0.0\"\n  echo \"22.0.1\"\nfi\n"), 0755)
+		os.WriteFile(vfoxPath, []byte("#!/bin/sh\nif [ \"$1\" = \"list\" ] && [ \"$2\" = \"all\" ]; then\n  echo \"Available versions\"\n  echo \"20.0.1\"\n  echo \"21.0.0\"\n  echo \"22.0.1\"\nfi\n"), 0o755)
 	}
 
 	t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))

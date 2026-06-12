@@ -37,7 +37,7 @@ func TestBackendError(t *testing.T) {
 	if !strings.Contains(err2.Error(), "test backend error for mytool: something failed: underlying") {
 		t.Errorf("unexpected error string: %s", err2.Error())
 	}
-	if err2.Unwrap() != cause {
+	if !errors.Is(err2.Unwrap(), cause) {
 		t.Error("expected to unwrap to underlying cause")
 	}
 }

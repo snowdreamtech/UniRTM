@@ -28,6 +28,7 @@ func (b *LuarocksBackend) Name() string {
 func (b *LuarocksBackend) Dependencies() []string {
 	return nil
 }
+
 func (b *LuarocksBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	// Luarocks doesn't have a very clean JSON API for just listing versions of one rock easily without parsing a huge manifest.
 	// But we can check https://luarocks.org/modules/<user>/<tool>
@@ -35,14 +36,16 @@ func (b *LuarocksBackend) ListVersions(ctx context.Context, tool string, platfor
 	return nil, NewBackendError(b.Name(), tool, "luarocks version listing is not yet implemented via REST", nil)
 }
 
-func (b *LuarocksBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *LuarocksBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
+	versionRequest = NormalizeVersionPrefix(versionRequest, false)
 	return &VersionInfo{
 		Version:  versionRequest,
 		Platform: platform,
 	}, nil
 }
 
-func (b *LuarocksBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (b *LuarocksBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
+	version = NormalizeVersionPrefix(version, false)
 	return &VersionInfo{
 		Version:  version,
 		Platform: platform,

@@ -207,7 +207,7 @@ func FindBestAsset(assets []CommonAsset, platform Platform, toolName string) (*C
 
 // FetchAndParseChecksumFile downloads and parses a checksum file from a URL.
 func FetchAndParseChecksumFile(ctx context.Context, client *http.Client, url string) (map[string]string, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -309,21 +309,21 @@ func FindGPGSignatureForAsset(assets []CommonAsset, targetAsset *CommonAsset) st
 type HostingProvider interface {
 	Name() string
 	FetchReleases(ctx context.Context, tool string) ([]CommonRelease, error)
-	FetchReleaseByTag(ctx context.Context, tool string, tag string) (*CommonRelease, error)
+	FetchReleaseByTag(ctx context.Context, tool, tag string) (*CommonRelease, error)
 	GetAttestationType() string
 	GetClient() *http.Client
 }
 
 // CommonRelease represents a generic release from any hosting platform.
 type CommonRelease struct {
-	Tag         string
-	Prerelease  bool
-	Assets      []CommonAsset
 	PublishedAt time.Time
+	Tag         string
+	Assets      []CommonAsset
+	Prerelease  bool
 }
 
 // GenericResolveVersion implements the common logic for resolving a version request.
-func GenericResolveVersion(ctx context.Context, p HostingProvider, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func GenericResolveVersion(ctx context.Context, p HostingProvider, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
 	releases, err := p.FetchReleases(ctx, tool)
 	if err != nil {
 		return nil, err
@@ -392,7 +392,7 @@ func GenericResolveVersion(ctx context.Context, p HostingProvider, tool string, 
 }
 
 // GenericGetDownloadInfo implements the common logic for retrieving download info.
-func GenericGetDownloadInfo(ctx context.Context, p HostingProvider, tool string, version string, platform Platform) (*VersionInfo, error) {
+func GenericGetDownloadInfo(ctx context.Context, p HostingProvider, tool, version string, platform Platform) (*VersionInfo, error) {
 	tag := version
 	if !strings.HasPrefix(tag, "v") {
 		tag = "v" + version
@@ -434,7 +434,7 @@ func GenericGetDownloadInfo(ctx context.Context, p HostingProvider, tool string,
 
 // ProbeURL checks if a URL is accessible via HEAD request.
 func ProbeURL(ctx context.Context, client *http.Client, url string) bool {
-	req, err := http.NewRequestWithContext(ctx, "HEAD", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "HEAD", url, http.NoBody)
 	if err != nil {
 		return false
 	}
@@ -446,4 +446,29 @@ func ProbeURL(ctx context.Context, client *http.Client, url string) bool {
 	defer resp.Body.Close()
 
 	return resp.StatusCode == http.StatusOK
+}
+
+// NormalizeVersionPrefix intelligently ensures the version string has the correct 'v' prefix behavior.
+// If requireV is true, it prepends 'v' if the version starts with a digit.
+// If requireV is false, it strips 'v' or 'V' if it's followed by a digit.
+func NormalizeVersionPrefix(versionRequest string, requireV bool) string {
+	if versionRequest == "latest" || versionRequest == "stable" {
+		return versionRequest
+	}
+
+	if !requireV {
+		if (strings.HasPrefix(versionRequest, "v") || strings.HasPrefix(versionRequest, "V")) && len(versionRequest) > 1 {
+			if versionRequest[1] >= '0' && versionRequest[1] <= '9' {
+				return versionRequest[1:]
+			}
+		}
+		return versionRequest
+	} else {
+		if !strings.HasPrefix(versionRequest, "v") && len(versionRequest) > 0 {
+			if versionRequest[0] >= '0' && versionRequest[0] <= '9' {
+				return "v" + versionRequest
+			}
+		}
+		return versionRequest
+	}
 }

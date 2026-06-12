@@ -69,11 +69,11 @@ func (g *GitHubBackend) ListVersions(ctx context.Context, tool string, platform 
 	return versions, nil
 }
 
-func (g *GitHubBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (g *GitHubBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
 	return GenericResolveVersion(ctx, g, tool, versionRequest, platform)
 }
 
-func (g *GitHubBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (g *GitHubBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
 	return GenericGetDownloadInfo(ctx, g, tool, version, platform)
 }
 
@@ -87,7 +87,7 @@ func (g *GitHubBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 	var bodyBytes []byte
 
 	for i := 0; i < 3; i++ {
-		req, reqErr := http.NewRequestWithContext(ctx, "GET", url, nil)
+		req, reqErr := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 		if reqErr != nil {
 			return nil, reqErr
 		}
@@ -134,7 +134,7 @@ func (g *GitHubBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 		if resp != nil && resp.StatusCode != http.StatusOK {
 			return nil, fmt.Errorf("GitHub API status %d", resp.StatusCode)
 		}
-		return nil, fmt.Errorf("GitHub API request failed: %v", err)
+		return nil, fmt.Errorf("GitHub API request failed: %w", err)
 	}
 
 	var releases []githubRelease
@@ -165,7 +165,7 @@ func (g *GitHubBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 }
 
 // FetchReleaseByTag implements HostingProvider.
-func (g *GitHubBackend) FetchReleaseByTag(ctx context.Context, tool string, tag string) (*CommonRelease, error) {
+func (g *GitHubBackend) FetchReleaseByTag(ctx context.Context, tool, tag string) (*CommonRelease, error) {
 	tool = strings.TrimPrefix(tool, "github:")
 	url := fmt.Sprintf("https://api.github.com/repos/%s/releases/tags/%s", tool, tag)
 
@@ -174,7 +174,7 @@ func (g *GitHubBackend) FetchReleaseByTag(ctx context.Context, tool string, tag 
 	var bodyBytes []byte
 
 	for i := 0; i < 3; i++ {
-		req, reqErr := http.NewRequestWithContext(ctx, "GET", url, nil)
+		req, reqErr := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 		if reqErr != nil {
 			return nil, reqErr
 		}
@@ -221,7 +221,7 @@ func (g *GitHubBackend) FetchReleaseByTag(ctx context.Context, tool string, tag 
 		if resp != nil && resp.StatusCode != http.StatusOK {
 			return nil, fmt.Errorf("status %d", resp.StatusCode)
 		}
-		return nil, fmt.Errorf("GitHub API request failed: %v", err)
+		return nil, fmt.Errorf("GitHub API request failed: %w", err)
 	}
 
 	var r githubRelease
@@ -252,14 +252,14 @@ func (g *GitHubBackend) toCommonAssets(assets []githubAsset) []CommonAsset {
 	return res
 }
 
-// githubRelease and githubAsset kept as internal helpers
+// githubRelease and githubAsset kept as internal helpers.
 type githubRelease struct {
 	TagName    string        `json:"tag_name"`
 	Name       string        `json:"name"`
+	CreatedAt  string        `json:"created_at"`
+	Assets     []githubAsset `json:"assets"`
 	Draft      bool          `json:"draft"`
 	Prerelease bool          `json:"prerelease"`
-	Assets     []githubAsset `json:"assets"`
-	CreatedAt  string        `json:"created_at"`
 }
 
 type githubAsset struct {

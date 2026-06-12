@@ -228,6 +228,7 @@ func TestCalculateAssetScore_Linux(t *testing.T) {
 		t.Errorf("expected positive score, got %d", score)
 	}
 }
+
 func TestCalculateAssetScore_Windows(t *testing.T) {
 	platform := Platform{OS: "windows", Arch: "amd64"}
 	score := CalculateAssetScore("app-windows-amd64.zip", platform, "app")
@@ -481,5 +482,44 @@ func TestProbeURL_InvalidURL(t *testing.T) {
 	result := ProbeURL(context.Background(), client, "not-a-url-%%%")
 	if result {
 		t.Error("expected false for invalid URL")
+	}
+}
+
+func TestNormalizeVersionPrefix(t *testing.T) {
+	tests := []struct {
+		name           string
+		versionRequest string
+		requireV       bool
+		want           string
+	}{
+		// requireV = true
+		{"requireV_adds_v_to_semver", "1.2.3", true, "v1.2.3"},
+		{"requireV_adds_v_to_major", "1", true, "v1"},
+		{"requireV_keeps_v", "v1.2.3", true, "v1.2.3"},
+		{"requireV_keeps_V", "V1.2.3", true, "V1.2.3"}, // Does not normalize V to v currently, just keeps it
+		{"requireV_ignores_latest", "latest", true, "latest"},
+		{"requireV_ignores_stable", "stable", true, "stable"},
+		{"requireV_ignores_master", "master", true, "master"},
+		{"requireV_ignores_empty", "", true, ""},
+
+		// requireV = false
+		{"stripV_removes_v", "v1.2.3", false, "1.2.3"},
+		{"stripV_removes_V", "V1.2.3", false, "1.2.3"},
+		{"stripV_keeps_non_v", "1.2.3", false, "1.2.3"},
+		{"stripV_ignores_latest", "latest", false, "latest"},
+		{"stripV_ignores_stable", "stable", false, "stable"},
+		{"stripV_ignores_master", "master", false, "master"},
+		{"stripV_ignores_empty", "", false, ""},
+		{"stripV_keeps_v_if_not_followed_by_digit", "valuable-release", false, "valuable-release"},
+		{"stripV_keeps_v_only", "v", false, "v"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := NormalizeVersionPrefix(tc.versionRequest, tc.requireV)
+			if got != tc.want {
+				t.Errorf("NormalizeVersionPrefix(%q, %v) = %q, want %q", tc.versionRequest, tc.requireV, got, tc.want)
+			}
+		})
 	}
 }

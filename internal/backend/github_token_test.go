@@ -103,7 +103,7 @@ token = "ghp_from_toml"
 [tokens."github.mycompany.com"]
 token = "ghp_enterprise_toml"
 `
-	if err := os.WriteFile(dir+"/github_tokens.toml", []byte(tomlContent), 0600); err != nil {
+	if err := os.WriteFile(dir+"/github_tokens.toml", []byte(tomlContent), 0o600); err != nil {
 		t.Fatalf("failed to write test token file: %v", err)
 	}
 
@@ -133,7 +133,7 @@ func TestFindGhHostsFile(t *testing.T) {
 	// Create a dummy hosts file
 	dir := t.TempDir()
 	hostsFile := filepath.Join(dir, "hosts.yml")
-	os.WriteFile(hostsFile, []byte(""), 0644)
+	os.WriteFile(hostsFile, []byte(""), 0o644)
 
 	// Test 1: GH_CONFIG_DIR
 	t.Setenv("GH_CONFIG_DIR", dir)
@@ -144,9 +144,9 @@ func TestFindGhHostsFile(t *testing.T) {
 	// Test 2: XDG_CONFIG_HOME
 	t.Setenv("GH_CONFIG_DIR", "")
 	ghDir := filepath.Join(dir, "gh")
-	os.Mkdir(ghDir, 0755)
+	os.Mkdir(ghDir, 0o755)
 	hostsFile2 := filepath.Join(ghDir, "hosts.yml")
-	os.WriteFile(hostsFile2, []byte(""), 0644)
+	os.WriteFile(hostsFile2, []byte(""), 0o644)
 
 	t.Setenv("XDG_CONFIG_HOME", dir)
 	if f := findGhHostsFile(); f != hostsFile2 {
@@ -220,12 +220,12 @@ func TestReadGitHubTokensFile_WithXDG(t *testing.T) {
 	// Test with XDG_CONFIG_HOME set
 	dir := t.TempDir()
 	unirtmDir := dir + "/unirtm"
-	os.MkdirAll(unirtmDir, 0755)
+	os.MkdirAll(unirtmDir, 0o755)
 	tomlContent := `[tokens]
 [tokens."github.com"]
 token = "ghp_from_xdg"
 `
-	os.WriteFile(unirtmDir+"/github_tokens.toml", []byte(tomlContent), 0600)
+	os.WriteFile(unirtmDir+"/github_tokens.toml", []byte(tomlContent), 0o600)
 
 	// Ensure CONFIG_DIR is not set
 	t.Setenv("UNIRTM_CONFIG_DIR", "")
@@ -242,7 +242,7 @@ func TestReadGitHubTokensFile_InvalidToml(t *testing.T) {
 	t.Setenv("UNIRTM_CONFIG_DIR", dir)
 
 	// Write invalid TOML
-	os.WriteFile(dir+"/github_tokens.toml", []byte("not valid toml [[["), 0600)
+	os.WriteFile(dir+"/github_tokens.toml", []byte("not valid toml [[["), 0o600)
 
 	got := readGitHubTokensFile("github.com")
 	if got != "" {
@@ -279,7 +279,7 @@ func TestReadGhCliToken_WithHostsFile(t *testing.T) {
     user: octocat
 `
 	hostsFile := dir + "/hosts.yml"
-	os.WriteFile(hostsFile, []byte(hostsContent), 0644)
+	os.WriteFile(hostsFile, []byte(hostsContent), 0o644)
 
 	t.Setenv("GH_CONFIG_DIR", dir)
 
@@ -296,7 +296,7 @@ func TestReadGhCliToken_UnknownHost(t *testing.T) {
     user: octocat
 `
 	hostsFile := dir + "/hosts.yml"
-	os.WriteFile(hostsFile, []byte(hostsContent), 0644)
+	os.WriteFile(hostsFile, []byte(hostsContent), 0o644)
 
 	t.Setenv("GH_CONFIG_DIR", dir)
 
@@ -309,7 +309,7 @@ func TestReadGhCliToken_UnknownHost(t *testing.T) {
 func TestReadGhCliToken_FileNotReadable(t *testing.T) {
 	dir := t.TempDir()
 	hostsFile := dir + "/hosts.yml"
-	os.WriteFile(hostsFile, []byte(""), 0000)
+	os.WriteFile(hostsFile, []byte(""), 0o000)
 
 	t.Setenv("GH_CONFIG_DIR", dir)
 
@@ -323,9 +323,9 @@ func TestReadGhCliToken_FileNotReadable(t *testing.T) {
 func TestFindGhHostsFile_XDGPath(t *testing.T) {
 	dir := t.TempDir()
 	ghDir := dir + "/gh"
-	os.MkdirAll(ghDir, 0755)
+	os.MkdirAll(ghDir, 0o755)
 	hostsFile := filepath.Join(ghDir, "hosts.yml")
-	os.WriteFile(hostsFile, []byte(""), 0644)
+	os.WriteFile(hostsFile, []byte(""), 0o644)
 
 	t.Setenv("GH_CONFIG_DIR", "")
 	t.Setenv("XDG_CONFIG_HOME", dir)
@@ -338,9 +338,9 @@ func TestFindGhHostsFile_XDGPath(t *testing.T) {
 
 func TestFindGhHostsFile_XDGConfigHome(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, "gh"), 0755)
+	os.MkdirAll(filepath.Join(dir, "gh"), 0o755)
 	hostsFile := filepath.Join(dir, "gh", "hosts.yml")
-	os.WriteFile(hostsFile, []byte("github.com:\n  oauth_token: ghp_test"), 0600)
+	os.WriteFile(hostsFile, []byte("github.com:\n  oauth_token: ghp_test"), 0o600)
 
 	t.Setenv("UNIRTM_GH_CONFIG_DIR", "")
 	t.Setenv("UNIRTM_XDG_CONFIG_HOME", dir)
@@ -354,9 +354,9 @@ func TestFindGhHostsFile_XDGConfigHome(t *testing.T) {
 func TestFindGhHostsFile_HomeDirFallback(t *testing.T) {
 	homeDir := t.TempDir()
 	// Mock XDG default
-	os.MkdirAll(filepath.Join(homeDir, ".config", "gh"), 0755)
+	os.MkdirAll(filepath.Join(homeDir, ".config", "gh"), 0o755)
 	hostsFile := filepath.Join(homeDir, ".config", "gh", "hosts.yml")
-	os.WriteFile(hostsFile, []byte("github.com:\n  oauth_token: ghp_test"), 0600)
+	os.WriteFile(hostsFile, []byte("github.com:\n  oauth_token: ghp_test"), 0o600)
 
 	t.Setenv("UNIRTM_GH_CONFIG_DIR", "")
 	t.Setenv("MISE_GH_CONFIG_DIR", "")
@@ -376,9 +376,9 @@ func TestFindGhHostsFile_HomeDirFallback(t *testing.T) {
 func TestFindGhHostsFile_MacosFallback(t *testing.T) {
 	homeDir := t.TempDir()
 	// Mock macos path
-	os.MkdirAll(filepath.Join(homeDir, "Library", "Application Support", "gh"), 0755)
+	os.MkdirAll(filepath.Join(homeDir, "Library", "Application Support", "gh"), 0o755)
 	hostsFile := filepath.Join(homeDir, "Library", "Application Support", "gh", "hosts.yml")
-	os.WriteFile(hostsFile, []byte("github.com:\n  oauth_token: ghp_test"), 0600)
+	os.WriteFile(hostsFile, []byte("github.com:\n  oauth_token: ghp_test"), 0o600)
 
 	t.Setenv("UNIRTM_GH_CONFIG_DIR", "")
 	t.Setenv("MISE_GH_CONFIG_DIR", "")

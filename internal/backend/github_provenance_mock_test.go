@@ -16,7 +16,7 @@ import (
 func TestVerifyArtifactProvenance_MockServer(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "artifact.bin")
-	if err := os.WriteFile(path, []byte("test"), 0644); err != nil {
+	if err := os.WriteFile(path, []byte("test"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 

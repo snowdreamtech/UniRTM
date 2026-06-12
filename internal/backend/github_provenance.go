@@ -17,6 +17,7 @@ import (
 	"github.com/golang/snappy"
 	"github.com/sigstore/sigstore-go/pkg/root"
 	"github.com/sigstore/sigstore-go/pkg/verify"
+
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
@@ -28,7 +29,6 @@ func VerifyArtifactProvenance(
 	ctx context.Context,
 	token, owner, repo, artifactPath string,
 ) (*ProvenanceResult, error) {
-
 	verifier := &provenanceVerifier{
 		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
 	}
@@ -166,8 +166,8 @@ type attestationAPIResponse struct {
 }
 
 type attestationEntry struct {
-	Bundle    json.RawMessage `json:"bundle"`
 	BundleURL string          `json:"bundle_url"`
+	Bundle    json.RawMessage `json:"bundle"`
 }
 
 func (v *provenanceVerifier) fetchAttestations(
@@ -185,7 +185,7 @@ func (v *provenanceVerifier) fetchAttestations(
 		apiBase, owner, repo, digest,
 	)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("provenance: create request: %w", err)
 	}
@@ -247,7 +247,7 @@ func (v *provenanceVerifier) fetchExternalBundle(ctx context.Context, urlStr str
 		}
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, finalURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, finalURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

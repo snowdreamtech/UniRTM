@@ -52,7 +52,7 @@ func (b *NpmBackend) ListVersions(ctx context.Context, tool string, platform Pla
 	baseURL = strings.TrimRight(baseURL, "/")
 	url := fmt.Sprintf("%s/%s", baseURL, tool)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, NewBackendError(b.Name(), tool, "create request", err)
 	}
@@ -97,7 +97,8 @@ func (b *NpmBackend) ListVersions(ctx context.Context, tool string, platform Pla
 	return versions, nil
 }
 
-func (b *NpmBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *NpmBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
+	versionRequest = NormalizeVersionPrefix(versionRequest, false)
 	if versionRequest == "latest" {
 		baseURL := env.Get("NPM_REGISTRY_URL")
 		if baseURL == "" {
@@ -108,7 +109,7 @@ func (b *NpmBackend) ResolveVersion(ctx context.Context, tool string, versionReq
 		}
 		baseURL = strings.TrimRight(baseURL, "/")
 		url := fmt.Sprintf("%s/%s/latest", baseURL, tool)
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 		if err != nil {
 			return nil, err
 		}
@@ -143,7 +144,8 @@ func (b *NpmBackend) ResolveVersion(ctx context.Context, tool string, versionReq
 	}, nil
 }
 
-func (b *NpmBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (b *NpmBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
+	version = NormalizeVersionPrefix(version, false)
 	// Provider handles actual downloading via npm cli
 	return &VersionInfo{
 		Version:  version,

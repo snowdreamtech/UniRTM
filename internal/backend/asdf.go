@@ -23,10 +23,10 @@ import (
 
 // AsdfBackend implements the Backend interface for asdf plugins.
 type AsdfBackend struct {
-	mu           sync.Mutex
 	client       *http.Client
 	registryPath string
 	pluginsPath  string
+	mu           sync.Mutex
 }
 
 // NewAsdfBackend creates a new asdf backend.
@@ -110,7 +110,7 @@ func (b *AsdfBackend) ListVersions(ctx context.Context, tool string, platform Pl
 	return versions, nil
 }
 
-func (b *AsdfBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *AsdfBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
 	tool = b.resolveToolName(tool)
 	if versionRequest == "latest" {
 		versions, err := b.ListVersions(ctx, tool, platform)
@@ -132,7 +132,7 @@ func (b *AsdfBackend) ResolveVersion(ctx context.Context, tool string, versionRe
 	}, nil
 }
 
-func (b *AsdfBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (b *AsdfBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
 	tool = b.resolveToolName(tool)
 	// asdf plugins don't provide download info without actually downloading.
 	// We need to ensure the plugin is present for the provider.
@@ -181,7 +181,7 @@ func (b *AsdfBackend) ensurePlugin(ctx context.Context, tool string) (string, er
 
 	logger.Info("Cloning asdf plugin", map[string]interface{}{"tool": tool, "url": repoURL})
 
-	if err := os.MkdirAll(b.pluginsPath, 0755); err != nil {
+	if err := os.MkdirAll(b.pluginsPath, 0o755); err != nil {
 		return "", err
 	}
 
@@ -209,7 +209,7 @@ func (b *AsdfBackend) ensurePlugin(ctx context.Context, tool string) (string, er
 // updateRegistry clones or fetches the central asdf-plugins registry.
 func (b *AsdfBackend) updateRegistry(ctx context.Context) error {
 	if _, err := os.Stat(b.registryPath); os.IsNotExist(err) {
-		if err := os.MkdirAll(filepath.Dir(b.registryPath), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(b.registryPath), 0o755); err != nil {
 			return err
 		}
 		repoURL := b.applyGithubProxy("https://github.com/asdf-vm/asdf-plugins.git")

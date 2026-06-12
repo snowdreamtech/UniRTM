@@ -28,20 +28,23 @@ func (b *CranBackend) Name() string {
 func (b *CranBackend) Dependencies() []string {
 	return nil
 }
+
 func (b *CranBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	// CRAN versions are usually found at https://cran.r-project.org/package=<tool>
 	// For simplicity, we return a limited implementation as a placeholder.
 	return nil, NewBackendError(b.Name(), tool, "cran version listing is not yet implemented via REST", nil)
 }
 
-func (b *CranBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *CranBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
+	versionRequest = NormalizeVersionPrefix(versionRequest, false)
 	return &VersionInfo{
 		Version:  versionRequest,
 		Platform: platform,
 	}, nil
 }
 
-func (b *CranBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (b *CranBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
+	version = NormalizeVersionPrefix(version, false)
 	return &VersionInfo{
 		Version:  version,
 		Platform: platform,

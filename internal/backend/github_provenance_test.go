@@ -22,7 +22,7 @@ func TestSha256File(t *testing.T) {
 	path := filepath.Join(dir, "artifact.bin")
 
 	content := []byte("hello provenance")
-	if err := os.WriteFile(path, content, 0644); err != nil {
+	if err := os.WriteFile(path, content, 0o644); err != nil {
 		t.Fatal(err)
 	}
 

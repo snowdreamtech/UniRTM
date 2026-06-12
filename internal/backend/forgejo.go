@@ -72,11 +72,11 @@ func (b *ForgejoBackend) ListVersions(ctx context.Context, tool string, platform
 	return versions, nil
 }
 
-func (b *ForgejoBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *ForgejoBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
 	return GenericResolveVersion(ctx, b, tool, versionRequest, platform)
 }
 
-func (b *ForgejoBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (b *ForgejoBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
 	return GenericGetDownloadInfo(ctx, b, tool, version, platform)
 }
 
@@ -85,7 +85,7 @@ func (b *ForgejoBackend) FetchReleases(ctx context.Context, tool string) ([]Comm
 	tool = strings.TrimPrefix(tool, "forgejo:")
 	apiURL := fmt.Sprintf("%s/repos/%s/releases", b.baseURL, tool)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -126,11 +126,11 @@ func (b *ForgejoBackend) FetchReleases(ctx context.Context, tool string) ([]Comm
 }
 
 // FetchReleaseByTag implements HostingProvider.
-func (b *ForgejoBackend) FetchReleaseByTag(ctx context.Context, tool string, tag string) (*CommonRelease, error) {
+func (b *ForgejoBackend) FetchReleaseByTag(ctx context.Context, tool, tag string) (*CommonRelease, error) {
 	tool = strings.TrimPrefix(tool, "forgejo:")
 	apiURL := fmt.Sprintf("%s/repos/%s/releases/tags/%s", b.baseURL, tool, tag)
 
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
 	if token := env.Get("FORGEJO_TOKEN"); token != "" {
 		req.Header.Set("Authorization", "token "+token)
 	}

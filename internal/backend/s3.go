@@ -32,13 +32,14 @@ func (b *S3Backend) Name() string {
 func (b *S3Backend) Dependencies() []string {
 	return nil
 }
+
 func (b *S3Backend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	// S3 bucket listing requires parsing XML from ?list-type=2 API, which can be complex
 	// For simplicity, we assume explicit version requests or a predefined versions.txt
 	return nil, NewBackendError(b.Name(), tool, "listing versions from s3 bucket root is not supported dynamically", nil)
 }
 
-func (b *S3Backend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *S3Backend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
 	if versionRequest == "latest" {
 		return &VersionInfo{
 			Version:  "latest",
@@ -52,7 +53,7 @@ func (b *S3Backend) ResolveVersion(ctx context.Context, tool string, versionRequ
 	}, nil
 }
 
-func (b *S3Backend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (b *S3Backend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
 	bucket := env.Get("S3_BUCKET")
 	if bucket == "" {
 		bucket = "unirtm-binaries" // Fallback or could fail here

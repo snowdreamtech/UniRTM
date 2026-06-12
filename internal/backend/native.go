@@ -29,6 +29,7 @@ func (b *NativeBackend) Name() string {
 func (b *NativeBackend) Dependencies() []string {
 	return nil
 }
+
 func (b *NativeBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	recipe, ok := b.recipes[tool]
 	if !ok {
@@ -89,7 +90,7 @@ func (b *NativeBackend) ListVersions(ctx context.Context, tool string, platform 
 	return res, nil
 }
 
-func (b *NativeBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *NativeBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
 	recipe, ok := b.recipes[tool]
 	if !ok {
 		return nil, fmt.Errorf("native: no recipe for tool: %s", tool)

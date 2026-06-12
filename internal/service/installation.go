@@ -1393,9 +1393,9 @@ func (im *InstallationManager) ParseToolSpec(spec string) (backend, tool, versio
 	tool = spec
 
 	// 1. Handle backend:tool[@version]
-	if idx := strings.Index(spec, ":"); idx != -1 {
-		backend = spec[:idx]
-		tool = spec[idx+1:]
+	if b, t, ok := strings.Cut(spec, ":"); ok {
+		backend = b
+		tool = t
 		// Intercept go: prefix and route to the internal go-pkg provider
 		if backend == "go" {
 			backend = "go-pkg"

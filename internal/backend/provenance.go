@@ -20,35 +20,30 @@ import (
 	"github.com/sigstore/sigstore-go/pkg/root"
 	"github.com/sigstore/sigstore-go/pkg/tuf"
 	"github.com/sigstore/sigstore-go/pkg/verify"
+	"github.com/theupdateframework/go-tuf/v2/metadata"
+	"github.com/theupdateframework/go-tuf/v2/metadata/fetcher"
+
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
-	"github.com/theupdateframework/go-tuf/v2/metadata"
-	"github.com/theupdateframework/go-tuf/v2/metadata/fetcher"
 )
 
 // ProvenanceResult represents the metadata extracted from a verified provenance bundle.
 type ProvenanceResult struct {
-	// Supported is false when the project publishes no attestations.
-	Supported bool
-	// Verified is true when the attestation bundle passed all checks.
-	Verified bool
-	// Repository is the source repository recorded in the Fulcio cert SAN.
-	Repository string
-	// WorkflowRef is the triggering workflow path recorded in the cert.
-	WorkflowRef string
-	// PredicateType is the in-toto predicate URI in the signed statement.
+	Repository    string
+	WorkflowRef   string
 	PredicateType string
-	// BuilderID is the SLSA builder identifier from the certificate extension.
-	BuilderID string
+	BuilderID     string
+	Supported     bool
+	Verified      bool
 }
 
 // SigstoreVerifier acts as the common orchestration engine for verifying
 // Sigstore bundles across different platforms (GitHub, GitLab, etc.)
 type SigstoreVerifier struct {
+	ExpectedRepo     string
 	TrustedMaterials []root.TrustedMaterial
 	Identities       []verify.CertificateIdentity
-	ExpectedRepo     string
 }
 
 // VerifyBundles attempts to verify a list of bundles against the provided identities and trust roots.
@@ -240,7 +235,7 @@ func (f *tufFetcher) DownloadFile(urlPath string, maxLength int64, timeout time.
 		defer cancel()
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, finalURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, finalURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

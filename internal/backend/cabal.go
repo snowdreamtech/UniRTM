@@ -38,7 +38,7 @@ type hackageResponse []struct {
 func (b *CabalBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	url := fmt.Sprintf("https://hackage.haskell.org/package/%s.json", tool)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, NewBackendError(b.Name(), tool, "create request", err)
 	}
@@ -69,7 +69,8 @@ func (b *CabalBackend) ListVersions(ctx context.Context, tool string, platform P
 	return versions, nil
 }
 
-func (b *CabalBackend) ResolveVersion(ctx context.Context, tool string, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *CabalBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
+	versionRequest = NormalizeVersionPrefix(versionRequest, false)
 	if versionRequest == "latest" {
 		versions, err := b.ListVersions(ctx, tool, platform)
 		if err != nil {
@@ -87,7 +88,8 @@ func (b *CabalBackend) ResolveVersion(ctx context.Context, tool string, versionR
 	}, nil
 }
 
-func (b *CabalBackend) GetDownloadInfo(ctx context.Context, tool string, version string, platform Platform) (*VersionInfo, error) {
+func (b *CabalBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
+	version = NormalizeVersionPrefix(version, false)
 	return &VersionInfo{
 		Version:  version,
 		Platform: platform,
