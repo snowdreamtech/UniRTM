@@ -1,8 +1,8 @@
 {
-  "ai": "gemini",
+  "ai": "generic",
   "feature_numbering": "sequential",
   "here": true,
-  "integration": "gemini",
+  "integration": "generic",
   "script": "sh",
   "speckit_version": "0.10.2"
 }

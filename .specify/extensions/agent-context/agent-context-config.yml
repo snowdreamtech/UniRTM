@@ -1,4 +1,4 @@
-context_file: GEMINI.md
+context_file: AGENTS.md
 context_markers:
   start: <!-- SPECKIT START -->
   end: <!-- SPECKIT END -->

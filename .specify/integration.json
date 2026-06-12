@@ -2,24 +2,18 @@
   "version": "0.10.2",
   "integration_state_schema": 1,
   "installed_integrations": [
-    "gemini",
-    "claude",
-    "cursor-agent"
+    "generic"
   ],
   "integration_settings": {
-    "gemini": {
+    "generic": {
       "script": "sh",
+      "raw_options": "--commands-dir .specify/commands/",
+      "parsed_options": {
+        "commands_dir": ".specify/commands/"
+      },
       "invoke_separator": "."
-    },
-    "claude": {
-      "script": "sh",
-      "invoke_separator": "-"
-    },
-    "cursor-agent": {
-      "script": "sh",
-      "invoke_separator": "-"
     }
   },
-  "integration": "gemini",
-  "default_integration": "gemini"
+  "integration": "generic",
+  "default_integration": "generic"
 }

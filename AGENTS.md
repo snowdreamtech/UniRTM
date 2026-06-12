@@ -30,7 +30,7 @@ the actual rules live in `.agent/rules/` as the Single Source of Truth.
 
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan at specs/023-smart-version-prefix/plan.md
+shell commands, and other important information, read the current plan
 <!-- SPECKIT END -->
 
 ## Slash Commands / Workflows
