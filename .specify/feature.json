@@ -1,1 +1,3 @@
-{"feature_directory": "specs/023-smart-version-prefix"}
+{
+  "feature_directory": "specs/025-lua-provider"
+}
