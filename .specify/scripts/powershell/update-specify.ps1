@@ -26,4 +26,4 @@ if ([version]$CurrentVersion -lt [version]$TargetVersion) {
 }
 
 Set-Location $RepoRoot
-specify init . --integration generic --integration-options="--commands-dir .specify/commands/"
+specify init . --force --script ps --integration generic --integration-options="--commands-dir .specify/commands/"

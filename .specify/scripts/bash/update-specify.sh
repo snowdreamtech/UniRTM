@@ -27,4 +27,4 @@ if [ "$LOWEST" = "$CURRENT_VERSION" ] && [ "$CURRENT_VERSION" != "$TARGET_VERSIO
 fi
 
 cd "$REPO_ROOT" || exit 1
-specify init . --integration generic --integration-options="--commands-dir .specify/commands/"
+specify init . --force --script sh --integration generic --integration-options="--commands-dir .specify/commands/"
