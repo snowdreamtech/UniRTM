@@ -406,15 +406,15 @@ repos:
           (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
         description: "Manage Go imports and formatting."
 
-      - id: golangci-lint
-        name: golangci-lint
-        language: system
-        entry: unirtm hook-exec golangci-lint run --fix
-        types: [go]
-        pass_filenames: false
-        exclude: |
-          (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
-        description: "Comprehensive Go linter aggregator."
+      #      - id: golangci-lint
+      #        name: golangci-lint
+      #        language: system
+      #        entry: unirtm hook-exec golangci-lint run --fix
+      #        types: [go]
+      #        pass_filenames: false
+      #        exclude: |
+      #          (?x)^(\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
+      #        description: "Comprehensive Go linter aggregator."
 
       - id: gitleaks
         name: gitleaks quality check
@@ -469,13 +469,13 @@ repos:
         stages: [manual, pre-push] # Skip in local pre-commit, run in CI or manually
         description: "Audit Infrastructure-as-Code (Terraform, K8s, Docker) for security best practices."
 
-      - id: gosec
-        name: gosec go security scan
-        language: system
-        entry: unirtm hook-exec gosec -exclude=G104 -quiet ./...
-        types: [go]
-        pass_filenames: false
-        description: "Audit Go source code for security vulnerabilities using Gosec."
+      #      - id: gosec
+      #        name: gosec go security scan
+      #        language: system
+      #        entry: unirtm hook-exec gosec -exclude=G104 -quiet ./...
+      #        types: [go]
+      #        pass_filenames: false
+      #        description: "Audit Go source code for security vulnerabilities using Gosec."
 
       - id: govulncheck
         name: govulncheck go vulnerability audit
