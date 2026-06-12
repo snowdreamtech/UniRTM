@@ -83,11 +83,6 @@ _paths_output=$(get_feature_paths) || { echo "ERROR: Failed to resolve feature p
 eval "$_paths_output"
 unset _paths_output
 
-# Auto-sync IDE adapters (Universal Compiler) in background
-if [[ -x "$SCRIPT_DIR/compile-ide-adapters.sh" ]]; then
-    "$SCRIPT_DIR/compile-ide-adapters.sh" &>/dev/null &
-fi
-
 # If paths-only mode, output paths and exit (no validation)
 if $PATHS_ONLY; then
     if $JSON_MODE; then
@@ -115,9 +110,6 @@ if $PATHS_ONLY; then
     fi
     exit 0
 fi
-
-# Validate branch name
-check_feature_branch "$CURRENT_BRANCH" "$HAS_GIT" || exit 1
 
 # Validate required directories and files
 if [[ ! -d "$FEATURE_DIR" ]]; then
