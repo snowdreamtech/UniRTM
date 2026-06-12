@@ -97,6 +97,7 @@ linters-settings:
     enable-all: true
     disable:
       - shadow # too strict for practical use
+      - fieldalignment # breaks unkeyed struct literals in tests
 
   gocyclo:
     min-complexity: 15
