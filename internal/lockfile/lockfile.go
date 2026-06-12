@@ -284,11 +284,30 @@ func (lf *LockFile) GetEntry(key, version string) *ToolLockEntry {
 	lf.mu.RLock()
 	defer lf.mu.RUnlock()
 
-	for _, e := range lf.Tools[key] {
+	entries := lf.Tools[key]
+	if len(entries) == 0 {
+		return nil
+	}
+
+	// Fast path: if there is only exactly one entry for this tool,
+	// it must be the locked resolution for whatever version was requested.
+	// This correctly maps config versions like "latest" or "v1.2.3" to
+	// their resolved concrete versions (e.g., "1.2.3") in the lockfile.
+	if len(entries) == 1 {
+		return entries[0]
+	}
+
+	for _, e := range entries {
 		if e == nil {
 			continue
 		}
 		if version == "" || e.Version == version {
+			return e
+		}
+
+		v1 := strings.TrimPrefix(strings.TrimPrefix(version, "v"), "V")
+		v2 := strings.TrimPrefix(strings.TrimPrefix(e.Version, "v"), "V")
+		if v1 != "" && v1 == v2 {
 			return e
 		}
 	}
