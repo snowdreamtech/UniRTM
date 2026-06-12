@@ -26,7 +26,7 @@ func (b *LuarocksBackend) Name() string {
 }
 
 func (b *LuarocksBackend) Dependencies() []string {
-	return nil
+	return []string{"lua"}
 }
 
 func (b *LuarocksBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {

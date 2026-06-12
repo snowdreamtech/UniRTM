@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"runtime"
+
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
@@ -29,7 +31,7 @@ func (p *LuaRocksProvider) Install(ctx context.Context, tool string, installPath
 		return err
 	}
 
-	lrCmd, err := exec.LookPath("luarocks")
+	lrCmd, err := p.findLuarocks()
 	if err != nil {
 		return NewProviderError(p.Name(), tool, version, "luarocks is required to install lua packages but was not found", err)
 	}
@@ -123,4 +125,44 @@ func (p *LuaRocksProvider) GetEnvVars(tool string, installPath string, version s
 
 func (p *LuaRocksProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
+}
+
+func (p *LuaRocksProvider) findLuarocks() (string, error) {
+	luaInstallsDir := filepath.Join(env.GetInstallsDir(), "lua")
+	entries, err := os.ReadDir(luaInstallsDir)
+	if err == nil {
+		var bestPath string
+		for _, entry := range entries {
+			if entry.IsDir() {
+				verDir := filepath.Join(luaInstallsDir, entry.Name())
+				var candidates []string
+				if runtime.GOOS == "windows" {
+					candidates = []string{
+						filepath.Join(verDir, "bin", "luarocks.bat"),
+						filepath.Join(verDir, "luarocks.bat"),
+						filepath.Join(verDir, "bin", "luarocks.cmd"),
+						filepath.Join(verDir, "luarocks.cmd"),
+						filepath.Join(verDir, "bin", "luarocks"),
+						filepath.Join(verDir, "luarocks"),
+					}
+				} else {
+					candidates = []string{
+						filepath.Join(verDir, "bin", "luarocks"),
+						filepath.Join(verDir, "luarocks"),
+					}
+				}
+				for _, cand := range candidates {
+					if info, err := os.Stat(cand); err == nil && !info.IsDir() {
+						bestPath = cand
+						break
+					}
+				}
+			}
+		}
+		if bestPath != "" {
+			return bestPath, nil
+		}
+	}
+
+	return exec.LookPath("luarocks")
 }
