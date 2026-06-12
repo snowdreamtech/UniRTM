@@ -213,6 +213,24 @@ func GetBuiltinRecipes() map[string]Recipe {
 				"BF888333D96A1C18E2682AAED79D67C9EC016739", // George Jenkins (Helm Maintainer)
 			},
 		},
+		"php": {
+			ID: "php",
+			Handler: &GithubHandler{
+				Owner: "shivammathur",
+				Repo:  "php-builder-releases",
+			},
+			BaseURL: "https://github.com/shivammathur/php-builder-releases/releases",
+		},
+		"dart": {
+			ID:      "dart",
+			Handler: &DartHandler{},
+			BaseURL: "https://storage.googleapis.com/dart-archive",
+		},
+		"haskell": {
+			ID:      "haskell",
+			Handler: &HaskellHandler{},
+			BaseURL: "https://downloads.haskell.org/~ghc",
+		},
 	}
 }
 
