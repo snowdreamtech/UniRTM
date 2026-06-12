@@ -6,6 +6,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0](https://github.com/snowdreamtech/UniRTM/compare/v0.18.0...v0.19.0) (2026-06-12)
+
+
+### Features
+
+* **ai-ide:** upgrade universal IDE compiler to V2 (production grade) ([8368476](https://github.com/snowdreamtech/UniRTM/commit/8368476d3ecd0eda4cfea66187d040efe6941318))
+* **ai-ide:** upgrade universal IDE compiler to V2 (production grade) ([56012f0](https://github.com/snowdreamtech/UniRTM/commit/56012f0d0d5dfb34496dd127b66111a1fe6bff84))
+* **hook:** make hookName optional to deprecate explicit 'all' keyword usage ([0b033d2](https://github.com/snowdreamtech/UniRTM/commit/0b033d2d4616ce0782aa91d8d88aef32a9a71be4))
+* **hook:** unify unirtm hook run syntax with stage flag and trailing args ([6f0e300](https://github.com/snowdreamtech/UniRTM/commit/6f0e300399c7537d86e1f9be4e2feb188e5464a9))
+* **provider:** add UNIRTM_NPM_ALLOW_SCRIPTS escape hatch for npm lifecycle scripts ([b3cef8a](https://github.com/snowdreamtech/UniRTM/commit/b3cef8a624443fc71e94062f4683244086f8561d))
+* **provider:** enforce --ignore-scripts for global npm installs and warn on lifecycle scripts ([1dc0b3d](https://github.com/snowdreamtech/UniRTM/commit/1dc0b3da68c387717a1b5b79cefac34466a922f5))
+* **provider:** natively integrate corepack and its proxied commands (yarn, pnpm) for node ([1dc0b3d](https://github.com/snowdreamtech/UniRTM/commit/1dc0b3da68c387717a1b5b79cefac34466a922f5))
+* **speckit:** implementation progress ([4ce29cd](https://github.com/snowdreamtech/UniRTM/commit/4ce29cd25141bba345b6b980019aae9bb12f49f5))
+* **speckit:** implementation progress ([0365521](https://github.com/snowdreamtech/UniRTM/commit/036552154247afa68d14e80b305d1cc3b6287591))
+
+
+### Bug Fixes
+
+* **hook:** add fallback for legacy hook run usage and fix husky path traversal ([c16bd32](https://github.com/snowdreamtech/UniRTM/commit/c16bd326be7cd15cdf3aba49924e14db7c0a483e))
+* **hook:** bypass windows cmd limit for node hooks via xargs batching ([dc59139](https://github.com/snowdreamtech/UniRTM/commit/dc59139a710a985d181ad44e4d1a90fa5b9ce14e))
+* **hook:** remove double-dash separator to allow passing flags to pre-commit engine directly ([e046e1d](https://github.com/snowdreamtech/UniRTM/commit/e046e1df6d968ba5e54d6387b3db060ab285190b))
+* **specify:** add snowdreamtech*.md to cleanup routines ([181340f](https://github.com/snowdreamtech/UniRTM/commit/181340f4e0f6415e566b575e7001366b949e7d48))
+* **specify:** optimize compile-ide-adapters.sh performance and ensure global symlink cleanup ([f84ab81](https://github.com/snowdreamtech/UniRTM/commit/f84ab811a7227d7d536039c8083afee6e9ec844c))
+* **speckit:** fix auto-commit manual execution fallback to adhere to conventional commits ([48f6e1c](https://github.com/snowdreamtech/UniRTM/commit/48f6e1c5708bd2928211bb256791411eeebbce4a))
+
 ## [0.18.0](https://github.com/snowdreamtech/UniRTM/compare/v0.17.0...v0.18.0) (2026-06-11)
 
 
