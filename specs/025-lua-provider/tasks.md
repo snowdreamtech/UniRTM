@@ -17,8 +17,8 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Register "lua" provider in `internal/provider/registry.go`
-- [ ] T002 Create stub provider implementation in `internal/provider/lua.go`
+- [x] T001 Register "lua" provider in `internal/provider/registry.go`
+- [x] T002 Create stub provider implementation in `internal/provider/lua.go`
 
 ---
 
@@ -28,7 +28,7 @@ description: "Task list template for feature implementation"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T003 Implement OS/Arch resolution mapping helper in `internal/provider/lua.go` (maps to `_Linux54_64_bin.tar.gz`, `_Win64_bin.zip`, etc., or dyne/luabinaries mirror for arm64)
+- [x] T003 Implement OS/Arch resolution mapping helper in `internal/provider/lua.go` (maps to `_Linux54_64_bin.tar.gz`, `_Win64_bin.zip`, etc., or dyne/luabinaries mirror for arm64)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
 
@@ -42,10 +42,10 @@ description: "Task list template for feature implementation"
 
 ### Implementation for User Story 1
 
-- [ ] T004 [US1] Implement `Install` method logic to fetch binary archive using `net/http` in `internal/provider/lua.go`
-- [ ] T005 [US1] Implement archive extraction logic (`zip`/`tar.gz`) into the target installation directory in `internal/provider/lua.go`
-- [ ] T006 [US1] Implement `GetBinPaths` and `ListExecutables` to correctly identify `lua` and `luac` executables in the installed directory in `internal/provider/lua.go`
-- [ ] T007 [US1] Add unit test for URL resolution and platform mapping in `internal/provider/lua_test.go`
+- [x] T004 [US1] Implement `Install` method logic to fetch binary archive using `net/http` in `internal/provider/lua.go`
+- [x] T005 [US1] Implement archive extraction logic (`zip`/`tar.gz`) into the target installation directory in `internal/provider/lua.go`
+- [x] T006 [US1] Implement `GetBinPaths` and `ListExecutables` to correctly identify `lua` and `luac` executables in the installed directory in `internal/provider/lua.go`
+- [x] T007 [US1] Add unit test for URL resolution and platform mapping in `internal/provider/lua_test.go`
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently (pure Lua works).
 
@@ -59,10 +59,10 @@ description: "Task list template for feature implementation"
 
 ### Implementation for User Story 2
 
-- [ ] T008 [US2] Implement `bootstrapLuaRocks` helper function in `internal/provider/lua.go` to download `luarocks` tarball.
-- [ ] T009 [US2] Implement logic in `bootstrapLuaRocks` to extract tarball and execute `./configure` + `make` (Unix) or `install.bat` (Windows) inside `internal/provider/lua.go`
-- [ ] T010 [US2] Hook `bootstrapLuaRocks` into the end of the `Install` method lifecycle in `internal/provider/lua.go`
-- [ ] T011 [US2] Update `ListExecutables` to also scan for `luarocks` and `luarocks-admin` in `internal/provider/lua.go`
+- [x] T008 [US2] Implement `bootstrapLuaRocks` helper function in `internal/provider/lua.go` to download `luarocks` tarball.
+- [x] T009 [US2] Implement logic in `bootstrapLuaRocks` to extract tarball and execute `./configure` + `make` (Unix) or `install.bat` (Windows) inside `internal/provider/lua.go`
+- [x] T010 [US2] Hook `bootstrapLuaRocks` into the end of the `Install` method lifecycle in `internal/provider/lua.go`
+- [x] T011 [US2] Update `ListExecutables` to also scan for `luarocks` and `luarocks-admin` in `internal/provider/lua.go`
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently. Lua and LuaRocks are natively available.
 
@@ -72,8 +72,8 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T012 Security hardening: Ensure downloaded tarball extraction is safe from zip slip vulnerabilities in `internal/provider/lua.go`
-- [ ] T013 Add robust error handling and debug logging for the `make`/`install.bat` execution phases in `internal/provider/lua.go`
+- [x] T012 Security hardening: Ensure downloaded tarball extraction is safe from zip slip vulnerabilities in `internal/provider/lua.go`
+- [x] T013 Add robust error handling and debug logging for the `make`/`install.bat` execution phases in `internal/provider/lua.go`
 - [ ] T014 Run validation scenarios from `specs/025-lua-provider/quickstart.md`
 
 ---

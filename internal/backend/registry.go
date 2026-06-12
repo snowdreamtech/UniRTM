@@ -32,6 +32,7 @@ func NewRegistry() *Registry {
 	r.Register(NewComposerBackend())
 	r.Register(NewDenoBackend())
 	r.Register(NewLuarocksBackend())
+	r.Register(NewLuaBackend())
 	r.Register(NewZigBackend())
 	r.Register(NewCranBackend())
 	r.Register(NewCabalBackend())

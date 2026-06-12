@@ -58,7 +58,7 @@ func NewRegistry() *Registry {
 	r.Register("pub", NewPubProvider())
 	r.Register("dart", r.providers["native"])
 	r.Register("luarocks", NewLuaRocksProvider())
-	r.Register("lua", r.providers["asdf"]) // fallback to asdf for lua
+	r.Register("lua", NewLuaProvider())
 	r.Register("cabal", NewCabalProvider())
 	r.Register("haskell", r.providers["native"]) // fallback to native for haskell
 	r.Register("flutter", NewFlutterProvider())

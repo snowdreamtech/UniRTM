@@ -1429,6 +1429,9 @@ func (im *InstallationManager) AutoDetectBackend(toolName string) string {
 	if native.IsNativeTool(toolName) {
 		return "native"
 	}
+	if im.backendRegistry != nil && im.backendRegistry.Has(toolName) {
+		return toolName
+	}
 	// Default to asdf for compatibility with the broadest range of tools
 	return "asdf"
 }
