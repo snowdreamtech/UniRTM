@@ -43,9 +43,9 @@
 
 ### Implementation for User Story 1
 
-- [ ] T001 [P] [US1] Create `ComposerProvider` implementation in `internal/provider/composer.go`
-- [ ] T002 [P] [US1] Create unit tests for `ComposerProvider` in `internal/provider/composer_test.go`
-- [ ] T003 [US1] Register `composer` -> `NewComposerProvider()` in `internal/provider/registry.go`
+- [X] T001 [P] [US1] Create `ComposerProvider` implementation in `internal/provider/composer.go`
+- [X] T002 [P] [US1] Create unit tests for `ComposerProvider` in `internal/provider/composer_test.go`
+- [X] T003 [US1] Register `composer` -> `NewComposerProvider()` in `internal/provider/registry.go`
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -59,9 +59,9 @@
 
 ### Implementation for User Story 2
 
-- [ ] T004 [P] [US2] Create `PubProvider` implementation in `internal/provider/pub.go`
-- [ ] T005 [P] [US2] Create unit tests for `PubProvider` in `internal/provider/pub_test.go`
-- [ ] T006 [US2] Register `pub` -> `NewPubProvider()` in `internal/provider/registry.go`
+- [X] T004 [P] [US2] Create `PubProvider` implementation in `internal/provider/pub.go`
+- [X] T005 [P] [US2] Create unit tests for `PubProvider` in `internal/provider/pub_test.go`
+- [X] T006 [US2] Register `pub` -> `NewPubProvider()` in `internal/provider/registry.go`
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -75,11 +75,11 @@
 
 ### Implementation for User Story 3
 
-- [ ] T007 [P] [US3] Create `LuaRocksProvider` implementation in `internal/provider/luarocks.go`
-- [ ] T008 [P] [US3] Create unit tests for `LuaRocksProvider` in `internal/provider/luarocks_test.go`
-- [ ] T009 [P] [US3] Create `CabalProvider` implementation in `internal/provider/cabal.go`
-- [ ] T010 [P] [US3] Create unit tests for `CabalProvider` in `internal/provider/cabal_test.go`
-- [ ] T011 [US3] Register `luarocks` and `cabal` in `internal/provider/registry.go`
+- [X] T007 [P] [US3] Create `LuaRocksProvider` implementation in `internal/provider/luarocks.go`
+- [X] T008 [P] [US3] Create unit tests for `LuaRocksProvider` in `internal/provider/luarocks_test.go`
+- [X] T009 [P] [US3] Create `CabalProvider` implementation in `internal/provider/cabal.go`
+- [X] T010 [P] [US3] Create unit tests for `CabalProvider` in `internal/provider/cabal_test.go`
+- [X] T011 [US3] Register `luarocks` and `cabal` in `internal/provider/registry.go`
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -89,8 +89,8 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T012 Validate end-to-end scenarios listed in `specs/024-add-new-providers/quickstart.md`
-- [ ] T013 Verify that unsupported platforms for specific package managers (e.g., if Cabal isn't installed) correctly return graceful failures instead of panics.
+- [X] T012 Validate end-to-end scenarios listed in `specs/024-add-new-providers/quickstart.md`
+- [X] T013 Verify that unsupported platforms for specific package managers (e.g., if Cabal isn't installed) correctly return graceful failures instead of panics.
 
 ---
 

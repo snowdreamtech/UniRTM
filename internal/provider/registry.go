@@ -53,7 +53,14 @@ func NewRegistry() *Registry {
 	r.Register("erlang", NewErlangProvider())
 	r.Register("swift", NewSwiftProvider())
 	r.Register("zig", NewZigProvider())
-	r.Register("php", r.providers["asdf"])
+	r.Register("composer", NewComposerProvider())
+	r.Register("php", r.providers["asdf"]) // fallback to asdf for php
+	r.Register("pub", NewPubProvider())
+	r.Register("dart", r.providers["asdf"]) // fallback to asdf for dart
+	r.Register("luarocks", NewLuaRocksProvider())
+	r.Register("lua", r.providers["asdf"]) // fallback to asdf for lua
+	r.Register("cabal", NewCabalProvider())
+	r.Register("haskell", r.providers["asdf"]) // fallback to asdf for haskell
 	r.Register("flutter", NewFlutterProvider())
 	r.Register("pipx", NewPypiProvider())
 	r.Register("terraform", NewGenericProvider())
