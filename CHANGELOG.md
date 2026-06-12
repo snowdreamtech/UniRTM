@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0](https://github.com/snowdreamtech/UniRTM/compare/v0.19.0...v0.20.0) (2026-06-12)
+
+
+### Features
+
+* **backend:** implement smart version prefix normalization ([45dc0d3](https://github.com/snowdreamtech/UniRTM/commit/45dc0d3261f2f975698302803f4c1938cc08b71e))
+* **hook:** add fault tolerance for hook-exec via UNIRTM_HOOK_ALLOW_MISSING ([b611de0](https://github.com/snowdreamtech/UniRTM/commit/b611de0cae92e3e89862b0f83a0c0a0e8453497e))
+
 ## [0.19.0](https://github.com/snowdreamtech/UniRTM/compare/v0.18.0...v0.19.0) (2026-06-12)
 
 
