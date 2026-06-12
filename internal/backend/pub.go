@@ -8,38 +8,38 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sort"
 	"time"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
-type ComposerBackend struct {
+type PubBackend struct {
 	client *http.Client
 }
 
-func NewComposerBackend() *ComposerBackend {
-	return &ComposerBackend{
+func NewPubBackend() *PubBackend {
+	return &PubBackend{
 		client: pkgHttp.NewClientWithTimeout(15 * time.Second),
 	}
 }
 
-func (b *ComposerBackend) Name() string {
-	return "composer"
+func (b *PubBackend) Name() string {
+	return "pub"
 }
 
-func (b *ComposerBackend) Dependencies() []string {
-	return []string{"php"}
+func (b *PubBackend) Dependencies() []string {
+	return []string{"dart"}
 }
 
-type packagistResponse struct {
-	Package struct {
-		Versions map[string]interface{} `json:"versions"`
-	} `json:"package"`
+type pubResponse struct {
+	Name     string `json:"name"`
+	Versions []struct {
+		Version string `json:"version"`
+	} `json:"versions"`
 }
 
-func (b *ComposerBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
-	url := fmt.Sprintf("https://packagist.org/packages/%s.json", tool)
+func (b *PubBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
+	url := fmt.Sprintf("https://pub.dev/api/packages/%s", tool)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
@@ -53,34 +53,34 @@ func (b *ComposerBackend) ListVersions(ctx context.Context, tool string, platfor
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, NewBackendError(b.Name(), tool, "package not found on packagist", nil)
+		return nil, NewBackendError(b.Name(), tool, "package not found on pub.dev", nil)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
 	}
 
-	var data packagistResponse
+	var data pubResponse
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		return nil, NewBackendError(b.Name(), tool, "decode response", err)
 	}
 
 	var versions []VersionInfo
-	for v := range data.Package.Versions {
+	for _, v := range data.Versions {
 		versions = append(versions, VersionInfo{
-			Version:  v,
+			Version:  v.Version,
 			Platform: platform,
 		})
 	}
 
-	// Sort versions (roughly newest first)
-	sort.Slice(versions, func(i, j int) bool {
-		return versions[i].Version > versions[j].Version
-	})
+	// Reverse to get descending order
+	for i, j := 0, len(versions)-1; i < j; i, j = i+1, j-1 {
+		versions[i], versions[j] = versions[j], versions[i]
+	}
 
 	return versions, nil
 }
 
-func (b *ComposerBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
+func (b *PubBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
 	versionRequest = NormalizeVersionPrefix(versionRequest, false)
 	if versionRequest == "latest" {
 		versions, err := b.ListVersions(ctx, tool, platform)
@@ -99,7 +99,7 @@ func (b *ComposerBackend) ResolveVersion(ctx context.Context, tool, versionReque
 	}, nil
 }
 
-func (b *ComposerBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
+func (b *PubBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
 	version = NormalizeVersionPrefix(version, false)
 	return &VersionInfo{
 		Version:  version,
@@ -107,34 +107,11 @@ func (b *ComposerBackend) GetDownloadInfo(ctx context.Context, tool, version str
 	}, nil
 }
 
-func (b *ComposerBackend) SupportsChecksum() bool {
-	return true
-}
-
-func (b *ComposerBackend) SupportsGPG() bool {
-	return false
-}
-
-func (b *ComposerBackend) AttestationType() string {
-	return ""
-}
-
-func (b *ComposerBackend) IsRecommended() bool {
-	return true
-}
-
-func (b *ComposerBackend) IsScriptless() bool {
-	return true
-}
-
-func (b *ComposerBackend) GetReach() string {
-	return "Large"
-}
-
-func (b *ComposerBackend) IsStable() bool {
-	return true
-}
-
-func (b *ComposerBackend) SupportsOffline() bool {
-	return true
-}
+func (b *PubBackend) SupportsChecksum() bool  { return false }
+func (b *PubBackend) SupportsGPG() bool       { return false }
+func (b *PubBackend) AttestationType() string { return "" }
+func (b *PubBackend) IsRecommended() bool     { return true }
+func (b *PubBackend) IsScriptless() bool      { return true }
+func (b *PubBackend) GetReach() string        { return "Medium" }
+func (b *PubBackend) IsStable() bool          { return true }
+func (b *PubBackend) SupportsOffline() bool   { return true }

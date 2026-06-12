@@ -20,8 +20,8 @@ func TestComposerBackend_Name(t *testing.T) {
 func TestComposerBackend_Properties(t *testing.T) {
 	b := NewComposerBackend()
 
-	if deps := b.Dependencies(); deps != nil {
-		t.Errorf("expected nil dependencies, got %v", deps)
+	if deps := b.Dependencies(); len(deps) != 1 || deps[0] != "php" {
+		t.Errorf("expected [php] dependencies, got %v", deps)
 	}
 	if !b.SupportsChecksum() {
 		t.Error("expected SupportsChecksum to be true")

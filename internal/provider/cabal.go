@@ -1,17 +1,20 @@
-// Copyright (c) 2026 SnowdreamTech. All rights reserved.
-// Licensed under the MIT License. See LICENSE file in the project root for full license information.
-
 package provider
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
+
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 // CabalProvider implements the Provider interface for Haskell Cabal packages.
 type CabalProvider struct{}
@@ -29,9 +32,9 @@ func (p *CabalProvider) Install(ctx context.Context, tool string, installPath st
 		return err
 	}
 
-	cabalCmd, err := exec.LookPath("cabal")
+	cabalCmd, err := p.findCabal()
 	if err != nil {
-		return NewProviderError(p.Name(), tool, version, "cabal is required to install haskell packages but was not found", err)
+		return NewProviderError(p.Name(), tool, version, "failed to find native cabal", err)
 	}
 
 	pkgSpec := tool
@@ -119,4 +122,42 @@ func (p *CabalProvider) GetEnvVars(tool string, installPath string, version stri
 
 func (p *CabalProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
+}
+
+func (p *CabalProvider) findCabal() (string, error) {
+	cabalCmd := ""
+	for _, backendPrefix := range []string{"haskell-haskell", "github-haskell", "ubi-haskell", "native-haskell"} {
+		haskellInstallBase := filepath.Join(env.GetInstallsDir(), backendPrefix)
+		if dirs, err := os.ReadDir(haskellInstallBase); err == nil {
+			for _, d := range dirs {
+				if d.IsDir() {
+					binPath := filepath.Join(haskellInstallBase, d.Name(), "bin", "cabal")
+					if runtime.GOOS == "windows" {
+						binPath += ".exe"
+					}
+					if _, err := os.Stat(binPath); err == nil {
+						cabalCmd = binPath
+						break
+					}
+					rootPath := filepath.Join(haskellInstallBase, d.Name(), "cabal")
+					if runtime.GOOS == "windows" {
+						rootPath += ".exe"
+					}
+					if _, err := os.Stat(rootPath); err == nil {
+						cabalCmd = rootPath
+						break
+					}
+				}
+			}
+		}
+		if cabalCmd != "" {
+			break
+		}
+	}
+
+	if cabalCmd == "" {
+		return "", fmt.Errorf("cabal is required but was not found natively managed by UniRTM")
+	}
+
+	return cabalCmd, nil
 }

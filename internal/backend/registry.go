@@ -30,6 +30,7 @@ func NewRegistry() *Registry {
 	r.Register(NewCargoBackend())
 	r.Register(NewGoBackend())
 	r.Register(NewComposerBackend())
+	r.Register(NewPubBackend())
 	r.Register(NewDenoBackend())
 	r.Register(NewLuarocksBackend())
 	r.Register(NewLuaBackend())

@@ -28,7 +28,7 @@ func (b *CabalBackend) Name() string {
 }
 
 func (b *CabalBackend) Dependencies() []string {
-	return nil
+	return []string{"haskell"}
 }
 
 type hackageResponse []struct {

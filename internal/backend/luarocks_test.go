@@ -18,8 +18,8 @@ func TestLuarocksBackend_Name(t *testing.T) {
 func TestLuarocksBackend_Properties(t *testing.T) {
 	b := NewLuarocksBackend()
 
-	if deps := b.Dependencies(); deps != nil {
-		t.Errorf("expected nil dependencies, got %v", deps)
+	if deps := b.Dependencies(); len(deps) != 1 || deps[0] != "lua" {
+		t.Errorf("expected [lua] dependencies, got %v", deps)
 	}
 	if !b.SupportsChecksum() {
 		t.Error("expected SupportsChecksum to be true")

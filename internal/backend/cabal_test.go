@@ -20,8 +20,8 @@ func TestCabalBackend_Name(t *testing.T) {
 func TestCabalBackend_Properties(t *testing.T) {
 	b := NewCabalBackend()
 
-	if deps := b.Dependencies(); deps != nil {
-		t.Errorf("expected nil dependencies, got %v", deps)
+	if deps := b.Dependencies(); len(deps) != 1 || deps[0] != "haskell" {
+		t.Errorf("expected [haskell] dependencies, got %v", deps)
 	}
 	if !b.SupportsChecksum() {
 		t.Error("expected SupportsChecksum to be true")

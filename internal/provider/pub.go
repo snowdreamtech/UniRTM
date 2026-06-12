@@ -1,6 +1,3 @@
-// Copyright (c) 2026 SnowdreamTech. All rights reserved.
-// Licensed under the MIT License. See LICENSE file in the project root for full license information.
-
 package provider
 
 import (
@@ -9,10 +6,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
+
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 // PubProvider implements the Provider interface for Dart Pub packages.
 type PubProvider struct {
@@ -32,13 +34,9 @@ func (p *PubProvider) Install(ctx context.Context, tool string, installPath stri
 		return err
 	}
 
-	dartCmd, err := exec.LookPath("dart")
+	dartCmd, err := p.findDart()
 	if err != nil {
-		// Fallback to standalone pub command if dart is not available
-		dartCmd, err = exec.LookPath("pub")
-		if err != nil {
-			return NewProviderError(p.Name(), tool, version, "dart or pub is required to install pub packages but was not found", err)
-		}
+		return NewProviderError(p.Name(), tool, version, "failed to find native dart", err)
 	}
 
 	var cmdArgs []string
@@ -146,4 +144,51 @@ func (p *PubProvider) GetEnvVars(tool string, installPath string, version string
 
 func (p *PubProvider) Uninstall(ctx context.Context, tool string, installPath string, version string) error {
 	return nil
+}
+
+func (p *PubProvider) findDart() (string, error) {
+	dartCmd := ""
+	for _, backendPrefix := range []string{"dart-dart", "github-dart", "ubi-dart", "native-dart"} {
+		dartInstallBase := filepath.Join(env.GetInstallsDir(), backendPrefix)
+		if dirs, err := os.ReadDir(dartInstallBase); err == nil {
+			for _, d := range dirs {
+				if d.IsDir() {
+					binPath := filepath.Join(dartInstallBase, d.Name(), "bin", "dart")
+					if runtime.GOOS == "windows" {
+						binPath += ".exe"
+					}
+					if _, err := os.Stat(binPath); err == nil {
+						dartCmd = binPath
+						break
+					}
+					rootPath := filepath.Join(dartInstallBase, d.Name(), "dart")
+					if runtime.GOOS == "windows" {
+						rootPath += ".exe"
+					}
+					if _, err := os.Stat(rootPath); err == nil {
+						dartCmd = rootPath
+						break
+					}
+					// Sometimes dart is nested in dart-sdk/bin
+					sdkPath := filepath.Join(dartInstallBase, d.Name(), "dart-sdk", "bin", "dart")
+					if runtime.GOOS == "windows" {
+						sdkPath += ".exe"
+					}
+					if _, err := os.Stat(sdkPath); err == nil {
+						dartCmd = sdkPath
+						break
+					}
+				}
+			}
+		}
+		if dartCmd != "" {
+			break
+		}
+	}
+
+	if dartCmd == "" {
+		return "", fmt.Errorf("dart is required but was not found natively managed by UniRTM")
+	}
+
+	return dartCmd, nil
 }

@@ -21,20 +21,17 @@ func TestPubProvider_Install(t *testing.T) {
 	p := NewPubProvider()
 	tmpDir := t.TempDir()
 
-	binDir := filepath.Join(tmpDir, "bin")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+
+	binDir := filepath.Join(tmpDir, "installs", "native-dart", "1.0", "bin")
 	os.MkdirAll(binDir, 0755)
 	dartName := "dart"
 	scriptContent := []byte("#!/bin/sh\necho installing...")
 	if env.RuntimeGOOS == "windows" {
-		dartName = "dart.bat"
-		scriptContent = []byte("@echo installing...")
+		dartName = "dart.exe"
 	}
 	scriptPath := filepath.Join(binDir, dartName)
 	os.WriteFile(scriptPath, scriptContent, 0755)
-
-	oldPath := os.Getenv("PATH")
-	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
-	defer os.Setenv("PATH", oldPath)
 
 	installPath := filepath.Join(tmpDir, "install")
 
@@ -47,14 +44,15 @@ func TestPubProvider_Install(t *testing.T) {
 }
 
 func TestPubProvider_Install_NotFound(t *testing.T) {
-	t.Setenv("PATH", "")
+	tmpDir := t.TempDir()
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	p := NewPubProvider()
 	installPath := filepath.Join(t.TempDir(), "install", "test_pkg")
 
 	err := p.Install(context.Background(), "test_pkg", installPath, "", "1.0.0")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "dart or pub is required")
+	require.Contains(t, err.Error(), "failed to find native dart")
 }
 
 func TestPubProvider_ListExecutables(t *testing.T) {
@@ -72,6 +70,7 @@ func TestPubProvider_ListExecutables(t *testing.T) {
 		dummy2Name = "dummy2.exe"
 	}
 	os.WriteFile(filepath.Join(binDir, dummy1Name), []byte(""), 0755)
+	os.Chmod(filepath.Join(binDir, dummy1Name), 0755)
 	os.WriteFile(filepath.Join(binDir, dummy2Name), []byte(""), 0644)
 
 	exes, err := p.ListExecutables("test_pkg", tmpDir, "1.0.0")

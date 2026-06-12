@@ -21,20 +21,21 @@ func TestComposerProvider_Install(t *testing.T) {
 	p := NewComposerProvider()
 	tmpDir := t.TempDir()
 
-	binDir := filepath.Join(tmpDir, "bin")
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+
+	binDir := filepath.Join(tmpDir, "installs", "native-php", "1.0", "bin")
 	os.MkdirAll(binDir, 0755)
-	compName := "composer"
+	phpName := "php"
 	scriptContent := []byte("#!/bin/sh\necho installing...")
 	if env.RuntimeGOOS == "windows" {
-		compName = "composer.bat"
-		scriptContent = []byte("@echo installing...")
+		phpName = "php.exe"
 	}
-	scriptPath := filepath.Join(binDir, compName)
+	scriptPath := filepath.Join(binDir, phpName)
 	os.WriteFile(scriptPath, scriptContent, 0755)
 
-	oldPath := os.Getenv("PATH")
-	t.Setenv("PATH", binDir+string(os.PathListSeparator)+oldPath)
-	defer os.Setenv("PATH", oldPath)
+	// mock composer.phar download by creating it
+	composerPhar := filepath.Join(binDir, "composer.phar")
+	os.WriteFile(composerPhar, []byte("fake composer"), 0755)
 
 	installPath := filepath.Join(tmpDir, "install")
 
@@ -47,14 +48,15 @@ func TestComposerProvider_Install(t *testing.T) {
 }
 
 func TestComposerProvider_Install_NotFound(t *testing.T) {
-	t.Setenv("PATH", "")
+	tmpDir := t.TempDir()
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 
 	p := NewComposerProvider()
 	installPath := filepath.Join(t.TempDir(), "install", "test_pkg")
 
 	err := p.Install(context.Background(), "test_pkg", installPath, "", "1.0.0")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "composer is required")
+	require.Contains(t, err.Error(), "failed to find PHP and Composer")
 }
 
 func TestComposerProvider_ListExecutables(t *testing.T) {
@@ -72,6 +74,7 @@ func TestComposerProvider_ListExecutables(t *testing.T) {
 		dummy2Name = "dummy2.exe"
 	}
 	os.WriteFile(filepath.Join(binDir, dummy1Name), []byte(""), 0755)
+	os.Chmod(filepath.Join(binDir, dummy1Name), 0755)
 	os.WriteFile(filepath.Join(binDir, dummy2Name), []byte(""), 0644)
 
 	exes, err := p.ListExecutables("test_pkg", tmpDir, "1.0.0")
