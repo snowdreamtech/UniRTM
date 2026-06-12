@@ -6,6 +6,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0](https://github.com/snowdreamtech/UniRTM/compare/v0.20.0...v0.21.0) (2026-06-12)
+
+
+### Features
+
+* **speckit:** implementation progress ([efdaba3](https://github.com/snowdreamtech/UniRTM/commit/efdaba319d351faacd02c343b44ba28af4c17c6a))
+* **speckit:** implementation progress ([92bd4e0](https://github.com/snowdreamtech/UniRTM/commit/92bd4e066098f0fbcf1994e8cd4ac67de3bda868))
+
+
+### Bug Fixes
+
+* **deps:** match toml versions with lock versions for strict mode ([c26c5c3](https://github.com/snowdreamtech/UniRTM/commit/c26c5c39f8b6b2b9446ee28aceafa27dbd988e6a))
+* **lockfile:** relax strict mode version matching ([f768572](https://github.com/snowdreamtech/UniRTM/commit/f768572c89ada35656ca77ac49000985ebaa34a0))
+
 ## [0.20.0](https://github.com/snowdreamtech/UniRTM/compare/v0.19.0...v0.20.0) (2026-06-12)
 
 
