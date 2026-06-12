@@ -4,8 +4,10 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -54,10 +56,25 @@ it executes the command in a single pass.`,
 			totalLen += len(arg) + 1
 		}
 
+		// Helper to execute runExec and handle fault tolerance
+		doRun := func(execArgs []string) error {
+			err := runExec(cmd, execArgs)
+			if err != nil {
+				if os.Getenv("UNIRTM_HOOK_ALLOW_MISSING") == "1" || os.Getenv("UNIRTM_HOOK_ALLOW_MISSING") == "true" {
+					if strings.HasPrefix(err.Error(), "command not found:") {
+						fmt.Printf("Skipped %s not found\n", baseArgs[0])
+						os.Exit(0)
+					}
+				}
+				return err
+			}
+			return nil
+		}
+
 		// On Unix or if total length is safely under the limit, run in a single pass.
 		// 7000 is chosen as a conservative safe limit below Windows' 8191.
 		if runtime.GOOS != "windows" || len(fileArgs) == 0 || totalLen < 7000 {
-			return runExec(cmd, args)
+			return doRun(args)
 		}
 
 		// Windows chunking logic for long commands
@@ -75,7 +92,7 @@ it executes the command in a single pass.`,
 			if baseLen+currentLen+fileLen >= 7000 {
 				if len(currentChunk) > 0 {
 					chunkArgs := append(append([]string(nil), baseArgs...), currentChunk...)
-					if err := runExec(cmd, chunkArgs); err != nil {
+					if err := doRun(chunkArgs); err != nil {
 						// runExec on Windows will os.Exit on error, but just in case
 						return err
 					}
@@ -90,7 +107,7 @@ it executes the command in a single pass.`,
 		// Execute remaining
 		if len(currentChunk) > 0 {
 			chunkArgs := append(append([]string(nil), baseArgs...), currentChunk...)
-			if err := runExec(cmd, chunkArgs); err != nil {
+			if err := doRun(chunkArgs); err != nil {
 				return err
 			}
 		}
