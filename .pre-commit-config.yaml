@@ -472,7 +472,7 @@ repos:
       - id: gosec
         name: gosec go security scan
         language: system
-        entry: unirtm hook-exec gosec -no-fail -quiet ./...
+        entry: unirtm hook-exec gosec -exclude=G104 -quiet ./...
         types: [go]
         pass_filenames: false
         description: "Audit Go source code for security vulnerabilities using Gosec."
