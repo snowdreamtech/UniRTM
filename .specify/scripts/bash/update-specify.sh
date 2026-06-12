@@ -20,7 +20,10 @@ LOWEST=$(printf "%s\n%s\n" "$CURRENT_VERSION" "$TARGET_VERSION" | sort -t. -k 1,
 
 if [ "$LOWEST" = "$CURRENT_VERSION" ] && [ "$CURRENT_VERSION" != "$TARGET_VERSION" ]; then
     echo "Upgrading specify-cli to version $TARGET_VERSION..."
-    uv tool install specify-cli --from "git+https://github.com/github/spec-kit.git@v${TARGET_VERSION}" --force
+    if ! uv tool install specify-cli --from "git+https://github.com/github/spec-kit.git@v${TARGET_VERSION}" --force; then
+        echo "Error: Failed to upgrade specify-cli to version $TARGET_VERSION." >&2
+        exit 1
+    fi
 fi
 
 cd "$REPO_ROOT" || exit 1
