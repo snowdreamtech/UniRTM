@@ -39,12 +39,12 @@ To counter this, UniRTM introduces a **Minimum Update Cooling-off Period**:
 - When resolving `latest` tags (instead of pinned versions), the system defaults to delaying the adoption of newly released versions that are less than 24-48 hours old.
 - This golden time window provides the open-source security community enough time to discover and yank polluted packages, preventing your environment from becoming a zero-day victim of poisoning attacks.
 
-You can configure this time window via the `update_cooling_off_hours` field in your global settings or project-level `.unirtm.toml` (defaults to `24` hours):
+You can configure this time window via the `minimum_release_age` field in your global settings or project-level `.unirtm.toml` (for example, defaults to `"24h"` or `"1d"`):
 
 ```toml
 [settings]
 # Delay the adoption of new releases for 48 hours to prevent zero-day poisoning
-update_cooling_off_hours = 48
+minimum_release_age = "48h"
 ```
 
 If you need to fetch an urgent hotfix and are absolutely certain of its safety, you can temporarily set this to `0` to force immediate resolution of the absolute latest version.
