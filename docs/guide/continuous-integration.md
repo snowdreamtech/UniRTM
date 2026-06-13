@@ -26,7 +26,7 @@ jobs:
           # Optional: Automatically trust .unirtm.toml
           trust: true
           # Optional: Pass GitHub token to prevent API rate-limiting
-          github_token: <code v-pre>${{ secrets.GITHUB_TOKEN }}</code>
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Tests
         # All tools defined in .unirtm.toml are now natively available in PATH
@@ -73,7 +73,7 @@ You can customize the behavior of `setup-unirtm` using the following inputs:
 | `install` | `false` | If true, runs `unirtm install` after setting up UniRTM. |
 | `install_args` | `''` | Arguments to pass to `unirtm install` (e.g. `"node python"`). |
 | `trust` | `false` | If true, runs `unirtm trust` after setting up UniRTM. |
-| `github_token` | `<code v-pre>${{ github.token }}</code>` | GitHub token for API authentication to avoid rate limits. |
+| `github_token` | <code v-pre>${{ github.token }}</code> | GitHub token for API authentication to avoid rate limits. |
 | `github_proxy` | `''` | Proxy prefix for GitHub download URLs (e.g. `"https://ghproxy.com/"`) to speed up downloads in restricted networks. |
 
 ## Other CI Providers (GitLab CI, CircleCI)

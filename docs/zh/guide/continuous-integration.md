@@ -26,7 +26,7 @@ jobs:
           # 可选：信任项目中的 .unirtm.toml 配置文件
           trust: true
           # 可选：传入 GitHub Token，以防止下载依赖时触发 API 速率限制
-          github_token: <code v-pre>${{ secrets.GITHUB_TOKEN }}</code>
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Tests
         # .unirtm.toml 中定义的所有工具，现在已经作为原生命令暴露在环境中了
@@ -73,7 +73,7 @@ Action 代码会在内部执行 `unirtm env` 解析这些变量，并将它们�
 | `install` | `false` | 是否在设置好后自动运行 `unirtm install` 安装工具链。 |
 | `install_args` | `''` | 传递给 `unirtm install` 的额外参数 (例如 `"node python"`)。 |
 | `trust` | `false` | 是否在设置好后自动运行 `unirtm trust` 信任项目配置文件。 |
-| `github_token` | `<code v-pre>${{ github.token }}</code>` | 用于获取发布版本并避免流控的 Token。 |
+| `github_token` | <code v-pre>${{ github.token }}</code> | 用于获取发布版本并避免流控的 Token。 |
 | `github_proxy` | `''` | GitHub 下载加速代理前缀 (例如 `"https://ghproxy.com/"`)，在受限网络环境极其有效。 |
 
 ## 其他 CI 平台 (GitLab CI, CircleCI)
