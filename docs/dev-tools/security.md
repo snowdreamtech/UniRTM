@@ -36,15 +36,15 @@ Unless explicitly overridden by the user in the configuration, we never sacrific
 Supply chain poisoning often exploits the developer's desire to "stay on the latest version," expecting a massive number of users to automatically update to a maliciously patched release within hours.
 To counter this, UniRTM introduces a **Minimum Update Cooling-off Period**:
 
-- When resolving `latest` tags (instead of pinned versions), the system defaults to delaying the adoption of newly released versions that are less than 24-48 hours old.
+- When resolving `latest` tags (instead of pinned versions), the system defaults to delaying the adoption of newly released versions that are less than 7 days old.
 - This golden time window provides the open-source security community enough time to discover and yank polluted packages, preventing your environment from becoming a zero-day victim of poisoning attacks.
 
-You can configure this time window via the `minimum_release_age` field in your global settings or project-level `.unirtm.toml` (for example, defaults to `"24h"` or `"1d"`):
+You can configure this time window via the `minimum_release_age` field in your global settings or project-level `.unirtm.toml` (defaults to `"7d"`):
 
 ```toml
 [settings]
-# Delay the adoption of new releases for 48 hours to prevent zero-day poisoning
-minimum_release_age = "48h"
+# Delay the adoption of new releases for 7 days to prevent zero-day poisoning
+minimum_release_age = "7d"
 ```
 
 If you need to fetch an urgent hotfix and are absolutely certain of its safety, you can temporarily set this to `0` to force immediate resolution of the absolute latest version.
