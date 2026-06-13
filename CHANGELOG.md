@@ -6,6 +6,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0](https://github.com/snowdreamtech/UniRTM/compare/v0.22.0...v0.23.0) (2026-06-13)
+
+
+### Features
+
+* **speckit:** implementation progress ([61cfee2](https://github.com/snowdreamtech/UniRTM/commit/61cfee2f18813812a371688c792b14dc2cf97691))
+* **speckit:** implementation progress ([4b8a77b](https://github.com/snowdreamtech/UniRTM/commit/4b8a77b58b7d0a215f2992510f0442e507056d17))
+* **speckit:** implementation progress ([f97462a](https://github.com/snowdreamtech/UniRTM/commit/f97462a55b3cf1d2ac9fcb97a1b009c36e0335f9))
+
+
+### Bug Fixes
+
+* escape Vue template syntax in continuous-integration docs ([e23b811](https://github.com/snowdreamtech/UniRTM/commit/e23b811576f390bc253e708578e4758028e56c6d))
+* remove explicit HTML tags in markdown code block to resolve VitePress SSR render crash ([6b78a49](https://github.com/snowdreamtech/UniRTM/commit/6b78a49d57079cd90dfa37a2b0ae11fcd62b96e5))
+
 ## [0.22.0](https://github.com/snowdreamtech/UniRTM/compare/v0.21.0...v0.22.0) (2026-06-13)
 
 
