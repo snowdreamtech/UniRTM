@@ -2,53 +2,50 @@
 
 **Branch**: `026-docs-mise-compare` | **Date**: 2026-06-13 | **Spec**: [spec.md](./spec.md)
 
-**Input**: Feature specification from `/specs/026-docs-mise-compare/spec.md`
-
 ## Summary
 
-This plan outlines the restructuring and enhancement of the UniRTM documentation to explicitly map its 100% native Go architecture, zero shell-pollution methodology, and MCP capabilities against competitors, primarily focusing on `mise` while also including legacy tools (`nvm`, `gvm`, `pyenv`, `asdf`, `direnv`). It also addresses implementing a client-side VitePress script to automatically redirect users to their preferred language (EN/ZH).
+This plan outlines a massive overhaul of the UniRTM documentation to completely align with and surpass the depth, breadth, and quality of `mise`'s documentation. Based on user feedback, the previous iterations were too superficial ("假大空") and lacked technical depth. We will introduce detailed architectural deep-dives, exhaustive CLI reference pages, in-depth environment management guides, and correctly position external security tools as integrations rather than core features.
 
-## Technical Context
+## Proposed Changes
 
-**Language/Version**: Markdown (VitePress)
-**Primary Dependencies**: VitePress, Vue
-**Target Platform**: Web (Documentation Site)
-**Project Type**: Documentation
+### 1. Architecture & Caching Deep Dive
 
-## Constitution Check
+We will replace the superficial `structure.md` with a comprehensive `architecture.md` (and its Chinese counterpart) that includes:
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+- **Code-Level Deep Dive**: Detailed breakdown of UniRTM's 100% native Go architecture, eliminating bash/Ruby plugins.
+- **Structural Diagrams**: Mermaid flowcharts illustrating the command layer, backend plugin system, tool resolution pipeline, and parallel execution engine.
+- **Caching Strategy**: Deep dive into caching mechanisms (e.g., how remote versions are cached, environment diff caching, parallel download caching, and TTL auto-pruning).
 
-- All documentation changes align with the project's zero-pollution and native Go principles. No new code dependencies are introduced. PASS.
+### 2. Exhaustive CLI Overview
 
-## Project Structure
+We will rewrite `docs/cli/overview.md` and `docs/zh/cli/overview.md` from scratch.
 
-### Documentation (this feature)
+- Instead of a single sentence, it will be an exhaustive, collapsible list of ALL UniRTM commands (e.g., `install`, `use`, `run`, `env`, `ls`, `ls-remote`, `exec`, `outdated`, etc.).
+- Each command will feature a detailed introduction, usage syntax, and real-world examples.
 
-```text
-specs/026-docs-mise-compare/
-├── plan.md              # This file (/speckit.plan command output)
-├── research.md          # Phase 0 output (/speckit.plan command)
-├── data-model.md        # Phase 1 output (/speckit.plan command)
-├── quickstart.md        # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command)
-```
+### 3. In-Depth Environments Guide
 
-### Source Code (repository root)
+We will rewrite `docs/environments/overview.md` and `docs/zh/environments/overview.md`.
 
-```text
-docs/
-├── .vitepress/
-│   └── config.mts
-├── guide/
-│   ├── introduction.md
-│   ├── getting-started.md
-│   └── comparisons.md
-└── zh/
-    └── guide/
-        ├── introduction.md
-        ├── getting-started.md
-        └── comparisons.md
-```
+- Deep explanation of the `.unirtm.toml` environment variable syntax, dynamic environment evaluation, and cross-platform `.env` file ingestion.
+- Explain how UniRTM achieves "zero shell pollution" dynamically upon directory entry/exit.
 
-**Structure Decision**: The documentation changes will primarily occur within the `docs/` and `docs/zh/` directories, updating existing structural files and adding the new `comparisons.md` routing. The `docs/.vitepress/config.mts` will also be updated with a script injection in the `<head>` to detect `navigator.language` and redirect Chinese users to `/zh/` upon landing at the root path `/`.
+### 4. Correcting "Secure by Default" Marketing
+
+We will review and update `getting-started.md` and other promotional materials.
+
+- Trivy, Syft, and Gitleaks must be explicitly documented as **external integrations** that UniRTM supports seamlessly, rather than exaggerating them as native built-in features.
+- Eliminate any boastful marketing fluff and replace it with objective technical facts.
+
+## Verification Plan
+
+### Automated Tests
+
+- `npm run docs:build` inside the `docs/` directory to ensure VitePress compiles successfully with the new mermaid diagrams and extensive markdown changes.
+- Check for broken markdown links across all newly linked documentation pages.
+
+### Manual Verification
+
+- Manually inspect the generated VitePress site locally (`npm run docs:dev`) to ensure diagrams render correctly.
+- Ensure the CLI page exhaustively covers all core commands.
+- Ensure the tone remains respectful towards `mise` while technically highlighting where UniRTM's native architecture excels.
