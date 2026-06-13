@@ -36,6 +36,11 @@ We need to provide detailed architectural comparisons highlighting UniRTM's zero
 - **Decision**: Emphasize declarative vs imperative environment variable injection.
 - **Rationale**: `direnv` requires `.envrc` and manual `direnv allow` commands. It runs shell scripts on `cd`. UniRTM declaratively defines variables in `.unirtm.toml` and injects them safely without executing arbitrary shell code on directory change, improving security and performance.
 
+### 7. VitePress I18n Auto-Redirect
+
+- **Decision**: Implement a custom client-side router hook or use a lightweight script injected in the `<head>` of the root `index.html` to perform `navigator.language` detection.
+- **Rationale**: VitePress natively supports localized routes (e.g., `/` for EN, `/zh/` for ZH), but it does not auto-redirect users visiting `/` based on their browser language by default. Injecting a small script in the configuration (`head` tags) or using a `setup` hook allows us to seamlessly redirect users with Chinese OS/Browser to the `/zh/` route on their first visit, meeting the FR-006 requirement without needing a backend server.
+
 ## Unknowns Resolved
 
 - All tool comparison angles are now fully mapped to UniRTM's USPs.

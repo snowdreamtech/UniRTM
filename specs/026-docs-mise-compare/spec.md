@@ -5,6 +5,13 @@
 **Status**: Draft
 **Input**: User description: "制定一个计划，1. 参考mise的docs，从栏目上，从内容上，对标。2. 超越mise的部分架构和内容必须点出来。3. 新增一个大栏目。用于介绍unirtm和nvm，gvm等等工具一一对比，特性，用法。方便开发者用来作为他们的替代。"
 
+## Clarifications
+
+### Session 2026-06-13
+
+- Q: Should the comparison with `mise` just match features, or explicitly highlight superiority? → A: It must not only match but explicitly surpass `mise`, highlighting areas where UniRTM is superior.
+- Q: How should the documentation handle internationalization (i18n)? → A: The site must support both English and Chinese simultaneously, and automatically redirect users to their preferred language based on their browser environment.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Evaluate UniRTM against existing tools (Priority: P1)
@@ -45,7 +52,8 @@ As a technical evaluator or architect reading the introduction, I want to clearl
 - **FR-002**: The `introduction.md` and `getting-started.md` pages MUST explicitly highlight UniRTM's native Go architecture, eliminating the need for bash shims, plugins, or third-party hook managers like `direnv`.
 - **FR-003**: The documentation MUST include a new major section titled "Comparisons" (替代与对比).
 - **FR-004**: The "Comparisons" section MUST include one-on-one comparisons for `nvm`, `gvm`, `pyenv`/`pipx`, `asdf`, `mise`, and `direnv`.
-- **FR-005**: Each tool comparison MUST detail UniRTM's specific feature advantages and usage substitution instructions.
+- **FR-005**: Each tool comparison MUST detail UniRTM's specific feature advantages and usage substitution instructions. In particular, the comparison with `mise` MUST explicitly list areas where UniRTM surpasses it, rather than just matching features.
+- **FR-006**: The documentation site MUST support both English and Chinese, and include a mechanism to automatically detect the user's browser language environment to redirect them to the appropriate locale by default.
 
 ### Key Entities
 
@@ -58,7 +66,8 @@ As a technical evaluator or architect reading the introduction, I want to clearl
 
 - **SC-001**: All 6 specified competitor tools (nvm, gvm, pyenv/pipx, asdf, mise, direnv) have dedicated comparison sections in the new document.
 - **SC-002**: The documentation site builds successfully without any broken links.
-- **SC-003**: At least 3 architectural advantages over `mise` are prominently highlighted using callouts/alerts in the Introduction.
+- **SC-003**: At least 3 architectural advantages over `mise` are prominently highlighted using callouts/alerts in the Introduction and the Comparison section.
+- **SC-004**: Visiting the root path `/` on a browser with Chinese language preference automatically redirects to `/zh/` (or similar functional behavior).
 
 ## Assumptions
 

@@ -6,7 +6,7 @@
 
 ## Summary
 
-This plan outlines the restructuring and enhancement of the UniRTM documentation to explicitly map its 100% native Go architecture, zero shell-pollution methodology, and MCP capabilities against competitors, primarily focusing on `mise` while also including legacy tools (`nvm`, `gvm`, `pyenv`, `asdf`, `direnv`).
+This plan outlines the restructuring and enhancement of the UniRTM documentation to explicitly map its 100% native Go architecture, zero shell-pollution methodology, and MCP capabilities against competitors, primarily focusing on `mise` while also including legacy tools (`nvm`, `gvm`, `pyenv`, `asdf`, `direnv`). It also addresses implementing a client-side VitePress script to automatically redirect users to their preferred language (EN/ZH).
 
 ## Technical Context
 
@@ -51,4 +51,4 @@ docs/
         └── comparisons.md
 ```
 
-**Structure Decision**: The documentation changes will primarily occur within the `docs/` and `docs/zh/` directories, updating existing structural files and adding the new `comparisons.md` routing.
+**Structure Decision**: The documentation changes will primarily occur within the `docs/` and `docs/zh/` directories, updating existing structural files and adding the new `comparisons.md` routing. The `docs/.vitepress/config.mts` will also be updated with a script injection in the `<head>` to detect `navigator.language` and redirect Chinese users to `/zh/` upon landing at the root path `/`.
