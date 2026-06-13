@@ -20,7 +20,7 @@ description: "Task list for UniRTM Documentation Upgrade"
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Identify missing configuration for Mermaid.js in VitePress (if any) in `docs/.vitepress/config.mts`
+- [X] T001 Identify missing configuration for Mermaid.js in VitePress (if any) in `docs/.vitepress/config.mts`
 
 ---
 
@@ -28,7 +28,7 @@ description: "Task list for UniRTM Documentation Upgrade"
 
 **Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
 
-- [ ] T002 Identify all CLI commands currently existing in UniRTM codebase to prepare for docs/cli/overview.md
+- [X] T002 Identify all CLI commands currently existing in UniRTM codebase to prepare for docs/cli/overview.md
 - [ ] T003 Read `docs/guide/architecture.md` (and related architecture docs) to establish comparison baseline
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
@@ -43,10 +43,10 @@ description: "Task list for UniRTM Documentation Upgrade"
 
 ### Implementation for User Story 1
 
-- [ ] T004 [P] [US1] Write `docs/guide/architecture.md` including code-level deep dive and Mermaid diagrams
-- [ ] T005 [P] [US1] Write `docs/zh/guide/architecture.md` including code-level deep dive and Mermaid diagrams
-- [ ] T006 [P] [US1] Write `docs/guide/cache-behavior.md` deep dive covering remote version caching, parallel downloads, and auto-pruning
-- [ ] T007 [P] [US1] Write `docs/zh/guide/cache-behavior.md` deep dive covering remote version caching, parallel downloads, and auto-pruning
+- [X] T004 [P] [US1] Write `docs/advanced/architecture.md` including code-level deep dive and Mermaid diagrams
+- [X] T005 [P] [US1] Write `docs/zh/advanced/architecture.md` including code-level deep dive and Mermaid diagrams
+- [X] T006 [P] [US1] Write `docs/advanced/cache-behavior.md` deep dive covering remote version caching, parallel downloads, and auto-pruning
+- [X] T007 [P] [US1] Write `docs/zh/advanced/cache-behavior.md` deep dive covering remote version caching, parallel downloads, and auto-pruning
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -60,8 +60,8 @@ description: "Task list for UniRTM Documentation Upgrade"
 
 ### Implementation for User Story 2
 
-- [ ] T008 [P] [US2] Rewrite `docs/cli/overview.md` with an exhaustive, collapsible command list
-- [ ] T009 [P] [US2] Rewrite `docs/zh/cli/overview.md` with an exhaustive, collapsible command list
+- [X] T008 [P] [US2] Rewrite `docs/cli/overview.md` with an exhaustive, collapsible command list
+- [X] T009 [P] [US2] Rewrite `docs/zh/cli/overview.md` with an exhaustive, collapsible command list
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -75,8 +75,8 @@ description: "Task list for UniRTM Documentation Upgrade"
 
 ### Implementation for User Story 3
 
-- [ ] T010 [P] [US3] Rewrite `docs/environments/overview.md` with deep details
-- [ ] T011 [P] [US3] Rewrite `docs/zh/environments/overview.md` with deep details
+- [X] T010 [P] [US3] Rewrite `docs/environments/overview.md` with deep details
+- [X] T011 [P] [US3] Rewrite `docs/zh/environments/overview.md` with deep details
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -90,8 +90,8 @@ description: "Task list for UniRTM Documentation Upgrade"
 
 ### Implementation for User Story 4
 
-- [ ] T012 [P] [US4] Update `docs/guide/getting-started.md` to accurately reflect security tools as integrations
-- [ ] T013 [P] [US4] Update `docs/zh/guide/getting-started.md` to accurately reflect security tools as integrations
+- [X] T012 [P] [US4] Update `docs/guide/getting-started.md` to accurately reflect security tools as integrations
+- [X] T013 [P] [US4] Update `docs/zh/guide/getting-started.md` to accurately reflect security tools as integrations
 
 ---
 
@@ -99,7 +99,7 @@ description: "Task list for UniRTM Documentation Upgrade"
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T014 Run validation by building documentation via `npm run docs:build` in `docs/` to verify links and formatting
+- [X] T014 Run validation by building documentation via `npm run docs:build` in `docs/` to verify links and formatting
 
 ---
 

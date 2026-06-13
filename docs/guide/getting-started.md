@@ -8,7 +8,7 @@ If you have used tools like `asdf`, `mise`, `nvm`, `pyenv`, or `rbenv`, you will
 
 1. **100% Native (Lightning Fast)**: Written purely in Go. No external bash plugins, no python dependencies. It avoids the slow startup times and brittleness of Bash/Ruby-based tools.
 2. **Zero Shell Pollution**: Keep your `.bashrc` and `.zshrc` clean. UniRTM can dynamically inject environments without running arbitrary shell scripts on every directory change.
-3. **Security Integrations**: Seamlessly integrates with Trivy, Syft, and Gitleaks to scan your tools and environments for vulnerabilities and secrets.
+3. **Security via Ecosystem Integrations**: UniRTM connects with industry-standard external tools like Trivy, Syft, and Gitleaks. While UniRTM manages your environments, you can easily plug in these external scanners to secure your supply chain without bloating the core runtime manager.
 4. **Cross-Platform**: Windows, macOS, and Linux are all treated as first-class citizens with pre-compiled native binaries.
 5. **All-in-One**: Replaces your tool manager, `.env` loaders (like `direnv`), and task runners (like `make`), while exposing a built-in MCP server for AI Agents.
 
