@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0](https://github.com/snowdreamtech/UniRTM/compare/v0.21.0...v0.22.0) (2026-06-13)
+
+
+### Features
+
+* **lua:** complete native lua and luarocks provider implementation ([349a788](https://github.com/snowdreamtech/UniRTM/commit/349a7889be62a8ebc91c367ff034a0b7f6869851))
+* **speckit:** implementation progress ([336008d](https://github.com/snowdreamtech/UniRTM/commit/336008dcef88a8e4cb7f09d5a80d99931be21d80))
+
 ## [0.21.0](https://github.com/snowdreamtech/UniRTM/compare/v0.20.0...v0.21.0) (2026-06-12)
 
 
