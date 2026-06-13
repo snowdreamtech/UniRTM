@@ -58,7 +58,7 @@ const sidebarEn = [
       { text: "Comparison to asdf", link: "/dev-tools/comparison-to-asdf" },
       { text: "Shims & PATH", link: "/dev-tools/shims" },
       { text: "Lockfile (unirtm.lock)", link: "/dev-tools/unirtm-lock" },
-      { text: "Security (Trivy & Syft)", link: "/dev-tools/security" },
+      { text: "Supply Chain Security", link: "/dev-tools/security" },
     ],
   },
   {
@@ -139,7 +139,7 @@ const sidebarZh = [
       { text: "与 asdf 的对比", link: "/zh/dev-tools/comparison-to-asdf" },
       { text: "Shims 与 PATH 劫持", link: "/zh/dev-tools/shims" },
       { text: "锁定文件 (unirtm.lock)", link: "/zh/dev-tools/unirtm-lock" },
-      { text: "安全检测 (Trivy & Syft)", link: "/zh/dev-tools/security" },
+      { text: "供应链安全与防投毒", link: "/zh/dev-tools/security" },
     ],
   },
   {
