@@ -1,44 +1,37 @@
-# Quickstart / Validation Guide: Documentation Upgrade
+# Quickstart Validation Guide: Documentation Upgrade
+
+This guide explains how to validate the documentation changes end-to-end.
 
 ## Prerequisites
 
-- A local checkout of the UniRTM repository on the `026-docs-mise-compare` branch.
-- Node.js installed to run the VitePress dev server.
+- Node.js installed
+- VitePress dependencies installed in `docs/`
 
-## Setup
+## Setup Commands
 
-1. Change into the docs directory (if applicable) or root:
+```bash
+cd docs
+npm install
+```
 
-   ```bash
-   npm install
-   ```
+## Run/Validation Commands
 
-## Validation Scenarios
-
-### Scenario 1: Verify the Local Dev Server
-
-Run the documentation site locally:
+### 1. Verify Local Dev Server & Diagram Rendering
 
 ```bash
 npm run docs:dev
 ```
 
-- Open `http://localhost:5173` in your browser.
-- Verify the site loads properly.
+- **Expected Outcome**: The dev server starts. Navigate to `http://localhost:5173/UniRTM/guide/architecture.html` and `http://localhost:5173/UniRTM/zh/guide/architecture.html`. Verify that the Mermaid flowcharts and structural diagrams render correctly.
 
-### Scenario 2: Verify Structural Alignment in Guide
+### 2. Verify Content Exhaustiveness
 
-- Navigate to the **Guide -> Introduction** page.
-- Verify the presence of GitHub Alerts / highlighted blocks mentioning the **100% Native Architecture**, **Zero-Pollution Philosophy**, and **MCP Capabilities**.
-- Verify the **Getting Started** page accurately reflects the simplified installation process.
+- **Expected Outcome**: Navigate to the CLI overview (`/cli/overview.html`) and verify that all commands are listed exhaustively with detailed descriptions. Navigate to the Environments overview (`/environments/overview.html`) to ensure the content is in-depth and not just 1-2 sentences.
 
-### Scenario 3: Verify the New Comparisons Section
+### 3. Verify Static Build Integrity
 
-- Navigate to the newly created **替代与对比 (Comparisons)** section in the sidebar.
-- Verify that each tool (`nvm`, `gvm`, `pyenv/pipx`, `asdf`, `mise`, `direnv`) has its own dedicated subsection.
-- Ensure the layout is clear and readable.
+```bash
+npm run docs:build
+```
 
-### Scenario 4: Verify Bilingual Support
-
-- Switch the language toggle to English/Chinese.
-- Ensure the structural changes and the new `comparisons.md` exist and are correctly translated in both `docs/` and `docs/zh/`.
+- **Expected Outcome**: The VitePress build completes successfully without any broken link warnings or syntax errors in the markdown files.

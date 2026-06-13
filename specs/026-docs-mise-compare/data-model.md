@@ -1,15 +1,23 @@
 # Data Model: Documentation Upgrade
 
-Since this feature revolves around static documentation in Markdown format powered by VitePress, there are no traditional database schemas or application-level data models to define.
+*Note: This feature revolves around static documentation generation (Markdown + VitePress). There are no traditional database or domain data models involved.*
 
-However, the "Content Model" for the new documentation section is as follows:
+## Entities
 
-## Content Entity: `ComparisonSection`
+### 1. `comparisons.md` (Document Entity)
 
-Each tool being compared against UniRTM will follow this structured content model:
+- **Attributes**: Features one-on-one architectural comparisons between UniRTM and competitors (nvm, gvm, pyenv, asdf, direnv, mise).
+- **Constraints**: Tone must be respectful; no trash-talking. Must highlight UniRTM's native architecture.
 
-- **Target Tool**: The name of the tool (e.g., `mise`, `nvm`).
-- **Primary Function**: What the tool is traditionally used for (e.g., "Node.js version management").
-- **Architectural Difference**: How UniRTM solves the problem differently (e.g., "Native Go binary vs Bash script hooks").
-- **Migration Value**: The direct benefit of migrating to UniRTM (e.g., "Zero shell startup penalty, zero global environment pollution").
-- **Usage Equivalence**: A brief table or snippet showing the old command vs the UniRTM approach (e.g., `nvm use 20` vs updating `.unirtm.toml`).
+### 2. `architecture.md` (Document Entity)
+
+- **Attributes**: Deep code-level breakdown of UniRTM's engine. Includes Mermaid diagrams.
+
+### 3. `cli/overview.md` (Document Entity)
+
+- **Attributes**: Exhaustive enumeration of all commands.
+- **Constraints**: Every single command must be detailed (can be collapsible).
+
+### 4. `environments/overview.md` (Document Entity)
+
+- **Attributes**: Deep dive into `.unirtm.toml`, `.env`, and context swapping.
