@@ -116,7 +116,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     environment: development
     concurrency:
-      group: lint-${{ github.workflow }}-${{ matrix.os }}-${{ github.event.pull_request.number || github.ref }}
+      group: lint-${{ github.workflow }}-${{ matrix.os }}-${{ github.ref }}
       cancel-in-progress: true
     strategy:
       fail-fast: false
@@ -227,7 +227,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     environment: development
     concurrency:
-      group: test-${{ github.workflow }}-${{ matrix.os }}-${{ github.event.pull_request.number || github.ref }}
+      group: test-${{ github.workflow }}-${{ matrix.os }}-${{ github.ref }}
       cancel-in-progress: true
     strategy:
       fail-fast: false
@@ -381,7 +381,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: development
     concurrency:
-      group: audit-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+      group: audit-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
     permissions:
       contents: read

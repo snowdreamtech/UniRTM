@@ -31,7 +31,7 @@ jobs:
       github.event.pull_request.user.login != 'release-please[bot]' &&
       github.event.pull_request.user.login != 'snowdream'
     concurrency:
-      group: dco-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+      group: dco-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
     permissions:
       contents: read

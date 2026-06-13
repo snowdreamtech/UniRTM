@@ -33,7 +33,7 @@ jobs:
     name: "🔍 Semantic Title Validation"
     runs-on: ubuntu-latest
     concurrency:
-      group: pr-title-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+      group: pr-title-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
     permissions:
       pull-requests: read # Required to read the pull request metadata via the GitHub API

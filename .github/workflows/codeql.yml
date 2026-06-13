@@ -43,7 +43,7 @@ jobs:
     name: "🛡️ Deep Semantic Analysis (${{ matrix.language }})"
     runs-on: ubuntu-latest
     concurrency:
-      group: codeql-${{ github.workflow }}-${{ matrix.language }}-${{ github.event.pull_request.number || github.ref }}
+      group: codeql-${{ github.workflow }}-${{ matrix.language }}-${{ github.ref }}
       cancel-in-progress: true
     permissions:
       security-events: write # Required to upload SARIF results to the GitHub Security tab

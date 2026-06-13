@@ -31,7 +31,7 @@ jobs:
     name: "🏷️ Pull Request Categorization"
     runs-on: ubuntu-latest
     concurrency:
-      group: labeler-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+      group: labeler-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
     permissions:
       pull-requests: write # Required to apply labels to the pull request
