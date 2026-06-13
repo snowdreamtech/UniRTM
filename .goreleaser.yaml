@@ -261,8 +261,6 @@ snapcrafts:
     grade: stable
     confinement: classic
     publish: false
-    #    channel_templates:
-    #      - stable
     disable: "{{ if .IsNightly }}true{{ end }}"
 
 flatpak:
