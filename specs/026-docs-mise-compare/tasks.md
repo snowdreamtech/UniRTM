@@ -1,3 +1,7 @@
+---
+description: "Task list for UniRTM Documentation Upgrade"
+---
+
 # Tasks: Documentation Upgrade: Aligning and Surpassing `mise`
 
 **Input**: Design documents from `/specs/026-docs-mise-compare/`
@@ -16,7 +20,7 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [x] T001 Verify local VitePress documentation environment can be run via `npm run docs:dev`
+- [ ] T001 Identify missing configuration for Mermaid.js in VitePress (if any) in `docs/.vitepress/config.mts`
 
 ---
 
@@ -24,51 +28,78 @@
 
 **Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
 
-- [x] T002 Update sidebar configuration in `docs/.vitepress/config.mts` to include `comparisons.md` under `guide` for both EN and ZH locales.
-- [x] T003 Implement `navigator.language` auto-redirect logic via `<head>` script injection inside `docs/.vitepress/config.mts`.
+- [ ] T002 Identify all CLI commands currently existing in UniRTM codebase to prepare for docs/cli/overview.md
+- [ ] T003 Read `docs/guide/architecture.md` (and related architecture docs) to establish comparison baseline
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
 ---
 
-## Phase 3: User Story 1 - Evaluate UniRTM against existing tools (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 - Deep Architecture Dive (Priority: P1) 🎯 MVP
 
-**Goal**: Provide a clear, side-by-side comparison with UniRTM against legacy and modern tools (nvm, gvm, pyenv/pipx, asdf, mise, direnv).
+**Goal**: As an evaluator, I want to read a detailed architecture deep dive.
 
-**Independent Test**: Can be tested by navigating to the new "Comparisons" section in the docs and verifying clear, structured contrast points for each tool, explicitly highlighting UniRTM's superiority over `mise`.
+**Independent Test**: Verify that the generated flowcharts and architecture descriptions render correctly in VitePress.
 
 ### Implementation for User Story 1
 
-- [x] T004 [P] [US1] Create and implement `docs/guide/comparisons.md` with comparisons for nvm, gvm, pyenv, asdf, mise, direnv, ensuring UniRTM's superiority over `mise` is highlighted.
-- [x] T005 [P] [US1] Create and implement `docs/zh/guide/comparisons.md` with translated comparisons based on `research.md`.
+- [ ] T004 [P] [US1] Write `docs/guide/architecture.md` including code-level deep dive and Mermaid diagrams
+- [ ] T005 [P] [US1] Write `docs/zh/guide/architecture.md` including code-level deep dive and Mermaid diagrams
+- [ ] T006 [P] [US1] Write `docs/guide/cache-behavior.md` deep dive covering remote version caching, parallel downloads, and auto-pruning
+- [ ] T007 [P] [US1] Write `docs/zh/guide/cache-behavior.md` deep dive covering remote version caching, parallel downloads, and auto-pruning
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
 ---
 
-## Phase 4: User Story 2 - Discover UniRTM's Architectural Superiority (Priority: P1)
+## Phase 4: User Story 2 - Exhaustive CLI Index (Priority: P1)
 
-**Goal**: Ensure technical evaluators reading the introduction understand how UniRTM's architecture surpasses competitors (native Go architecture, zero-pollution, built-in MCP).
+**Goal**: As a user, I want to see an exhaustive list of all CLI commands.
 
-**Independent Test**: Can be tested by reviewing the Introduction and Getting Started pages for highlighted superiority points, and verifying automatic redirect for Chinese browsers to `/zh/`.
+**Independent Test**: Ensure every single command is detailed and listed on the overview page.
 
 ### Implementation for User Story 2
 
-- [x] T006 [P] [US2] Update `docs/guide/introduction.md` to highlight 100% Native Architecture, Zero-Pollution, and MCP Capabilities.
-- [x] T007 [P] [US2] Update `docs/zh/guide/introduction.md` to highlight 100% Native Architecture, Zero-Pollution, and MCP Capabilities.
-- [x] T008 [P] [US2] Update `docs/guide/getting-started.md` to emphasize simplified installation without external plugins.
-- [x] T009 [P] [US2] Update `docs/zh/guide/getting-started.md` to emphasize simplified installation without external plugins.
+- [ ] T008 [P] [US2] Rewrite `docs/cli/overview.md` with an exhaustive, collapsible command list
+- [ ] T009 [P] [US2] Rewrite `docs/zh/cli/overview.md` with an exhaustive, collapsible command list
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
 ---
 
-## Phase 5: Polish & Cross-Cutting Concerns
+## Phase 5: User Story 3 - Environments Management (Priority: P2)
+
+**Goal**: As a user, I want to deeply understand the environment variable resolution.
+
+**Independent Test**: Ensure the `.unirtm.toml` dynamic environment handling and zero shell-pollution is comprehensively explained.
+
+### Implementation for User Story 3
+
+- [ ] T010 [P] [US3] Rewrite `docs/environments/overview.md` with deep details
+- [ ] T011 [P] [US3] Rewrite `docs/zh/environments/overview.md` with deep details
+
+**Checkpoint**: All user stories should now be independently functional
+
+---
+
+## Phase 6: User Story 4 - Security Integrations (Priority: P3)
+
+**Goal**: As a potential enterprise user, I want to see exactly how security tools are integrated.
+
+**Independent Test**: Ensure Trivy, Syft, and Gitleaks are explicitly listed as external integrations, not exaggerated features.
+
+### Implementation for User Story 4
+
+- [ ] T012 [P] [US4] Update `docs/guide/getting-started.md` to accurately reflect security tools as integrations
+- [ ] T013 [P] [US4] Update `docs/zh/guide/getting-started.md` to accurately reflect security tools as integrations
+
+---
+
+## Phase 7: Polish & Cross-Cutting Concerns
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [x] T010 Run `npm run docs:build` locally to verify there are no broken links in the VitePress build.
-- [x] T011 Perform visual review using `quickstart.md` validation scenarios.
+- [ ] T014 Run validation by building documentation via `npm run docs:build` in `docs/` to verify links and formatting
 
 ---
 
@@ -79,30 +110,19 @@
 - **Setup (Phase 1)**: No dependencies - can start immediately
 - **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
 - **User Stories (Phase 3+)**: All depend on Foundational phase completion
-  - User stories can then proceed in parallel (if staffed)
-  - Or sequentially in priority order (P1 → P2 → P3)
+  - User stories can then proceed in parallel
 - **Polish (Final Phase)**: Depends on all desired user stories being complete
 
 ### User Story Dependencies
 
-- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
-- **User Story 2 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
+- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies
+- **User Story 2 (P1)**: Can start after Foundational (Phase 2) - No dependencies
+- **User Story 3 (P2)**: Can start after Foundational (Phase 2) - No dependencies
+- **User Story 4 (P3)**: Can start after Foundational (Phase 2) - No dependencies
 
 ### Parallel Opportunities
 
-- All Foundational tasks marked [P] can run in parallel (within Phase 2)
-- Once Foundational phase completes, all user stories can start in parallel (if team capacity allows)
-- Translation updates can happen in parallel with English updates.
-
----
-
-## Parallel Example: User Story 1
-
-```bash
-# Launch all files for User Story 1 together:
-Task: "Create and implement docs/guide/comparisons.md"
-Task: "Create and implement docs/zh/guide/comparisons.md"
-```
+- All User Story implementations (T004 - T013) are marked [P] and can be run completely in parallel, as they edit distinct markdown files.
 
 ---
 
@@ -111,14 +131,16 @@ Task: "Create and implement docs/zh/guide/comparisons.md"
 ### MVP First (User Story 1 Only)
 
 1. Complete Phase 1: Setup
-2. Complete Phase 2: Foundational (CRITICAL - blocks all stories)
+2. Complete Phase 2: Foundational (CRITICAL)
 3. Complete Phase 3: User Story 1
-4. **STOP and VALIDATE**: Test User Story 1 independently
+4. **STOP and VALIDATE**: Verify the architecture and caching docs locally.
 5. Deploy/demo if ready
 
 ### Incremental Delivery
 
-1. Complete Setup + Foundational → Foundation ready
-2. Add User Story 1 → Test independently → Deploy/Demo (MVP!)
-3. Add User Story 2 → Test independently → Deploy/Demo
-4. Each story adds value without breaking previous stories
+1. Complete Setup + Foundational
+2. Add US1 → Test independently
+3. Add US2 → Test independently
+4. Add US3 → Test independently
+5. Add US4 → Test independently
+6. Run full build validation (Phase 7)
