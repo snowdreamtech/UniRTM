@@ -46,7 +46,7 @@ jobs:
     name: "🏗️ Documentation Compilation"
     runs-on: ubuntu-latest
     concurrency:
-      group: pages-build-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
+      group: pages-build-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: false # Never cancel in-progress deploys to avoid inconsistent states
     permissions:
       contents: read # Required for repository checkout
