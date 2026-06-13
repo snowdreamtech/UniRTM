@@ -68,7 +68,7 @@ You can customize the behavior of `setup-unirtm` using the following inputs:
 | `version` | `latest` | The version of UniRTM to install (e.g., `v1.2.3`). |
 | `install` | `true` | Whether to automatically run `unirtm install` after setting up the CLI. |
 | `cache` | `true` | Whether to utilize GitHub Actions caching for downloaded tools. |
-| `github_token` | `${{ github.token }}` | Token used to fetch UniRTM releases and prevent rate limits. |
+| `github_token` | <code v-pre>${{ github.token }}</code> | Token used to fetch UniRTM releases and prevent rate limits. |
 | `unirtm_toml` | `.unirtm.toml` | The path to your configuration file (useful for monorepos). |
 
 ## Other CI Providers (GitLab CI, CircleCI)

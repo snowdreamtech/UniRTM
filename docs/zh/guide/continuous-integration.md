@@ -68,7 +68,7 @@ Action 代码会在内部执行 `unirtm env` 解析这些变量，并将它们�
 | `version` | `latest` | 安装的 UniRTM 版本 (例如 `v1.2.3`)。 |
 | `install` | `true` | 是否在设置好 CLI 后自动运行 `unirtm install`。 |
 | `cache` | `true` | 是否启用 GitHub Actions 缓存来持久化保存工具。 |
-| `github_token` | `${{ github.token }}` | 用于获取发布版本并避免流控的 Token。 |
+| `github_token` | <code v-pre>${{ github.token }}</code> | 用于获取发布版本并避免流控的 Token。 |
 | `unirtm_toml` | `.unirtm.toml` | 配置文件的相对路径（常用于 Monorepo）。 |
 
 ## 其他 CI 平台 (GitLab CI, CircleCI)
