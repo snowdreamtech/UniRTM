@@ -1,4 +1,5 @@
 import { defineConfig } from "vitepress";
+import { withMermaid } from "vitepress-plugin-mermaid";
 
 let releases: any[] = [];
 try {
@@ -192,7 +193,7 @@ const sidebarZh = [
   },
 ];
 
-export default defineConfig({
+export default withMermaid(defineConfig({
   title: "UniRTM",
   description: "The fast, simple, cross-platform tool to manage your dev tools, environments, and tasks.",
   base: "/UniRTM/",
@@ -294,4 +295,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));
