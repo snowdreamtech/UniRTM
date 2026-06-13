@@ -19,13 +19,17 @@ jobs:
       - name: Setup UniRTM & Install Tools
         uses: snowdreamtech/setup-unirtm@v1
         with:
-          # Optional: Specify a UniRTM version (defaults to latest)
-          version: latest
-          # Optional: GitHub token to prevent API rate limits during tool downloads
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Optional: Specify UniRTM version
+          unirtm-version: latest
+          # Optional: Automatically run unirtm install
+          install: true
+          # Optional: Automatically trust .unirtm.toml
+          trust: true
+          # Optional: Pass GitHub token to prevent API rate-limiting
+          github_token: <code v-pre>${{ secrets.GITHUB_TOKEN }}</code>
 
       - name: Run Tests
-        # Tools defined in .unirtm.toml are now natively available in the PATH
+        # All tools defined in .unirtm.toml are now natively available in PATH
         run: npm test
 ```
 
@@ -65,11 +69,12 @@ You can customize the behavior of `setup-unirtm` using the following inputs:
 
 | Input | Default | Description |
 |---|---|---|
-| `version` | `latest` | The version of UniRTM to install (e.g., `v1.2.3`). |
-| `install` | `true` | Whether to automatically run `unirtm install` after setting up the CLI. |
-| `cache` | `true` | Whether to utilize GitHub Actions caching for downloaded tools. |
-| `github_token` | <code v-pre>${{ github.token }}</code> | Token used to fetch UniRTM releases and prevent rate limits. |
-| `unirtm_toml` | `.unirtm.toml` | The path to your configuration file (useful for monorepos). |
+| `unirtm-version` | `''` (latest) | The version of UniRTM to install (e.g. `"0.0.1"`). If empty, installs the latest release. |
+| `install` | `false` | If true, runs `unirtm install` after setting up UniRTM. |
+| `install_args` | `''` | Arguments to pass to `unirtm install` (e.g. `"node python"`). |
+| `trust` | `false` | If true, runs `unirtm trust` after setting up UniRTM. |
+| `github_token` | `<code v-pre>${{ github.token }}</code>` | GitHub token for API authentication to avoid rate limits. |
+| `github_proxy` | `''` | Proxy prefix for GitHub download URLs (e.g. `"https://ghproxy.com/"`) to speed up downloads in restricted networks. |
 
 ## Other CI Providers (GitLab CI, CircleCI)
 
