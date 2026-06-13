@@ -50,3 +50,30 @@ UniRTM is entirely self-contained and leaves no persistent registries or deep sy
    rm -rf ~/.config/unirtm
    rm -f ~/.local/bin/unirtm
    ```
+
+## Can UniRTM replace nvm / pyenv / gvm?
+
+**Absolutely.**
+One of the primary goals of UniRTM is to eliminate the chaos of "installing a different version manager for every programming language." Through the single `unirtm` command-line interface, it supports not only Node.js, Python, and Go, but dozens of mainstream language SDKs and CLI tools. Install once, manage everything.
+
+## Does UniRTM manage generic CLI tools other than programming languages?
+
+**Yes.**
+UniRTM is not limited to "Runtimes". You can use it to manage any generic binary development tools, such as `jq`, `ripgrep`, `golangci-lint`, `trivy`, etc. If a tool can run on your platform, you can pin its version in your project configuration. This ensures everyone on your team uses the exact same version of formatters and static analyzers.
+
+## How does UniRTM handle project scripts and tasks (Task Runner)?
+
+Just like mise, UniRTM features an incredibly powerful, native cross-platform Task Runner.
+In the past, you might have relied on `make` (which has terrible Windows support) or `npm run` (which requires Node.js). Now, you can define tasks directly in your `.unirtm.toml`:
+
+```toml
+[tasks.build]
+run = "go build -o unirtm ./main.go"
+```
+
+Then execute it via `unirtm run build`. It will automatically set up all necessary dependencies and run across platforms seamlessly.
+
+## Is UniRTM safe to use in CI/CD pipelines?
+
+**Absolutely safe and highly recommended.**
+UniRTM includes optimizations specifically designed for non-interactive (headless) environments, and we provide an official GitHub Action `setup-unirtm`. In CI/CD, it is not only faster than traditional multi-step setups, but it also shares the exact same `.unirtm.toml` as your local environment, ensuring "if it works on my machine, it works in CI."

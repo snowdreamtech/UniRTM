@@ -50,3 +50,30 @@ UniRTM 完全是绿色软件，不会在系统中留下任何顽固的注册表�
    rm -rf ~/.config/unirtm
    rm -f ~/.local/bin/unirtm
    ```
+
+## UniRTM 可以替代 nvm / pyenv / gvm 吗？
+
+**完全可以。**
+UniRTM 的设计初衷之一就是消灭这种“为每种语言安装一个单独的包管理器”的乱象。它通过单一的 `unirtm` 命令行界面，不仅支持 Node.js、Python、Go，甚至还支持超过数十种主流的语言 SDK 和 CLI 工具。一次安装，接管全局。
+
+## UniRTM 支持管理除了编程语言外的 CLI 工具吗？
+
+**是的。**
+UniRTM 并不局限于“运行时环境（Runtime）”。你可以用它来管理任意通用的二进制开发工具，例如：`jq`, `ripgrep`, `golangci-lint`, `trivy` 等等。只要能在对应平台运行的工具，你都能将其版本锁定在项目配置中，确保团队中的每个人都使用同版本的格式化工具或静态分析器。
+
+## UniRTM 如何处理项目的脚本和任务 (Task Runner)？
+
+如同 mise 一样，UniRTM 同样内置了一个极为强大的原生跨平台任务执行器 (Task Runner)。
+在过去，你可能依赖于 `make`（Windows 支持极差）或者 `npm run`（需要安装 Node.js）。现在，你可以直接在 `.unirtm.toml` 中定义任务：
+
+```toml
+[tasks.build]
+run = "go build -o unirtm ./main.go"
+```
+
+然后通过 `unirtm run build` 执行，它会自动为你准备好所有的依赖环境并跨平台运行。
+
+## UniRTM 可以安全地用在 CI/CD 管道中吗？
+
+**绝对安全且被高度推荐。**
+UniRTM 提供了专门为非交互式环境（Headless）设计的优化，并且我们提供了官方的 GitHub Actions `setup-unirtm`。在 CI/CD 中，它不仅比传统的多步安装更快，还能通过共享和项目一致的 `.unirtm.toml` 配置，确保“在本地能跑，在 CI 里就一定能跑”。
