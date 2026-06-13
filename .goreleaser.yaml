@@ -260,7 +260,7 @@ snapcrafts:
       UniRTM manages runtimes, tools, and tasks across Linux, macOS, and Windows.
     grade: stable
     confinement: classic
-    publish: true
+    publish: false
     #    channel_templates:
     #      - stable
     disable: "{{ if .IsNightly }}true{{ end }}"
