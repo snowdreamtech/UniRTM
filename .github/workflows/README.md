@@ -69,7 +69,7 @@ graph TD
 | Parameter | Type    | Default | Description                                            |
 | :-------- | :------ | :------ | :----------------------------------------------------- |
 | `venv`    | String  | `.venv` | Path to the Python virtual environment.                |
-| `pnpm`    | Boolean | `true`  | Whether to use pnpm for Node.js dependency management. |
+| `npm`     | Boolean | `true`  | Whether to use npm for Node.js dependency management.  |
 
 ### Workflow Patterns
 
@@ -104,7 +104,7 @@ graph TD
 
 ### Performance Considerations
 
-- **Caching**: Use `pnpm` and `pip` caching in every job to reduce build time by ~40%.
+- **Caching**: Use `npm` and `pip` caching in every job to reduce build time by ~40%.
 - **Matrix**: Limit test matrices to supported OS/version combinations to save runner minutes.
 
 ### Troubleshooting
