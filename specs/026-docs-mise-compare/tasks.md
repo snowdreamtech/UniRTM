@@ -16,7 +16,7 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Verify local VitePress documentation environment can be run via `npm run docs:dev`
+- [x] T001 Verify local VitePress documentation environment can be run via `npm run docs:dev`
 
 ---
 
@@ -24,8 +24,8 @@
 
 **Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
 
-- [ ] T002 Update sidebar configuration in `docs/.vitepress/config.mts` to include `comparisons.md` under `guide` for both EN and ZH locales.
-- [ ] T003 Implement `navigator.language` auto-redirect logic via `<head>` script injection inside `docs/.vitepress/config.mts`.
+- [x] T002 Update sidebar configuration in `docs/.vitepress/config.mts` to include `comparisons.md` under `guide` for both EN and ZH locales.
+- [x] T003 Implement `navigator.language` auto-redirect logic via `<head>` script injection inside `docs/.vitepress/config.mts`.
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -39,8 +39,8 @@
 
 ### Implementation for User Story 1
 
-- [ ] T004 [P] [US1] Create and implement `docs/guide/comparisons.md` with comparisons for nvm, gvm, pyenv, asdf, mise, direnv, ensuring UniRTM's superiority over `mise` is highlighted.
-- [ ] T005 [P] [US1] Create and implement `docs/zh/guide/comparisons.md` with translated comparisons based on `research.md`.
+- [x] T004 [P] [US1] Create and implement `docs/guide/comparisons.md` with comparisons for nvm, gvm, pyenv, asdf, mise, direnv, ensuring UniRTM's superiority over `mise` is highlighted.
+- [x] T005 [P] [US1] Create and implement `docs/zh/guide/comparisons.md` with translated comparisons based on `research.md`.
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -54,10 +54,10 @@
 
 ### Implementation for User Story 2
 
-- [ ] T006 [P] [US2] Update `docs/guide/introduction.md` to highlight 100% Native Architecture, Zero-Pollution, and MCP Capabilities.
-- [ ] T007 [P] [US2] Update `docs/zh/guide/introduction.md` to highlight 100% Native Architecture, Zero-Pollution, and MCP Capabilities.
-- [ ] T008 [P] [US2] Update `docs/guide/getting-started.md` to emphasize simplified installation without external plugins.
-- [ ] T009 [P] [US2] Update `docs/zh/guide/getting-started.md` to emphasize simplified installation without external plugins.
+- [x] T006 [P] [US2] Update `docs/guide/introduction.md` to highlight 100% Native Architecture, Zero-Pollution, and MCP Capabilities.
+- [x] T007 [P] [US2] Update `docs/zh/guide/introduction.md` to highlight 100% Native Architecture, Zero-Pollution, and MCP Capabilities.
+- [x] T008 [P] [US2] Update `docs/guide/getting-started.md` to emphasize simplified installation without external plugins.
+- [x] T009 [P] [US2] Update `docs/zh/guide/getting-started.md` to emphasize simplified installation without external plugins.
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -67,8 +67,8 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T010 Run `npm run docs:build` locally to verify there are no broken links in the VitePress build.
-- [ ] T011 Perform visual review using `quickstart.md` validation scenarios.
+- [x] T010 Run `npm run docs:build` locally to verify there are no broken links in the VitePress build.
+- [x] T011 Perform visual review using `quickstart.md` validation scenarios.
 
 ---
 

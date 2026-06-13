@@ -39,6 +39,7 @@ const sidebarEn = [
       { text: "Installing UniRTM", link: "/guide/installing-unirtm" },
       { text: "IDE Integration", link: "/guide/ide-integration" },
       { text: "Continuous Integration", link: "/guide/continuous-integration" },
+      { text: "Comparisons", link: "/guide/comparisons" },
     ],
   },
   {
@@ -119,6 +120,7 @@ const sidebarZh = [
       { text: "安装 UniRTM", link: "/zh/guide/installing-unirtm" },
       { text: "IDE 深度集成", link: "/zh/guide/ide-integration" },
       { text: "CI/CD 集成", link: "/zh/guide/continuous-integration" },
+      { text: "横向对比", link: "/zh/guide/comparisons" },
     ],
   },
   {

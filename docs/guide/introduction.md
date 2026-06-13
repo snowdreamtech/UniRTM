@@ -10,10 +10,12 @@ In modern software development, projects require various runtimes (Node.js, Go, 
 
 UniRTM replaces them all:
 
-- **Polyglot Tool Manager**: Installs and manages versions for multiple languages and tools automatically.
-- **Environment Management**: Automatically loads environment variables when entering a directory.
+- **100% Native Architecture**: Built entirely in Go. Zero dependencies on external plugins, bash scripts, or system-level tools (like `pipx` or `make`), delivering maximum performance.
+- **Absolute Zero-Pollution**: Manage environments without needing invasive shell hooks (`.zshrc`/`.bashrc` manipulations) or directory-switching aliases.
+- **Built-in MCP Server**: Out-of-the-box support for the Model Context Protocol (MCP), allowing AI agents to natively manage your environments.
+- **Polyglot Tool Manager**: Installs and manages versions for multiple languages natively.
+- **Environment Management**: Declarative loading of variables and secrets via `.unirtm.toml`.
 - **Task Runner**: A simple cross-platform task runner built-in.
-- **Fast**: Written in Go for maximum performance.
 
 ## Getting Started
 
