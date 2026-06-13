@@ -46,7 +46,7 @@ jobs:
     name: "🏗️ Documentation Compilation"
     runs-on: ubuntu-latest
     concurrency:
-      group: pages-build-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+      group: pages-build-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
       cancel-in-progress: false # Never cancel in-progress deploys to avoid inconsistent states
     permissions:
       contents: read # Required for repository checkout
@@ -128,7 +128,7 @@ jobs:
       - name: "⚡ Setup UniRTM"
         uses: snowdreamtech/setup-unirtm@cacfb4d739ee46d4a4b2528b02b508df2f560706 # v0.4.0
         with:
-          unirtm-version: "0.22.0"
+          unirtm-version: "0.23.0"
           install: true
           trust: true
         env:
