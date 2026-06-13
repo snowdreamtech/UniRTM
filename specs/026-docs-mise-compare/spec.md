@@ -11,6 +11,9 @@
 
 - Q: Should the comparison with `mise` just match features, or explicitly highlight superiority? → A: It must not only match but explicitly surpass `mise`, highlighting areas where UniRTM is superior.
 - Q: How should the documentation handle internationalization (i18n)? → A: The site must support both English and Chinese simultaneously, and automatically redirect users to their preferred language based on their browser environment.
+- Q: How should we address competitors like `mise` in the documentation? → A: Show respect to competitors and avoid any trash-talking or put-downs (不拉踩).
+- Q: What level of detail is expected in the documentation compared to `mise`? → A: Must have depth and breadth, avoiding vague, boastful, or overly marketing-driven language (拒绝假大空).
+- Q: How should the CLI overview section be structured? → A: All commands must be exhaustively listed and detailed one by one in the CLI overview pages (can be collapsible).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -52,8 +55,10 @@ As a technical evaluator or architect reading the introduction, I want to clearl
 - **FR-002**: The `introduction.md` and `getting-started.md` pages MUST explicitly highlight UniRTM's native Go architecture, eliminating the need for bash shims, plugins, or third-party hook managers like `direnv`.
 - **FR-003**: The documentation MUST include a new major section titled "Comparisons" (替代与对比).
 - **FR-004**: The "Comparisons" section MUST include one-on-one comparisons for `nvm`, `gvm`, `pyenv`/`pipx`, `asdf`, `mise`, and `direnv`.
-- **FR-005**: Each tool comparison MUST detail UniRTM's specific feature advantages and usage substitution instructions. In particular, the comparison with `mise` MUST explicitly list areas where UniRTM surpasses it, rather than just matching features.
+- **FR-005**: Each tool comparison MUST detail UniRTM's specific feature advantages and usage substitution instructions. In particular, the comparison with `mise` MUST explicitly list areas where UniRTM surpasses it, rather than just matching features. **However**, the tone MUST remain respectful and professional, completely avoiding trash-talking (不拉踩).
 - **FR-006**: The documentation site MUST support both English and Chinese, and include a mechanism to automatically detect the user's browser language environment to redirect them to the appropriate locale by default.
+- **FR-007**: The documentation MUST have technical depth and breadth, avoiding vague or overly boastful "marketing fluff" (拒绝假大空).
+- **FR-008**: The CLI overview pages (`cli/overview.md` and `zh/cli/overview.md`) MUST exhaustively list and detail every single command one by one. Content can be collapsible, but must not be omitted.
 
 ### Key Entities
 
