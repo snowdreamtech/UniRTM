@@ -60,21 +60,6 @@ sudo chown -R $USER:$USER ~/.local/share/unirtm ~/.config/unirtm
 unirtm trust
 ```
 
-## 5. IDE (Cursor / Windsurf) 无法加载 `.agent` 规则
-
-**现象：** 打开项目后，IDE 中的 AI 助手似乎没有读取到 `UniRTM` 接管的 SpecKit 上下文规则。
-
-**原因与修复：**
-UniRTM 的 `.agent` 规则作为项目的 Single Source of Truth，需要通过命令主动注入给 IDE，或者你的 IDE 需要具备动态读取外置规则的能力。
-**修复方案：**
-尝试在终端主动触发项目的分析和规划动作：
-
-```bash
-unirtm run speckit.plan
-```
-
-这会强制唤醒后端 Agent 流程，并更新当前目录下的 `.claude` / `.cursorrules` 上下文投影。
-
-## 6. 报告问题
+## 5. 报告问题
 
 如果以上的排查方案都未能解决你的问题，请带上 `unirtm doctor` 和 `unirtm env` 的输出日志，前往我们的 [GitHub Issues](https://github.com/snowdreamtech/UniRTM/issues) 页面提交一个 Bug 报告。

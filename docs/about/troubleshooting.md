@@ -60,21 +60,6 @@ For **absolute security reasons**, UniRTM incorporates a "Trust System". If a co
 unirtm trust
 ```
 
-## 5. IDE (Cursor / Windsurf) fails to load `.agent` rules
-
-**Symptom:** After opening a project, the AI assistant in your IDE does not seem to recognize the SpecKit context rules managed by UniRTM.
-
-**Cause & Fix:**
-UniRTM's `.agent` rules serve as the Single Source of Truth for the project. These rules need to be actively injected into the IDE, or your IDE needs the capability to read external rules dynamically.
-**Fix:**
-Try manually triggering the project analysis and planning tasks in the terminal:
-
-```bash
-unirtm run speckit.plan
-```
-
-This forces the backend Agent process to wake up and sync the contextual projections into `.claude` / `.cursorrules` in your workspace.
-
-## 6. Reporting an Issue
+## 5. Reporting an Issue
 
 If none of the above solutions resolve your problem, please head over to our [GitHub Issues](https://github.com/snowdreamtech/UniRTM/issues) page. When opening an issue, make sure to include the complete output logs from running `unirtm doctor` and `unirtm env`.
