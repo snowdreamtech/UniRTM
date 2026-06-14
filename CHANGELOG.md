@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.0](https://github.com/snowdreamtech/UniRTM/compare/v0.23.1...v0.24.0) (2026-06-14)
+
+
+### Features
+
+* **dependabot:** lock docker dependencies in subdirectories to patch updates ([7b5c626](https://github.com/snowdreamtech/UniRTM/commit/7b5c62683c2d7f8613fc692bb55562db630fafbf))
+
 ## [0.23.1](https://github.com/snowdreamtech/UniRTM/compare/v0.23.0...v0.23.1) (2026-06-13)
 
 
