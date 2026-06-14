@@ -103,7 +103,12 @@ updates:{{range .}}
     commit-message:
       prefix: "{{.Prefix}}"
     labels:{{range .Labels}}
-      - "{{.}}"{{end}}
+      - "{{.}}"{{end}}{{if and (eq .Ecosystem "docker") (ne .Directory "/")}}
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-major"{{end}}
 {{end}}`
 
 	tmpl, err := template.New("dependabot").Parse(tmplStr)
