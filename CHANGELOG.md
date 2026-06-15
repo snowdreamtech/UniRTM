@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0](https://github.com/snowdreamtech/UniRTM/compare/v0.24.0...v0.25.0) (2026-06-15)
+
+
+### Features
+
+* **install:** add support for riscv64, ppc64le, loong64, and s390x architectures ([0cf5164](https://github.com/snowdreamtech/UniRTM/commit/0cf516445ed1c40aa326f0ec2391cd000cac2c51))
+* **provider:** add support for extracting LZ4 compressed files ([3e3e253](https://github.com/snowdreamtech/UniRTM/commit/3e3e253e0f951a8dcb353fbfecdbe1f9bc9ed816))
+
 ## [0.24.0](https://github.com/snowdreamtech/UniRTM/compare/v0.23.1...v0.24.0) (2026-06-14)
 
 
