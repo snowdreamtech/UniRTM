@@ -1,6 +1,6 @@
 # Implementation Plan: AI IDE Integration Architecture
 
-**Branch**: `020-ai-ide-integration` | **Date**: 2026-06-11 | **Spec**: [spec.md](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/specs/020-ai-ide-integration/spec.md)
+**Branch**: `020-ai-ide-integration` | **Date**: 2026-06-11 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/020-ai-ide-integration/spec.md`
 

@@ -2,7 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-06-11
-**Feature**: [spec.md](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/specs/020-ai-ide-integration/spec.md)
+**Feature**: [spec.md](../spec.md)
 
 ## Content Quality
 

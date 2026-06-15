@@ -2,7 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-06-11
-**Feature**: [spec.md](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/specs/018-java-tools-provider/spec.md)
+**Feature**: [spec.md](../spec.md)
 
 ## Content Quality
 

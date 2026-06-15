@@ -2,8 +2,8 @@
 
 **Feature**: AI IDE Integration Architecture
 **Branch**: `020-ai-ide-integration`
-**Spec**: [spec.md](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/specs/020-ai-ide-integration/spec.md)
-**Plan**: [plan.md](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/specs/020-ai-ide-integration/plan.md)
+**Spec**: [spec.md](./spec.md)
+**Plan**: [plan.md](./plan.md)
 
 ## Phase 1: Setup (Shared Infrastructure)
 

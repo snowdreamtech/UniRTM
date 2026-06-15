@@ -35,5 +35,5 @@ All AI slash commands and standard operating procedures (SOPs) are located in `.
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/specs/026-docs-mise-compare/plan.md
+./specs/026-docs-mise-compare/plan.md
 <!-- SPECKIT END -->

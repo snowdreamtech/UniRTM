@@ -1,6 +1,6 @@
 # Implementation Plan: Hook Install Hybrid Resolution
 
-**Branch**: `019-hook-install-hybrid-resolution` | **Date**: 2026-06-11 | **Spec**: [spec.md](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/specs/019-hook-install-hybrid-resolution/spec.md)
+**Branch**: `019-hook-install-hybrid-resolution` | **Date**: 2026-06-11 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `/specs/019-hook-install-hybrid-resolution/spec.md`
 

@@ -2,7 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-06-12
-**Feature**: [spec.md](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/specs/024-add-new-providers/spec.md)
+**Feature**: [spec.md](../spec.md)
 
 ## Content Quality
 

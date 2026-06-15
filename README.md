@@ -95,7 +95,7 @@ $ go version
 go version go1.22.x macos/arm64
 ```
 
-See [dev tools](https://snowdreamtech.github.io/UniRTM/dev-tools/) for more examples.
+See [dev tools](https://snowdreamtech.github.io/UniRTM/dev-tools/overview.html) for more examples.
 
 ### Manage environment variables
 
@@ -111,7 +111,7 @@ $ echo $SOME_VAR
 bar
 ```
 
-Note that `UniRTM` can also [load `.env` files](https://snowdreamtech.github.io/UniRTM/environments/#env-directives).
+Note that `UniRTM` can also [load `.env` files](https://snowdreamtech.github.io/UniRTM/environments/overview.html#env-directives).
 
 ### Run tasks
 
@@ -127,7 +127,7 @@ $ unirtm run build
 building...
 ```
 
-See [tasks](https://snowdreamtech.github.io/UniRTM/tasks/) for more information.
+See [tasks](https://snowdreamtech.github.io/UniRTM/tasks/overview.html) for more information.
 
 ### Example UniRTM project
 

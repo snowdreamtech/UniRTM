@@ -1,6 +1,6 @@
 # Implementation Plan: Smart Version Prefix Normalization
 
-**Branch**: `023-smart-version-prefix` | **Date**: 2026-06-12 | **Spec**: [spec.md](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/specs/023-smart-version-prefix/spec.md)
+**Branch**: `023-smart-version-prefix` | **Date**: 2026-06-12 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/023-smart-version-prefix/spec.md`
 

@@ -1,6 +1,6 @@
 # Implementation Plan: Add New Backend Providers
 
-**Branch**: `024-add-new-providers` | **Date**: 2026-06-12 | **Spec**: [spec.md](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/specs/024-add-new-providers/spec.md)
+**Branch**: `024-add-new-providers` | **Date**: 2026-06-12 | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/024-add-new-providers/spec.md`
 

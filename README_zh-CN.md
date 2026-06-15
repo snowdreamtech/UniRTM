@@ -95,7 +95,7 @@ $ go version
 go version go1.22.x macos/arm64
 ```
 
-查看 [开发工具指南](https://snowdreamtech.github.io/UniRTM/zh/dev-tools/) 获取更多示例。
+查看 [开发工具指南](https://snowdreamtech.github.io/UniRTM/zh/dev-tools/overview.html) 获取更多示例。
 
 ### 管理环境变量
 
@@ -111,7 +111,7 @@ $ echo $SOME_VAR
 bar
 ```
 
-此外，`UniRTM` 同样可以自动读取本地的 [`.env` 文件](https://snowdreamtech.github.io/UniRTM/zh/environments/#env-directives)。
+此外，`UniRTM` 同样可以自动读取本地的 [`.env` 文件](https://snowdreamtech.github.io/UniRTM/zh/environments/overview.html#env-directives)。
 
 ### 运行任务
 
@@ -127,7 +127,7 @@ $ unirtm run build
 building...
 ```
 
-查看 [任务系统指南](https://snowdreamtech.github.io/UniRTM/zh/tasks/) 获取更多高级用法。
+查看 [任务系统指南](https://snowdreamtech.github.io/UniRTM/zh/tasks/overview.html) 获取更多高级用法。
 
 ### UniRTM 综合实战配置
 

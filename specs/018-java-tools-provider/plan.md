@@ -17,19 +17,19 @@ Implement a unified package provider for the Java ecosystem in UniRTM that nativ
 
 ### `internal/provider/`
 
-#### [NEW] [maven.go](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/internal/provider/maven.go)
+#### [NEW] [maven.go](../../internal/provider/maven.go)
 
 - Implement the `Provider` interface.
 - Add registry hooks for `maven` and `gradle`.
 - **Download logic**: Constructs URL `https://repo1.maven.org/maven2/<group_path>/<artifact>/<version>/<artifact>-<version>.jar`.
 - **Shim generation logic**: Automatically builds a custom shell/cmd wrapper referencing the `.jar` path.
 
-#### [NEW] [maven_test.go](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/internal/provider/maven_test.go)
+#### [NEW] [maven_test.go](../../internal/provider/maven_test.go)
 
 - Table-driven tests validating URL construction across default and mirrored URLs.
 - Cross-platform shim generation string matching.
 
-#### [MODIFY] [registry.go](file:///Users/snowdream/Workspace/snowdreamtech/UniRTM/internal/provider/registry.go)
+#### [MODIFY] [registry.go](../../internal/provider/registry.go)
 
 - Add `maven.go` provider initialization to the `DefaultRegistry`.
 
