@@ -18,7 +18,7 @@ behavioral rules distributed to 50+ IDEs via a symlink/redirect pattern.
 
 | Dependency | Version  | Purpose                      |
 | ---------- | -------- | ---------------------------- |
-| `mise`     | ≥ 2024.x | Toolchain version management |
+| `unirtm`     | ≥ 2024.x | Toolchain version management |
 | `make`     | System   | Task orchestration           |
 | `git`      | ≥ 2.x    | Version control and hooks    |
 | `node`     | ≥ 20.x   | Documentation (VitePress)    |
@@ -50,9 +50,9 @@ make verify                         # validates everything is green
 ### Run Quality Checks
 
 ```bash
-make lint          # run all local linters
-make audit         # run security audit (Gitleaks + dependency scan)
-make verify        # run all checks in sequence
+unirtm run lint          # run all local linters
+unirtm run audit         # run security audit (Gitleaks + dependency scan)
+unirtm run verify        # run all checks in sequence
 ```
 
 ### Update Dependencies
@@ -65,7 +65,7 @@ cd docs && npm update
 pre-commit autoupdate
 
 # Tool versions
-mise upgrade
+unirtm upgrade
 ```
 
 ### Build Documentation
@@ -94,10 +94,10 @@ cd docs && npm run dev         # development server (hot-reload)
 
 ```bash
 # Reproduce locally
-make lint
+unirtm run lint
 
 # Check specific linter output
-make lint 2>&1 | grep -A5 "error\|failed"
+unirtm run lint 2>&1 | grep -A5 "error\|failed"
 ```
 
 **Likely causes**:

@@ -97,10 +97,10 @@ support and richer libraries.
   creating a bootstrapping paradox. POSIX shell and compiled binaries are universally available on all target platforms and
   have zero external dependencies.
 
-### Option C: Makefile-only Automation
+### Option C: .unirtm.toml-only Automation
 
-Express all automation as Makefile targets with no shell scripts.
+Express all automation as .unirtm.toml targets with no shell scripts.
 
 - **Reason rejected:** GNU Make has subtle cross-platform differences, particularly regarding
   Windows compatibility. Complex conditional logic (OS detection, retry loops) is unwieldy in
-  Makefile syntax. A hybrid approach (`Makefile` targets invoke `scripts/*.sh`) is used instead.
+  .unirtm.toml syntax. A hybrid approach (`.unirtm.toml` targets invoke `scripts/*.sh`) is used instead.

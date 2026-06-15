@@ -81,14 +81,14 @@ unirtm install
 ```bash
 # Universal Security Scanners - Critical CI-only (1, 1)
 check_tool_version "OSV-scanner" "osv-scanner" \
-  "$(get_mise_tool_version osv-scanner)" \
+  "$(get_unirtm_tool_version osv-scanner)" \
   "osv-scanner --version" \
   1 \  # CRITICAL=1 (required)
   1 \  # CI_ONLY=1 (CI only)
   "osv-scanner" "OSV_FORCE_INSTALL"
 
 check_tool_version "Zizmor" "zizmor" \
-  "$(get_mise_tool_version zizmor)" \
+  "$(get_unirtm_tool_version zizmor)" \
   "zizmor --version" \
   1 \  # CRITICAL=1 (required)
   1 \  # CI_ONLY=1 (CI only)
@@ -121,7 +121,7 @@ fi
 
 if has_lang_files "requirements.txt pyproject.toml" "*.py"; then
   check_tool_version "Pip-audit" "pip-audit" \
-    "$(get_mise_tool_version pip-audit)" \
+    "$(get_unirtm_tool_version pip-audit)" \
     "pip-audit --version" \
     0 \  # CRITICAL=0 (optional)
     1 \  # CI_ONLY=1 (CI only)
@@ -183,7 +183,7 @@ If adding a new universal security scanner (applicable to all projects):
 
    ```bash
    check_tool_version "NewTool" "newtool" \
-     "$(get_mise_tool_version newtool)" \
+     "$(get_unirtm_tool_version newtool)" \
      "newtool --version" \
      1 1 "newtool" "NEWTOOL_FORCE_INSTALL"
    ```
@@ -234,7 +234,7 @@ If you have existing workflows that relied on the old Optional CI-only behavior 
 
 ```yaml
 - name: "Check Environment"
-  run: make check-env
+  run: unirtm run check-env
   # Would warn but not fail if OSV-scanner missing
 ```
 
@@ -245,7 +245,7 @@ If you have existing workflows that relied on the old Optional CI-only behavior 
   run: unirtm install
 
 - name: "Check Environment"
-  run: make check-env
+  run: unirtm run check-env
   # Will fail if OSV-scanner missing
 ```
 
@@ -257,17 +257,17 @@ If you have existing workflows that relied on the old Optional CI-only behavior 
 
 ```bash
 # Test check-env without security tools (should skip)
-make check-env
+unirtm run check-env
 
 # Force install security tools locally
-OSV_FORCE_INSTALL=1 ZIZMOR_FORCE_INSTALL=1 make check-env
+OSV_FORCE_INSTALL=1 ZIZMOR_FORCE_INSTALL=1 unirtm run check-env
 ```
 
 ### CI Testing
 
 ```bash
 # Simulate CI environment
-CI=true make check-env
+CI=true unirtm run check-env
 # Should fail if universal security tools are missing
 ```
 

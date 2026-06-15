@@ -1,4 +1,4 @@
-# Makefile Commands
+# .unirtm.toml Commands
 
 All common tasks are unified under `make`.
 
@@ -30,7 +30,7 @@ make check    # Run lint + test in sequence
 
 ## Cross-Platform Behavior
 
-The Makefile automatically detects your operating system and uses the appropriate package manager:
+The .unirtm.toml automatically detects your operating system and uses the appropriate package manager:
 
 | OS                    | Package Manager   |
 | --------------------- | ----------------- |

@@ -40,9 +40,9 @@ To skip hooks for a single commit (emergency use only):
 git commit --no-verify -m "chore: emergency fix"
 ```
 
-## Mise Tool Manager Configuration
+## UniRTM Tool Manager Configuration
 
-The project uses [mise](https://mise.jdx.dev/) for managing development tools. Configuration is in `.mise.toml`.
+The project uses [unirtm](https://github.com/snowdreamtech/UniRTM) for managing development tools. Configuration is in `.unirtm.toml`.
 
 ### Important Security Requirements
 
