@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/klauspost/compress/zstd"
+	"github.com/pierrec/lz4/v4"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/ulikunitz/xz"
 )
@@ -614,6 +615,7 @@ func (g *GenericProvider) extractArtifact(ctx context.Context, artifactPath stri
 	isXz := bytes.HasPrefix(magic, []byte{0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00})
 	isZstd := bytes.HasPrefix(magic, []byte{0x28, 0xb5, 0x2f, 0xfd})
 	isBz2 := bytes.HasPrefix(magic, []byte("BZh"))
+	isLz4 := bytes.HasPrefix(magic, []byte{0x04, 0x22, 0x4d, 0x18})
 
 	if strings.HasSuffix(base, ".tar.gz") || strings.HasSuffix(base, ".tgz") || strings.HasSuffix(base, ".gz") || isGz {
 		gz, err := gzip.NewReader(f)
@@ -640,6 +642,9 @@ func (g *GenericProvider) extractArtifact(ctx context.Context, artifactPath stri
 		compressed = true
 	} else if strings.HasSuffix(base, ".tar.bz2") || strings.HasSuffix(base, ".tbz2") || strings.HasSuffix(base, ".bz2") || isBz2 {
 		r = bzip2.NewReader(f)
+		compressed = true
+	} else if strings.HasSuffix(base, ".tar.lz4") || strings.HasSuffix(base, ".lz4") || isLz4 {
+		r = lz4.NewReader(f)
 		compressed = true
 	}
 
@@ -682,6 +687,9 @@ func (g *GenericProvider) extractArtifact(ctx context.Context, artifactPath stri
 		defer outF.Close()
 		// ROBUSTNESS FIX: Must read from br instead of r to include the 4096 bytes buffered by Peek
 		_, err = io.Copy(outF, br)
+		if err == io.EOF {
+			err = nil
+		}
 		return err
 	}
 

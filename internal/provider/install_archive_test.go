@@ -13,6 +13,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/pierrec/lz4/v4"
 )
 
 func TestGenericProvider_InstallArchiveCoverage(t *testing.T) {
@@ -107,6 +109,23 @@ func TestGenericProvider_ExtractArtifactMoreCoverage(t *testing.T) {
 	extractedSinglePath := filepath.Join(tmpDir, "single")
 	if _, err := os.Stat(extractedSinglePath); os.IsNotExist(err) {
 		t.Errorf("Expected single file to be extracted to %s", extractedSinglePath)
+	}
+
+	// Test extracting a single compressed file (.lz4)
+	lz4Path := filepath.Join(tmpDir, "single2.lz4")
+	fLz4, _ := os.Create(lz4Path)
+	lz4w := lz4.NewWriter(fLz4)
+	lz4w.Write([]byte("single2 lz4 decompressed data"))
+	lz4w.Close()
+	fLz4.Close()
+
+	err = p.extractArtifact(ctx, lz4Path, tmpDir)
+	if err != nil {
+		t.Errorf("Unexpected error for .lz4 extraction: %v", err)
+	}
+	extractedSingle2Path := filepath.Join(tmpDir, "single2")
+	if _, err := os.Stat(extractedSingle2Path); os.IsNotExist(err) {
+		t.Errorf("Expected single file to be extracted to %s", extractedSingle2Path)
 	}
 
 	// Test extracting a tar file

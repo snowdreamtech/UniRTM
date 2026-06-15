@@ -18,6 +18,7 @@ require (
 	github.com/lithammer/fuzzysearch v1.1.8
 	github.com/mattn/go-isatty v0.0.22
 	github.com/pelletier/go-toml/v2 v2.3.1
+	github.com/pierrec/lz4/v4 v4.1.27
 	github.com/pterm/pterm v0.12.83
 	github.com/rs/zerolog v1.35.1
 	github.com/sigstore/sigstore-go v1.1.4
