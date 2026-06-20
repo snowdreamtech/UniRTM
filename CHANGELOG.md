@@ -1648,49 +1648,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * **ci:** disable shellcheck integration in actionlint to prevent Windows hang ([1d711d8](https://github.com/snowdreamtech/template/commit/1d711d8c1bc4c7482651f1abe228c970ba6f024c))
 
-## [0.13.0](https://github.com/snowdreamtech/template/compare/v0.12.0...v0.13.0) (2026-04-28)
-
-
-### Features
-
-* **ci:** enable auto-merge for ALL dependabot updates including major ([9c8bae2](https://github.com/snowdreamtech/template/commit/9c8bae233e0e8834a611370dc897ac67db64057a))
-* **deps:** consolidate all dependabot updates into single PR ([e753902](https://github.com/snowdreamtech/template/commit/e753902201ce2f059747de31b59681442bb149b0))
-
-
-### Bug Fixes
-
-* **deps:** correct devcontainers directory to root ([9d83806](https://github.com/snowdreamtech/template/commit/9d838067e3fb82e84c1107f0036cc4a7b7855f56))
-* **deps:** exclude .devcontainer from docker ecosystem detection ([67e96c3](https://github.com/snowdreamtech/template/commit/67e96c3c1b94c72811d81af229a017f927fd3de4))
-
-## [0.12.0](https://github.com/snowdreamtech/template/compare/v0.11.0...v0.12.0) (2026-04-27)
-
-
-### Features
-
-* **security:** add CDN and download mirror endpoints to harden runner ([3ff8a5d](https://github.com/snowdreamtech/template/commit/3ff8a5d3d073a57bb4681c619e94aa797983ef23))
-* **security:** add DockerHub endpoints to harden runner ([48b6416](https://github.com/snowdreamtech/template/commit/48b6416ced65a68194a50d4ffb406c7e7257a37f))
-
-## [0.11.0](https://github.com/snowdreamtech/template/compare/v0.10.0...v0.11.0) (2026-04-24)
-
-
-### Features
-
-* **ci:** add GitHub API rate limit info to summary reports ([8c4293a](https://github.com/snowdreamtech/template/commit/8c4293afbd82f74278af2db4ecb77abf6a9b1aab))
-* **deps:** optimize dependabot configuration and grouping strategy ([900f3af](https://github.com/snowdreamtech/template/commit/900f3aff782a709643b81f9721a45da7a0d10a87))
-
-
-### Bug Fixes
-
-* **ci:** replace head -n -1 with sed for macOS compatibility ([67aaa95](https://github.com/snowdreamtech/template/commit/67aaa95afe68cdfcade622a3478fe3b0b000ccca))
-* **deps:** correct indentation in test script for editorconfig compliance ([0a44088](https://github.com/snowdreamtech/template/commit/0a44088beafca6ea70111f98062e1889d21c069f))
-
-## [0.10.0](https://github.com/snowdreamtech/template/compare/v0.9.2...v0.10.0) (2026-04-22)
-
-
-### Features
-
-* add rocket icon to performance workflow name ([e6a6146](https://github.com/snowdreamtech/template/commit/e6a61461a6315e84e993d6edfc618ef61f27003e))
-
 ## [0.9.2](https://github.com/snowdreamtech/template/compare/v0.9.1...v0.9.2) (2026-04-20)
 
 
@@ -1705,18 +1662,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Bug Fixes
 
 * **lint:** ignore CHANGELOG.md in all directories for markdownlint ([ebe338c](https://github.com/snowdreamtech/template/commit/ebe338c66126b82624c63e45b5c8a7c6bf77fcc1))
-
-## [0.9.0](https://github.com/snowdreamtech/template/compare/v0.8.2...v0.9.0) (2026-04-19)
-
-
-### Features
-
-* **lint:** add two-pass auto-fix mechanism to make lint ([9fba0f1](https://github.com/snowdreamtech/template/commit/9fba0f1436429e3e3d161358ab1dbc8d299b7fe8))
-
-
-### Bug Fixes
-
-* **lint:** restore color output in Pass 1 auto-fix stage ([fe3d523](https://github.com/snowdreamtech/template/commit/fe3d52320f604686e0f5dededbd07da463a0f176))
 
 ## [0.8.2](https://github.com/snowdreamtech/template/compare/v0.8.1...v0.8.2) (2026-04-19)
 
@@ -1738,13 +1683,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Bug Fixes
 
 * **ci:** resolve Docker Buildx container restart race condition ([01a1c2d](https://github.com/snowdreamtech/template/commit/01a1c2d500ea125ed63e0091fd5a6a136fa58544))
-
-## [0.8.0](https://github.com/snowdreamtech/template/compare/v0.7.1...v0.8.0) (2026-04-18)
-
-
-### Features
-
-* **release:** add separate-pull-requests for future manifest mode ([a543dde](https://github.com/snowdreamtech/template/commit/a543dded3032285624672de89e68d37130970bad))
 
 ## [0.7.1](https://github.com/snowdreamtech/template/compare/v0.7.0...v0.7.1) (2026-04-18)
 
@@ -2067,28 +2005,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * **dependabot:** add path monitoring for mise toolchain config ([ebc7227](https://github.com/snowdreamtech/template/commit/ebc72273a85cb32f3e66b84305c726e47ce55b63))
 * **deps:** remove MISE_SKIP_CHECKSUM workaround ([0a80645](https://github.com/snowdreamtech/template/commit/0a8064500cc0ecef8851af4aea31023f5809512e))
 
-## [0.7.0](https://github.com/snowdreamtech/template/compare/v0.6.1...v0.7.0) (2026-04-18)
-
-
-### Features
-
-* **ci:** add centralized Harden Runner endpoints configuration ([5389a6e](https://github.com/snowdreamtech/template/commit/5389a6eb811a6b1ecfeefd6a0a3512e9a7d8b078))
-* **ci:** sync Harden Runner endpoints from centralized config ([48b4221](https://github.com/snowdreamtech/template/commit/48b42213ee409890c4dd9a64f230c251dbac7b77))
-* **docker:** add docker-compose file detection for hadolint and dockerfile-utils ([836880d](https://github.com/snowdreamtech/template/commit/836880de8c86ea0e548ed9edabe589d38357903f))
-* **make:** add sync-harden-runner target for workflow endpoint management ([d24708d](https://github.com/snowdreamtech/template/commit/d24708dd86bb09946f3337dfd0747ca5fbcd51bc))
-* **security:** add sigstore wildcard endpoint to harden runner ([2e26b98](https://github.com/snowdreamtech/template/commit/2e26b98d181cc8e4c739febde72e90fcfdee99da))
-
-
-### Bug Fixes
-
-* **ci:** add missing endpoints for trivy and sigstore ([115a19d](https://github.com/snowdreamtech/template/commit/115a19de02c7cd1d274ecb0191bd035a02d273ef))
-* **ci:** restrict release-please to main branch only ([0db8a91](https://github.com/snowdreamtech/template/commit/0db8a910c4bbba1426944ccfcca648a593bb097e))
-* **scripts:** ensure summary table displays by default ([a0d1b69](https://github.com/snowdreamtech/template/commit/a0d1b69300d151b2f448a2f1375e0f81e97cd6b2))
-* **scripts:** install PyYAML via pip instead of pipx in sync-harden-runner ([16285a8](https://github.com/snowdreamtech/template/commit/16285a8ec6f27dada410103a3118482e38b82875))
-* **scripts:** prevent sync-harden-runner from deleting workflow content ([32a4228](https://github.com/snowdreamtech/template/commit/32a4228e6e456a62cf761590491c5c56b6b24b8b))
-* **security:** add docker.yml to zizmor ignore rules ([66e35cf](https://github.com/snowdreamtech/template/commit/66e35cf2e63c97fc8b1ecbad2a13e283a16031c7))
-* **security:** add template-injection rule to zizmor config ([92396c1](https://github.com/snowdreamtech/template/commit/92396c15000fed537d3f4057f41dddd3bd7fe69b))
-
 ## [0.6.1](https://github.com/snowdreamtech/template/compare/v0.6.0...v0.6.1) (2026-04-17)
 
 
@@ -2101,91 +2017,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Miscellaneous Chores
 
 * release 0.6.1 ([f6fc042](https://github.com/snowdreamtech/template/commit/f6fc042cad7d1c4991a20657655bc4b6b339d0d9))
-
-## [0.6.0](https://github.com/snowdreamtech/template/compare/v0.5.0...v0.6.0) (2026-04-16)
-
-
-### Features
-
-* **scripts:** add tool to remove Windows wrapper scripts ([5bfd3ef](https://github.com/snowdreamtech/template/commit/5bfd3ef8ec9241cb09eca577d58616d1c29e2987))
-
-## [0.5.0](https://github.com/snowdreamtech/template/compare/v0.4.0...v0.5.0) (2026-04-16)
-
-
-### Features
-
-* **ci:** improve release-please configuration and remove fixed version ([e1fcd64](https://github.com/snowdreamtech/template/commit/e1fcd648d91c306f6f385eca7600b3d6d2fefc5e))
-
-
-### Bug Fixes
-
-* **ci:** detect docker-compose files in dependabot generator ([530ca75](https://github.com/snowdreamtech/template/commit/530ca7534583ea16bb876c0e8bfbf209d958a42a))
-* **ci:** explicitly specify checkmake mise tool spec to avoid aqua registry lookup ([acefebb](https://github.com/snowdreamtech/template/commit/acefebb98efc3563a9011f2ea05e7cc7274f5aef))
-* **ci:** remove unsupported signoff parameter and add release-as 0.5.0 ([d01b2df](https://github.com/snowdreamtech/template/commit/d01b2dffa875d815316b5d41922b58ce9d574879))
-* **mise:** workaround for GitHub attestation verification failures ([2911054](https://github.com/snowdreamtech/template/commit/29110547a86ebe51593eac637c0b4dc4c14977bc))
-
-
-### Documentation
-
-* **security:** add comprehensive asdf supply chain risk analysis ([515eea1](https://github.com/snowdreamtech/template/commit/515eea10cedc50f05f0cecd3f421129e1ce59cd4))
-* **security:** add mise supply chain security analysis and mitigation ([c0c72f8](https://github.com/snowdreamtech/template/commit/c0c72f889b691ca3ed847e3b11dd3576c1586653))
-
-
-### Miscellaneous Chores
-
-* **deps:** bump mise to v2026.4.14 ([2bf29e3](https://github.com/snowdreamtech/template/commit/2bf29e3e3f8385913f9367de8a1170a151b5bd82))
-* **release:** v0.4.0 - Fix Dependabot docker-compose detection ([e91f7d8](https://github.com/snowdreamtech/template/commit/e91f7d882f3c7b23260f4da02f0e5e53d6399968))
-
-
-### Continuous Integration
-
-* **dependabot:** add path monitoring for mise toolchain config ([ebc7227](https://github.com/snowdreamtech/template/commit/ebc72273a85cb32f3e66b84305c726e47ce55b63))
-* **deps:** remove MISE_SKIP_CHECKSUM workaround ([0a80645](https://github.com/snowdreamtech/template/commit/0a8064500cc0ecef8851af4aea31023f5809512e))
-
-## [0.4.0](https://github.com/snowdreamtech/template/compare/v0.4.0...v0.4.0) (2026-04-16)
-
-
-### Bug Fixes
-
-* **ci:** detect docker-compose files in dependabot generator ([530ca75](https://github.com/snowdreamtech/template/commit/530ca7534583ea16bb876c0e8bfbf209d958a42a))
-* **ci:** explicitly specify checkmake mise tool spec to avoid aqua registry lookup ([acefebb](https://github.com/snowdreamtech/template/commit/acefebb98efc3563a9011f2ea05e7cc7274f5aef))
-* **ci:** remove unsupported signoff parameter and add release-as 0.5.0 ([d01b2df](https://github.com/snowdreamtech/template/commit/d01b2dffa875d815316b5d41922b58ce9d574879))
-* **mise:** workaround for GitHub attestation verification failures ([2911054](https://github.com/snowdreamtech/template/commit/29110547a86ebe51593eac637c0b4dc4c14977bc))
-
-
-### Documentation
-
-* **security:** add comprehensive asdf supply chain risk analysis ([515eea1](https://github.com/snowdreamtech/template/commit/515eea10cedc50f05f0cecd3f421129e1ce59cd4))
-
-
-### Miscellaneous Chores
-
-* **deps:** bump mise to v2026.4.14 ([2bf29e3](https://github.com/snowdreamtech/template/commit/2bf29e3e3f8385913f9367de8a1170a151b5bd82))
-* **release:** v0.4.0 - Fix Dependabot docker-compose detection ([e91f7d8](https://github.com/snowdreamtech/template/commit/e91f7d882f3c7b23260f4da02f0e5e53d6399968))
-
-
-### Continuous Integration
-
-* **dependabot:** add path monitoring for mise toolchain config ([ebc7227](https://github.com/snowdreamtech/template/commit/ebc72273a85cb32f3e66b84305c726e47ce55b63))
-* **deps:** remove MISE_SKIP_CHECKSUM workaround ([0a80645](https://github.com/snowdreamtech/template/commit/0a8064500cc0ecef8851af4aea31023f5809512e))
-
-## [0.3.0](https://github.com/snowdreamtech/template/compare/v0.2.0...v0.3.0) (2026-04-15)
-
-
-### ⚠ BREAKING CHANGES
-
-* **security:** mise now downloads binaries ONLY from GitHub Releases
-
-### Features
-
-* **dev:** add POSIX-compatible CI simulation script ([a587a39](https://github.com/snowdreamtech/template/commit/a587a390faa640adce2d448b773222cbb373c41d))
-* **security:** implement three-layer defense against Aqua Registry ([ef13665](https://github.com/snowdreamtech/template/commit/ef136651dc6d7d358cf4de2748a0a10a841730bf))
-
-
-### Bug Fixes
-
-* **ci:** update node-audit to use new npm bulk advisory endpoint ([526ca79](https://github.com/snowdreamtech/template/commit/526ca79e307d38240e54505bda3b06d75f1e8b9a))
-* **docs:** ensure make docs build works correctly ([6a0df9c](https://github.com/snowdreamtech/template/commit/6a0df9ce6acf22d2d8606dda0444c48d369967bd))
 
 ## [0.2.0](https://github.com/snowdreamtech/template/compare/v0.1.0...v0.2.0) (2026-04-14)
 
@@ -2210,24 +2041,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * **setup:** ensure yaml and toml modules are always installed locally ([7ca7026](https://github.com/snowdreamtech/template/commit/7ca7026761c0a58a939935db83e37922a872a243))
 * **tools:** complete taplo provider migration to npm ([cdeaf76](https://github.com/snowdreamtech/template/commit/cdeaf762d62dfde4a14d90136cf298fe4c8e125d))
 * **tools:** switch taplo from GitHub source to npm precompiled binary ([18de234](https://github.com/snowdreamtech/template/commit/18de2342744562645b849d24edbd94e6524259d1))
-
-## [0.1.0](https://github.com/snowdreamtech/template/compare/v0.0.4...v0.1.0) (2026-04-14)
-
-
-### Features
-
-* **devcontainer:** add comprehensive SSH and GPG permission configuration ([843180b](https://github.com/snowdreamtech/template/commit/843180b5722d20b1704e482d40b1c4a80f890fdc))
-* **devcontainer:** add support for local git config file ([2fb5e43](https://github.com/snowdreamtech/template/commit/2fb5e435b5038617746aff9837dec98865cd4d5c))
-* **devcontainer:** enable GPG signing support ([4d88e12](https://github.com/snowdreamtech/template/commit/4d88e125ddc84966237d382d897c03b1cf73da06))
-
-
-### Bug Fixes
-
-* **ci:** pin GitHub Actions to commit SHA in performance workflow ([13623d9](https://github.com/snowdreamtech/template/commit/13623d9cf5ae7a6677a8645a8d568bb39a2752a2))
-* **devcontainer:** make git config cross-platform compatible ([600052a](https://github.com/snowdreamtech/template/commit/600052ae9d9067de738a875009df7e8371099625))
-* **devcontainer:** use dynamic workspace folder variable ([73421d6](https://github.com/snowdreamtech/template/commit/73421d6f6724ae63613d30566103b55191d43c87))
-* **devcontainer:** use find instead of ls for directory permissions ([ffeaee8](https://github.com/snowdreamtech/template/commit/ffeaee833e3a9f4ad7a88d45b906ad12ca52b62d))
-* **setup:** normalize version strings in is_version_match to handle v prefix ([e5efefd](https://github.com/snowdreamtech/template/commit/e5efefdf81ca728f3b75703007cd475c6a2fa0f1))
 
 ## [0.0.4](https://github.com/snowdreamtech/template/compare/v0.0.3...v0.0.4) (2026-04-12)
 
