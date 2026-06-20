@@ -6,6 +6,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.1](https://github.com/snowdreamtech/UniRTM/compare/v0.25.0...v0.25.1) (2026-06-20)
+
+
+### 🚀 Features
+
+* **cd:** sync release orchestration enhancements from base repo ([b00fee8](https://github.com/snowdreamtech/UniRTM/commit/b00fee866cebcb89c24604a96bdfcd8816c60467))
+* **devcontainer:** add volume cache for osv-scanner ([95891da](https://github.com/snowdreamtech/UniRTM/commit/95891daa85b4e4759ce3fe748d6107894a8f8cac))
+* **devcontainer:** add volume cache for trivy ([9f931a1](https://github.com/snowdreamtech/UniRTM/commit/9f931a1d4e63544dbc34dbb795635990587f86e9))
+* **devcontainer:** add vscode extension customizations for auto-installation ([efae646](https://github.com/snowdreamtech/UniRTM/commit/efae64695c1208107298d792e272f05128405b6d))
+* **devcontainer:** forward common development and web ports ([35ff5f6](https://github.com/snowdreamtech/UniRTM/commit/35ff5f6256f3f2e88ccce449121826eac48fdc2b))
+
+
+### 🐛 Bug Fixes
+
+* **cd:** delete remote tag before re-push to trigger downstream docker build ([be75906](https://github.com/snowdreamtech/UniRTM/commit/be759064255c0e8f8e24f45efb260d5a26466c2a))
+* **cd:** disable persist-credentials to ensure WORKFLOW_SECRET PAT is used for tag push ([bedf7bf](https://github.com/snowdreamtech/UniRTM/commit/bedf7bf3bdabc083f6fd60d69d99dd2d482ea0ee))
+* **security:** bump dompurify from 3.4.10 to 3.4.11 in docs ([8e0f2f1](https://github.com/snowdreamtech/UniRTM/commit/8e0f2f193c6adf2f738f4c16b690f36e32dc5b50))
+
+
+### 🛠 Refactoring
+
+* **devcontainer:** remove redundant chown command ([5f79cc6](https://github.com/snowdreamtech/UniRTM/commit/5f79cc6acd2a983e94bf40058e20c34253049507))
+* **devcontainer:** remove redundant trivy cache settings ([1ffa32d](https://github.com/snowdreamtech/UniRTM/commit/1ffa32d80498d1c2805277d3a081ad6201d745f6))
+
+
+### ♻️ Miscellaneous Chores
+
+* **devcontainer:** replace MISE_ variables with UNIRTM_ and remove redundant HOST_HOME ([26e7368](https://github.com/snowdreamtech/UniRTM/commit/26e73687789097f86a41609a97d47dcb4e07c3d9))
+* **devcontainer:** update devcontainer image to latest ([5988d66](https://github.com/snowdreamtech/UniRTM/commit/5988d66920220f588096912ac114aeb4482fd25e))
+* **main:** release 0.15.0 ([6093285](https://github.com/snowdreamtech/UniRTM/commit/609328596217c6f3ac7ec3f0b6f54117e8b48c7f))
+* merge main into dev ([14541f3](https://github.com/snowdreamtech/UniRTM/commit/14541f3334b760a5d018ed4b5fc1d29b10b563b2))
+* release main ([782aa1a](https://github.com/snowdreamtech/UniRTM/commit/782aa1a112092bc881b36c47087a9a84829473a8))
+* release main ([76bafd6](https://github.com/snowdreamtech/UniRTM/commit/76bafd6d4eecbe14ec4b7fbe707280b4b4db9c07))
+* **release:** configure root package in config ([6d6254d](https://github.com/snowdreamtech/UniRTM/commit/6d6254dbe4df6d791e5f045ebab89def451bf089))
+* **release:** deduplicate CHANGELOG headers ([639b069](https://github.com/snowdreamtech/UniRTM/commit/639b0695d7325f2d2a827301a2f3a41111fcab6d))
+* **release:** update packages to use docker prefix and add rocky support ([81f21b2](https://github.com/snowdreamtech/UniRTM/commit/81f21b2115a96934213a15e66d6937560aabaa62))
+* remove unused dist paths from release-please-manifest.json ([86b8bdf](https://github.com/snowdreamtech/UniRTM/commit/86b8bdf2a8f248dfecb27d595e63812a4d45aa36))
+* sync upstream template changes ([fc66964](https://github.com/snowdreamtech/UniRTM/commit/fc669649fd55f55178ba55409a637088f333b208))
+
 ## [0.25.0](https://github.com/snowdreamtech/UniRTM/compare/v0.24.0...v0.25.0) (2026-06-15)
 
 
