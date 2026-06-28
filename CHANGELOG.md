@@ -6,6 +6,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.2](https://github.com/snowdreamtech/UniRTM/compare/v0.25.1...v0.25.2) (2026-06-28)
+
+
+### 🚀 Features
+
+* **lockfile:** support multiple checksum algorithms, smart length prefixing, and security warnings ([fdc0943](https://github.com/snowdreamtech/UniRTM/commit/fdc0943241bd372c6936bee574f0fc07ecb685b4))
+* support multi-hash checksum verification with auto-detection ([003f564](https://github.com/snowdreamtech/UniRTM/commit/003f564804f2b62e69cc1dd0408fc003416ce88f))
+
+
+### 🐛 Bug Fixes
+
+* **lockfile:** enforce strict hex validation for un-prefixed checksums ([7e1e4dc](https://github.com/snowdreamtech/UniRTM/commit/7e1e4dcf3a9b1560a319f4f75b2a101e4e9d1c29))
+
+
+### ♻️ Miscellaneous Chores
+
+* **deps:** bump the all-dependencies group with 5 updates ([4db359f](https://github.com/snowdreamtech/UniRTM/commit/4db359f40b9f1c0ecc7d6a25790e19ec10d7f0db))
+
 ## [0.25.1](https://github.com/snowdreamtech/UniRTM/compare/v0.25.0...v0.25.1) (2026-06-20)
 
 
