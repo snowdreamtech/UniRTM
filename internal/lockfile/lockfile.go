@@ -394,6 +394,10 @@ func (lf *LockFile) UpsertPlatform(key, version, platformKey string, pe *Platfor
 		e.Platforms = make(map[string]*PlatformEntry)
 	}
 
+	if pe != nil && pe.Checksum != "" {
+		pe.Checksum = NormalizeChecksum(pe.Checksum)
+	}
+
 	e.Platforms[platformKey] = pe
 	lf.updatedAt = time.Now()
 }

@@ -119,6 +119,37 @@ func isValidChecksumFormat(s string) bool {
 		strings.HasPrefix(s, "blake3:")
 }
 
+// NormalizeChecksum infers the algorithm prefix for a naked hex hash
+// based on its length, and returns the prefixed string (e.g. "sha256:<hash>").
+// If the string already has a prefix or is not valid hex, it is returned as is.
+func NormalizeChecksum(s string) string {
+	if s == "" || strings.Contains(s, ":") {
+		return s
+	}
+
+	// Ensure it is a valid hex string
+	if _, err := hex.DecodeString(s); err != nil {
+		return s
+	}
+
+	switch len(s) {
+	case 32:
+		return "md5:" + s
+	case 40:
+		return "sha1:" + s
+	case 56:
+		return "sha224:" + s
+	case 64:
+		return "sha256:" + s
+	case 96:
+		return "sha384:" + s
+	case 128:
+		return "sha512:" + s
+	default:
+		return s
+	}
+}
+
 // CheckStrict verifies that the lockfile contains a valid entry for each tool/platform
 // pair in the required set. For URL-based backends, it ensures a URL is present.
 // Used to enforce UNIRTM_LOCKED=1 / settings.locked=true.
