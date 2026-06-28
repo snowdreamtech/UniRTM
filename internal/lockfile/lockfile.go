@@ -393,6 +393,24 @@ func (lf *LockFile) UpsertPlatform(key, version, platformKey string, pe *Platfor
 	if e.Platforms == nil {
 		e.Platforms = make(map[string]*PlatformEntry)
 	}
+
+	if pe != nil && pe.Checksum != "" && !isValidChecksumFormat(pe.Checksum) {
+		l := len(pe.Checksum)
+		if l == 32 {
+			pe.Checksum = "md5:" + pe.Checksum
+		} else if l == 40 {
+			pe.Checksum = "sha1:" + pe.Checksum
+		} else if l == 56 {
+			pe.Checksum = "sha224:" + pe.Checksum
+		} else if l == 64 {
+			pe.Checksum = "sha256:" + pe.Checksum
+		} else if l == 96 {
+			pe.Checksum = "sha384:" + pe.Checksum
+		} else if l == 128 {
+			pe.Checksum = "sha512:" + pe.Checksum
+		}
+	}
+
 	e.Platforms[platformKey] = pe
 	lf.updatedAt = time.Now()
 }

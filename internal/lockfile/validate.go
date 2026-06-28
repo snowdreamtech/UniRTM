@@ -91,9 +91,13 @@ func validatePlatformEntry(toolKey, version, platformKey string, pe *PlatformEnt
 
 // isValidChecksumFormat verifies that s begins with a known algorithm prefix.
 func isValidChecksumFormat(s string) bool {
-	return strings.HasPrefix(s, "sha256:") ||
-		strings.HasPrefix(s, "blake3:") ||
-		strings.HasPrefix(s, "sha512:")
+	return strings.HasPrefix(s, "md5:") ||
+		strings.HasPrefix(s, "sha1:") ||
+		strings.HasPrefix(s, "sha224:") ||
+		strings.HasPrefix(s, "sha256:") ||
+		strings.HasPrefix(s, "sha384:") ||
+		strings.HasPrefix(s, "sha512:") ||
+		strings.HasPrefix(s, "blake3:")
 }
 
 // CheckStrict verifies that the lockfile contains a valid entry for each tool/platform

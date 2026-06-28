@@ -5,9 +5,13 @@ package download
 
 import (
 	"context"
+	"crypto/md5"
+	"crypto/sha1"
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
+	"hash"
 	"io"
 	"math/rand"
 	"net/http"
@@ -23,6 +27,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/errors"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
 // ErrGPGSkipped is returned when a signature file is not found (404) and verification is skipped.
@@ -374,9 +379,27 @@ func (h *HTTPDownloader) VerifyChecksum(ctx context.Context, file string, expect
 		return errors.NewUserError(fmt.Sprintf("invalid checksum format %q", expectedChecksum), err)
 	}
 
-	// Only SHA-256 is supported
-	if algorithm != "sha256" {
-		return errors.NewUserError(fmt.Sprintf("unsupported checksum algorithm %q (only sha256 is supported)", algorithm), nil)
+	if algorithm == "md5" || algorithm == "sha1" {
+		logger.Warn(fmt.Sprintf("Security Warning: Using weak checksum algorithm (%s), which is not cryptographically secure.", algorithm))
+	}
+
+	// Instantiate the correct hasher
+	var hasher hash.Hash
+	switch algorithm {
+	case "md5":
+		hasher = md5.New()
+	case "sha1":
+		hasher = sha1.New()
+	case "sha224":
+		hasher = sha256.New224()
+	case "sha256":
+		hasher = sha256.New()
+	case "sha384":
+		hasher = sha512.New384()
+	case "sha512":
+		hasher = sha512.New()
+	default:
+		return errors.NewUserError(fmt.Sprintf("unsupported checksum algorithm %q", algorithm), nil)
 	}
 
 	// Open file
@@ -386,8 +409,7 @@ func (h *HTTPDownloader) VerifyChecksum(ctx context.Context, file string, expect
 	}
 	defer f.Close()
 
-	// Compute SHA-256 hash
-	hasher := sha256.New()
+	// Compute hash
 	if _, err := io.Copy(hasher, f); err != nil {
 		return errors.NewSystemError(fmt.Sprintf("compute checksum for %q", file), err)
 	}
@@ -570,8 +592,27 @@ func parseChecksum(checksum string) (string, string, error) {
 		return algorithm, hash, nil
 	}
 
-	// Assume SHA-256 if no algorithm specified
-	return "sha256", checksum, nil
+	// Infer algorithm based on hash length
+	l := len(checksum)
+	var algorithm string
+	if l == 32 {
+		algorithm = "md5"
+	} else if l == 40 {
+		algorithm = "sha1"
+	} else if l == 56 {
+		algorithm = "sha224"
+	} else if l == 64 {
+		algorithm = "sha256"
+	} else if l == 96 {
+		algorithm = "sha384"
+	} else if l == 128 {
+		algorithm = "sha512"
+	} else {
+		// Fallback for unknown lengths
+		algorithm = "sha256"
+	}
+
+	return algorithm, checksum, nil
 }
 
 // downloadConcurrent performs a multi-threaded download using Range requests.
