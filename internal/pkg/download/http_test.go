@@ -442,7 +442,7 @@ func TestHTTPDownloader_VerifyChecksum_InvalidFormat(t *testing.T) {
 	}{
 		{"empty checksum", ""},
 		{"invalid format", "sha256:"},
-		{"unsupported algorithm", "md5:abc123"},
+		{"unsupported algorithm", "invalid:abc123"},
 	}
 
 	for _, tt := range tests {

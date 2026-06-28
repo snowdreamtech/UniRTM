@@ -74,7 +74,7 @@ func validatePlatformEntry(toolKey, version, platformKey string, pe *PlatformEnt
 	ctx := fmt.Sprintf("tool %q version %q platform %q", toolKey, version, platformKey)
 
 	if pe.Checksum != "" && !isValidChecksumFormat(pe.Checksum) {
-		ve.add("%s: checksum %q must start with 'sha256:' or 'blake3:'", ctx, pe.Checksum)
+		ve.add("%s: checksum %q must be a valid hex string or start with a supported algorithm prefix (e.g., sha256:)", ctx, pe.Checksum)
 	}
 	if pe.Size < 0 {
 		ve.add("%s: size must be ≥ 0, got %d", ctx, pe.Size)
@@ -89,14 +89,27 @@ func validatePlatformEntry(toolKey, version, platformKey string, pe *PlatformEnt
 	return nil
 }
 
-// isValidChecksumFormat verifies that s begins with a known algorithm prefix.
+// isValidChecksumFormat verifies that s begins with a known algorithm prefix
+// or is a valid naked hex hash of standard lengths.
 func isValidChecksumFormat(s string) bool {
+	// Naked hash fallback logic (no prefix)
+	if !strings.Contains(s, ":") {
+		l := len(s)
+		return l == 32 || l == 40 || l == 56 || l == 64 || l == 96 || l == 128
+	}
+
 	return strings.HasPrefix(s, "md5:") ||
 		strings.HasPrefix(s, "sha1:") ||
 		strings.HasPrefix(s, "sha224:") ||
 		strings.HasPrefix(s, "sha256:") ||
 		strings.HasPrefix(s, "sha384:") ||
 		strings.HasPrefix(s, "sha512:") ||
+		strings.HasPrefix(s, "sha3-224:") ||
+		strings.HasPrefix(s, "sha3-256:") ||
+		strings.HasPrefix(s, "sha3-384:") ||
+		strings.HasPrefix(s, "sha3-512:") ||
+		strings.HasPrefix(s, "blake2s:") ||
+		strings.HasPrefix(s, "blake2b:") ||
 		strings.HasPrefix(s, "blake3:")
 }
 

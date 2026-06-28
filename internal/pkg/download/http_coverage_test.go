@@ -58,10 +58,10 @@ func TestParseChecksum(t *testing.T) {
 		assert.Equal(t, "abc123", hash)
 	})
 
-	t.Run("no prefix defaults to sha256", func(t *testing.T) {
+	t.Run("no prefix defaults to auto", func(t *testing.T) {
 		algo, hash, err := parseChecksum("abc123deadbeef")
 		require.NoError(t, err)
-		assert.Equal(t, "sha256", algo)
+		assert.Equal(t, "auto", algo)
 		assert.Equal(t, "abc123deadbeef", hash)
 	})
 

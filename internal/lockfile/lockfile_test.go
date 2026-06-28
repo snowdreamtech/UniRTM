@@ -218,7 +218,7 @@ func TestValidate_BadChecksum(t *testing.T) {
 		Version: "2.72.0",
 		Backend: "github",
 		Platforms: map[string]*PlatformEntry{
-			"linux-amd64": {Checksum: "md5:abc123"},
+			"linux-amd64": {Checksum: "invalid:abc123"},
 		},
 	})
 	err := lf.Validate()

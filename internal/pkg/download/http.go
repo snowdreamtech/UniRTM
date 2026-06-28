@@ -14,6 +14,7 @@ import (
 	"hash"
 	"io"
 	"math/rand"
+
 	"net/http"
 	"net/url"
 	"os"
@@ -22,6 +23,11 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/zeebo/blake3"
+	"golang.org/x/crypto/blake2b"
+	"golang.org/x/crypto/blake2s"
+	"golang.org/x/crypto/sha3"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -379,27 +385,79 @@ func (h *HTTPDownloader) VerifyChecksum(ctx context.Context, file string, expect
 		return errors.NewUserError(fmt.Sprintf("invalid checksum format %q", expectedChecksum), err)
 	}
 
-	if algorithm == "md5" || algorithm == "sha1" {
-		logger.Warn(fmt.Sprintf("Security Warning: Using weak checksum algorithm (%s), which is not cryptographically secure.", algorithm))
-	}
+	// Setup hashers
+	var hashers []hash.Hash
+	var algos []string
 
-	// Instantiate the correct hasher
-	var hasher hash.Hash
-	switch algorithm {
-	case "md5":
-		hasher = md5.New()
-	case "sha1":
-		hasher = sha1.New()
-	case "sha224":
-		hasher = sha256.New224()
-	case "sha256":
-		hasher = sha256.New()
-	case "sha384":
-		hasher = sha512.New384()
-	case "sha512":
-		hasher = sha512.New()
-	default:
-		return errors.NewUserError(fmt.Sprintf("unsupported checksum algorithm %q", algorithm), nil)
+	if algorithm == "auto" {
+		l := len(expectedHash)
+		if l == 32 {
+			hashers = append(hashers, md5.New())
+			algos = append(algos, "md5")
+			logger.Warn("Security Warning: Auto-detected length 32 implies weak MD5 algorithm, which is not cryptographically secure.")
+		} else if l == 40 {
+			hashers = append(hashers, sha1.New())
+			algos = append(algos, "sha1")
+			logger.Warn("Security Warning: Auto-detected length 40 implies weak SHA-1 algorithm, which is not cryptographically secure.")
+		} else if l == 56 {
+			hashers = append(hashers, sha256.New224(), sha3.New224())
+			algos = append(algos, "sha224", "sha3-224")
+		} else if l == 64 {
+			hashers = append(hashers, sha256.New(), sha3.New256(), blake3.New())
+			algos = append(algos, "sha256", "sha3-256", "blake3")
+			if b2s, err := blake2s.New256(nil); err == nil {
+				hashers = append(hashers, b2s)
+				algos = append(algos, "blake2s")
+			}
+		} else if l == 96 {
+			hashers = append(hashers, sha512.New384(), sha3.New384())
+			algos = append(algos, "sha384", "sha3-384")
+		} else if l == 128 {
+			hashers = append(hashers, sha512.New(), sha3.New512())
+			algos = append(algos, "sha512", "sha3-512")
+			if b2b, err := blake2b.New512(nil); err == nil {
+				hashers = append(hashers, b2b)
+				algos = append(algos, "blake2b")
+			}
+		} else {
+			return errors.NewUserError(fmt.Sprintf("unsupported auto checksum length %d for hash: %s", l, expectedHash), nil)
+		}
+	} else {
+		// Specific algorithm parsing
+		switch algorithm {
+		case "md5":
+			hashers = append(hashers, md5.New())
+		case "sha1":
+			hashers = append(hashers, sha1.New())
+		case "sha224":
+			hashers = append(hashers, sha256.New224())
+		case "sha256":
+			hashers = append(hashers, sha256.New())
+		case "sha384":
+			hashers = append(hashers, sha512.New384())
+		case "sha512":
+			hashers = append(hashers, sha512.New())
+		case "sha3-224":
+			hashers = append(hashers, sha3.New224())
+		case "sha3-256":
+			hashers = append(hashers, sha3.New256())
+		case "sha3-384":
+			hashers = append(hashers, sha3.New384())
+		case "sha3-512":
+			hashers = append(hashers, sha3.New512())
+		case "blake2s":
+			if b2s, err := blake2s.New256(nil); err == nil {
+				hashers = append(hashers, b2s)
+			}
+		case "blake2b":
+			if b2b, err := blake2b.New512(nil); err == nil {
+				hashers = append(hashers, b2b)
+			}
+		case "blake3":
+			hashers = append(hashers, blake3.New())
+		default:
+			return errors.NewUserError(fmt.Sprintf("unsupported checksum algorithm %q", algorithm), nil)
+		}
 	}
 
 	// Open file
@@ -409,23 +467,46 @@ func (h *HTTPDownloader) VerifyChecksum(ctx context.Context, file string, expect
 	}
 	defer f.Close()
 
-	// Compute hash
-	if _, err := io.Copy(hasher, f); err != nil {
+	// Create MultiWriter
+	writers := make([]io.Writer, len(hashers))
+	for i, h := range hashers {
+		writers[i] = h
+	}
+	multiWriter := io.MultiWriter(writers...)
+
+	// Compute hash(es)
+	if _, err := io.Copy(multiWriter, f); err != nil {
 		return errors.NewSystemError(fmt.Sprintf("compute checksum for %q", file), err)
 	}
 
-	actualHash := hex.EncodeToString(hasher.Sum(nil))
+	// Compare checksums
+	matched := false
+	for _, h := range hashers {
+		actualHash := hex.EncodeToString(h.Sum(nil))
+		if strings.EqualFold(actualHash, expectedHash) {
+			matched = true
+			break
+		}
+	}
 
-	// Compare checksums (case-insensitive)
-	if !strings.EqualFold(actualHash, expectedHash) {
+	if !matched {
 		// Delete file on checksum mismatch
 		f.Close()
 		_ = os.Remove(file)
-		return errors.Wrap(
-			errors.ErrChecksumMismatch,
-			"checksum mismatch for %q: expected %s, got %s",
-			file, expectedHash, actualHash,
-		)
+		if len(hashers) == 1 && algorithm != "auto" {
+			actualHash := hex.EncodeToString(hashers[0].Sum(nil))
+			return errors.Wrap(
+				errors.ErrChecksumMismatch,
+				"checksum mismatch for %q: expected %s, got %s",
+				file, expectedHash, actualHash,
+			)
+		} else {
+			return errors.Wrap(
+				errors.ErrChecksumMismatch,
+				"checksum mismatch for %q: could not find any matching hash among algorithms %v",
+				file, algos,
+			)
+		}
 	}
 
 	return nil
@@ -592,27 +673,9 @@ func parseChecksum(checksum string) (string, string, error) {
 		return algorithm, hash, nil
 	}
 
-	// Infer algorithm based on hash length
-	l := len(checksum)
-	var algorithm string
-	if l == 32 {
-		algorithm = "md5"
-	} else if l == 40 {
-		algorithm = "sha1"
-	} else if l == 56 {
-		algorithm = "sha224"
-	} else if l == 64 {
-		algorithm = "sha256"
-	} else if l == 96 {
-		algorithm = "sha384"
-	} else if l == 128 {
-		algorithm = "sha512"
-	} else {
-		// Fallback for unknown lengths
-		algorithm = "sha256"
-	}
-
-	return algorithm, checksum, nil
+	// When no explicit prefix is given, return "auto"
+	// The downloader will use MultiWriter to compute all algorithms matching the length.
+	return "auto", checksum, nil
 }
 
 // downloadConcurrent performs a multi-threaded download using Range requests.

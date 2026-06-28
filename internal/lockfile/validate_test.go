@@ -43,7 +43,7 @@ func TestValidate_Errors(t *testing.T) {
 	assert.Contains(t, errMsg, "tool \"bad_version\": duplicate version \"1.0\"")
 	assert.Contains(t, errMsg, "unknown platform key \"invalid-key\"")
 	assert.Contains(t, errMsg, "nil entry")
-	assert.Contains(t, errMsg, "checksum \"invalid\" must start with 'sha256:' or 'blake3:'")
+	assert.Contains(t, errMsg, "must be a valid hex string or start with a supported algorithm prefix (e.g., sha256:)")
 	assert.Contains(t, errMsg, "size must be ≥ 0, got -1")
 	assert.Contains(t, errMsg, "url \"ftp://bad\" does not look like a valid HTTP URL")
 }
