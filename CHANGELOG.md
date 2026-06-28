@@ -6,6 +6,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.4](https://github.com/snowdreamtech/UniRTM/compare/v0.25.3...v0.25.4) (2026-06-28)
+
+
+### ♻️ Miscellaneous Chores
+
+* **deps:** bump unirtm version to 0.25.3 ([4537926](https://github.com/snowdreamtech/UniRTM/commit/45379263365ab14eb23f4936b5d156644b3190e4))
+* **deps:** sync dependabot config and unirtm toolchain ([8fad582](https://github.com/snowdreamtech/UniRTM/commit/8fad5822636bb3b2d6a9bf2656a484d4187e2d03))
+
 ## [0.25.3](https://github.com/snowdreamtech/UniRTM/compare/v0.25.2...v0.25.3) (2026-06-28)
 
 
