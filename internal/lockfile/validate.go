@@ -4,6 +4,7 @@
 package lockfile
 
 import (
+	"encoding/hex"
 	"fmt"
 	"strings"
 )
@@ -95,7 +96,12 @@ func isValidChecksumFormat(s string) bool {
 	// Naked hash fallback logic (no prefix)
 	if !strings.Contains(s, ":") {
 		l := len(s)
-		return l == 32 || l == 40 || l == 56 || l == 64 || l == 96 || l == 128
+		if l == 32 || l == 40 || l == 56 || l == 64 || l == 96 || l == 128 {
+			// Strictly ensure it is a valid hex string (0-9, a-f, A-F)
+			_, err := hex.DecodeString(s)
+			return err == nil
+		}
+		return false
 	}
 
 	return strings.HasPrefix(s, "md5:") ||
