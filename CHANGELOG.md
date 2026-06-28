@@ -6,6 +6,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.3](https://github.com/snowdreamtech/UniRTM/compare/v0.25.2...v0.25.3) (2026-06-28)
+
+
+### 🚀 Features
+
+* normalize checksum to include algorithm prefix in lockfile ([19a509e](https://github.com/snowdreamtech/UniRTM/commit/19a509e4de65818801ac30b1582725f93d551ea2))
+
+
+### ♻️ Miscellaneous Chores
+
+* **deps:** sync dependabot config and unirtm toolchain ([ccb40d1](https://github.com/snowdreamtech/UniRTM/commit/ccb40d1b5d44ca62c5423606426b08f9fca0b7be))
+* **deps:** sync dependabot config and unirtm toolchain [skip ci] ([c96735a](https://github.com/snowdreamtech/UniRTM/commit/c96735a86e4a32f4e9a58118fd85203bc7aee917))
+* **deps:** sync dependabot config and unirtm toolchain [skip ci] ([a2b010a](https://github.com/snowdreamtech/UniRTM/commit/a2b010ae615c8ba5f25b6bb49b6d17addce9f067))
+* remove unirtm.lock ([cb7f005](https://github.com/snowdreamtech/UniRTM/commit/cb7f005917f24e00f3bc09bf1bb5d2e3551d167f))
+* remove unirtm.lock ([d6d1dbc](https://github.com/snowdreamtech/UniRTM/commit/d6d1dbcf7bc42a83b826b2c3865d88bcf2701d90))
+
 ## [0.25.2](https://github.com/snowdreamtech/UniRTM/compare/v0.25.1...v0.25.2) (2026-06-28)
 
 
