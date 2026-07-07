@@ -37,6 +37,7 @@ exclude: |
     \.tmp/|tmp/|
     \.(venv|idx|continue|history|vscode-test)/.*|
     \.aider\.conf\.yml|
+    internal/addlicense/testdata/|
     (\.github/agents|agent|agents|roo|claude|qwen|amazonq|augment|bob|codebuddy|codex|kilocode|opencode|qoder|shai|cursor|windsurf|pearai|pi|pochi|supermaven|tabnine|trae|vibe|void|zed|zencoder|openhands|cody|coderabbit|aide|cline|clinerules|cursorrules|pr_agent.toml)/.*
   )
 
@@ -411,16 +412,6 @@ repos:
           - jsx
           - vue
         description: "Find and fix problems in JavaScript/TypeScript/Vue code."
-
-      - id: stylelint
-        name: stylelint quality check
-        language: system
-        entry: unirtm hook-exec stylelint --fix
-        types_or:
-          - css
-          - scss
-          - less
-        description: "Lint style sheets for CSS/SCSS/Less quality."
 
       - id: ruff
         name: ruff check
