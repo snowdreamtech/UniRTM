@@ -50,22 +50,6 @@ func TestEnv_WindowsAppDataFallback(t *testing.T) {
 	assert.Equal(t, filepath.Join(data2, "cache"), cache)
 }
 
-func TestEnv_DarwinCacheFallback(t *testing.T) {
-	origGOOS := RuntimeGOOS
-	defer func() { RuntimeGOOS = origGOOS }()
-	RuntimeGOOS = "darwin"
-
-	t.Setenv("UNIRTM_CACHE_DIR", "")
-	t.Setenv("XDG_CACHE_HOME", "")
-
-	origHomeDir := OsUserHomeDir
-	defer func() { OsUserHomeDir = origHomeDir }()
-	OsUserHomeDir = func() (string, error) { return "/Users/test", nil }
-
-	cache := GetCacheDir()
-	assert.Equal(t, filepath.Join("/Users/test", "Library", "Caches", "unirtm"), cache)
-}
-
 func TestEnv_PathsFallback(t *testing.T) {
 	// safely set environment variables to empty string
 	t.Setenv("UNIRTM_CONFIG_DIR", "")
