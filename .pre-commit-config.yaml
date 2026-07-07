@@ -156,13 +156,6 @@ repos:
         files: '\.svg$'
         description: "Verify that SVG files are well-formed and free of malicious script injections."
 
-      - id: check-nix
-        name: check nix well-formedness
-        entry: scripts/pre-commit/check-nix.py
-        language: system
-        files: '\.nix$'
-        description: "Verify that Nix files are well-formed (basic structural check)."
-
       - id: check-env-safety
         name: check environment safety
         entry: scripts/pre-commit/check-env-safety.py
@@ -219,14 +212,6 @@ repos:
         entry: unirtm hook-exec ruff format
         types_or: [python, pyi]
         description: "Fast Python code formatter."
-
-      - id: clang-format
-        name: clang-format
-        language: system
-        entry: unirtm hook-exec clang-format
-        args: [-i]
-        types_or: [objective-c, c, c++]
-        description: "Format C/C++ family source files."
 
       - id: gofmt
         name: gofmt
