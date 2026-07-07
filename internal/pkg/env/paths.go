@@ -135,11 +135,6 @@ func GetCacheDir() string {
 		return "./unirtm_cache"
 	}
 
-	if RuntimeGOOS == "darwin" {
-		// macOS standard cache directory
-		return filepath.Join(homeDir, "Library", "Caches", "unirtm")
-	}
-
 	if RuntimeGOOS == "windows" {
 		// Windows uses Local AppData for cache too, but usually in a 'cache' subfolder
 		return filepath.Join(GetDataDir(), "cache")

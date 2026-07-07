@@ -32,12 +32,6 @@ func TestEnvPaths_CoverageMore(t *testing.T) {
 	os.Unsetenv("UNIRTM_LOCALAPPDATA")
 	GetDataDir()
 
-	// 3. Test GetCacheDir darwin
-	os.Setenv("UNIRTM_CACHE_DIR", "")
-	os.Setenv("UNIRTM_XDG_CACHE_HOME", "")
-	RuntimeGOOS = "darwin"
-	GetCacheDir()
-
 	// 4. Test GetCacheDir windows
 	RuntimeGOOS = "windows"
 	GetCacheDir()
