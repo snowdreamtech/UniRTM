@@ -307,7 +307,7 @@ jobs:
       - name: "🔧 Install Cosign (for keyless artifact signing)"
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
       - name: "❄️ Install Nix (for GoReleaser nix pipe)"
-        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
+        uses: cachix/install-nix-action@a49548c11d9846ad46ecc0115273879b045f001c # v31.10.7
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
       - name: "�🚀 Distribute Artifacts (GoReleaser)"
@@ -325,7 +325,7 @@ jobs:
 
       - name: "📦 Setup Node.js for npm Publishing"
         if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
