@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "snowdreamtech-unirtm"
+version = "0.0.0" # This will be replaced during build
+description = "UniRTM: Universal Runtime Manager"
+readme = "README.md"
+requires-python = ">=3.7"
+authors = [{ name = "snowdream", email = "yanghui1986527@gmail.com" }]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: MacOS :: MacOS X",
+  "Operating System :: Microsoft :: Windows",
+]
+
+[project.scripts]
+unirtm = "snowdreamtech_unirtm.cli:main"

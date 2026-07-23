@@ -292,6 +292,34 @@ jobs:
           echo ""
           echo '[done] All npm packages published successfully!'
 
+      - name: "🐍 Setup Python for PyPI Publishing"
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1
+        with:
+          python-version: "3.12"
+
+      - name: "📦 Install Python Build Tools"
+        if: startsWith(github.ref, 'refs/tags/')
+        run: pip install build twine wheel setuptools
+
+      - name: "🔨 Build PyPI Platform Packages (Wheels)"
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: sh
+        run: |
+          VERSION=$(node -p "require('./dist/metadata.json').version")
+          echo "Building PyPI packages for version: ${VERSION}"
+          sh pypi/scripts/build.sh --version "${VERSION}"
+
+      - name: "🚀 Publish PyPI Packages"
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          echo "Publishing wheels to PyPI..."
+          # The build.sh script outputs wheels into pypi/dist/
+          twine upload pypi/dist/*.whl
+
       - name: "🛡️ Attest Build Provenance (SLSA)"
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
