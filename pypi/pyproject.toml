@@ -8,7 +8,7 @@ version = "0.0.0" # This will be replaced during build
 description = "UniRTM: Universal Runtime Manager"
 readme = "README.md"
 requires-python = ">=3.7"
-authors = [{ name = "snowdream", email = "yanghui1986527@gmail.com" }]
+authors = [{ name = "snowdreamtech", email = "snowdreamtech@qq.com" }]
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
