@@ -19,5 +19,8 @@
   "overrides": {
     "esbuild": "0.28.1",
     "vite": "8.1.4"
+  },
+  "dependencies": {
+    "dompurify": "^3.4.12"
   }
 }
