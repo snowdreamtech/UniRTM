@@ -46,6 +46,11 @@ unirtm_darwin_amd64_v1|macosx_10_9_x86_64|unirtm
 unirtm_linux_amd64_v1|manylinux2014_x86_64|unirtm
 unirtm_linux_arm64_v8.0|manylinux2014_aarch64|unirtm
 unirtm_linux_386_sse2|manylinux2014_i686|unirtm
+unirtm_linux_arm_7|manylinux2014_armv7l|unirtm
+unirtm_linux_loong64|linux_loongarch64|unirtm
+unirtm_linux_ppc64le_power8|manylinux2014_ppc64le|unirtm
+unirtm_linux_riscv64_rva20u64|linux_riscv64|unirtm
+unirtm_linux_s390x|manylinux2014_s390x|unirtm
 unirtm_windows_amd64_v1|win_amd64|unirtm.exe
 unirtm_windows_arm64_v8.0|win_arm64|unirtm.exe
 unirtm_windows_386_sse2|win32|unirtm.exe
