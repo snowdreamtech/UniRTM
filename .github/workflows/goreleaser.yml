@@ -314,7 +314,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         env:
           TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
         run: |
           echo "Publishing wheels to PyPI..."
           # The build.sh script outputs wheels into pypi/dist/
