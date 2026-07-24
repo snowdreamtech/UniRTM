@@ -102,6 +102,29 @@ updates:
       - "dependencies"
       - "javascript"
 
+  - package-ecosystem: "pip"
+    directory: "/pypi"
+    target-branch: "dev"
+    open-pull-requests-limit: 5
+    rebase-strategy: "auto"
+    groups:
+      all-dependencies:
+        patterns: ["*"]
+        update-types:
+          - "patch"
+          - "minor"
+          - "major"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore(deps):"
+    labels:
+      - "dependencies"
+      - "python"
+
   - package-ecosystem: "pre-commit"
     directory: "/"
     target-branch: "dev"
