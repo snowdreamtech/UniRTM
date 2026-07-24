@@ -62,10 +62,24 @@
 
 你可以通过多种方式安装 UniRTM，详见 [快速开始](https://snowdreamtech.github.io/UniRTM/zh/guide/getting-started.html)。
 
+**使用安装脚本 (Linux/macOS)**:
+
 ```sh-session
 $ curl -sL https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.sh | bash
 $ ~/.local/bin/unirtm --version
 UniRTM v0.1.0 macos-arm64 (2026-05-28)
+```
+
+**使用 NPM 安装**:
+
+```sh-session
+npm install -g @snowdreamtech/unirtm
+```
+
+**使用 PyPI (pip) 安装**:
+
+```sh-session
+pip install snowdreamtech-unirtm
 ```
 
 将 UniRTM 挂载到你的 Shell 中（请选择与你对应的 Shell）：

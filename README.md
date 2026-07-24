@@ -62,10 +62,24 @@ Notice the speed and the built-in vulnerability scanning!
 
 See [Getting started](https://snowdreamtech.github.io/UniRTM/guide/getting-started.html) for more options.
 
+**Via Script (Linux/macOS)**:
+
 ```sh-session
 $ curl -sL https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.sh | bash
 $ ~/.local/bin/unirtm --version
 UniRTM v0.1.0 macos-arm64 (2026-05-28)
+```
+
+**Via NPM**:
+
+```sh-session
+npm install -g @snowdreamtech/unirtm
+```
+
+**Via PyPI**:
+
+```sh-session
+pip install snowdreamtech-unirtm
 ```
 
 Hook UniRTM into your shell (pick the right one for your shell):
