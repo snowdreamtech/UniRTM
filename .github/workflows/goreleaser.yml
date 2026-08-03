@@ -256,8 +256,9 @@ jobs:
           done
           echo "⚠️ Proxy might not be ready, but proceeding anyway..."
 
-      - name: "�🚀 Distribute Artifacts (GoReleaser)"
+      - name: "🚀 Distribute Artifacts (GoReleaser)"
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        continue-on-error: true # We manually check status below to allow third-party failures but catch core failures
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
           WORKFLOW_SECRET: ${{ secrets.WORKFLOW_SECRET }}
@@ -267,7 +268,17 @@ jobs:
           # Orchestrates the optimized build and distribution of cross-compiled Go binaries.
           distribution: goreleaser
           version: "~> v2" # Pins to the latest stable v2 series binary
-          args: ${{ startsWith(github.ref, 'refs/tags/') && 'release --clean --timeout 60m' || 'release --snapshot --clean --skip=publish --timeout 60m' }}
+          # Run full release but continue if a specific publisher fails.
+          args: ${{ startsWith(github.ref, 'refs/tags/') && 'release --clean --timeout 60m --fail-fast=false' || 'release --snapshot --clean --skip=publish --timeout 60m' }}
+
+      - name: "🔍 Verify Core Artifacts Generation"
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          if [ ! -f dist/metadata.json ]; then
+            echo "❌ GoReleaser failed to compile or generate core artifacts!"
+            exit 1
+          fi
+          echo "✅ Core artifacts successfully generated. Proceeding to downstream publishers."
 
       - name: "📦 Setup Node.js for npm Publishing"
         if: startsWith(github.ref, 'refs/tags/')
