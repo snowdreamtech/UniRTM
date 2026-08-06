@@ -6,6 +6,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.8](https://github.com/snowdreamtech/UniRTM/compare/v0.25.7...v0.25.8) (2026-08-06)
+
+
+### 🚀 Features
+
+* add postcss dependency to documentation site ([67d26d3](https://github.com/snowdreamtech/UniRTM/commit/67d26d334d34e31d22f7779859b282a9e42ef251))
+
+
+### 📖 Documentation
+
+* add PyPI and NPM installation instructions to README ([35a60ae](https://github.com/snowdreamtech/UniRTM/commit/35a60ae3225dc8a71294558c38bd9d7697fc330f))
+
+
+### ♻️ Miscellaneous Chores
+
+* bump setup-unirtm unirtm-version to 0.25.7 ([3f76480](https://github.com/snowdreamtech/UniRTM/commit/3f76480229dcdbb053c922960a188e00c6aad20b))
+* **deps:** bump the all-dependencies group with 2 updates ([515c33c](https://github.com/snowdreamtech/UniRTM/commit/515c33c051fbe42cacbd7c38eb81e2b8a2b750f1))
+* **deps:** bump vite in /docs in the all-dependencies group ([f6e90e3](https://github.com/snowdreamtech/UniRTM/commit/f6e90e35a6a0b326fff2bb2daec1587d1fedba71))
+* **deps:** sync dependabot config and unirtm toolchain ([fa49270](https://github.com/snowdreamtech/UniRTM/commit/fa49270f38eb6fd1911a393860cf1d6e1f3aaa31))
+* **docs:** update postcss to v8.5.25 to fix vulnerability GHSA-fxqj-rqcc-2cmp ([57d6207](https://github.com/snowdreamtech/UniRTM/commit/57d62070738c21711a616103270e8b4cb40b12a0))
+
 ## [0.25.5](https://github.com/snowdreamtech/UniRTM/compare/v0.25.4...v0.25.5) (2026-07-23)
 
 
