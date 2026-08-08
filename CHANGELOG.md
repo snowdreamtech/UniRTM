@@ -6,6 +6,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.0](https://github.com/snowdreamtech/UniRTM/compare/v0.25.8...v0.26.0) (2026-08-08)
+
+
+### 🚀 Features
+
+* enable remote.SSH.allowLocalServerDownload to improve connection reliability ([8a6c80d](https://github.com/snowdreamtech/UniRTM/commit/8a6c80dd26e92e1a2d37be50a2ca5ca5113f08d8))
+* update vscode settings with enhanced editor, explorer, and terminal configurations ([44230bc](https://github.com/snowdreamtech/UniRTM/commit/44230bceaf3deebc247739e9f91c55a1d2721803))
+
+
+### 🐛 Bug Fixes
+
+* **docs:** resolve npm vulnerabilities by pinning exact dependency versions ([d628640](https://github.com/snowdreamtech/UniRTM/commit/d6286404ea025ee0cad3123b5b0b3bc6bd21a551))
+* **docs:** resolve npm vulnerabilities by pinning exact dependency versions ([9a0d0f0](https://github.com/snowdreamtech/UniRTM/commit/9a0d0f03315341c519d149089db455a4423f5be0))
+* **security:** resolve postcss vulnerability and fix gh issue creation label ([d1a10c0](https://github.com/snowdreamtech/UniRTM/commit/d1a10c0e4673c96c4bc05f34ec58527f4d1dead0))
+
+
+### ♻️ Miscellaneous Chores
+
+* bump tool versions to align with upstream ([a404bb4](https://github.com/snowdreamtech/UniRTM/commit/a404bb4f9c06bc54f0047eab0e13168625f6b85e))
+* **deps:** sync dependabot config and unirtm toolchain ([f561c65](https://github.com/snowdreamtech/UniRTM/commit/f561c65fd180508bba43e61ed445fba6e3898d23))
+* **deps:** update Go module dependencies ([f36a928](https://github.com/snowdreamtech/UniRTM/commit/f36a92828ac32dd3556bdd701c49a505b659e675))
+* **deps:** update go version to 1.26.5 ([91349d4](https://github.com/snowdreamtech/UniRTM/commit/91349d45d07f4928818f869a38e06042912d0710))
+* **deps:** update unirtm toolchain versions ([23e763a](https://github.com/snowdreamtech/UniRTM/commit/23e763a3ea3618766e9f9103095f1aff52764652))
+* merge upstream/dev and align configurations ([2a18dcb](https://github.com/snowdreamtech/UniRTM/commit/2a18dcb8fa19cb46b2ff20153d1405b155238bf2))
+* release main ([ac32ddd](https://github.com/snowdreamtech/UniRTM/commit/ac32ddd54d05d077fbfb0d310df419e82cef3e39))
+* release main ([a3848c6](https://github.com/snowdreamtech/UniRTM/commit/a3848c6ef66794de17cb5a0411310a863fe2e6af))
+* **release:** set bump-patch-for-minor-pre-major to false ([1e47e29](https://github.com/snowdreamtech/UniRTM/commit/1e47e29bf8d338de6bf5cee8c1373507568c5c4c))
+* remove unirtm.lock to allow auto-generation ([0f38402](https://github.com/snowdreamtech/UniRTM/commit/0f3840252fc09203d4e50cd9242d8fc1fc0405d2))
+
 ## [0.25.8](https://github.com/snowdreamtech/UniRTM/compare/v0.25.7...v0.25.8) (2026-08-06)
 
 
