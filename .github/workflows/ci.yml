@@ -66,7 +66,7 @@ jobs:
     env:
       VENV: ".venv"
       PYTHONUTF8: 1
-      STEP_SECURITY_DISABLE: ${{ matrix.os != 'ubuntu-latest' }}
+
     steps:
       - name: "📂 Checkout Repository Code"
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -74,14 +74,15 @@ jobs:
           persist-credentials: false
 
       - name: "⚡ Setup UniRTM"
-        uses: snowdreamtech/setup-unirtm@7711c9fc506ca29a54cba2d7d8181d2b146f00d9 # v0.6.0
+        uses: snowdreamtech/setup-unirtm@663cc55933eafea30cd63f43e837cecd4a587f45 # v0.7.0
         with:
-          unirtm-version: "0.25.7"
+          unirtm-version: "0.25.8"
           install: true
           trust: true
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
           UNIRTM_VERIFY_PROVENANCE: "0"
+
       - name: "🔍 Inspect Code Quality (Lint)"
         shell: sh
         run: |
@@ -120,14 +121,15 @@ jobs:
           persist-credentials: false
 
       - name: "⚡ Setup UniRTM"
-        uses: snowdreamtech/setup-unirtm@7711c9fc506ca29a54cba2d7d8181d2b146f00d9 # v0.6.0
+        uses: snowdreamtech/setup-unirtm@663cc55933eafea30cd63f43e837cecd4a587f45 # v0.7.0
         with:
-          unirtm-version: "0.25.7"
+          unirtm-version: "0.25.8"
           install: true
           trust: true
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
           UNIRTM_VERIFY_PROVENANCE: "0"
+
       - name: "📦 Cache Language Dependencies (Advanced)"
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -209,14 +211,15 @@ jobs:
           fetch-depth: 0
 
       - name: "⚡ Setup UniRTM"
-        uses: snowdreamtech/setup-unirtm@7711c9fc506ca29a54cba2d7d8181d2b146f00d9 # v0.6.0
+        uses: snowdreamtech/setup-unirtm@663cc55933eafea30cd63f43e837cecd4a587f45 # v0.7.0
         with:
-          unirtm-version: "0.25.7"
+          unirtm-version: "0.25.8"
           install: true
           trust: true
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
           UNIRTM_VERIFY_PROVENANCE: "0"
+
       - name: "📝 Validate Commit Convention (Commitlint)"
         shell: sh
         env:
@@ -276,7 +279,7 @@ jobs:
           skip-dirs: "unirtm_data,cmd/unirtm_data"
 
       - name: "📤 Upload Security Audit (SARIF)"
-        uses: github/codeql-action/upload-sarif@f205ea1c3313d32999d8d6a48b4f6530d4437b38 # v4.37.4
+        uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
         if: always()
         with:
           sarif_file: "."
