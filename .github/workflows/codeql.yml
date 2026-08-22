@@ -37,6 +37,7 @@ permissions: {}
 
 env:
   UNIRTM_LOCKED: 1
+  GOTOOLCHAIN: "auto"
 
 jobs:
   analyze:
@@ -85,9 +86,15 @@ jobs:
           languages: ${{ matrix.language }}
           config-file: .github/codeql/codeql-config.yml
 
-      - name: "🚀 Bootstrap Target Build"
+      - name: "🚀 Bootstrap Target Build (Non-Go)"
+        if: matrix.language != 'go'
         uses: github/codeql-action/autobuild@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
-        # Attempts to automatically compile the project to enable full-trace analysis.
+        # Attempts to automatically compile non-Go projects.
+
+      - name: "🔨 Build Go Code for CodeQL Extraction"
+        if: matrix.language == 'go'
+        run: |
+          go build -o unirtm main.go
 
       - name: "🔍 Perform Deep Security Analysis"
         uses: github/codeql-action/analyze@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
