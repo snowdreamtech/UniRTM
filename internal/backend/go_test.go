@@ -84,6 +84,38 @@ func TestGoBackend_ListVersions(t *testing.T) {
 	}
 }
 
+func TestGoBackend_ListVersions_SubpackageFallback(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/golang.org/x/vuln/@v/list" {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("v1.0.0\nv1.1.4\nv1.7.0"))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer ts.Close()
+
+	t.Setenv("GOPROXY", ts.URL)
+
+	b := NewGoBackend()
+	b.client.Transport = http.DefaultTransport
+
+	ctx := context.Background()
+	plat := Platform{OS: "linux", Arch: "amd64"}
+
+	// Query with subpackage path
+	versions, err := b.ListVersions(ctx, "golang.org/x/vuln/cmd/govulncheck", plat)
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if len(versions) != 3 {
+		t.Fatalf("expected 3 versions, got %d", len(versions))
+	}
+	if versions[0].Version != "v1.7.0" {
+		t.Errorf("expected v1.7.0, got %s", versions[0].Version)
+	}
+}
+
 func TestGoBackend_ResolveVersion(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/tool/@v/list" {
