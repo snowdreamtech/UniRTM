@@ -24,13 +24,9 @@ func ReadFileOrEmpty(path string) (string, error) {
 	return string(data), nil
 }
 
-// quoteTOMLValue formats a string value with single quotes by default for clean TOML output.
-// If the value contains a single quote, newline, or carriage return, it falls back to double quotes.
+// quoteTOMLValue formats a string value with double quotes following standard TOML convention.
 func quoteTOMLValue(val string) string {
-	if strings.Contains(val, "'") || strings.Contains(val, "\n") || strings.Contains(val, "\r") {
-		return fmt.Sprintf("%q", val)
-	}
-	return fmt.Sprintf("'%s'", val)
+	return fmt.Sprintf("%q", val)
 }
 
 // UpsertEnvVar adds or updates an environment variable entry in the TOML [env] section.
@@ -122,7 +118,7 @@ func UnsetEnvVar(content, key string) (string, bool) {
 func quoteTOMLKey(key string) string {
 	for _, c := range key {
 		if !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
-			return fmt.Sprintf("'%s'", key) // Use single quotes for tools like 'npm:xyz' for cleanliness
+			return fmt.Sprintf("%q", key) // Use double quotes for keys with special chars
 		}
 	}
 	return key

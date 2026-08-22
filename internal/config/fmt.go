@@ -199,7 +199,7 @@ func FormatTOML(content string) (string, error) {
 	return strings.Join(out, "\n") + "\n", nil
 }
 
-// normalizeTOMLLineQuotes normalizes single-line TOML key-value pairs to prefer single quotes.
+// normalizeTOMLLineQuotes normalizes single-line TOML key-value pairs to prefer double quotes.
 func normalizeTOMLLineQuotes(line string) string {
 	parts := strings.SplitN(line, "=", 2)
 	if len(parts) != 2 {
@@ -217,23 +217,18 @@ func normalizeTOMLLineQuotes(line string) string {
 		return line
 	}
 
-	// Normalize key quotes if double quoted
+	// Normalize key quotes if single quoted
 	normKey := trimmedKey
-	if strings.HasPrefix(trimmedKey, `"`) && strings.HasSuffix(trimmedKey, `"`) && len(trimmedKey) >= 2 {
+	if strings.HasPrefix(trimmedKey, `'`) && strings.HasSuffix(trimmedKey, `'`) && len(trimmedKey) >= 2 {
 		innerKey := trimmedKey[1 : len(trimmedKey)-1]
-		if !strings.Contains(innerKey, `'`) {
-			normKey = quoteTOMLKey(innerKey)
-		}
+		normKey = quoteTOMLKey(innerKey)
 	}
 
-	// Normalize value quotes if double-quoted string
+	// Normalize value quotes if single quoted
 	normVal := trimmedVal
-	if strings.HasPrefix(trimmedVal, `"`) && strings.HasSuffix(trimmedVal, `"`) && len(trimmedVal) >= 2 {
+	if strings.HasPrefix(trimmedVal, `'`) && strings.HasSuffix(trimmedVal, `'`) && len(trimmedVal) >= 2 {
 		innerVal := trimmedVal[1 : len(trimmedVal)-1]
-		// Convert to single quote if it doesn't contain single quotes or backslash escapes
-		if !strings.Contains(innerVal, `'`) && !strings.Contains(innerVal, `\`) {
-			normVal = fmt.Sprintf("'%s'", innerVal)
-		}
+		normVal = fmt.Sprintf("%q", innerVal)
 	}
 
 	// Preserve key indentation
