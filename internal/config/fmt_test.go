@@ -27,16 +27,16 @@ version = "1.0.0"
 
 	expected := `
 [min_version]
-version = "1.0.0"
+version = '1.0.0'
 
 
 [env]
-FOO = "bar"
+FOO = 'bar'
 [tools]
-node = "18"
+node = '18'
 
 [tasks]
-build = "go build"
+build = 'go build'
 `
 
 	result, err := FormatTOML(input)
@@ -64,7 +64,7 @@ FOO = "bar"
 	expected := `
 
 [env]
-FOO = "bar"
+FOO = 'bar'
 [tasks]
 build = """
   go build
@@ -105,7 +105,7 @@ FOO = "bar"
 	}
 
 	content, _ := os.ReadFile(tomlFile)
-	if !strings.Contains(string(content), "[env]\nFOO = \"bar\"\n[tools]\nnode = \"18\"") {
+	if !strings.Contains(string(content), "[env]\nFOO = 'bar'\n[tools]\nnode = '18'") {
 		t.Errorf("FormatFile didn't format correctly: %s", string(content))
 	}
 

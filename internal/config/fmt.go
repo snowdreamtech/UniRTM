@@ -158,7 +158,12 @@ func FormatTOML(content string) (string, error) {
 		b := getBlock(currentTopKey)
 		b.Lines = append(b.Lines, pendingComments...)
 		pendingComments = nil
-		b.Lines = append(b.Lines, line)
+
+		normalizedLine := line
+		if !inMultiLine {
+			normalizedLine = normalizeTOMLLineQuotes(line)
+		}
+		b.Lines = append(b.Lines, normalizedLine)
 
 		if !inMultiLineSingle {
 			doubleCount := strings.Count(line, `"""`) - strings.Count(line, `\"""`)
@@ -193,3 +198,46 @@ func FormatTOML(content string) (string, error) {
 
 	return strings.Join(out, "\n") + "\n", nil
 }
+
+// normalizeTOMLLineQuotes normalizes single-line TOML key-value pairs to prefer single quotes.
+func normalizeTOMLLineQuotes(line string) string {
+	parts := strings.SplitN(line, "=", 2)
+	if len(parts) != 2 {
+		return line
+	}
+
+	keyPart := parts[0]
+	valPart := parts[1]
+
+	trimmedKey := strings.TrimSpace(keyPart)
+	trimmedVal := strings.TrimSpace(valPart)
+
+	// Don't format complex values (inline tables, arrays, multiline strings)
+	if strings.HasPrefix(trimmedVal, "[") || strings.HasPrefix(trimmedVal, "{") || strings.HasPrefix(trimmedVal, `"""`) || strings.HasPrefix(trimmedVal, `'''`) {
+		return line
+	}
+
+	// Normalize key quotes if double quoted
+	normKey := trimmedKey
+	if strings.HasPrefix(trimmedKey, `"`) && strings.HasSuffix(trimmedKey, `"`) && len(trimmedKey) >= 2 {
+		innerKey := trimmedKey[1 : len(trimmedKey)-1]
+		if !strings.Contains(innerKey, `'`) {
+			normKey = quoteTOMLKey(innerKey)
+		}
+	}
+
+	// Normalize value quotes if double-quoted string
+	normVal := trimmedVal
+	if strings.HasPrefix(trimmedVal, `"`) && strings.HasSuffix(trimmedVal, `"`) && len(trimmedVal) >= 2 {
+		innerVal := trimmedVal[1 : len(trimmedVal)-1]
+		// Convert to single quote if it doesn't contain single quotes or backslash escapes
+		if !strings.Contains(innerVal, `'`) && !strings.Contains(innerVal, `\`) {
+			normVal = fmt.Sprintf("'%s'", innerVal)
+		}
+	}
+
+	// Preserve key indentation
+	indent := keyPart[:len(keyPart)-len(strings.TrimLeft(keyPart, " \t"))]
+	return fmt.Sprintf("%s%s = %s", indent, normKey, normVal)
+}
+

@@ -24,10 +24,19 @@ func ReadFileOrEmpty(path string) (string, error) {
 	return string(data), nil
 }
 
+// quoteTOMLValue formats a string value with single quotes by default for clean TOML output.
+// If the value contains a single quote, newline, or carriage return, it falls back to double quotes.
+func quoteTOMLValue(val string) string {
+	if strings.Contains(val, "'") || strings.Contains(val, "\n") || strings.Contains(val, "\r") {
+		return fmt.Sprintf("%q", val)
+	}
+	return fmt.Sprintf("'%s'", val)
+}
+
 // UpsertEnvVar adds or updates an environment variable entry in the TOML [env] section.
 func UpsertEnvVar(content, key, value string) string {
 	lines := strings.Split(content, "\n")
-	newEntry := fmt.Sprintf("%s = %q", key, value)
+	newEntry := fmt.Sprintf("%s = %s", quoteTOMLKey(key), quoteTOMLValue(value))
 
 	inEnv := false
 	envStart := -1
@@ -122,7 +131,7 @@ func quoteTOMLKey(key string) string {
 // UpsertToolVersion updates or inserts a tool version in the [tools] section of a TOML file.
 func UpsertToolVersion(content string, tool string, version string) string {
 	lines := strings.Split(content, "\n")
-	newEntry := fmt.Sprintf("%s = %q", quoteTOMLKey(tool), version)
+	newEntry := fmt.Sprintf("%s = %s", quoteTOMLKey(tool), quoteTOMLValue(version))
 
 	// Look for [tools] section
 	inTools := false
