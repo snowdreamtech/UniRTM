@@ -89,9 +89,13 @@ jobs:
       - name: "🔧 Update UniRTM Toolchain & Lockfile"
         shell: sh
         run: |
-          # 1. Update lockfile for all platforms
+          # 1. Check & update all tools in .unirtm.toml to latest versions (non-interactive)
+          unirtm update --all --force --yes
+          # 2. Format .unirtm.toml with canonical section and key ordering
+          unirtm fmt
+          # 3. Update lockfile for all platforms
           unirtm lock --all-platforms
-          # 2. Double-check lockfile integrity (fails if tools are omitted due to API errors)
+          # 4. Double-check lockfile integrity (fails if tools are omitted due to API errors)
           unirtm lock --check
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
