@@ -6,6 +6,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.0](https://github.com/snowdreamtech/UniRTM/compare/v0.26.0...v0.27.0) (2026-08-22)
+
+
+### 🚀 Features
+
+* **backend:** support automatic Go module root fallback for subpackages in ListVersions ([e3b116f](https://github.com/snowdreamtech/UniRTM/commit/e3b116f6c1d3314aa1ff37b5e87918bd4039e696))
+* **config:** enforce single quotes for TOML keys and values in fmt and edit operations ([9c7f5d5](https://github.com/snowdreamtech/UniRTM/commit/9c7f5d54627f7b0debabd7376d0f7a3b88595af4))
+* **config:** standardize TOML formatting to double quotes across fmt and edit commands ([7a65bac](https://github.com/snowdreamtech/UniRTM/commit/7a65bac7f0d6591a63acf3ccbb0449e4b3b85a58))
+
+
+### 🐛 Bug Fixes
+
+* **config:** resolve tasks.test conflict in .unirtm.toml ([c7798c5](https://github.com/snowdreamtech/UniRTM/commit/c7798c58a50f9de75af4451e00af574956d1e627))
+* **fmt:** ignore git conflict markers in normalizeTOMLLineQuotes ([1ba669d](https://github.com/snowdreamtech/UniRTM/commit/1ba669ddd08c9e1a36000cd34ef3456e63e000fa))
+* update nanoid to 3.3.18 in package-lock.json ([486baa3](https://github.com/snowdreamtech/UniRTM/commit/486baa3e05ea8004d13001fe888c904d04a0f956))
+* update nanoid to 3.3.18 in package-lock.json ([7411de0](https://github.com/snowdreamtech/UniRTM/commit/7411de016dbe4a384dc51712354aac7852f4e00b))
+
+
+### 🛠 Refactoring
+
+* **service:** narrow transaction scope in update command to prevent database locks ([6c6d1ba](https://github.com/snowdreamtech/UniRTM/commit/6c6d1baaea56602c640d9fab54a07b131ca6de5f))
+
+
+### ♻️ Miscellaneous Chores
+
+* **deps:** bump the all-dependencies group in /docs with 3 updates ([8c8ffd9](https://github.com/snowdreamtech/UniRTM/commit/8c8ffd91c27ffc4a74cf44ea5c3eadec988ffa04))
+* **deps:** bump the all-dependencies group in /docs with 3 updates ([c8f33f7](https://github.com/snowdreamtech/UniRTM/commit/c8f33f703b73af90423aa45e96a285da12dc5d11))
+* **deps:** bump vite in /docs in the all-dependencies group ([91cdab1](https://github.com/snowdreamtech/UniRTM/commit/91cdab13e0b1cbf7e533b1173f02661b0c4dade4))
+* **deps:** bump vite in /docs in the all-dependencies group ([adcc364](https://github.com/snowdreamtech/UniRTM/commit/adcc364a4b3f8b557aaa574df91a8791540628e1))
+* **deps:** sync dependabot config and unirtm toolchain ([d3058b4](https://github.com/snowdreamtech/UniRTM/commit/d3058b41e0d7728ae78ecae4928a961c4b6f1a37))
+* **deps:** sync dependabot config and unirtm toolchain ([eabf483](https://github.com/snowdreamtech/UniRTM/commit/eabf483fd39cd3a00f73d7e380a8e82a8de3eb3d))
+* **deps:** sync dependabot config and unirtm toolchain ([70cd8d9](https://github.com/snowdreamtech/UniRTM/commit/70cd8d91e24ff5d79ee4508b8d87a71c43f87912))
+* **deps:** sync dependabot config and unirtm toolchain ([2fe2996](https://github.com/snowdreamtech/UniRTM/commit/2fe2996a8c4e31cf73b81f3e4cf9c9987e21953c))
+* **deps:** update Go toolchain version to 1.27.0 ([b10c1f4](https://github.com/snowdreamtech/UniRTM/commit/b10c1f462191500fa8de6657f85e43b071d5542d))
+* **deps:** update govulncheck tool version to v1.7.0 for Go 1.27 AST support ([49d0976](https://github.com/snowdreamtech/UniRTM/commit/49d09761693e94e8f6e77c8cb575294e8f029041))
+* **deps:** upgrade golang version to 1.27.0 in template ([8559102](https://github.com/snowdreamtech/UniRTM/commit/8559102441208d4d9d5150bea6705f565129a190))
+* **deps:** upgrade golang.org/x dependencies to address OSV security advisories ([3b3d634](https://github.com/snowdreamtech/UniRTM/commit/3b3d634938248c2a374bebefb3673735338eb442))
+* merge upstream/dev into dev ([a86da3c](https://github.com/snowdreamtech/UniRTM/commit/a86da3ccaf04f0d6e9cbd038c1b611c18473bedb))
+* merge upstream/dev into dev ([4bd697b](https://github.com/snowdreamtech/UniRTM/commit/4bd697b126e8c8d655729d1f71058f908e0d4292))
+* release main ([f194b67](https://github.com/snowdreamtech/UniRTM/commit/f194b6782d11cd801472361df52aa91e89ff4885))
+* release main ([55a97dd](https://github.com/snowdreamtech/UniRTM/commit/55a97ddfbd7dc4d81d95104d2d32ed1e6dc7d763))
+* **security:** configure osv-scanner ignoring uncalled GO-2026-5932 and disable AST call graph analysis ([de45fb8](https://github.com/snowdreamtech/UniRTM/commit/de45fb810b6d33edc4c03275d6014354a439a1ae))
+
 ## [0.26.0](https://github.com/snowdreamtech/UniRTM/compare/v0.25.8...v0.26.0) (2026-08-08)
 
 
