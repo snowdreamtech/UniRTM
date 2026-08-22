@@ -214,12 +214,7 @@ description = "Run Go unit tests for all packages recursively"
 # -p 4         : limit the number of packages compiled/tested in parallel to prevent CI OOM
 #                (GitHub Actions ubuntu-latest has ~7GB RAM; -race multiplies usage 5-10x)
 # CGO_ENABLED=0: force pure-Go build — all test files must use modernc.org/sqlite, not mattn/go-sqlite3
-<<<<<<< HEAD
 run = "unirtm exec -- go test -cover -v -timeout 10m -p 4 ./..."
- = ======
-# run = 'unirtm exec -- go test -cover -v -timeout 10m -p 4 ./...'
-run = "unirtm exec -- unirtm version"
->>>>>>> 6458d98f61ef220a233e7b1f678abcbe2585e218
 output = "interleaved"
 env = { GOTOOLCHAIN = 'local', CGO_ENABLED = '0' }
 
