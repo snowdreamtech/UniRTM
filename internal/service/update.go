@@ -218,13 +218,6 @@ func (um *UpdateManager) UpdateTool(ctx context.Context, tool, oldVersion, targe
 		}, nil
 	}
 
-	// Start transaction for atomic update
-	tx, err := um.txManager.Begin(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to start transaction: %w", err)
-	}
-	defer tx.Rollback()
-
 	// Audit log: start update
 	auditEntry := &repository.AuditEntry{
 		Timestamp: time.Now(),
@@ -234,8 +227,10 @@ func (um *UpdateManager) UpdateTool(ctx context.Context, tool, oldVersion, targe
 		Status:    "in_progress",
 		Metadata:  fmt.Sprintf(`{"old_version":"%s","new_version":"%s"}`, oldVersion, targetVersion),
 	}
-	if err := tx.AuditRepo().Log(ctx, auditEntry); err != nil {
-		return nil, fmt.Errorf("failed to log audit entry: %w", err)
+	if um.auditRepo != nil {
+		if err := um.auditRepo.Log(ctx, auditEntry); err != nil {
+			return nil, fmt.Errorf("failed to log audit entry: %w", err)
+		}
 	}
 
 	// Get backend
@@ -363,6 +358,14 @@ func (um *UpdateManager) UpdateTool(ctx context.Context, tool, oldVersion, targe
 		InstalledAt: time.Now(),
 		Metadata:    installation.Metadata,
 	}
+
+	// Start transaction for atomic database record update
+	tx, err := um.txManager.Begin(ctx)
+	if err != nil {
+		os.RemoveAll(newInstallPath)
+		return um.createFailureResult(tool, oldVersion, targetVersion, startTime, fmt.Errorf("failed to start transaction: %w", err), false, "")
+	}
+	defer tx.Rollback()
 
 	// Delete old installation record
 	if err := tx.InstallationRepo().Delete(ctx, tool, oldVersion); err != nil {
