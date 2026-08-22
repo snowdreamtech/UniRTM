@@ -212,8 +212,9 @@ func normalizeTOMLLineQuotes(line string) string {
 	trimmedKey := strings.TrimSpace(keyPart)
 	trimmedVal := strings.TrimSpace(valPart)
 
-	// Don't format complex values (inline tables, arrays, multiline strings)
-	if strings.HasPrefix(trimmedVal, "[") || strings.HasPrefix(trimmedVal, "{") || strings.HasPrefix(trimmedVal, `"""`) || strings.HasPrefix(trimmedVal, `'''`) {
+	// Don't format conflict markers or complex values
+	if strings.HasPrefix(trimmedKey, "<") || strings.HasPrefix(trimmedKey, ">") || strings.HasPrefix(trimmedKey, "=") ||
+		strings.HasPrefix(trimmedVal, "[") || strings.HasPrefix(trimmedVal, "{") || strings.HasPrefix(trimmedVal, `"""`) || strings.HasPrefix(trimmedVal, `'''`) {
 		return line
 	}
 
@@ -235,4 +236,3 @@ func normalizeTOMLLineQuotes(line string) string {
 	indent := keyPart[:len(keyPart)-len(strings.TrimLeft(keyPart, " \t"))]
 	return fmt.Sprintf("%s%s = %s", indent, normKey, normVal)
 }
-
