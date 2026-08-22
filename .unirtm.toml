@@ -109,28 +109,14 @@ output = 'interleaved'
 [tasks."audit:osv"]
 description = 'Generic vulnerability scan across lockfiles'
 run = '''
-# Strategy 1: Environment-based routing (Local: Offline, CI: Online)
-if [ "$CI" = "true" ] || [ "$GITHUB_ACTIONS" = "true" ]; then
-    # CI Environment: Call API directly (fast, avoids large DB downloads)
-    for i in 1 2 3; do
-        if unirtm exec -- osv-scanner scan -r . --config .osv-scanner.toml --allow-no-lockfiles; then
-            exit 0
-        fi
-        echo "⚠️  osv-scanner (Online) failed. Retrying ($i/3)..."
-        sleep 2
-    done
-    exit 1
-else
-    # Local Environment: Use offline DB to prevent network timeouts
-    for i in 1 2 3; do
-        if unirtm exec -- osv-scanner scan -r . --config .osv-scanner.toml --offline-vulnerabilities --download-offline-databases --allow-no-lockfiles; then
-            exit 0
-        fi
-        echo "⚠️  osv-scanner (Offline) failed. Retrying ($i/3)..."
-        sleep 2
-    done
-    exit 1
-fi
+for i in 1 2 3; do
+    if unirtm exec -- osv-scanner scan -r . --config .osv-scanner.toml --allow-no-lockfiles --no-call-analysis=go; then
+        exit 0
+    fi
+    echo "⚠️  osv-scanner failed. Retrying ($i/3)..."
+    sleep 2
+done
+exit 1
 '''
 output = 'interleaved'
 

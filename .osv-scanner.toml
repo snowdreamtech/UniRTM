@@ -4,4 +4,6 @@
 # OSV-Scanner configuration
 # https://google.github.io/osv-scanner/configuration/
 
-# Minimal valid configuration - no experimental features
+[[IgnoredVulns]]
+id = "GO-2026-5932"
+reason = "golang.org/x/crypto/openpgp is deprecated in x/crypto but openpgp is not imported or used by UniRTM"
