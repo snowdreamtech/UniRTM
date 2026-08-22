@@ -5,10 +5,14 @@ package native
 
 import (
 	"context"
+	"os"
 	"testing"
 )
 
 func TestHaskellHandler(t *testing.T) {
+	if os.Getenv("TEST_NETWORK") == "" {
+		t.Skip("Skipping network test. Set TEST_NETWORK=1 to enable.")
+	}
 	h := &HaskellHandler{}
 	if h.Name() != "haskell" {
 		t.Errorf("expected name 'haskell', got '%s'", h.Name())
