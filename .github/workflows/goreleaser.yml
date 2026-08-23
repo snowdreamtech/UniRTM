@@ -300,8 +300,6 @@ jobs:
       - name: "🚀 Publish npm Platform Packages"
         if: startsWith(github.ref, 'refs/tags/')
         shell: sh
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           # npm/scripts/build.sh was already executed by GoReleaser after_hooks.
           # Platform packages (npm/unirtm-*/bin/) and package.json files are ready.
