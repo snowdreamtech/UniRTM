@@ -171,6 +171,6 @@ printf '   Version: %s\n' "${VERSION_NPM}"
 printf '\nNext steps:\n'
 printf '  1. Publish platform packages first:\n'
 # shellcheck disable=SC2016
-printf '%s\n' '       for pkg in npm/unirtm-*/; do npm publish "$pkg" --access public --registry=https://registry.npmjs.org; done'
+printf '%s\n' '       for pkg in npm/unirtm-*/; do npm publish "$pkg" --access public --provenance --registry=https://registry.npmjs.org; done'
 printf '  2. Then publish root package:\n'
-printf '       npm publish npm/unirtm/ --access public --registry=https://registry.npmjs.org\n'
+printf '       npm publish npm/unirtm/ --access public --provenance --registry=https://registry.npmjs.org\n'
