@@ -304,30 +304,71 @@ jobs:
           # npm/scripts/build.sh was already executed by GoReleaser after_hooks.
           # Platform packages (npm/unirtm-*/bin/) and package.json files are ready.
           echo '=== Publishing platform sub-packages ==='
-          for pkg in npm/unirtm-*/; do
-            pkg_name=$(node -p "require('./${pkg}package.json').name" 2>/dev/null || echo "${pkg}")
-            pkg_ver=$(node -p "require('./${pkg}package.json').version" 2>/dev/null || echo "")
-            if [ -n "${pkg_name}" ] && [ -n "${pkg_ver}" ] && npm view "${pkg_name}@${pkg_ver}" version >/dev/null 2>&1; then
-              echo "⚠️  [skip] ${pkg_name}@${pkg_ver} is already published on npm."
-              continue
-            fi
-            echo "[publish] ${pkg_name} (${pkg_ver}) ..."
-            npm publish "${pkg}" --access public --provenance --registry=https://registry.npmjs.org
+          for pkg in npm/*/; do
+            [ -f "${pkg}package.json" ] || continue
+            case "${pkg}" in
+              *-*/)
+                pkg_name=$(node -p "require('./${pkg}package.json').name" 2>/dev/null || echo "${pkg}")
+                pkg_ver=$(node -p "require('./${pkg}package.json').version" 2>/dev/null || echo "")
+                if [ -n "${pkg_name}" ] && [ -n "${pkg_ver}" ] && npm view "${pkg_name}@${pkg_ver}" version >/dev/null 2>&1; then
+                  echo "⚠️  [skip] ${pkg_name}@${pkg_ver} is already published on npm."
+                  continue
+                fi
+                echo "[publish] ${pkg_name} (${pkg_ver}) ..."
+                npm publish "${pkg}" --access public --provenance --registry=https://registry.npmjs.org
+                ;;
+            esac
           done
 
           echo ""
           echo '=== Publishing root package ==='
-          root_name=$(node -p "require('./npm/unirtm/package.json').name" 2>/dev/null || echo "@snowdreamtech/unirtm")
-          root_ver=$(node -p "require('./npm/unirtm/package.json').version" 2>/dev/null || echo "")
-          if [ -n "${root_name}" ] && [ -n "${root_ver}" ] && npm view "${root_name}@${root_ver}" version >/dev/null 2>&1; then
-            echo "⚠️  [skip] ${root_name}@${root_ver} is already published on npm."
-          else
-            echo "[publish] ${root_name} (${root_ver}) ..."
-            npm publish npm/unirtm/ --access public --provenance --registry=https://registry.npmjs.org
-          fi
+          for pkg in npm/*/; do
+            [ -f "${pkg}package.json" ] || continue
+            case "${pkg}" in
+              *-*/) ;;
+              *)
+                root_name=$(node -p "require('./${pkg}package.json').name" 2>/dev/null || echo "${pkg}")
+                root_ver=$(node -p "require('./${pkg}package.json').version" 2>/dev/null || echo "")
+                if [ -n "${root_name}" ] && [ -n "${root_ver}" ] && npm view "${root_name}@${root_ver}" version >/dev/null 2>&1; then
+                  echo "⚠️  [skip] ${root_name}@${root_ver} is already published on npm."
+                else
+                  echo "[publish] ${root_name} (${root_ver}) ..."
+                  npm publish "${pkg}" --access public --provenance --registry=https://registry.npmjs.org
+                fi
+                ;;
+            esac
+          done
 
           echo ""
           echo '[done] All npm packages published successfully!'
+
+      - name: "🐍 Setup Python for PyPI Publishing"
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1
+        with:
+          python-version: "3.12"
+
+      - name: "📦 Install Python Build Tools"
+        if: startsWith(github.ref, 'refs/tags/')
+        run: pip install build twine wheel setuptools
+
+      - name: "🔨 Build PyPI Platform Packages (Wheels)"
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: sh
+        run: |
+          VERSION=$(node -p "require('./dist/metadata.json').version")
+          echo "Building PyPI packages for version: ${VERSION}"
+          sh pypi/scripts/build.sh --version "${VERSION}"
+
+      - name: "🚀 Publish PyPI Packages"
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: sh
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          echo "Publishing wheels to PyPI..."
+          twine upload pypi/dist/*.whl --skip-existing
 
       - name: "🛡️ Attest Build Provenance (SLSA)"
         if: startsWith(github.ref, 'refs/tags/')
