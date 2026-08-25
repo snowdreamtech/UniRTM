@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.1](https://github.com/snowdreamtech/UniRTM/compare/v0.28.0...v0.28.1) (2026-08-25)
+
+
+### ♻️ Miscellaneous Chores
+
+* **deps:** generalize openpgp ignored vulnerability reason in osv-scanner config ([0ec432c](https://github.com/snowdreamtech/UniRTM/commit/0ec432cefd456edcf182f5f22f6b40719dad7f55))
+* **deps:** merge upstream/dev into dev ([6213346](https://github.com/snowdreamtech/UniRTM/commit/62133463a27787c13c45d7d9b00b2169a5a2698c))
+* **deps:** sync dependabot config and unirtm toolchain ([e50c60d](https://github.com/snowdreamtech/UniRTM/commit/e50c60d5f64cc050905a25719ce19949880c5e0e))
+* **deps:** update unirtm toolchain version to 0.28.0 ([b24cb8e](https://github.com/snowdreamtech/UniRTM/commit/b24cb8ef46c5fd2abce6b84a0cb8354b725f9ae7))
+
 ## [0.28.0](https://github.com/snowdreamtech/UniRTM/compare/v0.27.0...v0.28.0) (2026-08-22)
 
 
