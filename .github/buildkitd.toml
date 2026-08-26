@@ -10,9 +10,6 @@ trace = true
 [registry."docker.io"]
 mirrors = ["https://docker.sn0wdr1am.com"]
 
-[registry."quay.io"]
-mirrors = ["https://quay.sn0wdr1am.com"]
-
 [registry."gcr.io"]
 mirrors = ["https://gcr.sn0wdr1am.com"]
 

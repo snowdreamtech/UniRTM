@@ -26,4 +26,3 @@ trustedRegistries:
   - ghcr.io
   - public.ecr.aws
   - registry.k8s.io
-  - quay.io

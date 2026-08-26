@@ -228,7 +228,6 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
 
-
           if [ "$EVENT_NAME" = "pull_request" ]; then
             unirtm exec -- commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
           else
