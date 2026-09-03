@@ -47,12 +47,40 @@ backend = "github"
 url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-linux-x86_64.tar.gz"
 
 [[tools."editorconfig-checker/editorconfig-checker"]]
-version = "3.11.1"
+version = "3.11.2"
 backend = "github"
 
 [tools."editorconfig-checker/editorconfig-checker"."platforms.linux-amd64"]
-checksum = "sha256:eea4e20653cd00167ea074671891ebaa851150d2ac1525a8c343ba16820e7109"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.1/editorconfig-checker-linux-amd64.tar.gz"
+checksum = "sha256:85f32c6d293fe5335113176d4f36424eb92c2981219cbba2b5a8742c752214f5"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.2/editorconfig-checker-linux-amd64.tar.gz"
+
+[tools."editorconfig-checker/editorconfig-checker"."platforms.linux-amd64-musl"]
+checksum = "sha256:85f32c6d293fe5335113176d4f36424eb92c2981219cbba2b5a8742c752214f5"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.2/editorconfig-checker-linux-amd64.tar.gz"
+
+[tools."editorconfig-checker/editorconfig-checker"."platforms.linux-arm64"]
+checksum = "sha256:da58bdd200bf80595cad7c15a887c8477389df9db12e71c9b07a64c6921f022e"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.2/editorconfig-checker-linux-arm64.tar.gz"
+
+[tools."editorconfig-checker/editorconfig-checker"."platforms.linux-arm64-musl"]
+checksum = "sha256:da58bdd200bf80595cad7c15a887c8477389df9db12e71c9b07a64c6921f022e"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.2/editorconfig-checker-linux-arm64.tar.gz"
+
+[tools."editorconfig-checker/editorconfig-checker"."platforms.macos-amd64"]
+checksum = "sha256:1a013573bbd394341168ea95174790ed44d6fc180f6d16e75c2ebc032f05bcc1"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.2/ec-darwin-amd64.tar.gz"
+
+[tools."editorconfig-checker/editorconfig-checker"."platforms.macos-arm64"]
+checksum = "sha256:9ed40abdc3051c1b76c9557cd58c66ab1784728242dbd9c40cfffe1528195ab2"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.2/ec-darwin-arm64.tar.gz"
+
+[tools."editorconfig-checker/editorconfig-checker"."platforms.windows-amd64"]
+checksum = "sha256:b8ed1a762b3e548533e4427e08b58c1d044cdbb148791211884a22e422f936e5"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.2/editorconfig-checker-windows-amd64.tar.gz"
+
+[tools."editorconfig-checker/editorconfig-checker"."platforms.windows-arm64"]
+checksum = "sha256:fc981dbe54d591319610776404ae3e24f3f5128dedf726ba3251d5780433e57f"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.2/editorconfig-checker-windows-arm64.tar.gz"
 
 [[tools."github:anchore/syft"]]
 version = "1.51.0"
@@ -244,40 +272,40 @@ url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/d
 url = "https://github.com/dotenv-linter/dotenv-linter/releases/download/v4.0.0/dotenv-linter-win-aarch64.zip"
 
 [[tools."github:editorconfig-checker/editorconfig-checker"]]
-version = "3.11.1"
+version = "3.11.2"
 backend = "github"
 
 [tools."github:editorconfig-checker/editorconfig-checker"."platforms.linux-amd64"]
-checksum = "sha256:eea4e20653cd00167ea074671891ebaa851150d2ac1525a8c343ba16820e7109"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.1/editorconfig-checker-linux-amd64.tar.gz"
+checksum = "sha256:85f32c6d293fe5335113176d4f36424eb92c2981219cbba2b5a8742c752214f5"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.2/editorconfig-checker-linux-amd64.tar.gz"
 
 [tools."github:editorconfig-checker/editorconfig-checker"."platforms.linux-amd64-musl"]
-checksum = "sha256:eea4e20653cd00167ea074671891ebaa851150d2ac1525a8c343ba16820e7109"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.1/editorconfig-checker-linux-amd64.tar.gz"
+checksum = "sha256:85f32c6d293fe5335113176d4f36424eb92c2981219cbba2b5a8742c752214f5"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.2/editorconfig-checker-linux-amd64.tar.gz"
 
 [tools."github:editorconfig-checker/editorconfig-checker"."platforms.linux-arm64"]
-checksum = "sha256:26c34559bda51abb689a820f9804fdf619347a01dc532a8772682648aa7333c6"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.1/editorconfig-checker-linux-arm64.tar.gz"
+checksum = "sha256:da58bdd200bf80595cad7c15a887c8477389df9db12e71c9b07a64c6921f022e"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.2/editorconfig-checker-linux-arm64.tar.gz"
 
 [tools."github:editorconfig-checker/editorconfig-checker"."platforms.linux-arm64-musl"]
-checksum = "sha256:26c34559bda51abb689a820f9804fdf619347a01dc532a8772682648aa7333c6"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.1/editorconfig-checker-linux-arm64.tar.gz"
+checksum = "sha256:da58bdd200bf80595cad7c15a887c8477389df9db12e71c9b07a64c6921f022e"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.2/editorconfig-checker-linux-arm64.tar.gz"
 
 [tools."github:editorconfig-checker/editorconfig-checker"."platforms.macos-amd64"]
-checksum = "sha256:a9f68961e33d1a3b3f134c403557c8b2bbafb70b21b4c32b5d9245ffc2875f4f"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.1/ec-darwin-amd64.tar.gz"
+checksum = "sha256:1a013573bbd394341168ea95174790ed44d6fc180f6d16e75c2ebc032f05bcc1"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.2/ec-darwin-amd64.tar.gz"
 
 [tools."github:editorconfig-checker/editorconfig-checker"."platforms.macos-arm64"]
-checksum = "sha256:69205598fe8b26677d31194c5c9fdf7e8be321909ffb3c99efb5c9e4e648583e"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.1/ec-darwin-arm64.tar.gz"
+checksum = "sha256:9ed40abdc3051c1b76c9557cd58c66ab1784728242dbd9c40cfffe1528195ab2"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.2/ec-darwin-arm64.tar.gz"
 
 [tools."github:editorconfig-checker/editorconfig-checker"."platforms.windows-amd64"]
-checksum = "sha256:b0e4fd76e9b18a7f07a370ab1496c5d27b9434257f364deb2643871f0b32af2b"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.1/editorconfig-checker-windows-amd64.tar.gz"
+checksum = "sha256:b8ed1a762b3e548533e4427e08b58c1d044cdbb148791211884a22e422f936e5"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.2/editorconfig-checker-windows-amd64.tar.gz"
 
 [tools."github:editorconfig-checker/editorconfig-checker"."platforms.windows-arm64"]
-checksum = "sha256:511c00110975bf4a4bd0863051fd04bb73f5bbaeab41e9b7738d18c0cf38932c"
-url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.1/editorconfig-checker-windows-arm64.tar.gz"
+checksum = "sha256:fc981dbe54d591319610776404ae3e24f3f5128dedf726ba3251d5780433e57f"
+url = "https://github.com/editorconfig-checker/editorconfig-checker/releases/download/v3.11.2/editorconfig-checker-windows-arm64.tar.gz"
 
 [[tools."github:gitleaks/gitleaks"]]
 version = "8.30.1"
@@ -352,40 +380,40 @@ checksum = "sha256:33feb0b210a3e5ea7b338c719defc899f8833d990cdd297bcad4ff1a2586e
 url = "https://github.com/google/osv-scanner/releases/download/v2.5.1/osv-scanner_windows_arm64.exe"
 
 [[tools."github:goreleaser/goreleaser"]]
-version = "2.17.1"
+version = "2.18.0"
 backend = "github"
 
 [tools."github:goreleaser/goreleaser"."platforms.linux-amd64"]
-checksum = "sha256:a99bbc7ae0d8d897b07c4c497a9b62f222558804715ef219d1af05a7e417bc80"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.17.1/goreleaser_Linux_x86_64.tar.gz"
+checksum = "sha256:41cdf49b653784b03a08013dd99e382cd5d463049e915c2d818eaed182ae6197"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Linux_x86_64.tar.gz"
 
 [tools."github:goreleaser/goreleaser"."platforms.linux-amd64-musl"]
-checksum = "sha256:a99bbc7ae0d8d897b07c4c497a9b62f222558804715ef219d1af05a7e417bc80"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.17.1/goreleaser_Linux_x86_64.tar.gz"
+checksum = "sha256:41cdf49b653784b03a08013dd99e382cd5d463049e915c2d818eaed182ae6197"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Linux_x86_64.tar.gz"
 
 [tools."github:goreleaser/goreleaser"."platforms.linux-arm64"]
-checksum = "sha256:702f03769ac8bcb0e47839c82243cc614ae995633599a98c63062e13ea85f829"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.17.1/goreleaser_Linux_arm64.tar.gz"
+checksum = "sha256:1975566c9668e6f4247e6bb57656f21da13635c24d948ef47b1232e5c864a35b"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Linux_arm64.tar.gz"
 
 [tools."github:goreleaser/goreleaser"."platforms.linux-arm64-musl"]
-checksum = "sha256:702f03769ac8bcb0e47839c82243cc614ae995633599a98c63062e13ea85f829"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.17.1/goreleaser_Linux_arm64.tar.gz"
+checksum = "sha256:1975566c9668e6f4247e6bb57656f21da13635c24d948ef47b1232e5c864a35b"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Linux_arm64.tar.gz"
 
 [tools."github:goreleaser/goreleaser"."platforms.macos-amd64"]
-checksum = "sha256:a92a68c61a6833ff67748f532cbebc7b8e49ba30de062ab463b221211ee6368f"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.17.1/goreleaser_Darwin_x86_64.tar.gz"
+checksum = "sha256:c115f9ca07163d55885ba2276c5c2efebc95d60f7f7f69fe2dd6a54e97ac6db4"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Darwin_x86_64.tar.gz"
 
 [tools."github:goreleaser/goreleaser"."platforms.macos-arm64"]
-checksum = "sha256:b65624885c25da9a677b7ad11cf86a02123cc5a56af66f6b4ebb574658eada2e"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.17.1/goreleaser_Darwin_arm64.tar.gz"
+checksum = "sha256:1c42b87cbce094a60f1a94dab0c71f640dbe4396fa5dc632b5c25bf14b1e88fc"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Darwin_arm64.tar.gz"
 
 [tools."github:goreleaser/goreleaser"."platforms.windows-amd64"]
-checksum = "sha256:53314ce7cc16c3229f2d3b98a932c1618c427964eb2170a1efafbdfa862a556f"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.17.1/goreleaser_Windows_x86_64.zip"
+checksum = "sha256:cbd0aeab833806b6c07e2d156c2c9baaffa6e3d1fb870071bf3efc9d9e5b4777"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Windows_x86_64.zip"
 
 [tools."github:goreleaser/goreleaser"."platforms.windows-arm64"]
-checksum = "sha256:6eec917c98df13ba83b8bb9c261e017df2d1d5b08e525442b5918325627fdf91"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.17.1/goreleaser_Windows_arm64.zip"
+checksum = "sha256:43647ce4e0fbc624d39dd095e0ed5bf55a11978ea58a74a91630fb26eea88511"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Windows_arm64.zip"
 
 [[tools."github:hadolint/hadolint"]]
 version = "2.15.1"
@@ -694,12 +722,40 @@ checksum = "sha256:33feb0b210a3e5ea7b338c719defc899f8833d990cdd297bcad4ff1a2586e
 url = "https://github.com/google/osv-scanner/releases/download/v2.5.1/osv-scanner_windows_arm64.exe"
 
 [[tools."goreleaser/goreleaser"]]
-version = "2.17.1"
+version = "2.18.0"
 backend = "github"
 
 [tools."goreleaser/goreleaser"."platforms.linux-amd64"]
-checksum = "sha256:a99bbc7ae0d8d897b07c4c497a9b62f222558804715ef219d1af05a7e417bc80"
-url = "https://github.com/goreleaser/goreleaser/releases/download/v2.17.1/goreleaser_Linux_x86_64.tar.gz"
+checksum = "sha256:41cdf49b653784b03a08013dd99e382cd5d463049e915c2d818eaed182ae6197"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Linux_x86_64.tar.gz"
+
+[tools."goreleaser/goreleaser"."platforms.linux-amd64-musl"]
+checksum = "sha256:41cdf49b653784b03a08013dd99e382cd5d463049e915c2d818eaed182ae6197"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Linux_x86_64.tar.gz"
+
+[tools."goreleaser/goreleaser"."platforms.linux-arm64"]
+checksum = "sha256:1975566c9668e6f4247e6bb57656f21da13635c24d948ef47b1232e5c864a35b"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Linux_arm64.tar.gz"
+
+[tools."goreleaser/goreleaser"."platforms.linux-arm64-musl"]
+checksum = "sha256:1975566c9668e6f4247e6bb57656f21da13635c24d948ef47b1232e5c864a35b"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Linux_arm64.tar.gz"
+
+[tools."goreleaser/goreleaser"."platforms.macos-amd64"]
+checksum = "sha256:c115f9ca07163d55885ba2276c5c2efebc95d60f7f7f69fe2dd6a54e97ac6db4"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Darwin_x86_64.tar.gz"
+
+[tools."goreleaser/goreleaser"."platforms.macos-arm64"]
+checksum = "sha256:1c42b87cbce094a60f1a94dab0c71f640dbe4396fa5dc632b5c25bf14b1e88fc"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Darwin_arm64.tar.gz"
+
+[tools."goreleaser/goreleaser"."platforms.windows-amd64"]
+checksum = "sha256:cbd0aeab833806b6c07e2d156c2c9baaffa6e3d1fb870071bf3efc9d9e5b4777"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Windows_x86_64.zip"
+
+[tools."goreleaser/goreleaser"."platforms.windows-arm64"]
+checksum = "sha256:43647ce4e0fbc624d39dd095e0ed5bf55a11978ea58a74a91630fb26eea88511"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.0/goreleaser_Windows_arm64.zip"
 
 [[tools."hadolint/hadolint"]]
 version = "2.15.1"
@@ -893,7 +949,7 @@ backend = "npm"
 [tools."npm:dockerfile-utils"."platforms.windows-arm64"]
 
 [[tools."npm:eslint"]]
-version = "10.9.0"
+version = "10.9.1"
 backend = "npm"
 
 [tools."npm:eslint"."platforms.linux-amd64"]
@@ -993,7 +1049,7 @@ backend = "npm"
 [tools."npm:stylelint"."platforms.windows-arm64"]
 
 [[tools."pipx:clang-format"]]
-version = "22.1.8"
+version = "23.1.0"
 backend = "pipx"
 
 [tools."pipx:clang-format"."platforms.linux-amd64"]
@@ -1071,34 +1127,6 @@ backend = "pipx"
 [tools."pipx:yamllint"."platforms.windows-amd64"]
 
 [tools."pipx:yamllint"."platforms.windows-arm64"]
-
-[[tools."python"]]
-version = "3.14.5"
-backend = "native"
-
-[tools."python"."platforms.linux-amd64"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-unknown-linux-gnu-debug-full.tar.zst"
-
-[tools."python"."platforms.linux-amd64-musl"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-unknown-linux-gnu-debug-full.tar.zst"
-
-[tools."python"."platforms.linux-arm64"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-unknown-linux-gnu-debug-full.tar.zst"
-
-[tools."python"."platforms.linux-arm64-musl"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-unknown-linux-gnu-debug-full.tar.zst"
-
-[tools."python"."platforms.macos-amd64"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-apple-darwin-debug-full.tar.zst"
-
-[tools."python"."platforms.macos-arm64"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-apple-darwin-debug-full.tar.zst"
-
-[tools."python"."platforms.windows-amd64"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-x86_64-pc-windows-msvc-freethreaded%2Bpgo-full.tar.zst"
-
-[tools."python"."platforms.windows-arm64"]
-url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260602/cpython-3.14.5%2B20260602-aarch64-pc-windows-msvc-freethreaded%2Bpgo-full.tar.zst"
 
 [[tools."rhysd/actionlint"]]
 version = "1.7.12"
