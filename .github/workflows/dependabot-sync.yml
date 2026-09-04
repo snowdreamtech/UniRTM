@@ -93,8 +93,8 @@ jobs:
           unirtm update --all --force --yes
           # 2. Format .unirtm.toml with canonical section and key ordering
           unirtm fmt
-          # 3. Update lockfile for all platforms
-          unirtm lock --all-platforms
+          # 3. Update lockfile for all platforms (allow incomplete because some tools like shellcheck lack windows-arm64)
+          unirtm lock --all-platforms --allow-incomplete
           # 4. Double-check lockfile integrity (fails if tools are omitted due to API errors)
           unirtm lock --check
         env:
