@@ -462,6 +462,13 @@ func updateConfigAndLockfile(ctx context.Context, cfg *config.Config, backendReg
 							for k, v := range cfg.Tools {
 								if strings.HasSuffix(k, ":"+r.Tool) || strings.HasSuffix(k, "/"+r.Tool) {
 									backendName = v.Backend
+									// When backend is not explicitly set in the ToolConfig,
+									// infer it from the config key prefix (e.g. "npm:eslint" → "npm").
+									if backendName == "" {
+										if idx := strings.Index(k, ":"); idx != -1 {
+											backendName = k[:idx]
+										}
+									}
 									break
 								}
 							}
