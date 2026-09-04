@@ -6,6 +6,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.0](https://github.com/snowdreamtech/UniRTM/compare/v0.28.0...v0.29.0) (2026-09-04)
+
+
+### 🚀 Features
+
+* **backend:** add arm 32-bit (armhf/armv7/armv6) support to CalculateAssetScore ([8abc1ff](https://github.com/snowdreamtech/UniRTM/commit/8abc1ffdd5775e40814de2a3cff7d3f161d2aff9))
+* **backend:** add community asset registry as automatic fallback for asset selection ([5d323ed](https://github.com/snowdreamtech/UniRTM/commit/5d323ed2e8d230ef5edf39416a132a0f7cdaad66))
+* **backend:** enhance asset registry with local TOML override file ([76ef116](https://github.com/snowdreamtech/UniRTM/commit/76ef116434bf4beed50f9ece5f73eef03e2b7302))
+* **lock:** add asset_patterns override for per-platform asset selection ([bc065d4](https://github.com/snowdreamtech/UniRTM/commit/bc065d490d7677181ba61e10ba58c7ef980f67a6))
+* **lock:** add completeness gate and GenerateReport to lock generation ([cb31a90](https://github.com/snowdreamtech/UniRTM/commit/cb31a9074cf22640f35bcfca4d68ecf3edb80fb3))
+
+
+### 🐛 Bug Fixes
+
+* **backend:** add .md/.yaml/.yml to hard exclusion suffixes ([68c5e99](https://github.com/snowdreamtech/UniRTM/commit/68c5e99653cc4fc589b39bf1eccebee3de5c6c34))
+* **backend:** fix doc/man false-positives and add wasm/android exclusions ([4f23cae](https://github.com/snowdreamtech/UniRTM/commit/4f23cae8a58956fc83d6278529bb600790f70610))
+* **backend:** fourth wave of CalculateAssetScore improvements ([be90e75](https://github.com/snowdreamtech/UniRTM/commit/be90e75163656981eca162502ea2fdb8691441df))
+* **backend:** improve CalculateAssetScore heuristic rules ([852d659](https://github.com/snowdreamtech/UniRTM/commit/852d65950d970cc5537d0dc0ebeac5ce7c5dd175))
+* **backend:** recognize macOS universal binaries with 'all' keyword in asset names ([e7e36fd](https://github.com/snowdreamtech/UniRTM/commit/e7e36fd39e4396fd67c7b6fed6a83bd3943267fc))
+* **backend:** second wave of CalculateAssetScore heuristic improvements ([5beee75](https://github.com/snowdreamtech/UniRTM/commit/5beee75f5ffebecb8fb512c312dfa3c96dfeb000))
+* **ci:** disable gpg signing in workflow commit steps ([43f266e](https://github.com/snowdreamtech/UniRTM/commit/43f266e0e3c9b65bfbb6da0c761caa8d4f047c20))
+* **ci:** ensure npm install includes devDependencies in pages workflow ([4795ca3](https://github.com/snowdreamtech/UniRTM/commit/4795ca36f2eed5b3b9f522da75e5f6fd926aea61))
+* **deps:** bump golang.org/x/crypto and google.golang.org/grpc to fix security vulnerabilities ([01058a7](https://github.com/snowdreamtech/UniRTM/commit/01058a769f7552e9dee1f9c858723842152d82d7))
+* **deps:** set valid golangci-lint version to v1.64.8 ([625796e](https://github.com/snowdreamtech/UniRTM/commit/625796e5e0bb7313e0b4a44ead0a0f75145e4bad))
+* **unirtm:** add missing macos platform entries for editorconfig-checker@4.0.0 ([30c33f1](https://github.com/snowdreamtech/UniRTM/commit/30c33f1e527b062436491cc10c7dc24613da41be))
+
+
+### ♻️ Miscellaneous Chores
+
+* **deps:** bump the all-dependencies group in /docs with 3 updates ([3e4b847](https://github.com/snowdreamtech/UniRTM/commit/3e4b8479f8be438ffe369c01e099b35844a1d7e0))
+* **deps:** bump the all-dependencies group in /docs with 3 updates ([90084cc](https://github.com/snowdreamtech/UniRTM/commit/90084ccf10e767f9aad0d47d0456feb09c473ac3))
+* **deps:** bump the all-dependencies group with 3 updates ([1df2f3e](https://github.com/snowdreamtech/UniRTM/commit/1df2f3eee0247aea66f76e99fc9645f70d3114ce))
+* **deps:** generalize openpgp ignored vulnerability reason in osv-scanner config ([0ec432c](https://github.com/snowdreamtech/UniRTM/commit/0ec432cefd456edcf182f5f22f6b40719dad7f55))
+* **deps:** merge upstream changes from template repository ([e11f8e0](https://github.com/snowdreamtech/UniRTM/commit/e11f8e0c6be770f7ec13551dbd03af50a7912c55))
+* **deps:** merge upstream/dev into dev ([6213346](https://github.com/snowdreamtech/UniRTM/commit/62133463a27787c13c45d7d9b00b2169a5a2698c))
+* **deps:** sync dependabot config and unirtm toolchain ([c244660](https://github.com/snowdreamtech/UniRTM/commit/c244660fcb9c0d9a6ed9aaf2829d2964f68d987b))
+* **deps:** sync dependabot config and unirtm toolchain ([886b3fa](https://github.com/snowdreamtech/UniRTM/commit/886b3fa8c417add860d17fe12e0750964ce03886))
+* **deps:** sync dependabot config and unirtm toolchain ([99c370d](https://github.com/snowdreamtech/UniRTM/commit/99c370d33a8ebd1dfb18759373b6e2fe898597d5))
+* **deps:** sync dependabot config and unirtm toolchain ([e50c60d](https://github.com/snowdreamtech/UniRTM/commit/e50c60d5f64cc050905a25719ce19949880c5e0e))
+* **deps:** update golangci-lint to v2.13.2 with /v2 module path and remove lockfile ([2199c57](https://github.com/snowdreamtech/UniRTM/commit/2199c574af594eed06aa6e121ebe6a186f943e0b))
+* **deps:** update unirtm tool dependencies to latest versions ([c1606f7](https://github.com/snowdreamtech/UniRTM/commit/c1606f7653eafcd4b4d4ce730d5f1f716f589398))
+* **deps:** update unirtm toolchain version to 0.28.0 ([b24cb8e](https://github.com/snowdreamtech/UniRTM/commit/b24cb8ef46c5fd2abce6b84a0cb8354b725f9ae7))
+* release main ([91fc3d6](https://github.com/snowdreamtech/UniRTM/commit/91fc3d66da1c32ee41868c560f8f21c42ecd1108))
+* release main ([700980f](https://github.com/snowdreamtech/UniRTM/commit/700980f0d84553b1094f49745d30f5daf9a22b1b))
+
 ## [0.28.0](https://github.com/snowdreamtech/UniRTM/compare/v0.27.0...v0.28.0) (2026-08-22)
 
 
