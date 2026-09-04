@@ -71,6 +71,8 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 		".json", ".jsonl",
 		// macOS disk images — require manual mount+drag, not CLI-installable
 		".dmg",
+		// Markdown and YAML docs/configs — never runnable binaries
+		".md", ".yaml", ".yml",
 	}
 	for _, suffix := range excludeSuffixes {
 		if strings.HasSuffix(nameLower, suffix) {
