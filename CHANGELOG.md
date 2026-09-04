@@ -6,6 +6,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.1](https://github.com/snowdreamtech/UniRTM/compare/v0.29.0...v0.29.1) (2026-09-04)
+
+
+### 🐛 Bug Fixes
+
+* **update:** correctly infer backend from config key prefix in updateConfigAndLockfile ([3c81b81](https://github.com/snowdreamtech/UniRTM/commit/3c81b81d93fdf03e732bb8be5a917fac77f10db4))
+* **update:** use installation.Backend as authoritative source in updateConfigAndLockfile ([7f7a5c8](https://github.com/snowdreamtech/UniRTM/commit/7f7a5c8d522fc523c4e75ca6c6d1fd773f17311f))
+
+
+### ♻️ Miscellaneous Chores
+
+* **ci:** bump unirtm-version to 0.29.0 across workflow files ([01ddb9c](https://github.com/snowdreamtech/UniRTM/commit/01ddb9c6572e10877937e6b5e94ec404d80ab03e))
+* **deps:** sync dependabot config and unirtm toolchain ([9d6d67c](https://github.com/snowdreamtech/UniRTM/commit/9d6d67c2954fa5b8647929791d5459c20fbb489b))
+
 ## [0.29.0](https://github.com/snowdreamtech/UniRTM/compare/v0.28.0...v0.29.0) (2026-09-04)
 
 
