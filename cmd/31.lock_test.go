@@ -17,11 +17,17 @@ func TestRunLockCheck(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 	t.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
+	// Change working directory to the empty tmpDir so that config.Load()
+	// (which calls LoadFromDir(".")) cannot find the project's .unirtm.toml.
+	// Without this, the test picks up the real project config and fails the
+	// P1 completeness gate because node@20 cannot be resolved in CI.
+	t.Chdir(tmpDir)
 
-	// Reset global flags to prevent leakage from other tests
+	// Reset global flags to prevent leakage from other tests.
 	lockCheck = false
+	lockAllowIncomplete = false
 
-	// Since there is no config file, it should just return no error
+	// Since there is no config file, it should just return no error.
 	err := lockCmd.RunE(lockCmd, []string{})
 	assert.NoError(t, err)
 }
