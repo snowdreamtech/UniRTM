@@ -793,3 +793,45 @@ func TestCalculateAssetScore_Arm32bit(t *testing.T) {
 		}
 	}
 }
+
+// TestCalculateAssetScore_DmgExcluded verifies macOS DMG disk images are excluded.
+func TestCalculateAssetScore_DmgExcluded(t *testing.T) {
+	darwinArm64 := Platform{OS: "darwin", Arch: "arm64"}
+
+	score := CalculateAssetScore("tool-darwin-arm64.dmg", darwinArm64, "org/tool")
+	if score != -1 {
+		t.Errorf("tool-darwin-arm64.dmg should be excluded (.dmg requires manual mount), got %d", score)
+	}
+}
+
+// TestCalculateAssetScore_SymbolsExcluded verifies debug symbol packages are excluded.
+func TestCalculateAssetScore_SymbolsExcluded(t *testing.T) {
+	linuxAmd64 := Platform{OS: "linux", Arch: "amd64"}
+
+	cases := []string{
+		"tool-linux-amd64-symbols.tar.gz",
+		"tool-linux-amd64.symbols.tar.gz",
+	}
+	for _, name := range cases {
+		score := CalculateAssetScore(name, linuxAmd64, "org/tool")
+		if score != -1 {
+			t.Errorf("%q should be excluded (debug symbols), got score %d", name, score)
+		}
+	}
+}
+
+// TestCalculateAssetScore_GnuPreference verifies that on non-musl Linux, assets
+// with '-gnu' in their target triple score higher than equivalent unnamed assets.
+func TestCalculateAssetScore_GnuPreference(t *testing.T) {
+	linuxAmd64 := Platform{OS: "linux", Arch: "amd64", Musl: false}
+
+	scoreGnu := CalculateAssetScore("tool-x86_64-unknown-linux-gnu.tar.gz", linuxAmd64, "org/tool")
+	scorePlain := CalculateAssetScore("tool-linux-amd64.tar.gz", linuxAmd64, "org/tool")
+
+	if scoreGnu <= 0 {
+		t.Errorf("tool-x86_64-unknown-linux-gnu.tar.gz should score positive, got %d", scoreGnu)
+	}
+	if scoreGnu <= scorePlain {
+		t.Errorf("gnu asset (%d) should outscore plain asset (%d) on non-musl Linux", scoreGnu, scorePlain)
+	}
+}

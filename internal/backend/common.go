@@ -69,6 +69,8 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 		".pem", ".crt", ".pub",
 		// JSON files (SBOM, SLSA provenance, in-toto attestation)
 		".json", ".jsonl",
+		// macOS disk images — require manual mount+drag, not CLI-installable
+		".dmg",
 	}
 	for _, suffix := range excludeSuffixes {
 		if strings.HasSuffix(nameLower, suffix) {
@@ -114,6 +116,11 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 		return -1
 	}
 	if containsWord(nameLower, "sbom") && !strings.Contains(toolShortName, "sbom") {
+		return -1
+	}
+	// 'symbols' packages contain debug information, not runnable binaries.
+	// Use word-boundary to avoid matching tool names that contain 'symbols'.
+	if containsWord(nameLower, "symbols") && !strings.Contains(toolShortName, "symbols") {
 		return -1
 	}
 	// Exclude WebAssembly targets — wasm/wasi binaries cannot run natively.
@@ -261,6 +268,15 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 	}
 	if repoName != "" && strings.Contains(nameLower, repoName) {
 		score += 50
+	}
+
+	// 6. GNU libc soft preference (non-musl Linux only).
+	// When the target is a standard glibc Linux, give a small bonus to assets
+	// that explicitly declare the gnu ABI in their target triple
+	// (e.g. x86_64-unknown-linux-gnu). This makes the scorer prefer the
+	// canonical glibc build when both gnu and musl variants are published.
+	if platform.OS == "linux" && !platform.Musl && strings.Contains(nameLower, "-gnu") {
+		score += 10
 	}
 
 	hasMusl := strings.Contains(nameLower, "musl")
