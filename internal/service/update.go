@@ -46,6 +46,7 @@ type UpdateResult struct {
 	Tool           string        // Tool name
 	OldVersion     string        // Previous version
 	NewVersion     string        // New version after update
+	Backend        string        // Backend used for the tool (e.g. "npm", "github", "asdf")
 	Success        bool          // Whether the update succeeded
 	Error          string        // Error message if update failed
 	Duration       time.Duration // Time taken for the update
@@ -403,6 +404,7 @@ func (um *UpdateManager) UpdateTool(ctx context.Context, tool, oldVersion, targe
 		Tool:       tool,
 		OldVersion: oldVersion,
 		NewVersion: targetVersion,
+		Backend:    installation.Backend,
 		Success:    true,
 		Duration:   time.Since(startTime),
 	}, nil
@@ -434,6 +436,7 @@ func (um *UpdateManager) UpdateAll(ctx context.Context) ([]UpdateResult, error) 
 				Tool:       update.Tool,
 				OldVersion: update.CurrentVersion,
 				NewVersion: update.LatestVersion,
+				Backend:    update.Backend,
 				Success:    false,
 				Error:      err.Error(),
 			})

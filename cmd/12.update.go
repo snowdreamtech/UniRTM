@@ -18,6 +18,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/lockfile"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/snowdreamtech/unirtm/internal/service"
@@ -454,16 +455,15 @@ func updateConfigAndLockfile(ctx context.Context, cfg *config.Config, backendReg
 			updatedTools := make(map[string]service.ToolSpec)
 			for _, r := range results {
 				if r.Success {
-					backendName := ""
-					if cfg != nil {
-						if toolCfg, ok := cfg.Tools[r.Tool]; ok {
-							backendName = toolCfg.Backend
-						} else {
+					// r.Backend is populated from the installation DB record — the
+					// authoritative source — so we don't need to infer it from config.
+					backendName := r.Backend
+					if backendName == "" {
+						// Fallback 1: infer from config key prefix (e.g. "npm:eslint" → "npm").
+						if cfg != nil {
 							for k, v := range cfg.Tools {
 								if strings.HasSuffix(k, ":"+r.Tool) || strings.HasSuffix(k, "/"+r.Tool) {
 									backendName = v.Backend
-									// When backend is not explicitly set in the ToolConfig,
-									// infer it from the config key prefix (e.g. "npm:eslint" → "npm").
 									if backendName == "" {
 										if idx := strings.Index(k, ":"); idx != -1 {
 											backendName = k[:idx]
@@ -475,10 +475,15 @@ func updateConfigAndLockfile(ctx context.Context, cfg *config.Config, backendReg
 						}
 					}
 					if backendName == "" {
+						// Fallback 2: tool names containing "/" are structurally GitHub tools
+						// (owner/repo format). This is a reliable structural convention, not
+						// a guess. Everything else is genuinely unknown — skip it.
 						if strings.Contains(r.Tool, "/") {
 							backendName = "github"
 						} else {
-							backendName = "asdf"
+							logger.Warn("updateConfigAndLockfile: skipping lockfile update (unknown backend)",
+								map[string]interface{}{"tool": r.Tool})
+							continue
 						}
 					}
 					updatedTools[r.Tool] = service.ToolSpec{
