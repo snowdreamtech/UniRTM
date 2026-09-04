@@ -579,3 +579,183 @@ func TestNormalizeVersionPrefix(t *testing.T) {
 		})
 	}
 }
+
+// ─── Rule improvement tests (wave 1, 2, 3) ──────────────────────────────────
+
+// TestCalculateAssetScore_DocWordBoundary verifies that 'doc' is only excluded
+// as a standalone token, not as a substring of tool/project names like 'docker'.
+func TestCalculateAssetScore_DocWordBoundary(t *testing.T) {
+	linuxAmd64 := Platform{OS: "linux", Arch: "amd64"}
+
+	// 'docker' contains 'doc' as a prefix but 'k' follows — should NOT be excluded.
+	score := CalculateAssetScore("docker-linux-amd64.tar.gz", linuxAmd64, "docker/cli")
+	if score <= 0 {
+		t.Errorf("docker-linux-amd64.tar.gz should score positive for docker/cli, got %d", score)
+	}
+
+	// Standalone 'doc' token should be excluded.
+	score = CalculateAssetScore("tool-doc-linux-amd64.tar.gz", linuxAmd64, "org/tool")
+	if score != -1 {
+		t.Errorf("tool-doc-linux-amd64.tar.gz should be excluded (doc= man page), got %d", score)
+	}
+}
+
+// TestCalculateAssetScore_ManWordBoundary verifies 'man' is only excluded as a
+// standalone token, not as part of 'manifest', 'manager', etc.
+func TestCalculateAssetScore_ManWordBoundary(t *testing.T) {
+	linuxAmd64 := Platform{OS: "linux", Arch: "amd64"}
+
+	// 'manifest' contains 'man' but 'i' follows — should NOT be excluded.
+	score := CalculateAssetScore("manifest-tool-linux-amd64.tar.gz", linuxAmd64, "manifest-tool/manifest-tool")
+	if score <= 0 {
+		t.Errorf("manifest-tool-linux-amd64.tar.gz should score positive for manifest-tool, got %d", score)
+	}
+
+	// Standalone 'man' token should be excluded.
+	score = CalculateAssetScore("tool-man-linux-amd64.tar.gz", linuxAmd64, "org/tool")
+	if score != -1 {
+		t.Errorf("tool-man-linux-amd64.tar.gz should be excluded (man= man page), got %d", score)
+	}
+}
+
+// TestCalculateAssetScore_WasmExcluded verifies wasm/wasi targets are always excluded.
+func TestCalculateAssetScore_WasmExcluded(t *testing.T) {
+	linuxAmd64 := Platform{OS: "linux", Arch: "amd64"}
+
+	cases := []string{
+		"tool-linux-wasm.tar.gz",
+		"tool-wasm32-wasi.tar.gz",
+		"tool.wasm",
+		"tool-wasi-linux-amd64.tar.gz",
+	}
+	for _, name := range cases {
+		score := CalculateAssetScore(name, linuxAmd64, "org/tool")
+		if score != -1 {
+			t.Errorf("%q should be excluded (wasm/wasi), got score %d", name, score)
+		}
+	}
+}
+
+// TestCalculateAssetScore_AndroidExcludedFromLinux verifies android targets are
+// not matched even though they contain the word 'linux'.
+func TestCalculateAssetScore_AndroidExcludedFromLinux(t *testing.T) {
+	linuxAmd64 := Platform{OS: "linux", Arch: "amd64"}
+
+	cases := []string{
+		"tool-aarch64-linux-android.tar.gz",
+		"tool-x86_64-linux-android.tar.gz",
+		"tool-linux-android-amd64.tar.gz",
+	}
+	for _, name := range cases {
+		score := CalculateAssetScore(name, linuxAmd64, "org/tool")
+		if score != -1 {
+			t.Errorf("%q should be excluded (android ABI), got score %d", name, score)
+		}
+	}
+}
+
+// TestCalculateAssetScore_MuslImpliesLinux verifies that an asset named with
+// 'musl' but without the word 'linux' still matches the linux platform.
+func TestCalculateAssetScore_MuslImpliesLinux(t *testing.T) {
+	linuxAmd64 := Platform{OS: "linux", Arch: "amd64"}
+
+	score := CalculateAssetScore("tool-musl-amd64.tar.gz", linuxAmd64, "org/tool")
+	if score <= 0 {
+		t.Errorf("tool-musl-amd64.tar.gz should score positive for linux (musl implies Linux), got %d", score)
+	}
+}
+
+// TestCalculateAssetScore_AlpineImpliesLinux verifies that 'alpine' in the asset
+// name triggers linux osMatch.
+func TestCalculateAssetScore_AlpineImpliesLinux(t *testing.T) {
+	linuxAmd64 := Platform{OS: "linux", Arch: "amd64"}
+
+	score := CalculateAssetScore("tool-alpine-amd64.tar.gz", linuxAmd64, "org/tool")
+	if score <= 0 {
+		t.Errorf("tool-alpine-amd64.tar.gz should score positive for linux (alpine implies Linux), got %d", score)
+	}
+}
+
+// TestCalculateAssetScore_X8664HyphenAlias verifies 'x86-64' (hyphen) is
+// treated as amd64 — the POSIX naming convention variant.
+func TestCalculateAssetScore_X8664HyphenAlias(t *testing.T) {
+	linuxAmd64 := Platform{OS: "linux", Arch: "amd64"}
+
+	score := CalculateAssetScore("tool-linux-x86-64.tar.gz", linuxAmd64, "org/tool")
+	if score <= 0 {
+		t.Errorf("tool-linux-x86-64.tar.gz should score positive for linux-amd64, got %d", score)
+	}
+}
+
+// TestCalculateAssetScore_I686Alias verifies 'i686' is treated as 386.
+func TestCalculateAssetScore_I686Alias(t *testing.T) {
+	linux386 := Platform{OS: "linux", Arch: "386"}
+
+	score := CalculateAssetScore("tool-linux-i686.tar.gz", linux386, "org/tool")
+	if score <= 0 {
+		t.Errorf("tool-linux-i686.tar.gz should score positive for linux-386 (i686 alias), got %d", score)
+	}
+}
+
+// TestCalculateAssetScore_Arm64eAlias verifies 'arm64e' is treated as arm64.
+func TestCalculateAssetScore_Arm64eAlias(t *testing.T) {
+	darwinArm64 := Platform{OS: "darwin", Arch: "arm64"}
+
+	score := CalculateAssetScore("tool-darwin-arm64e.tar.gz", darwinArm64, "org/tool")
+	if score <= 0 {
+		t.Errorf("tool-darwin-arm64e.tar.gz should score positive for darwin-arm64 (arm64e alias), got %d", score)
+	}
+}
+
+// TestCalculateAssetScore_TarZst verifies .tar.zst gets a positive format bonus.
+func TestCalculateAssetScore_TarZst(t *testing.T) {
+	linuxAmd64 := Platform{OS: "linux", Arch: "amd64"}
+
+	scoreZst := CalculateAssetScore("tool-linux-amd64.tar.zst", linuxAmd64, "org/tool")
+	scoreTgz := CalculateAssetScore("tool-linux-amd64.tar.gz", linuxAmd64, "org/tool")
+
+	if scoreZst <= 0 {
+		t.Errorf("tool-linux-amd64.tar.zst should score positive, got %d", scoreZst)
+	}
+	// .tar.gz should be preferred over .tar.zst
+	if scoreTgz <= scoreZst {
+		t.Errorf(".tar.gz (%d) should outscore .tar.zst (%d)", scoreTgz, scoreZst)
+	}
+}
+
+// TestCalculateAssetScore_SnapFlatpakExcluded verifies Linux packaging formats
+// that require runtime tooling are excluded.
+func TestCalculateAssetScore_SnapFlatpakExcluded(t *testing.T) {
+	linuxAmd64 := Platform{OS: "linux", Arch: "amd64"}
+
+	cases := []string{
+		"tool_linux_amd64.snap",
+		"tool-linux-amd64.flatpak",
+	}
+	for _, name := range cases {
+		score := CalculateAssetScore(name, linuxAmd64, "org/tool")
+		if score != -1 {
+			t.Errorf("%q should be excluded (.snap/.flatpak), got score %d", name, score)
+		}
+	}
+}
+
+// TestCalculateAssetScore_AttestationExcluded verifies SBOM/provenance/attestation
+// files are excluded.
+func TestCalculateAssetScore_AttestationExcluded(t *testing.T) {
+	linuxAmd64 := Platform{OS: "linux", Arch: "amd64"}
+
+	cases := []string{
+		"tool-linux-amd64.sbom.json",
+		"tool-linux-amd64.intoto.jsonl",
+		"tool-linux-amd64-provenance.json",
+		"tool-linux-amd64-attestation.json",
+		"tool-linux-amd64.attestation",
+	}
+	for _, name := range cases {
+		score := CalculateAssetScore(name, linuxAmd64, "org/tool")
+		if score != -1 {
+			t.Errorf("%q should be excluded (security metadata), got score %d", name, score)
+		}
+	}
+}
