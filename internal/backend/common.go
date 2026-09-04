@@ -428,11 +428,16 @@ func GenericGetDownloadInfo(ctx context.Context, p HostingProvider, tool, versio
 }
 
 // GenericGetDownloadInfoWithPatterns is like GenericGetDownloadInfo but accepts
-// assetPatterns (a map from platform key → exact asset filename) to bypass
+// assetPatterns (a map from platform key -> exact asset filename) to bypass
 // heuristic scoring for the given platform.
 //
 // platformKey is the canonical lock key for the target platform (e.g. "macos-amd64").
 // When assetPatterns[platformKey] is set the asset is selected by exact name.
+//
+// Fallback order:
+//  1. User-configured asset_patterns (assetPatterns arg) — highest priority
+//  2. Heuristic asset scoring (CalculateAssetScore)
+//  3. Built-in community AssetRegistry (LookupRegistryPatterns) — automatic fallback
 func GenericGetDownloadInfoWithPatterns(ctx context.Context, p HostingProvider, tool, version, platformKey string, platform Platform, assetPatterns map[string]string) (*VersionInfo, error) {
 	tag := version
 	if !strings.HasPrefix(tag, "v") {
@@ -449,7 +454,18 @@ func GenericGetDownloadInfoWithPatterns(ctx context.Context, p HostingProvider, 
 		}
 	}
 
+	// Priority 1 & 2: user patterns + heuristic scoring.
 	bestAsset, _ := FindBestAssetWithOverride(release.Assets, platform, tool, platformKey, assetPatterns)
+
+	// Priority 3: built-in community registry fallback.
+	// Only consulted when there are no user-level patterns configured AND the
+	// heuristic found nothing.
+	if bestAsset == nil && len(assetPatterns) == 0 {
+		if registryEntry, ok := LookupRegistryPatterns(tool); ok && len(registryEntry.Patterns) > 0 {
+			bestAsset, _ = FindBestAssetWithOverride(release.Assets, platform, tool, platformKey, registryEntry.Patterns)
+		}
+	}
+
 	if bestAsset == nil {
 		return nil, NewBackendError(p.Name(), tool, "no matching asset", nil)
 	}
