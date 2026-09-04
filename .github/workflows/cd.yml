@@ -191,6 +191,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config commit.gpgsign false
           if [ -f "pnpm-lock.yaml" ]; then
             pnpm install --no-frozen-lockfile
           elif [ -f "yarn.lock" ]; then
@@ -199,7 +200,7 @@ jobs:
             npm install --package-lock-only
           fi
           git add .
-          git commit --signoff -m "chore(release): synchronize lockfiles for version bump" || echo "No changes to sync"
+          git commit --no-gpg-sign --signoff -m "chore(release): synchronize lockfiles for version bump" || echo "No changes to sync"
           git push "https://${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
@@ -210,6 +211,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config commit.gpgsign false
 
           find . -name "CHANGELOG.md" -type f | while read -r file; do
             awk '
@@ -232,7 +234,7 @@ jobs:
           done
 
           git add .
-          git commit --signoff -m "chore(release): deduplicate CHANGELOG headers" || echo "No changes to sync"
+          git commit --no-gpg-sign --signoff -m "chore(release): deduplicate CHANGELOG headers" || echo "No changes to sync"
           git push "https://${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}

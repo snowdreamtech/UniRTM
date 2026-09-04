@@ -75,7 +75,7 @@ jobs:
         shell: sh
         run: |
           cd docs
-          unirtm exec -- npm install
+          unirtm exec -- npm install --include=dev
           unirtm exec -- npm run docs:build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -113,8 +113,9 @@ jobs:
           else
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
+            git config commit.gpgsign false
             git add .github/dependabot.yml unirtm.lock .unirtm.toml
-            git commit --signoff -m "chore(deps): sync dependabot config and unirtm toolchain"
+            git commit --no-gpg-sign --signoff -m "chore(deps): sync dependabot config and unirtm toolchain"
             git push origin HEAD:"$GITHUB_REF"
             echo "✅ Dependabot config and UniRTM toolchain updated and pushed."
           fi
