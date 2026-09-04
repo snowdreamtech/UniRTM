@@ -873,7 +873,7 @@ backend = "npm"
 [tools."npm:dockerfile-utils"."platforms.windows-arm64"]
 
 [[tools."npm:eslint"]]
-version = "10.9.1"
+version = "10.10.0"
 backend = "npm"
 
 [tools."npm:eslint"."platforms.linux-amd64"]
@@ -953,7 +953,7 @@ backend = "npm"
 [tools."npm:sort-package-json"."platforms.windows-arm64"]
 
 [[tools."npm:stylelint"]]
-version = "17.14.1"
+version = "17.15.0"
 backend = "npm"
 
 [tools."npm:stylelint"."platforms.linux-amd64"]
