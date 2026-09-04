@@ -54,23 +54,26 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 	nameLower := strings.ToLower(assetName)
 
 	// 1. Hard Exclusions (Negative Score)
-	excludeSuffixes := []string{".sha256", ".sha256sum", ".md5", ".asc", ".sig", ".sha1", ".deb", ".rpm", ".msi", ".apk", ".pkg", ".txt", ".pdf", ".h", ".c", ".cpp", ".a", ".lib"}
+	excludeSuffixes := []string{".sha256", ".sha256sum", ".md5", ".asc", ".sig", ".sha1", ".deb", ".rpm", ".msi", ".apk", ".pkg", ".txt", ".pdf", ".h", ".c", ".cpp", ".a", ".lib", ".tar.bz2", ".tbz2"}
 	for _, suffix := range excludeSuffixes {
 		if strings.HasSuffix(nameLower, suffix) {
 			return -1
 		}
 	}
 
-	// Exclude non-runtime assets
-	negatives := []string{"checksums", "sha256sums", "license", "source", "devel", "dev", "header", "static-lib", "manual", "doc", "man", "debug"}
-
-	// Determine the short tool name to avoid false positives in negative check
+	// Determine the short tool name to avoid false positives in negative keyword checks.
 	toolShortName := toolName
 	if parts := strings.Split(toolName, "/"); len(parts) == 2 {
 		toolShortName = parts[1]
 	}
 	toolShortName = strings.TrimPrefix(toolShortName, "github:")
 	toolShortName = strings.ToLower(toolShortName)
+
+	// Exclude non-runtime assets.
+	// NOTE: "dev" is intentionally checked with word-boundary matching (containsWord)
+	// rather than plain Contains to avoid false-positives on tool names like
+	// "devops-tool" or asset names like "devenv-linux-amd64.tar.gz".
+	negatives := []string{"checksums", "sha256sums", "license", "source", "devel", "header", "static-lib", "manual", "doc", "man", "debug"}
 
 	for _, neg := range negatives {
 		if strings.Contains(nameLower, neg) {
@@ -81,6 +84,10 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 			}
 			return -1
 		}
+	}
+	// Word-boundary check for "dev" to avoid matching "devops", "devenv", etc.
+	if containsWord(nameLower, "dev") && !strings.Contains(toolShortName, "dev") {
+		return -1
 	}
 
 	score := 0
@@ -139,7 +146,11 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 			score += 50
 		}
 	case "arm64":
-		if strings.Contains(nameLower, "arm64") || strings.Contains(nameLower, "aarch64") || strings.Contains(nameLower, "armv8") {
+		// arm64, aarch64: standard 64-bit ARM names.
+		// armv8, armv8l: explicit ARMv8 naming (little-endian variant included).
+		// arm64e: Apple Silicon variant used in some Homebrew/macOS tools.
+		if strings.Contains(nameLower, "arm64") || strings.Contains(nameLower, "aarch64") ||
+			strings.Contains(nameLower, "armv8") || strings.Contains(nameLower, "arm64e") {
 			archMatch = true
 			score += 100
 		} else if isDarwinUniversal {
@@ -147,7 +158,12 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 			score += 80 // Lower than exact match so darwin-arm64 is preferred over darwin-all
 		}
 	case "386":
-		if strings.Contains(nameLower, "386") || strings.Contains(nameLower, "i386") || strings.Contains(nameLower, "x86") || strings.Contains(nameLower, "32bit") {
+		// i386, i686: common 32-bit x86 naming conventions.
+		// x86: generic 32-bit x86 identifier.
+		// 32bit: some tools use "32bit" as a suffix.
+		if strings.Contains(nameLower, "386") || strings.Contains(nameLower, "i386") ||
+			strings.Contains(nameLower, "i686") || strings.Contains(nameLower, "x86") ||
+			strings.Contains(nameLower, "32bit") {
 			archMatch = true
 			score += 100
 		}
@@ -157,15 +173,18 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 		return -1
 	}
 
-	// 4. Preferred Formats
-	if strings.HasSuffix(nameLower, ".tar.gz") || strings.HasSuffix(nameLower, ".tgz") {
+	// 4. Preferred Formats (scores reflect unpack ergonomics and cross-platform prevalence).
+	switch {
+	case strings.HasSuffix(nameLower, ".tar.gz") || strings.HasSuffix(nameLower, ".tgz"):
 		score += 50
-	} else if strings.HasSuffix(nameLower, ".zip") {
+	case strings.HasSuffix(nameLower, ".zip"):
 		score += 40
-	} else if strings.HasSuffix(nameLower, ".tar.xz") || strings.HasSuffix(nameLower, ".txz") {
+	case strings.HasSuffix(nameLower, ".tar.xz") || strings.HasSuffix(nameLower, ".txz"):
 		score += 30
-	} else if !strings.Contains(nameLower, ".") {
-		score += 20 // Raw binary
+	case strings.HasSuffix(nameLower, ".tar.zst") || strings.HasSuffix(nameLower, ".tzst"):
+		score += 28 // zstd: fast modern format, slightly below xz
+	case !strings.Contains(nameLower, ".") || strings.HasSuffix(nameLower, ".exe"):
+		score += 20 // Raw binary or Windows exe
 	}
 
 	// 5. Tool Name Bonus
