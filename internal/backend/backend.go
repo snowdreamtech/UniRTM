@@ -103,6 +103,20 @@ type Backend interface {
 	Dependencies() []string
 }
 
+// BackendWithPatterns is an optional extension of Backend implemented by backends
+// that support user-configured asset name overrides per platform.
+//
+// When a Backend also implements BackendWithPatterns, Generate() will call
+// GetDownloadInfoWithPatterns instead of GetDownloadInfo so that asset_patterns
+// from the user's .unirtm.toml can bypass heuristic scoring.
+type BackendWithPatterns interface {
+	Backend
+	// GetDownloadInfoWithPatterns resolves download info for tool@version on
+	// platform, but consults assetPatterns[platformKey] for an exact asset
+	// filename override before falling back to heuristic scoring.
+	GetDownloadInfoWithPatterns(ctx context.Context, tool, version, platformKey string, platform Platform, assetPatterns map[string]string) (*VersionInfo, error)
+}
+
 // BackendError represents an error from a backend operation.
 type BackendError struct {
 	Cause   error

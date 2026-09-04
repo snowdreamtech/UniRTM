@@ -320,7 +320,18 @@ func (ls *LockService) Generate(
 				}
 				plat := backend.Platform{OS: goos, Arch: goarch}
 
-				info, err := b.GetDownloadInfo(ctx, toolName, spec.Version, plat)
+				// Use asset pattern overrides when the spec has them and the
+				// backend supports the extended interface.
+				var info *backend.VersionInfo
+				if len(spec.AssetPatterns) > 0 {
+					if bp, ok := b.(backend.BackendWithPatterns); ok {
+						info, err = bp.GetDownloadInfoWithPatterns(ctx, toolName, spec.Version, platKey, plat, spec.AssetPatterns)
+					} else {
+						info, err = b.GetDownloadInfo(ctx, toolName, spec.Version, plat)
+					}
+				} else {
+					info, err = b.GetDownloadInfo(ctx, toolName, spec.Version, plat)
+				}
 				if err != nil {
 					logger.Warn("lockfile generate: could not resolve download info", map[string]interface{}{
 						"tool":     toolName,
@@ -401,6 +412,10 @@ type ToolSpec struct {
 	Version      string
 	BackendName  string
 	OriginalName string
+	// AssetPatterns maps platform keys (e.g. "macos-amd64") to exact release
+	// asset filenames.  When populated, FindBestAssetWithOverride uses these
+	// instead of heuristic scoring for the specified platforms.
+	AssetPatterns map[string]string
 }
 
 // ─── Inspection ───────────────────────────────────────────────────────────────

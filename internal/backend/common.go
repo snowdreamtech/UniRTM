@@ -215,6 +215,27 @@ func FindBestAsset(assets []CommonAsset, platform Platform, toolName string) (*C
 	return bestAsset, bestScore
 }
 
+// FindBestAssetWithOverride is like FindBestAsset but first checks assetPatterns
+// for an exact asset filename override keyed by platformKey (e.g. "macos-amd64").
+// When an override is found the named asset is located in the release and returned
+// directly, bypassing the heuristic scoring entirely.
+//
+// assetPatterns may be nil (or empty), in which case normal scoring is used.
+func FindBestAssetWithOverride(assets []CommonAsset, platform Platform, toolName, platformKey string, assetPatterns map[string]string) (*CommonAsset, int) {
+	if len(assetPatterns) > 0 {
+		if wantName, ok := assetPatterns[platformKey]; ok && wantName != "" {
+			for i := range assets {
+				if assets[i].Name == wantName {
+					return &assets[i], 1000 // override score — always wins
+				}
+			}
+			// Override specified but asset not found in release — fall through to
+			// normal matching so we still get something rather than nothing.
+		}
+	}
+	return FindBestAsset(assets, platform, toolName)
+}
+
 // FetchAndParseChecksumFile downloads and parses a checksum file from a URL.
 func FetchAndParseChecksumFile(ctx context.Context, client *http.Client, url string) (map[string]string, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
@@ -403,6 +424,16 @@ func GenericResolveVersion(ctx context.Context, p HostingProvider, tool, version
 
 // GenericGetDownloadInfo implements the common logic for retrieving download info.
 func GenericGetDownloadInfo(ctx context.Context, p HostingProvider, tool, version string, platform Platform) (*VersionInfo, error) {
+	return GenericGetDownloadInfoWithPatterns(ctx, p, tool, version, "", platform, nil)
+}
+
+// GenericGetDownloadInfoWithPatterns is like GenericGetDownloadInfo but accepts
+// assetPatterns (a map from platform key → exact asset filename) to bypass
+// heuristic scoring for the given platform.
+//
+// platformKey is the canonical lock key for the target platform (e.g. "macos-amd64").
+// When assetPatterns[platformKey] is set the asset is selected by exact name.
+func GenericGetDownloadInfoWithPatterns(ctx context.Context, p HostingProvider, tool, version, platformKey string, platform Platform, assetPatterns map[string]string) (*VersionInfo, error) {
 	tag := version
 	if !strings.HasPrefix(tag, "v") {
 		tag = "v" + version
@@ -418,7 +449,7 @@ func GenericGetDownloadInfo(ctx context.Context, p HostingProvider, tool, versio
 		}
 	}
 
-	bestAsset, _ := FindBestAsset(release.Assets, platform, tool)
+	bestAsset, _ := FindBestAssetWithOverride(release.Assets, platform, tool, platformKey, assetPatterns)
 	if bestAsset == nil {
 		return nil, NewBackendError(p.Name(), tool, "no matching asset", nil)
 	}

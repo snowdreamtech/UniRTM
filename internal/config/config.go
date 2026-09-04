@@ -36,13 +36,23 @@ type EnvironmentConfig struct {
 }
 
 type ToolConfig struct {
-	Version           string      `toml:"version" yaml:"version" mapstructure:"version"`
-	Backend           string      `toml:"backend,omitempty" yaml:"backend,omitempty" mapstructure:"backend,omitempty"`
-	Provider          string      `toml:"provider,omitempty" yaml:"provider,omitempty" mapstructure:"provider,omitempty"`
-	PreInstall        StringArray `toml:"pre_install,omitempty" yaml:"pre_install,omitempty" mapstructure:"pre_install,omitempty"`
-	PostInstall       StringArray `toml:"post_install,omitempty" yaml:"post_install,omitempty" mapstructure:"post_install,omitempty"`
-	GPGKeys           []string    `toml:"gpg_keys,omitempty" yaml:"gpg_keys,omitempty" mapstructure:"gpg_keys,omitempty"`
-	MinimumReleaseAge string      `toml:"minimum_release_age,omitempty" yaml:"minimum_release_age,omitempty" mapstructure:"minimum_release_age,omitempty"`
+	Version           string            `toml:"version" yaml:"version" mapstructure:"version"`
+	Backend           string            `toml:"backend,omitempty" yaml:"backend,omitempty" mapstructure:"backend,omitempty"`
+	Provider          string            `toml:"provider,omitempty" yaml:"provider,omitempty" mapstructure:"provider,omitempty"`
+	PreInstall        StringArray       `toml:"pre_install,omitempty" yaml:"pre_install,omitempty" mapstructure:"pre_install,omitempty"`
+	PostInstall       StringArray       `toml:"post_install,omitempty" yaml:"post_install,omitempty" mapstructure:"post_install,omitempty"`
+	GPGKeys           []string          `toml:"gpg_keys,omitempty" yaml:"gpg_keys,omitempty" mapstructure:"gpg_keys,omitempty"`
+	MinimumReleaseAge string            `toml:"minimum_release_age,omitempty" yaml:"minimum_release_age,omitempty" mapstructure:"minimum_release_age,omitempty"`
+	// AssetPatterns maps a platform key (e.g. "macos-amd64") to the exact asset
+	// filename to download from the release.  When set, the heuristic asset-score
+	// matching is bypassed and the named asset is selected directly.
+	//
+	// Example in .unirtm.toml:
+	//
+	//   [tools."editorconfig-checker/editorconfig-checker".asset_patterns]
+	//   macos-amd64 = "editorconfig-checker-darwin-all.tar.gz"
+	//   macos-arm64 = "editorconfig-checker-darwin-all.tar.gz"
+	AssetPatterns     map[string]string `toml:"asset_patterns,omitempty" yaml:"asset_patterns,omitempty" mapstructure:"asset_patterns,omitempty"`
 }
 
 type ToolMap map[string]ToolConfig
@@ -113,6 +123,14 @@ func parseToolConfig(v interface{}) ToolConfig {
 		}
 		if minAge, ok := val["minimum_release_age"].(string); ok {
 			tc.MinimumReleaseAge = minAge
+		}
+		if patterns, ok := val["asset_patterns"].(map[string]interface{}); ok {
+			tc.AssetPatterns = make(map[string]string)
+			for k, v := range patterns {
+				if s, ok := v.(string); ok {
+					tc.AssetPatterns[k] = s
+				}
+			}
 		}
 	}
 	return tc

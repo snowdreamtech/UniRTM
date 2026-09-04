@@ -77,6 +77,12 @@ func (g *GitHubBackend) GetDownloadInfo(ctx context.Context, tool, version strin
 	return GenericGetDownloadInfo(ctx, g, tool, version, platform)
 }
 
+// GetDownloadInfoWithPatterns is like GetDownloadInfo but accepts assetPatterns
+// and platformKey to bypass heuristic scoring for the named platform.
+func (g *GitHubBackend) GetDownloadInfoWithPatterns(ctx context.Context, tool, version, platformKey string, platform Platform, assetPatterns map[string]string) (*VersionInfo, error) {
+	return GenericGetDownloadInfoWithPatterns(ctx, g, tool, version, platformKey, platform, assetPatterns)
+}
+
 // FetchReleases implements HostingProvider.
 func (g *GitHubBackend) FetchReleases(ctx context.Context, tool string) ([]CommonRelease, error) {
 	tool = strings.TrimPrefix(tool, "github:")

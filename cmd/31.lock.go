@@ -161,9 +161,10 @@ func runLock(cmd *cobra.Command, args []string) error {
 				}
 			}
 			tools[name] = service.ToolSpec{
-				Name:        toolName,
-				Version:     tc.Version,
-				BackendName: backendName,
+				Name:          toolName,
+				Version:       tc.Version,
+				BackendName:   backendName,
+				AssetPatterns: tc.AssetPatterns,
 			}
 		}
 	} else {
