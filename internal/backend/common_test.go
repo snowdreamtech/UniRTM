@@ -43,6 +43,62 @@ func TestCalculateAssetScore(t *testing.T) {
 	}
 }
 
+func TestCalculateAssetScore_DarwinUniversal(t *testing.T) {
+	tests := []struct {
+		name      string
+		assetName string
+		platform  Platform
+		tool      string
+		wantMatch bool // true = should match (score > 0), false = should not (-1)
+	}{
+		// darwin-all should match both macOS amd64 and arm64
+		{"darwin-all matches macos-amd64", "editorconfig-checker-darwin-all.tar.gz", Platform{OS: "darwin", Arch: "amd64"}, "editorconfig-checker/editorconfig-checker", true},
+		{"darwin-all matches macos-arm64", "editorconfig-checker-darwin-all.tar.gz", Platform{OS: "darwin", Arch: "arm64"}, "editorconfig-checker/editorconfig-checker", true},
+		// darwin-universal should also match
+		{"darwin-universal matches macos-amd64", "tool-darwin-universal.tar.gz", Platform{OS: "darwin", Arch: "amd64"}, "owner/tool", true},
+		{"darwin-universal matches macos-arm64", "tool-darwin-universal.tar.gz", Platform{OS: "darwin", Arch: "arm64"}, "owner/tool", true},
+		// darwin-all should NOT match linux (OS mismatch)
+		{"darwin-all rejects linux", "editorconfig-checker-darwin-all.tar.gz", Platform{OS: "linux", Arch: "amd64"}, "editorconfig-checker/editorconfig-checker", false},
+		// linux-all should NOT match macOS (must not trigger universal fallback on non-darwin)
+		{"linux-all rejects macos", "tool-linux-all.tar.gz", Platform{OS: "darwin", Arch: "arm64"}, "owner/tool", false},
+		// "install" or "small" should NOT trigger 'all' match (containsWord boundary check)
+		{"install no false positive", "tool-darwin-install.tar.gz", Platform{OS: "darwin", Arch: "arm64"}, "owner/tool", false},
+		{"small no false positive", "tool-darwin-small.tar.gz", Platform{OS: "darwin", Arch: "arm64"}, "owner/tool", false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			score := CalculateAssetScore(tc.assetName, tc.platform, tc.tool)
+			if tc.wantMatch && score <= 0 {
+				t.Errorf("expected positive score for %q on %s, got %d", tc.assetName, tc.platform, score)
+			}
+			if !tc.wantMatch && score > 0 {
+				t.Errorf("expected no match (score <= 0) for %q on %s, got %d", tc.assetName, tc.platform, score)
+			}
+		})
+	}
+}
+
+func TestCalculateAssetScore_DarwinExactOverUniversal(t *testing.T) {
+	// Exact darwin-arm64 asset should score higher than darwin-all
+	exactAsset := "tool-darwin-arm64.tar.gz"
+	universalAsset := "tool-darwin-all.tar.gz"
+	p := Platform{OS: "darwin", Arch: "arm64"}
+
+	exactScore := CalculateAssetScore(exactAsset, p, "owner/tool")
+	universalScore := CalculateAssetScore(universalAsset, p, "owner/tool")
+
+	if exactScore <= 0 {
+		t.Fatalf("exact darwin-arm64 asset should match, got score %d", exactScore)
+	}
+	if universalScore <= 0 {
+		t.Fatalf("darwin-all asset should match, got score %d", universalScore)
+	}
+	if universalScore >= exactScore {
+		t.Errorf("exact match (%d) should score higher than universal (%d)", exactScore, universalScore)
+	}
+}
+
 func TestFindBestAsset(t *testing.T) {
 	assets := []CommonAsset{
 		{Name: "tool-windows-amd64.zip", URL: "url1"},

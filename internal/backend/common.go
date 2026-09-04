@@ -120,21 +120,31 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 
 	// 3. Architecture Match
 	archMatch := false
+	// isDarwinUniversal detects macOS universal/fat binaries that work on any architecture.
+	// Some projects publish a single "darwin-all" or "darwin-universal" binary instead of
+	// separate amd64/arm64 builds (e.g., editorconfig-checker v4.0.0).
+	isDarwinUniversal := platform.OS == "darwin" &&
+		(strings.Contains(nameLower, "universal") || containsWord(nameLower, "all"))
+
 	switch platform.Arch {
 	case "amd64":
-		if strings.Contains(nameLower, "amd64") || strings.Contains(nameLower, "x86_64") || strings.Contains(nameLower, "x64") || strings.Contains(nameLower, "64bit") ||
-			(platform.OS == "darwin" && strings.Contains(nameLower, "universal")) {
+		if strings.Contains(nameLower, "amd64") || strings.Contains(nameLower, "x86_64") || strings.Contains(nameLower, "x64") || strings.Contains(nameLower, "64bit") {
 			archMatch = true
 			score += 100
+		} else if isDarwinUniversal {
+			archMatch = true
+			score += 80 // Lower than exact match so darwin-amd64 is preferred over darwin-all
 		} else if platform.OS == "windows" && strings.HasSuffix(nameLower, ".zip") && !strings.Contains(nameLower, "386") && !strings.Contains(nameLower, "arm64") && !strings.Contains(nameLower, "aarch64") && !strings.Contains(nameLower, "armv8") {
 			archMatch = true
 			score += 50
 		}
 	case "arm64":
-		if strings.Contains(nameLower, "arm64") || strings.Contains(nameLower, "aarch64") || strings.Contains(nameLower, "armv8") ||
-			(platform.OS == "darwin" && strings.Contains(nameLower, "universal")) {
+		if strings.Contains(nameLower, "arm64") || strings.Contains(nameLower, "aarch64") || strings.Contains(nameLower, "armv8") {
 			archMatch = true
 			score += 100
+		} else if isDarwinUniversal {
+			archMatch = true
+			score += 80 // Lower than exact match so darwin-arm64 is preferred over darwin-all
 		}
 	case "386":
 		if strings.Contains(nameLower, "386") || strings.Contains(nameLower, "i386") || strings.Contains(nameLower, "x86") || strings.Contains(nameLower, "32bit") {
