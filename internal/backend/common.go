@@ -85,9 +85,13 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 	toolShortName = strings.ToLower(toolShortName)
 
 	// Exclude non-runtime assets.
-	// NOTE: "dev" and "sbom" are checked with word-boundary matching (containsWord)
-	// to avoid false-positives on tool names that contain these substrings.
-	negatives := []string{"checksums", "sha256sums", "license", "source", "devel", "header", "static-lib", "manual", "doc", "man", "debug", "provenance", "attestation"}
+	// NOTE: short keywords ("dev", "doc", "man", "sbom") use word-boundary
+	// containsWord() instead of plain Contains to avoid false-positive matches:
+	//   "doc"  would match "docker", "document"
+	//   "man"  would match "manifest", "manager", "command"
+	//   "dev"  would match "devops", "devenv"
+	//   "sbom" would match tool names with "sbom" as a substring
+	negatives := []string{"checksums", "sha256sums", "license", "source", "devel", "header", "static-lib", "manual", "debug", "provenance", "attestation"}
 
 	for _, neg := range negatives {
 		if strings.Contains(nameLower, neg) {
@@ -103,7 +107,17 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 	if containsWord(nameLower, "dev") && !strings.Contains(toolShortName, "dev") {
 		return -1
 	}
+	if containsWord(nameLower, "doc") && !strings.Contains(toolShortName, "doc") {
+		return -1
+	}
+	if containsWord(nameLower, "man") && !strings.Contains(toolShortName, "man") {
+		return -1
+	}
 	if containsWord(nameLower, "sbom") && !strings.Contains(toolShortName, "sbom") {
+		return -1
+	}
+	// Exclude WebAssembly targets — wasm/wasi binaries cannot run natively.
+	if strings.Contains(nameLower, "wasm") || strings.Contains(nameLower, "wasi") {
 		return -1
 	}
 
@@ -115,6 +129,11 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 	case "linux":
 		// Direct Linux keyword matches.
 		if strings.Contains(nameLower, "linux") || strings.Contains(nameLower, "unknown-linux") {
+			// Exclude android targets — android uses the Linux kernel but has a
+			// different ABI (Bionic libc) and cannot run standard Linux binaries.
+			if strings.Contains(nameLower, "android") {
+				return -1
+			}
 			osMatch = true
 			score += 100
 		}
