@@ -54,7 +54,22 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 	nameLower := strings.ToLower(assetName)
 
 	// 1. Hard Exclusions (Negative Score)
-	excludeSuffixes := []string{".sha256", ".sha256sum", ".md5", ".asc", ".sig", ".sha1", ".deb", ".rpm", ".msi", ".apk", ".pkg", ".txt", ".pdf", ".h", ".c", ".cpp", ".a", ".lib", ".tar.bz2", ".tbz2"}
+	excludeSuffixes := []string{
+		// Checksums and signatures — never a binary
+		".sha256", ".sha256sum", ".md5", ".asc", ".sig", ".sha1",
+		// OS package formats — require OS-specific installation tooling
+		".deb", ".rpm", ".msi", ".apk", ".pkg", ".snap", ".flatpak",
+		// Source / document files
+		".txt", ".pdf",
+		// C/C++ header and library files
+		".h", ".c", ".cpp", ".a", ".lib",
+		// bzip2 archives — obsolete for binary distributions
+		".tar.bz2", ".tbz2",
+		// Security / attestation files
+		".pem", ".crt", ".pub",
+		// JSON files (SBOM, SLSA provenance, in-toto attestation)
+		".json", ".jsonl",
+	}
 	for _, suffix := range excludeSuffixes {
 		if strings.HasSuffix(nameLower, suffix) {
 			return -1
@@ -70,10 +85,9 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 	toolShortName = strings.ToLower(toolShortName)
 
 	// Exclude non-runtime assets.
-	// NOTE: "dev" is intentionally checked with word-boundary matching (containsWord)
-	// rather than plain Contains to avoid false-positives on tool names like
-	// "devops-tool" or asset names like "devenv-linux-amd64.tar.gz".
-	negatives := []string{"checksums", "sha256sums", "license", "source", "devel", "header", "static-lib", "manual", "doc", "man", "debug"}
+	// NOTE: "dev" and "sbom" are checked with word-boundary matching (containsWord)
+	// to avoid false-positives on tool names that contain these substrings.
+	negatives := []string{"checksums", "sha256sums", "license", "source", "devel", "header", "static-lib", "manual", "doc", "man", "debug", "provenance", "attestation"}
 
 	for _, neg := range negatives {
 		if strings.Contains(nameLower, neg) {
@@ -85,8 +99,11 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 			return -1
 		}
 	}
-	// Word-boundary check for "dev" to avoid matching "devops", "devenv", etc.
+	// Word-boundary checks for short keywords to avoid false-positive substring matches.
 	if containsWord(nameLower, "dev") && !strings.Contains(toolShortName, "dev") {
+		return -1
+	}
+	if containsWord(nameLower, "sbom") && !strings.Contains(toolShortName, "sbom") {
 		return -1
 	}
 
@@ -96,9 +113,21 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 	osMatch := false
 	switch platform.OS {
 	case "linux":
+		// Direct Linux keyword matches.
 		if strings.Contains(nameLower, "linux") || strings.Contains(nameLower, "unknown-linux") {
 			osMatch = true
 			score += 100
+		}
+		// musl implies Linux — musl libc only runs on Linux, so an asset named
+		// e.g. "tool-musl-amd64" implicitly targets Linux even without the word.
+		if !osMatch && strings.Contains(nameLower, "musl") {
+			osMatch = true
+			score += 80 // slightly lower than explicit linux
+		}
+		// alpine implies Linux+musl — Alpine Linux assets often omit "linux".
+		if !osMatch && strings.Contains(nameLower, "alpine") {
+			osMatch = true
+			score += 80
 		}
 	case "darwin":
 		if strings.Contains(nameLower, "darwin") || strings.Contains(nameLower, "macos") || strings.Contains(nameLower, "osx") || strings.Contains(nameLower, "apple") {
@@ -135,7 +164,12 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 
 	switch platform.Arch {
 	case "amd64":
-		if strings.Contains(nameLower, "amd64") || strings.Contains(nameLower, "x86_64") || strings.Contains(nameLower, "x64") || strings.Contains(nameLower, "64bit") {
+		// amd64, x86_64, x86-64: standard 64-bit x86 naming (underscore and hyphen variants).
+		// x64: shorthand used by some tools.
+		// 64bit: suffix used by a few older projects.
+		if strings.Contains(nameLower, "amd64") || strings.Contains(nameLower, "x86_64") ||
+			strings.Contains(nameLower, "x86-64") || strings.Contains(nameLower, "x64") ||
+			strings.Contains(nameLower, "64bit") {
 			archMatch = true
 			score += 100
 		} else if isDarwinUniversal {
