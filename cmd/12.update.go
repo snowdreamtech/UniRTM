@@ -483,7 +483,7 @@ func updateConfigAndLockfile(ctx context.Context, cfg *config.Config, backendReg
 			}
 
 			if len(updatedTools) > 0 {
-				_ = lockSvc.Generate(ctx, updatedTools, service.GenerateOptions{
+				_, _ = lockSvc.Generate(ctx, updatedTools, service.GenerateOptions{
 					Platforms: lockfile.StandardPlatforms,
 				})
 			}

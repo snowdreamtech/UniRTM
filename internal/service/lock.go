@@ -201,16 +201,39 @@ type GenerateOptions struct {
 	Platforms []string
 }
 
+// MissingPlatform records a tool+platform combination that could not be resolved.
+type MissingPlatform struct {
+	ToolKey  string // e.g. "cli/cli"
+	ToolName string // e.g. "cli/cli"
+	Version  string // e.g. "2.72.0"
+	Platform string // e.g. "macos-arm64"
+	Reason   string // e.g. "no matching asset"
+}
+
+// GenerateReport summarises the outcome of a lockfile generation run.
+type GenerateReport struct {
+	// Missing lists all (tool, platform) pairs that could not be resolved.
+	Missing []MissingPlatform
+}
+
+// IsComplete returns true when every requested (tool, platform) pair was resolved.
+func (r *GenerateReport) IsComplete() bool {
+	return len(r.Missing) == 0
+}
+
 // Generate resolves download info from the backend for each (tool, platform)
 // pair and writes the result into the lockfile.
 //
 // ctx is used for backend API calls (cancellation, deadline).
 // tools is a map of toolName → {version, backendName} from the project config.
+//
+// The returned GenerateReport lists any (tool, platform) pairs that could not be
+// resolved, allowing the caller to warn about incomplete lockfiles.
 func (ls *LockService) Generate(
 	ctx context.Context,
 	tools map[string]ToolSpec,
 	opts GenerateOptions,
-) error {
+) (*GenerateReport, error) {
 	platforms := opts.Platforms
 	if len(platforms) == 0 {
 		platforms = []string{lockfile.CurrentPlatformKey()}
@@ -220,6 +243,10 @@ func (ls *LockService) Generate(
 
 	var wg sync.WaitGroup
 	errs := make(chan error, len(subset)*len(platforms))
+
+	// Collect missing platforms concurrently.
+	var missingMu sync.Mutex
+	var missing []MissingPlatform
 
 	// Limit concurrency to avoid hitting API rate limits (e.g. GitHub)
 	// and to prevent excessive resource usage.
@@ -256,6 +283,18 @@ func (ls *LockService) Generate(
 				"tool":  toolName,
 				"error": err.Error(),
 			})
+			// Record all platforms as missing for this tool.
+			missingMu.Lock()
+			for _, pk := range platforms {
+				missing = append(missing, MissingPlatform{
+					ToolKey:  uniqueKey,
+					ToolName: toolName,
+					Version:  spec.Version,
+					Platform: pk,
+					Reason:   "no backend: " + err.Error(),
+				})
+			}
+			missingMu.Unlock()
 			continue
 		}
 
@@ -289,6 +328,15 @@ func (ls *LockService) Generate(
 						"platform": platKey,
 						"error":    err.Error(),
 					})
+					missingMu.Lock()
+					missing = append(missing, MissingPlatform{
+						ToolKey:  uniqueKey,
+						ToolName: toolName,
+						Version:  spec.Version,
+						Platform: platKey,
+						Reason:   err.Error(),
+					})
+					missingMu.Unlock()
 					return
 				}
 
@@ -335,13 +383,16 @@ func (ls *LockService) Generate(
 
 	for err := range errs {
 		if err != nil {
-			return err
+			return &GenerateReport{Missing: missing}, err
 		}
 	}
 
 	ls.mu.Lock()
 	defer ls.mu.Unlock()
-	return ls.save()
+	if err := ls.save(); err != nil {
+		return &GenerateReport{Missing: missing}, err
+	}
+	return &GenerateReport{Missing: missing}, nil
 }
 
 // ToolSpec describes a single tool entry from project config.

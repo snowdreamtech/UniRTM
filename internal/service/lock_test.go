@@ -176,7 +176,7 @@ func TestLockService_Generate_Empty(t *testing.T) {
 	}
 
 	// Backend not found in registry, should skip smoothly
-	err := ls.Generate(ctx, tools, GenerateOptions{})
+	_, err := ls.Generate(ctx, tools, GenerateOptions{})
 	if err != nil {
 		t.Fatalf("expected no error for skipping unconfigured backend, got %v", err)
 	}
@@ -228,7 +228,7 @@ func TestLockService_Generate_SuccessAndErrorPaths(t *testing.T) {
 		"fail":    {Name: "fail", Version: "1.0", BackendName: "mockGen"},
 	}
 
-	err := ls.Generate(ctx, tools, GenerateOptions{
+	_, err := ls.Generate(ctx, tools, GenerateOptions{
 		Platforms: []string{"linux-amd64", "windows-amd64"},
 	})
 	if err != nil {

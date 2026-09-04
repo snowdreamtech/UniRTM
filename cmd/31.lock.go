@@ -29,6 +29,9 @@ var (
 
 	// lockCheck validates the lockfile without regenerating.
 	lockCheck bool
+
+	// lockAllowIncomplete downgrades incomplete lockfile errors to warnings.
+	lockAllowIncomplete bool
 )
 
 // init registers the lock command.
@@ -39,6 +42,8 @@ func init() {
 		"comma-separated list of platform keys (e.g. linux-amd64,macos-arm64)")
 	lockCmd.Flags().BoolVar(&lockCheck, "check", false,
 		"validate the lockfile without regenerating (exits non-zero on problems)")
+	lockCmd.Flags().BoolVar(&lockAllowIncomplete, "allow-incomplete", false,
+		"downgrade missing platform errors to warnings (exit 0 even if incomplete)")
 
 	if rootCmd != nil {
 		rootCmd.AddCommand(lockCmd)
@@ -79,6 +84,9 @@ Examples:
 
   # Validate the lockfile without regenerating (CI gate)
   unirtm lock --check
+
+  # Allow incomplete lockfiles (don't fail on missing platforms)
+  unirtm lock --all-platforms --allow-incomplete
 
 Environment variables:
   UNIRTM_LOCK_FILE   Override lockfile path (default: ./unirtm.lock)
@@ -217,7 +225,7 @@ func runLock(cmd *cobra.Command, args []string) error {
 	)
 
 	ctx := context.Background()
-	genErr := lockSvc.Generate(ctx, tools, service.GenerateOptions{
+	report, genErr := lockSvc.Generate(ctx, tools, service.GenerateOptions{
 		Platforms: platforms,
 	})
 
@@ -227,7 +235,32 @@ func runLock(cmd *cobra.Command, args []string) error {
 		return genErr
 	}
 
-	spinner.Success(fmt.Sprintf("Lockfile written: %s", lockPath))
+	// ── Completeness report ───────────────────────────────────────────────────
+	if report != nil && !report.IsComplete() {
+		spinner.Warning(fmt.Sprintf(
+			"Lockfile written with %d missing platform(s)", len(report.Missing)))
+
+		// Group missing entries by tool for cleaner output.
+		missingByTool := make(map[string][]string)
+		for _, m := range report.Missing {
+			key := fmt.Sprintf("%s@%s", m.ToolName, m.Version)
+			missingByTool[key] = append(missingByTool[key], m.Platform)
+		}
+
+		for tool, plats := range missingByTool {
+			formatter.Warning(fmt.Sprintf(
+				"⚠ %s: missing platforms: %s", tool, strings.Join(plats, ", ")))
+		}
+
+		if !lockAllowIncomplete {
+			formatter.Error("Lockfile is incomplete. Use --allow-incomplete to force write.")
+			return fmt.Errorf("lockfile is incomplete: %d platform(s) could not be resolved",
+				len(report.Missing))
+		}
+	} else {
+		spinner.Success(fmt.Sprintf("Lockfile written: %s", lockPath))
+	}
+
 	printLockSummaryTable(tools, platforms)
 	return nil
 }

@@ -27,7 +27,7 @@ func TestLockService_Generate(t *testing.T) {
 
 	ctx := context.Background()
 	// Test generate empty
-	err = ls.Generate(ctx, nil, GenerateOptions{})
+	_, err = ls.Generate(ctx, nil, GenerateOptions{})
 	require.NoError(t, err)
 
 	// Test buildSubset

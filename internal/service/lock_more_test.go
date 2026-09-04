@@ -18,7 +18,7 @@ func TestLockService_Generate_More(t *testing.T) {
 	ls, _ := NewLockService(opts)
 	// Should work with empty installation dir
 	if ls != nil {
-		ls.Generate(context.Background(), nil, GenerateOptions{})
+		ls.Generate(context.Background(), nil, GenerateOptions{}) //nolint:errcheck
 		ls.init()
 	}
 }
