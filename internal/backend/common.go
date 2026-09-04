@@ -220,6 +220,20 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 			archMatch = true
 			score += 100
 		}
+	case "arm":
+		// armhf: ARM Hard Float — used in Raspberry Pi OS 32-bit and Debian armhf.
+		// armv7l, armv7: ARMv7 (Cortex-A) — the most common 32-bit ARM today.
+		// armv6l, armv6: ARMv6 — older Raspberry Pi (1st gen, Zero).
+		// arm (word boundary): generic 32-bit ARM when no version suffix is given.
+		// NOTE: containsWord is essential here — bare Contains("arm") would
+		//       also match "arm64", "aarch64", and "armv8" (64-bit targets).
+		if strings.Contains(nameLower, "armhf") ||
+			strings.Contains(nameLower, "armv7") ||
+			strings.Contains(nameLower, "armv6") ||
+			containsWord(nameLower, "arm") {
+			archMatch = true
+			score += 100
+		}
 	}
 
 	if !archMatch {

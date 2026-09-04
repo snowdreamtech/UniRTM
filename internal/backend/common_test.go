@@ -759,3 +759,37 @@ func TestCalculateAssetScore_AttestationExcluded(t *testing.T) {
 		}
 	}
 }
+
+// TestCalculateAssetScore_Arm32bit verifies that arm (32-bit) platform correctly
+// matches armhf/armv7/armv6 and standalone arm assets, but NOT arm64 assets.
+func TestCalculateAssetScore_Arm32bit(t *testing.T) {
+	linuxArm := Platform{OS: "linux", Arch: "arm"}
+
+	positive := []string{
+		"tool-linux-armhf.tar.gz",     // Raspberry Pi OS / Debian armhf
+		"tool-linux-armv7l.tar.gz",    // ARMv7 little-endian
+		"tool-linux-armv7.tar.gz",     // ARMv7 generic
+		"tool-linux-armv6l.tar.gz",    // ARMv6 little-endian (Pi 1, Zero)
+		"tool-linux-armv6.tar.gz",     // ARMv6 generic
+		"tool-linux-arm.tar.gz",       // bare arm word token
+	}
+	for _, name := range positive {
+		score := CalculateAssetScore(name, linuxArm, "org/tool")
+		if score <= 0 {
+			t.Errorf("%q should score positive for linux-arm, got %d", name, score)
+		}
+	}
+
+	// arm64 assets must NOT match the arm 32-bit platform.
+	negative := []string{
+		"tool-linux-arm64.tar.gz",
+		"tool-linux-aarch64.tar.gz",
+		"tool-linux-armv8.tar.gz",
+	}
+	for _, name := range negative {
+		score := CalculateAssetScore(name, linuxArm, "org/tool")
+		if score != -1 {
+			t.Errorf("%q should NOT match arm 32-bit (it is arm64), got score %d", name, score)
+		}
+	}
+}
