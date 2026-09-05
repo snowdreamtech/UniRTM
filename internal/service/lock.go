@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -199,6 +200,8 @@ type GenerateOptions struct {
 	// Platforms is the list of platform keys to generate entries for.
 	// Empty = only current platform.  Use lockfile.StandardPlatforms for all.
 	Platforms []string
+	// Force forces fresh backend resolution, bypassing existing lock entries.
+	Force bool
 }
 
 // MissingPlatform records a tool+platform combination that could not be resolved.
@@ -324,19 +327,21 @@ func (ls *LockService) Generate(
 					info, err = b.GetDownloadInfo(ctx, toolName, spec.Version, plat)
 				}
 				if err != nil {
-					// Check if a valid lock entry already exists in the lockfile for this tool, version, and platform.
-					ls.mu.Lock()
-					existingPlat := ls.lf.GetPlatform(uniqueKey, spec.Version, platKey)
-					ls.mu.Unlock()
+					if !opts.Force {
+						// Check if a valid lock entry already exists in the lockfile for this tool, version, and platform.
+						ls.mu.Lock()
+						existingPlat := ls.lf.GetPlatform(uniqueKey, spec.Version, platKey)
+						ls.mu.Unlock()
 
-					if existingPlat != nil && existingPlat.URL != "" && existingPlat.Checksum != "" {
-						logger.Warn("lockfile generate: resolution failed, retaining existing lock entry", map[string]interface{}{
-							"tool":     toolName,
-							"version":  spec.Version,
-							"platform": platKey,
-							"error":    err.Error(),
-						})
-						return
+						if existingPlat != nil && existingPlat.URL != "" && existingPlat.Checksum != "" {
+							logger.Warn("lockfile generate: resolution failed, retaining existing lock entry", map[string]interface{}{
+								"tool":     toolName,
+								"version":  spec.Version,
+								"platform": platKey,
+								"error":    err.Error(),
+							})
+							return
+						}
 					}
 
 					logger.Warn("lockfile generate: could not resolve download info", map[string]interface{}{
@@ -406,6 +411,23 @@ func (ls *LockService) Generate(
 
 	ls.mu.Lock()
 	defer ls.mu.Unlock()
+
+	// Clean up orphan entries from lockfile if running full lock generation (opts.Tools is empty).
+	if len(opts.Tools) == 0 {
+		for lockKey := range ls.lf.Tools {
+			baseKey := lockKey
+			if idx := strings.Index(lockKey, ":"); idx != -1 {
+				baseKey = lockKey[idx+1:]
+			}
+			if _, inConfig := tools[lockKey]; !inConfig {
+				if _, inConfigBase := tools[baseKey]; !inConfigBase {
+					ls.lf.RemoveEntry(lockKey)
+					ls.dirty = true
+				}
+			}
+		}
+	}
+
 	if err := ls.save(); err != nil {
 		return &GenerateReport{Missing: missing}, err
 	}

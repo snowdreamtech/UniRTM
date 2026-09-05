@@ -306,3 +306,93 @@ func TestLockService_Generate_RetainsExistingOnFailure(t *testing.T) {
 	}
 }
 
+func TestLockService_Generate_ForceBypassesExisting(t *testing.T) {
+	tmpDir := t.TempDir()
+	lfPath := filepath.Join(tmpDir, "unirtm.lock")
+
+	// Seed lockfile with fail entry
+	lf := lockfile.New(lfPath)
+	lf.UpsertEntry("fail", &lockfile.ToolLockEntry{
+		Version:   "1.0",
+		Backend:   "mockGen",
+		Platforms: make(map[string]*lockfile.PlatformEntry),
+	})
+	lf.UpsertPlatform("fail", "1.0", "linux-amd64", &lockfile.PlatformEntry{
+		Checksum: "sha256:oldfail",
+		URL:      "http://example.com/oldfail",
+	})
+	_ = lf.Save()
+
+	ls, _ := NewLockService(LockServiceOptions{LockfilePath: lfPath})
+	registry := backend.NewRegistry()
+	registry.Register(&mockGenerateBackend{})
+	ls.SetBackendRegistry(registry)
+
+	ctx := context.Background()
+	tools := map[string]ToolSpec{
+		"fail": {Name: "fail", Version: "1.0", BackendName: "mockGen"},
+	}
+
+	// With Force: true, fail resolution failure should NOT retain old entry and should report missing
+	report, err := ls.Generate(ctx, tools, GenerateOptions{
+		Platforms: []string{"linux-amd64"},
+		Force:     true,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if report.IsComplete() {
+		t.Error("expected missing platform report when Force=true and resolution fails")
+	}
+}
+
+func TestLockService_Generate_OrphanCleanup(t *testing.T) {
+	tmpDir := t.TempDir()
+	lfPath := filepath.Join(tmpDir, "unirtm.lock")
+
+	// Seed lockfile with orphan tool "removed_tool" and kept tool "success"
+	lf := lockfile.New(lfPath)
+	lf.UpsertEntry("removed_tool", &lockfile.ToolLockEntry{
+		Version:   "1.0",
+		Backend:   "mockGen",
+		Platforms: make(map[string]*lockfile.PlatformEntry),
+	})
+	lf.UpsertPlatform("removed_tool", "1.0", "linux-amd64", &lockfile.PlatformEntry{
+		Checksum: "sha256:orphan",
+		URL:      "http://example.com/orphan",
+	})
+	_ = lf.Save()
+
+	ls, _ := NewLockService(LockServiceOptions{LockfilePath: lfPath})
+	registry := backend.NewRegistry()
+	registry.Register(&mockGenerateBackend{})
+	ls.SetBackendRegistry(registry)
+
+	ctx := context.Background()
+	// Config tools now only has "success", "removed_tool" was deleted from config
+	tools := map[string]ToolSpec{
+		"success": {Name: "success", Version: "1.0", BackendName: "mockGen"},
+	}
+
+	_, err := ls.Generate(ctx, tools, GenerateOptions{
+		Platforms: []string{"linux-amd64"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	parsed, err := lockfile.Load(lfPath)
+	if err != nil {
+		t.Fatalf("failed to load lockfile: %v", err)
+	}
+
+	if parsed.GetEntry("removed_tool", "1.0") != nil {
+		t.Error("expected orphan tool 'removed_tool' to be removed from lockfile during full lock generation")
+	}
+	if parsed.GetEntry("success", "1.0") == nil {
+		t.Error("expected 'success' tool to be in lockfile")
+	}
+}
+
+

@@ -32,6 +32,9 @@ var (
 
 	// lockAllowIncomplete downgrades incomplete lockfile errors to warnings.
 	lockAllowIncomplete bool
+
+	// lockForce forces fresh backend resolution, ignoring existing lock entries.
+	lockForce bool
 )
 
 // init registers the lock command.
@@ -44,6 +47,8 @@ func init() {
 		"validate the lockfile without regenerating (exits non-zero on problems)")
 	lockCmd.Flags().BoolVar(&lockAllowIncomplete, "allow-incomplete", false,
 		"downgrade missing platform errors to warnings (exit 0 even if incomplete)")
+	lockCmd.Flags().BoolVar(&lockForce, "force", false,
+		"force fresh backend resolution, ignoring existing locked entries")
 
 	if rootCmd != nil {
 		rootCmd.AddCommand(lockCmd)
@@ -225,9 +230,19 @@ func runLock(cmd *cobra.Command, args []string) error {
 		fmt.Sprintf("Resolving %d tool(s) for %d platform(s)...", len(tools), len(platforms)),
 	)
 
+	var toolFilter []string
+	if len(args) > 0 {
+		toolFilter = make([]string, 0, len(tools))
+		for t := range tools {
+			toolFilter = append(toolFilter, t)
+		}
+	}
+
 	ctx := context.Background()
 	report, genErr := lockSvc.Generate(ctx, tools, service.GenerateOptions{
 		Platforms: platforms,
+		Tools:     toolFilter,
+		Force:     lockForce,
 	})
 
 	if genErr != nil {
