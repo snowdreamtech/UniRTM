@@ -6,6 +6,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.0](https://github.com/snowdreamtech/UniRTM/compare/v0.29.1...v0.30.0) (2026-09-05)
+
+
+### 🚀 Features
+
+* **install:** activate lock service by default during installation to record lockfile entries on first install ([6fec287](https://github.com/snowdreamtech/UniRTM/commit/6fec2878166f3736990a877b76ba20273ba9963e))
+* **lock:** add --force option and automatic orphan lock entry cleanup ([0bb2f00](https://github.com/snowdreamtech/UniRTM/commit/0bb2f00df86139866461cc96849878e3b4325af0))
+* **lock:** enforce atomic write firewall to prevent saving incomplete lockfiles without --allow-incomplete ([096948c](https://github.com/snowdreamtech/UniRTM/commit/096948cdb48ac6bc59677edb2f909557a8e69d36))
+* **lock:** enhance config vs lock version sync validation and update command synergy ([cbaed06](https://github.com/snowdreamtech/UniRTM/commit/cbaed062c16d58225af81b04fb62782729c96587))
+* **uninstall:** sync unirtm.lock cleanup when running unirtm uninstall ([2e46807](https://github.com/snowdreamtech/UniRTM/commit/2e46807ab2481a57379221cfc8d637a21ca1d697))
+* **unuse:** synchronize unirtm.lock when removing tool specifications via unirtm unuse ([3bb4136](https://github.com/snowdreamtech/UniRTM/commit/3bb4136d74e573b34a296ab00fadd20e81911eab))
+* **use:** synchronize unirtm.lock when running unirtm use command ([7201a92](https://github.com/snowdreamtech/UniRTM/commit/7201a92bdcf15ee30cb9dc60197d27972a629ac3))
+
+
+### 🐛 Bug Fixes
+
+* **lock:** retain existing valid lock entries on resolution failure to prevent deletion ([cf2c178](https://github.com/snowdreamtech/UniRTM/commit/cf2c178768e4ee3ed754c440a4ccd520ace390c2))
+* **update:** pass Tools filter to lockSvc.Generate to prevent accidental orphan removal during tool update ([3f23638](https://github.com/snowdreamtech/UniRTM/commit/3f2363800d1ecf68838e0169c41099ee41467827))
+
 ## [0.29.1](https://github.com/snowdreamtech/UniRTM/compare/v0.29.0...v0.29.1) (2026-09-04)
 
 
