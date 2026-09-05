@@ -495,8 +495,13 @@ func updateConfigAndLockfile(ctx context.Context, cfg *config.Config, backendReg
 			}
 
 			if len(updatedTools) > 0 {
+				updatedNames := make([]string, 0, len(updatedTools))
+				for t := range updatedTools {
+					updatedNames = append(updatedNames, t)
+				}
 				_, _ = lockSvc.Generate(ctx, updatedTools, service.GenerateOptions{
 					Platforms: lockfile.StandardPlatforms,
+					Tools:     updatedNames,
 				})
 			}
 		}
