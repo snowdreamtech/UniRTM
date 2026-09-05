@@ -301,7 +301,69 @@ func runLockCheck(formatter output.Formatter, lockPath string) error {
 		return err
 	}
 
-	formatter.Success(fmt.Sprintf("Lockfile %q is valid.", lockPath))
+	// Cross-validate .unirtm.toml vs unirtm.lock to catch version desynchronizations early.
+	cfg, cfgErr := config.Load()
+	if cfgErr == nil && cfg != nil {
+		if syncErr := checkConfigLockSync(cfg, lf, lockPath); syncErr != nil {
+			formatter.Error(syncErr.Error())
+			return syncErr
+		}
+	}
+
+	formatter.Success(fmt.Sprintf("Lockfile %q is valid and synchronized with project config.", lockPath))
+	return nil
+}
+
+// checkConfigLockSync cross-validates project config tools against lockfile entries.
+func checkConfigLockSync(cfg *config.Config, lf *lockfile.LockFile, lockPath string) error {
+	if cfg == nil || len(cfg.Tools) == 0 {
+		return nil
+	}
+
+	registry := backend.NewRegistry()
+	knownBackends := registry.List()
+
+	var mismatches []string
+	for name, tc := range cfg.Tools {
+		if tc.Version == "" {
+			continue
+		}
+		toolName := name
+		if idx := strings.Index(name, ":"); idx != -1 {
+			toolName = name[idx+1:]
+		}
+
+		// Check exact key, toolName key, or backend-prefixed keys
+		entry := lf.GetEntry(name, tc.Version)
+		if entry == nil {
+			entry = lf.GetEntry(toolName, tc.Version)
+		}
+		if entry == nil {
+			for _, b := range knownBackends {
+				if e := lf.GetEntry(b+":"+toolName, tc.Version); e != nil {
+					entry = e
+					break
+				}
+			}
+		}
+
+		if entry != nil {
+			reqV := strings.TrimPrefix(strings.TrimPrefix(tc.Version, "v"), "V")
+			gotV := strings.TrimPrefix(strings.TrimPrefix(entry.Version, "v"), "V")
+			if reqV != "latest" && reqV != "" && gotV != "" && reqV != gotV {
+				entry = nil
+			}
+		}
+
+		if entry == nil {
+			mismatches = append(mismatches, fmt.Sprintf("%s@%s", name, tc.Version))
+		}
+	}
+
+	if len(mismatches) > 0 {
+		return fmt.Errorf("lockfile %q is desynchronized with project config (%d mismatch(es)):\n  - missing entries: %s\nRun `unirtm lock` to update lockfile",
+			lockPath, len(mismatches), strings.Join(mismatches, ", "))
+	}
 	return nil
 }
 

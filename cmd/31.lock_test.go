@@ -4,8 +4,11 @@
 package cmd
 
 import (
+	"path/filepath"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/config"
+	"github.com/snowdreamtech/unirtm/internal/lockfile"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,3 +34,38 @@ func TestRunLockCheck(t *testing.T) {
 	err := lockCmd.RunE(lockCmd, []string{})
 	assert.NoError(t, err)
 }
+
+func TestCheckConfigLockSync(t *testing.T) {
+	tmpDir := t.TempDir()
+	lfPath := filepath.Join(tmpDir, "unirtm.lock")
+
+	// Lockfile contains python@3.14.6
+	lf := lockfile.New(lfPath)
+	lf.UpsertEntry("python", &lockfile.ToolLockEntry{
+		Version:   "3.14.6",
+		Backend:   "native",
+		Platforms: make(map[string]*lockfile.PlatformEntry),
+	})
+
+	// Config requests python@3.14.7
+	cfg := &config.Config{
+		Tools: map[string]config.ToolConfig{
+			"python": {Version: "3.14.7"},
+		},
+	}
+
+	err := checkConfigLockSync(cfg, lf, lfPath)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "desynchronized with project config")
+	assert.Contains(t, err.Error(), "python@3.14.7")
+
+	// Config requests python@3.14.6 (matching)
+	cfgMatch := &config.Config{
+		Tools: map[string]config.ToolConfig{
+			"python": {Version: "3.14.6"},
+		},
+	}
+	errMatch := checkConfigLockSync(cfgMatch, lf, lfPath)
+	assert.NoError(t, errMatch)
+}
+

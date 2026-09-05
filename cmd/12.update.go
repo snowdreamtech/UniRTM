@@ -499,10 +499,17 @@ func updateConfigAndLockfile(ctx context.Context, cfg *config.Config, backendReg
 				for t := range updatedTools {
 					updatedNames = append(updatedNames, t)
 				}
-				_, _ = lockSvc.Generate(ctx, updatedTools, service.GenerateOptions{
-					Platforms: lockfile.StandardPlatforms,
-					Tools:     updatedNames,
+				report, _ := lockSvc.Generate(ctx, updatedTools, service.GenerateOptions{
+					Platforms:       lockfile.StandardPlatforms,
+					Tools:           updatedNames,
+					AllowIncomplete: true,
 				})
+				if report != nil && !report.IsComplete() {
+					logger.Warn("updateConfigAndLockfile: lockfile updated with missing platforms due to network limit", map[string]interface{}{
+						"updated_tools": len(updatedTools),
+						"missing_count": len(report.Missing),
+					})
+				}
 			}
 		}
 	}
