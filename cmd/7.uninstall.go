@@ -132,13 +132,24 @@ func runUninstall(cmd *cobra.Command, args []string) error {
 	// Create transaction manager
 	txManager := transaction.NewSQLiteTransactionManager(db.Conn())
 
-	// Create installation manager
-	installManager := service.NewInstallationManager(
+	// Create lock service
+	var lockSvc *service.LockService
+	lockPath := env.GetLockFilePath()
+	lockSvc, _ = service.NewLockService(service.LockServiceOptions{
+		LockfilePath: lockPath,
+	})
+	if lockSvc != nil {
+		lockSvc.SetBackendRegistry(backendRegistry)
+	}
+
+	// Create installation manager with lock support
+	installManager := service.NewInstallationManagerWithLock(
 		backendRegistry,
 		providerRegistry,
 		downloadManager,
 		installRepo,
 		txManager,
+		lockSvc,
 		nil,
 	)
 
