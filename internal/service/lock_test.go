@@ -245,3 +245,64 @@ func TestLockService_Generate_SuccessAndErrorPaths(t *testing.T) {
 		t.Error("expected 'success' tool in lockfile")
 	}
 }
+
+func TestLockService_Generate_RetainsExistingOnFailure(t *testing.T) {
+	tmpDir := t.TempDir()
+	lfPath := filepath.Join(tmpDir, "unirtm.lock")
+
+	// Pre-create lockfile containing valid entry for python@3.14.7
+	lf := lockfile.New(lfPath)
+	lf.UpsertEntry("python", &lockfile.ToolLockEntry{
+		Version:   "3.14.7",
+		Backend:   "mockGen",
+		Platforms: make(map[string]*lockfile.PlatformEntry),
+	})
+	lf.UpsertPlatform("python", "3.14.7", "linux-amd64", &lockfile.PlatformEntry{
+		Checksum: "sha256:python123",
+		URL:      "http://example.com/python.tar.gz",
+	})
+	if err := lf.Save(); err != nil {
+		t.Fatalf("failed to seed lockfile: %v", err)
+	}
+
+	opts := LockServiceOptions{LockfilePath: lfPath}
+	ls, err := NewLockService(opts)
+	if err != nil {
+		t.Fatalf("failed to create lock service: %v", err)
+	}
+
+	registry := backend.NewRegistry()
+	registry.Register(&mockGenerateBackend{})
+	ls.SetBackendRegistry(registry)
+
+	ctx := context.Background()
+	tools := map[string]ToolSpec{
+		"python": {Name: "python", Version: "3.14.7", BackendName: "mockGen"},
+		"fail":   {Name: "fail", Version: "1.0", BackendName: "mockGen"},
+	}
+
+	// Requesting "fail" (fails) and "python" (where "python" will fail if tool=="fail" or if mock returns error)
+	// Here mock returns error for "fail". For python, let's test when mock succeeds or fails.
+	report, err := ls.Generate(ctx, tools, GenerateOptions{
+		Platforms: []string{"linux-amd64"},
+	})
+	if err != nil {
+		t.Fatalf("expected Generate to complete without error, got %v", err)
+	}
+
+	// Read lockfile to verify 'python' entry was NOT deleted despite 'fail' error
+	parsed, err := lockfile.Load(lfPath)
+	if err != nil {
+		t.Fatalf("failed to load lockfile: %v", err)
+	}
+
+	pyEntry := parsed.GetPlatform("python", "3.14.7", "linux-amd64")
+	if pyEntry == nil || pyEntry.Checksum != "sha256:python123" {
+		t.Errorf("expected python lock entry to be retained in lockfile, got %v", pyEntry)
+	}
+
+	if report.IsComplete() {
+		t.Errorf("expected report to indicate missing platforms for 'fail'")
+	}
+}
+

@@ -256,17 +256,8 @@ func (ls *LockService) Generate(
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Minute)
 	defer cancel()
 
-	// Clear old entries for tools we are refreshing to avoid duplicates
-	// (e.g. "asdf:go" vs "go")
-	ls.mu.Lock()
-	for uniqueKey := range subset {
-		ls.lf.RemoveEntry(uniqueKey)
-		// Also remove old prefixed versions if any
-		for _, b := range ls.backendRegistry.List() {
-			ls.lf.RemoveEntry(b + ":" + uniqueKey)
-		}
-	}
-	ls.mu.Unlock()
+	// Do not pre-clear entries up front; update in-place (upsert) to prevent
+	// loss of existing valid locks when network requests fail.
 
 	for uniqueKey, spec := range subset {
 		uniqueKey := uniqueKey
@@ -333,6 +324,21 @@ func (ls *LockService) Generate(
 					info, err = b.GetDownloadInfo(ctx, toolName, spec.Version, plat)
 				}
 				if err != nil {
+					// Check if a valid lock entry already exists in the lockfile for this tool, version, and platform.
+					ls.mu.Lock()
+					existingPlat := ls.lf.GetPlatform(uniqueKey, spec.Version, platKey)
+					ls.mu.Unlock()
+
+					if existingPlat != nil && existingPlat.URL != "" && existingPlat.Checksum != "" {
+						logger.Warn("lockfile generate: resolution failed, retaining existing lock entry", map[string]interface{}{
+							"tool":     toolName,
+							"version":  spec.Version,
+							"platform": platKey,
+							"error":    err.Error(),
+						})
+						return
+					}
+
 					logger.Warn("lockfile generate: could not resolve download info", map[string]interface{}{
 						"tool":     toolName,
 						"version":  spec.Version,
