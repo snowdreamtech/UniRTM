@@ -229,7 +229,8 @@ func TestLockService_Generate_SuccessAndErrorPaths(t *testing.T) {
 	}
 
 	_, err := ls.Generate(ctx, tools, GenerateOptions{
-		Platforms: []string{"linux-amd64", "windows-amd64"},
+		Platforms:       []string{"linux-amd64", "windows-amd64"},
+		AllowIncomplete: true,
 	})
 	if err != nil {
 		t.Fatalf("expected Generate to handle backend errors internally and return nil, got %v", err)
