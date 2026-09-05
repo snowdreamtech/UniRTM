@@ -14,6 +14,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
+	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
 )
 
@@ -148,6 +149,23 @@ func runUnuse(cmd *cobra.Command, args []string) error {
 		}
 		if err := config.SaveRawTOML(cfgPath, cfgMap); err != nil {
 			formatter.Warning(fmt.Sprintf("Could not update %s: %v", cfgPath, err))
+		}
+
+		// Also remove entry from unirtm.lock if lockfile exists
+		lockPath := env.GetLockFilePath()
+		if _, err := os.Stat(lockPath); err == nil {
+			lockSvc, err := service.NewLockService(service.LockServiceOptions{
+				LockfilePath: lockPath,
+			})
+			if err == nil {
+				for _, arg := range args {
+					tool := arg
+					if idx := strings.Index(arg, "@"); idx != -1 {
+						tool = arg[:idx]
+					}
+					_ = lockSvc.RemoveTool(tool)
+				}
+			}
 		}
 	}
 

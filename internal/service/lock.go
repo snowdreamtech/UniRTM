@@ -181,12 +181,17 @@ func (ls *LockService) RecordInstall(
 	return ls.save()
 }
 
-// RemoveTool removes all lockfile entries for a tool (called on uninstall).
+// RemoveTool removes all lockfile entries for a tool (called on unuse/uninstall).
 func (ls *LockService) RemoveTool(lockKey string) error {
 	ls.mu.Lock()
 	defer ls.mu.Unlock()
 
 	ls.lf.RemoveEntry(lockKey)
+	for key := range ls.lf.Tools {
+		if strings.HasSuffix(key, ":"+lockKey) {
+			ls.lf.RemoveEntry(key)
+		}
+	}
 	ls.dirty = true
 	return ls.save()
 }
