@@ -202,6 +202,9 @@ type GenerateOptions struct {
 	Platforms []string
 	// Force forces fresh backend resolution, bypassing existing lock entries.
 	Force bool
+	// AllowIncomplete writes the lockfile to disk even if some (tool, platform) pairs could not be resolved.
+	// When false (default), Generate will refuse to save incomplete lockfiles to disk.
+	AllowIncomplete bool
 }
 
 // MissingPlatform records a tool+platform combination that could not be resolved.
@@ -409,6 +412,8 @@ func (ls *LockService) Generate(
 		}
 	}
 
+	report := &GenerateReport{Missing: missing}
+
 	ls.mu.Lock()
 	defer ls.mu.Unlock()
 
@@ -428,10 +433,18 @@ func (ls *LockService) Generate(
 		}
 	}
 
-	if err := ls.save(); err != nil {
-		return &GenerateReport{Missing: missing}, err
+	// Atomic Write Firewall: Refuse to write incomplete lockfile to disk unless AllowIncomplete is set
+	if !report.IsComplete() && !opts.AllowIncomplete {
+		logger.Warn("lockfile generate: lockfile incomplete, skipping save to disk", map[string]interface{}{
+			"missing_count": len(missing),
+		})
+		return report, nil
 	}
-	return &GenerateReport{Missing: missing}, nil
+
+	if err := ls.save(); err != nil {
+		return report, err
+	}
+	return report, nil
 }
 
 // ToolSpec describes a single tool entry from project config.

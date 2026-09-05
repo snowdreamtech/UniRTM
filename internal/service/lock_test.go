@@ -395,4 +395,48 @@ func TestLockService_Generate_OrphanCleanup(t *testing.T) {
 	}
 }
 
+func TestLockService_Generate_AtomicWriteFirewall(t *testing.T) {
+	tmpDir := t.TempDir()
+	lfPath := filepath.Join(tmpDir, "unirtm.lock")
+
+	ls, _ := NewLockService(LockServiceOptions{LockfilePath: lfPath})
+	registry := backend.NewRegistry()
+	registry.Register(&mockGenerateBackend{})
+	ls.SetBackendRegistry(registry)
+
+	ctx := context.Background()
+	tools := map[string]ToolSpec{
+		"success": {Name: "success", Version: "1.0", BackendName: "mockGen"},
+		"fail":    {Name: "fail", Version: "1.0", BackendName: "mockGen"},
+	}
+
+	// Generating incomplete lockfile without AllowIncomplete=true MUST NOT write to disk
+	report, err := ls.Generate(ctx, tools, GenerateOptions{
+		Platforms:       []string{"linux-amd64"},
+		AllowIncomplete: false,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if report.IsComplete() {
+		t.Error("expected report to be incomplete")
+	}
+
+	if _, err := os.Stat(lfPath); !os.IsNotExist(err) {
+		t.Errorf("expected lockfile %s NOT to be created on disk when lock is incomplete and AllowIncomplete is false", lfPath)
+	}
+
+	// Generating with AllowIncomplete=true MUST write to disk
+	_, _ = ls.Generate(ctx, tools, GenerateOptions{
+		Platforms:       []string{"linux-amd64"},
+		AllowIncomplete: true,
+	})
+
+	if _, err := os.Stat(lfPath); os.IsNotExist(err) {
+		t.Errorf("expected lockfile %s to be created when AllowIncomplete is true", lfPath)
+	}
+}
+
+
 

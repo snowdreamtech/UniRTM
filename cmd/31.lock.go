@@ -240,9 +240,10 @@ func runLock(cmd *cobra.Command, args []string) error {
 
 	ctx := context.Background()
 	report, genErr := lockSvc.Generate(ctx, tools, service.GenerateOptions{
-		Platforms: platforms,
-		Tools:     toolFilter,
-		Force:     lockForce,
+		Platforms:       platforms,
+		Tools:           toolFilter,
+		Force:           lockForce,
+		AllowIncomplete: lockAllowIncomplete,
 	})
 
 	if genErr != nil {
