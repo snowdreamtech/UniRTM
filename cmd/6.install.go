@@ -293,16 +293,14 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	// Create transaction manager
 	txManager := transaction.NewSQLiteTransactionManager(db.Conn())
 
-	// Create lock service if lockfile exists
+	// Create lock service
 	var lockSvc *service.LockService
 	lockPath := env.GetLockFilePath()
-	if _, err := os.Stat(lockPath); err == nil {
-		lockSvc, _ = service.NewLockService(service.LockServiceOptions{
-			LockfilePath: lockPath,
-		})
-		if lockSvc != nil {
-			lockSvc.SetBackendRegistry(backendRegistry)
-		}
+	lockSvc, _ = service.NewLockService(service.LockServiceOptions{
+		LockfilePath: lockPath,
+	})
+	if lockSvc != nil {
+		lockSvc.SetBackendRegistry(backendRegistry)
 	}
 
 	// Create installation manager with optional lock support
