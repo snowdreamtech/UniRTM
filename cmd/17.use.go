@@ -13,6 +13,10 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
+	"github.com/snowdreamtech/unirtm/internal/lockfile"
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
+	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -243,6 +247,38 @@ func runUse(cmd *cobra.Command, args []string) error {
 				}
 			} else {
 				formatter.Success(fmt.Sprintf("Tool %s@%s is already installed", toolName, p.version), nil)
+			}
+		}
+	}
+
+	// Synchronize unirtm.lock if lockfile exists
+	lockPath := env.GetLockFilePath()
+	if _, err := os.Stat(lockPath); err == nil {
+		lockSvc, err := service.NewLockService(service.LockServiceOptions{
+			LockfilePath: lockPath,
+		})
+		if err == nil {
+			lockSvc.SetBackendRegistry(backendRegistry)
+			usedTools := make(map[string]service.ToolSpec)
+			usedNames := make([]string, 0, len(pairs))
+			for _, p := range pairs {
+				usedTools[p.key] = service.ToolSpec{
+					Name:        p.toolName,
+					Version:     p.version,
+					BackendName: p.backendName,
+				}
+				usedNames = append(usedNames, p.key)
+			}
+			report, _ := lockSvc.Generate(ctx, usedTools, service.GenerateOptions{
+				Platforms:       lockfile.StandardPlatforms,
+				Tools:           usedNames,
+				AllowIncomplete: true,
+			})
+			if report != nil && !report.IsComplete() {
+				logger.Warn("runUse: lockfile updated with missing platforms due to network limit", map[string]interface{}{
+					"used_tools":    len(usedTools),
+					"missing_count": len(report.Missing),
+				})
 			}
 		}
 	}
