@@ -286,6 +286,12 @@ func (lf *LockFile) GetEntry(key, version string) *ToolLockEntry {
 
 	entries := lf.Tools[key]
 	if len(entries) == 0 {
+		// Fallback lookup: if key has a backend prefix (e.g. "github:cli/cli"), try legacy unprefixed base key ("cli/cli")
+		if idx := strings.Index(key, ":"); idx != -1 {
+			entries = lf.Tools[key[idx+1:]]
+		}
+	}
+	if len(entries) == 0 {
 		return nil
 	}
 
@@ -344,7 +350,7 @@ func (lf *LockFile) Path() string { return lf.path }
 // ─── Mutation API ─────────────────────────────────────────────────────────────
 
 // UpsertEntry creates or updates the ToolLockEntry for key+version.
-// If an entry for key+version already exists it is updated in place;
+// If an entry for key+version already exists it is updated in place (merging fields);
 // otherwise a new entry is appended to lf.Tools[key].
 func (lf *LockFile) UpsertEntry(key string, entry *ToolLockEntry) {
 	if entry == nil {
@@ -359,7 +365,20 @@ func (lf *LockFile) UpsertEntry(key string, entry *ToolLockEntry) {
 			continue
 		}
 		if e.Version == entry.Version {
-			lf.Tools[key][i] = entry
+			if entry.Backend != "" {
+				lf.Tools[key][i].Backend = entry.Backend
+			}
+			if len(entry.Options) > 0 {
+				lf.Tools[key][i].Options = entry.Options
+			}
+			if len(entry.Platforms) > 0 {
+				if lf.Tools[key][i].Platforms == nil {
+					lf.Tools[key][i].Platforms = make(map[string]*PlatformEntry)
+				}
+				for pk, pv := range entry.Platforms {
+					lf.Tools[key][i].Platforms[pk] = pv
+				}
+			}
 			lf.updatedAt = time.Now()
 			return
 		}

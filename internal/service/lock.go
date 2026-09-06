@@ -361,7 +361,7 @@ func (ls *LockService) Generate(
 						existingPlat := ls.lf.GetPlatform(uniqueKey, spec.Version, platKey)
 						ls.mu.Unlock()
 
-						if existingPlat != nil && existingPlat.URL != "" && existingPlat.Checksum != "" {
+						if existingPlat != nil && existingPlat.URL != "" {
 							logger.Warn("lockfile generate: resolution failed, retaining existing lock entry", map[string]interface{}{
 								"tool":     toolName,
 								"version":  spec.Version,
@@ -492,19 +492,14 @@ func (ls *LockService) Generate(
 							if leg == nil {
 								continue
 							}
-							if existingEntry := ls.lf.GetEntry(matchedConfigKey, leg.Version); existingEntry == nil {
-								ls.lf.UpsertEntry(matchedConfigKey, &lockfile.ToolLockEntry{
-									Version: leg.Version,
-									Backend: leg.Backend,
-									Options: leg.Options,
-								})
-							}
+							ls.lf.UpsertEntry(matchedConfigKey, &lockfile.ToolLockEntry{
+								Version: leg.Version,
+								Backend: leg.Backend,
+								Options: leg.Options,
+							})
 							for pKey, pVal := range leg.Platforms {
 								if pVal != nil && pVal.URL != "" {
-									existingPe := ls.lf.GetPlatform(matchedConfigKey, leg.Version, pKey)
-									if existingPe == nil || existingPe.URL == "" {
-										ls.lf.UpsertPlatform(matchedConfigKey, leg.Version, pKey, pVal)
-									}
+									ls.lf.UpsertPlatform(matchedConfigKey, leg.Version, pKey, pVal)
 								}
 							}
 						}
