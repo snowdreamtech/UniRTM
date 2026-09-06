@@ -439,5 +439,55 @@ func TestLockService_Generate_AtomicWriteFirewall(t *testing.T) {
 	}
 }
 
+func TestLockService_LegacyKeyMigration(t *testing.T) {
+	tmpDir := t.TempDir()
+	lfPath := filepath.Join(tmpDir, "unirtm.lock")
+
+	ls, _ := NewLockService(LockServiceOptions{LockfilePath: lfPath})
+	registry := backend.NewRegistry()
+	registry.Register(&mockGenerateBackend{})
+	ls.SetBackendRegistry(registry)
+
+	// Pre-populate lockfile with a legacy unprefixed key "legacy/tool" that has a locked platform "windows-amd64"
+	ls.lf.UpsertEntry("legacy/tool", &lockfile.ToolLockEntry{
+		Version: "1.0",
+		Backend: "mockGen",
+	})
+	ls.lf.UpsertPlatform("legacy/tool", "1.0", "windows-amd64", &lockfile.PlatformEntry{
+		URL:      "http://example.com/legacy-win.zip",
+		Checksum: "sha256:123456",
+	})
+
+	// Config has canonical prefixed key "github:legacy/tool"
+	tools := map[string]ToolSpec{
+		"github:legacy/tool": {
+			Name:        "legacy/tool",
+			Version:     "1.0",
+			BackendName: "mockGen",
+		},
+	}
+
+	ctx := context.Background()
+	_, err := ls.Generate(ctx, tools, GenerateOptions{
+		Platforms:       []string{"linux-amd64"},
+		AllowIncomplete: true,
+	})
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	// Verify legacy unprefixed key was removed
+	if ls.lf.GetEntry("legacy/tool", "1.0") != nil {
+		t.Error("expected legacy unprefixed key 'legacy/tool' to be removed from lockfile")
+	}
+
+	// Verify canonical prefixed key has the preserved "windows-amd64" platform entry
+	winPlat := ls.lf.GetPlatform("github:legacy/tool", "1.0", "windows-amd64")
+	if winPlat == nil || winPlat.URL != "http://example.com/legacy-win.zip" {
+		t.Errorf("expected migrated windows-amd64 platform URL, got %v", winPlat)
+	}
+}
+
+
 
 
