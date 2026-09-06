@@ -429,11 +429,41 @@ func (ls *LockService) Generate(
 			if idx := strings.Index(lockKey, ":"); idx != -1 {
 				baseKey = lockKey[idx+1:]
 			}
-			if _, inConfig := tools[lockKey]; !inConfig {
-				if _, inConfigBase := tools[baseKey]; !inConfigBase {
-					ls.lf.RemoveEntry(lockKey)
-					ls.dirty = true
+
+			inConfig := false
+			if _, ok := tools[lockKey]; ok {
+				inConfig = true
+			} else if _, ok := tools[baseKey]; ok {
+				inConfig = true
+			} else {
+				// Check if lockKey is a legacy unprefixed key matching a prefixed configKey
+				for configKey, spec := range tools {
+					if spec.Name == lockKey || configKey == "github:"+lockKey || configKey == "go:"+lockKey || configKey == "npm:"+lockKey || configKey == "pipx:"+lockKey {
+						inConfig = true
+						// Preserve & migrate any missing platform entries from legacy lockKey into canonical configKey
+						if legacyEntries, hasLegacy := ls.lf.Tools[lockKey]; hasLegacy {
+							for _, leg := range legacyEntries {
+								if leg == nil {
+									continue
+								}
+								for pKey, pVal := range leg.Platforms {
+									if pVal != nil && ls.lf.GetPlatform(configKey, leg.Version, pKey) == nil {
+										ls.lf.UpsertPlatform(configKey, leg.Version, pKey, pVal)
+									}
+								}
+							}
+						}
+						// Remove the legacy unprefixed key after migrating its platforms
+						ls.lf.RemoveEntry(lockKey)
+						ls.dirty = true
+						break
+					}
 				}
+			}
+
+			if !inConfig {
+				ls.lf.RemoveEntry(lockKey)
+				ls.dirty = true
 			}
 		}
 	}
