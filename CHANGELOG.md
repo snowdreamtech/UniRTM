@@ -6,6 +6,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.16](https://github.com/snowdreamtech/template/compare/v0.15.15...v0.15.16) (2026-09-06)
+
+
+### 🐛 Bug Fixes
+
+* **deps:** add missing windows-amd64 platform for python in unirtm.lock ([fa18c7c](https://github.com/snowdreamtech/template/commit/fa18c7cd60bf9ffec9259b3ae749fc8faef68aec))
+
+
+### ♻️ Miscellaneous Chores
+
+* **deps:** migrate unirtm.lock keys to canonical prefixed format ([16421b7](https://github.com/snowdreamtech/template/commit/16421b7ed716746da0be4e147bed5ab75f77045d))
+* **deps:** sync dependabot config and unirtm toolchain ([d908c5b](https://github.com/snowdreamtech/template/commit/d908c5b7fdaf77401564dbf1af2e207a4b262752))
+* **deps:** sync dependabot config and unirtm toolchain ([d7023c0](https://github.com/snowdreamtech/template/commit/d7023c0be316486305fce889c7b004b20ad7c275))
+* **deps:** update unirtm toolchain version to 0.30.0 ([2334d08](https://github.com/snowdreamtech/template/commit/2334d088055136020e9a3c176d338c8185cb9ac0))
+* **deps:** upgrade unirtm-version to 0.30.1 ([87148d3](https://github.com/snowdreamtech/template/commit/87148d3c7b1f17d59f660ba3b9aba1ab944f4f27))
+
 ## [0.15.15](https://github.com/snowdreamtech/template/compare/v0.15.14...v0.15.15) (2026-09-05)
 
 
