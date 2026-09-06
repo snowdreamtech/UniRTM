@@ -178,11 +178,10 @@ func (lf *LockFile) CheckStrict(required []LockRequirement) error {
 		}
 
 		// Backends that download from explicit URLs must have the URL locked.
-		// Package manager backends (npm, pipx, asdf, cargo, go) delegate resolution
-		// natively so they legitimately have an empty URL.
+		// Package manager backends delegate resolution natively so they legitimately have an empty URL.
 		needsURL := true
 		switch entry.Backend {
-		case "npm", "pipx", "asdf", "cargo", "go":
+		case "npm", "pipx", "asdf", "cargo", "go", "go_pkg", "vfox", "gem", "composer", "cran", "spm", "pub", "luarocks", "maven", "conda", "pypi":
 			needsURL = false
 		}
 
