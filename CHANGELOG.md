@@ -6,6 +6,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.1](https://github.com/snowdreamtech/UniRTM/compare/v0.30.0...v0.30.1) (2026-09-06)
+
+
+### 🐛 Bug Fixes
+
+* **lockfile:** enhance universal key bidirectional matching and fallback resolution ([be76380](https://github.com/snowdreamtech/UniRTM/commit/be76380e15bb3d103fa5fb74dbba59b6950cb14a))
+* **lockfile:** expand native package-manager backend whitelist in strict mode ([d7ce338](https://github.com/snowdreamtech/UniRTM/commit/d7ce3384951889c38932d6ee31b4ac4543bf9b6e))
+* **lockfile:** preserve platform data when migrating legacy unprefixed lock keys ([20c5d58](https://github.com/snowdreamtech/UniRTM/commit/20c5d583de0cef34dfde54e3df3b380b678dff12))
+
 ## [0.30.0](https://github.com/snowdreamtech/UniRTM/compare/v0.29.1...v0.30.0) (2026-09-05)
 
 
