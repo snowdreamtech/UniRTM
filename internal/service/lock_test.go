@@ -488,6 +488,85 @@ func TestLockService_LegacyKeyMigration(t *testing.T) {
 	}
 }
 
+func TestLockService_BidirectionalKeyMigration(t *testing.T) {
+	tmpDir := t.TempDir()
+	lfPath := filepath.Join(tmpDir, "unirtm.lock")
+
+	ls, _ := NewLockService(LockServiceOptions{LockfilePath: lfPath, StrictMode: true})
+	registry := backend.NewRegistry()
+	registry.Register(&mockGenerateBackend{})
+	ls.SetBackendRegistry(registry)
+
+	// Pre-populate lockfile with unprefixed entries for go and npm backends
+	ls.lf.UpsertEntry("golang/go", &lockfile.ToolLockEntry{
+		Version: "1.22.0",
+		Backend: "go",
+	})
+	ls.lf.UpsertPlatform("golang/go", "1.22.0", "linux-amd64", &lockfile.PlatformEntry{
+		URL:      "http://example.com/go.tar.gz",
+		Checksum: "sha256:go123",
+	})
+
+	ls.lf.UpsertEntry("prettier", &lockfile.ToolLockEntry{
+		Version: "3.0.0",
+		Backend: "npm",
+	})
+	ls.lf.UpsertPlatform("prettier", "3.0.0", "linux-amd64", &lockfile.PlatformEntry{
+		URL:      "http://example.com/prettier.tgz",
+		Checksum: "sha256:npm123",
+	})
+
+	tools := map[string]ToolSpec{
+		"go:golang/go": {
+			Name:        "golang/go",
+			Version:     "1.22.0",
+			BackendName: "unregistered",
+		},
+		"npm:prettier": {
+			Name:        "prettier",
+			Version:     "3.0.0",
+			BackendName: "unregistered",
+		},
+	}
+
+	ctx := context.Background()
+	_, err := ls.Generate(ctx, tools, GenerateOptions{
+		Platforms:       []string{"linux-amd64"},
+		AllowIncomplete: true,
+	})
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	// Verify legacy unprefixed entries were removed and canonical keys populated
+	if ls.lf.GetEntry("golang/go", "1.22.0") != nil {
+		t.Error("expected legacy 'golang/go' key to be removed")
+	}
+	if ls.lf.GetEntry("prettier", "3.0.0") != nil {
+		t.Error("expected legacy 'prettier' key to be removed")
+	}
+
+	goPlat := ls.lf.GetPlatform("go:golang/go", "1.22.0", "linux-amd64")
+	if goPlat == nil || goPlat.URL != "http://example.com/go.tar.gz" {
+		t.Errorf("expected migrated go platform URL, got %v", goPlat)
+	}
+
+	npmPlat := ls.lf.GetPlatform("npm:prettier", "3.0.0", "linux-amd64")
+	if npmPlat == nil || npmPlat.URL != "http://example.com/prettier.tgz" {
+		t.Errorf("expected migrated npm platform URL, got %v", npmPlat)
+	}
+
+	// Verify fallback Resolve & CheckStrict
+	plat := backend.Platform{OS: "linux", Arch: "amd64"}
+	if info, ok := ls.Resolve("go:golang/go", "1.22.0", plat); !ok || info.DownloadURL == "" {
+		t.Errorf("Resolve failed for go:golang/go: %v", info)
+	}
+	if err := ls.CheckStrict("go:golang/go", "1.22.0", plat); err != nil {
+		t.Errorf("CheckStrict failed for go:golang/go: %v", err)
+	}
+}
+
+
 
 
 

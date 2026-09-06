@@ -93,6 +93,12 @@ func (ls *LockService) Resolve(
 
 	pe := ls.lf.GetPlatform(lockKey, version, platKey)
 	if pe == nil || pe.URL == "" {
+		// Fallback check using baseKey without prefix
+		if idx := strings.Index(lockKey, ":"); idx != -1 {
+			pe = ls.lf.GetPlatform(lockKey[idx+1:], version, platKey)
+		}
+	}
+	if pe == nil || pe.URL == "" {
 		return nil, false
 	}
 
@@ -128,7 +134,16 @@ func (ls *LockService) CheckStrict(lockKey, version string, platform backend.Pla
 		Version:     version,
 		PlatformKey: platKey,
 	}
-	return ls.lf.CheckStrict([]lockfile.LockRequirement{req})
+	err := ls.lf.CheckStrict([]lockfile.LockRequirement{req})
+	if err != nil {
+		if idx := strings.Index(lockKey, ":"); idx != -1 {
+			req.ToolKey = lockKey[idx+1:]
+			if err2 := ls.lf.CheckStrict([]lockfile.LockRequirement{req}); err2 == nil {
+				return nil
+			}
+		}
+	}
+	return err
 }
 
 // ─── Write API ────────────────────────────────────────────────────────────────
@@ -187,8 +202,13 @@ func (ls *LockService) RemoveTool(lockKey string) error {
 	defer ls.mu.Unlock()
 
 	ls.lf.RemoveEntry(lockKey)
+	baseKey := lockKey
+	if idx := strings.Index(lockKey, ":"); idx != -1 {
+		baseKey = lockKey[idx+1:]
+	}
+	ls.lf.RemoveEntry(baseKey)
 	for key := range ls.lf.Tools {
-		if strings.HasSuffix(key, ":"+lockKey) {
+		if strings.HasSuffix(key, ":"+baseKey) {
 			ls.lf.RemoveEntry(key)
 		}
 	}
@@ -425,43 +445,75 @@ func (ls *LockService) Generate(
 	// Clean up orphan entries from lockfile if running full lock generation (opts.Tools is empty).
 	if len(opts.Tools) == 0 {
 		for lockKey := range ls.lf.Tools {
-			baseKey := lockKey
+			lockBase := lockKey
 			if idx := strings.Index(lockKey, ":"); idx != -1 {
-				baseKey = lockKey[idx+1:]
+				lockBase = lockKey[idx+1:]
 			}
 
 			inConfig := false
+			matchedConfigKey := ""
+
+			// Direct match or base key match
 			if _, ok := tools[lockKey]; ok {
 				inConfig = true
-			} else if _, ok := tools[baseKey]; ok {
+				matchedConfigKey = lockKey
+			} else if _, ok := tools[lockBase]; ok {
 				inConfig = true
+				matchedConfigKey = lockBase
 			} else {
-				// Check if lockKey is a legacy unprefixed key matching a prefixed configKey
+				// Bidirectional matching against config tools map
 				for configKey, spec := range tools {
-					if spec.Name == lockKey || configKey == "github:"+lockKey || configKey == "go:"+lockKey || configKey == "npm:"+lockKey || configKey == "pipx:"+lockKey {
+					configBase := configKey
+					if idx := strings.Index(configKey, ":"); idx != -1 {
+						configBase = configKey[idx+1:]
+					}
+
+					// Match conditions across aliases and legacy formats:
+					// 1. lockKey equals spec.Name or spec.OriginalName
+					// 2. lockBase equals configBase (e.g. "anchore/syft" vs "github:anchore/syft")
+					// 3. lockKey equals spec.BackendName + ":" + lockBase / configBase
+					// 4. configKey equals spec.BackendName + ":" + lockBase
+					if spec.Name == lockKey || spec.OriginalName == lockKey ||
+						lockBase == configBase || lockBase == spec.Name || lockBase == spec.OriginalName ||
+						(spec.BackendName != "" && (configKey == spec.BackendName+":"+lockBase || lockKey == spec.BackendName+":"+configBase)) {
 						inConfig = true
-						// Preserve & migrate any missing platform entries from legacy lockKey into canonical configKey
-						if legacyEntries, hasLegacy := ls.lf.Tools[lockKey]; hasLegacy {
-							for _, leg := range legacyEntries {
-								if leg == nil {
-									continue
-								}
-								for pKey, pVal := range leg.Platforms {
-									if pVal != nil && ls.lf.GetPlatform(configKey, leg.Version, pKey) == nil {
-										ls.lf.UpsertPlatform(configKey, leg.Version, pKey, pVal)
-									}
-								}
-							}
-						}
-						// Remove the legacy unprefixed key after migrating its platforms
-						ls.lf.RemoveEntry(lockKey)
-						ls.dirty = true
+						matchedConfigKey = configKey
 						break
 					}
 				}
 			}
 
-			if !inConfig {
+			if inConfig {
+				// If lockKey is a legacy or alias format key (different from matchedConfigKey),
+				// migrate missing platform entries from lockKey into matchedConfigKey and prune lockKey.
+				if matchedConfigKey != "" && matchedConfigKey != lockKey {
+					if legacyEntries, hasLegacy := ls.lf.Tools[lockKey]; hasLegacy {
+						for _, leg := range legacyEntries {
+							if leg == nil {
+								continue
+							}
+							if existingEntry := ls.lf.GetEntry(matchedConfigKey, leg.Version); existingEntry == nil {
+								ls.lf.UpsertEntry(matchedConfigKey, &lockfile.ToolLockEntry{
+									Version: leg.Version,
+									Backend: leg.Backend,
+									Options: leg.Options,
+								})
+							}
+							for pKey, pVal := range leg.Platforms {
+								if pVal != nil && pVal.URL != "" {
+									existingPe := ls.lf.GetPlatform(matchedConfigKey, leg.Version, pKey)
+									if existingPe == nil || existingPe.URL == "" {
+										ls.lf.UpsertPlatform(matchedConfigKey, leg.Version, pKey, pVal)
+									}
+								}
+							}
+						}
+					}
+					ls.lf.RemoveEntry(lockKey)
+					ls.dirty = true
+				}
+			} else {
+				// True orphan: not present in config under any prefix or alias
 				ls.lf.RemoveEntry(lockKey)
 				ls.dirty = true
 			}
