@@ -99,3 +99,32 @@ func TestCheckStrict_Errors(t *testing.T) {
 	})
 	assert.NoError(t, err)
 }
+
+func TestValidate_EmptyURLForBinaryBackend(t *testing.T) {
+	lf := &LockFile{
+		Tools: map[string][]*ToolLockEntry{
+			"github:cli/cli": {
+				{
+					Version: "2.72.0",
+					Backend: "github",
+					Platforms: map[string]*PlatformEntry{
+						"linux-amd64": {URL: ""},
+					},
+				},
+			},
+			"npm:prettier": {
+				{
+					Version: "3.9.6",
+					Backend: "npm",
+					Platforms: map[string]*PlatformEntry{
+						"linux-amd64": {URL: ""},
+					},
+				},
+			},
+		},
+	}
+
+	err := lf.Validate()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "URL is empty for binary download backend")
+}

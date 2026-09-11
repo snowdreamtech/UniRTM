@@ -56,7 +56,7 @@ func (lf *LockFile) Validate() error {
 					ve.add("tool %q version %q platform %q: nil entry", key, e.Version, pk)
 					continue
 				}
-				if err := validatePlatformEntry(key, e.Version, pk, pe); err != nil {
+				if err := validatePlatformEntry(key, e.Version, pk, pe, e.Backend); err != nil {
 					ve.add("%s", err)
 				}
 			}
@@ -69,11 +69,32 @@ func (lf *LockFile) Validate() error {
 	return nil
 }
 
+// BackendNeedsURL determines if a tool backend requires explicit binary download URLs.
+func BackendNeedsURL(toolKey, backend string) bool {
+	if backend == "" {
+		if strings.HasPrefix(toolKey, "github:") || strings.Contains(toolKey, "/") {
+			return true
+		}
+		if idx := strings.Index(toolKey, ":"); idx != -1 {
+			backend = toolKey[:idx]
+		}
+	}
+	switch backend {
+	case "npm", "pipx", "asdf", "cargo", "go", "go_pkg", "vfox", "gem", "composer", "cran", "spm", "pub", "luarocks", "maven", "conda", "pypi":
+		return false
+	default:
+		return true
+	}
+}
+
 // validatePlatformEntry validates a single PlatformEntry.
-func validatePlatformEntry(toolKey, version, platformKey string, pe *PlatformEntry) error {
+func validatePlatformEntry(toolKey, version, platformKey string, pe *PlatformEntry, backend string) error {
 	ve := &ValidationError{}
 	ctx := fmt.Sprintf("tool %q version %q platform %q", toolKey, version, platformKey)
 
+	if BackendNeedsURL(toolKey, backend) && pe.URL == "" {
+		ve.add("%s: URL is empty for binary download backend %q", ctx, backend)
+	}
 	if pe.Checksum != "" && !isValidChecksumFormat(pe.Checksum) {
 		ve.add("%s: checksum %q must be a valid hex string or start with a supported algorithm prefix (e.g., sha256:)", ctx, pe.Checksum)
 	}
@@ -177,13 +198,7 @@ func (lf *LockFile) CheckStrict(required []LockRequirement) error {
 			continue
 		}
 
-		// Backends that download from explicit URLs must have the URL locked.
-		// Package manager backends delegate resolution natively so they legitimately have an empty URL.
-		needsURL := true
-		switch entry.Backend {
-		case "npm", "pipx", "asdf", "cargo", "go", "go_pkg", "vfox", "gem", "composer", "cran", "spm", "pub", "luarocks", "maven", "conda", "pypi":
-			needsURL = false
-		}
+		needsURL := BackendNeedsURL(r.ToolKey, entry.Backend)
 
 		if needsURL && pe.URL == "" {
 			ve.add(
