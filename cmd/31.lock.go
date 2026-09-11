@@ -356,7 +356,21 @@ func checkConfigLockSync(cfg *config.Config, lf *lockfile.LockFile, lockPath str
 		}
 
 		if entry == nil {
-			mismatches = append(mismatches, fmt.Sprintf("%s@%s", name, tc.Version))
+			mismatches = append(mismatches, fmt.Sprintf("%s@%s (missing lock entry)", name, tc.Version))
+			continue
+		}
+
+		// Verify core platforms (linux-amd64, linux-arm64, macos-arm64, macos-amd64, windows-amd64) for URL-based backends
+		if lockfile.BackendNeedsURL(name, entry.Backend) {
+			for _, plat := range lockfile.CorePlatforms {
+				pe := lf.GetPlatform(name, entry.Version, plat)
+				if pe == nil {
+					pe = lf.GetPlatform(toolName, entry.Version, plat)
+				}
+				if pe == nil || pe.URL == "" {
+					mismatches = append(mismatches, fmt.Sprintf("%s@%s (missing core platform URL for %s)", name, entry.Version, plat))
+				}
+			}
 		}
 	}
 

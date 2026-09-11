@@ -40,11 +40,15 @@ func TestCheckConfigLockSync(t *testing.T) {
 	lfPath := filepath.Join(tmpDir, "unirtm.lock")
 
 	// Lockfile contains python@3.14.6
+	plats := make(map[string]*lockfile.PlatformEntry)
+	for _, p := range lockfile.CorePlatforms {
+		plats[p] = &lockfile.PlatformEntry{URL: "https://example.com/python.tar.gz"}
+	}
 	lf := lockfile.New(lfPath)
 	lf.UpsertEntry("python", &lockfile.ToolLockEntry{
 		Version:   "3.14.6",
 		Backend:   "native",
-		Platforms: make(map[string]*lockfile.PlatformEntry),
+		Platforms: plats,
 	})
 
 	// Config requests python@3.14.7
