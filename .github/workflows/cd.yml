@@ -63,6 +63,8 @@ jobs:
           trust: true
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+          UNIRTM_VERIFY_PROVENANCE: "0"
 
       - name: "📝 Validate Commit Convention (Commitlint)"
         shell: sh
