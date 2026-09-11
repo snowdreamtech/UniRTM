@@ -22,11 +22,7 @@ func TestUseCommandStructure(t *testing.T) {
 
 func TestRunUse(t *testing.T) {
 	tmpDir := t.TempDir()
-
-	// Switch to tmpDir
-	oldWd, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(oldWd)
+	t.Chdir(tmpDir)
 
 	cmd := useCmd
 	cmd.SetContext(context.Background())
@@ -52,10 +48,7 @@ func TestRunUse(t *testing.T) {
 
 func TestRunUse_Multiple(t *testing.T) {
 	tmpDir := t.TempDir()
-
-	oldWd, _ := os.Getwd()
-	os.Chdir(tmpDir)
-	defer os.Chdir(oldWd)
+	t.Chdir(tmpDir)
 
 	cmd := useCmd
 	cmd.SetContext(context.Background())
@@ -76,6 +69,7 @@ func TestRunUse_Multiple(t *testing.T) {
 
 func TestRunUse_SpecificPath(t *testing.T) {
 	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
 
 	targetDir := filepath.Join(tmpDir, "target")
 
@@ -99,6 +93,8 @@ func TestRunUse_SpecificPath(t *testing.T) {
 
 func TestRunUse_Global(t *testing.T) {
 	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
 	// HOME is used by os.UserHomeDir() on Unix.
 	// On Windows, os.UserHomeDir() reads USERPROFILE (or HOMEDRIVE+HOMEPATH).
 	t.Setenv("HOME", tmpDir)
@@ -123,6 +119,9 @@ func TestRunUse_Global(t *testing.T) {
 }
 
 func TestRunUse_DryRun(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
 	cmd := useCmd
 	cmd.SetContext(context.Background())
 
