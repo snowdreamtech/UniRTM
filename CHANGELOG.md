@@ -6,6 +6,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.31.0](https://github.com/snowdreamtech/UniRTM/compare/v0.30.1...v0.31.0) (2026-09-11)
+
+
+### 🚀 Features
+
+* **lock:** enforce CorePlatforms URL completeness in lock and check commands ([a8b9257](https://github.com/snowdreamtech/UniRTM/commit/a8b92577f116163567c3dd9da3e3ed54ca6334c9))
+* **lockfile:** define CorePlatforms slice for 5 tier-1 core platforms ([d6a3544](https://github.com/snowdreamtech/UniRTM/commit/d6a35446be2a8a562c43f1edd079e6e12dfda720))
+* **lockfile:** enforce non-empty URL validation for binary download backends ([13b13ea](https://github.com/snowdreamtech/UniRTM/commit/13b13ea0adbebf628312e801ca7456351d96049c))
+
+
+### 🐛 Bug Fixes
+
+* **lock:** preserve existing tool locks during incremental updates and fallback on network errors ([1060d04](https://github.com/snowdreamtech/UniRTM/commit/1060d0442af1a8273238bc9d3b97e4362f509b35))
+
+
+### ♻️ Miscellaneous Chores
+
+* **deps:** bump mermaid in /docs in the all-dependencies group ([060979a](https://github.com/snowdreamtech/UniRTM/commit/060979a73ff38e703afcf75ab98c64d51b595e64))
+* **deps:** bump mermaid in /docs in the all-dependencies group ([bfdd31d](https://github.com/snowdreamtech/UniRTM/commit/bfdd31dd463017762cd391d948a17f08bd7f07c1))
+* **deps:** bump mvdan.cc/sh/v3 in the all-dependencies group ([bf023e2](https://github.com/snowdreamtech/UniRTM/commit/bf023e2de80cd6a6773553b64d185fa47424d398))
+* **deps:** sync dependabot config and unirtm toolchain ([b180bcc](https://github.com/snowdreamtech/UniRTM/commit/b180bcc62d5fda4122a6d9b08ba04330ade68691))
+* **deps:** sync dependabot config and unirtm toolchain ([d908c5b](https://github.com/snowdreamtech/UniRTM/commit/d908c5b7fdaf77401564dbf1af2e207a4b262752))
+* **deps:** upgrade unirtm-version to 0.30.1 ([87148d3](https://github.com/snowdreamtech/UniRTM/commit/87148d3c7b1f17d59f660ba3b9aba1ab944f4f27))
+* merge upstream/dev into dev ([4db4e11](https://github.com/snowdreamtech/UniRTM/commit/4db4e111d93549e4b174ee246d5ea31ea1e52a8d))
+* merge upstream/dev into dev ([cb17338](https://github.com/snowdreamtech/UniRTM/commit/cb17338c34c9fd47c2dd8caa3ebb225ada5e2b1e))
+* release main ([3ce846e](https://github.com/snowdreamtech/UniRTM/commit/3ce846eda8539f7ccdc46fd21f0d59a1b59537dd))
+* release main ([#179](https://github.com/snowdreamtech/UniRTM/issues/179)) ([5abb138](https://github.com/snowdreamtech/UniRTM/commit/5abb138b8facdbef67eb206af1604e8e453c2660))
+
 ## [0.30.1](https://github.com/snowdreamtech/UniRTM/compare/v0.30.0...v0.30.1) (2026-09-06)
 
 
