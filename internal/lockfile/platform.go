@@ -25,6 +25,16 @@ var StandardPlatforms = []string{
 	"windows-arm64",
 }
 
+// CorePlatforms defines the 5 primary desktop, server, and container platforms
+// required for strict lockfile URL verification across Linux, macOS, and Windows.
+var CorePlatforms = []string{
+	"linux-amd64",
+	"linux-arm64",
+	"macos-arm64",
+	"macos-amd64",
+	"windows-amd64",
+}
+
 // osNames maps GOOS → lockfile OS segment.
 var osNames = map[string]string{
 	"linux":   "linux",
@@ -114,6 +124,16 @@ func ParsePlatformKey(key string) (goos, goarch string, musl bool, err error) {
 // IsValidPlatformKey reports whether key is a recognised standard platform key.
 func IsValidPlatformKey(key string) bool {
 	for _, p := range StandardPlatforms {
+		if p == key {
+			return true
+		}
+	}
+	return false
+}
+
+// IsCorePlatform reports whether key is one of the 5 primary core platforms.
+func IsCorePlatform(key string) bool {
+	for _, p := range CorePlatforms {
 		if p == key {
 			return true
 		}

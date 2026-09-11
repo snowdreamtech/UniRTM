@@ -375,3 +375,18 @@ func TestParsePlatformKeys_Error(t *testing.T) {
 		t.Error("expected error for invalid-os")
 	}
 }
+
+func TestCorePlatforms(t *testing.T) {
+	expected := []string{"linux-amd64", "linux-arm64", "macos-arm64", "macos-amd64", "windows-amd64"}
+	if len(CorePlatforms) != len(expected) {
+		t.Fatalf("CorePlatforms length mismatch: expected %d, got %d", len(expected), len(CorePlatforms))
+	}
+	for _, p := range expected {
+		if !IsCorePlatform(p) {
+			t.Errorf("IsCorePlatform(%q) = false, expected true", p)
+		}
+	}
+	if IsCorePlatform("linux-amd64-musl") {
+		t.Errorf("IsCorePlatform('linux-amd64-musl') = true, expected false")
+	}
+}
