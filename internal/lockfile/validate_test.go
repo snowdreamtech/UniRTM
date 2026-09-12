@@ -128,3 +128,11 @@ func TestValidate_EmptyURLForBinaryBackend(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "URL is empty for binary download backend")
 }
+
+func TestBackendNeedsURL(t *testing.T) {
+	assert.False(t, BackendNeedsURL("go:golang.org/x/vuln/cmd/govulncheck", "go-pkg"))
+	assert.False(t, BackendNeedsURL("go:golang.org/x/tools/cmd/goimports", "go"))
+	assert.False(t, BackendNeedsURL("npm:prettier", "npm"))
+	assert.True(t, BackendNeedsURL("github:cli/cli", "github"))
+	assert.True(t, BackendNeedsURL("http:example.com/tool.tar.gz", "http"))
+}

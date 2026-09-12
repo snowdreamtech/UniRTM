@@ -71,6 +71,9 @@ func (lf *LockFile) Validate() error {
 
 // BackendNeedsURL determines if a tool backend requires explicit binary download URLs.
 func BackendNeedsURL(toolKey, backend string) bool {
+	if strings.HasPrefix(toolKey, "go:") || strings.HasPrefix(toolKey, "npm:") || strings.HasPrefix(toolKey, "pipx:") || strings.HasPrefix(toolKey, "cargo:") {
+		return false
+	}
 	if backend == "" {
 		if strings.HasPrefix(toolKey, "github:") || strings.Contains(toolKey, "/") {
 			return true
@@ -79,8 +82,9 @@ func BackendNeedsURL(toolKey, backend string) bool {
 			backend = toolKey[:idx]
 		}
 	}
-	switch backend {
-	case "npm", "pipx", "asdf", "cargo", "go", "go_pkg", "vfox", "gem", "composer", "cran", "spm", "pub", "luarocks", "maven", "conda", "pypi":
+	normalized := strings.ReplaceAll(strings.ToLower(backend), "-", "_")
+	switch normalized {
+	case "npm", "pipx", "asdf", "cargo", "go", "go_pkg", "vfox", "gem", "composer", "cran", "spm", "pub", "luarocks", "maven", "conda", "pypi", "deno", "cabal", "dotnet", "zig":
 		return false
 	default:
 		return true
