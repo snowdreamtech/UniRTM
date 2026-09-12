@@ -204,3 +204,19 @@ func TestIsSelfReferential(t *testing.T) {
 	}
 }
 
+func TestGenerator_GenerateShim_SymlinkEvaluation(t *testing.T) {
+	tmpDir := t.TempDir()
+	realBin := filepath.Join(tmpDir, "real_unirtm")
+	if err := os.WriteFile(realBin, []byte("binary"), 0755); err != nil {
+		t.Fatalf("failed to write dummy binary: %v", err)
+	}
+	symlinkBin := filepath.Join(tmpDir, "symlink_unirtm")
+	if err := os.Symlink(realBin, symlinkBin); err != nil {
+		t.Fatalf("failed to create symlink: %v", err)
+	}
+
+	if !isSelfReferential(symlinkBin, realBin, "node", "node") {
+		t.Error("expected isSelfReferential to recognize symlink pointing to real binary")
+	}
+}
+
