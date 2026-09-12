@@ -168,3 +168,37 @@ func TestGenerator_GenerateWindowsShim_Direct(t *testing.T) {
 		t.Fatalf("generateWindowsShim failed: %v", err)
 	}
 }
+
+func TestGenerator_GenerateShim_SelfReferentialPrevention(t *testing.T) {
+	tmpDir := t.TempDir()
+	shimsDir := filepath.Join(tmpDir, "shims")
+	installsDir := filepath.Join(tmpDir, "installs")
+
+	g := NewGenerator(shimsDir, installsDir)
+
+	ctx := context.Background()
+	err := g.GenerateShim(ctx, "unirtm")
+	if err == nil {
+		t.Error("expected error when attempting to generate shim for unirtm itself")
+	}
+}
+
+func TestIsSelfReferential(t *testing.T) {
+	unirtmExe, err := os.Executable()
+	if err != nil {
+		t.Fatalf("failed to get os.Executable: %v", err)
+	}
+
+	if !isSelfReferential(unirtmExe, unirtmExe, "node", "node") {
+		t.Error("expected isSelfReferential to be true when shimPath == unirtmPath")
+	}
+
+	if !isSelfReferential("/tmp/shims/unirtm", "/usr/bin/unirtm", "unirtm", "unirtm") {
+		t.Error("expected isSelfReferential to be true when tool name is unirtm")
+	}
+
+	if isSelfReferential("/tmp/shims/node", "/usr/bin/unirtm", "node", "node") {
+		t.Error("expected isSelfReferential to be false for distinct tool and paths")
+	}
+}
+

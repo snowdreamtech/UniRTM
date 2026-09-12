@@ -126,6 +126,12 @@ func handleAsdfAlias() {
 
 // invokeShimMode resolves and executes a tool when UniRTM is invoked via a symlink.
 func invokeShimMode(exeName string) {
+	if os.Getenv("_UNIRTM_SHIM_RECURSION_GUARD") != "" {
+		fmt.Fprintf(os.Stderr, "ERROR: unirtm shim infinite recursion loop detected for executable '%s'\n", exeName)
+		os.Exit(128)
+	}
+	os.Setenv("_UNIRTM_SHIM_RECURSION_GUARD", "1")
+
 	ctx := context.Background()
 
 	// 1. Load configuration to find which tool provides this executable

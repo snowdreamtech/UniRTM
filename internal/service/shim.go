@@ -159,6 +159,16 @@ func (g *Generator) generateUnixShim(tool, executable string) error {
 		return fmt.Errorf("get unirtm executable path: %w", err)
 	}
 
+	// Resolve symlinks to prevent pointing to an entrypoint wrapper
+	if realPath, err := filepath.EvalSymlinks(unirtmPath); err == nil {
+		unirtmPath = realPath
+	}
+
+	// Safety check: Prevent self-referential shimming
+	if isSelfReferential(shimPath, unirtmPath, tool, executable) {
+		return fmt.Errorf("refusing to create self-referential shim for %s at %s", executable, shimPath)
+	}
+
 	// 2. Ensure the directory exists
 	if err := os.MkdirAll(filepath.Dir(shimPath), 0755); err != nil {
 		return fmt.Errorf("create shim directory for %s: %w", tool, err)
@@ -169,8 +179,8 @@ func (g *Generator) generateUnixShim(tool, executable string) error {
 
 	// 4. Create symlink pointing to the current UniRTM binary
 	if err := os.Symlink(unirtmPath, shimPath); err != nil {
-		// Fallback to minimal wrapper script if symlink fails (rare on Unix)
-		content := fmt.Sprintf("#!/bin/sh\nexec %q shim \"$0\" \"$@\"\n", unirtmPath)
+		// Fallback to minimal wrapper script with recursion guard if symlink fails (rare on Unix)
+		content := fmt.Sprintf("#!/bin/sh\nif [ -n \"$_UNIRTM_SHIM_RECURSION_GUARD\" ]; then\n  echo \"unirtm shim: infinite recursion loop detected for $0\" >&2\n  exit 128\nfi\nexport _UNIRTM_SHIM_RECURSION_GUARD=1\nexec %q shim \"$0\" \"$@\"\n", unirtmPath)
 		if err := os.WriteFile(shimPath, []byte(content), 0755); err != nil {
 			return fmt.Errorf("failed to create shim for %s: %w", tool, err)
 		}
@@ -187,7 +197,17 @@ func (g *Generator) generateWindowsShim(tool, executable string) error {
 		return fmt.Errorf("get unirtm executable path: %w", err)
 	}
 
+	// Resolve symlinks to get real binary path
+	if realPath, err := filepath.EvalSymlinks(unirtmPath); err == nil {
+		unirtmPath = realPath
+	}
+
 	shimPath := filepath.Join(g.shimsDir, executable+".exe")
+
+	// Safety check: Prevent self-referential shimming
+	if isSelfReferential(shimPath, unirtmPath, tool, executable) {
+		return fmt.Errorf("refusing to create self-referential shim for %s at %s", executable, shimPath)
+	}
 
 	// 1. Ensure the directory exists
 	if err := os.MkdirAll(filepath.Dir(shimPath), 0755); err != nil {
@@ -212,10 +232,37 @@ func (g *Generator) generateWindowsShim(tool, executable string) error {
 		}
 	}
 
-	// Fallback to minimal wrapper script if hard link fails (e.g. cross-partition) or if in tests
-	cmdContent := fmt.Sprintf("@echo off\n\"%s\" shim \"%%~n0\" %%*\n", unirtmPath)
+	// Fallback to minimal wrapper script with recursion guard if hard link fails (e.g. cross-partition) or if in tests
+	cmdContent := fmt.Sprintf("@echo off\nif defined _UNIRTM_SHIM_RECURSION_GUARD (\n  echo unirtm shim: infinite recursion loop detected for %%~n0 1>&2\n  exit /b 128\n)\nset _UNIRTM_SHIM_RECURSION_GUARD=1\n\"%s\" shim \"%%~n0\" %%*\n", unirtmPath)
 	cmdPath := filepath.Join(g.shimsDir, executable+".cmd")
 	return os.WriteFile(cmdPath, []byte(cmdContent), 0644)
+}
+
+// isSelfReferential checks if creating a shim for the given executable would result
+// in a self-referential execution loop or overwrite the unirtm binary itself.
+func isSelfReferential(shimPath, unirtmPath, tool, executable string) bool {
+	// 1. Check if tool or executable base name is unirtm
+	exeBase := strings.ToLower(strings.TrimSuffix(filepath.Base(executable), filepath.Ext(executable)))
+	toolBase := strings.ToLower(strings.TrimSuffix(filepath.Base(tool), filepath.Ext(tool)))
+	if exeBase == "unirtm" || toolBase == "unirtm" {
+		return true
+	}
+
+	// 2. Check if clean paths are identical
+	cleanShim := filepath.Clean(shimPath)
+	cleanUnirtm := filepath.Clean(unirtmPath)
+	if cleanShim == cleanUnirtm {
+		return true
+	}
+
+	// 3. Check if evaluated symlinks point to the same physical file
+	evalShim, err1 := filepath.EvalSymlinks(cleanShim)
+	evalUnirtm, err2 := filepath.EvalSymlinks(cleanUnirtm)
+	if err1 == nil && err2 == nil && evalShim == evalUnirtm {
+		return true
+	}
+
+	return false
 }
 
 // toolVersionEnvVar returns the environment variable name for a tool's active version.
