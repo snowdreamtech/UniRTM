@@ -110,6 +110,7 @@ func TestExecuteCommandsForCoverage(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 	t.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
+	t.Chdir(tmpDir)
 
 	commands := [][]string{
 		{"cache", "stats"},
@@ -145,6 +146,7 @@ func TestDirectFunctionsForCoverage(t *testing.T) {
 	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 	t.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
 	t.Setenv("EDITOR", "echo")
+	t.Chdir(tmpDir)
 
 	_ = runTasksEdit(tasksEditCmd, []string{"test"})
 	_ = runTasksList(tasksListCmd, []string{})
@@ -159,6 +161,7 @@ func TestMoreDirectFunctionsForCoverage(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
 	t.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
+	t.Chdir(tmpDir)
 
 	_ = getDefaultCacheDir()
 	_ = maskToken("12345678")
