@@ -241,10 +241,16 @@ func (g *Generator) generateWindowsShim(tool, executable string) error {
 // isSelfReferential checks if creating a shim for the given executable would result
 // in a self-referential execution loop or overwrite the unirtm binary itself.
 func isSelfReferential(shimPath, unirtmPath, tool, executable string) bool {
-	// 1. Check if tool or executable base name is unirtm
+	// 1. Check if tool or executable base name is unirtm or related version manager entry points
 	exeBase := strings.ToLower(strings.TrimSuffix(filepath.Base(executable), filepath.Ext(executable)))
 	toolBase := strings.ToLower(strings.TrimSuffix(filepath.Base(tool), filepath.Ext(tool)))
-	if exeBase == "unirtm" || toolBase == "unirtm" {
+	blockedNames := map[string]bool{
+		"unirtm": true,
+		"mise":   true,
+		"rtx":    true,
+		"asdf":   true,
+	}
+	if blockedNames[exeBase] || blockedNames[toolBase] {
 		return true
 	}
 

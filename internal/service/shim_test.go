@@ -193,8 +193,10 @@ func TestIsSelfReferential(t *testing.T) {
 		t.Error("expected isSelfReferential to be true when shimPath == unirtmPath")
 	}
 
-	if !isSelfReferential("/tmp/shims/unirtm", "/usr/bin/unirtm", "unirtm", "unirtm") {
-		t.Error("expected isSelfReferential to be true when tool name is unirtm")
+	for _, blocked := range []string{"unirtm", "mise", "rtx", "asdf"} {
+		if !isSelfReferential("/tmp/shims/"+blocked, "/usr/bin/unirtm", blocked, blocked) {
+			t.Errorf("expected isSelfReferential to be true for tool %s", blocked)
+		}
 	}
 
 	if isSelfReferential("/tmp/shims/node", "/usr/bin/unirtm", "node", "node") {

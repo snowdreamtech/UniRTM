@@ -98,13 +98,13 @@ func Execute() {
 	}
 }
 
-// isUniRTMBinary checks if the given name is one of UniRTM's own binary names.
+// isUniRTMBinary checks if the given name is one of UniRTM's own binary names (or compatible aliases).
 func isUniRTMBinary(name string) bool {
 	// Remove path and extension
 	name = filepath.Base(name)
 	name = strings.ToLower(name)
 	name = strings.TrimSuffix(name, ".exe")
-	return name == "unirtm" || name == "unirtm-test" || name == "main" || name == "unirtm-debug" || name == "unirtm-dev"
+	return name == "unirtm" || name == "unirtm-test" || name == "main" || name == "unirtm-debug" || name == "unirtm-dev" || name == "mise" || name == "rtx"
 }
 
 // handleAsdfAlias handles legacy asdf commands for compatibility.
