@@ -169,6 +169,9 @@
 
 - Use **locale-aware APIs** (`Intl.DateTimeFormat`, `Intl.NumberFormat`, `Intl.RelativeTimeFormat`) for dates, numbers, and currencies. Never manually format locale-sensitive values.
 - Design layouts using **logical CSS properties** (`margin-inline-start`, `padding-block-end`) instead of physical properties (`margin-left`, `padding-bottom`) to enable RTL language support without rewrites.
+- Maintain **100% Key Alignment** across all 15 supported language dictionaries (`zh-CN`, `zh-TW`, `en-US`, `ja-JP`, `ko-KR`, `de-DE`, `fr-FR`, `es-ES`, `ru-RU`, `pt-BR`, `it-IT`, `tr-TR`, `pl-PL`, `vi-VN`, `ar-SA`). No language dictionary may miss any key defined in base locales.
+- **Native Translation Principle**: All user-facing UI text (modals, card titles, status banners, toast messages, button labels, tooltips) must be translated into authentic target native languages. Avoid leaving unlocalized English sentences.
+- **Technical Acronym Exception**: Universal technical terms, filesystem types, protocols, vendor hardware acronyms, and product brand names (`USB`, `ISO`, `exFAT`, `NTFS`, `FAT32`, `ext4`, `Ventoy`, `UniBoot`, `iPXE`, `QEMU`, `HTTP/2`, `GitHub`, `MBR`, `GPT`, `TPM`, `CPU`, `RAM`, `macOS`, `Windows`, `Linux`, `VID`, `PID`) remain in English across all locales.
 - Maintain a **design system** or component library as a single source of truth for visual design decisions. Design tokens MUST be versioned and breaking changes managed like a public API — with a changelog and migration guide.
 
 ## 6. CLI UX & Terminal Interface

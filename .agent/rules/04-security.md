@@ -254,3 +254,29 @@ To maintain a robust security posture across all development stages, the audit p
   ```
 
 - **Rate Limiting & Abuse Prevention**: Apply rate limiting on all authentication, signup, password-reset, and data-export endpoints. Use sliding-window algorithms with IP + user-based limits. Return `429 Too Many Requests` with a `Retry-After` header.
+
+## 7. Storage & Low-Level Hardware Safety Rules (三大安全铁律)
+
+> Objective: Prevent catastrophic data loss, multi-drive contamination, and spoofing vulnerabilities when performing low-level disk inspections, partitioning, formatting, and bootloader deployments.
+
+### 🔒 铁律一：磁盘 Label 仅作为纯展示属性 (Labels are Display-Only, NEVER Authoritative)
+- **Principle**: Disk volume labels (`VolumeName`, `Label`) are user-modifiable strings easily altered in file managers. **NEVER** use volume labels to determine bootloader types, deployment states, or disk identification.
+- **Rule**:
+  - Bootloader identification must strictly rely on **raw physical sector signatures (Sector 0 MBR signature)** or **verified filesystem magic manifests** (e.g. `Magic: UNIBOOT_DISK` in `ipxe/uniboot.json`, core engine binaries).
+  - Unprivileged states that cannot read raw sectors or mount hidden ESP partitions must evaluate to `needs_privilege` ("Unverified Boot Structure / Unknown"), NEVER guessing or falling back to volume label matching.
+  - Disk names (like `UNIBOOT`, `Ventoy`, `Untitled`) must be treated as untrusted, user-facing display text only.
+
+### 🔒 铁律二：根绝裸字符切分误判 (Strict Hardware Node Normalization)
+- **Principle**: Loose substring checking (e.g. `strings.Contains(node, "s")` or naive index splitting) causes false partition-to-disk mappings (e.g., matching disk names or multi-digit disk numbers like `disk12s3`).
+- **Rule**:
+  - Always use standardized, platform-safe canonical parsers (e.g., `NormalizeDarwinDiskNode`) to extract parent physical disks (`diskN`) and partition identifiers (`diskNsM`).
+  - Prohibit raw character splitting or regex shortcuts on device nodes across all platforms.
+  - Any conversion between whole disk nodes (`/dev/diskN`) and slice nodes (`/dev/diskNsM`) must be structurally parsed.
+
+### 🔒 铁律三：零盲目 Fallback 与 Fail-Closed 熔断机制 (Zero Blind Fallbacks, Mandatory Fail-Closed)
+- **Principle**: Ambiguity in target disk partitions or mount paths must trigger an immediate fail-closed abort to prevent multi-drive data contamination or catastrophic accidental formatting.
+- **Rule**:
+  - All disk deployment, formatting, and file-write operations must target verified, unambiguous partition device nodes (e.g. `disk3s1`, `disk3s2`).
+  - When a target mount point or partition cannot be resolved with certainty, **fail closed immediately (Fail-Closed error return)**.
+  - **Strictly prohibit** hardcoded fallback paths (e.g. writing blindly to `/Volumes/Ventoy` or guessing drive letters).
+  - Multi-disk environments must be strictly isolated by target serial numbers and parent device IDs before any destructive actions.
