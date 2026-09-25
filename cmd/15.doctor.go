@@ -18,13 +18,14 @@ import (
 
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/backend"
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/version"
+	"github.com/snowdreamtech/unirtm/internal/utils"
 	"github.com/spf13/cobra"
-
-	"github.com/snowdreamtech/unirtm/internal/cli/output"
 )
 
 func init() {
@@ -350,7 +351,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 
 	// Network & Rate Limit
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := pkgHttp.NewClientWithTimeout(10 * time.Second)
 	req, _ := http.NewRequest("GET", "https://api.github.com/rate_limit", nil)
 	if token := env.Get("GITHUB_TOKEN"); token != "" {
 		req.Header.Set("Authorization", "token "+token)
@@ -466,14 +467,11 @@ func formatActiveEnv(cfg *config.Config) string {
 }
 
 func getDirSize(path string) string {
-	var size int64
-	_ = filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
-		if err == nil && !info.IsDir() {
-			size += info.Size()
-		}
-		return nil
-	})
-	return formatSize(size)
+	size, err := utils.CalculateDirectorySize(path)
+	if err != nil {
+		return "-"
+	}
+	return utils.FormatBytes(size)
 }
 
 func getFileSize(path string) string {
@@ -481,23 +479,7 @@ func getFileSize(path string) string {
 	if err != nil {
 		return "0 B"
 	}
-	return formatSize(info.Size())
-}
-
-func formatSize(size int64) string {
-	if size == 0 {
-		return "0 B"
-	}
-	const unit = 1024
-	if size < unit {
-		return fmt.Sprintf("%d B", size)
-	}
-	div, exp := int64(unit), 0
-	for n := size / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f %cB", float64(size)/float64(div), "KMGTPE"[exp])
+	return utils.FormatBytes(info.Size())
 }
 
 func stringToBulletItems(ss []string) []pterm.BulletListItem {
