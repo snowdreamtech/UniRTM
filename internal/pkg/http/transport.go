@@ -37,6 +37,9 @@ var ProxyBypassDomains = []string{
 
 // ShouldBypassProxy returns true if the given host should bypass the proxy.
 func ShouldBypassProxy(host string) bool {
+	if host == "localhost" || host == "127.0.0.1" || host == "::1" || strings.HasPrefix(host, "127.") {
+		return true
+	}
 	if strings.Contains(host, "mirror") || strings.HasSuffix(host, ".cn") {
 		return true
 	}
