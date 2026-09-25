@@ -27,6 +27,9 @@ import (
 	"go.uber.org/automaxprocs/maxprocs"
 )
 
+// RootCmd represents the base command structure.
+type RootCmd struct{}
+
 var (
 	rootCmd *cobra.Command
 )

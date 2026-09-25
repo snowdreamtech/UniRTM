@@ -8,6 +8,9 @@ import (
 	"database/sql"
 )
 
+// DBStruct provides a concrete base type for sqlite database execution.
+type DBStruct struct{}
+
 // DBExecutor is a common interface for *sql.DB and *sql.Tx
 // This allows repositories to work with both regular database connections
 // and transactions transparently

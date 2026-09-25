@@ -12,6 +12,9 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
+// EnvPathHelper provides path formatting and manipulation utilities.
+type EnvPathHelper struct{}
+
 var isWindowsMode = runtime.GOOS == "windows"
 var winDriveRegex = regexp.MustCompile(`^([A-Za-z]):[\\/](.*)$`)
 
