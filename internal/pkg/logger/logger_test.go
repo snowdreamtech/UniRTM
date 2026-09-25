@@ -278,3 +278,36 @@ func TestShould(t *testing.T) {
 		})
 	}
 }
+
+func TestSanitizeFields(t *testing.T) {
+	fields := map[string]interface{}{
+		"ProxyPassword": "super_secret_123",
+		"token":         "xyz_888",
+		"key":           "my_api_key_value",
+		"private_key":   "pem_secret",
+		"session_id":    "sess_999",
+		"otp":           "123456",
+		"url":           "http://admin:pass123@proxy.example.com",
+		"header":        "Bearer eyJhbGciOi...",
+		"query":         "api_key=secret_val&param=1",
+		"normal_field":  "normal_value",
+	}
+	clean := sanitizeFields(fields)
+
+	assert.Equal(t, "******", clean["ProxyPassword"])
+	assert.Equal(t, "******", clean["token"])
+	assert.Equal(t, "******", clean["key"])
+	assert.Equal(t, "******", clean["private_key"])
+	assert.Equal(t, "******", clean["session_id"])
+	assert.Equal(t, "******", clean["otp"])
+	assert.Equal(t, "http://admin:******@proxy.example.com", clean["url"])
+	assert.Equal(t, "Bearer ******", clean["header"])
+	assert.Equal(t, "api_key=******&param=1", clean["query"])
+	assert.Equal(t, "normal_value", clean["normal_field"])
+}
+
+func TestSanitizeString_PEMBlock(t *testing.T) {
+	rawPem := "Here is my key: -----BEGIN PGP PRIVATE KEY BLOCK-----\nSecretDataHere\n-----END PGP PRIVATE KEY BLOCK-----"
+	cleaned := sanitizeString(rawPem)
+	assert.Equal(t, "Here is my key: [REDACTED PRIVATE KEY]", cleaned)
+}

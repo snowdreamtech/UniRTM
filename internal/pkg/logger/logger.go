@@ -8,7 +8,9 @@ import (
 	"io"
 	"log"
 	"os"
+	"regexp"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,6 +19,78 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
+
+var (
+	urlCredRegex    = regexp.MustCompile(`(?i)(https?://[^:]+:)[^@]+(@)`)
+	authHeaderRegex = regexp.MustCompile(`(?i)(bearer|basic)\s+\S+`)
+	kvPairRegex     = regexp.MustCompile(`(?i)\b(password|passwd|pass|pwd|pin|code|secret|token|apikey|api_key|access_key|secret_key|private_key|key|auth|credential|credentials|session|cookie|sig|signature|gpg|ssh|rsa|dsa|ecdsa|ed25519)=[^&\s,;]+`)
+	pemKeyRegex     = regexp.MustCompile(`(?s)-----BEGIN [A-Z ]*(PRIVATE KEY|PGP PRIVATE KEY BLOCK|RSA PRIVATE KEY|DSA PRIVATE KEY|EC PRIVATE KEY|OPENSSH PRIVATE KEY)-----.*?-----END [A-Z ]*(PRIVATE KEY|PGP PRIVATE KEY BLOCK|RSA PRIVATE KEY|DSA PRIVATE KEY|EC PRIVATE KEY|OPENSSH PRIVATE KEY)-----`)
+)
+
+// isSensitiveKey checks if a log argument key represents a sensitive credential/secret/key.
+func isSensitiveKey(keyStr string) bool {
+	k := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(strings.TrimSpace(keyStr), "_", ""), "-", ""))
+	if k == "" {
+		return false
+	}
+	// 1. Exact match for short keywords
+	exactKeys := []string{
+		"key", "pass", "pwd", "cred", "creds", "sig", "auth",
+		"pin", "code", "token", "secret", "cookie", "sid", "cert", "pem",
+		"gpg", "ssh", "rsa", "dsa", "ecdsa", "ed25519", "idrsa", "ided25519",
+	}
+	for _, e := range exactKeys {
+		if k == e {
+			return true
+		}
+	}
+	// 2. Substring match for explicit security term keywords
+	substringKeys := []string{
+		"password", "passwd", "passcode", "secret", "token", "credential", "authorization",
+		"privatekey", "private", "apikey", "accesskey", "secretkey", "publickey", "authkey",
+		"clientkey", "userkey", "sshkey", "gpgkey", "rsakey", "dsakey", "ecdsakey", "ed25519key",
+		"masterkey", "appsecret", "clientsecret", "gpg", "ssh", "rsa", "dsa", "ecdsa", "ed25519", "pgp",
+		"session", "sessionid", "cookie", "accesstoken", "refreshtoken", "idtoken",
+		"bearer", "signature", "certificate", "keystore", "passphrase", "proxyauth",
+		"proxypassword", "verificationcode", "otp", "2fa",
+	}
+	for _, s := range substringKeys {
+		if strings.Contains(k, s) {
+			return true
+		}
+	}
+	return false
+}
+
+// sanitizeString masks embedded credentials, tokens, bearer headers and query parameters inside plain text strings.
+func sanitizeString(str string) string {
+	if str == "" {
+		return str
+	}
+	str = pemKeyRegex.ReplaceAllString(str, "[REDACTED PRIVATE KEY]")
+	str = urlCredRegex.ReplaceAllString(str, "${1}******${2}")
+	str = authHeaderRegex.ReplaceAllString(str, "${1} ******")
+	str = kvPairRegex.ReplaceAllString(str, "${1}=******")
+	return str
+}
+
+// sanitizeFields masks sensitive keys and values in context fields.
+func sanitizeFields(fields map[string]interface{}) map[string]interface{} {
+	if len(fields) == 0 {
+		return fields
+	}
+	res := make(map[string]interface{}, len(fields))
+	for k, v := range fields {
+		if isSensitiveKey(k) {
+			res[k] = "******"
+		} else if s, ok := v.(string); ok {
+			res[k] = sanitizeString(s)
+		} else {
+			res[k] = v
+		}
+	}
+	return res
+}
 
 // ANSI color codes
 const (
@@ -322,7 +396,7 @@ func colorize(s interface{}, c int, disabled bool) string {
 //	}).Info("Installing tool")
 func WithContext(fields map[string]interface{}) *zerolog.Logger {
 	ctx := Logger.With()
-	for key, value := range fields {
+	for key, value := range sanitizeFields(fields) {
 		ctx = ctx.Interface(key, value)
 	}
 	logger := ctx.Logger()
@@ -362,7 +436,13 @@ func WithFields(keysAndValues ...interface{}) *zerolog.Logger {
 			Logger.Error().Msgf("WithFields key at index %d is not a string", i)
 			continue
 		}
-		ctx = ctx.Interface(key, keysAndValues[i+1])
+		val := keysAndValues[i+1]
+		if isSensitiveKey(key) {
+			val = "******"
+		} else if s, ok := val.(string); ok {
+			val = sanitizeString(s)
+		}
+		ctx = ctx.Interface(key, val)
 	}
 	logger := ctx.Logger()
 	return &logger
@@ -390,7 +470,7 @@ func Logf(level zerolog.Level, format string, v ...interface{}) {
 	if should(level) {
 		t := colorize(time.Now().Format(time.RFC3339), colorDarkGray, NoColor)
 		l := colorize(zerolog.FormattedLevels[level], zerolog.LevelColors[level], NoColor)
-		s := colorize(fmt.Sprintf(format, v...), colorBold, NoColor)
+		s := colorize(sanitizeString(fmt.Sprintf(format, v...)), colorBold, NoColor)
 
 		fmt.Fprintf(gin.DefaultWriter, "%s %s %s\n", t, l, s)
 	}
@@ -418,7 +498,7 @@ func Log(level zerolog.Level, v ...interface{}) {
 	if should(level) {
 		t := colorize(time.Now().Format(time.RFC3339), colorDarkGray, NoColor)
 		l := colorize(zerolog.FormattedLevels[level], zerolog.LevelColors[level], NoColor)
-		s := colorize(fmt.Sprint(v...), colorBold, NoColor)
+		s := colorize(sanitizeString(fmt.Sprint(v...)), colorBold, NoColor)
 
 		fmt.Fprintf(gin.DefaultWriter, "%s %s %s\n", t, l, s)
 	}
@@ -439,103 +519,112 @@ func should(level zerolog.Level) bool {
 
 // Trace logs a message at trace level with optional context fields.
 func Trace(msg string, fields ...map[string]interface{}) {
+	sMsg := sanitizeString(msg)
 	if len(fields) > 0 {
 		logger := WithContext(fields[0])
-		logger.Trace().Msg(msg)
+		logger.Trace().Msg(sMsg)
 	} else {
-		Logger.Trace().Msg(msg)
+		Logger.Trace().Msg(sMsg)
 	}
 }
 
 // Debug logs a message at debug level with optional context fields.
 func Debug(msg string, fields ...map[string]interface{}) {
+	sMsg := sanitizeString(msg)
 	if len(fields) > 0 {
 		logger := WithContext(fields[0])
-		logger.Debug().Msg(msg)
+		logger.Debug().Msg(sMsg)
 	} else {
-		Logger.Debug().Msg(msg)
+		Logger.Debug().Msg(sMsg)
 	}
 }
 
 // Info logs a message at info level with optional context fields.
 func Info(msg string, fields ...map[string]interface{}) {
+	sMsg := sanitizeString(msg)
 	if len(fields) > 0 {
 		logger := WithContext(fields[0])
-		logger.Info().Msg(msg)
+		logger.Info().Msg(sMsg)
 	} else {
-		Logger.Info().Msg(msg)
+		Logger.Info().Msg(sMsg)
 	}
 }
 
 // Warn logs a message at warn level with optional context fields.
 func Warn(msg string, fields ...map[string]interface{}) {
+	sMsg := sanitizeString(msg)
 	if len(fields) > 0 {
 		logger := WithContext(fields[0])
-		logger.Warn().Msg(msg)
+		logger.Warn().Msg(sMsg)
 	} else {
-		Logger.Warn().Msg(msg)
+		Logger.Warn().Msg(sMsg)
 	}
 }
 
 // Error logs a message at error level with optional context fields.
 // Stack traces are automatically captured for error-level logs.
 func Error(msg string, fields ...map[string]interface{}) {
+	sMsg := sanitizeString(msg)
 	if len(fields) > 0 {
 		logger := WithContext(fields[0])
-		logger.Error().Msg(msg)
+		logger.Error().Msg(sMsg)
 	} else {
-		Logger.Error().Msg(msg)
+		Logger.Error().Msg(sMsg)
 	}
 }
 
 // Fatal logs a message at fatal level with optional context fields and exits.
 // Stack traces are automatically captured for fatal-level logs.
 func Fatal(msg string, fields ...map[string]interface{}) {
+	sMsg := sanitizeString(msg)
 	if len(fields) > 0 {
 		logger := WithContext(fields[0])
-		logger.Fatal().Msg(msg)
+		logger.Fatal().Msg(sMsg)
 	} else {
-		Logger.Fatal().Msg(msg)
+		Logger.Fatal().Msg(sMsg)
 	}
 }
 
 // Panic logs a message at panic level with optional context fields and panics.
 // Stack traces are automatically captured for panic-level logs.
 func Panic(msg string, fields ...map[string]interface{}) {
+	sMsg := sanitizeString(msg)
 	if len(fields) > 0 {
 		logger := WithContext(fields[0])
-		logger.Panic().Msg(msg)
+		logger.Panic().Msg(sMsg)
 	} else {
-		Logger.Panic().Msg(msg)
+		Logger.Panic().Msg(sMsg)
 	}
 }
 
 // ErrorWithErr logs an error with its message and optional context fields.
 // This is a convenience function for logging errors with automatic error field extraction.
 func ErrorWithErr(err error, msg string, fields ...map[string]interface{}) {
+	sMsg := sanitizeString(msg)
 	if len(fields) > 0 {
 		ctx := Logger.With().Err(err)
-		for key, value := range fields[0] {
+		for key, value := range sanitizeFields(fields[0]) {
 			ctx = ctx.Interface(key, value)
 		}
 		logger := ctx.Logger()
-		logger.Error().Msg(msg)
+		logger.Error().Msg(sMsg)
 	} else {
-		Logger.Error().Err(err).Msg(msg)
+		Logger.Error().Err(err).Msg(sMsg)
 	}
 }
 
 // FatalWithErr logs an error with its message and optional context fields, then exits.
 func FatalWithErr(err error, msg string, fields ...map[string]interface{}) {
+	sMsg := sanitizeString(msg)
 	if len(fields) > 0 {
 		ctx := Logger.With().Err(err)
-		for key, value := range fields[0] {
+		for key, value := range sanitizeFields(fields[0]) {
 			ctx = ctx.Interface(key, value)
 		}
 		logger := ctx.Logger()
-		logger.Fatal().Msg(msg)
+		logger.Fatal().Msg(sMsg)
 	} else {
-		Logger.Fatal().Err(err).Msg(msg)
+		Logger.Fatal().Err(err).Msg(sMsg)
 	}
 }
 
