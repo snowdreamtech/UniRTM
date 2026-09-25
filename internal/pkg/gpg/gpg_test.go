@@ -376,11 +376,18 @@ func TestNativeGPGVerifier_Verify_Errors(t *testing.T) {
 	// 4. Invalid signature format
 	// Setup a mock transport that returns a valid key, but signature is bad
 	armoredKey, _, _, fingerprint := generateTestKeyAndSig(t)
+
+	dir4 := t.TempDir()
+	sigPath4 := filepath.Join(dir4, "sig4.sig")
+	dataPath4 := filepath.Join(dir4, "data4.txt")
+	os.WriteFile(sigPath4, []byte("some sig"), 0644)
+	os.WriteFile(dataPath4, []byte("data"), 0644)
+
 	v.client.Transport = &mockTransport{
 		armoredKey: armoredKey,
 		fp:         strings.ToUpper(fingerprint),
 	}
-	err = v.Verify(ctx, sigPath, dataPath, []string{fingerprint})
+	err = v.Verify(ctx, sigPath4, dataPath4, []string{fingerprint})
 	if err == nil || (!strings.Contains(err.Error(), "invalid signature format") && !strings.Contains(err.Error(), "gpg verification failed")) {
 		t.Errorf("expected signature error, got %v", err)
 	}
