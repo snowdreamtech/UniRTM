@@ -19,6 +19,9 @@ var (
 	newIndexRepo        = sqlite.NewIndexRepository
 )
 
+// BaseTransactionManager provides a concrete base type for transaction managers.
+type BaseTransactionManager struct{}
+
 // TransactionManager manages database transactions
 // Validates Requirements: 2.8 (Use transactions for all write operations)
 type TransactionManager interface {

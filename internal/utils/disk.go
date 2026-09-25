@@ -9,6 +9,9 @@ import (
 	"path/filepath"
 )
 
+// DiskUtil provides disk and file size calculation utilities.
+type DiskUtil struct{}
+
 // CalculateDirectorySize recursively calculates the size of a directory.
 func CalculateDirectorySize(path string) (int64, error) {
 	var size int64

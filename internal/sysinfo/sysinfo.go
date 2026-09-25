@@ -12,6 +12,9 @@ import (
 	"sync"
 )
 
+// SysInfo provides system environment and runtime information.
+type SysInfo struct{}
+
 var (
 	isMuslCached bool
 	isMuslOnce   sync.Once
