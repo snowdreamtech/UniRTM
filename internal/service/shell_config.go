@@ -119,7 +119,7 @@ func (m *ShellConfigManager) Inject(shell ShellType, marker string, content stri
 		}
 
 		newContent := strings.Join(newLines, "\n")
-		if err := os.WriteFile(configFile, []byte(newContent), 0644); err != nil {
+		if err := os.WriteFile(configFile, []byte(newContent), 0600); err != nil {
 			return err
 		}
 		m.formatter.Success(fmt.Sprintf("Updated %s activation logic in %s", marker, configFile))
@@ -136,7 +136,7 @@ func (m *ShellConfigManager) Inject(shell ShellType, marker string, content stri
 		if err := os.MkdirAll(filepath.Dir(configFile), 0755); err != nil {
 			return err
 		}
-		if err := os.WriteFile(configFile, []byte(""), 0644); err != nil {
+		if err := os.WriteFile(configFile, []byte(""), 0600); err != nil {
 			return err
 		}
 	}
@@ -145,7 +145,7 @@ func (m *ShellConfigManager) Inject(shell ShellType, marker string, content stri
 	cleanContent := strings.TrimRight(rawContentStr, " \t\r\n")
 
 	// 4. Append block
-	f, err := os.OpenFile(configFile, os.O_WRONLY|os.O_TRUNC, 0644)
+	f, err := os.OpenFile(configFile, os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
@@ -222,7 +222,7 @@ func (m *ShellConfigManager) Remove(shell ShellType, marker string) error {
 	}
 
 	output := strings.Join(newLines, "\n") + "\n"
-	if err := os.WriteFile(configFile, []byte(output), 0644); err != nil {
+	if err := os.WriteFile(configFile, []byte(output), 0600); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
 
