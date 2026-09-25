@@ -131,3 +131,55 @@ func TestDirFunctions(t *testing.T) {
 		t.Error("expected global config path to be inside config dir")
 	}
 }
+
+func TestGet_Validation(t *testing.T) {
+	// GITHUB_PROXY validation
+	t.Setenv("UNIRTM_GITHUB_PROXY", "ftp://invalid-url")
+	if Get("GITHUB_PROXY") != "" {
+		t.Errorf("expected empty string for invalid GITHUB_PROXY, got %q", Get("GITHUB_PROXY"))
+	}
+	t.Setenv("UNIRTM_GITHUB_PROXY", "https://valid.proxy.com/")
+	if Get("GITHUB_PROXY") != "https://valid.proxy.com/" {
+		t.Errorf("expected valid GITHUB_PROXY to pass, got %q", Get("GITHUB_PROXY"))
+	}
+	t.Setenv("UNIRTM_GITHUB_PROXY", "direct")
+	if Get("GITHUB_PROXY") != "direct" {
+		t.Errorf("expected direct GITHUB_PROXY to pass, got %q", Get("GITHUB_PROXY"))
+	}
+
+	// JOBS validation
+	t.Setenv("UNIRTM_JOBS", "invalid")
+	if Get("JOBS") != "" {
+		t.Errorf("expected empty string for non-numeric JOBS")
+	}
+	t.Setenv("UNIRTM_JOBS", "0")
+	if Get("JOBS") != "" {
+		t.Errorf("expected empty string for JOBS < 1")
+	}
+	t.Setenv("UNIRTM_JOBS", "999")
+	if Get("JOBS") != "" {
+		t.Errorf("expected empty string for JOBS > 256")
+	}
+	t.Setenv("UNIRTM_JOBS", "8")
+	if Get("JOBS") != "8" {
+		t.Errorf("expected valid JOBS to pass, got %q", Get("JOBS"))
+	}
+
+	// HTTP2 validation
+	t.Setenv("UNIRTM_HTTP2", "2")
+	if Get("HTTP2") != "" {
+		t.Errorf("expected empty string for HTTP2 other than 0 or 1")
+	}
+	t.Setenv("UNIRTM_HTTP2", "0")
+	if Get("HTTP2") != "0" {
+		t.Errorf("expected HTTP2=0 to pass")
+	}
+	t.Setenv("UNIRTM_HTTP2", "1")
+	if Get("HTTP2") != "1" {
+		t.Errorf("expected HTTP2=1 to pass")
+	}
+}
+
+func TestEnvManager(t *testing.T) {
+	_ = EnvManager{}
+}

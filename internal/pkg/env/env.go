@@ -2,8 +2,13 @@ package env
 
 import (
 	"crypto/rand"
+	"fmt"
 	"os"
+	"strings"
 )
+
+// EnvManager provides environment variable operations.
+type EnvManager struct{}
 
 // Get returns the value of the environment variable with the given key,
 // searching with prefixes in order: UNIRTM_, MISE_, and then the raw key.
@@ -12,16 +17,45 @@ func Get(key string) string {
 	if key == "PATH" {
 		return os.Getenv("PATH")
 	}
+
+	value := ""
 	// 1. UNIRTM_ prefix
 	if v := os.Getenv("UNIRTM_" + key); v != "" {
-		return v
+		value = v
 	}
 	// 2. MISE_ prefix
-	if v := os.Getenv("MISE_" + key); v != "" {
-		return v
+	if value == "" {
+		if v := os.Getenv("MISE_" + key); v != "" {
+			value = v
+		}
 	}
 	// 3. Raw key (Native)
-	return os.Getenv(key)
+	if value == "" {
+		value = os.Getenv(key)
+	}
+
+	// Validate specific critical environment variables
+	switch key {
+	case "GITHUB_PROXY":
+		if value != "" && value != "direct" {
+			if !strings.HasPrefix(value, "http://") && !strings.HasPrefix(value, "https://") {
+				return ""
+			}
+		}
+	case "JOBS":
+		if value != "" {
+			var n int
+			if _, err := fmt.Sscanf(value, "%d", &n); err != nil || n < 1 || n > 256 {
+				return ""
+			}
+		}
+	case "HTTP2":
+		if value != "" && value != "0" && value != "1" {
+			return ""
+		}
+	}
+
+	return value
 }
 
 var (

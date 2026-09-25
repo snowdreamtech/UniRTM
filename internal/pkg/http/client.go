@@ -13,6 +13,9 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
+// ClientConfig provides HTTP client configurations.
+type ClientConfig struct{}
+
 // MockTransport can be set during tests to intercept all HTTP/HTTPS requests
 // created by UniRTM's DefaultTransport.
 var MockTransport http.RoundTripper
