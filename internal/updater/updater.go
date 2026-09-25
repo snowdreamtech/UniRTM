@@ -87,7 +87,7 @@ func writeCache(cache *UpdateCache) error {
 		return err
 	}
 
-	return os.WriteFile(getCachePath(), data, 0644)
+	return os.WriteFile(getCachePath(), data, 0600)
 }
 
 // fetchLatestRelease fetches the latest release version from GitHub API.
@@ -117,7 +117,8 @@ func fetchLatestRelease() (string, error) {
 		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	// Bound response body size to 10MB to prevent potential memory exhaustion
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 10*1024*1024))
 	if err != nil {
 		return "", err
 	}
