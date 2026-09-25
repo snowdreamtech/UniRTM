@@ -14,7 +14,7 @@ import (
 	"hash"
 	"io"
 	"math/rand"
-
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -146,16 +146,29 @@ func (h *HTTPDownloader) Download(ctx context.Context, url string, destination s
 		}
 	}
 	// Validate URL
-	if _, err := parseURL(url); err != nil {
+	parsedURL, err := parseURL(url)
+	if err != nil {
 		return errors.NewUserError(fmt.Sprintf("invalid URL %q", url), err)
 	}
 
-	// Apply timeout from options if specified
-	if opts.Timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, opts.Timeout)
-		defer cancel()
+	// Reject non-loopback insecure HTTP to protect downloads against tampering/MITM
+	if parsedURL.Scheme == "http" {
+		host := parsedURL.Hostname()
+		ip := net.ParseIP(host)
+		isLoopback := host == "localhost" || (ip != nil && ip.IsLoopback())
+		if !isLoopback {
+			return errors.NewUserError(fmt.Sprintf("insecure HTTP downloads are prohibited for security: %s", url), nil)
+		}
 	}
+
+	// Apply timeout from options if specified (or default to 30m)
+	clientTimeout := opts.Timeout
+	if clientTimeout == 0 {
+		clientTimeout = 30 * time.Minute
+	}
+	var cancel context.CancelFunc
+	ctx, cancel = context.WithTimeout(ctx, clientTimeout)
+	defer cancel()
 
 	// Determine max attempts (initial attempt + retries)
 	maxAttempts := opts.MaxRetries + 1

@@ -162,7 +162,7 @@ func TestHTTPDownloader_EdgeCases(t *testing.T) {
 		}
 
 		opts := DownloadOptions{MaxRetries: 0}
-		err := d.Download(context.Background(), "http://example.com/test", dest, opts)
+		err := d.Download(context.Background(), "http://127.0.0.1/test", dest, opts)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "download failed after")
 		// The internal logic should have set forceHTTP11 to true and retried immediately.
