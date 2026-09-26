@@ -24,6 +24,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
+	"github.com/snowdreamtech/unirtm/internal/lockfile"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/gpg"
@@ -743,7 +744,21 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 		// Write resolved info back into the lockfile so future installs can
 		// skip the remote API call (lock hit) and use the cached URL directly.
 		if im.lockService != nil {
-			if lockErr := im.lockService.RecordInstall(tool, backendName, versionInfo); lockErr != nil {
+			// Canonicalize the URL: strip any GitHub proxy prefix so the
+			// lockfile is environment-agnostic. The downloader re-applies
+			// the configured mirror at install time.
+			canonicalInfo := *versionInfo // shallow copy is sufficient
+			if canonicalInfo.DownloadURL != "" {
+				var proxyList []string
+				if im.settings != nil && im.settings.GitHubProxy != "" {
+					proxyList = append(proxyList, im.settings.GitHubProxy)
+				}
+				if ghProxy := env.Get("GITHUB_PROXY"); ghProxy != "" {
+					proxyList = append(proxyList, ghProxy)
+				}
+				canonicalInfo.DownloadURL = lockfile.StripProxyPrefix(canonicalInfo.DownloadURL, proxyList)
+			}
+			if lockErr := im.lockService.RecordInstall(tool, backendName, &canonicalInfo); lockErr != nil {
 				// Non-fatal: log but don't abort the install.
 				logger.Warn("lockfile: failed to record install", map[string]interface{}{
 					"tool":  tool,

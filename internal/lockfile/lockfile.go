@@ -85,7 +85,10 @@ type PlatformEntry struct {
 	// Size is the artifact size in bytes (0 = unknown).
 	Size int64 `toml:"size,omitempty"`
 
-	// URL is the direct download URL.
+	// URL is the direct download URL recorded at lock time.
+	// For GitHub assets this is the canonical upstream URL (github.com / objects.githubusercontent.com).
+	// Any proxy prefix is stripped before writing; the downloader re-applies the
+	// configured mirror at runtime, keeping the lockfile environment-agnostic.
 	URL string `toml:"url,omitempty"`
 
 	// URLAPI is the backend API URL for the asset (GitHub Releases asset API, etc.).
@@ -94,6 +97,30 @@ type PlatformEntry struct {
 
 	// GPGKey is the hex fingerprint of the trusted GPG key for this artifact.
 	GPGKey string `toml:"gpg_key,omitempty"`
+}
+
+// StripProxyPrefix removes a known proxy prefix from rawURL, returning the
+// canonical upstream URL. This ensures that the lockfile always records the
+// original GitHub / CDN URL regardless of the mirror that was active when the
+// lock was generated. The downloader re-applies the configured proxy at
+// runtime.
+//
+// knownProxies is a slice of proxy base URLs (e.g. ["https://gh-proxy.com/"]).
+// If rawURL does not begin with any of the listed prefixes it is returned as-is.
+func StripProxyPrefix(rawURL string, knownProxies []string) string {
+	for _, proxy := range knownProxies {
+		if proxy == "" {
+			continue
+		}
+		prefix := proxy
+		if !strings.HasSuffix(prefix, "/") {
+			prefix += "/"
+		}
+		if strings.HasPrefix(rawURL, prefix) {
+			return strings.TrimPrefix(rawURL, prefix)
+		}
+	}
+	return rawURL
 }
 
 // ─── Construction ─────────────────────────────────────────────────────────────
