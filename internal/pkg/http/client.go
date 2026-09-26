@@ -4,6 +4,8 @@
 package http
 
 import (
+	"context"
+	"net"
 	"net/http"
 	"net/url"
 	"sync"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
+
 
 // ClientConfig provides HTTP client configurations.
 type ClientConfig struct{}
@@ -92,8 +95,49 @@ func DefaultTransport() *http.Transport {
 	trans.IdleConnTimeout = 90 * time.Second
 	trans.ForceAttemptHTTP2 = true
 
+	// 4. In-memory DNS cache: resolves hostnames with TTL caching and singleflight
+	// deduplication, eliminating redundant DNS lookups across parallel HTTP calls.
+	dialer := &net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}
+	dnsCache := DefaultDNSCache()
+	trans.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		host, port, err := net.SplitHostPort(addr)
+		if err != nil {
+			return dialer.DialContext(ctx, network, addr)
+		}
+
+		ips, err := dnsCache.LookupIP(ctx, host)
+		if err != nil || len(ips) == 0 {
+			return dialer.DialContext(ctx, network, addr)
+		}
+
+		var lastErr error
+		for _, ip := range ips {
+			target := net.JoinHostPort(ip.String(), port)
+			conn, err := dialer.DialContext(ctx, network, target)
+			if err == nil {
+				return conn, nil
+			}
+			lastErr = err
+		}
+
+		// On failure, evict stale entry and retry once with original addr
+		dnsCache.Evict(host)
+		conn, err := dialer.DialContext(ctx, network, addr)
+		if err == nil {
+			return conn, nil
+		}
+		if lastErr != nil {
+			return nil, lastErr
+		}
+		return nil, err
+	}
+
 	return trans
 }
+
 
 var (
 	sharedTransport     *http.Transport
