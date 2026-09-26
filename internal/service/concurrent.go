@@ -29,6 +29,11 @@ type Installer interface {
 	Install(ctx context.Context, toolKey, tool, version, backend string) error
 }
 
+// ReleasePrefetcher is an optional interface implemented by an Installer to batch-prefetch releases before worker execution.
+type ReleasePrefetcher interface {
+	PrefetchReleases(ctx context.Context, requests []ToolInstallRequest)
+}
+
 // ConcurrentManager manages parallel tool installations with controlled concurrency.
 //
 // It respects dependency order, limits concurrent operations to avoid resource
@@ -95,6 +100,11 @@ func (cm *ConcurrentManager) InstallAll(ctx context.Context, requests []ToolInst
 
 	// Suppress individual interactive download/resolve progress UI during concurrent execution
 	ctx = context.WithValue(ctx, ContextKeyQuietProgress, true)
+
+	// Batch prefetch GitHub and GitLab releases if installer supports it
+	if prefetcher, ok := cm.installer.(ReleasePrefetcher); ok {
+		prefetcher.PrefetchReleases(ctx, requests)
+	}
 
 	// Topological sort to determine installation layers
 	layers, err := topoSort(requests)

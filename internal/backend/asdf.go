@@ -28,12 +28,13 @@ var (
 	asdfPluginMu      sync.Mutex
 )
 
-// ClearAsdfCache clears the in-memory asdf versions cache. Mainly used for testing.
+// ClearAsdfCache clears both in-memory and disk asdf versions cache. Mainly used for testing.
 func ClearAsdfCache() {
 	asdfVersionsCache.Range(func(key, _ interface{}) bool {
 		asdfVersionsCache.Delete(key)
 		return true
 	})
+	ClearEcosystemMetadataDiskCache("asdf")
 }
 
 // AsdfBackend implements the Backend interface for asdf plugins.
@@ -97,6 +98,20 @@ func (b *AsdfBackend) ListVersions(ctx context.Context, tool string, platform Pl
 			return val.([]VersionInfo), nil
 		}
 
+		// Check persistent disk cache before running plugin script
+		var versionStrs []string
+		if readEcosystemMetadataDiskCache("asdf", tool, &versionStrs, 10*time.Minute) {
+			var versions []VersionInfo
+			for _, v := range versionStrs {
+				versions = append(versions, VersionInfo{
+					Version:  v,
+					Platform: platform,
+				})
+			}
+			asdfVersionsCache.Store(tool, versions)
+			return versions, nil
+		}
+
 		pluginDir, err := b.ensurePlugin(ctx, tool)
 		if err != nil {
 			return nil, NewBackendError(b.Name(), tool, "ensure plugin", err)
@@ -118,6 +133,7 @@ func (b *AsdfBackend) ListVersions(ctx context.Context, tool string, platform Pl
 
 		lines := strings.Split(out.String(), "\n")
 		var versions []VersionInfo
+		var versionsToCache []string
 
 		// asdf plugins usually return versions oldest to newest, separated by spaces or newlines.
 		for i := len(lines) - 1; i >= 0; i-- {
@@ -134,10 +150,12 @@ func (b *AsdfBackend) ListVersions(ctx context.Context, tool string, platform Pl
 						Version:  v,
 						Platform: platform,
 					})
+					versionsToCache = append(versionsToCache, v)
 				}
 			}
 		}
 
+		writeEcosystemMetadataDiskCache("asdf", tool, versionsToCache)
 		asdfVersionsCache.Store(tool, versions)
 		return versions, nil
 	})

@@ -147,3 +147,41 @@ func TestTopoSort_CircularDependency(t *testing.T) {
 		t.Error("expected circular dependency error")
 	}
 }
+
+type mockPrefetchInstaller struct {
+	mockInstaller
+	prefetchCalled bool
+	prefetchedReqs []ToolInstallRequest
+}
+
+func (m *mockPrefetchInstaller) PrefetchReleases(ctx context.Context, requests []ToolInstallRequest) {
+	m.prefetchCalled = true
+	m.prefetchedReqs = requests
+}
+
+func TestConcurrentManager_InstallAll_Prefetcher(t *testing.T) {
+	installer := &mockPrefetchInstaller{
+		mockInstaller: *newMockInstaller(),
+	}
+	cm := NewConcurrentManager(installer, ConcurrentManagerConfig{MaxConcurrency: 2})
+
+	reqs := []ToolInstallRequest{
+		{ToolKey: "cli/cli", Tool: "cli/cli", Version: "v2.40.0", Backend: "github"},
+		{ToolKey: "gitlab-org/cli", Tool: "gitlab-org/cli", Version: "v1.30.0", Backend: "gitlab"},
+	}
+
+	results, err := cm.InstallAll(context.Background(), reqs)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(results) != 2 {
+		t.Fatalf("expected 2 results, got %d", len(results))
+	}
+	if !installer.prefetchCalled {
+		t.Fatal("expected PrefetchReleases to be called")
+	}
+	if len(installer.prefetchedReqs) != 2 {
+		t.Fatalf("expected 2 prefetched requests, got %d", len(installer.prefetchedReqs))
+	}
+}

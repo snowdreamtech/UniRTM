@@ -873,5 +873,14 @@ func writeEcosystemMetadataDiskCache(ecosystem, tool string, data any) {
 	WriteEcosystemMetadataDiskCache(ecosystem, tool, data)
 }
 
+// ClearEcosystemMetadataDiskCache clears the persistent disk cache for a specific ecosystem or all ecosystems.
+func ClearEcosystemMetadataDiskCache(ecosystem string) {
+	if ecosystem == "" {
+		_ = os.RemoveAll(filepath.Join(env.GetCacheDir(), "ecosystems"))
+		return
+	}
+	_ = os.RemoveAll(filepath.Join(env.GetCacheDir(), "ecosystems", ecosystem))
+}
+
 
 

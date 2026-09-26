@@ -104,6 +104,27 @@ func TestSpmBackend_ListVersions(t *testing.T) {
 	}
 }
 
+func TestSpmBackend_DiskCache(t *testing.T) {
+	ClearSpmCache()
+	defer ClearSpmCache()
+
+	tool := "file:///dummy/spm/repo"
+	dummyVersions := []string{"v2.0.0", "v2.1.0"}
+	writeEcosystemMetadataDiskCache("spm", tool, dummyVersions)
+
+	b := NewSpmBackend()
+	ctx := context.Background()
+	p := Platform{OS: "linux", Arch: "amd64"}
+
+	versions, err := b.ListVersions(ctx, tool, p)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(versions) != 2 || versions[0].Version != "v2.0.0" || versions[1].Version != "v2.1.0" {
+		t.Fatalf("expected cached versions, got %v", versions)
+	}
+}
+
 func TestSpmBackend_ResolveVersion(t *testing.T) {
 	b := NewSpmBackend()
 	ctx := context.Background()

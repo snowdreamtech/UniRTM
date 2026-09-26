@@ -4,7 +4,15 @@
 package provider
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestResolveLuaBinariesURL(t *testing.T) {
@@ -42,5 +50,67 @@ func TestResolveLuaBinariesURL(t *testing.T) {
 				t.Errorf("resolveLuaBinariesURL() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestDownloadLuaArchive(t *testing.T) {
+	var requestCount int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&requestCount, 1)
+		time.Sleep(20 * time.Millisecond) // Ensure concurrent overlap
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("fake-lua-archive-content"))
+	}))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+	t.Setenv("XDG_DATA_HOME", tmpDir)
+	t.Setenv("UNIRTM_DOWNLOADS_DIR", tmpDir)
+	t.Setenv("XDG_CACHE_HOME", tmpDir)
+
+	ctx := context.Background()
+	filename := fmt.Sprintf("test-lua-%d.tar.gz", time.Now().UnixNano())
+
+	// 1. Run 5 concurrent downloads to test singleflight deduplication
+	var wg sync.WaitGroup
+	errCh := make(chan error, 5)
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			path, err := downloadLuaArchive(ctx, server.URL, filename)
+			if err != nil {
+				errCh <- err
+				return
+			}
+			data, err := os.ReadFile(path)
+			if err != nil || string(data) != "fake-lua-archive-content" {
+				errCh <- fmt.Errorf("unexpected file content: %s", string(data))
+				return
+			}
+		}()
+	}
+	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
+		t.Fatalf("concurrent download error: %v", err)
+	}
+
+	if count := atomic.LoadInt32(&requestCount); count != 1 {
+		t.Errorf("expected 1 HTTP request due to singleflight, got %d", count)
+	}
+
+	// 2. Second sequential call should directly hit disk cache without HTTP request
+	path, err := downloadLuaArchive(ctx, server.URL, filename)
+	if err != nil {
+		t.Fatalf("disk cached download error: %v", err)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("expected file to exist at %s: %v", path, err)
+	}
+	if count := atomic.LoadInt32(&requestCount); count != 1 {
+		t.Errorf("expected still 1 HTTP request due to disk cache hit, got %d", count)
 	}
 }

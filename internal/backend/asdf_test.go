@@ -63,6 +63,28 @@ func TestAsdfBackend_ListVersions(t *testing.T) {
 	}
 }
 
+func TestAsdfBackend_DiskCache(t *testing.T) {
+	ClearAsdfCache()
+	defer ClearAsdfCache()
+
+	tool := "cached-plugin-tool"
+	dummyVersions := []string{"3.0.0", "3.1.0"}
+	writeEcosystemMetadataDiskCache("asdf", tool, dummyVersions)
+
+	b := NewAsdfBackend()
+	ctx := context.Background()
+	platform := Platform{OS: "linux", Arch: "amd64"}
+
+	// Even without any plugin on disk, ListVersions should succeed via disk cache
+	versions, err := b.ListVersions(ctx, tool, platform)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(versions) != 2 || versions[0].Version != "3.0.0" {
+		t.Fatalf("expected cached versions, got %v", versions)
+	}
+}
+
 func TestAsdfBackend_ResolveVersion(t *testing.T) {
 	if env.RuntimeGOOS == "windows" {
 		t.Skip("skipping on windows because it requires sh")

@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"time"
 
 	"golang.org/x/sync/singleflight"
 )
@@ -17,12 +18,13 @@ var (
 	spmFlight singleflight.Group
 )
 
-// ClearSpmCache clears the in-memory SPM versions cache. Mainly used for testing.
+// ClearSpmCache clears both in-memory and disk SPM versions cache. Mainly used for testing.
 func ClearSpmCache() {
 	spmCache.Range(func(key, _ interface{}) bool {
 		spmCache.Delete(key)
 		return true
 	})
+	ClearEcosystemMetadataDiskCache("spm")
 }
 
 // SpmBackend implements the Backend interface for Swift Package Manager.
@@ -58,6 +60,20 @@ func (b *SpmBackend) ListVersions(ctx context.Context, tool string, platform Pla
 			return val.([]VersionInfo), nil
 		}
 
+		// Check persistent disk cache before invoking git network command
+		var versionStrs []string
+		if readEcosystemMetadataDiskCache("spm", tool, &versionStrs, 10*time.Minute) {
+			var versions []VersionInfo
+			for _, v := range versionStrs {
+				versions = append(versions, VersionInfo{
+					Version:  v,
+					Platform: platform,
+				})
+			}
+			spmCache.Store(tool, versions)
+			return versions, nil
+		}
+
 		// For SPM, tool is usually a git repo URL.
 		// We use git ls-remote to fetch tags.
 		cmd := exec.CommandContext(ctx, "git", "ls-remote", "--tags", tool)
@@ -68,6 +84,7 @@ func (b *SpmBackend) ListVersions(ctx context.Context, tool string, platform Pla
 		}
 
 		var versions []VersionInfo
+		var versionsToCache []string
 		lines := strings.Split(string(out), "\n")
 		for _, line := range lines {
 			parts := strings.Fields(line)
@@ -82,9 +99,11 @@ func (b *SpmBackend) ListVersions(ctx context.Context, tool string, platform Pla
 					Version:  v,
 					Platform: platform,
 				})
+				versionsToCache = append(versionsToCache, v)
 			}
 		}
 
+		writeEcosystemMetadataDiskCache("spm", tool, versionsToCache)
 		spmCache.Store(tool, versions)
 		return versions, nil
 	})

@@ -20,9 +20,13 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
 
-var luaHTTPClient = pkgHttp.NewClientWithTimeout(30 * time.Second)
+var (
+	luaHTTPClient     = pkgHttp.NewClientWithTimeout(30 * time.Second)
+	luaDownloadFlight singleflight.Group
+)
 
 // LuaProvider implements the Provider interface for Lua via LuaBinaries.
 type LuaProvider struct{}
@@ -117,6 +121,63 @@ func resolveLuaBinariesURL(version, goarch string) (string, error) {
 	return fmt.Sprintf("https://sourceforge.net/projects/luabinaries/files/%s/Tools%%20Executables/lua-%s_%s_bin.zip/download", version, version, osSuffix), nil
 }
 
+// downloadLuaArchive downloads an archive to the downloads cache directory with singleflight deduplication.
+func downloadLuaArchive(ctx context.Context, url, filename string) (string, error) {
+	destDir := env.GetDownloadsDir()
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		return "", err
+	}
+	destPath := filepath.Join(destDir, filename)
+
+	if fi, err := os.Stat(destPath); err == nil && fi.Size() > 0 {
+		return destPath, nil
+	}
+
+	_, err, _ := luaDownloadFlight.Do(url, func() (interface{}, error) {
+		// Re-check after acquiring singleflight
+		if fi, err := os.Stat(destPath); err == nil && fi.Size() > 0 {
+			return destPath, nil
+		}
+
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := luaHTTPClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("failed to download from %s: HTTP %d", url, resp.StatusCode)
+		}
+
+		tmpFile := destPath + ".tmp"
+		f, err := os.OpenFile(tmpFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := io.Copy(f, resp.Body); err != nil {
+			f.Close()
+			_ = os.Remove(tmpFile)
+			return nil, err
+		}
+		f.Close()
+
+		if err := os.Rename(tmpFile, destPath); err != nil {
+			return nil, err
+		}
+		return destPath, nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+	return destPath, nil
+}
+
 // downloadAndCompileSource downloads Lua source from lua.org and compiles it
 func downloadAndCompileSource(ctx context.Context, version, installPath string) error {
 	tmpDir, err := os.MkdirTemp("", "lua-src-*")
@@ -126,22 +187,19 @@ func downloadAndCompileSource(ctx context.Context, version, installPath string) 
 	defer os.RemoveAll(tmpDir)
 
 	url := fmt.Sprintf("https://www.lua.org/ftp/lua-%s.tar.gz", version)
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	archiveName := fmt.Sprintf("lua-%s.tar.gz", version)
+	archivePath, err := downloadLuaArchive(ctx, url, archiveName)
 	if err != nil {
 		return err
 	}
 
-	resp, err := luaHTTPClient.Do(req)
+	f, err := os.Open(archivePath)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer f.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to download lua source: HTTP %d", resp.StatusCode)
-	}
-
-	if err := extractTarGz(resp.Body, tmpDir); err != nil {
+	if err := extractTarGz(f, tmpDir); err != nil {
 		return err
 	}
 
@@ -164,25 +222,29 @@ func downloadAndCompileSource(ctx context.Context, version, installPath string) 
 
 // downloadAndExtract downloads and extracts the archive
 func downloadAndExtract(ctx context.Context, url, dest string) error {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	archiveName := filepath.Base(url)
+	if idx := strings.Index(archiveName, "?"); idx != -1 {
+		archiveName = archiveName[:idx]
+	}
+	if !strings.HasSuffix(archiveName, ".zip") && !strings.HasSuffix(archiveName, ".tar.gz") {
+		archiveName = fmt.Sprintf("lua-bin-%d.archive", time.Now().UnixNano())
+	}
+
+	archivePath, err := downloadLuaArchive(ctx, url, archiveName)
 	if err != nil {
 		return err
 	}
 
-	resp, err := luaHTTPClient.Do(req)
+	f, err := os.Open(archivePath)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer f.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to download lua: HTTP %d", resp.StatusCode)
+	if strings.HasSuffix(archivePath, ".zip") || strings.Contains(url, "zip") {
+		return extractZip(f, dest)
 	}
-
-	if strings.HasSuffix(url, ".zip") || strings.Contains(url, "zip") {
-		return extractZip(resp.Body, dest)
-	}
-	return extractTarGz(resp.Body, dest)
+	return extractTarGz(f, dest)
 }
 
 func extractZip(r io.Reader, dest string) error {
@@ -300,22 +362,19 @@ func bootstrapLuaRocks(ctx context.Context, luaInstallPath, luaVersion string) e
 		githubProxy += "/"
 	}
 	url := fmt.Sprintf("%shttps://github.com/luarocks/luarocks/archive/refs/tags/v%s.tar.gz", githubProxy, luarocksVer)
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	archiveName := fmt.Sprintf("luarocks-%s.tar.gz", luarocksVer)
+	archivePath, err := downloadLuaArchive(ctx, url, archiveName)
 	if err != nil {
 		return err
 	}
 
-	resp, err := luaHTTPClient.Do(req)
+	f, err := os.Open(archivePath)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer f.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to download luarocks: HTTP %d", resp.StatusCode)
-	}
-
-	if err := extractTarGz(resp.Body, tmpDir); err != nil {
+	if err := extractTarGz(f, tmpDir); err != nil {
 		return err
 	}
 

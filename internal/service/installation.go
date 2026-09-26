@@ -1094,6 +1094,27 @@ func (im *InstallationManager) PrefetchGitLabReleases(ctx context.Context, tools
 	}
 }
 
+// PrefetchReleases translates ToolInstallRequests to ToolToInstall and prefetches both GitHub and GitLab releases.
+func (im *InstallationManager) PrefetchReleases(ctx context.Context, requests []ToolInstallRequest) {
+	if len(requests) == 0 {
+		return
+	}
+	var tools []ToolToInstall
+	for _, req := range requests {
+		backendName := req.Backend
+		if backendName == "" {
+			backendName = im.AutoDetectBackend(req.Tool)
+		}
+		tools = append(tools, ToolToInstall{
+			ToolName:    req.Tool,
+			Version:     req.Version,
+			BackendName: backendName,
+		})
+	}
+	im.PrefetchGitHubReleases(ctx, tools)
+	im.PrefetchGitLabReleases(ctx, tools)
+}
+
 // EnsureInstalled checks if all tools in the configuration are installed,
 // and installs any missing ones.
 func (im *InstallationManager) EnsureInstalled(ctx context.Context, tools map[string]config.ToolConfig) error {
