@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
@@ -198,20 +199,58 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 		envInjects = append(envInjects, "UNIRTM_FIX=1")
 	}
 
-	// Execute task
+	// Execute task — with interactive trust prompt on first attempt.
 	if err := engine.Execute(ctx, cwd, taskName, taskArgs, envInjects); err != nil {
 		if strings.Contains(err.Error(), "no suitable task runner found") {
-			// Check if local config is untrusted/modified and print a friendly hint
+			// Check if local config is untrusted/modified and offer an
+			// interactive [y/N] prompt to trust & retry in one step.
 			tm := config.NewTrustManager()
 			for _, f := range []string{".unirtm.toml", "unirtm.toml"} {
 				p := filepath.Join(cwd, f)
-				if _, err := os.Stat(p); err == nil {
-					status := tm.TrustStatus(p)
-					if status != config.TrustStatusTrusted {
-						pterm.Warning.Printf("Tasks in %s are ignored because the configuration file is not trusted.\nPlease run 'unirtm trust' to enable them.\n\n", f)
+				if _, statErr := os.Stat(p); statErr != nil {
+					continue
+				}
+				status := tm.TrustStatus(p)
+				if status == config.TrustStatusTrusted {
+					break
+				}
+
+				// Non-interactive environment (CI/pipe): fall back to passive warning.
+				if !term.IsTerminal(int(os.Stdin.Fd())) {
+					pterm.Warning.Printf("Tasks in %s are ignored because the configuration file is not trusted.\nPlease run 'unirtm trust' to enable them.\n\n", f)
+					break
+				}
+
+				// Interactive terminal: ask the user.
+				pterm.Warning.Printf("Tasks in %s are ignored because the configuration file is not trusted.\n", f)
+				fmt.Printf("Trust %s and run task %q? [y/N] ", f, taskName)
+				reader := bufio.NewReader(os.Stdin)
+				answer, _ := reader.ReadString('\n')
+				answer = strings.TrimSpace(strings.ToLower(answer))
+				if answer == "y" || answer == "yes" {
+					if trustErr := tm.Trust(p); trustErr != nil {
+						output.Errorf("Failed to trust %s: %v", f, trustErr)
 						break
 					}
+					output.Successf("Trusted %s — retrying task %q…", f, taskName)
+
+					// Reload config so the newly trusted tasks are available.
+					if configPath != "" {
+						cfg, _ = configManager.Load(ctx, configPath)
+					} else {
+						cfg, _ = configManager.LoadHierarchy(ctx)
+					}
+					if cfg != nil {
+						cfg.ApplyEnvironment()
+						engine2 := task.NewEngine()
+						engine2.Register(task.NewNativeRunner(cfg.Tasks, cfg.Settings))
+						engine2.Register(task.NewGoTaskRunner())
+						engine2.Register(task.NewMakeRunner())
+						engine2.Register(task.NewJustRunner())
+						return engine2.Execute(ctx, cwd, taskName, taskArgs, envInjects)
+					}
 				}
+				break
 			}
 
 			// Suggest similar tasks or commands if not found
