@@ -13,6 +13,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -721,3 +723,40 @@ func TestHTTPDownloader_SkipHeadForSmallFiles(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, methods, http.MethodHead, "archive file should trigger HEAD preflight")
 }
+
+// TestHTTPDownloader_ConcurrentDeduplication verifies that concurrent downloads to the same destination are deduplicated.
+func TestHTTPDownloader_ConcurrentDeduplication(t *testing.T) {
+	var requestCount int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&requestCount, 1)
+		time.Sleep(50 * time.Millisecond) // Simulate download latency
+		w.Header().Set("Content-Length", "10")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("0123456789"))
+	}))
+	defer server.Close()
+
+	downloader := download.NewHTTPDownloader()
+	tmpDir := t.TempDir()
+	destination := filepath.Join(tmpDir, "dedup_test.bin")
+
+	var wg sync.WaitGroup
+	numConcurrent := 5
+	errs := make([]error, numConcurrent)
+
+	for i := 0; i < numConcurrent; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			errs[idx] = downloader.Download(context.Background(), server.URL+"/small.json", destination, download.DefaultDownloadOptions())
+		}(i)
+	}
+	wg.Wait()
+
+	for i, err := range errs {
+		require.NoError(t, err, "concurrent worker %d failed", i)
+	}
+
+	assert.Equal(t, int32(1), atomic.LoadInt32(&requestCount), "expected exactly 1 network request due to singleflight deduplication")
+}
+

@@ -28,6 +28,7 @@ import (
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/blake2s"
 	"golang.org/x/crypto/sha3"
+	"golang.org/x/sync/singleflight"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -35,6 +36,15 @@ import (
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
+
+var (
+	downloadFlight singleflight.Group
+)
+
+// ResetDownloadFlightForTest resets the singleflight group used for downloads (primarily for tests).
+func ResetDownloadFlightForTest() {
+	downloadFlight = singleflight.Group{}
+}
 
 // ErrGPGSkipped is returned when a signature file is not found (404) and verification is skipped.
 var ErrGPGSkipped = errors.NewUserError("GPG signature not found, skipped", nil)
@@ -125,6 +135,14 @@ func NewHTTPDownloader() *HTTPDownloader {
 // Returns:
 //   - error: nil on success, or an error describing the failure
 func (h *HTTPDownloader) Download(ctx context.Context, url string, destination string, opts DownloadOptions) error {
+	flightKey := destination
+	_, err, _ := downloadFlight.Do(flightKey, func() (interface{}, error) {
+		return nil, h.downloadInternal(ctx, url, destination, opts)
+	})
+	return err
+}
+
+func (h *HTTPDownloader) downloadInternal(ctx context.Context, url string, destination string, opts DownloadOptions) error {
 	// Inject proxy into context for CheckRedirect
 	if opts.GitHubProxy != "" {
 		ctx = context.WithValue(ctx, githubProxyKey, opts.GitHubProxy)
