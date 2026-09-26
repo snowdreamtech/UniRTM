@@ -10,12 +10,27 @@ import (
 	"net/http"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/sysinfo"
+	"golang.org/x/sync/singleflight"
 )
+
+var (
+	javaHandlerCache  sync.Map
+	javaHandlerFlight singleflight.Group
+)
+
+// ClearJavaHandlerCache clears the in-memory cache for Adoptium Java releases.
+func ClearJavaHandlerCache() {
+	javaHandlerCache.Range(func(key, value any) bool {
+		javaHandlerCache.Delete(key)
+		return true
+	})
+}
 
 // JavaHandler handles Java distributions via Adoptium (Temurin) API.
 type JavaHandler struct {
@@ -44,8 +59,6 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 	// Adoptium versions: 23 (GA), 21 (LTS), 17 (LTS), 11 (LTS), 8 (LTS)
 	majorVersions := []string{"23", "21", "17", "11", "8"}
 
-	var allVersions []VersionInfo
-
 	// Map OS/Arch to Adoptium values
 	os := env.RuntimeGOOS
 	if os == "darwin" {
@@ -61,75 +74,102 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 		arch = "aarch64"
 	}
 
-	for _, v := range majorVersions {
-		imageType := h.ImageType
-		if imageType == "" {
-			imageType = "jdk"
-		}
+	imageType := h.ImageType
+	if imageType == "" {
+		imageType = "jdk"
+	}
 
-		apiBase := env.Get("ADOPTIUM_API_BASEURL")
-		if apiBase == "" {
-			apiBase = env.Get("JAVA_MIRROR_URL")
-		}
-		if apiBase == "" {
-			apiBase = "https://api.adoptium.net"
-		}
-		apiBase = strings.TrimSuffix(apiBase, "/")
+	apiBase := env.Get("ADOPTIUM_API_BASEURL")
+	if apiBase == "" {
+		apiBase = env.Get("JAVA_MIRROR_URL")
+	}
+	if apiBase == "" {
+		apiBase = "https://api.adoptium.net"
+	}
+	apiBase = strings.TrimSuffix(apiBase, "/")
 
-		url := fmt.Sprintf("%s/v3/assets/feature_releases/%s/ga?architecture=%s&heap_size=normal&image_type=%s&jvm_impl=hotspot&os=%s&project=jdk&vendor=eclipse", apiBase, v, arch, imageType, os)
-
-		client := pkgHttp.NewClientWithTimeout(30 * time.Second)
-		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-		if err != nil {
-			continue
-		}
-		req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
-
-		resp, err := client.Do(req)
-		if err != nil {
-			continue
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			continue
-		}
-
-		var releases []adoptiumRelease
-		if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
-			continue
-		}
-
-		for _, rel := range releases {
-			version := rel.VersionData.OpenjdkVersion
-			// Clean version string (e.g. 21.0.2+13-LTS -> 21.0.2)
-			// Remove -LTS if present
-			version = strings.ReplaceAll(version, "-LTS", "")
-			if idx := strings.Index(version, "+"); idx != -1 {
-				version = version[:idx]
-			}
-
-			for _, bin := range rel.Binaries {
-				assets := []Asset{
-					{
-						Filename:     bin.Package.Name,
-						URL:          bin.Package.Link,
-						SignatureURL: bin.SignatureLink,
-						OS:           env.RuntimeGOOS,
-						Arch:         runtime.GOARCH,
-						Metadata:     make(map[string]string),
-					},
-				}
-
-				allVersions = append(allVersions, VersionInfo{
-					Version: version,
-					Assets:  assets,
-				})
-				// Just take the first binary that matches our query filters
-				break
-			}
+	cacheKey := fmt.Sprintf("%s|%s|%s|%s", apiBase, imageType, os, arch)
+	if val, ok := javaHandlerCache.Load(cacheKey); ok {
+		if cached, ok := val.([]VersionInfo); ok {
+			cp := make([]VersionInfo, len(cached))
+			copy(cp, cached)
+			return cp, nil
 		}
 	}
 
-	return allVersions, nil
+	res, err, _ := javaHandlerFlight.Do(cacheKey, func() (interface{}, error) {
+		var allVersions []VersionInfo
+		client := pkgHttp.NewClientWithTimeout(30 * time.Second)
+
+		for _, v := range majorVersions {
+			url := fmt.Sprintf("%s/v3/assets/feature_releases/%s/ga?architecture=%s&heap_size=normal&image_type=%s&jvm_impl=hotspot&os=%s&project=jdk&vendor=eclipse", apiBase, v, arch, imageType, os)
+
+			req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+			if err != nil {
+				continue
+			}
+			req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
+
+			resp, err := client.Do(req)
+			if err != nil {
+				continue
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				resp.Body.Close()
+				continue
+			}
+
+			var releases []adoptiumRelease
+			decodeErr := json.NewDecoder(resp.Body).Decode(&releases)
+			resp.Body.Close()
+			if decodeErr != nil {
+				continue
+			}
+
+			for _, rel := range releases {
+				version := rel.VersionData.OpenjdkVersion
+				// Clean version string (e.g. 21.0.2+13-LTS -> 21.0.2)
+				// Remove -LTS if present
+				version = strings.ReplaceAll(version, "-LTS", "")
+				if idx := strings.Index(version, "+"); idx != -1 {
+					version = version[:idx]
+				}
+
+				for _, bin := range rel.Binaries {
+					assets := []Asset{
+						{
+							Filename:     bin.Package.Name,
+							URL:          bin.Package.Link,
+							SignatureURL: bin.SignatureLink,
+							OS:           env.RuntimeGOOS,
+							Arch:         runtime.GOARCH,
+							Metadata:     make(map[string]string),
+						},
+					}
+
+					allVersions = append(allVersions, VersionInfo{
+						Version: version,
+						Assets:  assets,
+					})
+					// Just take the first binary that matches our query filters
+					break
+				}
+			}
+		}
+
+		if len(allVersions) > 0 {
+			javaHandlerCache.Store(cacheKey, allVersions)
+		}
+		return allVersions, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	cached := res.([]VersionInfo)
+	cp := make([]VersionInfo, len(cached))
+	copy(cp, cached)
+	return cp, nil
 }
+
