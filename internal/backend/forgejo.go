@@ -9,7 +9,10 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
+
+	"golang.org/x/sync/singleflight"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
@@ -17,8 +20,11 @@ import (
 
 // ForgejoBackend implements the Backend interface using GenericReleaseManager.
 type ForgejoBackend struct {
-	client  *http.Client
-	baseURL string
+	client            *http.Client
+	baseURL           string
+	flight            singleflight.Group
+	releasesCache     sync.Map // tool -> []CommonRelease
+	releaseByTagCache sync.Map // tool@tag -> *CommonRelease
 }
 
 // NewForgejoBackend creates a new Forgejo backend.
@@ -83,84 +89,121 @@ func (b *ForgejoBackend) GetDownloadInfo(ctx context.Context, tool, version stri
 // FetchReleases implements HostingProvider.
 func (b *ForgejoBackend) FetchReleases(ctx context.Context, tool string) ([]CommonRelease, error) {
 	tool = strings.TrimPrefix(tool, "forgejo:")
-	apiURL := fmt.Sprintf("%s/repos/%s/releases", b.baseURL, tool)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
+	if val, ok := b.releasesCache.Load(tool); ok {
+		if rels, ok := val.([]CommonRelease); ok {
+			return rels, nil
+		}
+	}
+
+	val, err, _ := b.flight.Do("releases:"+tool, func() (interface{}, error) {
+		apiURL := fmt.Sprintf("%s/repos/%s/releases", b.baseURL, tool)
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
+		if err != nil {
+			return nil, err
+		}
+		if token := env.Get("FORGEJO_TOKEN"); token != "" {
+			req.Header.Set("Authorization", "token "+token)
+		}
+
+		resp, err := b.client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("Forgejo API status %d", resp.StatusCode)
+		}
+
+		var releases []forgejoRelease
+		if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
+			return nil, err
+		}
+
+		res := make([]CommonRelease, len(releases))
+		for i, r := range releases {
+			var publishedAt time.Time
+			if r.CreatedAt != "" {
+				if t, err := time.Parse(time.RFC3339, r.CreatedAt); err == nil {
+					publishedAt = t
+				}
+			}
+			res[i] = CommonRelease{
+				Tag:         r.TagName,
+				Assets:      b.toCommonAssets(r.Assets),
+				PublishedAt: publishedAt,
+			}
+			b.releaseByTagCache.Store(tool+"@"+r.TagName, &res[i])
+			cleanTag := strings.TrimPrefix(r.TagName, "v")
+			b.releaseByTagCache.Store(tool+"@"+cleanTag, &res[i])
+			b.releaseByTagCache.Store(tool+"@v"+cleanTag, &res[i])
+		}
+
+		b.releasesCache.Store(tool, res)
+		return res, nil
+	})
+
 	if err != nil {
 		return nil, err
 	}
-	if token := env.Get("FORGEJO_TOKEN"); token != "" {
-		req.Header.Set("Authorization", "token "+token)
+	return val.([]CommonRelease), nil
+}
+
+// FetchReleaseByTag implements HostingProvider.
+func (b *ForgejoBackend) FetchReleaseByTag(ctx context.Context, tool, tag string) (*CommonRelease, error) {
+	tool = strings.TrimPrefix(tool, "forgejo:")
+
+	cacheKey := tool + "@" + tag
+	if val, ok := b.releaseByTagCache.Load(cacheKey); ok {
+		if cr, ok := val.(*CommonRelease); ok {
+			return cr, nil
+		}
 	}
 
-	resp, err := b.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+	val, err, _ := b.flight.Do("tag:"+cacheKey, func() (interface{}, error) {
+		apiURL := fmt.Sprintf("%s/repos/%s/releases/tags/%s", b.baseURL, tool, tag)
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Forgejo API status %d", resp.StatusCode)
-	}
+		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
+		if token := env.Get("FORGEJO_TOKEN"); token != "" {
+			req.Header.Set("Authorization", "token "+token)
+		}
 
-	var releases []forgejoRelease
-	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
-		return nil, err
-	}
+		resp, err := b.client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
 
-	res := make([]CommonRelease, len(releases))
-	for i, r := range releases {
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("status %d", resp.StatusCode)
+		}
+
+		var r forgejoRelease
+		if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
+			return nil, err
+		}
+
 		var publishedAt time.Time
 		if r.CreatedAt != "" {
 			if t, err := time.Parse(time.RFC3339, r.CreatedAt); err == nil {
 				publishedAt = t
 			}
 		}
-		res[i] = CommonRelease{
+		cr := &CommonRelease{
 			Tag:         r.TagName,
 			Assets:      b.toCommonAssets(r.Assets),
 			PublishedAt: publishedAt,
 		}
-	}
-	return res, nil
-}
+		b.releaseByTagCache.Store(cacheKey, cr)
+		return cr, nil
+	})
 
-// FetchReleaseByTag implements HostingProvider.
-func (b *ForgejoBackend) FetchReleaseByTag(ctx context.Context, tool, tag string) (*CommonRelease, error) {
-	tool = strings.TrimPrefix(tool, "forgejo:")
-	apiURL := fmt.Sprintf("%s/repos/%s/releases/tags/%s", b.baseURL, tool, tag)
-
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
-	if token := env.Get("FORGEJO_TOKEN"); token != "" {
-		req.Header.Set("Authorization", "token "+token)
-	}
-
-	resp, err := b.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status %d", resp.StatusCode)
-	}
-
-	var r forgejoRelease
-	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		return nil, err
-	}
-
-	var publishedAt time.Time
-	if r.CreatedAt != "" {
-		if t, err := time.Parse(time.RFC3339, r.CreatedAt); err == nil {
-			publishedAt = t
-		}
-	}
-	return &CommonRelease{
-		Tag:         r.TagName,
-		Assets:      b.toCommonAssets(r.Assets),
-		PublishedAt: publishedAt,
-	}, nil
+	return val.(*CommonRelease), nil
 }
 
 func (b *ForgejoBackend) toCommonAssets(assets []forgejoAsset) []CommonAsset {

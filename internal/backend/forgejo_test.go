@@ -145,3 +145,45 @@ func TestForgejoFetchReleaseByTag_NotFound(t *testing.T) {
 		t.Errorf("expected error for not found")
 	}
 }
+
+func TestForgejoBackend_DeduplicationAndCache(t *testing.T) {
+	var requestCount int
+	mux := http.NewServeMux()
+	mux.HandleFunc("/repos/owner/repo/releases", func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`[{"tag_name": "v1.0.0", "created_at": "2023-01-01T00:00:00Z", "assets": [{"name": "app-linux-amd64", "browser_download_url": "https://example.com/app"}, {"name": "app-darwin-arm64", "browser_download_url": "https://example.com/app-mac"}]}]`))
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	t.Setenv("UNIRTM_FORGEJO_API_URL", server.URL)
+
+	b := NewForgejoBackend()
+	ctx := context.Background()
+	p1 := Platform{OS: "linux", Arch: "amd64"}
+	p2 := Platform{OS: "darwin", Arch: "arm64"}
+
+	// 1. First call fetches from REST
+	v1, err := b.ListVersions(ctx, "owner/repo", p1)
+	if err != nil || len(v1) != 1 {
+		t.Fatalf("first call failed: %v", err)
+	}
+
+	// 2. Second call across another platform should hit memory cache without extra network request
+	v2, err := b.ListVersions(ctx, "owner/repo", p2)
+	if err != nil || len(v2) != 1 {
+		t.Fatalf("second call failed: %v", err)
+	}
+
+	// 3. FetchReleaseByTag for v1.0.0 should also hit cache
+	rel, err := b.FetchReleaseByTag(ctx, "owner/repo", "v1.0.0")
+	if err != nil || rel == nil || rel.Tag != "v1.0.0" {
+		t.Fatalf("FetchReleaseByTag failed: %v", err)
+	}
+
+	if requestCount != 1 {
+		t.Errorf("expected exactly 1 REST request due to caching/deduplication, got %d", requestCount)
+	}
+}
+
