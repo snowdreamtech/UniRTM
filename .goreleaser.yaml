@@ -309,7 +309,6 @@ homebrew_casks:
     homepage: "https://github.com/snowdreamtech/UniRTM"
     url:
       template: "https://github.com/snowdreamtech/UniRTM/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
-      verified: "github.com/snowdreamtech/"
     description: "UniRTM (Uni Runtime and Tools Manager) is a cross-platform developer toolchain manager."
     license: "MIT"
     hooks:
