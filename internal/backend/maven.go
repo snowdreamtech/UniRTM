@@ -9,13 +9,17 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
 
 type MavenBackend struct {
-	client *http.Client
+	client        *http.Client
+	requestGroup  singleflight.Group
+	versionsCache sync.Map // map[string][]string (tool -> version strings)
 }
 
 func NewMavenBackend() *MavenBackend {
@@ -41,36 +45,71 @@ type mavenSearchResponse struct {
 }
 
 func (b *MavenBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
+	if ctx == nil {
+		return nil, NewBackendError(b.Name(), tool, "create request", fmt.Errorf("net/http: nil Context"))
+	}
+
 	// tool is expected to be group:artifact
 	parts := strings.Split(tool, ":")
 	if len(parts) != 2 {
 		return nil, NewBackendError(b.Name(), tool, "invalid tool name format, expected group:artifact", nil)
 	}
 
-	url := fmt.Sprintf("https://search.maven.org/solrsearch/select?q=g:%s+AND+a:%s&rows=50&core=gav", parts[0], parts[1])
+	if val, ok := b.versionsCache.Load(tool); ok {
+		versionStrs := val.([]string)
+		versions := make([]VersionInfo, len(versionStrs))
+		for i, v := range versionStrs {
+			versions[i] = VersionInfo{
+				Version:  v,
+				Platform: platform,
+			}
+		}
+		return versions, nil
+	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	result, err, _ := b.requestGroup.Do("versions:"+tool, func() (interface{}, error) {
+		if val, ok := b.versionsCache.Load(tool); ok {
+			return val, nil
+		}
+
+		url := fmt.Sprintf("https://search.maven.org/solrsearch/select?q=g:%s+AND+a:%s&rows=50&core=gav", parts[0], parts[1])
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "create request", err)
+		}
+
+		resp, err := b.client.Do(req)
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "execute request", err)
+		}
+		defer resp.Body.Close()
+
+		var data mavenSearchResponse
+		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+			return nil, NewBackendError(b.Name(), tool, "decode response", err)
+		}
+
+		var versionStrs []string
+		for _, doc := range data.Response.Docs {
+			versionStrs = append(versionStrs, doc.Version)
+		}
+
+		b.versionsCache.Store(tool, versionStrs)
+		return versionStrs, nil
+	})
+
 	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "create request", err)
+		return nil, err
 	}
 
-	resp, err := b.client.Do(req)
-	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "execute request", err)
-	}
-	defer resp.Body.Close()
-
-	var data mavenSearchResponse
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, NewBackendError(b.Name(), tool, "decode response", err)
-	}
-
-	var versions []VersionInfo
-	for _, doc := range data.Response.Docs {
-		versions = append(versions, VersionInfo{
-			Version:  doc.Version,
+	versionStrs := result.([]string)
+	versions := make([]VersionInfo, len(versionStrs))
+	for i, v := range versionStrs {
+		versions[i] = VersionInfo{
+			Version:  v,
 			Platform: platform,
-		})
+		}
 	}
 
 	return versions, nil

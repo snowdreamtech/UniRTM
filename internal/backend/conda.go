@@ -9,14 +9,18 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"sync"
 	"time"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
 
 // CondaBackend implements the Backend interface for Conda packages.
 type CondaBackend struct {
-	client *http.Client
+	client        *http.Client
+	requestGroup  singleflight.Group
+	versionsCache sync.Map // map[string][]string (tool -> sorted version strings)
 }
 
 // NewCondaBackend creates a new conda backend.
@@ -39,44 +43,79 @@ type anacondaResponse struct {
 }
 
 func (b *CondaBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
-	// We use the Anaconda API to fetch package metadata
-	url := fmt.Sprintf("https://api.anaconda.org/package/anaconda/%s", tool)
+	if ctx == nil {
+		return nil, NewBackendError(b.Name(), tool, "create request", fmt.Errorf("net/http: nil Context"))
+	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if val, ok := b.versionsCache.Load(tool); ok {
+		versionStrs := val.([]string)
+		versions := make([]VersionInfo, len(versionStrs))
+		for i, v := range versionStrs {
+			versions[i] = VersionInfo{
+				Version:  v,
+				Platform: platform,
+			}
+		}
+		return versions, nil
+	}
+
+	result, err, _ := b.requestGroup.Do("versions:"+tool, func() (interface{}, error) {
+		if val, ok := b.versionsCache.Load(tool); ok {
+			return val, nil
+		}
+
+		// We use the Anaconda API to fetch package metadata
+		url := fmt.Sprintf("https://api.anaconda.org/package/anaconda/%s", tool)
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "create request", err)
+		}
+
+		resp, err := b.client.Do(req)
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "execute request", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, NewBackendError(b.Name(), tool, "package not found in anaconda registry", nil)
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
+		}
+
+		var data anacondaResponse
+		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+			return nil, NewBackendError(b.Name(), tool, "decode response", err)
+		}
+
+		var versionStrs []string
+		for _, v := range data.Versions {
+			versionStrs = append(versionStrs, v)
+		}
+
+		// Sort newest first
+		sort.Slice(versionStrs, func(i, j int) bool {
+			return versionStrs[i] > versionStrs[j]
+		})
+
+		b.versionsCache.Store(tool, versionStrs)
+		return versionStrs, nil
+	})
+
 	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "create request", err)
+		return nil, err
 	}
 
-	resp, err := b.client.Do(req)
-	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "execute request", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, NewBackendError(b.Name(), tool, "package not found in anaconda registry", nil)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
-	}
-
-	var data anacondaResponse
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, NewBackendError(b.Name(), tool, "decode response", err)
-	}
-
-	var versions []VersionInfo
-	for _, v := range data.Versions {
-		versions = append(versions, VersionInfo{
+	versionStrs := result.([]string)
+	versions := make([]VersionInfo, len(versionStrs))
+	for i, v := range versionStrs {
+		versions[i] = VersionInfo{
 			Version:  v,
 			Platform: platform,
-		})
+		}
 	}
-
-	// Sort newest first
-	sort.Slice(versions, func(i, j int) bool {
-		return versions[i].Version > versions[j].Version
-	})
 
 	return versions, nil
 }

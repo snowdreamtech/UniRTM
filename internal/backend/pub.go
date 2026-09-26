@@ -8,13 +8,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
 
 type PubBackend struct {
-	client *http.Client
+	client        *http.Client
+	requestGroup  singleflight.Group
+	versionsCache sync.Map // map[string][]string (tool -> sorted version strings)
 }
 
 func NewPubBackend() *PubBackend {
@@ -39,42 +43,77 @@ type pubResponse struct {
 }
 
 func (b *PubBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
-	url := fmt.Sprintf("https://pub.dev/api/packages/%s", tool)
+	if ctx == nil {
+		return nil, NewBackendError(b.Name(), tool, "create request", fmt.Errorf("net/http: nil Context"))
+	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if val, ok := b.versionsCache.Load(tool); ok {
+		versionStrs := val.([]string)
+		versions := make([]VersionInfo, len(versionStrs))
+		for i, v := range versionStrs {
+			versions[i] = VersionInfo{
+				Version:  v,
+				Platform: platform,
+			}
+		}
+		return versions, nil
+	}
+
+	result, err, _ := b.requestGroup.Do("versions:"+tool, func() (interface{}, error) {
+		if val, ok := b.versionsCache.Load(tool); ok {
+			return val, nil
+		}
+
+		url := fmt.Sprintf("https://pub.dev/api/packages/%s", tool)
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "create request", err)
+		}
+
+		resp, err := b.client.Do(req)
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "execute request", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, NewBackendError(b.Name(), tool, "package not found on pub.dev", nil)
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
+		}
+
+		var data pubResponse
+		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+			return nil, NewBackendError(b.Name(), tool, "decode response", err)
+		}
+
+		var versionStrs []string
+		for _, v := range data.Versions {
+			versionStrs = append(versionStrs, v.Version)
+		}
+
+		// Reverse to get descending order
+		for i, j := 0, len(versionStrs)-1; i < j; i, j = i+1, j-1 {
+			versionStrs[i], versionStrs[j] = versionStrs[j], versionStrs[i]
+		}
+
+		b.versionsCache.Store(tool, versionStrs)
+		return versionStrs, nil
+	})
+
 	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "create request", err)
+		return nil, err
 	}
 
-	resp, err := b.client.Do(req)
-	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "execute request", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, NewBackendError(b.Name(), tool, "package not found on pub.dev", nil)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
-	}
-
-	var data pubResponse
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, NewBackendError(b.Name(), tool, "decode response", err)
-	}
-
-	var versions []VersionInfo
-	for _, v := range data.Versions {
-		versions = append(versions, VersionInfo{
-			Version:  v.Version,
+	versionStrs := result.([]string)
+	versions := make([]VersionInfo, len(versionStrs))
+	for i, v := range versionStrs {
+		versions[i] = VersionInfo{
+			Version:  v,
 			Platform: platform,
-		})
-	}
-
-	// Reverse to get descending order
-	for i, j := 0, len(versions)-1; i < j; i, j = i+1, j-1 {
-		versions[i], versions[j] = versions[j], versions[i]
+		}
 	}
 
 	return versions, nil
