@@ -1014,6 +1014,40 @@ func (im *InstallationManager) SortToolsFromSpecs(tools map[string]ToolSpec) []T
 	return sorted
 }
 
+// PrefetchGitHubReleases batches GitHub release requests via GraphQL before installation workers start.
+func (im *InstallationManager) PrefetchGitHubReleases(ctx context.Context, tools []ToolToInstall) {
+	if im.backendRegistry == nil {
+		return
+	}
+	b, err := im.backendRegistry.Get("github")
+	if err != nil || b == nil {
+		return
+	}
+	ghBackend, ok := b.(*backend.GitHubBackend)
+	if !ok {
+		return
+	}
+
+	var specs []backend.GitHubReleaseQuerySpec
+	for _, t := range tools {
+		backendName := t.BackendName
+		if backendName == "" {
+			backendName = "github"
+		}
+		tb, err := im.backendRegistry.Get(backendName)
+		if err == nil && tb != nil && tb.Name() == "github" && t.Version != "" {
+			specs = append(specs, backend.GitHubReleaseQuerySpec{
+				Tool: t.ToolName,
+				Tag:  t.Version,
+			})
+		}
+	}
+
+	if len(specs) > 0 {
+		_ = ghBackend.BatchPrefetchReleases(ctx, specs)
+	}
+}
+
 // EnsureInstalled checks if all tools in the configuration are installed,
 // and installs any missing ones.
 func (im *InstallationManager) EnsureInstalled(ctx context.Context, tools map[string]config.ToolConfig) error {

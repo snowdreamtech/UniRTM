@@ -382,6 +382,9 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		concurrencyLimit = runtime.NumCPU()
 	}
 
+	// Pre-fetch all GitHub release metadata in a single GraphQL batch query
+	installManager.PrefetchGitHubReleases(ctx, sortedTools)
+
 	// We run concurrently if there are multiple tools and concurrency limit > 1
 	runConcurrent := len(sortedTools) > 1 && concurrencyLimit > 1
 

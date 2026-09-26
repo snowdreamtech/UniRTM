@@ -672,3 +672,21 @@ func TestInstallationManager_Install_AutoRepairLockfile(t *testing.T) {
 	assert.Equal(t, "https://example.com/foo.tar.gz", pe.URL)
 }
 
+func TestInstallationManager_PrefetchGitHubReleases(t *testing.T) {
+	backendRegistry := backend.NewRegistry()
+	ghBackend := backend.NewGitHubBackend()
+	backendRegistry.Register(ghBackend)
+
+	im := NewInstallationManager(backendRegistry, nil, nil, nil, nil, &config.Settings{})
+
+	tools := []ToolToInstall{
+		{ToolName: "astral-sh/ruff", BackendName: "github", Version: "0.16.6"},
+		{ToolName: "go", BackendName: "golang", Version: "1.22.0"},
+	}
+
+	ctx := context.Background()
+	// Should execute gracefully without panic
+	im.PrefetchGitHubReleases(ctx, tools)
+}
+
+
