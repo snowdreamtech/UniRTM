@@ -171,7 +171,7 @@ jobs:
     timeout-minutes: 60 # Increased to accommodate snapcraft + flatpak SDK downloads and cross-platform compilation
     steps:
       - name: "🧹 Free Disk Space (Ubuntu)"
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # main
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         with:
           # this might remove tools that are actually needed,
           # if set to "true" but frees about 6 GB
