@@ -64,6 +64,8 @@ jobs:
       security-events: write
     timeout-minutes: 60
     env:
+      GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
       VENV: ".venv"
       PYTHONUTF8: 1
     steps:
@@ -80,6 +82,7 @@ jobs:
           trust: true
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
           UNIRTM_VERIFY_PROVENANCE: "0"
 
       - name: "🔍 Inspect Code Quality (Lint)"
@@ -90,7 +93,8 @@ jobs:
             unirtm exec -- pre-commit run --all-files
           }
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
           UNIRTM_YES: 1
 
   # 2. Automated Testing Stage (Test)
@@ -111,6 +115,8 @@ jobs:
       pull-requests: read
     timeout-minutes: 60
     env:
+      GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
       VENV: ".venv"
       PYTHONUTF8: 1
     steps:
@@ -127,6 +133,7 @@ jobs:
           trust: true
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
           UNIRTM_VERIFY_PROVENANCE: "0"
 
       - name: "📦 Cache Language Dependencies (Advanced)"
