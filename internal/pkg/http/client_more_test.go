@@ -109,14 +109,34 @@ func TestDefaultTransport_MockTransport(t *testing.T) {
 
 func TestDefaultTransport_ConnectionPool(t *testing.T) {
 	tr := DefaultTransport()
-	if tr.MaxIdleConns != 100 {
-		t.Errorf("expected MaxIdleConns=100, got %d", tr.MaxIdleConns)
+	if tr.MaxIdleConns != 200 {
+		t.Errorf("expected MaxIdleConns=200, got %d", tr.MaxIdleConns)
 	}
-	if tr.MaxIdleConnsPerHost != 32 {
-		t.Errorf("expected MaxIdleConnsPerHost=32, got %d", tr.MaxIdleConnsPerHost)
+	if tr.MaxIdleConnsPerHost != 50 {
+		t.Errorf("expected MaxIdleConnsPerHost=50, got %d", tr.MaxIdleConnsPerHost)
 	}
 	if tr.IdleConnTimeout != 90*time.Second {
 		t.Errorf("expected IdleConnTimeout=90s, got %v", tr.IdleConnTimeout)
+	}
+}
+
+func TestSharedTransport_SingletonAndReuse(t *testing.T) {
+	ResetSharedTransport()
+	defer ResetSharedTransport()
+
+	c1 := NewClient()
+	c2 := NewClientWithTimeout(10 * time.Second)
+
+	if c1.Transport == nil || c2.Transport == nil {
+		t.Fatal("expected non-nil transport")
+	}
+
+	if c1.Transport != c2.Transport {
+		t.Errorf("expected c1 and c2 to share the exact same transport instance for keep-alive connection pooling")
+	}
+
+	if c1.Transport != SharedTransport() {
+		t.Errorf("expected c1.Transport to match SharedTransport()")
 	}
 }
 

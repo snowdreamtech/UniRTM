@@ -6,6 +6,7 @@ package http
 import (
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	"golang.org/x/net/http/httpproxy"
@@ -86,11 +87,33 @@ func DefaultTransport() *http.Transport {
 	// 3. Connection pool optimization for high-concurrency downloads:
 	// Go's default MaxIdleConnsPerHost is only 2, which causes connection thrashing
 	// during parallel downloads to the same host (e.g. github.com / cdn mirrors).
-	trans.MaxIdleConns = 100
-	trans.MaxIdleConnsPerHost = 32
+	trans.MaxIdleConns = 200
+	trans.MaxIdleConnsPerHost = 50
 	trans.IdleConnTimeout = 90 * time.Second
+	trans.ForceAttemptHTTP2 = true
 
 	return trans
+}
+
+var (
+	sharedTransport     *http.Transport
+	sharedTransportOnce sync.Once
+)
+
+// SharedTransport returns the singleton instance of UniRTM's robust http.Transport.
+// Reusing this transport allows connection pooling and HTTP/1.1 or HTTP/2 keep-alive
+// across different clients and backends, drastically reducing TCP/TLS handshake latency.
+func SharedTransport() *http.Transport {
+	sharedTransportOnce.Do(func() {
+		sharedTransport = DefaultTransport()
+	})
+	return sharedTransport
+}
+
+// ResetSharedTransport resets the shared transport singleton (primarily used in tests).
+func ResetSharedTransport() {
+	sharedTransportOnce = sync.Once{}
+	sharedTransport = nil
 }
 
 // NewClient returns an http.Client pre-configured with UniRTM's robust transport.
@@ -101,7 +124,7 @@ func NewClient() *http.Client {
 	} else if _, ok := http.DefaultTransport.(*http.Transport); !ok {
 		tr = http.DefaultTransport
 	} else {
-		tr = DefaultTransport()
+		tr = SharedTransport()
 	}
 	return &http.Client{
 		Transport: tr,
@@ -116,7 +139,7 @@ func NewClientWithTimeout(timeout time.Duration) *http.Client {
 	} else if _, ok := http.DefaultTransport.(*http.Transport); !ok {
 		tr = http.DefaultTransport
 	} else {
-		tr = DefaultTransport()
+		tr = SharedTransport()
 	}
 	return &http.Client{
 		Timeout:   timeout,
