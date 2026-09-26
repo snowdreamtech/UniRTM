@@ -160,3 +160,47 @@ func TestGoBackend_GetDownloadInfo(t *testing.T) {
 		t.Errorf("expected v1.0.0, got %s", info.Version)
 	}
 }
+
+func TestGoBackend_DeduplicationAndCache(t *testing.T) {
+	var requestCount int
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		if r.URL.Path == "/tool/@v/list" {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("v1.0.0\nv1.1.0\nv1.2.0"))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer ts.Close()
+
+	t.Setenv("GOPROXY", ts.URL)
+
+	b := NewGoBackend()
+	ctx := context.Background()
+	p1 := Platform{OS: "linux", Arch: "amd64"}
+	p2 := Platform{OS: "darwin", Arch: "arm64"}
+
+	// 1. First call populates cache
+	v1, err := b.ListVersions(ctx, "tool", p1)
+	if err != nil || len(v1) != 3 {
+		t.Fatalf("first call failed: %v", err)
+	}
+
+	// 2. Second call across another platform should hit memory cache without extra network request
+	v2, err := b.ListVersions(ctx, "tool", p2)
+	if err != nil || len(v2) != 3 {
+		t.Fatalf("second call failed: %v", err)
+	}
+
+	// 3. ResolveVersion("latest") should also hit cache
+	latest, err := b.ResolveVersion(ctx, "tool", "latest", p2)
+	if err != nil || latest.Version != "v1.2.0" {
+		t.Fatalf("resolve latest failed: %v", err)
+	}
+
+	if requestCount != 1 {
+		t.Errorf("expected exactly 1 network request, got %d", requestCount)
+	}
+}
+

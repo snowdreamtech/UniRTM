@@ -128,3 +128,45 @@ func TestCargoBackend_GetDownloadInfo(t *testing.T) {
 		t.Errorf("expected 13.0.0, got %s", info.Version)
 	}
 }
+
+func TestCargoBackend_DeduplicationAndCache(t *testing.T) {
+	b := NewCargoBackend()
+	var requestCount int
+	b.client.Transport = &mockCargoTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			requestCount++
+			body := `{"crate": {"max_version": "14.1.0"}, "versions": [{"num": "14.1.0"}, {"num": "14.0.0"}]}`
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(bytes.NewBufferString(body)),
+			}, nil
+		},
+	}
+
+	ctx := context.Background()
+	p1 := Platform{OS: "linux", Arch: "amd64"}
+	p2 := Platform{OS: "darwin", Arch: "arm64"}
+
+	// 1. First call populates cache
+	v1, err := b.ListVersions(ctx, "concurrent-crate", p1)
+	if err != nil || len(v1) != 2 {
+		t.Fatalf("first call failed: %v", err)
+	}
+
+	// 2. Second call across another platform should hit memory cache without extra network request
+	v2, err := b.ListVersions(ctx, "concurrent-crate", p2)
+	if err != nil || len(v2) != 2 {
+		t.Fatalf("second call failed: %v", err)
+	}
+
+	// 3. ResolveVersion("latest") should also hit cache
+	latest, err := b.ResolveVersion(ctx, "concurrent-crate", "latest", p2)
+	if err != nil || latest.Version != "14.1.0" {
+		t.Fatalf("resolve latest failed: %v", err)
+	}
+
+	if requestCount != 1 {
+		t.Errorf("expected exactly 1 network request, got %d", requestCount)
+	}
+}
+

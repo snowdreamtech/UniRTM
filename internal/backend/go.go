@@ -10,7 +10,10 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 	"time"
+
+	"golang.org/x/sync/singleflight"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
@@ -18,6 +21,8 @@ import (
 
 type GoBackend struct {
 	client *http.Client
+	flight singleflight.Group
+	cache  sync.Map
 }
 
 func NewGoBackend() *GoBackend {
@@ -49,62 +54,103 @@ func getGoProxyBase() string {
 	return "https://proxy.golang.org"
 }
 
-func (b *GoBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
-	// Go proxy API: https://proxy.golang.org/<module>/@v/list
-	// If a tool specifies a subpackage (e.g. golang.org/x/vuln/cmd/govulncheck),
-	// fetching list on the subpackage returns 404. We iteratively fallback to parent directories
-	// to locate the actual Go module root.
-	modulePath := tool
-	for {
-		url := fmt.Sprintf("%s/%s/@v/list", getGoProxyBase(), modulePath)
-
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
-		if err != nil {
-			return nil, NewBackendError(b.Name(), tool, "create request", err)
-		}
-
-		resp, err := b.client.Do(req)
-		if err != nil {
-			return nil, NewBackendError(b.Name(), tool, "execute request", err)
-		}
-
-		if resp.StatusCode == http.StatusOK {
-			defer resp.Body.Close()
-			var versions []VersionInfo
-			scanner := bufio.NewScanner(resp.Body)
-			for scanner.Scan() {
-				v := strings.TrimSpace(scanner.Text())
-				if v != "" {
-					versions = append(versions, VersionInfo{
-						Version:  v,
-						Platform: platform,
-					})
-				}
-			}
-
-			// Sort versions (newest first)
-			sort.Slice(versions, func(i, j int) bool {
-				return versions[i].Version > versions[j].Version
-			})
-
-			return versions, nil
-		}
-		resp.Body.Close()
-
-		if resp.StatusCode == http.StatusNotFound {
-			lastSlash := strings.LastIndex(modulePath, "/")
-			if lastSlash > 0 {
-				modulePath = modulePath[:lastSlash]
-				continue
-			}
-			return nil, NewBackendError(b.Name(), tool, "module not found on proxy.golang.org", nil)
-		}
-
-		return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
+func (b *GoBackend) fetchVersionStrings(ctx context.Context, tool string) ([]string, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("net/http: nil Context")
 	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	if val, ok := b.cache.Load(tool); ok {
+		if verList, ok := val.([]string); ok {
+			return verList, nil
+		}
+	}
+
+	val, err, _ := b.flight.Do(tool, func() (interface{}, error) {
+		// Go proxy API: https://proxy.golang.org/<module>/@v/list
+		// If a tool specifies a subpackage (e.g. golang.org/x/vuln/cmd/govulncheck),
+		// fetching list on the subpackage returns 404. We iteratively fallback to parent directories
+		// to locate the actual Go module root.
+		modulePath := tool
+		for {
+			url := fmt.Sprintf("%s/%s/@v/list", getGoProxyBase(), modulePath)
+
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+			if err != nil {
+				return nil, NewBackendError(b.Name(), tool, "create request", err)
+			}
+
+			resp, err := b.client.Do(req)
+			if err != nil {
+				return nil, NewBackendError(b.Name(), tool, "execute request", err)
+			}
+
+			if resp.StatusCode == http.StatusOK {
+				defer resp.Body.Close()
+				var verList []string
+				scanner := bufio.NewScanner(resp.Body)
+				for scanner.Scan() {
+					v := strings.TrimSpace(scanner.Text())
+					if v != "" {
+						verList = append(verList, v)
+					}
+				}
+
+				// Sort versions (newest first)
+				sort.Slice(verList, func(i, j int) bool {
+					return verList[i] > verList[j]
+				})
+
+				b.cache.Store(tool, verList)
+				return verList, nil
+			}
+			resp.Body.Close()
+
+			if resp.StatusCode == http.StatusNotFound {
+				lastSlash := strings.LastIndex(modulePath, "/")
+				if lastSlash > 0 {
+					modulePath = modulePath[:lastSlash]
+					continue
+				}
+				return nil, NewBackendError(b.Name(), tool, "module not found on proxy.golang.org", nil)
+			}
+
+			return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
+		}
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return val.([]string), nil
+}
+
+func (b *GoBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
+	verList, err := b.fetchVersionStrings(ctx, tool)
+	if err != nil {
+		return nil, err
+	}
+
+	versions := make([]VersionInfo, len(verList))
+	for i, v := range verList {
+		versions[i] = VersionInfo{
+			Version:  v,
+			Platform: platform,
+		}
+	}
+	return versions, nil
 }
 
 func (b *GoBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("net/http: nil Context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	versionRequest = NormalizeVersionPrefix(versionRequest, true)
 	if versionRequest == "latest" {
 		versions, err := b.ListVersions(ctx, tool, platform)

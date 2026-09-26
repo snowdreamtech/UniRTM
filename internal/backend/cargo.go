@@ -8,7 +8,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
+
+	"golang.org/x/sync/singleflight"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
@@ -16,6 +19,8 @@ import (
 // CargoBackend implements the Backend interface for Cargo packages.
 type CargoBackend struct {
 	client *http.Client
+	flight singleflight.Group
+	cache  sync.Map
 }
 
 // NewCargoBackend creates a new Cargo backend.
@@ -43,33 +48,63 @@ type cargoRegistryResponse struct {
 	} `json:"versions"`
 }
 
+func (b *CargoBackend) fetchRegistry(ctx context.Context, tool string) (*cargoRegistryResponse, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("net/http: nil Context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	if val, ok := b.cache.Load(tool); ok {
+		if reg, ok := val.(*cargoRegistryResponse); ok {
+			return reg, nil
+		}
+	}
+
+	val, err, _ := b.flight.Do(tool, func() (interface{}, error) {
+		url := fmt.Sprintf("https://crates.io/api/v1/crates/%s", tool)
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "create request", err)
+		}
+
+		// crates.io requires a user-agent
+		req.Header.Set("User-Agent", "unirtm (https://github.com/snowdreamtech/unirtm)")
+
+		resp, err := b.client.Do(req)
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "execute request", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, NewBackendError(b.Name(), tool, "crate not found", nil)
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
+		}
+
+		var registry cargoRegistryResponse
+		if err := json.NewDecoder(resp.Body).Decode(&registry); err != nil {
+			return nil, NewBackendError(b.Name(), tool, "decode response", err)
+		}
+
+		b.cache.Store(tool, &registry)
+		return &registry, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return val.(*cargoRegistryResponse), nil
+}
+
 func (b *CargoBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
-	url := fmt.Sprintf("https://crates.io/api/v1/crates/%s", tool)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	registry, err := b.fetchRegistry(ctx, tool)
 	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "create request", err)
-	}
-
-	// crates.io requires a user-agent
-	req.Header.Set("User-Agent", "unirtm (https://github.com/snowdreamtech/unirtm)")
-
-	resp, err := b.client.Do(req)
-	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "execute request", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, NewBackendError(b.Name(), tool, "crate not found", nil)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
-	}
-
-	var registry cargoRegistryResponse
-	if err := json.NewDecoder(resp.Body).Decode(&registry); err != nil {
-		return nil, NewBackendError(b.Name(), tool, "decode response", err)
+		return nil, err
 	}
 
 	var versions []VersionInfo
@@ -91,28 +126,17 @@ func (b *CargoBackend) ListVersions(ctx context.Context, tool string, platform P
 }
 
 func (b *CargoBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("net/http: nil Context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	versionRequest = NormalizeVersionPrefix(versionRequest, false)
 	if versionRequest == "latest" {
-		url := fmt.Sprintf("https://crates.io/api/v1/crates/%s", tool)
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+		registry, err := b.fetchRegistry(ctx, tool)
 		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("User-Agent", "unirtm (https://github.com/snowdreamtech/unirtm)")
-
-		resp, err := b.client.Do(req)
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return nil, NewBackendError(b.Name(), tool, "crate not found", nil)
-		}
-
-		var registry cargoRegistryResponse
-		if err := json.NewDecoder(resp.Body).Decode(&registry); err != nil {
 			return nil, err
 		}
 
