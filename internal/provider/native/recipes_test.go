@@ -8,6 +8,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"sync/atomic"
 	"testing"
 
 	unirtmhttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
@@ -228,4 +229,39 @@ func TestIsNativeTool(t *testing.T) {
 	assert.True(t, IsNativeTool("go"))
 	assert.True(t, IsNativeTool("python"))
 	assert.False(t, IsNativeTool("nonexistent_tool_123"))
+}
+
+func TestGolangHandler_ConcurrentDeduplication(t *testing.T) {
+	var requestCount int32
+	oldMock := unirtmhttp.MockTransport
+	defer func() { unirtmhttp.MockTransport = oldMock }()
+
+	unirtmhttp.MockTransport = &mockRoundTripper{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			atomic.AddInt32(&requestCount, 1)
+			resp := `[
+				{
+					"version": "go1.21.0",
+					"stable": true,
+					"files": [
+						{"filename": "go1.21.0.linux-amd64.tar.gz", "os": "linux", "arch": "amd64", "version": "go1.21.0", "sha256": "123456", "size": 100, "kind": "archive"}
+					]
+				}
+			]`
+			return &http.Response{
+				StatusCode: 200,
+				Body:       io.NopCloser(bytes.NewBufferString(resp)),
+				Header:     make(http.Header),
+			}, nil
+		},
+	}
+
+	handler := &GolangHandler{}
+	for i := 0; i < 5; i++ {
+		versions, err := handler.ResolveVersions(context.Background(), "https://go.dev/dl")
+		assert.NoError(t, err)
+		assert.Len(t, versions, 1)
+	}
+
+	assert.Equal(t, int32(1), atomic.LoadInt32(&requestCount), "expected only 1 request due to cache")
 }

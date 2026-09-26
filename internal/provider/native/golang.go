@@ -9,13 +9,18 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	unirtmhttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
 
 // GolangHandler handles the official Go download metadata from go.dev/dl/?mode=json.
-type GolangHandler struct{}
+type GolangHandler struct {
+	flight singleflight.Group
+	cache  sync.Map // cacheKey -> []VersionInfo
+}
 
 type goFile struct {
 	Filename string `json:"filename"`
@@ -38,6 +43,10 @@ func (h *GolangHandler) Name() string {
 }
 
 func (h *GolangHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("net/http: nil Context")
+	}
+
 	metadataURL := baseURL
 	downloadMirror := env.Get("GO_DOWNLOAD_MIRROR")
 	skipChecksum := env.Get("GO_SKIP_CHECKSUM") == "1"
@@ -47,66 +56,84 @@ func (h *GolangHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		metadataURL = "https://golang.google.cn/dl"
 	}
 
-	url := fmt.Sprintf("%s/?mode=json&include=all", strings.TrimSuffix(metadataURL, "/"))
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	cacheKey := fmt.Sprintf("%s|%s|%t", metadataURL, downloadMirror, skipChecksum)
+	if val, ok := h.cache.Load(cacheKey); ok {
+		return val.([]VersionInfo), nil
+	}
+
+	res, err, _ := h.flight.Do(cacheKey, func() (interface{}, error) {
+		if val, ok := h.cache.Load(cacheKey); ok {
+			return val, nil
+		}
+
+		url := fmt.Sprintf("%s/?mode=json&include=all", strings.TrimSuffix(metadataURL, "/"))
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := unirtmhttp.NewClient().Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("golang: fetch metadata: %w", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("golang: unexpected status code: %d", resp.StatusCode)
+		}
+
+		var goVersions []goVersion
+		if err := json.NewDecoder(resp.Body).Decode(&goVersions); err != nil {
+			return nil, fmt.Errorf("golang: decode metadata: %w", err)
+		}
+
+		var versions []VersionInfo
+		for _, gv := range goVersions {
+			vi := VersionInfo{
+				Version: strings.TrimPrefix(gv.Version, "go"),
+				IsLTS:   gv.Stable,
+			}
+
+			for _, gf := range gv.Files {
+				if gf.Kind != "archive" {
+					continue
+				}
+
+				// Construct download URL: use mirror if provided, otherwise use metadata source
+				assetBaseURL := metadataURL
+				if downloadMirror != "" {
+					assetBaseURL = downloadMirror
+				}
+
+				asset := Asset{
+					URL:      fmt.Sprintf("%s/%s", strings.TrimSuffix(assetBaseURL, "/"), gf.Filename),
+					Filename: gf.Filename,
+					OS:       gf.OS,
+					Arch:     gf.Arch,
+					Checksum: gf.Sha256,
+					Algo:     "sha256",
+					Metadata: make(map[string]string),
+				}
+
+				if skipChecksum {
+					asset.Metadata["skip_checksum"] = "1"
+				}
+
+				vi.Assets = append(vi.Assets, asset)
+			}
+
+			if len(vi.Assets) > 0 {
+				versions = append(versions, vi)
+			}
+		}
+
+		h.cache.Store(cacheKey, versions)
+		return versions, nil
+	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := unirtmhttp.NewClient().Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("golang: fetch metadata: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("golang: unexpected status code: %d", resp.StatusCode)
-	}
-
-	var goVersions []goVersion
-	if err := json.NewDecoder(resp.Body).Decode(&goVersions); err != nil {
-		return nil, fmt.Errorf("golang: decode metadata: %w", err)
-	}
-
-	var versions []VersionInfo
-	for _, gv := range goVersions {
-		vi := VersionInfo{
-			Version: strings.TrimPrefix(gv.Version, "go"),
-			IsLTS:   gv.Stable,
-		}
-
-		for _, gf := range gv.Files {
-			if gf.Kind != "archive" {
-				continue
-			}
-
-			// Construct download URL: use mirror if provided, otherwise use metadata source
-			assetBaseURL := metadataURL
-			if downloadMirror != "" {
-				assetBaseURL = downloadMirror
-			}
-
-			asset := Asset{
-				URL:      fmt.Sprintf("%s/%s", strings.TrimSuffix(assetBaseURL, "/"), gf.Filename),
-				Filename: gf.Filename,
-				OS:       gf.OS,
-				Arch:     gf.Arch,
-				Checksum: gf.Sha256,
-				Algo:     "sha256",
-				Metadata: make(map[string]string),
-			}
-
-			if skipChecksum {
-				asset.Metadata["skip_checksum"] = "1"
-			}
-
-			vi.Assets = append(vi.Assets, asset)
-		}
-
-		if len(vi.Assets) > 0 {
-			versions = append(versions, vi)
-		}
-	}
-
-	return versions, nil
+	return res.([]VersionInfo), nil
 }

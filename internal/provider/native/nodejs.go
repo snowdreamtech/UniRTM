@@ -10,15 +10,20 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/sysinfo"
+	"golang.org/x/sync/singleflight"
 )
 
 // NodeJSHandler handles the official Node.js download metadata from nodejs.org/dist/index.json.
-type NodeJSHandler struct{}
+type NodeJSHandler struct {
+	flight singleflight.Group
+	cache  sync.Map // cacheKey -> []VersionInfo
+}
 
 type nodeVersion struct {
 	Version string      `json:"version"`
@@ -32,6 +37,10 @@ func (h *NodeJSHandler) Name() string {
 }
 
 func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("net/http: nil Context")
+	}
+
 	// Support Node.js Mirrors
 	mirrorURL := env.Get("MISE_NODE_MIRROR_URL")
 	if mirrorURL == "" {
@@ -41,72 +50,90 @@ func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		baseURL = mirrorURL
 	}
 
-	url := fmt.Sprintf("%s/index.json", strings.TrimSuffix(baseURL, "/"))
-	client := pkgHttp.NewClientWithTimeout(30 * time.Second)
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("nodejs: fetch metadata: %w", err)
-	}
-	defer resp.Body.Close()
-
-	var nv []nodeVersion
-	if err := json.NewDecoder(resp.Body).Decode(&nv); err != nil {
-		return nil, fmt.Errorf("nodejs: decode metadata: %w", err)
-	}
-
 	flavor := env.Get("MISE_NODE_FLAVOR")
 	if flavor == "" && env.RuntimeGOOS == "linux" && sysinfo.IsMusl() {
 		flavor = "musl"
 	}
 
-	var versions []VersionInfo
-	for _, v := range nv {
-		vi := VersionInfo{
-			Version: strings.TrimPrefix(v.Version, "v"),
-		}
-
-		if s, ok := v.Lts.(string); ok {
-			vi.IsLTS = true
-			vi.LTSName = s
-		}
-
-		for _, f := range v.Files {
-			osName, archName, rawArch, ext, isSupported := parseNodeFile(f)
-			if !isSupported {
-				continue
-			}
-
-			downloadURL := fmt.Sprintf("%s/%s/node-%s-%s-%s%s", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, rawArch, ext)
-			if flavor == "musl" {
-				// unofficial-builds naming convention: node-vX.Y.Z-linux-ARCH-musl.tar.gz
-				downloadURL = fmt.Sprintf("%s/%s/node-%s-%s-%s-musl%s", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, rawArch, ext)
-			}
-
-			vi.Assets = append(vi.Assets, Asset{
-				URL:          downloadURL,
-				Filename:     filepath.Base(downloadURL),
-				OS:           osName,
-				Arch:         archName,
-				Algo:         "sha256",
-				SignatureURL: fmt.Sprintf("%s/%s/SHASUMS256.txt.asc", strings.TrimSuffix(baseURL, "/"), v.Version),
-				Metadata: map[string]string{
-					"flavor": flavor,
-				},
-			})
-		}
-
-		if len(vi.Assets) > 0 {
-			versions = append(versions, vi)
-		}
+	cacheKey := fmt.Sprintf("%s|%s", baseURL, flavor)
+	if val, ok := h.cache.Load(cacheKey); ok {
+		return val.([]VersionInfo), nil
 	}
 
-	return versions, nil
+	res, err, _ := h.flight.Do(cacheKey, func() (interface{}, error) {
+		if val, ok := h.cache.Load(cacheKey); ok {
+			return val, nil
+		}
+
+		url := fmt.Sprintf("%s/index.json", strings.TrimSuffix(baseURL, "/"))
+		client := pkgHttp.NewClientWithTimeout(30 * time.Second)
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("nodejs: fetch metadata: %w", err)
+		}
+		defer resp.Body.Close()
+
+		var nv []nodeVersion
+		if err := json.NewDecoder(resp.Body).Decode(&nv); err != nil {
+			return nil, fmt.Errorf("nodejs: decode metadata: %w", err)
+		}
+
+		var versions []VersionInfo
+		for _, v := range nv {
+			vi := VersionInfo{
+				Version: strings.TrimPrefix(v.Version, "v"),
+			}
+
+			if s, ok := v.Lts.(string); ok {
+				vi.IsLTS = true
+				vi.LTSName = s
+			}
+
+			for _, f := range v.Files {
+				osName, archName, rawArch, ext, isSupported := parseNodeFile(f)
+				if !isSupported {
+					continue
+				}
+
+				downloadURL := fmt.Sprintf("%s/%s/node-%s-%s-%s%s", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, rawArch, ext)
+				if flavor == "musl" {
+					// unofficial-builds naming convention: node-vX.Y.Z-linux-ARCH-musl.tar.gz
+					downloadURL = fmt.Sprintf("%s/%s/node-%s-%s-%s-musl%s", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, rawArch, ext)
+				}
+
+				vi.Assets = append(vi.Assets, Asset{
+					URL:          downloadURL,
+					Filename:     filepath.Base(downloadURL),
+					OS:           osName,
+					Arch:         archName,
+					Algo:         "sha256",
+					SignatureURL: fmt.Sprintf("%s/%s/SHASUMS256.txt.asc", strings.TrimSuffix(baseURL, "/"), v.Version),
+					Metadata: map[string]string{
+						"flavor": flavor,
+					},
+				})
+			}
+
+			if len(vi.Assets) > 0 {
+				versions = append(versions, vi)
+			}
+		}
+
+		h.cache.Store(cacheKey, versions)
+		return versions, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res.([]VersionInfo), nil
 }
 
 func parseNodeFile(f string) (string, string, string, string, bool) {
