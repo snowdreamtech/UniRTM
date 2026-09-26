@@ -202,3 +202,63 @@ func TestGitlabBackend_DeduplicationAndCache(t *testing.T) {
 	}
 }
 
+func TestGitlabFetchReleaseByTag_ETag304(t *testing.T) {
+	ClearGitlabCache()
+	defer ClearGitlabCache()
+
+	tempDir := t.TempDir()
+	t.Setenv("UNIRTM_CACHE_DIR", tempDir)
+
+	var requestCount int
+	mux := http.NewServeMux()
+	mux.HandleFunc("/projects/owner%2Frepo/releases/v1.0.0", func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		if r.Header.Get("If-None-Match") == `"gl-etag-123"` {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+		w.Header().Set("ETag", `"gl-etag-123"`)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{
+			"tag_name": "v1.0.0",
+			"assets": {
+				"links": [
+					{"name": "app-linux-amd64", "url": "http://example.com/app"}
+				]
+			}
+		}`))
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	t.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
+
+	b := NewGitlabBackend()
+	ctx := context.Background()
+
+	// First fetch: 200 OK, saved to disk cache with ETag
+	rel1, err := b.FetchReleaseByTag(ctx, "owner/repo", "v1.0.0")
+	if err != nil || rel1 == nil {
+		t.Fatalf("first fetch failed: %v", err)
+	}
+	if rel1.ETag != `"gl-etag-123"` {
+		t.Errorf("expected ETag gl-etag-123, got %s", rel1.ETag)
+	}
+
+	// Clear in-memory cache to force reading disk cache
+	ClearGitlabCache()
+
+	// Second fetch: should send If-None-Match and receive 304, returning cached release
+	rel2, err := b.FetchReleaseByTag(ctx, "owner/repo", "v1.0.0")
+	if err != nil || rel2 == nil {
+		t.Fatalf("second fetch failed: %v", err)
+	}
+	if rel2.Tag != "v1.0.0" {
+		t.Errorf("expected tag v1.0.0, got %s", rel2.Tag)
+	}
+	if requestCount != 2 {
+		t.Errorf("expected 2 requests (1 200 + 1 304), got %d", requestCount)
+	}
+}
+
+

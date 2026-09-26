@@ -160,6 +160,9 @@ func (b *ForgejoBackend) FetchReleases(ctx context.Context, tool string) ([]Comm
 			cleanTag := strings.TrimPrefix(r.TagName, "v")
 			forgejoReleaseByTagCache.Store(tool+"@"+cleanTag, &res[i])
 			forgejoReleaseByTagCache.Store(tool+"@v"+cleanTag, &res[i])
+			if b.client.Transport == nil {
+				writeHostingReleaseDiskCache("forgejo", tool, r.TagName, &res[i])
+			}
 		}
 
 		forgejoReleasesCache.Store(tool, res)
@@ -183,10 +186,33 @@ func (b *ForgejoBackend) FetchReleaseByTag(ctx context.Context, tool, tag string
 		}
 	}
 
+	var cachedRelease *CommonRelease
+	if b.client.Transport == nil {
+		if diskRel := readHostingReleaseDiskCache("forgejo", tool, tag); diskRel != nil {
+			cachedRelease = diskRel
+			if diskRel.ETag == "" {
+				forgejoReleaseByTagCache.Store(cacheKey, diskRel)
+				return diskRel, nil
+			}
+		}
+	}
+
 	val, err, _ := forgejoFlight.Do("tag:"+cacheKey, func() (interface{}, error) {
+		if val, ok := forgejoReleaseByTagCache.Load(cacheKey); ok {
+			if cr, ok := val.(*CommonRelease); ok {
+				return cr, nil
+			}
+		}
+
 		apiURL := fmt.Sprintf("%s/repos/%s/releases/tags/%s", b.baseURL, tool, tag)
 
-		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
+		if err != nil {
+			return nil, err
+		}
+		if cachedRelease != nil && cachedRelease.ETag != "" {
+			req.Header.Set("If-None-Match", cachedRelease.ETag)
+		}
 		if token := env.Get("FORGEJO_TOKEN"); token != "" {
 			req.Header.Set("Authorization", "token "+token)
 		}
@@ -196,6 +222,11 @@ func (b *ForgejoBackend) FetchReleaseByTag(ctx context.Context, tool, tag string
 			return nil, err
 		}
 		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusNotModified && cachedRelease != nil {
+			forgejoReleaseByTagCache.Store(cacheKey, cachedRelease)
+			return cachedRelease, nil
+		}
 
 		if resp.StatusCode != http.StatusOK {
 			return nil, fmt.Errorf("status %d", resp.StatusCode)
@@ -216,8 +247,12 @@ func (b *ForgejoBackend) FetchReleaseByTag(ctx context.Context, tool, tag string
 			Tag:         r.TagName,
 			Assets:      b.toCommonAssets(r.Assets),
 			PublishedAt: publishedAt,
+			ETag:        resp.Header.Get("ETag"),
 		}
 		forgejoReleaseByTagCache.Store(cacheKey, cr)
+		if b.client.Transport == nil {
+			writeHostingReleaseDiskCache("forgejo", tool, tag, cr)
+		}
 		return cr, nil
 	})
 

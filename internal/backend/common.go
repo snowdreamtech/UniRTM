@@ -558,6 +558,7 @@ type CommonRelease struct {
 	Tag         string
 	Assets      []CommonAsset
 	Prerelease  bool
+	ETag        string `json:"etag,omitempty"`
 }
 
 // GenericResolveVersion implements the common logic for resolving a version request.
@@ -765,3 +766,41 @@ func NormalizeVersionPrefix(versionRequest string, requireV bool) string {
 		return versionRequest
 	}
 }
+
+func getHostingReleaseDiskCachePath(provider, tool, tag string) string {
+	safeTool := strings.NewReplacer("/", "_", ":", "_").Replace(tool)
+	safeTag := strings.NewReplacer("/", "_", ":", "_").Replace(tag)
+	return filepath.Join(env.GetCacheDir(), provider+"_releases", safeTool, safeTag+".json")
+}
+
+func readHostingReleaseDiskCache(provider, tool, tag string) *CommonRelease {
+	p := getHostingReleaseDiskCachePath(provider, tool, tag)
+	data, err := os.ReadFile(p)
+	if err != nil {
+		return nil
+	}
+	var rel CommonRelease
+	if err := json.Unmarshal(data, &rel); err != nil {
+		return nil
+	}
+	return &rel
+}
+
+func writeHostingReleaseDiskCache(provider, tool, tag string, rel *CommonRelease) {
+	if rel == nil {
+		return
+	}
+	p := getHostingReleaseDiskCachePath(provider, tool, tag)
+	if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+		return
+	}
+	data, err := json.Marshal(rel)
+	if err != nil {
+		return
+	}
+	tmp := p + ".tmp"
+	if err := os.WriteFile(tmp, data, 0644); err == nil {
+		_ = os.Rename(tmp, p)
+	}
+}
+

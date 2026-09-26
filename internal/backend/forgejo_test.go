@@ -200,3 +200,61 @@ func TestForgejoBackend_DeduplicationAndCache(t *testing.T) {
 	}
 }
 
+func TestForgejoFetchReleaseByTag_ETag304(t *testing.T) {
+	ClearForgejoCache()
+	defer ClearForgejoCache()
+
+	tempDir := t.TempDir()
+	t.Setenv("UNIRTM_CACHE_DIR", tempDir)
+
+	var requestCount int
+	mux := http.NewServeMux()
+	mux.HandleFunc("/repos/owner/repo/releases/tags/v1.0.0", func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		if r.Header.Get("If-None-Match") == `"fj-etag-456"` {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+		w.Header().Set("ETag", `"fj-etag-456"`)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{
+			"tag_name": "v1.0.0",
+			"assets": [
+				{"name": "app-linux-amd64", "browser_download_url": "http://example.com/app"}
+			]
+		}`))
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	t.Setenv("UNIRTM_FORGEJO_API_URL", server.URL)
+
+	b := NewForgejoBackend()
+	ctx := context.Background()
+
+	// First fetch: 200 OK, saved to disk cache with ETag
+	rel1, err := b.FetchReleaseByTag(ctx, "owner/repo", "v1.0.0")
+	if err != nil || rel1 == nil {
+		t.Fatalf("first fetch failed: %v", err)
+	}
+	if rel1.ETag != `"fj-etag-456"` {
+		t.Errorf("expected ETag fj-etag-456, got %s", rel1.ETag)
+	}
+
+	// Clear in-memory cache to force reading disk cache
+	ClearForgejoCache()
+
+	// Second fetch: should send If-None-Match and receive 304, returning cached release
+	rel2, err := b.FetchReleaseByTag(ctx, "owner/repo", "v1.0.0")
+	if err != nil || rel2 == nil {
+		t.Fatalf("second fetch failed: %v", err)
+	}
+	if rel2.Tag != "v1.0.0" {
+		t.Errorf("expected tag v1.0.0, got %s", rel2.Tag)
+	}
+	if requestCount != 2 {
+		t.Errorf("expected 2 requests (1 200 + 1 304), got %d", requestCount)
+	}
+}
+
+

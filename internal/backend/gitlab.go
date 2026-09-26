@@ -162,6 +162,9 @@ func (b *GitlabBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 			cleanTag := strings.TrimPrefix(r.TagName, "v")
 			gitlabReleaseByTagCache.Store(tool+"@"+cleanTag, &res[i])
 			gitlabReleaseByTagCache.Store(tool+"@v"+cleanTag, &res[i])
+			if b.client.Transport == nil {
+				writeHostingReleaseDiskCache("gitlab", tool, r.TagName, &res[i])
+			}
 		}
 
 		gitlabReleasesCache.Store(tool, res)
@@ -185,13 +188,33 @@ func (b *GitlabBackend) FetchReleaseByTag(ctx context.Context, tool, tag string)
 		}
 	}
 
+	var cachedRelease *CommonRelease
+	if b.client.Transport == nil {
+		if diskRel := readHostingReleaseDiskCache("gitlab", tool, tag); diskRel != nil {
+			cachedRelease = diskRel
+			if diskRel.ETag == "" {
+				gitlabReleaseByTagCache.Store(cacheKey, diskRel)
+				return diskRel, nil
+			}
+		}
+	}
+
 	val, err, _ := gitlabFlight.Do("tag:"+cacheKey, func() (interface{}, error) {
+		if val, ok := gitlabReleaseByTagCache.Load(cacheKey); ok {
+			if cr, ok := val.(*CommonRelease); ok {
+				return cr, nil
+			}
+		}
+
 		encodedRepo := url.PathEscape(tool)
 		apiURL := fmt.Sprintf("%s/projects/%s/releases/%s", b.baseURL, encodedRepo, url.PathEscape(tag))
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
 		if err != nil {
 			return nil, err
+		}
+		if cachedRelease != nil && cachedRelease.ETag != "" {
+			req.Header.Set("If-None-Match", cachedRelease.ETag)
 		}
 		if token := env.Get("GITLAB_TOKEN"); token != "" {
 			req.Header.Set("PRIVATE-TOKEN", token)
@@ -202,6 +225,11 @@ func (b *GitlabBackend) FetchReleaseByTag(ctx context.Context, tool, tag string)
 			return nil, err
 		}
 		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusNotModified && cachedRelease != nil {
+			gitlabReleaseByTagCache.Store(cacheKey, cachedRelease)
+			return cachedRelease, nil
+		}
 
 		if resp.StatusCode != http.StatusOK {
 			return nil, fmt.Errorf("status %d", resp.StatusCode)
@@ -222,8 +250,12 @@ func (b *GitlabBackend) FetchReleaseByTag(ctx context.Context, tool, tag string)
 			Tag:         r.TagName,
 			Assets:      b.toCommonAssets(r.Assets.Links),
 			PublishedAt: publishedAt,
+			ETag:        resp.Header.Get("ETag"),
 		}
 		gitlabReleaseByTagCache.Store(cacheKey, cr)
+		if b.client.Transport == nil {
+			writeHostingReleaseDiskCache("gitlab", tool, tag, cr)
+		}
 		return cr, nil
 	})
 

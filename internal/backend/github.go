@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -450,40 +448,15 @@ func parseGitHubRateLimitError(resp *http.Response, body []byte) error {
 }
 
 func getReleaseDiskCachePath(tool, tag string) string {
-	safeTool := strings.NewReplacer("/", "_", ":", "_").Replace(tool)
-	safeTag := strings.NewReplacer("/", "_", ":", "_").Replace(tag)
-	return filepath.Join(env.GetCacheDir(), "github_releases", safeTool, safeTag+".json")
+	return getHostingReleaseDiskCachePath("github", tool, tag)
 }
 
 func readReleaseDiskCache(tool, tag string) *CommonRelease {
-	p := getReleaseDiskCachePath(tool, tag)
-	data, err := os.ReadFile(p)
-	if err != nil {
-		return nil
-	}
-	var rel CommonRelease
-	if err := json.Unmarshal(data, &rel); err != nil {
-		return nil
-	}
-	return &rel
+	return readHostingReleaseDiskCache("github", tool, tag)
 }
 
 func writeReleaseDiskCache(tool, tag string, rel *CommonRelease) {
-	if rel == nil {
-		return
-	}
-	p := getReleaseDiskCachePath(tool, tag)
-	if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
-		return
-	}
-	data, err := json.Marshal(rel)
-	if err != nil {
-		return
-	}
-	tmp := p + ".tmp"
-	if err := os.WriteFile(tmp, data, 0644); err == nil {
-		_ = os.Rename(tmp, p)
-	}
+	writeHostingReleaseDiskCache("github", tool, tag, rel)
 }
 
 func (g *GitHubBackend) toCommonAssets(assets []githubAsset) []CommonAsset {
