@@ -9,6 +9,9 @@ import (
 )
 
 func TestDartHandler(t *testing.T) {
+	ClearDartCache()
+	defer ClearDartCache()
+
 	h := &DartHandler{}
 	if h.Name() != "dart" {
 		t.Errorf("expected name 'dart', got '%s'", h.Name())
@@ -36,4 +39,11 @@ func TestDartHandler(t *testing.T) {
 	if !foundLatest {
 		t.Error("expected 'latest' version to be present")
 	}
+
+	// Second invocation must hit memory cache
+	versions2, err := h.ResolveVersions(context.Background(), "")
+	if err != nil || len(versions2) != len(versions) {
+		t.Errorf("expected cached versions, got err=%v, len=%d", err, len(versions2))
+	}
 }
+

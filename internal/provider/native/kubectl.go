@@ -9,10 +9,25 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
+
+var (
+	kubectlCache  sync.Map
+	kubectlFlight singleflight.Group
+)
+
+// ClearKubectlCache clears in-memory cache for kubectl versions.
+func ClearKubectlCache() {
+	kubectlCache.Range(func(key, value any) bool {
+		kubectlCache.Delete(key)
+		return true
+	})
+}
 
 // KubectlHandler handles kubectl distribution via dl.k8s.io.
 type KubectlHandler struct{}
@@ -22,43 +37,64 @@ func (h *KubectlHandler) Name() string {
 }
 
 func (h *KubectlHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
-	// Fetch latest stable version
-	stableURL := "https://dl.k8s.io/release/stable.txt"
+	cacheKey := "kubectl_stable"
+	if val, ok := kubectlCache.Load(cacheKey); ok {
+		if cached, ok := val.([]VersionInfo); ok {
+			cp := make([]VersionInfo, len(cached))
+			copy(cp, cached)
+			return cp, nil
+		}
+	}
 
-	client := pkgHttp.NewClientWithTimeout(10 * time.Second)
-	req, err := http.NewRequestWithContext(ctx, "GET", stableURL, nil)
+	res, err, _ := kubectlFlight.Do(cacheKey, func() (interface{}, error) {
+		// Fetch latest stable version
+		stableURL := "https://dl.k8s.io/release/stable.txt"
+
+		client := pkgHttp.NewClientWithTimeout(10 * time.Second)
+		req, err := http.NewRequestWithContext(ctx, "GET", stableURL, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("kubectl api: returned status %d", resp.StatusCode)
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		latestVersion := strings.TrimSpace(string(body))
+
+		// For now, just return the latest version.
+		// In a full implementation, we could fetch historical versions.
+		versions := []VersionInfo{
+			{
+				Version: latestVersion,
+				Assets:  h.generateAssets(latestVersion),
+			},
+		}
+
+		kubectlCache.Store(cacheKey, versions)
+		return versions, nil
+	})
+
 	if err != nil {
 		return nil, err
 	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("kubectl api: returned status %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	latestVersion := strings.TrimSpace(string(body))
-
-	// For now, just return the latest version.
-	// In a full implementation, we could fetch historical versions.
-	versions := []VersionInfo{
-		{
-			Version: latestVersion,
-			Assets:  h.generateAssets(latestVersion),
-		},
-	}
-
-	return versions, nil
+	cached := res.([]VersionInfo)
+	cp := make([]VersionInfo, len(cached))
+	copy(cp, cached)
+	return cp, nil
 }
+
 
 func (h *KubectlHandler) generateAssets(version string) []Asset {
 	var assets []Asset

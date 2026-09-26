@@ -15,6 +15,9 @@ import (
 )
 
 func TestKubectlHandler_ResolveVersions(t *testing.T) {
+	ClearKubectlCache()
+	defer ClearKubectlCache()
+
 	oldMock := pkgHttp.MockTransport
 	defer func() { pkgHttp.MockTransport = oldMock }()
 
@@ -37,6 +40,9 @@ func TestKubectlHandler_ResolveVersions(t *testing.T) {
 }
 
 func TestKubectlHandler_ResolveVersions_Failures(t *testing.T) {
+	ClearKubectlCache()
+	defer ClearKubectlCache()
+
 	mockRt := &mockRoundTripper{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
 			return &http.Response{StatusCode: 500, Body: io.NopCloser(bytes.NewBufferString(`Internal Error`))}, nil
@@ -45,6 +51,7 @@ func TestKubectlHandler_ResolveVersions_Failures(t *testing.T) {
 	oldMock := pkgHttp.MockTransport
 	pkgHttp.MockTransport = mockRt
 	defer func() { pkgHttp.MockTransport = oldMock }()
+
 
 	h := &KubectlHandler{}
 	_, err := h.ResolveVersions(context.Background(), "")

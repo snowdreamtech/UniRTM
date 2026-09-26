@@ -9,9 +9,24 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	unirtmhttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
+
+var (
+	juliaCache  sync.Map
+	juliaFlight singleflight.Group
+)
+
+// ClearJuliaCache clears in-memory cache for Julia versions.
+func ClearJuliaCache() {
+	juliaCache.Range(func(key, value any) bool {
+		juliaCache.Delete(key)
+		return true
+	})
+}
 
 // JuliaHandler handles Julia language versions via official versions.json.
 type JuliaHandler struct{}
@@ -33,30 +48,41 @@ func (h *JuliaHandler) Name() string {
 }
 
 func (h *JuliaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
-	url := fmt.Sprintf("%s/versions.json", strings.TrimSuffix(baseURL, "/"))
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, err
+	cacheKey := strings.TrimSuffix(baseURL, "/")
+	if val, ok := juliaCache.Load(cacheKey); ok {
+		if cached, ok := val.([]VersionInfo); ok {
+			cp := make([]VersionInfo, len(cached))
+			copy(cp, cached)
+			return cp, nil
+		}
 	}
 
-	resp, err := unirtmhttp.NewClient().Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("julia: fetch metadata: %w", err)
-	}
-	defer resp.Body.Close()
-
-	var jv map[string]juliaVersion
-	if err := json.NewDecoder(resp.Body).Decode(&jv); err != nil {
-		return nil, fmt.Errorf("julia: decode metadata: %w", err)
-	}
-
-	var versions []VersionInfo
-	for vStr, v := range jv {
-		vi := VersionInfo{
-			Version: vStr,
+	res, err, _ := juliaFlight.Do(cacheKey, func() (interface{}, error) {
+		url := fmt.Sprintf("%s/versions.json", cacheKey)
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if err != nil {
+			return nil, err
 		}
 
-		for _, f := range v.Files {
+		resp, err := unirtmhttp.NewClient().Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("julia: fetch metadata: %w", err)
+		}
+		defer resp.Body.Close()
+
+		var jv map[string]juliaVersion
+		if err := json.NewDecoder(resp.Body).Decode(&jv); err != nil {
+			return nil, fmt.Errorf("julia: decode metadata: %w", err)
+		}
+
+		var versions []VersionInfo
+		for vStr, v := range jv {
+			vi := VersionInfo{
+				Version: vStr,
+			}
+
+			for _, f := range v.Files {
+
 			// Skip source and other kinds for now
 			if f.Kind != "archive" && f.Kind != "installer" {
 				continue
@@ -91,8 +117,21 @@ func (h *JuliaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]V
 		}
 	}
 
-	return versions, nil
+		if len(versions) > 0 {
+			juliaCache.Store(cacheKey, versions)
+		}
+		return versions, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	cached := res.([]VersionInfo)
+	cp := make([]VersionInfo, len(cached))
+	copy(cp, cached)
+	return cp, nil
 }
+
 
 func mapPlatform(os, arch string) (string, string) {
 	// Map Julia OS/Arch names to standard ones

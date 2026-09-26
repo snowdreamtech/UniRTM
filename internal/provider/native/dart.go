@@ -10,11 +10,26 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
+
+var (
+	dartCache  sync.Map
+	dartFlight singleflight.Group
+)
+
+// ClearDartCache clears in-memory cache for Dart SDK versions.
+func ClearDartCache() {
+	dartCache.Range(func(key, value any) bool {
+		dartCache.Delete(key)
+		return true
+	})
+}
 
 // DartHandler handles Dart SDK downloads via Google Storage.
 type DartHandler struct{}
@@ -24,38 +39,62 @@ func (h *DartHandler) Name() string {
 }
 
 func (h *DartHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
-	var versions []VersionInfo
-
-	// Fetch the full XML bucket list to get all versions
-	listURL := "https://storage.googleapis.com/dart-archive/?prefix=channels/stable/release/&delimiter=/"
-	client := pkgHttp.NewClientWithTimeout(10 * time.Second)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", listURL, nil)
-	if err != nil {
-		return nil, err
+	platform := env.RuntimeGOOS
+	if platform == "darwin" {
+		platform = "macos"
 	}
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch dart versions: HTTP %d", resp.StatusCode)
+	arch := env.RuntimeGOARCH
+	if arch == "amd64" {
+		arch = "x64"
+	} else if arch == "386" {
+		arch = "ia32"
 	}
 
-	// Simple XML parsing to find CommonPrefixes -> Prefix
-	type Bucket struct {
-		Prefixes []struct {
-			Prefix string `xml:"Prefix"`
-		} `xml:"CommonPrefixes"`
+	cacheKey := fmt.Sprintf("%s|%s", platform, arch)
+
+	if val, ok := dartCache.Load(cacheKey); ok {
+		if cached, ok := val.([]VersionInfo); ok {
+			cp := make([]VersionInfo, len(cached))
+			copy(cp, cached)
+			return cp, nil
+		}
 	}
 
-	var bucket Bucket
-	if err := xml.NewDecoder(resp.Body).Decode(&bucket); err != nil {
-		return nil, err
-	}
+	res, err, _ := dartFlight.Do(cacheKey, func() (interface{}, error) {
+		var versions []VersionInfo
+
+		// Fetch the full XML bucket list to get all versions
+		listURL := "https://storage.googleapis.com/dart-archive/?prefix=channels/stable/release/&delimiter=/"
+		client := pkgHttp.NewClientWithTimeout(10 * time.Second)
+
+		req, err := http.NewRequestWithContext(ctx, "GET", listURL, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("failed to fetch dart versions: HTTP %d", resp.StatusCode)
+		}
+
+		// Simple XML parsing to find CommonPrefixes -> Prefix
+		type Bucket struct {
+			Prefixes []struct {
+				Prefix string `xml:"Prefix"`
+			} `xml:"CommonPrefixes"`
+		}
+
+		var bucket Bucket
+		if err := xml.NewDecoder(resp.Body).Decode(&bucket); err != nil {
+			return nil, err
+		}
+
 
 	platform := env.RuntimeGOOS
 	if platform == "darwin" {
@@ -118,5 +157,18 @@ func (h *DartHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 		}
 	}
 
-	return versions, nil
+		if len(versions) > 0 {
+			dartCache.Store(cacheKey, versions)
+		}
+		return versions, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	cached := res.([]VersionInfo)
+	cp := make([]VersionInfo, len(cached))
+	copy(cp, cached)
+	return cp, nil
 }
+

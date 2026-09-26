@@ -8,9 +8,24 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"sync"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
+
+var (
+	gradleCache  sync.Map
+	gradleFlight singleflight.Group
+)
+
+// ClearGradleCache clears in-memory cache for Gradle releases.
+func ClearGradleCache() {
+	gradleCache.Range(func(key, value any) bool {
+		gradleCache.Delete(key)
+		return true
+	})
+}
 
 type GradleHandler struct{}
 
@@ -28,53 +43,76 @@ type gradleVersion struct {
 }
 
 func (h *GradleHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
-	// Gradle provides a nice JSON API
-	req, err := http.NewRequestWithContext(ctx, "GET", "https://services.gradle.org/versions/all", nil)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := pkgHttp.NewClient().Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var gv []gradleVersion
-	if err := json.NewDecoder(resp.Body).Decode(&gv); err != nil {
-		return nil, err
+	cacheKey := "gradle_versions_all"
+	if val, ok := gradleCache.Load(cacheKey); ok {
+		if cached, ok := val.([]VersionInfo); ok {
+			cp := make([]VersionInfo, len(cached))
+			copy(cp, cached)
+			return cp, nil
+		}
 	}
 
-	var res []VersionInfo
-	for _, v := range gv {
-		// Skip non-release versions and non-stable versions
-		lowVersion := strings.ToLower(v.Version)
-		if v.Snapshot || v.Nightly || v.ReleaseNightly || v.Broken ||
-			strings.Contains(lowVersion, "milestone") ||
-			strings.Contains(lowVersion, "rc") {
-			continue
+	res, err, _ := gradleFlight.Do(cacheKey, func() (interface{}, error) {
+		// Gradle provides a nice JSON API
+		req, err := http.NewRequestWithContext(ctx, "GET", "https://services.gradle.org/versions/all", nil)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := pkgHttp.NewClient().Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		var gv []gradleVersion
+		if err := json.NewDecoder(resp.Body).Decode(&gv); err != nil {
+			return nil, err
 		}
 
-		// Create assets for common architectures since Gradle is universal
-		commonArches := []string{"x86_64", "amd64", "arm64", "aarch64"}
-		var assets []Asset
-		for _, osName := range []string{"linux", "darwin", "windows"} {
-			for _, archName := range commonArches {
-				assets = append(assets, Asset{
-					OS:   osName,
-					Arch: archName,
-					URL:  v.DownloadURL,
-				})
+		var res []VersionInfo
+		for _, v := range gv {
+			// Skip non-release versions and non-stable versions
+			lowVersion := strings.ToLower(v.Version)
+			if v.Snapshot || v.Nightly || v.ReleaseNightly || v.Broken ||
+				strings.Contains(lowVersion, "milestone") ||
+				strings.Contains(lowVersion, "rc") {
+				continue
 			}
+
+			// Create assets for common architectures since Gradle is universal
+			commonArches := []string{"x86_64", "amd64", "arm64", "aarch64"}
+			var assets []Asset
+			for _, osName := range []string{"linux", "darwin", "windows"} {
+				for _, archName := range commonArches {
+					assets = append(assets, Asset{
+						OS:   osName,
+						Arch: archName,
+						URL:  v.DownloadURL,
+					})
+				}
+			}
+
+			res = append(res, VersionInfo{
+				Version: v.Version,
+				Assets:  assets,
+			})
 		}
 
-		res = append(res, VersionInfo{
-			Version: v.Version,
-			Assets:  assets,
-		})
-	}
+		if len(res) > 0 {
+			gradleCache.Store(cacheKey, res)
+		}
+		return res, nil
+	})
 
-	return res, nil
+	if err != nil {
+		return nil, err
+	}
+	cached := res.([]VersionInfo)
+	cp := make([]VersionInfo, len(cached))
+	copy(cp, cached)
+	return cp, nil
 }
+
 
 func (h *GradleHandler) IsMatch(filename, os, arch string) bool {
 	// For Gradle, we use the same URL for all platforms as it is platform-independent

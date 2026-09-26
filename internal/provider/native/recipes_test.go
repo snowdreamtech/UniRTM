@@ -159,6 +159,9 @@ func TestGolangHandler_ResolveVersions_Failures(t *testing.T) {
 }
 
 func TestJuliaHandler_ResolveVersions(t *testing.T) {
+	ClearJuliaCache()
+	defer ClearJuliaCache()
+
 	oldMock := unirtmhttp.MockTransport
 	defer func() { unirtmhttp.MockTransport = oldMock }()
 
@@ -191,6 +194,9 @@ func TestJuliaHandler_ResolveVersions(t *testing.T) {
 }
 
 func TestJuliaHandler_ResolveVersions_Failures(t *testing.T) {
+	ClearJuliaCache()
+	defer ClearJuliaCache()
+
 	mockRt := &mockRoundTripper{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
 			return &http.Response{StatusCode: 500, Body: io.NopCloser(bytes.NewBufferString(`Error`))}, nil
@@ -204,12 +210,14 @@ func TestJuliaHandler_ResolveVersions_Failures(t *testing.T) {
 	_, err := h.ResolveVersions(context.Background(), "")
 	assert.Error(t, err)
 
+	ClearJuliaCache()
 	mockRt.roundTripFunc = func(req *http.Request) (*http.Response, error) {
 		return &http.Response{StatusCode: 200, Body: io.NopCloser(bytes.NewBufferString(`invalid`))}, nil
 	}
 	_, err = h.ResolveVersions(context.Background(), "")
 	assert.Error(t, err)
 }
+
 
 func TestMapPlatform(t *testing.T) {
 	os, arch := mapPlatform("mac", "aarch64")

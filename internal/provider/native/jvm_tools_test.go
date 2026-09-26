@@ -15,6 +15,9 @@ import (
 )
 
 func TestGradleHandler_ResolveVersions(t *testing.T) {
+	ClearGradleCache()
+	defer ClearGradleCache()
+
 	oldMock := pkgHttp.MockTransport
 	defer func() { pkgHttp.MockTransport = oldMock }()
 
