@@ -114,6 +114,14 @@ type DownloadOptions struct {
 
 	// GitHubToken is a personal access token for GitHub API (optional).
 	GitHubToken string
+
+	// GoDownloadMirror replaces the go.dev/dl base URL at download time so that
+	// the lockfile always records the canonical https://go.dev/dl/<file> address
+	// while the actual HTTP request is sent to the configured mirror (e.g.
+	// https://golang.google.cn/dl or https://mirrors.aliyun.com/golang).
+	// If empty, no substitution is made and go.dev/dl is used directly.
+	// Populated from settings.go_download_mirror or the GO_DOWNLOAD_MIRROR env var.
+	GoDownloadMirror string
 }
 
 // GPGResult holds the result of a GPG verification attempt.

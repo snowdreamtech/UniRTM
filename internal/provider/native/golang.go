@@ -49,15 +49,27 @@ func (h *GolangHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 	}
 
 	metadataURL := baseURL
-	downloadMirror := env.Get("GO_DOWNLOAD_MIRROR")
 	skipChecksum := env.Get("GO_SKIP_CHECKSUM") == "1"
 
-	// Use golang.google.cn as a reliable metadata mirror for China
+	// For metadata fetching only: prefer golang.google.cn as a reliable mirror.
+	// This does NOT affect the lockfile URL — asset URLs always use the canonical
+	// go.dev/dl address so that the lockfile is environment-agnostic.
 	if strings.Contains(baseURL, "go.dev") {
 		metadataURL = "https://golang.google.cn/dl"
 	}
 
-	cacheKey := fmt.Sprintf("%s|%s|%t", metadataURL, downloadMirror, skipChecksum)
+	// canonicalBase is used for asset URL construction and written to the lockfile.
+	// It is always the official upstream base regardless of the metadata mirror.
+	canonicalBase := "https://go.dev/dl"
+	if !strings.Contains(baseURL, "go.dev") {
+		// Non-standard baseURL (e.g. a test server): preserve it as-is.
+		canonicalBase = strings.TrimSuffix(baseURL, "/")
+	}
+
+	// Cache key: metadata URL + checksum-skip flag.
+	// downloadMirror is intentionally excluded: asset URLs are always canonical,
+	// so cached results are valid regardless of which mirror the caller uses.
+	cacheKey := fmt.Sprintf("%s|%t", metadataURL, skipChecksum)
 	if val, ok := h.cache.Load(cacheKey); ok {
 		return val.([]VersionInfo), nil
 	}
@@ -106,14 +118,11 @@ func (h *GolangHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 					continue
 				}
 
-				// Construct download URL: use mirror if provided, otherwise use metadata source
-				assetBaseURL := metadataURL
-				if downloadMirror != "" {
-					assetBaseURL = downloadMirror
-				}
-
+				// Always construct the canonical go.dev/dl URL so the lockfile
+				// is environment-agnostic. The downloader applies GO_DOWNLOAD_MIRROR
+				// at runtime to redirect to the configured mirror.
 				asset := Asset{
-					URL:      fmt.Sprintf("%s/%s", strings.TrimSuffix(assetBaseURL, "/"), gf.Filename),
+					URL:      fmt.Sprintf("%s/%s", canonicalBase, gf.Filename),
 					Filename: gf.Filename,
 					OS:       gf.OS,
 					Arch:     gf.Arch,

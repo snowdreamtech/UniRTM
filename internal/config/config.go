@@ -155,6 +155,7 @@ type Settings struct {
 	Lockfile           bool                              `toml:"lockfile,omitempty" yaml:"lockfile,omitempty" mapstructure:"lockfile,omitempty"`
 	Locked             bool                              `toml:"locked,omitempty" yaml:"locked,omitempty" mapstructure:"locked,omitempty"`
 	GitHubProxy        string                            `toml:"github_proxy,omitempty" yaml:"github_proxy,omitempty" mapstructure:"github_proxy,omitempty"`
+	GoDownloadMirror   string                            `toml:"go_download_mirror,omitempty" yaml:"go_download_mirror,omitempty" mapstructure:"go_download_mirror,omitempty"`
 	HttpProxy          string                            `toml:"http_proxy,omitempty" yaml:"http_proxy,omitempty" mapstructure:"http_proxy,omitempty"`
 	HttpsProxy         string                            `toml:"https_proxy,omitempty" yaml:"https_proxy,omitempty" mapstructure:"https_proxy,omitempty"`
 	GitHubToken        string                            `toml:"github_token,omitempty" yaml:"github_token,omitempty" mapstructure:"github_token,omitempty"`
@@ -203,6 +204,9 @@ func (s *Settings) LoadFromEnv() {
 		if enableProxy != "0" && strings.ToLower(enableProxy) != "false" {
 			s.GitHubProxy = v
 		}
+	}
+	if v := env.Get("GO_DOWNLOAD_MIRROR"); v != "" {
+		s.GoDownloadMirror = v
 	}
 	if v := env.Get("HTTP_PROXY"); v != "" {
 		s.HttpProxy = v

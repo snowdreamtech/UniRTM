@@ -180,6 +180,18 @@ func (h *HTTPDownloader) downloadInternal(ctx context.Context, url string, desti
 			url = proxy + url
 		}
 	}
+
+	// Apply Go download mirror at runtime: the lockfile stores the canonical
+	// https://go.dev/dl/<file> address; substitute the domain here so the
+	// lockfile is never polluted by mirror-specific URLs.
+	goMirror := opts.GoDownloadMirror
+	if goMirror == "" {
+		goMirror = env.Get("GO_DOWNLOAD_MIRROR")
+	}
+	if goMirror != "" && strings.Contains(url, "go.dev/dl/") {
+		mirror := strings.TrimSuffix(goMirror, "/")
+		url = strings.Replace(url, "https://go.dev/dl", mirror, 1)
+	}
 	// Validate URL
 	parsedURL, err := parseURL(url)
 	if err != nil {

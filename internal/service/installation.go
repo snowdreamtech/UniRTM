@@ -473,11 +473,16 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 			if opts.GitHubProxy == "" {
 				opts.GitHubProxy = env.Get("GITHUB_PROXY")
 			}
+			opts.GoDownloadMirror = im.settings.GoDownloadMirror
+			if opts.GoDownloadMirror == "" {
+				opts.GoDownloadMirror = env.Get("GO_DOWNLOAD_MIRROR")
+			}
 			if im.settings.HTTPTimeout > 0 {
 				opts.Timeout = time.Duration(im.settings.HTTPTimeout) * time.Second
 			}
 		} else {
 			opts.GitHubProxy = env.Get("GITHUB_PROXY")
+			opts.GoDownloadMirror = env.Get("GO_DOWNLOAD_MIRROR")
 		}
 		if versionInfo.Checksum != "" {
 			opts = opts.WithChecksum(versionInfo.Checksum)
