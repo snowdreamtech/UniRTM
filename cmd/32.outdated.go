@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/backend"
@@ -121,34 +122,124 @@ func runOutdated(cmd *cobra.Command, args []string) error {
 
 	spinner, _ := output.StartSpinner("Checking for newer versions...")
 
-	var results []outdatedResult
+	// Batch prefetch GitHub and GitLab releases via GraphQL if available
+	var ghSpecs []backend.GitHubReleaseQuerySpec
+	var glSpecs []backend.GitLabReleaseQuerySpec
 	for _, inst := range installations {
-		b, err := backendRegistry.Get(inst.Backend)
-		if err != nil {
-			// Backend not found — skip silently in non-verbose mode.
-			if verbose {
-				formatter.Warning(fmt.Sprintf("Skipping %s: backend %q not found", inst.Tool, inst.Backend))
-			}
-			continue
+		backendName := inst.Backend
+		if backendName == "" && strings.Contains(inst.Tool, "/") {
+			backendName = "github"
 		}
-
-		latest, err := resolveLatestVersion(ctx, b, inst.Tool, platform)
-		if err != nil {
-			if verbose {
-				formatter.Warning(fmt.Sprintf("Could not resolve latest for %s: %v", inst.Tool, err))
-			}
-			continue
+		if backendName == "github" {
+			ghSpecs = append(ghSpecs, backend.GitHubReleaseQuerySpec{
+				Tool: inst.Tool,
+				Tag:  "latest",
+			})
+		} else if backendName == "gitlab" {
+			glSpecs = append(glSpecs, backend.GitLabReleaseQuerySpec{
+				Tool: inst.Tool,
+				Tag:  "latest",
+			})
 		}
+	}
+	if len(ghSpecs) > 0 {
+		if b, err := backendRegistry.Get("github"); err == nil {
+			if ghBackend, ok := b.(*backend.GitHubBackend); ok {
+				_ = ghBackend.BatchPrefetchReleases(ctx, ghSpecs)
+			}
+		}
+	}
+	if len(glSpecs) > 0 {
+		if b, err := backendRegistry.Get("gitlab"); err == nil {
+			if glBackend, ok := b.(*backend.GitlabBackend); ok {
+				_ = glBackend.BatchPrefetchReleases(ctx, glSpecs)
+			}
+		}
+	}
 
-		outdated := latest != "" && latest != inst.Version
-		results = append(results, outdatedResult{
-			Tool:     inst.Tool,
-			Backend:  inst.Backend,
-			Current:  inst.Version,
-			Latest:   latest,
-			Outdated: outdated,
+	results := make([]outdatedResult, len(installations))
+	valid := make([]bool, len(installations))
+	var warnings []string
+	var warnMu sync.Mutex
+
+	concurrency := 10
+	if len(installations) < concurrency {
+		concurrency = len(installations)
+	}
+	if concurrency < 1 {
+		concurrency = 1
+	}
+	sem := make(chan struct{}, concurrency)
+	var wg sync.WaitGroup
+
+	for i, inst := range installations {
+		wg.Add(1)
+		go func(idx int, inst struct {
+			Tool        string
+			Version     string
+			Backend     string
+			InstallPath string
+		}) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			b, err := backendRegistry.Get(inst.Backend)
+			if err != nil {
+				if verbose {
+					warnMu.Lock()
+					warnings = append(warnings, fmt.Sprintf("Skipping %s: backend %q not found", inst.Tool, inst.Backend))
+					warnMu.Unlock()
+				}
+				return
+			}
+
+			latest, err := resolveLatestVersion(ctx, b, inst.Tool, platform)
+			if err != nil {
+				if verbose {
+					warnMu.Lock()
+					warnings = append(warnings, fmt.Sprintf("Could not resolve latest for %s: %v", inst.Tool, err))
+					warnMu.Unlock()
+				}
+				return
+			}
+
+			outdated := latest != "" && latest != inst.Version
+			results[idx] = outdatedResult{
+				Tool:     inst.Tool,
+				Backend:  inst.Backend,
+				Current:  inst.Version,
+				Latest:   latest,
+				Outdated: outdated,
+			}
+			valid[idx] = true
+		}(i, struct {
+			Tool        string
+			Version     string
+			Backend     string
+			InstallPath string
+		}{
+			Tool:        inst.Tool,
+			Version:     inst.Version,
+			Backend:     inst.Backend,
+			InstallPath: inst.InstallPath,
 		})
 	}
+	wg.Wait()
+
+	if verbose {
+		for _, w := range warnings {
+			formatter.Warning(w)
+		}
+	}
+
+	var finalResults []outdatedResult
+	for i, ok := range valid {
+		if ok {
+			finalResults = append(finalResults, results[i])
+		}
+	}
+	results = finalResults
 
 	spinner.Stop()
 

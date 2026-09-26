@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
@@ -103,74 +104,123 @@ func (um *UpdateManager) CheckForUpdates(ctx context.Context) ([]UpdateInfo, err
 	var updates []UpdateInfo
 	platform := backend.CurrentPlatform()
 
-	for _, installation := range installations {
-		// Get backend for this tool
-		b, err := um.backendRegistry.Get(installation.Backend)
-		if err != nil {
-			// Skip tools with unavailable backends
-			continue
+	// Batch prefetch GitHub and GitLab releases via GraphQL if available
+	var ghSpecs []backend.GitHubReleaseQuerySpec
+	var glSpecs []backend.GitLabReleaseQuerySpec
+	for _, inst := range installations {
+		backendName := inst.Backend
+		if backendName == "" && strings.Contains(inst.Tool, "/") {
+			backendName = "github"
 		}
-
-		// Resolve latest version
-		latestInfo, err := b.ResolveVersion(ctx, installation.Tool, "latest", platform)
-		if err != nil {
-			// Skip tools where we can't determine latest version
-			continue
+		if backendName == "github" {
+			ghSpecs = append(ghSpecs, backend.GitHubReleaseQuerySpec{
+				Tool: inst.Tool,
+				Tag:  "latest",
+			})
+		} else if backendName == "gitlab" {
+			glSpecs = append(glSpecs, backend.GitLabReleaseQuerySpec{
+				Tool: inst.Tool,
+				Tag:  "latest",
+			})
 		}
-
-		// Determine effective minimum_release_age: per-tool config takes precedence
-		// over the global settings value. Default to "7d" to mitigate supply-chain attacks.
-		minAgeStr := "7d"
-		if um.configManager != nil {
-			if um.configManager.Settings.MinimumReleaseAge != "" {
-				minAgeStr = um.configManager.Settings.MinimumReleaseAge
+	}
+	if len(ghSpecs) > 0 {
+		if b, err := um.backendRegistry.Get("github"); err == nil {
+			if ghBackend, ok := b.(*backend.GitHubBackend); ok {
+				_ = ghBackend.BatchPrefetchReleases(ctx, ghSpecs)
 			}
-			if toolConfig, exists := um.configManager.Tools[installation.Tool]; exists {
-				if toolConfig.MinimumReleaseAge != "" {
-					minAgeStr = toolConfig.MinimumReleaseAge
+		}
+	}
+	if len(glSpecs) > 0 {
+		if b, err := um.backendRegistry.Get("gitlab"); err == nil {
+			if glBackend, ok := b.(*backend.GitlabBackend); ok {
+				_ = glBackend.BatchPrefetchReleases(ctx, glSpecs)
+			}
+		}
+	}
+
+	results := make([]UpdateInfo, len(installations))
+	valid := make([]bool, len(installations))
+
+	concurrency := 10
+	if len(installations) < concurrency {
+		concurrency = len(installations)
+	}
+	if concurrency < 1 {
+		concurrency = 1
+	}
+	sem := make(chan struct{}, concurrency)
+	var wg sync.WaitGroup
+
+	for i, installation := range installations {
+		wg.Add(1)
+		go func(idx int, inst *repository.Installation) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			b, err := um.backendRegistry.Get(inst.Backend)
+			if err != nil {
+				return
+			}
+
+			latestInfo, err := b.ResolveVersion(ctx, inst.Tool, "latest", platform)
+			if err != nil {
+				return
+			}
+
+			minAgeStr := "7d"
+			if um.configManager != nil {
+				if um.configManager.Settings.MinimumReleaseAge != "" {
+					minAgeStr = um.configManager.Settings.MinimumReleaseAge
 				}
-			}
-		}
-
-		// If a minimum release age is configured, enforce the quarantine window.
-		if minAgeStr != "" && !latestInfo.PublishedAt.IsZero() {
-			ageSecs, err := config.ParseDurationToSeconds(minAgeStr)
-			if err == nil && ageSecs > 0 {
-				quarantineUntil := latestInfo.PublishedAt.Add(time.Duration(ageSecs) * time.Second)
-				if time.Now().Before(quarantineUntil) {
-					// This version is too new; skip it to protect against
-					// supply-chain attacks on freshly-published releases.
-					continue
-				}
-			}
-		}
-
-		// Check if update is available
-		updateRequired := version.CompareVersions(latestInfo.Version, installation.Version) > 0
-
-		// Check version constraints from config if available
-		if um.configManager != nil {
-			if toolConfig, exists := um.configManager.Tools[installation.Tool]; exists {
-				// If a specific version is pinned in config, respect it
-				if toolConfig.Version != "" && toolConfig.Version != "latest" {
-					// Try to resolve the configured version
-					configInfo, err := b.ResolveVersion(ctx, installation.Tool, toolConfig.Version, platform)
-					if err == nil {
-						// Use the configured version as the target
-						latestInfo = configInfo
-						updateRequired = version.CompareVersions(configInfo.Version, installation.Version) > 0
+				if toolConfig, exists := um.configManager.Tools[inst.Tool]; exists {
+					if toolConfig.MinimumReleaseAge != "" {
+						minAgeStr = toolConfig.MinimumReleaseAge
 					}
 				}
 			}
-		}
 
-		updates = append(updates, UpdateInfo{
-			Tool:           installation.Tool,
-			CurrentVersion: installation.Version,
-			LatestVersion:  latestInfo.Version,
-			Backend:        installation.Backend,
-			UpdateRequired: updateRequired,
-		})
+			if minAgeStr != "" && !latestInfo.PublishedAt.IsZero() {
+				ageSecs, err := config.ParseDurationToSeconds(minAgeStr)
+				if err == nil && ageSecs > 0 {
+					quarantineUntil := latestInfo.PublishedAt.Add(time.Duration(ageSecs) * time.Second)
+					if time.Now().Before(quarantineUntil) {
+						return
+					}
+				}
+			}
+
+			updateRequired := version.CompareVersions(latestInfo.Version, inst.Version) > 0
+
+			if um.configManager != nil {
+				if toolConfig, exists := um.configManager.Tools[inst.Tool]; exists {
+					if toolConfig.Version != "" && toolConfig.Version != "latest" {
+						configInfo, err := b.ResolveVersion(ctx, inst.Tool, toolConfig.Version, platform)
+						if err == nil {
+							latestInfo = configInfo
+							updateRequired = version.CompareVersions(configInfo.Version, inst.Version) > 0
+						}
+					}
+				}
+			}
+
+			results[idx] = UpdateInfo{
+				Tool:           inst.Tool,
+				CurrentVersion: inst.Version,
+				LatestVersion:  latestInfo.Version,
+				Backend:        inst.Backend,
+				UpdateRequired: updateRequired,
+			}
+			valid[idx] = true
+		}(i, installation)
+	}
+	wg.Wait()
+
+	for i, ok := range valid {
+		if ok {
+			updates = append(updates, results[i])
+		}
 	}
 
 	return updates, nil

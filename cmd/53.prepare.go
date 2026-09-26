@@ -190,6 +190,17 @@ func runPrepare(cmd *cobra.Command, args []string) error {
 	}
 	cmManager := service.NewConcurrentManager(im, concurrentConfig)
 
+	var prefetchTools []service.ToolToInstall
+	for _, r := range requests {
+		prefetchTools = append(prefetchTools, service.ToolToInstall{
+			ToolName:    r.Tool,
+			Version:     r.Version,
+			BackendName: r.Backend,
+		})
+	}
+	im.PrefetchGitHubReleases(ctx, prefetchTools)
+	im.PrefetchGitLabReleases(ctx, prefetchTools)
+
 	results, err := cmManager.InstallAll(ctx, requests)
 	if err != nil {
 		output.Errorf("Preparation failed: %v", err)
