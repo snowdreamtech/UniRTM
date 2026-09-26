@@ -75,7 +75,21 @@ func (b *CargoBackend) fetchRegistry(ctx context.Context, tool string) (*cargoRe
 		}
 	}
 
+	if b.client.Transport == nil {
+		var reg cargoRegistryResponse
+		if readEcosystemMetadataDiskCache("cargo", tool, &reg, 10*time.Minute) {
+			cargoCache.Store(tool, &reg)
+			return &reg, nil
+		}
+	}
+
 	val, err, _ := cargoFlight.Do(tool, func() (interface{}, error) {
+		if val, ok := cargoCache.Load(tool); ok {
+			if reg, ok := val.(*cargoRegistryResponse); ok {
+				return reg, nil
+			}
+		}
+
 		url := fmt.Sprintf("https://crates.io/api/v1/crates/%s", tool)
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
@@ -105,6 +119,9 @@ func (b *CargoBackend) fetchRegistry(ctx context.Context, tool string) (*cargoRe
 		}
 
 		cargoCache.Store(tool, &registry)
+		if b.client.Transport == nil {
+			writeEcosystemMetadataDiskCache("cargo", tool, &registry)
+		}
 		return &registry, nil
 	})
 

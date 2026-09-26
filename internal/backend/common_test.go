@@ -10,6 +10,7 @@ import (
 	"os"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestCalculateAssetScore(t *testing.T) {
@@ -942,4 +943,56 @@ func TestFetchAndParseChecksumFile_ConcurrentDeduplication(t *testing.T) {
 		t.Errorf("expected disk cache file to exist at %s", p)
 	}
 }
+
+func TestEcosystemMetadataDiskCache(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Setenv("UNIRTM_CACHE_DIR", tempDir)
+
+	type sampleData struct {
+		Name     string   `json:"name"`
+		Versions []string `json:"versions"`
+	}
+
+	testItem := sampleData{
+		Name:     "express",
+		Versions: []string{"4.17.1", "4.18.0", "4.18.2"},
+	}
+
+	// 1. Initial read should return false
+	var out sampleData
+	if readEcosystemMetadataDiskCache("npm", "express", &out, 10*time.Minute) {
+		t.Fatal("expected cache miss before write")
+	}
+
+	// 2. Write to disk cache
+	writeEcosystemMetadataDiskCache("npm", "express", &testItem)
+
+	// 3. Read back from disk cache
+	var readBack sampleData
+	if !readEcosystemMetadataDiskCache("npm", "express", &readBack, 10*time.Minute) {
+		t.Fatal("expected cache hit after write")
+	}
+	if readBack.Name != "express" || len(readBack.Versions) != 3 {
+		t.Fatalf("corrupted cache read back: %+v", readBack)
+	}
+
+	// 4. Test TTL expiry: with negative TTL, should report false
+	var expired sampleData
+	if readEcosystemMetadataDiskCache("npm", "express", &expired, -1*time.Second) {
+		t.Fatal("expected expired cache to be rejected")
+	}
+
+	// 5. Test tool name with slashes and special characters (e.g. scoped npm packages)
+	scopedItem := sampleData{Name: "@angular/core", Versions: []string{"15.0.0"}}
+	writeEcosystemMetadataDiskCache("npm", "@angular/core", &scopedItem)
+
+	var scopedReadBack sampleData
+	if !readEcosystemMetadataDiskCache("npm", "@angular/core", &scopedReadBack, 5*time.Minute) {
+		t.Fatal("expected cache hit for scoped package")
+	}
+	if scopedReadBack.Name != "@angular/core" {
+		t.Fatalf("expected @angular/core, got %s", scopedReadBack.Name)
+	}
+}
+
 

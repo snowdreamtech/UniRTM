@@ -81,7 +81,20 @@ func (b *NpmBackend) fetchRegistry(ctx context.Context, tool string) (*npmRegist
 		}
 	}
 
+	if b.client.Transport == nil {
+		var reg npmRegistryResponse
+		if readEcosystemMetadataDiskCache("npm", tool, &reg, 10*time.Minute) {
+			npmCache.Store(tool, &reg)
+			return &reg, nil
+		}
+	}
+
 	val, err, _ := npmFlight.Do(tool, func() (interface{}, error) {
+		if val, ok := npmCache.Load(tool); ok {
+			if reg, ok := val.(*npmRegistryResponse); ok {
+				return reg, nil
+			}
+		}
 
 		baseURL := env.Get("NPM_REGISTRY_URL")
 		if baseURL == "" {
@@ -118,6 +131,9 @@ func (b *NpmBackend) fetchRegistry(ctx context.Context, tool string) (*npmRegist
 		}
 
 		npmCache.Store(tool, &registry)
+		if b.client.Transport == nil {
+			writeEcosystemMetadataDiskCache("npm", tool, &registry)
+		}
 		return &registry, nil
 	})
 

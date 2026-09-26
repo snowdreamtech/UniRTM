@@ -72,7 +72,21 @@ func (b *PypiBackend) fetchRegistry(ctx context.Context, tool string) (*pypiRegi
 		}
 	}
 
+	if b.client.Transport == nil {
+		var reg pypiRegistryResponse
+		if readEcosystemMetadataDiskCache("pypi", tool, &reg, 10*time.Minute) {
+			pypiCache.Store(tool, &reg)
+			return &reg, nil
+		}
+	}
+
 	val, err, _ := pypiFlight.Do(tool, func() (interface{}, error) {
+		if val, ok := pypiCache.Load(tool); ok {
+			if reg, ok := val.(*pypiRegistryResponse); ok {
+				return reg, nil
+			}
+		}
+
 		url := fmt.Sprintf("https://pypi.org/pypi/%s/json", tool)
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
@@ -99,6 +113,9 @@ func (b *PypiBackend) fetchRegistry(ctx context.Context, tool string) (*pypiRegi
 		}
 
 		pypiCache.Store(tool, &registry)
+		if b.client.Transport == nil {
+			writeEcosystemMetadataDiskCache("pypi", tool, &registry)
+		}
 		return &registry, nil
 	})
 

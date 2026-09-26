@@ -804,3 +804,63 @@ func writeHostingReleaseDiskCache(provider, tool, tag string, rel *CommonRelease
 	}
 }
 
+type ecosystemCacheWrapper struct {
+	SavedAt time.Time       `json:"saved_at"`
+	Data    json.RawMessage `json:"data"`
+}
+
+func getEcosystemMetadataDiskCachePath(ecosystem, tool string) string {
+	safeTool := strings.NewReplacer("/", "_", ":", "_", "@", "_").Replace(tool)
+	return filepath.Join(env.GetCacheDir(), "ecosystems", ecosystem, safeTool+".json")
+}
+
+func readEcosystemMetadataDiskCache(ecosystem, tool string, target any, ttl time.Duration) bool {
+	p := getEcosystemMetadataDiskCachePath(ecosystem, tool)
+	data, err := os.ReadFile(p)
+	if err != nil {
+		return false
+	}
+
+	var wrapper ecosystemCacheWrapper
+	if err := json.Unmarshal(data, &wrapper); err != nil {
+		return false
+	}
+
+	if time.Since(wrapper.SavedAt) > ttl {
+		return false
+	}
+
+	if err := json.Unmarshal(wrapper.Data, target); err != nil {
+		return false
+	}
+	return true
+}
+
+func writeEcosystemMetadataDiskCache(ecosystem, tool string, data any) {
+	p := getEcosystemMetadataDiskCachePath(ecosystem, tool)
+	raw, err := json.Marshal(data)
+	if err != nil {
+		return
+	}
+
+	wrapper := ecosystemCacheWrapper{
+		SavedAt: time.Now(),
+		Data:    raw,
+	}
+
+	bytes, err := json.Marshal(wrapper)
+	if err != nil {
+		return
+	}
+
+	if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+		return
+	}
+
+	tmp := p + ".tmp"
+	if err := os.WriteFile(tmp, bytes, 0644); err == nil {
+		_ = os.Rename(tmp, p)
+	}
+}
+
+
