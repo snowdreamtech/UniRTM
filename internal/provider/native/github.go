@@ -9,11 +9,26 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
+
+var (
+	githubHandlerCache  sync.Map // key: owner/repo|apiBase|proxy -> []VersionInfo
+	githubHandlerFlight singleflight.Group
+)
+
+// ClearGithubHandlerCache clears the in-memory cache of GitHubHandler releases (useful for testing).
+func ClearGithubHandlerCache() {
+	githubHandlerCache.Range(func(key, value interface{}) bool {
+		githubHandlerCache.Delete(key)
+		return true
+	})
+}
 
 // GithubHandler handles tools distributed via GitHub releases.
 // It specifically targets python-build-standalone style release naming.
@@ -35,6 +50,10 @@ type ghRelease struct {
 }
 
 func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("net/http: nil Context")
+	}
+
 	// Support GitHub Proxy Acceleration
 	githubProxy := ""
 	if env.Get("ENABLE_GITHUB_PROXY") == "1" {
@@ -51,13 +70,24 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		apiBase = "https://api.github.com"
 	}
 	apiBase = strings.TrimSuffix(apiBase, "/")
-	apiURL := fmt.Sprintf("%s/repos/%s/%s/releases?per_page=20", apiBase, h.Owner, h.Repo)
 
-	var resp *http.Response
-	var lastErr error
+	cacheKey := fmt.Sprintf("%s/%s|%s|%s", h.Owner, h.Repo, apiBase, githubProxy)
+	if val, ok := githubHandlerCache.Load(cacheKey); ok {
+		return val.([]VersionInfo), nil
+	}
 
-	for i := 0; i < 3; i++ {
-		client := pkgHttp.NewClientWithTimeout(60 * time.Second)
+	res, err, _ := githubHandlerFlight.Do(cacheKey, func() (interface{}, error) {
+		if val, ok := githubHandlerCache.Load(cacheKey); ok {
+			return val, nil
+		}
+
+		apiURL := fmt.Sprintf("%s/repos/%s/%s/releases?per_page=20", apiBase, h.Owner, h.Repo)
+
+		var resp *http.Response
+		var lastErr error
+
+		for i := 0; i < 3; i++ {
+			client := pkgHttp.NewClientWithTimeout(60 * time.Second)
 		req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 		if err != nil {
 			return nil, err
@@ -166,7 +196,15 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		}
 	}
 
-	return versions, nil
+		githubHandlerCache.Store(cacheKey, versions)
+		return versions, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return res.([]VersionInfo), nil
 }
 
 func (h *GithubHandler) detectPlatform(filename string) (string, string) {

@@ -20,6 +20,8 @@ func TestGithubHandler_Name(t *testing.T) {
 }
 
 func TestGithubHandler_ResolveVersions(t *testing.T) {
+	ClearGithubHandlerCache()
+	defer ClearGithubHandlerCache()
 	t.Setenv("ENABLE_GITHUB_PROXY", "0")
 	// Setup mock transport using mockRoundTripper from recipes_test.go
 	mockRt := &mockRoundTripper{
@@ -83,6 +85,9 @@ func TestGithubHandler_detectPlatform(t *testing.T) {
 }
 
 func TestGithubHandler_ResolveVersions_Failures(t *testing.T) {
+	ClearGithubHandlerCache()
+	defer ClearGithubHandlerCache()
+
 	mockRt := &mockRoundTripper{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
 			return &http.Response{StatusCode: 500, Body: io.NopCloser(bytes.NewBufferString(`Internal Error`))}, nil
@@ -101,7 +106,11 @@ func TestGithubHandler_ResolveVersions_Failures(t *testing.T) {
 }
 
 func TestGithubHandler_ResolveVersions_Signatures(t *testing.T) {
+	ClearGithubHandlerCache()
+	defer ClearGithubHandlerCache()
+
 	t.Setenv("ENABLE_GITHUB_PROXY", "0")
+
 	mockRt := &mockRoundTripper{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
 			return &http.Response{StatusCode: 200, Body: io.NopCloser(bytes.NewBufferString(`[
@@ -137,4 +146,46 @@ func TestGithubHandler_ResolveVersions_Signatures(t *testing.T) {
 			assert.Empty(t, a.SignatureURL)
 		}
 	}
+}
+
+func TestGithubHandler_ConcurrentDeduplication(t *testing.T) {
+	t.Setenv("ENABLE_GITHUB_PROXY", "0")
+	ClearGithubHandlerCache()
+	defer ClearGithubHandlerCache()
+
+	var reqCount int
+	mockRt := &mockRoundTripper{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			reqCount++
+			return &http.Response{
+				StatusCode: 200,
+				Body: io.NopCloser(bytes.NewBufferString(`[
+					{"tag_name":"v1.0.0", "assets": [{"name": "app-darwin-amd64.tar.gz", "browser_download_url": "http://example.com/dl"}]}
+				]`)),
+			}, nil
+		},
+	}
+
+	oldMock := pkgHttp.MockTransport
+	pkgHttp.MockTransport = mockRt
+	defer func() { pkgHttp.MockTransport = oldMock }()
+
+	h := &GithubHandler{Owner: "snowdreamtech", Repo: "sample"}
+
+	// Concurrent invocations
+	done := make(chan bool, 5)
+	for i := 0; i < 5; i++ {
+		go func() {
+			versions, err := h.ResolveVersions(context.Background(), "")
+			assert.NoError(t, err)
+			assert.Len(t, versions, 1)
+			done <- true
+		}()
+	}
+
+	for i := 0; i < 5; i++ {
+		<-done
+	}
+
+	assert.Equal(t, 1, reqCount, "Expected exactly 1 HTTP request due to singleflight and memory caching")
 }
