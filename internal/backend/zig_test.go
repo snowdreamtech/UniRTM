@@ -7,6 +7,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 )
 
@@ -116,5 +117,46 @@ func TestZigBackend_GetDownloadInfo(t *testing.T) {
 	}
 	if info.Version != "0.11.0" {
 		t.Errorf("expected 0.11.0, got %s", info.Version)
+	}
+}
+
+func TestZigBackend_ConcurrentDeduplication(t *testing.T) {
+	var requestCount int32
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&requestCount, 1)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{
+			"master": {},
+			"0.11.0": {}
+		}`))
+	}))
+	defer ts.Close()
+
+	b := NewZigBackend()
+	b.client.Transport = &mockTransport{
+		rt:  http.DefaultTransport,
+		url: ts.URL,
+	}
+
+	platforms := []Platform{
+		{OS: "linux", Arch: "amd64"},
+		{OS: "linux", Arch: "arm64"},
+		{OS: "darwin", Arch: "amd64"},
+		{OS: "darwin", Arch: "arm64"},
+		{OS: "windows", Arch: "amd64"},
+	}
+
+	for _, p := range platforms {
+		res, err := b.ListVersions(context.Background(), "zig", p)
+		if err != nil {
+			t.Fatalf("ListVersions error: %v", err)
+		}
+		if len(res) != 2 || res[0].Platform != p {
+			t.Errorf("unexpected result for platform %v", p)
+		}
+	}
+
+	if atomic.LoadInt32(&requestCount) != 1 {
+		t.Errorf("expected exactly 1 request due to cache, got %d", requestCount)
 	}
 }

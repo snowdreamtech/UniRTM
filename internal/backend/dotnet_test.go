@@ -8,6 +8,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"sync/atomic"
 	"testing"
 )
 
@@ -123,5 +124,42 @@ func TestDotnetBackend_GetDownloadInfo(t *testing.T) {
 	}
 	if info.Version != "1.0.0" {
 		t.Errorf("expected 1.0.0, got %s", info.Version)
+	}
+}
+
+func TestDotnetBackend_ConcurrentDeduplication(t *testing.T) {
+	var requestCount int32
+	b := NewDotnetBackend()
+	b.client.Transport = &mockCargoTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			atomic.AddInt32(&requestCount, 1)
+			body := `{"versions": ["1.0.0", "1.1.0", "2.0.0"]}`
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(bytes.NewBufferString(body)),
+			}, nil
+		},
+	}
+
+	platforms := []Platform{
+		{OS: "linux", Arch: "amd64"},
+		{OS: "linux", Arch: "arm64"},
+		{OS: "darwin", Arch: "amd64"},
+		{OS: "darwin", Arch: "arm64"},
+		{OS: "windows", Arch: "amd64"},
+	}
+
+	for _, p := range platforms {
+		res, err := b.ListVersions(context.Background(), "mytool", p)
+		if err != nil {
+			t.Fatalf("ListVersions error: %v", err)
+		}
+		if len(res) != 3 || res[0].Platform != p {
+			t.Errorf("unexpected result for platform %v", p)
+		}
+	}
+
+	if atomic.LoadInt32(&requestCount) != 1 {
+		t.Errorf("expected exactly 1 request due to cache, got %d", requestCount)
 	}
 }

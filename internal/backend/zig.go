@@ -6,14 +6,19 @@ package backend
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
 
 type ZigBackend struct {
-	client *http.Client
+	client        *http.Client
+	requestGroup  singleflight.Group
+	versionsCache sync.Map // map[string][]string (tool -> version strings)
 }
 
 func NewZigBackend() *ZigBackend {
@@ -33,33 +38,72 @@ func (b *ZigBackend) Dependencies() []string {
 type zigDownloadResponse map[string]interface{}
 
 func (b *ZigBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
-	// Zig compiler versions are listed at https://ziglang.org/download/index.json
-	// For zig packages, it's often github releases.
-	// For now we implement the compiler/core discovery.
-	url := "https://ziglang.org/download/index.json"
+	if ctx == nil {
+		return nil, NewBackendError(b.Name(), tool, "create request", fmt.Errorf("net/http: nil Context"))
+	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if val, ok := b.versionsCache.Load("zig_versions"); ok {
+		versionStrs := val.([]string)
+		versions := make([]VersionInfo, len(versionStrs))
+		for i, v := range versionStrs {
+			versions[i] = VersionInfo{
+				Version:  v,
+				Platform: platform,
+			}
+		}
+		return versions, nil
+	}
+
+	result, err, _ := b.requestGroup.Do("zig:versions", func() (interface{}, error) {
+		if val, ok := b.versionsCache.Load("zig_versions"); ok {
+			return val, nil
+		}
+
+		// Zig compiler versions are listed at https://ziglang.org/download/index.json
+		// For zig packages, it's often github releases.
+		// For now we implement the compiler/core discovery.
+		url := "https://ziglang.org/download/index.json"
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "create request", err)
+		}
+
+		resp, err := b.client.Do(req)
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "execute request", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
+		}
+
+		var data zigDownloadResponse
+		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+			return nil, NewBackendError(b.Name(), tool, "decode response", err)
+		}
+
+		var versionStrs []string
+		for v := range data {
+			versionStrs = append(versionStrs, v)
+		}
+
+		b.versionsCache.Store("zig_versions", versionStrs)
+		return versionStrs, nil
+	})
+
 	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "create request", err)
+		return nil, err
 	}
 
-	resp, err := b.client.Do(req)
-	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "execute request", err)
-	}
-	defer resp.Body.Close()
-
-	var data zigDownloadResponse
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, NewBackendError(b.Name(), tool, "decode response", err)
-	}
-
-	var versions []VersionInfo
-	for v := range data {
-		versions = append(versions, VersionInfo{
+	versionStrs := result.([]string)
+	versions := make([]VersionInfo, len(versionStrs))
+	for i, v := range versionStrs {
+		versions[i] = VersionInfo{
 			Version:  v,
 			Platform: platform,
-		})
+		}
 	}
 
 	return versions, nil

@@ -9,14 +9,18 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
 
 // DotnetBackend implements the Backend interface for .NET tools (NuGet).
 type DotnetBackend struct {
-	client *http.Client
+	client        *http.Client
+	requestGroup  singleflight.Group
+	versionsCache sync.Map // map[string][]string (tool -> sorted version strings)
 }
 
 // NewDotnetBackend creates a new dotnet backend.
@@ -39,40 +43,75 @@ type nugetVersionsResponse struct {
 }
 
 func (b *DotnetBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
-	// NuGet package IDs are case-insensitive but often queried in lowercase
+	if ctx == nil {
+		return nil, NewBackendError(b.Name(), tool, "create request", fmt.Errorf("net/http: nil Context"))
+	}
+
 	pkg := strings.ToLower(tool)
-	url := fmt.Sprintf("https://api.nuget.org/v3-flatcontainer/%s/index.json", pkg)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if val, ok := b.versionsCache.Load(pkg); ok {
+		versionStrs := val.([]string)
+		versions := make([]VersionInfo, len(versionStrs))
+		for i, v := range versionStrs {
+			versions[i] = VersionInfo{
+				Version:  v,
+				Platform: platform,
+			}
+		}
+		return versions, nil
+	}
+
+	result, err, _ := b.requestGroup.Do("dotnet:"+pkg, func() (interface{}, error) {
+		if val, ok := b.versionsCache.Load(pkg); ok {
+			return val, nil
+		}
+
+		url := fmt.Sprintf("https://api.nuget.org/v3-flatcontainer/%s/index.json", pkg)
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "create request", err)
+		}
+
+		resp, err := b.client.Do(req)
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "execute request", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, NewBackendError(b.Name(), tool, "package not found", nil)
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
+		}
+
+		var registry nugetVersionsResponse
+		if err := json.NewDecoder(resp.Body).Decode(&registry); err != nil {
+			return nil, NewBackendError(b.Name(), tool, "decode response", err)
+		}
+
+		// NuGet returns versions in ascending order, we want descending
+		var versionStrs []string
+		for i := len(registry.Versions) - 1; i >= 0; i-- {
+			versionStrs = append(versionStrs, registry.Versions[i])
+		}
+
+		b.versionsCache.Store(pkg, versionStrs)
+		return versionStrs, nil
+	})
+
 	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "create request", err)
+		return nil, err
 	}
 
-	resp, err := b.client.Do(req)
-	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "execute request", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, NewBackendError(b.Name(), tool, "package not found", nil)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
-	}
-
-	var registry nugetVersionsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&registry); err != nil {
-		return nil, NewBackendError(b.Name(), tool, "decode response", err)
-	}
-
-	var versions []VersionInfo
-	// NuGet returns versions in ascending order, we want descending
-	for i := len(registry.Versions) - 1; i >= 0; i-- {
-		versions = append(versions, VersionInfo{
-			Version:  registry.Versions[i],
+	versionStrs := result.([]string)
+	versions := make([]VersionInfo, len(versionStrs))
+	for i, v := range versionStrs {
+		versions[i] = VersionInfo{
+			Version:  v,
 			Platform: platform,
-		})
+		}
 	}
 
 	return versions, nil

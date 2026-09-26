@@ -8,13 +8,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
 
 type DenoBackend struct {
-	client *http.Client
+	client        *http.Client
+	requestGroup  singleflight.Group
+	versionsCache sync.Map // map[string]*denoVersionsResponse
 }
 
 func NewDenoBackend() *DenoBackend {
@@ -36,30 +40,58 @@ type denoVersionsResponse struct {
 	Versions []string `json:"versions"`
 }
 
+func (b *DenoBackend) fetchMeta(ctx context.Context, tool string) (*denoVersionsResponse, error) {
+	if ctx == nil {
+		return nil, NewBackendError(b.Name(), tool, "create request", fmt.Errorf("net/http: nil Context"))
+	}
+
+	if val, ok := b.versionsCache.Load(tool); ok {
+		return val.(*denoVersionsResponse), nil
+	}
+
+	res, err, _ := b.requestGroup.Do("deno:"+tool, func() (interface{}, error) {
+		if val, ok := b.versionsCache.Load(tool); ok {
+			return val.(*denoVersionsResponse), nil
+		}
+
+		url := fmt.Sprintf("https://cdn.deno.land/%s/meta/versions.json", tool)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "create request", err)
+		}
+
+		resp, err := b.client.Do(req)
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "execute request", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, NewBackendError(b.Name(), tool, "module not found on deno.land", nil)
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
+		}
+
+		var data denoVersionsResponse
+		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+			return nil, NewBackendError(b.Name(), tool, "decode response", err)
+		}
+
+		b.versionsCache.Store(tool, &data)
+		return &data, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return res.(*denoVersionsResponse), nil
+}
+
 func (b *DenoBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
-	url := fmt.Sprintf("https://cdn.deno.land/%s/meta/versions.json", tool)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	data, err := b.fetchMeta(ctx, tool)
 	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "create request", err)
-	}
-
-	resp, err := b.client.Do(req)
-	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "execute request", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, NewBackendError(b.Name(), tool, "module not found on deno.land", nil)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
-	}
-
-	var data denoVersionsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, NewBackendError(b.Name(), tool, "decode response", err)
+		return nil, err
 	}
 
 	var versions []VersionInfo
@@ -76,22 +108,14 @@ func (b *DenoBackend) ListVersions(ctx context.Context, tool string, platform Pl
 func (b *DenoBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
 	versionRequest = NormalizeVersionPrefix(versionRequest, false)
 	if versionRequest == "latest" {
-		url := fmt.Sprintf("https://cdn.deno.land/%s/meta/versions.json", tool)
-		resp, err := b.client.Get(url)
+		data, err := b.fetchMeta(ctx, tool)
 		if err != nil {
 			return nil, err
 		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode == http.StatusOK {
-			var data denoVersionsResponse
-			if err := json.NewDecoder(resp.Body).Decode(&data); err == nil {
-				return &VersionInfo{
-					Version:  data.Latest,
-					Platform: platform,
-				}, nil
-			}
-		}
+		return &VersionInfo{
+			Version:  data.Latest,
+			Platform: platform,
+		}, nil
 	}
 
 	return &VersionInfo{
