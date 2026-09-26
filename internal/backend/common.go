@@ -5,9 +5,14 @@ package backend
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -15,6 +20,7 @@ import (
 
 	"golang.org/x/sync/singleflight"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/version"
 )
 
@@ -348,6 +354,40 @@ func FindBestAssetWithOverride(assets []CommonAsset, platform Platform, toolName
 	return FindBestAsset(assets, platform, toolName)
 }
 
+func getChecksumDiskCachePath(url string) string {
+	sum := sha256.Sum256([]byte(url))
+	hash := hex.EncodeToString(sum[:])
+	return filepath.Join(env.GetCacheDir(), "checksums", hash+".json")
+}
+
+func readChecksumDiskCache(url string) map[string]string {
+	p := getChecksumDiskCachePath(url)
+	data, err := os.ReadFile(p)
+	if err != nil {
+		return nil
+	}
+	var res map[string]string
+	if err := json.Unmarshal(data, &res); err != nil {
+		return nil
+	}
+	return res
+}
+
+func writeChecksumDiskCache(url string, checksums map[string]string) {
+	if checksums == nil {
+		return
+	}
+	p := getChecksumDiskCachePath(url)
+	if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+		return
+	}
+	data, err := json.Marshal(checksums)
+	if err != nil {
+		return
+	}
+	_ = os.WriteFile(p, data, 0644)
+}
+
 // FetchAndParseChecksumFile downloads and parses a checksum file from a URL.
 func FetchAndParseChecksumFile(ctx context.Context, client *http.Client, url string) (map[string]string, error) {
 	if val, ok := checksumCache.Load(url); ok {
@@ -356,10 +396,24 @@ func FetchAndParseChecksumFile(ctx context.Context, client *http.Client, url str
 		}
 	}
 
+	if client == nil || client.Transport == nil {
+		if diskCached := readChecksumDiskCache(url); diskCached != nil {
+			checksumCache.Store(url, diskCached)
+			return diskCached, nil
+		}
+	}
+
 	v, err, _ := checksumFlight.Do(url, func() (interface{}, error) {
 		if val, ok := checksumCache.Load(url); ok {
 			if m, ok := val.(map[string]string); ok {
 				return m, nil
+			}
+		}
+
+		if client == nil || client.Transport == nil {
+			if diskCached := readChecksumDiskCache(url); diskCached != nil {
+				checksumCache.Store(url, diskCached)
+				return diskCached, nil
 			}
 		}
 
@@ -405,6 +459,9 @@ func FetchAndParseChecksumFile(ctx context.Context, client *http.Client, url str
 		}
 
 		checksumCache.Store(url, checksums)
+		if client == nil || client.Transport == nil {
+			writeChecksumDiskCache(url, checksums)
+		}
 		return checksums, nil
 	})
 

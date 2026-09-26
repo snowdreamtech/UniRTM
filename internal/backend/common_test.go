@@ -7,6 +7,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
 
@@ -835,3 +836,34 @@ func TestCalculateAssetScore_GnuPreference(t *testing.T) {
 		t.Errorf("gnu asset (%d) should outscore plain asset (%d) on non-musl Linux", scoreGnu, scorePlain)
 	}
 }
+
+func TestFetchAndParseChecksumFile_DiskCache(t *testing.T) {
+	testURL := "https://example.com/test-checksums.txt"
+	expected := map[string]string{
+		"tool_linux_amd64.tar.gz": "abc123def456",
+		"tool_darwin_arm64.zip":   "789012345678",
+	}
+
+	// 1. Write to disk cache
+	writeChecksumDiskCache(testURL, expected)
+	defer func() {
+		p := getChecksumDiskCachePath(testURL)
+		_ = os.Remove(p)
+	}()
+
+	// 2. Clear memory cache for this key
+	checksumCache.Delete(testURL)
+
+	// 3. Fetch with client == nil should read from disk cache
+	result, err := FetchAndParseChecksumFile(context.Background(), nil, testURL)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result) != len(expected) {
+		t.Fatalf("expected %d entries, got %d", len(expected), len(result))
+	}
+	if result["tool_linux_amd64.tar.gz"] != "abc123def456" {
+		t.Errorf("checksum mismatch: expected abc123def456, got %s", result["tool_linux_amd64.tar.gz"])
+	}
+}
+
