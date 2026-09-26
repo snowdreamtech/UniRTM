@@ -235,16 +235,14 @@ func getInstallationManager(ctx context.Context, cfg *config.Config) (*service.I
 	// Create transaction manager
 	txManager := transaction.NewSQLiteTransactionManager(db.Conn())
 
-	// Create lock service if lockfile exists
+	// Create lock service
 	var lockSvc *service.LockService
 	lockPath := env.GetLockFilePath()
-	if _, err := os.Stat(lockPath); err == nil {
-		lockSvc, _ = service.NewLockService(service.LockServiceOptions{
-			LockfilePath: lockPath,
-		})
-		if lockSvc != nil {
-			lockSvc.SetBackendRegistry(backendRegistry)
-		}
+	lockSvc, _ = service.NewLockService(service.LockServiceOptions{
+		LockfilePath: lockPath,
+	})
+	if lockSvc != nil {
+		lockSvc.SetBackendRegistry(backendRegistry)
 	}
 
 	// Create installation manager
@@ -265,6 +263,7 @@ func getInstallationManager(ctx context.Context, cfg *config.Config) (*service.I
 	// Transfer ownership of the DB to the manager so callers can close it
 	// via im.Close() when the command finishes.
 	im.SetDB(db)
+	im.SetAutoRepairLockfile(env.Get("FROZEN_LOCKFILE") != "1")
 
 	if cfg != nil {
 		im.SetAliases(cfg.Aliases)

@@ -606,3 +606,69 @@ func TestInstallationManager_ResolveExecutable(t *testing.T) {
 		t.Error("expected error for not found executable")
 	}
 }
+
+func TestInstallationManager_Install_AutoRepairLockfile(t *testing.T) {
+	oldMock := unirtmhttp.MockTransport
+	defer func() { unirtmhttp.MockTransport = oldMock }()
+	unirtmhttp.MockTransport = &mockRoundTripper{}
+
+	tempDir := t.TempDir()
+	lockfilePath := filepath.Join(tempDir, "unirtm.lock")
+	err := os.WriteFile(lockfilePath, []byte(""), 0644)
+	require.NoError(t, err)
+
+	ls, err := NewLockService(LockServiceOptions{
+		LockfilePath: lockfilePath,
+		StrictMode:   true,
+	})
+	require.NoError(t, err)
+
+	backendRegistry := backend.NewRegistry()
+	mockBackend := &mockUpdateBackend{
+		name: "github",
+		versions: map[string]*backend.VersionInfo{
+			"1.0.0": {Version: "1.0.0", DownloadURL: "https://example.com/foo.tar.gz"},
+		},
+	}
+	backendRegistry.Register(mockBackend)
+
+	providerRegistry := provider.NewRegistry()
+	downloadManager := download.NewManager()
+
+	installRepo := &mockInstallationRepo{
+		installations: make(map[string]*repository.Installation),
+	}
+	txManager := &mockTransactionManager{
+		tx: &mockTransaction{
+			installationRepo: installRepo,
+			auditRepo:        &mockAuditRepo{},
+		},
+	}
+
+	im := NewInstallationManagerWithLock(
+		backendRegistry,
+		providerRegistry,
+		downloadManager,
+		installRepo,
+		txManager,
+		ls,
+		&config.Settings{},
+	)
+	im.SetAutoRepairLockfile(true)
+
+	ctx := context.WithValue(context.Background(), ContextKeyQuietProgress, true)
+	// Install tool that is missing from lockfile
+	err = im.Install(ctx, "github:foo/bar", "foo/bar", "1.0.0", "github")
+	// It should NOT fail with strict mode validation error because auto-repair succeeded
+	if err != nil {
+		assert.NotContains(t, err.Error(), "strict mode: no locked entry")
+	}
+
+	// Verify the entry was actually written to the lockfile during auto-repair
+	currentPlatform := backend.CurrentPlatform()
+	platKey := lockfile.PlatformKey(string(currentPlatform.OS), string(currentPlatform.Arch), false)
+	pe := ls.lf.GetPlatform("github:foo/bar", "1.0.0", platKey)
+	require.NotNil(t, pe, "expected lockfile entry to be repaired and present")
+	assert.Equal(t, "https://example.com/foo.tar.gz", pe.URL)
+}
+

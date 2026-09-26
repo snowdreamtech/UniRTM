@@ -44,6 +44,7 @@ type LockServiceOptions struct {
 }
 
 // NewLockService creates a LockService, loading the lockfile from disk if it exists.
+// If the lockfile is corrupted or unparseable, it backs it up and initializes a fresh one for repair.
 func NewLockService(opts LockServiceOptions) (*LockService, error) {
 	path := opts.LockfilePath
 	if path == "" {
@@ -52,7 +53,12 @@ func NewLockService(opts LockServiceOptions) (*LockService, error) {
 
 	lf, err := lockfile.Load(path)
 	if err != nil {
-		return nil, fmt.Errorf("lock service: %w", err)
+		logger.Warn("lock service: lockfile corrupted or unparseable, attempting to back up and rebuild", map[string]interface{}{
+			"path":  path,
+			"error": err.Error(),
+		})
+		_ = os.Rename(path, path+".corrupted")
+		lf = lockfile.New(path)
 	}
 
 	strict := opts.StrictMode || env.Get("LOCKED") == "1"
@@ -194,6 +200,99 @@ func (ls *LockService) RecordInstall(
 	ls.dirty = true
 
 	return ls.save()
+}
+
+// RepairEntry attempts to resolve download info for a missing tool/version/platform,
+// updates the lockfile in-memory and persists it to disk.
+func (ls *LockService) RepairEntry(
+	ctx context.Context,
+	toolKey, version string,
+	platform backend.Platform,
+	b backend.Backend,
+) error {
+	ls.mu.Lock()
+	defer ls.mu.Unlock()
+
+	platKey := lockfile.PlatformKey(platform.OS, platform.Arch, false)
+
+	// Check if already present and valid
+	pe := ls.lf.GetPlatform(toolKey, version, platKey)
+	if pe != nil && pe.URL != "" {
+		return nil
+	}
+	if idx := strings.Index(toolKey, ":"); idx != -1 {
+		pe = ls.lf.GetPlatform(toolKey[idx+1:], version, platKey)
+		if pe != nil && pe.URL != "" {
+			return nil
+		}
+	}
+
+	toolName := toolKey
+	if idx := strings.Index(toolKey, ":"); idx != -1 {
+		toolName = toolKey[idx+1:]
+	}
+
+	var err error
+	if b == nil {
+		b, err = ls.backendForSpec(toolName, "")
+		if err != nil {
+			return fmt.Errorf("no backend available to repair %s: %w", toolKey, err)
+		}
+	}
+
+	var info *backend.VersionInfo
+	info, err = b.GetDownloadInfo(ctx, toolName, version, platform)
+	if err != nil {
+		info, err = b.ResolveVersion(ctx, toolName, version, platform)
+		if err != nil {
+			return fmt.Errorf("failed to resolve %s@%s for %s during lockfile repair: %w", toolKey, version, platKey, err)
+		}
+	}
+
+	existing := ls.lf.GetEntry(toolKey, info.Version)
+	if existing == nil {
+		ls.lf.UpsertEntry(toolKey, &lockfile.ToolLockEntry{
+			Version:   info.Version,
+			Backend:   b.Name(),
+			Platforms: make(map[string]*lockfile.PlatformEntry),
+		})
+	}
+
+	urlAPI := ""
+	if info.Metadata != nil {
+		urlAPI = info.Metadata["url_api"]
+	}
+	gpgKey := ""
+	if len(info.GPGKeys) > 0 {
+		gpgKey = info.GPGKeys[0]
+	}
+
+	ls.lf.UpsertPlatform(toolKey, info.Version, platKey, &lockfile.PlatformEntry{
+		Checksum: info.Checksum,
+		URL:      info.DownloadURL,
+		URLAPI:   urlAPI,
+		GPGKey:   gpgKey,
+	})
+	ls.dirty = true
+
+	return ls.save()
+}
+
+// Rebuild reconstructs the lockfile from a map of tool specifications.
+func (ls *LockService) Rebuild(ctx context.Context, tools map[string]ToolSpec, platforms []string) (*GenerateReport, error) {
+	if len(platforms) == 0 {
+		platforms = []string{lockfile.CurrentPlatformKey()}
+	}
+	ls.mu.Lock()
+	ls.lf = lockfile.New(ls.lockfilePath)
+	ls.dirty = true
+	ls.mu.Unlock()
+
+	return ls.Generate(ctx, tools, GenerateOptions{
+		Platforms:       platforms,
+		Force:           true,
+		AllowIncomplete: true,
+	})
 }
 
 // RemoveTool removes all lockfile entries for a tool (called on unuse/uninstall).

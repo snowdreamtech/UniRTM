@@ -68,7 +68,11 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		req.Header.Set("Accept", "application/vnd.github+json")
 
 		// Add GitHub token if available to increase rate limits
-		if token := env.Get("GITHUB_TOKEN"); token != "" {
+		token := env.Get("GITHUB_TOKEN")
+		if token == "" {
+			token = env.Get("GH_TOKEN")
+		}
+		if token != "" {
 			req.Header.Set("Authorization", "Bearer "+token)
 		}
 

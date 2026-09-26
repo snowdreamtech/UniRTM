@@ -10,9 +10,17 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
+	"golang.org/x/sync/singleflight"
+
 	"github.com/snowdreamtech/unirtm/internal/pkg/version"
+)
+
+var (
+	checksumCache  sync.Map
+	checksumFlight singleflight.Group
 )
 
 // CommonAsset represents a generic asset from a hosting platform.
@@ -342,48 +350,71 @@ func FindBestAssetWithOverride(assets []CommonAsset, platform Platform, toolName
 
 // FetchAndParseChecksumFile downloads and parses a checksum file from a URL.
 func FetchAndParseChecksumFile(ctx context.Context, client *http.Client, url string) (map[string]string, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
-	if err != nil {
-		return nil, err
+	if val, ok := checksumCache.Load(url); ok {
+		if m, ok := val.(map[string]string); ok {
+			return m, nil
+		}
 	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusNotFound {
+	v, err, _ := checksumFlight.Do(url, func() (interface{}, error) {
+		if val, ok := checksumCache.Load(url); ok {
+			if m, ok := val.(map[string]string); ok {
+				return m, nil
+			}
+		}
+
+		req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusNotFound {
+			return map[string]string(nil), nil
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("failed to fetch checksum file: HTTP %d", resp.StatusCode)
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		checksums := make(map[string]string)
+		lines := strings.Split(string(body), "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+
+			// Format: "checksum  filename" or "checksum filename"
+			parts := strings.Fields(line)
+			if len(parts) >= 2 {
+				checksum := parts[0]
+				filename := parts[1]
+				// Handle format where filename is prefixed with * or space
+				filename = strings.TrimPrefix(filename, "*")
+				checksums[filename] = checksum
+			}
+		}
+
+		checksumCache.Store(url, checksums)
+		return checksums, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	if v == nil {
 		return nil, nil
 	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch checksum file: HTTP %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	checksums := make(map[string]string)
-	lines := strings.Split(string(body), "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-
-		// Format: "checksum  filename" or "checksum filename"
-		parts := strings.Fields(line)
-		if len(parts) >= 2 {
-			checksum := parts[0]
-			filename := parts[1]
-			// Handle format where filename is prefixed with * or space
-			filename = strings.TrimPrefix(filename, "*")
-			checksums[filename] = checksum
-		}
-	}
-
-	return checksums, nil
+	return v.(map[string]string), nil
 }
 
 // FindChecksumForAsset attempts to find a matching checksum for an asset from a list of all assets.

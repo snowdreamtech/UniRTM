@@ -566,6 +566,113 @@ func TestLockService_BidirectionalKeyMigration(t *testing.T) {
 	}
 }
 
+func TestLockService_RepairEntry(t *testing.T) {
+	tmpDir := t.TempDir()
+	lockPath := filepath.Join(tmpDir, "unirtm.lock")
+
+	ls, err := NewLockService(LockServiceOptions{
+		LockfilePath: lockPath,
+	})
+	if err != nil {
+		t.Fatalf("NewLockService failed: %v", err)
+	}
+
+	b := &mockGenerateBackend{}
+	plat := backend.Platform{OS: "linux", Arch: "amd64"}
+
+	// Before repair, resolve should fail
+	if _, ok := ls.Resolve("mockGen:success", "1.0", plat); ok {
+		t.Fatal("expected Resolve to fail before repair")
+	}
+
+	// Repair the entry
+	ctx := context.Background()
+	err = ls.RepairEntry(ctx, "mockGen:success", "1.0", plat, b)
+	if err != nil {
+		t.Fatalf("RepairEntry failed: %v", err)
+	}
+
+	// After repair, resolve and check strict should succeed
+	info, ok := ls.Resolve("mockGen:success", "1.0", plat)
+	if !ok || info.DownloadURL != "http://example.com/url" {
+		t.Fatalf("expected resolved URL http://example.com/url, got %v", info)
+	}
+
+	// Verify entry was saved to disk
+	ls2, err := NewLockService(LockServiceOptions{
+		LockfilePath: lockPath,
+	})
+	if err != nil {
+		t.Fatalf("reloading lockfile failed: %v", err)
+	}
+	info2, ok := ls2.Resolve("mockGen:success", "1.0", plat)
+	if !ok || info2.DownloadURL != "http://example.com/url" {
+		t.Fatalf("expected reloaded URL http://example.com/url, got %v", info2)
+	}
+}
+
+func TestLockService_Rebuild(t *testing.T) {
+	tmpDir := t.TempDir()
+	lockPath := filepath.Join(tmpDir, "unirtm.lock")
+
+	ls, err := NewLockService(LockServiceOptions{
+		LockfilePath: lockPath,
+	})
+	if err != nil {
+		t.Fatalf("NewLockService failed: %v", err)
+	}
+
+	registry := backend.NewRegistry()
+	registry.Register(&mockGenerateBackend{})
+	ls.SetBackendRegistry(registry)
+
+	ctx := context.Background()
+	tools := map[string]ToolSpec{
+		"success": {Name: "success", Version: "1.0", BackendName: "mockGen"},
+	}
+
+	report, err := ls.Rebuild(ctx, tools, []string{"linux-amd64"})
+	if err != nil {
+		t.Fatalf("Rebuild failed: %v", err)
+	}
+	if !report.IsComplete() {
+		t.Fatalf("expected complete rebuild report, got missing: %v", report.Missing)
+	}
+
+	plat := backend.Platform{OS: "linux", Arch: "amd64"}
+	if info, ok := ls.Resolve("success", "1.0", plat); !ok || info.DownloadURL != "http://example.com/url" {
+		t.Fatalf("expected resolved rebuilt entry, got %v", info)
+	}
+}
+
+func TestLockService_CorruptedLockfile(t *testing.T) {
+	tmpDir := t.TempDir()
+	lockPath := filepath.Join(tmpDir, "unirtm.lock")
+
+	corruptedContent := []byte(`[broken_toml\nthis is not valid toml`)
+	if err := os.WriteFile(lockPath, corruptedContent, 0644); err != nil {
+		t.Fatalf("failed to write corrupted file: %v", err)
+	}
+
+	ls, err := NewLockService(LockServiceOptions{
+		LockfilePath: lockPath,
+	})
+	if err != nil {
+		t.Fatalf("expected NewLockService to recover from corrupted file, got: %v", err)
+	}
+
+	// Verify backup was created
+	if _, err := os.Stat(lockPath + ".corrupted"); os.IsNotExist(err) {
+		t.Error("expected .corrupted backup file to exist")
+	}
+
+	// Verify a clean lockfile is ready for use
+	if !ls.IsEmpty() {
+		t.Error("expected fresh lockfile to be empty")
+	}
+}
+
+
 
 
 

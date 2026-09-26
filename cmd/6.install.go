@@ -19,6 +19,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
+	"github.com/snowdreamtech/unirtm/internal/lockfile"
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/provider"
@@ -301,6 +302,28 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	})
 	if lockSvc != nil {
 		lockSvc.SetBackendRegistry(backendRegistry)
+	}
+
+	// Lockfile Missing Auto-Rebuild: when lockfile is missing, attempt to rebuild it
+	if _, statErr := os.Stat(lockPath); os.IsNotExist(statErr) && lockSvc != nil && len(toolsToInstall) > 0 {
+		if !quiet {
+			formatter.Info(fmt.Sprintf("Lockfile is missing (%s), attempting to rebuild...", lockPath))
+		}
+		rebuildCtx, cancelRebuild := context.WithTimeout(ctx, 3*time.Minute)
+		_, genErr := lockSvc.Generate(rebuildCtx, toolsToInstall, service.GenerateOptions{
+			Platforms:       []string{lockfile.CurrentPlatformKey()},
+			AllowIncomplete: true,
+		})
+		cancelRebuild()
+		if genErr == nil {
+			if !quiet {
+				formatter.Success(fmt.Sprintf("Successfully rebuilt lockfile: %s", lockPath))
+			}
+		} else {
+			if !quiet {
+				formatter.Warning(fmt.Sprintf("Lockfile rebuild had warnings: %v (will repair on the fly during install)", genErr))
+			}
+		}
 	}
 
 	// Create installation manager with optional lock support

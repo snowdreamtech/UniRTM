@@ -56,9 +56,10 @@ type InstallationManager struct {
 	settings         *config.Settings
 	aliases          map[string]map[string]string
 	toolConfigs      map[string]config.ToolConfig
-	gpgVerifier      gpg.Verifier
-	shimGenerator    *Generator
-	db               *database.DB // underlying DB connection; closed by Close()
+	gpgVerifier        gpg.Verifier
+	shimGenerator      *Generator
+	db                 *database.DB // underlying DB connection; closed by Close()
+	autoRepairLockfile bool
 }
 
 // NewInstallationManager creates a new installation manager without lockfile support.
@@ -118,6 +119,11 @@ func (im *InstallationManager) SetToolConfigs(toolConfigs map[string]config.Tool
 // owns the database lifetime.
 func (im *InstallationManager) SetDB(db *database.DB) {
 	im.db = db
+}
+
+// SetAutoRepairLockfile controls whether missing or invalid lockfile entries should be repaired automatically.
+func (im *InstallationManager) SetAutoRepairLockfile(autoRepair bool) {
+	im.autoRepairLockfile = autoRepair
 }
 
 // Close releases the underlying database connection held by the manager.
@@ -339,7 +345,33 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 	if im.lockService != nil {
 		// Enforce strict mode before any API call.
 		if err := im.lockService.CheckStrict(toolKey, version, platform); err != nil {
-			return err
+			if im.autoRepairLockfile {
+				logger.Warn("lockfile issue detected, attempting to repair entry", map[string]interface{}{
+					"tool":     toolKey,
+					"version":  version,
+					"platform": platform.String(),
+					"error":    err.Error(),
+				})
+				if !quietProgress {
+					output.Warningf("lockfile issue for %s@%s: %v — attempting to repair...", toolKey, version, err)
+				}
+				repairErr := im.lockService.RepairEntry(ctx, toolKey, version, platform, b)
+				if repairErr != nil {
+					if im.lockService.IsStrictMode() {
+						return fmt.Errorf("lockfile repair failed: %w (strict check: %v)", repairErr, err)
+					}
+					logger.Warn("lockfile repair failed, falling back to remote resolution", map[string]interface{}{
+						"tool":  toolKey,
+						"error": repairErr.Error(),
+					})
+				} else {
+					if !quietProgress {
+						output.Successf("successfully repaired lockfile for %s@%s", toolKey, version)
+					}
+				}
+			} else {
+				return err
+			}
 		}
 		// Try to resolve directly from the lockfile.
 		if info, ok := im.lockService.Resolve(toolKey, version, platform); ok {
@@ -349,6 +381,13 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 				"platform": platform.String(),
 			})
 			versionInfo = info
+		} else if im.autoRepairLockfile {
+			// Lockfile exists but this entry is missing - try to repair
+			if err := im.lockService.RepairEntry(ctx, toolKey, version, platform, b); err == nil {
+				if info, ok := im.lockService.Resolve(toolKey, version, platform); ok {
+					versionInfo = info
+				}
+			}
 		}
 	}
 

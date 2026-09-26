@@ -5,10 +5,12 @@ package backend
 
 import (
 	"bufio"
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/pelletier/go-toml/v2"
 
@@ -31,10 +33,12 @@ func ResolveGitHubTokenPublic(host string) string {
 // Priority (mirrors mise behavior):
 //  1. UNIRTM_GITHUB_TOKEN (UniRTM-specific override)
 //  2. GITHUB_TOKEN        (standard CI env var, e.g. GitHub Actions)
-//  3. GITHUB_API_TOKEN    (legacy alternative)
-//  4. credential_command  (via UNIRTM_GITHUB_CREDENTIAL_COMMAND env var)
-//  5. github_tokens.toml  (~/.config/unirtm/github_tokens.toml)
-//  6. gh CLI hosts.yml
+//  3. GH_TOKEN            (standard GitHub CLI env var)
+//  4. GITHUB_API_TOKEN    (legacy alternative)
+//  5. credential_command  (via UNIRTM_GITHUB_CREDENTIAL_COMMAND env var)
+//  6. github_tokens.toml  (~/.config/unirtm/github_tokens.toml)
+//  7. gh CLI hosts.yml
+//  8. gh auth token command fallback
 func resolveGitHubToken(host string) string {
 	if host == "" {
 		host = "github.com"
@@ -45,12 +49,17 @@ func resolveGitHubToken(host string) string {
 		return token
 	}
 
-	// 2. GITHUB_API_TOKEN (legacy fallback)
+	// 2. GH_TOKEN (UNIRTM_GH_TOKEN -> MISE_GH_TOKEN -> GH_TOKEN)
+	if token := env.Get("GH_TOKEN"); token != "" {
+		return token
+	}
+
+	// 3. GITHUB_API_TOKEN (legacy fallback)
 	if token := env.Get("GITHUB_API_TOKEN"); token != "" {
 		return token
 	}
 
-	// 3. credential_command (UNIRTM_GITHUB_CREDENTIAL_COMMAND -> MISE_GITHUB_CREDENTIAL_COMMAND -> GITHUB_CREDENTIAL_COMMAND)
+	// 4. credential_command (UNIRTM_GITHUB_CREDENTIAL_COMMAND -> MISE_GITHUB_CREDENTIAL_COMMAND -> GITHUB_CREDENTIAL_COMMAND)
 	if cmd := env.Get("GITHUB_CREDENTIAL_COMMAND"); cmd != "" {
 		if token := runCredentialCommand(cmd, host); token != "" {
 			return token
@@ -67,7 +76,25 @@ func resolveGitHubToken(host string) string {
 		return token
 	}
 
+	// 7. gh CLI auth token execution fallback
+	if token := runGhAuthToken(host); token != "" {
+		return token
+	}
+
 	return ""
+}
+
+// runGhAuthToken runs `gh auth token` to retrieve token from gh credential helper if available.
+func runGhAuthToken(host string) string {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "gh", "auth", "token", "--hostname", host)
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }
 
 // runCredentialCommand executes the configured credential command and returns its stdout.

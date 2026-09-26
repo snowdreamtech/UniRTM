@@ -9,16 +9,31 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	"golang.org/x/sync/singleflight"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
 // GitHubBackend implements the Backend interface using GenericReleaseManager.
 type GitHubBackend struct {
-	client *http.Client
+	client       *http.Client
+	sfg          singleflight.Group
+	releaseCache sync.Map // key: tool+"@"+tag -> *CommonRelease
+	listCache    sync.Map // key: tool -> cachedReleaseList
+}
+
+type cachedReleaseList struct {
+	releases  []CommonRelease
+	fetchedAt time.Time
 }
 
 // NewGitHubBackend creates a new GitHub backend.
@@ -86,8 +101,41 @@ func (g *GitHubBackend) GetDownloadInfoWithPatterns(ctx context.Context, tool, v
 // FetchReleases implements HostingProvider.
 func (g *GitHubBackend) FetchReleases(ctx context.Context, tool string) ([]CommonRelease, error) {
 	tool = strings.TrimPrefix(tool, "github:")
-	url := fmt.Sprintf("https://api.github.com/repos/%s/releases", tool)
+	cacheKey := "list:" + tool
 
+	if val, ok := g.listCache.Load(cacheKey); ok {
+		if cached, ok := val.(cachedReleaseList); ok && time.Since(cached.fetchedAt) < 15*time.Minute {
+			return cached.releases, nil
+		}
+	}
+
+	v, err, _ := g.sfg.Do(cacheKey, func() (interface{}, error) {
+		if val, ok := g.listCache.Load(cacheKey); ok {
+			if cached, ok := val.(cachedReleaseList); ok && time.Since(cached.fetchedAt) < 15*time.Minute {
+				return cached.releases, nil
+			}
+		}
+
+		url := fmt.Sprintf("https://api.github.com/repos/%s/releases", tool)
+		releases, err := g.fetchReleasesListHTTP(ctx, url)
+		if err != nil {
+			return nil, err
+		}
+
+		g.listCache.Store(cacheKey, cachedReleaseList{
+			releases:  releases,
+			fetchedAt: time.Now(),
+		})
+		return releases, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return v.([]CommonRelease), nil
+}
+
+func (g *GitHubBackend) fetchReleasesListHTTP(ctx context.Context, url string) ([]CommonRelease, error) {
 	var resp *http.Response
 	var err error
 	var bodyBytes []byte
@@ -98,6 +146,7 @@ func (g *GitHubBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 			return nil, reqErr
 		}
 		req.Header.Set("Accept", "application/vnd.github.v3+json")
+		req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
 		if token := resolveGitHubToken("github.com"); token != "" {
 			req.Header.Set("Authorization", "Bearer "+token)
 		}
@@ -112,33 +161,43 @@ func (g *GitHubBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 			continue
 		}
 
-		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(time.Duration(i+1) * time.Second):
-			}
-			continue
-		}
-
 		bodyBytes, err = io.ReadAll(resp.Body)
 		resp.Body.Close()
-		if err != nil {
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(time.Duration(i+1) * time.Second):
-			}
-			continue
+
+		if resp.StatusCode == http.StatusOK {
+			break
 		}
 
-		break
+		// Don't retry on 404
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, fmt.Errorf("GitHub API status %d", resp.StatusCode)
+		}
+
+		// Check rate limits
+		if resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusTooManyRequests {
+			if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
+				if sec, parseErr := strconv.Atoi(retryAfter); parseErr == nil && sec > 0 && sec <= 5 {
+					select {
+					case <-ctx.Done():
+						return nil, ctx.Err()
+					case <-time.After(time.Duration(sec) * time.Second):
+						continue
+					}
+				}
+			}
+			return nil, parseGitHubRateLimitError(resp, bodyBytes)
+		}
+
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(time.Duration(i+1) * time.Second):
+		}
 	}
 
-	if len(bodyBytes) == 0 {
-		if resp != nil && resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("GitHub API status %d", resp.StatusCode)
+	if len(bodyBytes) == 0 || (resp != nil && resp.StatusCode != http.StatusOK) {
+		if resp != nil {
+			return nil, parseGitHubRateLimitError(resp, bodyBytes)
 		}
 		return nil, fmt.Errorf("GitHub API request failed: %w", err)
 	}
@@ -173,8 +232,49 @@ func (g *GitHubBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 // FetchReleaseByTag implements HostingProvider.
 func (g *GitHubBackend) FetchReleaseByTag(ctx context.Context, tool, tag string) (*CommonRelease, error) {
 	tool = strings.TrimPrefix(tool, "github:")
-	url := fmt.Sprintf("https://api.github.com/repos/%s/releases/tags/%s", tool, tag)
+	cacheKey := tool + "@" + tag
 
+	// 1. In-memory cache hit
+	if val, ok := g.releaseCache.Load(cacheKey); ok {
+		if rel, ok := val.(*CommonRelease); ok {
+			return rel, nil
+		}
+	}
+
+	// 2. Persistent disk cache hit (immutable release tag, only for real network clients)
+	if g.client.Transport == nil {
+		if rel := readReleaseDiskCache(tool, tag); rel != nil {
+			g.releaseCache.Store(cacheKey, rel)
+			return rel, nil
+		}
+	}
+
+	// 3. Singleflight deduplication across concurrent callers
+	v, err, _ := g.sfg.Do(cacheKey, func() (interface{}, error) {
+		if val, ok := g.releaseCache.Load(cacheKey); ok {
+			return val.(*CommonRelease), nil
+		}
+
+		url := fmt.Sprintf("https://api.github.com/repos/%s/releases/tags/%s", tool, tag)
+		rel, err := g.fetchReleaseByTagHTTP(ctx, url)
+		if err != nil {
+			return nil, err
+		}
+
+		g.releaseCache.Store(cacheKey, rel)
+		if g.client.Transport == nil {
+			writeReleaseDiskCache(tool, tag, rel)
+		}
+		return rel, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return v.(*CommonRelease), nil
+}
+
+func (g *GitHubBackend) fetchReleaseByTagHTTP(ctx context.Context, url string) (*CommonRelease, error) {
 	var resp *http.Response
 	var err error
 	var bodyBytes []byte
@@ -185,6 +285,7 @@ func (g *GitHubBackend) FetchReleaseByTag(ctx context.Context, tool, tag string)
 			return nil, reqErr
 		}
 		req.Header.Set("Accept", "application/vnd.github.v3+json")
+		req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
 		if token := resolveGitHubToken("github.com"); token != "" {
 			req.Header.Set("Authorization", "Bearer "+token)
 		}
@@ -199,33 +300,43 @@ func (g *GitHubBackend) FetchReleaseByTag(ctx context.Context, tool, tag string)
 			continue
 		}
 
-		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(time.Duration(i+1) * time.Second):
-			}
-			continue
-		}
-
 		bodyBytes, err = io.ReadAll(resp.Body)
 		resp.Body.Close()
-		if err != nil {
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(time.Duration(i+1) * time.Second):
-			}
-			continue
+
+		if resp.StatusCode == http.StatusOK {
+			break
 		}
 
-		break
+		// Don't retry on 404 — the requested tag doesn't exist
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, fmt.Errorf("status %d", resp.StatusCode)
+		}
+
+		// Check rate limits
+		if resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusTooManyRequests {
+			if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
+				if sec, parseErr := strconv.Atoi(retryAfter); parseErr == nil && sec > 0 && sec <= 5 {
+					select {
+					case <-ctx.Done():
+						return nil, ctx.Err()
+					case <-time.After(time.Duration(sec) * time.Second):
+						continue
+					}
+				}
+			}
+			return nil, parseGitHubRateLimitError(resp, bodyBytes)
+		}
+
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(time.Duration(i+1) * time.Second):
+		}
 	}
 
-	if len(bodyBytes) == 0 {
-		if resp != nil && resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("status %d", resp.StatusCode)
+	if len(bodyBytes) == 0 || (resp != nil && resp.StatusCode != http.StatusOK) {
+		if resp != nil {
+			return nil, parseGitHubRateLimitError(resp, bodyBytes)
 		}
 		return nil, fmt.Errorf("GitHub API request failed: %w", err)
 	}
@@ -248,6 +359,73 @@ func (g *GitHubBackend) FetchReleaseByTag(ctx context.Context, tool, tag string)
 		Assets:      g.toCommonAssets(r.Assets),
 		PublishedAt: publishedAt,
 	}, nil
+}
+
+func parseGitHubRateLimitError(resp *http.Response, body []byte) error {
+	remaining := resp.Header.Get("X-RateLimit-Remaining")
+	reset := resp.Header.Get("X-RateLimit-Reset")
+
+	var ghErr struct {
+		Message          string `json:"message"`
+		DocumentationURL string `json:"documentation_url"`
+	}
+	_ = json.Unmarshal(body, &ghErr)
+
+	msg := ghErr.Message
+	if msg == "" {
+		msg = http.StatusText(resp.StatusCode)
+	}
+
+	if resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusTooManyRequests {
+		if remaining == "0" || strings.Contains(strings.ToLower(msg), "rate limit") {
+			resetTimeStr := ""
+			if reset != "" {
+				if sec, err := strconv.ParseInt(reset, 10, 64); err == nil {
+					resetTime := time.Unix(sec, 0)
+					resetTimeStr = fmt.Sprintf(" (resets at %s)", resetTime.Format("15:04:05 MST"))
+				}
+			}
+			return fmt.Errorf("GitHub API rate limit exceeded%s: %s. Set GITHUB_TOKEN or GH_TOKEN to increase your limit from 60 to 5,000 requests/hour", resetTimeStr, msg)
+		}
+	}
+	return fmt.Errorf("GitHub API status %d: %s", resp.StatusCode, msg)
+}
+
+func getReleaseDiskCachePath(tool, tag string) string {
+	safeTool := strings.NewReplacer("/", "_", ":", "_").Replace(tool)
+	safeTag := strings.NewReplacer("/", "_", ":", "_").Replace(tag)
+	return filepath.Join(env.GetCacheDir(), "github_releases", safeTool, safeTag+".json")
+}
+
+func readReleaseDiskCache(tool, tag string) *CommonRelease {
+	p := getReleaseDiskCachePath(tool, tag)
+	data, err := os.ReadFile(p)
+	if err != nil {
+		return nil
+	}
+	var rel CommonRelease
+	if err := json.Unmarshal(data, &rel); err != nil {
+		return nil
+	}
+	return &rel
+}
+
+func writeReleaseDiskCache(tool, tag string, rel *CommonRelease) {
+	if rel == nil {
+		return
+	}
+	p := getReleaseDiskCachePath(tool, tag)
+	if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+		return
+	}
+	data, err := json.Marshal(rel)
+	if err != nil {
+		return
+	}
+	tmp := p + ".tmp"
+	if err := os.WriteFile(tmp, data, 0644); err == nil {
+		_ = os.Rename(tmp, p)
+	}
 }
 
 func (g *GitHubBackend) toCommonAssets(assets []githubAsset) []CommonAsset {
