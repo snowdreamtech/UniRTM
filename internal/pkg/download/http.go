@@ -286,28 +286,53 @@ func (h *HTTPDownloader) Download(ctx context.Context, url string, destination s
 	return errors.NewExternalError(fmt.Sprintf("download failed after %d attempts", maxAttempts), lastErr)
 }
 
+// shouldSkipHeadPreflight returns true if the URL points to a file type that is known
+// to be small (e.g., checksums, signatures, manifests) where a HEAD request would add
+// an unnecessary round-trip latency without any benefit for chunked downloading.
+func shouldSkipHeadPreflight(rawURL string) bool {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	path := strings.ToLower(u.Path)
+	smallExtensions := []string{
+		".sha256", ".sha512", ".sha1", ".md5", ".blake3",
+		".asc", ".sig", ".json", ".txt", ".yaml", ".yml",
+	}
+	for _, ext := range smallExtensions {
+		if strings.HasSuffix(path, ext) {
+			return true
+		}
+	}
+	return false
+}
+
 // downloadOnce performs a single download attempt without retry logic.
 func (h *HTTPDownloader) downloadOnce(ctx context.Context, url string, destination string, opts DownloadOptions) error {
-	// 1. Pre-flight check: Get content length and range support using HEAD
-	headReq, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
-	if err == nil {
-		headResp, err := h.client.Do(headReq)
+	// 1. Pre-flight check: Get content length and range support using HEAD,
+	// unless the file extension indicates a small metadata/checksum file where
+	// a HEAD request is unnecessary overhead.
+	if !shouldSkipHeadPreflight(url) {
+		headReq, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
 		if err == nil {
-			defer headResp.Body.Close()
-			if headResp.StatusCode == http.StatusOK {
-				totalBytes := headResp.ContentLength
-				acceptRanges := headResp.Header.Get("Accept-Ranges") == "bytes"
+			headResp, err := h.client.Do(headReq)
+			if err == nil {
+				defer headResp.Body.Close()
+				if headResp.StatusCode == http.StatusOK {
+					totalBytes := headResp.ContentLength
+					acceptRanges := headResp.Header.Get("Accept-Ranges") == "bytes"
 
-				// 2. Decide if we use concurrent download
-				// Criteria: Size > 1MB, Server supports Ranges
-				if acceptRanges && totalBytes > 1*1024*1024 {
-					err := h.downloadConcurrent(ctx, url, destination, totalBytes, opts)
-					if err == nil {
-						return nil
-					}
-					// Fallback on failure
-					if ctx.Err() != nil {
-						return err // Intercept cancellation, do not fallback
+					// 2. Decide if we use concurrent download
+					// Criteria: Size > 1MB, Server supports Ranges
+					if acceptRanges && totalBytes > 1*1024*1024 {
+						err := h.downloadConcurrent(ctx, url, destination, totalBytes, opts)
+						if err == nil {
+							return nil
+						}
+						// Fallback on failure
+						if ctx.Err() != nil {
+							return err // Intercept cancellation, do not fallback
+						}
 					}
 				}
 			}

@@ -690,12 +690,34 @@ func TestHTTPDownloader_Download_Concurrent_Panic(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		// Panic on purpose when reading data to simulate a thread panic
-		// Wait, panic in handler doesn't cause client panic. It causes EOF.
-		// To cause panic in the client thread, we need to mock a reader or client.Do
 		w.Header().Set("Accept-Ranges", "bytes")
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
-	// Actually, simulating a panic inside the goroutine in http.go is hard from the outside.
+}
+
+// TestHTTPDownloader_SkipHeadForSmallFiles verifies that small metadata/checksum files skip the HEAD preflight check.
+func TestHTTPDownloader_SkipHeadForSmallFiles(t *testing.T) {
+	var methods []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		methods = append(methods, r.Method)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("dummy content"))
+	}))
+	defer server.Close()
+
+	downloader := download.NewHTTPDownloader()
+	tmpDir := t.TempDir()
+
+	// 1. Download checksum file (.sha256) -> Should only send GET
+	methods = nil
+	err := downloader.Download(context.Background(), server.URL+"/tool.tar.gz.sha256", filepath.Join(tmpDir, "tool.sha256"), download.DefaultDownloadOptions())
+	require.NoError(t, err)
+	assert.Equal(t, []string{http.MethodGet}, methods, "checksum file should not trigger HEAD preflight")
+
+	// 2. Download archive file (.tar.gz) -> Should send HEAD then GET
+	methods = nil
+	err = downloader.Download(context.Background(), server.URL+"/tool.tar.gz", filepath.Join(tmpDir, "tool.tar.gz"), download.DefaultDownloadOptions())
+	require.NoError(t, err)
+	assert.Contains(t, methods, http.MethodHead, "archive file should trigger HEAD preflight")
 }
