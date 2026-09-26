@@ -15,15 +15,30 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+var (
+	cabalFlight        singleflight.Group
+	cabalVersionsCache sync.Map // map[string][]string (tool -> version strings)
+)
+
+// ClearCabalCache clears the in-memory cache for Cabal packages. Mainly used for testing.
+func ClearCabalCache() {
+	cabalVersionsCache.Range(func(key, _ interface{}) bool {
+		cabalVersionsCache.Delete(key)
+		return true
+	})
+}
+
 type CabalBackend struct {
 	client        *http.Client
-	requestGroup  singleflight.Group
-	versionsCache sync.Map // map[string][]string (tool -> version strings)
+	requestGroup  *singleflight.Group
+	versionsCache *sync.Map
 }
 
 func NewCabalBackend() *CabalBackend {
 	return &CabalBackend{
-		client: pkgHttp.NewClientWithTimeout(10 * time.Second),
+		client:        pkgHttp.NewClientWithTimeout(10 * time.Second),
+		requestGroup:  &cabalFlight,
+		versionsCache: &cabalVersionsCache,
 	}
 }
 

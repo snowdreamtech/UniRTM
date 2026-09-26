@@ -162,6 +162,9 @@ func TestGoBackend_GetDownloadInfo(t *testing.T) {
 }
 
 func TestGoBackend_DeduplicationAndCache(t *testing.T) {
+	ClearGoCache()
+	defer ClearGoCache()
+
 	var requestCount int
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestCount++

@@ -153,6 +153,9 @@ func TestComposerBackend_GetDownloadInfo(t *testing.T) {
 }
 
 func TestComposerBackend_ConcurrentDeduplication(t *testing.T) {
+	ClearComposerCache()
+	defer ClearComposerCache()
+
 	var requestCount int32
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&requestCount, 1)

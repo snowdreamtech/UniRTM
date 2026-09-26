@@ -19,15 +19,30 @@ import (
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
+var (
+	goFlight singleflight.Group
+	goCache  sync.Map
+)
+
+// ClearGoCache clears the in-memory cache for Go modules. Mainly used for testing.
+func ClearGoCache() {
+	goCache.Range(func(key, _ interface{}) bool {
+		goCache.Delete(key)
+		return true
+	})
+}
+
 type GoBackend struct {
 	client *http.Client
-	flight singleflight.Group
-	cache  sync.Map
+	flight *singleflight.Group
+	cache  *sync.Map
 }
 
 func NewGoBackend() *GoBackend {
 	return &GoBackend{
 		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
+		flight: &goFlight,
+		cache:  &goCache,
 	}
 }
 

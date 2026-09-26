@@ -147,6 +147,9 @@ func TestDenoBackend_GetDownloadInfo(t *testing.T) {
 }
 
 func TestDenoBackend_ConcurrentDeduplication(t *testing.T) {
+	ClearDenoCache()
+	defer ClearDenoCache()
+
 	var requestCount int32
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&requestCount, 1)

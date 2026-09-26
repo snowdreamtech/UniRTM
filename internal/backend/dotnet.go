@@ -16,17 +16,32 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+var (
+	dotnetFlight        singleflight.Group
+	dotnetVersionsCache sync.Map // map[string][]string (tool -> sorted version strings)
+)
+
+// ClearDotnetCache clears the in-memory cache for .NET tools. Mainly used for testing.
+func ClearDotnetCache() {
+	dotnetVersionsCache.Range(func(key, _ interface{}) bool {
+		dotnetVersionsCache.Delete(key)
+		return true
+	})
+}
+
 // DotnetBackend implements the Backend interface for .NET tools (NuGet).
 type DotnetBackend struct {
 	client        *http.Client
-	requestGroup  singleflight.Group
-	versionsCache sync.Map // map[string][]string (tool -> sorted version strings)
+	requestGroup  *singleflight.Group
+	versionsCache *sync.Map
 }
 
 // NewDotnetBackend creates a new dotnet backend.
 func NewDotnetBackend() *DotnetBackend {
 	return &DotnetBackend{
-		client: pkgHttp.NewClientWithTimeout(10 * time.Second),
+		client:        pkgHttp.NewClientWithTimeout(10 * time.Second),
+		requestGroup:  &dotnetFlight,
+		versionsCache: &dotnetVersionsCache,
 	}
 }
 

@@ -144,6 +144,9 @@ func TestCondaBackend_GetDownloadInfo(t *testing.T) {
 }
 
 func TestCondaBackend_ConcurrentDeduplication(t *testing.T) {
+	ClearCondaCache()
+	defer ClearCondaCache()
+
 	var requestCount int32
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&requestCount, 1)

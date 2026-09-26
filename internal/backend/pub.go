@@ -15,15 +15,30 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+var (
+	pubFlight        singleflight.Group
+	pubVersionsCache sync.Map // map[string][]string (tool -> sorted version strings)
+)
+
+// ClearPubCache clears the in-memory cache for Dart Pub packages. Mainly used for testing.
+func ClearPubCache() {
+	pubVersionsCache.Range(func(key, _ interface{}) bool {
+		pubVersionsCache.Delete(key)
+		return true
+	})
+}
+
 type PubBackend struct {
 	client        *http.Client
-	requestGroup  singleflight.Group
-	versionsCache sync.Map // map[string][]string (tool -> sorted version strings)
+	requestGroup  *singleflight.Group
+	versionsCache *sync.Map
 }
 
 func NewPubBackend() *PubBackend {
 	return &PubBackend{
-		client: pkgHttp.NewClientWithTimeout(15 * time.Second),
+		client:        pkgHttp.NewClientWithTimeout(15 * time.Second),
+		requestGroup:  &pubFlight,
+		versionsCache: &pubVersionsCache,
 	}
 }
 

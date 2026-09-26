@@ -57,6 +57,8 @@ func TestGitHubBackend_Properties(t *testing.T) {
 }
 
 func TestGitHubBackend_FetchReleases(t *testing.T) {
+	ClearGitHubCache()
+	defer ClearGitHubCache()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/owner/repo/releases" {
 			w.WriteHeader(http.StatusOK)
@@ -107,6 +109,8 @@ func TestGitHubBackend_FetchReleases(t *testing.T) {
 }
 
 func TestGitHubBackend_FetchReleaseByTag(t *testing.T) {
+	ClearGitHubCache()
+	defer ClearGitHubCache()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/owner/repo/releases/tags/v1.2.0" {
 			w.WriteHeader(http.StatusOK)
@@ -140,6 +144,8 @@ func TestGitHubBackend_FetchReleaseByTag(t *testing.T) {
 }
 
 func TestGitHubBackend_ListVersions(t *testing.T) {
+	ClearGitHubCache()
+	defer ClearGitHubCache()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/owner/repo/releases" {
 			w.WriteHeader(http.StatusOK)
@@ -180,6 +186,8 @@ func TestGitHubBackend_ListVersions(t *testing.T) {
 }
 
 func TestGitHubBackend_ResolveVersion(t *testing.T) {
+	ClearGitHubCache()
+	defer ClearGitHubCache()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/owner/repo/releases" {
 			w.WriteHeader(http.StatusOK)
@@ -216,6 +224,8 @@ func TestGitHubBackend_ResolveVersion(t *testing.T) {
 }
 
 func TestGitHubBackend_GetDownloadInfo(t *testing.T) {
+	ClearGitHubCache()
+	defer ClearGitHubCache()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/owner/repo/releases" || r.URL.Path == "/repos/owner/repo/releases/tags/v1.2.0" {
 			w.WriteHeader(http.StatusOK)
@@ -250,6 +260,8 @@ func TestGitHubBackend_GetDownloadInfo(t *testing.T) {
 }
 
 func TestGitHubBackend_FetchReleases_ETag304(t *testing.T) {
+	ClearGitHubCache()
+	defer ClearGitHubCache()
 	reqCount := 0
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		reqCount++

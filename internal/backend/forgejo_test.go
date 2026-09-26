@@ -18,6 +18,9 @@ func TestForgejoBackend_Name(t *testing.T) {
 }
 
 func TestForgejoBackend_ResolveVersion(t *testing.T) {
+	ClearForgejoCache()
+	defer ClearForgejoCache()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/repos/owner/repo/releases" {
 			w.WriteHeader(http.StatusOK)
@@ -46,6 +49,8 @@ func TestForgejoBackend_ResolveVersion(t *testing.T) {
 }
 
 func TestForgejoBackend_ListVersions(t *testing.T) {
+	ClearForgejoCache()
+	defer ClearForgejoCache()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`[
@@ -101,6 +106,9 @@ func TestForgejoBackend_Properties(t *testing.T) {
 }
 
 func TestForgejoFetchReleaseByTag(t *testing.T) {
+	ClearForgejoCache()
+	defer ClearForgejoCache()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repos/owner/repo/releases/tags/v1.0.0", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -130,6 +138,9 @@ func TestForgejoFetchReleaseByTag(t *testing.T) {
 }
 
 func TestForgejoFetchReleaseByTag_NotFound(t *testing.T) {
+	ClearForgejoCache()
+	defer ClearForgejoCache()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repos/owner/repo/releases/tags/v1.0.0", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
@@ -147,6 +158,8 @@ func TestForgejoFetchReleaseByTag_NotFound(t *testing.T) {
 }
 
 func TestForgejoBackend_DeduplicationAndCache(t *testing.T) {
+	ClearForgejoCache()
+	defer ClearForgejoCache()
 	var requestCount int
 	mux := http.NewServeMux()
 	mux.HandleFunc("/repos/owner/repo/releases", func(w http.ResponseWriter, r *http.Request) {

@@ -19,13 +19,31 @@ import (
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
+var (
+	gitlabFlight            singleflight.Group
+	gitlabReleasesCache     sync.Map // tool -> []CommonRelease
+	gitlabReleaseByTagCache sync.Map // tool@tag -> *CommonRelease
+)
+
+// ClearGitlabCache clears the in-memory GitLab caches. Mainly used for testing.
+func ClearGitlabCache() {
+	gitlabReleasesCache.Range(func(key, _ interface{}) bool {
+		gitlabReleasesCache.Delete(key)
+		return true
+	})
+	gitlabReleaseByTagCache.Range(func(key, _ interface{}) bool {
+		gitlabReleaseByTagCache.Delete(key)
+		return true
+	})
+}
+
 // GitlabBackend implements the Backend interface using GenericReleaseManager.
 type GitlabBackend struct {
 	client            *http.Client
 	baseURL           string
-	flight            singleflight.Group
-	releasesCache     sync.Map // tool -> []CommonRelease
-	releaseByTagCache sync.Map // tool@tag -> *CommonRelease
+	flight            *singleflight.Group
+	releasesCache     *sync.Map
+	releaseByTagCache *sync.Map
 }
 
 // NewGitlabBackend creates a new GitLab backend.
@@ -35,8 +53,11 @@ func NewGitlabBackend() *GitlabBackend {
 		baseURL = "https://gitlab.com/api/v4"
 	}
 	return &GitlabBackend{
-		client:  pkgHttp.NewClientWithTimeout(15 * time.Second),
-		baseURL: baseURL,
+		client:            pkgHttp.NewClientWithTimeout(15 * time.Second),
+		baseURL:           baseURL,
+		flight:            &gitlabFlight,
+		releasesCache:     &gitlabReleasesCache,
+		releaseByTagCache: &gitlabReleaseByTagCache,
 	}
 }
 
@@ -91,13 +112,13 @@ func (b *GitlabBackend) GetDownloadInfo(ctx context.Context, tool, version strin
 func (b *GitlabBackend) FetchReleases(ctx context.Context, tool string) ([]CommonRelease, error) {
 	tool = strings.TrimPrefix(tool, "gitlab:")
 
-	if val, ok := b.releasesCache.Load(tool); ok {
+	if val, ok := gitlabReleasesCache.Load(tool); ok {
 		if rels, ok := val.([]CommonRelease); ok {
 			return rels, nil
 		}
 	}
 
-	val, err, _ := b.flight.Do("releases:"+tool, func() (interface{}, error) {
+	val, err, _ := gitlabFlight.Do("releases:"+tool, func() (interface{}, error) {
 		encodedRepo := url.PathEscape(tool)
 		apiURL := fmt.Sprintf("%s/projects/%s/releases", b.baseURL, encodedRepo)
 
@@ -137,13 +158,13 @@ func (b *GitlabBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 				Assets:      b.toCommonAssets(r.Assets.Links),
 				PublishedAt: publishedAt,
 			}
-			b.releaseByTagCache.Store(tool+"@"+r.TagName, &res[i])
+			gitlabReleaseByTagCache.Store(tool+"@"+r.TagName, &res[i])
 			cleanTag := strings.TrimPrefix(r.TagName, "v")
-			b.releaseByTagCache.Store(tool+"@"+cleanTag, &res[i])
-			b.releaseByTagCache.Store(tool+"@v"+cleanTag, &res[i])
+			gitlabReleaseByTagCache.Store(tool+"@"+cleanTag, &res[i])
+			gitlabReleaseByTagCache.Store(tool+"@v"+cleanTag, &res[i])
 		}
 
-		b.releasesCache.Store(tool, res)
+		gitlabReleasesCache.Store(tool, res)
 		return res, nil
 	})
 
@@ -158,13 +179,13 @@ func (b *GitlabBackend) FetchReleaseByTag(ctx context.Context, tool, tag string)
 	tool = strings.TrimPrefix(tool, "gitlab:")
 
 	cacheKey := tool + "@" + tag
-	if val, ok := b.releaseByTagCache.Load(cacheKey); ok {
+	if val, ok := gitlabReleaseByTagCache.Load(cacheKey); ok {
 		if cr, ok := val.(*CommonRelease); ok {
 			return cr, nil
 		}
 	}
 
-	val, err, _ := b.flight.Do("tag:"+cacheKey, func() (interface{}, error) {
+	val, err, _ := gitlabFlight.Do("tag:"+cacheKey, func() (interface{}, error) {
 		encodedRepo := url.PathEscape(tool)
 		apiURL := fmt.Sprintf("%s/projects/%s/releases/%s", b.baseURL, encodedRepo, url.PathEscape(tag))
 
@@ -202,7 +223,7 @@ func (b *GitlabBackend) FetchReleaseByTag(ctx context.Context, tool, tag string)
 			Assets:      b.toCommonAssets(r.Assets.Links),
 			PublishedAt: publishedAt,
 		}
-		b.releaseByTagCache.Store(cacheKey, cr)
+		gitlabReleaseByTagCache.Store(cacheKey, cr)
 		return cr, nil
 	})
 

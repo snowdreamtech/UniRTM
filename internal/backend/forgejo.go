@@ -18,13 +18,31 @@ import (
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
+var (
+	forgejoFlight            singleflight.Group
+	forgejoReleasesCache     sync.Map // tool -> []CommonRelease
+	forgejoReleaseByTagCache sync.Map // tool@tag -> *CommonRelease
+)
+
+// ClearForgejoCache clears the in-memory Forgejo caches. Mainly used for testing.
+func ClearForgejoCache() {
+	forgejoReleasesCache.Range(func(key, _ interface{}) bool {
+		forgejoReleasesCache.Delete(key)
+		return true
+	})
+	forgejoReleaseByTagCache.Range(func(key, _ interface{}) bool {
+		forgejoReleaseByTagCache.Delete(key)
+		return true
+	})
+}
+
 // ForgejoBackend implements the Backend interface using GenericReleaseManager.
 type ForgejoBackend struct {
 	client            *http.Client
 	baseURL           string
-	flight            singleflight.Group
-	releasesCache     sync.Map // tool -> []CommonRelease
-	releaseByTagCache sync.Map // tool@tag -> *CommonRelease
+	flight            *singleflight.Group
+	releasesCache     *sync.Map
+	releaseByTagCache *sync.Map
 }
 
 // NewForgejoBackend creates a new Forgejo backend.
@@ -34,8 +52,11 @@ func NewForgejoBackend() *ForgejoBackend {
 		baseURL = "https://codeberg.org/api/v1"
 	}
 	return &ForgejoBackend{
-		client:  pkgHttp.NewClientWithTimeout(15 * time.Second),
-		baseURL: baseURL,
+		client:            pkgHttp.NewClientWithTimeout(15 * time.Second),
+		baseURL:           baseURL,
+		flight:            &forgejoFlight,
+		releasesCache:     &forgejoReleasesCache,
+		releaseByTagCache: &forgejoReleaseByTagCache,
 	}
 }
 
@@ -90,13 +111,13 @@ func (b *ForgejoBackend) GetDownloadInfo(ctx context.Context, tool, version stri
 func (b *ForgejoBackend) FetchReleases(ctx context.Context, tool string) ([]CommonRelease, error) {
 	tool = strings.TrimPrefix(tool, "forgejo:")
 
-	if val, ok := b.releasesCache.Load(tool); ok {
+	if val, ok := forgejoReleasesCache.Load(tool); ok {
 		if rels, ok := val.([]CommonRelease); ok {
 			return rels, nil
 		}
 	}
 
-	val, err, _ := b.flight.Do("releases:"+tool, func() (interface{}, error) {
+	val, err, _ := forgejoFlight.Do("releases:"+tool, func() (interface{}, error) {
 		apiURL := fmt.Sprintf("%s/repos/%s/releases", b.baseURL, tool)
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
@@ -135,13 +156,13 @@ func (b *ForgejoBackend) FetchReleases(ctx context.Context, tool string) ([]Comm
 				Assets:      b.toCommonAssets(r.Assets),
 				PublishedAt: publishedAt,
 			}
-			b.releaseByTagCache.Store(tool+"@"+r.TagName, &res[i])
+			forgejoReleaseByTagCache.Store(tool+"@"+r.TagName, &res[i])
 			cleanTag := strings.TrimPrefix(r.TagName, "v")
-			b.releaseByTagCache.Store(tool+"@"+cleanTag, &res[i])
-			b.releaseByTagCache.Store(tool+"@v"+cleanTag, &res[i])
+			forgejoReleaseByTagCache.Store(tool+"@"+cleanTag, &res[i])
+			forgejoReleaseByTagCache.Store(tool+"@v"+cleanTag, &res[i])
 		}
 
-		b.releasesCache.Store(tool, res)
+		forgejoReleasesCache.Store(tool, res)
 		return res, nil
 	})
 
@@ -156,13 +177,13 @@ func (b *ForgejoBackend) FetchReleaseByTag(ctx context.Context, tool, tag string
 	tool = strings.TrimPrefix(tool, "forgejo:")
 
 	cacheKey := tool + "@" + tag
-	if val, ok := b.releaseByTagCache.Load(cacheKey); ok {
+	if val, ok := forgejoReleaseByTagCache.Load(cacheKey); ok {
 		if cr, ok := val.(*CommonRelease); ok {
 			return cr, nil
 		}
 	}
 
-	val, err, _ := b.flight.Do("tag:"+cacheKey, func() (interface{}, error) {
+	val, err, _ := forgejoFlight.Do("tag:"+cacheKey, func() (interface{}, error) {
 		apiURL := fmt.Sprintf("%s/repos/%s/releases/tags/%s", b.baseURL, tool, tag)
 
 		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
@@ -196,7 +217,7 @@ func (b *ForgejoBackend) FetchReleaseByTag(ctx context.Context, tool, tag string
 			Assets:      b.toCommonAssets(r.Assets),
 			PublishedAt: publishedAt,
 		}
-		b.releaseByTagCache.Store(cacheKey, cr)
+		forgejoReleaseByTagCache.Store(cacheKey, cr)
 		return cr, nil
 	})
 

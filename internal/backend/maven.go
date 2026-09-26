@@ -16,15 +16,30 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+var (
+	mavenFlight        singleflight.Group
+	mavenVersionsCache sync.Map // map[string][]string (tool -> version strings)
+)
+
+// ClearMavenCache clears the in-memory cache for Maven artifacts. Mainly used for testing.
+func ClearMavenCache() {
+	mavenVersionsCache.Range(func(key, _ interface{}) bool {
+		mavenVersionsCache.Delete(key)
+		return true
+	})
+}
+
 type MavenBackend struct {
 	client        *http.Client
-	requestGroup  singleflight.Group
-	versionsCache sync.Map // map[string][]string (tool -> version strings)
+	requestGroup  *singleflight.Group
+	versionsCache *sync.Map
 }
 
 func NewMavenBackend() *MavenBackend {
 	return &MavenBackend{
-		client: pkgHttp.NewClientWithTimeout(10 * time.Second),
+		client:        pkgHttp.NewClientWithTimeout(10 * time.Second),
+		requestGroup:  &mavenFlight,
+		versionsCache: &mavenVersionsCache,
 	}
 }
 

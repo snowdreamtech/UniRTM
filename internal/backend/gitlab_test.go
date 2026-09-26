@@ -18,6 +18,9 @@ func TestGitlabBackend_Name(t *testing.T) {
 }
 
 func TestGitlabBackend_ResolveVersion(t *testing.T) {
+	ClearGitlabCache()
+	defer ClearGitlabCache()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/projects/owner/repo/releases" || r.URL.Path == "/projects/owner%2Frepo/releases" {
 			w.WriteHeader(http.StatusOK)
@@ -46,6 +49,8 @@ func TestGitlabBackend_ResolveVersion(t *testing.T) {
 }
 
 func TestGitlabBackend_ListVersions(t *testing.T) {
+	ClearGitlabCache()
+	defer ClearGitlabCache()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`[
@@ -101,6 +106,9 @@ func TestGitlabBackend_Properties(t *testing.T) {
 }
 
 func TestGitlabFetchReleaseByTag(t *testing.T) {
+	ClearGitlabCache()
+	defer ClearGitlabCache()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/projects/owner%2Frepo/releases/v1.0.0", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -132,6 +140,9 @@ func TestGitlabFetchReleaseByTag(t *testing.T) {
 }
 
 func TestGitlabFetchReleaseByTag_NotFound(t *testing.T) {
+	ClearGitlabCache()
+	defer ClearGitlabCache()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/projects/owner%2Frepo/releases/v1.0.0", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
@@ -149,6 +160,8 @@ func TestGitlabFetchReleaseByTag_NotFound(t *testing.T) {
 }
 
 func TestGitlabBackend_DeduplicationAndCache(t *testing.T) {
+	ClearGitlabCache()
+	defer ClearGitlabCache()
 	var requestCount int
 	mux := http.NewServeMux()
 	mux.HandleFunc("/projects/owner%2Frepo/releases", func(w http.ResponseWriter, r *http.Request) {

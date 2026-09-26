@@ -24,12 +24,30 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
+var (
+	githubSFG          singleflight.Group
+	githubReleaseCache sync.Map // key: tool+"@"+tag -> *CommonRelease
+	githubListCache    sync.Map // key: tool -> cachedReleaseList
+)
+
+// ClearGitHubCache clears GitHub in-memory caches. Mainly used for testing.
+func ClearGitHubCache() {
+	githubReleaseCache.Range(func(key, _ interface{}) bool {
+		githubReleaseCache.Delete(key)
+		return true
+	})
+	githubListCache.Range(func(key, _ interface{}) bool {
+		githubListCache.Delete(key)
+		return true
+	})
+}
+
 // GitHubBackend implements the Backend interface using GenericReleaseManager.
 type GitHubBackend struct {
 	client       *http.Client
-	sfg          singleflight.Group
-	releaseCache sync.Map // key: tool+"@"+tag -> *CommonRelease
-	listCache    sync.Map // key: tool -> cachedReleaseList
+	sfg          *singleflight.Group
+	releaseCache *sync.Map
+	listCache    *sync.Map
 }
 
 type cachedReleaseList struct {
@@ -41,7 +59,10 @@ type cachedReleaseList struct {
 // NewGitHubBackend creates a new GitHub backend.
 func NewGitHubBackend() *GitHubBackend {
 	return &GitHubBackend{
-		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
+		client:       pkgHttp.NewClientWithTimeout(30 * time.Second),
+		sfg:          &githubSFG,
+		releaseCache: &githubReleaseCache,
+		listCache:    &githubListCache,
 	}
 }
 
@@ -107,7 +128,7 @@ func (g *GitHubBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 
 	var lastEtag string
 	var lastReleases []CommonRelease
-	if val, ok := g.listCache.Load(cacheKey); ok {
+	if val, ok := githubListCache.Load(cacheKey); ok {
 		if cached, ok := val.(cachedReleaseList); ok {
 			if time.Since(cached.fetchedAt) < 15*time.Minute {
 				return cached.releases, nil
@@ -117,8 +138,8 @@ func (g *GitHubBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 		}
 	}
 
-	v, err, _ := g.sfg.Do(cacheKey, func() (interface{}, error) {
-		if val, ok := g.listCache.Load(cacheKey); ok {
+	v, err, _ := githubSFG.Do(cacheKey, func() (interface{}, error) {
+		if val, ok := githubListCache.Load(cacheKey); ok {
 			if cached, ok := val.(cachedReleaseList); ok {
 				if time.Since(cached.fetchedAt) < 15*time.Minute {
 					return cached.releases, nil
@@ -140,7 +161,7 @@ func (g *GitHubBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 
 		if is304 && len(lastReleases) > 0 {
 			logger.Debug("FetchReleases: 304 Not Modified, reusing cached releases without consuming rate limit", map[string]interface{}{"tool": tool})
-			g.listCache.Store(cacheKey, cachedReleaseList{
+			githubListCache.Store(cacheKey, cachedReleaseList{
 				releases:  lastReleases,
 				etag:      lastEtag,
 				fetchedAt: time.Now(),
@@ -148,7 +169,7 @@ func (g *GitHubBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 			return lastReleases, nil
 		}
 
-		g.listCache.Store(cacheKey, cachedReleaseList{
+		githubListCache.Store(cacheKey, cachedReleaseList{
 			releases:  releases,
 			etag:      newEtag,
 			fetchedAt: time.Now(),
@@ -272,7 +293,7 @@ func (g *GitHubBackend) FetchReleaseByTag(ctx context.Context, tool, tag string)
 	cacheKey := tool + "@" + tag
 
 	// 1. In-memory cache hit
-	if val, ok := g.releaseCache.Load(cacheKey); ok {
+	if val, ok := githubReleaseCache.Load(cacheKey); ok {
 		if rel, ok := val.(*CommonRelease); ok {
 			return rel, nil
 		}
@@ -281,14 +302,14 @@ func (g *GitHubBackend) FetchReleaseByTag(ctx context.Context, tool, tag string)
 	// 2. Persistent disk cache hit (immutable release tag, only for real network clients)
 	if g.client.Transport == nil {
 		if rel := readReleaseDiskCache(tool, tag); rel != nil {
-			g.releaseCache.Store(cacheKey, rel)
+			githubReleaseCache.Store(cacheKey, rel)
 			return rel, nil
 		}
 	}
 
 	// 3. Singleflight deduplication across concurrent callers
-	v, err, _ := g.sfg.Do(cacheKey, func() (interface{}, error) {
-		if val, ok := g.releaseCache.Load(cacheKey); ok {
+	v, err, _ := githubSFG.Do(cacheKey, func() (interface{}, error) {
+		if val, ok := githubReleaseCache.Load(cacheKey); ok {
 			return val.(*CommonRelease), nil
 		}
 
@@ -298,7 +319,7 @@ func (g *GitHubBackend) FetchReleaseByTag(ctx context.Context, tool, tag string)
 			return nil, err
 		}
 
-		g.releaseCache.Store(cacheKey, rel)
+		githubReleaseCache.Store(cacheKey, rel)
 		if g.client.Transport == nil {
 			writeReleaseDiskCache(tool, tag, rel)
 		}

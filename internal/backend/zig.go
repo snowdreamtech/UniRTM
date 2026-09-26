@@ -15,15 +15,30 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+var (
+	zigFlight        singleflight.Group
+	zigVersionsCache sync.Map // map[string][]string (tool -> version strings)
+)
+
+// ClearZigCache clears the in-memory cache for Zig releases. Mainly used for testing.
+func ClearZigCache() {
+	zigVersionsCache.Range(func(key, _ interface{}) bool {
+		zigVersionsCache.Delete(key)
+		return true
+	})
+}
+
 type ZigBackend struct {
 	client        *http.Client
-	requestGroup  singleflight.Group
-	versionsCache sync.Map // map[string][]string (tool -> version strings)
+	requestGroup  *singleflight.Group
+	versionsCache *sync.Map
 }
 
 func NewZigBackend() *ZigBackend {
 	return &ZigBackend{
-		client: pkgHttp.NewClientWithTimeout(10 * time.Second),
+		client:        pkgHttp.NewClientWithTimeout(10 * time.Second),
+		requestGroup:  &zigFlight,
+		versionsCache: &zigVersionsCache,
 	}
 }
 

@@ -15,15 +15,30 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+var (
+	denoFlight        singleflight.Group
+	denoVersionsCache sync.Map // map[string]*denoVersionsResponse
+)
+
+// ClearDenoCache clears the in-memory cache for Deno modules. Mainly used for testing.
+func ClearDenoCache() {
+	denoVersionsCache.Range(func(key, _ interface{}) bool {
+		denoVersionsCache.Delete(key)
+		return true
+	})
+}
+
 type DenoBackend struct {
 	client        *http.Client
-	requestGroup  singleflight.Group
-	versionsCache sync.Map // map[string]*denoVersionsResponse
+	requestGroup  *singleflight.Group
+	versionsCache *sync.Map
 }
 
 func NewDenoBackend() *DenoBackend {
 	return &DenoBackend{
-		client: pkgHttp.NewClientWithTimeout(10 * time.Second),
+		client:        pkgHttp.NewClientWithTimeout(10 * time.Second),
+		requestGroup:  &denoFlight,
+		versionsCache: &denoVersionsCache,
 	}
 }
 

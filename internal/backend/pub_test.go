@@ -159,6 +159,9 @@ func TestPubBackend_GetDownloadInfo(t *testing.T) {
 }
 
 func TestPubBackend_ConcurrentDeduplication(t *testing.T) {
+	ClearPubCache()
+	defer ClearPubCache()
+
 	var requestCount int32
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&requestCount, 1)

@@ -31,6 +31,9 @@ func TestGemBackend_Interface(t *testing.T) {
 }
 
 func TestGemBackend_ListVersions(t *testing.T) {
+	ClearGemCache()
+	defer ClearGemCache()
+
 	b := NewGemBackend()
 	b.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -62,6 +65,7 @@ func TestGemBackend_ListVersions(t *testing.T) {
 	}
 
 	// execution error
+	ClearGemCache()
 	bErr := NewGemBackend()
 	bErr.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -74,6 +78,7 @@ func TestGemBackend_ListVersions(t *testing.T) {
 	}
 
 	// internal error
+	ClearGemCache()
 	bInternal := NewGemBackend()
 	bInternal.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -86,6 +91,7 @@ func TestGemBackend_ListVersions(t *testing.T) {
 	}
 
 	// bad json
+	ClearGemCache()
 	bJSON := NewGemBackend()
 	bJSON.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -105,6 +111,9 @@ func TestGemBackend_ListVersions(t *testing.T) {
 }
 
 func TestGemBackend_ResolveVersion(t *testing.T) {
+	ClearGemCache()
+	defer ClearGemCache()
+
 	b := NewGemBackend()
 	b.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -138,6 +147,7 @@ func TestGemBackend_ResolveVersion(t *testing.T) {
 	}
 
 	// execution error
+	ClearGemCache()
 	bErr := NewGemBackend()
 	bErr.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -150,6 +160,7 @@ func TestGemBackend_ResolveVersion(t *testing.T) {
 	}
 
 	// bad json
+	ClearGemCache()
 	bJSON := NewGemBackend()
 	bJSON.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -189,6 +200,9 @@ func TestGemBackend_GetDownloadInfo(t *testing.T) {
 }
 
 func TestGemBackend_ConcurrentDeduplication(t *testing.T) {
+	ClearGemCache()
+	defer ClearGemCache()
+
 	var requestCount int32
 	b := NewGemBackend()
 	b.client.Transport = &mockCargoTransport{

@@ -16,15 +16,30 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+var (
+	composerFlight        singleflight.Group
+	composerVersionsCache sync.Map // map[string][]string (tool -> sorted version strings)
+)
+
+// ClearComposerCache clears the in-memory cache for Composer packages. Mainly used for testing.
+func ClearComposerCache() {
+	composerVersionsCache.Range(func(key, _ interface{}) bool {
+		composerVersionsCache.Delete(key)
+		return true
+	})
+}
+
 type ComposerBackend struct {
 	client        *http.Client
-	requestGroup  singleflight.Group
-	versionsCache sync.Map // map[string][]string (tool -> sorted version strings)
+	requestGroup  *singleflight.Group
+	versionsCache *sync.Map
 }
 
 func NewComposerBackend() *ComposerBackend {
 	return &ComposerBackend{
-		client: pkgHttp.NewClientWithTimeout(15 * time.Second),
+		client:        pkgHttp.NewClientWithTimeout(15 * time.Second),
+		requestGroup:  &composerFlight,
+		versionsCache: &composerVersionsCache,
 	}
 }
 

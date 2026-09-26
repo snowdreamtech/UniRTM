@@ -128,6 +128,9 @@ func TestDotnetBackend_GetDownloadInfo(t *testing.T) {
 }
 
 func TestDotnetBackend_ConcurrentDeduplication(t *testing.T) {
+	ClearDotnetCache()
+	defer ClearDotnetCache()
+
 	var requestCount int32
 	b := NewDotnetBackend()
 	b.client.Transport = &mockCargoTransport{

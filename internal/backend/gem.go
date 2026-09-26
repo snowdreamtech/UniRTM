@@ -15,18 +15,39 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+var (
+	gemFlight        singleflight.Group
+	gemVersionsCache sync.Map // map[string][]string (tool -> version numbers)
+	gemLatestCache   sync.Map // map[string]string (tool -> latest version)
+)
+
+// ClearGemCache clears the in-memory cache for RubyGems. Mainly used for testing.
+func ClearGemCache() {
+	gemVersionsCache.Range(func(key, _ interface{}) bool {
+		gemVersionsCache.Delete(key)
+		return true
+	})
+	gemLatestCache.Range(func(key, _ interface{}) bool {
+		gemLatestCache.Delete(key)
+		return true
+	})
+}
+
 // GemBackend implements the Backend interface for RubyGems.
 type GemBackend struct {
 	client        *http.Client
-	requestGroup  singleflight.Group
-	versionsCache sync.Map // map[string][]string (tool -> version numbers)
-	latestCache   sync.Map // map[string]string (tool -> latest version)
+	requestGroup  *singleflight.Group
+	versionsCache *sync.Map
+	latestCache   *sync.Map
 }
 
 // NewGemBackend creates a new gem backend.
 func NewGemBackend() *GemBackend {
 	return &GemBackend{
-		client: pkgHttp.NewClientWithTimeout(10 * time.Second),
+		client:        pkgHttp.NewClientWithTimeout(10 * time.Second),
+		requestGroup:  &gemFlight,
+		versionsCache: &gemVersionsCache,
+		latestCache:   &gemLatestCache,
 	}
 }
 

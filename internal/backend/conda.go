@@ -16,17 +16,31 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+var (
+	condaFlight        singleflight.Group
+	condaVersionsCache sync.Map // map[string][]string (tool -> sorted version strings)
+)
+
+// ClearCondaCache clears the in-memory cache for Conda packages. Mainly used for testing.
+func ClearCondaCache() {
+	condaVersionsCache.Range(func(key, _ interface{}) bool {
+		condaVersionsCache.Delete(key)
+		return true
+	})
+}
+
 // CondaBackend implements the Backend interface for Conda packages.
 type CondaBackend struct {
 	client        *http.Client
-	requestGroup  singleflight.Group
-	versionsCache sync.Map // map[string][]string (tool -> sorted version strings)
+	requestGroup  *singleflight.Group
+	versionsCache *sync.Map
 }
 
-// NewCondaBackend creates a new conda backend.
 func NewCondaBackend() *CondaBackend {
 	return &CondaBackend{
-		client: pkgHttp.NewClientWithTimeout(15 * time.Second),
+		client:        pkgHttp.NewClientWithTimeout(15 * time.Second),
+		requestGroup:  &condaFlight,
+		versionsCache: &condaVersionsCache,
 	}
 }
 
