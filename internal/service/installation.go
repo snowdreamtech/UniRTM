@@ -5,8 +5,11 @@ package service
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"os/exec"
@@ -479,117 +482,126 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 			opts = opts.WithChecksum(versionInfo.Checksum)
 		}
 
-		// Cleanup any stale temporary files from previous interrupted attempts
-		if tmpFiles, err := filepath.Glob(downloadPath + ".tmp.*"); err == nil {
-			for _, tmpFile := range tmpFiles {
-				os.Remove(tmpFile)
+		cachePath := getDownloadCachePath(versionInfo.DownloadURL, versionInfo.Checksum)
+		if tryUseDownloadCache(ctx, downloader, cachePath, downloadPath, versionInfo.Checksum) {
+			if !quietProgress {
+				output.Infof("using cached download for %s", tool)
 			}
-		}
-
-		// Use a randomized temporary path for downloading to ensure atomicity and concurrency safety
-		// Similar to how homebrew and mise handle incomplete downloads.
-		randSuffix, _ := env.RandomString(8)
-		downloadTmpPath := fmt.Sprintf("%s.tmp.%s", downloadPath, randSuffix)
-
-		// Start a spinner for the connection/download phase
-		var spinner *pterm.SpinnerPrinter
-		if !quietProgress {
-			spinner, _ = output.StartSpinner(fmt.Sprintf("Connecting to %s...", tool))
-		}
-
-		// Initialize progress bar
-		var progressbar *pterm.ProgressbarPrinter
-		var lastDownloaded int64
-		var lastUpdateTime time.Time
-		var progressMutex sync.Mutex
-
-		opts.ProgressCallback = func(downloaded, total int64) {
-			if quietProgress {
-				if reporter, ok := ctx.Value(ContextKeyProgressReporter).(ProgressReporter); ok {
-					reporter(tool, downloaded, total)
+		} else {
+			// Cleanup any stale temporary files from previous interrupted attempts
+			if tmpFiles, err := filepath.Glob(downloadPath + ".tmp.*"); err == nil {
+				for _, tmpFile := range tmpFiles {
+					os.Remove(tmpFile)
 				}
-				return
-			}
-			progressMutex.Lock()
-			defer progressMutex.Unlock()
-
-			// Stop the connection spinner once we start receiving bytes,
-			// BUT ONLY if we are going to start a progress bar.
-			if spinner != nil && total > 0 {
-				spinner.Stop()
-				spinner = nil
 			}
 
-			// Initialize progress bar if not already done and total is known
-			if progressbar == nil && total > 0 {
-				progressbar, _ = pterm.DefaultProgressbar.
-					WithTotal(int(total)).
-					WithTitle(fmt.Sprintf("Downloading %s (%s)", tool, humanize.Bytes(uint64(total)))).
-					WithShowCount(false).
-					Start()
-				lastUpdateTime = time.Now()
+			// Use a randomized temporary path for downloading to ensure atomicity and concurrency safety
+			// Similar to how homebrew and mise handle incomplete downloads.
+			randSuffix, _ := env.RandomString(8)
+			downloadTmpPath := fmt.Sprintf("%s.tmp.%s", downloadPath, randSuffix)
+
+			// Start a spinner for the connection/download phase
+			var spinner *pterm.SpinnerPrinter
+			if !quietProgress {
+				spinner, _ = output.StartSpinner(fmt.Sprintf("Connecting to %s...", tool))
 			}
 
-			// Throttle updates to prevent terminal rendering bottlenecks (max 10 updates per second)
-			now := time.Now()
-			if now.Sub(lastUpdateTime) > 100*time.Millisecond || downloaded >= total {
-				if progressbar != nil {
-					diff := downloaded - lastDownloaded
-					if diff != 0 {
-						// MUST update title BEFORE Add().
-						// If Add() reaches 100%, pterm internally calls Stop() and freezes the UI.
-						// Any title update after Add() would be completely ignored on the final frame.
-						progressbar.UpdateTitle(fmt.Sprintf("Downloading %s (%s/%s)",
-							tool,
-							humanize.Bytes(uint64(downloaded)),
-							humanize.Bytes(uint64(total))))
+			// Initialize progress bar
+			var progressbar *pterm.ProgressbarPrinter
+			var lastDownloaded int64
+			var lastUpdateTime time.Time
+			var progressMutex sync.Mutex
 
-						if diff < 0 {
-							// Download was reset (e.g. fallback from concurrent to sequential)
-							lastDownloaded = downloaded
-						} else {
-							progressbar.Add(int(diff))
-							lastDownloaded = downloaded
+			opts.ProgressCallback = func(downloaded, total int64) {
+				if quietProgress {
+					if reporter, ok := ctx.Value(ContextKeyProgressReporter).(ProgressReporter); ok {
+						reporter(tool, downloaded, total)
+					}
+					return
+				}
+				progressMutex.Lock()
+				defer progressMutex.Unlock()
+
+				// Stop the connection spinner once we start receiving bytes,
+				// BUT ONLY if we are going to start a progress bar.
+				if spinner != nil && total > 0 {
+					spinner.Stop()
+					spinner = nil
+				}
+
+				// Initialize progress bar if not already done and total is known
+				if progressbar == nil && total > 0 {
+					progressbar, _ = pterm.DefaultProgressbar.
+						WithTotal(int(total)).
+						WithTitle(fmt.Sprintf("Downloading %s (%s)", tool, humanize.Bytes(uint64(total)))).
+						WithShowCount(false).
+						Start()
+					lastUpdateTime = time.Now()
+				}
+
+				// Throttle updates to prevent terminal rendering bottlenecks (max 10 updates per second)
+				now := time.Now()
+				if now.Sub(lastUpdateTime) > 100*time.Millisecond || downloaded >= total {
+					if progressbar != nil {
+						diff := downloaded - lastDownloaded
+						if diff != 0 {
+							// MUST update title BEFORE Add().
+							// If Add() reaches 100%, pterm internally calls Stop() and freezes the UI.
+							// Any title update after Add() would be completely ignored on the final frame.
+							progressbar.UpdateTitle(fmt.Sprintf("Downloading %s (%s/%s)",
+								tool,
+								humanize.Bytes(uint64(downloaded)),
+								humanize.Bytes(uint64(total))))
+
+							if diff < 0 {
+								// Download was reset (e.g. fallback from concurrent to sequential)
+								lastDownloaded = downloaded
+							} else {
+								progressbar.Add(int(diff))
+								lastDownloaded = downloaded
+							}
+
+							lastUpdateTime = now
 						}
-
+						if total > 0 && downloaded >= total {
+							progressbar.Stop()
+						}
+					} else if spinner != nil {
+						// Update spinner text if we don't have a progress bar (unknown total)
+						spinner.UpdateText(fmt.Sprintf("Downloading %s (%s)...", tool, humanize.Bytes(uint64(downloaded))))
 						lastUpdateTime = now
 					}
-					if total > 0 && downloaded >= total {
-						progressbar.Stop()
-					}
-				} else if spinner != nil {
-					// Update spinner text if we don't have a progress bar (unknown total)
-					spinner.UpdateText(fmt.Sprintf("Downloading %s (%s)...", tool, humanize.Bytes(uint64(downloaded))))
-					lastUpdateTime = now
 				}
 			}
-		}
 
-		if err := downloader.Download(ctx, versionInfo.DownloadURL, downloadTmpPath, opts); err != nil {
+			if err := downloader.Download(ctx, versionInfo.DownloadURL, downloadTmpPath, opts); err != nil {
+				if spinner != nil {
+					spinner.Stop()
+				}
+				if progressbar != nil {
+					progressbar.Stop()
+				}
+				os.Remove(downloadTmpPath)
+				return fmt.Errorf("failed to download: %w", err)
+			}
 			if spinner != nil {
 				spinner.Stop()
 			}
 			if progressbar != nil {
 				progressbar.Stop()
 			}
-			os.Remove(downloadTmpPath)
-			return fmt.Errorf("failed to download: %w", err)
-		}
-		if spinner != nil {
-			spinner.Stop()
-		}
-		if progressbar != nil {
-			progressbar.Stop()
-		}
 
-		// Atomic rename from temp download path to final download path
-		if err := os.Rename(downloadTmpPath, downloadPath); err != nil {
-			os.Remove(downloadTmpPath)
-			return fmt.Errorf("failed to finalize download: %w", err)
-		}
+			// Atomic rename from temp download path to final download path
+			if err := os.Rename(downloadTmpPath, downloadPath); err != nil {
+				os.Remove(downloadTmpPath)
+				return fmt.Errorf("failed to finalize download: %w", err)
+			}
 
-		if !quietProgress {
-			output.Successf("downloaded to %s", downloadPath)
+			saveToDownloadCache(downloadPath, cachePath)
+
+			if !quietProgress {
+				output.Successf("downloaded to %s", downloadPath)
+			}
 		}
 		defer func() {
 			if im.settings != nil && im.settings.AlwaysKeepDownload {
@@ -1557,3 +1569,81 @@ func (im *InstallationManager) removeEmptyDirs(path string, root string) {
 		dir = filepath.Dir(dir)
 	}
 }
+
+func getDownloadCachePath(downloadURL, checksum string) string {
+	var key string
+	if checksum != "" {
+		clean := strings.TrimPrefix(checksum, "sha256:")
+		clean = strings.TrimPrefix(clean, "sha512:")
+		key = clean
+	} else {
+		sum := sha256.Sum256([]byte(downloadURL))
+		key = hex.EncodeToString(sum[:])
+	}
+	ext := filepath.Ext(downloadURL)
+	if strings.HasSuffix(downloadURL, ".tar.gz") {
+		ext = ".tar.gz"
+	} else if strings.HasSuffix(downloadURL, ".tar.xz") {
+		ext = ".tar.xz"
+	} else if strings.HasSuffix(downloadURL, ".tar.bz2") {
+		ext = ".tar.bz2"
+	}
+	return filepath.Join(env.GetCacheDir(), "downloads", key+ext)
+}
+
+func tryUseDownloadCache(ctx context.Context, downloader download.Downloader, cachePath, downloadPath, expectedChecksum string) bool {
+	info, err := os.Stat(cachePath)
+	if err != nil || info.IsDir() || info.Size() == 0 {
+		return false
+	}
+	if expectedChecksum != "" && downloader != nil {
+		if err := downloader.VerifyChecksum(ctx, cachePath, expectedChecksum); err != nil {
+			_ = os.Remove(cachePath)
+			return false
+		}
+	}
+	if err := os.MkdirAll(filepath.Dir(downloadPath), 0755); err != nil {
+		return false
+	}
+	_ = os.Remove(downloadPath)
+	if err := os.Link(cachePath, downloadPath); err == nil {
+		return true
+	}
+	src, err := os.Open(cachePath)
+	if err != nil {
+		return false
+	}
+	defer src.Close()
+	dst, err := os.Create(downloadPath)
+	if err != nil {
+		return false
+	}
+	defer dst.Close()
+	if _, err := io.Copy(dst, src); err != nil {
+		_ = os.Remove(downloadPath)
+		return false
+	}
+	return true
+}
+
+func saveToDownloadCache(downloadPath, cachePath string) {
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err != nil {
+		return
+	}
+	_ = os.Remove(cachePath)
+	if err := os.Link(downloadPath, cachePath); err == nil {
+		return
+	}
+	src, err := os.Open(downloadPath)
+	if err != nil {
+		return
+	}
+	defer src.Close()
+	dst, err := os.Create(cachePath)
+	if err != nil {
+		return
+	}
+	defer dst.Close()
+	_, _ = io.Copy(dst, src)
+}
+

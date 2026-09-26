@@ -706,5 +706,36 @@ func TestInstallationManager_PrefetchGitLabReleases(t *testing.T) {
 	im.PrefetchGitLabReleases(ctx, tools)
 }
 
+func TestInstallationManager_DownloadCache(t *testing.T) {
+	tempDir := t.TempDir()
+	sourceFile := filepath.Join(tempDir, "source.tar.gz")
+	cacheFile := filepath.Join(tempDir, "cache.tar.gz")
+	targetFile := filepath.Join(tempDir, "target.tar.gz")
+
+	content := "test archive binary payload 12345"
+	if err := os.WriteFile(sourceFile, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write source file: %v", err)
+	}
+
+	// 1. Save to cache
+	saveToDownloadCache(sourceFile, cacheFile)
+	if _, err := os.Stat(cacheFile); err != nil {
+		t.Fatalf("expected cache file to exist: %v", err)
+	}
+
+	// 2. Try use download cache
+	ctx := context.Background()
+	ok := tryUseDownloadCache(ctx, nil, cacheFile, targetFile, "")
+	if !ok {
+		t.Fatal("expected tryUseDownloadCache to succeed")
+	}
+
+	data, err := os.ReadFile(targetFile)
+	if err != nil || string(data) != content {
+		t.Fatalf("target file content mismatch: expected %q, got %q", content, string(data))
+	}
+}
+
+
 
 
