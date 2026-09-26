@@ -17,16 +17,39 @@ func TestResolveGitHubToken_EnvPriority(t *testing.T) {
 		"UNIRTM_GITHUB_TOKEN",
 		"MISE_GITHUB_TOKEN",
 		"GITHUB_TOKEN",
+		"UNIRTM_GH_TOKEN",
+		"MISE_GH_TOKEN",
+		"GH_TOKEN",
 		"UNIRTM_GITHUB_API_TOKEN",
 		"MISE_GITHUB_API_TOKEN",
 		"GITHUB_API_TOKEN",
 		"UNIRTM_GITHUB_CREDENTIAL_COMMAND",
 		"MISE_GITHUB_CREDENTIAL_COMMAND",
 		"GITHUB_CREDENTIAL_COMMAND",
+		"UNIRTM_CONFIG_DIR",
+		"MISE_CONFIG_DIR",
+		"CONFIG_DIR",
+		"UNIRTM_GH_CONFIG_DIR",
+		"MISE_GH_CONFIG_DIR",
+		"GH_CONFIG_DIR",
+		"UNIRTM_XDG_CONFIG_HOME",
+		"MISE_XDG_CONFIG_HOME",
+		"XDG_CONFIG_HOME",
 	}
 	for _, v := range envVars {
 		t.Setenv(v, "")
 	}
+
+	// Point config dirs to an isolated empty directory to avoid reading host configs
+	emptyDir := t.TempDir()
+	t.Setenv("UNIRTM_CONFIG_DIR", emptyDir)
+	t.Setenv("GH_CONFIG_DIR", emptyDir)
+	t.Setenv("XDG_CONFIG_HOME", emptyDir)
+
+	// Mock gh auth token command to avoid invoking host gh CLI
+	origGhAuthTokenFn := ghAuthTokenFn
+	ghAuthTokenFn = func(host string) string { return "" }
+	defer func() { ghAuthTokenFn = origGhAuthTokenFn }()
 
 	t.Run("UNIRTM_GITHUB_TOKEN takes priority", func(t *testing.T) {
 		t.Setenv("UNIRTM_GITHUB_TOKEN", "unirtm-token")
@@ -47,12 +70,32 @@ func TestResolveGitHubToken_EnvPriority(t *testing.T) {
 		}
 	})
 
+	t.Run("GH_TOKEN used when GITHUB_TOKEN not set", func(t *testing.T) {
+		t.Setenv("GH_TOKEN", "gh-token")
+
+		got := resolveGitHubToken("github.com")
+		if got != "gh-token" {
+			t.Errorf("expected 'gh-token', got %q", got)
+		}
+	})
+
 	t.Run("GITHUB_API_TOKEN used as fallback", func(t *testing.T) {
 		t.Setenv("GITHUB_API_TOKEN", "api-token")
 
 		got := resolveGitHubToken("github.com")
 		if got != "api-token" {
 			t.Errorf("expected 'api-token', got %q", got)
+		}
+	})
+
+	t.Run("gh auth token fallback when configured", func(t *testing.T) {
+		orig := ghAuthTokenFn
+		ghAuthTokenFn = func(host string) string { return "gh-cli-token" }
+		defer func() { ghAuthTokenFn = orig }()
+
+		got := resolveGitHubToken("github.com")
+		if got != "gh-cli-token" {
+			t.Errorf("expected 'gh-cli-token', got %q", got)
 		}
 	})
 

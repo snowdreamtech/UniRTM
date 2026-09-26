@@ -733,6 +733,7 @@ dummy2/
 gin.log
 coverage.out
 cmd/.unirtm.toml
+cmd/unirtm.lock
 *.patch
 *.rej
 coverage_*.txt

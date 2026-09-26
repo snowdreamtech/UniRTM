@@ -77,12 +77,16 @@ func resolveGitHubToken(host string) string {
 	}
 
 	// 7. gh CLI auth token execution fallback
-	if token := runGhAuthToken(host); token != "" {
-		return token
+	if ghAuthTokenFn != nil {
+		if token := ghAuthTokenFn(host); token != "" {
+			return token
+		}
 	}
 
 	return ""
 }
+
+var ghAuthTokenFn = runGhAuthToken
 
 // runGhAuthToken runs `gh auth token` to retrieve token from gh credential helper if available.
 func runGhAuthToken(host string) string {
