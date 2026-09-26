@@ -147,8 +147,8 @@ func (g *GitHubBackend) BatchPrefetchReleases(ctx context.Context, specs []GitHu
 		return nil
 	}
 
-	// Process in batches of 40 to avoid GraphQL complexity limits
-	const batchSize = 40
+	// Process in batches of 50 to avoid GraphQL complexity limits
+	const batchSize = 50
 	for i := 0; i < len(needed); i += batchSize {
 		end := i + batchSize
 		if end > len(needed) {
