@@ -47,6 +47,8 @@ jobs:
       security-events: write
     timeout-minutes: 50
     env:
+      GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
       PYTHONUTF8: 1
     steps:
       - name: "📂 Checkout Repository Code"
@@ -76,7 +78,8 @@ jobs:
         run: |
           unirtm run verify
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
           PYTHONUTF8: 1
           TRIVY_CACHE_DIR: .trivycache
           UNIRTM_YES: 1
