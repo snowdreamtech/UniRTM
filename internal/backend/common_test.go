@@ -146,6 +146,9 @@ func TestFindBestAsset_MuslFallback(t *testing.T) {
 }
 
 func TestProbeURL(t *testing.T) {
+	ClearProbeURLCache()
+	defer ClearProbeURLCache()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/good" {
 			w.WriteHeader(http.StatusOK)
@@ -163,6 +166,39 @@ func TestProbeURL(t *testing.T) {
 		t.Error("expected /bad to be inaccessible")
 	}
 }
+
+func TestProbeURL_DeduplicationAndCache(t *testing.T) {
+	ClearProbeURLCache()
+	defer ClearProbeURLCache()
+
+	var headReqCount int
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		headReqCount++
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ts.Close()
+
+	client := ts.Client()
+	done := make(chan bool, 5)
+	for i := 0; i < 5; i++ {
+		go func() {
+			ok := ProbeURL(context.Background(), client, ts.URL+"/probe-target")
+			if !ok {
+				t.Errorf("expected probe to succeed")
+			}
+			done <- true
+		}()
+	}
+
+	for i := 0; i < 5; i++ {
+		<-done
+	}
+
+	if headReqCount != 1 {
+		t.Errorf("expected exactly 1 HEAD request due to singleflight and caching, got %d", headReqCount)
+	}
+}
+
 
 func TestFetchAndParseChecksumFile(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

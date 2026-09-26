@@ -25,10 +25,26 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/version"
 )
 
+type probeCacheEntry struct {
+	ok        bool
+	expiresAt time.Time
+}
+
 var (
 	checksumCache  sync.Map
 	checksumFlight singleflight.Group
+	probeURLCache  sync.Map
+	probeURLFlight singleflight.Group
 )
+
+// ClearProbeURLCache clears in-memory cache for ProbeURL results.
+func ClearProbeURLCache() {
+	probeURLCache.Range(func(key, value any) bool {
+		probeURLCache.Delete(key)
+		return true
+	})
+}
+
 
 // CommonAsset represents a generic asset from a hosting platform.
 type CommonAsset struct {
@@ -680,21 +696,50 @@ func GenericGetDownloadInfoWithPatterns(ctx context.Context, p HostingProvider, 
 	}, nil
 }
 
-// ProbeURL checks if a URL is accessible via HEAD request.
+// ProbeURL checks if a URL is accessible via HEAD request, deduplicating concurrent checks and caching results with a 1-minute TTL.
 func ProbeURL(ctx context.Context, client *http.Client, url string) bool {
-	req, err := http.NewRequestWithContext(ctx, "HEAD", url, http.NoBody)
+	if val, ok := probeURLCache.Load(url); ok {
+		if entry, ok := val.(probeCacheEntry); ok && time.Now().Before(entry.expiresAt) {
+			return entry.ok
+		}
+	}
+
+	if client == nil {
+		client = pkgHttp.NewClient()
+	}
+
+	res, err, _ := probeURLFlight.Do(url, func() (interface{}, error) {
+		if val, ok := probeURLCache.Load(url); ok {
+			if entry, ok := val.(probeCacheEntry); ok && time.Now().Before(entry.expiresAt) {
+				return entry.ok, nil
+			}
+		}
+
+		req, err := http.NewRequestWithContext(ctx, "HEAD", url, http.NoBody)
+		if err != nil {
+			return false, nil
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return false, nil
+		}
+		defer resp.Body.Close()
+
+		ok := (resp.StatusCode == http.StatusOK)
+		probeURLCache.Store(url, probeCacheEntry{
+			ok:        ok,
+			expiresAt: time.Now().Add(1 * time.Minute),
+		})
+		return ok, nil
+	})
+
 	if err != nil {
 		return false
 	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return false
-	}
-	defer resp.Body.Close()
-
-	return resp.StatusCode == http.StatusOK
+	return res.(bool)
 }
+
 
 // NormalizeVersionPrefix intelligently ensures the version string has the correct 'v' prefix behavior.
 // If requireV is true, it prepends 'v' if the version starts with a digit.
