@@ -9,13 +9,17 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"sync"
 	"time"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
 
 type ComposerBackend struct {
-	client *http.Client
+	client        *http.Client
+	requestGroup  singleflight.Group
+	versionsCache sync.Map // map[string][]string (tool -> sorted version strings)
 }
 
 func NewComposerBackend() *ComposerBackend {
@@ -39,43 +43,77 @@ type packagistResponse struct {
 }
 
 func (b *ComposerBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
-	url := fmt.Sprintf("https://packagist.org/packages/%s.json", tool)
+	if ctx == nil {
+		return nil, NewBackendError(b.Name(), tool, "create request", fmt.Errorf("net/http: nil Context"))
+	}
+	if val, ok := b.versionsCache.Load(tool); ok {
+		versionStrs := val.([]string)
+		versions := make([]VersionInfo, len(versionStrs))
+		for i, v := range versionStrs {
+			versions[i] = VersionInfo{
+				Version:  v,
+				Platform: platform,
+			}
+		}
+		return versions, nil
+	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	result, err, _ := b.requestGroup.Do("versions:"+tool, func() (interface{}, error) {
+		if val, ok := b.versionsCache.Load(tool); ok {
+			return val, nil
+		}
+
+		url := fmt.Sprintf("https://packagist.org/packages/%s.json", tool)
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "create request", err)
+		}
+
+		resp, err := b.client.Do(req)
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "execute request", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, NewBackendError(b.Name(), tool, "package not found on packagist", nil)
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
+		}
+
+		var data packagistResponse
+		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+			return nil, NewBackendError(b.Name(), tool, "decode response", err)
+		}
+
+		var versionStrs []string
+		for v := range data.Package.Versions {
+			versionStrs = append(versionStrs, v)
+		}
+
+		// Sort versions (roughly newest first)
+		sort.Slice(versionStrs, func(i, j int) bool {
+			return versionStrs[i] > versionStrs[j]
+		})
+
+		b.versionsCache.Store(tool, versionStrs)
+		return versionStrs, nil
+	})
+
 	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "create request", err)
+		return nil, err
 	}
 
-	resp, err := b.client.Do(req)
-	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "execute request", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, NewBackendError(b.Name(), tool, "package not found on packagist", nil)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
-	}
-
-	var data packagistResponse
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, NewBackendError(b.Name(), tool, "decode response", err)
-	}
-
-	var versions []VersionInfo
-	for v := range data.Package.Versions {
-		versions = append(versions, VersionInfo{
+	versionStrs := result.([]string)
+	versions := make([]VersionInfo, len(versionStrs))
+	for i, v := range versionStrs {
+		versions[i] = VersionInfo{
 			Version:  v,
 			Platform: platform,
-		})
+		}
 	}
-
-	// Sort versions (roughly newest first)
-	sort.Slice(versions, func(i, j int) bool {
-		return versions[i].Version > versions[j].Version
-	})
 
 	return versions, nil
 }

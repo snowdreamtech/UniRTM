@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
 
@@ -184,5 +185,45 @@ func TestGemBackend_GetDownloadInfo(t *testing.T) {
 	}
 	if info.Version != "7.0.0" {
 		t.Errorf("expected 7.0.0, got %s", info.Version)
+	}
+}
+
+func TestGemBackend_ConcurrentDeduplication(t *testing.T) {
+	var requestCount int32
+	b := NewGemBackend()
+	b.client.Transport = &mockCargoTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			if strings.Contains(req.URL.Path, "versions/rails.json") {
+				atomic.AddInt32(&requestCount, 1)
+				body := `[{"number": "7.0.0"}, {"number": "7.0.1"}]`
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Body:       io.NopCloser(bytes.NewBufferString(body)),
+				}, nil
+			}
+			return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(bytes.NewBufferString(""))}, nil
+		},
+	}
+
+	platforms := []Platform{
+		{OS: "linux", Arch: "amd64"},
+		{OS: "linux", Arch: "arm64"},
+		{OS: "darwin", Arch: "amd64"},
+		{OS: "darwin", Arch: "arm64"},
+		{OS: "windows", Arch: "amd64"},
+	}
+
+	for _, p := range platforms {
+		res, err := b.ListVersions(context.Background(), "rails", p)
+		if err != nil {
+			t.Fatalf("ListVersions error: %v", err)
+		}
+		if len(res) != 2 || res[0].Platform != p {
+			t.Errorf("unexpected result for platform %v", p)
+		}
+	}
+
+	if atomic.LoadInt32(&requestCount) != 1 {
+		t.Errorf("expected exactly 1 network request due to cache, got %d", requestCount)
 	}
 }
