@@ -9,9 +9,11 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
+	"golang.org/x/sync/singleflight"
 )
 
 // OfflineManager detects network availability and provides offline operation support.
@@ -28,17 +30,31 @@ type OfflineManager struct {
 	cachedAt time.Time
 	// cacheDuration is how long to cache the status check.
 	cacheDuration time.Duration
+
+	mu     sync.RWMutex
+	flight singleflight.Group
+	client *http.Client
 }
 
 // NewOfflineManager creates a new OfflineManager.
 func NewOfflineManager() *OfflineManager {
+	timeout := 5 * time.Second
 	return &OfflineManager{
 		probeURLs: []string{
 			"https://api.github.com",
 			"https://aquaproj.github.io",
 		},
-		timeout:       5 * time.Second,
+		timeout:       timeout,
 		cacheDuration: 30 * time.Second,
+		client: &http.Client{
+			Timeout: timeout,
+			Transport: &http.Transport{
+				DialContext: (&net.Dialer{
+					Timeout:   3 * time.Second,
+					KeepAlive: 0,
+				}).DialContext,
+			},
+		},
 	}
 }
 
@@ -48,43 +64,65 @@ func NewOfflineManager() *OfflineManager {
 //
 // Validates Requirement: 19.1 (network availability detection)
 func (om *OfflineManager) IsOnline(ctx context.Context) bool {
-	// Return cached status if recent enough
+	// Return cached status if recent enough (read lock)
+	om.mu.RLock()
 	if om.cachedStatus != nil && time.Since(om.cachedAt) < om.cacheDuration {
-		return *om.cachedStatus
+		status := *om.cachedStatus
+		om.mu.RUnlock()
+		return status
 	}
+	om.mu.RUnlock()
 
-	client := &http.Client{
-		Timeout: om.timeout,
-		Transport: &http.Transport{
-			DialContext: (&net.Dialer{
-				Timeout:   3 * time.Second,
-				KeepAlive: 0,
-			}).DialContext,
-		},
-	}
-
-	online := false
-	for _, url := range om.probeURLs {
-		req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
-		if err != nil {
-			continue
+	res, _, _ := om.flight.Do("is_online", func() (interface{}, error) {
+		// Double check after flight acquisition
+		om.mu.RLock()
+		if om.cachedStatus != nil && time.Since(om.cachedAt) < om.cacheDuration {
+			status := *om.cachedStatus
+			om.mu.RUnlock()
+			return status, nil
 		}
-		resp, err := client.Do(req)
-		if err == nil {
-			resp.Body.Close()
-			online = true
-			break
+		om.mu.RUnlock()
+
+		client := om.client
+		if client == nil {
+			client = &http.Client{
+				Timeout: om.timeout,
+				Transport: &http.Transport{
+					DialContext: (&net.Dialer{
+						Timeout:   3 * time.Second,
+						KeepAlive: 0,
+					}).DialContext,
+				},
+			}
 		}
-	}
 
-	om.cachedStatus = &online
-	om.cachedAt = time.Now()
+		online := false
+		for _, url := range om.probeURLs {
+			req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
+			if err != nil {
+				continue
+			}
+			resp, err := client.Do(req)
+			if err == nil {
+				resp.Body.Close()
+				online = true
+				break
+			}
+		}
 
-	logger.Debug("Network status checked", map[string]interface{}{
-		"online": online,
+		om.mu.Lock()
+		om.cachedStatus = &online
+		om.cachedAt = time.Now()
+		om.mu.Unlock()
+
+		logger.Debug("Network status checked", map[string]interface{}{
+			"online": online,
+		})
+
+		return online, nil
 	})
 
-	return online
+	return res.(bool)
 }
 
 // RequireOnline checks network connectivity and returns an error if offline.

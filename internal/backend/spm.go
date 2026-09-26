@@ -7,7 +7,23 @@ import (
 	"context"
 	"os/exec"
 	"strings"
+	"sync"
+
+	"golang.org/x/sync/singleflight"
 )
+
+var (
+	spmCache  sync.Map // map[string][]VersionInfo
+	spmFlight singleflight.Group
+)
+
+// ClearSpmCache clears the in-memory SPM versions cache. Mainly used for testing.
+func ClearSpmCache() {
+	spmCache.Range(func(key, _ interface{}) bool {
+		spmCache.Delete(key)
+		return true
+	})
+}
 
 // SpmBackend implements the Backend interface for Swift Package Manager.
 type SpmBackend struct{}
@@ -26,34 +42,64 @@ func (b *SpmBackend) Dependencies() []string {
 }
 
 func (b *SpmBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
-	// For SPM, tool is usually a git repo URL.
-	// We use git ls-remote to fetch tags.
-	cmd := exec.CommandContext(ctx, "git", "ls-remote", "--tags", tool)
-	disableGitPrompts(cmd)
-	out, err := cmd.Output()
+	if val, ok := spmCache.Load(tool); ok {
+		cached := val.([]VersionInfo)
+		res := make([]VersionInfo, len(cached))
+		copy(res, cached)
+		for i := range res {
+			res[i].Platform = platform
+		}
+		return res, nil
+	}
+
+	res, err, _ := spmFlight.Do(tool, func() (interface{}, error) {
+		// Re-check after acquiring flight
+		if val, ok := spmCache.Load(tool); ok {
+			return val.([]VersionInfo), nil
+		}
+
+		// For SPM, tool is usually a git repo URL.
+		// We use git ls-remote to fetch tags.
+		cmd := exec.CommandContext(ctx, "git", "ls-remote", "--tags", tool)
+		disableGitPrompts(cmd)
+		out, err := cmd.Output()
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "git ls-remote failed", err)
+		}
+
+		var versions []VersionInfo
+		lines := strings.Split(string(out), "\n")
+		for _, line := range lines {
+			parts := strings.Fields(line)
+			if len(parts) < 2 {
+				continue
+			}
+			ref := parts[1]
+			if strings.HasPrefix(ref, "refs/tags/") {
+				v := strings.TrimPrefix(ref, "refs/tags/")
+				v = strings.TrimSuffix(v, "^{}") // Remove peeled tag suffix
+				versions = append(versions, VersionInfo{
+					Version:  v,
+					Platform: platform,
+				})
+			}
+		}
+
+		spmCache.Store(tool, versions)
+		return versions, nil
+	})
+
 	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "git ls-remote failed", err)
+		return nil, err
 	}
 
-	var versions []VersionInfo
-	lines := strings.Split(string(out), "\n")
-	for _, line := range lines {
-		parts := strings.Fields(line)
-		if len(parts) < 2 {
-			continue
-		}
-		ref := parts[1]
-		if strings.HasPrefix(ref, "refs/tags/") {
-			v := strings.TrimPrefix(ref, "refs/tags/")
-			v = strings.TrimSuffix(v, "^{}") // Remove peeled tag suffix
-			versions = append(versions, VersionInfo{
-				Version:  v,
-				Platform: platform,
-			})
-		}
+	cached := res.([]VersionInfo)
+	out := make([]VersionInfo, len(cached))
+	copy(out, cached)
+	for i := range out {
+		out[i].Platform = platform
 	}
-
-	return versions, nil
+	return out, nil
 }
 
 func (b *SpmBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {

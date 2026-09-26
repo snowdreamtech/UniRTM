@@ -18,11 +18,16 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/version"
+	"golang.org/x/sync/singleflight"
+)
+
+var (
+	githubAPIURL = "https://api.github.com/repos/snowdreamtech/UniRTM/releases/latest"
 )
 
 const (
-	githubAPIURL = "https://api.github.com/repos/snowdreamtech/UniRTM/releases/latest"
 	cacheFile    = "update-cache.json"
 	checkPeriod  = 24 * time.Hour
 	promptPeriod = 24 * time.Hour
@@ -45,6 +50,8 @@ var (
 		"__complete":  true, // Cobra completion
 	}
 	cacheMutex sync.Mutex
+	updaterFlight singleflight.Group
+	updaterClient = pkgHttp.NewClientWithTimeout(3 * time.Second)
 )
 
 // getCachePath returns the path to the update cache file.
@@ -92,45 +99,46 @@ func writeCache(cache *UpdateCache) error {
 
 // fetchLatestRelease fetches the latest release version from GitHub API.
 func fetchLatestRelease() (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
+	v, err, _ := updaterFlight.Do("fetch_latest_release", func() (interface{}, error) {
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, githubAPIURL, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, githubAPIURL, nil)
+		if err != nil {
+			return "", err
+		}
+
+		req.Header.Set("Accept", "application/vnd.github.v3+json")
+
+		resp, err := updaterClient.Do(req)
+		if err != nil {
+			return "", err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		}
+
+		// Bound response body size to 10MB to prevent potential memory exhaustion
+		body, err := io.ReadAll(io.LimitReader(resp.Body, 10*1024*1024))
+		if err != nil {
+			return "", err
+		}
+
+		var release struct {
+			TagName string `json:"tag_name"`
+		}
+		if err := json.Unmarshal(body, &release); err != nil {
+			return "", err
+		}
+
+		return strings.TrimPrefix(release.TagName, "v"), nil
+	})
 	if err != nil {
 		return "", err
 	}
-
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-
-	// Use proxy if configured
-	client := &http.Client{}
-	// Note: We could configure a proxy here if needed, but for now we rely on the default transport
-	// which respects HTTP_PROXY/HTTPS_PROXY environment variables.
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
-	// Bound response body size to 10MB to prevent potential memory exhaustion
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 10*1024*1024))
-	if err != nil {
-		return "", err
-	}
-
-	var release struct {
-		TagName string `json:"tag_name"`
-	}
-	if err := json.Unmarshal(body, &release); err != nil {
-		return "", err
-	}
-
-	return strings.TrimPrefix(release.TagName, "v"), nil
+	return v.(string), nil
 }
 
 // CheckUpdateAsync asynchronously checks for an update if 24 hours have passed since the last check.

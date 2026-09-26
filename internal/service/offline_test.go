@@ -7,6 +7,8 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -95,3 +97,40 @@ func TestOfflineManager_SkipIfOffline(t *testing.T) {
 		t.Error("expected SkipIfOffline to return true when offline")
 	}
 }
+
+func TestOfflineManager_Concurrent(t *testing.T) {
+	om := NewOfflineManager()
+
+	var reqCount int32
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&reqCount, 1)
+		time.Sleep(50 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ts.Close()
+
+	om.probeURLs = []string{ts.URL}
+
+	var wg sync.WaitGroup
+	results := make([]bool, 10)
+
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			results[idx] = om.IsOnline(context.Background())
+		}(i)
+	}
+	wg.Wait()
+
+	for i := 0; i < 10; i++ {
+		if !results[i] {
+			t.Errorf("worker %d got false, want true", i)
+		}
+	}
+
+	if atomic.LoadInt32(&reqCount) != 1 {
+		t.Errorf("expected 1 probe request due to singleflight, got %d", reqCount)
+	}
+}
+

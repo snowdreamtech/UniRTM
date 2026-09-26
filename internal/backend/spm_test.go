@@ -160,3 +160,62 @@ func TestSpmBackend_GetDownloadInfo(t *testing.T) {
 		t.Errorf("expected 509.0.0, got %s", info.Version)
 	}
 }
+
+func TestSpmBackend_CacheAndSingleflight(t *testing.T) {
+	ClearSpmCache()
+	defer ClearSpmCache()
+
+	tmpDir := t.TempDir()
+	if out, err := exec.Command("git", "-C", tmpDir, "init").CombinedOutput(); err != nil {
+		t.Fatalf("git init failed: %v, output: %s", err, string(out))
+	}
+	if out, err := exec.Command("git", "-C", tmpDir, "config", "user.email", "test@example.com").CombinedOutput(); err != nil {
+		t.Fatalf("git config email failed: %v, output: %s", err, string(out))
+	}
+	if out, err := exec.Command("git", "-C", tmpDir, "config", "user.name", "Test User").CombinedOutput(); err != nil {
+		t.Fatalf("git config name failed: %v, output: %s", err, string(out))
+	}
+	if out, err := exec.Command("git", "-c", "commit.gpgsign=false", "-C", tmpDir, "commit", "--allow-empty", "-m", "init").CombinedOutput(); err != nil {
+		t.Fatalf("git commit failed: %v, output: %s", err, string(out))
+	}
+	if out, err := exec.Command("git", "-C", tmpDir, "tag", "v1.0.0").CombinedOutput(); err != nil {
+		t.Fatalf("git tag failed: %v, output: %s", err, string(out))
+	}
+
+	repoURL := "file://" + tmpDir
+	b := NewSpmBackend()
+	ctx := context.Background()
+	p := Platform{OS: "darwin", Arch: "arm64"}
+
+	// First call populates cache
+	versions1, err := b.ListVersions(ctx, repoURL, p)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(versions1) != 1 || versions1[0].Version != "v1.0.0" {
+		t.Fatalf("expected [v1.0.0], got %v", versions1)
+	}
+
+	// Add new tag in git repo; since cached, second call should return cached result
+	if out, err := exec.Command("git", "-C", tmpDir, "tag", "v2.0.0").CombinedOutput(); err != nil {
+		t.Fatalf("git tag v2.0.0 failed: %v, output: %s", err, string(out))
+	}
+
+	versions2, err := b.ListVersions(ctx, repoURL, p)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(versions2) != 1 || versions2[0].Version != "v1.0.0" {
+		t.Errorf("expected cached result [v1.0.0], got %v", versions2)
+	}
+
+	// Clear cache and verify updated tags are fetched
+	ClearSpmCache()
+	versions3, err := b.ListVersions(ctx, repoURL, p)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(versions3) != 2 {
+		t.Errorf("expected 2 versions after cache clear, got %d", len(versions3))
+	}
+}

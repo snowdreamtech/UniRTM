@@ -4,8 +4,12 @@
 package updater
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -82,3 +86,41 @@ func TestPromptIfAvailable_Blacklist(t *testing.T) {
 	PromptIfAvailable("0.5.0", "version")
 	PromptIfAvailable("0.5.0", "completion")
 }
+
+func TestFetchLatestRelease_Mock(t *testing.T) {
+	var count int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&count, 1)
+		time.Sleep(50 * time.Millisecond)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"tag_name": "v1.2.3"}`))
+	}))
+	defer server.Close()
+
+	oldURL := githubAPIURL
+	githubAPIURL = server.URL
+	defer func() { githubAPIURL = oldURL }()
+
+	var wg sync.WaitGroup
+	errs := make([]error, 5)
+	versions := make([]string, 5)
+
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			v, err := fetchLatestRelease()
+			versions[idx] = v
+			errs[idx] = err
+		}(i)
+	}
+	wg.Wait()
+
+	for i := 0; i < 5; i++ {
+		require.NoError(t, errs[i])
+		assert.Equal(t, "1.2.3", versions[i])
+	}
+
+	assert.Equal(t, int32(1), atomic.LoadInt32(&count))
+}
+

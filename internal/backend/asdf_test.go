@@ -37,6 +37,8 @@ func TestAsdfBackend_ListVersions(t *testing.T) {
 	if env.RuntimeGOOS == "windows" {
 		t.Skip("skipping on windows because it requires sh")
 	}
+	ClearAsdfCache()
+	defer ClearAsdfCache()
 	b := NewAsdfBackend()
 	tmpDir := t.TempDir()
 	b.pluginsPath = tmpDir
@@ -65,6 +67,8 @@ func TestAsdfBackend_ResolveVersion(t *testing.T) {
 	if env.RuntimeGOOS == "windows" {
 		t.Skip("skipping on windows because it requires sh")
 	}
+	ClearAsdfCache()
+	defer ClearAsdfCache()
 	b := NewAsdfBackend()
 	tmpDir := t.TempDir()
 	b.pluginsPath = tmpDir
@@ -202,3 +206,55 @@ exit /b 0
 		t.Errorf("expected error for unknown tool clone")
 	}
 }
+
+func TestAsdfBackend_Cache(t *testing.T) {
+	if env.RuntimeGOOS == "windows" {
+		t.Skip("skipping on windows because it requires sh")
+	}
+	ClearAsdfCache()
+	defer ClearAsdfCache()
+
+	b := NewAsdfBackend()
+	tmpDir := t.TempDir()
+	b.pluginsPath = tmpDir
+	b.registryPath = filepath.Join(tmpDir, "registry")
+
+	toolDir := filepath.Join(tmpDir, "dummy")
+	os.MkdirAll(filepath.Join(toolDir, "bin"), 0o755)
+
+	scriptPath := filepath.Join(toolDir, "bin", "list-all")
+	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho '1.0.0'"), 0o755)
+
+	ctx := context.Background()
+	p := Platform{OS: "linux", Arch: "amd64"}
+
+	// First call populates cache
+	versions1, err := b.ListVersions(ctx, "dummy", p)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(versions1) != 1 || versions1[0].Version != "1.0.0" {
+		t.Fatalf("expected [1.0.0], got %v", versions1)
+	}
+
+	// Change script output; since cached, second call should return old cached version
+	os.WriteFile(scriptPath, []byte("#!/bin/sh\necho '2.0.0'"), 0o755)
+	versions2, err := b.ListVersions(ctx, "dummy", p)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(versions2) != 1 || versions2[0].Version != "1.0.0" {
+		t.Fatalf("expected cached [1.0.0], got %v", versions2)
+	}
+
+	// Clear cache and verify new output is read
+	ClearAsdfCache()
+	versions3, err := b.ListVersions(ctx, "dummy", p)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(versions3) != 1 || versions3[0].Version != "2.0.0" {
+		t.Fatalf("expected [2.0.0], got %v", versions3)
+	}
+}
+
