@@ -21,6 +21,7 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/version"
 )
 
@@ -396,11 +397,9 @@ func FetchAndParseChecksumFile(ctx context.Context, client *http.Client, url str
 		}
 	}
 
-	if client == nil || client.Transport == nil {
-		if diskCached := readChecksumDiskCache(url); diskCached != nil {
-			checksumCache.Store(url, diskCached)
-			return diskCached, nil
-		}
+	if diskCached := readChecksumDiskCache(url); diskCached != nil {
+		checksumCache.Store(url, diskCached)
+		return diskCached, nil
 	}
 
 	v, err, _ := checksumFlight.Do(url, func() (interface{}, error) {
@@ -410,11 +409,13 @@ func FetchAndParseChecksumFile(ctx context.Context, client *http.Client, url str
 			}
 		}
 
-		if client == nil || client.Transport == nil {
-			if diskCached := readChecksumDiskCache(url); diskCached != nil {
-				checksumCache.Store(url, diskCached)
-				return diskCached, nil
-			}
+		if diskCached := readChecksumDiskCache(url); diskCached != nil {
+			checksumCache.Store(url, diskCached)
+			return diskCached, nil
+		}
+
+		if client == nil {
+			client = pkgHttp.NewClient()
 		}
 
 		req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
@@ -459,9 +460,7 @@ func FetchAndParseChecksumFile(ctx context.Context, client *http.Client, url str
 		}
 
 		checksumCache.Store(url, checksums)
-		if client == nil || client.Transport == nil {
-			writeChecksumDiskCache(url, checksums)
-		}
+		writeChecksumDiskCache(url, checksums)
 		return checksums, nil
 	})
 

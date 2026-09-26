@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"sync/atomic"
 	"testing"
 )
 
@@ -864,6 +865,45 @@ func TestFetchAndParseChecksumFile_DiskCache(t *testing.T) {
 	}
 	if result["tool_linux_amd64.tar.gz"] != "abc123def456" {
 		t.Errorf("checksum mismatch: expected abc123def456, got %s", result["tool_linux_amd64.tar.gz"])
+	}
+}
+
+func TestFetchAndParseChecksumFile_ConcurrentDeduplication(t *testing.T) {
+	var requestCount int32
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&requestCount, 1)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("11223344  tool.tar.gz\n55667788 *tool.zip\n"))
+	}))
+	defer ts.Close()
+
+	testURL := ts.URL + "/SHASUMS256.txt"
+	defer func() {
+		p := getChecksumDiskCachePath(testURL)
+		_ = os.Remove(p)
+		checksumCache.Delete(testURL)
+	}()
+
+	client := &http.Client{Transport: http.DefaultTransport}
+
+	for i := 0; i < 5; i++ {
+		res, err := FetchAndParseChecksumFile(context.Background(), client, testURL)
+		if err != nil {
+			t.Fatalf("fetch error: %v", err)
+		}
+		if res["tool.tar.gz"] != "11223344" {
+			t.Errorf("expected 11223344, got %s", res["tool.tar.gz"])
+		}
+	}
+
+	if atomic.LoadInt32(&requestCount) != 1 {
+		t.Errorf("expected exactly 1 request due to singleflight and memory/disk cache, got %d", requestCount)
+	}
+
+	// Verify disk cache was written even when client.Transport != nil
+	p := getChecksumDiskCachePath(testURL)
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		t.Errorf("expected disk cache file to exist at %s", p)
 	}
 }
 
