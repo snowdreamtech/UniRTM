@@ -196,12 +196,19 @@ func findGhHostsFile() string {
 
 	// 3. macOS: ~/Library/Application Support/gh/hosts.yml
 	home, err := os.UserHomeDir()
-	if err != nil {
-		return ""
+	if err == nil {
+		macosPath := filepath.Join(home, "Library", "Application Support", "gh", "hosts.yml")
+		if _, err := os.Stat(macosPath); err == nil {
+			return macosPath
+		}
 	}
-	macosPath := filepath.Join(home, "Library", "Application Support", "gh", "hosts.yml")
-	if _, err := os.Stat(macosPath); err == nil {
-		return macosPath
+
+	// 4. Windows: %APPDATA%\GitHub CLI\hosts.yml
+	if appData := os.Getenv("APPDATA"); appData != "" {
+		winPath := filepath.Join(appData, "GitHub CLI", "hosts.yml")
+		if _, err := os.Stat(winPath); err == nil {
+			return winPath
+		}
 	}
 
 	return ""

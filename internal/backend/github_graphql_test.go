@@ -49,7 +49,48 @@ func TestBuildGraphQLQuery(t *testing.T) {
 	}
 }
 
+func isolateGitHubTokenEnv(t *testing.T) {
+	for _, k := range []string{
+		"UNIRTM_GITHUB_TOKEN",
+		"MISE_GITHUB_TOKEN",
+		"GITHUB_TOKEN",
+		"UNIRTM_GH_TOKEN",
+		"MISE_GH_TOKEN",
+		"GH_TOKEN",
+		"UNIRTM_GITHUB_API_TOKEN",
+		"MISE_GITHUB_API_TOKEN",
+		"GITHUB_API_TOKEN",
+		"UNIRTM_GITHUB_CREDENTIAL_COMMAND",
+		"MISE_GITHUB_CREDENTIAL_COMMAND",
+		"GITHUB_CREDENTIAL_COMMAND",
+		"UNIRTM_CONFIG_DIR",
+		"MISE_CONFIG_DIR",
+		"CONFIG_DIR",
+		"UNIRTM_GH_CONFIG_DIR",
+		"MISE_GH_CONFIG_DIR",
+		"GH_CONFIG_DIR",
+		"UNIRTM_XDG_CONFIG_HOME",
+		"MISE_XDG_CONFIG_HOME",
+		"XDG_CONFIG_HOME",
+	} {
+		t.Setenv(k, "")
+	}
+	emptyDir := t.TempDir()
+	t.Setenv("UNIRTM_CONFIG_DIR", emptyDir)
+	t.Setenv("GH_CONFIG_DIR", emptyDir)
+	t.Setenv("XDG_CONFIG_HOME", emptyDir)
+	t.Setenv("HOME", emptyDir)
+	t.Setenv("USERPROFILE", emptyDir)
+	t.Setenv("APPDATA", emptyDir)
+	t.Setenv("LOCALAPPDATA", emptyDir)
+
+	orig := ghAuthTokenFn
+	ghAuthTokenFn = func(host string) string { return "" }
+	t.Cleanup(func() { ghAuthTokenFn = orig })
+}
+
 func TestBatchPrefetchReleases_Success(t *testing.T) {
+	isolateGitHubTokenEnv(t)
 	t.Setenv("GITHUB_TOKEN", "fake-test-token")
 
 	mockRespBody := `{
@@ -158,8 +199,7 @@ func TestBatchPrefetchReleases_Success(t *testing.T) {
 }
 
 func TestBatchPrefetchReleases_NoToken(t *testing.T) {
-	t.Setenv("GITHUB_TOKEN", "")
-	t.Setenv("GH_TOKEN", "")
+	isolateGitHubTokenEnv(t)
 
 	backend := NewGitHubBackend()
 	ctx := context.Background()
