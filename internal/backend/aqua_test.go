@@ -117,3 +117,43 @@ func TestAquaBackend_GetDownloadInfo(t *testing.T) {
 		t.Errorf("expected 2.0.0, got %s", info.Version)
 	}
 }
+
+func TestAquaBackend_ConcurrentDeduplication(t *testing.T) {
+	ClearAquaMetadataCache()
+	defer ClearAquaMetadataCache()
+
+	b := NewAquaBackend()
+	b.registryURL = "https://raw.githubusercontent.com/aquaproj/aqua-registry/main/pkgs"
+
+	var pkgReqCount int
+	b.client.Transport = &mockCargoTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			if strings.Contains(req.URL.Path, "aquaproj/aqua/pkg.yaml") {
+				pkgReqCount++
+				body := `{"type": "github_release", "repo_owner": "aquaproj", "repo_name": "aqua", "asset": "aqua_{{.OS}}_{{.Arch}}.tar.gz"}`
+				return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewBufferString(body))}, nil
+			}
+			return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(bytes.NewBufferString(""))}, nil
+		},
+	}
+
+	done := make(chan bool, 5)
+	for i := 0; i < 5; i++ {
+		go func() {
+			pkg, err := b.fetchPackageMetadata(context.Background(), "aquaproj/aqua")
+			if err != nil || pkg.RepoOwner != "aquaproj" {
+				t.Errorf("unexpected fetch result: %v", err)
+			}
+			done <- true
+		}()
+	}
+
+	for i := 0; i < 5; i++ {
+		<-done
+	}
+
+	if pkgReqCount != 1 {
+		t.Errorf("expected 1 pkg.yaml request due to singleflight, got %d", pkgReqCount)
+	}
+}
+

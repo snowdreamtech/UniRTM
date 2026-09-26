@@ -11,12 +11,28 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
 
+var (
+	aquaPkgCache  sync.Map
+	aquaPkgFlight singleflight.Group
+)
+
+// ClearAquaMetadataCache clears in-memory cache for Aqua package metadata.
+func ClearAquaMetadataCache() {
+	aquaPkgCache.Range(func(key, value any) bool {
+		aquaPkgCache.Delete(key)
+		return true
+	})
+}
+
 // AquaBackend implements the Backend interface for Aqua registry.
+
 // Aqua is a declarative CLI version manager that provides a curated registry of tools.
 type AquaBackend struct {
 	client      *http.Client
@@ -144,32 +160,49 @@ func (a *AquaBackend) fetchPackageMetadata(ctx context.Context, tool string) (*a
 		registryPath = fmt.Sprintf("%s/%s/pkg.yaml", a.registryURL, tool)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", registryPath, http.NoBody)
+	cacheKey := registryPath
+	if val, ok := aquaPkgCache.Load(cacheKey); ok {
+		return val.(*aquaPackage), nil
+	}
+
+	v, err, _ := aquaPkgFlight.Do(cacheKey, func() (interface{}, error) {
+		if val, ok := aquaPkgCache.Load(cacheKey); ok {
+			return val.(*aquaPackage), nil
+		}
+
+		req, err := http.NewRequestWithContext(ctx, "GET", registryPath, http.NoBody)
+		if err != nil {
+			return nil, NewBackendError("aqua", tool, "failed to create request", err)
+		}
+
+		resp, err := a.client.Do(req)
+		if err != nil {
+			return nil, NewBackendError("aqua", tool, "failed to fetch package metadata", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, NewBackendError("aqua", tool, fmt.Sprintf("package not found in registry (status %d)", resp.StatusCode), nil)
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, NewBackendError("aqua", tool, "failed to read package metadata", err)
+		}
+
+		var pkg aquaPackage
+		if err := json.Unmarshal(body, &pkg); err != nil {
+			return nil, NewBackendError("aqua", tool, "failed to parse package metadata", err)
+		}
+
+		aquaPkgCache.Store(cacheKey, &pkg)
+		return &pkg, nil
+	})
+
 	if err != nil {
-		return nil, NewBackendError("aqua", tool, "failed to create request", err)
+		return nil, err
 	}
-
-	resp, err := a.client.Do(req)
-	if err != nil {
-		return nil, NewBackendError("aqua", tool, "failed to fetch package metadata", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, NewBackendError("aqua", tool, fmt.Sprintf("package not found in registry (status %d)", resp.StatusCode), nil)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, NewBackendError("aqua", tool, "failed to read package metadata", err)
-	}
-
-	var pkg aquaPackage
-	if err := json.Unmarshal(body, &pkg); err != nil {
-		return nil, NewBackendError("aqua", tool, "failed to parse package metadata", err)
-	}
-
-	return &pkg, nil
+	return v.(*aquaPackage), nil
 }
 
 // listGitHubVersions lists versions from GitHub releases for an Aqua package.
