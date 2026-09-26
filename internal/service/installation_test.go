@@ -689,4 +689,22 @@ func TestInstallationManager_PrefetchGitHubReleases(t *testing.T) {
 	im.PrefetchGitHubReleases(ctx, tools)
 }
 
+func TestInstallationManager_PrefetchGitLabReleases(t *testing.T) {
+	backendRegistry := backend.NewRegistry()
+	glBackend := backend.NewGitlabBackend()
+	backendRegistry.Register(glBackend)
+
+	im := NewInstallationManager(backendRegistry, nil, nil, nil, nil, &config.Settings{})
+
+	tools := []ToolToInstall{
+		{ToolName: "group/project", BackendName: "gitlab", Version: "1.0.0"},
+		{ToolName: "go", BackendName: "golang", Version: "1.22.0"},
+	}
+
+	ctx := context.Background()
+	// Should execute gracefully without panic
+	im.PrefetchGitLabReleases(ctx, tools)
+}
+
+
 

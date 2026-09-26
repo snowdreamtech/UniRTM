@@ -391,6 +391,7 @@ func (ls *LockService) Generate(
 
 	// Pre-fetch all GitHub release metadata in a single GraphQL query
 	ls.prefetchGitHubReleases(ctx, subset)
+	ls.prefetchGitLabReleases(ctx, subset)
 
 	for uniqueKey, spec := range subset {
 		uniqueKey := uniqueKey
@@ -729,6 +730,40 @@ func (ls *LockService) prefetchGitHubReleases(ctx context.Context, tools map[str
 
 	if len(specs) > 0 {
 		_ = ghBackend.BatchPrefetchReleases(ctx, specs)
+	}
+}
+
+// prefetchGitLabReleases batches GitLab release requests via GraphQL before parallel platform resolution.
+func (ls *LockService) prefetchGitLabReleases(ctx context.Context, tools map[string]ToolSpec) {
+	if ls.backendRegistry == nil {
+		return
+	}
+	b, err := ls.backendRegistry.Get("gitlab")
+	if err != nil || b == nil {
+		return
+	}
+	glBackend, ok := b.(*backend.GitlabBackend)
+	if !ok {
+		return
+	}
+
+	var specs []backend.GitLabReleaseQuerySpec
+	for uniqueKey, spec := range tools {
+		toolName := spec.Name
+		if toolName == "" {
+			toolName = uniqueKey
+		}
+		tb, err := ls.backendForSpec(toolName, spec.BackendName)
+		if err == nil && tb != nil && tb.Name() == "gitlab" && spec.Version != "" {
+			specs = append(specs, backend.GitLabReleaseQuerySpec{
+				Tool: toolName,
+				Tag:  spec.Version,
+			})
+		}
+	}
+
+	if len(specs) > 0 {
+		_ = glBackend.BatchPrefetchReleases(ctx, specs)
 	}
 }
 

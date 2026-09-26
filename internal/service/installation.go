@@ -1048,6 +1048,40 @@ func (im *InstallationManager) PrefetchGitHubReleases(ctx context.Context, tools
 	}
 }
 
+// PrefetchGitLabReleases batches GitLab release requests via GraphQL before installation workers start.
+func (im *InstallationManager) PrefetchGitLabReleases(ctx context.Context, tools []ToolToInstall) {
+	if im.backendRegistry == nil {
+		return
+	}
+	b, err := im.backendRegistry.Get("gitlab")
+	if err != nil || b == nil {
+		return
+	}
+	glBackend, ok := b.(*backend.GitlabBackend)
+	if !ok {
+		return
+	}
+
+	var specs []backend.GitLabReleaseQuerySpec
+	for _, t := range tools {
+		backendName := t.BackendName
+		if backendName == "" {
+			backendName = "gitlab"
+		}
+		tb, err := im.backendRegistry.Get(backendName)
+		if err == nil && tb != nil && tb.Name() == "gitlab" && t.Version != "" {
+			specs = append(specs, backend.GitLabReleaseQuerySpec{
+				Tool: t.ToolName,
+				Tag:  t.Version,
+			})
+		}
+	}
+
+	if len(specs) > 0 {
+		_ = glBackend.BatchPrefetchReleases(ctx, specs)
+	}
+}
+
 // EnsureInstalled checks if all tools in the configuration are installed,
 // and installs any missing ones.
 func (im *InstallationManager) EnsureInstalled(ctx context.Context, tools map[string]config.ToolConfig) error {
