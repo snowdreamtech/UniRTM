@@ -29,6 +29,8 @@ func TestAllNativeProviders_Name(t *testing.T) {
 		{&NinjaHandler{}, "ninja"},
 		{&RubyHandler{}, "ruby"},
 		{&ZigHandler{}, "zig"},
+		{&DartHandler{}, "dart"},
+		{&HaskellHandler{}, "haskell"},
 	}
 
 	for _, tt := range tests {
