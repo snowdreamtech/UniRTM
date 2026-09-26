@@ -239,7 +239,6 @@ func (b *NpmBackend) ResolveVersion(ctx context.Context, tool, versionRequest st
 			return latest.Version, nil
 		})
 
-
 		if err != nil {
 			return nil, err
 		}

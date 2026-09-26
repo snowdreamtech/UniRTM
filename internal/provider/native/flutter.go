@@ -69,61 +69,61 @@ func (h *FlutterHandler) ResolveVersions(ctx context.Context, baseURL string) ([
 
 		apiURL := fmt.Sprintf("https://storage.googleapis.com/flutter_infra_release/releases/releases_%s.json", platform)
 
-	client := pkgHttp.NewClientWithTimeout(10 * time.Second)
-	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("flutter api: returned status %d", resp.StatusCode)
-	}
-
-	var data flutterReleases
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, err
-	}
-
-	var versions []VersionInfo
-	// Map to deduplicate versions (Flutter has multiple channels for the same version)
-	seen := make(map[string]bool)
-
-	for _, rel := range data.Releases {
-		if rel.Channel != "stable" {
-			continue // Prioritize stable releases
+		client := pkgHttp.NewClientWithTimeout(10 * time.Second)
+		req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+		if err != nil {
+			return nil, err
 		}
 
-		if seen[rel.Version] {
-			continue
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
 		}
-		seen[rel.Version] = true
+		defer resp.Body.Close()
 
-		url := fmt.Sprintf("%s/%s", data.BaseURL, rel.Archive)
-
-		// Determine arch from archive name (heuristics)
-		arch := "amd64"
-		if strings.Contains(rel.Archive, "arm64") {
-			arch = "arm64"
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("flutter api: returned status %d", resp.StatusCode)
 		}
 
-		versions = append(versions, VersionInfo{
-			Version: rel.Version,
-			Assets: []Asset{
-				{
-					Filename: filepathBase(url),
-					URL:      url,
-					OS:       env.RuntimeGOOS,
-					Arch:     arch,
+		var data flutterReleases
+		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+			return nil, err
+		}
+
+		var versions []VersionInfo
+		// Map to deduplicate versions (Flutter has multiple channels for the same version)
+		seen := make(map[string]bool)
+
+		for _, rel := range data.Releases {
+			if rel.Channel != "stable" {
+				continue // Prioritize stable releases
+			}
+
+			if seen[rel.Version] {
+				continue
+			}
+			seen[rel.Version] = true
+
+			url := fmt.Sprintf("%s/%s", data.BaseURL, rel.Archive)
+
+			// Determine arch from archive name (heuristics)
+			arch := "amd64"
+			if strings.Contains(rel.Archive, "arm64") {
+				arch = "arm64"
+			}
+
+			versions = append(versions, VersionInfo{
+				Version: rel.Version,
+				Assets: []Asset{
+					{
+						Filename: filepathBase(url),
+						URL:      url,
+						OS:       env.RuntimeGOOS,
+						Arch:     arch,
+					},
 				},
-			},
-		})
-	}
+			})
+		}
 
 		flutterCache.Store(platform, versions)
 		return versions, nil
@@ -138,4 +138,3 @@ func (h *FlutterHandler) ResolveVersions(ctx context.Context, baseURL string) ([
 	copy(cp, cached)
 	return cp, nil
 }
-

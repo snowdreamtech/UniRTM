@@ -184,4 +184,3 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 	copy(cp, cached)
 	return cp, nil
 }
-

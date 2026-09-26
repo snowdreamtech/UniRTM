@@ -200,7 +200,6 @@ func TestProbeURL_DeduplicationAndCache(t *testing.T) {
 	}
 }
 
-
 func TestFetchAndParseChecksumFile(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/checksums.txt" {
@@ -805,12 +804,12 @@ func TestCalculateAssetScore_Arm32bit(t *testing.T) {
 	linuxArm := Platform{OS: "linux", Arch: "arm"}
 
 	positive := []string{
-		"tool-linux-armhf.tar.gz",     // Raspberry Pi OS / Debian armhf
-		"tool-linux-armv7l.tar.gz",    // ARMv7 little-endian
-		"tool-linux-armv7.tar.gz",     // ARMv7 generic
-		"tool-linux-armv6l.tar.gz",    // ARMv6 little-endian (Pi 1, Zero)
-		"tool-linux-armv6.tar.gz",     // ARMv6 generic
-		"tool-linux-arm.tar.gz",       // bare arm word token
+		"tool-linux-armhf.tar.gz",  // Raspberry Pi OS / Debian armhf
+		"tool-linux-armv7l.tar.gz", // ARMv7 little-endian
+		"tool-linux-armv7.tar.gz",  // ARMv7 generic
+		"tool-linux-armv6l.tar.gz", // ARMv6 little-endian (Pi 1, Zero)
+		"tool-linux-armv6.tar.gz",  // ARMv6 generic
+		"tool-linux-arm.tar.gz",    // bare arm word token
 	}
 	for _, name := range positive {
 		score := CalculateAssetScore(name, linuxArm, "org/tool")
@@ -994,5 +993,3 @@ func TestEcosystemMetadataDiskCache(t *testing.T) {
 		t.Fatalf("expected @angular/core, got %s", scopedReadBack.Name)
 	}
 }
-
-

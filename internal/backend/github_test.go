@@ -316,4 +316,3 @@ func TestGitHubBackend_FetchReleases_ETag304(t *testing.T) {
 		t.Fatalf("expected 2 server requests, got %d", reqCount)
 	}
 }
-

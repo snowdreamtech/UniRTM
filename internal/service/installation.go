@@ -50,15 +50,15 @@ var ErrAlreadyInstalled = fmt.Errorf("already installed")
 
 // InstallationManager manages tool installation workflow.
 type InstallationManager struct {
-	backendRegistry  *backend.Registry
-	providerRegistry *provider.Registry
-	downloadManager  *download.Manager
-	installRepo      repository.InstallationRepository
-	txManager        transaction.TransactionManager
-	lockService      *LockService // optional; nil = lockfile disabled
-	settings         *config.Settings
-	aliases          map[string]map[string]string
-	toolConfigs      map[string]config.ToolConfig
+	backendRegistry    *backend.Registry
+	providerRegistry   *provider.Registry
+	downloadManager    *download.Manager
+	installRepo        repository.InstallationRepository
+	txManager          transaction.TransactionManager
+	lockService        *LockService // optional; nil = lockfile disabled
+	settings           *config.Settings
+	aliases            map[string]map[string]string
+	toolConfigs        map[string]config.ToolConfig
 	gpgVerifier        gpg.Verifier
 	shimGenerator      *Generator
 	db                 *database.DB // underlying DB connection; closed by Close()
@@ -1667,4 +1667,3 @@ func saveToDownloadCache(downloadPath, cachePath string) {
 	defer dst.Close()
 	_, _ = io.Copy(dst, src)
 }
-

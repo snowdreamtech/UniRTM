@@ -236,4 +236,3 @@ func TestVerifyArtifactProvenance_DiskCache(t *testing.T) {
 		t.Fatalf("expected res.Verified=true from cache, got %+v", res)
 	}
 }
-

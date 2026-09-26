@@ -218,7 +218,6 @@ func TestJuliaHandler_ResolveVersions_Failures(t *testing.T) {
 	assert.Error(t, err)
 }
 
-
 func TestMapPlatform(t *testing.T) {
 	os, arch := mapPlatform("mac", "aarch64")
 	assert.Equal(t, "darwin", os)

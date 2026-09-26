@@ -423,4 +423,3 @@ func TestNativeGPGVerifier_DiskCache(t *testing.T) {
 		t.Errorf("expected fingerprint %s, got %s", fingerprint, key.GetFingerprint())
 	}
 }
-

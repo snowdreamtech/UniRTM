@@ -45,7 +45,6 @@ func ClearProbeURLCache() {
 	})
 }
 
-
 // CommonAsset represents a generic asset from a hosting platform.
 type CommonAsset struct {
 	Name            string
@@ -741,7 +740,6 @@ func ProbeURL(ctx context.Context, client *http.Client, url string) bool {
 	return res.(bool)
 }
 
-
 // NormalizeVersionPrefix intelligently ensures the version string has the correct 'v' prefix behavior.
 // If requireV is true, it prepends 'v' if the version starts with a digit.
 // If requireV is false, it strips 'v' or 'V' if it's followed by a digit.
@@ -881,6 +879,3 @@ func ClearEcosystemMetadataDiskCache(ecosystem string) {
 	}
 	_ = os.RemoveAll(filepath.Join(env.GetCacheDir(), "ecosystems", ecosystem))
 }
-
-
-

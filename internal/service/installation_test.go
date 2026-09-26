@@ -735,7 +735,3 @@ func TestInstallationManager_DownloadCache(t *testing.T) {
 		t.Fatalf("target file content mismatch: expected %q, got %q", content, string(data))
 	}
 }
-
-
-
-

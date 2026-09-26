@@ -94,4 +94,3 @@ func TestJavaHandler_ConcurrentDeduplication(t *testing.T) {
 	// 5 major versions queried in single execution = 5 requests total instead of 5 * 5 = 25
 	assert.Equal(t, 5, reqCount, "Expected exactly 5 requests (one per major version) for all concurrent callers")
 }
-

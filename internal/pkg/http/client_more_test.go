@@ -139,4 +139,3 @@ func TestSharedTransport_SingletonAndReuse(t *testing.T) {
 		t.Errorf("expected c1.Transport to match SharedTransport()")
 	}
 }
-

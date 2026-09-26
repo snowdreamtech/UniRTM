@@ -227,4 +227,3 @@ func TestGoBackend_DiskCache(t *testing.T) {
 		t.Fatalf("expected cached versions, got %v", versions)
 	}
 }
-

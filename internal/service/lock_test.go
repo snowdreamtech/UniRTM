@@ -671,9 +671,3 @@ func TestLockService_CorruptedLockfile(t *testing.T) {
 		t.Error("expected fresh lockfile to be empty")
 	}
 }
-
-
-
-
-
-

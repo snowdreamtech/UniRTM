@@ -194,5 +194,3 @@ func TestAquaBackend_ReleasesCaching(t *testing.T) {
 		t.Errorf("expected 1 releases request due to caching, got %d", releaseReqCount)
 	}
 }
-
-

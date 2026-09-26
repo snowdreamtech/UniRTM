@@ -80,39 +80,39 @@ func (h *NinjaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]V
 			return nil, err
 		}
 
-	var versions []VersionInfo
-	for _, rel := range releases {
-		version := strings.TrimPrefix(rel.TagName, "v")
-		var assets []Asset
+		var versions []VersionInfo
+		for _, rel := range releases {
+			version := strings.TrimPrefix(rel.TagName, "v")
+			var assets []Asset
 
-		for _, a := range rel.Assets {
-			osName := ""
-			lowerName := strings.ToLower(a.Name)
-			if strings.Contains(lowerName, "linux") {
-				osName = "linux"
-			} else if strings.Contains(lowerName, "mac") {
-				osName = "darwin"
-			} else if strings.Contains(lowerName, "win") {
-				osName = "windows"
+			for _, a := range rel.Assets {
+				osName := ""
+				lowerName := strings.ToLower(a.Name)
+				if strings.Contains(lowerName, "linux") {
+					osName = "linux"
+				} else if strings.Contains(lowerName, "mac") {
+					osName = "darwin"
+				} else if strings.Contains(lowerName, "win") {
+					osName = "windows"
+				}
+
+				if osName != "" {
+					assets = append(assets, Asset{
+						Filename: a.Name,
+						URL:      a.BrowserDownloadURL,
+						OS:       osName,
+						Arch:     "amd64", // Ninja binaries are usually x86_64
+					})
+				}
 			}
 
-			if osName != "" {
-				assets = append(assets, Asset{
-					Filename: a.Name,
-					URL:      a.BrowserDownloadURL,
-					OS:       osName,
-					Arch:     "amd64", // Ninja binaries are usually x86_64
+			if len(assets) > 0 {
+				versions = append(versions, VersionInfo{
+					Version: version,
+					Assets:  assets,
 				})
 			}
 		}
-
-		if len(assets) > 0 {
-			versions = append(versions, VersionInfo{
-				Version: version,
-				Assets:  assets,
-			})
-		}
-	}
 
 		ninjaCache.Store("ninja_versions", versions)
 		return versions, nil
@@ -127,4 +127,3 @@ func (h *NinjaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]V
 	copy(cp, cached)
 	return cp, nil
 }
-

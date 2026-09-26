@@ -256,5 +256,3 @@ func TestForgejoFetchReleaseByTag_ETag304(t *testing.T) {
 		t.Errorf("expected 2 requests (1 200 + 1 304), got %d", requestCount)
 	}
 }
-
-

@@ -153,5 +153,3 @@ func TestFetchLatestRelease_ETag304(t *testing.T) {
 	assert.True(t, res2.notModified)
 	assert.Equal(t, res1.etag, res2.etag)
 }
-
-

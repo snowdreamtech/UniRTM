@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
 func TestDNSCache_LookupIP_IPAddress(t *testing.T) {
 	cache := NewDNSCache(time.Minute)
 	ctx := context.Background()

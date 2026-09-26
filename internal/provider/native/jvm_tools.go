@@ -113,7 +113,6 @@ func (h *GradleHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 	return cp, nil
 }
 
-
 func (h *GradleHandler) IsMatch(filename, os, arch string) bool {
 	// For Gradle, we use the same URL for all platforms as it is platform-independent
 	return true

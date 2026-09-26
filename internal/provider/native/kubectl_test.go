@@ -52,7 +52,6 @@ func TestKubectlHandler_ResolveVersions_Failures(t *testing.T) {
 	pkgHttp.MockTransport = mockRt
 	defer func() { pkgHttp.MockTransport = oldMock }()
 
-
 	h := &KubectlHandler{}
 	_, err := h.ResolveVersions(context.Background(), "")
 	assert.Error(t, err)

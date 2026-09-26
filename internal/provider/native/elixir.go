@@ -74,49 +74,49 @@ func (h *ElixirHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 			return nil, err
 		}
 
-	var versions []VersionInfo
-	for _, rel := range releases {
-		version := strings.TrimPrefix(rel.TagName, "v")
+		var versions []VersionInfo
+		for _, rel := range releases {
+			version := strings.TrimPrefix(rel.TagName, "v")
 
-		var assets []Asset
-		for _, a := range rel.Assets {
-			// Elixir precompiled assets are platform-independent
-			if a.Name == "Precompiled.zip" || strings.HasPrefix(a.Name, "elixir-otp-") {
-				// Mark as universal for all platforms
-				assets = append(assets, Asset{
-					Filename: a.Name,
-					URL:      a.BrowserDownloadURL,
-					OS:       "linux", // Map to all major ones for resolution
-					Arch:     "amd64",
-				})
-				assets = append(assets, Asset{
-					Filename: a.Name,
-					URL:      a.BrowserDownloadURL,
-					OS:       "darwin",
-					Arch:     "amd64",
-				})
-				assets = append(assets, Asset{
-					Filename: a.Name,
-					URL:      a.BrowserDownloadURL,
-					OS:       "darwin",
-					Arch:     "arm64",
-				})
-				assets = append(assets, Asset{
-					Filename: a.Name,
-					URL:      a.BrowserDownloadURL,
-					OS:       "windows",
-					Arch:     "amd64",
+			var assets []Asset
+			for _, a := range rel.Assets {
+				// Elixir precompiled assets are platform-independent
+				if a.Name == "Precompiled.zip" || strings.HasPrefix(a.Name, "elixir-otp-") {
+					// Mark as universal for all platforms
+					assets = append(assets, Asset{
+						Filename: a.Name,
+						URL:      a.BrowserDownloadURL,
+						OS:       "linux", // Map to all major ones for resolution
+						Arch:     "amd64",
+					})
+					assets = append(assets, Asset{
+						Filename: a.Name,
+						URL:      a.BrowserDownloadURL,
+						OS:       "darwin",
+						Arch:     "amd64",
+					})
+					assets = append(assets, Asset{
+						Filename: a.Name,
+						URL:      a.BrowserDownloadURL,
+						OS:       "darwin",
+						Arch:     "arm64",
+					})
+					assets = append(assets, Asset{
+						Filename: a.Name,
+						URL:      a.BrowserDownloadURL,
+						OS:       "windows",
+						Arch:     "amd64",
+					})
+				}
+			}
+
+			if len(assets) > 0 {
+				versions = append(versions, VersionInfo{
+					Version: version,
+					Assets:  assets,
 				})
 			}
 		}
-
-		if len(assets) > 0 {
-			versions = append(versions, VersionInfo{
-				Version: version,
-				Assets:  assets,
-			})
-		}
-	}
 
 		elixirCache.Store("elixir_versions", versions)
 		return versions, nil
@@ -131,4 +131,3 @@ func (h *ElixirHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 	copy(cp, cached)
 	return cp, nil
 }
-

@@ -88,113 +88,113 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 
 		for i := 0; i < 3; i++ {
 			client := pkgHttp.NewClientWithTimeout(60 * time.Second)
-		req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
-		if err != nil {
+			req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			// GitHub API requires a User-Agent header
+			req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
+			req.Header.Set("Accept", "application/vnd.github+json")
+
+			// Add GitHub token if available to increase rate limits
+			token := env.Get("GITHUB_TOKEN")
+			if token == "" {
+				token = env.Get("GH_TOKEN")
+			}
+			if token != "" {
+				req.Header.Set("Authorization", "Bearer "+token)
+			}
+
+			resp, err = client.Do(req)
+			if err == nil && resp.StatusCode == http.StatusOK {
+				lastErr = nil
+				break
+			}
+
+			if err != nil {
+				lastErr = fmt.Errorf("attempt %d: %w", i+1, err)
+			} else {
+				lastErr = fmt.Errorf("attempt %d: github api returned status %d", i+1, resp.StatusCode)
+				resp.Body.Close()
+			}
+
+			// Backoff before retry
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(time.Duration(i+1) * time.Second):
+			}
+		}
+
+		if lastErr != nil {
+			return nil, fmt.Errorf("github api call failed after 3 attempts (base: %s): %w", apiBase, lastErr)
+		}
+		defer resp.Body.Close()
+
+		var releases []ghRelease
+		if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
 			return nil, err
 		}
 
-		// GitHub API requires a User-Agent header
-		req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
-		req.Header.Set("Accept", "application/vnd.github+json")
+		var versions []VersionInfo
+		for _, rel := range releases {
+			version := strings.TrimPrefix(rel.TagName, "v")
 
-		// Add GitHub token if available to increase rate limits
-		token := env.Get("GITHUB_TOKEN")
-		if token == "" {
-			token = env.Get("GH_TOKEN")
-		}
-		if token != "" {
-			req.Header.Set("Authorization", "Bearer "+token)
-		}
+			// Map to store signatures for later matching
+			sigs := make(map[string]string)
+			for _, a := range rel.Assets {
+				downloadURL := a.BrowserDownloadURL
+				if githubProxy != "" {
+					downloadURL = strings.TrimSuffix(githubProxy, "/") + "/" + downloadURL
+				}
 
-		resp, err = client.Do(req)
-		if err == nil && resp.StatusCode == http.StatusOK {
-			lastErr = nil
-			break
-		}
-
-		if err != nil {
-			lastErr = fmt.Errorf("attempt %d: %w", i+1, err)
-		} else {
-			lastErr = fmt.Errorf("attempt %d: github api returned status %d", i+1, resp.StatusCode)
-			resp.Body.Close()
-		}
-
-		// Backoff before retry
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(time.Duration(i+1) * time.Second):
-		}
-	}
-
-	if lastErr != nil {
-		return nil, fmt.Errorf("github api call failed after 3 attempts (base: %s): %w", apiBase, lastErr)
-	}
-	defer resp.Body.Close()
-
-	var releases []ghRelease
-	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
-		return nil, err
-	}
-
-	var versions []VersionInfo
-	for _, rel := range releases {
-		version := strings.TrimPrefix(rel.TagName, "v")
-
-		// Map to store signatures for later matching
-		sigs := make(map[string]string)
-		for _, a := range rel.Assets {
-			downloadURL := a.BrowserDownloadURL
-			if githubProxy != "" {
-				downloadURL = strings.TrimSuffix(githubProxy, "/") + "/" + downloadURL
+				if strings.HasSuffix(a.Name, ".asc") || strings.HasSuffix(a.Name, ".sig") {
+					sigs[a.Name] = downloadURL
+				}
 			}
 
-			if strings.HasSuffix(a.Name, ".asc") || strings.HasSuffix(a.Name, ".sig") {
-				sigs[a.Name] = downloadURL
+			var assets []Asset
+			for _, a := range rel.Assets {
+				if strings.HasSuffix(a.Name, ".asc") || strings.HasSuffix(a.Name, ".sig") || strings.HasSuffix(a.Name, ".sha256") {
+					continue
+				}
+
+				os, arch := h.detectPlatform(a.Name)
+				if os == "" || arch == "" {
+					continue
+				}
+
+				downloadURL := a.BrowserDownloadURL
+				if githubProxy != "" {
+					downloadURL = strings.TrimSuffix(githubProxy, "/") + "/" + downloadURL
+				}
+
+				asset := Asset{
+					Filename: a.Name,
+					URL:      downloadURL,
+					OS:       os,
+					Arch:     arch,
+					Metadata: make(map[string]string),
+				}
+
+				// Try to find matching signature
+				if sigURL, ok := sigs[a.Name+".asc"]; ok {
+					asset.SignatureURL = sigURL
+				} else if sigURL, ok := sigs[a.Name+".sig"]; ok {
+					asset.SignatureURL = sigURL
+				}
+
+				assets = append(assets, asset)
+			}
+
+			if len(assets) > 0 {
+				versions = append(versions, VersionInfo{
+					Version: version,
+					Assets:  assets,
+				})
 			}
 		}
-
-		var assets []Asset
-		for _, a := range rel.Assets {
-			if strings.HasSuffix(a.Name, ".asc") || strings.HasSuffix(a.Name, ".sig") || strings.HasSuffix(a.Name, ".sha256") {
-				continue
-			}
-
-			os, arch := h.detectPlatform(a.Name)
-			if os == "" || arch == "" {
-				continue
-			}
-
-			downloadURL := a.BrowserDownloadURL
-			if githubProxy != "" {
-				downloadURL = strings.TrimSuffix(githubProxy, "/") + "/" + downloadURL
-			}
-
-			asset := Asset{
-				Filename: a.Name,
-				URL:      downloadURL,
-				OS:       os,
-				Arch:     arch,
-				Metadata: make(map[string]string),
-			}
-
-			// Try to find matching signature
-			if sigURL, ok := sigs[a.Name+".asc"]; ok {
-				asset.SignatureURL = sigURL
-			} else if sigURL, ok := sigs[a.Name+".sig"]; ok {
-				asset.SignatureURL = sigURL
-			}
-
-			assets = append(assets, asset)
-		}
-
-		if len(assets) > 0 {
-			versions = append(versions, VersionInfo{
-				Version: version,
-				Assets:  assets,
-			})
-		}
-	}
 
 		githubHandlerCache.Store(cacheKey, versions)
 		return versions, nil

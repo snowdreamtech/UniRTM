@@ -125,7 +125,6 @@ func (b *PypiBackend) fetchRegistry(ctx context.Context, tool string) (*pypiRegi
 	return val.(*pypiRegistryResponse), nil
 }
 
-
 func (b *PypiBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	registry, err := b.fetchRegistry(ctx, tool)
 	if err != nil {

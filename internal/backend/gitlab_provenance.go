@@ -152,8 +152,6 @@ func (v *gitlabProvenanceVerifier) verify(
 		return nil, fmt.Errorf("provenance: compute digest: %w", err)
 	}
 
-
-
 	logger.Debug("provenance: fetching attestations from GitLab", map[string]interface{}{"owner": owner, "repo": repo, "digest": digest})
 	bundles, err := v.fetchAttestations(ctx, token, owner, repo, digest)
 	if err != nil {

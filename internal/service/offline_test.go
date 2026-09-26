@@ -155,4 +155,3 @@ func TestOfflineManager_DiskCache(t *testing.T) {
 		t.Error("expected IsOnline to hit disk cache and return true")
 	}
 }
-

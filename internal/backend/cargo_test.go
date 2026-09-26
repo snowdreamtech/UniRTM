@@ -179,5 +179,3 @@ func TestCargoBackend_DeduplicationAndCache(t *testing.T) {
 		t.Errorf("expected exactly 1 network request, got %d", requestCount)
 	}
 }
-
-

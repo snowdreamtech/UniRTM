@@ -47,4 +47,3 @@ func TestDartHandler(t *testing.T) {
 		t.Errorf("expected cached versions, got err=%v, len=%d", err, len(versions2))
 	}
 }
-

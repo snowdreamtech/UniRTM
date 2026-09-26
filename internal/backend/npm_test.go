@@ -122,7 +122,6 @@ func TestNpmBackend_ListVersions(t *testing.T) {
 	}
 }
 
-
 func TestNpmBackend_ResolveVersion(t *testing.T) {
 	b := NewNpmBackend()
 	b.client.Transport = &mockCargoTransport{
@@ -197,7 +196,6 @@ func TestNpmBackend_ResolveVersion(t *testing.T) {
 	}
 }
 
-
 func TestNpmBackend_GetDownloadInfo(t *testing.T) {
 	b := NewNpmBackend()
 	ctx := context.Background()
@@ -267,5 +265,3 @@ func TestNpmBackend_DeduplicationAndCache(t *testing.T) {
 		t.Errorf("expected exactly 1 network request due to caching/deduplication, got %d", requestCount)
 	}
 }
-
-

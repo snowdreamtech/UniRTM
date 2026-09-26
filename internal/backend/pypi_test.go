@@ -184,7 +184,6 @@ func TestPypiBackend_ResolveVersion(t *testing.T) {
 	}
 }
 
-
 func TestPypiBackend_GetDownloadInfo(t *testing.T) {
 	b := NewPypiBackend()
 	ctx := context.Background()
@@ -254,5 +253,3 @@ func TestPypiBackend_DeduplicationAndCache(t *testing.T) {
 		t.Errorf("expected exactly 1 network request due to caching/deduplication, got %d", requestCount)
 	}
 }
-
-

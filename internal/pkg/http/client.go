@@ -16,7 +16,6 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
-
 // ClientConfig provides HTTP client configurations.
 type ClientConfig struct{}
 
@@ -137,7 +136,6 @@ func DefaultTransport() *http.Transport {
 
 	return trans
 }
-
 
 var (
 	sharedTransport     *http.Transport

@@ -95,7 +95,6 @@ func (h *KubectlHandler) ResolveVersions(ctx context.Context, baseURL string) ([
 	return cp, nil
 }
 
-
 func (h *KubectlHandler) generateAssets(version string) []Asset {
 	var assets []Asset
 

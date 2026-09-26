@@ -759,4 +759,3 @@ func TestHTTPDownloader_ConcurrentDeduplication(t *testing.T) {
 
 	assert.Equal(t, int32(1), atomic.LoadInt32(&requestCount), "expected exactly 1 network request due to singleflight deduplication")
 }
-

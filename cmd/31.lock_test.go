@@ -72,4 +72,3 @@ func TestCheckConfigLockSync(t *testing.T) {
 	errMatch := checkConfigLockSync(cfgMatch, lf, lfPath)
 	assert.NoError(t, errMatch)
 }
-

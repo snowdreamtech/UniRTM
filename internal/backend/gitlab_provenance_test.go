@@ -187,4 +187,3 @@ func TestVerifyGitlabArtifactProvenance_ConcurrentDeduplication(t *testing.T) {
 	}
 	_ = digest
 }
-

@@ -83,39 +83,39 @@ func (h *JuliaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]V
 
 			for _, f := range v.Files {
 
-			// Skip source and other kinds for now
-			if f.Kind != "archive" && f.Kind != "installer" {
-				continue
+				// Skip source and other kinds for now
+				if f.Kind != "archive" && f.Kind != "installer" {
+					continue
+				}
+
+				os, arch := mapPlatform(f.OS, f.Arch)
+				if os == "" || arch == "" {
+					continue
+				}
+
+				asset := Asset{
+					URL:      f.URL,
+					Filename: vStr + "-" + f.OS + "-" + f.Arch,
+					OS:       os,
+					Arch:     arch,
+					Checksum: f.SHA256,
+					Algo:     "sha256",
+				}
+
+				// If it has an embedded signature, we'll need to handle it.
+				// For now, we assume the installation manager can handle SignatureURL.
+				// We can provide a special URL or handle it in the backend.
+				if f.ASC != "" {
+					asset.Signature = f.ASC
+				}
+
+				vi.Assets = append(vi.Assets, asset)
 			}
 
-			os, arch := mapPlatform(f.OS, f.Arch)
-			if os == "" || arch == "" {
-				continue
+			if len(vi.Assets) > 0 {
+				versions = append(versions, vi)
 			}
-
-			asset := Asset{
-				URL:      f.URL,
-				Filename: vStr + "-" + f.OS + "-" + f.Arch,
-				OS:       os,
-				Arch:     arch,
-				Checksum: f.SHA256,
-				Algo:     "sha256",
-			}
-
-			// If it has an embedded signature, we'll need to handle it.
-			// For now, we assume the installation manager can handle SignatureURL.
-			// We can provide a special URL or handle it in the backend.
-			if f.ASC != "" {
-				asset.Signature = f.ASC
-			}
-
-			vi.Assets = append(vi.Assets, asset)
 		}
-
-		if len(vi.Assets) > 0 {
-			versions = append(versions, vi)
-		}
-	}
 
 		if len(versions) > 0 {
 			juliaCache.Store(cacheKey, versions)
@@ -131,7 +131,6 @@ func (h *JuliaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]V
 	copy(cp, cached)
 	return cp, nil
 }
-
 
 func mapPlatform(os, arch string) (string, string) {
 	// Map Julia OS/Arch names to standard ones
