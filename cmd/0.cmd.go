@@ -104,7 +104,7 @@ func isUniRTMBinary(name string) bool {
 	name = filepath.Base(name)
 	name = strings.ToLower(name)
 	name = strings.TrimSuffix(name, ".exe")
-	return name == "unirtm" || name == "unirtm-test" || name == "main" || name == "unirtm-debug"
+	return name == "unirtm" || name == "unirtm-test" || name == "main" || name == "unirtm-debug" || name == "unirtm-dev"
 }
 
 // handleAsdfAlias handles legacy asdf commands for compatibility.
