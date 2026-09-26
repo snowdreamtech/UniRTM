@@ -36,6 +36,7 @@ const (
 // UpdateCache stores the cache for latest version check.
 type UpdateCache struct {
 	LatestVersion string    `json:"latest_version"`
+	ETag          string    `json:"etag,omitempty"`
 	LastChecked   time.Time `json:"last_checked"`
 	LastPrompted  time.Time `json:"last_prompted"`
 }
@@ -49,7 +50,7 @@ var (
 		"self-update": true,
 		"__complete":  true, // Cobra completion
 	}
-	cacheMutex sync.Mutex
+	cacheMutex    sync.Mutex
 	updaterFlight singleflight.Group
 	updaterClient = pkgHttp.NewClientWithTimeout(3 * time.Second)
 )
@@ -97,48 +98,79 @@ func writeCache(cache *UpdateCache) error {
 	return os.WriteFile(getCachePath(), data, 0600)
 }
 
-// fetchLatestRelease fetches the latest release version from GitHub API.
-func fetchLatestRelease() (string, error) {
+// fetchReleaseResult holds the fetched version, etag and not-modified status.
+type fetchReleaseResult struct {
+	version     string
+	etag        string
+	notModified bool
+}
+
+// fetchLatestReleaseWithETag fetches the latest release version from GitHub API with ETag support.
+func fetchLatestReleaseWithETag(cachedETag string) (fetchReleaseResult, error) {
 	v, err, _ := updaterFlight.Do("fetch_latest_release", func() (interface{}, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, githubAPIURL, nil)
 		if err != nil {
-			return "", err
+			return fetchReleaseResult{}, err
 		}
 
 		req.Header.Set("Accept", "application/vnd.github.v3+json")
+		if cachedETag != "" {
+			req.Header.Set("If-None-Match", cachedETag)
+		}
+		if token := env.Get("GITHUB_TOKEN"); token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
 
 		resp, err := updaterClient.Do(req)
 		if err != nil {
-			return "", err
+			return fetchReleaseResult{}, err
 		}
 		defer resp.Body.Close()
 
-		if resp.StatusCode != http.StatusOK {
-			return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		if resp.StatusCode == http.StatusNotModified {
+			return fetchReleaseResult{etag: cachedETag, notModified: true}, nil
 		}
+
+		if resp.StatusCode != http.StatusOK {
+			return fetchReleaseResult{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		}
+
+		newETag := resp.Header.Get("ETag")
 
 		// Bound response body size to 10MB to prevent potential memory exhaustion
 		body, err := io.ReadAll(io.LimitReader(resp.Body, 10*1024*1024))
 		if err != nil {
-			return "", err
+			return fetchReleaseResult{}, err
 		}
 
 		var release struct {
 			TagName string `json:"tag_name"`
 		}
 		if err := json.Unmarshal(body, &release); err != nil {
-			return "", err
+			return fetchReleaseResult{}, err
 		}
 
-		return strings.TrimPrefix(release.TagName, "v"), nil
+		return fetchReleaseResult{
+			version: strings.TrimPrefix(release.TagName, "v"),
+			etag:    newETag,
+		}, nil
 	})
+	if err != nil {
+		return fetchReleaseResult{}, err
+	}
+	return v.(fetchReleaseResult), nil
+}
+
+// fetchLatestRelease fetches the latest release version from GitHub API.
+func fetchLatestRelease() (string, error) {
+	res, err := fetchLatestReleaseWithETag("")
 	if err != nil {
 		return "", err
 	}
-	return v.(string), nil
+	return res.version, nil
 }
 
 // CheckUpdateAsync asynchronously checks for an update if 24 hours have passed since the last check.
@@ -162,7 +194,7 @@ func CheckUpdateAsync(currentVersion string) {
 			return
 		}
 
-		latest, err := fetchLatestRelease()
+		res, err := fetchLatestReleaseWithETag(cache.ETag)
 		if err != nil {
 			// On error, just update the check time to avoid spamming the API
 			cache.LastChecked = time.Now()
@@ -170,7 +202,16 @@ func CheckUpdateAsync(currentVersion string) {
 			return
 		}
 
-		cache.LatestVersion = latest
+		if res.notModified {
+			cache.LastChecked = time.Now()
+			_ = writeCache(cache)
+			return
+		}
+
+		cache.LatestVersion = res.version
+		if res.etag != "" {
+			cache.ETag = res.etag
+		}
 		cache.LastChecked = time.Now()
 		_ = writeCache(cache)
 	}()

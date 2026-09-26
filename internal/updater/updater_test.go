@@ -124,3 +124,34 @@ func TestFetchLatestRelease_Mock(t *testing.T) {
 	assert.Equal(t, int32(1), atomic.LoadInt32(&count))
 }
 
+func TestFetchLatestRelease_ETag304(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("If-None-Match") == `"v1.2.3-etag"` {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+		w.Header().Set("ETag", `"v1.2.3-etag"`)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"tag_name": "v1.2.3"}`))
+	}))
+	defer server.Close()
+
+	oldURL := githubAPIURL
+	githubAPIURL = server.URL
+	defer func() { githubAPIURL = oldURL }()
+
+	// First request: should fetch version and return ETag
+	res1, err := fetchLatestReleaseWithETag("")
+	require.NoError(t, err)
+	assert.Equal(t, "1.2.3", res1.version)
+	assert.Equal(t, `"v1.2.3-etag"`, res1.etag)
+	assert.False(t, res1.notModified)
+
+	// Second request with cached ETag: should return 304 Not Modified
+	res2, err := fetchLatestReleaseWithETag(res1.etag)
+	require.NoError(t, err)
+	assert.True(t, res2.notModified)
+	assert.Equal(t, res1.etag, res2.etag)
+}
+
+

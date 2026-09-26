@@ -157,3 +157,42 @@ func TestAquaBackend_ConcurrentDeduplication(t *testing.T) {
 	}
 }
 
+func TestAquaBackend_ReleasesCaching(t *testing.T) {
+	ClearAquaCache()
+	defer ClearAquaCache()
+
+	b := NewAquaBackend()
+	b.registryURL = "https://raw.githubusercontent.com/aquaproj/aqua-registry/main/pkgs"
+
+	var releaseReqCount int
+	b.client.Transport = &mockCargoTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			if strings.Contains(req.URL.Path, "aquaproj/aqua/pkg.yaml") {
+				body := `{"type": "github_release", "repo_owner": "aquaproj", "repo_name": "aqua", "asset": "aqua_{{.OS}}_{{.Arch}}.tar.gz"}`
+				return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewBufferString(body))}, nil
+			} else if strings.Contains(req.URL.Path, "repos/aquaproj/aqua/releases") {
+				releaseReqCount++
+				body := `[{"tag_name": "v2.0.1", "name": "v2.0.1"}, {"tag_name": "v2.0.0", "name": "v2.0.0"}]`
+				return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(bytes.NewBufferString(body))}, nil
+			}
+			return &http.Response{StatusCode: http.StatusNotFound, Body: io.NopCloser(bytes.NewBufferString(""))}, nil
+		},
+	}
+
+	ctx := context.Background()
+	p := Platform{OS: "linux", Arch: "amd64"}
+
+	// Multiple calls to ResolveVersion and GetDownloadInfo
+	for i := 0; i < 3; i++ {
+		_, err := b.ResolveVersion(ctx, "aquaproj/aqua", "2.0.0", p)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	}
+
+	if releaseReqCount != 1 {
+		t.Errorf("expected 1 releases request due to caching, got %d", releaseReqCount)
+	}
+}
+
+

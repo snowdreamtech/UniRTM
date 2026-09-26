@@ -19,16 +19,27 @@ import (
 )
 
 var (
-	aquaPkgCache  sync.Map
-	aquaPkgFlight singleflight.Group
+	aquaPkgCache      sync.Map
+	aquaPkgFlight     singleflight.Group
+	aquaReleasesCache sync.Map
+	aquaReleaseFlight singleflight.Group
 )
 
-// ClearAquaMetadataCache clears in-memory cache for Aqua package metadata.
-func ClearAquaMetadataCache() {
+// ClearAquaCache clears all in-memory caches for Aqua package metadata and releases.
+func ClearAquaCache() {
 	aquaPkgCache.Range(func(key, value any) bool {
 		aquaPkgCache.Delete(key)
 		return true
 	})
+	aquaReleasesCache.Range(func(key, value any) bool {
+		aquaReleasesCache.Delete(key)
+		return true
+	})
+}
+
+// ClearAquaMetadataCache clears in-memory cache for Aqua package metadata (compatibility alias).
+func ClearAquaMetadataCache() {
+	ClearAquaCache()
 }
 
 // AquaBackend implements the Backend interface for Aqua registry.
@@ -208,29 +219,47 @@ func (a *AquaBackend) fetchPackageMetadata(ctx context.Context, tool string) (*a
 // listGitHubVersions lists versions from GitHub releases for an Aqua package.
 func (a *AquaBackend) listGitHubVersions(ctx context.Context, tool string, pkg *aquaPackage, platform Platform) ([]VersionInfo, error) {
 	repoPath := fmt.Sprintf("%s/%s", pkg.RepoOwner, pkg.RepoName)
-	url := fmt.Sprintf("https://api.github.com/repos/%s/releases", repoPath)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
-	if err != nil {
-		return nil, NewBackendError("aqua", tool, "failed to create request", err)
-	}
-
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-
-	resp, err := a.client.Do(req)
-	if err != nil {
-		return nil, NewBackendError("aqua", tool, "failed to fetch releases", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, NewBackendError("aqua", tool, fmt.Sprintf("API returned status %d: %s", resp.StatusCode, string(body)), nil)
-	}
 
 	var releases []githubRelease
-	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
-		return nil, NewBackendError("aqua", tool, "failed to decode releases", err)
+	if val, ok := aquaReleasesCache.Load(repoPath); ok {
+		releases = val.([]githubRelease)
+	} else {
+		res, err, _ := aquaReleaseFlight.Do(repoPath, func() (any, error) {
+			url := fmt.Sprintf("https://api.github.com/repos/%s/releases", repoPath)
+
+			req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
+			if err != nil {
+				return nil, NewBackendError("aqua", tool, "failed to create request", err)
+			}
+
+			req.Header.Set("Accept", "application/vnd.github.v3+json")
+			if token := resolveGitHubToken("github.com"); token != "" {
+				req.Header.Set("Authorization", "Bearer "+token)
+			}
+
+			resp, err := a.client.Do(req)
+			if err != nil {
+				return nil, NewBackendError("aqua", tool, "failed to fetch releases", err)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				body, _ := io.ReadAll(resp.Body)
+				return nil, NewBackendError("aqua", tool, fmt.Sprintf("API returned status %d: %s", resp.StatusCode, string(body)), nil)
+			}
+
+			var fetched []githubRelease
+			if err := json.NewDecoder(resp.Body).Decode(&fetched); err != nil {
+				return nil, NewBackendError("aqua", tool, "failed to decode releases", err)
+			}
+
+			aquaReleasesCache.Store(repoPath, fetched)
+			return fetched, nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		releases = res.([]githubRelease)
 	}
 
 	var versions []VersionInfo
