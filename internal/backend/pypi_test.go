@@ -61,6 +61,7 @@ func TestPypiBackend_ListVersions(t *testing.T) {
 	}
 
 	// execution error
+	ClearPypiMetadataCache()
 	bErr := NewPypiBackend()
 	bErr.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -73,6 +74,7 @@ func TestPypiBackend_ListVersions(t *testing.T) {
 	}
 
 	// internal error
+	ClearPypiMetadataCache()
 	bInternal := NewPypiBackend()
 	bInternal.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -85,6 +87,7 @@ func TestPypiBackend_ListVersions(t *testing.T) {
 	}
 
 	// bad json
+	ClearPypiMetadataCache()
 	bJSON := NewPypiBackend()
 	bJSON.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -97,6 +100,7 @@ func TestPypiBackend_ListVersions(t *testing.T) {
 	}
 
 	// bad request
+	ClearPypiMetadataCache()
 	_, err = b.ListVersions(nil, "black", platform)
 	if err == nil {
 		t.Error("expected request creation error with nil context")
@@ -104,6 +108,9 @@ func TestPypiBackend_ListVersions(t *testing.T) {
 }
 
 func TestPypiBackend_ResolveVersion(t *testing.T) {
+	ClearPypiMetadataCache()
+	defer ClearPypiMetadataCache()
+
 	b := NewPypiBackend()
 	b.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -137,6 +144,7 @@ func TestPypiBackend_ResolveVersion(t *testing.T) {
 	}
 
 	// execution error
+	ClearPypiMetadataCache()
 	bErr := NewPypiBackend()
 	bErr.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -149,6 +157,7 @@ func TestPypiBackend_ResolveVersion(t *testing.T) {
 	}
 
 	// bad json
+	ClearPypiMetadataCache()
 	bJSON := NewPypiBackend()
 	bJSON.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -161,17 +170,20 @@ func TestPypiBackend_ResolveVersion(t *testing.T) {
 	}
 
 	// not found latest
+	ClearPypiMetadataCache()
 	_, err = b.ResolveVersion(ctx, "notfound", "latest", platform)
 	if err == nil {
 		t.Error("expected not found latest error")
 	}
 
 	// bad request latest
+	ClearPypiMetadataCache()
 	_, err = b.ResolveVersion(nil, "black", "latest", platform)
 	if err == nil {
 		t.Error("expected request creation error with nil context")
 	}
 }
+
 
 func TestPypiBackend_GetDownloadInfo(t *testing.T) {
 	b := NewPypiBackend()
@@ -188,9 +200,12 @@ func TestPypiBackend_GetDownloadInfo(t *testing.T) {
 }
 
 func TestPypiBackend_DeduplicationAndCache(t *testing.T) {
-	b := NewPypiBackend()
+	ClearPypiMetadataCache()
+	defer ClearPypiMetadataCache()
+
+	b1 := NewPypiBackend()
 	var requestCount int
-	b.client.Transport = &mockCargoTransport{
+	mockTr := &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
 			requestCount++
 			body := `{"info": {"version": "23.3.0"}, "releases": {"23.3.0": [], "22.1.0": []}}`
@@ -200,12 +215,13 @@ func TestPypiBackend_DeduplicationAndCache(t *testing.T) {
 			}, nil
 		},
 	}
+	b1.client.Transport = mockTr
 
 	ctx := context.Background()
 	platform := Platform{OS: "linux", Arch: "amd64"}
 
-	// 1. First call populates cache
-	versions, err := b.ListVersions(ctx, "concurrent-pkg", platform)
+	// 1. First call on b1 populates cache
+	versions, err := b1.ListVersions(ctx, "concurrent-pkg", platform)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -213,9 +229,11 @@ func TestPypiBackend_DeduplicationAndCache(t *testing.T) {
 		t.Fatalf("expected 2 versions, got %d", len(versions))
 	}
 
-	// 2. Second call across another platform should hit memory cache without extra network request
+	// 2. Second call across another instance b2 and platform should hit global memory cache
+	b2 := NewPypiBackend()
+	b2.client.Transport = mockTr
 	platform2 := Platform{OS: "darwin", Arch: "arm64"}
-	versions2, err := b.ListVersions(ctx, "concurrent-pkg", platform2)
+	versions2, err := b2.ListVersions(ctx, "concurrent-pkg", platform2)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -223,8 +241,8 @@ func TestPypiBackend_DeduplicationAndCache(t *testing.T) {
 		t.Fatalf("expected 2 versions, got %d", len(versions2))
 	}
 
-	// 3. ResolveVersion("latest") should also hit cache
-	latest, err := b.ResolveVersion(ctx, "concurrent-pkg", "latest", platform2)
+	// 3. ResolveVersion("latest") on b2 should also hit cache
+	latest, err := b2.ResolveVersion(ctx, "concurrent-pkg", "latest", platform2)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -236,4 +254,5 @@ func TestPypiBackend_DeduplicationAndCache(t *testing.T) {
 		t.Errorf("expected exactly 1 network request due to caching/deduplication, got %d", requestCount)
 	}
 }
+
 

@@ -16,6 +16,19 @@ import (
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
+var (
+	cargoCache  sync.Map
+	cargoFlight singleflight.Group
+)
+
+// ClearCargoMetadataCache clears in-memory caches for Cargo crate metadata.
+func ClearCargoMetadataCache() {
+	cargoCache.Range(func(key, value any) bool {
+		cargoCache.Delete(key)
+		return true
+	})
+}
+
 // CargoBackend implements the Backend interface for Cargo packages.
 type CargoBackend struct {
 	client *http.Client
@@ -56,13 +69,13 @@ func (b *CargoBackend) fetchRegistry(ctx context.Context, tool string) (*cargoRe
 		return nil, err
 	}
 
-	if val, ok := b.cache.Load(tool); ok {
+	if val, ok := cargoCache.Load(tool); ok {
 		if reg, ok := val.(*cargoRegistryResponse); ok {
 			return reg, nil
 		}
 	}
 
-	val, err, _ := b.flight.Do(tool, func() (interface{}, error) {
+	val, err, _ := cargoFlight.Do(tool, func() (interface{}, error) {
 		url := fmt.Sprintf("https://crates.io/api/v1/crates/%s", tool)
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
@@ -91,7 +104,7 @@ func (b *CargoBackend) fetchRegistry(ctx context.Context, tool string) (*cargoRe
 			return nil, NewBackendError(b.Name(), tool, "decode response", err)
 		}
 
-		b.cache.Store(tool, &registry)
+		cargoCache.Store(tool, &registry)
 		return &registry, nil
 	})
 
@@ -100,6 +113,7 @@ func (b *CargoBackend) fetchRegistry(ctx context.Context, tool string) (*cargoRe
 	}
 	return val.(*cargoRegistryResponse), nil
 }
+
 
 func (b *CargoBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	registry, err := b.fetchRegistry(ctx, tool)

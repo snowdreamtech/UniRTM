@@ -61,6 +61,7 @@ func TestNpmBackend_ListVersions(t *testing.T) {
 	}
 
 	// execution error
+	ClearNpmMetadataCache()
 	bErr := NewNpmBackend()
 	bErr.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -73,6 +74,7 @@ func TestNpmBackend_ListVersions(t *testing.T) {
 	}
 
 	// internal error
+	ClearNpmMetadataCache()
 	bInternal := NewNpmBackend()
 	bInternal.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -85,6 +87,7 @@ func TestNpmBackend_ListVersions(t *testing.T) {
 	}
 
 	// bad json
+	ClearNpmMetadataCache()
 	bJSON := NewNpmBackend()
 	bJSON.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -97,6 +100,7 @@ func TestNpmBackend_ListVersions(t *testing.T) {
 	}
 
 	// time parse
+	ClearNpmMetadataCache()
 	bTime := NewNpmBackend()
 	bTime.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -111,11 +115,13 @@ func TestNpmBackend_ListVersions(t *testing.T) {
 	}
 
 	// bad request
+	ClearNpmMetadataCache()
 	_, err = b.ListVersions(nil, "typescript", platform)
 	if err == nil {
 		t.Error("expected request creation error with nil context")
 	}
 }
+
 
 func TestNpmBackend_ResolveVersion(t *testing.T) {
 	b := NewNpmBackend()
@@ -151,6 +157,7 @@ func TestNpmBackend_ResolveVersion(t *testing.T) {
 	}
 
 	// execution error
+	ClearNpmMetadataCache()
 	bErr := NewNpmBackend()
 	bErr.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -163,6 +170,7 @@ func TestNpmBackend_ResolveVersion(t *testing.T) {
 	}
 
 	// bad json
+	ClearNpmMetadataCache()
 	bJSON := NewNpmBackend()
 	bJSON.client.Transport = &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
@@ -175,17 +183,20 @@ func TestNpmBackend_ResolveVersion(t *testing.T) {
 	}
 
 	// not found latest
+	ClearNpmMetadataCache()
 	_, err = b.ResolveVersion(ctx, "notfound", "latest", platform)
 	if err == nil {
 		t.Error("expected not found latest error")
 	}
 
 	// bad request latest
+	ClearNpmMetadataCache()
 	_, err = b.ResolveVersion(nil, "typescript", "latest", platform)
 	if err == nil {
 		t.Error("expected request creation error with nil context")
 	}
 }
+
 
 func TestNpmBackend_GetDownloadInfo(t *testing.T) {
 	b := NewNpmBackend()
@@ -202,9 +213,12 @@ func TestNpmBackend_GetDownloadInfo(t *testing.T) {
 }
 
 func TestNpmBackend_DeduplicationAndCache(t *testing.T) {
-	b := NewNpmBackend()
+	ClearNpmMetadataCache()
+	defer ClearNpmMetadataCache()
+
+	b1 := NewNpmBackend()
 	var requestCount int
-	b.client.Transport = &mockCargoTransport{
+	mockTr := &mockCargoTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
 			requestCount++
 			body := `{"dist-tags": {"latest": "5.1.0"}, "versions": {"5.0.0": {}, "5.1.0": {}}}`
@@ -214,12 +228,13 @@ func TestNpmBackend_DeduplicationAndCache(t *testing.T) {
 			}, nil
 		},
 	}
+	b1.client.Transport = mockTr
 
 	ctx := context.Background()
 	platform := Platform{OS: "linux", Arch: "amd64"}
 
-	// 1. First call populates cache
-	versions, err := b.ListVersions(ctx, "concurrent-pkg", platform)
+	// 1. First call on b1 populates cache
+	versions, err := b1.ListVersions(ctx, "concurrent-pkg", platform)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -227,9 +242,11 @@ func TestNpmBackend_DeduplicationAndCache(t *testing.T) {
 		t.Fatalf("expected 2 versions, got %d", len(versions))
 	}
 
-	// 2. Second call across another platform should hit memory cache without extra network request
+	// 2. Second call across another instance b2 and platform should hit global memory cache
+	b2 := NewNpmBackend()
+	b2.client.Transport = mockTr
 	platform2 := Platform{OS: "darwin", Arch: "arm64"}
-	versions2, err := b.ListVersions(ctx, "concurrent-pkg", platform2)
+	versions2, err := b2.ListVersions(ctx, "concurrent-pkg", platform2)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -237,8 +254,8 @@ func TestNpmBackend_DeduplicationAndCache(t *testing.T) {
 		t.Fatalf("expected 2 versions, got %d", len(versions2))
 	}
 
-	// 3. ResolveVersion("latest") should also hit cache
-	latest, err := b.ResolveVersion(ctx, "concurrent-pkg", "latest", platform2)
+	// 3. ResolveVersion("latest") on b2 should also hit cache
+	latest, err := b2.ResolveVersion(ctx, "concurrent-pkg", "latest", platform2)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -250,4 +267,5 @@ func TestNpmBackend_DeduplicationAndCache(t *testing.T) {
 		t.Errorf("expected exactly 1 network request due to caching/deduplication, got %d", requestCount)
 	}
 }
+
 

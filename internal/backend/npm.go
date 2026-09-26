@@ -18,6 +18,25 @@ import (
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
+var (
+	npmCache        sync.Map
+	npmFlight       singleflight.Group
+	npmLatestCache  sync.Map
+	npmLatestFlight singleflight.Group
+)
+
+// ClearNpmMetadataCache clears in-memory caches for NPM package metadata.
+func ClearNpmMetadataCache() {
+	npmCache.Range(func(key, value any) bool {
+		npmCache.Delete(key)
+		return true
+	})
+	npmLatestCache.Range(func(key, value any) bool {
+		npmLatestCache.Delete(key)
+		return true
+	})
+}
+
 // NpmBackend implements the Backend interface for npm packages.
 type NpmBackend struct {
 	client       *http.Client
@@ -56,13 +75,14 @@ func (b *NpmBackend) fetchRegistry(ctx context.Context, tool string) (*npmRegist
 		return nil, err
 	}
 
-	if val, ok := b.cache.Load(tool); ok {
+	if val, ok := npmCache.Load(tool); ok {
 		if reg, ok := val.(*npmRegistryResponse); ok {
 			return reg, nil
 		}
 	}
 
-	val, err, _ := b.flight.Do(tool, func() (interface{}, error) {
+	val, err, _ := npmFlight.Do(tool, func() (interface{}, error) {
+
 		baseURL := env.Get("NPM_REGISTRY_URL")
 		if baseURL == "" {
 			baseURL = env.Get("NPM_CONFIG_REGISTRY")
@@ -97,7 +117,7 @@ func (b *NpmBackend) fetchRegistry(ctx context.Context, tool string) (*npmRegist
 			return nil, NewBackendError(b.Name(), tool, "decode response", err)
 		}
 
-		b.cache.Store(tool, &registry)
+		npmCache.Store(tool, &registry)
 		return &registry, nil
 	})
 
@@ -145,7 +165,7 @@ func (b *NpmBackend) ResolveVersion(ctx context.Context, tool, versionRequest st
 
 	versionRequest = NormalizeVersionPrefix(versionRequest, false)
 	if versionRequest == "latest" {
-		if val, ok := b.latestCache.Load(tool); ok {
+		if val, ok := npmLatestCache.Load(tool); ok {
 			if ver, ok := val.(string); ok && ver != "" {
 				return &VersionInfo{
 					Version:  ver,
@@ -155,10 +175,10 @@ func (b *NpmBackend) ResolveVersion(ctx context.Context, tool, versionRequest st
 		}
 
 		// Check if we already have the full registry in cache with dist-tags
-		if val, ok := b.cache.Load(tool); ok {
+		if val, ok := npmCache.Load(tool); ok {
 			if reg, ok := val.(*npmRegistryResponse); ok && reg.DistTags != nil {
 				if latest, ok := reg.DistTags["latest"]; ok && latest != "" {
-					b.latestCache.Store(tool, latest)
+					npmLatestCache.Store(tool, latest)
 					return &VersionInfo{
 						Version:  latest,
 						Platform: platform,
@@ -167,7 +187,7 @@ func (b *NpmBackend) ResolveVersion(ctx context.Context, tool, versionRequest st
 			}
 		}
 
-		val, err, _ := b.latestFlight.Do(tool, func() (interface{}, error) {
+		val, err, _ := npmLatestFlight.Do(tool, func() (interface{}, error) {
 			baseURL := env.Get("NPM_REGISTRY_URL")
 			if baseURL == "" {
 				baseURL = env.Get("NPM_CONFIG_REGISTRY")
@@ -199,9 +219,10 @@ func (b *NpmBackend) ResolveVersion(ctx context.Context, tool, versionRequest st
 				return nil, err
 			}
 
-			b.latestCache.Store(tool, latest.Version)
+			npmLatestCache.Store(tool, latest.Version)
 			return latest.Version, nil
 		})
+
 
 		if err != nil {
 			return nil, err

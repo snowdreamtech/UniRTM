@@ -16,6 +16,19 @@ import (
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
 
+var (
+	pypiCache  sync.Map
+	pypiFlight singleflight.Group
+)
+
+// ClearPypiMetadataCache clears in-memory caches for PyPI package metadata.
+func ClearPypiMetadataCache() {
+	pypiCache.Range(func(key, value any) bool {
+		pypiCache.Delete(key)
+		return true
+	})
+}
+
 // PypiBackend implements the Backend interface for PyPI packages.
 type PypiBackend struct {
 	client *http.Client
@@ -53,13 +66,13 @@ func (b *PypiBackend) fetchRegistry(ctx context.Context, tool string) (*pypiRegi
 		return nil, err
 	}
 
-	if val, ok := b.cache.Load(tool); ok {
+	if val, ok := pypiCache.Load(tool); ok {
 		if reg, ok := val.(*pypiRegistryResponse); ok {
 			return reg, nil
 		}
 	}
 
-	val, err, _ := b.flight.Do(tool, func() (interface{}, error) {
+	val, err, _ := pypiFlight.Do(tool, func() (interface{}, error) {
 		url := fmt.Sprintf("https://pypi.org/pypi/%s/json", tool)
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
@@ -85,7 +98,7 @@ func (b *PypiBackend) fetchRegistry(ctx context.Context, tool string) (*pypiRegi
 			return nil, NewBackendError(b.Name(), tool, "decode response", err)
 		}
 
-		b.cache.Store(tool, &registry)
+		pypiCache.Store(tool, &registry)
 		return &registry, nil
 	})
 
@@ -94,6 +107,7 @@ func (b *PypiBackend) fetchRegistry(ctx context.Context, tool string) (*pypiRegi
 	}
 	return val.(*pypiRegistryResponse), nil
 }
+
 
 func (b *PypiBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
 	registry, err := b.fetchRegistry(ctx, tool)
