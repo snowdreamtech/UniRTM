@@ -814,7 +814,8 @@ func getEcosystemMetadataDiskCachePath(ecosystem, tool string) string {
 	return filepath.Join(env.GetCacheDir(), "ecosystems", ecosystem, safeTool+".json")
 }
 
-func readEcosystemMetadataDiskCache(ecosystem, tool string, target any, ttl time.Duration) bool {
+// ReadEcosystemMetadataDiskCache reads cached metadata for any ecosystem from disk if within TTL.
+func ReadEcosystemMetadataDiskCache(ecosystem, tool string, target any, ttl time.Duration) bool {
 	p := getEcosystemMetadataDiskCachePath(ecosystem, tool)
 	data, err := os.ReadFile(p)
 	if err != nil {
@@ -836,7 +837,12 @@ func readEcosystemMetadataDiskCache(ecosystem, tool string, target any, ttl time
 	return true
 }
 
-func writeEcosystemMetadataDiskCache(ecosystem, tool string, data any) {
+func readEcosystemMetadataDiskCache(ecosystem, tool string, target any, ttl time.Duration) bool {
+	return ReadEcosystemMetadataDiskCache(ecosystem, tool, target, ttl)
+}
+
+// WriteEcosystemMetadataDiskCache writes metadata for any ecosystem to disk.
+func WriteEcosystemMetadataDiskCache(ecosystem, tool string, data any) {
 	p := getEcosystemMetadataDiskCachePath(ecosystem, tool)
 	raw, err := json.Marshal(data)
 	if err != nil {
@@ -862,5 +868,10 @@ func writeEcosystemMetadataDiskCache(ecosystem, tool string, data any) {
 		_ = os.Rename(tmp, p)
 	}
 }
+
+func writeEcosystemMetadataDiskCache(ecosystem, tool string, data any) {
+	WriteEcosystemMetadataDiskCache(ecosystem, tool, data)
+}
+
 
 

@@ -76,6 +76,21 @@ func (b *DotnetBackend) ListVersions(ctx context.Context, tool string, platform 
 		return versions, nil
 	}
 
+	if b.client.Transport == nil {
+		var versionStrs []string
+		if readEcosystemMetadataDiskCache("dotnet", pkg, &versionStrs, 10*time.Minute) {
+			b.versionsCache.Store(pkg, versionStrs)
+			versions := make([]VersionInfo, len(versionStrs))
+			for i, v := range versionStrs {
+				versions[i] = VersionInfo{
+					Version:  v,
+					Platform: platform,
+				}
+			}
+			return versions, nil
+		}
+	}
+
 	result, err, _ := b.requestGroup.Do("dotnet:"+pkg, func() (interface{}, error) {
 		if val, ok := b.versionsCache.Load(pkg); ok {
 			return val, nil
@@ -113,6 +128,9 @@ func (b *DotnetBackend) ListVersions(ctx context.Context, tool string, platform 
 		}
 
 		b.versionsCache.Store(pkg, versionStrs)
+		if b.client.Transport == nil {
+			writeEcosystemMetadataDiskCache("dotnet", pkg, versionStrs)
+		}
 		return versionStrs, nil
 	})
 

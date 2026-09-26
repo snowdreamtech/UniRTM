@@ -73,6 +73,21 @@ func (b *ComposerBackend) ListVersions(ctx context.Context, tool string, platfor
 		return versions, nil
 	}
 
+	if b.client.Transport == nil {
+		var versionStrs []string
+		if readEcosystemMetadataDiskCache("composer", tool, &versionStrs, 10*time.Minute) {
+			b.versionsCache.Store(tool, versionStrs)
+			versions := make([]VersionInfo, len(versionStrs))
+			for i, v := range versionStrs {
+				versions[i] = VersionInfo{
+					Version:  v,
+					Platform: platform,
+				}
+			}
+			return versions, nil
+		}
+	}
+
 	result, err, _ := b.requestGroup.Do("versions:"+tool, func() (interface{}, error) {
 		if val, ok := b.versionsCache.Load(tool); ok {
 			return val, nil
@@ -114,6 +129,9 @@ func (b *ComposerBackend) ListVersions(ctx context.Context, tool string, platfor
 		})
 
 		b.versionsCache.Store(tool, versionStrs)
+		if b.client.Transport == nil {
+			writeEcosystemMetadataDiskCache("composer", tool, versionStrs)
+		}
 		return versionStrs, nil
 	})
 

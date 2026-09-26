@@ -9,14 +9,19 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
 
 // ZigHandler handles Zig tool versions via its official JSON API.
-type ZigHandler struct{}
+type ZigHandler struct {
+	cache  sync.Map
+	flight singleflight.Group
+}
 
 func (h *ZigHandler) Name() string {
 	return "zig"
@@ -43,21 +48,37 @@ func (h *ZigHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ver
 		baseURL = "https://ziglang.org/download/index.json"
 	}
 
-	client := pkgHttp.NewClientWithTimeout(30 * time.Second)
-	req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
-	if err != nil {
-		return nil, err
+	cacheKey := baseURL
+	if val, ok := h.cache.Load(cacheKey); ok {
+		return val.([]VersionInfo), nil
 	}
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
+	var diskVersions []VersionInfo
+	if readNativeDiskCache("zig", cacheKey, &diskVersions, 10*time.Minute) {
+		h.cache.Store(cacheKey, diskVersions)
+		return diskVersions, nil
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("zig api: returned status %d", resp.StatusCode)
-	}
+	res, err, _ := h.flight.Do(cacheKey, func() (interface{}, error) {
+		if val, ok := h.cache.Load(cacheKey); ok {
+			return val, nil
+		}
+
+		client := pkgHttp.NewClientWithTimeout(30 * time.Second)
+		req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("zig api: returned status %d", resp.StatusCode)
+		}
 
 	var data map[string]map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
@@ -110,7 +131,16 @@ func (h *ZigHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ver
 		}
 	}
 
+	h.cache.Store(cacheKey, versions)
+	writeNativeDiskCache("zig", cacheKey, versions)
 	return versions, nil
+})
+
+if err != nil {
+	return nil, err
+}
+
+return res.([]VersionInfo), nil
 }
 
 func (h *ZigHandler) parsePlatform(platKey string) (string, string) {

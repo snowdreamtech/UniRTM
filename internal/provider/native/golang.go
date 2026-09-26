@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	unirtmhttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
@@ -59,6 +60,12 @@ func (h *GolangHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 	cacheKey := fmt.Sprintf("%s|%s|%t", metadataURL, downloadMirror, skipChecksum)
 	if val, ok := h.cache.Load(cacheKey); ok {
 		return val.([]VersionInfo), nil
+	}
+
+	var diskVersions []VersionInfo
+	if readNativeDiskCache("go", cacheKey, &diskVersions, 10*time.Minute) {
+		h.cache.Store(cacheKey, diskVersions)
+		return diskVersions, nil
 	}
 
 	res, err, _ := h.flight.Do(cacheKey, func() (interface{}, error) {
@@ -128,6 +135,7 @@ func (h *GolangHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		}
 
 		h.cache.Store(cacheKey, versions)
+		writeNativeDiskCache("go", cacheKey, versions)
 		return versions, nil
 	})
 

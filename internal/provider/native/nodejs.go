@@ -60,6 +60,12 @@ func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		return val.([]VersionInfo), nil
 	}
 
+	var diskVersions []VersionInfo
+	if readNativeDiskCache("node", cacheKey, &diskVersions, 10*time.Minute) {
+		h.cache.Store(cacheKey, diskVersions)
+		return diskVersions, nil
+	}
+
 	res, err, _ := h.flight.Do(cacheKey, func() (interface{}, error) {
 		if val, ok := h.cache.Load(cacheKey); ok {
 			return val, nil
@@ -126,6 +132,7 @@ func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		}
 
 		h.cache.Store(cacheKey, versions)
+		writeNativeDiskCache("node", cacheKey, versions)
 		return versions, nil
 	})
 
