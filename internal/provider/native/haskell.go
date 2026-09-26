@@ -9,11 +9,26 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"sync"
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
+
+var (
+	haskellFlight singleflight.Group
+	haskellCache  sync.Map // key: os|arch -> []VersionInfo
+)
+
+// ClearHaskellCache clears the in-memory cache for haskell versions.
+func ClearHaskellCache() {
+	haskellCache.Range(func(key, _ interface{}) bool {
+		haskellCache.Delete(key)
+		return true
+	})
+}
 
 // HaskellHandler handles GHC downloads via downloads.haskell.org.
 type HaskellHandler struct{}
@@ -23,9 +38,25 @@ func (h *HaskellHandler) Name() string {
 }
 
 func (h *HaskellHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
-	// Fetch the main page to get versions
-	client := pkgHttp.NewClientWithTimeout(10 * time.Second)
-	req, err := http.NewRequestWithContext(ctx, "GET", "https://downloads.haskell.org/~ghc/", nil)
+	platform := env.RuntimeGOOS
+	arch := env.RuntimeGOARCH
+	cacheKey := fmt.Sprintf("%s|%s", platform, arch)
+
+	if val, ok := haskellCache.Load(cacheKey); ok {
+		cached := val.([]VersionInfo)
+		cp := make([]VersionInfo, len(cached))
+		copy(cp, cached)
+		return cp, nil
+	}
+
+	res, err, _ := haskellFlight.Do(cacheKey, func() (interface{}, error) {
+		if val, ok := haskellCache.Load(cacheKey); ok {
+			return val.([]VersionInfo), nil
+		}
+
+		// Fetch the main page to get versions
+		client := pkgHttp.NewClientWithTimeout(10 * time.Second)
+		req, err := http.NewRequestWithContext(ctx, "GET", "https://downloads.haskell.org/~ghc/", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -101,5 +132,17 @@ func (h *HaskellHandler) ResolveVersions(ctx context.Context, baseURL string) ([
 		})
 	}
 
-	return versions, nil
+		haskellCache.Store(cacheKey, versions)
+		return versions, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	cached := res.([]VersionInfo)
+	cp := make([]VersionInfo, len(cached))
+	copy(cp, cached)
+	return cp, nil
 }
+

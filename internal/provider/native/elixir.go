@@ -9,10 +9,25 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
+
+var (
+	elixirFlight singleflight.Group
+	elixirCache  sync.Map // key: "elixir_versions" -> []VersionInfo
+)
+
+// ClearElixirCache clears the in-memory cache for elixir versions.
+func ClearElixirCache() {
+	elixirCache.Range(func(key, _ interface{}) bool {
+		elixirCache.Delete(key)
+		return true
+	})
+}
 
 // ElixirHandler handles Elixir versions via GitHub releases.
 type ElixirHandler struct {
@@ -24,28 +39,40 @@ func (h *ElixirHandler) Name() string {
 }
 
 func (h *ElixirHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
-	h.Owner = "elixir-lang"
-	h.Repo = "elixir"
-
-	// We call a modified logic that doesn't strictly filter by OS/Arch initially
-	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", h.Owner, h.Repo)
-
-	client := pkgHttp.NewClientWithTimeout(10 * time.Second)
-	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
-	if err != nil {
-		return nil, err
+	if val, ok := elixirCache.Load("elixir_versions"); ok {
+		cached := val.([]VersionInfo)
+		cp := make([]VersionInfo, len(cached))
+		copy(cp, cached)
+		return cp, nil
 	}
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+	res, err, _ := elixirFlight.Do("elixir_versions", func() (interface{}, error) {
+		if val, ok := elixirCache.Load("elixir_versions"); ok {
+			return val.([]VersionInfo), nil
+		}
 
-	var releases []ghRelease
-	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
-		return nil, err
-	}
+		h.Owner = "elixir-lang"
+		h.Repo = "elixir"
+
+		// We call a modified logic that doesn't strictly filter by OS/Arch initially
+		apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", h.Owner, h.Repo)
+
+		client := pkgHttp.NewClientWithTimeout(10 * time.Second)
+		req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		var releases []ghRelease
+		if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
+			return nil, err
+		}
 
 	var versions []VersionInfo
 	for _, rel := range releases {
@@ -91,5 +118,17 @@ func (h *ElixirHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		}
 	}
 
-	return versions, nil
+		elixirCache.Store("elixir_versions", versions)
+		return versions, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	cached := res.([]VersionInfo)
+	cp := make([]VersionInfo, len(cached))
+	copy(cp, cached)
+	return cp, nil
 }
+

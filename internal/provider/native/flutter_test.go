@@ -16,6 +16,9 @@ import (
 )
 
 func TestFlutterHandler_ResolveVersions(t *testing.T) {
+	ClearFlutterCache()
+	defer ClearFlutterCache()
+
 	oldMock := pkgHttp.MockTransport
 	defer func() { pkgHttp.MockTransport = oldMock }()
 
@@ -45,4 +48,41 @@ func TestFlutterHandler_ResolveVersions(t *testing.T) {
 	// Flutter asset OS depends on the platform running the test
 	osName := env.RuntimeGOOS
 	assert.Equal(t, osName, versions[0].Assets[0].OS)
+}
+
+func TestFlutterHandler_CacheAndSingleflight(t *testing.T) {
+	ClearFlutterCache()
+	defer ClearFlutterCache()
+
+	var reqCount int
+	oldMock := pkgHttp.MockTransport
+	defer func() { pkgHttp.MockTransport = oldMock }()
+
+	pkgHttp.MockTransport = &mockRoundTripper{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			reqCount++
+			resp := `{
+				"base_url": "https://storage.googleapis.com/flutter_infra_release/releases",
+				"releases": [
+					{"hash": "123", "channel": "stable", "version": "3.10.0", "archive": "flutter_macos_3.10.0-stable.zip"}
+				]
+			}`
+			return &http.Response{
+				StatusCode: 200,
+				Body:       io.NopCloser(bytes.NewBufferString(resp)),
+				Header:     make(http.Header),
+			}, nil
+		},
+	}
+
+	h := &FlutterHandler{}
+	v1, err := h.ResolveVersions(context.Background(), "")
+	assert.NoError(t, err)
+	assert.Len(t, v1, 1)
+
+	v2, err := h.ResolveVersions(context.Background(), "")
+	assert.NoError(t, err)
+	assert.Len(t, v2, 1)
+
+	assert.Equal(t, 1, reqCount, "subsequent calls should use memory cache")
 }

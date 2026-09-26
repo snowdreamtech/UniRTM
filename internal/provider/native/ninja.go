@@ -9,10 +9,25 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
+
+var (
+	ninjaFlight singleflight.Group
+	ninjaCache  sync.Map // key: "ninja_versions" -> []VersionInfo
+)
+
+// ClearNinjaCache clears the in-memory cache for ninja versions.
+func ClearNinjaCache() {
+	ninjaCache.Range(func(key, _ interface{}) bool {
+		ninjaCache.Delete(key)
+		return true
+	})
+}
 
 // NinjaHandler handles Ninja build tool versions via GitHub releases.
 type NinjaHandler struct {
@@ -24,34 +39,46 @@ func (h *NinjaHandler) Name() string {
 }
 
 func (h *NinjaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
-	h.Owner = "ninja-build"
-	h.Repo = "ninja"
-
-	// We fetch directly because GithubHandler filters out assets without clear os/arch
-	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", h.Owner, h.Repo)
-
-	client := pkgHttp.NewClientWithTimeout(10 * time.Second)
-	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
-	if err != nil {
-		return nil, err
+	if val, ok := ninjaCache.Load("ninja_versions"); ok {
+		cached := val.([]VersionInfo)
+		cp := make([]VersionInfo, len(cached))
+		copy(cp, cached)
+		return cp, nil
 	}
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+	res, err, _ := ninjaFlight.Do("ninja_versions", func() (interface{}, error) {
+		if val, ok := ninjaCache.Load("ninja_versions"); ok {
+			return val.([]VersionInfo), nil
+		}
 
-	var releases []struct {
-		TagName string `json:"tag_name"`
-		Assets  []struct {
-			Name               string `json:"name"`
-			BrowserDownloadURL string `json:"browser_download_url"`
-		} `json:"assets"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
-		return nil, err
-	}
+		h.Owner = "ninja-build"
+		h.Repo = "ninja"
+
+		// We fetch directly because GithubHandler filters out assets without clear os/arch
+		apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", h.Owner, h.Repo)
+
+		client := pkgHttp.NewClientWithTimeout(10 * time.Second)
+		req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		var releases []struct {
+			TagName string `json:"tag_name"`
+			Assets  []struct {
+				Name               string `json:"name"`
+				BrowserDownloadURL string `json:"browser_download_url"`
+			} `json:"assets"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
+			return nil, err
+		}
 
 	var versions []VersionInfo
 	for _, rel := range releases {
@@ -87,5 +114,17 @@ func (h *NinjaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]V
 		}
 	}
 
-	return versions, nil
+		ninjaCache.Store("ninja_versions", versions)
+		return versions, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	cached := res.([]VersionInfo)
+	cp := make([]VersionInfo, len(cached))
+	copy(cp, cached)
+	return cp, nil
 }
+

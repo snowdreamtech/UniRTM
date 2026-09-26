@@ -15,6 +15,9 @@ import (
 )
 
 func TestElixirHandler_ResolveVersions(t *testing.T) {
+	ClearElixirCache()
+	defer ClearElixirCache()
+
 	oldMock := pkgHttp.MockTransport
 	defer func() { pkgHttp.MockTransport = oldMock }()
 
@@ -47,4 +50,43 @@ func TestElixirHandler_ResolveVersions(t *testing.T) {
 
 	// Each asset matching adds 4 universal OS/arch combinations
 	assert.Len(t, versions[0].Assets, 8)
+}
+
+func TestElixirHandler_CacheAndSingleflight(t *testing.T) {
+	ClearElixirCache()
+	defer ClearElixirCache()
+
+	var reqCount int
+	oldMock := pkgHttp.MockTransport
+	defer func() { pkgHttp.MockTransport = oldMock }()
+
+	pkgHttp.MockTransport = &mockRoundTripper{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			reqCount++
+			resp := `[
+				{
+					"tag_name": "v1.15.0",
+					"assets": [
+						{"name": "Precompiled.zip", "browser_download_url": "https://example.com/Precompiled.zip"}
+					]
+				}
+			]`
+			return &http.Response{
+				StatusCode: 200,
+				Body:       io.NopCloser(bytes.NewBufferString(resp)),
+				Header:     make(http.Header),
+			}, nil
+		},
+	}
+
+	h := &ElixirHandler{}
+	v1, err := h.ResolveVersions(context.Background(), "")
+	assert.NoError(t, err)
+	assert.Len(t, v1, 1)
+
+	v2, err := h.ResolveVersions(context.Background(), "")
+	assert.NoError(t, err)
+	assert.Len(t, v2, 1)
+
+	assert.Equal(t, 1, reqCount, "subsequent calls should use memory cache")
 }

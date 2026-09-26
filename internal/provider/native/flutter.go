@@ -9,11 +9,26 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
+
+var (
+	flutterFlight singleflight.Group
+	flutterCache  sync.Map // platform -> []VersionInfo
+)
+
+// ClearFlutterCache clears the in-memory cache for flutter versions.
+func ClearFlutterCache() {
+	flutterCache.Range(func(key, _ interface{}) bool {
+		flutterCache.Delete(key)
+		return true
+	})
+}
 
 // FlutterHandler handles Flutter SDK versions via its official storage API.
 type FlutterHandler struct{}
@@ -40,7 +55,19 @@ func (h *FlutterHandler) ResolveVersions(ctx context.Context, baseURL string) ([
 		platform = "macos"
 	}
 
-	apiURL := fmt.Sprintf("https://storage.googleapis.com/flutter_infra_release/releases/releases_%s.json", platform)
+	if val, ok := flutterCache.Load(platform); ok {
+		cached := val.([]VersionInfo)
+		cp := make([]VersionInfo, len(cached))
+		copy(cp, cached)
+		return cp, nil
+	}
+
+	res, err, _ := flutterFlight.Do(platform, func() (interface{}, error) {
+		if val, ok := flutterCache.Load(platform); ok {
+			return val.([]VersionInfo), nil
+		}
+
+		apiURL := fmt.Sprintf("https://storage.googleapis.com/flutter_infra_release/releases/releases_%s.json", platform)
 
 	client := pkgHttp.NewClientWithTimeout(10 * time.Second)
 	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
@@ -98,5 +125,17 @@ func (h *FlutterHandler) ResolveVersions(ctx context.Context, baseURL string) ([
 		})
 	}
 
-	return versions, nil
+		flutterCache.Store(platform, versions)
+		return versions, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	cached := res.([]VersionInfo)
+	cp := make([]VersionInfo, len(cached))
+	copy(cp, cached)
+	return cp, nil
 }
+

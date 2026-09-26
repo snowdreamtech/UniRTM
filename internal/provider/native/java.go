@@ -101,61 +101,73 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 		var allVersions []VersionInfo
 		client := pkgHttp.NewClientWithTimeout(30 * time.Second)
 
-		for _, v := range majorVersions {
-			url := fmt.Sprintf("%s/v3/assets/feature_releases/%s/ga?architecture=%s&heap_size=normal&image_type=%s&jvm_impl=hotspot&os=%s&project=jdk&vendor=eclipse", apiBase, v, arch, imageType, os)
+		results := make([][]VersionInfo, len(majorVersions))
+		var wg sync.WaitGroup
 
-			req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-			if err != nil {
-				continue
-			}
-			req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
+		for idx, v := range majorVersions {
+			wg.Add(1)
+			go func(i int, major string) {
+				defer wg.Done()
+				url := fmt.Sprintf("%s/v3/assets/feature_releases/%s/ga?architecture=%s&heap_size=normal&image_type=%s&jvm_impl=hotspot&os=%s&project=jdk&vendor=eclipse", apiBase, major, arch, imageType, os)
 
-			resp, err := client.Do(req)
-			if err != nil {
-				continue
-			}
+				req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+				if err != nil {
+					return
+				}
+				req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
 
-			if resp.StatusCode != http.StatusOK {
-				resp.Body.Close()
-				continue
-			}
+				resp, err := client.Do(req)
+				if err != nil {
+					return
+				}
+				defer resp.Body.Close()
 
-			var releases []adoptiumRelease
-			decodeErr := json.NewDecoder(resp.Body).Decode(&releases)
-			resp.Body.Close()
-			if decodeErr != nil {
-				continue
-			}
-
-			for _, rel := range releases {
-				version := rel.VersionData.OpenjdkVersion
-				// Clean version string (e.g. 21.0.2+13-LTS -> 21.0.2)
-				// Remove -LTS if present
-				version = strings.ReplaceAll(version, "-LTS", "")
-				if idx := strings.Index(version, "+"); idx != -1 {
-					version = version[:idx]
+				if resp.StatusCode != http.StatusOK {
+					return
 				}
 
-				for _, bin := range rel.Binaries {
-					assets := []Asset{
-						{
-							Filename:     bin.Package.Name,
-							URL:          bin.Package.Link,
-							SignatureURL: bin.SignatureLink,
-							OS:           env.RuntimeGOOS,
-							Arch:         runtime.GOARCH,
-							Metadata:     make(map[string]string),
-						},
+				var releases []adoptiumRelease
+				if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
+					return
+				}
+
+				var subVersions []VersionInfo
+				for _, rel := range releases {
+					version := rel.VersionData.OpenjdkVersion
+					// Clean version string (e.g. 21.0.2+13-LTS -> 21.0.2)
+					// Remove -LTS if present
+					version = strings.ReplaceAll(version, "-LTS", "")
+					if idx := strings.Index(version, "+"); idx != -1 {
+						version = version[:idx]
 					}
 
-					allVersions = append(allVersions, VersionInfo{
-						Version: version,
-						Assets:  assets,
-					})
-					// Just take the first binary that matches our query filters
-					break
+					for _, bin := range rel.Binaries {
+						assets := []Asset{
+							{
+								Filename:     bin.Package.Name,
+								URL:          bin.Package.Link,
+								SignatureURL: bin.SignatureLink,
+								OS:           env.RuntimeGOOS,
+								Arch:         runtime.GOARCH,
+								Metadata:     make(map[string]string),
+							},
+						}
+
+						subVersions = append(subVersions, VersionInfo{
+							Version: version,
+							Assets:  assets,
+						})
+						// Just take the first binary that matches our query filters
+						break
+					}
 				}
-			}
+				results[i] = subVersions
+			}(idx, v)
+		}
+		wg.Wait()
+
+		for _, sub := range results {
+			allVersions = append(allVersions, sub...)
 		}
 
 		if len(allVersions) > 0 {
