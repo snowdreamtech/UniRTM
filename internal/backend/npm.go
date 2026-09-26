@@ -9,7 +9,10 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
+
+	"golang.org/x/sync/singleflight"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
@@ -17,7 +20,11 @@ import (
 
 // NpmBackend implements the Backend interface for npm packages.
 type NpmBackend struct {
-	client *http.Client
+	client       *http.Client
+	flight       singleflight.Group
+	latestFlight singleflight.Group
+	cache        sync.Map
+	latestCache  sync.Map
 }
 
 // NewNpmBackend creates a new npm backend.
@@ -36,43 +43,74 @@ func (b *NpmBackend) Dependencies() []string {
 }
 
 type npmRegistryResponse struct {
+	DistTags map[string]string      `json:"dist-tags"`
 	Versions map[string]interface{} `json:"versions"`
 	Time     map[string]string      `json:"time"`
 }
 
+func (b *NpmBackend) fetchRegistry(ctx context.Context, tool string) (*npmRegistryResponse, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("net/http: nil Context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	if val, ok := b.cache.Load(tool); ok {
+		if reg, ok := val.(*npmRegistryResponse); ok {
+			return reg, nil
+		}
+	}
+
+	val, err, _ := b.flight.Do(tool, func() (interface{}, error) {
+		baseURL := env.Get("NPM_REGISTRY_URL")
+		if baseURL == "" {
+			baseURL = env.Get("NPM_CONFIG_REGISTRY")
+		}
+		if baseURL == "" {
+			baseURL = "https://registry.npmjs.org"
+		}
+		// NPM_CONFIG_REGISTRY might have a trailing slash
+		baseURL = strings.TrimRight(baseURL, "/")
+		url := fmt.Sprintf("%s/%s", baseURL, tool)
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "create request", err)
+		}
+
+		resp, err := b.client.Do(req)
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "execute request", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, NewBackendError(b.Name(), tool, "package not found", nil)
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
+		}
+
+		var registry npmRegistryResponse
+		if err := json.NewDecoder(resp.Body).Decode(&registry); err != nil {
+			return nil, NewBackendError(b.Name(), tool, "decode response", err)
+		}
+
+		b.cache.Store(tool, &registry)
+		return &registry, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return val.(*npmRegistryResponse), nil
+}
+
 func (b *NpmBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
-	baseURL := env.Get("NPM_REGISTRY_URL")
-	if baseURL == "" {
-		baseURL = env.Get("NPM_CONFIG_REGISTRY")
-	}
-	if baseURL == "" {
-		baseURL = "https://registry.npmjs.org"
-	}
-	// NPM_CONFIG_REGISTRY might have a trailing slash
-	baseURL = strings.TrimRight(baseURL, "/")
-	url := fmt.Sprintf("%s/%s", baseURL, tool)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	registry, err := b.fetchRegistry(ctx, tool)
 	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "create request", err)
-	}
-
-	resp, err := b.client.Do(req)
-	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "execute request", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, NewBackendError(b.Name(), tool, "package not found", nil)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, NewBackendError(b.Name(), tool, fmt.Sprintf("unexpected status code: %d", resp.StatusCode), nil)
-	}
-
-	var registry npmRegistryResponse
-	if err := json.NewDecoder(resp.Body).Decode(&registry); err != nil {
-		return nil, NewBackendError(b.Name(), tool, "decode response", err)
+		return nil, err
 	}
 
 	var versions []VersionInfo
@@ -98,41 +136,79 @@ func (b *NpmBackend) ListVersions(ctx context.Context, tool string, platform Pla
 }
 
 func (b *NpmBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("net/http: nil Context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	versionRequest = NormalizeVersionPrefix(versionRequest, false)
 	if versionRequest == "latest" {
-		baseURL := env.Get("NPM_REGISTRY_URL")
-		if baseURL == "" {
-			baseURL = env.Get("NPM_CONFIG_REGISTRY")
+		if val, ok := b.latestCache.Load(tool); ok {
+			if ver, ok := val.(string); ok && ver != "" {
+				return &VersionInfo{
+					Version:  ver,
+					Platform: platform,
+				}, nil
+			}
 		}
-		if baseURL == "" {
-			baseURL = "https://registry.npmjs.org"
+
+		// Check if we already have the full registry in cache with dist-tags
+		if val, ok := b.cache.Load(tool); ok {
+			if reg, ok := val.(*npmRegistryResponse); ok && reg.DistTags != nil {
+				if latest, ok := reg.DistTags["latest"]; ok && latest != "" {
+					b.latestCache.Store(tool, latest)
+					return &VersionInfo{
+						Version:  latest,
+						Platform: platform,
+					}, nil
+				}
+			}
 		}
-		baseURL = strings.TrimRight(baseURL, "/")
-		url := fmt.Sprintf("%s/%s/latest", baseURL, tool)
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+
+		val, err, _ := b.latestFlight.Do(tool, func() (interface{}, error) {
+			baseURL := env.Get("NPM_REGISTRY_URL")
+			if baseURL == "" {
+				baseURL = env.Get("NPM_CONFIG_REGISTRY")
+			}
+			if baseURL == "" {
+				baseURL = "https://registry.npmjs.org"
+			}
+			baseURL = strings.TrimRight(baseURL, "/")
+			url := fmt.Sprintf("%s/%s/latest", baseURL, tool)
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+			if err != nil {
+				return nil, err
+			}
+
+			resp, err := b.client.Do(req)
+			if err != nil {
+				return nil, err
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				return nil, NewBackendError(b.Name(), tool, "latest version not found", nil)
+			}
+
+			var latest struct {
+				Version string `json:"version"`
+			}
+			if err := json.NewDecoder(resp.Body).Decode(&latest); err != nil {
+				return nil, err
+			}
+
+			b.latestCache.Store(tool, latest.Version)
+			return latest.Version, nil
+		})
+
 		if err != nil {
-			return nil, err
-		}
-
-		resp, err := b.client.Do(req)
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return nil, NewBackendError(b.Name(), tool, "latest version not found", nil)
-		}
-
-		var latest struct {
-			Version string `json:"version"`
-		}
-		if err := json.NewDecoder(resp.Body).Decode(&latest); err != nil {
 			return nil, err
 		}
 
 		return &VersionInfo{
-			Version:  latest.Version,
+			Version:  val.(string),
 			Platform: platform,
 		}, nil
 	}
