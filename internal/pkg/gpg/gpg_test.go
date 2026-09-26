@@ -392,3 +392,35 @@ func TestNativeGPGVerifier_Verify_Errors(t *testing.T) {
 		t.Errorf("expected signature error, got %v", err)
 	}
 }
+
+func TestNativeGPGVerifier_DiskCache(t *testing.T) {
+	armoredKey, _, _, fingerprint := generateTestKeyAndSig(t)
+
+	// 1. Write key directly to disk cache
+	writeGPGDiskCache(fingerprint, armoredKey)
+	defer func() {
+		p := getGPGDiskCachePath(fingerprint)
+		_ = os.Remove(p)
+	}()
+
+	// 2. Clear memory cache for this fingerprint
+	gpgKeyCache.Delete(strings.ToUpper(fingerprint))
+
+	// 3. Create verifier with transport that returns 404 to ensure no network key is returned
+	v := NewNativeGPGVerifier()
+	v.client.Transport = &mockTransport{
+		fp: "NONEXISTENT",
+	}
+
+	key, err := v.fetchKey(context.Background(), fingerprint)
+	if err != nil {
+		t.Fatalf("expected key from disk cache, got error: %v", err)
+	}
+	if key == nil {
+		t.Fatal("expected non-nil key")
+	}
+	if !strings.EqualFold(key.GetFingerprint(), fingerprint) {
+		t.Errorf("expected fingerprint %s, got %s", fingerprint, key.GetFingerprint())
+	}
+}
+

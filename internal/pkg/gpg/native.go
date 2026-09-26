@@ -9,13 +9,48 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
+	"golang.org/x/sync/singleflight"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 )
+
+var (
+	gpgKeyCache  sync.Map
+	gpgKeyFlight singleflight.Group
+)
+
+func getGPGDiskCachePath(fingerprint string) string {
+	cleanFP := strings.ToUpper(strings.TrimSpace(fingerprint))
+	return filepath.Join(env.GetCacheDir(), "gpg", cleanFP+".asc")
+}
+
+func readGPGDiskCache(fingerprint string) (*crypto.Key, error) {
+	p := getGPGDiskCachePath(fingerprint)
+	data, err := os.ReadFile(p)
+	if err != nil {
+		return nil, err
+	}
+	return crypto.NewKeyFromArmored(string(data))
+}
+
+func writeGPGDiskCache(fingerprint string, armored string) {
+	if armored == "" {
+		return
+	}
+	p := getGPGDiskCachePath(fingerprint)
+	if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+		return
+	}
+	_ = os.WriteFile(p, []byte(armored), 0644)
+}
 
 // NativeGPGVerifier implements Verifier using the pure-Go gopenpgp library.
 type NativeGPGVerifier struct {
@@ -103,40 +138,68 @@ func (v *NativeGPGVerifier) ImportKey(ctx context.Context, fingerprint string) e
 }
 
 func (v *NativeGPGVerifier) fetchKey(ctx context.Context, fingerprint string) (*crypto.Key, error) {
-	// Try multiple keyservers
-	keyservers := []string{
-		"https://keys.openpgp.org/vks/v1/by-fingerprint/%s",
-		"https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x%s",
-	}
+	fingerprint = strings.ToUpper(strings.TrimSpace(fingerprint))
 
-	for _, template := range keyservers {
-		url := fmt.Sprintf(template, strings.ToUpper(fingerprint))
-		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-		if err != nil {
-			continue
-		}
-
-		resp, err := v.client.Do(req)
-		if err != nil {
-			continue
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			continue
-		}
-
-		// Limit public key file size to 1MB
-		keyData, err := io.ReadAll(io.LimitReader(resp.Body, 1*1024*1024))
-		if err != nil {
-			continue
-		}
-
-		key, err := crypto.NewKeyFromArmored(string(keyData))
-		if err == nil {
+	if val, ok := gpgKeyCache.Load(fingerprint); ok {
+		if key, ok := val.(*crypto.Key); ok {
 			return key, nil
 		}
 	}
 
-	return nil, fmt.Errorf("failed to fetch public key for fingerprint %s from any keyserver", fingerprint)
+	if key, err := readGPGDiskCache(fingerprint); err == nil && key != nil {
+		gpgKeyCache.Store(fingerprint, key)
+		return key, nil
+	}
+
+	val, err, _ := gpgKeyFlight.Do(fingerprint, func() (interface{}, error) {
+		if key, err := readGPGDiskCache(fingerprint); err == nil && key != nil {
+			gpgKeyCache.Store(fingerprint, key)
+			return key, nil
+		}
+
+		// Try multiple keyservers
+		keyservers := []string{
+			"https://keys.openpgp.org/vks/v1/by-fingerprint/%s",
+			"https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x%s",
+		}
+
+		for _, template := range keyservers {
+			url := fmt.Sprintf(template, fingerprint)
+			req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+			if err != nil {
+				continue
+			}
+
+			resp, err := v.client.Do(req)
+			if err != nil {
+				continue
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				continue
+			}
+
+			// Limit public key file size to 1MB
+			keyData, err := io.ReadAll(io.LimitReader(resp.Body, 1*1024*1024))
+			if err != nil {
+				continue
+			}
+
+			armored := string(keyData)
+			key, err := crypto.NewKeyFromArmored(armored)
+			if err == nil {
+				writeGPGDiskCache(fingerprint, armored)
+				gpgKeyCache.Store(fingerprint, key)
+				return key, nil
+			}
+		}
+
+		return nil, fmt.Errorf("failed to fetch public key for fingerprint %s from any keyserver", fingerprint)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return val.(*crypto.Key), nil
 }
