@@ -39,11 +39,28 @@ import (
 
 var (
 	downloadFlight singleflight.Group
+	preflightCache sync.Map
 )
+
+type preflightResult struct {
+	contentLength int64
+	acceptRanges  bool
+	statusCode    int
+	cachedAt      time.Time
+}
+
+// ClearPreflightCache clears the in-memory preflight HEAD request cache.
+func ClearPreflightCache() {
+	preflightCache.Range(func(key, _ interface{}) bool {
+		preflightCache.Delete(key)
+		return true
+	})
+}
 
 // ResetDownloadFlightForTest resets the singleflight group used for downloads (primarily for tests).
 func ResetDownloadFlightForTest() {
 	downloadFlight = singleflight.Group{}
+	ClearPreflightCache()
 }
 
 // ErrGPGSkipped is returned when a signature file is not found (404) and verification is skipped.
@@ -331,27 +348,51 @@ func (h *HTTPDownloader) downloadOnce(ctx context.Context, url string, destinati
 	// unless the file extension indicates a small metadata/checksum file where
 	// a HEAD request is unnecessary overhead.
 	if !shouldSkipHeadPreflight(url) {
-		headReq, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
-		if err == nil {
-			headResp, err := h.client.Do(headReq)
-			if err == nil {
-				defer headResp.Body.Close()
-				if headResp.StatusCode == http.StatusOK {
-					totalBytes := headResp.ContentLength
-					acceptRanges := headResp.Header.Get("Accept-Ranges") == "bytes"
+		var totalBytes int64
+		var acceptRanges bool
+		var headOK bool
 
-					// 2. Decide if we use concurrent download
-					// Criteria: Size > 1MB, Server supports Ranges
-					if acceptRanges && totalBytes > 1*1024*1024 {
-						err := h.downloadConcurrent(ctx, url, destination, totalBytes, opts)
-						if err == nil {
-							return nil
-						}
-						// Fallback on failure
-						if ctx.Err() != nil {
-							return err // Intercept cancellation, do not fallback
-						}
+		if val, ok := preflightCache.Load(url); ok {
+			res := val.(preflightResult)
+			if time.Since(res.cachedAt) < 5*time.Minute {
+				totalBytes = res.contentLength
+				acceptRanges = res.acceptRanges
+				headOK = (res.statusCode == http.StatusOK)
+			}
+		}
+
+		if !headOK {
+			headReq, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
+			if err == nil {
+				headResp, err := h.client.Do(headReq)
+				if err == nil {
+					defer headResp.Body.Close()
+					if headResp.StatusCode == http.StatusOK {
+						totalBytes = headResp.ContentLength
+						acceptRanges = headResp.Header.Get("Accept-Ranges") == "bytes"
+						headOK = true
+						preflightCache.Store(url, preflightResult{
+							contentLength: totalBytes,
+							acceptRanges:  acceptRanges,
+							statusCode:    headResp.StatusCode,
+							cachedAt:      time.Now(),
+						})
 					}
+				}
+			}
+		}
+
+		if headOK {
+			// 2. Decide if we use concurrent download
+			// Criteria: Size > 1MB, Server supports Ranges
+			if acceptRanges && totalBytes > 1*1024*1024 {
+				err := h.downloadConcurrent(ctx, url, destination, totalBytes, opts)
+				if err == nil {
+					return nil
+				}
+				// Fallback on failure
+				if ctx.Err() != nil {
+					return err // Intercept cancellation, do not fallback
 				}
 			}
 		}
@@ -585,46 +626,79 @@ func (h *HTTPDownloader) verifyGPGSignature(ctx context.Context, targetURL, dest
 		return errors.NewSystemError("failed to parse keyring", err)
 	}
 
-	// Try .sig first, then .asc
-	sigURL := targetURL + ".sig"
-	sigDest := destination + ".sig"
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sigURL, nil)
-	if err != nil {
-		return err
+	// Concurrently probe both .sig and .asc to eliminate serial 404 RTT penalty
+	type sigProbeResult struct {
+		ext  string
+		resp *http.Response
+		err  error
 	}
-	resp, err := h.client.Do(req)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-		// Fallback to .asc
-		sigURL = targetURL + ".asc"
-		sigDest = destination + ".asc"
-		req, _ = http.NewRequestWithContext(ctx, http.MethodGet, sigURL, nil)
-		resp, err = h.client.Do(req)
-		if err != nil {
-			return errors.NewExternalError("failed to fetch signature", err)
-		}
-		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
-			// If neither .sig nor .asc exist, just skip verification (assume unsigned)
-			if resp.StatusCode == http.StatusNotFound {
-				return ErrGPGSkipped
+
+	sigCh := make(chan sigProbeResult, 2)
+	for _, ext := range []string{".sig", ".asc"} {
+		go func(e string) {
+			url := targetURL + e
+			req, reqErr := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+			if reqErr != nil {
+				sigCh <- sigProbeResult{ext: e, err: reqErr}
+				return
 			}
-			return errors.NewExternalError("signature not found at .sig or .asc", nil)
+			r, err := h.client.Do(req)
+			sigCh <- sigProbeResult{ext: e, resp: r, err: err}
+		}(ext)
+	}
+
+	var results []sigProbeResult
+	for i := 0; i < 2; i++ {
+		results = append(results, <-sigCh)
+	}
+
+	var bestResp *http.Response
+	var bestExt string
+	var all404 = true
+
+	// Priority: .sig > .asc
+	for _, preferredExt := range []string{".sig", ".asc"} {
+		for _, res := range results {
+			if res.ext == preferredExt {
+				if res.err == nil && res.resp != nil && res.resp.StatusCode == http.StatusOK {
+					bestResp = res.resp
+					bestExt = res.ext
+					break
+				}
+			}
+		}
+		if bestResp != nil {
+			break
 		}
 	}
 
+	// Clean up non-chosen responses and check 404 status
+	for _, res := range results {
+		if res.resp != nil && res.resp != bestResp {
+			res.resp.Body.Close()
+		}
+		if res.resp == nil || res.resp.StatusCode != http.StatusNotFound {
+			all404 = false
+		}
+	}
+
+	if bestResp == nil {
+		if all404 {
+			return ErrGPGSkipped
+		}
+		return errors.NewExternalError("signature not found at .sig or .asc", nil)
+	}
+
+	sigDest := destination + bestExt
 	sigFile, err := os.Create(sigDest)
 	if err != nil {
-		resp.Body.Close()
+		bestResp.Body.Close()
 		return err
 	}
 	defer os.Remove(sigDest)
 
-	_, err = io.Copy(sigFile, resp.Body)
-	resp.Body.Close()
+	_, err = io.Copy(sigFile, bestResp.Body)
+	bestResp.Body.Close()
 	sigFile.Close() // Close before reading for verification
 
 	if err != nil {

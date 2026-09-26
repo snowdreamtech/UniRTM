@@ -97,17 +97,39 @@ func (om *OfflineManager) IsOnline(ctx context.Context) bool {
 		}
 
 		online := false
-		for _, url := range om.probeURLs {
-			req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
-			if err != nil {
-				continue
-			}
-			resp, err := client.Do(req)
+		if len(om.probeURLs) == 1 {
+			req, err := http.NewRequestWithContext(ctx, http.MethodHead, om.probeURLs[0], nil)
 			if err == nil {
-				resp.Body.Close()
-				online = true
-				break
+				if resp, err := client.Do(req); err == nil {
+					resp.Body.Close()
+					online = true
+				}
 			}
+		} else if len(om.probeURLs) > 1 {
+			probeCtx, cancelProbe := context.WithCancel(ctx)
+			defer cancelProbe()
+
+			var wg sync.WaitGroup
+			var once sync.Once
+			for _, probeURL := range om.probeURLs {
+				wg.Add(1)
+				go func(url string) {
+					defer wg.Done()
+					req, err := http.NewRequestWithContext(probeCtx, http.MethodHead, url, nil)
+					if err != nil {
+						return
+					}
+					resp, err := client.Do(req)
+					if err == nil {
+						resp.Body.Close()
+						once.Do(func() {
+							online = true
+							cancelProbe()
+						})
+					}
+				}(probeURL)
+			}
+			wg.Wait()
 		}
 
 		om.mu.Lock()
