@@ -10,9 +10,17 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
+	"golang.org/x/sync/singleflight"
+)
+
+var (
+	composerPharFlight singleflight.Group
+	composerHTTPClient = pkgHttp.NewClientWithTimeout(30 * time.Second)
 )
 
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
@@ -198,33 +206,51 @@ func (p *ComposerProvider) findPHPAndComposer(ctx context.Context) (string, stri
 }
 
 func (p *ComposerProvider) downloadComposerPhar(ctx context.Context, destPath string) error {
-	githubProxy := env.Get("GITHUB_PROXY")
-	if githubProxy != "" && !strings.HasSuffix(githubProxy, "/") {
-		githubProxy += "/"
-	}
-	url := githubProxy + "https://github.com/composer/composer/releases/latest/download/composer.phar"
+	_, err, _ := composerPharFlight.Do(destPath, func() (interface{}, error) {
+		if fi, err := os.Stat(destPath); err == nil && fi.Size() > 0 {
+			return nil, nil
+		}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return err
-	}
+		githubProxy := env.Get("GITHUB_PROXY")
+		if githubProxy != "" && !strings.HasSuffix(githubProxy, "/") {
+			githubProxy += "/"
+		}
+		url := githubProxy + "https://github.com/composer/composer/releases/latest/download/composer.phar"
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("HTTP %d", resp.StatusCode)
-	}
+		resp, err := composerHTTPClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
 
-	out, err := os.OpenFile(destPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
+		}
 
-	_, err = io.Copy(out, resp.Body)
+		tmpFile := destPath + ".tmp"
+		out, err := os.OpenFile(tmpFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, err = io.Copy(out, resp.Body); err != nil {
+			out.Close()
+			os.Remove(tmpFile)
+			return nil, err
+		}
+		out.Close()
+
+		if err := os.Rename(tmpFile, destPath); err != nil {
+			os.Remove(tmpFile)
+			return nil, err
+		}
+
+		return nil, nil
+	})
 	return err
 }

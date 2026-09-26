@@ -16,9 +16,13 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 )
+
+var luaHTTPClient = pkgHttp.NewClientWithTimeout(30 * time.Second)
 
 // LuaProvider implements the Provider interface for Lua via LuaBinaries.
 type LuaProvider struct{}
@@ -127,7 +131,7 @@ func downloadAndCompileSource(ctx context.Context, version, installPath string) 
 		return err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := luaHTTPClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -165,7 +169,7 @@ func downloadAndExtract(ctx context.Context, url, dest string) error {
 		return err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := luaHTTPClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -301,7 +305,7 @@ func bootstrapLuaRocks(ctx context.Context, luaInstallPath, luaVersion string) e
 		return err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := luaHTTPClient.Do(req)
 	if err != nil {
 		return err
 	}
