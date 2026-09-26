@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestGitHubBackend_Name(t *testing.T) {
@@ -247,3 +248,60 @@ func TestGitHubBackend_GetDownloadInfo(t *testing.T) {
 		t.Errorf("expected version 1.2.0, got %v", info)
 	}
 }
+
+func TestGitHubBackend_FetchReleases_ETag304(t *testing.T) {
+	reqCount := 0
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		reqCount++
+		if r.Header.Get("If-None-Match") == `"test-etag-123"` {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+		w.Header().Set("ETag", `"test-etag-123"`)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`[
+			{"tag_name": "v1.0.0", "assets": [{"name": "asset.tar.gz", "browser_download_url": "https://example.com"}]}
+		]`))
+	}))
+	defer ts.Close()
+
+	b := NewGitHubBackend()
+	b.client.Transport = &mockTransport{
+		rt:  http.DefaultTransport,
+		url: ts.URL,
+	}
+
+	ctx := context.Background()
+
+	// First fetch (200 OK with ETag)
+	releases, err := b.FetchReleases(ctx, "owner/repo")
+	if err != nil {
+		t.Fatalf("first fetch failed: %v", err)
+	}
+	if len(releases) != 1 || releases[0].Tag != "v1.0.0" {
+		t.Fatalf("unexpected releases: %+v", releases)
+	}
+
+	// Manually expire the cache timestamp to simulate TTL expiration
+	cacheKey := "list:owner/repo"
+	val, ok := b.listCache.Load(cacheKey)
+	if !ok {
+		t.Fatal("expected cached list")
+	}
+	cached := val.(cachedReleaseList)
+	cached.fetchedAt = time.Now().Add(-20 * time.Minute)
+	b.listCache.Store(cacheKey, cached)
+
+	// Second fetch (should send If-None-Match and receive 304 Not Modified, reusing cache)
+	releases2, err := b.FetchReleases(ctx, "owner/repo")
+	if err != nil {
+		t.Fatalf("second fetch failed: %v", err)
+	}
+	if len(releases2) != 1 || releases2[0].Tag != "v1.0.0" {
+		t.Fatalf("unexpected releases on 304: %+v", releases2)
+	}
+	if reqCount != 2 {
+		t.Fatalf("expected 2 server requests, got %d", reqCount)
+	}
+}
+

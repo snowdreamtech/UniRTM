@@ -21,6 +21,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
 // GitHubBackend implements the Backend interface using GenericReleaseManager.
@@ -33,6 +34,7 @@ type GitHubBackend struct {
 
 type cachedReleaseList struct {
 	releases  []CommonRelease
+	etag      string
 	fetchedAt time.Time
 }
 
@@ -103,27 +105,52 @@ func (g *GitHubBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 	tool = strings.TrimPrefix(tool, "github:")
 	cacheKey := "list:" + tool
 
+	var lastEtag string
+	var lastReleases []CommonRelease
 	if val, ok := g.listCache.Load(cacheKey); ok {
-		if cached, ok := val.(cachedReleaseList); ok && time.Since(cached.fetchedAt) < 15*time.Minute {
-			return cached.releases, nil
+		if cached, ok := val.(cachedReleaseList); ok {
+			if time.Since(cached.fetchedAt) < 15*time.Minute {
+				return cached.releases, nil
+			}
+			lastEtag = cached.etag
+			lastReleases = cached.releases
 		}
 	}
 
 	v, err, _ := g.sfg.Do(cacheKey, func() (interface{}, error) {
 		if val, ok := g.listCache.Load(cacheKey); ok {
-			if cached, ok := val.(cachedReleaseList); ok && time.Since(cached.fetchedAt) < 15*time.Minute {
-				return cached.releases, nil
+			if cached, ok := val.(cachedReleaseList); ok {
+				if time.Since(cached.fetchedAt) < 15*time.Minute {
+					return cached.releases, nil
+				}
+				lastEtag = cached.etag
+				lastReleases = cached.releases
 			}
 		}
 
 		url := fmt.Sprintf("https://api.github.com/repos/%s/releases", tool)
-		releases, err := g.fetchReleasesListHTTP(ctx, url)
+		releases, newEtag, is304, err := g.fetchReleasesListHTTP(ctx, url, lastEtag)
 		if err != nil {
+			if len(lastReleases) > 0 {
+				logger.Warn("FetchReleases: request failed, using stale cache", map[string]interface{}{"error": err.Error()})
+				return lastReleases, nil
+			}
 			return nil, err
+		}
+
+		if is304 && len(lastReleases) > 0 {
+			logger.Debug("FetchReleases: 304 Not Modified, reusing cached releases without consuming rate limit", map[string]interface{}{"tool": tool})
+			g.listCache.Store(cacheKey, cachedReleaseList{
+				releases:  lastReleases,
+				etag:      lastEtag,
+				fetchedAt: time.Now(),
+			})
+			return lastReleases, nil
 		}
 
 		g.listCache.Store(cacheKey, cachedReleaseList{
 			releases:  releases,
+			etag:      newEtag,
 			fetchedAt: time.Now(),
 		})
 		return releases, nil
@@ -135,7 +162,7 @@ func (g *GitHubBackend) FetchReleases(ctx context.Context, tool string) ([]Commo
 	return v.([]CommonRelease), nil
 }
 
-func (g *GitHubBackend) fetchReleasesListHTTP(ctx context.Context, url string) ([]CommonRelease, error) {
+func (g *GitHubBackend) fetchReleasesListHTTP(ctx context.Context, url, etag string) ([]CommonRelease, string, bool, error) {
 	var resp *http.Response
 	var err error
 	var bodyBytes []byte
@@ -143,10 +170,13 @@ func (g *GitHubBackend) fetchReleasesListHTTP(ctx context.Context, url string) (
 	for i := 0; i < 3; i++ {
 		req, reqErr := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 		if reqErr != nil {
-			return nil, reqErr
+			return nil, "", false, reqErr
 		}
 		req.Header.Set("Accept", "application/vnd.github.v3+json")
 		req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
+		if etag != "" {
+			req.Header.Set("If-None-Match", etag)
+		}
 		if token := resolveGitHubToken("github.com"); token != "" {
 			req.Header.Set("Authorization", "Bearer "+token)
 		}
@@ -155,10 +185,15 @@ func (g *GitHubBackend) fetchReleasesListHTTP(ctx context.Context, url string) (
 		if err != nil {
 			select {
 			case <-ctx.Done():
-				return nil, ctx.Err()
+				return nil, "", false, ctx.Err()
 			case <-time.After(time.Duration(i+1) * time.Second):
 			}
 			continue
+		}
+
+		if resp.StatusCode == http.StatusNotModified {
+			resp.Body.Close()
+			return nil, etag, true, nil
 		}
 
 		bodyBytes, err = io.ReadAll(resp.Body)
@@ -170,7 +205,7 @@ func (g *GitHubBackend) fetchReleasesListHTTP(ctx context.Context, url string) (
 
 		// Don't retry on 404
 		if resp.StatusCode == http.StatusNotFound {
-			return nil, fmt.Errorf("GitHub API status %d", resp.StatusCode)
+			return nil, "", false, fmt.Errorf("GitHub API status %d", resp.StatusCode)
 		}
 
 		// Check rate limits
@@ -179,32 +214,34 @@ func (g *GitHubBackend) fetchReleasesListHTTP(ctx context.Context, url string) (
 				if sec, parseErr := strconv.Atoi(retryAfter); parseErr == nil && sec > 0 && sec <= 5 {
 					select {
 					case <-ctx.Done():
-						return nil, ctx.Err()
+						return nil, "", false, ctx.Err()
 					case <-time.After(time.Duration(sec) * time.Second):
 						continue
 					}
 				}
 			}
-			return nil, parseGitHubRateLimitError(resp, bodyBytes)
+			return nil, "", false, parseGitHubRateLimitError(resp, bodyBytes)
 		}
 
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return nil, "", false, ctx.Err()
 		case <-time.After(time.Duration(i+1) * time.Second):
 		}
 	}
 
 	if len(bodyBytes) == 0 || (resp != nil && resp.StatusCode != http.StatusOK) {
 		if resp != nil {
-			return nil, parseGitHubRateLimitError(resp, bodyBytes)
+			return nil, "", false, parseGitHubRateLimitError(resp, bodyBytes)
 		}
-		return nil, fmt.Errorf("GitHub API request failed: %w", err)
+		return nil, "", false, fmt.Errorf("GitHub API request failed: %w", err)
 	}
+
+	newEtag := resp.Header.Get("ETag")
 
 	var releases []githubRelease
 	if err := json.Unmarshal(bodyBytes, &releases); err != nil {
-		return nil, err
+		return nil, "", false, err
 	}
 
 	sort.Slice(releases, func(i, j int) bool {
@@ -226,7 +263,7 @@ func (g *GitHubBackend) fetchReleasesListHTTP(ctx context.Context, url string) (
 			PublishedAt: publishedAt,
 		}
 	}
-	return res, nil
+	return res, newEtag, false, nil
 }
 
 // FetchReleaseByTag implements HostingProvider.
