@@ -196,3 +196,24 @@ func TestMavenBackend_ConcurrentDeduplication(t *testing.T) {
 		t.Errorf("expected exactly 1 request due to cache, got %d", requestCount)
 	}
 }
+
+func TestMavenBackend_DiskCache(t *testing.T) {
+	ClearMavenCache()
+	defer ClearMavenCache()
+
+	tool := "com.example:my-lib"
+	dummyVersions := []string{"1.0.0", "1.1.0"}
+	writeEcosystemMetadataDiskCache("maven", tool, dummyVersions)
+
+	b := NewMavenBackend()
+	ctx := context.Background()
+	p := Platform{OS: "linux", Arch: "amd64"}
+
+	versions, err := b.ListVersions(ctx, tool, p)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(versions) != 2 || versions[0].Version != "1.0.0" {
+		t.Fatalf("expected cached versions, got %v", versions)
+	}
+}

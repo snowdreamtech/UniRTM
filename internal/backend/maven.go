@@ -21,12 +21,13 @@ var (
 	mavenVersionsCache sync.Map // map[string][]string (tool -> version strings)
 )
 
-// ClearMavenCache clears the in-memory cache for Maven artifacts. Mainly used for testing.
+// ClearMavenCache clears both in-memory and disk cache for Maven artifacts. Mainly used for testing.
 func ClearMavenCache() {
 	mavenVersionsCache.Range(func(key, _ interface{}) bool {
 		mavenVersionsCache.Delete(key)
 		return true
 	})
+	ClearEcosystemMetadataDiskCache("maven")
 }
 
 type MavenBackend struct {
@@ -87,6 +88,12 @@ func (b *MavenBackend) ListVersions(ctx context.Context, tool string, platform P
 			return val, nil
 		}
 
+		var diskVersions []string
+		if readEcosystemMetadataDiskCache("maven", tool, &diskVersions, 10*time.Minute) {
+			b.versionsCache.Store(tool, diskVersions)
+			return diskVersions, nil
+		}
+
 		url := fmt.Sprintf("https://search.maven.org/solrsearch/select?q=g:%s+AND+a:%s&rows=50&core=gav", parts[0], parts[1])
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
@@ -110,6 +117,7 @@ func (b *MavenBackend) ListVersions(ctx context.Context, tool string, platform P
 			versionStrs = append(versionStrs, doc.Version)
 		}
 
+		writeEcosystemMetadataDiskCache("maven", tool, versionStrs)
 		b.versionsCache.Store(tool, versionStrs)
 		return versionStrs, nil
 	})

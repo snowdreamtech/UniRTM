@@ -207,3 +207,24 @@ func TestGoBackend_DeduplicationAndCache(t *testing.T) {
 	}
 }
 
+func TestGoBackend_DiskCache(t *testing.T) {
+	ClearGoCache()
+	defer ClearGoCache()
+
+	tool := "golang.org/x/tools/gopls"
+	dummyVersions := []string{"v0.16.0", "v0.15.0"}
+	writeEcosystemMetadataDiskCache("go", tool, dummyVersions)
+
+	b := NewGoBackend()
+	ctx := context.Background()
+	p := Platform{OS: "linux", Arch: "amd64"}
+
+	versions, err := b.ListVersions(ctx, tool, p)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(versions) != 2 || versions[0].Version != "v0.16.0" {
+		t.Fatalf("expected cached versions, got %v", versions)
+	}
+}
+

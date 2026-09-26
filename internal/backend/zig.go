@@ -20,12 +20,13 @@ var (
 	zigVersionsCache sync.Map // map[string][]string (tool -> version strings)
 )
 
-// ClearZigCache clears the in-memory cache for Zig releases. Mainly used for testing.
+// ClearZigCache clears both in-memory and disk cache for Zig releases. Mainly used for testing.
 func ClearZigCache() {
 	zigVersionsCache.Range(func(key, _ interface{}) bool {
 		zigVersionsCache.Delete(key)
 		return true
 	})
+	ClearEcosystemMetadataDiskCache("zig")
 }
 
 type ZigBackend struct {
@@ -74,6 +75,12 @@ func (b *ZigBackend) ListVersions(ctx context.Context, tool string, platform Pla
 			return val, nil
 		}
 
+		var diskVersions []string
+		if readEcosystemMetadataDiskCache("zig", "index", &diskVersions, 10*time.Minute) {
+			b.versionsCache.Store("zig_versions", diskVersions)
+			return diskVersions, nil
+		}
+
 		// Zig compiler versions are listed at https://ziglang.org/download/index.json
 		// For zig packages, it's often github releases.
 		// For now we implement the compiler/core discovery.
@@ -104,6 +111,7 @@ func (b *ZigBackend) ListVersions(ctx context.Context, tool string, platform Pla
 			versionStrs = append(versionStrs, v)
 		}
 
+		writeEcosystemMetadataDiskCache("zig", "index", versionStrs)
 		b.versionsCache.Store("zig_versions", versionStrs)
 		return versionStrs, nil
 	})

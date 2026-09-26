@@ -7,7 +7,25 @@ import (
 	"context"
 	"os/exec"
 	"strings"
+	"sync"
+	"time"
+
+	"golang.org/x/sync/singleflight"
 )
+
+var (
+	vfoxCache  sync.Map
+	vfoxFlight singleflight.Group
+)
+
+// ClearVfoxCache clears both in-memory and disk cache for vfox. Mainly used for testing.
+func ClearVfoxCache() {
+	vfoxCache.Range(func(key, _ interface{}) bool {
+		vfoxCache.Delete(key)
+		return true
+	})
+	ClearEcosystemMetadataDiskCache("vfox")
+}
 
 // VfoxBackend implements the Backend interface for vfox plugins.
 type VfoxBackend struct{}
@@ -26,31 +44,77 @@ func (b *VfoxBackend) Dependencies() []string {
 }
 
 func (b *VfoxBackend) ListVersions(ctx context.Context, tool string, platform Platform) ([]VersionInfo, error) {
-	// Since we don't have a Lua VM to run vfox plugins, we shell out to vfox if installed.
-	cmd := exec.CommandContext(ctx, "vfox", "list", "all", tool)
-	out, err := cmd.Output()
+	if val, ok := vfoxCache.Load(tool); ok {
+		cached := val.([]VersionInfo)
+		res := make([]VersionInfo, len(cached))
+		copy(res, cached)
+		for i := range res {
+			res[i].Platform = platform
+		}
+		return res, nil
+	}
+
+	res, err, _ := vfoxFlight.Do(tool, func() (interface{}, error) {
+		if val, ok := vfoxCache.Load(tool); ok {
+			return val.([]VersionInfo), nil
+		}
+
+		var diskVersions []string
+		if readEcosystemMetadataDiskCache("vfox", tool, &diskVersions, 10*time.Minute) {
+			var versions []VersionInfo
+			for _, v := range diskVersions {
+				versions = append(versions, VersionInfo{
+					Version:  v,
+					Platform: platform,
+				})
+			}
+			vfoxCache.Store(tool, versions)
+			return versions, nil
+		}
+
+		// Since we don't have a Lua VM to run vfox plugins, we shell out to vfox if installed.
+		cmd := exec.CommandContext(ctx, "vfox", "list", "all", tool)
+		out, err := cmd.Output()
+		if err != nil {
+			return nil, NewBackendError(b.Name(), tool, "vfox list all failed (ensure vfox is installed)", err)
+		}
+
+		var versions []VersionInfo
+		var versionStrs []string
+		lines := strings.Split(string(out), "\n")
+		for _, line := range lines {
+			v := strings.TrimSpace(line)
+			if v == "" || strings.Contains(v, "Available versions") {
+				continue
+			}
+			// vfox output can be messy, we try to grab the first word which is usually the version
+			parts := strings.Fields(v)
+			if len(parts) > 0 {
+				ver := parts[0]
+				versions = append(versions, VersionInfo{
+					Version:  ver,
+					Platform: platform,
+				})
+				versionStrs = append(versionStrs, ver)
+			}
+		}
+
+		writeEcosystemMetadataDiskCache("vfox", tool, versionStrs)
+		vfoxCache.Store(tool, versions)
+		return versions, nil
+	})
+
 	if err != nil {
-		return nil, NewBackendError(b.Name(), tool, "vfox list all failed (ensure vfox is installed)", err)
+		return nil, err
 	}
 
-	var versions []VersionInfo
-	lines := strings.Split(string(out), "\n")
-	for _, line := range lines {
-		v := strings.TrimSpace(line)
-		if v == "" || strings.Contains(v, "Available versions") {
-			continue
-		}
-		// vfox output can be messy, we try to grab the first word which is usually the version
-		parts := strings.Fields(v)
-		if len(parts) > 0 {
-			versions = append(versions, VersionInfo{
-				Version:  parts[0],
-				Platform: platform,
-			})
-		}
+	cached := res.([]VersionInfo)
+	out := make([]VersionInfo, len(cached))
+	copy(out, cached)
+	for i := range out {
+		out[i].Platform = platform
 	}
-
-	return versions, nil
+	return out, nil
 }
 
 func (b *VfoxBackend) ResolveVersion(ctx context.Context, tool, versionRequest string, platform Platform) (*VersionInfo, error) {

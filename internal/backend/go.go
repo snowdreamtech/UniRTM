@@ -24,12 +24,13 @@ var (
 	goCache  sync.Map
 )
 
-// ClearGoCache clears the in-memory cache for Go modules. Mainly used for testing.
+// ClearGoCache clears both in-memory and disk cache for Go modules. Mainly used for testing.
 func ClearGoCache() {
 	goCache.Range(func(key, _ interface{}) bool {
 		goCache.Delete(key)
 		return true
 	})
+	ClearEcosystemMetadataDiskCache("go")
 }
 
 type GoBackend struct {
@@ -84,6 +85,18 @@ func (b *GoBackend) fetchVersionStrings(ctx context.Context, tool string) ([]str
 	}
 
 	val, err, _ := b.flight.Do(tool, func() (interface{}, error) {
+		if val, ok := b.cache.Load(tool); ok {
+			if verList, ok := val.([]string); ok {
+				return verList, nil
+			}
+		}
+
+		var diskVerList []string
+		if readEcosystemMetadataDiskCache("go", tool, &diskVerList, 10*time.Minute) {
+			b.cache.Store(tool, diskVerList)
+			return diskVerList, nil
+		}
+
 		// Go proxy API: https://proxy.golang.org/<module>/@v/list
 		// If a tool specifies a subpackage (e.g. golang.org/x/vuln/cmd/govulncheck),
 		// fetching list on the subpackage returns 404. We iteratively fallback to parent directories
@@ -118,6 +131,7 @@ func (b *GoBackend) fetchVersionStrings(ctx context.Context, tool string) ([]str
 					return verList[i] > verList[j]
 				})
 
+				writeEcosystemMetadataDiskCache("go", tool, verList)
 				b.cache.Store(tool, verList)
 				return verList, nil
 			}

@@ -14,6 +14,8 @@ import (
 )
 
 func TestOfflineManager_IsOnline(t *testing.T) {
+	ClearOfflineDiskCache()
+	defer ClearOfflineDiskCache()
 	om := NewOfflineManager()
 
 	// Initially we don't know if online without actual network,
@@ -37,6 +39,7 @@ func TestOfflineManager_IsOnline(t *testing.T) {
 
 	// Force cache expiration
 	om.cachedAt = time.Now().Add(-1 * time.Hour)
+	ClearOfflineDiskCache()
 	if om.IsOnline(context.Background()) {
 		t.Error("expected IsOnline to return false after cache expiration with bad URL")
 	}
@@ -99,6 +102,8 @@ func TestOfflineManager_SkipIfOffline(t *testing.T) {
 }
 
 func TestOfflineManager_Concurrent(t *testing.T) {
+	ClearOfflineDiskCache()
+	defer ClearOfflineDiskCache()
 	om := NewOfflineManager()
 
 	var reqCount int32
@@ -131,6 +136,23 @@ func TestOfflineManager_Concurrent(t *testing.T) {
 
 	if atomic.LoadInt32(&reqCount) != 1 {
 		t.Errorf("expected 1 probe request due to singleflight, got %d", reqCount)
+	}
+}
+
+func TestOfflineManager_DiskCache(t *testing.T) {
+	ClearOfflineDiskCache()
+	defer ClearOfflineDiskCache()
+
+	// Write status to disk
+	writeOfflineDiskCache(true)
+
+	// Create a brand new OfflineManager without in-memory cache
+	om := NewOfflineManager()
+	om.probeURLs = []string{"http://unreachable.test.domain.invalid"}
+
+	// Should hit disk cache and return true
+	if !om.IsOnline(context.Background()) {
+		t.Error("expected IsOnline to hit disk cache and return true")
 	}
 }
 

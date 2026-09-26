@@ -189,3 +189,27 @@ func TestDenoBackend_ConcurrentDeduplication(t *testing.T) {
 		t.Errorf("expected exactly 1 request due to cache, got %d", requestCount)
 	}
 }
+
+func TestDenoBackend_DiskCache(t *testing.T) {
+	ClearDenoCache()
+	defer ClearDenoCache()
+
+	tool := "cached_module"
+	dummyData := denoVersionsResponse{
+		Latest:   "1.2.3",
+		Versions: []string{"1.2.3", "1.2.2"},
+	}
+	writeEcosystemMetadataDiskCache("deno", tool, dummyData)
+
+	b := NewDenoBackend()
+	ctx := context.Background()
+	p := Platform{OS: "linux", Arch: "amd64"}
+
+	versions, err := b.ListVersions(ctx, tool, p)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(versions) != 2 || versions[0].Version != "1.2.3" {
+		t.Fatalf("expected cached versions, got %v", versions)
+	}
+}

@@ -20,12 +20,13 @@ var (
 	denoVersionsCache sync.Map // map[string]*denoVersionsResponse
 )
 
-// ClearDenoCache clears the in-memory cache for Deno modules. Mainly used for testing.
+// ClearDenoCache clears both in-memory and disk cache for Deno modules. Mainly used for testing.
 func ClearDenoCache() {
 	denoVersionsCache.Range(func(key, _ interface{}) bool {
 		denoVersionsCache.Delete(key)
 		return true
 	})
+	ClearEcosystemMetadataDiskCache("deno")
 }
 
 type DenoBackend struct {
@@ -69,6 +70,12 @@ func (b *DenoBackend) fetchMeta(ctx context.Context, tool string) (*denoVersions
 			return val.(*denoVersionsResponse), nil
 		}
 
+		var diskData denoVersionsResponse
+		if readEcosystemMetadataDiskCache("deno", tool, &diskData, 10*time.Minute) {
+			b.versionsCache.Store(tool, &diskData)
+			return &diskData, nil
+		}
+
 		url := fmt.Sprintf("https://cdn.deno.land/%s/meta/versions.json", tool)
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 		if err != nil {
@@ -93,6 +100,7 @@ func (b *DenoBackend) fetchMeta(ctx context.Context, tool string) (*denoVersions
 			return nil, NewBackendError(b.Name(), tool, "decode response", err)
 		}
 
+		writeEcosystemMetadataDiskCache("deno", tool, data)
 		b.versionsCache.Store(tool, &data)
 		return &data, nil
 	})

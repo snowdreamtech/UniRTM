@@ -6,15 +6,68 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 	"golang.org/x/sync/singleflight"
 )
+
+type offlineDiskCache struct {
+	Online   bool      `json:"online"`
+	CachedAt time.Time `json:"cached_at"`
+}
+
+func getOfflineDiskCachePath() string {
+	return filepath.Join(env.GetCacheDir(), "network", "online_status.json")
+}
+
+func readOfflineDiskCache(ttl time.Duration) (bool, bool) {
+	p := getOfflineDiskCachePath()
+	data, err := os.ReadFile(p)
+	if err != nil {
+		return false, false
+	}
+	var c offlineDiskCache
+	if err := json.Unmarshal(data, &c); err != nil {
+		return false, false
+	}
+	if time.Since(c.CachedAt) > ttl {
+		return false, false
+	}
+	return c.Online, true
+}
+
+func writeOfflineDiskCache(online bool) {
+	p := getOfflineDiskCachePath()
+	c := offlineDiskCache{
+		Online:   online,
+		CachedAt: time.Now(),
+	}
+	data, err := json.Marshal(c)
+	if err != nil {
+		return
+	}
+	if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+		return
+	}
+	tmp := p + ".tmp"
+	if err := os.WriteFile(tmp, data, 0644); err == nil {
+		_ = os.Rename(tmp, p)
+	}
+}
+
+// ClearOfflineDiskCache clears the persistent network status cache. Mainly used for testing.
+func ClearOfflineDiskCache() {
+	_ = os.Remove(getOfflineDiskCachePath())
+}
 
 // OfflineManager detects network availability and provides offline operation support.
 //
@@ -73,6 +126,15 @@ func (om *OfflineManager) IsOnline(ctx context.Context) bool {
 	}
 	om.mu.RUnlock()
 
+	// Check cross-process persistent disk cache
+	if status, ok := readOfflineDiskCache(om.cacheDuration); ok {
+		om.mu.Lock()
+		om.cachedStatus = &status
+		om.cachedAt = time.Now()
+		om.mu.Unlock()
+		return status
+	}
+
 	res, _, _ := om.flight.Do("is_online", func() (interface{}, error) {
 		// Double check after flight acquisition
 		om.mu.RLock()
@@ -82,6 +144,14 @@ func (om *OfflineManager) IsOnline(ctx context.Context) bool {
 			return status, nil
 		}
 		om.mu.RUnlock()
+
+		if status, ok := readOfflineDiskCache(om.cacheDuration); ok {
+			om.mu.Lock()
+			om.cachedStatus = &status
+			om.cachedAt = time.Now()
+			om.mu.Unlock()
+			return status, nil
+		}
 
 		client := om.client
 		if client == nil {
@@ -136,6 +206,8 @@ func (om *OfflineManager) IsOnline(ctx context.Context) bool {
 		om.cachedStatus = &online
 		om.cachedAt = time.Now()
 		om.mu.Unlock()
+
+		writeOfflineDiskCache(online)
 
 		logger.Debug("Network status checked", map[string]interface{}{
 			"online": online,

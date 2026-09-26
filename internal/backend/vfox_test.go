@@ -52,6 +52,9 @@ func TestVfoxBackend_Properties(t *testing.T) {
 }
 
 func TestVfoxBackend_ListVersions(t *testing.T) {
+	ClearVfoxCache()
+	defer ClearVfoxCache()
+
 	// Create a fake vfox executable
 	tmpDir := t.TempDir()
 	vfoxPath := filepath.Join(tmpDir, "vfox")
@@ -81,6 +84,9 @@ func TestVfoxBackend_ListVersions(t *testing.T) {
 }
 
 func TestVfoxBackend_ResolveVersion(t *testing.T) {
+	ClearVfoxCache()
+	defer ClearVfoxCache()
+
 	b := NewVfoxBackend()
 	ctx := context.Background()
 	p := Platform{OS: "linux", Arch: "amd64"}
@@ -126,5 +132,27 @@ func TestVfoxBackend_GetDownloadInfo(t *testing.T) {
 	}
 	if info.Version != "21.0.1" {
 		t.Errorf("expected 21.0.1, got %s", info.Version)
+	}
+}
+
+func TestVfoxBackend_DiskCache(t *testing.T) {
+	ClearVfoxCache()
+	defer ClearVfoxCache()
+
+	tool := "cached-vfox-tool"
+	dummyVersions := []string{"1.5.0", "1.4.0"}
+	writeEcosystemMetadataDiskCache("vfox", tool, dummyVersions)
+
+	b := NewVfoxBackend()
+	ctx := context.Background()
+	p := Platform{OS: "linux", Arch: "amd64"}
+
+	// Even if vfox binary is missing, ListVersions should succeed via disk cache
+	versions, err := b.ListVersions(ctx, tool, p)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(versions) != 2 || versions[0].Version != "1.5.0" {
+		t.Fatalf("expected cached versions, got %v", versions)
 	}
 }

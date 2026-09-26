@@ -163,3 +163,24 @@ func TestZigBackend_ConcurrentDeduplication(t *testing.T) {
 		t.Errorf("expected exactly 1 request due to cache, got %d", requestCount)
 	}
 }
+
+func TestZigBackend_DiskCache(t *testing.T) {
+	ClearZigCache()
+	defer ClearZigCache()
+
+	tool := "index"
+	dummyVersions := []string{"0.12.0", "0.11.0"}
+	writeEcosystemMetadataDiskCache("zig", tool, dummyVersions)
+
+	b := NewZigBackend()
+	ctx := context.Background()
+	p := Platform{OS: "linux", Arch: "amd64"}
+
+	versions, err := b.ListVersions(ctx, "zig", p)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(versions) != 2 || versions[0].Version != "0.12.0" {
+		t.Fatalf("expected cached versions, got %v", versions)
+	}
+}
