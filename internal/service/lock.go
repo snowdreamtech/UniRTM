@@ -389,6 +389,9 @@ func (ls *LockService) Generate(
 	// Do not pre-clear entries up front; update in-place (upsert) to prevent
 	// loss of existing valid locks when network requests fail.
 
+	// Pre-fetch all GitHub release metadata in a single GraphQL query
+	ls.prefetchGitHubReleases(ctx, subset)
+
 	for uniqueKey, spec := range subset {
 		uniqueKey := uniqueKey
 		spec := spec
@@ -695,7 +698,39 @@ func (ls *LockService) SetBackendRegistry(r *backend.Registry) {
 // backendRegistry is stored separately for injection.
 func (ls *LockService) init() {} // placeholder for future init logic
 
-var _ = (*LockService).init // suppress unused warning
+// prefetchGitHubReleases batches GitHub release requests via GraphQL before parallel platform resolution.
+func (ls *LockService) prefetchGitHubReleases(ctx context.Context, tools map[string]ToolSpec) {
+	if ls.backendRegistry == nil {
+		return
+	}
+	b, err := ls.backendRegistry.Get("github")
+	if err != nil || b == nil {
+		return
+	}
+	ghBackend, ok := b.(*backend.GitHubBackend)
+	if !ok {
+		return
+	}
+
+	var specs []backend.GitHubReleaseQuerySpec
+	for uniqueKey, spec := range tools {
+		toolName := spec.Name
+		if toolName == "" {
+			toolName = uniqueKey
+		}
+		tb, err := ls.backendForSpec(toolName, spec.BackendName)
+		if err == nil && tb != nil && tb.Name() == "github" && spec.Version != "" {
+			specs = append(specs, backend.GitHubReleaseQuerySpec{
+				Tool: toolName,
+				Tag:  spec.Version,
+			})
+		}
+	}
+
+	if len(specs) > 0 {
+		_ = ghBackend.BatchPrefetchReleases(ctx, specs)
+	}
+}
 
 // buildSubset filters a full tools map to only the requested names.
 func buildSubset(all map[string]ToolSpec, filter []string) map[string]ToolSpec {
