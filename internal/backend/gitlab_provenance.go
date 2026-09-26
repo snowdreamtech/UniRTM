@@ -11,15 +11,68 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/sigstore/sigstore-go/pkg/verify"
+	"golang.org/x/sync/singleflight"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
+
+var (
+	gitlabProvenanceCache  sync.Map
+	gitlabProvenanceFlight singleflight.Group
+)
+
+// ClearGitlabProvenanceCache clears the in-memory cache for GitLab attestations.
+func ClearGitlabProvenanceCache() {
+	gitlabProvenanceCache.Range(func(key, value any) bool {
+		gitlabProvenanceCache.Delete(key)
+		return true
+	})
+}
+
+func getGitlabAttestationDiskCachePath(owner, repo, digest string) string {
+	safeRepo := strings.NewReplacer("/", "_", ":", "_").Replace(owner + "_" + repo)
+	return filepath.Join(env.GetCacheDir(), "attestations", "gitlab", safeRepo, digest+".json")
+}
+
+func readGitlabAttestationDiskCache(owner, repo, digest string) *ProvenanceResult {
+	p := getGitlabAttestationDiskCachePath(owner, repo, digest)
+	data, err := os.ReadFile(p)
+	if err != nil {
+		return nil
+	}
+	var res ProvenanceResult
+	if err := json.Unmarshal(data, &res); err != nil {
+		return nil
+	}
+	return &res
+}
+
+func writeGitlabAttestationDiskCache(owner, repo, digest string, res *ProvenanceResult) {
+	if res == nil {
+		return
+	}
+	p := getGitlabAttestationDiskCachePath(owner, repo, digest)
+	if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+		return
+	}
+	data, err := json.Marshal(res)
+	if err != nil {
+		return
+	}
+	tmp := p + ".tmp"
+	if err := os.WriteFile(tmp, data, 0644); err == nil {
+		_ = os.Rename(tmp, p)
+	}
+}
 
 // VerifyGitlabArtifactProvenance checks the GitLab attestation for the artifact at
 // artifactPath against the repository owner/repo.
@@ -27,22 +80,55 @@ func VerifyGitlabArtifactProvenance(
 	ctx context.Context,
 	token, owner, repo, artifactPath string,
 ) (*ProvenanceResult, error) {
-	verifier := &gitlabProvenanceVerifier{
-		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
+	digest, err := sha256File(artifactPath)
+	if err != nil {
+		return nil, fmt.Errorf("provenance: compute digest: %w", err)
 	}
 
-	result, err := verifier.verify(ctx, token, owner, repo, artifactPath)
-	if err != nil && strings.Contains(err.Error(), "malformed HTTP response") {
-		logger.Warn("provenance: detected malformed HTTP response, smartly downgrading to HTTP/1.1 and retrying...")
-		verifier = &gitlabProvenanceVerifier{
+	cacheKey := fmt.Sprintf("%s/%s@sha256:%s", owner, repo, digest)
+	if val, ok := gitlabProvenanceCache.Load(cacheKey); ok {
+		return val.(*ProvenanceResult), nil
+	}
+
+	if diskRes := readGitlabAttestationDiskCache(owner, repo, digest); diskRes != nil {
+		gitlabProvenanceCache.Store(cacheKey, diskRes)
+		return diskRes, nil
+	}
+
+	v, err, _ := gitlabProvenanceFlight.Do(cacheKey, func() (interface{}, error) {
+		if val, ok := gitlabProvenanceCache.Load(cacheKey); ok {
+			return val.(*ProvenanceResult), nil
+		}
+		if diskRes := readGitlabAttestationDiskCache(owner, repo, digest); diskRes != nil {
+			gitlabProvenanceCache.Store(cacheKey, diskRes)
+			return diskRes, nil
+		}
+
+		verifier := &gitlabProvenanceVerifier{
 			client: pkgHttp.NewClientWithTimeout(30 * time.Second),
 		}
-		if trans, ok := verifier.client.Transport.(*http.Transport); ok {
-			pkgHttp.DisableHTTP2(trans)
+
+		result, err := verifier.verify(ctx, token, owner, repo, artifactPath)
+		if err != nil && strings.Contains(err.Error(), "malformed HTTP response") {
+			logger.Warn("provenance: detected malformed HTTP response, smartly downgrading to HTTP/1.1 and retrying...")
+			verifier = &gitlabProvenanceVerifier{
+				client: pkgHttp.NewClientWithTimeout(30 * time.Second),
+			}
+			if trans, ok := verifier.client.Transport.(*http.Transport); ok {
+				pkgHttp.DisableHTTP2(trans)
+			}
+			result, err = verifier.verify(ctx, token, owner, repo, artifactPath)
 		}
-		return verifier.verify(ctx, token, owner, repo, artifactPath)
+		if err == nil && result != nil && result.Verified {
+			gitlabProvenanceCache.Store(cacheKey, result)
+			writeGitlabAttestationDiskCache(owner, repo, digest, result)
+		}
+		return result, err
+	})
+	if err != nil {
+		return nil, err
 	}
-	return result, err
+	return v.(*ProvenanceResult), nil
 }
 
 type gitlabProvenanceVerifier struct {
@@ -65,6 +151,8 @@ func (v *gitlabProvenanceVerifier) verify(
 	if err != nil {
 		return nil, fmt.Errorf("provenance: compute digest: %w", err)
 	}
+
+
 
 	logger.Debug("provenance: fetching attestations from GitLab", map[string]interface{}{"owner": owner, "repo": repo, "digest": digest})
 	bundles, err := v.fetchAttestations(ctx, token, owner, repo, digest)

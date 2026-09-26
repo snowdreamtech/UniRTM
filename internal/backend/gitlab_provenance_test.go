@@ -103,3 +103,88 @@ func TestVerifyGitlabArtifactProvenance_MockServer(t *testing.T) {
 		t.Fatalf("expected 1 bundle, got %d", len(bundles))
 	}
 }
+
+func TestVerifyGitlabArtifactProvenance_DiskCache(t *testing.T) {
+	ClearGitlabProvenanceCache()
+	defer ClearGitlabProvenanceCache()
+
+	dir := t.TempDir()
+	t.Setenv("UNIRTM_CACHE_DIR", dir)
+
+	owner := "gitlabowner"
+	repo := "gitlabrepo"
+
+	artifactPath := filepath.Join(dir, "artifact.bin")
+	_ = os.WriteFile(artifactPath, []byte("gitlab content"), 0644)
+	digest, err := sha256File(artifactPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := &ProvenanceResult{
+		Verified:  true,
+		Supported: true,
+	}
+
+	writeGitlabAttestationDiskCache(owner, repo, digest, expected)
+
+	loaded := readGitlabAttestationDiskCache(owner, repo, digest)
+	if loaded == nil || !loaded.Verified {
+		t.Fatalf("expected cached provenance result, got %+v", loaded)
+	}
+
+	// Verify VerifyGitlabArtifactProvenance uses cached result without network request
+	res, err := VerifyGitlabArtifactProvenance(context.Background(), "token", owner, repo, artifactPath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !res.Verified {
+		t.Fatalf("expected res.Verified=true from cache, got %+v", res)
+	}
+}
+
+func TestVerifyGitlabArtifactProvenance_ConcurrentDeduplication(t *testing.T) {
+	ClearGitlabProvenanceCache()
+	defer ClearGitlabProvenanceCache()
+
+	dir := t.TempDir()
+	t.Setenv("UNIRTM_CACHE_DIR", dir)
+
+	artifactPath := filepath.Join(dir, "artifact.bin")
+	_ = os.WriteFile(artifactPath, []byte("concurrent content"), 0644)
+	digest, err := sha256File(artifactPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var reqCount int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		reqCount++
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	t.Setenv("GITLAB_API_URL", server.URL)
+	t.Setenv("UNIRTM_GITLAB_API_URL", server.URL)
+
+	done := make(chan bool, 5)
+	for i := 0; i < 5; i++ {
+		go func() {
+			res, err := VerifyGitlabArtifactProvenance(context.Background(), "", "owner", "repo", artifactPath)
+			if err != nil || (res != nil && res.Supported) {
+				t.Errorf("unexpected result: res=%v, err=%v", res, err)
+			}
+			done <- true
+		}()
+	}
+
+	for i := 0; i < 5; i++ {
+		<-done
+	}
+
+	if reqCount != 1 {
+		t.Errorf("expected 1 request due to singleflight, got %d", reqCount)
+	}
+	_ = digest
+}
+
