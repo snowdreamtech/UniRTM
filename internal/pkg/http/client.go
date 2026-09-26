@@ -83,6 +83,13 @@ func DefaultTransport() *http.Transport {
 		DisableHTTP2(trans)
 	}
 
+	// 3. Connection pool optimization for high-concurrency downloads:
+	// Go's default MaxIdleConnsPerHost is only 2, which causes connection thrashing
+	// during parallel downloads to the same host (e.g. github.com / cdn mirrors).
+	trans.MaxIdleConns = 100
+	trans.MaxIdleConnsPerHost = 32
+	trans.IdleConnTimeout = 90 * time.Second
+
 	return trans
 }
 

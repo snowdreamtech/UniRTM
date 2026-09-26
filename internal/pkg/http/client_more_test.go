@@ -106,3 +106,17 @@ func TestDefaultTransport_MockTransport(t *testing.T) {
 		t.Fatal("expected clientTimeout.Transport to be mockRt")
 	}
 }
+
+func TestDefaultTransport_ConnectionPool(t *testing.T) {
+	tr := DefaultTransport()
+	if tr.MaxIdleConns != 100 {
+		t.Errorf("expected MaxIdleConns=100, got %d", tr.MaxIdleConns)
+	}
+	if tr.MaxIdleConnsPerHost != 32 {
+		t.Errorf("expected MaxIdleConnsPerHost=32, got %d", tr.MaxIdleConnsPerHost)
+	}
+	if tr.IdleConnTimeout != 90*time.Second {
+		t.Errorf("expected IdleConnTimeout=90s, got %v", tr.IdleConnTimeout)
+	}
+}
+
