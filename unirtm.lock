@@ -783,7 +783,7 @@ backend = "go"
 
 [[tools."go:golang.org/x/vuln/cmd/govulncheck"]]
 version = "v1.8.0"
-backend = ""
+backend = "go"
 
 [tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.linux-amd64"]
 
@@ -879,7 +879,7 @@ backend = "npm"
 
 [[tools."npm:@commitlint/cli"]]
 version = "21.2.3"
-backend = ""
+backend = "npm"
 
 [tools."npm:@commitlint/cli"."platforms.linux-amd64"]
 
@@ -919,7 +919,7 @@ backend = "npm"
 
 [[tools."npm:@commitlint/config-conventional"]]
 version = "21.2.3"
-backend = ""
+backend = "npm"
 
 [tools."npm:@commitlint/config-conventional"."platforms.linux-amd64"]
 
@@ -1059,7 +1059,7 @@ backend = "npm"
 
 [[tools."npm:eslint"]]
 version = "10.11.0"
-backend = ""
+backend = "npm"
 
 [tools."npm:eslint"."platforms.linux-amd64"]
 
@@ -1099,7 +1099,7 @@ backend = "npm"
 
 [[tools."npm:markdownlint-cli2"]]
 version = "0.23.3"
-backend = ""
+backend = "npm"
 
 [tools."npm:markdownlint-cli2"."platforms.linux-amd64"]
 
@@ -1139,7 +1139,7 @@ backend = "npm"
 
 [[tools."npm:prettier"]]
 version = "3.9.9"
-backend = ""
+backend = "npm"
 
 [tools."npm:prettier"."platforms.linux-amd64"]
 
@@ -1219,7 +1219,7 @@ backend = "pipx"
 
 [[tools."pipx:clang-format"]]
 version = "23.1.1"
-backend = ""
+backend = "pipx"
 
 [tools."pipx:clang-format"."platforms.linux-amd64"]
 
