@@ -219,4 +219,3 @@ func TestGenerator_GenerateShim_SymlinkEvaluation(t *testing.T) {
 		t.Error("expected isSelfReferential to recognize symlink pointing to real binary")
 	}
 }
-
