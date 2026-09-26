@@ -6,6 +6,105 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.32.0](https://github.com/snowdreamtech/UniRTM/compare/v0.31.1...v0.32.0) (2026-09-26)
+
+
+### 🚀 Features
+
+* **backend:** implement GitHub GraphQL batch release resolver ([8b2083f](https://github.com/snowdreamtech/UniRTM/commit/8b2083fbb5131226e7e1cc594b50656fd91cbd6e))
+* **env:** validate critical environment variables and declare concrete config struct types ([31c083e](https://github.com/snowdreamtech/UniRTM/commit/31c083eb4d0da434ca216c00452e91d92ab6ac2d))
+* **github:** support ETag conditional requests returning 304 without quota consumption ([09a34ab](https://github.com/snowdreamtech/UniRTM/commit/09a34abb676324b05cecc3bafc12c5e5694dd790))
+* **gitlab:** implement GitLab GraphQL batch release resolver ([7a28360](https://github.com/snowdreamtech/UniRTM/commit/7a2836067a998450de0f2a01b6bc440ee6ae2648))
+* **install:** batch prefetch GitHub release metadata before concurrent install ([6d1bdb2](https://github.com/snowdreamtech/UniRTM/commit/6d1bdb2ea9395f9f13591457d06268a069937f9d))
+* **lock:** batch prefetch GitHub releases during lockfile generation ([8e61ae1](https://github.com/snowdreamtech/UniRTM/commit/8e61ae1ac727fd71d65c5644a50a08ea9a794206))
+* **lockfile:** auto-repair missing entries, rebuild missing lockfiles, and mitigate github rate limits ([e5b6da3](https://github.com/snowdreamtech/UniRTM/commit/e5b6da3c81c23888d4eced07a982852ec26ace4d))
+* **prefetch:** integrate GitLab GraphQL batch prefetching into lock and install services ([772cf51](https://github.com/snowdreamtech/UniRTM/commit/772cf512ee59d1ca3caabd657e78fb7f0d85f001))
+* **shim:** add self-referential shim prevention and CLI binary recognition for mise/rtx/asdf ([c495a80](https://github.com/snowdreamtech/UniRTM/commit/c495a80f8b55930191463bf236352a90791234fd))
+
+
+### 🐛 Bug Fixes
+
+* correct backend field for npm/go/pipx tools in unirtm.lock ([2d79884](https://github.com/snowdreamtech/UniRTM/commit/2d798841a9c63004b3b646d592a112791cfe51b9))
+* **docs:** pin mermaid to 11.17.2 for vitepress-plugin-mermaid peer dependency ([325ec0a](https://github.com/snowdreamtech/UniRTM/commit/325ec0a4391bc0301774b6da633ad39280d6c0eb))
+* **download:** reject insecure non-loopback HTTP and bound client timeout ([2f6aadf](https://github.com/snowdreamtech/UniRTM/commit/2f6aadfc86d0fbbc07066fd94165fdb1bff9edd2))
+* **gpg:** cap key download size to 1MB and isolate test temp files ([f64bd05](https://github.com/snowdreamtech/UniRTM/commit/f64bd05dfa012362764cfd5369a8c302ead0ea5d))
+* **http:** support non-standard DefaultTransport and bypass proxy for loopback ([e9346c6](https://github.com/snowdreamtech/UniRTM/commit/e9346c6674ce592ba16796bf8ced4ab0d921fe69))
+* **lockfile:** relax URL and checksum requirements for package managers and ecosystem tools ([33181c7](https://github.com/snowdreamtech/UniRTM/commit/33181c72043f47fad40535723f71de5cd3f4d788))
+* **logger:** automatically sanitize sensitive credentials, tokens, and private keys ([e39b3c2](https://github.com/snowdreamtech/UniRTM/commit/e39b3c20c9bdbbac473c80b92b03454c17fc5f78))
+* **shell:** harden shell configuration file permissions to 0600 ([0b428a8](https://github.com/snowdreamtech/UniRTM/commit/0b428a8d05d4e4f18c16be8d79c2c6b20c57536e))
+* **shim:** prevent self-referential shim recursion and add recursion guard ([7c5bd86](https://github.com/snowdreamtech/UniRTM/commit/7c5bd8674c4c31c4a9664e4bbaa73ab72defec55))
+* **test:** isolate token environment and support Windows, macOS, and Linux in backend tests ([89d669d](https://github.com/snowdreamtech/UniRTM/commit/89d669ded08f105bd424ded5602f0f67b2f884d9))
+* **updater:** harden cache permissions to 0600 and bound response body size ([1ca9cc0](https://github.com/snowdreamtech/UniRTM/commit/1ca9cc0b356aa3d49fb06d58ec8e466e6f34eb76))
+
+
+### ⚡️ Performance Improvements
+
+* **backend:** add disk caching for maven, deno, zig, go, vfox and offline status ([682811b](https://github.com/snowdreamtech/UniRTM/commit/682811b6bfdc84df21701c7f94d48029e9279728))
+* **backend:** add etag 304 conditional requests and disk caching to gitlab and forgejo ([4f73522](https://github.com/snowdreamtech/UniRTM/commit/4f735229d7b93df32e45c3c06754e093bd9c23d6))
+* **backend:** add lightweight disk caching for ecosystem package manager metadata ([f00eb54](https://github.com/snowdreamtech/UniRTM/commit/f00eb54b479d93123bea3452aaea561434ce3100))
+* **backend:** add singleflight and memory caching for aqua package metadata ([8e8cf9d](https://github.com/snowdreamtech/UniRTM/commit/8e8cf9d239715417e33b12788dd3e93d8bb77f8c))
+* **backend:** add singleflight and metadata caching for cargo and go backends ([032f8c6](https://github.com/snowdreamtech/UniRTM/commit/032f8c6570247b824f0d517252a19de2340f182b))
+* **backend:** add singleflight and metadata caching for deno, dotnet, zig, and cabal backends ([5ba9b99](https://github.com/snowdreamtech/UniRTM/commit/5ba9b999240d683806a0c2cbc63d55890aba0a47))
+* **backend:** add singleflight and metadata caching for gem and composer backends ([2d519b2](https://github.com/snowdreamtech/UniRTM/commit/2d519b24453966d11dc760f8ce0398ffc1211427))
+* **backend:** add singleflight and metadata caching for pub, maven, and conda backends ([79fd037](https://github.com/snowdreamtech/UniRTM/commit/79fd0379f4958403c042db4c57f5fdcc39ba7017))
+* **backend:** add singleflight and release caching for forgejo and gitlab ([518c0ba](https://github.com/snowdreamtech/UniRTM/commit/518c0ba8a0005805ef96b3896d825f11ce9f9159))
+* **backend:** add singleflight request deduplication and memory caching for npm and pypi ([dfd66b0](https://github.com/snowdreamtech/UniRTM/commit/dfd66b09d3ca8826d1ed5a4296e94a256aab0bd6))
+* **backend:** convert all remaining ecosystem and core vcs backends to global singletons ([f9cdfb8](https://github.com/snowdreamtech/UniRTM/commit/f9cdfb802810a44ff09d816aaa2619ab5149c652))
+* **backend:** convert npm, pypi, and cargo caches to global singletons for cross-instance reuse ([9cda07f](https://github.com/snowdreamtech/UniRTM/commit/9cda07ffaa795c0bcc66422d12df5388f868de97))
+* **backend:** deduplicate ProbeURL HEAD requests using singleflight and ttl cache ([ceca4fa](https://github.com/snowdreamtech/UniRTM/commit/ceca4fa47fd4f6905418d5b68533139ce3885ae6))
+* **backend:** optimize aqua github release fetching and add etag conditional request to updater ([762fae7](https://github.com/snowdreamtech/UniRTM/commit/762fae7af0ddec2b0a5dd0487c3da4cc1421ac71))
+* **backend:** persist checksum files to disk cache across executions ([9174e85](https://github.com/snowdreamtech/UniRTM/commit/9174e8594eb33756ae5702f56c566e149724f70b))
+* **checksum:** deduplicate concurrent checksum downloads using singleflight and enable disk caching for all clients ([483f1a2](https://github.com/snowdreamtech/UniRTM/commit/483f1a26c88fe7285ab0f17e3343b88346720340))
+* **download:** deduplicate concurrent downloads to same destination using singleflight ([bc610e1](https://github.com/snowdreamtech/UniRTM/commit/bc610e17323af28f2e998989eea04913872a3fc7))
+* **download:** optimize preflight HEAD check and reduce unnecessary RTTs ([ea4296d](https://github.com/snowdreamtech/UniRTM/commit/ea4296dd1b1788efbef9708335a6787ba3a93ab6))
+* **download:** parallelize connectivity probing and signature sniffing with preflight caching ([1ac6d58](https://github.com/snowdreamtech/UniRTM/commit/1ac6d581d489d013b81776afb08cf195371f254f))
+* **github:** increase graphql batch size to 50 for larger single-request prefetching ([ed372f6](https://github.com/snowdreamtech/UniRTM/commit/ed372f6cc8d63b390b8a9ca2ccce00cf96f121b1))
+* **gpg:** cache public keys to disk with singleflight to avoid keyserver requests ([11cfe48](https://github.com/snowdreamtech/UniRTM/commit/11cfe481485970bd5e2f3063e1f7004be11e905c))
+* **http:** add in-memory dns caching to transport dialer to reduce lookup latency ([cd501a6](https://github.com/snowdreamtech/UniRTM/commit/cd501a6089844ac0021bd072323339afdef14cfe))
+* **http:** optimize transport connection pool with increased MaxIdleConnsPerHost ([b242e4e](https://github.com/snowdreamtech/UniRTM/commit/b242e4e072afde7c515a2e539303a082d562c0ae))
+* **http:** reuse shared transport connection pool across clients to enable keep-alive ([495f8a8](https://github.com/snowdreamtech/UniRTM/commit/495f8a835c2f7a1d18d0dedc36c42ddbe9981d94))
+* **install:** add persistent download archive cache to eliminate duplicate downloads ([cf83a17](https://github.com/snowdreamtech/UniRTM/commit/cf83a1790ef2df23fab6c4895ac8b72889a4e92e))
+* **native:** add caching for flutter, haskell, elixir, ninja and parallelize java versions fetch ([6c86e6c](https://github.com/snowdreamtech/UniRTM/commit/6c86e6cc089cfb1d29116ef9d8939e2652d8af5e))
+* **native:** add singleflight and memory caching for adoptium java releases ([b29782e](https://github.com/snowdreamtech/UniRTM/commit/b29782ee5c95726dfb253739e7a3e58dc5484cc9))
+* **native:** add singleflight and memory caching for dart, julia, gradle, and kubectl ([0428a77](https://github.com/snowdreamtech/UniRTM/commit/0428a7741062af223a514e04ac396590a71a6722))
+* **native:** add singleflight and memory caching to GithubHandler to conserve GitHub API quota ([2c67723](https://github.com/snowdreamtech/UniRTM/commit/2c67723f011fdd0987fe60fb728155257f52155c))
+* **native:** add singleflight and metadata caching for golang and nodejs providers ([ffd7934](https://github.com/snowdreamtech/UniRTM/commit/ffd7934740c979c733b5d24e8e40b929e534381a))
+* **network:** batch prefetch releases in InstallAll, disk cache spm and asdf, deduplicate lua downloads ([1156e31](https://github.com/snowdreamtech/UniRTM/commit/1156e3184df29a2be081548c07a0c1f80a35dc9f))
+* **network:** deduplicate git queries in spm/asdf and harden updater/offline connectivity probes ([8599d9a](https://github.com/snowdreamtech/UniRTM/commit/8599d9a28b055e51cba8436c2a173176f6d6984e))
+* **provenance:** add persistent disk cache and singleflight for GitHub attestations ([0de1042](https://github.com/snowdreamtech/UniRTM/commit/0de104238a952bd1beaa647bc3a7df1f747cb164))
+* **provenance:** add singleflight and disk caching for gitlab attestations ([888cca3](https://github.com/snowdreamtech/UniRTM/commit/888cca33af8466ade41de2e4cd8c8d82853f97ad))
+* **provenance:** parallelize external attestation bundle downloads for github and gitlab ([1a5a4c8](https://github.com/snowdreamtech/UniRTM/commit/1a5a4c81c010da51dfec2d55458d6dbcd4ea8e07))
+* **provider:** add metadata disk caching for native language providers and remaining ecosystems ([9269647](https://github.com/snowdreamtech/UniRTM/commit/926964754c968b98c3b62e80fed00d5ae1f68fc5))
+* **provider:** replace bare default http client with shared client and deduplicate phar download ([bac1a4d](https://github.com/snowdreamtech/UniRTM/commit/bac1a4d96c7c991548ed485fce4665e9f1563ac8))
+* **service:** parallelize update checks with graphql batch prefetch and inject prefetch in prepare ([a50b3d2](https://github.com/snowdreamtech/UniRTM/commit/a50b3d2a995d92967ca3ea15cf408c51538945eb))
+
+
+### 🛠 Refactoring
+
+* **cmd:** unify doctor utility helpers and use pkgHttp client ([55e35a5](https://github.com/snowdreamtech/UniRTM/commit/55e35a544fb802539e747036bbeefba40427a663))
+* **core:** declare concrete base struct types for sysinfo, transaction, and disk utils ([586099f](https://github.com/snowdreamtech/UniRTM/commit/586099f4277e4b166decaf4f9b678c01bf52692d))
+* **repository:** use internal/pkg/errors and declare concrete base types ([59929c1](https://github.com/snowdreamtech/UniRTM/commit/59929c126515509156657619652739928458bb8b))
+
+
+### 📖 Documentation
+
+* **agent:** sync storage and low-level hardware safety rules ([9f7523d](https://github.com/snowdreamtech/UniRTM/commit/9f7523d4490732ed6f0e8af2f2481ed54b00fadd))
+
+
+### ♻️ Miscellaneous Chores
+
+* **deps:** bump the all-dependencies group in /docs with 2 updates ([3f41128](https://github.com/snowdreamtech/UniRTM/commit/3f411286745dbc6bdb204b1064626f8aa8788065))
+* **deps:** bump the all-dependencies group in /docs with 2 updates ([8409b97](https://github.com/snowdreamtech/UniRTM/commit/8409b979eec3450836d0da273dcd3245205e5bd7))
+* **deps:** bump the all-dependencies group with 3 updates ([64e1b53](https://github.com/snowdreamtech/UniRTM/commit/64e1b53e50189ebcf0804bd5cc4448b6db40845e))
+* **deps:** bump the all-dependencies group with 4 updates ([2b46333](https://github.com/snowdreamtech/UniRTM/commit/2b46333b928929f3c1ee616faf9366b2e012b84d))
+* **deps:** sync dependabot config and unirtm toolchain ([f700831](https://github.com/snowdreamtech/UniRTM/commit/f700831021b7629d2a9cfd35619ec459f87f177e))
+* **lock:** lock all 38 tools across 8 platforms and support unirtm-dev binary ([0931aa4](https://github.com/snowdreamtech/UniRTM/commit/0931aa4905d09538828d8d1040aa2abc635ccafe))
+* **lock:** record reconstructed lock entries for current platform ([691cbfa](https://github.com/snowdreamtech/UniRTM/commit/691cbfa8a85ebeca2b2ff4ec305d955f1ee778d9))
+* regenerate unirtm.lock with all-platforms support ([0c241d0](https://github.com/snowdreamtech/UniRTM/commit/0c241d02de42f83c4b3182d6474b6b7d3549bddb))
+* **release:** remove comment--manifest-mode and x-packages from release-please config ([5987ac1](https://github.com/snowdreamtech/UniRTM/commit/5987ac1df92fcb3cfb96f7dcb4a3ba7bbb64cac9))
+* update project files ([471b2ec](https://github.com/snowdreamtech/UniRTM/commit/471b2ecf31ce045d4d563fa1b6433ba3e9aba7d7))
+* update project files ([78569a3](https://github.com/snowdreamtech/UniRTM/commit/78569a3edfe2ae488cc6e2c3e1b17afa75e5b3e8))
+
 ## [0.31.1](https://github.com/snowdreamtech/UniRTM/compare/v0.31.0...v0.31.1) (2026-09-12)
 
 
