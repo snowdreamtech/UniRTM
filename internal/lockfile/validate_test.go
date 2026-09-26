@@ -130,9 +130,88 @@ func TestValidate_EmptyURLForBinaryBackend(t *testing.T) {
 }
 
 func TestBackendNeedsURL(t *testing.T) {
+	// Package manager / ecosystem backends (no URL or checksum required)
 	assert.False(t, BackendNeedsURL("go:golang.org/x/vuln/cmd/govulncheck", "go-pkg"))
 	assert.False(t, BackendNeedsURL("go:golang.org/x/tools/cmd/goimports", "go"))
+	assert.False(t, BackendNeedsURL("go:mvdan.cc/sh/v3/cmd/shfmt", ""))
 	assert.False(t, BackendNeedsURL("npm:prettier", "npm"))
+	assert.False(t, BackendNeedsURL("npm:prettier", ""))
+	assert.False(t, BackendNeedsURL("npm:@commitlint/cli", ""))
+	assert.False(t, BackendNeedsURL("npm:@commitlint/config-conventional", "npm"))
+	assert.False(t, BackendNeedsURL("pipx:clang-format", "pipx"))
+	assert.False(t, BackendNeedsURL("pipx:clang-format", ""))
+	assert.False(t, BackendNeedsURL("pipx:pre-commit", "pipx"))
+	assert.False(t, BackendNeedsURL("cargo:ripgrep", "cargo"))
+	assert.False(t, BackendNeedsURL("cargo:ripgrep", ""))
+	assert.False(t, BackendNeedsURL("gem:rubocop", "gem"))
+	assert.False(t, BackendNeedsURL("composer:squizlabs/php_codesniffer", "composer"))
+	assert.False(t, BackendNeedsURL("composer:squizlabs/php_codesniffer", ""))
+	assert.False(t, BackendNeedsURL("pub:stagehand", "pub"))
+	assert.False(t, BackendNeedsURL("docker:ghcr.io/aquasec/trivy", "docker"))
+	assert.False(t, BackendNeedsURL("docker:ghcr.io/aquasec/trivy", ""))
+	assert.False(t, BackendNeedsURL("podman:alpine", ""))
+	assert.False(t, BackendNeedsURL("deno:fmt", "deno"))
+	assert.False(t, BackendNeedsURL("dotnet:csharp-ls", "dotnet"))
+	assert.False(t, BackendNeedsURL("cabal:hlint", "cabal"))
+	assert.False(t, BackendNeedsURL("lua:inspect", "lua"))
+	assert.False(t, BackendNeedsURL("luarocks:luacheck", "luarocks"))
+
+	// Binary download backends (URL and checksum required)
 	assert.True(t, BackendNeedsURL("github:cli/cli", "github"))
+	assert.True(t, BackendNeedsURL("github:cli/cli", ""))
+	assert.True(t, BackendNeedsURL("cli/cli", ""))
+	assert.True(t, BackendNeedsURL("gitlab:gitlab-org/cli", "gitlab"))
+	assert.True(t, BackendNeedsURL("forgejo:forgejo/forgejo", "forgejo"))
 	assert.True(t, BackendNeedsURL("http:example.com/tool.tar.gz", "http"))
+	assert.True(t, BackendNeedsURL("https:example.com/tool.tar.gz", ""))
+	assert.True(t, BackendNeedsURL("s3:mybucket/mytool", "s3"))
+	assert.True(t, BackendNeedsURL("aqua:aquaproj/aqua", "aqua"))
+
+	// Verify BackendNeedsChecksum matches BackendNeedsURL
+	assert.False(t, BackendNeedsChecksum("npm:prettier", "npm"))
+	assert.False(t, BackendNeedsChecksum("go:golang.org/x/vuln/cmd/govulncheck", "go"))
+	assert.False(t, BackendNeedsChecksum("pipx:clang-format", "pipx"))
+	assert.True(t, BackendNeedsChecksum("github:cli/cli", "github"))
+}
+
+func TestCheckStrict_EcosystemNoURLNoChecksum(t *testing.T) {
+	lf := &LockFile{
+		Tools: map[string][]*ToolLockEntry{
+			"npm:prettier": {
+				{
+					Version: "3.9.9",
+					Backend: "npm",
+					Platforms: map[string]*PlatformEntry{
+						"linux-amd64": {URL: "", Checksum: ""},
+					},
+				},
+			},
+			"go:golang.org/x/vuln/cmd/govulncheck": {
+				{
+					Version: "v1.8.0",
+					Backend: "go",
+					Platforms: map[string]*PlatformEntry{
+						"linux-amd64": {URL: "", Checksum: ""},
+					},
+				},
+			},
+			"pipx:clang-format": {
+				{
+					Version: "23.1.1",
+					Backend: "pipx",
+					Platforms: map[string]*PlatformEntry{
+						"linux-amd64": {URL: "", Checksum: ""},
+					},
+				},
+			},
+		},
+	}
+
+	// In strict mode, npm/go/pipx entries with empty URL and empty Checksum MUST pass!
+	err := lf.CheckStrict([]LockRequirement{
+		{ToolKey: "npm:prettier", Version: "3.9.9", PlatformKey: "linux-amd64"},
+		{ToolKey: "go:golang.org/x/vuln/cmd/govulncheck", Version: "v1.8.0", PlatformKey: "linux-amd64"},
+		{ToolKey: "pipx:clang-format", Version: "23.1.1", PlatformKey: "linux-amd64"},
+	})
+	assert.NoError(t, err)
 }

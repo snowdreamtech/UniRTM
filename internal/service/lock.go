@@ -97,13 +97,51 @@ func (ls *LockService) Resolve(
 
 	platKey := lockfile.PlatformKey(platform.OS, platform.Arch, false)
 
+	entry := ls.lf.GetEntry(lockKey, version)
+	if entry == nil {
+		if idx := strings.Index(lockKey, ":"); idx != -1 {
+			entry = ls.lf.GetEntry(lockKey[idx+1:], version)
+		}
+	}
+
+	needsURL := true
+	if entry != nil {
+		needsURL = lockfile.BackendNeedsURL(lockKey, entry.Backend)
+	}
+
 	pe := ls.lf.GetPlatform(lockKey, version, platKey)
-	if pe == nil || pe.URL == "" {
+	if pe == nil {
 		// Fallback check using baseKey without prefix
 		if idx := strings.Index(lockKey, ":"); idx != -1 {
 			pe = ls.lf.GetPlatform(lockKey[idx+1:], version, platKey)
 		}
 	}
+
+	// Ecosystem backends (npm, go, pipx, cargo, etc.) do not require binary download URLs or checksums.
+	// As long as the pinned tool entry exists in the lockfile, lock resolution succeeds.
+	if !needsURL && entry != nil {
+		var checksum, downloadURL, urlAPI, gpgKey string
+		if pe != nil {
+			checksum = pe.Checksum
+			downloadURL = pe.URL
+			urlAPI = pe.URLAPI
+			gpgKey = pe.GPGKey
+		}
+		info := &backend.VersionInfo{
+			Version:      version,
+			DownloadURL:  downloadURL,
+			Checksum:     checksum,
+			SignatureURL: "",
+			GPGKeys:      nil,
+			Platform:     platform,
+			Metadata:     map[string]string{"lock_url_api": urlAPI},
+		}
+		if gpgKey != "" {
+			info.GPGKeys = []string{gpgKey}
+		}
+		return info, true
+	}
+
 	if pe == nil || pe.URL == "" {
 		return nil, false
 	}
@@ -176,6 +214,9 @@ func (ls *LockService) RecordInstall(
 			Backend:   backendName,
 			Platforms: make(map[string]*lockfile.PlatformEntry),
 		})
+	} else if existing.Backend == "" && backendName != "" {
+		// Repair a stale backend="" left by an incomplete previous lock run.
+		existing.Backend = backendName
 	}
 
 	// Extract api URL from metadata if the backend stored it there.
@@ -256,6 +297,9 @@ func (ls *LockService) RepairEntry(
 			Backend:   b.Name(),
 			Platforms: make(map[string]*lockfile.PlatformEntry),
 		})
+	} else if existing.Backend == "" && b.Name() != "" {
+		// Repair a stale backend="" left by an incomplete previous lock run.
+		existing.Backend = b.Name()
 	}
 
 	urlAPI := ""
@@ -464,7 +508,7 @@ func (ls *LockService) Generate(
 						existingPlat := ls.lf.GetPlatform(uniqueKey, spec.Version, platKey)
 						ls.mu.Unlock()
 
-						if existingPlat != nil && existingPlat.URL != "" {
+						if existingPlat != nil && (existingPlat.URL != "" || !lockfile.BackendNeedsURL(uniqueKey, spec.BackendName)) {
 							logger.Warn("lockfile generate: resolution failed, retaining existing lock entry", map[string]interface{}{
 								"tool":     toolName,
 								"version":  spec.Version,
@@ -513,6 +557,9 @@ func (ls *LockService) Generate(
 						Backend:   spec.BackendName,
 						Platforms: make(map[string]*lockfile.PlatformEntry),
 					})
+				} else if existing.Backend == "" && spec.BackendName != "" {
+					// Repair a stale backend="" left by an incomplete previous lock run.
+					existing.Backend = spec.BackendName
 				}
 				ls.lf.UpsertPlatform(lockKey, info.Version, platKey, &lockfile.PlatformEntry{
 					Checksum: info.Checksum,

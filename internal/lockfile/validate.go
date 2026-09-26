@@ -69,26 +69,69 @@ func (lf *LockFile) Validate() error {
 	return nil
 }
 
-// BackendNeedsURL determines if a tool backend requires explicit binary download URLs.
-func BackendNeedsURL(toolKey, backend string) bool {
-	if strings.HasPrefix(toolKey, "go:") || strings.HasPrefix(toolKey, "npm:") || strings.HasPrefix(toolKey, "pipx:") || strings.HasPrefix(toolKey, "cargo:") {
-		return false
-	}
-	if backend == "" {
-		if strings.HasPrefix(toolKey, "github:") || strings.Contains(toolKey, "/") {
-			return true
-		}
-		if idx := strings.Index(toolKey, ":"); idx != -1 {
-			backend = toolKey[:idx]
-		}
-	}
-	normalized := strings.ReplaceAll(strings.ToLower(backend), "-", "_")
+// IsEcosystemBackend reports whether the backend is a package manager, language
+// ecosystem, container runtime, or plugin system that manages its own downloads,
+// resolution, and integrity, and therefore does not require a direct binary download URL
+// or lockfile checksum.
+func IsEcosystemBackend(backend string) bool {
+	normalized := strings.ReplaceAll(strings.ToLower(strings.TrimSpace(backend)), "-", "_")
 	switch normalized {
-	case "npm", "pipx", "asdf", "cargo", "go", "go_pkg", "vfox", "gem", "composer", "cran", "spm", "pub", "luarocks", "maven", "conda", "pypi", "deno", "cabal", "dotnet", "zig":
-		return false
+	case "npm", "pipx", "pypi", "asdf", "cargo", "go", "go_pkg", "vfox", "gem",
+		"composer", "cran", "spm", "pub", "luarocks", "lua", "maven", "conda",
+		"deno", "cabal", "dotnet", "zig",
+		"docker", "podman", "nerdctl", "container", "oci":
+		return true
 	default:
+		return false
+	}
+}
+
+// BackendNeedsURL determines if a tool backend requires explicit binary download URLs.
+// Package manager ecosystems (e.g. npm, go, pipx, cargo, gem, composer) and container runtimes
+// manage their own installation and package registries, so they do NOT need binary URLs or checksums.
+func BackendNeedsURL(toolKey, backend string) bool {
+	toolKey = strings.TrimSpace(toolKey)
+	var prefix string
+	if idx := strings.Index(toolKey, ":"); idx != -1 {
+		prefix = toolKey[:idx]
+	}
+
+	// 1. If toolKey has an explicit ecosystem prefix (e.g., "npm:prettier", "composer:foo/bar"),
+	// no URL or checksum is needed.
+	if prefix != "" && IsEcosystemBackend(prefix) {
+		return false
+	}
+
+	// 2. If backend was explicitly provided:
+	if backend != "" {
+		if IsEcosystemBackend(backend) {
+			return false
+		}
 		return true
 	}
+
+	// 3. backend == "": infer from toolKey prefix or format
+	if prefix != "" {
+		if IsEcosystemBackend(prefix) {
+			return false
+		}
+		if prefix == "github" || prefix == "gitlab" || prefix == "forgejo" || prefix == "http" || prefix == "https" || prefix == "s3" || prefix == "aqua" {
+			return true
+		}
+	}
+
+	// If no prefix, shorthand like "cli/cli" or "astral-sh/ruff" indicates GitHub
+	if strings.Contains(toolKey, "/") {
+		return true
+	}
+
+	return true
+}
+
+// BackendNeedsChecksum determines if a tool backend requires explicit lockfile checksums.
+// Package managers, language ecosystems, and container runtimes do not require checksums in unirtm.lock.
+func BackendNeedsChecksum(toolKey, backend string) bool {
+	return BackendNeedsURL(toolKey, backend)
 }
 
 // validatePlatformEntry validates a single PlatformEntry.
