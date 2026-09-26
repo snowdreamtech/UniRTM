@@ -2,53 +2,8 @@
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "release-type": "simple",
   "changelog-path": "CHANGELOG.md",
-  "comment--manifest-mode": "To enable Manifest (Monorepo/Flavor) mode: 1. Rename 'x-packages' to 'packages'. 2. Create '.release-please-manifest.json'. 3. Remove top-level 'initial-version'.",
   "packages": {
     ".": {}
-  },
-  "x-packages": {
-    "docker/alpine": {
-      "release-type": "simple",
-      "component": "alpine",
-      "include-component-in-tag": true,
-      "release-as": "0.1.0",
-      "changelog-path": "CHANGELOG.md",
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "Dockerfile",
-          "glob": false
-        }
-      ]
-    },
-    "docker/debian": {
-      "release-type": "simple",
-      "component": "debian",
-      "include-component-in-tag": true,
-      "release-as": "0.1.0",
-      "changelog-path": "CHANGELOG.md",
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "Dockerfile",
-          "glob": false
-        }
-      ]
-    },
-    "docker/rocky": {
-      "release-type": "simple",
-      "component": "rocky",
-      "include-component-in-tag": true,
-      "release-as": "0.1.0",
-      "changelog-path": "CHANGELOG.md",
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "Dockerfile",
-          "glob": false
-        }
-      ]
-    }
   },
   "initial-version": "0.1.0",
   "include-v-in-tag": true,
