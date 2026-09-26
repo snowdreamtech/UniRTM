@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -17,11 +19,53 @@ import (
 	"github.com/golang/snappy"
 	"github.com/sigstore/sigstore-go/pkg/root"
 	"github.com/sigstore/sigstore-go/pkg/verify"
+	"golang.org/x/sync/singleflight"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
+
+var (
+	provenanceCache  sync.Map
+	provenanceFlight singleflight.Group
+)
+
+func getAttestationDiskCachePath(owner, repo, digest string) string {
+	safeRepo := strings.NewReplacer("/", "_", ":", "_").Replace(owner + "_" + repo)
+	return filepath.Join(env.GetCacheDir(), "attestations", safeRepo, digest+".json")
+}
+
+func readAttestationDiskCache(owner, repo, digest string) *ProvenanceResult {
+	p := getAttestationDiskCachePath(owner, repo, digest)
+	data, err := os.ReadFile(p)
+	if err != nil {
+		return nil
+	}
+	var res ProvenanceResult
+	if err := json.Unmarshal(data, &res); err != nil {
+		return nil
+	}
+	return &res
+}
+
+func writeAttestationDiskCache(owner, repo, digest string, res *ProvenanceResult) {
+	if res == nil {
+		return
+	}
+	p := getAttestationDiskCachePath(owner, repo, digest)
+	if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+		return
+	}
+	data, err := json.Marshal(res)
+	if err != nil {
+		return
+	}
+	tmp := p + ".tmp"
+	if err := os.WriteFile(tmp, data, 0644); err == nil {
+		_ = os.Rename(tmp, p)
+	}
+}
 
 // VerifyArtifactProvenance checks the GitHub attestation for the artifact at
 // artifactPath against the repository owner/repo.
@@ -29,22 +73,58 @@ func VerifyArtifactProvenance(
 	ctx context.Context,
 	token, owner, repo, artifactPath string,
 ) (*ProvenanceResult, error) {
-	verifier := &provenanceVerifier{
-		client: pkgHttp.NewClientWithTimeout(30 * time.Second),
+	digest, err := sha256File(artifactPath)
+	if err != nil {
+		return nil, fmt.Errorf("provenance: compute digest: %w", err)
 	}
 
-	result, err := verifier.verify(ctx, token, owner, repo, artifactPath)
-	if err != nil && strings.Contains(err.Error(), "malformed HTTP response") {
-		logger.Warn("provenance: detected malformed HTTP response, smartly downgrading to HTTP/1.1 and retrying...")
-		verifier = &provenanceVerifier{
+	cacheKey := fmt.Sprintf("%s/%s@sha256:%s", owner, repo, digest)
+	if val, ok := provenanceCache.Load(cacheKey); ok {
+		return val.(*ProvenanceResult), nil
+	}
+
+	if diskRes := readAttestationDiskCache(owner, repo, digest); diskRes != nil {
+		provenanceCache.Store(cacheKey, diskRes)
+		return diskRes, nil
+	}
+
+	v, err, _ := provenanceFlight.Do(cacheKey, func() (interface{}, error) {
+		if val, ok := provenanceCache.Load(cacheKey); ok {
+			return val.(*ProvenanceResult), nil
+		}
+		if diskRes := readAttestationDiskCache(owner, repo, digest); diskRes != nil {
+			provenanceCache.Store(cacheKey, diskRes)
+			return diskRes, nil
+		}
+
+		verifier := &provenanceVerifier{
 			client: pkgHttp.NewClientWithTimeout(30 * time.Second),
 		}
-		if trans, ok := verifier.client.Transport.(*http.Transport); ok {
-			pkgHttp.DisableHTTP2(trans)
+
+		result, err := verifier.verifyDigest(ctx, token, owner, repo, digest)
+		if err != nil && strings.Contains(err.Error(), "malformed HTTP response") {
+			logger.Warn("provenance: detected malformed HTTP response, smartly downgrading to HTTP/1.1 and retrying...")
+			verifier = &provenanceVerifier{
+				client: pkgHttp.NewClientWithTimeout(30 * time.Second),
+			}
+			if trans, ok := verifier.client.Transport.(*http.Transport); ok {
+				pkgHttp.DisableHTTP2(trans)
+			}
+			result, err = verifier.verifyDigest(ctx, token, owner, repo, digest)
 		}
-		return verifier.verify(ctx, token, owner, repo, artifactPath)
+		if err != nil {
+			return nil, err
+		}
+
+		provenanceCache.Store(cacheKey, result)
+		writeAttestationDiskCache(owner, repo, digest, result)
+		return result, nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
-	return result, err
+	return v.(*ProvenanceResult), nil
 }
 
 type provenanceVerifier struct {
@@ -59,6 +139,13 @@ func (v *provenanceVerifier) verify(
 	if err != nil {
 		return nil, fmt.Errorf("provenance: compute digest: %w", err)
 	}
+	return v.verifyDigest(ctx, token, owner, repo, digest)
+}
+
+func (v *provenanceVerifier) verifyDigest(
+	ctx context.Context,
+	token, owner, repo, digest string,
+) (*ProvenanceResult, error) {
 
 	logger.Debug("provenance: fetching attestations from GitHub", map[string]interface{}{"owner": owner, "repo": repo, "digest": digest})
 	bundles, err := v.fetchAttestations(ctx, token, owner, repo, digest)

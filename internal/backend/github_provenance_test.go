@@ -201,3 +201,39 @@ func TestVerifyGitlabArtifactProvenance_Failure(t *testing.T) {
 		t.Errorf("expected error on missing file")
 	}
 }
+
+func TestVerifyArtifactProvenance_DiskCache(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("UNIRTM_CACHE_DIR", dir)
+
+	owner := "testowner"
+	repo := "testrepo"
+	digest := "aabbccdd11223344"
+
+	expected := &ProvenanceResult{
+		Verified:  true,
+		Supported: true,
+	}
+
+	writeAttestationDiskCache(owner, repo, digest, expected)
+
+	loaded := readAttestationDiskCache(owner, repo, digest)
+	if loaded == nil || !loaded.Verified {
+		t.Fatalf("expected cached provenance result, got %+v", loaded)
+	}
+
+	// Verify VerifyArtifactProvenance uses cached result without network request
+	artifactPath := filepath.Join(dir, "artifact.bin")
+	_ = os.WriteFile(artifactPath, []byte("content"), 0644)
+	computedDigest, _ := sha256File(artifactPath)
+
+	writeAttestationDiskCache(owner, repo, computedDigest, expected)
+	res, err := VerifyArtifactProvenance(context.Background(), "token", owner, repo, artifactPath)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !res.Verified {
+		t.Fatalf("expected res.Verified=true from cache, got %+v", res)
+	}
+}
+
