@@ -9,11 +9,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/config"
+	"golang.org/x/sync/errgroup"
 	"mvdan.cc/sh/v3/expand"
 	"mvdan.cc/sh/v3/interp"
 	"mvdan.cc/sh/v3/syntax"
@@ -55,33 +58,50 @@ func (r *NativeRunner) ListTasks(dir string) ([]string, error) {
 
 // Run executes a task defined in the unirtm.toml configuration.
 func (r *NativeRunner) Run(ctx context.Context, dir string, taskName string, args []string, env []string) error {
-	// Use a visited map for cycle detection in the dependency graph
-	visited := make(map[string]bool)
+	// Use a visited map (protected by a mutex) for cycle detection across goroutines.
+	visited := &sync.Map{}
 	return r.runTaskWithGraph(ctx, dir, taskName, args, env, visited)
 }
 
-func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskName string, args []string, env []string, visited map[string]bool) error {
-	if visited[taskName] {
+// maxJobs returns the effective concurrency ceiling for parallel dependency execution.
+func (r *NativeRunner) maxJobs() int {
+	if r.settings.Jobs > 0 {
+		return r.settings.Jobs
+	}
+	return runtime.NumCPU()
+}
+
+// runTaskWithGraph executes a task and its dependencies via a parallel DAG walk.
+func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskName string, args []string, env []string, visited *sync.Map) error {
+	// Cycle detection: mark before recursing, clear after.
+	if _, alreadyVisiting := visited.LoadOrStore(taskName, true); alreadyVisiting {
 		return fmt.Errorf("circular dependency detected involving task %q", taskName)
 	}
-	visited[taskName] = true
-	defer func() { visited[taskName] = false }() // allow multiple paths to same task if needed, though DAG usually means we run it once.
-	// Actually, for a proper DAG, we should only run a task once per session.
-	// But for simplicity, we just do cycle detection.
+	defer visited.Delete(taskName)
 
 	taskDef, exists := r.tasks[taskName]
 	if !exists {
 		return fmt.Errorf("task %q not found in UniRTM configuration", taskName)
 	}
 
-	// Recursively execute dependencies sequentially
-	for _, dep := range taskDef.Depends {
-		if err := r.runTaskWithGraph(ctx, dir, dep, nil, env, visited); err != nil {
-			return fmt.Errorf("dependency %q failed: %w", dep, err)
+	// ── Parallel dependency execution ──────────────────────────────────────────
+	if len(taskDef.Depends) > 0 {
+		sem := make(chan struct{}, r.maxJobs())
+		g, gCtx := errgroup.WithContext(ctx)
+		for _, dep := range taskDef.Depends {
+			dep := dep // capture
+			sem <- struct{}{}
+			g.Go(func() error {
+				defer func() { <-sem }()
+				return r.runTaskWithGraph(gCtx, dir, dep, nil, env, visited)
+			})
+		}
+		if err := g.Wait(); err != nil {
+			return fmt.Errorf("dependency failed: %w", err)
 		}
 	}
 
-	// Prepare the script. If there are args, append them directly.
+	// ── Prepare the script ─────────────────────────────────────────────────────
 	script := taskDef.Run.Script()
 	if len(args) > 0 {
 		if script != "" {
@@ -91,7 +111,33 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 		}
 	}
 
-	// Resolve timeout: task override > global setting
+	// No script body – task is purely a dependency aggregator.
+	if strings.TrimSpace(script) == "" {
+		return nil
+	}
+
+	// ── Native retry loop ──────────────────────────────────────────────────────
+	maxAttempts := taskDef.Retry + 1 // Retry=0 → one attempt; Retry=N → N+1 attempts
+	if maxAttempts < 1 {
+		maxAttempts = 1
+	}
+
+	var lastErr error
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		if attempt > 1 {
+			output.Infof("Retrying task %s (attempt %d/%d)…", taskName, attempt, maxAttempts)
+		}
+		lastErr = r.execScript(ctx, dir, taskName, script, taskDef, env)
+		if lastErr == nil {
+			return nil
+		}
+	}
+	return lastErr
+}
+
+// execScript compiles and runs the shell script for a single attempt.
+func (r *NativeRunner) execScript(ctx context.Context, dir string, taskName string, script string, taskDef config.Task, env []string) error {
+	// ── Timeout ────────────────────────────────────────────────────────────────
 	timeout := r.settings.TaskTimeout
 	if taskDef.Timeout > 0 {
 		timeout = config.DurationOrInt(taskDef.Timeout)
@@ -104,35 +150,27 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 		defer cancel()
 	}
 
-	// Inject process env + UniRTM env
+	// ── Environment ────────────────────────────────────────────────────────────
 	fullEnv := append(os.Environ(), env...)
-	// Inject task-specific env defined in TOML
 	for k, v := range taskDef.Env {
 		fullEnv = append(fullEnv, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	var file *syntax.File
-	var err error
-	if strings.TrimSpace(script) != "" {
-		parser := syntax.NewParser()
-		file, err = parser.Parse(strings.NewReader(script), "")
-		if err != nil {
-			return fmt.Errorf("failed to parse task script: %w", err)
-		}
+	// ── Parse script ───────────────────────────────────────────────────────────
+	parser := syntax.NewParser()
+	file, err := parser.Parse(strings.NewReader(script), "")
+	if err != nil {
+		return fmt.Errorf("failed to parse task script: %w", err)
 	}
 
-	// Bind IO streams based on output style
+	// ── Output mode ────────────────────────────────────────────────────────────
 	outputStyle := r.settings.TaskOutput
 	if taskDef.Output != "" {
 		outputStyle = taskDef.Output
 	}
-
-	// Scheme 4: Check environment variable override (UNIRTM_TASK_OUTPUT)
 	if envOutput := os.Getenv("UNIRTM_TASK_OUTPUT"); envOutput != "" {
 		outputStyle = envOutput
 	}
-
-	// Scheme 5: Auto-detect CI environment and use interleaved mode
 	if outputStyle == "spinner" || outputStyle == "" {
 		isCIEnv := os.Getenv("CI") != "" ||
 			os.Getenv("GITHUB_ACTIONS") != "" ||
@@ -154,36 +192,28 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 	stderr = os.Stderr
 
 	if outputStyle == "spinner" || outputStyle == "" {
-		// Create a local copy to avoid data races when tasks run concurrently
 		spinner, _ = output.StartSpinner(fmt.Sprintf("Running task: %s", taskName))
-		// Capture output so we can show it if it fails, or just hide it
-		if file != nil {
-			stdout = &buf
-			stderr = &buf
-		}
+		stdout = &buf
+		stderr = &buf
 	} else if outputStyle == "prefix" {
 		prefix := fmt.Sprintf("[%s] ", pterm.FgCyan.Sprint(taskName))
-		if file != nil {
-			stdout = &prefixWriter{w: os.Stdout, prefix: prefix, atStart: true}
-			stderr = &prefixWriter{w: os.Stderr, prefix: prefix, atStart: true}
-		}
+		stdout = &prefixWriter{w: os.Stdout, prefix: prefix, atStart: true}
+		stderr = &prefixWriter{w: os.Stderr, prefix: prefix, atStart: true}
 	} else {
 		// "interleaved" or other
 		output.Infof("Running task: %s", taskName)
 	}
 
-	if file != nil {
-		runner, runnerErr := interp.New(
-			interp.Env(expand.ListEnviron(fullEnv...)),
-			interp.Dir(dir),
-			interp.StdIO(os.Stdin, stdout, stderr),
-			interp.Params("-e"),
-		)
-		if runnerErr != nil {
-			err = fmt.Errorf("failed to create shell runner: %w", runnerErr)
-		} else {
-			err = runner.Run(runCtx, file)
-		}
+	runner, runnerErr := interp.New(
+		interp.Env(expand.ListEnviron(fullEnv...)),
+		interp.Dir(dir),
+		interp.StdIO(os.Stdin, stdout, stderr),
+		interp.Params("-e"),
+	)
+	if runnerErr != nil {
+		err = fmt.Errorf("failed to create shell runner: %w", runnerErr)
+	} else {
+		err = runner.Run(runCtx, file)
 	}
 
 	if spinner != nil {
@@ -194,7 +224,6 @@ func (r *NativeRunner) runTaskWithGraph(ctx context.Context, dir string, taskNam
 			}
 		} else {
 			spinner.Success(fmt.Sprintf("Task %s completed", taskName))
-			// Scheme 2: Show success output if captured
 			if buf.Len() > 0 {
 				fmt.Println(buf.String())
 			}

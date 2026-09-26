@@ -297,6 +297,8 @@ type Task struct {
 	Depends     []string               `toml:"depends,omitempty" yaml:"depends,omitempty" mapstructure:"depends,omitempty"`
 	Timeout     int                    `toml:"timeout,omitempty" yaml:"timeout,omitempty" mapstructure:"timeout,omitempty"`
 	Output      string                 `toml:"output,omitempty" yaml:"output,omitempty" mapstructure:"output,omitempty"`
+	// Retry is the number of additional attempts to make if the task fails (0 = no retry).
+	Retry       int                    `toml:"retry,omitempty" yaml:"retry,omitempty" mapstructure:"retry,omitempty"`
 }
 
 func (c *Config) Validate() error {
