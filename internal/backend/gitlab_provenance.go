@@ -254,22 +254,38 @@ func (v *gitlabProvenanceVerifier) fetchAttestations(
 
 	fmt.Printf("ℹ provenance: found %d GitLab attestation(s)\n", len(apiResp))
 
-	raw := make([]json.RawMessage, 0, len(apiResp))
+	raw := make([]json.RawMessage, len(apiResp))
+	valid := make([]bool, len(apiResp))
+
+	var wg sync.WaitGroup
 	for i, a := range apiResp {
 		if a.DownloadURL != "" {
 			fmt.Printf("ℹ provenance: downloading GitLab bundle %d/%d from URL...\n", i+1, len(apiResp))
-			bundleData, err := v.downloadBundle(ctx, token, a.DownloadURL)
-			if err != nil {
-				logger.Warn("provenance: failed to download GitLab bundle", map[string]interface{}{
-					"url":   a.DownloadURL,
-					"error": err.Error(),
-				})
-				continue
-			}
-			raw = append(raw, bundleData)
+			wg.Add(1)
+			go func(idx int, downloadURL string) {
+				defer wg.Done()
+				bundleData, err := v.downloadBundle(ctx, token, downloadURL)
+				if err != nil {
+					logger.Warn("provenance: failed to download GitLab bundle", map[string]interface{}{
+						"url":   downloadURL,
+						"error": err.Error(),
+					})
+					return
+				}
+				raw[idx] = bundleData
+				valid[idx] = true
+			}(i, a.DownloadURL)
 		}
 	}
-	return raw, nil
+	wg.Wait()
+
+	var finalRaw []json.RawMessage
+	for i, ok := range valid {
+		if ok {
+			finalRaw = append(finalRaw, raw[i])
+		}
+	}
+	return finalRaw, nil
 }
 
 func (v *gitlabProvenanceVerifier) downloadBundle(ctx context.Context, token, downloadURL string) (json.RawMessage, error) {

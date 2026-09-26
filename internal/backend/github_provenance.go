@@ -302,27 +302,44 @@ func (v *provenanceVerifier) fetchAttestations(
 		return nil, fmt.Errorf("provenance: decode API response: %w", err)
 	}
 	fmt.Printf("ℹ provenance: found %d attestation(s)\n", len(apiResp.Attestations))
-	raw := make([]json.RawMessage, 0, len(apiResp.Attestations))
+	raw := make([]json.RawMessage, len(apiResp.Attestations))
+	valid := make([]bool, len(apiResp.Attestations))
+
+	var wg sync.WaitGroup
 	for i, a := range apiResp.Attestations {
 		if len(a.Bundle) > 0 && string(a.Bundle) != "null" {
-			raw = append(raw, a.Bundle)
+			raw[i] = a.Bundle
+			valid[i] = true
 			continue
 		}
 
 		if a.BundleURL != "" {
 			fmt.Printf("ℹ provenance: fetching external bundle %d/%d from URL...\n", i+1, len(apiResp.Attestations))
-			bundleData, err := v.fetchExternalBundle(ctx, a.BundleURL)
-			if err != nil {
-				logger.Warn("provenance: failed to fetch external bundle", map[string]interface{}{
-					"url":   a.BundleURL,
-					"error": err.Error(),
-				})
-				continue
-			}
-			raw = append(raw, bundleData)
+			wg.Add(1)
+			go func(idx int, bundleURL string) {
+				defer wg.Done()
+				bundleData, err := v.fetchExternalBundle(ctx, bundleURL)
+				if err != nil {
+					logger.Warn("provenance: failed to fetch external bundle", map[string]interface{}{
+						"url":   bundleURL,
+						"error": err.Error(),
+					})
+					return
+				}
+				raw[idx] = bundleData
+				valid[idx] = true
+			}(i, a.BundleURL)
 		}
 	}
-	return raw, nil
+	wg.Wait()
+
+	var finalRaw []json.RawMessage
+	for i, ok := range valid {
+		if ok {
+			finalRaw = append(finalRaw, raw[i])
+		}
+	}
+	return finalRaw, nil
 }
 
 func (v *provenanceVerifier) fetchExternalBundle(ctx context.Context, urlStr string) (json.RawMessage, error) {
