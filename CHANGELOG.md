@@ -639,15 +639,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * release main ([91fc3d6](https://github.com/snowdreamtech/UniRTM/commit/91fc3d66da1c32ee41868c560f8f21c42ecd1108))
 * release main ([700980f](https://github.com/snowdreamtech/UniRTM/commit/700980f0d84553b1094f49745d30f5daf9a22b1b))
 
-## [0.28.0](https://github.com/snowdreamtech/UniRTM/compare/v0.27.0...v0.28.0) (2026-08-22)
-
-
-### ♻️ Miscellaneous Chores
-
-* force release 0.28.0 ([107fe91](https://github.com/snowdreamtech/UniRTM/commit/107fe91e7629daa3d7b72fc027125dc245dbbb75))
-* force release 0.28.0 (retry) ([b31dbce](https://github.com/snowdreamtech/UniRTM/commit/b31dbce98f78899e2e8f3c95aa4bc751f1a090c5))
-* trigger release-please ([2d5b90e](https://github.com/snowdreamtech/UniRTM/commit/2d5b90e7df495c26c5541474e63d98d8f6bde20c))
-
 ## [0.27.0](https://github.com/snowdreamtech/UniRTM/compare/v0.26.0...v0.27.0) (2026-08-22)
 
 
