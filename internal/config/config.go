@@ -149,36 +149,36 @@ func (tm ToolMap) MarshalTOML() (interface{}, error) {
 }
 
 type Settings struct {
-	CacheDir           string                            `toml:"cache_dir" yaml:"cache_dir" mapstructure:"cache_dir"`
-	DataDir            string                            `toml:"data_dir" yaml:"data_dir" mapstructure:"data_dir"`
-	CacheTTL           DurationOrInt                     `toml:"cache_ttl" yaml:"cache_ttl" mapstructure:"cache_ttl"`
-	Lockfile           bool                              `toml:"lockfile,omitempty" yaml:"lockfile,omitempty" mapstructure:"lockfile,omitempty"`
-	Locked             bool                              `toml:"locked,omitempty" yaml:"locked,omitempty" mapstructure:"locked,omitempty"`
+	CacheDir             string                            `toml:"cache_dir" yaml:"cache_dir" mapstructure:"cache_dir"`
+	DataDir              string                            `toml:"data_dir" yaml:"data_dir" mapstructure:"data_dir"`
+	CacheTTL             DurationOrInt                     `toml:"cache_ttl" yaml:"cache_ttl" mapstructure:"cache_ttl"`
+	Lockfile             bool                              `toml:"lockfile,omitempty" yaml:"lockfile,omitempty" mapstructure:"lockfile,omitempty"`
+	Locked               bool                              `toml:"locked,omitempty" yaml:"locked,omitempty" mapstructure:"locked,omitempty"`
 	GitHubProxy          string                            `toml:"github_proxy,omitempty" yaml:"github_proxy,omitempty" mapstructure:"github_proxy,omitempty"`
 	GoDownloadMirror     string                            `toml:"go_download_mirror,omitempty" yaml:"go_download_mirror,omitempty" mapstructure:"go_download_mirror,omitempty"`
 	NodeJSDownloadMirror string                            `toml:"nodejs_download_mirror,omitempty" yaml:"nodejs_download_mirror,omitempty" mapstructure:"nodejs_download_mirror,omitempty"`
 	RustDistMirror       string                            `toml:"rust_dist_mirror,omitempty" yaml:"rust_dist_mirror,omitempty" mapstructure:"rust_dist_mirror,omitempty"`
-	HttpProxy          string                            `toml:"http_proxy,omitempty" yaml:"http_proxy,omitempty" mapstructure:"http_proxy,omitempty"`
-	HttpsProxy         string                            `toml:"https_proxy,omitempty" yaml:"https_proxy,omitempty" mapstructure:"https_proxy,omitempty"`
-	GitHubToken        string                            `toml:"github_token,omitempty" yaml:"github_token,omitempty" mapstructure:"github_token,omitempty"`
-	HTTPTimeout        DurationOrInt                     `toml:"http_timeout,omitempty" yaml:"http_timeout,omitempty" mapstructure:"http_timeout,omitempty"`
-	TaskTimeout        DurationOrInt                     `toml:"task_timeout,omitempty" yaml:"task_timeout,omitempty" mapstructure:"task_timeout,omitempty"`
-	TaskOutput         string                            `toml:"task_output,omitempty" yaml:"task_output,omitempty" mapstructure:"task_output,omitempty"`
-	Experimental       bool                              `toml:"experimental,omitempty" yaml:"experimental,omitempty" mapstructure:"experimental,omitempty"`
-	AutoInstall        *bool                             `toml:"auto_install,omitempty" yaml:"auto_install,omitempty" mapstructure:"auto_install,omitempty"`
-	Color              string                            `toml:"color,omitempty" yaml:"color,omitempty" mapstructure:"color,omitempty"`
-	Editor             string                            `toml:"editor,omitempty" yaml:"editor,omitempty" mapstructure:"editor,omitempty"`
-	Shell              string                            `toml:"shell,omitempty" yaml:"shell,omitempty" mapstructure:"shell,omitempty"`
-	AlwaysKeepDownload bool                              `toml:"always_keep_download,omitempty" yaml:"always_keep_download,omitempty" mapstructure:"always_keep_download,omitempty"`
-	CeilingPaths       []string                          `toml:"ceiling_paths,omitempty" yaml:"ceiling_paths,omitempty" mapstructure:"ceiling_paths,omitempty"`
-	TrustedConfigPaths []string                          `toml:"trusted_config_paths,omitempty" yaml:"trusted_config_paths,omitempty" mapstructure:"trusted_config_paths,omitempty"`
-	GPGVerify          string                            `toml:"gpg_verify" yaml:"gpg_verify" mapstructure:"gpg_verify"`
-	GPGKeys            []string                          `toml:"gpg_keys" yaml:"gpg_keys" mapstructure:"gpg_keys"`
-	VerifyMetadata     *bool                             `toml:"verify_metadata,omitempty" yaml:"verify_metadata,omitempty" mapstructure:"verify_metadata,omitempty"`
-	NoProxy            []string                          `toml:"no_proxy,omitempty" yaml:"no_proxy,omitempty" mapstructure:"no_proxy,omitempty"`
-	Jobs               int                               `toml:"jobs,omitempty" yaml:"jobs,omitempty" mapstructure:"jobs,omitempty"`
-	Tools              map[string]map[string]interface{} `toml:"tools,omitempty" yaml:"tools,omitempty" mapstructure:"tools,omitempty"`
-	MinimumReleaseAge  string                            `toml:"minimum_release_age,omitempty" yaml:"minimum_release_age,omitempty" mapstructure:"minimum_release_age,omitempty"`
+	HttpProxy            string                            `toml:"http_proxy,omitempty" yaml:"http_proxy,omitempty" mapstructure:"http_proxy,omitempty"`
+	HttpsProxy           string                            `toml:"https_proxy,omitempty" yaml:"https_proxy,omitempty" mapstructure:"https_proxy,omitempty"`
+	GitHubToken          string                            `toml:"github_token,omitempty" yaml:"github_token,omitempty" mapstructure:"github_token,omitempty"`
+	HTTPTimeout          DurationOrInt                     `toml:"http_timeout,omitempty" yaml:"http_timeout,omitempty" mapstructure:"http_timeout,omitempty"`
+	TaskTimeout          DurationOrInt                     `toml:"task_timeout,omitempty" yaml:"task_timeout,omitempty" mapstructure:"task_timeout,omitempty"`
+	TaskOutput           string                            `toml:"task_output,omitempty" yaml:"task_output,omitempty" mapstructure:"task_output,omitempty"`
+	Experimental         bool                              `toml:"experimental,omitempty" yaml:"experimental,omitempty" mapstructure:"experimental,omitempty"`
+	AutoInstall          *bool                             `toml:"auto_install,omitempty" yaml:"auto_install,omitempty" mapstructure:"auto_install,omitempty"`
+	Color                string                            `toml:"color,omitempty" yaml:"color,omitempty" mapstructure:"color,omitempty"`
+	Editor               string                            `toml:"editor,omitempty" yaml:"editor,omitempty" mapstructure:"editor,omitempty"`
+	Shell                string                            `toml:"shell,omitempty" yaml:"shell,omitempty" mapstructure:"shell,omitempty"`
+	AlwaysKeepDownload   bool                              `toml:"always_keep_download,omitempty" yaml:"always_keep_download,omitempty" mapstructure:"always_keep_download,omitempty"`
+	CeilingPaths         []string                          `toml:"ceiling_paths,omitempty" yaml:"ceiling_paths,omitempty" mapstructure:"ceiling_paths,omitempty"`
+	TrustedConfigPaths   []string                          `toml:"trusted_config_paths,omitempty" yaml:"trusted_config_paths,omitempty" mapstructure:"trusted_config_paths,omitempty"`
+	GPGVerify            string                            `toml:"gpg_verify" yaml:"gpg_verify" mapstructure:"gpg_verify"`
+	GPGKeys              []string                          `toml:"gpg_keys" yaml:"gpg_keys" mapstructure:"gpg_keys"`
+	VerifyMetadata       *bool                             `toml:"verify_metadata,omitempty" yaml:"verify_metadata,omitempty" mapstructure:"verify_metadata,omitempty"`
+	NoProxy              []string                          `toml:"no_proxy,omitempty" yaml:"no_proxy,omitempty" mapstructure:"no_proxy,omitempty"`
+	Jobs                 int                               `toml:"jobs,omitempty" yaml:"jobs,omitempty" mapstructure:"jobs,omitempty"`
+	Tools                map[string]map[string]interface{} `toml:"tools,omitempty" yaml:"tools,omitempty" mapstructure:"tools,omitempty"`
+	MinimumReleaseAge    string                            `toml:"minimum_release_age,omitempty" yaml:"minimum_release_age,omitempty" mapstructure:"minimum_release_age,omitempty"`
 }
 
 func (s *Settings) LoadFromEnv() {
@@ -312,7 +312,7 @@ type Task struct {
 	Timeout     int                    `toml:"timeout,omitempty" yaml:"timeout,omitempty" mapstructure:"timeout,omitempty"`
 	Output      string                 `toml:"output,omitempty" yaml:"output,omitempty" mapstructure:"output,omitempty"`
 	// Retry is the number of additional attempts to make if the task fails (0 = no retry).
-	Retry       int                    `toml:"retry,omitempty" yaml:"retry,omitempty" mapstructure:"retry,omitempty"`
+	Retry int `toml:"retry,omitempty" yaml:"retry,omitempty" mapstructure:"retry,omitempty"`
 }
 
 func (c *Config) Validate() error {
