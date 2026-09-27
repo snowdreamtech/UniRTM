@@ -192,6 +192,29 @@ func (h *HTTPDownloader) downloadInternal(ctx context.Context, url string, desti
 		mirror := strings.TrimSuffix(goMirror, "/")
 		url = strings.Replace(url, "https://go.dev/dl", mirror, 1)
 	}
+
+	// Apply Node.js download mirror at runtime (same pattern as Go).
+	nodeMirror := opts.NodeJSDownloadMirror
+	if nodeMirror == "" {
+		nodeMirror = env.Get("NODEJS_ORG_MIRROR")
+		if nodeMirror == "" {
+			nodeMirror = env.Get("MISE_NODE_MIRROR_URL")
+		}
+	}
+	if nodeMirror != "" && strings.Contains(url, "nodejs.org/dist/") {
+		mirror := strings.TrimSuffix(nodeMirror, "/")
+		url = strings.Replace(url, "https://nodejs.org/dist", mirror, 1)
+	}
+
+	// Apply Rust dist mirror at runtime (same pattern as Go).
+	rustMirror := opts.RustDistMirror
+	if rustMirror == "" {
+		rustMirror = env.Get("RUSTUP_DIST_SERVER")
+	}
+	if rustMirror != "" && strings.Contains(url, "static.rust-lang.org/dist/") {
+		mirror := strings.TrimSuffix(rustMirror, "/")
+		url = strings.Replace(url, "https://static.rust-lang.org", mirror, 1)
+	}
 	// Validate URL
 	parsedURL, err := parseURL(url)
 	if err != nil {

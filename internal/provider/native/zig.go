@@ -38,17 +38,23 @@ type zigVersion struct {
 }
 
 func (h *ZigHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
-	// Support Zig Mirror
-	mirrorURL := env.Get("ZIG_MIRROR_URL")
-	if mirrorURL != "" {
-		baseURL = mirrorURL
-	}
+	// Canonical index URL: always ziglang.org — never a mirror.
+	const canonicalIndexURL = "https://ziglang.org/download/index.json"
+	const canonicalHost = "https://ziglang.org"
 
 	if baseURL == "" {
-		baseURL = "https://ziglang.org/download/index.json"
+		baseURL = canonicalIndexURL
 	}
 
-	cacheKey := baseURL
+	// Fetch-side URL: may be a mirror, but MUST NOT appear in lockfile entries.
+	metaURL := baseURL
+	if mirrorURL := env.Get("ZIG_MIRROR_URL"); mirrorURL != "" {
+		metaURL = mirrorURL
+	}
+
+	// Cache key uses the canonical URL so mirror changes don't produce entries
+	// with mirror-specific download URLs.
+	cacheKey := canonicalIndexURL
 	if val, ok := h.cache.Load(cacheKey); ok {
 		return val.([]VersionInfo), nil
 	}
@@ -65,7 +71,9 @@ func (h *ZigHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ver
 		}
 
 		client := pkgHttp.NewClientWithTimeout(30 * time.Second)
-		req, err := http.NewRequestWithContext(ctx, "GET", baseURL, nil)
+		// Fetch index from mirror (if configured) to avoid rate-limiting;
+		// asset URLs will be normalized to the canonical host before storage.
+		req, err := http.NewRequestWithContext(ctx, "GET", metaURL, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -111,6 +119,26 @@ func (h *ZigHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ver
 
 				if url == "" {
 					continue
+				}
+
+				// Normalize tarball URL: if the mirror's JSON encodes mirror-specific
+				// hostnames, replace the host part with the canonical ziglang.org so
+				// the lockfile is never polluted by transient mirror URLs.
+				if metaURL != canonicalIndexURL {
+					// Strip the mirror host prefix and replace with canonical host.
+					// Mirrors typically serve the same path structure as ziglang.org.
+					mirrorBase := strings.TrimSuffix(metaURL, "/")
+					// Remove trailing "/download/index.json" or "/index.json" so we
+					// get just the host+prefix portion that the mirror substituted.
+					for _, suffix := range []string{"/download/index.json", "/index.json"} {
+						if strings.HasSuffix(mirrorBase, suffix) {
+							mirrorBase = mirrorBase[:len(mirrorBase)-len(suffix)]
+							break
+						}
+					}
+					if mirrorBase != "" && strings.HasPrefix(url, mirrorBase) {
+						url = canonicalHost + url[len(mirrorBase):]
+					}
 				}
 
 				assets = append(assets, Asset{

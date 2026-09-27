@@ -122,6 +122,18 @@ type DownloadOptions struct {
 	// If empty, no substitution is made and go.dev/dl is used directly.
 	// Populated from settings.go_download_mirror or the GO_DOWNLOAD_MIRROR env var.
 	GoDownloadMirror string
+
+	// NodeJSDownloadMirror replaces the nodejs.org/dist base URL at download
+	// time so the lockfile always stores the canonical https://nodejs.org/dist/
+	// address.  Applied symmetrically to GoDownloadMirror.
+	// Populated from settings.nodejs_download_mirror or NODEJS_ORG_MIRROR env var.
+	NodeJSDownloadMirror string
+
+	// RustDistMirror replaces the static.rust-lang.org/dist base URL at
+	// download time so the lockfile always stores the canonical address.
+	// Applied symmetrically to GoDownloadMirror.
+	// Populated from settings.rust_dist_mirror or RUSTUP_DIST_SERVER env var.
+	RustDistMirror string
 }
 
 // GPGResult holds the result of a GPG verification attempt.

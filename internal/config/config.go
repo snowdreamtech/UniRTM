@@ -154,8 +154,10 @@ type Settings struct {
 	CacheTTL           DurationOrInt                     `toml:"cache_ttl" yaml:"cache_ttl" mapstructure:"cache_ttl"`
 	Lockfile           bool                              `toml:"lockfile,omitempty" yaml:"lockfile,omitempty" mapstructure:"lockfile,omitempty"`
 	Locked             bool                              `toml:"locked,omitempty" yaml:"locked,omitempty" mapstructure:"locked,omitempty"`
-	GitHubProxy        string                            `toml:"github_proxy,omitempty" yaml:"github_proxy,omitempty" mapstructure:"github_proxy,omitempty"`
-	GoDownloadMirror   string                            `toml:"go_download_mirror,omitempty" yaml:"go_download_mirror,omitempty" mapstructure:"go_download_mirror,omitempty"`
+	GitHubProxy          string                            `toml:"github_proxy,omitempty" yaml:"github_proxy,omitempty" mapstructure:"github_proxy,omitempty"`
+	GoDownloadMirror     string                            `toml:"go_download_mirror,omitempty" yaml:"go_download_mirror,omitempty" mapstructure:"go_download_mirror,omitempty"`
+	NodeJSDownloadMirror string                            `toml:"nodejs_download_mirror,omitempty" yaml:"nodejs_download_mirror,omitempty" mapstructure:"nodejs_download_mirror,omitempty"`
+	RustDistMirror       string                            `toml:"rust_dist_mirror,omitempty" yaml:"rust_dist_mirror,omitempty" mapstructure:"rust_dist_mirror,omitempty"`
 	HttpProxy          string                            `toml:"http_proxy,omitempty" yaml:"http_proxy,omitempty" mapstructure:"http_proxy,omitempty"`
 	HttpsProxy         string                            `toml:"https_proxy,omitempty" yaml:"https_proxy,omitempty" mapstructure:"https_proxy,omitempty"`
 	GitHubToken        string                            `toml:"github_token,omitempty" yaml:"github_token,omitempty" mapstructure:"github_token,omitempty"`
@@ -207,6 +209,14 @@ func (s *Settings) LoadFromEnv() {
 	}
 	if v := env.Get("GO_DOWNLOAD_MIRROR"); v != "" {
 		s.GoDownloadMirror = v
+	}
+	if v := env.Get("NODEJS_ORG_MIRROR"); v != "" {
+		s.NodeJSDownloadMirror = v
+	} else if v := env.Get("MISE_NODE_MIRROR_URL"); v != "" {
+		s.NodeJSDownloadMirror = v
+	}
+	if v := env.Get("RUSTUP_DIST_SERVER"); v != "" {
+		s.RustDistMirror = v
 	}
 	if v := env.Get("HTTP_PROXY"); v != "" {
 		s.HttpProxy = v

@@ -6,7 +6,6 @@ package native
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/sysinfo"
@@ -41,12 +40,10 @@ func (h *RustHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 func (h *RustHandler) generateAssets(version string) []Asset {
 	var assets []Asset
 
-	// Support Rust Dist Mirror
-	distServer := env.Get("RUSTUP_DIST_SERVER")
-	if distServer == "" {
-		distServer = "https://static.rust-lang.org"
-	}
-	distServer = strings.TrimSuffix(distServer, "/")
+	// Always use the canonical dist server for asset URLs so the lockfile is
+	// never polluted by RUSTUP_DIST_SERVER.  The mirror is applied at
+	// download time via RustDistMirror in DownloadOptions (see http.go).
+	const distServer = "https://static.rust-lang.org"
 
 	// Common Rust targets
 	targets := map[string]struct{ os, arch string }{

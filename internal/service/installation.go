@@ -477,12 +477,28 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 			if opts.GoDownloadMirror == "" {
 				opts.GoDownloadMirror = env.Get("GO_DOWNLOAD_MIRROR")
 			}
+			opts.NodeJSDownloadMirror = im.settings.NodeJSDownloadMirror
+			if opts.NodeJSDownloadMirror == "" {
+				opts.NodeJSDownloadMirror = env.Get("NODEJS_ORG_MIRROR")
+				if opts.NodeJSDownloadMirror == "" {
+					opts.NodeJSDownloadMirror = env.Get("MISE_NODE_MIRROR_URL")
+				}
+			}
+			opts.RustDistMirror = im.settings.RustDistMirror
+			if opts.RustDistMirror == "" {
+				opts.RustDistMirror = env.Get("RUSTUP_DIST_SERVER")
+			}
 			if im.settings.HTTPTimeout > 0 {
 				opts.Timeout = time.Duration(im.settings.HTTPTimeout) * time.Second
 			}
 		} else {
 			opts.GitHubProxy = env.Get("GITHUB_PROXY")
 			opts.GoDownloadMirror = env.Get("GO_DOWNLOAD_MIRROR")
+			opts.NodeJSDownloadMirror = env.Get("NODEJS_ORG_MIRROR")
+			if opts.NodeJSDownloadMirror == "" {
+				opts.NodeJSDownloadMirror = env.Get("MISE_NODE_MIRROR_URL")
+			}
+			opts.RustDistMirror = env.Get("RUSTUP_DIST_SERVER")
 		}
 		if versionInfo.Checksum != "" {
 			opts = opts.WithChecksum(versionInfo.Checksum)

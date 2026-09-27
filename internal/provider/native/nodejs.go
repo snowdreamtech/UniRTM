@@ -41,13 +41,19 @@ func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		return nil, fmt.Errorf("net/http: nil Context")
 	}
 
-	// Support Node.js Mirrors
-	mirrorURL := env.Get("MISE_NODE_MIRROR_URL")
-	if mirrorURL == "" {
-		mirrorURL = env.Get("NODEJS_ORG_MIRROR")
+	// Canonical base URL is always nodejs.org/dist; mirror is only used to
+	// fetch the metadata index so it never leaks into lockfile asset URLs.
+	if baseURL == "" {
+		baseURL = "https://nodejs.org/dist"
 	}
-	if mirrorURL != "" {
-		baseURL = mirrorURL
+	canonicalBase := baseURL
+
+	// Determine metadata-fetch URL (may be a mirror, must not appear in lockfile)
+	metaURL := canonicalBase
+	if mirrorURL := env.Get("MISE_NODE_MIRROR_URL"); mirrorURL != "" {
+		metaURL = mirrorURL
+	} else if mirrorURL := env.Get("NODEJS_ORG_MIRROR"); mirrorURL != "" {
+		metaURL = mirrorURL
 	}
 
 	flavor := env.Get("MISE_NODE_FLAVOR")
@@ -55,7 +61,9 @@ func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		flavor = "musl"
 	}
 
-	cacheKey := fmt.Sprintf("%s|%s", baseURL, flavor)
+	// Cache key is always based on the canonical URL so mirror changes don't
+	// produce duplicate cache entries with mirror-specific download URLs.
+	cacheKey := fmt.Sprintf("%s|%s", canonicalBase, flavor)
 	if val, ok := h.cache.Load(cacheKey); ok {
 		return val.([]VersionInfo), nil
 	}
@@ -71,9 +79,11 @@ func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 			return val, nil
 		}
 
-		url := fmt.Sprintf("%s/index.json", strings.TrimSuffix(baseURL, "/"))
+		// Fetch the index from the mirror (if configured) but build asset URLs
+		// from the canonical base so the lockfile is never polluted.
+		indexURL := fmt.Sprintf("%s/index.json", strings.TrimSuffix(metaURL, "/"))
 		client := pkgHttp.NewClientWithTimeout(30 * time.Second)
-		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		req, err := http.NewRequestWithContext(ctx, "GET", indexURL, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -107,10 +117,12 @@ func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 					continue
 				}
 
-				downloadURL := fmt.Sprintf("%s/%s/node-%s-%s-%s%s", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, rawArch, ext)
+				// Always use the canonical base for asset URLs so the lockfile
+				// is never polluted with mirror-specific hostnames.
+				downloadURL := fmt.Sprintf("%s/%s/node-%s-%s-%s%s", strings.TrimSuffix(canonicalBase, "/"), v.Version, v.Version, osName, rawArch, ext)
 				if flavor == "musl" {
 					// unofficial-builds naming convention: node-vX.Y.Z-linux-ARCH-musl.tar.gz
-					downloadURL = fmt.Sprintf("%s/%s/node-%s-%s-%s-musl%s", strings.TrimSuffix(baseURL, "/"), v.Version, v.Version, osName, rawArch, ext)
+					downloadURL = fmt.Sprintf("%s/%s/node-%s-%s-%s-musl%s", strings.TrimSuffix(canonicalBase, "/"), v.Version, v.Version, osName, rawArch, ext)
 				}
 
 				vi.Assets = append(vi.Assets, Asset{
@@ -119,7 +131,7 @@ func (h *NodeJSHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 					OS:           osName,
 					Arch:         archName,
 					Algo:         "sha256",
-					SignatureURL: fmt.Sprintf("%s/%s/SHASUMS256.txt.asc", strings.TrimSuffix(baseURL, "/"), v.Version),
+					SignatureURL: fmt.Sprintf("%s/%s/SHASUMS256.txt.asc", strings.TrimSuffix(canonicalBase, "/"), v.Version),
 					Metadata: map[string]string{
 						"flavor": flavor,
 					},
