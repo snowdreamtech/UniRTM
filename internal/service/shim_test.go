@@ -227,14 +227,17 @@ func TestGenerator_GenerateWindowsShim_AlreadyWithExtension(t *testing.T) {
 
 	g := NewGenerator(shimsDir, installsDir)
 	_ = os.MkdirAll(shimsDir, 0755)
+	// Simulate legacy buggy files already present
 	_ = os.WriteFile(filepath.Join(shimsDir, "node.exe.exe"), []byte("buggy"), 0755)
 	_ = os.WriteFile(filepath.Join(shimsDir, "node.exe.cmd"), []byte("buggy"), 0755)
 
+	// Calling with node.exe should create node.cmd/node.exe, NOT node.exe.exe or node.exe.cmd
 	err := g.generateWindowsShim("node", "node.exe")
 	if err != nil {
 		t.Fatalf("generateWindowsShim failed: %v", err)
 	}
 
+	// Verify legacy files were cleaned up and no double extension exists
 	if _, err := os.Stat(filepath.Join(shimsDir, "node.exe.exe")); err == nil {
 		t.Error("node.exe.exe should have been cleaned up")
 	}
