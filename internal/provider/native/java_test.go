@@ -8,6 +8,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"sync/atomic"
 	"testing"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
@@ -62,10 +63,10 @@ func TestJavaHandler_ConcurrentDeduplication(t *testing.T) {
 	ClearJavaHandlerCache()
 	defer ClearJavaHandlerCache()
 
-	var reqCount int
+	var reqCount int32
 	mockRt := &mockRoundTripper{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
-			reqCount++
+			atomic.AddInt32(&reqCount, 1)
 			return &http.Response{
 				StatusCode: 200,
 				Body:       io.NopCloser(bytes.NewBufferString(`[{"release_name":"jdk-17","version_data":{"openjdk_version":"17.0.2+8"},"binaries":[{"package":{"name":"file.tar.gz","link":"url"}}]}]`)),
@@ -92,5 +93,5 @@ func TestJavaHandler_ConcurrentDeduplication(t *testing.T) {
 	}
 
 	// 5 major versions queried in single execution = 5 requests total instead of 5 * 5 = 25
-	assert.Equal(t, 5, reqCount, "Expected exactly 5 requests (one per major version) for all concurrent callers")
+	assert.Equal(t, int32(5), atomic.LoadInt32(&reqCount), "Expected exactly 5 requests (one per major version) for all concurrent callers")
 }
