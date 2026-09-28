@@ -192,3 +192,51 @@ func TestResolveExecutable_WindowsExtensionMatching(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, exePath, resolved)
 }
+
+func TestResolveExecutable_PythonAliasMatching(t *testing.T) {
+	br := backend.NewRegistry()
+	pr := provider.NewRegistry()
+
+	tempDir := t.TempDir()
+	exePath := filepath.Join(tempDir, "python.exe")
+
+	f, err := os.Create(exePath)
+	require.NoError(t, err)
+	f.Close()
+	os.Chmod(exePath, 0755)
+
+	pr.Register("mock", &mockResolveProvider{
+		executables: []string{exePath},
+		envVars:     map[string]string{"PYTHONUTF8": "1"},
+	})
+
+	repo := &mockInstallRepo{
+		installations: []*repository.Installation{
+			{
+				Tool:        "python",
+				Version:     "3.14.7",
+				Backend:     "mock",
+				InstallPath: tempDir,
+			},
+		},
+	}
+
+	im := NewInstallationManager(br, pr, nil, repo, nil, nil)
+	ctx := context.Background()
+
+	// 1. On Windows: resolving "python3" when only "python.exe" is installed should succeed
+	resolved, _, err := im.ResolveExecutable(ctx, "python3", backend.Platform{OS: "windows"})
+	require.NoError(t, err)
+	require.Equal(t, exePath, resolved)
+
+	// 2. On Windows: resolving "python3.EXE" should succeed
+	resolved, _, err = im.ResolveExecutable(ctx, "python3.EXE", backend.Platform{OS: "windows"})
+	require.NoError(t, err)
+	require.Equal(t, exePath, resolved)
+
+	// 3. Resolving "python" directly should succeed
+	resolved, _, err = im.ResolveExecutable(ctx, "python", backend.Platform{OS: "windows"})
+	require.NoError(t, err)
+	require.Equal(t, exePath, resolved)
+}
+

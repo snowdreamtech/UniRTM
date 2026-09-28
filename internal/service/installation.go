@@ -1418,6 +1418,18 @@ var archiveExtensions = map[string]bool{
 	".sig": true, ".asc": true, ".sha256": true, ".sha512": true,
 }
 
+// standardExecutableAliases maps common executable aliases across platforms,
+// such as python3 <-> python and pip3 <-> pip.
+var standardExecutableAliases = map[string][]string{
+	"python3":  {"python"},
+	"python":   {"python3"},
+	"python3w": {"pythonw"},
+	"pythonw":  {"python3w"},
+	"pip3":     {"pip"},
+	"pip":      {"pip3"},
+}
+
+
 // isExecutableFile returns true if path is a regular file that can be executed.
 // It rejects directories, archive/compressed files, and (on Unix) files
 // without the execute permission bit.
@@ -1560,6 +1572,23 @@ func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName st
 	}
 
 	if len(candidates) == 0 {
+		cleanLower := strings.ToLower(queryClean)
+		if aliases, ok := standardExecutableAliases[cleanLower]; ok {
+			for _, alias := range aliases {
+				aliasQuery := alias
+				if isWindows && filepath.Ext(exeName) != "" {
+					aliasQuery = alias + filepath.Ext(exeName)
+				}
+				if resolved, envVars, err := im.ResolveExecutable(ctx, aliasQuery, platform); err == nil {
+					return resolved, envVars, nil
+				}
+				if aliasQuery != alias {
+					if resolved, envVars, err := im.ResolveExecutable(ctx, alias, platform); err == nil {
+						return resolved, envVars, nil
+					}
+				}
+			}
+		}
 		return "", nil, fmt.Errorf("executable %s not found", exeName)
 	}
 
