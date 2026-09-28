@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -1467,6 +1468,16 @@ func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName st
 	}
 	var candidates []candidate
 
+	isWindows := platform.OS == "windows" || (platform.OS == "" && runtime.GOOS == "windows")
+
+	queryClean := exeName
+	if isWindows {
+		ext := strings.ToLower(filepath.Ext(queryClean))
+		if ext == ".exe" || ext == ".cmd" || ext == ".bat" || ext == ".ps1" {
+			queryClean = queryClean[:len(queryClean)-len(ext)]
+		}
+	}
+
 	for _, inst := range installations {
 		// If the tool is configured in the current context, only consider the active version.
 		if tc, ok := im.toolConfigs[inst.Tool]; ok {
@@ -1502,10 +1513,26 @@ func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName st
 				continue
 			}
 
-			exact := baseName == exeName
+			baseClean := baseName
+			if isWindows {
+				ext := strings.ToLower(filepath.Ext(baseClean))
+				if ext == ".exe" || ext == ".cmd" || ext == ".bat" || ext == ".ps1" {
+					baseClean = baseClean[:len(baseClean)-len(ext)]
+				}
+			}
+
+			exact := baseName == exeName || (isWindows && (strings.EqualFold(baseName, exeName) || strings.EqualFold(baseClean, queryClean)))
 			prefix := !exact && strings.HasPrefix(baseName, exeName)
+			if !exact && isWindows && !prefix {
+				prefix = strings.HasPrefix(strings.ToLower(baseClean), strings.ToLower(queryClean))
+			}
 			if prefix {
-				remainder := baseName[len(exeName):]
+				var remainder string
+				if isWindows && strings.HasPrefix(strings.ToLower(baseClean), strings.ToLower(queryClean)) {
+					remainder = baseClean[len(queryClean):]
+				} else if strings.HasPrefix(baseName, exeName) {
+					remainder = baseName[len(exeName):]
+				}
 				// Only accept prefix match when remainder starts with a version separator.
 				// This avoids matching "python-3.14.4.zst" for "python".
 				if len(remainder) == 0 || (remainder[0] != '-' && remainder[0] != '_' && remainder[0] != '@' && remainder[0] != '.') {
@@ -1548,8 +1575,9 @@ func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName st
 		}
 		// Among candidates of equal match quality, prefer the tool whose name
 		// matches the executable (e.g. tool "python" for exe "python").
-		if c.exactMatch == selected.exactMatch &&
-			(c.inst.Tool == exeName || filepath.Base(c.inst.Tool) == exeName) {
+		toolBase := filepath.Base(c.inst.Tool)
+		toolMatch := c.inst.Tool == exeName || toolBase == exeName || (isWindows && (strings.EqualFold(c.inst.Tool, queryClean) || strings.EqualFold(toolBase, queryClean)))
+		if c.exactMatch == selected.exactMatch && toolMatch {
 			selected = c
 			break
 		}

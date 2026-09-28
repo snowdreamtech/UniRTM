@@ -126,7 +126,14 @@ func runReshim(cmd *cobra.Command, args []string) error {
 				executables = []string{inst.Tool}
 			}
 			for _, exe := range executables {
-				knownShims[filepath.Base(exe)] = true
+				baseExe := filepath.Base(exe)
+				if runtime.GOOS == "windows" {
+					lowerBase := strings.ToLower(baseExe)
+					if strings.HasSuffix(lowerBase, ".exe") || strings.HasSuffix(lowerBase, ".cmd") || strings.HasSuffix(lowerBase, ".ps1") || strings.HasSuffix(lowerBase, ".bat") {
+						baseExe = baseExe[:len(baseExe)-4]
+					}
+				}
+				knownShims[baseExe] = true
 			}
 		}
 
@@ -144,7 +151,7 @@ func runReshim(cmd *cobra.Command, args []string) error {
 			baseName := name
 			if runtime.GOOS == "windows" {
 				lowerName := strings.ToLower(name)
-				if strings.HasSuffix(lowerName, ".exe") || strings.HasSuffix(lowerName, ".cmd") || strings.HasSuffix(lowerName, ".ps1") {
+				if strings.HasSuffix(lowerName, ".exe") || strings.HasSuffix(lowerName, ".cmd") || strings.HasSuffix(lowerName, ".ps1") || strings.HasSuffix(lowerName, ".bat") {
 					baseName = name[:len(name)-4]
 				}
 			}

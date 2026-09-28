@@ -90,6 +90,7 @@ audit and logging capabilities.`,
 	}
 
 	buildFlags()
+	rootCmd.AddCommand(shimCmd)
 }
 
 // setupGlobalOptions configures the global logging level and handles global flags like --cd.

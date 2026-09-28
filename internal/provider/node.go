@@ -85,7 +85,10 @@ func (n *NodeProvider) GenerateShims(tool string, installPath string, version st
 func (n *NodeProvider) DetectVersion(ctx context.Context, tool string, installPath string) (string, error) {
 	nodePath := filepath.Join(installPath, "bin", "node")
 	if env.RuntimeGOOS == "windows" {
-		nodePath += ".exe"
+		nodePath = filepath.Join(installPath, "node.exe")
+		if _, statErr := os.Stat(nodePath); os.IsNotExist(statErr) {
+			nodePath = filepath.Join(installPath, "bin", "node.exe")
+		}
 	}
 
 	cmd := exec.CommandContext(ctx, nodePath, "--version")

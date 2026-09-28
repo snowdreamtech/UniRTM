@@ -135,8 +135,8 @@ func TestShimPaths(t *testing.T) {
 		t.Error("expected at least one path")
 	}
 	if env.RuntimeGOOS == "windows" {
-		if len(paths) != 2 {
-			t.Errorf("expected 2 paths on Windows, got %d", len(paths))
+		if len(paths) != 3 {
+			t.Errorf("expected 3 paths on Windows, got %d", len(paths))
 		}
 	} else {
 		if len(paths) != 1 {
@@ -217,5 +217,39 @@ func TestGenerator_GenerateShim_SymlinkEvaluation(t *testing.T) {
 
 	if !isSelfReferential(symlinkBin, realBin, "node", "node") {
 		t.Error("expected isSelfReferential to recognize symlink pointing to real binary")
+	}
+}
+
+func TestGenerator_GenerateWindowsShim_AlreadyWithExtension(t *testing.T) {
+	tmpDir := t.TempDir()
+	shimsDir := filepath.Join(tmpDir, "shims")
+	installsDir := filepath.Join(tmpDir, "installs")
+
+	g := NewGenerator(shimsDir, installsDir)
+	_ = os.MkdirAll(shimsDir, 0755)
+	_ = os.WriteFile(filepath.Join(shimsDir, "node.exe.exe"), []byte("buggy"), 0755)
+	_ = os.WriteFile(filepath.Join(shimsDir, "node.exe.cmd"), []byte("buggy"), 0755)
+
+	err := g.generateWindowsShim("node", "node.exe")
+	if err != nil {
+		t.Fatalf("generateWindowsShim failed: %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(shimsDir, "node.exe.exe")); err == nil {
+		t.Error("node.exe.exe should have been cleaned up")
+	}
+	if _, err := os.Stat(filepath.Join(shimsDir, "node.exe.cmd")); err == nil {
+		t.Error("node.exe.cmd should have been cleaned up")
+	}
+
+	err = g.generateWindowsShim("node", "npm.cmd")
+	if err != nil {
+		t.Fatalf("generateWindowsShim for npm.cmd failed: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(shimsDir, "npm.cmd.exe")); err == nil {
+		t.Error("npm.cmd.exe should not have been created")
+	}
+	if _, err := os.Stat(filepath.Join(shimsDir, "npm.cmd.cmd")); err == nil {
+		t.Error("npm.cmd.cmd should not have been created")
 	}
 }

@@ -145,3 +145,50 @@ func TestResolveExecutable_PrefixMatch(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, exePath, resolvedPath)
 }
+
+func TestResolveExecutable_WindowsExtensionMatching(t *testing.T) {
+	br := backend.NewRegistry()
+	pr := provider.NewRegistry()
+
+	tempDir := t.TempDir()
+	exePath := filepath.Join(tempDir, "node.exe")
+
+	f, err := os.Create(exePath)
+	require.NoError(t, err)
+	f.Close()
+	os.Chmod(exePath, 0755)
+
+	pr.Register("mock", &mockResolveProvider{
+		executables: []string{exePath},
+		envVars:     map[string]string{"NODE_ENV": "production"},
+	})
+
+	repo := &mockInstallRepo{
+		installations: []*repository.Installation{
+			{
+				Tool:        "node",
+				Version:     "20.0.0",
+				Backend:     "mock",
+				InstallPath: tempDir,
+			},
+		},
+	}
+
+	im := NewInstallationManager(br, pr, nil, repo, nil, nil)
+	ctx := context.Background()
+
+	// 1. Resolve with "node" when binary is "node.exe" on Windows platform
+	resolved, _, err := im.ResolveExecutable(ctx, "node", backend.Platform{OS: "windows"})
+	require.NoError(t, err)
+	require.Equal(t, exePath, resolved)
+
+	// 2. Resolve with "node.exe" when binary is "node.exe" on Windows platform
+	resolved, _, err = im.ResolveExecutable(ctx, "node.exe", backend.Platform{OS: "windows"})
+	require.NoError(t, err)
+	require.Equal(t, exePath, resolved)
+
+	// 3. Resolve with "NODE.EXE" (case-insensitive) on Windows platform
+	resolved, _, err = im.ResolveExecutable(ctx, "NODE.EXE", backend.Platform{OS: "windows"})
+	require.NoError(t, err)
+	require.Equal(t, exePath, resolved)
+}

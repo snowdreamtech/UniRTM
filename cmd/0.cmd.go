@@ -124,14 +124,30 @@ func handleAsdfAlias() {
 	os.Exit(0)
 }
 
+// shimCmd represents the internal command called by fallback wrapper scripts.
+var shimCmd = &cobra.Command{
+	Use:                "shim <binary> [args...]",
+	Short:              "Execute a tool via shim delegation",
+	Hidden:             true,
+	DisableFlagParsing: true,
+	Args:               cobra.MinimumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		exeName := filepath.Base(args[0])
+		invokeShimModeWithArgs(exeName, args)
+	},
+}
+
 // invokeShimMode resolves and executes a tool when UniRTM is invoked via a symlink.
 func invokeShimMode(exeName string) {
+	invokeShimModeWithArgs(exeName, os.Args)
+}
+
+func invokeShimModeWithArgs(exeName string, origArgs []string) {
 	if os.Getenv("_UNIRTM_SHIM_RECURSION_GUARD") != "" {
 		fmt.Fprintf(os.Stderr, "ERROR: unirtm shim infinite recursion loop detected for executable '%s'\n", exeName)
 		os.Exit(128)
 	}
 	os.Setenv("_UNIRTM_SHIM_RECURSION_GUARD", "1")
-
 	ctx := context.Background()
 
 	// 1. Load configuration to find which tool provides this executable
@@ -174,7 +190,8 @@ func invokeShimMode(exeName string) {
 	}
 
 	// Prepare for execution
-	args := os.Args
+	args := make([]string, len(origArgs))
+	copy(args, origArgs)
 	if len(args) > 0 {
 		args[0] = binPath
 	}

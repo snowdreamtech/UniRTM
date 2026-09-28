@@ -169,16 +169,31 @@ func runWhich(cmd *cobra.Command, args []string) error {
 
 	// 4. Resolve Active Version
 	// Logic: Argument version > Environment variable > Config file > Latest installed
+	isWindows := runtime.GOOS == "windows"
+	targetClean := target
+	if isWindows {
+		ext := strings.ToLower(filepath.Ext(targetClean))
+		if ext == ".exe" || ext == ".cmd" || ext == ".bat" || ext == ".ps1" {
+			targetClean = targetClean[:len(targetClean)-len(ext)]
+		}
+	}
+
 	activeVersions := make(map[string]string)
 	if versionArg != "" {
 		activeVersions[target] = versionArg
+		activeVersions[targetClean] = versionArg
 	} else {
 		// Check environment variable override: <PREFIX>_<TOOL>_VERSION
-		toolKey := strings.ToUpper(strings.ReplaceAll(target, "-", "_")) + "_VERSION"
+		toolKey := strings.ToUpper(strings.ReplaceAll(targetClean, "-", "_")) + "_VERSION"
 		if v := env.Get(toolKey); v != "" {
 			activeVersions[target] = v
+			activeVersions[targetClean] = v
+		} else if tc, ok := cfg.Tools[targetClean]; ok {
+			activeVersions[target] = tc.Version
+			activeVersions[targetClean] = tc.Version
 		} else if tc, ok := cfg.Tools[target]; ok {
 			activeVersions[target] = tc.Version
+			activeVersions[targetClean] = tc.Version
 		}
 	}
 
@@ -186,6 +201,11 @@ func runWhich(cmd *cobra.Command, args []string) error {
 	toolInstallations, err := installRepo.ListByTool(ctx, target)
 	if err != nil {
 		return fmt.Errorf("list installations: %w", err)
+	}
+	if len(toolInstallations) == 0 && isWindows && targetClean != target {
+		if cleanInstalls, cleanErr := installRepo.ListByTool(ctx, targetClean); cleanErr == nil {
+			toolInstallations = cleanInstalls
+		}
 	}
 
 	// Fallback: if no installation found by exact tool name, scan all
@@ -216,12 +236,24 @@ func runWhich(cmd *cobra.Command, args []string) error {
 					}
 
 					baseName := filepath.Base(absPath)
+					baseClean := baseName
+					if isWindows {
+						ext := strings.ToLower(filepath.Ext(baseClean))
+						if ext == ".exe" || ext == ".cmd" || ext == ".bat" || ext == ".ps1" {
+							baseClean = baseClean[:len(baseClean)-len(ext)]
+						}
+					}
+
 					matched := false
-					if baseName == target {
+					if baseName == target || (isWindows && (strings.EqualFold(baseName, target) || strings.EqualFold(baseClean, targetClean))) {
 						matched = true
-					} else if strings.HasPrefix(baseName, target) {
-						// Smart match: check for separator or digit (e.g. hadolint-2.14.0 or python3)
-						remainder := baseName[len(target):]
+					} else if strings.HasPrefix(baseName, target) || (isWindows && strings.HasPrefix(strings.ToLower(baseClean), strings.ToLower(targetClean))) {
+						var remainder string
+						if isWindows && strings.HasPrefix(strings.ToLower(baseClean), strings.ToLower(targetClean)) {
+							remainder = baseClean[len(targetClean):]
+						} else {
+							remainder = baseName[len(target):]
+						}
 						if len(remainder) > 0 {
 							r := remainder[0]
 							if r == '-' || r == '_' || r == '@' || r == '.' || (r >= '0' && r <= '9') {
@@ -279,11 +311,24 @@ func runWhich(cmd *cobra.Command, args []string) error {
 			}
 
 			baseName := filepath.Base(absPath)
+			baseClean := baseName
+			if isWindows {
+				ext := strings.ToLower(filepath.Ext(baseClean))
+				if ext == ".exe" || ext == ".cmd" || ext == ".bat" || ext == ".ps1" {
+					baseClean = baseClean[:len(baseClean)-len(ext)]
+				}
+			}
+
 			matched := false
-			if baseName == target {
+			if baseName == target || (isWindows && (strings.EqualFold(baseName, target) || strings.EqualFold(baseClean, targetClean))) {
 				matched = true
-			} else if strings.HasPrefix(baseName, target) {
-				remainder := baseName[len(target):]
+			} else if strings.HasPrefix(baseName, target) || (isWindows && strings.HasPrefix(strings.ToLower(baseClean), strings.ToLower(targetClean))) {
+				var remainder string
+				if isWindows && strings.HasPrefix(strings.ToLower(baseClean), strings.ToLower(targetClean)) {
+					remainder = baseClean[len(targetClean):]
+				} else {
+					remainder = baseName[len(target):]
+				}
 				if len(remainder) > 0 {
 					r := remainder[0]
 					if r == '-' || r == '_' || r == '@' || r == '.' || (r >= '0' && r <= '9') {
@@ -301,7 +346,7 @@ func runWhich(cmd *cobra.Command, args []string) error {
 					Active:   isActive,
 					Source:   source,
 				})
-			} else if inst.Tool == target && len(execs) == 1 {
+			} else if (inst.Tool == target || (isWindows && strings.EqualFold(inst.Tool, targetClean))) && len(execs) == 1 {
 				// Priority 2: Single binary fallback (if tool name matches exactly)
 				matches = append(matches, match{
 					Path:     absPath,

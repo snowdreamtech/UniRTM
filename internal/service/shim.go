@@ -119,7 +119,15 @@ func (g *Generator) ListShims() ([]string, error) {
 		}
 		name := e.Name()
 		// Strip Windows-specific extensions
-		tool := strings.TrimSuffix(strings.TrimSuffix(name, ".cmd"), ".ps1")
+		tool := name
+		if env.RuntimeGOOS == "windows" {
+			ext := strings.ToLower(filepath.Ext(name))
+			if ext == ".exe" || ext == ".cmd" || ext == ".bat" || ext == ".ps1" {
+				tool = name[:len(name)-len(ext)]
+			}
+		} else {
+			tool = strings.TrimSuffix(strings.TrimSuffix(name, ".cmd"), ".ps1")
+		}
 		if !seen[tool] {
 			seen[tool] = true
 			tools = append(tools, tool)
@@ -134,7 +142,12 @@ func (g *Generator) shimPaths(tool string) []string {
 	// Flatten tool name for lookup to match flat shims directory
 	flatName := filepath.Base(tool)
 	if env.RuntimeGOOS == "windows" {
+		ext := strings.ToLower(filepath.Ext(flatName))
+		if ext == ".exe" || ext == ".cmd" || ext == ".bat" || ext == ".ps1" {
+			flatName = flatName[:len(flatName)-len(ext)]
+		}
 		return []string{
+			filepath.Join(g.shimsDir, flatName+".exe"),
 			filepath.Join(g.shimsDir, flatName+".cmd"),
 			filepath.Join(g.shimsDir, flatName+".ps1"),
 		}
@@ -202,7 +215,13 @@ func (g *Generator) generateWindowsShim(tool, executable string) error {
 		unirtmPath = realPath
 	}
 
-	shimPath := filepath.Join(g.shimsDir, executable+".exe")
+	baseName := executable
+	ext := strings.ToLower(filepath.Ext(executable))
+	if ext == ".exe" || ext == ".cmd" || ext == ".bat" || ext == ".ps1" {
+		baseName = executable[:len(executable)-len(ext)]
+	}
+
+	shimPath := filepath.Join(g.shimsDir, baseName+".exe")
 
 	// Safety check: Prevent self-referential shimming
 	if isSelfReferential(shimPath, unirtmPath, tool, executable) {
@@ -214,10 +233,12 @@ func (g *Generator) generateWindowsShim(tool, executable string) error {
 		return fmt.Errorf("create shim directory for %s: %w", tool, err)
 	}
 
-	// 2. Clean up existing shims (might be old .cmd, .ps1 or .exe)
+	// 2. Clean up existing shims (might be old .cmd, .ps1, .exe, or legacy .exe.exe)
 	_ = os.Remove(shimPath)
-	_ = os.Remove(filepath.Join(g.shimsDir, executable+".cmd"))
-	_ = os.Remove(filepath.Join(g.shimsDir, executable+".ps1"))
+	_ = os.Remove(filepath.Join(g.shimsDir, baseName+".cmd"))
+	_ = os.Remove(filepath.Join(g.shimsDir, baseName+".ps1"))
+	_ = os.Remove(filepath.Join(g.shimsDir, baseName+".exe.exe"))
+	_ = os.Remove(filepath.Join(g.shimsDir, baseName+".exe.cmd"))
 
 	// 3. Create a Hard Link to the UniRTM binary
 	// On Windows, you cannot delete a hard link to a running executable.
@@ -234,7 +255,7 @@ func (g *Generator) generateWindowsShim(tool, executable string) error {
 
 	// Fallback to minimal wrapper script with recursion guard if hard link fails (e.g. cross-partition) or if in tests
 	cmdContent := fmt.Sprintf("@echo off\nif defined _UNIRTM_SHIM_RECURSION_GUARD (\n  echo unirtm shim: infinite recursion loop detected for %%~n0 1>&2\n  exit /b 128\n)\nset _UNIRTM_SHIM_RECURSION_GUARD=1\n\"%s\" shim \"%%~n0\" %%*\n", unirtmPath)
-	cmdPath := filepath.Join(g.shimsDir, executable+".cmd")
+	cmdPath := filepath.Join(g.shimsDir, baseName+".cmd")
 	return os.WriteFile(cmdPath, []byte(cmdContent), 0644)
 }
 
