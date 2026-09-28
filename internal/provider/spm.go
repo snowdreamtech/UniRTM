@@ -69,6 +69,9 @@ func (p *SpmProvider) Install(ctx context.Context, tool string, installPath stri
 
 	buildCmd := exec.CommandContext(ctx, swiftCmd, "build", "-c", "release")
 	buildCmd.Dir = tmpDir
+	swiftDir := filepath.Dir(swiftCmd)
+	currentPath := env.Get("PATH")
+	buildCmd.Env = append(os.Environ(), fmt.Sprintf("PATH=%s%c%s", swiftDir, os.PathListSeparator, currentPath))
 	buildCmd.Stdout = os.Stdout
 	buildCmd.Stderr = os.Stderr
 	if err := buildCmd.Run(); err != nil {

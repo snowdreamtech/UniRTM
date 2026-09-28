@@ -5,11 +5,13 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
@@ -57,7 +59,9 @@ func (p *VfoxProvider) Install(ctx context.Context, tool string, installPath str
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	}
-	cmd.Env = GetNoProxyEnv()
+	vfoxDir := filepath.Dir(vfoxCmd)
+	currentPath := env.Get("PATH")
+	cmd.Env = append(GetNoProxyEnv(), fmt.Sprintf("PATH=%s%c%s", vfoxDir, os.PathListSeparator, currentPath))
 
 	// Optional: force vfox to use installPath as its base via environment variables if vfox supports it.
 	// VFOX_HOME or something similar. For simplicity, we just run it.

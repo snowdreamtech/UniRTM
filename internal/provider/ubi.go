@@ -5,11 +5,13 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/logger"
 )
 
@@ -50,6 +52,10 @@ func (p *UbiProvider) Install(ctx context.Context, tool string, installPath stri
 	}
 
 	cmd := exec.CommandContext(ctx, ubiCmd, args...)
+	ubiDir := filepath.Dir(ubiCmd)
+	currentPath := env.Get("PATH")
+	cmdEnv := append(os.Environ(), fmt.Sprintf("PATH=%s%c%s", ubiDir, os.PathListSeparator, currentPath))
+	cmd.Env = cmdEnv
 	if ctx != nil && ctx.Value("quietProgress") == true {
 		cmd.Stdout = nil
 		cmd.Stderr = nil
@@ -62,6 +68,7 @@ func (p *UbiProvider) Install(ctx context.Context, tool string, installPath stri
 			logger.Debug("Retrying ubi without 'v' prefix", map[string]interface{}{"tool": tool, "version": version})
 			args[len(args)-1] = version
 			cmd2 := exec.CommandContext(ctx, ubiCmd, args...)
+			cmd2.Env = cmdEnv
 			cmd2.Stdout = os.Stdout
 			cmd2.Stderr = os.Stderr
 			if err2 := cmd2.Run(); err2 != nil {

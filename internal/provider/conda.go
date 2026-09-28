@@ -5,6 +5,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -57,7 +58,9 @@ func (p *CondaProvider) Install(ctx context.Context, tool string, installPath st
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	}
-	cmd.Env = GetNoProxyEnv()
+	condaDir := filepath.Dir(condaCmd)
+	currentPath := env.Get("PATH")
+	cmd.Env = append(GetNoProxyEnv(), fmt.Sprintf("PATH=%s%c%s", condaDir, os.PathListSeparator, currentPath))
 
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "conda create failed", err)
