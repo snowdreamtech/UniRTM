@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
@@ -271,7 +272,18 @@ func testExecutable(exePath string, cmdEnv []string) error {
 	var lastOutput string
 
 	for _, flags := range testFlags {
-		cmd := exec.Command(exePath, flags...)
+		var cmd *exec.Cmd
+		if runtime.GOOS == "windows" {
+			ext := strings.ToLower(filepath.Ext(exePath))
+			if ext == ".bat" || ext == ".cmd" {
+				cmdArgs := append([]string{"/c", exePath}, flags...)
+				cmd = exec.Command("cmd.exe", cmdArgs...)
+			} else {
+				cmd = exec.Command(exePath, flags...)
+			}
+		} else {
+			cmd = exec.Command(exePath, flags...)
+		}
 		cmd.Env = cmdEnv
 		output, err := cmd.CombinedOutput()
 
