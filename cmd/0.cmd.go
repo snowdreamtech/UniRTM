@@ -50,6 +50,14 @@ func Execute() {
 		return
 	}
 
+	// Handle fallback wrapper scripts: unirtm shim "$0" "$@"
+	if isUniRTMBinary(exeName) && len(os.Args) >= 3 && os.Args[1] == "shim" {
+		targetExe := filepath.Base(os.Args[2])
+		os.Args = append([]string{targetExe}, os.Args[3:]...)
+		invokeShimMode(targetExe)
+		return
+	}
+
 	// Handle shim mode: if invoked as a tool (e.g. "go") instead of "unirtm"
 	if !isUniRTMBinary(exeName) {
 		invokeShimMode(exeName)
@@ -143,11 +151,14 @@ func invokeShimMode(exeName string) {
 }
 
 func invokeShimModeWithArgs(exeName string, origArgs []string) {
-	if os.Getenv("_UNIRTM_SHIM_RECURSION_GUARD") != "" {
+	cleanName := strings.TrimSuffix(strings.ToLower(exeName), ".exe")
+	guardKey := "_UNIRTM_SHIM_GUARD_" + strings.ToUpper(strings.ReplaceAll(cleanName, "-", "_"))
+
+	if os.Getenv(guardKey) != "" {
 		fmt.Fprintf(os.Stderr, "ERROR: unirtm shim infinite recursion loop detected for executable '%s'\n", exeName)
 		os.Exit(128)
 	}
-	os.Setenv("_UNIRTM_SHIM_RECURSION_GUARD", "1")
+	os.Setenv(guardKey, "1")
 	ctx := context.Background()
 
 	// 1. Load configuration to find which tool provides this executable
@@ -171,6 +182,9 @@ func invokeShimModeWithArgs(exeName string, origArgs []string) {
 	// This will look through active tools in the current directory context
 	platform := backend.CurrentPlatform()
 	binPath, envVars, err := im.ResolveExecutable(ctx, exeName, platform)
+	if err != nil && cleanName != strings.ToLower(exeName) {
+		binPath, envVars, err = im.ResolveExecutable(ctx, cleanName, platform)
+	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unirtm: '%s' is not installed or binary not found.\n", exeName)
 		fmt.Fprintf(os.Stderr, "  Run: unirtm install [tool]\n")
@@ -185,8 +199,25 @@ func invokeShimModeWithArgs(exeName string, origArgs []string) {
 
 	// Filter out host environment variables that might pollute the unirtm managed tools.
 	// E.g., if the user has GOROOT set for a system Go installation, it will break unirtm's Go.
-	if exeName == "go" || exeName == "gofmt" {
+	if cleanName == "go" || cleanName == "gofmt" {
 		os.Unsetenv("GOROOT")
+	}
+
+	// Crucial fix: Clear recursion guard before handing off to the real binary.
+	// The guard is only meant to prevent unirtm shim from infinitely re-entering itself
+	// during resolution/execution of this specific hop. Leaving it set pollutes child
+	// processes and causes false-positive recursion detections (exit 128).
+	os.Unsetenv(guardKey)
+	os.Unsetenv("_UNIRTM_SHIM_RECURSION_GUARD")
+
+	// Guard against self-referential execution loops if binPath resolves to this binary.
+	if selfExe, err := os.Executable(); err == nil {
+		if realSelf, err := filepath.EvalSymlinks(selfExe); err == nil {
+			if realBin, err := filepath.EvalSymlinks(binPath); err == nil && realBin == realSelf {
+				fmt.Fprintf(os.Stderr, "ERROR: unirtm shim infinite recursion loop detected for executable '%s'\n", exeName)
+				os.Exit(128)
+			}
+		}
 	}
 
 	// Prepare for execution

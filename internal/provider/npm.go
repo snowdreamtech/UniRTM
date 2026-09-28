@@ -69,7 +69,12 @@ func (p *NpmProvider) Install(ctx context.Context, tool string, installPath stri
 		extraDomains = append(extraDomains, d)
 	}
 
-	cmd.Env = GetNoProxyEnv(extraDomains...)
+	// Ensure the node directory containing npmCmd is at the head of PATH so that
+	// npm's shebang (#!/usr/bin/env node) and lifecycle scripts resolve to the real node binary
+	// directly without traversing shims.
+	nodeDir := filepath.Dir(npmCmd)
+	currentPath := env.Get("PATH")
+	cmd.Env = append(GetNoProxyEnv(extraDomains...), fmt.Sprintf("PATH=%s%c%s", nodeDir, os.PathListSeparator, currentPath))
 
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "npm install failed", err)

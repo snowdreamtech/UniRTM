@@ -224,8 +224,8 @@ func (g *Generator) generateWindowsShim(tool, executable string) error {
 	shimPath := filepath.Join(g.shimsDir, baseName+".exe")
 
 	// Safety check: Prevent self-referential shimming
-	if isSelfReferential(shimPath, unirtmPath, tool, executable) {
-		return fmt.Errorf("refusing to create self-referential shim for %s at %s", executable, shimPath)
+	if isSelfReferential(shimPath, unirtmPath, tool, baseName) {
+		return fmt.Errorf("refusing to create self-referential shim for %s at %s", baseName, shimPath)
 	}
 
 	// 1. Ensure the directory exists
