@@ -94,22 +94,40 @@ func (p *PythonProvider) PostInstall(ctx context.Context, tool string, installPa
 
 	// Ensure the DLLs in installPath are discoverable by the newly created venv
 	// python executable during ensurepip.
-	env := os.Environ()
+	envVars := os.Environ()
 	pathVar := "PATH"
-	for i, e := range env {
+	for i, e := range envVars {
 		if strings.HasPrefix(strings.ToUpper(e), "PATH=") {
-			env[i] = "PATH=" + installPath + string(os.PathListSeparator) + e[5:]
+			envVars[i] = "PATH=" + installPath + string(os.PathListSeparator) + e[5:]
 			pathVar = ""
 			break
 		}
 	}
 	if pathVar != "" {
-		env = append(env, "PATH="+installPath)
+		envVars = append(envVars, "PATH="+installPath)
 	}
-	cmd.Env = env
+	cmd.Env = envVars
 
 	if err := cmd.Run(); err != nil {
 		return NewProviderError("python", "python", version, "failed to create virtual environment", err)
+	}
+
+	if env.RuntimeGOOS == "windows" {
+		scriptsDir := filepath.Join(venvDir, "Scripts")
+		copyIfMissing := func(src, dst string) {
+			if _, err := os.Stat(dst); os.IsNotExist(err) {
+				if srcInfo, err := os.Stat(src); err == nil && !srcInfo.IsDir() {
+					if linkErr := os.Link(src, dst); linkErr != nil {
+						if data, readErr := os.ReadFile(src); readErr == nil {
+							_ = os.WriteFile(dst, data, 0755)
+						}
+					}
+				}
+			}
+		}
+		copyIfMissing(filepath.Join(scriptsDir, "python.exe"), filepath.Join(scriptsDir, "python3.exe"))
+		copyIfMissing(filepath.Join(scriptsDir, "pip.exe"), filepath.Join(scriptsDir, "pip3.exe"))
+		copyIfMissing(filepath.Join(installPath, "python.exe"), filepath.Join(installPath, "python3.exe"))
 	}
 
 	return nil
