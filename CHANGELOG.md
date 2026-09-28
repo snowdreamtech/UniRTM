@@ -6,6 +6,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.2](https://github.com/snowdreamtech/UniRTM/compare/v0.33.1...v0.33.2) (2026-09-28)
+
+
+### 🐛 Bug Fixes
+
+* **ci,audit:** use ghcr.io for trivy db with fallback to prevent ecr rate limit ([bb4ae92](https://github.com/snowdreamtech/UniRTM/commit/bb4ae920c53bbf3e73ac649905f8d2656d5a8fbf))
+* **cli:** unify cross-platform executable aliases and path fallback across commands ([f369db1](https://github.com/snowdreamtech/UniRTM/commit/f369db118c04a7e06a276d73e9ccc068527566c5))
+* **provider:** create python3 and pip3 binaries in windows venv post-install ([c2f90e5](https://github.com/snowdreamtech/UniRTM/commit/c2f90e566c90d37bfdf68dabc7ece74d3a25249c))
+* **python:** ensure python/python3 and pip/pip3 symlinks on unix in post-install ([dfd4167](https://github.com/snowdreamtech/UniRTM/commit/dfd4167565ab8e78069531b04d8c352046a43908))
+* **service:** add cross-platform alias fallback for python and pip executables ([e9e48c5](https://github.com/snowdreamtech/UniRTM/commit/e9e48c54b3189bcf01e5b6591cc0abff29296e98))
+* **shim,exec:** guarantee dual .exe and .cmd shims on windows and handle batch files in exec ([48dff95](https://github.com/snowdreamtech/UniRTM/commit/48dff950bccd878d21846d2c482c19ece5fd5a7b))
+* **shim:** resolve cross-platform executable aliases and binary paths comprehensively ([151b76c](https://github.com/snowdreamtech/UniRTM/commit/151b76cc705a4ab2b18e45d6b5dfeb0935842a71))
+* **test-tool:** wrap .bat and .cmd scripts with cmd.exe /c on windows in testExecutable ([40cdfc1](https://github.com/snowdreamtech/UniRTM/commit/40cdfc12b67aa250ef80e095a9f0a01c28a33a47))
+* **test:** support cross-platform binary extensions in which_test ([35f7873](https://github.com/snowdreamtech/UniRTM/commit/35f787382e841f87afbf1894692d72fee8de1ca2))
+
+
+### ♻️ Miscellaneous Chores
+
+* **deps:** bump mermaid in /docs in the all-dependencies group ([4c14167](https://github.com/snowdreamtech/UniRTM/commit/4c14167ab3c635c2450b7614a0ed14487a550d30))
+* **deps:** bump the all-dependencies group with 5 updates ([fc743f2](https://github.com/snowdreamtech/UniRTM/commit/fc743f29a04457bc6b44dfa16c4461063ef07bf1))
+
 ## [0.33.1](https://github.com/snowdreamtech/UniRTM/compare/v0.33.0...v0.33.1) (2026-09-28)
 
 
