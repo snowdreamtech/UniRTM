@@ -56,7 +56,9 @@ func (p *ComposerProvider) Install(ctx context.Context, tool string, installPath
 	mirror := env.Get("UNIRTM_COMPOSER_MIRROR")
 	if mirror != "" {
 		configCmd := exec.CommandContext(ctx, phpCmd, composerPhar, "config", "-g", "repo.packagist", "composer", mirror)
-		configCmd.Env = append(os.Environ(), fmt.Sprintf("COMPOSER_HOME=%s", installPath))
+		phpDir := filepath.Dir(phpCmd)
+		currentPath := env.Get("PATH")
+		configCmd.Env = append(os.Environ(), fmt.Sprintf("COMPOSER_HOME=%s", installPath), fmt.Sprintf("PATH=%s%c%s", phpDir, os.PathListSeparator, currentPath))
 		if output, err := configCmd.CombinedOutput(); err != nil {
 			return NewProviderError(p.Name(), tool, version, "failed to configure composer mirror: "+string(output), err)
 		}

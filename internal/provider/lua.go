@@ -379,10 +379,15 @@ func bootstrapLuaRocks(ctx context.Context, luaInstallPath, luaVersion string) e
 	}
 
 	srcDir := filepath.Join(tmpDir, fmt.Sprintf("luarocks-%s", luarocksVer))
+	luaBinDir := filepath.Join(luaInstallPath, "bin")
+	currentPath := env.Get("PATH")
+	luaPathEnv := fmt.Sprintf("PATH=%s%c%s%c%s", luaBinDir, os.PathListSeparator, luaInstallPath, os.PathListSeparator, currentPath)
+	cmdEnv := append(os.Environ(), luaPathEnv)
 
 	if runtime.GOOS == "windows" {
 		cmd := exec.CommandContext(ctx, "install.bat", "/F", "/MW", "/LUA", luaInstallPath, "/P", luaInstallPath, "/Q")
 		cmd.Dir = srcDir
+		cmd.Env = cmdEnv
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("luarocks install.bat failed: %v\nOutput: %s", err, string(out))
@@ -390,6 +395,7 @@ func bootstrapLuaRocks(ctx context.Context, luaInstallPath, luaVersion string) e
 	} else {
 		cmd := exec.CommandContext(ctx, "./configure", "--prefix="+luaInstallPath, "--with-lua="+luaInstallPath)
 		cmd.Dir = srcDir
+		cmd.Env = cmdEnv
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("luarocks configure failed: %v\nOutput: %s", err, string(out))
@@ -397,11 +403,13 @@ func bootstrapLuaRocks(ctx context.Context, luaInstallPath, luaVersion string) e
 
 		makeBuildCmd := exec.CommandContext(ctx, "make", "build")
 		makeBuildCmd.Dir = srcDir
+		makeBuildCmd.Env = cmdEnv
 		out, err = makeBuildCmd.CombinedOutput()
 		if err != nil {
 			// fallback to just 'make' if 'make build' fails
 			makeBuildCmd = exec.CommandContext(ctx, "make")
 			makeBuildCmd.Dir = srcDir
+			makeBuildCmd.Env = cmdEnv
 			out, err = makeBuildCmd.CombinedOutput()
 			if err != nil {
 				return fmt.Errorf("luarocks make build failed: %v\nOutput: %s", err, string(out))
@@ -410,6 +418,7 @@ func bootstrapLuaRocks(ctx context.Context, luaInstallPath, luaVersion string) e
 
 		makeCmd := exec.CommandContext(ctx, "make", "install")
 		makeCmd.Dir = srcDir
+		makeCmd.Env = cmdEnv
 		out, err = makeCmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("luarocks make install failed: %v\nOutput: %s", err, string(out))
