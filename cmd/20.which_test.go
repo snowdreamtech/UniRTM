@@ -114,11 +114,12 @@ func TestRunWhich_Alias(t *testing.T) {
 	binDir := filepath.Join(installPath, "bin")
 	require.NoError(t, os.MkdirAll(binDir, 0755))
 
-	nodeBin := filepath.Join(binDir, "node")
-	f, err := os.Create(nodeBin)
-	require.NoError(t, err)
-	f.Close()
-	os.Chmod(nodeBin, 0755)
+	for _, name := range []string{"node", "node.exe", "nodejs", "nodejs.exe"} {
+		for _, dir := range []string{installPath, binDir} {
+			p := filepath.Join(dir, name)
+			_ = os.WriteFile(p, []byte("#!/bin/sh\n"), 0755)
+		}
+	}
 
 	inst := &repository.Installation{
 		Tool:        "node",
@@ -154,13 +155,18 @@ func TestRunWhich_AliasPython(t *testing.T) {
 
 	installPath := filepath.Join(tmpDir, "installs", "python", "3.12.0")
 	binDir := filepath.Join(installPath, "bin")
+	venvBin := filepath.Join(installPath, "venv", "bin")
+	venvScripts := filepath.Join(installPath, "venv", "Scripts")
 	require.NoError(t, os.MkdirAll(binDir, 0755))
+	require.NoError(t, os.MkdirAll(venvBin, 0755))
+	require.NoError(t, os.MkdirAll(venvScripts, 0755))
 
-	pyBin := filepath.Join(binDir, "python")
-	f, err := os.Create(pyBin)
-	require.NoError(t, err)
-	f.Close()
-	os.Chmod(pyBin, 0755)
+	for _, name := range []string{"python", "python.exe", "python3", "python3.exe"} {
+		for _, dir := range []string{installPath, binDir, venvBin, venvScripts} {
+			p := filepath.Join(dir, name)
+			_ = os.WriteFile(p, []byte("#!/bin/sh\n"), 0755)
+		}
+	}
 
 	inst := &repository.Installation{
 		Tool:        "python",
