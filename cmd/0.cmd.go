@@ -151,7 +151,10 @@ func invokeShimMode(exeName string) {
 }
 
 func invokeShimModeWithArgs(exeName string, origArgs []string) {
-	cleanName := strings.TrimSuffix(strings.ToLower(exeName), ".exe")
+	cleanName := strings.ToLower(exeName)
+	if ext := filepath.Ext(cleanName); ext == ".exe" || ext == ".cmd" || ext == ".bat" || ext == ".ps1" {
+		cleanName = cleanName[:len(cleanName)-len(ext)]
+	}
 	guardKey := "_UNIRTM_SHIM_GUARD_" + strings.ToUpper(strings.ReplaceAll(cleanName, "-", "_"))
 
 	if os.Getenv(guardKey) != "" {

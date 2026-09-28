@@ -391,6 +391,14 @@ func runExec(cmd *cobra.Command, args []string) error {
 		var err error
 		binary, err = exec.LookPath(program)
 		if err != nil {
+			for _, alias := range service.GetExecutableAliases(program) {
+				if b, lErr := exec.LookPath(alias); lErr == nil {
+					binary = b
+					break
+				}
+			}
+		}
+		if binary == "" {
 			return fmt.Errorf("command not found: %s (checked UniRTM tools and PATH)", program)
 		}
 	}
@@ -429,7 +437,14 @@ func execUnix(binary string, args, environ []string) error {
 // its exit code.  Ctrl-C is forwarded to the child naturally because we do
 // not install a signal handler in the parent process.
 func execWindows(binary string, args []string) error {
-	c := exec.Command(binary, args...)
+	var c *exec.Cmd
+	ext := strings.ToLower(filepath.Ext(binary))
+	if ext == ".cmd" || ext == ".bat" {
+		cmdArgs := append([]string{"/c", binary}, args...)
+		c = exec.Command("cmd.exe", cmdArgs...)
+	} else {
+		c = exec.Command(binary, args...)
+	}
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr

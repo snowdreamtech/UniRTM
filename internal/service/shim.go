@@ -273,14 +273,11 @@ func (g *Generator) generateWindowsShim(tool, executable string) error {
 	isTest := strings.HasSuffix(unirtmPath, ".test.exe") || strings.HasSuffix(unirtmPath, ".test")
 
 	if !isTest {
-		if err := os.Link(unirtmPath, shimPath); err == nil {
-			return nil
-		}
+		_ = os.Link(unirtmPath, shimPath)
 	}
 
-	// Fallback to minimal wrapper script if hard link fails (e.g. cross-partition) or if in tests.
-	// No recursion guard needed here: UniRTM's invokeShimModeWithArgs sets a per-executable
-	// guard (_UNIRTM_SHIM_GUARD_<TOOL>) and detects self-referential paths before executing.
+	// Always generate minimal wrapper script (.cmd) as well, ensuring tools or scripts
+	// explicitly calling <tool>.cmd or invoking via cmd.exe can always resolve it.
 	cmdContent := fmt.Sprintf("@echo off\n\"%s\" shim \"%%~n0\" %%*\n", unirtmPath)
 	cmdPath := filepath.Join(g.shimsDir, baseName+".cmd")
 	return os.WriteFile(cmdPath, []byte(cmdContent), 0644)
