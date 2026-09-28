@@ -255,7 +255,7 @@ repos:
       - id: trivy
         name: trivy security scan
         language: system
-        entry: unirtm hook-exec trivy fs . --scanners vuln,misconfig,secret --skip-dirs internal/addlicense/testdata --db-repository public.ecr.aws/aquasecurity/trivy-db --java-db-repository public.ecr.aws/aquasecurity/trivy-java-db:1 --checks-bundle-repository public.ecr.aws/aquasecurity/trivy-checks --timeout 15m --exit-code 1 --severity HIGH,CRITICAL
+        entry: unirtm hook-exec trivy fs . --scanners vuln,misconfig,secret --skip-dirs internal/addlicense/testdata --db-repository ghcr.io/aquasecurity/trivy-db --java-db-repository ghcr.io/aquasecurity/trivy-java-db:1 --checks-bundle-repository ghcr.io/aquasecurity/trivy-checks --timeout 15m --exit-code 1 --severity HIGH,CRITICAL
         always_run: true
         pass_filenames: false
         stages: [manual, pre-push] # Skip in local pre-commit, run in CI or manually
