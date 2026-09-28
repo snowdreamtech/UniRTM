@@ -5,6 +5,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -53,6 +54,11 @@ func (p *DotnetProvider) Install(ctx context.Context, tool string, installPath s
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	}
+
+	// Ensure the dotnet directory is at the head of PATH so internal tool calls bypass shims.
+	dotnetDir := filepath.Dir(dotnetCmd)
+	currentPath := env.Get("PATH")
+	cmd.Env = append(GetNoProxyEnv(), fmt.Sprintf("PATH=%s%c%s", dotnetDir, os.PathListSeparator, currentPath))
 
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "dotnet tool install failed", err)

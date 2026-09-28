@@ -5,6 +5,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -58,7 +59,11 @@ func (p *LuaRocksProvider) Install(ctx context.Context, tool string, installPath
 		cmd.Stderr = os.Stderr
 	}
 
-	cmd.Env = GetNoProxyEnv()
+	// Ensure the lua directory containing lrCmd is at the head of PATH so that
+	// luarocks' internal calls to lua resolve to the real binary directly.
+	luaDir := filepath.Dir(lrCmd)
+	currentPath := env.Get("PATH")
+	cmd.Env = append(GetNoProxyEnv(), fmt.Sprintf("PATH=%s%c%s", luaDir, os.PathListSeparator, currentPath))
 
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "luarocks install failed", err)

@@ -72,6 +72,10 @@ func (p *PubProvider) Install(ctx context.Context, tool string, installPath stri
 		}
 	}
 	finalEnv = append(finalEnv, fmt.Sprintf("PUB_CACHE=%s", installPath))
+	// Ensure the dart directory is at the head of PATH so internal calls bypass shims.
+	dartDir := filepath.Dir(dartCmd)
+	currentPath := env.Get("PATH")
+	finalEnv = append(finalEnv, fmt.Sprintf("PATH=%s%c%s", dartDir, os.PathListSeparator, currentPath))
 	cmd.Env = finalEnv
 
 	if err := cmd.Run(); err != nil {

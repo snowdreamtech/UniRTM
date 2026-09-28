@@ -5,6 +5,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -60,7 +61,11 @@ func (p *GemProvider) Install(ctx context.Context, tool string, installPath stri
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	}
-	cmd.Env = GetNoProxyEnv(extraDomains...)
+	// Ensure the ruby directory containing gemCmd is at the head of PATH so that
+	// gem's internal calls to ruby resolve to the real binary directly without traversing shims.
+	rubyDir := filepath.Dir(gemCmd)
+	currentPath := env.Get("PATH")
+	cmd.Env = append(GetNoProxyEnv(extraDomains...), fmt.Sprintf("PATH=%s%c%s", rubyDir, os.PathListSeparator, currentPath))
 
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "gem install failed", err)

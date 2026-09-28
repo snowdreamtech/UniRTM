@@ -5,6 +5,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -59,7 +60,11 @@ func (p *CargoProvider) Install(ctx context.Context, tool string, installPath st
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	}
-	cmd.Env = GetNoProxyEnv(extraDomains...)
+	// Ensure the rust directory containing cargoCmd is at the head of PATH so that
+	// cargo's internal calls to rustc/rustup resolve to the real binaries directly.
+	rustDir := filepath.Dir(cargoCmd)
+	currentPath := env.Get("PATH")
+	cmd.Env = append(GetNoProxyEnv(extraDomains...), fmt.Sprintf("PATH=%s%c%s", rustDir, os.PathListSeparator, currentPath))
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "cargo install failed", err)
 	}

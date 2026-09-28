@@ -192,8 +192,11 @@ func (g *Generator) generateUnixShim(tool, executable string) error {
 
 	// 4. Create symlink pointing to the current UniRTM binary
 	if err := os.Symlink(unirtmPath, shimPath); err != nil {
-		// Fallback to minimal wrapper script with recursion guard if symlink fails (rare on Unix)
-		content := fmt.Sprintf("#!/bin/sh\nif [ -n \"$_UNIRTM_SHIM_RECURSION_GUARD\" ]; then\n  echo \"unirtm shim: infinite recursion loop detected for $0\" >&2\n  exit 128\nfi\nexport _UNIRTM_SHIM_RECURSION_GUARD=1\nexec %q shim \"$0\" \"$@\"\n", unirtmPath)
+		// Fallback to minimal wrapper script if symlink fails (rare on Unix).
+		// No recursion guard needed here: UniRTM's invokeShimModeWithArgs sets
+		// a per-executable guard (_UNIRTM_SHIM_GUARD_<TOOL>) and detects
+		// self-referential paths before executing the resolved binary.
+		content := fmt.Sprintf("#!/bin/sh\nexec %q shim \"$0\" \"$@\"\n", unirtmPath)
 		if err := os.WriteFile(shimPath, []byte(content), 0755); err != nil {
 			return fmt.Errorf("failed to create shim for %s: %w", tool, err)
 		}
@@ -253,8 +256,10 @@ func (g *Generator) generateWindowsShim(tool, executable string) error {
 		}
 	}
 
-	// Fallback to minimal wrapper script with recursion guard if hard link fails (e.g. cross-partition) or if in tests
-	cmdContent := fmt.Sprintf("@echo off\nif defined _UNIRTM_SHIM_RECURSION_GUARD (\n  echo unirtm shim: infinite recursion loop detected for %%~n0 1>&2\n  exit /b 128\n)\nset _UNIRTM_SHIM_RECURSION_GUARD=1\n\"%s\" shim \"%%~n0\" %%*\n", unirtmPath)
+	// Fallback to minimal wrapper script if hard link fails (e.g. cross-partition) or if in tests.
+	// No recursion guard needed here: UniRTM's invokeShimModeWithArgs sets a per-executable
+	// guard (_UNIRTM_SHIM_GUARD_<TOOL>) and detects self-referential paths before executing.
+	cmdContent := fmt.Sprintf("@echo off\n\"%s\" shim \"%%~n0\" %%*\n", unirtmPath)
 	cmdPath := filepath.Join(g.shimsDir, baseName+".cmd")
 	return os.WriteFile(cmdPath, []byte(cmdContent), 0644)
 }

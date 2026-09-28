@@ -55,7 +55,9 @@ func (p *CabalProvider) Install(ctx context.Context, tool string, installPath st
 		cmd.Stderr = os.Stderr
 	}
 
-	cmd.Env = GetNoProxyEnv()
+	cabalDir := filepath.Dir(cabalCmd)
+	currentPath := env.Get("PATH")
+	cmd.Env = append(GetNoProxyEnv(), fmt.Sprintf("PATH=%s%c%s", cabalDir, os.PathListSeparator, currentPath))
 
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "cabal install failed", err)

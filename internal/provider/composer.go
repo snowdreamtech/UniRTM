@@ -81,6 +81,10 @@ func (p *ComposerProvider) Install(ctx context.Context, tool string, installPath
 		}
 	}
 	finalEnv = append(finalEnv, fmt.Sprintf("COMPOSER_HOME=%s", installPath))
+	// Ensure the php directory is at the head of PATH so internal calls bypass shims.
+	phpDir := filepath.Dir(phpCmd)
+	currentPath := env.Get("PATH")
+	finalEnv = append(finalEnv, fmt.Sprintf("PATH=%s%c%s", phpDir, os.PathListSeparator, currentPath))
 	cmd.Env = finalEnv
 
 	if err := cmd.Run(); err != nil {

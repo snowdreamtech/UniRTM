@@ -88,9 +88,10 @@ func (p *GoPkgProvider) Install(ctx context.Context, tool string, installPath st
 	if gonosumdb := env.Get("GONOSUMDB"); gonosumdb != "" {
 		cmdEnv = append(cmdEnv, "GONOSUMDB="+gonosumdb)
 	}
-	if goprivate := env.Get("GOPRIVATE"); goprivate != "" {
-		cmdEnv = append(cmdEnv, "GOPRIVATE="+goprivate)
-	}
+	// Ensure the go directory is at the head of PATH so internal compiler/tool calls bypass shims.
+	goDir := filepath.Dir(goCmd)
+	currentPath := env.Get("PATH")
+	cmdEnv = append(cmdEnv, fmt.Sprintf("PATH=%s%c%s", goDir, os.PathListSeparator, currentPath))
 	cmd.Env = cmdEnv
 	if ctx != nil && ctx.Value("quietProgress") == true {
 		cmd.Stdout = nil

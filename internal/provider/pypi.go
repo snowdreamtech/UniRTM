@@ -56,10 +56,15 @@ func (p *PypiProvider) Install(ctx context.Context, tool string, installPath str
 		extraDomains = append(extraDomains, d)
 	}
 
+	// Ensure the python directory is at the head of PATH so internal calls bypass shims.
+	pythonDir := filepath.Dir(pythonCmd)
+	currentPath := env.Get("PATH")
+	pythonPathEnv := fmt.Sprintf("PATH=%s%c%s", pythonDir, os.PathListSeparator, currentPath)
+
 	// 1. Create a virtual environment
 	logger.Debug("Creating virtual environment", map[string]interface{}{"path": installPath})
 	venvCmd := exec.CommandContext(ctx, pythonCmd, "-m", "venv", installPath)
-	venvCmd.Env = GetNoProxyEnv(extraDomains...)
+	venvCmd.Env = append(GetNoProxyEnv(extraDomains...), pythonPathEnv)
 	outVenv, err := venvCmd.CombinedOutput()
 	if err != nil {
 		return NewProviderError(p.Name(), tool, version, fmt.Sprintf("failed to create virtual environment: %s", string(outVenv)), err)
@@ -81,7 +86,7 @@ func (p *PypiProvider) Install(ctx context.Context, tool string, installPath str
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	}
-	cmd.Env = GetNoProxyEnv(extraDomains...)
+	cmd.Env = append(GetNoProxyEnv(extraDomains...), pythonPathEnv)
 
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "pip install failed", err)
