@@ -84,6 +84,9 @@ updates:
     target-branch: "dev"
     open-pull-requests-limit: 5
     rebase-strategy: "auto"
+    ignore:
+      - dependency-name: "mermaid"
+        update-types: ["version-update:semver-major"]
     groups:
       all-dependencies:
         patterns: ["*"]
