@@ -207,8 +207,11 @@ func (p *AsdfProvider) ListExecutables(tool string, installPath string, version 
 			if !entry.IsDir() {
 				// Only include executable files
 				info, err := entry.Info()
-				if err == nil && info.Mode()&0111 != 0 {
-					executables = append(executables, filepath.Join(dir, entry.Name()))
+				if err == nil {
+					ext := strings.ToLower(filepath.Ext(entry.Name()))
+					if info.Mode()&0111 != 0 || ext == ".exe" || ext == ".bat" || ext == ".cmd" {
+						executables = append(executables, filepath.Join(dir, entry.Name()))
+					}
 				}
 			}
 		}

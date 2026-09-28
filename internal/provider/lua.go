@@ -74,6 +74,46 @@ func (p *LuaProvider) Install(ctx context.Context, tool string, installPath stri
 
 // PostInstall performs any post-installation steps.
 func (p *LuaProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
+	if env.RuntimeGOOS == "windows" {
+		// On Windows, LuaBinaries extracts files like lua54.exe and luac54.exe.
+		// Ensure standard canonical lua.exe and luac.exe exist.
+		copyIfMissing := func(src, dst string) {
+			if _, err := os.Stat(dst); os.IsNotExist(err) {
+				if srcInfo, err := os.Stat(src); err == nil && !srcInfo.IsDir() {
+					if linkErr := os.Link(src, dst); linkErr != nil {
+						if data, readErr := os.ReadFile(src); readErr == nil {
+							_ = os.WriteFile(dst, data, 0755)
+						}
+					}
+				}
+			}
+		}
+
+		luaExe := filepath.Join(installPath, "lua.exe")
+		luacExe := filepath.Join(installPath, "luac.exe")
+
+		if _, err := os.Stat(luaExe); os.IsNotExist(err) {
+			entries, _ := os.ReadDir(installPath)
+			for _, e := range entries {
+				lower := strings.ToLower(e.Name())
+				if strings.HasPrefix(lower, "lua5") && strings.HasSuffix(lower, ".exe") && !strings.Contains(lower, "luac") {
+					copyIfMissing(filepath.Join(installPath, e.Name()), luaExe)
+					break
+				}
+			}
+		}
+
+		if _, err := os.Stat(luacExe); os.IsNotExist(err) {
+			entries, _ := os.ReadDir(installPath)
+			for _, e := range entries {
+				lower := strings.ToLower(e.Name())
+				if strings.HasPrefix(lower, "luac5") && strings.HasSuffix(lower, ".exe") {
+					copyIfMissing(filepath.Join(installPath, e.Name()), luacExe)
+					break
+				}
+			}
+		}
+	}
 	return nil
 }
 

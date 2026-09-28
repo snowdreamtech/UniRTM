@@ -93,7 +93,15 @@ func (p *SpmProvider) Install(ctx context.Context, tool string, installPath stri
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			info, err := entry.Info()
-			if err == nil && info.Mode()&0111 != 0 && filepath.Ext(entry.Name()) == "" {
+			isExec := false
+			if err == nil {
+				if env.RuntimeGOOS == "windows" {
+					isExec = strings.EqualFold(filepath.Ext(entry.Name()), ".exe")
+				} else {
+					isExec = info.Mode()&0111 != 0 && filepath.Ext(entry.Name()) == ""
+				}
+			}
+			if isExec {
 				src := filepath.Join(releaseDir, entry.Name())
 				dst := filepath.Join(binDir, entry.Name())
 				if err := p.copyFile(src, dst); err != nil {

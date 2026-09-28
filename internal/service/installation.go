@@ -19,6 +19,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/dustin/go-humanize"
 	"github.com/pterm/pterm"
@@ -1419,16 +1420,67 @@ var archiveExtensions = map[string]bool{
 }
 
 // standardExecutableAliases maps common executable aliases across platforms,
-// such as python3 <-> python and pip3 <-> pip.
+// such as python3 <-> python, nodejs <-> node, gmake <-> make, etc.
 var standardExecutableAliases = map[string][]string{
-	"python3":  {"python"},
-	"python":   {"python3"},
-	"python3w": {"pythonw"},
-	"pythonw":  {"python3w"},
-	"pip3":     {"pip"},
-	"pip":      {"pip3"},
+	"python3":       {"python"},
+	"python":        {"python3"},
+	"python3w":      {"pythonw"},
+	"pythonw":       {"python3w"},
+	"pip3":          {"pip"},
+	"pip":           {"pip3"},
+	"pydoc3":        {"pydoc"},
+	"pydoc":         {"pydoc3"},
+	"wheel3":        {"wheel"},
+	"wheel":         {"wheel3"},
+	"pytest3":       {"pytest"},
+	"pytest":        {"pytest3", "pytest-3"},
+	"node":          {"nodejs"},
+	"nodejs":        {"node"},
+	"yarn":          {"yarnpkg"},
+	"yarnpkg":       {"yarn"},
+	"bun":           {"bunx"},
+	"bunx":          {"bun"},
+	"make":          {"gmake", "mingw32-make"},
+	"gmake":         {"make"},
+	"mingw32-make":  {"make"},
+	"cc":            {"gcc", "clang"},
+	"gcc":           {"cc"},
+	"clang":         {"cc"},
+	"c++":           {"g++", "clang++"},
+	"g++":           {"c++"},
+	"clang++":       {"c++"},
+	"ninja":         {"ninja-build"},
+	"ninja-build":   {"ninja"},
+	"bundle":        {"bundler"},
+	"bundler":       {"bundle"},
+	"sh":            {"bash"},
+	"bash":          {"sh"},
+	"awk":           {"gawk", "mawk"},
+	"gawk":          {"awk"},
+	"sed":           {"gsed"},
+	"gsed":          {"sed"},
+	"tar":           {"gtar", "bsdtar"},
+	"gtar":          {"tar"},
+	"bsdtar":        {"tar"},
+	"lua":           {"lua54", "lua5.4", "lua53", "lua5.3", "lua52", "lua5.2", "lua51", "lua5.1", "luajit"},
+	"luac":          {"luac54", "luac5.4", "luac53", "luac5.3", "luac51", "luac5.1"},
+	"perl":          {"perl5"},
+	"perl5":         {"perl"},
+	"composer":      {"composer.phar"},
+	"composer.phar": {"composer"},
 }
 
+// GetExecutableAliases returns known cross-platform or canonical aliases for an executable name.
+func GetExecutableAliases(exe string) []string {
+	clean := strings.ToLower(exe)
+	if ext := filepath.Ext(clean); ext == ".exe" || ext == ".cmd" || ext == ".bat" || ext == ".ps1" {
+		clean = clean[:len(clean)-len(ext)]
+	}
+	if aliases, ok := standardExecutableAliases[clean]; ok {
+		return aliases
+	}
+	return nil
+}
 
 // isExecutableFile returns true if path is a regular file that can be executed.
 // It rejects directories, archive/compressed files, and (on Unix) files
@@ -1520,6 +1572,19 @@ func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName st
 				absPath = filepath.Join(inst.InstallPath, exec)
 			}
 
+			// If not directly found at absPath, search in tool's binPaths
+			if !isExecutableFile(absPath) {
+				if binPaths, err := p.GetBinPaths(inst.Tool, inst.InstallPath, inst.Version); err == nil {
+					for _, bDir := range binPaths {
+						candidatePath := filepath.Join(bDir, baseName)
+						if isExecutableFile(candidatePath) {
+							absPath = candidatePath
+							break
+						}
+					}
+				}
+			}
+
 			// Hard filter: skip files that are not actually executable binaries.
 			if !isExecutableFile(absPath) {
 				continue
@@ -1545,9 +1610,9 @@ func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName st
 				} else if strings.HasPrefix(baseName, exeName) {
 					remainder = baseName[len(exeName):]
 				}
-				// Only accept prefix match when remainder starts with a version separator.
-				// This avoids matching "python-3.14.4.zst" for "python".
-				if len(remainder) == 0 || (remainder[0] != '-' && remainder[0] != '_' && remainder[0] != '@' && remainder[0] != '.') {
+				// Only accept prefix match when remainder starts with a version separator or a digit.
+				// This avoids matching "python-3.14.4.zst" for "python", while allowing "python3" or "lua54".
+				if len(remainder) == 0 || (remainder[0] != '-' && remainder[0] != '_' && remainder[0] != '@' && remainder[0] != '.' && !unicode.IsDigit(rune(remainder[0]))) {
 					prefix = false
 				}
 				// Reject if the remainder still contains a file extension we consider

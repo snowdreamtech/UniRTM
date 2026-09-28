@@ -134,6 +134,9 @@ func runReshim(cmd *cobra.Command, args []string) error {
 					}
 				}
 				knownShims[baseExe] = true
+				for _, alias := range service.GetExecutableAliases(baseExe) {
+					knownShims[alias] = true
+				}
 			}
 		}
 

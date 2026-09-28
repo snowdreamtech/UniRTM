@@ -95,8 +95,13 @@ func (p *CondaProvider) DetectVersion(ctx context.Context, tool string, installP
 func (p *CondaProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	binDir := filepath.Join(installPath, "bin")
 
-	// Check bin for unix, Scripts for windows
-	dirsToCheck := []string{binDir, filepath.Join(installPath, "Scripts")}
+	// Check bin for unix, and installPath, Scripts, Library/bin for windows
+	dirsToCheck := []string{
+		binDir,
+		installPath,
+		filepath.Join(installPath, "Scripts"),
+		filepath.Join(installPath, "Library", "bin"),
+	}
 
 	var executables []string
 
@@ -114,7 +119,7 @@ func (p *CondaProvider) ListExecutables(tool string, installPath string, version
 				info, err := entry.Info()
 				if err == nil {
 					ext := strings.ToLower(filepath.Ext(entry.Name()))
-					if info.Mode()&0111 != 0 || ext == ".exe" || ext == ".bat" {
+					if info.Mode()&0111 != 0 || ext == ".exe" || ext == ".bat" || ext == ".cmd" {
 						executables = append(executables, filepath.Join(dir, entry.Name()))
 					}
 				}
@@ -128,8 +133,10 @@ func (p *CondaProvider) ListExecutables(tool string, installPath string, version
 // GetBinPaths returns the absolute paths to the bin directories.
 func (p *CondaProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
 	return []string{
+		installPath,
 		filepath.Join(installPath, "bin"),
 		filepath.Join(installPath, "Scripts"),
+		filepath.Join(installPath, "Library", "bin"),
 	}, nil
 }
 

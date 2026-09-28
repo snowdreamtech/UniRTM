@@ -229,6 +229,9 @@ func invokeShimModeWithArgs(exeName string, origArgs []string) {
 
 	// Use syscall.Exec for a clean handoff on Unix, or fallback on Windows
 	if err := service.ExecuteBinary(binPath, args); err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			os.Exit(exitErr.ExitCode())
+		}
 		fmt.Fprintf(os.Stderr, "ERROR: failed to execute %s: %v\n", binPath, err)
 		os.Exit(1)
 	}

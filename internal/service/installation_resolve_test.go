@@ -29,11 +29,19 @@ func (m *mockInstallRepo) List(ctx context.Context) ([]*repository.Installation,
 type mockResolveProvider struct {
 	provider.Provider
 	executables []string
+	binPaths    []string
 	envVars     map[string]string
 }
 
 func (m *mockResolveProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	return m.executables, nil
+}
+
+func (m *mockResolveProvider) GetBinPaths(tool string, installPath string, version string) ([]string, error) {
+	if len(m.binPaths) > 0 {
+		return m.binPaths, nil
+	}
+	return []string{installPath}, nil
 }
 
 func (m *mockResolveProvider) GetEnvVars(tool string, installPath string, version string) (map[string]string, error) {
@@ -240,3 +248,113 @@ func TestResolveExecutable_PythonAliasMatching(t *testing.T) {
 	require.Equal(t, exePath, resolved)
 }
 
+func TestResolveExecutable_GeneralAliases(t *testing.T) {
+	br := backend.NewRegistry()
+	pr := provider.NewRegistry()
+
+	tempDir := t.TempDir()
+	nodePath := filepath.Join(tempDir, "node")
+	makePath := filepath.Join(tempDir, "make")
+	f1, _ := os.Create(nodePath)
+	f1.Close()
+	os.Chmod(nodePath, 0755)
+	f2, _ := os.Create(makePath)
+	f2.Close()
+	os.Chmod(makePath, 0755)
+
+	pr.Register("mock-node", &mockResolveProvider{
+		executables: []string{nodePath},
+	})
+	pr.Register("mock-make", &mockResolveProvider{
+		executables: []string{makePath},
+	})
+
+	repo := &mockInstallRepo{
+		installations: []*repository.Installation{
+			{Tool: "node", Version: "20.0.0", Backend: "mock-node", InstallPath: tempDir},
+			{Tool: "make", Version: "4.4.1", Backend: "mock-make", InstallPath: tempDir},
+		},
+	}
+
+	im := NewInstallationManager(br, pr, nil, repo, nil, nil)
+	ctx := context.Background()
+
+	// 1. Resolve "nodejs" when installed binary is "node"
+	resolved, _, err := im.ResolveExecutable(ctx, "nodejs", backend.Platform{OS: "linux"})
+	require.NoError(t, err)
+	require.Equal(t, nodePath, resolved)
+
+	// 2. Resolve "gmake" when installed binary is "make"
+	resolved, _, err = im.ResolveExecutable(ctx, "gmake", backend.Platform{OS: "linux"})
+	require.NoError(t, err)
+	require.Equal(t, makePath, resolved)
+
+	// 3. Resolve "mingw32-make" when installed binary is "make"
+	resolved, _, err = im.ResolveExecutable(ctx, "mingw32-make", backend.Platform{OS: "windows"})
+	require.NoError(t, err)
+	require.Equal(t, makePath, resolved)
+}
+
+func TestResolveExecutable_BinPathsFallback(t *testing.T) {
+	br := backend.NewRegistry()
+	pr := provider.NewRegistry()
+
+	tempDir := t.TempDir()
+	binDir := filepath.Join(tempDir, "bin")
+	require.NoError(t, os.MkdirAll(binDir, 0755))
+
+	realJavaPath := filepath.Join(binDir, "java")
+	f, err := os.Create(realJavaPath)
+	require.NoError(t, err)
+	f.Close()
+	os.Chmod(realJavaPath, 0755)
+
+	// Provider returns relative name "java" without subfolder, but specifies binPaths
+	pr.Register("mock-java", &mockResolveProvider{
+		executables: []string{"java"},
+		binPaths:    []string{binDir},
+	})
+
+	repo := &mockInstallRepo{
+		installations: []*repository.Installation{
+			{Tool: "java", Version: "21.0.0", Backend: "mock-java", InstallPath: tempDir},
+		},
+	}
+
+	im := NewInstallationManager(br, pr, nil, repo, nil, nil)
+	ctx := context.Background()
+
+	resolved, _, err := im.ResolveExecutable(ctx, "java", backend.Platform{OS: "linux"})
+	require.NoError(t, err)
+	require.Equal(t, realJavaPath, resolved)
+}
+
+func TestResolveExecutable_PrefixMatchWithDigits(t *testing.T) {
+	br := backend.NewRegistry()
+	pr := provider.NewRegistry()
+
+	tempDir := t.TempDir()
+	lua54Path := filepath.Join(tempDir, "lua54")
+	f, err := os.Create(lua54Path)
+	require.NoError(t, err)
+	f.Close()
+	os.Chmod(lua54Path, 0755)
+
+	pr.Register("mock-lua", &mockResolveProvider{
+		executables: []string{lua54Path},
+	})
+
+	repo := &mockInstallRepo{
+		installations: []*repository.Installation{
+			{Tool: "lua", Version: "5.4.6", Backend: "mock-lua", InstallPath: tempDir},
+		},
+	}
+
+	im := NewInstallationManager(br, pr, nil, repo, nil, nil)
+	ctx := context.Background()
+
+	// Query "lua" matches "lua54" because '5' is a digit
+	resolved, _, err := im.ResolveExecutable(ctx, "lua", backend.Platform{OS: "linux"})
+	require.NoError(t, err)
+	require.Equal(t, lua54Path, resolved)
+}

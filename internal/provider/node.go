@@ -37,12 +37,34 @@ func (n *NodeProvider) Install(ctx context.Context, tool string, installPath str
 	return n.generic.Install(ctx, tool, installPath, artifactPath, version)
 }
 
-// PostInstall sets up npm global directory.
+// PostInstall sets up npm global directory and ensures nodejs alias exists.
 func (n *NodeProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	// Create npm global directory
 	npmGlobalDir := filepath.Join(installPath, "npm-global")
 	if err := os.MkdirAll(npmGlobalDir, 0755); err != nil {
 		return NewProviderError("node", "node", version, "failed to create npm global directory", err)
+	}
+
+	if env.RuntimeGOOS == "windows" {
+		nodeExe := filepath.Join(installPath, "node.exe")
+		nodejsExe := filepath.Join(installPath, "nodejs.exe")
+		if _, err := os.Stat(nodejsExe); os.IsNotExist(err) {
+			if _, err := os.Stat(nodeExe); err == nil {
+				if err := os.Link(nodeExe, nodejsExe); err != nil {
+					if data, err := os.ReadFile(nodeExe); err == nil {
+						_ = os.WriteFile(nodejsExe, data, 0755)
+					}
+				}
+			}
+		}
+	} else {
+		nodeBin := filepath.Join(installPath, "bin", "node")
+		nodejsBin := filepath.Join(installPath, "bin", "nodejs")
+		if _, err := os.Lstat(nodejsBin); os.IsNotExist(err) {
+			if _, err := os.Stat(nodeBin); err == nil {
+				_ = os.Symlink("node", nodejsBin)
+			}
+		}
 	}
 
 	return nil
@@ -52,14 +74,14 @@ func (n *NodeProvider) PostInstall(ctx context.Context, tool string, installPath
 func (n *NodeProvider) GenerateShims(tool string, installPath string, version string) (map[string]string, error) {
 	shims := make(map[string]string)
 
-	// Generate shims for node, npm, npx, corepack, and its proxies
-	executables := []string{"node", "npm", "npx", "corepack", "yarn", "yarnpkg", "pnpm", "pnpx"}
+	// Generate shims for node, nodejs, npm, npx, corepack, and its proxies
+	executables := []string{"node", "nodejs", "npm", "npx", "corepack", "yarn", "yarnpkg", "pnpm", "pnpx"}
 	for _, exe := range executables {
 		var exePath string
 		isCorepackProxy := exe == "yarn" || exe == "yarnpkg" || exe == "pnpm" || exe == "pnpx"
 
 		if env.RuntimeGOOS == "windows" {
-			if exe == "node" {
+			if exe == "node" || exe == "nodejs" {
 				exePath = filepath.Join(installPath, "node.exe")
 			} else if isCorepackProxy {
 				exePath = filepath.Join(installPath, "corepack.cmd")
@@ -69,6 +91,8 @@ func (n *NodeProvider) GenerateShims(tool string, installPath string, version st
 		} else {
 			if isCorepackProxy {
 				exePath = filepath.Join(installPath, "bin", "corepack")
+			} else if exe == "nodejs" {
+				exePath = filepath.Join(installPath, "bin", "node")
 			} else {
 				exePath = filepath.Join(installPath, "bin", exe)
 			}
@@ -105,13 +129,13 @@ func (n *NodeProvider) DetectVersion(ctx context.Context, tool string, installPa
 // ListExecutables returns Node.js executables relative to installPath.
 func (n *NodeProvider) ListExecutables(tool string, installPath string, version string) ([]string, error) {
 	executables := []string{
-		filepath.Join("bin", "node"), filepath.Join("bin", "npm"), filepath.Join("bin", "npx"),
+		filepath.Join("bin", "node"), filepath.Join("bin", "nodejs"), filepath.Join("bin", "npm"), filepath.Join("bin", "npx"),
 		filepath.Join("bin", "corepack"), filepath.Join("bin", "yarn"), filepath.Join("bin", "yarnpkg"),
 		filepath.Join("bin", "pnpm"), filepath.Join("bin", "pnpx"),
 	}
 	if env.RuntimeGOOS == "windows" {
 		executables = []string{
-			"node.exe", "npm.cmd", "npx.cmd", "corepack.cmd",
+			"node.exe", "nodejs.exe", "npm.cmd", "npx.cmd", "corepack.cmd",
 			"yarn.cmd", "yarnpkg.cmd", "pnpm.cmd", "pnpx.cmd",
 		}
 	}

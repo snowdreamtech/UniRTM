@@ -53,7 +53,29 @@ func (g *Generator) GenerateShim(ctx context.Context, tool string, executables .
 		executables = []string{tool}
 	}
 
+	// Expand executables with standard aliases so both canonical and alias names are shimmed
+	allExecutables := make([]string, 0, len(executables)*2)
+	seen := make(map[string]bool)
 	for _, exe := range executables {
+		clean := strings.ToLower(filepath.Base(exe))
+		if ext := filepath.Ext(clean); ext == ".exe" || ext == ".cmd" || ext == ".bat" || ext == ".ps1" {
+			clean = clean[:len(clean)-len(ext)]
+		}
+		if !seen[clean] {
+			seen[clean] = true
+			allExecutables = append(allExecutables, exe)
+		}
+		if aliases, ok := standardExecutableAliases[clean]; ok {
+			for _, alias := range aliases {
+				if !seen[alias] {
+					seen[alias] = true
+					allExecutables = append(allExecutables, alias)
+				}
+			}
+		}
+	}
+
+	for _, exe := range allExecutables {
 		// Flatten shim directory by always using filepath.Base for the filename.
 		// This ensures consistency with mise and avoids nested directories in shims/.
 		shimName := filepath.Base(exe)
@@ -307,8 +329,16 @@ func toolVersionEnvVar(tool string) string {
 // ExecuteBinary executes a binary with arguments, replacing the current process on Unix.
 func ExecuteBinary(binPath string, args []string) error {
 	if env.RuntimeGOOS == "windows" {
-		// On Windows, we must use exec.Command because syscall.Exec is not available
-		cmd := exec.Command(binPath, args[1:]...)
+		// On Windows, we must use exec.Command because syscall.Exec is not available.
+		// If binPath is a .cmd or .bat file, wrap it with cmd.exe /c to ensure reliable execution.
+		var cmd *exec.Cmd
+		ext := strings.ToLower(filepath.Ext(binPath))
+		if ext == ".cmd" || ext == ".bat" {
+			cmdArgs := append([]string{"/c", binPath}, args[1:]...)
+			cmd = exec.Command("cmd.exe", cmdArgs...)
+		} else {
+			cmd = exec.Command(binPath, args[1:]...)
+		}
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr

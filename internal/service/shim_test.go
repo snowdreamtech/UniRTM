@@ -92,6 +92,9 @@ func TestGenerator_GenerateShim_MultipleExecutables(t *testing.T) {
 	if !g.ShimExists("npx") {
 		t.Error("expected npx shim to exist")
 	}
+	if !g.ShimExists("nodejs") {
+		t.Error("expected nodejs alias shim to exist")
+	}
 }
 
 func TestExecuteBinary_NotExists(t *testing.T) {
