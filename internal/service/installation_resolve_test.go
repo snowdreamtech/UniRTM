@@ -358,3 +358,25 @@ func TestResolveExecutable_PrefixMatchWithDigits(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, lua54Path, resolved)
 }
+
+func TestResolveExecutable_NonExistentAliasNoCycle(t *testing.T) {
+	br := backend.NewRegistry()
+	pr := provider.NewRegistry()
+
+	repo := &mockInstallRepo{
+		installations: []*repository.Installation{},
+	}
+
+	im := NewInstallationManager(br, pr, nil, repo, nil, nil)
+	ctx := context.Background()
+
+	// "node" and "nodejs" are mutual aliases. When neither is installed,
+	// ResolveExecutable must terminate cleanly without stack overflow.
+	_, _, err := im.ResolveExecutable(ctx, "nodejs", backend.Platform{OS: "linux"})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "not found")
+
+	_, _, err = im.ResolveExecutable(ctx, "node", backend.Platform{OS: "linux"})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "not found")
+}

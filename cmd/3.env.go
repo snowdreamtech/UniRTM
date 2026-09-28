@@ -17,6 +17,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/envpath"
 	"github.com/snowdreamtech/unirtm/internal/provider"
+	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
@@ -119,6 +120,17 @@ func runEnv(cmd *cobra.Command, args []string) error {
 		}
 		fsToolName := env.GetFSToolName(toolName, backendName)
 		installPath := filepath.Join(installsDir, fsToolName, version)
+		if _, statErr := os.Stat(installPath); os.IsNotExist(statErr) {
+			for _, alias := range service.GetExecutableAliases(toolName) {
+				aliasFs := env.GetFSToolName(alias, backendName)
+				candPath := filepath.Join(installsDir, aliasFs, version)
+				if _, cErr := os.Stat(candPath); cErr == nil {
+					installPath = candPath
+					toolName = alias
+					break
+				}
+			}
+		}
 
 		// Add bin paths
 		binPaths, err := p.GetBinPaths(toolName, installPath, version)

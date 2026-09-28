@@ -11,12 +11,14 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
+	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
 )
 
@@ -207,6 +209,13 @@ func runWhich(cmd *cobra.Command, args []string) error {
 			toolInstallations = cleanInstalls
 		}
 	}
+	if len(toolInstallations) == 0 {
+		for _, alias := range service.GetExecutableAliases(targetClean) {
+			if aliasInstalls, aliasErr := installRepo.ListByTool(ctx, alias); aliasErr == nil && len(aliasInstalls) > 0 {
+				toolInstallations = append(toolInstallations, aliasInstalls...)
+			}
+		}
+	}
 
 	// Fallback: if no installation found by exact tool name, scan all
 	// installations and look for one that provides an executable named target.
@@ -230,39 +239,25 @@ func runWhich(cmd *cobra.Command, args []string) error {
 						absPath = filepath.Join(inst.InstallPath, ex)
 					}
 
-					// Skip non-executable files (like .zst archives)
+					// Skip non-executable files; check binPaths fallback
+					if !isExecutableFile(absPath) {
+						if binPaths, bErr := p.GetBinPaths(inst.Tool, inst.InstallPath, inst.Version); bErr == nil {
+							for _, bDir := range binPaths {
+								cand := filepath.Join(bDir, filepath.Base(ex))
+								if isExecutableFile(cand) {
+									absPath = cand
+									break
+								}
+							}
+						}
+					}
+
 					if !isExecutableFile(absPath) {
 						continue
 					}
 
 					baseName := filepath.Base(absPath)
-					baseClean := baseName
-					if isWindows {
-						ext := strings.ToLower(filepath.Ext(baseClean))
-						if ext == ".exe" || ext == ".cmd" || ext == ".bat" || ext == ".ps1" {
-							baseClean = baseClean[:len(baseClean)-len(ext)]
-						}
-					}
-
-					matched := false
-					if baseName == target || (isWindows && (strings.EqualFold(baseName, target) || strings.EqualFold(baseClean, targetClean))) {
-						matched = true
-					} else if strings.HasPrefix(baseName, target) || (isWindows && strings.HasPrefix(strings.ToLower(baseClean), strings.ToLower(targetClean))) {
-						var remainder string
-						if isWindows && strings.HasPrefix(strings.ToLower(baseClean), strings.ToLower(targetClean)) {
-							remainder = baseClean[len(targetClean):]
-						} else {
-							remainder = baseName[len(target):]
-						}
-						if len(remainder) > 0 {
-							r := remainder[0]
-							if r == '-' || r == '_' || r == '@' || r == '.' || (r >= '0' && r <= '9') {
-								matched = true
-							}
-						}
-					}
-
-					if matched {
+					if isNameOrAliasMatch(baseName, target, isWindows) {
 						toolInstallations = append(toolInstallations, inst)
 						break
 					}
@@ -305,37 +300,25 @@ func runWhich(cmd *cobra.Command, args []string) error {
 				absPath = filepath.Join(inst.InstallPath, exec)
 			}
 
-			// Defensive check: skip non-executables
+			// Defensive check: skip non-executables; check binPaths fallback
+			if !isExecutableFile(absPath) {
+				if binPaths, bErr := p.GetBinPaths(inst.Tool, inst.InstallPath, inst.Version); bErr == nil {
+					for _, bDir := range binPaths {
+						cand := filepath.Join(bDir, filepath.Base(exec))
+						if isExecutableFile(cand) {
+							absPath = cand
+							break
+						}
+					}
+				}
+			}
+
 			if !isExecutableFile(absPath) {
 				continue
 			}
 
 			baseName := filepath.Base(absPath)
-			baseClean := baseName
-			if isWindows {
-				ext := strings.ToLower(filepath.Ext(baseClean))
-				if ext == ".exe" || ext == ".cmd" || ext == ".bat" || ext == ".ps1" {
-					baseClean = baseClean[:len(baseClean)-len(ext)]
-				}
-			}
-
-			matched := false
-			if baseName == target || (isWindows && (strings.EqualFold(baseName, target) || strings.EqualFold(baseClean, targetClean))) {
-				matched = true
-			} else if strings.HasPrefix(baseName, target) || (isWindows && strings.HasPrefix(strings.ToLower(baseClean), strings.ToLower(targetClean))) {
-				var remainder string
-				if isWindows && strings.HasPrefix(strings.ToLower(baseClean), strings.ToLower(targetClean)) {
-					remainder = baseClean[len(targetClean):]
-				} else {
-					remainder = baseName[len(target):]
-				}
-				if len(remainder) > 0 {
-					r := remainder[0]
-					if r == '-' || r == '_' || r == '@' || r == '.' || (r >= '0' && r <= '9') {
-						matched = true
-					}
-				}
-			}
+			matched := isNameOrAliasMatch(baseName, target, isWindows)
 
 			if matched {
 				matches = append(matches, match{
@@ -383,6 +366,19 @@ func runWhich(cmd *cobra.Command, args []string) error {
 		for _, m := range matches {
 			printMatch(m)
 		}
+		return nil
+	}
+
+	// 4b. Fallback to unified InstallationManager.ResolveExecutable
+	im := service.NewInstallationManager(backend.DefaultRegistry, provider.DefaultRegistry, nil, installRepo, nil, nil)
+	if binPath, _, err := im.ResolveExecutable(ctx, target, backend.CurrentPlatform()); err == nil && binPath != "" {
+		printMatch(match{
+			Path:    binPath,
+			Version: "",
+			Tool:    target,
+			Active:  true,
+			Source:  "Active",
+		})
 		return nil
 	}
 
@@ -472,4 +468,52 @@ func isExecutableFile(path string) bool {
 	}
 	winExec := map[string]bool{".exe": true, ".cmd": true, ".bat": true, ".ps1": true}
 	return winExec[ext] || ext == ""
+}
+
+// isNameOrAliasMatch checks whether a candidate executable matches the query or its aliases,
+// handling case-insensitivity, Windows file extensions, standard aliases, and prefix matching.
+func isNameOrAliasMatch(candidateBase, targetName string, isWindows bool) bool {
+	candClean := candidateBase
+	tgtClean := targetName
+	if isWindows {
+		ext := strings.ToLower(filepath.Ext(candClean))
+		if ext == ".exe" || ext == ".cmd" || ext == ".bat" || ext == ".ps1" {
+			candClean = candClean[:len(candClean)-len(ext)]
+		}
+		extTgt := strings.ToLower(filepath.Ext(tgtClean))
+		if extTgt == ".exe" || extTgt == ".cmd" || extTgt == ".bat" || extTgt == ".ps1" {
+			tgtClean = tgtClean[:len(tgtClean)-len(extTgt)]
+		}
+	}
+
+	candLower := strings.ToLower(candClean)
+	tgtLower := strings.ToLower(tgtClean)
+
+	if candLower == tgtLower {
+		return true
+	}
+
+	// Check standard aliases in both directions
+	for _, alias := range service.GetExecutableAliases(tgtLower) {
+		if candLower == strings.ToLower(alias) {
+			return true
+		}
+	}
+	for _, alias := range service.GetExecutableAliases(candLower) {
+		if tgtLower == strings.ToLower(alias) {
+			return true
+		}
+	}
+
+	// Prefix matching with version or separator suffix (e.g., hadolint-2.14.0 or python3)
+	if strings.HasPrefix(candLower, tgtLower) {
+		remainder := candLower[len(tgtLower):]
+		if len(remainder) > 0 {
+			r := remainder[0]
+			if r == '-' || r == '_' || r == '@' || r == '.' || (r >= '0' && r <= '9') {
+				return true
+			}
+		}
+	}
+	return false
 }

@@ -96,3 +96,87 @@ func TestRunWhich_WithVersionArg(t *testing.T) {
 	err := runWhich(cmd, []string{"nonexistent", "2.0.0"})
 	assert.Error(t, err)
 }
+
+func TestRunWhich_Alias(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+
+	dbPath := env.GetDatabasePath()
+	os.MkdirAll(filepath.Dir(dbPath), 0755)
+
+	db, err := database.Open(context.Background(), database.Config{Path: dbPath, WALMode: true})
+	require.NoError(t, err)
+
+	repo, err := sqlite.NewInstallationRepository(db.Conn())
+	require.NoError(t, err)
+
+	installPath := filepath.Join(tmpDir, "installs", "node", "20.0.0")
+	binDir := filepath.Join(installPath, "bin")
+	require.NoError(t, os.MkdirAll(binDir, 0755))
+
+	nodeBin := filepath.Join(binDir, "node")
+	f, err := os.Create(nodeBin)
+	require.NoError(t, err)
+	f.Close()
+	os.Chmod(nodeBin, 0755)
+
+	inst := &repository.Installation{
+		Tool:        "node",
+		Version:     "20.0.0",
+		Backend:     "node",
+		InstallPath: installPath,
+		InstalledAt: time.Now(),
+	}
+	require.NoError(t, repo.Create(context.Background(), inst))
+	db.Close()
+
+	cmd := whichCmd
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+
+	// "nodejs" is an alias of "node"
+	err = runWhich(cmd, []string{"nodejs"})
+	assert.NoError(t, err)
+}
+
+func TestRunWhich_AliasPython(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+
+	dbPath := env.GetDatabasePath()
+	os.MkdirAll(filepath.Dir(dbPath), 0755)
+
+	db, err := database.Open(context.Background(), database.Config{Path: dbPath, WALMode: true})
+	require.NoError(t, err)
+
+	repo, err := sqlite.NewInstallationRepository(db.Conn())
+	require.NoError(t, err)
+
+	installPath := filepath.Join(tmpDir, "installs", "python", "3.12.0")
+	binDir := filepath.Join(installPath, "bin")
+	require.NoError(t, os.MkdirAll(binDir, 0755))
+
+	pyBin := filepath.Join(binDir, "python")
+	f, err := os.Create(pyBin)
+	require.NoError(t, err)
+	f.Close()
+	os.Chmod(pyBin, 0755)
+
+	inst := &repository.Installation{
+		Tool:        "python",
+		Version:     "3.12.0",
+		Backend:     "python",
+		InstallPath: installPath,
+		InstalledAt: time.Now(),
+	}
+	require.NoError(t, repo.Create(context.Background(), inst))
+	db.Close()
+
+	cmd := whichCmd
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+
+	// "python3" should resolve to "python"
+	err = runWhich(cmd, []string{"python3"})
+	assert.NoError(t, err)
+}

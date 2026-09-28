@@ -222,7 +222,23 @@ func runTestTool(cmd *cobra.Command, args []string) error {
 
 		output.Infof("Testing %s@%s executables:", toolName, resolvedVersion)
 		for _, exe := range execs {
-			err := testExecutable(exe, cmdEnv)
+			absExe := exe
+			if !filepath.IsAbs(absExe) {
+				absExe = filepath.Join(installPath, exe)
+			}
+			if _, statErr := os.Stat(absExe); os.IsNotExist(statErr) {
+				if binPaths, bErr := p.GetBinPaths(toolName, installPath, resolvedVersion); bErr == nil {
+					for _, bDir := range binPaths {
+						cand := filepath.Join(bDir, filepath.Base(exe))
+						if _, cErr := os.Stat(cand); cErr == nil {
+							absExe = cand
+							break
+						}
+					}
+				}
+			}
+
+			err := testExecutable(absExe, cmdEnv)
 			if err != nil {
 				output.Errorf("  %s (failed: %v)", filepath.Base(exe), err)
 				hasError = true

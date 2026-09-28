@@ -285,6 +285,17 @@ func runActivate(cmd *cobra.Command, args []string) error {
 			}
 			fsToolName := env.GetFSToolName(toolName, backendName)
 			installPath := filepath.Join(installsDir, fsToolName, version)
+			if _, statErr := os.Stat(installPath); os.IsNotExist(statErr) {
+				for _, alias := range service.GetExecutableAliases(toolName) {
+					aliasFs := env.GetFSToolName(alias, backendName)
+					candPath := filepath.Join(installsDir, aliasFs, version)
+					if _, cErr := os.Stat(candPath); cErr == nil {
+						installPath = candPath
+						toolName = alias
+						break
+					}
+				}
+			}
 
 			binPaths, err := p.GetBinPaths(toolName, installPath, version)
 			if err == nil {

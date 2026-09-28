@@ -277,7 +277,8 @@ func getInstallationManager(ctx context.Context, cfg *config.Config) (*service.I
 
 	// Setup database
 	db, err := database.Open(ctx, database.Config{
-		Path: env.GetDatabasePath(),
+		Path:    env.GetDatabasePath(),
+		WALMode: true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)

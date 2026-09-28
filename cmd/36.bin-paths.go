@@ -16,6 +16,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/provider"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
+	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
 )
 
@@ -118,6 +119,16 @@ func runBinPaths(cmd *cobra.Command, args []string) error {
 				v2 = "v" + v2
 			}
 			inst, _ = installRepo.FindByToolAndVersion(ctx, toolName, v2)
+			if inst == nil {
+				for _, alias := range service.GetExecutableAliases(toolName) {
+					if inst, _ = installRepo.FindByToolAndVersion(ctx, alias, version); inst != nil {
+						break
+					}
+					if inst, _ = installRepo.FindByToolAndVersion(ctx, alias, v2); inst != nil {
+						break
+					}
+				}
+			}
 			if inst == nil {
 				continue // Not installed, skip
 			}

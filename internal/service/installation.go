@@ -1468,6 +1468,12 @@ var standardExecutableAliases = map[string][]string{
 	"perl5":         {"perl"},
 	"composer":      {"composer.phar"},
 	"composer.phar": {"composer"},
+	"golang":        {"go"},
+	"go":            {"golang"},
+	"rust":          {"rustc", "cargo"},
+	"rustc":         {"rust"},
+	"jdk":           {"java"},
+	"jre":           {"java"},
 }
 
 // GetExecutableAliases returns known cross-platform or canonical aliases for an executable name.
@@ -1517,6 +1523,10 @@ func isExecutableFile(path string) bool {
 // ResolveExecutable finds the absolute path and environment variables for a given executable name
 // by searching through installed tools in the current context.
 func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName string, platform backend.Platform) (string, map[string]string, error) {
+	return im.resolveExecutableWithVisited(ctx, exeName, platform, make(map[string]bool))
+}
+
+func (im *InstallationManager) resolveExecutableWithVisited(ctx context.Context, exeName string, platform backend.Platform, visited map[string]bool) (string, map[string]string, error) {
 	// 1. Get all installations from repository
 	installations, err := im.installRepo.List(ctx)
 	if err != nil {
@@ -1638,17 +1648,22 @@ func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName st
 
 	if len(candidates) == 0 {
 		cleanLower := strings.ToLower(queryClean)
+		visited[cleanLower] = true
 		if aliases, ok := standardExecutableAliases[cleanLower]; ok {
 			for _, alias := range aliases {
+				aliasClean := strings.ToLower(alias)
+				if visited[aliasClean] {
+					continue
+				}
 				aliasQuery := alias
 				if isWindows && filepath.Ext(exeName) != "" {
 					aliasQuery = alias + filepath.Ext(exeName)
 				}
-				if resolved, envVars, err := im.ResolveExecutable(ctx, aliasQuery, platform); err == nil {
+				if resolved, envVars, err := im.resolveExecutableWithVisited(ctx, aliasQuery, platform, visited); err == nil {
 					return resolved, envVars, nil
 				}
 				if aliasQuery != alias {
-					if resolved, envVars, err := im.ResolveExecutable(ctx, alias, platform); err == nil {
+					if resolved, envVars, err := im.resolveExecutableWithVisited(ctx, alias, platform, visited); err == nil {
 						return resolved, envVars, nil
 					}
 				}

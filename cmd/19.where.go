@@ -12,6 +12,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
 )
 
@@ -85,6 +86,16 @@ func runWhere(cmd *cobra.Command, args []string) error {
 	installPath := filepath.Join(env.GetInstallsDir(), fsName, version)
 
 	if _, err := os.Stat(installPath); err != nil {
+		for _, alias := range service.GetExecutableAliases(toolName) {
+			aliasFs := env.GetFSToolName(alias, backendName)
+			candPath := filepath.Join(env.GetInstallsDir(), aliasFs, version)
+			if _, cErr := os.Stat(candPath); cErr == nil {
+				installPath = candPath
+				fmt.Println(installPath)
+				return nil
+			}
+		}
+
 		// Try resolving it as an executable first
 		platform := backend.CurrentPlatform()
 		binPath, _, err := im.ResolveExecutable(ctx, input, platform)

@@ -56,6 +56,17 @@ func GetBuiltinRecipes() map[string]Recipe {
 				"latest": "3.12.2",
 			},
 		},
+		"python3": {
+			ID: "python",
+			Handler: &PythonHandler{
+				Owner: "astral-sh",
+				Repo:  "python-build-standalone",
+			},
+			BaseURL: "https://github.com/astral-sh/python-build-standalone/releases",
+			Aliases: map[string]string{
+				"latest": "3.12.2",
+			},
+		},
 		"zig": {
 			ID:      "zig",
 			Handler: &ZigHandler{},
@@ -70,6 +81,14 @@ func GetBuiltinRecipes() map[string]Recipe {
 			},
 			GPGKeys: []string{
 				"108F66205EAEB0AAA8DD5E1C85AB96E6FA1EF743", // Rust Release Team
+			},
+		},
+		"rustc": {
+			ID:      "rust",
+			Handler: &RustHandler{},
+			BaseURL: "https://static.rust-lang.org/dist",
+			GPGKeys: []string{
+				"108F66205EAEB0AAA8DD5E1C85AB96E6FA1EF743",
 			},
 		},
 		"bun": {
