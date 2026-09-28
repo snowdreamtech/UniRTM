@@ -128,6 +128,25 @@ func (p *PythonProvider) PostInstall(ctx context.Context, tool string, installPa
 		copyIfMissing(filepath.Join(scriptsDir, "python.exe"), filepath.Join(scriptsDir, "python3.exe"))
 		copyIfMissing(filepath.Join(scriptsDir, "pip.exe"), filepath.Join(scriptsDir, "pip3.exe"))
 		copyIfMissing(filepath.Join(installPath, "python.exe"), filepath.Join(installPath, "python3.exe"))
+	} else {
+		linkIfMissing := func(src, dst string) {
+			if _, err := os.Lstat(dst); os.IsNotExist(err) {
+				if _, err := os.Stat(src); err == nil {
+					_ = os.Symlink(filepath.Base(src), dst)
+				}
+			}
+		}
+		binDir := filepath.Join(venvDir, "bin")
+		linkIfMissing(filepath.Join(binDir, "python3"), filepath.Join(binDir, "python"))
+		linkIfMissing(filepath.Join(binDir, "python"), filepath.Join(binDir, "python3"))
+		linkIfMissing(filepath.Join(binDir, "pip3"), filepath.Join(binDir, "pip"))
+		linkIfMissing(filepath.Join(binDir, "pip"), filepath.Join(binDir, "pip3"))
+
+		installBin := filepath.Join(installPath, "bin")
+		linkIfMissing(filepath.Join(installBin, "python3"), filepath.Join(installBin, "python"))
+		linkIfMissing(filepath.Join(installBin, "python"), filepath.Join(installBin, "python3"))
+		linkIfMissing(filepath.Join(installBin, "pip3"), filepath.Join(installBin, "pip"))
+		linkIfMissing(filepath.Join(installBin, "pip"), filepath.Join(installBin, "pip3"))
 	}
 
 	return nil
