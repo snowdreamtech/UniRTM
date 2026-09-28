@@ -148,9 +148,6 @@ func (p *NpmProvider) findNodeExe() (string, error) {
 			}
 			nodePath := filepath.Join(nodeInstallsDir, entry.Name(), "node.exe")
 			if info, statErr := os.Stat(nodePath); statErr == nil && !info.IsDir() {
-				if runErr := exec.Command(nodePath, "--version").Run(); runErr != nil {
-					continue
-				}
 				if bestVer == "" || version.CompareVersions(entry.Name(), bestVer) > 0 {
 					bestVer = entry.Name()
 					bestPath = nodePath
@@ -394,7 +391,7 @@ func (p *NpmProvider) findNpm() (string, error) {
 						if env.RuntimeGOOS == "windows" {
 							nodeExe = filepath.Join(filepath.Dir(cand), "node.exe")
 						}
-						if _, err := os.Stat(nodeExe); err == nil {
+						if nodeStat, err := os.Stat(nodeExe); err == nil && nodeStat.Size() > 0 {
 							if runErr := exec.Command(nodeExe, "--version").Run(); runErr != nil {
 								continue
 							}
