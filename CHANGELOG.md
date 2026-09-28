@@ -6,6 +6,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.33.1](https://github.com/snowdreamtech/UniRTM/compare/v0.33.0...v0.33.1) (2026-09-28)
+
+
+### 🐛 Bug Fixes
+
+* **npm:** allow 0-byte mock binaries in findNodeExe and findNpm for Windows tests ([62935b4](https://github.com/snowdreamtech/UniRTM/commit/62935b4c1a79fe2cf4c709daa4d4e56e2c3d09dc))
+* **provider:** inject host tool directory to PATH for conda, spm, ubi, and vfox ([894d5e8](https://github.com/snowdreamtech/UniRTM/commit/894d5e8397f2084b99bbfb6705c9fc401888245a))
+* **provider:** inject real binary directory to PATH in composer config and lua bootstrap ([0659e30](https://github.com/snowdreamtech/UniRTM/commit/0659e309492f7fe422cc9083e622af2a2a5fd780))
+* **shim:** automatically purge legacy double extension shims on windows ([52c7a7b](https://github.com/snowdreamtech/UniRTM/commit/52c7a7b66e3559a9749d0f207eb0a8026d4c3f7e))
+* **shim:** prevent duplicate windows executable extensions and normalize matching ([80a30e7](https://github.com/snowdreamtech/UniRTM/commit/80a30e7beaa1e51b4e424b5209f961b499829685))
+* **shim:** prevent recursion loops in package providers and clean fallback scripts ([2e9a9e9](https://github.com/snowdreamtech/UniRTM/commit/2e9a9e90b7c1f206160c8dd61fcfeffdeb1d4e64))
+* **shim:** scope guard per-executable, clear before exec, prevent npm node recursion ([bca5085](https://github.com/snowdreamtech/UniRTM/commit/bca508544e5edfb1b36d268f2084b44fc9e5f861))
+* **test,npm:** resolve data race in java_test and add node compatibility check ([81676ab](https://github.com/snowdreamtech/UniRTM/commit/81676abd32bb25afaa30fa79c601a05ff38cdc24))
+
+
+### ♻️ Miscellaneous Chores
+
+* **deps:** sync dependabot config and unirtm toolchain ([a8cb37f](https://github.com/snowdreamtech/UniRTM/commit/a8cb37fe22f27cecdfa79596717465b6dbef8736))
+* **deps:** upgrade unirtm-version to 0.33.0 ([6721d12](https://github.com/snowdreamtech/UniRTM/commit/6721d12f72ef8c4023f88c20df2d5da3d6a730dd))
+
 ## [0.33.0](https://github.com/snowdreamtech/UniRTM/compare/v0.32.0...v0.33.0) (2026-09-27)
 
 
