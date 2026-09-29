@@ -407,7 +407,7 @@ jobs:
         run: |
           gh release download "$TAG" \
             --repo snowdreamtech/UniRTM \
-            --pattern 'unirtm_Linux_x86_64.tar.gz' \
+            --pattern 'unirtm_*linux_amd64.tar.gz' \
             --pattern 'checksums.txt' \
             --pattern 'checksums.txt.sigstore.json'
 
@@ -426,6 +426,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
         run: |
-          gh attestation verify unirtm_Linux_x86_64.tar.gz \
+          TARGET_ASSET=$(find . -maxdepth 1 -name 'unirtm_*linux_amd64.tar.gz' | head -n 1)
+          gh attestation verify "$TARGET_ASSET" \
             --repo snowdreamtech/UniRTM \
             --signer-repo snowdreamtech/UniRTM

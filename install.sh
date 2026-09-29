@@ -117,18 +117,18 @@ detect_platform() {
   ARCH="$(uname -m)"
 
   case "$OS" in
-  Linux) OS_NAME="Linux" ;;
-  Darwin) OS_NAME="Darwin" ;;
+  Linux) OS_NAME="linux" ;;
+  Darwin) OS_NAME="darwin" ;;
   *) die "Unsupported operating system: $OS" ;;
   esac
 
   case "$ARCH" in
-  x86_64 | amd64) ARCH_NAME="x86_64" ;;
+  x86_64 | amd64) ARCH_NAME="amd64" ;;
   aarch64 | arm64) ARCH_NAME="arm64" ;;
   armv7*) ARCH_NAME="armv7" ;;
   armv6*) ARCH_NAME="armv6" ;;
   armv5*) ARCH_NAME="armv5" ;;
-  i386 | i686) ARCH_NAME="i386" ;;
+  i386 | i686) ARCH_NAME="386" ;;
   riscv64) ARCH_NAME="riscv64" ;;
   ppc64le) ARCH_NAME="ppc64le" ;;
   loongarch64 | loong64) ARCH_NAME="loong64" ;;
@@ -300,7 +300,8 @@ curl_with_retry() {
 # ---------------------------------------------------------------------------
 download_and_verify() {
   TMP_DIR="$1"
-  ARCHIVE_NAME="${BINARY}_${OS_NAME}_${ARCH_NAME}.tar.gz"
+  CLEAN_VERSION="${VERSION#v}"
+  ARCHIVE_NAME="${BINARY}_${CLEAN_VERSION}_${OS_NAME}_${ARCH_NAME}.tar.gz"
   ARCHIVE_URL="https://github.com/${REPO}/releases/download/${VERSION}/${ARCHIVE_NAME}"
   CHECKSUM_URL="https://github.com/${REPO}/releases/download/${VERSION}/checksums.txt"
 
@@ -448,7 +449,6 @@ main() {
 
   download_and_verify "$TMP_DIR"
 
-  ARCHIVE_NAME="${BINARY}_${OS_NAME}_${ARCH_NAME}.tar.gz"
   ARCHIVE_PATH="${TMP_DIR}/${ARCHIVE_NAME}"
 
   install_binary "$ARCHIVE_PATH" "$TMP_DIR"

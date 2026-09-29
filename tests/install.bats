@@ -32,12 +32,12 @@ case "$ORIG_ARGS" in
         case "$ORIG_ARGS" in
             *checksums.txt*)
                 HASH="d26e6e9ad7595a49744a86f770536eddb0b1beaee70844b8bfbdf6ae620a07fe"
-                printf "%s  %s\n" "$HASH" "unirtm_Darwin_arm64.tar.gz" \
-                       "$HASH" "unirtm_Darwin_x86_64.tar.gz" \
-                       "$HASH" "unirtm_Linux_arm64.tar.gz" \
-                       "$HASH" "unirtm_Linux_x86_64.tar.gz" \
-                       "$HASH" "unirtm_Windows_arm64.zip" \
-                       "$HASH" "unirtm_Windows_x86_64.zip" > "$OUTFILE"
+                printf "%s  %s\n" "$HASH" "unirtm_99.9.9_darwin_arm64.tar.gz" \
+                       "$HASH" "unirtm_99.9.9_darwin_amd64.tar.gz" \
+                       "$HASH" "unirtm_99.9.9_linux_arm64.tar.gz" \
+                       "$HASH" "unirtm_99.9.9_linux_amd64.tar.gz" \
+                       "$HASH" "unirtm_99.9.9_windows_arm64.zip" \
+                       "$HASH" "unirtm_99.9.9_windows_amd64.zip" > "$OUTFILE"
                 ;;
             *)
                 echo "dummy archive content" > "$OUTFILE"

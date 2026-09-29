@@ -120,16 +120,17 @@ if ($Version) {
 $os = $(Get-CimInstance -ClassName Win32_OperatingSystem).Caption
 $archEnv = $env:PROCESSOR_ARCHITECTURE
 if ($archEnv -eq "AMD64") {
-    $archName = "x86_64"
+    $archName = "amd64"
 } elseif ($archEnv -eq "ARM64") {
     $archName = "arm64"
 } else {
-    $archName = "i386"
+    $archName = "386"
 }
 Write-Info "Detected platform: Windows/${archName}"
 
 # Build URLs
-$archiveName = "${Binary}_Windows_${archName}.zip"
+$cleanVersion = $Version.TrimStart('v')
+$archiveName = "${Binary}_${cleanVersion}_windows_${archName}.zip"
 $archiveUrl = "https://github.com/${Repo}/releases/download/${Version}/${archiveName}"
 $checksumUrl = "https://github.com/${Repo}/releases/download/${Version}/checksums.txt"
 if ($GitHubProxy) { $archiveUrl = "$GitHubProxy$archiveUrl"; $checksumUrl = "$GitHubProxy$checksumUrl" }
