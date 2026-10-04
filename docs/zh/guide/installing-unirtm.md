@@ -31,6 +31,22 @@ brew install snowdreamtech/tap/unirtm
 
 UniRTM 深度支持 Windows 生态系统。
 
+### PowerShell 一键安装脚本
+
+Windows 下最简便快捷的安装方式：
+
+```powershell
+irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex
+```
+
+### Git Bash
+
+如果你在 Windows 的 Git Bash 终端中工作，可以直接调用 PowerShell 安装脚本：
+
+```bash
+powershell.exe -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex"
+```
+
 ### Winget
 
 Windows 官方推荐的包管理器：

@@ -14,13 +14,27 @@
 
 ## 1. 安装 UniRTM
 
-最简单的安装方式是使用一键安装脚本：
+最简单的安装方式是使用官方一键安装脚本：
+
+**Linux / macOS**:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.sh | bash
 ```
 
-*如果你想通过 Homebrew、Cargo 或 APT 安装，请参阅 [安装 UniRTM](./installing-unirtm.md)。*
+**Windows (PowerShell)**:
+
+```powershell
+irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex
+```
+
+**Windows (Git Bash)**:
+
+```bash
+powershell.exe -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex"
+```
+
+*如果你想通过 Homebrew、Winget、Scoop 或 APT 安装，请参阅 [安装 UniRTM](./installing-unirtm.md)。*
 
 ## 2. 注入你的 Shell
 
@@ -30,11 +44,20 @@ curl -sL https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.sh 
 # 对于 Zsh
 echo 'eval "$(unirtm env --shell zsh)"' >> ~/.zshrc
 
-# 对于 Bash
+# 对于 Bash (Linux/macOS 或 Windows Git Bash)
 echo 'eval "$(unirtm env --shell bash)"' >> ~/.bashrc
+
+# 对于 Fish
+echo 'unirtm env --shell fish | source' >> ~/.config/fish/config.fish
 ```
 
-重启终端（或执行 `source ~/.zshrc`）使配置生效。
+对于 **PowerShell** (Windows)，请将以下内容添加到你的 `$PROFILE` 文件中：
+
+```powershell
+unirtm env --shell powershell | Out-String | Invoke-Expression
+```
+
+重启终端（或重新加载 Shell 配置文件）使配置生效。
 
 ## 3. 安装你的第一个工具
 

@@ -14,13 +14,27 @@ If you have used tools like `asdf`, `mise`, `nvm`, `pyenv`, or `rbenv`, you will
 
 ## 1. Install UniRTM
 
-The easiest way to install UniRTM is via our installation script:
+The easiest way to install UniRTM is via our installation scripts:
+
+**Linux / macOS**:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.sh | bash
 ```
 
-*For more installation methods (Homebrew, Cargo, APT), see [Installing UniRTM](./installing-unirtm.md).*
+**Windows (PowerShell)**:
+
+```powershell
+irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex
+```
+
+**Windows (Git Bash)**:
+
+```bash
+powershell.exe -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex"
+```
+
+*For more installation methods (Homebrew, Winget, Scoop, APT), see [Installing UniRTM](./installing-unirtm.md).*
 
 ## 2. Hook into your Shell
 
@@ -30,8 +44,17 @@ For UniRTM to magically switch your tools and environments when you `cd` into a 
 # For Zsh
 echo 'eval "$(unirtm env --shell zsh)"' >> ~/.zshrc
 
-# For Bash
+# For Bash (Linux/macOS or Windows Git Bash)
 echo 'eval "$(unirtm env --shell bash)"' >> ~/.bashrc
+
+# For Fish
+echo 'unirtm env --shell fish | source' >> ~/.config/fish/config.fish
+```
+
+For **PowerShell** (Windows), add the following to your `$PROFILE`:
+
+```powershell
+unirtm env --shell powershell | Out-String | Invoke-Expression
 ```
 
 Restart your terminal for the changes to take effect.

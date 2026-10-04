@@ -70,6 +70,20 @@ $ ~/.local/bin/unirtm --version
 UniRTM v0.1.0 macos-arm64 (2026-05-28)
 ```
 
+**Via PowerShell (Windows)**:
+
+```powershell
+irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex
+unirtm --version
+```
+
+**Via Git Bash (Windows)**:
+
+```sh-session
+$ powershell.exe -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex"
+$ ~/bin/unirtm.exe --version
+```
+
 **Via NPM**:
 
 ```sh-session
@@ -85,10 +99,17 @@ pip install snowdreamtech-unirtm
 Hook UniRTM into your shell (pick the right one for your shell):
 
 ```sh-session
-# note this assumes unirtm is located at ~/.local/bin/unirtm
-echo 'eval "$(~/.local/bin/unirtm env)"' >> ~/.bashrc
-echo 'eval "$(~/.local/bin/unirtm env)"' >> ~/.zshrc
-echo '~/.local/bin/unirtm env | source' >> ~/.config/fish/config.fish
+# Bash (Linux/macOS or Windows Git Bash)
+echo 'eval "$(unirtm env)"' >> ~/.bashrc
+
+# Zsh
+echo 'eval "$(unirtm env)"' >> ~/.zshrc
+
+# Fish
+echo 'unirtm env | source' >> ~/.config/fish/config.fish
+
+# PowerShell (Windows) - add to $PROFILE
+unirtm env | Out-String | Invoke-Expression
 ```
 
 ### Execute commands with specific tools

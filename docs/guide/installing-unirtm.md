@@ -31,6 +31,22 @@ brew install snowdreamtech/tap/unirtm
 
 UniRTM natively supports the Windows ecosystem.
 
+### PowerShell Script
+
+The quickest way to install UniRTM on Windows:
+
+```powershell
+irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex
+```
+
+### Git Bash
+
+If you are working inside Git Bash on Windows, invoke the PowerShell installer:
+
+```bash
+powershell.exe -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex"
+```
+
 ### Winget
 
 The official Windows package manager:

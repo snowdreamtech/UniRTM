@@ -70,6 +70,20 @@ $ ~/.local/bin/unirtm --version
 UniRTM v0.1.0 macos-arm64 (2026-05-28)
 ```
 
+**使用 PowerShell 安装 (Windows)**:
+
+```powershell
+irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex
+unirtm --version
+```
+
+**使用 Git Bash 安装 (Windows)**:
+
+```sh-session
+$ powershell.exe -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex"
+$ ~/bin/unirtm.exe --version
+```
+
 **使用 NPM 安装**:
 
 ```sh-session
@@ -85,10 +99,17 @@ pip install snowdreamtech-unirtm
 将 UniRTM 挂载到你的 Shell 中（请选择与你对应的 Shell）：
 
 ```sh-session
-# 假设 unirtm 被安装在默认的 ~/.local/bin/unirtm 下
-echo 'eval "$(~/.local/bin/unirtm env)"' >> ~/.bashrc
-echo 'eval "$(~/.local/bin/unirtm env)"' >> ~/.zshrc
-echo '~/.local/bin/unirtm env | source' >> ~/.config/fish/config.fish
+# Bash (Linux/macOS 或 Windows Git Bash)
+echo 'eval "$(unirtm env)"' >> ~/.bashrc
+
+# Zsh
+echo 'eval "$(unirtm env)"' >> ~/.zshrc
+
+# Fish
+echo 'unirtm env | source' >> ~/.config/fish/config.fish
+
+# PowerShell (Windows) - 添加到 $PROFILE
+unirtm env | Out-String | Invoke-Expression
 ```
 
 ### 单次执行指定版本的工具
