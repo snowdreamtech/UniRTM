@@ -117,12 +117,17 @@ func (h *PythonHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 	// Regex to extract version from filename: cpython-3.14.4+20260408-...
 	re := regexp.MustCompile(`cpython-([0-9.]+)\+`)
 
-	versionMap := make(map[string]*VersionInfo)
+	versionMap := make(map[string]*versionCollector)
 
 	for _, rel := range releases {
 		for _, a := range rel.Assets {
 			// Skip metadata files
 			if strings.HasSuffix(a.Name, ".asc") || strings.HasSuffix(a.Name, ".sig") || strings.HasSuffix(a.Name, ".sha256") {
+				continue
+			}
+
+			// Skip debug packages immediately
+			if strings.Contains(strings.ToLower(a.Name), "debug") {
 				continue
 			}
 
@@ -142,54 +147,97 @@ func (h *PythonHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 				downloadURL = strings.TrimSuffix(githubProxy, "/") + "/" + downloadURL
 			}
 
+			score := pythonAssetPreference(a.Name)
+			if score <= 0 {
+				continue
+			}
+
 			vi, ok := versionMap[pyVersion]
 			if !ok {
-				vi = &VersionInfo{
-					Version: pyVersion,
-					Assets:  []Asset{},
+				vi = &versionCollector{
+					version:    pyVersion,
+					bestAssets: make(map[string]scoredAsset),
 				}
 				versionMap[pyVersion] = vi
 			}
 
-			// Avoid duplicate assets for the same platform within the same version
-			// (python-build-standalone often has multiple release types like debug, pgo+lto, etc.)
-			// We prefer "pgo+lto" or "install_only" over "debug".
-			isBetter := true
-			for _, existing := range vi.Assets {
-				if existing.OS == osName && existing.Arch == archName {
-					// If we already have a non-debug one, and current is debug, skip
-					if !strings.Contains(existing.Filename, "debug") && strings.Contains(a.Name, "debug") {
-						isBetter = false
-						break
-					}
-					// If current is pgo+lto and existing is not, it's better
-					if strings.Contains(a.Name, "pgo+lto") && !strings.Contains(existing.Filename, "pgo+lto") {
-						isBetter = true
-						// We'll replace it later or just append.
-						// To keep it simple, we just don't add if not better.
-					}
+			platKey := osName + "/" + archName
+			if existing, exists := vi.bestAssets[platKey]; !exists || score > existing.score {
+				vi.bestAssets[platKey] = scoredAsset{
+					asset: Asset{
+						Filename: a.Name,
+						URL:      downloadURL,
+						OS:       osName,
+						Arch:     archName,
+					},
+					score: score,
 				}
-			}
-
-			if isBetter {
-				vi.Assets = append(vi.Assets, Asset{
-					Filename: a.Name,
-					URL:      downloadURL,
-					OS:       osName,
-					Arch:     archName,
-				})
 			}
 		}
 	}
 
 	var result []VersionInfo
-	for _, vi := range versionMap {
-		if len(vi.Assets) > 0 {
-			result = append(result, *vi)
+	for _, vc := range versionMap {
+		var assets []Asset
+		for _, sa := range vc.bestAssets {
+			assets = append(assets, sa.asset)
+		}
+		if len(assets) > 0 {
+			result = append(result, VersionInfo{
+				Version: vc.version,
+				Assets:  assets,
+			})
 		}
 	}
 
 	return result, nil
+}
+
+type scoredAsset struct {
+	asset Asset
+	score int
+}
+
+type versionCollector struct {
+	version    string
+	bestAssets map[string]scoredAsset
+}
+
+// pythonAssetPreference evaluates python-build-standalone asset names.
+// Debug builds are strictly excluded (-1). Standard standalone install_only distributions
+// receive highest priority, followed by pgo and shared variants.
+func pythonAssetPreference(name string) int {
+	nameLower := strings.ToLower(name)
+
+	// Explicitly exclude debug packages
+	if strings.Contains(nameLower, "debug") {
+		return -1
+	}
+
+	// Prefer standard install_only packages (clean standalone distribution)
+	if strings.Contains(nameLower, "install_only") && !strings.Contains(nameLower, "shared") {
+		if strings.Contains(nameLower, "install_only_stripped") {
+			return 95
+		}
+		return 100
+	}
+
+	// Performance-optimized builds (PGO/LTO)
+	if strings.Contains(nameLower, "pgo+lto") || strings.Contains(nameLower, "pgo") {
+		return 85
+	}
+
+	// Shared library builds
+	if strings.Contains(nameLower, "shared") {
+		return 70
+	}
+
+	// Standard full builds without debug
+	if strings.Contains(nameLower, "full") {
+		return 60
+	}
+
+	return 50
 }
 
 func (h *PythonHandler) detectPlatform(filename string) (string, string) {

@@ -144,11 +144,22 @@ func (b *NativeBackend) GetDownloadInfo(ctx context.Context, tool, version strin
 	bestScore := -1
 
 	for _, a := range targetVersion.Assets {
-		// 1. Strict Match (Priority: 999)
+		// 1. Strict Match
 		if a.OS == platform.OS && a.Arch == platform.Arch {
-			bestAsset = &a
-			bestScore = 999
-			break
+			score := 1000
+			if a.Filename != "" {
+				fileScore := CalculateAssetScore(a.Filename, platform, tool)
+				if fileScore < 0 {
+					// Exclude negative assets (e.g. debug, checksums, source, etc.)
+					continue
+				}
+				score += fileScore
+			}
+			if score > bestScore {
+				bestScore = score
+				bestAsset = &a
+			}
+			continue
 		}
 
 		// 2. Guessing Logic (Fallback)

@@ -113,3 +113,43 @@ func TestNativeBackend_MuslFallback(t *testing.T) {
 		t.Errorf("expected IsGlibcFallback to be 'true', got %v", vi.Metadata["IsGlibcFallback"])
 	}
 }
+
+type mockDebugRecipeHandler struct{}
+
+func (m *mockDebugRecipeHandler) Name() string { return "mock_debug" }
+func (m *mockDebugRecipeHandler) ResolveVersions(ctx context.Context, baseURL string) ([]native.VersionInfo, error) {
+	return []native.VersionInfo{
+		{
+			Version: "2.0.0",
+			Assets: []native.Asset{
+				{OS: "windows", Arch: "amd64", Filename: "tool-2.0.0-windows-amd64-debug.zip", URL: "http://test/debug.zip"},
+				{OS: "windows", Arch: "amd64", Filename: "tool-2.0.0-windows-amd64.zip", URL: "http://test/release.zip"},
+			},
+		},
+	}, nil
+}
+func (m *mockDebugRecipeHandler) BuildURL(version, os, arch, baseURL string) string {
+	return "http://test/" + version
+}
+func (m *mockDebugRecipeHandler) SupportedOS() []string   { return []string{"windows"} }
+func (m *mockDebugRecipeHandler) SupportedArch() []string { return []string{"amd64"} }
+
+func TestNativeBackend_DebugAssetRejection(t *testing.T) {
+	b := NewNativeBackend()
+	b.recipes["mytool"] = native.Recipe{
+		BaseURL: "http://test",
+		Handler: &mockDebugRecipeHandler{},
+	}
+
+	ctx := context.Background()
+	platform := Platform{OS: "windows", Arch: "amd64"}
+
+	vi, err := b.GetDownloadInfo(ctx, "mytool", "2.0.0", platform)
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+
+	if vi.DownloadURL != "http://test/release.zip" {
+		t.Errorf("expected release URL, got %s", vi.DownloadURL)
+	}
+}
