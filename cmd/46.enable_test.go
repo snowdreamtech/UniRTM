@@ -105,4 +105,3 @@ func TestGetActivationCmd_CrossPlatform(t *testing.T) {
 	assert.Contains(t, cmdFish, "if type -q unirtm")
 	assert.Contains(t, cmdFish, "activate fish | source")
 }
-

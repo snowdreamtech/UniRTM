@@ -174,4 +174,3 @@ if (Get-Command %s -ErrorAction SilentlyContinue) {
 		return "", fmt.Errorf("unsupported shell: %s", shell)
 	}
 }
-

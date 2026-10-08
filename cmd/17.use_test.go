@@ -100,6 +100,11 @@ func TestRunUse_Global(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)
 
+	// Pre-create asdf registry marker so asdf backend doesn't clone remote git repo during test
+	asdfReg := filepath.Join(tmpDir, ".local", "share", "unirtm", "asdf", "repository", ".git")
+	_ = os.MkdirAll(asdfReg, 0755)
+	_ = os.WriteFile(filepath.Join(asdfReg, "FETCH_HEAD"), []byte(""), 0644)
+
 	cmd := useCmd
 	cmd.SetContext(context.Background())
 	var buf bytes.Buffer

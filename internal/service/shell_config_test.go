@@ -396,7 +396,7 @@ fi`
 	}
 }
 
-func (m *mockFormatter) Infof(format string, a ...interface{})    {}
+func (m *mockFormatter) Infof(format string, a ...interface{}) {}
 
 func (m *mockFormatter) Successf(format string, a ...interface{}) {}
 func (m *mockFormatter) Warningf(format string, a ...interface{}) {}

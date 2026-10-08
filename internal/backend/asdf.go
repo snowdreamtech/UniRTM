@@ -271,12 +271,18 @@ func (b *AsdfBackend) ensurePlugin(ctx context.Context, tool string) (string, er
 
 // updateRegistry clones or fetches the central asdf-plugins registry.
 func (b *AsdfBackend) updateRegistry(ctx context.Context) error {
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, 30*time.Second)
+		defer cancel()
+	}
+
 	if _, err := os.Stat(b.registryPath); os.IsNotExist(err) {
 		if err := os.MkdirAll(filepath.Dir(b.registryPath), 0o755); err != nil {
 			return err
 		}
 		repoURL := b.applyGithubProxy("https://github.com/asdf-vm/asdf-plugins.git")
-		cmd := exec.CommandContext(ctx, "git", "clone", repoURL, b.registryPath)
+		cmd := exec.CommandContext(ctx, "git", "clone", "--depth", "1", repoURL, b.registryPath)
 		disableGitPrompts(cmd)
 		return cmd.Run()
 	}

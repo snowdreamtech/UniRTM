@@ -292,6 +292,11 @@ func TestRunInstall_Execution(t *testing.T) {
 	// Create a dummy config so we test config resolution
 	configFile := tmpDir + "/.unirtm.toml"
 	os.WriteFile(configFile, []byte("[tools]\ndummy-tool = { version = \"20.0.0\" }"), 0644)
+	// Create empty lockfile and asdf registry marker to avoid slow rebuilds and network clones
+	os.WriteFile(filepath.Join(tmpDir, "unirtm.lock"), []byte(""), 0644)
+	asdfReg := filepath.Join(tmpDir, "asdf", "repository", ".git")
+	_ = os.MkdirAll(asdfReg, 0755)
+	_ = os.WriteFile(filepath.Join(asdfReg, "FETCH_HEAD"), []byte(""), 0644)
 
 	oldDir, _ := os.Getwd()
 	os.Chdir(tmpDir)

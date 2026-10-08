@@ -151,15 +151,19 @@ func TestAsdfBackend_EnsurePlugin_UpdateRegistryAndClone(t *testing.T) {
 
 	gitMockScript := `#!/bin/sh
 if [ "$1" = "clone" ]; then
+  target=""
+  for arg in "$@"; do
+    target="$arg"
+  done
   if echo "$@" | grep "asdf-plugins" > /dev/null; then
-    mkdir -p "$3/.git"
-    mkdir -p "$3/plugins"
-    echo "repository = https://github.com/fake/fake-tool.git" > "$3/plugins/fake-tool"
+    mkdir -p "$target/.git"
+    mkdir -p "$target/plugins"
+    echo "repository = https://github.com/fake/fake-tool.git" > "$target/plugins/fake-tool"
     exit 0
   fi
   # for plugin clone
   if echo "$@" | grep "fake-tool" > /dev/null; then
-    mkdir -p "$3"
+    mkdir -p "$target"
     exit 0
   fi
   exit 1
@@ -169,22 +173,21 @@ exit 0
 	if env.RuntimeGOOS == "windows" {
 		gitMockPath += ".cmd"
 		gitMockScript = `@echo off
-if "%~1"=="clone" (
-	echo %* | findstr "asdf-plugins" >nul
-	if not errorlevel 1 (
-		mkdir "%~3\.git"
-		mkdir "%~3\plugins"
-		echo repository = https://github.com/fake/fake-tool.git > "%~3\plugins\fake-tool"
-		exit /b 0
-	)
-	echo %* | findstr "fake-tool" >nul
-	if not errorlevel 1 (
-		mkdir "%~3"
-		exit /b 0
-	)
-	exit /b 1
+if not "%~1"=="clone" exit /b 0
+for %%a in (%*) do set "target=%%~a"
+echo %* | findstr "asdf-plugins" >nul
+if not errorlevel 1 (
+	mkdir "%target%\.git" 2>nul
+	mkdir "%target%\plugins" 2>nul
+	echo repository = https://github.com/fake/fake-tool.git > "%target%\plugins\fake-tool"
+	exit /b 0
 )
-exit /b 0
+echo %* | findstr "fake-tool" >nul
+if not errorlevel 1 (
+	mkdir "%target%" 2>nul
+	exit /b 0
+)
+exit /b 1
 `
 	}
 

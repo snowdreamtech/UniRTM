@@ -352,4 +352,3 @@ func isBlockComponent(lineLower string) bool {
 		strings.Contains(lineLower, "type -q") ||
 		strings.Contains(lineLower, "get-command")
 }
-
