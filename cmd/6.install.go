@@ -354,7 +354,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 		if isInstalled {
 			if !jsonOutput {
-				output.Successf("%s@%s (already installed, use --force to reinstall)", t.ToolName, t.Version)
+				output.Successf("%s@%s", t.ToolName, t.Version)
 			}
 		} else {
 			if installForce {
