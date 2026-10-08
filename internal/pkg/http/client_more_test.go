@@ -121,8 +121,8 @@ func TestDefaultTransport_ConnectionPool(t *testing.T) {
 }
 
 func TestSharedTransport_SingletonAndReuse(t *testing.T) {
-	ResetSharedTransport()
-	defer ResetSharedTransport()
+	ResetSharedAdaptiveTransport()
+	defer ResetSharedAdaptiveTransport()
 
 	c1 := NewClient()
 	c2 := NewClientWithTimeout(10 * time.Second)
@@ -135,7 +135,7 @@ func TestSharedTransport_SingletonAndReuse(t *testing.T) {
 		t.Errorf("expected c1 and c2 to share the exact same transport instance for keep-alive connection pooling")
 	}
 
-	if c1.Transport != SharedTransport() {
-		t.Errorf("expected c1.Transport to match SharedTransport()")
+	if c1.Transport != SharedAdaptiveTransport() {
+		t.Errorf("expected c1.Transport to match SharedAdaptiveTransport()")
 	}
 }

@@ -110,6 +110,14 @@ func NewHTTPDownloader() *HTTPDownloader {
 			return fmt.Errorf("too many redirects")
 		}
 
+		// Inherit route strategy from previous request across 302 redirects
+		if len(via) > 0 {
+			prevReq := via[len(via)-1]
+			if strat, ok := pkgHttp.RouteStrategyFromContext(prevReq.Context()); ok {
+				*req = *req.WithContext(pkgHttp.WithRouteStrategy(req.Context(), strat))
+			}
+		}
+
 		// Get proxy from context
 		proxy, ok := req.Context().Value(githubProxyKey).(string)
 		if ok && proxy != "" {

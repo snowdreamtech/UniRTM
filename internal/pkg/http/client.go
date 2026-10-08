@@ -5,6 +5,7 @@ package http
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"net/url"
@@ -138,8 +139,10 @@ func DefaultTransport() *http.Transport {
 }
 
 var (
-	sharedTransport     *http.Transport
-	sharedTransportOnce sync.Once
+	sharedTransport             *http.Transport
+	sharedTransportOnce         sync.Once
+	sharedAdaptiveTransport     *AdaptiveTransport
+	sharedAdaptiveTransportOnce sync.Once
 )
 
 // SharedTransport returns the singleton instance of UniRTM's robust http.Transport.
@@ -158,7 +161,34 @@ func ResetSharedTransport() {
 	sharedTransport = nil
 }
 
-// NewClient returns an http.Client pre-configured with UniRTM's robust transport.
+// SharedAdaptiveTransport returns the singleton instance of UniRTM's adaptive racing transport.
+func SharedAdaptiveTransport() *AdaptiveTransport {
+	sharedAdaptiveTransportOnce.Do(func() {
+		sharedAdaptiveTransport = NewAdaptiveTransport(DirectTransport(), ProxyOnlyTransport(), DefaultRouteCache())
+	})
+	return sharedAdaptiveTransport
+}
+
+// ResetSharedAdaptiveTransport resets the adaptive transport singleton (primarily used in tests).
+func ResetSharedAdaptiveTransport() {
+	sharedAdaptiveTransportOnce = sync.Once{}
+	sharedAdaptiveTransport = nil
+}
+
+func defaultCheckRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) >= 10 {
+		return errors.New("stopped after 10 redirects")
+	}
+	if len(via) > 0 {
+		prevReq := via[len(via)-1]
+		if strat, ok := RouteStrategyFromContext(prevReq.Context()); ok {
+			*req = *req.WithContext(WithRouteStrategy(req.Context(), strat))
+		}
+	}
+	return nil
+}
+
+// NewClient returns an http.Client pre-configured with UniRTM's adaptive racing transport and redirect context inheritance.
 func NewClient() *http.Client {
 	var tr http.RoundTripper
 	if MockTransport != nil {
@@ -166,14 +196,15 @@ func NewClient() *http.Client {
 	} else if _, ok := http.DefaultTransport.(*http.Transport); !ok {
 		tr = http.DefaultTransport
 	} else {
-		tr = SharedTransport()
+		tr = SharedAdaptiveTransport()
 	}
 	return &http.Client{
-		Transport: tr,
+		Transport:     tr,
+		CheckRedirect: defaultCheckRedirect,
 	}
 }
 
-// NewClientWithTimeout returns an http.Client with a timeout and the robust transport.
+// NewClientWithTimeout returns an http.Client with a timeout, the adaptive racing transport, and redirect context inheritance.
 func NewClientWithTimeout(timeout time.Duration) *http.Client {
 	var tr http.RoundTripper
 	if MockTransport != nil {
@@ -181,10 +212,11 @@ func NewClientWithTimeout(timeout time.Duration) *http.Client {
 	} else if _, ok := http.DefaultTransport.(*http.Transport); !ok {
 		tr = http.DefaultTransport
 	} else {
-		tr = SharedTransport()
+		tr = SharedAdaptiveTransport()
 	}
 	return &http.Client{
-		Timeout:   timeout,
-		Transport: tr,
+		Timeout:       timeout,
+		Transport:     tr,
+		CheckRedirect: defaultCheckRedirect,
 	}
 }

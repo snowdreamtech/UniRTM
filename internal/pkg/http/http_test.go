@@ -21,7 +21,7 @@ func TestShouldBypassProxy(t *testing.T) {
 		{"foo.cn", true},
 		{"registry.npmmirror.com", true},
 		{"mirrors.aliyun.com", true},
-		{"test.mirror.com", true},
+		{"test.mirror.com", false}, // non-domestic mirror should NOT bypass proxy
 	}
 
 	for _, tc := range tests {
@@ -29,6 +29,32 @@ func TestShouldBypassProxy(t *testing.T) {
 			result := ShouldBypassProxy(tc.host)
 			if result != tc.expected {
 				t.Errorf("ShouldBypassProxy(%q) = %v; expected %v", tc.host, result, tc.expected)
+			}
+		})
+	}
+}
+
+func TestExtractApexDomain(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"objects.githubusercontent.com", "githubusercontent.com"},
+		{"api.github.com", "github.com"},
+		{"github.com", "github.com"},
+		{"mirrors.aliyun.com:443", "aliyun.com"},
+		{"registry.npmmirror.com", "npmmirror.com"},
+		{"mirrors.tuna.tsinghua.edu.cn", "tsinghua.edu.cn"},
+		{"news.bbc.co.uk", "bbc.co.uk"},
+		{"127.0.0.1:8080", "127.0.0.1"},
+		{"localhost", "localhost"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.input, func(t *testing.T) {
+			got := ExtractApexDomain(tc.input)
+			if got != tc.expected {
+				t.Errorf("ExtractApexDomain(%q) = %q; want %q", tc.input, got, tc.expected)
 			}
 		})
 	}
