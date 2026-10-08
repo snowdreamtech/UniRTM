@@ -426,7 +426,7 @@ func TestGenerateHookEnvScript_PowerShell(t *testing.T) {
 	assert.Contains(t, script, "# UniRTM auto-activation hook for PowerShell")
 	assert.Contains(t, script, "function Invoke-UnirtmHook")
 	assert.Contains(t, script, "$env:UNIRTM_OLD_PWD")
-	assert.Contains(t, script, "unirtm hook-env --shell powershell")
+	assert.Contains(t, script, "hook-env --shell powershell")
 	assert.Contains(t, script, "function prompt")
 }
 
@@ -437,6 +437,24 @@ func TestGenerateHookEnvScript_UnsupportedShell(t *testing.T) {
 	_, err := autoMgr.GenerateHookEnvScript("unsupported", "/usr/local/bin/unirtm")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported shell type")
+}
+
+func TestGenerateHookEnvScript_WindowsPathEscaping(t *testing.T) {
+	activationMgr := NewActivationManager("/tmp/shims", "/tmp/data", provider.NewRegistry())
+	autoMgr := NewAutoActivationManager(activationMgr)
+
+	winExe := `C:\Users\ansible\bin\unirtm.exe`
+
+	// Bash: backslashes must be converted to forward slashes to avoid escape bugs
+	bashScript, err := autoMgr.GenerateHookEnvScript(ShellBash, winExe)
+	require.NoError(t, err)
+	assert.NotContains(t, bashScript, `C:\Users`)
+	assert.Contains(t, bashScript, `C:/Users/ansible/bin/unirtm.exe`)
+
+	// PowerShell: must be safely quoted with call operator (&)
+	psScript, err := autoMgr.GenerateHookEnvScript(ShellPowerShell, winExe)
+	require.NoError(t, err)
+	assert.Contains(t, psScript, `& "C:\Users\ansible\bin\unirtm.exe" hook-env --shell powershell`)
 }
 
 func TestEnvironmentState_SavesPath(t *testing.T) {

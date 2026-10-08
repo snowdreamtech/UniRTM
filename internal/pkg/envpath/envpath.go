@@ -57,6 +57,46 @@ func FormatDirForPosix(dir string) string {
 	return dir
 }
 
+// FormatExeForPosix sanitizes an executable path for invocation inside POSIX scripts (Bash, Zsh).
+// It converts Windows backslashes to forward slashes and safely quotes paths with spaces or special chars.
+func FormatExeForPosix(exePath string) string {
+	if exePath == "" {
+		return "unirtm"
+	}
+	p := strings.ReplaceAll(exePath, "\\", "/")
+	prefix := env.Get("CYGDRIVE_PREFIX")
+	if prefix != "" {
+		if matches := winDriveRegex.FindStringSubmatch(p); len(matches) == 3 {
+			drive := strings.ToLower(matches[1])
+			rest := matches[2]
+			prefix = strings.TrimRight(prefix, "/")
+			p = prefix + "/" + drive + "/" + rest
+		}
+	}
+	if strings.ContainsAny(p, " \t$*?()[]{}<>~`#^&|;\"") {
+		return `"` + strings.ReplaceAll(p, `"`, `\"`) + `"`
+	}
+	return p
+}
+
+// FormatExeForPowerShell sanitizes an executable path for invocation inside PowerShell scripts.
+// It wraps paths containing spaces or path separators with the call operator (&) and quotes.
+func FormatExeForPowerShell(exePath string) string {
+	if exePath == "" {
+		return "unirtm"
+	}
+	if strings.ContainsAny(exePath, " \t$*?()[]{}<>~`#^&|;\"\\/") {
+		escaped := strings.ReplaceAll(exePath, `"`, "`\"")
+		return `& "` + escaped + `"`
+	}
+	return exePath
+}
+
+// FormatExeForFish sanitizes an executable path for invocation inside Fish scripts.
+func FormatExeForFish(exePath string) string {
+	return FormatExeForPosix(exePath)
+}
+
 // JoinForPowerShell joins multiple paths into a single string meant for PowerShell scripts.
 // PowerShell fundamentally requires the OS native PathListSeparator.
 func JoinForPowerShell(paths []string) string {

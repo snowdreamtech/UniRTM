@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/pkg/envpath"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
 )
@@ -135,13 +136,17 @@ func getActivationCmd(targetTool string, shell service.ShellType, useShims bool)
 
 	switch shell {
 	case service.ShellZsh:
-		return fmt.Sprintf(`eval "$(%s activate%s zsh)"`, exePath, flags), nil
+		cmd := envpath.FormatExeForPosix(exePath)
+		return fmt.Sprintf(`eval "$(%s activate%s zsh)"`, cmd, flags), nil
 	case service.ShellBash:
-		return fmt.Sprintf(`eval "$(%s activate%s bash)"`, exePath, flags), nil
+		cmd := envpath.FormatExeForPosix(exePath)
+		return fmt.Sprintf(`eval "$(%s activate%s bash)"`, cmd, flags), nil
 	case service.ShellFish:
-		return fmt.Sprintf(`%s activate%s fish | source`, exePath, flags), nil
+		cmd := envpath.FormatExeForFish(exePath)
+		return fmt.Sprintf(`%s activate%s fish | source`, cmd, flags), nil
 	case service.ShellPowerShell:
-		return fmt.Sprintf(`%s activate%s powershell | Out-String | Invoke-Expression`, exePath, flags), nil
+		cmd := envpath.FormatExeForPowerShell(exePath)
+		return fmt.Sprintf(`%s activate%s powershell | Out-String | Invoke-Expression`, cmd, flags), nil
 	default:
 		return "", fmt.Errorf("unsupported shell: %s", shell)
 	}

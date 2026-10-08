@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -64,4 +65,23 @@ func TestRunEnable_InvalidTool(t *testing.T) {
 	cmd := enableCmd
 	err := runEnable(cmd, []string{"invalid"})
 	assert.Error(t, err)
+}
+
+func TestGetActivationCmd_CrossPlatform(t *testing.T) {
+	// 1. Bash: Must never contain unescaped backslashes
+	cmdBash, err := getActivationCmd("unirtm", service.ShellBash, false)
+	require.NoError(t, err)
+	assert.Contains(t, cmdBash, `activate bash)"`)
+	assert.NotContains(t, cmdBash, `\`)
+
+	// 2. PowerShell: Must be safe for execution
+	cmdPS, err := getActivationCmd("unirtm", service.ShellPowerShell, false)
+	require.NoError(t, err)
+	assert.Contains(t, cmdPS, `activate powershell | Out-String | Invoke-Expression`)
+
+	// 3. Zsh: Must never contain unescaped backslashes
+	cmdZsh, err := getActivationCmd("unirtm", service.ShellZsh, false)
+	require.NoError(t, err)
+	assert.Contains(t, cmdZsh, `activate zsh)"`)
+	assert.NotContains(t, cmdZsh, `\`)
 }

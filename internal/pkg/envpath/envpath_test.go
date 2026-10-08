@@ -93,4 +93,14 @@ func TestWindowsMode(t *testing.T) {
 	sep := string(os.PathListSeparator)
 	input := "C:\\dir1" + sep + "c:\\DIR1" + sep + "D:\\dir2"
 	assert.Equal(t, "C:\\dir1"+sep+"D:\\dir2", DeduplicateOSPaths(input))
+
+	// Test FormatExeForPosix
+	assert.Equal(t, "C:/Users/ansible/bin/unirtm.exe", FormatExeForPosix("C:\\Users\\ansible\\bin\\unirtm.exe"))
+	assert.Equal(t, `"C:/Program Files/unirtm/unirtm.exe"`, FormatExeForPosix("C:\\Program Files\\unirtm\\unirtm.exe"))
+	assert.Equal(t, "unirtm", FormatExeForPosix("unirtm"))
+
+	// Test FormatExeForPowerShell
+	assert.Equal(t, `& "C:\Users\ansible\bin\unirtm.exe"`, FormatExeForPowerShell("C:\\Users\\ansible\\bin\\unirtm.exe"))
+	assert.Equal(t, `& "C:\Program Files\unirtm\unirtm.exe"`, FormatExeForPowerShell("C:\\Program Files\\unirtm\\unirtm.exe"))
+	assert.Equal(t, "unirtm", FormatExeForPowerShell("unirtm"))
 }
