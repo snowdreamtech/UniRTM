@@ -6,7 +6,6 @@ package download_test
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/download"
 )
@@ -90,7 +89,8 @@ func ExampleDownloader_basic() {
 	)
 
 	if err != nil {
-		log.Fatalf("Download failed: %v", err)
+		fmt.Printf("Download failed: %v\n", err)
+		return
 	}
 
 	fmt.Println("Download completed successfully")
@@ -120,7 +120,8 @@ func ExampleDownloader_withChecksum() {
 	)
 
 	if err != nil {
-		log.Fatalf("Download failed: %v", err)
+		fmt.Printf("Download failed: %v\n", err)
+		return
 	}
 
 	fmt.Println("Download and verification completed")
@@ -160,7 +161,8 @@ func ExampleDownloader_withProgress() {
 	)
 
 	if err != nil {
-		log.Fatalf("Download failed: %v", err)
+		fmt.Printf("Download failed: %v\n", err)
+		return
 	}
 
 	// Output:
@@ -185,7 +187,8 @@ func ExampleDownloader_VerifyChecksum() {
 	)
 
 	if err != nil {
-		log.Fatalf("Checksum verification failed: %v", err)
+		fmt.Printf("Checksum verification failed: %v\n", err)
+		return
 	}
 
 	fmt.Println("Checksum verification passed")

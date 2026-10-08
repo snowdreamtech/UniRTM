@@ -15,6 +15,8 @@ func TestIsUniRTMBinary(t *testing.T) {
 	assert.True(t, isUniRTMBinary("unirtm.exe"))
 	assert.True(t, isUniRTMBinary("/path/to/unirtm"))
 	assert.True(t, isUniRTMBinary("unirtm-test"))
+	assert.True(t, isUniRTMBinary("cmd.test"))
+	assert.True(t, isUniRTMBinary("cmd.test.exe"))
 	assert.True(t, isUniRTMBinary("main"))
 	assert.False(t, isUniRTMBinary("go"))
 	assert.False(t, isUniRTMBinary("node"))

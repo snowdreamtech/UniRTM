@@ -1619,12 +1619,12 @@ func isExecutableFile(path string) bool {
 func isShimOrSelf(path string) bool {
 	shimsDir := filepath.Clean(env.GetShimsDir())
 	cleanPath := filepath.Clean(path)
-	if strings.HasPrefix(cleanPath, shimsDir) {
+	if strings.HasPrefix(strings.ToLower(cleanPath), strings.ToLower(shimsDir)) {
 		return true
 	}
 	if selfExe, err := os.Executable(); err == nil {
 		if realSelf, err := filepath.EvalSymlinks(selfExe); err == nil {
-			if realTarget, err := filepath.EvalSymlinks(path); err == nil && realTarget == realSelf {
+			if realTarget, err := filepath.EvalSymlinks(path); err == nil && strings.EqualFold(realTarget, realSelf) {
 				return true
 			}
 		}

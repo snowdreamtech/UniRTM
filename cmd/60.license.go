@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/addlicense"
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/spf13/cobra"
 )
 
@@ -119,7 +120,10 @@ Exits with code 1 if any files are missing headers (suitable for CI gates).`,
 		}
 		if n > 0 {
 			fmt.Fprintf(os.Stderr, "\n✗ %d file(s) missing license headers.\n", n)
-			os.Exit(1)
+			if !output.IsTesting() {
+				os.Exit(1)
+			}
+			return fmt.Errorf("%d file(s) missing license headers", n)
 		}
 		fmt.Println("✓ All files have license headers.")
 		return nil

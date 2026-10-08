@@ -4,7 +4,9 @@
 package output
 
 import (
+	"flag"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/pterm/pterm"
@@ -12,8 +14,12 @@ import (
 
 // IsTesting checks if the current process is a test process.
 func IsTesting() bool {
-	return strings.HasSuffix(os.Args[0], ".test") ||
+	base := strings.ToLower(filepath.Base(os.Args[0]))
+	base = strings.TrimSuffix(base, ".exe")
+	return strings.HasSuffix(base, ".test") ||
 		strings.Contains(os.Args[0], "/_test/") ||
+		strings.Contains(os.Args[0], "\\_test\\") ||
+		flag.Lookup("test.v") != nil ||
 		os.Getenv("UNIRTM_TESTING") == "1" ||
 		os.Getenv("CI") != "" // Usually CI runs tests, and we don't want spinners messing up CI logs anyway
 }

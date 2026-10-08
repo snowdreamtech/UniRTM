@@ -60,6 +60,9 @@ func TestRunSearch_Results(t *testing.T) {
 	t.Setenv("UNIRTM_DATA_DIR", tmpData)
 	setupSearchDB(t)
 
+	quiet = true
+	defer func() { quiet = false }()
+
 	err := runSearch(searchCmd, []string{"dummy"})
 	assert.NoError(t, err)
 
@@ -72,6 +75,9 @@ func TestRunSearch_Results(t *testing.T) {
 func TestRunSearch_JsonOutput(t *testing.T) {
 	tmpData := t.TempDir()
 	t.Setenv("UNIRTM_DATA_DIR", tmpData)
+
+	quiet = true
+	defer func() { quiet = false }()
 
 	jsonOutput = true
 	defer func() { jsonOutput = false }()

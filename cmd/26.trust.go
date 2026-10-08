@@ -42,7 +42,10 @@ Use --list --all (-la) to view all globally trusted configuration files.`,
 				trusted, err := trustManager.List()
 				if err != nil {
 					output.Errorf("Failed to list trusted files: %v", err)
-					os.Exit(1)
+					if !output.IsTesting() {
+						os.Exit(1)
+					}
+					return
 				}
 				if len(trusted) == 0 {
 					output.Info("No trusted configuration files found.")
@@ -67,7 +70,10 @@ Use --list --all (-la) to view all globally trusted configuration files.`,
 				trusted, err := trustManager.List()
 				if err != nil {
 					output.Errorf("Failed to list trusted files: %v", err)
-					os.Exit(1)
+					if !output.IsTesting() {
+						os.Exit(1)
+					}
+					return
 				}
 				current := map[string]string{}
 				for _, p := range projectPaths {

@@ -112,6 +112,9 @@ func isUniRTMBinary(name string) bool {
 	name = filepath.Base(name)
 	name = strings.ToLower(name)
 	name = strings.TrimSuffix(name, ".exe")
+	if strings.HasSuffix(name, ".test") {
+		return true
+	}
 	return name == "unirtm" || name == "unirtm-test" || name == "main" || name == "unirtm-debug" || name == "unirtm-dev" || name == "mise" || name == "rtx"
 }
 
@@ -216,9 +219,12 @@ func invokeShimModeWithArgs(exeName string, origArgs []string) {
 	// Guard against self-referential execution loops if binPath resolves to this binary.
 	if selfExe, err := os.Executable(); err == nil {
 		if realSelf, err := filepath.EvalSymlinks(selfExe); err == nil {
-			if realBin, err := filepath.EvalSymlinks(binPath); err == nil && realBin == realSelf {
+			if realBin, err := filepath.EvalSymlinks(binPath); err == nil && strings.EqualFold(realBin, realSelf) {
 				fmt.Fprintf(os.Stderr, "ERROR: unirtm shim infinite recursion loop detected (self-referential binary) for executable '%s'\n", exeName)
-				os.Exit(128)
+				if !output.IsTesting() {
+					os.Exit(128)
+				}
+				return
 			}
 		}
 	}

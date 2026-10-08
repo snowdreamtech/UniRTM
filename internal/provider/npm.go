@@ -513,7 +513,7 @@ func findSystemBinaryExcludingShims(name string) (string, error) {
 		}
 		candidate := filepath.Join(cleanDir, name)
 		if fi, err := os.Stat(candidate); err == nil && !fi.IsDir() {
-			if realCandidate, err := filepath.EvalSymlinks(candidate); err == nil && realSelf != "" && realCandidate == realSelf {
+			if realCandidate, err := filepath.EvalSymlinks(candidate); err == nil && realSelf != "" && strings.EqualFold(realCandidate, realSelf) {
 				continue
 			}
 			return candidate, nil

@@ -452,7 +452,9 @@ func execWindows(binary string, args []string) error {
 
 	if err := c.Run(); err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
-			os.Exit(exitErr.ExitCode())
+			if !output.IsTesting() {
+				os.Exit(exitErr.ExitCode())
+			}
 		}
 		return err
 	}

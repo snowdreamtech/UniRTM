@@ -6,7 +6,8 @@ package transaction_test
 import (
 	"context"
 	"fmt"
-	"log"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/database"
@@ -16,13 +17,17 @@ import (
 
 // Example_basicTransaction demonstrates basic transaction usage
 func Example_basicTransaction() {
+	dbPath := filepath.Join(os.TempDir(), fmt.Sprintf("unirtm_tx_basic_%d.db", time.Now().UnixNano()))
+	defer os.Remove(dbPath)
+
 	// Open database
 	db, err := database.Open(context.Background(), database.Config{
-		Path:    "/tmp/unirtm.db",
+		Path:    dbPath,
 		WALMode: true,
 	})
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Open database error: %v\n", err)
+		return
 	}
 	defer db.Close()
 
@@ -33,13 +38,14 @@ func Example_basicTransaction() {
 	ctx := context.Background()
 	tx, err := tm.Begin(ctx)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Begin error: %v\n", err)
+		return
 	}
 
 	// Ensure rollback on error
 	defer func() {
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 		}
 	}()
 
@@ -56,13 +62,15 @@ func Example_basicTransaction() {
 
 	err = tx.InstallationRepo().Create(ctx, installation)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Create error: %v\n", err)
+		return
 	}
 
 	// Commit transaction
 	err = tx.Commit()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Commit error: %v\n", err)
+		return
 	}
 
 	fmt.Println("Installation created successfully")
@@ -70,12 +78,16 @@ func Example_basicTransaction() {
 
 // Example_multiRepositoryTransaction demonstrates atomic operations across multiple repositories
 func Example_multiRepositoryTransaction() {
+	dbPath := filepath.Join(os.TempDir(), fmt.Sprintf("unirtm_tx_multi_%d.db", time.Now().UnixNano()))
+	defer os.Remove(dbPath)
+
 	db, err := database.Open(context.Background(), database.Config{
-		Path:    "/tmp/unirtm.db",
+		Path:    dbPath,
 		WALMode: true,
 	})
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Open database error: %v\n", err)
+		return
 	}
 	defer db.Close()
 
@@ -85,15 +97,14 @@ func Example_multiRepositoryTransaction() {
 	// Begin transaction
 	tx, err := tm.Begin(ctx)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Begin error: %v\n", err)
+		return
 	}
 
 	// Automatic rollback on error
 	defer func() {
 		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				log.Printf("rollback failed: %v", rbErr)
-			}
+			_ = tx.Rollback()
 		}
 	}()
 
@@ -109,7 +120,8 @@ func Example_multiRepositoryTransaction() {
 	}
 	err = tx.InstallationRepo().Create(ctx, installation)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Create error: %v\n", err)
+		return
 	}
 
 	// 2. Log audit entry
@@ -123,7 +135,8 @@ func Example_multiRepositoryTransaction() {
 	}
 	err = tx.AuditRepo().Log(ctx, auditEntry)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Log audit error: %v\n", err)
+		return
 	}
 
 	// 3. Update tool index
@@ -137,19 +150,22 @@ func Example_multiRepositoryTransaction() {
 	}
 	err = tx.IndexRepo().Upsert(ctx, indexEntry)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Upsert index error: %v\n", err)
+		return
 	}
 
 	// 4. Cache installation metadata
 	err = tx.CacheRepo().Set(ctx, "python:3.11.0:metadata", []byte("cached metadata"), 24*time.Hour)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Set cache error: %v\n", err)
+		return
 	}
 
 	// Commit all operations atomically
 	err = tx.Commit()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Commit error: %v\n", err)
+		return
 	}
 
 	fmt.Println("Multi-repository transaction completed successfully")
@@ -157,12 +173,16 @@ func Example_multiRepositoryTransaction() {
 
 // Example_errorHandlingWithRollback demonstrates automatic rollback on error
 func Example_errorHandlingWithRollback() {
+	dbPath := filepath.Join(os.TempDir(), fmt.Sprintf("unirtm_tx_err_%d.db", time.Now().UnixNano()))
+	defer os.Remove(dbPath)
+
 	db, err := database.Open(context.Background(), database.Config{
-		Path:    "/tmp/unirtm.db",
+		Path:    dbPath,
 		WALMode: true,
 	})
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Open database error: %v\n", err)
+		return
 	}
 	defer db.Close()
 
@@ -179,9 +199,7 @@ func Example_errorHandlingWithRollback() {
 		// Automatic rollback on any error
 		defer func() {
 			if err != nil {
-				if rbErr := tx.Rollback(); rbErr != nil {
-					log.Printf("rollback failed: %v", rbErr)
-				}
+				_ = tx.Rollback()
 			}
 		}()
 
@@ -219,12 +237,16 @@ func Example_errorHandlingWithRollback() {
 
 // Example_contextCancellation demonstrates handling context cancellation
 func Example_contextCancellation() {
+	dbPath := filepath.Join(os.TempDir(), fmt.Sprintf("unirtm_tx_ctx_%d.db", time.Now().UnixNano()))
+	defer os.Remove(dbPath)
+
 	db, err := database.Open(context.Background(), database.Config{
-		Path:    "/tmp/unirtm.db",
+		Path:    dbPath,
 		WALMode: true,
 	})
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Open database error: %v\n", err)
+		return
 	}
 	defer db.Close()
 
@@ -236,12 +258,13 @@ func Example_contextCancellation() {
 
 	tx, err := tm.Begin(ctx)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Begin error: %v\n", err)
+		return
 	}
 
 	defer func() {
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 		}
 	}()
 
@@ -258,14 +281,15 @@ func Example_contextCancellation() {
 
 	err = tx.InstallationRepo().Create(ctx, installation)
 	if err != nil {
-		log.Printf("Operation failed: %v", err)
+		fmt.Printf("Operation failed: %v\n", err)
 		return
 	}
 
 	// Commit before context timeout
 	err = tx.Commit()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Commit error: %v\n", err)
+		return
 	}
 
 	fmt.Println("Transaction completed before timeout")

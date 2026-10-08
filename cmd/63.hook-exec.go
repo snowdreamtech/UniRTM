@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/spf13/cobra"
 )
 
@@ -63,7 +64,10 @@ it executes the command in a single pass.`,
 				if os.Getenv("UNIRTM_HOOK_ALLOW_MISSING") == "1" || os.Getenv("UNIRTM_HOOK_ALLOW_MISSING") == "true" {
 					if strings.HasPrefix(err.Error(), "command not found:") {
 						fmt.Printf("Skipped %s not found\n", baseArgs[0])
-						os.Exit(0)
+						if !output.IsTesting() {
+							os.Exit(0)
+						}
+						return nil
 					}
 				}
 				return err

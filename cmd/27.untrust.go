@@ -34,7 +34,10 @@ Once untrusted, the file's environment variables and configuration will no longe
 		trustManager := config.NewTrustManager()
 		if err := trustManager.Untrust(absPath); err != nil {
 			output.Errorf("Failed to untrust configuration file: %v", err)
-			os.Exit(1)
+			if !output.IsTesting() {
+				os.Exit(1)
+			}
+			return
 		}
 
 		output.Successf("Untrusted configuration file: %s", pterm.LightGreen(absPath))
