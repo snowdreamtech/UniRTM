@@ -43,10 +43,19 @@ func (m *ShellConfigManager) GetConfigPath(shell ShellType) (string, error) {
 		return filepath.Join(home, ".config/fish/config.fish"), nil
 	case ShellPowerShell:
 		configFile := env.Get("PROFILE")
-		if configFile == "" {
-			configFile = filepath.Join(home, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1")
+		if configFile != "" {
+			return configFile, nil
 		}
-		return configFile, nil
+		pwshCore := filepath.Join(home, "Documents", "PowerShell", "Microsoft.PowerShell_profile.ps1")
+		if env.RuntimeGOOS == "windows" {
+			winPwsh := filepath.Join(home, "Documents", "WindowsPowerShell", "Microsoft.PowerShell_profile.ps1")
+			if _, err := os.Stat(winPwsh); err == nil {
+				if _, err := os.Stat(pwshCore); os.IsNotExist(err) {
+					return winPwsh, nil
+				}
+			}
+		}
+		return pwshCore, nil
 	default:
 		return "", fmt.Errorf("unsupported shell: %s", shell)
 	}
@@ -175,37 +184,63 @@ func (m *ShellConfigManager) Remove(shell ShellType, marker string) error {
 		return nil
 	}
 
-	content, err := os.ReadFile(configFile)
+	rawBytes, err := os.ReadFile(configFile)
 	if err != nil {
 		return fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	searchPattern := fmt.Sprintf("unirtm %s activation", marker)
-	if !strings.Contains(string(content), searchPattern) {
-		// Try fallback to older pattern without "activation" suffix just in case
-		oldPattern := fmt.Sprintf("unirtm %s", marker)
-		if !strings.Contains(string(content), oldPattern) {
-			return nil
-		}
-		searchPattern = oldPattern
+	contentStr := string(rawBytes)
+	isCRLF := strings.Contains(contentStr, "\r\n")
+	normalized := strings.ReplaceAll(contentStr, "\r\n", "\n")
+	lines := strings.Split(normalized, "\n")
+
+	markerLower := strings.ToLower(marker)
+	possibleComments := []string{
+		fmt.Sprintf("unirtm %s activation", markerLower),
+		fmt.Sprintf("unirtm %s", markerLower),
+		fmt.Sprintf("%s activation", markerLower),
+	}
+	if markerLower == "unirtm" {
+		possibleComments = append(possibleComments, "unirtm activation")
 	}
 
-	lines := strings.Split(string(content), "\n")
+	isCommentMarker := func(line string) bool {
+		trimmed := strings.ToLower(strings.TrimSpace(line))
+		if !strings.HasPrefix(trimmed, "#") {
+			return false
+		}
+		for _, pat := range possibleComments {
+			if strings.Contains(trimmed, pat) {
+				return true
+			}
+		}
+		return false
+	}
+
+	isActivationCmd := func(line string) bool {
+		trimmed := strings.ToLower(strings.TrimSpace(line))
+		if strings.HasPrefix(trimmed, "#") {
+			return false
+		}
+		// Must reference the target tool
+		if !strings.Contains(trimmed, markerLower) {
+			return false
+		}
+		// And must contain activation keywords
+		return strings.Contains(trimmed, "activate") ||
+			strings.Contains(trimmed, "hook-env") ||
+			strings.Contains(trimmed, "source") ||
+			strings.Contains(trimmed, "eval") ||
+			strings.Contains(trimmed, "invoke-expression") ||
+			strings.Contains(trimmed, "out-string") ||
+			strings.Contains(trimmed, "invoke-restmethod")
+	}
+
 	var newLines []string
 	removedCount := 0
 
 	for _, line := range lines {
-		// Remove the comment marker line
-		if strings.Contains(line, searchPattern) {
-			removedCount++
-			continue
-		}
-		// Also remove the specific source/activation line if we find it
-		// Added PowerShell specific keywords: Invoke-Expression, Out-String
-		if strings.Contains(line, "unirtm") && strings.Contains(line, marker) &&
-			(strings.Contains(line, "source") || strings.Contains(line, "activate") ||
-				strings.Contains(line, "eval") || strings.Contains(line, "Invoke-Expression") ||
-				strings.Contains(line, "Out-String") || strings.Contains(line, "Invoke-RestMethod")) {
+		if isCommentMarker(line) || isActivationCmd(line) {
 			removedCount++
 			continue
 		}
@@ -221,7 +256,15 @@ func (m *ShellConfigManager) Remove(shell ShellType, marker string) error {
 		newLines = newLines[:len(newLines)-1]
 	}
 
-	output := strings.Join(newLines, "\n") + "\n"
+	lineSep := "\n"
+	if isCRLF {
+		lineSep = "\r\n"
+	}
+	output := strings.Join(newLines, lineSep)
+	if len(newLines) > 0 {
+		output += lineSep
+	}
+
 	if err := os.WriteFile(configFile, []byte(output), 0600); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}

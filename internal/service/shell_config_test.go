@@ -224,6 +224,81 @@ func TestShellConfigManager_Inject_DryRun_Update(t *testing.T) {
 	}
 }
 
+func TestShellConfigManager_Remove_MiseWithoutUniRTMKeyword(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	sm := NewShellConfigManager(&mockFormatter{}, false)
+	configPath := filepath.Join(tmpDir, ".bashrc")
+
+	content := []byte("# unirtm mise activation\neval \"$(/usr/local/bin/mise activate bash)\"\nexport FOO=bar\n")
+	os.WriteFile(configPath, content, 0644)
+
+	err := sm.Remove(ShellBash, "mise")
+	if err != nil {
+		t.Fatalf("Remove mise failed: %v", err)
+	}
+
+	readContent, _ := os.ReadFile(configPath)
+	str := string(readContent)
+	if strings.Contains(str, "mise activate") || strings.Contains(str, "unirtm mise activation") {
+		t.Errorf("expected mise activation to be completely removed, got: %s", str)
+	}
+	if !strings.Contains(str, "export FOO=bar") {
+		t.Errorf("expected other configuration to remain untouched, got: %s", str)
+	}
+}
+
+func TestShellConfigManager_Remove_WithoutComment(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	sm := NewShellConfigManager(&mockFormatter{}, false)
+	configPath := filepath.Join(tmpDir, ".bashrc")
+
+	content := []byte("export PATH=/usr/bin:$PATH\neval \"$(C:/Users/test/unirtm.exe activate bash)\"\nalias ll='ls -l'\n")
+	os.WriteFile(configPath, content, 0644)
+
+	err := sm.Remove(ShellBash, "unirtm")
+	if err != nil {
+		t.Fatalf("Remove unirtm without comment failed: %v", err)
+	}
+
+	readContent, _ := os.ReadFile(configPath)
+	str := string(readContent)
+	if strings.Contains(str, "unirtm.exe activate") {
+		t.Errorf("expected unirtm command to be removed even without comment, got: %s", str)
+	}
+	if !strings.Contains(str, "export PATH") || !strings.Contains(str, "alias ll") {
+		t.Errorf("expected unrelated lines to be preserved, got: %s", str)
+	}
+}
+
+func TestShellConfigManager_Remove_CRLF(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	sm := NewShellConfigManager(&mockFormatter{}, false)
+	configPath := filepath.Join(tmpDir, ".bashrc")
+
+	content := []byte("# unirtm activation\r\n& \"C:\\unirtm.exe\" activate powershell | Out-String | Invoke-Expression\r\nWrite-Host 'hello'\r\n")
+	os.WriteFile(configPath, content, 0644)
+
+	err := sm.Remove(ShellBash, "unirtm")
+	if err != nil {
+		t.Fatalf("Remove CRLF failed: %v", err)
+	}
+
+	readContent, _ := os.ReadFile(configPath)
+	str := string(readContent)
+	if strings.Contains(str, "activate powershell") {
+		t.Errorf("expected powershell activation to be removed, got: %s", str)
+	}
+	if !strings.Contains(str, "Write-Host 'hello'") {
+		t.Errorf("expected other lines to remain, got: %s", str)
+	}
+	if !strings.Contains(str, "\r\n") {
+		t.Errorf("expected CRLF line endings to be preserved, got: %q", str)
+	}
+}
+
 func (m *mockFormatter) Infof(format string, a ...interface{})    {}
 func (m *mockFormatter) Successf(format string, a ...interface{}) {}
 func (m *mockFormatter) Warningf(format string, a ...interface{}) {}
