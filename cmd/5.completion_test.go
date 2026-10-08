@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -264,4 +265,21 @@ func TestAllShells_Coverage(t *testing.T) {
 		assert.True(t, ok, "completionFileNames should have an entry for %s", st)
 		assert.NotEmpty(t, filename)
 	}
+}
+
+func TestBuildActivationCmd(t *testing.T) {
+	// Test bash and zsh with standard and spaced paths
+	cmdBash := buildActivationCmd(service.ShellBash, "/home/user/.local/share/unirtm/completions/unirtm.bash")
+	assert.Equal(t, `[[ -f "/home/user/.local/share/unirtm/completions/unirtm.bash" ]] && source "/home/user/.local/share/unirtm/completions/unirtm.bash"`, cmdBash)
+
+	cmdZshSpaced := buildActivationCmd(service.ShellZsh, "/home/user name/unirtm.zsh")
+	assert.Equal(t, `[[ -f "/home/user name/unirtm.zsh" ]] && source "/home/user name/unirtm.zsh"`, cmdZshSpaced)
+
+	// Test powershell with quotes
+	cmdPwsh := buildActivationCmd(service.ShellPowerShell, `C:\Users\John Doe\unirtm.ps1`)
+	assert.Equal(t, `. "C:\Users\John Doe\unirtm.ps1"`, cmdPwsh)
+
+	// Test fish returns empty string
+	cmdFish := buildActivationCmd(service.ShellFish, "/home/user/.config/fish/completions/unirtm.fish")
+	assert.Empty(t, cmdFish)
 }

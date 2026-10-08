@@ -13,6 +13,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/pkg/envpath"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
 )
@@ -309,9 +310,10 @@ func writeCompletionFile(cmd *cobra.Command, shellType service.ShellType, destFi
 func buildActivationCmd(shellType service.ShellType, compFile string) string {
 	switch shellType {
 	case service.ShellZsh, service.ShellBash:
-		return fmt.Sprintf(`[[ -f %s ]] && source %s`, compFile, compFile)
+		posixCompFile := envpath.FormatDirForPosix(compFile)
+		return fmt.Sprintf(`[[ -f "%s" ]] && source "%s"`, posixCompFile, posixCompFile)
 	case service.ShellPowerShell:
-		return fmt.Sprintf(`. %s`, compFile)
+		return fmt.Sprintf(`. "%s"`, compFile)
 	case service.ShellFish:
 		// Fish picks up completions from ~/.config/fish/completions/ automatically.
 		return ""

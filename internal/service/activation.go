@@ -339,7 +339,7 @@ func (m *ActivationManager) generatePosixScript(config ActivationConfig) (*Activ
 	if len(config.Sources) > 0 {
 		sb.WriteString("# Source additional scripts\n")
 		for _, s := range config.Sources {
-			sb.WriteString(fmt.Sprintf("source \"%s\"\n", s))
+			sb.WriteString(fmt.Sprintf("source \"%s\"\n", envpath.FormatDirForPosix(s)))
 		}
 		sb.WriteString("\n")
 	}

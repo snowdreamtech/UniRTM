@@ -267,7 +267,7 @@ func (m *AutoActivationManager) generateActivation(ctx context.Context, shell Sh
 			case ShellPowerShell:
 				scriptContent.WriteString(fmt.Sprintf(". \"%s\"\n", s))
 			default: // POSIX
-				scriptContent.WriteString(fmt.Sprintf("source \"%s\"\n", s))
+				scriptContent.WriteString(fmt.Sprintf("source \"%s\"\n", envpath.FormatDirForPosix(s)))
 			}
 		}
 	}

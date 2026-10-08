@@ -23,7 +23,9 @@ if ! command -v unirtm >/dev/null 2>&1; then
     if [ -x "$_UNIRTM_BIN" ]; then
         eval "$("$_UNIRTM_BIN" env)" 2>/dev/null
     else
-        if [ -x "$HOME/.local/bin/unirtm" ]; then
+        if [ -x "$HOME/bin/unirtm" ]; then
+            eval "$("$HOME/bin/unirtm" env)" 2>/dev/null
+        elif [ -x "$HOME/.local/bin/unirtm" ]; then
             eval "$("$HOME/.local/bin/unirtm" env)" 2>/dev/null
         fi
     fi
