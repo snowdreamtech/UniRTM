@@ -162,7 +162,16 @@ func NewHTTPDownloader() *HTTPDownloader {
 func (h *HTTPDownloader) Download(ctx context.Context, url string, destination string, opts DownloadOptions) error {
 	flightKey := destination
 	_, err, _ := downloadFlight.Do(flightKey, func() (interface{}, error) {
-		return nil, h.downloadInternal(ctx, url, destination, opts)
+		err := h.downloadInternal(ctx, url, destination, opts)
+		// Proxy-strip fallback: if a user-configured GitHub proxy failed (e.g. 502/down/rate-limited),
+		// strip the proxy prefix and retry once with canonical URL directly via AdaptiveTransport.
+		if err != nil && opts.GitHubProxy != "" && (strings.Contains(url, "github.com") || strings.Contains(url, "githubusercontent.com")) {
+			fallbackOpts := opts
+			fallbackOpts.GitHubProxy = ""
+			_ = os.Remove(destination)
+			return nil, h.downloadInternal(ctx, url, destination, fallbackOpts)
+		}
+		return nil, err
 	})
 	return err
 }

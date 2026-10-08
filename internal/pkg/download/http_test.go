@@ -759,3 +759,31 @@ func TestHTTPDownloader_ConcurrentDeduplication(t *testing.T) {
 
 	assert.Equal(t, int32(1), atomic.LoadInt32(&requestCount), "expected exactly 1 network request due to singleflight deduplication")
 }
+
+func TestHTTPDownloader_Download_GitHubProxyFallback(t *testing.T) {
+	canonicalContent := []byte("canonical-content")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "broken-proxy") {
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(canonicalContent)))
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(canonicalContent)
+	}))
+	defer server.Close()
+
+	downloader := download.NewHTTPDownloader()
+	opts := download.DefaultDownloadOptions()
+	opts.MaxRetries = 0
+	opts.GitHubProxy = server.URL + "/broken-proxy/"
+
+	dest := filepath.Join(t.TempDir(), "fallback.txt")
+	targetURL := server.URL + "/github.com/test/repo"
+	err := downloader.Download(context.Background(), targetURL, dest, opts)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(dest)
+	require.NoError(t, err)
+	assert.Equal(t, canonicalContent, data)
+}

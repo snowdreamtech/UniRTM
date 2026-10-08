@@ -4,6 +4,7 @@
 package http
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -77,5 +78,35 @@ func TestDomainRouteCache_InvalidateAndClear(t *testing.T) {
 	}
 	if _, ok := cache.Get("bar.com"); ok {
 		t.Errorf("expected bar.com to be cleared")
+	}
+}
+
+func TestDomainRouteCache_DiskPersistence(t *testing.T) {
+	tempFile := filepath.Join(t.TempDir(), "network", "routes.json")
+
+	// Process 1: populate cache and persist to disk
+	cache1 := NewPersistentDomainRouteCache(10*time.Minute, tempFile)
+	cache1.Set("objects.githubusercontent.com", RouteProxy)
+	cache1.Set("mirrors.aliyun.com", RouteDirect)
+
+	// Process 2: new instance reading from the same file
+	cache2 := NewPersistentDomainRouteCache(10*time.Minute, tempFile)
+
+	strat, ok := cache2.Get("raw.githubusercontent.com")
+	if !ok || strat != RouteProxy {
+		t.Errorf("expected RouteProxy for raw.githubusercontent.com from disk, got %v (ok=%v)", strat, ok)
+	}
+
+	strat, ok = cache2.Get("aliyun.com")
+	if !ok || strat != RouteDirect {
+		t.Errorf("expected RouteDirect for aliyun.com from disk, got %v (ok=%v)", strat, ok)
+	}
+
+	// Invalidate in Process 2 and verify Process 3 sees it removed
+	cache2.Invalidate("aliyun.com")
+
+	cache3 := NewPersistentDomainRouteCache(10*time.Minute, tempFile)
+	if _, ok := cache3.Get("aliyun.com"); ok {
+		t.Errorf("expected aliyun.com to remain invalidated on disk")
 	}
 }

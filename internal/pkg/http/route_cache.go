@@ -4,8 +4,13 @@
 package http
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // RouteStrategy defines the routing strategy chosen for an apex domain.
@@ -32,26 +37,38 @@ func (s RouteStrategy) String() string {
 
 // RouteEntry stores the strategy and expiration timestamp for a domain.
 type RouteEntry struct {
-	Strategy  RouteStrategy
-	ExpiresAt time.Time
+	Strategy  RouteStrategy `json:"strategy"`
+	ExpiresAt time.Time     `json:"expires_at"`
 }
 
-// DomainRouteCache provides thread-safe, TTL-based caching for domain routing decisions.
+// DomainRouteCache provides thread-safe, TTL-based caching for domain routing decisions
+// with optional on-disk persistence across CLI executions.
 type DomainRouteCache struct {
 	mu         sync.RWMutex
 	routes     map[string]RouteEntry
 	defaultTTL time.Duration
+	filePath   string
 }
 
-// NewDomainRouteCache creates a new DomainRouteCache with the specified default TTL.
+// NewDomainRouteCache creates an in-memory DomainRouteCache.
 func NewDomainRouteCache(ttl time.Duration) *DomainRouteCache {
+	return NewPersistentDomainRouteCache(ttl, "")
+}
+
+// NewPersistentDomainRouteCache creates a DomainRouteCache backed by a persistent file.
+func NewPersistentDomainRouteCache(ttl time.Duration, filePath string) *DomainRouteCache {
 	if ttl <= 0 {
 		ttl = 30 * time.Minute
 	}
-	return &DomainRouteCache{
+	c := &DomainRouteCache{
 		routes:     make(map[string]RouteEntry),
 		defaultTTL: ttl,
+		filePath:   filePath,
 	}
+	if filePath != "" {
+		c.loadFromDisk()
+	}
+	return c
 }
 
 var (
@@ -59,10 +76,15 @@ var (
 	defaultRouteCacheOnce sync.Once
 )
 
-// DefaultRouteCache returns the shared global singleton instance of DomainRouteCache.
+// DefaultRouteCache returns the shared persistent singleton instance of DomainRouteCache.
 func DefaultRouteCache() *DomainRouteCache {
 	defaultRouteCacheOnce.Do(func() {
-		defaultRouteCache = NewDomainRouteCache(30 * time.Minute)
+		cacheDir := env.GetCacheDir()
+		var p string
+		if cacheDir != "" {
+			p = filepath.Join(cacheDir, "network", "routes.json")
+		}
+		defaultRouteCache = NewPersistentDomainRouteCache(30*time.Minute, p)
 	})
 	return defaultRouteCache
 }
@@ -71,6 +93,54 @@ func DefaultRouteCache() *DomainRouteCache {
 func ResetDefaultRouteCache() {
 	defaultRouteCacheOnce = sync.Once{}
 	defaultRouteCache = nil
+}
+
+func (c *DomainRouteCache) loadFromDisk() {
+	if c.filePath == "" {
+		return
+	}
+	data, err := os.ReadFile(c.filePath)
+	if err != nil {
+		return
+	}
+	var loaded map[string]RouteEntry
+	if err := json.Unmarshal(data, &loaded); err != nil {
+		return
+	}
+
+	now := time.Now()
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for k, v := range loaded {
+		if now.Before(v.ExpiresAt) {
+			c.routes[k] = v
+		}
+	}
+}
+
+func (c *DomainRouteCache) saveToDiskLocked() {
+	if c.filePath == "" {
+		return
+	}
+	now := time.Now()
+	active := make(map[string]RouteEntry)
+	for k, v := range c.routes {
+		if now.Before(v.ExpiresAt) {
+			active[k] = v
+		}
+	}
+	data, err := json.MarshalIndent(active, "", "  ")
+	if err != nil {
+		return
+	}
+
+	dir := filepath.Dir(c.filePath)
+	_ = os.MkdirAll(dir, 0755)
+
+	tmpFile := c.filePath + ".tmp"
+	if err := os.WriteFile(tmpFile, data, 0644); err == nil {
+		_ = os.Rename(tmpFile, c.filePath)
+	}
 }
 
 // Get returns the cached routing strategy for the host's apex domain if valid.
@@ -91,6 +161,7 @@ func (c *DomainRouteCache) Get(host string) (RouteStrategy, bool) {
 	if time.Now().After(entry.ExpiresAt) {
 		c.mu.Lock()
 		delete(c.routes, apex)
+		c.saveToDiskLocked()
 		c.mu.Unlock()
 		return RouteDirect, false
 	}
@@ -115,6 +186,7 @@ func (c *DomainRouteCache) SetWithTTL(host string, strategy RouteStrategy, ttl t
 		Strategy:  strategy,
 		ExpiresAt: time.Now().Add(ttl),
 	}
+	c.saveToDiskLocked()
 	c.mu.Unlock()
 }
 
@@ -128,6 +200,7 @@ func (c *DomainRouteCache) Invalidate(host string) {
 
 	c.mu.Lock()
 	delete(c.routes, apex)
+	c.saveToDiskLocked()
 	c.mu.Unlock()
 }
 
@@ -135,5 +208,6 @@ func (c *DomainRouteCache) Invalidate(host string) {
 func (c *DomainRouteCache) Clear() {
 	c.mu.Lock()
 	c.routes = make(map[string]RouteEntry)
+	c.saveToDiskLocked()
 	c.mu.Unlock()
 }
