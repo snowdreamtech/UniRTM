@@ -316,6 +316,9 @@ func TestShellConfigManager_MultiLineBlock(t *testing.T) {
 if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     export PATH="$HOME/.local/bin:$PATH"
 fi
+if [[ -d "$HOME/bin" && ":$PATH:" != *":$HOME/bin:"* ]]; then
+    export PATH="$HOME/bin:$PATH"
+fi
 
 # UniRTM activation
 if command -v unirtm >/dev/null 2>&1; then
@@ -344,6 +347,9 @@ fi`
 	block2 := `# Ensure user private bin directory is in PATH
 if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     export PATH="$HOME/.local/bin:$PATH"
+fi
+if [[ -d "$HOME/bin" && ":$PATH:" != *":$HOME/bin:"* ]]; then
+    export PATH="$HOME/bin:$PATH"
 fi
 
 # UniRTM activation

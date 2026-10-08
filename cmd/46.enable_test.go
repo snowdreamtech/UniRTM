@@ -74,6 +74,8 @@ func TestGetActivationCmd_CrossPlatform(t *testing.T) {
 	assert.Contains(t, cmdBash, "# Ensure user private bin directory is in PATH")
 	assert.Contains(t, cmdBash, `if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then`)
 	assert.Contains(t, cmdBash, `export PATH="$HOME/.local/bin:$PATH"`)
+	assert.Contains(t, cmdBash, `if [[ -d "$HOME/bin" && ":$PATH:" != *":$HOME/bin:"* ]]; then`)
+	assert.Contains(t, cmdBash, `export PATH="$HOME/bin:$PATH"`)
 	assert.Contains(t, cmdBash, "# UniRTM activation")
 	assert.Contains(t, cmdBash, "if command -v unirtm >/dev/null 2>&1; then")
 	assert.Contains(t, cmdBash, `activate bash)"`)

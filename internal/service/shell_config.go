@@ -343,6 +343,8 @@ func isBlockComponent(lineLower string) bool {
 		strings.Contains(lineLower, "userbin") ||
 		strings.Contains(lineLower, "if ") ||
 		strings.Contains(lineLower, "then") ||
+		strings.Contains(lineLower, "foreach") ||
+		strings.Contains(lineLower, "test ") ||
 		lineLower == "fi" ||
 		lineLower == "end" ||
 		lineLower == "}" ||

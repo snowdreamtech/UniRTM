@@ -123,6 +123,9 @@ func getActivationCmd(targetTool string, shell service.ShellType, useShims bool)
 if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     export PATH="$HOME/.local/bin:$PATH"
 fi
+if [[ -d "$HOME/bin" && ":$PATH:" != *":$HOME/bin:"* ]]; then
+    export PATH="$HOME/bin:$PATH"
+fi
 
 # %s activation
 if command -v %s >/dev/null 2>&1; then
@@ -132,6 +135,9 @@ fi`, toolDisplayName, targetTool, targetTool, flags), nil
 		return fmt.Sprintf(`# Ensure user private bin directory is in PATH
 if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     export PATH="$HOME/.local/bin:$PATH"
+fi
+if [[ -d "$HOME/bin" && ":$PATH:" != *":$HOME/bin:"* ]]; then
+    export PATH="$HOME/bin:$PATH"
 fi
 
 # %s activation
@@ -143,6 +149,9 @@ fi`, toolDisplayName, targetTool, targetTool, flags), nil
 if not contains "$HOME/.local/bin" $PATH
     set -gx PATH "$HOME/.local/bin" $PATH
 end
+if test -d "$HOME/bin"; and not contains "$HOME/bin" $PATH
+    set -gx PATH "$HOME/bin" $PATH
+end
 
 # %s activation
 if type -q %s
@@ -150,9 +159,11 @@ if type -q %s
 end`, toolDisplayName, targetTool, targetTool, flags), nil
 	case service.ShellPowerShell:
 		return fmt.Sprintf(`# Ensure user private bin directory is in PATH
-$userBin = if ($env:OS -like "*Windows*" -or $IsWindows) { "$HOME\bin" } else { "$HOME/.local/bin" }
-if (-not ($env:Path -split [System.IO.Path]::PathSeparator -contains $userBin)) {
-    $env:Path = "$userBin" + [System.IO.Path]::PathSeparator + $env:Path
+$userBins = if ($env:OS -like "*Windows*" -or $IsWindows) { @("$HOME\bin", "$HOME\.local\bin") } else { @("$HOME/.local/bin", "$HOME/bin") }
+foreach ($dir in $userBins) {
+    if ((Test-Path $dir) -and -not ($env:Path -split [System.IO.Path]::PathSeparator -contains $dir)) {
+        $env:Path = "$dir" + [System.IO.Path]::PathSeparator + $env:Path
+    }
 }
 
 # %s activation
