@@ -80,8 +80,8 @@ unirtm --version
 **Via Git Bash (Windows)**:
 
 ```sh-session
-$ powershell.exe -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex"
-$ ~/bin/unirtm.exe --version
+powershell.exe -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex"
+~/bin/unirtm.exe --version
 ```
 
 **Via NPM**:

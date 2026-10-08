@@ -80,8 +80,8 @@ unirtm --version
 **使用 Git Bash 安装 (Windows)**:
 
 ```sh-session
-$ powershell.exe -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex"
-$ ~/bin/unirtm.exe --version
+powershell.exe -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.com/snowdreamtech/UniRTM/main/install.ps1 | iex"
+~/bin/unirtm.exe --version
 ```
 
 **使用 NPM 安装**:
