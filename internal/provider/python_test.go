@@ -139,4 +139,3 @@ func TestPythonProvider_GetRealPythonPath(t *testing.T) {
 	_ = os.WriteFile(binPy314, []byte("#!/bin/sh"), 0755)
 	assert.Equal(t, binPy314, p.getRealPythonPath(verDirMac))
 }
-
