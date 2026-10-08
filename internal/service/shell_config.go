@@ -91,15 +91,23 @@ func (m *ShellConfigManager) Inject(shell ShellType, marker string, content stri
 		}
 
 		// Update by replacing the old block
-		// We search for the block starting with the marker and ending at the next newline after the content-like line
 		lines := strings.Split(rawContentStr, "\n")
 		var newLines []string
 		inBlock := false
 		replaced := false
+		seenActivation := false
+		inIfWrapper := false
+		markerLower := strings.ToLower(marker)
 
 		for i := 0; i < len(lines); i++ {
-			if strings.Contains(lines[i], searchPattern) {
+			line := lines[i]
+			trimmed := strings.TrimSpace(line)
+			trimmedLower := strings.ToLower(trimmed)
+
+			if strings.Contains(line, searchPattern) {
 				inBlock = true
+				seenActivation = false
+				inIfWrapper = false
 				if !replaced {
 					// Add the new block here
 					newLines = append(newLines, "# "+searchPattern)
@@ -110,20 +118,29 @@ func (m *ShellConfigManager) Inject(shell ShellType, marker string, content stri
 			}
 
 			if inBlock {
-				// We assume the block is the marker line + one activation line
-				// If the line contains the tool name and activate/eval, it's the activation line
-				if strings.Contains(lines[i], marker) && (strings.Contains(lines[i], "activate") || strings.Contains(lines[i], "eval") || strings.Contains(lines[i], "source")) {
-					inBlock = false
-					continue
+				if strings.Contains(trimmedLower, markerLower) &&
+					(strings.Contains(trimmedLower, "activate") || strings.Contains(trimmedLower, "hook-env") || strings.Contains(trimmedLower, "eval") || strings.Contains(trimmedLower, "source")) {
+					seenActivation = true
 				}
-				// If we reach an empty line or another comment, the block ended unexpectedly
-				if strings.TrimSpace(lines[i]) == "" || strings.HasPrefix(strings.TrimSpace(lines[i]), "#") {
-					inBlock = false
-					// Don't continue, process this line normally
-				} else {
-					continue
+
+				if strings.HasPrefix(trimmedLower, "if ") || strings.Contains(trimmedLower, "get-command") {
+					inIfWrapper = true
 				}
+
+				if seenActivation {
+					if inIfWrapper {
+						if trimmed == "fi" || trimmed == "end" || trimmed == "}" {
+							inBlock = false
+						}
+					} else {
+						inBlock = false
+					}
+				} else if !isBlockComponent(trimmedLower) {
+					inBlock = false
+				}
+				continue
 			}
+
 			newLines = append(newLines, lines[i])
 		}
 
@@ -238,12 +255,57 @@ func (m *ShellConfigManager) Remove(shell ShellType, marker string) error {
 
 	var newLines []string
 	removedCount := 0
+	inBlock := false
+	seenActivation := false
+	inIfWrapper := false
 
-	for _, line := range lines {
-		if isCommentMarker(line) || isActivationCmd(line) {
+	for i := 0; i < len(lines); i++ {
+		line := lines[i]
+		trimmed := strings.TrimSpace(line)
+		trimmedLower := strings.ToLower(trimmed)
+
+		// 1. Check if this line starts a managed block
+		if isCommentMarker(line) {
+			inBlock = true
+			seenActivation = false
+			inIfWrapper = false
 			removedCount++
 			continue
 		}
+
+		// 2. If inside a managed block, remove all lines of the block
+		if inBlock {
+			removedCount++
+
+			if strings.Contains(trimmedLower, markerLower) &&
+				(strings.Contains(trimmedLower, "activate") || strings.Contains(trimmedLower, "hook-env") || strings.Contains(trimmedLower, "eval") || strings.Contains(trimmedLower, "source")) {
+				seenActivation = true
+			}
+
+			if strings.HasPrefix(trimmedLower, "if ") || strings.Contains(trimmedLower, "get-command") {
+				inIfWrapper = true
+			}
+
+			if seenActivation {
+				if inIfWrapper {
+					if trimmed == "fi" || trimmed == "end" || trimmed == "}" {
+						inBlock = false
+					}
+				} else {
+					inBlock = false
+				}
+			} else if !isBlockComponent(trimmedLower) {
+				inBlock = false
+			}
+			continue
+		}
+
+		// 3. Fallback: Standalone activation command without comment marker
+		if isActivationCmd(line) {
+			removedCount++
+			continue
+		}
+
 		newLines = append(newLines, line)
 	}
 
@@ -272,3 +334,20 @@ func (m *ShellConfigManager) Remove(shell ShellType, marker string) error {
 	m.formatter.Success(fmt.Sprintf("Removed %s logic from %s (%d lines removed)", marker, configFile, removedCount))
 	return nil
 }
+
+func isBlockComponent(lineLower string) bool {
+	if lineLower == "" || strings.HasPrefix(lineLower, "#") {
+		return true
+	}
+	return strings.Contains(lineLower, "path") ||
+		strings.Contains(lineLower, "userbin") ||
+		strings.Contains(lineLower, "if ") ||
+		strings.Contains(lineLower, "then") ||
+		lineLower == "fi" ||
+		lineLower == "end" ||
+		lineLower == "}" ||
+		strings.Contains(lineLower, "command -v") ||
+		strings.Contains(lineLower, "type -q") ||
+		strings.Contains(lineLower, "get-command")
+}
+

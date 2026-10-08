@@ -68,20 +68,39 @@ func TestRunEnable_InvalidTool(t *testing.T) {
 }
 
 func TestGetActivationCmd_CrossPlatform(t *testing.T) {
-	// 1. Bash: Must never contain unescaped backslashes
+	// 1. Bash: Must never contain unescaped backslashes, must have English comments and PATH check
 	cmdBash, err := getActivationCmd("unirtm", service.ShellBash, false)
 	require.NoError(t, err)
+	assert.Contains(t, cmdBash, "# Ensure user private bin directory is in PATH")
+	assert.Contains(t, cmdBash, `if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then`)
+	assert.Contains(t, cmdBash, `export PATH="$HOME/.local/bin:$PATH"`)
+	assert.Contains(t, cmdBash, "# UniRTM activation")
+	assert.Contains(t, cmdBash, "if command -v unirtm >/dev/null 2>&1; then")
 	assert.Contains(t, cmdBash, `activate bash)"`)
 	assert.NotContains(t, cmdBash, `\`)
 
-	// 2. PowerShell: Must be safe for execution
+	// 2. PowerShell: Must be safe for execution with defense check and userBin setup
 	cmdPS, err := getActivationCmd("unirtm", service.ShellPowerShell, false)
 	require.NoError(t, err)
+	assert.Contains(t, cmdPS, "# Ensure user private bin directory is in PATH")
+	assert.Contains(t, cmdPS, "$userBin")
+	assert.Contains(t, cmdPS, "if (Get-Command unirtm -ErrorAction SilentlyContinue) {")
 	assert.Contains(t, cmdPS, `activate powershell | Out-String | Invoke-Expression`)
 
 	// 3. Zsh: Must never contain unescaped backslashes
 	cmdZsh, err := getActivationCmd("unirtm", service.ShellZsh, false)
 	require.NoError(t, err)
+	assert.Contains(t, cmdZsh, "# Ensure user private bin directory is in PATH")
+	assert.Contains(t, cmdZsh, "if command -v unirtm >/dev/null 2>&1; then")
 	assert.Contains(t, cmdZsh, `activate zsh)"`)
 	assert.NotContains(t, cmdZsh, `\`)
+
+	// 4. Fish: Must use fish syntax
+	cmdFish, err := getActivationCmd("unirtm", service.ShellFish, false)
+	require.NoError(t, err)
+	assert.Contains(t, cmdFish, "# Ensure user private bin directory is in PATH")
+	assert.Contains(t, cmdFish, `if not contains "$HOME/.local/bin" $PATH`)
+	assert.Contains(t, cmdFish, "if type -q unirtm")
+	assert.Contains(t, cmdFish, "activate fish | source")
 }
+

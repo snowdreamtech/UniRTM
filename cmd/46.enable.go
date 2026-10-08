@@ -6,12 +6,9 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
-	"github.com/snowdreamtech/unirtm/internal/pkg/envpath"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
 )
@@ -110,44 +107,60 @@ func runEnable(cmd *cobra.Command, args []string) error {
 }
 
 func getActivationCmd(targetTool string, shell service.ShellType, useShims bool) (string, error) {
-	// Get the absolute path of the target executable
-	var exePath string
-	var err error
-	if targetTool == "unirtm" {
-		exePath, err = os.Executable()
-		if err != nil {
-			exePath = "unirtm"
-		}
-	} else {
-		// Try to find mise in PATH
-		exePath = "mise"
-		if p, err := exec.LookPath("mise"); err == nil {
-			if abs, err := filepath.Abs(p); err == nil {
-				exePath = abs
-			}
-		}
-	}
-
-	// Prepare flags
 	flags := ""
 	if useShims {
 		flags = " --shims"
 	}
 
+	toolDisplayName := targetTool
+	if targetTool == "unirtm" {
+		toolDisplayName = "UniRTM"
+	}
+
 	switch shell {
 	case service.ShellZsh:
-		cmd := envpath.FormatExeForPosix(exePath)
-		return fmt.Sprintf(`eval "$(%s activate%s zsh)"`, cmd, flags), nil
+		return fmt.Sprintf(`# Ensure user private bin directory is in PATH
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
+# %s activation
+if command -v %s >/dev/null 2>&1; then
+    eval "$(%s activate%s zsh)"
+fi`, toolDisplayName, targetTool, targetTool, flags), nil
 	case service.ShellBash:
-		cmd := envpath.FormatExeForPosix(exePath)
-		return fmt.Sprintf(`eval "$(%s activate%s bash)"`, cmd, flags), nil
+		return fmt.Sprintf(`# Ensure user private bin directory is in PATH
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
+# %s activation
+if command -v %s >/dev/null 2>&1; then
+    eval "$(%s activate%s bash)"
+fi`, toolDisplayName, targetTool, targetTool, flags), nil
 	case service.ShellFish:
-		cmd := envpath.FormatExeForFish(exePath)
-		return fmt.Sprintf(`%s activate%s fish | source`, cmd, flags), nil
+		return fmt.Sprintf(`# Ensure user private bin directory is in PATH
+if not contains "$HOME/.local/bin" $PATH
+    set -gx PATH "$HOME/.local/bin" $PATH
+end
+
+# %s activation
+if type -q %s
+    %s activate%s fish | source
+end`, toolDisplayName, targetTool, targetTool, flags), nil
 	case service.ShellPowerShell:
-		cmd := envpath.FormatExeForPowerShell(exePath)
-		return fmt.Sprintf(`%s activate%s powershell | Out-String | Invoke-Expression`, cmd, flags), nil
+		return fmt.Sprintf(`# Ensure user private bin directory is in PATH
+$userBin = if ($env:OS -like "*Windows*" -or $IsWindows) { "$HOME\bin" } else { "$HOME/.local/bin" }
+if (-not ($env:Path -split [System.IO.Path]::PathSeparator -contains $userBin)) {
+    $env:Path = "$userBin" + [System.IO.Path]::PathSeparator + $env:Path
+}
+
+# %s activation
+if (Get-Command %s -ErrorAction SilentlyContinue) {
+    %s activate%s powershell | Out-String | Invoke-Expression
+}`, toolDisplayName, targetTool, targetTool, flags), nil
 	default:
 		return "", fmt.Errorf("unsupported shell: %s", shell)
 	}
 }
+

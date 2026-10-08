@@ -299,7 +299,99 @@ func TestShellConfigManager_Remove_CRLF(t *testing.T) {
 	}
 }
 
+func TestShellConfigManager_MultiLineBlock(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	sm := NewShellConfigManager(&mockFormatter{}, false)
+	configPath := filepath.Join(tmpDir, ".bashrc")
+
+	// 1. Initial content
+	initial := "alias ll='ls -l'\n"
+	err := os.WriteFile(configPath, []byte(initial), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	block1 := `# Ensure user private bin directory is in PATH
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
+# UniRTM activation
+if command -v unirtm >/dev/null 2>&1; then
+    eval "$(unirtm activate bash)"
+fi`
+
+	// Inject block
+	err = sm.Inject(ShellBash, "unirtm", block1)
+	if err != nil {
+		t.Fatalf("Inject failed: %v", err)
+	}
+
+	content, _ := os.ReadFile(configPath)
+	str := string(content)
+	if !strings.Contains(str, "# unirtm unirtm activation") {
+		t.Errorf("expected marker in content")
+	}
+	if !strings.Contains(str, "Ensure user private bin directory is in PATH") {
+		t.Errorf("expected PATH comment in content")
+	}
+	if !strings.Contains(str, "alias ll='ls -l'") {
+		t.Errorf("expected existing alias preserved")
+	}
+
+	// 2. Update with new block (e.g. --shims)
+	block2 := `# Ensure user private bin directory is in PATH
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
+# UniRTM activation
+if command -v unirtm >/dev/null 2>&1; then
+    eval "$(unirtm activate --shims bash)"
+fi`
+
+	err = sm.Inject(ShellBash, "unirtm", block2)
+	if err != nil {
+		t.Fatalf("Inject update failed: %v", err)
+	}
+
+	content, _ = os.ReadFile(configPath)
+	str = string(content)
+	if strings.Count(str, "unirtm unirtm activation") != 1 {
+		t.Errorf("expected exactly 1 marker, got %d", strings.Count(str, "unirtm unirtm activation"))
+	}
+	if !strings.Contains(str, "--shims") {
+		t.Errorf("expected updated --shims content")
+	}
+	if strings.Contains(str, `eval "$(unirtm activate bash)"`) {
+		t.Errorf("expected old activation without --shims to be replaced")
+	}
+
+	// 3. Remove block
+	err = sm.Remove(ShellBash, "unirtm")
+	if err != nil {
+		t.Fatalf("Remove failed: %v", err)
+	}
+
+	content, _ = os.ReadFile(configPath)
+	str = string(content)
+	if strings.Contains(str, "unirtm") {
+		t.Errorf("expected all unirtm logic to be removed, got: %s", str)
+	}
+	if strings.Contains(str, "Ensure user private bin directory") {
+		t.Errorf("expected PATH comment to be removed")
+	}
+	if strings.Contains(str, "export PATH") {
+		t.Errorf("expected PATH export to be removed")
+	}
+	if !strings.Contains(str, "alias ll='ls -l'") {
+		t.Errorf("expected alias ll to remain untouched")
+	}
+}
+
 func (m *mockFormatter) Infof(format string, a ...interface{})    {}
+
 func (m *mockFormatter) Successf(format string, a ...interface{}) {}
 func (m *mockFormatter) Warningf(format string, a ...interface{}) {}
 func (m *mockFormatter) Errorf(format string, a ...interface{})   {}
