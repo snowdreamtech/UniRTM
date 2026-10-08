@@ -158,7 +158,7 @@ func invokeShimModeWithArgs(exeName string, origArgs []string) {
 	guardKey := "_UNIRTM_SHIM_GUARD_" + strings.ToUpper(strings.ReplaceAll(cleanName, "-", "_"))
 
 	if os.Getenv(guardKey) != "" {
-		fmt.Fprintf(os.Stderr, "ERROR: unirtm shim infinite recursion loop detected for executable '%s'\n", exeName)
+		fmt.Fprintf(os.Stderr, "ERROR: unirtm shim infinite recursion loop detected (recursion guard active) for executable '%s'\n", exeName)
 		os.Exit(128)
 	}
 	os.Setenv(guardKey, "1")
@@ -217,10 +217,19 @@ func invokeShimModeWithArgs(exeName string, origArgs []string) {
 	if selfExe, err := os.Executable(); err == nil {
 		if realSelf, err := filepath.EvalSymlinks(selfExe); err == nil {
 			if realBin, err := filepath.EvalSymlinks(binPath); err == nil && realBin == realSelf {
-				fmt.Fprintf(os.Stderr, "ERROR: unirtm shim infinite recursion loop detected for executable '%s'\n", exeName)
+				fmt.Fprintf(os.Stderr, "ERROR: unirtm shim infinite recursion loop detected (self-referential binary) for executable '%s'\n", exeName)
 				os.Exit(128)
 			}
 		}
+	}
+
+	// Prepend the target binary's directory to PATH so shebangs (e.g. #!/usr/bin/env node)
+	// and co-located tools resolve directly to genuine binaries, avoiding re-entering shims.
+	targetDir := filepath.Dir(binPath)
+	if currentPath := os.Getenv("PATH"); currentPath != "" {
+		os.Setenv("PATH", targetDir+string(os.PathListSeparator)+currentPath)
+	} else {
+		os.Setenv("PATH", targetDir)
 	}
 
 	// Prepare for execution

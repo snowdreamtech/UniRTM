@@ -1391,6 +1391,26 @@ func (im *InstallationManager) ResolveToolEnvBySpec(
 	envKey := "UNIRTM_" + strings.ToUpper(strings.ReplaceAll(toolName, "-", "_")) + "_VERSION"
 	result[envKey] = version
 
+	// For node runtime, verify the binary actually runs without crashing (e.g. dyld libc++ issues).
+	// If it crashes, fall back to another healthy installed version or system node.
+	if toolName == "node" || toolName == "nodejs" {
+		nodeExe := filepath.Join(installPath, "bin", "node")
+		if env.RuntimeGOOS == "windows" {
+			nodeExe = filepath.Join(installPath, "node.exe")
+		} else if _, statErr := os.Stat(nodeExe); statErr != nil {
+			nodeExe = filepath.Join(installPath, "node")
+		}
+		if _, statErr := os.Stat(nodeExe); statErr == nil {
+			if runErr := exec.Command(nodeExe, "--version").Run(); runErr != nil {
+				if healthyNode := im.findHealthyNodePath(); healthyNode != "" {
+					result["PATH"] = filepath.Dir(healthyNode)
+					return result
+				}
+				return result
+			}
+		}
+	}
+
 	// Prepend the tool's bin directory to PATH.
 	for _, binDir := range []string{
 		filepath.Join(installPath, "bin"),
@@ -1407,6 +1427,80 @@ func (im *InstallationManager) ResolveToolEnvBySpec(
 	}
 
 	return result
+}
+
+// findHealthyNodePath scans for any installed Node.js binary or system Node.js that runs without crashing.
+func (im *InstallationManager) findHealthyNodePath() string {
+	nodeInstallsDir := filepath.Join(env.GetInstallsDir(), "node")
+	if entries, err := os.ReadDir(nodeInstallsDir); err == nil {
+		var bestVer, bestPath string
+		for _, entry := range entries {
+			if !entry.IsDir() || strings.HasSuffix(entry.Name(), ".unirtm-tmp") {
+				continue
+			}
+			var candidates []string
+			if env.RuntimeGOOS == "windows" {
+				candidates = []string{
+					filepath.Join(nodeInstallsDir, entry.Name(), "node.exe"),
+					filepath.Join(nodeInstallsDir, entry.Name(), "bin", "node.exe"),
+				}
+			} else {
+				candidates = []string{
+					filepath.Join(nodeInstallsDir, entry.Name(), "bin", "node"),
+					filepath.Join(nodeInstallsDir, entry.Name(), "node"),
+				}
+			}
+			for _, cand := range candidates {
+				if fi, err := os.Stat(cand); err == nil && !fi.IsDir() {
+					if exec.Command(cand, "--version").Run() == nil {
+						if bestVer == "" || version.CompareVersions(entry.Name(), bestVer) > 0 {
+							bestVer = entry.Name()
+							bestPath = cand
+						}
+						break
+					}
+				}
+			}
+		}
+		if bestPath != "" {
+			return bestPath
+		}
+	}
+	exeName := "node"
+	if env.RuntimeGOOS == "windows" {
+		exeName = "node.exe"
+	}
+	if path, err := findSystemBinaryExcludingShims(exeName); err == nil && path != "" {
+		if exec.Command(path, "--version").Run() == nil {
+			return path
+		}
+	}
+	return ""
+}
+
+// findSystemBinaryExcludingShims searches system PATH for the given binary,
+// explicitly skipping any matches located in UniRTM's shims directory or
+// resolving to the UniRTM binary itself.
+func findSystemBinaryExcludingShims(name string) (string, error) {
+	shimsDir := filepath.Clean(env.GetShimsDir())
+	selfExe, _ := os.Executable()
+	realSelf, _ := filepath.EvalSymlinks(selfExe)
+
+	pathEnv := env.Get("PATH")
+	for _, dir := range filepath.SplitList(pathEnv) {
+		cleanDir := filepath.Clean(dir)
+		if strings.EqualFold(cleanDir, shimsDir) {
+			continue
+		}
+		candidate := filepath.Join(cleanDir, name)
+		if fi, err := os.Stat(candidate); err == nil && !fi.IsDir() {
+			if realCandidate, err := filepath.EvalSymlinks(candidate); err == nil && realSelf != "" && realCandidate == realSelf {
+				continue
+			}
+			return candidate, nil
+		}
+	}
+	return "", fmt.Errorf("executable file not found in $PATH (excluding shims): %s", name)
 }
 
 // archiveExtensions contains file extensions that are never directly executable.
@@ -1520,6 +1614,24 @@ func isExecutableFile(path string) bool {
 	return winExec[ext] || ext == ""
 }
 
+// isShimOrSelf reports whether path resides in UniRTM's shims directory
+// or evaluates to the running UniRTM executable itself.
+func isShimOrSelf(path string) bool {
+	shimsDir := filepath.Clean(env.GetShimsDir())
+	cleanPath := filepath.Clean(path)
+	if strings.HasPrefix(cleanPath, shimsDir) {
+		return true
+	}
+	if selfExe, err := os.Executable(); err == nil {
+		if realSelf, err := filepath.EvalSymlinks(selfExe); err == nil {
+			if realTarget, err := filepath.EvalSymlinks(path); err == nil && realTarget == realSelf {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // ResolveExecutable finds the absolute path and environment variables for a given executable name
 // by searching through installed tools in the current context.
 func (im *InstallationManager) ResolveExecutable(ctx context.Context, exeName string, platform backend.Platform) (string, map[string]string, error) {
@@ -1573,13 +1685,13 @@ func (im *InstallationManager) resolveExecutableWithVisited(ctx context.Context,
 			continue
 		}
 
-		for _, exec := range execs {
-			baseName := filepath.Base(exec)
+		for _, exeItem := range execs {
+			baseName := filepath.Base(exeItem)
 
 			// Resolve absolute path first so we can stat it.
-			absPath := exec
-			if !filepath.IsAbs(exec) {
-				absPath = filepath.Join(inst.InstallPath, exec)
+			absPath := exeItem
+			if !filepath.IsAbs(exeItem) {
+				absPath = filepath.Join(inst.InstallPath, exeItem)
 			}
 
 			// If not directly found at absPath, search in tool's binPaths
@@ -1595,8 +1707,8 @@ func (im *InstallationManager) resolveExecutableWithVisited(ctx context.Context,
 				}
 			}
 
-			// Hard filter: skip files that are not actually executable binaries.
-			if !isExecutableFile(absPath) {
+			// Hard filter: skip files that are not actually executable binaries or are shims/self.
+			if !isExecutableFile(absPath) || isShimOrSelf(absPath) {
 				continue
 			}
 

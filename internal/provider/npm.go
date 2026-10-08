@@ -69,12 +69,48 @@ func (p *NpmProvider) Install(ctx context.Context, tool string, installPath stri
 		extraDomains = append(extraDomains, d)
 	}
 
-	// Ensure the node directory containing npmCmd is at the head of PATH so that
-	// npm's shebang (#!/usr/bin/env node) and lifecycle scripts resolve to the real node binary
-	// directly without traversing shims.
+	// Find the genuine directory containing node so that npm's shebang (#!/usr/bin/env node)
+	// resolves to the real node runtime directly, completely bypassing shims.
 	nodeDir := filepath.Dir(npmCmd)
-	currentPath := env.Get("PATH")
-	cmd.Env = append(GetNoProxyEnv(extraDomains...), fmt.Sprintf("PATH=%s%c%s", nodeDir, os.PathListSeparator, currentPath))
+	nodeExe := filepath.Join(nodeDir, "node")
+	if env.RuntimeGOOS == "windows" {
+		nodeExe = filepath.Join(nodeDir, "node.exe")
+	}
+	if _, err := os.Stat(nodeExe); err != nil {
+		// If node is not co-located with npm, locate real node in managed installs or system PATH
+		if realNode, err := p.findRealNode(); err == nil && realNode != "" {
+			nodeDir = filepath.Dir(realNode)
+		}
+	}
+
+	// Construct clean PATH for the subprocess:
+	// 1. Put genuine node directory at the head.
+	// 2. Strip UniRTM's shims directory from PATH to avoid any re-entry loops.
+	shimsDir := filepath.Clean(env.GetShimsDir())
+	var cleanPathElements []string
+	if nodeDir != "" {
+		cleanPathElements = append(cleanPathElements, nodeDir)
+	}
+	for _, pElem := range filepath.SplitList(env.Get("PATH")) {
+		if cleanElem := filepath.Clean(pElem); cleanElem == shimsDir || cleanElem == nodeDir {
+			continue
+		}
+		cleanPathElements = append(cleanPathElements, pElem)
+	}
+	cleanPath := strings.Join(cleanPathElements, string(os.PathListSeparator))
+
+	// Clean out any recursion guards and duplicate PATH from base environment.
+	baseEnv := GetNoProxyEnv(extraDomains...)
+	var filteredEnv []string
+	for _, envEntry := range baseEnv {
+		if strings.HasPrefix(envEntry, "_UNIRTM_SHIM_GUARD_") ||
+			strings.HasPrefix(envEntry, "_UNIRTM_SHIM_RECURSION_GUARD") ||
+			strings.HasPrefix(envEntry, "PATH=") {
+			continue
+		}
+		filteredEnv = append(filteredEnv, envEntry)
+	}
+	cmd.Env = append(filteredEnv, "PATH="+cleanPath)
 
 	if err := cmd.Run(); err != nil {
 		return NewProviderError(p.Name(), tool, version, "npm install failed", err)
@@ -158,8 +194,8 @@ func (p *NpmProvider) findNodeExe() (string, error) {
 			return bestPath, nil
 		}
 	}
-	// Fallback: search system PATH
-	return exec.LookPath("node.exe")
+	// Fallback: search system PATH (excluding UniRTM shims)
+	return findSystemBinaryExcludingShims("node.exe")
 }
 
 // rewriteCmdNodePath rewrites a single npm-generated .cmd file so that it uses
@@ -410,8 +446,80 @@ func (p *NpmProvider) findNpm() (string, error) {
 		}
 	}
 
-	// 2. Fallback to system PATH
-	return exec.LookPath("npm")
+	// 2. Fallback to system PATH (strictly excluding UniRTM shims)
+	return findSystemBinaryExcludingShims("npm")
+}
+
+// findRealNode locates the genuine node executable, preferring UniRTM-managed installs
+// and falling back to system PATH while strictly excluding UniRTM shims.
+func (p *NpmProvider) findRealNode() (string, error) {
+	nodeInstallsDir := filepath.Join(env.GetInstallsDir(), "node")
+	if entries, err := os.ReadDir(nodeInstallsDir); err == nil {
+		var bestVer, bestPath string
+		for _, entry := range entries {
+			if !entry.IsDir() || strings.HasSuffix(entry.Name(), ".unirtm-tmp") {
+				continue
+			}
+			var candidates []string
+			if env.RuntimeGOOS == "windows" {
+				candidates = []string{
+					filepath.Join(nodeInstallsDir, entry.Name(), "node.exe"),
+					filepath.Join(nodeInstallsDir, entry.Name(), "bin", "node.exe"),
+				}
+			} else {
+				candidates = []string{
+					filepath.Join(nodeInstallsDir, entry.Name(), "bin", "node"),
+					filepath.Join(nodeInstallsDir, entry.Name(), "node"),
+				}
+			}
+			for _, cand := range candidates {
+				if info, statErr := os.Stat(cand); statErr == nil && !info.IsDir() {
+					// Verify that node runtime in the candidate directory actually runs without crashing
+					if runErr := exec.Command(cand, "--version").Run(); runErr != nil {
+						continue
+					}
+					if bestVer == "" || version.CompareVersions(entry.Name(), bestVer) > 0 {
+						bestVer = entry.Name()
+						bestPath = cand
+					}
+					break
+				}
+			}
+		}
+		if bestPath != "" {
+			return bestPath, nil
+		}
+	}
+	exeName := "node"
+	if env.RuntimeGOOS == "windows" {
+		exeName = "node.exe"
+	}
+	return findSystemBinaryExcludingShims(exeName)
+}
+
+// findSystemBinaryExcludingShims searches system PATH for the given binary,
+// explicitly skipping any matches located in UniRTM's shims directory or
+// resolving to the UniRTM binary itself.
+func findSystemBinaryExcludingShims(name string) (string, error) {
+	shimsDir := filepath.Clean(env.GetShimsDir())
+	selfExe, _ := os.Executable()
+	realSelf, _ := filepath.EvalSymlinks(selfExe)
+
+	pathEnv := env.Get("PATH")
+	for _, dir := range filepath.SplitList(pathEnv) {
+		cleanDir := filepath.Clean(dir)
+		if strings.EqualFold(cleanDir, shimsDir) {
+			continue
+		}
+		candidate := filepath.Join(cleanDir, name)
+		if fi, err := os.Stat(candidate); err == nil && !fi.IsDir() {
+			if realCandidate, err := filepath.EvalSymlinks(candidate); err == nil && realSelf != "" && realCandidate == realSelf {
+				continue
+			}
+			return candidate, nil
+		}
+	}
+	return "", fmt.Errorf("executable file not found in $PATH (excluding shims): %s", name)
 }
 
 // checkAndWarnLifecycleScripts reads package.json and issues a warning if lifecycle scripts are found.

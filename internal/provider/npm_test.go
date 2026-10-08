@@ -167,3 +167,46 @@ func TestNpmProvider_RewriteCmdNodePath_NoNodePattern(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, original, string(result))
 }
+
+func TestNpmProvider_Install_ShimsExcludedFromPATH(t *testing.T) {
+	if env.RuntimeGOOS == "windows" {
+		t.Skip("Skipping bash-based mock test on windows")
+	}
+	tmpDir := t.TempDir()
+	t.Setenv("UNIRTM_DATA_DIR", tmpDir)
+
+	// Create fake shims directory and place a mock npm inside it
+	shimsDir := filepath.Join(tmpDir, "shims")
+	require.NoError(t, os.MkdirAll(shimsDir, 0755))
+	shimNpm := filepath.Join(shimsDir, "npm")
+	require.NoError(t, os.WriteFile(shimNpm, []byte("#!/bin/sh\necho 'ERROR: shim executed' >&2\nexit 128\n"), 0755))
+
+	// Create genuine node/npm installation
+	nodeInstallsDir := filepath.Join(tmpDir, "installs", "node", "26.8.1", "bin")
+	require.NoError(t, os.MkdirAll(nodeInstallsDir, 0755))
+	genuineNode := filepath.Join(nodeInstallsDir, "node")
+	require.NoError(t, os.WriteFile(genuineNode, []byte("#!/bin/sh\nexit 0\n"), 0755))
+
+	// Genuine npm verifies that shims directory is NOT in PATH and writes proof
+	proofFile := filepath.Join(tmpDir, "path_proof.txt")
+	genuineNpm := filepath.Join(nodeInstallsDir, "npm")
+	scriptContent := "#!/bin/sh\necho \"$PATH\" > \"" + proofFile + "\"\nexit 0\n"
+	require.NoError(t, os.WriteFile(genuineNpm, []byte(scriptContent), 0755))
+
+	// Put shims at the HEAD of PATH, followed by other system paths
+	t.Setenv("PATH", shimsDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("_UNIRTM_SHIM_GUARD_NODE", "1")
+
+	p := provider.NewNpmProvider()
+	installPath := filepath.Join(tmpDir, "npm_install", "test_pkg")
+	err := p.Install(context.Background(), "test_pkg", installPath, "", "1.0.0")
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(proofFile)
+	require.NoError(t, err)
+	pathContent := string(data)
+
+	// Proof: nodeInstallsDir must be at the head of PATH, shimsDir must be completely absent
+	assert.Contains(t, pathContent, nodeInstallsDir)
+	assert.NotContains(t, pathContent, shimsDir)
+}
