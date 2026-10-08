@@ -10,6 +10,8 @@ import (
 )
 
 func TestShouldBypassProxy(t *testing.T) {
+	t.Setenv("NO_PROXY", "company.internal,custom-mirror.net")
+
 	tests := []struct {
 		host     string
 		expected bool
@@ -22,6 +24,16 @@ func TestShouldBypassProxy(t *testing.T) {
 		{"registry.npmmirror.com", true},
 		{"mirrors.aliyun.com", true},
 		{"test.mirror.com", false}, // non-domestic mirror should NOT bypass proxy
+		// RFC 1918 Private networks
+		{"10.0.0.1", true},
+		{"10.1.2.3:8080", true},
+		{"192.168.1.100", true},
+		{"172.16.0.50", true},
+		{"127.0.0.1", true},
+		{"localhost", true},
+		// User configured NO_PROXY
+		{"repo.company.internal", true},
+		{"custom-mirror.net:443", true},
 	}
 
 	for _, tc := range tests {

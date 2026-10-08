@@ -7,7 +7,12 @@ import (
 	"crypto/tls"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
+
+	"golang.org/x/net/http/httpproxy"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // ProxyBypassDomains contains a list of common domestic mirror domains
@@ -94,15 +99,69 @@ func ExtractApexDomain(host string) string {
 	return strings.Join(parts[len(parts)-2:], ".")
 }
 
+// isMatchNoProxy checks if the given host matches the standard NO_PROXY environment variable.
+func isMatchNoProxy(host string) bool {
+	noProxy := env.Get("NO_PROXY")
+	if noProxy == "" {
+		return false
+	}
+	cfg := httpproxy.Config{
+		HTTPProxy:  "http://dummy.proxy",
+		HTTPSProxy: "http://dummy.proxy",
+		NoProxy:    noProxy,
+	}
+	proxyFunc := cfg.ProxyFunc()
+	u, err := url.Parse("http://" + host)
+	if err != nil {
+		return false
+	}
+	proxyURL, err := proxyFunc(u)
+	return err == nil && proxyURL == nil
+}
+
 // ShouldBypassProxy returns true if the given host should bypass the proxy.
+// It checks:
+//  1. Localhost and loopback addresses
+//  2. Private internal networks (RFC 1918, RFC 4193, Link-local)
+//  3. User-configured NO_PROXY rules (via standard httpproxy spec)
+//  4. Official .cn top-level domain
+//  5. Standard domestic baseline mirror domains
 func ShouldBypassProxy(host string) bool {
 	h := strings.ToLower(strings.TrimSpace(host))
-	if h == "localhost" || h == "127.0.0.1" || h == "::1" || strings.HasPrefix(h, "127.") {
+	if h == "" {
+		return false
+	}
+	if strings.Contains(h, ":") {
+		if splitHost, _, err := net.SplitHostPort(h); err == nil {
+			h = splitHost
+		}
+	}
+
+	// 1. Localhost
+	if h == "localhost" {
 		return true
 	}
+
+	// 2. IP address checks: loopback, private (RFC 1918 / RFC 4193), link-local
+	if ip := net.ParseIP(h); ip != nil {
+		if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() {
+			return true
+		}
+	} else if strings.HasPrefix(h, "127.") {
+		return true
+	}
+
+	// 3. User-configured NO_PROXY rules
+	if isMatchNoProxy(h) {
+		return true
+	}
+
+	// 4. Official .cn top-level domain
 	if strings.HasSuffix(h, ".cn") {
 		return true
 	}
+
+	// 5. Standard domestic baseline mirror domains
 	apex := ExtractApexDomain(h)
 	for _, domain := range ProxyBypassDomains {
 		if apex == domain || strings.HasSuffix(h, "."+domain) || h == domain {
