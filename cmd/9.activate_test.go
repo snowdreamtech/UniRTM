@@ -157,3 +157,57 @@ func TestRunActivate_Errors(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported shell")
 }
+
+func TestShouldShowInstructions(t *testing.T) {
+	tests := []struct {
+		name          string
+		isTerminal    bool
+		alreadyActive bool
+		quiet         bool
+		want          bool
+	}{
+		{
+			name:          "interactive terminal and not active",
+			isTerminal:    true,
+			alreadyActive: false,
+			quiet:         false,
+			want:          true,
+		},
+		{
+			name:          "non-terminal (eval or redirection)",
+			isTerminal:    false,
+			alreadyActive: false,
+			quiet:         false,
+			want:          false,
+		},
+		{
+			name:          "already active environment in terminal",
+			isTerminal:    true,
+			alreadyActive: true,
+			quiet:         false,
+			want:          false,
+		},
+		{
+			name:          "quiet mode requested in terminal",
+			isTerminal:    true,
+			alreadyActive: false,
+			quiet:         true,
+			want:          false,
+		},
+		{
+			name:          "non-terminal and already active",
+			isTerminal:    false,
+			alreadyActive: true,
+			quiet:         false,
+			want:          false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := shouldShowInstructions(tt.isTerminal, tt.alreadyActive, tt.quiet)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+

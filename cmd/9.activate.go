@@ -18,6 +18,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 	"github.com/snowdreamtech/unirtm/internal/service"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 var (
@@ -346,12 +347,22 @@ func runActivate(cmd *cobra.Command, args []string) error {
 	// Print the activation script to stdout for eval
 	fmt.Print(script.Content)
 
-	// Print instructions to stderr
-	if !quiet {
+	// Print instructions to stderr only if stdout is an interactive terminal,
+	// the environment is not already active, and quiet mode is not requested.
+	isStdoutTerminal := term.IsTerminal(int(os.Stdout.Fd()))
+	alreadyActive := os.Getenv("UNIRTM_ACTIVE") == "1"
+	if shouldShowInstructions(isStdoutTerminal, alreadyActive, quiet) {
 		formatter.Info(script.Instructions, nil)
 	}
 
 	return nil
+}
+
+// shouldShowInstructions returns true if activation instructions should be displayed to stderr.
+// Instructions are shown only when stdout is an interactive terminal (not captured by eval, pipe, or redirection),
+// the shell is not already activated, and quiet mode is disabled.
+func shouldShowInstructions(isTerminal bool, alreadyActive bool, quiet bool) bool {
+	return isTerminal && !alreadyActive && !quiet
 }
 
 // resolveShellType returns the shell type to use for activation.
