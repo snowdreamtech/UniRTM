@@ -5,6 +5,7 @@ package http
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -137,9 +138,15 @@ func (c *DomainRouteCache) saveToDiskLocked() {
 	dir := filepath.Dir(c.filePath)
 	_ = os.MkdirAll(dir, 0755)
 
-	tmpFile := c.filePath + ".tmp"
+	tmpFile := fmt.Sprintf("%s.tmp.%d", c.filePath, time.Now().UnixNano())
 	if err := os.WriteFile(tmpFile, data, 0644); err == nil {
-		_ = os.Rename(tmpFile, c.filePath)
+		if err := os.Rename(tmpFile, c.filePath); err != nil {
+			// Windows fallback: if destination exists and cannot be atomically overwritten, remove first
+			_ = os.Remove(c.filePath)
+			if err := os.Rename(tmpFile, c.filePath); err != nil {
+				_ = os.Remove(tmpFile)
+			}
+		}
 	}
 }
 
