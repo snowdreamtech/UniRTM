@@ -89,11 +89,23 @@ func (p *PythonProvider) getRealPythonPath(installPath string) string {
 		filepath.Join(installPath, "python3"),
 		filepath.Join(installPath, "python"),
 	}
+
+	// If installPath has a version folder name like "3.14.7", directly check "python3.14" without directory scanning
+	ver := filepath.Base(installPath)
+	if parts := strings.Split(ver, "."); len(parts) >= 2 {
+		majorMinor := parts[0] + "." + parts[1]
+		candidates = append(candidates,
+			filepath.Join(installPath, "bin", "python"+majorMinor),
+			filepath.Join(installPath, "install", "bin", "python"+majorMinor),
+		)
+	}
+
 	for _, cand := range candidates {
 		if fi, err := os.Stat(cand); err == nil && !fi.IsDir() {
 			return cand
 		}
 	}
+
 	return filepath.Join(installPath, "bin", "python3")
 }
 
@@ -121,19 +133,49 @@ func (p *PythonProvider) PostInstall(ctx context.Context, tool string, installPa
 	venvDir := filepath.Join(installPath, "venv")
 	cmd := exec.CommandContext(ctx, pythonPath, "-m", "venv", venvDir)
 
-	// Ensure the DLLs in installPath are discoverable by the newly created venv
-	// python executable during ensurepip.
+	// Ensure binaries and shared libraries across platforms (Windows DLLs, Linux/macOS SOs/dylibs)
+	// are discoverable by the newly created venv during ensurepip and venv setup.
+	binPaths, _ := p.GetBinPaths(tool, installPath, version)
+	pathPrefix := strings.Join(binPaths, string(os.PathListSeparator))
+
 	envVars := os.Environ()
-	pathVar := "PATH"
+	pathFound := false
 	for i, e := range envVars {
 		if strings.HasPrefix(strings.ToUpper(e), "PATH=") {
-			envVars[i] = "PATH=" + installPath + string(os.PathListSeparator) + e[5:]
-			pathVar = ""
+			envVars[i] = "PATH=" + pathPrefix + string(os.PathListSeparator) + e[5:]
+			pathFound = true
 			break
 		}
 	}
-	if pathVar != "" {
-		envVars = append(envVars, "PATH="+installPath)
+	if !pathFound {
+		envVars = append(envVars, "PATH="+pathPrefix)
+	}
+
+	libDir := filepath.Join(installPath, "lib")
+	if env.RuntimeGOOS == "linux" {
+		ldFound := false
+		for i, e := range envVars {
+			if strings.HasPrefix(e, "LD_LIBRARY_PATH=") {
+				envVars[i] = "LD_LIBRARY_PATH=" + libDir + ":" + e[16:]
+				ldFound = true
+				break
+			}
+		}
+		if !ldFound {
+			envVars = append(envVars, "LD_LIBRARY_PATH="+libDir)
+		}
+	} else if env.RuntimeGOOS == "darwin" {
+		dyFound := false
+		for i, e := range envVars {
+			if strings.HasPrefix(e, "DYLD_LIBRARY_PATH=") {
+				envVars[i] = "DYLD_LIBRARY_PATH=" + libDir + ":" + e[18:]
+				dyFound = true
+				break
+			}
+		}
+		if !dyFound {
+			envVars = append(envVars, "DYLD_LIBRARY_PATH="+libDir)
+		}
 	}
 	cmd.Env = envVars
 

@@ -280,6 +280,13 @@ func (p *PypiProvider) findPython() (string, error) {
 					filepath.Join(verDir, "python_d.exe"),
 					filepath.Join(verDir, "install", "python_d.exe"),
 				}
+				if parts := strings.Split(entry.Name(), "."); len(parts) >= 2 {
+					majorMinor := parts[0] + "." + parts[1]
+					candidates = append(candidates,
+						filepath.Join(verDir, "bin", "python"+majorMinor),
+						filepath.Join(verDir, "venv", "bin", "python"+majorMinor),
+					)
+				}
 				for _, cand := range candidates {
 					if info, err := os.Stat(cand); err == nil && !info.IsDir() {
 						if bestVer == "" || version.CompareVersions(entry.Name(), bestVer) > 0 {
@@ -298,6 +305,9 @@ func (p *PypiProvider) findPython() (string, error) {
 
 	// 2. Fallback to system PATH
 	cmds := []string{"python3", "python"}
+	if env.RuntimeGOOS == "windows" {
+		cmds = []string{"python.exe", "python3.exe", "py.exe", "python", "python3"}
+	}
 	for _, cmd := range cmds {
 		if path, err := exec.LookPath(cmd); err == nil {
 			return path, nil

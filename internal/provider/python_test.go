@@ -110,9 +110,33 @@ func TestPythonProvider_GetRealPythonPath(t *testing.T) {
 	assert.Equal(t, binPy3, p.getRealPythonPath(tempDir))
 	_ = os.Remove(binPy3)
 
-	// 5. Unix: bin/python
+	// 5. Linux: bin/python
 	binPy := filepath.Join(binDir, "python")
 	_ = os.WriteFile(binPy, []byte("#!/bin/sh"), 0755)
 	assert.Equal(t, binPy, p.getRealPythonPath(tempDir))
+	_ = os.Remove(binPy)
+
+	// 6. Linux: versioned directory and binary (3.12.0 -> bin/python3.12)
+	verDirLinux := filepath.Join(tempDir, "3.12.0")
+	binDirLinux := filepath.Join(verDirLinux, "bin")
+	_ = os.MkdirAll(binDirLinux, 0755)
+	binPyVer := filepath.Join(binDirLinux, "python3.12")
+	_ = os.WriteFile(binPyVer, []byte("#!/bin/sh"), 0755)
+	assert.Equal(t, binPyVer, p.getRealPythonPath(verDirLinux))
+
+	// 7. macOS: bin/python3
+	env.RuntimeGOOS = "darwin"
+	binPy3Darwin := filepath.Join(binDir, "python3")
+	_ = os.WriteFile(binPy3Darwin, []byte("#!/bin/sh"), 0755)
+	assert.Equal(t, binPy3Darwin, p.getRealPythonPath(tempDir))
+	_ = os.Remove(binPy3Darwin)
+
+	// 8. macOS: versioned directory and binary (3.14.7 -> bin/python3.14)
+	verDirMac := filepath.Join(tempDir, "3.14.7")
+	binDirMac := filepath.Join(verDirMac, "bin")
+	_ = os.MkdirAll(binDirMac, 0755)
+	binPy314 := filepath.Join(binDirMac, "python3.14")
+	_ = os.WriteFile(binPy314, []byte("#!/bin/sh"), 0755)
+	assert.Equal(t, binPy314, p.getRealPythonPath(verDirMac))
 }
 
