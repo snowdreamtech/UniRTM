@@ -48,25 +48,51 @@ func (p *PythonProvider) Install(ctx context.Context, tool string, installPath s
 // since vcruntime140.dll is next to the real binary, not the symlink.
 func (p *PythonProvider) getRealPythonPath(installPath string) string {
 	if env.RuntimeGOOS == "windows" {
+		// Prefer binaries directly in the install root or install/ folder next to DLLs
+		candidates := []string{
+			filepath.Join(installPath, "python.exe"),
+			filepath.Join(installPath, "install", "python.exe"),
+			filepath.Join(installPath, "python3.exe"),
+			filepath.Join(installPath, "install", "python3.exe"),
+			filepath.Join(installPath, "python_d.exe"),
+			filepath.Join(installPath, "install", "python_d.exe"),
+		}
+		for _, cand := range candidates {
+			if fi, err := os.Stat(cand); err == nil && !fi.IsDir() {
+				return cand
+			}
+		}
+
 		binPy := filepath.Join(installPath, "bin", "python.exe")
 		if realPy, err := filepath.EvalSymlinks(binPy); err == nil {
-			return realPy
+			if fi, err := os.Stat(realPy); err == nil && !fi.IsDir() {
+				return realPy
+			}
 		}
 
-		// python-build-standalone on Windows often extracts python.exe to the root
-		rootPy := filepath.Join(installPath, "python.exe")
-		if _, err := os.Stat(rootPy); err == nil {
-			return rootPy
+		binPyD := filepath.Join(installPath, "bin", "python_d.exe")
+		if realPy, err := filepath.EvalSymlinks(binPyD); err == nil {
+			if fi, err := os.Stat(realPy); err == nil && !fi.IsDir() {
+				return realPy
+			}
 		}
 
-		// Fallback for some standalone builds
-		installPy := filepath.Join(installPath, "install", "python.exe")
-		if _, err := os.Stat(installPy); err == nil {
-			return installPy
-		}
-
-		// Try bin just in case
+		// Fallback for edge cases
 		return binPy
+	}
+
+	candidates := []string{
+		filepath.Join(installPath, "bin", "python3"),
+		filepath.Join(installPath, "bin", "python"),
+		filepath.Join(installPath, "install", "bin", "python3"),
+		filepath.Join(installPath, "install", "bin", "python"),
+		filepath.Join(installPath, "python3"),
+		filepath.Join(installPath, "python"),
+	}
+	for _, cand := range candidates {
+		if fi, err := os.Stat(cand); err == nil && !fi.IsDir() {
+			return cand
+		}
 	}
 	return filepath.Join(installPath, "bin", "python3")
 }
@@ -74,6 +100,9 @@ func (p *PythonProvider) getRealPythonPath(installPath string) string {
 // PostInstall creates a virtual environment.
 func (p *PythonProvider) PostInstall(ctx context.Context, tool string, installPath string, version string) error {
 	pythonPath := p.getRealPythonPath(installPath)
+	if _, err := os.Stat(pythonPath); err != nil {
+		return NewProviderError("python", "python", version, fmt.Sprintf("python executable not found at %s", pythonPath), err)
+	}
 
 	if env.RuntimeGOOS == "windows" {
 		// python-build-standalone on Windows ships with a python*._pth file
@@ -125,8 +154,10 @@ func (p *PythonProvider) PostInstall(ctx context.Context, tool string, installPa
 				}
 			}
 		}
+		copyIfMissing(filepath.Join(scriptsDir, "python_d.exe"), filepath.Join(scriptsDir, "python.exe"))
 		copyIfMissing(filepath.Join(scriptsDir, "python.exe"), filepath.Join(scriptsDir, "python3.exe"))
 		copyIfMissing(filepath.Join(scriptsDir, "pip.exe"), filepath.Join(scriptsDir, "pip3.exe"))
+		copyIfMissing(filepath.Join(installPath, "python_d.exe"), filepath.Join(installPath, "python.exe"))
 		copyIfMissing(filepath.Join(installPath, "python.exe"), filepath.Join(installPath, "python3.exe"))
 	} else {
 		linkIfMissing := func(src, dst string) {

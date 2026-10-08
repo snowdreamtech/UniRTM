@@ -4,10 +4,12 @@
 package provider
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPythonProvider_Name(t *testing.T) {
@@ -70,3 +72,47 @@ func TestPythonProvider_GenerateShims(t *testing.T) {
 		t.Errorf("expected 4 shims, got %d", len(shims))
 	}
 }
+
+func TestPythonProvider_GetRealPythonPath(t *testing.T) {
+	p := NewPythonProvider()
+	tempDir := t.TempDir()
+
+	origGOOS := env.RuntimeGOOS
+	defer func() { env.RuntimeGOOS = origGOOS }()
+
+	// 1. Windows: root python.exe
+	env.RuntimeGOOS = "windows"
+	rootPy := filepath.Join(tempDir, "python.exe")
+	_ = os.WriteFile(rootPy, []byte("echo python"), 0755)
+	assert.Equal(t, rootPy, p.getRealPythonPath(tempDir))
+	_ = os.Remove(rootPy)
+
+	// 2. Windows: install/python.exe
+	installDir := filepath.Join(tempDir, "install")
+	_ = os.MkdirAll(installDir, 0755)
+	installPy := filepath.Join(installDir, "python.exe")
+	_ = os.WriteFile(installPy, []byte("echo install python"), 0755)
+	assert.Equal(t, installPy, p.getRealPythonPath(tempDir))
+	_ = os.Remove(installPy)
+
+	// 3. Windows: python_d.exe
+	rootPyD := filepath.Join(tempDir, "python_d.exe")
+	_ = os.WriteFile(rootPyD, []byte("echo debug python"), 0755)
+	assert.Equal(t, rootPyD, p.getRealPythonPath(tempDir))
+	_ = os.Remove(rootPyD)
+
+	// 4. Unix: bin/python3
+	env.RuntimeGOOS = "linux"
+	binDir := filepath.Join(tempDir, "bin")
+	_ = os.MkdirAll(binDir, 0755)
+	binPy3 := filepath.Join(binDir, "python3")
+	_ = os.WriteFile(binPy3, []byte("#!/bin/sh"), 0755)
+	assert.Equal(t, binPy3, p.getRealPythonPath(tempDir))
+	_ = os.Remove(binPy3)
+
+	// 5. Unix: bin/python
+	binPy := filepath.Join(binDir, "python")
+	_ = os.WriteFile(binPy, []byte("#!/bin/sh"), 0755)
+	assert.Equal(t, binPy, p.getRealPythonPath(tempDir))
+}
+
