@@ -227,6 +227,9 @@ func TestShellConfigManager_Inject_DryRun_Update(t *testing.T) {
 func TestShellConfigManager_Remove_MiseWithoutUniRTMKeyword(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
+	if env.RuntimeGOOS == "windows" {
+		t.Setenv("USERPROFILE", tmpDir)
+	}
 	sm := NewShellConfigManager(&mockFormatter{}, false)
 	configPath := filepath.Join(tmpDir, ".bashrc")
 
@@ -251,6 +254,9 @@ func TestShellConfigManager_Remove_MiseWithoutUniRTMKeyword(t *testing.T) {
 func TestShellConfigManager_Remove_WithoutComment(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
+	if env.RuntimeGOOS == "windows" {
+		t.Setenv("USERPROFILE", tmpDir)
+	}
 	sm := NewShellConfigManager(&mockFormatter{}, false)
 	configPath := filepath.Join(tmpDir, ".bashrc")
 
@@ -275,6 +281,9 @@ func TestShellConfigManager_Remove_WithoutComment(t *testing.T) {
 func TestShellConfigManager_Remove_CRLF(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
+	if env.RuntimeGOOS == "windows" {
+		t.Setenv("USERPROFILE", tmpDir)
+	}
 	sm := NewShellConfigManager(&mockFormatter{}, false)
 	configPath := filepath.Join(tmpDir, ".bashrc")
 
@@ -302,6 +311,9 @@ func TestShellConfigManager_Remove_CRLF(t *testing.T) {
 func TestShellConfigManager_MultiLineBlock(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
+	if env.RuntimeGOOS == "windows" {
+		t.Setenv("USERPROFILE", tmpDir)
+	}
 	sm := NewShellConfigManager(&mockFormatter{}, false)
 	configPath := filepath.Join(tmpDir, ".bashrc")
 
