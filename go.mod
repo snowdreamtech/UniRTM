@@ -30,7 +30,7 @@ require (
 	github.com/zeebo/blake3 v0.2.4
 	go.uber.org/automaxprocs v1.6.0
 	golang.org/x/crypto v0.57.0
-	golang.org/x/net v0.59.0
+	golang.org/x/net v0.60.0
 	golang.org/x/sync v0.23.0
 	golang.org/x/term v0.46.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1

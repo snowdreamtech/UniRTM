@@ -210,4 +210,3 @@ func TestShouldShowInstructions(t *testing.T) {
 		})
 	}
 }
-
