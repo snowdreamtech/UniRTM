@@ -105,6 +105,38 @@ url = "https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.7
 checksum = "sha256:94c40e0696e4b907a74b7b2e1438d5d72ebaca83115817407f568a002d520842"
 url = "https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_windows-64bit.zip"
 
+[[tools."github:aquasecurity/trivy"]]
+version = "0.75.0"
+backend = "github"
+
+[tools."github:aquasecurity/trivy"."platforms.linux-amd64"]
+checksum = "sha256:c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f"
+url = "https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_Linux-64bit.tar.gz"
+
+[tools."github:aquasecurity/trivy"."platforms.linux-amd64-musl"]
+checksum = "sha256:c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f"
+url = "https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_Linux-64bit.tar.gz"
+
+[tools."github:aquasecurity/trivy"."platforms.linux-arm64"]
+checksum = "sha256:a1ee9f6ffb7d112b64ff726a2a0717c21175c1114361391f4a132956751a13b3"
+url = "https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_Linux-ARM64.tar.gz"
+
+[tools."github:aquasecurity/trivy"."platforms.linux-arm64-musl"]
+checksum = "sha256:a1ee9f6ffb7d112b64ff726a2a0717c21175c1114361391f4a132956751a13b3"
+url = "https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_Linux-ARM64.tar.gz"
+
+[tools."github:aquasecurity/trivy"."platforms.macos-amd64"]
+checksum = "sha256:291edaa9778acbe4693d067b5ad60ee11570e5ac68296e85595417528ca641e4"
+url = "https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_macOS-64bit.tar.gz"
+
+[tools."github:aquasecurity/trivy"."platforms.macos-arm64"]
+checksum = "sha256:4a77108cccf8e55c8d6823e1e759939a622277e66cd0daa3c1fc621ed69e4568"
+url = "https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_macOS-ARM64.tar.gz"
+
+[tools."github:aquasecurity/trivy"."platforms.windows-amd64"]
+checksum = "sha256:4e43bd71a30f51aee39525f60f2b47043af77eb8df8fe082aae4372b69c6660f"
+url = "https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_windows-64bit.zip"
+
 [[tools."github:astral-sh/ruff"]]
 version = "0.16.6"
 backend = "github"
@@ -1442,25 +1474,25 @@ version = "3.14.7"
 backend = "native"
 
 [tools."python"."platforms.linux-amd64"]
-url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260929/cpython-3.14.7%2B20260929-x86_64-unknown-linux-gnu-freethreaded-install_only.tar.gz"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260929/cpython-3.14.7%2B20260929-x86_64-unknown-linux-gnu-debug-full.tar.zst"
 
 [tools."python"."platforms.linux-amd64-musl"]
-url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260929/cpython-3.14.7%2B20260929-x86_64-unknown-linux-gnu-freethreaded-install_only.tar.gz"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260929/cpython-3.14.7%2B20260929-x86_64-unknown-linux-gnu-debug-full.tar.zst"
 
 [tools."python"."platforms.linux-arm64"]
-url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260929/cpython-3.14.7%2B20260929-aarch64-unknown-linux-gnu-freethreaded-install_only.tar.gz"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260929/cpython-3.14.7%2B20260929-aarch64-unknown-linux-gnu-debug-full.tar.zst"
 
 [tools."python"."platforms.linux-arm64-musl"]
-url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260929/cpython-3.14.7%2B20260929-aarch64-unknown-linux-gnu-freethreaded-install_only.tar.gz"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260929/cpython-3.14.7%2B20260929-aarch64-unknown-linux-gnu-debug-full.tar.zst"
 
 [tools."python"."platforms.macos-amd64"]
-url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260929/cpython-3.14.7%2B20260929-x86_64-apple-darwin-freethreaded-install_only.tar.gz"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260929/cpython-3.14.7%2B20260929-x86_64-apple-darwin-debug-full.tar.zst"
 
 [tools."python"."platforms.macos-arm64"]
-url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260929/cpython-3.14.7%2B20260929-aarch64-apple-darwin-freethreaded-install_only.tar.gz"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260929/cpython-3.14.7%2B20260929-aarch64-apple-darwin-debug-full.tar.zst"
 
 [tools."python"."platforms.windows-amd64"]
-url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260929/cpython-3.14.7%2B20260929-x86_64-pc-windows-msvc-freethreaded-install_only.tar.gz"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260929/cpython-3.14.7%2B20260929-x86_64-pc-windows-msvc-debug-full.tar.zst"
 
 [tools."python"."platforms.windows-arm64"]
-url = "https://gh-proxy.sn0wdr1am.com/https://github.com/astral-sh/python-build-standalone/releases/download/20260929/cpython-3.14.7%2B20260929-aarch64-pc-windows-msvc-freethreaded-install_only.tar.gz"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260929/cpython-3.14.7%2B20260929-aarch64-pc-windows-msvc-debug-full.tar.zst"

@@ -31,7 +31,7 @@ UNIRTM_HOOK_ALLOW_MISSING = "1"
 
 [tools]
 "github:anchore/syft" = "1.52.0"
-"github:aquasecurity/trivy" = "0.74.0"
+"github:aquasecurity/trivy" = "0.75.0"
 "github:astral-sh/ruff" = "0.16.6"
 "github:checkmake/checkmake" = "v0.3.2"
 "github:cli/cli" = "2.102.0"
