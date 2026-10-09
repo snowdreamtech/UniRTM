@@ -50,6 +50,7 @@ repos:
         entry: scripts/pre-commit/trailing-whitespace.py
         language: system
         types: [text]
+        exclude_types: [symlink]
         exclude: |
           (?x)^(
             \.md$|.*\.lock$|go\.sum$
@@ -62,6 +63,7 @@ repos:
         entry: scripts/pre-commit/end-of-file-fixer.py
         language: system
         types: [text]
+        exclude_types: [symlink]
         exclude: |
           (?x)^(
             .*\.lock$|go\.sum$
@@ -255,7 +257,7 @@ repos:
       - id: trivy
         name: trivy security scan
         language: system
-        entry: unirtm hook-exec trivy fs . --scanners vuln,misconfig,secret --skip-dirs internal/addlicense/testdata --db-repository ghcr.io/aquasecurity/trivy-db --java-db-repository ghcr.io/aquasecurity/trivy-java-db:1 --checks-bundle-repository ghcr.io/aquasecurity/trivy-checks --timeout 15m --exit-code 1 --severity HIGH,CRITICAL
+        entry: unirtm hook-exec trivy fs . --scanners vuln,misconfig,secret --skip-dirs internal/addlicense/testdata --db-repository ghcr.io/aquasecurity/trivy-db:2,public.ecr.aws/aquasecurity/trivy-db:2 --java-db-repository ghcr.io/aquasecurity/trivy-java-db:1,public.ecr.aws/aquasecurity/trivy-java-db:1 --checks-bundle-repository ghcr.io/aquasecurity/trivy-checks:2,public.ecr.aws/aquasecurity/trivy-checks:2 --timeout 15m --exit-code 1 --severity HIGH,CRITICAL
         always_run: true
         pass_filenames: false
         stages: [manual, pre-push] # Skip in local pre-commit, run in CI or manually
@@ -415,7 +417,7 @@ repos:
       - id: markdownlint-cli2
         name: markdownlint-cli2
         language: system
-        entry: bash -c 'if unirtm which markdownlint-cli2 >/dev/null 2>&1; then printf "%s\\0" "$@" | xargs -0 -s 7000 unirtm exec -- markdownlint-cli2 --fix; else echo "Skipped markdownlint-cli2 not found"; fi' markdownlint-cli2
+        entry: unirtm hook-exec markdownlint-cli2 --fix
         types: [markdown]
         description: "Ensure Markdown follows project style guides."
 
@@ -454,6 +456,11 @@ repos:
         name: editorconfig quality check
         language: system
         entry: unirtm hook-exec editorconfig-checker
+        exclude_types: [symlink]
+        exclude: |
+          (?x)^(
+            \.kilocode/workflows|\.windsurf/workflows
+          )
         description: "Ensure compliance with .editorconfig rules across the project."
 
       - id: goreleaser-check

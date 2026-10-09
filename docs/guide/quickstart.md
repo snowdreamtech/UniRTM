@@ -16,6 +16,7 @@ Click **"Use this template"** on GitHub, or clone directly:
 git clone https://github.com/snowdreamtech/template.git my-project
 cd my-project
 git config core.ignorecase false  # MANDATORY for Mac/Windows
+git config core.filemode false    # Recommended for Windows
 ```
 
 ## Step 2: Hydrate the Project

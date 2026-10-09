@@ -238,3 +238,22 @@ To prevent rebase conflicts and history fragmentation across different operating
   ```
 
 - **Verification**: Ensure your configuration is active by running `git config core.ignorecase`. It MUST return `false`.
+
+## 8. Cross-Platform File Mode Tracking (core.filemode)
+
+To prevent false file permission modifications on non-POSIX filesystems (especially Windows NTFS/FAT), configure `core.filemode`:
+
+- **Windows Compatibility**: Windows filesystems do not natively support POSIX executable bits (`chmod +x`). When cloning or checking out repositories containing executable scripts (`.sh`, `.py`), Git on Windows may falsely flag them as modified (`100755` -> `100644`).
+- **Configuration**: Windows developers SHOULD set `core.filemode` to `false` locally (or globally):
+
+  ```bash
+  git config core.filemode false
+  ```
+
+- **POSIX Environments (Linux / macOS)**: Keep `core.filemode` set to `true` (default) so that script execution permissions are tracked accurately in Git index.
+
+## 9. Environment-Agnostic Configurations (No Local Absolute Paths)
+
+- **System-Specific Tools**: Never hardcode platform-specific absolute binary paths (such as `gpg.program = /usr/local/bin/gpg` or `C:/Program Files/...`) in repository-level configurations, hooks, or tracked files.
+- **Dynamic Resolution**: Always rely on standard system `PATH` resolution or configure system-dependent tools in user-level global configuration (`~/.gitconfig`).
+

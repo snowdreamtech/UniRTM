@@ -3,7 +3,15 @@
 import os
 import sys
 
-broken = [f for f in sys.argv[1:] if os.path.islink(f) and not os.path.exists(f)]
-for f in broken:
-    print(f"Broken symlink: {f}")
-sys.exit(1 if broken else 0)
+errors = 0
+for f in sys.argv[1:]:
+    if os.path.islink(f):
+        target = os.readlink(f)
+        if os.path.isabs(target):
+            print(f"Absolute symlink forbidden: {f} -> {target}")
+            errors += 1
+        elif not os.path.exists(f):
+            print(f"Broken symlink: {f} -> {target}")
+            errors += 1
+
+sys.exit(1 if errors > 0 else 0)

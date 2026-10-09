@@ -43,8 +43,10 @@ behavioral rules distributed to 50+ IDEs via a symlink/redirect pattern.
 git clone <repo-url>
 cd <repo>
 git config core.ignorecase false   # MANDATORY on macOS/Windows
-unirtm install                      # installs tools and project dependencies
-make verify                         # validates everything is green
+git config core.filemode false     # Recommended on Windows
+unirtm run setup                          # installs unirtm + core tools
+unirtm run install                        # installs project dependencies (Node, Python venv)
+unirtm run verify                         # validates everything is green
 ```
 
 ### Run Quality Checks

@@ -218,6 +218,7 @@ lerna-debug.log*
 .node_repl_history
 *.tgz
 *.log
+*.timestamp-*.mjs
 
 ### Python ###
 __pycache__/
@@ -326,7 +327,7 @@ composer.phar
 ### Ruby / Bundler ###
 /.bundle/
 /lib/bundler/man/
-/pkg/
+# Go pkg directory is source code in Standard Go layout
 /spec/reports/
 /tmp/
 Gemfile.lock
@@ -747,3 +748,4 @@ coverage.svg
 sbom.json
 completions/
 manpages/
+.trivycache/

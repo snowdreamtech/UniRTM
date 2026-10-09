@@ -3,6 +3,7 @@
 
 
 [env]
+GOTOOLCHAIN = "auto"
 CONFIG_AUTO_UPDATE = "1"
 COREPACK_INTEGRITY_KEYS = "0"
 ENABLE_GITHUB_PROXY = "{% if env.CI is defined %}0{% else %}1{% endif %}"
@@ -74,21 +75,28 @@ python = "3.14.7"
 [tasks]
 [tasks.audit]
 description = "Run comprehensive security audit sequentially"
-run = '''
-unirtm run audit:gitleaks
-unirtm run audit:zizmor
-unirtm run audit:osv
-unirtm run audit:npm
-unirtm run audit:pip
-unirtm run audit:govulncheck
-unirtm run audit:trivy
-'''
+depends = [
+  "audit:gitleaks",
+  "audit:zizmor",
+  "audit:osv",
+  "audit:npm",
+  "audit:pip",
+  "audit:govulncheck",
+  "audit:trivy",
+]
 output = "interleaved"
+
+[tasks."audit:fix"]
+description = "Auto-fix security flaws and dependency vulnerabilities where supported"
+depends = ["audit:zizmor", "audit:npm", "audit:pip"]
+output = "interleaved"
+env = { UNIRTM_FIX = "1" }
 
 [tasks."audit:gitleaks"]
 description = "Scan for hardcoded secrets"
 run = "unirtm exec -- gitleaks detect --source . --no-banner"
 output = "interleaved"
+env = { GIT_CONFIG_COUNT = "1", GIT_CONFIG_KEY_0 = "diff.renameLimit", GIT_CONFIG_VALUE_0 = "0" }
 
 [tasks."audit:zizmor"]
 description = "Audit GitHub Actions workflows for security flaws"
@@ -165,37 +173,30 @@ output = "interleaved"
 description = "Generate and scan SBOM using Trivy"
 run = '''
 export TRIVY_SKIP_VERSION_CHECK="true"
+export TRIVY_DB_REPOSITORY="${TRIVY_DB_REPOSITORY:-ghcr.io/aquasecurity/trivy-db:2,public.ecr.aws/aquasecurity/trivy-db:2}"
+export TRIVY_JAVA_DB_REPOSITORY="${TRIVY_JAVA_DB_REPOSITORY:-ghcr.io/aquasecurity/trivy-java-db:1,public.ecr.aws/aquasecurity/trivy-java-db:1}"
+export TRIVY_CHECKS_BUNDLE_REPOSITORY="${TRIVY_CHECKS_BUNDLE_REPOSITORY:-ghcr.io/aquasecurity/trivy-checks:2,public.ecr.aws/aquasecurity/trivy-checks:2}"
+
+unirtm exec -- trivy fs --format cyclonedx --output sbom.json .
 
 if [ "${CI:-}" = "true" ] || [ "${GITHUB_ACTIONS:-}" = "true" ]; then
-    unirtm exec -- trivy fs --format cyclonedx --output sbom.json .
-    export TRIVY_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-db"
-    export TRIVY_JAVA_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-java-db:1"
-    export TRIVY_CHECKS_BUNDLE_REPOSITORY="ghcr.io/aquasecurity/trivy-checks"
     if ! unirtm exec -- trivy sbom sbom.json; then
-        echo "⚠️  ghcr.io trivy DB failed, attempting fallback to public.ecr.aws..."
-        export TRIVY_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-db"
-        export TRIVY_JAVA_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-java-db:1"
-        export TRIVY_CHECKS_BUNDLE_REPOSITORY="public.ecr.aws/aquasecurity/trivy-checks"
-        unirtm exec -- trivy sbom sbom.json || {
-            echo "⚠️  Trivy vulnerability DB download failed due to upstream rate limits; continuing..."
-            exit 0
-        }
+        echo "⚠️  Trivy online scan failed. Trying offline scan with cached DB..."
+        unirtm exec -- trivy sbom --skip-db-update --skip-java-db-update --offline-scan sbom.json
     fi
 else
-    export TRIVY_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-db"
-    export TRIVY_JAVA_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-java-db:1"
-    export TRIVY_CHECKS_BUNDLE_REPOSITORY="public.ecr.aws/aquasecurity/trivy-checks"
-    unirtm exec -- trivy fs --format cyclonedx --output sbom.json .
-    # Try offline mode first. If missing DB, it will fail and we fallback to online.
+    # Try offline mode first. If missing DB, it will fail and we fallback to multi-source online.
     if ! unirtm exec -- trivy sbom --skip-db-update --skip-java-db-update --offline-scan sbom.json; then
-        echo "⚠️  Local Trivy DB missing. Downloading from AWS ECR fallback..."
-        unirtm exec -- trivy sbom sbom.json || {
-            echo "⚠️  Trivy online scan failed, continuing..."
-            exit 0
-        }
+        echo "⚠️  Local Trivy DB missing or outdated. Downloading from multi-source registries..."
+        unirtm exec -- trivy sbom sbom.json
     fi
 fi
 '''
+output = "interleaved"
+
+[tasks.fix]
+description = "Auto-fix code format, security flaws, and dependencies where supported"
+depends = ["lint", "audit:fix"]
 output = "interleaved"
 
 [tasks.lint]
@@ -231,7 +232,7 @@ description = "Run Go unit tests for all packages recursively"
 # CGO_ENABLED=0: force pure-Go build — all test files must use modernc.org/sqlite, not mattn/go-sqlite3
 run = "unirtm exec -- go test -cover -v -timeout 10m -p 4 ./..."
 output = "interleaved"
-env = { GOTOOLCHAIN = 'local', CGO_ENABLED = '0' }
+env = { GOTOOLCHAIN = 'auto', CGO_ENABLED = '0' }
 
 [tasks."test:shell"]
 description = "Run Bats tests for install.sh"
@@ -250,19 +251,15 @@ output = "interleaved"
 
 [tasks.verify]
 description = "Run full local verification sequentially (lint-all, test, audit) to prevent CI OOM"
-run = '''
-unirtm run lint-all
-unirtm run test
-unirtm run audit
-'''
+depends = ["lint-all", "test", "audit"]
 output = "interleaved"
 
 [tasks."audit:trivy-update"]
 description = "Update Trivy vulnerability databases locally"
 run = '''
-export TRIVY_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-db"
-export TRIVY_JAVA_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-java-db:1"
-export TRIVY_CHECKS_BUNDLE_REPOSITORY="ghcr.io/aquasecurity/trivy-checks"
+export TRIVY_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-db:2,public.ecr.aws/aquasecurity/trivy-db:2"
+export TRIVY_JAVA_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-java-db:1,public.ecr.aws/aquasecurity/trivy-java-db:1"
+export TRIVY_CHECKS_BUNDLE_REPOSITORY="ghcr.io/aquasecurity/trivy-checks:2,public.ecr.aws/aquasecurity/trivy-checks:2"
 
 echo "Downloading main vulnerability DB..."
 unirtm exec -- trivy image --download-db-only

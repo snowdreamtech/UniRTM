@@ -47,7 +47,7 @@ name: "🤖 Dependabot Smart Sync"
 permissions: {}
 
 env:
-  UNIRTM_LOCKED: 1
+  UNIRTM_LOCKED: 0
   # Opt into Node.js 24 now ahead of GitHub's June 16, 2026 forced migration.
   # See: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "1"
@@ -89,6 +89,11 @@ jobs:
       - name: "🔧 Update UniRTM Toolchain & Lockfile"
         shell: sh
         run: |
+          # Prepend real Node.js bin dir to PATH to prevent npm shebang from triggering unirtm shim recursion
+          NODE_BIN=$(dirname "$(unirtm which node 2>/dev/null || echo "")")
+          if [ -d "$NODE_BIN" ]; then
+            export PATH="$NODE_BIN:$PATH"
+          fi
           # 1. Check & update all tools in .unirtm.toml to latest versions (non-interactive)
           unirtm update --all --force --yes
           # 2. Format .unirtm.toml with canonical section and key ordering
