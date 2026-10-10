@@ -134,20 +134,23 @@ func mergeEnvMaps(dst, src map[string]string) {
 // ensuring host tools remain accessible.
 func applyEnvMap(envMap map[string]string) {
 	for k, v := range envMap {
-		if k == "PATH" && v != "" {
+		if strings.EqualFold(k, "PATH") && v != "" {
 			existing := os.Getenv("PATH")
+			val := envpath.DeduplicateOSPaths(v)
 			if existing != "" {
-				os.Setenv(k, envpath.DeduplicateOSPaths(envpath.JoinForOS([]string{v, existing})))
-			} else {
-				os.Setenv(k, envpath.DeduplicateOSPaths(v))
+				val = envpath.DeduplicateOSPaths(envpath.JoinForOS([]string{v, existing}))
 			}
-		} else if k == "NODE_PATH" && v != "" {
+			os.Setenv("PATH", val)
+			if runtime.GOOS == "windows" {
+				os.Setenv("Path", val)
+			}
+		} else if strings.EqualFold(k, "NODE_PATH") && v != "" {
 			existing := os.Getenv("NODE_PATH")
+			val := envpath.DeduplicateOSPaths(v)
 			if existing != "" {
-				os.Setenv(k, envpath.DeduplicateOSPaths(envpath.JoinForOS([]string{existing, v})))
-			} else {
-				os.Setenv(k, envpath.DeduplicateOSPaths(v))
+				val = envpath.DeduplicateOSPaths(envpath.JoinForOS([]string{existing, v}))
 			}
+			os.Setenv("NODE_PATH", val)
 		} else if v != "" {
 			os.Setenv(k, v)
 		}
@@ -448,7 +451,18 @@ func execWindows(binary string, args []string) error {
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
-	c.Env = os.Environ()
+
+	envList := os.Environ()
+	pathVal := os.Getenv("PATH")
+	var filtered []string
+	for _, e := range envList {
+		if strings.HasPrefix(strings.ToUpper(e), "PATH=") {
+			continue
+		}
+		filtered = append(filtered, e)
+	}
+	filtered = append(filtered, "PATH="+pathVal, "Path="+pathVal)
+	c.Env = filtered
 
 	if err := c.Run(); err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {

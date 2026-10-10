@@ -193,6 +193,9 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 	envInjects := []string{
 		fmt.Sprintf("PATH=%s", cleanPath),
 	}
+	if runtime.GOOS == "windows" {
+		envInjects = append(envInjects, fmt.Sprintf("Path=%s", cleanPath))
+	}
 
 	isFix, _ := cmd.Flags().GetBool("fix")
 	if isFix {

@@ -155,6 +155,26 @@ func (r *NativeRunner) execScript(ctx context.Context, dir string, taskName stri
 	for k, v := range taskDef.Env {
 		fullEnv = append(fullEnv, fmt.Sprintf("%s=%s", k, v))
 	}
+	if runtime.GOOS == "windows" {
+		var targetPath string
+		for _, e := range env {
+			if strings.HasPrefix(strings.ToUpper(e), "PATH=") {
+				targetPath = e[5:]
+				break
+			}
+		}
+		if targetPath != "" {
+			var filtered []string
+			for _, e := range fullEnv {
+				if strings.HasPrefix(strings.ToUpper(e), "PATH=") {
+					continue
+				}
+				filtered = append(filtered, e)
+			}
+			filtered = append(filtered, "PATH="+targetPath, "Path="+targetPath)
+			fullEnv = filtered
+		}
+	}
 
 	// ── Parse script ───────────────────────────────────────────────────────────
 	parser := syntax.NewParser()
