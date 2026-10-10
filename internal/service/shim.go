@@ -339,6 +339,31 @@ func ExecuteBinary(binPath string, args []string) error {
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
+
+		envList := os.Environ()
+		pathVal := os.Getenv("PATH")
+		var filtered []string
+		hasPathExt := false
+		for _, e := range envList {
+			if strings.HasPrefix(strings.ToUpper(e), "PATH=") {
+				continue
+			}
+			if strings.HasPrefix(strings.ToUpper(e), "PATHEXT=") {
+				hasPathExt = true
+			}
+			filtered = append(filtered, e)
+		}
+		filtered = append(filtered, "PATH="+pathVal, "Path="+pathVal)
+		if !hasPathExt {
+			defaultPathExt := ".COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC"
+			effectivePathExt := os.Getenv("PATHEXT")
+			if effectivePathExt == "" {
+				effectivePathExt = defaultPathExt
+			}
+			filtered = append(filtered, "PATHEXT="+effectivePathExt, "PathExt="+effectivePathExt)
+		}
+		cmd.Env = filtered
+
 		return cmd.Run()
 	}
 

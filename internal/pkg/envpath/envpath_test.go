@@ -5,7 +5,6 @@ package envpath
 
 import (
 	"os"
-	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -23,7 +22,7 @@ func TestJoinForPosix(t *testing.T) {
 	paths := []string{"C:\\foo\\bin", "D:\\bar\\bin"}
 	result := JoinForPosix(paths)
 	if runtime.GOOS == "windows" {
-		assert.Equal(t, "C:/foo/bin:D:/bar/bin", result)
+		assert.Equal(t, "/c/foo/bin:/d/bar/bin", result)
 	} else {
 		assert.Equal(t, "C:\\foo\\bin:D:\\bar\\bin", result)
 	}
@@ -33,7 +32,7 @@ func TestFormatDirForPosix(t *testing.T) {
 	dir := "C:\\Users\\test\\shims"
 	result := FormatDirForPosix(dir)
 	if runtime.GOOS == "windows" {
-		assert.Equal(t, filepath.ToSlash(dir), result)
+		assert.Equal(t, "/c/Users/test/shims", result)
 	} else {
 		assert.Equal(t, dir, result)
 	}
@@ -82,7 +81,7 @@ func TestWindowsMode(t *testing.T) {
 	defer func() { isWindowsMode = orig }()
 
 	// Test FormatDirForPosix without prefix
-	assert.Equal(t, "C:/foo/bar", FormatDirForPosix("C:\\foo\\bar"))
+	assert.Equal(t, "/c/foo/bar", FormatDirForPosix("C:\\foo\\bar"))
 
 	// Test FormatDirForPosix with CYGDRIVE_PREFIX
 	os.Setenv("UNIRTM_CYGDRIVE_PREFIX", "/cygdrive/")
@@ -95,8 +94,8 @@ func TestWindowsMode(t *testing.T) {
 	assert.Equal(t, "C:\\dir1"+sep+"D:\\dir2", DeduplicateOSPaths(input))
 
 	// Test FormatExeForPosix
-	assert.Equal(t, "C:/Users/ansible/bin/unirtm.exe", FormatExeForPosix("C:\\Users\\ansible\\bin\\unirtm.exe"))
-	assert.Equal(t, `"C:/Program Files/unirtm/unirtm.exe"`, FormatExeForPosix("C:\\Program Files\\unirtm\\unirtm.exe"))
+	assert.Equal(t, "/c/Users/ansible/bin/unirtm.exe", FormatExeForPosix("C:\\Users\\ansible\\bin\\unirtm.exe"))
+	assert.Equal(t, `"/c/Program Files/unirtm/unirtm.exe"`, FormatExeForPosix("C:\\Program Files\\unirtm\\unirtm.exe"))
 	assert.Equal(t, "unirtm", FormatExeForPosix("unirtm"))
 
 	// Test FormatExeForPowerShell
