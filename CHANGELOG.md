@@ -6,6 +6,75 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.34.0](https://github.com/snowdreamtech/UniRTM/compare/v0.33.2...v0.34.0) (2026-10-10)
+
+
+### 🚀 Features
+
+* **http:** implement adaptive racing transport with apex-domain cache and redirect inheritance ([3db521e](https://github.com/snowdreamtech/UniRTM/commit/3db521e13ab0f84c3c36286ed599328c732c886c))
+* **http:** support RFC 1918 private IP ranges and standard NO_PROXY rules in proxy bypass ([9857594](https://github.com/snowdreamtech/UniRTM/commit/9857594fffd6ade798045a31264197d793edcd49))
+* **network:** add disk route persistence and proxy-strip fallback for broken github mirrors ([39e4443](https://github.com/snowdreamtech/UniRTM/commit/39e4443f74b4b7e4c9984b045653da7befffb3ba))
+* **pre-commit:** disallow absolute symlinks in check-symlinks hook ([3dcd93a](https://github.com/snowdreamtech/UniRTM/commit/3dcd93a4859edced1e44f3c6c133a1254c9380d9))
+* **shell:** ensure private bin directory in PATH and harden shell activation ([2ff7ec1](https://github.com/snowdreamtech/UniRTM/commit/2ff7ec121ac58fbc34dd59899ccf71d0e82e8552))
+
+
+### 🐛 Bug Fixes
+
+* **core:** prevent silent process exit on windows during tests ([b3255f2](https://github.com/snowdreamtech/UniRTM/commit/b3255f2b3699f1472809ccaa84e021080121b6ca))
+* **deps:** bump go to 1.27.2 and upgrade x/net to v0.60.0 ([1e07cb7](https://github.com/snowdreamtech/UniRTM/commit/1e07cb7c510cccff1414d26df7b74d7d4c5f5a13))
+* **deps:** bump source-map-js to 1.2.2 in docs to resolve CVE-2026-93749 ([5282643](https://github.com/snowdreamtech/UniRTM/commit/52826439009e53ef4d78ad06f46b79cf7051bd3f))
+* **docs:** override vulnerable dependencies and update lockfile ([9b93e56](https://github.com/snowdreamtech/UniRTM/commit/9b93e566a06107f7d2453cba628097f4365eb2e4))
+* **docs:** pin mermaid to 11.17.2 and enable legacy peer deps for vitepress build ([2a799a2](https://github.com/snowdreamtech/UniRTM/commit/2a799a2a8b476e878fc9431f785c8e58a88e20b2))
+* **docs:** pin mermaid to 11.17.2 and enable legacy peer deps for vitepress build ([a244a63](https://github.com/snowdreamtech/UniRTM/commit/a244a63d98ebd7a059c9d42b94d02dadd4acd72a))
+* **http:** harden cross-platform atomic disk cache write for Windows and Unix ([b51bbb0](https://github.com/snowdreamtech/UniRTM/commit/b51bbb03375b68646576c663fc0353a107d81f91))
+* improve python binary path resolution and update lockfile urls for standalone builds ([60a06b3](https://github.com/snowdreamtech/UniRTM/commit/60a06b3596dbf5b83f0a36845f42af09651710f0))
+* **lint:** enhance cross-platform pre-commit hooks and symlink handling ([31ce37c](https://github.com/snowdreamtech/UniRTM/commit/31ce37cbd9b95b2b712e1eaa23fc3b2d30be1626))
+* **native:** filter debug python assets and refine platform selection ([87ba9c1](https://github.com/snowdreamtech/UniRTM/commit/87ba9c1e1a1ab1c3033fa81702aa100d8007eecb))
+* **provenance:** cache non-verified GitLab results and stabilize concurrent deduplication test ([b8c66fd](https://github.com/snowdreamtech/UniRTM/commit/b8c66fd056ffdc66c12cab92dd83939c69de6a47))
+* **provider:** optimize cross-platform python path resolution and env setup ([60aae57](https://github.com/snowdreamtech/UniRTM/commit/60aae57b5d0bce514e5254b91f15ba65ea374bb2))
+* **provider:** prevent shim infinite recursion loop and isolate node runtime ([d246fde](https://github.com/snowdreamtech/UniRTM/commit/d246fdee24dc6c7c9b2d7689d275ffc3ba4e13c3))
+* resolve eof in python_test.go and bump vulnerable docs dependencies ([39f60f5](https://github.com/snowdreamtech/UniRTM/commit/39f60f58c1cb485385cf99812b9066598e358b3b))
+* **service:** improve cross-platform compatibility and robustness of shell disable ([505bf3d](https://github.com/snowdreamtech/UniRTM/commit/505bf3dfecdda9b91025af3195e9637906c1a18b))
+* **shell:** adapt private bin detection and escape paths for Windows Git Bash ([8ff2f03](https://github.com/snowdreamtech/UniRTM/commit/8ff2f03a8a004ac8ebf22ff363eee8ed90a40787))
+* **shell:** escape paths and support posix normalization across completion and activation ([4ce4100](https://github.com/snowdreamtech/UniRTM/commit/4ce4100f4d987bdefa1bcd32730918478e30117c))
+* **shell:** sanitize executable paths for POSIX and PowerShell in activation scripts ([ba09c47](https://github.com/snowdreamtech/UniRTM/commit/ba09c478c8f06d375d04d2d4f68bf9ccbc08458f))
+* **shell:** suppress activate instructions in non-terminal stdout or when already active ([4c714cf](https://github.com/snowdreamtech/UniRTM/commit/4c714cf94c3c4298c87da7f5703e53ef65ad7ce9))
+
+
+### 🛠 Refactoring
+
+* **release:** standardize release asset naming conventions ([09d40d8](https://github.com/snowdreamtech/UniRTM/commit/09d40d87a852d54290dc033bc35a95636ec6415d))
+* **release:** standardize release asset naming conventions ([efa63e9](https://github.com/snowdreamtech/UniRTM/commit/efa63e9cd8a4fc2d73a342772eaef34aaa12d251))
+
+
+### 📖 Documentation
+
+* format command snippets in readme ([75c6057](https://github.com/snowdreamtech/UniRTM/commit/75c60575df84b738fe99a2ff1138635d66f2b705))
+* **git:** add core.filemode and env-agnostic config guidelines ([b823339](https://github.com/snowdreamtech/UniRTM/commit/b823339b79074203246fdc101f492329d1afeaf8))
+* **readme:** add powershell and git bash installation instructions ([825b629](https://github.com/snowdreamtech/UniRTM/commit/825b629fb57957d99587069fa0e80251264ddb83))
+
+
+### ♻️ Miscellaneous Chores
+
+* **deps:** bump the all-dependencies group in /docs with 3 updates ([fffce6f](https://github.com/snowdreamtech/UniRTM/commit/fffce6fab0fc7b446089b6b8aa369aaf3e7c1fde))
+* **deps:** bump the all-dependencies group in /docs with 3 updates ([fe25ab7](https://github.com/snowdreamtech/UniRTM/commit/fe25ab77c54ba2069dc595b482d6c9b6badcea38))
+* **deps:** bump the all-dependencies group with 3 updates ([ba88343](https://github.com/snowdreamtech/UniRTM/commit/ba883434655b176a839f25ba483ff4ce3db20e72))
+* **deps:** sync dependabot config and unirtm toolchain ([a9f5b60](https://github.com/snowdreamtech/UniRTM/commit/a9f5b60863589607a0f657fdda57519722bb8a75))
+* **deps:** sync dependabot config and unirtm toolchain ([72111be](https://github.com/snowdreamtech/UniRTM/commit/72111beff3774707bde324c23b2d2ba51f681123))
+* **deps:** sync dependabot config and unirtm toolchain ([3e83e2e](https://github.com/snowdreamtech/UniRTM/commit/3e83e2ea198b34c05b17b9b2e87a378a6e79fade))
+* **deps:** sync dependabot config and unirtm toolchain ([72314c6](https://github.com/snowdreamtech/UniRTM/commit/72314c6f04457895af744bda09bedbf4bae9da68))
+* **deps:** sync dependabot config and unirtm toolchain ([e6c6d24](https://github.com/snowdreamtech/UniRTM/commit/e6c6d241754751d0daf1b9e83f4366379e056313))
+* **deps:** sync dependabot config and unirtm toolchain ([6e52f0d](https://github.com/snowdreamtech/UniRTM/commit/6e52f0db5e9d317366611c9f72735b978a87d749))
+* **deps:** update unirtm.lock for windows-amd64 toolchains ([36cb314](https://github.com/snowdreamtech/UniRTM/commit/36cb314bcf700d39010960cb5f99613ad9d6e240))
+* **git:** ignore temporary mjs timestamps and trivy cache directory ([5875d36](https://github.com/snowdreamtech/UniRTM/commit/5875d36e2dbaa136c9cc25844a5144493857309d))
+* **git:** preserve pkg directory in gitignore for standard source layouts ([c0f7694](https://github.com/snowdreamtech/UniRTM/commit/c0f76946940ff88af39e0b6a3405e62f2bdc8125))
+* **lint:** exclude .specify directory from editorconfig checking ([8b7aefa](https://github.com/snowdreamtech/UniRTM/commit/8b7aefa1dbe795817a82f0040d254ebcd1840466))
+* merge upstream template updates into dev ([0f502fa](https://github.com/snowdreamtech/UniRTM/commit/0f502fa2ac49f40c842378f9817f41786caaa02c))
+* release main ([7c79c69](https://github.com/snowdreamtech/UniRTM/commit/7c79c69b290fcf8ca42dd96b5da9e4d386a6221d))
+* release main ([10e8a24](https://github.com/snowdreamtech/UniRTM/commit/10e8a2436e17c20d88911ae536bc4b2d7dd902a5))
+* **template:** remove obsolete workflows symlinks for kilocode and windsurf ([1a98637](https://github.com/snowdreamtech/UniRTM/commit/1a98637ad6d5b131262008e6d2d8248f1e1996dd))
+* **toolchain:** configure GOTOOLCHAIN to auto in unirtm environment and test tasks ([6529890](https://github.com/snowdreamtech/UniRTM/commit/6529890d2cc171fe02761235e6274517e168cb3e))
+
 ## [0.33.2](https://github.com/snowdreamtech/UniRTM/compare/v0.33.1...v0.33.2) (2026-09-28)
 
 
