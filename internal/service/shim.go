@@ -323,8 +323,24 @@ func toolVersionEnvVar(tool string) string {
 	return fmt.Sprintf("UNIRTM_%s_VERSION", upper)
 }
 
+// isHashbangScript reports whether the file at path begins with '#!'.
+func isHashbangScript(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	buf := make([]byte, 2)
+	n, err := f.Read(buf)
+	if err != nil || n < 2 {
+		return false
+	}
+	return buf[0] == '#' && buf[1] == '!'
+}
+
 // PrepareWindowsCommand constructs an *exec.Cmd tailored for Windows execution.
-// It automatically wraps .cmd/.bat files with cmd.exe /d /s /c and configures
+// It automatically wraps .cmd/.bat files with cmd.exe /d /s /c, .ps1 scripts with powershell.exe,
+// and hashbang/shell scripts with a discovered POSIX shell (sh/bash). It also configures
 // environment variables (PATH/Path and PATHEXT/PathExt) to avoid missing extensions or LookPath failures.
 func PrepareWindowsCommand(binPath string, args []string) (*exec.Cmd, error) {
 	var cmd *exec.Cmd
@@ -332,6 +348,19 @@ func PrepareWindowsCommand(binPath string, args []string) (*exec.Cmd, error) {
 	if ext == ".cmd" || ext == ".bat" {
 		cmdArgs := append([]string{"/d", "/s", "/c", binPath}, args...)
 		cmd = exec.Command("cmd.exe", cmdArgs...)
+	} else if ext == ".ps1" {
+		psArgs := append([]string{"-NoProfile", "-ExecutionPolicy", "Bypass", "-File", binPath}, args...)
+		cmd = exec.Command("powershell.exe", psArgs...)
+	} else if ext == ".sh" || isHashbangScript(binPath) {
+		if shExe, err := exec.LookPath("sh"); err == nil {
+			shArgs := append([]string{binPath}, args...)
+			cmd = exec.Command(shExe, shArgs...)
+		} else if bashExe, err := exec.LookPath("bash"); err == nil {
+			bashArgs := append([]string{binPath}, args...)
+			cmd = exec.Command(bashExe, bashArgs...)
+		} else {
+			return nil, fmt.Errorf("script '%s' requires a POSIX shell (sh/bash) to run on Windows, but neither was found in PATH", binPath)
+		}
 	} else {
 		cmd = exec.Command(binPath, args...)
 	}

@@ -313,4 +313,36 @@ func TestPrepareWindowsCommand(t *testing.T) {
 	if cExe.Path != exeBinary {
 		t.Errorf("expected %s, got %s", exeBinary, cExe.Path)
 	}
+
+	// Test .ps1 PowerShell execution
+	ps1Script := "C:\\Tools\\script.ps1"
+	cPs1, err := PrepareWindowsCommand(ps1Script, []string{"arg1"})
+	if err != nil {
+		t.Fatalf("PrepareWindowsCommand for .ps1 failed: %v", err)
+	}
+	if filepath.Base(cPs1.Path) != "powershell.exe" && cPs1.Path != "powershell.exe" {
+		t.Errorf("expected powershell.exe, got %s", cPs1.Path)
+	}
+	expectedPsArgs := []string{"powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ps1Script, "arg1"}
+	if len(cPs1.Args) != len(expectedPsArgs) {
+		t.Fatalf("expected %d args for powershell, got %d: %v", len(expectedPsArgs), len(cPs1.Args), cPs1.Args)
+	}
+
+	// Test hashbang script fallback
+	tmpDir := t.TempDir()
+	shScript := filepath.Join(tmpDir, "hashbang-tool")
+	if err := os.WriteFile(shScript, []byte("#!/bin/sh\necho hello\n"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	cSh, err := PrepareWindowsCommand(shScript, []string{"foo"})
+	if err == nil {
+		// sh.exe or bash.exe was available in PATH
+		baseName := filepath.Base(cSh.Path)
+		if !strings.HasPrefix(baseName, "sh") && !strings.HasPrefix(baseName, "bash") {
+			t.Errorf("expected sh or bash wrapper, got %s", cSh.Path)
+		}
+		if len(cSh.Args) < 3 || cSh.Args[1] != shScript || cSh.Args[2] != "foo" {
+			t.Errorf("unexpected args for sh wrapper: %v", cSh.Args)
+		}
+	}
 }
