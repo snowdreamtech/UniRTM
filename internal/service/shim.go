@@ -323,47 +323,61 @@ func toolVersionEnvVar(tool string) string {
 	return fmt.Sprintf("UNIRTM_%s_VERSION", upper)
 }
 
+// PrepareWindowsCommand constructs an *exec.Cmd tailored for Windows execution.
+// It automatically wraps .cmd/.bat files with cmd.exe /d /s /c and configures
+// environment variables (PATH/Path and PATHEXT/PathExt) to avoid missing extensions or LookPath failures.
+func PrepareWindowsCommand(binPath string, args []string) (*exec.Cmd, error) {
+	var cmd *exec.Cmd
+	ext := strings.ToLower(filepath.Ext(binPath))
+	if ext == ".cmd" || ext == ".bat" {
+		cmdArgs := append([]string{"/d", "/s", "/c", binPath}, args...)
+		cmd = exec.Command("cmd.exe", cmdArgs...)
+	} else {
+		cmd = exec.Command(binPath, args...)
+	}
+
+	envList := os.Environ()
+	pathVal := os.Getenv("PATH")
+	var pathExtVal string
+	var filtered []string
+	for _, e := range envList {
+		if strings.HasPrefix(strings.ToUpper(e), "PATH=") {
+			continue
+		}
+		if strings.HasPrefix(strings.ToUpper(e), "PATHEXT=") {
+			if pathExtVal == "" {
+				pathExtVal = e[strings.Index(e, "=")+1:]
+			}
+			continue
+		}
+		filtered = append(filtered, e)
+	}
+	filtered = append(filtered, "PATH="+pathVal, "Path="+pathVal)
+	if pathExtVal == "" {
+		pathExtVal = os.Getenv("PATHEXT")
+	}
+	if pathExtVal == "" {
+		pathExtVal = ".COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC"
+	}
+	filtered = append(filtered, "PATHEXT="+pathExtVal, "PathExt="+pathExtVal)
+	cmd.Env = filtered
+	return cmd, nil
+}
+
 // ExecuteBinary executes a binary with arguments, replacing the current process on Unix.
 func ExecuteBinary(binPath string, args []string) error {
 	if env.RuntimeGOOS == "windows" {
-		// On Windows, we must use exec.Command because syscall.Exec is not available.
-		// If binPath is a .cmd or .bat file, wrap it with cmd.exe /c to ensure reliable execution.
-		var cmd *exec.Cmd
-		ext := strings.ToLower(filepath.Ext(binPath))
-		if ext == ".cmd" || ext == ".bat" {
-			cmdArgs := append([]string{"/c", binPath}, args[1:]...)
-			cmd = exec.Command("cmd.exe", cmdArgs...)
-		} else {
-			cmd = exec.Command(binPath, args[1:]...)
+		cmdArgs := []string{}
+		if len(args) > 1 {
+			cmdArgs = args[1:]
+		}
+		cmd, err := PrepareWindowsCommand(binPath, cmdArgs)
+		if err != nil {
+			return err
 		}
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
-
-		envList := os.Environ()
-		pathVal := os.Getenv("PATH")
-		var filtered []string
-		hasPathExt := false
-		for _, e := range envList {
-			if strings.HasPrefix(strings.ToUpper(e), "PATH=") {
-				continue
-			}
-			if strings.HasPrefix(strings.ToUpper(e), "PATHEXT=") {
-				hasPathExt = true
-			}
-			filtered = append(filtered, e)
-		}
-		filtered = append(filtered, "PATH="+pathVal, "Path="+pathVal)
-		if !hasPathExt {
-			defaultPathExt := ".COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC"
-			effectivePathExt := os.Getenv("PATHEXT")
-			if effectivePathExt == "" {
-				effectivePathExt = defaultPathExt
-			}
-			filtered = append(filtered, "PATHEXT="+effectivePathExt, "PathExt="+effectivePathExt)
-		}
-		cmd.Env = filtered
-
 		return cmd.Run()
 	}
 

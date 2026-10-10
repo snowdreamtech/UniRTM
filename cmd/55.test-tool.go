@@ -274,12 +274,10 @@ func testExecutable(exePath string, cmdEnv []string) error {
 	for _, flags := range testFlags {
 		var cmd *exec.Cmd
 		if runtime.GOOS == "windows" {
-			ext := strings.ToLower(filepath.Ext(exePath))
-			if ext == ".bat" || ext == ".cmd" {
-				cmdArgs := append([]string{"/c", exePath}, flags...)
-				cmd = exec.Command("cmd.exe", cmdArgs...)
-			} else {
-				cmd = exec.Command(exePath, flags...)
+			var pErr error
+			cmd, pErr = service.PrepareWindowsCommand(exePath, flags)
+			if pErr != nil {
+				return pErr
 			}
 		} else {
 			cmd = exec.Command(exePath, flags...)

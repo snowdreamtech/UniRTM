@@ -440,41 +440,13 @@ func execUnix(binary string, args, environ []string) error {
 // its exit code.  Ctrl-C is forwarded to the child naturally because we do
 // not install a signal handler in the parent process.
 func execWindows(binary string, args []string) error {
-	var c *exec.Cmd
-	ext := strings.ToLower(filepath.Ext(binary))
-	if ext == ".cmd" || ext == ".bat" {
-		cmdArgs := append([]string{"/c", binary}, args...)
-		c = exec.Command("cmd.exe", cmdArgs...)
-	} else {
-		c = exec.Command(binary, args...)
+	c, err := service.PrepareWindowsCommand(binary, args)
+	if err != nil {
+		return err
 	}
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
-
-	envList := os.Environ()
-	pathVal := os.Getenv("PATH")
-	var filtered []string
-	hasPathExt := false
-	for _, e := range envList {
-		if strings.HasPrefix(strings.ToUpper(e), "PATH=") {
-			continue
-		}
-		if strings.HasPrefix(strings.ToUpper(e), "PATHEXT=") {
-			hasPathExt = true
-		}
-		filtered = append(filtered, e)
-	}
-	filtered = append(filtered, "PATH="+pathVal, "Path="+pathVal)
-	if !hasPathExt {
-		defaultPathExt := ".COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC"
-		effectivePathExt := os.Getenv("PATHEXT")
-		if effectivePathExt == "" {
-			effectivePathExt = defaultPathExt
-		}
-		filtered = append(filtered, "PATHEXT="+effectivePathExt, "PathExt="+effectivePathExt)
-	}
-	c.Env = filtered
 
 	if err := c.Run(); err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
