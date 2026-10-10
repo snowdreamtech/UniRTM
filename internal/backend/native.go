@@ -52,9 +52,19 @@ func (b *NativeBackend) ListVersions(ctx context.Context, tool string, platform 
 		bestScore := -1
 		for _, a := range v.Assets {
 			if a.OS == platform.OS && a.Arch == platform.Arch {
-				bestAsset = &a
-				bestScore = 999
-				break
+				score := 1000
+				if a.Filename != "" {
+					fileScore := CalculateAssetScore(a.Filename, platform, tool)
+					if fileScore < 0 {
+						continue
+					}
+					score += fileScore
+				}
+				if score > bestScore {
+					bestScore = score
+					bestAsset = &a
+				}
+				continue
 			}
 			if a.Filename != "" {
 				score := CalculateAssetScore(a.Filename, platform, tool)

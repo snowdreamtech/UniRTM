@@ -193,8 +193,66 @@ func TestPythonHandler_ResolveVersions_WindowsDebugRejection(t *testing.T) {
 func TestPythonAssetPreference(t *testing.T) {
 	assert.Equal(t, -1, pythonAssetPreference("cpython-3.14.7-windows-msvc-debug-full.tar.zst"))
 	assert.Equal(t, -1, pythonAssetPreference("cpython-3.14.7-windows-msvc-freethreaded-install_only.tar.gz"))
+	assert.Equal(t, -1, pythonAssetPreference("cpython-3.14.7-linux-gnu-nogil-install_only.tar.gz"))
+	assert.Equal(t, -1, pythonAssetPreference("cpython-3.14.7-x86_64_v3-unknown-linux-gnu-install_only.tar.gz"))
+	assert.Equal(t, -1, pythonAssetPreference("cpython-3.14.7-linux-gnu-asan-install_only.tar.gz"))
+	assert.Equal(t, -1, pythonAssetPreference("cpython-3.14.7-linux-gnu-tsan-install_only.tar.gz"))
+	assert.Equal(t, -1, pythonAssetPreference("cpython-3.14.7-linux-gnu-msan-install_only.tar.gz"))
+	assert.Equal(t, -1, pythonAssetPreference("cpython-3.14.7-linux-gnu-valgrind-install_only.tar.gz"))
 	assert.Equal(t, 100, pythonAssetPreference("cpython-3.14.7-windows-msvc-install_only.tar.gz"))
 	assert.Equal(t, 95, pythonAssetPreference("cpython-3.14.7-windows-msvc-install_only_stripped.tar.gz"))
 	assert.Equal(t, 85, pythonAssetPreference("cpython-3.14.7-windows-msvc-pgo-full.tar.zst"))
 	assert.Equal(t, 70, pythonAssetPreference("cpython-3.14.7-windows-msvc-shared-install_only.tar.gz"))
 }
+
+func TestIsBetterAsset(t *testing.T) {
+	// Score difference dominates
+	assert.True(t, isBetterAsset("a.tar.gz", 100, "b.tar.gz", 90))
+	assert.False(t, isBetterAsset("a.tar.gz", 80, "b.tar.gz", 90))
+
+	// Equal score: .tar.gz over .tar.zst
+	assert.True(t, isBetterAsset("cpython-install_only.tar.gz", 100, "cpython-install_only.tar.zst", 100))
+	assert.False(t, isBetterAsset("cpython-install_only.tar.zst", 100, "cpython-install_only.tar.gz", 100))
+
+	// Equal score & format: non-stripped over stripped
+	assert.True(t, isBetterAsset("cpython-install_only.tar.gz", 100, "cpython-install_only_stripped.tar.gz", 100))
+	assert.False(t, isBetterAsset("cpython-install_only_stripped.tar.gz", 100, "cpython-install_only.tar.gz", 100))
+
+	// Equal score & format: shorter/simpler name over longer
+	assert.True(t, isBetterAsset("cpython-clean.tar.gz", 100, "cpython-clean-extra-opt.tar.gz", 100))
+
+	// Equal score, format & length: deterministic lexical order
+	assert.True(t, isBetterAsset("cpython-a.tar.gz", 100, "cpython-b.tar.gz", 100))
+	assert.False(t, isBetterAsset("cpython-b.tar.gz", 100, "cpython-a.tar.gz", 100))
+}
+
+func TestPythonHandler_ResolveVersions_DeterministicTieBreaker(t *testing.T) {
+	mockRt := &mockRoundTripper{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			// .tar.zst appears first in API response, followed by .tar.gz (both score 100)
+			resp := `[
+				{
+					"tag_name": "20260929",
+					"assets": [
+						{"name": "cpython-3.14.7+20260929-x86_64-unknown-linux-gnu-install_only.tar.zst", "browser_download_url": "https://example.com/python.tar.zst"},
+						{"name": "cpython-3.14.7+20260929-x86_64-unknown-linux-gnu-install_only.tar.gz", "browser_download_url": "https://example.com/python.tar.gz"}
+					]
+				}
+			]`
+			return &http.Response{StatusCode: 200, Body: io.NopCloser(bytes.NewBufferString(resp))}, nil
+		},
+	}
+
+	oldMock := pkgHttp.MockTransport
+	pkgHttp.MockTransport = mockRt
+	defer func() { pkgHttp.MockTransport = oldMock }()
+
+	h := &PythonHandler{}
+	versions, err := h.ResolveVersions(context.Background(), "")
+	assert.NoError(t, err)
+	assert.Len(t, versions, 1)
+	// Must pick .tar.gz over .tar.zst even though .tar.zst arrived first
+	assert.Len(t, versions[0].Assets, 1)
+	assert.Equal(t, "cpython-3.14.7+20260929-x86_64-unknown-linux-gnu-install_only.tar.gz", versions[0].Assets[0].Filename)
+}
+

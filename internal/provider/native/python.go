@@ -165,7 +165,7 @@ func (h *PythonHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 			if strings.Contains(strings.ToLower(a.Name), "musl") {
 				platKey += "-musl"
 			}
-			if existing, exists := vi.bestAssets[platKey]; !exists || score > existing.score {
+			if existing, exists := vi.bestAssets[platKey]; !exists || isBetterAsset(a.Name, score, existing.asset.Filename, existing.score) {
 				vi.bestAssets[platKey] = scoredAsset{
 					asset: Asset{
 						Filename: a.Name,
@@ -207,13 +207,21 @@ type versionCollector struct {
 }
 
 // pythonAssetPreference evaluates python-build-standalone asset names.
-// Debug and experimental freethreaded builds are strictly excluded (-1). Standard standalone install_only distributions
-// receive highest priority, followed by pgo and shared variants.
+// Debug, non-baseline x86_64, sanitizers, and experimental freethreaded builds are strictly excluded (-1).
+// Standard standalone install_only distributions receive highest priority, followed by pgo and shared variants.
 func pythonAssetPreference(name string) int {
 	nameLower := strings.ToLower(name)
 
-	// Explicitly exclude debug and experimental freethreaded packages
-	if strings.Contains(nameLower, "debug") || strings.Contains(nameLower, "freethreaded") {
+	// Explicitly exclude debug, non-baseline microarchitectures, sanitizers and experimental freethreaded/nogil packages
+	if strings.Contains(nameLower, "debug") ||
+		strings.Contains(nameLower, "freethreaded") ||
+		strings.Contains(nameLower, "nogil") ||
+		strings.Contains(nameLower, "valgrind") ||
+		strings.Contains(nameLower, "asan") ||
+		strings.Contains(nameLower, "tsan") ||
+		strings.Contains(nameLower, "msan") ||
+		strings.Contains(nameLower, "x86_64_v") ||
+		strings.Contains(nameLower, "amd64_v") {
 		return -1
 	}
 
@@ -241,6 +249,54 @@ func pythonAssetPreference(name string) int {
 	}
 
 	return 50
+}
+
+// isBetterAsset provides a deterministic tie-breaker when comparing two candidate assets for the same platform.
+func isBetterAsset(candidateName string, candidateScore int, existingName string, existingScore int) bool {
+	if candidateScore != existingScore {
+		return candidateScore > existingScore
+	}
+
+	// Deterministic Tie-Breaker 1: Compression format preference (.tar.gz > .zip > .tar.xz > .tar.zst)
+	formatScore := func(name string) int {
+		n := strings.ToLower(name)
+		if strings.HasSuffix(n, ".tar.gz") || strings.HasSuffix(n, ".tgz") {
+			return 10
+		}
+		if strings.HasSuffix(n, ".zip") {
+			return 9
+		}
+		if strings.HasSuffix(n, ".tar.xz") {
+			return 8
+		}
+		if strings.HasSuffix(n, ".tar.zst") {
+			return 5
+		}
+		return 1
+	}
+	cfScore := formatScore(candidateName)
+	efScore := formatScore(existingName)
+	if cfScore != efScore {
+		return cfScore > efScore
+	}
+
+	// Deterministic Tie-Breaker 2: Non-stripped over stripped
+	candStripped := strings.Contains(strings.ToLower(candidateName), "stripped")
+	existStripped := strings.Contains(strings.ToLower(existingName), "stripped")
+	if !candStripped && existStripped {
+		return true
+	}
+	if candStripped && !existStripped {
+		return false
+	}
+
+	// Deterministic Tie-Breaker 3: Simplicity (fewer special tokens / shorter length preferred for standard baselines)
+	if len(candidateName) != len(existingName) {
+		return len(candidateName) < len(existingName)
+	}
+
+	// Deterministic Tie-Breaker 4: Alphabetical stability (ensures 100% idempotent result regardless of slice order)
+	return candidateName < existingName
 }
 
 func (h *PythonHandler) detectPlatform(filename string) (string, string) {
