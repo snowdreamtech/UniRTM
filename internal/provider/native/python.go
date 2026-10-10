@@ -162,6 +162,9 @@ func (h *PythonHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 			}
 
 			platKey := osName + "/" + archName
+			if strings.Contains(strings.ToLower(a.Name), "musl") {
+				platKey += "-musl"
+			}
 			if existing, exists := vi.bestAssets[platKey]; !exists || score > existing.score {
 				vi.bestAssets[platKey] = scoredAsset{
 					asset: Asset{
@@ -204,13 +207,13 @@ type versionCollector struct {
 }
 
 // pythonAssetPreference evaluates python-build-standalone asset names.
-// Debug builds are strictly excluded (-1). Standard standalone install_only distributions
+// Debug and experimental freethreaded builds are strictly excluded (-1). Standard standalone install_only distributions
 // receive highest priority, followed by pgo and shared variants.
 func pythonAssetPreference(name string) int {
 	nameLower := strings.ToLower(name)
 
-	// Explicitly exclude debug packages
-	if strings.Contains(nameLower, "debug") {
+	// Explicitly exclude debug and experimental freethreaded packages
+	if strings.Contains(nameLower, "debug") || strings.Contains(nameLower, "freethreaded") {
 		return -1
 	}
 

@@ -165,6 +165,7 @@ func TestPythonHandler_ResolveVersions_WindowsDebugRejection(t *testing.T) {
 					"tag_name": "20260929",
 					"assets": [
 						{"name": "cpython-3.14.7+20260929-x86_64-pc-windows-msvc-debug-full.tar.zst", "browser_download_url": "https://example.com/python-debug.tar.zst"},
+						{"name": "cpython-3.14.7+20260929-x86_64-pc-windows-msvc-freethreaded-install_only.tar.gz", "browser_download_url": "https://example.com/python-freethreaded.tar.gz"},
 						{"name": "cpython-3.14.7+20260929-x86_64-pc-windows-msvc-install_only.tar.gz", "browser_download_url": "https://example.com/python-install-only.tar.gz"},
 						{"name": "cpython-3.14.7+20260929-x86_64-pc-windows-msvc-pgo-full.tar.zst", "browser_download_url": "https://example.com/python-pgo.tar.zst"}
 					]
@@ -191,6 +192,7 @@ func TestPythonHandler_ResolveVersions_WindowsDebugRejection(t *testing.T) {
 
 func TestPythonAssetPreference(t *testing.T) {
 	assert.Equal(t, -1, pythonAssetPreference("cpython-3.14.7-windows-msvc-debug-full.tar.zst"))
+	assert.Equal(t, -1, pythonAssetPreference("cpython-3.14.7-windows-msvc-freethreaded-install_only.tar.gz"))
 	assert.Equal(t, 100, pythonAssetPreference("cpython-3.14.7-windows-msvc-install_only.tar.gz"))
 	assert.Equal(t, 95, pythonAssetPreference("cpython-3.14.7-windows-msvc-install_only_stripped.tar.gz"))
 	assert.Equal(t, 85, pythonAssetPreference("cpython-3.14.7-windows-msvc-pgo-full.tar.zst"))
