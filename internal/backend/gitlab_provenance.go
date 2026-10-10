@@ -119,11 +119,13 @@ func VerifyGitlabArtifactProvenance(
 			}
 			result, err = verifier.verify(ctx, token, owner, repo, artifactPath)
 		}
-		if err == nil && result != nil && result.Verified {
-			gitlabProvenanceCache.Store(cacheKey, result)
-			writeGitlabAttestationDiskCache(owner, repo, digest, result)
+		if err != nil {
+			return nil, err
 		}
-		return result, err
+
+		gitlabProvenanceCache.Store(cacheKey, result)
+		writeGitlabAttestationDiskCache(owner, repo, digest, result)
+		return result, nil
 	})
 	if err != nil {
 		return nil, err

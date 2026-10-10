@@ -10,7 +10,9 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestVerifyGitlabArtifactProvenance_FileNotFound(t *testing.T) {
@@ -157,9 +159,10 @@ func TestVerifyGitlabArtifactProvenance_ConcurrentDeduplication(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var reqCount int
+	var reqCount int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		reqCount++
+		atomic.AddInt32(&reqCount, 1)
+		time.Sleep(50 * time.Millisecond)
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer server.Close()
@@ -182,8 +185,8 @@ func TestVerifyGitlabArtifactProvenance_ConcurrentDeduplication(t *testing.T) {
 		<-done
 	}
 
-	if reqCount != 1 {
-		t.Errorf("expected 1 request due to singleflight, got %d", reqCount)
+	if count := atomic.LoadInt32(&reqCount); count != 1 {
+		t.Errorf("expected 1 request due to singleflight, got %d", count)
 	}
 	_ = digest
 }
