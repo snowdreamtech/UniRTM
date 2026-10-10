@@ -174,6 +174,21 @@ func (r *NativeRunner) execScript(ctx context.Context, dir string, taskName stri
 			filtered = append(filtered, "PATH="+targetPath, "Path="+targetPath)
 			fullEnv = filtered
 		}
+		hasPathExt := false
+		for _, e := range fullEnv {
+			if strings.HasPrefix(strings.ToUpper(e), "PATHEXT=") {
+				hasPathExt = true
+				break
+			}
+		}
+		if !hasPathExt {
+			defaultPathExt := ".COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC"
+			effectivePathExt := os.Getenv("PATHEXT")
+			if effectivePathExt == "" {
+				effectivePathExt = defaultPathExt
+			}
+			fullEnv = append(fullEnv, "PATHEXT="+effectivePathExt, "PathExt="+effectivePathExt)
+		}
 	}
 
 	// ── Parse script ───────────────────────────────────────────────────────────

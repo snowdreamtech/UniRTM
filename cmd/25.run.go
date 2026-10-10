@@ -196,6 +196,12 @@ func runTaskCommand(cmd *cobra.Command, args []string) error {
 	}
 	if runtime.GOOS == "windows" {
 		envInjects = append(envInjects, fmt.Sprintf("Path=%s", cleanPath))
+		defaultPathExt := ".COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC"
+		effectivePathExt := os.Getenv("PATHEXT")
+		if effectivePathExt == "" {
+			effectivePathExt = defaultPathExt
+		}
+		envInjects = append(envInjects, "PATHEXT="+effectivePathExt, "PathExt="+effectivePathExt)
 	}
 
 	isFix, _ := cmd.Flags().GetBool("fix")
