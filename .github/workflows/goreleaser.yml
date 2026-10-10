@@ -274,13 +274,13 @@ jobs:
           for i in 1 2 3; do
             echo "Attempt $i: Installing Flatpak packages and runtimes..."
             if sudo apt update -q && \
-               sudo apt install -yq flatpak flatpak-builder && \
-               sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo && \
-               sudo flatpak install -y --noninteractive flathub \
-                 org.freedesktop.Platform/x86_64/24.08 \
-                 org.freedesktop.Sdk/x86_64/24.08 \
-                 org.freedesktop.Platform/aarch64/24.08 \
-                 org.freedesktop.Sdk/aarch64/24.08; then
+              sudo apt install -yq flatpak flatpak-builder && \
+              sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo && \
+              sudo flatpak install -y --noninteractive flathub \
+                org.freedesktop.Platform/x86_64/24.08 \
+                org.freedesktop.Sdk/x86_64/24.08 \
+                org.freedesktop.Platform/aarch64/24.08 \
+                org.freedesktop.Sdk/aarch64/24.08; then
               echo "Flatpak setup successfully completed"
               break
             fi

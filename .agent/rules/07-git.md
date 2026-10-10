@@ -256,4 +256,3 @@ To prevent false file permission modifications on non-POSIX filesystems (especia
 
 - **System-Specific Tools**: Never hardcode platform-specific absolute binary paths (such as `gpg.program = /usr/local/bin/gpg` or `C:/Program Files/...`) in repository-level configurations, hooks, or tracked files.
 - **Dynamic Resolution**: Always rely on standard system `PATH` resolution or configure system-dependent tools in user-level global configuration (`~/.gitconfig`).
-
