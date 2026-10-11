@@ -6,6 +6,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.35.0](https://github.com/snowdreamtech/UniRTM/compare/v0.34.0...v0.35.0) (2026-10-11)
+
+
+### 🚀 Features
+
+* **doctor:** add Windows shell and mintty environment diagnostics ([08fd7be](https://github.com/snowdreamtech/UniRTM/commit/08fd7be31380197666cd66d43ba0350c777a33e5))
+* **windows:** fallback to sh.exe for hashbang scripts without extension ([34415a5](https://github.com/snowdreamtech/UniRTM/commit/34415a517b272a704bcd70b5d8f51f42f9e1d5b8))
+
+
+### 🐛 Bug Fixes
+
+* **cmd:** import runtime in run command for windows platform check ([b03e780](https://github.com/snowdreamtech/UniRTM/commit/b03e78056430ac5ce06d3e0a5de4e14fbe9659b1))
+* **env:** synchronize PATH and Path on Windows across exec, run, and task runner ([b770997](https://github.com/snowdreamtech/UniRTM/commit/b770997256ce25718ae23bb6969c6c3b0e7f00da))
+* **provider/native:** exclude freethreaded python packages and preserve musl assets ([07dbc9f](https://github.com/snowdreamtech/UniRTM/commit/07dbc9f48cff6b9d53e9b5cf318fe5576f4b9cae))
+* **service:** query provider for canonical bin paths in ResolveToolEnvBySpec ([d2b9e6f](https://github.com/snowdreamtech/UniRTM/commit/d2b9e6feabf262bb0383407db084cf9dc7c52310))
+* **toolchain:** enhance asset scoring, strict exclusions and deterministic tie-breaker for python and native tools ([c0d68dc](https://github.com/snowdreamtech/UniRTM/commit/c0d68dcdbd4789570b6d3cb3f1a43530ed98d9ce))
+* **windows:** convert drive letter colons to POSIX paths and fix which active versions ([1920c35](https://github.com/snowdreamtech/UniRTM/commit/1920c358f7d1131d63788e4685060aac55b642d1))
+* **windows:** guarantee PATHEXT propagation in exec, run, and task runner ([2494552](https://github.com/snowdreamtech/UniRTM/commit/2494552a500e2ff1305162ccb6cdd945b924e0e1))
+* **windows:** harden cmd.exe execution with safe quoting and /d /s flags ([1f6d2f1](https://github.com/snowdreamtech/UniRTM/commit/1f6d2f11887b471d2dc5d3aab9a64e1affa62bba))
+
+
+### ♻️ Miscellaneous Chores
+
+* merge dev into main ([c3cc982](https://github.com/snowdreamtech/UniRTM/commit/c3cc982e32f41c6e8a8a396ddcd7c0d7acb15e34))
+
 ## [0.34.0](https://github.com/snowdreamtech/UniRTM/compare/v0.33.2...v0.34.0) (2026-10-10)
 
 
