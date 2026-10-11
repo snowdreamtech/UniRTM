@@ -178,8 +178,11 @@ func (p *PythonProvider) PostInstall(ctx context.Context, tool string, installPa
 		}
 	}
 	cmd.Env = envVars
-
-	if err := cmd.Run(); err != nil {
+	if output, err := cmd.CombinedOutput(); err != nil {
+		outStr := strings.TrimSpace(string(output))
+		if outStr != "" {
+			return NewProviderError("python", "python", version, fmt.Sprintf("failed to create virtual environment: %s", outStr), err)
+		}
 		return NewProviderError("python", "python", version, "failed to create virtual environment", err)
 	}
 

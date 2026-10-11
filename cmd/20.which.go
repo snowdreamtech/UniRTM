@@ -181,6 +181,19 @@ func runWhich(cmd *cobra.Command, args []string) error {
 	}
 
 	activeVersions := make(map[string]string)
+	if cfg != nil {
+		for toolName, tc := range cfg.Tools {
+			activeVersions[toolName] = tc.Version
+			cleanTool := toolName
+			if isWindows {
+				ext := strings.ToLower(filepath.Ext(cleanTool))
+				if ext == ".exe" || ext == ".cmd" || ext == ".bat" || ext == ".ps1" {
+					cleanTool = cleanTool[:len(cleanTool)-len(ext)]
+				}
+			}
+			activeVersions[cleanTool] = tc.Version
+		}
+	}
 	if versionArg != "" {
 		activeVersions[target] = versionArg
 		activeVersions[targetClean] = versionArg

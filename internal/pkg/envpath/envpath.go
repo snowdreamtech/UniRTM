@@ -43,14 +43,15 @@ func FormatDirForPosix(dir string) string {
 	if isWindowsMode {
 		dir = strings.ReplaceAll(dir, "\\", "/")
 
-		prefix := env.Get("CYGDRIVE_PREFIX")
-		if prefix != "" {
-			if matches := winDriveRegex.FindStringSubmatch(dir); len(matches) == 3 {
-				drive := strings.ToLower(matches[1])
-				rest := matches[2]
+		if matches := winDriveRegex.FindStringSubmatch(dir); len(matches) == 3 {
+			drive := strings.ToLower(matches[1])
+			rest := matches[2]
+			prefix := env.Get("CYGDRIVE_PREFIX")
+			if prefix != "" {
 				prefix = strings.TrimRight(prefix, "/")
 				return prefix + "/" + drive + "/" + rest
 			}
+			return "/" + drive + "/" + rest
 		}
 		return dir
 	}
@@ -64,13 +65,17 @@ func FormatExeForPosix(exePath string) string {
 		return "unirtm"
 	}
 	p := strings.ReplaceAll(exePath, "\\", "/")
-	prefix := env.Get("CYGDRIVE_PREFIX")
-	if prefix != "" {
+	if isWindowsMode {
 		if matches := winDriveRegex.FindStringSubmatch(p); len(matches) == 3 {
 			drive := strings.ToLower(matches[1])
 			rest := matches[2]
-			prefix = strings.TrimRight(prefix, "/")
-			p = prefix + "/" + drive + "/" + rest
+			prefix := env.Get("CYGDRIVE_PREFIX")
+			if prefix != "" {
+				prefix = strings.TrimRight(prefix, "/")
+				p = prefix + "/" + drive + "/" + rest
+			} else {
+				p = "/" + drive + "/" + rest
+			}
 		}
 	}
 	if strings.ContainsAny(p, " \t$*?()[]{}<>~`#^&|;\"") {

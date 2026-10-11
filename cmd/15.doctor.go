@@ -87,8 +87,20 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	cwd, _ := os.Getwd()
 
 	shellVer := "unknown"
-	if out, err := exec.Command(shellPath, "-c", "echo $ZSH_VERSION $BASH_VERSION").CombinedOutput(); err == nil {
-		shellVer = strings.TrimSpace(string(out))
+	if shellPath != "" {
+		if out, err := exec.Command(shellPath, "-c", "echo $ZSH_VERSION $BASH_VERSION").CombinedOutput(); err == nil {
+			shellVer = strings.TrimSpace(string(out))
+		}
+	} else if runtime.GOOS == "windows" {
+		if msystem := os.Getenv("MSYSTEM"); msystem != "" {
+			shellPath = fmt.Sprintf("Git Bash / MSYS2 (%s)", msystem)
+		} else if os.Getenv("PSModulePath") != "" {
+			shellPath = "PowerShell"
+		} else if os.Getenv("PROMPT") != "" {
+			shellPath = "Command Prompt (CMD)"
+		} else {
+			shellPath = "Windows Native"
+		}
 	}
 
 	editor, source := getBestEditorWithSource(cfg)
@@ -432,6 +444,13 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		output.Warningf("Found %d missing tools.", missingTools)
 		output.Infof("Fix: Run 'unirtm install' to install all missing tools.")
 		suggestions++
+	}
+
+	if runtime.GOOS == "windows" && os.Getenv("MSYSTEM") != "" {
+		term := os.Getenv("TERM")
+		if strings.Contains(term, "xterm") || os.Getenv("TERM_PROGRAM") == "mintty" {
+			output.Infof("MSYS2/Git Bash (mintty) terminal detected. If interactive REPLs (node, python) hang, use Windows Terminal or launch with 'winpty <cmd>'.")
+		}
 	}
 
 	if suggestions == 0 {

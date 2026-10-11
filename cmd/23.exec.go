@@ -134,20 +134,23 @@ func mergeEnvMaps(dst, src map[string]string) {
 // ensuring host tools remain accessible.
 func applyEnvMap(envMap map[string]string) {
 	for k, v := range envMap {
-		if k == "PATH" && v != "" {
+		if strings.EqualFold(k, "PATH") && v != "" {
 			existing := os.Getenv("PATH")
+			val := envpath.DeduplicateOSPaths(v)
 			if existing != "" {
-				os.Setenv(k, envpath.DeduplicateOSPaths(envpath.JoinForOS([]string{v, existing})))
-			} else {
-				os.Setenv(k, envpath.DeduplicateOSPaths(v))
+				val = envpath.DeduplicateOSPaths(envpath.JoinForOS([]string{v, existing}))
 			}
-		} else if k == "NODE_PATH" && v != "" {
+			os.Setenv("PATH", val)
+			if runtime.GOOS == "windows" {
+				os.Setenv("Path", val)
+			}
+		} else if strings.EqualFold(k, "NODE_PATH") && v != "" {
 			existing := os.Getenv("NODE_PATH")
+			val := envpath.DeduplicateOSPaths(v)
 			if existing != "" {
-				os.Setenv(k, envpath.DeduplicateOSPaths(envpath.JoinForOS([]string{existing, v})))
-			} else {
-				os.Setenv(k, envpath.DeduplicateOSPaths(v))
+				val = envpath.DeduplicateOSPaths(envpath.JoinForOS([]string{existing, v}))
 			}
+			os.Setenv("NODE_PATH", val)
 		} else if v != "" {
 			os.Setenv(k, v)
 		}
@@ -437,18 +440,13 @@ func execUnix(binary string, args, environ []string) error {
 // its exit code.  Ctrl-C is forwarded to the child naturally because we do
 // not install a signal handler in the parent process.
 func execWindows(binary string, args []string) error {
-	var c *exec.Cmd
-	ext := strings.ToLower(filepath.Ext(binary))
-	if ext == ".cmd" || ext == ".bat" {
-		cmdArgs := append([]string{"/c", binary}, args...)
-		c = exec.Command("cmd.exe", cmdArgs...)
-	} else {
-		c = exec.Command(binary, args...)
+	c, err := service.PrepareWindowsCommand(binary, args)
+	if err != nil {
+		return err
 	}
 	c.Stdin = os.Stdin
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
-	c.Env = os.Environ()
 
 	if err := c.Run(); err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {

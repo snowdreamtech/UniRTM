@@ -1411,18 +1411,31 @@ func (im *InstallationManager) ResolveToolEnvBySpec(
 		}
 	}
 
-	// Prepend the tool's bin directory to PATH.
-	for _, binDir := range []string{
-		filepath.Join(installPath, "bin"),
-		installPath,
-	} {
+	// Prepend the tool's canonical bin directory(ies) to PATH.
+	var binDirs []string
+	if p != nil {
+		if pb, err := p.GetBinPaths(toolName, installPath, version); err == nil && len(pb) > 0 {
+			binDirs = pb
+		}
+	}
+	if len(binDirs) == 0 {
+		for _, candidate := range []string{
+			filepath.Join(installPath, "bin"),
+			installPath,
+		} {
+			if fi, err := os.Stat(candidate); err == nil && fi.IsDir() {
+				binDirs = append(binDirs, candidate)
+			}
+		}
+	}
+
+	for _, binDir := range binDirs {
 		if fi, err := os.Stat(binDir); err == nil && fi.IsDir() {
 			if existing, ok := result["PATH"]; ok && existing != "" {
 				result["PATH"] = binDir + string(os.PathListSeparator) + existing
 			} else {
 				result["PATH"] = binDir
 			}
-			break // Only prepend the first valid bin directory.
 		}
 	}
 

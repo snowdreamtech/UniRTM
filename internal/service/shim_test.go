@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -215,7 +216,7 @@ func TestGenerator_GenerateShim_SymlinkEvaluation(t *testing.T) {
 	}
 	symlinkBin := filepath.Join(tmpDir, "symlink_unirtm")
 	if err := os.Symlink(realBin, symlinkBin); err != nil {
-		t.Fatalf("failed to create symlink: %v", err)
+		t.Skipf("skipping symlink test on platform without symlink privilege: %v", err)
 	}
 
 	if !isSelfReferential(symlinkBin, realBin, "node", "node") {
@@ -257,5 +258,91 @@ func TestGenerator_GenerateWindowsShim_AlreadyWithExtension(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(shimsDir, "npm.cmd.cmd")); err == nil {
 		t.Error("npm.cmd.cmd should not have been created")
+	}
+}
+
+func TestPrepareWindowsCommand(t *testing.T) {
+	// Test .cmd script wrapping
+	cmdScript := "C:\\Program Files\\Tools\\npm.cmd"
+	c, err := PrepareWindowsCommand(cmdScript, []string{"install", "--save"})
+	if err != nil {
+		t.Fatalf("PrepareWindowsCommand failed: %v", err)
+	}
+	if filepath.Base(c.Path) != "cmd.exe" && c.Path != "cmd.exe" {
+		t.Errorf("expected cmd.exe, got %s", c.Path)
+	}
+	expectedArgs := []string{"cmd.exe", "/d", "/s", "/c", cmdScript, "install", "--save"}
+	if len(c.Args) != len(expectedArgs) {
+		t.Fatalf("expected %d args, got %d: %v", len(expectedArgs), len(c.Args), c.Args)
+	}
+	for i, arg := range expectedArgs {
+		if c.Args[i] != arg {
+			t.Errorf("arg[%d]: expected %q, got %q", i, arg, c.Args[i])
+		}
+	}
+
+	// Verify environment variables have PATH, Path, PATHEXT, PathExt
+	var hasPath, hasPathLower, hasPathExt, hasPathExtLower bool
+	for _, env := range c.Env {
+		if strings.HasPrefix(env, "PATH=") {
+			hasPath = true
+		}
+		if strings.HasPrefix(env, "Path=") {
+			hasPathLower = true
+		}
+		if strings.HasPrefix(env, "PATHEXT=") {
+			hasPathExt = true
+		}
+		if strings.HasPrefix(env, "PathExt=") {
+			hasPathExtLower = true
+		}
+	}
+	if !hasPath || !hasPathLower {
+		t.Errorf("expected both PATH and Path in environment, got hasPath=%v, hasPathLower=%v", hasPath, hasPathLower)
+	}
+	if !hasPathExt || !hasPathExtLower {
+		t.Errorf("expected both PATHEXT and PathExt in environment, got hasPathExt=%v, hasPathExtLower=%v", hasPathExt, hasPathExtLower)
+	}
+
+	// Test .exe native execution
+	exeBinary := "C:\\Tools\\node.exe"
+	cExe, err := PrepareWindowsCommand(exeBinary, []string{"-v"})
+	if err != nil {
+		t.Fatalf("PrepareWindowsCommand for .exe failed: %v", err)
+	}
+	if cExe.Path != exeBinary {
+		t.Errorf("expected %s, got %s", exeBinary, cExe.Path)
+	}
+
+	// Test .ps1 PowerShell execution
+	ps1Script := "C:\\Tools\\script.ps1"
+	cPs1, err := PrepareWindowsCommand(ps1Script, []string{"arg1"})
+	if err != nil {
+		t.Fatalf("PrepareWindowsCommand for .ps1 failed: %v", err)
+	}
+	if filepath.Base(cPs1.Path) != "powershell.exe" && cPs1.Path != "powershell.exe" {
+		t.Errorf("expected powershell.exe, got %s", cPs1.Path)
+	}
+	expectedPsArgs := []string{"powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ps1Script, "arg1"}
+	if len(cPs1.Args) != len(expectedPsArgs) {
+		t.Fatalf("expected %d args for powershell, got %d: %v", len(expectedPsArgs), len(cPs1.Args), cPs1.Args)
+	}
+
+	// Test hashbang script fallback
+	tmpDir := t.TempDir()
+	shScript := filepath.Join(tmpDir, "hashbang-tool")
+	if err := os.WriteFile(shScript, []byte("#!/bin/sh\necho hello\n"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	cSh, err := PrepareWindowsCommand(shScript, []string{"foo"})
+	if err == nil {
+		// sh.exe or bash.exe was available in PATH
+		baseName := filepath.Base(cSh.Path)
+		if !strings.HasPrefix(baseName, "sh") && !strings.HasPrefix(baseName, "bash") {
+			t.Errorf("expected sh or bash wrapper, got %s", cSh.Path)
+		}
+		if len(cSh.Args) < 3 || cSh.Args[1] != shScript || cSh.Args[2] != "foo" {
+			t.Errorf("unexpected args for sh wrapper: %v", cSh.Args)
+		}
 	}
 }

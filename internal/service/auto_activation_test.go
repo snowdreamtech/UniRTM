@@ -445,11 +445,12 @@ func TestGenerateHookEnvScript_WindowsPathEscaping(t *testing.T) {
 
 	winExe := `C:\Users\ansible\bin\unirtm.exe`
 
-	// Bash: backslashes must be converted to forward slashes to avoid escape bugs
+	// Bash: backslashes must be converted to forward slashes to avoid escape bugs,
+	// and on Windows drive letters must be converted to /c/... for POSIX shells.
 	bashScript, err := autoMgr.GenerateHookEnvScript(ShellBash, winExe)
 	require.NoError(t, err)
 	assert.NotContains(t, bashScript, `C:\Users`)
-	assert.Contains(t, bashScript, `C:/Users/ansible/bin/unirtm.exe`)
+	assert.True(t, strings.Contains(bashScript, `/c/Users/ansible/bin/unirtm.exe`) || strings.Contains(bashScript, `C:/Users/ansible/bin/unirtm.exe`), "bashScript must contain normalized path")
 
 	// PowerShell: must be safely quoted with call operator (&)
 	psScript, err := autoMgr.GenerateHookEnvScript(ShellPowerShell, winExe)

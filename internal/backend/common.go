@@ -125,7 +125,11 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 	//   "man"  would match "manifest", "manager", "command"
 	//   "dev"  would match "devops", "devenv"
 	//   "sbom" would match tool names with "sbom" as a substring
-	negatives := []string{"checksums", "sha256sums", "license", "source", "devel", "header", "static-lib", "manual", "debug", "provenance", "attestation"}
+	negatives := []string{
+		"checksums", "sha256sums", "license", "source", "devel", "header",
+		"static-lib", "manual", "debug", "provenance", "attestation",
+		"freethreaded", "nogil", "valgrind", "asan", "tsan", "msan",
+	}
 
 	for _, neg := range negatives {
 		if strings.Contains(nameLower, neg) {
@@ -157,6 +161,11 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 	}
 	// Exclude WebAssembly targets — wasm/wasi binaries cannot run natively.
 	if strings.Contains(nameLower, "wasm") || strings.Contains(nameLower, "wasi") {
+		return -1
+	}
+	// Exclude non-baseline x86_64 microarchitecture levels (v2, v3, v4) to prevent Illegal Instruction crashes
+	// on legacy CPUs and cloud/CI VMs that only guarantee baseline x86_64.
+	if strings.Contains(nameLower, "x86_64_v") || strings.Contains(nameLower, "amd64_v") {
 		return -1
 	}
 
