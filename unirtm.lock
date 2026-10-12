@@ -913,6 +913,26 @@ backend = "go"
 
 [tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.windows-arm64"]
 
+[[tools."go:golang.org/x/vuln/cmd/govulncheck"]]
+version = "v1.9.0"
+backend = "go-pkg"
+
+[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.linux-amd64"]
+
+[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.linux-amd64-musl"]
+
+[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.linux-arm64"]
+
+[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.linux-arm64-musl"]
+
+[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.macos-amd64"]
+
+[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.macos-arm64"]
+
+[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.windows-amd64"]
+
+[tools."go:golang.org/x/vuln/cmd/govulncheck"."platforms.windows-arm64"]
+
 [[tools."go:mvdan.cc/sh/v3/cmd/shfmt"]]
 version = "v3.14.0"
 backend = "go"
@@ -1289,6 +1309,26 @@ backend = "npm"
 
 [tools."npm:prettier"."platforms.windows-arm64"]
 
+[[tools."npm:prettier"]]
+version = "3.9.10"
+backend = "npm"
+
+[tools."npm:prettier"."platforms.linux-amd64"]
+
+[tools."npm:prettier"."platforms.linux-amd64-musl"]
+
+[tools."npm:prettier"."platforms.linux-arm64"]
+
+[tools."npm:prettier"."platforms.linux-arm64-musl"]
+
+[tools."npm:prettier"."platforms.macos-amd64"]
+
+[tools."npm:prettier"."platforms.macos-arm64"]
+
+[tools."npm:prettier"."platforms.windows-amd64"]
+
+[tools."npm:prettier"."platforms.windows-arm64"]
+
 [[tools."npm:sort-package-json"]]
 version = "4.0.0"
 backend = "npm"
@@ -1431,6 +1471,26 @@ backend = "pipx"
 
 [[tools."pipx:pre-commit"]]
 version = "4.6.2"
+backend = "pipx"
+
+[tools."pipx:pre-commit"."platforms.linux-amd64"]
+
+[tools."pipx:pre-commit"."platforms.linux-amd64-musl"]
+
+[tools."pipx:pre-commit"."platforms.linux-arm64"]
+
+[tools."pipx:pre-commit"."platforms.linux-arm64-musl"]
+
+[tools."pipx:pre-commit"."platforms.macos-amd64"]
+
+[tools."pipx:pre-commit"."platforms.macos-arm64"]
+
+[tools."pipx:pre-commit"."platforms.windows-amd64"]
+
+[tools."pipx:pre-commit"."platforms.windows-arm64"]
+
+[[tools."pipx:pre-commit"]]
+version = "4.7.0"
 backend = "pipx"
 
 [tools."pipx:pre-commit"."platforms.linux-amd64"]
