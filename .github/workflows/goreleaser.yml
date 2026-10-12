@@ -199,7 +199,7 @@ jobs:
           swap-storage: true
 
       - name: "⚡ Cache Release Tools (Cosign & Syft)"
-        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             /opt/hostedtoolcache/cosign
@@ -236,7 +236,7 @@ jobs:
 
       - name: "📦 Install Syft (for GoReleaser SBOM)"
         continue-on-error: true
-        uses: anchore/sbom-action/download-syft@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+        uses: anchore/sbom-action/download-syft@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_SECRET || secrets.GITHUB_TOKEN }}
 
@@ -489,7 +489,7 @@ jobs:
           EOF
 
       - name: "⚡ Cache Release Tools (Cosign)"
-        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             /opt/hostedtoolcache/cosign
