@@ -1,0 +1,392 @@
+/* Glassmorphism Theme CSS — UniGoDesktop Design System */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-color: #070a12;
+  --card-bg: rgba(18, 26, 43, 0.92);
+  --modal-bg: rgba(13, 20, 36, 0.95);
+  --input-bg: rgba(8, 14, 26, 0.8);
+  --section-bg: rgba(0, 0, 0, 0.25);
+  --card-border: rgba(0, 229, 255, 0.15);
+  --card-border-active: rgba(0, 229, 255, 0.6);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --accent-cyan: #00e5ff;
+  --accent-cyan-glow: rgba(0, 229, 255, 0.35);
+  --accent-purple: #9d4edd;
+  --success: #10b981;
+  --warning: #f59e0b;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg-color: #f1f5f9;
+  --card-bg: #ffffff;
+  --modal-bg: #ffffff;
+  --input-bg: #f8fafc;
+  --section-bg: #f1f5f9;
+  --card-border: #cbd5e1;
+  --card-border-active: #0284c7;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --accent-cyan: #0284c7;
+  --accent-cyan-glow: rgba(2, 132, 199, 0.2);
+  --accent-purple: #7c3aed;
+  --success: #059669;
+  --warning: #d97706;
+}
+
+/* Global Select & Option Dropdown Light/Dark Theme Adaptations */
+select,
+option,
+optgroup {
+  background-color: var(--input-bg) !important;
+  color: var(--text-main) !important;
+  border-color: var(--card-border) !important;
+}
+
+:root[data-theme="light"] select,
+:root[data-theme="light"] option,
+:root[data-theme="light"] optgroup,
+[data-theme="light"] select,
+[data-theme="light"] option,
+[data-theme="light"] optgroup,
+[data-theme="light"] select option {
+  color-scheme: light !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] option,
+:root[data-theme="dark"] optgroup,
+[data-theme="dark"] select,
+[data-theme="dark"] option,
+[data-theme="dark"] optgroup,
+[data-theme="dark"] select option {
+  color-scheme: dark !important;
+  background-color: #0d1424 !important;
+  color: #f8fafc !important;
+}
+
+/* Global Input & Textarea Placeholder Styling - Subtle & Muted Hint */
+input::placeholder,
+textarea::placeholder,
+select::placeholder {
+  color: rgba(148, 163, 184, 0.45) !important;
+  opacity: 1 !important;
+  font-size: 0.82rem;
+  font-weight: 400;
+  transition: color 0.2s ease;
+}
+
+input:focus::placeholder,
+textarea:focus::placeholder,
+select:focus::placeholder {
+  color: rgba(148, 163, 184, 0.22) !important;
+}
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder,
+[data-theme="light"] select::placeholder {
+  color: rgba(100, 116, 139, 0.45) !important;
+}
+
+[data-theme="light"] input:focus::placeholder,
+[data-theme="light"] textarea:focus::placeholder,
+[data-theme="light"] select:focus::placeholder {
+  color: rgba(100, 116, 139, 0.22) !important;
+}
+
+/* Purge Browser Default Autofill Background & Red Spellcheck Squiggles */
+input,
+textarea {
+  spellcheck: false;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-main) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--input-bg) inset !important;
+  box-shadow: 0 0 0px 1000px var(--input-bg) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: var(--text-main);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Desktop Native App UI Normalization */
+html,
+body,
+#app {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  overscroll-behavior: none;
+  -webkit-overscroll-behavior: none;
+}
+
+/* Allow text selection in inputs and explicit selectable elements */
+input,
+textarea,
+[contenteditable="true"],
+.selectable,
+[data-selectable] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* Prevent browser ghost dragging on media and link elements */
+img,
+a,
+svg {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
+/* Clean focus outline for mouse clicks while keeping keyboard accessibility */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Cross-Platform Modern Overlay / Thin Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
+}
+
+
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.45);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+[data-theme="light"] {
+  scrollbar-color: rgba(100, 116, 139, 0.25) transparent;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.25);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.45);
+}
+
+body {
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    "SF Pro Display",
+    "Segoe UI Variable Text",
+    "Segoe UI Variable Display",
+    "Segoe UI",
+    "PingFang SC",
+    "Hiragino Sans GB",
+    "Microsoft YaHei UI",
+    "Microsoft YaHei",
+    "Inter",
+    "Roboto",
+    "Ubuntu",
+    "Cantarell",
+    "Noto Sans",
+    "Noto Sans CJK SC",
+    sans-serif,
+    "Apple Color Emoji",
+    "Segoe UI Emoji",
+    "Noto Color Emoji";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  background-color: var(--bg-color);
+  background-image:
+    radial-gradient(circle at 15% 15%, rgba(0, 229, 255, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(157, 78, 221, 0.08) 0%, transparent 40%);
+  color: var(--text-main);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.glass-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-card:hover {
+  border-color: var(--card-border-active);
+  box-shadow: 0 8px 32px 0 var(--accent-cyan-glow);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #00e5ff 0%, #0088ff 100%);
+  color: #070a12;
+  font-weight: 700;
+  border: none;
+  padding: 0.75rem 1.75rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 15px var(--accent-cyan-glow);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px var(--accent-cyan-glow);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  border: 1px solid var(--card-border);
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent-cyan);
+}
+
+/* Smooth transition for layout directions and theme switching */
+html {
+  transition: direction 0.25s ease;
+}
+
+body,
+.app-container,
+.main-content,
+.app-header,
+.settings-modal-card {
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease;
+}
+
+/* LTR / RTL explicit Direction Controls */
+html[dir="ltr"],
+[dir="ltr"] {
+  direction: ltr;
+  text-align: left;
+}
+html[dir="ltr"] input,
+html[dir="ltr"] select,
+html[dir="ltr"] textarea {
+  text-align: left;
+}
+html[dir="ltr"] .header-brand,
+html[dir="ltr"] .section-header-row,
+html[dir="ltr"] .modal-header,
+html[dir="ltr"] .sync-status,
+html[dir="ltr"] .tab-group,
+html[dir="ltr"] .protocol-radio-bar,
+html[dir="ltr"] .radio-group {
+  flex-direction: row;
+}
+html[dir="ltr"] .dropdown-caret,
+html[dir="ltr"] .opt-check {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+html[dir="rtl"],
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+html[dir="rtl"] input,
+html[dir="rtl"] select,
+html[dir="rtl"] textarea {
+  text-align: right;
+}
+html[dir="rtl"] .header-brand,
+html[dir="rtl"] .section-header-row,
+html[dir="rtl"] .modal-header,
+html[dir="rtl"] .sync-status,
+html[dir="rtl"] .tab-group,
+html[dir="rtl"] .protocol-radio-bar,
+html[dir="rtl"] .radio-group {
+  flex-direction: row-reverse;
+}
+html[dir="rtl"] .dropdown-caret,
+html[dir="rtl"] .opt-check {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+/* Header dropdown menu anchoring in RTL */
+[dir="rtl"] .lang-dropdown-menu {
+  right: auto !important;
+  left: 0 !important;
+}
+
+[dir="rtl"] .lang-option {
+  text-align: right;
+}
+
+/* Custom Select in RTL */
+[dir="rtl"] .custom-select-container .select-trigger {
+  text-align: right;
+}
+
+[dir="rtl"] .custom-select-container .dropdown-item {
+  text-align: right;
+}
+
+/* Native Window Focus / Blur State Visual Adaptation */
+.window-inactive {
+  --accent-cyan-glow: rgba(0, 229, 255, 0.12);
+}
+
+.window-inactive .app-header {
+  opacity: 0.94;
+}
+
+.window-inactive .logo-img {
+  filter: grayscale(0.2) opacity(0.88);
+}

@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UniRTM</title>
+    <!-- Theme pre-load: apply saved or system theme synchronously before any render -->
+    <script>
+      (function () {
+        try {
+          var cachedTheme = localStorage.getItem("unirtm_theme_cache") || localStorage.getItem("unigo_theme_cache");
+          var systemTheme =
+            window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          var theme = cachedTheme === "light" || cachedTheme === "dark" ? cachedTheme : systemTheme;
+          document.documentElement.setAttribute("data-theme", theme);
+        } catch (e) {
+          document.documentElement.setAttribute(
+            "data-theme",
+            window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+          );
+        }
+      })();
+    </script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      :root {
+        --startup-bg: radial-gradient(circle at 50% 38%, rgba(0, 229, 255, 0.12), transparent 30%), #070a12;
+        --startup-color: #f8fafc;
+      }
+
+      @media (prefers-color-scheme: light) {
+        :root {
+          --startup-bg: radial-gradient(circle at 50% 38%, rgba(2, 132, 199, 0.1), transparent 30%), #f1f5f9;
+          --startup-color: #0f172a;
+        }
+      }
+
+      [data-theme="dark"] {
+        --startup-bg: radial-gradient(circle at 50% 38%, rgba(0, 229, 255, 0.12), transparent 30%), #070a12;
+        --startup-color: #f8fafc;
+        background: #070a12;
+        color: #f8fafc;
+      }
+
+      [data-theme="light"] {
+        --startup-bg: radial-gradient(circle at 50% 38%, rgba(2, 132, 199, 0.1), transparent 30%), #f1f5f9;
+        --startup-color: #0f172a;
+        background: #f1f5f9;
+        color: #0f172a;
+      }
+
+      html::before {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483646;
+        display: grid;
+        place-items: center;
+        background: var(--startup-bg);
+        color: var(--startup-color);
+        content: "UniRTM";
+        font:
+          700 22px/1.2 -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      html.app-ready::before {
+        display: none;
+      }
+
+      #startup-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background: var(--startup-bg);
+        color: var(--startup-color);
+        opacity: 1;
+        transition:
+          opacity 220ms ease,
+          visibility 220ms ease;
+      }
+
+      html.app-ready #startup-loader {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      .startup-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+        transform: translateY(-4vh);
+        animation: startup-rise 500ms ease-out both;
+      }
+
+      .startup-mark {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 86px;
+        height: 86px;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow:
+          0 18px 50px rgba(0, 229, 255, 0.35),
+          0 0 0 1px rgba(0, 229, 255, 0.4);
+      }
+
+      [data-theme="light"] .startup-mark {
+        box-shadow:
+          0 18px 50px rgba(2, 132, 199, 0.25),
+          0 0 0 1px rgba(2, 132, 199, 0.3);
+      }
+
+      .startup-mark::after {
+        position: absolute;
+        inset: -9px;
+        border: 1px solid rgba(0, 229, 255, 0.32);
+        border-radius: 31px;
+        content: "";
+        animation: startup-pulse 1.8s ease-out infinite;
+      }
+
+      [data-theme="light"] .startup-mark::after {
+        border-color: rgba(2, 132, 199, 0.3);
+      }
+
+      .startup-logo-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .startup-title {
+        margin: 2px 0 0;
+        color: currentColor;
+        font:
+          700 22px/1.2 -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        letter-spacing: 0.01em;
+      }
+
+      .startup-progress {
+        width: 148px;
+        height: 3px;
+        margin-top: 5px;
+        overflow: hidden;
+        background: color-mix(in srgb, currentColor 12%, transparent);
+        border-radius: 99px;
+      }
+
+      .startup-progress-fill {
+        width: var(--startup-progress, 8%);
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #00e5ff, #9d4edd);
+        transition: width 260ms ease-out;
+      }
+
+      [data-theme="light"] .startup-progress-fill {
+        background: linear-gradient(90deg, #0284c7, #7c3aed);
+      }
+
+      @keyframes startup-rise {
+        from {
+          opacity: 1;
+          transform: translateY(-2vh);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(-4vh);
+        }
+      }
+
+      @keyframes startup-pulse {
+        0%,
+        100% {
+          opacity: 0.3;
+          transform: scale(0.96);
+        }
+        50% {
+          opacity: 0;
+          transform: scale(1.08);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .startup-content,
+        .startup-mark::after,
+        .startup-progress-fill {
+          animation: none;
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="startup-loader" role="status" aria-live="polite" aria-label="Starting UniRTM">
+      <div class="startup-content">
+        <div class="startup-mark" aria-hidden="true">
+          <img src="/logo.png" alt="UniRTM" class="startup-logo-img" />
+        </div>
+        <h1 class="startup-title">UniRTM</h1>
+        <div class="startup-progress" aria-hidden="true">
+          <div class="startup-progress-fill"></div>
+        </div>
+      </div>
+    </div>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
