@@ -3,7 +3,7 @@
     <!-- View Header -->
     <div class="view-header-row">
       <div>
-        <h2 class="view-title">🧩 扩展与插件市场 (Extensions Marketplace)</h2>
+        <h2 class="view-title">🧩 扩展与插件市场</h2>
         <p class="view-desc">
           让 UniRTM 内核保持极度轻量与高纯度，把 AI 智能体、专有语言支持与深度安全能力通过市场按需扩展。
         </p>
@@ -18,7 +18,7 @@
           v-model="searchQuery"
           type="text"
           class="market-search-input"
-          placeholder="搜索扩展、插件、工具包或 AI 智能体 (如: agent, rust, security)..."
+          placeholder="搜索扩展、插件、工具包或 AI 智能体..."
         />
       </div>
 
@@ -70,7 +70,7 @@
             :class="{ installed: ext.installed }"
             @click="toggleInstall(ext)"
           >
-            <span>{{ ext.installed ? "已安装 (Installed)" : "获取并安装" }}</span>
+            <span>{{ ext.installed ? "已安装" : "获取并安装" }}</span>
           </button>
         </div>
       </div>
@@ -89,10 +89,10 @@ const searchQuery = ref("");
 const activeCategory = ref("all");
 
 const categories = [
-  { id: "all", label: "全部 (All)" },
+  { id: "all", label: "全部" },
   { id: "ai", label: "🤖 AI 智能体" },
   { id: "security", label: "🛡️ 安全审计" },
-  { id: "runtime", label: "🛠️ 运行时 Provider" },
+  { id: "runtime", label: "🛠️ 运行时支持" },
   { id: "pack", label: "📦 任务套件" },
 ];
 

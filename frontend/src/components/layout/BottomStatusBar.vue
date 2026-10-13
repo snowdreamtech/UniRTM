@@ -99,7 +99,7 @@ const isZh = computed(() => {
 const statusReadyText = computed(() => (isZh.value ? "环境就绪" : "Ready"));
 const runningTaskText = computed(() => (isZh.value ? "正在执行" : "Running"));
 const toolsLabelText = computed(() => (isZh.value ? "个工具" : "tools"));
-const lockStatusText = computed(() => (isZh.value ? "Lock 同步" : "Lock Sync"));
+const lockStatusText = computed(() => (isZh.value ? "锁定已同步" : "Lock Sync"));
 
 const mirrorLabel = computed(() => {
   const lat = props.latencyMs ? ` (${props.latencyMs}ms)` : "";

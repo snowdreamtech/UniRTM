@@ -9,45 +9,45 @@
           :class="{ active: activeTab === 'output' }"
           @click="activeTab = 'output'"
         >
-          <span>📜 Output (日志输出)</span>
+          <span>📜 {{ t("drawer.tab_output") }}</span>
         </button>
         <button
           class="drawer-tab"
           :class="{ active: activeTab === 'tasks' }"
           @click="activeTab = 'tasks'"
         >
-          <span>⚡ Tasks (任务终端)</span>
+          <span>⚡ {{ t("drawer.tab_tasks") }}</span>
         </button>
         <button
           class="drawer-tab"
           :class="{ active: activeTab === 'doctor' }"
           @click="activeTab = 'doctor'"
         >
-          <span>🩺 Doctor (诊断报告)</span>
+          <span>🩺 {{ t("drawer.tab_doctor") }}</span>
         </button>
       </div>
 
       <!-- Action Tools on the right -->
       <div class="drawer-actions">
-        <button class="drawer-action-btn" title="Clear Logs" @click="$emit('clear-logs')">
+        <button class="drawer-action-btn" :title="t('drawer.clear_logs')" @click="$emit('clear-logs')">
           <span>🧹</span>
         </button>
         <button
           class="drawer-action-btn"
           :class="{ active: autoScroll }"
-          :title="'Toggle Auto Scroll: ' + (autoScroll ? 'ON' : 'OFF')"
+          :title="`${t('drawer.toggle_scroll')}: ${autoScroll ? 'ON' : 'OFF'}`"
           @click="autoScroll = !autoScroll"
         >
           <span>⬇️</span>
         </button>
         <button
           class="drawer-action-btn"
-          title="Toggle Maximize"
+          :title="t('drawer.toggle_max')"
           @click="isMaximized = !isMaximized"
         >
           <span>{{ isMaximized ? "🗗" : "🗖" }}</span>
         </button>
-        <button class="drawer-action-btn" title="Close Drawer" @click="$emit('close')">
+        <button class="drawer-action-btn" :title="t('common.close')" @click="$emit('close')">
           <span>✕</span>
         </button>
       </div>
@@ -60,7 +60,7 @@
       :style="{ height: isMaximized ? '380px' : '170px' }"
     >
       <div v-if="displayLogs.length === 0" class="empty-logs">
-        <span>No log output available. Run a task or diagnostic to inspect logs.</span>
+        <span>{{ t("drawer.empty_logs") }}</span>
       </div>
 
       <div
@@ -82,6 +82,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from "vue";
+import { t } from "../../i18n";
 
 export interface LogItem {
   timestamp: string;

@@ -11,6 +11,14 @@ export interface TranslationDict {
   "common.lang": string;
   "common.close": string;
 
+  "drawer.tab_output"?: string;
+  "drawer.tab_tasks"?: string;
+  "drawer.tab_doctor"?: string;
+  "drawer.empty_logs"?: string;
+  "drawer.clear_logs"?: string;
+  "drawer.toggle_scroll"?: string;
+  "drawer.toggle_max"?: string;
+
   "theme.dark": string;
   "theme.light": string;
   "theme.system": string;
