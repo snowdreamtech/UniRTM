@@ -20,10 +20,10 @@
           :class="{ active: activeScope === 'user' }"
           @click="switchScope('user')"
           id="btn-scope-user"
+          :title="configData?.user?.path || '~/.config/unirtm/unirtm.toml'"
         >
           <span class="scope-icon">👤</span>
           <span class="scope-title">{{ t("settings.scope_user") || "用户" }}</span>
-          <span class="scope-badge font-mono">~/.config/unirtm</span>
         </button>
 
         <button
@@ -31,10 +31,10 @@
           :class="{ active: activeScope === 'workspace' }"
           @click="switchScope('workspace')"
           id="btn-scope-workspace"
+          :title="configData?.workspace?.path || './.unirtm.toml'"
         >
           <span class="scope-icon">📁</span>
           <span class="scope-title">{{ t("settings.scope_workspace") || "工作区" }}</span>
-          <span class="scope-badge font-mono">./.unirtm.toml</span>
         </button>
       </div>
 
@@ -801,20 +801,6 @@ onMounted(() => {
   background: var(--card-bg);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   border: 1px solid var(--card-border-active);
-}
-
-.scope-badge {
-  font-size: 0.72rem;
-  font-family: monospace;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-muted);
-}
-
-.scope-tab-btn.active .scope-badge {
-  background: var(--accent-cyan-glow);
-  color: var(--accent-cyan);
 }
 
 /* Actions */
