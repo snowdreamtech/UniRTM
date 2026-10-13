@@ -20,14 +20,204 @@ export default defineConfig({
     {
       name: "dev-api-middleware",
       configureServer(server) {
-        server.middlewares.use((req, res, next) => {
+        server.middlewares.use((req: any, res: any, next: any) => {
+          const rootDir = fileURLToPath(new URL("..", import.meta.url));
+          const unirtmBin = path.join(rootDir, "bin", "unirtm");
+
+          if (req.url?.startsWith("/api/network/status")) {
+            const urlObj = new URL(req.url, "http://localhost");
+            const scope = urlObj.searchParams.get("scope");
+            const args = ["network", "status", "--json"];
+            if (scope === "user") args.push("--global");
+            try {
+              const out = execFileSync(unirtmBin, args, { cwd: rootDir, encoding: "utf-8" });
+              res.setHeader("Content-Type", "application/json");
+              res.end(out);
+            } catch (err: any) {
+              res.statusCode = 500;
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify({ error: err.message }));
+            }
+            return;
+          }
+
+          if (req.url === "/api/network/profile/use" && req.method === "POST") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const { profile_id, scope } = JSON.parse(bodyStr || "{}");
+                const args = ["network", "profile", "use", profile_id];
+                if (scope === "user") args.push("--global");
+                execFileSync(unirtmBin, args, { cwd: rootDir, stdio: "pipe" });
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ ok: true, active_profile: profile_id }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
+          if (req.url === "/api/network/profile/save" && req.method === "POST") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const { profile_id, name, scope } = JSON.parse(bodyStr || "{}");
+                const args = ["network", "profile", "save-as", profile_id];
+                if (scope === "user") args.push("--global");
+                execFileSync(unirtmBin, args, { cwd: rootDir, stdio: "pipe" });
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ ok: true, profile_id, name }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
+          if (req.url === "/api/network/profile/reset" && req.method === "POST") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const { profile_id, scope } = JSON.parse(bodyStr || "{}");
+                const args = ["network", "profile", "reset", profile_id];
+                if (scope === "user") args.push("--global");
+                execFileSync(unirtmBin, args, { cwd: rootDir, stdio: "pipe" });
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ ok: true, reset: profile_id }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
+          if (req.url === "/api/network/profile/delete" && req.method === "POST") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const { profile_id, scope } = JSON.parse(bodyStr || "{}");
+                const args = ["network", "profile", "delete", profile_id];
+                if (scope === "user") args.push("--global");
+                execFileSync(unirtmBin, args, { cwd: rootDir, stdio: "pipe" });
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ ok: true, deleted: profile_id }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
+          if (req.url === "/api/network/registry/override" && req.method === "POST") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const { ecosystem, url, scope } = JSON.parse(bodyStr || "{}");
+                const args = ["network", "registry", "set", ecosystem, url];
+                if (scope === "user") args.push("--global");
+                execFileSync(unirtmBin, args, { cwd: rootDir, stdio: "pipe" });
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ ok: true, ecosystem, url }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
+          if (req.url === "/api/network/registry/reset" && req.method === "POST") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const { ecosystem, scope } = JSON.parse(bodyStr || "{}");
+                const args = ["network", "registry", "reset", ecosystem];
+                if (scope === "user") args.push("--global");
+                execFileSync(unirtmBin, args, { cwd: rootDir, stdio: "pipe" });
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ ok: true, ecosystem }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
+          if (req.url === "/api/network/proxy" && req.method === "POST") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const body = JSON.parse(bodyStr || "{}");
+                const proxy = body.proxy || body;
+                const scope = body.scope;
+                if (!proxy || !proxy.enabled) {
+                  const args = ["network", "proxy", "off"];
+                  if (scope === "user") args.push("--global");
+                  execFileSync(unirtmBin, args, { cwd: rootDir, stdio: "pipe" });
+                } else {
+                  const rawUrl = proxy.http || proxy.socks5 || "";
+                  if (rawUrl) {
+                    const args = ["network", "proxy", "set", rawUrl];
+                    if (scope === "user") args.push("--global");
+                    execFileSync(unirtmBin, args, { cwd: rootDir, stdio: "pipe" });
+                  } else {
+                    const args = ["network", "proxy", "on"];
+                    if (scope === "user") args.push("--global");
+                    execFileSync(unirtmBin, args, { cwd: rootDir, stdio: "pipe" });
+                  }
+                }
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ ok: true, proxy }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
+          if (req.url?.startsWith("/api/network/ping")) {
+            res.setHeader("Content-Type", "application/json");
+            res.end(
+              JSON.stringify({
+                results: [
+                  { ecosystem: "npm", name: "npmmirror", endpoint: "https://registry.npmmirror.com", latency_ms: 28, status: "fast", ok: true },
+                  { ecosystem: "go", name: "goproxy.cn", endpoint: "https://goproxy.cn", latency_ms: 35, status: "fast", ok: true },
+                  { ecosystem: "python", name: "清华大学 TUNA", endpoint: "https://pypi.tuna.tsinghua.edu.cn", latency_ms: 42, status: "fast", ok: true },
+                  { ecosystem: "rust", name: "rsproxy.cn", endpoint: "https://rsproxy.cn", latency_ms: 30, status: "fast", ok: true },
+                  { ecosystem: "ruby", name: "Ruby China", endpoint: "https://gems.ruby-china.com", latency_ms: 55, status: "fast", ok: true },
+                ],
+              })
+            );
+            return;
+          }
+
           if (req.url === "/api/system/browsers") {
             res.setHeader("Content-Type", "application/json");
             res.end(JSON.stringify({ browsers: [] }));
             return;
           }
           if (req.url === "/api/config") {
-            const rootDir = fileURLToPath(new URL("..", import.meta.url));
             const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
             const wsPath = path.join(rootDir, ".unirtm.toml");
 
@@ -82,7 +272,7 @@ export default defineConfig({
               return;
             } else if (req.method === "POST") {
               let bodyStr = "";
-              req.on("data", (c) => {
+              req.on("data", (c: any) => {
                 bodyStr += c;
               });
               req.on("end", () => {

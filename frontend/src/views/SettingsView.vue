@@ -348,25 +348,54 @@
               </div>
             </div>
 
-            <!-- Save as Modal -->
-            <div v-if="showCreateProfileModal" class="create-profile-modal glass-card">
-              <h4>{{ t('network.create_profile') || '创建新网络预设档案' }}</h4>
-              <div class="modal-form">
-                <input
-                  v-model="newProfileId"
-                  type="text"
-                  class="setting-text-input font-mono"
-                  placeholder="档案标识 ID (例如 my-company)"
-                />
-                <input
-                  v-model="newProfileName"
-                  type="text"
-                  class="setting-text-input"
-                  placeholder="展示名称 (例如 公司内网高速)"
-                />
-                <div class="modal-actions">
+            <!-- Create/Save Profile Modal Dialog -->
+            <div v-if="showCreateProfileModal" class="modal-backdrop" @click.self="showCreateProfileModal = false">
+              <div class="modal-dialog glass-card">
+                <div class="modal-header">
+                  <div class="modal-title-group">
+                    <span class="modal-icon">📦</span>
+                    <div>
+                      <h4>{{ t('network.create_profile') || '新建网络预设档案' }}</h4>
+                      <span class="modal-subtitle">将当前网络与各生态镜像配置保存为独立的 Profile 方案</span>
+                    </div>
+                  </div>
+                  <button class="btn-modal-close" @click="showCreateProfileModal = false">✕</button>
+                </div>
+
+                <div class="modal-body">
+                  <div class="modal-field">
+                    <label>档案标识 (ID) <span class="text-danger">*</span></label>
+                    <input
+                      v-model="newProfileId"
+                      type="text"
+                      class="setting-text-input font-mono"
+                      placeholder="例如: company-internal 或 fast-mirror"
+                      autofocus
+                    />
+                    <span class="field-hint">用于 CLI 命令行切换，仅允许英文字母、数字、短横线与下划线</span>
+                  </div>
+
+                  <div class="modal-field">
+                    <label>显示名称</label>
+                    <input
+                      v-model="newProfileName"
+                      type="text"
+                      class="setting-text-input"
+                      placeholder="例如: 公司专线加速"
+                    />
+                  </div>
+                </div>
+
+                <div class="modal-footer">
                   <button class="btn-modal-cancel" @click="showCreateProfileModal = false">取消</button>
-                  <button class="btn-modal-confirm" :disabled="!newProfileId" @click="handleSaveAsProfile">创建并激活</button>
+                  <button
+                    class="btn-modal-confirm"
+                    :disabled="!newProfileId.trim() || isSavingProfile"
+                    @click="handleSaveAsProfile"
+                  >
+                    <span v-if="isSavingProfile">正在创建...</span>
+                    <span v-else>创建并激活</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -620,13 +649,51 @@ const httpProxy = ref("");
 
 
 // Network matrix and profile state
-const networkStatus = ref<any>(null);
-const recommendedMirrors = ref<any>({});
-const isProbing = ref(false);
-const probeResults = ref<any[]>([]);
+const isSavingProfile = ref(false);
 const showCreateProfileModal = ref(false);
 const newProfileId = ref("");
 const newProfileName = ref("");
+const isProbing = ref(false);
+const probeResults = ref<any[]>([]);
+const recommendedMirrors = ref<any>({});
+
+const networkStatus = ref<any>({
+  active_profile_id: "official",
+  active_profile: {
+    id: "official",
+    name: "官方直连",
+    description: "全量使用官方源与官方二进制 CDN，不经任何代理或国内镜像",
+    builtin: true,
+  },
+  proxy: {
+    enabled: false,
+    http: "",
+    https: "",
+    socks5: "",
+    no_proxy: "localhost,127.0.0.1,::1,*.local,*.internal",
+  },
+  effective: {
+    npm: { ecosystem: "npm", url: "https://registry.npmjs.org", source: "profile", is_overridden: false },
+    go: { ecosystem: "go", url: "https://proxy.golang.org,direct", source: "profile", is_overridden: false },
+    python: { ecosystem: "python", url: "https://pypi.org/simple", source: "profile", is_overridden: false },
+    rust: { ecosystem: "rust", url: "https://crates.io", source: "profile", is_overridden: false },
+    ruby: { ecosystem: "ruby", url: "https://rubygems.org", source: "profile", is_overridden: false },
+  },
+  profiles: {
+    official: {
+      id: "official",
+      name: "官方直连",
+      description: "全量使用官方源与官方二进制 CDN，不经任何代理或国内镜像",
+      builtin: true,
+    },
+    cn: {
+      id: "cn",
+      name: "国内镜像加速",
+      description: "国内顶级高校与大厂公共镜像加速矩阵，保障编译前依赖极速拉取",
+      builtin: true,
+    },
+  },
+});
 
 // Full config from API
 const configData = ref<any>(null);
@@ -976,14 +1043,16 @@ async function handleUseProfile(id: string) {
 }
 
 async function handleSaveAsProfile() {
-  if (!newProfileId.value) return;
+  const pid = newProfileId.value.trim();
+  if (!pid) return;
+  isSavingProfile.value = true;
   try {
     const res = await fetch("/api/network/profile/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        profile_id: newProfileId.value,
-        name: newProfileName.value || newProfileId.value,
+        profile_id: pid,
+        name: newProfileName.value.trim() || pid,
         scope: activeScope.value,
       }),
     });
@@ -993,9 +1062,15 @@ async function handleSaveAsProfile() {
       newProfileName.value = "";
       await loadNetworkStatus();
       loadConfigData();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error || "创建档案失败");
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
+    alert("请求失败: " + err.message);
+  } finally {
+    isSavingProfile.value = false;
   }
 }
 
@@ -2058,56 +2133,150 @@ input:checked + .slider:before {
   color: #c084fc;
 }
 
-.create-profile-modal {
-  padding: 14px 18px;
-  border-radius: 8px;
-  background: #090e1a;
-  border: 1px solid var(--accent-cyan);
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-dialog {
+  width: 100%;
+  max-width: 460px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  overflow: hidden;
 }
 
-.create-profile-modal h4 {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--accent-cyan);
-}
-
-.modal-form {
+.modal-header {
   display: flex;
-  gap: 10px;
   align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--card-border);
 }
 
-.modal-actions {
+.modal-title-group {
   display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-icon {
+  font-size: 1.35rem;
+}
+
+.modal-header h4 {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.modal-subtitle {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 2px;
+}
+
+.btn-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.btn-modal-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-field {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
 }
 
+.modal-field label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.modal-field .text-danger {
+  color: #ef4444;
+}
+
+.modal-field .field-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--card-border);
+  background: rgba(0, 0, 0, 0.03);
+}
+
 .btn-modal-cancel {
-  padding: 6px 12px;
+  padding: 7px 16px;
+  border-radius: 6px;
   background: var(--input-bg);
   border: 1px solid var(--card-border);
-  color: var(--text-muted);
-  border-radius: 5px;
+  color: var(--text-main);
+  font-size: 0.8rem;
   cursor: pointer;
-  font-size: 0.78rem;
+  transition: all 0.15s ease;
+}
+
+.btn-modal-cancel:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .btn-modal-confirm {
-  padding: 6px 14px;
+  padding: 7px 20px;
+  border-radius: 6px;
   background: var(--accent-cyan);
-  color: #0b1120;
+  border: 1px solid var(--accent-cyan);
+  color: #050b14;
+  font-size: 0.8rem;
   font-weight: 600;
-  border: none;
-  border-radius: 5px;
   cursor: pointer;
-  font-size: 0.78rem;
+  transition: all 0.15s ease;
+}
+
+.btn-modal-confirm:hover:not(:disabled) {
+  opacity: 0.9;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.35);
 }
 
 .btn-modal-confirm:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 

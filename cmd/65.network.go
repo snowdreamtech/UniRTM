@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -96,6 +97,17 @@ var networkStatusCmd = &cobra.Command{
 func runNetworkStatus(cmd *cobra.Command, args []string) error {
 	mgr, path, _ := getNetworkManager()
 	status := mgr.GetStatus()
+
+	if networkJSON {
+		data := map[string]interface{}{
+			"status":      status,
+			"recommended": network.RecommendedMirrors(),
+			"file_path":   path,
+		}
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		return enc.Encode(data)
+	}
 
 	pterm.DefaultHeader.WithFullWidth().Println("UniRTM 网络与镜像源配置状态")
 	pterm.Info.Printf("配置文件路径: %s\n", path)
