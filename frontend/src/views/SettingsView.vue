@@ -13,7 +13,7 @@
         <button v-if="searchQuery" class="clear-search-btn" @click="searchQuery = ''" title="清除">✕</button>
       </div>
 
-      <!-- Scope Switcher Tabs: User (全局) vs Workspace (项目) -->
+      <!-- Scope Switcher Tabs: User vs Workspace -->
       <div class="scope-tabs-bar">
         <button
           class="scope-tab-btn"
@@ -22,8 +22,8 @@
           id="btn-scope-user"
         >
           <span class="scope-icon">👤</span>
-          <span class="scope-title">User (全局)</span>
-          <span class="scope-badge">~/.config/unirtm</span>
+          <span class="scope-title">{{ t("settings.scope_user") || "用户" }}</span>
+          <span class="scope-badge font-mono">~/.config/unirtm</span>
         </button>
 
         <button
@@ -33,24 +33,24 @@
           id="btn-scope-workspace"
         >
           <span class="scope-icon">📁</span>
-          <span class="scope-title">Workspace (项目)</span>
-          <span class="scope-badge">./.unirtm.toml</span>
+          <span class="scope-title">{{ t("settings.scope_workspace") || "工作区" }}</span>
+          <span class="scope-badge font-mono">./.unirtm.toml</span>
         </button>
       </div>
 
       <!-- Top Right Actions: Auto-save status & Open TOML -->
       <div class="settings-top-actions">
         <span class="auto-save-pill" :class="{ saving: isSaving }">
-          {{ saveStatusText || '⚡ ' + (t('settings.realtime_save') || '自动保存就绪') }}
+          {{ saveStatusText || '⚡ ' + (t('settings.realtime_save') || '修改已实时生效') }}
         </span>
         <button
           class="btn-raw-toml"
           :class="{ active: showRawTomlModal }"
           @click="showRawTomlModal = !showRawTomlModal"
-          title="查看原始 TOML 配置文件"
+          :title="t('settings.open_toml') || '打开 TOML'"
         >
           <span>📝</span>
-          <span>{{ showRawTomlModal ? '关闭 TOML' : '打开 TOML' }}</span>
+          <span>{{ showRawTomlModal ? (t('settings.close_toml') || '关闭 TOML') : (t('settings.open_toml') || '打开 TOML') }}</span>
         </button>
       </div>
     </div>
@@ -59,7 +59,7 @@
     <div class="settings-body-row">
       <!-- Left Secondary Category Sidebar -->
       <nav class="settings-nav-sidebar glass-card">
-        <div class="category-group-title">SETTINGS SECTIONS</div>
+        <div class="category-group-title">{{ t('settings.sections') || '设置分组' }}</div>
         <button
           v-for="cat in categories"
           :key="cat.id"
@@ -77,13 +77,13 @@
         <div class="scope-summary-card">
           <div class="summary-header">
             <span class="summary-icon">{{ activeScope === 'user' ? '👤' : '📁' }}</span>
-            <span class="summary-scope-name">{{ activeScope === 'user' ? '用户全局偏好' : '当前工作区配置' }}</span>
+            <span class="summary-scope-name">{{ activeScope === 'user' ? (t('settings.user_pref_title') || '用户全局偏好') : (t('settings.workspace_pref_title') || '当前工作区配置') }}</span>
           </div>
           <p class="summary-desc">
             {{
               activeScope === 'user'
-                ? '存储在用户目录，跨项目共享（包含本机浏览器偏好）。'
-                : '存储于当前代码仓，将随 Git 提交，供全团队一致复用。'
+                ? (t('settings.scope_user_desc') || '存储在用户目录，跨项目共享（包含本机浏览器偏好）。')
+                : (t('settings.scope_workspace_desc') || '存储于当前代码仓，随代码库共享给整个团队。')
             }}
           </p>
           <div class="summary-path font-mono">
@@ -98,20 +98,20 @@
         <div v-if="showRawTomlModal" class="raw-toml-view glass-card">
           <div class="raw-toml-header">
             <div class="toml-title-group">
-              <span class="font-mono text-cyan">{{ activeScope === 'user' ? 'User TOML' : 'Workspace TOML' }}</span>
+              <span class="font-mono text-cyan">{{ activeScope === 'user' ? (t('settings.user_toml') || '用户配置 (TOML)') : (t('settings.workspace_toml') || '工作区配置 (TOML)') }}</span>
               <span class="toml-path font-mono">{{ activeScope === 'user' ? configData?.user?.path : configData?.workspace?.path }}</span>
             </div>
             <div class="toml-actions">
               <button class="btn-copy-toml" @click="copyRawToml">
-                {{ isCopied ? '✓ 已复制' : '复制内容' }}
+                {{ isCopied ? ('✓ ' + (t('settings.copied') || '已复制')) : (t('settings.copy_content') || '复制内容') }}
               </button>
               <button class="btn-close-toml" @click="showRawTomlModal = false">✕</button>
             </div>
           </div>
-          <pre class="raw-toml-pre"><code>{{ currentRawToml || '# 配置文件尚无自定义内容' }}</code></pre>
+          <pre class="raw-toml-pre"><code>{{ currentRawToml || (t('settings.empty_toml') || '# 配置文件尚无自定义内容') }}</code></pre>
         </div>
 
-        <!-- 1. Commonly Used (常用设置) -->
+        <!-- 1. Commonly Used -->
         <section
           v-show="isCategoryVisible('common')"
           id="section-common"
@@ -121,8 +121,8 @@
             <div class="section-title-wrap">
               <span class="section-icon">⚙️</span>
               <div>
-                <h2>常用设置 (Commonly Used)</h2>
-                <span class="section-sub">基础外观、语言本地化与通用缓存策略</span>
+                <h2>{{ t('settings.cat_common') || '常用设置' }}</h2>
+                <span class="section-sub">{{ t('settings.subtitle') || '外观、语言与网络加速' }}</span>
               </div>
             </div>
           </div>
@@ -131,9 +131,9 @@
             <!-- Setting: Language -->
             <div class="setting-item" :class="{ highlight: matchesSearch('language') }">
               <div class="setting-meta">
-                <span class="setting-title">应用语言 (Language)</span>
+                <span class="setting-title">{{ t('settings.language') || '应用语言' }}</span>
                 <span class="setting-key font-mono">settings.language</span>
-                <p class="setting-desc">UniRTM 图形工作台与命令行所使用的语言界面。</p>
+                <p class="setting-desc">{{ t('settings.language') || '应用语言' }}</p>
               </div>
               <div class="setting-control">
                 <CustomSelect
@@ -147,9 +147,9 @@
             <!-- Setting: Theme -->
             <div class="setting-item" :class="{ highlight: matchesSearch('theme') }">
               <div class="setting-meta">
-                <span class="setting-title">外观主题 (Appearance Theme)</span>
+                <span class="setting-title">{{ t('settings.theme') || '外观主题' }}</span>
                 <span class="setting-key font-mono">settings.theme</span>
-                <p class="setting-desc">工作台界面色彩主题，支持自适应系统深浅色切换。</p>
+                <p class="setting-desc">{{ t('settings.theme') || '外观主题' }}</p>
               </div>
               <div class="setting-control">
                 <CustomSelect
@@ -163,9 +163,9 @@
             <!-- Setting: Cache TTL -->
             <div class="setting-item" :class="{ highlight: matchesSearch('cache_ttl') }">
               <div class="setting-meta">
-                <span class="setting-title">元数据缓存有效周期 (Cache TTL)</span>
+                <span class="setting-title">{{ t('settings.cache_ttl') || '缓存有效周期' }}</span>
                 <span class="setting-key font-mono">settings.cache_ttl</span>
-                <p class="setting-desc">工具链清单与在线版本索引的本地缓存有效时间（如 24h、7d、0s）。</p>
+                <p class="setting-desc">{{ t('settings.cache_ttl_desc') || '工具链清单与在线版本索引的本地缓存有效时间（例如 24h、7d、0s）。' }}</p>
               </div>
               <div class="setting-control">
                 <div class="input-inline-group">
@@ -176,14 +176,14 @@
                     placeholder="24h"
                     @change="saveSetting('settings.cache_ttl', cacheTtl)"
                   />
-                  <button class="btn-apply-small" @click="saveSetting('settings.cache_ttl', cacheTtl)">保存</button>
+                  <button class="btn-apply-small" @click="saveSetting('settings.cache_ttl', cacheTtl)">{{ t('settings.save') || '保存' }}</button>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- 2. System & Browser (系统工具与浏览器) -->
+        <!-- 2. System & Browser -->
         <section
           v-show="isCategoryVisible('browser')"
           id="section-browser"
@@ -193,8 +193,8 @@
             <div class="section-title-wrap">
               <span class="section-icon">💻</span>
               <div>
-                <h2>系统工具与浏览器 (System & Browser)</h2>
-                <span class="section-sub">工作台浏览器调用行为与本机专属环境参数</span>
+                <h2>{{ t('settings.cat_browser') || '系统与浏览器' }}</h2>
+                <span class="section-sub">{{ t('settings.browser_desc') || '工作台浏览器调用行为与本机专属环境参数' }}</span>
               </div>
             </div>
           </div>
@@ -210,26 +210,26 @@
             >
               <div class="setting-meta">
                 <div class="title-with-badge">
-                  <span class="setting-title">图形工作台启动浏览器 (Workbench Browser)</span>
+                  <span class="setting-title">{{ t('settings.browser_title') || '工作台浏览器偏好' }}</span>
                   <span v-if="activeScope === 'workspace'" class="badge-global-only">
-                    ⚠️ 仅全局可用 (Global Only)
+                    ⚠️ {{ t('settings.scope_global_only') || '仅限用户设置' }}
                   </span>
                 </div>
                 <span class="setting-key font-mono">settings.browser</span>
                 <p class="setting-desc">
-                  执行 <code>unirtm ui</code> 打开工作台时优先调用的浏览器。支持主流浏览器预设标识或自定义二进制可执行文件路径。
+                  {{ t('settings.browser_desc') || '执行 unirtm ui 启动工作台时调用的浏览器。支持系统默认、预设浏览器或自定义路径。' }}
                 </p>
 
                 <!-- Workspace Scope Warning Banner -->
                 <div v-if="activeScope === 'workspace'" class="scope-notice-banner warning">
                   <div class="notice-icon">⚠️</div>
                   <div class="notice-body">
-                    <strong>禁止在工作区中设置浏览器偏好</strong>
+                    <strong>{{ t('settings.scope_global_only_banner') || '禁止在工作区中设置浏览器偏好' }}</strong>
                     <p>
-                      浏览器偏好属于个人本机系统环境，无法在项目配置（<code>.unirtm.toml</code>）中修改，以避免团队跨平台协作环境受到污染。
+                      {{ t('settings.scope_global_only_desc') || '浏览器偏好属于个人系统环境，无法在工作区配置中修改，以避免团队协作环境受到污染。' }}
                     </p>
                     <button class="btn-switch-scope" @click="switchScope('user', 'settings.browser')">
-                      切换到 User (全局) 标签修改 ↗
+                      {{ t('settings.switch_to_user') || '切换到用户设置修改' }} ↗
                     </button>
                   </div>
                 </div>
@@ -238,7 +238,7 @@
               <!-- Browser Controls -->
               <div class="setting-control">
                 <div v-if="activeScope === 'workspace'" class="control-disabled-notice">
-                  <span class="font-mono text-muted">已在当前工作区禁用 (Disabled in Workspace)</span>
+                  <span class="font-mono text-muted">{{ t('settings.disabled_in_workspace') || '已在工作区中禁用' }}</span>
                 </div>
                 <div v-else class="browser-input-box">
                   <CustomSelect
@@ -251,10 +251,10 @@
                       v-model="customBrowserPath"
                       type="text"
                       class="setting-text-input font-mono"
-                      placeholder="/usr/bin/google-chrome-stable 或自定义路径"
+                      :placeholder="t('settings.browser_custom_placeholder') || '/usr/bin/google-chrome-stable 或自定义路径'"
                       @change="saveSetting('settings.browser', customBrowserPath)"
                     />
-                    <button class="btn-apply-small" @click="saveSetting('settings.browser', customBrowserPath)">应用</button>
+                    <button class="btn-apply-small" @click="saveSetting('settings.browser', customBrowserPath)">{{ t('settings.apply') || '应用' }}</button>
                   </div>
                 </div>
               </div>
@@ -262,7 +262,7 @@
           </div>
         </section>
 
-        <!-- 3. Network & Mirrors (网络与代理) -->
+        <!-- 3. Network & Mirrors -->
         <section
           v-show="isCategoryVisible('network')"
           id="section-network"
@@ -272,8 +272,8 @@
             <div class="section-title-wrap">
               <span class="section-icon">🌐</span>
               <div>
-                <h2>网络与镜像代理 (Network & Mirrors)</h2>
-                <span class="section-sub">资源加速前缀、HTTP/HTTPS 代理与下载连通性</span>
+                <h2>{{ t('settings.cat_network') || '网络与代理' }}</h2>
+                <span class="section-sub">{{ t('settings.subtitle') || '资源加速前缀、HTTP/HTTPS 代理与下载连通性' }}</span>
               </div>
             </div>
           </div>
@@ -282,16 +282,16 @@
             <!-- Setting: GitHub Proxy -->
             <div class="setting-item" :class="{ highlight: matchesSearch('github_proxy') }">
               <div class="setting-meta">
-                <span class="setting-title">GitHub 资源下载加速镜像 (GitHub Proxy Mirror)</span>
+                <span class="setting-title">{{ t('settings.githubProxy') || 'GitHub 镜像' }}</span>
                 <span class="setting-key font-mono">settings.github_proxy</span>
                 <p class="setting-desc">
-                  用于加速 GitHub Releases 和原始资产下载的镜像前缀。留空时使用官方直连。
+                  {{ t('settings.github_proxy_desc') || '可配置自定义加速镜像用于下载资源，留空为直连官方。' }}
                 </p>
                 <div class="mirror-presets">
-                  <span class="preset-label">快捷预设:</span>
+                  <span class="preset-label">{{ t('settings.quick_presets') || '快捷预设' }}:</span>
                   <button class="btn-preset-pill" @click="applyMirrorPreset('https://ghproxy.net/')">ghproxy.net</button>
                   <button class="btn-preset-pill" @click="applyMirrorPreset('https://gh-proxy.com/')">gh-proxy.com</button>
-                  <button class="btn-preset-pill" @click="applyMirrorPreset('')">直连官方 (清空)</button>
+                  <button class="btn-preset-pill" @click="applyMirrorPreset('')">{{ t('settings.official_direct') || '直连官方' }}</button>
                 </div>
               </div>
 
@@ -309,7 +309,7 @@
                     :disabled="isTestingNet"
                     @click="testNetwork"
                   >
-                    {{ isTestingNet ? '测速中...' : '⚡ 测试连通' }}
+                    {{ isTestingNet ? (t('settings.testing_net') || '测速中...') : ('⚡ ' + (t('settings.test_connection') || '测试连通性')) }}
                   </button>
                 </div>
                 <div v-if="netTestMsg" class="test-feedback" :class="{ success: netTestOk, error: !netTestOk }">
@@ -321,9 +321,9 @@
             <!-- Setting: HTTP Proxy -->
             <div class="setting-item" :class="{ highlight: matchesSearch('http_proxy') }">
               <div class="setting-meta">
-                <span class="setting-title">全局 HTTP 代理服务器 (HTTP Proxy)</span>
+                <span class="setting-title">{{ t('settings.system_proxy') || '全局网络代理' }}</span>
                 <span class="setting-key font-mono">settings.http_proxy</span>
-                <p class="setting-desc">标准网络代理 URL，如 <code>http://127.0.0.1:7890</code>。</p>
+                <p class="setting-desc">{{ t('settings.system_proxy') || '全局网络代理 (HTTP / HTTPS / SOCKS5)' }}</p>
               </div>
               <div class="setting-control">
                 <div class="input-inline-group">
@@ -334,14 +334,14 @@
                     placeholder="http://127.0.0.1:7890"
                     @change="saveSetting('settings.http_proxy', httpProxy)"
                   />
-                  <button class="btn-apply-small" @click="saveSetting('settings.http_proxy', httpProxy)">保存</button>
+                  <button class="btn-apply-small" @click="saveSetting('settings.http_proxy', httpProxy)">{{ t('settings.save') || '保存' }}</button>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- 4. Plugins & Extensions (插件与扩展配置) -->
+        <!-- 4. Plugins & Extensions -->
         <section
           v-show="isCategoryVisible('plugins')"
           id="section-plugins"
@@ -351,8 +351,8 @@
             <div class="section-title-wrap">
               <span class="section-icon">🧩</span>
               <div>
-                <h2>插件与扩展配置 (Plugins & Extensions)</h2>
-                <span class="section-sub">第三方插件唯一合法国度 <code>plugins.&lt;plugin-id&gt;.*</code> 隔离区</span>
+                <h2>{{ t('settings.cat_plugins') || '插件与扩展' }}</h2>
+                <span class="section-sub">{{ t('settings.plugin_isolation_title') || '插件配置隔离区' }}</span>
               </div>
             </div>
           </div>
@@ -362,9 +362,9 @@
             <div class="plugin-isolation-banner">
               <span class="banner-icon">🔒</span>
               <div class="banner-text">
-                <strong>三层命名空间隔离准则</strong>
+                <strong>{{ t('settings.plugin_isolation_title') || '三层命名空间隔离准则' }}</strong>
                 <p>
-                  所有第三方扩展配置严格写入 <code>[plugins."&lt;plugin-id&gt;"]</code>，严禁污染核心保留表（tools, tasks, settings 等），并受插件 Manifest JSON Schema 严格校验。
+                  {{ t('settings.plugin_isolation_desc') || '所有第三方扩展配置严格隔离于 plugins.<plugin-id>.* 区域，严禁侵入核心保留表。' }}
                 </p>
               </div>
             </div>
@@ -382,7 +382,7 @@
                     <span class="plugin-id font-mono">{{ p.id }}</span>
                     <span class="plugin-version-tag">v{{ p.version || 'latest' }}</span>
                   </div>
-                  <span class="plugin-keys-count">{{ Object.keys(p.config || {}).length }} 项参数</span>
+                  <span class="plugin-keys-count">{{ Object.keys(p.config || {}).length }}</span>
                 </div>
 
                 <div class="plugin-params-table">
@@ -395,7 +395,7 @@
                     <span class="param-val font-mono">{{ val }}</span>
                   </div>
                   <div v-if="!p.config || Object.keys(p.config).length === 0" class="empty-param-hint">
-                    暂未在当前作用域配置特定选项
+                    {{ t('settings.empty_toml') || '暂无配置项' }}
                   </div>
                 </div>
               </div>
@@ -403,12 +403,12 @@
 
             <div v-else class="no-plugins-card">
               <span class="empty-icon">📦</span>
-              <span>当前尚未声明第三方插件配置。可通过市场或配置写入 <code>[plugins]</code> 扩展。</span>
+              <span>{{ t('settings.no_plugins') || '当前尚未声明第三方插件配置。可通过扩展市场或配置文件添加扩展。' }}</span>
             </div>
           </div>
         </section>
 
-        <!-- 5. Security & Namespace (命名空间与安全架构) -->
+        <!-- 5. Security & Namespace -->
         <section
           v-show="isCategoryVisible('security')"
           id="section-security"
@@ -418,30 +418,29 @@
             <div class="section-title-wrap">
               <span class="section-icon">🔒</span>
               <div>
-                <h2>命名空间架构与文件锁 (Namespace & File Locks)</h2>
-                <span class="section-sub">UniRTM 配置隔离架构与 AST 格式保护保证</span>
+                <h2>{{ t('settings.cat_security') || '安全与命名空间' }}</h2>
+                <span class="section-sub">{{ t('settings.sec_ast_desc') || '配置隔离架构与 AST 格式保护' }}</span>
               </div>
             </div>
           </div>
 
           <div class="security-architecture-grid">
             <div class="sec-card">
-              <div class="sec-badge green">已受保护</div>
-              <h3>五大核心保留命名空间</h3>
-              <p><code>[tools]</code>, <code>[tasks]</code>, <code>[format]</code>, <code>[env]</code>, <code>[settings]</code></p>
-              <span class="sec-sub">任何第三方插件写入非法顶级字段均会被拦截。</span>
+              <div class="sec-badge green">{{ t('settings.status_protected') || '已受保护' }}</div>
+              <h3>{{ t('settings.sec_core_title') || '核心保留命名空间' }}</h3>
+              <p>{{ t('settings.sec_core_desc') || '严格保留 [tools], [tasks], [format], [env], [settings]，任何第三方插件写入非法顶级字段均会被拦截。' }}</p>
             </div>
 
             <div class="sec-card">
-              <div class="sec-badge cyan">活跃生效</div>
-              <h3>并发文件锁 (FLock)</h3>
-              <p>写入配置时自动获取排他锁，超时安全保护，防止多进程或编辑器并发写入数据损坏。</p>
+              <div class="sec-badge cyan">{{ t('settings.status_active') || '活跃生效' }}</div>
+              <h3>{{ t('settings.sec_lock_title') || '并发文件排他锁' }}</h3>
+              <p>{{ t('settings.sec_lock_desc') || '写入配置时自动获取排他锁，防止多进程或编辑器并发保存损坏数据。' }}</p>
             </div>
 
             <div class="sec-card">
-              <div class="sec-badge purple">AST 注释保留</div>
-              <h3>保留 TOML 注释与缩进</h3>
-              <p>采用 AST 精准注入算法，更新配置绝不破坏原配置文件中的手工注释与空行排版。</p>
+              <div class="sec-badge purple">{{ t('settings.status_ast_safe') || '格式安全' }}</div>
+              <h3>{{ t('settings.sec_ast_title') || 'AST 注释与格式保留' }}</h3>
+              <p>{{ t('settings.sec_ast_desc') || '采用语法树精准注入算法，更新配置绝不破坏原配置文件中的手工注释与空行排版。' }}</p>
             </div>
           </div>
         </section>
@@ -489,16 +488,16 @@ const netTestOk = ref(false);
 // Full config from API
 const configData = ref<any>(null);
 
-const categories = [
-  { id: "common", icon: "⚙️", label: "常用设置 (Commonly Used)" },
-  { id: "browser", icon: "💻", label: "系统工具与浏览器 (System & Browser)" },
-  { id: "network", icon: "🌐", label: "网络与代理 (Network & Mirrors)" },
-  { id: "plugins", icon: "🧩", label: "插件与扩展 (Plugins & Extensions)" },
-  { id: "security", icon: "🔒", label: "命名空间与安全 (Namespace & Security)" },
-];
+const categories = computed(() => [
+  { id: "common", icon: "⚙️", label: t("settings.cat_common") || "常用设置" },
+  { id: "browser", icon: "💻", label: t("settings.cat_browser") || "系统与浏览器" },
+  { id: "network", icon: "🌐", label: t("settings.cat_network") || "网络与代理" },
+  { id: "plugins", icon: "🧩", label: t("settings.cat_plugins") || "插件与扩展" },
+  { id: "security", icon: "🔒", label: t("settings.cat_security") || "安全与命名空间" },
+]);
 
 const languageSelectOptions = computed(() => [
-  { value: "auto", label: "🌐 " + (t("common.autoDetect") || "自动检测 (Auto Detect)") },
+  { value: "auto", label: "🌐 " + (t("common.autoDetect") || "自动检测") },
   ...SUPPORTED_LANGUAGES.map((item) => ({
     value: item.code,
     label: item.nativeName,
@@ -506,20 +505,20 @@ const languageSelectOptions = computed(() => [
 ]);
 
 const themeSelectOptions = computed(() => [
-  { value: "dark", label: "🌙 " + (t("theme.dark") || "深色模式 (Dark)") },
-  { value: "light", label: "☀️ " + (t("theme.light") || "浅色模式 (Light)") },
-  { value: "system", label: "💻 " + (t("theme.system") || "跟随系统 (System)") },
+  { value: "dark", label: "🌙 " + (t("theme.dark") || "深色模式") },
+  { value: "light", label: "☀️ " + (t("theme.light") || "浅色模式") },
+  { value: "system", label: "💻 " + (t("theme.system") || "跟随系统") },
 ]);
 
 const browserPresetOptions = computed(() => [
-  { value: "", label: "🖥️ 系统默认 (自动调用操作系统默认浏览器)" },
+  { value: "", label: "🖥️ " + (t("settings.browser_auto") || "系统默认") },
   { value: "chrome", label: "🌐 Google Chrome" },
   { value: "firefox", label: "🦊 Mozilla Firefox" },
   { value: "msedge", label: "🌊 Microsoft Edge" },
   { value: "safari", label: "🧭 Apple Safari" },
   { value: "brave", label: "🦁 Brave Browser" },
   { value: "chromium", label: "⚡ Chromium" },
-  { value: "custom", label: "🛠️ 自定义二进制路径 (Custom Executable)" },
+  { value: "custom", label: "🛠️ " + (t("settings.browser_custom") || "自定义路径") },
 ]);
 
 const currentRawToml = computed(() => {

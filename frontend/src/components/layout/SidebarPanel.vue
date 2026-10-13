@@ -117,7 +117,7 @@
 
       <!-- SETTINGS Navigation Items -->
       <template v-if="currentTab === 'settings'">
-        <div class="nav-group-title">SETTINGS SECTIONS</div>
+        <div class="nav-group-title">{{ t('settings.sections') || '设置分组' }}</div>
         <button
           v-for="item in settingsNavItems"
           :key="item.id"
@@ -174,11 +174,11 @@ const headerTitle = computed(() => {
 });
 
 const settingsNavItems = computed(() => [
-  { id: "common", icon: "⚙️", label: "常用设置", sub: "外观、语言、缓存" },
-  { id: "browser", icon: "💻", label: "系统工具与浏览器", sub: "浏览器偏好 (全局专属)" },
-  { id: "network", icon: "🌐", label: "网络与代理", sub: "GitHub 加速、HTTP 代理" },
-  { id: "plugins", icon: "🧩", label: "插件与扩展", sub: "plugins.<id> 隔离区" },
-  { id: "security", icon: "🔒", label: "命名空间与锁", sub: "核心保留表与文件锁" },
+  { id: "common", icon: "⚙️", label: t("settings.cat_common") || "常用设置", sub: t("settings.section_appearance") || "外观与语言" },
+  { id: "browser", icon: "💻", label: t("settings.cat_browser") || "系统与浏览器", sub: t("settings.scope_global_only") || "仅限用户设置" },
+  { id: "network", icon: "🌐", label: t("settings.cat_network") || "网络与代理", sub: t("settings.githubProxy") || "镜像与代理" },
+  { id: "plugins", icon: "🧩", label: t("settings.cat_plugins") || "插件与扩展", sub: t("settings.plugin_isolation_title") || "命名空间隔离" },
+  { id: "security", icon: "🔒", label: t("settings.cat_security") || "安全与命名空间", sub: t("settings.sec_lock_title") || "并发文件锁" },
 ]);
 
 const searchPlaceholder = computed(() => {

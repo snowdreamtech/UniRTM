@@ -127,7 +127,7 @@ import SettingsView from "./views/SettingsView.vue";
 import AboutModal from "./components/AboutModal.vue";
 import ToastNotification from "./components/ToastNotification.vue";
 
-import { selectedLangSetting, setLanguage } from "./i18n";
+import { t, selectedLangSetting, setLanguage } from "./i18n";
 import { useTheme } from "./composables/useTheme";
 import { useToast } from "./composables/useToast";
 
@@ -177,17 +177,17 @@ const appConfig = ref<AppConfig | null>(null);
 const currentTabLabel = computed(() => {
   switch (currentTab.value) {
     case "dashboard":
-      return "Dashboard";
+      return t("nav.dashboard") || "Dashboard";
     case "tools":
-      return "Toolchains";
+      return t("nav.tools") || "Toolchains";
     case "tasks":
-      return "Task Runner";
+      return t("nav.tasks") || "Task Runner";
     case "marketplace":
-      return "Extensions Marketplace";
+      return t("nav.marketplace") || "Extensions Marketplace";
     case "doctor":
-      return "Doctor Diagnostics";
+      return t("nav.doctor") || "Doctor Diagnostics";
     case "settings":
-      return "Settings";
+      return t("settings.title") || "设置";
     default:
       return currentTab.value.toUpperCase();
   }
