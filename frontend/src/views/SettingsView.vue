@@ -145,9 +145,6 @@
                   <span v-if="activeScope === 'workspace'" class="badge-global-only">
                     {{ t('settings.scope_global_only') || '仅限用户' }}
                   </span>
-                  <span v-else-if="detectedBrowsers.length > 0" class="badge-detected">
-                    ✓ {{ t('settings.detected_count', { count: detectedBrowsers.length }) || `已检测到 ${detectedBrowsers.length} 款` }}
-                  </span>
                 </div>
                 <span class="setting-key font-mono">settings.browser</span>
                 <p class="setting-desc">
@@ -175,21 +172,11 @@
                   <span class="font-mono text-muted">{{ t('settings.disabled_in_workspace') || '在工作区中禁用' }}</span>
                 </div>
                 <div v-else class="browser-input-box">
-                  <div class="browser-select-row">
-                    <CustomSelect
-                      :model-value="selectedBrowserPreset"
-                      :options="browserPresetOptions"
-                      @change="onBrowserPresetChange"
-                    />
-                    <button
-                      class="btn-rescan-browser"
-                      :class="{ spinning: isDetectingBrowsers }"
-                      :title="t('settings.refresh_browsers') || '重新检测本机浏览器'"
-                      @click="refreshBrowsers"
-                    >
-                      🔄
-                    </button>
-                  </div>
+                  <CustomSelect
+                    :model-value="selectedBrowserPreset"
+                    :options="browserPresetOptions"
+                    @change="onBrowserPresetChange"
+                  />
                   <div v-if="selectedBrowserPreset === 'custom'" class="custom-browser-field">
                     <input
                       v-model="customBrowserPath"
@@ -197,8 +184,9 @@
                       class="setting-text-input font-mono"
                       :placeholder="t('settings.browser_custom_placeholder') || '/usr/bin/google-chrome-stable 或自定义路径'"
                       @change="saveSetting('settings.browser', customBrowserPath)"
+                      @blur="saveSetting('settings.browser', customBrowserPath)"
+                      @keydown.enter="saveSetting('settings.browser', customBrowserPath)"
                     />
-                    <button class="btn-apply-small" @click="saveSetting('settings.browser', customBrowserPath)">{{ t('settings.apply') || '应用' }}</button>
                   </div>
                 </div>
               </div>
@@ -212,16 +200,15 @@
                 <p class="setting-desc">{{ t('settings.cache_ttl_desc') || '工具清单与索引的本地缓存有效时间。' }}</p>
               </div>
               <div class="setting-control">
-                <div class="input-inline-group">
-                  <input
-                    v-model="cacheTtl"
-                    type="text"
-                    class="setting-text-input font-mono"
-                    placeholder="24h"
-                    @change="saveSetting('settings.cache_ttl', cacheTtl)"
-                  />
-                  <button class="btn-apply-small" @click="saveSetting('settings.cache_ttl', cacheTtl)">{{ t('settings.save') || '保存' }}</button>
-                </div>
+                <input
+                  v-model="cacheTtl"
+                  type="text"
+                  class="setting-text-input font-mono"
+                  placeholder="24h"
+                  @change="saveSetting('settings.cache_ttl', cacheTtl)"
+                  @blur="saveSetting('settings.cache_ttl', cacheTtl)"
+                  @keydown.enter="saveSetting('settings.cache_ttl', cacheTtl)"
+                />
               </div>
             </div>
           </div>
@@ -268,6 +255,8 @@
                     class="setting-text-input font-mono"
                     placeholder="https://ghproxy.net/"
                     @change="saveSetting('settings.github_proxy', githubProxy)"
+                    @blur="saveSetting('settings.github_proxy', githubProxy)"
+                    @keydown.enter="saveSetting('settings.github_proxy', githubProxy)"
                   />
                   <button
                     class="btn-test-net"
@@ -291,16 +280,15 @@
                 <p class="setting-desc">{{ t('settings.system_proxy') || '全局网络代理 (HTTP / HTTPS / SOCKS5)' }}</p>
               </div>
               <div class="setting-control">
-                <div class="input-inline-group">
-                  <input
-                    v-model="httpProxy"
-                    type="text"
-                    class="setting-text-input font-mono"
-                    placeholder="http://127.0.0.1:7890"
-                    @change="saveSetting('settings.http_proxy', httpProxy)"
-                  />
-                  <button class="btn-apply-small" @click="saveSetting('settings.http_proxy', httpProxy)">{{ t('settings.save') || '保存' }}</button>
-                </div>
+                <input
+                  v-model="httpProxy"
+                  type="text"
+                  class="setting-text-input font-mono"
+                  placeholder="http://127.0.0.1:7890"
+                  @change="saveSetting('settings.http_proxy', httpProxy)"
+                  @blur="saveSetting('settings.http_proxy', httpProxy)"
+                  @keydown.enter="saveSetting('settings.http_proxy', httpProxy)"
+                />
               </div>
             </div>
           </div>
@@ -540,25 +528,6 @@ function mergeDetectedBrowsers(serverList?: DetectedBrowser[]): DetectedBrowser[
 }
 
 const detectedBrowsers = ref<DetectedBrowser[]>(mergeDetectedBrowsers());
-const isDetectingBrowsers = ref(false);
-
-async function refreshBrowsers() {
-  isDetectingBrowsers.value = true;
-  try {
-    const res = await fetch("/api/system/browsers");
-    if (res.ok) {
-      const data = await res.json();
-      detectedBrowsers.value = mergeDetectedBrowsers(data.browsers || []);
-    } else {
-      detectedBrowsers.value = mergeDetectedBrowsers([]);
-    }
-  } catch (err) {
-    detectedBrowsers.value = mergeDetectedBrowsers([]);
-    console.warn("Failed to detect browsers:", err);
-  } finally {
-    isDetectingBrowsers.value = false;
-  }
-}
 
 function getBrowserIcon(id: string): string {
   switch (id.toLowerCase()) {
@@ -584,7 +553,7 @@ const browserPresetOptions = computed(() => {
     const icon = getBrowserIcon(b.id);
     options.push({
       value: b.id,
-      label: `${icon} ${b.name} (${t("settings.browser_detected") || "已安装"})`,
+      label: `${icon} ${b.name}`,
     });
   }
 
@@ -1142,22 +1111,6 @@ onMounted(() => {
   border-color: var(--accent-cyan);
 }
 
-.btn-apply-small {
-  padding: 6px 14px;
-  background: var(--accent-cyan);
-  color: #070a12;
-  border: none;
-  border-radius: 5px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
-}
-
-.btn-apply-small:hover {
-  opacity: 0.9;
-}
-
 /* Scope warning banner */
 .scope-notice-banner.warning {
   display: flex;
@@ -1213,45 +1166,6 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.browser-select-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-
-.browser-select-row :deep(.custom-select-container) {
-  flex: 1;
-}
-
-.btn-rescan-browser {
-  background: var(--input-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 6px;
-  padding: 7px 11px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: all 0.2s ease;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-rescan-browser:hover {
-  border-color: var(--accent-cyan);
-  color: var(--accent-cyan);
-}
-
-.btn-rescan-browser.spinning {
-  animation: spin-browser 0.8s linear infinite;
-}
-
-@keyframes spin-browser {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 
 .custom-browser-field {
