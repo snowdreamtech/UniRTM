@@ -1,0 +1,283 @@
+<template>
+  <div v-if="isOpen" class="bottom-drawer" id="app-bottom-drawer">
+    <!-- Drawer Header Bar -->
+    <div class="drawer-header">
+      <!-- Tabs on the left -->
+      <div class="drawer-tabs">
+        <button
+          class="drawer-tab"
+          :class="{ active: activeTab === 'output' }"
+          @click="activeTab = 'output'"
+        >
+          <span>📜 Output (日志输出)</span>
+        </button>
+        <button
+          class="drawer-tab"
+          :class="{ active: activeTab === 'tasks' }"
+          @click="activeTab = 'tasks'"
+        >
+          <span>⚡ Tasks (任务终端)</span>
+        </button>
+        <button
+          class="drawer-tab"
+          :class="{ active: activeTab === 'doctor' }"
+          @click="activeTab = 'doctor'"
+        >
+          <span>🩺 Doctor (诊断报告)</span>
+        </button>
+      </div>
+
+      <!-- Action Tools on the right -->
+      <div class="drawer-actions">
+        <button class="drawer-action-btn" title="Clear Logs" @click="$emit('clear-logs')">
+          <span>🧹</span>
+        </button>
+        <button
+          class="drawer-action-btn"
+          :class="{ active: autoScroll }"
+          :title="'Toggle Auto Scroll: ' + (autoScroll ? 'ON' : 'OFF')"
+          @click="autoScroll = !autoScroll"
+        >
+          <span>⬇️</span>
+        </button>
+        <button
+          class="drawer-action-btn"
+          title="Toggle Maximize"
+          @click="isMaximized = !isMaximized"
+        >
+          <span>{{ isMaximized ? "🗗" : "🗖" }}</span>
+        </button>
+        <button class="drawer-action-btn" title="Close Drawer" @click="$emit('close')">
+          <span>✕</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Drawer Body -->
+    <div
+      class="drawer-body font-mono"
+      ref="logContainerRef"
+      :style="{ height: isMaximized ? '380px' : '170px' }"
+    >
+      <div v-if="displayLogs.length === 0" class="empty-logs">
+        <span>No log output available. Run a task or diagnostic to inspect logs.</span>
+      </div>
+
+      <div
+        v-for="(log, idx) in displayLogs"
+        :key="idx"
+        class="log-row"
+        :class="'level-' + log.level.toLowerCase()"
+      >
+        <span class="log-time">{{ log.timestamp }}</span>
+        <span class="log-badge" :class="'badge-' + log.level.toLowerCase()">
+          {{ log.level }}
+        </span>
+        <span class="log-msg">{{ log.message }}</span>
+        <span v-if="log.details" class="log-details">{{ log.details }}</span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, watch, nextTick } from "vue";
+
+export interface LogItem {
+  timestamp: string;
+  level: "INFO" | "SUCCESS" | "WARN" | "ERROR";
+  message: string;
+  details?: string;
+}
+
+const props = defineProps<{
+  isOpen: boolean;
+  logs: LogItem[];
+}>();
+
+defineEmits<{
+  (e: "close"): void;
+  (e: "clear-logs"): void;
+}>();
+
+const activeTab = ref<"output" | "tasks" | "doctor">("output");
+const autoScroll = ref(true);
+const isMaximized = ref(false);
+const logContainerRef = ref<HTMLElement | null>(null);
+
+const displayLogs = computed(() => {
+  return props.logs;
+});
+
+watch(
+  () => props.logs.length,
+  () => {
+    if (autoScroll.value && logContainerRef.value) {
+      nextTick(() => {
+        if (logContainerRef.value) {
+          logContainerRef.value.scrollTop = logContainerRef.value.scrollHeight;
+        }
+      });
+    }
+  }
+);
+</script>
+
+<style scoped>
+.bottom-drawer {
+  width: 100%;
+  background: var(--card-bg);
+  border-top: 1px solid var(--card-border);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  z-index: 55;
+  backdrop-filter: blur(12px);
+  animation: drawer-slide-up 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes drawer-slide-up {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  min-height: 32px;
+  background: var(--input-bg);
+  border-bottom: 1px solid var(--card-border);
+  padding: 0 0.5rem;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.drawer-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.drawer-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.drawer-tab:hover {
+  color: var(--text-main);
+}
+
+.drawer-tab.active {
+  color: var(--accent-cyan);
+  border-bottom-color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.drawer-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.drawer-action-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.15s ease;
+}
+
+.drawer-action-btn:hover {
+  background: var(--card-bg);
+  color: var(--text-main);
+}
+
+.drawer-action-btn.active {
+  color: var(--accent-cyan);
+}
+
+.drawer-body {
+  overflow-y: auto;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  background: var(--section-bg);
+  transition: height 0.2s ease;
+}
+
+.empty-logs {
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 0.75rem 0;
+  text-align: center;
+}
+
+.log-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.15rem 0;
+  word-break: break-all;
+}
+
+.log-time {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.log-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.badge-info {
+  background: rgba(0, 229, 255, 0.15);
+  color: var(--accent-cyan);
+}
+
+.badge-success {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success);
+}
+
+.badge-warn {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning);
+}
+
+.badge-error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.log-msg {
+  color: var(--text-main);
+}
+
+.log-details {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+</style>
