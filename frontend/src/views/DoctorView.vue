@@ -66,7 +66,8 @@ import { ref } from "vue";
 import { t } from "../i18n";
 
 const emit = defineEmits<{
-  (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string): void;
+  (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string, category?: "output" | "tasks" | "doctor"): void;
+  (e: "open-drawer", tab?: "output" | "tasks" | "doctor"): void;
 }>();
 
 const isRunningCheck = ref(false);
@@ -108,14 +109,15 @@ const checkList = ref([
 
 function runFullDiagnostic() {
   isRunningCheck.value = true;
-  emit("log-event", "INFO", "Starting UniRTM full diagnostic doctor scan...");
+  emit("open-drawer", "doctor");
+  emit("log-event", "INFO", "Starting UniRTM full diagnostic doctor scan...", undefined, "doctor");
 
   setTimeout(() => {
-    emit("log-event", "INFO", "Checking OS shims, tool versions, and lockfile consistency...");
+    emit("log-event", "INFO", "Checking OS shims, tool versions, and lockfile consistency...", undefined, "doctor");
   }, 400);
 
   setTimeout(() => {
-    emit("log-event", "SUCCESS", "UniRTM Doctor diagnostic completed: 4/4 checks passed (100% Score).");
+    emit("log-event", "SUCCESS", "UniRTM Doctor diagnostic completed: 4/4 checks passed (100% Score).", undefined, "doctor");
     isRunningCheck.value = false;
   }, 1000);
 }

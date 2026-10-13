@@ -51,7 +51,7 @@ import { ref } from "vue";
 import { t } from "../i18n";
 
 const emit = defineEmits<{
-  (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string): void;
+  (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string, category?: "output" | "tasks" | "doctor"): void;
   (e: "task-started", taskName: string): void;
   (e: "task-finished", taskName: string): void;
 }>();
@@ -92,14 +92,14 @@ const tasks = ref<ProjectTask[]>([
 function executeTask(task: ProjectTask) {
   runningTask.value = task.name;
   emit("task-started", task.name);
-  emit("log-event", "INFO", `Starting task: ${task.name}`, `Command: ${task.command}`);
+  emit("log-event", "INFO", `Starting task: ${task.name}`, `Command: ${task.command}`, "tasks");
 
   setTimeout(() => {
-    emit("log-event", "INFO", `[${task.name}] Loading environment variables and shims...`);
+    emit("log-event", "INFO", `[${task.name}] Loading environment variables and shims...`, undefined, "tasks");
   }, 300);
 
   setTimeout(() => {
-    emit("log-event", "SUCCESS", `[${task.name}] Process finished successfully with exit code 0.`);
+    emit("log-event", "SUCCESS", `[${task.name}] Process finished successfully with exit code 0.`, undefined, "tasks");
     emit("task-finished", task.name);
     runningTask.value = null;
   }, 1200);

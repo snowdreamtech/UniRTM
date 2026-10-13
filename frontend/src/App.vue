@@ -74,6 +74,7 @@
           <DoctorView
             v-else-if="currentTab === 'doctor'"
             @log-event="addLog"
+            @open-drawer="handleOpenDrawerTab"
           />
 
           <SettingsView
@@ -94,6 +95,8 @@
     <BottomDrawer
       :isOpen="isDrawerOpen"
       :logs="runtimeLogs"
+      :activeTab="drawerActiveTab"
+      @update:activeTab="drawerActiveTab = $event"
       @close="isDrawerOpen = false"
       @clear-logs="handleClearLogs"
     />
@@ -170,6 +173,7 @@ watch(isDrawerOpen, (newVal) => {
 
 const activeRunningTask = ref<string | undefined>(undefined);
 const currentLatencyMs = ref<number | null>(18);
+const drawerActiveTab = ref<"output" | "tasks" | "doctor">("output");
 
 const runtimeLogs = ref<LogItem[]>([
   {
@@ -177,11 +181,13 @@ const runtimeLogs = ref<LogItem[]>([
     level: "INFO",
     message: "UniRTM Workbench initialised successfully",
     details: "Pure Go shims router + VS Code style workbench layout",
+    category: "output",
   },
   {
     timestamp: new Date().toLocaleTimeString(),
     level: "SUCCESS",
     message: "Environment verified: Node.js 22.14, Go 1.24, Python 3.12 ready",
+    category: "output",
   },
 ]);
 
@@ -246,32 +252,51 @@ function openCommandPalette() {
   showToast("Command Palette: Press Ctrl+K (All quick commands available)", "info");
 }
 
-function handleClearLogs() {
-  runtimeLogs.value = [];
+function handleOpenDrawerTab(tab: "output" | "tasks" | "doctor" = "output") {
+  isDrawerOpen.value = true;
+  drawerActiveTab.value = tab;
 }
 
-function addLog(level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string) {
+function handleClearLogs(category?: "output" | "tasks" | "doctor") {
+  if (category) {
+    runtimeLogs.value = runtimeLogs.value.filter((log) => {
+      const logCat = log.category || "output";
+      return logCat !== category;
+    });
+  } else {
+    runtimeLogs.value = [];
+  }
+}
+
+function addLog(
+  level: "INFO" | "SUCCESS" | "WARN" | "ERROR",
+  msg: string,
+  detail?: string,
+  category: "output" | "tasks" | "doctor" = "output"
+) {
   runtimeLogs.value.push({
     timestamp: new Date().toLocaleTimeString(),
     level,
     message: msg,
     details: detail,
+    category,
   });
 }
 
 function handleTaskStarted(taskName: string) {
   activeRunningTask.value = taskName;
   isDrawerOpen.value = true;
-  addLog("INFO", `Running project task: unirtm run ${taskName}...`);
+  drawerActiveTab.value = "tasks";
+  addLog("INFO", `Running project task: unirtm run ${taskName}...`, undefined, "tasks");
   setTimeout(() => {
     activeRunningTask.value = undefined;
-    addLog("SUCCESS", `Task ${taskName} executed successfully.`);
+    addLog("SUCCESS", `Task ${taskName} executed successfully.`, undefined, "tasks");
   }, 1200);
 }
 
 function handleTaskFinished(taskName: string) {
   activeRunningTask.value = undefined;
-  addLog("SUCCESS", `Task ${taskName} finished.`);
+  addLog("SUCCESS", `Task ${taskName} finished.`, undefined, "tasks");
 }
 
 async function saveGlobalSetting(key: string, value: any) {

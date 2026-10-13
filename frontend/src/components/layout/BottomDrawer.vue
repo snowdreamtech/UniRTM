@@ -6,24 +6,27 @@
       <div class="drawer-tabs">
         <button
           class="drawer-tab"
-          :class="{ active: activeTab === 'output' }"
-          @click="activeTab = 'output'"
+          :class="{ active: currentTab === 'output' }"
+          @click="currentTab = 'output'"
         >
           <span>📜 {{ t("drawer.tab_output") }}</span>
+          <span v-if="outputLogs.length > 0" class="tab-badge">{{ outputLogs.length }}</span>
         </button>
         <button
           class="drawer-tab"
-          :class="{ active: activeTab === 'tasks' }"
-          @click="activeTab = 'tasks'"
+          :class="{ active: currentTab === 'tasks' }"
+          @click="currentTab = 'tasks'"
         >
           <span>⚡ {{ t("drawer.tab_tasks") }}</span>
+          <span v-if="tasksLogs.length > 0" class="tab-badge">{{ tasksLogs.length }}</span>
         </button>
         <button
           class="drawer-tab"
-          :class="{ active: activeTab === 'doctor' }"
-          @click="activeTab = 'doctor'"
+          :class="{ active: currentTab === 'doctor' }"
+          @click="currentTab = 'doctor'"
         >
           <span>🩺 {{ t("drawer.tab_doctor") }}</span>
+          <span v-if="doctorLogs.length > 0" class="tab-badge">{{ doctorLogs.length }}</span>
         </button>
       </div>
 
@@ -33,7 +36,7 @@
           class="drawer-action-btn"
           :title="clearLogsTitle"
           :data-tooltip="clearLogsTitle"
-          @click="$emit('clear-logs')"
+          @click="$emit('clear-logs', currentTab)"
         >
           <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="8" cy="8" r="6" />
@@ -87,7 +90,7 @@
       :style="{ height: isMaximized ? '380px' : '170px' }"
     >
       <div v-if="displayLogs.length === 0" class="empty-logs">
-        <span>{{ t("drawer.empty_logs") }}</span>
+        <span>{{ emptyStateText }}</span>
       </div>
 
       <div
@@ -116,16 +119,24 @@ export interface LogItem {
   level: "INFO" | "SUCCESS" | "WARN" | "ERROR";
   message: string;
   details?: string;
+  category?: "output" | "tasks" | "doctor";
 }
 
-const props = defineProps<{
-  isOpen: boolean;
-  logs: LogItem[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    isOpen: boolean;
+    logs: LogItem[];
+    activeTab?: "output" | "tasks" | "doctor";
+  }>(),
+  {
+    activeTab: undefined,
+  }
+);
 
-defineEmits<{
+const emit = defineEmits<{
   (e: "close"): void;
-  (e: "clear-logs"): void;
+  (e: "clear-logs", category?: "output" | "tasks" | "doctor"): void;
+  (e: "update:activeTab", tab: "output" | "tasks" | "doctor"): void;
 }>();
 
 const DRAWER_TAB_KEY = "unirtm_drawer_tab";
@@ -153,12 +164,21 @@ function getInitialAutoScroll(): boolean {
   return saved === "true";
 }
 
-const activeTab = ref<"output" | "tasks" | "doctor">(getInitialTab());
+const internalActiveTab = ref<"output" | "tasks" | "doctor">(getInitialTab());
+
+const currentTab = computed<"output" | "tasks" | "doctor">({
+  get: () => props.activeTab ?? internalActiveTab.value,
+  set: (val: "output" | "tasks" | "doctor") => {
+    internalActiveTab.value = val;
+    emit("update:activeTab", val);
+  },
+});
+
 const autoScroll = ref(getInitialAutoScroll());
 const isMaximized = ref(getInitialMaximized());
 const logContainerRef = ref<HTMLElement | null>(null);
 
-watch(activeTab, (val) => {
+watch(currentTab, (val) => {
   if (typeof localStorage !== "undefined") {
     localStorage.setItem(DRAWER_TAB_KEY, val);
   }
@@ -176,8 +196,40 @@ watch(autoScroll, (val) => {
   }
 });
 
+const outputLogs = computed(() =>
+  props.logs.filter((l) => !l.category || l.category === "output")
+);
+const tasksLogs = computed(() =>
+  props.logs.filter((l) => l.category === "tasks")
+);
+const doctorLogs = computed(() =>
+  props.logs.filter((l) => l.category === "doctor")
+);
+
 const displayLogs = computed(() => {
-  return props.logs;
+  if (currentTab.value === "tasks") {
+    return tasksLogs.value;
+  }
+  if (currentTab.value === "doctor") {
+    return doctorLogs.value;
+  }
+  return outputLogs.value;
+});
+
+const emptyStateText = computed(() => {
+  if (currentTab.value === "tasks") {
+    return (
+      t("drawer.empty_tasks") ||
+      "暂无任务执行日志。在任务视图中点击“运行”以在此查看执行终端输出。"
+    );
+  }
+  if (currentTab.value === "doctor") {
+    return (
+      t("drawer.empty_doctor") ||
+      "暂无环境体检报告。在环境诊断视图中执行“重新全面体检”以查看详情。"
+    );
+  }
+  return t("drawer.empty_logs") || "暂无系统输出日志。系统运行与扩展事件将在此显示。";
 });
 
 const clearLogsTitle = computed(() => t("drawer.clear_logs") || "清空控制台日志");
@@ -251,6 +303,9 @@ watch(
 }
 
 .drawer-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
@@ -270,6 +325,26 @@ watch(
   color: var(--accent-cyan);
   border-bottom-color: var(--accent-cyan);
   font-weight: 600;
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.05rem 0.35rem;
+  min-width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  background: var(--card-border);
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.drawer-tab.active .tab-badge {
+  background: rgba(34, 211, 238, 0.15);
+  color: var(--accent-cyan);
 }
 
 .drawer-actions {

@@ -15,6 +15,8 @@ export interface TranslationDict {
   "drawer.tab_tasks"?: string;
   "drawer.tab_doctor"?: string;
   "drawer.empty_logs"?: string;
+  "drawer.empty_tasks"?: string;
+  "drawer.empty_doctor"?: string;
   "drawer.clear_logs"?: string;
   "drawer.toggle_scroll"?: string;
   "drawer.toggle_max"?: string;
