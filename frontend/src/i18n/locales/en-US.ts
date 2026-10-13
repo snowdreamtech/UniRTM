@@ -137,7 +137,6 @@ export const enUs: TranslationDict = {
   "network.proxy_http": "HTTP / HTTPS Proxy URL",
   "network.proxy_socks5": "SOCKS5 Proxy URL",
   "network.proxy_noproxy": "Bypass Proxy List (NO_PROXY)",
-  "network.proxy_security_notice": "UniRTM defaults to official direct connection. Third-party proxies and GitHub relays are strictly forbidden to ensure token and source code security.",
   "network.profile_title": "Network Profiles",
   "network.profile_cn": "China Fast Mirrors",
   "network.profile_official": "Official Direct",

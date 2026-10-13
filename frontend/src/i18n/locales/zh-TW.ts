@@ -135,7 +135,6 @@ export const zhTw: TranslationDict = {
   "network.proxy_http": "HTTP / HTTPS 代理位址",
   "network.proxy_socks5": "SOCKS5 代理位址",
   "network.proxy_noproxy": "直連白名單 (NO_PROXY)",
-  "network.proxy_security_notice": "系統預設官方直連，嚴禁且不內置任何第三方公網代理或 GitHub 代理，保障源碼與密鑰絕對安全。",
   "network.profile_title": "網絡預設檔案",
   "network.profile_cn": "國內鏡像加速",
   "network.profile_official": "官方直連",

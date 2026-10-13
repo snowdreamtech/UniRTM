@@ -129,7 +129,6 @@ export interface TranslationDict {
   "network.proxy_http"?: string;
   "network.proxy_socks5"?: string;
   "network.proxy_noproxy"?: string;
-  "network.proxy_security_notice"?: string;
   "network.profile_title"?: string;
   "network.profile_cn"?: string;
   "network.profile_official"?: string;

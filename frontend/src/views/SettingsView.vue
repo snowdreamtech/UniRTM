@@ -245,11 +245,6 @@
               </span>
             </div>
 
-            <!-- Proxy Security Callout -->
-            <div class="security-callout">
-              <span class="callout-icon">🛡️</span>
-              <p>{{ t('network.proxy_security_notice') || '系统默认官方直连，严禁且不内置任何第三方公网代理或 GitHub 代理，保障源码与密钥绝对安全。' }}</p>
-            </div>
 
             <div class="proxy-form-grid" v-if="networkStatus">
               <div class="proxy-toggle-row">
@@ -1858,22 +1853,6 @@ onMounted(() => {
   border: 1px solid var(--card-border);
 }
 
-.security-callout {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 14px;
-  background: rgba(56, 189, 248, 0.06);
-  border-left: 3px solid var(--accent-cyan);
-  border-radius: 4px;
-}
-
-.security-callout p {
-  margin: 0;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  line-height: 1.5;
-}
 
 .proxy-toggle-row {
   display: flex;
