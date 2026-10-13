@@ -489,7 +489,57 @@ interface DetectedBrowser {
   is_default?: boolean;
 }
 
-const detectedBrowsers = ref<DetectedBrowser[]>([]);
+function detectClientBrowsers(): DetectedBrowser[] {
+  if (typeof navigator === "undefined") return [];
+
+  const ua = navigator.userAgent || "";
+  const isMac = /Macintosh|Mac OS X/i.test(ua);
+  const isWindows = /Windows NT/i.test(ua);
+  const detected: DetectedBrowser[] = [];
+
+  // Detect currently active browser from User Agent
+  if (/Edg\//i.test(ua)) {
+    detected.push({ id: "msedge", name: "Microsoft Edge", path: "msedge", is_default: false });
+  } else if (/Chrome\//i.test(ua) && !/Chromium|Edg|OPR|Brave/i.test(ua)) {
+    detected.push({ id: "chrome", name: "Google Chrome", path: "chrome", is_default: false });
+  } else if (/Firefox\//i.test(ua)) {
+    detected.push({ id: "firefox", name: "Mozilla Firefox", path: "firefox", is_default: false });
+  } else if (/Safari\//i.test(ua) && !/Chrome|Chromium|Edg/i.test(ua)) {
+    detected.push({ id: "safari", name: "Apple Safari", path: "safari", is_default: false });
+  }
+
+  // Detect OS platform native built-ins
+  if (isMac && !detected.some((b) => b.id === "safari")) {
+    detected.push({ id: "safari", name: "Apple Safari", path: "safari", is_default: false });
+  } else if (isWindows && !detected.some((b) => b.id === "msedge")) {
+    detected.push({ id: "msedge", name: "Microsoft Edge", path: "msedge", is_default: false });
+  }
+
+  return detected;
+}
+
+function mergeDetectedBrowsers(serverList?: DetectedBrowser[]): DetectedBrowser[] {
+  const map = new Map<string, DetectedBrowser>();
+
+  // If server returned browsers (e.g. local desktop unirtm execution), add them
+  if (serverList && serverList.length > 0) {
+    for (const b of serverList) {
+      map.set(b.id.toLowerCase(), b);
+    }
+  }
+
+  // Merge client-side detected browsers (vital for web UI / remote SSH sessions)
+  const clientList = detectClientBrowsers();
+  for (const b of clientList) {
+    if (!map.has(b.id.toLowerCase())) {
+      map.set(b.id.toLowerCase(), b);
+    }
+  }
+
+  return Array.from(map.values());
+}
+
+const detectedBrowsers = ref<DetectedBrowser[]>(mergeDetectedBrowsers());
 const isDetectingBrowsers = ref(false);
 
 async function refreshBrowsers() {
@@ -498,9 +548,12 @@ async function refreshBrowsers() {
     const res = await fetch("/api/system/browsers");
     if (res.ok) {
       const data = await res.json();
-      detectedBrowsers.value = data.browsers || [];
+      detectedBrowsers.value = mergeDetectedBrowsers(data.browsers || []);
+    } else {
+      detectedBrowsers.value = mergeDetectedBrowsers([]);
     }
   } catch (err) {
+    detectedBrowsers.value = mergeDetectedBrowsers([]);
     console.warn("Failed to detect browsers:", err);
   } finally {
     isDetectingBrowsers.value = false;
@@ -527,23 +580,12 @@ const browserPresetOptions = computed(() => {
     { value: "", label: "🖥️ " + (t("settings.browser_auto") || "系统默认") },
   ];
 
-  if (detectedBrowsers.value.length > 0) {
-    for (const b of detectedBrowsers.value) {
-      const icon = getBrowserIcon(b.id);
-      options.push({
-        value: b.id,
-        label: `${icon} ${b.name} (${t("settings.browser_detected") || "已安装"})`,
-      });
-    }
-  } else {
-    options.push(
-      { value: "chrome", label: "🌐 Google Chrome" },
-      { value: "firefox", label: "🦊 Mozilla Firefox" },
-      { value: "msedge", label: "🌊 Microsoft Edge" },
-      { value: "safari", label: "🧭 Apple Safari" },
-      { value: "brave", label: "🦁 Brave Browser" },
-      { value: "chromium", label: "⚡ Chromium" },
-    );
+  for (const b of detectedBrowsers.value) {
+    const icon = getBrowserIcon(b.id);
+    options.push({
+      value: b.id,
+      label: `${icon} ${b.name} (${t("settings.browser_detected") || "已安装"})`,
+    });
   }
 
   options.push({
@@ -668,7 +710,7 @@ function syncFieldsFromConfig() {
   const s = target?.settings || {};
 
   if (configData.value?.detected_browsers) {
-    detectedBrowsers.value = configData.value.detected_browsers;
+    detectedBrowsers.value = mergeDetectedBrowsers(configData.value.detected_browsers);
   }
 
   cacheTtl.value = s.cache_ttl || "24h";
