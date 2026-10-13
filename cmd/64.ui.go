@@ -216,10 +216,14 @@ func openBrowser(url string, targetBrowser string) error {
 
 	// If a specific browser was requested (e.g. "chrome", "firefox", "edge", or executable path)
 	if targetBrowser != "" {
-		return openWithSpecificBrowser(url, targetBrowser)
+		if err := openWithSpecificBrowser(url, targetBrowser); err == nil {
+			return nil
+		}
+		// Graceful degradation: custom browser not installed or failed to start
+		pterm.Warning.Printf("Specified browser %q not found or failed to launch. Falling back to system default browser.\n", targetBrowser)
 	}
 
-	// Otherwise, open with system default handler
+	// Fallback to system default browser handler
 	return openWithDefaultBrowser(url)
 }
 
