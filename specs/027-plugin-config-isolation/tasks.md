@@ -1,0 +1,87 @@
+# Feature Tasks: Plugin & Extension Configuration Namespace Isolation
+
+**Feature**: Plugin & Extension Configuration Namespace Isolation  
+**Branch**: `027-plugin-config-isolation`  
+**Spec**: [spec.md](./spec.md)  
+**Plan**: [plan.md](./plan.md)  
+
+---
+
+## Phase 1: Setup & Data Modeling
+
+**Purpose**: Establish data models, interfaces, and core reserved table definitions.
+
+- [ ] T001 [Setup] Define `ReservedCoreTables` map in `internal/config/reserved.go`
+- [ ] T002 [Setup] Add `Plugins map[string]PluginDeclaration` to `Config` struct in `internal/config/config.go`
+- [ ] T003 [Setup] Create `PluginDeclaration` struct with `Version` and `Config map[string]interface{}`
+- [ ] T004 [Setup] Write unit tests for reserved table check in `internal/config/reserved_test.go`
+
+---
+
+## Phase 2: Foundational Namespace Validation (Blocking Prerequisites)
+
+**Purpose**: Enforce write-time and read-time namespace validation rules.
+
+- [ ] T005 [Foundational] Implement `ValidateKeyNamespace(key string) error` in `internal/config/reserved.go`
+- [ ] T006 [Foundational] Reject unreserved root-level keys in `ValidateKeyNamespace`
+- [ ] T007 [Foundational] Validate plugin ID formatting under `plugins."<plugin-id>"` namespace
+- [ ] T008 [Foundational] Add unit tests covering legal and illegal keys in `internal/config/reserved_test.go`
+
+---
+
+## Phase 3: User Story 1 - Inline Plugin Config & Namespace Isolation (Priority: P1) 🎯 MVP
+
+**Goal**: Support reading and writing inline plugin configurations safely under `[plugins."<id>".config]`.
+
+- [ ] T009 [US1] Update `runConfigSet` in `cmd/14.config.go` to call `ValidateKeyNamespace`
+- [ ] T010 [US1] Support setting plugin configuration via `unirtm config set plugins."<id>".config.<key> <val>`
+- [ ] T011 [US1] Support retrieving plugin configuration via `unirtm config get plugins."<id>".config.<key>`
+- [ ] T012 [US1] Ensure `unirtm config` show command outputs plugin configuration under a dedicated section
+- [ ] T013 [US1] Verify that plugin A cannot overwrite or clobber plugin B's keys
+- [ ] T014 [US1] Add integration tests in `cmd/14.config_test.go` testing inline plugin config flows
+
+---
+
+## Phase 4: User Story 2 - Sidecar (External Split) Configuration (Priority: P1)
+
+**Goal**: Allow complex plugin configs to live in `.unirtm/plugins/*.toml` and auto-merge at runtime.
+
+- [ ] T015 [US2] Implement sidecar directory scanner in `internal/config/sidecar.go` (`.unirtm/plugins/*.toml`)
+- [ ] T016 [US2] Implement global sidecar directory scanner (`~/.config/unirtm/plugins/*.toml`)
+- [ ] T017 [US2] Implement deep merge logic between sidecar files and `.unirtm.toml` in `internal/config/loader.go`
+- [ ] T018 [US2] Enforce precedence rule: inline `.unirtm.toml` overrides sidecar defaults
+- [ ] T019 [US2] Add unit tests for sidecar discovery, merging, and precedence in `internal/config/sidecar_test.go`
+
+---
+
+## Phase 5: User Story 3 - Write-Time Sandbox & Concurrency File Locking (Priority: P2)
+
+**Goal**: Guarantee thread-safe, process-safe atomic writes and comment preservation.
+
+- [ ] T020 [US3] Implement cross-platform file locking (`.unirtm.toml.lock`) in `internal/config/lock.go`
+- [ ] T021 [US3] Integrate file locking into `runConfigSet` with automatic timeout handling
+- [ ] T022 [US3] Ensure comment preservation when updating TOML files via AST-aware serializer
+- [ ] T023 [US3] Add unit tests simulating concurrent configuration writers in `internal/config/lock_test.go`
+- [ ] T024 [US3] Add test ensuring comments and whitespace are preserved after config modifications
+
+---
+
+## Phase 6: User Story 4 - Manifest Schema Validation & Inspection (Priority: P2)
+
+**Goal**: Validate plugin configuration values against plugin manifest schemas at write-time.
+
+- [ ] T025 [US4] Define `PluginManifest` and `ContributedConfiguration` structures in `internal/config/schema.go`
+- [ ] T026 [US4] Implement type checking (`string`, `int`, `bool`, `list`) against manifest schema
+- [ ] T027 [US4] Integrate schema validation check into `runConfigSet`
+- [ ] T028 [US4] Add unit tests validating schema compliance in `internal/config/schema_test.go`
+
+---
+
+## Phase 7: Polish & Documentation
+
+**Purpose**: Finalize CLI experience, error messages, and documentation.
+
+- [ ] T029 [Docs] Update documentation comparing plugin configuration architecture to VS Code / Cargo
+- [ ] T030 [Docs] Provide plugin developer guide in `docs/plugins/configuration.md`
+- [ ] T031 [UI] Expose plugins and active sidecars in `unirtm ui` settings and status views
+- [ ] T032 [Verify] Run full test suite (`go test ./...`) to ensure 100% pass rate
