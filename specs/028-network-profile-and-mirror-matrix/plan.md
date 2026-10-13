@@ -1,50 +1,50 @@
 # Technical Plan: Network Profiles, Domestic Mirror Matrix & Cascading Overrides
 
-## 1. 架构目标与设计原则
-
-1. **绝对中立与安全**：系统绝不内置任何第三方代理服务器或 GitHub 中继；代理默认关闭、地址留空。
-2. **三层解析模型**：`Overrides (单项覆盖) > Active Profile (激活档案) > Official Baseline (官方兜底)`。
-3. **沙箱式环境变量注入**：UniRTM 在调度 shims 或运行任务时通过子进程注入环境，不污染、不篡改宿主环境与永久配置。
-4. **两端完全对齐与母语化**：CLI 与 Web 界面拥有 1:1 的完整功能，全部 UI 与 CLI 输出全面支持 i18n 母语化（中文、英文等）。
+**Feature**: Network Profiles, Domestic Mirror Matrix & Cascading Overrides  
+**Branch**: `dev`  
+**Spec**: [spec.md](./spec.md)  
+**Tasks**: [tasks.md](./tasks.md)  
+**Data Model**: [data-model.md](./data-model.md)  
 
 ---
 
-## 2. 后端核心模块规划 (Go Backend)
+## 1. Architectural Goals & Design Principles
 
-### 2.1 配置解析器与工厂 (`internal/network/`)
-- `internal/network/types.go`：定义配置结构体与 DTO。
-- `internal/network/defaults.go`：硬编码原厂出厂标准模板（`official` 与 `cn`），用于初始化与 `ResetToDefault`。
-- `internal/network/manager.go`：
-  - `GetStatus(cfg *config.Config) *ActiveNetworkStatus`：计算解析出全生态最终生效的源与来源标记。
-  - `SetProfile(profileID string) error`：切换激活 Profile。
-  - `CreateProfile(p NetworkProfile) error`：创建新自定义 Profile。
-  - `SaveAsProfile(newID, name string) error`：把当前有效状态打包另存为新 Profile。
-  - `ResetProfile(profileID string) error`：重置内置 Profile 为出厂初始值。
-  - `DeleteProfile(profileID string) error`：安全删除自定义 Profile，自动回退激活。
-  - `SetOverride(ecosystem, url string) error`：设置单项语言覆盖。
-  - `ResetOverride(ecosystem string) error`：清除单项语言覆盖。
-  - `SetProxy(p ProxyConfig) error`：保存代理开关与地址。
-- `internal/network/probe.go`：
-  - 并发 HTTP HEAD/GET 探针，并发测试各大源 RTT 往返耗时（带 2.5s 超时）。
+1. **Strict Neutrality & Security**: The system never embeds any third-party public proxy servers or GitHub relay domains. Proxies default to disabled with empty URLs.
+2. **Three-Tier Cascading Resolution**: Resolves effective registry endpoints using `Overrides (Granular User Override) > Active Profile (Selected Matrix) > Official Baseline (Upstream Default)`.
+3. **Sandbox Environment Injection**: Injects proxy and mirror environment variables into executed child processes (shims and task runs) without mutating the host's global shell rc files (`~/.bashrc`, `/etc/environment`).
+4. **1:1 CLI and Web Parity with Native i18n**: The CLI and Web UI share identical functional capabilities and support 100% native localization without awkward mixed-language text.
 
-### 2.2 运行期沙箱环境注入 (`internal/runner/` / `cmd/run.go`)
-- 在构建子进程 `exec.Cmd.Env` 时，自动合并：
-  - `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY`（若 `proxy.enabled == true`）
-  - `NPM_CONFIG_REGISTRY`
-  - `GOPROXY`
-  - `PIP_INDEX_URL`
-  - `CARGO_REGISTRIES_CRATES_IO_INDEX`
-  - `NODEJS_ORG_MIRROR`
+---
 
-### 2.3 CLI 命令组 (`cmd/network.go`)
-- `unirtm network status`
-- `unirtm network profile [list | use <id> | create <id> | save-as <id> | reset <id> | delete <id>]`
-- `unirtm network registry [set <lang> <url> | reset <lang> | list]`
-- `unirtm network proxy [on | off | set <url>]`
-- `unirtm network test`
+## 2. Go Backend Architecture (`internal/network/`)
 
-### 2.4 Web 后端 REST API (`cmd/ui.go`)
-- `GET  /api/network/status`
+### 2.1 Configuration Parser & Lifecycle Engine (`internal/network/`)
+- `internal/network/types.go`: Core data types and DTOs.
+- `internal/network/defaults.go`: Hardcoded factory blueprints (`official` and `cn`) used for initial seeding and factory resets (`ResetToDefault`). Includes vetted public mirror suggestions.
+- `internal/network/manager.go`:
+  - `GetStatus() ActiveNetworkStatus`: Computes effective registry URLs with source tracking.
+  - `UseProfile(profileID string) error`: Switches the active profile.
+  - `CreateProfile(p NetworkProfile) error`: Adds a new custom profile.
+  - `SaveAsProfile(newID, name, description string) error`: Snapshots current effective state into a new profile.
+  - `ResetProfile(profileID string) error`: Restores built-in profiles to factory defaults.
+  - `DeleteProfile(profileID string) error`: Removes a custom profile with automatic fallback to `official`.
+  - `SetOverride(ecosystem, url string) error`: Stores a single-ecosystem override.
+  - `ResetOverride(ecosystem string) error`: Clears a single-ecosystem override.
+  - `SetProxy(p ProxyConfig) error`: Validates and saves proxy settings.
+  - `ExportEnvironment(target *[]string)`: Formats effective registries and proxies into environment variables.
+- `internal/network/probe.go`:
+  - Concurrent HTTP HEAD/GET probes measuring endpoint RTT with a 2.5s timeout.
+
+### 2.2 CLI Subcommand Suite (`cmd/65.network.go`)
+- `unirtm network status [--json]`: Displays active profile, proxy status, and effective registries.
+- `unirtm network profile [list | use <id> | create <id> | save-as <id> | reset <id> | delete <id>]`: Profile lifecycle operations.
+- `unirtm network registry [set <lang> <url> | reset <lang> | list]`: Granular ecosystem override management.
+- `unirtm network proxy [status | on | off | set <url>]`: Proxy state controls.
+- `unirtm network test`: Terminal-based concurrent latency probe table.
+
+### 2.3 Web REST API Endpoints (`cmd/64.ui.go`)
+- `GET  /api/network/status?scope=workspace|user`
 - `POST /api/network/profile/use`
 - `POST /api/network/profile/save`
 - `POST /api/network/profile/reset`
@@ -56,36 +56,23 @@
 
 ---
 
-## 3. 前端界面与国际化规划 (Vue 3 Frontend)
+## 3. Frontend Architecture (Vue 3 + Vite)
 
-### 3.1 页面重构与视觉设计
-1. **SettingsView.vue（设置视图）**：
-   - 增加独立一级导航或优化网络标签栏：
-     - **“网络代理 (Proxy)”板块**：
-       - 主开关（默认关）
-       - 代理地址输入框（默认空，由用户输入本地端口，明确说明不提供第三方代理）
-       - `NO_PROXY` 默认安全白名单
-     - **“镜像源管理 (Mirrors & Registries)”板块**：
-       - 顶部卡片栏：`🚀 国内镜像加速`、`🌐 官方直连`、自定义 Profile 卡片，带 `[+ 新建档案]` 和 `[↺ 恢复出厂设置]`。
-       - 各语言列表（Node.js, Go, Python, Rust, Ruby）：
-         - 知名公共大厂/高校镜像下拉快捷菜单
-         - 输入框与实时状态徽章（`[来自预设]` / `[单项覆盖]`）
-         - `[↺ 恢复跟随]` 按钮
-         - `[⚡ 测速]` 按钮与毫秒指示灯（绿色 <100ms，黄色 <300ms，红色超时）
-2. **DashboardView.vue（仪表盘视图）**：
-   - 网络态势指示卡片：清晰显示当前 Profile、代理开关状态、一键全面测速。
+### 3.1 Component Structure & Views
+1. **SettingsView.vue**:
+   - **Network Proxy Section**:
+     - Master switch toggle (disabled by default).
+     - Reactive input fields for HTTP, SOCKS5, and `NO_PROXY` bypass list.
+     - Responsive help text on enterprise gateway usage.
+   - **Mirror Matrix & Profile Management**:
+     - Profile cards displaying status badges (`active`, `builtin`, `custom`).
+     - Modal dialog for creating new profiles with live form validation.
+     - Factory reset action for built-in profiles.
+     - Ecosystem Registries Matrix table with preset dropdowns, custom inputs, override tags, restore buttons, and latency probe buttons.
+2. **DashboardView.vue**:
+   - Network diagnostics card reporting active profile, proxy status, and round-trip ping latency.
 
-### 3.2 国际化 (i18n) 全覆盖
-在 `types.ts`、`zh-CN.ts`、`zh-TW.ts`、`en-US.ts` 等中全面扩展：
-- `network.proxy_title`: "网络代理" / "Network Proxy"
-- `network.proxy_desc`: "全局网络代理配置（支持本地或企业网关，默认不内置任何公网代理）"
-- `network.mirrors_title`: "镜像源矩阵" / "Registry Mirrors"
-- `network.profile_cn`: "国内镜像加速" / "China Fast Mirrors"
-- `network.profile_official`: "官方直连" / "Official Direct"
-- `network.badge_overridden`: "单项覆盖" / "Overridden"
-- `network.badge_inherited`: "跟随预设" / "Inherited"
-- `network.reset_factory`: "恢复出厂默认值" / "Reset to Factory Defaults"
-- `network.restore_inherited`: "恢复跟随预设" / "Follow Profile"
-- `network.save_as_profile`: "另存为新档案" / "Save as New Profile"
-- `network.speed_test`: "实时测速" / "Speed Test"
-- 严禁任何形式的中英文混合括号文本。
+### 3.2 Full i18n Dictionary Expansion
+- Complete coverage across `en-US.ts`, `zh-CN.ts`, and `zh-TW.ts`.
+- Zero mixed-language parentheses.
+- Strict consistency across button labels, badges, alerts, and placeholders.

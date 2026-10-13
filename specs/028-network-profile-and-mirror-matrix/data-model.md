@@ -1,13 +1,24 @@
 # Data Model: Network Profiles & Mirror Matrix Architecture
 
+**Feature**: Network Profiles, Domestic Mirror Matrix & Cascading Overrides  
+**Branch**: `dev`  
+**Spec**: [spec.md](./spec.md)  
+**Plan**: [plan.md](./plan.md)  
+**Tasks**: [tasks.md](./tasks.md)  
+
+---
+
 ## 1. TOML Configuration Schema
+
+The network subsystem is stored under the root `[network]` section in `.unirtm.toml` (project workspace scope) or `~/.config/unirtm/unirtm.toml` (global user scope).
 
 ```toml
 [network]
-# 当前激活的 Profile ID，如 "cn"、"official" 或用户自定义 ID
+# Active Profile identifier, e.g., "cn", "official", or a custom user profile ID
 active_profile = "cn"
 
-# 1. 代理服务器配置 (全局代理，默认严格关闭，输入框默认完全空白)
+# 1. Proxy Configuration
+# Master proxy controls; strictly disabled by default with empty endpoints
 [network.proxy]
 enabled = false
 http = ""
@@ -15,8 +26,8 @@ https = ""
 socks5 = ""
 no_proxy = "localhost,127.0.0.1,::1,*.local,*.internal"
 
-# 2. 单项语言覆盖区 (优先级最高: Overrides > Profile > Official Default)
-# 用户在界面或 CLI 单独修改某语言源时记录在此；未设置的语言自动跟随当前 active_profile
+# 2. Per-Ecosystem Overrides (Highest Precedence: Overrides > Profile > Factory Default)
+# Records granular user overrides; unset ecosystems dynamically follow active_profile
 [network.overrides]
 npm = ""
 go = ""
@@ -24,28 +35,28 @@ python = ""
 rust = ""
 ruby = ""
 
-# 3. 预设档案集合 (内置 official、cn，支持用户自定义扩展)
+# 3. Built-in Factory Profiles
 [network.profiles.official]
 id = "official"
-name = "官方直连"
-description = "全量使用各官方注册表与分发源，不经任何代理加速"
+name = "Official Direct"
+description = "Uses upstream official registries and binary CDNs without proxies or third-party mirrors"
 builtin = true
 registries = { npm = "https://registry.npmjs.org", go = "https://proxy.golang.org,direct", python = "https://pypi.org/simple", rust = "https://crates.io", ruby = "https://rubygems.org" }
 downloads = { node = "https://nodejs.org/dist", go = "https://golang.org/dl", python = "https://www.python.org/ftp/python" }
 
 [network.profiles.cn]
 id = "cn"
-name = "国内镜像加速"
-description = "国内顶级公共镜像与大厂高校加速矩阵"
+name = "China Fast Mirrors"
+description = "Vetted domestic university and cloud provider public mirror matrix for fast pre-flight downloads"
 builtin = true
 registries = { npm = "https://registry.npmmirror.com", go = "https://goproxy.cn,direct", python = "https://pypi.tuna.tsinghua.edu.cn/simple", rust = "https://rsproxy.cn/crates.io-index", ruby = "https://gems.ruby-china.com" }
 downloads = { node = "https://npmmirror.com/mirrors/node", go = "https://golang.google.cn/dl", python = "https://registry.npmmirror.com/binary.html?b=python" }
 
-# 用户自定义档案示例 (通过 CLI create / save-as 或 Web 界面保存生成)
+# 4. User-Defined Custom Profiles (Created via CLI or Web UI)
 [network.profiles.company-office]
 id = "company-office"
-name = "公司内网办公"
-description = "企业自建私有包服务与专网源"
+name = "Corporate Office"
+description = "Internal enterprise registries and private repository endpoints"
 builtin = false
 registries = { npm = "https://npm.corp.internal", go = "https://goproxy.cn,direct", python = "https://pypi.tuna.tsinghua.edu.cn/simple", rust = "https://rsproxy.cn/crates.io-index", ruby = "https://gems.ruby-china.com" }
 downloads = { node = "https://npmmirror.com/mirrors/node", go = "https://golang.google.cn/dl", python = "https://registry.npmmirror.com/binary.html?b=python" }
@@ -55,10 +66,12 @@ downloads = { node = "https://npmmirror.com/mirrors/node", go = "https://golang.
 
 ## 2. Go Core Data Structures
 
-```go
-package config
+Defined in `internal/network/types.go`:
 
-// NetworkConfig represents the root network section in UniRTM config
+```go
+package network
+
+// NetworkConfig represents the root network section in UniRTM configuration.
 type NetworkConfig struct {
     ActiveProfile string                    `json:"active_profile" toml:"active_profile"`
     Proxy         ProxyConfig               `json:"proxy" toml:"proxy"`
@@ -66,7 +79,7 @@ type NetworkConfig struct {
     Profiles      map[string]NetworkProfile `json:"profiles" toml:"profiles"`
 }
 
-// ProxyConfig defines local/corporate network proxy parameters
+// ProxyConfig defines network proxy parameters.
 type ProxyConfig struct {
     Enabled bool   `json:"enabled" toml:"enabled"`
     HTTP    string `json:"http" toml:"http"`
@@ -75,7 +88,7 @@ type ProxyConfig struct {
     NoProxy string `json:"no_proxy" toml:"no_proxy"`
 }
 
-// NetworkProfile defines an end-to-end profile contract
+// NetworkProfile defines an individual mirror profile.
 type NetworkProfile struct {
     ID          string            `json:"id" toml:"id"`
     Name        string            `json:"name" toml:"name"`
@@ -85,20 +98,31 @@ type NetworkProfile struct {
     Downloads   map[string]string `json:"downloads" toml:"downloads"`
 }
 
-// ActiveNetworkStatus represents the effective resolved view for CLI and Web
+// ActiveNetworkStatus represents the resolved state returned to CLI and Web UI.
 type ActiveNetworkStatus struct {
     ActiveProfileID string                       `json:"active_profile_id"`
     ActiveProfile   NetworkProfile               `json:"active_profile"`
     Proxy           ProxyConfig                  `json:"proxy"`
     Effective       map[string]EffectiveRegistry `json:"effective"`
+    Profiles        map[string]NetworkProfile    `json:"profiles"`
 }
 
-// EffectiveRegistry denotes the resolved URL and origin for a language ecosystem
+// EffectiveRegistry denotes the resolved registry URL and origin for an ecosystem.
 type EffectiveRegistry struct {
-    Ecosystem   string `json:"ecosystem"` // npm, go, python, rust, ruby
-    URL         string `json:"url"`
-    Source      string `json:"source"`    // "override" | "profile" | "default"
-    IsOverridden bool  `json:"is_overridden"`
+    Ecosystem    string `json:"ecosystem"` // npm, go, python, rust, ruby
+    URL          string `json:"url"`
+    Source       string `json:"source"`    // "override" | "profile" | "default"
+    IsOverridden bool   `json:"is_overridden"`
+}
+
+// ProbeResult stores latency metrics for endpoint health monitoring.
+type ProbeResult struct {
+    Ecosystem string `json:"ecosystem"`
+    Name      string `json:"name"`
+    Endpoint  string `json:"endpoint"`
+    RTTMs     int64  `json:"latency_ms"`
+    Status    string `json:"status"` // "fast" | "normal" | "slow" | "timeout"
+    OK        bool   `json:"ok"`
 }
 ```
 
@@ -106,13 +130,15 @@ type EffectiveRegistry struct {
 
 ## 3. Frontend TypeScript Interfaces
 
+Defined in `frontend/src/i18n/types.ts` and view component types:
+
 ```ts
-export interface NetworkStatusPayload {
-  activeProfileId: string;
-  activeProfile: NetworkProfile;
+export interface ActiveNetworkStatus {
+  active_profile_id: string;
+  active_profile: NetworkProfile;
   proxy: ProxyConfig;
-  profiles: Record<string, NetworkProfile>;
   effective: Record<string, EffectiveRegistry>;
+  profiles: Record<string, NetworkProfile>;
 }
 
 export interface ProxyConfig {
@@ -120,7 +146,7 @@ export interface ProxyConfig {
   http: string;
   https: string;
   socks5: string;
-  noProxy: string;
+  no_proxy: string;
 }
 
 export interface NetworkProfile {
@@ -136,13 +162,15 @@ export interface EffectiveRegistry {
   ecosystem: string;
   url: string;
   source: "override" | "profile" | "default";
-  isOverridden: boolean;
+  is_overridden: boolean;
 }
 
 export interface ProbeResult {
-  endpoint: string;
+  ecosystem: string;
   name: string;
-  rttMs: number;
+  endpoint: string;
+  latency_ms: number;
   status: "fast" | "normal" | "slow" | "timeout";
+  ok: boolean;
 }
 ```
