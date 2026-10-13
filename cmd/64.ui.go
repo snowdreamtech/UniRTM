@@ -200,23 +200,193 @@ func openBrowser(url string, targetBrowser string) error {
 	return openWithDefaultBrowser(url)
 }
 
-func openWithSpecificBrowser(url string, targetBrowser string) error {
+// DetectedBrowser represents an installed browser found on the host system.
+type DetectedBrowser struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Path      string `json:"path"`
+	IsDefault bool   `json:"is_default"`
+}
+
+// detectInstalledBrowsers dynamically scans the host system for known installed browsers.
+func detectInstalledBrowsers() []DetectedBrowser {
+	var list []DetectedBrowser
+	seen := make(map[string]bool)
+
+	addBrowser := func(id, name, path string, isDefault bool) {
+		if seen[id] || path == "" {
+			return
+		}
+		seen[id] = true
+		list = append(list, DetectedBrowser{
+			ID:        id,
+			Name:      name,
+			Path:      path,
+			IsDefault: isDefault,
+		})
+	}
+
 	switch runtime.GOOS {
 	case "darwin":
-		if strings.Contains(targetBrowser, "/") {
-			return exec.Command(targetBrowser, url).Start()
+		knownMac := []struct {
+			id   string
+			name string
+			app  string
+		}{
+			{"chrome", "Google Chrome", "/Applications/Google Chrome.app"},
+			{"safari", "Safari", "/Applications/Safari.app"},
+			{"firefox", "Mozilla Firefox", "/Applications/Firefox.app"},
+			{"msedge", "Microsoft Edge", "/Applications/Microsoft Edge.app"},
+			{"brave", "Brave Browser", "/Applications/Brave Browser.app"},
+			{"arc", "Arc", "/Applications/Arc.app"},
+			{"chromium", "Chromium", "/Applications/Chromium.app"},
+			{"opera", "Opera", "/Applications/Opera.app"},
+			{"vivaldi", "Vivaldi", "/Applications/Vivaldi.app"},
 		}
-		return exec.Command("open", "-a", targetBrowser, url).Start()
+		home, _ := os.UserHomeDir()
+		for _, b := range knownMac {
+			if _, err := os.Stat(b.app); err == nil {
+				addBrowser(b.id, b.name, b.app, false)
+			} else if home != "" {
+				userApp := filepath.Join(home, "Applications", filepath.Base(b.app))
+				if _, err := os.Stat(userApp); err == nil {
+					addBrowser(b.id, b.name, userApp, false)
+				}
+			}
+		}
+		if !seen["safari"] {
+			if _, err := os.Stat("/System/Applications/Safari.app"); err == nil {
+				addBrowser("safari", "Safari", "/System/Applications/Safari.app", false)
+			}
+		}
 
 	case "windows":
-		return exec.Command("cmd", "/c", "start", "", targetBrowser, url).Start()
+		knownWin := []struct {
+			id      string
+			name    string
+			subPath string
+		}{
+			{"chrome", "Google Chrome", `Google\Chrome\Application\chrome.exe`},
+			{"msedge", "Microsoft Edge", `Microsoft\Edge\Application\msedge.exe`},
+			{"firefox", "Mozilla Firefox", `Mozilla Firefox\firefox.exe`},
+			{"brave", "Brave Browser", `BraveSoftware\Brave-Browser\Application\brave.exe`},
+			{"opera", "Opera", `Opera\launcher.exe`},
+			{"vivaldi", "Vivaldi", `Vivaldi\Application\vivaldi.exe`},
+		}
+
+		prefixes := []string{
+			os.Getenv("ProgramFiles"),
+			os.Getenv("ProgramFiles(x86)"),
+			os.Getenv("LocalAppData"),
+		}
+
+		for _, b := range knownWin {
+			found := false
+			for _, p := range prefixes {
+				if p == "" {
+					continue
+				}
+				full := filepath.Join(p, b.subPath)
+				if _, err := os.Stat(full); err == nil {
+					addBrowser(b.id, b.name, full, false)
+					found = true
+					break
+				}
+			}
+			if !found {
+				if p, err := exec.LookPath(b.id + ".exe"); err == nil {
+					addBrowser(b.id, b.name, p, false)
+				}
+			}
+		}
 
 	default:
 		// Linux / Unix / WSL
-		if isWSL() && strings.HasSuffix(strings.ToLower(targetBrowser), ".exe") {
-			return exec.Command("cmd.exe", "/c", "start", "", targetBrowser, url).Start()
+		knownLinux := []struct {
+			id   string
+			name string
+			bins []string
+		}{
+			{"chrome", "Google Chrome", []string{"google-chrome-stable", "google-chrome"}},
+			{"firefox", "Mozilla Firefox", []string{"firefox", "firefox-esr"}},
+			{"msedge", "Microsoft Edge", []string{"microsoft-edge-stable", "microsoft-edge"}},
+			{"chromium", "Chromium", []string{"chromium-browser", "chromium"}},
+			{"brave", "Brave Browser", []string{"brave-browser", "brave"}},
+			{"opera", "Opera", []string{"opera"}},
+			{"vivaldi", "Vivaldi", []string{"vivaldi-stable", "vivaldi"}},
+			{"epiphany", "GNOME Web", []string{"epiphany"}},
 		}
-		return exec.Command(targetBrowser, url).Start()
+
+		defaultHandler := ""
+		if out, err := exec.Command("xdg-mime", "query", "default", "x-scheme-handler/http").Output(); err == nil {
+			defaultHandler = strings.ToLower(strings.TrimSpace(string(out)))
+		}
+
+		for _, b := range knownLinux {
+			for _, bin := range b.bins {
+				if p, err := exec.LookPath(bin); err == nil {
+					isDef := false
+					if defaultHandler != "" && strings.Contains(defaultHandler, b.id) {
+						isDef = true
+					}
+					addBrowser(b.id, b.name, p, isDef)
+					break
+				}
+			}
+		}
+	}
+
+	return list
+}
+
+func resolveBrowserExecutable(target string) string {
+	switch strings.ToLower(target) {
+	case "chrome":
+		for _, b := range []string{"google-chrome-stable", "google-chrome", "chromium", "chrome"} {
+			if p, err := exec.LookPath(b); err == nil {
+				return p
+			}
+		}
+	case "msedge", "edge":
+		for _, b := range []string{"microsoft-edge-stable", "microsoft-edge", "msedge"} {
+			if p, err := exec.LookPath(b); err == nil {
+				return p
+			}
+		}
+	case "brave":
+		for _, b := range []string{"brave-browser", "brave"} {
+			if p, err := exec.LookPath(b); err == nil {
+				return p
+			}
+		}
+	case "firefox":
+		for _, b := range []string{"firefox", "firefox-esr"} {
+			if p, err := exec.LookPath(b); err == nil {
+				return p
+			}
+		}
+	}
+	return target
+}
+
+func openWithSpecificBrowser(url string, targetBrowser string) error {
+	resolved := resolveBrowserExecutable(targetBrowser)
+	switch runtime.GOOS {
+	case "darwin":
+		if strings.Contains(resolved, "/") {
+			return exec.Command(resolved, url).Start()
+		}
+		return exec.Command("open", "-a", resolved, url).Start()
+
+	case "windows":
+		return exec.Command("cmd", "/c", "start", "", resolved, url).Start()
+
+	default:
+		// Linux / Unix / WSL
+		if isWSL() && strings.HasSuffix(strings.ToLower(resolved), ".exe") {
+			return exec.Command("cmd.exe", "/c", "start", "", resolved, url).Start()
+		}
+		return exec.Command(resolved, url).Start()
 	}
 }
 
@@ -328,6 +498,13 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
 	})
 
+	mux.HandleFunc("/api/system/browsers", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"browsers": detectInstalledBrowsers(),
+		})
+	})
+
 	// ─── Static SPA Handler ───────────────────────────────────────────────────
 	fileServer := http.FileServer(http.FS(distFS))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -401,6 +578,7 @@ func handleGetConfig(w http.ResponseWriter, r *http.Request) {
 			"tools":    wsCfg.Tools,
 			"tasks":    wsCfg.Tasks,
 		},
+		"detected_browsers": detectInstalledBrowsers(),
 	})
 }
 

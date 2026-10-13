@@ -6,6 +6,7 @@ package cmd
 import (
 	"net/http"
 	"net/http/httptest"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -164,6 +165,33 @@ func TestUIConfigAPI(t *testing.T) {
 
 	if rrPostUser.Code != http.StatusOK {
 		t.Errorf("Expected status 200 for user scope browser, got %d (body: %s)", rrPostUser.Code, rrPostUser.Body.String())
+	}
+}
+
+func TestUIDetectBrowsers(t *testing.T) {
+	distFS, err := frontend.GetFS()
+	if err != nil {
+		t.Fatalf("GetFS failed: %v", err)
+	}
+	mux := setupUIMux(distFS)
+
+	req := httptest.NewRequest("GET", "/api/system/browsers", nil)
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("Expected status 200 on /api/system/browsers, got %d", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), "browsers") {
+		t.Errorf("Expected response to contain 'browsers', got %s", rr.Body.String())
+	}
+
+	browsers := detectInstalledBrowsers()
+	t.Logf("Detected %d installed browsers on host (%s)", len(browsers), runtime.GOOS)
+
+	resChrome := resolveBrowserExecutable("chrome")
+	if resChrome == "" {
+		t.Error("resolveBrowserExecutable returned empty string")
 	}
 }
 

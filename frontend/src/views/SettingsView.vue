@@ -145,6 +145,9 @@
                   <span v-if="activeScope === 'workspace'" class="badge-global-only">
                     {{ t('settings.scope_global_only') || '仅限用户' }}
                   </span>
+                  <span v-else-if="detectedBrowsers.length > 0" class="badge-detected">
+                    ✓ {{ t('settings.detected_count', { count: detectedBrowsers.length }) || `已检测到 ${detectedBrowsers.length} 款` }}
+                  </span>
                 </div>
                 <span class="setting-key font-mono">settings.browser</span>
                 <p class="setting-desc">
@@ -172,11 +175,21 @@
                   <span class="font-mono text-muted">{{ t('settings.disabled_in_workspace') || '在工作区中禁用' }}</span>
                 </div>
                 <div v-else class="browser-input-box">
-                  <CustomSelect
-                    :model-value="selectedBrowserPreset"
-                    :options="browserPresetOptions"
-                    @change="onBrowserPresetChange"
-                  />
+                  <div class="browser-select-row">
+                    <CustomSelect
+                      :model-value="selectedBrowserPreset"
+                      :options="browserPresetOptions"
+                      @change="onBrowserPresetChange"
+                    />
+                    <button
+                      class="btn-rescan-browser"
+                      :class="{ spinning: isDetectingBrowsers }"
+                      :title="t('settings.refresh_browsers') || '重新检测本机浏览器'"
+                      @click="refreshBrowsers"
+                    >
+                      🔄
+                    </button>
+                  </div>
                   <div v-if="selectedBrowserPreset === 'custom'" class="custom-browser-field">
                     <input
                       v-model="customBrowserPath"
@@ -469,16 +482,77 @@ const themeSelectOptions = computed(() => [
   { value: "system", label: "💻 " + (t("theme.system") || "跟随系统") },
 ]);
 
-const browserPresetOptions = computed(() => [
-  { value: "", label: "🖥️ " + (t("settings.browser_auto") || "系统默认") },
-  { value: "chrome", label: "🌐 Google Chrome" },
-  { value: "firefox", label: "🦊 Mozilla Firefox" },
-  { value: "msedge", label: "🌊 Microsoft Edge" },
-  { value: "safari", label: "🧭 Apple Safari" },
-  { value: "brave", label: "🦁 Brave Browser" },
-  { value: "chromium", label: "⚡ Chromium" },
-  { value: "custom", label: "🛠️ " + (t("settings.browser_custom") || "自定义路径") },
-]);
+interface DetectedBrowser {
+  id: string;
+  name: string;
+  path: string;
+  is_default?: boolean;
+}
+
+const detectedBrowsers = ref<DetectedBrowser[]>([]);
+const isDetectingBrowsers = ref(false);
+
+async function refreshBrowsers() {
+  isDetectingBrowsers.value = true;
+  try {
+    const res = await fetch("/api/system/browsers");
+    if (res.ok) {
+      const data = await res.json();
+      detectedBrowsers.value = data.browsers || [];
+    }
+  } catch (err) {
+    console.warn("Failed to detect browsers:", err);
+  } finally {
+    isDetectingBrowsers.value = false;
+  }
+}
+
+function getBrowserIcon(id: string): string {
+  switch (id.toLowerCase()) {
+    case "chrome": return "🌐";
+    case "firefox": return "🦊";
+    case "msedge": case "edge": return "🌊";
+    case "safari": return "🧭";
+    case "brave": return "🦁";
+    case "chromium": return "⚡";
+    case "arc": return "🎨";
+    case "opera": return "⭕";
+    case "vivaldi": return "🔺";
+    default: return "💻";
+  }
+}
+
+const browserPresetOptions = computed(() => {
+  const options: Array<{ value: string; label: string }> = [
+    { value: "", label: "🖥️ " + (t("settings.browser_auto") || "系统默认") },
+  ];
+
+  if (detectedBrowsers.value.length > 0) {
+    for (const b of detectedBrowsers.value) {
+      const icon = getBrowserIcon(b.id);
+      options.push({
+        value: b.id,
+        label: `${icon} ${b.name} (${t("settings.browser_detected") || "已安装"})`,
+      });
+    }
+  } else {
+    options.push(
+      { value: "chrome", label: "🌐 Google Chrome" },
+      { value: "firefox", label: "🦊 Mozilla Firefox" },
+      { value: "msedge", label: "🌊 Microsoft Edge" },
+      { value: "safari", label: "🧭 Apple Safari" },
+      { value: "brave", label: "🦁 Brave Browser" },
+      { value: "chromium", label: "⚡ Chromium" },
+    );
+  }
+
+  options.push({
+    value: "custom",
+    label: "🛠️ " + (t("settings.browser_custom") || "自定义路径"),
+  });
+
+  return options;
+});
 
 const currentRawToml = computed(() => {
   if (!configData.value) return "";
@@ -593,13 +667,19 @@ function syncFieldsFromConfig() {
   const target = activeScope.value === "user" ? configData.value.user : configData.value.workspace;
   const s = target?.settings || {};
 
+  if (configData.value?.detected_browsers) {
+    detectedBrowsers.value = configData.value.detected_browsers;
+  }
+
   cacheTtl.value = s.cache_ttl || "24h";
   githubProxy.value = s.github_proxy || "";
   httpProxy.value = s.http_proxy || "";
 
   if (activeScope.value === "user") {
     const b = s.browser || "";
-    if (["chrome", "firefox", "msedge", "safari", "brave", "chromium", ""].includes(b)) {
+    const knownIds = ["chrome", "firefox", "msedge", "safari", "brave", "chromium", "arc", "opera", "vivaldi", "epiphany", ""];
+    const isDetectedOrKnown = knownIds.includes(b.toLowerCase()) || detectedBrowsers.value.some(d => d.id === b.toLowerCase());
+    if (isDetectedOrKnown) {
       selectedBrowserPreset.value = b;
       customBrowserPath.value = "";
     } else {
@@ -963,6 +1043,16 @@ onMounted(() => {
   font-weight: 500;
 }
 
+.badge-detected {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  font-weight: 500;
+}
+
 .setting-key {
   display: inline-block;
   font-size: 0.75rem;
@@ -1081,6 +1171,45 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.browser-select-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.browser-select-row :deep(.custom-select-container) {
+  flex: 1;
+}
+
+.btn-rescan-browser {
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 7px 11px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-rescan-browser:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.btn-rescan-browser.spinning {
+  animation: spin-browser 0.8s linear infinite;
+}
+
+@keyframes spin-browser {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .custom-browser-field {
