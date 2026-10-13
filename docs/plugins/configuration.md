@@ -130,3 +130,89 @@ Plugins can provide a manifest schema (`.manifest.json`) declaring types, descri
 When a manifest is present:
 * `unirtm config set` strictly checks input types and enums before writing.
 * Type mismatches or invalid enum values are immediately rejected with clear error messages.
+
+---
+
+## 6. IDE 智能感知与配置 Schema 规范体系
+
+为了在现代 IDE（VS Code、Cursor、Zed、IntelliJ）中为开发者提供**实时语法高亮、参数自动补全、类型错误标红与悬停文档**，UniRTM 建立了双层 JSON Schema 规范体系：
+
+```
+UniRTM Schema 体系
+├── 1. 核心工程规范 -> schemas/unirtm.schema.json (约束 .unirtm.toml 核心表与三层隔离)
+└── 2. 插件元数据规范 -> schemas/plugin-manifest.schema.json (约束第三方插件 manifest)
+```
+
+### 1. 核心工程配置绑定 (`.unirtm.toml`)
+
+在项目的 `.unirtm.toml` 头部添加声明：
+
+```toml
+#:schema ./schemas/unirtm.schema.json
+
+[tools]
+go = "1.24.0"
+```
+
+或在 IDE 配置 (`.vscode/settings.json`) 中绑定：
+
+```json
+{
+  "evenBetterToml.schema.associations": {
+    "*(.|)unirtm*.toml": "./schemas/unirtm.schema.json"
+  }
+}
+```
+
+**生效体验**：
+* 键入 `[settings]` 时自动补全支持的参数及中文说明。
+* 误在项目级定义 `settings.browser` 时，IDE 立即黄色/标红警告该属性属于仅全局偏好。
+* 严禁第三方随意创建根表，非法根表会被 IDE 拦截标红。
+
+---
+
+### 2. 插件开发者指南：如何生成插件 Schema
+
+第三方插件作者需要发布一个规范的 `<plugin-id>.manifest.json`，即可自动获得 IDE 级和 CLI 级的双重校验支持。
+
+#### 插件清单格式模板
+创建 `<plugin-id>.manifest.json`（可参考 [examples/plugins/docker/docker.manifest.json](../../examples/plugins/docker/docker.manifest.json)）：
+
+```json
+{
+  "$schema": "https://unirtm.snowdream.tech/schemas/v1/plugin-manifest.schema.json",
+  "name": "vendor/plugin-name",
+  "version": "1.0.0",
+  "description": "插件功能简述",
+  "contributes": {
+    "configuration": {
+      "port": {
+        "type": "integer",
+        "description": "服务监听端口",
+        "default": 8080
+      },
+      "mode": {
+        "type": "string",
+        "description": "运行模式",
+        "enum": ["standalone", "cluster"],
+        "default": "standalone"
+      },
+      "enable_metrics": {
+        "type": "boolean",
+        "description": "是否开启监控指标采集",
+        "default": true
+      }
+    }
+  }
+}
+```
+
+#### 存放与发现路径
+插件清单可放置在以下任一位置供 UniRTM 自动发现：
+1. **项目插件目录**：`.unirtm/plugins/<plugin-id>.manifest.json` 或 `.unirtm/plugins/<slug>.manifest.json`
+2. **全局插件目录**：`~/.config/unirtm/plugins/<plugin-id>.manifest.json`
+
+当清单被加载后：
+1. 开发者在 CLI 运行 `unirtm config set plugins."<plugin-id>".config.port abc` 时，会自动校验并提示 `"property 'port' must be an integer"`。
+2. 结合 VS Code 的 JSON 校验器，IDE 会在编辑插件配置时自动提供智能提示和文档浮窗。
+

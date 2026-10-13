@@ -1,0 +1,33 @@
+{
+  "$schema": "../../../schemas/plugin-manifest.schema.json",
+  "name": "snowdreamtech/docker",
+  "version": "1.0.0",
+  "description": "Docker runtime and container orchestration plugin for UniRTM",
+  "author": "SnowdreamTech",
+  "homepage": "https://github.com/snowdreamtech/unirtm-plugin-docker",
+  "contributes": {
+    "configuration": {
+      "port": {
+        "type": "integer",
+        "description": "Port to bind the Docker reverse proxy",
+        "default": 8080
+      },
+      "driver": {
+        "type": "string",
+        "description": "Storage driver used by Docker daemon",
+        "default": "overlay2",
+        "enum": ["overlay2", "btrfs", "vfs"]
+      },
+      "auto_prune": {
+        "type": "boolean",
+        "description": "Automatically prune dangling images and volumes on project teardown",
+        "default": false
+      },
+      "compose_files": {
+        "type": "array",
+        "description": "Ordered list of compose files to launch",
+        "default": ["docker-compose.yml"]
+      }
+    }
+  }
+}

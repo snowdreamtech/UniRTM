@@ -513,5 +513,17 @@
     ".github/workflows/*.yml": "yaml", // GitHub Actions workflows
     ".vscode/*.json": "jsonc", // VS Code local configs (support comments)
     "*.agent-flow": "json" // Agent Flow resource files
-  }
+  },
+  // ------------------------------------------------------------
+  // UniRTM Schema Associations for IDE IntelliSense & Validation
+  // ------------------------------------------------------------
+  "evenBetterToml.schema.associations": {
+    "*(.|)unirtm*.toml": "./schemas/unirtm.schema.json"
+  },
+  "json.schemas": [
+    {
+      "fileMatch": ["*.manifest.json"],
+      "url": "./schemas/plugin-manifest.schema.json"
+    }
+  ]
 }
