@@ -82,7 +82,7 @@ var networkCmd = &cobra.Command{
 	Use:     "network",
 	Aliases: []string{"net"},
 	Short:   "管理多语言编译前网络环境、镜像矩阵与代理配置",
-	Long: `管理 UniRTM 多语言生态（Node.js, Go, Python, Rust, Ruby）的国内镜像矩阵与本地网络代理。
+	Long: `管理 UniRTM 多语言生态（Node.js, Go, Python, Rust, Ruby, PHP, Java 等）的镜像源矩阵与本地网络代理。
 
 解决项目在编译构建前的网络拉取与环境就绪问题。支持 Profile 档案一键切换、单语言覆盖以及实时测速。`,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -513,9 +513,9 @@ var networkProxySetCmd = &cobra.Command{
 // networkTestCmd executes latency test against probe targets.
 var networkTestCmd = &cobra.Command{
 	Use:   "test",
-	Short: "测试各生态官方源与主流国内镜像源的往返延迟",
+	Short: "测试各生态官方源与主流公共镜像源的往返延迟",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		spinner, _ := pterm.DefaultSpinner.Start("正在并发探测各大官方源与国内镜像站网络延迟...")
+		spinner, _ := pterm.DefaultSpinner.Start("正在并发探测各大官方源与公共镜像站网络延迟...")
 		results := network.ProbeAll(network.DefaultProbeTargets(), 2500*time.Millisecond)
 		spinner.Success("网络延迟探测完成")
 

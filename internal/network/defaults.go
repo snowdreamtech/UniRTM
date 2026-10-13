@@ -24,7 +24,7 @@ func DefaultBuiltinProfiles() map[string]NetworkProfile {
 		"official": {
 			ID:          "official",
 			Name:        "官方直连",
-			Description: "全量使用官方源与官方二进制 CDN，不经任何代理或国内镜像",
+			Description: "全量使用官方源与官方二进制 CDN，不经任何代理或第三方镜像",
 			Builtin:     true,
 			Registries: map[string]string{
 				"npm":      "https://registry.npmjs.org",
@@ -45,8 +45,8 @@ func DefaultBuiltinProfiles() map[string]NetworkProfile {
 		},
 		"cn": {
 			ID:          "cn",
-			Name:        "国内镜像加速",
-			Description: "国内顶级高校与大厂公共镜像加速矩阵，保障编译前依赖极速拉取",
+			Name:        "中国镜像加速",
+			Description: "中国顶级高校与大厂公共镜像加速矩阵，保障编译前依赖极速拉取",
 			Builtin:     true,
 			Registries: map[string]string{
 				"npm":      "https://registry.npmmirror.com",

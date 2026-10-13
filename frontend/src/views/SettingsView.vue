@@ -819,7 +819,7 @@ const networkStatus = ref<any>({
   active_profile: {
     id: "official",
     name: "官方直连",
-    description: "全量使用官方源与官方二进制 CDN，不经任何代理或国内镜像",
+    description: "全量使用官方源与官方二进制 CDN，不经任何代理或第三方镜像",
     builtin: true,
   },
   proxy: {
@@ -844,13 +844,13 @@ const networkStatus = ref<any>({
     official: {
       id: "official",
       name: "官方直连",
-      description: "全量使用官方源与官方二进制 CDN，不经任何代理或国内镜像",
+      description: "全量使用官方源与官方二进制 CDN，不经任何代理或第三方镜像",
       builtin: true,
     },
     cn: {
       id: "cn",
-      name: "国内镜像加速",
-      description: "国内顶级高校与大厂公共镜像加速矩阵，保障编译前依赖极速拉取",
+      name: "中国镜像加速",
+      description: "中国顶级高校与大厂公共镜像加速矩阵，保障编译前依赖极速拉取",
       builtin: true,
     },
   },

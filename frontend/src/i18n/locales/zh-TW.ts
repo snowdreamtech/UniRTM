@@ -136,7 +136,7 @@ export const zhTw: TranslationDict = {
   "network.proxy_socks5": "SOCKS5 代理位址",
   "network.proxy_noproxy": "直連白名單 (NO_PROXY)",
   "network.profile_title": "網絡預設檔案",
-  "network.profile_cn": "國內鏡像加速",
+  "network.profile_cn": "中國鏡像加速",
   "network.profile_official": "官方直連",
   "network.create_profile": "新建檔案",
   "network.save_as_profile": "另存為新檔案",
