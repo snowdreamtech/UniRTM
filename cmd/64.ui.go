@@ -23,6 +23,7 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/frontend"
 	"github.com/snowdreamtech/unirtm/internal/config"
+	"github.com/snowdreamtech/unirtm/internal/network"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
 )
@@ -505,6 +506,17 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 		})
 	})
 
+	// ─── Network & Mirror API Endpoints ──────────────────────────────────────
+	mux.HandleFunc("/api/network/status", handleGetNetworkStatus)
+	mux.HandleFunc("/api/network/profile/use", handleUseNetworkProfile)
+	mux.HandleFunc("/api/network/profile/save", handleSaveNetworkProfile)
+	mux.HandleFunc("/api/network/profile/reset", handleResetNetworkProfile)
+	mux.HandleFunc("/api/network/profile/delete", handleDeleteNetworkProfile)
+	mux.HandleFunc("/api/network/registry/override", handleOverrideNetworkRegistry)
+	mux.HandleFunc("/api/network/registry/reset", handleResetNetworkRegistry)
+	mux.HandleFunc("/api/network/proxy", handleSetNetworkProxy)
+	mux.HandleFunc("/api/network/ping", handlePingNetwork)
+
 	// ─── Static SPA Handler ───────────────────────────────────────────────────
 	fileServer := http.FileServer(http.FS(distFS))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -694,6 +706,253 @@ func handlePostConfig(w http.ResponseWriter, r *http.Request) {
 		"key":     storeKey,
 		"value":   valStr,
 		"file":    targetFile,
+	})
+}
+
+func resolveNetworkPathFromRequest(r *http.Request, defaultScope string) string {
+	scope := r.URL.Query().Get("scope")
+	if scope == "" {
+		scope = defaultScope
+	}
+	if scope == "user" || scope == "global" {
+		return config.GetGlobalConfigPath()
+	}
+	if _, err := os.Stat(".unirtm.toml"); err == nil {
+		return ".unirtm.toml"
+	}
+	return config.GetGlobalConfigPath()
+}
+
+func handleGetNetworkStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	targetPath := resolveNetworkPathFromRequest(r, "workspace")
+	mgr := network.NewManager(nil)
+	_ = mgr.LoadFromPath(targetPath)
+
+	status := mgr.GetStatus()
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":      status,
+		"recommended": network.RecommendedMirrors(),
+		"path":        targetPath,
+	})
+}
+
+func handleUseNetworkProfile(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var req struct {
+		ProfileID string `json:"profile_id"`
+		Scope     string `json:"scope"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	targetPath := resolveNetworkPathFromRequest(r, req.Scope)
+	mgr := network.NewManager(nil)
+	_ = mgr.LoadFromPath(targetPath)
+
+	if err := mgr.UseProfile(req.ProfileID); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	if err := mgr.SaveToPath(targetPath); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "status": mgr.GetStatus()})
+}
+
+func handleSaveNetworkProfile(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var req struct {
+		ProfileID   string `json:"profile_id"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		Scope       string `json:"scope"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	targetPath := resolveNetworkPathFromRequest(r, req.Scope)
+	mgr := network.NewManager(nil)
+	_ = mgr.LoadFromPath(targetPath)
+
+	if err := mgr.SaveAsProfile(req.ProfileID, req.Name, req.Description); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	if err := mgr.SaveToPath(targetPath); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "status": mgr.GetStatus()})
+}
+
+func handleResetNetworkProfile(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var req struct {
+		ProfileID string `json:"profile_id"`
+		Scope     string `json:"scope"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	targetPath := resolveNetworkPathFromRequest(r, req.Scope)
+	mgr := network.NewManager(nil)
+	_ = mgr.LoadFromPath(targetPath)
+
+	if err := mgr.ResetProfile(req.ProfileID); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	if err := mgr.SaveToPath(targetPath); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "status": mgr.GetStatus()})
+}
+
+func handleDeleteNetworkProfile(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var req struct {
+		ProfileID string `json:"profile_id"`
+		Scope     string `json:"scope"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	targetPath := resolveNetworkPathFromRequest(r, req.Scope)
+	mgr := network.NewManager(nil)
+	_ = mgr.LoadFromPath(targetPath)
+
+	if err := mgr.DeleteProfile(req.ProfileID); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	if err := mgr.SaveToPath(targetPath); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "status": mgr.GetStatus()})
+}
+
+func handleOverrideNetworkRegistry(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var req struct {
+		Ecosystem string `json:"ecosystem"`
+		URL       string `json:"url"`
+		Scope     string `json:"scope"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	targetPath := resolveNetworkPathFromRequest(r, req.Scope)
+	mgr := network.NewManager(nil)
+	_ = mgr.LoadFromPath(targetPath)
+
+	if err := mgr.SetOverride(req.Ecosystem, req.URL); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	if err := mgr.SaveToPath(targetPath); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "status": mgr.GetStatus()})
+}
+
+func handleResetNetworkRegistry(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var req struct {
+		Ecosystem string `json:"ecosystem"`
+		Scope     string `json:"scope"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	targetPath := resolveNetworkPathFromRequest(r, req.Scope)
+	mgr := network.NewManager(nil)
+	_ = mgr.LoadFromPath(targetPath)
+
+	if err := mgr.ResetOverride(req.Ecosystem); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	if err := mgr.SaveToPath(targetPath); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "status": mgr.GetStatus()})
+}
+
+func handleSetNetworkProxy(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var req struct {
+		Enabled bool   `json:"enabled"`
+		HTTP    string `json:"http"`
+		HTTPS   string `json:"https"`
+		SOCKS5  string `json:"socks5"`
+		NoProxy string `json:"no_proxy"`
+		Scope   string `json:"scope"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	targetPath := resolveNetworkPathFromRequest(r, req.Scope)
+	mgr := network.NewManager(nil)
+	_ = mgr.LoadFromPath(targetPath)
+
+	proxyCfg := network.ProxyConfig{
+		Enabled: req.Enabled,
+		HTTP:    req.HTTP,
+		HTTPS:   req.HTTPS,
+		SOCKS5:  req.SOCKS5,
+		NoProxy: req.NoProxy,
+	}
+
+	if err := mgr.SetProxy(proxyCfg); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	if err := mgr.SaveToPath(targetPath); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "status": mgr.GetStatus()})
+}
+
+func handlePingNetwork(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	results := network.ProbeAll(network.DefaultProbeTargets(), 2500*time.Millisecond)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"results": results,
 	})
 }
 

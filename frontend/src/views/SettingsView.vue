@@ -228,66 +228,230 @@
                 <span class="section-sub">{{ t('settings.cat_network_sub') || '镜像加速与网络代理' }}</span>
               </div>
             </div>
+            <div class="section-header-actions">
+              <button class="btn-batch-test" :disabled="isProbing" @click="handleRunProbeAll">
+                <span>{{ isProbing ? '🔄 ' + (t('network.testing') || '测速中...') : '⚡ ' + (t('network.batch_test') || '全生态并发测速') }}</span>
+              </button>
+            </div>
           </div>
 
-          <div class="settings-list">
-            <!-- Setting: GitHub Proxy -->
-            <div class="setting-item" :class="{ highlight: matchesSearch('github_proxy') }">
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.githubProxy') || 'GitHub 镜像' }}</span>
-                <span class="setting-key font-mono">settings.github_proxy</span>
-                <p class="setting-desc">
-                  {{ t('settings.github_proxy_desc') || '可配置自定义加速镜像用于下载资源，留空为直连官方。' }}
-                </p>
-                <div class="mirror-presets" v-if="githubProxy">
-                  <button class="btn-preset-pill" @click="applyMirrorPreset('')">
-                    {{ t('settings.official_direct') || '恢复官方直连' }}
-                  </button>
-                </div>
+          <!-- Section A: Network Proxy (Default strictly disabled, empty, no 3rd-party github proxies) -->
+          <div class="network-subsection">
+            <div class="subsection-title-bar">
+              <span class="sub-icon">🔒</span>
+              <h3>{{ t('network.tab_proxy') || '网络代理' }}</h3>
+              <span class="proxy-badge" :class="networkStatus?.proxy?.enabled ? 'badge-on' : 'badge-off'">
+                {{ networkStatus?.proxy?.enabled ? (t('network.proxy_enabled') || '已启用') : (t('network.proxy_disabled') || '直连模式 (已关闭)') }}
+              </span>
+            </div>
+
+            <!-- Proxy Security Callout -->
+            <div class="security-callout">
+              <span class="callout-icon">🛡️</span>
+              <p>{{ t('network.proxy_security_notice') || '系统默认官方直连，严禁且不内置任何第三方公网代理或 GitHub 代理，保障源码与密钥绝对安全。' }}</p>
+            </div>
+
+            <div class="proxy-form-grid" v-if="networkStatus">
+              <div class="proxy-toggle-row">
+                <label class="toggle-switch-label">
+                  <input
+                    type="checkbox"
+                    v-model="networkStatus.proxy.enabled"
+                    @change="handleSaveProxy"
+                  />
+                  <span class="slider round"></span>
+                </label>
+                <span class="toggle-text">{{ networkStatus.proxy.enabled ? (t('network.proxy_enabled') || '全局代理已开启') : (t('network.proxy_disabled') || '全局代理已关闭 (直连)') }}</span>
               </div>
 
-              <div class="setting-control">
-                <div class="input-with-test">
+              <div class="proxy-fields" :class="{ 'fields-disabled': !networkStatus.proxy.enabled }">
+                <div class="proxy-field-item">
+                  <label>{{ t('network.proxy_http') || 'HTTP / HTTPS 代理地址' }}</label>
                   <input
-                    v-model="githubProxy"
+                    v-model="networkStatus.proxy.http"
                     type="text"
                     class="setting-text-input font-mono"
-                    placeholder="https://mirror.internal.company.com/ (默认留空，直连官方)"
-                    @change="saveSetting('settings.github_proxy', githubProxy)"
-                    @blur="saveSetting('settings.github_proxy', githubProxy)"
-                    @keydown.enter="saveSetting('settings.github_proxy', githubProxy)"
+                    placeholder="http://127.0.0.1:7890 (留空为不使用)"
+                    :disabled="!networkStatus.proxy.enabled"
+                    @blur="handleSaveProxy"
+                    @keydown.enter="handleSaveProxy"
                   />
-                  <button
-                    class="btn-test-net"
-                    :disabled="isTestingNet"
-                    @click="testNetwork"
-                  >
-                    {{ isTestingNet ? (t('settings.testing_net') || '测速中...') : ('⚡ ' + (t('settings.test_connection') || '测试连通性')) }}
-                  </button>
                 </div>
-                <div v-if="netTestMsg" class="test-feedback" :class="{ success: netTestOk, error: !netTestOk }">
-                  {{ netTestMsg }}
+
+                <div class="proxy-field-item">
+                  <label>{{ t('network.proxy_socks5') || 'SOCKS5 代理地址' }}</label>
+                  <input
+                    v-model="networkStatus.proxy.socks5"
+                    type="text"
+                    class="setting-text-input font-mono"
+                    placeholder="socks5://127.0.0.1:10808 (可选)"
+                    :disabled="!networkStatus.proxy.enabled"
+                    @blur="handleSaveProxy"
+                    @keydown.enter="handleSaveProxy"
+                  />
+                </div>
+
+                <div class="proxy-field-item full-width">
+                  <label>{{ t('network.proxy_noproxy') || '直连白名单 (NO_PROXY)' }}</label>
+                  <input
+                    v-model="networkStatus.proxy.no_proxy"
+                    type="text"
+                    class="setting-text-input font-mono"
+                    placeholder="localhost,127.0.0.1,::1,*.local,*.internal"
+                    :disabled="!networkStatus.proxy.enabled"
+                    @blur="handleSaveProxy"
+                    @keydown.enter="handleSaveProxy"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section B: Profiles and Mirrors Matrix -->
+          <div class="network-subsection">
+            <div class="subsection-title-bar">
+              <span class="sub-icon">📦</span>
+              <h3>{{ t('network.tab_mirrors') || '镜像源矩阵' }}</h3>
+              <div class="profile-actions-bar">
+                <button
+                  class="btn-profile-action"
+                  @click="showCreateProfileModal = true"
+                  :title="t('network.create_profile') || '新建档案'"
+                >
+                  ＋ {{ t('network.create_profile') || '新建档案' }}
+                </button>
+                <button
+                  v-if="networkStatus?.active_profile?.builtin"
+                  class="btn-profile-action secondary"
+                  @click="handleResetBuiltinProfile(networkStatus.active_profile_id)"
+                  :title="t('network.reset_factory') || '恢复出厂默认值'"
+                >
+                  ↺ {{ t('network.reset_factory') || '恢复出厂默认值' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Profile Cards -->
+            <div class="profile-cards-grid" v-if="networkStatus">
+              <div
+                v-for="(p, pId) in networkStatus.profiles"
+                :key="pId"
+                class="profile-card"
+                :class="{ active: pId === networkStatus.active_profile_id, builtin: p.builtin }"
+                @click="handleUseProfile(String(pId))"
+              >
+                <div class="profile-card-header">
+                  <span class="profile-name">{{ p.name }}</span>
+                  <span v-if="pId === networkStatus.active_profile_id" class="active-tag">✔ {{ t('network.active_tag') || '生效中' }}</span>
+                </div>
+                <p class="profile-desc">{{ p.description }}</p>
+                <div class="profile-footer">
+                  <span class="profile-id font-mono">id: {{ pId }}</span>
+                  <span v-if="p.builtin" class="pill-builtin">{{ t('network.tag_builtin') || '官方内置' }}</span>
+                  <span v-else class="pill-custom">{{ t('network.tag_custom') || '用户自定义' }}</span>
                 </div>
               </div>
             </div>
 
-            <!-- Setting: HTTP Proxy -->
-            <div class="setting-item" :class="{ highlight: matchesSearch('http_proxy') }">
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.system_proxy') || '全局网络代理' }}</span>
-                <span class="setting-key font-mono">settings.http_proxy</span>
-                <p class="setting-desc">{{ t('settings.system_proxy') || '全局网络代理 (HTTP / HTTPS / SOCKS5)' }}</p>
-              </div>
-              <div class="setting-control">
+            <!-- Save as Modal -->
+            <div v-if="showCreateProfileModal" class="create-profile-modal glass-card">
+              <h4>{{ t('network.create_profile') || '创建新网络预设档案' }}</h4>
+              <div class="modal-form">
                 <input
-                  v-model="httpProxy"
+                  v-model="newProfileId"
                   type="text"
                   class="setting-text-input font-mono"
-                  placeholder="http://127.0.0.1:7890"
-                  @change="saveSetting('settings.http_proxy', httpProxy)"
-                  @blur="saveSetting('settings.http_proxy', httpProxy)"
-                  @keydown.enter="saveSetting('settings.http_proxy', httpProxy)"
+                  placeholder="档案标识 ID (例如 my-company)"
                 />
+                <input
+                  v-model="newProfileName"
+                  type="text"
+                  class="setting-text-input"
+                  placeholder="展示名称 (例如 公司内网高速)"
+                />
+                <div class="modal-actions">
+                  <button class="btn-modal-cancel" @click="showCreateProfileModal = false">取消</button>
+                  <button class="btn-modal-confirm" :disabled="!newProfileId" @click="handleSaveAsProfile">创建并激活</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ecosystem Registries Matrix Table -->
+            <div class="registries-matrix" v-if="networkStatus">
+              <div
+                v-for="eco in ['npm', 'go', 'python', 'rust', 'ruby']"
+                :key="eco"
+                class="registry-matrix-row"
+              >
+                <div class="row-eco-info">
+                  <span class="eco-badge font-mono">{{ eco.toUpperCase() }}</span>
+                  <span
+                    class="status-indicator-badge"
+                    :class="networkStatus.effective[eco]?.is_overridden ? 'badge-override' : 'badge-inherited'"
+                  >
+                    {{ networkStatus.effective[eco]?.is_overridden ? (t('network.badge_overridden') || '单项自定义覆盖') : (t('network.badge_inherited') || '跟随档案预设') }}
+                  </span>
+                </div>
+
+                <div class="row-controls">
+                  <!-- Quick Preset Dropdown -->
+                  <div class="preset-dropdown-wrap" v-if="recommendedMirrors[eco]">
+                    <select
+                      class="preset-select"
+                      @change="handleSelectMirrorPreset(eco, ($event.target as HTMLSelectElement).value)"
+                    >
+                      <option value="">快速推荐镜像源...</option>
+                      <option
+                        v-for="m in recommendedMirrors[eco]"
+                        :key="m.url"
+                        :value="m.url"
+                      >
+                        {{ m.name }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <!-- Text input for registry URL -->
+                  <input
+                    type="text"
+                    class="setting-text-input font-mono registry-url-input"
+                    :value="networkStatus.effective[eco]?.url"
+                    @change="handleOverrideRegistry(eco, ($event.target as HTMLInputElement).value)"
+                    @blur="handleOverrideRegistry(eco, ($event.target as HTMLInputElement).value)"
+                  />
+
+                  <!-- Reset Override Button if Overridden -->
+                  <button
+                    v-if="networkStatus.effective[eco]?.is_overridden"
+                    class="btn-reset-override"
+                    :title="t('network.restore_inherited') || '恢复跟随预设'"
+                    @click="handleResetRegistry(eco)"
+                  >
+                    ↺ {{ t('network.restore_inherited') || '恢复跟随' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Latency Probe Results Table if run -->
+            <div v-if="probeResults.length > 0" class="probe-results-card glass-card">
+              <h4>{{ t('network.speed_test') || '并发网络延迟探测结果' }}</h4>
+              <div class="probe-grid">
+                <div
+                  v-for="res in probeResults"
+                  :key="res.endpoint"
+                  class="probe-node-item"
+                  :class="'node-' + res.status"
+                >
+                  <div class="node-header">
+                    <span class="node-eco font-mono">{{ res.ecosystem.toUpperCase() }}</span>
+                    <span class="node-name">{{ res.name }}</span>
+                  </div>
+                  <div class="node-rtt font-mono">
+                    <span v-if="res.status !== 'timeout'">{{ res.rtt_ms }} ms</span>
+                    <span v-else class="text-error">TIMEOUT</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -459,10 +623,15 @@ const customBrowserPath = ref("");
 const githubProxy = ref("");
 const httpProxy = ref("");
 
-// Network testing state
-const isTestingNet = ref(false);
-const netTestMsg = ref("");
-const netTestOk = ref(false);
+
+// Network matrix and profile state
+const networkStatus = ref<any>(null);
+const recommendedMirrors = ref<any>({});
+const isProbing = ref(false);
+const probeResults = ref<any[]>([]);
+const showCreateProfileModal = ref(false);
+const newProfileId = ref("");
+const newProfileName = ref("");
 
 // Full config from API
 const configData = ref<any>(null);
@@ -666,6 +835,7 @@ function scrollToCategory(catId: string) {
 function switchScope(scope: "user" | "workspace", scrollToId?: string) {
   activeScope.value = scope;
   syncFieldsFromConfig();
+  loadNetworkStatus();
   if (scrollToId) {
     setTimeout(() => {
       scrollToCategory("general");
@@ -770,25 +940,6 @@ function onBrowserPresetChange(val: string) {
   }
 }
 
-function applyMirrorPreset(url: string) {
-  githubProxy.value = url;
-  saveSetting("settings.github_proxy", url);
-}
-
-async function testNetwork() {
-  isTestingNet.value = true;
-  netTestMsg.value = "正在测试与 GitHub 连接延迟...";
-  netTestOk.value = false;
-
-  const targetUrl = githubProxy.value ? `${githubProxy.value.replace(/\/$/, "")}/https://github.com` : "https://github.com";
-  const start = performance.now();
-  setTimeout(() => {
-    isTestingNet.value = false;
-    const dur = Math.round(performance.now() - start + 45);
-    netTestOk.value = true;
-    netTestMsg.value = `✓ 连通性测试通过 (${dur}ms) [${targetUrl}]`;
-  }, 400);
-}
 
 function copyRawToml() {
   if (currentRawToml.value) {
@@ -800,8 +951,150 @@ function copyRawToml() {
   }
 }
 
+async function loadNetworkStatus() {
+  try {
+    const res = await fetch(`/api/network/status?scope=${activeScope.value}`);
+    if (res.ok) {
+      const data = await res.json();
+      networkStatus.value = data.status;
+      recommendedMirrors.value = data.recommended || {};
+    }
+  } catch (err) {
+    console.warn("Failed to load network status:", err);
+  }
+}
+
+async function handleUseProfile(id: string) {
+  try {
+    const res = await fetch("/api/network/profile/use", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profile_id: id, scope: activeScope.value }),
+    });
+    if (res.ok) {
+      await loadNetworkStatus();
+      loadConfigData();
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function handleSaveAsProfile() {
+  if (!newProfileId.value) return;
+  try {
+    const res = await fetch("/api/network/profile/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        profile_id: newProfileId.value,
+        name: newProfileName.value || newProfileId.value,
+        scope: activeScope.value,
+      }),
+    });
+    if (res.ok) {
+      showCreateProfileModal.value = false;
+      newProfileId.value = "";
+      newProfileName.value = "";
+      await loadNetworkStatus();
+      loadConfigData();
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function handleResetBuiltinProfile(id: string) {
+  try {
+    const res = await fetch("/api/network/profile/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profile_id: id, scope: activeScope.value }),
+    });
+    if (res.ok) {
+      await loadNetworkStatus();
+      loadConfigData();
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function handleOverrideRegistry(ecosystem: string, url: string) {
+  try {
+    const res = await fetch("/api/network/registry/override", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ecosystem, url, scope: activeScope.value }),
+    });
+    if (res.ok) {
+      await loadNetworkStatus();
+      loadConfigData();
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function handleSelectMirrorPreset(ecosystem: string, url: string) {
+  if (!url) return;
+  handleOverrideRegistry(ecosystem, url);
+}
+
+async function handleResetRegistry(ecosystem: string) {
+  try {
+    const res = await fetch("/api/network/registry/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ecosystem, scope: activeScope.value }),
+    });
+    if (res.ok) {
+      await loadNetworkStatus();
+      loadConfigData();
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function handleSaveProxy() {
+  if (!networkStatus.value) return;
+  try {
+    const res = await fetch("/api/network/proxy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...networkStatus.value.proxy,
+        scope: activeScope.value,
+      }),
+    });
+    if (res.ok) {
+      await loadNetworkStatus();
+      loadConfigData();
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function handleRunProbeAll() {
+  isProbing.value = true;
+  try {
+    const res = await fetch("/api/network/ping");
+    if (res.ok) {
+      const data = await res.json();
+      probeResults.value = data.results || [];
+    }
+  } catch (err) {
+    console.error(err);
+  } finally {
+    isProbing.value = false;
+  }
+}
+
 onMounted(() => {
   loadConfigData();
+  loadNetworkStatus();
   if (props.activeCategory) {
     setTimeout(() => {
       scrollToCategory(props.activeCategory!);
@@ -1491,5 +1784,506 @@ onMounted(() => {
   color: #38bdf8;
   margin: 0;
   line-height: 1.5;
+}
+
+/* ─── Network & Mirror Matrix Styles ─── */
+.section-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-batch-test {
+  padding: 6px 14px;
+  background: rgba(34, 211, 238, 0.12);
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  color: var(--accent-cyan);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-batch-test:hover:not(:disabled) {
+  background: rgba(34, 211, 238, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-batch-test:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.network-subsection {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  margin-top: 14px;
+}
+
+.subsection-title-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.subsection-title-bar h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.proxy-badge {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
+.badge-on {
+  background: rgba(16, 185, 129, 0.18);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.badge-off {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text-muted);
+  border: 1px solid var(--card-border);
+}
+
+.security-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(56, 189, 248, 0.06);
+  border-left: 3px solid var(--accent-cyan);
+  border-radius: 4px;
+}
+
+.security-callout p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.proxy-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toggle-switch-label {
+  position: relative;
+  display: inline-block;
+  width: 42px;
+  height: 22px;
+}
+
+.toggle-switch-label input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--card-border);
+  transition: 0.25s;
+}
+
+.slider.round {
+  border-radius: 22px;
+}
+
+.slider.round:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.25s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--accent-cyan);
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+.toggle-text {
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.proxy-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.proxy-fields.fields-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.proxy-field-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.proxy-field-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.proxy-field-item label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.profile-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.btn-profile-action {
+  padding: 4px 10px;
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  color: var(--accent-cyan);
+  border-radius: 5px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-profile-action:hover {
+  background: rgba(34, 211, 238, 0.2);
+}
+
+.btn-profile-action.secondary {
+  background: var(--input-bg);
+  border-color: var(--card-border);
+  color: var(--text-muted);
+}
+
+.profile-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.profile-card {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.profile-card:hover {
+  border-color: rgba(34, 211, 238, 0.4);
+  transform: translateY(-1px);
+}
+
+.profile-card.active {
+  border-color: var(--accent-cyan);
+  background: rgba(34, 211, 238, 0.06);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.15);
+}
+
+.profile-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.profile-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.active-tag {
+  font-size: 0.68rem;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: rgba(34, 211, 238, 0.2);
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.profile-desc {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.profile-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.profile-id {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.pill-builtin, .pill-custom {
+  font-size: 0.65rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.pill-builtin {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.pill-custom {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+}
+
+.create-profile-modal {
+  padding: 14px 18px;
+  border-radius: 8px;
+  background: #090e1a;
+  border: 1px solid var(--accent-cyan);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.create-profile-modal h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--accent-cyan);
+}
+
+.modal-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-modal-cancel {
+  padding: 6px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+.btn-modal-confirm {
+  padding: 6px 14px;
+  background: var(--accent-cyan);
+  color: #0b1120;
+  font-weight: 600;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+.btn-modal-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.registries-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.registry-matrix-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 7px;
+}
+
+.row-eco-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 180px;
+}
+
+.eco-badge {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  color: var(--text-main);
+}
+
+.status-indicator-badge {
+  font-size: 0.68rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.badge-override {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.badge-inherited {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+
+.row-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.preset-dropdown-wrap {
+  width: 170px;
+}
+
+.preset-select {
+  width: 100%;
+  padding: 6px 8px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 5px;
+  color: var(--text-main);
+  font-size: 0.76rem;
+  outline: none;
+}
+
+.registry-url-input {
+  flex: 1;
+  font-size: 0.8rem;
+  padding: 6px 10px;
+}
+
+.btn-reset-override {
+  padding: 4px 10px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #f59e0b;
+  border-radius: 4px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-reset-override:hover {
+  background: rgba(245, 158, 11, 0.25);
+}
+
+.probe-results-card {
+  margin-top: 14px;
+  padding: 14px 18px;
+}
+
+.probe-results-card h4 {
+  margin: 0 0 10px;
+  font-size: 0.88rem;
+  color: var(--text-main);
+}
+
+.probe-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 8px;
+}
+
+.probe-node-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+}
+
+.node-eco {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-right: 6px;
+}
+
+.node-name {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.node-rtt {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.node-fast .node-rtt {
+  color: #10b981;
+}
+
+.node-normal .node-rtt {
+  color: #38bdf8;
+}
+
+.node-slow .node-rtt {
+  color: #f59e0b;
+}
+
+.node-timeout .node-rtt {
+  color: #ef4444;
 }
 </style>

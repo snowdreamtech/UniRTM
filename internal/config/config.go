@@ -26,6 +26,7 @@ type Config struct {
 	Aliases      map[string]map[string]string `toml:"aliases,omitempty" yaml:"aliases,omitempty" mapstructure:"aliases,omitempty"`
 	Plugins      PluginMap                    `toml:"-" yaml:"-" mapstructure:"-"`
 	PluginsRaw   map[string]interface{}       `toml:"plugins,omitempty" yaml:"plugins,omitempty" mapstructure:"plugins,omitempty"`
+	NetworkRaw   map[string]interface{}       `toml:"network,omitempty" yaml:"network,omitempty" mapstructure:"network,omitempty"`
 }
 
 type EnvironmentConfig struct {

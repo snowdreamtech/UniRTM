@@ -22,6 +22,7 @@ var ReservedCoreTables = map[string]bool{
 	"environments": true,
 	"aliases":      true,
 	"plugins":      true,
+	"network":      true,
 }
 
 // ReservedRootFields are scalar or list fields explicitly reserved at the root level of .unirtm.toml.

@@ -1,0 +1,441 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+package network
+
+import (
+	"errors"
+	"fmt"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/pelletier/go-toml/v2"
+)
+
+// Manager coordinates profile lifecycle, cascading resolution, and sandboxed env export.
+type Manager struct {
+	config *NetworkConfig
+}
+
+// LoadFromPath reads network configuration from a TOML file.
+func (m *Manager) LoadFromPath(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			m.EnsureDefaults()
+			return nil
+		}
+		return err
+	}
+	var root struct {
+		Network *NetworkConfig `toml:"network"`
+	}
+	if err := toml.Unmarshal(data, &root); err != nil {
+		return err
+	}
+	if root.Network != nil {
+		m.config = root.Network
+	}
+	m.EnsureDefaults()
+	return nil
+}
+
+// SaveToPath updates the network section of a TOML file without modifying other sections.
+func (m *Manager) SaveToPath(path string) error {
+	m.EnsureDefaults()
+	var rootMap map[string]interface{}
+
+	data, err := os.ReadFile(path)
+	if err == nil {
+		_ = toml.Unmarshal(data, &rootMap)
+	}
+	if rootMap == nil {
+		rootMap = make(map[string]interface{})
+	}
+
+	netBytes, err := toml.Marshal(m.config)
+	if err != nil {
+		return err
+	}
+	var netMap map[string]interface{}
+	if err := toml.Unmarshal(netBytes, &netMap); err != nil {
+		return err
+	}
+
+	rootMap["network"] = netMap
+
+	outBytes, err := toml.Marshal(rootMap)
+	if err != nil {
+		return err
+	}
+
+	dir := filepath.Dir(path)
+	if dir != "" && dir != "." {
+		_ = os.MkdirAll(dir, 0755)
+	}
+
+	return os.WriteFile(path, outBytes, 0644)
+}
+
+// NewManager creates a network manager wrapping the provided NetworkConfig.
+func NewManager(cfg *NetworkConfig) *Manager {
+	if cfg == nil {
+		cfg = &NetworkConfig{}
+	}
+	m := &Manager{config: cfg}
+	m.EnsureDefaults()
+	return m
+}
+
+// Config returns the underlying NetworkConfig.
+func (m *Manager) Config() *NetworkConfig {
+	return m.config
+}
+
+// EnsureDefaults guarantees that built-in profiles and baseline configs are always seeded.
+func (m *Manager) EnsureDefaults() {
+	if m.config.ActiveProfile == "" {
+		m.config.ActiveProfile = "cn"
+	}
+	if m.config.Profiles == nil {
+		m.config.Profiles = make(map[string]NetworkProfile)
+	}
+	if m.config.Overrides == nil {
+		m.config.Overrides = make(map[string]string)
+	}
+
+	builtins := DefaultBuiltinProfiles()
+	for id, p := range builtins {
+		existing, ok := m.config.Profiles[id]
+		if !ok {
+			m.config.Profiles[id] = p
+		} else {
+			// Ensure Builtin flag stays true
+			existing.Builtin = true
+			if existing.Registries == nil {
+				existing.Registries = p.Registries
+			}
+			if existing.Downloads == nil {
+				existing.Downloads = p.Downloads
+			}
+			m.config.Profiles[id] = existing
+		}
+	}
+
+	if m.config.Proxy.NoProxy == "" {
+		m.config.Proxy.NoProxy = DefaultProxyConfig().NoProxy
+	}
+}
+
+// GetStatus computes the active effective registries considering cascading overrides.
+func (m *Manager) GetStatus() *ActiveNetworkStatus {
+	m.EnsureDefaults()
+
+	activeID := m.config.ActiveProfile
+	activeProfile, ok := m.config.Profiles[activeID]
+	if !ok {
+		activeProfile = m.config.Profiles["cn"]
+		activeID = "cn"
+	}
+
+	officialBlueprint := DefaultBuiltinProfiles()["official"]
+	effective := make(map[string]EffectiveRegistry)
+
+	for _, eco := range KnownEcosystems {
+		overrideURL, hasOverride := m.config.Overrides[eco]
+		if hasOverride && strings.TrimSpace(overrideURL) != "" {
+			effective[eco] = EffectiveRegistry{
+				Ecosystem:    eco,
+				URL:          strings.TrimSpace(overrideURL),
+				Source:       "override",
+				IsOverridden: true,
+			}
+			continue
+		}
+
+		profileURL, hasProfile := activeProfile.Registries[eco]
+		if hasProfile && strings.TrimSpace(profileURL) != "" {
+			effective[eco] = EffectiveRegistry{
+				Ecosystem:    eco,
+				URL:          strings.TrimSpace(profileURL),
+				Source:       "profile",
+				IsOverridden: false,
+			}
+			continue
+		}
+
+		fallbackURL := officialBlueprint.Registries[eco]
+		effective[eco] = EffectiveRegistry{
+			Ecosystem:    eco,
+			URL:          fallbackURL,
+			Source:       "default",
+			IsOverridden: false,
+		}
+	}
+
+	// Copy profiles map
+	profilesCopy := make(map[string]NetworkProfile, len(m.config.Profiles))
+	for k, v := range m.config.Profiles {
+		profilesCopy[k] = v
+	}
+
+	return &ActiveNetworkStatus{
+		ActiveProfileID: activeID,
+		ActiveProfile:   activeProfile,
+		Proxy:           m.config.Proxy,
+		Effective:       effective,
+		Profiles:        profilesCopy,
+	}
+}
+
+// UseProfile sets the active profile ID.
+func (m *Manager) UseProfile(profileID string) error {
+	m.EnsureDefaults()
+	profileID = strings.TrimSpace(profileID)
+	if _, ok := m.config.Profiles[profileID]; !ok {
+		return fmt.Errorf("profile %q does not exist", profileID)
+	}
+	m.config.ActiveProfile = profileID
+	return nil
+}
+
+// CreateProfile registers a new custom profile.
+func (m *Manager) CreateProfile(p NetworkProfile) error {
+	m.EnsureDefaults()
+	id := strings.TrimSpace(p.ID)
+	if id == "" {
+		return errors.New("profile id cannot be empty")
+	}
+	if _, exists := m.config.Profiles[id]; exists {
+		return fmt.Errorf("profile %q already exists", id)
+	}
+
+	p.ID = id
+	p.Builtin = false
+	if p.Registries == nil {
+		p.Registries = make(map[string]string)
+	}
+	if p.Downloads == nil {
+		p.Downloads = make(map[string]string)
+	}
+
+	m.config.Profiles[id] = p
+	return nil
+}
+
+// SaveAsProfile packages the current effective configuration into a new profile.
+func (m *Manager) SaveAsProfile(newID, name, description string) error {
+	m.EnsureDefaults()
+	newID = strings.TrimSpace(newID)
+	if newID == "" {
+		return errors.New("new profile id cannot be empty")
+	}
+	if _, exists := m.config.Profiles[newID]; exists {
+		return fmt.Errorf("profile %q already exists", newID)
+	}
+
+	status := m.GetStatus()
+	registries := make(map[string]string)
+	for eco, eff := range status.Effective {
+		registries[eco] = eff.URL
+	}
+
+	downloads := make(map[string]string)
+	for k, v := range status.ActiveProfile.Downloads {
+		downloads[k] = v
+	}
+
+	if name == "" {
+		name = newID
+	}
+
+	newProfile := NetworkProfile{
+		ID:          newID,
+		Name:        name,
+		Description: description,
+		Builtin:     false,
+		Registries:  registries,
+		Downloads:   downloads,
+	}
+
+	m.config.Profiles[newID] = newProfile
+	m.config.ActiveProfile = newID
+	// Clear overrides since they are now codified into the new profile
+	m.config.Overrides = make(map[string]string)
+	return nil
+}
+
+// UpdateProfile updates an existing profile.
+func (m *Manager) UpdateProfile(p NetworkProfile) error {
+	m.EnsureDefaults()
+	id := strings.TrimSpace(p.ID)
+	existing, ok := m.config.Profiles[id]
+	if !ok {
+		return fmt.Errorf("profile %q not found", id)
+	}
+
+	// Preserve builtin status
+	p.Builtin = existing.Builtin
+	if p.Name == "" {
+		p.Name = existing.Name
+	}
+	if p.Registries == nil {
+		p.Registries = existing.Registries
+	}
+	if p.Downloads == nil {
+		p.Downloads = existing.Downloads
+	}
+
+	m.config.Profiles[id] = p
+	return nil
+}
+
+// ResetProfile restores a built-in profile to its factory default state.
+func (m *Manager) ResetProfile(profileID string) error {
+	m.EnsureDefaults()
+	profileID = strings.TrimSpace(profileID)
+
+	builtins := DefaultBuiltinProfiles()
+	factory, ok := builtins[profileID]
+	if !ok {
+		return fmt.Errorf("only built-in profiles can be reset to factory defaults; %q is custom", profileID)
+	}
+
+	m.config.Profiles[profileID] = factory
+	return nil
+}
+
+// DeleteProfile safely deletes a custom profile.
+func (m *Manager) DeleteProfile(profileID string) error {
+	m.EnsureDefaults()
+	profileID = strings.TrimSpace(profileID)
+
+	p, ok := m.config.Profiles[profileID]
+	if !ok {
+		return fmt.Errorf("profile %q not found", profileID)
+	}
+	if p.Builtin {
+		return fmt.Errorf("cannot delete built-in profile %q", profileID)
+	}
+
+	delete(m.config.Profiles, profileID)
+	if m.config.ActiveProfile == profileID {
+		m.config.ActiveProfile = "cn"
+	}
+	return nil
+}
+
+// SetOverride registers an ecosystem registry override.
+func (m *Manager) SetOverride(ecosystem, rawURL string) error {
+	m.EnsureDefaults()
+	eco := strings.TrimSpace(strings.ToLower(ecosystem))
+	if eco == "" {
+		return errors.New("ecosystem cannot be empty")
+	}
+
+	cleanURL := strings.TrimSpace(rawURL)
+	if cleanURL == "" {
+		delete(m.config.Overrides, eco)
+		return nil
+	}
+
+	m.config.Overrides[eco] = cleanURL
+	return nil
+}
+
+// ResetOverride clears an ecosystem registry override, falling back to profile.
+func (m *Manager) ResetOverride(ecosystem string) error {
+	m.EnsureDefaults()
+	eco := strings.TrimSpace(strings.ToLower(ecosystem))
+	delete(m.config.Overrides, eco)
+	return nil
+}
+
+// SetProxy updates proxy configuration with strict validation.
+func (m *Manager) SetProxy(p ProxyConfig) error {
+	m.EnsureDefaults()
+
+	validateURL := func(raw, label string) error {
+		trimmed := strings.TrimSpace(raw)
+		if trimmed == "" {
+			return nil
+		}
+		if !strings.HasPrefix(trimmed, "http://") &&
+			!strings.HasPrefix(trimmed, "https://") &&
+			!strings.HasPrefix(trimmed, "socks5://") &&
+			!strings.HasPrefix(trimmed, "socks5h://") {
+			return fmt.Errorf("invalid %s proxy URL %q: must start with http://, https://, or socks5://", label, trimmed)
+		}
+		_, err := url.Parse(trimmed)
+		if err != nil {
+			return fmt.Errorf("invalid %s proxy URL %q: %w", label, trimmed, err)
+		}
+		return nil
+	}
+
+	if err := validateURL(p.HTTP, "HTTP"); err != nil {
+		return err
+	}
+	if err := validateURL(p.HTTPS, "HTTPS"); err != nil {
+		return err
+	}
+	if err := validateURL(p.SOCKS5, "SOCKS5"); err != nil {
+		return err
+	}
+
+	if p.HTTPS == "" && p.HTTP != "" {
+		p.HTTPS = p.HTTP
+	}
+
+	m.config.Proxy = p
+	return nil
+}
+
+// ExportEnvironment computes standard environment variables to inject into child processes.
+func (m *Manager) ExportEnvironment() map[string]string {
+	status := m.GetStatus()
+	env := make(map[string]string)
+
+	// 1. Proxy injection
+	if status.Proxy.Enabled {
+		if status.Proxy.HTTP != "" {
+			env["HTTP_PROXY"] = status.Proxy.HTTP
+			env["http_proxy"] = status.Proxy.HTTP
+		}
+		if status.Proxy.HTTPS != "" {
+			env["HTTPS_PROXY"] = status.Proxy.HTTPS
+			env["https_proxy"] = status.Proxy.HTTPS
+		}
+		if status.Proxy.SOCKS5 != "" {
+			env["ALL_PROXY"] = status.Proxy.SOCKS5
+			env["all_proxy"] = status.Proxy.SOCKS5
+		}
+		if status.Proxy.NoProxy != "" {
+			env["NO_PROXY"] = status.Proxy.NoProxy
+			env["no_proxy"] = status.Proxy.NoProxy
+		}
+	}
+
+	// 2. Package registries injection
+	if npm, ok := status.Effective["npm"]; ok && npm.URL != "" {
+		env["NPM_CONFIG_REGISTRY"] = npm.URL
+	}
+	if goproxy, ok := status.Effective["go"]; ok && goproxy.URL != "" {
+		env["GOPROXY"] = goproxy.URL
+	}
+	if pip, ok := status.Effective["python"]; ok && pip.URL != "" {
+		env["PIP_INDEX_URL"] = pip.URL
+	}
+	if cargo, ok := status.Effective["rust"]; ok && cargo.URL != "" {
+		env["CARGO_REGISTRIES_CRATES_IO_INDEX"] = cargo.URL
+	}
+
+	// 3. Downloads mirror
+	if nodeMirror, ok := status.ActiveProfile.Downloads["node"]; ok && nodeMirror != "" {
+		env["NODEJS_ORG_MIRROR"] = nodeMirror
+	}
+
+	return env
+}

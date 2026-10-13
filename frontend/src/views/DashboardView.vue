@@ -84,26 +84,26 @@
         <div class="card-title-row">
           <div class="card-icon purple">🌐</div>
           <div>
-            <h3>{{ t("hello.network_title") || "网络与代理 (Network & Mirrors)" }}</h3>
-            <span class="sub-muted">{{ t("hello.network_desc") || "网络代理通道与 GitHub 镜像联通性诊断" }}</span>
+            <h3>{{ t("hello.network_title") || "网络与代理" }}</h3>
+            <span class="sub-muted">{{ t("hello.network_desc") || "生态镜像方案与网络代理状态诊断" }}</span>
           </div>
         </div>
 
         <div class="specs-table">
           <div class="spec-row">
-            <span class="spec-name">当前网络代理</span>
-            <span class="spec-badge badge-neutral">
-              {{ appConfig?.proxyHost ? `${appConfig.proxyProtocol || 'http'}://${appConfig.proxyHost}:${appConfig.proxyPort}` : '官方直连 (DIRECT)' }}
+            <span class="spec-name">{{ t("network.col_profile") || "当前配置方案" }}</span>
+            <span class="spec-badge badge-neutral font-mono">
+              {{ networkStatus?.active_profile || 'official' }}
             </span>
           </div>
           <div class="spec-row">
-            <span class="spec-name">GitHub 镜像通道</span>
-            <span class="spec-val font-mono">
-              {{ appConfig?.githubProxy || '官方直连 (github.com)' }}
+            <span class="spec-name">{{ t("network.tab_proxy") || "网络代理" }}</span>
+            <span class="spec-badge font-mono" :class="networkStatus?.proxy?.enabled ? 'badge-on' : 'badge-neutral'">
+              {{ networkStatus?.proxy?.enabled ? (networkStatus.proxy.url || (t("network.proxy_enabled") || "已启用")) : (t("network.direct_mode") || "官方直连") }}
             </span>
           </div>
           <div class="spec-row">
-            <span class="spec-name">{{ t("hello.ping_latency") || "往返延迟 (RTT)" }}</span>
+            <span class="spec-name">{{ t("hello.ping_latency") || "往返延迟" }}</span>
             <span class="spec-val font-mono" :class="{ 'text-success': networkConnected }">
               {{ latencyDisplay }}
             </span>
@@ -122,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { t } from "../i18n";
 
 defineProps<{
@@ -137,25 +137,56 @@ const emit = defineEmits<{
 const testingNetwork = ref(false);
 const latencyMs = ref<number | null>(null);
 const networkConnected = ref<boolean | null>(null);
+const networkStatus = ref<any>(null);
 
 const latencyDisplay = computed(() => {
-  if (testingNetwork.value) return t("hello.testing") || "正在测速...";
-  if (latencyMs.value !== null) return `${latencyMs.value} ms (稳定)`;
-  return t("hello.untested") || "未测速";
+  if (testingNetwork.value) return t("network.testing") || "正在测速...";
+  if (latencyMs.value !== null) return `${latencyMs.value} ms`;
+  return t("network.untested") || "未测速";
 });
 
-function handleTestNetwork() {
-  testingNetwork.value = true;
-  emit("log-event", "INFO", "Initiating network diagnostic probe to npmmirror and GitHub CDN...");
+async function loadNetworkStatus() {
+  try {
+    const res = await fetch("/api/network/status");
+    if (res.ok) {
+      const data = await res.json();
+      networkStatus.value = data.status;
+    }
+  } catch (err) {
+    // ignore
+  }
+}
 
-  const startTime = Date.now();
-  setTimeout(() => {
-    const elapsed = Math.round(Date.now() - startTime + Math.random() * 20);
-    latencyMs.value = elapsed;
-    networkConnected.value = true;
+onMounted(() => {
+  loadNetworkStatus();
+});
+
+async function handleTestNetwork() {
+  testingNetwork.value = true;
+  emit("log-event", "INFO", "Initiating network diagnostic probe...");
+
+  try {
+    const res = await fetch("/api/network/ping");
+    if (res.ok) {
+      const data = await res.json();
+      const results = data.results || [];
+      const okItem = results.find((r: any) => r.ok && r.latency_ms > 0);
+      if (okItem) {
+        latencyMs.value = okItem.latency_ms;
+        networkConnected.value = true;
+        emit("log-event", "SUCCESS", `Network latency probe completed: ${okItem.latency_ms}ms`, `Target: ${okItem.endpoint}`);
+      } else {
+        networkConnected.value = false;
+        latencyMs.value = null;
+        emit("log-event", "WARN", "Network latency probe completed with errors");
+      }
+    }
+  } catch (err: any) {
+    networkConnected.value = false;
+    emit("log-event", "ERROR", `Network diagnostic probe failed: ${err.message}`);
+  } finally {
     testingNetwork.value = false;
-    emit("log-event", "SUCCESS", `Network latency probe completed: ${elapsed}ms RTT`, "Host: https://registry.npmmirror.com");
-  }, 350);
+  }
 }
 </script>
 

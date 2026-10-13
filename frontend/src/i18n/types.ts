@@ -122,6 +122,32 @@ export interface TranslationDict {
   "settings.connected": string;
   "settings.connectFailed": string;
 
+  "network.tab_proxy"?: string;
+  "network.tab_mirrors"?: string;
+  "network.proxy_enabled"?: string;
+  "network.proxy_disabled"?: string;
+  "network.proxy_http"?: string;
+  "network.proxy_socks5"?: string;
+  "network.proxy_noproxy"?: string;
+  "network.proxy_security_notice"?: string;
+  "network.profile_title"?: string;
+  "network.profile_cn"?: string;
+  "network.profile_official"?: string;
+  "network.create_profile"?: string;
+  "network.save_as_profile"?: string;
+  "network.reset_factory"?: string;
+  "network.delete_profile"?: string;
+  "network.badge_overridden"?: string;
+  "network.badge_inherited"?: string;
+  "network.restore_inherited"?: string;
+  "network.speed_test"?: string;
+  "network.batch_test"?: string;
+  "network.testing"?: string;
+  "network.probe_fast"?: string;
+  "network.probe_normal"?: string;
+  "network.probe_slow"?: string;
+  "network.probe_timeout"?: string;
+
   "about.title": string;
   "about.subtitle": string;
   "about.gitTag": string;
