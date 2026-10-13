@@ -162,3 +162,42 @@ func TestConfigGlobalBrowser(t *testing.T) {
 	err = configCmd.RunE(configCmd, []string{"settings.browser", "firefox"})
 	assert.NoError(t, err)
 }
+
+func TestPluginConfigNamespaceIsolation(t *testing.T) {
+	tmpDir := t.TempDir()
+	cwd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(cwd)
+
+	configPath = filepath.Join(tmpDir, ".unirtm.toml")
+	defer func() { configPath = "" }()
+
+	// 1. Unreserved key must be rejected
+	err := runConfigSet(configSetCmd, []string{"myplugin.setting", "value"})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not reserved for core")
+
+	// 2. Setting Plugin A config succeeds
+	err = runConfigSet(configSetCmd, []string{`plugins."snowdreamtech/docker".config.port`, "8080"})
+	assert.NoError(t, err)
+
+	// 3. Setting Plugin B config succeeds and does not clobber Plugin A
+	err = runConfigSet(configSetCmd, []string{`plugins."community/deploy".config.cluster`, "staging"})
+	assert.NoError(t, err)
+
+	// 4. Reading back Plugin A config
+	var buf bytes.Buffer
+	configGetCmd.SetOut(&buf)
+	err = runConfigGet(configGetCmd, []string{`plugins."snowdreamtech/docker".config.port`})
+	assert.NoError(t, err)
+
+	// 5. Reading back Plugin B config
+	err = runConfigGet(configGetCmd, []string{`plugins."community/deploy".config.cluster`})
+	assert.NoError(t, err)
+
+	// 6. Config show renders without error
+	cmdShow := configShowCmd
+	cmdShow.SetOut(&buf)
+	err = runConfigShow(cmdShow, []string{})
+	assert.NoError(t, err)
+}

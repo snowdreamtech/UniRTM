@@ -201,6 +201,8 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 	var err error
 	if configGlobal {
 		cfg, err = config.LoadGlobal()
+	} else if configPath != "" {
+		cfg, err = cm.Load(ctx, configPath)
 	} else {
 		cfg, err = cm.LoadHierarchy(ctx)
 	}
@@ -238,6 +240,10 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 		p := config.GetGlobalConfigPath()
 		if _, err := os.Stat(p); err == nil {
 			activeFiles = append(activeFiles, p)
+		}
+	} else if configPath != "" {
+		if _, err := os.Stat(configPath); err == nil {
+			activeFiles = append(activeFiles, configPath)
 		}
 	} else {
 		systemPaths := []string{
@@ -394,6 +400,27 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// 4. Plugins & Extensions Section
+	if len(cfg.Plugins) > 0 {
+		if !isTerminal {
+			pterm.DefaultSection.Println("Plugins & Extensions")
+		} else {
+			pterm.DefaultSection.Println("Plugins")
+		}
+		var pluginItems []pterm.BulletListItem
+		for name, p := range cfg.Plugins {
+			desc := p.Version
+			if desc == "" {
+				desc = "enabled"
+			}
+			if len(p.Config) > 0 {
+				desc = fmt.Sprintf("%s (%d config items)", desc, len(p.Config))
+			}
+			pluginItems = append(pluginItems, pterm.BulletListItem{Level: 0, Text: fmt.Sprintf("%s: %s", name, desc)})
+		}
+		pterm.DefaultBulletList.WithItems(pluginItems).Render()
+	}
+
 	return nil
 }
 
@@ -412,17 +439,24 @@ func runConfigGet(cmd *cobra.Command, args []string) error {
 	key := args[0]
 
 	var cfg *config.Config
+	ctx := cmd.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	if configGlobal {
 		var err error
 		cfg, err = config.LoadGlobal()
 		if err != nil || cfg == nil {
 			cfg = &config.Config{}
 		}
-	} else {
-		ctx := cmd.Context()
-		if ctx == nil {
-			ctx = context.Background()
+	} else if configPath != "" {
+		cm := config.NewConfigManager()
+		var err error
+		cfg, err = cm.Load(ctx, configPath)
+		if err != nil || cfg == nil {
+			cfg = &config.Config{}
 		}
+	} else {
 		cm := config.NewConfigManager()
 		var err error
 		cfg, err = cm.LoadHierarchy(ctx)
@@ -437,21 +471,20 @@ func runConfigGet(cmd *cobra.Command, args []string) error {
 		cleanKey = "settings." + cleanKey
 	}
 
-	parts := strings.SplitN(cleanKey, ".", 2)
+	segments := config.SplitConfigKey(cleanKey)
 	var value interface{}
-	switch parts[0] {
+	switch segments[0] {
 	case "tools":
-		if len(parts) > 1 {
-			sub := strings.SplitN(parts[1], ".", 2)
-			if t, ok := cfg.Tools[sub[0]]; ok {
+		if len(segments) > 1 {
+			if t, ok := cfg.Tools[segments[1]]; ok {
 				value = t
 			}
 		} else {
 			value = cfg.Tools
 		}
 	case "settings":
-		if len(parts) > 1 {
-			switch parts[1] {
+		if len(segments) > 1 {
+			switch segments[1] {
 			case "browser":
 				value = cfg.Settings.Browser
 			case "cache_ttl":
@@ -463,13 +496,34 @@ func runConfigGet(cmd *cobra.Command, args []string) error {
 			value = cfg.Settings
 		}
 	case "env":
-		if len(parts) > 1 {
-			value = cfg.Env[parts[1]]
+		if len(segments) > 1 {
+			value = cfg.Env[segments[1]]
 		} else {
 			value = cfg.Env
 		}
 	case "tasks":
 		value = cfg.Tasks
+	case "plugins":
+		if len(segments) > 1 {
+			pluginID := segments[1]
+			if p, ok := cfg.Plugins[pluginID]; ok {
+				if len(segments) == 2 {
+					value = p
+				} else if segments[2] == "config" {
+					if len(segments) == 3 {
+						value = p.Config
+					} else {
+						value = p.Config[segments[3]]
+					}
+				} else if segments[2] == "version" {
+					value = p.Version
+				} else {
+					value = p.Config[segments[2]]
+				}
+			}
+		} else {
+			value = cfg.Plugins
+		}
 	default:
 		value = nil
 	}
@@ -505,6 +559,14 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 
 	key := args[0]
 	value := args[1]
+
+	// Validate namespace adhering to reserved core tables and plugin namespaces
+	if err := config.ValidateKeyNamespace(key); err != nil {
+		formatter.Error("Invalid configuration namespace", map[string]interface{}{
+			"error": err.Error(),
+		})
+		return fmt.Errorf("invalid configuration key: %w", err)
+	}
 
 	var targetConfigFile string
 	if configGlobal {
@@ -560,8 +622,8 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 		storeKey = "settings." + storeKey
 	}
 
-	// Set the value at the dotted key path
-	setNestedKey(existing, strings.Split(storeKey, "."), value)
+	// Set the value at the segmented key path (respecting quoted plugin IDs)
+	setNestedKey(existing, config.SplitConfigKey(storeKey), value)
 
 	// Serialize back to file
 	var out []byte
@@ -588,6 +650,10 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 		})
 		return fmt.Errorf("write config: %w", err)
 	}
+
+	// Automatically trust the config file updated by unirtm config set
+	trustMgr := config.NewTrustManager()
+	_ = trustMgr.Trust(targetConfigFile)
 
 	formatter.Success(fmt.Sprintf("Set %s = %s in %s", key, value, targetConfigFile), nil)
 	return nil

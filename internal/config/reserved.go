@@ -49,6 +49,36 @@ var KnownSettingShorthands = map[string]bool{
 	"color":     true,
 }
 
+// SplitConfigKey parses a dotted configuration key path into discrete segments,
+// respecting quoted segments (e.g. plugins."vendor/name".config.port -> ["plugins", "vendor/name", "config", "port"]).
+func SplitConfigKey(key string) []string {
+	if key == "" {
+		return nil
+	}
+	var segments []string
+	var current strings.Builder
+	inQuote := false
+	quoteChar := rune(0)
+
+	for _, ch := range key {
+		switch {
+		case (ch == '"' || ch == '\'') && !inQuote:
+			inQuote = true
+			quoteChar = ch
+		case ch == quoteChar && inQuote:
+			inQuote = false
+			quoteChar = rune(0)
+		case ch == '.' && !inQuote:
+			segments = append(segments, current.String())
+			current.Reset()
+		default:
+			current.WriteRune(ch)
+		}
+	}
+	segments = append(segments, current.String())
+	return segments
+}
+
 // ValidateKeyNamespace validates whether a configuration key path adheres to UniRTM's
 // namespace rules.
 func ValidateKeyNamespace(key string) error {
@@ -57,27 +87,29 @@ func ValidateKeyNamespace(key string) error {
 		return fmt.Errorf("configuration key cannot be empty")
 	}
 
-	// Single key (no dot) validation
-	if !strings.Contains(key, ".") {
-		if key == "plugins" {
-			return fmt.Errorf("plugin configuration requires a plugin ID (e.g. 'plugins.\"<plugin-id>\".config.<key>')")
-		}
-		if IsReservedRoot(key) || KnownSettingShorthands[key] {
-			return nil
-		}
-		return fmt.Errorf("root key %q is not a reserved core table or valid plugin namespace; plugins must use 'plugins.\"<id>\".config.<key>'", key)
+	segments := SplitConfigKey(key)
+	if len(segments) == 0 {
+		return fmt.Errorf("configuration key cannot be empty")
 	}
 
-	parts := strings.Split(key, ".")
-	root := strings.Trim(parts[0], `"'`)
-
-	if root == "plugins" {
-		if len(parts) < 2 {
+	// Single key (no dot) validation
+	if len(segments) == 1 {
+		k := segments[0]
+		if k == "plugins" {
 			return fmt.Errorf("plugin configuration requires a plugin ID (e.g. 'plugins.\"<plugin-id>\".config.<key>')")
 		}
-		// Extract plugin ID (might be quoted, e.g. plugins."vendor/name".config)
-		rawPluginID := parts[1]
-		pluginID := strings.Trim(rawPluginID, `"'`)
+		if IsReservedRoot(k) || KnownSettingShorthands[k] {
+			return nil
+		}
+		return fmt.Errorf("root key %q is not a reserved core table or valid plugin namespace; plugins must use 'plugins.\"<id>\".config.<key>'", k)
+	}
+
+	root := segments[0]
+	if root == "plugins" {
+		if len(segments) < 2 {
+			return fmt.Errorf("plugin configuration requires a plugin ID (e.g. 'plugins.\"<plugin-id>\".config.<key>')")
+		}
+		pluginID := segments[1]
 		if pluginID == "" {
 			return fmt.Errorf("plugin ID cannot be empty in key %q", key)
 		}

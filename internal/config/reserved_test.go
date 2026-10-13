@@ -124,3 +124,19 @@ func TestPluginDeclarationParsing(t *testing.T) {
 	assert.Equal(t, "1.0.0", cfg.Plugins["complex"].Version)
 	assert.Equal(t, true, cfg.Plugins["complex"].Config["enabled"])
 }
+
+func TestSplitConfigKey(t *testing.T) {
+	cases := []struct {
+		input    string
+		expected []string
+	}{
+		{"settings.cache_ttl", []string{"settings", "cache_ttl"}},
+		{"plugins.docker.config.port", []string{"plugins", "docker", "config", "port"}},
+		{`plugins."snowdreamtech/docker".config.compose_file`, []string{"plugins", "snowdreamtech/docker", "config", "compose_file"}},
+		{`plugins."io.unirtm.rust".config.toolchain`, []string{"plugins", "io.unirtm.rust", "config", "toolchain"}},
+	}
+	for _, tc := range cases {
+		actual := SplitConfigKey(tc.input)
+		assert.Equal(t, tc.expected, actual, "Input %q should split properly", tc.input)
+	}
+}

@@ -298,6 +298,7 @@ func (m *defaultConfigManager) LoadHierarchy(ctx context.Context) (*Config, erro
 		Env:     make(map[string]interface{}),
 		Tasks:   make(map[string]Task),
 		Aliases: make(map[string]map[string]string),
+		Plugins: make(PluginMap),
 	}
 	for _, c := range configs {
 		initialMerged, _ = m.Merge(initialMerged, c)
@@ -384,6 +385,7 @@ func (m *defaultConfigManager) LoadHierarchy(ctx context.Context) (*Config, erro
 			Tasks:        make(map[string]Task),
 			Environments: make(map[string]EnvironmentConfig),
 			Aliases:      make(map[string]map[string]string),
+			Plugins:      make(PluginMap),
 		}, nil
 	}
 
@@ -512,6 +514,7 @@ func (m *defaultConfigManager) Merge(configs ...*Config) (*Config, error) {
 		Tasks:        make(map[string]Task),
 		Environments: make(map[string]EnvironmentConfig),
 		Aliases:      make(map[string]map[string]string),
+		Plugins:      make(PluginMap),
 	}
 
 	// Merge each configuration in order
@@ -614,6 +617,42 @@ func (m *defaultConfigManager) Merge(configs ...*Config) (*Config, error) {
 				for k, v := range settings {
 					merged.Settings.Tools[toolName][k] = v
 				}
+			}
+		}
+
+		// Merge Plugins (later overrides earlier)
+		if config.Plugins != nil {
+			if merged.Plugins == nil {
+				merged.Plugins = make(PluginMap)
+			}
+			for pluginID, pluginDecl := range config.Plugins {
+				if existing, exists := merged.Plugins[pluginID]; exists {
+					mergedCfg := make(map[string]interface{})
+					for k, v := range existing.Config {
+						mergedCfg[k] = v
+					}
+					for k, v := range pluginDecl.Config {
+						mergedCfg[k] = v
+					}
+					newDecl := pluginDecl
+					newDecl.Config = mergedCfg
+					if newDecl.Version == "" {
+						newDecl.Version = existing.Version
+					}
+					merged.Plugins[pluginID] = newDecl
+				} else {
+					merged.Plugins[pluginID] = pluginDecl
+				}
+			}
+		}
+
+		// Merge PluginsRaw
+		if config.PluginsRaw != nil {
+			if merged.PluginsRaw == nil {
+				merged.PluginsRaw = make(map[string]interface{})
+			}
+			for k, v := range config.PluginsRaw {
+				merged.PluginsRaw[k] = v
 			}
 		}
 	}

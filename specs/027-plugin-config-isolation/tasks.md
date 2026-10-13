@@ -33,12 +33,12 @@
 
 **Goal**: Support reading and writing inline plugin configurations safely under `[plugins."<id>".config]`.
 
-- [ ] T009 [US1] Update `runConfigSet` in `cmd/14.config.go` to call `ValidateKeyNamespace`
-- [ ] T010 [US1] Support setting plugin configuration via `unirtm config set plugins."<id>".config.<key> <val>`
-- [ ] T011 [US1] Support retrieving plugin configuration via `unirtm config get plugins."<id>".config.<key>`
-- [ ] T012 [US1] Ensure `unirtm config` show command outputs plugin configuration under a dedicated section
-- [ ] T013 [US1] Verify that plugin A cannot overwrite or clobber plugin B's keys
-- [ ] T014 [US1] Add integration tests in `cmd/14.config_test.go` testing inline plugin config flows
+- [x] T009 [US1] Update `runConfigSet` in `cmd/14.config.go` to call `ValidateKeyNamespace`
+- [x] T010 [US1] Support setting plugin configuration via `unirtm config set plugins."<id>".config.<key> <val>`
+- [x] T011 [US1] Support retrieving plugin configuration via `unirtm config get plugins."<id>".config.<key>`
+- [x] T012 [US1] Ensure `unirtm config` show command outputs plugin configuration under a dedicated section
+- [x] T013 [US1] Verify that plugin A cannot overwrite or clobber plugin B's keys
+- [x] T014 [US1] Add integration tests in `cmd/14.config_test.go` testing inline plugin config flows
 
 ---
 
