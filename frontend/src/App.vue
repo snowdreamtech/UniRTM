@@ -7,11 +7,7 @@
     <TitleBar
       :currentLang="selectedLangSetting"
       :currentTheme="currentTheme"
-      :isDrawerOpen="isDrawerOpen"
       @toggle-theme="toggleTheme"
-      @open-settings="openSettings"
-      @open-about="openAbout"
-      @toggle-drawer="toggleDrawer"
       @open-palette="openCommandPalette"
       @select-lang="selectLanguage"
     />
@@ -21,9 +17,11 @@
       <!-- Activity Bar (Far Left Icon Navigation) -->
       <ActivityBar
         :currentTab="currentTab"
+        :isDrawerOpen="isDrawerOpen"
         @select-tab="handleSelectActivityTab"
         @open-settings="openSettings"
         @open-about="openAbout"
+        @toggle-drawer="toggleDrawer"
       />
 
       <!-- Primary Collapsible Sidebar Panel -->

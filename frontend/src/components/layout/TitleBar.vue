@@ -64,37 +64,6 @@
       >
         <span>{{ isLight ? "🌙" : "☀️" }}</span>
       </button>
-
-      <!-- Toggle Console Drawer Button -->
-      <button
-        class="titlebar-icon-btn"
-        id="btn-console-drawer"
-        :class="{ active: isDrawerOpen }"
-        :title="'Toggle Console Drawer (Ctrl+` )'"
-        @click="$emit('toggle-drawer')"
-      >
-        <span>📜</span>
-      </button>
-
-      <!-- Settings Button -->
-      <button
-        class="titlebar-icon-btn"
-        id="btn-open-settings"
-        :title="t('settings.title') || 'Settings'"
-        @click="$emit('open-settings')"
-      >
-        <span>⚙️</span>
-      </button>
-
-      <!-- About Button -->
-      <button
-        class="titlebar-icon-btn"
-        id="btn-open-about"
-        :title="t('about.title') || 'About'"
-        @click="$emit('open-about')"
-      >
-        <span>ℹ️</span>
-      </button>
     </div>
   </header>
 </template>
@@ -106,7 +75,7 @@ import { SUPPORTED_LANGUAGES, t } from "../../i18n";
 const props = defineProps<{
   currentLang: string;
   currentTheme: string;
-  isDrawerOpen: boolean;
+  isDrawerOpen?: boolean;
 }>();
 
 const emit = defineEmits<{

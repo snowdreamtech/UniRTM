@@ -40,6 +40,18 @@
         <span class="activity-indicator" v-if="currentTab === 'about'"></span>
         <span class="activity-icon">ℹ️</span>
       </button>
+
+      <!-- Logs / Terminal Drawer Toggle Button -->
+      <button
+        class="activity-btn"
+        id="btn-activity-logs"
+        :class="{ active: isDrawerOpen }"
+        :title="t('console.title') || 'Terminal / Logs'"
+        @click="$emit('toggle-drawer')"
+      >
+        <span class="activity-indicator" v-if="isDrawerOpen"></span>
+        <span class="activity-icon">📜</span>
+      </button>
     </div>
   </aside>
 </template>
@@ -57,6 +69,7 @@ export interface ActivityTab {
 
 const props = defineProps<{
   currentTab: string;
+  isDrawerOpen?: boolean;
   toolCount?: number;
   taskCount?: number;
 }>();
@@ -65,6 +78,7 @@ defineEmits<{
   (e: "select-tab", tabId: string): void;
   (e: "open-settings"): void;
   (e: "open-about"): void;
+  (e: "toggle-drawer"): void;
 }>();
 
 const primaryTabs = computed<ActivityTab[]>(() => [
