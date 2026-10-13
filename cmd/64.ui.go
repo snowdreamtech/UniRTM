@@ -21,6 +21,7 @@ import (
 
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/frontend"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/spf13/cobra"
 )
@@ -137,14 +138,24 @@ func runUI(cmd *cobra.Command, args []string) error {
 	// Banner output
 	pterm.DefaultSection.Println("UniRTM Workbench")
 	pterm.Info.Printf("Local Server : %s\n", pterm.Cyan(url))
-	// Determine target browser: CLI flag > Config > $BROWSER
+	// Determine target browser:
+	// Priority 1: CLI flag --browser / -b (temporary override for current invocation)
+	// Priority 2: Global environment variable $BROWSER
+	// Priority 3: User global/machine configuration only (LoadGlobal).
+	// NOTE: Project-level .unirtm.toml configuration is explicitly ignored for browser settings
+	// to prevent team repository pollution and ensure cross-machine compatibility.
 	targetBrowser := strings.TrimSpace(uiBrowser)
 	if targetBrowser == "" {
-		if cfg, err := loadConfig(cmd.Context()); err == nil && cfg != nil && cfg.Settings.Browser != "" {
-			targetBrowser = strings.TrimSpace(cfg.Settings.Browser)
-		} else if envBrowser := os.Getenv("BROWSER"); envBrowser != "" {
+		if envBrowser := os.Getenv("BROWSER"); envBrowser != "" {
 			targetBrowser = strings.TrimSpace(envBrowser)
+		} else if globalCfg, err := config.LoadGlobal(); err == nil && globalCfg != nil && globalCfg.Settings.Browser != "" {
+			targetBrowser = strings.TrimSpace(globalCfg.Settings.Browser)
 		}
+	}
+
+	// Warn if project config attempted to define browser
+	if localCfg, err := loadConfig(cmd.Context()); err == nil && localCfg != nil && localCfg.Settings.Browser != "" {
+		pterm.Warning.Println("Notice: 'settings.browser' in project configuration is ignored (browser preferences are user-global only).")
 	}
 
 	pterm.Info.Printf("Process PID  : %d\n", os.Getpid())

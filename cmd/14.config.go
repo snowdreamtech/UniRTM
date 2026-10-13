@@ -20,8 +20,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+var configGlobal bool
+
 // init registers the config command and its subcommands.
 func init() {
+	configCmd.PersistentFlags().BoolVarP(&configGlobal, "global", "g", false, "operate on global user configuration")
+
 	configCmd.AddCommand(configValidateCmd)
 	configCmd.AddCommand(configShowCmd)
 	configCmd.AddCommand(configSetCmd)
@@ -35,16 +39,31 @@ func init() {
 
 // configCmd is the parent config command.
 var configCmd = &cobra.Command{
-	Use:   "config",
+	Use:   "config [key] [value]",
 	Short: "Manage UniRTM configuration",
 	Long: `Manage UniRTM configuration settings.
 
 This command manages settings that control UniRTM's behavior (e.g. cache TTL, data directory).
 It is NOT for managing tools or environment variables (use 'set' or 'alias' for those).
 
-If no subcommand is provided, it displays the current merged configuration.`,
+Examples:
+  # View merged configuration
+  unirtm config
+
+  # View or edit global machine configuration
+  unirtm config --global
+  unirtm config --global settings.browser chrome
+  unirtm config get --global settings.browser
+  unirtm config set --global settings.browser chrome`,
 	Aliases: []string{"cfg"},
+	Args:    cobra.MaximumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 2 {
+			return runConfigSet(cmd, args)
+		}
+		if len(args) == 1 {
+			return runConfigGet(cmd, args)
+		}
 		return runConfigShow(cmd, args)
 	},
 }
@@ -178,7 +197,13 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	cm := config.NewConfigManager()
 
-	cfg, err := cm.LoadHierarchy(ctx)
+	var cfg *config.Config
+	var err error
+	if configGlobal {
+		cfg, err = config.LoadGlobal()
+	} else {
+		cfg, err = cm.LoadHierarchy(ctx)
+	}
 	if err != nil {
 		if verbose {
 			output.Infof("No configuration files found, using defaults: %v", err)
@@ -195,22 +220,36 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 
 	// 0. Active Configuration Files Section
 	if !isTerminal {
-		pterm.DefaultSection.Println("Active Configuration Files")
+		if configGlobal {
+			pterm.DefaultSection.Println("Global Configuration")
+		} else {
+			pterm.DefaultSection.Println("Active Configuration Files")
+		}
 	} else {
-		pterm.DefaultSection.Println("Config Files")
+		if configGlobal {
+			pterm.DefaultSection.Println("Global Config")
+		} else {
+			pterm.DefaultSection.Println("Config Files")
+		}
 	}
 
 	var activeFiles []string
-	systemPaths := []string{
-		"/etc/unirtm/config.toml",
-		"/etc/unirtm/config.yaml",
-		"/etc/unirtm/config.yml",
-	}
-	for _, p := range systemPaths {
+	if configGlobal {
+		p := config.GetGlobalConfigPath()
 		if _, err := os.Stat(p); err == nil {
 			activeFiles = append(activeFiles, p)
 		}
-	}
+	} else {
+		systemPaths := []string{
+			"/etc/unirtm/config.toml",
+			"/etc/unirtm/config.yaml",
+			"/etc/unirtm/config.yml",
+		}
+		for _, p := range systemPaths {
+			if _, err := os.Stat(p); err == nil {
+				activeFiles = append(activeFiles, p)
+			}
+		}
 
 	globalPaths := []string{
 		filepath.Join(env.GetConfigDir(), "config.toml"),
@@ -272,6 +311,7 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 		curr = filepath.Dir(curr)
 	}
 	activeFiles = append(activeFiles, projectFiles...)
+}
 
 	if len(activeFiles) == 0 {
 		output.Info("  (no configuration files found)")
@@ -307,12 +347,16 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 	if !isTerminal {
 		pterm.DefaultSection.Println("UniRTM Settings")
 	}
-	pterm.DefaultBulletList.WithItems([]pterm.BulletListItem{
+	settingsList := []pterm.BulletListItem{
 		{Level: 0, Text: fmt.Sprintf("Cache TTL:  %v", cfg.Settings.CacheTTL)},
 		{Level: 0, Text: fmt.Sprintf("Data Dir:   %s", env.GetDataDir())},
 		{Level: 0, Text: fmt.Sprintf("Config Dir: %s", env.GetConfigDir())},
 		{Level: 0, Text: fmt.Sprintf("Cache Dir:  %s", env.GetCacheDir())},
-	}).Render()
+	}
+	if cfg.Settings.Browser != "" {
+		settingsList = append(settingsList, pterm.BulletListItem{Level: 0, Text: fmt.Sprintf("Browser:    %s", cfg.Settings.Browser)})
+	}
+	pterm.DefaultBulletList.WithItems(settingsList).Render()
 
 	// 3. Environment & Mirrors Section
 	if len(cfg.Env) > 0 {
@@ -367,18 +411,33 @@ func runConfigGet(cmd *cobra.Command, args []string) error {
 
 	key := args[0]
 
-	ctx := cmd.Context()
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	cm := config.NewConfigManager()
-	cfg, err := cm.LoadHierarchy(ctx)
-	if err != nil || cfg == nil {
-		cfg = &config.Config{}
+	var cfg *config.Config
+	if configGlobal {
+		var err error
+		cfg, err = config.LoadGlobal()
+		if err != nil || cfg == nil {
+			cfg = &config.Config{}
+		}
+	} else {
+		ctx := cmd.Context()
+		if ctx == nil {
+			ctx = context.Background()
+		}
+		cm := config.NewConfigManager()
+		var err error
+		cfg, err = cm.LoadHierarchy(ctx)
+		if err != nil || cfg == nil {
+			cfg = &config.Config{}
+		}
 	}
 
 	// Resolve dotted key into the config struct using a simple top-level section lookup
-	parts := strings.SplitN(key, ".", 2)
+	cleanKey := key
+	if !strings.HasPrefix(cleanKey, "settings.") && (cleanKey == "browser" || cleanKey == "cache_ttl" || cleanKey == "data_dir") {
+		cleanKey = "settings." + cleanKey
+	}
+
+	parts := strings.SplitN(cleanKey, ".", 2)
 	var value interface{}
 	switch parts[0] {
 	case "tools":
@@ -391,7 +450,18 @@ func runConfigGet(cmd *cobra.Command, args []string) error {
 			value = cfg.Tools
 		}
 	case "settings":
-		value = cfg.Settings
+		if len(parts) > 1 {
+			switch parts[1] {
+			case "browser":
+				value = cfg.Settings.Browser
+			case "cache_ttl":
+				value = cfg.Settings.CacheTTL
+			default:
+				value = cfg.Settings
+			}
+		} else {
+			value = cfg.Settings
+		}
 	case "env":
 		if len(parts) > 1 {
 			value = cfg.Env[parts[1]]
@@ -404,7 +474,7 @@ func runConfigGet(cmd *cobra.Command, args []string) error {
 		value = nil
 	}
 
-	if value == nil {
+	if value == nil || value == "" {
 		formatter.Error(fmt.Sprintf("Key %q not found in configuration", key), nil)
 		return fmt.Errorf("key %q not found", key)
 	}
@@ -421,7 +491,7 @@ func runConfigGet(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// runConfigSet sets a configuration value in the local config file.
+// runConfigSet sets a configuration value in the local or global config file.
 //
 // Validates: Requirements 13.6, 23.2
 func runConfigSet(cmd *cobra.Command, args []string) error {
@@ -436,26 +506,46 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 	key := args[0]
 	value := args[1]
 
-	localConfigFile := ".unirtm.toml"
-	if configPath != "" {
-		localConfigFile = configPath
+	var targetConfigFile string
+	if configGlobal {
+		targetConfigFile = config.GetGlobalConfigPath()
+		if err := os.MkdirAll(filepath.Dir(targetConfigFile), 0755); err != nil {
+			formatter.Error("Failed to create global config directory", map[string]interface{}{
+				"error": err.Error(),
+			})
+			return fmt.Errorf("create global config dir: %w", err)
+		}
 	} else {
-		for _, f := range []string{".unirtm.toml", ".unirtm.yaml", ".unirtm.yml", "unirtm.toml", "unirtm.yaml", "unirtm.yml"} {
-			if _, err := os.Stat(f); err == nil {
-				localConfigFile = f
-				break
+		// Enforce: Browser setting is strictly user-global only
+		cleanKey := strings.TrimPrefix(key, "settings.")
+		if cleanKey == "browser" {
+			formatter.Error("Browser configuration is only permitted in global config to ensure project portability across team machines.", map[string]interface{}{
+				"hint": fmt.Sprintf("Use 'unirtm config --global %s %s'", key, value),
+			})
+			return fmt.Errorf("browser setting is only allowed globally; please use 'unirtm config --global %s %s'", key, value)
+		}
+
+		targetConfigFile = ".unirtm.toml"
+		if configPath != "" {
+			targetConfigFile = configPath
+		} else {
+			for _, f := range []string{".unirtm.toml", ".unirtm.yaml", ".unirtm.yml", "unirtm.toml", "unirtm.yaml", "unirtm.yml"} {
+				if _, err := os.Stat(f); err == nil {
+					targetConfigFile = f
+					break
+				}
 			}
 		}
 	}
 
-	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(localConfigFile), "."))
+	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(targetConfigFile), "."))
 	if ext == "" {
 		ext = "toml"
 	}
 
 	// Read existing content as a generic map to preserve unknown keys
 	existing := make(map[string]interface{})
-	if data, err := os.ReadFile(localConfigFile); err == nil {
+	if data, err := os.ReadFile(targetConfigFile); err == nil {
 		switch ext {
 		case "toml":
 			_ = toml.Unmarshal(data, &existing)
@@ -464,8 +554,14 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Normalize settings shorthand (e.g. "browser" -> "settings.browser")
+	storeKey := key
+	if !strings.HasPrefix(storeKey, "settings.") && (storeKey == "browser" || storeKey == "cache_ttl") {
+		storeKey = "settings." + storeKey
+	}
+
 	// Set the value at the dotted key path
-	setNestedKey(existing, strings.Split(key, "."), value)
+	setNestedKey(existing, strings.Split(storeKey, "."), value)
 
 	// Serialize back to file
 	var out []byte
@@ -485,15 +581,15 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("serialize config: %w", writeErr)
 	}
 
-	if err := os.WriteFile(localConfigFile, out, 0644); err != nil {
+	if err := os.WriteFile(targetConfigFile, out, 0644); err != nil {
 		formatter.Error("Failed to write configuration", map[string]interface{}{
-			"file":  localConfigFile,
+			"file":  targetConfigFile,
 			"error": err.Error(),
 		})
 		return fmt.Errorf("write config: %w", err)
 	}
 
-	formatter.Success(fmt.Sprintf("Set %s = %s in %s", key, value, localConfigFile), nil)
+	formatter.Success(fmt.Sprintf("Set %s = %s in %s", key, value, targetConfigFile), nil)
 	return nil
 }
 

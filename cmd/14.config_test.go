@@ -135,3 +135,30 @@ func TestRunConfigJson(t *testing.T) {
 	err = runConfigGet(cmdGet, []string{"tools"})
 	assert.NoError(t, err)
 }
+
+func TestConfigGlobalBrowser(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("UNIRTM_CONFIG_DIR", tmpDir)
+
+	// 1. Setting browser locally (without --global) must return error
+	configGlobal = false
+	err := runConfigSet(configSetCmd, []string{"settings.browser", "chrome"})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "only allowed globally")
+
+	// 2. Setting browser with --global must succeed
+	configGlobal = true
+	defer func() { configGlobal = false }()
+	err = runConfigSet(configSetCmd, []string{"settings.browser", "chrome"})
+	assert.NoError(t, err)
+
+	// 3. Getting browser with --global must succeed
+	var buf bytes.Buffer
+	configGetCmd.SetOut(&buf)
+	err = runConfigGet(configGetCmd, []string{"settings.browser"})
+	assert.NoError(t, err)
+
+	// 4. Test root configCmd routing: unirtm config --global settings.browser firefox
+	err = configCmd.RunE(configCmd, []string{"settings.browser", "firefox"})
+	assert.NoError(t, err)
+}
