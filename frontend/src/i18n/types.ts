@@ -131,7 +131,12 @@ export interface TranslationDict {
   "network.proxy_noproxy"?: string;
   "network.profile_title"?: string;
   "network.profile_cn"?: string;
+  "network.profile_cn_desc"?: string;
   "network.profile_official"?: string;
+  "network.profile_official_desc"?: string;
+  "network.active_tag"?: string;
+  "network.tag_builtin"?: string;
+  "network.tag_custom"?: string;
   "network.create_profile"?: string;
   "network.save_as_profile"?: string;
   "network.reset_factory"?: string;

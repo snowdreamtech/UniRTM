@@ -112,8 +112,10 @@ func (m *Manager) EnsureDefaults() {
 		if !ok {
 			m.config.Profiles[id] = p
 		} else {
-			// Ensure Builtin flag stays true
+			// Ensure Builtin flag stays true and canonical metadata stays in sync
 			existing.Builtin = true
+			existing.Name = p.Name
+			existing.Description = p.Description
 			if existing.Registries == nil {
 				existing.Registries = p.Registries
 			}

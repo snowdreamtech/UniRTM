@@ -343,14 +343,14 @@
                 @click="handleUseProfile(String(pId))"
               >
                 <div class="profile-card-header">
-                  <span class="profile-name">{{ p.name }}</span>
-                  <span v-if="pId === networkStatus.active_profile_id" class="active-tag">✔ {{ t('network.active_tag') || '生效中' }}</span>
+                  <span class="profile-name">{{ getProfileDisplayName(String(pId), p.name) }}</span>
+                  <span v-if="pId === networkStatus.active_profile_id" class="active-tag">✔ {{ t('network.active_tag') }}</span>
                 </div>
-                <p class="profile-desc">{{ p.description }}</p>
+                <p class="profile-desc">{{ getProfileDisplayDesc(String(pId), p.description) }}</p>
                 <div class="profile-footer">
                   <span class="profile-id font-mono">id: {{ pId }}</span>
-                  <span v-if="p.builtin" class="pill-builtin">{{ t('network.tag_builtin') || '官方内置' }}</span>
-                  <span v-else class="pill-custom">{{ t('network.tag_custom') || '用户自定义' }}</span>
+                  <span v-if="p.builtin" class="pill-builtin">{{ t('network.tag_builtin') }}</span>
+                  <span v-else class="pill-custom">{{ t('network.tag_custom') }}</span>
                 </div>
               </div>
             </div>
@@ -870,6 +870,26 @@ const orderedProfiles = computed(() => {
     return a.id.localeCompare(b.id);
   });
 });
+
+function getProfileDisplayName(id: string, fallbackName?: string): string {
+  if (id === "cn") {
+    return t("network.profile_cn") || "中国镜像加速";
+  }
+  if (id === "official") {
+    return t("network.profile_official") || "官方直连";
+  }
+  return fallbackName || id;
+}
+
+function getProfileDisplayDesc(id: string, fallbackDesc?: string): string {
+  if (id === "cn") {
+    return t("network.profile_cn_desc") || "中国顶级高校与大厂公共镜像加速矩阵，保障编译前依赖极速拉取";
+  }
+  if (id === "official") {
+    return t("network.profile_official_desc") || "全量使用官方源与官方二进制 CDN，不经任何代理或第三方镜像";
+  }
+  return fallbackDesc || "";
+}
 
 const orderedEffectiveEcosystems = computed(() => {
   if (!networkStatus.value?.effective) return [];
