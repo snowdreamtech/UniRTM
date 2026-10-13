@@ -111,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import TitleBar from "./components/layout/TitleBar.vue";
 import ActivityBar from "./components/layout/ActivityBar.vue";
 import SidebarPanel from "./components/layout/SidebarPanel.vue";
@@ -149,11 +149,24 @@ export interface AppConfig {
 const { currentTheme, applyTheme, toggleTheme: baseToggleTheme } = useTheme();
 const { toastMessage, toastType, showToast, dismissToast } = useToast();
 
+const DRAWER_STORAGE_KEY = "unirtm_drawer_open";
+
+function getInitialDrawerOpen(): boolean {
+  if (typeof localStorage === "undefined") return false;
+  return localStorage.getItem(DRAWER_STORAGE_KEY) === "true";
+}
+
 const currentTab = ref<string>("dashboard");
 const activeSubItem = ref<string>("overview");
 const isSidebarOpen = ref<boolean>(true);
-const isDrawerOpen = ref<boolean>(false);
+const isDrawerOpen = ref<boolean>(getInitialDrawerOpen());
 const settingsScope = ref<"user" | "workspace">("user");
+
+watch(isDrawerOpen, (newVal) => {
+  if (typeof localStorage !== "undefined") {
+    localStorage.setItem(DRAWER_STORAGE_KEY, String(newVal));
+  }
+});
 
 const activeRunningTask = ref<string | undefined>(undefined);
 const currentLatencyMs = ref<number | null>(18);

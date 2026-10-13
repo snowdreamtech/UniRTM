@@ -101,10 +101,39 @@ defineEmits<{
   (e: "clear-logs"): void;
 }>();
 
-const activeTab = ref<"output" | "tasks" | "doctor">("output");
+const DRAWER_TAB_KEY = "unirtm_drawer_tab";
+const DRAWER_MAX_KEY = "unirtm_drawer_maximized";
+
+function getInitialTab(): "output" | "tasks" | "doctor" {
+  if (typeof localStorage === "undefined") return "output";
+  const saved = localStorage.getItem(DRAWER_TAB_KEY);
+  if (saved === "output" || saved === "tasks" || saved === "doctor") {
+    return saved;
+  }
+  return "output";
+}
+
+function getInitialMaximized(): boolean {
+  if (typeof localStorage === "undefined") return false;
+  return localStorage.getItem(DRAWER_MAX_KEY) === "true";
+}
+
+const activeTab = ref<"output" | "tasks" | "doctor">(getInitialTab());
 const autoScroll = ref(true);
-const isMaximized = ref(false);
+const isMaximized = ref(getInitialMaximized());
 const logContainerRef = ref<HTMLElement | null>(null);
+
+watch(activeTab, (val) => {
+  if (typeof localStorage !== "undefined") {
+    localStorage.setItem(DRAWER_TAB_KEY, val);
+  }
+});
+
+watch(isMaximized, (val) => {
+  if (typeof localStorage !== "undefined") {
+    localStorage.setItem(DRAWER_MAX_KEY, String(val));
+  }
+});
 
 const displayLogs = computed(() => {
   return props.logs;
