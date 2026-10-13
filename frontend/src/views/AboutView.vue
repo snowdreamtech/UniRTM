@@ -405,7 +405,8 @@ onMounted(() => {
 .progress-bar-track {
   width: 100%;
   height: 6px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--section-bg);
+  border: 1px solid var(--card-border);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -423,10 +424,24 @@ onMounted(() => {
 
 /* Hero Banner */
 .about-hero-banner {
-  padding: 1.5rem;
+  padding: 1.5rem 1.75rem;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.45) 0%, rgba(15, 23, 42, 0.75) 100%);
+  background: var(--card-bg);
   border: 1px solid var(--card-border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme="dark"] .about-hero-banner,
+[data-theme="dark"] .about-hero-banner {
+  background: linear-gradient(135deg, rgba(18, 26, 43, 0.95) 0%, rgba(13, 20, 36, 0.98) 100%);
+  border-color: var(--card-border);
+}
+
+:root[data-theme="light"] .about-hero-banner,
+[data-theme="light"] .about-hero-banner {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-color: var(--card-border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
 .hero-left {
@@ -450,7 +465,7 @@ onMounted(() => {
   width: 90px;
   height: 90px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.35) 0%, rgba(6, 182, 212, 0) 70%);
+  background: radial-gradient(circle, var(--accent-cyan-glow) 0%, transparent 70%);
 }
 
 .app-logo-image {
@@ -487,8 +502,8 @@ onMounted(() => {
   gap: 5px;
   padding: 2px 10px;
   border-radius: 12px;
-  background: rgba(6, 182, 212, 0.12);
-  border: 1px solid rgba(6, 182, 212, 0.25);
+  background: var(--accent-cyan-glow);
+  border: 1px solid var(--card-border);
   color: var(--accent-cyan);
   font-size: 0.78rem;
   font-weight: 600;
@@ -516,7 +531,7 @@ onMounted(() => {
 
 .hero-tag {
   font-size: 0.72rem;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 4px;
   background: var(--input-bg);
   border: 1px solid var(--card-border);
