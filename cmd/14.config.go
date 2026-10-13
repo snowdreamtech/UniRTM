@@ -568,6 +568,27 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid configuration key: %w", err)
 	}
 
+	// Validate against plugin manifest schema if present
+	segments := config.SplitConfigKey(key)
+	if len(segments) >= 4 && segments[0] == "plugins" && segments[2] == "config" {
+		pluginID := segments[1]
+		property := segments[3]
+		cwdDir, _ := os.Getwd()
+		manifest, _ := config.FindPluginManifest(pluginID, cwdDir)
+		if manifest != nil && manifest.Contributes.Configuration != nil {
+			if schema, exists := manifest.Contributes.Configuration[property]; exists {
+				if err := config.ValidateConfigValue(property, value, schema); err != nil {
+					formatter.Error("Plugin configuration schema validation failed", map[string]interface{}{
+						"plugin":   pluginID,
+						"property": property,
+						"error":    err.Error(),
+					})
+					return fmt.Errorf("plugin schema validation failed: %w", err)
+				}
+			}
+		}
+	}
+
 	var targetConfigFile string
 	if configGlobal {
 		targetConfigFile = config.GetGlobalConfigPath()

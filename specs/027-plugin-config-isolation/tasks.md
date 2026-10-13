@@ -70,10 +70,10 @@
 
 **Goal**: Validate plugin configuration values against plugin manifest schemas at write-time.
 
-- [ ] T025 [US4] Define `PluginManifest` and `ContributedConfiguration` structures in `internal/config/schema.go`
-- [ ] T026 [US4] Implement type checking (`string`, `int`, `bool`, `list`) against manifest schema
-- [ ] T027 [US4] Integrate schema validation check into `runConfigSet`
-- [ ] T028 [US4] Add unit tests validating schema compliance in `internal/config/schema_test.go`
+- [x] T025 [US4] Define `PluginManifest` and `ContributedConfiguration` structures in `internal/config/schema.go`
+- [x] T026 [US4] Implement type checking (`string`, `int`, `bool`, `list`) against manifest schema
+- [x] T027 [US4] Integrate schema validation check into `runConfigSet`
+- [x] T028 [US4] Add unit tests validating schema compliance in `internal/config/schema_test.go`
 
 ---
 

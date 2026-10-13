@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestConfigStructure(t *testing.T) {
@@ -201,3 +202,52 @@ func TestPluginConfigNamespaceIsolation(t *testing.T) {
 	err = runConfigShow(cmdShow, []string{})
 	assert.NoError(t, err)
 }
+
+func TestPluginManifestSchemaValidation(t *testing.T) {
+	tmpDir := t.TempDir()
+	cwd, _ := os.Getwd()
+	os.Chdir(tmpDir)
+	defer os.Chdir(cwd)
+
+	pluginsDir := filepath.Join(tmpDir, ".unirtm", "plugins")
+	require.NoError(t, os.MkdirAll(pluginsDir, 0755))
+
+	manifestContent := `{
+  "name": "snowdreamtech/docker",
+  "version": "1.0.0",
+  "contributes": {
+    "configuration": {
+      "port": {
+        "type": "integer"
+      },
+      "driver": {
+        "type": "string",
+        "enum": ["overlay2", "btrfs"]
+      }
+    }
+  }
+}`
+	require.NoError(t, os.WriteFile(filepath.Join(pluginsDir, "snowdreamtech-docker.manifest.json"), []byte(manifestContent), 0644))
+
+	configPath = filepath.Join(tmpDir, ".unirtm.toml")
+	defer func() { configPath = "" }()
+
+	// 1. Valid integer port
+	err := runConfigSet(configSetCmd, []string{`plugins."snowdreamtech/docker".config.port`, "9090"})
+	assert.NoError(t, err)
+
+	// 2. Invalid non-integer port rejected
+	err = runConfigSet(configSetCmd, []string{`plugins."snowdreamtech/docker".config.port`, "not_a_number"})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "must be an integer")
+
+	// 3. Valid enum
+	err = runConfigSet(configSetCmd, []string{`plugins."snowdreamtech/docker".config.driver`, "overlay2"})
+	assert.NoError(t, err)
+
+	// 4. Invalid enum rejected
+	err = runConfigSet(configSetCmd, []string{`plugins."snowdreamtech/docker".config.driver`, "unsupported_driver"})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not in allowed enums")
+}
+
