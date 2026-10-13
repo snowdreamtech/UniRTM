@@ -37,13 +37,23 @@ func LoadGlobal() (*Config, error) {
 	globalPath := GetGlobalConfigPath()
 	data, err := OsReadFile(globalPath)
 	if err != nil {
-		return &Config{}, err
+		globalCfg := &Config{Plugins: make(PluginMap)}
+		globalSidecars, _ := DiscoverGlobalSidecars()
+		if len(globalSidecars) > 0 {
+			MergeSidecarConfigs(globalCfg, globalSidecars)
+			return globalCfg, nil
+		}
+		return globalCfg, err
 	}
 	globalCfg := &Config{}
 	if err := toml.Unmarshal(data, globalCfg); err != nil {
 		return nil, err
 	}
 	globalCfg.PostLoad()
+	globalSidecars, _ := DiscoverGlobalSidecars()
+	if len(globalSidecars) > 0 {
+		MergeSidecarConfigs(globalCfg, globalSidecars)
+	}
 	return globalCfg, nil
 }
 
@@ -104,6 +114,13 @@ func LoadFromDir(dir string) (*Config, error) {
 	}
 
 	if foundFile == "" {
+		// Even if no primary config file exists, check for project sidecars
+		projSidecars, _ := DiscoverProjectSidecars(dir)
+		if len(projSidecars) > 0 {
+			sidecarCfg := &Config{Plugins: make(PluginMap)}
+			MergeSidecarConfigs(sidecarCfg, projSidecars)
+			return sidecarCfg, nil
+		}
 		return &Config{}, fmt.Errorf("no config file found in %s", dir)
 	}
 
@@ -113,6 +130,12 @@ func LoadFromDir(dir string) (*Config, error) {
 	}
 
 	cfg.PostLoad()
+
+	// Discover and merge sidecars (.unirtm/plugins/*.toml)
+	projSidecars, _ := DiscoverProjectSidecars(dir)
+	if len(projSidecars) > 0 {
+		MergeSidecarConfigs(cfg, projSidecars)
+	}
 
 	return cfg, nil
 }

@@ -234,6 +234,12 @@ func (m *defaultConfigManager) Load(ctx context.Context, path string) (*Config, 
 		config.Aliases = make(map[string]map[string]string)
 	}
 
+	// Discover and merge sidecars from the directory containing this config
+	projSidecars, _ := DiscoverProjectSidecars(filepath.Dir(path))
+	if len(projSidecars) > 0 {
+		MergeSidecarConfigs(&config, projSidecars)
+	}
+
 	return &config, nil
 }
 
@@ -285,11 +291,22 @@ func (m *defaultConfigManager) LoadHierarchy(ctx context.Context) (*Config, erro
 		filepath.Join(env.GetConfigDir(), "config.yaml"),
 		filepath.Join(env.GetConfigDir(), "config.yml"),
 	}
+	var globalConfigLoaded *Config
 	for _, path := range globalPaths {
 		if cfg, err := m.tryLoad(ctx, path, false, nil); cfg != nil && err == nil {
-			configs = append(configs, cfg)
+			globalConfigLoaded = cfg
 			break
 		}
+	}
+	globalSidecars, _ := DiscoverGlobalSidecars()
+	if len(globalSidecars) > 0 {
+		if globalConfigLoaded == nil {
+			globalConfigLoaded = &Config{Plugins: make(PluginMap)}
+		}
+		MergeSidecarConfigs(globalConfigLoaded, globalSidecars)
+	}
+	if globalConfigLoaded != nil {
+		configs = append(configs, globalConfigLoaded)
 	}
 
 	// Merge initial configs to get settings like CeilingPaths and TrustedConfigPaths
@@ -349,6 +366,12 @@ func (m *defaultConfigManager) LoadHierarchy(ctx context.Context) (*Config, erro
 		}
 
 		dirConfigs := []*Config{}
+		projSidecars, _ := DiscoverProjectSidecars(curr)
+		if len(projSidecars) > 0 {
+			sidecarCfg := &Config{Plugins: make(PluginMap)}
+			MergeSidecarConfigs(sidecarCfg, projSidecars)
+			dirConfigs = append(dirConfigs, sidecarCfg)
+		}
 		for _, path := range files {
 			cfg, err := m.tryLoad(ctx, path, true, &initialMerged.Settings)
 			if err != nil {

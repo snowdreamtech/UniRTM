@@ -438,6 +438,41 @@ func (c *Config) Merge(other *Config) {
 			c.Hooks[k] = v
 		}
 	}
+
+	// Merge plugins
+	if other.Plugins != nil {
+		if c.Plugins == nil {
+			c.Plugins = make(PluginMap)
+		}
+		for pluginID, pluginDecl := range other.Plugins {
+			if existing, exists := c.Plugins[pluginID]; exists {
+				mergedCfg := make(map[string]interface{})
+				for k, v := range existing.Config {
+					mergedCfg[k] = v
+				}
+				for k, v := range pluginDecl.Config {
+					mergedCfg[k] = v
+				}
+				newDecl := pluginDecl
+				newDecl.Config = mergedCfg
+				if newDecl.Version == "" {
+					newDecl.Version = existing.Version
+				}
+				c.Plugins[pluginID] = newDecl
+			} else {
+				c.Plugins[pluginID] = pluginDecl
+			}
+		}
+	}
+
+	if other.PluginsRaw != nil {
+		if c.PluginsRaw == nil {
+			c.PluginsRaw = make(map[string]interface{})
+		}
+		for k, v := range other.PluginsRaw {
+			c.PluginsRaw[k] = v
+		}
+	}
 }
 
 func (c *Config) validateTaskDependencies() error {

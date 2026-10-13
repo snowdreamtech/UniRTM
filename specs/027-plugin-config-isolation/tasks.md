@@ -46,11 +46,11 @@
 
 **Goal**: Allow complex plugin configs to live in `.unirtm/plugins/*.toml` and auto-merge at runtime.
 
-- [ ] T015 [US2] Implement sidecar directory scanner in `internal/config/sidecar.go` (`.unirtm/plugins/*.toml`)
-- [ ] T016 [US2] Implement global sidecar directory scanner (`~/.config/unirtm/plugins/*.toml`)
-- [ ] T017 [US2] Implement deep merge logic between sidecar files and `.unirtm.toml` in `internal/config/loader.go`
-- [ ] T018 [US2] Enforce precedence rule: inline `.unirtm.toml` overrides sidecar defaults
-- [ ] T019 [US2] Add unit tests for sidecar discovery, merging, and precedence in `internal/config/sidecar_test.go`
+- [x] T015 [US2] Implement sidecar directory scanner in `internal/config/sidecar.go` (`.unirtm/plugins/*.toml`)
+- [x] T016 [US2] Implement global sidecar directory scanner (`~/.config/unirtm/plugins/*.toml`)
+- [x] T017 [US2] Implement deep merge logic between sidecar files and `.unirtm.toml` in `internal/config/loader.go`
+- [x] T018 [US2] Enforce precedence rule: inline `.unirtm.toml` overrides sidecar defaults
+- [x] T019 [US2] Add unit tests for sidecar discovery, merging, and precedence in `internal/config/sidecar_test.go`
 
 ---
 
