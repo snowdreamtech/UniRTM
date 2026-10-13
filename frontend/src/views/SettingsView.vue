@@ -14,28 +14,36 @@
       </div>
 
       <!-- Scope Switcher Tabs: User vs Workspace -->
-      <div class="scope-tabs-bar">
-        <button
-          class="scope-tab-btn"
-          :class="{ active: activeScope === 'user' }"
-          @click="switchScope('user')"
-          id="btn-scope-user"
-          :title="configData?.user?.path || '~/.config/unirtm/unirtm.toml'"
-        >
-          <span class="scope-icon">👤</span>
-          <span class="scope-title">{{ t("settings.scope_user") || "用户" }}</span>
-        </button>
+      <div class="scope-switcher-group">
+        <div class="scope-tabs-bar">
+          <button
+            class="scope-tab-btn"
+            :class="{ active: activeScope === 'user' }"
+            @click="switchScope('user')"
+            id="btn-scope-user"
+            :title="configData?.user?.path || '~/.config/unirtm/unirtm.toml'"
+          >
+            <span class="scope-icon">👤</span>
+            <span class="scope-title">{{ t("settings.scope_user") || "用户" }}</span>
+          </button>
 
-        <button
-          class="scope-tab-btn"
-          :class="{ active: activeScope === 'workspace' }"
-          @click="switchScope('workspace')"
-          id="btn-scope-workspace"
-          :title="configData?.workspace?.path || './.unirtm.toml'"
+          <button
+            class="scope-tab-btn"
+            :class="{ active: activeScope === 'workspace' }"
+            @click="switchScope('workspace')"
+            id="btn-scope-workspace"
+            :title="configData?.workspace?.path || './.unirtm.toml'"
+          >
+            <span class="scope-icon">📁</span>
+            <span class="scope-title">{{ t("settings.scope_workspace") || "工作区" }}</span>
+          </button>
+        </div>
+        <span
+          class="active-scope-badge font-mono"
+          :title="activeScope === 'user' ? (configData?.user?.path || '~/.config/unirtm/unirtm.toml') : (configData?.workspace?.path || './.unirtm.toml')"
         >
-          <span class="scope-icon">📁</span>
-          <span class="scope-title">{{ t("settings.scope_workspace") || "工作区" }}</span>
-        </button>
+          {{ activeScope === 'user' ? (configData?.user?.path || '~/.config/unirtm/unirtm.toml') : (configData?.workspace?.path || './.unirtm.toml') }}
+        </span>
       </div>
 
       <!-- Top Right Actions: Auto-save status & Open TOML -->
@@ -55,44 +63,8 @@
       </div>
     </div>
 
-    <!-- Main Settings Body: Left Navigation Categories + Right Content Canvas -->
-    <div class="settings-body-row">
-      <!-- Left Secondary Category Sidebar -->
-      <nav class="settings-nav-sidebar glass-card">
-        <button
-          v-for="cat in categories"
-          :key="cat.id"
-          class="category-nav-btn"
-          :class="{ active: activeCategory === cat.id }"
-          @click="scrollToCategory(cat.id)"
-        >
-          <span class="cat-icon">{{ cat.icon }}</span>
-          <span class="cat-label">{{ cat.label }}</span>
-          <span v-if="getCategoryItemCount(cat.id)" class="cat-count">
-            {{ getCategoryItemCount(cat.id) }}
-          </span>
-        </button>
-
-        <div class="scope-summary-card">
-          <div class="summary-header">
-            <span class="summary-icon">{{ activeScope === 'user' ? '👤' : '📁' }}</span>
-            <span class="summary-scope-name">{{ activeScope === 'user' ? (t('settings.scope_user') || '用户') : (t('settings.scope_workspace') || '工作区') }}</span>
-          </div>
-          <p class="summary-desc">
-            {{
-              activeScope === 'user'
-                ? (t('settings.scope_user_desc') || '应用于本机所有项目。')
-                : (t('settings.scope_workspace_desc') || '应用于当前项目，随仓库共享。')
-            }}
-          </p>
-          <div class="summary-path font-mono">
-            {{ activeScope === 'user' ? (configData?.user?.path || '~/.config/unirtm/unirtm.toml') : (configData?.workspace?.path || './.unirtm.toml') }}
-          </div>
-        </div>
-      </nav>
-
-      <!-- Right Settings Canvas -->
-      <div class="settings-content-canvas" ref="canvasScrollRef">
+    <!-- Main Settings Body: Full-width Content Canvas -->
+    <div class="settings-content-canvas" ref="canvasScrollRef">
         <!-- Raw TOML View Overlay if toggled -->
         <div v-if="showRawTomlModal" class="raw-toml-view glass-card">
           <div class="raw-toml-header">
@@ -425,18 +397,22 @@
           </div>
         </section>
       </div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { t, selectedLangSetting, setLanguage, SUPPORTED_LANGUAGES } from "../i18n";
 import { useTheme } from "../composables/useTheme";
 import CustomSelect from "../components/CustomSelect.vue";
 
 const props = defineProps<{
   initialScope?: "user" | "workspace";
+  activeCategory?: string;
+}>();
+
+const emit = defineEmits<{
+  (e: "select-category", catId: string): void;
 }>();
 
 const { currentTheme, applyTheme } = useTheme();
@@ -444,9 +420,19 @@ const { currentTheme, applyTheme } = useTheme();
 // State
 const activeScope = ref<"user" | "workspace">(props.initialScope || "user");
 const searchQuery = ref("");
-const activeCategory = ref("general");
+const activeCategory = ref(props.activeCategory || "general");
 const showRawTomlModal = ref(false);
 const isCopied = ref(false);
+
+watch(
+  () => props.activeCategory,
+  (newCat) => {
+    if (newCat) {
+      activeCategory.value = newCat;
+      scrollToCategory(newCat);
+    }
+  }
+);
 
 const isSaving = ref(false);
 const saveStatusText = ref("");
@@ -468,12 +454,6 @@ const netTestOk = ref(false);
 // Full config from API
 const configData = ref<any>(null);
 
-const categories = computed(() => [
-  { id: "general", icon: "⚙️", label: t("settings.cat_general") || "常规" },
-  { id: "network", icon: "🌐", label: t("settings.cat_network") || "网络" },
-  { id: "plugins", icon: "🧩", label: t("settings.cat_plugins") || "扩展" },
-  { id: "security", icon: "🔒", label: t("settings.cat_security") || "安全" },
-]);
 
 const languageSelectOptions = computed(() => [
   { value: "auto", label: "🌐 " + (t("common.autoDetect") || "自动检测") },
@@ -518,10 +498,6 @@ const configuredPlugins = computed(() => {
   }));
 });
 
-function getCategoryItemCount(catId: string) {
-  if (catId === "plugins") return configuredPlugins.value.length || undefined;
-  return undefined;
-}
 
 function matchesSearch(keyword: string) {
   if (!searchQuery.value) return false;
@@ -583,6 +559,7 @@ function isCategoryVisible(catId: string) {
 
 function scrollToCategory(catId: string) {
   activeCategory.value = catId;
+  emit("select-category", catId);
   const target = document.getElementById(`section-${catId}`);
   if (target) {
     target.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -716,6 +693,11 @@ function copyRawToml() {
 
 onMounted(() => {
   loadConfigData();
+  if (props.activeCategory) {
+    setTimeout(() => {
+      scrollToCategory(props.activeCategory!);
+    }, 150);
+  }
 });
 </script>
 
@@ -866,101 +848,24 @@ onMounted(() => {
   color: var(--accent-cyan);
 }
 
-/* Main Body Row */
-.settings-body-row {
-  display: flex;
-  flex: 1;
-  gap: 20px;
-  min-height: 0;
-}
-
-/* Nav Sidebar */
-.settings-nav-sidebar {
-  width: 260px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  padding: 14px;
-  gap: 6px;
-  border-radius: 8px;
-  border: 1px solid var(--card-border);
-  background: var(--card-bg);
-  overflow-y: auto;
-}
-
-.category-group-title {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  letter-spacing: 0.05em;
-  padding: 4px 8px 8px;
-}
-
-.category-nav-btn {
+/* Scope Switcher & Path Badge */
+.scope-switcher-group {
   display: flex;
   align-items: center;
-  width: 100%;
-  padding: 8px 10px;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  color: var(--text-muted);
-  font-size: 0.84rem;
-  text-align: left;
-  cursor: pointer;
-  gap: 10px;
-  transition: all 0.2s ease;
+  gap: 12px;
 }
 
-.category-nav-btn:hover {
-  color: var(--text-main);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.category-nav-btn.active {
-  color: var(--accent-cyan);
-  background: var(--accent-cyan-glow);
-  font-weight: 600;
-}
-
-.cat-count {
-  margin-left: auto;
+.active-scope-badge {
   font-size: 0.72rem;
-  padding: 2px 6px;
-  border-radius: 10px;
-  background: rgba(0, 229, 255, 0.15);
-  color: var(--accent-cyan);
-}
-
-.scope-summary-card {
-  margin-top: auto;
-  padding: 12px;
-  border-radius: 6px;
-  background: var(--section-bg);
+  color: var(--text-muted);
+  background: var(--input-bg);
+  padding: 4px 10px;
+  border-radius: 4px;
   border: 1px solid var(--card-border);
-}
-
-.summary-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-main);
-  margin-bottom: 6px;
-}
-
-.summary-desc {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  line-height: 1.4;
-  margin: 0 0 8px;
-}
-
-.summary-path {
-  font-size: 0.72rem;
-  color: var(--accent-cyan);
-  word-break: break-all;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Content Canvas */

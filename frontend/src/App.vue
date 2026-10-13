@@ -81,6 +81,8 @@
           <SettingsView
             v-else-if="currentTab === 'settings'"
             :initialScope="settingsScope"
+            :activeCategory="activeSubItem"
+            @select-category="activeSubItem = $event"
           />
         </div>
       </main>
