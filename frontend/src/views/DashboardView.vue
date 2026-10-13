@@ -91,12 +91,16 @@
 
         <div class="specs-table">
           <div class="spec-row">
-            <span class="spec-name">当前代理模式</span>
-            <span class="spec-badge badge-neutral">DIRECT (cn-public)</span>
+            <span class="spec-name">当前网络代理</span>
+            <span class="spec-badge badge-neutral">
+              {{ appConfig?.proxyHost ? `${appConfig.proxyProtocol || 'http'}://${appConfig.proxyHost}:${appConfig.proxyPort}` : '官方直连 (DIRECT)' }}
+            </span>
           </div>
           <div class="spec-row">
             <span class="spec-name">GitHub 镜像通道</span>
-            <span class="spec-val">https://ghproxy.net</span>
+            <span class="spec-val font-mono">
+              {{ appConfig?.githubProxy || '官方直连 (github.com)' }}
+            </span>
           </div>
           <div class="spec-row">
             <span class="spec-name">{{ t("hello.ping_latency") || "往返延迟 (RTT)" }}</span>

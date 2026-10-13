@@ -239,11 +239,10 @@
                 <p class="setting-desc">
                   {{ t('settings.github_proxy_desc') || '可配置自定义加速镜像用于下载资源，留空为直连官方。' }}
                 </p>
-                <div class="mirror-presets">
-                  <span class="preset-label">{{ t('settings.quick_presets') || '快捷预设' }}:</span>
-                  <button class="btn-preset-pill" @click="applyMirrorPreset('https://ghproxy.net/')">ghproxy.net</button>
-                  <button class="btn-preset-pill" @click="applyMirrorPreset('https://gh-proxy.com/')">gh-proxy.com</button>
-                  <button class="btn-preset-pill" @click="applyMirrorPreset('')">{{ t('settings.official_direct') || '直连官方' }}</button>
+                <div class="mirror-presets" v-if="githubProxy">
+                  <button class="btn-preset-pill" @click="applyMirrorPreset('')">
+                    {{ t('settings.official_direct') || '恢复官方直连' }}
+                  </button>
                 </div>
               </div>
 
@@ -253,7 +252,7 @@
                     v-model="githubProxy"
                     type="text"
                     class="setting-text-input font-mono"
-                    placeholder="https://ghproxy.net/"
+                    placeholder="https://mirror.internal.company.com/ (默认留空，直连官方)"
                     @change="saveSetting('settings.github_proxy', githubProxy)"
                     @blur="saveSetting('settings.github_proxy', githubProxy)"
                     @keydown.enter="saveSetting('settings.github_proxy', githubProxy)"
