@@ -26,15 +26,17 @@ import (
 )
 
 var (
-	uiPort   int
-	uiHost   string
-	uiNoOpen bool
+	uiPort    int
+	uiHost    string
+	uiNoOpen  bool
+	uiBrowser string
 )
 
 func init() {
 	uiCmd.Flags().IntVarP(&uiPort, "port", "p", 5173, "port to listen on")
 	uiCmd.Flags().StringVarP(&uiHost, "host", "H", "127.0.0.1", "host address to bind")
 	uiCmd.Flags().BoolVar(&uiNoOpen, "no-open", false, "do not open browser automatically")
+	uiCmd.Flags().StringVarP(&uiBrowser, "browser", "b", "", "browser to open (e.g. chrome, firefox, edge, or executable path)")
 
 	if rootCmd != nil {
 		rootCmd.AddCommand(uiCmd)
@@ -135,14 +137,30 @@ func runUI(cmd *cobra.Command, args []string) error {
 	// Banner output
 	pterm.DefaultSection.Println("UniRTM Workbench")
 	pterm.Info.Printf("Local Server : %s\n", pterm.Cyan(url))
+	// Determine target browser: CLI flag > Config > $BROWSER
+	targetBrowser := strings.TrimSpace(uiBrowser)
+	if targetBrowser == "" {
+		if cfg, err := loadConfig(cmd.Context()); err == nil && cfg != nil && cfg.Settings.Browser != "" {
+			targetBrowser = strings.TrimSpace(cfg.Settings.Browser)
+		} else if envBrowser := os.Getenv("BROWSER"); envBrowser != "" {
+			targetBrowser = strings.TrimSpace(envBrowser)
+		}
+	}
+
 	pterm.Info.Printf("Process PID  : %d\n", os.Getpid())
+	if targetBrowser != "" {
+		pterm.Info.Printf("Browser      : %s\n", pterm.Green(targetBrowser))
+	}
 	pterm.Info.Println("Press Ctrl+C to stop the workbench server.")
 
 	// Auto-open browser in background
 	if !uiNoOpen {
 		go func() {
 			time.Sleep(100 * time.Millisecond)
-			_ = openBrowser(url)
+			if err := openBrowser(url, targetBrowser); err != nil {
+				pterm.Warning.Printf("Could not open browser automatically: %v\n", err)
+				pterm.Info.Printf("Please open %s manually in your browser.\n", url)
+			}
 		}()
 	}
 
@@ -191,16 +209,94 @@ func listenOnAvailablePort(host string, preferredPort int) (net.Listener, int, e
 	return fallbackListener, actualPort, nil
 }
 
-// openBrowser opens the specified URL in the system's default browser.
-func openBrowser(url string) error {
-	var cmd *exec.Cmd
+// openBrowser opens the specified URL in the preferred or system default browser.
+// Supports Windows, macOS, Linux, and WSL (Windows Subsystem for Linux).
+func openBrowser(url string, targetBrowser string) error {
+	targetBrowser = strings.TrimSpace(targetBrowser)
+
+	// If a specific browser was requested (e.g. "chrome", "firefox", "edge", or executable path)
+	if targetBrowser != "" {
+		return openWithSpecificBrowser(url, targetBrowser)
+	}
+
+	// Otherwise, open with system default handler
+	return openWithDefaultBrowser(url)
+}
+
+func openWithSpecificBrowser(url string, targetBrowser string) error {
+	switch runtime.GOOS {
+	case "darwin":
+		if strings.Contains(targetBrowser, "/") {
+			return exec.Command(targetBrowser, url).Start()
+		}
+		return exec.Command("open", "-a", targetBrowser, url).Start()
+
+	case "windows":
+		return exec.Command("cmd", "/c", "start", "", targetBrowser, url).Start()
+
+	default:
+		// Linux / Unix / WSL
+		if isWSL() && strings.HasSuffix(strings.ToLower(targetBrowser), ".exe") {
+			return exec.Command("cmd.exe", "/c", "start", "", targetBrowser, url).Start()
+		}
+		return exec.Command(targetBrowser, url).Start()
+	}
+}
+
+func openWithDefaultBrowser(url string) error {
 	switch runtime.GOOS {
 	case "windows":
-		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+		// Windows: "cmd /c start <url>" handles associations cleanly. Fallback to rundll32.
+		cmd := exec.Command("cmd", "/c", "start", "", url)
+		if err := cmd.Start(); err == nil {
+			return nil
+		}
+		return exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+
 	case "darwin":
-		cmd = exec.Command("open", url)
+		return exec.Command("open", url).Start()
+
 	default:
-		cmd = exec.Command("xdg-open", url)
+		// Linux / WSL
+		if isWSL() {
+			if _, err := exec.LookPath("wslview"); err == nil {
+				if err := exec.Command("wslview", url).Start(); err == nil {
+					return nil
+				}
+			}
+			if err := exec.Command("cmd.exe", "/c", "start", "", url).Start(); err == nil {
+				return nil
+			}
+		}
+
+		if _, err := exec.LookPath("xdg-open"); err == nil {
+			if err := exec.Command("xdg-open", url).Start(); err == nil {
+				return nil
+			}
+		}
+		if _, err := exec.LookPath("gio"); err == nil {
+			if err := exec.Command("gio", "open", url).Start(); err == nil {
+				return nil
+			}
+		}
+		return exec.Command("x-www-browser", url).Start()
 	}
-	return cmd.Start()
+}
+
+// isWSL detects if the current Linux environment is running inside Windows Subsystem for Linux.
+func isWSL() bool {
+	if runtime.GOOS != "linux" {
+		return false
+	}
+	if os.Getenv("WSL_DISTRO_NAME") != "" || os.Getenv("WSL_INTEROP") != "" {
+		return true
+	}
+	data, err := os.ReadFile("/proc/version")
+	if err == nil {
+		content := strings.ToLower(string(data))
+		if strings.Contains(content, "microsoft") || strings.Contains(content, "wsl") {
+			return true
+		}
+	}
+	return false
 }

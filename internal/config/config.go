@@ -168,6 +168,7 @@ type Settings struct {
 	AutoInstall          *bool                             `toml:"auto_install,omitempty" yaml:"auto_install,omitempty" mapstructure:"auto_install,omitempty"`
 	Color                string                            `toml:"color,omitempty" yaml:"color,omitempty" mapstructure:"color,omitempty"`
 	Editor               string                            `toml:"editor,omitempty" yaml:"editor,omitempty" mapstructure:"editor,omitempty"`
+	Browser              string                            `toml:"browser,omitempty" yaml:"browser,omitempty" mapstructure:"browser,omitempty"`
 	Shell                string                            `toml:"shell,omitempty" yaml:"shell,omitempty" mapstructure:"shell,omitempty"`
 	AlwaysKeepDownload   bool                              `toml:"always_keep_download,omitempty" yaml:"always_keep_download,omitempty" mapstructure:"always_keep_download,omitempty"`
 	CeilingPaths         []string                          `toml:"ceiling_paths,omitempty" yaml:"ceiling_paths,omitempty" mapstructure:"ceiling_paths,omitempty"`
@@ -256,6 +257,9 @@ func (s *Settings) LoadFromEnv() {
 	}
 	if v := env.Get("EDITOR"); v != "" {
 		s.Editor = v
+	}
+	if v := env.Get("BROWSER"); v != "" {
+		s.Browser = v
 	}
 	if v := env.Get("VISUAL"); v != "" && s.Editor == "" {
 		s.Editor = v

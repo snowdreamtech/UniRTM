@@ -48,6 +48,14 @@ func TestUICmdFlagsAndAliases(t *testing.T) {
 	if noOpenFlag == nil {
 		t.Error("Flag --no-open not found")
 	}
+
+	browserFlag := uiCmd.Flags().Lookup("browser")
+	if browserFlag == nil {
+		t.Error("Flag --browser not found")
+	}
+	if browserFlag.Shorthand != "b" {
+		t.Errorf("Expected shorthand 'b' for browser flag, got '%s'", browserFlag.Shorthand)
+	}
 }
 
 func TestUIStaticAndAPIHandler(t *testing.T) {
