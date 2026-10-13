@@ -130,7 +130,7 @@ import SettingsModal from "./components/SettingsModal.vue";
 import AboutModal from "./components/AboutModal.vue";
 import ToastNotification from "./components/ToastNotification.vue";
 
-import { selectedLangSetting, setLanguage, t } from "./i18n";
+import { selectedLangSetting, setLanguage } from "./i18n";
 import { useTheme } from "./composables/useTheme";
 import { useToast } from "./composables/useToast";
 

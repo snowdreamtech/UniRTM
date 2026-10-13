@@ -267,6 +267,15 @@ unirtm exec -- trivy image --download-db-only
 echo "Downloading Java index DB..."
 unirtm exec -- trivy image --download-java-db-only
 '''
+[tasks."build:frontend"]
+description = "Build frontend production assets"
+run = "cd frontend && npm install && npm run build"
+output = "interleaved"
+
+[tasks.build]
+description = "Compile UniRTM single binary with embedded frontend"
+depends = ["build:frontend"]
+run = "go build -o unirtm main.go"
 output = "interleaved"
 
 [settings]
