@@ -441,6 +441,19 @@ const saveStatusText = ref("");
 // Setting fields
 const appLanguage = ref(selectedLangSetting.value || "auto");
 const appTheme = ref(currentTheme.value || "system");
+
+watch(currentTheme, (newTheme) => {
+  if (newTheme && appTheme.value !== newTheme) {
+    appTheme.value = newTheme;
+  }
+});
+
+watch(selectedLangSetting, (newLang) => {
+  if (newLang && appLanguage.value !== newLang) {
+    appLanguage.value = newLang;
+  }
+});
+
 const cacheTtl = ref("24h");
 const selectedBrowserPreset = ref("");
 const customBrowserPath = ref("");
@@ -685,6 +698,12 @@ function syncFieldsFromConfig() {
   cacheTtl.value = s.cache_ttl || "24h";
   githubProxy.value = s.github_proxy || "";
   httpProxy.value = s.http_proxy || "";
+  if (s.theme) {
+    appTheme.value = s.theme;
+  }
+  if (s.language) {
+    appLanguage.value = s.language;
+  }
 
   if (activeScope.value === "user") {
     const b = s.browser || "";

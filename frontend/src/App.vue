@@ -263,11 +263,28 @@ function handleTaskFinished(taskName: string) {
   addLog("SUCCESS", `Task ${taskName} finished.`);
 }
 
+async function saveGlobalSetting(key: string, value: any) {
+  try {
+    await fetch("/api/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        scope: "user",
+        key,
+        value,
+      }),
+    });
+  } catch (err) {
+    console.warn("Failed to persist setting to config:", err);
+  }
+}
+
 function selectLanguage(langVal: string) {
   setLanguage(langVal);
   if (appConfig.value) {
     appConfig.value.language = langVal;
   }
+  saveGlobalSetting("settings.language", langVal);
   showToast(`Language switched to ${langVal}`, "info");
 }
 
@@ -276,9 +293,10 @@ function toggleTheme() {
   if (appConfig.value) {
     appConfig.value.theme = nextTheme;
   }
+  saveGlobalSetting("settings.theme", nextTheme);
 }
 
-function loadConfig() {
+async function loadConfig() {
   try {
     const raw = localStorage.getItem("unirtm_config");
     if (raw) {
@@ -293,6 +311,22 @@ function loadConfig() {
     }
   } catch (err) {
     console.warn("Failed to load initial configuration:", err);
+  }
+
+  try {
+    const res = await fetch("/api/config");
+    if (res.ok) {
+      const data = await res.json();
+      const userSettings = data?.user?.settings || {};
+      if (userSettings.theme) {
+        applyTheme(userSettings.theme);
+      }
+      if (userSettings.language) {
+        setLanguage(userSettings.language);
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to sync /api/config on startup:", err);
   }
 }
 

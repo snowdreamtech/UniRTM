@@ -177,6 +177,8 @@ type Settings struct {
 	Color                string                            `toml:"color,omitempty" yaml:"color,omitempty" mapstructure:"color,omitempty"`
 	Editor               string                            `toml:"editor,omitempty" yaml:"editor,omitempty" mapstructure:"editor,omitempty"`
 	Browser              string                            `toml:"browser,omitempty" yaml:"browser,omitempty" mapstructure:"browser,omitempty"`
+	Theme                string                            `toml:"theme,omitempty" yaml:"theme,omitempty" mapstructure:"theme,omitempty"`
+	Language             string                            `toml:"language,omitempty" yaml:"language,omitempty" mapstructure:"language,omitempty"`
 	Shell                string                            `toml:"shell,omitempty" yaml:"shell,omitempty" mapstructure:"shell,omitempty"`
 	AlwaysKeepDownload   bool                              `toml:"always_keep_download,omitempty" yaml:"always_keep_download,omitempty" mapstructure:"always_keep_download,omitempty"`
 	CeilingPaths         []string                          `toml:"ceiling_paths,omitempty" yaml:"ceiling_paths,omitempty" mapstructure:"ceiling_paths,omitempty"`

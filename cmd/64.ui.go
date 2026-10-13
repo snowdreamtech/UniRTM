@@ -662,7 +662,7 @@ func handlePostConfig(w http.ResponseWriter, r *http.Request) {
 
 	// Normalize settings shorthand (e.g. "browser" -> "settings.browser")
 	storeKey := key
-	if !strings.HasPrefix(storeKey, "settings.") && (storeKey == "browser" || storeKey == "cache_ttl") {
+	if !strings.HasPrefix(storeKey, "settings.") && (storeKey == "browser" || storeKey == "cache_ttl" || storeKey == "theme" || storeKey == "language") {
 		storeKey = "settings." + storeKey
 	}
 
