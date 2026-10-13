@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -163,7 +164,29 @@ var networkProfileListCmd = &cobra.Command{
 			{"激活", "档案标识", "名称", "类型", "描述"},
 		}
 
-		for id, p := range status.Profiles {
+		var profileIDs []string
+		for id := range status.Profiles {
+			profileIDs = append(profileIDs, id)
+		}
+		sort.Slice(profileIDs, func(i, j int) bool {
+			idA, idB := profileIDs[i], profileIDs[j]
+			if idA == "official" {
+				return true
+			}
+			if idB == "official" {
+				return false
+			}
+			if idA == "cn" {
+				return true
+			}
+			if idB == "cn" {
+				return false
+			}
+			return idA < idB
+		})
+
+		for _, id := range profileIDs {
+			p := status.Profiles[id]
 			activeMark := " "
 			if id == status.ActiveProfileID {
 				activeMark = pterm.Green("✔")

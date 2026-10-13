@@ -97,7 +97,7 @@ func (m *Manager) Config() *NetworkConfig {
 // EnsureDefaults guarantees that built-in profiles and baseline configs are always seeded.
 func (m *Manager) EnsureDefaults() {
 	if m.config.ActiveProfile == "" {
-		m.config.ActiveProfile = "cn"
+		m.config.ActiveProfile = "official"
 	}
 	if m.config.Profiles == nil {
 		m.config.Profiles = make(map[string]NetworkProfile)
@@ -136,8 +136,8 @@ func (m *Manager) GetStatus() *ActiveNetworkStatus {
 	activeID := m.config.ActiveProfile
 	activeProfile, ok := m.config.Profiles[activeID]
 	if !ok {
-		activeProfile = m.config.Profiles["cn"]
-		activeID = "cn"
+		activeProfile = m.config.Profiles["official"]
+		activeID = "official"
 	}
 
 	officialBlueprint := DefaultBuiltinProfiles()["official"]
@@ -322,7 +322,7 @@ func (m *Manager) DeleteProfile(profileID string) error {
 
 	delete(m.config.Profiles, profileID)
 	if m.config.ActiveProfile == profileID {
-		m.config.ActiveProfile = "cn"
+		m.config.ActiveProfile = "official"
 	}
 	return nil
 }

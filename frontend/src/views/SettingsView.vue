@@ -329,7 +329,7 @@
             <!-- Profile Cards -->
             <div class="profile-cards-grid" v-if="networkStatus">
               <div
-                v-for="(p, pId) in networkStatus.profiles"
+                v-for="{ id: pId, profile: p } in orderedProfiles"
                 :key="pId"
                 class="profile-card"
                 :class="{ active: pId === networkStatus.active_profile_id, builtin: p.builtin }"
@@ -693,6 +693,21 @@ const networkStatus = ref<any>({
       builtin: true,
     },
   },
+});
+
+const orderedProfiles = computed(() => {
+  if (!networkStatus.value?.profiles) return [];
+  const list = Object.entries(networkStatus.value.profiles).map(([id, profile]) => ({
+    id,
+    profile: profile as any,
+  }));
+  return list.sort((a, b) => {
+    if (a.id === "official") return -1;
+    if (b.id === "official") return 1;
+    if (a.id === "cn") return -1;
+    if (b.id === "cn") return 1;
+    return a.id.localeCompare(b.id);
+  });
 });
 
 // Full config from API

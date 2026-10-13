@@ -12,8 +12,8 @@ func TestDefaultSeedingAndSecurity(t *testing.T) {
 	mgr := NewManager(nil)
 	cfg := mgr.Config()
 
-	if cfg.ActiveProfile != "cn" {
-		t.Fatalf("expected active profile to be 'cn', got %q", cfg.ActiveProfile)
+	if cfg.ActiveProfile != "official" {
+		t.Fatalf("expected active profile to be 'official', got %q", cfg.ActiveProfile)
 	}
 
 	if cfg.Proxy.Enabled {
@@ -42,10 +42,10 @@ func TestCascadingResolution(t *testing.T) {
 	mgr := NewManager(nil)
 	status := mgr.GetStatus()
 
-	// 1. By default, follows 'cn' profile
+	// 1. By default, follows 'official' profile
 	npmEff, ok := status.Effective["npm"]
-	if !ok || npmEff.URL != "https://registry.npmmirror.com" {
-		t.Fatalf("expected default npm to be npmmirror, got %v", npmEff)
+	if !ok || npmEff.URL != "https://registry.npmjs.org" {
+		t.Fatalf("expected default npm to be official npmjs, got %v", npmEff)
 	}
 	if npmEff.Source != "profile" || npmEff.IsOverridden {
 		t.Fatalf("expected source to be 'profile', got %s, isOverridden=%v", npmEff.Source, npmEff.IsOverridden)
@@ -63,9 +63,9 @@ func TestCascadingResolution(t *testing.T) {
 		t.Fatalf("expected override to take precedence: %+v", npmEff)
 	}
 
-	// Go should still follow cn
+	// Go should still follow official
 	goEff := status.Effective["go"]
-	if goEff.URL != "https://goproxy.cn,direct" || goEff.Source != "profile" || goEff.IsOverridden {
+	if goEff.URL != "https://proxy.golang.org,direct" || goEff.Source != "profile" || goEff.IsOverridden {
 		t.Fatalf("expected go to still follow profile: %+v", goEff)
 	}
 
@@ -75,8 +75,8 @@ func TestCascadingResolution(t *testing.T) {
 		t.Fatalf("unexpected error resetting override: %v", err)
 	}
 	status = mgr.GetStatus()
-	if status.Effective["npm"].URL != "https://registry.npmmirror.com" || status.Effective["npm"].IsOverridden {
-		t.Fatalf("expected npm to fall back to cn profile after reset: %+v", status.Effective["npm"])
+	if status.Effective["npm"].URL != "https://registry.npmjs.org" || status.Effective["npm"].IsOverridden {
+		t.Fatalf("expected npm to fall back to official profile after reset: %+v", status.Effective["npm"])
 	}
 }
 
@@ -120,8 +120,8 @@ func TestProfileLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to delete custom profile: %v", err)
 	}
-	if mgr.Config().ActiveProfile != "cn" {
-		t.Fatalf("expected active profile to fall back to 'cn', got %s", mgr.Config().ActiveProfile)
+	if mgr.Config().ActiveProfile != "official" {
+		t.Fatalf("expected active profile to fall back to 'official', got %s", mgr.Config().ActiveProfile)
 	}
 }
 
@@ -150,6 +150,7 @@ func TestSaveAsProfile(t *testing.T) {
 
 func TestResetBuiltinToFactory(t *testing.T) {
 	mgr := NewManager(nil)
+	_ = mgr.UseProfile("cn")
 	p := mgr.Config().Profiles["cn"]
 	p.Registries["npm"] = "https://corrupted.url"
 	_ = mgr.UpdateProfile(p)
@@ -194,10 +195,10 @@ func TestProxyValidationAndEnvExport(t *testing.T) {
 	if env["HTTP_PROXY"] != "http://127.0.0.1:7890" {
 		t.Fatalf("expected HTTP_PROXY to be exported, got %q", env["HTTP_PROXY"])
 	}
-	if env["NPM_CONFIG_REGISTRY"] != "https://registry.npmmirror.com" {
+	if env["NPM_CONFIG_REGISTRY"] != "https://registry.npmjs.org" {
 		t.Fatalf("expected NPM_CONFIG_REGISTRY, got %q", env["NPM_CONFIG_REGISTRY"])
 	}
-	if env["GOPROXY"] != "https://goproxy.cn,direct" {
+	if env["GOPROXY"] != "https://proxy.golang.org,direct" {
 		t.Fatalf("expected GOPROXY, got %q", env["GOPROXY"])
 	}
 }
