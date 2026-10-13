@@ -30,7 +30,10 @@
       <!-- Action Tools on the right -->
       <div class="drawer-actions">
         <button class="drawer-action-btn" :title="t('drawer.clear_logs')" @click="$emit('clear-logs')">
-          <span>🧹</span>
+          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="8" r="6" />
+            <path d="M3.8 3.8l8.4 8.4" />
+          </svg>
         </button>
         <button
           class="drawer-action-btn"
@@ -38,17 +41,29 @@
           :title="`${t('drawer.toggle_scroll')}: ${autoScroll ? 'ON' : 'OFF'}`"
           @click="autoScroll = !autoScroll"
         >
-          <span>⬇️</span>
+          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 2.5v8.5" />
+            <path d="M4.5 7.5L8 11l3.5-3.5" />
+            <path d="M2.5 13.5h11" />
+          </svg>
         </button>
         <button
           class="drawer-action-btn"
-          :title="t('drawer.toggle_max')"
+          :class="{ active: isMaximized }"
+          :title="isMaximized ? (t('drawer.restore') || '还原默认高度') : (t('drawer.maximize') || '最大化视窗')"
           @click="isMaximized = !isMaximized"
         >
-          <span>{{ isMaximized ? "🗗" : "🗖" }}</span>
+          <svg v-if="!isMaximized" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2.5 10.5L8 5l5.5 5.5" />
+          </svg>
+          <svg v-else viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2.5 5.5L8 11l5.5-5.5" />
+          </svg>
         </button>
         <button class="drawer-action-btn" :title="t('common.close')" @click="$emit('close')">
-          <span>✕</span>
+          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
+          </svg>
         </button>
       </div>
     </div>
@@ -103,6 +118,7 @@ defineEmits<{
 
 const DRAWER_TAB_KEY = "unirtm_drawer_tab";
 const DRAWER_MAX_KEY = "unirtm_drawer_maximized";
+const DRAWER_AUTOSCROLL_KEY = "unirtm_drawer_autoscroll";
 
 function getInitialTab(): "output" | "tasks" | "doctor" {
   if (typeof localStorage === "undefined") return "output";
@@ -118,8 +134,15 @@ function getInitialMaximized(): boolean {
   return localStorage.getItem(DRAWER_MAX_KEY) === "true";
 }
 
+function getInitialAutoScroll(): boolean {
+  if (typeof localStorage === "undefined") return true;
+  const saved = localStorage.getItem(DRAWER_AUTOSCROLL_KEY);
+  if (saved === null) return true;
+  return saved === "true";
+}
+
 const activeTab = ref<"output" | "tasks" | "doctor">(getInitialTab());
-const autoScroll = ref(true);
+const autoScroll = ref(getInitialAutoScroll());
 const isMaximized = ref(getInitialMaximized());
 const logContainerRef = ref<HTMLElement | null>(null);
 
@@ -132,6 +155,12 @@ watch(activeTab, (val) => {
 watch(isMaximized, (val) => {
   if (typeof localStorage !== "undefined") {
     localStorage.setItem(DRAWER_MAX_KEY, String(val));
+  }
+});
+
+watch(autoScroll, (val) => {
+  if (typeof localStorage !== "undefined") {
+    localStorage.setItem(DRAWER_AUTOSCROLL_KEY, String(val));
   }
 });
 
@@ -228,10 +257,14 @@ watch(
   background: transparent;
   border: none;
   color: var(--text-muted);
-  padding: 0.2rem 0.4rem;
+  width: 24px;
+  height: 24px;
+  padding: 0;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.15s ease;
 }
 
@@ -242,6 +275,7 @@ watch(
 
 .drawer-action-btn.active {
   color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.14);
 }
 
 .drawer-body {

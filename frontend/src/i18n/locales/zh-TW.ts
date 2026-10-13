@@ -18,6 +18,8 @@ export const zhTw: TranslationDict = {
   "drawer.clear_logs": "清空記錄",
   "drawer.toggle_scroll": "自動滾動",
   "drawer.toggle_max": "最大化/還原",
+  "drawer.maximize": "最大化視窗",
+  "drawer.restore": "還原預設高度",
 
   "nav.dashboard": "項目總覽",
   "nav.tools": "工具鏈",

@@ -18,6 +18,8 @@ export const zhCn: TranslationDict = {
   "drawer.clear_logs": "清空日志",
   "drawer.toggle_scroll": "自动滚动",
   "drawer.toggle_max": "最大化/还原",
+  "drawer.maximize": "最大化视窗",
+  "drawer.restore": "还原默认高度",
 
   "nav.dashboard": "项目总览",
   "nav.tools": "工具链",

@@ -18,6 +18,8 @@ export const enUs: TranslationDict = {
   "drawer.clear_logs": "Clear logs",
   "drawer.toggle_scroll": "Auto scroll",
   "drawer.toggle_max": "Toggle maximize",
+  "drawer.maximize": "Maximize panel",
+  "drawer.restore": "Restore panel height",
 
   "nav.dashboard": "Dashboard",
   "nav.tools": "Toolchains",

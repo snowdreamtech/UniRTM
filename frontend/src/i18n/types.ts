@@ -18,6 +18,8 @@ export interface TranslationDict {
   "drawer.clear_logs"?: string;
   "drawer.toggle_scroll"?: string;
   "drawer.toggle_max"?: string;
+  "drawer.maximize"?: string;
+  "drawer.restore"?: string;
 
   "nav.dashboard"?: string;
   "nav.tools"?: string;
