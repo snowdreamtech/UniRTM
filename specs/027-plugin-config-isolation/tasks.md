@@ -11,10 +11,10 @@
 
 **Purpose**: Establish data models, interfaces, and core reserved table definitions.
 
-- [ ] T001 [Setup] Define `ReservedCoreTables` map in `internal/config/reserved.go`
-- [ ] T002 [Setup] Add `Plugins map[string]PluginDeclaration` to `Config` struct in `internal/config/config.go`
-- [ ] T003 [Setup] Create `PluginDeclaration` struct with `Version` and `Config map[string]interface{}`
-- [ ] T004 [Setup] Write unit tests for reserved table check in `internal/config/reserved_test.go`
+- [x] T001 [Setup] Define `ReservedCoreTables` map in `internal/config/reserved.go`
+- [x] T002 [Setup] Add `Plugins map[string]PluginDeclaration` to `Config` struct in `internal/config/config.go`
+- [x] T003 [Setup] Create `PluginDeclaration` struct with `Version` and `Config map[string]interface{}`
+- [x] T004 [Setup] Write unit tests for reserved table check in `internal/config/reserved_test.go`
 
 ---
 
@@ -22,10 +22,10 @@
 
 **Purpose**: Enforce write-time and read-time namespace validation rules.
 
-- [ ] T005 [Foundational] Implement `ValidateKeyNamespace(key string) error` in `internal/config/reserved.go`
-- [ ] T006 [Foundational] Reject unreserved root-level keys in `ValidateKeyNamespace`
-- [ ] T007 [Foundational] Validate plugin ID formatting under `plugins."<plugin-id>"` namespace
-- [ ] T008 [Foundational] Add unit tests covering legal and illegal keys in `internal/config/reserved_test.go`
+- [x] T005 [Foundational] Implement `ValidateKeyNamespace(key string) error` in `internal/config/reserved.go`
+- [x] T006 [Foundational] Reject unreserved root-level keys in `ValidateKeyNamespace`
+- [x] T007 [Foundational] Validate plugin ID formatting under `plugins."<plugin-id>"` namespace
+- [x] T008 [Foundational] Add unit tests covering legal and illegal keys in `internal/config/reserved_test.go`
 
 ---
 

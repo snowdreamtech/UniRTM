@@ -24,6 +24,8 @@ type Config struct {
 	Hooks        map[string]string            `toml:"hooks,omitempty" yaml:"hooks,omitempty" mapstructure:"hooks,omitempty"`
 	Environments map[string]EnvironmentConfig `toml:"environments,omitempty" yaml:"environments,omitempty" mapstructure:"environments,omitempty"`
 	Aliases      map[string]map[string]string `toml:"aliases,omitempty" yaml:"aliases,omitempty" mapstructure:"aliases,omitempty"`
+	Plugins      PluginMap                    `toml:"-" yaml:"-" mapstructure:"-"`
+	PluginsRaw   map[string]interface{}       `toml:"plugins,omitempty" yaml:"plugins,omitempty" mapstructure:"plugins,omitempty"`
 }
 
 type EnvironmentConfig struct {
@@ -64,6 +66,12 @@ func (c *Config) PostLoad() {
 		c.Tools = make(ToolMap)
 		for k, v := range c.ToolsRaw {
 			c.Tools[k] = parseToolConfig(v)
+		}
+	}
+	if c.PluginsRaw != nil {
+		c.Plugins = make(PluginMap)
+		for k, v := range c.PluginsRaw {
+			c.Plugins[k] = parsePluginDeclaration(v)
 		}
 	}
 	for name, env := range c.Environments {
