@@ -9,8 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
-	"github.com/pelletier/go-toml/v2"
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
 	"github.com/snowdreamtech/unirtm/internal/config"
@@ -605,33 +605,40 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 		ext = "toml"
 	}
 
-	// Read existing content as a generic map to preserve unknown keys
-	existing := make(map[string]interface{})
-	if data, err := os.ReadFile(targetConfigFile); err == nil {
-		switch ext {
-		case "toml":
-			_ = toml.Unmarshal(data, &existing)
-		case "yaml", "yml":
-			_ = yaml.Unmarshal(data, &existing)
-		}
-	}
-
 	// Normalize settings shorthand (e.g. "browser" -> "settings.browser")
 	storeKey := key
 	if !strings.HasPrefix(storeKey, "settings.") && (storeKey == "browser" || storeKey == "cache_ttl") {
 		storeKey = "settings." + storeKey
 	}
 
-	// Set the value at the segmented key path (respecting quoted plugin IDs)
-	setNestedKey(existing, config.SplitConfigKey(storeKey), value)
+	// Acquire exclusive file lock to ensure atomic, safe writes
+	fileLock, lockErr := config.AcquireFileLock(targetConfigFile, 5*time.Second)
+	if lockErr != nil {
+		formatter.Error("Failed to acquire configuration file lock", map[string]interface{}{
+			"error": lockErr.Error(),
+		})
+		return fmt.Errorf("acquire config lock: %w", lockErr)
+	}
+	defer fileLock.Release()
 
-	// Serialize back to file
+	// Serialize back to file preserving comments for TOML
 	var out []byte
 	var writeErr error
 	switch ext {
 	case "toml":
-		out, writeErr = toml.Marshal(existing)
+		existingRaw, _ := os.ReadFile(targetConfigFile)
+		updatedTOML, err := config.UpsertTOMLSetting(string(existingRaw), config.SplitConfigKey(storeKey), value)
+		if err != nil {
+			writeErr = err
+		} else {
+			out = []byte(updatedTOML)
+		}
 	case "yaml", "yml":
+		existing := make(map[string]interface{})
+		if data, err := os.ReadFile(targetConfigFile); err == nil {
+			_ = yaml.Unmarshal(data, &existing)
+		}
+		setNestedKey(existing, config.SplitConfigKey(storeKey), value)
 		out, writeErr = yaml.Marshal(existing)
 	default:
 		writeErr = fmt.Errorf("unsupported config format: %s", ext)

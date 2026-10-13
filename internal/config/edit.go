@@ -225,3 +225,159 @@ func SaveRawTOML(path string, m map[string]interface{}) error {
 	_, _ = FormatFile(path, false)
 	return nil
 }
+
+// formatTOMLValue formats a value as a valid TOML literal.
+func formatTOMLValue(val interface{}) string {
+	switch v := val.(type) {
+	case string:
+		return quoteTOMLValue(v)
+	case bool:
+		if v {
+			return "true"
+		}
+		return "false"
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
+		return fmt.Sprintf("%v", v)
+	default:
+		data, err := toml.Marshal(v)
+		if err == nil {
+			return strings.TrimSpace(string(data))
+		}
+		return fmt.Sprintf("%v", v)
+	}
+}
+
+// UpsertTOMLSetting updates or inserts a setting at keySegments in TOML content while
+// strictly preserving all comments, formatting, and unknown keys.
+func UpsertTOMLSetting(content string, keySegments []string, value interface{}) (string, error) {
+	if len(keySegments) == 0 {
+		return content, fmt.Errorf("key segments cannot be empty")
+	}
+
+	var sectionSegments []string
+	var targetKey string
+	if len(keySegments) == 1 {
+		targetKey = keySegments[0]
+	} else {
+		sectionSegments = keySegments[:len(keySegments)-1]
+		targetKey = keySegments[len(keySegments)-1]
+	}
+
+	// Format section header
+	var sectionHeader string
+	if len(sectionSegments) > 0 {
+		var quotedSecs []string
+		for _, s := range sectionSegments {
+			quotedSecs = append(quotedSecs, quoteTOMLKey(s))
+		}
+		sectionHeader = "[" + strings.Join(quotedSecs, ".") + "]"
+	}
+
+	newEntry := fmt.Sprintf("%s = %s", quoteTOMLKey(targetKey), formatTOMLValue(value))
+
+	lines := strings.Split(content, "\n")
+
+	// If root section (no header)
+	if sectionHeader == "" {
+		keyLineIdx := -1
+		firstSectionIdx := -1
+		for i, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			if strings.HasPrefix(trimmed, "[") {
+				firstSectionIdx = i
+				break
+			}
+			parts := strings.SplitN(trimmed, "=", 2)
+			if len(parts) == 2 {
+				k := strings.Trim(strings.TrimSpace(parts[0]), `"'`)
+				if k == targetKey {
+					keyLineIdx = i
+					break
+				}
+			}
+		}
+		if keyLineIdx != -1 {
+			lines[keyLineIdx] = newEntry
+			return strings.Join(lines, "\n"), nil
+		}
+		if firstSectionIdx != -1 {
+			newLines := make([]string, 0, len(lines)+1)
+			newLines = append(newLines, lines[:firstSectionIdx]...)
+			newLines = append(newLines, newEntry)
+			newLines = append(newLines, lines[firstSectionIdx:]...)
+			return strings.Join(newLines, "\n"), nil
+		}
+		lines = append(lines, newEntry)
+		return strings.Join(lines, "\n"), nil
+	}
+
+	// Non-root section
+	inSection := false
+	secStart := -1
+	secEnd := -1
+	keyLineIdx := -1
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "[") && !strings.HasPrefix(trimmed, "[[") {
+			if normalizeHeader(trimmed) == normalizeHeader(sectionHeader) {
+				inSection = true
+				secStart = i
+				continue
+			} else if inSection {
+				secEnd = i
+				inSection = false
+				break
+			}
+		}
+		if inSection {
+			parts := strings.SplitN(trimmed, "=", 2)
+			if len(parts) == 2 {
+				k := strings.Trim(strings.TrimSpace(parts[0]), `"'`)
+				if k == targetKey {
+					keyLineIdx = i
+				}
+			}
+		}
+	}
+
+	if inSection {
+		secEnd = len(lines)
+	}
+
+	if secStart == -1 {
+		// Section not found; append to end
+		if content != "" && !strings.HasSuffix(content, "\n") {
+			content += "\n"
+		}
+		content += "\n" + sectionHeader + "\n" + newEntry + "\n"
+		return content, nil
+	}
+
+	if keyLineIdx != -1 {
+		// Update existing line
+		lines[keyLineIdx] = newEntry
+		return strings.Join(lines, "\n"), nil
+	}
+
+	// Insert before secEnd
+	insertAt := secEnd
+	newLines := make([]string, 0, len(lines)+1)
+	newLines = append(newLines, lines[:insertAt]...)
+	newLines = append(newLines, newEntry)
+	newLines = append(newLines, lines[insertAt:]...)
+	return strings.Join(newLines, "\n"), nil
+}
+
+func normalizeHeader(h string) string {
+	h = strings.TrimSpace(h)
+	h = strings.TrimPrefix(h, "[")
+	h = strings.TrimSuffix(h, "]")
+	h = strings.TrimSpace(h)
+	segments := SplitConfigKey(h)
+	var norm []string
+	for _, s := range segments {
+		norm = append(norm, quoteTOMLKey(s))
+	}
+	return "[" + strings.Join(norm, ".") + "]"
+}

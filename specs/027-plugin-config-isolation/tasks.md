@@ -58,11 +58,11 @@
 
 **Goal**: Guarantee thread-safe, process-safe atomic writes and comment preservation.
 
-- [ ] T020 [US3] Implement cross-platform file locking (`.unirtm.toml.lock`) in `internal/config/lock.go`
-- [ ] T021 [US3] Integrate file locking into `runConfigSet` with automatic timeout handling
-- [ ] T022 [US3] Ensure comment preservation when updating TOML files via AST-aware serializer
-- [ ] T023 [US3] Add unit tests simulating concurrent configuration writers in `internal/config/lock_test.go`
-- [ ] T024 [US3] Add test ensuring comments and whitespace are preserved after config modifications
+- [x] T020 [US3] Implement cross-platform file locking (`.unirtm.toml.lock`) in `internal/config/lock.go`
+- [x] T021 [US3] Integrate file locking into `runConfigSet` with automatic timeout handling
+- [x] T022 [US3] Ensure comment preservation when updating TOML files via AST-aware serializer
+- [x] T023 [US3] Add unit tests simulating concurrent configuration writers in `internal/config/lock_test.go`
+- [x] T024 [US3] Add test ensuring comments and whitespace are preserved after config modifications
 
 ---
 
