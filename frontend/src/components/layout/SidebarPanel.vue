@@ -114,6 +114,24 @@
           <span class="status-indicator-dot success">●</span>
         </button>
       </template>
+
+      <!-- SETTINGS Navigation Items -->
+      <template v-if="currentTab === 'settings'">
+        <div class="nav-group-title">SETTINGS SECTIONS</div>
+        <button
+          v-for="item in settingsNavItems"
+          :key="item.id"
+          class="sidebar-item"
+          :class="{ active: activeSubItem === item.id }"
+          @click="$emit('select-sub-item', item.id)"
+        >
+          <span class="item-icon">{{ item.icon }}</span>
+          <div class="item-dual">
+            <span class="item-label">{{ item.label }}</span>
+            <span class="item-sub">{{ item.sub }}</span>
+          </div>
+        </button>
+      </template>
     </div>
   </aside>
 </template>
@@ -148,10 +166,20 @@ const headerTitle = computed(() => {
       return t("nav.marketplace") || "MARKETPLACE";
     case "doctor":
       return t("nav.doctor") || "DOCTOR";
+    case "settings":
+      return t("settings.title") || "SETTINGS";
     default:
       return "EXPLORER";
   }
 });
+
+const settingsNavItems = computed(() => [
+  { id: "common", icon: "⚙️", label: "常用设置", sub: "外观、语言、缓存" },
+  { id: "browser", icon: "💻", label: "系统工具与浏览器", sub: "浏览器偏好 (全局专属)" },
+  { id: "network", icon: "🌐", label: "网络与代理", sub: "GitHub 加速、HTTP 代理" },
+  { id: "plugins", icon: "🧩", label: "插件与扩展", sub: "plugins.<id> 隔离区" },
+  { id: "security", icon: "🔒", label: "命名空间与锁", sub: "核心保留表与文件锁" },
+]);
 
 const searchPlaceholder = computed(() => {
   return "Filter...";

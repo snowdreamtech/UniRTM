@@ -106,3 +106,64 @@ func TestUIStaticAndAPIHandler(t *testing.T) {
 		t.Logf("Root returned status %d", rrRoot.Code)
 	}
 }
+
+func TestUIConfigAPI(t *testing.T) {
+	distFS, err := frontend.GetFS()
+	if err != nil {
+		t.Fatalf("GetFS failed: %v", err)
+	}
+	mux := setupUIMux(distFS)
+
+	// 1. Test GET /api/config
+	reqGet := httptest.NewRequest("GET", "/api/config", nil)
+	rrGet := httptest.NewRecorder()
+	mux.ServeHTTP(rrGet, reqGet)
+
+	if rrGet.Code != http.StatusOK {
+		t.Fatalf("Expected status 200 on GET /api/config, got %d", rrGet.Code)
+	}
+	if !strings.Contains(rrGet.Body.String(), "user") || !strings.Contains(rrGet.Body.String(), "workspace") {
+		t.Errorf("Expected body to contain 'user' and 'workspace', got %s", rrGet.Body.String())
+	}
+
+	// 2. Test POST /api/config rejecting browser in workspace scope
+	reqBodyWS := strings.NewReader(`{"scope":"workspace","key":"settings.browser","value":"chrome"}`)
+	reqPostWS := httptest.NewRequest("POST", "/api/config", reqBodyWS)
+	reqPostWS.Header.Set("Content-Type", "application/json")
+	rrPostWS := httptest.NewRecorder()
+	mux.ServeHTTP(rrPostWS, reqPostWS)
+
+	if rrPostWS.Code != http.StatusBadRequest {
+		t.Errorf("Expected status 400 for browser in workspace, got %d (body: %s)", rrPostWS.Code, rrPostWS.Body.String())
+	}
+	if !strings.Contains(rrPostWS.Body.String(), "global") {
+		t.Errorf("Expected rejection message to mention 'global', got %s", rrPostWS.Body.String())
+	}
+
+	// 3. Test POST /api/config rejecting unknown root namespace
+	reqBodyInvalid := strings.NewReader(`{"scope":"workspace","key":"unknown_root.item","value":"val"}`)
+	reqPostInvalid := httptest.NewRequest("POST", "/api/config", reqBodyInvalid)
+	reqPostInvalid.Header.Set("Content-Type", "application/json")
+	rrPostInvalid := httptest.NewRecorder()
+	mux.ServeHTTP(rrPostInvalid, reqPostInvalid)
+
+	if rrPostInvalid.Code != http.StatusBadRequest {
+		t.Errorf("Expected status 400 for unknown namespace, got %d", rrPostInvalid.Code)
+	}
+
+	// 4. Test POST /api/config with user scope browser setting (temporary home dir)
+	tempHome := t.TempDir()
+	t.Setenv("HOME", tempHome)
+	t.Setenv("USERPROFILE", tempHome)
+
+	reqBodyUser := strings.NewReader(`{"scope":"user","key":"settings.browser","value":"firefox"}`)
+	reqPostUser := httptest.NewRequest("POST", "/api/config", reqBodyUser)
+	reqPostUser.Header.Set("Content-Type", "application/json")
+	rrPostUser := httptest.NewRecorder()
+	mux.ServeHTTP(rrPostUser, reqPostUser)
+
+	if rrPostUser.Code != http.StatusOK {
+		t.Errorf("Expected status 200 for user scope browser, got %d (body: %s)", rrPostUser.Code, rrPostUser.Body.String())
+	}
+}
+

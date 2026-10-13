@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"syscall"
@@ -87,65 +88,7 @@ func runUI(cmd *cobra.Command, args []string) error {
 
 	url := fmt.Sprintf("http://%s:%d", uiHost, actualPort)
 
-	mux := http.NewServeMux()
-
-	// ─── API Endpoints ────────────────────────────────────────────────────────
-	mux.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		cm := config.NewConfigManager()
-		cfg, _ := cm.LoadHierarchy(r.Context())
-		pluginCount := 0
-		if cfg != nil {
-			pluginCount = len(cfg.Plugins)
-		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":        "ready",
-			"version":       env.GitTag,
-			"commit":        env.CommitHash,
-			"platform":      fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
-			"go_version":    runtime.Version(),
-			"tools_count":   5,
-			"tasks_count":   4,
-			"plugins_count": pluginCount,
-			"timestamp":     time.Now().Unix(),
-		})
-	})
-
-	mux.HandleFunc("/api/plugins", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		cm := config.NewConfigManager()
-		cfg, _ := cm.LoadHierarchy(r.Context())
-		if cfg == nil {
-			cfg = &config.Config{}
-		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"plugins": cfg.Plugins,
-		})
-	})
-
-	// ─── Static SPA Handler ───────────────────────────────────────────────────
-	fileServer := http.FileServer(http.FS(distFS))
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/api/") {
-			http.NotFound(w, r)
-			return
-		}
-
-		path := strings.TrimPrefix(r.URL.Path, "/")
-		if path == "" {
-			path = "index.html"
-		}
-
-		// If static file exists, serve it; otherwise fallback to index.html (SPA routing)
-		if _, err := fs.Stat(distFS, path); err == nil {
-			fileServer.ServeHTTP(w, r)
-			return
-		}
-
-		// Fallback to index.html for SPA client-side routes
-		r.URL.Path = "/"
-		fileServer.ServeHTTP(w, r)
-	})
+	mux := setupUIMux(distFS)
 
 	server := &http.Server{
 		Handler:      mux,
@@ -334,3 +277,245 @@ func isWSL() bool {
 	}
 	return false
 }
+
+func setupUIMux(distFS fs.FS) *http.ServeMux {
+	mux := http.NewServeMux()
+
+	// ─── API Endpoints ────────────────────────────────────────────────────────
+	mux.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		cm := config.NewConfigManager()
+		cfg, _ := cm.LoadHierarchy(r.Context())
+		pluginCount := 0
+		if cfg != nil {
+			pluginCount = len(cfg.Plugins)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":        "ready",
+			"version":       env.GitTag,
+			"commit":        env.CommitHash,
+			"platform":      fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
+			"go_version":    runtime.Version(),
+			"tools_count":   5,
+			"tasks_count":   4,
+			"plugins_count": pluginCount,
+			"timestamp":     time.Now().Unix(),
+		})
+	})
+
+	mux.HandleFunc("/api/plugins", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		cm := config.NewConfigManager()
+		cfg, _ := cm.LoadHierarchy(r.Context())
+		if cfg == nil {
+			cfg = &config.Config{}
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"plugins": cfg.Plugins,
+		})
+	})
+
+	mux.HandleFunc("/api/config", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet {
+			handleGetConfig(w, r)
+			return
+		} else if r.Method == http.MethodPost {
+			handlePostConfig(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+	})
+
+	// ─── Static SPA Handler ───────────────────────────────────────────────────
+	fileServer := http.FileServer(http.FS(distFS))
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			http.NotFound(w, r)
+			return
+		}
+
+		path := strings.TrimPrefix(r.URL.Path, "/")
+		if path == "" {
+			path = "index.html"
+		}
+
+		// If static file exists, serve it; otherwise fallback to index.html (SPA routing)
+		if _, err := fs.Stat(distFS, path); err == nil {
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+
+		// Fallback to index.html for SPA client-side routes
+		r.URL.Path = "/"
+		fileServer.ServeHTTP(w, r)
+	})
+
+	return mux
+}
+
+func handleGetConfig(w http.ResponseWriter, r *http.Request) {
+	userPath := config.GetGlobalConfigPath()
+	userExists := false
+	var userRaw string
+	var userCfg *config.Config
+	if data, err := os.ReadFile(userPath); err == nil {
+		userExists = true
+		userRaw = string(data)
+	}
+	userCfg, _ = config.LoadGlobal()
+	if userCfg == nil {
+		userCfg = &config.Config{}
+	}
+
+	wsPath := ".unirtm.toml"
+	wsExists := false
+	var wsRaw string
+	if data, err := os.ReadFile(wsPath); err == nil {
+		wsExists = true
+		wsRaw = string(data)
+	}
+	cm := config.NewConfigManager()
+	wsCfg, _ := cm.LoadHierarchy(r.Context())
+	if wsCfg == nil {
+		wsCfg = &config.Config{}
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"user": map[string]interface{}{
+			"path":     userPath,
+			"exists":   userExists,
+			"raw":      userRaw,
+			"settings": userCfg.Settings,
+			"plugins":  userCfg.Plugins,
+			"env":      userCfg.Env,
+		},
+		"workspace": map[string]interface{}{
+			"path":     wsPath,
+			"exists":   wsExists,
+			"raw":      wsRaw,
+			"settings": wsCfg.Settings,
+			"plugins":  wsCfg.Plugins,
+			"env":      wsCfg.Env,
+			"tools":    wsCfg.Tools,
+			"tasks":    wsCfg.Tasks,
+		},
+	})
+}
+
+func handlePostConfig(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Scope string      `json:"scope"`
+		Key   string      `json:"key"`
+		Value interface{} `json:"value"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid json body: " + err.Error()})
+		return
+	}
+
+	scope := strings.ToLower(strings.TrimSpace(body.Scope))
+	key := strings.TrimSpace(body.Key)
+	if scope != "user" && scope != "workspace" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "scope must be 'user' or 'workspace'"})
+		return
+	}
+
+	if key == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "key cannot be empty"})
+		return
+	}
+
+	// Machine-specific settings check: browser is global-only
+	cleanKey := strings.TrimPrefix(key, "settings.")
+	if scope == "workspace" && cleanKey == "browser" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "Browser configuration is only permitted in global config to ensure project portability across team machines.",
+			"hint":  "Please configure settings.browser in User (全局) scope instead.",
+		})
+		return
+	}
+
+	// Validate namespace adhering to reserved core tables and plugin namespaces
+	if err := config.ValidateKeyNamespace(key); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	valStr := fmt.Sprintf("%v", body.Value)
+
+	// Validate plugin schema if applicable
+	segments := config.SplitConfigKey(key)
+	if len(segments) >= 4 && segments[0] == "plugins" && segments[2] == "config" {
+		pluginID := segments[1]
+		property := segments[3]
+		cwdDir, _ := os.Getwd()
+		manifest, _ := config.FindPluginManifest(pluginID, cwdDir)
+		if manifest != nil && manifest.Contributes.Configuration != nil {
+			if schema, exists := manifest.Contributes.Configuration[property]; exists {
+				if err := config.ValidateConfigValue(property, valStr, schema); err != nil {
+					w.WriteHeader(http.StatusBadRequest)
+					_ = json.NewEncoder(w).Encode(map[string]interface{}{
+						"error": fmt.Sprintf("plugin schema validation failed: %v", err),
+					})
+					return
+				}
+			}
+		}
+	}
+
+	var targetFile string
+	if scope == "user" {
+		targetFile = config.GetGlobalConfigPath()
+		if err := os.MkdirAll(filepath.Dir(targetFile), 0755); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "create global config dir: " + err.Error()})
+			return
+		}
+	} else {
+		targetFile = ".unirtm.toml"
+	}
+
+	// Normalize settings shorthand (e.g. "browser" -> "settings.browser")
+	storeKey := key
+	if !strings.HasPrefix(storeKey, "settings.") && (storeKey == "browser" || storeKey == "cache_ttl") {
+		storeKey = "settings." + storeKey
+	}
+
+	fileLock, lockErr := config.AcquireFileLock(targetFile, 5*time.Second)
+	if lockErr != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "acquire config file lock: " + lockErr.Error()})
+		return
+	}
+	defer fileLock.Release()
+
+	existingRaw, _ := os.ReadFile(targetFile)
+	updatedTOML, err := config.UpsertTOMLSetting(string(existingRaw), config.SplitConfigKey(storeKey), valStr)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "update toml setting: " + err.Error()})
+		return
+	}
+
+	if err := os.WriteFile(targetFile, []byte(updatedTOML), 0644); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "write config file: " + err.Error()})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"scope":   scope,
+		"key":     storeKey,
+		"value":   valStr,
+		"file":    targetFile,
+	})
+}
+

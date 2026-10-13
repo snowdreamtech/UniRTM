@@ -55,11 +55,13 @@ func ValidateConfigValue(prop string, val string, schema ConfigPropertySchema) e
 			return fmt.Errorf("property %q must be a boolean (true/false), got %q", prop, val)
 		}
 	case "array", "list":
-		if strings.HasPrefix(val, "[") && strings.HasSuffix(val, "]") {
-			var arr []interface{}
-			if err := json.Unmarshal([]byte(val), &arr); err != nil {
-				return fmt.Errorf("property %q must be a valid list/array, got %q", prop, val)
-			}
+		val = strings.TrimSpace(val)
+		if !strings.HasPrefix(val, "[") || !strings.HasSuffix(val, "]") {
+			return fmt.Errorf("property %q must be a valid list/array, got %q", prop, val)
+		}
+		var arr []interface{}
+		if err := json.Unmarshal([]byte(val), &arr); err != nil {
+			return fmt.Errorf("property %q must be a valid list/array, got %q", prop, val)
 		}
 	}
 

@@ -77,6 +77,11 @@
             v-else-if="currentTab === 'doctor'"
             @log-event="addLog"
           />
+
+          <SettingsView
+            v-else-if="currentTab === 'settings'"
+            :initialScope="settingsScope"
+          />
         </div>
       </main>
     </div>
@@ -99,14 +104,6 @@
       @toggle-drawer="toggleDrawer"
     />
 
-    <!-- Settings Modal -->
-    <SettingsModal
-      :isOpen="isSettingsOpen"
-      :currentProxy="appConfig?.githubProxy"
-      @close="isSettingsOpen = false"
-      @save="onSaveSettings"
-    />
-
     <!-- About Modal -->
     <AboutModal :show="isAboutOpen" @close="isAboutOpen = false" />
   </div>
@@ -125,8 +122,8 @@ import ToolsView from "./views/ToolsView.vue";
 import TasksView from "./views/TasksView.vue";
 import MarketplaceView from "./views/MarketplaceView.vue";
 import DoctorView from "./views/DoctorView.vue";
+import SettingsView from "./views/SettingsView.vue";
 
-import SettingsModal from "./components/SettingsModal.vue";
 import AboutModal from "./components/AboutModal.vue";
 import ToastNotification from "./components/ToastNotification.vue";
 
@@ -155,7 +152,7 @@ const currentTab = ref<string>("dashboard");
 const activeSubItem = ref<string>("overview");
 const isSidebarOpen = ref<boolean>(true);
 const isDrawerOpen = ref<boolean>(false);
-const isSettingsOpen = ref<boolean>(false);
+const settingsScope = ref<"user" | "workspace">("user");
 const isAboutOpen = ref<boolean>(false);
 
 const activeRunningTask = ref<string | undefined>(undefined);
@@ -189,6 +186,8 @@ const currentTabLabel = computed(() => {
       return "Extensions Marketplace";
     case "doctor":
       return "Doctor Diagnostics";
+    case "settings":
+      return "Settings";
     default:
       return currentTab.value.toUpperCase();
   }
@@ -214,8 +213,12 @@ function toggleDrawer() {
   isDrawerOpen.value = !isDrawerOpen.value;
 }
 
-function openSettings() {
-  isSettingsOpen.value = true;
+function openSettings(scope?: "user" | "workspace") {
+  if (scope) {
+    settingsScope.value = scope;
+  }
+  currentTab.value = "settings";
+  isSidebarOpen.value = true;
 }
 
 function openAbout() {
@@ -269,22 +272,6 @@ function toggleTheme() {
   }
 }
 
-function onSaveSettings(savedCfg: any) {
-  appConfig.value = { ...(appConfig.value || {}), ...savedCfg };
-  if (savedCfg.theme) {
-    applyTheme(savedCfg.theme);
-  }
-  if (savedCfg.language) {
-    setLanguage(savedCfg.language);
-  }
-  try {
-    localStorage.setItem("unirtm_config", JSON.stringify(appConfig.value));
-  } catch (e) {
-    console.error("Failed to persist config:", e);
-  }
-  showToast("Settings saved successfully", "success");
-}
-
 function loadConfig() {
   try {
     const raw = localStorage.getItem("unirtm_config");
@@ -319,12 +306,15 @@ function handleGlobalKeydown(e: KeyboardEvent) {
     e.preventDefault();
     openCommandPalette();
   }
+  // Ctrl+, / Cmd+,: Open Settings (VS Code shortcut)
+  else if ((e.ctrlKey || e.metaKey) && e.key === ",") {
+    e.preventDefault();
+    openSettings();
+  }
   // Escape
   else if (e.key === "Escape") {
     if (isAboutOpen.value) {
       isAboutOpen.value = false;
-    } else if (isSettingsOpen.value) {
-      isSettingsOpen.value = false;
     } else if (isDrawerOpen.value) {
       isDrawerOpen.value = false;
     }

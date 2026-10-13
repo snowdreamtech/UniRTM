@@ -22,9 +22,11 @@
       <button
         class="activity-btn"
         id="btn-activity-settings"
+        :class="{ active: currentTab === 'settings' }"
         :title="t('settings.title') || 'Settings'"
-        @click="$emit('open-settings')"
+        @click="$emit('select-tab', 'settings')"
       >
+        <span class="activity-indicator" v-if="currentTab === 'settings'"></span>
         <span class="activity-icon">⚙️</span>
       </button>
 
