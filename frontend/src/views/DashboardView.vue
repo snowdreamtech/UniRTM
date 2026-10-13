@@ -17,7 +17,7 @@
           <span class="kpi-icon">🛠️</span>
           <div class="kpi-info">
             <span class="kpi-val">5 项</span>
-            <span class="kpi-lbl">活跃运行时 (Active Tools)</span>
+            <span class="kpi-lbl">{{ t("dashboard.kpi_tools") }}</span>
           </div>
         </div>
 
@@ -25,7 +25,7 @@
           <span class="kpi-icon">⚡</span>
           <div class="kpi-info">
             <span class="kpi-val">4 个</span>
-            <span class="kpi-lbl">项目任务 (Tasks)</span>
+            <span class="kpi-lbl">{{ t("dashboard.kpi_tasks") }}</span>
           </div>
         </div>
 
@@ -33,7 +33,7 @@
           <span class="kpi-icon">🌐</span>
           <div class="kpi-info">
             <span class="kpi-val">{{ latencyMs !== null ? latencyMs + 'ms' : '畅通' }}</span>
-            <span class="kpi-lbl">镜像延迟 (npmmirror)</span>
+            <span class="kpi-lbl">{{ t("dashboard.kpi_mirror") }}</span>
           </div>
         </div>
 
@@ -41,7 +41,7 @@
           <span class="kpi-icon">🔒</span>
           <div class="kpi-info">
             <span class="kpi-val text-success">100%</span>
-            <span class="kpi-lbl">锁文件与安全一致性</span>
+            <span class="kpi-lbl">{{ t("dashboard.kpi_security") }}</span>
           </div>
         </div>
       </div>
@@ -54,7 +54,7 @@
         <div class="card-title-row">
           <div class="card-icon cyan">💻</div>
           <div>
-            <h3>{{ t("hello.system_title") || "运行环境 (Runtime Environment)" }}</h3>
+            <h3>{{ t("hello.system_title") || "运行环境" }}</h3>
             <span class="sub-muted">{{ t("hello.system_desc") || "底层操作系统、架构与 Go 运行时信息" }}</span>
           </div>
         </div>

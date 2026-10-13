@@ -85,29 +85,29 @@ const primaryTabs = computed<ActivityTab[]>(() => [
   {
     id: "dashboard",
     icon: "📊",
-    label: t("nav.dashboard") || "Dashboard (项目总览)",
+    label: t("nav.dashboard") || "Dashboard",
   },
   {
     id: "tools",
     icon: "🛠️",
-    label: t("nav.tools") || "Toolchains (工具链)",
+    label: t("nav.tools") || "Toolchains",
     badge: props.toolCount || 5,
   },
   {
     id: "tasks",
     icon: "⚡",
-    label: t("nav.tasks") || "Task Runner (任务系统)",
+    label: t("nav.tasks") || "Tasks",
     badge: props.taskCount || 4,
   },
   {
     id: "marketplace",
     icon: "🧩",
-    label: t("nav.marketplace") || "Extensions Marketplace (扩展市场)",
+    label: t("nav.marketplace") || "Marketplace",
   },
   {
     id: "doctor",
     icon: "🩺",
-    label: t("nav.doctor") || "Doctor Diagnostics (健康诊断)",
+    label: t("nav.doctor") || "Doctor",
   },
 ]);
 </script>

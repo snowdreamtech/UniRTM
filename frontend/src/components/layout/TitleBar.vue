@@ -114,8 +114,8 @@ const currentLangLabel = computed(() => {
 
 const searchPlaceholderText = computed(() => {
   return props.currentLang.startsWith("zh")
-    ? "搜索工具、任务、扩展与设置... (Ctrl+K)"
-    : "Search tools, tasks, extensions & settings... (Ctrl+K)";
+    ? "搜索工具、任务、扩展与设置..."
+    : "Search tools, tasks, extensions & settings...";
 });
 
 function selectLanguage(langVal: string) {

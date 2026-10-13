@@ -3,14 +3,14 @@
     <!-- View Header -->
     <div class="view-header-row">
       <div>
-        <h2 class="view-title">🛠️ 项目运行时与工具链 (Toolchains)</h2>
+        <h2 class="view-title">🛠️ {{ t("tools.title") }}</h2>
         <p class="view-desc">
           由 UniRTM 统一版本锁定与高性能垫片（Go Shims）路由，开箱即用，绝对环境隔离。
         </p>
       </div>
       <div class="view-actions">
         <button class="tool-action-btn primary" @click="handleReshim">
-          <span>⚡ 刷新垫片 (Reshim)</span>
+          <span>⚡ {{ t("tools.reshim") }}</span>
         </button>
       </div>
     </div>
@@ -23,7 +23,7 @@
           v-model="searchKey"
           type="text"
           class="tool-search-input"
-          placeholder="按工具名称、后端或用途筛选 (如: node, python, security)..."
+          placeholder="按工具名称、后端或用途筛选..."
         />
       </div>
       <div class="tool-count-badge">
@@ -80,6 +80,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import { t } from "../i18n";
 
 const emit = defineEmits<{
   (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string): void;

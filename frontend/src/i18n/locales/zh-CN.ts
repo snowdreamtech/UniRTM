@@ -18,6 +18,36 @@ export const zhCn: TranslationDict = {
   "drawer.clear_logs": "清空日志",
   "drawer.toggle_scroll": "自动滚动",
   "drawer.toggle_max": "最大化/还原",
+
+  "nav.dashboard": "项目总览",
+  "nav.tools": "工具链",
+  "nav.tasks": "任务系统",
+  "nav.marketplace": "扩展市场",
+  "nav.doctor": "环境诊断",
+
+  "sidebar.group_overview": "项目总览",
+  "sidebar.group_tools": "运行时与工具",
+  "sidebar.group_tasks": "项目任务 (.unirtm.toml)",
+  "sidebar.group_marketplace": "推荐扩展",
+  "sidebar.group_doctor": "系统诊断",
+
+  "tasks.title": "统一任务运行器",
+  "tasks.desc": "定义在 .unirtm.toml 中的跨语言任务，摆脱平台与 shell 差异，一键跨平台执行。",
+  "tasks.run": "运行",
+  "tasks.running": "正在执行",
+
+  "tools.title": "项目运行时与工具链",
+  "tools.reshim": "刷新垫片",
+
+  "doctor.title": "项目与环境全面体检",
+  "doctor.healthy": "项目环境完全健康",
+
+  "dashboard.kpi_tools": "活跃运行时",
+  "dashboard.kpi_tasks": "项目任务",
+  "dashboard.kpi_mirror": "镜像网络延迟",
+  "dashboard.kpi_security": "锁文件与安全一致性",
+
+  "common.filter": "过滤...",
   "theme.dark": "深色模式",
   "theme.light": "浅色模式",
   "theme.system": "跟随系统",

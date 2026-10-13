@@ -3,9 +3,9 @@
     <!-- View Header -->
     <div class="view-header-row">
       <div>
-        <h2 class="view-title">⚡ 统一任务运行器 (Task Runner)</h2>
+        <h2 class="view-title">⚡ {{ t("tasks.title") }}</h2>
         <p class="view-desc">
-          定义在 .unirtm.toml 中的跨语言任务。摆脱 Makefile 和繁杂的 shell 差异，一键跨平台执行。
+          {{ t("tasks.desc") }}
         </p>
       </div>
     </div>
@@ -36,8 +36,8 @@
               :disabled="runningTask !== null"
               @click="executeTask(task)"
             >
-              <span v-if="runningTask === task.name" class="spin-icon">⏳</span>
-              <span v-else>▶ 运行 (Run)</span>
+              <span v-if="runningTask === task.name" class="spin-icon">⏳ {{ t("tasks.running") }}</span>
+              <span v-else>▶ {{ t("tasks.run") }}</span>
             </button>
           </div>
         </div>
@@ -48,6 +48,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { t } from "../i18n";
 
 const emit = defineEmits<{
   (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string): void;

@@ -18,6 +18,36 @@ export const zhTw: TranslationDict = {
   "drawer.clear_logs": "清空記錄",
   "drawer.toggle_scroll": "自動滾動",
   "drawer.toggle_max": "最大化/還原",
+
+  "nav.dashboard": "項目總覽",
+  "nav.tools": "工具鏈",
+  "nav.tasks": "任務系統",
+  "nav.marketplace": "擴充市場",
+  "nav.doctor": "環境診斷",
+
+  "sidebar.group_overview": "項目總覽",
+  "sidebar.group_tools": "執行階段與工具",
+  "sidebar.group_tasks": "專案任務 (.unirtm.toml)",
+  "sidebar.group_marketplace": "推薦擴充",
+  "sidebar.group_doctor": "系統診斷",
+
+  "tasks.title": "統一任務執行器",
+  "tasks.desc": "定義在 .unirtm.toml 中的跨語言任務，擺脫平台與 shell 差異，一鍵跨平台執行。",
+  "tasks.run": "執行",
+  "tasks.running": "正在執行",
+
+  "tools.title": "專案執行階段與工具鏈",
+  "tools.reshim": "重新整理墊片",
+
+  "doctor.title": "專案與環境全面體檢",
+  "doctor.healthy": "專案環境完全健康",
+
+  "dashboard.kpi_tools": "活躍執行階段",
+  "dashboard.kpi_tasks": "專案任務",
+  "dashboard.kpi_mirror": "鏡像網路延遲",
+  "dashboard.kpi_security": "鎖定檔案與安全一致性",
+
+  "common.filter": "篩選...",
   "theme.dark": "深色模式",
   "theme.light": "淺色模式",
   "theme.system": "跟隨系統",

@@ -18,6 +18,36 @@ export const enUs: TranslationDict = {
   "drawer.clear_logs": "Clear logs",
   "drawer.toggle_scroll": "Auto scroll",
   "drawer.toggle_max": "Toggle maximize",
+
+  "nav.dashboard": "Dashboard",
+  "nav.tools": "Toolchains",
+  "nav.tasks": "Tasks",
+  "nav.marketplace": "Marketplace",
+  "nav.doctor": "Doctor",
+
+  "sidebar.group_overview": "PROJECT OVERVIEW",
+  "sidebar.group_tools": "RUNTIMES & TOOLS",
+  "sidebar.group_tasks": "TASKS (.unirtm.toml)",
+  "sidebar.group_marketplace": "FEATURED EXTENSIONS",
+  "sidebar.group_doctor": "SYSTEM DIAGNOSTICS",
+
+  "tasks.title": "Unified Task Runner",
+  "tasks.desc": "Cross-language tasks defined in .unirtm.toml, executed cross-platform in one click.",
+  "tasks.run": "Run",
+  "tasks.running": "Running",
+
+  "tools.title": "Project Toolchains & Runtimes",
+  "tools.reshim": "Reshim",
+
+  "doctor.title": "UniRTM Doctor Diagnostics",
+  "doctor.healthy": "Environment Fully Healthy",
+
+  "dashboard.kpi_tools": "Active Tools",
+  "dashboard.kpi_tasks": "Project Tasks",
+  "dashboard.kpi_mirror": "Mirror Latency",
+  "dashboard.kpi_security": "Lockfile & Security",
+
+  "common.filter": "Filter...",
   "theme.dark": "Dark Mode",
   "theme.light": "Light Mode",
   "theme.system": "System Default",

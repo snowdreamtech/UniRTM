@@ -28,7 +28,7 @@
     <div class="sidebar-content-list">
       <!-- DASHBOARD Navigation Items -->
       <template v-if="currentTab === 'dashboard'">
-        <div class="nav-group-title">PROJECT OVERVIEW</div>
+        <div class="nav-group-title">{{ t("sidebar.group_overview") || "PROJECT OVERVIEW" }}</div>
         <button
           v-for="item in filteredDashboardItems"
           :key="item.id"
@@ -44,7 +44,7 @@
 
       <!-- TOOLS Navigation Items -->
       <template v-if="currentTab === 'tools'">
-        <div class="nav-group-title">PROJECT RUNTIMES & TOOLS</div>
+        <div class="nav-group-title">{{ t("sidebar.group_tools") || "PROJECT RUNTIMES & TOOLS" }}</div>
         <button
           v-for="tool in filteredToolItems"
           :key="tool.name"
@@ -63,7 +63,7 @@
 
       <!-- TASKS Navigation Items -->
       <template v-if="currentTab === 'tasks'">
-        <div class="nav-group-title">UNIRTM TASKS (.unirtm.toml)</div>
+        <div class="nav-group-title">{{ t("sidebar.group_tasks") || "UNIRTM TASKS (.unirtm.toml)" }}</div>
         <button
           v-for="task in filteredTaskItems"
           :key="task.name"
@@ -82,7 +82,7 @@
 
       <!-- MARKETPLACE Navigation Items -->
       <template v-if="currentTab === 'marketplace'">
-        <div class="nav-group-title">FEATURED EXTENSIONS</div>
+        <div class="nav-group-title">{{ t("sidebar.group_marketplace") || "FEATURED EXTENSIONS" }}</div>
         <button
           v-for="ext in filteredExtensions"
           :key="ext.id"
@@ -101,7 +101,7 @@
 
       <!-- DOCTOR Navigation Items -->
       <template v-if="currentTab === 'doctor'">
-        <div class="nav-group-title">DIAGNOSTIC CHECKS</div>
+        <div class="nav-group-title">{{ t("sidebar.group_doctor") || "DIAGNOSTIC CHECKS" }}</div>
         <button
           v-for="check in doctorChecks"
           :key="check.id"
@@ -188,7 +188,7 @@ const settingsNavItems = computed(() => [
 ]);
 
 const searchPlaceholder = computed(() => {
-  return "Filter...";
+  return t("common.filter") || "Filter...";
 });
 
 // Dashboard mock items

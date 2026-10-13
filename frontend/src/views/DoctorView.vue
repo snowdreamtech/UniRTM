@@ -3,7 +3,7 @@
     <!-- View Header -->
     <div class="view-header-row">
       <div>
-        <h2 class="view-title">🩺 项目与环境全面体检 (UniRTM Doctor)</h2>
+        <h2 class="view-title">🩺 {{ t("doctor.title") }}</h2>
         <p class="view-desc">
           主动排查工具冲突、锁文件漂移、网络阻塞及权限隐患，确保项目始终能够“跑得通、编译顺”。
         </p>
@@ -24,7 +24,7 @@
           <span class="score-unit">/100</span>
         </div>
         <div class="score-text">
-          <h3 class="score-title">{{ isRunningCheck ? '正在检查全景环境...' : '项目环境完全健康 (All Clear)' }}</h3>
+          <h3 class="score-title">{{ isRunningCheck ? '正在检查全景环境...' : t("doctor.healthy") }}</h3>
           <p class="score-sub">
             所有核心运行时、版本锁定、网络代理及 Git 提交前钩子均符合生产级标准。
           </p>
@@ -63,6 +63,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { t } from "../i18n";
 
 const emit = defineEmits<{
   (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string): void;

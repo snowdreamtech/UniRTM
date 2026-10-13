@@ -19,6 +19,36 @@ export interface TranslationDict {
   "drawer.toggle_scroll"?: string;
   "drawer.toggle_max"?: string;
 
+  "nav.dashboard"?: string;
+  "nav.tools"?: string;
+  "nav.tasks"?: string;
+  "nav.marketplace"?: string;
+  "nav.doctor"?: string;
+
+  "sidebar.group_overview"?: string;
+  "sidebar.group_tools"?: string;
+  "sidebar.group_tasks"?: string;
+  "sidebar.group_marketplace"?: string;
+  "sidebar.group_doctor"?: string;
+
+  "tasks.title"?: string;
+  "tasks.desc"?: string;
+  "tasks.run"?: string;
+  "tasks.running"?: string;
+
+  "tools.title"?: string;
+  "tools.reshim"?: string;
+
+  "doctor.title"?: string;
+  "doctor.healthy"?: string;
+
+  "dashboard.kpi_tools"?: string;
+  "dashboard.kpi_tasks"?: string;
+  "dashboard.kpi_mirror"?: string;
+  "dashboard.kpi_security"?: string;
+
+  "common.filter"?: string;
+
   "theme.dark": string;
   "theme.light": string;
   "theme.system": string;
