@@ -128,6 +128,15 @@
           <span class="item-label">{{ item.label }}</span>
         </button>
       </template>
+
+      <!-- ABOUT Navigation Items -->
+      <template v-if="currentTab === 'about'">
+        <div class="nav-group-title">ABOUT UNIRTM</div>
+        <div class="sidebar-item active">
+          <span class="item-icon">ℹ️</span>
+          <span class="item-label">{{ t("about.title") || "关于" }}</span>
+        </div>
+      </template>
     </div>
   </aside>
 </template>
@@ -164,6 +173,8 @@ const headerTitle = computed(() => {
       return t("nav.doctor") || "DOCTOR";
     case "settings":
       return t("settings.title") || "SETTINGS";
+    case "about":
+      return t("about.title") || "ABOUT";
     default:
       return "EXPLORER";
   }

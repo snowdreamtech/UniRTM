@@ -84,6 +84,10 @@
             :activeCategory="activeSubItem"
             @select-category="activeSubItem = $event"
           />
+
+          <AboutView
+            v-else-if="currentTab === 'about'"
+          />
         </div>
       </main>
     </div>
@@ -105,9 +109,6 @@
       @open-network-settings="openSettings"
       @toggle-drawer="toggleDrawer"
     />
-
-    <!-- About Modal -->
-    <AboutModal :show="isAboutOpen" @close="isAboutOpen = false" />
   </div>
 </template>
 
@@ -125,8 +126,8 @@ import TasksView from "./views/TasksView.vue";
 import MarketplaceView from "./views/MarketplaceView.vue";
 import DoctorView from "./views/DoctorView.vue";
 import SettingsView from "./views/SettingsView.vue";
+import AboutView from "./views/AboutView.vue";
 
-import AboutModal from "./components/AboutModal.vue";
 import ToastNotification from "./components/ToastNotification.vue";
 
 import { t, selectedLangSetting, setLanguage } from "./i18n";
@@ -155,7 +156,6 @@ const activeSubItem = ref<string>("overview");
 const isSidebarOpen = ref<boolean>(true);
 const isDrawerOpen = ref<boolean>(false);
 const settingsScope = ref<"user" | "workspace">("user");
-const isAboutOpen = ref<boolean>(false);
 
 const activeRunningTask = ref<string | undefined>(undefined);
 const currentLatencyMs = ref<number | null>(18);
@@ -190,6 +190,8 @@ const currentTabLabel = computed(() => {
       return t("nav.doctor") || "Doctor Diagnostics";
     case "settings":
       return t("settings.title") || "设置";
+    case "about":
+      return t("about.title") || "关于";
     default:
       return currentTab.value.toUpperCase();
   }
@@ -224,7 +226,9 @@ function openSettings(scope?: "user" | "workspace") {
 }
 
 function openAbout() {
-  isAboutOpen.value = true;
+  currentTab.value = "about";
+  activeSubItem.value = "";
+  isSidebarOpen.value = true;
 }
 
 function openCommandPalette() {
@@ -315,9 +319,7 @@ function handleGlobalKeydown(e: KeyboardEvent) {
   }
   // Escape
   else if (e.key === "Escape") {
-    if (isAboutOpen.value) {
-      isAboutOpen.value = false;
-    } else if (isDrawerOpen.value) {
+    if (isDrawerOpen.value) {
       isDrawerOpen.value = false;
     }
   }

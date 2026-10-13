@@ -33,9 +33,11 @@
       <button
         class="activity-btn"
         id="btn-activity-about"
+        :class="{ active: currentTab === 'about' }"
         :title="t('about.title') || 'About'"
-        @click="$emit('open-about')"
+        @click="$emit('select-tab', 'about')"
       >
+        <span class="activity-indicator" v-if="currentTab === 'about'"></span>
         <span class="activity-icon">ℹ️</span>
       </button>
     </div>
