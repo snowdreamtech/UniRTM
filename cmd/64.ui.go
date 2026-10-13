@@ -92,15 +92,34 @@ func runUI(cmd *cobra.Command, args []string) error {
 	// ─── API Endpoints ────────────────────────────────────────────────────────
 	mux.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		cm := config.NewConfigManager()
+		cfg, _ := cm.LoadHierarchy(r.Context())
+		pluginCount := 0
+		if cfg != nil {
+			pluginCount = len(cfg.Plugins)
+		}
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":      "ready",
-			"version":     env.GitTag,
-			"commit":      env.CommitHash,
-			"platform":    fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
-			"go_version":  runtime.Version(),
-			"tools_count": 5,
-			"tasks_count": 4,
-			"timestamp":   time.Now().Unix(),
+			"status":        "ready",
+			"version":       env.GitTag,
+			"commit":        env.CommitHash,
+			"platform":      fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
+			"go_version":    runtime.Version(),
+			"tools_count":   5,
+			"tasks_count":   4,
+			"plugins_count": pluginCount,
+			"timestamp":     time.Now().Unix(),
+		})
+	})
+
+	mux.HandleFunc("/api/plugins", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		cm := config.NewConfigManager()
+		cfg, _ := cm.LoadHierarchy(r.Context())
+		if cfg == nil {
+			cfg = &config.Config{}
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"plugins": cfg.Plugins,
 		})
 	})
 

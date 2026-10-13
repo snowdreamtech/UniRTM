@@ -108,7 +108,9 @@ var configSetCmd = &cobra.Command{
 
 Examples:
   unirtm config set tools.node.version 20.0.0
-  unirtm config set settings.cache_ttl 48h`,
+  unirtm config set settings.cache_ttl 48h
+  unirtm config set plugins."snowdreamtech/docker".config.port 8080
+  unirtm config set plugins."community/deploy".config.cluster staging`,
 	Args: cobra.ExactArgs(2),
 	RunE: runConfigSet,
 }
@@ -121,7 +123,8 @@ var configGetCmd = &cobra.Command{
 
 Examples:
   unirtm config get tools.node.version
-  unirtm config get settings.cache_ttl`,
+  unirtm config get settings.cache_ttl
+  unirtm config get plugins."snowdreamtech/docker".config.port`,
 	Args: cobra.ExactArgs(1),
 	RunE: runConfigGet,
 }

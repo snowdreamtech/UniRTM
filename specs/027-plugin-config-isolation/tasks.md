@@ -81,7 +81,7 @@
 
 **Purpose**: Finalize CLI experience, error messages, and documentation.
 
-- [ ] T029 [Docs] Update documentation comparing plugin configuration architecture to VS Code / Cargo
-- [ ] T030 [Docs] Provide plugin developer guide in `docs/plugins/configuration.md`
-- [ ] T031 [UI] Expose plugins and active sidecars in `unirtm ui` settings and status views
-- [ ] T032 [Verify] Run full test suite (`go test ./...`) to ensure 100% pass rate
+- [x] T029 [Docs] Update documentation comparing plugin configuration architecture to VS Code / Cargo
+- [x] T030 [Docs] Provide plugin developer guide in `docs/plugins/configuration.md`
+- [x] T031 [UI] Expose plugins and active sidecars in `unirtm ui` settings and status views
+- [x] T032 [Verify] Run full test suite (`go test ./...`) to ensure 100% pass rate
