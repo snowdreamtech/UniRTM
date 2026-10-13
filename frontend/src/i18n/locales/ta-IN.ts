@@ -1,7 +1,7 @@
 import type { TranslationDict } from "../types";
 
 export const taIn: TranslationDict = {
-  "app.title": "UniGoDesktop",
+  "app.title": "UniRTM",
   "app.subtitle": "குறுக்கு-தள டெஸ்க்டாப் பயன்பாட்டு டெம்ப்ளேட் (Go + Wails + Vue 3 + TypeScript)",
   "app.greeting": "UniGoDesktop-லிருந்து வாழ்த்துகள்!",
   "app.template_badge": "Go + Wails + Vue 3 + TypeScript டெஸ்க்டாப் டெம்ப்ளேட்",

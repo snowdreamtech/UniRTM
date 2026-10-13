@@ -1,7 +1,7 @@
 import type { TranslationDict } from "../types";
 
 export const ptBr: TranslationDict = {
-  "app.title": "UniGoDesktop",
+  "app.title": "UniRTM",
   "app.subtitle": "Modelo de aplicativo desktop multiplataforma (Go + Wails + Vue 3 + TypeScript)",
   "app.greeting": "Saudações do UniGoDesktop!",
   "app.template_badge": "Modelo desktop Go + Wails + Vue 3 + TypeScript",

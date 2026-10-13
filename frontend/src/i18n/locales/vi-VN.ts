@@ -1,7 +1,7 @@
 import type { TranslationDict } from "../types";
 
 export const viVn: TranslationDict = {
-  "app.title": "UniGoDesktop",
+  "app.title": "UniRTM",
   "app.subtitle": "Mẫu ứng dụng máy tính đa nền tảng (Go + Wails + Vue 3 + TypeScript)",
   "app.greeting": "Lời chào từ UniGoDesktop!",
   "app.template_badge": "Mẫu ứng dụng Go + Wails + Vue 3 + TypeScript",

@@ -1,7 +1,7 @@
 import type { TranslationDict } from "../types";
 
 export const huHu: TranslationDict = {
-  "app.title": "UniGoDesktop",
+  "app.title": "UniRTM",
   "app.subtitle": "Çok platformlu masaüstü uygulama şablonu (Go + Wails + Vue 3 + TypeScript)",
   "app.greeting": "Üdvözlet a UniGoDesktop-tól!",
   "app.template_badge": "Go + Wails + Vue 3 + TypeScript Masaüstü Şablonu",

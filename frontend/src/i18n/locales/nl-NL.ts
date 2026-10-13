@@ -1,7 +1,7 @@
 import type { TranslationDict } from "../types";
 
 export const nlNl: TranslationDict = {
-  "app.title": "UniGoDesktop",
+  "app.title": "UniRTM",
   "app.subtitle": "Platformonafhankelijk desktopsjabloon (Go + Wails + Vue 3 + TypeScript)",
   "app.greeting": "Groeten van UniGoDesktop!",
   "app.template_badge": "Go + Wails + Vue 3 + TypeScript Desktopsjabloon",

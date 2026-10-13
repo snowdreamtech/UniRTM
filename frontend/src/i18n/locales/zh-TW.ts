@@ -1,11 +1,11 @@
 import type { TranslationDict } from "../types";
 
 export const zhTw: TranslationDict = {
-  "app.title": "UniGoDesktop",
-  "app.subtitle": "跨平台桌面應用模版 (Go + Wails + Vue 3 + TypeScript)",
-  "app.greeting": "你好，來自 UniGoDesktop！",
-  "app.template_badge": "Go + Wails + Vue 3 + TypeScript 跨平台應用模版",
-  "app.template_desc": "現代化、高顏值、開箱即用的跨平台桌面應用開發模版，具備國際化、深淺主題與網絡加速功能。",
+  "app.title": "UniRTM",
+  "app.subtitle": "集開發工具、環境變數和任務管理於一體的 CLI（內置安全掃描）",
+  "app.greeting": "歡迎使用 UniRTM！",
+  "app.template_badge": "UniRTM • 通用運行時管理器",
+  "app.template_desc": "在編寫代碼前，讓一切各就各位。快速、簡單、跨平台地統一管理開發工具、環境變數與任務。",
   "common.autoDetect": "自動識別",
   "common.langAuto": "自動",
   "common.lang": "語言",
@@ -82,7 +82,7 @@ export const zhTw: TranslationDict = {
   "settings.connected": "已連線",
   "settings.connectFailed": "連線失敗",
   "about.title": "關於",
-  "about.subtitle": "通用 Go 桌面開發套件",
+  "about.subtitle": "通用運行時管理器 (Universal Runtime Manager)",
   "about.gitTag": "Git 標籤",
   "about.commitHash": "提交雜湊",
   "about.buildTime": "組建時間",
@@ -120,7 +120,7 @@ export const zhTw: TranslationDict = {
   "privilege.status_standard": "Unauthorized",
   "privilege.btn_elevate": "請求管理員權限",
   "privilege.modal_title": "需要管理員權限",
-  "privilege.elevation_prompt": "UniGoDesktop 需要管理員權限以存取底層儲存裝置與系統資源。",
+  "privilege.elevation_prompt": "UniRTM 需要管理員權限以存取系統資源。",
   "privilege.modal_subtitle": "執行特權操作需要系統管理員授權",
   "privilege.reason_title": "Why is Administrator Privilege Required?",
   "privilege.reason_desc":

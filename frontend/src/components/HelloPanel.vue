@@ -5,14 +5,14 @@
       <div class="hero-content">
         <div class="hero-badge">
           <span class="sparkle-icon">✨</span>
-          <span>{{ t("app.template_badge") || "UniRTM • Universal Runtime & Code Gatekeeper" }}</span>
+          <span>{{ t("app.template_badge") || "UniRTM • Universal Runtime Manager" }}</span>
         </div>
         <h1 class="hero-title">
           {{ heroGreeting }}
         </h1>
         <p class="hero-subtitle">
           {{
-            t("app.template_desc") || "A modern, robust, and extensible cross-platform desktop application template."
+            t("app.template_desc") || "The fast, simple, cross-platform tool to manage your dev tools, environments, and tasks."
           }}
         </p>
 
@@ -199,7 +199,7 @@ const latencyMs = ref<number | null>(null);
 const networkConnected = ref<boolean | null>(null);
 
 const heroGreeting = computed(() => {
-  return t("app.greeting") || "UniRTM Project Gatekeeper";
+  return t("app.greeting") || "Welcome to UniRTM!";
 });
 
 const proxyModeText = computed(() => {

@@ -2,10 +2,10 @@ import type { TranslationDict } from "../types";
 
 export const enUs: TranslationDict = {
   "app.title": "UniRTM",
-  "app.subtitle": "Project Gatekeeper for Developers",
+  "app.subtitle": "Dev tools, env vars, and tasks in one CLI with built-in security",
   "app.greeting": "Welcome to UniRTM!",
-  "app.template_badge": "UniRTM • Universal Runtime & Code Gatekeeper",
-  "app.template_desc": "Reliable installs, unified code style, bombproof commits.",
+  "app.template_badge": "UniRTM • Universal Runtime Manager",
+  "app.template_desc": "The fast, simple, cross-platform tool to manage your dev tools, environments, and tasks.",
   "common.autoDetect": "Auto Detect",
   "common.langAuto": "Auto",
   "common.lang": "Language",
@@ -82,7 +82,7 @@ export const enUs: TranslationDict = {
   "settings.connected": "Connected",
   "settings.connectFailed": "Connection Failed",
   "about.title": "About",
-  "about.subtitle": "Universal Go Desktop Suite",
+  "about.subtitle": "Universal Runtime Manager",
   "about.gitTag": "Git Tag",
   "about.commitHash": "Commit Hash",
   "about.buildTime": "Build Time",
@@ -122,7 +122,7 @@ export const enUs: TranslationDict = {
   "privilege.btn_elevate": "Request Admin Access",
   "privilege.modal_title": "Administrator Permission Required",
   "privilege.elevation_prompt":
-    "UniGoDesktop requires administrator privileges to access raw storage devices and system resources.",
+    "UniRTM requires administrator privileges to access raw storage devices and system resources.",
   "privilege.modal_subtitle": "System authorization is required to perform privileged actions",
   "privilege.reason_title": "Why is Administrator Privilege Required?",
   "privilege.reason_desc":

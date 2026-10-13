@@ -1,7 +1,7 @@
 import type { TranslationDict } from "../types";
 
 export const ocFr: TranslationDict = {
-  "app.title": "UniGoDesktop",
+  "app.title": "UniRTM",
   "app.subtitle": "Modèl d'aplicacion de burèu multiplataforma (Go + Wails + Vue 3 + TypeScript)",
   "app.greeting": "Saludacions de UniGoDesktop !",
   "app.template_badge": "Modèle de bureau Go + Wails + Vue 3 + TypeScript",

@@ -1,7 +1,7 @@
 import type { TranslationDict } from "../types";
 
 export const glEs: TranslationDict = {
-  "app.title": "UniGoDesktop",
+  "app.title": "UniRTM",
   "app.subtitle": "Modelo de aplicación de escritorio multiplataforma (Go + Wails + Vue 3 + TypeScript)",
   "app.greeting": "Saúdos desde UniGoDesktop!",
   "app.template_badge": "Plantilla de escritorio Go + Wails + Vue 3 + TypeScript",

@@ -2,10 +2,10 @@ import type { TranslationDict } from "../types";
 
 export const zhCn: TranslationDict = {
   "app.title": "UniRTM",
-  "app.subtitle": "中国开发者的「项目看门人」",
-  "app.greeting": "你好，欢迎使用 UniRTM！",
-  "app.template_badge": "UniRTM • Universal Runtime & Code Gatekeeper",
-  "app.template_desc": "装得动、装得对、写得一致、提交不炸。统一环境管理与代码规范。",
+  "app.subtitle": "集开发工具、环境变量和任务管理于一体的 CLI（内置安全扫描）",
+  "app.greeting": "欢迎使用 UniRTM！",
+  "app.template_badge": "UniRTM • 通用运行时管理器",
+  "app.template_desc": "在编写代码前，让一切各就各位。快速、简单、跨平台地统一管理开发工具、环境变量与任务。",
   "common.autoDetect": "自动识别",
   "common.langAuto": "自动",
   "common.lang": "语言",
@@ -82,7 +82,7 @@ export const zhCn: TranslationDict = {
   "settings.connected": "已连接",
   "settings.connectFailed": "连接失败",
   "about.title": "关于",
-  "about.subtitle": "通用 Go 桌面开发套件",
+  "about.subtitle": "通用运行时管理器 (Universal Runtime Manager)",
   "about.gitTag": "Git 标签",
   "about.commitHash": "提交哈希",
   "about.buildTime": "构建时间",

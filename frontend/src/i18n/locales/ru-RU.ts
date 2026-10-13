@@ -1,7 +1,7 @@
 import type { TranslationDict } from "../types";
 
 export const ruRu: TranslationDict = {
-  "app.title": "UniGoDesktop",
+  "app.title": "UniRTM",
   "app.subtitle": "Кроссплатформенный шаблон десктопного приложения (Go + Wails + Vue 3 + TypeScript)",
   "app.greeting": "Привет от UniGoDesktop!",
   "app.template_badge": "Шаблон десктопного приложения Go + Wails + Vue 3 + TypeScript",

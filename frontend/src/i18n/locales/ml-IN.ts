@@ -1,7 +1,7 @@
 import type { TranslationDict } from "../types";
 
 export const mlIn: TranslationDict = {
-  "app.title": "UniGoDesktop",
+  "app.title": "UniRTM",
   "app.subtitle": "क्रॉस-प्लेटफ़ॉर्म डेस्कटॉप एप्लिकेशन टेम्पलेट (Go + Wails + Vue 3 + TypeScript)",
   "app.greeting": "UniGoDesktop-ൽ നിന്നുള്ള ആശംസകൾ!",
   "app.template_badge": "डेस्कटॉप टेम्पलेट Go + Wails + Vue 3 + TypeScript",

@@ -17,10 +17,10 @@
           <div class="about-hero">
             <div class="logo-wrapper">
               <div class="logo-glow"></div>
-              <img src="/logo.png" alt="UniGo" class="app-logo-image" />
+              <img src="/logo.png" alt="UniRTM" class="app-logo-image" />
             </div>
-            <h2 class="app-title">UniGoDesktop</h2>
-            <p class="app-subtitle">{{ t("about.subtitle") || "Universal Go Desktop Suite" }}</p>
+            <h2 class="app-title">{{ t("app.title") || "UniRTM" }}</h2>
+            <p class="app-subtitle">{{ t("about.subtitle") || "Universal Runtime Manager" }}</p>
             <div class="version-badge">
               <span class="badge-dot"></span>
               <span class="badge-text">{{ displayVersion }}</span>

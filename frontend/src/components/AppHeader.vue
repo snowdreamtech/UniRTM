@@ -4,7 +4,7 @@
       <img src="/logo.png" alt="UniRTM" class="logo-img" />
       <div>
         <h1>{{ t("app.title") || "UniRTM" }}</h1>
-        <span class="sub-brand">{{ t("app.subtitle") || "Project Gatekeeper for Developers" }}</span>
+        <span class="sub-brand">{{ t("app.subtitle") || "Dev tools, env vars, and tasks in one CLI with built-in security" }}</span>
       </div>
     </div>
 

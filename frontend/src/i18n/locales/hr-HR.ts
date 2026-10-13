@@ -1,7 +1,7 @@
 import type { TranslationDict } from "../types";
 
 export const hrHr: TranslationDict = {
-  "app.title": "UniGoDesktop",
+  "app.title": "UniRTM",
   "app.subtitle": "Wieloplatformowy szablon aplikacji desktopowej (Go + Wails + Vue 3 + TypeScript)",
   "app.greeting": "Pozdrav iz UniGoDesktop!",
   "app.template_badge": "Szablon aplikacji desktopowej Go + Wails + Vue 3 + TypeScript",

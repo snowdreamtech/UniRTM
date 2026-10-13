@@ -1,7 +1,7 @@
 import type { TranslationDict } from "../types";
 
 export const faIr: TranslationDict = {
-  "app.title": "UniGoDesktop",
+  "app.title": "UniRTM",
   "app.subtitle": "الگوی برنامه دسکتاپ چند پلتفرمی (Go + Wails + Vue 3 + TypeScript)",
   "app.greeting": "درود از UniGoDesktop!",
   "app.template_badge": "الگوی دسکتاپ Go + Wails + Vue 3 + TypeScript",
