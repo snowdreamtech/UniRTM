@@ -29,7 +29,12 @@
 
       <!-- Action Tools on the right -->
       <div class="drawer-actions">
-        <button class="drawer-action-btn" :title="t('drawer.clear_logs')" @click="$emit('clear-logs')">
+        <button
+          class="drawer-action-btn"
+          :title="clearLogsTitle"
+          :data-tooltip="clearLogsTitle"
+          @click="$emit('clear-logs')"
+        >
           <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="8" cy="8" r="6" />
             <path d="M3.8 3.8l8.4 8.4" />
@@ -38,7 +43,8 @@
         <button
           class="drawer-action-btn"
           :class="{ active: autoScroll }"
-          :title="`${t('drawer.toggle_scroll')}: ${autoScroll ? 'ON' : 'OFF'}`"
+          :title="autoScrollTitle"
+          :data-tooltip="autoScrollTitle"
           @click="autoScroll = !autoScroll"
         >
           <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -50,7 +56,8 @@
         <button
           class="drawer-action-btn"
           :class="{ active: isMaximized }"
-          :title="isMaximized ? (t('drawer.restore') || '还原默认高度') : (t('drawer.maximize') || '最大化视窗')"
+          :title="maximizeTitle"
+          :data-tooltip="maximizeTitle"
           @click="isMaximized = !isMaximized"
         >
           <svg v-if="!isMaximized" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -60,7 +67,12 @@
             <path d="M2.5 5.5L8 11l5.5-5.5" />
           </svg>
         </button>
-        <button class="drawer-action-btn" :title="t('common.close')" @click="$emit('close')">
+        <button
+          class="drawer-action-btn"
+          :title="closeTitle"
+          :data-tooltip="closeTitle"
+          @click="$emit('close')"
+        >
           <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
           </svg>
@@ -167,6 +179,19 @@ watch(autoScroll, (val) => {
 const displayLogs = computed(() => {
   return props.logs;
 });
+
+const clearLogsTitle = computed(() => t("drawer.clear_logs") || "清空控制台日志");
+const autoScrollTitle = computed(() =>
+  autoScroll.value
+    ? t("drawer.scroll_enabled") || "自动滚动（已开启）"
+    : t("drawer.scroll_disabled") || "自动滚动（已暂停）"
+);
+const maximizeTitle = computed(() =>
+  isMaximized.value
+    ? t("drawer.restore") || "还原视窗默认高度"
+    : t("drawer.maximize") || "最大化视窗高度"
+);
+const closeTitle = computed(() => t("drawer.close_hint") || "关闭控制台面板");
 
 watch(
   () => props.logs.length,
@@ -276,6 +301,36 @@ watch(
 .drawer-action-btn.active {
   color: var(--accent-cyan);
   background: rgba(0, 229, 255, 0.14);
+}
+
+.drawer-action-btn[data-tooltip] {
+  position: relative;
+}
+
+.drawer-action-btn[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  padding: 4px 8px;
+  background: var(--card-bg);
+  color: var(--text-main);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  font-size: 0.7rem;
+  font-weight: 500;
+  white-space: nowrap;
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 100;
+}
+
+.drawer-action-btn[data-tooltip]:hover::after {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .drawer-body {

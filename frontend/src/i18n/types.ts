@@ -20,6 +20,10 @@ export interface TranslationDict {
   "drawer.toggle_max"?: string;
   "drawer.maximize"?: string;
   "drawer.restore"?: string;
+  "drawer.scroll_enabled"?: string;
+  "drawer.scroll_disabled"?: string;
+  "drawer.close_hint"?: string;
+  "console.title"?: string;
 
   "nav.dashboard"?: string;
   "nav.tools"?: string;
