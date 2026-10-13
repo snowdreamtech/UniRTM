@@ -70,32 +70,32 @@ type MirrorOption struct {
 func RecommendedMirrors() map[string][]MirrorOption {
 	return map[string][]MirrorOption{
 		"npm": {
-			{Name: "官方源 (npmjs.org)", URL: "https://registry.npmjs.org"},
+			{Name: "官方直连 (npmjs.org)", URL: "https://registry.npmjs.org"},
 			{Name: "npmmirror (淘宝/阿里云)", URL: "https://registry.npmmirror.com"},
 			{Name: "腾讯云镜像", URL: "https://mirrors.cloud.tencent.com/npm/"},
 			{Name: "华为云镜像", URL: "https://repo.huaweicloud.com/repository/npm/"},
 		},
 		"go": {
-			{Name: "官方源 (Google)", URL: "https://proxy.golang.org,direct"},
+			{Name: "官方直连 (Google)", URL: "https://proxy.golang.org,direct"},
 			{Name: "goproxy.cn (七牛云/社区)", URL: "https://goproxy.cn,direct"},
 			{Name: "阿里云 GoProxy", URL: "https://mirrors.aliyun.com/goproxy/,direct"},
 			{Name: "goproxy.io", URL: "https://goproxy.io,direct"},
 		},
 		"python": {
-			{Name: "官方源 (PyPI)", URL: "https://pypi.org/simple"},
+			{Name: "官方直连 (PyPI)", URL: "https://pypi.org/simple"},
 			{Name: "清华大学 TUNA", URL: "https://pypi.tuna.tsinghua.edu.cn/simple"},
 			{Name: "阿里云 PyPI", URL: "https://mirrors.aliyun.com/pypi/simple/"},
 			{Name: "腾讯云 PyPI", URL: "https://mirrors.cloud.tencent.com/pypi/simple/"},
 			{Name: "华为云 PyPI", URL: "https://repo.huaweicloud.com/repository/pypi/simple/"},
 		},
 		"rust": {
-			{Name: "官方源 (crates.io)", URL: "https://crates.io"},
+			{Name: "官方直连 (crates.io)", URL: "https://crates.io"},
 			{Name: "rsproxy.cn (字节跳动/社区)", URL: "https://rsproxy.cn/crates.io-index"},
 			{Name: "中国科学技术大学 USTC", URL: "https://mirrors.ustc.edu.cn/crates.io-index"},
 			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git"},
 		},
 		"ruby": {
-			{Name: "官方源 (RubyGems)", URL: "https://rubygems.org"},
+			{Name: "官方直连 (RubyGems)", URL: "https://rubygems.org"},
 			{Name: "Ruby China", URL: "https://gems.ruby-china.com"},
 			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/rubygems/"},
 		},

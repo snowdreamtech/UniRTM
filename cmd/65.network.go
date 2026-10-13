@@ -309,7 +309,11 @@ var networkRegistryListCmd = &cobra.Command{
 	Short: "列出推荐公共镜像列表",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		rec := network.RecommendedMirrors()
-		for eco, list := range rec {
+		for _, eco := range network.KnownEcosystems {
+			list, ok := rec[eco]
+			if !ok {
+				continue
+			}
 			pterm.DefaultSection.Printf("%s 推荐镜像源", strings.ToUpper(eco))
 			for _, opt := range list {
 				pterm.Println(fmt.Sprintf("  • %-28s %s", opt.Name, pterm.LightCyan(opt.URL)))

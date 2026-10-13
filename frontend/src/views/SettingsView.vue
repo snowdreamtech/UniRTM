@@ -418,19 +418,24 @@
                 </div>
 
                 <div class="row-controls">
-                  <!-- Quick Preset Dropdown -->
                   <div class="preset-dropdown-wrap" v-if="recommendedMirrors[eco]">
                     <select
                       class="preset-select"
+                      :value="getPresetSelectValue(eco)"
                       @change="handleSelectMirrorPreset(eco, ($event.target as HTMLSelectElement).value)"
                     >
-                      <option value="">快速推荐镜像源...</option>
                       <option
                         v-for="m in recommendedMirrors[eco]"
                         :key="m.url"
                         :value="m.url"
                       >
                         {{ m.name }}
+                      </option>
+                      <option
+                        v-if="!isUrlInPresets(eco, networkStatus?.effective?.[eco]?.url)"
+                        :value="networkStatus?.effective?.[eco]?.url"
+                      >
+                        {{ t('network.custom_source') || '自定义镜像源' }}
                       </option>
                     </select>
                   </div>
@@ -655,7 +660,38 @@ const newProfileId = ref("");
 const newProfileName = ref("");
 const isProbing = ref(false);
 const probeResults = ref<any[]>([]);
-const recommendedMirrors = ref<any>({});
+const recommendedMirrors = ref<Record<string, Array<{ name: string; url: string }>>>({
+  npm: [
+    { name: "官方直连 (npmjs.org)", url: "https://registry.npmjs.org" },
+    { name: "npmmirror (淘宝/阿里云)", url: "https://registry.npmmirror.com" },
+    { name: "腾讯云镜像", url: "https://mirrors.cloud.tencent.com/npm/" },
+    { name: "华为云镜像", url: "https://repo.huaweicloud.com/repository/npm/" },
+  ],
+  go: [
+    { name: "官方直连 (Google)", url: "https://proxy.golang.org,direct" },
+    { name: "goproxy.cn (七牛云/社区)", url: "https://goproxy.cn,direct" },
+    { name: "阿里云 GoProxy", url: "https://mirrors.aliyun.com/goproxy/,direct" },
+    { name: "goproxy.io", url: "https://goproxy.io,direct" },
+  ],
+  python: [
+    { name: "官方直连 (PyPI)", url: "https://pypi.org/simple" },
+    { name: "清华大学 TUNA", url: "https://pypi.tuna.tsinghua.edu.cn/simple" },
+    { name: "阿里云 PyPI", url: "https://mirrors.aliyun.com/pypi/simple/" },
+    { name: "腾讯云 PyPI", url: "https://mirrors.cloud.tencent.com/pypi/simple/" },
+    { name: "华为云 PyPI", url: "https://repo.huaweicloud.com/repository/pypi/simple/" },
+  ],
+  rust: [
+    { name: "官方直连 (crates.io)", url: "https://crates.io" },
+    { name: "rsproxy.cn (字节跳动/社区)", url: "https://rsproxy.cn/crates.io-index" },
+    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/crates.io-index" },
+    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git" },
+  ],
+  ruby: [
+    { name: "官方直连 (RubyGems)", url: "https://rubygems.org" },
+    { name: "Ruby China", url: "https://gems.ruby-china.com" },
+    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/rubygems/" },
+  ],
+});
 
 const networkStatus = ref<any>({
   active_profile_id: "official",
@@ -1121,9 +1157,24 @@ async function handleOverrideRegistry(ecosystem: string, url: string) {
   }
 }
 
+function isUrlInPresets(eco: string, url?: string): boolean {
+  if (!url) return false;
+  const list = recommendedMirrors.value[eco] || [];
+  return list.some((m: any) => m.url === url);
+}
+
+function getPresetSelectValue(eco: string): string {
+  return networkStatus.value?.effective?.[eco]?.url || "";
+}
+
 function handleSelectMirrorPreset(ecosystem: string, url: string) {
   if (!url) return;
-  handleOverrideRegistry(ecosystem, url);
+  const profileUrl = networkStatus.value?.active_profile?.registries?.[ecosystem];
+  if (profileUrl && url === profileUrl) {
+    handleResetRegistry(ecosystem);
+  } else {
+    handleOverrideRegistry(ecosystem, url);
+  }
 }
 
 async function handleResetRegistry(ecosystem: string) {

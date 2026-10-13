@@ -238,3 +238,23 @@ func TestFilePersistence(t *testing.T) {
 		t.Fatalf("expected proxy to be persisted, got %+v", status.Proxy)
 	}
 }
+
+func TestRecommendedMirrorsOrdering(t *testing.T) {
+	mgr := NewManager(nil)
+	official := mgr.Config().Profiles["official"]
+	rec := RecommendedMirrors()
+
+	for _, eco := range KnownEcosystems {
+		list, ok := rec[eco]
+		if !ok || len(list) == 0 {
+			t.Fatalf("ecosystem %s missing recommended mirrors", eco)
+		}
+		// First entry must be official direct connection
+		first := list[0]
+		expectedURL := official.Registries[eco]
+		if first.URL != expectedURL {
+			t.Fatalf("ecosystem %s expected first mirror to be official upstream %q, got %q", eco, expectedURL, first.URL)
+		}
+	}
+}
+

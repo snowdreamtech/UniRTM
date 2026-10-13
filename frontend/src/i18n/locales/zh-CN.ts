@@ -154,6 +154,7 @@ export const zhCn: TranslationDict = {
   "network.probe_normal": "良好",
   "network.probe_slow": "缓慢",
   "network.probe_timeout": "超时",
+  "network.custom_source": "自定义镜像源",
 
   "settings.scope_user": "用户",
   "settings.scope_workspace": "工作区",

@@ -146,6 +146,7 @@ export interface TranslationDict {
   "network.probe_normal"?: string;
   "network.probe_slow"?: string;
   "network.probe_timeout"?: string;
+  "network.custom_source"?: string;
 
   "about.title": string;
   "about.subtitle": string;

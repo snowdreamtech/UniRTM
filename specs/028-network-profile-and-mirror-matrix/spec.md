@@ -85,18 +85,16 @@ As a developer using both command-line workflows and web dashboards, I want 1:1 
 
 - **FR-001 (Configuration Schema)**: The system MUST organize network configuration under `[network]` with `proxy`, `profiles`, and `overrides` tables.
 - **FR-002 (Proxy Defaults)**: Proxy `enabled` MUST default to `false` and endpoint URLs MUST default to empty.
-- **FR-003 (Factory Profiles)**: The system MUST ship with immutable factory blueprints:
-  - `official`: Direct connections to official registries.
-  - `cn`: Curated domestic mirror matrix (npmmirror, goproxy.cn, Tsinghua PyPI, rsproxy, Ruby China).
+- **FR-003 (Factory Profiles & Defaults)**: The system MUST ship with immutable factory blueprints (`official` and `cn`). Official direct connection (`official`) MUST be ordered first and serve as the default initialization baseline across profiles and mirror presets.
 - **FR-004 (Profile CRUD)**: The system MUST support creating, modifying, saving as, and deleting custom profiles.
 - **FR-005 (Factory Reset)**: The system MUST support resetting built-in profiles to factory blueprints.
 - **FR-006 (Resolution Precedence)**: The resolution engine MUST resolve effective registries following:
   `Overrides[ecosystem] > ActiveProfile.Registries[ecosystem] > DefaultBaseline[ecosystem]`.
 - **FR-007 (Override Reset)**: The system MUST support clearing granular ecosystem overrides.
 - **FR-008 (Environment Export)**: The system MUST provide `ExportEnvironment` to format effective registries into standard environment variables (`NPM_CONFIG_REGISTRY`, `GOPROXY`, `PIP_INDEX_URL`, `CARGO_REGISTRIES_CRATES_IO_INDEX`, etc.).
-- **FR-009 (CLI Command Suite)**: The CLI MUST provide `unirtm network status`, `profile`, `registry`, `proxy`, and `test` commands.
+- **FR-009 (CLI Command Suite)**: The CLI MUST provide `unirtm network status`, `profile`, `registry`, `proxy`, and `test` commands. Ecosystem and profile listings MUST order `official` direct first.
 - **FR-010 (Web REST API)**: The web service MUST expose `/api/network/status`, `/api/network/profile/*`, `/api/network/registry/*`, `/api/network/proxy`, and `/api/network/ping`.
-- **FR-011 (Web Settings UI)**: The Web UI MUST provide dedicated sections for Network Proxy and Mirror Matrix with live inputs and theme-adaptive modal dialogs.
+- **FR-011 (Web Settings UI)**: The Web UI MUST provide dedicated sections for Network Proxy and Mirror Matrix with live inputs, preset selector dropdowns initializing to official direct as first option, and theme-adaptive modal dialogs.
 - **FR-012 (Probe Timeout)**: Latency probes MUST execute concurrently with a maximum timeout of 2.5 seconds.
 - **FR-013 (Native Localization)**: All user-facing strings MUST be fully localized in i18n dictionaries without bilingual parenthetical mixing.
 

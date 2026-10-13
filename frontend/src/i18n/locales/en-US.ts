@@ -154,6 +154,7 @@ export const enUs: TranslationDict = {
   "network.probe_normal": "Normal",
   "network.probe_slow": "Slow",
   "network.probe_timeout": "Timeout",
+  "network.custom_source": "Custom Mirror",
 
   "settings.scope_user": "User",
   "settings.scope_workspace": "Workspace",

@@ -152,6 +152,7 @@ export const zhTw: TranslationDict = {
   "network.probe_normal": "良好",
   "network.probe_slow": "緩慢",
   "network.probe_timeout": "超時",
+  "network.custom_source": "自訂鏡像源",
 
   "about.title": "關於",
   "about.subtitle": "通用運行時管理器 (Universal Runtime Manager)",
