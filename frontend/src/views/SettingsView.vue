@@ -59,7 +59,6 @@
     <div class="settings-body-row">
       <!-- Left Secondary Category Sidebar -->
       <nav class="settings-nav-sidebar glass-card">
-        <div class="category-group-title">{{ t('settings.sections') || '设置分组' }}</div>
         <button
           v-for="cat in categories"
           :key="cat.id"
@@ -77,13 +76,13 @@
         <div class="scope-summary-card">
           <div class="summary-header">
             <span class="summary-icon">{{ activeScope === 'user' ? '👤' : '📁' }}</span>
-            <span class="summary-scope-name">{{ activeScope === 'user' ? (t('settings.user_pref_title') || '用户全局偏好') : (t('settings.workspace_pref_title') || '当前工作区配置') }}</span>
+            <span class="summary-scope-name">{{ activeScope === 'user' ? (t('settings.scope_user') || '用户') : (t('settings.scope_workspace') || '工作区') }}</span>
           </div>
           <p class="summary-desc">
             {{
               activeScope === 'user'
-                ? (t('settings.scope_user_desc') || '存储在用户目录，跨项目共享（包含本机浏览器偏好）。')
-                : (t('settings.scope_workspace_desc') || '存储于当前代码仓，随代码库共享给整个团队。')
+                ? (t('settings.scope_user_desc') || '应用于本机所有项目。')
+                : (t('settings.scope_workspace_desc') || '应用于当前项目，随仓库共享。')
             }}
           </p>
           <div class="summary-path font-mono">
@@ -98,7 +97,7 @@
         <div v-if="showRawTomlModal" class="raw-toml-view glass-card">
           <div class="raw-toml-header">
             <div class="toml-title-group">
-              <span class="font-mono text-cyan">{{ activeScope === 'user' ? (t('settings.user_toml') || '用户配置 (TOML)') : (t('settings.workspace_toml') || '工作区配置 (TOML)') }}</span>
+              <span class="font-mono text-cyan">{{ activeScope === 'user' ? (t('settings.user_toml') || '用户配置') : (t('settings.workspace_toml') || '工作区配置') }}</span>
               <span class="toml-path font-mono">{{ activeScope === 'user' ? configData?.user?.path : configData?.workspace?.path }}</span>
             </div>
             <div class="toml-actions">
@@ -111,18 +110,18 @@
           <pre class="raw-toml-pre"><code>{{ currentRawToml || (t('settings.empty_toml') || '# 配置文件尚无自定义内容') }}</code></pre>
         </div>
 
-        <!-- 1. Commonly Used -->
+        <!-- 1. General Settings -->
         <section
-          v-show="isCategoryVisible('common')"
-          id="section-common"
+          v-show="isCategoryVisible('general')"
+          id="section-general"
           class="settings-category-section glass-card"
         >
           <div class="section-header">
             <div class="section-title-wrap">
               <span class="section-icon">⚙️</span>
               <div>
-                <h2>{{ t('settings.cat_common') || '常用设置' }}</h2>
-                <span class="section-sub">{{ t('settings.subtitle') || '外观、语言与网络加速' }}</span>
+                <h2>{{ t('settings.cat_general') || '常规' }}</h2>
+                <span class="section-sub">{{ t('settings.cat_general_sub') || '语言、主题、浏览器、缓存' }}</span>
               </div>
             </div>
           </div>
@@ -131,9 +130,9 @@
             <!-- Setting: Language -->
             <div class="setting-item" :class="{ highlight: matchesSearch('language') }">
               <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.language') || '应用语言' }}</span>
+                <span class="setting-title">{{ t('settings.language') || '语言' }}</span>
                 <span class="setting-key font-mono">settings.language</span>
-                <p class="setting-desc">{{ t('settings.language') || '应用语言' }}</p>
+                <p class="setting-desc">{{ t('settings.language_desc') || '工作台界面的显示语言。' }}</p>
               </div>
               <div class="setting-control">
                 <CustomSelect
@@ -147,9 +146,9 @@
             <!-- Setting: Theme -->
             <div class="setting-item" :class="{ highlight: matchesSearch('theme') }">
               <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.theme') || '外观主题' }}</span>
+                <span class="setting-title">{{ t('settings.theme') || '主题' }}</span>
                 <span class="setting-key font-mono">settings.theme</span>
-                <p class="setting-desc">{{ t('settings.theme') || '外观主题' }}</p>
+                <p class="setting-desc">{{ t('settings.theme_desc') || '工作台外观色彩主题。' }}</p>
               </div>
               <div class="setting-control">
                 <CustomSelect
@@ -160,46 +159,6 @@
               </div>
             </div>
 
-            <!-- Setting: Cache TTL -->
-            <div class="setting-item" :class="{ highlight: matchesSearch('cache_ttl') }">
-              <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.cache_ttl') || '缓存有效周期' }}</span>
-                <span class="setting-key font-mono">settings.cache_ttl</span>
-                <p class="setting-desc">{{ t('settings.cache_ttl_desc') || '工具链清单与在线版本索引的本地缓存有效时间（例如 24h、7d、0s）。' }}</p>
-              </div>
-              <div class="setting-control">
-                <div class="input-inline-group">
-                  <input
-                    v-model="cacheTtl"
-                    type="text"
-                    class="setting-text-input font-mono"
-                    placeholder="24h"
-                    @change="saveSetting('settings.cache_ttl', cacheTtl)"
-                  />
-                  <button class="btn-apply-small" @click="saveSetting('settings.cache_ttl', cacheTtl)">{{ t('settings.save') || '保存' }}</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 2. System & Browser -->
-        <section
-          v-show="isCategoryVisible('browser')"
-          id="section-browser"
-          class="settings-category-section glass-card"
-        >
-          <div class="section-header">
-            <div class="section-title-wrap">
-              <span class="section-icon">💻</span>
-              <div>
-                <h2>{{ t('settings.cat_browser') || '系统与浏览器' }}</h2>
-                <span class="section-sub">{{ t('settings.browser_desc') || '工作台浏览器调用行为与本机专属环境参数' }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="settings-list">
             <!-- Setting: Browser -->
             <div
               class="setting-item browser-setting-item"
@@ -210,26 +169,26 @@
             >
               <div class="setting-meta">
                 <div class="title-with-badge">
-                  <span class="setting-title">{{ t('settings.browser_title') || '工作台浏览器偏好' }}</span>
+                  <span class="setting-title">{{ t('settings.browser_title') || '浏览器' }}</span>
                   <span v-if="activeScope === 'workspace'" class="badge-global-only">
-                    ⚠️ {{ t('settings.scope_global_only') || '仅限用户设置' }}
+                    {{ t('settings.scope_global_only') || '仅限用户' }}
                   </span>
                 </div>
                 <span class="setting-key font-mono">settings.browser</span>
                 <p class="setting-desc">
-                  {{ t('settings.browser_desc') || '执行 unirtm ui 启动工作台时调用的浏览器。支持系统默认、预设浏览器或自定义路径。' }}
+                  {{ t('settings.browser_desc') || '启动工作台时调用的浏览器。' }}
                 </p>
 
                 <!-- Workspace Scope Warning Banner -->
                 <div v-if="activeScope === 'workspace'" class="scope-notice-banner warning">
                   <div class="notice-icon">⚠️</div>
                   <div class="notice-body">
-                    <strong>{{ t('settings.scope_global_only_banner') || '禁止在工作区中设置浏览器偏好' }}</strong>
+                    <strong>{{ t('settings.scope_global_only_banner') || '无法在工作区中配置浏览器' }}</strong>
                     <p>
-                      {{ t('settings.scope_global_only_desc') || '浏览器偏好属于个人系统环境，无法在工作区配置中修改，以避免团队协作环境受到污染。' }}
+                      {{ t('settings.scope_global_only_desc') || '浏览器偏好属于个人系统环境，无法在工作区配置，以避免污染团队共享环境。' }}
                     </p>
                     <button class="btn-switch-scope" @click="switchScope('user', 'settings.browser')">
-                      {{ t('settings.switch_to_user') || '切换到用户设置修改' }} ↗
+                      {{ t('settings.switch_to_user') || '在用户中编辑' }} ↗
                     </button>
                   </div>
                 </div>
@@ -238,7 +197,7 @@
               <!-- Browser Controls -->
               <div class="setting-control">
                 <div v-if="activeScope === 'workspace'" class="control-disabled-notice">
-                  <span class="font-mono text-muted">{{ t('settings.disabled_in_workspace') || '已在工作区中禁用' }}</span>
+                  <span class="font-mono text-muted">{{ t('settings.disabled_in_workspace') || '在工作区中禁用' }}</span>
                 </div>
                 <div v-else class="browser-input-box">
                   <CustomSelect
@@ -259,6 +218,27 @@
                 </div>
               </div>
             </div>
+
+            <!-- Setting: Cache TTL -->
+            <div class="setting-item" :class="{ highlight: matchesSearch('cache_ttl') }">
+              <div class="setting-meta">
+                <span class="setting-title">{{ t('settings.cache_ttl') || '缓存周期' }}</span>
+                <span class="setting-key font-mono">settings.cache_ttl</span>
+                <p class="setting-desc">{{ t('settings.cache_ttl_desc') || '工具清单与索引的本地缓存有效时间。' }}</p>
+              </div>
+              <div class="setting-control">
+                <div class="input-inline-group">
+                  <input
+                    v-model="cacheTtl"
+                    type="text"
+                    class="setting-text-input font-mono"
+                    placeholder="24h"
+                    @change="saveSetting('settings.cache_ttl', cacheTtl)"
+                  />
+                  <button class="btn-apply-small" @click="saveSetting('settings.cache_ttl', cacheTtl)">{{ t('settings.save') || '保存' }}</button>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -272,8 +252,8 @@
             <div class="section-title-wrap">
               <span class="section-icon">🌐</span>
               <div>
-                <h2>{{ t('settings.cat_network') || '网络与代理' }}</h2>
-                <span class="section-sub">{{ t('settings.subtitle') || '资源加速前缀、HTTP/HTTPS 代理与下载连通性' }}</span>
+                <h2>{{ t('settings.cat_network') || '网络' }}</h2>
+                <span class="section-sub">{{ t('settings.cat_network_sub') || '镜像加速与网络代理' }}</span>
               </div>
             </div>
           </div>
@@ -351,8 +331,8 @@
             <div class="section-title-wrap">
               <span class="section-icon">🧩</span>
               <div>
-                <h2>{{ t('settings.cat_plugins') || '插件与扩展' }}</h2>
-                <span class="section-sub">{{ t('settings.plugin_isolation_title') || '插件配置隔离区' }}</span>
+                <h2>{{ t('settings.cat_plugins') || '扩展' }}</h2>
+                <span class="section-sub">{{ t('settings.cat_plugins_sub') || '插件配置与隔离' }}</span>
               </div>
             </div>
           </div>
@@ -418,8 +398,8 @@
             <div class="section-title-wrap">
               <span class="section-icon">🔒</span>
               <div>
-                <h2>{{ t('settings.cat_security') || '安全与命名空间' }}</h2>
-                <span class="section-sub">{{ t('settings.sec_ast_desc') || '配置隔离架构与 AST 格式保护' }}</span>
+                <h2>{{ t('settings.cat_security') || '安全' }}</h2>
+                <span class="section-sub">{{ t('settings.cat_security_sub') || '保留表与文件排他锁' }}</span>
               </div>
             </div>
           </div>
@@ -464,7 +444,7 @@ const { currentTheme, applyTheme } = useTheme();
 // State
 const activeScope = ref<"user" | "workspace">(props.initialScope || "user");
 const searchQuery = ref("");
-const activeCategory = ref("common");
+const activeCategory = ref("general");
 const showRawTomlModal = ref(false);
 const isCopied = ref(false);
 
@@ -489,11 +469,10 @@ const netTestOk = ref(false);
 const configData = ref<any>(null);
 
 const categories = computed(() => [
-  { id: "common", icon: "⚙️", label: t("settings.cat_common") || "常用设置" },
-  { id: "browser", icon: "💻", label: t("settings.cat_browser") || "系统与浏览器" },
-  { id: "network", icon: "🌐", label: t("settings.cat_network") || "网络与代理" },
-  { id: "plugins", icon: "🧩", label: t("settings.cat_plugins") || "插件与扩展" },
-  { id: "security", icon: "🔒", label: t("settings.cat_security") || "安全与命名空间" },
+  { id: "general", icon: "⚙️", label: t("settings.cat_general") || "常规" },
+  { id: "network", icon: "🌐", label: t("settings.cat_network") || "网络" },
+  { id: "plugins", icon: "🧩", label: t("settings.cat_plugins") || "扩展" },
+  { id: "security", icon: "🔒", label: t("settings.cat_security") || "安全" },
 ]);
 
 const languageSelectOptions = computed(() => [
@@ -551,12 +530,54 @@ function matchesSearch(keyword: string) {
 
 function isCategoryVisible(catId: string) {
   if (!searchQuery.value) return true;
-  const q = searchQuery.value.toLowerCase();
-  if (catId === "common" && (q.includes("lang") || q.includes("theme") || q.includes("cache") || q.includes("常用"))) return true;
-  if (catId === "browser" && (q.includes("browser") || q.includes("chrome") || q.includes("firefox") || q.includes("浏览器"))) return true;
-  if (catId === "network" && (q.includes("proxy") || q.includes("github") || q.includes("mirror") || q.includes("代理") || q.includes("镜像"))) return true;
-  if (catId === "plugins" && (q.includes("plugin") || q.includes("docker") || q.includes("插件") || q.includes("扩展"))) return true;
-  if (catId === "security" && (q.includes("lock") || q.includes("namespace") || q.includes("命名空间") || q.includes("安全"))) return true;
+  const q = searchQuery.value.toLowerCase().trim();
+  if (
+    catId === "general" &&
+    (q.includes("lang") ||
+      q.includes("theme") ||
+      q.includes("cache") ||
+      q.includes("browser") ||
+      q.includes("常规") ||
+      q.includes("常用") ||
+      q.includes("语言") ||
+      q.includes("主题") ||
+      q.includes("浏览器") ||
+      q.includes("缓存"))
+  )
+    return true;
+  if (
+    catId === "network" &&
+    (q.includes("proxy") ||
+      q.includes("github") ||
+      q.includes("mirror") ||
+      q.includes("net") ||
+      q.includes("网络") ||
+      q.includes("代理") ||
+      q.includes("镜像"))
+  )
+    return true;
+  if (
+    catId === "plugins" &&
+    (q.includes("plugin") ||
+      q.includes("ext") ||
+      q.includes("docker") ||
+      q.includes("插件") ||
+      q.includes("扩展"))
+  )
+    return true;
+  if (
+    catId === "security" &&
+    (q.includes("sec") ||
+      q.includes("lock") ||
+      q.includes("ast") ||
+      q.includes("namespace") ||
+      q.includes("safe") ||
+      q.includes("安全") ||
+      q.includes("锁") ||
+      q.includes("命名空间") ||
+      q.includes("保留"))
+  )
+    return true;
   return false;
 }
 
@@ -573,7 +594,7 @@ function switchScope(scope: "user" | "workspace", scrollToId?: string) {
   syncFieldsFromConfig();
   if (scrollToId) {
     setTimeout(() => {
-      scrollToCategory("browser");
+      scrollToCategory("general");
     }, 100);
   }
 }
