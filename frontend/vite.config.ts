@@ -141,6 +141,46 @@ export default defineConfig({
             return;
           }
 
+          if (req.url === "/api/network/registry/add" && req.method === "POST") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const { ecosystem, url, scope } = JSON.parse(bodyStr || "{}");
+                const args = ["network", "registry", "add", ecosystem, url];
+                if (scope === "user") args.push("--global");
+                execFileSync(unirtmBin, args, { cwd: rootDir, stdio: "pipe" });
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ ok: true, ecosystem, url }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
+          if (req.url === "/api/network/registry/delete" && req.method === "POST") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const { ecosystem, scope } = JSON.parse(bodyStr || "{}");
+                const args = ["network", "registry", "delete", ecosystem];
+                if (scope === "user") args.push("--global");
+                execFileSync(unirtmBin, args, { cwd: rootDir, stdio: "pipe" });
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ ok: true, ecosystem }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
           if (req.url === "/api/network/registry/reset" && req.method === "POST") {
             let bodyStr = "";
             req.on("data", (c: any) => { bodyStr += c; });

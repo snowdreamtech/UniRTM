@@ -4,7 +4,7 @@
 package network
 
 // KnownEcosystems enumerates supported package manager ecosystems.
-var KnownEcosystems = []string{"npm", "go", "python", "rust", "ruby"}
+var KnownEcosystems = []string{"npm", "go", "python", "rust", "ruby", "composer", "maven", "nuget", "docker"}
 
 // DefaultProxyConfig returns the standard secure proxy baseline.
 // Proxy is strictly disabled by default with empty URLs.
@@ -27,11 +27,15 @@ func DefaultBuiltinProfiles() map[string]NetworkProfile {
 			Description: "全量使用官方源与官方二进制 CDN，不经任何代理或国内镜像",
 			Builtin:     true,
 			Registries: map[string]string{
-				"npm":    "https://registry.npmjs.org",
-				"go":     "https://proxy.golang.org,direct",
-				"python": "https://pypi.org/simple",
-				"rust":   "https://crates.io",
-				"ruby":   "https://rubygems.org",
+				"npm":      "https://registry.npmjs.org",
+				"go":       "https://proxy.golang.org,direct",
+				"python":   "https://pypi.org/simple",
+				"rust":     "https://crates.io",
+				"ruby":     "https://rubygems.org",
+				"composer": "https://repo.packagist.org",
+				"maven":    "https://repo1.maven.org/maven2",
+				"nuget":    "https://api.nuget.org/v3/index.json",
+				"docker":   "https://registry-1.docker.io",
 			},
 			Downloads: map[string]string{
 				"node":   "https://nodejs.org/dist",
@@ -45,11 +49,15 @@ func DefaultBuiltinProfiles() map[string]NetworkProfile {
 			Description: "国内顶级高校与大厂公共镜像加速矩阵，保障编译前依赖极速拉取",
 			Builtin:     true,
 			Registries: map[string]string{
-				"npm":    "https://registry.npmmirror.com",
-				"go":     "https://goproxy.cn,direct",
-				"python": "https://pypi.tuna.tsinghua.edu.cn/simple",
-				"rust":   "https://rsproxy.cn/crates.io-index",
-				"ruby":   "https://gems.ruby-china.com",
+				"npm":      "https://registry.npmmirror.com",
+				"go":       "https://goproxy.cn,direct",
+				"python":   "https://pypi.tuna.tsinghua.edu.cn/simple",
+				"rust":     "https://rsproxy.cn/crates.io-index",
+				"ruby":     "https://gems.ruby-china.com",
+				"composer": "https://mirrors.aliyun.com/composer/",
+				"maven":    "https://maven.aliyun.com/repository/public",
+				"nuget":    "https://repo.huaweicloud.com/repository/nuget/v3/index.json",
+				"docker":   "https://registry.cn-hangzhou.aliyuncs.com",
 			},
 			Downloads: map[string]string{
 				"node":   "https://npmmirror.com/mirrors/node",
@@ -98,6 +106,29 @@ func RecommendedMirrors() map[string][]MirrorOption {
 			{Name: "官方直连 (RubyGems)", URL: "https://rubygems.org"},
 			{Name: "Ruby China", URL: "https://gems.ruby-china.com"},
 			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/rubygems/"},
+		},
+		"composer": {
+			{Name: "官方直连 (Packagist)", URL: "https://repo.packagist.org"},
+			{Name: "阿里云 Composer", URL: "https://mirrors.aliyun.com/composer/"},
+			{Name: "腾讯云 Composer", URL: "https://mirrors.cloud.tencent.com/composer/"},
+			{Name: "华为云 Composer", URL: "https://repo.huaweicloud.com/repository/php/"},
+		},
+		"maven": {
+			{Name: "官方直连 (Maven Central)", URL: "https://repo1.maven.org/maven2"},
+			{Name: "阿里云 Maven", URL: "https://maven.aliyun.com/repository/public"},
+			{Name: "华为云 Maven", URL: "https://repo.huaweicloud.com/repository/maven/"},
+			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/maven/"},
+		},
+		"nuget": {
+			{Name: "官方直连 (NuGet.org)", URL: "https://api.nuget.org/v3/index.json"},
+			{Name: "华为云 NuGet", URL: "https://repo.huaweicloud.com/repository/nuget/v3/index.json"},
+			{Name: "腾讯云 NuGet", URL: "https://mirrors.cloud.tencent.com/nuget/"},
+		},
+		"docker": {
+			{Name: "官方直连 (Docker Hub)", URL: "https://registry-1.docker.io"},
+			{Name: "阿里云 Docker 镜像", URL: "https://registry.cn-hangzhou.aliyuncs.com"},
+			{Name: "网易 Docker 镜像", URL: "https://hub-mirror.c.163.com"},
+			{Name: "百度 Docker 镜像", URL: "https://mirror.baidubce.com"},
 		},
 	}
 }

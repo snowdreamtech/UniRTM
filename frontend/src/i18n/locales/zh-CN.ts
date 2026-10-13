@@ -155,6 +155,13 @@ export const zhCn: TranslationDict = {
   "network.probe_slow": "缓慢",
   "network.probe_timeout": "超时",
   "network.custom_source": "自定义镜像源",
+  "network.add_ecosystem": "添加生态",
+  "network.delete_ecosystem": "从矩阵中移除",
+  "network.add_ecosystem_title": "添加语言生态镜像源",
+  "network.add_ecosystem_desc": "支持配置任何语言生态（如 PHP/Composer、Java/Maven、.NET/NuGet、Docker 等）或自定义私有生态",
+  "network.eco_identifier": "生态标识 (ID)",
+  "network.eco_registry_url": "镜像源地址 (URL)",
+  "network.quick_templates": "快速选择预设生态",
 
   "settings.scope_user": "用户",
   "settings.scope_workspace": "工作区",

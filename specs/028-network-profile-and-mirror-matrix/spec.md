@@ -97,6 +97,7 @@ As a developer using both command-line workflows and web dashboards, I want 1:1 
 - **FR-011 (Web Settings UI)**: The Web UI MUST provide dedicated sections for Network Proxy and Mirror Matrix with live inputs, preset selector dropdowns initializing to official direct as first option, and theme-adaptive modal dialogs.
 - **FR-012 (Probe Timeout)**: Latency probes MUST execute concurrently with a maximum timeout of 2.5 seconds.
 - **FR-013 (Native Localization)**: All user-facing strings MUST be fully localized in i18n dictionaries without bilingual parenthetical mixing.
+- **FR-014 (Dynamic Ecosystem Lifecycle)**: The system MUST support dynamically adding and removing/excluding language ecosystems (such as Composer, Maven, NuGet, Docker, or custom enterprise registries) across CLI (`unirtm network registry add/delete`) and Web UI matrix management controls.
 
 ---
 

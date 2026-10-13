@@ -143,7 +143,39 @@ func (m *Manager) GetStatus() *ActiveNetworkStatus {
 	officialBlueprint := DefaultBuiltinProfiles()["official"]
 	effective := make(map[string]EffectiveRegistry)
 
+	excludedMap := make(map[string]bool)
+	for _, exc := range m.config.ExcludedEcosystems {
+		excludedMap[strings.ToLower(strings.TrimSpace(exc))] = true
+	}
+
+	seen := make(map[string]bool)
+	var allEcosystems []string
+
 	for _, eco := range KnownEcosystems {
+		eco = strings.ToLower(strings.TrimSpace(eco))
+		if !excludedMap[eco] && !seen[eco] {
+			seen[eco] = true
+			allEcosystems = append(allEcosystems, eco)
+		}
+	}
+
+	for eco := range activeProfile.Registries {
+		eco = strings.ToLower(strings.TrimSpace(eco))
+		if !excludedMap[eco] && !seen[eco] {
+			seen[eco] = true
+			allEcosystems = append(allEcosystems, eco)
+		}
+	}
+
+	for eco := range m.config.Overrides {
+		eco = strings.ToLower(strings.TrimSpace(eco))
+		if !excludedMap[eco] && !seen[eco] {
+			seen[eco] = true
+			allEcosystems = append(allEcosystems, eco)
+		}
+	}
+
+	for _, eco := range allEcosystems {
 		overrideURL, hasOverride := m.config.Overrides[eco]
 		if hasOverride && strings.TrimSpace(overrideURL) != "" {
 			effective[eco] = EffectiveRegistry{
@@ -167,11 +199,13 @@ func (m *Manager) GetStatus() *ActiveNetworkStatus {
 		}
 
 		fallbackURL := officialBlueprint.Registries[eco]
-		effective[eco] = EffectiveRegistry{
-			Ecosystem:    eco,
-			URL:          fallbackURL,
-			Source:       "default",
-			IsOverridden: false,
+		if strings.TrimSpace(fallbackURL) != "" {
+			effective[eco] = EffectiveRegistry{
+				Ecosystem:    eco,
+				URL:          fallbackURL,
+				Source:       "default",
+				IsOverridden: false,
+			}
 		}
 	}
 
@@ -350,6 +384,77 @@ func (m *Manager) ResetOverride(ecosystem string) error {
 	m.EnsureDefaults()
 	eco := strings.TrimSpace(strings.ToLower(ecosystem))
 	delete(m.config.Overrides, eco)
+	return nil
+}
+
+// AddEcosystem registers or restores an ecosystem in the active profile or overrides.
+func (m *Manager) AddEcosystem(ecosystem, rawURL string) error {
+	m.EnsureDefaults()
+	eco := strings.ToLower(strings.TrimSpace(ecosystem))
+	if eco == "" {
+		return errors.New("ecosystem identifier cannot be empty")
+	}
+
+	cleanURL := strings.TrimSpace(rawURL)
+
+	// Un-exclude if previously excluded
+	var newExcluded []string
+	for _, exc := range m.config.ExcludedEcosystems {
+		if strings.ToLower(strings.TrimSpace(exc)) != eco {
+			newExcluded = append(newExcluded, exc)
+		}
+	}
+	m.config.ExcludedEcosystems = newExcluded
+
+	// If URL is provided, set as override or set into active profile if custom
+	activeID := m.config.ActiveProfile
+	activeProfile, exists := m.config.Profiles[activeID]
+	if exists && !activeProfile.Builtin {
+		if activeProfile.Registries == nil {
+			activeProfile.Registries = make(map[string]string)
+		}
+		if cleanURL != "" {
+			activeProfile.Registries[eco] = cleanURL
+		}
+		m.config.Profiles[activeID] = activeProfile
+	} else if cleanURL != "" {
+		m.config.Overrides[eco] = cleanURL
+	}
+
+	return nil
+}
+
+// DeleteEcosystem removes or excludes an ecosystem from effective resolution and active profile.
+func (m *Manager) DeleteEcosystem(ecosystem string) error {
+	m.EnsureDefaults()
+	eco := strings.ToLower(strings.TrimSpace(ecosystem))
+	if eco == "" {
+		return errors.New("ecosystem identifier cannot be empty")
+	}
+
+	// Remove from overrides
+	delete(m.config.Overrides, eco)
+
+	// Remove from active profile if custom
+	activeID := m.config.ActiveProfile
+	if activeProfile, exists := m.config.Profiles[activeID]; exists && !activeProfile.Builtin {
+		delete(activeProfile.Registries, eco)
+		delete(activeProfile.Downloads, eco)
+		m.config.Profiles[activeID] = activeProfile
+	}
+
+	// Add to ExcludedEcosystems so built-in default resolution suppresses it
+	alreadyExcluded := false
+	for _, exc := range m.config.ExcludedEcosystems {
+		if strings.ToLower(strings.TrimSpace(exc)) == eco {
+			alreadyExcluded = true
+			break
+		}
+	}
+	if !alreadyExcluded {
+		m.config.ExcludedEcosystems = append(m.config.ExcludedEcosystems, eco)
+	}
+
 	return nil
 }
 

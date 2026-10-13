@@ -147,6 +147,13 @@ export interface TranslationDict {
   "network.probe_slow"?: string;
   "network.probe_timeout"?: string;
   "network.custom_source"?: string;
+  "network.add_ecosystem"?: string;
+  "network.delete_ecosystem"?: string;
+  "network.add_ecosystem_title"?: string;
+  "network.add_ecosystem_desc"?: string;
+  "network.eco_identifier"?: string;
+  "network.eco_registry_url"?: string;
+  "network.quick_templates"?: string;
 
   "about.title": string;
   "about.subtitle": string;

@@ -258,3 +258,58 @@ func TestRecommendedMirrorsOrdering(t *testing.T) {
 	}
 }
 
+func TestAddAndDeleteEcosystem(t *testing.T) {
+	mgr := NewManager(nil)
+
+	status := mgr.GetStatus()
+	if _, ok := status.Effective["composer"]; !ok {
+		t.Fatalf("composer expected in expanded default ecosystems")
+	}
+
+	// Add custom ecosystem
+	err := mgr.AddEcosystem("customlang", "https://customlang.org/repo")
+	if err != nil {
+		t.Fatalf("failed to add customlang: %v", err)
+	}
+
+	status = mgr.GetStatus()
+	customEff, ok := status.Effective["customlang"]
+	if !ok || customEff.URL != "https://customlang.org/repo" {
+		t.Fatalf("expected customlang to be effective: %+v", customEff)
+	}
+
+	// Delete custom ecosystem
+	err = mgr.DeleteEcosystem("customlang")
+	if err != nil {
+		t.Fatalf("failed to delete customlang: %v", err)
+	}
+
+	status = mgr.GetStatus()
+	if _, ok := status.Effective["customlang"]; ok {
+		t.Fatalf("expected customlang to be removed from effective")
+	}
+
+	// Delete built-in ecosystem (e.g. ruby)
+	err = mgr.DeleteEcosystem("ruby")
+	if err != nil {
+		t.Fatalf("failed to delete ruby: %v", err)
+	}
+
+	status = mgr.GetStatus()
+	if _, ok := status.Effective["ruby"]; ok {
+		t.Fatalf("expected ruby to be excluded from effective")
+	}
+
+	// Re-add ruby
+	err = mgr.AddEcosystem("ruby", "https://rubygems.org")
+	if err != nil {
+		t.Fatalf("failed to re-add ruby: %v", err)
+	}
+
+	status = mgr.GetStatus()
+	if _, ok := status.Effective["ruby"]; !ok {
+		t.Fatalf("expected ruby to be restored in effective")
+	}
+}
+
+

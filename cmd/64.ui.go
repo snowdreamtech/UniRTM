@@ -512,6 +512,8 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/network/profile/save", handleSaveNetworkProfile)
 	mux.HandleFunc("/api/network/profile/reset", handleResetNetworkProfile)
 	mux.HandleFunc("/api/network/profile/delete", handleDeleteNetworkProfile)
+	mux.HandleFunc("/api/network/registry/add", handleAddNetworkRegistry)
+	mux.HandleFunc("/api/network/registry/delete", handleDeleteNetworkRegistry)
 	mux.HandleFunc("/api/network/registry/override", handleOverrideNetworkRegistry)
 	mux.HandleFunc("/api/network/registry/reset", handleResetNetworkRegistry)
 	mux.HandleFunc("/api/network/proxy", handleSetNetworkProxy)
@@ -896,6 +898,63 @@ func handleResetNetworkRegistry(w http.ResponseWriter, r *http.Request) {
 	_ = mgr.LoadFromPath(targetPath)
 
 	if err := mgr.ResetOverride(req.Ecosystem); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	if err := mgr.SaveToPath(targetPath); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "status": mgr.GetStatus()})
+}
+
+func handleAddNetworkRegistry(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var req struct {
+		Ecosystem string `json:"ecosystem"`
+		URL       string `json:"url"`
+		Scope     string `json:"scope"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	targetPath := resolveNetworkPathFromRequest(r, req.Scope)
+	mgr := network.NewManager(nil)
+	_ = mgr.LoadFromPath(targetPath)
+
+	if err := mgr.AddEcosystem(req.Ecosystem, req.URL); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	if err := mgr.SaveToPath(targetPath); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "status": mgr.GetStatus()})
+}
+
+func handleDeleteNetworkRegistry(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var req struct {
+		Ecosystem string `json:"ecosystem"`
+		Scope     string `json:"scope"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	targetPath := resolveNetworkPathFromRequest(r, req.Scope)
+	mgr := network.NewManager(nil)
+	_ = mgr.LoadFromPath(targetPath)
+
+	if err := mgr.DeleteEcosystem(req.Ecosystem); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
 		return

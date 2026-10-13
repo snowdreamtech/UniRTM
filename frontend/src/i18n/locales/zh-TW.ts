@@ -153,6 +153,13 @@ export const zhTw: TranslationDict = {
   "network.probe_slow": "緩慢",
   "network.probe_timeout": "超時",
   "network.custom_source": "自訂鏡像源",
+  "network.add_ecosystem": "新增生態",
+  "network.delete_ecosystem": "從矩陣中移除",
+  "network.add_ecosystem_title": "新增語言生態鏡像源",
+  "network.add_ecosystem_desc": "支援設定任何語言生態（如 PHP/Composer、Java/Maven、.NET/NuGet、Docker 等）或自訂私有生態",
+  "network.eco_identifier": "生態識別 (ID)",
+  "network.eco_registry_url": "鏡像源地址 (URL)",
+  "network.quick_templates": "快速選擇預設生態",
 
   "about.title": "關於",
   "about.subtitle": "通用運行時管理器 (Universal Runtime Manager)",

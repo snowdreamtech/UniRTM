@@ -37,6 +37,8 @@ func init() {
 	// Registry subcommands
 	networkRegistryCmd.AddCommand(networkRegistryListCmd)
 	networkRegistryCmd.AddCommand(networkRegistrySetCmd)
+	networkRegistryCmd.AddCommand(networkRegistryAddCmd)
+	networkRegistryCmd.AddCommand(networkRegistryDeleteCmd)
 	networkRegistryCmd.AddCommand(networkRegistryResetCmd)
 
 	// Proxy subcommands
@@ -131,7 +133,25 @@ func runNetworkStatus(cmd *cobra.Command, args []string) error {
 		{"生态", "生效镜像源地址", "来源"},
 	}
 
+	// Sort ecosystems with standard baseline first, then others alphabetically
+	var orderedEcos []string
+	seenEco := make(map[string]bool)
 	for _, eco := range network.KnownEcosystems {
+		if _, ok := status.Effective[eco]; ok {
+			orderedEcos = append(orderedEcos, eco)
+			seenEco[eco] = true
+		}
+	}
+	var extraEcos []string
+	for eco := range status.Effective {
+		if !seenEco[eco] {
+			extraEcos = append(extraEcos, eco)
+		}
+	}
+	sort.Strings(extraEcos)
+	orderedEcos = append(orderedEcos, extraEcos...)
+
+	for _, eco := range orderedEcos {
 		eff := status.Effective[eco]
 		sourceBadge := "[继承自预设]"
 		if eff.IsOverridden {
@@ -339,6 +359,44 @@ var networkRegistrySetCmd = &cobra.Command{
 			return err
 		}
 		pterm.Success.Printf("已设置 %s 单项覆盖镜像源: %s\n", strings.ToUpper(eco), url)
+		return nil
+	},
+}
+
+var networkRegistryAddCmd = &cobra.Command{
+	Use:   "add <ecosystem> <url>",
+	Short: "添加或恢复语言生态镜像源",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		mgr, path, _ := getNetworkManager()
+		eco := args[0]
+		url := args[1]
+		if err := mgr.AddEcosystem(eco, url); err != nil {
+			return err
+		}
+		if err := mgr.SaveToPath(path); err != nil {
+			return err
+		}
+		pterm.Success.Printf("已添加语言生态 %s 镜像源: %s\n", strings.ToUpper(eco), url)
+		return nil
+	},
+}
+
+var networkRegistryDeleteCmd = &cobra.Command{
+	Use:     "delete <ecosystem>",
+	Aliases: []string{"del", "remove", "rm"},
+	Short:   "从镜像源矩阵中删除或隐藏某语言生态",
+	Args:    cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		mgr, path, _ := getNetworkManager()
+		eco := args[0]
+		if err := mgr.DeleteEcosystem(eco); err != nil {
+			return err
+		}
+		if err := mgr.SaveToPath(path); err != nil {
+			return err
+		}
+		pterm.Success.Printf("已从镜像矩阵中移除语言生态: %s\n", strings.ToUpper(eco))
 		return nil
 	},
 }

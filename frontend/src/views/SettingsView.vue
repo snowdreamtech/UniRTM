@@ -316,6 +316,13 @@
                   ＋ {{ t('network.create_profile') || '新建档案' }}
                 </button>
                 <button
+                  class="btn-profile-action"
+                  @click="openAddEcoModal()"
+                  :title="t('network.add_ecosystem') || '添加生态'"
+                >
+                  ＋ {{ t('network.add_ecosystem') || '添加生态' }}
+                </button>
+                <button
                   v-if="networkStatus?.active_profile?.builtin"
                   class="btn-profile-action secondary"
                   @click="handleResetBuiltinProfile(networkStatus.active_profile_id)"
@@ -400,10 +407,78 @@
               </div>
             </div>
 
+            <!-- Add Ecosystem Modal Dialog -->
+            <div v-if="showAddEcoModal" class="modal-backdrop" @click.self="showAddEcoModal = false">
+              <div class="modal-dialog glass-card">
+                <div class="modal-header">
+                  <div class="modal-title-group">
+                    <span class="modal-icon">🌐</span>
+                    <div>
+                      <h4>{{ t('network.add_ecosystem_title') || '添加语言生态镜像源' }}</h4>
+                      <span class="modal-subtitle">{{ t('network.add_ecosystem_desc') || '选择常用语言生态预设或输入自定义生态标识与镜像地址' }}</span>
+                    </div>
+                  </div>
+                  <button class="btn-modal-close" @click="showAddEcoModal = false">✕</button>
+                </div>
+
+                <div class="modal-body">
+                  <div class="modal-field">
+                    <label>{{ t('network.quick_templates') || '快速选择预设生态' }}</label>
+                    <div class="quick-templates-grid">
+                      <button
+                        v-for="tpl in commonEcoTemplates"
+                        :key="tpl.id"
+                        type="button"
+                        class="btn-template-chip"
+                        :class="{ active: newEcoId === tpl.id }"
+                        @click="applyEcoTemplate(tpl)"
+                      >
+                        {{ tpl.label }}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="modal-field">
+                    <label>{{ t('network.eco_identifier') || '生态标识 (ID)' }} <span class="text-danger">*</span></label>
+                    <input
+                      v-model="newEcoId"
+                      type="text"
+                      class="setting-text-input font-mono"
+                      placeholder="例如: composer, maven, docker, nuget 等"
+                      autofocus
+                    />
+                    <span class="field-hint">小写字母、数字或短横线，如 composer、maven、docker 等</span>
+                  </div>
+
+                  <div class="modal-field">
+                    <label>{{ t('network.eco_registry_url') || '镜像源地址 (URL)' }} <span class="text-danger">*</span></label>
+                    <input
+                      v-model="newEcoUrl"
+                      type="text"
+                      class="setting-text-input font-mono"
+                      placeholder="例如: https://repo.packagist.org"
+                    />
+                  </div>
+                </div>
+
+                <div class="modal-footer">
+                  <button class="btn-modal-cancel" @click="showAddEcoModal = false">取消</button>
+                  <button
+                    class="btn-modal-confirm"
+                    :disabled="!newEcoId.trim() || !newEcoUrl.trim() || isAddingEco"
+                    @click="handleAddEcosystem"
+                  >
+                    <span v-if="isAddingEco">正在添加...</span>
+                    <span v-else>添加并保存</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <!-- Ecosystem Registries Matrix Table -->
             <div class="registries-matrix" v-if="networkStatus">
               <div
-                v-for="eco in ['npm', 'go', 'python', 'rust', 'ruby']"
+                v-for="eco in orderedEffectiveEcosystems"
                 :key="eco"
                 class="registry-matrix-row"
               >
@@ -418,7 +493,7 @@
                 </div>
 
                 <div class="row-controls">
-                  <div class="preset-dropdown-wrap" v-if="recommendedMirrors[eco]">
+                  <div class="preset-dropdown-wrap" v-if="recommendedMirrors[eco] && recommendedMirrors[eco].length">
                     <select
                       class="preset-select"
                       :value="getPresetSelectValue(eco)"
@@ -456,7 +531,16 @@
                     :title="t('network.restore_inherited') || '恢复跟随预设'"
                     @click="handleResetRegistry(eco)"
                   >
-                    ↺ {{ t('network.restore_inherited') || '恢复跟随' }}
+                    ↺
+                  </button>
+
+                  <!-- Delete Ecosystem Button -->
+                  <button
+                    class="btn-delete-eco"
+                    :title="t('network.delete_ecosystem') || '从矩阵中移除'"
+                    @click="handleDeleteEcosystem(eco)"
+                  >
+                    🗑️
                   </button>
                 </div>
               </div>
@@ -660,6 +744,20 @@ const newProfileId = ref("");
 const newProfileName = ref("");
 const isProbing = ref(false);
 const probeResults = ref<any[]>([]);
+const showAddEcoModal = ref(false);
+const isAddingEco = ref(false);
+const newEcoId = ref("");
+const newEcoUrl = ref("");
+
+const commonEcoTemplates = [
+  { id: "composer", label: "Composer (PHP)", url: "https://repo.packagist.org" },
+  { id: "maven", label: "Maven (Java)", url: "https://repo1.maven.org/maven2" },
+  { id: "nuget", label: "NuGet (.NET)", url: "https://api.nuget.org/v3/index.json" },
+  { id: "docker", label: "Docker Hub", url: "https://registry-1.docker.io" },
+  { id: "deno", label: "Deno", url: "https://deno.land" },
+  { id: "flutter", label: "Flutter / Dart", url: "https://pub.dev" },
+];
+
 const recommendedMirrors = ref<Record<string, Array<{ name: string; url: string }>>>({
   npm: [
     { name: "官方直连 (npmjs.org)", url: "https://registry.npmjs.org" },
@@ -691,6 +789,29 @@ const recommendedMirrors = ref<Record<string, Array<{ name: string; url: string 
     { name: "Ruby China", url: "https://gems.ruby-china.com" },
     { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/rubygems/" },
   ],
+  composer: [
+    { name: "官方直连 (Packagist)", url: "https://repo.packagist.org" },
+    { name: "阿里云 Composer", url: "https://mirrors.aliyun.com/composer/" },
+    { name: "腾讯云 Composer", url: "https://mirrors.cloud.tencent.com/composer/" },
+    { name: "华为云 Composer", url: "https://repo.huaweicloud.com/repository/php/" },
+  ],
+  maven: [
+    { name: "官方直连 (Maven Central)", url: "https://repo1.maven.org/maven2" },
+    { name: "阿里云 Maven", url: "https://maven.aliyun.com/repository/public" },
+    { name: "华为云 Maven", url: "https://repo.huaweicloud.com/repository/maven/" },
+    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/maven/" },
+  ],
+  nuget: [
+    { name: "官方直连 (NuGet.org)", url: "https://api.nuget.org/v3/index.json" },
+    { name: "华为云 NuGet", url: "https://repo.huaweicloud.com/repository/nuget/v3/index.json" },
+    { name: "腾讯云 NuGet", url: "https://mirrors.cloud.tencent.com/nuget/" },
+  ],
+  docker: [
+    { name: "官方直连 (Docker Hub)", url: "https://registry-1.docker.io" },
+    { name: "阿里云 Docker 镜像", url: "https://registry.cn-hangzhou.aliyuncs.com" },
+    { name: "网易 Docker 镜像", url: "https://hub-mirror.c.163.com" },
+    { name: "百度 Docker 镜像", url: "https://mirror.baidubce.com" },
+  ],
 });
 
 const networkStatus = ref<any>({
@@ -714,6 +835,10 @@ const networkStatus = ref<any>({
     python: { ecosystem: "python", url: "https://pypi.org/simple", source: "profile", is_overridden: false },
     rust: { ecosystem: "rust", url: "https://crates.io", source: "profile", is_overridden: false },
     ruby: { ecosystem: "ruby", url: "https://rubygems.org", source: "profile", is_overridden: false },
+    composer: { ecosystem: "composer", url: "https://repo.packagist.org", source: "profile", is_overridden: false },
+    maven: { ecosystem: "maven", url: "https://repo1.maven.org/maven2", source: "profile", is_overridden: false },
+    nuget: { ecosystem: "nuget", url: "https://api.nuget.org/v3/index.json", source: "profile", is_overridden: false },
+    docker: { ecosystem: "docker", url: "https://registry-1.docker.io", source: "profile", is_overridden: false },
   },
   profiles: {
     official: {
@@ -745,6 +870,72 @@ const orderedProfiles = computed(() => {
     return a.id.localeCompare(b.id);
   });
 });
+
+const orderedEffectiveEcosystems = computed(() => {
+  if (!networkStatus.value?.effective) return [];
+  const baseOrder = ["npm", "go", "python", "rust", "ruby", "composer", "maven", "nuget", "docker"];
+  const effKeys = Object.keys(networkStatus.value.effective);
+  const ordered: string[] = [];
+  for (const eco of baseOrder) {
+    if (effKeys.includes(eco)) {
+      ordered.push(eco);
+    }
+  }
+  const extras = effKeys.filter((eco) => !baseOrder.includes(eco)).sort();
+  return [...ordered, ...extras];
+});
+
+function openAddEcoModal() {
+  newEcoId.value = "";
+  newEcoUrl.value = "";
+  showAddEcoModal.value = true;
+}
+
+function applyEcoTemplate(tpl: { id: string; url: string }) {
+  newEcoId.value = tpl.id;
+  newEcoUrl.value = tpl.url;
+}
+
+async function handleAddEcosystem() {
+  const eco = newEcoId.value.trim().toLowerCase();
+  const url = newEcoUrl.value.trim();
+  if (!eco || !url) return;
+  isAddingEco.value = true;
+  try {
+    const res = await fetch("/api/network/registry/add", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ecosystem: eco, url, scope: activeScope.value }),
+    });
+    if (res.ok) {
+      showAddEcoModal.value = false;
+      newEcoId.value = "";
+      newEcoUrl.value = "";
+      await loadNetworkStatus();
+      loadConfigData();
+    }
+  } catch (err) {
+    console.error(err);
+  } finally {
+    isAddingEco.value = false;
+  }
+}
+
+async function handleDeleteEcosystem(eco: string) {
+  try {
+    const res = await fetch("/api/network/registry/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ecosystem: eco, scope: activeScope.value }),
+    });
+    if (res.ok) {
+      await loadNetworkStatus();
+      loadConfigData();
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
 
 // Full config from API
 const configData = ref<any>(null);
@@ -2439,6 +2630,48 @@ input:checked + .slider:before {
 
 .btn-reset-override:hover {
   background: rgba(245, 158, 11, 0.25);
+}
+
+.btn-delete-eco {
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  border-radius: 4px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.btn-delete-eco:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+}
+
+.quick-templates-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.btn-template-chip {
+  padding: 4px 10px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  font-size: 0.76rem;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-template-chip:hover, .btn-template-chip.active {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: #3b82f6;
+  color: #60a5fa;
 }
 
 .probe-results-card {

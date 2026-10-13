@@ -155,6 +155,13 @@ export const enUs: TranslationDict = {
   "network.probe_slow": "Slow",
   "network.probe_timeout": "Timeout",
   "network.custom_source": "Custom Mirror",
+  "network.add_ecosystem": "Add Ecosystem",
+  "network.delete_ecosystem": "Remove from Matrix",
+  "network.add_ecosystem_title": "Add Language Ecosystem Mirror",
+  "network.add_ecosystem_desc": "Configure any package manager ecosystem (Composer, Maven, NuGet, Docker, etc.) or custom internal registry",
+  "network.eco_identifier": "Ecosystem Identifier (ID)",
+  "network.eco_registry_url": "Registry URL",
+  "network.quick_templates": "Quick Presets",
 
   "settings.scope_user": "User",
   "settings.scope_workspace": "Workspace",

@@ -7,8 +7,9 @@ package network
 type NetworkConfig struct {
 	ActiveProfile string                    `json:"active_profile" toml:"active_profile" yaml:"active_profile"`
 	Proxy         ProxyConfig               `json:"proxy" toml:"proxy" yaml:"proxy"`
-	Overrides     map[string]string         `json:"overrides,omitempty" toml:"overrides,omitempty" yaml:"overrides,omitempty"`
-	Profiles      map[string]NetworkProfile `json:"profiles,omitempty" toml:"profiles,omitempty" yaml:"profiles,omitempty"`
+	Overrides           map[string]string         `json:"overrides,omitempty" toml:"overrides,omitempty" yaml:"overrides,omitempty"`
+	Profiles            map[string]NetworkProfile `json:"profiles,omitempty" toml:"profiles,omitempty" yaml:"profiles,omitempty"`
+	ExcludedEcosystems []string                  `json:"excluded_ecosystems,omitempty" toml:"excluded_ecosystems,omitempty" yaml:"excluded_ecosystems,omitempty"`
 }
 
 // ProxyConfig defines local/corporate network proxy parameters.
