@@ -46,9 +46,49 @@ func (m *Manager) LoadFromPath(path string) error {
 func (m *Manager) SaveToPath(path string) error {
 	m.EnsureDefaults()
 
-	// Serialize only the [network] table
+	// Filter profiles: only persist custom profiles or user-modified built-in profiles.
+	// Untouched factory profiles are managed in-memory and seeded by EnsureDefaults.
+	builtins := DefaultBuiltinProfiles()
+	profilesToSave := make(map[string]NetworkProfile)
+	for id, p := range m.config.Profiles {
+		bp, isBuiltin := builtins[id]
+		if !isBuiltin || !p.Builtin {
+			// Custom user-defined profile: always save
+			profilesToSave[id] = p
+		} else {
+			// Built-in profile: only save if modified by the user
+			if !isBuiltinProfileUnmodified(p, bp) {
+				profilesToSave[id] = p
+			}
+		}
+	}
+
+	defaultProxy := DefaultProxyConfig()
+	isDefaultProxy := !m.config.Proxy.Enabled &&
+		m.config.Proxy.HTTP == "" &&
+		m.config.Proxy.HTTPS == "" &&
+		m.config.Proxy.SOCKS5 == "" &&
+		(m.config.Proxy.NoProxy == "" || m.config.Proxy.NoProxy == defaultProxy.NoProxy)
+
+	toSerialize := map[string]interface{}{
+		"active_profile": m.config.ActiveProfile,
+	}
+	if !isDefaultProxy {
+		toSerialize["proxy"] = m.config.Proxy
+	}
+	if len(m.config.Overrides) > 0 {
+		toSerialize["overrides"] = m.config.Overrides
+	}
+	if len(profilesToSave) > 0 {
+		toSerialize["profiles"] = profilesToSave
+	}
+	if len(m.config.ExcludedEcosystems) > 0 {
+		toSerialize["excluded_ecosystems"] = m.config.ExcludedEcosystems
+	}
+
+	// Serialize only the minimal [network] table
 	netMap := map[string]interface{}{
-		"network": m.config,
+		"network": toSerialize,
 	}
 	netBytes, err := toml.Marshal(netMap)
 	if err != nil {
@@ -107,6 +147,29 @@ func (m *Manager) SaveToPath(path string) error {
 	}
 
 	return os.WriteFile(path, []byte(finalContent), 0644)
+}
+
+func isBuiltinProfileUnmodified(p, bp NetworkProfile) bool {
+	if p.Name != bp.Name || p.Description != bp.Description || p.FallbackProfile != bp.FallbackProfile {
+		return false
+	}
+	if len(p.Registries) != len(bp.Registries) {
+		return false
+	}
+	for k, v := range p.Registries {
+		if bp.Registries[k] != v {
+			return false
+		}
+	}
+	if len(p.Downloads) != len(bp.Downloads) {
+		return false
+	}
+	for k, v := range p.Downloads {
+		if bp.Downloads[k] != v {
+			return false
+		}
+	}
+	return true
 }
 
 // NewManager creates a network manager wrapping the provided NetworkConfig.
