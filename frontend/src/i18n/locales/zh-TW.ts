@@ -154,7 +154,7 @@ export const zhTw: TranslationDict = {
   "network.delete_profile": "刪除檔案",
   "network.badge_overridden": "自訂",
   "network.badge_inherited": "預設",
-  "network.badge_fallback_cn": "國內加速補齊",
+  "network.badge_fallback_cn": "預設",
   "network.badge_fallback_cn_tip": "當前專線未收錄該生態，已自動回退到中國鏡像加速矩陣補齊",
   "network.restore_inherited": "恢復預設",
   "network.speed_test": "即時測速",

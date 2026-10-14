@@ -1016,14 +1016,12 @@ const orderedEffectiveEcosystems = computed(() => {
 function getEcoBadgeClass(eco: string): string {
   const eff = networkStatus.value?.effective?.[eco];
   if (eff?.is_overridden) return 'badge-override';
-  if (eff?.source?.startsWith('fallback_')) return 'badge-fallback';
   return 'badge-inherited';
 }
 
 function getEcoBadgeLabel(eco: string): string {
   const eff = networkStatus.value?.effective?.[eco];
   if (eff?.is_overridden) return t('network.badge_overridden') || '自定义';
-  if (eff?.source?.startsWith('fallback_')) return t('network.badge_fallback_cn') || '国内加速补齐';
   return t('network.badge_inherited') || '预设';
 }
 

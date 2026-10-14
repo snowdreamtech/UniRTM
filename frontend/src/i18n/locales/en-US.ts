@@ -156,7 +156,7 @@ export const enUs: TranslationDict = {
   "network.delete_profile": "Delete Profile",
   "network.badge_overridden": "Custom",
   "network.badge_inherited": "Preset",
-  "network.badge_fallback_cn": "CN Fallback",
+  "network.badge_fallback_cn": "Preset",
   "network.badge_fallback_cn_tip": "Not hosted on this dedicated mirror; automatically fallen back to China Mirror Matrix",
   "network.restore_inherited": "Reset to Preset",
   "network.speed_test": "Speed Test",

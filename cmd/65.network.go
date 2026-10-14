@@ -157,9 +157,6 @@ func runNetworkStatus(cmd *cobra.Command, args []string) error {
 		sourceBadge := "[预设]"
 		if eff.IsOverridden {
 			sourceBadge = pterm.LightYellow("[自定义]")
-		} else if strings.HasPrefix(eff.Source, "fallback_") {
-			fbTarget := strings.TrimPrefix(eff.Source, "fallback_")
-			sourceBadge = pterm.LightCyan(fmt.Sprintf("[%s 未收录，回退 %s 补齐]", status.ActiveProfileID, fbTarget))
 		} else if eff.Source == "default" {
 			sourceBadge = pterm.Gray("[官方默认]")
 		} else {

@@ -156,7 +156,7 @@ export const zhCn: TranslationDict = {
   "network.delete_profile": "删除档案",
   "network.badge_overridden": "自定义",
   "network.badge_inherited": "预设",
-  "network.badge_fallback_cn": "国内加速补齐",
+  "network.badge_fallback_cn": "预设",
   "network.badge_fallback_cn_tip": "当前专线未收录该生态，已自动回退到中国镜像加速矩阵补齐",
   "network.restore_inherited": "恢复预设",
   "network.speed_test": "实时测速",
