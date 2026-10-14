@@ -329,6 +329,11 @@ func runExec(cmd *cobra.Command, args []string) error {
 		additionalEnv["PATH"] += string(os.PathListSeparator) + exeDir
 	}
 
+	// Inject network environment variables (registries, proxies, and downloads)
+	if netMgr, _, _ := getNetworkManager(); netMgr != nil {
+		mergeEnvMaps(additionalEnv, netMgr.ExportEnvironment())
+	}
+
 	// Apply all collected env overrides onto the current process.
 	applyEnvMap(additionalEnv)
 

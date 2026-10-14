@@ -197,6 +197,24 @@ func runEnv(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Load network environment variables (registries, proxies, and downloads)
+	if netMgr, _, _ := getNetworkManager(); netMgr != nil {
+		for k, v := range netMgr.ExportEnvironment() {
+			found := false
+			for i, existing := range vars {
+				if existing.Name == k {
+					vars[i].Value = v
+					vars[i].Source = "network"
+					found = true
+					break
+				}
+			}
+			if !found {
+				vars = append(vars, envVarEntry{Name: k, Value: v, Source: "network"})
+			}
+		}
+	}
+
 	// Determine if we should show the interactive TUI
 	// We show the TUI ONLY if:
 	// 1. Output is a terminal
