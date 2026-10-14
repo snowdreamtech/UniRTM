@@ -2625,7 +2625,13 @@ input:checked + .slider:before {
   padding: 2px 7px;
   border-radius: 4px;
   background: var(--accent-cyan);
-  color: #090e17;
+  color: #050b14;
+}
+
+:root[data-theme="light"] .detected-pill,
+[data-theme="light"] .detected-pill {
+  background: #0284c7;
+  color: #ffffff;
 }
 
 .detected-desc {
@@ -2635,20 +2641,36 @@ input:checked + .slider:before {
 }
 
 .btn-apply-detected {
-  padding: 5px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
   background: var(--accent-cyan);
-  color: #090e17;
-  border: none;
-  border-radius: 5px;
-  font-size: 0.76rem;
+  color: #050b14;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  transition: opacity 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+:root[data-theme="light"] .btn-apply-detected,
+[data-theme="light"] .btn-apply-detected {
+  background: #0284c7;
+  color: #ffffff !important;
+  box-shadow: 0 1px 4px rgba(2, 132, 199, 0.3);
 }
 
 .btn-apply-detected:hover {
-  opacity: 0.88;
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.btn-apply-detected:active {
+  transform: translateY(0);
 }
 
 .proxy-fields {
