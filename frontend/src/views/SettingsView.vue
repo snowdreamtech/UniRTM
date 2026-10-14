@@ -277,7 +277,7 @@
                   class="btn-apply-detected"
                   @click="applyDetectedProxy"
                 >
-                  ⚡ 一键填入并启用
+                  ⚡ 一键导入
                 </button>
               </div>
 
