@@ -34,6 +34,27 @@ func TestUpsertEnvVar(t *testing.T) {
 	if !strings.Contains(res, "FOO = \"new\"") || strings.Contains(res, "FOO = \"old\"") {
 		t.Errorf("UpsertEnvVar failed to update existing key: %s", res)
 	}
+
+	// 4. Lowercase or mixed-case key input is normalized to uppercase
+	content = ""
+	res = UpsertEnvVar(content, "github_token", "ghp_123")
+	if !strings.Contains(res, "GITHUB_TOKEN = \"ghp_123\"") || strings.Contains(res, "github_token") {
+		t.Errorf("UpsertEnvVar failed to normalize lowercase key to uppercase: %s", res)
+	}
+
+	// 5. Existing lowercase key in [env] is replaced and migrated to uppercase
+	content = "[env]\ngithub_token = \"old_token\"\n"
+	res = UpsertEnvVar(content, "GITHUB_TOKEN", "new_token")
+	if !strings.Contains(res, "GITHUB_TOKEN = \"new_token\"") || strings.Contains(res, "github_token") {
+		t.Errorf("UpsertEnvVar failed to migrate existing lowercase key to uppercase: %s", res)
+	}
+
+	// 6. Deduplicates multiple casing variants if they existed
+	content = "[env]\ngithub_token = \"tok1\"\nGITHUB_TOKEN = \"tok2\"\n"
+	res = UpsertEnvVar(content, "GitHub_Token", "tok3")
+	if strings.Count(res, "GITHUB_TOKEN") != 1 || strings.Contains(res, "github_token") || !strings.Contains(res, "tok3") {
+		t.Errorf("UpsertEnvVar failed to deduplicate casing variants: %s", res)
+	}
 }
 
 func TestUnsetEnvVar(t *testing.T) {
@@ -51,6 +72,13 @@ func TestUnsetEnvVar(t *testing.T) {
 	res, changed = UnsetEnvVar(content, "NONEXISTENT")
 	if changed {
 		t.Errorf("UnsetEnvVar should return changed=false for nonexistent key")
+	}
+
+	// 3. Case-insensitive removal
+	content = "[env]\nGITHUB_TOKEN = \"ghp_xxx\"\n"
+	res, changed = UnsetEnvVar(content, "github_token")
+	if !changed || strings.Contains(res, "GITHUB_TOKEN") {
+		t.Errorf("UnsetEnvVar failed to remove case-insensitively: %s", res)
 	}
 }
 

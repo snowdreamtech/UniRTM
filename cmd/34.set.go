@@ -136,7 +136,8 @@ func runSet(cmd *cobra.Command, args []string) error {
 			formatter.Error(fmt.Sprintf("Invalid format %q — expected KEY=value", arg))
 			return fmt.Errorf("invalid argument: %q", arg)
 		}
-		pairs[arg[:idx]] = arg[idx+1:]
+		rawKey := strings.TrimSpace(arg[:idx])
+		pairs[strings.ToUpper(rawKey)] = arg[idx+1:]
 	}
 
 	cfgPath := resolveConfigFilePathWithOpts(setGlobal, setPath, setEnv)

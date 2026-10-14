@@ -29,15 +29,34 @@ func quoteTOMLValue(val string) string {
 	return fmt.Sprintf("%q", val)
 }
 
+// extractTOMLKey extracts the key from a "key = value" TOML line.
+func extractTOMLKey(line string) string {
+	trimmed := strings.TrimSpace(line)
+	if strings.HasPrefix(trimmed, "#") || trimmed == "" || strings.HasPrefix(trimmed, "[") {
+		return ""
+	}
+	parts := strings.SplitN(trimmed, "=", 2)
+	if len(parts) != 2 {
+		return ""
+	}
+	k := strings.TrimSpace(parts[0])
+	k = strings.Trim(k, `"'`)
+	return k
+}
+
 // UpsertEnvVar adds or updates an environment variable entry in the TOML [env] section.
+// Following Postel's Law and POSIX environment standards, environment variable keys are
+// strictly normalized to UPPERCASE when written to TOML configuration.
+// Existing entries with matching key (case-insensitively) are replaced and deduplicated.
 func UpsertEnvVar(content, key, value string) string {
+	upperKey := strings.ToUpper(strings.TrimSpace(key))
 	lines := strings.Split(content, "\n")
-	newEntry := fmt.Sprintf("%s = %s", quoteTOMLKey(key), quoteTOMLValue(value))
+	newEntry := fmt.Sprintf("%s = %s", quoteTOMLKey(upperKey), quoteTOMLValue(value))
 
 	inEnv := false
 	envStart := -1
 	envEnd := -1
-	envLineIdx := -1
+	var matchingIndices []int
 
 	for i, line := range lines {
 		trimmed := strings.TrimSpace(line)
@@ -52,8 +71,9 @@ func UpsertEnvVar(content, key, value string) string {
 				inEnv = false
 				break
 			}
-			if strings.HasPrefix(trimmed, key+"=") || strings.HasPrefix(trimmed, key+" =") {
-				envLineIdx = i
+			existingKey := extractTOMLKey(line)
+			if strings.EqualFold(existingKey, upperKey) {
+				matchingIndices = append(matchingIndices, i)
 			}
 		}
 	}
@@ -69,8 +89,23 @@ func UpsertEnvVar(content, key, value string) string {
 		return content
 	}
 
-	if envLineIdx != -1 {
-		lines[envLineIdx] = newEntry
+	if len(matchingIndices) > 0 {
+		// Update first matching occurrence with uppercase key
+		lines[matchingIndices[0]] = newEntry
+		// Remove any duplicate occurrences (e.g. if both lowercase and uppercase existed previously)
+		if len(matchingIndices) > 1 {
+			toRemove := make(map[int]bool)
+			for _, idx := range matchingIndices[1:] {
+				toRemove[idx] = true
+			}
+			filtered := make([]string, 0, len(lines)-len(matchingIndices)+1)
+			for i, l := range lines {
+				if !toRemove[i] {
+					filtered = append(filtered, l)
+				}
+			}
+			lines = filtered
+		}
 		return strings.Join(lines, "\n")
 	}
 
@@ -83,11 +118,13 @@ func UpsertEnvVar(content, key, value string) string {
 }
 
 // UnsetEnvVar removes an environment variable entry from the TOML [env] section.
+// Key matching is case-insensitive, ensuring any existing casing variants are removed.
 func UnsetEnvVar(content, key string) (string, bool) {
+	matchKey := strings.TrimSpace(key)
 	lines := strings.Split(content, "\n")
 
 	inEnv := false
-	envLineIdx := -1
+	var matchingIndices []int
 
 	for i, line := range lines {
 		trimmed := strings.TrimSpace(line)
@@ -99,17 +136,25 @@ func UnsetEnvVar(content, key string) (string, bool) {
 			if strings.HasPrefix(trimmed, "[") && trimmed != "[env]" {
 				break
 			}
-			if strings.HasPrefix(trimmed, key+"=") || strings.HasPrefix(trimmed, key+" =") {
-				envLineIdx = i
-				break
+			existingKey := extractTOMLKey(line)
+			if strings.EqualFold(existingKey, matchKey) {
+				matchingIndices = append(matchingIndices, i)
 			}
 		}
 	}
 
-	if envLineIdx != -1 {
-		// Remove the line
-		lines = append(lines[:envLineIdx], lines[envLineIdx+1:]...)
-		return strings.Join(lines, "\n"), true
+	if len(matchingIndices) > 0 {
+		toRemove := make(map[int]bool)
+		for _, idx := range matchingIndices {
+			toRemove[idx] = true
+		}
+		newLines := make([]string, 0, len(lines)-len(matchingIndices))
+		for i, l := range lines {
+			if !toRemove[i] {
+				newLines = append(newLines, l)
+			}
+		}
+		return strings.Join(newLines, "\n"), true
 	}
 
 	return content, false
@@ -250,6 +295,13 @@ func LoadRawTOML(path string) (map[string]interface{}, error) {
 
 // SaveRawTOML writes a generic map to a TOML file and formats it.
 func SaveRawTOML(path string, m map[string]interface{}) error {
+	if envMap, ok := m["env"].(map[string]interface{}); ok {
+		normalizedEnv := make(map[string]interface{}, len(envMap))
+		for k, v := range envMap {
+			normalizedEnv[strings.ToUpper(k)] = v
+		}
+		m["env"] = normalizedEnv
+	}
 	var buf bytes.Buffer
 	enc := toml.NewEncoder(&buf)
 	if err := enc.Encode(m); err != nil {
@@ -298,6 +350,11 @@ func UpsertTOMLSetting(content string, keySegments []string, value interface{}) 
 	} else {
 		sectionSegments = keySegments[:len(keySegments)-1]
 		targetKey = keySegments[len(keySegments)-1]
+	}
+
+	isEnv := len(sectionSegments) == 1 && strings.EqualFold(sectionSegments[0], "env")
+	if isEnv {
+		targetKey = strings.ToUpper(targetKey)
 	}
 
 	// Format section header
@@ -371,7 +428,7 @@ func UpsertTOMLSetting(content string, keySegments []string, value interface{}) 
 			parts := strings.SplitN(trimmed, "=", 2)
 			if len(parts) == 2 {
 				k := strings.Trim(strings.TrimSpace(parts[0]), `"'`)
-				if k == targetKey {
+				if (isEnv && strings.EqualFold(k, targetKey)) || k == targetKey {
 					keyLineIdx = i
 				}
 			}

@@ -493,6 +493,26 @@ func (c *Config) Merge(other *Config) {
 	}
 }
 
+// GetEnv returns an environment variable from c.Env case-insensitively.
+func (c *Config) GetEnv(key string) (string, bool) {
+	if c == nil || c.Env == nil {
+		return "", false
+	}
+	if v, exists := c.Env[key]; exists {
+		return fmt.Sprintf("%v", v), true
+	}
+	upper := strings.ToUpper(key)
+	if v, exists := c.Env[upper]; exists {
+		return fmt.Sprintf("%v", v), true
+	}
+	for k, v := range c.Env {
+		if strings.EqualFold(k, key) {
+			return fmt.Sprintf("%v", v), true
+		}
+	}
+	return "", false
+}
+
 func (c *Config) validateTaskDependencies() error {
 	var errs []string
 	for taskName, task := range c.Tasks {
