@@ -30,7 +30,7 @@
         :currentTab="currentTab"
         :activeSubItem="activeSubItem"
         @toggle-collapse="isSidebarOpen = false"
-        @select-sub-item="activeSubItem = $event"
+        @select-sub-item="activeSubItem = (activeSubItem === $event ? '' : $event)"
         @run-task="handleTaskStarted"
       />
 

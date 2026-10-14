@@ -34,7 +34,7 @@
           :key="item.id"
           class="sidebar-item"
           :class="{ active: activeSubItem === item.id }"
-          @click="$emit('select-sub-item', item.id)"
+          @click="handleSubItemClick(item.id)"
         >
           <span class="item-icon">{{ item.icon }}</span>
           <span class="item-label">{{ item.label }}</span>
@@ -50,7 +50,7 @@
           :key="item.id"
           class="sidebar-item"
           :class="{ active: activeSubItem === item.id }"
-          @click="$emit('select-sub-item', item.id)"
+          @click="handleSubItemClick(item.id)"
         >
           <span class="item-icon">{{ item.icon }}</span>
           <div class="item-dual">
@@ -68,7 +68,7 @@
           :key="tool.name"
           class="sidebar-item"
           :class="{ active: activeSubItem === tool.name }"
-          @click="$emit('select-sub-item', tool.name)"
+          @click="handleSubItemClick(tool.name)"
         >
           <span class="item-icon">{{ tool.icon }}</span>
           <div class="item-dual">
@@ -87,7 +87,7 @@
           :key="task.name"
           class="sidebar-item"
           :class="{ active: activeSubItem === task.name }"
-          @click="$emit('select-sub-item', task.name)"
+          @click="handleSubItemClick(task.name)"
         >
           <span class="item-icon">⚡</span>
           <div class="item-dual">
@@ -106,7 +106,7 @@
           :key="ext.id"
           class="sidebar-item"
           :class="{ active: activeSubItem === ext.id }"
-          @click="$emit('select-sub-item', ext.id)"
+          @click="handleSubItemClick(ext.id)"
         >
           <span class="item-icon">{{ ext.icon }}</span>
           <div class="item-dual">
@@ -125,7 +125,7 @@
           :key="check.id"
           class="sidebar-item"
           :class="{ active: activeSubItem === check.id }"
-          @click="$emit('select-sub-item', check.id)"
+          @click="handleSubItemClick(check.id)"
         >
           <span class="item-icon">{{ check.icon }}</span>
           <span class="item-label">{{ check.label }}</span>
@@ -140,7 +140,7 @@
           :key="item.id"
           class="sidebar-item"
           :class="{ active: activeSubItem === item.id }"
-          @click="$emit('select-sub-item', item.id)"
+          @click="handleSubItemClick(item.id)"
         >
           <span class="item-icon">{{ item.icon }}</span>
           <span class="item-label">{{ item.label }}</span>
@@ -169,11 +169,19 @@ const props = defineProps<{
   activeSubItem: string;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (e: "toggle-collapse"): void;
   (e: "select-sub-item", id: string): void;
   (e: "run-task", taskName: string): void;
 }>();
+
+function handleSubItemClick(id: string) {
+  if (props.activeSubItem === id) {
+    emit("select-sub-item", "");
+  } else {
+    emit("select-sub-item", id);
+  }
+}
 
 const searchQuery = ref("");
 

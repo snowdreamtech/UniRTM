@@ -286,23 +286,93 @@ export default defineConfig({
             return;
           }
 
+          if (req.url === "/api/runtimes/remove" && req.method === "POST") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const { tool, global: isGlobal } = JSON.parse(bodyStr || "{}");
+                let executedCli = false;
+                if (fs.existsSync(unirtmBin)) {
+                  try {
+                    const args = ["unuse", tool];
+                    if (isGlobal) args.push("--global");
+                    execFileSync(unirtmBin, args, { cwd: rootDir, encoding: "utf-8" });
+                    executedCli = true;
+                  } catch (e) {
+                    console.warn("unirtm unuse fallback:", e);
+                  }
+                }
+
+                const targetPath = isGlobal
+                  ? path.join(os.homedir(), ".config", "unirtm", "unirtm.toml")
+                  : path.join(rootDir, ".unirtm.toml");
+
+                if (fs.existsSync(targetPath)) {
+                  let content = fs.readFileSync(targetPath, "utf-8");
+                  const lines = content.split("\n");
+                  let toolsIdx = -1;
+                  let nextIdx = -1;
+                  for (let i = 0; i < lines.length; i++) {
+                    const tr = lines[i].trim();
+                    if (tr === "[tools]") toolsIdx = i;
+                    else if (toolsIdx !== -1 && tr.startsWith("[") && tr.endsWith("]")) {
+                      nextIdx = i;
+                      break;
+                    }
+                  }
+                  if (toolsIdx !== -1) {
+                    const end = nextIdx !== -1 ? nextIdx : lines.length;
+                    const reg = new RegExp(`^\\s*"?${tool}"?\\s*=`);
+                    for (let i = toolsIdx + 1; i < end; i++) {
+                      if (reg.test(lines[i])) {
+                        lines.splice(i, 1);
+                        break;
+                      }
+                    }
+                    fs.writeFileSync(targetPath, lines.join("\n"), "utf-8");
+                  }
+                }
+
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, tool, cli: executedCli }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
           if (req.url?.startsWith("/api/runtimes/remote")) {
             const urlObj = new URL(req.url, "http://localhost");
             const tool = urlObj.searchParams.get("tool");
             let versions: string[] = [];
             if (tool === "node") {
-              versions = ["22.14.0", "22.13.1", "20.18.3", "20.18.2", "18.20.7", "18.20.6"];
+              versions = ["26.8.1", "22.14.0", "22.13.1", "20.18.3", "20.18.2", "18.20.7", "18.20.6"];
             } else if (tool === "go") {
-              versions = ["1.24.0", "1.23.6", "1.23.5", "1.22.12", "1.27.2", "1.27.1"];
+              versions = ["1.27.2", "1.27.1", "1.24.0", "1.23.6", "1.23.5", "1.22.12"];
             } else if (tool === "python") {
-              versions = ["3.13.2", "3.12.9", "3.12.8", "3.11.11", "3.10.16"];
+              versions = ["3.14.7", "3.13.2", "3.12.9", "3.12.8", "3.12.2", "3.11.11", "3.10.16"];
+            } else if (tool === "rust") {
+              versions = ["1.85.0", "1.84.1", "1.83.0", "1.82.0", "1.81.0"];
+            } else if (tool === "java") {
+              versions = ["21.0.2", "21.0.1", "17.0.10", "11.0.22", "8.0.402"];
+            } else if (tool === "bun") {
+              versions = ["1.2.4", "1.2.2", "1.1.45", "1.0.35"];
+            } else if (tool === "deno") {
+              versions = ["2.2.2", "2.1.9", "2.0.6", "1.46.3"];
+            } else if (tool === "zig") {
+              versions = ["0.13.0", "0.12.1", "0.11.0"];
             } else {
-              versions = ["1.85.0", "1.84.1", "1.83.0", "1.82.0"];
+              versions = ["2.0.0", "1.5.0", "1.2.0", "1.0.0"];
             }
             res.setHeader("Content-Type", "application/json");
             res.end(JSON.stringify({ tool, versions: versions.map((v) => ({ version: v })) }));
             return;
           }
+
 
           if (req.url?.startsWith("/api/network/status")) {
             const urlObj = new URL(req.url, "http://localhost");

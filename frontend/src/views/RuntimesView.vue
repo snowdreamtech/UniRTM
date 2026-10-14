@@ -96,6 +96,13 @@
         <span class="stat-badge highlight">
           <b>{{ totalInstalled }}</b> {{ t("runtimes.count_installed_suffix") || "个已装版本" }}
         </span>
+        <button
+          class="tool-action-btn primary small"
+          id="btn-add-runtime"
+          @click="openAddModal"
+        >
+          <span>+ {{ t("runtimes.add_runtime") || "添加运行环境" }}</span>
+        </button>
       </div>
     </div>
 
@@ -124,10 +131,18 @@
               >
                 ↗
               </a>
+              <button
+                class="runtime-delete-btn"
+                :title="(t('runtimes.remove_runtime') || '移除环境') + ' ' + rt.name"
+                @click.stop="confirmRemoveRuntime(rt)"
+              >
+                🗑️
+              </button>
             </div>
             <span class="runtime-desc">{{ rt.description }}</span>
           </div>
         </div>
+
 
         <!-- Dual Scope Version Display -->
         <div class="runtime-status-box">
@@ -270,6 +285,9 @@
             class="modal-search-input"
             :placeholder="t('runtimes.search_remote_placeholder') || 'Filter remote versions (e.g. 20, lts, 1.23)...'"
           />
+          <span class="version-count-pill font-mono">
+            {{ filteredRemoteVersions.length }} {{ t("runtimes.version_count") || "个可用版本" }}
+          </span>
         </div>
 
         <div class="modal-body-versions">
@@ -284,7 +302,7 @@
 
           <div
             v-else
-            v-for="rv in filteredRemoteVersions.slice(0, 50)"
+            v-for="rv in filteredRemoteVersions"
             :key="rv.version"
             class="remote-ver-row"
           >
@@ -294,20 +312,21 @@
                 v-if="isAlreadyInstalled(selectedRuntime?.id || '', rv.version)"
                 class="installed-tag"
               >
-                ✓ Installed
+                {{ t("runtimes.installed") || "已安装" }}
               </span>
             </div>
 
             <button
               class="install-action-btn"
+              :class="{ 'is-installed': isAlreadyInstalled(selectedRuntime?.id || '', rv.version) }"
               :disabled="installingVer === rv.version"
               @click="installRemoteVersion(selectedRuntime?.id || '', rv.version)"
             >
-              <span v-if="installingVer === rv.version">Installing...</span>
+              <span v-if="installingVer === rv.version">{{ t("runtimes.installing") || "Installing..." }}</span>
               <span v-else-if="isAlreadyInstalled(selectedRuntime?.id || '', rv.version)">
-                {{ modalInstallScope === 'user' ? '设为用户' : '设为工作区' }}
+                {{ modalInstallScope === 'user' ? (t("runtimes.set_user") || '设为用户') : (t("runtimes.set_workspace") || '设为工作区') }}
               </span>
-              <span v-else>安装并应用</span>
+              <span v-else>{{ t("runtimes.install_apply") || "安装并应用" }}</span>
             </button>
           </div>
         </div>
@@ -319,7 +338,78 @@
         </div>
       </div>
     </div>
+
+    <!-- Add New Runtime Modal -->
+    <div v-if="isAddModalOpen" class="modal-backdrop" @click.self="isAddModalOpen = false">
+      <div class="modal-dialog glass-card add-runtime-dialog" role="dialog" aria-modal="true">
+        <div class="modal-header">
+          <div class="modal-title-row">
+            <span class="modal-icon">➕</span>
+            <div>
+              <h3 class="modal-title">{{ t("runtimes.add_runtime") || "添加运行环境" }}</h3>
+              <p class="modal-desc">为当前{{ currentScope === 'user' ? '用户默认' : '工作区' }}添加编程语言运行时与版本</p>
+            </div>
+          </div>
+          <button class="modal-close-btn" @click="isAddModalOpen = false">✕</button>
+        </div>
+
+        <div class="add-preset-section">
+          <div class="preset-section-title">官方支持推荐语言</div>
+          <div class="add-preset-grid">
+            <div
+              v-for="preset in availablePresetRuntimes"
+              :key="preset.id"
+              class="add-preset-card"
+            >
+              <div class="preset-card-left">
+                <span class="preset-icon">{{ preset.icon }}</span>
+                <div class="preset-info">
+                  <div class="preset-name-row">
+                    <span class="preset-name">{{ preset.name }}</span>
+                    <span class="preset-tag font-mono">v{{ preset.defaultVersion }}</span>
+                  </div>
+                  <span class="preset-desc">{{ preset.description }}</span>
+                </div>
+              </div>
+              <button
+                class="tool-action-btn primary small"
+                @click="addRuntimeFromPreset(preset)"
+              >
+                + 添加
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="custom-add-section">
+          <div class="preset-section-title">或输入自定义工具名</div>
+          <div class="custom-add-form">
+            <input
+              v-model="customToolInput"
+              type="text"
+              class="custom-tool-input font-mono"
+              placeholder="例如: elixir, zig, php..."
+              @keyup.enter="addCustomRuntime"
+            />
+            <button
+              class="tool-action-btn primary small"
+              :disabled="!customToolInput.trim()"
+              @click="addCustomRuntime"
+            >
+              添加
+            </button>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="tool-action-btn secondary" @click="isAddModalOpen = false">
+            {{ t("common.close") || "Close" }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
+
 </template>
 
 <script setup lang="ts">
@@ -415,6 +505,193 @@ const remoteSearchKey = ref("");
 const loadingRemote = ref(false);
 const installingVer = ref<string | null>(null);
 
+// Add Runtime modal state
+const isAddModalOpen = ref(false);
+const customToolInput = ref("");
+
+interface PresetRuntime {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  homepage: string;
+  defaultVersion: string;
+}
+
+const presetRuntimes: PresetRuntime[] = [
+  {
+    id: "bun",
+    name: "Bun",
+    icon: "🥟",
+    description: "Incredibly fast all-in-one JavaScript & TypeScript toolkit",
+    homepage: "https://bun.sh",
+    defaultVersion: "1.2.4",
+  },
+  {
+    id: "deno",
+    name: "Deno",
+    icon: "🦕",
+    description: "Modern, secure runtime for JavaScript and TypeScript",
+    homepage: "https://deno.com",
+    defaultVersion: "2.2.2",
+  },
+  {
+    id: "java",
+    name: "Java (OpenJDK)",
+    icon: "☕",
+    description: "Enterprise multi-platform Java Development Kit & Virtual Machine",
+    homepage: "https://openjdk.org",
+    defaultVersion: "21.0.2",
+  },
+  {
+    id: "zig",
+    name: "Zig",
+    icon: "⚡",
+    description: "General-purpose programming language and toolchain for robust software",
+    homepage: "https://ziglang.org",
+    defaultVersion: "0.13.0",
+  },
+  {
+    id: "ruby",
+    name: "Ruby",
+    icon: "💎",
+    description: "Dynamic, open source programming language with a focus on simplicity",
+    homepage: "https://ruby-lang.org",
+    defaultVersion: "3.4.1",
+  },
+  {
+    id: "php",
+    name: "PHP",
+    icon: "🐘",
+    description: "Popular general-purpose scripting language suited for web development",
+    homepage: "https://php.net",
+    defaultVersion: "8.4.3",
+  },
+  {
+    id: "node",
+    name: "Node.js",
+    icon: "🟢",
+    description: "JavaScript / TypeScript runtime (NVM superset)",
+    homepage: "https://nodejs.org",
+    defaultVersion: "22.14.0",
+  },
+  {
+    id: "go",
+    name: "Go",
+    icon: "🔷",
+    description: "Go programming language (GVM superset)",
+    homepage: "https://go.dev",
+    defaultVersion: "1.24.0",
+  },
+  {
+    id: "python",
+    name: "Python",
+    icon: "🐍",
+    description: "Python language interpreter (Pyenv superset)",
+    homepage: "https://python.org",
+    defaultVersion: "3.13.2",
+  },
+  {
+    id: "rust",
+    name: "Rust",
+    icon: "🦀",
+    description: "Rust toolchain & cargo build system",
+    homepage: "https://rust-lang.org",
+    defaultVersion: "1.85.0",
+  },
+];
+
+const availablePresetRuntimes = computed(() => {
+  const currentIds = new Set(runtimes.value.map((r) => r.id.toLowerCase()));
+  return presetRuntimes.filter((p) => !currentIds.has(p.id.toLowerCase()));
+});
+
+function openAddModal() {
+  customToolInput.value = "";
+  isAddModalOpen.value = true;
+}
+
+async function addRuntimeFromPreset(preset: PresetRuntime) {
+  const isGlobal = currentScope.value === "user";
+  const newItem: RuntimeItem = {
+    id: preset.id,
+    name: preset.name,
+    description: preset.description,
+    homepage: preset.homepage,
+    installed_versions: [preset.defaultVersion],
+    active_version: isGlobal ? "" : preset.defaultVersion,
+    global_version: preset.defaultVersion,
+    source: ".unirtm.toml",
+    is_legacy: false,
+    legacy_file: "",
+  };
+
+  runtimes.value.push(newItem);
+  isAddModalOpen.value = false;
+  showToast(`已成功添加 ${preset.name} 环境 (v${preset.defaultVersion})`, "success");
+
+  // Persist to .unirtm.toml & unirtm.lock
+  await quickSwitch(preset.id, preset.defaultVersion, isGlobal);
+}
+
+async function addCustomRuntime() {
+  const toolName = customToolInput.value.trim().toLowerCase();
+  if (!toolName) return;
+
+  const isGlobal = currentScope.value === "user";
+  const newItem: RuntimeItem = {
+    id: toolName,
+    name: toolName.charAt(0).toUpperCase() + toolName.slice(1),
+    description: `${toolName} runtime environment`,
+    homepage: "",
+    installed_versions: ["latest"],
+    active_version: isGlobal ? "" : "latest",
+    global_version: "latest",
+    source: ".unirtm.toml",
+    is_legacy: false,
+    legacy_file: "",
+  };
+
+  runtimes.value.push(newItem);
+  customToolInput.value = "";
+  isAddModalOpen.value = false;
+  showToast(`已成功添加 ${newItem.name} 环境`, "success");
+
+  await quickSwitch(toolName, "latest", isGlobal);
+}
+
+async function confirmRemoveRuntime(rt: RuntimeItem) {
+  const isGlobal = currentScope.value === "user";
+  const scopeName = isGlobal ? "用户配置" : "工作区";
+  const msg = (t("runtimes.remove_confirm") || "确定从当前工作区中移除 {name} 吗？").replace("{name}", rt.name);
+  if (!window.confirm(msg)) {
+    return;
+  }
+
+  // 1. Optimistic removal
+  const prevRuntimes = JSON.parse(JSON.stringify(runtimes.value));
+  runtimes.value = runtimes.value.filter((r) => r.id !== rt.id);
+  showToast(`正在从${scopeName}移除 ${rt.name}...`, "info");
+
+  try {
+    const res = await fetch("/api/runtimes/remove", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tool: rt.id, global: isGlobal }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
+    showToast(`已成功移除 ${rt.name}`, "success");
+    emit("log-event", "SUCCESS", `Removed runtime ${rt.name} from ${scopeName}`);
+  } catch (err: any) {
+    runtimes.value = prevRuntimes;
+    showToast(`移除失败: ${err.message}`, "error");
+    emit("log-event", "ERROR", `Failed to remove runtime: ${err.message}`);
+  }
+}
+
 const emit = defineEmits<{
   (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string): void;
 }>();
@@ -439,14 +716,44 @@ const filteredRuntimes = computed(() => {
   );
 });
 
+// Semver compare descending (newest version first)
+function compareSemverDesc(a: string, b: string): number {
+  const cleanA = a.replace(/^v/, "").trim();
+  const cleanB = b.replace(/^v/, "").trim();
+  const pa = cleanA.split(".").map((n) => parseInt(n, 10));
+  const pb = cleanB.split(".").map((n) => parseInt(n, 10));
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const na = isNaN(pa[i]) ? 0 : pa[i];
+    const nb = isNaN(pb[i]) ? 0 : pb[i];
+    if (na !== nb) return nb - na;
+  }
+  return cleanB.localeCompare(cleanA);
+}
+
 const filteredRemoteVersions = computed(() => {
-  if (!remoteSearchKey.value.trim()) return remoteVersions.value;
-  const q = remoteSearchKey.value.toLowerCase();
-  return remoteVersions.value.filter((v) => v.version.toLowerCase().includes(q));
+  let list = [...remoteVersions.value];
+  // Ensure installed versions are also in the list if not already present
+  const existingSet = new Set(list.map((v) => v.version.replace(/^v/, "")));
+  if (selectedRuntime.value?.installed_versions) {
+    for (const iv of selectedRuntime.value.installed_versions) {
+      const clean = iv.replace(/^v/, "");
+      if (!existingSet.has(clean)) {
+        list.push({ version: clean });
+        existingSet.add(clean);
+      }
+    }
+  }
+
+  // Strictly sort descending by semantic version (newest first)
+  list.sort((a, b) => compareSemverDesc(a.version, b.version));
+
+  if (!remoteSearchKey.value.trim()) return list;
+  const q = remoteSearchKey.value.toLowerCase().replace(/^v/, "");
+  return list.filter((v) => v.version.toLowerCase().includes(q));
 });
 
 function getRuntimeIcon(id: string): string {
-  switch (id) {
+  switch (id.toLowerCase()) {
     case "node":
     case "nodejs":
       return "🟢";
@@ -458,14 +765,24 @@ function getRuntimeIcon(id: string): string {
       return "🐍";
     case "rust":
       return "🦀";
+    case "bun":
+      return "🥟";
+    case "deno":
+      return "🦕";
+    case "zig":
+      return "⚡";
     case "java":
+    case "openjdk":
       return "☕";
     case "ruby":
       return "💎";
+    case "php":
+      return "🐘";
     default:
       return "⚙️";
   }
 }
+
 
 function isAlreadyInstalled(toolId: string, ver: string): boolean {
   const rt = runtimes.value.find((r) => r.id === toolId);
@@ -1323,12 +1640,32 @@ onMounted(() => {
   color: var(--text-muted);
 }
 
+.runtime-delete-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  opacity: 0.4;
+  transition: all 0.15s ease;
+  margin-left: auto;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+.runtime-delete-btn:hover {
+  opacity: 1;
+  background: rgba(239, 68, 68, 0.18);
+}
+
 .modal-search-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
   margin-bottom: 0.75rem;
 }
 
 .modal-search-input {
-  width: 100%;
+  flex: 1;
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
   background: var(--input-bg);
@@ -1343,13 +1680,39 @@ onMounted(() => {
   border-color: var(--card-border-active);
 }
 
+.version-count-pill {
+  font-size: 0.72rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 6px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
 .modal-body-versions {
   flex: 1;
   overflow-y: auto;
-  max-height: 380px;
+  max-height: 350px;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.modal-body-versions::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body-versions::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-body-versions::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
 }
 
 .remote-loading-box,
@@ -1383,7 +1746,7 @@ onMounted(() => {
 .remote-ver-info {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .ver-name {
@@ -1394,7 +1757,11 @@ onMounted(() => {
 
 .installed-tag {
   font-size: 0.7rem;
-  color: var(--success);
+  color: var(--accent-cyan);
+  background: rgba(6, 182, 212, 0.12);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  padding: 0.12rem 0.5rem;
+  border-radius: 4px;
   font-weight: 600;
 }
 
@@ -1415,12 +1782,130 @@ onMounted(() => {
   transform: translateY(-1px);
 }
 
+.install-action-btn.is-installed {
+  background: rgba(2, 132, 199, 0.15);
+  border: 1px solid var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.install-action-btn.is-installed:hover:not(:disabled) {
+  background: rgba(2, 132, 199, 0.28);
+}
+
 .install-action-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   background: var(--input-bg);
   border: 1px solid var(--card-border);
   color: var(--text-muted);
+}
+
+/* Add Runtime Dialog Styles */
+.add-runtime-dialog {
+  max-width: 580px;
+}
+
+.preset-section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.55rem;
+}
+
+.add-preset-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+  margin-bottom: 1.15rem;
+}
+
+.add-preset-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  transition: all 0.15s ease;
+}
+
+.add-preset-card:hover {
+  border-color: var(--card-border-active);
+  background: var(--card-bg);
+}
+
+.preset-card-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  overflow: hidden;
+}
+
+.preset-icon {
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.preset-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.preset-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.preset-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.preset-tag {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+}
+
+.preset-desc {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.custom-add-section {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--card-border);
+}
+
+.custom-add-form {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.custom-tool-input {
+  flex: 1;
+  padding: 0.45rem 0.75rem;
+  border-radius: 6px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  font-size: 0.82rem;
+  outline: none;
+}
+
+.custom-tool-input:focus {
+  border-color: var(--card-border-active);
 }
 
 .modal-footer {
