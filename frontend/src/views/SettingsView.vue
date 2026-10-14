@@ -1948,6 +1948,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .auto-save-pill {
@@ -1990,6 +1991,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .active-scope-badge {
@@ -1999,10 +2001,25 @@ onMounted(() => {
   padding: 4px 10px;
   border-radius: 4px;
   border: 1px solid var(--card-border);
-  max-width: 320px;
+  width: 250px;
+  flex-shrink: 0;
+  box-sizing: border-box;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  user-select: all;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.active-scope-badge:hover {
+  border-color: var(--card-border-active);
+  color: var(--text-main);
+}
+
+@media (max-width: 960px) {
+  .active-scope-badge {
+    display: none;
+  }
 }
 
 /* Content Canvas */
