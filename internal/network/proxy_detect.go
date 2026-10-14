@@ -52,27 +52,42 @@ func DetectSystemProxy() DetectedProxy {
 		return dp
 	}
 
-	// 5. Check Hysteria / Hysteria 2 configurations
+	// 5. Check Shadowsocks configurations (ss-local, shadowsocks-rust, shadowsocks-libev)
+	if dp := detectShadowsocks(); dp.Detected {
+		return dp
+	}
+
+	// 6. Check Hysteria / Hysteria 2 configurations
 	if dp := detectHysteria(); dp.Detected {
 		return dp
 	}
 
-	// 6. Check NaiveProxy configurations
+	// 7. Check TUIC configurations
+	if dp := detectTUIC(); dp.Detected {
+		return dp
+	}
+
+	// 8. Check NaiveProxy configurations
 	if dp := detectNaiveProxy(); dp.Detected {
 		return dp
 	}
 
-	// 7. Check OS / Desktop environment proxy settings
+	// 9. Inspect active process table (ss-local, mihomo, clash-verge, gost, brook, polipo, etc.)
+	if dp := detectProcessTable(); dp.Detected {
+		return dp
+	}
+
+	// 10. Check OS / Desktop environment proxy settings
 	if dp := detectOSProxy(); dp.Detected {
 		return dp
 	}
 
-	// 8. Check environment variables
+	// 11. Check environment variables
 	if dp := detectEnvProxy(); dp.Detected {
 		return dp
 	}
 
-	// 9. Active probing of common proxy ports
+	// 12. Active probing of common proxy ports
 	if dp := probeCommonPorts(); dp.Detected {
 		return dp
 	}
@@ -462,6 +477,267 @@ func detectNaiveProxy() DetectedProxy {
 	return DetectedProxy{Detected: false}
 }
 
+func detectShadowsocks() DetectedProxy {
+	home, _ := os.UserHomeDir()
+	candidatePaths := []string{
+		"/etc/shadowsocks/config.json",
+		"/etc/shadowsocks-libev/config.json",
+		"/etc/shadowsocks-rust/config.json",
+		filepath.Join(home, ".config", "shadowsocks", "config.json"),
+		filepath.Join(home, ".config", "shadowsocks-rust", "config.json"),
+	}
+
+	type SSConfig struct {
+		LocalPort    int    `json:"local_port"`
+		LocalAddress string `json:"local_address"`
+	}
+
+	for _, p := range candidatePaths {
+		data, err := os.ReadFile(p)
+		if err != nil {
+			continue
+		}
+		var cfg SSConfig
+		if err := json.Unmarshal(data, &cfg); err != nil {
+			continue
+		}
+		if cfg.LocalPort <= 0 {
+			continue
+		}
+		addr := cfg.LocalAddress
+		if addr == "" || addr == "0.0.0.0" {
+			addr = "127.0.0.1"
+		}
+		if isPortOpen(addr, cfg.LocalPort, 150*time.Millisecond) {
+			return DetectedProxy{
+				Detected:    true,
+				Type:        "shadowsocks",
+				SOCKS5:      fmt.Sprintf("socks5://%s:%d", addr, cfg.LocalPort),
+				Port:        cfg.LocalPort,
+				Description: fmt.Sprintf("检测到本机正在运行的 Shadowsocks 客户端代理 (端口 %d)", cfg.LocalPort),
+			}
+		}
+	}
+	return DetectedProxy{Detected: false}
+}
+
+func detectTUIC() DetectedProxy {
+	home, _ := os.UserHomeDir()
+	candidatePaths := []string{
+		"/etc/tuic/config.json",
+		"/etc/tuic/client.json",
+		filepath.Join(home, ".config", "tuic", "config.json"),
+		filepath.Join(home, ".config", "tuic", "client.json"),
+	}
+
+	type TUICConfig struct {
+		Local string `json:"local"`
+	}
+
+	for _, p := range candidatePaths {
+		data, err := os.ReadFile(p)
+		if err != nil {
+			continue
+		}
+		var cfg TUICConfig
+		if err := json.Unmarshal(data, &cfg); err != nil {
+			continue
+		}
+		if cfg.Local == "" {
+			continue
+		}
+		host, portStr, err := net.SplitHostPort(cfg.Local)
+		if err == nil {
+			port, _ := strconv.Atoi(portStr)
+			if host == "" || host == "0.0.0.0" {
+				host = "127.0.0.1"
+			}
+			if port > 0 && isPortOpen(host, port, 150*time.Millisecond) {
+				return DetectedProxy{
+					Detected:    true,
+					Type:        "tuic",
+					SOCKS5:      fmt.Sprintf("socks5://%s:%d", host, port),
+					Port:        port,
+					Description: fmt.Sprintf("检测到本机正在运行的 TUIC 客户端代理 (端口 %d)", port),
+				}
+			}
+		}
+	}
+	return DetectedProxy{Detected: false}
+}
+
+func detectProcessTable() DetectedProxy {
+	out, err := exec.Command("ps", "-eo", "comm,args").Output()
+	if err != nil {
+		return DetectedProxy{Detected: false}
+	}
+	scanner := bufio.NewScanner(bytes.NewReader(out))
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			continue
+		}
+		comm := strings.ToLower(filepath.Base(fields[0]))
+		comm = strings.TrimSuffix(comm, ".exe")
+
+		switch comm {
+		case "sing-box", "sbx":
+			if isPortOpen("127.0.0.1", 8889, 100*time.Millisecond) {
+				return DetectedProxy{
+					Detected:    true,
+					Type:        "sing-box",
+					HTTP:        "http://127.0.0.1:8889",
+					HTTPS:       "http://127.0.0.1:8889",
+					SOCKS5:      "socks5://127.0.0.1:8889",
+					Port:        8889,
+					Description: "检测到运行中的 sing-box 进程 (端口 8889)",
+				}
+			}
+		case "clash", "clash-meta", "mihomo", "clash-verge", "clash-verge-rev", "nyanpasu", "cfw", "openclash":
+			for _, port := range []int{7890, 7891, 7892} {
+				if isPortOpen("127.0.0.1", port, 80*time.Millisecond) {
+					return DetectedProxy{
+						Detected:    true,
+						Type:        "clash",
+						HTTP:        fmt.Sprintf("http://127.0.0.1:%d", port),
+						HTTPS:       fmt.Sprintf("http://127.0.0.1:%d", port),
+						SOCKS5:      fmt.Sprintf("socks5://127.0.0.1:%d", port),
+						Port:        port,
+						Description: fmt.Sprintf("检测到运行中的 %s 进程 (端口 %d)", comm, port),
+					}
+				}
+			}
+		case "xray", "v2ray", "v2rayn", "qv2ray", "v2ray-core", "xray-core", "passwall", "passwall2":
+			for _, port := range []int{10808, 10809, 1081, 1082} {
+				if isPortOpen("127.0.0.1", port, 80*time.Millisecond) {
+					dp := DetectedProxy{
+						Detected:    true,
+						Type:        "v2ray",
+						Port:        port,
+						Description: fmt.Sprintf("检测到运行中的 %s 代理进程 (端口 %d)", comm, port),
+					}
+					if port == 10808 || port == 1081 || port == 1082 {
+						dp.SOCKS5 = fmt.Sprintf("socks5://127.0.0.1:%d", port)
+					} else {
+						dp.HTTP = "http://127.0.0.1:10809"
+						dp.HTTPS = "http://127.0.0.1:10809"
+					}
+					return dp
+				}
+			}
+		case "ss-local", "shadowsocks", "shadowsocks-rust", "shadowsocks-libev", "ssr-local", "ssr-redir":
+			for _, port := range []int{1080, 1086, 1081} {
+				if isPortOpen("127.0.0.1", port, 80*time.Millisecond) {
+					return DetectedProxy{
+						Detected:    true,
+						Type:        "shadowsocks",
+						SOCKS5:      fmt.Sprintf("socks5://127.0.0.1:%d", port),
+						Port:        port,
+						Description: fmt.Sprintf("检测到运行中的 Shadowsocks 客户端进程 (%s, 端口 %d)", comm, port),
+					}
+				}
+			}
+		case "trojan", "trojan-go", "trojan-r", "trojan-qt5":
+			for _, port := range []int{1080, 10808} {
+				if isPortOpen("127.0.0.1", port, 80*time.Millisecond) {
+					return DetectedProxy{
+						Detected:    true,
+						Type:        "trojan",
+						SOCKS5:      fmt.Sprintf("socks5://127.0.0.1:%d", port),
+						Port:        port,
+						Description: fmt.Sprintf("检测到运行中的 Trojan 进程 (%s, 端口 %d)", comm, port),
+					}
+				}
+			}
+		case "hysteria", "hysteria2":
+			for _, port := range []int{1080, 10808, 8080} {
+				if isPortOpen("127.0.0.1", port, 80*time.Millisecond) {
+					return DetectedProxy{
+						Detected:    true,
+						Type:        "hysteria",
+						SOCKS5:      fmt.Sprintf("socks5://127.0.0.1:%d", port),
+						Port:        port,
+						Description: fmt.Sprintf("检测到运行中的 Hysteria 进程 (%s, 端口 %d)", comm, port),
+					}
+				}
+			}
+		case "tuic", "tuic-client":
+			for _, port := range []int{1080, 10808} {
+				if isPortOpen("127.0.0.1", port, 80*time.Millisecond) {
+					return DetectedProxy{
+						Detected:    true,
+						Type:        "tuic",
+						SOCKS5:      fmt.Sprintf("socks5://127.0.0.1:%d", port),
+						Port:        port,
+						Description: fmt.Sprintf("检测到运行中的 TUIC 客户端进程 (%s, 端口 %d)", comm, port),
+					}
+				}
+			}
+		case "gost":
+			for _, port := range []int{1080, 8080, 7890} {
+				if isPortOpen("127.0.0.1", port, 80*time.Millisecond) {
+					return DetectedProxy{
+						Detected:    true,
+						Type:        "gost",
+						HTTP:        fmt.Sprintf("http://127.0.0.1:%d", port),
+						HTTPS:       fmt.Sprintf("http://127.0.0.1:%d", port),
+						SOCKS5:      fmt.Sprintf("socks5://127.0.0.1:%d", port),
+						Port:        port,
+						Description: fmt.Sprintf("检测到运行中的 GOST 代理隧道进程 (端口 %d)", port),
+					}
+				}
+			}
+		case "brook":
+			for _, port := range []int{1080, 10808} {
+				if isPortOpen("127.0.0.1", port, 80*time.Millisecond) {
+					return DetectedProxy{
+						Detected:    true,
+						Type:        "brook",
+						SOCKS5:      fmt.Sprintf("socks5://127.0.0.1:%d", port),
+						Port:        port,
+						Description: fmt.Sprintf("检测到运行中的 Brook 代理客户端 (端口 %d)", port),
+					}
+				}
+			}
+		case "polipo":
+			if isPortOpen("127.0.0.1", 8123, 80*time.Millisecond) {
+				return DetectedProxy{
+					Detected:    true,
+					Type:        "polipo",
+					HTTP:        "http://127.0.0.1:8123",
+					HTTPS:       "http://127.0.0.1:8123",
+					Port:        8123,
+					Description: "检测到运行中的 Polipo HTTP 代理 (端口 8123)",
+				}
+			}
+		case "tinyproxy":
+			if isPortOpen("127.0.0.1", 8888, 80*time.Millisecond) {
+				return DetectedProxy{
+					Detected:    true,
+					Type:        "tinyproxy",
+					HTTP:        "http://127.0.0.1:8888",
+					HTTPS:       "http://127.0.0.1:8888",
+					Port:        8888,
+					Description: "检测到运行中的 Tinyproxy 进程 (端口 8888)",
+				}
+			}
+		case "privoxy":
+			if isPortOpen("127.0.0.1", 8118, 80*time.Millisecond) {
+				return DetectedProxy{
+					Detected:    true,
+					Type:        "privoxy",
+					HTTP:        "http://127.0.0.1:8118",
+					HTTPS:       "http://127.0.0.1:8118",
+					Port:        8118,
+					Description: "检测到运行中的 Privoxy 进程 (端口 8118)",
+				}
+			}
+		}
+	}
+	return DetectedProxy{Detected: false}
+}
+
 func detectOSProxy() DetectedProxy {
 	switch runtime.GOOS {
 	case "linux":
@@ -737,6 +1013,31 @@ func probeCommonPorts() DetectedProxy {
 			HTTPS:       "http://127.0.0.1:3128",
 			Port:        3128,
 			Description: "检测到本机正在运行的 Squid 代理服务 (端口 3128)",
+		}
+	}
+
+	// Check Polipo (8123)
+	if isPortOpen("127.0.0.1", 8123, 80*time.Millisecond) {
+		return DetectedProxy{
+			Detected:    true,
+			Type:        "polipo",
+			HTTP:        "http://127.0.0.1:8123",
+			HTTPS:       "http://127.0.0.1:8123",
+			Port:        8123,
+			Description: "检测到本机正在运行的 Polipo HTTP 代理服务 (端口 8123)",
+		}
+	}
+
+	// Check OpenClash / Passwall extra local ports (7892, 1081, 1082)
+	for _, port := range []int{7892, 1081, 1082} {
+		if isPortOpen("127.0.0.1", port, 80*time.Millisecond) {
+			return DetectedProxy{
+				Detected:    true,
+				Type:        "router-proxy",
+				SOCKS5:      fmt.Sprintf("socks5://127.0.0.1:%d", port),
+				Port:        port,
+				Description: fmt.Sprintf("检测到本机正在运行的本地/旁路由代理服务 (端口 %d)", port),
+			}
 		}
 	}
 
