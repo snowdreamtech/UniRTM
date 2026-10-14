@@ -10,6 +10,8 @@ export const zhTw: TranslationDict = {
   "common.langAuto": "自動",
   "common.lang": "語言",
   "common.close": "關閉",
+  "common.refresh": "重新整理",
+  "common.refreshing": "重新整理中...",
 
   "drawer.tab_output": "輸出",
   "drawer.tab_tasks": "任務",

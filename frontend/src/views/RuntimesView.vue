@@ -14,7 +14,7 @@
       <div class="view-actions">
         <button class="tool-action-btn secondary" @click="fetchStatus" :disabled="loading">
           <span :class="{ 'spin-icon': loading }">🔄</span>
-          <span>{{ loading ? "Refreshing..." : "Refresh" }}</span>
+          <span>{{ loading ? t("common.refreshing") : t("common.refresh") }}</span>
         </button>
       </div>
     </div>

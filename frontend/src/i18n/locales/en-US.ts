@@ -10,6 +10,8 @@ export const enUs: TranslationDict = {
   "common.langAuto": "Auto",
   "common.lang": "Language",
   "common.close": "Close",
+  "common.refresh": "Refresh",
+  "common.refreshing": "Refreshing...",
 
   "drawer.tab_output": "Output",
   "drawer.tab_tasks": "Tasks",

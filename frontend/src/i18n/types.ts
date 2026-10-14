@@ -10,6 +10,8 @@ export interface TranslationDict {
   "common.langAuto": string;
   "common.lang": string;
   "common.close": string;
+  "common.refresh"?: string;
+  "common.refreshing"?: string;
 
   "drawer.tab_output"?: string;
   "drawer.tab_tasks"?: string;

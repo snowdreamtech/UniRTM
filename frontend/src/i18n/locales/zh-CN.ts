@@ -10,6 +10,8 @@ export const zhCn: TranslationDict = {
   "common.langAuto": "自动",
   "common.lang": "语言",
   "common.close": "关闭",
+  "common.refresh": "刷新",
+  "common.refreshing": "刷新中...",
 
   "drawer.tab_output": "输出",
   "drawer.tab_tasks": "任务",
