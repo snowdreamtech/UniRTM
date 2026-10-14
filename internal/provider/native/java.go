@@ -15,7 +15,6 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
-	"github.com/snowdreamtech/unirtm/internal/sysinfo"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -43,9 +42,12 @@ func (h *JavaHandler) Name() string {
 
 type adoptiumRelease struct {
 	Binaries []struct {
-		Package struct {
-			Name string `json:"name"`
-			Link string `json:"link"`
+		Architecture string `json:"architecture"`
+		OS           string `json:"os"`
+		Package      struct {
+			Name     string `json:"name"`
+			Link     string `json:"link"`
+			Checksum string `json:"checksum"`
 		} `json:"package"`
 		SignatureLink string `json:"signature_link"`
 	} `json:"binaries"`
@@ -55,24 +57,49 @@ type adoptiumRelease struct {
 	} `json:"version_data"`
 }
 
+func mapAdoptiumOS(adoptOS string) string {
+	switch adoptOS {
+	case "mac":
+		return "darwin"
+	case "windows":
+		return "windows"
+	case "linux", "alpine-linux":
+		return "linux"
+	case "aix":
+		return "aix"
+	case "solaris":
+		return "solaris"
+	default:
+		return adoptOS
+	}
+}
+
+func mapAdoptiumArch(adoptArch string) string {
+	switch adoptArch {
+	case "x64":
+		return "amd64"
+	case "aarch64":
+		return "arm64"
+	case "x32", "x86":
+		return "386"
+	case "arm":
+		return "arm"
+	case "ppc64le":
+		return "ppc64le"
+	case "ppc64":
+		return "ppc64"
+	case "s390x":
+		return "s390x"
+	case "riscv64":
+		return "riscv64"
+	default:
+		return adoptArch
+	}
+}
+
 func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
 	// Adoptium versions: 23 (GA), 21 (LTS), 17 (LTS), 11 (LTS), 8 (LTS)
 	majorVersions := []string{"23", "21", "17", "11", "8"}
-
-	// Map OS/Arch to Adoptium values
-	os := env.RuntimeGOOS
-	if os == "darwin" {
-		os = "mac"
-	} else if os == "linux" && sysinfo.IsMusl() {
-		os = "alpine-linux"
-	}
-
-	arch := runtime.GOARCH
-	if arch == "amd64" {
-		arch = "x64"
-	} else if arch == "arm64" {
-		arch = "aarch64"
-	}
 
 	imageType := h.ImageType
 	if imageType == "" {
@@ -88,7 +115,7 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 	}
 	apiBase = strings.TrimSuffix(apiBase, "/")
 
-	cacheKey := fmt.Sprintf("%s|%s|%s|%s", apiBase, imageType, os, arch)
+	cacheKey := fmt.Sprintf("%s|%s", apiBase, imageType)
 	if val, ok := javaHandlerCache.Load(cacheKey); ok {
 		if cached, ok := val.([]VersionInfo); ok {
 			cp := make([]VersionInfo, len(cached))
@@ -108,7 +135,7 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 			wg.Add(1)
 			go func(i int, major string) {
 				defer wg.Done()
-				url := fmt.Sprintf("%s/v3/assets/feature_releases/%s/ga?architecture=%s&heap_size=normal&image_type=%s&jvm_impl=hotspot&os=%s&project=jdk&vendor=eclipse", apiBase, major, arch, imageType, os)
+				url := fmt.Sprintf("%s/v3/assets/feature_releases/%s/ga?heap_size=normal&image_type=%s&jvm_impl=hotspot&project=jdk&vendor=eclipse&page_size=50", apiBase, major, imageType)
 
 				req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 				if err != nil {
@@ -141,24 +168,40 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 						version = version[:idx]
 					}
 
+					var assets []Asset
 					for _, bin := range rel.Binaries {
-						assets := []Asset{
-							{
-								Filename:     bin.Package.Name,
-								URL:          bin.Package.Link,
-								SignatureURL: bin.SignatureLink,
-								OS:           env.RuntimeGOOS,
-								Arch:         runtime.GOARCH,
-								Metadata:     make(map[string]string),
-							},
+						if bin.Package.Link == "" {
+							continue
+						}
+						targetOS := mapAdoptiumOS(bin.OS)
+						if targetOS == "" {
+							targetOS = env.RuntimeGOOS
+						}
+						targetArch := mapAdoptiumArch(bin.Architecture)
+						if targetArch == "" {
+							targetArch = runtime.GOARCH
 						}
 
+						asset := Asset{
+							Filename:     bin.Package.Name,
+							URL:          bin.Package.Link,
+							SignatureURL: bin.SignatureLink,
+							OS:           targetOS,
+							Arch:         targetArch,
+							Metadata:     make(map[string]string),
+						}
+						if bin.Package.Checksum != "" {
+							asset.Checksum = bin.Package.Checksum
+							asset.Algo = "sha256"
+						}
+						assets = append(assets, asset)
+					}
+
+					if len(assets) > 0 {
 						subVersions = append(subVersions, VersionInfo{
 							Version: version,
 							Assets:  assets,
 						})
-						// Just take the first binary that matches our query filters
-						break
 					}
 				}
 				results[i] = subVersions

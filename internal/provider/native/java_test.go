@@ -95,3 +95,60 @@ func TestJavaHandler_ConcurrentDeduplication(t *testing.T) {
 	// 5 major versions queried in single execution = 5 requests total instead of 5 * 5 = 25
 	assert.Equal(t, int32(5), atomic.LoadInt32(&reqCount), "Expected exactly 5 requests (one per major version) for all concurrent callers")
 }
+
+func TestJavaHandler_ResolveVersions_MultiPlatform(t *testing.T) {
+	ClearJavaHandlerCache()
+	defer ClearJavaHandlerCache()
+
+	mockJSON := `[{
+		"release_name": "jdk-21.0.2+13",
+		"version_data": {"openjdk_version": "21.0.2+13-LTS"},
+		"binaries": [
+			{"os": "mac", "architecture": "x64", "package": {"name": "mac-x64.tar.gz", "link": "https://download/mac-x64.tar.gz", "checksum": "abc1"}},
+			{"os": "mac", "architecture": "aarch64", "package": {"name": "mac-arm64.tar.gz", "link": "https://download/mac-arm64.tar.gz", "checksum": "abc2"}},
+			{"os": "linux", "architecture": "x64", "package": {"name": "linux-x64.tar.gz", "link": "https://download/linux-x64.tar.gz", "checksum": "abc3"}},
+			{"os": "alpine-linux", "architecture": "x64", "package": {"name": "alpine-x64.tar.gz", "link": "https://download/alpine-x64.tar.gz", "checksum": "abc4"}},
+			{"os": "windows", "architecture": "x64", "package": {"name": "win-x64.zip", "link": "https://download/win-x64.zip", "checksum": "abc5"}}
+		]
+	}]`
+
+	mockRt := &mockRoundTripper{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			assert.Contains(t, req.URL.RawQuery, "page_size=50")
+			return &http.Response{
+				StatusCode: 200,
+				Body:       io.NopCloser(bytes.NewBufferString(mockJSON)),
+			}, nil
+		},
+	}
+	oldMock := pkgHttp.MockTransport
+	pkgHttp.MockTransport = mockRt
+	defer func() { pkgHttp.MockTransport = oldMock }()
+
+	h := &JavaHandler{}
+	versions, err := h.ResolveVersions(context.Background(), "")
+	assert.NoError(t, err)
+	assert.NotEmpty(t, versions)
+
+	v := versions[0]
+	assert.Equal(t, "21.0.2", v.Version)
+	assert.Len(t, v.Assets, 5)
+
+	// Check platform mappings
+	assert.Equal(t, "darwin", v.Assets[0].OS)
+	assert.Equal(t, "amd64", v.Assets[0].Arch)
+	assert.Equal(t, "abc1", v.Assets[0].Checksum)
+	assert.Equal(t, "sha256", v.Assets[0].Algo)
+
+	assert.Equal(t, "darwin", v.Assets[1].OS)
+	assert.Equal(t, "arm64", v.Assets[1].Arch)
+
+	assert.Equal(t, "linux", v.Assets[2].OS)
+	assert.Equal(t, "amd64", v.Assets[2].Arch)
+
+	assert.Equal(t, "linux", v.Assets[3].OS)
+	assert.Equal(t, "amd64", v.Assets[3].Arch)
+
+	assert.Equal(t, "windows", v.Assets[4].OS)
+	assert.Equal(t, "amd64", v.Assets[4].Arch)
+}

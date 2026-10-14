@@ -197,7 +197,7 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 			score += 80
 		}
 	case "darwin":
-		if strings.Contains(nameLower, "darwin") || strings.Contains(nameLower, "macos") || strings.Contains(nameLower, "osx") || strings.Contains(nameLower, "apple") {
+		if strings.Contains(nameLower, "darwin") || strings.Contains(nameLower, "macos") || strings.Contains(nameLower, "osx") || strings.Contains(nameLower, "apple") || containsWord(nameLower, "mac") {
 			osMatch = true
 			score += 100
 		}
@@ -320,7 +320,7 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 		score += 10
 	}
 
-	hasMusl := strings.Contains(nameLower, "musl")
+	hasMusl := strings.Contains(nameLower, "musl") || strings.Contains(nameLower, "alpine")
 	if platform.Musl {
 		if hasMusl {
 			score += 50
