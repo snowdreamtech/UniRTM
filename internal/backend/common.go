@@ -196,6 +196,11 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 			osMatch = true
 			score += 80
 		}
+		// Distro names that often omit the word "linux" (e.g. ruby-builder's ubuntu-22.04 assets).
+		if !osMatch && (strings.Contains(nameLower, "ubuntu") || strings.Contains(nameLower, "debian") || strings.Contains(nameLower, "centos") || strings.Contains(nameLower, "fedora") || strings.Contains(nameLower, "rhel")) {
+			osMatch = true
+			score += 80
+		}
 	case "darwin":
 		if strings.Contains(nameLower, "darwin") || strings.Contains(nameLower, "macos") || strings.Contains(nameLower, "osx") || strings.Contains(nameLower, "apple") || containsWord(nameLower, "mac") {
 			osMatch = true

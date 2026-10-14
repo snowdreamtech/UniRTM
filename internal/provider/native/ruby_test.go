@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
@@ -103,3 +104,51 @@ func TestRubyHandler_isMatch(t *testing.T) {
 	assert.False(t, h.isMatch("ruby-3.0-ubuntu-arm64.tar.gz"))
 	assert.False(t, h.isMatch("ruby-3.0-ubuntu.tar.gz")) // amd64 requires arch in name usually unless handled otherwise, wait, actually if not present it returns false
 }
+
+func TestRubyHandler_ResolveTag(t *testing.T) {
+	ClearGithubHandlerCache()
+	defer ClearGithubHandlerCache()
+
+	oldMock := pkgHttp.MockTransport
+	defer func() { pkgHttp.MockTransport = oldMock }()
+
+	pkgHttp.MockTransport = &mockRoundTripper{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			if strings.Contains(req.URL.Path, "ruby-3.4.1") {
+				resp := `{
+					"tag_name": "ruby-3.4.1",
+					"assets": [
+						{"name": "ruby-3.4.1-darwin-arm64.tar.gz", "browser_download_url": "https://example.com/darwin-arm64"},
+						{"name": "ruby-3.4.1-darwin-x64.tar.gz", "browser_download_url": "https://example.com/darwin-x64"},
+						{"name": "ruby-3.4.1-ubuntu-22.04-arm64.tar.gz", "browser_download_url": "https://example.com/ubuntu-arm64"},
+						{"name": "ruby-3.4.1-ubuntu-22.04-x64.tar.gz", "browser_download_url": "https://example.com/ubuntu-x64"}
+					]
+				}`
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(bytes.NewBufferString(resp)),
+					Header:     make(http.Header),
+				}, nil
+			}
+			return &http.Response{StatusCode: 404, Body: io.NopCloser(bytes.NewBufferString("Not Found"))}, nil
+		},
+	}
+
+	h := &RubyHandler{}
+	info, err := h.ResolveTag(context.Background(), "3.4.1")
+	require.NoError(t, err)
+	require.NotNil(t, info)
+	assert.Equal(t, "3.4.1", info.Version)
+	assert.Len(t, info.Assets, 4)
+
+	// Verify all platforms were detected
+	platforms := make(map[string]bool)
+	for _, a := range info.Assets {
+		platforms[a.OS+"-"+a.Arch] = true
+	}
+	assert.True(t, platforms["darwin-arm64"])
+	assert.True(t, platforms["darwin-amd64"])
+	assert.True(t, platforms["linux-arm64"])
+	assert.True(t, platforms["linux-amd64"])
+}
+

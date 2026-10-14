@@ -5,10 +5,31 @@ package native
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"regexp"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
+
+var (
+	rubyHandlerCache  sync.Map
+	rubyHandlerFlight singleflight.Group
+)
+
+// ClearRubyHandlerCache clears the in-memory cache for Ruby releases.
+func ClearRubyHandlerCache() {
+	rubyHandlerCache.Range(func(key, value any) bool {
+		rubyHandlerCache.Delete(key)
+		return true
+	})
+}
 
 // RubyHandler handles Ruby distributions via ruby/ruby-builder.
 // It targets precompiled binaries used in GitHub Actions.
@@ -30,26 +51,116 @@ func (h *RubyHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 		return nil, err
 	}
 
-	// The default GithubHandler uses a generic detectPlatform.
-	// ruby-builder has very specific naming: ruby-3.3.0-ubuntu-22.04.tar.gz
-	// We need to filter and ensure the assets match the current host environment.
 	var filtered []VersionInfo
 	for _, rel := range releases {
+		// Only consider MRI Ruby releases (skip jruby, truffleruby, etc.)
+		if !strings.HasPrefix(rel.Version, "ruby-") && !strings.HasPrefix(rel.Version, "v") && !strings.Contains(rel.Version, ".") {
+			continue
+		}
+		cleanVer := strings.TrimPrefix(rel.Version, "ruby-")
+		cleanVer = strings.TrimPrefix(cleanVer, "v")
+
 		var assets []Asset
 		for _, a := range rel.Assets {
-			if h.isMatch(a.Filename) {
+			filename := strings.ToLower(a.Filename)
+			if strings.HasPrefix(filename, "ruby-") {
 				assets = append(assets, a)
 			}
 		}
 		if len(assets) > 0 {
 			filtered = append(filtered, VersionInfo{
-				Version: rel.Version,
+				Version: cleanVer,
 				Assets:  assets,
 			})
 		}
 	}
 
 	return filtered, nil
+}
+
+// ResolveTag fetches a specific Ruby release by version tag (e.g. "ruby-3.4.1").
+func (h *RubyHandler) ResolveTag(ctx context.Context, version string) (*VersionInfo, error) {
+	cleanVer := strings.TrimPrefix(version, "ruby-")
+	cleanVer = strings.TrimPrefix(cleanVer, "v")
+
+	cacheKey := "tag:" + cleanVer
+	if val, ok := rubyHandlerCache.Load(cacheKey); ok {
+		return val.(*VersionInfo), nil
+	}
+
+	res, err, _ := rubyHandlerFlight.Do(cacheKey, func() (interface{}, error) {
+		h.GithubHandler.Owner = "ruby"
+		h.GithubHandler.Repo = "ruby-builder"
+
+		// 1. Try GithubHandler.ResolveTag first
+		info, err := h.GithubHandler.ResolveTag(ctx, "ruby-"+cleanVer)
+		if err == nil && info != nil && len(info.Assets) > 0 {
+			info.Version = cleanVer
+			rubyHandlerCache.Store(cacheKey, info)
+			return info, nil
+		}
+
+		// 2. Fallback to scraping expanded_assets if GitHub API failed (e.g. rate limit 403)
+		expandedURL := fmt.Sprintf("https://github.com/ruby/ruby-builder/releases/expanded_assets/ruby-%s", cleanVer)
+		client := pkgHttp.NewClientWithTimeout(30 * time.Second)
+		req, reqErr := http.NewRequestWithContext(ctx, "GET", expandedURL, nil)
+		if reqErr == nil {
+			req.Header.Set("User-Agent", "Mozilla/5.0")
+			resp, doErr := client.Do(req)
+			if doErr == nil && resp.StatusCode == http.StatusOK {
+				defer resp.Body.Close()
+				bodyBytes, _ := io.ReadAll(resp.Body)
+				html := string(bodyBytes)
+
+				re := regexp.MustCompile(`/ruby/ruby-builder/releases/download/[^"'\s<>]+`)
+				matches := re.FindAllString(html, -1)
+				if len(matches) > 0 {
+					var assets []Asset
+					seen := make(map[string]bool)
+					for _, m := range matches {
+						parts := strings.Split(m, "/")
+						filename := parts[len(parts)-1]
+						if seen[filename] {
+							continue
+						}
+						seen[filename] = true
+
+						os, arch := h.detectPlatform(filename)
+						if os == "" || arch == "" {
+							continue
+						}
+						assets = append(assets, Asset{
+							Filename: filename,
+							URL:      "https://github.com" + m,
+							OS:       os,
+							Arch:     arch,
+							Metadata: make(map[string]string),
+						})
+					}
+					if len(assets) > 0 {
+						fallbackInfo := &VersionInfo{
+							Version: cleanVer,
+							Assets:  assets,
+						}
+						rubyHandlerCache.Store(cacheKey, fallbackInfo)
+						return fallbackInfo, nil
+					}
+				}
+			} else if resp != nil {
+				_ = resp.Body.Close()
+			}
+		}
+
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("ruby: version %s not found", version)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return res.(*VersionInfo), nil
 }
 
 func (h *RubyHandler) isMatch(filename string) bool {

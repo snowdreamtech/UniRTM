@@ -204,16 +204,14 @@ func (b *NativeBackend) GetDownloadInfo(ctx context.Context, tool, version strin
 
 	version = cleanVersionReq(version, tool)
 
-	versions, err := recipe.Handler.ResolveVersions(ctx, recipe.BaseURL)
-	if err != nil {
-		return nil, err
-	}
-
 	var targetVersion *native.VersionInfo
-	for _, v := range versions {
-		if v.Version == version {
-			targetVersion = &v
-			break
+	versions, err := recipe.Handler.ResolveVersions(ctx, recipe.BaseURL)
+	if err == nil {
+		for _, v := range versions {
+			if v.Version == version {
+				targetVersion = &v
+				break
+			}
 		}
 	}
 
@@ -222,13 +220,16 @@ func (b *NativeBackend) GetDownloadInfo(ctx context.Context, tool, version strin
 		if tagResolver, ok := recipe.Handler.(interface {
 			ResolveTag(ctx context.Context, version string) (*native.VersionInfo, error)
 		}); ok {
-			if resolved, err := tagResolver.ResolveTag(ctx, version); err == nil && resolved != nil {
+			if resolved, tagErr := tagResolver.ResolveTag(ctx, version); tagErr == nil && resolved != nil {
 				targetVersion = resolved
 			}
 		}
 	}
 
 	if targetVersion == nil {
+		if err != nil {
+			return nil, err
+		}
 		return nil, fmt.Errorf("native: version %s not found for %s", version, tool)
 	}
 
