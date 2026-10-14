@@ -494,32 +494,46 @@ async function fetchStatus() {
 
 async function quickSwitch(toolId: string, ver: string, targetGlobal?: boolean) {
   const isGlobal = targetGlobal !== undefined ? targetGlobal : (currentScope.value === "user");
+  const scopeName = isGlobal ? "用户" : "工作区";
+
+  // 1. Snapshot previous state for rollback
+  const prevRuntimes = JSON.parse(JSON.stringify(runtimes.value));
+
+  // 2. Optimistic UI update: Immediately update state (0ms latency, no lag)
+  runtimes.value = runtimes.value.map((rt) => {
+    if (rt.id === toolId) {
+      if (isGlobal) {
+        return { ...rt, global_version: ver };
+      } else {
+        return { ...rt, active_version: ver, is_legacy: false, source: ".unirtm.toml" };
+      }
+    }
+    return rt;
+  });
+
+  // 3. Asynchronously persist change to backend
   try {
-    await fetch("/api/runtimes/use", {
+    const res = await fetch("/api/runtimes/use", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tool: toolId, version: ver, global: isGlobal }),
     });
-    // Immediately update local active or global version
-    runtimes.value = runtimes.value.map((rt) => {
-      if (rt.id === toolId) {
-        if (isGlobal) {
-          return { ...rt, global_version: ver };
-        } else {
-          return { ...rt, active_version: ver, is_legacy: false, source: ".unirtm.toml" };
-        }
-      }
-      return rt;
-    });
-    const scopeName = isGlobal ? "用户" : "工作区";
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
+
     showToast(`已成功将 ${toolId} 的${scopeName}版本设置为 v${ver}`, "success");
     emit("log-event", "SUCCESS", `Set ${toolId} (${scopeName}) to ${ver}`);
-    await fetchStatus();
   } catch (err: any) {
-    showToast(`设置失败: ${err.message}`, "error");
+    // 4. Rollback on failure
+    runtimes.value = prevRuntimes;
+    showToast(`设置失败: ${err.message}，已自动回退版本`, "error");
     emit("log-event", "ERROR", `Failed to switch version: ${err.message}`);
   }
 }
+
 
 function handleSelectChange(toolId: string, evt: Event) {
   const select = evt.target as HTMLSelectElement;
@@ -584,49 +598,81 @@ async function openRemoteModal(rt: RuntimeItem) {
 }
 
 async function installRemoteVersion(toolId: string, ver: string) {
-  installingVer.value = ver;
   const isGlobal = modalInstallScope.value === "user";
   const scopeName = isGlobal ? "用户" : "工作区";
-  showToast(`正在将 ${toolId} v${ver} 应用为${scopeName}...`, "info");
-  try {
-    await fetch("/api/runtimes/use", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tool: toolId, version: ver, global: isGlobal }),
-    });
+  const alreadyInstalled = isAlreadyInstalled(toolId, ver);
+
+  const prevRuntimes = JSON.parse(JSON.stringify(runtimes.value));
+
+  // If already installed locally, perform optimistic update and close modal immediately
+  if (alreadyInstalled) {
     runtimes.value = runtimes.value.map((rt) => {
       if (rt.id === toolId) {
-        const set = new Set(rt.installed_versions || []);
-        set.add(ver);
         if (isGlobal) {
-          return {
-            ...rt,
-            global_version: ver,
-            installed_versions: Array.from(set),
-          };
+          return { ...rt, global_version: ver };
         } else {
-          return {
-            ...rt,
-            active_version: ver,
-            is_legacy: false,
-            source: ".unirtm.toml",
-            installed_versions: Array.from(set),
-          };
+          return { ...rt, active_version: ver, is_legacy: false, source: ".unirtm.toml" };
         }
       }
       return rt;
     });
-    showToast(`成功安装并设置 ${toolId}@${ver} 为${scopeName}！`, "success");
-    emit("log-event", "INFO", `Installed ${toolId}@${ver} as ${scopeName}`);
     isModalOpen.value = false;
-    await fetchStatus();
+  } else {
+    installingVer.value = ver;
+    showToast(`正在将 ${toolId} v${ver} 应用为${scopeName}...`, "info");
+  }
+
+  try {
+    const res = await fetch("/api/runtimes/use", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tool: toolId, version: ver, global: isGlobal }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
+
+    if (!alreadyInstalled) {
+      runtimes.value = runtimes.value.map((rt) => {
+        if (rt.id === toolId) {
+          const set = new Set(rt.installed_versions || []);
+          set.add(ver);
+          if (isGlobal) {
+            return {
+              ...rt,
+              global_version: ver,
+              installed_versions: Array.from(set),
+            };
+          } else {
+            return {
+              ...rt,
+              active_version: ver,
+              is_legacy: false,
+              source: ".unirtm.toml",
+              installed_versions: Array.from(set),
+            };
+          }
+        }
+        return rt;
+      });
+      isModalOpen.value = false;
+    }
+
+    showToast(`成功将 ${toolId}@${ver} 设置为${scopeName}！`, "success");
+    emit("log-event", "INFO", `Set ${toolId}@${ver} as ${scopeName}`);
   } catch (err: any) {
+    if (alreadyInstalled) {
+      runtimes.value = prevRuntimes;
+    }
     showToast(`设置失败: ${err.message}`, "error");
-    emit("log-event", "ERROR", `Failed to install version: ${err.message}`);
+    emit("log-event", "ERROR", `Failed to set version: ${err.message}`);
   } finally {
     installingVer.value = null;
   }
 }
+
 
 onMounted(() => {
   fetchStatus();

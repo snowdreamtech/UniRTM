@@ -665,6 +665,36 @@ func (ls *LockService) Generate(
 		}
 	}
 
+	// Prune stale version entries for tools in subset if the new version is present in lockfile
+	for uniqueKey, spec := range subset {
+		if spec.Version != "" {
+			targetVer := spec.Version
+			targetVerNoV := strings.TrimPrefix(targetVer, "v")
+			for _, k := range []string{uniqueKey, spec.Name} {
+				if k == "" {
+					continue
+				}
+				if entries, exists := ls.lf.Tools[k]; exists {
+					var kept []*lockfile.ToolLockEntry
+					for _, e := range entries {
+						if e == nil {
+							continue
+						}
+						eVerNoV := strings.TrimPrefix(e.Version, "v")
+						if e.Version == targetVer || eVerNoV == targetVerNoV {
+							kept = append(kept, e)
+						}
+					}
+					if len(kept) > 0 && len(kept) != len(entries) {
+						ls.lf.Tools[k] = kept
+						ls.dirty = true
+					}
+				}
+			}
+		}
+	}
+
+
 	// Atomic Write Firewall: Refuse to write incomplete lockfile to disk unless AllowIncomplete is set
 	if !report.IsComplete() && !opts.AllowIncomplete {
 		logger.Warn("lockfile generate: lockfile incomplete, skipping save to disk", map[string]interface{}{

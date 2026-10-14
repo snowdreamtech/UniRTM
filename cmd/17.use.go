@@ -251,39 +251,42 @@ func runUse(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Synchronize unirtm.lock if lockfile exists
-	lockPath := env.GetLockFilePath()
-	if _, err := os.Stat(lockPath); err == nil {
-		lockSvc, err := service.NewLockService(service.LockServiceOptions{
-			LockfilePath: lockPath,
-		})
-		if err == nil {
-			lockSvc.SetBackendRegistry(backendRegistry)
-			usedTools := make(map[string]service.ToolSpec)
-			usedNames := make([]string, 0, len(pairs))
-			for _, p := range pairs {
-				usedTools[p.key] = service.ToolSpec{
-					Name:        p.toolName,
-					Version:     p.version,
-					BackendName: p.backendName,
-				}
-				usedNames = append(usedNames, p.key)
-			}
-			report, _ := lockSvc.Generate(ctx, usedTools, service.GenerateOptions{
-				Platforms:       lockfile.StandardPlatforms,
-				Tools:           usedNames,
-				AllowIncomplete: true,
+	// Synchronize unirtm.lock if lockfile exists and not in global mode
+	if !useGlobal {
+		lockPath := env.GetLockFilePath()
+		if _, err := os.Stat(lockPath); err == nil {
+			lockSvc, err := service.NewLockService(service.LockServiceOptions{
+				LockfilePath: lockPath,
 			})
-			if report != nil && !report.IsComplete() {
-				logger.Warn("runUse: lockfile updated with missing platforms due to network limit", map[string]interface{}{
-					"used_tools":    len(usedTools),
-					"missing_count": len(report.Missing),
+			if err == nil {
+				lockSvc.SetBackendRegistry(backendRegistry)
+				usedTools := make(map[string]service.ToolSpec)
+				usedNames := make([]string, 0, len(pairs))
+				for _, p := range pairs {
+					usedTools[p.key] = service.ToolSpec{
+						Name:        p.toolName,
+						Version:     p.version,
+						BackendName: p.backendName,
+					}
+					usedNames = append(usedNames, p.key)
+				}
+				report, _ := lockSvc.Generate(ctx, usedTools, service.GenerateOptions{
+					Platforms:       lockfile.StandardPlatforms,
+					Tools:           usedNames,
+					AllowIncomplete: true,
 				})
+				if report != nil && !report.IsComplete() {
+					logger.Warn("runUse: lockfile updated with missing platforms due to network limit", map[string]interface{}{
+						"used_tools":    len(usedTools),
+						"missing_count": len(report.Missing),
+					})
+				}
 			}
 		}
 	}
 
 	return nil
+
 }
 
 // findOrCreateConfigFile finds an existing config file in the directory,

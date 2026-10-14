@@ -236,44 +236,47 @@ export default defineConfig({
                   }
                 }
 
-                // Ensure file is directly updated in case CLI was skipped or failed
-                const targetPath = isGlobal
-                  ? path.join(os.homedir(), ".config", "unirtm", "unirtm.toml")
-                  : path.join(rootDir, ".unirtm.toml");
-                fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-                let content = fs.existsSync(targetPath) ? fs.readFileSync(targetPath, "utf-8") : "";
+                // Fallback direct update only if CLI was skipped or failed
+                if (!executedCli) {
+                  const targetPath = isGlobal
+                    ? path.join(os.homedir(), ".config", "unirtm", "unirtm.toml")
+                    : path.join(rootDir, ".unirtm.toml");
+                  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+                  let content = fs.existsSync(targetPath) ? fs.readFileSync(targetPath, "utf-8") : "";
 
-                const lines = content.split("\n");
-                let toolsIdx = -1;
-                let nextIdx = -1;
-                for (let i = 0; i < lines.length; i++) {
-                  const tr = lines[i].trim();
-                  if (tr === "[tools]") toolsIdx = i;
-                  else if (toolsIdx !== -1 && tr.startsWith("[") && tr.endsWith("]")) {
-                    nextIdx = i;
-                    break;
-                  }
-                }
-                const reg = new RegExp(`^\\s*"?${tool}"?\\s*=`);
-                if (toolsIdx !== -1) {
-                  const end = nextIdx !== -1 ? nextIdx : lines.length;
-                  let found = false;
-                  for (let i = toolsIdx + 1; i < end; i++) {
-                    if (reg.test(lines[i])) {
-                      lines[i] = `${tool} = "${version}"`;
-                      found = true;
+                  const lines = content.split("\n");
+                  let toolsIdx = -1;
+                  let nextIdx = -1;
+                  for (let i = 0; i < lines.length; i++) {
+                    const tr = lines[i].trim();
+                    if (tr === "[tools]") toolsIdx = i;
+                    else if (toolsIdx !== -1 && tr.startsWith("[") && tr.endsWith("]")) {
+                      nextIdx = i;
                       break;
                     }
                   }
-                  if (!found) lines.splice(toolsIdx + 1, 0, `${tool} = "${version}"`);
-                  content = lines.join("\n");
-                } else {
-                  content += `\n[tools]\n${tool} = "${version}"\n`;
-                }
+                  const reg = new RegExp(`^\\s*"?${tool}"?\\s*=`);
+                  if (toolsIdx !== -1) {
+                    const end = nextIdx !== -1 ? nextIdx : lines.length;
+                    let found = false;
+                    for (let i = toolsIdx + 1; i < end; i++) {
+                      if (reg.test(lines[i])) {
+                        lines[i] = `${tool} = "${version}"`;
+                        found = true;
+                        break;
+                      }
+                    }
+                    if (!found) lines.splice(toolsIdx + 1, 0, `${tool} = "${version}"`);
+                    content = lines.join("\n");
+                  } else {
+                    content += `\n[tools]\n${tool} = "${version}"\n`;
+                  }
 
-                fs.writeFileSync(targetPath, content, "utf-8");
+                  fs.writeFileSync(targetPath, content, "utf-8");
+                }
                 res.setHeader("Content-Type", "application/json");
                 res.end(JSON.stringify({ success: true, tool, version, global: isGlobal, cli: executedCli }));
+
               } catch (err: any) {
                 res.statusCode = 500;
                 res.setHeader("Content-Type", "application/json");
