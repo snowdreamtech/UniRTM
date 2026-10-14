@@ -65,6 +65,6 @@
 
 **Purpose**: Verify cross-platform functionality, test suites, and deliver clean, structured git commits.
 
-- [ ] T020 [Verify] Test legacy takeover in sample directories with `.nvmrc` and `.go-version`.
-- [ ] T021 [Verify] Execute full Go test suite (`go test ./...`) ensuring zero regressions.
-- [ ] T022 [Commit] Execute step-by-step git commits following Conventional Commits format.
+- [x] T020 [Verify] Test legacy takeover in sample directories with `.nvmrc` and `.go-version`.
+- [x] T021 [Verify] Execute full Go test suite (`go test ./...`) ensuring zero regressions.
+- [x] T022 [Commit] Execute step-by-step git commits following Conventional Commits format.
