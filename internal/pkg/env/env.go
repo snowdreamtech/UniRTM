@@ -37,6 +37,11 @@ func Get(key string) string {
 		value = os.Getenv(key)
 	}
 
+	// 4. Case-insensitive and normalized fallback (UNIRTM_ > MISE_ > Raw)
+	if value == "" {
+		value = getCaseInsensitive(key)
+	}
+
 	// Validate specific critical environment variables
 	switch key {
 	case "GITHUB_PROXY":
@@ -59,6 +64,47 @@ func Get(key string) string {
 	}
 
 	return value
+}
+
+// getCaseInsensitive scans os.Environ() case-insensitively, respecting UNIRTM_ > MISE_ > Raw priority.
+func getCaseInsensitive(key string) string {
+	var unirtmVal, miseVal, rawVal string
+	normKey := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(key, "_", ""), "-", ""))
+
+	for _, e := range os.Environ() {
+		parts := strings.SplitN(e, "=", 2)
+		if len(parts) != 2 || parts[1] == "" {
+			continue
+		}
+		k := parts[0]
+		v := strings.TrimSpace(parts[1])
+		if v == "" {
+			continue
+		}
+
+		clean := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(k, "_", ""), "-", ""))
+		if strings.HasPrefix(clean, "unirtm") {
+			stripped := strings.TrimPrefix(clean, "unirtm")
+			if stripped == normKey && unirtmVal == "" {
+				unirtmVal = v
+			}
+		} else if strings.HasPrefix(clean, "mise") {
+			stripped := strings.TrimPrefix(clean, "mise")
+			if stripped == normKey && miseVal == "" {
+				miseVal = v
+			}
+		} else if clean == normKey && rawVal == "" {
+			rawVal = v
+		}
+	}
+
+	if unirtmVal != "" {
+		return unirtmVal
+	}
+	if miseVal != "" {
+		return miseVal
+	}
+	return rawVal
 }
 
 var (

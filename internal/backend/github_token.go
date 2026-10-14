@@ -14,6 +14,7 @@ import (
 
 	"github.com/pelletier/go-toml/v2"
 
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
@@ -44,7 +45,7 @@ func resolveGitHubToken(host string) string {
 		host = "github.com"
 	}
 
-	// 1. Environment variables (UNIRTM_* -> MISE_* -> raw, supporting case variations)
+	// 1. Environment variables via unified env.Get (UNIRTM_* -> MISE_* -> raw, supporting case variations)
 	if token := resolveGitHubTokenFromEnv(); token != "" {
 		return token
 	}
@@ -56,22 +57,27 @@ func resolveGitHubToken(host string) string {
 		}
 	}
 
-	// 3. Workspace configuration (.unirtm.toml, unirtm.toml in cwd and parent dirs)
+	// 3. Unified configuration hierarchy (workspace & user level via config.LoadFull)
+	if token := readConfigGitHubToken(host); token != "" {
+		return token
+	}
+
+	// 4. Workspace configuration (.unirtm.toml, unirtm.toml in cwd and parent dirs)
 	if token := readWorkspaceGitHubToken(host); token != "" {
 		return token
 	}
 
-	// 4. User configuration (github_tokens.toml, ~/.config/unirtm/unirtm.toml)
+	// 5. User configuration (github_tokens.toml, ~/.config/unirtm/unirtm.toml)
 	if token := readGitHubTokensFile(host); token != "" {
 		return token
 	}
 
-	// 5. gh CLI hosts.yml
+	// 6. gh CLI hosts.yml
 	if token := readGhCliToken(host); token != "" {
 		return token
 	}
 
-	// 6. gh CLI auth token execution fallback
+	// 7. gh CLI auth token execution fallback
 	if ghAuthTokenFn != nil {
 		if token := ghAuthTokenFn(host); token != "" {
 			return token
@@ -81,59 +87,43 @@ func resolveGitHubToken(host string) string {
 	return ""
 }
 
-// resolveGitHubTokenFromEnv retrieves GitHub token from environment variables.
-// Priority: UNIRTM_* > MISE_* > Raw keys.
-// Fully supports case-insensitivity, mixed casing, and UNIRTM/MISE prefixes.
+// resolveGitHubTokenFromEnv retrieves GitHub token from environment variables using unified env.Get.
+// Priority: UNIRTM_* > MISE_* > Raw keys. Fully supports case-insensitivity and prefix tolerance.
 func resolveGitHubTokenFromEnv() string {
-	// 1. Check standard prioritized env keys first
 	for _, key := range []string{"GITHUB_TOKEN", "GH_TOKEN", "GITHUB_API_TOKEN"} {
 		if token := env.Get(key); token != "" {
 			return token
 		}
 	}
+	return ""
+}
 
-	// 2. Scan all environment variables with case-insensitivity and prefix tolerance
-	var unirtmVal, miseVal, rawVal string
-	for _, e := range os.Environ() {
-		parts := strings.SplitN(e, "=", 2)
-		if len(parts) != 2 || parts[1] == "" {
-			continue
-		}
-		k := parts[0]
-		v := strings.TrimSpace(parts[1])
-		if v == "" {
-			continue
-		}
+// readConfigGitHubToken loads configuration via unified config.LoadFull() and extracts github token.
+func readConfigGitHubToken(host string) string {
+	if !strings.EqualFold(host, "github.com") && host != "" {
+		return ""
+	}
 
-		clean := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(k, "_", ""), "-", ""))
-		if strings.HasPrefix(clean, "unirtm") {
-			stripped := strings.TrimPrefix(clean, "unirtm")
-			if stripped == "githubtoken" || stripped == "ghtoken" || stripped == "githubapitoken" {
-				if unirtmVal == "" {
-					unirtmVal = v
-				}
-			}
-		} else if strings.HasPrefix(clean, "mise") {
-			stripped := strings.TrimPrefix(clean, "mise")
-			if stripped == "githubtoken" || stripped == "ghtoken" || stripped == "githubapitoken" {
-				if miseVal == "" {
-					miseVal = v
-				}
-			}
-		} else if clean == "githubtoken" || clean == "ghtoken" || clean == "githubapitoken" {
-			if rawVal == "" {
-				rawVal = v
+	cfg, err := config.LoadFull()
+	if err != nil || cfg == nil {
+		return ""
+	}
+
+	// 1. Check Settings.GitHubToken
+	if cfg.Settings.GitHubToken != "" {
+		return cfg.Settings.GitHubToken
+	}
+
+	// 2. Check [env] section
+	for k, v := range cfg.Env {
+		if isGitHubTokenKey(k) {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				return strings.TrimSpace(s)
 			}
 		}
 	}
 
-	if unirtmVal != "" {
-		return unirtmVal
-	}
-	if miseVal != "" {
-		return miseVal
-	}
-	return rawVal
+	return ""
 }
 
 var ghAuthTokenFn = runGhAuthToken
