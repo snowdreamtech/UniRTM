@@ -789,6 +789,7 @@ const recommendedMirrors = ref<Record<string, Array<{ name: string; url: string 
   python: [
     { name: "官方直连 (PyPI)", url: "https://pypi.org/simple" },
     { name: "清华大学 TUNA", url: "https://pypi.tuna.tsinghua.edu.cn/simple" },
+    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/pypi/simple" },
     { name: "阿里云 PyPI", url: "https://mirrors.aliyun.com/pypi/simple/" },
     { name: "腾讯云 PyPI", url: "https://mirrors.cloud.tencent.com/pypi/simple/" },
     { name: "华为云 PyPI", url: "https://repo.huaweicloud.com/repository/pypi/simple/" },
@@ -853,17 +854,20 @@ const recommendedMirrors = ref<Record<string, Array<{ name: string; url: string 
   cran: [
     { name: "官方直连 (CRAN)", url: "https://cran.r-project.org" },
     { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/CRAN/" },
+    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/CRAN/" },
     { name: "南方科技大学 SUSTech", url: "https://mirrors.sustech.edu.cn/CRAN/" },
     { name: "阿里云 CRAN", url: "https://mirrors.aliyun.com/CRAN/" },
   ],
   julia: [
     { name: "官方直连 (Julia Pkg)", url: "https://pkg.julialang.org" },
     { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/julia" },
+    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/julia" },
     { name: "北京外国语大学 BFSU", url: "https://mirrors.bfsu.edu.cn/julia" },
   ],
   cpan: [
     { name: "官方直连 (CPAN)", url: "https://www.cpan.org" },
     { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/CPAN/" },
+    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/CPAN/" },
     { name: "阿里云 CPAN", url: "https://mirrors.aliyun.com/CPAN/" },
   ],
   hackage: [

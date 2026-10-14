@@ -120,6 +120,26 @@ func DefaultBuiltinProfiles() map[string]NetworkProfile {
 				"python": "https://mirrors.aliyun.com/python/",
 			},
 		},
+		"ustc": {
+			ID:              "ustc",
+			Name:            "中国科学技术大学 USTC 专线",
+			Description:     "优先全量采用中国科学技术大学 (USTC) 教育网核心骨干镜像站加速源",
+			Builtin:         true,
+			FallbackProfile: "cn",
+			Registries: map[string]string{
+				"python":    "https://mirrors.ustc.edu.cn/pypi/simple",
+				"rust":      "https://mirrors.ustc.edu.cn/crates.io-index",
+				"ruby":      "https://mirrors.ustc.edu.cn/rubygems/",
+				"cocoapods": "https://mirrors.ustc.edu.cn/CocoaPods-Specs.git",
+				"conda":     "https://mirrors.ustc.edu.cn/anaconda/pkgs/main",
+				"homebrew":  "https://mirrors.ustc.edu.cn/homebrew-bottles",
+			},
+			Downloads: map[string]string{
+				"node":   "https://mirrors.ustc.edu.cn/node/",
+				"go":     "https://golang.google.cn/dl",
+				"python": "https://mirrors.ustc.edu.cn/python/",
+			},
+		},
 	}
 }
 
@@ -147,6 +167,7 @@ func RecommendedMirrors() map[string][]MirrorOption {
 		"python": {
 			{Name: "官方直连 (PyPI)", URL: "https://pypi.org/simple"},
 			{Name: "清华大学 TUNA", URL: "https://pypi.tuna.tsinghua.edu.cn/simple"},
+			{Name: "中国科学技术大学 USTC", URL: "https://mirrors.ustc.edu.cn/pypi/simple"},
 			{Name: "阿里云 PyPI", URL: "https://mirrors.aliyun.com/pypi/simple/"},
 			{Name: "腾讯云 PyPI", URL: "https://mirrors.cloud.tencent.com/pypi/simple/"},
 			{Name: "华为云 PyPI", URL: "https://repo.huaweicloud.com/repository/pypi/simple/"},
@@ -211,17 +232,20 @@ func RecommendedMirrors() map[string][]MirrorOption {
 		"cran": {
 			{Name: "官方直连 (CRAN)", URL: "https://cran.r-project.org"},
 			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/CRAN/"},
+			{Name: "中国科学技术大学 USTC", URL: "https://mirrors.ustc.edu.cn/CRAN/"},
 			{Name: "南方科技大学 SUSTech", URL: "https://mirrors.sustech.edu.cn/CRAN/"},
 			{Name: "阿里云 CRAN", URL: "https://mirrors.aliyun.com/CRAN/"},
 		},
 		"julia": {
 			{Name: "官方直连 (Julia Pkg)", URL: "https://pkg.julialang.org"},
 			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/julia"},
+			{Name: "中国科学技术大学 USTC", URL: "https://mirrors.ustc.edu.cn/julia"},
 			{Name: "北京外国语大学 BFSU", URL: "https://mirrors.bfsu.edu.cn/julia"},
 		},
 		"cpan": {
 			{Name: "官方直连 (CPAN)", URL: "https://www.cpan.org"},
 			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/CPAN/"},
+			{Name: "中国科学技术大学 USTC", URL: "https://mirrors.ustc.edu.cn/CPAN/"},
 			{Name: "阿里云 CPAN", URL: "https://mirrors.aliyun.com/CPAN/"},
 		},
 		"hackage": {
