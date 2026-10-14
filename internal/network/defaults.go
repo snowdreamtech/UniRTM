@@ -73,7 +73,7 @@ func DefaultBuiltinProfiles() map[string]NetworkProfile {
 			Downloads: map[string]string{
 				"node":   "https://npmmirror.com/mirrors/node",
 				"go":     "https://golang.google.cn/dl",
-				"python": "https://registry.npmmirror.com/binary.html?b=python",
+				"python": "https://npmmirror.com/mirrors/python",
 			},
 		},
 		"tuna": {
