@@ -42,6 +42,57 @@ func (m *Manager) LoadFromPath(path string) error {
 	return nil
 }
 
+// LoadCascading loads global configuration first, then overlays project-level [network] if present.
+// Returns true if a project-level [network] block was found and applied.
+func (m *Manager) LoadCascading(localPath, globalPath string) (bool, error) {
+	hasLocal := false
+	if globalPath != "" {
+		_ = m.LoadFromPath(globalPath)
+	}
+	if localPath != "" {
+		data, err := os.ReadFile(localPath)
+		if err == nil {
+			var root struct {
+				Network *NetworkConfig `toml:"network"`
+			}
+			if err := toml.Unmarshal(data, &root); err == nil && root.Network != nil {
+				m.Merge(root.Network)
+				hasLocal = true
+			}
+		}
+	}
+	m.EnsureDefaults()
+	return hasLocal, nil
+}
+
+// Merge overlays non-zero fields from other into m.config.
+func (m *Manager) Merge(other *NetworkConfig) {
+	if other == nil {
+		return
+	}
+	if other.ActiveProfile != "" {
+		m.config.ActiveProfile = other.ActiveProfile
+	}
+	if other.Proxy.Enabled || other.Proxy.HTTP != "" || other.Proxy.HTTPS != "" || other.Proxy.SOCKS5 != "" {
+		m.config.Proxy = other.Proxy
+	}
+	if m.config.Profiles == nil {
+		m.config.Profiles = make(map[string]NetworkProfile)
+	}
+	for id, p := range other.Profiles {
+		m.config.Profiles[id] = p
+	}
+	if m.config.Overrides == nil {
+		m.config.Overrides = make(map[string]string)
+	}
+	for k, v := range other.Overrides {
+		m.config.Overrides[k] = v
+	}
+	if len(other.ExcludedEcosystems) > 0 {
+		m.config.ExcludedEcosystems = other.ExcludedEcosystems
+	}
+}
+
 // SaveToPath updates the network section of a TOML file without modifying other sections.
 func (m *Manager) SaveToPath(path string) error {
 	m.EnsureDefaults()

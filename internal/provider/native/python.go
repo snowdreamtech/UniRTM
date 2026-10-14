@@ -30,11 +30,13 @@ func (h *PythonHandler) Name() string {
 func (h *PythonHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
 	// Support GitHub Proxy Acceleration
 	githubProxy := ""
-	if env.Get("ENABLE_GITHUB_PROXY") == "1" {
-		githubProxy = env.Get("GITHUB_PROXY")
-		if githubProxy == "" {
-			githubProxy = "https://gh-proxy.com/"
+	if p := env.Get("GITHUB_PROXY"); p != "" {
+		enableProxy := env.Get("ENABLE_GITHUB_PROXY")
+		if enableProxy != "0" && strings.ToLower(enableProxy) != "false" {
+			githubProxy = p
 		}
+	} else if env.Get("ENABLE_GITHUB_PROXY") == "1" {
+		githubProxy = "https://gh-proxy.com/"
 	}
 
 	apiBase := env.Get("GITHUB_API_BASEURL")

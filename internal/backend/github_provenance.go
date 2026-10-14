@@ -345,7 +345,8 @@ func (v *provenanceVerifier) fetchAttestations(
 func (v *provenanceVerifier) fetchExternalBundle(ctx context.Context, urlStr string) (json.RawMessage, error) {
 	finalURL := urlStr
 	githubProxy := env.Get("GITHUB_PROXY")
-	if githubProxy != "" && env.Get("ENABLE_GITHUB_PROXY") == "1" {
+	enableProxy := env.Get("ENABLE_GITHUB_PROXY")
+	if githubProxy != "" && enableProxy != "0" && strings.ToLower(enableProxy) != "false" {
 		if !strings.HasPrefix(urlStr, githubProxy) {
 			finalURL = githubProxy + urlStr
 		}

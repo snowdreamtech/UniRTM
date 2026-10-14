@@ -56,11 +56,13 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 
 	// Support GitHub Proxy Acceleration
 	githubProxy := ""
-	if env.Get("ENABLE_GITHUB_PROXY") == "1" {
-		githubProxy = env.Get("GITHUB_PROXY")
-		if githubProxy == "" {
-			githubProxy = "https://gh-proxy.com/" // Default fallback
+	if p := env.Get("GITHUB_PROXY"); p != "" {
+		enableProxy := env.Get("ENABLE_GITHUB_PROXY")
+		if enableProxy != "0" && strings.ToLower(enableProxy) != "false" {
+			githubProxy = p
 		}
+	} else if env.Get("ENABLE_GITHUB_PROXY") == "1" {
+		githubProxy = "https://gh-proxy.com/" // Default fallback
 	}
 
 	// BaseURL for github is used to construct the API URL if needed,

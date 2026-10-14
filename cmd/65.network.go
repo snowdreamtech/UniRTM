@@ -61,10 +61,22 @@ func init() {
 }
 
 func getNetworkManager() (*network.Manager, string, error) {
-	path := resolveNetworkConfigFile(networkGlobal)
+	globalPath := config.GetGlobalConfigPath()
+	localPath := ".unirtm.toml"
+
+	if networkGlobal {
+		mgr := network.NewManager(nil)
+		_ = mgr.LoadFromPath(globalPath)
+		return mgr, globalPath, nil
+	}
+
 	mgr := network.NewManager(nil)
-	_ = mgr.LoadFromPath(path)
-	return mgr, path, nil
+	hasLocal, _ := mgr.LoadCascading(localPath, globalPath)
+	targetPath := localPath
+	if _, err := os.Stat(localPath); err != nil && !hasLocal {
+		targetPath = globalPath
+	}
+	return mgr, targetPath, nil
 }
 
 func resolveNetworkConfigFile(global bool) string {
