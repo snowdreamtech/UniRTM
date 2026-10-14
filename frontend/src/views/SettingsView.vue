@@ -264,6 +264,17 @@
                   <span v-if="isDetectingProxy">🔄 探测中...</span>
                   <span v-else>🔍 自动探测宿主代理</span>
                 </button>
+
+                <button
+                  type="button"
+                  class="btn-test-proxy"
+                  :disabled="isTestingProxy || !networkStatus.proxy.enabled || (!networkStatus.proxy.http && !networkStatus.proxy.socks5)"
+                  @click="handleTestProxy"
+                  title="发起真实网络连接检测该代理是否可用"
+                >
+                  <span v-if="isTestingProxy">🔄 检测中...</span>
+                  <span v-else>⚡ 连通性检测</span>
+                </button>
               </div>
 
               <!-- Detected Proxy Banner -->
@@ -279,6 +290,21 @@
                 >
                   ⚡ 一键导入
                 </button>
+              </div>
+
+              <!-- Proxy Test Result Status Banner -->
+              <div
+                v-if="proxyTestResult"
+                class="proxy-test-status-banner"
+                :class="{ 'status-ok': proxyTestResult.success, 'status-fail': !proxyTestResult.success }"
+              >
+                <div class="test-status-left">
+                  <span class="status-icon">{{ proxyTestResult.success ? '🟢' : '🔴' }}</span>
+                  <span class="status-message">{{ proxyTestResult.message || proxyTestResult.error }}</span>
+                </div>
+                <div v-if="proxyTestResult.success && proxyTestResult.rtt_ms" class="test-rtt-tag">
+                  ⚡ 延迟 {{ proxyTestResult.rtt_ms }}ms
+                </div>
               </div>
 
               <div class="proxy-fields" :class="{ 'fields-disabled': !networkStatus.proxy.enabled }">
@@ -780,6 +806,13 @@ const newProfileName = ref("");
 const isProbing = ref(false);
 const detectedProxy = ref<any>(null);
 const isDetectingProxy = ref(false);
+const isTestingProxy = ref(false);
+const proxyTestResult = ref<{
+  success: boolean;
+  rtt_ms?: number;
+  message?: string;
+  error?: string;
+} | null>(null);
 interface EcoPingResult {
   rtt_ms?: number;
   status: 'idle' | 'loading' | 'fast' | 'normal' | 'slow' | 'timeout' | 'error';
@@ -1642,6 +1675,48 @@ async function applyDetectedProxy() {
   networkStatus.value.proxy.socks5 = detectedProxy.value.socks5 || "";
   networkStatus.value.proxy.enabled = true;
   await handleSaveProxy();
+  await handleTestProxy();
+}
+
+async function handleTestProxy() {
+  if (!networkStatus.value?.proxy) return;
+  const http = networkStatus.value.proxy.http;
+  const https = networkStatus.value.proxy.https;
+  const socks5 = networkStatus.value.proxy.socks5;
+  if (!http && !https && !socks5) {
+    proxyTestResult.value = {
+      success: false,
+      error: "未填写任何代理服务器地址 (HTTP 或 SOCKS5)",
+    };
+    return;
+  }
+
+  isTestingProxy.value = true;
+  proxyTestResult.value = null;
+
+  try {
+    const res = await fetch("/api/network/proxy/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ http, https, socks5 }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      proxyTestResult.value = data;
+    } else {
+      proxyTestResult.value = {
+        success: false,
+        error: `代理测试接口请求失败 (HTTP ${res.status})`,
+      };
+    }
+  } catch (err: any) {
+    proxyTestResult.value = {
+      success: false,
+      error: `测试请求发生异常: ${err.message}`,
+    };
+  } finally {
+    isTestingProxy.value = false;
+  }
 }
 
 function getEcoPingClass(eco: string) {
@@ -2599,6 +2674,90 @@ input:checked + .slider:before {
 .btn-detect-proxy:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.btn-test-proxy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  color: var(--accent-cyan);
+  border-radius: 5px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-test-proxy:hover:not(:disabled) {
+  border-color: var(--accent-cyan);
+  background: rgba(34, 211, 238, 0.1);
+}
+
+.btn-test-proxy:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.proxy-test-status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  margin-top: 10px;
+  transition: all 0.2s;
+}
+
+.proxy-test-status-banner.status-ok {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #10b981;
+}
+
+:root[data-theme="light"] .proxy-test-status-banner.status-ok,
+[data-theme="light"] .proxy-test-status-banner.status-ok {
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+  color: #047857;
+}
+
+.proxy-test-status-banner.status-fail {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+}
+
+:root[data-theme="light"] .proxy-test-status-banner.status-fail,
+[data-theme="light"] .proxy-test-status-banner.status-fail {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
+}
+
+.test-status-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.test-rtt-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.2);
+}
+
+:root[data-theme="light"] .test-rtt-tag,
+[data-theme="light"] .test-rtt-tag {
+  background: #d1fae5;
+  color: #047857;
 }
 
 .detected-proxy-banner {

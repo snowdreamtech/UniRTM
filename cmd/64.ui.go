@@ -519,6 +519,7 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/network/registry/reset-all", handleResetAllNetworkRegistries)
 	mux.HandleFunc("/api/network/proxy", handleSetNetworkProxy)
 	mux.HandleFunc("/api/network/proxy/detect", handleDetectNetworkProxy)
+	mux.HandleFunc("/api/network/proxy/test", handleTestNetworkProxy)
 	mux.HandleFunc("/api/network/ping", handlePingNetwork)
 
 	// ─── Static SPA Handler ───────────────────────────────────────────────────
@@ -1036,6 +1037,27 @@ func handleDetectNetworkProxy(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	detected := network.DetectSystemProxy()
 	_ = json.NewEncoder(w).Encode(detected)
+}
+
+func handleTestNetworkProxy(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var req struct {
+		HTTP   string `json:"http"`
+		HTTPS  string `json:"https"`
+		SOCKS5 string `json:"socks5"`
+	}
+	if r.Body != nil {
+		_ = json.NewDecoder(r.Body).Decode(&req)
+	}
+
+	res := network.TestProxyConnectivity(network.ProxyConfig{
+		Enabled: true,
+		HTTP:    req.HTTP,
+		HTTPS:   req.HTTPS,
+		SOCKS5:  req.SOCKS5,
+	}, 4*time.Second)
+
+	_ = json.NewEncoder(w).Encode(res)
 }
 
 func handlePingNetwork(w http.ResponseWriter, r *http.Request) {

@@ -300,6 +300,61 @@ export default defineConfig({
             return;
           }
 
+          if (req.url === "/api/network/proxy/test") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", async () => {
+              try {
+                let proxyCfg: any = {};
+                if (bodyStr) {
+                  try { proxyCfg = JSON.parse(bodyStr); } catch {}
+                }
+                const httpProxy = proxyCfg.http || proxyCfg.https;
+                if (!httpProxy && !proxyCfg.socks5) {
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: false, error: "未填写任何代理服务器地址" }));
+                  return;
+                }
+                const testURL = httpProxy || proxyCfg.socks5;
+                const parsed = new URL(testURL);
+                const testPort = parseInt(parsed.port, 10);
+                const testHost = parsed.hostname || "127.0.0.1";
+
+                const net = await import("node:net");
+                const start = Date.now();
+                const socket = net.createConnection({ host: testHost, port: testPort, timeout: 2500 }, () => {
+                  const rtt = Date.now() - start;
+                  socket.destroy();
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({
+                    success: true,
+                    rtt_ms: rtt,
+                    message: `代理服务器连通正常 (响应延迟 ${rtt}ms)`
+                  }));
+                });
+                socket.on("error", (err: any) => {
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({
+                    success: false,
+                    error: `代理服务器端口无法连通 (${testHost}:${testPort}): ${err.message}`
+                  }));
+                });
+                socket.on("timeout", () => {
+                  socket.destroy();
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({
+                    success: false,
+                    error: `连接代理服务器端口超时 (${testHost}:${testPort})`
+                  }));
+                });
+              } catch (err: any) {
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: false, error: err.message }));
+              }
+            });
+            return;
+          }
+
           if (req.url?.startsWith("/api/network/ping")) {
             let bodyStr = "";
             req.on("data", (c: any) => { bodyStr += c; });
