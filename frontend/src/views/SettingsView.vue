@@ -538,6 +538,23 @@
                     @blur="handleOverrideRegistry(eco, ($event.target as HTMLInputElement).value)"
                   />
 
+                  <!-- Dynamic Ping / Latency Badge for this ecosystem -->
+                  <button
+                    class="btn-eco-ping"
+                    :class="getEcoPingClass(eco)"
+                    :disabled="ecoPingStatus[eco]?.loading"
+                    :title="getEcoPingTitle(eco)"
+                    @click="handlePingSingle(eco)"
+                  >
+                    <span v-if="ecoPingStatus[eco]?.loading" class="ping-icon spinning">🔄</span>
+                    <span v-else-if="ecoPingStatus[eco]?.status === 'fast'" class="ping-text ping-fast">⚡ {{ ecoPingStatus[eco]?.rtt_ms }}ms</span>
+                    <span v-else-if="ecoPingStatus[eco]?.status === 'normal'" class="ping-text ping-normal">⚡ {{ ecoPingStatus[eco]?.rtt_ms }}ms</span>
+                    <span v-else-if="ecoPingStatus[eco]?.status === 'slow'" class="ping-text ping-slow">⚡ {{ ecoPingStatus[eco]?.rtt_ms }}ms</span>
+                    <span v-else-if="ecoPingStatus[eco]?.status === 'timeout'" class="ping-text ping-timeout">⚠️ 超时</span>
+                    <span v-else-if="ecoPingStatus[eco]?.status === 'error'" class="ping-text ping-error">⚠️ 失败</span>
+                    <span v-else class="ping-text ping-idle">⚡ 测速</span>
+                  </button>
+
                   <!-- Reset Override Button if Overridden -->
                   <button
                     v-if="networkStatus.effective[eco]?.is_overridden"
@@ -556,28 +573,6 @@
                   >
                     🗑️
                   </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Latency Probe Results Table if run -->
-            <div v-if="probeResults.length > 0" class="probe-results-card glass-card">
-              <h4>{{ t('network.speed_test') || '并发网络延迟探测结果' }}</h4>
-              <div class="probe-grid">
-                <div
-                  v-for="res in probeResults"
-                  :key="res.endpoint"
-                  class="probe-node-item"
-                  :class="'node-' + res.status"
-                >
-                  <div class="node-header">
-                    <span class="node-eco font-mono">{{ res.ecosystem.toUpperCase() }}</span>
-                    <span class="node-name">{{ res.name }}</span>
-                  </div>
-                  <div class="node-rtt font-mono">
-                    <span v-if="res.status !== 'timeout'">{{ res.rtt_ms }} ms</span>
-                    <span v-else class="text-error">TIMEOUT</span>
-                  </div>
                 </div>
               </div>
             </div>
@@ -757,7 +752,13 @@ const showCreateProfileModal = ref(false);
 const newProfileId = ref("");
 const newProfileName = ref("");
 const isProbing = ref(false);
-const probeResults = ref<any[]>([]);
+interface EcoPingResult {
+  rtt_ms?: number;
+  status: 'idle' | 'loading' | 'fast' | 'normal' | 'slow' | 'timeout' | 'error';
+  loading?: boolean;
+  error?: string;
+}
+const ecoPingStatus = ref<Record<string, EcoPingResult>>({});
 const showAddEcoModal = ref(false);
 const isAddingEco = ref(false);
 const newEcoId = ref("");
@@ -1564,18 +1565,106 @@ async function handleSaveProxy() {
   }
 }
 
-async function handleRunProbeAll() {
-  isProbing.value = true;
+function getEcoPingClass(eco: string) {
+  const p = ecoPingStatus.value[eco];
+  if (!p || p.status === 'idle') return 'ping-idle';
+  if (p.loading) return 'ping-loading';
+  return `ping-${p.status}`;
+}
+
+function getEcoPingTitle(eco: string) {
+  const p = ecoPingStatus.value[eco];
+  if (!p) return '点击测试此镜像延迟';
+  if (p.loading) return '正在测速...';
+  if (p.status === 'timeout') return '连接超时';
+  if (p.status === 'error') return p.error || '连接失败';
+  return `延迟: ${p.rtt_ms}ms (${p.status})`;
+}
+
+async function handlePingSingle(eco: string) {
+  const url = networkStatus.value?.effective?.[eco]?.url;
+  if (!url) return;
+
+  ecoPingStatus.value[eco] = {
+    ...ecoPingStatus.value[eco],
+    loading: true,
+    status: 'loading'
+  };
+
   try {
-    const res = await fetch("/api/network/ping");
+    const res = await fetch("/api/network/ping", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ecosystem: eco, url })
+    });
     if (res.ok) {
       const data = await res.json();
-      probeResults.value = data.results || [];
+      const item = data.results?.[0];
+      if (item) {
+        ecoPingStatus.value[eco] = {
+          rtt_ms: item.rtt_ms,
+          status: item.status,
+          loading: false,
+          error: item.error
+        };
+      }
+    } else {
+      ecoPingStatus.value[eco] = { status: 'error', loading: false, error: '请求失败' };
+    }
+  } catch (err: any) {
+    ecoPingStatus.value[eco] = { status: 'error', loading: false, error: err?.message || '网络异常' };
+  }
+}
+
+async function handleRunProbeAll() {
+  if (!networkStatus.value?.effective) return;
+  isProbing.value = true;
+
+  const targets = orderedEffectiveEcosystems.value
+    .map(eco => ({
+      ecosystem: eco,
+      name: eco,
+      url: networkStatus.value?.effective?.[eco]?.url || ''
+    }))
+    .filter(t => t.url);
+
+  targets.forEach(t => {
+    ecoPingStatus.value[t.ecosystem] = {
+      ...ecoPingStatus.value[t.ecosystem],
+      loading: true,
+      status: 'loading'
+    };
+  });
+
+  try {
+    const res = await fetch("/api/network/ping", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targets })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const results: any[] = data.results || [];
+      results.forEach(r => {
+        if (r.ecosystem) {
+          ecoPingStatus.value[r.ecosystem] = {
+            rtt_ms: r.rtt_ms,
+            status: r.status,
+            loading: false,
+            error: r.error
+          };
+        }
+      });
     }
   } catch (err) {
     console.error(err);
   } finally {
     isProbing.value = false;
+    Object.keys(ecoPingStatus.value).forEach(k => {
+      if (ecoPingStatus.value[k]?.loading) {
+        ecoPingStatus.value[k].loading = false;
+      }
+    });
   }
 }
 
@@ -2899,63 +2988,83 @@ input:checked + .slider:before {
   color: #60a5fa;
 }
 
-.probe-results-card {
-  margin-top: 14px;
-  padding: 14px 18px;
-}
-
-.probe-results-card h4 {
-  margin: 0 0 10px;
-  font-size: 0.88rem;
-  color: var(--text-main);
-}
-
-.probe-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 8px;
-}
-
-.probe-node-item {
-  display: flex;
+.btn-eco-ping {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
+  justify-content: center;
+  gap: 4px;
+  min-width: 82px;
+  height: 30px;
+  padding: 0 10px;
   border-radius: 6px;
-  background: var(--card-bg);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
   border: 1px solid var(--card-border);
-}
-
-.node-eco {
-  font-size: 0.68rem;
+  background: var(--input-bg);
   color: var(--text-muted);
-  margin-right: 6px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  font-family: inherit;
 }
 
-.node-name {
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: var(--text-main);
+.btn-eco-ping:hover:not(:disabled) {
+  border-color: rgba(34, 211, 238, 0.4);
+  color: var(--accent-cyan);
+  background: rgba(34, 211, 238, 0.08);
 }
 
-.node-rtt {
-  font-size: 0.78rem;
-  font-weight: 700;
+.btn-eco-ping:disabled {
+  cursor: wait;
+  opacity: 0.8;
 }
 
-.node-fast .node-rtt {
+.btn-eco-ping.ping-fast {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
   color: #10b981;
 }
+.btn-eco-ping.ping-fast:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.22);
+}
 
-.node-normal .node-rtt {
+.btn-eco-ping.ping-normal {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.35);
   color: #38bdf8;
 }
-
-.node-slow .node-rtt {
-  color: #f59e0b;
+.btn-eco-ping.ping-normal:hover:not(:disabled) {
+  background: rgba(56, 189, 248, 0.22);
 }
 
-.node-timeout .node-rtt {
+.btn-eco-ping.ping-slow {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #f59e0b;
+}
+.btn-eco-ping.ping-slow:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.22);
+}
+
+.btn-eco-ping.ping-timeout,
+.btn-eco-ping.ping-error {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
   color: #ef4444;
+}
+.btn-eco-ping.ping-timeout:hover:not(:disabled),
+.btn-eco-ping.ping-error:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.22);
+}
+
+.btn-eco-ping .ping-icon.spinning {
+  display: inline-block;
+  animation: eco-spin 1s linear infinite;
+  font-size: 0.8rem;
+}
+
+@keyframes eco-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>

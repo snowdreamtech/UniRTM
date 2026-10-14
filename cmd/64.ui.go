@@ -1033,7 +1033,42 @@ func handleSetNetworkProxy(w http.ResponseWriter, r *http.Request) {
 
 func handlePingNetwork(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	results := network.ProbeAll(network.DefaultProbeTargets(), 2500*time.Millisecond)
+	var targets []network.ProbeTarget
+
+	if r.Method == http.MethodPost && r.Body != nil {
+		var req struct {
+			Targets []struct {
+				Ecosystem string `json:"ecosystem"`
+				Name      string `json:"name"`
+				URL       string `json:"url"`
+			} `json:"targets"`
+			Ecosystem string `json:"ecosystem"`
+			URL       string `json:"url"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err == nil {
+			if len(req.Targets) > 0 {
+				for _, t := range req.Targets {
+					targets = append(targets, network.ProbeTarget{
+						Ecosystem: t.Ecosystem,
+						Name:      t.Name,
+						Endpoint:  t.URL,
+					})
+				}
+			} else if req.URL != "" {
+				targets = append(targets, network.ProbeTarget{
+					Ecosystem: req.Ecosystem,
+					Name:      req.Ecosystem,
+					Endpoint:  req.URL,
+				})
+			}
+		}
+	}
+
+	if len(targets) == 0 {
+		targets = network.DefaultProbeTargets()
+	}
+
+	results := network.ProbeAll(targets, 3000*time.Millisecond)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"results": results,
 	})

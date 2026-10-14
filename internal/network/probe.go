@@ -5,6 +5,7 @@ package network
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -67,14 +68,23 @@ func ProbeOne(client *http.Client, t ProbeTarget, timeout time.Duration) ProbeRe
 	start := time.Now()
 	resp, err := client.Do(req)
 	rtt := time.Since(start).Milliseconds()
+	if rtt <= 0 {
+		rtt = 1
+	}
 	res.RTTMs = rtt
 
 	if err != nil {
 		res.Status = "timeout"
-		res.Error = "timeout"
+		res.Error = err.Error()
 		return res
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode >= 500 {
+		res.Status = "error"
+		res.Error = fmt.Sprintf("HTTP %d", resp.StatusCode)
+		return res
+	}
 
 	if rtt < 100 {
 		res.Status = "fast"
