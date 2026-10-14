@@ -32,6 +32,8 @@ var (
 	useEnv string
 	// usePin resolves fuzzy/prefix versions to precise concrete versions in the config file
 	usePin bool
+	// useNoInstall skips automatic installation after setting config & lockfile
+	useNoInstall bool
 )
 
 // init registers the use command to the root command.
@@ -41,6 +43,7 @@ func init() {
 	useCmd.Flags().BoolVarP(&useForce, "force", "f", false, "force reinstall even if the tool is already installed")
 	useCmd.Flags().StringVarP(&useEnv, "env", "e", "", "environment-specific config file (e.g. unirtm.<env>.toml)")
 	useCmd.Flags().BoolVarP(&usePin, "pin", "P", false, "resolve prefix/alias/range to precise concrete version")
+	useCmd.Flags().BoolVar(&useNoInstall, "no-install", false, "do not automatically download and install tool")
 
 	if rootCmd != nil {
 		rootCmd.AddCommand(useCmd)
@@ -259,7 +262,7 @@ func runUse(cmd *cobra.Command, args []string) error {
 	}
 
 	// Automatically install the tool versions if they are not already installed
-	if im != nil {
+	if im != nil && !useNoInstall {
 		for _, p := range pairs {
 			toolName := p.toolName
 			backendName := p.backendName

@@ -206,8 +206,36 @@ func (ls *LockService) RecordInstall(
 
 	platKey := lockfile.PlatformKey(info.Platform.OS, info.Platform.Arch, false)
 
-	// Ensure the top-level entry exists (create or update backend field).
+	// If entry already has a valid URL for this platform, no need to overwrite or re-save
 	existing := ls.lf.GetEntry(lockKey, info.Version)
+	if existing != nil {
+		if p, ok := existing.Platforms[platKey]; ok && p != nil && p.URL != "" {
+			return nil
+		}
+	}
+
+	// Always merge with existing disk lockfile to avoid erasing other platforms
+	if ls.lockfilePath != "" {
+		if diskLF, err := lockfile.Load(ls.lockfilePath); err == nil && diskLF != nil {
+			if diskEntry := diskLF.GetEntry(lockKey, info.Version); diskEntry != nil {
+				if existing == nil {
+					ls.lf.UpsertEntry(lockKey, diskEntry)
+					existing = diskEntry
+				} else {
+					for pk, pv := range diskEntry.Platforms {
+						if _, has := existing.Platforms[pk]; !has {
+							existing.Platforms[pk] = pv
+						}
+					}
+				}
+				if existing.Platforms[platKey] != nil && existing.Platforms[platKey].URL != "" {
+					return nil
+				}
+			}
+		}
+	}
+
+	// Ensure the top-level entry exists (create or update backend field).
 	if existing == nil {
 		ls.lf.UpsertEntry(lockKey, &lockfile.ToolLockEntry{
 			Version:   info.Version,

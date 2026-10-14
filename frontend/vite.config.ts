@@ -255,7 +255,7 @@ export default defineConfig({
                 let executedCli = false;
                 if (fs.existsSync(unirtmBin)) {
                   try {
-                    const args = ["use", `${tool}@${version}`];
+                    const args = ["use", "--no-install", `${tool}@${version}`];
                     if (isGlobal) args.push("--global");
                     execFileSync(unirtmBin, args, { cwd: rootDir, encoding: "utf-8" });
                     executedCli = true;

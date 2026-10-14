@@ -786,10 +786,14 @@ func (im *InstallationManager) Install(ctx context.Context, toolKey, tool, versi
 				}
 				canonicalInfo.DownloadURL = lockfile.StripProxyPrefix(canonicalInfo.DownloadURL, proxyList)
 			}
-			if lockErr := im.lockService.RecordInstall(tool, backendName, &canonicalInfo); lockErr != nil {
+			effectiveLockKey := toolKey
+			if effectiveLockKey == "" {
+				effectiveLockKey = tool
+			}
+			if lockErr := im.lockService.RecordInstall(effectiveLockKey, backendName, &canonicalInfo); lockErr != nil {
 				// Non-fatal: log but don't abort the install.
 				logger.Warn("lockfile: failed to record install", map[string]interface{}{
-					"tool":  tool,
+					"tool":  effectiveLockKey,
 					"error": lockErr.Error(),
 				})
 			}
