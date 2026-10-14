@@ -133,18 +133,34 @@ func readGitHubTokensFile(host string) string {
 	}
 
 	tokenFile := filepath.Join(configDir, "github_tokens.toml")
-	data, err := os.ReadFile(tokenFile)
-	if err != nil {
-		return ""
+	if data, err := os.ReadFile(tokenFile); err == nil {
+		var tokens githubTokensFile
+		if err := toml.Unmarshal(data, &tokens); err == nil {
+			if entry, ok := tokens.Tokens[host]; ok && entry.Token != "" {
+				return entry.Token
+			}
+		}
 	}
 
-	var tokens githubTokensFile
-	if err := toml.Unmarshal(data, &tokens); err != nil {
-		return ""
-	}
-
-	if entry, ok := tokens.Tokens[host]; ok && entry.Token != "" {
-		return entry.Token
+	// Also check unirtm.toml in configDir for GITHUB_TOKEN or github_token
+	if host == "github.com" {
+		configFile := filepath.Join(configDir, "unirtm.toml")
+		if cfgData, err := os.ReadFile(configFile); err == nil {
+			var userCfg struct {
+				Env      map[string]interface{} `toml:"env"`
+				Settings struct {
+					GitHubToken string `toml:"github_token"`
+				} `toml:"settings"`
+			}
+			if err := toml.Unmarshal(cfgData, &userCfg); err == nil {
+				if userCfg.Settings.GitHubToken != "" {
+					return userCfg.Settings.GitHubToken
+				}
+				if tok, ok := userCfg.Env["GITHUB_TOKEN"].(string); ok && tok != "" {
+					return tok
+				}
+			}
+		}
 	}
 
 	return ""
