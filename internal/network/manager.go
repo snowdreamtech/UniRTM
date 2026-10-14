@@ -752,9 +752,48 @@ func (m *Manager) ExportEnvironment() map[string]string {
 			env["ALL_PROXY"] = status.Proxy.SOCKS5
 			env["all_proxy"] = status.Proxy.SOCKS5
 		}
-		if status.Proxy.NoProxy != "" {
-			env["NO_PROXY"] = status.Proxy.NoProxy
-			env["no_proxy"] = status.Proxy.NoProxy
+		noProxyList := strings.Split(status.Proxy.NoProxy, ",")
+		seenNoProxy := make(map[string]bool)
+		var mergedNoProxy []string
+		for _, item := range noProxyList {
+			t := strings.TrimSpace(item)
+			if t != "" && !seenNoProxy[t] {
+				seenNoProxy[t] = true
+				mergedNoProxy = append(mergedNoProxy, t)
+			}
+		}
+
+		// Automatically add active profile's mirror hostnames to NO_PROXY so mirrors are never routed via proxy
+		for _, eff := range status.Effective {
+			if eff.URL != "" {
+				if parsed, err := url.Parse(eff.URL); err == nil && parsed.Hostname() != "" {
+					h := parsed.Hostname()
+					if strings.HasSuffix(h, ".cn") || strings.Contains(h, "aliyun") || strings.Contains(h, "npmmirror") || strings.Contains(h, "tencent") || strings.Contains(h, "huaweicloud") {
+						if !seenNoProxy[h] {
+							seenNoProxy[h] = true
+							mergedNoProxy = append(mergedNoProxy, h)
+						}
+					}
+				}
+			}
+		}
+		for _, dl := range status.ActiveProfile.Downloads {
+			if dl != "" {
+				if parsed, err := url.Parse(dl); err == nil && parsed.Hostname() != "" {
+					h := parsed.Hostname()
+					if strings.HasSuffix(h, ".cn") || strings.Contains(h, "aliyun") || strings.Contains(h, "npmmirror") || strings.Contains(h, "tencent") || strings.Contains(h, "huaweicloud") {
+						if !seenNoProxy[h] {
+							seenNoProxy[h] = true
+							mergedNoProxy = append(mergedNoProxy, h)
+						}
+					}
+				}
+			}
+		}
+		finalNoProxy := strings.Join(mergedNoProxy, ",")
+		if finalNoProxy != "" {
+			env["NO_PROXY"] = finalNoProxy
+			env["no_proxy"] = finalNoProxy
 		}
 	}
 

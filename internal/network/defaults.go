@@ -17,7 +17,7 @@ func DefaultProxyConfig() ProxyConfig {
 		HTTP:    "",
 		HTTPS:   "",
 		SOCKS5:  "",
-		NoProxy: "localhost,127.0.0.1,::1,*.local,*.internal",
+		NoProxy: "localhost,127.0.0.1,::1,127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,169.254.0.0/16,*.local,*.internal,*.lan,*.cluster.local",
 	}
 }
 

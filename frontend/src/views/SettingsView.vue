@@ -892,7 +892,7 @@ const networkStatus = ref<any>({
     http: "",
     https: "",
     socks5: "",
-    no_proxy: "localhost,127.0.0.1,::1,*.local,*.internal",
+    no_proxy: "localhost,127.0.0.1,::1,127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,169.254.0.0/16,*.local,*.internal,*.lan,*.cluster.local",
   },
   effective: {
     npm: { ecosystem: "npm", url: "https://registry.npmjs.org", source: "profile", is_overridden: false },
