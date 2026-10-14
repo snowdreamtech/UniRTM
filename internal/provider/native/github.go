@@ -155,9 +155,6 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 			sigs := make(map[string]string)
 			for _, a := range rel.Assets {
 				downloadURL := a.BrowserDownloadURL
-				if githubProxy != "" {
-					downloadURL = strings.TrimSuffix(githubProxy, "/") + "/" + downloadURL
-				}
 
 				if strings.HasSuffix(a.Name, ".asc") || strings.HasSuffix(a.Name, ".sig") {
 					sigs[a.Name] = downloadURL
@@ -176,9 +173,6 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 				}
 
 				downloadURL := a.BrowserDownloadURL
-				if githubProxy != "" {
-					downloadURL = strings.TrimSuffix(githubProxy, "/") + "/" + downloadURL
-				}
 
 				asset := Asset{
 					Filename: a.Name,
@@ -221,16 +215,6 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 func (h *GithubHandler) ResolveTag(ctx context.Context, version string) (*VersionInfo, error) {
 	if ctx == nil {
 		return nil, fmt.Errorf("net/http: nil Context")
-	}
-
-	githubProxy := ""
-	if p := env.Get("GITHUB_PROXY"); p != "" {
-		enableProxy := env.Get("ENABLE_GITHUB_PROXY")
-		if enableProxy != "0" && strings.ToLower(enableProxy) != "false" {
-			githubProxy = p
-		}
-	} else if env.Get("ENABLE_GITHUB_PROXY") == "1" {
-		githubProxy = "https://gh-proxy.com/"
 	}
 
 	apiBase := env.Get("GITHUB_API_BASEURL")
@@ -289,9 +273,6 @@ func (h *GithubHandler) ResolveTag(ctx context.Context, version string) (*Versio
 				continue
 			}
 			downloadURL := a.BrowserDownloadURL
-			if githubProxy != "" {
-				downloadURL = strings.TrimSuffix(githubProxy, "/") + "/" + downloadURL
-			}
 			assets = append(assets, Asset{
 				Filename: a.Name,
 				URL:      downloadURL,

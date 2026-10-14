@@ -120,6 +120,11 @@ func (im *InstallationManager) SetToolConfigs(toolConfigs map[string]config.Tool
 	im.toolConfigs = toolConfigs
 }
 
+// SetLockService updates the managed LockService reference.
+func (im *InstallationManager) SetLockService(ls *LockService) {
+	im.lockService = ls
+}
+
 // SetDB stores the underlying database handle so it can be closed with Close().
 // This must be called after NewInstallationManagerWithLock when the caller
 // owns the database lifetime.

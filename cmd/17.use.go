@@ -254,6 +254,9 @@ func runUse(cmd *cobra.Command, args []string) error {
 						"missing_count": len(report.Missing),
 					})
 				}
+				if im != nil {
+					im.SetLockService(lockSvc)
+				}
 			}
 		}
 	}
