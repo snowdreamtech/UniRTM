@@ -44,44 +44,34 @@ func resolveGitHubToken(host string) string {
 		host = "github.com"
 	}
 
-	// 1. GITHUB_TOKEN (UNIRTM_GITHUB_TOKEN -> MISE_GITHUB_TOKEN -> GITHUB_TOKEN)
-	if token := env.Get("GITHUB_TOKEN"); token != "" {
+	// 1. Environment variables (UNIRTM_* -> MISE_* -> raw, supporting case variations)
+	if token := resolveGitHubTokenFromEnv(); token != "" {
 		return token
 	}
 
-	// 2. GH_TOKEN (UNIRTM_GH_TOKEN -> MISE_GH_TOKEN -> GH_TOKEN)
-	if token := env.Get("GH_TOKEN"); token != "" {
-		return token
-	}
-
-	// 3. GITHUB_API_TOKEN (legacy fallback)
-	if token := env.Get("GITHUB_API_TOKEN"); token != "" {
-		return token
-	}
-
-	// 4. credential_command (UNIRTM_GITHUB_CREDENTIAL_COMMAND -> MISE_GITHUB_CREDENTIAL_COMMAND -> GITHUB_CREDENTIAL_COMMAND)
+	// 2. credential_command (UNIRTM_GITHUB_CREDENTIAL_COMMAND -> MISE_GITHUB_CREDENTIAL_COMMAND -> GITHUB_CREDENTIAL_COMMAND)
 	if cmd := env.Get("GITHUB_CREDENTIAL_COMMAND"); cmd != "" {
 		if token := runCredentialCommand(cmd, host); token != "" {
 			return token
 		}
 	}
 
-	// 5. Workspace configuration (.unirtm.toml, unirtm.toml in cwd and parent dirs)
+	// 3. Workspace configuration (.unirtm.toml, unirtm.toml in cwd and parent dirs)
 	if token := readWorkspaceGitHubToken(host); token != "" {
 		return token
 	}
 
-	// 6. User configuration (github_tokens.toml, ~/.config/unirtm/unirtm.toml)
+	// 4. User configuration (github_tokens.toml, ~/.config/unirtm/unirtm.toml)
 	if token := readGitHubTokensFile(host); token != "" {
 		return token
 	}
 
-	// 7. gh CLI hosts.yml
+	// 5. gh CLI hosts.yml
 	if token := readGhCliToken(host); token != "" {
 		return token
 	}
 
-	// 8. gh CLI auth token execution fallback
+	// 6. gh CLI auth token execution fallback
 	if ghAuthTokenFn != nil {
 		if token := ghAuthTokenFn(host); token != "" {
 			return token
@@ -89,6 +79,61 @@ func resolveGitHubToken(host string) string {
 	}
 
 	return ""
+}
+
+// resolveGitHubTokenFromEnv retrieves GitHub token from environment variables.
+// Priority: UNIRTM_* > MISE_* > Raw keys.
+// Fully supports case-insensitivity, mixed casing, and UNIRTM/MISE prefixes.
+func resolveGitHubTokenFromEnv() string {
+	// 1. Check standard prioritized env keys first
+	for _, key := range []string{"GITHUB_TOKEN", "GH_TOKEN", "GITHUB_API_TOKEN"} {
+		if token := env.Get(key); token != "" {
+			return token
+		}
+	}
+
+	// 2. Scan all environment variables with case-insensitivity and prefix tolerance
+	var unirtmVal, miseVal, rawVal string
+	for _, e := range os.Environ() {
+		parts := strings.SplitN(e, "=", 2)
+		if len(parts) != 2 || parts[1] == "" {
+			continue
+		}
+		k := parts[0]
+		v := strings.TrimSpace(parts[1])
+		if v == "" {
+			continue
+		}
+
+		clean := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(k, "_", ""), "-", ""))
+		if strings.HasPrefix(clean, "unirtm") {
+			stripped := strings.TrimPrefix(clean, "unirtm")
+			if stripped == "githubtoken" || stripped == "ghtoken" || stripped == "githubapitoken" {
+				if unirtmVal == "" {
+					unirtmVal = v
+				}
+			}
+		} else if strings.HasPrefix(clean, "mise") {
+			stripped := strings.TrimPrefix(clean, "mise")
+			if stripped == "githubtoken" || stripped == "ghtoken" || stripped == "githubapitoken" {
+				if miseVal == "" {
+					miseVal = v
+				}
+			}
+		} else if clean == "githubtoken" || clean == "ghtoken" || clean == "githubapitoken" {
+			if rawVal == "" {
+				rawVal = v
+			}
+		}
+	}
+
+	if unirtmVal != "" {
+		return unirtmVal
+	}
+	if miseVal != "" {
+		return miseVal
+	}
+	return rawVal
 }
 
 var ghAuthTokenFn = runGhAuthToken
@@ -123,10 +168,12 @@ func runCredentialCommand(command, host string) string {
 
 // isGitHubTokenKey checks if a key matches any casing or format for a GitHub token.
 // Matches e.g. github_token, GITHUB_TOKEN, GitHub_Token, githubToken, github-token,
-// gh_token, GH_TOKEN, unirtm_github_token, github_api_token.
+// gh_token, GH_TOKEN, unirtm_github_token, mise_github_token, unirtm_gh_token, mise_gh_token, github_api_token.
 func isGitHubTokenKey(key string) bool {
 	clean := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(key, "_", ""), "-", ""))
-	return clean == "githubtoken" || clean == "ghtoken" || clean == "unirtmgithubtoken" || clean == "githubapitoken"
+	clean = strings.TrimPrefix(clean, "unirtm")
+	clean = strings.TrimPrefix(clean, "mise")
+	return clean == "githubtoken" || clean == "ghtoken" || clean == "githubapitoken"
 }
 
 // extractGitHubTokenFromToml extracts a GitHub token from unmarshalled TOML bytes,

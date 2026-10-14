@@ -528,3 +528,38 @@ func TestReadWorkspaceGitHubToken(t *testing.T) {
 		t.Errorf("expected 'workspace_token_123', got %q", got)
 	}
 }
+
+func TestResolveGitHubToken_PrefixesAndCase(t *testing.T) {
+	// Clean env
+	t.Setenv("UNIRTM_GITHUB_TOKEN", "")
+	t.Setenv("MISE_GITHUB_TOKEN", "")
+	t.Setenv("GITHUB_TOKEN", "")
+	t.Setenv("GH_TOKEN", "")
+	t.Setenv("GITHUB_API_TOKEN", "")
+
+	t.Run("lowercase mise_github_token in env", func(t *testing.T) {
+		t.Setenv("mise_github_token", "mise_token_val")
+		got := resolveGitHubTokenFromEnv()
+		if got != "mise_token_val" {
+			t.Errorf("expected 'mise_token_val', got %q", got)
+		}
+	})
+
+	t.Run("unirtm prefix overrides mise prefix in env", func(t *testing.T) {
+		t.Setenv("mise_github_token", "mise_val")
+		t.Setenv("unirtm_github_token", "unirtm_val")
+		got := resolveGitHubTokenFromEnv()
+		if got != "unirtm_val" {
+			t.Errorf("expected 'unirtm_val', got %q", got)
+		}
+	})
+
+	t.Run("mise prefix in toml", func(t *testing.T) {
+		toml := "[env]\nmise_github_token = \"from_mise_toml\"\n"
+		got := extractGitHubTokenFromToml([]byte(toml), "github.com")
+		if got != "from_mise_toml" {
+			t.Errorf("expected 'from_mise_toml', got %q", got)
+		}
+	})
+}
+
