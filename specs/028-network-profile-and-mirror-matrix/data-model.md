@@ -90,12 +90,13 @@ type ProxyConfig struct {
 
 // NetworkProfile defines an individual mirror profile.
 type NetworkProfile struct {
-    ID          string            `json:"id" toml:"id"`
-    Name        string            `json:"name" toml:"name"`
-    Description string            `json:"description" toml:"description"`
-    Builtin     bool              `json:"builtin" toml:"builtin"`
-    Registries  map[string]string `json:"registries" toml:"registries"`
-    Downloads   map[string]string `json:"downloads" toml:"downloads"`
+    ID              string            `json:"id" toml:"id"`
+    Name            string            `json:"name" toml:"name"`
+    Description     string            `json:"description" toml:"description"`
+    Builtin         bool              `json:"builtin" toml:"builtin"`
+    FallbackProfile string            `json:"fallback_profile,omitempty" toml:"fallback_profile,omitempty"`
+    Registries      map[string]string `json:"registries" toml:"registries"`
+    Downloads       map[string]string `json:"downloads" toml:"downloads"`
 }
 
 // ActiveNetworkStatus represents the resolved state returned to CLI and Web UI.
@@ -109,9 +110,9 @@ type ActiveNetworkStatus struct {
 
 // EffectiveRegistry denotes the resolved registry URL and origin for an ecosystem.
 type EffectiveRegistry struct {
-    Ecosystem    string `json:"ecosystem"` // npm, go, python, rust, ruby
+    Ecosystem    string `json:"ecosystem"` // npm, go, python, rust, ruby, etc.
     URL          string `json:"url"`
-    Source       string `json:"source"`    // "override" | "profile" | "default"
+    Source       string `json:"source"`    // "override" | "profile" | "fallback_cn" | "default"
     IsOverridden bool   `json:"is_overridden"`
 }
 

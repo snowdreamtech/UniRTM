@@ -116,9 +116,45 @@ func (m *Manager) EnsureDefaults() {
 			existing.Builtin = true
 			existing.Name = p.Name
 			existing.Description = p.Description
+			existing.FallbackProfile = p.FallbackProfile
 			if existing.Registries == nil {
 				existing.Registries = make(map[string]string)
 			}
+			// Clean up non-native placeholders from earlier versions of tuna/aliyun so fallback can take effect
+			if id == "tuna" {
+				if existing.Registries["npm"] == "https://registry.npmmirror.com" {
+					delete(existing.Registries, "npm")
+				}
+				if existing.Registries["go"] == "https://goproxy.cn,direct" {
+					delete(existing.Registries, "go")
+				}
+				if existing.Registries["composer"] == "https://mirrors.aliyun.com/composer/" {
+					delete(existing.Registries, "composer")
+				}
+				if existing.Registries["nuget"] == "https://api.nuget.org/v3/index.json" {
+					delete(existing.Registries, "nuget")
+				}
+				if existing.Registries["docker"] == "https://registry.cn-hangzhou.aliyuncs.com" {
+					delete(existing.Registries, "docker")
+				}
+			} else if id == "aliyun" {
+				if existing.Registries["rust"] == "https://rsproxy.cn/crates.io-index" {
+					delete(existing.Registries, "rust")
+				}
+				if existing.Registries["ruby"] == "https://gems.ruby-china.com" {
+					delete(existing.Registries, "ruby")
+				}
+				if existing.Registries["nuget"] == "https://repo.huaweicloud.com/repository/nuget/v3/index.json" {
+					delete(existing.Registries, "nuget")
+				}
+				if existing.Registries["dart"] == "https://mirrors.tuna.tsinghua.edu.cn/dart-pub" {
+					delete(existing.Registries, "dart")
+				}
+				if existing.Registries["cocoapods"] == "https://cdn.cocoapods.org" {
+					delete(existing.Registries, "cocoapods")
+				}
+			}
+
 			for k, v := range p.Registries {
 				if _, hasKey := existing.Registries[k]; !hasKey {
 					excluded := false
@@ -212,6 +248,25 @@ func (m *Manager) GetStatus() *ActiveNetworkStatus {
 				IsOverridden: false,
 			}
 			continue
+		}
+
+		// Fallback profile resolution (e.g. tuna or aliyun dedicated profiles falling back to cn matrix)
+		fallbackID := activeProfile.FallbackProfile
+		if fallbackID == "" && (activeID == "tuna" || activeID == "aliyun") {
+			fallbackID = "cn"
+		}
+		if fallbackID != "" && fallbackID != activeID {
+			if fbProfile, exists := m.config.Profiles[fallbackID]; exists {
+				if fbURL, hasFB := fbProfile.Registries[eco]; hasFB && strings.TrimSpace(fbURL) != "" {
+					effective[eco] = EffectiveRegistry{
+						Ecosystem:    eco,
+						URL:          strings.TrimSpace(fbURL),
+						Source:       "fallback_" + fallbackID,
+						IsOverridden: false,
+					}
+					continue
+				}
+			}
 		}
 
 		fallbackURL := officialBlueprint.Registries[eco]

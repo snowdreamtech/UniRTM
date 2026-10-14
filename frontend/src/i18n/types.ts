@@ -148,6 +148,8 @@ export interface TranslationDict {
   "network.delete_profile"?: string;
   "network.badge_overridden"?: string;
   "network.badge_inherited"?: string;
+  "network.badge_fallback_cn"?: string;
+  "network.badge_fallback_cn_tip"?: string;
   "network.restore_inherited"?: string;
   "network.speed_test"?: string;
   "network.batch_test"?: string;

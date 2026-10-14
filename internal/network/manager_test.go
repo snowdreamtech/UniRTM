@@ -332,4 +332,85 @@ func TestAddAndDeleteEcosystem(t *testing.T) {
 	}
 }
 
+func TestDedicatedProfilesFallback(t *testing.T) {
+	mgr := NewManager(nil)
+
+	// 1. Test TUNA profile: native python/rust/dart, fallback npm/go/composer to cn
+	err := mgr.UseProfile("tuna")
+	if err != nil {
+		t.Fatalf("failed to switch to tuna profile: %v", err)
+	}
+	status := mgr.GetStatus()
+	if status.ActiveProfileID != "tuna" {
+		t.Fatalf("expected active profile tuna, got %s", status.ActiveProfileID)
+	}
+
+	// Python is natively hosted by TUNA
+	pyEff := status.Effective["python"]
+	if pyEff.URL != "https://pypi.tuna.tsinghua.edu.cn/simple" || pyEff.Source != "profile" {
+		t.Fatalf("expected python to come from tuna profile, got %+v", pyEff)
+	}
+	// Dart is natively hosted by TUNA
+	dartEff := status.Effective["dart"]
+	if dartEff.URL != "https://mirrors.tuna.tsinghua.edu.cn/dart-pub" || dartEff.Source != "profile" {
+		t.Fatalf("expected dart to come from tuna profile, got %+v", dartEff)
+	}
+	// NPM is NOT hosted by TUNA -> fallback to cn (npmmirror)
+	npmEff := status.Effective["npm"]
+	if npmEff.URL != "https://registry.npmmirror.com" || npmEff.Source != "fallback_cn" {
+		t.Fatalf("expected npm to fallback to cn npmmirror, got %+v", npmEff)
+	}
+	// Go is NOT hosted by TUNA -> fallback to cn (goproxy.cn)
+	goEff := status.Effective["go"]
+	if goEff.URL != "https://goproxy.cn,direct" || goEff.Source != "fallback_cn" {
+		t.Fatalf("expected go to fallback to cn goproxy.cn, got %+v", goEff)
+	}
+	// Composer is NOT hosted by TUNA -> fallback to cn (aliyun composer)
+	composerEff := status.Effective["composer"]
+	if composerEff.URL != "https://mirrors.aliyun.com/composer/" || composerEff.Source != "fallback_cn" {
+		t.Fatalf("expected composer to fallback to cn aliyun composer, got %+v", composerEff)
+	}
+
+	// 2. Test Aliyun profile: native npm/go/composer, fallback rust/dart/cocoapods to cn
+	err = mgr.UseProfile("aliyun")
+	if err != nil {
+		t.Fatalf("failed to switch to aliyun profile: %v", err)
+	}
+	status = mgr.GetStatus()
+
+	// NPM is natively hosted by Aliyun
+	aliNpm := status.Effective["npm"]
+	if aliNpm.URL != "https://registry.npmmirror.com" || aliNpm.Source != "profile" {
+		t.Fatalf("expected npm to come from aliyun profile, got %+v", aliNpm)
+	}
+	// Go is natively hosted by Aliyun
+	aliGo := status.Effective["go"]
+	if aliGo.URL != "https://mirrors.aliyun.com/goproxy/,direct" || aliGo.Source != "profile" {
+		t.Fatalf("expected go to come from aliyun profile, got %+v", aliGo)
+	}
+	// Rust is NOT hosted by Aliyun -> fallback to cn (rsproxy.cn)
+	aliRust := status.Effective["rust"]
+	if aliRust.URL != "https://rsproxy.cn/crates.io-index" || aliRust.Source != "fallback_cn" {
+		t.Fatalf("expected rust to fallback to cn rsproxy.cn, got %+v", aliRust)
+	}
+	// Dart is NOT hosted by Aliyun -> fallback to cn (tuna dart-pub)
+	aliDart := status.Effective["dart"]
+	if aliDart.URL != "https://mirrors.tuna.tsinghua.edu.cn/dart-pub" || aliDart.Source != "fallback_cn" {
+		t.Fatalf("expected dart to fallback to cn tuna dart-pub, got %+v", aliDart)
+	}
+	// CocoaPods is NOT hosted by Aliyun -> fallback to cn (tuna specs git)
+	aliPods := status.Effective["cocoapods"]
+	if aliPods.URL != "https://mirrors.tuna.tsinghua.edu.cn/git/CocoaPods/Specs.git" || aliPods.Source != "fallback_cn" {
+		t.Fatalf("expected cocoapods to fallback to cn tuna specs git, got %+v", aliPods)
+	}
+
+	// 3. Override takes precedence over fallback
+	_ = mgr.SetOverride("rust", "https://custom.rust.org")
+	status = mgr.GetStatus()
+	if status.Effective["rust"].URL != "https://custom.rust.org" || status.Effective["rust"].Source != "override" {
+		t.Fatalf("expected override to take precedence over fallback: %+v", status.Effective["rust"])
+	}
+}
+
+
 

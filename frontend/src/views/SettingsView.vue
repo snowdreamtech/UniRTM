@@ -493,9 +493,10 @@
                   <span class="eco-badge font-mono">{{ eco.toUpperCase() }}</span>
                   <span
                     class="status-indicator-badge"
-                    :class="networkStatus.effective[eco]?.is_overridden ? 'badge-override' : 'badge-inherited'"
+                    :class="getEcoBadgeClass(eco)"
+                    :title="getEcoBadgeTitle(eco)"
                   >
-                    {{ networkStatus.effective[eco]?.is_overridden ? (t('network.badge_overridden') || '单项自定义覆盖') : (t('network.badge_inherited') || '跟随档案预设') }}
+                    {{ getEcoBadgeLabel(eco) }}
                   </span>
                 </div>
 
@@ -982,6 +983,28 @@ const orderedEffectiveEcosystems = computed(() => {
   const extras = effKeys.filter((eco) => !baseOrder.includes(eco)).sort();
   return [...ordered, ...extras];
 });
+
+function getEcoBadgeClass(eco: string): string {
+  const eff = networkStatus.value?.effective?.[eco];
+  if (eff?.is_overridden) return 'badge-override';
+  if (eff?.source?.startsWith('fallback_')) return 'badge-fallback';
+  return 'badge-inherited';
+}
+
+function getEcoBadgeLabel(eco: string): string {
+  const eff = networkStatus.value?.effective?.[eco];
+  if (eff?.is_overridden) return t('network.badge_overridden') || '单项自定义覆盖';
+  if (eff?.source?.startsWith('fallback_')) return t('network.badge_fallback_cn') || '国内加速补齐';
+  return t('network.badge_inherited') || '跟随档案预设';
+}
+
+function getEcoBadgeTitle(eco: string): string {
+  const eff = networkStatus.value?.effective?.[eco];
+  if (eff?.source?.startsWith('fallback_')) {
+    return t('network.badge_fallback_cn_tip') || '当前专线未收录该生态，已自动回退到中国镜像加速矩阵补齐';
+  }
+  return '';
+}
 
 function openAddEcoModal() {
   newEcoId.value = "";
@@ -2695,6 +2718,12 @@ input:checked + .slider:before {
   background: rgba(245, 158, 11, 0.15);
   color: #f59e0b;
   border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.badge-fallback {
+  background: rgba(14, 165, 233, 0.15);
+  color: #0ea5e9;
+  border: 1px dashed rgba(14, 165, 233, 0.45);
 }
 
 .badge-inherited {

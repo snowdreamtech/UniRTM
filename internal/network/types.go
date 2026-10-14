@@ -27,9 +27,10 @@ type NetworkProfile struct {
 	ID          string            `json:"id" toml:"id" yaml:"id"`
 	Name        string            `json:"name" toml:"name" yaml:"name"`
 	Description string            `json:"description" toml:"description" yaml:"description"`
-	Builtin     bool              `json:"builtin" toml:"builtin" yaml:"builtin"`
-	Registries  map[string]string `json:"registries" toml:"registries" yaml:"registries"`
-	Downloads   map[string]string `json:"downloads" toml:"downloads" yaml:"downloads"`
+	Builtin         bool              `json:"builtin" toml:"builtin" yaml:"builtin"`
+	FallbackProfile string            `json:"fallback_profile,omitempty" toml:"fallback_profile,omitempty" yaml:"fallback_profile,omitempty"`
+	Registries      map[string]string `json:"registries" toml:"registries" yaml:"registries"`
+	Downloads       map[string]string `json:"downloads" toml:"downloads" yaml:"downloads"`
 }
 
 // ActiveNetworkStatus represents the effective resolved view for CLI and Web.
