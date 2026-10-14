@@ -95,66 +95,123 @@ export default defineConfig({
           }
 
           if (req.url === "/api/runtimes/status") {
+            const wsPath = path.join(rootDir, ".unirtm.toml");
+            const altWsPath = path.join(rootDir, "unirtm.toml");
+            const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
+            const altUserPath = path.join(os.homedir(), ".config", "unirtm", "config.toml");
+
+            const parseTools = (filePath: string) => {
+              const res: Record<string, string> = {};
+              if (!fs.existsSync(filePath)) return res;
+              try {
+                const c = fs.readFileSync(filePath, "utf-8");
+                let inTools = false;
+                for (const line of c.split("\n")) {
+                  const tr = line.trim();
+                  if (tr.startsWith("[") && tr.endsWith("]")) {
+                    inTools = (tr === "[tools]");
+                    continue;
+                  }
+                  if (inTools && tr && !tr.startsWith("#")) {
+                    const m = tr.match(/^"?([^"=\s]+)"?\s*=\s*"([^"]+)"/);
+                    if (m) res[m[1]] = m[2];
+                  }
+                }
+              } catch {}
+              return res;
+            };
+
+            const getInstalled = (toolId: string, fallback: string[]) => {
+              const dir = path.join(os.homedir(), ".local", "share", "unirtm", "installs", toolId);
+              if (!fs.existsSync(dir)) return fallback;
+              try {
+                const list = fs.readdirSync(dir).filter(f => !f.startsWith(".") && fs.statSync(path.join(dir, f)).isDirectory());
+                if (list.length === 0) return fallback;
+                return list.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+              } catch {
+                return fallback;
+              }
+            };
+
+            const wsTools = parseTools(fs.existsSync(wsPath) ? wsPath : altWsPath);
+            const userTools = parseTools(fs.existsSync(userPath) ? userPath : altUserPath);
+
             const nvmrc = path.join(rootDir, ".nvmrc");
+            const nodeVer = path.join(rootDir, ".node-version");
             const goVer = path.join(rootDir, ".go-version");
+            const pyVer = path.join(rootDir, ".python-version");
+
             const detected_legacies: string[] = [];
             if (fs.existsSync(nvmrc)) detected_legacies.push(".nvmrc");
+            if (fs.existsSync(nodeVer)) detected_legacies.push(".node-version");
             if (fs.existsSync(goVer)) detected_legacies.push(".go-version");
+            if (fs.existsSync(pyVer)) detected_legacies.push(".python-version");
+
+            const getToolItem = (id: string, name: string, desc: string, hp: string, defaultVer: string, fallbackInstalled: string[]) => {
+              const installed = getInstalled(id, fallbackInstalled);
+              let active = wsTools[id] || "";
+              let source = active ? ".unirtm.toml" : "";
+              let isLegacy = false;
+              let legacyFile = "";
+
+              if (!active) {
+                if (id === "node" && fs.existsSync(nvmrc)) {
+                  active = fs.readFileSync(nvmrc, "utf-8").trim().replace(/^v/, "");
+                  source = ".nvmrc";
+                  isLegacy = true;
+                  legacyFile = ".nvmrc";
+                } else if (id === "node" && fs.existsSync(nodeVer)) {
+                  active = fs.readFileSync(nodeVer, "utf-8").trim().replace(/^v/, "");
+                  source = ".node-version";
+                  isLegacy = true;
+                  legacyFile = ".node-version";
+                } else if (id === "go" && fs.existsSync(goVer)) {
+                  active = fs.readFileSync(goVer, "utf-8").trim().replace(/^v/, "");
+                  source = ".go-version";
+                  isLegacy = true;
+                  legacyFile = ".go-version";
+                } else if (id === "python" && fs.existsSync(pyVer)) {
+                  active = fs.readFileSync(pyVer, "utf-8").trim().replace(/^v/, "");
+                  source = ".python-version";
+                  isLegacy = true;
+                  legacyFile = ".python-version";
+                }
+              }
+
+              if (!active) {
+                active = defaultVer;
+              }
+
+              const globalVer = userTools[id] || defaultVer;
+
+              return {
+                id,
+                name,
+                description: desc,
+                homepage: hp,
+                installed_versions: installed,
+                active_version: active,
+                global_version: globalVer,
+                source: source || ".unirtm.toml",
+                is_legacy: isLegacy,
+                legacy_file: legacyFile,
+              };
+            };
+
+            const runtimes = [
+              getToolItem("node", "Node.js", "JavaScript / TypeScript runtime (NVM superset)", "https://nodejs.org", "20.18.3", ["20.18.3", "26.8.1"]),
+              getToolItem("go", "Go", "Go programming language (GVM superset)", "https://go.dev", "1.27.2", ["1.27.1", "1.27.2"]),
+              getToolItem("python", "Python", "Python language interpreter (Pyenv superset)", "https://python.org", "3.14.7", ["3.12.2", "3.14.7"]),
+              getToolItem("rust", "Rust", "Rust toolchain & cargo build system", "https://rust-lang.org", "1.85.0", ["1.85.0"]),
+            ];
+
+            const totalInstalled = runtimes.reduce((acc, r) => acc + r.installed_versions.length, 0);
 
             res.setHeader("Content-Type", "application/json");
             res.end(
               JSON.stringify({
-                runtimes: [
-                  {
-                    id: "node",
-                    name: "Node.js",
-                    description: "JavaScript / TypeScript runtime (NVM superset)",
-                    homepage: "https://nodejs.org",
-                    installed_versions: ["20.18.3", "26.8.1"],
-                    active_version: "20.18.3",
-                    global_version: "26.8.1",
-                    source: fs.existsSync(nvmrc) ? ".nvmrc" : ".unirtm.toml",
-                    is_legacy: fs.existsSync(nvmrc),
-                    legacy_file: fs.existsSync(nvmrc) ? ".nvmrc" : "",
-                  },
-                  {
-                    id: "go",
-                    name: "Go",
-                    description: "Go programming language (GVM superset)",
-                    homepage: "https://go.dev",
-                    installed_versions: ["1.27.1", "1.27.2"],
-                    active_version: "1.27.2",
-                    global_version: "1.27.2",
-                    source: fs.existsSync(goVer) ? ".go-version" : ".unirtm.toml",
-                    is_legacy: fs.existsSync(goVer),
-                    legacy_file: fs.existsSync(goVer) ? ".go-version" : "",
-                  },
-                  {
-                    id: "python",
-                    name: "Python",
-                    description: "Python language interpreter (Pyenv superset)",
-                    homepage: "https://python.org",
-                    installed_versions: ["3.12.2", "3.14.7"],
-                    active_version: "3.14.7",
-                    global_version: "3.14.7",
-                    source: ".unirtm.toml",
-                    is_legacy: false,
-                    legacy_file: "",
-                  },
-                  {
-                    id: "rust",
-                    name: "Rust",
-                    description: "Rust toolchain & cargo build system",
-                    homepage: "https://rust-lang.org",
-                    installed_versions: ["1.85.0"],
-                    active_version: "1.85.0",
-                    global_version: "1.85.0",
-                    source: ".unirtm.toml",
-                    is_legacy: false,
-                    legacy_file: "",
-                  },
-                ],
-                total_installed: 7,
+                runtimes,
+                total_installed: totalInstalled,
                 detected_legacies,
               })
             );
@@ -167,6 +224,19 @@ export default defineConfig({
             req.on("end", () => {
               try {
                 const { tool, version, global: isGlobal } = JSON.parse(bodyStr || "{}");
+                let executedCli = false;
+                if (fs.existsSync(unirtmBin)) {
+                  try {
+                    const args = ["use", `${tool}@${version}`];
+                    if (isGlobal) args.push("--global");
+                    execFileSync(unirtmBin, args, { cwd: rootDir, encoding: "utf-8" });
+                    executedCli = true;
+                  } catch (e) {
+                    console.warn("unirtm CLI execution fallback:", e);
+                  }
+                }
+
+                // Ensure file is directly updated in case CLI was skipped or failed
                 const targetPath = isGlobal
                   ? path.join(os.homedir(), ".config", "unirtm", "unirtm.toml")
                   : path.join(rootDir, ".unirtm.toml");
@@ -184,7 +254,7 @@ export default defineConfig({
                     break;
                   }
                 }
-                const reg = new RegExp(`^\\s*${tool}\\s*=`);
+                const reg = new RegExp(`^\\s*"?${tool}"?\\s*=`);
                 if (toolsIdx !== -1) {
                   const end = nextIdx !== -1 ? nextIdx : lines.length;
                   let found = false;
@@ -203,7 +273,7 @@ export default defineConfig({
 
                 fs.writeFileSync(targetPath, content, "utf-8");
                 res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({ success: true, tool, version, global: isGlobal }));
+                res.end(JSON.stringify({ success: true, tool, version, global: isGlobal, cli: executedCli }));
               } catch (err: any) {
                 res.statusCode = 500;
                 res.setHeader("Content-Type", "application/json");
