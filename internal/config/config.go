@@ -27,6 +27,8 @@ type Config struct {
 	Plugins      PluginMap                    `toml:"-" yaml:"-" mapstructure:"-"`
 	PluginsRaw   map[string]interface{}       `toml:"plugins,omitempty" yaml:"plugins,omitempty" mapstructure:"plugins,omitempty"`
 	NetworkRaw   map[string]interface{}       `toml:"network,omitempty" yaml:"network,omitempty" mapstructure:"network,omitempty"`
+	SourceFile    string            `toml:"-" yaml:"-" mapstructure:"-"`
+	LegacySources map[string]string `toml:"-" yaml:"-" mapstructure:"-"`
 }
 
 type EnvironmentConfig struct {
@@ -384,6 +386,19 @@ func (c *Config) Merge(other *Config) {
 		if _, exists := c.Tools[k]; !exists {
 			c.Tools[k] = v
 		}
+	}
+
+	// Merge legacy sources
+	if c.LegacySources == nil {
+		c.LegacySources = make(map[string]string)
+	}
+	for k, v := range other.LegacySources {
+		if _, exists := c.LegacySources[k]; !exists {
+			c.LegacySources[k] = v
+		}
+	}
+	if c.SourceFile == "" && other.SourceFile != "" {
+		c.SourceFile = other.SourceFile
 	}
 
 	// Merge environment variables

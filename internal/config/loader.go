@@ -114,7 +114,28 @@ func LoadFromDir(dir string) (*Config, error) {
 	}
 
 	if foundFile == "" {
-		// Even if no primary config file exists, check for project sidecars
+		// If no primary config file exists, inspect directory for legacy version files
+		// (.nvmrc, .node-version, .go-version, .python-version, .tool-versions)
+		legacyTools, legacySources := ReadLegacyVersionFiles(dir)
+		if len(legacyTools) > 0 {
+			cfg := &Config{
+				Tools:         legacyTools,
+				LegacySources: legacySources,
+			}
+			for _, src := range legacySources {
+				cfg.SourceFile = filepath.Join(dir, src)
+				break
+			}
+			cfg.PostLoad()
+
+			projSidecars, _ := DiscoverProjectSidecars(dir)
+			if len(projSidecars) > 0 {
+				MergeSidecarConfigs(cfg, projSidecars)
+			}
+			return cfg, nil
+		}
+
+		// Check for project sidecars
 		projSidecars, _ := DiscoverProjectSidecars(dir)
 		if len(projSidecars) > 0 {
 			sidecarCfg := &Config{Plugins: make(PluginMap)}
@@ -129,7 +150,25 @@ func LoadFromDir(dir string) (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config from %s: %w", foundFile, err)
 	}
 
+	cfg.SourceFile = foundFile
 	cfg.PostLoad()
+
+	// Fill any tools not explicitly declared in primary config from legacy files
+	legacyTools, legacySources := ReadLegacyVersionFiles(dir)
+	if len(legacyTools) > 0 {
+		if cfg.Tools == nil {
+			cfg.Tools = make(ToolMap)
+		}
+		if cfg.LegacySources == nil {
+			cfg.LegacySources = make(map[string]string)
+		}
+		for t, tCfg := range legacyTools {
+			if _, exists := cfg.Tools[t]; !exists {
+				cfg.Tools[t] = tCfg
+				cfg.LegacySources[t] = legacySources[t]
+			}
+		}
+	}
 
 	// Discover and merge sidecars (.unirtm/plugins/*.toml)
 	projSidecars, _ := DiscoverProjectSidecars(dir)
