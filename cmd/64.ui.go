@@ -522,6 +522,12 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/network/proxy/test", handleTestNetworkProxy)
 	mux.HandleFunc("/api/network/ping", handlePingNetwork)
 
+	// Runtime Management APIs
+	mux.HandleFunc("/api/runtimes/status", handleGetRuntimesStatus)
+	mux.HandleFunc("/api/runtimes/remote", handleGetRuntimesRemote)
+	mux.HandleFunc("/api/runtimes/use", handleUseRuntime)
+	mux.HandleFunc("/api/runtimes/migrate-legacy", handleMigrateLegacyRuntime)
+
 	// ─── Static SPA Handler ───────────────────────────────────────────────────
 	fileServer := http.FileServer(http.FS(distFS))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

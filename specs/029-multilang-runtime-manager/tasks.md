@@ -43,10 +43,10 @@
 
 **Purpose**: Expose comprehensive REST endpoints in `cmd/64.ui.go` for full Web UI runtime management.
 
-- [ ] T012 [API] Implement `GET /api/runtimes/status` returning all supported runtimes, installed versions, active version, origin source, and detected legacy files.
-- [ ] T013 [API] Implement `GET /api/runtimes/remote` to query available remote versions with LTS flags.
-- [ ] T014 [API] Implement `POST /api/runtimes/install`, `POST /api/runtimes/uninstall`, `POST /api/runtimes/use`, and `POST /api/runtimes/migrate-legacy`.
-- [ ] T015 [Tests] Write API test cases in `cmd/64.ui_runtimes_test.go`.
+- [x] T012 [API] Implement `GET /api/runtimes/status` returning all supported runtimes, installed versions, active version, origin source, and detected legacy files.
+- [x] T013 [API] Implement `GET /api/runtimes/remote` to query available remote versions with LTS flags.
+- [x] T014 [API] Implement `POST /api/runtimes/install`, `POST /api/runtimes/uninstall`, `POST /api/runtimes/use`, and `POST /api/runtimes/migrate-legacy`.
+- [x] T015 [Tests] Write API test cases in `cmd/64.ui_runtimes_test.go`.
 
 ---
 
