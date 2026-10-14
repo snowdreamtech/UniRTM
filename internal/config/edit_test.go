@@ -158,3 +158,71 @@ func TestSaveRawTOML(t *testing.T) {
 		t.Errorf("Expected error for write error, got nil")
 	}
 }
+
+func TestValidateTOML(t *testing.T) {
+	// Valid TOML
+	validCases := []string{
+		"",
+		"# Comment only\n",
+		`[env]` + "\n" + `FOO = "bar"`,
+		`[tools]` + "\n" + `node = "20.0.0"`,
+	}
+	for _, tc := range validCases {
+		if err := ValidateTOML(tc); err != nil {
+			t.Errorf("ValidateTOML expected nil for valid TOML, got %v for %q", err, tc)
+		}
+	}
+
+	// Invalid TOML
+	invalidCases := []string{
+		`key = [unclosed array`,
+		`invalid \n toml`,
+		`FOO = "unclosed string`,
+		`[broken table`,
+	}
+	for _, tc := range invalidCases {
+		if err := ValidateTOML(tc); err == nil {
+			t.Errorf("ValidateTOML expected error for invalid TOML %q, got nil", tc)
+		}
+	}
+}
+
+func TestWriteTOMLFile(t *testing.T) {
+	dir := t.TempDir()
+
+	// 1. Valid TOML writes successfully and creates parent directory
+	filePath := dir + "/nested/config.toml"
+	validContent := []byte("[env]\nFOO = \"bar\"\n")
+	if err := WriteTOMLFile(filePath, validContent); err != nil {
+		t.Fatalf("WriteTOMLFile failed on valid TOML: %v", err)
+	}
+
+	read, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatalf("Failed to read written file: %v", err)
+	}
+	if string(read) != string(validContent) {
+		t.Errorf("Content mismatch: expected %q, got %q", string(validContent), string(read))
+	}
+
+	// 2. Invalid TOML is rejected before touching disk (new file should not be created)
+	badFilePath := dir + "/invalid.toml"
+	invalidContent := []byte("key = [broken")
+	if err := WriteTOMLFile(badFilePath, invalidContent); err == nil {
+		t.Fatalf("WriteTOMLFile expected validation error on invalid TOML, got nil")
+	}
+	if _, err := os.Stat(badFilePath); !os.IsNotExist(err) {
+		t.Errorf("Invalid TOML file should not have been written to disk")
+	}
+
+	// 3. Invalid TOML does not overwrite existing valid file
+	if err := WriteTOMLFile(filePath, invalidContent); err == nil {
+		t.Fatalf("WriteTOMLFile expected validation error, got nil")
+	}
+	// Verify original content was preserved
+	readAfterBad, err := os.ReadFile(filePath)
+	if err != nil || string(readAfterBad) != string(validContent) {
+		t.Errorf("Existing file was corrupted or modified by failed WriteTOMLFile")
+	}
+}
+

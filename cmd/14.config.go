@@ -674,12 +674,18 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("serialize config: %w", writeErr)
 	}
 
-	if err := os.WriteFile(targetConfigFile, out, 0644); err != nil {
+	var writeDiskErr error
+	if ext == "toml" {
+		writeDiskErr = config.WriteTOMLFile(targetConfigFile, out)
+	} else {
+		writeDiskErr = os.WriteFile(targetConfigFile, out, 0644)
+	}
+	if writeDiskErr != nil {
 		formatter.Error("Failed to write configuration", map[string]interface{}{
 			"file":  targetConfigFile,
-			"error": err.Error(),
+			"error": writeDiskErr.Error(),
 		})
-		return fmt.Errorf("write config: %w", err)
+		return fmt.Errorf("write config: %w", writeDiskErr)
 	}
 
 	// Automatically trust the config file updated by unirtm config set

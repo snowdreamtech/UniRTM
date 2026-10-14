@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
+	"github.com/snowdreamtech/unirtm/internal/config"
 )
 
 // Manager coordinates profile lifecycle, cascading resolution, and sandboxed env export.
@@ -149,11 +149,7 @@ func (m *Manager) SaveToPath(path string) error {
 
 	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) || len(data) == 0 {
-		dir := filepath.Dir(path)
-		if dir != "" && dir != "." {
-			_ = os.MkdirAll(dir, 0755)
-		}
-		return os.WriteFile(path, []byte(netString+"\n"), 0644)
+		return config.WriteTOMLFile(path, []byte(netString+"\n"))
 	}
 	if err != nil {
 		return err
@@ -192,12 +188,7 @@ func (m *Manager) SaveToPath(path string) error {
 		finalContent = preservedContent + "\n\n" + netString + "\n"
 	}
 
-	dir := filepath.Dir(path)
-	if dir != "" && dir != "." {
-		_ = os.MkdirAll(dir, 0755)
-	}
-
-	return os.WriteFile(path, []byte(finalContent), 0644)
+	return config.WriteTOMLFile(path, []byte(finalContent))
 }
 
 func isBuiltinProfileUnmodified(p, bp NetworkProfile) bool {

@@ -48,8 +48,14 @@ func FormatFile(path string, fmtCheck bool) (bool, error) {
 	}
 
 	if !fmtCheck {
-		if err := OsWriteFile(path, formatted, 0o644); err != nil {
-			return false, err
+		if strings.HasSuffix(path, ".toml") {
+			if err := WriteTOMLFile(path, formatted); err != nil {
+				return false, err
+			}
+		} else {
+			if err := OsWriteFile(path, formatted, 0o644); err != nil {
+				return false, err
+			}
 		}
 	}
 

@@ -151,12 +151,7 @@ func runSet(cmd *cobra.Command, args []string) error {
 		content = config.UpsertEnvVar(content, k, v)
 	}
 
-	if err := config.ValidateTOML(content); err != nil {
-		formatter.Error(fmt.Sprintf("Failed to validate config syntax: %v", err))
-		return err
-	}
-
-	if err := os.WriteFile(cfgPath, []byte(content), 0o644); err != nil {
+	if err := config.WriteTOMLFile(cfgPath, []byte(content)); err != nil {
 		formatter.Error(fmt.Sprintf("Failed to save config: %v", err))
 		return err
 	}
@@ -198,12 +193,7 @@ func runUnset(cmd *cobra.Command, args []string) error {
 	}
 
 	if anyRemoved {
-		if err := config.ValidateTOML(content); err != nil {
-			formatter.Error(fmt.Sprintf("Failed to validate config syntax: %v", err))
-			return err
-		}
-
-		if err := os.WriteFile(cfgPath, []byte(content), 0o644); err != nil {
+		if err := config.WriteTOMLFile(cfgPath, []byte(content)); err != nil {
 			formatter.Error(fmt.Sprintf("Failed to save config: %v", err))
 			return err
 		}

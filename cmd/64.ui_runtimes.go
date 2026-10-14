@@ -264,13 +264,7 @@ func handleMigrateLegacyRuntime(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := config.ValidateTOML(content); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
-		return
-	}
-
-	if err := os.WriteFile(targetFile, []byte(content), 0644); err != nil {
+	if err := config.WriteTOMLFile(targetFile, []byte(content)); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return

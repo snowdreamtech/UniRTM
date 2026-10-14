@@ -435,9 +435,7 @@ func updateConfigAndLockfile(ctx context.Context, cfg *config.Config, backendReg
 				}
 
 				if modified {
-					if err := config.ValidateTOML(content); err == nil {
-						_ = os.WriteFile(configFile, []byte(content), 0644)
-					}
+					_ = config.WriteTOMLFile(configFile, []byte(content))
 				}
 			}
 		}

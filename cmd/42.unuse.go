@@ -138,7 +138,7 @@ func runUnuse(cmd *cobra.Command, args []string) error {
 
 	// Write config if changed.
 	if cfgChanged {
-		if err := os.WriteFile(cfgPath, []byte(cfgContent), 0644); err != nil {
+		if err := config.WriteTOMLFile(cfgPath, []byte(cfgContent)); err != nil {
 			formatter.Warning(fmt.Sprintf("Could not update %s: %v", cfgPath, err))
 		}
 

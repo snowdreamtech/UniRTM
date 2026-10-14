@@ -153,7 +153,7 @@ func (mm *MigrationManager) MigrateFile(ctx context.Context, sourcePath string, 
 		return report, nil
 	}
 
-	if err := os.WriteFile(outputPath, []byte(finalContent), 0644); err != nil {
+	if err := config.WriteTOMLFile(outputPath, []byte(finalContent)); err != nil {
 		report.Errors = append(report.Errors, fmt.Sprintf("write output: %s", err.Error()))
 		return report, fmt.Errorf("write output file: %w", err)
 	}

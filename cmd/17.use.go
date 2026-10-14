@@ -211,8 +211,8 @@ func runUse(cmd *cobra.Command, args []string) error {
 		content = config.UpsertToolVersion(content, p.key, p.version)
 	}
 
-	// Write back
-	if err := os.WriteFile(configFile, []byte(content), 0644); err != nil {
+	// Write back with ValidateTOML verification
+	if err := config.WriteTOMLFile(configFile, []byte(content)); err != nil {
 		return fmt.Errorf("write config file %s: %w", configFile, err)
 	}
 

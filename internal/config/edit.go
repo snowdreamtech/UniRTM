@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
@@ -295,11 +296,28 @@ func LoadRawTOML(path string) (map[string]interface{}, error) {
 
 // ValidateTOML verifies that the content parses as valid TOML syntax.
 func ValidateTOML(content string) error {
+	trimmed := strings.TrimSpace(content)
+	if trimmed == "" {
+		return nil
+	}
 	var dummy map[string]interface{}
 	if err := toml.Unmarshal([]byte(content), &dummy); err != nil {
 		return fmt.Errorf("invalid TOML syntax: %w", err)
 	}
 	return nil
+}
+
+// WriteTOMLFile validates that content is syntactically valid TOML and writes it to path.
+// If the content fails ValidateTOML, the write is aborted to protect config file integrity.
+func WriteTOMLFile(path string, content []byte) error {
+	if err := ValidateTOML(string(content)); err != nil {
+		return fmt.Errorf("cannot write invalid TOML to %s: %w", path, err)
+	}
+	dir := filepath.Dir(path)
+	if dir != "" && dir != "." {
+		_ = os.MkdirAll(dir, 0755)
+	}
+	return OsWriteFile(path, content, 0o644)
 }
 
 // SaveRawTOML writes a generic map to a TOML file safely without global reformatting.
@@ -316,10 +334,7 @@ func SaveRawTOML(path string, m map[string]interface{}) error {
 	if err := enc.Encode(m); err != nil {
 		return fmt.Errorf("encode TOML: %w", err)
 	}
-	if err := ValidateTOML(buf.String()); err != nil {
-		return fmt.Errorf("validate encoded TOML: %w", err)
-	}
-	return OsWriteFile(path, buf.Bytes(), 0o644)
+	return WriteTOMLFile(path, buf.Bytes())
 }
 
 // formatTOMLValue formats a value as a valid TOML literal.
