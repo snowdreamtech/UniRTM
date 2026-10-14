@@ -45,6 +45,11 @@ export interface TranslationDict {
   "runtimes.install_new"?: string;
   "runtimes.scope_project"?: string;
   "runtimes.scope_global"?: string;
+  "runtimes.scope_project_desc"?: string;
+  "runtimes.scope_global_desc"?: string;
+  "runtimes.follow_global"?: string;
+  "runtimes.set_as_global"?: string;
+  "runtimes.set_as_project"?: string;
   "runtimes.search_placeholder"?: string;
   "runtimes.no_installed"?: string;
   "runtimes.modal_title"?: string;

@@ -19,8 +19,46 @@
       </div>
     </div>
 
-    <!-- Legacy Version Files Banner -->
-    <div v-if="detectedLegacies.length > 0" class="legacy-banner glass-card" id="legacy-detected-banner">
+    <!-- Scope Selection Bar (Project Scope vs User Global Scope) -->
+    <div class="scope-selection-bar glass-card" id="runtimes-scope-bar">
+      <div class="scope-tabs-group">
+        <button
+          class="scope-pill-btn"
+          :class="{ active: currentScope === 'project' }"
+          @click="currentScope = 'project'"
+          id="btn-scope-project"
+          title="./.unirtm.toml"
+        >
+          <span class="scope-icon">📁</span>
+          <span class="scope-label">{{ t("runtimes.scope_project") || "当前项目" }}</span>
+          <span class="scope-path-tag font-mono">./.unirtm.toml</span>
+        </button>
+
+        <button
+          class="scope-pill-btn"
+          :class="{ active: currentScope === 'global' }"
+          @click="currentScope = 'global'"
+          id="btn-scope-global"
+          title="~/.config/unirtm/unirtm.toml"
+        >
+          <span class="scope-icon">👤</span>
+          <span class="scope-label">{{ t("runtimes.scope_global") || "全局用户" }}</span>
+          <span class="scope-path-tag font-mono">~/.config/unirtm</span>
+        </button>
+      </div>
+
+      <div class="scope-hint-text">
+        <span v-if="currentScope === 'project'">
+          📌 {{ t("runtimes.scope_project_desc") || "锁定当前工作区语言版本，团队协作检出即生效" }}
+        </span>
+        <span v-else>
+          🌐 {{ t("runtimes.scope_global_desc") || "配置当前用户所有未指定项目时的全局兜底环境" }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Legacy Version Files Banner (Project Scope Only) -->
+    <div v-if="currentScope === 'project' && detectedLegacies.length > 0" class="legacy-banner glass-card" id="legacy-detected-banner">
       <div class="legacy-banner-left">
         <span class="legacy-banner-icon">💡</span>
         <div class="legacy-banner-content">
@@ -71,7 +109,7 @@
         v-for="rt in filteredRuntimes"
         :key="rt.id"
         class="glass-card runtime-card"
-        :class="{ active: rt.active_version }"
+        :class="{ active: currentScope === 'project' ? rt.active_version : rt.global_version }"
         :id="'runtime-card-' + rt.id"
       >
         <!-- Card Header -->
@@ -95,22 +133,38 @@
           </div>
         </div>
 
-        <!-- Active Version & Origin Source -->
+        <!-- Dual Scope Version Display -->
         <div class="runtime-status-box">
-          <div class="status-row">
-            <span class="status-label">{{ t("runtimes.active_version") || "Active Version" }}:</span>
+          <!-- Project Scope Version -->
+          <div class="status-row" :class="{ 'highlight-scope': currentScope === 'project' }">
+            <span class="status-label">
+              <span class="scope-mini-icon">📁</span>
+              {{ t("runtimes.scope_project") || "当前项目" }}:
+            </span>
             <div v-if="rt.active_version" class="status-val-wrap">
               <span class="active-pill font-mono">v{{ rt.active_version }}</span>
               <span class="source-tag" :class="getSourceTagClass(rt.source)">
-                {{ rt.source || "default" }}
+                {{ rt.source || ".unirtm.toml" }}
               </span>
             </div>
-            <span v-else class="text-muted font-mono italic">None</span>
+            <div v-else-if="rt.global_version" class="status-val-wrap">
+              <span class="active-pill font-mono muted">v{{ rt.global_version }}</span>
+              <span class="source-tag source-default">{{ t("runtimes.follow_global") || "跟随全局默认" }}</span>
+            </div>
+            <span v-else class="text-muted font-mono italic">未配置</span>
           </div>
 
-          <div v-if="rt.global_version && rt.global_version !== rt.active_version" class="status-row sub-row">
-            <span class="status-label">{{ t("runtimes.global_default") || "Global Default" }}:</span>
-            <span class="font-mono global-val">v{{ rt.global_version }}</span>
+          <!-- User Global Scope Version -->
+          <div class="status-row" :class="{ 'highlight-scope': currentScope === 'global' }">
+            <span class="status-label">
+              <span class="scope-mini-icon">👤</span>
+              {{ t("runtimes.scope_global") || "全局用户" }}:
+            </span>
+            <div v-if="rt.global_version" class="status-val-wrap">
+              <span class="global-pill font-mono">v{{ rt.global_version }}</span>
+              <span class="source-tag source-global">~/.config/unirtm</span>
+            </div>
+            <span v-else class="text-muted font-mono italic">未配置</span>
           </div>
         </div>
 
@@ -126,11 +180,16 @@
               v-for="ver in rt.installed_versions"
               :key="ver"
               class="ver-pill font-mono"
-              :class="{ selected: ver === rt.active_version }"
-              :title="'Click to switch to ' + ver"
+              :class="{
+                selected: currentScope === 'project' ? ver === rt.active_version : ver === rt.global_version
+              }"
+              :title="'点击设为' + (currentScope === 'global' ? '全局默认' : '当前项目') + '版本 (v' + ver + ')'"
               @click="quickSwitch(rt.id, ver)"
             >
-              <span v-if="ver === rt.active_version" class="active-dot">●</span>
+              <span
+                v-if="(currentScope === 'project' && ver === rt.active_version) || (currentScope === 'global' && ver === rt.global_version)"
+                class="active-dot"
+              >●</span>
               <span>v{{ ver }}</span>
             </button>
           </div>
@@ -145,16 +204,18 @@
             <select
               v-if="rt.installed_versions && rt.installed_versions.length > 0"
               class="runtime-select"
-              :value="rt.active_version"
+              :value="currentScope === 'project' ? rt.active_version : rt.global_version"
               @change="handleSelectChange(rt.id, $event)"
             >
-              <option value="" disabled>Switch version...</option>
+              <option value="" disabled>
+                {{ currentScope === 'global' ? '切换全局默认版本...' : '切换当前项目版本...' }}
+              </option>
               <option
                 v-for="ver in rt.installed_versions"
                 :key="ver"
                 :value="ver"
               >
-                v{{ ver }}{{ ver === rt.active_version ? ' (current)' : '' }}
+                v{{ ver }}{{ (currentScope === 'project' ? ver === rt.active_version : ver === rt.global_version) ? ' (当前)' : '' }}
               </option>
             </select>
           </div>
@@ -185,6 +246,26 @@
             </div>
           </div>
           <button class="modal-close-btn" @click="isModalOpen = false">✕</button>
+        </div>
+
+        <!-- Scope Option Inside Modal -->
+        <div class="modal-scope-picker">
+          <label class="modal-scope-item" :class="{ active: modalInstallScope === 'project' }">
+            <input type="radio" value="project" v-model="modalInstallScope" name="install-scope" />
+            <span class="scope-icon">📁</span>
+            <div class="scope-opt-text">
+              <span class="scope-opt-name">{{ t("runtimes.scope_project") || "当前项目" }}</span>
+              <span class="scope-opt-desc">写入 ./.unirtm.toml，随仓库共享</span>
+            </div>
+          </label>
+          <label class="modal-scope-item" :class="{ active: modalInstallScope === 'global' }">
+            <input type="radio" value="global" v-model="modalInstallScope" name="install-scope" />
+            <span class="scope-icon">👤</span>
+            <div class="scope-opt-text">
+              <span class="scope-opt-name">{{ t("runtimes.scope_global") || "全局用户" }}</span>
+              <span class="scope-opt-desc">写入 ~/.config/unirtm，所有项目默认兜底</span>
+            </div>
+          </label>
         </div>
 
         <div class="modal-search-row">
@@ -224,12 +305,14 @@
 
             <button
               class="install-action-btn"
-              :disabled="installingVer === rv.version || isAlreadyInstalled(selectedRuntime?.id || '', rv.version)"
+              :disabled="installingVer === rv.version"
               @click="installRemoteVersion(selectedRuntime?.id || '', rv.version)"
             >
               <span v-if="installingVer === rv.version">Installing...</span>
-              <span v-else-if="isAlreadyInstalled(selectedRuntime?.id || '', rv.version)">Installed</span>
-              <span v-else>Install & Activate</span>
+              <span v-else-if="isAlreadyInstalled(selectedRuntime?.id || '', rv.version)">
+                {{ modalInstallScope === 'global' ? '设为全局' : '设为项目' }}
+              </span>
+              <span v-else>安装并应用</span>
             </button>
           </div>
         </div>
@@ -267,6 +350,9 @@ export interface RuntimeItem {
 const props = defineProps<{
   activeSubItem?: string;
 }>();
+
+const currentScope = ref<"project" | "global">("project");
+const modalInstallScope = ref<"project" | "global">("project");
 
 const defaultRuntimes: RuntimeItem[] = [
   {
@@ -421,25 +507,31 @@ async function fetchStatus() {
   }
 }
 
-async function quickSwitch(toolId: string, ver: string) {
+async function quickSwitch(toolId: string, ver: string, targetGlobal?: boolean) {
+  const isGlobal = targetGlobal !== undefined ? targetGlobal : (currentScope.value === "global");
   try {
     await fetch("/api/runtimes/use", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tool: toolId, version: ver, global: false }),
+      body: JSON.stringify({ tool: toolId, version: ver, global: isGlobal }),
     });
-    // Immediately update local active_version for instant responsiveness
+    // Immediately update local active or global version
     runtimes.value = runtimes.value.map((rt) => {
       if (rt.id === toolId) {
-        return { ...rt, active_version: ver };
+        if (isGlobal) {
+          return { ...rt, global_version: ver };
+        } else {
+          return { ...rt, active_version: ver, is_legacy: false, source: ".unirtm.toml" };
+        }
       }
       return rt;
     });
-    showToast(`已成功切换 ${toolId} 至 v${ver}`, "success");
-    emit("log-event", "SUCCESS", `Switched ${toolId} to ${ver}`);
+    const scopeName = isGlobal ? "全局默认" : "当前项目";
+    showToast(`已成功将 ${toolId} 的${scopeName}版本设置为 v${ver}`, "success");
+    emit("log-event", "SUCCESS", `Set ${toolId} (${scopeName}) to ${ver}`);
     await fetchStatus();
   } catch (err: any) {
-    showToast(`切换失败: ${err.message}`, "error");
+    showToast(`设置失败: ${err.message}`, "error");
     emit("log-event", "ERROR", `Failed to switch version: ${err.message}`);
   }
 }
@@ -460,7 +552,6 @@ async function migrateLegacy() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({}),
     });
-    // Regardless of standalone dev or backend, clear legacy banner and update sources
     detectedLegacies.value = [];
     runtimes.value = runtimes.value.map((rt) => {
       if (rt.is_legacy) {
@@ -477,7 +568,6 @@ async function migrateLegacy() {
     emit("log-event", "SUCCESS", "Successfully migrated legacy version files into .unirtm.toml");
     await fetchStatus();
   } catch (err: any) {
-    // If error, also gracefully clear banner and notify
     detectedLegacies.value = [];
     runtimes.value = runtimes.value.map((rt) => ({ ...rt, is_legacy: false, source: ".unirtm.toml" }));
     showToast(t("runtimes.migrate_success") || "已成功将旧版本文件配置迁移至 .unirtm.toml！", "success");
@@ -490,6 +580,7 @@ async function migrateLegacy() {
 async function openRemoteModal(rt: RuntimeItem) {
   selectedRuntime.value = rt;
   isModalOpen.value = true;
+  modalInstallScope.value = currentScope.value;
   remoteVersions.value = [];
   remoteSearchKey.value = "";
   loadingRemote.value = true;
@@ -509,31 +600,43 @@ async function openRemoteModal(rt: RuntimeItem) {
 
 async function installRemoteVersion(toolId: string, ver: string) {
   installingVer.value = ver;
-  showToast(`正在激活 ${toolId} v${ver}...`, "info");
+  const isGlobal = modalInstallScope.value === "global";
+  const scopeName = isGlobal ? "全局默认" : "当前项目";
+  showToast(`正在将 ${toolId} v${ver} 应用为${scopeName}...`, "info");
   try {
     await fetch("/api/runtimes/use", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tool: toolId, version: ver, global: false }),
+      body: JSON.stringify({ tool: toolId, version: ver, global: isGlobal }),
     });
     runtimes.value = runtimes.value.map((rt) => {
       if (rt.id === toolId) {
         const set = new Set(rt.installed_versions || []);
         set.add(ver);
-        return {
-          ...rt,
-          active_version: ver,
-          installed_versions: Array.from(set),
-        };
+        if (isGlobal) {
+          return {
+            ...rt,
+            global_version: ver,
+            installed_versions: Array.from(set),
+          };
+        } else {
+          return {
+            ...rt,
+            active_version: ver,
+            is_legacy: false,
+            source: ".unirtm.toml",
+            installed_versions: Array.from(set),
+          };
+        }
       }
       return rt;
     });
-    showToast(`成功安装并激活 ${toolId}@${ver}！`, "success");
-    emit("log-event", "INFO", `Initiated install for ${toolId}@${ver}`);
+    showToast(`成功安装并设置 ${toolId}@${ver} 为${scopeName}！`, "success");
+    emit("log-event", "INFO", `Installed ${toolId}@${ver} as ${scopeName}`);
     isModalOpen.value = false;
     await fetchStatus();
   } catch (err: any) {
-    showToast(`安装激活失败: ${err.message}`, "error");
+    showToast(`设置失败: ${err.message}`, "error");
     emit("log-event", "ERROR", `Failed to install version: ${err.message}`);
   } finally {
     installingVer.value = null;
@@ -549,7 +652,7 @@ onMounted(() => {
 .runtimes-view {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.15rem;
   padding: 1.25rem;
   height: 100%;
   overflow-y: auto;
@@ -581,6 +684,69 @@ onMounted(() => {
   color: var(--text-muted);
   margin: 0;
   line-height: 1.5;
+}
+
+/* Scope Selection Bar */
+.scope-selection-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.55rem 0.85rem;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.scope-tabs-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.scope-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.38rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.scope-pill-btn:hover {
+  background: var(--input-bg);
+  color: var(--text-main);
+}
+
+.scope-pill-btn.active {
+  background: rgba(2, 132, 199, 0.12);
+  border-color: rgba(2, 132, 199, 0.35);
+  color: var(--accent-cyan);
+}
+
+.scope-path-tag {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  background: var(--input-bg);
+  color: var(--text-muted);
+  border: 1px solid var(--card-border);
+}
+
+.scope-pill-btn.active .scope-path-tag {
+  background: rgba(2, 132, 199, 0.15);
+  border-color: rgba(2, 132, 199, 0.3);
+  color: var(--accent-cyan);
+}
+
+.scope-hint-text {
+  font-size: 0.78rem;
+  color: var(--text-muted);
 }
 
 .tool-action-btn {
@@ -812,18 +978,31 @@ onMounted(() => {
   padding: 0.65rem 0.85rem;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.45rem;
 }
 
 .status-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.status-row.highlight-scope {
+  background: rgba(2, 132, 199, 0.06);
+}
+
+.scope-mini-icon {
+  margin-right: 0.25rem;
 }
 
 .status-label {
   color: var(--text-muted);
+  display: flex;
+  align-items: center;
 }
 
 .status-val-wrap {
@@ -836,6 +1015,17 @@ onMounted(() => {
   font-size: 0.8rem;
   font-weight: 700;
   color: var(--success);
+}
+
+.active-pill.muted {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.global-pill {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-purple);
 }
 
 .source-tag {
@@ -871,11 +1061,6 @@ onMounted(() => {
   background: var(--input-bg);
   color: var(--text-muted);
   border: 1px solid var(--card-border);
-}
-
-.global-val {
-  font-size: 0.775rem;
-  color: var(--text-muted);
 }
 
 /* Installed versions */
@@ -1063,6 +1248,51 @@ onMounted(() => {
 
 .modal-close-btn:hover {
   color: var(--text-main);
+}
+
+/* Modal Scope Picker */
+.modal-scope-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.modal-scope-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modal-scope-item input {
+  margin-top: 0.2rem;
+}
+
+.modal-scope-item.active {
+  border-color: var(--card-border-active);
+  background: rgba(2, 132, 199, 0.08);
+}
+
+.scope-opt-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.scope-opt-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.scope-opt-desc {
+  font-size: 0.68rem;
+  color: var(--text-muted);
 }
 
 .modal-search-row {
