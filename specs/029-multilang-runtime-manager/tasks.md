@@ -31,11 +31,11 @@
 
 **Purpose**: Elevate CLI ergonomics so developers experience a complete superset of NVM, GVM, and Pyenv commands.
 
-- [ ] T007 [CLI] Enhance `unirtm list` / `unirtm ls` in `cmd/8.list.go` to display installed runtimes, active version marker `*`, and the origin source (e.g., `(set by .nvmrc)`, `(set by .unirtm.toml)`, `(set by global)`).
-- [ ] T008 [CLI] Polish `unirtm current` in `cmd/57.current.go` to report all active runtimes in the current working directory with origin indicators.
-- [ ] T009 [CLI] Enhance `unirtm use -g` / `--global` in `cmd/17.use.go` to update global default runtimes in `~/.config/unirtm/unirtm.toml` with immediate shim refresh.
-- [ ] T010 [CLI] Verify `unirtm ls-remote` in `cmd/52.ls-remote.go` supporting `--lts` and sorted releases for Node, Go, and Python.
-- [ ] T011 [Tests] Write and run CLI unit tests covering list, current, and use commands.
+- [x] T007 [CLI] Enhance `unirtm list` / `unirtm ls` in `cmd/8.list.go` to display installed runtimes, active version marker `*`, and the origin source (e.g., `(set by .nvmrc)`, `(set by .unirtm.toml)`, `(set by global)`).
+- [x] T008 [CLI] Polish `unirtm current` in `cmd/57.current.go` to report all active runtimes in the current working directory with origin indicators.
+- [x] T009 [CLI] Enhance `unirtm use -g` / `--global` in `cmd/17.use.go` to update global default runtimes in `~/.config/unirtm/unirtm.toml` with immediate shim refresh.
+- [x] T010 [CLI] Verify `unirtm ls-remote` in `cmd/52.ls-remote.go` supporting `--lts` and sorted releases for Node, Go, and Python.
+- [x] T011 [Tests] Write and run CLI unit tests covering list, current, and use commands.
 
 ---
 

@@ -8,10 +8,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/internal/cli/output"
+	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/repository"
@@ -111,6 +113,35 @@ func runList(cmd *cobra.Command, args []string) error {
 	// Resolve active version per tool via shim symlinks.
 	shimsDir := env.GetShimsDir()
 	activeVersions := resolveActiveVersions(shimsDir, installations)
+	versionSources := make(map[string]string)
+
+	// Incorporate active versions from project and global configuration hierarchy (.unirtm.toml, .nvmrc, etc.)
+	if cfg, err := config.LoadFull(); err == nil && cfg != nil {
+		for tool, toolCfg := range cfg.Tools {
+			reqVer := strings.TrimSpace(toolCfg.Version)
+			if reqVer == "" {
+				continue
+			}
+			for _, inst := range installations {
+				if inst.Tool == tool {
+					cleanInst := strings.TrimPrefix(inst.Version, "v")
+					cleanReq := strings.TrimPrefix(reqVer, "v")
+					if inst.Version == reqVer || cleanInst == cleanReq || strings.HasPrefix(cleanInst, cleanReq+".") {
+						activeVersions[tool] = inst.Version
+						src := cfg.LegacySources[tool]
+						if src == "" && cfg.SourceFile != "" {
+							src = filepath.Base(cfg.SourceFile)
+						}
+						if src == "" {
+							src = "global"
+						}
+						versionSources[tool] = src
+						break
+					}
+				}
+			}
+		}
+	}
 
 	// Apply --current filter.
 	if listCurrentOnly {
@@ -148,6 +179,7 @@ func runList(cmd *cobra.Command, args []string) error {
 			Version       string    `json:"version"`
 			Backend       string    `json:"backend"`
 			Status        string    `json:"status"`
+			Source        string    `json:"source,omitempty"`
 			InstallPath   string    `json:"install_path"`
 			InstalledAt   time.Time `json:"installed_at"`
 			Size          int64     `json:"size"`
@@ -156,14 +188,20 @@ func runList(cmd *cobra.Command, args []string) error {
 		results := make([]jsonEntry, 0, len(installations))
 		for _, inst := range installations {
 			status := "installed"
+			source := ""
 			if activeVersions[inst.Tool] == inst.Version {
 				status = "active"
+				source = versionSources[inst.Tool]
+				if source == "" {
+					source = "shim"
+				}
 			}
 			results = append(results, jsonEntry{
 				Tool:          inst.Tool,
 				Version:       inst.Version,
 				Backend:       inst.Backend,
 				Status:        status,
+				Source:        source,
 				InstallPath:   inst.InstallPath,
 				InstalledAt:   inst.InstalledAt,
 				Size:          sizes[inst.InstallPath],
@@ -177,20 +215,27 @@ func runList(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Human-readable table with STATUS and SIZE columns.
+	// Human-readable table with STATUS, SOURCE, and SIZE columns.
 	tableData := pterm.TableData{
-		{"TOOL", "VERSION", "STATUS", "SIZE", "BACKEND", "INSTALLED AT"},
+		{"TOOL", "VERSION", "STATUS", "SOURCE", "SIZE", "BACKEND", "INSTALLED AT"},
 	}
 
 	for _, inst := range installations {
 		statusColored := pterm.FgDefault.Sprint("─")
+		sourceColored := pterm.FgDefault.Sprint("─")
 		if activeVersions[inst.Tool] == inst.Version {
-			statusColored = pterm.FgGreen.Sprint("active ✓")
+			statusColored = pterm.FgGreen.Sprint("active *")
+			src := versionSources[inst.Tool]
+			if src == "" {
+				src = "shim"
+			}
+			sourceColored = pterm.FgLightYellow.Sprint(src)
 		}
 		tableData = append(tableData, []string{
 			pterm.FgCyan.Sprint(inst.Tool),
 			pterm.FgYellow.Sprint(inst.Version),
 			statusColored,
+			sourceColored,
 			pterm.FgLightBlue.Sprint(sizeStrings[inst.InstallPath]),
 			pterm.FgMagenta.Sprint(inst.Backend),
 			inst.InstalledAt.Format("2006-01-02"),

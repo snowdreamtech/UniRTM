@@ -160,10 +160,18 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 
 	// [Surpass] Interactive UI
 	var tableData [][]string
-	tableData = append(tableData, []string{"Tool", "Version", "Status"})
+	tableData = append(tableData, []string{"Tool", "Version", "Status", "Source"})
 
 	hasMissing := false
 	for _, res := range results {
+		source := cfg.LegacySources[res.name]
+		if source == "" && cfg.SourceFile != "" {
+			source = filepath.Base(cfg.SourceFile)
+		}
+		if source == "" {
+			source = "global"
+		}
+
 		for i, v := range res.versions {
 			status := pterm.LightGreen("✓ installed")
 			if !res.installed[i] {
@@ -180,6 +188,7 @@ func runCurrent(cmd *cobra.Command, args []string) error {
 				pterm.Bold.Sprint(toolDisplay),
 				pterm.Cyan(v),
 				status,
+				pterm.LightYellow(source),
 			})
 		}
 	}
