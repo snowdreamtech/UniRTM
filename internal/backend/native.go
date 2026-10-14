@@ -7,9 +7,23 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"unicode"
 
 	"github.com/snowdreamtech/unirtm/internal/provider/native"
 )
+
+func cleanVersionReq(val, tool string) string {
+	val = strings.TrimSpace(val)
+	if (strings.HasPrefix(val, "v") || strings.HasPrefix(val, "V")) && len(val) > 1 && unicode.IsDigit(rune(val[1])) {
+		val = val[1:]
+	}
+	if tool == "go" || tool == "golang" || strings.Contains(tool, "go") {
+		if strings.HasPrefix(val, "go") && len(val) > 2 && unicode.IsDigit(rune(val[2])) {
+			val = val[2:]
+		}
+	}
+	return val
+}
 
 // NativeBackend implements the Backend interface using built-in native recipes.
 type NativeBackend struct {
@@ -106,25 +120,80 @@ func (b *NativeBackend) ResolveVersion(ctx context.Context, tool, versionRequest
 		return nil, fmt.Errorf("native: no recipe for tool: %s", tool)
 	}
 
-	// 1. Check for aliases
-	if alias, ok := recipe.Aliases[versionRequest]; ok {
-		versionRequest = alias
+	req := cleanVersionReq(versionRequest, tool)
+
+	// 1. Check for static aliases
+	if alias, ok := recipe.Aliases[req]; ok {
+		req = alias
 	}
 
-	// 2. Handle "latest" if not already resolved by alias
-	if versionRequest == "latest" {
-		versions, err := recipe.Handler.ResolveVersions(ctx, recipe.BaseURL)
-		if err != nil {
-			return nil, err
-		}
-		if len(versions) == 0 {
-			return nil, fmt.Errorf("native: no versions found for %s", tool)
-		}
-		// Use the first version as latest (assuming handlers return newest first)
-		versionRequest = versions[0].Version
+	// Fetch versions to resolve dynamic aliases / prefixes
+	versions, err := recipe.Handler.ResolveVersions(ctx, recipe.BaseURL)
+	if err != nil {
+		return nil, err
+	}
+	if len(versions) == 0 {
+		return nil, fmt.Errorf("native: no versions found for %s", tool)
 	}
 
-	return b.GetDownloadInfo(ctx, tool, versionRequest, platform)
+	// 2. Handle "latest"
+	if strings.EqualFold(req, "latest") {
+		req = versions[0].Version
+	} else if strings.EqualFold(req, "lts") || req == "lts/*" {
+		// 3. Handle dynamic LTS
+		foundLTS := false
+		for _, v := range versions {
+			if v.IsLTS {
+				req = v.Version
+				foundLTS = true
+				break
+			}
+		}
+		if !foundLTS {
+			if alias, ok := recipe.Aliases["lts"]; ok {
+				req = alias
+			} else {
+				req = versions[0].Version
+			}
+		}
+	} else if strings.HasPrefix(strings.ToLower(req), "lts/") {
+		// 4. Handle LTS by codename (e.g. lts/iron, lts/hydrogen)
+		codename := strings.ToLower(strings.TrimPrefix(req, "lts/"))
+		foundNamedLTS := false
+		for _, v := range versions {
+			if v.IsLTS && strings.EqualFold(v.LTSName, codename) {
+				req = v.Version
+				foundNamedLTS = true
+				break
+			}
+		}
+		if !foundNamedLTS {
+			return nil, fmt.Errorf("native: no LTS release found with codename %q for %s", codename, tool)
+		}
+	} else {
+		// 5. Check if exact match exists
+		exactMatch := false
+		for _, v := range versions {
+			if v.Version == req {
+				exactMatch = true
+				break
+			}
+		}
+
+		// 6. Fuzzy prefix / semver matching (e.g. "20", "20.x", "1.23", "3.12")
+		if !exactMatch {
+			cleanPrefix := strings.TrimSuffix(strings.TrimSuffix(req, ".*"), ".x")
+			for _, v := range versions {
+				if strings.HasPrefix(v.Version, cleanPrefix+".") || v.Version == cleanPrefix {
+					req = v.Version
+					exactMatch = true
+					break
+				}
+			}
+		}
+	}
+
+	return b.GetDownloadInfo(ctx, tool, req, platform)
 }
 
 func (b *NativeBackend) GetDownloadInfo(ctx context.Context, tool, version string, platform Platform) (*VersionInfo, error) {
@@ -132,6 +201,8 @@ func (b *NativeBackend) GetDownloadInfo(ctx context.Context, tool, version strin
 	if !ok {
 		return nil, fmt.Errorf("native: no recipe for tool: %s", tool)
 	}
+
+	version = cleanVersionReq(version, tool)
 
 	versions, err := recipe.Handler.ResolveVersions(ctx, recipe.BaseURL)
 	if err != nil {

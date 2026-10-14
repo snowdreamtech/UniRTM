@@ -21,9 +21,9 @@
 
 **Purpose**: Allow developers to install and use runtimes using intuitive expressions like `node@lts`, `node@20`, `go@latest`, `python@3.12`.
 
-- [ ] T004 [Service] Enhance version alias and prefix resolver in `internal/service/` supporting `lts`, `latest`, `lts/<codename>`, and major/minor prefix matching for Node, Go, and Python.
-- [ ] T005 [Provider] Ensure native providers for Node, Go, and Python verify pre-built distributions and checksums across Linux, macOS, and Windows.
-- [ ] T006 [Tests] Add unit tests for alias and prefix resolution in `internal/service/installation_resolve_test.go`.
+- [x] T004 [Service] Enhance version alias and prefix resolver in `internal/service/` supporting `lts`, `latest`, `lts/<codename>`, and major/minor prefix matching for Node, Go, and Python.
+- [x] T005 [Provider] Ensure native providers for Node, Go, and Python verify pre-built distributions and checksums across Linux, macOS, and Windows.
+- [x] T006 [Tests] Add unit tests for alias and prefix resolution in `internal/service/installation_resolve_test.go`.
 
 ---
 
