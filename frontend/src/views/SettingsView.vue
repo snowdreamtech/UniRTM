@@ -1623,7 +1623,7 @@ async function handleDetectProxy(applyImmediately: boolean = false) {
       const data = await res.json();
       if (data && data.detected) {
         detectedProxy.value = data;
-        if (applyImmediately || (networkStatus.value?.proxy?.enabled && !networkStatus.value?.proxy?.http && !networkStatus.value?.proxy?.socks5)) {
+        if (applyImmediately) {
           applyDetectedProxy();
         }
       }
