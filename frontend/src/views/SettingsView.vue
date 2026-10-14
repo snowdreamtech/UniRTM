@@ -224,11 +224,6 @@
                 <span class="section-sub">{{ t('settings.cat_network_sub') || '镜像加速与网络代理' }}</span>
               </div>
             </div>
-            <div class="section-header-actions">
-              <button class="btn-batch-test" :disabled="isProbing" @click="handleRunProbeAll">
-                <span>{{ isProbing ? '🔄 ' + (t('network.testing') || '测速中...') : '⚡ ' + (t('network.batch_test') || '全生态并发测速') }}</span>
-              </button>
-            </div>
           </div>
 
           <!-- Section A: Network Proxy (Default strictly disabled, empty, no 3rd-party github proxies) -->
@@ -356,6 +351,14 @@
               <span class="sub-icon">📦</span>
               <h3>{{ t('network.tab_mirrors') || '镜像源矩阵' }}</h3>
               <div class="profile-actions-bar">
+                <button
+                  class="btn-profile-action btn-batch-test"
+                  :disabled="isProbing"
+                  @click="handleRunProbeAll"
+                  title="并发测试当前镜像源矩阵中所有生态的延迟"
+                >
+                  <span>{{ isProbing ? '🔄 测速中...' : '⚡ 一键测速' }}</span>
+                </button>
                 <div class="profile-scroll-nav" v-if="orderedProfiles.length > 3">
                   <button class="btn-scroll-arrow" @click="scrollProfiles('left')" title="向左滚动">‹</button>
                   <button class="btn-scroll-arrow" @click="scrollProfiles('right')" title="向右滚动">›</button>
@@ -2525,12 +2528,15 @@ onMounted(() => {
 }
 
 .btn-batch-test {
-  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
   background: rgba(34, 211, 238, 0.12);
   border: 1px solid rgba(34, 211, 238, 0.35);
   color: var(--accent-cyan);
-  border-radius: 6px;
-  font-size: 0.8rem;
+  border-radius: 5px;
+  font-size: 0.76rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -2542,7 +2548,7 @@ onMounted(() => {
 }
 
 .btn-batch-test:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
