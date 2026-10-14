@@ -85,15 +85,9 @@ func runUnuse(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Also update [tools] section of config file.
+	// Also update [tools] section of config file line by line without reformatting the file.
 	cfgPath := resolveConfigFilePathWithOpts(unuseGlobal, unusePath, unuseEnv)
-	cfgMap, _ := config.LoadRawTOML(cfgPath)
-	toolsSection, _ := cfgMap["tools"].(map[string]interface{})
-	if toolsSection == nil {
-		toolsSection = make(map[string]interface{})
-		cfgMap["tools"] = toolsSection
-	}
-
+	cfgContent, _ := config.ReadFileOrEmpty(cfgPath)
 	cfgChanged := false
 
 	for _, arg := range args {
@@ -134,9 +128,9 @@ func runUnuse(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		// Remove from [tools] section of config.
-		if _, ok := toolsSection[tool]; ok {
-			delete(toolsSection, tool)
+		// Remove from [tools] section of config line by line.
+		if newContent, removed := config.RemoveToolVersion(cfgContent, tool); removed {
+			cfgContent = newContent
 			cfgChanged = true
 			formatter.Success(fmt.Sprintf("Removed %s from [tools] in %s", tool, cfgPath), nil)
 		}
@@ -144,10 +138,7 @@ func runUnuse(cmd *cobra.Command, args []string) error {
 
 	// Write config if changed.
 	if cfgChanged {
-		if len(toolsSection) == 0 {
-			delete(cfgMap, "tools")
-		}
-		if err := config.SaveRawTOML(cfgPath, cfgMap); err != nil {
+		if err := os.WriteFile(cfgPath, []byte(cfgContent), 0644); err != nil {
 			formatter.Warning(fmt.Sprintf("Could not update %s: %v", cfgPath, err))
 		}
 

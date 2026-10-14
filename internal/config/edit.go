@@ -191,6 +191,43 @@ func UpsertToolVersion(content string, tool string, version string) string {
 	return strings.Join(newLines, "\n")
 }
 
+// RemoveToolVersion removes a tool entry from the [tools] section of a TOML file,
+// preserving all comments, indentation, multi-line strings, and formatting across the rest of the file.
+func RemoveToolVersion(content string, tool string) (string, bool) {
+	lines := strings.Split(content, "\n")
+	inTools := false
+	toolLineIdx := -1
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "[tools]" {
+			inTools = true
+			continue
+		}
+		if inTools {
+			if strings.HasPrefix(trimmed, "[") && trimmed != "[tools]" {
+				break
+			}
+			parts := strings.SplitN(trimmed, "=", 2)
+			if len(parts) == 2 {
+				keyPart := strings.TrimSpace(parts[0])
+				keyPart = strings.Trim(keyPart, `"'`)
+				if keyPart == tool {
+					toolLineIdx = i
+					break
+				}
+			}
+		}
+	}
+
+	if toolLineIdx != -1 {
+		lines = append(lines[:toolLineIdx], lines[toolLineIdx+1:]...)
+		return strings.Join(lines, "\n"), true
+	}
+
+	return content, false
+}
+
 // LoadRawTOML reads a TOML file into a generic map.
 // Returns an empty map when the file does not yet exist.
 func LoadRawTOML(path string) (map[string]interface{}, error) {

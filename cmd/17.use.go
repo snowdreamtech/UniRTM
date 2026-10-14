@@ -213,9 +213,6 @@ func runUse(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("write config file %s: %w", configFile, err)
 	}
 
-	// Apply canonical format and taplo formatting to ensure correct block order
-	_, _ = config.FormatFile(configFile, false)
-
 	for _, p := range pairs {
 		formatter.Success(fmt.Sprintf("Set %s = %q in %s", p.key, p.version, configFile), map[string]interface{}{
 			"tool":    p.key,
