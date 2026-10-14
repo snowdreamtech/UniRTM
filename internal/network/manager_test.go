@@ -310,6 +310,26 @@ func TestAddAndDeleteEcosystem(t *testing.T) {
 	if _, ok := status.Effective["ruby"]; !ok {
 		t.Fatalf("expected ruby to be restored in effective")
 	}
+
+	// Delete dart and homebrew, then reset
+	_ = mgr.DeleteEcosystem("dart")
+	_ = mgr.DeleteEcosystem("homebrew")
+	status = mgr.GetStatus()
+	if _, ok := status.Effective["dart"]; ok {
+		t.Fatalf("expected dart to be excluded")
+	}
+
+	err = mgr.ResetDefaultEcosystems()
+	if err != nil {
+		t.Fatalf("unexpected error resetting ecosystems: %v", err)
+	}
+
+	status = mgr.GetStatus()
+	for _, eco := range KnownEcosystems {
+		if _, ok := status.Effective[eco]; !ok {
+			t.Fatalf("expected default ecosystem %s to be restored", eco)
+		}
+	}
 }
 
 

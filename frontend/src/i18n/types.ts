@@ -134,9 +134,14 @@ export interface TranslationDict {
   "network.profile_cn_desc"?: string;
   "network.profile_official"?: string;
   "network.profile_official_desc"?: string;
+  "network.profile_tuna"?: string;
+  "network.profile_tuna_desc"?: string;
+  "network.profile_aliyun"?: string;
+  "network.profile_aliyun_desc"?: string;
   "network.active_tag"?: string;
   "network.tag_builtin"?: string;
   "network.tag_custom"?: string;
+  "network.reset_all_ecosystems"?: string;
   "network.create_profile"?: string;
   "network.save_as_profile"?: string;
   "network.reset_factory"?: string;

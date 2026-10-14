@@ -201,6 +201,26 @@ export default defineConfig({
             return;
           }
 
+          if (req.url === "/api/network/registry/reset-all" && req.method === "POST") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const { scope } = JSON.parse(bodyStr || "{}");
+                const args = ["network", "registry", "reset-all"];
+                if (scope === "user") args.push("--global");
+                execFileSync(unirtmBin, args, { cwd: rootDir, stdio: "pipe" });
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ ok: true }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
           if (req.url === "/api/network/proxy" && req.method === "POST") {
             let bodyStr = "";
             req.on("data", (c: any) => { bodyStr += c; });

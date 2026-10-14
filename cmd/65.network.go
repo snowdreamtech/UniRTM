@@ -40,6 +40,7 @@ func init() {
 	networkRegistryCmd.AddCommand(networkRegistryAddCmd)
 	networkRegistryCmd.AddCommand(networkRegistryDeleteCmd)
 	networkRegistryCmd.AddCommand(networkRegistryResetCmd)
+	networkRegistryCmd.AddCommand(networkRegistryResetAllCmd)
 
 	// Proxy subcommands
 	networkProxyCmd.AddCommand(networkProxyStatusCmd)
@@ -415,6 +416,23 @@ var networkRegistryResetCmd = &cobra.Command{
 			return err
 		}
 		pterm.Success.Printf("已清除 %s 单项覆盖，恢复跟随当前预设档案\n", strings.ToUpper(eco))
+		return nil
+	},
+}
+
+var networkRegistryResetAllCmd = &cobra.Command{
+	Use:     "reset-all",
+	Aliases: []string{"restore-defaults", "reset-matrix"},
+	Short:   "重置并恢复全部 13 大标准语言生态默认矩阵",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		mgr, path, _ := getNetworkManager()
+		if err := mgr.ResetDefaultEcosystems(); err != nil {
+			return err
+		}
+		if err := mgr.SaveToPath(path); err != nil {
+			return err
+		}
+		pterm.Success.Println("已恢复全部 13 大标准语言生态默认矩阵与内置预设")
 		return nil
 	},
 }

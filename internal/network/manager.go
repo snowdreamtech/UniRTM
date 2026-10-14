@@ -474,6 +474,26 @@ func (m *Manager) DeleteEcosystem(ecosystem string) error {
 	return nil
 }
 
+// ResetDefaultEcosystems clears all exclusions/overrides and restores all standard built-in ecosystems.
+func (m *Manager) ResetDefaultEcosystems() error {
+	m.EnsureDefaults()
+	m.config.ExcludedEcosystems = nil
+	m.config.Overrides = make(map[string]string)
+
+	builtins := DefaultBuiltinProfiles()
+	for id, bp := range builtins {
+		if prof, ok := m.config.Profiles[id]; ok && prof.Builtin {
+			prof.Registries = make(map[string]string)
+			for k, v := range bp.Registries {
+				prof.Registries[k] = v
+			}
+			m.config.Profiles[id] = prof
+		}
+	}
+
+	return nil
+}
+
 // SetProxy updates proxy configuration with strict validation.
 func (m *Manager) SetProxy(p ProxyConfig) error {
 	m.EnsureDefaults()
@@ -551,11 +571,30 @@ func (m *Manager) ExportEnvironment() map[string]string {
 	}
 	if cargo, ok := status.Effective["rust"]; ok && cargo.URL != "" {
 		env["CARGO_REGISTRIES_CRATES_IO_INDEX"] = cargo.URL
+		if strings.Contains(cargo.URL, "rsproxy.cn") {
+			env["RUSTUP_DIST_SERVER"] = "https://rsproxy.cn/rustup"
+			env["RUSTUP_UPDATE_ROOT"] = "https://rsproxy.cn/rustup/rustup"
+		} else if strings.Contains(cargo.URL, "tsinghua") {
+			env["RUSTUP_DIST_SERVER"] = "https://mirrors.tuna.tsinghua.edu.cn/rustup"
+			env["RUSTUP_UPDATE_ROOT"] = "https://mirrors.tuna.tsinghua.edu.cn/rustup/rustup"
+		}
+	}
+	if dart, ok := status.Effective["dart"]; ok && dart.URL != "" {
+		env["PUB_HOSTED_URL"] = dart.URL
+	}
+	if brew, ok := status.Effective["homebrew"]; ok && brew.URL != "" {
+		env["HOMEBREW_BOTTLE_DOMAIN"] = brew.URL
 	}
 
 	// 3. Downloads mirror
 	if nodeMirror, ok := status.ActiveProfile.Downloads["node"]; ok && nodeMirror != "" {
 		env["NODEJS_ORG_MIRROR"] = nodeMirror
+	}
+	if goMirror, ok := status.ActiveProfile.Downloads["go"]; ok && goMirror != "" {
+		env["UNIRTM_GO_DOWNLOAD_MIRROR"] = goMirror
+	}
+	if pyMirror, ok := status.ActiveProfile.Downloads["python"]; ok && pyMirror != "" {
+		env["PYTHON_BUILD_MIRROR_URL"] = pyMirror
 	}
 
 	return env

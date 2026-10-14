@@ -323,6 +323,13 @@
                   ＋ {{ t('network.add_ecosystem') || '添加生态' }}
                 </button>
                 <button
+                  class="btn-profile-action secondary"
+                  @click="handleResetAllEcosystems()"
+                  :title="t('network.reset_all_ecosystems') || '恢复默认生态'"
+                >
+                  ↺ {{ t('network.reset_all_ecosystems') || '恢复默认生态' }}
+                </button>
+                <button
                   v-if="networkStatus?.active_profile?.builtin"
                   class="btn-profile-action secondary"
                   @click="handleResetBuiltinProfile(networkStatus.active_profile_id)"
@@ -913,11 +920,16 @@ const orderedProfiles = computed(() => {
     id,
     profile: profile as any,
   }));
+  const rank: Record<string, number> = {
+    official: 1,
+    cn: 2,
+    tuna: 3,
+    aliyun: 4,
+  };
   return list.sort((a, b) => {
-    if (a.id === "official") return -1;
-    if (b.id === "official") return 1;
-    if (a.id === "cn") return -1;
-    if (b.id === "cn") return 1;
+    const rankA = rank[a.id] || 99;
+    const rankB = rank[b.id] || 99;
+    if (rankA !== rankB) return rankA - rankB;
     return a.id.localeCompare(b.id);
   });
 });
@@ -929,6 +941,12 @@ function getProfileDisplayName(id: string, fallbackName?: string): string {
   if (id === "official") {
     return t("network.profile_official") || "官方直连";
   }
+  if (id === "tuna") {
+    return t("network.profile_tuna") || "清华大学 TUNA 专线";
+  }
+  if (id === "aliyun") {
+    return t("network.profile_aliyun") || "阿里云镜像专线";
+  }
   return fallbackName || id;
 }
 
@@ -938,6 +956,12 @@ function getProfileDisplayDesc(id: string, fallbackDesc?: string): string {
   }
   if (id === "official") {
     return t("network.profile_official_desc") || "全量使用官方源与官方二进制 CDN，不经任何代理或第三方镜像";
+  }
+  if (id === "tuna") {
+    return t("network.profile_tuna_desc") || "优先全量采用清华大学开源软件镜像站 (TUNA) 教育网与公网优质骨干源";
+  }
+  if (id === "aliyun") {
+    return t("network.profile_aliyun_desc") || "优先全量采用阿里巴巴开源镜像站生态高速 CDN 加速矩阵";
   }
   return fallbackDesc || "";
 }
@@ -1396,6 +1420,22 @@ async function handleResetBuiltinProfile(id: string) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ profile_id: id, scope: activeScope.value }),
+    });
+    if (res.ok) {
+      await loadNetworkStatus();
+      loadConfigData();
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function handleResetAllEcosystems() {
+  try {
+    const res = await fetch("/api/network/registry/reset-all", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scope: activeScope.value }),
     });
     if (res.ok) {
       await loadNetworkStatus();

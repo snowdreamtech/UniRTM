@@ -516,6 +516,7 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/network/registry/delete", handleDeleteNetworkRegistry)
 	mux.HandleFunc("/api/network/registry/override", handleOverrideNetworkRegistry)
 	mux.HandleFunc("/api/network/registry/reset", handleResetNetworkRegistry)
+	mux.HandleFunc("/api/network/registry/reset-all", handleResetAllNetworkRegistries)
 	mux.HandleFunc("/api/network/proxy", handleSetNetworkProxy)
 	mux.HandleFunc("/api/network/ping", handlePingNetwork)
 
@@ -955,6 +956,29 @@ func handleDeleteNetworkRegistry(w http.ResponseWriter, r *http.Request) {
 	_ = mgr.LoadFromPath(targetPath)
 
 	if err := mgr.DeleteEcosystem(req.Ecosystem); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	if err := mgr.SaveToPath(targetPath); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "status": mgr.GetStatus()})
+}
+
+func handleResetAllNetworkRegistries(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var req struct {
+		Scope string `json:"scope"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+	targetPath := resolveNetworkPathFromRequest(r, req.Scope)
+	mgr := network.NewManager(nil)
+	_ = mgr.LoadFromPath(targetPath)
+
+	if err := mgr.ResetDefaultEcosystems(); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
 		return
