@@ -160,6 +160,7 @@ func RecommendedMirrors() map[string][]MirrorOption {
 		"ruby": {
 			{Name: "官方直连 (RubyGems)", URL: "https://rubygems.org"},
 			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/rubygems/"},
+			{Name: "中国科学技术大学 USTC", URL: "https://mirrors.ustc.edu.cn/rubygems/"},
 			{Name: "腾讯云 RubyGems", URL: "https://mirrors.cloud.tencent.com/rubygems/"},
 		},
 		"composer": {
