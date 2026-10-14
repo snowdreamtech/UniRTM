@@ -8,41 +8,208 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 )
 
-// EnvManager provides environment variable operations.
-type EnvManager struct{}
+// EnvManager provides smart cached environment variable operations,
+// featuring automatic change detection, case-insensitivity, UNIRTM_/MISE_ prefixes,
+// and real-time cache updating when variables are added, updated, or removed.
+type EnvManager struct {
+	mu            sync.RWMutex
+	fingerprint   uint64
+	unirtmIndex   map[string]string // normalizedKey -> value
+	miseIndex     map[string]string // normalizedKey -> value
+	rawIndex      map[string]string // normalizedKey -> value
+	resolvedCache map[string]string // queryKey -> value
+}
+
+var defaultEnvManager = &EnvManager{
+	unirtmIndex:   make(map[string]string),
+	miseIndex:     make(map[string]string),
+	rawIndex:      make(map[string]string),
+	resolvedCache: make(map[string]string),
+}
+
+// normalizeKey strips underscores and dashes and returns lowercase string.
+func normalizeKey(key string) string {
+	return strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(key, "_", ""), "-", ""))
+}
+
+// computeEnvironFingerprint computes a 64-bit FNV-1a hash over os.Environ()
+// to detect when any environment variable is added, modified, or removed.
+func computeEnvironFingerprint() uint64 {
+	envList := os.Environ()
+	var h uint64 = 14695981039346656037
+	for _, s := range envList {
+		for i := 0; i < len(s); i++ {
+			h ^= uint64(s[i])
+			h *= 1099511628211
+		}
+	}
+	return h
+}
+
+func (m *EnvManager) rebuildIndexLocked(currentFp uint64) {
+	m.fingerprint = currentFp
+	m.unirtmIndex = make(map[string]string)
+	m.miseIndex = make(map[string]string)
+	m.rawIndex = make(map[string]string)
+	m.resolvedCache = make(map[string]string)
+
+	for _, e := range os.Environ() {
+		parts := strings.SplitN(e, "=", 2)
+		if len(parts) != 2 || parts[1] == "" {
+			continue
+		}
+		rawKey := parts[0]
+		val := strings.TrimSpace(parts[1])
+		if val == "" {
+			continue
+		}
+
+		clean := normalizeKey(rawKey)
+		if strings.HasPrefix(clean, "unirtm") {
+			stripped := strings.TrimPrefix(clean, "unirtm")
+			if _, exists := m.unirtmIndex[stripped]; !exists {
+				m.unirtmIndex[stripped] = val
+			}
+		} else if strings.HasPrefix(clean, "mise") {
+			stripped := strings.TrimPrefix(clean, "mise")
+			if _, exists := m.miseIndex[stripped]; !exists {
+				m.miseIndex[stripped] = val
+			}
+		} else {
+			if _, exists := m.rawIndex[clean]; !exists {
+				m.rawIndex[clean] = val
+			}
+		}
+	}
+}
 
 // Get returns the value of the environment variable with the given key,
 // searching with prefixes in order: UNIRTM_, MISE_, and then the raw key.
-// Note: PATH is retrieved directly to avoid pollution from UNIRTM_PATH/MISE_PATH.
-func Get(key string) string {
+// It uses a smart fingerprint-backed cache that automatically refreshes
+// when any environment variable is added, modified, or removed.
+func (m *EnvManager) Get(key string) string {
 	if key == "PATH" {
 		return os.Getenv("PATH")
 	}
 
-	value := ""
-	// 1. UNIRTM_ prefix
-	if v := os.Getenv("UNIRTM_" + key); v != "" {
-		value = v
-	}
-	// 2. MISE_ prefix
-	if value == "" {
-		if v := os.Getenv("MISE_" + key); v != "" {
-			value = v
+	fp := computeEnvironFingerprint()
+
+	m.mu.RLock()
+	if m.fingerprint == fp && m.fingerprint != 0 {
+		if val, ok := m.resolvedCache[key]; ok {
+			m.mu.RUnlock()
+			return validateCriticalKey(key, val)
 		}
 	}
-	// 3. Raw key (Native)
-	if value == "" {
-		value = os.Getenv(key)
+	m.mu.RUnlock()
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Recheck under write lock
+	if m.fingerprint != fp || m.fingerprint == 0 {
+		m.rebuildIndexLocked(fp)
+	} else if val, ok := m.resolvedCache[key]; ok {
+		return validateCriticalKey(key, val)
 	}
 
-	// 4. Case-insensitive and normalized fallback (UNIRTM_ > MISE_ > Raw)
-	if value == "" {
-		value = getCaseInsensitive(key)
+	norm := normalizeKey(key)
+
+	var res string
+	// Priority 1: UNIRTM_ prefix
+	if v, ok := m.unirtmIndex[norm]; ok && v != "" {
+		res = v
+	} else if v, ok := m.miseIndex[norm]; ok && v != "" { // Priority 2: MISE_ prefix
+		res = v
+	} else if v, ok := m.rawIndex[norm]; ok && v != "" { // Priority 3: Raw key
+		res = v
 	}
 
-	// Validate specific critical environment variables
+	m.resolvedCache[key] = res
+	return validateCriticalKey(key, res)
+}
+
+// Set sets the environment variable and immediately updates the smart cache.
+func (m *EnvManager) Set(key, value string) error {
+	if err := os.Setenv(key, value); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.rebuildIndexLocked(computeEnvironFingerprint())
+	return nil
+}
+
+// Unset unsets the environment variable (and related UNIRTM_/MISE_ variants) and updates the smart cache.
+func (m *EnvManager) Unset(key string) error {
+	norm := normalizeKey(key)
+
+	for _, e := range os.Environ() {
+		parts := strings.SplitN(e, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		clean := normalizeKey(parts[0])
+		strippedUnirtm := strings.TrimPrefix(clean, "unirtm")
+		strippedMise := strings.TrimPrefix(clean, "mise")
+		if clean == norm || strippedUnirtm == norm || strippedMise == norm {
+			_ = os.Unsetenv(parts[0])
+		}
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.rebuildIndexLocked(computeEnvironFingerprint())
+	return nil
+}
+
+// Has returns true if the given environment variable exists in any valid prefix or case form.
+func (m *EnvManager) Has(key string) bool {
+	return m.Get(key) != ""
+}
+
+// ResetCache clears the smart cache and forces re-indexing on next access.
+func (m *EnvManager) ResetCache() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.fingerprint = 0
+	m.rebuildIndexLocked(computeEnvironFingerprint())
+}
+
+// Get returns the value of the environment variable with the given key using the smart cache.
+func Get(key string) string {
+	return defaultEnvManager.Get(key)
+}
+
+// Set sets an environment variable and updates the smart cache in real time.
+func Set(key, value string) error {
+	return defaultEnvManager.Set(key, value)
+}
+
+// Unset unsets an environment variable and updates the smart cache in real time.
+func Unset(key string) error {
+	return defaultEnvManager.Unset(key)
+}
+
+// Has checks if an environment variable exists with smart case and prefix resolution.
+func Has(key string) bool {
+	return defaultEnvManager.Has(key)
+}
+
+// ResetCache explicitly invalidates the smart environment cache.
+func ResetCache() {
+	defaultEnvManager.ResetCache()
+}
+
+// InvalidateCache is an alias for ResetCache.
+func InvalidateCache() {
+	defaultEnvManager.ResetCache()
+}
+
+func validateCriticalKey(key, value string) string {
 	switch key {
 	case "GITHUB_PROXY":
 		if value != "" && value != "direct" {
@@ -62,49 +229,7 @@ func Get(key string) string {
 			return ""
 		}
 	}
-
 	return value
-}
-
-// getCaseInsensitive scans os.Environ() case-insensitively, respecting UNIRTM_ > MISE_ > Raw priority.
-func getCaseInsensitive(key string) string {
-	var unirtmVal, miseVal, rawVal string
-	normKey := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(key, "_", ""), "-", ""))
-
-	for _, e := range os.Environ() {
-		parts := strings.SplitN(e, "=", 2)
-		if len(parts) != 2 || parts[1] == "" {
-			continue
-		}
-		k := parts[0]
-		v := strings.TrimSpace(parts[1])
-		if v == "" {
-			continue
-		}
-
-		clean := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(k, "_", ""), "-", ""))
-		if strings.HasPrefix(clean, "unirtm") {
-			stripped := strings.TrimPrefix(clean, "unirtm")
-			if stripped == normKey && unirtmVal == "" {
-				unirtmVal = v
-			}
-		} else if strings.HasPrefix(clean, "mise") {
-			stripped := strings.TrimPrefix(clean, "mise")
-			if stripped == normKey && miseVal == "" {
-				miseVal = v
-			}
-		} else if clean == normKey && rawVal == "" {
-			rawVal = v
-		}
-	}
-
-	if unirtmVal != "" {
-		return unirtmVal
-	}
-	if miseVal != "" {
-		return miseVal
-	}
-	return rawVal
 }
 
 var (

@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/pelletier/go-toml/v2"
@@ -26,16 +25,9 @@ type githubTokensFile struct {
 	} `toml:"tokens"`
 }
 
-var (
-	tokenCacheMu sync.RWMutex
-	tokenCache   = make(map[string]string)
-)
-
-// ClearTokenCache clears the in-memory token cache (useful for testing or reloading).
+// ClearTokenCache clears the environment cache via unified env.ResetCache().
 func ClearTokenCache() {
-	tokenCacheMu.Lock()
-	defer tokenCacheMu.Unlock()
-	tokenCache = make(map[string]string)
+	env.ResetCache()
 }
 
 // ResolveGitHubTokenPublic is the exported wrapper for use outside the backend package.
@@ -43,7 +35,7 @@ func ResolveGitHubTokenPublic(host string) string {
 	return resolveGitHubToken(host)
 }
 
-// resolveGitHubToken resolves the best available GitHub token for a given host with in-memory caching.
+// resolveGitHubToken resolves the best available GitHub token for a given host.
 // Priority (mirrors mise behavior):
 //  1. UNIRTM_GITHUB_TOKEN (UniRTM-specific override)
 //  2. GITHUB_TOKEN        (standard CI env var, e.g. GitHub Actions)
@@ -58,30 +50,11 @@ func resolveGitHubToken(host string) string {
 		host = "github.com"
 	}
 
-	tokenCacheMu.RLock()
-	if tok, ok := tokenCache[host]; ok {
-		tokenCacheMu.RUnlock()
-		return tok
-	}
-	tokenCacheMu.RUnlock()
-
-	tokenCacheMu.Lock()
-	defer tokenCacheMu.Unlock()
-
-	// Double check under write lock
-	if tok, ok := tokenCache[host]; ok {
-		return tok
-	}
-
-	tok := doResolveGitHubToken(host)
-	tokenCache[host] = tok
-	return tok
-}
-
-func doResolveGitHubToken(host string) string {
-	// 1. Environment variables via unified env.Get (UNIRTM_* -> MISE_* -> raw, supporting case variations)
-	if token := resolveGitHubTokenFromEnv(); token != "" {
-		return token
+	// 1. Environment variables via unified smart cached env.Get (UNIRTM_* -> MISE_* -> raw, supporting case variations)
+	for _, key := range []string{"GITHUB_TOKEN", "GH_TOKEN", "GITHUB_API_TOKEN"} {
+		if token := env.Get(key); token != "" {
+			return token
+		}
 	}
 
 	// 2. credential_command (UNIRTM_GITHUB_CREDENTIAL_COMMAND -> MISE_GITHUB_CREDENTIAL_COMMAND -> GITHUB_CREDENTIAL_COMMAND)
