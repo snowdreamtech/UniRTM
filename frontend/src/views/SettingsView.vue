@@ -251,17 +251,6 @@
 
                 <button
                   type="button"
-                  class="btn-detect-proxy"
-                  :disabled="isDetectingProxy"
-                  @click="handleDetectProxy(true)"
-                  title="自动探测宿主机运行中的代理客户端 (sing-box, Clash 等)"
-                >
-                  <span v-if="isDetectingProxy">🔄 探测中...</span>
-                  <span v-else>🔍 自动探测宿主代理</span>
-                </button>
-
-                <button
-                  type="button"
                   class="btn-test-proxy"
                   :disabled="isTestingProxy || !networkStatus.proxy.enabled || (!networkStatus.proxy.http && !networkStatus.proxy.socks5)"
                   @click="handleTestProxy"
@@ -269,6 +258,17 @@
                 >
                   <span v-if="isTestingProxy">🔄 检测中...</span>
                   <span v-else>⚡ 连通性检测</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="btn-detect-proxy"
+                  :disabled="isDetectingProxy"
+                  @click="handleDetectProxy(true)"
+                  title="自动探测宿主机运行中的代理客户端 (sing-box, Clash 等)"
+                >
+                  <span v-if="isDetectingProxy">🔄 探测中...</span>
+                  <span v-else>🔍 自动探测宿主代理</span>
                 </button>
               </div>
 
@@ -2614,6 +2614,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .toggle-switch-label {
