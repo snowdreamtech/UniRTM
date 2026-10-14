@@ -308,6 +308,10 @@
               <span class="sub-icon">📦</span>
               <h3>{{ t('network.tab_mirrors') || '镜像源矩阵' }}</h3>
               <div class="profile-actions-bar">
+                <div class="profile-scroll-nav" v-if="orderedProfiles.length > 3">
+                  <button class="btn-scroll-arrow" @click="scrollProfiles('left')" title="向左滚动">‹</button>
+                  <button class="btn-scroll-arrow" @click="scrollProfiles('right')" title="向右滚动">›</button>
+                </div>
                 <button
                   class="btn-profile-action"
                   @click="showCreateProfileModal = true"
@@ -340,24 +344,30 @@
               </div>
             </div>
 
-            <!-- Profile Cards -->
-            <div class="profile-cards-grid" v-if="networkStatus">
+            <!-- Profile Cards Track -->
+            <div class="profile-cards-wrapper" v-if="networkStatus">
               <div
-                v-for="{ id: pId, profile: p } in orderedProfiles"
-                :key="pId"
-                class="profile-card"
-                :class="{ active: pId === networkStatus.active_profile_id, builtin: p.builtin }"
-                @click="handleUseProfile(String(pId))"
+                ref="profileTrackRef"
+                class="profile-cards-track"
+                @wheel="onProfileTrackWheel"
               >
-                <div class="profile-card-header">
-                  <span class="profile-name">{{ getProfileDisplayName(String(pId), p.name) }}</span>
-                  <span v-if="pId === networkStatus.active_profile_id" class="active-tag">✔ {{ t('network.active_tag') }}</span>
-                </div>
-                <p class="profile-desc">{{ getProfileDisplayDesc(String(pId), p.description) }}</p>
-                <div class="profile-footer">
-                  <span class="profile-id font-mono">id: {{ pId }}</span>
-                  <span v-if="p.builtin" class="pill-builtin">{{ t('network.tag_builtin') }}</span>
-                  <span v-else class="pill-custom">{{ t('network.tag_custom') }}</span>
+                <div
+                  v-for="{ id: pId, profile: p } in orderedProfiles"
+                  :key="pId"
+                  class="profile-card"
+                  :class="{ active: pId === networkStatus.active_profile_id, builtin: p.builtin }"
+                  @click="handleUseProfile(String(pId))"
+                >
+                  <div class="profile-card-header">
+                    <span class="profile-name">{{ getProfileDisplayName(String(pId), p.name) }}</span>
+                    <span v-if="pId === networkStatus.active_profile_id" class="active-tag">✔ {{ t('network.active_tag') }}</span>
+                  </div>
+                  <p class="profile-desc">{{ getProfileDisplayDesc(String(pId), p.description) }}</p>
+                  <div class="profile-footer">
+                    <span class="profile-id font-mono">id: {{ pId }}</span>
+                    <span v-if="p.builtin" class="pill-builtin">{{ t('network.tag_builtin') }}</span>
+                    <span v-else class="pill-custom">{{ t('network.tag_custom') }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -965,6 +975,25 @@ function getProfileDisplayDesc(id: string, fallbackDesc?: string): string {
     return t("network.profile_aliyun_desc") || "优先全量采用阿里巴巴开源镜像站生态高速 CDN 加速矩阵";
   }
   return fallbackDesc || "";
+}
+
+const profileTrackRef = ref<HTMLElement | null>(null);
+
+function scrollProfiles(direction: 'left' | 'right') {
+  if (!profileTrackRef.value) return;
+  const scrollAmount = 280;
+  profileTrackRef.value.scrollBy({
+    left: direction === 'left' ? -scrollAmount : scrollAmount,
+    behavior: 'smooth',
+  });
+}
+
+function onProfileTrackWheel(e: WheelEvent) {
+  if (!profileTrackRef.value) return;
+  if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && profileTrackRef.value.scrollWidth > profileTrackRef.value.clientWidth) {
+    e.preventDefault();
+    profileTrackRef.value.scrollLeft += e.deltaY;
+  }
 }
 
 const orderedEffectiveEcosystems = computed(() => {
@@ -2440,13 +2469,72 @@ input:checked + .slider:before {
   color: var(--text-muted);
 }
 
-.profile-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+.profile-scroll-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 2px;
+}
+
+.btn-scroll-arrow {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  cursor: pointer;
+  font-size: 1.15rem;
+  font-weight: bold;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.btn-scroll-arrow:hover {
+  background: rgba(34, 211, 238, 0.15);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.profile-cards-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.profile-cards-track {
+  display: flex;
   gap: 12px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 4px 2px 10px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 211, 238, 0.25) transparent;
+}
+
+.profile-cards-track::-webkit-scrollbar {
+  height: 6px;
+}
+
+.profile-cards-track::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.profile-cards-track::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0.2);
+  border-radius: 9999px;
+}
+
+.profile-cards-track::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 211, 238, 0.4);
 }
 
 .profile-card {
+  flex: 1 0 240px;
+  min-width: 240px;
+  max-width: 320px;
   padding: 12px 14px;
   border-radius: 8px;
   background: var(--card-bg);
