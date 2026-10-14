@@ -205,7 +205,7 @@ const currentTabLabel = computed(() => {
     case "dashboard":
       return t("nav.dashboard") || "Dashboard";
     case "runtimes":
-      return t("nav.runtimes") || "Runtimes";
+      return t("nav.runtimes") || "Language Environments";
     case "tools":
       return t("nav.tools") || "Toolchains";
     case "tasks":

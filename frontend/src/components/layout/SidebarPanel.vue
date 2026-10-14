@@ -44,7 +44,7 @@
 
       <!-- RUNTIMES Navigation Items -->
       <template v-if="currentTab === 'runtimes'">
-        <div class="nav-group-title">{{ t("runtimes.title") || "RUNTIMES" }}</div>
+        <div class="nav-group-title">{{ t("nav.runtimes") || "多语言环境" }}</div>
         <button
           v-for="item in filteredRuntimeItems"
           :key="item.id"
@@ -182,7 +182,7 @@ const headerTitle = computed(() => {
     case "dashboard":
       return t("nav.dashboard") || "DASHBOARD";
     case "runtimes":
-      return t("nav.runtimes") || "RUNTIMES";
+      return t("nav.runtimes") || "多语言环境";
     case "tools":
       return t("nav.tools") || "TOOLCHAINS";
     case "tasks":

@@ -90,7 +90,7 @@ const primaryTabs = computed<ActivityTab[]>(() => [
   {
     id: "runtimes",
     icon: "🌐",
-    label: t("nav.runtimes") || "Runtimes",
+    label: t("nav.runtimes") || "Language Environments",
   },
   {
     id: "tools",

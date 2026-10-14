@@ -49,8 +49,11 @@ export interface TranslationDict {
   "runtimes.no_installed"?: string;
   "runtimes.modal_title"?: string;
   "runtimes.modal_desc"?: string;
-  "runtimes.installing"?: string;
-  "runtimes.installed_success"?: string;
+  "runtimes.install_version"?: string;
+  "runtimes.remote_list_tip"?: string;
+  "runtimes.search_remote_placeholder"?: string;
+  "runtimes.count_runtimes_suffix"?: string;
+  "runtimes.count_installed_suffix"?: string;
   "runtimes.migrating"?: string;
   "runtimes.migrate_success"?: string;
 

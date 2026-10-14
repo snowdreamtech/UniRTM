@@ -57,10 +57,10 @@
       </div>
       <div class="runtime-stats-badges">
         <span class="stat-badge">
-          <b>{{ filteredRuntimes.length }}</b> Runtimes
+          <b>{{ filteredRuntimes.length }}</b> {{ t("runtimes.count_runtimes_suffix") || "个语言环境" }}
         </span>
         <span class="stat-badge highlight">
-          <b>{{ totalInstalled }}</b> Installed Releases
+          <b>{{ totalInstalled }}</b> {{ t("runtimes.count_installed_suffix") || "个已装版本" }}
         </span>
       </div>
     </div>
