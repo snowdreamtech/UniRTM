@@ -536,7 +536,7 @@
                   <button
                     v-if="networkStatus.effective[eco]?.is_overridden"
                     class="btn-reset-override"
-                    :title="t('network.restore_inherited') || '恢复跟随预设'"
+                    :title="t('network.restore_inherited') || '恢复预设'"
                     @click="handleResetRegistry(eco)"
                   >
                     ↺
@@ -993,9 +993,9 @@ function getEcoBadgeClass(eco: string): string {
 
 function getEcoBadgeLabel(eco: string): string {
   const eff = networkStatus.value?.effective?.[eco];
-  if (eff?.is_overridden) return t('network.badge_overridden') || '单项自定义覆盖';
+  if (eff?.is_overridden) return t('network.badge_overridden') || '自定义';
   if (eff?.source?.startsWith('fallback_')) return t('network.badge_fallback_cn') || '国内加速补齐';
-  return t('network.badge_inherited') || '跟随档案预设';
+  return t('network.badge_inherited') || '预设';
 }
 
 function getEcoBadgeTitle(eco: string): string {

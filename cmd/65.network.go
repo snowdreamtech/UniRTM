@@ -154,16 +154,16 @@ func runNetworkStatus(cmd *cobra.Command, args []string) error {
 
 	for _, eco := range orderedEcos {
 		eff := status.Effective[eco]
-		sourceBadge := "[继承自预设]"
+		sourceBadge := "[预设]"
 		if eff.IsOverridden {
-			sourceBadge = pterm.LightYellow("[单项自定义覆盖]")
+			sourceBadge = pterm.LightYellow("[自定义]")
 		} else if strings.HasPrefix(eff.Source, "fallback_") {
 			fbTarget := strings.TrimPrefix(eff.Source, "fallback_")
 			sourceBadge = pterm.LightCyan(fmt.Sprintf("[%s 未收录，回退 %s 补齐]", status.ActiveProfileID, fbTarget))
 		} else if eff.Source == "default" {
 			sourceBadge = pterm.Gray("[官方默认]")
 		} else {
-			sourceBadge = pterm.LightGreen("[跟随 " + status.ActiveProfileID + " 预设]")
+			sourceBadge = pterm.LightGreen("[预设]")
 		}
 		tableData = append(tableData, []string{strings.ToUpper(eco), eff.URL, sourceBadge})
 	}
