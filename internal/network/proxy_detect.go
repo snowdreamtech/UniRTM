@@ -47,17 +47,32 @@ func DetectSystemProxy() DetectedProxy {
 		return dp
 	}
 
-	// 4. Check OS / Desktop environment proxy settings
+	// 4. Check Trojan / Trojan-Go configurations
+	if dp := detectTrojan(); dp.Detected {
+		return dp
+	}
+
+	// 5. Check Hysteria / Hysteria 2 configurations
+	if dp := detectHysteria(); dp.Detected {
+		return dp
+	}
+
+	// 6. Check NaiveProxy configurations
+	if dp := detectNaiveProxy(); dp.Detected {
+		return dp
+	}
+
+	// 7. Check OS / Desktop environment proxy settings
 	if dp := detectOSProxy(); dp.Detected {
 		return dp
 	}
 
-	// 5. Check environment variables
+	// 8. Check environment variables
 	if dp := detectEnvProxy(); dp.Detected {
 		return dp
 	}
 
-	// 6. Active probing of common proxy ports
+	// 9. Active probing of common proxy ports
 	if dp := probeCommonPorts(); dp.Detected {
 		return dp
 	}
@@ -279,6 +294,171 @@ func detectV2Ray() DetectedProxy {
 		}
 	}
 
+	return DetectedProxy{Detected: false}
+}
+
+func detectTrojan() DetectedProxy {
+	home, _ := os.UserHomeDir()
+	candidatePaths := []string{
+		"/etc/trojan/config.json",
+		"/usr/local/etc/trojan/config.json",
+		"/etc/trojan-go/config.json",
+		"/usr/local/etc/trojan-go/config.json",
+		filepath.Join(home, ".config", "trojan", "config.json"),
+		filepath.Join(home, ".config", "trojan-go", "config.json"),
+	}
+
+	type TrojanConfig struct {
+		RunType   string `json:"run_type"`
+		LocalAddr string `json:"local_addr"`
+		LocalPort int    `json:"local_port"`
+	}
+
+	for _, p := range candidatePaths {
+		data, err := os.ReadFile(p)
+		if err != nil {
+			continue
+		}
+
+		var cfg TrojanConfig
+		if err := json.Unmarshal(data, &cfg); err != nil {
+			continue
+		}
+
+		if cfg.LocalPort <= 0 {
+			continue
+		}
+		addr := cfg.LocalAddr
+		if addr == "" || addr == "0.0.0.0" {
+			addr = "127.0.0.1"
+		}
+
+		if isPortOpen(addr, cfg.LocalPort, 150*time.Millisecond) {
+			return DetectedProxy{
+				Detected:    true,
+				Type:        "trojan",
+				SOCKS5:      fmt.Sprintf("socks5://%s:%d", addr, cfg.LocalPort),
+				Port:        cfg.LocalPort,
+				Description: fmt.Sprintf("检测到本机正在运行的 Trojan/Trojan-Go 客户端代理 (端口 %d)", cfg.LocalPort),
+			}
+		}
+	}
+	return DetectedProxy{Detected: false}
+}
+
+func detectHysteria() DetectedProxy {
+	home, _ := os.UserHomeDir()
+	candidatePaths := []string{
+		"/etc/hysteria/config.yaml",
+		"/etc/hysteria/config.json",
+		"/etc/hysteria2/config.yaml",
+		"/etc/hysteria2/config.json",
+		filepath.Join(home, ".config", "hysteria", "config.yaml"),
+		filepath.Join(home, ".config", "hysteria2", "config.yaml"),
+	}
+
+	for _, p := range candidatePaths {
+		data, err := os.ReadFile(p)
+		if err != nil {
+			continue
+		}
+		content := string(data)
+
+		// Check for listen lines: e.g. "listen: 127.0.0.1:1080"
+		lines := strings.Split(content, "\n")
+		var isSocks, isHTTP bool
+		for _, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			if strings.HasPrefix(trimmed, "socks5:") || strings.Contains(trimmed, "socks5") {
+				isSocks = true
+			}
+			if strings.HasPrefix(trimmed, "http:") || strings.Contains(trimmed, "http") {
+				isHTTP = true
+			}
+			if strings.HasPrefix(trimmed, "listen:") {
+				val := strings.TrimSpace(strings.TrimPrefix(trimmed, "listen:"))
+				val = strings.Trim(val, "'\"")
+				host, portStr, err := net.SplitHostPort(val)
+				if err == nil {
+					port, _ := strconv.Atoi(portStr)
+					if port > 0 {
+						if host == "" || host == "0.0.0.0" {
+							host = "127.0.0.1"
+						}
+						if isPortOpen(host, port, 150*time.Millisecond) {
+							dp := DetectedProxy{
+								Detected:    true,
+								Type:        "hysteria",
+								Port:        port,
+								Description: fmt.Sprintf("检测到本机正在运行的 Hysteria 客户端代理 (端口 %d)", port),
+							}
+							if isHTTP {
+								dp.HTTP = fmt.Sprintf("http://%s:%d", host, port)
+								dp.HTTPS = fmt.Sprintf("http://%s:%d", host, port)
+							}
+							if isSocks || !isHTTP {
+								dp.SOCKS5 = fmt.Sprintf("socks5://%s:%d", host, port)
+							}
+							return dp
+						}
+					}
+				}
+			}
+		}
+	}
+	return DetectedProxy{Detected: false}
+}
+
+func detectNaiveProxy() DetectedProxy {
+	home, _ := os.UserHomeDir()
+	candidatePaths := []string{
+		"/etc/naiveproxy/config.json",
+		filepath.Join(home, ".config", "naiveproxy", "config.json"),
+	}
+
+	type NaiveConfig struct {
+		Listen string `json:"listen"`
+	}
+
+	for _, p := range candidatePaths {
+		data, err := os.ReadFile(p)
+		if err != nil {
+			continue
+		}
+
+		var cfg NaiveConfig
+		if err := json.Unmarshal(data, &cfg); err != nil {
+			continue
+		}
+
+		if cfg.Listen == "" {
+			continue
+		}
+
+		u, err := url.Parse(cfg.Listen)
+		if err == nil && u.Port() != "" {
+			port, _ := strconv.Atoi(u.Port())
+			host := u.Hostname()
+			if host == "" || host == "0.0.0.0" {
+				host = "127.0.0.1"
+			}
+			if port > 0 && isPortOpen(host, port, 150*time.Millisecond) {
+				dp := DetectedProxy{
+					Detected:    true,
+					Type:        "naiveproxy",
+					Port:        port,
+					Description: fmt.Sprintf("检测到本机正在运行的 NaiveProxy 客户端 (端口 %d)", port),
+				}
+				if u.Scheme == "http" || u.Scheme == "https" {
+					dp.HTTP = fmt.Sprintf("http://%s:%d", host, port)
+					dp.HTTPS = fmt.Sprintf("http://%s:%d", host, port)
+				} else {
+					dp.SOCKS5 = fmt.Sprintf("socks5://%s:%d", host, port)
+				}
+				return dp
+			}
+		}
+	}
 	return DetectedProxy{Detected: false}
 }
 
