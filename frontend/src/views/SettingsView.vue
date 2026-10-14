@@ -18,17 +18,6 @@
         <div class="scope-tabs-bar">
           <button
             class="scope-tab-btn"
-            :class="{ active: activeScope === 'user' }"
-            @click="switchScope('user')"
-            id="btn-scope-user"
-            :title="configData?.user?.path || '~/.config/unirtm/unirtm.toml'"
-          >
-            <span class="scope-icon">👤</span>
-            <span class="scope-title">{{ t("settings.scope_user") || "用户" }}</span>
-          </button>
-
-          <button
-            class="scope-tab-btn"
             :class="{ active: activeScope === 'workspace' }"
             @click="switchScope('workspace')"
             id="btn-scope-workspace"
@@ -36,6 +25,17 @@
           >
             <span class="scope-icon">📁</span>
             <span class="scope-title">{{ t("settings.scope_workspace") || "工作区" }}</span>
+          </button>
+
+          <button
+            class="scope-tab-btn"
+            :class="{ active: activeScope === 'user' }"
+            @click="switchScope('user')"
+            id="btn-scope-user"
+            :title="configData?.user?.path || '~/.config/unirtm/unirtm.toml'"
+          >
+            <span class="scope-icon">👤</span>
+            <span class="scope-title">{{ t("settings.scope_user") || "用户" }}</span>
           </button>
         </div>
         <span
@@ -760,7 +760,7 @@ const emit = defineEmits<{
 const { currentTheme, applyTheme } = useTheme();
 
 // State
-const activeScope = ref<"user" | "workspace">(props.initialScope || "user");
+const activeScope = ref<"user" | "workspace">(props.initialScope || "workspace");
 const searchQuery = ref("");
 const activeCategory = ref(props.activeCategory || "general");
 const showRawTomlModal = ref(false);

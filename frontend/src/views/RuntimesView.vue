@@ -24,22 +24,22 @@
       <div class="scope-tabs-bar">
         <button
           class="scope-tab-btn"
-          :class="{ active: currentScope === 'user' }"
-          @click="currentScope = 'user'"
-          id="btn-scope-user"
-        >
-          <span class="scope-icon">👤</span>
-          <span class="scope-title">{{ t("runtimes.scope_user") || "用户" }}</span>
-        </button>
-
-        <button
-          class="scope-tab-btn"
           :class="{ active: currentScope === 'workspace' }"
           @click="currentScope = 'workspace'"
           id="btn-scope-workspace"
         >
           <span class="scope-icon">📁</span>
           <span class="scope-title">{{ t("runtimes.scope_workspace") || "工作区" }}</span>
+        </button>
+
+        <button
+          class="scope-tab-btn"
+          :class="{ active: currentScope === 'user' }"
+          @click="currentScope = 'user'"
+          id="btn-scope-user"
+        >
+          <span class="scope-icon">👤</span>
+          <span class="scope-title">{{ t("runtimes.scope_user") || "用户" }}</span>
         </button>
       </div>
 
@@ -131,19 +131,7 @@
 
         <!-- Dual Scope Version Display -->
         <div class="runtime-status-box">
-          <!-- User Scope Version (First) -->
-          <div class="status-row" :class="{ 'highlight-scope': currentScope === 'user' }">
-            <span class="status-label">
-              <span class="scope-mini-icon">👤</span>
-              {{ t("runtimes.scope_user") || "用户" }}:
-            </span>
-            <div v-if="rt.global_version" class="status-val-wrap">
-              <span class="global-pill font-mono">v{{ rt.global_version }}</span>
-            </div>
-            <span v-else class="text-muted font-mono italic">未配置</span>
-          </div>
-
-          <!-- Workspace Scope Version (Second) -->
+          <!-- Workspace Scope Version (First) -->
           <div class="status-row" :class="{ 'highlight-scope': currentScope === 'workspace' }">
             <span class="status-label">
               <span class="scope-mini-icon">📁</span>
@@ -158,6 +146,18 @@
             <div v-else-if="rt.global_version" class="status-val-wrap">
               <span class="active-pill font-mono muted">v{{ rt.global_version }}</span>
               <span class="source-tag source-default">{{ t("runtimes.follow_user") || "跟随用户" }}</span>
+            </div>
+            <span v-else class="text-muted font-mono italic">未配置</span>
+          </div>
+
+          <!-- User Scope Version (Second) -->
+          <div class="status-row" :class="{ 'highlight-scope': currentScope === 'user' }">
+            <span class="status-label">
+              <span class="scope-mini-icon">👤</span>
+              {{ t("runtimes.scope_user") || "用户" }}:
+            </span>
+            <div v-if="rt.global_version" class="status-val-wrap">
+              <span class="global-pill font-mono">v{{ rt.global_version }}</span>
             </div>
             <span v-else class="text-muted font-mono italic">未配置</span>
           </div>
@@ -245,20 +245,20 @@
 
         <!-- Scope Option Inside Modal -->
         <div class="modal-scope-picker">
-          <label class="modal-scope-item" :class="{ active: modalInstallScope === 'user' }">
-            <input type="radio" value="user" v-model="modalInstallScope" name="install-scope" />
-            <span class="scope-icon">👤</span>
-            <div class="scope-opt-text">
-              <span class="scope-opt-name">{{ t("runtimes.scope_user") || "用户" }}</span>
-              <span class="scope-opt-desc">应用于本机所有工作区的默认兜底版本</span>
-            </div>
-          </label>
           <label class="modal-scope-item" :class="{ active: modalInstallScope === 'workspace' }">
             <input type="radio" value="workspace" v-model="modalInstallScope" name="install-scope" />
             <span class="scope-icon">📁</span>
             <div class="scope-opt-text">
               <span class="scope-opt-name">{{ t("runtimes.scope_workspace") || "工作区" }}</span>
               <span class="scope-opt-desc">应用于当前工作区，随团队项目协作生效</span>
+            </div>
+          </label>
+          <label class="modal-scope-item" :class="{ active: modalInstallScope === 'user' }">
+            <input type="radio" value="user" v-model="modalInstallScope" name="install-scope" />
+            <span class="scope-icon">👤</span>
+            <div class="scope-opt-text">
+              <span class="scope-opt-name">{{ t("runtimes.scope_user") || "用户" }}</span>
+              <span class="scope-opt-desc">应用于本机所有工作区的默认兜底版本</span>
             </div>
           </label>
         </div>
@@ -346,8 +346,8 @@ const props = defineProps<{
   activeSubItem?: string;
 }>();
 
-const currentScope = ref<"user" | "workspace">("user");
-const modalInstallScope = ref<"user" | "workspace">("user");
+const currentScope = ref<"user" | "workspace">("workspace");
+const modalInstallScope = ref<"user" | "workspace">("workspace");
 
 const defaultRuntimes: RuntimeItem[] = [
   {
