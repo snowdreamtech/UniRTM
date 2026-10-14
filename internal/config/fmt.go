@@ -145,7 +145,11 @@ func FormatTOML(content string) (string, error) {
 				b := getBlock(currentTopKey)
 				b.Lines = append(b.Lines, pendingComments...)
 				pendingComments = nil
-				b.Lines = append(b.Lines, line)
+				normalizedHeader := line
+				if strings.Contains(line, "'") {
+					normalizedHeader = normalizeSingleQuotes(line)
+				}
+				b.Lines = append(b.Lines, normalizedHeader)
 				continue
 			}
 		}
@@ -199,8 +203,70 @@ func FormatTOML(content string) (string, error) {
 	return strings.Join(out, "\n") + "\n", nil
 }
 
+// splitTOMLComment splits a line into code and trailing comment (# ...).
+func splitTOMLComment(s string) (string, string) {
+	inDouble := false
+	inSingle := false
+	for i := 0; i < len(s); i++ {
+		ch := s[i]
+		if ch == '"' && !inSingle {
+			if i == 0 || s[i-1] != '\\' {
+				inDouble = !inDouble
+			}
+		} else if ch == '\'' && !inDouble {
+			inSingle = !inSingle
+		} else if ch == '#' && !inDouble && !inSingle {
+			return strings.TrimRight(s[:i], " \t"), s[i:]
+		}
+	}
+	return s, ""
+}
+
+// normalizeSingleQuotes converts non-comment single-quoted strings or keys to double quotes.
+func normalizeSingleQuotes(s string) string {
+	var b strings.Builder
+	inSingle := false
+	var cur strings.Builder
+	for i := 0; i < len(s); i++ {
+		ch := s[i]
+		if ch == '\'' {
+			if !inSingle {
+				inSingle = true
+				cur.Reset()
+			} else {
+				inSingle = false
+				b.WriteString(fmt.Sprintf("%q", cur.String()))
+			}
+		} else if inSingle {
+			cur.WriteByte(ch)
+		} else {
+			b.WriteByte(ch)
+		}
+	}
+	if inSingle {
+		return s
+	}
+	return b.String()
+}
+
 // normalizeTOMLLineQuotes normalizes single-line TOML key-value pairs to prefer double quotes.
 func normalizeTOMLLineQuotes(line string) string {
+	trimmed := strings.TrimSpace(line)
+
+	// Don't format conflict markers or complex multiline values
+	if strings.HasPrefix(trimmed, "<") || strings.HasPrefix(trimmed, ">") || strings.HasPrefix(trimmed, "=") ||
+		strings.HasPrefix(trimmed, `"""`) || strings.HasPrefix(trimmed, `'''`) {
+		return line
+	}
+
+	// If header line e.g. [tools.'foo/bar']
+	if strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
+		if strings.Contains(line, "'") {
+			return normalizeSingleQuotes(line)
+		}
+		return line
+	}
+
 	parts := strings.SplitN(line, "=", 2)
 	if len(parts) != 2 {
 		return line
@@ -212,12 +278,6 @@ func normalizeTOMLLineQuotes(line string) string {
 	trimmedKey := strings.TrimSpace(keyPart)
 	trimmedVal := strings.TrimSpace(valPart)
 
-	// Don't format conflict markers or complex values
-	if strings.HasPrefix(trimmedKey, "<") || strings.HasPrefix(trimmedKey, ">") || strings.HasPrefix(trimmedKey, "=") ||
-		strings.HasPrefix(trimmedVal, "[") || strings.HasPrefix(trimmedVal, "{") || strings.HasPrefix(trimmedVal, `"""`) || strings.HasPrefix(trimmedVal, `'''`) {
-		return line
-	}
-
 	// Normalize key quotes if single quoted
 	normKey := trimmedKey
 	if strings.HasPrefix(trimmedKey, `'`) && strings.HasSuffix(trimmedKey, `'`) && len(trimmedKey) >= 2 {
@@ -225,11 +285,16 @@ func normalizeTOMLLineQuotes(line string) string {
 		normKey = quoteTOMLKey(innerKey)
 	}
 
-	// Normalize value quotes if single quoted
+	// Normalize value quotes if containing single quotes
 	normVal := trimmedVal
-	if strings.HasPrefix(trimmedVal, `'`) && strings.HasSuffix(trimmedVal, `'`) && len(trimmedVal) >= 2 {
-		innerVal := trimmedVal[1 : len(trimmedVal)-1]
-		normVal = fmt.Sprintf("%q", innerVal)
+	if strings.Contains(trimmedVal, "'") {
+		valNoComment, comment := splitTOMLComment(trimmedVal)
+		normalizedVal := normalizeSingleQuotes(valNoComment)
+		if comment != "" {
+			normVal = normalizedVal + " " + comment
+		} else {
+			normVal = normalizedVal
+		}
 	}
 
 	// Preserve key indentation

@@ -293,7 +293,16 @@ func LoadRawTOML(path string) (map[string]interface{}, error) {
 	return m, nil
 }
 
-// SaveRawTOML writes a generic map to a TOML file and formats it.
+// ValidateTOML verifies that the content parses as valid TOML syntax.
+func ValidateTOML(content string) error {
+	var dummy map[string]interface{}
+	if err := toml.Unmarshal([]byte(content), &dummy); err != nil {
+		return fmt.Errorf("invalid TOML syntax: %w", err)
+	}
+	return nil
+}
+
+// SaveRawTOML writes a generic map to a TOML file safely without global reformatting.
 func SaveRawTOML(path string, m map[string]interface{}) error {
 	if envMap, ok := m["env"].(map[string]interface{}); ok {
 		normalizedEnv := make(map[string]interface{}, len(envMap))
@@ -307,12 +316,10 @@ func SaveRawTOML(path string, m map[string]interface{}) error {
 	if err := enc.Encode(m); err != nil {
 		return fmt.Errorf("encode TOML: %w", err)
 	}
-	if err := OsWriteFile(path, buf.Bytes(), 0o644); err != nil {
-		return err
+	if err := ValidateTOML(buf.String()); err != nil {
+		return fmt.Errorf("validate encoded TOML: %w", err)
 	}
-	// Always format the file to enforce standard section ordering
-	_, _ = FormatFile(path, false)
-	return nil
+	return OsWriteFile(path, buf.Bytes(), 0o644)
 }
 
 // formatTOMLValue formats a value as a valid TOML literal.

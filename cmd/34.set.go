@@ -151,13 +151,15 @@ func runSet(cmd *cobra.Command, args []string) error {
 		content = config.UpsertEnvVar(content, k, v)
 	}
 
+	if err := config.ValidateTOML(content); err != nil {
+		formatter.Error(fmt.Sprintf("Failed to validate config syntax: %v", err))
+		return err
+	}
+
 	if err := os.WriteFile(cfgPath, []byte(content), 0o644); err != nil {
 		formatter.Error(fmt.Sprintf("Failed to save config: %v", err))
 		return err
 	}
-
-	// Apply canonical format and taplo formatting to ensure correct block order
-	_, _ = config.FormatFile(cfgPath, false)
 
 	for k, v := range pairs {
 		formatter.Success(fmt.Sprintf("Set %s=%s in %s", k, v, cfgPath), nil)
@@ -189,20 +191,22 @@ func runUnset(cmd *cobra.Command, args []string) error {
 		content, removed = config.UnsetEnvVar(content, key)
 		if removed {
 			anyRemoved = true
-			formatter.Success(fmt.Sprintf("Unset %s from %s", key, cfgPath), nil)
+			formatter.Success(fmt.Sprintf("Unset %s from %s", strings.ToUpper(key), cfgPath), nil)
 		} else {
 			formatter.Warning(fmt.Sprintf("Key %q not found in [env] of %s", key, cfgPath))
 		}
 	}
 
 	if anyRemoved {
+		if err := config.ValidateTOML(content); err != nil {
+			formatter.Error(fmt.Sprintf("Failed to validate config syntax: %v", err))
+			return err
+		}
+
 		if err := os.WriteFile(cfgPath, []byte(content), 0o644); err != nil {
 			formatter.Error(fmt.Sprintf("Failed to save config: %v", err))
 			return err
 		}
-
-		// Apply canonical format and taplo formatting
-		_, _ = config.FormatFile(cfgPath, false)
 	}
 	return nil
 }

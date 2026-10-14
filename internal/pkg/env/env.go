@@ -117,14 +117,20 @@ func (m *EnvManager) Get(key string) string {
 	}
 
 	norm := normalizeKey(key)
+	lookupKey := norm
+	if strings.HasPrefix(norm, "unirtm") {
+		lookupKey = strings.TrimPrefix(norm, "unirtm")
+	} else if strings.HasPrefix(norm, "mise") {
+		lookupKey = strings.TrimPrefix(norm, "mise")
+	}
 
 	var res string
 	// Priority 1: UNIRTM_ prefix
-	if v, ok := m.unirtmIndex[norm]; ok && v != "" {
+	if v, ok := m.unirtmIndex[lookupKey]; ok && v != "" {
 		res = v
-	} else if v, ok := m.miseIndex[norm]; ok && v != "" { // Priority 2: MISE_ prefix
+	} else if v, ok := m.miseIndex[lookupKey]; ok && v != "" { // Priority 2: MISE_ prefix
 		res = v
-	} else if v, ok := m.rawIndex[norm]; ok && v != "" { // Priority 3: Raw key
+	} else if v, ok := m.rawIndex[lookupKey]; ok && v != "" { // Priority 3: Raw key
 		res = v
 	}
 

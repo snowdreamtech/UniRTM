@@ -30,6 +30,8 @@ func TestGetBestEditorWithSource(t *testing.T) {
 	assert.Equal(t, "$UNIRTM_EDITOR", source)
 
 	t.Setenv("UNIRTM_EDITOR", "")
+	t.Setenv("VISUAL", "")
+	t.Setenv("EDITOR", "")
 
 	cfg := &config.Config{
 		Settings: config.Settings{
