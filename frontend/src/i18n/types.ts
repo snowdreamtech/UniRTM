@@ -51,6 +51,8 @@ export interface TranslationDict {
   "runtimes.modal_desc"?: string;
   "runtimes.installing"?: string;
   "runtimes.installed_success"?: string;
+  "runtimes.migrating"?: string;
+  "runtimes.migrate_success"?: string;
 
   "sidebar.group_overview"?: string;
   "sidebar.group_tools"?: string;

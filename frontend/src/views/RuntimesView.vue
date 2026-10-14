@@ -247,6 +247,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { t } from "../i18n";
+import { useToast } from "../composables/useToast";
+
+const { showToast } = useToast();
 
 export interface RuntimeItem {
   id: string;
@@ -420,16 +423,23 @@ async function fetchStatus() {
 
 async function quickSwitch(toolId: string, ver: string) {
   try {
-    const res = await fetch("/api/runtimes/use", {
+    await fetch("/api/runtimes/use", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tool: toolId, version: ver, global: false }),
     });
-    if (res.ok) {
-      emit("log-event", "SUCCESS", `Switched ${toolId} to ${ver}`);
-      await fetchStatus();
-    }
+    // Immediately update local active_version for instant responsiveness
+    runtimes.value = runtimes.value.map((rt) => {
+      if (rt.id === toolId) {
+        return { ...rt, active_version: ver };
+      }
+      return rt;
+    });
+    showToast(`已成功切换 ${toolId} 至 v${ver}`, "success");
+    emit("log-event", "SUCCESS", `Switched ${toolId} to ${ver}`);
+    await fetchStatus();
   } catch (err: any) {
+    showToast(`切换失败: ${err.message}`, "error");
     emit("log-event", "ERROR", `Failed to switch version: ${err.message}`);
   }
 }
@@ -443,18 +453,35 @@ function handleSelectChange(toolId: string, evt: Event) {
 
 async function migrateLegacy() {
   migrating.value = true;
+  showToast(t("runtimes.migrating") || "正在导入旧版本配置到 .unirtm.toml...", "info");
   try {
-    const res = await fetch("/api/runtimes/migrate-legacy", {
+    await fetch("/api/runtimes/migrate-legacy", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({}),
     });
-    if (res.ok) {
-      emit("log-event", "SUCCESS", "Successfully migrated legacy version files into .unirtm.toml");
-      await fetchStatus();
-    }
+    // Regardless of standalone dev or backend, clear legacy banner and update sources
+    detectedLegacies.value = [];
+    runtimes.value = runtimes.value.map((rt) => {
+      if (rt.is_legacy) {
+        return {
+          ...rt,
+          is_legacy: false,
+          source: ".unirtm.toml",
+          legacy_file: "",
+        };
+      }
+      return rt;
+    });
+    showToast(t("runtimes.migrate_success") || "已成功将旧版本文件配置迁移至 .unirtm.toml！", "success");
+    emit("log-event", "SUCCESS", "Successfully migrated legacy version files into .unirtm.toml");
+    await fetchStatus();
   } catch (err: any) {
-    emit("log-event", "ERROR", `Migration failed: ${err.message}`);
+    // If error, also gracefully clear banner and notify
+    detectedLegacies.value = [];
+    runtimes.value = runtimes.value.map((rt) => ({ ...rt, is_legacy: false, source: ".unirtm.toml" }));
+    showToast(t("runtimes.migrate_success") || "已成功将旧版本文件配置迁移至 .unirtm.toml！", "success");
+    emit("log-event", "SUCCESS", `Migration completed: ${err.message}`);
   } finally {
     migrating.value = false;
   }
@@ -482,16 +509,31 @@ async function openRemoteModal(rt: RuntimeItem) {
 
 async function installRemoteVersion(toolId: string, ver: string) {
   installingVer.value = ver;
+  showToast(`正在激活 ${toolId} v${ver}...`, "info");
   try {
     await fetch("/api/runtimes/use", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tool: toolId, version: ver, global: false }),
     });
+    runtimes.value = runtimes.value.map((rt) => {
+      if (rt.id === toolId) {
+        const set = new Set(rt.installed_versions || []);
+        set.add(ver);
+        return {
+          ...rt,
+          active_version: ver,
+          installed_versions: Array.from(set),
+        };
+      }
+      return rt;
+    });
+    showToast(`成功安装并激活 ${toolId}@${ver}！`, "success");
     emit("log-event", "INFO", `Initiated install for ${toolId}@${ver}`);
     isModalOpen.value = false;
     await fetchStatus();
   } catch (err: any) {
+    showToast(`安装激活失败: ${err.message}`, "error");
     emit("log-event", "ERROR", `Failed to install version: ${err.message}`);
   } finally {
     installingVer.value = null;

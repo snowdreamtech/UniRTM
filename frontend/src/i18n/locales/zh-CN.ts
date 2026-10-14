@@ -51,6 +51,8 @@ export const zhCn: TranslationDict = {
   "runtimes.modal_desc": "从官方分发或高速镜像源极速下载并配置预编译二进制包。",
   "runtimes.installing": "正在下载安装...",
   "runtimes.installed_success": "成功安装 {tool}@{version}",
+  "runtimes.migrating": "正在导入旧版本配置到 .unirtm.toml...",
+  "runtimes.migrate_success": "已成功将旧版本文件配置迁移至 .unirtm.toml！",
 
   "sidebar.group_overview": "项目总览",
   "sidebar.group_tools": "运行时与工具",

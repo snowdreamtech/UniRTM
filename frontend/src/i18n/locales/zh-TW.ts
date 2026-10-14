@@ -51,6 +51,8 @@ export const zhTw: TranslationDict = {
   "runtimes.modal_desc": "從官方發行或高速鏡像源極速下載並配置預編譯二進位檔案。",
   "runtimes.installing": "正在下載安裝...",
   "runtimes.installed_success": "成功安裝 {tool}@{version}",
+  "runtimes.migrating": "正在匯入舊版本配置至 .unirtm.toml...",
+  "runtimes.migrate_success": "已成功將舊版本檔案配置遷移至 .unirtm.toml！",
 
   "sidebar.group_overview": "項目總覽",
   "sidebar.group_tools": "執行階段與工具",

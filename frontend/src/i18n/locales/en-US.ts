@@ -51,6 +51,8 @@ export const enUs: TranslationDict = {
   "runtimes.modal_desc": "Select and install pre-compiled binaries from official and mirror repositories.",
   "runtimes.installing": "Installing...",
   "runtimes.installed_success": "Successfully installed {tool}@{version}",
+  "runtimes.migrating": "Importing legacy version configurations to .unirtm.toml...",
+  "runtimes.migrate_success": "Successfully migrated legacy version files into .unirtm.toml!",
 
   "sidebar.group_overview": "PROJECT OVERVIEW",
   "sidebar.group_tools": "RUNTIMES & TOOLS",
