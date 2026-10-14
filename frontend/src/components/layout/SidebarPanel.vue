@@ -401,6 +401,17 @@ const doctorChecks = [
   font-weight: 600;
 }
 
+[data-theme="light"] .sidebar-item.active,
+:root[data-theme="light"] .sidebar-item.active {
+  background: rgba(2, 132, 199, 0.12);
+  color: #0369a1;
+}
+
+[data-theme="light"] .sidebar-item.active .item-sub,
+:root[data-theme="light"] .sidebar-item.active .item-sub {
+  color: #0284c7;
+}
+
 .item-icon {
   font-size: 0.95rem;
   line-height: 1;

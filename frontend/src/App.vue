@@ -56,6 +56,7 @@
 
           <RuntimesView
             v-else-if="currentTab === 'runtimes'"
+            :activeSubItem="activeSubItem"
             @log-event="addLog"
           />
 
