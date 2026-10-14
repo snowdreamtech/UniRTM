@@ -194,7 +194,7 @@ export default defineConfig({
               };
             };
 
-            const knownTools: Record<string, { name: string; desc: string; hp: string; defaultVer: string }> = {
+            const knownLanguageRuntimes: Record<string, { name: string; desc: string; hp: string; defaultVer: string }> = {
               node: { name: "Node.js", desc: "JavaScript / TypeScript runtime (NVM superset)", hp: "https://nodejs.org", defaultVer: "20.18.3" },
               go: { name: "Go", desc: "Go programming language (GVM superset)", hp: "https://go.dev", defaultVer: "1.27.2" },
               python: { name: "Python", desc: "Python language interpreter (Pyenv superset)", hp: "https://python.org", defaultVer: "3.14.7" },
@@ -203,12 +203,28 @@ export default defineConfig({
               deno: { name: "Deno", desc: "Next-generation JavaScript and TypeScript runtime", hp: "https://deno.com", defaultVer: "2.1.9" },
               java: { name: "Java", desc: "OpenJDK / Java runtime environment", hp: "https://openjdk.org", defaultVer: "21.0.2" },
               zig: { name: "Zig", desc: "General-purpose programming language and toolchain", hp: "https://ziglang.org", defaultVer: "0.13.0" },
+              ruby: { name: "Ruby", desc: "Dynamic open source programming language with a focus on simplicity", hp: "https://ruby-lang.org", defaultVer: "3.4.1" },
+              php: { name: "PHP", desc: "Popular general-purpose scripting language suited for web development", hp: "https://php.net", defaultVer: "8.4.3" },
+              dotnet: { name: "Dotnet", desc: ".NET Developer Platform and SDK", hp: "https://dotnet.microsoft.com", defaultVer: "9.0.100" },
+              elixir: { name: "Elixir", desc: "Dynamic functional language designed for building scalable applications", hp: "https://elixir-lang.org", defaultVer: "1.18.1" },
+              erlang: { name: "Erlang", desc: "Programming language used to build massively scalable soft real-time systems", hp: "https://www.erlang.org", defaultVer: "27.2.1" },
+              flutter: { name: "Flutter", desc: "UI software development kit by Google", hp: "https://flutter.dev", defaultVer: "3.27.3" },
+              lua: { name: "Lua", desc: "Powerful, efficient, lightweight, embeddable scripting language", hp: "https://www.lua.org", defaultVer: "5.4.7" },
+              swift: { name: "Swift", desc: "General-purpose programming language developed by Apple", hp: "https://swift.org", defaultVer: "6.0.3" },
             };
 
-            const allToolIds = new Set(["node", "go", "python", "rust", ...Object.keys(wsTools), ...Object.keys(userTools)]);
+            // Only recognize programming language environments — filter out ecosystem/dev tools like github:*, npm:*, pipx:*, go:*, tools with slash, etc.
+            const isLanguageRuntime = (id: string) => {
+              if (id.includes(":") || id.includes("/")) return false;
+              return id in knownLanguageRuntimes;
+            };
+
+            const coreLangIds = ["node", "go", "python", "rust"];
+            const dynamicLangIds = [...Object.keys(wsTools), ...Object.keys(userTools)].filter(isLanguageRuntime);
+            const allToolIds = new Set([...coreLangIds, ...dynamicLangIds]);
             const runtimes: any[] = [];
             for (const id of allToolIds) {
-              const meta = knownTools[id] || {
+              const meta = knownLanguageRuntimes[id] || {
                 name: id.charAt(0).toUpperCase() + id.slice(1),
                 desc: `${id} runtime environment`,
                 hp: "",
