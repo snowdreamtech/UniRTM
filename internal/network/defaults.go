@@ -60,7 +60,7 @@ func DefaultBuiltinProfiles() map[string]NetworkProfile {
 				"go":        "https://goproxy.cn,direct",
 				"python":    "https://pypi.tuna.tsinghua.edu.cn/simple",
 				"rust":      "https://rsproxy.cn/crates.io-index",
-				"ruby":      "https://gems.ruby-china.com",
+				"ruby":      "https://mirrors.tuna.tsinghua.edu.cn/rubygems/",
 				"composer":  "https://mirrors.aliyun.com/composer/",
 				"maven":     "https://maven.aliyun.com/repository/public",
 				"nuget":     "https://repo.huaweicloud.com/repository/nuget/v3/index.json",
@@ -159,8 +159,8 @@ func RecommendedMirrors() map[string][]MirrorOption {
 		},
 		"ruby": {
 			{Name: "官方直连 (RubyGems)", URL: "https://rubygems.org"},
-			{Name: "Ruby China", URL: "https://gems.ruby-china.com"},
 			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/rubygems/"},
+			{Name: "腾讯云 RubyGems", URL: "https://mirrors.cloud.tencent.com/rubygems/"},
 		},
 		"composer": {
 			{Name: "官方直连 (Packagist)", URL: "https://repo.packagist.org"},
@@ -253,7 +253,7 @@ func DefaultProbeTargets() []ProbeTarget {
 		{Ecosystem: "python", Name: "pypi.org (官方)", Endpoint: "https://pypi.org/simple"},
 		{Ecosystem: "rust", Name: "rsproxy.cn", Endpoint: "https://rsproxy.cn/crates.io-index"},
 		{Ecosystem: "rust", Name: "crates.io (官方)", Endpoint: "https://crates.io"},
-		{Ecosystem: "ruby", Name: "Ruby China", Endpoint: "https://gems.ruby-china.com"},
+		{Ecosystem: "ruby", Name: "清华大学 TUNA", Endpoint: "https://mirrors.tuna.tsinghua.edu.cn/rubygems/"},
 		{Ecosystem: "ruby", Name: "rubygems.org (官方)", Endpoint: "https://rubygems.org"},
 		{Ecosystem: "composer", Name: "阿里云 Composer", Endpoint: "https://mirrors.aliyun.com/composer/"},
 		{Ecosystem: "composer", Name: "Packagist (官方)", Endpoint: "https://repo.packagist.org"},

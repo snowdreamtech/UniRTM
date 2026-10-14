@@ -285,7 +285,7 @@ func (m *Manager) EnsureDefaults() {
 				if existing.Registries["rust"] == "https://rsproxy.cn/crates.io-index" {
 					delete(existing.Registries, "rust")
 				}
-				if existing.Registries["ruby"] == "https://gems.ruby-china.com" {
+				if existing.Registries["ruby"] == "https://gems.ruby-china.com" || existing.Registries["ruby"] == "https://mirrors.tuna.tsinghua.edu.cn/rubygems/" {
 					delete(existing.Registries, "ruby")
 				}
 				if existing.Registries["nuget"] == "https://repo.huaweicloud.com/repository/nuget/v3/index.json" {
@@ -297,6 +297,10 @@ func (m *Manager) EnsureDefaults() {
 				if existing.Registries["cocoapods"] == "https://cdn.cocoapods.org" {
 					delete(existing.Registries, "cocoapods")
 				}
+			}
+
+			if existing.Registries["ruby"] == "https://gems.ruby-china.com" {
+				existing.Registries["ruby"] = "https://mirrors.tuna.tsinghua.edu.cn/rubygems/"
 			}
 
 			for k, v := range p.Registries {
@@ -318,6 +322,10 @@ func (m *Manager) EnsureDefaults() {
 			}
 			m.config.Profiles[id] = existing
 		}
+	}
+
+	if m.config.Overrides != nil && m.config.Overrides["ruby"] == "https://gems.ruby-china.com" {
+		m.config.Overrides["ruby"] = "https://mirrors.tuna.tsinghua.edu.cn/rubygems/"
 	}
 
 	if m.config.Proxy.NoProxy == "" {

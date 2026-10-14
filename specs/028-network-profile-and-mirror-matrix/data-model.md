@@ -49,7 +49,7 @@ id = "cn"
 name = "China Fast Mirrors"
 description = "Vetted domestic university and cloud provider public mirror matrix for fast pre-flight downloads"
 builtin = true
-registries = { npm = "https://registry.npmmirror.com", go = "https://goproxy.cn,direct", python = "https://pypi.tuna.tsinghua.edu.cn/simple", rust = "https://rsproxy.cn/crates.io-index", ruby = "https://gems.ruby-china.com" }
+registries = { npm = "https://registry.npmmirror.com", go = "https://goproxy.cn,direct", python = "https://pypi.tuna.tsinghua.edu.cn/simple", rust = "https://rsproxy.cn/crates.io-index", ruby = "https://mirrors.tuna.tsinghua.edu.cn/rubygems/" }
 downloads = { node = "https://npmmirror.com/mirrors/node", go = "https://golang.google.cn/dl", python = "https://registry.npmmirror.com/binary.html?b=python" }
 
 # 4. User-Defined Custom Profiles (Created via CLI or Web UI)
@@ -58,7 +58,7 @@ id = "company-office"
 name = "Corporate Office"
 description = "Internal enterprise registries and private repository endpoints"
 builtin = false
-registries = { npm = "https://npm.corp.internal", go = "https://goproxy.cn,direct", python = "https://pypi.tuna.tsinghua.edu.cn/simple", rust = "https://rsproxy.cn/crates.io-index", ruby = "https://gems.ruby-china.com" }
+registries = { npm = "https://npm.corp.internal", go = "https://goproxy.cn,direct", python = "https://pypi.tuna.tsinghua.edu.cn/simple", rust = "https://rsproxy.cn/crates.io-index", ruby = "https://mirrors.tuna.tsinghua.edu.cn/rubygems/" }
 downloads = { node = "https://npmmirror.com/mirrors/node", go = "https://golang.google.cn/dl", python = "https://registry.npmmirror.com/binary.html?b=python" }
 ```
 

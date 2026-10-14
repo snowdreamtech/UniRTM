@@ -801,8 +801,8 @@ const recommendedMirrors = ref<Record<string, Array<{ name: string; url: string 
   ],
   ruby: [
     { name: "官方直连 (RubyGems)", url: "https://rubygems.org" },
-    { name: "Ruby China", url: "https://gems.ruby-china.com" },
     { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/rubygems/" },
+    { name: "腾讯云 RubyGems", url: "https://mirrors.cloud.tencent.com/rubygems/" },
   ],
   composer: [
     { name: "官方直连 (Packagist)", url: "https://repo.packagist.org" },

@@ -37,7 +37,6 @@ var ProxyBypassDomains = []string{
 	"r.cnpmjs.org",
 	"goproxy.cn",
 	"goproxy.io",
-	"gems.ruby-china.com",
 	"sn0wdr1am.com",
 }
 
