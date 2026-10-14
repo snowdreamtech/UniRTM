@@ -329,7 +329,7 @@ export default defineConfig({
                   res.end(JSON.stringify({
                     success: true,
                     rtt_ms: rtt,
-                    message: `代理服务器连通正常 (响应延迟 ${rtt}ms)`
+                    message: "代理服务器连通正常"
                   }));
                 });
                 socket.on("error", (err: any) => {

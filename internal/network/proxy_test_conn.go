@@ -174,7 +174,7 @@ func TestProxyConnectivity(cfg ProxyConfig, timeout time.Duration) ProxyTestResu
 		}
 		res.Success = true
 		res.RTTMs = avgRTT
-		res.Message = fmt.Sprintf("代理服务器连通正常 (响应延迟 %dms)", avgRTT)
+		res.Message = "代理服务器连通正常"
 		return res
 	}
 
