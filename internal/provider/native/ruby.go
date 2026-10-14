@@ -96,6 +96,10 @@ func (h *RubyHandler) ResolveTag(ctx context.Context, version string) (*VersionI
 		info, err := h.GithubHandler.ResolveTag(ctx, "ruby-"+cleanVer)
 		if err == nil && info != nil && len(info.Assets) > 0 {
 			info.Version = cleanVer
+			winAssets := h.fetchRubyInstallerAssets(ctx, cleanVer)
+			if len(winAssets) > 0 {
+				info.Assets = append(info.Assets, winAssets...)
+			}
 			rubyHandlerCache.Store(cacheKey, info)
 			return info, nil
 		}
@@ -104,6 +108,7 @@ func (h *RubyHandler) ResolveTag(ctx context.Context, version string) (*VersionI
 		expandedURL := fmt.Sprintf("https://github.com/ruby/ruby-builder/releases/expanded_assets/ruby-%s", cleanVer)
 		client := pkgHttp.NewClientWithTimeout(30 * time.Second)
 		req, reqErr := http.NewRequestWithContext(ctx, "GET", expandedURL, nil)
+		var assets []Asset
 		if reqErr == nil {
 			req.Header.Set("User-Agent", "Mozilla/5.0")
 			resp, doErr := client.Do(req)
@@ -115,7 +120,6 @@ func (h *RubyHandler) ResolveTag(ctx context.Context, version string) (*VersionI
 				re := regexp.MustCompile(`/ruby/ruby-builder/releases/download/[^"'\s<>]+`)
 				matches := re.FindAllString(html, -1)
 				if len(matches) > 0 {
-					var assets []Asset
 					seen := make(map[string]bool)
 					for _, m := range matches {
 						parts := strings.Split(m, "/")
@@ -137,18 +141,25 @@ func (h *RubyHandler) ResolveTag(ctx context.Context, version string) (*VersionI
 							Metadata: make(map[string]string),
 						})
 					}
-					if len(assets) > 0 {
-						fallbackInfo := &VersionInfo{
-							Version: cleanVer,
-							Assets:  assets,
-						}
-						rubyHandlerCache.Store(cacheKey, fallbackInfo)
-						return fallbackInfo, nil
-					}
 				}
 			} else if resp != nil {
 				_ = resp.Body.Close()
 			}
+		}
+
+		// Fetch Windows assets from oneclick/rubyinstaller2
+		winAssets := h.fetchRubyInstallerAssets(ctx, cleanVer)
+		if len(winAssets) > 0 {
+			assets = append(assets, winAssets...)
+		}
+
+		if len(assets) > 0 {
+			fallbackInfo := &VersionInfo{
+				Version: cleanVer,
+				Assets:  assets,
+			}
+			rubyHandlerCache.Store(cacheKey, fallbackInfo)
+			return fallbackInfo, nil
 		}
 
 		if err != nil {
@@ -161,6 +172,74 @@ func (h *RubyHandler) ResolveTag(ctx context.Context, version string) (*VersionI
 		return nil, err
 	}
 	return res.(*VersionInfo), nil
+}
+
+// fetchRubyInstallerAssets attempts to fetch Windows prebuilt archives (.7z) from oneclick/rubyinstaller2.
+func (h *RubyHandler) fetchRubyInstallerAssets(ctx context.Context, cleanVer string) []Asset {
+	tag := fmt.Sprintf("RubyInstaller-%s-1", cleanVer)
+	expandedURL := fmt.Sprintf("https://github.com/oneclick/rubyinstaller2/releases/expanded_assets/%s", tag)
+	client := pkgHttp.NewClientWithTimeout(30 * time.Second)
+	req, reqErr := http.NewRequestWithContext(ctx, "GET", expandedURL, nil)
+	if reqErr != nil {
+		return nil
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0")
+	resp, doErr := client.Do(req)
+	if doErr != nil || resp.StatusCode != http.StatusOK {
+		if resp != nil {
+			_ = resp.Body.Close()
+		}
+		return nil
+	}
+	defer resp.Body.Close()
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	html := string(bodyBytes)
+
+	re := regexp.MustCompile(`/oneclick/rubyinstaller2/releases/download/[^"'\s<>]+`)
+	matches := re.FindAllString(html, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+
+	var assets []Asset
+	seen := make(map[string]bool)
+	for _, m := range matches {
+		parts := strings.Split(m, "/")
+		filename := parts[len(parts)-1]
+		if seen[filename] {
+			continue
+		}
+		seen[filename] = true
+
+		// Only grab .7z archives (the portable archives, skipping .exe installers / devkits / sigs)
+		if !strings.HasSuffix(filename, ".7z") {
+			continue
+		}
+		if strings.Contains(filename, "devkit") {
+			continue
+		}
+
+		arch := ""
+		if strings.Contains(filename, "x64") {
+			arch = "amd64"
+		} else if strings.Contains(filename, "x86") {
+			arch = "386"
+		} else if strings.Contains(filename, "arm64") {
+			arch = "arm64"
+		}
+		if arch == "" {
+			continue
+		}
+
+		assets = append(assets, Asset{
+			Filename: filename,
+			URL:      "https://github.com" + m,
+			OS:       "windows",
+			Arch:     arch,
+			Metadata: make(map[string]string),
+		})
+	}
+	return assets
 }
 
 func (h *RubyHandler) isMatch(filename string) bool {

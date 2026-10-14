@@ -213,6 +213,7 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 			strings.Contains(nameLower, "win64") ||
 			strings.Contains(nameLower, "win32") ||
 			containsWord(nameLower, "win") ||
+			strings.Contains(nameLower, "rubyinstaller") ||
 			strings.HasSuffix(nameLower, ".exe") {
 			osMatch = true
 			score += 100
@@ -299,6 +300,8 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 		score += 50
 	case strings.HasSuffix(nameLower, ".zip"):
 		score += 40
+	case strings.HasSuffix(nameLower, ".7z"):
+		score += 35
 	case strings.HasSuffix(nameLower, ".tar.xz") || strings.HasSuffix(nameLower, ".txz"):
 		score += 30
 	case strings.HasSuffix(nameLower, ".tar.zst") || strings.HasSuffix(nameLower, ".tzst"):
