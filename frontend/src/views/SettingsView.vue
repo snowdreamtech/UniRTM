@@ -547,9 +547,9 @@
                     @click="handlePingSingle(eco)"
                   >
                     <span v-if="ecoPingStatus[eco]?.loading" class="ping-icon spinning">🔄</span>
-                    <span v-else-if="ecoPingStatus[eco]?.status === 'fast'" class="ping-text ping-fast">⚡ {{ ecoPingStatus[eco]?.rtt_ms }}ms</span>
-                    <span v-else-if="ecoPingStatus[eco]?.status === 'normal'" class="ping-text ping-normal">⚡ {{ ecoPingStatus[eco]?.rtt_ms }}ms</span>
-                    <span v-else-if="ecoPingStatus[eco]?.status === 'slow'" class="ping-text ping-slow">⚡ {{ ecoPingStatus[eco]?.rtt_ms }}ms</span>
+                    <span v-else-if="ecoPingStatus[eco]?.status === 'fast'" class="ping-text ping-fast">⚡ {{ (ecoPingStatus[eco]?.rtt_ms ?? 0) }}ms</span>
+                    <span v-else-if="ecoPingStatus[eco]?.status === 'normal'" class="ping-text ping-normal">⚡ {{ (ecoPingStatus[eco]?.rtt_ms ?? 0) }}ms</span>
+                    <span v-else-if="ecoPingStatus[eco]?.status === 'slow'" class="ping-text ping-slow">⚡ {{ (ecoPingStatus[eco]?.rtt_ms ?? 0) }}ms</span>
                     <span v-else-if="ecoPingStatus[eco]?.status === 'timeout'" class="ping-text ping-timeout">⚠️ 超时</span>
                     <span v-else-if="ecoPingStatus[eco]?.status === 'error'" class="ping-text ping-error">⚠️ 失败</span>
                     <span v-else class="ping-text ping-idle">⚡ 测速</span>
@@ -1602,7 +1602,7 @@ async function handlePingSingle(eco: string) {
       const item = data.results?.[0];
       if (item) {
         ecoPingStatus.value[eco] = {
-          rtt_ms: item.rtt_ms,
+          rtt_ms: item.rtt_ms ?? item.latency_ms ?? 0,
           status: item.status,
           loading: false,
           error: item.error
@@ -1648,7 +1648,7 @@ async function handleRunProbeAll() {
       results.forEach(r => {
         if (r.ecosystem) {
           ecoPingStatus.value[r.ecosystem] = {
-            rtt_ms: r.rtt_ms,
+            rtt_ms: r.rtt_ms ?? r.latency_ms ?? 0,
             status: r.status,
             loading: false,
             error: r.error

@@ -257,18 +257,108 @@ export default defineConfig({
           }
 
           if (req.url?.startsWith("/api/network/ping")) {
-            res.setHeader("Content-Type", "application/json");
-            res.end(
-              JSON.stringify({
-                results: [
-                  { ecosystem: "npm", name: "npmmirror", endpoint: "https://registry.npmmirror.com", latency_ms: 28, status: "fast", ok: true },
-                  { ecosystem: "go", name: "goproxy.cn", endpoint: "https://goproxy.cn", latency_ms: 35, status: "fast", ok: true },
-                  { ecosystem: "python", name: "清华大学 TUNA", endpoint: "https://pypi.tuna.tsinghua.edu.cn", latency_ms: 42, status: "fast", ok: true },
-                  { ecosystem: "rust", name: "rsproxy.cn", endpoint: "https://rsproxy.cn", latency_ms: 30, status: "fast", ok: true },
-                  { ecosystem: "ruby", name: "Ruby China", endpoint: "https://gems.ruby-china.com", latency_ms: 55, status: "fast", ok: true },
-                ],
-              })
-            );
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", async () => {
+              try {
+                let targets: Array<{ ecosystem: string; name?: string; url: string }> = [];
+                if (bodyStr) {
+                  try {
+                    const parsed = JSON.parse(bodyStr);
+                    if (Array.isArray(parsed.targets)) {
+                      targets = parsed.targets;
+                    } else if (parsed.url) {
+                      targets = [{ ecosystem: parsed.ecosystem || "custom", name: parsed.name || parsed.ecosystem, url: parsed.url }];
+                    }
+                  } catch {}
+                }
+
+                if (targets.length === 0) {
+                  targets = [
+                    { ecosystem: "npm", name: "npmmirror", url: "https://registry.npmmirror.com" },
+                    { ecosystem: "go", name: "goproxy.cn", url: "https://goproxy.cn" },
+                    { ecosystem: "python", name: "清华大学 TUNA", url: "https://pypi.tuna.tsinghua.edu.cn/simple" },
+                    { ecosystem: "rust", name: "rsproxy.cn", url: "https://rsproxy.cn/crates.io-index" },
+                    { ecosystem: "ruby", name: "Ruby China", url: "https://gems.ruby-china.com" },
+                    { ecosystem: "composer", name: "阿里云 Composer", url: "https://mirrors.aliyun.com/composer/" },
+                    { ecosystem: "maven", name: "阿里云 Maven", url: "https://maven.aliyun.com/repository/public" },
+                    { ecosystem: "nuget", name: "华为云 NuGet", url: "https://repo.huaweicloud.com/repository/nuget/v3/index.json" },
+                    { ecosystem: "docker", name: "阿里云 Docker", url: "https://registry.cn-hangzhou.aliyuncs.com" },
+                    { ecosystem: "dart", name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/dart-pub" },
+                    { ecosystem: "cocoapods", name: "CocoaPods CDN", url: "https://cdn.cocoapods.org" },
+                    { ecosystem: "conda", name: "清华大学 Conda", url: "https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main" },
+                    { ecosystem: "homebrew", name: "清华大学 Homebrew", url: "https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles" },
+                    { ecosystem: "git", name: "GitHub", url: "https://github.com" },
+                  ];
+                }
+
+                const probeOne = async (t: { ecosystem: string; name?: string; url: string }) => {
+                  const start = Date.now();
+                  try {
+                    let targetUrl = t.url;
+                    if (targetUrl.includes(",")) {
+                      const parts = targetUrl.split(",");
+                      for (const p of parts) {
+                        const trimmed = p.trim();
+                        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+                          targetUrl = trimmed;
+                          break;
+                        }
+                      }
+                    }
+                    const controller = new AbortController();
+                    const timer = setTimeout(() => controller.abort(), 3000);
+                    const resp = await fetch(targetUrl, {
+                      method: "HEAD",
+                      signal: controller.signal,
+                      headers: { "User-Agent": "UniRTM-Probe/0.1.0" },
+                    });
+                    clearTimeout(timer);
+                    const rtt = Math.max(1, Date.now() - start);
+                    let status = "normal";
+                    if (resp.status >= 500) {
+                      status = "error";
+                    } else if (rtt < 100) {
+                      status = "fast";
+                    } else if (rtt < 300) {
+                      status = "normal";
+                    } else {
+                      status = "slow";
+                    }
+                    return {
+                      ecosystem: t.ecosystem,
+                      name: t.name || t.ecosystem,
+                      endpoint: t.url,
+                      rtt_ms: rtt,
+                      latency_ms: rtt,
+                      status,
+                      ok: resp.status < 500,
+                    };
+                  } catch (err: any) {
+                    const rtt = Date.now() - start;
+                    const isTimeout = err.name === "AbortError" || rtt >= 2800;
+                    return {
+                      ecosystem: t.ecosystem,
+                      name: t.name || t.ecosystem,
+                      endpoint: t.url,
+                      rtt_ms: 0,
+                      latency_ms: 0,
+                      status: isTimeout ? "timeout" : "error",
+                      error: err.message,
+                      ok: false,
+                    };
+                  }
+                };
+
+                const results = await Promise.all(targets.map(probeOne));
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ results }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
             return;
           }
 

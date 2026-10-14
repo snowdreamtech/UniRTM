@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -56,7 +57,19 @@ func ProbeOne(client *http.Client, t ProbeTarget, timeout time.Duration) ProbeRe
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodHead, t.Endpoint, nil)
+	rawURL := strings.TrimSpace(t.Endpoint)
+	if strings.Contains(rawURL, ",") {
+		parts := strings.Split(rawURL, ",")
+		for _, p := range parts {
+			p = strings.TrimSpace(p)
+			if strings.HasPrefix(p, "http://") || strings.HasPrefix(p, "https://") {
+				rawURL = p
+				break
+			}
+		}
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, rawURL, nil)
 	if err != nil {
 		res.Status = "error"
 		res.Error = err.Error()
