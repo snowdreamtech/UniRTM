@@ -42,6 +42,24 @@
         </button>
       </template>
 
+      <!-- RUNTIMES Navigation Items -->
+      <template v-if="currentTab === 'runtimes'">
+        <div class="nav-group-title">{{ t("runtimes.title") || "RUNTIMES" }}</div>
+        <button
+          v-for="item in filteredRuntimeItems"
+          :key="item.id"
+          class="sidebar-item"
+          :class="{ active: activeSubItem === item.id }"
+          @click="$emit('select-sub-item', item.id)"
+        >
+          <span class="item-icon">{{ item.icon }}</span>
+          <div class="item-dual">
+            <span class="item-label">{{ item.label }}</span>
+            <span class="item-sub">{{ item.meta }}</span>
+          </div>
+        </button>
+      </template>
+
       <!-- TOOLS Navigation Items -->
       <template v-if="currentTab === 'tools'">
         <div class="nav-group-title">{{ t("sidebar.group_tools") || "PROJECT RUNTIMES & TOOLS" }}</div>
@@ -163,6 +181,8 @@ const headerTitle = computed(() => {
   switch (props.currentTab) {
     case "dashboard":
       return t("nav.dashboard") || "DASHBOARD";
+    case "runtimes":
+      return t("nav.runtimes") || "RUNTIMES";
     case "tools":
       return t("nav.tools") || "TOOLCHAINS";
     case "tasks":
@@ -202,6 +222,23 @@ const dashboardItems = [
 const filteredDashboardItems = computed(() => {
   if (!searchQuery.value) return dashboardItems;
   return dashboardItems.filter((i) => i.label.toLowerCase().includes(searchQuery.value.toLowerCase()));
+});
+
+// Runtimes items
+const runtimeItems = [
+  { id: "node", icon: "🟢", label: "Node.js", meta: "NVM / .nvmrc" },
+  { id: "go", icon: "🔷", label: "Go", meta: "GVM / .go-version" },
+  { id: "python", icon: "🐍", label: "Python", meta: "Pyenv / .python-version" },
+  { id: "rust", icon: "🦀", label: "Rust", meta: "rustup / cargo" },
+];
+
+const filteredRuntimeItems = computed(() => {
+  if (!searchQuery.value) return runtimeItems;
+  return runtimeItems.filter(
+    (r) =>
+      r.label.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      r.meta.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
 });
 
 // Tools items

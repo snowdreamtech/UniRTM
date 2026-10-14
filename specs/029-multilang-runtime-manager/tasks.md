@@ -54,10 +54,10 @@
 
 **Purpose**: Provide an interactive, modern, and natively localized Web workbench for runtime governance.
 
-- [ ] T016 [i18n] Add complete `runtimes.*` dictionary keys to `frontend/src/i18n/types.ts`, `zh-CN.ts`, `zh-TW.ts`, and `en-US.ts`.
-- [ ] T017 [UI] Create `frontend/src/views/RuntimesView.vue` with runtime cards (Node.js, Go, Python, Rust), active version selectors, legacy file alert banner, and remote install modal.
-- [ ] T018 [UI] Register the "Runtimes" navigation tab and route in `frontend/src/router/` and `frontend/src/App.vue`.
-- [ ] T019 [Build] Verify frontend production bundle compilation with `npm run build` in `frontend/`.
+- [x] T016 [i18n] Add complete `runtimes.*` dictionary keys to `frontend/src/i18n/types.ts`, `zh-CN.ts`, `zh-TW.ts`, and `en-US.ts`.
+- [x] T017 [UI] Create `frontend/src/views/RuntimesView.vue` with runtime cards (Node.js, Go, Python, Rust), active version selectors, legacy file alert banner, and remote install modal.
+- [x] T018 [UI] Register the "Runtimes" navigation tab and route in `frontend/src/router/` and `frontend/src/App.vue`.
+- [x] T019 [Build] Verify frontend production bundle compilation with `npm run build` in `frontend/`.
 
 ---
 

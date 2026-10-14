@@ -28,10 +28,29 @@ export interface TranslationDict {
   "console.title"?: string;
 
   "nav.dashboard"?: string;
+  "nav.runtimes"?: string;
   "nav.tools"?: string;
   "nav.tasks"?: string;
   "nav.marketplace"?: string;
   "nav.doctor"?: string;
+
+  "runtimes.title"?: string;
+  "runtimes.desc"?: string;
+  "runtimes.legacy_banner"?: string;
+  "runtimes.import_legacy"?: string;
+  "runtimes.installed_versions"?: string;
+  "runtimes.active_version"?: string;
+  "runtimes.global_default"?: string;
+  "runtimes.switch_version"?: string;
+  "runtimes.install_new"?: string;
+  "runtimes.scope_project"?: string;
+  "runtimes.scope_global"?: string;
+  "runtimes.search_placeholder"?: string;
+  "runtimes.no_installed"?: string;
+  "runtimes.modal_title"?: string;
+  "runtimes.modal_desc"?: string;
+  "runtimes.installing"?: string;
+  "runtimes.installed_success"?: string;
 
   "sidebar.group_overview"?: string;
   "sidebar.group_tools"?: string;

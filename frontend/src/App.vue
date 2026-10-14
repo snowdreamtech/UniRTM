@@ -54,6 +54,11 @@
             @log-event="addLog"
           />
 
+          <RuntimesView
+            v-else-if="currentTab === 'runtimes'"
+            @log-event="addLog"
+          />
+
           <ToolsView
             v-else-if="currentTab === 'tools'"
             @log-event="addLog"
@@ -122,6 +127,7 @@ import BottomStatusBar from "./components/layout/BottomStatusBar.vue";
 import BottomDrawer, { type LogItem } from "./components/layout/BottomDrawer.vue";
 
 import DashboardView from "./views/DashboardView.vue";
+import RuntimesView from "./views/RuntimesView.vue";
 import ToolsView from "./views/ToolsView.vue";
 import TasksView from "./views/TasksView.vue";
 import MarketplaceView from "./views/MarketplaceView.vue";
@@ -197,6 +203,8 @@ const currentTabLabel = computed(() => {
   switch (currentTab.value) {
     case "dashboard":
       return t("nav.dashboard") || "Dashboard";
+    case "runtimes":
+      return t("nav.runtimes") || "Runtimes";
     case "tools":
       return t("nav.tools") || "Toolchains";
     case "tasks":
