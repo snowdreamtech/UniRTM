@@ -253,6 +253,32 @@
                   <span class="slider round"></span>
                 </label>
                 <span class="toggle-text">{{ networkStatus.proxy.enabled ? (t('network.proxy_enabled') || '全局代理已开启') : (t('network.proxy_disabled') || '全局代理已关闭 (直连)') }}</span>
+
+                <button
+                  type="button"
+                  class="btn-detect-proxy"
+                  :disabled="isDetectingProxy"
+                  @click="handleDetectProxy(true)"
+                  title="自动探测宿主机运行中的代理客户端 (sing-box, Clash 等)"
+                >
+                  <span v-if="isDetectingProxy">🔄 探测中...</span>
+                  <span v-else>🔍 自动探测宿主代理</span>
+                </button>
+              </div>
+
+              <!-- Detected Proxy Banner -->
+              <div v-if="detectedProxy?.detected" class="detected-proxy-banner">
+                <div class="detected-banner-left">
+                  <span class="detected-pill">{{ detectedProxy.type.toUpperCase() }}</span>
+                  <span class="detected-desc">{{ detectedProxy.description }}</span>
+                </div>
+                <button
+                  type="button"
+                  class="btn-apply-detected"
+                  @click="applyDetectedProxy"
+                >
+                  ⚡ 一键填入并启用
+                </button>
               </div>
 
               <div class="proxy-fields" :class="{ 'fields-disabled': !networkStatus.proxy.enabled }">
@@ -752,6 +778,8 @@ const showCreateProfileModal = ref(false);
 const newProfileId = ref("");
 const newProfileName = ref("");
 const isProbing = ref(false);
+const detectedProxy = ref<any>(null);
+const isDetectingProxy = ref(false);
 interface EcoPingResult {
   rtt_ms?: number;
   status: 'idle' | 'loading' | 'fast' | 'normal' | 'slow' | 'timeout' | 'error';
@@ -1587,6 +1615,35 @@ async function handleSaveProxy() {
   }
 }
 
+async function handleDetectProxy(applyImmediately: boolean = false) {
+  isDetectingProxy.value = true;
+  try {
+    const res = await fetch("/api/network/proxy/detect");
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.detected) {
+        detectedProxy.value = data;
+        if (applyImmediately || (networkStatus.value?.proxy?.enabled && !networkStatus.value?.proxy?.http && !networkStatus.value?.proxy?.socks5)) {
+          applyDetectedProxy();
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Failed to detect system proxy:", err);
+  } finally {
+    isDetectingProxy.value = false;
+  }
+}
+
+async function applyDetectedProxy() {
+  if (!detectedProxy.value || !networkStatus.value) return;
+  networkStatus.value.proxy.http = detectedProxy.value.http || "";
+  networkStatus.value.proxy.https = detectedProxy.value.https || detectedProxy.value.http || "";
+  networkStatus.value.proxy.socks5 = detectedProxy.value.socks5 || "";
+  networkStatus.value.proxy.enabled = true;
+  await handleSaveProxy();
+}
+
 function getEcoPingClass(eco: string) {
   const p = ecoPingStatus.value[eco];
   if (!p || p.status === 'idle') return 'ping-idle';
@@ -1693,6 +1750,7 @@ async function handleRunProbeAll() {
 onMounted(() => {
   loadConfigData();
   loadNetworkStatus();
+  handleDetectProxy(false);
   if (props.activeCategory) {
     setTimeout(() => {
       scrollToCategory(props.activeCategory!);
@@ -2515,6 +2573,82 @@ input:checked + .slider:before {
   font-size: 0.84rem;
   font-weight: 500;
   color: var(--text-main);
+}
+
+.btn-detect-proxy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  color: var(--accent-cyan);
+  border-radius: 5px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: auto;
+  transition: all 0.2s;
+}
+
+.btn-detect-proxy:hover:not(:disabled) {
+  border-color: var(--accent-cyan);
+  background: rgba(34, 211, 238, 0.1);
+}
+
+.btn-detect-proxy:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.detected-proxy-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.detected-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detected-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--accent-cyan);
+  color: #090e17;
+}
+
+.detected-desc {
+  font-size: 0.8rem;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.btn-apply-detected {
+  padding: 5px 12px;
+  background: var(--accent-cyan);
+  color: #090e17;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+}
+
+.btn-apply-detected:hover {
+  opacity: 0.88;
 }
 
 .proxy-fields {

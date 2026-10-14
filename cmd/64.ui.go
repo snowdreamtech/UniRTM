@@ -518,6 +518,7 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/network/registry/reset", handleResetNetworkRegistry)
 	mux.HandleFunc("/api/network/registry/reset-all", handleResetAllNetworkRegistries)
 	mux.HandleFunc("/api/network/proxy", handleSetNetworkProxy)
+	mux.HandleFunc("/api/network/proxy/detect", handleDetectNetworkProxy)
 	mux.HandleFunc("/api/network/ping", handlePingNetwork)
 
 	// ─── Static SPA Handler ───────────────────────────────────────────────────
@@ -1029,6 +1030,12 @@ func handleSetNetworkProxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "status": mgr.GetStatus()})
+}
+
+func handleDetectNetworkProxy(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	detected := network.DetectSystemProxy()
+	_ = json.NewEncoder(w).Encode(detected)
 }
 
 func handlePingNetwork(w http.ResponseWriter, r *http.Request) {

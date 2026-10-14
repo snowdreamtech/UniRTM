@@ -256,6 +256,50 @@ export default defineConfig({
             return;
           }
 
+          if (req.url === "/api/network/proxy/detect") {
+            try {
+              let detected = false;
+              let port = 8889;
+              let desc = "";
+              const singBoxPath = "/etc/sing-box/config.json";
+              if (fs.existsSync(singBoxPath)) {
+                try {
+                  const cfg = JSON.parse(fs.readFileSync(singBoxPath, "utf-8"));
+                  for (const inb of cfg.inbounds || []) {
+                    if (inb.type === "mixed" || inb.type === "http" || inb.type === "socks") {
+                      port = inb.listen_port || 8889;
+                      detected = true;
+                      desc = `检测到本机正在运行的 sing-box 混合代理服务 (端口 ${port})`;
+                      break;
+                    }
+                  }
+                } catch {}
+              }
+              if (!detected) {
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ detected: false }));
+                return;
+              }
+              res.setHeader("Content-Type", "application/json");
+              res.end(
+                JSON.stringify({
+                  detected: true,
+                  type: "sing-box",
+                  http: `http://127.0.0.1:${port}`,
+                  https: `http://127.0.0.1:${port}`,
+                  socks5: `socks5://127.0.0.1:${port}`,
+                  port,
+                  description: desc,
+                })
+              );
+            } catch (err: any) {
+              res.statusCode = 500;
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify({ error: err.message }));
+            }
+            return;
+          }
+
           if (req.url?.startsWith("/api/network/ping")) {
             let bodyStr = "";
             req.on("data", (c: any) => { bodyStr += c; });
