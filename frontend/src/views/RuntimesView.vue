@@ -620,8 +620,8 @@ async function addRuntimeFromPreset(preset: PresetRuntime) {
     homepage: preset.homepage,
     installed_versions: [preset.defaultVersion],
     active_version: isGlobal ? "" : preset.defaultVersion,
-    global_version: preset.defaultVersion,
-    source: ".unirtm.toml",
+    global_version: isGlobal ? preset.defaultVersion : "",
+    source: isGlobal ? "~/.config/unirtm/unirtm.toml" : ".unirtm.toml",
     is_legacy: false,
     legacy_file: "",
   };
@@ -646,8 +646,8 @@ async function addCustomRuntime() {
     homepage: "",
     installed_versions: ["latest"],
     active_version: isGlobal ? "" : "latest",
-    global_version: "latest",
-    source: ".unirtm.toml",
+    global_version: isGlobal ? "latest" : "",
+    source: isGlobal ? "~/.config/unirtm/unirtm.toml" : ".unirtm.toml",
     is_legacy: false,
     legacy_file: "",
   };

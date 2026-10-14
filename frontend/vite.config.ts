@@ -178,11 +178,7 @@ export default defineConfig({
                 }
               }
 
-              if (!active) {
-                active = defaultVer;
-              }
-
-              const globalVer = userTools[id] || defaultVer;
+              const globalVer = userTools[id] || "";
 
               return {
                 id,
@@ -192,18 +188,34 @@ export default defineConfig({
                 installed_versions: installed,
                 active_version: active,
                 global_version: globalVer,
-                source: source || ".unirtm.toml",
+                source: source || (active ? ".unirtm.toml" : ""),
                 is_legacy: isLegacy,
                 legacy_file: legacyFile,
               };
             };
 
-            const runtimes = [
-              getToolItem("node", "Node.js", "JavaScript / TypeScript runtime (NVM superset)", "https://nodejs.org", "20.18.3", ["20.18.3", "26.8.1"]),
-              getToolItem("go", "Go", "Go programming language (GVM superset)", "https://go.dev", "1.27.2", ["1.27.1", "1.27.2"]),
-              getToolItem("python", "Python", "Python language interpreter (Pyenv superset)", "https://python.org", "3.14.7", ["3.12.2", "3.14.7"]),
-              getToolItem("rust", "Rust", "Rust toolchain & cargo build system", "https://rust-lang.org", "1.85.0", ["1.85.0"]),
-            ];
+            const knownTools: Record<string, { name: string; desc: string; hp: string; defaultVer: string }> = {
+              node: { name: "Node.js", desc: "JavaScript / TypeScript runtime (NVM superset)", hp: "https://nodejs.org", defaultVer: "20.18.3" },
+              go: { name: "Go", desc: "Go programming language (GVM superset)", hp: "https://go.dev", defaultVer: "1.27.2" },
+              python: { name: "Python", desc: "Python language interpreter (Pyenv superset)", hp: "https://python.org", defaultVer: "3.14.7" },
+              rust: { name: "Rust", desc: "Rust toolchain & cargo build system", hp: "https://rust-lang.org", defaultVer: "1.85.0" },
+              bun: { name: "Bun", desc: "Incredibly fast all-in-one JavaScript & TypeScript toolkit", hp: "https://bun.sh", defaultVer: "1.2.4" },
+              deno: { name: "Deno", desc: "Next-generation JavaScript and TypeScript runtime", hp: "https://deno.com", defaultVer: "2.1.9" },
+              java: { name: "Java", desc: "OpenJDK / Java runtime environment", hp: "https://openjdk.org", defaultVer: "21.0.2" },
+              zig: { name: "Zig", desc: "General-purpose programming language and toolchain", hp: "https://ziglang.org", defaultVer: "0.13.0" },
+            };
+
+            const allToolIds = new Set(["node", "go", "python", "rust", ...Object.keys(wsTools), ...Object.keys(userTools)]);
+            const runtimes: any[] = [];
+            for (const id of allToolIds) {
+              const meta = knownTools[id] || {
+                name: id.charAt(0).toUpperCase() + id.slice(1),
+                desc: `${id} runtime environment`,
+                hp: "",
+                defaultVer: "",
+              };
+              runtimes.push(getToolItem(id, meta.name, meta.desc, meta.hp, meta.defaultVer, []));
+            }
 
             const totalInstalled = runtimes.reduce((acc, r) => acc + r.installed_versions.length, 0);
 
