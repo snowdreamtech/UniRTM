@@ -103,7 +103,6 @@
             <div class="setting-item" :class="{ highlight: matchesSearch('language') }">
               <div class="setting-meta">
                 <span class="setting-title">{{ t('settings.language') || '语言' }}</span>
-                <span class="setting-key font-mono">settings.language</span>
                 <p class="setting-desc">{{ t('settings.language_desc') || '工作台界面的显示语言。' }}</p>
               </div>
               <div class="setting-control">
@@ -119,7 +118,6 @@
             <div class="setting-item" :class="{ highlight: matchesSearch('theme') }">
               <div class="setting-meta">
                 <span class="setting-title">{{ t('settings.theme') || '主题' }}</span>
-                <span class="setting-key font-mono">settings.theme</span>
                 <p class="setting-desc">{{ t('settings.theme_desc') || '工作台外观色彩主题。' }}</p>
               </div>
               <div class="setting-control">
@@ -146,7 +144,6 @@
                     {{ t('settings.scope_global_only') || '仅限用户' }}
                   </span>
                 </div>
-                <span class="setting-key font-mono">settings.browser</span>
                 <p class="setting-desc">
                   {{ t('settings.browser_desc') || '启动工作台时调用的浏览器。' }}
                 </p>
@@ -196,7 +193,6 @@
             <div class="setting-item" :class="{ highlight: matchesSearch('cache_ttl') }">
               <div class="setting-meta">
                 <span class="setting-title">{{ t('settings.cache_ttl') || '缓存周期' }}</span>
-                <span class="setting-key font-mono">settings.cache_ttl</span>
                 <p class="setting-desc">{{ t('settings.cache_ttl_desc') || '工具清单与索引的本地缓存有效时间。' }}</p>
               </div>
               <div class="setting-control">
