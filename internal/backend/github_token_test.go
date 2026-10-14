@@ -52,6 +52,7 @@ func TestResolveGitHubToken_EnvPriority(t *testing.T) {
 	defer func() { ghAuthTokenFn = origGhAuthTokenFn }()
 
 	t.Run("UNIRTM_GITHUB_TOKEN takes priority", func(t *testing.T) {
+		ClearTokenCache()
 		t.Setenv("UNIRTM_GITHUB_TOKEN", "unirtm-token")
 		t.Setenv("GITHUB_TOKEN", "github-token")
 
@@ -62,6 +63,7 @@ func TestResolveGitHubToken_EnvPriority(t *testing.T) {
 	})
 
 	t.Run("GITHUB_TOKEN used when UNIRTM_GITHUB_TOKEN not set", func(t *testing.T) {
+		ClearTokenCache()
 		t.Setenv("GITHUB_TOKEN", "ci-token")
 
 		got := resolveGitHubToken("github.com")
@@ -71,6 +73,7 @@ func TestResolveGitHubToken_EnvPriority(t *testing.T) {
 	})
 
 	t.Run("GH_TOKEN used when GITHUB_TOKEN not set", func(t *testing.T) {
+		ClearTokenCache()
 		t.Setenv("GH_TOKEN", "gh-token")
 
 		got := resolveGitHubToken("github.com")
@@ -80,6 +83,7 @@ func TestResolveGitHubToken_EnvPriority(t *testing.T) {
 	})
 
 	t.Run("GITHUB_API_TOKEN used as fallback", func(t *testing.T) {
+		ClearTokenCache()
 		t.Setenv("GITHUB_API_TOKEN", "api-token")
 
 		got := resolveGitHubToken("github.com")
@@ -89,6 +93,7 @@ func TestResolveGitHubToken_EnvPriority(t *testing.T) {
 	})
 
 	t.Run("gh auth token fallback when configured", func(t *testing.T) {
+		ClearTokenCache()
 		orig := ghAuthTokenFn
 		ghAuthTokenFn = func(host string) string { return "gh-cli-token" }
 		defer func() { ghAuthTokenFn = orig }()
@@ -100,6 +105,7 @@ func TestResolveGitHubToken_EnvPriority(t *testing.T) {
 	})
 
 	t.Run("returns empty string when no token configured", func(t *testing.T) {
+		ClearTokenCache()
 		got := resolveGitHubToken("github.com")
 		if got != "" {
 			t.Errorf("expected empty string, got %q", got)
