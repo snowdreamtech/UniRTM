@@ -6,6 +6,34 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 
+function findUnirtmBinary(rootDir: string): string {
+  const isWindows = process.platform === "win32";
+  const exeSuffix = isWindows ? ".exe" : "";
+  const candidates = [
+    path.join(rootDir, "bin", `unirtm${exeSuffix}`),
+    path.join(rootDir, `unirtm${exeSuffix}`),
+    path.join(os.homedir(), ".local", "bin", `unirtm${exeSuffix}`),
+    path.join(os.homedir(), "bin", `unirtm${exeSuffix}`),
+  ];
+
+  let bestBin = "";
+  let latestMtime = -1;
+
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      try {
+        const stat = fs.statSync(p);
+        if (stat.mtimeMs > latestMtime) {
+          latestMtime = stat.mtimeMs;
+          bestBin = p;
+        }
+      } catch {}
+    }
+  }
+
+  return bestBin || candidates[0];
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -22,7 +50,7 @@ export default defineConfig({
       configureServer(server) {
         server.middlewares.use((req: any, res: any, next: any) => {
           const rootDir = fileURLToPath(new URL("..", import.meta.url));
-          const unirtmBin = path.join(rootDir, "bin", "unirtm");
+          const unirtmBin = findUnirtmBinary(rootDir);
 
           if (req.url === "/api/runtimes/migrate-legacy" && req.method === "POST") {
             try {
@@ -932,7 +960,7 @@ export default defineConfig({
               req.on("end", () => {
                 try {
                   const { scope, key, value } = JSON.parse(bodyStr || "{}");
-                  const unirtmBin = path.join(rootDir, "bin", "unirtm");
+                  const unirtmBin = findUnirtmBinary(rootDir);
                   const args = ["config", "set"];
                   if (scope === "user") {
                     args.push("--global");
