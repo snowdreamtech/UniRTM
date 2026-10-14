@@ -350,15 +350,16 @@
             <div class="subsection-title-bar">
               <span class="sub-icon">📦</span>
               <h3>{{ t('network.tab_mirrors') || '镜像源矩阵' }}</h3>
+              <button
+                class="btn-batch-test"
+                :disabled="isProbing"
+                @click="handleRunProbeAll"
+                title="并发测试当前镜像源矩阵中所有生态的延迟"
+              >
+                <span>{{ isProbing ? '🔄 测速中...' : '⚡ 一键测速' }}</span>
+              </button>
+
               <div class="profile-actions-bar">
-                <button
-                  class="btn-profile-action btn-batch-test"
-                  :disabled="isProbing"
-                  @click="handleRunProbeAll"
-                  title="并发测试当前镜像源矩阵中所有生态的延迟"
-                >
-                  <span>{{ isProbing ? '🔄 测速中...' : '⚡ 一键测速' }}</span>
-                </button>
                 <div class="profile-scroll-nav" v-if="orderedProfiles.length > 3">
                   <button class="btn-scroll-arrow" @click="scrollProfiles('left')" title="向左滚动">‹</button>
                   <button class="btn-scroll-arrow" @click="scrollProfiles('right')" title="向右滚动">›</button>
@@ -2531,20 +2532,33 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 11px;
+  padding: 3px 10px;
   background: rgba(34, 211, 238, 0.12);
   border: 1px solid rgba(34, 211, 238, 0.35);
   color: var(--accent-cyan);
   border-radius: 5px;
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   font-weight: 600;
   cursor: pointer;
+  margin-left: 2px;
   transition: all 0.2s ease;
+}
+
+:root[data-theme="light"] .btn-batch-test,
+[data-theme="light"] .btn-batch-test {
+  background: rgba(2, 132, 199, 0.1);
+  border-color: rgba(2, 132, 199, 0.3);
+  color: #0284c7;
 }
 
 .btn-batch-test:hover:not(:disabled) {
   background: rgba(34, 211, 238, 0.25);
   transform: translateY(-1px);
+}
+
+:root[data-theme="light"] .btn-batch-test:hover:not(:disabled),
+[data-theme="light"] .btn-batch-test:hover:not(:disabled) {
+  background: rgba(2, 132, 199, 0.18);
 }
 
 .btn-batch-test:disabled {
