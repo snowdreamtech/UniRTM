@@ -769,6 +769,9 @@ const commonEcoTemplates = [
   { id: "julia", label: "Julia (Pkg)", url: "https://pkg.julialang.org" },
   { id: "cpan", label: "Perl (CPAN)", url: "https://www.cpan.org" },
   { id: "hackage", label: "Haskell (Hackage)", url: "https://hackage.haskell.org" },
+  { id: "stackage", label: "Haskell (Stackage)", url: "https://www.stackage.org" },
+  { id: "ctan", label: "TeX (CTAN)", url: "https://mirror.ctan.org/" },
+  { id: "elpa", label: "Emacs (ELPA)", url: "https://elpa.gnu.org/packages/" },
   { id: "clojars", label: "Clojure (Clojars)", url: "https://repo.clojars.org" },
   { id: "deno", label: "Deno", url: "https://deno.land/x" },
 ];
@@ -878,6 +881,20 @@ const recommendedMirrors = ref<Record<string, Array<{ name: string; url: string 
   clojars: [
     { name: "官方直连 (Clojars)", url: "https://repo.clojars.org" },
     { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/clojars" },
+  ],
+  ctan: [
+    { name: "官方直连 (CTAN)", url: "https://mirror.ctan.org/" },
+    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/CTAN/" },
+    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/CTAN/" },
+  ],
+  elpa: [
+    { name: "官方直连 (GNU ELPA)", url: "https://elpa.gnu.org/packages/" },
+    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/elpa/" },
+    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/elpa/" },
+  ],
+  stackage: [
+    { name: "官方直连 (Stackage)", url: "https://www.stackage.org" },
+    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/stackage" },
   ],
 });
 

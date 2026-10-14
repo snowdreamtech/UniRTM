@@ -138,6 +138,8 @@ func DefaultBuiltinProfiles() map[string]NetworkProfile {
 				"node":   "https://mirrors.ustc.edu.cn/node/",
 				"go":     "https://golang.google.cn/dl",
 				"python": "https://mirrors.ustc.edu.cn/python/",
+				"rust":   "https://mirrors.ustc.edu.cn/rust-static",
+				"java":   "https://mirrors.ustc.edu.cn/adoptium/",
 			},
 		},
 	}
@@ -256,6 +258,20 @@ func RecommendedMirrors() map[string][]MirrorOption {
 		"clojars": {
 			{Name: "官方直连 (Clojars)", URL: "https://repo.clojars.org"},
 			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/clojars"},
+		},
+		"ctan": {
+			{Name: "官方直连 (CTAN)", URL: "https://mirror.ctan.org/"},
+			{Name: "中国科学技术大学 USTC", URL: "https://mirrors.ustc.edu.cn/CTAN/"},
+			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/CTAN/"},
+		},
+		"elpa": {
+			{Name: "官方直连 (GNU ELPA)", URL: "https://elpa.gnu.org/packages/"},
+			{Name: "中国科学技术大学 USTC", URL: "https://mirrors.ustc.edu.cn/elpa/"},
+			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/elpa/"},
+		},
+		"stackage": {
+			{Name: "官方直连 (Stackage)", URL: "https://www.stackage.org"},
+			{Name: "中国科学技术大学 USTC", URL: "https://mirrors.ustc.edu.cn/stackage"},
 		},
 	}
 }
