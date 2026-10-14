@@ -436,3 +436,95 @@ func TestFindGhHostsFile_MacosFallback(t *testing.T) {
 		t.Errorf("expected %s, got %s", hostsFile, f)
 	}
 }
+
+func TestExtractGitHubTokenFromToml_CaseAndSections(t *testing.T) {
+	tests := []struct {
+		name     string
+		toml     string
+		host     string
+		expected string
+	}{
+		{
+			name:     "lowercase github_token in env",
+			toml:     "[env]\ngithub_token = \"token_lower_env\"\n",
+			host:     "github.com",
+			expected: "token_lower_env",
+		},
+		{
+			name:     "uppercase GITHUB_TOKEN in env",
+			toml:     "[env]\nGITHUB_TOKEN = \"token_upper_env\"\n",
+			host:     "github.com",
+			expected: "token_upper_env",
+		},
+		{
+			name:     "mixed case GitHub_Token in env",
+			toml:     "[ENV]\nGitHub_Token = \"token_mixed_env\"\n",
+			host:     "github.com",
+			expected: "token_mixed_env",
+		},
+		{
+			name:     "camelCase githubToken in settings",
+			toml:     "[settings]\ngithubToken = \"token_camel_settings\"\n",
+			host:     "github.com",
+			expected: "token_camel_settings",
+		},
+		{
+			name:     "uppercase GITHUB_TOKEN in settings",
+			toml:     "[SETTINGS]\nGITHUB_TOKEN = \"token_upper_settings\"\n",
+			host:     "github.com",
+			expected: "token_upper_settings",
+		},
+		{
+			name:     "gh_token and GH_TOKEN in env",
+			toml:     "[env]\nGH_TOKEN = \"token_gh\"\n",
+			host:     "github.com",
+			expected: "token_gh",
+		},
+		{
+			name:     "root level github_token",
+			toml:     "github_token = \"token_root\"\n",
+			host:     "github.com",
+			expected: "token_root",
+		},
+		{
+			name:     "tokens table for enterprise host",
+			toml:     "[tokens.\"github.enterprise.com\"]\ntoken = \"token_ent\"\n",
+			host:     "github.enterprise.com",
+			expected: "token_ent",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := extractGitHubTokenFromToml([]byte(tc.toml), tc.host)
+			if got != tc.expected {
+				t.Errorf("expected %q, got %q", tc.expected, got)
+			}
+		})
+	}
+}
+
+func TestReadWorkspaceGitHubToken(t *testing.T) {
+	tempDir := t.TempDir()
+	origWd, _ := os.Getwd()
+	defer os.Chdir(origWd)
+
+	subDir := filepath.Join(tempDir, "sub", "project")
+	if err := os.MkdirAll(subDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// In parent directory, place .unirtm.toml with mixed case
+	tomlContent := "[env]\nGitHub_Token = \"workspace_token_123\"\n"
+	if err := os.WriteFile(filepath.Join(tempDir, ".unirtm.toml"), []byte(tomlContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(subDir); err != nil {
+		t.Fatal(err)
+	}
+	got := readWorkspaceGitHubToken("github.com")
+	if got != "workspace_token_123" {
+		t.Errorf("expected 'workspace_token_123', got %q", got)
+	}
+}

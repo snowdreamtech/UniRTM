@@ -66,17 +66,22 @@ func resolveGitHubToken(host string) string {
 		}
 	}
 
-	// 5. github_tokens.toml (~/.config/unirtm/github_tokens.toml)
+	// 5. Workspace configuration (.unirtm.toml, unirtm.toml in cwd and parent dirs)
+	if token := readWorkspaceGitHubToken(host); token != "" {
+		return token
+	}
+
+	// 6. User configuration (github_tokens.toml, ~/.config/unirtm/unirtm.toml)
 	if token := readGitHubTokensFile(host); token != "" {
 		return token
 	}
 
-	// 6. gh CLI hosts.yml
+	// 7. gh CLI hosts.yml
 	if token := readGhCliToken(host); token != "" {
 		return token
 	}
 
-	// 7. gh CLI auth token execution fallback
+	// 8. gh CLI auth token execution fallback
 	if ghAuthTokenFn != nil {
 		if token := ghAuthTokenFn(host); token != "" {
 			return token
@@ -116,7 +121,134 @@ func runCredentialCommand(command, host string) string {
 	return strings.TrimSpace(string(out))
 }
 
-// readGitHubTokensFile reads the per-host token from ~/.config/unirtm/github_tokens.toml.
+// isGitHubTokenKey checks if a key matches any casing or format for a GitHub token.
+// Matches e.g. github_token, GITHUB_TOKEN, GitHub_Token, githubToken, github-token,
+// gh_token, GH_TOKEN, unirtm_github_token, github_api_token.
+func isGitHubTokenKey(key string) bool {
+	clean := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(key, "_", ""), "-", ""))
+	return clean == "githubtoken" || clean == "ghtoken" || clean == "unirtmgithubtoken" || clean == "githubapitoken"
+}
+
+// extractGitHubTokenFromToml extracts a GitHub token from unmarshalled TOML bytes,
+// case-insensitively inspecting [tokens], [env], [settings], and root-level keys.
+func extractGitHubTokenFromToml(data []byte, host string) string {
+	if host == "" {
+		host = "github.com"
+	}
+
+	var raw map[string]interface{}
+	if err := toml.Unmarshal(data, &raw); err != nil {
+		return ""
+	}
+
+	// 1. Check [tokens] table (e.g., [tokens."github.com"] token = "...")
+	for k, v := range raw {
+		if strings.EqualFold(k, "tokens") {
+			if tokensMap, ok := v.(map[string]interface{}); ok {
+				for hostKey, hostVal := range tokensMap {
+					if strings.EqualFold(hostKey, host) {
+						if entryMap, ok := hostVal.(map[string]interface{}); ok {
+							for ek, ev := range entryMap {
+								cleanEk := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(ek, "_", ""), "-", ""))
+								if cleanEk == "token" || isGitHubTokenKey(ek) {
+									if s, ok := ev.(string); ok && strings.TrimSpace(s) != "" {
+										return strings.TrimSpace(s)
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// For non-github.com hosts, host-specific tokens table is the primary target
+	if !strings.EqualFold(host, "github.com") {
+		return ""
+	}
+
+	// 2. Check [env] section with case-insensitive section and key matching
+	for k, v := range raw {
+		if strings.EqualFold(k, "env") {
+			if envMap, ok := v.(map[string]interface{}); ok {
+				for ek, ev := range envMap {
+					if isGitHubTokenKey(ek) {
+						if s, ok := ev.(string); ok && strings.TrimSpace(s) != "" {
+							return strings.TrimSpace(s)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 3. Check [settings] section with case-insensitive section and key matching
+	for k, v := range raw {
+		if strings.EqualFold(k, "settings") {
+			if settingsMap, ok := v.(map[string]interface{}); ok {
+				for sk, sv := range settingsMap {
+					if isGitHubTokenKey(sk) {
+						if s, ok := sv.(string); ok && strings.TrimSpace(s) != "" {
+							return strings.TrimSpace(s)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 4. Check root-level keys
+	for k, v := range raw {
+		if isGitHubTokenKey(k) {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				return strings.TrimSpace(s)
+			}
+		}
+	}
+
+	return ""
+}
+
+// readWorkspaceGitHubToken searches for a GitHub token in workspace configuration files
+// (.unirtm.local.toml, .unirtm.toml, unirtm.toml, .mise.local.toml, .mise.toml)
+// from the current working directory walking up to the root directory.
+func readWorkspaceGitHubToken(host string) string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+
+	curr := cwd
+	for {
+		candidates := []string{
+			filepath.Join(curr, ".unirtm.local.toml"),
+			filepath.Join(curr, ".unirtm.toml"),
+			filepath.Join(curr, "unirtm.toml"),
+			filepath.Join(curr, ".mise.local.toml"),
+			filepath.Join(curr, ".mise.toml"),
+		}
+		for _, path := range candidates {
+			if data, err := os.ReadFile(path); err == nil {
+				if tok := extractGitHubTokenFromToml(data, host); tok != "" {
+					return tok
+				}
+			}
+		}
+
+		parent := filepath.Dir(curr)
+		if parent == curr {
+			break
+		}
+		curr = parent
+	}
+	return ""
+}
+
+// readGitHubTokensFile reads the per-host token from user configuration:
+// 1. ~/.config/unirtm/github_tokens.toml
+// 2. ~/.config/unirtm/unirtm.toml
+// 3. ~/.unirtm.toml
 func readGitHubTokensFile(host string) string {
 	configDir := env.Get("CONFIG_DIR")
 	if configDir == "" {
@@ -132,33 +264,20 @@ func readGitHubTokensFile(host string) string {
 		}
 	}
 
-	tokenFile := filepath.Join(configDir, "github_tokens.toml")
-	if data, err := os.ReadFile(tokenFile); err == nil {
-		var tokens githubTokensFile
-		if err := toml.Unmarshal(data, &tokens); err == nil {
-			if entry, ok := tokens.Tokens[host]; ok && entry.Token != "" {
-				return entry.Token
-			}
-		}
+	userFiles := []string{
+		filepath.Join(configDir, "github_tokens.toml"),
+		filepath.Join(configDir, "unirtm.toml"),
+		filepath.Join(configDir, ".unirtm.toml"),
 	}
 
-	// Also check unirtm.toml in configDir for GITHUB_TOKEN or github_token
-	if host == "github.com" {
-		configFile := filepath.Join(configDir, "unirtm.toml")
-		if cfgData, err := os.ReadFile(configFile); err == nil {
-			var userCfg struct {
-				Env      map[string]interface{} `toml:"env"`
-				Settings struct {
-					GitHubToken string `toml:"github_token"`
-				} `toml:"settings"`
-			}
-			if err := toml.Unmarshal(cfgData, &userCfg); err == nil {
-				if userCfg.Settings.GitHubToken != "" {
-					return userCfg.Settings.GitHubToken
-				}
-				if tok, ok := userCfg.Env["GITHUB_TOKEN"].(string); ok && tok != "" {
-					return tok
-				}
+	if home, err := os.UserHomeDir(); err == nil {
+		userFiles = append(userFiles, filepath.Join(home, ".unirtm.toml"))
+	}
+
+	for _, file := range userFiles {
+		if data, err := os.ReadFile(file); err == nil {
+			if tok := extractGitHubTokenFromToml(data, host); tok != "" {
+				return tok
 			}
 		}
 	}
