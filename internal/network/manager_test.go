@@ -4,7 +4,9 @@
 package network
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -238,6 +240,54 @@ func TestFilePersistence(t *testing.T) {
 		t.Fatalf("expected proxy to be persisted, got %+v", status.Proxy)
 	}
 }
+
+func TestSaveToPathPreservesExistingSectionsAndComments(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "test.toml")
+
+	initialContent := `# Top level comment
+[env]
+KEY = "val"
+
+# Task comment
+[tasks.test]
+description = "Test description"
+run = '''
+echo "multiline"
+exit 0
+'''
+`
+	if err := os.WriteFile(configPath, []byte(initialContent), 0644); err != nil {
+		t.Fatalf("failed to write initial file: %v", err)
+	}
+
+	mgr := NewManager(nil)
+	_ = mgr.UseProfile("cn")
+	if err := mgr.SaveToPath(configPath); err != nil {
+		t.Fatalf("failed to save to path: %v", err)
+	}
+
+	contentBytes, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("failed to read back: %v", err)
+	}
+	content := string(contentBytes)
+
+	// Verify comments and multiline strings were preserved byte-for-byte
+	if !strings.Contains(content, "# Top level comment") {
+		t.Fatalf("lost top level comment: %s", content)
+	}
+	if !strings.Contains(content, "# Task comment") {
+		t.Fatalf("lost task comment: %s", content)
+	}
+	if !strings.Contains(content, "echo \"multiline\"") {
+		t.Fatalf("lost multiline task body: %s", content)
+	}
+	if !strings.Contains(content, "[network]") {
+		t.Fatalf("missing [network] section: %s", content)
+	}
+}
+
 
 func TestRecommendedMirrorsOrdering(t *testing.T) {
 	mgr := NewManager(nil)

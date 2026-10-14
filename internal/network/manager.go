@@ -45,30 +45,60 @@ func (m *Manager) LoadFromPath(path string) error {
 // SaveToPath updates the network section of a TOML file without modifying other sections.
 func (m *Manager) SaveToPath(path string) error {
 	m.EnsureDefaults()
-	var rootMap map[string]interface{}
+
+	// Serialize only the [network] table
+	netMap := map[string]interface{}{
+		"network": m.config,
+	}
+	netBytes, err := toml.Marshal(netMap)
+	if err != nil {
+		return err
+	}
+	netString := strings.TrimSpace(string(netBytes))
 
 	data, err := os.ReadFile(path)
-	if err == nil {
-		_ = toml.Unmarshal(data, &rootMap)
+	if os.IsNotExist(err) || len(data) == 0 {
+		dir := filepath.Dir(path)
+		if dir != "" && dir != "." {
+			_ = os.MkdirAll(dir, 0755)
+		}
+		return os.WriteFile(path, []byte(netString+"\n"), 0644)
 	}
-	if rootMap == nil {
-		rootMap = make(map[string]interface{})
-	}
-
-	netBytes, err := toml.Marshal(m.config)
 	if err != nil {
 		return err
 	}
-	var netMap map[string]interface{}
-	if err := toml.Unmarshal(netBytes, &netMap); err != nil {
-		return err
+
+	// File exists: remove any existing [network] and [network.*] sections,
+	// strictly preserving all other comments, tables, and multi-line formatting.
+	lines := strings.Split(string(data), "\n")
+	var preservedLines []string
+	inNetworkSection := false
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
+			secName := strings.Trim(trimmed, "[]")
+			secName = strings.TrimSpace(secName)
+			if secName == "network" || strings.HasPrefix(secName, "network.") {
+				inNetworkSection = true
+				continue
+			} else {
+				inNetworkSection = false
+			}
+		}
+		if !inNetworkSection {
+			preservedLines = append(preservedLines, line)
+		}
 	}
 
-	rootMap["network"] = netMap
+	// Join preserved content and trim trailing empty lines
+	preservedContent := strings.TrimRight(strings.Join(preservedLines, "\n"), "\r\n ")
 
-	outBytes, err := toml.Marshal(rootMap)
-	if err != nil {
-		return err
+	var finalContent string
+	if preservedContent == "" {
+		finalContent = netString + "\n"
+	} else {
+		finalContent = preservedContent + "\n\n" + netString + "\n"
 	}
 
 	dir := filepath.Dir(path)
@@ -76,7 +106,7 @@ func (m *Manager) SaveToPath(path string) error {
 		_ = os.MkdirAll(dir, 0755)
 	}
 
-	return os.WriteFile(path, outBytes, 0644)
+	return os.WriteFile(path, []byte(finalContent), 0644)
 }
 
 // NewManager creates a network manager wrapping the provided NetworkConfig.
