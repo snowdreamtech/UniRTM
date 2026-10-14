@@ -224,34 +224,7 @@ func runUse(cmd *cobra.Command, args []string) error {
 		})
 	}
 
-	// Automatically install the tool versions if they are not already installed
-	if im != nil {
-		for _, p := range pairs {
-			toolName := p.toolName
-			backendName := p.backendName
-
-			// If force is enabled, perform clean uninstallation first if it is installed
-			if useForce {
-				alreadyOnDisk, _ := im.IsInstalled(ctx, toolName, p.version, backendName)
-				if alreadyOnDisk {
-					formatter.Info(fmt.Sprintf("Tool %s@%s is already installed. [force] Uninstalling first...", toolName, p.version), nil)
-					_ = im.Uninstall(ctx, toolName, p.version)
-				}
-			}
-
-			isInstalled, _ := im.IsInstalled(ctx, toolName, p.version, backendName)
-			if !isInstalled {
-				formatter.Info(fmt.Sprintf("Tool %s@%s is not installed. Installing now...", toolName, p.version), nil)
-				if err := im.Install(ctx, p.key, toolName, p.version, backendName); err != nil {
-					return fmt.Errorf("failed to automatically install %s@%s: %w", toolName, p.version, err)
-				}
-			} else {
-				formatter.Success(fmt.Sprintf("Tool %s@%s is already installed", toolName, p.version), nil)
-			}
-		}
-	}
-
-	// Synchronize unirtm.lock if lockfile exists and not in global mode
+	// Synchronize unirtm.lock immediately after writing config (if lockfile exists and not in global mode)
 	if !useGlobal {
 		lockPath := env.GetLockFilePath()
 		if _, err := os.Stat(lockPath); err == nil {
@@ -285,7 +258,35 @@ func runUse(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Automatically install the tool versions if they are not already installed
+	if im != nil {
+		for _, p := range pairs {
+			toolName := p.toolName
+			backendName := p.backendName
+
+			// If force is enabled, perform clean uninstallation first if it is installed
+			if useForce {
+				alreadyOnDisk, _ := im.IsInstalled(ctx, toolName, p.version, backendName)
+				if alreadyOnDisk {
+					formatter.Info(fmt.Sprintf("Tool %s@%s is already installed. [force] Uninstalling first...", toolName, p.version), nil)
+					_ = im.Uninstall(ctx, toolName, p.version)
+				}
+			}
+
+			isInstalled, _ := im.IsInstalled(ctx, toolName, p.version, backendName)
+			if !isInstalled {
+				formatter.Info(fmt.Sprintf("Tool %s@%s is not installed. Installing now...", toolName, p.version), nil)
+				if err := im.Install(ctx, p.key, toolName, p.version, backendName); err != nil {
+					formatter.Warning(fmt.Sprintf("Tool %s@%s was recorded in config & lockfile, but automatic download/install failed: %v", toolName, p.version, err))
+				}
+			} else {
+				formatter.Success(fmt.Sprintf("Tool %s@%s is already installed", toolName, p.version), nil)
+			}
+		}
+	}
+
 	return nil
+
 
 }
 

@@ -273,6 +273,22 @@ export default defineConfig({
                   }
 
                   fs.writeFileSync(targetPath, content, "utf-8");
+
+                  // Also synchronize unirtm.lock in fallback if in workspace mode
+                  if (!isGlobal) {
+                    const lockPath = path.join(rootDir, "unirtm.lock");
+                    if (fs.existsSync(lockPath)) {
+                      let lockContent = fs.readFileSync(lockPath, "utf-8");
+                      const toolBlockHeader = `[[tools."${tool}"]]`;
+                      if (lockContent.includes(toolBlockHeader)) {
+                        const toolRegex = new RegExp(`(\\[\\[tools\\."${tool}"\\]\\][\\s\\S]*?version\\s*=\\s*)"[^"]+"`);
+                        lockContent = lockContent.replace(toolRegex, `$1"${version}"`);
+                      } else {
+                        lockContent += `\n[[tools."${tool}"]]\nversion = "${version}"\nbackend = "native"\n`;
+                      }
+                      fs.writeFileSync(lockPath, lockContent, "utf-8");
+                    }
+                  }
                 }
                 res.setHeader("Content-Type", "application/json");
                 res.end(JSON.stringify({ success: true, tool, version, global: isGlobal, cli: executedCli }));
@@ -331,6 +347,17 @@ export default defineConfig({
                       }
                     }
                     fs.writeFileSync(targetPath, lines.join("\n"), "utf-8");
+                  }
+                }
+
+                // If fallback and not global, remove from unirtm.lock as well
+                if (!executedCli && !isGlobal) {
+                  const lockPath = path.join(rootDir, "unirtm.lock");
+                  if (fs.existsSync(lockPath)) {
+                    let lockContent = fs.readFileSync(lockPath, "utf-8");
+                    const blockRegex = new RegExp(`\n?\\[\\[tools\\."${tool}"\\]\\][\\s\\S]*?(?=(\n\\[\\[|\$))`, "g");
+                    lockContent = lockContent.replace(blockRegex, "");
+                    fs.writeFileSync(lockPath, lockContent, "utf-8");
                   }
                 }
 

@@ -218,6 +218,17 @@ func (b *NativeBackend) GetDownloadInfo(ctx context.Context, tool, version strin
 	}
 
 	if targetVersion == nil {
+		// Fallback: If handler supports direct tag resolution (e.g. GithubHandler.ResolveTag)
+		if tagResolver, ok := recipe.Handler.(interface {
+			ResolveTag(ctx context.Context, version string) (*native.VersionInfo, error)
+		}); ok {
+			if resolved, err := tagResolver.ResolveTag(ctx, version); err == nil && resolved != nil {
+				targetVersion = resolved
+			}
+		}
+	}
+
+	if targetVersion == nil {
 		return nil, fmt.Errorf("native: version %s not found for %s", version, tool)
 	}
 

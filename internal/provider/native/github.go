@@ -141,7 +141,15 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 
 		var versions []VersionInfo
 		for _, rel := range releases {
-			version := strings.TrimPrefix(rel.TagName, "v")
+			version := rel.TagName
+			if h.Repo != "" {
+				version = strings.TrimPrefix(version, h.Repo+"-v")
+				version = strings.TrimPrefix(version, h.Repo+"-")
+				version = strings.TrimPrefix(version, h.Repo+"_v")
+				version = strings.TrimPrefix(version, h.Repo+"_")
+			}
+			version = strings.TrimPrefix(version, "v")
+			version = strings.TrimPrefix(version, "V")
 
 			// Map to store signatures for later matching
 			sigs := make(map[string]string)
@@ -207,6 +215,101 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 	}
 
 	return res.([]VersionInfo), nil
+}
+
+// ResolveTag fetches a specific release by tag name directly when not found in recent releases.
+func (h *GithubHandler) ResolveTag(ctx context.Context, version string) (*VersionInfo, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("net/http: nil Context")
+	}
+
+	githubProxy := ""
+	if p := env.Get("GITHUB_PROXY"); p != "" {
+		enableProxy := env.Get("ENABLE_GITHUB_PROXY")
+		if enableProxy != "0" && strings.ToLower(enableProxy) != "false" {
+			githubProxy = p
+		}
+	} else if env.Get("ENABLE_GITHUB_PROXY") == "1" {
+		githubProxy = "https://gh-proxy.com/"
+	}
+
+	apiBase := env.Get("GITHUB_API_BASEURL")
+	if apiBase == "" {
+		apiBase = "https://api.github.com"
+	}
+	apiBase = strings.TrimSuffix(apiBase, "/")
+
+	tagCandidates := []string{
+		h.Repo + "-v" + version,
+		h.Repo + "-" + version,
+		"v" + version,
+		version,
+	}
+
+	client := pkgHttp.NewClientWithTimeout(30 * time.Second)
+	token := env.Get("GITHUB_TOKEN")
+	if token == "" {
+		token = env.Get("GH_TOKEN")
+	}
+
+	for _, tag := range tagCandidates {
+		apiURL := fmt.Sprintf("%s/repos/%s/%s/releases/tags/%s", apiBase, h.Owner, h.Repo, tag)
+		req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+		if err != nil {
+			continue
+		}
+		req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
+		req.Header.Set("Accept", "application/vnd.github+json")
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+
+		resp, err := client.Do(req)
+		if err != nil || resp.StatusCode != http.StatusOK {
+			if resp != nil {
+				_ = resp.Body.Close()
+			}
+			continue
+		}
+
+		var rel ghRelease
+		err = json.NewDecoder(resp.Body).Decode(&rel)
+		_ = resp.Body.Close()
+		if err != nil {
+			continue
+		}
+
+		var assets []Asset
+		for _, a := range rel.Assets {
+			if strings.HasSuffix(a.Name, ".asc") || strings.HasSuffix(a.Name, ".sig") || strings.HasSuffix(a.Name, ".sha256") {
+				continue
+			}
+			osName, arch := h.detectPlatform(a.Name)
+			if osName == "" || arch == "" {
+				continue
+			}
+			downloadURL := a.BrowserDownloadURL
+			if githubProxy != "" {
+				downloadURL = strings.TrimSuffix(githubProxy, "/") + "/" + downloadURL
+			}
+			assets = append(assets, Asset{
+				Filename: a.Name,
+				URL:      downloadURL,
+				OS:       osName,
+				Arch:     arch,
+				Metadata: make(map[string]string),
+			})
+		}
+
+		if len(assets) > 0 {
+			return &VersionInfo{
+				Version: version,
+				Assets:  assets,
+			}, nil
+		}
+	}
+
+	return nil, fmt.Errorf("github release tag not found for version %s", version)
 }
 
 func (h *GithubHandler) detectPlatform(filename string) (string, string) {
