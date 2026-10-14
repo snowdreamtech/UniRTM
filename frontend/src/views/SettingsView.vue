@@ -750,12 +750,12 @@ const newEcoId = ref("");
 const newEcoUrl = ref("");
 
 const commonEcoTemplates = [
-  { id: "composer", label: "Composer (PHP)", url: "https://repo.packagist.org" },
-  { id: "maven", label: "Maven (Java)", url: "https://repo1.maven.org/maven2" },
-  { id: "nuget", label: "NuGet (.NET)", url: "https://api.nuget.org/v3/index.json" },
-  { id: "docker", label: "Docker Hub", url: "https://registry-1.docker.io" },
-  { id: "deno", label: "Deno", url: "https://deno.land" },
-  { id: "flutter", label: "Flutter / Dart", url: "https://pub.dev" },
+  { id: "cran", label: "R (CRAN)", url: "https://cran.r-project.org" },
+  { id: "julia", label: "Julia (Pkg)", url: "https://pkg.julialang.org" },
+  { id: "cpan", label: "Perl (CPAN)", url: "https://www.cpan.org" },
+  { id: "hackage", label: "Haskell (Hackage)", url: "https://hackage.haskell.org" },
+  { id: "clojars", label: "Clojure (Clojars)", url: "https://repo.clojars.org" },
+  { id: "deno", label: "Deno", url: "https://deno.land/x" },
 ];
 
 const recommendedMirrors = ref<Record<string, Array<{ name: string; url: string }>>>({
@@ -812,6 +812,53 @@ const recommendedMirrors = ref<Record<string, Array<{ name: string; url: string 
     { name: "网易 Docker 镜像", url: "https://hub-mirror.c.163.com" },
     { name: "百度 Docker 镜像", url: "https://mirror.baidubce.com" },
   ],
+  dart: [
+    { name: "官方直连 (pub.dev)", url: "https://pub.dev" },
+    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/dart-pub" },
+    { name: "上海交通大学 SJTUG", url: "https://mirrors.sjtug.sjtu.edu.cn/dart-pub" },
+  ],
+  cocoapods: [
+    { name: "官方直连 (CocoaPods CDN)", url: "https://cdn.cocoapods.org" },
+    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/git/CocoaPods/Specs.git" },
+    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/CocoaPods-Specs.git" },
+  ],
+  conda: [
+    { name: "官方直连 (Anaconda)", url: "https://repo.anaconda.com/pkgs/main" },
+    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main" },
+    { name: "北京外国语大学 BFSU", url: "https://mirrors.bfsu.edu.cn/anaconda/pkgs/main" },
+    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/anaconda/pkgs/main" },
+  ],
+  homebrew: [
+    { name: "官方直连 (Homebrew Bottles)", url: "https://ghcr.io/v2/homebrew/core" },
+    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles" },
+    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/homebrew-bottles" },
+    { name: "阿里云 Homebrew", url: "https://mirrors.aliyun.com/homebrew/homebrew-bottles" },
+  ],
+  cran: [
+    { name: "官方直连 (CRAN)", url: "https://cran.r-project.org" },
+    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/CRAN/" },
+    { name: "南方科技大学 SUSTech", url: "https://mirrors.sustech.edu.cn/CRAN/" },
+    { name: "阿里云 CRAN", url: "https://mirrors.aliyun.com/CRAN/" },
+  ],
+  julia: [
+    { name: "官方直连 (Julia Pkg)", url: "https://pkg.julialang.org" },
+    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/julia" },
+    { name: "北京外国语大学 BFSU", url: "https://mirrors.bfsu.edu.cn/julia" },
+  ],
+  cpan: [
+    { name: "官方直连 (CPAN)", url: "https://www.cpan.org" },
+    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/CPAN/" },
+    { name: "阿里云 CPAN", url: "https://mirrors.aliyun.com/CPAN/" },
+  ],
+  hackage: [
+    { name: "官方直连 (Hackage)", url: "https://hackage.haskell.org" },
+    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/hackage" },
+    { name: "中国科学技术大学 USTC", url: "https://mirrors.ustc.edu.cn/hackage" },
+  ],
+  clojars: [
+    { name: "官方直连 (Clojars)", url: "https://repo.clojars.org" },
+    { name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/clojars" },
+  ],
 });
 
 const networkStatus = ref<any>({
@@ -839,6 +886,10 @@ const networkStatus = ref<any>({
     maven: { ecosystem: "maven", url: "https://repo1.maven.org/maven2", source: "profile", is_overridden: false },
     nuget: { ecosystem: "nuget", url: "https://api.nuget.org/v3/index.json", source: "profile", is_overridden: false },
     docker: { ecosystem: "docker", url: "https://registry-1.docker.io", source: "profile", is_overridden: false },
+    dart: { ecosystem: "dart", url: "https://pub.dev", source: "profile", is_overridden: false },
+    cocoapods: { ecosystem: "cocoapods", url: "https://cdn.cocoapods.org", source: "profile", is_overridden: false },
+    conda: { ecosystem: "conda", url: "https://repo.anaconda.com/pkgs/main", source: "profile", is_overridden: false },
+    homebrew: { ecosystem: "homebrew", url: "https://ghcr.io/v2/homebrew/core", source: "profile", is_overridden: false },
   },
   profiles: {
     official: {
@@ -893,7 +944,10 @@ function getProfileDisplayDesc(id: string, fallbackDesc?: string): string {
 
 const orderedEffectiveEcosystems = computed(() => {
   if (!networkStatus.value?.effective) return [];
-  const baseOrder = ["npm", "go", "python", "rust", "ruby", "composer", "maven", "nuget", "docker"];
+  const baseOrder = [
+    "npm", "go", "python", "rust", "ruby", "composer", "maven", "nuget", "docker",
+    "dart", "cocoapods", "conda", "homebrew"
+  ];
   const effKeys = Object.keys(networkStatus.value.effective);
   const ordered: string[] = [];
   for (const eco of baseOrder) {

@@ -117,7 +117,21 @@ func (m *Manager) EnsureDefaults() {
 			existing.Name = p.Name
 			existing.Description = p.Description
 			if existing.Registries == nil {
-				existing.Registries = p.Registries
+				existing.Registries = make(map[string]string)
+			}
+			for k, v := range p.Registries {
+				if _, hasKey := existing.Registries[k]; !hasKey {
+					excluded := false
+					for _, exc := range m.config.ExcludedEcosystems {
+						if exc == k {
+							excluded = true
+							break
+						}
+					}
+					if !excluded {
+						existing.Registries[k] = v
+					}
+				}
 			}
 			if existing.Downloads == nil {
 				existing.Downloads = p.Downloads

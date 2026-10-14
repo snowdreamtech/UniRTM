@@ -4,7 +4,10 @@
 package network
 
 // KnownEcosystems enumerates supported package manager ecosystems.
-var KnownEcosystems = []string{"npm", "go", "python", "rust", "ruby", "composer", "maven", "nuget", "docker"}
+var KnownEcosystems = []string{
+	"npm", "go", "python", "rust", "ruby", "composer", "maven", "nuget", "docker",
+	"dart", "cocoapods", "conda", "homebrew",
+}
 
 // DefaultProxyConfig returns the standard secure proxy baseline.
 // Proxy is strictly disabled by default with empty URLs.
@@ -27,15 +30,19 @@ func DefaultBuiltinProfiles() map[string]NetworkProfile {
 			Description: "全量使用官方源与官方二进制 CDN，不经任何代理或第三方镜像",
 			Builtin:     true,
 			Registries: map[string]string{
-				"npm":      "https://registry.npmjs.org",
-				"go":       "https://proxy.golang.org,direct",
-				"python":   "https://pypi.org/simple",
-				"rust":     "https://crates.io",
-				"ruby":     "https://rubygems.org",
-				"composer": "https://repo.packagist.org",
-				"maven":    "https://repo1.maven.org/maven2",
-				"nuget":    "https://api.nuget.org/v3/index.json",
-				"docker":   "https://registry-1.docker.io",
+				"npm":       "https://registry.npmjs.org",
+				"go":        "https://proxy.golang.org,direct",
+				"python":    "https://pypi.org/simple",
+				"rust":      "https://crates.io",
+				"ruby":      "https://rubygems.org",
+				"composer":  "https://repo.packagist.org",
+				"maven":     "https://repo1.maven.org/maven2",
+				"nuget":     "https://api.nuget.org/v3/index.json",
+				"docker":    "https://registry-1.docker.io",
+				"dart":      "https://pub.dev",
+				"cocoapods": "https://cdn.cocoapods.org",
+				"conda":     "https://repo.anaconda.com/pkgs/main",
+				"homebrew":  "https://ghcr.io/v2/homebrew/core",
 			},
 			Downloads: map[string]string{
 				"node":   "https://nodejs.org/dist",
@@ -49,15 +56,19 @@ func DefaultBuiltinProfiles() map[string]NetworkProfile {
 			Description: "中国顶级高校与大厂公共镜像加速矩阵，保障编译前依赖极速拉取",
 			Builtin:     true,
 			Registries: map[string]string{
-				"npm":      "https://registry.npmmirror.com",
-				"go":       "https://goproxy.cn,direct",
-				"python":   "https://pypi.tuna.tsinghua.edu.cn/simple",
-				"rust":     "https://rsproxy.cn/crates.io-index",
-				"ruby":     "https://gems.ruby-china.com",
-				"composer": "https://mirrors.aliyun.com/composer/",
-				"maven":    "https://maven.aliyun.com/repository/public",
-				"nuget":    "https://repo.huaweicloud.com/repository/nuget/v3/index.json",
-				"docker":   "https://registry.cn-hangzhou.aliyuncs.com",
+				"npm":       "https://registry.npmmirror.com",
+				"go":        "https://goproxy.cn,direct",
+				"python":    "https://pypi.tuna.tsinghua.edu.cn/simple",
+				"rust":      "https://rsproxy.cn/crates.io-index",
+				"ruby":      "https://gems.ruby-china.com",
+				"composer":  "https://mirrors.aliyun.com/composer/",
+				"maven":     "https://maven.aliyun.com/repository/public",
+				"nuget":     "https://repo.huaweicloud.com/repository/nuget/v3/index.json",
+				"docker":    "https://registry.cn-hangzhou.aliyuncs.com",
+				"dart":      "https://mirrors.tuna.tsinghua.edu.cn/dart-pub",
+				"cocoapods": "https://mirrors.tuna.tsinghua.edu.cn/git/CocoaPods/Specs.git",
+				"conda":     "https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main",
+				"homebrew":  "https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles",
 			},
 			Downloads: map[string]string{
 				"node":   "https://npmmirror.com/mirrors/node",
@@ -129,6 +140,53 @@ func RecommendedMirrors() map[string][]MirrorOption {
 			{Name: "阿里云 Docker 镜像", URL: "https://registry.cn-hangzhou.aliyuncs.com"},
 			{Name: "网易 Docker 镜像", URL: "https://hub-mirror.c.163.com"},
 			{Name: "百度 Docker 镜像", URL: "https://mirror.baidubce.com"},
+		},
+		"dart": {
+			{Name: "官方直连 (pub.dev)", URL: "https://pub.dev"},
+			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/dart-pub"},
+			{Name: "上海交通大学 SJTUG", URL: "https://mirrors.sjtug.sjtu.edu.cn/dart-pub"},
+		},
+		"cocoapods": {
+			{Name: "官方直连 (CocoaPods CDN)", URL: "https://cdn.cocoapods.org"},
+			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/git/CocoaPods/Specs.git"},
+			{Name: "中国科学技术大学 USTC", URL: "https://mirrors.ustc.edu.cn/CocoaPods-Specs.git"},
+		},
+		"conda": {
+			{Name: "官方直连 (Anaconda)", URL: "https://repo.anaconda.com/pkgs/main"},
+			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main"},
+			{Name: "北京外国语大学 BFSU", URL: "https://mirrors.bfsu.edu.cn/anaconda/pkgs/main"},
+			{Name: "中国科学技术大学 USTC", URL: "https://mirrors.ustc.edu.cn/anaconda/pkgs/main"},
+		},
+		"homebrew": {
+			{Name: "官方直连 (Homebrew Bottles)", URL: "https://ghcr.io/v2/homebrew/core"},
+			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles"},
+			{Name: "中国科学技术大学 USTC", URL: "https://mirrors.ustc.edu.cn/homebrew-bottles"},
+			{Name: "阿里云 Homebrew", URL: "https://mirrors.aliyun.com/homebrew/homebrew-bottles"},
+		},
+		"cran": {
+			{Name: "官方直连 (CRAN)", URL: "https://cran.r-project.org"},
+			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/CRAN/"},
+			{Name: "南方科技大学 SUSTech", URL: "https://mirrors.sustech.edu.cn/CRAN/"},
+			{Name: "阿里云 CRAN", URL: "https://mirrors.aliyun.com/CRAN/"},
+		},
+		"julia": {
+			{Name: "官方直连 (Julia Pkg)", URL: "https://pkg.julialang.org"},
+			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/julia"},
+			{Name: "北京外国语大学 BFSU", URL: "https://mirrors.bfsu.edu.cn/julia"},
+		},
+		"cpan": {
+			{Name: "官方直连 (CPAN)", URL: "https://www.cpan.org"},
+			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/CPAN/"},
+			{Name: "阿里云 CPAN", URL: "https://mirrors.aliyun.com/CPAN/"},
+		},
+		"hackage": {
+			{Name: "官方直连 (Hackage)", URL: "https://hackage.haskell.org"},
+			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/hackage"},
+			{Name: "中国科学技术大学 USTC", URL: "https://mirrors.ustc.edu.cn/hackage"},
+		},
+		"clojars": {
+			{Name: "官方直连 (Clojars)", URL: "https://repo.clojars.org"},
+			{Name: "清华大学 TUNA", URL: "https://mirrors.tuna.tsinghua.edu.cn/clojars"},
 		},
 	}
 }
