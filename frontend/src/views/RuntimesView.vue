@@ -340,13 +340,15 @@
           </div>
 
           <div v-else-if="filteredRemoteVersions.length === 0" class="remote-empty-box">
-            <div class="empty-icon"><TechIcon id="workbench:search" :size="24" /></div>
+            <div class="empty-icon-wrap">
+              <TechIcon id="workbench:search" :size="24" />
+            </div>
             <div class="empty-title">{{ t("runtimes.no_matching_releases") || "未找到匹配的官方发布版本" }}</div>
 
             <!-- Version format / rule validation error -->
             <div v-if="versionValidation.error" class="version-validation-error">
               <span class="warn-icon">⚠️</span>
-              <span>{{ versionValidation.error }}</span>
+              <span class="warn-text">{{ versionValidation.error }}</span>
             </div>
 
             <!-- Strictly validated custom version card when unlisted -->
@@ -1933,40 +1935,64 @@ onBeforeUnmount(() => {
 }
 
 .remote-empty-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.65rem;
-  padding: 2.2rem 1rem;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.65rem !important;
+  padding: 2.2rem 1.5rem !important;
   color: var(--text-muted);
   font-size: 0.85rem;
-  text-align: center;
+  text-align: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
-.empty-icon {
-  opacity: 0.5;
-  margin-bottom: -0.2rem;
+.empty-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  opacity: 0.7;
+  margin-bottom: 0.15rem;
 }
 
 .empty-title {
-  font-size: 0.86rem;
+  font-size: 0.88rem;
+  font-weight: 500;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .version-validation-error {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.5rem 0.85rem;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  border-radius: 6px;
-  color: #f59e0b;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.45rem !important;
+  padding: 0.35rem 0.85rem !important;
+  background: rgba(245, 158, 11, 0.1) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  border-radius: 20px !important;
+  color: #f59e0b !important;
+  font-size: 0.76rem !important;
+  white-space: nowrap !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.warn-icon {
   font-size: 0.78rem;
-  max-width: 95%;
-  line-height: 1.4;
-  text-align: left;
+  line-height: 1;
+}
+
+.warn-text {
+  font-size: 0.76rem;
+  line-height: 1.2;
 }
 
 .custom-ver-install-box {

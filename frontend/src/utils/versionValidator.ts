@@ -83,7 +83,7 @@ export function validateRuntimeVersion(toolId: string, input: string): VersionVa
     if (major < 1) {
       return {
         valid: false,
-        error: `“${val}” 不是有效的 Go 版本号（Go 官方版本均在 1.0 及以上，如 1.24.0，不存在 0.x 版本）`,
+        error: `版本号无效：Go 官方版本均为 1.x（如 1.24.0）`,
       };
     }
     if (major > 30) {
@@ -94,7 +94,7 @@ export function validateRuntimeVersion(toolId: string, input: string): VersionVa
     if (major < 1) {
       return {
         valid: false,
-        error: `“${val}” 不是有效的 Rust 版本号（Rust 官方稳定版本均在 1.0 及以上，如 1.85.0）`,
+        error: `版本号无效：Rust 稳定版本均为 1.x（如 1.85.0）`,
       };
     }
   } else if (tid === "python") {
@@ -102,7 +102,7 @@ export function validateRuntimeVersion(toolId: string, input: string): VersionVa
     if (major < 2 || major > 4) {
       return {
         valid: false,
-        error: `“${val}” 不是有效的 Python 版本号（Python 版本通常为 3.x，如 3.12.0）`,
+        error: `版本号无效：Python 版本通常为 3.x（如 3.12.0）`,
       };
     }
   } else if (tid === "node") {
@@ -111,7 +111,7 @@ export function validateRuntimeVersion(toolId: string, input: string): VersionVa
       if (minor !== 10 && minor !== 12) {
         return {
           valid: false,
-          error: `“${val}” 不是有效的 Node.js 版本（Node 0.x 仅支持 0.10 或 0.12，现代版本为 18.x、20.x 等）`,
+          error: `版本号无效：Node.js 现代版本为 18.x、20.x 等`,
         };
       }
     } else if (major < 4 || major > 50) {

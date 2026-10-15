@@ -24,7 +24,7 @@ describe("validateRuntimeVersion", () => {
   it("rejects 0.x versions for Go (e.g. 0.1111)", () => {
     const res = validateRuntimeVersion("go", "0.1111");
     expect(res.valid).toBe(false);
-    expect(res.error).toContain("Go 官方版本均在 1.0 及以上");
+    expect(res.error).toContain("Go 官方版本均为 1.x");
   });
 
   it("accepts valid Go semantic versions", () => {
@@ -37,7 +37,7 @@ describe("validateRuntimeVersion", () => {
   it("rejects 0.x for Rust SemVer", () => {
     const res = validateRuntimeVersion("rust", "0.99.1");
     expect(res.valid).toBe(false);
-    expect(res.error).toContain("Rust 官方稳定版本均在 1.0 及以上");
+    expect(res.error).toContain("Rust 稳定版本均为 1.x");
   });
 
   it("accepts valid Rust versions", () => {
