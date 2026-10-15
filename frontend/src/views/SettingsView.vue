@@ -3,7 +3,9 @@
     <!-- Top Settings Header Bar (VS Code Style) -->
     <div class="settings-top-bar glass-card">
       <div class="settings-search-wrapper">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon">
+          <TechIcon id="workbench:doctor" :size="14" :colored="false" />
+        </span>
         <input
           v-model="searchQuery"
           type="text"
@@ -325,7 +327,9 @@
         >
           <div class="section-header">
             <div class="section-title-wrap">
-              <span class="section-icon">🌐</span>
+              <span class="section-icon">
+                <TechIcon id="workbench:runtimes" :size="20" />
+              </span>
               <div>
                 <h2>{{ t('settings.cat_network') || '网络' }}</h2>
                 <span class="section-sub">{{ t('settings.cat_network_sub') || '镜像加速与网络代理' }}</span>
@@ -750,7 +754,9 @@
         >
           <div class="section-header">
             <div class="section-title-wrap">
-              <span class="section-icon">🧩</span>
+              <span class="section-icon">
+                <TechIcon id="workbench:marketplace" :size="20" />
+              </span>
               <div>
                 <h2>{{ t('settings.cat_plugins') || '扩展' }}</h2>
                 <span class="section-sub">{{ t('settings.cat_plugins_sub') || '插件配置与隔离' }}</span>
@@ -761,7 +767,9 @@
           <div class="settings-list">
             <!-- Explanation banner -->
             <div class="plugin-isolation-banner">
-              <span class="banner-icon">🔒</span>
+              <span class="banner-icon">
+                <TechIcon id="workbench:lock" :size="16" />
+              </span>
               <div class="banner-text">
                 <strong>{{ t('settings.plugin_isolation_title') || '三层命名空间隔离准则' }}</strong>
                 <p>
@@ -779,7 +787,9 @@
               >
                 <div class="plugin-card-header">
                   <div class="plugin-identity">
-                    <span class="plugin-icon">🔌</span>
+                    <span class="plugin-icon">
+                      <TechIcon id="workbench:marketplace" :size="16" />
+                    </span>
                     <span class="plugin-id font-mono">{{ p.id }}</span>
                     <span class="plugin-version-tag">v{{ p.version || 'latest' }}</span>
                   </div>
@@ -803,7 +813,9 @@
             </div>
 
             <div v-else class="no-plugins-card">
-              <span class="empty-icon">📦</span>
+              <span class="empty-icon">
+                <TechIcon id="workbench:marketplace" :size="32" />
+              </span>
               <span>{{ t('settings.no_plugins') || '当前尚未声明第三方插件配置。可通过扩展市场或配置文件添加扩展。' }}</span>
             </div>
           </div>
@@ -817,7 +829,9 @@
         >
           <div class="section-header">
             <div class="section-title-wrap">
-              <span class="section-icon">🔒</span>
+              <span class="section-icon">
+                <TechIcon id="workbench:lock" :size="20" />
+              </span>
               <div>
                 <h2>{{ t('settings.cat_security') || '安全' }}</h2>
                 <span class="section-sub">{{ t('settings.cat_security_sub') || '保留表与文件排他锁' }}</span>
@@ -1661,10 +1675,10 @@ async function onAppearanceChange(mode: "system" | "light" | "dark") {
   await setActiveTheme(undefined, undefined, mode);
   showToast(
     mode === "system"
-      ? "💻 已设置为跟随系统外观"
+      ? "已设置为跟随系统外观"
       : mode === "light"
-      ? "☀️ 已切换为浅色模式"
-      : "🌙 已切换为深色模式",
+      ? "已切换为浅色模式"
+      : "已切换为深色模式",
     "info"
   );
 }
@@ -1674,14 +1688,14 @@ async function onColorThemeChange(val: string) {
   appTheme.value = val;
   const themeObj = colorThemes.value.find((c) => c.id === val);
   const themeName = themeObj ? themeObj.name : val;
-  showToast(`🎨 已应用配色主题: ${themeName}`, "success");
+  showToast(`已应用配色主题: ${themeName}`, "success");
 }
 
 async function onIconThemeChange(val: string) {
   await setActiveTheme(undefined, val, undefined);
   const iconObj = iconThemes.value.find((i) => i.id === val);
   const iconName = iconObj ? (iconObj.id === "seti" ? "Seti UI" : iconObj.name) : val;
-  showToast(`📁 已应用文件图标主题: ${iconName}`, "success");
+  showToast(`已应用文件图标主题: ${iconName}`, "success");
 }
 
 

@@ -28,7 +28,9 @@
           @click="currentScope = 'workspace'"
           id="btn-scope-workspace"
         >
-          <span class="scope-icon">📁</span>
+          <span class="scope-icon">
+            <TechIcon id="workbench:tools" :size="14" :colored="false" />
+          </span>
           <span class="scope-title">{{ t("runtimes.scope_workspace") || "工作区" }}</span>
         </button>
 
@@ -38,17 +40,19 @@
           @click="currentScope = 'user'"
           id="btn-scope-user"
         >
-          <span class="scope-icon">👤</span>
+          <span class="scope-icon">
+            <TechIcon id="workbench:settings" :size="14" :colored="false" />
+          </span>
           <span class="scope-title">{{ t("runtimes.scope_user") || "用户" }}</span>
         </button>
       </div>
 
       <div class="scope-hint-text">
         <span v-if="currentScope === 'user'">
-          🌐 {{ t("runtimes.scope_user_desc") || "配置当前用户所有未指定工作区时的默认兜底环境" }}
+          {{ t("runtimes.scope_user_desc") || "配置当前用户所有未指定工作区时的默认兜底环境" }}
         </span>
         <span v-else>
-          📌 {{ t("runtimes.scope_workspace_desc") || "锁定当前工作区语言版本，团队协作检出即生效" }}
+          {{ t("runtimes.scope_workspace_desc") || "锁定当前工作区语言版本，团队协作检出即生效" }}
         </span>
       </div>
     </div>
@@ -56,7 +60,9 @@
     <!-- Legacy Version Files Banner (Workspace Scope Only) -->
     <div v-if="currentScope === 'workspace' && detectedLegacies.length > 0" class="legacy-banner glass-card" id="legacy-detected-banner">
       <div class="legacy-banner-left">
-        <span class="legacy-banner-icon">💡</span>
+        <span class="legacy-banner-icon">
+          <TechIcon id="workbench:about" :size="16" />
+        </span>
         <div class="legacy-banner-content">
           <span class="legacy-banner-title">
             {{ t("runtimes.legacy_banner", { files: detectedLegacies.join(", ") }) }}
@@ -73,7 +79,10 @@
           @click="migrateLegacy"
           :disabled="migrating"
         >
-          <span>✨ {{ migrating ? "Importing..." : (t("runtimes.import_legacy") || "一键导入至工作区") }}</span>
+          <span style="display: inline-flex; align-items: center; gap: 4px;">
+            <TechIcon id="workbench:tasks" :size="12" :colored="false" />
+            {{ migrating ? "Importing..." : (t("runtimes.import_legacy") || "一键导入至工作区") }}
+          </span>
         </button>
       </div>
     </div>
@@ -81,7 +90,9 @@
     <!-- Scope Filter & Stats Toolbar -->
     <div class="runtimes-filter-bar glass-card">
       <div class="search-input-wrapper">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon">
+          <TechIcon id="workbench:doctor" :size="14" :colored="false" />
+        </span>
         <input
           v-model="searchKey"
           type="text"
@@ -149,7 +160,9 @@
           <!-- Workspace Scope Version (First) -->
           <div class="status-row" :class="{ 'highlight-scope': currentScope === 'workspace' }">
             <span class="status-label">
-              <span class="scope-mini-icon">📁</span>
+              <span class="scope-mini-icon">
+                <TechIcon id="workbench:tools" :size="12" :colored="false" />
+              </span>
               {{ t("runtimes.scope_workspace") || "工作区" }}:
             </span>
             <div v-if="rt.active_version" class="status-val-wrap">
@@ -168,7 +181,9 @@
           <!-- User Scope Version (Second) -->
           <div class="status-row" :class="{ 'highlight-scope': currentScope === 'user' }">
             <span class="status-label">
-              <span class="scope-mini-icon">👤</span>
+              <span class="scope-mini-icon">
+                <TechIcon id="workbench:settings" :size="12" :colored="false" />
+              </span>
               {{ t("runtimes.scope_user") || "用户" }}:
             </span>
             <div v-if="rt.global_version" class="status-val-wrap">

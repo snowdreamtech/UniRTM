@@ -365,7 +365,7 @@ function selectLanguage(langVal: string) {
 async function toggleTheme() {
   const nextTheme = await toggleAppearance();
   saveGlobalSetting("settings.appearance", nextTheme);
-  showToast(nextTheme === "light" ? "☀️ 已切换为浅色模式" : "🌙 已切换为深色模式", "info");
+  showToast(nextTheme === "light" ? "已切换为浅色模式" : "已切换为深色模式", "info");
 }
 
 async function loadConfig() {

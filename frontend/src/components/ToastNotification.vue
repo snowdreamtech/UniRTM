@@ -2,10 +2,11 @@
   <transition name="toast-fade">
     <div v-if="message" class="global-toast" :class="type">
       <span class="toast-icon">
-        <template v-if="type === 'warning'">⚠️</template>
-        <template v-else-if="type === 'error'">❌</template>
-        <template v-else-if="type === 'success'">🎉</template>
-        <template v-else>ℹ️</template>
+        <TechIcon
+          :id="type === 'warning' ? 'workbench:warning' : type === 'error' ? 'workbench:error' : type === 'success' ? 'workbench:tasks' : 'workbench:about'"
+          :size="16"
+          :colored="false"
+        />
       </span>
       <span class="toast-text">{{ message }}</span>
       <button class="toast-close" title="Close" @click="$emit('close')">✕</button>
@@ -14,6 +15,8 @@
 </template>
 
 <script setup lang="ts">
+import TechIcon from "./common/TechIcon.vue";
+
 defineProps<{
   message: string;
   type?: "info" | "success" | "warning" | "error";

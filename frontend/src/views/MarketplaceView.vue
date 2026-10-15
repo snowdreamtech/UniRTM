@@ -1235,11 +1235,11 @@ async function onApplySubColorTheme(label: string) {
     await setActiveTheme(match.id, undefined);
     feedbackMsg.value = `✓ 已应用颜色主题: ${match.name}`;
     feedbackIsError.value = false;
-    showToast(`🎨 已应用颜色主题: ${match.name}`, "success");
+    showToast(`已应用颜色主题: ${match.name}`, "success");
   } else {
     feedbackMsg.value = `已激活主题包，可在设置中选择应用 ${label}`;
     feedbackIsError.value = false;
-    showToast(`🎨 已激活主题包: ${label}`, "info");
+    showToast(`已激活主题包: ${label}`, "info");
   }
 }
 
@@ -1251,11 +1251,11 @@ async function onApplySubIconTheme(label: string) {
     await setActiveTheme(undefined, match.id);
     feedbackMsg.value = `✓ 已应用图标主题: ${match.name}`;
     feedbackIsError.value = false;
-    showToast(`📁 已应用图标主题: ${match.name}`, "success");
+    showToast(`已应用图标主题: ${match.name}`, "success");
   } else {
     feedbackMsg.value = `已激活图标包，可在设置中选择应用 ${label}`;
     feedbackIsError.value = false;
-    showToast(`📁 已激活图标包: ${label}`, "info");
+    showToast(`已激活图标包: ${label}`, "info");
   }
 }
 
