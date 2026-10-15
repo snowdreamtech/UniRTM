@@ -6,8 +6,17 @@ import type { ThemeItem, ThemesListResponse } from "../types/theme-manager";
 import { useColorTheme } from "./useColorTheme";
 import { iconThemeService } from "../services/icon-theme/iconThemeService";
 
-const colorThemes = ref<ThemeItem[]>([]);
-const iconThemes = ref<ThemeItem[]>([]);
+const defaultColors: ThemeItem[] = [
+  { id: "dark", name: "Dark (UniRTM Default)", type: "color", is_builtin: true, ui_theme: "vs-dark" },
+  { id: "light", name: "Light", type: "color", is_builtin: true, ui_theme: "vs" },
+  { id: "system", name: "Follow System", type: "color", is_builtin: true, ui_theme: "vs-dark" },
+];
+const defaultIcons: ThemeItem[] = [
+  { id: "seti", name: "Seti UI (VS Code Default)", type: "icon", is_builtin: true, description: "Official Visual Studio Code default file icon theme" },
+];
+
+const colorThemes = ref<ThemeItem[]>(defaultColors);
+const iconThemes = ref<ThemeItem[]>(defaultIcons);
 const activeColorTheme = ref<string>("dark");
 const activeIconTheme = ref<string>("seti");
 const loading = ref<boolean>(false);

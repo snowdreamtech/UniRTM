@@ -93,6 +93,15 @@ export interface TranslationDict {
   "theme.system": string;
   "theme.toggleDark": string;
   "theme.toggleLight": string;
+  "settings.color_theme"?: string;
+  "settings.color_theme_desc"?: string;
+  "settings.icon_theme"?: string;
+  "settings.icon_theme_desc"?: string;
+  "settings.theme_pkg_manager"?: string;
+  "settings.theme_pkg_desc"?: string;
+  "settings.install_vsix"?: string;
+  "settings.installing"?: string;
+  "settings.installed_custom_themes"?: string;
 
   "hello.input_placeholder": string;
   "hello.greet_btn": string;

@@ -1277,17 +1277,37 @@ const languageSelectOptions = computed(() => [
 ]);
 
 const colorThemeOptions = computed(() => {
-  return colorThemes.value.map((t) => ({
-    value: t.id,
-    label: (t.is_builtin ? (t.id === "dark" ? "🌙 " : t.id === "light" ? "☀️ " : "💻 ") : "🎨 ") + t.name + (!t.is_builtin && t.version ? ` (v${t.version})` : ""),
-  }));
+  return colorThemes.value.map((item) => {
+    let icon = "🎨 ";
+    let name = item.name;
+    if (item.is_builtin) {
+      if (item.id === "dark") {
+        icon = "🌙 ";
+        name = t("theme.dark") || "深色模式";
+      } else if (item.id === "light") {
+        icon = "☀️ ";
+        name = t("theme.light") || "浅色模式";
+      } else {
+        icon = "💻 ";
+        name = t("theme.system") || "跟随系统";
+      }
+    }
+    return {
+      value: item.id,
+      label: icon + name + (!item.is_builtin && item.version ? ` (v${item.version})` : ""),
+    };
+  });
 });
 
 const iconThemeOptions = computed(() => {
-  return iconThemes.value.map((t) => ({
-    value: t.id,
-    label: (t.is_builtin ? "📁 " : "🧩 ") + t.name + (!t.is_builtin && t.version ? ` (v${t.version})` : ""),
-  }));
+  return iconThemes.value.map((item) => {
+    let icon = item.is_builtin ? "📁 " : "🧩 ";
+    let name = item.id === "seti" ? "Seti UI (VS Code 默认)" : item.name;
+    return {
+      value: item.id,
+      label: icon + name + (!item.is_builtin && item.version ? ` (v${item.version})` : ""),
+    };
+  });
 });
 
 const installedThemesList = computed(() => {
