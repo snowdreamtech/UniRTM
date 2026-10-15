@@ -100,7 +100,6 @@ const searchKey = ref("");
 interface ToolEntry {
   id: string;
   name: string;
-  icon: string;
   version: string;
   backend: string;
   description: string;
@@ -113,7 +112,6 @@ const toolsList = ref<ToolEntry[]>([
   {
     id: "node",
     name: "node",
-    icon: "🟢",
     version: "22.14.0",
     backend: "native / npmmirror",
     description: "JavaScript / TypeScript 核心运行时与包管理器环境",
@@ -124,7 +122,6 @@ const toolsList = ref<ToolEntry[]>([
   {
     id: "go",
     name: "go",
-    icon: "🔷",
     version: "1.24.0",
     backend: "native / goproxy.cn",
     description: "UniRTM 底层构建与高并发服务编译工具链",
@@ -135,7 +132,6 @@ const toolsList = ref<ToolEntry[]>([
   {
     id: "python",
     name: "python",
-    icon: "🐍",
     version: "3.12.2",
     backend: "github-releases",
     description: "脚本自动化、数据分析及辅助工具环境",
@@ -146,7 +142,6 @@ const toolsList = ref<ToolEntry[]>([
   {
     id: "pre-commit",
     name: "pre-commit",
-    icon: "🪝",
     version: "4.7.0",
     backend: "pipx / github",
     description: "跨语言 Git 提交前多层安全与代码规范检查器",
@@ -157,7 +152,6 @@ const toolsList = ref<ToolEntry[]>([
   {
     id: "trivy",
     name: "trivy",
-    icon: "🛡️",
     version: "0.50.1",
     backend: "aqua / github",
     description: "容器与依赖树全量 CVE 漏洞实时安全扫描工具",
@@ -168,7 +162,6 @@ const toolsList = ref<ToolEntry[]>([
   {
     id: "eslint",
     name: "eslint",
-    icon: "⚡",
     version: "10.12.0",
     backend: "npm:eslint",
     description: "前端 JavaScript / TypeScript 静态语法与代码规范扫描",

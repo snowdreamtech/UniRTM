@@ -538,7 +538,6 @@ const customToolInput = ref("");
 interface PresetRuntime {
   id: string;
   name: string;
-  icon: string;
   description: string;
   homepage: string;
   defaultVersion: string;
@@ -548,7 +547,6 @@ const presetRuntimes: PresetRuntime[] = [
   {
     id: "bun",
     name: "Bun",
-    icon: "🥟",
     description: "Incredibly fast all-in-one JavaScript & TypeScript toolkit",
     homepage: "https://bun.sh",
     defaultVersion: "1.2.4",
@@ -556,7 +554,6 @@ const presetRuntimes: PresetRuntime[] = [
   {
     id: "deno",
     name: "Deno",
-    icon: "🦕",
     description: "Modern, secure runtime for JavaScript and TypeScript",
     homepage: "https://deno.com",
     defaultVersion: "2.2.2",
@@ -564,7 +561,6 @@ const presetRuntimes: PresetRuntime[] = [
   {
     id: "java",
     name: "Java (OpenJDK)",
-    icon: "☕",
     description: "Enterprise multi-platform Java Development Kit & Virtual Machine",
     homepage: "https://openjdk.org",
     defaultVersion: "21.0.2",
@@ -572,7 +568,6 @@ const presetRuntimes: PresetRuntime[] = [
   {
     id: "zig",
     name: "Zig",
-    icon: "⚡",
     description: "General-purpose programming language and toolchain for robust software",
     homepage: "https://ziglang.org",
     defaultVersion: "0.13.0",
@@ -580,7 +575,6 @@ const presetRuntimes: PresetRuntime[] = [
   {
     id: "ruby",
     name: "Ruby",
-    icon: "💎",
     description: "Dynamic, open source programming language with a focus on simplicity",
     homepage: "https://ruby-lang.org",
     defaultVersion: "3.4.1",
@@ -588,7 +582,6 @@ const presetRuntimes: PresetRuntime[] = [
   {
     id: "php",
     name: "PHP",
-    icon: "🐘",
     description: "Popular general-purpose scripting language suited for web development",
     homepage: "https://php.net",
     defaultVersion: "8.4.4",
@@ -596,7 +589,6 @@ const presetRuntimes: PresetRuntime[] = [
   {
     id: "node",
     name: "Node.js",
-    icon: "🟢",
     description: "JavaScript / TypeScript runtime (NVM superset)",
     homepage: "https://nodejs.org",
     defaultVersion: "22.14.0",
@@ -604,7 +596,6 @@ const presetRuntimes: PresetRuntime[] = [
   {
     id: "go",
     name: "Go",
-    icon: "🔷",
     description: "Go programming language (GVM superset)",
     homepage: "https://go.dev",
     defaultVersion: "1.24.0",
@@ -612,7 +603,6 @@ const presetRuntimes: PresetRuntime[] = [
   {
     id: "python",
     name: "Python",
-    icon: "🐍",
     description: "Python language interpreter (Pyenv superset)",
     homepage: "https://python.org",
     defaultVersion: "3.13.2",
@@ -620,7 +610,6 @@ const presetRuntimes: PresetRuntime[] = [
   {
     id: "rust",
     name: "Rust",
-    icon: "🦀",
     description: "Rust toolchain & cargo build system",
     homepage: "https://rust-lang.org",
     defaultVersion: "1.85.0",

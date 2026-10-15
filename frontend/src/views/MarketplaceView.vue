@@ -1334,13 +1334,13 @@ async function onApplyTheme(item: MarketplaceExtension) {
     await fetchThemes();
 
     const targetName = item.displayName || item.name;
-    feedbackMsg.value = `✓ 已启用主题: ${targetName}`;
+    feedbackMsg.value = `已启用主题: ${targetName}`;
     feedbackIsError.value = false;
-    showToast(`✓ 已启用并应用主题: ${targetName}`, "success");
+    showToast(`已启用并应用主题: ${targetName}`, "success");
   } catch (err: any) {
-    feedbackMsg.value = `✕ 激活主题失败: ${err.message || err}`;
+    feedbackMsg.value = `激活主题失败: ${err.message || err}`;
     feedbackIsError.value = true;
-    showToast(`✕ 激活主题失败: ${err.message || err}`, "error");
+    showToast(`激活主题失败: ${err.message || err}`, "error");
   }
 }
 
@@ -1375,7 +1375,6 @@ function cleanGitUrl(url: string): string {
 interface PluginItem {
   id: string;
   name: string;
-  icon: string;
   version: string;
   author: string;
   description: string;
@@ -1389,7 +1388,6 @@ const nativePlugins = ref<PluginItem[]>([
   {
     id: "uniagent",
     name: "UniAgent 智能排错助手",
-    icon: "🤖",
     version: "0.1.0",
     author: "SnowdreamTech 官方认证",
     description: "专注于开发编译与环境配置诊断的 AI 智能助手，通过独立 MCP 协议与工作台通讯，零内核侵入。",
@@ -1401,7 +1399,6 @@ const nativePlugins = ref<PluginItem[]>([
   {
     id: "security-suite",
     name: "Security Suite Pack",
-    icon: "🛡️",
     version: "1.2.0",
     author: "SnowdreamTech 官方认证",
     description: "集成 Trivy、Syft、Gitleaks 深度源码与依赖漏洞扫描，自动生成 SBOM 软件物料清单。",
@@ -1413,7 +1410,6 @@ const nativePlugins = ref<PluginItem[]>([
   {
     id: "rust-provider",
     name: "Rust & Cargo Provider",
-    icon: "🦀",
     version: "1.85.0",
     author: "社区维护",
     description: "为 UniRTM 提供原生 Rust/Cargo 极速版本下载与跨平台构建环境隔离支持。",
@@ -1425,7 +1421,6 @@ const nativePlugins = ref<PluginItem[]>([
   {
     id: "datascience-pack",
     name: "Python DataScience Pack",
-    icon: "🔬",
     version: "2.0.0",
     author: "社区维护",
     description: "预置 uv、ruff、ipython、jupyter 数据科学轻量级任务流与环境配置模板。",

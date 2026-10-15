@@ -54,8 +54,13 @@
 
       <!-- Top Right Actions: Auto-save status & Open TOML -->
       <div class="settings-top-actions">
-        <span class="auto-save-pill" :class="{ saving: isSaving }">
-          {{ saveStatusText || '⚡ ' + (t('settings.realtime_save') || '修改已实时生效') }}
+        <span class="auto-save-pill" :class="[saveStatusType, { saving: isSaving }]" style="display: inline-flex; align-items: center; gap: 6px;">
+          <TechIcon
+            :id="saveStatusType === 'saving' ? 'workbench:sync' : saveStatusType === 'success' ? 'workbench:success' : saveStatusType === 'error' ? 'workbench:error' : 'workbench:speed'"
+            :size="12"
+            :class="{ spinning: saveStatusType === 'saving' }"
+          />
+          <span>{{ saveStatusText || t('settings.realtime_save') || '修改已实时生效' }}</span>
         </span>
         <button
           class="btn-raw-toml"
@@ -516,21 +521,24 @@
                   @click="showCreateProfileModal = true"
                   :title="t('network.create_profile') || '新建档案'"
                 >
-                  ＋ {{ t('network.create_profile') || '新建档案' }}
+                  <TechIcon id="workbench:tools" :size="12" />
+                  <span>{{ t('network.create_profile') || '新建档案' }}</span>
                 </button>
                 <button
                   class="btn-profile-action"
                   @click="openAddEcoModal()"
                   :title="t('network.add_ecosystem') || '添加生态'"
                 >
-                  ＋ {{ t('network.add_ecosystem') || '添加生态' }}
+                  <TechIcon id="workbench:runtimes" :size="12" />
+                  <span>{{ t('network.add_ecosystem') || '添加生态' }}</span>
                 </button>
                 <button
                   class="btn-profile-action secondary"
                   @click="handleResetAllEcosystems()"
                   :title="t('network.reset_all_ecosystems') || '恢复默认生态'"
                 >
-                  ↺ {{ t('network.reset_all_ecosystems') || '恢复默认生态' }}
+                  <TechIcon id="workbench:sync" :size="12" />
+                  <span>{{ t('network.reset_all_ecosystems') || '恢复默认生态' }}</span>
                 </button>
                 <button
                   v-if="networkStatus?.active_profile?.builtin"
@@ -538,7 +546,8 @@
                   @click="handleResetBuiltinProfile(networkStatus.active_profile_id)"
                   :title="t('network.reset_factory') || '恢复出厂默认值'"
                 >
-                  ↺ {{ t('network.reset_factory') || '恢复出厂默认值' }}
+                  <TechIcon id="workbench:sync" :size="12" />
+                  <span>{{ t('network.reset_factory') || '恢复出厂默认值' }}</span>
                 </button>
               </div>
             </div>
@@ -789,7 +798,7 @@
                     :title="t('network.restore_inherited') || '恢复预设'"
                     @click="handleResetRegistry(eco)"
                   >
-                    ↺
+                    <TechIcon id="workbench:sync" :size="12" />
                   </button>
 
                   <!-- Delete Ecosystem Button -->
@@ -980,6 +989,7 @@ watch(
 
 const isSaving = ref(false);
 const saveStatusText = ref("");
+const saveStatusType = ref<"idle" | "saving" | "success" | "error">("idle");
 
 // Setting fields
 const appLanguage = ref(selectedLangSetting.value || "auto");
@@ -1473,37 +1483,21 @@ function mergeDetectedBrowsers(serverList?: DetectedBrowser[]): DetectedBrowser[
 
 const detectedBrowsers = ref<DetectedBrowser[]>(mergeDetectedBrowsers());
 
-function getBrowserIcon(id: string): string {
-  switch (id.toLowerCase()) {
-    case "chrome": return "🌐";
-    case "firefox": return "🦊";
-    case "msedge": case "edge": return "🌊";
-    case "safari": return "🧭";
-    case "brave": return "🦁";
-    case "chromium": return "⚡";
-    case "arc": return "🎨";
-    case "opera": return "⭕";
-    case "vivaldi": return "🔺";
-    default: return "💻";
-  }
-}
-
 const browserPresetOptions = computed(() => {
   const options: Array<{ value: string; label: string }> = [
-    { value: "", label: "🖥️ " + (t("settings.browser_auto") || "系统默认") },
+    { value: "", label: t("settings.browser_auto") || "系统默认 (自动探测)" },
   ];
 
   for (const b of detectedBrowsers.value) {
-    const icon = getBrowserIcon(b.id);
     options.push({
       value: b.id,
-      label: `${icon} ${b.name}`,
+      label: b.name,
     });
   }
 
   options.push({
     value: "custom",
-    label: "🛠️ " + (t("settings.browser_custom") || "自定义路径"),
+    label: t("settings.browser_custom") || "自定义路径",
   });
 
   return options;
@@ -1653,7 +1647,8 @@ function syncFieldsFromConfig() {
 
 async function saveSetting(key: string, value: any) {
   isSaving.value = true;
-  saveStatusText.value = "⚡ 保存中...";
+  saveStatusType.value = "saving";
+  saveStatusText.value = "保存中...";
 
   try {
     const res = await fetch("/api/config", {
@@ -1669,18 +1664,22 @@ async function saveSetting(key: string, value: any) {
     const data = await res.json();
     if (res.ok) {
       isSaving.value = false;
-      saveStatusText.value = "✅ 已自动保存";
+      saveStatusType.value = "success";
+      saveStatusText.value = "已自动保存";
       await loadConfigData();
       setTimeout(() => {
+        saveStatusType.value = "idle";
         saveStatusText.value = "";
       }, 2000);
     } else {
       isSaving.value = false;
-      saveStatusText.value = `❌ 保存失败: ${data.error || "未知错误"}`;
+      saveStatusType.value = "error";
+      saveStatusText.value = `保存失败: ${data.error || "未知错误"}`;
     }
   } catch (err: any) {
     isSaving.value = false;
-    saveStatusText.value = `❌ 网络错误: ${err.message}`;
+    saveStatusType.value = "error";
+    saveStatusText.value = `网络错误: ${err.message}`;
   }
 }
 
