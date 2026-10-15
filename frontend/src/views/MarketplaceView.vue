@@ -408,7 +408,7 @@
             </button>
           </div>
           <span v-if="mpTotalSize > 0" class="results-count-label">
-            共收录 {{ mpTotalSize }} 款外观扩展
+            共收录 {{ mpTotalSize }} 款主题与图标包
           </span>
         </div>
 
@@ -464,7 +464,15 @@
                   </span>
                   <span class="card-version font-mono">v{{ item.version }}</span>
                 </div>
-                <span class="card-namespace font-mono">{{ item.namespace }}</span>
+                <div class="card-subtitle-row">
+                  <span class="card-namespace font-mono">{{ item.namespace }}</span>
+                  <span
+                    class="card-type-tag"
+                    :class="getExtensionType(item) === 'icon' ? 'type-icon' : 'type-color'"
+                  >
+                    {{ getExtensionType(item) === 'icon' ? '📁 图标' : '🎨 主题' }}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -510,7 +518,7 @@
         <!-- Pagination Bar -->
         <div v-if="mpTotalPages > 1" class="market-pagination-bar glass-card">
           <div class="pagination-summary">
-            <span>共收录 <strong>{{ mpTotalSize }}</strong> 款外观扩展</span>
+            <span>共收录 <strong>{{ mpTotalSize }}</strong> 款主题与图标包</span>
             <span class="pagination-divider">•</span>
             <span>第 <strong>{{ mpCurrentPage }}</strong> / {{ mpTotalPages }} 页</span>
           </div>
@@ -812,6 +820,14 @@ async function onJumpPage() {
 async function onChangePageSize(size: number) {
   await mpSetPageSize(size);
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function getExtensionType(item: MarketplaceExtension): "icon" | "theme" {
+  const text = `${item.name} ${item.displayName || ""} ${item.description || ""}`.toLowerCase();
+  if (text.includes("icon") || text.includes("icons")) {
+    return "icon";
+  }
+  return "theme";
 }
 
 function onSearchThemes(q?: string) {
@@ -1401,10 +1417,37 @@ const nativePlugins = ref<PluginItem[]>([
   flex-shrink: 0;
 }
 
+.card-subtitle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 2px;
+}
+
 .card-namespace {
   font-size: 0.76rem;
   color: var(--text-muted);
-  margin-top: 2px;
+}
+
+.card-type-tag {
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.card-type-tag.type-color {
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.25);
+}
+
+.card-type-tag.type-icon {
+  background: rgba(6, 182, 212, 0.12);
+  color: #22d3ee;
+  border: 1px solid rgba(6, 182, 212, 0.25);
 }
 
 .card-desc {
