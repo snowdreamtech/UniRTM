@@ -1301,15 +1301,24 @@ const colorThemeOptions = computed(() => {
     let icon = "🎨 ";
     let name = item.name;
     if (item.is_builtin) {
-      if (item.id === "dark") {
+      if (item.id === "dark" || item.id === "vs-dark") {
         icon = "🌙 ";
         name = t("theme.dark") || "深色模式";
-      } else if (item.id === "light") {
+      } else if (item.id === "light" || item.id === "vs") {
         icon = "☀️ ";
         name = t("theme.light") || "浅色模式";
-      } else {
+      } else if (item.id === "system") {
         icon = "💻 ";
         name = t("theme.system") || "跟随系统";
+      } else if (item.id === "hc-black") {
+        icon = "🖤 ";
+        name = "高对比度深色";
+      } else if (item.id === "hc-light") {
+        icon = "🤍 ";
+        name = "高对比度浅色";
+      } else {
+        icon = "🎨 ";
+        name = item.name;
       }
     }
     return {
@@ -1322,7 +1331,7 @@ const colorThemeOptions = computed(() => {
 const iconThemeOptions = computed(() => {
   return iconThemes.value.map((item) => {
     let icon = item.is_builtin ? "📁 " : "🧩 ";
-    let name = item.id === "seti" ? "Seti UI (VS Code 默认)" : item.name;
+    let name = item.id === "seti" || item.id === "vs-seti" ? "Seti UI (VS Code 默认)" : item.name;
     return {
       value: item.id,
       label: icon + name + (!item.is_builtin && item.version ? ` (v${item.version})` : ""),

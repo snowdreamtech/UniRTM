@@ -1167,14 +1167,12 @@ print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes'
           if (req.url?.startsWith("/api/themes") && req.method === "GET") {
             const themesDir = path.join(os.homedir(), ".config", "unirtm", "themes");
             const colorThemes: any[] = [
-              { id: "vs-dark", name: "Default Dark+", type: "color", is_builtin: true, ui_theme: "vs-dark" },
-              { id: "vs", name: "Default Light+", type: "color", is_builtin: true, ui_theme: "vs" },
-              { id: "hc-black", name: "High Contrast Dark", type: "color", is_builtin: true, ui_theme: "hc-black" },
-              { id: "hc-light", name: "High Contrast Light", type: "color", is_builtin: true, ui_theme: "hc-light" },
+              { id: "dark", name: "Dark (UniRTM Default)", type: "color", is_builtin: true, ui_theme: "vs-dark" },
+              { id: "light", name: "Light", type: "color", is_builtin: true, ui_theme: "vs" },
+              { id: "system", name: "Follow System", type: "color", is_builtin: true, ui_theme: "vs-dark" },
             ];
             const iconThemes: any[] = [
-              { id: "vs-seti", name: "Seti UI (VS Code 默认)", type: "icon", is_builtin: true },
-              { id: "minimal", name: "Minimal", type: "icon", is_builtin: true },
+              { id: "seti", name: "Seti UI (VS Code Default)", type: "icon", is_builtin: true, description: "Official Visual Studio Code default file icon theme" },
             ];
 
             if (fs.existsSync(themesDir)) {
@@ -1219,15 +1217,22 @@ print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes'
 
             const userConfigDir = path.join(os.homedir(), ".config", "unirtm");
             const userPath = path.join(userConfigDir, "unirtm.toml");
-            let activeColor = "vs-dark";
-            let activeIcon = "vs-seti";
+            let activeColor = "dark";
+            let activeIcon = "seti";
             const readSetting = (fp: string) => {
               if (!fs.existsSync(fp)) return;
               const text = fs.readFileSync(fp, "utf-8");
               const mColor = text.match(/(?:color_)?theme\s*=\s*"([^"]+)"/);
-              if (mColor) activeColor = mColor[1];
+              if (mColor) {
+                activeColor = mColor[1];
+                if (activeColor === "vs-dark") activeColor = "dark";
+                if (activeColor === "vs") activeColor = "light";
+              }
               const mIcon = text.match(/icon_theme\s*=\s*"([^"]+)"/);
-              if (mIcon) activeIcon = mIcon[1];
+              if (mIcon) {
+                activeIcon = mIcon[1];
+                if (activeIcon === "vs-seti") activeIcon = "seti";
+              }
             };
             readSetting(userPath);
 
