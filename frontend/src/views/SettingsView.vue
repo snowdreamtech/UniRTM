@@ -185,43 +185,6 @@
                   <span>{{ themeInstallMsg }}</span>
                   <button class="btn-close-msg" @click="themeInstallMsg = ''">✕</button>
                 </div>
-
-                <!-- Installed Custom Themes Table / Cards -->
-                <div v-if="installedThemesList.length > 0" class="installed-themes-container">
-                  <div class="installed-themes-header">
-                    <span>{{ t('settings.installed_custom_themes') || '已安装的第三方主题与图标包' }}</span>
-                    <span class="count-badge">{{ installedThemesList.length }}</span>
-                  </div>
-                  <div class="installed-themes-list">
-                    <div
-                      v-for="item in installedThemesList"
-                      :key="item.type + ':' + (item.package_id || item.id)"
-                      class="installed-theme-card"
-                    >
-                      <div class="card-left">
-                        <span class="theme-type-tag" :class="item.type">
-                          {{ item.type === 'color' ? '🎨 颜色主题' : '📁 图标主题' }}
-                        </span>
-                        <div class="theme-info-texts">
-                          <span class="theme-card-title">{{ item.name }}</span>
-                          <span class="theme-card-sub font-mono">{{ item.package_id }} {{ item.version ? 'v' + item.version : '' }}</span>
-                        </div>
-                      </div>
-                      <div class="card-actions">
-                        <button
-                          class="btn-delete-theme"
-                          :title="t('common.delete') || '卸载删除'"
-                          @click="onDeleteInstalledTheme(item)"
-                        >
-                          🗑️ {{ t('common.uninstall') || '卸载' }}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div v-else class="installed-empty-hint">
-                  <p>尚未安装任何第三方扩展包。可前往“扩展与主题市场”挑选，或手动导入本地 .vsix 文件。</p>
-                </div>
               </div>
             </div>
 
@@ -844,7 +807,6 @@ import { useRouter } from "vue-router";
 import { t, selectedLangSetting, setLanguage, SUPPORTED_LANGUAGES } from "../i18n";
 import { useTheme } from "../composables/useTheme";
 import { useThemeManager } from "../composables/useThemeManager";
-import type { ThemeItem } from "../types/theme-manager";
 import CustomSelect from "../components/CustomSelect.vue";
 
 const router = useRouter();
@@ -870,7 +832,6 @@ const {
   activeIconTheme,
   fetchThemes,
   installTheme,
-  deleteTheme,
   setActiveTheme,
 } = useThemeManager();
 
@@ -1339,23 +1300,6 @@ const iconThemeOptions = computed(() => {
   });
 });
 
-const installedThemesList = computed(() => {
-  const list: ThemeItem[] = [];
-  const seen = new Set<string>();
-  for (const c of colorThemes.value) {
-    if (!c.is_builtin && c.package_id && !seen.has(`color:${c.package_id}`)) {
-      seen.add(`color:${c.package_id}`);
-      list.push(c);
-    }
-  }
-  for (const i of iconThemes.value) {
-    if (!i.is_builtin && i.package_id && !seen.has(`icon:${i.package_id}`)) {
-      seen.add(`icon:${i.package_id}`);
-      list.push(i);
-    }
-  }
-  return list;
-});
 
 interface DetectedBrowser {
   id: string;
@@ -1680,20 +1624,6 @@ async function onIconThemeChange(val: string) {
   await setActiveTheme(undefined, val);
 }
 
-async function onDeleteInstalledTheme(item: ThemeItem) {
-  if (!item.package_id) return;
-  if (!confirm(`确定要卸载主题包 "${item.name}" 吗？`)) {
-    return;
-  }
-  try {
-    await deleteTheme(item.type, item.package_id);
-    themeInstallMsg.value = `✓ 已卸载 ${item.name}`;
-    themeInstallError.value = false;
-  } catch (err: any) {
-    themeInstallError.value = true;
-    themeInstallMsg.value = `✕ 卸载失败: ${err.message || err}`;
-  }
-}
 
 function onBrowserPresetChange(val: string) {
   selectedBrowserPreset.value = val;

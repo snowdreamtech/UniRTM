@@ -413,13 +413,20 @@
               v-for="chip in themeChips"
               :key="chip"
               class="chip-btn"
-              :class="{ active: (chip === '全部' && !mpSearchQuery) || mpSearchQuery.toLowerCase() === chip.toLowerCase() }"
+              :class="{
+                active: selectedFilter === chip,
+                'chip-installed': chip === '已安装'
+              }"
               @click="onSelectChip(chip)"
             >
-              {{ chip }}
+              <span v-if="chip === '已安装'">📦 已安装 ({{ installedExtensions.length }})</span>
+              <span v-else>{{ chip }}</span>
             </button>
           </div>
-          <span v-if="mpTotalSize > 0" class="results-count-label">
+          <span v-if="selectedFilter === '已安装'" class="results-count-label">
+            已安装 {{ displayedExtensions.length }} 款主题与图标包
+          </span>
+          <span v-else-if="mpTotalSize > 0" class="results-count-label">
             共收录 {{ mpTotalSize }} 款主题与图标包
           </span>
         </div>
@@ -431,33 +438,48 @@
         </div>
 
         <!-- Error Banner -->
-        <div v-if="mpError" class="error-banner">
+        <div v-if="mpError && selectedFilter !== '已安装'" class="error-banner">
           <span>⚠️ {{ mpError }}</span>
           <button class="btn-retry" @click="onSearchThemes(mpSearchQuery)">重试</button>
         </div>
 
         <!-- Loading State -->
-        <div v-if="mpIsSearching" class="market-loading-box glass-card">
+        <div v-if="mpIsSearching && selectedFilter !== '已安装'" class="market-loading-box glass-card">
           <div class="spinner-small"></div>
           <span>正在实时连接 Open VSX 检索主题与图标...</span>
         </div>
 
         <!-- Empty State -->
-        <div v-else-if="mpSearchResults.length === 0" class="market-empty-box glass-card">
+        <div v-else-if="displayedExtensions.length === 0" class="market-empty-box glass-card">
           <span class="empty-icon">🎨</span>
-          <p>未找到符合条件的主题或图标包</p>
+          <p>{{ selectedFilter === '已安装' ? '暂未安装任何第三方主题或图标包' : '未找到符合条件的主题或图标包' }}</p>
           <button class="btn-reset-chip" @click="onSelectChip('全部')">查看热门推荐</button>
         </div>
 
         <!-- Themes Grid -->
         <div v-else class="extensions-grid">
           <div
-            v-for="item in mpSearchResults"
-            :key="item.namespace + '.' + item.name"
+            v-for="item in displayedExtensions"
+            :key="(item.namespace || '') + '.' + item.name"
             class="glass-card theme-card clickable-card"
             :class="{ 'card-is-active': isExtensionActive(item) }"
-            @click="navigateToDetail(item.namespace, item.name)"
+            @click="navigateToDetail(item.namespace || '', item.name)"
           >
+            <!-- Top Right Delete Button for Installed Themes -->
+            <button
+              v-if="isItemInstalled(item)"
+              class="btn-card-delete"
+              :title="t('common.delete') || '卸载此主题包'"
+              @click.stop="onUninstallThemeCard(item)"
+            >
+              <svg class="trash-icon" viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2" fill="none">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+            </button>
+
             <div class="card-header-row">
               <div class="card-icon-wrap">
                 <img
@@ -508,7 +530,7 @@
               </div>
 
               <div class="card-actions" @click.stop>
-                <div v-if="item.is_installed" class="installed-group">
+                <div v-if="isItemInstalled(item)" class="installed-group">
                   <span :class="isExtensionActive(item) ? 'badge-active-applied' : 'badge-installed'">
                     ✓ {{ isExtensionActive(item) ? "使用中" : (t("settings.installed") || "已安装") }}
                   </span>
@@ -544,7 +566,7 @@
         </div>
 
         <!-- Pagination Bar -->
-        <div v-if="mpTotalPages > 1" class="market-pagination-bar glass-card">
+        <div v-if="selectedFilter !== '已安装' && mpTotalPages > 1" class="market-pagination-bar glass-card">
           <div class="pagination-summary">
             <span>共收录 <strong>{{ mpTotalSize }}</strong> 款主题与图标包</span>
             <span class="pagination-divider">•</span>
@@ -739,8 +761,11 @@ const {
   deleteTheme,
 } = useThemeManager();
 
+const selectedFilter = ref<string>("全部");
+
 const themeChips = [
   "全部",
+  "已安装",
   "Material",
   "Dracula",
   "One Dark",
@@ -749,6 +774,94 @@ const themeChips = [
   "GitHub",
   "Icons",
 ];
+
+const installedExtensions = computed<MarketplaceExtension[]>(() => {
+  const list: MarketplaceExtension[] = [];
+  const seen = new Set<string>();
+
+  for (const c of colorThemes.value) {
+    if (!c.is_builtin && c.package_id) {
+      const key = `color:${c.package_id.toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const match = mpSearchResults.value.find(
+        (s) => (s.package_id && s.package_id.toLowerCase() === c.package_id?.toLowerCase()) ||
+               s.name.toLowerCase() === c.package_id?.toLowerCase()
+      );
+      if (match) {
+        list.push({ ...match, is_installed: true });
+      } else {
+        list.push({
+          namespace: c.package_id.includes(".") ? c.package_id.split(".")[0] : "",
+          name: c.package_id.includes(".") ? c.package_id.split(".")[1] : c.package_id,
+          displayName: c.name || c.package_id,
+          version: c.version || "",
+          description: "已安装的本地 VS Code 颜色主题扩展包",
+          downloadCount: 0,
+          averageRating: 5.0,
+          is_installed: true,
+          package_id: c.package_id,
+          files: {
+            download: "",
+            icon: "",
+          },
+        });
+      }
+    }
+  }
+
+  for (const i of iconThemes.value) {
+    if (!i.is_builtin && i.package_id) {
+      const key = `icon:${i.package_id.toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const match = mpSearchResults.value.find(
+        (s) => (s.package_id && s.package_id.toLowerCase() === i.package_id?.toLowerCase()) ||
+               s.name.toLowerCase() === i.package_id?.toLowerCase()
+      );
+      if (match) {
+        list.push({ ...match, is_installed: true });
+      } else {
+        list.push({
+          namespace: i.package_id.includes(".") ? i.package_id.split(".")[0] : "",
+          name: i.package_id.includes(".") ? i.package_id.split(".")[1] : i.package_id,
+          displayName: i.name || i.package_id,
+          version: i.version || "",
+          description: "已安装的本地 VS Code 图标主题扩展包",
+          downloadCount: 0,
+          averageRating: 5.0,
+          is_installed: true,
+          package_id: i.package_id,
+          files: {
+            download: "",
+            icon: "",
+          },
+        });
+      }
+    }
+  }
+
+  return list;
+});
+
+const displayedExtensions = computed<MarketplaceExtension[]>(() => {
+  if (selectedFilter.value === "已安装") {
+    if (!mpSearchQuery.value.trim()) {
+      return installedExtensions.value;
+    }
+    const q = mpSearchQuery.value.toLowerCase().trim();
+    return installedExtensions.value.filter(
+      (item) =>
+        (item.displayName && item.displayName.toLowerCase().includes(q)) ||
+        item.name.toLowerCase().includes(q) ||
+        (item.description && item.description.toLowerCase().includes(q)) ||
+        (item.package_id && item.package_id.toLowerCase().includes(q))
+    );
+  }
+  return mpSearchResults.value;
+});
 
 const feedbackMsg = ref("");
 const feedbackIsError = ref(false);
@@ -863,8 +976,35 @@ function getExtensionType(item: MarketplaceExtension): "icon" | "theme" {
   return "theme";
 }
 
+function isItemInstalled(item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean }): boolean {
+  if (item.is_installed) return true;
+  const pkgId = (item.package_id || item.name || "").toLowerCase();
+  const name = (item.name || "").toLowerCase();
+  const ns = (item.namespace || "").toLowerCase();
+  const fullId = `${ns}.${name}`.toLowerCase();
+  const displayName = (item.displayName || "").toLowerCase();
+
+  const isColor = colorThemes.value.some((c) => {
+    if (c.is_builtin) return false;
+    const cPkg = (c.package_id || "").toLowerCase();
+    const cId = c.id.toLowerCase();
+    const cName = c.name.toLowerCase();
+    return cPkg === pkgId || cPkg === name || cPkg === fullId || cId === pkgId || cId === name || (displayName && cName === displayName);
+  });
+  if (isColor) return true;
+
+  const isIcon = iconThemes.value.some((i) => {
+    if (i.is_builtin) return false;
+    const iPkg = (i.package_id || "").toLowerCase();
+    const iId = i.id.toLowerCase();
+    const iName = i.name.toLowerCase();
+    return iPkg === pkgId || iPkg === name || iPkg === fullId || iId === pkgId || iId === name || (displayName && iName === displayName);
+  });
+  return isIcon;
+}
+
 function isExtensionActive(item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean }): boolean {
-  if (!item.is_installed) return false;
+  if (!isItemInstalled(item)) return false;
 
   const pkgId = (item.package_id || item.name || "").toLowerCase();
   const name = (item.name || "").toLowerCase();
@@ -906,7 +1046,7 @@ function isExtensionActive(item: { namespace?: string; name: string; displayName
 }
 
 const isDetailActive = computed(() => {
-  if (!activeDetail.value || !activeDetail.value.is_installed) return false;
+  if (!activeDetail.value || !isItemInstalled(activeDetail.value)) return false;
   return isExtensionActive(activeDetail.value);
 });
 
@@ -927,21 +1067,58 @@ async function onApplyDetailTheme(detail: MarketplaceExtensionDetail) {
 }
 
 function onSearchThemes(q?: string) {
+  if (selectedFilter.value === "已安装") {
+    return;
+  }
+  selectedFilter.value = q ? q : "全部";
   mpSearchThemes(q);
 }
 
 function onSelectChip(chip: string) {
+  selectedFilter.value = chip;
+  if (chip === "已安装") {
+    mpSearchQuery.value = "";
+    return;
+  }
   const query = chip === "全部" ? "" : chip;
   mpSearchQuery.value = query;
   mpSearchThemes(query);
 }
 
 function navigateToDetail(namespace: string, name: string) {
+  if (!namespace) {
+    return;
+  }
   router.push(`/marketplace/${namespace}/${name}`);
 }
 
 function goBackToList() {
   router.push({ path: "/marketplace", query: { tab: currentChannel.value } });
+}
+
+async function onUninstallThemeCard(item: MarketplaceExtension) {
+  const name = item.displayName || item.name;
+  if (!confirm(`确定要卸载主题包 "${name}" 吗？`)) {
+    return;
+  }
+  const pkgId = item.package_id || item.name;
+  feedbackMsg.value = "";
+  feedbackIsError.value = false;
+  try {
+    await deleteTheme("color", pkgId);
+    await deleteTheme("icon", pkgId);
+    item.is_installed = false;
+    const found = mpSearchResults.value.find(
+      (s) => s.name === item.name || (s.package_id && s.package_id === pkgId)
+    );
+    if (found) found.is_installed = false;
+    await fetchThemes();
+    feedbackMsg.value = `✓ 已卸载 ${name}`;
+    feedbackIsError.value = false;
+  } catch (err: any) {
+    feedbackMsg.value = `✕ 卸载失败: ${err.message || err}`;
+    feedbackIsError.value = true;
+  }
 }
 
 async function onInstallTheme(item: MarketplaceExtension) {
@@ -1363,6 +1540,16 @@ const nativePlugins = ref<PluginItem[]>([
   color: var(--accent-cyan);
 }
 
+.chip-btn.chip-installed {
+  font-weight: 600;
+}
+
+.chip-btn.chip-installed.active {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: #10b981;
+  color: #10b981;
+}
+
 .results-count-label {
   font-size: 0.78rem;
   color: var(--text-muted);
@@ -1587,6 +1774,43 @@ const nativePlugins = ref<PluginItem[]>([
   display: flex;
   gap: 12px;
   align-items: flex-start;
+  padding-right: 28px;
+}
+
+.btn-card-delete {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 5;
+}
+
+.btn-card-delete:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #ffffff;
+  transform: scale(1.1);
+  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4);
+}
+
+.trash-icon {
+  stroke: currentColor;
+  stroke-width: 2;
+  transition: transform 0.2s ease;
+}
+
+.btn-card-delete:hover .trash-icon {
+  transform: scale(1.1);
 }
 
 .card-icon-wrap,
