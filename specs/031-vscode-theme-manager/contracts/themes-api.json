@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Themes API Contract",
+  "definitions": {
+    "ThemeItem": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["color", "icon"] },
+        "is_builtin": { "type": "boolean" },
+        "ui_theme": { "type": "string" },
+        "path": { "type": "string" },
+        "description": { "type": "string" },
+        "version": { "type": "string" }
+      },
+      "required": ["id", "name", "type", "is_builtin", "path"]
+    }
+  }
+}
