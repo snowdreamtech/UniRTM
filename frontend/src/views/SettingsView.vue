@@ -168,7 +168,7 @@
                     @click="triggerVsixUpload"
                   >
                     <span v-if="isInstallingTheme" class="spinner-small"></span>
-                    <span v-else>📥</span>
+                    <span v-else class="btn-icon">📥</span>
                     <span>{{ isInstallingTheme ? (t('settings.installing') || '正在解析安装...') : (t('settings.install_vsix') || '导入 VS Code 主题包 (.vsix)') }}</span>
                   </button>
                   <span v-if="themeInstallMsg" class="install-feedback-msg" :class="{ error: themeInstallError }">
@@ -3676,33 +3676,61 @@ input:checked + .slider:before {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 14px;
+  padding: 6px 14px;
   border-radius: 6px;
-  background: var(--accent-cyan);
-  color: #070a12;
+  background: var(--input-bg);
+  color: var(--text-main);
+  border: 1px solid var(--card-border);
   font-size: 0.84rem;
-  font-weight: 600;
-  border: none;
+  font-weight: 500;
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.1s;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-install-vsix .btn-icon {
+  font-size: 0.95rem;
+  line-height: 1;
 }
 
 .btn-install-vsix:hover:not(:disabled) {
-  opacity: 0.9;
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.08);
+  box-shadow: 0 0 0 2px var(--accent-cyan-glow);
   transform: translateY(-1px);
 }
 
+.btn-install-vsix:active:not(:disabled) {
+  transform: translateY(0);
+}
+
 .btn-install-vsix:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
+}
+
+:root[data-theme="light"] .btn-install-vsix,
+[data-theme="light"] .btn-install-vsix {
+  background: #ffffff;
+  color: #1e293b;
+  border-color: #cbd5e1;
+}
+
+:root[data-theme="light"] .btn-install-vsix:hover:not(:disabled),
+[data-theme="light"] .btn-install-vsix:hover:not(:disabled) {
+  border-color: #0284c7;
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.06);
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
 }
 
 .spinner-small {
   display: inline-block;
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(0, 0, 0, 0.2);
-  border-top-color: #070a12;
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--card-border);
+  border-top-color: var(--accent-cyan);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
