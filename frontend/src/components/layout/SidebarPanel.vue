@@ -42,23 +42,7 @@
         </button>
       </template>
 
-      <!-- RUNTIMES Navigation Items -->
-      <template v-if="currentTab === 'runtimes'">
-        <div class="nav-group-title">{{ t("nav.runtimes") || "多语言环境" }}</div>
-        <button
-          v-for="item in filteredRuntimeItems"
-          :key="item.id"
-          class="sidebar-item"
-          :class="{ active: activeSubItem === item.id }"
-          @click="handleSubItemClick(item.id)"
-        >
-          <span class="item-icon"><TechIcon :id="item.id" :size="20" /></span>
-          <div class="item-dual">
-            <span class="item-label">{{ item.label }}</span>
-            <span class="item-sub">{{ item.meta }}</span>
-          </div>
-        </button>
-      </template>
+
 
       <!-- TOOLS Navigation Items -->
       <template v-if="currentTab === 'tools'">
@@ -190,8 +174,6 @@ const headerTitle = computed(() => {
   switch (props.currentTab) {
     case "dashboard":
       return t("nav.dashboard") || "DASHBOARD";
-    case "runtimes":
-      return t("nav.runtimes") || "多语言环境";
     case "tools":
       return t("nav.tools") || "TOOLCHAINS";
     case "tasks":
@@ -233,28 +215,7 @@ const filteredDashboardItems = computed(() => {
   return dashboardItems.filter((i) => i.label.toLowerCase().includes(searchQuery.value.toLowerCase()));
 });
 
-// Runtimes items
-const runtimeItems = [
-  { id: "node", icon: "node", label: "Node.js", meta: "NVM / .nvmrc" },
-  { id: "go", icon: "go", label: "Go", meta: "GVM / .go-version" },
-  { id: "python", icon: "python", label: "Python", meta: "Pyenv / .python-version" },
-  { id: "rust", icon: "rust", label: "Rust", meta: "rustup / cargo" },
-  { id: "java", icon: "java", label: "Java", meta: "Adoptium / JDK" },
-  { id: "bun", icon: "bun", label: "Bun", meta: "JavaScript toolkit" },
-  { id: "deno", icon: "deno", label: "Deno", meta: "Secure runtime" },
-  { id: "ruby", icon: "ruby", label: "Ruby", meta: "rbenv / ruby-build" },
-  { id: "php", icon: "php", label: "PHP", meta: "static-php-cli" },
-  { id: "zig", icon: "zig", label: "Zig", meta: "ziglang.org" },
-];
 
-const filteredRuntimeItems = computed(() => {
-  if (!searchQuery.value) return runtimeItems;
-  return runtimeItems.filter(
-    (r) =>
-      r.label.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      r.meta.toLowerCase().includes(searchQuery.value.toLowerCase())
-  );
-});
 
 // Tools items (Full toolchains superset covering Languages, Build Systems, DevOps, Linters)
 const toolItems = ref([

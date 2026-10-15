@@ -202,8 +202,6 @@ const currentTabLabel = computed(() => {
   switch (currentTab.value) {
     case "dashboard":
       return t("nav.dashboard") || "Dashboard";
-    case "runtimes":
-      return t("nav.runtimes") || "Language Environments";
     case "tools":
       return t("nav.tools") || "Toolchains";
     case "tasks":

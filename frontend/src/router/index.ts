@@ -3,7 +3,6 @@
 
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 import DashboardView from "../views/DashboardView.vue";
-import RuntimesView from "../views/RuntimesView.vue";
 import ToolsView from "../views/ToolsView.vue";
 import TasksView from "../views/TasksView.vue";
 import MarketplaceView from "../views/MarketplaceView.vue";
@@ -20,11 +19,6 @@ const routes: Array<RouteRecordRaw> = [
     path: "/dashboard",
     name: "dashboard",
     component: DashboardView,
-  },
-  {
-    path: "/runtimes",
-    name: "runtimes",
-    component: RuntimesView,
   },
   {
     path: "/tools",

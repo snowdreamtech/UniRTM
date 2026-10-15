@@ -97,15 +97,10 @@ const primaryTabs = computed<ActivityTab[]>(() => [
     label: t("nav.dashboard") || "Dashboard",
   },
   {
-    id: "runtimes",
-    icon: "workbench:runtimes",
-    label: t("nav.runtimes") || "Language Environments",
-  },
-  {
     id: "tools",
     icon: "workbench:tools",
     label: t("nav.tools") || "Toolchains",
-    badge: props.toolCount || 14,
+    badge: props.toolCount,
   },
   {
     id: "tasks",
