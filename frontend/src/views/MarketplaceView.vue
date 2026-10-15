@@ -82,11 +82,11 @@
             <button
               v-if="!activeDetail.is_installed"
               class="btn-install-primary"
-              :disabled="mpInstallingMap[activeDetail.name || activeDetail.displayName]"
+              :disabled="mpIsInstalling(activeDetail)"
               @click="onInstallDetail(activeDetail)"
             >
-              <span v-if="mpInstallingMap[activeDetail.name || activeDetail.displayName]" class="spinner-small"></span>
-              <span>{{ mpInstallingMap[activeDetail.name || activeDetail.displayName] ? (t("settings.installing") || "安装中...") : (t("settings.install") || "安装") }}</span>
+              <span v-if="mpIsInstalling(activeDetail)" class="spinner-small"></span>
+              <span>{{ mpIsInstalling(activeDetail) ? (t("settings.installing") || "安装中...") : (t("settings.install") || "安装") }}</span>
             </button>
             <div v-else class="installed-action-buttons">
               <button
@@ -504,11 +504,11 @@
                 <button
                   v-else
                   class="btn-install-theme"
-                  :disabled="mpInstallingMap[item.namespace + '.' + item.name]"
+                  :disabled="mpIsInstalling(item)"
                   @click="onInstallTheme(item)"
                 >
-                  <span v-if="mpInstallingMap[item.namespace + '.' + item.name]" class="spinner-small"></span>
-                  <span>{{ mpInstallingMap[item.namespace + '.' + item.name] ? (t("settings.installing") || "安装中...") : (t("settings.install") || "安装") }}</span>
+                  <span v-if="mpIsInstalling(item)" class="spinner-small"></span>
+                  <span>{{ mpIsInstalling(item) ? (t("settings.installing") || "安装中...") : (t("settings.install") || "安装") }}</span>
                 </button>
               </div>
             </div>
@@ -689,13 +689,13 @@ const {
   pageSize: mpPageSize,
   totalPages: mpTotalPages,
   isSearching: mpIsSearching,
-  installingMap: mpInstallingMap,
   marketplaceError: mpError,
   activeDetail,
   isLoadingDetail,
   searchThemes: mpSearchThemes,
   goToPage: mpGoToPage,
   setPageSize: mpSetPageSize,
+  isExtensionInstalling: mpIsInstalling,
   installThemeOnline: mpInstallThemeOnline,
   fetchExtensionDetail,
   clearActiveDetail,
@@ -1287,6 +1287,32 @@ const nativePlugins = ref<PluginItem[]>([
   padding: 40px 20px;
   color: var(--text-muted);
   font-size: 0.88rem;
+}
+
+.spinner-small {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  vertical-align: middle;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.market-loading-box .spinner-small,
+.detail-loading-box .spinner-small {
+  width: 26px;
+  height: 26px;
+  border-width: 3px;
+  border-color: rgba(0, 229, 255, 0.2);
+  border-top-color: var(--accent-cyan);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .empty-icon,

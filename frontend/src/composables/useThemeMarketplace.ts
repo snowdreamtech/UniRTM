@@ -70,13 +70,27 @@ export function useThemeMarketplace() {
     await searchThemes(undefined, 1, size);
   };
 
+  const isExtensionInstalling = (item?: { namespace?: string; name?: string; displayName?: string } | null): boolean => {
+    if (!item) return false;
+    if (item.namespace && item.name && installingMap[`${item.namespace}.${item.name}`]) return true;
+    if (item.name && installingMap[item.name]) return true;
+    if (item.displayName && installingMap[item.displayName]) return true;
+    return false;
+  };
+
   const installThemeOnline = async (item: MarketplaceExtension): Promise<ThemeItem[]> => {
     if (!item.files?.download) {
       throw new Error("No download URL available for this package");
     }
 
-    const key = item.name || item.displayName;
-    installingMap[key] = true;
+    const keys: string[] = [];
+    if (item.name) keys.push(item.name);
+    if (item.displayName) keys.push(item.displayName);
+    if (item.namespace && item.name) keys.push(`${item.namespace}.${item.name}`);
+
+    for (const k of keys) {
+      installingMap[k] = true;
+    }
     marketplaceError.value = null;
 
     try {
@@ -101,7 +115,9 @@ export function useThemeMarketplace() {
       marketplaceError.value = err.message || "Failed to install theme";
       throw err;
     } finally {
-      installingMap[key] = false;
+      for (const k of keys) {
+        installingMap[k] = false;
+      }
     }
   };
 
@@ -145,6 +161,7 @@ export function useThemeMarketplace() {
     searchThemes,
     goToPage,
     setPageSize,
+    isExtensionInstalling,
     installThemeOnline,
     fetchExtensionDetail,
     clearActiveDetail,
