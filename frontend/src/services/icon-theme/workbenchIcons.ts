@@ -129,3 +129,11 @@ export const workbenchSemanticIcons: Record<WorkbenchIconKey, SemanticIconMappin
 export function isWorkbenchSemanticIcon(id: string): id is WorkbenchIconKey {
   return typeof id === "string" && id.startsWith("workbench:") && id in workbenchSemanticIcons;
 }
+
+/**
+ * Built-in high fidelity SVG fallbacks for system workbench actions
+ * when the active file icon theme does not provide a dedicated action glyph.
+ */
+export const WORKBENCH_BUILTIN_SVGS: Partial<Record<WorkbenchIconKey, string>> = {
+  "workbench:delete": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16' fill='%23ef4444'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M10 3h3v1h-1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4H3V3h3V2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1zM7 2v1h2V2H7zm2 3H8v7h1V5zm-2 0H6v7h1V5z'/%3E%3C/svg%3E",
+};

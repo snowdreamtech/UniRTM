@@ -149,7 +149,7 @@
                 :title="(t('runtimes.remove_runtime') || '移除环境') + ' ' + rt.name"
                 @click.stop="confirmRemoveRuntime(rt)"
               >
-                <TechIcon id="workbench:delete" :size="13" />
+                <TechIcon id="workbench:delete" :size="15" />
               </button>
             </div>
             <span class="runtime-desc">{{ rt.description }}</span>
@@ -311,7 +311,48 @@
           </span>
         </div>
 
+        <!-- Quick Major Filter Tags -->
+        <div v-if="quickFilterTags.length > 0" class="quick-filter-chips">
+          <button
+            class="filter-chip"
+            :class="{ active: selectedMajorFilter === '' }"
+            @click="selectedMajorFilter = ''"
+          >
+            {{ t('runtimes.all_versions') || '全部' }}
+          </button>
+          <button
+            v-for="tag in quickFilterTags"
+            :key="tag"
+            class="filter-chip"
+            :class="{ active: selectedMajorFilter === tag }"
+            @click="selectedMajorFilter = selectedMajorFilter === tag ? '' : tag"
+          >
+            {{ tag }}
+          </button>
+        </div>
+
         <div class="modal-body-versions">
+          <!-- Custom Version Banner when user types non-listed version -->
+          <div
+            v-if="canInstallCustomVersion"
+            class="remote-ver-row custom-ver-highlight"
+          >
+            <div class="remote-ver-info">
+              <span class="font-mono ver-name">v{{ cleanCustomVersion }}</span>
+              <span class="custom-badge font-mono">
+                {{ t('runtimes.custom_version') || '自定义指定版本' }}
+              </span>
+            </div>
+            <button
+              class="install-action-btn"
+              :disabled="installingVer === cleanCustomVersion"
+              @click="installRemoteVersion(selectedRuntime?.id || '', cleanCustomVersion)"
+            >
+              <span v-if="installingVer === cleanCustomVersion">{{ t("runtimes.installing") || "Installing..." }}</span>
+              <span v-else>{{ t("runtimes.install_apply") || "安装并应用" }}</span>
+            </button>
+          </div>
+
           <div v-if="loadingRemote" class="remote-loading-box">
             <span class="spin-icon">
               <TechIcon id="workbench:sync" :size="16" />
@@ -319,7 +360,7 @@
             <span>Fetching available releases...</span>
           </div>
 
-          <div v-else-if="filteredRemoteVersions.length === 0" class="remote-empty-box">
+          <div v-else-if="filteredRemoteVersions.length === 0 && !canInstallCustomVersion" class="remote-empty-box">
             <span>No matching upstream releases found.</span>
           </div>
 
@@ -528,6 +569,7 @@ const isModalOpen = ref(false);
 const selectedRuntime = ref<RuntimeItem | null>(null);
 const remoteVersions = ref<{ version: string }[]>([]);
 const remoteSearchKey = ref("");
+const selectedMajorFilter = ref("");
 const loadingRemote = ref(false);
 const installingVer = ref<string | null>(null);
 
@@ -745,6 +787,132 @@ function compareSemverDesc(a: string, b: string): number {
   return cleanB.localeCompare(cleanA);
 }
 
+function getFallbackVersionsForTool(toolId: string): string[] {
+  switch (toolId.toLowerCase()) {
+    case "node":
+    case "nodejs":
+      return [
+        "23.9.0", "23.8.0", "23.7.0", "23.6.0", "23.0.0",
+        "22.14.0", "22.13.1", "22.13.0", "22.12.0", "22.11.0", "22.9.0", "22.0.0",
+        "21.7.3", "21.6.2", "21.1.0",
+        "20.18.3", "20.18.2", "20.18.0", "20.17.0", "20.16.0", "20.15.1", "20.14.0", "20.12.2", "20.11.1", "20.10.0", "20.9.0",
+        "19.9.0", "19.8.1",
+        "18.20.7", "18.20.6", "18.20.5", "18.20.4", "18.20.0", "18.19.1", "18.18.2", "18.17.1", "18.16.0", "18.14.2", "18.12.1",
+        "16.20.2", "16.20.0", "16.19.1", "16.18.0", "16.14.2",
+        "14.21.3", "14.20.1", "14.19.3",
+      ];
+    case "python":
+    case "python3":
+      return [
+        "3.14.0a4",
+        "3.13.2", "3.13.1", "3.13.0",
+        "3.12.9", "3.12.8", "3.12.7", "3.12.6", "3.12.5", "3.12.4", "3.12.3", "3.12.2", "3.12.1", "3.12.0",
+        "3.11.11", "3.11.10", "3.11.9", "3.11.8", "3.11.7", "3.11.6", "3.11.5", "3.11.4", "3.11.0",
+        "3.10.16", "3.10.15", "3.10.14", "3.10.13", "3.10.12", "3.10.11", "3.10.8", "3.10.0",
+        "3.9.21", "3.9.20", "3.9.19", "3.9.18", "3.9.16", "3.9.13", "3.9.0",
+        "3.8.20", "3.8.18", "3.8.16", "3.8.12", "3.8.0",
+        "3.7.17", "3.7.12",
+      ];
+    case "go":
+    case "golang":
+      return [
+        "1.24.1", "1.24.0",
+        "1.23.6", "1.23.5", "1.23.4", "1.23.3", "1.23.2", "1.23.1", "1.23.0",
+        "1.22.12", "1.22.11", "1.22.10", "1.22.9", "1.22.8", "1.22.6", "1.22.5", "1.22.2", "1.22.0",
+        "1.21.13", "1.21.12", "1.21.11", "1.21.8", "1.21.6", "1.21.0",
+        "1.20.14", "1.20.12", "1.20.7", "1.20.0",
+        "1.19.13", "1.19.8", "1.19.0",
+        "1.18.10", "1.18.5",
+      ];
+    case "rust":
+      return [
+        "1.85.0", "1.84.1", "1.84.0", "1.83.0", "1.82.0", "1.81.0",
+        "1.80.1", "1.80.0", "1.79.0", "1.78.0", "1.77.2", "1.77.0",
+        "1.76.0", "1.75.0", "1.74.1", "1.73.0", "1.72.1", "1.71.1", "1.70.0",
+        "1.69.0", "1.68.2", "1.67.1", "1.66.1", "1.65.0",
+      ];
+    case "java":
+    case "openjdk":
+      return [
+        "23.0.2", "23.0.1",
+        "22.0.2", "22.0.1",
+        "21.0.6", "21.0.5", "21.0.4", "21.0.2", "21.0.1", "21.0.0",
+        "17.0.14", "17.0.12", "17.0.10", "17.0.9", "17.0.8", "17.0.2",
+        "11.0.26", "11.0.22", "11.0.20", "11.0.18",
+        "8.0.442", "8.0.402", "8.0.392", "8.0.352",
+      ];
+    case "bun":
+      return [
+        "1.2.4", "1.2.3", "1.2.2", "1.2.1", "1.2.0",
+        "1.1.45", "1.1.42", "1.1.38", "1.1.34", "1.1.30", "1.1.25", "1.1.20", "1.1.10", "1.1.0",
+        "1.0.36", "1.0.35", "1.0.30", "1.0.25", "1.0.20", "1.0.18", "1.0.0",
+      ];
+    case "deno":
+      return [
+        "2.2.3", "2.2.2", "2.2.1", "2.2.0",
+        "2.1.9", "2.1.4", "2.1.0",
+        "2.0.6", "2.0.4", "2.0.0",
+        "1.46.3", "1.45.5", "1.44.4", "1.43.6", "1.42.4", "1.41.2", "1.40.5", "1.39.4", "1.38.2",
+      ];
+    case "zig":
+      return [
+        "0.14.0", "0.13.0", "0.12.1", "0.12.0", "0.11.0", "0.10.1", "0.9.1", "0.8.1",
+      ];
+    case "ruby":
+      return [
+        "3.4.2", "3.4.1",
+        "3.3.7", "3.3.6", "3.3.5", "3.3.0",
+        "3.2.7", "3.2.6", "3.2.3", "3.2.0",
+        "3.1.6", "3.1.4", "3.1.2",
+        "3.0.7", "3.0.6",
+      ];
+    case "php":
+      return [
+        "8.4.4", "8.4.3", "8.4.1",
+        "8.3.17", "8.3.16", "8.3.14", "8.3.10", "8.3.0",
+        "8.2.27", "8.2.26", "8.2.20", "8.2.15",
+        "8.1.31", "8.1.28", "8.1.20",
+        "8.0.30", "8.0.28",
+      ];
+    default:
+      return [
+        "3.2.0", "3.1.0", "3.0.0",
+        "2.8.0", "2.6.0", "2.4.0", "2.2.0", "2.0.0",
+        "1.8.0", "1.5.0", "1.2.0", "1.0.0",
+      ];
+  }
+}
+
+const quickFilterTags = computed(() => {
+  const versions = remoteVersions.value.map((v) => v.version.replace(/^v/, ""));
+  const tagSet = new Set<string>();
+  for (const ver of versions) {
+    const parts = ver.split(".");
+    if (parts.length >= 2) {
+      if (parts[0] === "1" || parts[0] === "3") {
+        tagSet.add(`v${parts[0]}.${parts[1]}`);
+      } else {
+        tagSet.add(`v${parts[0]}`);
+      }
+    }
+  }
+  return Array.from(tagSet).slice(0, 7);
+});
+
+const cleanCustomVersion = computed(() => {
+  return remoteSearchKey.value.trim().replace(/^v/i, "");
+});
+
+const canInstallCustomVersion = computed(() => {
+  const val = cleanCustomVersion.value;
+  if (!val || val.length < 2) return false;
+  if (!/^[0-9]+(\.[0-9a-zA-Z_\-]+)*$/.test(val)) return false;
+  const exactMatch = filteredRemoteVersions.value.some(
+    (v) => v.version.replace(/^v/, "").toLowerCase() === val.toLowerCase()
+  );
+  return !exactMatch;
+});
+
 const filteredRemoteVersions = computed(() => {
   let list = [...remoteVersions.value];
   // Ensure installed versions are also in the list if not already present
@@ -759,12 +927,24 @@ const filteredRemoteVersions = computed(() => {
     }
   }
 
+  // Filter by major tag if selected
+  if (selectedMajorFilter.value) {
+    const prefix = selectedMajorFilter.value.replace(/^v/, "").toLowerCase();
+    list = list.filter((v) => {
+      const clean = v.version.toLowerCase().replace(/^v/, "");
+      return clean.startsWith(prefix);
+    });
+  }
+
+  // Filter by search keyword
+  if (remoteSearchKey.value.trim()) {
+    const q = remoteSearchKey.value.toLowerCase().replace(/^v/, "");
+    list = list.filter((v) => v.version.toLowerCase().includes(q));
+  }
+
   // Strictly sort descending by semantic version (newest first)
   list.sort((a, b) => compareSemverDesc(a.version, b.version));
-
-  if (!remoteSearchKey.value.trim()) return list;
-  const q = remoteSearchKey.value.toLowerCase().replace(/^v/, "");
-  return list.filter((v) => v.version.toLowerCase().includes(q));
+  return list;
 });
 
 
@@ -883,6 +1063,7 @@ async function openRemoteModal(rt: RuntimeItem) {
   modalInstallScope.value = currentScope.value;
   remoteVersions.value = [];
   remoteSearchKey.value = "";
+  selectedMajorFilter.value = "";
   loadingRemote.value = true;
 
   try {
@@ -894,6 +1075,18 @@ async function openRemoteModal(rt: RuntimeItem) {
   } catch (err: any) {
     emit("log-event", "ERROR", `Failed to fetch remote versions: ${err.message}`);
   } finally {
+    // If backend returns fewer versions or empty, smartly merge comprehensive fallbacks
+    if (remoteVersions.value.length < 10) {
+      const fallbacks = getFallbackVersionsForTool(rt.id);
+      const curSet = new Set(remoteVersions.value.map((v) => v.version.replace(/^v/, "")));
+      for (const fb of fallbacks) {
+        const clean = fb.replace(/^v/, "");
+        if (!curSet.has(clean)) {
+          remoteVersions.value.push({ version: clean });
+          curSet.add(clean);
+        }
+      }
+    }
     loadingRemote.value = false;
   }
 }
@@ -1625,27 +1818,88 @@ onMounted(() => {
 }
 
 .runtime-delete-btn {
-  background: transparent;
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  color: #ef4444;
   cursor: pointer;
-  font-size: 0.85rem;
-  opacity: 0.4;
-  transition: all 0.15s ease;
+  opacity: 0.88;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   margin-left: auto;
-  padding: 2px 5px;
-  border-radius: 4px;
+  padding: 0;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .runtime-delete-btn:hover {
   opacity: 1;
-  background: rgba(239, 68, 68, 0.18);
+  background: rgba(239, 68, 68, 0.22);
+  border-color: rgba(239, 68, 68, 0.45);
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 3px 8px rgba(239, 68, 68, 0.2);
 }
 
 .modal-search-row {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  margin-bottom: 0.5rem;
+}
+
+.quick-filter-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
   margin-bottom: 0.75rem;
+}
+
+.filter-chip {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.73rem;
+  font-family: inherit;
+  font-weight: 500;
+  border-radius: 9999px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filter-chip:hover {
+  color: var(--text-main);
+  border-color: var(--card-border-active);
+}
+
+.filter-chip.active {
+  background: rgba(2, 132, 199, 0.15);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.custom-ver-highlight {
+  background: rgba(6, 182, 212, 0.08);
+  border: 1px dashed var(--accent-cyan);
+  margin-bottom: 0.4rem;
+}
+
+.custom-ver-highlight:hover {
+  background: rgba(6, 182, 212, 0.14);
+}
+
+.custom-badge {
+  font-size: 0.68rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(6, 182, 212, 0.15);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(6, 182, 212, 0.3);
 }
 
 .modal-search-input {
@@ -1677,7 +1931,7 @@ onMounted(() => {
 .modal-body-versions {
   flex: 1;
   overflow-y: auto;
-  max-height: 350px;
+  max-height: 400px;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;

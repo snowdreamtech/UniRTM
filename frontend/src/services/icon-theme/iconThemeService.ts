@@ -15,7 +15,11 @@ function parseJSONC(text: string): Record<string, any> {
   return JSON.parse(cleaned);
 }
 
-import { workbenchSemanticIcons, isWorkbenchSemanticIcon } from "./workbenchIcons";
+import {
+  workbenchSemanticIcons,
+  isWorkbenchSemanticIcon,
+  WORKBENCH_BUILTIN_SVGS,
+} from "./workbenchIcons";
 
 class IconThemeService {
   private activeManifest: IconThemeManifest;
@@ -365,6 +369,18 @@ class IconThemeService {
         false,
         this.currentBaseUrl
       );
+      this.resolutionCache.set(rawIdentifier, res);
+      return res;
+    }
+
+    // Tier 1.5: If workbench semantic action has high-fidelity builtin SVG, prefer it over generic font fallback
+    if (isWorkbenchSemanticIcon(rawIdentifier) && WORKBENCH_BUILTIN_SVGS[rawIdentifier]) {
+      const res: ResolvedIcon = {
+        type: "svg",
+        svgPath: WORKBENCH_BUILTIN_SVGS[rawIdentifier],
+        definitionKey: "builtin:" + rawIdentifier,
+        isFallback: false,
+      };
       this.resolutionCache.set(rawIdentifier, res);
       return res;
     }
