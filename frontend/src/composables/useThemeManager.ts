@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 import { ref } from "vue";
-import type { ThemeItem, ThemesListResponse } from "../types/theme-manager";
+import type { ThemeItem } from "../types/theme-manager";
 import { useColorTheme } from "./useColorTheme";
 import { iconThemeService } from "../services/icon-theme/iconThemeService";
 
@@ -33,11 +33,11 @@ export function useThemeManager() {
       if (!res.ok) {
         throw new Error(`Failed to fetch themes: ${res.statusText}`);
       }
-      const data: ThemesListResponse = await res.json();
-      colorThemes.value = data.colors || [];
-      iconThemes.value = data.icons || [];
-      activeColorTheme.value = data.active?.color || "dark";
-      activeIconTheme.value = data.active?.icon || "seti";
+      const data: any = await res.json();
+      colorThemes.value = data.colors || data.color_themes || [];
+      iconThemes.value = data.icons || data.icon_themes || [];
+      activeColorTheme.value = data.active?.color || data.active_color_theme || "dark";
+      activeIconTheme.value = data.active?.icon || data.active_icon_theme || "seti";
 
       // Apply active themes hot
       await applyColorTheme(activeColorTheme.value, colorThemes.value);

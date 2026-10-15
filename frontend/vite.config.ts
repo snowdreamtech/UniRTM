@@ -1217,25 +1217,30 @@ print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes'
               } catch {}
             }
 
-            const wsPath = path.join(rootDir, ".unirtm.toml");
-            const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
+            const userConfigDir = path.join(os.homedir(), ".config", "unirtm");
+            const userPath = path.join(userConfigDir, "unirtm.toml");
             let activeColor = "vs-dark";
             let activeIcon = "vs-seti";
             const readSetting = (fp: string) => {
               if (!fs.existsSync(fp)) return;
               const text = fs.readFileSync(fp, "utf-8");
-              const mColor = text.match(/color_theme\s*=\s*"([^"]+)"/);
+              const mColor = text.match(/(?:color_)?theme\s*=\s*"([^"]+)"/);
               if (mColor) activeColor = mColor[1];
               const mIcon = text.match(/icon_theme\s*=\s*"([^"]+)"/);
               if (mIcon) activeIcon = mIcon[1];
             };
             readSetting(userPath);
-            readSetting(wsPath);
 
             res.setHeader("Content-Type", "application/json");
             res.end(JSON.stringify({
+              active: {
+                color: activeColor,
+                icon: activeIcon,
+              },
               active_color_theme: activeColor,
               active_icon_theme: activeIcon,
+              colors: colorThemes,
+              icons: iconThemes,
               color_themes: colorThemes,
               icon_themes: iconThemes,
             }));
@@ -1277,28 +1282,41 @@ print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes'
             req.on("data", (c: any) => { bodyStr += c; });
             req.on("end", () => {
               try {
-                const { color_theme_id, icon_theme_id } = JSON.parse(bodyStr || "{}");
-                const wsPath = path.join(rootDir, ".unirtm.toml");
-                if (fs.existsSync(wsPath)) {
-                  let content = fs.readFileSync(wsPath, "utf-8");
-                  if (color_theme_id) {
-                    if (content.includes("color_theme =")) {
-                      content = content.replace(/color_theme\s*=\s*"[^"]*"/, `color_theme = "${color_theme_id}"`);
-                    } else {
-                      content += `\n[settings]\ncolor_theme = "${color_theme_id}"\n`;
-                    }
-                  }
-                  if (icon_theme_id) {
-                    if (content.includes("icon_theme =")) {
-                      content = content.replace(/icon_theme\s*=\s*"[^"]*"/, `icon_theme = "${icon_theme_id}"`);
-                    } else {
-                      content += `\n[settings]\nicon_theme = "${icon_theme_id}"\n`;
-                    }
-                  }
-                  fs.writeFileSync(wsPath, content, "utf-8");
+                const body = JSON.parse(bodyStr || "{}");
+                const color_theme_id = body.color || body.color_theme_id;
+                const icon_theme_id = body.icon || body.icon_theme_id;
+                const userConfigDir = path.join(os.homedir(), ".config", "unirtm");
+                if (!fs.existsSync(userConfigDir)) {
+                  fs.mkdirSync(userConfigDir, { recursive: true });
                 }
+                const userPath = path.join(userConfigDir, "unirtm.toml");
+                let content = fs.existsSync(userPath) ? fs.readFileSync(userPath, "utf-8") : "";
+
+                if (color_theme_id) {
+                  if (content.match(/(?:color_)?theme\s*=/)) {
+                    content = content.replace(/(?:color_)?theme\s*=\s*"[^"]*"/, `theme = "${color_theme_id}"`);
+                  } else {
+                    content += `\n[settings]\ntheme = "${color_theme_id}"\n`;
+                  }
+                }
+                if (icon_theme_id) {
+                  if (content.match(/icon_theme\s*=/)) {
+                    content = content.replace(/icon_theme\s*=\s*"[^"]*"/, `icon_theme = "${icon_theme_id}"`);
+                  } else {
+                    if (!content.includes("[settings]")) {
+                      content += `\n[settings]\n`;
+                    }
+                    content += `icon_theme = "${icon_theme_id}"\n`;
+                  }
+                }
+                fs.writeFileSync(userPath, content, "utf-8");
+
                 res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({ success: true }));
+                res.end(JSON.stringify({
+                  success: true,
+                  color: color_theme_id,
+                  icon: icon_theme_id,
+                }));
               } catch (err: any) {
                 res.statusCode = 500;
                 res.setHeader("Content-Type", "application/json");

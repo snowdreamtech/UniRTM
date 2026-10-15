@@ -59,7 +59,8 @@
               <div class="hero-title-row">
                 <h1 class="hero-title">{{ activeDetail.displayName || activeDetail.name }}</h1>
                 <span class="hero-version font-mono">v{{ activeDetail.version }}</span>
-                <span v-if="activeDetail.is_installed" class="badge-installed">✓ {{ t("settings.installed") || "已安装" }}</span>
+                <span v-if="isDetailActive" class="badge-active-pill">● 当前生效使用中</span>
+                <span v-else-if="activeDetail.is_installed" class="badge-installed">✓ {{ t("settings.installed") || "已安装" }}</span>
               </div>
               <div class="hero-meta-row">
                 <span class="hero-author font-mono">
@@ -89,6 +90,14 @@
               <span>{{ mpIsInstalling(activeDetail) ? (t("settings.installing") || "安装中...") : (t("settings.install") || "安装") }}</span>
             </button>
             <div v-else class="installed-action-buttons">
+              <span v-if="isDetailActive" class="badge-hero-applied">✓ 当前主题已生效</span>
+              <button
+                v-else
+                class="btn-apply-detail-primary"
+                @click="onApplyDetailTheme(activeDetail)"
+              >
+                应用此主题
+              </button>
               <button
                 class="btn-uninstall-danger"
                 :disabled="isUninstalling"
@@ -443,6 +452,7 @@
             v-for="item in mpSearchResults"
             :key="item.namespace + '.' + item.name"
             class="glass-card theme-card clickable-card"
+            :class="{ 'card-is-active': isExtensionActive(item) }"
             @click="navigateToDetail(item.namespace, item.name)"
           >
             <div class="card-header-row">
@@ -463,6 +473,7 @@
                     {{ item.displayName || item.name }}
                   </span>
                   <span class="card-version font-mono">v{{ item.version }}</span>
+                  <span v-if="isExtensionActive(item)" class="badge-active-pill">● 生效中</span>
                 </div>
                 <div class="card-subtitle-row">
                   <span class="card-namespace font-mono">{{ item.namespace }}</span>
@@ -492,13 +503,24 @@
 
               <div class="card-actions" @click.stop>
                 <div v-if="item.is_installed" class="installed-group">
-                  <span class="badge-installed">✓ {{ t("settings.installed") || "已安装" }}</span>
+                  <span :class="isExtensionActive(item) ? 'badge-active-applied' : 'badge-installed'">
+                    ✓ {{ isExtensionActive(item) ? "使用中" : (t("settings.installed") || "已安装") }}
+                  </span>
                   <button
+                    v-if="!isExtensionActive(item)"
                     class="btn-apply-theme"
                     :title="t('settings.apply_theme') || '应用此主题'"
                     @click="onApplyTheme(item)"
                   >
                     {{ t("settings.apply") || "应用" }}
+                  </button>
+                  <button
+                    v-else
+                    class="btn-applied-current"
+                    disabled
+                    title="当前正在生效的主题"
+                  >
+                    当前生效
                   </button>
                 </div>
                 <button
@@ -704,6 +726,8 @@ const {
 const {
   colorThemes,
   iconThemes,
+  activeColorTheme,
+  activeIconTheme,
   setActiveTheme,
   deleteTheme,
 } = useThemeManager();
@@ -828,6 +852,59 @@ function getExtensionType(item: MarketplaceExtension): "icon" | "theme" {
     return "icon";
   }
   return "theme";
+}
+
+function isExtensionActive(item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean }): boolean {
+  if (!item.is_installed) return false;
+
+  const pkgId = (item.package_id || item.name || "").toLowerCase();
+  const nsPkgId = `${item.namespace || ""}.${item.name || ""}`.toLowerCase();
+  const displayName = (item.displayName || "").toLowerCase();
+
+  // 1. Check against active color theme
+  if (activeColorTheme.value) {
+    const actColor = activeColorTheme.value.toLowerCase();
+    if (actColor === pkgId || actColor === nsPkgId || actColor === displayName) return true;
+    const activeColorItem = colorThemes.value.find((c) => c.id.toLowerCase() === actColor);
+    if (activeColorItem) {
+      const cPkg = (activeColorItem.package_id || "").toLowerCase();
+      if (cPkg && (cPkg === pkgId || cPkg === nsPkgId)) return true;
+    }
+  }
+
+  // 2. Check against active icon theme
+  if (activeIconTheme.value) {
+    const actIcon = activeIconTheme.value.toLowerCase();
+    if (actIcon === pkgId || actIcon === nsPkgId || actIcon === displayName) return true;
+    const activeIconItem = iconThemes.value.find((i) => i.id.toLowerCase() === actIcon);
+    if (activeIconItem) {
+      const iPkg = (activeIconItem.package_id || "").toLowerCase();
+      if (iPkg && (iPkg === pkgId || iPkg === nsPkgId)) return true;
+    }
+  }
+
+  return false;
+}
+
+const isDetailActive = computed(() => {
+  if (!activeDetail.value || !activeDetail.value.is_installed) return false;
+  return isExtensionActive(activeDetail.value);
+});
+
+async function onApplyDetailTheme(detail: MarketplaceExtensionDetail) {
+  const item: MarketplaceExtension = {
+    namespace: detail.namespace,
+    name: detail.name,
+    displayName: detail.displayName || detail.name,
+    version: detail.version,
+    description: detail.description,
+    downloadCount: detail.downloadCount,
+    averageRating: detail.averageRating,
+    files: detail.files,
+    is_installed: detail.is_installed,
+    package_id: detail.package_id || detail.name,
+  };
+  await onApplyTheme(item);
 }
 
 function onSearchThemes(q?: string) {
@@ -1374,6 +1451,17 @@ const nativePlugins = ref<PluginItem[]>([
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
+.card-is-active {
+  border-color: rgba(0, 229, 255, 0.7) !important;
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.1) 0%, rgba(255, 255, 255, 0.04) 100%) !important;
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.25), inset 0 0 16px rgba(0, 229, 255, 0.08) !important;
+}
+
+.card-is-active:hover {
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.35), inset 0 0 20px rgba(0, 229, 255, 0.12) !important;
+  border-color: var(--accent-cyan) !important;
+}
+
 .card-header-row {
   display: flex;
   gap: 12px;
@@ -1524,6 +1612,73 @@ const nativePlugins = ref<PluginItem[]>([
   border: 1px solid rgba(16, 185, 129, 0.35);
   color: var(--success, #10b981);
   border-radius: 4px;
+}
+
+.badge-active-pill {
+  font-size: 0.72rem;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: rgba(0, 229, 255, 0.16);
+  border: 1px solid rgba(0, 229, 255, 0.55);
+  color: var(--accent-cyan);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(0, 229, 255, 0.2);
+}
+
+.badge-active-applied {
+  font-size: 0.74rem;
+  padding: 2px 7px;
+  background: rgba(0, 229, 255, 0.18);
+  border: 1px solid var(--accent-cyan);
+  color: var(--accent-cyan);
+  border-radius: 4px;
+  font-weight: 600;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.25);
+}
+
+.badge-hero-applied {
+  font-size: 0.86rem;
+  padding: 8px 16px;
+  background: rgba(0, 229, 255, 0.15);
+  border: 1px solid var(--accent-cyan);
+  color: var(--accent-cyan);
+  border-radius: 6px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-applied-current {
+  padding: 4px 10px;
+  background: rgba(0, 229, 255, 0.16);
+  border: 1px solid rgba(0, 229, 255, 0.45);
+  color: var(--accent-cyan);
+  border-radius: 4px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: default;
+}
+
+.btn-apply-detail-primary {
+  padding: 8px 18px;
+  background: var(--accent-cyan);
+  border: 1px solid var(--accent-cyan);
+  color: #0b1120;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-apply-detail-primary:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
 }
 
 .badge-soon {
