@@ -9,7 +9,10 @@
           :class="{ active: currentTab === 'output' }"
           @click="currentTab = 'output'"
         >
-          <span>📜 {{ t("drawer.tab_output") }}</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px;">
+            <TechIcon id="workbench:logs" :size="13" />
+            {{ t("drawer.tab_output") }}
+          </span>
           <span v-if="outputLogs.length > 0" class="tab-badge">{{ outputLogs.length }}</span>
         </button>
         <button
@@ -17,7 +20,10 @@
           :class="{ active: currentTab === 'tasks' }"
           @click="currentTab = 'tasks'"
         >
-          <span>⚡ {{ t("drawer.tab_tasks") }}</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px;">
+            <TechIcon id="workbench:tasks" :size="13" />
+            {{ t("drawer.tab_tasks") }}
+          </span>
           <span v-if="tasksLogs.length > 0" class="tab-badge">{{ tasksLogs.length }}</span>
         </button>
         <button
@@ -25,7 +31,10 @@
           :class="{ active: currentTab === 'doctor' }"
           @click="currentTab = 'doctor'"
         >
-          <span>🩺 {{ t("drawer.tab_doctor") }}</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px;">
+            <TechIcon id="workbench:doctor" :size="13" />
+            {{ t("drawer.tab_doctor") }}
+          </span>
           <span v-if="doctorLogs.length > 0" class="tab-badge">{{ doctorLogs.length }}</span>
         </button>
       </div>
@@ -113,6 +122,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from "vue";
 import { t } from "../../i18n";
+import TechIcon from "../common/TechIcon.vue";
 
 export interface LogItem {
   timestamp: string;

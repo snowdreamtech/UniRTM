@@ -459,7 +459,10 @@
 
         <!-- Error Banner -->
         <div v-if="mpError && selectedFilter !== 'installed'" class="error-banner">
-          <span>⚠️ {{ mpError }}</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px;">
+            <TechIcon id="workbench:warning" :size="14" />
+            <span>{{ mpError }}</span>
+          </span>
           <button class="btn-retry" @click="onSearchThemes(mpSearchQuery)">{{ t('marketplace.retry') || '重试' }}</button>
         </div>
 
@@ -719,8 +722,14 @@
 
             <div class="card-footer-row">
               <div class="card-stats">
-                <span class="stat-item">⭐ {{ ext.stars }}</span>
-                <span class="stat-item">📥 {{ ext.downloads }}</span>
+                <span class="stat-item" style="display: inline-flex; align-items: center; gap: 4px;">
+                  <TechIcon id="workbench:star" :size="12" />
+                  <span>{{ ext.stars }}</span>
+                </span>
+                <span class="stat-item" style="display: inline-flex; align-items: center; gap: 4px;">
+                  <TechIcon id="workbench:package" :size="12" />
+                  <span>{{ ext.downloads }}</span>
+                </span>
               </div>
 
               <div class="card-actions">

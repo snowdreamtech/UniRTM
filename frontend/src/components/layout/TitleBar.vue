@@ -104,7 +104,7 @@ const isLight = computed(() => {
 });
 
 const langOptions = computed(() => [
-  { value: "auto", label: "🌐 " + (t("common.autoDetect") || "Auto Detect") },
+  { value: "auto", label: t("common.autoDetect") || "Auto Detect" },
   ...SUPPORTED_LANGUAGES.map((item) => ({
     value: item.code,
     label: item.nativeName,

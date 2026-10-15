@@ -376,8 +376,14 @@
                   @click="handleTestProxy"
                   title="发起真实网络连接检测该代理是否可用"
                 >
-                  <span v-if="isTestingProxy">🔄 检测中...</span>
-                  <span v-else>⚡ 连通性检测</span>
+                  <span v-if="isTestingProxy" style="display: inline-flex; align-items: center; gap: 4px;">
+                    <TechIcon id="workbench:sync" :size="13" class="spinning" />
+                    <span>检测中...</span>
+                  </span>
+                  <span v-else style="display: inline-flex; align-items: center; gap: 4px;">
+                    <TechIcon id="workbench:speed" :size="13" />
+                    <span>连通性检测</span>
+                  </span>
                 </button>
 
                 <button
@@ -387,8 +393,14 @@
                   @click="handleDetectProxy(true)"
                   title="自动探测宿主机运行中的代理客户端 (sing-box, Clash 等)"
                 >
-                  <span v-if="isDetectingProxy">🔄 探测中...</span>
-                  <span v-else>🔍 自动探测宿主代理</span>
+                  <span v-if="isDetectingProxy" style="display: inline-flex; align-items: center; gap: 4px;">
+                    <TechIcon id="workbench:sync" :size="13" class="spinning" />
+                    <span>探测中...</span>
+                  </span>
+                  <span v-else style="display: inline-flex; align-items: center; gap: 4px;">
+                    <TechIcon id="workbench:search" :size="13" />
+                    <span>自动探测宿主代理</span>
+                  </span>
                 </button>
               </div>
 
@@ -403,7 +415,10 @@
                   class="btn-apply-detected"
                   @click="applyDetectedProxy"
                 >
-                  ⚡ 一键导入
+                  <span style="display: inline-flex; align-items: center; gap: 4px;">
+                    <TechIcon id="workbench:speed" :size="13" />
+                    <span>一键导入</span>
+                  </span>
                 </button>
               </div>
 
@@ -414,11 +429,14 @@
                 :class="{ 'status-ok': proxyTestResult.success, 'status-fail': !proxyTestResult.success }"
               >
                 <div class="test-status-left">
-                  <span class="status-icon">{{ proxyTestResult.success ? '🟢' : '🔴' }}</span>
+                  <span class="status-icon">
+                    <TechIcon :id="proxyTestResult.success ? 'workbench:success' : 'workbench:error'" :size="14" />
+                  </span>
                   <span class="status-message">{{ proxyTestResult.message || proxyTestResult.error }}</span>
                 </div>
-                <div v-if="proxyTestResult.success && proxyTestResult.rtt_ms" class="test-rtt-tag">
-                  ⚡ 延迟 {{ proxyTestResult.rtt_ms }}ms
+                <div v-if="proxyTestResult.success && proxyTestResult.rtt_ms" class="test-rtt-tag" style="display: inline-flex; align-items: center; gap: 4px;">
+                  <TechIcon id="workbench:speed" :size="12" />
+                  <span>延迟 {{ proxyTestResult.rtt_ms }}ms</span>
                 </div>
               </div>
 
@@ -478,7 +496,14 @@
                 @click="handleRunProbeAll"
                 title="并发测试当前镜像源矩阵中所有生态的延迟"
               >
-                <span>{{ isProbing ? '🔄 测速中...' : '⚡ 一键测速' }}</span>
+                <span v-if="isProbing" style="display: inline-flex; align-items: center; gap: 4px;">
+                  <TechIcon id="workbench:sync" :size="13" class="spinning" />
+                  <span>测速中...</span>
+                </span>
+                <span v-else style="display: inline-flex; align-items: center; gap: 4px;">
+                  <TechIcon id="workbench:speed" :size="13" />
+                  <span>一键测速</span>
+                </span>
               </button>
 
               <div class="profile-actions-bar">
@@ -731,12 +756,30 @@
                     <span v-if="ecoPingStatus[eco]?.loading" class="ping-icon spinning">
                       <TechIcon id="workbench:sync" :size="12" />
                     </span>
-                    <span v-else-if="ecoPingStatus[eco]?.status === 'fast'" class="ping-text ping-fast">⚡ {{ (ecoPingStatus[eco]?.rtt_ms ?? 0) }}ms</span>
-                    <span v-else-if="ecoPingStatus[eco]?.status === 'normal'" class="ping-text ping-normal">⚡ {{ (ecoPingStatus[eco]?.rtt_ms ?? 0) }}ms</span>
-                    <span v-else-if="ecoPingStatus[eco]?.status === 'slow'" class="ping-text ping-slow">⚡ {{ (ecoPingStatus[eco]?.rtt_ms ?? 0) }}ms</span>
-                    <span v-else-if="ecoPingStatus[eco]?.status === 'timeout'" class="ping-text ping-timeout">⚠️ 超时</span>
-                    <span v-else-if="ecoPingStatus[eco]?.status === 'error'" class="ping-text ping-error">⚠️ 失败</span>
-                    <span v-else class="ping-text ping-idle">⚡ 测速</span>
+                    <span v-else-if="ecoPingStatus[eco]?.status === 'fast'" class="ping-text ping-fast" style="display: inline-flex; align-items: center; gap: 4px;">
+                      <TechIcon id="workbench:speed" :size="11" />
+                      <span>{{ (ecoPingStatus[eco]?.rtt_ms ?? 0) }}ms</span>
+                    </span>
+                    <span v-else-if="ecoPingStatus[eco]?.status === 'normal'" class="ping-text ping-normal" style="display: inline-flex; align-items: center; gap: 4px;">
+                      <TechIcon id="workbench:speed" :size="11" />
+                      <span>{{ (ecoPingStatus[eco]?.rtt_ms ?? 0) }}ms</span>
+                    </span>
+                    <span v-else-if="ecoPingStatus[eco]?.status === 'slow'" class="ping-text ping-slow" style="display: inline-flex; align-items: center; gap: 4px;">
+                      <TechIcon id="workbench:speed" :size="11" />
+                      <span>{{ (ecoPingStatus[eco]?.rtt_ms ?? 0) }}ms</span>
+                    </span>
+                    <span v-else-if="ecoPingStatus[eco]?.status === 'timeout'" class="ping-text ping-timeout" style="display: inline-flex; align-items: center; gap: 4px;">
+                      <TechIcon id="workbench:warning" :size="11" />
+                      <span>超时</span>
+                    </span>
+                    <span v-else-if="ecoPingStatus[eco]?.status === 'error'" class="ping-text ping-error" style="display: inline-flex; align-items: center; gap: 4px;">
+                      <TechIcon id="workbench:warning" :size="11" />
+                      <span>失败</span>
+                    </span>
+                    <span v-else class="ping-text ping-idle" style="display: inline-flex; align-items: center; gap: 4px;">
+                      <TechIcon id="workbench:speed" :size="11" />
+                      <span>测速</span>
+                    </span>
                   </button>
 
                   <!-- Reset Override Button if Overridden -->
@@ -1333,7 +1376,7 @@ const configData = ref<any>(null);
 
 
 const languageSelectOptions = computed(() => [
-  { value: "auto", label: "🌐 " + (t("common.autoDetect") || "自动检测") },
+  { value: "auto", label: t("common.autoDetect") || "自动检测" },
   ...SUPPORTED_LANGUAGES.map((item) => ({
     value: item.code,
     label: item.nativeName,
@@ -1342,20 +1385,18 @@ const languageSelectOptions = computed(() => [
 
 const colorThemeOptions = computed(() => {
   const options: Array<{ value: string; label: string }> = [
-    { value: "default", label: "🎨 UniRTM 官方默认 (自适应深浅)" },
-    { value: "light", label: "☀️ UniRTM 官方浅色 (Light)" },
-    { value: "dark", label: "🌙 UniRTM 官方深色 (Dark)" },
+    { value: "default", label: "UniRTM 官方默认 (自适应深浅)" },
+    { value: "light", label: "UniRTM 官方浅色 (Light)" },
+    { value: "dark", label: "UniRTM 官方深色 (Dark)" },
   ];
 
   for (const item of colorThemes.value) {
     if (item.id === "default" || item.id === "dark" || item.id === "light" || item.id === "system") {
       continue;
     }
-    const isLight = item.ui_theme === "vs" || item.ui_theme === "light";
-    const modeBadge = isLight ? "☀️ " : "🌙 ";
     options.push({
       value: item.id,
-      label: `${modeBadge}${item.name}`,
+      label: item.name,
     });
   }
 
