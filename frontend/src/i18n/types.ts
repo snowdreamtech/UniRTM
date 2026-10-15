@@ -102,6 +102,13 @@ export interface TranslationDict {
   "settings.install_vsix"?: string;
   "settings.installing"?: string;
   "settings.installed_custom_themes"?: string;
+  "settings.marketplace_title"?: string;
+  "settings.marketplace_desc"?: string;
+  "settings.marketplace_search_placeholder"?: string;
+  "settings.one_click_install"?: string;
+  "settings.installed"?: string;
+  "settings.apply_now"?: string;
+  "settings.downloads"?: string;
 
   "hello.input_placeholder": string;
   "hello.greet_btn": string;

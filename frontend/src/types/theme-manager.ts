@@ -21,3 +21,26 @@ export interface ThemesListResponse {
     icon: string;
   };
 }
+
+export interface MarketplaceExtension {
+  namespace: string;
+  name: string;
+  displayName: string;
+  version: string;
+  description: string;
+  downloadCount: number;
+  averageRating: number;
+  files: {
+    download: string;
+    icon?: string;
+  };
+  url?: string;
+  is_installed?: boolean;
+  package_id?: string;
+}
+
+export interface MarketplaceSearchResponse {
+  offset: number;
+  totalSize: number;
+  extensions: MarketplaceExtension[];
+}

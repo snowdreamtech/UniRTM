@@ -16,6 +16,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -558,6 +559,16 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	})
 	mux.HandleFunc("/api/themes/assets/", func(w http.ResponseWriter, r *http.Request) {
 		handleThemeAssets(w, r, themeMgr)
+	})
+	mux.HandleFunc("/api/themes/marketplace/search", func(w http.ResponseWriter, r *http.Request) {
+		handleMarketplaceSearch(w, r, themeMgr)
+	})
+	mux.HandleFunc("/api/themes/marketplace/install", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		handleMarketplaceInstall(w, r, themeMgr)
 	})
 
 	// ─── Static SPA Handler ───────────────────────────────────────────────────
@@ -1324,5 +1335,69 @@ func handleThemeAssets(w http.ResponseWriter, r *http.Request, themeMgr *theme.M
 	}
 	http.ServeFile(w, r, absPath)
 }
+
+func handleMarketplaceSearch(w http.ResponseWriter, r *http.Request, themeMgr *theme.Manager) {
+	w.Header().Set("Content-Type", "application/json")
+	q := r.URL.Query().Get("q")
+	sizeStr := r.URL.Query().Get("size")
+	offsetStr := r.URL.Query().Get("offset")
+
+	size := 20
+	offset := 0
+	if s, err := strconv.Atoi(sizeStr); err == nil && s > 0 {
+		size = s
+	}
+	if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
+		offset = o
+	}
+
+	installedIDs := make(map[string]bool)
+	if themes, err := themeMgr.ListThemes(); err == nil && themes != nil {
+		for _, c := range themes.Colors {
+			if c.PackageID != "" {
+				installedIDs[c.PackageID] = true
+			}
+		}
+		for _, i := range themes.Icons {
+			if i.PackageID != "" {
+				installedIDs[i.PackageID] = true
+			}
+		}
+	}
+
+	result, err := theme.SearchOpenVSXThemes(q, size, offset, installedIDs)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(result)
+}
+
+func handleMarketplaceInstall(w http.ResponseWriter, r *http.Request, themeMgr *theme.Manager) {
+	w.Header().Set("Content-Type", "application/json")
+	var body struct {
+		DownloadURL string `json:"download_url"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.DownloadURL == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "download_url is required"})
+		return
+	}
+
+	items, err := themeMgr.InstallFromURL(body.DownloadURL)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "online install failed: " + err.Error()})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":   true,
+		"installed": items,
+	})
+}
+
 
 
