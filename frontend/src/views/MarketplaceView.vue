@@ -430,9 +430,6 @@
           <span v-if="selectedFilter === 'installed'" class="results-count-label">
             {{ t('marketplace.installed_count', { count: displayedExtensions.length }) || `已安装 ${displayedExtensions.length} 款主题与图标包` }}
           </span>
-          <span v-else-if="selectedFilter === 'themes' || selectedFilter === 'icons'" class="results-count-label">
-            {{ t('marketplace.total_count', { count: displayedExtensions.length }) || `共收录 ${displayedExtensions.length} 款` }}
-          </span>
           <span v-else-if="mpTotalSize > 0" class="results-count-label">
             {{ t('marketplace.total_count', { count: mpTotalSize }) || `共收录 ${mpTotalSize} 款主题与图标包` }}
           </span>
@@ -783,8 +780,6 @@ interface ThemeChipItem {
 const themeChips = computed<ThemeChipItem[]>(() => [
   { id: "all", labelKey: "marketplace.filter_all", query: "" },
   { id: "installed", labelKey: "marketplace.filter_installed", query: "", isInstalled: true },
-  { id: "themes", labelKey: "marketplace.filter_themes", query: "" },
-  { id: "icons", labelKey: "marketplace.filter_icons", query: "icons" },
   { id: "material", name: "Material", query: "Material" },
   { id: "dracula", name: "Dracula", query: "Dracula" },
   { id: "one-dark", name: "One Dark", query: "One Dark" },
@@ -865,23 +860,12 @@ const installedExtensions = computed<MarketplaceExtension[]>(() => {
 });
 
 const displayedExtensions = computed<MarketplaceExtension[]>(() => {
-  let list: MarketplaceExtension[] = [];
   if (selectedFilter.value === "installed") {
-    list = installedExtensions.value;
-  } else {
-    list = mpSearchResults.value;
-  }
-
-  // Strict category exclusion: when 'themes' is selected, filter OUT all icon packs
-  if (selectedFilter.value === "themes") {
-    list = list.filter((item) => getExtensionType(item) === "theme");
-  } else if (selectedFilter.value === "icons") {
-    list = list.filter((item) => getExtensionType(item) === "icon");
-  }
-
-  if (selectedFilter.value === "installed" && mpSearchQuery.value.trim()) {
+    if (!mpSearchQuery.value.trim()) {
+      return installedExtensions.value;
+    }
     const q = mpSearchQuery.value.toLowerCase().trim();
-    list = list.filter(
+    return installedExtensions.value.filter(
       (item) =>
         (item.displayName && item.displayName.toLowerCase().includes(q)) ||
         item.name.toLowerCase().includes(q) ||
@@ -889,7 +873,7 @@ const displayedExtensions = computed<MarketplaceExtension[]>(() => {
         (item.package_id && item.package_id.toLowerCase().includes(q))
     );
   }
-  return list;
+  return mpSearchResults.value;
 });
 
 const feedbackMsg = ref("");
