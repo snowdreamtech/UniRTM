@@ -2,7 +2,12 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 import { ref, reactive } from "vue";
-import type { MarketplaceExtension, MarketplaceSearchResponse, ThemeItem } from "../types/theme-manager";
+import type {
+  MarketplaceExtension,
+  MarketplaceSearchResponse,
+  MarketplaceExtensionDetail,
+  ThemeItem,
+} from "../types/theme-manager";
 import { useThemeManager } from "./useThemeManager";
 
 const searchQuery = ref<string>("");
@@ -11,6 +16,8 @@ const totalSize = ref<number>(0);
 const isSearching = ref<boolean>(false);
 const installingMap = reactive<Record<string, boolean>>({});
 const marketplaceError = ref<string | null>(null);
+const activeDetail = ref<MarketplaceExtensionDetail | null>(null);
+const isLoadingDetail = ref<boolean>(false);
 
 export function useThemeMarketplace() {
   const { fetchThemes } = useThemeManager();
@@ -74,6 +81,31 @@ export function useThemeMarketplace() {
     }
   };
 
+  const fetchExtensionDetail = async (namespace: string, name: string): Promise<MarketplaceExtensionDetail | null> => {
+    isLoadingDetail.value = true;
+    marketplaceError.value = null;
+    try {
+      const url = `/api/themes/marketplace/detail?namespace=${encodeURIComponent(namespace)}&name=${encodeURIComponent(name)}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch extension details: ${res.statusText}`);
+      }
+      const data: MarketplaceExtensionDetail = await res.json();
+      activeDetail.value = data;
+      return data;
+    } catch (err: any) {
+      marketplaceError.value = err.message || "Failed to fetch extension detail";
+      console.error("[useThemeMarketplace] detail error:", err);
+      return null;
+    } finally {
+      isLoadingDetail.value = false;
+    }
+  };
+
+  const clearActiveDetail = () => {
+    activeDetail.value = null;
+  };
+
   return {
     searchQuery,
     searchResults,
@@ -81,7 +113,12 @@ export function useThemeMarketplace() {
     isSearching,
     installingMap,
     marketplaceError,
+    activeDetail,
+    isLoadingDetail,
     searchThemes,
     installThemeOnline,
+    fetchExtensionDetail,
+    clearActiveDetail,
   };
 }
+

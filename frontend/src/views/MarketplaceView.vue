@@ -1,84 +1,20 @@
 <template>
   <div class="view-container marketplace-view" id="view-marketplace">
-    <!-- View Header -->
-    <div class="view-header-row">
-      <div>
-        <h2 class="view-title">{{ t("nav.marketplace") || "扩展与主题市场" }}</h2>
-        <p class="view-desc">
-          探索与安装 VS Code 兼容的主题与图标集，以及扩展 UniRTM 原生能力的开发者功能套件。
-        </p>
-      </div>
-
-      <!-- Channel Switcher Tabs -->
-      <div class="channel-tabs glass-card">
-        <button
-          class="channel-btn"
-          :class="{ active: currentChannel === 'themes' }"
-          @click="switchChannel('themes')"
-        >
-          <span>🎨</span>
-          <span>{{ t("settings.theme_tab_marketplace") || "主题与图标 (Open VSX)" }}</span>
+    <!-- VIEW MODE 1: EXTENSION DETAIL PAGE -->
+    <div v-if="route.params.namespace && route.params.name" class="market-detail-container">
+      <!-- Breadcrumb Bar -->
+      <div class="detail-nav-bar glass-card">
+        <button class="btn-back-market" @click="goBackToList">
+          <span class="back-arrow">←</span>
+          <span>返回市场列表</span>
         </button>
-        <button
-          class="channel-btn"
-          :class="{ active: currentChannel === 'plugins' }"
-          @click="switchChannel('plugins')"
-        >
-          <span>🧩</span>
-          <span>{{ t("settings.cat_plugins") || "功能插件 (UniRTM 生态)" }}</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- CHANNEL 1: Themes & Icons from Open VSX -->
-    <div v-show="currentChannel === 'themes'" class="market-channel-content">
-      <!-- Search Filter Bar -->
-      <div class="market-filter-bar glass-card">
-        <div class="search-input-wrapper">
-          <span class="search-icon">🔍</span>
-          <input
-            v-model="mpSearchQuery"
-            type="text"
-            class="market-search-input"
-            :placeholder="t('settings.marketplace_search_placeholder') || '在 Open VSX 搜索主题或图标集 (如 Dracula, Material, Catppuccin)...'"
-            @keydown.enter="onSearchThemes(mpSearchQuery)"
-          />
-          <button
-            v-if="mpSearchQuery"
-            class="btn-clear-search"
-            title="清空"
-            @click="mpSearchQuery = ''; onSearchThemes('')"
-          >
-            ✕
-          </button>
+        <div class="breadcrumb-trail">
+          <span class="crumb-link" @click="goBackToList">扩展与主题市场</span>
+          <span class="crumb-sep">/</span>
+          <span class="crumb-ns font-mono">{{ route.params.namespace }}</span>
+          <span class="crumb-sep">/</span>
+          <span class="crumb-curr">{{ activeDetail?.displayName || activeDetail?.name || route.params.name }}</span>
         </div>
-        <button
-          class="btn-search-action"
-          :disabled="mpIsSearching"
-          @click="onSearchThemes(mpSearchQuery)"
-        >
-          <span v-if="mpIsSearching" class="spinner-small"></span>
-          <span v-else>搜索</span>
-        </button>
-      </div>
-
-      <!-- Quick Chips & Results count -->
-      <div class="market-chips-bar">
-        <div class="chips-left">
-          <span class="chips-label">推荐分类:</span>
-          <button
-            v-for="chip in themeChips"
-            :key="chip"
-            class="chip-btn"
-            :class="{ active: (chip === '全部' && !mpSearchQuery) || mpSearchQuery.toLowerCase() === chip.toLowerCase() }"
-            @click="onSelectChip(chip)"
-          >
-            {{ chip }}
-          </button>
-        </div>
-        <span v-if="mpTotalSize > 0" class="results-count-label">
-          共收录 {{ mpTotalSize }} 款外观扩展
-        </span>
       </div>
 
       <!-- Feedback Alert -->
@@ -87,182 +23,565 @@
         <button class="btn-close-banner" @click="feedbackMsg = ''">✕</button>
       </div>
 
-      <!-- Error Banner -->
-      <div v-if="mpError" class="error-banner">
-        <span>⚠️ {{ mpError }}</span>
-        <button class="btn-retry" @click="onSearchThemes(mpSearchQuery)">重试</button>
-      </div>
-
       <!-- Loading State -->
-      <div v-if="mpIsSearching" class="market-loading-box glass-card">
+      <div v-if="isLoadingDetail" class="detail-loading-box glass-card">
         <div class="spinner-small"></div>
-        <span>正在实时连接 Open VSX 检索主题与图标...</span>
+        <span>正在实时获取扩展详细信息、README 与主题清单...</span>
       </div>
 
-      <!-- Empty State -->
-      <div v-else-if="mpSearchResults.length === 0" class="market-empty-box glass-card">
-        <span class="empty-icon">🎨</span>
-        <p>未找到符合条件的主题或图标包</p>
-        <button class="btn-reset-chip" @click="onSelectChip('全部')">查看热门推荐</button>
+      <!-- Error State -->
+      <div v-else-if="!activeDetail" class="detail-error-box glass-card">
+        <span class="error-icon">⚠️</span>
+        <h3>未找到该扩展主题信息</h3>
+        <p>{{ mpError || "网络请求失败或该扩展不存在于 Open VSX 仓库。" }}</p>
+        <div class="detail-error-actions">
+          <button class="btn-action-primary" @click="loadCurrentDetail">重新尝试</button>
+          <button class="btn-action-secondary" @click="goBackToList">返回市场</button>
+        </div>
       </div>
 
-      <!-- Themes Grid -->
-      <div v-else class="extensions-grid">
-        <div
-          v-for="item in mpSearchResults"
-          :key="item.namespace + '.' + item.name"
-          class="glass-card theme-card"
-        >
-          <div class="card-header-row">
-            <div class="card-icon-wrap">
+      <!-- Detail Main Content -->
+      <div v-else class="detail-main-layout">
+        <!-- Hero Header -->
+        <div class="detail-hero glass-card">
+          <div class="hero-left">
+            <div class="hero-icon-box">
               <img
-                v-if="item.files && item.files.icon"
-                :src="item.files.icon"
-                class="card-img-icon"
-                loading="lazy"
+                v-if="activeDetail.files && activeDetail.files.icon"
+                :src="activeDetail.files.icon"
+                class="hero-img-icon"
                 alt="icon"
                 @error="(e: any) => { if (e && e.target) e.target.style.display = 'none'; }"
               />
-              <span class="card-fallback-icon">🎨</span>
+              <span class="hero-fallback-icon">🎨</span>
             </div>
-            <div class="card-title-col">
-              <div class="card-name-row">
-                <span class="card-name" :title="item.displayName || item.name">
-                  {{ item.displayName || item.name }}
-                </span>
-                <span class="card-version font-mono">v{{ item.version }}</span>
+            <div class="hero-info">
+              <div class="hero-title-row">
+                <h1 class="hero-title">{{ activeDetail.displayName || activeDetail.name }}</h1>
+                <span class="hero-version font-mono">v{{ activeDetail.version }}</span>
+                <span v-if="activeDetail.is_installed" class="badge-installed">✓ {{ t("settings.installed") || "已安装" }}</span>
               </div>
-              <span class="card-namespace font-mono">{{ item.namespace }}</span>
+              <div class="hero-meta-row">
+                <span class="hero-author font-mono">
+                  发布者: <strong>{{ activeDetail.namespace }}</strong>
+                </span>
+                <span class="meta-dot">•</span>
+                <span class="hero-stat">⬇️ {{ formatDownloads(activeDetail.downloadCount) }} 次下载</span>
+                <span v-if="activeDetail.averageRating" class="meta-dot">•</span>
+                <span v-if="activeDetail.averageRating" class="hero-stat">
+                  ⭐ {{ activeDetail.averageRating.toFixed(1) }} ({{ activeDetail.reviewCount || 1 }} 评价)
+                </span>
+                <span v-if="activeDetail.license" class="meta-dot">•</span>
+                <span v-if="activeDetail.license" class="hero-license font-mono">{{ activeDetail.license }}</span>
+              </div>
+              <p class="hero-desc">{{ activeDetail.description || "无详细描述" }}</p>
             </div>
           </div>
 
-          <p class="card-desc" :title="item.description">
-            {{ item.description || "无详细描述" }}
-          </p>
+          <div class="hero-actions">
+            <button
+              v-if="!activeDetail.is_installed"
+              class="btn-install-primary"
+              :disabled="mpInstallingMap[activeDetail.name || activeDetail.displayName]"
+              @click="onInstallDetail(activeDetail)"
+            >
+              <span v-if="mpInstallingMap[activeDetail.name || activeDetail.displayName]" class="spinner-small"></span>
+              <span>{{ mpInstallingMap[activeDetail.name || activeDetail.displayName] ? (t("settings.installing") || "安装中...") : (t("settings.install") || "安装") }}</span>
+            </button>
+            <div v-else class="installed-action-buttons">
+              <button
+                class="btn-uninstall-danger"
+                :disabled="isUninstalling"
+                @click="onUninstallDetail(activeDetail)"
+              >
+                {{ isUninstalling ? "卸载中..." : "卸载" }}
+              </button>
+            </div>
+            <a
+              :href="'https://open-vsx.org/extension/' + activeDetail.namespace + '/' + activeDetail.name"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn-external-link"
+              title="在 Open VSX 官方页面打开"
+            >
+              <span>在 Open VSX 查看</span>
+              <span>↗</span>
+            </a>
+          </div>
+        </div>
 
-          <div class="card-footer-row">
-            <div class="card-stats">
-              <span class="stat-item" :title="'下载量: ' + item.downloadCount">
-                ⬇️ {{ formatDownloads(item.downloadCount) }}
-              </span>
-              <span v-if="item.averageRating" class="stat-item">
-                ⭐ {{ item.averageRating.toFixed(1) }}
-              </span>
+        <!-- Detail Body Grid: Main Content + Sidebar -->
+        <div class="detail-body-grid">
+          <!-- Main Tabs Area -->
+          <div class="detail-body-main glass-card">
+            <div class="detail-subtabs">
+              <button
+                class="subtab-btn"
+                :class="{ active: activeDetailTab === 'readme' }"
+                @click="activeDetailTab = 'readme'"
+              >
+                📖 详情说明 (README)
+              </button>
+              <button
+                class="subtab-btn"
+                :class="{ active: activeDetailTab === 'contributes' }"
+                @click="activeDetailTab = 'contributes'"
+              >
+                🎨 包含主题与图标
+                <span v-if="contributedThemesCount > 0" class="tab-badge">{{ contributedThemesCount }}</span>
+              </button>
+              <button
+                v-if="activeDetail.files && activeDetail.files.changelog"
+                class="subtab-btn"
+                :class="{ active: activeDetailTab === 'changelog' }"
+                @click="activeDetailTab = 'changelog'"
+              >
+                📝 更新日志
+              </button>
             </div>
 
-            <div class="card-actions">
-              <div v-if="item.is_installed" class="installed-group">
-                <span class="badge-installed">✓ {{ t("settings.installed") || "已安装" }}</span>
-                <button
-                  class="btn-apply-theme"
-                  :title="t('settings.apply_theme') || '应用此主题'"
-                  @click="onApplyTheme(item)"
+            <!-- Tab 1: README (Markdown with Screenshots) -->
+            <div v-show="activeDetailTab === 'readme'" class="tab-content tab-readme">
+              <div
+                v-if="activeDetail.readme"
+                class="markdown-body"
+                v-html="renderedReadme"
+              ></div>
+              <div v-else class="readme-empty-hint">
+                <span class="empty-icon">📄</span>
+                <p>该扩展未提供 README 文档说明</p>
+              </div>
+            </div>
+
+            <!-- Tab 2: Contributed Sub-themes -->
+            <div v-show="activeDetailTab === 'contributes'" class="tab-content tab-contributes">
+              <!-- Color Themes List -->
+              <div
+                v-if="activeDetail.contributes?.themes && activeDetail.contributes.themes.length > 0"
+                class="contribute-group"
+              >
+                <h3 class="group-title">颜色主题 (Color Themes)</h3>
+                <div class="contribute-list">
+                  <div
+                    v-for="sub in activeDetail.contributes.themes"
+                    :key="sub.label"
+                    class="contribute-item"
+                  >
+                    <div class="sub-info">
+                      <span class="sub-label">{{ sub.label }}</span>
+                      <span
+                        class="sub-mode-tag"
+                        :class="sub.uiTheme === 'vs' ? 'mode-light' : 'mode-dark'"
+                      >
+                        {{ formatUITheme(sub.uiTheme) }}
+                      </span>
+                    </div>
+                    <button
+                      v-if="activeDetail.is_installed"
+                      class="btn-apply-sub"
+                      @click="onApplySubColorTheme(sub.label)"
+                    >
+                      应用
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Icon Themes List -->
+              <div
+                v-if="activeDetail.contributes?.iconThemes && activeDetail.contributes.iconThemes.length > 0"
+                class="contribute-group"
+              >
+                <h3 class="group-title">图标集 (Icon Themes)</h3>
+                <div class="contribute-list">
+                  <div
+                    v-for="sub in activeDetail.contributes.iconThemes"
+                    :key="sub.label"
+                    class="contribute-item"
+                  >
+                    <div class="sub-info">
+                      <span class="sub-label">{{ sub.label }}</span>
+                      <span class="sub-mode-tag mode-icon">文件图标</span>
+                    </div>
+                    <button
+                      v-if="activeDetail.is_installed"
+                      class="btn-apply-sub"
+                      @click="onApplySubIconTheme(sub.label)"
+                    >
+                      应用
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                v-if="(!activeDetail.contributes?.themes || activeDetail.contributes.themes.length === 0) &&
+                      (!activeDetail.contributes?.iconThemes || activeDetail.contributes.iconThemes.length === 0)"
+                class="readme-empty-hint"
+              >
+                <p>该扩展清单中未发现显式声明的主题子集</p>
+              </div>
+            </div>
+
+            <!-- Tab 3: Changelog -->
+            <div v-show="activeDetailTab === 'changelog'" class="tab-content tab-changelog">
+              <div
+                v-if="changelogContent"
+                class="markdown-body"
+                v-html="renderedChangelog"
+              ></div>
+              <div v-else class="readme-empty-hint">
+                <p>正在读取或该扩展未提供独立更新日志</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Sidebar Metadata -->
+          <div class="detail-sidebar glass-card">
+            <!-- Resources -->
+            <div class="sidebar-section">
+              <h4 class="sidebar-heading">资源与链接</h4>
+              <div class="sidebar-links">
+                <a
+                  v-if="activeDetail.repository"
+                  :href="cleanGitUrl(activeDetail.repository)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="sidebar-link"
                 >
-                  {{ t("settings.apply") || "应用" }}
+                  <span class="link-icon">🐙</span>
+                  <span>项目仓库 (Repository)</span>
+                </a>
+                <a
+                  v-if="activeDetail.bugs"
+                  :href="activeDetail.bugs"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="sidebar-link"
+                >
+                  <span class="link-icon">🐛</span>
+                  <span>问题反馈 (Issues)</span>
+                </a>
+                <a
+                  v-if="activeDetail.homepage"
+                  :href="activeDetail.homepage"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="sidebar-link"
+                >
+                  <span class="link-icon">🏠</span>
+                  <span>主页 (Homepage)</span>
+                </a>
+                <a
+                  v-if="activeDetail.files && activeDetail.files.download"
+                  :href="activeDetail.files.download"
+                  download
+                  class="sidebar-link"
+                >
+                  <span class="link-icon">📥</span>
+                  <span>下载 .vsix 离线安装包</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Properties -->
+            <div class="sidebar-section">
+              <h4 class="sidebar-heading">元数据属性</h4>
+              <div class="prop-list">
+                <div class="prop-item">
+                  <span class="prop-key">命名空间</span>
+                  <span class="prop-val font-mono">{{ activeDetail.namespace }}</span>
+                </div>
+                <div class="prop-item">
+                  <span class="prop-key">扩展标识</span>
+                  <span class="prop-val font-mono">{{ activeDetail.namespace }}.{{ activeDetail.name }}</span>
+                </div>
+                <div class="prop-item">
+                  <span class="prop-key">最新版本</span>
+                  <span class="prop-val font-mono">v{{ activeDetail.version }}</span>
+                </div>
+                <div class="prop-item">
+                  <span class="prop-key">发布日期</span>
+                  <span class="prop-val">{{ formatDate(activeDetail.timestamp) }}</span>
+                </div>
+                <div class="prop-item">
+                  <span class="prop-key">许可证</span>
+                  <span class="prop-val">{{ activeDetail.license || "开源协议" }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tags -->
+            <div v-if="activeDetail.tags && activeDetail.tags.length > 0" class="sidebar-section">
+              <h4 class="sidebar-heading">标签分类</h4>
+              <div class="sidebar-tags">
+                <span
+                  v-for="tag in activeDetail.tags"
+                  :key="tag"
+                  class="tag-chip"
+                >
+                  {{ tag }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW MODE 2: MARKETPLACE DISCOVERY LIST (DUAL CHANNELS) -->
+    <template v-else>
+      <!-- View Header -->
+      <div class="view-header-row">
+        <div>
+          <h2 class="view-title">{{ t("nav.marketplace") || "扩展与主题市场" }}</h2>
+          <p class="view-desc">
+            探索与安装 VS Code 兼容的主题与图标集，以及扩展 UniRTM 原生能力的开发者功能套件。
+          </p>
+        </div>
+
+        <!-- Channel Switcher Tabs -->
+        <div class="channel-tabs glass-card">
+          <button
+            class="channel-btn"
+            :class="{ active: currentChannel === 'themes' }"
+            @click="switchChannel('themes')"
+          >
+            <span>🎨</span>
+            <span>{{ t("settings.theme_tab_marketplace") || "主题与图标 (Open VSX)" }}</span>
+          </button>
+          <button
+            class="channel-btn"
+            :class="{ active: currentChannel === 'plugins' }"
+            @click="switchChannel('plugins')"
+          >
+            <span>🧩</span>
+            <span>{{ t("settings.cat_plugins") || "功能插件 (UniRTM 生态)" }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- CHANNEL 1: Themes & Icons from Open VSX -->
+      <div v-show="currentChannel === 'themes'" class="market-channel-content">
+        <!-- Search Filter Bar -->
+        <div class="market-filter-bar glass-card">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input
+              v-model="mpSearchQuery"
+              type="text"
+              class="market-search-input"
+              :placeholder="t('settings.marketplace_search_placeholder') || '在 Open VSX 搜索主题或图标集 (如 Dracula, Material, Catppuccin)...'"
+              @keydown.enter="onSearchThemes(mpSearchQuery)"
+            />
+            <button
+              v-if="mpSearchQuery"
+              class="btn-clear-search"
+              title="清空"
+              @click="mpSearchQuery = ''; onSearchThemes('')"
+            >
+              ✕
+            </button>
+          </div>
+          <button
+            class="btn-search-action"
+            :disabled="mpIsSearching"
+            @click="onSearchThemes(mpSearchQuery)"
+          >
+            <span v-if="mpIsSearching" class="spinner-small"></span>
+            <span v-else>搜索</span>
+          </button>
+        </div>
+
+        <!-- Quick Chips & Results count -->
+        <div class="market-chips-bar">
+          <div class="chips-left">
+            <span class="chips-label">推荐分类:</span>
+            <button
+              v-for="chip in themeChips"
+              :key="chip"
+              class="chip-btn"
+              :class="{ active: (chip === '全部' && !mpSearchQuery) || mpSearchQuery.toLowerCase() === chip.toLowerCase() }"
+              @click="onSelectChip(chip)"
+            >
+              {{ chip }}
+            </button>
+          </div>
+          <span v-if="mpTotalSize > 0" class="results-count-label">
+            共收录 {{ mpTotalSize }} 款外观扩展
+          </span>
+        </div>
+
+        <!-- Feedback Alert -->
+        <div v-if="feedbackMsg" class="feedback-banner" :class="{ error: feedbackIsError }">
+          <span>{{ feedbackMsg }}</span>
+          <button class="btn-close-banner" @click="feedbackMsg = ''">✕</button>
+        </div>
+
+        <!-- Error Banner -->
+        <div v-if="mpError" class="error-banner">
+          <span>⚠️ {{ mpError }}</span>
+          <button class="btn-retry" @click="onSearchThemes(mpSearchQuery)">重试</button>
+        </div>
+
+        <!-- Loading State -->
+        <div v-if="mpIsSearching" class="market-loading-box glass-card">
+          <div class="spinner-small"></div>
+          <span>正在实时连接 Open VSX 检索主题与图标...</span>
+        </div>
+
+        <!-- Empty State -->
+        <div v-else-if="mpSearchResults.length === 0" class="market-empty-box glass-card">
+          <span class="empty-icon">🎨</span>
+          <p>未找到符合条件的主题或图标包</p>
+          <button class="btn-reset-chip" @click="onSelectChip('全部')">查看热门推荐</button>
+        </div>
+
+        <!-- Themes Grid -->
+        <div v-else class="extensions-grid">
+          <div
+            v-for="item in mpSearchResults"
+            :key="item.namespace + '.' + item.name"
+            class="glass-card theme-card clickable-card"
+            @click="navigateToDetail(item.namespace, item.name)"
+          >
+            <div class="card-header-row">
+              <div class="card-icon-wrap">
+                <img
+                  v-if="item.files && item.files.icon"
+                  :src="item.files.icon"
+                  class="card-img-icon"
+                  loading="lazy"
+                  alt="icon"
+                  @error="(e: any) => { if (e && e.target) e.target.style.display = 'none'; }"
+                />
+                <span class="card-fallback-icon">🎨</span>
+              </div>
+              <div class="card-title-col">
+                <div class="card-name-row">
+                  <span class="card-name" :title="item.displayName || item.name">
+                    {{ item.displayName || item.name }}
+                  </span>
+                  <span class="card-version font-mono">v{{ item.version }}</span>
+                </div>
+                <span class="card-namespace font-mono">{{ item.namespace }}</span>
+              </div>
+            </div>
+
+            <p class="card-desc" :title="item.description">
+              {{ item.description || "无详细描述" }}
+            </p>
+
+            <div class="card-footer-row">
+              <div class="card-stats">
+                <span class="stat-item" :title="'下载量: ' + item.downloadCount">
+                  ⬇️ {{ formatDownloads(item.downloadCount) }}
+                </span>
+                <span v-if="item.averageRating" class="stat-item">
+                  ⭐ {{ item.averageRating.toFixed(1) }}
+                </span>
+              </div>
+
+              <div class="card-actions" @click.stop>
+                <div v-if="item.is_installed" class="installed-group">
+                  <span class="badge-installed">✓ {{ t("settings.installed") || "已安装" }}</span>
+                  <button
+                    class="btn-apply-theme"
+                    :title="t('settings.apply_theme') || '应用此主题'"
+                    @click="onApplyTheme(item)"
+                  >
+                    {{ t("settings.apply") || "应用" }}
+                  </button>
+                </div>
+                <button
+                  v-else
+                  class="btn-install-theme"
+                  :disabled="mpInstallingMap[item.namespace + '.' + item.name]"
+                  @click="onInstallTheme(item)"
+                >
+                  <span v-if="mpInstallingMap[item.namespace + '.' + item.name]" class="spinner-small"></span>
+                  <span>{{ mpInstallingMap[item.namespace + '.' + item.name] ? (t("settings.installing") || "安装中...") : (t("settings.install") || "安装") }}</span>
                 </button>
               </div>
-              <button
-                v-else
-                class="btn-install-theme"
-                :disabled="mpInstallingMap[item.namespace + '.' + item.name]"
-                @click="onInstallTheme(item)"
-              >
-                <span v-if="mpInstallingMap[item.namespace + '.' + item.name]" class="spinner-small"></span>
-                <span>{{ mpInstallingMap[item.namespace + '.' + item.name] ? (t("settings.installing") || "安装中...") : (t("settings.install") || "安装") }}</span>
-              </button>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- CHANNEL 2: Native Plugins & Ecosystem (UniRTM Extensions) -->
-    <div v-show="currentChannel === 'plugins'" class="market-channel-content">
-      <!-- Ecosystem Banner -->
-      <div class="plugin-isolation-banner glass-card">
-        <span class="banner-icon">🔒</span>
-        <div class="banner-text">
-          <strong>三层隔离架构与工具提供者准则</strong>
-          <p>
-            UniRTM 原生功能插件运行于独立外部进程中，绝不臃肿核心运行时。所有插件配置与存储严格限定于 plugins.&lt;plugin-id&gt;.* 命名空间内。
-          </p>
+      <!-- CHANNEL 2: Native Plugins & Ecosystem (UniRTM Extensions) -->
+      <div v-show="currentChannel === 'plugins'" class="market-channel-content">
+        <!-- Ecosystem Banner -->
+        <div class="plugin-isolation-banner glass-card">
+          <span class="banner-icon">🔒</span>
+          <div class="banner-text">
+            <strong>三层隔离架构与工具提供者准则</strong>
+            <p>
+              UniRTM 原生功能插件运行于独立外部进程中，绝不臃肿核心运行时。所有插件配置与存储严格限定于 plugins.&lt;plugin-id&gt;.* 命名空间内。
+            </p>
+          </div>
         </div>
-      </div>
 
-      <!-- Native Plugins Grid -->
-      <div class="extensions-grid">
-        <div
-          v-for="ext in nativePlugins"
-          :key="ext.id"
-          class="glass-card plugin-card"
-        >
-          <div class="card-header-row">
-            <div class="card-icon-box">{{ ext.icon }}</div>
-            <div class="card-title-col">
-              <div class="card-name-row">
-                <span class="card-name">{{ ext.name }}</span>
-                <span class="card-version font-mono">v{{ ext.version }}</span>
+        <!-- Native Plugins Grid -->
+        <div class="extensions-grid">
+          <div
+            v-for="ext in nativePlugins"
+            :key="ext.id"
+            class="glass-card plugin-card"
+          >
+            <div class="card-header-row">
+              <div class="card-icon-box">{{ ext.icon }}</div>
+              <div class="card-title-col">
+                <div class="card-name-row">
+                  <span class="card-name">{{ ext.name }}</span>
+                  <span class="card-version font-mono">v{{ ext.version }}</span>
+                </div>
+                <span class="card-namespace font-mono">{{ ext.author }}</span>
               </div>
-              <span class="card-namespace font-mono">{{ ext.author }}</span>
-            </div>
-          </div>
-
-          <p class="card-desc">{{ ext.description }}</p>
-
-          <div class="plugin-tags-row">
-            <span v-for="tag in ext.tags" :key="tag" class="plugin-tag">{{ tag }}</span>
-          </div>
-
-          <div class="card-footer-row">
-            <div class="card-stats">
-              <span class="stat-item">⭐ {{ ext.stars }}</span>
-              <span class="stat-item">📥 {{ ext.downloads }}</span>
             </div>
 
-            <div class="card-actions">
-              <span v-if="ext.installed" class="badge-installed">✓ 已启用</span>
-              <button
-                v-else
-                class="btn-install-theme"
-                @click="ext.installed = true; feedbackMsg = `✓ 已启用插件 ${ext.name}`"
-              >
-                {{ t("settings.install") || "安装" }}
-              </button>
+            <p class="card-desc">{{ ext.description }}</p>
+
+            <div class="plugin-tags-row">
+              <span v-for="tag in ext.tags" :key="tag" class="plugin-tag">{{ tag }}</span>
+            </div>
+
+            <div class="card-footer-row">
+              <div class="card-stats">
+                <span class="stat-item">⭐ {{ ext.stars }}</span>
+                <span class="stat-item">📥 {{ ext.downloads }}</span>
+              </div>
+
+              <div class="card-actions">
+                <span v-if="ext.installed" class="badge-installed">✓ {{ t("settings.installed") || "已启用" }}</span>
+                <span v-else class="badge-soon">开发中</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { ref, computed, onMounted, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { t } from "../i18n";
 import { useThemeMarketplace } from "../composables/useThemeMarketplace";
 import { useThemeManager } from "../composables/useThemeManager";
-import type { MarketplaceExtension } from "../types/theme-manager";
+import { renderMarkdown } from "../utils/markdown";
+import type { MarketplaceExtension, MarketplaceExtensionDetail } from "../types/theme-manager";
 
 const route = useRoute();
+const router = useRouter();
 
 // Channels: 'themes' (Open VSX) vs 'plugins' (UniRTM Native Plugins)
 const currentChannel = ref<"themes" | "plugins">("themes");
 
-// Initialize channel from query parameter if present
-onMounted(() => {
-  if (route.query.tab === "plugins") {
-    currentChannel.value = "plugins";
-  } else {
-    currentChannel.value = "themes";
-  }
-  // Trigger initial theme marketplace search
-  mpSearchThemes("");
-});
-
-function switchChannel(channel: "themes" | "plugins") {
-  currentChannel.value = channel;
-}
+// Detail view state
+const activeDetailTab = ref<"readme" | "contributes" | "changelog">("readme");
+const isUninstalling = ref<boolean>(false);
+const changelogContent = ref<string>("");
 
 // --- Theme Marketplace Composable Integration ---
 const {
@@ -272,14 +591,19 @@ const {
   isSearching: mpIsSearching,
   installingMap: mpInstallingMap,
   marketplaceError: mpError,
+  activeDetail,
+  isLoadingDetail,
   searchThemes: mpSearchThemes,
   installThemeOnline: mpInstallThemeOnline,
+  fetchExtensionDetail,
+  clearActiveDetail,
 } = useThemeMarketplace();
 
 const {
   colorThemes,
   iconThemes,
   setActiveTheme,
+  deleteTheme,
 } = useThemeManager();
 
 const themeChips = [
@@ -296,6 +620,69 @@ const themeChips = [
 const feedbackMsg = ref("");
 const feedbackIsError = ref(false);
 
+// Markdown computed properties
+const renderedReadme = computed(() => {
+  if (!activeDetail.value?.readme) return "";
+  return renderMarkdown(activeDetail.value.readme);
+});
+
+const renderedChangelog = computed(() => {
+  if (!changelogContent.value) return "";
+  return renderMarkdown(changelogContent.value);
+});
+
+const contributedThemesCount = computed(() => {
+  const tCount = activeDetail.value?.contributes?.themes?.length || 0;
+  const iCount = activeDetail.value?.contributes?.iconThemes?.length || 0;
+  return tCount + iCount;
+});
+
+// Watch route params for detail page view
+const loadCurrentDetail = async () => {
+  const ns = route.params.namespace as string;
+  const name = route.params.name as string;
+  if (ns && name) {
+    changelogContent.value = "";
+    activeDetailTab.value = "readme";
+    const detail = await fetchExtensionDetail(ns, name);
+    if (detail?.files?.changelog) {
+      try {
+        const clRes = await fetch(detail.files.changelog);
+        if (clRes.ok) {
+          changelogContent.value = await clRes.text();
+        }
+      } catch {}
+    }
+  } else {
+    clearActiveDetail();
+  }
+};
+
+watch(
+  () => [route.params.namespace, route.params.name],
+  () => {
+    loadCurrentDetail();
+  },
+  { immediate: true }
+);
+
+// Initialize channel from query parameter if present
+onMounted(() => {
+  if (route.query.tab === "plugins") {
+    currentChannel.value = "plugins";
+  } else {
+    currentChannel.value = "themes";
+  }
+  // Trigger initial theme marketplace search if on list view
+  if (!route.params.namespace || !route.params.name) {
+    mpSearchThemes("");
+  }
+});
+
+function switchChannel(channel: "themes" | "plugins") {
+  currentChannel.value = channel;
+}
+
 function onSearchThemes(q?: string) {
   mpSearchThemes(q);
 }
@@ -304,6 +691,14 @@ function onSelectChip(chip: string) {
   const query = chip === "全部" ? "" : chip;
   mpSearchQuery.value = query;
   mpSearchThemes(query);
+}
+
+function navigateToDetail(namespace: string, name: string) {
+  router.push(`/marketplace/${namespace}/${name}`);
+}
+
+function goBackToList() {
+  router.push({ path: "/marketplace", query: { tab: currentChannel.value } });
 }
 
 async function onInstallTheme(item: MarketplaceExtension) {
@@ -326,6 +721,73 @@ async function onInstallTheme(item: MarketplaceExtension) {
   }
 }
 
+async function onInstallDetail(detail: MarketplaceExtensionDetail) {
+  const item: MarketplaceExtension = {
+    namespace: detail.namespace,
+    name: detail.name,
+    displayName: detail.displayName || detail.name,
+    version: detail.version,
+    description: detail.description,
+    downloadCount: detail.downloadCount,
+    averageRating: detail.averageRating,
+    files: {
+      download: detail.files.download,
+      icon: detail.files.icon,
+    },
+    package_id: detail.package_id || detail.name,
+  };
+  await onInstallTheme(item);
+  detail.is_installed = true;
+}
+
+async function onUninstallDetail(detail: MarketplaceExtensionDetail) {
+  const pkgId = detail.package_id || detail.name;
+  isUninstalling.value = true;
+  feedbackMsg.value = "";
+  feedbackIsError.value = false;
+  try {
+    await deleteTheme("color", pkgId);
+    await deleteTheme("icon", pkgId);
+    detail.is_installed = false;
+    const found = mpSearchResults.value.find((s) => s.namespace === detail.namespace && s.name === detail.name);
+    if (found) found.is_installed = false;
+    feedbackMsg.value = `✓ 已卸载 ${detail.displayName || detail.name}`;
+  } catch (err: any) {
+    feedbackMsg.value = `✕ 卸载失败: ${err.message || err}`;
+    feedbackIsError.value = true;
+  } finally {
+    isUninstalling.value = false;
+  }
+}
+
+async function onApplySubColorTheme(label: string) {
+  const match = colorThemes.value.find(
+    (c) => c.name.toLowerCase() === label.toLowerCase() || c.id.toLowerCase() === label.toLowerCase()
+  );
+  if (match) {
+    await setActiveTheme(match.id, undefined);
+    feedbackMsg.value = `✓ 已应用颜色主题: ${match.name}`;
+    feedbackIsError.value = false;
+  } else {
+    feedbackMsg.value = `已激活主题包，可在设置中选择应用 ${label}`;
+    feedbackIsError.value = false;
+  }
+}
+
+async function onApplySubIconTheme(label: string) {
+  const match = iconThemes.value.find(
+    (i) => i.name.toLowerCase() === label.toLowerCase() || i.id.toLowerCase() === label.toLowerCase()
+  );
+  if (match) {
+    await setActiveTheme(undefined, match.id);
+    feedbackMsg.value = `✓ 已应用图标主题: ${match.name}`;
+    feedbackIsError.value = false;
+  } else {
+    feedbackMsg.value = `已激活图标包，可在设置中选择应用 ${label}`;
+    feedbackIsError.value = false;
+  }
+}
+
 async function onApplyTheme(item: MarketplaceExtension) {
   const pkgID = item.package_id || item.name;
   const colorMatch = colorThemes.value.find((c) => c.package_id === pkgID);
@@ -344,6 +806,26 @@ function formatDownloads(count: number): string {
   if (count >= 1000000) return (count / 1000000).toFixed(1) + "M";
   if (count >= 1000) return (count / 1000).toFixed(1) + "k";
   return String(count);
+}
+
+function formatUITheme(uiTheme?: string): string {
+  if (uiTheme === "vs") return "浅色 (Light)";
+  if (uiTheme === "hc-black" || uiTheme === "hc-light") return "高对比度";
+  return "深色 (Dark)";
+}
+
+function formatDate(dateStr?: string): string {
+  if (!dateStr) return "近期更新";
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString();
+  } catch {
+    return dateStr;
+  }
+}
+
+function cleanGitUrl(url: string): string {
+  return url.replace(/^git\+/, "").replace(/\.git$/, "");
 }
 
 // --- Channel 2: UniRTM Ecosystem Native Plugins ---
@@ -423,6 +905,7 @@ const nativePlugins = ref<PluginItem[]>([
   box-sizing: border-box;
 }
 
+/* Header & Tabs */
 .view-header-row {
   display: flex;
   align-items: center;
@@ -448,20 +931,20 @@ const nativePlugins = ref<PluginItem[]>([
   display: flex;
   padding: 4px;
   border-radius: 8px;
-  gap: 4px;
+  gap: 6px;
 }
 
 .channel-btn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
+  border: 1px solid transparent;
   border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
   font-size: 0.84rem;
   font-weight: 500;
-  color: var(--text-muted);
-  background: transparent;
-  border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -473,23 +956,23 @@ const nativePlugins = ref<PluginItem[]>([
 
 .channel-btn.active {
   color: var(--accent-cyan);
-  background: rgba(0, 229, 255, 0.1);
+  background: rgba(0, 229, 255, 0.12);
   border-color: rgba(0, 229, 255, 0.3);
-  font-weight: 600;
 }
 
+/* Channel Content */
 .market-channel-content {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
+/* Filter Bar */
 .market-filter-bar {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  padding: 10px 14px;
   align-items: center;
-  padding: 8px 12px;
-  border-radius: 10px;
 }
 
 .search-input-wrapper {
@@ -501,20 +984,20 @@ const nativePlugins = ref<PluginItem[]>([
 
 .search-icon {
   position: absolute;
-  left: 10px;
-  font-size: 0.85rem;
+  left: 12px;
+  font-size: 0.9rem;
   opacity: 0.6;
   pointer-events: none;
 }
 
 .market-search-input {
   width: 100%;
-  padding: 7px 32px;
-  background: var(--input-bg);
-  border: 1px solid var(--card-border);
+  padding: 8px 36px 8px 36px;
+  background: var(--input-bg, rgba(0, 0, 0, 0.2));
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
   border-radius: 6px;
   color: var(--text-main);
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   outline: none;
   transition: border-color 0.2s;
 }
@@ -525,95 +1008,94 @@ const nativePlugins = ref<PluginItem[]>([
 
 .btn-clear-search {
   position: absolute;
-  right: 10px;
+  right: 12px;
   background: transparent;
   border: none;
   color: var(--text-muted);
-  font-size: 0.75rem;
   cursor: pointer;
 }
 
 .btn-search-action {
-  padding: 7px 20px;
-  background: rgba(0, 229, 255, 0.12);
-  border: 1px solid rgba(0, 229, 255, 0.3);
+  padding: 8px 20px;
+  background: rgba(0, 229, 255, 0.14);
+  border: 1px solid rgba(0, 229, 255, 0.35);
   color: var(--accent-cyan);
   border-radius: 6px;
-  font-size: 0.84rem;
+  font-size: 0.86rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .btn-search-action:hover:not(:disabled) {
-  background: rgba(0, 229, 255, 0.22);
+  background: rgba(0, 229, 255, 0.25);
   border-color: var(--accent-cyan);
 }
 
+/* Chips Bar */
 .market-chips-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .chips-left {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .chips-label {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
-  margin-right: 2px;
 }
 
 .chip-btn {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
+  background: var(--card-bg, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
   color: var(--text-muted);
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 0.75rem;
+  padding: 4px 12px;
+  border-radius: 14px;
+  font-size: 0.78rem;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .chip-btn:hover {
   color: var(--text-main);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .chip-btn.active {
-  background: rgba(0, 229, 255, 0.1);
+  background: rgba(0, 229, 255, 0.12);
   border-color: var(--accent-cyan);
   color: var(--accent-cyan);
-  font-weight: 600;
 }
 
 .results-count-label {
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   color: var(--text-muted);
 }
 
+/* Banners */
 .feedback-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: var(--success);
+  padding: 8px 14px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: var(--success, #10b981);
   border-radius: 6px;
-  font-size: 0.82rem;
+  font-size: 0.84rem;
 }
 
 .feedback-banner.error {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
   color: #ef4444;
 }
 
@@ -622,64 +1104,81 @@ const nativePlugins = ref<PluginItem[]>([
   border: none;
   color: inherit;
   cursor: pointer;
-  font-size: 0.8rem;
 }
 
 .error-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 10px 14px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
   color: #ef4444;
   border-radius: 6px;
-  font-size: 0.82rem;
+  font-size: 0.84rem;
 }
 
 .btn-retry {
   background: transparent;
   border: 1px solid rgba(239, 68, 68, 0.4);
   color: #ef4444;
-  padding: 2px 8px;
+  padding: 2px 10px;
   border-radius: 4px;
-  font-size: 0.76rem;
   cursor: pointer;
 }
 
+/* Loading & Empty */
 .market-loading-box,
-.market-empty-box {
+.market-empty-box,
+.detail-loading-box,
+.detail-error-box {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 40px 16px;
+  gap: 12px;
+  padding: 40px 20px;
   color: var(--text-muted);
-  font-size: 0.86rem;
-  border-radius: 12px;
+  font-size: 0.88rem;
 }
 
-.empty-icon {
-  font-size: 2rem;
+.empty-icon,
+.error-icon {
+  font-size: 2.2rem;
 }
 
-.btn-reset-chip {
-  margin-top: 6px;
-  padding: 5px 14px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
+.btn-reset-chip,
+.btn-action-primary {
+  padding: 6px 16px;
+  background: rgba(0, 229, 255, 0.14);
+  border: 1px solid rgba(0, 229, 255, 0.35);
   color: var(--accent-cyan);
   border-radius: 6px;
-  font-size: 0.8rem;
+  font-size: 0.84rem;
   cursor: pointer;
+}
+
+.btn-action-secondary {
+  padding: 6px 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  border-radius: 6px;
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+.detail-error-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
 }
 
 /* Extensions Grid */
 .extensions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 14px;
 }
 
 .theme-card,
@@ -688,35 +1187,40 @@ const nativePlugins = ref<PluginItem[]>([
   flex-direction: column;
   justify-content: space-between;
   padding: 14px;
-  border-radius: 12px;
-  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  border-radius: 10px;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.theme-card:hover,
-.plugin-card:hover {
+.clickable-card {
+  cursor: pointer;
+}
+
+.clickable-card:hover {
   transform: translateY(-2px);
   border-color: rgba(0, 229, 255, 0.4);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
 .card-header-row {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: flex-start;
 }
 
-.card-icon-wrap {
+.card-icon-wrap,
+.card-icon-box {
   width: 44px;
   height: 44px;
   border-radius: 8px;
-  background: var(--section-bg);
-  border: 1px solid var(--card-border);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
+  font-size: 1.4rem;
 }
 
 .card-img-icon {
@@ -734,11 +1238,6 @@ const nativePlugins = ref<PluginItem[]>([
   z-index: 0;
 }
 
-.card-icon-box {
-  font-size: 2rem;
-  line-height: 1;
-}
-
 .card-title-col {
   display: flex;
   flex-direction: column;
@@ -750,7 +1249,7 @@ const nativePlugins = ref<PluginItem[]>([
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 8px;
 }
 
 .card-name {
@@ -763,22 +1262,22 @@ const nativePlugins = ref<PluginItem[]>([
 }
 
 .card-version {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
   background: rgba(255, 255, 255, 0.06);
-  padding: 1px 4px;
+  padding: 1px 6px;
   border-radius: 4px;
   flex-shrink: 0;
 }
 
 .card-namespace {
-  font-size: 0.74rem;
+  font-size: 0.76rem;
   color: var(--text-muted);
   margin-top: 2px;
 }
 
 .card-desc {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
   margin: 10px 0;
   line-height: 1.4;
@@ -786,23 +1285,7 @@ const nativePlugins = ref<PluginItem[]>([
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 2.2em;
-}
-
-.plugin-tags-row {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-
-.plugin-tag {
-  font-size: 0.7rem;
-  background: rgba(0, 229, 255, 0.08);
-  border: 1px solid rgba(0, 229, 255, 0.2);
-  color: var(--accent-cyan);
-  padding: 1px 6px;
-  border-radius: 4px;
+  min-height: 2.25em;
 }
 
 .card-footer-row {
@@ -811,14 +1294,14 @@ const nativePlugins = ref<PluginItem[]>([
   justify-content: space-between;
   margin-top: 6px;
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .card-stats {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.74rem;
+  gap: 10px;
+  font-size: 0.76rem;
   color: var(--text-muted);
 }
 
@@ -835,16 +1318,24 @@ const nativePlugins = ref<PluginItem[]>([
 }
 
 .badge-installed {
-  font-size: 0.72rem;
-  padding: 3px 8px;
+  font-size: 0.74rem;
+  padding: 2px 7px;
   background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: var(--success, #10b981);
+  border-radius: 4px;
+}
+
+.badge-soon {
+  font-size: 0.74rem;
+  padding: 2px 7px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
   border-radius: 4px;
 }
 
 .btn-apply-theme {
-  padding: 4px 12px;
+  padding: 4px 10px;
   background: rgba(0, 229, 255, 0.12);
   border: 1px solid rgba(0, 229, 255, 0.3);
   color: var(--accent-cyan);
@@ -875,7 +1366,7 @@ const nativePlugins = ref<PluginItem[]>([
 }
 
 .btn-install-theme:hover:not(:disabled) {
-  background: rgba(0, 229, 255, 0.22);
+  background: rgba(0, 229, 255, 0.25);
   border-color: var(--accent-cyan);
 }
 
@@ -884,31 +1375,621 @@ const nativePlugins = ref<PluginItem[]>([
   cursor: not-allowed;
 }
 
+/* Plugin Isolation Banner */
 .plugin-isolation-banner {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  background: rgba(0, 229, 255, 0.05);
-  border: 1px solid rgba(0, 229, 255, 0.18);
+  gap: 14px;
+  align-items: center;
+  padding: 12px 18px;
+  background: rgba(0, 229, 255, 0.06);
+  border-color: rgba(0, 229, 255, 0.2);
 }
 
 .banner-icon {
-  font-size: 1.4rem;
+  font-size: 1.6rem;
 }
 
 .banner-text strong {
   display: block;
-  font-size: 0.88rem;
-  color: var(--text-main);
+  font-size: 0.9rem;
+  color: var(--accent-cyan);
   margin-bottom: 2px;
 }
 
 .banner-text p {
+  margin: 0;
   font-size: 0.8rem;
   color: var(--text-muted);
-  margin: 0;
   line-height: 1.4;
+}
+
+.plugin-tags-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 4px 0 10px;
+}
+
+.plugin-tag {
+  font-size: 0.72rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+}
+
+/* ========================================================================= */
+/* DETAIL VIEW STYLING */
+/* ========================================================================= */
+.market-detail-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.detail-nav-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  font-size: 0.86rem;
+}
+
+.btn-back-market {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-back-market:hover {
+  background: rgba(0, 229, 255, 0.12);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.breadcrumb-trail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+}
+
+.crumb-link {
+  cursor: pointer;
+}
+
+.crumb-link:hover {
+  color: var(--accent-cyan);
+  text-decoration: underline;
+}
+
+.crumb-sep {
+  opacity: 0.4;
+}
+
+.crumb-curr {
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+/* Detail Hero Header */
+.detail-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px;
+  flex-wrap: wrap;
+}
+
+.hero-left {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 320px;
+}
+
+.hero-icon-box {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.hero-img-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.hero-fallback-icon {
+  font-size: 2.2rem;
+}
+
+.hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hero-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-main);
+}
+
+.hero-version {
+  font-size: 0.78rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--text-muted);
+}
+
+.hero-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.meta-dot {
+  opacity: 0.35;
+}
+
+.hero-desc {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+  line-height: 1.45;
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-install-primary {
+  padding: 8px 24px;
+  background: var(--accent-cyan);
+  border: 1px solid var(--accent-cyan);
+  color: #0b1120;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-install-primary:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-install-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-uninstall-danger {
+  padding: 7px 16px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+  border-radius: 6px;
+  font-size: 0.84rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-uninstall-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.22);
+}
+
+.btn-external-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  border-radius: 6px;
+  font-size: 0.84rem;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-external-link:hover {
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Detail Body Grid Layout */
+.detail-body-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+@media (max-width: 900px) {
+  .detail-body-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detail-body-main {
+  padding: 16px;
+  min-height: 400px;
+}
+
+/* Subtabs */
+.detail-subtabs {
+  display: flex;
+  gap: 10px;
+  border-bottom: 1px solid var(--card-border);
+  padding-bottom: 10px;
+  margin-bottom: 16px;
+}
+
+.subtab-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.subtab-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.subtab-btn.active {
+  color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.1);
+  font-weight: 600;
+}
+
+.tab-badge {
+  font-size: 0.72rem;
+  padding: 1px 6px;
+  background: rgba(0, 229, 255, 0.2);
+  border-radius: 10px;
+  color: var(--accent-cyan);
+}
+
+/* Tab Content */
+.tab-content {
+  line-height: 1.6;
+}
+
+.readme-empty-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+/* Contributed Themes List */
+.contribute-group {
+  margin-bottom: 20px;
+}
+
+.group-title {
+  font-size: 0.95rem;
+  color: var(--text-main);
+  margin: 0 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.contribute-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.contribute-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+}
+
+.sub-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sub-label {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.sub-mode-tag {
+  font-size: 0.72rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.mode-dark {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+}
+
+.mode-light {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fcd34d;
+}
+
+.mode-icon {
+  background: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+}
+
+.btn-apply-sub {
+  padding: 4px 12px;
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: var(--accent-cyan);
+  border-radius: 4px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-apply-sub:hover {
+  background: rgba(0, 229, 255, 0.24);
+  border-color: var(--accent-cyan);
+}
+
+/* Sidebar */
+.detail-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 16px;
+}
+
+.sidebar-heading {
+  font-size: 0.84rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin: 0 0 10px;
+}
+
+.sidebar-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-main);
+  text-decoration: none;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: background 0.2s, color 0.2s;
+}
+
+.sidebar-link:hover {
+  background: rgba(0, 229, 255, 0.1);
+  color: var(--accent-cyan);
+}
+
+.link-icon {
+  font-size: 0.95rem;
+}
+
+.prop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.prop-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.prop-key {
+  color: var(--text-muted);
+}
+
+.prop-val {
+  color: var(--text-main);
+}
+
+.sidebar-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tag-chip {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  color: var(--text-muted);
+}
+
+/* Rendered Markdown Styles */
+:deep(.markdown-body) {
+  color: var(--text-main);
+  font-size: 0.88rem;
+  line-height: 1.65;
+}
+
+:deep(.markdown-body h1),
+:deep(.markdown-body h2),
+:deep(.markdown-body h3),
+:deep(.markdown-body h4) {
+  color: var(--text-main);
+  margin-top: 1.2em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+
+:deep(.markdown-body h1) {
+  font-size: 1.35rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 6px;
+}
+
+:deep(.markdown-body h2) {
+  font-size: 1.15rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 4px;
+}
+
+:deep(.markdown-body h3) {
+  font-size: 1.02rem;
+}
+
+:deep(.markdown-body p) {
+  margin: 0.6em 0;
+}
+
+:deep(.markdown-body a.md-link) {
+  color: var(--accent-cyan);
+  text-decoration: underline;
+}
+
+:deep(.markdown-body img.md-img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 8px 0;
+  border: 1px solid var(--card-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+:deep(.markdown-body code.md-inline-code) {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.82rem;
+  color: var(--accent-cyan);
+}
+
+:deep(.markdown-body pre.md-code-block) {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-family: monospace;
+  font-size: 0.82rem;
+  margin: 10px 0;
+}
+
+:deep(.markdown-body blockquote.md-blockquote) {
+  margin: 10px 0;
+  padding: 8px 14px;
+  border-left: 3px solid var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.04);
+  color: var(--text-muted);
+}
+
+:deep(.markdown-body ul.md-ul),
+:deep(.markdown-body ol.md-ol) {
+  padding-left: 20px;
+  margin: 6px 0;
+}
+
+:deep(.markdown-body li.md-li) {
+  margin: 3px 0;
+}
+
+:deep(.markdown-body hr.md-hr) {
+  border: none;
+  border-top: 1px solid var(--card-border);
+  margin: 16px 0;
+}
+
+:deep(.markdown-body .md-table-wrap) {
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+:deep(.markdown-body table.md-table) {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+:deep(.markdown-body table.md-table th),
+:deep(.markdown-body table.md-table td) {
+  border: 1px solid var(--card-border);
+  padding: 6px 12px;
+  text-align: left;
+}
+
+:deep(.markdown-body table.md-table th) {
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 600;
 }
 </style>

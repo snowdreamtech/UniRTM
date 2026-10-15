@@ -37,7 +37,7 @@ const routes: Array<RouteRecordRaw> = [
     component: TasksView,
   },
   {
-    path: "/marketplace",
+    path: "/marketplace/:namespace?/:name?",
     name: "marketplace",
     component: MarketplaceView,
   },

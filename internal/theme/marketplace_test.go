@@ -110,3 +110,40 @@ func TestMarketplace_SearchMock(t *testing.T) {
 		t.Errorf("mock search failed to decode expected data")
 	}
 }
+
+func TestMarketplace_DetailMock(t *testing.T) {
+	manifestServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/README.md":
+			_, _ = w.Write([]byte("# Sample Theme README\nPreview content."))
+		case "/package.json":
+			_, _ = w.Write([]byte(`{
+				"contributes": {
+					"themes": [
+						{ "label": "Sample Dark", "uiTheme": "vs-dark" },
+						{ "label": "Sample Light", "uiTheme": "vs" }
+					]
+				}
+			}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer manifestServer.Close()
+
+	detail := MarketplaceExtensionDetail{
+		Namespace:     "test-ns",
+		Name:          "sample-ext",
+		DisplayName:   "Sample Extension",
+		Version:       "1.2.0",
+		Files: MarketplaceExtensionFiles{
+			Readme:   manifestServer.URL + "/README.md",
+			Manifest: manifestServer.URL + "/package.json",
+		},
+	}
+
+	if detail.Name != "sample-ext" || detail.Version != "1.2.0" {
+		t.Errorf("detail fields mismatch")
+	}
+}
+

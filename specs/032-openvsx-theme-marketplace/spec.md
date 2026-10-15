@@ -43,9 +43,25 @@ Connect UniRTM to [Open VSX Registry](https://open-vsx.org) to provide an integr
   2. `🧩 Plugins & Extensions (UniRTM Ecosystem)`: native tool providers, AI agents, and workflows.
 - Settings page `/settings` is slimmed down: focuses purely on preferences and configurations, with a quick link to `Marketplace` for discovering new themes.
 
+### US5: Theme and Icon Extension Details View (Overview, README, Contributed Sub-themes, Changelog)
+- **As a** developer browsing the marketplace,
+- **I want to** click on any theme or icon card to view its comprehensive details view,
+- **So that** I can inspect preview screenshots, read the full documentation (README), review which specific light/dark themes are included in the package, check version history, author, license, and repository links before deciding to install.
+
+**Acceptance Criteria**:
+- Clicking on an extension card navigates to the Extension Details view (accessible via `/marketplace/:namespace/:name` or in-place detail view with history support).
+- Header presents extension icon, display name, extension ID (`{namespace}.{name}`), publisher, version, license, download count, rating, and action buttons (`安装` / `已安装` / `应用` / `卸载`).
+- Tabbed layout:
+  1. `📖 详情 (Overview / README)`: Renders full Markdown documentation from Open VSX, including embedded screenshots and visual theme previews.
+  2. `🎨 包含主题与图标 (Contributions)`: Details each contributed sub-theme (`contributes.themes` / `contributes.iconThemes`), displaying its label, UI theme variant (`vs` light, `vs-dark` dark, `hc-black` high contrast), and direct "应用 (Apply)" buttons when the package is installed.
+  3. `📝 更新日志 (Changelog)`: Displays changelog markdown if available.
+- Sidebar provides metadata: Open VSX web link, source repository, issue tracker, license, release date, tags, and direct VSIX download link.
+- Breadcrumb navigation allows easy 1-click return to the marketplace search list (`← 返回市场列表`).
+
 ---
 
 ## Non-Functional Requirements
 - **100% Static Extraction**: No Node.js runtime, no Extension Host process.
 - **Proxy Aware**: All downloads flow through UniRTM's configured network proxy/mirrors if enabled.
 - **Offline Resilient**: Builtin themes (Dark, Light, Seti UI) remain 100% functional without internet connectivity.
+

@@ -7,9 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -19,6 +21,51 @@ type MarketplaceExtensionFiles struct {
 	Download  string `json:"download"`
 	Icon      string `json:"icon,omitempty"`
 	Signature string `json:"signature,omitempty"`
+	Readme    string `json:"readme,omitempty"`
+	Changelog string `json:"changelog,omitempty"`
+	Manifest  string `json:"manifest,omitempty"`
+}
+
+type ContributedSubTheme struct {
+	ID      string `json:"id,omitempty"`
+	Label   string `json:"label"`
+	UITheme string `json:"uiTheme,omitempty"` // "vs", "vs-dark", "hc-black", "hc-light"
+	Path    string `json:"path,omitempty"`
+}
+
+type ContributedSubIconTheme struct {
+	ID    string `json:"id,omitempty"`
+	Label string `json:"label"`
+	Path  string `json:"path,omitempty"`
+}
+
+type ExtensionContributions struct {
+	Themes     []ContributedSubTheme     `json:"themes,omitempty"`
+	IconThemes []ContributedSubIconTheme `json:"iconThemes,omitempty"`
+}
+
+type MarketplaceExtensionDetail struct {
+	Namespace     string                    `json:"namespace"`
+	Name          string                    `json:"name"`
+	DisplayName   string                    `json:"displayName"`
+	Version       string                    `json:"version"`
+	Description   string                    `json:"description"`
+	DownloadCount int64                     `json:"downloadCount"`
+	AverageRating float64                   `json:"averageRating"`
+	ReviewCount   int                       `json:"reviewCount"`
+	Repository    string                    `json:"repository,omitempty"`
+	Homepage      string                    `json:"homepage,omitempty"`
+	Bugs          string                    `json:"bugs,omitempty"`
+	License       string                    `json:"license,omitempty"`
+	Timestamp     string                    `json:"timestamp,omitempty"`
+	Tags          []string                  `json:"tags,omitempty"`
+	Categories    []string                  `json:"categories,omitempty"`
+	Files         MarketplaceExtensionFiles `json:"files"`
+	URL           string                    `json:"url"`
+	IsInstalled   bool                      `json:"is_installed"`
+	PackageID     string                    `json:"package_id"`
+	ReadmeContent string                    `json:"readme,omitempty"`
+	Contributes   ExtensionContributions    `json:"contributes"`
 }
 
 type MarketplaceExtension struct {
@@ -145,3 +192,131 @@ func (m *Manager) InstallFromURL(downloadURL string) ([]ThemeItem, error) {
 
 	return m.InstallVSIX(resp.Body)
 }
+
+// GetOpenVSXExtensionDetail fetches full metadata, README markdown, and contributed themes for a specific extension.
+func GetOpenVSXExtensionDetail(namespace, name string, installedIDs map[string]bool) (*MarketplaceExtensionDetail, error) {
+	namespace = strings.TrimSpace(namespace)
+	name = strings.TrimSpace(name)
+	if namespace == "" || name == "" {
+		return nil, errors.New("namespace and name are required")
+	}
+
+	apiURL := fmt.Sprintf("https://open-vsx.org/api/%s/%s", url.PathEscape(namespace), url.PathEscape(name))
+	client := &http.Client{
+		Timeout: 15 * time.Second,
+	}
+
+	req, err := http.NewRequest(http.MethodGet, apiURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "UniRTM-ThemeMarketplace/1.0")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch extension details: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Open VSX API returned status: %d", resp.StatusCode)
+	}
+
+	var detail MarketplaceExtensionDetail
+	if err := json.NewDecoder(resp.Body).Decode(&detail); err != nil {
+		return nil, fmt.Errorf("failed to decode extension details: %w", err)
+	}
+
+	pkgID := detail.Name
+	if pkgID == "" {
+		pkgID = detail.DisplayName
+	}
+	pkgID = strings.ReplaceAll(pkgID, "/", "-")
+	detail.PackageID = pkgID
+
+	if installedIDs != nil {
+		if installedIDs[detail.Name] || installedIDs[pkgID] || installedIDs[detail.Namespace+"."+detail.Name] {
+			detail.IsInstalled = true
+		}
+	}
+
+	// Concurrently fetch README and manifest if available
+	var wg sync.WaitGroup
+	if detail.Files.Readme != "" {
+		wg.Add(1)
+		go func(readmeURL string) {
+			defer wg.Done()
+			rReq, rErr := http.NewRequest(http.MethodGet, readmeURL, nil)
+			if rErr == nil {
+				rReq.Header.Set("User-Agent", "UniRTM-ThemeMarketplace/1.0")
+				rResp, doErr := client.Do(rReq)
+				if doErr == nil && rResp.StatusCode == http.StatusOK {
+					defer rResp.Body.Close()
+					limited := io.LimitReader(rResp.Body, 512*1024)
+					b, _ := io.ReadAll(limited)
+					detail.ReadmeContent = string(b)
+				}
+			}
+		}(detail.Files.Readme)
+	}
+
+	if detail.Files.Manifest != "" {
+		wg.Add(1)
+		go func(manifestURL string) {
+			defer wg.Done()
+			mReq, mErr := http.NewRequest(http.MethodGet, manifestURL, nil)
+			if mErr == nil {
+				mReq.Header.Set("User-Agent", "UniRTM-ThemeMarketplace/1.0")
+				mResp, doErr := client.Do(mReq)
+				if doErr == nil && mResp.StatusCode == http.StatusOK {
+					defer mResp.Body.Close()
+					var pkg struct {
+						Contributes struct {
+							Themes []struct {
+								ID      string `json:"id"`
+								Label   string `json:"label"`
+								UITheme string `json:"uiTheme"`
+								Path    string `json:"path"`
+							} `json:"themes"`
+							IconThemes []struct {
+								ID    string `json:"id"`
+								Label string `json:"label"`
+								Path  string `json:"path"`
+							} `json:"iconThemes"`
+						} `json:"contributes"`
+					}
+					limited := io.LimitReader(mResp.Body, 512*1024)
+					if err := json.NewDecoder(limited).Decode(&pkg); err == nil {
+						for _, t := range pkg.Contributes.Themes {
+							lbl := t.Label
+							if lbl == "" {
+								lbl = t.ID
+							}
+							detail.Contributes.Themes = append(detail.Contributes.Themes, ContributedSubTheme{
+								ID:      t.ID,
+								Label:   lbl,
+								UITheme: t.UITheme,
+								Path:    t.Path,
+							})
+						}
+						for _, it := range pkg.Contributes.IconThemes {
+							lbl := it.Label
+							if lbl == "" {
+								lbl = it.ID
+							}
+							detail.Contributes.IconThemes = append(detail.Contributes.IconThemes, ContributedSubIconTheme{
+								ID:    it.ID,
+								Label: lbl,
+								Path:  it.Path,
+							})
+						}
+					}
+				}
+			}
+		}(detail.Files.Manifest)
+	}
+
+	wg.Wait()
+	return &detail, nil
+}
+

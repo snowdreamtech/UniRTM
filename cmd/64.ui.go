@@ -563,6 +563,9 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/themes/marketplace/search", func(w http.ResponseWriter, r *http.Request) {
 		handleMarketplaceSearch(w, r, themeMgr)
 	})
+	mux.HandleFunc("/api/themes/marketplace/detail", func(w http.ResponseWriter, r *http.Request) {
+		handleMarketplaceDetail(w, r, themeMgr)
+	})
 	mux.HandleFunc("/api/themes/marketplace/install", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -1398,6 +1401,41 @@ func handleMarketplaceInstall(w http.ResponseWriter, r *http.Request, themeMgr *
 		"installed": items,
 	})
 }
+
+func handleMarketplaceDetail(w http.ResponseWriter, r *http.Request, themeMgr *theme.Manager) {
+	w.Header().Set("Content-Type", "application/json")
+	namespace := r.URL.Query().Get("namespace")
+	name := r.URL.Query().Get("name")
+	if namespace == "" || name == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "namespace and name are required"})
+		return
+	}
+
+	installedIDs := make(map[string]bool)
+	if themes, err := themeMgr.ListThemes(); err == nil && themes != nil {
+		for _, c := range themes.Colors {
+			if c.PackageID != "" {
+				installedIDs[c.PackageID] = true
+			}
+		}
+		for _, i := range themes.Icons {
+			if i.PackageID != "" {
+				installedIDs[i.PackageID] = true
+			}
+		}
+	}
+
+	detail, err := theme.GetOpenVSXExtensionDetail(namespace, name, installedIDs)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(detail)
+}
+
 
 
 

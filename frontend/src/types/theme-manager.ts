@@ -44,3 +44,52 @@ export interface MarketplaceSearchResponse {
   totalSize: number;
   extensions: MarketplaceExtension[];
 }
+
+export interface ContributedSubTheme {
+  id?: string;
+  label: string;
+  uiTheme?: string;
+  path?: string;
+}
+
+export interface ContributedSubIconTheme {
+  id?: string;
+  label: string;
+  path?: string;
+}
+
+export interface ExtensionContributions {
+  themes?: ContributedSubTheme[];
+  iconThemes?: ContributedSubIconTheme[];
+}
+
+export interface MarketplaceExtensionDetail {
+  namespace: string;
+  name: string;
+  displayName: string;
+  version: string;
+  description: string;
+  downloadCount: number;
+  averageRating: number;
+  reviewCount: number;
+  repository?: string;
+  homepage?: string;
+  bugs?: string;
+  license?: string;
+  timestamp?: string;
+  tags?: string[];
+  categories?: string[];
+  files: {
+    download: string;
+    icon?: string;
+    readme?: string;
+    changelog?: string;
+    manifest?: string;
+  };
+  url?: string;
+  is_installed?: boolean;
+  package_id?: string;
+  readme?: string;
+  contributes?: ExtensionContributions;
+}
+

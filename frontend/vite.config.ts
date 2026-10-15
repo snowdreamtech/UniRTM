@@ -970,6 +970,124 @@ export default defineConfig({
             return;
           }
 
+          if (req.url?.startsWith("/api/themes/marketplace/detail")) {
+            const urlObj = new URL(req.url, "http://localhost");
+            const namespace = urlObj.searchParams.get("namespace");
+            const name = urlObj.searchParams.get("name");
+            if (!namespace || !name) {
+              res.statusCode = 400;
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify({ error: "namespace and name are required" }));
+              return;
+            }
+
+            const targetURL = `https://open-vsx.org/api/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`;
+            fetch(targetURL, {
+              headers: { "User-Agent": "UniRTM-Workbench-Dev/0.1.0" }
+            })
+              .then(async (resp) => {
+                if (!resp.ok) {
+                  res.statusCode = resp.status;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: `Open VSX detail error: HTTP ${resp.status}` }));
+                  return;
+                }
+                const data = await resp.json();
+
+                let readme = "";
+                if (data.files?.readme) {
+                  try {
+                    const rRes = await fetch(data.files.readme, {
+                      headers: { "User-Agent": "UniRTM-Workbench-Dev/0.1.0" }
+                    });
+                    if (rRes.ok) readme = await rRes.text();
+                  } catch {}
+                }
+
+                const contributes: { themes: any[]; iconThemes: any[] } = { themes: [], iconThemes: [] };
+                if (data.files?.manifest) {
+                  try {
+                    const mRes = await fetch(data.files.manifest, {
+                      headers: { "User-Agent": "UniRTM-Workbench-Dev/0.1.0" }
+                    });
+                    if (mRes.ok) {
+                      const pkg = await mRes.json();
+                      if (pkg.contributes?.themes) {
+                        contributes.themes = pkg.contributes.themes.map((t: any) => ({
+                          id: t.id || "",
+                          label: t.label || t.id || "Unnamed Theme",
+                          uiTheme: t.uiTheme || "vs-dark",
+                          path: t.path || "",
+                        }));
+                      }
+                      if (pkg.contributes?.iconThemes) {
+                        contributes.iconThemes = pkg.contributes.iconThemes.map((it: any) => ({
+                          id: it.id || "",
+                          label: it.label || it.id || "Unnamed Icon Theme",
+                          path: it.path || "",
+                        }));
+                      }
+                    }
+                  } catch {}
+                }
+
+                const themesDir = path.join(os.homedir(), ".config", "unirtm", "themes");
+                const installedPkgIds = new Set<string>();
+                if (fs.existsSync(themesDir)) {
+                  try {
+                    const entries = fs.readdirSync(themesDir, { withFileTypes: true });
+                    for (const entry of entries) {
+                      if (entry.isDirectory()) {
+                        installedPkgIds.add(entry.name.toLowerCase());
+                        const pkgJsonPath = path.join(themesDir, entry.name, "package.json");
+                        if (fs.existsSync(pkgJsonPath)) {
+                          try {
+                            const p = JSON.parse(fs.readFileSync(pkgJsonPath, "utf-8"));
+                            if (p.name) installedPkgIds.add(p.name.toLowerCase());
+                          } catch {}
+                        }
+                      }
+                    }
+                  } catch {}
+                }
+
+                const pkgId = data.name || "";
+                const nsPkgId = `${data.namespace}.${data.name}`.toLowerCase();
+                const isInstalled = installedPkgIds.has(pkgId.toLowerCase()) || installedPkgIds.has(nsPkgId);
+
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({
+                  namespace: data.namespace,
+                  name: data.name,
+                  displayName: data.displayName || data.name,
+                  version: data.version,
+                  description: data.description || "",
+                  downloadCount: data.downloadCount || 0,
+                  averageRating: data.averageRating || 0,
+                  reviewCount: data.reviewCount || 0,
+                  repository: data.repository || "",
+                  homepage: data.homepage || "",
+                  bugs: data.bugs || "",
+                  license: data.license || "",
+                  timestamp: data.timestamp || "",
+                  tags: data.tags || [],
+                  categories: data.categories || [],
+                  files: data.files || {},
+                  url: data.url || "",
+                  is_installed: isInstalled,
+                  package_id: data.name,
+                  readme,
+                  contributes,
+                }));
+              })
+              .catch((err) => {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              });
+            return;
+          }
+
           if (req.url === "/api/themes/marketplace/install" && req.method === "POST") {
             let bodyStr = "";
             req.on("data", (c: any) => { bodyStr += c; });
