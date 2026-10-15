@@ -36,7 +36,7 @@
           :class="{ active: activeSubItem === item.id }"
           @click="handleSubItemClick(item.id)"
         >
-          <span class="item-icon"><TechIcon :id="item.icon" :size="16" /></span>
+          <span class="item-icon"><TechIcon :id="item.icon" :size="20" /></span>
           <span class="item-label">{{ item.label }}</span>
           <span v-if="item.meta" class="item-meta">{{ item.meta }}</span>
         </button>
@@ -52,7 +52,7 @@
           :class="{ active: activeSubItem === item.id }"
           @click="handleSubItemClick(item.id)"
         >
-          <span class="item-icon"><TechIcon :id="item.id" :size="16" /></span>
+          <span class="item-icon"><TechIcon :id="item.id" :size="20" /></span>
           <div class="item-dual">
             <span class="item-label">{{ item.label }}</span>
             <span class="item-sub">{{ item.meta }}</span>
@@ -70,7 +70,7 @@
           :class="{ active: activeSubItem === tool.name }"
           @click="handleSubItemClick(tool.name)"
         >
-          <span class="item-icon"><TechIcon :id="tool.name" :size="16" /></span>
+          <span class="item-icon"><TechIcon :id="tool.name" :size="20" /></span>
           <div class="item-dual">
             <span class="item-label">{{ tool.name }}</span>
             <span class="item-sub">{{ tool.version }}</span>
@@ -89,7 +89,7 @@
           :class="{ active: activeSubItem === task.name }"
           @click="handleSubItemClick(task.name)"
         >
-          <span class="item-icon"><TechIcon id="workbench:tasks" :size="16" /></span>
+          <span class="item-icon"><TechIcon id="workbench:tasks" :size="20" /></span>
           <div class="item-dual">
             <span class="item-label">{{ task.name }}</span>
             <span class="item-sub">{{ task.cmd }}</span>
@@ -108,7 +108,7 @@
           :class="{ active: activeSubItem === ext.id }"
           @click="handleSubItemClick(ext.id)"
         >
-          <span class="item-icon"><TechIcon :id="ext.icon" :size="16" /></span>
+          <span class="item-icon"><TechIcon :id="ext.icon" :size="20" /></span>
           <div class="item-dual">
             <span class="item-label">{{ ext.name }}</span>
             <span class="item-sub">{{ ext.desc }}</span>
@@ -127,7 +127,7 @@
           :class="{ active: activeSubItem === check.id }"
           @click="handleSubItemClick(check.id)"
         >
-          <span class="item-icon"><TechIcon :id="check.icon" :size="16" /></span>
+          <span class="item-icon"><TechIcon :id="check.icon" :size="20" /></span>
           <span class="item-label">{{ check.label }}</span>
           <span class="status-indicator-dot success">●</span>
         </button>
@@ -142,7 +142,7 @@
           :class="{ active: activeSubItem === item.id }"
           @click="handleSubItemClick(item.id)"
         >
-          <span class="item-icon"><TechIcon :id="item.icon" :size="16" /></span>
+          <span class="item-icon"><TechIcon :id="item.icon" :size="20" /></span>
           <span class="item-label">{{ item.label }}</span>
         </button>
       </template>
@@ -151,7 +151,7 @@
       <template v-if="currentTab === 'about'">
         <div class="nav-group-title">ABOUT UNIRTM</div>
         <div class="sidebar-item active">
-          <span class="item-icon"><TechIcon id="workbench:about" :size="16" /></span>
+          <span class="item-icon"><TechIcon id="workbench:about" :size="20" /></span>
           <span class="item-label">{{ t("about.title") || "关于" }}</span>
         </div>
       </template>

@@ -13,7 +13,7 @@
       >
         <span class="activity-indicator" v-if="currentTab === item.id"></span>
         <span class="activity-icon">
-          <TechIcon :id="item.icon" :size="20" />
+          <TechIcon :id="item.icon" :size="24" />
         </span>
         <span v-if="item.badge" class="activity-badge">{{ item.badge }}</span>
       </button>
@@ -30,7 +30,7 @@
       >
         <span class="activity-indicator" v-if="currentTab === 'settings'"></span>
         <span class="activity-icon">
-          <TechIcon id="workbench:settings" :size="18" />
+          <TechIcon id="workbench:settings" :size="22" />
         </span>
       </button>
 
@@ -43,7 +43,7 @@
       >
         <span class="activity-indicator" v-if="currentTab === 'about'"></span>
         <span class="activity-icon">
-          <TechIcon id="workbench:about" :size="18" />
+          <TechIcon id="workbench:about" :size="22" />
         </span>
       </button>
 
@@ -57,7 +57,7 @@
       >
         <span class="activity-indicator" v-if="isDrawerOpen"></span>
         <span class="activity-icon">
-          <TechIcon id="workbench:terminal" :size="18" />
+          <TechIcon id="workbench:terminal" :size="22" />
         </span>
       </button>
     </div>
