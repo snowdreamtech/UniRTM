@@ -728,6 +728,7 @@ const {
   iconThemes,
   activeColorTheme,
   activeIconTheme,
+  fetchThemes,
   setActiveTheme,
   deleteTheme,
 } = useThemeManager();
@@ -792,13 +793,15 @@ watch(
   { immediate: true }
 );
 
-// Initialize channel from query parameter if present
-onMounted(() => {
+// Initialize channel and load installed themes on mount
+onMounted(async () => {
   if (route.query.tab === "plugins") {
     currentChannel.value = "plugins";
   } else {
     currentChannel.value = "themes";
   }
+  // Load installed themes and active theme state
+  await fetchThemes();
   // Trigger initial theme marketplace search if on list view
   if (!route.params.namespace || !route.params.name) {
     mpSearchThemes("");
@@ -858,28 +861,38 @@ function isExtensionActive(item: { namespace?: string; name: string; displayName
   if (!item.is_installed) return false;
 
   const pkgId = (item.package_id || item.name || "").toLowerCase();
-  const nsPkgId = `${item.namespace || ""}.${item.name || ""}`.toLowerCase();
+  const name = (item.name || "").toLowerCase();
+  const ns = (item.namespace || "").toLowerCase();
+  const fullId = `${ns}.${name}`;
   const displayName = (item.displayName || "").toLowerCase();
 
   // 1. Check against active color theme
   if (activeColorTheme.value) {
     const actColor = activeColorTheme.value.toLowerCase();
-    if (actColor === pkgId || actColor === nsPkgId || actColor === displayName) return true;
+    if (actColor === pkgId || actColor === name || actColor === fullId || actColor === displayName) return true;
     const activeColorItem = colorThemes.value.find((c) => c.id.toLowerCase() === actColor);
     if (activeColorItem) {
       const cPkg = (activeColorItem.package_id || "").toLowerCase();
-      if (cPkg && (cPkg === pkgId || cPkg === nsPkgId)) return true;
+      const cId = activeColorItem.id.toLowerCase();
+      const cName = activeColorItem.name.toLowerCase();
+      if (cPkg && (cPkg === pkgId || cPkg === name || cPkg === fullId)) return true;
+      if (cId === pkgId || cId === name || cId === fullId) return true;
+      if (cName === displayName) return true;
     }
   }
 
   // 2. Check against active icon theme
   if (activeIconTheme.value) {
     const actIcon = activeIconTheme.value.toLowerCase();
-    if (actIcon === pkgId || actIcon === nsPkgId || actIcon === displayName) return true;
+    if (actIcon === pkgId || actIcon === name || actIcon === fullId || actIcon === displayName) return true;
     const activeIconItem = iconThemes.value.find((i) => i.id.toLowerCase() === actIcon);
     if (activeIconItem) {
       const iPkg = (activeIconItem.package_id || "").toLowerCase();
-      if (iPkg && (iPkg === pkgId || iPkg === nsPkgId)) return true;
+      const iId = activeIconItem.id.toLowerCase();
+      const iName = activeIconItem.name.toLowerCase();
+      if (iPkg && (iPkg === pkgId || iPkg === name || iPkg === fullId)) return true;
+      if (iId === pkgId || iId === name || iId === fullId) return true;
+      if (iName === displayName) return true;
     }
   }
 
@@ -1013,16 +1026,61 @@ async function onApplySubIconTheme(label: string) {
 }
 
 async function onApplyTheme(item: MarketplaceExtension) {
-  const pkgID = item.package_id || item.name;
-  const colorMatch = colorThemes.value.find((c) => c.package_id === pkgID);
-  if (colorMatch) {
-    await setActiveTheme(colorMatch.id, undefined);
+  try {
+    // If local themes list isn't populated yet, fetch first
+    if (colorThemes.value.length <= 4 && iconThemes.value.length <= 2) {
+      await fetchThemes();
+    }
+
+    const pkgID = (item.package_id || item.name || "").toLowerCase();
+    const name = item.name.toLowerCase();
+    const fullId = `${item.namespace || ""}.${item.name}`.toLowerCase();
+    const displayName = (item.displayName || "").toLowerCase();
+
+    // Find matching color theme
+    const colorMatch = colorThemes.value.find((c) => {
+      const cPkg = (c.package_id || "").toLowerCase();
+      const cId = c.id.toLowerCase();
+      const cName = c.name.toLowerCase();
+      return cPkg === pkgID || cPkg === name || cPkg === fullId || cId === pkgID || cId === name || cName === displayName;
+    });
+
+    // Find matching icon theme
+    const iconMatch = iconThemes.value.find((i) => {
+      const iPkg = (i.package_id || "").toLowerCase();
+      const iId = i.id.toLowerCase();
+      const iName = i.name.toLowerCase();
+      return iPkg === pkgID || iPkg === name || iPkg === fullId || iId === pkgID || iId === name || iName === displayName;
+    });
+
+    let applied = false;
+    if (colorMatch) {
+      await setActiveTheme(colorMatch.id, undefined);
+      applied = true;
+    }
+    if (iconMatch) {
+      await setActiveTheme(undefined, iconMatch.id);
+      applied = true;
+    }
+
+    if (!applied) {
+      // Fallback: apply directly by extension name according to type
+      if (getExtensionType(item) === "icon") {
+        await setActiveTheme(undefined, item.name);
+      } else {
+        await setActiveTheme(item.name, undefined);
+      }
+    }
+
+    // Refresh themes so all UI states sync
+    await fetchThemes();
+
+    feedbackMsg.value = `✓ 已启用主题: ${item.displayName || item.name}`;
+    feedbackIsError.value = false;
+  } catch (err: any) {
+    feedbackMsg.value = `✕ 激活主题失败: ${err.message || err}`;
+    feedbackIsError.value = true;
   }
-  const iconMatch = iconThemes.value.find((i) => i.package_id === pkgID);
-  if (iconMatch) {
-    await setActiveTheme(undefined, iconMatch.id);
-  }
-  feedbackMsg.value = `✓ 已激活主题 ${item.displayName || item.name}`;
 }
 
 function formatDownloads(count: number): string {
