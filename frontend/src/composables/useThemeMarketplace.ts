@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-import { ref, reactive } from "vue";
+import { ref, reactive, computed } from "vue";
 import type {
   MarketplaceExtension,
   MarketplaceSearchResponse,
@@ -13,24 +13,37 @@ import { useThemeManager } from "./useThemeManager";
 const searchQuery = ref<string>("");
 const searchResults = ref<MarketplaceExtension[]>([]);
 const totalSize = ref<number>(0);
+const currentPage = ref<number>(1);
+const pageSize = ref<number>(24);
 const isSearching = ref<boolean>(false);
 const installingMap = reactive<Record<string, boolean>>({});
 const marketplaceError = ref<string | null>(null);
 const activeDetail = ref<MarketplaceExtensionDetail | null>(null);
 const isLoadingDetail = ref<boolean>(false);
 
+const totalPages = computed(() => {
+  if (totalSize.value <= 0 || pageSize.value <= 0) return 1;
+  return Math.ceil(totalSize.value / pageSize.value);
+});
+
 export function useThemeMarketplace() {
   const { fetchThemes } = useThemeManager();
 
-  const searchThemes = async (q?: string) => {
+  const searchThemes = async (q?: string, page: number = 1, size?: number) => {
     isSearching.value = true;
     marketplaceError.value = null;
     if (q !== undefined) {
       searchQuery.value = q;
     }
+    if (size !== undefined && size > 0) {
+      pageSize.value = size;
+    }
+    currentPage.value = Math.max(1, page);
+
+    const offset = (currentPage.value - 1) * pageSize.value;
 
     try {
-      const url = `/api/themes/marketplace/search?q=${encodeURIComponent(searchQuery.value)}&size=30`;
+      const url = `/api/themes/marketplace/search?q=${encodeURIComponent(searchQuery.value)}&size=${pageSize.value}&offset=${offset}`;
       const res = await fetch(url);
       if (!res.ok) {
         throw new Error(`Failed to search Open VSX: ${res.statusText}`);
@@ -44,6 +57,17 @@ export function useThemeMarketplace() {
     } finally {
       isSearching.value = false;
     }
+  };
+
+  const goToPage = async (page: number) => {
+    const target = Math.max(1, Math.min(page, totalPages.value));
+    if (target === currentPage.value && searchResults.value.length > 0) return;
+    await searchThemes(undefined, target);
+  };
+
+  const setPageSize = async (size: number) => {
+    if (size === pageSize.value) return;
+    await searchThemes(undefined, 1, size);
   };
 
   const installThemeOnline = async (item: MarketplaceExtension): Promise<ThemeItem[]> => {
@@ -110,12 +134,17 @@ export function useThemeMarketplace() {
     searchQuery,
     searchResults,
     totalSize,
+    currentPage,
+    pageSize,
+    totalPages,
     isSearching,
     installingMap,
     marketplaceError,
     activeDetail,
     isLoadingDetail,
     searchThemes,
+    goToPage,
+    setPageSize,
     installThemeOnline,
     fetchExtensionDetail,
     clearActiveDetail,

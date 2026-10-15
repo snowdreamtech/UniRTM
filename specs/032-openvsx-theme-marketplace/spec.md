@@ -58,6 +58,18 @@ Connect UniRTM to [Open VSX Registry](https://open-vsx.org) to provide an integr
 - Sidebar provides metadata: Open VSX web link, source repository, issue tracker, license, release date, tags, and direct VSIX download link.
 - Breadcrumb navigation allows easy 1-click return to the marketplace search list (`← 返回市场列表`).
 
+### US6: Pagination and Page Size Control for Marketplace Search Results
+- **As a** developer browsing the theme marketplace,
+- **I want to** navigate through all pages of results with pagination controls (prev/next, numbered pages with ellipsis, direct jump input, and page size selector),
+- **So that** I can explore the entire catalog of 1900+ themes across multiple pages seamlessly.
+
+**Acceptance Criteria**:
+- Displays total extension count (e.g., 1977) and current page range (`第 X / Y 页`).
+- Page navigation controls: First, Previous, Next, Last, and smart page numbers with ellipsis.
+- Quick jump input (`跳至 [ ] 页`) with validation.
+- Page size switcher (e.g. 12, 24, 48 items per page).
+- Switching pages smoothly updates search results via `offset` and `size` parameters.
+
 ---
 
 ## Non-Functional Requirements

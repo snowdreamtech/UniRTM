@@ -79,4 +79,21 @@
   - Changelog tab and Metadata sidebar
 - [x] T018 [P] [US5] Build validation and full test suite (`npm run build`, `npm run test`, `go test`, `go build`).
 
+---
+
+## Phase 7: Marketplace Pagination & Result Browsing (US6)
+
+- [x] T019 [US6] Enhance `frontend/src/composables/useThemeMarketplace.ts`:
+  - Add `currentPage`, `pageSize` (default 24), `totalPages` reactive states
+  - Update `searchThemes(q?: string, page?: number, size?: number)` to pass `offset = (page - 1) * size`
+  - Implement `goToPage(page: number)` and `setPageSize(size: number)`
+- [x] T020 [US6] Implement Pagination component and styles in `frontend/src/views/MarketplaceView.vue`:
+  - Total extensions count and current page range display (`共 1977 款 | 第 1 / 83 页`)
+  - Navigation controls: First, Previous, Next, Last buttons with disabled boundary states
+  - Dynamic page numbers with ellipsis algorithm
+  - Direct page jumper input (`跳至 [  ] 页 确定`)
+  - Page size select dropdown (`12`, `24`, `48` 条/页)
+  - Smooth scroll to top of list upon page navigation
+- [x] T021 [P] [US6] Build validation and full test suite (`npm run build`, `npm run test`, `go test`).
+
 

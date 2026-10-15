@@ -55,3 +55,17 @@
     - Hero header (Icon, Name, Publisher badge, Version, Stats, Minimalist Install action).
     - Tabs: Overview/README (with preview screenshots), Contributed Sub-themes (with light/dark badges & 1-click Apply), Changelog.
     - Sidebar: Repository link, Open VSX link, Issue tracker, License, Tags, Direct VSIX download.
+
+### 6. Pagination & Browsing Architecture (US6)
+- **Frontend Composable (`useThemeMarketplace.ts`)**:
+  - State: `currentPage` (1-indexed), `pageSize` (default 24), `totalPages` computed from `totalSize / pageSize`.
+  - Search function updated to accept `(query, page, size)`, computing `offset = (page - 1) * size`.
+  - Exported actions: `goToPage(page: number)`, `setPageSize(size: number)`.
+- **UI Component (`MarketplaceView.vue`)**:
+  - Sticky/compact pagination bar at the footer of the extensions grid:
+    - Information indicator: total items count, current page / total pages.
+    - Button controls: First (`«`), Previous (`‹`), Next (`›`), Last (`»`).
+    - Smart dynamic numeric pagination with ellipsis algorithm.
+    - Direct page jumper with Enter submission.
+    - Page size select dropdown (`12`, `24`, `48`).
+    - Smooth scroll to top of list upon page navigation.

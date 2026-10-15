@@ -506,6 +506,95 @@
             </div>
           </div>
         </div>
+
+        <!-- Pagination Bar -->
+        <div v-if="mpTotalPages > 1" class="market-pagination-bar glass-card">
+          <div class="pagination-summary">
+            <span>共收录 <strong>{{ mpTotalSize }}</strong> 款外观扩展</span>
+            <span class="pagination-divider">•</span>
+            <span>第 <strong>{{ mpCurrentPage }}</strong> / {{ mpTotalPages }} 页</span>
+          </div>
+
+          <div class="pagination-buttons">
+            <button
+              class="btn-page-nav"
+              :disabled="mpCurrentPage <= 1 || mpIsSearching"
+              title="第一页"
+              @click="onPageChange(1)"
+            >
+              «
+            </button>
+            <button
+              class="btn-page-nav"
+              :disabled="mpCurrentPage <= 1 || mpIsSearching"
+              title="上一页"
+              @click="onPageChange(mpCurrentPage - 1)"
+            >
+              ‹
+            </button>
+
+            <template v-for="(p, idx) in visiblePages" :key="idx">
+              <span v-if="p === -1" class="page-ellipsis">…</span>
+              <button
+                v-else
+                class="btn-page-num"
+                :class="{ active: p === mpCurrentPage }"
+                :disabled="mpIsSearching"
+                @click="onPageChange(p)"
+              >
+                {{ p }}
+              </button>
+            </template>
+
+            <button
+              class="btn-page-nav"
+              :disabled="mpCurrentPage >= mpTotalPages || mpIsSearching"
+              title="下一页"
+              @click="onPageChange(mpCurrentPage + 1)"
+            >
+              ›
+            </button>
+            <button
+              class="btn-page-nav"
+              :disabled="mpCurrentPage >= mpTotalPages || mpIsSearching"
+              title="最后一页"
+              @click="onPageChange(mpTotalPages)"
+            >
+              »
+            </button>
+          </div>
+
+          <div class="pagination-tools">
+            <div class="page-jump-box">
+              <span>跳至</span>
+              <input
+                v-model.number="jumpPageInput"
+                type="number"
+                min="1"
+                :max="mpTotalPages"
+                class="jump-input"
+                placeholder="页码"
+                @keydown.enter="onJumpPage"
+              />
+              <button class="btn-jump-submit" :disabled="mpIsSearching" @click="onJumpPage">
+                跳转
+              </button>
+            </div>
+
+            <div class="page-size-box">
+              <select
+                :value="mpPageSize"
+                class="page-size-select"
+                :disabled="mpIsSearching"
+                @change="onChangePageSize(Number(($event.target as HTMLSelectElement).value))"
+              >
+                <option :value="12">12 条 / 页</option>
+                <option :value="24">24 条 / 页</option>
+                <option :value="48">48 条 / 页</option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- CHANNEL 2: Native Plugins & Ecosystem (UniRTM Extensions) -->
@@ -588,12 +677,17 @@ const {
   searchQuery: mpSearchQuery,
   searchResults: mpSearchResults,
   totalSize: mpTotalSize,
+  currentPage: mpCurrentPage,
+  pageSize: mpPageSize,
+  totalPages: mpTotalPages,
   isSearching: mpIsSearching,
   installingMap: mpInstallingMap,
   marketplaceError: mpError,
   activeDetail,
   isLoadingDetail,
   searchThemes: mpSearchThemes,
+  goToPage: mpGoToPage,
+  setPageSize: mpSetPageSize,
   installThemeOnline: mpInstallThemeOnline,
   fetchExtensionDetail,
   clearActiveDetail,
@@ -681,6 +775,43 @@ onMounted(() => {
 
 function switchChannel(channel: "themes" | "plugins") {
   currentChannel.value = channel;
+}
+
+// --- Pagination State & Handlers ---
+const jumpPageInput = ref<number | string>("");
+
+const visiblePages = computed(() => {
+  const total = mpTotalPages.value;
+  const current = mpCurrentPage.value;
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  if (current <= 4) {
+    return [1, 2, 3, 4, 5, -1, total];
+  }
+  if (current >= total - 3) {
+    return [1, -1, total - 4, total - 3, total - 2, total - 1, total];
+  }
+  return [1, -1, current - 1, current, current + 1, -1, total];
+});
+
+async function onPageChange(page: number) {
+  if (page < 1 || page > mpTotalPages.value || page === mpCurrentPage.value) return;
+  await mpGoToPage(page);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+async function onJumpPage() {
+  const target = Number(jumpPageInput.value);
+  if (target >= 1 && target <= mpTotalPages.value) {
+    jumpPageInput.value = "";
+    await onPageChange(target);
+  }
+}
+
+async function onChangePageSize(size: number) {
+  await mpSetPageSize(size);
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function onSearchThemes(q?: string) {
@@ -1416,6 +1547,169 @@ const nativePlugins = ref<PluginItem[]>([
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-muted);
+}
+
+/* ========================================================================= */
+/* MARKETPLACE PAGINATION STYLES */
+/* ========================================================================= */
+.market-pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  border-radius: 12px;
+}
+
+.pagination-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.86rem;
+}
+
+.pagination-summary strong {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.pagination-divider {
+  opacity: 0.3;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-page-nav,
+.btn-page-num {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.btn-page-nav:hover:not(:disabled),
+.btn-page-num:hover:not(:disabled) {
+  background: rgba(0, 229, 255, 0.12);
+  border-color: rgba(0, 229, 255, 0.4);
+  color: var(--accent-cyan);
+}
+
+.btn-page-num.active {
+  background: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+  color: #0b1120;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 229, 255, 0.3);
+}
+
+.btn-page-nav:disabled,
+.btn-page-num:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-ellipsis {
+  padding: 0 4px;
+  color: var(--text-muted);
+  opacity: 0.5;
+  user-select: none;
+}
+
+.pagination-tools {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.page-jump-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.84rem;
+}
+
+.jump-input {
+  width: 54px;
+  height: 32px;
+  padding: 0 6px;
+  text-align: center;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  font-size: 0.84rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.jump-input:focus {
+  border-color: var(--accent-cyan);
+}
+
+.jump-input::-webkit-inner-spin-button,
+.jump-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.btn-jump-submit {
+  height: 32px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-jump-submit:hover:not(:disabled) {
+  background: rgba(0, 229, 255, 0.15);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.btn-jump-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-size-select {
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  font-size: 0.82rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.page-size-select:focus {
+  border-color: var(--accent-cyan);
 }
 
 /* ========================================================================= */
