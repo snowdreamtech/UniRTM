@@ -94,7 +94,9 @@
         >
           <div class="section-header">
             <div class="section-title-wrap">
-              <span class="section-icon">⚙️</span>
+              <span class="section-icon">
+                <TechIcon id="workbench:settings" :size="20" />
+              </span>
               <div>
                 <h2>{{ t('settings.cat_general') || '常规' }}</h2>
                 <span class="section-sub">{{ t('settings.cat_general_sub') || '语言、主题、浏览器、缓存' }}</span>
@@ -133,7 +135,7 @@
                     @click="onAppearanceChange('system')"
                     id="btn-appearance-system"
                   >
-                    <span>💻</span>
+                    <TechIcon id="workbench:dashboard" :size="14" :colored="false" />
                     <span>{{ t('theme.system') || '跟随系统' }}</span>
                   </button>
                   <button
@@ -143,7 +145,7 @@
                     @click="onAppearanceChange('light')"
                     id="btn-appearance-light"
                   >
-                    <span>☀️</span>
+                    <TechIcon id="workbench:about" :size="14" :colored="false" />
                     <span>{{ t('theme.light') || '浅色模式' }}</span>
                   </button>
                   <button
@@ -153,7 +155,7 @@
                     @click="onAppearanceChange('dark')"
                     id="btn-appearance-dark"
                   >
-                    <span>🌙</span>
+                    <TechIcon id="workbench:terminal" :size="14" :colored="false" />
                     <span>{{ t('theme.dark') || '深色模式' }}</span>
                   </button>
                 </div>

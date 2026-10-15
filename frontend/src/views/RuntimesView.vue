@@ -262,7 +262,9 @@
         <div class="modal-scope-picker">
           <label class="modal-scope-item" :class="{ active: modalInstallScope === 'workspace' }">
             <input type="radio" value="workspace" v-model="modalInstallScope" name="install-scope" />
-            <span class="scope-icon">📁</span>
+            <span class="scope-icon">
+              <TechIcon id="workbench:tools" :size="16" :colored="false" />
+            </span>
             <div class="scope-opt-text">
               <span class="scope-opt-name">{{ t("runtimes.scope_workspace") || "工作区" }}</span>
               <span class="scope-opt-desc">应用于当前工作区，随团队项目协作生效</span>
@@ -270,7 +272,9 @@
           </label>
           <label class="modal-scope-item" :class="{ active: modalInstallScope === 'user' }">
             <input type="radio" value="user" v-model="modalInstallScope" name="install-scope" />
-            <span class="scope-icon">👤</span>
+            <span class="scope-icon">
+              <TechIcon id="workbench:settings" :size="16" :colored="false" />
+            </span>
             <div class="scope-opt-text">
               <span class="scope-opt-name">{{ t("runtimes.scope_user") || "用户" }}</span>
               <span class="scope-opt-desc">应用于本机所有工作区的默认兜底版本</span>

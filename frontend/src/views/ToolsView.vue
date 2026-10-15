@@ -3,14 +3,20 @@
     <!-- View Header -->
     <div class="view-header-row">
       <div>
-        <h2 class="view-title">🛠️ {{ t("tools.title") }}</h2>
+        <h2 class="view-title" style="display: flex; align-items: center; gap: 8px;">
+          <TechIcon id="workbench:tools" :size="20" />
+          {{ t("tools.title") }}
+        </h2>
         <p class="view-desc">
           由 UniRTM 统一版本锁定与高性能垫片（Go Shims）路由，开箱即用，绝对环境隔离。
         </p>
       </div>
       <div class="view-actions">
         <button class="tool-action-btn primary" @click="handleReshim">
-          <span>⚡ {{ t("tools.reshim") }}</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px;">
+            <TechIcon id="workbench:tasks" :size="14" :colored="false" />
+            {{ t("tools.reshim") }}
+          </span>
         </button>
       </div>
     </div>
@@ -18,7 +24,9 @@
     <!-- Search & Filter Filter Bar -->
     <div class="tools-filter-bar glass-card">
       <div class="search-input-wrapper">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon">
+          <TechIcon id="workbench:doctor" :size="14" :colored="false" />
+        </span>
         <input
           v-model="searchKey"
           type="text"
