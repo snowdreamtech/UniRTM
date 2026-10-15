@@ -430,6 +430,9 @@
           <span v-if="selectedFilter === 'installed'" class="results-count-label">
             {{ t('marketplace.installed_count', { count: displayedExtensions.length }) || `已安装 ${displayedExtensions.length} 款主题与图标包` }}
           </span>
+          <span v-else-if="selectedFilter === 'themes' || selectedFilter === 'icons'" class="results-count-label">
+            {{ t('marketplace.total_count', { count: displayedExtensions.length }) || `共收录 ${displayedExtensions.length} 款` }}
+          </span>
           <span v-else-if="mpTotalSize > 0" class="results-count-label">
             {{ t('marketplace.total_count', { count: mpTotalSize }) || `共收录 ${mpTotalSize} 款主题与图标包` }}
           </span>
@@ -780,7 +783,7 @@ interface ThemeChipItem {
 const themeChips = computed<ThemeChipItem[]>(() => [
   { id: "all", labelKey: "marketplace.filter_all", query: "" },
   { id: "installed", labelKey: "marketplace.filter_installed", query: "", isInstalled: true },
-  { id: "themes", labelKey: "marketplace.filter_themes", query: "theme" },
+  { id: "themes", labelKey: "marketplace.filter_themes", query: "" },
   { id: "icons", labelKey: "marketplace.filter_icons", query: "icons" },
   { id: "material", name: "Material", query: "Material" },
   { id: "dracula", name: "Dracula", query: "Dracula" },
@@ -862,12 +865,23 @@ const installedExtensions = computed<MarketplaceExtension[]>(() => {
 });
 
 const displayedExtensions = computed<MarketplaceExtension[]>(() => {
+  let list: MarketplaceExtension[] = [];
   if (selectedFilter.value === "installed") {
-    if (!mpSearchQuery.value.trim()) {
-      return installedExtensions.value;
-    }
+    list = installedExtensions.value;
+  } else {
+    list = mpSearchResults.value;
+  }
+
+  // Strict category exclusion: when 'themes' is selected, filter OUT all icon packs
+  if (selectedFilter.value === "themes") {
+    list = list.filter((item) => getExtensionType(item) === "theme");
+  } else if (selectedFilter.value === "icons") {
+    list = list.filter((item) => getExtensionType(item) === "icon");
+  }
+
+  if (selectedFilter.value === "installed" && mpSearchQuery.value.trim()) {
     const q = mpSearchQuery.value.toLowerCase().trim();
-    return installedExtensions.value.filter(
+    list = list.filter(
       (item) =>
         (item.displayName && item.displayName.toLowerCase().includes(q)) ||
         item.name.toLowerCase().includes(q) ||
@@ -875,7 +889,7 @@ const displayedExtensions = computed<MarketplaceExtension[]>(() => {
         (item.package_id && item.package_id.toLowerCase().includes(q))
     );
   }
-  return mpSearchResults.value;
+  return list;
 });
 
 const feedbackMsg = ref("");
@@ -984,10 +998,28 @@ async function onChangePageSize(size: number) {
 }
 
 function getExtensionType(item: MarketplaceExtension): "icon" | "theme" {
-  const text = `${item.name} ${item.displayName || ""} ${item.description || ""}`.toLowerCase();
-  if (text.includes("icon") || text.includes("icons")) {
+  // Check local installed themes first for 100% exact type match
+  const pkgId = (item.package_id || item.name || "").toLowerCase();
+  const name = (item.name || "").toLowerCase();
+  if (iconThemes.value.some((i) => !i.is_builtin && ((i.package_id && i.package_id.toLowerCase() === pkgId) || i.id.toLowerCase() === name))) {
     return "icon";
   }
+  if (colorThemes.value.some((c) => !c.is_builtin && ((c.package_id && c.package_id.toLowerCase() === pkgId) || c.id.toLowerCase() === name))) {
+    return "theme";
+  }
+
+  // Name or displayName with 'icon' or 'icons' is an icon pack
+  const nameText = `${item.name} ${item.displayName || ""}`.toLowerCase();
+  if (nameText.includes("icon") || nameText.includes("icons")) {
+    return "icon";
+  }
+
+  // Fallback to description
+  const desc = (item.description || "").toLowerCase();
+  if (desc.includes("icon theme") || desc.includes("icons theme") || desc.includes("file icons")) {
+    return "icon";
+  }
+
   return "theme";
 }
 
