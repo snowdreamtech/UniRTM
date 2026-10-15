@@ -114,18 +114,101 @@
               </div>
             </div>
 
-            <!-- Setting: Theme -->
+            <!-- Setting: Color Theme -->
             <div class="setting-item" :class="{ highlight: matchesSearch('theme') }">
               <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.theme') || '主题' }}</span>
-                <p class="setting-desc">{{ t('settings.theme_desc') || '工作台外观色彩主题。' }}</p>
+                <span class="setting-title">{{ t('settings.color_theme') || '颜色主题' }}</span>
+                <p class="setting-desc">{{ t('settings.color_theme_desc') || '工作台界面配色主题，完全兼容 VS Code 主题标准。' }}</p>
               </div>
               <div class="setting-control">
                 <CustomSelect
-                  :model-value="appTheme"
-                  :options="themeSelectOptions"
-                  @change="onThemeChange"
+                  :model-value="activeColorTheme"
+                  :options="colorThemeOptions"
+                  @change="onColorThemeChange"
                 />
+              </div>
+            </div>
+
+            <!-- Setting: Icon Theme -->
+            <div class="setting-item" :class="{ highlight: matchesSearch('icon') }">
+              <div class="setting-meta">
+                <span class="setting-title">{{ t('settings.icon_theme') || '文件图标主题' }}</span>
+                <p class="setting-desc">{{ t('settings.icon_theme_desc') || '工作台侧边栏与文件/工具列表图标集，100% 对齐 VS Code 标准结构。' }}</p>
+              </div>
+              <div class="setting-control">
+                <CustomSelect
+                  :model-value="activeIconTheme"
+                  :options="iconThemeOptions"
+                  @change="onIconThemeChange"
+                />
+              </div>
+            </div>
+
+            <!-- Setting: Theme Package Manager -->
+            <div class="setting-item theme-manager-item" :class="{ highlight: matchesSearch('vsix') }">
+              <div class="setting-meta full-width">
+                <div class="title-with-badge">
+                  <span class="setting-title">{{ t('settings.theme_pkg_manager') || 'VS Code 主题扩展包管理' }}</span>
+                  <span class="badge-custom-pkg">VSIX / ZIP</span>
+                </div>
+                <p class="setting-desc">{{ t('settings.theme_pkg_desc') || '直接导入官方 VS Code 扩展包（.vsix），纯静态解析，自动保存在用户本地目录。' }}</p>
+
+                <!-- Action Bar -->
+                <div class="theme-install-actions">
+                  <input
+                    ref="vsixInputRef"
+                    type="file"
+                    accept=".vsix,.zip"
+                    class="hidden-file-input"
+                    @change="onVsixFileSelected"
+                  />
+                  <button
+                    class="btn-install-vsix"
+                    :disabled="isInstallingTheme"
+                    @click="triggerVsixUpload"
+                  >
+                    <span v-if="isInstallingTheme" class="spinner-small"></span>
+                    <span v-else>📥</span>
+                    <span>{{ isInstallingTheme ? (t('settings.installing') || '正在解析安装...') : (t('settings.install_vsix') || '导入 VS Code 主题包 (.vsix)') }}</span>
+                  </button>
+                  <span v-if="themeInstallMsg" class="install-feedback-msg" :class="{ error: themeInstallError }">
+                    {{ themeInstallMsg }}
+                  </span>
+                </div>
+
+                <!-- Installed Custom Themes Table / Cards -->
+                <div v-if="installedThemesList.length > 0" class="installed-themes-container">
+                  <div class="installed-themes-header">
+                    <span>{{ t('settings.installed_custom_themes') || '已安装的第三方主题包' }}</span>
+                    <span class="count-badge">{{ installedThemesList.length }}</span>
+                  </div>
+                  <div class="installed-themes-list">
+                    <div
+                      v-for="item in installedThemesList"
+                      :key="item.type + ':' + (item.package_id || item.id)"
+                      class="installed-theme-card"
+                    >
+                      <div class="card-left">
+                        <span class="theme-type-tag" :class="item.type">
+                          {{ item.type === 'color' ? '🎨 颜色' : '📁 图标' }}
+                        </span>
+                        <div class="theme-info-texts">
+                          <span class="theme-card-title">{{ item.name }}</span>
+                          <span class="theme-card-sub font-mono">{{ item.package_id }} {{ item.version ? 'v' + item.version : '' }}</span>
+                        </div>
+                      </div>
+                      <div class="card-actions">
+                        <button
+                          class="btn-delete-theme"
+                          :title="t('common.delete') || '卸载删除'"
+                          @click="onDeleteInstalledTheme(item)"
+                        >
+                          🗑️ {{ t('common.uninstall') || '卸载' }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -746,6 +829,8 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { t, selectedLangSetting, setLanguage, SUPPORTED_LANGUAGES } from "../i18n";
 import { useTheme } from "../composables/useTheme";
+import { useThemeManager } from "../composables/useThemeManager";
+import type { ThemeItem } from "../types/theme-manager";
 import CustomSelect from "../components/CustomSelect.vue";
 
 const props = defineProps<{
@@ -757,7 +842,17 @@ const emit = defineEmits<{
   (e: "select-category", catId: string): void;
 }>();
 
-const { currentTheme, applyTheme } = useTheme();
+const { currentTheme } = useTheme();
+const {
+  colorThemes,
+  iconThemes,
+  activeColorTheme,
+  activeIconTheme,
+  fetchThemes,
+  installTheme,
+  deleteTheme,
+  setActiveTheme,
+} = useThemeManager();
 
 // State
 const activeScope = ref<"user" | "workspace">(props.initialScope || "workspace");
@@ -1181,11 +1276,37 @@ const languageSelectOptions = computed(() => [
   })),
 ]);
 
-const themeSelectOptions = computed(() => [
-  { value: "dark", label: "🌙 " + (t("theme.dark") || "深色模式") },
-  { value: "light", label: "☀️ " + (t("theme.light") || "浅色模式") },
-  { value: "system", label: "💻 " + (t("theme.system") || "跟随系统") },
-]);
+const colorThemeOptions = computed(() => {
+  return colorThemes.value.map((t) => ({
+    value: t.id,
+    label: (t.is_builtin ? (t.id === "dark" ? "🌙 " : t.id === "light" ? "☀️ " : "💻 ") : "🎨 ") + t.name + (!t.is_builtin && t.version ? ` (v${t.version})` : ""),
+  }));
+});
+
+const iconThemeOptions = computed(() => {
+  return iconThemes.value.map((t) => ({
+    value: t.id,
+    label: (t.is_builtin ? "📁 " : "🧩 ") + t.name + (!t.is_builtin && t.version ? ` (v${t.version})` : ""),
+  }));
+});
+
+const installedThemesList = computed(() => {
+  const list: ThemeItem[] = [];
+  const seen = new Set<string>();
+  for (const c of colorThemes.value) {
+    if (!c.is_builtin && c.package_id && !seen.has(`color:${c.package_id}`)) {
+      seen.add(`color:${c.package_id}`);
+      list.push(c);
+    }
+  }
+  for (const i of iconThemes.value) {
+    if (!i.is_builtin && i.package_id && !seen.has(`icon:${i.package_id}`)) {
+      seen.add(`icon:${i.package_id}`);
+      list.push(i);
+    }
+  }
+  return list;
+});
 
 interface DetectedBrowser {
   id: string;
@@ -1463,10 +1584,66 @@ function onLanguageChange(val: string) {
   saveSetting("settings.language", val);
 }
 
-function onThemeChange(val: string) {
+const vsixInputRef = ref<HTMLInputElement | null>(null);
+const isInstallingTheme = ref(false);
+const themeInstallMsg = ref("");
+const themeInstallError = ref(false);
+
+function triggerVsixUpload() {
+  vsixInputRef.value?.click();
+}
+
+async function onVsixFileSelected(e: Event) {
+  const target = e.target as HTMLInputElement;
+  const files = target.files;
+  if (!files || files.length === 0) return;
+  const file = files[0];
+  isInstallingTheme.value = true;
+  themeInstallMsg.value = "";
+  themeInstallError.value = false;
+
+  try {
+    const installed = await installTheme(file);
+    themeInstallMsg.value = `✓ 成功安装 ${installed.length} 个主题/图标项！`;
+    if (installed.length > 0) {
+      const first = installed[0];
+      if (first.type === "color") {
+        await setActiveTheme(first.id, undefined);
+      } else if (first.type === "icon") {
+        await setActiveTheme(undefined, first.id);
+      }
+    }
+  } catch (err: any) {
+    themeInstallError.value = true;
+    themeInstallMsg.value = `✕ 安装失败: ${err.message || err}`;
+  } finally {
+    isInstallingTheme.value = false;
+    target.value = "";
+  }
+}
+
+async function onColorThemeChange(val: string) {
+  await setActiveTheme(val, undefined);
   appTheme.value = val;
-  applyTheme(val);
-  saveSetting("settings.theme", val);
+}
+
+async function onIconThemeChange(val: string) {
+  await setActiveTheme(undefined, val);
+}
+
+async function onDeleteInstalledTheme(item: ThemeItem) {
+  if (!item.package_id) return;
+  if (!confirm(`确定要卸载主题包 "${item.name}" 吗？`)) {
+    return;
+  }
+  try {
+    await deleteTheme(item.type, item.package_id);
+    themeInstallMsg.value = `✓ 已卸载 ${item.name}`;
+    themeInstallError.value = false;
+  } catch (err: any) {
+    themeInstallError.value = true;
+    themeInstallMsg.value = `✕ 卸载失败: ${err.message || err}`;
+  }
 }
 
 function onBrowserPresetChange(val: string) {
@@ -1830,6 +2007,7 @@ onMounted(() => {
   loadConfigData();
   loadNetworkStatus();
   handleDetectProxy(false);
+  fetchThemes();
   if (props.activeCategory) {
     setTimeout(() => {
       scrollToCategory(props.activeCategory!);
@@ -3442,4 +3620,187 @@ input:checked + .slider:before {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+/* Theme Management Styles */
+.theme-manager-item {
+  flex-direction: column;
+  align-items: stretch !important;
+}
+
+.theme-manager-item .setting-meta.full-width {
+  width: 100%;
+}
+
+.badge-custom-pkg {
+  font-size: 0.72rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(0, 229, 255, 0.12);
+  color: var(--accent-cyan);
+  border: 1px solid var(--accent-cyan-glow);
+  font-weight: 500;
+}
+
+.theme-install-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+.btn-install-vsix {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 6px;
+  background: var(--accent-cyan);
+  color: #070a12;
+  font-size: 0.84rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.btn-install-vsix:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-install-vsix:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinner-small {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: #070a12;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.install-feedback-msg {
+  font-size: 0.82rem;
+  color: var(--success);
+}
+
+.install-feedback-msg.error {
+  color: #ef4444;
+}
+
+.installed-themes-container {
+  margin-top: 14px;
+  background: var(--section-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.installed-themes-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.count-badge {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+}
+
+.installed-themes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.installed-theme-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  transition: border-color 0.2s;
+}
+
+.installed-theme-card:hover {
+  border-color: var(--accent-cyan);
+}
+
+.card-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.theme-type-tag {
+  font-size: 0.72rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.theme-type-tag.color {
+  background: rgba(157, 78, 221, 0.15);
+  color: var(--accent-purple);
+  border: 1px solid rgba(157, 78, 221, 0.3);
+}
+
+.theme-type-tag.icon {
+  background: rgba(0, 229, 255, 0.15);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+}
+
+.theme-info-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.theme-card-title {
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.theme-card-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.btn-delete-theme {
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-delete-theme:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+}
 </style>
+

@@ -44,8 +44,9 @@ func IsReservedRoot(rootName string) bool {
 var KnownSettingShorthands = map[string]bool{
 	"browser":   true,
 	"cache_ttl": true,
-	"theme":     true,
-	"language":  true,
+	"theme":      true,
+	"icon_theme": true,
+	"language":   true,
 	"data_dir":  true,
 	"editor":    true,
 	"shell":     true,

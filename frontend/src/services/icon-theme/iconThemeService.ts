@@ -2,16 +2,45 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 import type { IconThemeManifest, ResolvedIcon } from "../../types/icon-theme";
+import type { ThemeItem } from "../../types/theme-manager";
 import defaultSetiManifest from "../../assets/themes/seti/seti.json";
 import setiWoff2Url from "../../assets/themes/seti/seti.woff2";
 import setiWoffUrl from "../../assets/themes/seti/seti.woff";
 
+function parseJSONC(text: string): Record<string, any> {
+  const cleaned = text
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/[^\n\r]*/g, "")
+    .replace(/,\s*([\]}])/g, "$1");
+  return JSON.parse(cleaned);
+}
+
 class IconThemeService {
   private activeManifest: IconThemeManifest;
   private isStyleInjected = false;
+  private currentBaseUrl = "";
+  private activeThemeId = "seti";
+  private listeners: Array<() => void> = [];
 
   constructor() {
     this.activeManifest = defaultSetiManifest as unknown as IconThemeManifest;
+  }
+
+  public subscribe(cb: () => void): () => void {
+    this.listeners.push(cb);
+    return () => {
+      this.listeners = this.listeners.filter((l) => l !== cb);
+    };
+  }
+
+  private notify(): void {
+    for (const listener of this.listeners) {
+      try {
+        listener();
+      } catch {
+        // ignore
+      }
+    }
   }
 
   /**
@@ -68,6 +97,7 @@ class IconThemeService {
       return false;
     }
     this.activeManifest = manifest;
+    this.notify();
     return true;
   }
 
@@ -87,12 +117,105 @@ class IconThemeService {
    * Switch to a registered custom theme.
    */
   public switchTheme(themeId: string): boolean {
+    if (themeId === "seti") {
+      this.activeManifest = defaultSetiManifest as unknown as IconThemeManifest;
+      this.currentBaseUrl = "";
+      this.activeThemeId = "seti";
+      this.notify();
+      return true;
+    }
     const target = this.customThemes.get(themeId);
     if (target) {
       this.activeManifest = target;
+      this.activeThemeId = themeId;
+      this.notify();
       return true;
     }
     return false;
+  }
+
+  /**
+   * Get current active theme ID.
+   */
+  public getActiveThemeId(): string {
+    return this.activeThemeId;
+  }
+
+  /**
+   * Load and apply icon theme from server API or builtin
+   */
+  public async loadAndApplyTheme(themeItem: ThemeItem): Promise<boolean> {
+    if (themeItem.id === "seti" || themeItem.is_builtin) {
+      this.activeManifest = defaultSetiManifest as unknown as IconThemeManifest;
+      this.currentBaseUrl = "";
+      this.activeThemeId = "seti";
+      this.notify();
+      return true;
+    }
+
+    if (!themeItem.package_id || !themeItem.relative_path) {
+      return false;
+    }
+
+    const cleanRel = themeItem.relative_path.startsWith("./")
+      ? themeItem.relative_path.slice(2)
+      : themeItem.relative_path.startsWith("/")
+      ? themeItem.relative_path.slice(1)
+      : themeItem.relative_path;
+
+    const manifestUrl = `/api/themes/assets/icon/${encodeURIComponent(themeItem.package_id)}/${cleanRel}`;
+    const lastSlash = cleanRel.lastIndexOf("/");
+    const manifestDir = lastSlash !== -1 ? cleanRel.substring(0, lastSlash) : "";
+    this.currentBaseUrl = `/api/themes/assets/icon/${encodeURIComponent(themeItem.package_id)}/${manifestDir ? manifestDir + "/" : ""}`;
+
+    try {
+      const res = await fetch(manifestUrl);
+      if (!res.ok) {
+        throw new Error(`Failed to load icon theme: ${res.statusText}`);
+      }
+      const text = await res.text();
+      const manifest = parseJSONC(text) as IconThemeManifest;
+
+      if (manifest.fonts && manifest.fonts.length > 0) {
+        let fontFaceCSS = "";
+        for (const font of manifest.fonts) {
+          const srcRules = font.src
+            .map((s) => {
+              const fontRel = s.path.startsWith("./") ? s.path.slice(2) : s.path;
+              const fullFontUrl = this.currentBaseUrl + fontRel;
+              return `url('${fullFontUrl}') format('${s.format}')`;
+            })
+            .join(",\n       ");
+
+          fontFaceCSS += `
+@font-face {
+  font-family: '${font.id}';
+  src: ${srcRules};
+  font-weight: ${font.weight || "normal"};
+  font-style: ${font.style || "normal"};
+  font-display: block;
+}
+`;
+        }
+
+        const customStyleId = "unirtm-custom-icon-fonts";
+        let customStyleEl = document.getElementById(customStyleId) as HTMLStyleElement | null;
+        if (!customStyleEl) {
+          customStyleEl = document.createElement("style");
+          customStyleEl.id = customStyleId;
+          document.head.appendChild(customStyleEl);
+        }
+        customStyleEl.textContent = fontFaceCSS;
+      }
+
+      this.activeManifest = manifest;
+      this.activeThemeId = themeItem.id;
+      this.notify();
+      return true;
+    } catch (err) {
+      console.error("[IconThemeService] Failed to load custom icon theme:", err);
+      return false;
+    }
   }
 
   /**
@@ -108,7 +231,6 @@ class IconThemeService {
   public parseCharacter(rawChar?: string): string {
     if (!rawChar) return "";
     try {
-      // Remove leading backslashes or 'u' prefix while keeping hex digits (including 'E') intact
       const cleanHex = rawChar.replace(/^\\+u?/i, "").replace(/^0x/i, "");
       const codePoint = parseInt(cleanHex, 16);
       if (!isNaN(codePoint)) {
@@ -135,7 +257,6 @@ class IconThemeService {
     const trimmed = rawIdentifier.trim();
     const lower = trimmed.toLowerCase();
 
-    // Clean compound prefixes/paths like "go:mvdan.cc/sh/v3/cmd/shfmt" -> "shfmt"
     let toolName = lower;
     if (toolName.includes(":")) {
       toolName = toolName.split(":").pop() || toolName;
@@ -147,33 +268,41 @@ class IconThemeService {
     const manifest = this.activeManifest;
     let defKey: string | undefined;
 
-    // 1. Check exact fileNames (e.g. 'unirtm.lock', 'Cargo.toml')
+    // 1. Check exact fileNames
     if (manifest.fileNames) {
       defKey = manifest.fileNames[trimmed] || manifest.fileNames[lower] || manifest.fileNames[toolName];
     }
 
-    // 2. Check fileExtensions if identifier has an extension (e.g. 'app.go' -> 'go')
+    // 2. Check fileExtensions
     if (!defKey && manifest.fileExtensions) {
       if (trimmed.includes(".")) {
         const parts = trimmed.split(".");
         const ext = parts[parts.length - 1].toLowerCase();
         defKey = manifest.fileExtensions[ext];
       } else {
-        // Also check if tool itself matches an extension (e.g. 'py', 'rs', 'go')
         defKey = manifest.fileExtensions[toolName];
       }
     }
 
-    // 3. Check languageIds (e.g. 'go', 'golang', 'rust', 'python', 'shfmt')
+    // 3. Check languageIds
     if (!defKey && manifest.languageIds) {
       defKey = manifest.languageIds[toolName] || manifest.languageIds[lower];
     }
 
     if (defKey && manifest.iconDefinitions && manifest.iconDefinitions[defKey]) {
       const def = manifest.iconDefinitions[defKey];
+      if (def.iconPath) {
+        const cleanPath = def.iconPath.startsWith("./") ? def.iconPath.slice(2) : def.iconPath;
+        const fullSvgPath = this.currentBaseUrl ? this.currentBaseUrl + cleanPath : def.iconPath;
+        return {
+          type: "svg",
+          svgPath: fullSvgPath,
+          definitionKey: defKey,
+        };
+      }
       return {
         type: "font",
-        fontFamily: "seti",
+        fontFamily: (manifest.fonts && manifest.fonts[0]?.id) || "seti",
         character: this.parseCharacter(def.fontCharacter),
         color: def.fontColor,
         fontSize: def.fontSize,
@@ -187,9 +316,18 @@ class IconThemeService {
   private getDefaultIcon(): ResolvedIcon {
     const defaultKey = this.activeManifest.file || "_default";
     const def = this.activeManifest.iconDefinitions?.[defaultKey];
+    if (def?.iconPath) {
+      const cleanPath = def.iconPath.startsWith("./") ? def.iconPath.slice(2) : def.iconPath;
+      const fullSvgPath = this.currentBaseUrl ? this.currentBaseUrl + cleanPath : def.iconPath;
+      return {
+        type: "svg",
+        svgPath: fullSvgPath,
+        definitionKey: defaultKey,
+      };
+    }
     return {
       type: "font",
-      fontFamily: "seti",
+      fontFamily: (this.activeManifest.fonts && this.activeManifest.fonts[0]?.id) || "seti",
       character: this.parseCharacter(def?.fontCharacter || "\\E023"),
       color: def?.fontColor || "#d4d7d6",
       definitionKey: defaultKey,

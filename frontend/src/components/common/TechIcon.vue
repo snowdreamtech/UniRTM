@@ -1,5 +1,16 @@
 <template>
+  <img
+    v-if="resolved.type === 'svg' && resolved.svgPath"
+    :src="resolved.svgPath"
+    class="tech-icon tech-icon-svg"
+    :class="className"
+    :style="svgStyles"
+    :title="id"
+    :alt="id"
+    role="img"
+  />
   <span
+    v-else
     class="tech-icon"
     :class="className"
     :style="iconStyles"
@@ -49,6 +60,17 @@ const iconStyles = computed(() => {
     WebkitUserSelect: "none" as const,
   };
 });
+
+const svgStyles = computed(() => {
+  return {
+    width: `${props.size}px`,
+    height: `${props.size}px`,
+    minWidth: `${props.size}px`,
+    objectFit: "contain" as const,
+    display: "inline-flex",
+    verticalAlign: "middle",
+  };
+});
 </script>
 
 <style scoped>
@@ -60,5 +82,8 @@ const iconStyles = computed(() => {
   vertical-align: middle;
   font-style: normal;
   font-variant: normal;
+}
+.tech-icon-svg {
+  display: inline-block;
 }
 </style>

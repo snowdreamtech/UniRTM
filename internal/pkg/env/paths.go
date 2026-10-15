@@ -119,6 +119,21 @@ func GetPluginsDir() string {
 	return filepath.Join(GetDataDir(), "plugins")
 }
 
+// GetThemesDir returns the directory where installed VS Code themes are stored.
+func GetThemesDir() string {
+	return filepath.Join(GetDataDir(), "themes")
+}
+
+// GetIconThemesDir returns the directory for installed icon themes.
+func GetIconThemesDir() string {
+	return filepath.Join(GetThemesDir(), "icons")
+}
+
+// GetColorThemesDir returns the directory for installed color themes.
+func GetColorThemesDir() string {
+	return filepath.Join(GetThemesDir(), "colors")
+}
+
 // GetCacheDir returns the directory where cache files are stored.
 // It follows XDG Base Directory Specification for cache home.
 func GetCacheDir() string {

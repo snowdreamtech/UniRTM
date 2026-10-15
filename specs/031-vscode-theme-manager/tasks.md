@@ -15,8 +15,8 @@
 
 **Purpose**: Establish backend and frontend data structures.
 
-- [ ] T001 [P] [US1] Create Go theme model types and standard directory resolver in `internal/theme/types.go`.
-- [ ] T002 [P] [US1] Create frontend TypeScript theme management interfaces in `frontend/src/types/theme-manager.ts`.
+- [x] T001 [P] [US1] Create Go theme model types and standard directory resolver in `internal/theme/types.go`.
+- [x] T002 [P] [US1] Create frontend TypeScript theme management interfaces in `frontend/src/types/theme-manager.ts`.
 
 ---
 
@@ -26,13 +26,13 @@
 
 **⚠️ CRITICAL**: Must be completed before frontend API integration.
 
-- [ ] T003 [US1/US2] Implement `internal/theme/manager.go` supporting:
+- [x] T003 [US1/US2] Implement `internal/theme/manager.go` supporting:
   - Standard user directory initialization (`~/.local/share/unirtm/themes/{icons,colors}`)
   - Theme scanner parsing `package.json` for `contributes.themes` and `contributes.iconThemes`
   - Safe `.vsix` / `.zip` archive unpacker
   - Theme uninstaller (directory deletion)
-- [ ] T004 [P] [US1/US2] Implement unit tests in `internal/theme/manager_test.go` verifying discovery, zip unpacking, and path sanitization.
-- [ ] T005 [US1/US2] Wire theme endpoints into `cmd/64.ui.go`:
+- [x] T004 [P] [US1/US2] Implement unit tests in `internal/theme/manager_test.go` verifying discovery, zip unpacking, and path sanitization.
+- [x] T005 [US1/US2] Wire theme endpoints into `cmd/64.ui.go`:
   - `GET /api/themes` (list all installed + builtin themes)
   - `POST /api/themes/install` (multipart upload & extraction of `.vsix`)
   - `DELETE /api/themes` (uninstall theme by type and id)
@@ -47,8 +47,8 @@
 
 **Purpose**: Reactive frontend services to hot-switch themes and bridge VS Code color tokens.
 
-- [ ] T006 [P] [US3] Implement `frontend/src/composables/useColorTheme.ts` mapping standard VS Code workbench colors (`activityBar.background`, `sideBar.background`, `editor.background`, `statusBar.background`, `foreground`) to CSS variables.
-- [ ] T007 [P] [US3] Implement `frontend/src/composables/useThemeManager.ts` managing API requests (`fetchThemes`, `installTheme`, `deleteTheme`, `applyTheme`).
+- [x] T006 [P] [US3] Implement `frontend/src/composables/useColorTheme.ts` mapping standard VS Code workbench colors (`activityBar.background`, `sideBar.background`, `editor.background`, `statusBar.background`, `foreground`) to CSS variables.
+- [x] T007 [P] [US3] Implement `frontend/src/composables/useThemeManager.ts` managing API requests (`fetchThemes`, `installTheme`, `deleteTheme`, `applyTheme`).
 
 ---
 
@@ -58,7 +58,7 @@
 
 **Independent Test**: User can upload `.vsix`, see it appear in the dropdown, switch to it with live visual change, and delete it.
 
-- [ ] T008 [US3] Add "Theme & Icon Management" section to `frontend/src/views/SettingsView.vue`:
+- [x] T008 [US3] Add "Theme & Icon Management" section to `frontend/src/views/SettingsView.vue`:
   - Dropdown pickers for active Color Theme and Icon Theme
   - "Install Theme (.vsix)" file upload button
   - Installed Themes list with delete buttons
@@ -71,9 +71,9 @@
 
 **Purpose**: Full build validation and regression check.
 
-- [ ] T009 [P] Run `npm run build` in `frontend/` to verify zero TypeScript errors.
-- [ ] T010 [P] Run `go test ./internal/theme/...` and build Go binary (`go build -o bin/unirtm main.go`).
-- [ ] T011 Verify hot-switching and persistence end-to-end.
+- [x] T009 [P] Run `npm run build` in `frontend/` to verify zero TypeScript errors.
+- [x] T010 [P] Run `go test ./internal/theme/...` and build Go binary (`go build -o bin/unirtm main.go`).
+- [x] T011 Verify hot-switching and persistence end-to-end.
 
 ---
 
