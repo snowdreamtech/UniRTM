@@ -625,6 +625,34 @@ const presetRuntimes: PresetRuntime[] = [
     defaultVersion: "2.2.2",
   },
   {
+    id: "node",
+    name: "Node.js",
+    description: "JavaScript / TypeScript runtime (NVM superset)",
+    homepage: "https://nodejs.org",
+    defaultVersion: "22.14.0",
+  },
+  {
+    id: "go",
+    name: "Go",
+    description: "Go programming language (GVM superset)",
+    homepage: "https://go.dev",
+    defaultVersion: "1.24.0",
+  },
+  {
+    id: "python",
+    name: "Python",
+    description: "Python language interpreter (Pyenv superset)",
+    homepage: "https://python.org",
+    defaultVersion: "3.13.2",
+  },
+  {
+    id: "rust",
+    name: "Rust",
+    description: "Rust toolchain & cargo build system",
+    homepage: "https://rust-lang.org",
+    defaultVersion: "1.85.0",
+  },
+  {
     id: "java",
     name: "Java (OpenJDK)",
     description: "Enterprise multi-platform Java Development Kit & Virtual Machine",
@@ -653,32 +681,46 @@ const presetRuntimes: PresetRuntime[] = [
     defaultVersion: "8.4.4",
   },
   {
-    id: "node",
-    name: "Node.js",
-    description: "JavaScript / TypeScript runtime (NVM superset)",
-    homepage: "https://nodejs.org",
-    defaultVersion: "22.14.0",
+    id: "dart",
+    name: "Dart",
+    description: "Client-optimized language for fast apps on any platform",
+    homepage: "https://dart.dev",
+    defaultVersion: "3.6.1",
   },
   {
-    id: "go",
-    name: "Go",
-    description: "Go programming language (GVM superset)",
-    homepage: "https://go.dev",
-    defaultVersion: "1.24.0",
+    id: "flutter",
+    name: "Flutter",
+    description: "Google's UI toolkit for multi-platform applications",
+    homepage: "https://flutter.dev",
+    defaultVersion: "3.29.0",
   },
   {
-    id: "python",
-    name: "Python",
-    description: "Python language interpreter (Pyenv superset)",
-    homepage: "https://python.org",
-    defaultVersion: "3.13.2",
+    id: "julia",
+    name: "Julia",
+    description: "High-performance dynamic language for technical & scientific computing",
+    homepage: "https://julialang.org",
+    defaultVersion: "1.11.3",
   },
   {
-    id: "rust",
-    name: "Rust",
-    description: "Rust toolchain & cargo build system",
-    homepage: "https://rust-lang.org",
-    defaultVersion: "1.85.0",
+    id: "elixir",
+    name: "Elixir",
+    description: "Dynamic, functional language for building scalable & maintainable software",
+    homepage: "https://elixir-lang.org",
+    defaultVersion: "1.18.2",
+  },
+  {
+    id: "erlang",
+    name: "Erlang / OTP",
+    description: "Soft real-time distributed system language & OTP runtime",
+    homepage: "https://erlang.org",
+    defaultVersion: "27.2.1",
+  },
+  {
+    id: "haskell",
+    name: "Haskell (GHC)",
+    description: "Purely functional programming language with Glasgow Haskell Compiler",
+    homepage: "https://haskell.org",
+    defaultVersion: "9.12.1",
   },
 ];
 
@@ -2099,7 +2141,16 @@ onBeforeUnmount(() => {
 
 /* Add Runtime Dialog Styles */
 .add-runtime-dialog {
-  max-width: 580px;
+  max-width: 680px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.add-preset-section {
+  overflow-y: auto;
+  max-height: 380px;
+  padding-right: 4px;
 }
 
 .preset-section-title {
@@ -2115,7 +2166,7 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.65rem;
-  margin-bottom: 1.15rem;
+  margin-bottom: 0.5rem;
 }
 
 .add-preset-card {
