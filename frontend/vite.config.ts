@@ -894,6 +894,302 @@ export default defineConfig({
             return;
           }
 
+          // --- Themes & Marketplace API for Dev Server ---
+          if (req.url?.startsWith("/api/themes/marketplace/search")) {
+            const urlObj = new URL(req.url, "http://localhost");
+            const q = urlObj.searchParams.get("q") || "";
+            const size = urlObj.searchParams.get("size") || "24";
+            const offset = urlObj.searchParams.get("offset") || "0";
+            const targetURL = `https://open-vsx.org/api/-/search?category=Themes&query=${encodeURIComponent(q)}&size=${size}&offset=${offset}`;
+
+            fetch(targetURL, {
+              headers: { "User-Agent": "UniRTM-Workbench-Dev/0.1.0" }
+            })
+              .then(async (resp) => {
+                if (!resp.ok) {
+                  res.statusCode = resp.status;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: `Open VSX search error: HTTP ${resp.status}` }));
+                  return;
+                }
+                const data = await resp.json();
+                const themesDir = path.join(os.homedir(), ".config", "unirtm", "themes");
+                const installedPkgIds = new Set<string>();
+                if (fs.existsSync(themesDir)) {
+                  try {
+                    const entries = fs.readdirSync(themesDir, { withFileTypes: true });
+                    for (const entry of entries) {
+                      if (entry.isDirectory()) {
+                        installedPkgIds.add(entry.name.toLowerCase());
+                        const pkgJsonPath = path.join(themesDir, entry.name, "package.json");
+                        if (fs.existsSync(pkgJsonPath)) {
+                          try {
+                            const p = JSON.parse(fs.readFileSync(pkgJsonPath, "utf-8"));
+                            if (p.name) installedPkgIds.add(p.name.toLowerCase());
+                          } catch {}
+                        }
+                      }
+                    }
+                  } catch {}
+                }
+
+                const extensions = (data.extensions || []).map((ext: any) => {
+                  const pkgId = ext.name || "";
+                  const nsPkgId = `${ext.namespace}.${ext.name}`.toLowerCase();
+                  const isInstalled = installedPkgIds.has(pkgId.toLowerCase()) || installedPkgIds.has(nsPkgId);
+                  return {
+                    namespace: ext.namespace,
+                    name: ext.name,
+                    displayName: ext.displayName || ext.name,
+                    version: ext.version,
+                    description: ext.description || "",
+                    downloadCount: ext.downloadCount || 0,
+                    averageRating: ext.averageRating || 0,
+                    files: {
+                      download: ext.files?.download || "",
+                      icon: ext.files?.icon || "",
+                    },
+                    url: ext.url || "",
+                    is_installed: isInstalled,
+                    package_id: ext.name,
+                  };
+                });
+
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({
+                  offset: data.offset || 0,
+                  totalSize: data.totalSize || 0,
+                  extensions,
+                }));
+              })
+              .catch((err) => {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              });
+            return;
+          }
+
+          if (req.url === "/api/themes/marketplace/install" && req.method === "POST") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", async () => {
+              try {
+                const { download_url } = JSON.parse(bodyStr || "{}");
+                if (!download_url) {
+                  res.statusCode = 400;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: "missing download_url" }));
+                  return;
+                }
+                const resp = await fetch(download_url);
+                if (!resp.ok) {
+                  res.statusCode = 502;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: `Failed to download VSIX: HTTP ${resp.status}` }));
+                  return;
+                }
+                const buffer = Buffer.from(await resp.arrayBuffer());
+                const tmpZip = path.join(os.tmpdir(), `unirtm_theme_${Date.now()}.vsix`);
+                fs.writeFileSync(tmpZip, buffer);
+
+                const script = `
+import zipfile, json, os, sys
+zf = zipfile.ZipFile(sys.argv[1], 'r')
+pkg_raw = zf.read('extension/package.json').decode('utf-8', errors='ignore')
+pkg = json.loads(pkg_raw)
+name = pkg.get('name', 'custom-theme')
+dest = os.path.expanduser(os.path.join('~/.config/unirtm/themes', name))
+os.makedirs(dest, exist_ok=True)
+for member in zf.namelist():
+    if member.startswith('extension/') and not member.endswith('/'):
+        rel = member[len('extension/'):]
+        target = os.path.join(dest, rel)
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        with open(target, 'wb') as f:
+            f.write(zf.read(member))
+print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes': pkg.get('contributes', {}).get('themes', []), 'iconThemes': pkg.get('contributes', {}).get('iconThemes', [])}))
+`;
+                const outStr = execFileSync("python3", ["-c", script, tmpZip], { encoding: "utf-8" });
+                try { fs.unlinkSync(tmpZip); } catch {}
+                const parsed = JSON.parse(outStr.trim());
+                const installed: any[] = [];
+                for (const t of parsed.themes || []) {
+                  installed.push({
+                    id: t.id || t.label,
+                    name: t.label || t.id,
+                    type: "color",
+                    is_builtin: false,
+                    ui_theme: t.uiTheme || "vs-dark",
+                    package_id: parsed.name,
+                    version: parsed.version,
+                  });
+                }
+                for (const t of parsed.iconThemes || []) {
+                  installed.push({
+                    id: t.id || t.label,
+                    name: t.label || t.id,
+                    type: "icon",
+                    is_builtin: false,
+                    package_id: parsed.name,
+                    version: parsed.version,
+                  });
+                }
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, installed }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
+          if (req.url?.startsWith("/api/themes") && req.method === "GET") {
+            const themesDir = path.join(os.homedir(), ".config", "unirtm", "themes");
+            const colorThemes: any[] = [
+              { id: "vs-dark", name: "Default Dark+", type: "color", is_builtin: true, ui_theme: "vs-dark" },
+              { id: "vs", name: "Default Light+", type: "color", is_builtin: true, ui_theme: "vs" },
+              { id: "hc-black", name: "High Contrast Dark", type: "color", is_builtin: true, ui_theme: "hc-black" },
+              { id: "hc-light", name: "High Contrast Light", type: "color", is_builtin: true, ui_theme: "hc-light" },
+            ];
+            const iconThemes: any[] = [
+              { id: "vs-seti", name: "Seti UI (VS Code 默认)", type: "icon", is_builtin: true },
+              { id: "minimal", name: "Minimal", type: "icon", is_builtin: true },
+            ];
+
+            if (fs.existsSync(themesDir)) {
+              try {
+                const dirs = fs.readdirSync(themesDir, { withFileTypes: true });
+                for (const d of dirs) {
+                  if (d.isDirectory()) {
+                    const pkgJson = path.join(themesDir, d.name, "package.json");
+                    if (fs.existsSync(pkgJson)) {
+                      try {
+                        const p = JSON.parse(fs.readFileSync(pkgJson, "utf-8"));
+                        const c = p.contributes || {};
+                        for (const ct of c.themes || []) {
+                          colorThemes.push({
+                            id: ct.id || ct.label,
+                            name: ct.label || ct.id,
+                            type: "color",
+                            is_builtin: false,
+                            ui_theme: ct.uiTheme || "vs-dark",
+                            package_id: p.name,
+                            version: p.version,
+                            relative_path: ct.path,
+                          });
+                        }
+                        for (const it of c.iconThemes || []) {
+                          iconThemes.push({
+                            id: it.id || it.label,
+                            name: it.label || it.id,
+                            type: "icon",
+                            is_builtin: false,
+                            package_id: p.name,
+                            version: p.version,
+                            relative_path: it.path,
+                          });
+                        }
+                      } catch {}
+                    }
+                  }
+                }
+              } catch {}
+            }
+
+            const wsPath = path.join(rootDir, ".unirtm.toml");
+            const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
+            let activeColor = "vs-dark";
+            let activeIcon = "vs-seti";
+            const readSetting = (fp: string) => {
+              if (!fs.existsSync(fp)) return;
+              const text = fs.readFileSync(fp, "utf-8");
+              const mColor = text.match(/color_theme\s*=\s*"([^"]+)"/);
+              if (mColor) activeColor = mColor[1];
+              const mIcon = text.match(/icon_theme\s*=\s*"([^"]+)"/);
+              if (mIcon) activeIcon = mIcon[1];
+            };
+            readSetting(userPath);
+            readSetting(wsPath);
+
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({
+              active_color_theme: activeColor,
+              active_icon_theme: activeIcon,
+              color_themes: colorThemes,
+              icon_themes: iconThemes,
+            }));
+            return;
+          }
+
+          if (req.url?.startsWith("/api/themes") && req.method === "DELETE") {
+            const urlObj = new URL(req.url, "http://localhost");
+            const id = urlObj.searchParams.get("id");
+            const themesDir = path.join(os.homedir(), ".config", "unirtm", "themes");
+            if (id && fs.existsSync(themesDir)) {
+              try {
+                for (const d of fs.readdirSync(themesDir)) {
+                  const itemDir = path.join(themesDir, d);
+                  const pkgJson = path.join(itemDir, "package.json");
+                  if (fs.existsSync(pkgJson)) {
+                    try {
+                      const p = JSON.parse(fs.readFileSync(pkgJson, "utf-8"));
+                      const c = p.contributes || {};
+                      const hasTheme = (c.themes || []).some((t: any) => (t.id || t.label) === id) ||
+                                       (c.iconThemes || []).some((t: any) => (t.id || t.label) === id) ||
+                                       p.name === id;
+                      if (hasTheme) {
+                        fs.rmSync(itemDir, { recursive: true, force: true });
+                        break;
+                      }
+                    } catch {}
+                  }
+                }
+              } catch {}
+            }
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ success: true }));
+            return;
+          }
+
+          if (req.url === "/api/themes/apply" && req.method === "POST") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const { color_theme_id, icon_theme_id } = JSON.parse(bodyStr || "{}");
+                const wsPath = path.join(rootDir, ".unirtm.toml");
+                if (fs.existsSync(wsPath)) {
+                  let content = fs.readFileSync(wsPath, "utf-8");
+                  if (color_theme_id) {
+                    if (content.includes("color_theme =")) {
+                      content = content.replace(/color_theme\s*=\s*"[^"]*"/, `color_theme = "${color_theme_id}"`);
+                    } else {
+                      content += `\n[settings]\ncolor_theme = "${color_theme_id}"\n`;
+                    }
+                  }
+                  if (icon_theme_id) {
+                    if (content.includes("icon_theme =")) {
+                      content = content.replace(/icon_theme\s*=\s*"[^"]*"/, `icon_theme = "${icon_theme_id}"`);
+                    } else {
+                      content += `\n[settings]\nicon_theme = "${icon_theme_id}"\n`;
+                    }
+                  }
+                  fs.writeFileSync(wsPath, content, "utf-8");
+                }
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
           if (req.url === "/api/system/browsers") {
             res.setHeader("Content-Type", "application/json");
             res.end(JSON.stringify({ browsers: [] }));

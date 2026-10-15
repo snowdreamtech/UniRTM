@@ -99,6 +99,8 @@ export interface TranslationDict {
   "settings.icon_theme_desc"?: string;
   "settings.theme_pkg_manager"?: string;
   "settings.theme_pkg_desc"?: string;
+  "settings.theme_tab_marketplace"?: string;
+  "settings.theme_tab_installed"?: string;
   "settings.install_vsix"?: string;
   "settings.installing"?: string;
   "settings.installed_custom_themes"?: string;
@@ -108,7 +110,10 @@ export interface TranslationDict {
   "settings.one_click_install"?: string;
   "settings.installed"?: string;
   "settings.apply_now"?: string;
+  "settings.apply_theme"?: string;
   "settings.downloads"?: string;
+  "common.uninstall"?: string;
+  "common.delete"?: string;
 
   "hello.input_placeholder": string;
   "hello.greet_btn": string;
