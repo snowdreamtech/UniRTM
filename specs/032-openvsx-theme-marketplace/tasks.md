@@ -45,3 +45,17 @@
 - [x] T007 [P] Run `go test ./internal/theme/...` and build Go binary (`go build -o bin/unirtm main.go`).
 - [x] T008 [P] Run `npm run build` in `frontend/` to verify zero TypeScript errors.
 - [x] T009 Test end-to-end online search and installation against Open VSX.
+
+---
+
+## Phase 5: Information Architecture Migration (Marketplace View & Slimmed Settings)
+
+- [x] T010 [US4] Rebuild `frontend/src/views/MarketplaceView.vue`:
+  - Channels/Tabs: `🎨 主题与图标 (Open VSX)` and `🧩 功能插件 (UniRTM 生态)`
+  - Full Open VSX search, chip filters, rich cards grid, install/apply actions
+  - Route query param support (`?tab=themes` or `?tab=plugins`)
+- [x] T011 [US4] Slim down `frontend/src/views/SettingsView.vue`:
+  - Remove heavy Open VSX search grid from settings
+  - Retain clean color/icon theme dropdown selectors and custom installed package list
+  - Add quick link: `🎨 获取更多主题与图标 ↗` linking to `/marketplace?tab=themes`
+- [x] T012 [P] [US4] Update sidebar/activity bar navigation and verify all flows with zero TypeScript/Vue errors.

@@ -23,12 +23,18 @@
 - `searchThemes(q?: string)`
 - `installOnline(item: MarketplaceExtension)`
 
-### 4. Frontend UI (`frontend/src/views/SettingsView.vue`)
-- In "VS Code 主题扩展包管理":
-  - Add search input for Open VSX marketplace with quick tags (热门/Popular, Dracula, Material, One Dark, etc.).
-  - Grid/List of marketplace theme cards:
-    - Icon / Logo
-    - DisplayName, Publisher, Version
-    - Download count, Rating
-    - Button: "一键安装" (or "已安装" / "卸载")
-    - Fast install and hot apply prompt.
+### 4. Frontend UI Architecture (`MarketplaceView.vue` & `SettingsView.vue`)
+- **Dedicated Marketplace (`frontend/src/views/MarketplaceView.vue`)**:
+  - Two decoupled channels/tabs:
+    1. **Themes & Icons (Open VSX)**:
+       - Full search bar with quick recommendations (Material, Dracula, One Dark, etc.).
+       - Grid of theme cards (Icon, DisplayName, Namespace, Version, Downloads, Rating, Description).
+       - One-click "安装" / "已安装" / "应用" actions.
+    2. **Plugins & Extensions (UniRTM Ecosystem)**:
+       - Native plugins catalog (UniAgent, Security Suite, tool providers).
+       - Isolated namespaces explanation and guidelines.
+- **Slimmed Settings (`frontend/src/views/SettingsView.vue`)**:
+  - Focused solely on preferences:
+    - Color theme & File icon theme dropdown selectors.
+    - Local custom installed theme list & manual `.vsix` file upload.
+    - Navigation prompt: `🎨 获取更多主题与图标 ↗` linking directly to `/marketplace?tab=themes`.

@@ -32,6 +32,17 @@ Connect UniRTM to [Open VSX Registry](https://open-vsx.org) to provide an integr
 - **I want to** click "Apply" or pick the installed theme from the theme dropdown,
 - **So that** both light and dark modes adapt to the selected theme family and icons update in real time.
 
+### US4: Dedicated Marketplace View with Channel-Level Decoupling
+- **As a** developer,
+- **I want to** browse themes and plugins from a top-level dedicated "Marketplace" view rather than buried inside Settings,
+- **So that** I have an expansive, immersive discovery experience, and themes (from Open VSX) and native plugins (from UniRTM ecosystem) remain cleanly separated across dedicated channels.
+
+**Acceptance Criteria**:
+- Marketplace top-level page `/marketplace` features two decoupled tabs/channels:
+  1. `🎨 Themes & Icons (Open VSX)`: full search, chips, grid, installation and activation.
+  2. `🧩 Plugins & Extensions (UniRTM Ecosystem)`: native tool providers, AI agents, and workflows.
+- Settings page `/settings` is slimmed down: focuses purely on preferences and configurations, with a quick link to `Marketplace` for discovering new themes.
+
 ---
 
 ## Non-Functional Requirements

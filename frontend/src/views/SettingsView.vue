@@ -149,175 +149,18 @@
               <div class="setting-meta full-width">
                 <div class="title-with-badge">
                   <span class="setting-title">{{ t('settings.theme_pkg_manager') || 'VS Code 主题与图标扩展管理' }}</span>
-                  <span class="badge-custom-pkg">Open VSX / VSIX</span>
+                  <span class="badge-custom-pkg">VSIX / ZIP</span>
                 </div>
-                <p class="setting-desc">{{ t('settings.theme_pkg_desc') || '在线浏览或安装 VS Code 官方主题与图标集，纯静态解析，自动保存在用户本地目录。' }}</p>
+                <p class="setting-desc">{{ t('settings.theme_pkg_desc') || '导入本地官方 VS Code 扩展包（.vsix），纯静态解析，自动保存在用户本地目录。' }}</p>
 
-                <!-- Sub-tabs: Marketplace vs Installed -->
-                <div class="theme-manager-subtabs">
-                  <button
-                    class="subtab-btn"
-                    :class="{ active: themeSectionTab === 'marketplace' }"
-                    @click="themeSectionTab = 'marketplace'"
-                  >
-                    <span>🌐</span>
-                    <span>{{ t('settings.theme_tab_marketplace') || '在线主题市场 (Open VSX)' }}</span>
+                <!-- Actions Toolbar -->
+                <div class="theme-actions-toolbar">
+                  <button class="btn-jump-marketplace" @click="navigateToMarketplace('themes')">
+                    <span class="jump-icon">🌐</span>
+                    <span>前往扩展与主题市场挑选... ↗</span>
                   </button>
-                  <button
-                    class="subtab-btn"
-                    :class="{ active: themeSectionTab === 'installed' }"
-                    @click="themeSectionTab = 'installed'"
-                  >
-                    <span>📦</span>
-                    <span>{{ t('settings.theme_tab_installed') || '已安装与本地导入' }}</span>
-                    <span v-if="installedThemesList.length > 0" class="tab-count-badge">{{ installedThemesList.length }}</span>
-                  </button>
-                </div>
 
-                <!-- Tab 1: Marketplace -->
-                <div v-show="themeSectionTab === 'marketplace'" class="marketplace-panel">
-                  <!-- Search Bar & Chips -->
-                  <div class="marketplace-search-bar">
-                    <div class="search-input-wrapper">
-                      <span class="search-icon">🔍</span>
-                      <input
-                        v-model="mpSearchQuery"
-                        type="text"
-                        :placeholder="t('settings.marketplace_search_placeholder') || '在 Open VSX 搜索主题或图标集...'"
-                        class="marketplace-input"
-                        @keydown.enter="onSearchMarketplace(mpSearchQuery)"
-                      />
-                      <button
-                        v-if="mpSearchQuery"
-                        class="btn-clear-search"
-                        @click="mpSearchQuery = ''; onSearchMarketplace('')"
-                        title="清空"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    <button
-                      class="btn-search-mp"
-                      :disabled="mpIsSearching"
-                      @click="onSearchMarketplace(mpSearchQuery)"
-                    >
-                      <span v-if="mpIsSearching" class="spinner-small"></span>
-                      <span v-else>搜索</span>
-                    </button>
-                  </div>
-
-                  <!-- Quick Chips -->
-                  <div class="marketplace-chips">
-                    <span class="chips-label">推荐:</span>
-                    <button
-                      v-for="chip in ['全部', 'Material', 'Dracula', 'One Dark', 'Catppuccin', 'Tokyo Night', 'GitHub', 'Icons']"
-                      :key="chip"
-                      class="chip-btn"
-                      :class="{ active: (chip === '全部' && !mpSearchQuery) || mpSearchQuery.toLowerCase() === chip.toLowerCase() }"
-                      @click="mpSearchQuery = (chip === '全部' ? '' : chip); onSearchMarketplace(mpSearchQuery)"
-                    >
-                      {{ chip }}
-                    </button>
-                    <span v-if="mpTotalSize > 0" class="results-count-label">共 {{ mpTotalSize }} 款</span>
-                  </div>
-
-                  <!-- Feedback Alert -->
-                  <div v-if="themeInstallMsg" class="install-feedback-banner" :class="{ error: themeInstallError }">
-                    <span>{{ themeInstallMsg }}</span>
-                    <button class="btn-close-msg" @click="themeInstallMsg = ''">✕</button>
-                  </div>
-
-                  <!-- Error Banner -->
-                  <div v-if="mpError" class="marketplace-error-banner">
-                    <span>⚠️ {{ mpError }}</span>
-                    <button class="btn-retry" @click="onSearchMarketplace(mpSearchQuery)">重试</button>
-                  </div>
-
-                  <!-- Loading Skeleton -->
-                  <div v-if="mpIsSearching" class="marketplace-loading">
-                    <div class="spinner-small"></div>
-                    <span>正在连接 Open VSX 检索主题与图标...</span>
-                  </div>
-
-                  <!-- Empty State -->
-                  <div v-else-if="mpSearchResults.length === 0" class="marketplace-empty">
-                    <span class="empty-icon">🎨</span>
-                    <p>未找到符合条件的主题或图标包</p>
-                    <button class="btn-retry-all" @click="mpSearchQuery = ''; onSearchMarketplace('')">查看热门推荐</button>
-                  </div>
-
-                  <!-- Cards Grid -->
-                  <div v-else class="marketplace-grid">
-                    <div
-                      v-for="item in mpSearchResults"
-                      :key="item.namespace + '.' + item.name"
-                      class="mp-card"
-                    >
-                      <div class="mp-card-top">
-                        <div class="mp-card-icon-wrap">
-                          <img
-                            v-if="item.files && item.files.icon"
-                            :src="item.files.icon"
-                            class="mp-card-icon"
-                            loading="lazy"
-                            alt="icon"
-                            @error="(e: any) => { if (e && e.target) e.target.style.display = 'none'; }"
-                          />
-                          <span class="mp-card-default-icon">🎨</span>
-                        </div>
-                        <div class="mp-card-info">
-                          <div class="mp-card-title-row">
-                            <span class="mp-card-title" :title="item.displayName || item.name">
-                              {{ item.displayName || item.name }}
-                            </span>
-                            <span class="mp-card-version">v{{ item.version }}</span>
-                          </div>
-                          <span class="mp-card-namespace font-mono">{{ item.namespace }}</span>
-                        </div>
-                      </div>
-
-                      <p class="mp-card-desc" :title="item.description">
-                        {{ item.description || '无详细描述' }}
-                      </p>
-
-                      <div class="mp-card-footer">
-                        <div class="mp-card-meta">
-                          <span class="mp-downloads" :title="'下载量: ' + item.downloadCount">
-                            ⬇️ {{ formatDownloads(item.downloadCount) }}
-                          </span>
-                          <span v-if="item.averageRating" class="mp-rating">
-                            ⭐ {{ item.averageRating.toFixed(1) }}
-                          </span>
-                        </div>
-                        <div class="mp-card-action">
-                          <div v-if="item.is_installed" class="installed-actions-group">
-                            <span class="badge-installed">✓ 已安装</span>
-                            <button
-                              class="btn-apply-theme"
-                              :title="t('settings.apply_theme') || '应用此主题'"
-                              @click="onApplyMarketplaceTheme(item)"
-                            >
-                              {{ t('settings.apply') || '应用' }}
-                            </button>
-                          </div>
-                          <button
-                            v-else
-                            class="btn-install-online"
-                            :disabled="mpInstallingMap[item.namespace + '.' + item.name]"
-                            @click="onInstallMarketplaceTheme(item)"
-                          >
-                            <span v-if="mpInstallingMap[item.namespace + '.' + item.name]" class="spinner-small"></span>
-                            <span>{{ mpInstallingMap[item.namespace + '.' + item.name] ? (t('settings.installing') || '安装中...') : (t('settings.install') || '安装') }}</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Tab 2: Installed & Manual Upload -->
-                <div v-show="themeSectionTab === 'installed'" class="installed-panel">
-                  <div class="theme-install-actions">
+                  <div class="local-vsix-upload-wrap">
                     <input
                       ref="vsixInputRef"
                       type="file"
@@ -335,49 +178,49 @@
                       <span>{{ isInstallingTheme ? (t('settings.installing') || '正在解析安装...') : (t('settings.install_vsix') || '手动导入本地 .vsix 包') }}</span>
                     </button>
                   </div>
+                </div>
 
-                  <!-- Feedback Alert in Installed Tab -->
-                  <div v-if="themeInstallMsg" class="install-feedback-banner" :class="{ error: themeInstallError }">
-                    <span>{{ themeInstallMsg }}</span>
-                    <button class="btn-close-msg" @click="themeInstallMsg = ''">✕</button>
+                <!-- Feedback Alert in Installed Tab -->
+                <div v-if="themeInstallMsg" class="install-feedback-banner" :class="{ error: themeInstallError }">
+                  <span>{{ themeInstallMsg }}</span>
+                  <button class="btn-close-msg" @click="themeInstallMsg = ''">✕</button>
+                </div>
+
+                <!-- Installed Custom Themes Table / Cards -->
+                <div v-if="installedThemesList.length > 0" class="installed-themes-container">
+                  <div class="installed-themes-header">
+                    <span>{{ t('settings.installed_custom_themes') || '已安装的第三方主题与图标包' }}</span>
+                    <span class="count-badge">{{ installedThemesList.length }}</span>
                   </div>
-
-                  <!-- Installed Custom Themes Table / Cards -->
-                  <div v-if="installedThemesList.length > 0" class="installed-themes-container">
-                    <div class="installed-themes-header">
-                      <span>{{ t('settings.installed_custom_themes') || '已安装的第三方主题与图标包' }}</span>
-                      <span class="count-badge">{{ installedThemesList.length }}</span>
-                    </div>
-                    <div class="installed-themes-list">
-                      <div
-                        v-for="item in installedThemesList"
-                        :key="item.type + ':' + (item.package_id || item.id)"
-                        class="installed-theme-card"
-                      >
-                        <div class="card-left">
-                          <span class="theme-type-tag" :class="item.type">
-                            {{ item.type === 'color' ? '🎨 颜色主题' : '📁 图标主题' }}
-                          </span>
-                          <div class="theme-info-texts">
-                            <span class="theme-card-title">{{ item.name }}</span>
-                            <span class="theme-card-sub font-mono">{{ item.package_id }} {{ item.version ? 'v' + item.version : '' }}</span>
-                          </div>
+                  <div class="installed-themes-list">
+                    <div
+                      v-for="item in installedThemesList"
+                      :key="item.type + ':' + (item.package_id || item.id)"
+                      class="installed-theme-card"
+                    >
+                      <div class="card-left">
+                        <span class="theme-type-tag" :class="item.type">
+                          {{ item.type === 'color' ? '🎨 颜色主题' : '📁 图标主题' }}
+                        </span>
+                        <div class="theme-info-texts">
+                          <span class="theme-card-title">{{ item.name }}</span>
+                          <span class="theme-card-sub font-mono">{{ item.package_id }} {{ item.version ? 'v' + item.version : '' }}</span>
                         </div>
-                        <div class="card-actions">
-                          <button
-                            class="btn-delete-theme"
-                            :title="t('common.delete') || '卸载删除'"
-                            @click="onDeleteInstalledTheme(item)"
-                          >
-                            🗑️ {{ t('common.uninstall') || '卸载' }}
-                          </button>
-                        </div>
+                      </div>
+                      <div class="card-actions">
+                        <button
+                          class="btn-delete-theme"
+                          :title="t('common.delete') || '卸载删除'"
+                          @click="onDeleteInstalledTheme(item)"
+                        >
+                          🗑️ {{ t('common.uninstall') || '卸载' }}
+                        </button>
                       </div>
                     </div>
                   </div>
-                  <div v-else class="installed-empty-hint">
-                    <p>尚未安装任何第三方扩展包，可前往“在线主题市场”挑选并安装。</p>
-                  </div>
+                </div>
+                <div v-else class="installed-empty-hint">
+                  <p>尚未安装任何第三方扩展包。可前往“扩展与主题市场”挑选，或手动导入本地 .vsix 文件。</p>
                 </div>
               </div>
             </div>
@@ -997,12 +840,18 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
+import { useRouter } from "vue-router";
 import { t, selectedLangSetting, setLanguage, SUPPORTED_LANGUAGES } from "../i18n";
 import { useTheme } from "../composables/useTheme";
 import { useThemeManager } from "../composables/useThemeManager";
-import { useThemeMarketplace } from "../composables/useThemeMarketplace";
-import type { ThemeItem, MarketplaceExtension } from "../types/theme-manager";
+import type { ThemeItem } from "../types/theme-manager";
 import CustomSelect from "../components/CustomSelect.vue";
+
+const router = useRouter();
+
+function navigateToMarketplace(tab = "themes") {
+  router.push({ path: "/marketplace", query: { tab } });
+}
 
 const props = defineProps<{
   initialScope?: "user" | "workspace";
@@ -1024,19 +873,6 @@ const {
   deleteTheme,
   setActiveTheme,
 } = useThemeManager();
-
-const {
-  searchQuery: mpSearchQuery,
-  searchResults: mpSearchResults,
-  totalSize: mpTotalSize,
-  isSearching: mpIsSearching,
-  installingMap: mpInstallingMap,
-  marketplaceError: mpError,
-  searchThemes: mpSearchThemes,
-  installThemeOnline: mpInstallThemeOnline,
-} = useThemeMarketplace();
-
-const themeSectionTab = ref<"marketplace" | "installed">("marketplace");
 
 // State
 const activeScope = ref<"user" | "workspace">(props.initialScope || "workspace");
@@ -1850,55 +1686,6 @@ async function onDeleteInstalledTheme(item: ThemeItem) {
   }
 }
 
-function onSearchMarketplace(q?: string) {
-  mpSearchThemes(q);
-}
-
-async function onInstallMarketplaceTheme(item: MarketplaceExtension) {
-  try {
-    themeInstallMsg.value = "";
-    themeInstallError.value = false;
-    const installed = await mpInstallThemeOnline(item);
-    themeInstallMsg.value = `✓ 成功安装 ${item.displayName || item.name}！`;
-    if (installed && installed.length > 0) {
-      const first = installed[0];
-      if (first.type === "color") {
-        await setActiveTheme(first.id, undefined);
-      } else if (first.type === "icon") {
-        await setActiveTheme(undefined, first.id);
-      }
-    }
-  } catch (err: any) {
-    themeInstallError.value = true;
-    themeInstallMsg.value = `✕ 安装失败: ${err.message || err}`;
-  }
-}
-
-async function onApplyMarketplaceTheme(item: MarketplaceExtension) {
-  const pkgID = item.package_id || item.name;
-  const colorMatch = colorThemes.value.find((c) => c.package_id === pkgID);
-  if (colorMatch) {
-    await setActiveTheme(colorMatch.id, undefined);
-    appTheme.value = colorMatch.id;
-  }
-  const iconMatch = iconThemes.value.find((i) => i.package_id === pkgID);
-  if (iconMatch) {
-    await setActiveTheme(undefined, iconMatch.id);
-  }
-  themeInstallMsg.value = `✓ 已激活主题 ${item.displayName || item.name}`;
-}
-
-function formatDownloads(count: number): string {
-  if (!count) return "0";
-  if (count >= 1000000) {
-    return (count / 1000000).toFixed(1) + "M";
-  }
-  if (count >= 1000) {
-    return (count / 1000).toFixed(1) + "k";
-  }
-  return String(count);
-}
-
 function onBrowserPresetChange(val: string) {
   selectedBrowserPreset.value = val;
   if (val !== "custom") {
@@ -2261,7 +2048,6 @@ onMounted(() => {
   loadNetworkStatus();
   handleDetectProxy(false);
   fetchThemes();
-  mpSearchThemes("");
   if (props.activeCategory) {
     setTimeout(() => {
       scrollToCategory(props.activeCategory!);
@@ -4085,442 +3871,42 @@ input:checked + .slider:before {
   border-color: #ef4444;
 }
 
-/* Subtabs for Theme Manager */
-.theme-manager-subtabs {
+/* Toolbar for Theme Manager Actions */
+.theme-actions-toolbar {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
   margin: 14px 0 16px 0;
-  border-bottom: 1px solid var(--card-border);
-  padding-bottom: 8px;
+  flex-wrap: wrap;
 }
 
-.subtab-btn {
+.btn-jump-marketplace {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: var(--accent-cyan);
   border-radius: 6px;
   font-size: 0.84rem;
   font-weight: 500;
-  color: var(--text-muted);
-  background: transparent;
-  border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.subtab-btn:hover {
-  color: var(--text-main);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.subtab-btn.active {
-  color: var(--accent-cyan);
-  background: rgba(0, 229, 255, 0.08);
-  border-color: rgba(0, 229, 255, 0.25);
-}
-
-.tab-count-badge {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-main);
-  font-size: 0.72rem;
-  padding: 1px 6px;
-  border-radius: 10px;
-}
-
-/* Marketplace Panel */
-.marketplace-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.marketplace-search-bar {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.search-input-wrapper {
-  position: relative;
-  flex: 1;
-  display: flex;
-  align-items: center;
-}
-
-.search-icon {
-  position: absolute;
-  left: 10px;
-  font-size: 0.85rem;
-  opacity: 0.6;
-  pointer-events: none;
-}
-
-.marketplace-input {
-  width: 100%;
-  padding: 7px 32px 7px 32px;
-  background: var(--input-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 6px;
-  color: var(--text-main);
-  font-size: 0.85rem;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.marketplace-input:focus {
-  border-color: var(--accent-cyan);
-}
-
-.btn-clear-search {
-  position: absolute;
-  right: 10px;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  cursor: pointer;
-}
-
-.btn-clear-search:hover {
-  color: var(--text-main);
-}
-
-.btn-search-mp {
-  padding: 7px 18px;
-  background: rgba(0, 229, 255, 0.12);
-  border: 1px solid rgba(0, 229, 255, 0.3);
-  color: var(--accent-cyan);
-  border-radius: 6px;
-  font-size: 0.84rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-search-mp:hover:not(:disabled) {
-  background: rgba(0, 229, 255, 0.2);
-  border-color: var(--accent-cyan);
-}
-
-.btn-search-mp:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.marketplace-chips {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.chips-label {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  margin-right: 2px;
-}
-
-.chip-btn {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  color: var(--text-muted);
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.chip-btn:hover {
-  color: var(--text-main);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.chip-btn.active {
-  background: rgba(0, 229, 255, 0.1);
-  border-color: var(--accent-cyan);
-  color: var(--accent-cyan);
-}
-
-.results-count-label {
-  font-size: 0.74rem;
-  color: var(--text-muted);
-  margin-left: 6px;
-}
-
-.install-feedback-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: var(--success);
-  border-radius: 6px;
-  font-size: 0.82rem;
-}
-
-.install-feedback-banner.error {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #ef4444;
-}
-
-.btn-close-msg {
-  background: transparent;
-  border: none;
-  color: inherit;
-  cursor: pointer;
-  font-size: 0.8rem;
-}
-
-.marketplace-error-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #ef4444;
-  border-radius: 6px;
-  font-size: 0.82rem;
-}
-
-.btn-retry {
-  background: transparent;
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #ef4444;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 0.76rem;
-  cursor: pointer;
-}
-
-.marketplace-loading,
-.marketplace-empty,
-.installed-empty-hint {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 28px 16px;
-  color: var(--text-muted);
-  font-size: 0.84rem;
-  background: var(--section-bg);
-  border: 1px dashed var(--card-border);
-  border-radius: 8px;
-}
-
-.empty-icon {
-  font-size: 1.8rem;
-}
-
-.btn-retry-all {
-  margin-top: 6px;
-  padding: 5px 12px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  color: var(--accent-cyan);
-  border-radius: 6px;
-  font-size: 0.8rem;
-  cursor: pointer;
-}
-
-/* Marketplace Grid */
-.marketplace-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-  margin-top: 4px;
-}
-
-.mp-card {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 12px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 8px;
-  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-}
-
-.mp-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(0, 229, 255, 0.4);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.mp-card-top {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-}
-
-.mp-card-icon-wrap {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: var(--section-bg);
-  border: 1px solid var(--card-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  position: relative;
-  flex-shrink: 0;
-}
-
-.mp-card-icon {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 1;
-}
-
-.mp-card-default-icon {
-  font-size: 1.2rem;
-  z-index: 0;
-}
-
-.mp-card-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
-}
-
-.mp-card-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-}
-
-.mp-card-title {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--text-main);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.mp-card-version {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.06);
-  padding: 1px 4px;
-  border-radius: 4px;
-  flex-shrink: 0;
-}
-
-.mp-card-namespace {
-  font-size: 0.74rem;
-  color: var(--text-muted);
-  margin-top: 1px;
-}
-
-.mp-card-desc {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  margin: 8px 0;
-  line-height: 1.35;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: 2.1em;
-}
-
-.mp-card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 4px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.mp-card-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.74rem;
-  color: var(--text-muted);
-}
-
-.mp-card-action {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.installed-actions-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.badge-installed {
-  font-size: 0.72rem;
-  padding: 2px 6px;
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: var(--success);
-  border-radius: 4px;
-}
-
-.btn-apply-theme {
-  padding: 4px 10px;
-  background: rgba(0, 229, 255, 0.12);
-  border: 1px solid rgba(0, 229, 255, 0.3);
-  color: var(--accent-cyan);
-  border-radius: 4px;
-  font-size: 0.76rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-apply-theme:hover {
-  background: rgba(0, 229, 255, 0.25);
-  border-color: var(--accent-cyan);
-}
-
-.btn-install-online {
-  padding: 4px 12px;
-  background: rgba(0, 229, 255, 0.12);
-  border: 1px solid rgba(0, 229, 255, 0.3);
-  color: var(--accent-cyan);
-  border-radius: 4px;
-  font-size: 0.78rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.btn-install-online:hover:not(:disabled) {
+.btn-jump-marketplace:hover {
   background: rgba(0, 229, 255, 0.22);
   border-color: var(--accent-cyan);
+  transform: translateY(-1px);
 }
 
-.btn-install-online:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.jump-icon {
+  font-size: 0.95rem;
 }
 
-.installed-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.local-vsix-upload-wrap {
+  display: inline-flex;
 }
 </style>
 
