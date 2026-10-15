@@ -4,7 +4,7 @@ import { fileURLToPath, URL } from "node:url";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 
 function findUnirtmBinary(rootDir: string): string {
   const isWindows = process.platform === "win32";
@@ -436,17 +436,24 @@ export default defineConfig({
             // 1. Dynamic live query via UniRTM CLI: unirtm ls-remote <tool> --json
             if (tool && fs.existsSync(unirtmBin)) {
               try {
-                const out = execFileSync(unirtmBin, ["ls-remote", tool, "--json"], {
+                const res = spawnSync(unirtmBin, ["ls-remote", tool, "--json"], {
                   cwd: rootDir,
                   encoding: "utf-8",
                   maxBuffer: 50 * 1024 * 1024,
+                  timeout: 10000,
                 });
-                const data = JSON.parse(out);
-                if (Array.isArray(data.versions) && data.versions.length > 0) {
-                  const extracted = data.versions
-                    .map((v: any) => v.Version || v.version || "")
-                    .filter((v: string) => v && !v.includes("rc") && !v.includes("beta") && !v.includes("alpha"));
-                  versions = Array.from(new Set(extracted));
+                const text = (res.stdout || "").trim() || (res.stderr || "").trim();
+                const start = text.indexOf("{");
+                const end = text.lastIndexOf("}");
+                if (start !== -1 && end !== -1 && end > start) {
+                  const data = JSON.parse(text.slice(start, end + 1));
+                  const rawList = data.fields?.versions || data.versions || (Array.isArray(data) ? data : []);
+                  if (Array.isArray(rawList) && rawList.length > 0) {
+                    const extracted = rawList
+                      .map((v: any) => v.Version || v.version || (typeof v === "string" ? v : ""))
+                      .filter((v: string) => v && !v.includes("rc") && !v.includes("beta") && !v.includes("alpha"));
+                    versions = Array.from(new Set(extracted));
+                  }
                 }
               } catch (e) {
                 console.warn(`[UniRTM DevServer] Dynamic ls-remote fallback for ${tool}:`, e);

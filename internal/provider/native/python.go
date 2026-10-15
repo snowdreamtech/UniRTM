@@ -73,12 +73,14 @@ func (h *PythonHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		var bodyBytes []byte
 		var newETag, lastMod string
 
-		timeout := 5 * time.Second
+		maxRetries := 2
+		timeout := 3 * time.Second
 		if pkgHttp.MockTransport != nil {
+			maxRetries = 3
 			timeout = 60 * time.Second
 		}
 
-		for i := 0; i < 3; i++ {
+		for i := 0; i < maxRetries; i++ {
 			client := pkgHttp.NewClientWithTimeout(timeout)
 			req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 			if err != nil {
@@ -156,10 +158,11 @@ func (h *PythonHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 					return staleVersions, nil
 				}
 				if baseline := getPythonBaselineVersions(githubProxy); len(baseline) > 0 {
+					writeNativeDiskCacheWithETag("python", cacheKey, baseline, "", "")
 					return baseline, nil
 				}
 			}
-			return nil, fmt.Errorf("github api call failed after 3 attempts (base: %s): %w", apiBase, lastErr)
+			return nil, fmt.Errorf("github api call failed after %d attempts (base: %s): %w", maxRetries, apiBase, lastErr)
 		}
 
 		var releases []ghRelease
@@ -261,7 +264,7 @@ func (h *PythonHandler) parseReleases(releases []ghRelease, githubProxy string) 
 		}
 	}
 
-	return result, nil
+	return result
 }
 
 type scoredAsset struct {
