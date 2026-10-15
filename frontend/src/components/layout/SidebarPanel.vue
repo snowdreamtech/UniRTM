@@ -217,29 +217,12 @@ const filteredDashboardItems = computed(() => {
 
 
 
-// Tools items (Full toolchains superset covering Languages, Build Systems, DevOps, Linters)
+// Tools items (Synchronized with active toolchains and runtimes)
 const toolItems = ref([
-  // Languages
-  { id: "node", name: "Node.js", icon: "node", version: "22.14.0", status: "success" },
-  { id: "go", name: "Go", icon: "go", version: "1.24.0", status: "success" },
-  { id: "python", name: "Python", icon: "python", version: "3.13.2", status: "success" },
+  { id: "node", name: "Node.js", icon: "node", version: "20.18.3", status: "success" },
+  { id: "go", name: "Go", icon: "go", version: "1.27.2", status: "success" },
+  { id: "python", name: "Python", icon: "python", version: "3.14.7", status: "success" },
   { id: "rust", name: "Rust", icon: "rust", version: "1.85.0", status: "success" },
-  { id: "java", name: "Java", icon: "java", version: "21.0.2", status: "success" },
-
-  // Build Systems
-  { id: "maven", name: "Maven", icon: "maven", version: "3.9.6", status: "success" },
-  { id: "gradle", name: "Gradle", icon: "gradle", version: "8.10.2", status: "success" },
-  { id: "cmake", name: "CMake", icon: "cmake", version: "3.30.5", status: "success" },
-  { id: "ninja", name: "Ninja", icon: "ninja", version: "1.12.1", status: "success" },
-
-  // Cloud & DevOps
-  { id: "kubectl", name: "Kubectl", icon: "kubectl", version: "v1.31.2", status: "success" },
-  { id: "helm", name: "Helm", icon: "helm", version: "3.16.2", status: "success" },
-
-  // Linters & Security
-  { id: "pre-commit", name: "pre-commit", icon: "git", version: "4.0.1", status: "success" },
-  { id: "trivy", name: "Trivy", icon: "lock", version: "0.56.2", status: "success" },
-  { id: "eslint", name: "ESLint", icon: "javascript", version: "9.14.0", status: "success" },
 ]);
 
 const filteredToolItems = computed(() => {
@@ -293,6 +276,14 @@ onMounted(async () => {
           if (matched) {
             if (rt.active_version) matched.version = rt.active_version;
             else if (rt.global_version) matched.version = rt.global_version;
+          } else {
+            toolItems.value.push({
+              id: rt.id,
+              name: rt.name,
+              icon: rt.id,
+              version: rt.active_version || rt.global_version || "installed",
+              status: "success",
+            });
           }
         }
       }
