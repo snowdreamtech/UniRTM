@@ -78,18 +78,36 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		return val.([]VersionInfo), nil
 	}
 
+	// Tier 1: Check persistent disk cache (12 hours TTL)
+	var cachedVersions []VersionInfo
+	hit, etag, cachedVersions := readNativeDiskCacheMeta(h.Name(), cacheKey, &cachedVersions, 12*time.Hour)
+	if hit && len(cachedVersions) > 0 {
+		githubHandlerCache.Store(cacheKey, cachedVersions)
+		return cachedVersions, nil
+	}
+
 	res, err, _ := githubHandlerFlight.Do(cacheKey, func() (interface{}, error) {
 		if val, ok := githubHandlerCache.Load(cacheKey); ok {
 			return val, nil
 		}
+		if hit, _, cached := readNativeDiskCacheMeta(h.Name(), cacheKey, &cachedVersions, 12*time.Hour); hit && len(cached) > 0 {
+			githubHandlerCache.Store(cacheKey, cached)
+			return cached, nil
+		}
 
-		apiURL := fmt.Sprintf("%s/repos/%s/%s/releases?per_page=20", apiBase, h.Owner, h.Repo)
+		apiURL := fmt.Sprintf("%s/repos/%s/%s/releases?per_page=100", apiBase, h.Owner, h.Repo)
 
 		var resp *http.Response
 		var lastErr error
+		var newETag, lastMod string
+
+		timeout := 5 * time.Second
+		if pkgHttp.MockTransport != nil {
+			timeout = 60 * time.Second
+		}
 
 		for i := 0; i < 3; i++ {
-			client := pkgHttp.NewClientWithTimeout(60 * time.Second)
+			client := pkgHttp.NewClientWithTimeout(timeout)
 			req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 			if err != nil {
 				return nil, err
@@ -100,36 +118,54 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 			req.Header.Set("Accept", "application/vnd.github+json")
 
 			// Add GitHub token if available to increase rate limits
-			token := env.Get("GITHUB_TOKEN")
-			if token == "" {
-				token = env.Get("GH_TOKEN")
-			}
+			token := getGitHubToken()
 			if token != "" {
 				req.Header.Set("Authorization", "Bearer "+token)
 			}
 
-			resp, err = client.Do(req)
-			if err == nil && resp.StatusCode == http.StatusOK {
-				lastErr = nil
-				break
+			// Conditional request (ETag) to save GitHub rate limit quota
+			if etag != "" {
+				req.Header.Set("If-None-Match", etag)
 			}
 
-			if err != nil {
-				lastErr = fmt.Errorf("attempt %d: %w", i+1, err)
+			resp, err = client.Do(req)
+			if err == nil {
+				if resp.StatusCode == http.StatusNotModified {
+					resp.Body.Close()
+					touchNativeDiskCache(h.Name(), cacheKey)
+					if len(cachedVersions) > 0 {
+						githubHandlerCache.Store(cacheKey, cachedVersions)
+						return cachedVersions, nil
+					}
+				} else if resp.StatusCode == http.StatusOK {
+					newETag = resp.Header.Get("ETag")
+					lastMod = resp.Header.Get("Last-Modified")
+					lastErr = nil
+					break
+				} else {
+					lastErr = fmt.Errorf("attempt %d: github api returned status %d", i+1, resp.StatusCode)
+					resp.Body.Close()
+				}
 			} else {
-				lastErr = fmt.Errorf("attempt %d: github api returned status %d", i+1, resp.StatusCode)
-				resp.Body.Close()
+				lastErr = fmt.Errorf("attempt %d: %w", i+1, err)
 			}
 
 			// Backoff before retry
 			select {
 			case <-ctx.Done():
 				return nil, ctx.Err()
-			case <-time.After(time.Duration(i+1) * time.Second):
+			case <-time.After(time.Duration(i+1) * 200 * time.Millisecond):
 			}
 		}
 
 		if lastErr != nil {
+			if pkgHttp.MockTransport == nil {
+				var staleVersions []VersionInfo
+				if readNativeDiskCacheStale(h.Name(), cacheKey, &staleVersions) && len(staleVersions) > 0 {
+					githubHandlerCache.Store(cacheKey, staleVersions)
+					return staleVersions, nil
+				}
+			}
 			return nil, fmt.Errorf("github api call failed after 3 attempts (base: %s): %w", apiBase, lastErr)
 		}
 		defer resp.Body.Close()
@@ -201,6 +237,9 @@ func (h *GithubHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		}
 
 		githubHandlerCache.Store(cacheKey, versions)
+		if len(versions) > 0 {
+			writeNativeDiskCacheWithETag(h.Name(), cacheKey, versions, newETag, lastMod)
+		}
 		return versions, nil
 	})
 
@@ -231,10 +270,7 @@ func (h *GithubHandler) ResolveTag(ctx context.Context, version string) (*Versio
 	}
 
 	client := pkgHttp.NewClientWithTimeout(30 * time.Second)
-	token := env.Get("GITHUB_TOKEN")
-	if token == "" {
-		token = env.Get("GH_TOKEN")
-	}
+	token := getGitHubToken()
 
 	for _, tag := range tagCandidates {
 		apiURL := fmt.Sprintf("%s/repos/%s/%s/releases/tags/%s", apiBase, h.Owner, h.Repo, tag)

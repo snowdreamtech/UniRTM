@@ -5,6 +5,8 @@ package native
 
 import (
 	"context"
+
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 )
 
 // Asset represents a downloadable file for a specific version.
@@ -44,3 +46,22 @@ type Recipe struct {
 	Aliases map[string]string
 	GPGKeys []string // List of trusted GPG fingerprints for this tool
 }
+
+// GitHubTokenResolver allows injecting full config/credential token resolution without cyclic dependency.
+var GitHubTokenResolver func(host string) string
+
+// getGitHubToken retrieves the GitHub token using the resolver if set, falling back to environment variables.
+func getGitHubToken() string {
+	if GitHubTokenResolver != nil {
+		if tok := GitHubTokenResolver("github.com"); tok != "" {
+			return tok
+		}
+	}
+	for _, key := range []string{"GITHUB_TOKEN", "GH_TOKEN", "GITHUB_API_TOKEN"} {
+		if token := env.Get(key); token != "" {
+			return token
+		}
+	}
+	return ""
+}
+

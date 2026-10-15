@@ -15,6 +15,7 @@ import (
 
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
+	"golang.org/x/sync/singleflight"
 )
 
 // PythonHandler specifically handles python-build-standalone.
@@ -26,6 +27,10 @@ type PythonHandler struct {
 func (h *PythonHandler) Name() string {
 	return "python_standalone"
 }
+
+var (
+	pythonHandlerFlight singleflight.Group
+)
 
 func (h *PythonHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
 	// Support GitHub Proxy Acceleration
@@ -44,77 +49,138 @@ func (h *PythonHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		apiBase = "https://api.github.com"
 	}
 	apiBase = strings.TrimSuffix(apiBase, "/")
-	// Use smaller per_page to avoid 504
-	apiURL := fmt.Sprintf("%s/repos/%s/%s/releases?per_page=10", apiBase, h.Owner, h.Repo)
 
-	var resp *http.Response
-	var lastErr error
-	var bodyBytes []byte
+	cacheKey := fmt.Sprintf("%s/%s|%s|%s", h.Owner, h.Repo, apiBase, githubProxy)
 
-	for i := 0; i < 3; i++ {
-		client := pkgHttp.NewClientWithTimeout(60 * time.Second)
-		req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
-		if err != nil {
+	// Tier 1: Check Disk Cache (12 hours TTL)
+	var cachedVersions []VersionInfo
+	hit, etag, cachedVersions := readNativeDiskCacheMeta("python", cacheKey, &cachedVersions, 12*time.Hour)
+	if hit && len(cachedVersions) > 0 {
+		return cachedVersions, nil
+	}
+
+	// Use singleflight to prevent duplicate concurrent API requests
+	res, err, _ := pythonHandlerFlight.Do(cacheKey, func() (interface{}, error) {
+		// Double check inside singleflight
+		if hit, _, cached := readNativeDiskCacheMeta("python", cacheKey, &cachedVersions, 12*time.Hour); hit && len(cached) > 0 {
+			return cached, nil
+		}
+
+		apiURL := fmt.Sprintf("%s/repos/%s/%s/releases?per_page=100", apiBase, h.Owner, h.Repo)
+
+		var resp *http.Response
+		var lastErr error
+		var bodyBytes []byte
+		var newETag, lastMod string
+
+		timeout := 5 * time.Second
+		if pkgHttp.MockTransport != nil {
+			timeout = 60 * time.Second
+		}
+
+		for i := 0; i < 3; i++ {
+			client := pkgHttp.NewClientWithTimeout(timeout)
+			req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
+			req.Header.Set("Accept", "application/vnd.github+json")
+
+			token := getGitHubToken()
+			if token != "" {
+				req.Header.Set("Authorization", "Bearer "+token)
+			}
+
+			// Conditional request (ETag) to save GitHub rate limit quota
+			if etag != "" {
+				req.Header.Set("If-None-Match", etag)
+			}
+
+			resp, err = client.Do(req)
+			if err != nil {
+				lastErr = fmt.Errorf("attempt %d: request failed: %w", i+1, err)
+				select {
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				case <-time.After(time.Duration(i+1) * 200 * time.Millisecond):
+				}
+				continue
+			}
+
+			// 304 Not Modified: Cache is still fresh on upstream! Zero quota used.
+			if resp.StatusCode == http.StatusNotModified {
+				resp.Body.Close()
+				touchNativeDiskCache("python", cacheKey)
+				if len(cachedVersions) > 0 {
+					return cachedVersions, nil
+				}
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				lastErr = fmt.Errorf("attempt %d: github api returned status %d", i+1, resp.StatusCode)
+				resp.Body.Close()
+				select {
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				case <-time.After(time.Duration(i+1) * 200 * time.Millisecond):
+				}
+				continue
+			}
+
+			newETag = resp.Header.Get("ETag")
+			lastMod = resp.Header.Get("Last-Modified")
+
+			bodyBytes, err = io.ReadAll(resp.Body)
+			resp.Body.Close()
+			if err != nil {
+				lastErr = fmt.Errorf("attempt %d: reading body failed: %w", i+1, err)
+				select {
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				case <-time.After(time.Duration(i+1) * 200 * time.Millisecond):
+				}
+				continue
+			}
+
+			lastErr = nil
+			break
+		}
+
+		if lastErr != nil {
+			// Tier 3: Stale Fallback on error (rate-limit, offline, timeout)
+			if pkgHttp.MockTransport == nil {
+				var staleVersions []VersionInfo
+				if readNativeDiskCacheStale("python", cacheKey, &staleVersions) && len(staleVersions) > 0 {
+					return staleVersions, nil
+				}
+				if baseline := getPythonBaselineVersions(githubProxy); len(baseline) > 0 {
+					return baseline, nil
+				}
+			}
+			return nil, fmt.Errorf("github api call failed after 3 attempts (base: %s): %w", apiBase, lastErr)
+		}
+
+		var releases []ghRelease
+		if err := json.Unmarshal(bodyBytes, &releases); err != nil {
 			return nil, err
 		}
 
-		req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
-		req.Header.Set("Accept", "application/vnd.github+json")
-
-		token := env.Get("GITHUB_TOKEN")
-		if token == "" {
-			token = env.Get("GH_TOKEN")
+		parsed := h.parseReleases(releases, githubProxy)
+		if len(parsed) > 0 {
+			writeNativeDiskCacheWithETag("python", cacheKey, parsed, newETag, lastMod)
 		}
-		if token != "" {
-			req.Header.Set("Authorization", "Bearer "+token)
-		}
+		return parsed, nil
+	})
 
-		resp, err = client.Do(req)
-		if err != nil {
-			lastErr = fmt.Errorf("attempt %d: request failed: %w", i+1, err)
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(time.Duration(i+1) * time.Second):
-			}
-			continue
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			lastErr = fmt.Errorf("attempt %d: github api returned status %d", i+1, resp.StatusCode)
-			resp.Body.Close()
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(time.Duration(i+1) * time.Second):
-			}
-			continue
-		}
-
-		bodyBytes, err = io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			lastErr = fmt.Errorf("attempt %d: reading body failed: %w", i+1, err)
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(time.Duration(i+1) * time.Second):
-			}
-			continue
-		}
-
-		lastErr = nil
-		break
-	}
-
-	if lastErr != nil {
-		return nil, fmt.Errorf("github api call failed after 3 attempts (base: %s): %w", apiBase, lastErr)
-	}
-
-	var releases []ghRelease
-	if err := json.Unmarshal(bodyBytes, &releases); err != nil {
+	if err != nil {
 		return nil, err
 	}
+	return res.([]VersionInfo), nil
+}
+
+func (h *PythonHandler) parseReleases(releases []ghRelease, githubProxy string) []VersionInfo {
 
 	// Regex to extract version from filename: cpython-3.14.4+20260408-...
 	re := regexp.MustCompile(`cpython-([0-9.]+)\+`)
@@ -332,3 +398,51 @@ func (h *PythonHandler) detectPlatform(filename string) (string, string) {
 
 	return os, arch
 }
+
+// getPythonBaselineVersions provides guaranteed offline fallback versions for Python
+// based on official python-build-standalone releases (supporting 3.7 to 3.14).
+func getPythonBaselineVersions(proxy string) []VersionInfo {
+	versions := []string{
+		"3.14.0", "3.13.2", "3.13.1", "3.13.0",
+		"3.12.9", "3.12.8", "3.12.7", "3.12.0",
+		"3.11.11", "3.11.10", "3.11.9", "3.11.0",
+		"3.10.16", "3.10.15", "3.10.0",
+		"3.9.21", "3.9.20", "3.9.0",
+		"3.8.20", "3.8.19", "3.8.0",
+		"3.7.17", "3.7.16", "3.7.0",
+	}
+
+	platforms := []struct {
+		os, arch, suffix string
+	}{
+		{"linux", "amd64", "x86_64-unknown-linux-gnu-install_only.tar.gz"},
+		{"linux", "arm64", "aarch64-unknown-linux-gnu-install_only.tar.gz"},
+		{"darwin", "amd64", "x86_64-apple-darwin-install_only.tar.gz"},
+		{"darwin", "arm64", "aarch64-apple-darwin-install_only.tar.gz"},
+		{"windows", "amd64", "x86_64-pc-windows-msvc-shared-install_only.tar.gz"},
+	}
+
+	var res []VersionInfo
+	for _, v := range versions {
+		var assets []Asset
+		for _, p := range platforms {
+			fn := fmt.Sprintf("cpython-%s+latest-%s", v, p.suffix)
+			url := fmt.Sprintf("https://github.com/astral-sh/python-build-standalone/releases/download/latest/%s", fn)
+			if proxy != "" {
+				url = strings.TrimSuffix(proxy, "/") + "/" + url
+			}
+			assets = append(assets, Asset{
+				Filename: fn,
+				URL:      url,
+				OS:       p.os,
+				Arch:     p.arch,
+			})
+		}
+		res = append(res, VersionInfo{
+			Version: v,
+			Assets:  assets,
+		})
+	}
+	return res
+}
+

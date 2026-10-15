@@ -53,4 +53,27 @@ func TestNativeDiskCache(t *testing.T) {
 	if readNativeDiskCache(tool, key, &expired, -1*time.Second) {
 		t.Fatal("expected expired cache to be rejected")
 	}
+
+	// 5. Test Stale fallback (should succeed even if expired)
+	var stale []VersionInfo
+	if !readNativeDiskCacheStale(tool, key, &stale) || len(stale) != 1 {
+		t.Fatal("expected stale cache to be successfully read")
+	}
+
+	// 6. Test Write with ETag
+	etagKey := "github/astral-sh/python"
+	writeNativeDiskCacheWithETag(tool, etagKey, versions, "W/\"etag-12345\"", "Wed, 21 Oct 2026 07:28:00 GMT")
+
+	var metaVersions []VersionInfo
+	hit, etag, _ := readNativeDiskCacheMeta(tool, etagKey, &metaVersions, 10*time.Minute)
+	if !hit || etag != "W/\"etag-12345\"" || len(metaVersions) != 1 {
+		t.Fatalf("expected etag cache hit, got hit=%v etag=%s", hit, etag)
+	}
+
+	// 7. Test touchNativeDiskCache
+	touchNativeDiskCache(tool, etagKey)
+	hitAfterTouch, etagAfterTouch, _ := readNativeDiskCacheMeta(tool, etagKey, &metaVersions, 10*time.Minute)
+	if !hitAfterTouch || etagAfterTouch != "W/\"etag-12345\"" {
+		t.Fatalf("expected cache to remain valid after touch, got hit=%v", hitAfterTouch)
+	}
 }

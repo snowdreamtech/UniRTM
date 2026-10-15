@@ -25,6 +25,10 @@ func cleanVersionReq(val, tool string) string {
 	return val
 }
 
+func init() {
+	native.GitHubTokenResolver = ResolveGitHubTokenPublic
+}
+
 // NativeBackend implements the Backend interface using built-in native recipes.
 type NativeBackend struct {
 	recipes map[string]native.Recipe
