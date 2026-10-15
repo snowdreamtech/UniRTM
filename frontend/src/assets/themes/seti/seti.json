@@ -1,0 +1,226 @@
+{
+  "fonts": [
+    {
+      "id": "seti",
+      "src": [
+        {
+          "path": "./seti.woff2",
+          "format": "woff2"
+        },
+        {
+          "path": "./seti.woff",
+          "format": "woff"
+        }
+      ],
+      "weight": "normal",
+      "style": "normal",
+      "size": "100%"
+    }
+  ],
+  "iconDefinitions": {
+    "_default": {
+      "fontCharacter": "\\E023",
+      "fontColor": "#d4d7d6"
+    },
+    "_go": {
+      "fontCharacter": "\\E03A",
+      "fontColor": "#00add8"
+    },
+    "_node": {
+      "fontCharacter": "\\E068",
+      "fontColor": "#5fa04e"
+    },
+    "_javascript": {
+      "fontCharacter": "\\E052",
+      "fontColor": "#cbcb41"
+    },
+    "_typescript": {
+      "fontCharacter": "\\E09A",
+      "fontColor": "#519aba"
+    },
+    "_python": {
+      "fontCharacter": "\\E07C",
+      "fontColor": "#3776ab"
+    },
+    "_rust": {
+      "fontCharacter": "\\E083",
+      "fontColor": "#dea584"
+    },
+    "_php": {
+      "fontCharacter": "\\E071",
+      "fontColor": "#a074c4"
+    },
+    "_java": {
+      "fontCharacter": "\\E051",
+      "fontColor": "#cc3e44"
+    },
+    "_ruby": {
+      "fontCharacter": "\\E082",
+      "fontColor": "#cc3e44"
+    },
+    "_zig": {
+      "fontCharacter": "\\E0A8",
+      "fontColor": "#f7a41d"
+    },
+    "_lua": {
+      "fontCharacter": "\\E05F",
+      "fontColor": "#519aba"
+    },
+    "_c": {
+      "fontCharacter": "\\E00C",
+      "fontColor": "#519aba"
+    },
+    "_cpp": {
+      "fontCharacter": "\\E01A",
+      "fontColor": "#519aba"
+    },
+    "_csharp": {
+      "fontCharacter": "\\E00B",
+      "fontColor": "#519aba"
+    },
+    "_shell": {
+      "fontCharacter": "\\E08A",
+      "fontColor": "#4d5a5e"
+    },
+    "_lock": {
+      "fontCharacter": "\\E05E",
+      "fontColor": "#e37933"
+    },
+    "_config": {
+      "fontCharacter": "\\E019",
+      "fontColor": "#6d8086"
+    },
+    "_docker": {
+      "fontCharacter": "\\E025",
+      "fontColor": "#519aba"
+    },
+    "_git": {
+      "fontCharacter": "\\E035",
+      "fontColor": "#cc3e44"
+    },
+    "_search": {
+      "fontCharacter": "\\E088",
+      "fontColor": "#519aba"
+    },
+    "_json": {
+      "fontCharacter": "\\E056",
+      "fontColor": "#cbcb41"
+    },
+    "_markdown": {
+      "fontCharacter": "\\E061",
+      "fontColor": "#519aba"
+    },
+    "_html": {
+      "fontCharacter": "\\E049",
+      "fontColor": "#e37933"
+    },
+    "_css": {
+      "fontCharacter": "\\E01D",
+      "fontColor": "#519aba"
+    },
+    "_zip": {
+      "fontCharacter": "\\E0A9",
+      "fontColor": "#e37933"
+    },
+    "_database": {
+      "fontCharacter": "\\E022",
+      "fontColor": "#cc3e44"
+    },
+    "_terraform": {
+      "fontCharacter": "\\E094",
+      "fontColor": "#a074c4"
+    },
+    "_settings": {
+      "fontCharacter": "\\E089",
+      "fontColor": "#6d8086"
+    },
+    "_info": {
+      "fontCharacter": "\\E04E",
+      "fontColor": "#519aba"
+    }
+  },
+  "file": "_default",
+  "languageIds": {
+    "go": "_go",
+    "golang": "_go",
+    "node": "_node",
+    "nodejs": "_node",
+    "javascript": "_javascript",
+    "js": "_javascript",
+    "typescript": "_typescript",
+    "ts": "_typescript",
+    "python": "_python",
+    "python3": "_python",
+    "rust": "_rust",
+    "php": "_php",
+    "java": "_java",
+    "openjdk": "_java",
+    "ruby": "_ruby",
+    "zig": "_zig",
+    "bun": "_javascript",
+    "deno": "_typescript",
+    "lua": "_lua",
+    "c": "_c",
+    "cpp": "_cpp",
+    "csharp": "_csharp",
+    "shell": "_shell",
+    "bash": "_shell",
+    "sh": "_shell",
+    "zsh": "_shell",
+    "shfmt": "_shell",
+    "ripgrep": "_search",
+    "git": "_git",
+    "docker": "_docker",
+    "terraform": "_terraform",
+    "json": "_json",
+    "toml": "_config",
+    "yaml": "_config",
+    "yml": "_config",
+    "markdown": "_markdown",
+    "html": "_html",
+    "css": "_css"
+  },
+  "fileNames": {
+    "unirtm.lock": "_lock",
+    "unirtm.toml": "_config",
+    ".unirtm.toml": "_config",
+    "package.json": "_node",
+    "package-lock.json": "_lock",
+    "Cargo.toml": "_rust",
+    "Cargo.lock": "_lock",
+    "go.mod": "_go",
+    "go.sum": "_lock",
+    ".nvmrc": "_node",
+    ".node-version": "_node",
+    ".python-version": "_python",
+    ".go-version": "_go",
+    "requirements.txt": "_python",
+    "Dockerfile": "_docker",
+    "Makefile": "_shell",
+    "README.md": "_markdown"
+  },
+  "fileExtensions": {
+    "go": "_go",
+    "py": "_python",
+    "rs": "_rust",
+    "js": "_javascript",
+    "ts": "_typescript",
+    "php": "_php",
+    "java": "_java",
+    "rb": "_ruby",
+    "zig": "_zig",
+    "sh": "_shell",
+    "bash": "_shell",
+    "lock": "_lock",
+    "toml": "_config",
+    "json": "_json",
+    "yml": "_config",
+    "yaml": "_config",
+    "md": "_markdown",
+    "html": "_html",
+    "css": "_css",
+    "zip": "_zip",
+    "tar": "_zip",
+    "gz": "_zip"
+  }
+}

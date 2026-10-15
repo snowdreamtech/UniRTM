@@ -15,9 +15,9 @@
 
 **Purpose**: Establish type definitions, vendor default Seti UI assets, and verify license compliance.
 
-- [ ] T001 [P] [US4] Create or update `THIRD-PARTY-LICENSES.md` at repository root with MIT and CC-BY-SA 4.0 attributions for VS Code and Seti UI assets.
-- [ ] T002 [P] [US3] Create `frontend/src/types/icon-theme.ts` declaring 100% VS Code compatible interfaces (`IconThemeManifest`, `IconDefinition`, `IconFontDefinition`, `ResolvedIcon`).
-- [ ] T003 [P] [US1] Vendor canonical Seti UI assets (`seti.woff` and `seti.json`) under `frontend/src/assets/themes/seti/`.
+- [x] T001 [P] [US4] Create or update `THIRD-PARTY-LICENSES.md` at repository root with MIT and CC-BY-SA 4.0 attributions for VS Code and Seti UI assets.
+- [x] T002 [P] [US3] Create `frontend/src/types/icon-theme.ts` declaring 100% VS Code compatible interfaces (`IconThemeManifest`, `IconDefinition`, `IconFontDefinition`, `ResolvedIcon`).
+- [x] T003 [P] [US1] Vendor canonical Seti UI assets (`seti.woff` and `seti.json`) under `frontend/src/assets/themes/seti/`.
 
 ---
 

@@ -1,0 +1,50 @@
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
+/**
+ * 100% VS Code Compatible File Icon Theme Types
+ * Aligned with https://code.visualstudio.com/api/extension-guides/file-icon-theme
+ */
+
+export interface IconDefinition {
+  fontCharacter?: string;
+  fontColor?: string;
+  fontSize?: string;
+  iconPath?: string;
+}
+
+export interface IconFontDefinition {
+  id: string;
+  src: Array<{
+    path: string;
+    format: "woff" | "woff2" | "ttf" | "opentype";
+  }>;
+  weight?: string;
+  style?: string;
+  size?: string;
+}
+
+export interface IconThemeManifest {
+  fonts?: IconFontDefinition[];
+  iconDefinitions: Record<string, IconDefinition>;
+  file?: string;
+  folder?: string;
+  folderExpanded?: string;
+  rootFolder?: string;
+  rootFolderExpanded?: string;
+  fileExtensions?: Record<string, string>;
+  fileNames?: Record<string, string>;
+  languageIds?: Record<string, string>;
+  light?: Partial<IconThemeManifest>;
+  highContrast?: Partial<IconThemeManifest>;
+}
+
+export interface ResolvedIcon {
+  type: "font" | "svg";
+  fontFamily?: string;
+  character?: string;
+  color?: string;
+  fontSize?: string;
+  svgPath?: string;
+  definitionKey: string;
+}
