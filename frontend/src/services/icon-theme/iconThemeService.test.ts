@@ -65,4 +65,11 @@ describe("IconThemeService & Seti Fallback Engine", () => {
     expect(strangeIcon.definitionKey).toBe("_default");
     expect(strangeIcon.isFallback).toBe(true);
   });
+
+  it("should resolve workbench:delete to high-fidelity SVG", () => {
+    const deleteIcon = iconThemeService.resolveIcon("workbench:delete");
+    expect(deleteIcon).toBeDefined();
+    expect(deleteIcon.type).toBe("svg");
+    expect(deleteIcon.definitionKey).toBe("builtin:workbench:delete");
+  });
 });

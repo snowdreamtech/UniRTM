@@ -341,6 +341,18 @@ class IconThemeService {
       return this.resolutionCache.get(rawIdentifier)!;
     }
 
+    // Direct high-fidelity builtin SVG for workbench action icons
+    if (rawIdentifier === "workbench:delete" && WORKBENCH_BUILTIN_SVGS["workbench:delete"]) {
+      const res: ResolvedIcon = {
+        type: "svg",
+        svgPath: WORKBENCH_BUILTIN_SVGS["workbench:delete"],
+        definitionKey: "builtin:workbench:delete",
+        isFallback: false,
+      };
+      this.resolutionCache.set(rawIdentifier, res);
+      return res;
+    }
+
     let candidates: string[] = [];
     let semanticFallbackKey: string | undefined;
 

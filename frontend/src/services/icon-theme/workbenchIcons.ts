@@ -82,7 +82,7 @@ export const workbenchSemanticIcons: Record<WorkbenchIconKey, SemanticIconMappin
     fallbackSetiKey: "_search",
   },
   "workbench:delete": {
-    candidates: ["delete", "trash", "remove", "clean"],
+    candidates: ["delete", "trash", "remove"],
     fallbackSetiKey: "_default",
   },
   "workbench:folder": {

@@ -1823,24 +1823,31 @@ onMounted(() => {
   justify-content: center;
   width: 28px;
   height: 28px;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.22);
-  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #ef4444 !important;
   cursor: pointer;
-  opacity: 0.88;
+  opacity: 1 !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   margin-left: auto;
   padding: 0;
   border-radius: 6px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.08);
 }
 
 .runtime-delete-btn:hover {
   opacity: 1;
-  background: rgba(239, 68, 68, 0.22);
-  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+  color: #dc2626 !important;
   transform: translateY(-1px) scale(1.05);
-  box-shadow: 0 3px 8px rgba(239, 68, 68, 0.2);
+  box-shadow: 0 3px 8px rgba(239, 68, 68, 0.25);
+}
+
+.runtime-delete-btn :deep(svg),
+.runtime-delete-btn :deep(.tech-icon) {
+  color: #ef4444 !important;
+  fill: #ef4444 !important;
 }
 
 .modal-search-row {

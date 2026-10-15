@@ -1,6 +1,22 @@
 <template>
+  <svg
+    v-if="id === 'workbench:delete'"
+    xmlns="http://www.w3.org/2000/svg"
+    :width="size"
+    :height="size"
+    viewBox="0 0 16 16"
+    fill="currentColor"
+    class="tech-icon tech-icon-svg"
+    :class="className"
+    :style="{ width: `${size}px`, height: `${size}px`, minWidth: `${size}px`, color: colored ? '#ef4444' : 'inherit' }"
+    role="img"
+    :title="id"
+    :aria-label="id"
+  >
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3h3v1h-1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4H3V3h3V2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1zM7 2v1h2V2H7zm2 3H8v7h1V5zm-2 0H6v7h1V5z"/>
+  </svg>
   <img
-    v-if="resolved.type === 'svg' && resolved.svgPath"
+    v-else-if="resolved.type === 'svg' && resolved.svgPath"
     :src="resolved.svgPath"
     class="tech-icon tech-icon-svg"
     :class="className"
