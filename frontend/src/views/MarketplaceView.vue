@@ -401,33 +401,37 @@
             @click="onSearchThemes(mpSearchQuery)"
           >
             <span v-if="mpIsSearching" class="spinner-small"></span>
-            <span v-else>搜索</span>
+            <span v-else>{{ t('marketplace.search') || '搜索' }}</span>
           </button>
         </div>
 
         <!-- Quick Chips & Results count -->
         <div class="market-chips-bar">
           <div class="chips-left">
-            <span class="chips-label">推荐分类:</span>
+            <span class="chips-label">{{ t('marketplace.recommended_categories') || '推荐分类' }}:</span>
             <button
               v-for="chip in themeChips"
-              :key="chip"
+              :key="chip.id"
               class="chip-btn"
               :class="{
-                active: selectedFilter === chip,
-                'chip-installed': chip === '已安装'
+                active: selectedFilter === chip.id,
+                'chip-installed': chip.isInstalled
               }"
               @click="onSelectChip(chip)"
             >
-              <span v-if="chip === '已安装'">📦 已安装 ({{ installedExtensions.length }})</span>
-              <span v-else>{{ chip }}</span>
+              <span v-if="chip.isInstalled">
+                📦 {{ (chip.labelKey ? t(chip.labelKey as any) : chip.name) || '已安装' }} ({{ installedExtensions.length }})
+              </span>
+              <span v-else>
+                {{ (chip.labelKey ? t(chip.labelKey as any) : chip.name) || chip.id }}
+              </span>
             </button>
           </div>
-          <span v-if="selectedFilter === '已安装'" class="results-count-label">
-            已安装 {{ displayedExtensions.length }} 款主题与图标包
+          <span v-if="selectedFilter === 'installed'" class="results-count-label">
+            {{ t('marketplace.installed_count', { count: displayedExtensions.length }) || `已安装 ${displayedExtensions.length} 款主题与图标包` }}
           </span>
           <span v-else-if="mpTotalSize > 0" class="results-count-label">
-            共收录 {{ mpTotalSize }} 款主题与图标包
+            {{ t('marketplace.total_count', { count: mpTotalSize }) || `共收录 ${mpTotalSize} 款主题与图标包` }}
           </span>
         </div>
 
@@ -438,22 +442,22 @@
         </div>
 
         <!-- Error Banner -->
-        <div v-if="mpError && selectedFilter !== '已安装'" class="error-banner">
+        <div v-if="mpError && selectedFilter !== 'installed'" class="error-banner">
           <span>⚠️ {{ mpError }}</span>
-          <button class="btn-retry" @click="onSearchThemes(mpSearchQuery)">重试</button>
+          <button class="btn-retry" @click="onSearchThemes(mpSearchQuery)">{{ t('marketplace.retry') || '重试' }}</button>
         </div>
 
         <!-- Loading State -->
-        <div v-if="mpIsSearching && selectedFilter !== '已安装'" class="market-loading-box glass-card">
+        <div v-if="mpIsSearching && selectedFilter !== 'installed'" class="market-loading-box glass-card">
           <div class="spinner-small"></div>
-          <span>正在实时连接 Open VSX 检索主题与图标...</span>
+          <span>{{ t('marketplace.searching_openvsx') || '正在实时连接 Open VSX 检索主题与图标...' }}</span>
         </div>
 
         <!-- Empty State -->
         <div v-else-if="displayedExtensions.length === 0" class="market-empty-box glass-card">
           <span class="empty-icon">🎨</span>
-          <p>{{ selectedFilter === '已安装' ? '暂未安装任何第三方主题或图标包' : '未找到符合条件的主题或图标包' }}</p>
-          <button class="btn-reset-chip" @click="onSelectChip('全部')">查看热门推荐</button>
+          <p>{{ selectedFilter === 'installed' ? (t('marketplace.empty_installed') || '暂未安装任何第三方主题或图标包') : (t('marketplace.empty_results') || '未找到符合条件的主题或图标包') }}</p>
+          <button class="btn-reset-chip" @click="onResetToPopular">{{ t('marketplace.view_popular') || '查看热门推荐' }}</button>
         </div>
 
         <!-- Themes Grid -->
@@ -500,7 +504,7 @@
                   <span class="card-version font-mono">v{{ item.version }}</span>
                   <span v-if="isExtensionActive(item)" class="badge-active-pill">
                     <span class="active-dot"></span>
-                    <span>生效中</span>
+                    <span>{{ t('marketplace.active') || '生效中' }}</span>
                   </span>
                 </div>
                 <div class="card-subtitle-row">
@@ -509,19 +513,19 @@
                     class="card-type-tag"
                     :class="getExtensionType(item) === 'icon' ? 'type-icon' : 'type-color'"
                   >
-                    {{ getExtensionType(item) === 'icon' ? '📁 图标' : '🎨 主题' }}
+                    {{ getExtensionType(item) === 'icon' ? ('📁 ' + (t('marketplace.filter_icons') || '图标')) : ('🎨 ' + (t('marketplace.filter_themes') || '主题')) }}
                   </span>
                 </div>
               </div>
             </div>
 
             <p class="card-desc" :title="item.description">
-              {{ item.description || "无详细描述" }}
+              {{ item.description || "No description provided." }}
             </p>
 
             <div class="card-footer-row">
               <div class="card-stats">
-                <span class="stat-item" :title="'下载量: ' + item.downloadCount">
+                <span class="stat-item" :title="'Downloads: ' + item.downloadCount">
                   ⬇️ {{ formatDownloads(item.downloadCount) }}
                 </span>
                 <span v-if="item.averageRating" class="stat-item">
@@ -532,7 +536,7 @@
               <div class="card-actions" @click.stop>
                 <div v-if="isItemInstalled(item)" class="installed-group">
                   <span :class="isExtensionActive(item) ? 'badge-active-applied' : 'badge-installed'">
-                    ✓ {{ isExtensionActive(item) ? "使用中" : (t("settings.installed") || "已安装") }}
+                    ✓ {{ isExtensionActive(item) ? (t('marketplace.in_use') || "使用中") : (t("settings.installed") || "已安装") }}
                   </span>
                   <button
                     v-if="!isExtensionActive(item)"
@@ -546,9 +550,9 @@
                     v-else
                     class="btn-applied-current"
                     disabled
-                    title="当前正在生效的主题"
+                    :title="t('marketplace.current_active') || '当前正在生效的主题'"
                   >
-                    当前生效
+                    {{ t('marketplace.currently_applied') || '当前生效' }}
                   </button>
                 </div>
                 <button
@@ -566,18 +570,18 @@
         </div>
 
         <!-- Pagination Bar -->
-        <div v-if="selectedFilter !== '已安装' && mpTotalPages > 1" class="market-pagination-bar glass-card">
+        <div v-if="selectedFilter !== 'installed' && mpTotalPages > 1" class="market-pagination-bar glass-card">
           <div class="pagination-summary">
-            <span>共收录 <strong>{{ mpTotalSize }}</strong> 款主题与图标包</span>
+            <span>{{ t('marketplace.total_count', { count: mpTotalSize }) || `共收录 ${mpTotalSize} 款主题与图标包` }}</span>
             <span class="pagination-divider">•</span>
-            <span>第 <strong>{{ mpCurrentPage }}</strong> / {{ mpTotalPages }} 页</span>
+            <span>{{ t('marketplace.page_info', { current: mpCurrentPage, total: mpTotalPages }) || `第 ${mpCurrentPage} / ${mpTotalPages} 页` }}</span>
           </div>
 
           <div class="pagination-buttons">
             <button
               class="btn-page-nav"
               :disabled="mpCurrentPage <= 1 || mpIsSearching"
-              title="第一页"
+              :title="t('marketplace.first_page') || '第一页'"
               @click="onPageChange(1)"
             >
               «
@@ -585,7 +589,7 @@
             <button
               class="btn-page-nav"
               :disabled="mpCurrentPage <= 1 || mpIsSearching"
-              title="上一页"
+              :title="t('marketplace.prev_page') || '上一页'"
               @click="onPageChange(mpCurrentPage - 1)"
             >
               ‹
@@ -607,7 +611,7 @@
             <button
               class="btn-page-nav"
               :disabled="mpCurrentPage >= mpTotalPages || mpIsSearching"
-              title="下一页"
+              :title="t('marketplace.next_page') || '下一页'"
               @click="onPageChange(mpCurrentPage + 1)"
             >
               ›
@@ -615,7 +619,7 @@
             <button
               class="btn-page-nav"
               :disabled="mpCurrentPage >= mpTotalPages || mpIsSearching"
-              title="最后一页"
+              :title="t('marketplace.last_page') || '最后一页'"
               @click="onPageChange(mpTotalPages)"
             >
               »
@@ -624,18 +628,18 @@
 
           <div class="pagination-tools">
             <div class="page-jump-box">
-              <span>跳至</span>
+              <span>{{ t('marketplace.jump_to') || '跳至' }}</span>
               <input
                 v-model.number="jumpPageInput"
                 type="number"
                 min="1"
                 :max="mpTotalPages"
                 class="jump-input"
-                placeholder="页码"
+                :placeholder="t('marketplace.page_info', { current: '', total: '' }).replace(/[^0-9a-zA-Z]/g, '') || '页码'"
                 @keydown.enter="onJumpPage"
               />
               <button class="btn-jump-submit" :disabled="mpIsSearching" @click="onJumpPage">
-                跳转
+                {{ t('marketplace.jump_btn') || '跳转' }}
               </button>
             </div>
 
@@ -646,9 +650,9 @@
                 :disabled="mpIsSearching"
                 @change="onChangePageSize(Number(($event.target as HTMLSelectElement).value))"
               >
-                <option :value="12">12 条 / 页</option>
-                <option :value="24">24 条 / 页</option>
-                <option :value="48">48 条 / 页</option>
+                <option :value="12">{{ t('marketplace.page_size_item', { size: 12 }) || '12 条 / 页' }}</option>
+                <option :value="24">{{ t('marketplace.page_size_item', { size: 24 }) || '24 条 / 页' }}</option>
+                <option :value="48">{{ t('marketplace.page_size_item', { size: 48 }) || '48 条 / 页' }}</option>
               </select>
             </div>
           </div>
@@ -763,19 +767,28 @@ const {
   deleteTheme,
 } = useThemeManager();
 
-const selectedFilter = ref<string>("全部");
+const selectedFilter = ref<string>("all");
 
-const themeChips = [
-  "全部",
-  "已安装",
-  "Material",
-  "Dracula",
-  "One Dark",
-  "Catppuccin",
-  "Tokyo Night",
-  "GitHub",
-  "Icons",
-];
+interface ThemeChipItem {
+  id: string;
+  labelKey?: string;
+  name?: string;
+  query: string;
+  isInstalled?: boolean;
+}
+
+const themeChips = computed<ThemeChipItem[]>(() => [
+  { id: "all", labelKey: "marketplace.filter_all", query: "" },
+  { id: "installed", labelKey: "marketplace.filter_installed", query: "", isInstalled: true },
+  { id: "themes", labelKey: "marketplace.filter_themes", query: "theme" },
+  { id: "icons", labelKey: "marketplace.filter_icons", query: "icons" },
+  { id: "material", name: "Material", query: "Material" },
+  { id: "dracula", name: "Dracula", query: "Dracula" },
+  { id: "one-dark", name: "One Dark", query: "One Dark" },
+  { id: "catppuccin", name: "Catppuccin", query: "Catppuccin" },
+  { id: "tokyo-night", name: "Tokyo Night", query: "Tokyo Night" },
+  { id: "github", name: "GitHub", query: "GitHub" },
+]);
 
 const installedExtensions = computed<MarketplaceExtension[]>(() => {
   const list: MarketplaceExtension[] = [];
@@ -849,7 +862,7 @@ const installedExtensions = computed<MarketplaceExtension[]>(() => {
 });
 
 const displayedExtensions = computed<MarketplaceExtension[]>(() => {
-  if (selectedFilter.value === "已安装") {
+  if (selectedFilter.value === "installed") {
     if (!mpSearchQuery.value.trim()) {
       return installedExtensions.value;
     }
@@ -1069,22 +1082,30 @@ async function onApplyDetailTheme(detail: MarketplaceExtensionDetail) {
 }
 
 function onSearchThemes(q?: string) {
-  if (selectedFilter.value === "已安装") {
+  if (selectedFilter.value === "installed") {
     return;
   }
-  selectedFilter.value = q ? q : "全部";
-  mpSearchThemes(q);
+  const query = q !== undefined ? q : mpSearchQuery.value;
+  const match = themeChips.value.find((c) => !c.isInstalled && c.query.toLowerCase() === query.toLowerCase().trim());
+  selectedFilter.value = match ? match.id : (query ? "" : "all");
+  mpSearchThemes(query);
 }
 
-function onSelectChip(chip: string) {
-  selectedFilter.value = chip;
-  if (chip === "已安装") {
+function onSelectChip(chip: ThemeChipItem) {
+  selectedFilter.value = chip.id;
+  if (chip.isInstalled) {
     mpSearchQuery.value = "";
     return;
   }
-  const query = chip === "全部" ? "" : chip;
-  mpSearchQuery.value = query;
-  mpSearchThemes(query);
+  mpSearchQuery.value = chip.query;
+  mpSearchThemes(chip.query);
+}
+
+function onResetToPopular() {
+  const allChip = themeChips.value[0];
+  if (allChip) {
+    onSelectChip(allChip);
+  }
 }
 
 function navigateToDetail(namespace: string, name: string) {
@@ -1100,7 +1121,8 @@ function goBackToList() {
 
 async function onUninstallThemeCard(item: MarketplaceExtension) {
   const name = item.displayName || item.name;
-  if (!confirm(`确定要卸载主题包 "${name}" 吗？`)) {
+  const confirmMsg = t("marketplace.uninstall_confirm", { name }) || `确定要卸载主题包 "${name}" 吗？`;
+  if (!confirm(confirmMsg)) {
     return;
   }
   const pkgId = item.package_id || item.name;
@@ -1115,7 +1137,7 @@ async function onUninstallThemeCard(item: MarketplaceExtension) {
     );
     if (found) found.is_installed = false;
     await fetchThemes();
-    feedbackMsg.value = `✓ 已卸载 ${name}`;
+    feedbackMsg.value = t("marketplace.uninstalled_success", { name }) || `✓ 已卸载 ${name}`;
     feedbackIsError.value = false;
   } catch (err: any) {
     feedbackMsg.value = `✕ 卸载失败: ${err.message || err}`;
