@@ -124,8 +124,8 @@ const router = useRouter();
 
 import { useThemeManager } from "./composables/useThemeManager";
 
-const { currentTheme, applyTheme, toggleTheme: baseToggleTheme } = useTheme();
-const { fetchThemes } = useThemeManager();
+const { currentTheme, applyTheme } = useTheme();
+const { fetchThemes, toggleAppearance } = useThemeManager();
 const { toastMessage, toastType, showToast, dismissToast } = useToast();
 
 const DRAWER_STORAGE_KEY = "unirtm_drawer_open";
@@ -362,14 +362,9 @@ function selectLanguage(langVal: string) {
   showToast(`Language switched to ${langVal}`, "info");
 }
 
-function toggleTheme() {
-  const nextTheme = baseToggleTheme();
+async function toggleTheme() {
+  const nextTheme = await toggleAppearance();
   saveGlobalSetting("settings.appearance", nextTheme);
-  fetch("/api/themes/apply", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ appearance: nextTheme }),
-  }).catch(() => {});
   showToast(nextTheme === "light" ? "☀️ 已切换为浅色模式" : "🌙 已切换为深色模式", "info");
 }
 

@@ -57,7 +57,7 @@ export function useColorTheme() {
 
       // Determine UI theme base (light or dark)
       const isLight = themeItem.ui_theme === "vs" || themeData.type === "light";
-      document.documentElement.setAttribute("data-theme", isLight ? "light" : "dark");
+      const targetScope = isLight ? '[data-theme="light"]' : '[data-theme="dark"]';
 
       // Comprehensive mapping of VS Code workbench tokens to UniRTM layout and components
       const rootVars: string[] = [];
@@ -93,10 +93,10 @@ export function useColorTheme() {
       if (border) rootVars.push(`--card-border: ${border} !important;`);
       if (borderActive) rootVars.push(`--card-border-active: ${borderActive} !important;`);
 
-      // Targeted layout overrides
+      // Targeted layout overrides strictly scoped to this theme mode
       if (titleBg) {
         componentRules.push(`
-          .titlebar {
+          ${targetScope} .titlebar {
             background: ${titleBg} !important;
             border-bottom: 1px solid ${border} !important;
             color: ${colors["titleBar.activeForeground"] || textFg} !important;
@@ -105,7 +105,7 @@ export function useColorTheme() {
       }
       if (activityBg) {
         componentRules.push(`
-          .activitybar {
+          ${targetScope} .activitybar {
             background: ${activityBg} !important;
             border-right: 1px solid ${border} !important;
           }
@@ -113,7 +113,7 @@ export function useColorTheme() {
       }
       if (sideBg) {
         componentRules.push(`
-          .sidebar-panel {
+          ${targetScope} .sidebar-panel {
             background: ${sideBg} !important;
             border-right: 1px solid ${border} !important;
             color: ${colors["sideBar.foreground"] || textFg} !important;
@@ -122,7 +122,7 @@ export function useColorTheme() {
       }
       if (statusBg) {
         componentRules.push(`
-          .bottom-statusbar {
+          ${targetScope} .bottom-statusbar {
             background: ${statusBg} !important;
             border-top: 1px solid ${border} !important;
             color: ${colors["statusBar.foreground"] || textFg} !important;
@@ -131,7 +131,7 @@ export function useColorTheme() {
       }
       if (panelBg) {
         componentRules.push(`
-          .bottom-drawer {
+          ${targetScope} .bottom-drawer {
             background: ${panelBg} !important;
             border-top: 1px solid ${border} !important;
           }
@@ -139,7 +139,7 @@ export function useColorTheme() {
       }
       if (breadcrumbBg) {
         componentRules.push(`
-          .canvas-breadcrumb-bar {
+          ${targetScope} .canvas-breadcrumb-bar {
             background: ${breadcrumbBg} !important;
             border-bottom: 1px solid ${border} !important;
           }
@@ -147,7 +147,7 @@ export function useColorTheme() {
       }
       if (editorBg) {
         componentRules.push(`
-          .workbench-canvas {
+          ${targetScope} .workbench-canvas {
             background: ${editorBg} !important;
           }
         `);
@@ -164,7 +164,7 @@ export function useColorTheme() {
       removeCustomThemeStyle();
       const styleEl = document.createElement("style");
       styleEl.id = STYLE_TAG_ID;
-      styleEl.textContent = `:root, [data-theme] { ${rootVars.join(" ")} }\n${componentRules.join("\n")}`;
+      styleEl.textContent = `${targetScope} { ${rootVars.join(" ")} }\n${componentRules.join("\n")}`;
       document.head.appendChild(styleEl);
 
       currentThemeId.value = themeItem.id;

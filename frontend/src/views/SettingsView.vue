@@ -1305,13 +1305,15 @@ const languageSelectOptions = computed(() => [
 const colorThemeOptions = computed(() => {
   const options: Array<{ value: string; label: string }> = [
     { value: "default", label: "🎨 UniRTM 官方默认 (自适应深浅)" },
+    { value: "light", label: "☀️ UniRTM 官方浅色 (Light)" },
+    { value: "dark", label: "🌙 UniRTM 官方深色 (Dark)" },
   ];
 
   for (const item of colorThemes.value) {
     if (item.id === "default" || item.id === "dark" || item.id === "light" || item.id === "system") {
       continue;
     }
-    const isLight = item.ui_theme === "vs";
+    const isLight = item.ui_theme === "vs" || item.ui_theme === "light";
     const modeBadge = isLight ? "☀️ " : "🌙 ";
     options.push({
       value: item.id,
