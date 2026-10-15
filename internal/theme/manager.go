@@ -52,6 +52,13 @@ func (m *Manager) ListThemes() (*ThemesListResponse, error) {
 	resp := &ThemesListResponse{
 		Colors: []ThemeItem{
 			{
+				ID:        "default",
+				Name:      "UniRTM (Default)",
+				Type:      ThemeTypeColor,
+				IsBuiltin: true,
+				UITheme:   "vs-dark",
+			},
+			{
 				ID:        "dark",
 				Name:      "Dark (UniRTM Default)",
 				Type:      ThemeTypeColor,

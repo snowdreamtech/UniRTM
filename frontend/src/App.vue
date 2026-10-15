@@ -122,7 +122,10 @@ export interface AppConfig {
 const route = useRoute();
 const router = useRouter();
 
+import { useThemeManager } from "./composables/useThemeManager";
+
 const { currentTheme, applyTheme, toggleTheme: baseToggleTheme } = useTheme();
+const { fetchThemes } = useThemeManager();
 const { toastMessage, toastType, showToast, dismissToast } = useToast();
 
 const DRAWER_STORAGE_KEY = "unirtm_drawer_open";
@@ -361,10 +364,13 @@ function selectLanguage(langVal: string) {
 
 function toggleTheme() {
   const nextTheme = baseToggleTheme();
-  if (appConfig.value) {
-    appConfig.value.theme = nextTheme;
-  }
-  saveGlobalSetting("settings.theme", nextTheme);
+  saveGlobalSetting("settings.appearance", nextTheme);
+  fetch("/api/themes/apply", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ appearance: nextTheme }),
+  }).catch(() => {});
+  showToast(nextTheme === "light" ? "☀️ 已切换为浅色模式" : "🌙 已切换为深色模式", "info");
 }
 
 async function loadConfig() {
@@ -373,7 +379,9 @@ async function loadConfig() {
     if (raw) {
       const cfg = JSON.parse(raw);
       appConfig.value = cfg;
-      if (cfg.theme) {
+      if (cfg.appearance) {
+        applyTheme(cfg.appearance);
+      } else if (cfg.theme && (cfg.theme === "dark" || cfg.theme === "light" || cfg.theme === "system")) {
         applyTheme(cfg.theme);
       }
       if (cfg.language) {
@@ -389,8 +397,9 @@ async function loadConfig() {
     if (res.ok) {
       const data = await res.json();
       const userSettings = data?.user?.settings || {};
-      if (userSettings.theme) {
-        applyTheme(userSettings.theme);
+      const app = userSettings.appearance || (userSettings.theme === "light" || userSettings.theme === "dark" || userSettings.theme === "system" ? userSettings.theme : undefined);
+      if (app) {
+        applyTheme(app);
       }
       if (userSettings.language) {
         setLanguage(userSettings.language);
@@ -432,6 +441,7 @@ function handleGlobalKeydown(e: KeyboardEvent) {
 
 onMounted(() => {
   loadConfig();
+  fetchThemes();
   window.addEventListener("keydown", handleGlobalKeydown);
 });
 

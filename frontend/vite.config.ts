@@ -1164,12 +1164,36 @@ print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes'
             return;
           }
 
-          if (req.url?.startsWith("/api/themes") && req.method === "GET") {
+          if (req.url?.startsWith("/api/themes/assets/") && req.method === "GET") {
+            const rel = req.url.slice("/api/themes/assets/".length).split("?")[0];
+            const parts = rel.split("/");
+            if (parts.length >= 3) {
+              const packageId = decodeURIComponent(parts[1]);
+              const subpath = parts.slice(2).map(decodeURIComponent).join("/");
+              const themesDir = path.join(os.homedir(), ".config", "unirtm", "themes");
+              const targetFile = path.join(themesDir, packageId, subpath);
+              if (fs.existsSync(targetFile) && fs.statSync(targetFile).isFile()) {
+                if (targetFile.endsWith(".json")) res.setHeader("Content-Type", "application/json");
+                else if (targetFile.endsWith(".svg")) res.setHeader("Content-Type", "image/svg+xml");
+                else if (targetFile.endsWith(".woff2")) res.setHeader("Content-Type", "font/woff2");
+                else if (targetFile.endsWith(".woff")) res.setHeader("Content-Type", "font/woff");
+                else if (targetFile.endsWith(".png")) res.setHeader("Content-Type", "image/png");
+                res.end(fs.readFileSync(targetFile));
+                return;
+              }
+            }
+            res.statusCode = 404;
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ error: "Theme asset not found" }));
+            return;
+          }
+
+          if ((req.url === "/api/themes" || req.url?.startsWith("/api/themes?")) && req.method === "GET") {
             const themesDir = path.join(os.homedir(), ".config", "unirtm", "themes");
             const colorThemes: any[] = [
-              { id: "dark", name: "Dark (UniRTM Default)", type: "color", is_builtin: true, ui_theme: "vs-dark" },
-              { id: "light", name: "Light", type: "color", is_builtin: true, ui_theme: "vs" },
-              { id: "system", name: "Follow System", type: "color", is_builtin: true, ui_theme: "vs-dark" },
+              { id: "default", name: "UniRTM (默认)", type: "color", is_builtin: true, ui_theme: "vs-dark" },
+              { id: "dark", name: "UniRTM Dark", type: "color", is_builtin: true, ui_theme: "vs-dark" },
+              { id: "light", name: "UniRTM Light", type: "color", is_builtin: true, ui_theme: "vs" },
             ];
             const iconThemes: any[] = [
               { id: "seti", name: "Seti UI (VS Code Default)", type: "icon", is_builtin: true, description: "Official Visual Studio Code default file icon theme" },
@@ -1217,16 +1241,26 @@ print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes'
 
             const userConfigDir = path.join(os.homedir(), ".config", "unirtm");
             const userPath = path.join(userConfigDir, "unirtm.toml");
-            let activeColor = "dark";
+            let activeColor = "default";
             let activeIcon = "seti";
+            let activeAppearance = "system";
+
             const readSetting = (fp: string) => {
               if (!fs.existsSync(fp)) return;
               const text = fs.readFileSync(fp, "utf-8");
+              const mApp = text.match(/appearance\s*=\s*"([^"]+)"/);
+              if (mApp) {
+                activeAppearance = mApp[1];
+              }
               const mColor = text.match(/(?:color_)?theme\s*=\s*"([^"]+)"/);
               if (mColor) {
-                activeColor = mColor[1];
-                if (activeColor === "vs-dark") activeColor = "dark";
-                if (activeColor === "vs") activeColor = "light";
+                const val = mColor[1];
+                if (val === "dark" || val === "light" || val === "system") {
+                  activeAppearance = val;
+                  activeColor = "default";
+                } else {
+                  activeColor = val;
+                }
               }
               const mIcon = text.match(/icon_theme\s*=\s*"([^"]+)"/);
               if (mIcon) {
@@ -1241,6 +1275,7 @@ print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes'
               active: {
                 color: activeColor,
                 icon: activeIcon,
+                appearance: activeAppearance,
               },
               active_color_theme: activeColor,
               active_icon_theme: activeIcon,
@@ -1290,6 +1325,7 @@ print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes'
                 const body = JSON.parse(bodyStr || "{}");
                 const color_theme_id = body.color || body.color_theme_id;
                 const icon_theme_id = body.icon || body.icon_theme_id;
+                const appearance = body.appearance;
                 const userConfigDir = path.join(os.homedir(), ".config", "unirtm");
                 if (!fs.existsSync(userConfigDir)) {
                   fs.mkdirSync(userConfigDir, { recursive: true });
@@ -1314,6 +1350,16 @@ print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes'
                     content += `icon_theme = "${icon_theme_id}"\n`;
                   }
                 }
+                if (appearance) {
+                  if (content.match(/appearance\s*=/)) {
+                    content = content.replace(/appearance\s*=\s*"[^"]*"/, `appearance = "${appearance}"`);
+                  } else {
+                    if (!content.includes("[settings]")) {
+                      content += `\n[settings]\n`;
+                    }
+                    content += `appearance = "${appearance}"\n`;
+                  }
+                }
                 fs.writeFileSync(userPath, content, "utf-8");
 
                 res.setHeader("Content-Type", "application/json");
@@ -1321,6 +1367,7 @@ print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes'
                   success: true,
                   color: color_theme_id,
                   icon: icon_theme_id,
+                  appearance,
                 }));
               } catch (err: any) {
                 res.statusCode = 500;

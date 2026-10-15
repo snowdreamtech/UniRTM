@@ -182,6 +182,7 @@ type Settings struct {
 	Browser              string                            `toml:"browser,omitempty" yaml:"browser,omitempty" mapstructure:"browser,omitempty"`
 	Theme                string                            `toml:"theme,omitempty" yaml:"theme,omitempty" mapstructure:"theme,omitempty"`
 	IconTheme            string                            `toml:"icon_theme,omitempty" yaml:"icon_theme,omitempty" mapstructure:"icon_theme,omitempty"`
+	Appearance           string                            `toml:"appearance,omitempty" yaml:"appearance,omitempty" mapstructure:"appearance,omitempty"`
 	Language             string                            `toml:"language,omitempty" yaml:"language,omitempty" mapstructure:"language,omitempty"`
 	Shell                string                            `toml:"shell,omitempty" yaml:"shell,omitempty" mapstructure:"shell,omitempty"`
 	AlwaysKeepDownload   bool                              `toml:"always_keep_download,omitempty" yaml:"always_keep_download,omitempty" mapstructure:"always_keep_download,omitempty"`

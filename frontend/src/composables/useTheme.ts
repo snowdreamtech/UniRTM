@@ -95,10 +95,12 @@ export function useTheme() {
   }
 
   return {
+    appearance: currentTheme,
     currentTheme,
     effectiveTheme,
     isDarkTheme,
     applyTheme,
+    setAppearance: applyTheme,
     getActiveTheme,
     toggleTheme,
   };

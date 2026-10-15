@@ -56,7 +56,8 @@ type ThemesListResponse struct {
 	Colors []ThemeItem `json:"colors"`
 	Icons  []ThemeItem `json:"icons"`
 	Active struct {
-		Color string `json:"color"`
-		Icon  string `json:"icon"`
+		Color      string `json:"color"`
+		Icon       string `json:"icon"`
+		Appearance string `json:"appearance,omitempty"`
 	} `json:"active"`
 }

@@ -716,11 +716,13 @@ import { useRoute, useRouter } from "vue-router";
 import { t } from "../i18n";
 import { useThemeMarketplace } from "../composables/useThemeMarketplace";
 import { useThemeManager } from "../composables/useThemeManager";
+import { useToast } from "../composables/useToast";
 import { renderMarkdown } from "../utils/markdown";
 import type { MarketplaceExtension, MarketplaceExtensionDetail } from "../types/theme-manager";
 
 const route = useRoute();
 const router = useRouter();
+const { showToast } = useToast();
 
 // Channels: 'themes' (Open VSX) vs 'plugins' (UniRTM Native Plugins)
 const currentChannel = ref<"themes" | "plugins">("themes");
@@ -1188,9 +1190,11 @@ async function onApplySubColorTheme(label: string) {
     await setActiveTheme(match.id, undefined);
     feedbackMsg.value = `✓ 已应用颜色主题: ${match.name}`;
     feedbackIsError.value = false;
+    showToast(`🎨 已应用颜色主题: ${match.name}`, "success");
   } else {
     feedbackMsg.value = `已激活主题包，可在设置中选择应用 ${label}`;
     feedbackIsError.value = false;
+    showToast(`🎨 已激活主题包: ${label}`, "info");
   }
 }
 
@@ -1202,9 +1206,11 @@ async function onApplySubIconTheme(label: string) {
     await setActiveTheme(undefined, match.id);
     feedbackMsg.value = `✓ 已应用图标主题: ${match.name}`;
     feedbackIsError.value = false;
+    showToast(`📁 已应用图标主题: ${match.name}`, "success");
   } else {
     feedbackMsg.value = `已激活图标包，可在设置中选择应用 ${label}`;
     feedbackIsError.value = false;
+    showToast(`📁 已激活图标包: ${label}`, "info");
   }
 }
 
@@ -1258,11 +1264,14 @@ async function onApplyTheme(item: MarketplaceExtension) {
     // Refresh themes so all UI states sync
     await fetchThemes();
 
-    feedbackMsg.value = `✓ 已启用主题: ${item.displayName || item.name}`;
+    const targetName = item.displayName || item.name;
+    feedbackMsg.value = `✓ 已启用主题: ${targetName}`;
     feedbackIsError.value = false;
+    showToast(`✓ 已启用并应用主题: ${targetName}`, "success");
   } catch (err: any) {
     feedbackMsg.value = `✕ 激活主题失败: ${err.message || err}`;
     feedbackIsError.value = true;
+    showToast(`✕ 激活主题失败: ${err.message || err}`, "error");
   }
 }
 

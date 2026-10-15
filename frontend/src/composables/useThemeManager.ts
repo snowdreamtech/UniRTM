@@ -4,12 +4,11 @@
 import { ref } from "vue";
 import type { ThemeItem } from "../types/theme-manager";
 import { useColorTheme } from "./useColorTheme";
+import { useTheme } from "./useTheme";
 import { iconThemeService } from "../services/icon-theme/iconThemeService";
 
 const defaultColors: ThemeItem[] = [
-  { id: "dark", name: "Dark (UniRTM Default)", type: "color", is_builtin: true, ui_theme: "vs-dark" },
-  { id: "light", name: "Light", type: "color", is_builtin: true, ui_theme: "vs" },
-  { id: "system", name: "Follow System", type: "color", is_builtin: true, ui_theme: "vs-dark" },
+  { id: "default", name: "UniRTM (默认)", type: "color", is_builtin: true, ui_theme: "vs-dark" },
 ];
 const defaultIcons: ThemeItem[] = [
   { id: "seti", name: "Seti UI (VS Code Default)", type: "icon", is_builtin: true, description: "Official Visual Studio Code default file icon theme" },
@@ -17,12 +16,14 @@ const defaultIcons: ThemeItem[] = [
 
 const colorThemes = ref<ThemeItem[]>(defaultColors);
 const iconThemes = ref<ThemeItem[]>(defaultIcons);
-const activeColorTheme = ref<string>("dark");
+const activeColorTheme = ref<string>("default");
 const activeIconTheme = ref<string>("seti");
+const activeAppearance = ref<string>("system");
 const loading = ref<boolean>(false);
 const error = ref<string | null>(null);
 
 const { applyTheme: applyColorTheme } = useColorTheme();
+const { applyTheme: applyAppearanceTheme } = useTheme();
 
 export function useThemeManager() {
   const fetchThemes = async () => {
@@ -36,8 +37,12 @@ export function useThemeManager() {
       const data: any = await res.json();
       colorThemes.value = data.colors || data.color_themes || [];
       iconThemes.value = data.icons || data.icon_themes || [];
-      activeColorTheme.value = data.active?.color || data.active_color_theme || "dark";
+      activeColorTheme.value = data.active?.color || data.active_color_theme || "default";
       activeIconTheme.value = data.active?.icon || data.active_icon_theme || "seti";
+      activeAppearance.value = data.active?.appearance || "system";
+
+      // Apply appearance mode first
+      applyAppearanceTheme(activeAppearance.value);
 
       // Apply active themes hot
       await applyColorTheme(activeColorTheme.value, colorThemes.value);
@@ -117,13 +122,14 @@ export function useThemeManager() {
     }
   };
 
-  const setActiveTheme = async (colorId?: string, iconId?: string) => {
+  const setActiveTheme = async (colorId?: string, iconId?: string, appearance?: string) => {
     loading.value = true;
     error.value = null;
     try {
       const payload: Record<string, string> = {};
       if (colorId) payload.color = colorId;
       if (iconId) payload.icon = iconId;
+      if (appearance) payload.appearance = appearance;
 
       const res = await fetch("/api/themes/apply", {
         method: "POST",
@@ -134,6 +140,11 @@ export function useThemeManager() {
       const data = await res.json();
       if (!res.ok || data.error) {
         throw new Error(data.error || "Failed to apply theme");
+      }
+
+      if (appearance) {
+        activeAppearance.value = appearance;
+        applyAppearanceTheme(appearance);
       }
 
       if (colorId) {
@@ -163,6 +174,7 @@ export function useThemeManager() {
     iconThemes,
     activeColorTheme,
     activeIconTheme,
+    activeAppearance,
     loading,
     error,
     fetchThemes,

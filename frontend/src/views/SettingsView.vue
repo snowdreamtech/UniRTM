@@ -114,10 +114,52 @@
               </div>
             </div>
 
+            <!-- Setting: Appearance Mode -->
+            <div class="setting-item" :class="{ highlight: matchesSearch('appearance') }">
+              <div class="setting-meta">
+                <span class="setting-title">{{ t('settings.appearance_mode') || '外观模式' }}</span>
+                <p class="setting-desc">{{ t('settings.appearance_mode_desc') || '工作台界面的明暗模式，可跟随操作系统或手动指定。' }}</p>
+              </div>
+              <div class="setting-control">
+                <div class="segmented-control" id="appearance-segmented-control">
+                  <button
+                    type="button"
+                    class="segment-btn"
+                    :class="{ active: activeAppearance === 'system' }"
+                    @click="onAppearanceChange('system')"
+                    id="btn-appearance-system"
+                  >
+                    <span>💻</span>
+                    <span>{{ t('theme.system') || '跟随系统' }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="segment-btn"
+                    :class="{ active: activeAppearance === 'light' }"
+                    @click="onAppearanceChange('light')"
+                    id="btn-appearance-light"
+                  >
+                    <span>☀️</span>
+                    <span>{{ t('theme.light') || '浅色模式' }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="segment-btn"
+                    :class="{ active: activeAppearance === 'dark' }"
+                    @click="onAppearanceChange('dark')"
+                    id="btn-appearance-dark"
+                  >
+                    <span>🌙</span>
+                    <span>{{ t('theme.dark') || '深色模式' }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <!-- Setting: Color Theme -->
             <div class="setting-item" :class="{ highlight: matchesSearch('theme') }">
               <div class="setting-meta">
-                <span class="setting-title">{{ t('settings.color_theme') || '颜色主题' }}</span>
+                <span class="setting-title">{{ t('settings.color_theme') || '配色主题' }}</span>
                 <p class="setting-desc">{{ t('settings.color_theme_desc') || '工作台界面配色主题，完全兼容 VS Code 主题标准。' }}</p>
               </div>
               <div class="setting-control">
@@ -807,9 +849,11 @@ import { useRouter } from "vue-router";
 import { t, selectedLangSetting, setLanguage, SUPPORTED_LANGUAGES } from "../i18n";
 import { useTheme } from "../composables/useTheme";
 import { useThemeManager } from "../composables/useThemeManager";
+import { useToast } from "../composables/useToast";
 import CustomSelect from "../components/CustomSelect.vue";
 
 const router = useRouter();
+const { showToast } = useToast();
 
 function navigateToMarketplace(tab = "themes") {
   router.push({ path: "/marketplace", query: { tab } });
@@ -830,6 +874,7 @@ const {
   iconThemes,
   activeColorTheme,
   activeIconTheme,
+  activeAppearance,
   fetchThemes,
   installTheme,
   setActiveTheme,
@@ -1258,35 +1303,23 @@ const languageSelectOptions = computed(() => [
 ]);
 
 const colorThemeOptions = computed(() => {
-  return colorThemes.value.map((item) => {
-    let icon = "🎨 ";
-    let name = item.name;
-    if (item.is_builtin) {
-      if (item.id === "dark" || item.id === "vs-dark") {
-        icon = "🌙 ";
-        name = t("theme.dark") || "深色模式";
-      } else if (item.id === "light" || item.id === "vs") {
-        icon = "☀️ ";
-        name = t("theme.light") || "浅色模式";
-      } else if (item.id === "system") {
-        icon = "💻 ";
-        name = t("theme.system") || "跟随系统";
-      } else if (item.id === "hc-black") {
-        icon = "🖤 ";
-        name = "高对比度深色";
-      } else if (item.id === "hc-light") {
-        icon = "🤍 ";
-        name = "高对比度浅色";
-      } else {
-        icon = "🎨 ";
-        name = item.name;
-      }
+  const options: Array<{ value: string; label: string }> = [
+    { value: "default", label: "🎨 UniRTM 官方默认 (自适应深浅)" },
+  ];
+
+  for (const item of colorThemes.value) {
+    if (item.id === "default" || item.id === "dark" || item.id === "light" || item.id === "system") {
+      continue;
     }
-    return {
+    const isLight = item.ui_theme === "vs";
+    const modeBadge = isLight ? "☀️ " : "🌙 ";
+    options.push({
       value: item.id,
-      label: icon + name + (!item.is_builtin && item.version ? ` (v${item.version})` : ""),
-    };
-  });
+      label: `${modeBadge}${item.name}${item.version ? ` (v${item.version})` : ""}`,
+    });
+  }
+
+  return options;
 });
 
 const iconThemeOptions = computed(() => {
@@ -1615,13 +1648,31 @@ async function onVsixFileSelected(e: Event) {
   }
 }
 
+async function onAppearanceChange(mode: "system" | "light" | "dark") {
+  await setActiveTheme(undefined, undefined, mode);
+  showToast(
+    mode === "system"
+      ? "💻 已设置为跟随系统外观"
+      : mode === "light"
+      ? "☀️ 已切换为浅色模式"
+      : "🌙 已切换为深色模式",
+    "info"
+  );
+}
+
 async function onColorThemeChange(val: string) {
-  await setActiveTheme(val, undefined);
+  await setActiveTheme(val, undefined, undefined);
   appTheme.value = val;
+  const themeObj = colorThemes.value.find((c) => c.id === val);
+  const themeName = themeObj ? themeObj.name : val;
+  showToast(`🎨 已应用配色主题: ${themeName}`, "success");
 }
 
 async function onIconThemeChange(val: string) {
-  await setActiveTheme(undefined, val);
+  await setActiveTheme(undefined, val, undefined);
+  const iconObj = iconThemes.value.find((i) => i.id === val);
+  const iconName = iconObj ? (iconObj.id === "seti" ? "Seti UI" : iconObj.name) : val;
+  showToast(`📁 已应用文件图标主题: ${iconName}`, "success");
 }
 
 
@@ -3846,6 +3897,46 @@ input:checked + .slider:before {
 
 .local-vsix-upload-wrap {
   display: inline-flex;
+}
+
+/* Appearance Segmented Control */
+.segmented-control {
+  display: inline-flex;
+  align-items: center;
+  background: var(--input-bg);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+  gap: 4px;
+}
+
+.segment-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.segment-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.segment-btn.active {
+  color: var(--text-main);
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--card-border-active);
+  font-weight: 600;
 }
 </style>
 

@@ -1166,27 +1166,41 @@ func handleGetThemes(w http.ResponseWriter, r *http.Request, themeMgr *theme.Man
 		return
 	}
 
-	activeColor := "dark"
+	activeColor := "default"
 	activeIcon := "seti"
+	activeAppearance := "system"
+
+	checkCfg := func(c *config.Config) {
+		if c == nil {
+			return
+		}
+		if c.Settings.Appearance != "" {
+			activeAppearance = c.Settings.Appearance
+		}
+		if c.Settings.Theme != "" {
+			th := c.Settings.Theme
+			if th == "light" || th == "dark" || th == "system" {
+				activeAppearance = th
+				activeColor = "default"
+			} else {
+				activeColor = th
+			}
+		}
+		if c.Settings.IconTheme != "" {
+			activeIcon = c.Settings.IconTheme
+		}
+	}
+
 	if globalCfg, err := config.LoadGlobal(); err == nil && globalCfg != nil {
-		if globalCfg.Settings.Theme != "" {
-			activeColor = globalCfg.Settings.Theme
-		}
-		if globalCfg.Settings.IconTheme != "" {
-			activeIcon = globalCfg.Settings.IconTheme
-		}
+		checkCfg(globalCfg)
 	}
 	cm := config.NewConfigManager()
 	if cfg, _ := cm.LoadHierarchy(r.Context()); cfg != nil {
-		if cfg.Settings.Theme != "" {
-			activeColor = cfg.Settings.Theme
-		}
-		if cfg.Settings.IconTheme != "" {
-			activeIcon = cfg.Settings.IconTheme
-		}
+		checkCfg(cfg)
 	}
 	resp.Active.Color = activeColor
 	resp.Active.Icon = activeIcon
+	resp.Active.Appearance = activeAppearance
 
 	_ = json.NewEncoder(w).Encode(resp)
 }
@@ -1261,8 +1275,9 @@ func handleDeleteTheme(w http.ResponseWriter, r *http.Request, themeMgr *theme.M
 func handleApplyTheme(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var body struct {
-		Color string `json:"color"`
-		Icon  string `json:"icon"`
+		Color      string `json:"color"`
+		Icon       string `json:"icon"`
+		Appearance string `json:"appearance"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -1307,6 +1322,15 @@ func handleApplyTheme(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if body.Appearance != "" {
+		content, err = config.UpsertTOMLSetting(content, []string{"settings", "appearance"}, body.Appearance)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "upsert appearance: " + err.Error()})
+			return
+		}
+	}
+
 	if err := os.WriteFile(targetFile, []byte(content), 0644); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "write config file: " + err.Error()})
@@ -1314,9 +1338,10 @@ func handleApplyTheme(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": true,
-		"color":   body.Color,
-		"icon":    body.Icon,
+		"success":    true,
+		"color":      body.Color,
+		"icon":       body.Icon,
+		"appearance": body.Appearance,
 	})
 }
 
