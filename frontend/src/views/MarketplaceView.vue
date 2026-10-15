@@ -90,7 +90,10 @@
               <span>{{ mpIsInstalling(activeDetail) ? (t("settings.installing") || "安装中...") : (t("settings.install") || "安装") }}</span>
             </button>
             <div v-else class="installed-action-buttons">
-              <span v-if="isDetailActive" class="badge-hero-applied">✓ 当前主题已生效</span>
+              <span v-if="isDetailActive" class="badge-hero-applied">
+                <span class="active-dot"></span>
+                <span>当前主题已生效</span>
+              </span>
               <button
                 v-else
                 class="btn-apply-detail-primary"
@@ -473,7 +476,10 @@
                     {{ item.displayName || item.name }}
                   </span>
                   <span class="card-version font-mono">v{{ item.version }}</span>
-                  <span v-if="isExtensionActive(item)" class="badge-active-pill">● 生效中</span>
+                  <span v-if="isExtensionActive(item)" class="badge-active-pill">
+                    <span class="active-dot"></span>
+                    <span>生效中</span>
+                  </span>
                 </div>
                 <div class="card-subtitle-row">
                   <span class="card-namespace font-mono">{{ item.namespace }}</span>
@@ -1491,12 +1497,14 @@ const nativePlugins = ref<PluginItem[]>([
 
 .theme-card,
 .plugin-card {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: 14px;
   border-radius: 10px;
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .clickable-card {
@@ -1510,14 +1518,69 @@ const nativePlugins = ref<PluginItem[]>([
 }
 
 .card-is-active {
-  border-color: rgba(0, 229, 255, 0.7) !important;
-  background: linear-gradient(135deg, rgba(0, 229, 255, 0.1) 0%, rgba(255, 255, 255, 0.04) 100%) !important;
-  box-shadow: 0 0 18px rgba(0, 229, 255, 0.25), inset 0 0 16px rgba(0, 229, 255, 0.08) !important;
+  position: relative;
+  border: 2px solid #00e5ff !important;
+  background: linear-gradient(145deg, rgba(0, 229, 255, 0.22) 0%, rgba(14, 165, 233, 0.14) 40%, rgba(15, 23, 42, 0.96) 100%) !important;
+  box-shadow: 0 0 26px rgba(0, 229, 255, 0.42), 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 0 18px rgba(0, 229, 255, 0.15) !important;
+}
+
+.card-is-active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #00e5ff, #38bdf8, #818cf8);
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.9);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .card-is-active:hover {
-  box-shadow: 0 0 24px rgba(0, 229, 255, 0.35), inset 0 0 20px rgba(0, 229, 255, 0.12) !important;
-  border-color: var(--accent-cyan) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 0 34px rgba(0, 229, 255, 0.55), 0 10px 28px rgba(0, 0, 0, 0.6), inset 0 0 22px rgba(0, 229, 255, 0.2) !important;
+  border-color: #00e5ff !important;
+}
+
+.card-is-active .card-name {
+  color: #00e5ff !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.45);
+}
+
+.card-is-active .card-icon-wrap,
+.card-is-active .card-icon-box {
+  border-color: #00e5ff !important;
+  background: rgba(0, 229, 255, 0.18) !important;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.4) !important;
+}
+
+/* Light Mode Overrides for Active Theme Card */
+:root[data-theme="light"] .card-is-active,
+[data-theme="light"] .card-is-active {
+  border: 2px solid #0284c7 !important;
+  background: linear-gradient(145deg, rgba(2, 132, 199, 0.14) 0%, rgba(240, 249, 255, 0.97) 100%) !important;
+  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.25), inset 0 0 14px rgba(2, 132, 199, 0.08) !important;
+}
+
+:root[data-theme="light"] .card-is-active::before,
+[data-theme="light"] .card-is-active::before {
+  background: linear-gradient(90deg, #0284c7, #38bdf8);
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.5);
+}
+
+:root[data-theme="light"] .card-is-active .card-name,
+[data-theme="light"] .card-is-active .card-name {
+  color: #0284c7 !important;
+  text-shadow: none;
+}
+
+:root[data-theme="light"] .card-is-active .card-icon-wrap,
+[data-theme="light"] .card-is-active .card-icon-box {
+  border-color: #0284c7 !important;
+  background: rgba(2, 132, 199, 0.1) !important;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.25) !important;
 }
 
 .card-header-row {
@@ -1674,52 +1737,119 @@ const nativePlugins = ref<PluginItem[]>([
 
 .badge-active-pill {
   font-size: 0.72rem;
-  padding: 1px 7px;
-  border-radius: 10px;
-  background: rgba(0, 229, 255, 0.16);
-  border: 1px solid rgba(0, 229, 255, 0.55);
-  color: var(--accent-cyan);
-  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(0, 229, 255, 0.22);
+  border: 1px solid #00e5ff;
+  color: #00e5ff;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   flex-shrink: 0;
-  box-shadow: 0 0 6px rgba(0, 229, 255, 0.2);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.45);
+  letter-spacing: 0.2px;
+}
+
+.active-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00e5ff;
+  box-shadow: 0 0 8px #00e5ff;
+  animation: activeDotPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes activeDotPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 8px #00e5ff;
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.8);
+    box-shadow: 0 0 2px #00e5ff;
+  }
 }
 
 .badge-active-applied {
   font-size: 0.74rem;
-  padding: 2px 7px;
-  background: rgba(0, 229, 255, 0.18);
-  border: 1px solid var(--accent-cyan);
-  color: var(--accent-cyan);
+  padding: 3px 8px;
+  background: rgba(0, 229, 255, 0.2);
+  border: 1px solid #00e5ff;
+  color: #00e5ff;
   border-radius: 4px;
-  font-weight: 600;
-  box-shadow: 0 0 8px rgba(0, 229, 255, 0.25);
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.35);
 }
 
 .badge-hero-applied {
-  font-size: 0.86rem;
-  padding: 8px 16px;
-  background: rgba(0, 229, 255, 0.15);
-  border: 1px solid var(--accent-cyan);
-  color: var(--accent-cyan);
-  border-radius: 6px;
-  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 8px 18px;
+  background: rgba(0, 229, 255, 0.22);
+  border: 1.5px solid #00e5ff;
+  color: #00e5ff;
+  border-radius: 8px;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.45);
 }
 
 .btn-applied-current {
-  padding: 4px 10px;
-  background: rgba(0, 229, 255, 0.16);
-  border: 1px solid rgba(0, 229, 255, 0.45);
-  color: var(--accent-cyan);
+  padding: 4px 12px;
+  background: #00e5ff !important;
+  border: 1px solid #00e5ff !important;
+  color: #070a12 !important;
   border-radius: 4px;
   font-size: 0.76rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: default;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.5) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Light Mode Overrides for Active Badges & Buttons */
+:root[data-theme="light"] .badge-active-pill,
+[data-theme="light"] .badge-active-pill {
+  background: rgba(2, 132, 199, 0.12);
+  border-color: #0284c7;
+  color: #0284c7;
+  box-shadow: 0 0 6px rgba(2, 132, 199, 0.2);
+}
+
+:root[data-theme="light"] .badge-active-pill .active-dot,
+[data-theme="light"] .badge-active-pill .active-dot {
+  background: #0284c7;
+  box-shadow: 0 0 6px #0284c7;
+}
+
+:root[data-theme="light"] .badge-active-applied,
+[data-theme="light"] .badge-active-applied {
+  background: rgba(2, 132, 199, 0.15);
+  border-color: #0284c7;
+  color: #0284c7;
+  box-shadow: none;
+}
+
+:root[data-theme="light"] .btn-applied-current,
+[data-theme="light"] .btn-applied-current {
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3) !important;
+}
+
+:root[data-theme="light"] .badge-hero-applied,
+[data-theme="light"] .badge-hero-applied {
+  background: rgba(2, 132, 199, 0.12);
+  border-color: #0284c7;
+  color: #0284c7;
+  box-shadow: 0 2px 10px rgba(2, 132, 199, 0.2);
 }
 
 .btn-apply-detail-primary {
