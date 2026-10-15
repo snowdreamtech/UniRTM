@@ -67,10 +67,10 @@
           v-for="tool in filteredToolItems"
           :key="tool.name"
           class="sidebar-item"
-          :class="{ active: activeSubItem === tool.name }"
-          @click="handleSubItemClick(tool.name)"
+          :class="{ active: activeSubItem === tool.name || activeSubItem === tool.id }"
+          @click="handleSubItemClick(tool.id || tool.name)"
         >
-          <span class="item-icon"><TechIcon :id="tool.name" :size="20" /></span>
+          <span class="item-icon"><TechIcon :id="tool.id || tool.name" :size="20" /></span>
           <div class="item-dual">
             <span class="item-label">{{ tool.name }}</span>
             <span class="item-sub">{{ tool.version }}</span>
@@ -160,7 +160,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 
@@ -239,6 +239,12 @@ const runtimeItems = [
   { id: "go", icon: "go", label: "Go", meta: "GVM / .go-version" },
   { id: "python", icon: "python", label: "Python", meta: "Pyenv / .python-version" },
   { id: "rust", icon: "rust", label: "Rust", meta: "rustup / cargo" },
+  { id: "java", icon: "java", label: "Java", meta: "Adoptium / JDK" },
+  { id: "bun", icon: "bun", label: "Bun", meta: "JavaScript toolkit" },
+  { id: "deno", icon: "deno", label: "Deno", meta: "Secure runtime" },
+  { id: "ruby", icon: "ruby", label: "Ruby", meta: "rbenv / ruby-build" },
+  { id: "php", icon: "php", label: "PHP", meta: "static-php-cli" },
+  { id: "zig", icon: "zig", label: "Zig", meta: "ziglang.org" },
 ];
 
 const filteredRuntimeItems = computed(() => {
@@ -250,19 +256,35 @@ const filteredRuntimeItems = computed(() => {
   );
 });
 
-// Tools items
-const toolItems = [
-  { name: "node", icon: "node", version: "22.14.0", status: "success" },
-  { name: "go", icon: "go", version: "1.24.0", status: "success" },
-  { name: "python", icon: "python", version: "3.12.2", status: "success" },
-  { name: "pre-commit", icon: "git", version: "4.7.0", status: "success" },
-  { name: "trivy", icon: "lock", version: "0.50.1", status: "success" },
-  { name: "eslint", icon: "javascript", version: "10.12.0", status: "success" },
-];
+// Tools items (Full toolchains superset covering Languages, Build Systems, DevOps, Linters)
+const toolItems = ref([
+  // Languages
+  { id: "node", name: "Node.js", icon: "node", version: "22.14.0", status: "success" },
+  { id: "go", name: "Go", icon: "go", version: "1.24.0", status: "success" },
+  { id: "python", name: "Python", icon: "python", version: "3.13.2", status: "success" },
+  { id: "rust", name: "Rust", icon: "rust", version: "1.85.0", status: "success" },
+  { id: "java", name: "Java", icon: "java", version: "21.0.2", status: "success" },
+
+  // Build Systems
+  { id: "maven", name: "Maven", icon: "maven", version: "3.9.6", status: "success" },
+  { id: "gradle", name: "Gradle", icon: "gradle", version: "8.10.2", status: "success" },
+  { id: "cmake", name: "CMake", icon: "cmake", version: "3.30.5", status: "success" },
+  { id: "ninja", name: "Ninja", icon: "ninja", version: "1.12.1", status: "success" },
+
+  // Cloud & DevOps
+  { id: "kubectl", name: "Kubectl", icon: "kubectl", version: "v1.31.2", status: "success" },
+  { id: "helm", name: "Helm", icon: "helm", version: "3.16.2", status: "success" },
+
+  // Linters & Security
+  { id: "pre-commit", name: "pre-commit", icon: "git", version: "4.0.1", status: "success" },
+  { id: "trivy", name: "Trivy", icon: "lock", version: "0.56.2", status: "success" },
+  { id: "eslint", name: "ESLint", icon: "javascript", version: "9.14.0", status: "success" },
+]);
 
 const filteredToolItems = computed(() => {
-  if (!searchQuery.value) return toolItems;
-  return toolItems.filter((t) => t.name.toLowerCase().includes(searchQuery.value.toLowerCase()));
+  if (!searchQuery.value) return toolItems.value;
+  const q = searchQuery.value.toLowerCase().trim();
+  return toolItems.value.filter((t) => t.name.toLowerCase().includes(q) || t.id.toLowerCase().includes(q));
 });
 
 // Tasks items
@@ -298,6 +320,26 @@ const doctorChecks = [
   { id: "env-sandbox", icon: "workbench:config", label: "Environment Isolation" },
   { id: "mirror-speed", icon: "workbench:tasks", label: "Mirror Latency" },
 ];
+
+onMounted(async () => {
+  try {
+    const res = await fetch("/api/runtimes/status");
+    if (res.ok) {
+      const data = await res.json();
+      if (data.runtimes && Array.isArray(data.runtimes)) {
+        for (const rt of data.runtimes) {
+          const matched = toolItems.value.find((t) => t.id === rt.id || t.name === rt.id);
+          if (matched) {
+            if (rt.active_version) matched.version = rt.active_version;
+            else if (rt.global_version) matched.version = rt.global_version;
+          }
+        }
+      }
+    }
+  } catch {
+    // dev mode fallback
+  }
+});
 </script>
 
 <style scoped>

@@ -6,12 +6,12 @@
         <div class="title-with-badge">
           <h2 class="view-title" style="display: flex; align-items: center; gap: 8px;">
             <TechIcon id="workbench:tools" :size="22" />
-            {{ t("tools.title") || "开发工具链与运行时全集" }}
+            <span>项目开发工具链与运行时全集</span>
           </h2>
           <span class="superset-badge">SUPERSET</span>
         </div>
         <p class="view-desc">
-          {{ t("tools.desc") || "由 UniRTM 统一版本锁定与高性能垫片（Go Shims）路由，涵盖编程语言、构建系统、云原生运维与安全扫描等全量工具。" }}
+          由 UniRTM 统一版本锁定与高性能垫片（Go Shims）路由，涵盖编程语言、构建系统、云原生运维与安全扫描等全量工具。
         </p>
       </div>
       <div class="view-actions">
@@ -38,14 +38,14 @@
         <button class="tool-action-btn secondary" @click="handleReshim">
           <span style="display: inline-flex; align-items: center; gap: 6px;">
             <TechIcon id="workbench:tasks" :size="14" :colored="false" />
-            {{ t("tools.reshim") || "刷新垫片" }}
+            <span>刷新垫片</span>
           </span>
         </button>
 
         <button class="tool-action-btn primary" @click="openAddModal">
           <span style="display: inline-flex; align-items: center; gap: 6px;">
             <span>+</span>
-            {{ t("tools.add_tool") || "添加工具" }}
+            <span>添加工具</span>
           </span>
         </button>
       </div>
@@ -90,7 +90,7 @@
       <p class="empty-title">未找到匹配的工具</p>
       <p class="empty-desc">尝试更换搜索关键字，或在当前分类下点击“添加工具”安装新工具。</p>
       <button class="tool-action-btn primary small" @click="openAddModal">
-        + {{ t("tools.add_tool") || "添加工具" }}
+        + 添加工具
       </button>
     </div>
 
@@ -100,7 +100,10 @@
         v-for="tool in filteredTools"
         :key="tool.id"
         class="glass-card tool-card"
-        :class="{ active: isToolActive(tool) }"
+        :class="{
+          active: isToolActive(tool),
+          'subitem-focused': props.activeSubItem && (props.activeSubItem.toLowerCase() === tool.id.toLowerCase() || props.activeSubItem.toLowerCase() === tool.name.toLowerCase())
+        }"
       >
         <div class="tool-card-header">
           <div class="tool-badge-icon">
@@ -178,7 +181,7 @@
               <TechIcon id="workbench:tools" :size="20" />
             </span>
             <div>
-              <h3 class="modal-title">{{ t("tools.add_tool") || "添加工具" }}</h3>
+              <h3 class="modal-title">添加工具</h3>
               <p class="modal-desc">为当前{{ currentScope === 'user' ? '用户默认' : '工作区' }}添加开发工具与版本</p>
             </div>
           </div>
@@ -336,6 +339,10 @@ import { useToast } from "../composables/useToast";
 import TechIcon from "../components/common/TechIcon.vue";
 
 const { showToast } = useToast();
+
+const props = defineProps<{
+  activeSubItem?: string;
+}>();
 
 const emit = defineEmits<{
   (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string): void;
@@ -611,6 +618,13 @@ function getCategoryTagClass(catId: ToolCategory): string {
 
 const filteredTools = computed(() => {
   let list = tools.value;
+  if (props.activeSubItem && props.activeSubItem.trim()) {
+    const sub = props.activeSubItem.trim().toLowerCase();
+    const matched = list.filter((t) => t.id.toLowerCase() === sub || t.name.toLowerCase() === sub);
+    if (matched.length > 0) {
+      return matched;
+    }
+  }
   if (activeCategory.value !== "all") {
     list = list.filter((t) => t.category === activeCategory.value);
   }
@@ -1184,6 +1198,21 @@ onMounted(async () => {
 .tool-card:hover {
   border-color: var(--card-border-active);
   transform: translateY(-2px);
+}
+
+.tool-card.subitem-focused {
+  border-color: var(--accent-cyan) !important;
+  box-shadow: 0 0 0 1px var(--accent-cyan), 0 4px 20px rgba(0, 229, 255, 0.3) !important;
+  animation: pulse-border 2s infinite ease-in-out;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    box-shadow: 0 0 0 1px var(--accent-cyan), 0 4px 20px rgba(0, 229, 255, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 2px var(--accent-cyan), 0 6px 28px rgba(0, 229, 255, 0.45);
+  }
 }
 
 .tool-card-header {
