@@ -52,7 +52,7 @@
           :class="{ active: activeSubItem === item.id }"
           @click="handleSubItemClick(item.id)"
         >
-          <span class="item-icon">{{ item.icon }}</span>
+          <span class="item-icon"><TechIcon :id="item.id" :size="16" /></span>
           <div class="item-dual">
             <span class="item-label">{{ item.label }}</span>
             <span class="item-sub">{{ item.meta }}</span>
@@ -70,7 +70,7 @@
           :class="{ active: activeSubItem === tool.name }"
           @click="handleSubItemClick(tool.name)"
         >
-          <span class="item-icon">{{ tool.icon }}</span>
+          <span class="item-icon"><TechIcon :id="tool.name" :size="16" /></span>
           <div class="item-dual">
             <span class="item-label">{{ tool.name }}</span>
             <span class="item-sub">{{ tool.version }}</span>
@@ -162,6 +162,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { t } from "../../i18n";
+import TechIcon from "../common/TechIcon.vue";
 
 const props = defineProps<{
   isOpen: boolean;

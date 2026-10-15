@@ -57,11 +57,42 @@ class IconThemeService {
     this.isStyleInjected = true;
   }
 
+  private customThemes: Map<string, IconThemeManifest> = new Map();
+
   /**
-   * Set or update active theme manifest.
+   * Set or update active theme manifest with validation and safe fallback.
    */
-  public setManifest(manifest: IconThemeManifest): void {
+  public setManifest(manifest: IconThemeManifest): boolean {
+    if (!manifest || typeof manifest !== "object" || !manifest.iconDefinitions) {
+      console.warn("[IconThemeService] Rejected invalid manifest. Keeping fallback.");
+      return false;
+    }
     this.activeManifest = manifest;
+    return true;
+  }
+
+  /**
+   * Register a custom theme manifest.
+   */
+  public registerCustomTheme(themeId: string, manifest: IconThemeManifest): boolean {
+    if (!manifest || typeof manifest !== "object" || !manifest.iconDefinitions) {
+      console.warn(`[IconThemeService] Invalid theme manifest rejected for "${themeId}".`);
+      return false;
+    }
+    this.customThemes.set(themeId, manifest);
+    return true;
+  }
+
+  /**
+   * Switch to a registered custom theme.
+   */
+  public switchTheme(themeId: string): boolean {
+    const target = this.customThemes.get(themeId);
+    if (target) {
+      this.activeManifest = target;
+      return true;
+    }
+    return false;
   }
 
   /**

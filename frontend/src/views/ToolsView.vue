@@ -40,7 +40,7 @@
         :class="{ active: tool.active }"
       >
         <div class="tool-card-header">
-          <div class="tool-badge-icon">{{ tool.icon }}</div>
+          <div class="tool-badge-icon"><TechIcon :id="tool.id" :size="24" :colored="true" /></div>
           <div class="tool-meta-block">
             <div class="tool-name-row">
               <span class="tool-name">{{ tool.name }}</span>
@@ -81,6 +81,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { t } from "../i18n";
+import TechIcon from "../components/common/TechIcon.vue";
 
 const emit = defineEmits<{
   (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string): void;

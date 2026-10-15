@@ -41,10 +41,10 @@
 
 **Independent Test**: Open Runtimes, Sidebar, and Tools views; all runtimes (Go, Node.js, Python, Rust, PHP, Java, etc.) render crisp, official Seti vector icons with brand colors.
 
-- [ ] T007 [P] [US1] Refactor `frontend/src/components/layout/SidebarPanel.vue` to replace runtime and tool emoji mappings (`🔷`, `🟢`, `🐍`, `🦀`) with `<TechIcon :id="item.id" :size="16" />`.
-- [ ] T008 [P] [US1] Refactor `frontend/src/views/RuntimesView.vue` to delete `getRuntimeIcon()` switch statement and replace preset/card icons with `<TechIcon :id="runtime.id" :size="28" :colored="true" />`.
-- [ ] T009 [P] [US1] Refactor `frontend/src/views/ToolsView.vue` to replace tool emojis with `<TechIcon :id="tool.id" :size="24" :colored="true" />`.
-- [ ] T010 [P] [US1] Refactor `frontend/src/views/DashboardView.vue` and `frontend/src/components/layout/BottomStatusBar.vue` to replace any remaining hardcoded tool emojis.
+- [x] T007 [P] [US1] Refactor `frontend/src/components/layout/SidebarPanel.vue` to replace runtime and tool emoji mappings (`🔷`, `🟢`, `🐍`, `🦀`) with `<TechIcon :id="item.id" :size="16" />`.
+- [x] T008 [P] [US1] Refactor `frontend/src/views/RuntimesView.vue` to delete `getRuntimeIcon()` switch statement and replace preset/card icons with `<TechIcon :id="runtime.id" :size="28" :colored="true" />`.
+- [x] T009 [P] [US1] Refactor `frontend/src/views/ToolsView.vue` to replace tool emojis with `<TechIcon :id="tool.id" :size="24" :colored="true" />`.
+- [x] T010 [P] [US1] Refactor `frontend/src/views/DashboardView.vue` and `frontend/src/components/layout/BottomStatusBar.vue` to replace any remaining hardcoded tool emojis.
 
 **Checkpoint**: Workbench is 100% free of hardcoded emojis; all tool/language icons render via the declarative engine.
 
@@ -56,8 +56,8 @@
 
 **Independent Test**: Load a custom or partial `icon-theme.json` file; unrecognized tools gracefully fall back to the theme's `default` file icon without console warnings.
 
-- [ ] T011 [US3] Add validation and error boundary in `frontend/src/services/icon-theme/iconThemeService.ts` ensuring corrupted manifests fall back safely to built-in Seti.
-- [ ] T012 [US3] Implement `registerCustomTheme(manifest)` API allowing dynamic runtime addition of third-party icon themes.
+- [x] T011 [US3] Add validation and error boundary in `frontend/src/services/icon-theme/iconThemeService.ts` ensuring corrupted manifests fall back safely to built-in Seti.
+- [x] T012 [US3] Implement `registerCustomTheme(manifest)` API allowing dynamic runtime addition of third-party icon themes.
 
 ---
 
@@ -65,9 +65,9 @@
 
 **Purpose**: Build verification, performance check, and cross-theme validation.
 
-- [ ] T013 [P] Run `npm run build` in `frontend/` to ensure zero TypeScript errors (`vue-tsc`) and clean production bundle.
-- [ ] T014 [P] Run `go build -o bin/unirtm main.go` to ensure embedded assets build cleanly into single binary.
-- [ ] T015 Verify visual presentation across dark and light themes (contrast, alignment, font scaling).
+- [x] T013 [P] Run `npm run build` in `frontend/` to ensure zero TypeScript errors (`vue-tsc`) and clean production bundle.
+- [x] T014 [P] Run `go build -o bin/unirtm main.go` to ensure embedded assets build cleanly into single binary.
+- [x] T015 Verify visual presentation across dark and light themes (contrast, alignment, font scaling).
 
 ---
 

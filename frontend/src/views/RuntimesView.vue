@@ -117,7 +117,7 @@
       >
         <!-- Card Header -->
         <div class="runtime-card-header">
-          <div class="runtime-icon-badge">{{ getRuntimeIcon(rt.id) }}</div>
+          <div class="runtime-icon-badge"><TechIcon :id="rt.id" :size="24" :colored="true" /></div>
           <div class="runtime-title-block">
             <div class="runtime-name-row">
               <span class="runtime-name">{{ rt.name }}</span>
@@ -245,7 +245,7 @@
       <div class="modal-dialog glass-card" role="dialog" aria-modal="true">
         <div class="modal-header">
           <div class="modal-title-row">
-            <span class="modal-icon">{{ getRuntimeIcon(selectedRuntime?.id || "") }}</span>
+            <span class="modal-icon"><TechIcon :id="selectedRuntime?.id || ''" :size="20" :colored="true" /></span>
             <div>
               <h3 class="modal-title">
                 {{ selectedRuntime?.name }} {{ t("runtimes.install_version") || "Install Version" }}
@@ -362,7 +362,7 @@
               class="add-preset-card"
             >
               <div class="preset-card-left">
-                <span class="preset-icon">{{ preset.icon }}</span>
+                <span class="preset-icon"><TechIcon :id="preset.id" :size="20" :colored="true" /></span>
                 <div class="preset-info">
                   <div class="preset-name-row">
                     <span class="preset-name">{{ preset.name }}</span>
@@ -416,6 +416,7 @@
 import { ref, computed, onMounted } from "vue";
 import { t } from "../i18n";
 import { useToast } from "../composables/useToast";
+import TechIcon from "../components/common/TechIcon.vue";
 
 const { showToast } = useToast();
 
@@ -751,37 +752,6 @@ const filteredRemoteVersions = computed(() => {
   const q = remoteSearchKey.value.toLowerCase().replace(/^v/, "");
   return list.filter((v) => v.version.toLowerCase().includes(q));
 });
-
-function getRuntimeIcon(id: string): string {
-  switch (id.toLowerCase()) {
-    case "node":
-    case "nodejs":
-      return "🟢";
-    case "go":
-    case "golang":
-      return "🔷";
-    case "python":
-    case "python3":
-      return "🐍";
-    case "rust":
-      return "🦀";
-    case "bun":
-      return "🥟";
-    case "deno":
-      return "🦕";
-    case "zig":
-      return "⚡";
-    case "java":
-    case "openjdk":
-      return "☕";
-    case "ruby":
-      return "💎";
-    case "php":
-      return "🐘";
-    default:
-      return "⚙️";
-  }
-}
 
 
 function isAlreadyInstalled(toolId: string, ver: string): boolean {

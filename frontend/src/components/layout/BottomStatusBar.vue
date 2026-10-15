@@ -65,7 +65,7 @@
         id="status-lockfile"
         :title="'unirtm.lock is in sync with active dependencies'"
       >
-        <span class="btn-icon">🔒</span>
+        <span class="btn-icon"><TechIcon id="unirtm.lock" :size="12" /></span>
         <span>{{ lockStatusText }}</span>
       </div>
 
@@ -79,6 +79,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import TechIcon from "../common/TechIcon.vue";
 
 const props = defineProps<{
   activeTaskName?: string;

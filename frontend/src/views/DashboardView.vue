@@ -66,7 +66,7 @@
           </div>
           <div class="spec-row">
             <span class="spec-name">{{ t("hello.go_version") || "Go 编译版本" }}</span>
-            <span class="spec-val font-mono">go1.24.0 linux/amd64</span>
+            <span class="spec-val font-mono"><TechIcon id="go" :size="14" style="margin-right: 4px;" />go1.24.0 linux/amd64</span>
           </div>
           <div class="spec-row">
             <span class="spec-name">{{ t("hello.app_version") || "核心版本" }}</span>
@@ -124,6 +124,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { t } from "../i18n";
+import TechIcon from "../components/common/TechIcon.vue";
 
 defineProps<{
   appConfig?: any;
