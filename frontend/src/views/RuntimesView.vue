@@ -332,27 +332,6 @@
         </div>
 
         <div class="modal-body-versions">
-          <!-- Custom Version Banner when user types non-listed version -->
-          <div
-            v-if="canInstallCustomVersion"
-            class="remote-ver-row custom-ver-highlight"
-          >
-            <div class="remote-ver-info">
-              <span class="font-mono ver-name">v{{ cleanCustomVersion }}</span>
-              <span class="custom-badge font-mono">
-                {{ t('runtimes.custom_version') || '自定义指定版本' }}
-              </span>
-            </div>
-            <button
-              class="install-action-btn"
-              :disabled="installingVer === cleanCustomVersion"
-              @click="installRemoteVersion(selectedRuntime?.id || '', cleanCustomVersion)"
-            >
-              <span v-if="installingVer === cleanCustomVersion">{{ t("runtimes.installing") || "Installing..." }}</span>
-              <span v-else>{{ t("runtimes.install_apply") || "安装并应用" }}</span>
-            </button>
-          </div>
-
           <div v-if="loadingRemote" class="remote-loading-box">
             <span class="spin-icon">
               <TechIcon id="workbench:sync" :size="16" />
@@ -360,8 +339,36 @@
             <span>{{ t("runtimes.fetching_releases") || "Fetching available releases..." }}</span>
           </div>
 
-          <div v-else-if="filteredRemoteVersions.length === 0 && !canInstallCustomVersion" class="remote-empty-box">
-            <span>No matching upstream releases found.</span>
+          <div v-else-if="filteredRemoteVersions.length === 0" class="remote-empty-box">
+            <div class="empty-icon"><TechIcon id="workbench:search" :size="24" /></div>
+            <div class="empty-title">{{ t("runtimes.no_matching_releases") || "未找到匹配的官方发布版本" }}</div>
+
+            <!-- Version format / rule validation error -->
+            <div v-if="versionValidation.error" class="version-validation-error">
+              <span class="warn-icon">⚠️</span>
+              <span>{{ versionValidation.error }}</span>
+            </div>
+
+            <!-- Strictly validated custom version card when unlisted -->
+            <div v-else-if="canInstallCustomVersion" class="custom-ver-install-box">
+              <div class="custom-ver-header">
+                <span class="font-mono ver-name">v{{ cleanCustomVersion }}</span>
+                <span class="custom-badge font-mono">
+                  {{ t('runtimes.custom_version_unlisted') || '官方未收录' }}
+                </span>
+              </div>
+              <p class="custom-ver-desc">
+                {{ t('runtimes.custom_version_desc') || '该版本未包含在当前官方版本清单中。若您确认存在此构建，可尝试自定义安装。' }}
+              </p>
+              <button
+                class="install-action-btn"
+                :disabled="installingVer === cleanCustomVersion"
+                @click="installRemoteVersion(selectedRuntime?.id || '', cleanCustomVersion)"
+              >
+                <span v-if="installingVer === cleanCustomVersion">{{ t("runtimes.installing") || "Installing..." }}</span>
+                <span v-else>{{ t("runtimes.install_custom_btn") || "尝试安装自定义版本" }}</span>
+              </button>
+            </div>
           </div>
 
           <div
@@ -483,6 +490,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { t } from "../i18n";
 import { useToast } from "../composables/useToast";
 import TechIcon from "../components/common/TechIcon.vue";
+import { validateRuntimeVersion } from "../utils/versionValidator";
 
 const { showToast } = useToast();
 
@@ -823,14 +831,26 @@ const cleanCustomVersion = computed(() => {
   return remoteSearchKey.value.trim().replace(/^v/i, "");
 });
 
+const isAttemptingVersionNumber = computed(() => {
+  const q = cleanCustomVersion.value;
+  return /[0-9]/.test(q);
+});
+
+const versionValidation = computed(() => {
+  if (!isAttemptingVersionNumber.value) {
+    return { valid: false };
+  }
+  return validateRuntimeVersion(selectedRuntime.value?.id || "", cleanCustomVersion.value);
+});
+
 const canInstallCustomVersion = computed(() => {
-  const val = cleanCustomVersion.value;
-  if (!val || val.length < 2) return false;
-  if (!/^[0-9]+(\.[0-9a-zA-Z_\-]+)*$/.test(val)) return false;
-  const exactMatch = filteredRemoteVersions.value.some(
-    (v) => v.version.replace(/^v/, "").toLowerCase() === val.toLowerCase()
-  );
-  return !exactMatch;
+  // Only offer custom installation if:
+  // 1. Official upstream list has NO match for the current search
+  // 2. The user has typed a version number
+  // 3. The version strictly passed semantic & tool-specific validation
+  if (filteredRemoteVersions.value.length > 0) return false;
+  if (!isAttemptingVersionNumber.value) return false;
+  return versionValidation.value.valid;
 });
 
 const filteredRemoteVersions = computed(() => {
@@ -1902,8 +1922,7 @@ onBeforeUnmount(() => {
   border-radius: 4px;
 }
 
-.remote-loading-box,
-.remote-empty-box {
+.remote-loading-box {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1911,6 +1930,71 @@ onBeforeUnmount(() => {
   padding: 2rem 0;
   color: var(--text-muted);
   font-size: 0.85rem;
+}
+
+.remote-empty-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 2.2rem 1rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.empty-icon {
+  opacity: 0.5;
+  margin-bottom: -0.2rem;
+}
+
+.empty-title {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+.version-validation-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.85rem;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 6px;
+  color: #f59e0b;
+  font-size: 0.78rem;
+  max-width: 95%;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.custom-ver-install-box {
+  width: 100%;
+  max-width: 440px;
+  margin-top: 0.4rem;
+  padding: 0.85rem 1rem;
+  background: rgba(6, 182, 212, 0.06);
+  border: 1px dashed var(--accent-cyan);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: center;
+}
+
+.custom-ver-header {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.custom-ver-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
 }
 
 .remote-ver-row {

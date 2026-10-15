@@ -85,6 +85,11 @@ export const zhCn: TranslationDict = {
   "runtimes.scope_user_tip": "应用于本机所有工作区的默认兜底版本",
   "runtimes.close": "关闭",
   "runtimes.fetching_releases": "正在获取官方最新版本...",
+  "runtimes.no_matching_releases": "未找到匹配的官方发布版本",
+  "runtimes.version_invalid_format": "版本号格式不合规（须符合语义化版本规范，例如 1.23.0）",
+  "runtimes.custom_version_unlisted": "官方未收录",
+  "runtimes.custom_version_desc": "该版本未包含在当前官方版本清单中。若您确认存在此构建，可尝试自定义安装。",
+  "runtimes.install_custom_btn": "尝试安装自定义版本",
 
   "sidebar.group_overview": "项目总览",
   "sidebar.group_tools": "运行时与工具",

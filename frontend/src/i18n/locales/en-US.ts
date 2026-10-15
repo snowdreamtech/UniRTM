@@ -85,6 +85,11 @@ export const enUs: TranslationDict = {
   "runtimes.scope_user_tip": "Fallback default version for all workspaces on this machine",
   "runtimes.close": "Close",
   "runtimes.fetching_releases": "Fetching available releases...",
+  "runtimes.no_matching_releases": "No matching upstream releases found.",
+  "runtimes.version_invalid_format": "Invalid version format (must follow Semantic Versioning, e.g. 1.23.0)",
+  "runtimes.custom_version_unlisted": "Unlisted Upstream",
+  "runtimes.custom_version_desc": "This version is not in the official release list. If you are sure this build exists, you can try custom installation.",
+  "runtimes.install_custom_btn": "Try Installing Custom Version",
 
   "sidebar.group_overview": "PROJECT OVERVIEW",
   "sidebar.group_tools": "RUNTIMES & TOOLS",
