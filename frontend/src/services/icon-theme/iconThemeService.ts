@@ -108,7 +108,8 @@ class IconThemeService {
   public parseCharacter(rawChar?: string): string {
     if (!rawChar) return "";
     try {
-      const cleanHex = rawChar.replace(/^\\+[EeUu]?/, "").replace(/^0x/i, "");
+      // Remove leading backslashes or 'u' prefix while keeping hex digits (including 'E') intact
+      const cleanHex = rawChar.replace(/^\\+u?/i, "").replace(/^0x/i, "");
       const codePoint = parseInt(cleanHex, 16);
       if (!isNaN(codePoint)) {
         return String.fromCodePoint(codePoint);
