@@ -3,7 +3,10 @@
     <!-- View Header -->
     <div class="view-header-row">
       <div>
-        <h2 class="view-title">⚡ {{ t("tasks.title") }}</h2>
+        <h2 class="view-title" style="display: flex; align-items: center; gap: 8px;">
+          <TechIcon id="workbench:tasks" :size="20" />
+          {{ t("tasks.title") }}
+        </h2>
         <p class="view-desc">
           {{ t("tasks.desc") }}
         </p>
@@ -21,7 +24,10 @@
         >
           <div class="task-info-side">
             <div class="task-name-line">
-              <span class="task-title">{{ task.name }}</span>
+              <span class="task-title" style="display: inline-flex; align-items: center; gap: 6px;">
+                <TechIcon id="workbench:tasks" :size="14" />
+                {{ task.name }}
+              </span>
               <span v-if="task.env" class="task-env-pill">{{ task.env }}</span>
             </div>
             <div class="task-cmd-line font-mono">
@@ -37,7 +43,10 @@
               @click="executeTask(task)"
             >
               <span v-if="runningTask === task.name" class="spin-icon">⏳ {{ t("tasks.running") }}</span>
-              <span v-else>▶ {{ t("tasks.run") }}</span>
+              <span v-else style="display: inline-flex; align-items: center; gap: 4px;">
+                <TechIcon id="workbench:tasks" :size="12" :colored="false" />
+                {{ t("tasks.run") }}
+              </span>
             </button>
           </div>
         </div>
@@ -49,6 +58,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { t } from "../i18n";
+import TechIcon from "../components/common/TechIcon.vue";
 
 const emit = defineEmits<{
   (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string, category?: "output" | "tasks" | "doctor"): void;

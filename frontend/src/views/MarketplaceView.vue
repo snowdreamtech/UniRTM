@@ -53,7 +53,9 @@
                 alt="icon"
                 @error="(e: any) => { if (e && e.target) e.target.style.display = 'none'; }"
               />
-              <span class="hero-fallback-icon">🎨</span>
+              <span class="hero-fallback-icon">
+                <TechIcon id="workbench:marketplace" :size="32" />
+              </span>
             </div>
             <div class="hero-info">
               <div class="hero-title-row">
@@ -494,7 +496,9 @@
                   alt="icon"
                   @error="(e: any) => { if (e && e.target) e.target.style.display = 'none'; }"
                 />
-                <span class="card-fallback-icon">🎨</span>
+                <span class="card-fallback-icon">
+                  <TechIcon id="workbench:marketplace" :size="24" />
+                </span>
               </div>
               <div class="card-title-col">
                 <div class="card-name-row">
@@ -512,8 +516,10 @@
                   <span
                     class="card-type-tag"
                     :class="getExtensionType(item) === 'icon' ? 'type-icon' : 'type-color'"
+                    style="display: inline-flex; align-items: center; gap: 4px;"
                   >
-                    {{ getExtensionType(item) === 'icon' ? ('📁 ' + (t('marketplace.filter_icons') || '图标')) : ('🎨 ' + (t('marketplace.filter_themes') || '主题')) }}
+                    <TechIcon :id="getExtensionType(item) === 'icon' ? 'workbench:tools' : 'workbench:marketplace'" :size="12" :colored="false" />
+                    {{ getExtensionType(item) === 'icon' ? (t('marketplace.filter_icons') || '图标') : (t('marketplace.filter_themes') || '主题') }}
                   </span>
                 </div>
               </div>
@@ -723,6 +729,7 @@ import { useThemeManager } from "../composables/useThemeManager";
 import { useToast } from "../composables/useToast";
 import { renderMarkdown } from "../utils/markdown";
 import type { MarketplaceExtension, MarketplaceExtensionDetail } from "../types/theme-manager";
+import TechIcon from "../components/common/TechIcon.vue";
 
 const route = useRoute();
 const router = useRouter();

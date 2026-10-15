@@ -36,7 +36,7 @@
           :class="{ active: activeSubItem === item.id }"
           @click="handleSubItemClick(item.id)"
         >
-          <span class="item-icon">{{ item.icon }}</span>
+          <span class="item-icon"><TechIcon :id="item.icon" :size="16" /></span>
           <span class="item-label">{{ item.label }}</span>
           <span v-if="item.meta" class="item-meta">{{ item.meta }}</span>
         </button>
@@ -89,7 +89,7 @@
           :class="{ active: activeSubItem === task.name }"
           @click="handleSubItemClick(task.name)"
         >
-          <span class="item-icon">⚡</span>
+          <span class="item-icon"><TechIcon id="workbench:tasks" :size="16" /></span>
           <div class="item-dual">
             <span class="item-label">{{ task.name }}</span>
             <span class="item-sub">{{ task.cmd }}</span>
@@ -108,7 +108,7 @@
           :class="{ active: activeSubItem === ext.id }"
           @click="handleSubItemClick(ext.id)"
         >
-          <span class="item-icon">{{ ext.icon }}</span>
+          <span class="item-icon"><TechIcon :id="ext.icon" :size="16" /></span>
           <div class="item-dual">
             <span class="item-label">{{ ext.name }}</span>
             <span class="item-sub">{{ ext.desc }}</span>
@@ -127,7 +127,7 @@
           :class="{ active: activeSubItem === check.id }"
           @click="handleSubItemClick(check.id)"
         >
-          <span class="item-icon">{{ check.icon }}</span>
+          <span class="item-icon"><TechIcon :id="check.icon" :size="16" /></span>
           <span class="item-label">{{ check.label }}</span>
           <span class="status-indicator-dot success">●</span>
         </button>
@@ -142,7 +142,7 @@
           :class="{ active: activeSubItem === item.id }"
           @click="handleSubItemClick(item.id)"
         >
-          <span class="item-icon">{{ item.icon }}</span>
+          <span class="item-icon"><TechIcon :id="item.icon" :size="16" /></span>
           <span class="item-label">{{ item.label }}</span>
         </button>
       </template>
@@ -151,7 +151,7 @@
       <template v-if="currentTab === 'about'">
         <div class="nav-group-title">ABOUT UNIRTM</div>
         <div class="sidebar-item active">
-          <span class="item-icon">ℹ️</span>
+          <span class="item-icon"><TechIcon id="workbench:about" :size="16" /></span>
           <span class="item-label">{{ t("about.title") || "关于" }}</span>
         </div>
       </template>
@@ -210,10 +210,10 @@ const headerTitle = computed(() => {
 });
 
 const settingsNavItems = computed(() => [
-  { id: "general", icon: "⚙️", label: t("settings.cat_general") || "常规" },
-  { id: "network", icon: "🌐", label: t("settings.cat_network") || "网络" },
-  { id: "plugins", icon: "🧩", label: t("settings.cat_plugins") || "扩展" },
-  { id: "security", icon: "🔒", label: t("settings.cat_security") || "安全" },
+  { id: "general", icon: "workbench:settings", label: t("settings.cat_general") || "常规" },
+  { id: "network", icon: "workbench:runtimes", label: t("settings.cat_network") || "网络" },
+  { id: "plugins", icon: "workbench:marketplace", label: t("settings.cat_plugins") || "扩展" },
+  { id: "security", icon: "workbench:lock", label: t("settings.cat_security") || "安全" },
 ]);
 
 const searchPlaceholder = computed(() => {
@@ -222,10 +222,10 @@ const searchPlaceholder = computed(() => {
 
 // Dashboard mock items
 const dashboardItems = [
-  { id: "overview", icon: "📊", label: "Project Status", meta: "100%" },
-  { id: "specs", icon: "💻", label: "Runtime Specs", meta: "Go 1.24" },
-  { id: "connectivity", icon: "🌐", label: "Network & Mirrors", meta: "OK" },
-  { id: "actions", icon: "🚀", label: "Quick Actions", meta: "3" },
+  { id: "overview", icon: "workbench:dashboard", label: "Project Status", meta: "100%" },
+  { id: "specs", icon: "go", label: "Runtime Specs", meta: "Go 1.24" },
+  { id: "connectivity", icon: "workbench:runtimes", label: "Network & Mirrors", meta: "OK" },
+  { id: "actions", icon: "workbench:tasks", label: "Quick Actions", meta: "3" },
 ];
 
 const filteredDashboardItems = computed(() => {
@@ -235,10 +235,10 @@ const filteredDashboardItems = computed(() => {
 
 // Runtimes items
 const runtimeItems = [
-  { id: "node", icon: "🟢", label: "Node.js", meta: "NVM / .nvmrc" },
-  { id: "go", icon: "🔷", label: "Go", meta: "GVM / .go-version" },
-  { id: "python", icon: "🐍", label: "Python", meta: "Pyenv / .python-version" },
-  { id: "rust", icon: "🦀", label: "Rust", meta: "rustup / cargo" },
+  { id: "node", icon: "node", label: "Node.js", meta: "NVM / .nvmrc" },
+  { id: "go", icon: "go", label: "Go", meta: "GVM / .go-version" },
+  { id: "python", icon: "python", label: "Python", meta: "Pyenv / .python-version" },
+  { id: "rust", icon: "rust", label: "Rust", meta: "rustup / cargo" },
 ];
 
 const filteredRuntimeItems = computed(() => {
@@ -252,12 +252,12 @@ const filteredRuntimeItems = computed(() => {
 
 // Tools items
 const toolItems = [
-  { name: "node", icon: "🟢", version: "22.14.0", status: "success" },
-  { name: "go", icon: "🔷", version: "1.24.0", status: "success" },
-  { name: "python", icon: "🐍", version: "3.12.2", status: "success" },
-  { name: "pre-commit", icon: "🪝", version: "4.7.0", status: "success" },
-  { name: "trivy", icon: "🛡️", version: "0.50.1", status: "success" },
-  { name: "eslint", icon: "⚡", version: "10.12.0", status: "success" },
+  { name: "node", icon: "node", version: "22.14.0", status: "success" },
+  { name: "go", icon: "go", version: "1.24.0", status: "success" },
+  { name: "python", icon: "python", version: "3.12.2", status: "success" },
+  { name: "pre-commit", icon: "git", version: "4.7.0", status: "success" },
+  { name: "trivy", icon: "lock", version: "0.50.1", status: "success" },
+  { name: "eslint", icon: "javascript", version: "10.12.0", status: "success" },
 ];
 
 const filteredToolItems = computed(() => {
@@ -280,10 +280,10 @@ const filteredTaskItems = computed(() => {
 
 // Marketplace extensions
 const extensions = [
-  { id: "uniagent", icon: "🤖", name: "UniAgent", desc: "AI Troubleshooter", installed: true },
-  { id: "security-suite", icon: "🛡️", name: "Security Suite", desc: "Trivy & Syft Scans", installed: true },
-  { id: "rust-provider", icon: "🦀", name: "Rust Provider", desc: "Cargo & Rust Toolchain", installed: false },
-  { id: "datascience", icon: "🔬", name: "DataScience Pack", desc: "Python uv & Jupyter", installed: false },
+  { id: "uniagent", icon: "workbench:doctor", name: "UniAgent", desc: "AI Troubleshooter", installed: true },
+  { id: "security-suite", icon: "workbench:lock", name: "Security Suite", desc: "Trivy & Syft Scans", installed: true },
+  { id: "rust-provider", icon: "rust", name: "Rust Provider", desc: "Cargo & Rust Toolchain", installed: false },
+  { id: "datascience", icon: "python", name: "DataScience Pack", desc: "Python uv & Jupyter", installed: false },
 ];
 
 const filteredExtensions = computed(() => {
@@ -293,10 +293,10 @@ const filteredExtensions = computed(() => {
 
 // Doctor checks
 const doctorChecks = [
-  { id: "os-arch", icon: "💻", label: "OS & Arch Support" },
-  { id: "lockfile", icon: "🔒", label: "Lockfile Hygiene" },
-  { id: "env-sandbox", icon: "📦", label: "Environment Isolation" },
-  { id: "mirror-speed", icon: "⚡", label: "Mirror Latency" },
+  { id: "os-arch", icon: "workbench:dashboard", label: "OS & Arch Support" },
+  { id: "lockfile", icon: "workbench:lock", label: "Lockfile Hygiene" },
+  { id: "env-sandbox", icon: "workbench:config", label: "Environment Isolation" },
+  { id: "mirror-speed", icon: "workbench:tasks", label: "Mirror Latency" },
 ];
 </script>
 

@@ -23,7 +23,9 @@
             id="btn-scope-workspace"
             :title="configData?.workspace?.path || './.unirtm.toml'"
           >
-            <span class="scope-icon">📁</span>
+            <span class="scope-icon">
+              <TechIcon id="workbench:tools" :size="14" :colored="false" />
+            </span>
             <span class="scope-title">{{ t("settings.scope_workspace") || "工作区" }}</span>
           </button>
 
@@ -34,7 +36,9 @@
             id="btn-scope-user"
             :title="configData?.user?.path || '~/.config/unirtm/unirtm.toml'"
           >
-            <span class="scope-icon">👤</span>
+            <span class="scope-icon">
+              <TechIcon id="workbench:settings" :size="14" :colored="false" />
+            </span>
             <span class="scope-title">{{ t("settings.scope_user") || "用户" }}</span>
           </button>
         </div>
@@ -851,6 +855,7 @@ import { useTheme } from "../composables/useTheme";
 import { useThemeManager } from "../composables/useThemeManager";
 import { useToast } from "../composables/useToast";
 import CustomSelect from "../components/CustomSelect.vue";
+import TechIcon from "../components/common/TechIcon.vue";
 
 const router = useRouter();
 const { showToast } = useToast();

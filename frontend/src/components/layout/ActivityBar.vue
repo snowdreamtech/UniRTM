@@ -12,7 +12,9 @@
         @click="$emit('select-tab', item.id)"
       >
         <span class="activity-indicator" v-if="currentTab === item.id"></span>
-        <span class="activity-icon">{{ item.icon }}</span>
+        <span class="activity-icon">
+          <TechIcon :id="item.icon" :size="20" />
+        </span>
         <span v-if="item.badge" class="activity-badge">{{ item.badge }}</span>
       </button>
     </div>
@@ -27,7 +29,9 @@
         @click="$emit('select-tab', 'settings')"
       >
         <span class="activity-indicator" v-if="currentTab === 'settings'"></span>
-        <span class="activity-icon">⚙️</span>
+        <span class="activity-icon">
+          <TechIcon id="workbench:settings" :size="18" />
+        </span>
       </button>
 
       <button
@@ -38,7 +42,9 @@
         @click="$emit('select-tab', 'about')"
       >
         <span class="activity-indicator" v-if="currentTab === 'about'"></span>
-        <span class="activity-icon">ℹ️</span>
+        <span class="activity-icon">
+          <TechIcon id="workbench:about" :size="18" />
+        </span>
       </button>
 
       <!-- Logs / Terminal Drawer Toggle Button -->
@@ -50,7 +56,9 @@
         @click="$emit('toggle-drawer')"
       >
         <span class="activity-indicator" v-if="isDrawerOpen"></span>
-        <span class="activity-icon">📜</span>
+        <span class="activity-icon">
+          <TechIcon id="workbench:terminal" :size="18" />
+        </span>
       </button>
     </div>
   </aside>
@@ -59,6 +67,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { t } from "../../i18n";
+import TechIcon from "../common/TechIcon.vue";
 
 export interface ActivityTab {
   id: string;
@@ -84,34 +93,34 @@ defineEmits<{
 const primaryTabs = computed<ActivityTab[]>(() => [
   {
     id: "dashboard",
-    icon: "📊",
+    icon: "workbench:dashboard",
     label: t("nav.dashboard") || "Dashboard",
   },
   {
     id: "runtimes",
-    icon: "🌐",
+    icon: "workbench:runtimes",
     label: t("nav.runtimes") || "Language Environments",
   },
   {
     id: "tools",
-    icon: "🛠️",
+    icon: "workbench:tools",
     label: t("nav.tools") || "Toolchains",
     badge: props.toolCount || 5,
   },
   {
     id: "tasks",
-    icon: "⚡",
+    icon: "workbench:tasks",
     label: t("nav.tasks") || "Tasks",
     badge: props.taskCount || 4,
   },
   {
     id: "marketplace",
-    icon: "🧩",
+    icon: "workbench:marketplace",
     label: t("nav.marketplace") || "Marketplace",
   },
   {
     id: "doctor",
-    icon: "🩺",
+    icon: "workbench:doctor",
     label: t("nav.doctor") || "Doctor",
   },
 ]);

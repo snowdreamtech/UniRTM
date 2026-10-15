@@ -15,12 +15,15 @@ function parseJSONC(text: string): Record<string, any> {
   return JSON.parse(cleaned);
 }
 
+import { workbenchSemanticIcons, isWorkbenchSemanticIcon } from "./workbenchIcons";
+
 class IconThemeService {
   private activeManifest: IconThemeManifest;
   private isStyleInjected = false;
   private currentBaseUrl = "";
   private activeThemeId = "seti";
   private listeners: Array<() => void> = [];
+  private resolutionCache: Map<string, ResolvedIcon> = new Map();
 
   constructor() {
     this.activeManifest = defaultSetiManifest as unknown as IconThemeManifest;
@@ -34,6 +37,7 @@ class IconThemeService {
   }
 
   private notify(): void {
+    this.resolutionCache.clear();
     for (const listener of this.listeners) {
       try {
         listener();
@@ -45,6 +49,7 @@ class IconThemeService {
 
   /**
    * Inject the @font-face and base icon styles dynamically into the DOM head.
+   * Ensures Seti woff/woff2 is ALWAYS registered as a baseline fallback font.
    */
   public ensureStylesInjected(): void {
     if (this.isStyleInjected || typeof document === "undefined") {
@@ -243,96 +248,164 @@ class IconThemeService {
   }
 
   /**
-   * Resolve icon definition key using VS Code standard priority:
-   * 1. fileNames
-   * 2. fileExtensions
-   * 3. languageIds
-   * 4. file (default)
+   * Helper to look up definition key in a given manifest using candidates.
    */
-  public resolveIcon(rawIdentifier: string): ResolvedIcon {
-    if (!rawIdentifier) {
-      return this.getDefaultIcon();
-    }
+  private matchManifest(manifest: IconThemeManifest, candidates: string[]): string | undefined {
+    for (const cand of candidates) {
+      const trimmed = cand.trim();
+      const lower = trimmed.toLowerCase();
+      let toolName = lower;
+      if (toolName.includes(":")) {
+        toolName = toolName.split(":").pop() || toolName;
+      }
+      if (toolName.includes("/")) {
+        toolName = toolName.split("/").pop() || toolName;
+      }
 
-    const trimmed = rawIdentifier.trim();
-    const lower = trimmed.toLowerCase();
+      // 1. fileNames
+      if (manifest.fileNames) {
+        const k = manifest.fileNames[trimmed] || manifest.fileNames[lower] || manifest.fileNames[toolName];
+        if (k && manifest.iconDefinitions?.[k]) return k;
+      }
 
-    let toolName = lower;
-    if (toolName.includes(":")) {
-      toolName = toolName.split(":").pop() || toolName;
-    }
-    if (toolName.includes("/")) {
-      toolName = toolName.split("/").pop() || toolName;
-    }
+      // 2. fileExtensions
+      if (manifest.fileExtensions) {
+        if (trimmed.includes(".")) {
+          const parts = trimmed.split(".");
+          const ext = parts[parts.length - 1].toLowerCase();
+          const k = manifest.fileExtensions[ext];
+          if (k && manifest.iconDefinitions?.[k]) return k;
+        } else {
+          const k = manifest.fileExtensions[toolName];
+          if (k && manifest.iconDefinitions?.[k]) return k;
+        }
+      }
 
-    const manifest = this.activeManifest;
-    let defKey: string | undefined;
-
-    // 1. Check exact fileNames
-    if (manifest.fileNames) {
-      defKey = manifest.fileNames[trimmed] || manifest.fileNames[lower] || manifest.fileNames[toolName];
-    }
-
-    // 2. Check fileExtensions
-    if (!defKey && manifest.fileExtensions) {
-      if (trimmed.includes(".")) {
-        const parts = trimmed.split(".");
-        const ext = parts[parts.length - 1].toLowerCase();
-        defKey = manifest.fileExtensions[ext];
-      } else {
-        defKey = manifest.fileExtensions[toolName];
+      // 3. languageIds
+      if (manifest.languageIds) {
+        const k = manifest.languageIds[toolName] || manifest.languageIds[lower];
+        if (k && manifest.iconDefinitions?.[k]) return k;
       }
     }
-
-    // 3. Check languageIds
-    if (!defKey && manifest.languageIds) {
-      defKey = manifest.languageIds[toolName] || manifest.languageIds[lower];
-    }
-
-    if (defKey && manifest.iconDefinitions && manifest.iconDefinitions[defKey]) {
-      const def = manifest.iconDefinitions[defKey];
-      if (def.iconPath) {
-        const cleanPath = def.iconPath.startsWith("./") ? def.iconPath.slice(2) : def.iconPath;
-        const fullSvgPath = this.currentBaseUrl ? this.currentBaseUrl + cleanPath : def.iconPath;
-        return {
-          type: "svg",
-          svgPath: fullSvgPath,
-          definitionKey: defKey,
-        };
-      }
-      return {
-        type: "font",
-        fontFamily: (manifest.fonts && manifest.fonts[0]?.id) || "seti",
-        character: this.parseCharacter(def.fontCharacter),
-        color: def.fontColor,
-        fontSize: def.fontSize,
-        definitionKey: defKey,
-      };
-    }
-
-    return this.getDefaultIcon();
+    return undefined;
   }
 
-  private getDefaultIcon(): ResolvedIcon {
-    const defaultKey = this.activeManifest.file || "_default";
-    const def = this.activeManifest.iconDefinitions?.[defaultKey];
+  /**
+   * Build ResolvedIcon from a definition key in a specific manifest.
+   */
+  private buildResolvedIcon(
+    manifest: IconThemeManifest,
+    defKey: string,
+    isFallback: boolean,
+    baseUrl = ""
+  ): ResolvedIcon {
+    const def = manifest.iconDefinitions[defKey];
     if (def?.iconPath) {
       const cleanPath = def.iconPath.startsWith("./") ? def.iconPath.slice(2) : def.iconPath;
-      const fullSvgPath = this.currentBaseUrl ? this.currentBaseUrl + cleanPath : def.iconPath;
+      const fullSvgPath = baseUrl ? baseUrl + cleanPath : def.iconPath;
       return {
         type: "svg",
         svgPath: fullSvgPath,
-        definitionKey: defaultKey,
+        definitionKey: defKey,
+        isFallback,
       };
     }
+
     return {
       type: "font",
-      fontFamily: (this.activeManifest.fonts && this.activeManifest.fonts[0]?.id) || "seti",
+      fontFamily: (manifest.fonts && manifest.fonts[0]?.id) || "seti",
+      character: this.parseCharacter(def?.fontCharacter),
+      color: def?.fontColor,
+      fontSize: def?.fontSize,
+      definitionKey: defKey,
+      isFallback,
+    };
+  }
+
+  /**
+   * Resolve icon definition key using VS Code standard priority + Multi-Tier Fallback:
+   * 1. Check in Active Theme Manifest
+   * 2. If not found, Fallback to Seti UI Manifest exact match
+   * 3. If still not found, Fallback to Seti UI default file icon (_default)
+   */
+  public resolveIcon(rawIdentifier: string): ResolvedIcon {
+    if (!rawIdentifier) {
+      return this.getSetiDefaultIcon();
+    }
+
+    if (this.resolutionCache.has(rawIdentifier)) {
+      return this.resolutionCache.get(rawIdentifier)!;
+    }
+
+    let candidates: string[] = [];
+    let semanticFallbackKey: string | undefined;
+
+    if (isWorkbenchSemanticIcon(rawIdentifier)) {
+      const mapping = workbenchSemanticIcons[rawIdentifier];
+      candidates = mapping.candidates;
+      semanticFallbackKey = mapping.fallbackSetiKey;
+    } else {
+      const trimmed = rawIdentifier.trim();
+      const lower = trimmed.toLowerCase();
+      candidates = [trimmed, lower];
+      if (lower.includes(":")) {
+        candidates.push(lower.split(":").pop() || lower);
+      }
+      if (lower.includes("/")) {
+        candidates.push(lower.split("/").pop() || lower);
+      }
+    }
+
+    // Tier 1: Look up in active manifest
+    const activeKey = this.matchManifest(this.activeManifest, candidates);
+    if (activeKey && this.activeManifest.iconDefinitions?.[activeKey]) {
+      const res = this.buildResolvedIcon(
+        this.activeManifest,
+        activeKey,
+        false,
+        this.currentBaseUrl
+      );
+      this.resolutionCache.set(rawIdentifier, res);
+      return res;
+    }
+
+    // Tier 2: Fallback to Seti UI manifest
+    const setiManifest = defaultSetiManifest as unknown as IconThemeManifest;
+    
+    // Check if semantic fallback key exists in Seti
+    if (semanticFallbackKey && setiManifest.iconDefinitions?.[semanticFallbackKey]) {
+      const res = this.buildResolvedIcon(setiManifest, semanticFallbackKey, true, "");
+      this.resolutionCache.set(rawIdentifier, res);
+      return res;
+    }
+
+    const setiKey = this.matchManifest(setiManifest, candidates);
+    if (setiKey && setiManifest.iconDefinitions?.[setiKey]) {
+      const res = this.buildResolvedIcon(setiManifest, setiKey, true, "");
+      this.resolutionCache.set(rawIdentifier, res);
+      return res;
+    }
+
+    // Tier 3: Seti default icon
+    const fallbackDefault = this.getSetiDefaultIcon();
+    this.resolutionCache.set(rawIdentifier, fallbackDefault);
+    return fallbackDefault;
+  }
+
+  private getSetiDefaultIcon(): ResolvedIcon {
+    const setiManifest = defaultSetiManifest as unknown as IconThemeManifest;
+    const defaultKey = setiManifest.file || "_default";
+    const def = setiManifest.iconDefinitions?.[defaultKey];
+    return {
+      type: "font",
+      fontFamily: "seti",
       character: this.parseCharacter(def?.fontCharacter || "\\E023"),
       color: def?.fontColor || "#d4d7d6",
       definitionKey: defaultKey,
+      isFallback: true,
     };
   }
 }
 
 export const iconThemeService = new IconThemeService();
+

@@ -17,7 +17,7 @@
         id="status-warnings"
         :title="'0 Security Warnings'"
       >
-        <span class="status-icon">⚠️</span>
+        <span class="status-icon"><TechIcon id="workbench:warning" :size="12" /></span>
         <span class="status-text">0</span>
       </div>
     </div>
@@ -30,7 +30,7 @@
         id="status-running-task"
         @click="$emit('toggle-drawer')"
       >
-        <span class="spin-icon">⏳</span>
+        <span class="spin-icon"><TechIcon id="workbench:tasks" :size="12" :colored="false" /></span>
         <span class="task-running-text">{{ runningTaskText }}: {{ activeTaskName }}</span>
       </div>
     </div>
@@ -44,7 +44,7 @@
         :title="'5 tools configured in current project'"
         @click="$emit('select-tab', 'tools')"
       >
-        <span class="btn-icon">🛠️</span>
+        <span class="btn-icon"><TechIcon id="workbench:tools" :size="12" :colored="false" /></span>
         <span>5 {{ toolsLabelText }}</span>
       </button>
 
@@ -55,7 +55,7 @@
         :title="'Mirror: npmmirror • Latency: ' + (latencyMs ? latencyMs + 'ms' : 'Ready')"
         @click="$emit('open-network-settings')"
       >
-        <span class="btn-icon">🌐</span>
+        <span class="btn-icon"><TechIcon id="workbench:runtimes" :size="12" :colored="false" /></span>
         <span>{{ mirrorLabel }}</span>
       </button>
 

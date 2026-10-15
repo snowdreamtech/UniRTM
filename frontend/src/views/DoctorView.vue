@@ -3,7 +3,10 @@
     <!-- View Header -->
     <div class="view-header-row">
       <div>
-        <h2 class="view-title">🩺 {{ t("doctor.title") }}</h2>
+        <h2 class="view-title" style="display: flex; align-items: center; gap: 8px;">
+          <TechIcon id="workbench:doctor" :size="20" />
+          {{ t("doctor.title") }}
+        </h2>
         <p class="view-desc">
           主动排查工具冲突、锁文件漂移、网络阻塞及权限隐患，确保项目始终能够“跑得通、编译顺”。
         </p>
@@ -11,7 +14,10 @@
       <div class="view-actions">
         <button class="doctor-action-btn primary" :disabled="isRunningCheck" @click="runFullDiagnostic">
           <span v-if="isRunningCheck" class="spin-icon">🔄</span>
-          <span v-else>🔍 重新全面体检</span>
+          <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
+            <TechIcon id="workbench:doctor" :size="14" :colored="false" />
+            重新全面体检
+          </span>
         </button>
       </div>
     </div>
@@ -41,7 +47,7 @@
       >
         <div class="check-card-header">
           <div class="check-icon-circle" :class="item.status">
-            <span>{{ item.status === 'ok' ? '✓' : '!' }}</span>
+            <TechIcon :id="item.icon" :size="16" />
           </div>
           <div class="check-title-block">
             <span class="check-name">{{ item.title }}</span>
@@ -64,6 +70,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { t } from "../i18n";
+import TechIcon from "../components/common/TechIcon.vue";
 
 const emit = defineEmits<{
   (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string, category?: "output" | "tasks" | "doctor"): void;
@@ -75,6 +82,7 @@ const isRunningCheck = ref(false);
 const checkList = ref([
   {
     id: "os",
+    icon: "workbench:dashboard",
     title: "操作系统与 CPU 架构兼容性",
     category: "OS & Hardware",
     description: "检测操作系统 glibc/musl 运行时、CPU 体系结构与原生 shims 路由支持。",
@@ -83,6 +91,7 @@ const checkList = ref([
   },
   {
     id: "lockfile",
+    icon: "workbench:lock",
     title: "锁文件唯一性与卫生检查",
     category: "Lockfile Hygiene",
     description: "检测是否存在 package-lock.json 与 pnpm-lock.yaml 冲突，验证 unirtm.lock 完整性。",
@@ -91,6 +100,7 @@ const checkList = ref([
   },
   {
     id: "network",
+    icon: "workbench:runtimes",
     title: "网络镜像源联通性与响应速度",
     category: "Network Latency",
     description: "验证 npmmirror、GoProxy 以及 GitHub Release 加速通道往返网络延迟。",
@@ -99,6 +109,7 @@ const checkList = ref([
   },
   {
     id: "precommit",
+    icon: "workbench:tasks",
     title: "Git 提交前钩子与安全扫描",
     category: "Code Standards",
     description: "检查 pre-commit 钩子绑定状态及 Gitleaks 密钥泄露扫描防护。",

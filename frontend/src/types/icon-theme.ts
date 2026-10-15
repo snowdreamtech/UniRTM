@@ -47,4 +47,28 @@ export interface ResolvedIcon {
   fontSize?: string;
   svgPath?: string;
   definitionKey: string;
+  isFallback?: boolean;
+}
+
+export type WorkbenchIconKey =
+  | "workbench:dashboard"
+  | "workbench:runtimes"
+  | "workbench:tools"
+  | "workbench:tasks"
+  | "workbench:marketplace"
+  | "workbench:doctor"
+  | "workbench:settings"
+  | "workbench:about"
+  | "workbench:terminal"
+  | "workbench:logs"
+  | "workbench:lock"
+  | "workbench:config"
+  | "workbench:success"
+  | "workbench:warning"
+  | "workbench:error"
+  | "workbench:info";
+
+export interface SemanticIconMapping {
+  candidates: string[];
+  fallbackSetiKey: string;
 }
