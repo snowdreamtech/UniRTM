@@ -258,7 +258,7 @@
     </div>
 
     <!-- Remote Versions Modal -->
-    <div v-if="isModalOpen" class="modal-backdrop" @click.self="isModalOpen = false">
+    <div v-if="isModalOpen" class="modal-backdrop" @click.self="closeRemoteModal">
       <div class="modal-dialog glass-card" role="dialog" aria-modal="true">
         <div class="modal-header">
           <div class="modal-title-row">
@@ -272,7 +272,7 @@
               </p>
             </div>
           </div>
-          <button class="modal-close-btn" @click="isModalOpen = false">✕</button>
+          <button class="modal-close-btn" @click="closeRemoteModal">✕</button>
         </div>
 
         <!-- Scope Option Inside Modal -->
@@ -396,7 +396,7 @@
         </div>
 
         <div class="modal-footer">
-          <button class="tool-action-btn secondary" @click="isModalOpen = false">
+          <button class="tool-action-btn secondary" @click="closeRemoteModal">
             {{ t("common.close") || "Close" }}
           </button>
         </div>
@@ -479,7 +479,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { t } from "../i18n";
 import { useToast } from "../composables/useToast";
 import TechIcon from "../components/common/TechIcon.vue";
@@ -572,6 +572,20 @@ const remoteSearchKey = ref("");
 const selectedMajorFilter = ref("");
 const loadingRemote = ref(false);
 const installingVer = ref<string | null>(null);
+let remoteModalAbortController: AbortController | null = null;
+
+function closeRemoteModal() {
+  if (remoteModalAbortController) {
+    remoteModalAbortController.abort();
+    remoteModalAbortController = null;
+  }
+  isModalOpen.value = false;
+  selectedRuntime.value = null;
+  remoteVersions.value = [];
+  remoteSearchKey.value = "";
+  selectedMajorFilter.value = "";
+  loadingRemote.value = false;
+}
 
 // Add Runtime modal state
 const isAddModalOpen = ref(false);
@@ -964,6 +978,15 @@ async function migrateLegacy() {
 }
 
 async function openRemoteModal(rt: RuntimeItem) {
+  // 1. Abort any previous in-flight request
+  if (remoteModalAbortController) {
+    remoteModalAbortController.abort();
+    remoteModalAbortController = null;
+  }
+
+  const controller = new AbortController();
+  remoteModalAbortController = controller;
+
   selectedRuntime.value = rt;
   isModalOpen.value = true;
   modalInstallScope.value = currentScope.value;
@@ -973,18 +996,34 @@ async function openRemoteModal(rt: RuntimeItem) {
   loadingRemote.value = true;
 
   try {
-    const res = await fetch(`/api/runtimes/remote?tool=${rt.id}`);
+    const res = await fetch(`/api/runtimes/remote?tool=${encodeURIComponent(rt.id)}`, {
+      signal: controller.signal,
+    });
     if (res.ok) {
       const data = await res.json();
-      remoteVersions.value = data.versions || [];
+      // Only commit data if the modal is still open and targeting the exact same runtime
+      if (isModalOpen.value && selectedRuntime.value?.id === rt.id) {
+        remoteVersions.value = data.versions || [];
+      }
     } else {
-      remoteVersions.value = [];
+      if (isModalOpen.value && selectedRuntime.value?.id === rt.id) {
+        remoteVersions.value = [];
+      }
     }
   } catch (err: any) {
+    if (err.name === "AbortError") {
+      // Cleanly aborted on modal close or tool switch; ignore
+      return;
+    }
     emit("log-event", "ERROR", `Failed to fetch remote versions: ${err.message}`);
-    remoteVersions.value = [];
+    if (isModalOpen.value && selectedRuntime.value?.id === rt.id) {
+      remoteVersions.value = [];
+    }
   } finally {
-    loadingRemote.value = false;
+    if (remoteModalAbortController === controller) {
+      loadingRemote.value = false;
+      remoteModalAbortController = null;
+    }
   }
 }
 
@@ -1007,7 +1046,7 @@ async function installRemoteVersion(toolId: string, ver: string) {
       }
       return rt;
     });
-    isModalOpen.value = false;
+    closeRemoteModal();
   } else {
     installingVer.value = ver;
     showToast(`正在将 ${toolId} v${ver} 应用为${scopeName}...`, "info");
@@ -1048,7 +1087,7 @@ async function installRemoteVersion(toolId: string, ver: string) {
         }
         return rt;
       });
-      isModalOpen.value = false;
+      closeRemoteModal();
     }
 
     showToast(`成功将 ${toolId}@${ver} 设置为${scopeName}！`, "success");
@@ -1064,9 +1103,15 @@ async function installRemoteVersion(toolId: string, ver: string) {
   }
 }
 
-
 onMounted(() => {
   fetchStatus();
+});
+
+onBeforeUnmount(() => {
+  if (remoteModalAbortController) {
+    remoteModalAbortController.abort();
+    remoteModalAbortController = null;
+  }
 });
 </script>
 
