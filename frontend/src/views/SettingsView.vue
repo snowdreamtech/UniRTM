@@ -1338,7 +1338,7 @@ const colorThemeOptions = computed(() => {
     const modeBadge = isLight ? "☀️ " : "🌙 ";
     options.push({
       value: item.id,
-      label: `${modeBadge}${item.name}${item.version ? ` (v${item.version})` : ""}`,
+      label: `${modeBadge}${item.name}`,
     });
   }
 
@@ -1348,10 +1348,10 @@ const colorThemeOptions = computed(() => {
 const iconThemeOptions = computed(() => {
   return iconThemes.value.map((item) => {
     let icon = item.is_builtin ? "📁 " : "🧩 ";
-    let name = item.id === "seti" || item.id === "vs-seti" ? "Seti UI (VS Code 默认)" : item.name;
+    let name = item.id === "seti" || item.id === "vs-seti" ? "Seti UI" : item.name;
     return {
       value: item.id,
-      label: icon + name + (!item.is_builtin && item.version ? ` (v${item.version})` : ""),
+      label: icon + name,
     };
   });
 });
