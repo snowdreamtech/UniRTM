@@ -8,7 +8,7 @@
       </div>
       <div class="workspace-pill" :title="'Current Workspace: /UniRTM'">
         <span class="folder-icon">
-          <TechIcon id="workbench:folder" :size="14" />
+          <TechIcon id="workbench:folder" :size="16" />
         </span>
         <span class="workspace-name">UniRTM</span>
         <span class="branch-tag">dev</span>
@@ -19,7 +19,7 @@
     <div class="titlebar-center">
       <div class="command-search-box" @click="$emit('open-palette')">
         <span class="search-icon">
-          <TechIcon id="workbench:search" :size="13" />
+          <TechIcon id="workbench:search" :size="16" />
         </span>
         <span class="search-placeholder">
           {{ searchPlaceholderText }}
@@ -39,7 +39,7 @@
           @click.stop="isLangMenuOpen = !isLangMenuOpen"
         >
           <span class="lang-icon">
-            <TechIcon id="workbench:globe" :size="14" />
+            <TechIcon id="workbench:globe" :size="16" />
           </span>
           <span class="lang-label">{{ currentLangLabel }}</span>
           <span class="dropdown-caret">▾</span>

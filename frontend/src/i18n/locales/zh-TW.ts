@@ -439,4 +439,10 @@ export const zhTw: TranslationDict = {
   "marketplace.prev_page": "上一頁",
   "marketplace.next_page": "下一頁",
   "marketplace.last_page": "最後一頁",
+  "runtimes.all_versions": "全部",
+  "runtimes.custom_version": "自訂版本",
+  "runtimes.scope_workspace_tip": "套用於目前工作區，隨團隊專案協作生效",
+  "runtimes.scope_user_tip": "套用於本機所有工作區的預設兜底版本",
+  "runtimes.close": "關閉",
+  "runtimes.fetching_releases": "正在獲取官方最新版本...",
 };

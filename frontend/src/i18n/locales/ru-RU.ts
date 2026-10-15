@@ -430,4 +430,10 @@ export const ruRu: TranslationDict = {
   "marketplace.prev_page": "Предыдущая страница",
   "marketplace.next_page": "Следующая страница",
   "marketplace.last_page": "Последняя страница",
+  "runtimes.all_versions": "All",
+  "runtimes.custom_version": "Custom Version",
+  "runtimes.scope_workspace_tip": "Applied to current workspace, active for team collaboration",
+  "runtimes.scope_user_tip": "Fallback default version for all workspaces on this machine",
+  "runtimes.close": "Close",
+  "runtimes.fetching_releases": "Fetching available releases...",
 };

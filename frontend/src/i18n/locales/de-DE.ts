@@ -431,4 +431,10 @@ export const deDe: TranslationDict = {
   "marketplace.prev_page": "Vorherige Seite",
   "marketplace.next_page": "Nächste Seite",
   "marketplace.last_page": "Letzte Seite",
+  "runtimes.all_versions": "All",
+  "runtimes.custom_version": "Custom Version",
+  "runtimes.scope_workspace_tip": "Applied to current workspace, active for team collaboration",
+  "runtimes.scope_user_tip": "Fallback default version for all workspaces on this machine",
+  "runtimes.close": "Close",
+  "runtimes.fetching_releases": "Fetching available releases...",
 };

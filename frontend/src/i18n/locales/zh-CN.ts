@@ -79,6 +79,12 @@ export const zhCn: TranslationDict = {
   "runtimes.remove_runtime": "移除环境",
   "runtimes.remove_confirm": "确定从当前工作区中移除 {name} 吗？",
   "runtimes.version_count": "个可用版本",
+  "runtimes.all_versions": "全部",
+  "runtimes.custom_version": "自定义版本",
+  "runtimes.scope_workspace_tip": "应用于当前工作区，随团队项目协作生效",
+  "runtimes.scope_user_tip": "应用于本机所有工作区的默认兜底版本",
+  "runtimes.close": "关闭",
+  "runtimes.fetching_releases": "正在获取官方最新版本...",
 
   "sidebar.group_overview": "项目总览",
   "sidebar.group_tools": "运行时与工具",

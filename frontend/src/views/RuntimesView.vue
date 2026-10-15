@@ -130,7 +130,7 @@
       >
         <!-- Card Header -->
         <div class="runtime-card-header">
-          <div class="runtime-icon-badge"><TechIcon :id="rt.id" :size="24" :colored="true" /></div>
+          <div class="runtime-icon-badge"><TechIcon :id="rt.id" :size="32" :colored="true" /></div>
           <div class="runtime-title-block">
             <div class="runtime-name-row">
               <span class="runtime-name">{{ rt.name }}</span>
@@ -149,7 +149,7 @@
                 :title="(t('runtimes.remove_runtime') || '移除环境') + ' ' + rt.name"
                 @click.stop="confirmRemoveRuntime(rt)"
               >
-                <TechIcon id="workbench:delete" :size="15" />
+                <TechIcon id="workbench:delete" :size="17" />
               </button>
             </div>
             <span class="runtime-desc">{{ rt.description }}</span>
@@ -163,7 +163,7 @@
           <div class="status-row" :class="{ 'highlight-scope': currentScope === 'workspace' }">
             <span class="status-label">
               <span class="scope-mini-icon">
-                <TechIcon id="workbench:tools" :size="12" :colored="false" />
+                <TechIcon id="workbench:tools" :size="15" :colored="false" />
               </span>
               {{ t("runtimes.scope_workspace") || "工作区" }}:
             </span>
@@ -184,7 +184,7 @@
           <div class="status-row" :class="{ 'highlight-scope': currentScope === 'user' }">
             <span class="status-label">
               <span class="scope-mini-icon">
-                <TechIcon id="workbench:settings" :size="12" :colored="false" />
+                <TechIcon id="workbench:settings" :size="15" :colored="false" />
               </span>
               {{ t("runtimes.scope_user") || "用户" }}:
             </span>
@@ -280,21 +280,21 @@
           <label class="modal-scope-item" :class="{ active: modalInstallScope === 'workspace' }">
             <input type="radio" value="workspace" v-model="modalInstallScope" name="install-scope" />
             <span class="scope-icon">
-              <TechIcon id="workbench:tools" :size="16" :colored="false" />
+              <TechIcon id="workbench:workspace" :size="16" :colored="false" />
             </span>
             <div class="scope-opt-text">
               <span class="scope-opt-name">{{ t("runtimes.scope_workspace") || "工作区" }}</span>
-              <span class="scope-opt-desc">应用于当前工作区，随团队项目协作生效</span>
+              <span class="scope-opt-desc">{{ t("runtimes.scope_workspace_tip") || "应用于当前工作区，随团队项目协作生效" }}</span>
             </div>
           </label>
           <label class="modal-scope-item" :class="{ active: modalInstallScope === 'user' }">
             <input type="radio" value="user" v-model="modalInstallScope" name="install-scope" />
             <span class="scope-icon">
-              <TechIcon id="workbench:settings" :size="16" :colored="false" />
+              <TechIcon id="workbench:user" :size="16" :colored="false" />
             </span>
             <div class="scope-opt-text">
               <span class="scope-opt-name">{{ t("runtimes.scope_user") || "用户" }}</span>
-              <span class="scope-opt-desc">应用于本机所有工作区的默认兜底版本</span>
+              <span class="scope-opt-desc">{{ t("runtimes.scope_user_tip") || "应用于本机所有工作区的默认兜底版本" }}</span>
             </div>
           </label>
         </div>
@@ -357,7 +357,7 @@
             <span class="spin-icon">
               <TechIcon id="workbench:sync" :size="16" />
             </span>
-            <span>Fetching available releases...</span>
+            <span>{{ t("runtimes.fetching_releases") || "Fetching available releases..." }}</span>
           </div>
 
           <div v-else-if="filteredRemoteVersions.length === 0 && !canInstallCustomVersion" class="remote-empty-box">
@@ -527,9 +527,9 @@ const defaultRuntimes: RuntimeItem[] = [
     installed_versions: ["1.27.1", "1.27.2"],
     active_version: "1.27.2",
     global_version: "1.27.2",
-    source: ".go-version",
-    is_legacy: true,
-    legacy_file: ".go-version",
+    source: ".unirtm.toml",
+    is_legacy: false,
+    legacy_file: "",
   },
   {
     id: "python",
@@ -816,7 +816,10 @@ function getFallbackVersionsForTool(toolId: string): string[] {
     case "go":
     case "golang":
       return [
-        "1.24.1", "1.24.0",
+        "1.27.2", "1.27.1", "1.27.0",
+        "1.26.5", "1.26.4", "1.26.3", "1.26.2", "1.26.1", "1.26.0",
+        "1.25.8", "1.25.7", "1.25.6", "1.25.5", "1.25.4", "1.25.3", "1.25.2", "1.25.1", "1.25.0",
+        "1.24.5", "1.24.4", "1.24.3", "1.24.2", "1.24.1", "1.24.0",
         "1.23.6", "1.23.5", "1.23.4", "1.23.3", "1.23.2", "1.23.1", "1.23.0",
         "1.22.12", "1.22.11", "1.22.10", "1.22.9", "1.22.8", "1.22.6", "1.22.5", "1.22.2", "1.22.0",
         "1.21.13", "1.21.12", "1.21.11", "1.21.8", "1.21.6", "1.21.0",

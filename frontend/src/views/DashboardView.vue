@@ -16,7 +16,7 @@
       <!-- 4 KPI Metrics Grid -->
       <div class="kpi-grid">
         <div class="kpi-card" @click="$emit('select-tab', 'tools')">
-          <span class="kpi-icon"><TechIcon id="workbench:tools" :size="24" /></span>
+          <span class="kpi-icon"><TechIcon id="workbench:tools" :size="30" /></span>
           <div class="kpi-info">
             <span class="kpi-val">5 项</span>
             <span class="kpi-lbl">{{ t("dashboard.kpi_tools") }}</span>
@@ -24,7 +24,7 @@
         </div>
 
         <div class="kpi-card" @click="$emit('select-tab', 'tasks')">
-          <span class="kpi-icon"><TechIcon id="workbench:tasks" :size="24" /></span>
+          <span class="kpi-icon"><TechIcon id="workbench:tasks" :size="30" /></span>
           <div class="kpi-info">
             <span class="kpi-val">4 个</span>
             <span class="kpi-lbl">{{ t("dashboard.kpi_tasks") }}</span>
@@ -32,7 +32,7 @@
         </div>
 
         <div class="kpi-card" @click="handleTestNetwork">
-          <span class="kpi-icon"><TechIcon id="workbench:runtimes" :size="24" /></span>
+          <span class="kpi-icon"><TechIcon id="workbench:runtimes" :size="30" /></span>
           <div class="kpi-info">
             <span class="kpi-val">{{ latencyMs !== null ? latencyMs + 'ms' : '畅通' }}</span>
             <span class="kpi-lbl">{{ t("dashboard.kpi_mirror") }}</span>
@@ -40,7 +40,7 @@
         </div>
 
         <div class="kpi-card" @click="$emit('select-tab', 'doctor')">
-          <span class="kpi-icon"><TechIcon id="workbench:doctor" :size="24" /></span>
+          <span class="kpi-icon"><TechIcon id="workbench:doctor" :size="30" /></span>
           <div class="kpi-info">
             <span class="kpi-val text-success">100%</span>
             <span class="kpi-lbl">{{ t("dashboard.kpi_security") }}</span>
@@ -54,7 +54,7 @@
       <!-- Left Card: Runtime Environment Specs -->
       <div class="glass-card dash-card">
         <div class="card-title-row">
-          <div class="card-icon cyan"><TechIcon id="workbench:dashboard" :size="20" /></div>
+          <div class="card-icon cyan"><TechIcon id="workbench:dashboard" :size="24" /></div>
           <div>
             <h3>{{ t("hello.system_title") || "运行环境" }}</h3>
             <span class="sub-muted">{{ t("hello.system_desc") || "底层操作系统、架构与 Go 运行时信息" }}</span>
@@ -68,7 +68,7 @@
           </div>
           <div class="spec-row">
             <span class="spec-name">{{ t("hello.go_version") || "Go 编译版本" }}</span>
-            <span class="spec-val font-mono"><TechIcon id="go" :size="14" style="margin-right: 4px;" />go1.24.0 linux/amd64</span>
+            <span class="spec-val font-mono"><TechIcon id="go" :size="18" style="margin-right: 6px; vertical-align: middle;" />go1.24.0 linux/amd64</span>
           </div>
           <div class="spec-row">
             <span class="spec-name">{{ t("hello.app_version") || "核心版本" }}</span>
@@ -84,7 +84,7 @@
       <!-- Right Card: Network & Connectivity Diagnosis -->
       <div class="glass-card dash-card">
         <div class="card-title-row">
-          <div class="card-icon purple"><TechIcon id="workbench:runtimes" :size="20" /></div>
+          <div class="card-icon purple"><TechIcon id="workbench:runtimes" :size="24" /></div>
           <div>
             <h3>{{ t("hello.network_title") || "网络与代理" }}</h3>
             <span class="sub-muted">{{ t("hello.network_desc") || "生态镜像方案与网络代理状态诊断" }}</span>
@@ -115,10 +115,10 @@
         <div class="card-action-bar">
           <button class="dash-btn primary" :disabled="testingNetwork" @click="handleTestNetwork">
             <span v-if="testingNetwork" class="spin-icon">
-              <TechIcon id="workbench:sync" :size="14" />
+              <TechIcon id="workbench:sync" :size="16" />
             </span>
-            <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
-              <TechIcon id="workbench:tasks" :size="14" :colored="false" />
+            <span v-else style="display: inline-flex; align-items: center; gap: 8px;">
+              <TechIcon id="workbench:tasks" :size="16" :colored="false" />
               {{ t("hello.test_speed_btn") || "测试网络联通性" }}
             </span>
           </button>
@@ -314,10 +314,11 @@ async function handleTestNetwork() {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-  font-size: 1.15rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  font-size: 1.3rem;
+  flex-shrink: 0;
 }
 
 .card-icon.cyan {

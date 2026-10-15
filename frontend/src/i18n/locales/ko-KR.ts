@@ -429,4 +429,10 @@ export const koKr: TranslationDict = {
   "marketplace.prev_page": "이전 페이지",
   "marketplace.next_page": "다음 페이지",
   "marketplace.last_page": "마지막 페이지",
+  "runtimes.all_versions": "All",
+  "runtimes.custom_version": "Custom Version",
+  "runtimes.scope_workspace_tip": "Applied to current workspace, active for team collaboration",
+  "runtimes.scope_user_tip": "Fallback default version for all workspaces on this machine",
+  "runtimes.close": "Close",
+  "runtimes.fetching_releases": "Fetching available releases...",
 };

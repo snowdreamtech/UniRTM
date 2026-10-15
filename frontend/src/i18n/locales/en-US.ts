@@ -79,6 +79,12 @@ export const enUs: TranslationDict = {
   "runtimes.remove_runtime": "Remove",
   "runtimes.remove_confirm": "Are you sure you want to remove {name} from workspace configuration?",
   "runtimes.version_count": "available versions",
+  "runtimes.all_versions": "All",
+  "runtimes.custom_version": "Custom Version",
+  "runtimes.scope_workspace_tip": "Applied to current workspace, active for team collaboration",
+  "runtimes.scope_user_tip": "Fallback default version for all workspaces on this machine",
+  "runtimes.close": "Close",
+  "runtimes.fetching_releases": "Fetching available releases...",
 
   "sidebar.group_overview": "PROJECT OVERVIEW",
   "sidebar.group_tools": "RUNTIMES & TOOLS",

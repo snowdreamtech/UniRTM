@@ -430,4 +430,10 @@ export const esEs: TranslationDict = {
   "marketplace.prev_page": "Página anterior",
   "marketplace.next_page": "Página siguiente",
   "marketplace.last_page": "Última página",
+  "runtimes.all_versions": "All",
+  "runtimes.custom_version": "Custom Version",
+  "runtimes.scope_workspace_tip": "Applied to current workspace, active for team collaboration",
+  "runtimes.scope_user_tip": "Fallback default version for all workspaces on this machine",
+  "runtimes.close": "Close",
+  "runtimes.fetching_releases": "Fetching available releases...",
 };

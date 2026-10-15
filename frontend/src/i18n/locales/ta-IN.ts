@@ -432,4 +432,10 @@ export const taIn: TranslationDict = {
   "marketplace.prev_page": "Previous Page",
   "marketplace.next_page": "Next Page",
   "marketplace.last_page": "Last Page",
+  "runtimes.all_versions": "All",
+  "runtimes.custom_version": "Custom Version",
+  "runtimes.scope_workspace_tip": "Applied to current workspace, active for team collaboration",
+  "runtimes.scope_user_tip": "Fallback default version for all workspaces on this machine",
+  "runtimes.close": "Close",
+  "runtimes.fetching_releases": "Fetching available releases...",
 };

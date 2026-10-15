@@ -432,7 +432,30 @@ export default defineConfig({
             const urlObj = new URL(req.url, "http://localhost");
             const tool = urlObj.searchParams.get("tool");
             let versions: string[] = [];
-            if (tool === "node" || tool === "nodejs") {
+
+            // 1. Dynamic live query via UniRTM CLI: unirtm ls-remote <tool> --json
+            if (tool && fs.existsSync(unirtmBin)) {
+              try {
+                const out = execFileSync(unirtmBin, ["ls-remote", tool, "--json"], {
+                  cwd: rootDir,
+                  encoding: "utf-8",
+                  maxBuffer: 50 * 1024 * 1024,
+                });
+                const data = JSON.parse(out);
+                if (Array.isArray(data.versions) && data.versions.length > 0) {
+                  const extracted = data.versions
+                    .map((v: any) => v.Version || v.version || "")
+                    .filter((v: string) => v && !v.includes("rc") && !v.includes("beta") && !v.includes("alpha"));
+                  versions = Array.from(new Set(extracted));
+                }
+              } catch (e) {
+                console.warn(`[UniRTM DevServer] Dynamic ls-remote fallback for ${tool}:`, e);
+              }
+            }
+
+            // 2. Static fallback only if CLI or upstream network fails
+            if (versions.length === 0) {
+              if (tool === "node" || tool === "nodejs") {
               versions = [
                 "23.9.0", "23.8.0", "23.7.0", "23.6.0", "23.0.0",
                 "22.14.0", "22.13.1", "22.13.0", "22.12.0", "22.11.0", "22.9.0", "22.0.0",
@@ -456,7 +479,10 @@ export default defineConfig({
               ];
             } else if (tool === "go" || tool === "golang") {
               versions = [
-                "1.24.1", "1.24.0",
+                "1.27.2", "1.27.1", "1.27.0",
+                "1.26.5", "1.26.4", "1.26.3", "1.26.2", "1.26.1", "1.26.0",
+                "1.25.8", "1.25.7", "1.25.6", "1.25.5", "1.25.4", "1.25.3", "1.25.2", "1.25.1", "1.25.0",
+                "1.24.5", "1.24.4", "1.24.3", "1.24.2", "1.24.1", "1.24.0",
                 "1.23.6", "1.23.5", "1.23.4", "1.23.3", "1.23.2", "1.23.1", "1.23.0",
                 "1.22.12", "1.22.11", "1.22.10", "1.22.9", "1.22.8", "1.22.6", "1.22.5", "1.22.2", "1.22.0",
                 "1.21.13", "1.21.12", "1.21.11", "1.21.8", "1.21.6", "1.21.0",
@@ -520,9 +546,10 @@ export default defineConfig({
                 "1.8.0", "1.5.0", "1.2.0", "1.0.0",
               ];
             }
-            res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({ tool, versions: versions.map((v) => ({ version: v })) }));
-            return;
+          }
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify({ tool, versions: versions.map((v) => ({ version: v })) }));
+          return;
           }
 
 
