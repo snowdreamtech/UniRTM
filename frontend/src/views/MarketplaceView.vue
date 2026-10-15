@@ -1424,11 +1424,18 @@ const nativePlugins = ref<PluginItem[]>([
 .market-detail-container {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
   max-width: 1440px;
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
+}
+
+.detail-main-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
 }
 
 .detail-nav-bar {
@@ -1655,7 +1662,7 @@ const nativePlugins = ref<PluginItem[]>([
 .detail-body-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 20px;
+  gap: 1.5rem;
   align-items: flex-start;
   width: 100%;
 }
