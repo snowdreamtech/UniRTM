@@ -27,9 +27,9 @@
 
 **⚠️ CRITICAL**: Must be completed before views can be refactored.
 
-- [ ] T004 [US2] Implement `IconThemeService` in `frontend/src/services/icon-theme/iconThemeService.ts` with manifest parsing, `@font-face` dynamic CSS stylesheet injection, and $O(1)$ multi-tier resolution (`fileNames` -> `fileExtensions` -> `languageIds` -> `file` default).
-- [ ] T005 [US2] Implement Vue composable `useIconTheme` in `frontend/src/composables/useIconTheme.ts` exposing `resolveIcon(id)` and `activeTheme`.
-- [ ] T006 [US2] Implement universal `<TechIcon>` component in `frontend/src/components/common/TechIcon.vue` supporting customizable `id`, `size`, `colored`, and class customization.
+- [x] T004 [US2] Implement `IconThemeService` in `frontend/src/services/icon-theme/iconThemeService.ts` with manifest parsing, `@font-face` dynamic CSS stylesheet injection, and $O(1)$ multi-tier resolution (`fileNames` -> `fileExtensions` -> `languageIds` -> `file` default).
+- [x] T005 [US2] Implement Vue composable `useIconTheme` in `frontend/src/composables/useIconTheme.ts` exposing `resolveIcon(id)` and `activeTheme`.
+- [x] T006 [US2] Implement universal `<TechIcon>` component in `frontend/src/components/common/TechIcon.vue` supporting customizable `id`, `size`, `colored`, and class customization.
 
 **Checkpoint**: Foundation ready. `<TechIcon id="go" />`, `<TechIcon id="node" />`, `<TechIcon id="unirtm.lock" />` can now render Seti vector icons correctly.
 
