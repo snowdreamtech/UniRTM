@@ -395,4 +395,5 @@ export const mlIn: TranslationDict = {
   "settings.status_protected": "Protected",
   "settings.status_active": "Active",
   "settings.status_ast_safe": "AST Safe",
+  "settings.install": "Install",
 };

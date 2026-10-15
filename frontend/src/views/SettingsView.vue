@@ -297,7 +297,7 @@
                               :title="t('settings.apply_theme') || '应用此主题'"
                               @click="onApplyMarketplaceTheme(item)"
                             >
-                              应用
+                              {{ t('settings.apply') || '应用' }}
                             </button>
                           </div>
                           <button
@@ -307,7 +307,7 @@
                             @click="onInstallMarketplaceTheme(item)"
                           >
                             <span v-if="mpInstallingMap[item.namespace + '.' + item.name]" class="spinner-small"></span>
-                            <span v-else>📥 一键安装</span>
+                            <span>{{ mpInstallingMap[item.namespace + '.' + item.name] ? (t('settings.installing') || '安装中...') : (t('settings.install') || '安装') }}</span>
                           </button>
                         </div>
                       </div>
@@ -376,7 +376,7 @@
                     </div>
                   </div>
                   <div v-else class="installed-empty-hint">
-                    <p>尚未安装任何第三方扩展包，可前往“在线主题市场”挑选并一键安装。</p>
+                    <p>尚未安装任何第三方扩展包，可前往“在线主题市场”挑选并安装。</p>
                   </div>
                 </div>
               </div>

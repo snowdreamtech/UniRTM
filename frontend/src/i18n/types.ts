@@ -107,6 +107,7 @@ export interface TranslationDict {
   "settings.marketplace_title"?: string;
   "settings.marketplace_desc"?: string;
   "settings.marketplace_search_placeholder"?: string;
+  "settings.install"?: string;
   "settings.one_click_install"?: string;
   "settings.installed"?: string;
   "settings.apply_now"?: string;
