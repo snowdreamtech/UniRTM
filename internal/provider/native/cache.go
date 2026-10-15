@@ -52,7 +52,7 @@ func readNativeDiskCacheMeta(tool, key string, versions *[]VersionInfo, ttl time
 	etag = wrapper.ETag
 	cached = wrapper.Versions
 
-	if ttl > 0 && time.Since(wrapper.SavedAt) > ttl {
+	if ttl <= 0 || time.Since(wrapper.SavedAt) > ttl {
 		return false, etag, cached
 	}
 

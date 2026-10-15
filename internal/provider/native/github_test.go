@@ -8,6 +8,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
@@ -27,7 +28,7 @@ func TestGithubHandler_ResolveVersions(t *testing.T) {
 	mockRt := &mockRoundTripper{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
 			url := req.URL.String()
-			if url == "https://api.github.com/repos/owner/repo/releases?per_page=20" {
+			if strings.Contains(url, "/repos/owner/repo/releases") {
 				return &http.Response{StatusCode: 200, Body: io.NopCloser(bytes.NewBufferString(`[
 					{"tag_name":"v1.2.3", "assets": [{"name": "repo-darwin-amd64.tar.gz", "browser_download_url": "http://example.com/dl"}]},
 					{"tag_name":"v1.2.0", "assets": [{"name": "repo-darwin-amd64.tar.gz", "browser_download_url": "http://example.com/dl2"}]}
