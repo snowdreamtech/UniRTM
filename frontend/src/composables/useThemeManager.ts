@@ -16,7 +16,7 @@ const defaultColors: ThemeItem[] = [
   { id: "light", name: "UniRTM Light", type: "color", is_builtin: true, ui_theme: "vs" },
 ];
 const defaultIcons: ThemeItem[] = [
-  { id: "seti", name: "Seti UI (VS Code Default)", type: "icon", is_builtin: true, description: "Official Visual Studio Code default file icon theme" },
+  { id: "seti", name: "Seti UI", type: "icon", is_builtin: true, description: "Official Visual Studio Code default file icon theme" },
 ];
 
 const colorThemes = ref<ThemeItem[]>(defaultColors);

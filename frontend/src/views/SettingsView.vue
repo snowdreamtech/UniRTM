@@ -1393,11 +1393,26 @@ const languageSelectOptions = computed(() => [
   })),
 ]);
 
+function cleanThemeLabel(rawName: string): string {
+  if (!rawName) return "";
+  let name = rawName;
+  if (/^seti/i.test(name)) {
+    return "Seti UI";
+  }
+  // 移除任何括号及其内容，如 (v13.0.0), (VS Code Default), (默认), [v1.0] 等
+  name = name.replace(/\s*[\(\[\（\【][^\)\]\）\】]*[\)\]\）\】]\s*/g, " ");
+  // 移除裸版本号标识，如 v13.0.0, 1.2.3 等
+  name = name.replace(/\b[vV]?\d+(\.\d+)+(-[a-zA-Z0-9.]+)?\b/g, "");
+  // 规范化空格
+  name = name.trim().replace(/\s+/g, " ");
+  return name || rawName;
+}
+
 const colorThemeOptions = computed(() => {
   const options: Array<{ value: string; label: string }> = [
-    { value: "default", label: "UniRTM 官方默认 (自适应深浅)" },
-    { value: "light", label: "UniRTM 官方浅色 (Light)" },
-    { value: "dark", label: "UniRTM 官方深色 (Dark)" },
+    { value: "default", label: "UniRTM 默认自适应" },
+    { value: "light", label: "UniRTM 官方浅色" },
+    { value: "dark", label: "UniRTM 官方深色" },
   ];
 
   for (const item of colorThemes.value) {
@@ -1406,7 +1421,7 @@ const colorThemeOptions = computed(() => {
     }
     options.push({
       value: item.id,
-      label: item.name,
+      label: cleanThemeLabel(item.name),
     });
   }
 
@@ -1415,10 +1430,9 @@ const colorThemeOptions = computed(() => {
 
 const iconThemeOptions = computed(() => {
   return iconThemes.value.map((item) => {
-    let name = item.id === "seti" || item.id === "vs-seti" ? "Seti UI" : item.name;
     return {
       value: item.id,
-      label: name,
+      label: cleanThemeLabel(item.name),
     };
   });
 });
@@ -1743,14 +1757,14 @@ async function onColorThemeChange(val: string) {
   await setActiveTheme(val, undefined, undefined);
   appTheme.value = val;
   const themeObj = colorThemes.value.find((c) => c.id === val);
-  const themeName = themeObj ? themeObj.name : val;
+  const themeName = cleanThemeLabel(themeObj ? themeObj.name : val);
   showToast(`已应用配色主题: ${themeName}`, "success");
 }
 
 async function onIconThemeChange(val: string) {
   await setActiveTheme(undefined, val, undefined);
   const iconObj = iconThemes.value.find((i) => i.id === val);
-  const iconName = iconObj ? (iconObj.id === "seti" ? "Seti UI" : iconObj.name) : val;
+  const iconName = cleanThemeLabel(iconObj ? iconObj.name : val);
   showToast(`已应用文件图标主题: ${iconName}`, "success");
 }
 

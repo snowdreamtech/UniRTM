@@ -83,7 +83,7 @@ func (m *Manager) ListThemes() (*ThemesListResponse, error) {
 		Icons: []ThemeItem{
 			{
 				ID:          "seti",
-				Name:        "Seti UI (VS Code Default)",
+				Name:        "Seti UI",
 				Type:        ThemeTypeIcon,
 				IsBuiltin:   true,
 				Description: "Official Visual Studio Code default file icon theme",
