@@ -334,6 +334,17 @@ func TestCalculateAssetScore_Windows(t *testing.T) {
 	if score <= 0 {
 		t.Errorf("expected positive score, got %d", score)
 	}
+
+	// Windows on ARM (arm64) should match x64 via emulation fallback
+	armPlatform := Platform{OS: "windows", Arch: "arm64"}
+	score = CalculateAssetScore("rubyinstaller-3.4.1-1-x64.7z", armPlatform, "ruby")
+	if score <= 0 {
+		t.Errorf("expected positive score for x64 ruby on windows-arm64, got %d", score)
+	}
+	score = CalculateAssetScore("php-8.4.4-Win32-vs17-x64.zip", armPlatform, "php")
+	if score <= 0 {
+		t.Errorf("expected positive score for x64 php on windows-arm64, got %d", score)
+	}
 }
 
 func TestCalculateAssetScore_Darwin(t *testing.T) {

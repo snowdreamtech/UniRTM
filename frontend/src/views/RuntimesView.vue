@@ -565,7 +565,7 @@ const presetRuntimes: PresetRuntime[] = [
     icon: "🐘",
     description: "Popular general-purpose scripting language suited for web development",
     homepage: "https://php.net",
-    defaultVersion: "8.4.3",
+    defaultVersion: "8.4.4",
   },
   {
     id: "node",

@@ -233,12 +233,9 @@ func GetBuiltinRecipes() map[string]Recipe {
 			},
 		},
 		"php": {
-			ID: "php",
-			Handler: &GithubHandler{
-				Owner: "shivammathur",
-				Repo:  "php-builder-releases",
-			},
-			BaseURL: "https://github.com/shivammathur/php-builder-releases/releases",
+			ID:      "php",
+			Handler: &PhpHandler{},
+			BaseURL: "https://dl.static-php.dev/static-php-cli/bulk/?format=json",
 		},
 		"dart": {
 			ID:      "dart",

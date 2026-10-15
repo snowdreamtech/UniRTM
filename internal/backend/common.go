@@ -263,6 +263,9 @@ func CalculateAssetScore(assetName string, platform Platform, toolName string) i
 		} else if isDarwinUniversal {
 			archMatch = true
 			score += 80 // Lower than exact match so darwin-arm64 is preferred over darwin-all
+		} else if platform.OS == "windows" && (strings.Contains(nameLower, "x64") || strings.Contains(nameLower, "x86_64") || strings.Contains(nameLower, "amd64")) {
+			archMatch = true
+			score += 40 // Allows x64 emulation fallback on Windows on ARM when native arm64 is absent
 		}
 	case "386":
 		// i386, i686: common 32-bit x86 naming conventions.
