@@ -83,4 +83,42 @@ func TestUIRuntimesAPI(t *testing.T) {
 	migratedContent, err := os.ReadFile(targetCfg)
 	require.NoError(t, err)
 	assert.Contains(t, string(migratedContent), "20.18.0")
+
+	// 4. Test tools with prefix (e.g. npm:@biomejs/biome) in .unirtm.toml are reflected in /api/runtimes/status
+	customToml := `[tools]
+node = "22.14.0"
+"npm:@biomejs/biome" = "1.9.4"
+"cli/cli" = "2.62.0"
+`
+	_ = os.WriteFile(filepath.Join(tempDir, ".unirtm.toml"), []byte(customToml), 0644)
+	req = httptest.NewRequest("GET", "/api/runtimes/status", nil)
+	rr = httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	var customStatus RuntimesStatusResponse
+	_ = json.Unmarshal(rr.Body.Bytes(), &customStatus)
+
+	var biomeInfo *RuntimeInfo
+	for i := range customStatus.Runtimes {
+		if customStatus.Runtimes[i].ID == "npm:@biomejs/biome" {
+			biomeInfo = &customStatus.Runtimes[i]
+			break
+		}
+	}
+	require.NotNil(t, biomeInfo)
+	assert.Equal(t, "npm:@biomejs/biome", biomeInfo.Name)
+	assert.Equal(t, "1.9.4", biomeInfo.ActiveVersion)
+
+	// Ensure core languages appear before custom tools
+	var nodeIdx, biomeIdx int = -1, -1
+	for idx, rt := range customStatus.Runtimes {
+		if rt.ID == "node" {
+			nodeIdx = idx
+		}
+		if rt.ID == "npm:@biomejs/biome" {
+			biomeIdx = idx
+		}
+	}
+	assert.True(t, nodeIdx != -1 && biomeIdx != -1 && nodeIdx < biomeIdx)
 }

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/snowdreamtech/unirtm/internal/backend"
@@ -138,6 +139,73 @@ func handleGetRuntimesStatus(w http.ResponseWriter, r *http.Request) {
 			Source:            source,
 			IsLegacy:          isLegacy,
 			LegacyFile:        legacyFile,
+		})
+	}
+
+	// 4. Append all other tools configured in workspace, global, or installed locally
+	var otherTools []string
+	if cfg != nil {
+		for name := range cfg.Tools {
+			if !knownIDs[name] {
+				knownIDs[name] = true
+				otherTools = append(otherTools, name)
+			}
+		}
+	}
+	if globalCfg != nil {
+		for name := range globalCfg.Tools {
+			if !knownIDs[name] {
+				knownIDs[name] = true
+				otherTools = append(otherTools, name)
+			}
+		}
+	}
+	for name := range installedMap {
+		if !knownIDs[name] {
+			knownIDs[name] = true
+			otherTools = append(otherTools, name)
+		}
+	}
+	sort.Strings(otherTools)
+
+	for _, name := range otherTools {
+		activeVer := ""
+		source := ""
+		globalVer := ""
+
+		if globalCfg != nil {
+			if gTool, exists := globalCfg.Tools[name]; exists {
+				globalVer = gTool.Version
+			}
+		}
+
+		if cfg != nil {
+			if pTool, exists := cfg.Tools[name]; exists {
+				activeVer = pTool.Version
+				if cfg.SourceFile != "" {
+					source = filepath.Base(cfg.SourceFile)
+				} else {
+					source = ".unirtm.toml"
+				}
+			}
+		}
+
+		if activeVer == "" && globalVer != "" {
+			activeVer = globalVer
+			source = "global"
+		}
+
+		runtimeList = append(runtimeList, RuntimeInfo{
+			ID:                name,
+			Name:              name,
+			Description:       "Unified toolchain managed via UniRTM",
+			Homepage:          "",
+			InstalledVersions: installedMap[name],
+			ActiveVersion:     activeVer,
+			GlobalVersion:     globalVer,
+			Source:            source,
+			IsLegacy:          false,
+			LegacyFile:        "",
 		})
 	}
 
