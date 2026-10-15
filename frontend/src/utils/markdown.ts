@@ -3,8 +3,8 @@
 
 /**
  * Lightweight, zero-dependency Markdown renderer designed for extension READMEs and changelogs.
- * Enforces XSS sanitization and handles common markdown constructs (headings, code blocks,
- * images, links, tables, lists, quotes, emphasis).
+ * Enforces XSS sanitization, expands collapsible details/screenshots by default,
+ * and ensures responsive image sizing without container overflow.
  */
 
 function escapeHtml(text: string): string {
@@ -22,6 +22,14 @@ function sanitizeUrl(rawUrl: string): string {
     return trimmed;
   }
   return "#";
+}
+
+function sanitizeHtmlAttributes(attrStr: string): string {
+  // Strip on* event handlers (e.g. onclick, onerror)
+  let clean = attrStr.replace(/\s*on\w+\s*=\s*(["'][^"']*["']|[^\s>]+)/gi, "");
+  // Strip javascript: uris
+  clean = clean.replace(/javascript\s*:/gi, "forbidden:");
+  return clean;
 }
 
 function parseInline(inlineText: string): string {
@@ -46,16 +54,52 @@ function parseInline(inlineText: string): string {
   });
 
   // Bold & Italic: ***text*** or ___text___
-  res = res.replace(/(\*\*\*|___)(.*?)\1/g, '<strong><em>$2</em></strong>');
+  res = res.replace(/(\*\*\*|___)(.*?)\1/g, "<strong><em>$2</em></strong>");
 
   // Bold: **text** or __text__
-  res = res.replace(/(\*\*|__)(.*?)\1/g, '<strong>$2</strong>');
+  res = res.replace(/(\*\*|__)(.*?)\1/g, "<strong>$2</strong>");
 
   // Italic: *text* or _text_
-  res = res.replace(/(\*|_)(.*?)\1/g, '<em>$2</em>');
+  res = res.replace(/(\*|_)(.*?)\1/g, "<em>$2</em>");
 
   // Strikethrough: ~~text~~
-  res = res.replace(/~~(.*?)~~/g, '<del>$1</del>');
+  res = res.replace(/~~(.*?)~~/g, "<del>$1</del>");
+
+  return res;
+}
+
+/**
+ * Preprocesses raw HTML tags in Markdown:
+ * 1. Automatically injects 'open' into <details> so images & previews are NOT collapsed by default.
+ * 2. Rewrites raw <img> tags to add class="md-img" and loading="lazy", ensuring container fit.
+ * 3. Removes malicious scripts or unsafe objects.
+ */
+function preprocessHtmlTags(content: string): string {
+  let res = content;
+
+  // Remove dangerous tags completely
+  res = res.replace(/<\s*(script|iframe|object|embed|style)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, "");
+  res = res.replace(/<\s*(script|iframe|object|embed|style)\b[^>]*>/gi, "");
+
+  // Ensure <details> is open by default so screenshots and icon grids are immediately visible
+  res = res.replace(/<details\b(?![^>]*\bopen\b)([^>]*)>/gi, '<details open class="md-details"$1>');
+  res = res.replace(/<details\b([^>]*)>/gi, (m) => {
+    if (!m.includes("class=")) {
+      return m.replace("<details", '<details class="md-details"');
+    }
+    return m;
+  });
+
+  // Summary tag styling
+  res = res.replace(/<summary\b([^>]*)>/gi, '<summary class="md-summary"$1>');
+
+  // Raw <img> tag enhancement: ensure loading="lazy", responsive class, sanitized src
+  res = res.replace(/<img\s+([^>]*?)src=["']([^"']+)["']([^>]*?)>/gi, (_m, pre, src, post) => {
+    const safeSrc = sanitizeUrl(src);
+    const cleanPre = sanitizeHtmlAttributes(pre);
+    const cleanPost = sanitizeHtmlAttributes(post);
+    return `<img class="md-img" src="${safeSrc}" loading="lazy" ${cleanPre} ${cleanPost} />`;
+  });
 
   return res;
 }
@@ -63,7 +107,9 @@ function parseInline(inlineText: string): string {
 export function renderMarkdown(markdown: string): string {
   if (!markdown) return "";
 
-  const lines = markdown.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+  // Preprocess HTML tags first (details open, image class, xss cleanup)
+  const preprocessed = preprocessHtmlTags(markdown);
+  const lines = preprocessed.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
   const out: string[] = [];
 
   let inCodeBlock = false;
@@ -114,6 +160,9 @@ export function renderMarkdown(markdown: string): string {
       inList = false;
     }
   };
+
+  // Block-level HTML tags that should NOT be wrapped in <p>
+  const blockHtmlRegex = /^<\/?(details|summary|p|div|section|article|h[1-6]|ul|ol|li|table|thead|tbody|tr|th|td|blockquote|pre|br|hr)\b/i;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -167,7 +216,7 @@ export function renderMarkdown(markdown: string): string {
       continue;
     }
 
-    // Headings
+    // Headings (# Heading)
     const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
     if (headingMatch) {
       flushList();
@@ -177,7 +226,7 @@ export function renderMarkdown(markdown: string): string {
       continue;
     }
 
-    // Blockquote
+    // Blockquote (> Quote)
     if (line.startsWith(">")) {
       flushList();
       const quoteText = parseInline(line.replace(/^>\s?/, ""));
@@ -208,6 +257,13 @@ export function renderMarkdown(markdown: string): string {
         listType = "ol";
       }
       out.push(`<li class="md-li">${parseInline(olMatch[2])}</li>`);
+      continue;
+    }
+
+    // Block-level HTML passthrough (don't wrap in <p>)
+    if (blockHtmlRegex.test(trimmed)) {
+      flushList();
+      out.push(parseInline(line));
       continue;
     }
 
