@@ -58,3 +58,41 @@ func TestKubectlHandler_ResolveVersions_Failures(t *testing.T) {
 
 	// Invalid body isn't explicitly tested for kubectl because it's just strings.Split, so it's a valid empty list.
 }
+
+func TestKubectlHandler_ResolveVersions_MultipleFromGitHub(t *testing.T) {
+	ClearKubectlCache()
+	defer ClearKubectlCache()
+
+	oldMock := pkgHttp.MockTransport
+	defer func() { pkgHttp.MockTransport = oldMock }()
+
+	pkgHttp.MockTransport = &mockRoundTripper{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			if req.URL.Host == "api.github.com" {
+				jsonBody := `[
+					{"tag_name": "v1.32.0", "draft": false, "prerelease": false},
+					{"tag_name": "v1.31.2", "draft": false, "prerelease": false},
+					{"tag_name": "v1.30.5", "draft": false, "prerelease": false}
+				]`
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(bytes.NewBufferString(jsonBody)),
+					Header:     make(http.Header),
+				}, nil
+			}
+			return &http.Response{
+				StatusCode: 200,
+				Body:       io.NopCloser(bytes.NewBufferString("v1.32.0\n")),
+				Header:     make(http.Header),
+			}, nil
+		},
+	}
+
+	h := &KubectlHandler{}
+	versions, err := h.ResolveVersions(context.Background(), "")
+	assert.NoError(t, err)
+	assert.Len(t, versions, 3)
+	assert.Equal(t, "v1.32.0", versions[0].Version)
+	assert.Equal(t, "v1.31.2", versions[1].Version)
+	assert.Equal(t, "v1.30.5", versions[2].Version)
+}

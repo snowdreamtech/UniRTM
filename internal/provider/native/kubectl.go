@@ -5,6 +5,7 @@ package native
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"golang.org/x/sync/singleflight"
 )
@@ -36,8 +38,14 @@ func (h *KubectlHandler) Name() string {
 	return "kubectl"
 }
 
+type k8sRelease struct {
+	TagName    string `json:"tag_name"`
+	Prerelease bool   `json:"prerelease"`
+	Draft      bool   `json:"draft"`
+}
+
 func (h *KubectlHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
-	cacheKey := "kubectl_stable"
+	cacheKey := "kubectl_all_versions"
 	if val, ok := kubectlCache.Load(cacheKey); ok {
 		if cached, ok := val.([]VersionInfo); ok {
 			cp := make([]VersionInfo, len(cached))
@@ -47,39 +55,81 @@ func (h *KubectlHandler) ResolveVersions(ctx context.Context, baseURL string) ([
 	}
 
 	res, err, _ := kubectlFlight.Do(cacheKey, func() (interface{}, error) {
-		// Fetch latest stable version
+		client := pkgHttp.NewClientWithTimeout(15 * time.Second)
+		seen := make(map[string]bool)
+		var versions []VersionInfo
+
+		// 1. Try fetching full release history from GitHub Releases
+		apiBase := env.Get("GITHUB_API_BASEURL")
+		if apiBase == "" {
+			apiBase = "https://api.github.com"
+		}
+		apiBase = strings.TrimSuffix(apiBase, "/")
+		ghURL := fmt.Sprintf("%s/repos/kubernetes/kubernetes/releases?per_page=100", apiBase)
+
+		req, err := http.NewRequestWithContext(ctx, "GET", ghURL, nil)
+		if err == nil {
+			if token := getGitHubToken(); token != "" {
+				req.Header.Set("Authorization", "Bearer "+token)
+			}
+			req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
+
+			resp, err := client.Do(req)
+			if err == nil && resp.StatusCode == http.StatusOK {
+				defer resp.Body.Close()
+				var releases []k8sRelease
+				if err := json.NewDecoder(resp.Body).Decode(&releases); err == nil {
+					for _, rel := range releases {
+						if rel.Draft {
+							continue
+						}
+						tag := strings.TrimSpace(rel.TagName)
+						if tag == "" || seen[tag] {
+							continue
+						}
+						// Focus on v1.x.y releases (and standard prereleases if any)
+						if strings.HasPrefix(tag, "v") && strings.Contains(tag, ".") {
+							seen[tag] = true
+							versions = append(versions, VersionInfo{
+								Version: tag,
+								Assets:  h.generateAssets(tag),
+							})
+						}
+					}
+				}
+			} else if resp != nil {
+				resp.Body.Close()
+			}
+		}
+
+		// 2. Also fetch latest stable version from dl.k8s.io as guaranteed fallback/addition
 		stableURL := "https://dl.k8s.io/release/stable.txt"
-
-		client := pkgHttp.NewClientWithTimeout(10 * time.Second)
-		req, err := http.NewRequestWithContext(ctx, "GET", stableURL, nil)
-		if err != nil {
-			return nil, err
+		stableReq, err := http.NewRequestWithContext(ctx, "GET", stableURL, nil)
+		if err == nil {
+			stableResp, err := client.Do(stableReq)
+			if err == nil && stableResp.StatusCode == http.StatusOK {
+				defer stableResp.Body.Close()
+				body, err := io.ReadAll(stableResp.Body)
+				if err == nil {
+					latestVersion := strings.TrimSpace(string(body))
+					if latestVersion != "" && !seen[latestVersion] {
+						seen[latestVersion] = true
+						// Prepend latest stable version if not already present
+						versions = append([]VersionInfo{
+							{
+								Version: latestVersion,
+								Assets:  h.generateAssets(latestVersion),
+							},
+						}, versions...)
+					}
+				}
+			} else if stableResp != nil {
+				stableResp.Body.Close()
+			}
 		}
 
-		resp, err := client.Do(req)
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("kubectl api: returned status %d", resp.StatusCode)
-		}
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-
-		latestVersion := strings.TrimSpace(string(body))
-
-		// For now, just return the latest version.
-		// In a full implementation, we could fetch historical versions.
-		versions := []VersionInfo{
-			{
-				Version: latestVersion,
-				Assets:  h.generateAssets(latestVersion),
-			},
+		if len(versions) == 0 {
+			return nil, fmt.Errorf("kubectl api: failed to resolve versions from both GitHub releases and stable.txt")
 		}
 
 		kubectlCache.Store(cacheKey, versions)

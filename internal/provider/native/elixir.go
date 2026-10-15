@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"golang.org/x/sync/singleflight"
 )
@@ -54,14 +55,22 @@ func (h *ElixirHandler) ResolveVersions(ctx context.Context, baseURL string) ([]
 		h.Owner = "elixir-lang"
 		h.Repo = "elixir"
 
-		// We call a modified logic that doesn't strictly filter by OS/Arch initially
-		apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", h.Owner, h.Repo)
+		apiBase := env.Get("GITHUB_API_BASEURL")
+		if apiBase == "" {
+			apiBase = "https://api.github.com"
+		}
+		apiBase = strings.TrimSuffix(apiBase, "/")
+		apiURL := fmt.Sprintf("%s/repos/%s/%s/releases?per_page=100", apiBase, h.Owner, h.Repo)
 
-		client := pkgHttp.NewClientWithTimeout(10 * time.Second)
+		client := pkgHttp.NewClientWithTimeout(15 * time.Second)
 		req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 		if err != nil {
 			return nil, err
 		}
+		if token := getGitHubToken(); token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+		req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
 
 		resp, err := client.Do(req)
 		if err != nil {

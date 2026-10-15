@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"net/http"
 	"runtime"
+	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -97,10 +99,45 @@ func mapAdoptiumArch(adoptArch string) string {
 	}
 }
 
-func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
-	// Adoptium versions: 23 (GA), 21 (LTS), 17 (LTS), 11 (LTS), 8 (LTS)
-	majorVersions := []string{"23", "21", "17", "11", "8"}
+type adoptiumAvailableReleasesResponse struct {
+	AvailableReleases []int `json:"available_releases"`
+}
 
+func fetchAdoptiumMajorVersions(ctx context.Context, client *http.Client, apiBase string) []string {
+	req, err := http.NewRequestWithContext(ctx, "GET", apiBase+"/v3/info/available_releases", nil)
+	if err != nil {
+		return []string{"25", "23", "21", "17", "11", "8"}
+	}
+	req.Header.Set("User-Agent", "unirtm/"+env.GitTag)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return []string{"25", "23", "21", "17", "11", "8"}
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return []string{"25", "23", "21", "17", "11", "8"}
+	}
+
+	var data adoptiumAvailableReleasesResponse
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil || len(data.AvailableReleases) == 0 {
+		return []string{"25", "23", "21", "17", "11", "8"}
+	}
+
+	// Sort descending so newer releases come first
+	sort.Slice(data.AvailableReleases, func(i, j int) bool {
+		return data.AvailableReleases[i] > data.AvailableReleases[j]
+	})
+
+	res := make([]string, len(data.AvailableReleases))
+	for i, v := range data.AvailableReleases {
+		res[i] = strconv.Itoa(v)
+	}
+	return res
+}
+
+func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
 	imageType := h.ImageType
 	if imageType == "" {
 		imageType = "jdk"
@@ -127,6 +164,8 @@ func (h *JavaHandler) ResolveVersions(ctx context.Context, baseURL string) ([]Ve
 	res, err, _ := javaHandlerFlight.Do(cacheKey, func() (interface{}, error) {
 		var allVersions []VersionInfo
 		client := pkgHttp.NewClientWithTimeout(30 * time.Second)
+
+		majorVersions := fetchAdoptiumMajorVersions(ctx, client, apiBase)
 
 		results := make([][]VersionInfo, len(majorVersions))
 		var wg sync.WaitGroup

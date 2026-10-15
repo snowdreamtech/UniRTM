@@ -44,6 +44,9 @@ func TestGradleHandler_ResolveVersions(t *testing.T) {
 }
 
 func TestMavenHandler_ResolveVersions(t *testing.T) {
+	ClearMavenCache()
+	defer ClearMavenCache()
+
 	oldMock := pkgHttp.MockTransport
 	defer func() { pkgHttp.MockTransport = oldMock }()
 
@@ -61,7 +64,7 @@ func TestMavenHandler_ResolveVersions(t *testing.T) {
 	versions, err := h.ResolveVersions(context.Background(), "")
 	assert.NoError(t, err)
 	assert.Len(t, versions, 1)
-	assert.Equal(t, "3.9.6", versions[0].Version)
+	assert.Equal(t, "3.9.5", versions[0].Version)
 	assert.NotEmpty(t, versions[0].Assets)
 
 	assert.Equal(t, "maven", h.Name())

@@ -6,9 +6,12 @@ package native
 import (
 	"context"
 	"encoding/json"
+	"encoding/xml"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	pkgHttp "github.com/snowdreamtech/unirtm/internal/pkg/http"
 	"golang.org/x/sync/singleflight"
@@ -17,12 +20,22 @@ import (
 var (
 	gradleCache  sync.Map
 	gradleFlight singleflight.Group
+	mavenCache   sync.Map
+	mavenFlight  singleflight.Group
 )
 
 // ClearGradleCache clears in-memory cache for Gradle releases.
 func ClearGradleCache() {
 	gradleCache.Range(func(key, value any) bool {
 		gradleCache.Delete(key)
+		return true
+	})
+}
+
+// ClearMavenCache clears in-memory cache for Maven releases.
+func ClearMavenCache() {
+	mavenCache.Range(func(key, value any) bool {
+		mavenCache.Delete(key)
 		return true
 	})
 }
@@ -124,31 +137,98 @@ func (h *MavenHandler) Name() string {
 	return "maven"
 }
 
-func (h *MavenHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
-	// Maven doesn't have a simple JSON API for all versions,
-	// but we can use the archive page or a well-known pattern.
-	// For simplicity, we'll implement a basic version resolver or hardcode recent ones for now,
-	// or scrape the apache archive.
+type mavenMetadata struct {
+	Versioning struct {
+		Versions struct {
+			Version []string `xml:"version"`
+		} `xml:"versions"`
+		Latest  string `xml:"latest"`
+		Release string `xml:"release"`
+	} `xml:"versioning"`
+}
 
-	// Better approach: use the Maven Central metadata for the distribution
-	commonArches := []string{"x86_64", "amd64", "arm64", "aarch64"}
-	var assets396 []Asset
-	for _, osName := range []string{"linux", "darwin", "windows"} {
-		for _, archName := range commonArches {
-			assets396 = append(assets396, Asset{
-				OS:   osName,
-				Arch: archName,
-				URL:  "https://archive.apache.org/dist/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz",
-			})
+func (h *MavenHandler) ResolveVersions(ctx context.Context, baseURL string) ([]VersionInfo, error) {
+	cacheKey := "maven_versions_all"
+	if val, ok := mavenCache.Load(cacheKey); ok {
+		if cached, ok := val.([]VersionInfo); ok {
+			cp := make([]VersionInfo, len(cached))
+			copy(cp, cached)
+			return cp, nil
 		}
 	}
 
-	return []VersionInfo{
-		{
-			Version: "3.9.6",
-			Assets:  assets396,
-		},
-	}, nil
+	res, err, _ := mavenFlight.Do(cacheKey, func() (interface{}, error) {
+		metadataURL := "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/maven-metadata.xml"
+		if baseURL != "" && !strings.Contains(baseURL, "archive.apache.org") {
+			if strings.HasSuffix(baseURL, ".xml") {
+				metadataURL = baseURL
+			} else {
+				metadataURL = strings.TrimSuffix(baseURL, "/") + "/maven-metadata.xml"
+			}
+		}
+
+		client := pkgHttp.NewClientWithTimeout(15 * time.Second)
+		req, err := http.NewRequestWithContext(ctx, "GET", metadataURL, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("maven metadata: returned status %d", resp.StatusCode)
+		}
+
+		var meta mavenMetadata
+		if err := xml.NewDecoder(resp.Body).Decode(&meta); err != nil {
+			return nil, err
+		}
+
+		commonArches := []string{"x86_64", "amd64", "arm64", "aarch64"}
+		var versions []VersionInfo
+		rawVersions := meta.Versioning.Versions.Version
+
+		// Reverse iteration to show newer versions first
+		for i := len(rawVersions) - 1; i >= 0; i-- {
+			v := strings.TrimSpace(rawVersions[i])
+			if v == "" {
+				continue
+			}
+
+			var assets []Asset
+			for _, osName := range []string{"linux", "darwin", "windows"} {
+				for _, archName := range commonArches {
+					assets = append(assets, Asset{
+						OS:   osName,
+						Arch: archName,
+						URL:  fmt.Sprintf("https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/%s/apache-maven-%s-bin.tar.gz", v, v),
+					})
+				}
+			}
+
+			versions = append(versions, VersionInfo{
+				Version: v,
+				Assets:  assets,
+			})
+		}
+
+		if len(versions) > 0 {
+			mavenCache.Store(cacheKey, versions)
+		}
+		return versions, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	cached := res.([]VersionInfo)
+	cp := make([]VersionInfo, len(cached))
+	copy(cp, cached)
+	return cp, nil
 }
 
 func (h *MavenHandler) IsMatch(filename, os, arch string) bool {

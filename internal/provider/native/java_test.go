@@ -8,6 +8,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -21,6 +22,12 @@ func TestJavaHandler_ResolveVersions(t *testing.T) {
 
 	mockRt := &mockRoundTripper{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			if strings.Contains(req.URL.Path, "info/available_releases") {
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(bytes.NewBufferString(`{"available_releases": [21, 17]}`)),
+				}, nil
+			}
 			return &http.Response{
 				StatusCode: 200,
 				Body:       io.NopCloser(bytes.NewBufferString(`[{"release_name":"jdk-17","version_data":{"openjdk_version":"17.0.2+8"},"binaries":[{"package":{"name":"file.tar.gz","link":"url"}}]}]`)),
@@ -34,8 +41,8 @@ func TestJavaHandler_ResolveVersions(t *testing.T) {
 	h := &JavaHandler{}
 	versions, err := h.ResolveVersions(context.Background(), "")
 	assert.NoError(t, err)
-	// It will query 5 major versions, returning 5 results with version "17.0.2"
-	assert.Len(t, versions, 5)
+	// It will query 2 major versions [21, 17], returning 2 results with version "17.0.2"
+	assert.Len(t, versions, 2)
 	assert.Equal(t, "17.0.2", versions[0].Version)
 }
 
@@ -67,6 +74,12 @@ func TestJavaHandler_ConcurrentDeduplication(t *testing.T) {
 	mockRt := &mockRoundTripper{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
 			atomic.AddInt32(&reqCount, 1)
+			if strings.Contains(req.URL.Path, "info/available_releases") {
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(bytes.NewBufferString(`{"available_releases": [21, 17]}`)),
+				}, nil
+			}
 			return &http.Response{
 				StatusCode: 200,
 				Body:       io.NopCloser(bytes.NewBufferString(`[{"release_name":"jdk-17","version_data":{"openjdk_version":"17.0.2+8"},"binaries":[{"package":{"name":"file.tar.gz","link":"url"}}]}]`)),
@@ -83,7 +96,7 @@ func TestJavaHandler_ConcurrentDeduplication(t *testing.T) {
 		go func() {
 			versions, err := h.ResolveVersions(context.Background(), "")
 			assert.NoError(t, err)
-			assert.Len(t, versions, 5)
+			assert.Len(t, versions, 2)
 			done <- true
 		}()
 	}
@@ -92,8 +105,8 @@ func TestJavaHandler_ConcurrentDeduplication(t *testing.T) {
 		<-done
 	}
 
-	// 5 major versions queried in single execution = 5 requests total instead of 5 * 5 = 25
-	assert.Equal(t, int32(5), atomic.LoadInt32(&reqCount), "Expected exactly 5 requests (one per major version) for all concurrent callers")
+	// 1 available_releases request + 2 major versions requests = 3 requests total
+	assert.Equal(t, int32(3), atomic.LoadInt32(&reqCount), "Expected exactly 3 requests (1 metadata + 2 major versions) for all concurrent callers")
 }
 
 func TestJavaHandler_ResolveVersions_MultiPlatform(t *testing.T) {
@@ -114,6 +127,12 @@ func TestJavaHandler_ResolveVersions_MultiPlatform(t *testing.T) {
 
 	mockRt := &mockRoundTripper{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			if strings.Contains(req.URL.Path, "info/available_releases") {
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(bytes.NewBufferString(`{"available_releases": [21]}`)),
+				}, nil
+			}
 			assert.Contains(t, req.URL.RawQuery, "page_size=50")
 			return &http.Response{
 				StatusCode: 200,
