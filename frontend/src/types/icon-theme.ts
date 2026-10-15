@@ -66,7 +66,19 @@ export type WorkbenchIconKey =
   | "workbench:success"
   | "workbench:warning"
   | "workbench:error"
-  | "workbench:info";
+  | "workbench:info"
+  | "workbench:sync"
+  | "workbench:search"
+  | "workbench:delete"
+  | "workbench:folder"
+  | "workbench:package"
+  | "workbench:globe"
+  | "workbench:speed"
+  | "workbench:star"
+  | "workbench:user"
+  | "workbench:edit"
+  | "workbench:github"
+  | "workbench:sparkle";
 
 export interface SemanticIconMapping {
   candidates: string[];

@@ -63,7 +63,7 @@
           @click="showRawTomlModal = !showRawTomlModal"
           :title="t('settings.open_toml') || '打开 TOML'"
         >
-          <span>📝</span>
+          <TechIcon id="workbench:edit" :size="14" />
           <span>{{ showRawTomlModal ? (t('settings.close_toml') || '关闭 TOML') : (t('settings.open_toml') || '打开 TOML') }}</span>
         </button>
       </div>
@@ -206,7 +206,9 @@
                 <!-- Actions Toolbar -->
                 <div class="theme-actions-toolbar">
                   <button class="btn-jump-marketplace" @click="navigateToMarketplace('themes')">
-                    <span class="jump-icon">🌐</span>
+                    <span class="jump-icon">
+                      <TechIcon id="workbench:marketplace" :size="14" />
+                    </span>
                     <span>前往扩展与主题市场挑选... ↗</span>
                   </button>
 
@@ -221,10 +223,13 @@
                     <button
                       class="btn-install-vsix"
                       :disabled="isInstallingTheme"
+                      @trigger="triggerVsixUpload"
                       @click="triggerVsixUpload"
                     >
                       <span v-if="isInstallingTheme" class="spinner-small"></span>
-                      <span v-else class="btn-icon">📁</span>
+                      <span v-else class="btn-icon">
+                        <TechIcon id="workbench:folder" :size="14" />
+                      </span>
                       <span>{{ isInstallingTheme ? (t('settings.installing') || '正在解析安装...') : (t('settings.install_vsix') || '手动导入本地 .vsix 包') }}</span>
                     </button>
                   </div>
@@ -259,7 +264,9 @@
 
                 <!-- Workspace Scope Warning Banner -->
                 <div v-if="activeScope === 'workspace'" class="scope-notice-banner warning">
-                  <div class="notice-icon">⚠️</div>
+                  <div class="notice-icon">
+                    <TechIcon id="workbench:warning" :size="16" />
+                  </div>
                   <div class="notice-body">
                     <strong>{{ t('settings.scope_global_only_banner') || '无法在工作区中配置浏览器' }}</strong>
                     <p>
@@ -340,7 +347,9 @@
           <!-- Section A: Network Proxy (Default strictly disabled, empty, no 3rd-party github proxies) -->
           <div class="network-subsection">
             <div class="subsection-title-bar">
-              <span class="sub-icon">🔒</span>
+              <span class="sub-icon">
+                <TechIcon id="workbench:lock" :size="16" />
+              </span>
               <h3>{{ t('network.tab_proxy') || '网络代理' }}</h3>
               <span class="proxy-badge" :class="networkStatus?.proxy?.enabled ? 'badge-on' : 'badge-off'">
                 {{ networkStatus?.proxy?.enabled ? (t('network.proxy_enabled') || '已启用') : (t('network.proxy_disabled') || '直连模式 (已关闭)') }}
@@ -459,7 +468,9 @@
           <!-- Section B: Profiles and Mirrors Matrix -->
           <div class="network-subsection">
             <div class="subsection-title-bar">
-              <span class="sub-icon">📦</span>
+              <span class="sub-icon">
+                <TechIcon id="workbench:package" :size="16" />
+              </span>
               <h3>{{ t('network.tab_mirrors') || '镜像源矩阵' }}</h3>
               <button
                 class="btn-batch-test"
@@ -540,7 +551,9 @@
               <div class="modal-dialog glass-card">
                 <div class="modal-header">
                   <div class="modal-title-group">
-                    <span class="modal-icon">📦</span>
+                    <span class="modal-icon">
+                      <TechIcon id="workbench:config" :size="20" />
+                    </span>
                     <div>
                       <h4>{{ t('network.create_profile') || '新建网络预设档案' }}</h4>
                       <span class="modal-subtitle">将当前网络与各生态镜像配置保存为独立的 Profile 方案</span>
@@ -592,7 +605,9 @@
               <div class="modal-dialog glass-card">
                 <div class="modal-header">
                   <div class="modal-title-group">
-                    <span class="modal-icon">🌐</span>
+                    <span class="modal-icon">
+                      <TechIcon id="workbench:runtimes" :size="20" />
+                    </span>
                     <div>
                       <h4>{{ t('network.add_ecosystem_title') || '添加语言生态镜像源' }}</h4>
                       <span class="modal-subtitle">{{ t('network.add_ecosystem_desc') || '选择常用语言生态预设或输入自定义生态标识与镜像地址' }}</span>
@@ -713,7 +728,9 @@
                     :title="getEcoPingTitle(eco)"
                     @click="handlePingSingle(eco)"
                   >
-                    <span v-if="ecoPingStatus[eco]?.loading" class="ping-icon spinning">🔄</span>
+                    <span v-if="ecoPingStatus[eco]?.loading" class="ping-icon spinning">
+                      <TechIcon id="workbench:sync" :size="12" />
+                    </span>
                     <span v-else-if="ecoPingStatus[eco]?.status === 'fast'" class="ping-text ping-fast">⚡ {{ (ecoPingStatus[eco]?.rtt_ms ?? 0) }}ms</span>
                     <span v-else-if="ecoPingStatus[eco]?.status === 'normal'" class="ping-text ping-normal">⚡ {{ (ecoPingStatus[eco]?.rtt_ms ?? 0) }}ms</span>
                     <span v-else-if="ecoPingStatus[eco]?.status === 'slow'" class="ping-text ping-slow">⚡ {{ (ecoPingStatus[eco]?.rtt_ms ?? 0) }}ms</span>
@@ -738,7 +755,7 @@
                     :title="t('network.delete_ecosystem') || '从矩阵中移除'"
                     @click="handleDeleteEcosystem(eco)"
                   >
-                    🗑️
+                    <TechIcon id="workbench:delete" :size="13" />
                   </button>
                 </div>
               </div>
@@ -1347,11 +1364,10 @@ const colorThemeOptions = computed(() => {
 
 const iconThemeOptions = computed(() => {
   return iconThemes.value.map((item) => {
-    let icon = item.is_builtin ? "📁 " : "🧩 ";
     let name = item.id === "seti" || item.id === "vs-seti" ? "Seti UI" : item.name;
     return {
       value: item.id,
-      label: icon + name,
+      label: name,
     };
   });
 });

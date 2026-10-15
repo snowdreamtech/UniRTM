@@ -3,8 +3,10 @@
     <!-- View Header Row -->
     <div class="view-header-row">
       <div>
-        <h2 class="view-title">
-          <span class="view-icon">🌐</span>
+        <h2 class="view-title" style="display: flex; align-items: center; gap: 8px;">
+          <span class="view-icon">
+            <TechIcon id="workbench:runtimes" :size="20" />
+          </span>
           <span>{{ t("runtimes.title") || "Multi-Language Runtimes" }}</span>
         </h2>
         <p class="view-desc">
@@ -13,7 +15,7 @@
       </div>
       <div class="view-actions">
         <button class="tool-action-btn secondary" @click="fetchStatus" :disabled="loading">
-          <span :class="{ 'spin-icon': loading }">🔄</span>
+          <TechIcon id="workbench:sync" :size="14" :class="{ 'spin-icon': loading }" />
           <span>{{ loading ? t("common.refreshing") : t("common.refresh") }}</span>
         </button>
       </div>
@@ -147,7 +149,7 @@
                 :title="(t('runtimes.remove_runtime') || '移除环境') + ' ' + rt.name"
                 @click.stop="confirmRemoveRuntime(rt)"
               >
-                🗑️
+                <TechIcon id="workbench:delete" :size="13" />
               </button>
             </div>
             <span class="runtime-desc">{{ rt.description }}</span>
@@ -311,7 +313,9 @@
 
         <div class="modal-body-versions">
           <div v-if="loadingRemote" class="remote-loading-box">
-            <span class="spin-icon">⏳</span>
+            <span class="spin-icon">
+              <TechIcon id="workbench:sync" :size="16" />
+            </span>
             <span>Fetching available releases...</span>
           </div>
 
@@ -363,7 +367,9 @@
       <div class="modal-dialog glass-card add-runtime-dialog" role="dialog" aria-modal="true">
         <div class="modal-header">
           <div class="modal-title-row">
-            <span class="modal-icon">➕</span>
+            <span class="modal-icon">
+              <TechIcon id="workbench:tools" :size="20" />
+            </span>
             <div>
               <h3 class="modal-title">{{ t("runtimes.add_runtime") || "添加运行环境" }}</h3>
               <p class="modal-desc">为当前{{ currentScope === 'user' ? '用户默认' : '工作区' }}添加编程语言运行时与版本</p>

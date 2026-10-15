@@ -3,17 +3,17 @@
     <!-- Top Header Bar -->
     <div class="view-header-row">
       <div>
-        <h2 class="view-title">ℹ️ {{ t("about.title") || "关于" }} (About UniRTM)</h2>
+        <h2 class="view-title" style="display: flex; align-items: center; gap: 8px;">
+          <TechIcon id="workbench:about" :size="20" />
+          <span>{{ t("about.title") || "关于" }} (About UniRTM)</span>
+        </h2>
         <p class="view-desc">
           {{ t("about.subtitle") || "通用运行时与开发环境多版本统一管理器" }}
         </p>
       </div>
       <div class="view-actions">
         <button class="about-action-btn secondary" @click="copySystemInfo" :disabled="copied">
-          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none">
-            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-          </svg>
+          <TechIcon id="workbench:config" :size="14" />
           <span>{{ copied ? t("about.copied") || "已复制到剪贴板" : t("about.copyInfo") || "复制系统信息" }}</span>
         </button>
 
@@ -23,8 +23,13 @@
           @click="handleCheckUpdate"
           :disabled="checking || updating"
         >
-          <span v-if="checking" class="spin-icon">🔄</span>
-          <span v-else>🔍 {{ t("about.checkUpdate") || "检查更新" }}</span>
+          <span v-if="checking" class="spin-icon">
+            <TechIcon id="workbench:sync" :size="14" />
+          </span>
+          <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
+            <TechIcon id="workbench:search" :size="14" />
+            <span>{{ t("about.checkUpdate") || "检查更新" }}</span>
+          </span>
         </button>
 
         <button
@@ -33,18 +38,26 @@
           @click="handleRestartApp"
           :disabled="restarting"
         >
-          <span>🚀 {{ restarting ? t("about.restarting") || "正在重启..." : t("about.restartToApply") || "立即重启生效" }}</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px;">
+            <TechIcon id="workbench:speed" :size="14" />
+            <span>{{ restarting ? t("about.restarting") || "正在重启..." : t("about.restartToApply") || "立即重启生效" }}</span>
+          </span>
         </button>
 
         <button v-else class="about-action-btn update" @click="handlePerformUpdate" :disabled="updating">
-          <span>⬇️ {{ updating ? t("about.updating", { progress: updateProgress }) : t("about.updateTo", { tag: latestTag }) }}</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px;">
+            <TechIcon id="workbench:tasks" :size="14" />
+            <span>{{ updating ? t("about.updating", { progress: updateProgress }) : t("about.updateTo", { tag: latestTag }) }}</span>
+          </span>
         </button>
       </div>
     </div>
 
     <!-- Update Feedback Banner -->
     <div v-if="updateMessage" class="update-status-banner glass-card" :class="updateStatusClass">
-      <span class="banner-icon">{{ isRestartReady ? '🎉' : 'ℹ️' }}</span>
+      <span class="banner-icon">
+        <TechIcon :id="isRestartReady ? 'workbench:sparkle' : 'workbench:info'" :size="16" />
+      </span>
       <span class="banner-text">{{ updateMessage }}</span>
     </div>
 
@@ -108,7 +121,9 @@
     <!-- Architecture Highlights Grid -->
     <div class="highlights-grid">
       <div class="glass-card highlight-card">
-        <div class="highlight-icon-wrap">🛠️</div>
+        <div class="highlight-icon-wrap">
+          <TechIcon id="workbench:tools" :size="24" />
+        </div>
         <div class="highlight-body">
           <h3>多运行时声明式管控</h3>
           <p>无缝管理 Node.js、Go、Python、Rust、Java 等多语言版本，支持工具链锁定与跨平台环境对齐。</p>
@@ -116,7 +131,9 @@
       </div>
 
       <div class="glass-card highlight-card">
-        <div class="highlight-icon-wrap">🔒</div>
+        <div class="highlight-icon-wrap">
+          <TechIcon id="workbench:lock" :size="24" />
+        </div>
         <div class="highlight-body">
           <h3>三层命名空间与排他锁</h3>
           <p>严格隔离核心系统设置与第三方插件参数，写入自动持有文件锁并完整保留原有 TOML 注释排版。</p>
@@ -124,7 +141,9 @@
       </div>
 
       <div class="glass-card highlight-card">
-        <div class="highlight-icon-wrap">⚡</div>
+        <div class="highlight-icon-wrap">
+          <TechIcon id="workbench:speed" :size="24" />
+        </div>
         <div class="highlight-body">
           <h3>极速无感即时自动保存</h3>
           <p>遵循现代专业 IDE 哲学，界面选项修改即时生效落盘，杜绝手动冗余保存按钮与配置丢失风险。</p>
@@ -136,11 +155,7 @@
     <div class="glass-card about-footer-card">
       <div class="footer-links">
         <button @click="openUrl('https://github.com/snowdreamtech/unirtm')" class="footer-link-btn">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-            <path
-              d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"
-            />
-          </svg>
+          <TechIcon id="workbench:github" :size="16" />
           <span>GitHub Repository</span>
         </button>
         <span class="link-separator">•</span>
@@ -159,6 +174,7 @@
 import { ref, computed, onMounted } from "vue";
 import { t } from "../i18n";
 import { formatUpdateProgress, type UpdateProgressPayload } from "../utils/updater";
+import TechIcon from "../components/common/TechIcon.vue";
 
 interface AppInfo {
   projectName?: string;

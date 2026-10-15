@@ -42,7 +42,10 @@
               :disabled="runningTask !== null"
               @click="executeTask(task)"
             >
-              <span v-if="runningTask === task.name" class="spin-icon">⏳ {{ t("tasks.running") }}</span>
+              <span v-if="runningTask === task.name" class="spin-icon" style="display: inline-flex; align-items: center; gap: 4px;">
+                <TechIcon id="workbench:sync" :size="12" />
+                {{ t("tasks.running") }}
+              </span>
               <span v-else style="display: inline-flex; align-items: center; gap: 4px;">
                 <TechIcon id="workbench:tasks" :size="12" :colored="false" />
                 {{ t("tasks.run") }}

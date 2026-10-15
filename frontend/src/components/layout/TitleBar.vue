@@ -7,7 +7,9 @@
         <span class="brand-title">UniRTM</span>
       </div>
       <div class="workspace-pill" :title="'Current Workspace: /UniRTM'">
-        <span class="folder-icon">📁</span>
+        <span class="folder-icon">
+          <TechIcon id="workbench:folder" :size="14" />
+        </span>
         <span class="workspace-name">UniRTM</span>
         <span class="branch-tag">dev</span>
       </div>
@@ -16,7 +18,9 @@
     <!-- Center: Global Command Palette Search Bar -->
     <div class="titlebar-center">
       <div class="command-search-box" @click="$emit('open-palette')">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon">
+          <TechIcon id="workbench:search" :size="13" />
+        </span>
         <span class="search-placeholder">
           {{ searchPlaceholderText }}
         </span>
@@ -34,7 +38,9 @@
           :title="t('settings.language') || 'Language'"
           @click.stop="isLangMenuOpen = !isLangMenuOpen"
         >
-          <span class="lang-icon">🌐</span>
+          <span class="lang-icon">
+            <TechIcon id="workbench:globe" :size="14" />
+          </span>
           <span class="lang-label">{{ currentLangLabel }}</span>
           <span class="dropdown-caret">▾</span>
         </button>
@@ -71,6 +77,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { SUPPORTED_LANGUAGES, t } from "../../i18n";
+import TechIcon from "../common/TechIcon.vue";
 
 const props = defineProps<{
   currentLang: string;

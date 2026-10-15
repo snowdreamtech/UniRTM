@@ -3,7 +3,9 @@
     <!-- Hero Cockpit Banner -->
     <div class="hero-cockpit glass-card">
       <div class="hero-badge">
-        <span class="sparkle-icon">✨</span>
+        <span class="sparkle-icon">
+          <TechIcon id="workbench:sparkle" :size="14" />
+        </span>
         <span>{{ t("app.template_badge") || "UniRTM • 通用运行时管理器" }}</span>
       </div>
       <h1 class="hero-title">{{ t("app.greeting") || "欢迎使用 UniRTM！" }}</h1>
@@ -112,7 +114,9 @@
 
         <div class="card-action-bar">
           <button class="dash-btn primary" :disabled="testingNetwork" @click="handleTestNetwork">
-            <span v-if="testingNetwork" class="spin-icon">🔄</span>
+            <span v-if="testingNetwork" class="spin-icon">
+              <TechIcon id="workbench:sync" :size="14" />
+            </span>
             <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
               <TechIcon id="workbench:tasks" :size="14" :colored="false" />
               {{ t("hello.test_speed_btn") || "测试网络联通性" }}

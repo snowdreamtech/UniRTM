@@ -73,6 +73,54 @@ export const workbenchSemanticIcons: Record<WorkbenchIconKey, SemanticIconMappin
     candidates: ["info", "information", "hint"],
     fallbackSetiKey: "_info",
   },
+  "workbench:sync": {
+    candidates: ["sync", "refresh", "reload", "git", "git_commit"],
+    fallbackSetiKey: "_git",
+  },
+  "workbench:search": {
+    candidates: ["search", "find", "doctor", "zoom"],
+    fallbackSetiKey: "_search",
+  },
+  "workbench:delete": {
+    candidates: ["delete", "trash", "remove", "clean"],
+    fallbackSetiKey: "_default",
+  },
+  "workbench:folder": {
+    candidates: ["folder", "directory", "dir", "files"],
+    fallbackSetiKey: "_default",
+  },
+  "workbench:package": {
+    candidates: ["package", "zip", "bundle", "tar", "box"],
+    fallbackSetiKey: "_zip",
+  },
+  "workbench:globe": {
+    candidates: ["globe", "network", "internet", "http", "html"],
+    fallbackSetiKey: "_html",
+  },
+  "workbench:speed": {
+    candidates: ["speed", "lightning", "zap", "performance", "flash"],
+    fallbackSetiKey: "_shell",
+  },
+  "workbench:star": {
+    candidates: ["star", "favorite", "json"],
+    fallbackSetiKey: "_json",
+  },
+  "workbench:user": {
+    candidates: ["user", "account", "author", "person"],
+    fallbackSetiKey: "_info",
+  },
+  "workbench:edit": {
+    candidates: ["edit", "pencil", "write", "config", "settings"],
+    fallbackSetiKey: "_settings",
+  },
+  "workbench:github": {
+    candidates: ["github", "git", "repo", "repository"],
+    fallbackSetiKey: "_git",
+  },
+  "workbench:sparkle": {
+    candidates: ["sparkle", "ai", "magic", "smart", "json"],
+    fallbackSetiKey: "_json",
+  },
 };
 
 /**

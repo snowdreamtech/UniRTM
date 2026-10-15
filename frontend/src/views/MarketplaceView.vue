@@ -31,7 +31,9 @@
 
       <!-- Error State -->
       <div v-else-if="!activeDetail" class="detail-error-box glass-card">
-        <span class="error-icon">⚠️</span>
+        <span class="error-icon">
+          <TechIcon id="workbench:warning" :size="32" />
+        </span>
         <h3>未找到该扩展主题信息</h3>
         <p>{{ mpError || "网络请求失败或该扩展不存在于 Open VSX 仓库。" }}</p>
         <div class="detail-error-actions">
@@ -162,7 +164,9 @@
                 v-html="renderedReadme"
               ></div>
               <div v-else class="readme-empty-hint">
-                <span class="empty-icon">📄</span>
+                <span class="empty-icon">
+                  <TechIcon id="workbench:about" :size="32" />
+                </span>
                 <p>该扩展未提供 README 文档说明</p>
               </div>
             </div>
@@ -263,7 +267,9 @@
                   rel="noopener noreferrer"
                   class="sidebar-link"
                 >
-                  <span class="link-icon">🐙</span>
+                  <span class="link-icon">
+                    <TechIcon id="workbench:github" :size="14" />
+                  </span>
                   <span>项目仓库 (Repository)</span>
                 </a>
                 <a
@@ -273,7 +279,9 @@
                   rel="noopener noreferrer"
                   class="sidebar-link"
                 >
-                  <span class="link-icon">🐛</span>
+                  <span class="link-icon">
+                    <TechIcon id="workbench:doctor" :size="14" />
+                  </span>
                   <span>问题反馈 (Issues)</span>
                 </a>
                 <a
@@ -283,7 +291,9 @@
                   rel="noopener noreferrer"
                   class="sidebar-link"
                 >
-                  <span class="link-icon">🏠</span>
+                  <span class="link-icon">
+                    <TechIcon id="workbench:dashboard" :size="14" />
+                  </span>
                   <span>主页 (Homepage)</span>
                 </a>
                 <a
@@ -292,7 +302,9 @@
                   download
                   class="sidebar-link"
                 >
-                  <span class="link-icon">📥</span>
+                  <span class="link-icon">
+                    <TechIcon id="workbench:package" :size="14" />
+                  </span>
                   <span>下载 .vsix 离线安装包</span>
                 </a>
               </div>
@@ -361,7 +373,7 @@
             :class="{ active: currentChannel === 'themes' }"
             @click="switchChannel('themes')"
           >
-            <span>🎨</span>
+            <TechIcon id="workbench:marketplace" :size="16" />
             <span>{{ t("settings.theme_tab_marketplace") || "主题与图标 (Open VSX)" }}</span>
           </button>
           <button
@@ -369,7 +381,7 @@
             :class="{ active: currentChannel === 'plugins' }"
             @click="switchChannel('plugins')"
           >
-            <span>🧩</span>
+            <TechIcon id="workbench:tools" :size="16" />
             <span>{{ t("settings.cat_plugins") || "功能插件 (UniRTM 生态)" }}</span>
           </button>
         </div>
@@ -380,7 +392,9 @@
         <!-- Search Filter Bar -->
         <div class="market-filter-bar glass-card">
           <div class="search-input-wrapper">
-            <span class="search-icon">🔍</span>
+            <span class="search-icon">
+              <TechIcon id="workbench:search" :size="14" />
+            </span>
             <input
               v-model="mpSearchQuery"
               type="text"
@@ -457,7 +471,9 @@
 
         <!-- Empty State -->
         <div v-else-if="displayedExtensions.length === 0" class="market-empty-box glass-card">
-          <span class="empty-icon">🎨</span>
+          <span class="empty-icon">
+            <TechIcon id="workbench:marketplace" :size="36" />
+          </span>
           <p>{{ selectedFilter === 'installed' ? (t('marketplace.empty_installed') || '暂未安装任何第三方主题或图标包') : (t('marketplace.empty_results') || '未找到符合条件的主题或图标包') }}</p>
           <button class="btn-reset-chip" @click="onResetToPopular">{{ t('marketplace.view_popular') || '查看热门推荐' }}</button>
         </div>
@@ -478,12 +494,7 @@
               :title="t('common.delete') || '卸载此主题包'"
               @click.stop="onUninstallThemeCard(item)"
             >
-              <svg class="trash-icon" viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2" fill="none">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                <line x1="10" y1="11" x2="10" y2="17"></line>
-                <line x1="14" y1="11" x2="14" y2="17"></line>
-              </svg>
+              <TechIcon id="workbench:delete" :size="13" />
             </button>
 
             <div class="card-header-row">
@@ -669,7 +680,9 @@
       <div v-show="currentChannel === 'plugins'" class="market-channel-content">
         <!-- Ecosystem Banner -->
         <div class="plugin-isolation-banner glass-card">
-          <span class="banner-icon">🔒</span>
+          <span class="banner-icon">
+            <TechIcon id="workbench:lock" :size="20" />
+          </span>
           <div class="banner-text">
             <strong>三层隔离架构与工具提供者准则</strong>
             <p>
@@ -686,7 +699,9 @@
             class="glass-card plugin-card"
           >
             <div class="card-header-row">
-              <div class="card-icon-box">{{ ext.icon }}</div>
+              <div class="card-icon-box">
+                <TechIcon :id="ext.id" :size="28" :colored="true" />
+              </div>
               <div class="card-title-col">
                 <div class="card-name-row">
                   <span class="card-name">{{ ext.name }}</span>

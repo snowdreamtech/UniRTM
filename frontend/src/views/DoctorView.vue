@@ -13,7 +13,9 @@
       </div>
       <div class="view-actions">
         <button class="doctor-action-btn primary" :disabled="isRunningCheck" @click="runFullDiagnostic">
-          <span v-if="isRunningCheck" class="spin-icon">🔄</span>
+          <span v-if="isRunningCheck" class="spin-icon">
+            <TechIcon id="workbench:sync" :size="14" />
+          </span>
           <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
             <TechIcon id="workbench:doctor" :size="14" :colored="false" />
             重新全面体检
