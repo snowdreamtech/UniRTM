@@ -30,7 +30,7 @@
         :currentTab="currentTab"
         :activeSubItem="activeSubItem"
         @toggle-collapse="isSidebarOpen = false"
-        @select-sub-item="activeSubItem = (activeSubItem === $event ? '' : $event)"
+        @select-sub-item="handleSubItemSelect"
         @run-task="handleTaskStarted"
       />
 
@@ -47,52 +47,24 @@
 
         <!-- Canvas Views -->
         <div class="canvas-content-wrapper">
-          <DashboardView
-            v-if="currentTab === 'dashboard'"
-            :appConfig="appConfig"
-            @select-tab="handleDirectSelectTab"
-            @log-event="addLog"
-          />
-
-          <RuntimesView
-            v-else-if="currentTab === 'runtimes'"
-            :activeSubItem="activeSubItem"
-            @log-event="addLog"
-          />
-
-          <ToolsView
-            v-else-if="currentTab === 'tools'"
-            @log-event="addLog"
-          />
-
-          <TasksView
-            v-else-if="currentTab === 'tasks'"
-            @task-started="handleTaskStarted"
-            @task-finished="handleTaskFinished"
-            @log-event="addLog"
-          />
-
-          <MarketplaceView
-            v-else-if="currentTab === 'marketplace'"
-            @log-event="addLog"
-          />
-
-          <DoctorView
-            v-else-if="currentTab === 'doctor'"
-            @log-event="addLog"
-            @open-drawer="handleOpenDrawerTab"
-          />
-
-          <SettingsView
-            v-else-if="currentTab === 'settings'"
-            :initialScope="settingsScope"
-            :activeCategory="activeSubItem"
-            @select-category="activeSubItem = $event"
-          />
-
-          <AboutView
-            v-else-if="currentTab === 'about'"
-          />
+          <router-view v-slot="{ Component }">
+            <keep-alive>
+              <component
+                :is="Component"
+                :key="currentTab"
+                :appConfig="appConfig"
+                :activeSubItem="activeSubItem"
+                :initialScope="settingsScope"
+                :activeCategory="activeSubItem"
+                @select-tab="handleDirectSelectTab"
+                @log-event="addLog"
+                @task-started="handleTaskStarted"
+                @task-finished="handleTaskFinished"
+                @open-drawer="handleOpenDrawerTab"
+                @select-category="handleCategorySelect"
+              />
+            </keep-alive>
+          </router-view>
         </div>
       </main>
     </div>
@@ -121,21 +93,12 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import TitleBar from "./components/layout/TitleBar.vue";
 import ActivityBar from "./components/layout/ActivityBar.vue";
 import SidebarPanel from "./components/layout/SidebarPanel.vue";
 import BottomStatusBar from "./components/layout/BottomStatusBar.vue";
 import BottomDrawer, { type LogItem } from "./components/layout/BottomDrawer.vue";
-
-import DashboardView from "./views/DashboardView.vue";
-import RuntimesView from "./views/RuntimesView.vue";
-import ToolsView from "./views/ToolsView.vue";
-import TasksView from "./views/TasksView.vue";
-import MarketplaceView from "./views/MarketplaceView.vue";
-import DoctorView from "./views/DoctorView.vue";
-import SettingsView from "./views/SettingsView.vue";
-import AboutView from "./views/AboutView.vue";
-
 import ToastNotification from "./components/ToastNotification.vue";
 
 import { t, selectedLangSetting, setLanguage } from "./i18n";
@@ -156,6 +119,9 @@ export interface AppConfig {
   proxyPassword?: string;
 }
 
+const route = useRoute();
+const router = useRouter();
+
 const { currentTheme, applyTheme, toggleTheme: baseToggleTheme } = useTheme();
 const { toastMessage, toastType, showToast, dismissToast } = useToast();
 
@@ -166,8 +132,8 @@ function getInitialDrawerOpen(): boolean {
   return localStorage.getItem(DRAWER_STORAGE_KEY) === "true";
 }
 
-const currentTab = ref<string>("dashboard");
-const activeSubItem = ref<string>("overview");
+const currentTab = computed<string>(() => (route.name as string) || "dashboard");
+const activeSubItem = ref<string>("");
 const isSidebarOpen = ref<boolean>(true);
 const isDrawerOpen = ref<boolean>(getInitialDrawerOpen());
 const settingsScope = ref<"user" | "workspace">("user");
@@ -177,6 +143,35 @@ watch(isDrawerOpen, (newVal) => {
     localStorage.setItem(DRAWER_STORAGE_KEY, String(newVal));
   }
 });
+
+watch(
+  () => route.name,
+  (newName, oldName) => {
+    if (newName !== oldName && newName !== "settings") {
+      activeSubItem.value = "";
+    }
+  }
+);
+
+watch(
+  () => route.params.category,
+  (category) => {
+    if (category && typeof category === "string") {
+      activeSubItem.value = category;
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => route.query.scope,
+  (scope) => {
+    if (scope === "user" || scope === "workspace") {
+      settingsScope.value = scope;
+    }
+  },
+  { immediate: true }
+);
 
 const activeRunningTask = ref<string | undefined>(undefined);
 const currentLatencyMs = ref<number | null>(18);
@@ -223,20 +218,45 @@ const currentTabLabel = computed(() => {
   }
 });
 
+function navigateToTab(tabId: string) {
+  if (currentTab.value !== tabId) {
+    router.push({ name: tabId }).catch(() => {});
+  }
+}
+
 function handleSelectActivityTab(tabId: string) {
   if (currentTab.value === tabId) {
     // If clicking same active tab in activity bar, toggle sidebar visibility (classic VS Code behavior)
     isSidebarOpen.value = !isSidebarOpen.value;
   } else {
-    currentTab.value = tabId;
     isSidebarOpen.value = true;
     activeSubItem.value = "";
+    navigateToTab(tabId);
   }
 }
 
 function handleDirectSelectTab(tabId: string) {
-  currentTab.value = tabId;
   isSidebarOpen.value = true;
+  navigateToTab(tabId);
+}
+
+function handleSubItemSelect(id: string) {
+  const nextItem = activeSubItem.value === id ? "" : id;
+  activeSubItem.value = nextItem;
+  if (currentTab.value === "settings") {
+    if (nextItem) {
+      router.replace({ name: "settings", params: { category: nextItem }, query: route.query }).catch(() => {});
+    } else {
+      router.replace({ name: "settings", query: route.query }).catch(() => {});
+    }
+  }
+}
+
+function handleCategorySelect(catId: string) {
+  activeSubItem.value = catId;
+  if (currentTab.value === "settings") {
+    router.replace({ name: "settings", params: { category: catId }, query: route.query }).catch(() => {});
+  }
 }
 
 function toggleDrawer() {
@@ -247,14 +267,20 @@ function openSettings(scope?: "user" | "workspace") {
   if (scope) {
     settingsScope.value = scope;
   }
-  currentTab.value = "settings";
   isSidebarOpen.value = true;
+  if (route.name === "settings") {
+    if (scope) {
+      router.replace({ name: "settings", params: route.params, query: { scope } }).catch(() => {});
+    }
+  } else {
+    router.push({ name: "settings", query: scope ? { scope } : {} }).catch(() => {});
+  }
 }
 
 function openAbout() {
-  currentTab.value = "about";
   activeSubItem.value = "";
   isSidebarOpen.value = true;
+  navigateToTab("about");
 }
 
 function openCommandPalette() {

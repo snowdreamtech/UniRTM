@@ -3,6 +3,7 @@
 
 import { createApp } from "vue";
 import App from "./App.vue";
+import router from "./router";
 import "./styles/theme.css";
 
 const STARTUP_LOADER_MIN_DURATION_MS = 300;
@@ -36,5 +37,5 @@ window.setTimeout(() => {
 }, 1200);
 
 setStartupProgress(25);
-createApp(App).mount("#app");
+createApp(App).use(router).mount("#app");
 setStartupProgress(75);
