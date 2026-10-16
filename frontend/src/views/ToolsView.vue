@@ -750,7 +750,10 @@ import { validateRuntimeVersion } from "../utils/versionValidator";
 import { useToolUpdates, type ToolUpdateItem } from "../composables/useToolUpdates";
 import { getToolHomepage } from "../utils/toolHomepage";
 
+import { useToolScope } from "../composables/useToolScope";
+
 const { showToast } = useToast();
+const { activeScope: currentScope } = useToolScope();
 const {
   updateResults,
   isChecking: checkingUpdates,
@@ -779,7 +782,6 @@ const props = defineProps<{
   activeSubItem?: string;
 }>();
 
-const currentScope = ref<"user" | "workspace">("workspace");
 const modalInstallScope = ref<"user" | "workspace">("workspace");
 
 const defaultRuntimes: RuntimeItem[] = [

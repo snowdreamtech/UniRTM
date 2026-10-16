@@ -46,7 +46,9 @@
 
       <!-- TOOLS Navigation Items -->
       <template v-if="currentTab === 'tools'">
-        <div class="nav-group-title">{{ t("sidebar.group_tools") || "PROJECT TOOLS" }}</div>
+        <div class="nav-group-title">
+          {{ activeScope === 'user' ? '用户工具' : (t("sidebar.group_tools") || "项目工具") }}
+        </div>
         <button
           v-for="tool in filteredToolItems"
           :key="tool.name"
@@ -152,8 +154,10 @@ import { ref, computed, onMounted } from "vue";
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 import { useToolUpdates } from "../../composables/useToolUpdates";
+import { useToolScope } from "../../composables/useToolScope";
 
 const { hasUpdate, syncFromToolsList } = useToolUpdates();
+const { activeScope } = useToolScope();
 
 const props = defineProps<{
   isOpen: boolean;
@@ -224,12 +228,41 @@ const filteredDashboardItems = computed(() => {
 
 
 
-// Tools items (Synchronized with active toolchains and runtimes)
-const toolItems = ref([
-  { id: "node", name: "Node.js", icon: "node", version: "26.8.1", status: "success" },
-  { id: "go", name: "Go", icon: "go", version: "1.27.2", status: "success" },
-  { id: "python", name: "Python", icon: "python", version: "3.14.7", status: "success" },
+// Tools items (Synchronized with active toolchains and runtimes by Scope)
+const rawTools = ref<any[]>([
+  { id: "node", name: "Node.js", active_version: "26.8.1", global_version: "26.8.1" },
+  { id: "go", name: "Go", active_version: "1.27.2", global_version: "" },
+  { id: "python", name: "Python", active_version: "3.14.7", global_version: "" },
 ]);
+
+const toolItems = computed(() => {
+  const isUser = activeScope.value === "user";
+  const items: any[] = [];
+  for (const rt of rawTools.value) {
+    if (isUser) {
+      if (rt.global_version && String(rt.global_version).trim()) {
+        items.push({
+          id: rt.id,
+          name: rt.name,
+          icon: rt.id,
+          version: rt.global_version,
+          status: "success",
+        });
+      }
+    } else {
+      if ((rt.active_version && String(rt.active_version).trim()) || rt.is_legacy) {
+        items.push({
+          id: rt.id,
+          name: rt.name,
+          icon: rt.id,
+          version: rt.active_version || rt.global_version,
+          status: "success",
+        });
+      }
+    }
+  }
+  return items;
+});
 
 const filteredToolItems = computed(() => {
   if (!searchQuery.value) return toolItems.value;
@@ -279,25 +312,7 @@ onMounted(async () => {
       const list = data.tools || data.runtimes;
       if (list && Array.isArray(list)) {
         syncFromToolsList(list);
-        const items = [];
-        for (const rt of list) {
-          const ver =
-            rt.active_version ||
-            rt.global_version ||
-            (rt.installed_versions && rt.installed_versions.length > 0 ? rt.installed_versions[0] : "");
-          if (ver) {
-            items.push({
-              id: rt.id,
-              name: rt.name,
-              icon: rt.id,
-              version: ver,
-              status: "success",
-            });
-          }
-        }
-        if (items.length > 0) {
-          toolItems.value = items;
-        }
+        rawTools.value = list;
       }
     }
   } catch {
