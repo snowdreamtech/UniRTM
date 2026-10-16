@@ -13,7 +13,17 @@
           由 UniRTM 统一版本锁定与高性能垫片（Go Shims）路由，替换 NVM、GVM、Pyenv 等异构管理器，提供跨平台一致的工具链环境。
         </p>
       </div>
-      <div class="view-actions">
+      <div class="view-actions" style="display: flex; gap: 8px; align-items: center;">
+        <button
+          class="tool-action-btn secondary"
+          id="btn-check-updates"
+          @click="checkRemoteUpdates"
+          :disabled="checkingUpdates || loading"
+          title="检测所有工具最新远程版本与升级差异"
+        >
+          <TechIcon id="workbench:sync" :size="14" :class="{ 'spin-icon': checkingUpdates }" />
+          <span>{{ checkingUpdates ? "正在检测更新..." : "检测更新" }}</span>
+        </button>
         <button class="tool-action-btn secondary" @click="fetchStatus" :disabled="loading">
           <TechIcon id="workbench:sync" :size="14" :class="{ 'spin-icon': loading }" />
           <span>{{ loading ? t("common.refreshing") : t("common.refresh") }}</span>
@@ -520,6 +530,150 @@
         </div>
       </div>
     </div>
+
+    <!-- Version Diff & Batch Update Drawer/Modal -->
+    <div
+      v-if="isDiffDrawerOpen"
+      class="modal-backdrop diff-drawer-backdrop"
+      @click.self="isDiffDrawerOpen = false"
+    >
+      <div class="diff-drawer glass-card" role="dialog" aria-modal="true" id="diff-drawer-container">
+        <!-- Header -->
+        <div class="diff-drawer-header">
+          <div class="diff-drawer-title-group">
+            <div class="diff-header-badge">
+              <TechIcon id="workbench:sync" :size="14" />
+              <span>版本差异比对与批量升级</span>
+            </div>
+            <h3 class="diff-drawer-title">工具版本升级检测 (Diff Drawer)</h3>
+            <p class="diff-drawer-desc">
+              对比当前激活版本与官方最新版本。安全基线：已锁定的工具自动屏蔽升级，保护项目环境稳定性。
+            </p>
+          </div>
+          <button class="modal-close-btn" @click="isDiffDrawerOpen = false" title="关闭">✕</button>
+        </div>
+
+        <!-- Body / Diff Table -->
+        <div class="diff-drawer-body">
+          <div v-if="updateResults.length === 0" class="empty-diff-state">
+            <span>暂无工具版本差异数据</span>
+          </div>
+
+          <div v-else class="diff-table-container">
+            <table class="diff-table">
+              <thead>
+                <tr>
+                  <th style="width: 44px; text-align: center;">
+                    <input
+                      type="checkbox"
+                      :checked="isAllUpdatableSelected"
+                      :disabled="updatableCount === 0"
+                      @change="toggleSelectAllUpdatable"
+                      title="全选/取消全选所有可升级工具"
+                    />
+                  </th>
+                  <th>工具名称</th>
+                  <th>当前激活版本</th>
+                  <th>官方最新版本</th>
+                  <th>状态与保护</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="item in updateResults"
+                  :key="item.id"
+                  class="diff-row"
+                  :class="{
+                    'is-pinned-row': item.pinned,
+                    'is-updatable-row': item.has_update && !item.pinned,
+                    'is-selected-row': selectedUpdateTools.includes(item.id)
+                  }"
+                >
+                  <td style="text-align: center;">
+                    <input
+                      v-if="!item.pinned && item.has_update"
+                      type="checkbox"
+                      :value="item.id"
+                      v-model="selectedUpdateTools"
+                    />
+                    <span v-else-if="item.pinned" class="pinned-row-icon" title="工具已锁定，受保护">🔒</span>
+                    <span v-else class="synced-row-icon" title="已是最新版本">✓</span>
+                  </td>
+                  <td>
+                    <div class="diff-tool-info">
+                      <TechIcon :id="item.id" :size="20" :colored="true" />
+                      <div class="diff-tool-name-box">
+                        <span class="diff-tool-name font-mono">{{ item.name }}</span>
+                        <span class="diff-tool-id font-mono">({{ item.id }})</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="diff-version-pill current font-mono">v{{ item.current_version || "未指定" }}</span>
+                  </td>
+                  <td>
+                    <div class="diff-version-target">
+                      <span
+                        class="diff-version-pill latest font-mono"
+                        :class="{ 'has-new': item.has_update && !item.pinned }"
+                      >
+                        v{{ item.latest_version }}
+                      </span>
+                      <span v-if="item.has_update && !item.pinned" class="diff-delta-badge font-mono">
+                        ↑ 升级
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="diff-status-cell">
+                      <span v-if="item.pinned" class="diff-badge pinned" :title="item.pin_reason">
+                        🔒 已锁定{{ item.pin_reason ? `: ${item.pin_reason}` : "" }}
+                      </span>
+                      <span v-else-if="item.has_update" class="diff-badge updatable">
+                        可升级
+                      </span>
+                      <span v-else class="diff-badge latest">
+                        已是最新
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="diff-drawer-footer">
+          <div class="diff-footer-info">
+            <span class="diff-selection-summary">
+              已选中 <b>{{ selectedUpdateTools.length }}</b> 个待升级工具
+            </span>
+            <span class="diff-scope-note">
+              (将写入当前 {{ currentScope === 'user' ? '用户默认全局配置' : '工作区 .unirtm.toml' }})
+            </span>
+          </div>
+          <div class="diff-footer-actions">
+            <button
+              class="tool-action-btn secondary"
+              @click="isDiffDrawerOpen = false"
+              :disabled="batchUpdating"
+            >
+              取消
+            </button>
+            <button
+              class="tool-action-btn primary"
+              id="btn-apply-batch-update"
+              @click="runBatchUpdate"
+              :disabled="selectedUpdateTools.length === 0 || batchUpdating"
+            >
+              <TechIcon v-if="batchUpdating" id="workbench:sync" :size="14" class="spin-icon" />
+              <span>{{ batchUpdating ? "正在批量升级..." : `一键升级选中项 (${selectedUpdateTools.length})` }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
 </template>
@@ -639,6 +793,51 @@ function closeRemoteModal() {
 // Add Runtime modal state
 const isAddModalOpen = ref(false);
 const customToolInput = ref("");
+
+// Remote update detection & Diff Drawer state
+export interface ToolUpdateResult {
+  id: string;
+  name: string;
+  current_version: string;
+  latest_version: string;
+  has_update: boolean;
+  pinned: boolean;
+  pin_reason?: string;
+  homepage?: string;
+  error?: string;
+}
+
+const isDiffDrawerOpen = ref(false);
+const checkingUpdates = ref(false);
+const batchUpdating = ref(false);
+const updateResults = ref<ToolUpdateResult[]>([]);
+const selectedUpdateTools = ref<string[]>([]);
+
+const updatableCount = computed(() => {
+  return updateResults.value.filter((r) => r.has_update && !r.pinned).length;
+});
+
+const isAllUpdatableSelected = computed(() => {
+  const updatableIds = updateResults.value
+    .filter((r) => r.has_update && !r.pinned)
+    .map((r) => r.id);
+  if (updatableIds.length === 0) return false;
+  return updatableIds.every((id) => selectedUpdateTools.value.includes(id));
+});
+
+function toggleSelectAllUpdatable() {
+  const updatableIds = updateResults.value
+    .filter((r) => r.has_update && !r.pinned)
+    .map((r) => r.id);
+  if (isAllUpdatableSelected.value) {
+    selectedUpdateTools.value = selectedUpdateTools.value.filter(
+      (id) => !updatableIds.includes(id)
+    );
+  } else {
+    const newSet = new Set([...selectedUpdateTools.value, ...updatableIds]);
+    selectedUpdateTools.value = Array.from(newSet);
+  }
+}
 
 interface PresetRuntime {
   id: string;
@@ -1337,6 +1536,88 @@ async function installRemoteVersion(toolId: string, ver: string) {
     emit("log-event", "ERROR", `Failed to set version: ${err.message}`);
   } finally {
     installingVer.value = null;
+  }
+}
+
+async function checkRemoteUpdates() {
+  checkingUpdates.value = true;
+  try {
+    const isGlobal = currentScope.value === "user";
+    const res = await fetch(`/api/tools/check-updates?global=${isGlobal}`);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    updateResults.value = data.results || [];
+
+    const autoSelected = updateResults.value
+      .filter((item: ToolUpdateResult) => item.has_update && !item.pinned)
+      .map((item: ToolUpdateResult) => item.id);
+    selectedUpdateTools.value = autoSelected;
+
+    isDiffDrawerOpen.value = true;
+
+    const pinnedCount = updateResults.value.filter((r) => r.pinned).length;
+    if (autoSelected.length > 0) {
+      showToast(
+        `检测完成：发现 ${autoSelected.length} 个工具可升级${pinnedCount > 0 ? ` (已自动保护 ${pinnedCount} 个锁定工具)` : ""}`,
+        "success"
+      );
+    } else {
+      showToast("检测完成：所有工具均已是最新版本或受保护锁定", "info");
+    }
+  } catch (err: any) {
+    showToast(`检测更新失败: ${err.message}`, "error");
+  } finally {
+    checkingUpdates.value = false;
+  }
+}
+
+async function runBatchUpdate() {
+  if (selectedUpdateTools.value.length === 0) return;
+  batchUpdating.value = true;
+
+  const isGlobal = currentScope.value === "user";
+  const toolsPayload = selectedUpdateTools.value
+    .map((toolId) => {
+      const match = updateResults.value.find((r) => r.id === toolId);
+      return match ? { id: toolId, version: match.latest_version } : null;
+    })
+    .filter(Boolean);
+
+  try {
+    const res = await fetch("/api/tools/batch-update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tools: toolsPayload,
+        global: isGlobal,
+      }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    const updatedCount = data.updated ? data.updated.length : 0;
+    const skippedCount = data.skipped ? data.skipped.length : 0;
+
+    let msg = `批量升级完成：已成功升级 ${updatedCount} 个工具`;
+    if (skippedCount > 0) {
+      msg += `，跳过 ${skippedCount} 个保护项`;
+    }
+    showToast(msg, "success");
+    isDiffDrawerOpen.value = false;
+    emit(
+      "log-event",
+      "INFO",
+      `Batch updated ${updatedCount} tools (${isGlobal ? "user" : "workspace"})`
+    );
+    await fetchStatus();
+  } catch (err: any) {
+    showToast(`批量升级失败: ${err.message}`, "error");
+  } finally {
+    batchUpdating.value = false;
   }
 }
 
@@ -2576,5 +2857,269 @@ onBeforeUnmount(() => {
   margin-top: 0.85rem;
   display: flex;
   justify-content: flex-end;
+}
+
+/* Diff Drawer & Batch Upgrade Styles */
+.diff-drawer {
+  width: 92%;
+  max-width: 760px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  background: var(--modal-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+  color: var(--text-main);
+  animation: diffDrawerIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes diffDrawerIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.diff-drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.85rem;
+}
+
+.diff-drawer-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.diff-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.diff-drawer-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.diff-drawer-desc {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.diff-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0.75rem 0;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.15);
+  max-height: 52vh;
+}
+
+.empty-diff-state {
+  padding: 2.5rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.diff-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.82rem;
+}
+
+.diff-table th {
+  padding: 0.65rem 0.85rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid var(--card-border);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  backdrop-filter: blur(8px);
+}
+
+.diff-table td {
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: middle;
+}
+
+.diff-row {
+  transition: background-color 0.15s ease;
+}
+
+.diff-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.diff-row.is-selected-row {
+  background: rgba(56, 189, 248, 0.04);
+}
+
+.diff-row.is-pinned-row {
+  opacity: 0.78;
+}
+
+.diff-tool-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.diff-tool-name-box {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.diff-tool-name {
+  font-weight: 700;
+  color: var(--text-main);
+  font-size: 0.85rem;
+}
+
+.diff-tool-id {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.diff-version-pill {
+  display: inline-block;
+  padding: 0.18rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+}
+
+.diff-version-pill.current {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.diff-version-target {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.diff-version-pill.latest {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.diff-version-pill.latest.has-new {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  font-weight: 700;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.diff-delta-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.diff-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.18rem 0.55rem;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.diff-badge.pinned {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  font-weight: 600;
+}
+
+.diff-badge.updatable {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  font-weight: 600;
+}
+
+.diff-badge.latest {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pinned-row-icon {
+  font-size: 0.85rem;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.synced-row-icon {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.diff-drawer-footer {
+  margin-top: 0.6rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--card-border);
+}
+
+.diff-footer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.diff-selection-summary {
+  font-size: 0.82rem;
+  color: var(--text-main);
+}
+
+.diff-selection-summary b {
+  color: var(--accent-cyan);
+}
+
+.diff-scope-note {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.diff-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
 }
 </style>
