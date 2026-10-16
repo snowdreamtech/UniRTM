@@ -23,7 +23,7 @@
           <div class="form-group">
             <label class="form-label required">
               <span>{{ t("tasks.field_name") || "任务名称" }}</span>
-              <span class="label-hint">（唯一标识，如 build, test, lint:fix）</span>
+              <span class="label-hint">{{ t("tasks.name_hint") || "（唯一标识，如 build, test, lint:fix）" }}</span>
             </label>
             <input
               v-model="form.name"
@@ -39,7 +39,7 @@
           <div class="form-group">
             <label class="form-label required">
               <span>{{ t("tasks.field_command") || "执行命令 (Command / Script)" }}</span>
-              <span class="label-hint">（支持单行命令或多行脚本）</span>
+              <span class="label-hint">{{ t("tasks.command_hint") || "（支持单行命令或多行脚本）" }}</span>
             </label>
             <textarea
               v-model="form.command"
@@ -55,7 +55,7 @@
           <div class="form-group">
             <label class="form-label">
               <span>{{ t("tasks.field_desc") || "任务描述" }}</span>
-              <span class="label-hint">（选填，说明该任务的用途与触发时机）</span>
+              <span class="label-hint">{{ t("tasks.desc_hint") || "（选填，说明该任务的用途与触发时机）" }}</span>
             </label>
             <input
               v-model="form.description"
@@ -70,7 +70,7 @@
           <div class="form-group">
             <label class="form-label">
               <span>{{ t("tasks.field_depends") || "依赖前置任务 (Depends)" }}</span>
-              <span class="label-hint">（选填，执行当前任务前必须先完成的任务）</span>
+              <span class="label-hint">{{ t("tasks.depends_hint") || "（选填，执行当前任务前必须先完成的任务）" }}</span>
             </label>
             <div class="depends-selector-wrap">
               <div v-if="filteredAvailableTasks.length > 0" class="dep-pills-list">
@@ -101,11 +101,11 @@
                   @click="addCustomDependency"
                   :disabled="!customDepInput.trim() || saving"
                 >
-                  添加依赖
+                  {{ t("tasks.add_dep") || "添加依赖" }}
                 </button>
               </div>
               <div v-if="form.depends.length > 0" class="current-selected-deps">
-                <span class="selected-label">当前选定顺序:</span>
+                <span class="selected-label">{{ t("tasks.dep_order") || "当前选定顺序:" }}</span>
                 <span
                   v-for="dep in form.depends"
                   :key="dep"

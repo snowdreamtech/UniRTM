@@ -184,10 +184,10 @@
         </div>
         <div class="modal-body" style="padding: 1.25rem 1.4rem;">
           <p style="margin: 0 0 0.75rem 0; font-size: 0.85rem; color: var(--text-main);">
-            确定要删除任务 <b class="font-mono" style="color: var(--accent-cyan);">{{ taskToDelete.name }}</b> 吗？
+            {{ t("tasks.delete_confirm", { name: taskToDelete.name }) }}
           </p>
           <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
-            此操作将从 {{ activeScope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml' }} 中移除该任务配置，删除后不可撤销。
+            {{ t("tasks.delete_warning", { file: activeScope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml' }) }}
           </p>
           <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.08);">
             <button class="tool-action-btn secondary" @click="taskToDelete = null" :disabled="deletingTask">

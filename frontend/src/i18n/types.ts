@@ -12,6 +12,10 @@ export interface TranslationDict {
   "common.close": string;
   "common.refresh"?: string;
   "common.refreshing"?: string;
+  "common.cancel"?: string;
+  "common.saving"?: string;
+  "common.save_changes"?: string;
+  "common.deleting"?: string;
 
   "drawer.tab_output"?: string;
   "drawer.tab_tasks"?: string;
@@ -74,6 +78,27 @@ export interface TranslationDict {
   "tasks.desc"?: string;
   "tasks.run"?: string;
   "tasks.running"?: string;
+  "tasks.create_btn"?: string;
+  "tasks.create_first"?: string;
+  "tasks.create_title"?: string;
+  "tasks.edit_title"?: string;
+  "tasks.delete_title"?: string;
+  "tasks.delete_confirm"?: string;
+  "tasks.delete_warning"?: string;
+  "tasks.field_name"?: string;
+  "tasks.name_hint"?: string;
+  "tasks.field_command"?: string;
+  "tasks.command_hint"?: string;
+  "tasks.field_desc"?: string;
+  "tasks.desc_hint"?: string;
+  "tasks.field_depends"?: string;
+  "tasks.depends_hint"?: string;
+  "tasks.add_dep"?: string;
+  "tasks.dep_order"?: string;
+  "tasks.save_success"?: string;
+  "tasks.save_failed"?: string;
+  "tasks.delete_success"?: string;
+  "tasks.delete_failed"?: string;
 
   "tools.title"?: string;
   "tools.reshim"?: string;
