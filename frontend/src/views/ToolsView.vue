@@ -136,22 +136,27 @@
               >
                 {{ formatToolTitle(rt.name) }}
               </a>
-              <button
-                class="runtime-pin-btn"
-                :class="{ 'is-pinned': rt.pinned }"
-                :title="rt.pinned ? (rt.pin_reason ? `版本已锁定：${rt.pin_reason} (点击解锁)` : '版本已锁定 (点击解锁)') : '锁定当前版本，防止意外升级'"
-                @click.stop="togglePin(rt)"
-              >
-                <span class="pin-icon">{{ rt.pinned ? '🔒' : '🔓' }}</span>
-                <span v-if="rt.pinned" class="pin-label">已锁定</span>
-              </button>
-              <button
-                class="runtime-delete-btn"
-                :title="(t('runtimes.remove_runtime') || '移除环境') + ' ' + rt.name"
-                @click.stop="confirmRemoveRuntime(rt)"
-              >
-                <TechIcon id="workbench:delete" :size="17" />
-              </button>
+              <div class="runtime-header-badges">
+                <span
+                  class="runtime-version-badge font-mono"
+                  :class="{
+                    'is-active': Boolean(getCurrentVersion(rt)),
+                    'is-muted': !getCurrentVersion(rt),
+                  }"
+                  :title="getCurrentVersion(rt) ? `当前生效版本: ${formatVersion(getCurrentVersion(rt))}` : '未配置/未生效'"
+                >
+                  {{ getCurrentVersion(rt) ? formatVersion(getCurrentVersion(rt)) : '未配置' }}
+                </span>
+                <button
+                  v-if="!rt.pinned && (getLocalUpgradableVersion(rt, currentScope) || getRemoteUpgradableVersion(rt.id))"
+                  class="local-upgrade-btn"
+                  :title="'可升级至 ' + formatVersion(getLocalUpgradableVersion(rt, currentScope) || getRemoteUpgradableVersion(rt.id)!)"
+                  @click.stop="handleQuickUpgrade(rt)"
+                >
+                  <span class="upgrade-arrow">↑</span>
+                  <span>{{ formatVersion(getLocalUpgradableVersion(rt, currentScope) || getRemoteUpgradableVersion(rt.id)!) }}</span>
+                </button>
+              </div>
             </div>
             <span class="runtime-desc">{{ rt.description }}</span>
             <div v-if="rt.pinned && rt.pin_reason" class="pin-reason-tag" :title="rt.pin_reason">
@@ -161,134 +166,6 @@
           </div>
         </div>
 
-
-        <!-- Scope-Aware Version Display (Only displays the current active scope) -->
-        <div class="runtime-status-box">
-          <!-- Workspace Scope Version (Shown when currentScope === 'workspace') -->
-          <div v-if="currentScope === 'workspace'" class="status-row highlight-scope">
-            <span class="status-label">
-              <span class="scope-mini-icon">
-                <TechIcon id="workbench:tools" :size="15" :colored="false" />
-              </span>
-              {{ t("runtimes.scope_workspace") || "工作区" }}:
-            </span>
-            <div v-if="rt.active_version" class="status-val-wrap">
-              <span class="active-pill font-mono">{{ formatVersion(rt.active_version) }}</span>
-              <button
-                v-if="!rt.pinned && getLocalUpgradableVersion(rt, 'workspace')"
-                class="local-upgrade-btn"
-                :title="'本地已安装更高版本 ' + formatVersion(getLocalUpgradableVersion(rt, 'workspace')) + '，点击秒级无感切换'"
-                @click.stop="quickSwitch(rt.id, getLocalUpgradableVersion(rt, 'workspace')!, false)"
-              >
-                <span class="upgrade-arrow">↑</span>
-                <span>{{ formatVersion(getLocalUpgradableVersion(rt, 'workspace')) }}</span>
-              </button>
-              <button
-                v-else-if="!rt.pinned && getRemoteUpgradableVersion(rt.id)"
-                class="local-upgrade-btn remote-upgrade-btn"
-                :title="'官方最新版本 ' + formatVersion(getRemoteUpgradableVersion(rt.id)!) + '，点击直接安装并应用'"
-                @click.stop="upgradeToRemoteVersion(rt, getRemoteUpgradableVersion(rt.id)!)"
-              >
-                <span class="upgrade-arrow">↑</span>
-                <span>{{ formatVersion(getRemoteUpgradableVersion(rt.id)!) }}</span>
-              </button>
-              <span v-if="rt.pinned" class="source-tag source-pinned" :title="rt.pin_reason ? `版本锁定: ${rt.pin_reason}` : '版本已锁定'">
-                🔒 锁定
-              </span>
-              <span v-else-if="rt.is_legacy" class="source-tag source-legacy">
-                {{ rt.source }}
-              </span>
-            </div>
-            <div v-else-if="rt.global_version" class="status-val-wrap">
-              <span class="active-pill font-mono muted">{{ formatVersion(rt.global_version) }}</span>
-              <button
-                v-if="!rt.pinned && getLocalUpgradableVersion(rt, 'workspace')"
-                class="local-upgrade-btn"
-                :title="'本地已安装更高版本 ' + formatVersion(getLocalUpgradableVersion(rt, 'workspace')) + '，点击秒级无感切换'"
-                @click.stop="quickSwitch(rt.id, getLocalUpgradableVersion(rt, 'workspace')!, false)"
-              >
-                <span class="upgrade-arrow">↑</span>
-                <span>{{ formatVersion(getLocalUpgradableVersion(rt, 'workspace')) }}</span>
-              </button>
-              <button
-                v-else-if="!rt.pinned && getRemoteUpgradableVersion(rt.id)"
-                class="local-upgrade-btn remote-upgrade-btn"
-                :title="'官方最新版本 ' + formatVersion(getRemoteUpgradableVersion(rt.id)!) + '，点击直接安装并应用'"
-                @click.stop="upgradeToRemoteVersion(rt, getRemoteUpgradableVersion(rt.id)!)"
-              >
-                <span class="upgrade-arrow">↑</span>
-                <span>{{ formatVersion(getRemoteUpgradableVersion(rt.id)!) }}</span>
-              </button>
-              <span class="source-tag source-default">{{ t("runtimes.follow_user") || "跟随用户" }}</span>
-            </div>
-            <span v-else class="text-muted font-mono italic">未配置</span>
-          </div>
-
-          <!-- User Scope Version (Shown when currentScope === 'user') -->
-          <div v-else class="status-row highlight-scope">
-            <span class="status-label">
-              <span class="scope-mini-icon">
-                <TechIcon id="workbench:settings" :size="15" :colored="false" />
-              </span>
-              {{ t("runtimes.scope_user") || "用户" }}:
-            </span>
-            <div v-if="rt.global_version" class="status-val-wrap">
-              <span class="global-pill font-mono">{{ formatVersion(rt.global_version) }}</span>
-              <button
-                v-if="!rt.pinned && getLocalUpgradableVersion(rt, 'user')"
-                class="local-upgrade-btn"
-                :title="'本地已安装更高版本 ' + formatVersion(getLocalUpgradableVersion(rt, 'user')) + '，点击秒级无感切换'"
-                @click.stop="quickSwitch(rt.id, getLocalUpgradableVersion(rt, 'user')!, true)"
-              >
-                <span class="upgrade-arrow">↑</span>
-                <span>{{ formatVersion(getLocalUpgradableVersion(rt, 'user')) }}</span>
-              </button>
-              <button
-                v-else-if="!rt.pinned && getRemoteUpgradableVersion(rt.id)"
-                class="local-upgrade-btn remote-upgrade-btn"
-                :title="'官方最新版本 ' + formatVersion(getRemoteUpgradableVersion(rt.id)!) + '，点击直接安装并应用为用户默认'"
-                @click.stop="upgradeToRemoteVersion(rt, getRemoteUpgradableVersion(rt.id)!, true)"
-              >
-                <span class="upgrade-arrow">↑</span>
-                <span>{{ formatVersion(getRemoteUpgradableVersion(rt.id)!) }}</span>
-              </button>
-              <span v-if="rt.pinned" class="source-tag source-pinned" :title="rt.pin_reason ? `版本锁定: ${rt.pin_reason}` : '版本已锁定'">
-                🔒 锁定
-              </span>
-            </div>
-            <span v-else class="text-muted font-mono italic">未配置</span>
-          </div>
-        </div>
-
-        <!-- Installed Versions List -->
-        <div class="installed-versions-section">
-          <div class="section-title-row">
-            <span class="section-title">{{ t("runtimes.installed_versions") || "Installed Versions" }}</span>
-            <span class="count-pill">{{ rt.installed_versions ? rt.installed_versions.length : 0 }}</span>
-          </div>
-
-          <div v-if="rt.installed_versions && rt.installed_versions.length > 0" class="versions-pills-row">
-            <button
-              v-for="ver in rt.installed_versions"
-              :key="ver"
-              class="ver-pill font-mono"
-              :class="{
-                selected: currentScope === 'workspace' ? ver === rt.active_version : ver === rt.global_version
-              }"
-              :title="'点击设为' + (currentScope === 'user' ? '用户' : '工作区') + '版本 (v' + ver + ')'"
-              @click="quickSwitch(rt.id, ver)"
-            >
-              <span
-                v-if="(currentScope === 'workspace' && ver === rt.active_version) || (currentScope === 'user' && ver === rt.global_version)"
-                class="active-dot"
-              >●</span>
-              <span>{{ formatVersion(ver) }}</span>
-            </button>
-          </div>
-          <div v-else class="empty-installed-text">
-            {{ t("runtimes.no_installed") || "No versions installed locally" }}
-          </div>
-        </div>
 
         <!-- Card Actions & Switcher -->
         <div class="runtime-card-footer">
@@ -1274,6 +1151,25 @@ async function upgradeToRemoteVersion(rt: RuntimeItem, targetVer: string, forceG
   await installRemoteVersion(rt.id, targetVer);
 }
 
+function getCurrentVersion(rt: RuntimeItem): string {
+  if (currentScope.value === "user") {
+    return rt.global_version || "";
+  }
+  return rt.active_version || rt.global_version || "";
+}
+
+function handleQuickUpgrade(rt: RuntimeItem) {
+  const localVer = getLocalUpgradableVersion(rt, currentScope.value);
+  if (localVer) {
+    quickSwitch(rt.id, localVer, currentScope.value === "user");
+    return;
+  }
+  const remoteVer = getRemoteUpgradableVersion(rt.id);
+  if (remoteVer) {
+    upgradeToRemoteVersion(rt, remoteVer, currentScope.value === "user");
+  }
+}
+
 
 
 
@@ -2104,7 +2000,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 0.4rem;
+  gap: 0.45rem;
   width: 100%;
 }
 
@@ -2113,8 +2009,7 @@ onBeforeUnmount(() => {
   font-weight: 700;
   color: var(--text-main);
   line-height: 1.35;
-  min-height: 2.7em;
-  max-height: 2.7em;
+  min-height: 1.35em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -2140,6 +2035,42 @@ onBeforeUnmount(() => {
   color: #0284c7;
 }
 
+.runtime-header-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.runtime-version-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.18rem 0.5rem;
+  border-radius: 6px;
+  line-height: 1.3;
+  display: inline-flex;
+  align-items: center;
+}
+
+.runtime-version-badge.is-active {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="dark"] .runtime-version-badge.is-active {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
+.runtime-version-badge.is-muted {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  font-weight: 500;
+}
+
 .runtime-desc {
   font-size: 0.78rem;
   color: var(--text-muted);
@@ -2150,6 +2081,7 @@ onBeforeUnmount(() => {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
 
 /* Status box */
 .runtime-status-box {
