@@ -151,6 +151,51 @@
       </div>
     </div>
 
+    <!-- Open Source Acknowledgements & Icon Credits -->
+    <div class="glass-card about-credits-card">
+      <div class="credits-header">
+        <TechIcon id="workbench:about" :size="18" />
+        <h3>{{ t("about.credits_title") || "开源鸣谢与图标集许可声明 (Open Source & Icon Credits)" }}</h3>
+      </div>
+      <p class="credits-desc">
+        {{ t("about.credits_desc") || "UniRTM 深度融合现代开源开发生态，严格遵循开源软件分发与商业许可合规标准：" }}
+      </p>
+      <div class="credits-grid">
+        <div class="credit-item">
+          <div class="credit-item-title">
+            <span class="codicon codicon-vscode"></span>
+            <strong>VS Code Codicons (@vscode/codicons)</strong>
+            <span class="credit-license-badge">CC-BY-4.0</span>
+          </div>
+          <p>
+            {{ t("about.credits_codicons_desc") || "UniRTM 工作台标准产品操作与界面图标集。由 Microsoft 官方维护，遵循 CC-BY-4.0 商业可用许可，提供官方标准工作台交互视觉语言。" }}
+          </p>
+        </div>
+
+        <div class="credit-item">
+          <div class="credit-item-title">
+            <span class="codicon codicon-file"></span>
+            <strong>Seti UI 图标集 (@vscode/seti-ui)</strong>
+            <span class="credit-license-badge">MIT License</span>
+          </div>
+          <p>
+            {{ t("about.credits_seti_desc") || "UniRTM 默认文件与开发语言图标集。由 Jesse Weed 与 Visual Studio Code 团队维护，遵循 MIT 许可，精准映射文件扩展名与语言标识。" }}
+          </p>
+        </div>
+
+        <div class="credit-item">
+          <div class="credit-item-title">
+            <span class="codicon codicon-extensions"></span>
+            <strong>VS Code 主题扩展规范与 Open VSX</strong>
+            <span class="credit-license-badge">Open VSX</span>
+          </div>
+          <p>
+            {{ t("about.credits_themes_desc") || "原生兼容 VS Code 三大扩展主题维度：颜色主题 (contributes.themes)、文件图标 (contributes.iconThemes) 与界面产品图标 (contributes.productIconThemes)。" }}
+          </p>
+        </div>
+      </div>
+    </div>
+
     <!-- Footer Links & Copyright -->
     <div class="glass-card about-footer-card">
       <div class="footer-links">
@@ -608,6 +653,79 @@ onMounted(() => {
 }
 
 .highlight-body p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Open Source & Icon Credits Card */
+.about-credits-card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.credits-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.credits-header h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-main);
+}
+
+.credits-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.credits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 0.25rem;
+}
+
+.credit-item {
+  background: var(--bg-card-glass, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.credit-item-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  flex-wrap: wrap;
+}
+
+.credit-license-badge {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(0, 229, 255, 0.12);
+  color: var(--accent-cyan, #00e5ff);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.credit-item p {
   font-size: 0.8rem;
   color: var(--text-muted);
   line-height: 1.45;

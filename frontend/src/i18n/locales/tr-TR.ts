@@ -488,4 +488,9 @@ export const trTr: TranslationDict = {
   "settings.product_icon_theme": "Product Icon Theme",
   "settings.product_icon_theme_desc": "Product and workbench UI icon theme for buttons, actions, and status indicators. Supports Codicons and third-party product icon extensions.",
   "marketplace.filter_product_icons": "Product Icons",
+  "about.credits_title": "Open Source & Icon Credits",
+  "about.credits_desc": "UniRTM embraces modern open-source ecosystems in compliance with standard commercial and open-source licenses:",
+  "about.credits_codicons_desc": "Visual Studio Code official workbench & product icon set, maintained by Microsoft under CC-BY-4.0 commercial-friendly license.",
+  "about.credits_seti_desc": "UniRTM default file and language icon set, maintained by Jesse Weed and the VS Code team under MIT license.",
+  "about.credits_themes_desc": "Native support for VS Code theme manifests across color themes (contributes.themes), file icon themes (contributes.iconThemes), and product icon themes (contributes.productIconThemes).",
 };

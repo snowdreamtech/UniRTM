@@ -325,6 +325,11 @@ export interface TranslationDict {
   "about.stagingPackage": string;
   "about.preparingApplyScript": string;
   "about.verifyingChecksum": string;
+  "about.credits_title"?: string;
+  "about.credits_desc"?: string;
+  "about.credits_codicons_desc"?: string;
+  "about.credits_seti_desc"?: string;
+  "about.credits_themes_desc"?: string;
 
   "privilege.status_elevated": string;
   "privilege.status_standard": string;

@@ -387,6 +387,11 @@ export const zhCn: TranslationDict = {
   "about.stagingPackage": "正在准备更新文件...",
   "about.preparingApplyScript": "正在准备更新替换脚本...",
   "about.verifyingChecksum": "正在校验更新包完整性...",
+  "about.credits_title": "开源鸣谢与图标集许可声明",
+  "about.credits_desc": "UniRTM 深度融合现代开源开发生态，严格遵循开源软件分发与商业许可合规标准：",
+  "about.credits_codicons_desc": "UniRTM 工作台标准产品操作与界面图标集。由 Microsoft 官方维护，遵循 CC-BY-4.0 商业可用许可，提供官方标准工作台交互视觉语言。",
+  "about.credits_seti_desc": "UniRTM 默认文件与开发语言图标集。由 Jesse Weed 与 Visual Studio Code 团队维护，遵循 MIT 许可，精准映射文件扩展名与语言标识。",
+  "about.credits_themes_desc": "原生兼容 VS Code 三大扩展主题维度：颜色主题 (contributes.themes)、文件图标 (contributes.iconThemes) 与界面产品图标 (contributes.productIconThemes)。",
 
   "privilege.status_elevated": "已授权",
   "privilege.status_standard": "未授权",
