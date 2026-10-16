@@ -31,7 +31,7 @@
         :activeSubItem="activeSubItem"
         @toggle-collapse="isSidebarOpen = false"
         @select-sub-item="handleSubItemSelect"
-        @run-task="handleTaskStarted"
+        @run-task="handleSidebarTaskRun"
       />
 
       <!-- Main Canvas / Editor Space -->
@@ -340,16 +340,38 @@ function handleTaskStarted(taskName: string) {
   activeRunningTask.value = taskName;
   isDrawerOpen.value = true;
   drawerActiveTab.value = "tasks";
-  addLog("INFO", `Running project task: unirtm run ${taskName}...`, undefined, "tasks");
-  setTimeout(() => {
+}
+
+async function handleSidebarTaskRun(taskName: string) {
+  activeRunningTask.value = taskName;
+  isDrawerOpen.value = true;
+  drawerActiveTab.value = "tasks";
+  addLog("INFO", `[unirtm run ${taskName}] 正在启动任务...`, undefined, "tasks");
+  try {
+    const res = await fetch("/api/tasks/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        task: taskName,
+        scope: activeScope.value || "workspace",
+      }),
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      addLog("SUCCESS", `[unirtm run ${taskName}] 任务执行完成 (退出码: 0)`, data.output, "tasks");
+    } else {
+      addLog("ERROR", `[unirtm run ${taskName}] 任务执行失败 (退出码: ${data.exit_code ?? 1})`, data.error || data.output, "tasks");
+    }
+  } catch (err: any) {
+    addLog("ERROR", `[unirtm run ${taskName}] 任务调用异常: ${err.message}`, undefined, "tasks");
+  } finally {
     activeRunningTask.value = undefined;
-    addLog("SUCCESS", `Task ${taskName} executed successfully.`, undefined, "tasks");
-  }, 1200);
+  }
 }
 
 function handleTaskFinished(taskName: string) {
   activeRunningTask.value = undefined;
-  addLog("SUCCESS", `Task ${taskName} finished.`, undefined, "tasks");
+  addLog("SUCCESS", `[unirtm run ${taskName}] 任务执行结束`, undefined, "tasks");
 }
 
 async function saveGlobalSetting(key: string, value: any) {

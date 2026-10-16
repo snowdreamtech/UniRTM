@@ -71,7 +71,9 @@
 
       <!-- TASKS Navigation Items -->
       <template v-if="currentTab === 'tasks'">
-        <div class="nav-group-title">{{ t("sidebar.group_tasks") || "UNIRTM TASKS (.unirtm.toml)" }}</div>
+        <div class="nav-group-title">
+          {{ activeScope === 'user' ? '用户任务 (~/.unirtm.toml)' : (t("sidebar.group_tasks") || "项目任务 (.unirtm.toml)") }}
+        </div>
         <button
           v-for="task in filteredTaskItems"
           :key="task.name"
@@ -150,7 +152,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 import { useToolUpdates } from "../../composables/useToolUpdates";
@@ -270,18 +272,59 @@ const filteredToolItems = computed(() => {
   return toolItems.value.filter((t) => t.name.toLowerCase().includes(q) || t.id.toLowerCase().includes(q));
 });
 
-// Tasks items
-const taskItems = [
-  { name: "dev", cmd: "vite" },
-  { name: "build", cmd: "vue-tsc && vite build" },
-  { name: "test", cmd: "vitest run" },
-  { name: "audit:npm", cmd: "npm audit" },
-];
+// Tasks items dynamically synchronized with .unirtm.toml
+interface SidebarTaskItem {
+  name: string;
+  cmd: string;
+  desc?: string;
+}
+
+const rawTasks = ref<SidebarTaskItem[]>([]);
+
+async function fetchSidebarTasks() {
+  try {
+    const res = await fetch(`/api/tasks?scope=${activeScope.value}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.tasks)) {
+        rawTasks.value = data.tasks.map((t: any) => ({
+          name: t.name,
+          cmd: t.command || t.description || "",
+          desc: t.description || "",
+        }));
+      }
+    }
+  } catch {
+    // dev mode fallback
+  }
+}
 
 const filteredTaskItems = computed(() => {
-  if (!searchQuery.value) return taskItems;
-  return taskItems.filter((t) => t.name.toLowerCase().includes(searchQuery.value.toLowerCase()));
+  if (!searchQuery.value) return rawTasks.value;
+  const q = searchQuery.value.toLowerCase().trim();
+  return rawTasks.value.filter(
+    (t) =>
+      t.name.toLowerCase().includes(q) ||
+      t.cmd.toLowerCase().includes(q) ||
+      (t.desc && t.desc.toLowerCase().includes(q))
+  );
 });
+
+watch(
+  () => activeScope.value,
+  () => {
+    fetchSidebarTasks();
+  }
+);
+
+watch(
+  () => props.currentTab,
+  (newTab) => {
+    if (newTab === "tasks") {
+      fetchSidebarTasks();
+    }
+  }
+);
 
 // Marketplace extensions
 const extensions = [
@@ -305,6 +348,7 @@ const doctorChecks = [
 ];
 
 onMounted(async () => {
+  fetchSidebarTasks();
   try {
     const res = await fetch("/api/tools/status");
     if (res.ok) {

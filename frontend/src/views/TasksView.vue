@@ -146,6 +146,11 @@ import { t } from "../i18n";
 import TechIcon from "../components/common/TechIcon.vue";
 import { useAppScope } from "../composables/useAppScope";
 
+const props = defineProps<{
+  activeSubItem?: string;
+  initialScope?: string;
+}>();
+
 const emit = defineEmits<{
   (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string, category?: "output" | "tasks" | "doctor"): void;
   (e: "task-started", taskName: string): void;
@@ -205,6 +210,16 @@ watch(
   () => {
     fetchTasks();
   }
+);
+
+watch(
+  () => props.activeSubItem,
+  (newSubItem) => {
+    if (newSubItem) {
+      searchKey.value = newSubItem;
+    }
+  },
+  { immediate: true }
 );
 
 onMounted(() => {
