@@ -35,8 +35,21 @@
       </div>
     </div>
 
-    <!-- Right Section: Tool Count, Mirror Latency, Lockfile, Version -->
+    <!-- Right Section: Scope, Tool Count, Mirror Latency, Lockfile, Version -->
     <div class="status-right">
+      <!-- Active Scope Switcher -->
+      <button
+        class="status-btn"
+        id="btn-status-scope"
+        :title="activeScope === 'user' ? '当前作用域: 用户全局 (~/.unirtm) • 点击切换为工作区 (Alt+S)' : '当前作用域: 工作区 (.unirtm.toml) • 点击切换为用户全局 (Alt+S)'"
+        @click="toggleScope(router)"
+      >
+        <span class="btn-icon">
+          <TechIcon :id="activeScope === 'user' ? 'workbench:settings' : 'workbench:folder'" :size="13" :colored="false" />
+        </span>
+        <span>{{ activeScope === 'user' ? (isZh ? '用户全局' : 'User') : (isZh ? '工作区' : 'Workspace') }}</span>
+      </button>
+
       <!-- Active Toolchain Count -->
       <button
         class="status-btn"
@@ -79,7 +92,12 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { useRouter } from "vue-router";
 import TechIcon from "../common/TechIcon.vue";
+import { useAppScope } from "../../composables/useAppScope";
+
+const router = useRouter();
+const { activeScope, toggleScope } = useAppScope();
 
 const props = defineProps<{
   activeTaskName?: string;

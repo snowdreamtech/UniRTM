@@ -6,12 +6,17 @@
         <img src="/logo.png" alt="UniRTM" class="titlebar-logo" />
         <span class="brand-title">UniRTM</span>
       </div>
-      <div class="workspace-pill" :title="'Current Workspace: /UniRTM'">
+      <div
+        class="workspace-pill"
+        :title="activeScope === 'user' ? '用户全局模式 (~/.unirtm) • 点击切换 (Alt+S)' : '当前工作区: /UniRTM (dev) • 点击切换 (Alt+S)'"
+        style="cursor: pointer;"
+        @click="toggleScope(router)"
+      >
         <span class="folder-icon">
-          <TechIcon id="workbench:folder" :size="16" />
+          <TechIcon :id="activeScope === 'user' ? 'workbench:settings' : 'workbench:folder'" :size="16" />
         </span>
-        <span class="workspace-name">UniRTM</span>
-        <span class="branch-tag">dev</span>
+        <span class="workspace-name">{{ activeScope === 'user' ? '用户全局' : 'UniRTM' }}</span>
+        <span class="branch-tag" :class="activeScope">{{ activeScope === 'user' ? 'global' : 'dev' }}</span>
       </div>
     </div>
 
@@ -76,8 +81,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
 import { SUPPORTED_LANGUAGES, t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
+import { useAppScope } from "../../composables/useAppScope";
+
+const router = useRouter();
+const { activeScope, toggleScope } = useAppScope();
 
 const props = defineProps<{
   currentLang: string;

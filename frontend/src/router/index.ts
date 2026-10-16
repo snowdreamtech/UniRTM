@@ -61,4 +61,29 @@ const router = createRouter({
   routes,
 });
 
+import { useAppScope } from "../composables/useAppScope";
+
+router.beforeEach((to, _from, next) => {
+  const { activeScope } = useAppScope();
+  const toScope = to.query.scope;
+  if (!toScope || (toScope !== "user" && toScope !== "workspace")) {
+    next({
+      name: to.name || undefined,
+      path: to.name ? undefined : to.path,
+      params: to.params,
+      query: {
+        ...to.query,
+        scope: activeScope.value || "workspace",
+      },
+      hash: to.hash,
+      replace: true,
+    });
+    return;
+  }
+  if (activeScope.value !== toScope) {
+    activeScope.value = toScope;
+  }
+  next();
+});
+
 export default router;

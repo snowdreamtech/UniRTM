@@ -31,41 +31,20 @@
       </div>
     </div>
 
-    <!-- Scope Selection Bar (User Scope vs Workspace Scope) -->
+    <!-- Current Scope Context Banner -->
     <div class="scope-selection-bar glass-card" id="runtimes-scope-bar">
-      <div class="scope-tabs-bar">
-        <button
-          class="scope-tab-btn"
-          :class="{ active: currentScope === 'workspace' }"
-          @click="currentScope = 'workspace'"
-          id="btn-scope-workspace"
-        >
-          <span class="scope-icon">
-            <TechIcon id="workbench:tools" :size="14" :colored="false" />
-          </span>
-          <span class="scope-title">{{ t("runtimes.scope_workspace") || "工作区" }}</span>
-        </button>
-
-        <button
-          class="scope-tab-btn"
-          :class="{ active: currentScope === 'user' }"
-          @click="currentScope = 'user'"
-          id="btn-scope-user"
-        >
-          <span class="scope-icon">
-            <TechIcon id="workbench:settings" :size="14" :colored="false" />
-          </span>
-          <span class="scope-title">{{ t("runtimes.scope_user") || "用户" }}</span>
-        </button>
+      <div class="scope-context-pill">
+        <span class="scope-badge" :class="currentScope">
+          <TechIcon :id="currentScope === 'user' ? 'workbench:settings' : 'workbench:folder'" :size="13" :colored="false" />
+          {{ currentScope === 'user' ? (t("runtimes.scope_user") || "用户全局环境") : (t("runtimes.scope_workspace") || "工作区项目环境") }}
+        </span>
+        <span class="scope-hint-text">
+          {{ currentScope === 'user' ? (t("runtimes.scope_user_desc") || "配置当前用户所有未指定工作区时的默认兜底环境 (~/.unirtm)") : (t("runtimes.scope_workspace_desc") || "锁定当前工作区工具版本，团队协作检出即生效 (.unirtm.toml)") }}
+        </span>
       </div>
-
-      <div class="scope-hint-text">
-        <span v-if="currentScope === 'user'">
-          {{ t("runtimes.scope_user_desc") || "配置当前用户所有未指定工作区时的默认兜底环境" }}
-        </span>
-        <span v-else>
-          {{ t("runtimes.scope_workspace_desc") || "锁定当前工作区语言版本，团队协作检出即生效" }}
-        </span>
+      <div class="scope-context-config font-mono" :title="currentScope === 'user' ? '~/.unirtm' : '.unirtm.toml'">
+        <span class="file-icon">📄</span>
+        <span>{{ currentScope === 'user' ? '~/.unirtm' : '.unirtm.toml' }}</span>
       </div>
     </div>
 
@@ -1856,46 +1835,44 @@ onBeforeUnmount(() => {
   padding: 0.65rem 1rem;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 12px;
+  border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  gap: 1rem;
 }
 
-/* Scope Tabs (Settings unified style) */
-.scope-tabs-bar {
+.scope-context-pill {
   display: flex;
   align-items: center;
-  background: var(--input-bg);
-  padding: 3px;
-  border-radius: 6px;
-  border: 1px solid var(--card-border);
-  gap: 4px;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
-.scope-tab-btn {
-  display: flex;
+.scope-badge {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  border: 1px solid transparent;
-  border-radius: 5px;
-  background: transparent;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: rgba(2, 132, 199, 0.12);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(2, 132, 199, 0.25);
+}
+
+.scope-badge.user {
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+  border-color: rgba(168, 85, 247, 0.25);
+}
+
+.scope-context-config {
+  font-size: 0.72rem;
   color: var(--text-muted);
-  font-size: 0.86rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.scope-tab-btn:hover {
-  color: var(--text-main);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.scope-tab-btn.active {
-  color: var(--text-main);
-  background: var(--card-bg);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--card-border-active);
+  opacity: 0.8;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .scope-hint-text {

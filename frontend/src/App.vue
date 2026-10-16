@@ -38,11 +38,16 @@
       <main class="workbench-canvas" id="workbench-canvas">
         <!-- Canvas Breadcrumbs Navigation Bar -->
         <div class="canvas-breadcrumb-bar">
-          <span class="bc-item">UniRTM</span>
-          <span class="bc-separator">/</span>
-          <span class="bc-item active">{{ currentTabLabel }}</span>
-          <span v-if="activeSubItem" class="bc-separator">/</span>
-          <span v-if="activeSubItem" class="bc-item sub font-mono">{{ activeSubItem }}</span>
+          <div class="breadcrumb-left">
+            <span class="bc-item">UniRTM</span>
+            <span class="bc-separator">/</span>
+            <span class="bc-item active">{{ currentTabLabel }}</span>
+            <span v-if="activeSubItem" class="bc-separator">/</span>
+            <span v-if="activeSubItem" class="bc-item sub font-mono">{{ activeSubItem }}</span>
+          </div>
+          <div class="breadcrumb-right">
+            <ScopeSwitcher />
+          </div>
         </div>
 
         <!-- Canvas Views -->
@@ -54,7 +59,7 @@
                 :key="currentTab"
                 :appConfig="appConfig"
                 :activeSubItem="activeSubItem"
-                :initialScope="settingsScope"
+                :initialScope="activeScope"
                 :activeCategory="activeSubItem"
                 @select-tab="handleDirectSelectTab"
                 @log-event="addLog"
@@ -105,8 +110,11 @@ import { t, selectedLangSetting, setLanguage } from "./i18n";
 import { useTheme } from "./composables/useTheme";
 import { useToast } from "./composables/useToast";
 import { useToolUpdates } from "./composables/useToolUpdates";
+import { useAppScope } from "./composables/useAppScope";
+import ScopeSwitcher from "./components/common/ScopeSwitcher.vue";
 
 const { checkUpdates } = useToolUpdates();
+const { activeScope, syncFromRoute } = useAppScope();
 
 export interface AppConfig {
   language?: string;
@@ -142,7 +150,6 @@ const currentTab = computed<string>(() => (route.name as string) || "dashboard")
 const activeSubItem = ref<string>("");
 const isSidebarOpen = ref<boolean>(true);
 const isDrawerOpen = ref<boolean>(getInitialDrawerOpen());
-const settingsScope = ref<"user" | "workspace">("user");
 
 watch(isDrawerOpen, (newVal) => {
   if (typeof localStorage !== "undefined") {
@@ -173,7 +180,7 @@ watch(
   () => route.query.scope,
   (scope) => {
     if (scope === "user" || scope === "workspace") {
-      settingsScope.value = scope;
+      syncFromRoute(route);
     }
   },
   { immediate: true }
@@ -269,15 +276,14 @@ function toggleDrawer() {
 
 function openSettings(scope?: "user" | "workspace") {
   if (scope) {
-    settingsScope.value = scope;
+    activeScope.value = scope;
   }
   isSidebarOpen.value = true;
+  const targetScope = scope || activeScope.value;
   if (route.name === "settings") {
-    if (scope) {
-      router.replace({ name: "settings", params: route.params, query: { scope } }).catch(() => {});
-    }
+    router.replace({ name: "settings", params: route.params, query: { ...route.query, scope: targetScope } }).catch(() => {});
   } else {
-    router.push({ name: "settings", query: scope ? { scope } : {} }).catch(() => {});
+    router.push({ name: "settings", query: { ...route.query, scope: targetScope } }).catch(() => {});
   }
 }
 
@@ -479,9 +485,10 @@ onUnmounted(() => {
 .canvas-breadcrumb-bar {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  height: 28px;
-  min-height: 28px;
+  justify-content: space-between;
+  gap: 0.6rem;
+  height: 32px;
+  min-height: 32px;
   background: var(--card-bg);
   border-bottom: 1px solid var(--card-border);
   padding: 0 1rem;
@@ -489,6 +496,21 @@ onUnmounted(() => {
   color: var(--text-muted);
   user-select: none;
   -webkit-user-select: none;
+}
+
+.breadcrumb-left {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breadcrumb-right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .bc-item {
@@ -510,7 +532,7 @@ onUnmounted(() => {
 
 .canvas-content-wrapper {
   flex: 1;
-  height: calc(100% - 28px);
+  height: calc(100% - 32px);
   overflow-y: auto;
   scrollbar-gutter: stable;
   position: relative;

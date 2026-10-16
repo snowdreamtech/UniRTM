@@ -15,39 +15,15 @@
         <button v-if="searchQuery" class="clear-search-btn" @click="searchQuery = ''" title="清除">✕</button>
       </div>
 
-      <!-- Scope Switcher Tabs: User vs Workspace -->
+      <!-- Scope Context Info: User vs Workspace -->
       <div class="scope-switcher-group">
-        <div class="scope-tabs-bar">
-          <button
-            class="scope-tab-btn"
-            :class="{ active: activeScope === 'workspace' }"
-            @click="switchScope('workspace')"
-            id="btn-scope-workspace"
-            :title="configData?.workspace?.path || './.unirtm.toml'"
-          >
-            <span class="scope-icon">
-              <TechIcon id="workbench:tools" :size="14" :colored="false" />
-            </span>
-            <span class="scope-title">{{ t("settings.scope_workspace") || "工作区" }}</span>
-          </button>
-
-          <button
-            class="scope-tab-btn"
-            :class="{ active: activeScope === 'user' }"
-            @click="switchScope('user')"
-            id="btn-scope-user"
-            :title="configData?.user?.path || '~/.config/unirtm/unirtm.toml'"
-          >
-            <span class="scope-icon">
-              <TechIcon id="workbench:settings" :size="14" :colored="false" />
-            </span>
-            <span class="scope-title">{{ t("settings.scope_user") || "用户" }}</span>
-          </button>
-        </div>
         <span
           class="active-scope-badge font-mono"
           :title="activeScope === 'user' ? (configData?.user?.path || '~/.config/unirtm/unirtm.toml') : (configData?.workspace?.path || './.unirtm.toml')"
         >
+          <span style="font-weight: 600; color: var(--accent-cyan); margin-right: 6px;">
+            [{{ activeScope === 'user' ? (t('settings.scope_user') || '用户全局配置') : (t('settings.scope_workspace') || '工作区配置') }}]
+          </span>
           {{ activeScope === 'user' ? (configData?.user?.path || '~/.config/unirtm/unirtm.toml') : (configData?.workspace?.path || './.unirtm.toml') }}
         </span>
       </div>
@@ -939,11 +915,13 @@ import { t, selectedLangSetting, setLanguage, SUPPORTED_LANGUAGES } from "../i18
 import { useTheme } from "../composables/useTheme";
 import { useThemeManager } from "../composables/useThemeManager";
 import { useToast } from "../composables/useToast";
+import { useAppScope } from "../composables/useAppScope";
 import CustomSelect from "../components/CustomSelect.vue";
 import TechIcon from "../components/common/TechIcon.vue";
 
 const router = useRouter();
 const { showToast } = useToast();
+const { activeScope, setScope } = useAppScope();
 
 function navigateToMarketplace(tab = "themes") {
   router.push({ path: "/marketplace", query: { tab } });
@@ -971,11 +949,15 @@ const {
 } = useThemeManager();
 
 // State
-const activeScope = ref<"user" | "workspace">(props.initialScope || "workspace");
 const searchQuery = ref("");
 const activeCategory = ref(props.activeCategory || "general");
 const showRawTomlModal = ref(false);
 const isCopied = ref(false);
+
+watch(activeScope, () => {
+  syncFieldsFromConfig();
+  loadNetworkStatus();
+});
 
 watch(
   () => props.activeCategory,
@@ -1604,7 +1586,7 @@ function scrollToCategory(catId: string) {
 }
 
 function switchScope(scope: "user" | "workspace", scrollToId?: string) {
-  activeScope.value = scope;
+  setScope(scope, router);
   syncFieldsFromConfig();
   loadNetworkStatus();
   if (scrollToId) {

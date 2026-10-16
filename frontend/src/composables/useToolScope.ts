@@ -1,16 +1,10 @@
-import { ref } from "vue";
+// Copyright (c) 2026 SnowdreamTech. All rights reserved.
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-export type ToolScope = "workspace" | "user";
-
-const activeScope = ref<ToolScope>("workspace");
-
-export function useToolScope() {
-  function setScope(scope: ToolScope) {
-    activeScope.value = scope;
-  }
-
-  return {
-    activeScope,
-    setScope,
-  };
-}
+export {
+  useAppScope,
+  useAppScope as useToolScope,
+  type AppScope,
+  type AppScope as ToolScope,
+  SCOPE_STORAGE_KEY,
+} from "./useAppScope";
