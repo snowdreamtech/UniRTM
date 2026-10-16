@@ -141,8 +141,16 @@ export default defineConfig({
                     continue;
                   }
                   if (inTools && tr && !tr.startsWith("#")) {
-                    const m = tr.match(/^"?([^"=\s]+)"?\s*=\s*"([^"]+)"/);
-                    if (m) res[m[1]] = m[2];
+                    const eqIdx = tr.indexOf("=");
+                    if (eqIdx !== -1) {
+                      const rawKey = tr.slice(0, eqIdx).trim();
+                      const rawVal = tr.slice(eqIdx + 1).trim();
+                      const key = rawKey.replace(/^["']|["']$/g, "").trim();
+                      const val = rawVal.replace(/^["']|["']$/g, "").trim();
+                      if (key && val) {
+                        res[key] = val;
+                      }
+                    }
                   }
                 }
               } catch {}
@@ -227,11 +235,11 @@ export default defineConfig({
               go: { name: "Go", desc: "Go programming language (GVM superset)", hp: "https://go.dev", defaultVer: "1.27.2" },
               python: { name: "Python", desc: "Python language interpreter (Pyenv superset)", hp: "https://python.org", defaultVer: "3.14.7" },
               rust: { name: "Rust", desc: "Rust toolchain & cargo build system", hp: "https://rust-lang.org", defaultVer: "1.85.0" },
+              java: { name: "Java", desc: "OpenJDK / Java runtime environment", hp: "https://openjdk.org", defaultVer: "21.0.2" },
+              ruby: { name: "Ruby", desc: "Dynamic open source programming language with a focus on simplicity", hp: "https://ruby-lang.org", defaultVer: "3.4.1" },
               bun: { name: "Bun", desc: "Incredibly fast all-in-one JavaScript & TypeScript toolkit", hp: "https://bun.sh", defaultVer: "1.2.4" },
               deno: { name: "Deno", desc: "Next-generation JavaScript and TypeScript runtime", hp: "https://deno.com", defaultVer: "2.1.9" },
-              java: { name: "Java", desc: "OpenJDK / Java runtime environment", hp: "https://openjdk.org", defaultVer: "21.0.2" },
               zig: { name: "Zig", desc: "General-purpose programming language and toolchain", hp: "https://ziglang.org", defaultVer: "0.13.0" },
-              ruby: { name: "Ruby", desc: "Dynamic open source programming language with a focus on simplicity", hp: "https://ruby-lang.org", defaultVer: "3.4.1" },
               php: { name: "PHP", desc: "Popular general-purpose scripting language suited for web development", hp: "https://php.net", defaultVer: "8.4.3" },
               dotnet: { name: "Dotnet", desc: ".NET Developer Platform and SDK", hp: "https://dotnet.microsoft.com", defaultVer: "9.0.100" },
               elixir: { name: "Elixir", desc: "Dynamic functional language designed for building scalable applications", hp: "https://elixir-lang.org", defaultVer: "1.18.1" },
@@ -241,33 +249,35 @@ export default defineConfig({
               swift: { name: "Swift", desc: "General-purpose programming language developed by Apple", hp: "https://swift.org", defaultVer: "6.0.3" },
             };
 
-            // Only recognize programming language environments — filter out ecosystem/dev tools like github:*, npm:*, pipx:*, go:*, tools with slash, etc.
-            const isLanguageRuntime = (id: string) => {
-              if (id.includes(":") || id.includes("/")) return false;
-              return id in knownLanguageRuntimes;
-            };
+            // 1. Core languages always placed at the very top
+            const coreLangIds = ["node", "go", "python", "rust", "java", "ruby"];
 
-            const coreLangIds = ["node", "go", "python", "rust"];
-            const dynamicLangIds = [...Object.keys(wsTools), ...Object.keys(userTools)].filter(isLanguageRuntime);
-            const allToolIds = new Set([...coreLangIds, ...dynamicLangIds]);
-            const runtimes: any[] = [];
+            // 2. All other configured tools from workspace & user TOML, keeping original IDs & prefixes intact
+            const otherToolIds = Array.from(
+              new Set([...Object.keys(wsTools), ...Object.keys(userTools)])
+            )
+              .filter((id) => !coreLangIds.includes(id))
+              .sort((a, b) => a.localeCompare(b));
+
+            const allToolIds = [...coreLangIds, ...otherToolIds];
+            const toolsList: any[] = [];
             for (const id of allToolIds) {
               const meta = knownLanguageRuntimes[id] || {
-                name: id.charAt(0).toUpperCase() + id.slice(1),
-                desc: `${id} runtime environment`,
+                name: id,
+                desc: "Unified toolchain managed via UniRTM",
                 hp: "",
                 defaultVer: "",
               };
-              runtimes.push(getToolItem(id, meta.name, meta.desc, meta.hp, meta.defaultVer, []));
+              toolsList.push(getToolItem(id, meta.name, meta.desc, meta.hp, meta.defaultVer, []));
             }
 
-            const totalInstalled = runtimes.reduce((acc, r) => acc + r.installed_versions.length, 0);
+            const totalInstalled = toolsList.reduce((acc, r) => acc + r.installed_versions.length, 0);
 
             res.setHeader("Content-Type", "application/json");
             res.end(
               JSON.stringify({
-                tools: runtimes,
-                runtimes,
+                tools: toolsList,
+                runtimes: toolsList,
                 total_installed: totalInstalled,
                 detected_legacies,
               })
