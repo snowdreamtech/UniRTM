@@ -702,11 +702,36 @@ export default defineConfig({
                 }
               }
 
+              // Scan locally installed versions from ~/.local/share/unirtm/installs
+              const installsRoot = path.join(os.homedir(), ".local", "share", "unirtm", "installs");
+              if (fs.existsSync(installsRoot)) {
+                const dirCands = [
+                  toolKey,
+                  bare,
+                  toolKey.replace(/[:/@]/g, "-"),
+                  toolKey.replace(/^github:/, "github-").replace(/[:/@]/g, "-"),
+                  toolKey.replace(/^npm:/, "npm-").replace(/[:/@]/g, "-"),
+                  toolKey.replace(/^go:/, "go-pkg-").replace(/[:/@]/g, "-"),
+                  toolKey.replace(/^pipx:/, "pipx-").replace(/[:/@]/g, "-"),
+                ];
+                for (const d of dirCands) {
+                  const dir = path.join(installsRoot, d);
+                  if (fs.existsSync(dir)) {
+                    try {
+                      const list = fs.readdirSync(dir).filter((f: string) => !f.startsWith(".") && fs.statSync(path.join(dir, f)).isDirectory());
+                      for (const v of list) {
+                        if (!candidates.includes(v)) candidates.push(v);
+                      }
+                    } catch {}
+                  }
+                }
+              }
+
               if (candidates.length === 0) {
                 return curVer;
               }
 
-              candidates.sort((a, b) => (semverGt(a, b) ? -1 : semverGt(b, a) ? 1 : 0));
+              candidates.sort((a: string, b: string) => (semverGt(a, b) ? -1 : semverGt(b, a) ? 1 : 0));
               return candidates[0] || curVer;
             };
 

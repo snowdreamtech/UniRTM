@@ -26,10 +26,21 @@ export function useToolUpdates() {
   const updatableToolIds = computed(() => {
     const ids = new Set<string>();
     for (const r of updatableList.value) {
-      if (r.id) ids.add(r.id);
-      if (r.name) ids.add(r.name);
-      if (r.id && r.id.includes(":")) {
-        ids.add(r.id.split(":").slice(1).join(":"));
+      const keys = [r.id, r.name].filter(Boolean);
+      for (const k of keys) {
+        ids.add(k);
+        if (k.includes(":")) {
+          const bare = k.split(":").slice(1).join(":");
+          ids.add(bare);
+          if (bare.includes("/")) {
+            const short = bare.split("/").pop();
+            if (short) ids.add(short);
+          }
+        }
+        if (k.includes("/")) {
+          const short = k.split("/").pop();
+          if (short) ids.add(short);
+        }
       }
     }
     return ids;
@@ -37,7 +48,76 @@ export function useToolUpdates() {
 
   function hasUpdate(toolId: string): boolean {
     if (!toolId) return false;
-    return updatableToolIds.value.has(toolId);
+    if (updatableToolIds.value.has(toolId)) return true;
+    if (toolId.includes(":")) {
+      const bare = toolId.split(":").slice(1).join(":");
+      if (updatableToolIds.value.has(bare)) return true;
+      if (bare.includes("/")) {
+        const short = bare.split("/").pop();
+        if (short && updatableToolIds.value.has(short)) return true;
+      }
+    }
+    if (toolId.includes("/")) {
+      const short = toolId.split("/").pop();
+      if (short && updatableToolIds.value.has(short)) return true;
+    }
+    return false;
+  }
+
+  function syncFromToolsList(tools: any[]) {
+    if (!tools || !Array.isArray(tools)) return;
+    const currentResults = [...updateResults.value];
+    let changed = false;
+
+    const semverGt = (a: string, b: string) => {
+      const pa = a.replace(/^[vV]+/, "").split(".").map((n) => parseInt(n, 10));
+      const pb = b.replace(/^[vV]+/, "").split(".").map((n) => parseInt(n, 10));
+      for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+        const na = isNaN(pa[i]) ? 0 : pa[i];
+        const nb = isNaN(pb[i]) ? 0 : pb[i];
+        if (na !== nb) return na > nb;
+      }
+      return false;
+    };
+
+    for (const tool of tools) {
+      if (!tool || tool.pinned) continue;
+      const cur = tool.active_version || tool.global_version;
+      const installed = tool.installed_versions;
+      if (!cur || !installed || !Array.isArray(installed) || installed.length === 0) continue;
+
+      const higherInstalled = installed.filter((v: string) => v && semverGt(v, cur));
+      if (higherInstalled.length > 0) {
+        higherInstalled.sort((a: string, b: string) => (semverGt(a, b) ? -1 : semverGt(b, a) ? 1 : 0));
+        const bestVer = higherInstalled[0];
+        const toolId = tool.id || tool.name;
+        const existingIdx = currentResults.findIndex((r) => r.id === toolId || r.name === toolId);
+        if (existingIdx !== -1) {
+          if (!currentResults[existingIdx].has_update) {
+            currentResults[existingIdx] = {
+              ...currentResults[existingIdx],
+              has_update: true,
+              latest_version: currentResults[existingIdx].latest_version || bestVer,
+            };
+            changed = true;
+          }
+        } else {
+          currentResults.push({
+            id: toolId,
+            name: tool.name || toolId,
+            current_version: cur,
+            latest_version: bestVer,
+            has_update: true,
+            pinned: false,
+          });
+          changed = true;
+        }
+      }
+    }
+
+    if (changed) {
+      updateResults.value = currentResults;
+    }
   }
 
   async function checkUpdates(isGlobal: boolean = false): Promise<ToolUpdateItem[]> {
@@ -92,6 +172,7 @@ export function useToolUpdates() {
     updatableCount,
     updatableToolIds,
     hasUpdate,
+    syncFromToolsList,
     checkUpdates,
     markToolUpdated,
     setUpdateResults,

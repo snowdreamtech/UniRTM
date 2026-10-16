@@ -153,7 +153,7 @@ import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 import { useToolUpdates } from "../../composables/useToolUpdates";
 
-const { hasUpdate } = useToolUpdates();
+const { hasUpdate, syncFromToolsList } = useToolUpdates();
 
 const props = defineProps<{
   isOpen: boolean;
@@ -278,6 +278,7 @@ onMounted(async () => {
       const data = await res.json();
       const list = data.tools || data.runtimes;
       if (list && Array.isArray(list)) {
+        syncFromToolsList(list);
         const items = [];
         for (const rt of list) {
           const ver =

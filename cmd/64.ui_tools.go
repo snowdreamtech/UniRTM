@@ -258,6 +258,51 @@ func handleGetToolsStatus(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func getLocalInstalledVersions(tool string) []string {
+	installsRoot := filepath.Join(env.GetDataDir(), "installs")
+	bare := tool
+	if strings.Contains(tool, ":") {
+		bare = strings.SplitN(tool, ":", 2)[1]
+	}
+
+	replaceSpecial := func(s string) string {
+		s = strings.ReplaceAll(s, ":", "-")
+		s = strings.ReplaceAll(s, "/", "-")
+		s = strings.ReplaceAll(s, "@", "-")
+		return s
+	}
+
+	candDirs := []string{
+		tool,
+		bare,
+		replaceSpecial(tool),
+		replaceSpecial("github-" + bare),
+		replaceSpecial("npm-" + bare),
+		replaceSpecial("go-pkg-" + bare),
+		replaceSpecial("pipx-" + bare),
+	}
+
+	var res []string
+	seen := make(map[string]bool)
+	for _, d := range candDirs {
+		dir := filepath.Join(installsRoot, d)
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, entry := range entries {
+			if entry.IsDir() && !strings.HasPrefix(entry.Name(), ".") {
+				v := entry.Name()
+				if !seen[v] {
+					seen[v] = true
+					res = append(res, v)
+				}
+			}
+		}
+	}
+	return res
+}
+
 func getLockfileVersions(tool string) []string {
 	lockPath := env.GetLockFilePath()
 	lf, err := lockfile.Load(lockPath)
@@ -358,6 +403,10 @@ func handleGetToolsRemote(w http.ResponseWriter, r *http.Request) {
 
 func getFallbackRemoteVersions(tool string) []string {
 	switch strings.ToLower(tool) {
+	case "ruff", "github:astral-sh/ruff", "astral-sh/ruff":
+		return []string{
+			"0.16.10", "0.16.9", "0.16.8", "0.16.7", "0.16.6",
+		}
 	case "node", "nodejs":
 		return []string{
 			"23.9.0", "23.8.0", "23.7.0", "23.6.0", "23.0.0",
@@ -763,6 +812,10 @@ func handleCheckToolsUpdates(w http.ResponseWriter, r *http.Request) {
 		}
 		if len(candidateVersions) == 0 {
 			candidateVersions = getFallbackRemoteVersions(name)
+		}
+		// Also scan locally installed versions to recognize local upgrade opportunities
+		for _, v := range getLocalInstalledVersions(name) {
+			candidateVersions = append(candidateVersions, v)
 		}
 
 		sort.Slice(candidateVersions, func(i, j int) bool {

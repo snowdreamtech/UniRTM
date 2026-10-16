@@ -83,4 +83,55 @@ describe("useToolUpdates", () => {
     expect(hasUpdate("github:astral-sh/ruff")).toBe(false);
     expect(updatableCount.value).toBe(0);
   });
+
+  it("should match tool updates by full ID, repo name, and short name", () => {
+    setUpdateResults([
+      {
+        id: "github:astral-sh/ruff",
+        name: "github:astral-sh/ruff",
+        current_version: "0.16.6",
+        latest_version: "0.16.10",
+        has_update: true,
+        pinned: false,
+      },
+    ]);
+
+    expect(hasUpdate("github:astral-sh/ruff")).toBe(true);
+    expect(hasUpdate("astral-sh/ruff")).toBe(true);
+    expect(hasUpdate("ruff")).toBe(true);
+    expect(hasUpdate("other-tool")).toBe(false);
+  });
+
+  it("should sync local tool updates when a higher version is already installed", () => {
+    const { syncFromToolsList } = useToolUpdates();
+    syncFromToolsList([
+      {
+        id: "github:astral-sh/ruff",
+        name: "github:astral-sh/ruff",
+        active_version: "0.16.6",
+        installed_versions: ["0.16.10", "0.16.6"],
+        pinned: false,
+      },
+      {
+        id: "github:checkmake/checkmake",
+        name: "checkmake",
+        active_version: "v0.3.2",
+        installed_versions: ["v0.3.2"],
+        pinned: false,
+      },
+      {
+        id: "node",
+        name: "Node.js",
+        active_version: "26.8.1",
+        installed_versions: ["26.8.1", "24.0.0"],
+        pinned: false,
+      },
+    ]);
+
+    expect(hasUpdate("github:astral-sh/ruff")).toBe(true);
+    expect(hasUpdate("ruff")).toBe(true);
+    expect(hasUpdate("github:checkmake/checkmake")).toBe(false);
+    expect(hasUpdate("node")).toBe(false);
+    expect(updatableCount.value).toBe(1);
+  });
 });

@@ -739,6 +739,7 @@ const {
   checkUpdates,
   markToolUpdated,
   updatableCount,
+  syncFromToolsList,
 } = useToolUpdates();
 
 export interface RuntimeItem {
@@ -1302,6 +1303,7 @@ async function fetchStatus() {
         runtimes.value = toolsList;
         totalInstalled.value = data.total_installed || 0;
         detectedLegacies.value = data.detected_legacies || [];
+        syncFromToolsList(toolsList);
       }
     }
   } catch (err: any) {
