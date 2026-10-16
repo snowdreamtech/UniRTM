@@ -225,6 +225,63 @@
       </div>
     </div>
 
+    <!-- Switch Version Modal -->
+    <div
+      v-if="isSwitchModalOpen && switchModalRuntime"
+      class="modal-backdrop switch-modal-backdrop"
+      @click.self="closeSwitchVersionModal"
+      @keydown.esc="closeSwitchVersionModal"
+    >
+      <div class="modal-dialog glass-card switch-modal-dialog" role="dialog" aria-modal="true">
+        <div class="modal-header">
+          <div class="modal-title-row">
+            <span class="modal-icon">
+              <TechIcon :id="switchModalRuntime.id" :size="24" :colored="true" />
+            </span>
+            <div>
+              <h3 class="modal-title">
+                {{ formatToolTitle(switchModalRuntime.name) }} · {{ t("runtimes.switch_version") || "切换版本" }}
+              </h3>
+              <p class="modal-desc">
+                {{ currentScope === 'user' ? '选择生效的用户全局默认版本' : '选择当前工作区生效的版本' }}
+              </p>
+            </div>
+          </div>
+          <button class="modal-close-btn" @click="closeSwitchVersionModal" title="关闭">✕</button>
+        </div>
+
+        <div class="switch-modal-body">
+          <div
+            v-if="switchModalRuntime.installed_versions && switchModalRuntime.installed_versions.length > 0"
+            class="switch-pills-container"
+          >
+            <button
+              v-for="ver in switchModalRuntime.installed_versions"
+              :key="ver"
+              class="switch-ver-pill font-mono"
+              :class="{
+                'is-active': ver === getCurrentVersion(switchModalRuntime),
+                'is-inactive': ver !== getCurrentVersion(switchModalRuntime),
+              }"
+              :title="ver === getCurrentVersion(switchModalRuntime) ? '当前生效中' : `点击切换至 ${formatVersion(ver)}`"
+              @click="handleSelectVersionAndClose(switchModalRuntime, ver)"
+            >
+              <span v-if="ver === getCurrentVersion(switchModalRuntime)" class="pill-active-dot">●</span>
+              <span class="pill-ver-text">{{ formatVersion(ver) }}</span>
+              <span v-if="ver === getCurrentVersion(switchModalRuntime)" class="pill-active-tag">生效中</span>
+            </button>
+          </div>
+
+          <div v-else class="switch-empty-box">
+            <p class="switch-empty-tip">本地尚未安装该工具的任何版本</p>
+            <button class="switch-install-now-btn" @click="openInstallFromSwitch(switchModalRuntime)">
+              + 安装新版本
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Remote Versions Modal -->
     <div v-if="isModalOpen" class="modal-backdrop" @click.self="closeRemoteModal">
       <div class="modal-dialog glass-card" role="dialog" aria-modal="true">
@@ -1191,6 +1248,16 @@ function closeSwitchVersionModal() {
   switchModalRuntime.value = null;
 }
 
+function handleSelectVersionAndClose(rt: RuntimeItem, ver: string) {
+  quickSwitch(rt.id, ver, currentScope.value === "user");
+  closeSwitchVersionModal();
+}
+
+function openInstallFromSwitch(rt: RuntimeItem) {
+  closeSwitchVersionModal();
+  openRemoteModal(rt);
+}
+
 
 
 
@@ -1437,13 +1504,6 @@ async function quickSwitch(toolId: string, ver: string, targetGlobal?: boolean) 
   }
 }
 
-
-function handleSelectChange(toolId: string, evt: Event) {
-  const select = evt.target as HTMLSelectElement;
-  if (select && select.value) {
-    quickSwitch(toolId, select.value);
-  }
-}
 
 async function migrateLegacy() {
   migrating.value = true;
@@ -1707,16 +1767,25 @@ async function runBatchUpdate() {
   }
 }
 
+function handleGlobalKeyDown(e: KeyboardEvent) {
+  if (e.key === "Escape" && isSwitchModalOpen.value) {
+    closeSwitchVersionModal();
+  }
+}
+
 onMounted(() => {
   fetchStatus();
+  window.addEventListener("keydown", handleGlobalKeyDown);
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener("keydown", handleGlobalKeyDown);
   if (remoteModalAbortController) {
     remoteModalAbortController.abort();
     remoteModalAbortController = null;
   }
 });
+
 </script>
 
 <style scoped>
@@ -2501,6 +2570,117 @@ onBeforeUnmount(() => {
 .modal-close-btn:hover {
   color: var(--text-main);
 }
+
+/* Switch Version Modal */
+.switch-modal-dialog {
+  max-width: 440px;
+  width: 90%;
+  border-radius: 14px;
+  padding: 1.25rem 1.4rem;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+
+.switch-modal-body {
+  padding-top: 0.85rem;
+}
+
+.switch-pills-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 0.25rem 0.15rem;
+}
+
+.switch-ver-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+/* 当前生效版本：绿色高亮与描边 */
+.switch-ver-pill.is-active {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: #10b981;
+  color: #10b981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+  font-weight: 700;
+}
+
+[data-theme="dark"] .switch-ver-pill.is-active {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: #34d399;
+  color: #34d399;
+  box-shadow: 0 0 14px rgba(52, 211, 153, 0.3);
+}
+
+.pill-active-dot {
+  font-size: 0.65rem;
+  line-height: 1;
+}
+
+.pill-active-tag {
+  font-size: 0.7rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.2);
+  margin-left: 0.2rem;
+}
+
+/* 未生效版本：灰色，悬停变色 */
+.switch-ver-pill.is-inactive {
+  background: var(--input-bg);
+  border-color: var(--card-border);
+  color: var(--text-muted);
+}
+
+.switch-ver-pill.is-inactive:hover {
+  background: rgba(2, 132, 199, 0.1);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  transform: translateY(-1px);
+}
+
+.switch-empty-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1.5rem 0.5rem;
+  text-align: center;
+}
+
+.switch-empty-tip {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.switch-install-now-btn {
+  padding: 0.45rem 1rem;
+  border-radius: 6px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #10b981;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.switch-install-now-btn:hover {
+  background: #10b981;
+  color: #fff;
+}
+
 
 /* Modal Scope Picker */
 .modal-scope-picker {
