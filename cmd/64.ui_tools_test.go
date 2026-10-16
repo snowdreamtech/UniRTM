@@ -17,36 +17,37 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUIRuntimesAPI(t *testing.T) {
+func TestUIToolsAPI(t *testing.T) {
 	mockFS := fstest.MapFS{
 		"index.html": &fstest.MapFile{Data: []byte("<html>UniRTM Workbench</html>")},
 	}
 	mux := setupUIMux(mockFS)
 
-	// 1. GET /api/runtimes/status
-	req := httptest.NewRequest("GET", "/api/runtimes/status", nil)
+	// 1. GET /api/tools/status (and verify /api/runtimes/status compatibility)
+	req := httptest.NewRequest("GET", "/api/tools/status", nil)
 	rr := httptest.NewRecorder()
 	mux.ServeHTTP(rr, req)
 
 	require.Equal(t, http.StatusOK, rr.Code, rr.Body.String())
 
-	var statusResp RuntimesStatusResponse
+	var statusResp ToolsStatusResponse
 	err := json.Unmarshal(rr.Body.Bytes(), &statusResp)
 	require.NoError(t, err)
+	assert.NotEmpty(t, statusResp.Tools)
 	assert.NotEmpty(t, statusResp.Runtimes)
 
 	// Find node in the list
-	var nodeInfo *RuntimeInfo
-	for i := range statusResp.Runtimes {
-		if statusResp.Runtimes[i].ID == "node" {
-			nodeInfo = &statusResp.Runtimes[i]
+	var nodeInfo *ToolInfo
+	for i := range statusResp.Tools {
+		if statusResp.Tools[i].ID == "node" {
+			nodeInfo = &statusResp.Tools[i]
 			break
 		}
 	}
 	require.NotNil(t, nodeInfo)
 	assert.Equal(t, "Node.js", nodeInfo.Name)
 
-	// 2. POST /api/runtimes/use (switch version)
+	// 2. POST /api/tools/use (switch version)
 	tempDir := t.TempDir()
 	origWd, _ := os.Getwd()
 	_ = os.Chdir(tempDir)
@@ -57,7 +58,7 @@ func TestUIRuntimesAPI(t *testing.T) {
 		"version": "22.1.0",
 		"global":  false,
 	})
-	req = httptest.NewRequest("POST", "/api/runtimes/use", bytes.NewReader(useBody))
+	req = httptest.NewRequest("POST", "/api/tools/use", bytes.NewReader(useBody))
 	rr = httptest.NewRecorder()
 	mux.ServeHTTP(rr, req)
 
@@ -69,13 +70,26 @@ func TestUIRuntimesAPI(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(writtenContent), "22.1.0")
 
-	// 3. POST /api/runtimes/migrate-legacy
+	// 3. POST /api/tools/remove
+	removeBody, _ := json.Marshal(map[string]interface{}{
+		"tool":   "node",
+		"global": false,
+	})
+	req = httptest.NewRequest("POST", "/api/tools/remove", bytes.NewReader(removeBody))
+	rr = httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code, rr.Body.String())
+
+	removedContent, _ := os.ReadFile(targetCfg)
+	assert.NotContains(t, string(removedContent), "node")
+
+	// 4. POST /api/tools/migrate-legacy
 	// Create .nvmrc in tempDir
 	_ = os.WriteFile(filepath.Join(tempDir, ".nvmrc"), []byte("20.18.0\n"), 0644)
 	migrateBody, _ := json.Marshal(map[string]string{
 		"tool": "node",
 	})
-	req = httptest.NewRequest("POST", "/api/runtimes/migrate-legacy", bytes.NewReader(migrateBody))
+	req = httptest.NewRequest("POST", "/api/tools/migrate-legacy", bytes.NewReader(migrateBody))
 	rr = httptest.NewRecorder()
 	mux.ServeHTTP(rr, req)
 
@@ -84,25 +98,25 @@ func TestUIRuntimesAPI(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(migratedContent), "20.18.0")
 
-	// 4. Test tools with prefix (e.g. npm:@biomejs/biome) in .unirtm.toml are reflected in /api/runtimes/status
+	// 5. Test tools with prefix (e.g. npm:@biomejs/biome) in .unirtm.toml are reflected in /api/tools/status
 	customToml := `[tools]
 node = "22.14.0"
 "npm:@biomejs/biome" = "1.9.4"
 "cli/cli" = "2.62.0"
 `
 	_ = os.WriteFile(filepath.Join(tempDir, ".unirtm.toml"), []byte(customToml), 0644)
-	req = httptest.NewRequest("GET", "/api/runtimes/status", nil)
+	req = httptest.NewRequest("GET", "/api/tools/status", nil)
 	rr = httptest.NewRecorder()
 	mux.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	var customStatus RuntimesStatusResponse
+	var customStatus ToolsStatusResponse
 	_ = json.Unmarshal(rr.Body.Bytes(), &customStatus)
 
-	var biomeInfo *RuntimeInfo
-	for i := range customStatus.Runtimes {
-		if customStatus.Runtimes[i].ID == "npm:@biomejs/biome" {
-			biomeInfo = &customStatus.Runtimes[i]
+	var biomeInfo *ToolInfo
+	for i := range customStatus.Tools {
+		if customStatus.Tools[i].ID == "npm:@biomejs/biome" {
+			biomeInfo = &customStatus.Tools[i]
 			break
 		}
 	}
@@ -112,7 +126,7 @@ node = "22.14.0"
 
 	// Ensure core languages appear before custom tools
 	var nodeIdx, biomeIdx int = -1, -1
-	for idx, rt := range customStatus.Runtimes {
+	for idx, rt := range customStatus.Tools {
 		if rt.ID == "node" {
 			nodeIdx = idx
 		}
@@ -122,3 +136,9 @@ node = "22.14.0"
 	}
 	assert.True(t, nodeIdx != -1 && biomeIdx != -1 && nodeIdx < biomeIdx)
 }
+
+// TestUIRuntimesAPI provides backward compatibility verification
+func TestUIRuntimesAPI(t *testing.T) {
+	TestUIToolsAPI(t)
+}
+

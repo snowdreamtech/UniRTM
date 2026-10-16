@@ -797,7 +797,7 @@ async function confirmRemoveRuntime(rt: RuntimeItem) {
   showToast(`正在从${scopeName}移除 ${rt.name}...`, "info");
 
   try {
-    const res = await fetch("/api/runtimes/remove", {
+    const res = await fetch("/api/tools/remove", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tool: rt.id, global: isGlobal }),
@@ -941,11 +941,12 @@ function isAlreadyInstalled(toolId: string, ver: string): boolean {
 async function fetchStatus() {
   loading.value = true;
   try {
-    const res = await fetch("/api/runtimes/status");
+    const res = await fetch("/api/tools/status");
     if (res.ok) {
       const data = await res.json();
-      if (data.runtimes && data.runtimes.length > 0) {
-        runtimes.value = data.runtimes;
+      const toolsList = data.tools || data.runtimes;
+      if (toolsList && toolsList.length > 0) {
+        runtimes.value = toolsList;
         totalInstalled.value = data.total_installed || 0;
         detectedLegacies.value = data.detected_legacies || [];
       }
@@ -978,7 +979,7 @@ async function quickSwitch(toolId: string, ver: string, targetGlobal?: boolean) 
 
   // 3. Asynchronously persist change to backend
   try {
-    const res = await fetch("/api/runtimes/use", {
+    const res = await fetch("/api/tools/use", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tool: toolId, version: ver, global: isGlobal }),
@@ -1011,7 +1012,7 @@ async function migrateLegacy() {
   migrating.value = true;
   showToast(t("runtimes.migrating") || "正在导入旧版本配置到 .unirtm.toml...", "info");
   try {
-    await fetch("/api/runtimes/migrate-legacy", {
+    await fetch("/api/tools/migrate-legacy", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({}),
@@ -1060,7 +1061,7 @@ async function openRemoteModal(rt: RuntimeItem) {
   loadingRemote.value = true;
 
   try {
-    const res = await fetch(`/api/runtimes/remote?tool=${encodeURIComponent(rt.id)}`, {
+    const res = await fetch(`/api/tools/remote?tool=${encodeURIComponent(rt.id)}`, {
       signal: controller.signal,
     });
     if (res.ok) {
@@ -1117,7 +1118,7 @@ async function installRemoteVersion(toolId: string, ver: string) {
   }
 
   try {
-    const res = await fetch("/api/runtimes/use", {
+    const res = await fetch("/api/tools/use", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tool: toolId, version: ver, global: isGlobal }),

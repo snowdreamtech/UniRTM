@@ -52,7 +52,7 @@ export default defineConfig({
           const rootDir = fileURLToPath(new URL("..", import.meta.url));
           const unirtmBin = findUnirtmBinary(rootDir);
 
-          if (req.url === "/api/runtimes/migrate-legacy" && req.method === "POST") {
+          if ((req.url === "/api/tools/migrate-legacy" || req.url === "/api/runtimes/migrate-legacy") && req.method === "POST") {
             try {
               const wsPath = path.join(rootDir, ".unirtm.toml");
               let content = fs.existsSync(wsPath) ? fs.readFileSync(wsPath, "utf-8") : "";
@@ -122,7 +122,7 @@ export default defineConfig({
             return;
           }
 
-          if (req.url === "/api/runtimes/status") {
+          if (req.url === "/api/tools/status" || req.url === "/api/runtimes/status") {
             const wsPath = path.join(rootDir, ".unirtm.toml");
             const altWsPath = path.join(rootDir, "unirtm.toml");
             const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
@@ -266,6 +266,7 @@ export default defineConfig({
             res.setHeader("Content-Type", "application/json");
             res.end(
               JSON.stringify({
+                tools: runtimes,
                 runtimes,
                 total_installed: totalInstalled,
                 detected_legacies,
@@ -274,7 +275,7 @@ export default defineConfig({
             return;
           }
 
-          if (req.url === "/api/runtimes/use" && req.method === "POST") {
+          if ((req.url === "/api/tools/use" || req.url === "/api/runtimes/use") && req.method === "POST") {
             let bodyStr = "";
             req.on("data", (c: any) => { bodyStr += c; });
             req.on("end", () => {
@@ -358,7 +359,7 @@ export default defineConfig({
             return;
           }
 
-          if (req.url === "/api/runtimes/remove" && req.method === "POST") {
+          if ((req.url === "/api/tools/remove" || req.url === "/api/runtimes/remove") && req.method === "POST") {
             let bodyStr = "";
             req.on("data", (c: any) => { bodyStr += c; });
             req.on("end", () => {
@@ -428,7 +429,7 @@ export default defineConfig({
             return;
           }
 
-          if (req.url?.startsWith("/api/runtimes/remote")) {
+          if (req.url?.startsWith("/api/tools/remote") || req.url?.startsWith("/api/runtimes/remote")) {
             const urlObj = new URL(req.url, "http://localhost");
             const tool = urlObj.searchParams.get("tool");
             let versions: string[] = [];

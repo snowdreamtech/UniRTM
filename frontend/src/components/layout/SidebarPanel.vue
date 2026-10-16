@@ -267,11 +267,12 @@ const doctorChecks = [
 
 onMounted(async () => {
   try {
-    const res = await fetch("/api/runtimes/status");
+    const res = await fetch("/api/tools/status");
     if (res.ok) {
       const data = await res.json();
-      if (data.runtimes && Array.isArray(data.runtimes)) {
-        for (const rt of data.runtimes) {
+      const list = data.tools || data.runtimes;
+      if (list && Array.isArray(list)) {
+        for (const rt of list) {
           const matched = toolItems.value.find((t) => t.id === rt.id || t.name === rt.id);
           if (matched) {
             if (rt.active_version) matched.version = rt.active_version;

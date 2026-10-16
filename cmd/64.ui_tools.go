@@ -18,7 +18,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 )
 
-type RuntimeInfo struct {
+type ToolInfo struct {
 	ID                string   `json:"id"`
 	Name              string   `json:"name"`
 	Description       string   `json:"description"`
@@ -31,11 +31,16 @@ type RuntimeInfo struct {
 	LegacyFile        string   `json:"legacy_file"`
 }
 
-type RuntimesStatusResponse struct {
-	Runtimes         []RuntimeInfo `json:"runtimes"`
-	TotalInstalled   int           `json:"total_installed"`
-	DetectedLegacies []string      `json:"detected_legacies"`
+type ToolsStatusResponse struct {
+	Tools            []ToolInfo `json:"tools"`
+	Runtimes         []ToolInfo `json:"runtimes"` // Backward compatibility alias
+	TotalInstalled   int        `json:"total_installed"`
+	DetectedLegacies []string   `json:"detected_legacies"`
 }
+
+// Backward-compatible type aliases
+type RuntimeInfo = ToolInfo
+type RuntimesStatusResponse = ToolsStatusResponse
 
 var coreRuntimes = []struct {
 	ID          string
@@ -51,7 +56,7 @@ var coreRuntimes = []struct {
 	{"ruby", "Ruby", "Dynamic, open source language with a focus on simplicity", "https://www.ruby-lang.org"},
 }
 
-func handleGetRuntimesStatus(w http.ResponseWriter, r *http.Request) {
+func handleGetToolsStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := r.Context()
 
@@ -90,8 +95,8 @@ func handleGetRuntimesStatus(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 3. Assemble runtime info
-	runtimeList := make([]RuntimeInfo, 0, len(coreRuntimes))
+	// 3. Assemble tools info (core runtimes first)
+	toolsList := make([]ToolInfo, 0, len(coreRuntimes))
 	knownIDs := make(map[string]bool)
 
 	for _, cr := range coreRuntimes {
@@ -128,7 +133,7 @@ func handleGetRuntimesStatus(w http.ResponseWriter, r *http.Request) {
 			source = "global"
 		}
 
-		runtimeList = append(runtimeList, RuntimeInfo{
+		toolsList = append(toolsList, ToolInfo{
 			ID:                cr.ID,
 			Name:              cr.Name,
 			Description:       cr.Description,
@@ -195,7 +200,7 @@ func handleGetRuntimesStatus(w http.ResponseWriter, r *http.Request) {
 			source = "global"
 		}
 
-		runtimeList = append(runtimeList, RuntimeInfo{
+		toolsList = append(toolsList, ToolInfo{
 			ID:                name,
 			Name:              name,
 			Description:       "Unified toolchain managed via UniRTM",
@@ -209,14 +214,15 @@ func handleGetRuntimesStatus(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	_ = json.NewEncoder(w).Encode(RuntimesStatusResponse{
-		Runtimes:         runtimeList,
+	_ = json.NewEncoder(w).Encode(ToolsStatusResponse{
+		Tools:            toolsList,
+		Runtimes:         toolsList,
 		TotalInstalled:   totalInstalled,
 		DetectedLegacies: detectedLegacies,
 	})
 }
 
-func handleGetRuntimesRemote(w http.ResponseWriter, r *http.Request) {
+func handleGetToolsRemote(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	tool := strings.TrimSpace(r.URL.Query().Get("tool"))
 	if tool == "" {
@@ -344,7 +350,7 @@ func getFallbackRemoteVersions(tool string) []string {
 }
 
 
-func handleUseRuntime(w http.ResponseWriter, r *http.Request) {
+func handleUseTool(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -398,7 +404,53 @@ func handleUseRuntime(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func handleMigrateLegacyRuntime(w http.ResponseWriter, r *http.Request) {
+func handleRemoveTool(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Tool   string `json:"tool"`
+		Global bool   `json:"global"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "invalid request body"})
+		return
+	}
+
+	req.Tool = strings.TrimSpace(req.Tool)
+	if req.Tool == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "tool is required"})
+		return
+	}
+
+	var targetFile string
+	if req.Global {
+		targetFile = config.GetGlobalConfigPath()
+	} else {
+		targetFile = resolveConfigFilePath(false)
+	}
+
+	content, _ := config.ReadFileOrEmpty(targetFile)
+	newContent, removed := config.RemoveToolVersion(content, req.Tool)
+	if removed {
+		_ = os.WriteFile(targetFile, []byte(newContent), 0644)
+		_, _ = config.FormatFile(targetFile, false)
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"tool":    req.Tool,
+		"removed": removed,
+		"file":    targetFile,
+	})
+}
+
+func handleMigrateLegacyTool(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -442,3 +494,12 @@ func handleMigrateLegacyRuntime(w http.ResponseWriter, r *http.Request) {
 		"file":           targetFile,
 	})
 }
+
+// Backward-compatible function aliases
+var (
+	handleGetRuntimesStatus    = handleGetToolsStatus
+	handleGetRuntimesRemote    = handleGetToolsRemote
+	handleUseRuntime           = handleUseTool
+	handleRemoveRuntime        = handleRemoveTool
+	handleMigrateLegacyRuntime = handleMigrateLegacyTool
+)

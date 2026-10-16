@@ -524,11 +524,19 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/network/proxy/test", handleTestNetworkProxy)
 	mux.HandleFunc("/api/network/ping", handlePingNetwork)
 
-	// Runtime Management APIs
-	mux.HandleFunc("/api/runtimes/status", handleGetRuntimesStatus)
-	mux.HandleFunc("/api/runtimes/remote", handleGetRuntimesRemote)
-	mux.HandleFunc("/api/runtimes/use", handleUseRuntime)
-	mux.HandleFunc("/api/runtimes/migrate-legacy", handleMigrateLegacyRuntime)
+	// Tools Management APIs (Canonical)
+	mux.HandleFunc("/api/tools/status", handleGetToolsStatus)
+	mux.HandleFunc("/api/tools/remote", handleGetToolsRemote)
+	mux.HandleFunc("/api/tools/use", handleUseTool)
+	mux.HandleFunc("/api/tools/remove", handleRemoveTool)
+	mux.HandleFunc("/api/tools/migrate-legacy", handleMigrateLegacyTool)
+
+	// Backward Compatibility Aliases (/api/runtimes/*)
+	mux.HandleFunc("/api/runtimes/status", handleGetToolsStatus)
+	mux.HandleFunc("/api/runtimes/remote", handleGetToolsRemote)
+	mux.HandleFunc("/api/runtimes/use", handleUseTool)
+	mux.HandleFunc("/api/runtimes/remove", handleRemoveTool)
+	mux.HandleFunc("/api/runtimes/migrate-legacy", handleMigrateLegacyTool)
 
 	// Theme Management APIs
 	themeMgr := theme.NewManager()
