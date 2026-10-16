@@ -143,16 +143,14 @@
           <div class="runtime-icon-badge"><TechIcon :id="rt.id" :size="32" :colored="true" /></div>
           <div class="runtime-title-block">
             <div class="runtime-name-row">
-              <span class="runtime-name" :title="rt.name">{{ formatToolTitle(rt.name) }}</span>
               <a
-                v-if="rt.homepage"
-                :href="rt.homepage"
+                :href="getToolHomepage(rt)"
                 target="_blank"
-                rel="noreferrer"
-                class="runtime-homepage-link"
-                title="Official Homepage"
+                rel="noopener noreferrer"
+                class="runtime-name"
+                :title="`${formatToolTitle(rt.name)} (访问官方主页/代码仓库)`"
               >
-                ↗
+                {{ formatToolTitle(rt.name) }}
               </a>
               <button
                 class="runtime-pin-btn"
@@ -705,6 +703,7 @@ import { useToast } from "../composables/useToast";
 import TechIcon from "../components/common/TechIcon.vue";
 import { validateRuntimeVersion } from "../utils/versionValidator";
 import { useToolUpdates, type ToolUpdateItem } from "../composables/useToolUpdates";
+import { getToolHomepage } from "../utils/toolHomepage";
 
 const { showToast } = useToast();
 const {
@@ -1981,17 +1980,20 @@ onBeforeUnmount(() => {
   overflow-wrap: anywhere;
   flex: 1;
   min-width: 0;
-}
-
-.runtime-homepage-link {
-  color: var(--text-muted);
   text-decoration: none;
-  font-size: 0.8rem;
-  transition: color 0.15s ease;
+  cursor: pointer;
+  transition: color 0.15s ease, text-decoration 0.15s ease;
 }
 
-.runtime-homepage-link:hover {
+.runtime-name:hover {
   color: var(--accent-cyan);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+[data-theme="light"] .runtime-name:hover,
+:root[data-theme="light"] .runtime-name:hover {
+  color: #0284c7;
 }
 
 .runtime-desc {
