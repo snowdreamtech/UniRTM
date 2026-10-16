@@ -14,6 +14,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/backend"
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
+	"github.com/snowdreamtech/unirtm/internal/lockfile"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/pkg/version"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
@@ -257,6 +258,38 @@ func handleGetToolsStatus(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func getLockfileVersions(tool string) []string {
+	lockPath := env.GetLockFilePath()
+	lf, err := lockfile.Load(lockPath)
+	if err != nil || lf == nil {
+		return nil
+	}
+	candKeys := []string{
+		tool,
+		"github:" + tool,
+		"go:" + tool,
+		"npm:" + tool,
+		"pipx:" + tool,
+	}
+	if strings.Contains(tool, ":") {
+		parts := strings.SplitN(tool, ":", 2)
+		candKeys = append(candKeys, parts[1])
+	}
+	var res []string
+	seen := make(map[string]bool)
+	for _, k := range candKeys {
+		if entries, ok := lf.Tools[k]; ok {
+			for _, e := range entries {
+				if e != nil && e.Version != "" && !seen[e.Version] {
+					seen[e.Version] = true
+					res = append(res, e.Version)
+				}
+			}
+		}
+	}
+	return res
+}
+
 func handleGetToolsRemote(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	tool := strings.TrimSpace(r.URL.Query().Get("tool"))
@@ -264,22 +297,56 @@ func handleGetToolsRemote(w http.ResponseWriter, r *http.Request) {
 		tool = "node"
 	}
 
-	nb := backend.NewNativeBackend()
-	versions, err := nb.ListVersions(r.Context(), tool, backend.CurrentPlatform())
+	backendRegistry := backend.NewRegistry()
+	var versions []backend.VersionInfo
+
+	backendName := "native"
+	toolName := tool
+	if strings.Contains(tool, ":") {
+		parts := strings.SplitN(tool, ":", 2)
+		backendName = parts[0]
+		toolName = parts[1]
+		if backendName == "go" {
+			backendName = "go-pkg"
+		}
+	} else if strings.Contains(tool, "/") {
+		backendName = "github"
+	}
+
+	if b, err := backendRegistry.Get(backendName); err == nil && b != nil {
+		if vList, err := b.ListVersions(r.Context(), toolName, backend.CurrentPlatform()); err == nil && len(vList) > 0 {
+			versions = vList
+		}
+	}
 
 	type remoteVerDTO struct {
 		Version string `json:"version"`
 	}
 
 	dtos := make([]remoteVerDTO, 0, len(versions))
-	if err == nil && len(versions) > 0 {
+	seen := make(map[string]bool)
+
+	if len(versions) > 0 {
 		for _, v := range versions {
-			dtos = append(dtos, remoteVerDTO{Version: v.Version})
+			if !seen[v.Version] {
+				seen[v.Version] = true
+				dtos = append(dtos, remoteVerDTO{Version: v.Version})
+			}
 		}
 	} else {
+		// Provide versions from lockfile
+		for _, v := range getLockfileVersions(tool) {
+			if !seen[v] {
+				seen[v] = true
+				dtos = append(dtos, remoteVerDTO{Version: v})
+			}
+		}
 		// Provide comprehensive built-in upstream releases fallback
 		for _, v := range getFallbackRemoteVersions(tool) {
-			dtos = append(dtos, remoteVerDTO{Version: v})
+			if !seen[v] {
+				seen[v] = true
+				dtos = append(dtos, remoteVerDTO{Version: v})
+			}
 		}
 	}
 
@@ -658,7 +725,7 @@ func handleCheckToolsUpdates(w http.ResponseWriter, r *http.Request) {
 	upgradableCount := 0
 	pinnedCount := 0
 
-	nb := backend.NewNativeBackend()
+	backendRegistry := backend.NewRegistry()
 
 	var keys []string
 	for k := range toolsToCheck {
@@ -670,11 +737,31 @@ func handleCheckToolsUpdates(w http.ResponseWriter, r *http.Request) {
 		info := toolsToCheck[name]
 		var candidateVersions []string
 
-		if versions, err := nb.ListVersions(r.Context(), name, backend.CurrentPlatform()); err == nil && len(versions) > 0 {
-			for _, v := range versions {
-				candidateVersions = append(candidateVersions, v.Version)
+		backendName := "native"
+		toolName := name
+		if strings.Contains(name, ":") {
+			parts := strings.SplitN(name, ":", 2)
+			backendName = parts[0]
+			toolName = parts[1]
+			if backendName == "go" {
+				backendName = "go-pkg"
 			}
-		} else {
+		} else if strings.Contains(name, "/") {
+			backendName = "github"
+		}
+
+		if b, err := backendRegistry.Get(backendName); err == nil && b != nil {
+			if versions, err := b.ListVersions(r.Context(), toolName, backend.CurrentPlatform()); err == nil && len(versions) > 0 {
+				for _, v := range versions {
+					candidateVersions = append(candidateVersions, v.Version)
+				}
+			}
+		}
+
+		if len(candidateVersions) == 0 {
+			candidateVersions = getLockfileVersions(name)
+		}
+		if len(candidateVersions) == 0 {
 			candidateVersions = getFallbackRemoteVersions(name)
 		}
 
@@ -682,16 +769,21 @@ func handleCheckToolsUpdates(w http.ResponseWriter, r *http.Request) {
 			return version.CompareVersions(candidateVersions[i], candidateVersions[j]) > 0
 		})
 
-		latestVer := ""
+		latestVer := info.curVer
 		if len(candidateVersions) > 0 {
 			latestVer = candidateVersions[0]
 		}
 
 		hasUpdate := false
 		if info.curVer != "" && latestVer != "" {
-			if version.CompareVersions(latestVer, info.curVer) > 0 {
+			cleanCur := strings.TrimPrefix(strings.TrimPrefix(info.curVer, "v"), "V")
+			cleanLatest := strings.TrimPrefix(strings.TrimPrefix(latestVer, "v"), "V")
+			if cleanLatest != cleanCur && version.CompareVersions(latestVer, info.curVer) > 0 {
 				hasUpdate = true
 			}
+		}
+		if !hasUpdate && info.curVer != "" {
+			latestVer = info.curVer
 		}
 
 		if info.pinned {

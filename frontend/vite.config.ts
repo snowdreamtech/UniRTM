@@ -116,6 +116,33 @@ export default defineConfig({
             return res;
           };
 
+          const parseLockTools = (lockPath: string): Record<string, string[]> => {
+            const res: Record<string, string[]> = {};
+            if (!fs.existsSync(lockPath)) return res;
+            try {
+              const c = fs.readFileSync(lockPath, "utf-8");
+              let currentTool = "";
+              for (const line of c.split("\n")) {
+                const tr = line.trim();
+                const m = tr.match(/^\[\[tools\."([^"]+)"\]\]/);
+                if (m) {
+                  currentTool = m[1];
+                  if (!res[currentTool]) res[currentTool] = [];
+                  continue;
+                }
+                if (currentTool && tr.startsWith("version =")) {
+                  const vm = tr.match(/version\s*=\s*"([^"]+)"/);
+                  if (vm && vm[1]) {
+                    if (!res[currentTool].includes(vm[1])) {
+                      res[currentTool].push(vm[1]);
+                    }
+                  }
+                }
+              }
+            } catch {}
+            return res;
+          };
+
           if ((req.url === "/api/tools/migrate-legacy" || req.url === "/api/runtimes/migrate-legacy") && req.method === "POST") {
             try {
               const wsPath = path.join(rootDir, ".unirtm.toml");
@@ -642,14 +669,45 @@ export default defineConfig({
             };
 
             const semverGt = (a: string, b: string) => {
-              const pa = a.replace(/^v/, "").split(".").map(n => parseInt(n, 10));
-              const pb = b.replace(/^v/, "").split(".").map(n => parseInt(n, 10));
+              const pa = a.replace(/^[vV]+/, "").split(".").map(n => parseInt(n, 10));
+              const pb = b.replace(/^[vV]+/, "").split(".").map(n => parseInt(n, 10));
               for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
                 const na = isNaN(pa[i]) ? 0 : pa[i];
                 const nb = isNaN(pb[i]) ? 0 : pb[i];
                 if (na !== nb) return na > nb;
               }
               return false;
+            };
+
+            const lockPath = path.join(rootDir, "unirtm.lock");
+            const lockTools = parseLockTools(lockPath);
+
+            const getLatestVersion = (toolKey: string, curVer: string): string => {
+              const candidates: string[] = [];
+              const bare = toolKey.includes(":") ? toolKey.split(":").slice(1).join(":") : toolKey;
+
+              if (fallbackLatest[toolKey]) {
+                candidates.push(fallbackLatest[toolKey]);
+              }
+              if (fallbackLatest[bare] && !candidates.includes(fallbackLatest[bare])) {
+                candidates.push(fallbackLatest[bare]);
+              }
+
+              const candKeys = [toolKey, bare, `github:${toolKey}`, `github:${bare}`];
+              for (const k of candKeys) {
+                if (lockTools[k]) {
+                  for (const v of lockTools[k]) {
+                    if (!candidates.includes(v)) candidates.push(v);
+                  }
+                }
+              }
+
+              if (candidates.length === 0) {
+                return curVer;
+              }
+
+              candidates.sort((a, b) => (semverGt(a, b) ? -1 : semverGt(b, a) ? 1 : 0));
+              return candidates[0] || curVer;
             };
 
             const updates: any[] = [];
@@ -659,8 +717,10 @@ export default defineConfig({
             for (const t of targetTools) {
               const cur = wsTools[t] || userTools[t] || "";
               const pin = wsPins[t] || userPins[t] || { pinned: false, reason: "" };
-              const latest = fallbackLatest[t] || "1.0.0";
-              const hasUpdate = Boolean(cur && latest && semverGt(latest, cur));
+              const latest = getLatestVersion(t, cur);
+              const cleanCur = cur.replace(/^[vV]+/, "").trim();
+              const cleanLatest = latest.replace(/^[vV]+/, "").trim();
+              const hasUpdate = Boolean(cur && latest && cleanCur !== cleanLatest && semverGt(latest, cur));
 
               if (pin.pinned) {
                 pinnedCount++;
@@ -671,7 +731,7 @@ export default defineConfig({
               updates.push({
                 tool: t,
                 current_version: cur,
-                latest_version: latest,
+                latest_version: hasUpdate ? latest : (cur || latest || ""),
                 has_update: hasUpdate,
                 is_pinned: pin.pinned,
                 pin_reason: pin.reason,
@@ -891,11 +951,42 @@ export default defineConfig({
                 "8.0.30", "8.0.28",
               ];
             } else {
-              versions = [
-                "3.2.0", "3.1.0", "3.0.0",
-                "2.8.0", "2.6.0", "2.4.0", "2.2.0", "2.0.0",
-                "1.8.0", "1.5.0", "1.2.0", "1.0.0",
-              ];
+              const lockPath = path.join(rootDir, "unirtm.lock");
+              const lockTools = parseLockTools(lockPath);
+              const bare = tool && tool.includes(":") ? tool.split(":").slice(1).join(":") : tool;
+              const candKeys = [tool, bare, `github:${tool}`, `github:${bare}`];
+              for (const k of candKeys) {
+                if (k && lockTools[k] && lockTools[k].length > 0) {
+                  versions = [...lockTools[k]];
+                  break;
+                }
+              }
+              if (versions.length === 0 && tool) {
+                const installsRoot = path.join(os.homedir(), ".local", "share", "unirtm", "installs");
+                if (fs.existsSync(installsRoot)) {
+                  const candDirs = [
+                    tool,
+                    bare,
+                    tool.replace(/[:/@]/g, "-"),
+                    tool.replace(/^github:/, "github-").replace(/[:/@]/g, "-"),
+                    tool.replace(/^npm:/, "npm-").replace(/[:/@]/g, "-"),
+                    tool.replace(/^go:/, "go-pkg-").replace(/[:/@]/g, "-"),
+                    tool.replace(/^pipx:/, "pipx-").replace(/[:/@]/g, "-"),
+                  ];
+                  for (const cand of candDirs) {
+                    const dir = path.join(installsRoot, cand);
+                    if (fs.existsSync(dir)) {
+                      try {
+                        const list = fs.readdirSync(dir).filter(f => !f.startsWith(".") && fs.statSync(path.join(dir, f)).isDirectory());
+                        if (list.length > 0) {
+                          versions = list.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+                          break;
+                        }
+                      } catch {}
+                    }
+                  }
+                }
+              }
             }
           }
           res.setHeader("Content-Type", "application/json");

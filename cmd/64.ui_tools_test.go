@@ -203,6 +203,27 @@ node = "22.14.0"
 	assert.Equal(t, "node", checkResp.Updates[0].Tool)
 	assert.NotEmpty(t, checkResp.Updates[0].LatestVersion)
 
+	// Test GET /api/tools/check-updates for checkmake and trivy (must not return fake 1.0 or 1.0.0)
+	req = httptest.NewRequest("GET", "/api/tools/check-updates?tool=github:checkmake/checkmake", nil)
+	rr = httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	var cmResp CheckUpdatesResponse
+	_ = json.Unmarshal(rr.Body.Bytes(), &cmResp)
+	require.NotEmpty(t, cmResp.Updates)
+	assert.NotEqual(t, "1.0", cmResp.Updates[0].LatestVersion)
+	assert.NotEqual(t, "1.0.0", cmResp.Updates[0].LatestVersion)
+
+	req = httptest.NewRequest("GET", "/api/tools/check-updates?tool=github:aquasecurity/trivy", nil)
+	rr = httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+	var trivyResp CheckUpdatesResponse
+	_ = json.Unmarshal(rr.Body.Bytes(), &trivyResp)
+	require.NotEmpty(t, trivyResp.Updates)
+	assert.NotEqual(t, "1.0", trivyResp.Updates[0].LatestVersion)
+	assert.NotEqual(t, "1.0.0", trivyResp.Updates[0].LatestVersion)
+
 	// 8. Test POST /api/tools/batch-update
 	batchBody, _ := json.Marshal(map[string]interface{}{
 		"tools": []map[string]string{

@@ -1170,10 +1170,21 @@ function getLocalUpgradableVersion(rt: RuntimeItem, scope: "workspace" | "user" 
 
 function getRemoteUpgradableVersion(toolId: string): string | null {
   const match = updateResults.value.find((r) => r.id === toolId || r.name === toolId);
-  if (match && match.has_update && !match.pinned && match.latest_version) {
-    return match.latest_version;
+  if (!match || !match.has_update || match.pinned || !match.latest_version) {
+    return null;
   }
-  return null;
+  const rt = runtimes.value.find((r) => r.id === toolId);
+  if (rt) {
+    const cur = currentScope.value === "workspace" ? (rt.active_version || rt.global_version) : rt.global_version;
+    if (cur) {
+      const cleanCur = cur.replace(/^[vV]+/, "").trim();
+      const cleanLatest = match.latest_version.replace(/^[vV]+/, "").trim();
+      if (cleanLatest === cleanCur || compareSemverDesc(cleanLatest, cleanCur) >= 0) {
+        return null;
+      }
+    }
+  }
+  return match.latest_version;
 }
 
 async function upgradeToRemoteVersion(rt: RuntimeItem, targetVer: string, forceGlobal: boolean = false) {
