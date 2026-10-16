@@ -1961,13 +1961,15 @@ const nativePlugins = ref<PluginItem[]>([
 }
 
 .type-tab-btn.active {
-  color: #fff;
+  color: var(--accent-cyan);
   background: rgba(0, 229, 255, 0.14);
   border-color: rgba(0, 229, 255, 0.35);
   box-shadow: 0 0 12px rgba(0, 229, 255, 0.15);
+  font-weight: 600;
 }
 
 .type-tab-btn.type-tab-installed.active {
+  color: #10b981;
   background: rgba(16, 185, 129, 0.16);
   border-color: rgba(16, 185, 129, 0.4);
   box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
@@ -2594,7 +2596,111 @@ const nativePlugins = ref<PluginItem[]>([
   gap: 4px;
 }
 
-/* Light Mode Overrides for Active Badges & Buttons */
+/* Light Mode Overrides for Active Badges, Tabs & Buttons */
+:root[data-theme="light"] .type-tab-btn:hover,
+[data-theme="light"] .type-tab-btn:hover {
+  color: var(--text-main);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="light"] .type-tab-btn.active,
+[data-theme="light"] .type-tab-btn.active {
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.12);
+  border-color: rgba(2, 132, 199, 0.4);
+  box-shadow: 0 1px 6px rgba(2, 132, 199, 0.16);
+  font-weight: 600;
+}
+
+:root[data-theme="light"] .type-tab-btn.type-tab-installed.active,
+[data-theme="light"] .type-tab-btn.type-tab-installed.active {
+  color: #047857;
+  background: rgba(5, 150, 105, 0.12);
+  border-color: rgba(5, 150, 105, 0.4);
+  box-shadow: 0 1px 6px rgba(5, 150, 105, 0.16);
+  font-weight: 600;
+}
+
+:root[data-theme="light"] .type-tab-btn .tab-badge,
+[data-theme="light"] .type-tab-btn .tab-badge {
+  background: rgba(5, 150, 105, 0.12);
+  color: #047857;
+  border-color: rgba(5, 150, 105, 0.35);
+}
+
+:root[data-theme="light"] .channel-btn:hover,
+[data-theme="light"] .channel-btn:hover {
+  color: var(--text-main);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="light"] .channel-btn.active,
+[data-theme="light"] .channel-btn.active {
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.12);
+  border-color: rgba(2, 132, 199, 0.4);
+  font-weight: 600;
+}
+
+:root[data-theme="light"] .btn-search-action,
+[data-theme="light"] .btn-search-action {
+  background: rgba(2, 132, 199, 0.1);
+  border-color: rgba(2, 132, 199, 0.35);
+  color: #0284c7;
+}
+
+:root[data-theme="light"] .btn-search-action:hover:not(:disabled),
+[data-theme="light"] .btn-search-action:hover:not(:disabled) {
+  background: rgba(2, 132, 199, 0.18);
+  border-color: #0284c7;
+}
+
+:root[data-theme="light"] .chip-btn.active,
+[data-theme="light"] .chip-btn.active {
+  background: rgba(2, 132, 199, 0.1);
+  border-color: rgba(2, 132, 199, 0.35);
+  color: #0284c7;
+}
+
+:root[data-theme="light"] .chip-btn.chip-installed.active,
+[data-theme="light"] .chip-btn.chip-installed.active {
+  background: rgba(5, 150, 105, 0.1);
+  border-color: rgba(5, 150, 105, 0.35);
+  color: #047857;
+}
+
+:root[data-theme="light"] .btn-page-num.active,
+[data-theme="light"] .btn-page-num.active {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+}
+
+:root[data-theme="light"] .btn-install-primary,
+[data-theme="light"] .btn-install-primary,
+:root[data-theme="light"] .btn-apply-detail-primary,
+[data-theme="light"] .btn-apply-detail-primary {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff !important;
+  box-shadow: 0 2px 10px rgba(2, 132, 199, 0.25);
+}
+
+:root[data-theme="light"] .subtab-btn:hover,
+[data-theme="light"] .subtab-btn:hover {
+  color: var(--text-main);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="light"] .subtab-btn.active,
+[data-theme="light"] .subtab-btn.active {
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.12);
+  border-color: rgba(2, 132, 199, 0.35);
+  font-weight: 600;
+}
+
 :root[data-theme="light"] .badge-active-pill,
 [data-theme="light"] .badge-active-pill {
   background: rgba(2, 132, 199, 0.12);
