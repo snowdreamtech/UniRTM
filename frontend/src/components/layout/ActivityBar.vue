@@ -83,7 +83,6 @@ const props = defineProps<{
   currentTab: string;
   isDrawerOpen?: boolean;
   toolCount?: number;
-  taskCount?: number;
 }>();
 
 defineEmits<{
@@ -109,7 +108,6 @@ const primaryTabs = computed<ActivityTab[]>(() => [
     id: "tasks",
     icon: "workbench:tasks",
     label: t("nav.tasks") || "Tasks",
-    badge: props.taskCount || 4,
   },
   {
     id: "marketplace",
