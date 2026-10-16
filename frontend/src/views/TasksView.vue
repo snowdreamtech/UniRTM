@@ -137,7 +137,11 @@
                 @click.stop="toggleTaskMenu(task.name)"
                 :title="`更多操作: ${task.name}`"
               >
-                ···
+                <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
+                  <circle cx="3" cy="8" r="1.5" />
+                  <circle cx="8" cy="8" r="1.5" />
+                  <circle cx="13" cy="8" r="1.5" />
+                </svg>
               </button>
               <div v-if="activeMenuTask === task.name" class="task-dropdown-menu">
                 <button class="dropdown-item" @click.stop="handleEditFromMenu(task)">
@@ -788,7 +792,8 @@ async function executeTask(task: ProjectTask) {
   flex-direction: column;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 0.65rem;
+  gap: 0.75rem;
+  padding: 0.15rem 0;
   flex-shrink: 0;
 }
 
@@ -801,20 +806,17 @@ async function executeTask(task: ProjectTask) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  border-radius: 7px;
   border: 1px solid var(--card-border);
   background: var(--section-bg);
   color: var(--text-muted);
-  font-size: 1.05rem;
-  font-weight: 700;
-  letter-spacing: 1px;
   cursor: pointer;
-  opacity: 0.35;
-  transition: all 0.2s ease;
-  line-height: 1;
-  padding: 0;
+  opacity: 0.6;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
 }
 
 .task-more-btn:hover,
@@ -823,6 +825,7 @@ async function executeTask(task: ProjectTask) {
   color: var(--text-main);
   border-color: var(--card-border-active);
   opacity: 1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   transform: translateY(-1px);
 }
 
@@ -830,33 +833,38 @@ async function executeTask(task: ProjectTask) {
   opacity: 0.85;
 }
 
+.task-row-card:hover .task-more-btn:hover,
+.task-row-card:hover .task-more-btn.active {
+  opacity: 1;
+}
+
 .task-dropdown-menu {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   right: 0;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 8px;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 0 12px var(--accent-cyan-glow);
-  padding: 0.3rem;
+  padding: 0.35rem;
   z-index: 50;
-  min-width: 120px;
+  min-width: 130px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .task-dropdown-menu .dropdown-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 0.65rem;
-  font-size: 0.78rem;
+  gap: 0.6rem;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.82rem;
   font-weight: 500;
   color: var(--text-main);
   background: transparent;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
   width: 100%;
   text-align: left;
