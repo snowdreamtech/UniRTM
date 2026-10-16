@@ -695,8 +695,16 @@ import { t } from "../i18n";
 import { useToast } from "../composables/useToast";
 import TechIcon from "../components/common/TechIcon.vue";
 import { validateRuntimeVersion } from "../utils/versionValidator";
+import { useToolUpdates, type ToolUpdateItem } from "../composables/useToolUpdates";
 
 const { showToast } = useToast();
+const {
+  updateResults,
+  isChecking: checkingUpdates,
+  checkUpdates,
+  markToolUpdated,
+  updatableCount,
+} = useToolUpdates();
 
 export interface RuntimeItem {
   id: string;
@@ -794,27 +802,11 @@ const isAddModalOpen = ref(false);
 const customToolInput = ref("");
 
 // Remote update detection & Diff Drawer state
-export interface ToolUpdateResult {
-  id: string;
-  name: string;
-  current_version: string;
-  latest_version: string;
-  has_update: boolean;
-  pinned: boolean;
-  pin_reason?: string;
-  homepage?: string;
-  error?: string;
-}
+export type ToolUpdateResult = ToolUpdateItem;
 
 const isDiffDrawerOpen = ref(false);
-const checkingUpdates = ref(false);
 const batchUpdating = ref(false);
-const updateResults = ref<ToolUpdateResult[]>([]);
 const selectedUpdateTools = ref<string[]>([]);
-
-const updatableCount = computed(() => {
-  return updateResults.value.filter((r) => r.has_update && !r.pinned).length;
-});
 
 const isAllUpdatableSelected = computed(() => {
   const updatableIds = updateResults.value
@@ -1548,24 +1540,18 @@ async function installRemoteVersion(toolId: string, ver: string) {
 }
 
 async function checkRemoteUpdates() {
-  checkingUpdates.value = true;
   try {
     const isGlobal = currentScope.value === "user";
-    const res = await fetch(`/api/tools/check-updates?global=${isGlobal}`);
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
-    }
-    const data = await res.json();
-    updateResults.value = data.results || [];
+    const list = await checkUpdates(isGlobal);
 
-    const autoSelected = updateResults.value
-      .filter((item: ToolUpdateResult) => item.has_update && !item.pinned)
-      .map((item: ToolUpdateResult) => item.id);
+    const autoSelected = list
+      .filter((item: ToolUpdateItem) => item.has_update && !item.pinned)
+      .map((item: ToolUpdateItem) => item.id);
     selectedUpdateTools.value = autoSelected;
 
     isDiffDrawerOpen.value = true;
 
-    const pinnedCount = updateResults.value.filter((r) => r.pinned).length;
+    const pinnedCount = list.filter((r) => r.pinned).length;
     if (autoSelected.length > 0) {
       showToast(
         `检测完成：发现 ${autoSelected.length} 个工具可升级${pinnedCount > 0 ? ` (已自动保护 ${pinnedCount} 个锁定工具)` : ""}`,
@@ -1576,8 +1562,6 @@ async function checkRemoteUpdates() {
     }
   } catch (err: any) {
     showToast(`检测更新失败: ${err.message}`, "error");
-  } finally {
-    checkingUpdates.value = false;
   }
 }
 
@@ -1613,6 +1597,9 @@ async function runBatchUpdate() {
     let msg = `批量升级完成：已成功升级 ${updatedCount} 个工具`;
     if (skippedCount > 0) {
       msg += `，跳过 ${skippedCount} 个保护项`;
+    }
+    for (const toolId of selectedUpdateTools.value) {
+      markToolUpdated(toolId);
     }
     showToast(msg, "success");
     isDiffDrawerOpen.value = false;

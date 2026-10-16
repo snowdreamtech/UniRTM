@@ -15,7 +15,7 @@
         <span class="activity-icon">
           <TechIcon :id="item.icon" :size="24" />
         </span>
-        <span v-if="item.badge" class="activity-badge">{{ item.badge }}</span>
+        <span v-if="item.badge" class="activity-badge" :class="'badge-' + item.id">{{ item.badge }}</span>
       </button>
     </div>
 
@@ -68,6 +68,9 @@
 import { computed } from "vue";
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
+import { useToolUpdates } from "../../composables/useToolUpdates";
+
+const { updatableCount } = useToolUpdates();
 
 export interface ActivityTab {
   id: string;
@@ -100,7 +103,7 @@ const primaryTabs = computed<ActivityTab[]>(() => [
     id: "tools",
     icon: "workbench:tools",
     label: t("nav.tools") || "Toolchains",
-    badge: props.toolCount,
+    badge: (updatableCount.value > 0 ? updatableCount.value : undefined) ?? props.toolCount,
   },
   {
     id: "tasks",
@@ -202,5 +205,11 @@ const primaryTabs = computed<ActivityTab[]>(() => [
   border-radius: 9999px;
   line-height: 1.1;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.activity-badge.badge-tools {
+  background: #f59e0b;
+  color: #111827;
+  font-weight: 800;
 }
 </style>

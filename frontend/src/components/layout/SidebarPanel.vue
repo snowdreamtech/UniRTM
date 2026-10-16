@@ -59,7 +59,11 @@
             <span class="item-label">{{ tool.name }}</span>
             <span class="item-sub">{{ tool.version }}</span>
           </div>
-          <span class="status-indicator-dot" :class="tool.status">●</span>
+          <span
+            v-if="hasUpdate(tool.id || tool.name)"
+            class="status-indicator-dot update"
+            title="发现新版本，可升级"
+          >●</span>
         </button>
       </template>
 
@@ -147,6 +151,9 @@
 import { ref, computed, onMounted } from "vue";
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
+import { useToolUpdates } from "../../composables/useToolUpdates";
+
+const { hasUpdate } = useToolUpdates();
 
 const props = defineProps<{
   isOpen: boolean;
@@ -456,14 +463,16 @@ onMounted(async () => {
 
 .status-indicator-dot {
   font-size: 0.65rem;
+  line-height: 1;
 }
 
-.status-indicator-dot.success {
-  color: var(--success);
+.status-indicator-dot.update {
+  color: #f59e0b;
 }
 
-.status-indicator-dot.warning {
-  color: var(--warning);
+[data-theme="light"] .status-indicator-dot.update,
+:root[data-theme="light"] .status-indicator-dot.update {
+  color: #d97706;
 }
 
 .task-play-hint {

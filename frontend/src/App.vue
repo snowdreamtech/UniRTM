@@ -104,6 +104,9 @@ import ToastNotification from "./components/ToastNotification.vue";
 import { t, selectedLangSetting, setLanguage } from "./i18n";
 import { useTheme } from "./composables/useTheme";
 import { useToast } from "./composables/useToast";
+import { useToolUpdates } from "./composables/useToolUpdates";
+
+const { checkUpdates } = useToolUpdates();
 
 export interface AppConfig {
   language?: string;
@@ -435,6 +438,7 @@ function handleGlobalKeydown(e: KeyboardEvent) {
 onMounted(() => {
   loadConfig();
   fetchThemes();
+  checkUpdates().catch(() => {});
   window.addEventListener("keydown", handleGlobalKeydown);
 });
 
