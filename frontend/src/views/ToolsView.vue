@@ -116,8 +116,13 @@
         <span class="stat-badge">
           <b>{{ filteredRuntimes.length }}</b> {{ t("runtimes.count_runtimes_suffix") || "个工具" }}
         </span>
-        <span class="stat-badge highlight">
-          <b>{{ scopeInstalledCount }}</b> {{ t("runtimes.count_installed_suffix") || "个已装版本" }}
+        <span
+          class="stat-badge"
+          :class="{ highlight: scopeUpgradableCount > 0, clickable: scopeUpgradableCount > 0 }"
+          :title="scopeUpgradableCount > 0 ? (t('runtimes.upgradable_tooltip', { count: scopeUpgradableCount }) || `当前作用域有 ${scopeUpgradableCount} 个工具可升级，点击查看详情`) : ''"
+          @click="scopeUpgradableCount > 0 ? (isDiffDrawerOpen = true) : undefined"
+        >
+          <b>{{ scopeUpgradableCount }}</b> {{ t("runtimes.count_upgradable_suffix") || "个可升级" }}
         </span>
         <button
           class="tool-action-btn primary small"
@@ -1139,9 +1144,16 @@ const filteredRuntimes = computed(() => {
       (currentScope.value === "user" ? rt.global_version.includes(q) : rt.active_version.includes(q))
   );
 });
+function isToolUpgradable(rt: RuntimeItem): boolean {
+  if (rt.pinned) return false;
+  return Boolean(
+    getLocalUpgradableVersion(rt, currentScope.value) ||
+    getRemoteUpgradableVersion(rt.id)
+  );
+}
 
-const scopeInstalledCount = computed(() => {
-  return filteredRuntimes.value.reduce((acc, rt) => acc + (rt.installed_versions?.length || 0), 0);
+const scopeUpgradableCount = computed(() => {
+  return filteredRuntimes.value.filter(isToolUpgradable).length;
 });
 
 watch(
@@ -1221,11 +1233,33 @@ function getLocalUpgradableVersion(rt: RuntimeItem, scope: "workspace" | "user" 
 }
 
 function getRemoteUpgradableVersion(toolId: string): string | null {
-  const match = updateResults.value.find((r) => r.id === toolId || r.name === toolId);
+  const normId = (id: string) => (id || "").replace(/^github:/, "").toLowerCase();
+  const shortName = (id: string) => normId(id).split("/").pop() || "";
+  const targetNorm = normId(toolId);
+  const targetShort = shortName(toolId);
+
+  const match = updateResults.value.find((r) => {
+    if (r.id === toolId || r.name === toolId) return true;
+    const rNorm = normId(r.id || "");
+    const rShort = shortName(r.id || "");
+    const rName = (r.name || "").toLowerCase();
+    return (
+      (targetNorm && rNorm === targetNorm) ||
+      (targetShort && (rShort === targetShort || rName === targetShort))
+    );
+  });
   if (!match || !match.has_update || match.pinned || !match.latest_version) {
     return null;
   }
-  const rt = runtimes.value.find((r) => r.id === toolId);
+  const rt = runtimes.value.find((r) => {
+    if (r.id === toolId || r.name === toolId) return true;
+    const rNorm = normId(r.id || "");
+    const rShort = shortName(r.id || "");
+    return (
+      (targetNorm && rNorm === targetNorm) ||
+      (targetShort && rShort === targetShort)
+    );
+  });
   if (rt) {
     const cur = currentScope.value === "workspace" ? (rt.active_version || rt.global_version) : rt.global_version;
     if (cur) {
@@ -2016,6 +2050,17 @@ onBeforeUnmount(() => {
   border-color: rgba(2, 132, 199, 0.3);
   color: var(--accent-cyan);
   font-weight: 600;
+}
+
+.stat-badge.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stat-badge.clickable:hover {
+  filter: brightness(1.15);
+  box-shadow: 0 0 8px rgba(2, 132, 199, 0.25);
+  transform: translateY(-1px);
 }
 
 /* Grid */

@@ -250,6 +250,7 @@ export const hiIn: TranslationDict = {
   "runtimes.remote_list_tip": "Official releases available for installation",
   "runtimes.count_runtimes_suffix": "Environments",
   "runtimes.count_installed_suffix": "Installed Releases",
+  "runtimes.count_upgradable_suffix": "अपग्रेड करने योग्य",
   "runtimes.migrating": "Importing legacy version configurations to .unirtm.toml...",
   "runtimes.migrate_success": "Successfully migrated legacy version files into .unirtm.toml!",
   "runtimes.installed": "Installed",

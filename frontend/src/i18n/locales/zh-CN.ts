@@ -68,6 +68,7 @@ export const zhCn: TranslationDict = {
   "runtimes.remote_list_tip": "官方发布的可用版本列表",
   "runtimes.count_runtimes_suffix": "个工具",
   "runtimes.count_installed_suffix": "个已装版本",
+  "runtimes.count_upgradable_suffix": "个可升级",
   "runtimes.migrating": "正在导入旧版本配置到 .unirtm.toml...",
   "runtimes.migrate_success": "已成功将旧版本文件配置迁移至 .unirtm.toml！",
   "runtimes.installed": "已安装",
