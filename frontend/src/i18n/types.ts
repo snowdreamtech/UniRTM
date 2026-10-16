@@ -24,6 +24,11 @@ export interface TranslationDict {
   "drawer.empty_tasks"?: string;
   "drawer.empty_doctor"?: string;
   "drawer.clear_logs"?: string;
+  "drawer.copy_all"?: string;
+  "drawer.copy_all_success"?: string;
+  "drawer.copy_row"?: string;
+  "drawer.copy_row_success"?: string;
+  "drawer.empty_copy"?: string;
   "drawer.toggle_scroll"?: string;
   "drawer.toggle_max"?: string;
   "drawer.maximize"?: string;

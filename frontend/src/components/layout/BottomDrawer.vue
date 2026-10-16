@@ -54,6 +54,21 @@
         </button>
         <button
           class="drawer-action-btn"
+          :class="{ active: isCopiedAll }"
+          :title="copyAllTitle"
+          :data-tooltip="copyAllTitle"
+          @click="handleCopyAll"
+        >
+          <svg v-if="!isCopiedAll" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" />
+            <path d="M10.5 5.5V3.5a1.5 1.5 0 0 0-1.5-1.5h-5A1.5 1.5 0 0 0 2.5 3.5v5a1.5 1.5 0 0 0 1.5 1.5h1.5" />
+          </svg>
+          <svg v-else viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--success, #10b981);">
+            <path d="M3.5 8.5l3 3 6-6" />
+          </svg>
+        </button>
+        <button
+          class="drawer-action-btn"
           :class="{ active: autoScroll }"
           :title="autoScrollTitle"
           :data-tooltip="autoScrollTitle"
@@ -106,7 +121,8 @@
         v-for="(log, idx) in displayLogs"
         :key="idx"
         class="log-row"
-        :class="'level-' + log.level.toLowerCase()"
+        :class="['level-' + log.level.toLowerCase(), { copied: copiedRowIdx === idx }]"
+        @dblclick="handleCopyRow(log, idx)"
       >
         <span class="log-time">{{ log.timestamp }}</span>
         <span class="log-badge" :class="'badge-' + log.level.toLowerCase()">
@@ -114,6 +130,22 @@
         </span>
         <span class="log-msg">{{ log.message }}</span>
         <span v-if="log.details" class="log-details">{{ log.details }}</span>
+
+        <!-- Single Line Copy Button -->
+        <button
+          class="log-row-copy-btn"
+          :class="{ copied: copiedRowIdx === idx }"
+          @click.stop="handleCopyRow(log, idx)"
+          :title="t('drawer.copy_row') || '复制单行日志'"
+        >
+          <svg v-if="copiedRowIdx !== idx" viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" />
+            <path d="M10.5 5.5V3.5a1.5 1.5 0 0 0-1.5-1.5h-5A1.5 1.5 0 0 0 2.5 3.5v5a1.5 1.5 0 0 0 1.5 1.5h1.5" />
+          </svg>
+          <svg v-else viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--success, #10b981);">
+            <path d="M3.5 8.5l3 3 6-6" />
+          </svg>
+        </button>
       </div>
     </div>
   </div>
@@ -123,6 +155,7 @@
 import { ref, computed, watch, nextTick } from "vue";
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
+import { useToast } from "../../composables/useToast";
 
 export interface LogItem {
   timestamp: string;
@@ -243,6 +276,7 @@ const emptyStateText = computed(() => {
 });
 
 const clearLogsTitle = computed(() => t("drawer.clear_logs") || "清空控制台日志");
+const copyAllTitle = computed(() => t("drawer.copy_all") || "复制全部日志");
 const autoScrollTitle = computed(() =>
   autoScroll.value
     ? t("drawer.scroll_enabled") || "自动滚动（已开启）"
@@ -254,6 +288,74 @@ const maximizeTitle = computed(() =>
     : t("drawer.maximize") || "最大化视窗高度"
 );
 const closeTitle = computed(() => t("drawer.close_hint") || "关闭控制台面板");
+
+const { showToast } = useToast();
+const isCopiedAll = ref(false);
+const copiedRowIdx = ref<number | null>(null);
+
+function formatLogLine(log: LogItem): string {
+  const parts = [`[${log.timestamp}]`, `[${log.level}]`, log.message];
+  if (log.details) {
+    parts.push(log.details);
+  }
+  return parts.join(" ");
+}
+
+async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (e) {
+    // fallback
+  }
+  try {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    textArea.style.top = "-9999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand("copy");
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function handleCopyAll() {
+  if (displayLogs.value.length === 0) {
+    showToast(t("drawer.empty_copy") || "当前暂无日志可复制", "warning");
+    return;
+  }
+  const text = displayLogs.value.map(formatLogLine).join("\n");
+  const success = await copyText(text);
+  if (success) {
+    isCopiedAll.value = true;
+    setTimeout(() => {
+      isCopiedAll.value = false;
+    }, 1500);
+    showToast(t("drawer.copy_all_success") || "已复制当前面板全部日志到剪贴板", "success");
+  }
+}
+
+async function handleCopyRow(log: LogItem, idx: number) {
+  const lineText = formatLogLine(log);
+  const success = await copyText(lineText);
+  if (success) {
+    copiedRowIdx.value = idx;
+    setTimeout(() => {
+      if (copiedRowIdx.value === idx) {
+        copiedRowIdx.value = null;
+      }
+    }, 1500);
+    showToast(t("drawer.copy_row_success") || "已复制单行日志", "success");
+  }
+}
 
 watch(
   () => props.logs.length,
@@ -435,11 +537,57 @@ watch(
 }
 
 .log-row {
+  position: relative;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.6rem;
-  padding: 0.15rem 0;
+  padding: 0.18rem 0.45rem;
+  border-radius: 4px;
   word-break: break-all;
+  transition: background 0.15s ease;
+}
+
+.log-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="light"] .log-row:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.log-row.copied {
+  background: rgba(16, 185, 129, 0.15) !important;
+}
+
+.log-row-copy-btn {
+  margin-left: auto;
+  opacity: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.log-row:hover .log-row-copy-btn,
+.log-row-copy-btn.copied {
+  opacity: 0.75;
+}
+
+.log-row-copy-btn:hover,
+.log-row-copy-btn.copied {
+  opacity: 1;
+  color: var(--accent-cyan);
+  border-color: var(--card-border-active);
+  background: var(--input-bg);
 }
 
 .log-time {
