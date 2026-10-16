@@ -740,18 +740,6 @@ const defaultRuntimes: RuntimeItem[] = [
     is_legacy: false,
     legacy_file: "",
   },
-  {
-    id: "rust",
-    name: "Rust",
-    description: "Rust toolchain & cargo build system",
-    homepage: "https://rust-lang.org",
-    installed_versions: ["1.85.0"],
-    active_version: "1.85.0",
-    global_version: "1.85.0",
-    source: ".unirtm.toml",
-    is_legacy: false,
-    legacy_file: "",
-  },
 ];
 
 const runtimes = ref<RuntimeItem[]>([...defaultRuntimes]);

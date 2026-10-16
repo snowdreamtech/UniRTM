@@ -108,7 +108,6 @@ func handleGetToolsStatus(w http.ResponseWriter, r *http.Request) {
 	knownIDs := make(map[string]bool)
 
 	for _, cr := range coreRuntimes {
-		knownIDs[cr.ID] = true
 		activeVer := ""
 		source := ""
 		isLegacy := false
@@ -151,20 +150,24 @@ func handleGetToolsStatus(w http.ResponseWriter, r *http.Request) {
 			source = "global"
 		}
 
-		toolsList = append(toolsList, ToolInfo{
-			ID:                cr.ID,
-			Name:              cr.Name,
-			Description:       cr.Description,
-			Homepage:          cr.Homepage,
-			InstalledVersions: installedMap[cr.ID],
-			ActiveVersion:     activeVer,
-			GlobalVersion:     globalVer,
-			Source:            source,
-			IsLegacy:          isLegacy,
-			LegacyFile:        legacyFile,
-			Pinned:            pinned,
-			PinReason:         pinReason,
-		})
+		// Only include core runtime if it is configured in workspace/global or installed locally
+		if activeVer != "" || globalVer != "" || len(installedMap[cr.ID]) > 0 {
+			knownIDs[cr.ID] = true
+			toolsList = append(toolsList, ToolInfo{
+				ID:                cr.ID,
+				Name:              cr.Name,
+				Description:       cr.Description,
+				Homepage:          cr.Homepage,
+				InstalledVersions: installedMap[cr.ID],
+				ActiveVersion:     activeVer,
+				GlobalVersion:     globalVer,
+				Source:            source,
+				IsLegacy:          isLegacy,
+				LegacyFile:        legacyFile,
+				Pinned:            pinned,
+				PinReason:         pinReason,
+			})
+		}
 	}
 
 	// 4. Append all other tools configured in workspace, global, or installed locally

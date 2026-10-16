@@ -219,10 +219,9 @@ const filteredDashboardItems = computed(() => {
 
 // Tools items (Synchronized with active toolchains and runtimes)
 const toolItems = ref([
-  { id: "node", name: "Node.js", icon: "node", version: "20.18.3", status: "success" },
+  { id: "node", name: "Node.js", icon: "node", version: "26.8.1", status: "success" },
   { id: "go", name: "Go", icon: "go", version: "1.27.2", status: "success" },
   { id: "python", name: "Python", icon: "python", version: "3.14.7", status: "success" },
-  { id: "rust", name: "Rust", icon: "rust", version: "1.85.0", status: "success" },
 ]);
 
 const filteredToolItems = computed(() => {
@@ -272,20 +271,24 @@ onMounted(async () => {
       const data = await res.json();
       const list = data.tools || data.runtimes;
       if (list && Array.isArray(list)) {
+        const items = [];
         for (const rt of list) {
-          const matched = toolItems.value.find((t) => t.id === rt.id || t.name === rt.id);
-          if (matched) {
-            if (rt.active_version) matched.version = rt.active_version;
-            else if (rt.global_version) matched.version = rt.global_version;
-          } else {
-            toolItems.value.push({
+          const ver =
+            rt.active_version ||
+            rt.global_version ||
+            (rt.installed_versions && rt.installed_versions.length > 0 ? rt.installed_versions[0] : "");
+          if (ver) {
+            items.push({
               id: rt.id,
               name: rt.name,
               icon: rt.id,
-              version: rt.active_version || rt.global_version || "installed",
+              version: ver,
               status: "success",
             });
           }
+        }
+        if (items.length > 0) {
+          toolItems.value = items;
         }
       }
     }

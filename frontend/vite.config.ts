@@ -338,19 +338,33 @@ export default defineConfig({
               swift: { name: "Swift", desc: "General-purpose programming language developed by Apple", hp: "https://swift.org", defaultVer: "6.0.3" },
             };
 
-            // 1. Core languages always placed at the very top
-            const coreLangIds = ["node", "go", "python", "rust", "java", "ruby"];
+            // 1. Collect all tool IDs that are actually configured (workspace/user) or active via legacy files
+            const activeLegacyIds: string[] = [];
+            if (fs.existsSync(nvmrc) || fs.existsSync(nodeVer)) activeLegacyIds.push("node");
+            if (fs.existsSync(goVer)) activeLegacyIds.push("go");
+            if (fs.existsSync(pyVer)) activeLegacyIds.push("python");
 
-            // 2. All other configured tools from workspace & user TOML, keeping original IDs & prefixes intact
-            const otherToolIds = Array.from(
-              new Set([...Object.keys(wsTools), ...Object.keys(userTools)])
-            )
-              .filter((id) => !coreLangIds.includes(id))
-              .sort((a, b) => a.localeCompare(b));
+            const configuredIds = Array.from(
+              new Set([
+                ...Object.keys(wsTools),
+                ...Object.keys(userTools),
+                ...activeLegacyIds,
+              ])
+            );
 
-            const allToolIds = [...coreLangIds, ...otherToolIds];
+            // Priority order for standard language runtimes if they are configured
+            const priorityLangs = ["node", "go", "python", "rust", "bun", "deno", "java", "ruby"];
+            const sortedToolIds = configuredIds.sort((a, b) => {
+              const aIdx = priorityLangs.indexOf(a);
+              const bIdx = priorityLangs.indexOf(b);
+              if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+              if (aIdx !== -1) return -1;
+              if (bIdx !== -1) return 1;
+              return a.localeCompare(b);
+            });
+
             const toolsList: any[] = [];
-            for (const id of allToolIds) {
+            for (const id of sortedToolIds) {
               const meta = knownLanguageRuntimes[id] || {
                 name: id,
                 desc: "Unified toolchain managed via UniRTM",
