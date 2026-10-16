@@ -1770,18 +1770,35 @@ async function onVsixFileSelected(e: Event) {
 
   try {
     const installed = await installTheme(file);
-    themeInstallMsg.value = `✓ 成功安装 ${installed.length} 个主题/图标项！`;
+    const colorItems = installed.filter((i) => i.type === "color");
+    const iconItems = installed.filter((i) => i.type === "icon");
+    const productItems = installed.filter((i) => i.type === "product");
+
+    const parts: string[] = [];
+    if (colorItems.length > 0) parts.push(`${colorItems.length} 个颜色主题`);
+    if (iconItems.length > 0) parts.push(`${iconItems.length} 个文件图标`);
+    if (productItems.length > 0) parts.push(`${productItems.length} 个界面图标`);
+
+    const typeSummary = parts.length > 0 ? parts.join("，") : `${installed.length} 项`;
+    themeInstallMsg.value = `✓ 成功导入 ${typeSummary}！`;
+
     if (installed.length > 0) {
       const first = installed[0];
       if (first.type === "color") {
         await setActiveTheme(first.id, undefined);
       } else if (first.type === "icon") {
         await setActiveTheme(undefined, first.id);
+      } else if (first.type === "product") {
+        await setActiveTheme(undefined, undefined, undefined, first.id);
       }
     }
+    await fetchThemes();
+    await loadConfigData();
+    showToast(`成功导入 VS Code 扩展包，识别到: ${typeSummary}`, "success");
   } catch (err: any) {
     themeInstallError.value = true;
     themeInstallMsg.value = `✕ 安装失败: ${err.message || err}`;
+    showToast(`导入失败: ${err.message || err}`, "error");
   } finally {
     isInstallingTheme.value = false;
     target.value = "";

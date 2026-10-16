@@ -5,6 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
+import { Buffer } from "node:buffer";
 
 function findUnirtmBinary(rootDir: string): string {
   const isWindows = process.platform === "win32";
@@ -1760,6 +1761,100 @@ print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes'
                 const outStr = execFileSync("python3", ["-c", script, tmpZip], { encoding: "utf-8" });
                 try { fs.unlinkSync(tmpZip); } catch {}
                 const parsed = JSON.parse(outStr.trim());
+                const installed: any[] = [];
+                for (const t of parsed.themes || []) {
+                  installed.push({
+                    id: t.id || t.label,
+                    name: t.label || t.id,
+                    type: "color",
+                    is_builtin: false,
+                    ui_theme: t.uiTheme || "vs-dark",
+                    package_id: parsed.name,
+                    version: parsed.version,
+                  });
+                }
+                for (const t of parsed.iconThemes || []) {
+                  installed.push({
+                    id: t.id || t.label,
+                    name: t.label || t.id,
+                    type: "icon",
+                    is_builtin: false,
+                    package_id: parsed.name,
+                    version: parsed.version,
+                  });
+                }
+                for (const t of parsed.productIconThemes || []) {
+                  installed.push({
+                    id: t.id || t.label,
+                    name: t.label || t.id,
+                    type: "product",
+                    is_builtin: false,
+                    package_id: parsed.name,
+                    version: parsed.version,
+                  });
+                }
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, installed }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
+          if (req.url === "/api/themes/install" && req.method === "POST") {
+            const chunks: any[] = [];
+            req.on("data", (c: any) => { chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c)); });
+            req.on("end", async () => {
+              try {
+                const totalBuffer = Buffer.concat(chunks);
+                const tmpZip = path.join(os.tmpdir(), `unirtm_theme_upload_${Date.now()}.vsix`);
+
+                const script = `
+import sys, io, zipfile, json, os
+
+raw = open(sys.argv[1], 'rb').read()
+idx = raw.find(b'PK\\x03\\x04')
+if idx == -1:
+    print(json.dumps({'error': 'invalid zip archive'}))
+    sys.exit(1)
+eocd = raw.rfind(b'PK\\x05\\x06')
+zip_bytes = raw[idx:eocd + 22] if eocd != -1 else raw[idx:]
+zf = zipfile.ZipFile(io.BytesIO(zip_bytes), 'r')
+
+pkg_raw = zf.read('extension/package.json').decode('utf-8', errors='ignore')
+pkg = json.loads(pkg_raw)
+name = pkg.get('name', 'custom-theme')
+dest = os.path.expanduser(os.path.join('~/.config/unirtm/themes', name))
+os.makedirs(dest, exist_ok=True)
+for member in zf.namelist():
+    if member.startswith('extension/') and not member.endswith('/'):
+        rel = member[len('extension/'):]
+        target = os.path.join(dest, rel)
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        with open(target, 'wb') as f:
+            f.write(zf.read(member))
+print(json.dumps({
+    'name': name,
+    'version': pkg.get('version', '0.0.1'),
+    'themes': pkg.get('contributes', {}).get('themes', []),
+    'iconThemes': pkg.get('contributes', {}).get('iconThemes', []),
+    'productIconThemes': pkg.get('contributes', {}).get('productIconThemes', [])
+}))
+`;
+                fs.writeFileSync(tmpZip, totalBuffer);
+                const outStr = execFileSync("python3", ["-c", script, tmpZip], { encoding: "utf-8" });
+                try { fs.unlinkSync(tmpZip); } catch {}
+                const parsed = JSON.parse(outStr.trim());
+                if (parsed.error) {
+                  res.statusCode = 400;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: parsed.error }));
+                  return;
+                }
+
                 const installed: any[] = [];
                 for (const t of parsed.themes || []) {
                   installed.push({
