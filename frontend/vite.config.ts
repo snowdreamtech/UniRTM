@@ -1257,22 +1257,25 @@ export default defineConfig({
                 const body = JSON.parse(bodyStr || "{}");
                 const proxy = body.proxy || body;
                 const scope = body.scope;
-                if (!proxy || !proxy.enabled) {
-                  const args = ["network", "proxy", "off"];
-                  if (scope === "user") args.push("--global");
-                  execFileSync(unirtmBin, args, { cwd: rootDir, stdio: "pipe" });
-                } else {
-                  const rawUrl = proxy.http || proxy.socks5 || "";
-                  if (rawUrl) {
-                    const args = ["network", "proxy", "set", rawUrl];
-                    if (scope === "user") args.push("--global");
-                    execFileSync(unirtmBin, args, { cwd: rootDir, stdio: "pipe" });
-                  } else {
-                    const args = ["network", "proxy", "on"];
-                    if (scope === "user") args.push("--global");
-                    execFileSync(unirtmBin, args, { cwd: rootDir, stdio: "pipe" });
-                  }
+                const args = ["network", "proxy", "set"];
+                if (scope === "user") args.push("--global");
+
+                if (proxy.http !== undefined) {
+                  args.push("--http", String(proxy.http));
                 }
+                if (proxy.https !== undefined) {
+                  args.push("--https", String(proxy.https));
+                }
+                if (proxy.socks5 !== undefined) {
+                  args.push("--socks5", String(proxy.socks5));
+                }
+                if (proxy.no_proxy !== undefined) {
+                  args.push("--no-proxy", String(proxy.no_proxy));
+                }
+                if (!proxy || !proxy.enabled) {
+                  args.push("--off");
+                }
+                execFileSync(unirtmBin, args, { cwd: rootDir, stdio: "pipe" });
                 res.setHeader("Content-Type", "application/json");
                 res.end(JSON.stringify({ ok: true, proxy }));
               } catch (err: any) {
@@ -1921,41 +1924,18 @@ print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes'
                 const color_theme_id = body.color || body.color_theme_id;
                 const icon_theme_id = body.icon || body.icon_theme_id;
                 const appearance = body.appearance;
-                const userConfigDir = path.join(os.homedir(), ".config", "unirtm");
-                if (!fs.existsSync(userConfigDir)) {
-                  fs.mkdirSync(userConfigDir, { recursive: true });
-                }
-                const userPath = path.join(userConfigDir, "unirtm.toml");
-                let content = fs.existsSync(userPath) ? fs.readFileSync(userPath, "utf-8") : "";
-
-                if (color_theme_id) {
-                  if (content.match(/(?:color_)?theme\s*=/)) {
-                    content = content.replace(/(?:color_)?theme\s*=\s*"[^"]*"/, `theme = "${color_theme_id}"`);
-                  } else {
-                    content += `\n[settings]\ntheme = "${color_theme_id}"\n`;
+                const unirtmBin = findUnirtmBinary(rootDir);
+                if (fs.existsSync(unirtmBin)) {
+                  if (color_theme_id) {
+                    execFileSync(unirtmBin, ["config", "set", "--global", "settings.theme", String(color_theme_id)], { cwd: rootDir, stdio: "pipe" });
+                  }
+                  if (icon_theme_id) {
+                    execFileSync(unirtmBin, ["config", "set", "--global", "settings.icon_theme", String(icon_theme_id)], { cwd: rootDir, stdio: "pipe" });
+                  }
+                  if (appearance) {
+                    execFileSync(unirtmBin, ["config", "set", "--global", "settings.appearance", String(appearance)], { cwd: rootDir, stdio: "pipe" });
                   }
                 }
-                if (icon_theme_id) {
-                  if (content.match(/icon_theme\s*=/)) {
-                    content = content.replace(/icon_theme\s*=\s*"[^"]*"/, `icon_theme = "${icon_theme_id}"`);
-                  } else {
-                    if (!content.includes("[settings]")) {
-                      content += `\n[settings]\n`;
-                    }
-                    content += `icon_theme = "${icon_theme_id}"\n`;
-                  }
-                }
-                if (appearance) {
-                  if (content.match(/appearance\s*=/)) {
-                    content = content.replace(/appearance\s*=\s*"[^"]*"/, `appearance = "${appearance}"`);
-                  } else {
-                    if (!content.includes("[settings]")) {
-                      content += `\n[settings]\n`;
-                    }
-                    content += `appearance = "${appearance}"\n`;
-                  }
-                }
-                fs.writeFileSync(userPath, content, "utf-8");
 
                 res.setHeader("Content-Type", "application/json");
                 res.end(JSON.stringify({

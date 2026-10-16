@@ -430,6 +430,7 @@
                     class="setting-text-input font-mono"
                     placeholder="http://127.0.0.1:7890 (留空为不使用)"
                     :disabled="!networkStatus.proxy.enabled"
+                    @change="handleSaveProxy"
                     @blur="handleSaveProxy"
                     @keydown.enter="handleSaveProxy"
                   />
@@ -443,6 +444,7 @@
                     class="setting-text-input font-mono"
                     placeholder="socks5://127.0.0.1:10808 (可选)"
                     :disabled="!networkStatus.proxy.enabled"
+                    @change="handleSaveProxy"
                     @blur="handleSaveProxy"
                     @keydown.enter="handleSaveProxy"
                   />
@@ -456,6 +458,7 @@
                     class="setting-text-input font-mono"
                     placeholder="localhost,127.0.0.1,::1,*.local,*.internal"
                     :disabled="!networkStatus.proxy.enabled"
+                    @change="handleSaveProxy"
                     @blur="handleSaveProxy"
                     @keydown.enter="handleSaveProxy"
                   />
@@ -728,6 +731,7 @@
                     :value="networkStatus.effective[eco]?.url"
                     @change="handleOverrideRegistry(eco, ($event.target as HTMLInputElement).value)"
                     @blur="handleOverrideRegistry(eco, ($event.target as HTMLInputElement).value)"
+                    @keydown.enter="handleOverrideRegistry(eco, ($event.target as HTMLInputElement).value)"
                   />
 
                   <!-- Dynamic Ping / Latency Badge for this ecosystem -->
@@ -955,7 +959,7 @@ const showRawTomlModal = ref(false);
 const isCopied = ref(false);
 
 watch(activeScope, () => {
-  syncFieldsFromConfig();
+  loadConfigData();
   loadNetworkStatus();
 });
 
@@ -1327,6 +1331,9 @@ async function handleAddEcosystem() {
   const url = newEcoUrl.value.trim();
   if (!eco || !url) return;
   isAddingEco.value = true;
+  isSaving.value = true;
+  saveStatusType.value = "saving";
+  saveStatusText.value = "正在添加生态...";
   try {
     const res = await fetch("/api/network/registry/add", {
       method: "POST",
@@ -1337,17 +1344,34 @@ async function handleAddEcosystem() {
       showAddEcoModal.value = false;
       newEcoId.value = "";
       newEcoUrl.value = "";
+      saveStatusType.value = "success";
+      saveStatusText.value = "已自动保存";
       await loadNetworkStatus();
-      loadConfigData();
+      await loadConfigData();
+      showToast(`已添加生态镜像源: ${eco}`, "success");
+      setTimeout(() => {
+        saveStatusType.value = "idle";
+        saveStatusText.value = "";
+      }, 2000);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      saveStatusType.value = "error";
+      saveStatusText.value = `添加失败: ${err.error || "未知错误"}`;
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
+    saveStatusType.value = "error";
+    saveStatusText.value = `网络错误: ${err.message}`;
   } finally {
     isAddingEco.value = false;
+    isSaving.value = false;
   }
 }
 
 async function handleDeleteEcosystem(eco: string) {
+  isSaving.value = true;
+  saveStatusType.value = "saving";
+  saveStatusText.value = "正在移除生态...";
   try {
     const res = await fetch("/api/network/registry/delete", {
       method: "POST",
@@ -1355,11 +1379,26 @@ async function handleDeleteEcosystem(eco: string) {
       body: JSON.stringify({ ecosystem: eco, scope: activeScope.value }),
     });
     if (res.ok) {
+      saveStatusType.value = "success";
+      saveStatusText.value = "已移除生态";
       await loadNetworkStatus();
-      loadConfigData();
+      await loadConfigData();
+      showToast(`已从矩阵中移除生态: ${eco}`, "success");
+      setTimeout(() => {
+        saveStatusType.value = "idle";
+        saveStatusText.value = "";
+      }, 2000);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      saveStatusType.value = "error";
+      saveStatusText.value = `移除失败: ${err.error || "未知错误"}`;
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
+    saveStatusType.value = "error";
+    saveStatusText.value = `网络错误: ${err.message}`;
+  } finally {
+    isSaving.value = false;
   }
 }
 
@@ -1724,30 +1763,81 @@ async function onVsixFileSelected(e: Event) {
 }
 
 async function onAppearanceChange(mode: "system" | "light" | "dark") {
-  await setActiveTheme(undefined, undefined, mode);
-  showToast(
-    mode === "system"
-      ? "已设置为跟随系统外观"
-      : mode === "light"
-      ? "已切换为浅色模式"
-      : "已切换为深色模式",
-    "info"
-  );
+  isSaving.value = true;
+  saveStatusType.value = "saving";
+  saveStatusText.value = "正在切换外观...";
+  try {
+    await setActiveTheme(undefined, undefined, mode);
+    saveStatusType.value = "success";
+    saveStatusText.value = "已自动保存";
+    await loadConfigData();
+    showToast(
+      mode === "system"
+        ? "已设置为跟随系统外观"
+        : mode === "light"
+        ? "已切换为浅色模式"
+        : "已切换为深色模式",
+      "info"
+    );
+    setTimeout(() => {
+      saveStatusType.value = "idle";
+      saveStatusText.value = "";
+    }, 2000);
+  } catch (err: any) {
+    saveStatusType.value = "error";
+    saveStatusText.value = `外观设置失败: ${err.message || err}`;
+  } finally {
+    isSaving.value = false;
+  }
 }
 
 async function onColorThemeChange(val: string) {
-  await setActiveTheme(val, undefined, undefined);
-  appTheme.value = val;
-  const themeObj = colorThemes.value.find((c) => c.id === val);
-  const themeName = cleanThemeLabel(themeObj ? themeObj.name : val);
-  showToast(`已应用配色主题: ${themeName}`, "success");
+  isSaving.value = true;
+  saveStatusType.value = "saving";
+  saveStatusText.value = "正在应用主题...";
+  try {
+    await setActiveTheme(val, undefined, undefined);
+    appTheme.value = val;
+    const themeObj = colorThemes.value.find((c) => c.id === val);
+    const themeName = cleanThemeLabel(themeObj ? themeObj.name : val);
+    saveStatusType.value = "success";
+    saveStatusText.value = "已自动保存";
+    await loadConfigData();
+    showToast(`已应用配色主题: ${themeName}`, "success");
+    setTimeout(() => {
+      saveStatusType.value = "idle";
+      saveStatusText.value = "";
+    }, 2000);
+  } catch (err: any) {
+    saveStatusType.value = "error";
+    saveStatusText.value = `应用主题失败: ${err.message || err}`;
+  } finally {
+    isSaving.value = false;
+  }
 }
 
 async function onIconThemeChange(val: string) {
-  await setActiveTheme(undefined, val, undefined);
-  const iconObj = iconThemes.value.find((i) => i.id === val);
-  const iconName = cleanThemeLabel(iconObj ? iconObj.name : val);
-  showToast(`已应用文件图标主题: ${iconName}`, "success");
+  isSaving.value = true;
+  saveStatusType.value = "saving";
+  saveStatusText.value = "正在应用图标主题...";
+  try {
+    await setActiveTheme(undefined, val, undefined);
+    const iconObj = iconThemes.value.find((i) => i.id === val);
+    const iconName = cleanThemeLabel(iconObj ? iconObj.name : val);
+    saveStatusType.value = "success";
+    saveStatusText.value = "已自动保存";
+    await loadConfigData();
+    showToast(`已应用文件图标主题: ${iconName}`, "success");
+    setTimeout(() => {
+      saveStatusType.value = "idle";
+      saveStatusText.value = "";
+    }, 2000);
+  } catch (err: any) {
+    saveStatusType.value = "error";
+    saveStatusText.value = `应用图标失败: ${err.message || err}`;
+  } finally {
+    isSaving.value = false;
+  }
 }
 
 
@@ -1783,18 +1873,36 @@ async function loadNetworkStatus() {
 }
 
 async function handleUseProfile(id: string) {
+  isSaving.value = true;
+  saveStatusType.value = "saving";
+  saveStatusText.value = "正在切换档案...";
   try {
     const res = await fetch("/api/network/profile/use", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ profile_id: id, scope: activeScope.value }),
     });
+    const data = await res.json().catch(() => ({}));
     if (res.ok) {
+      saveStatusType.value = "success";
+      saveStatusText.value = "已应用档案";
       await loadNetworkStatus();
-      loadConfigData();
+      await loadConfigData();
+      showToast(`已切换网络档案为: ${id}`, "success");
+      setTimeout(() => {
+        saveStatusType.value = "idle";
+        saveStatusText.value = "";
+      }, 2000);
+    } else {
+      saveStatusType.value = "error";
+      saveStatusText.value = `切换档案失败: ${data.error || "未知错误"}`;
+      showToast(`切换档案失败: ${data.error || "未知错误"}`, "error");
     }
-  } catch (err) {
-    console.error(err);
+  } catch (err: any) {
+    saveStatusType.value = "error";
+    saveStatusText.value = `网络错误: ${err.message}`;
+  } finally {
+    isSaving.value = false;
   }
 }
 
@@ -1802,6 +1910,9 @@ async function handleSaveAsProfile() {
   const pid = newProfileId.value.trim();
   if (!pid) return;
   isSavingProfile.value = true;
+  isSaving.value = true;
+  saveStatusType.value = "saving";
+  saveStatusText.value = "正在创建档案...";
   try {
     const res = await fetch("/api/network/profile/save", {
       method: "POST",
@@ -1816,21 +1927,36 @@ async function handleSaveAsProfile() {
       showCreateProfileModal.value = false;
       newProfileId.value = "";
       newProfileName.value = "";
+      saveStatusType.value = "success";
+      saveStatusText.value = "已创建并激活档案";
       await loadNetworkStatus();
-      loadConfigData();
+      await loadConfigData();
+      showToast(`已创建并激活档案: ${pid}`, "success");
+      setTimeout(() => {
+        saveStatusType.value = "idle";
+        saveStatusText.value = "";
+      }, 2000);
     } else {
       const err = await res.json().catch(() => ({}));
+      saveStatusType.value = "error";
+      saveStatusText.value = `创建档案失败: ${err.error || "未知错误"}`;
       alert(err.error || "创建档案失败");
     }
   } catch (err: any) {
     console.error(err);
+    saveStatusType.value = "error";
+    saveStatusText.value = `请求失败: ${err.message}`;
     alert("请求失败: " + err.message);
   } finally {
     isSavingProfile.value = false;
+    isSaving.value = false;
   }
 }
 
 async function handleResetBuiltinProfile(id: string) {
+  isSaving.value = true;
+  saveStatusType.value = "saving";
+  saveStatusText.value = "正在重置档案...";
   try {
     const res = await fetch("/api/network/profile/reset", {
       method: "POST",
@@ -1838,15 +1964,32 @@ async function handleResetBuiltinProfile(id: string) {
       body: JSON.stringify({ profile_id: id, scope: activeScope.value }),
     });
     if (res.ok) {
+      saveStatusType.value = "success";
+      saveStatusText.value = "已恢复出厂默认值";
       await loadNetworkStatus();
-      loadConfigData();
+      await loadConfigData();
+      showToast("已恢复出厂默认值", "success");
+      setTimeout(() => {
+        saveStatusType.value = "idle";
+        saveStatusText.value = "";
+      }, 2000);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      saveStatusType.value = "error";
+      saveStatusText.value = `重置失败: ${err.error || "未知错误"}`;
     }
-  } catch (err) {
-    console.error(err);
+  } catch (err: any) {
+    saveStatusType.value = "error";
+    saveStatusText.value = `网络错误: ${err.message}`;
+  } finally {
+    isSaving.value = false;
   }
 }
 
 async function handleResetAllEcosystems() {
+  isSaving.value = true;
+  saveStatusType.value = "saving";
+  saveStatusText.value = "正在恢复默认生态...";
   try {
     const res = await fetch("/api/network/registry/reset-all", {
       method: "POST",
@@ -1854,15 +1997,33 @@ async function handleResetAllEcosystems() {
       body: JSON.stringify({ scope: activeScope.value }),
     });
     if (res.ok) {
+      saveStatusType.value = "success";
+      saveStatusText.value = "已恢复默认生态列表";
       await loadNetworkStatus();
-      loadConfigData();
+      await loadConfigData();
+      showToast("已恢复默认生态列表", "success");
+      setTimeout(() => {
+        saveStatusType.value = "idle";
+        saveStatusText.value = "";
+      }, 2000);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      saveStatusType.value = "error";
+      saveStatusText.value = `恢复失败: ${err.error || "未知错误"}`;
     }
-  } catch (err) {
-    console.error(err);
+  } catch (err: any) {
+    saveStatusType.value = "error";
+    saveStatusText.value = `网络错误: ${err.message}`;
+  } finally {
+    isSaving.value = false;
   }
 }
 
 async function handleOverrideRegistry(ecosystem: string, url: string) {
+  if (!ecosystem || !url) return;
+  isSaving.value = true;
+  saveStatusType.value = "saving";
+  saveStatusText.value = "正在更新镜像源...";
   try {
     const res = await fetch("/api/network/registry/override", {
       method: "POST",
@@ -1870,11 +2031,24 @@ async function handleOverrideRegistry(ecosystem: string, url: string) {
       body: JSON.stringify({ ecosystem, url, scope: activeScope.value }),
     });
     if (res.ok) {
+      saveStatusType.value = "success";
+      saveStatusText.value = "已自动保存";
       await loadNetworkStatus();
-      loadConfigData();
+      await loadConfigData();
+      setTimeout(() => {
+        saveStatusType.value = "idle";
+        saveStatusText.value = "";
+      }, 2000);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      saveStatusType.value = "error";
+      saveStatusText.value = `保存失败: ${err.error || "未知错误"}`;
     }
-  } catch (err) {
-    console.error(err);
+  } catch (err: any) {
+    saveStatusType.value = "error";
+    saveStatusText.value = `网络错误: ${err.message}`;
+  } finally {
+    isSaving.value = false;
   }
 }
 
@@ -1899,6 +2073,9 @@ function handleSelectMirrorPreset(ecosystem: string, url: string) {
 }
 
 async function handleResetRegistry(ecosystem: string) {
+  isSaving.value = true;
+  saveStatusType.value = "saving";
+  saveStatusText.value = "正在恢复预设...";
   try {
     const res = await fetch("/api/network/registry/reset", {
       method: "POST",
@@ -1906,16 +2083,32 @@ async function handleResetRegistry(ecosystem: string) {
       body: JSON.stringify({ ecosystem, scope: activeScope.value }),
     });
     if (res.ok) {
+      saveStatusType.value = "success";
+      saveStatusText.value = "已恢复预设";
       await loadNetworkStatus();
-      loadConfigData();
+      await loadConfigData();
+      setTimeout(() => {
+        saveStatusType.value = "idle";
+        saveStatusText.value = "";
+      }, 2000);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      saveStatusType.value = "error";
+      saveStatusText.value = `恢复失败: ${err.error || "未知错误"}`;
     }
   } catch (err) {
-    console.error(err);
+    saveStatusType.value = "error";
+    saveStatusText.value = "网络请求失败";
+  } finally {
+    isSaving.value = false;
   }
 }
 
 async function handleSaveProxy() {
   if (!networkStatus.value) return;
+  isSaving.value = true;
+  saveStatusType.value = "saving";
+  saveStatusText.value = "保存中...";
   try {
     const res = await fetch("/api/network/proxy", {
       method: "POST",
@@ -1926,11 +2119,24 @@ async function handleSaveProxy() {
       }),
     });
     if (res.ok) {
+      saveStatusType.value = "success";
+      saveStatusText.value = "已自动保存";
       await loadNetworkStatus();
-      loadConfigData();
+      await loadConfigData();
+      setTimeout(() => {
+        saveStatusType.value = "idle";
+        saveStatusText.value = "";
+      }, 2000);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      saveStatusType.value = "error";
+      saveStatusText.value = `保存失败: ${err.error || "未知错误"}`;
     }
-  } catch (err) {
-    console.error(err);
+  } catch (err: any) {
+    saveStatusType.value = "error";
+    saveStatusText.value = `网络错误: ${err.message}`;
+  } finally {
+    isSaving.value = false;
   }
 }
 

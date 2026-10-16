@@ -46,6 +46,11 @@ func init() {
 	networkProxyCmd.AddCommand(networkProxyStatusCmd)
 	networkProxyCmd.AddCommand(networkProxyOnCmd)
 	networkProxyCmd.AddCommand(networkProxyOffCmd)
+	networkProxySetCmd.Flags().StringVar(&proxyFlagHTTP, "http", "", "HTTP 代理服务器地址")
+	networkProxySetCmd.Flags().StringVar(&proxyFlagHTTPS, "https", "", "HTTPS 代理服务器地址")
+	networkProxySetCmd.Flags().StringVar(&proxyFlagSOCKS5, "socks5", "", "SOCKS5 代理服务器地址")
+	networkProxySetCmd.Flags().StringVar(&proxyFlagNoProxy, "no-proxy", "", "直连白名单 (逗号分隔)")
+	networkProxySetCmd.Flags().BoolVar(&proxyFlagOff, "off", false, "保存配置并关闭代理")
 	networkProxyCmd.AddCommand(networkProxySetCmd)
 
 	// Add subcommands to networkCmd
@@ -514,21 +519,49 @@ var networkProxyOffCmd = &cobra.Command{
 	},
 }
 
+var (
+	proxyFlagHTTP    string
+	proxyFlagHTTPS   string
+	proxyFlagSOCKS5  string
+	proxyFlagNoProxy string
+	proxyFlagOff     bool
+)
+
 var networkProxySetCmd = &cobra.Command{
-	Use:   "set <proxy_url>",
+	Use:   "set [proxy_url]",
 	Short: "设置代理服务器地址 (例如 http://127.0.0.1:7890 或 socks5://127.0.0.1:10808)",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mgr, path, _ := getNetworkManager()
-		rawURL := args[0]
 		p := mgr.Config().Proxy
-		p.Enabled = true
 
-		if strings.HasPrefix(rawURL, "socks5://") || strings.HasPrefix(rawURL, "socks5h://") {
-			p.SOCKS5 = rawURL
-		} else {
-			p.HTTP = rawURL
-			p.HTTPS = rawURL
+		if len(args) > 0 {
+			rawURL := args[0]
+			if strings.HasPrefix(rawURL, "socks5://") || strings.HasPrefix(rawURL, "socks5h://") {
+				p.SOCKS5 = rawURL
+			} else {
+				p.HTTP = rawURL
+				p.HTTPS = rawURL
+			}
+		}
+
+		if cmd.Flags().Changed("http") {
+			p.HTTP = proxyFlagHTTP
+		}
+		if cmd.Flags().Changed("https") {
+			p.HTTPS = proxyFlagHTTPS
+		}
+		if cmd.Flags().Changed("socks5") {
+			p.SOCKS5 = proxyFlagSOCKS5
+		}
+		if cmd.Flags().Changed("no-proxy") {
+			p.NoProxy = proxyFlagNoProxy
+		}
+
+		if proxyFlagOff {
+			p.Enabled = false
+		} else if len(args) > 0 || cmd.Flags().Changed("http") || cmd.Flags().Changed("https") || cmd.Flags().Changed("socks5") {
+			p.Enabled = true
 		}
 
 		if err := mgr.SetProxy(p); err != nil {
@@ -537,7 +570,11 @@ var networkProxySetCmd = &cobra.Command{
 		if err := mgr.SaveToPath(path); err != nil {
 			return err
 		}
-		pterm.Success.Printf("代理服务器已配置并启用: %s\n", rawURL)
+		if p.Enabled {
+			pterm.Success.Println("网络代理配置已更新并启用")
+		} else {
+			pterm.Success.Println("网络代理配置已更新 (已保持关闭状态)")
+		}
 		return nil
 	},
 }
