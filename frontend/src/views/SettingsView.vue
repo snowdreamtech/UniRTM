@@ -1845,7 +1845,7 @@ async function onColorThemeChange(val: string) {
 async function onIconThemeChange(val: string) {
   isSaving.value = true;
   saveStatusType.value = "saving";
-  saveStatusText.value = "正在应用图标主题...";
+  saveStatusText.value = "正在应用文件图标主题...";
   try {
     await setActiveTheme(undefined, val, undefined);
     const iconObj = iconThemes.value.find((i) => i.id === val);
@@ -1860,7 +1860,7 @@ async function onIconThemeChange(val: string) {
     }, 2000);
   } catch (err: any) {
     saveStatusType.value = "error";
-    saveStatusText.value = `应用图标失败: ${err.message || err}`;
+    saveStatusText.value = `应用文件图标失败: ${err.message || err}`;
   } finally {
     isSaving.value = false;
   }

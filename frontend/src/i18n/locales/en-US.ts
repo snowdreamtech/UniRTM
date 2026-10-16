@@ -484,7 +484,7 @@ export const enUs: TranslationDict = {
   "marketplace.filter_all": "All",
   "marketplace.filter_installed": "Installed",
   "marketplace.filter_themes": "Themes",
-  "marketplace.filter_icons": "Icons",
+  "marketplace.filter_icons": "File Icons",
   "marketplace.filter_product_icons": "Product Icons",
   "marketplace.installed_count": "{count} installed themes & icon packs",
   "marketplace.total_count": "{count} themes & icon packs in total",

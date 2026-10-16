@@ -917,7 +917,7 @@ const installedExtensions = computed<MarketplaceExtension[]>(() => {
           name: i.package_id.includes(".") ? i.package_id.split(".")[1] : i.package_id,
           displayName: i.name || i.package_id,
           version: i.version || "",
-          description: "已安装的本地 VS Code 图标主题扩展包",
+          description: "已安装的本地 VS Code 文件图标主题扩展包",
           downloadCount: 0,
           averageRating: 5.0,
           is_installed: true,
@@ -1393,13 +1393,13 @@ async function onApplySubIconTheme(label: string) {
   );
   if (match) {
     await setActiveTheme(undefined, match.id);
-    feedbackMsg.value = `✓ 已应用图标主题: ${match.name}`;
+    feedbackMsg.value = `✓ 已应用文件图标主题: ${match.name}`;
     feedbackIsError.value = false;
-    showToast(`已应用图标主题: ${match.name}`, "success");
+    showToast(`已应用文件图标主题: ${match.name}`, "success");
   } else {
-    feedbackMsg.value = `已激活图标包，可在设置中选择应用 ${label}`;
+    feedbackMsg.value = `已激活文件图标包，可在设置中选择应用 ${label}`;
     feedbackIsError.value = false;
-    showToast(`已激活图标包: ${label}`, "info");
+    showToast(`已激活文件图标包: ${label}`, "info");
   }
 }
 

@@ -482,7 +482,7 @@ export const zhCn: TranslationDict = {
   "marketplace.filter_all": "全部",
   "marketplace.filter_installed": "已安装",
   "marketplace.filter_themes": "主题",
-  "marketplace.filter_icons": "图标",
+  "marketplace.filter_icons": "文件图标",
   "marketplace.filter_product_icons": "界面图标",
   "marketplace.installed_count": "已安装 {count} 款主题与图标包",
   "marketplace.total_count": "共收录 {count} 款主题与图标包",
