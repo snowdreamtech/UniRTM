@@ -199,6 +199,15 @@
                 <span class="upgrade-arrow">↑</span>
                 <span>{{ formatVersion(getLocalUpgradableVersion(rt, 'workspace')) }}</span>
               </button>
+              <button
+                v-else-if="!rt.pinned && getRemoteUpgradableVersion(rt.id)"
+                class="local-upgrade-btn remote-upgrade-btn"
+                :title="'官方最新版本 ' + formatVersion(getRemoteUpgradableVersion(rt.id)!) + '，点击直接安装并应用'"
+                @click.stop="upgradeToRemoteVersion(rt, getRemoteUpgradableVersion(rt.id)!)"
+              >
+                <span class="upgrade-arrow">↑</span>
+                <span>{{ formatVersion(getRemoteUpgradableVersion(rt.id)!) }}</span>
+              </button>
               <span v-if="rt.pinned" class="source-tag source-pinned" :title="rt.pin_reason ? `版本锁定: ${rt.pin_reason}` : '版本已锁定'">
                 🔒 锁定
               </span>
@@ -216,6 +225,15 @@
               >
                 <span class="upgrade-arrow">↑</span>
                 <span>{{ formatVersion(getLocalUpgradableVersion(rt, 'workspace')) }}</span>
+              </button>
+              <button
+                v-else-if="!rt.pinned && getRemoteUpgradableVersion(rt.id)"
+                class="local-upgrade-btn remote-upgrade-btn"
+                :title="'官方最新版本 ' + formatVersion(getRemoteUpgradableVersion(rt.id)!) + '，点击直接安装并应用'"
+                @click.stop="upgradeToRemoteVersion(rt, getRemoteUpgradableVersion(rt.id)!)"
+              >
+                <span class="upgrade-arrow">↑</span>
+                <span>{{ formatVersion(getRemoteUpgradableVersion(rt.id)!) }}</span>
               </button>
               <span class="source-tag source-default">{{ t("runtimes.follow_user") || "跟随用户" }}</span>
             </div>
@@ -240,6 +258,15 @@
               >
                 <span class="upgrade-arrow">↑</span>
                 <span>{{ formatVersion(getLocalUpgradableVersion(rt, 'user')) }}</span>
+              </button>
+              <button
+                v-else-if="!rt.pinned && getRemoteUpgradableVersion(rt.id)"
+                class="local-upgrade-btn remote-upgrade-btn"
+                :title="'官方最新版本 ' + formatVersion(getRemoteUpgradableVersion(rt.id)!) + '，点击直接安装并应用为用户默认'"
+                @click.stop="upgradeToRemoteVersion(rt, getRemoteUpgradableVersion(rt.id)!, true)"
+              >
+                <span class="upgrade-arrow">↑</span>
+                <span>{{ formatVersion(getRemoteUpgradableVersion(rt.id)!) }}</span>
               </button>
             </div>
             <span v-else class="text-muted font-mono italic">未配置</span>
@@ -1139,6 +1166,20 @@ function getLocalUpgradableVersion(rt: RuntimeItem, scope: "workspace" | "user" 
   }
 
   return highest;
+}
+
+function getRemoteUpgradableVersion(toolId: string): string | null {
+  const match = updateResults.value.find((r) => r.id === toolId || r.name === toolId);
+  if (match && match.has_update && !match.pinned && match.latest_version) {
+    return match.latest_version;
+  }
+  return null;
+}
+
+async function upgradeToRemoteVersion(rt: RuntimeItem, targetVer: string, forceGlobal: boolean = false) {
+  modalInstallScope.value = forceGlobal ? "user" : currentScope.value;
+  selectedRuntime.value = rt;
+  await installRemoteVersion(rt.id, targetVer);
 }
 
 
