@@ -147,15 +147,6 @@
                 >
                   {{ getCurrentVersion(rt) ? formatVersion(getCurrentVersion(rt)) : t('runtimes.unconfigured') }}
                 </span>
-                <button
-                  v-if="!rt.pinned && (getLocalUpgradableVersion(rt, currentScope) || getRemoteUpgradableVersion(rt.id))"
-                  class="local-upgrade-btn"
-                  :title="`${t('runtimes.count_upgradable_suffix')}: ` + formatVersion(getLocalUpgradableVersion(rt, currentScope) || getRemoteUpgradableVersion(rt.id)!)"
-                  @click.stop="handleQuickUpgrade(rt)"
-                >
-                  <span class="upgrade-arrow">↑</span>
-                  <span>{{ formatVersion(getLocalUpgradableVersion(rt, currentScope) || getRemoteUpgradableVersion(rt.id)!) }}</span>
-                </button>
               </div>
             </div>
             <span class="runtime-desc">{{ rt.description }}</span>
@@ -1210,29 +1201,11 @@ function getRemoteUpgradableVersion(toolId: string): string | null {
   return match.latest_version;
 }
 
-async function upgradeToRemoteVersion(rt: RuntimeItem, targetVer: string, forceGlobal: boolean = false) {
-  modalInstallScope.value = forceGlobal ? "user" : currentScope.value;
-  selectedRuntime.value = rt;
-  await installRemoteVersion(rt.id, targetVer);
-}
-
 function getCurrentVersion(rt: RuntimeItem): string {
   if (currentScope.value === "user") {
     return rt.global_version || "";
   }
   return rt.active_version || rt.global_version || "";
-}
-
-function handleQuickUpgrade(rt: RuntimeItem) {
-  const localVer = getLocalUpgradableVersion(rt, currentScope.value);
-  if (localVer) {
-    quickSwitch(rt.id, localVer, currentScope.value === "user");
-    return;
-  }
-  const remoteVer = getRemoteUpgradableVersion(rt.id);
-  if (remoteVer) {
-    upgradeToRemoteVersion(rt, remoteVer, currentScope.value === "user");
-  }
 }
 
 const isSwitchModalOpen = ref(false);
@@ -2282,61 +2255,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--card-border);
 }
 
-.local-upgrade-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 0.1rem 0.45rem;
-  font-size: 0.68rem;
-  font-weight: 600;
-  border-radius: 4px;
-  background: rgba(16, 185, 129, 0.14);
-  border: 1px solid rgba(16, 185, 129, 0.35);
-  color: #10b981;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.1);
-  animation: pulse-soft 3s infinite ease-in-out;
-}
 
-[data-theme="dark"] .local-upgrade-btn {
-  background: rgba(16, 185, 129, 0.18);
-  border-color: rgba(52, 211, 153, 0.4);
-  color: #34d399;
-}
-
-.local-upgrade-btn:hover {
-  background: rgba(16, 185, 129, 0.28);
-  border-color: #10b981;
-  color: #059669;
-  transform: translateY(-1px) scale(1.03);
-  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
-}
-
-[data-theme="dark"] .local-upgrade-btn:hover {
-  color: #6ee7b7;
-  border-color: #34d399;
-  box-shadow: 0 2px 8px rgba(52, 211, 153, 0.3);
-}
-
-.upgrade-arrow {
-  font-weight: 800;
-  display: inline-block;
-  transition: transform 0.2s ease;
-}
-
-.local-upgrade-btn:hover .upgrade-arrow {
-  transform: translateY(-1px);
-}
-
-@keyframes pulse-soft {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0);
-  }
-}
 
 
 /* Installed versions */
