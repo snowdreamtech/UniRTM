@@ -107,13 +107,29 @@ func (m *Manager) ListThemes() (*ThemesListResponse, error) {
 		},
 	}
 
-	// Scan installed color themes
-	if colorEntries, err := os.ReadDir(m.colorsDir); err == nil {
-		for _, entry := range colorEntries {
+	seenColors := make(map[string]bool)
+	for _, c := range resp.Colors {
+		seenColors[c.ID] = true
+	}
+	seenIcons := make(map[string]bool)
+	for _, i := range resp.Icons {
+		seenIcons[i.ID] = true
+	}
+	seenProducts := make(map[string]bool)
+	for _, p := range resp.Products {
+		seenProducts[p.ID] = true
+	}
+
+	scanDir := func(dir string) {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			return
+		}
+		for _, entry := range entries {
 			if !entry.IsDir() {
 				continue
 			}
-			pkgDir := filepath.Join(m.colorsDir, entry.Name())
+			pkgDir := filepath.Join(dir, entry.Name())
 			pkg, err := m.readPackageJSON(pkgDir)
 			if err != nil {
 				continue
@@ -123,80 +139,67 @@ func (m *Manager) ListThemes() (*ThemesListResponse, error) {
 				if thID == "" {
 					thID = th.Label
 				}
-				resp.Colors = append(resp.Colors, ThemeItem{
-					ID:           thID,
-					Name:         th.Label,
-					Type:         ThemeTypeColor,
-					IsBuiltin:    false,
-					UITheme:      th.UITheme,
-					PackageID:    entry.Name(),
-					RelativePath: th.Path,
-					Description:  pkg.Description,
-					Version:      pkg.Version,
-				})
-			}
-		}
-	}
-
-	// Scan installed icon themes
-	if iconEntries, err := os.ReadDir(m.iconsDir); err == nil {
-		for _, entry := range iconEntries {
-			if !entry.IsDir() {
-				continue
-			}
-			pkgDir := filepath.Join(m.iconsDir, entry.Name())
-			pkg, err := m.readPackageJSON(pkgDir)
-			if err != nil {
-				continue
+				if !seenColors[thID] {
+					seenColors[thID] = true
+					resp.Colors = append(resp.Colors, ThemeItem{
+						ID:           thID,
+						Name:         th.Label,
+						Type:         ThemeTypeColor,
+						IsBuiltin:    false,
+						UITheme:      th.UITheme,
+						PackageID:    entry.Name(),
+						RelativePath: th.Path,
+						Description:  pkg.Description,
+						Version:      pkg.Version,
+					})
+				}
 			}
 			for _, ic := range pkg.Contributes.IconThemes {
 				icID := ic.ID
 				if icID == "" {
 					icID = ic.Label
 				}
-				resp.Icons = append(resp.Icons, ThemeItem{
-					ID:           icID,
-					Name:         ic.Label,
-					Type:         ThemeTypeIcon,
-					IsBuiltin:    false,
-					PackageID:    entry.Name(),
-					RelativePath: ic.Path,
-					Description:  pkg.Description,
-					Version:      pkg.Version,
-				})
-			}
-		}
-	}
-
-	// Scan installed product icon themes
-	if productEntries, err := os.ReadDir(m.productIconsDir); err == nil {
-		for _, entry := range productEntries {
-			if !entry.IsDir() {
-				continue
-			}
-			pkgDir := filepath.Join(m.productIconsDir, entry.Name())
-			pkg, err := m.readPackageJSON(pkgDir)
-			if err != nil {
-				continue
+				if !seenIcons[icID] {
+					seenIcons[icID] = true
+					resp.Icons = append(resp.Icons, ThemeItem{
+						ID:           icID,
+						Name:         ic.Label,
+						Type:         ThemeTypeIcon,
+						IsBuiltin:    false,
+						PackageID:    entry.Name(),
+						RelativePath: ic.Path,
+						Description:  pkg.Description,
+						Version:      pkg.Version,
+					})
+				}
 			}
 			for _, pit := range pkg.Contributes.ProductIconThemes {
 				pitID := pit.ID
 				if pitID == "" {
 					pitID = pit.Label
 				}
-				resp.Products = append(resp.Products, ThemeItem{
-					ID:           pitID,
-					Name:         pit.Label,
-					Type:         ThemeTypeProduct,
-					IsBuiltin:    false,
-					PackageID:    entry.Name(),
-					RelativePath: pit.Path,
-					Description:  pkg.Description,
-					Version:      pkg.Version,
-				})
+				if !seenProducts[pitID] {
+					seenProducts[pitID] = true
+					resp.Products = append(resp.Products, ThemeItem{
+						ID:           pitID,
+						Name:         pit.Label,
+						Type:         ThemeTypeProduct,
+						IsBuiltin:    false,
+						PackageID:    entry.Name(),
+						RelativePath: pit.Path,
+						Description:  pkg.Description,
+						Version:      pkg.Version,
+					})
+				}
 			}
 		}
 	}
+
+	scanDir(m.colorsDir)
+	scanDir(m.iconsDir)
+	scanDir(m.productIconsDir)
+	scanDir(m.baseDir)
+	scanDir(filepath.Join(env.GetConfigDir(), "themes"))
 
 	return resp, nil
 }

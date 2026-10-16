@@ -12,7 +12,8 @@ function parseJSONC(text: string): Record<string, any> {
 }
 
 function resolveRelativePath(baseFile: string, relPath: string): string {
-  const dirParts = baseFile.split("/").slice(0, -1);
+  const cleanBase = baseFile.replace(/^\.\//, "");
+  const dirParts = cleanBase.split("/").slice(0, -1);
   const segments = relPath.replace(/^\.\//, "").split("/");
   for (const seg of segments) {
     if (seg === "..") {
@@ -53,7 +54,8 @@ export class ProductIconThemeService {
     }
 
     try {
-      const manifestUrl = `/api/themes/assets/product/${theme.package_id}/${theme.relative_path}`;
+      const cleanPath = theme.relative_path.replace(/^\.\//, "");
+      const manifestUrl = `/api/themes/assets/product/${encodeURIComponent(theme.package_id)}/${cleanPath}`;
       const res = await fetch(manifestUrl);
       if (!res.ok) {
         throw new Error(`Failed to load product icon manifest: ${res.statusText}`);
