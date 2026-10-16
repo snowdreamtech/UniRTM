@@ -491,12 +491,6 @@
             </button>
           </div>
         </div>
-
-        <div class="modal-footer">
-          <button class="tool-action-btn secondary" @click="isAddModalOpen = false">
-            {{ t("common.close") || "Close" }}
-          </button>
-        </div>
       </div>
     </div>
   </div>
