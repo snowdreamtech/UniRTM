@@ -29,6 +29,8 @@ type ToolInfo struct {
 	Source            string   `json:"source"`
 	IsLegacy          bool     `json:"is_legacy"`
 	LegacyFile        string   `json:"legacy_file"`
+	Pinned            bool     `json:"pinned"`
+	PinReason         string   `json:"pin_reason"`
 }
 
 type ToolsStatusResponse struct {
@@ -111,16 +113,26 @@ func handleGetToolsStatus(w http.ResponseWriter, r *http.Request) {
 		isLegacy := false
 		legacyFile := ""
 		globalVer := ""
+		pinned := false
+		pinReason := ""
 
 		if globalCfg != nil {
 			if gTool, exists := globalCfg.Tools[cr.ID]; exists {
 				globalVer = gTool.Version
+				if gTool.Pinned {
+					pinned = true
+					pinReason = gTool.PinReason
+				}
 			}
 		}
 
 		if cfg != nil {
 			if pTool, exists := cfg.Tools[cr.ID]; exists {
 				activeVer = pTool.Version
+				if pTool.Pinned {
+					pinned = true
+					pinReason = pTool.PinReason
+				}
 				if lSrc, ok := cfg.LegacySources[cr.ID]; ok && lSrc != "" {
 					isLegacy = true
 					legacyFile = lSrc
@@ -149,6 +161,8 @@ func handleGetToolsStatus(w http.ResponseWriter, r *http.Request) {
 			Source:            source,
 			IsLegacy:          isLegacy,
 			LegacyFile:        legacyFile,
+			Pinned:            pinned,
+			PinReason:         pinReason,
 		})
 	}
 
@@ -182,16 +196,26 @@ func handleGetToolsStatus(w http.ResponseWriter, r *http.Request) {
 		activeVer := ""
 		source := ""
 		globalVer := ""
+		pinned := false
+		pinReason := ""
 
 		if globalCfg != nil {
 			if gTool, exists := globalCfg.Tools[name]; exists {
 				globalVer = gTool.Version
+				if gTool.Pinned {
+					pinned = true
+					pinReason = gTool.PinReason
+				}
 			}
 		}
 
 		if cfg != nil {
 			if pTool, exists := cfg.Tools[name]; exists {
 				activeVer = pTool.Version
+				if pTool.Pinned {
+					pinned = true
+					pinReason = pTool.PinReason
+				}
 				if cfg.SourceFile != "" {
 					source = filepath.Base(cfg.SourceFile)
 				} else {
@@ -216,6 +240,8 @@ func handleGetToolsStatus(w http.ResponseWriter, r *http.Request) {
 			Source:            source,
 			IsLegacy:          false,
 			LegacyFile:        "",
+			Pinned:            pinned,
+			PinReason:         pinReason,
 		})
 	}
 
@@ -500,6 +526,66 @@ func handleMigrateLegacyTool(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func handlePinTool(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Tool   string `json:"tool"`
+		Pinned bool   `json:"pinned"`
+		Reason string `json:"reason"`
+		Global bool   `json:"global"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "invalid request body"})
+		return
+	}
+
+	req.Tool = strings.TrimSpace(req.Tool)
+	if req.Tool == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "tool is required"})
+		return
+	}
+
+	var targetFile string
+	if req.Global {
+		targetFile = config.GetGlobalConfigPath()
+	} else {
+		targetFile = resolveConfigFilePath(false)
+	}
+
+	_ = os.MkdirAll(filepath.Dir(targetFile), 0755)
+	content, _ := config.ReadFileOrEmpty(targetFile)
+
+	if req.Pinned {
+		content = config.UpsertPin(content, req.Tool, req.Reason)
+	} else {
+		content, _ = config.RemovePin(content, req.Tool)
+	}
+
+	if err := os.WriteFile(targetFile, []byte(content), 0644); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	_, _ = config.FormatFile(targetFile, false)
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"tool":    req.Tool,
+		"pinned":  req.Pinned,
+		"reason":  req.Reason,
+		"global":  req.Global,
+		"file":    targetFile,
+	})
+}
+
 // Backward-compatible function aliases
 var (
 	handleGetRuntimesStatus    = handleGetToolsStatus
@@ -507,4 +593,6 @@ var (
 	handleUseRuntime           = handleUseTool
 	handleRemoveRuntime        = handleRemoveTool
 	handleMigrateLegacyRuntime = handleMigrateLegacyTool
+	handlePinRuntime           = handlePinTool
 )
+

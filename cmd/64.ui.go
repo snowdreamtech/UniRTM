@@ -529,6 +529,7 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/tools/remote", handleGetToolsRemote)
 	mux.HandleFunc("/api/tools/use", handleUseTool)
 	mux.HandleFunc("/api/tools/remove", handleRemoveTool)
+	mux.HandleFunc("/api/tools/pin", handlePinTool)
 	mux.HandleFunc("/api/tools/migrate-legacy", handleMigrateLegacyTool)
 
 	// Backward Compatibility Aliases (/api/runtimes/*)
@@ -536,6 +537,7 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/runtimes/remote", handleGetToolsRemote)
 	mux.HandleFunc("/api/runtimes/use", handleUseTool)
 	mux.HandleFunc("/api/runtimes/remove", handleRemoveTool)
+	mux.HandleFunc("/api/runtimes/pin", handlePinRuntime)
 	mux.HandleFunc("/api/runtimes/migrate-legacy", handleMigrateLegacyTool)
 
 	// Theme Management APIs

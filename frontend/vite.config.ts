@@ -218,8 +218,45 @@ export default defineConfig({
               return fallback;
             };
 
+            const parsePins = (filePath: string) => {
+              const res: Record<string, { pinned: boolean; reason: string }> = {};
+              if (!fs.existsSync(filePath)) return res;
+              try {
+                const c = fs.readFileSync(filePath, "utf-8");
+                let inPins = false;
+                for (const line of c.split("\n")) {
+                  const tr = line.trim();
+                  if (tr.startsWith("[") && tr.endsWith("]")) {
+                    inPins = (tr === "[pins]");
+                    continue;
+                  }
+                  if (inPins && tr && !tr.startsWith("#")) {
+                    const eqIdx = tr.indexOf("=");
+                    if (eqIdx !== -1) {
+                      const rawKey = tr.slice(0, eqIdx).trim();
+                      const rawVal = tr.slice(eqIdx + 1).trim();
+                      const key = rawKey.replace(/^["']|["']$/g, "").trim();
+                      const val = rawVal.replace(/^["']|["']$/g, "").trim();
+                      if (key) {
+                        if (val === "false") {
+                          res[key] = { pinned: false, reason: "" };
+                        } else if (val === "true") {
+                          res[key] = { pinned: true, reason: "" };
+                        } else {
+                          res[key] = { pinned: true, reason: val };
+                        }
+                      }
+                    }
+                  }
+                }
+              } catch {}
+              return res;
+            };
+
             const wsTools = parseTools(fs.existsSync(wsPath) ? wsPath : altWsPath);
             const userTools = parseTools(fs.existsSync(userPath) ? userPath : altUserPath);
+            const wsPins = parsePins(fs.existsSync(wsPath) ? wsPath : altWsPath);
+            const userPins = parsePins(fs.existsSync(userPath) ? userPath : altUserPath);
 
             const nvmrc = path.join(rootDir, ".nvmrc");
             const nodeVer = path.join(rootDir, ".node-version");
@@ -264,6 +301,7 @@ export default defineConfig({
               }
 
               const globalVer = userTools[id] || "";
+              const pinInfo = wsPins[id] || userPins[id] || { pinned: false, reason: "" };
 
               return {
                 id,
@@ -276,6 +314,8 @@ export default defineConfig({
                 source: source || (active ? ".unirtm.toml" : ""),
                 is_legacy: isLegacy,
                 legacy_file: legacyFile,
+                pinned: pinInfo.pinned,
+                pin_reason: pinInfo.reason,
               };
             };
 
@@ -479,6 +519,76 @@ export default defineConfig({
 
                 res.setHeader("Content-Type", "application/json");
                 res.end(JSON.stringify({ success: true, tool, cli: executedCli }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
+          if ((req.url === "/api/tools/pin" || req.url === "/api/runtimes/pin") && req.method === "POST") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const { tool, pinned, reason, global: isGlobal } = JSON.parse(bodyStr || "{}");
+                const targetPath = isGlobal
+                  ? path.join(os.homedir(), ".config", "unirtm", "unirtm.toml")
+                  : path.join(rootDir, ".unirtm.toml");
+
+                fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+                let content = fs.existsSync(targetPath) ? fs.readFileSync(targetPath, "utf-8") : "";
+
+                const lines = content.split("\n");
+                let pinsIdx = -1;
+                let nextIdx = -1;
+                for (let i = 0; i < lines.length; i++) {
+                  const tr = lines[i].trim();
+                  if (tr === "[pins]") pinsIdx = i;
+                  else if (pinsIdx !== -1 && tr.startsWith("[") && tr.endsWith("]")) {
+                    nextIdx = i;
+                    break;
+                  }
+                }
+
+                const quoteKey = (k: string) => (/^[a-zA-Z0-9_-]+$/.test(k) ? k : `"${k}"`);
+                const keyPattern = new RegExp(`^\\s*"?${tool}"?\\s*=`);
+                const valStr = reason ? `"${reason}"` : "true";
+
+                if (pinned) {
+                  if (pinsIdx !== -1) {
+                    const end = nextIdx !== -1 ? nextIdx : lines.length;
+                    let found = false;
+                    for (let i = pinsIdx + 1; i < end; i++) {
+                      if (keyPattern.test(lines[i])) {
+                        lines[i] = `${quoteKey(tool)} = ${valStr}`;
+                        found = true;
+                        break;
+                      }
+                    }
+                    if (!found) lines.splice(pinsIdx + 1, 0, `${quoteKey(tool)} = ${valStr}`);
+                    content = lines.join("\n");
+                  } else {
+                    content += `\n[pins]\n${quoteKey(tool)} = ${valStr}\n`;
+                  }
+                } else {
+                  if (pinsIdx !== -1) {
+                    const end = nextIdx !== -1 ? nextIdx : lines.length;
+                    for (let i = pinsIdx + 1; i < end; i++) {
+                      if (keyPattern.test(lines[i])) {
+                        lines.splice(i, 1);
+                        break;
+                      }
+                    }
+                    content = lines.join("\n");
+                  }
+                }
+
+                fs.writeFileSync(targetPath, content, "utf-8");
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, tool, pinned, reason, global: isGlobal, file: targetPath }));
               } catch (err: any) {
                 res.statusCode = 500;
                 res.setHeader("Content-Type", "application/json");

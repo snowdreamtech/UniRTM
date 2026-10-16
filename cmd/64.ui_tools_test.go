@@ -104,7 +104,7 @@ node = "22.14.0"
 "npm:@biomejs/biome" = "1.9.4"
 "cli/cli" = "2.62.0"
 `
-	_ = os.WriteFile(filepath.Join(tempDir, ".unirtm.toml"), []byte(customToml), 0644)
+	_ = os.WriteFile(targetCfg, []byte(customToml), 0644)
 	req = httptest.NewRequest("GET", "/api/tools/status", nil)
 	rr = httptest.NewRecorder()
 	mux.ServeHTTP(rr, req)
@@ -135,6 +135,61 @@ node = "22.14.0"
 		}
 	}
 	assert.True(t, nodeIdx != -1 && biomeIdx != -1 && nodeIdx < biomeIdx)
+
+	// 6. Test POST /api/tools/pin (and verification in /api/tools/status)
+	pinBody, _ := json.Marshal(map[string]interface{}{
+		"tool":   "node",
+		"pinned": true,
+		"reason": "macOS 12.7 compatibility",
+		"global": false,
+	})
+	req = httptest.NewRequest("POST", "/api/tools/pin", bytes.NewReader(pinBody))
+	rr = httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code, rr.Body.String())
+
+	// Verify /api/tools/status reflects pinned and pin_reason
+	req = httptest.NewRequest("GET", "/api/tools/status", nil)
+	rr = httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	var pinnedStatus ToolsStatusResponse
+	_ = json.Unmarshal(rr.Body.Bytes(), &pinnedStatus)
+	var pinnedNode *ToolInfo
+	for i := range pinnedStatus.Tools {
+		if pinnedStatus.Tools[i].ID == "node" {
+			pinnedNode = &pinnedStatus.Tools[i]
+			break
+		}
+	}
+	require.NotNil(t, pinnedNode)
+	assert.True(t, pinnedNode.Pinned)
+	assert.Equal(t, "macOS 12.7 compatibility", pinnedNode.PinReason)
+
+	// Unpin
+	unpinBody, _ := json.Marshal(map[string]interface{}{
+		"tool":   "node",
+		"pinned": false,
+		"global": false,
+	})
+	req = httptest.NewRequest("POST", "/api/tools/pin", bytes.NewReader(unpinBody))
+	rr = httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code, rr.Body.String())
+
+	// Verify unpinned in status
+	req = httptest.NewRequest("GET", "/api/tools/status", nil)
+	rr = httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	var unpinnedStatus ToolsStatusResponse
+	_ = json.Unmarshal(rr.Body.Bytes(), &unpinnedStatus)
+	for i := range unpinnedStatus.Tools {
+		if unpinnedStatus.Tools[i].ID == "node" {
+			assert.False(t, unpinnedStatus.Tools[i].Pinned)
+			break
+		}
+	}
 }
 
 // TestUIRuntimesAPI provides backward compatibility verification

@@ -145,6 +145,15 @@
                 ↗
               </a>
               <button
+                class="runtime-pin-btn"
+                :class="{ 'is-pinned': rt.pinned }"
+                :title="rt.pinned ? (rt.pin_reason ? `版本已锁定：${rt.pin_reason} (点击解锁)` : '版本已锁定 (点击解锁)') : '锁定当前版本，防止意外升级'"
+                @click.stop="togglePin(rt)"
+              >
+                <span class="pin-icon">{{ rt.pinned ? '🔒' : '🔓' }}</span>
+                <span v-if="rt.pinned" class="pin-label">已锁定</span>
+              </button>
+              <button
                 class="runtime-delete-btn"
                 :title="(t('runtimes.remove_runtime') || '移除环境') + ' ' + rt.name"
                 @click.stop="confirmRemoveRuntime(rt)"
@@ -153,6 +162,10 @@
               </button>
             </div>
             <span class="runtime-desc">{{ rt.description }}</span>
+            <div v-if="rt.pinned && rt.pin_reason" class="pin-reason-tag" :title="rt.pin_reason">
+              <span class="pin-reason-icon">📌</span>
+              <span class="pin-reason-text">{{ rt.pin_reason }}</span>
+            </div>
           </div>
         </div>
 
@@ -169,7 +182,10 @@
             </span>
             <div v-if="rt.active_version" class="status-val-wrap">
               <span class="active-pill font-mono">{{ formatVersion(rt.active_version) }}</span>
-              <span v-if="rt.is_legacy" class="source-tag source-legacy">
+              <span v-if="rt.pinned" class="source-tag source-pinned" :title="rt.pin_reason ? `版本锁定: ${rt.pin_reason}` : '版本已锁定'">
+                🔒 锁定
+              </span>
+              <span v-else-if="rt.is_legacy" class="source-tag source-legacy">
                 {{ rt.source }}
               </span>
             </div>
@@ -507,6 +523,8 @@ export interface RuntimeItem {
   source: string;
   is_legacy: boolean;
   legacy_file: string;
+  pinned?: boolean;
+  pin_reason?: string;
 }
 
 const props = defineProps<{
@@ -976,9 +994,94 @@ async function fetchStatus() {
   }
 }
 
+async function togglePin(rt: RuntimeItem) {
+  const isGlobal = currentScope.value === "user";
+  const scopeName = isGlobal ? "用户" : "工作区";
+  const prevPinned = rt.pinned;
+  const prevReason = rt.pin_reason;
+
+  if (rt.pinned) {
+    const ok = window.confirm(
+      `确定解除 ${rt.name} 的版本锁定吗？\n解除后将允许自由切换或升级该工具的版本。`
+    );
+    if (!ok) return;
+
+    // Optimistic update
+    rt.pinned = false;
+    rt.pin_reason = "";
+    showToast(`已解除 ${rt.name} 的版本锁定`, "info");
+
+    try {
+      const res = await fetch("/api/tools/pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tool: rt.id, pinned: false, global: isGlobal }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
+      emit("log-event", "INFO", `Unpinned tool ${rt.id} (${scopeName})`);
+    } catch (err: any) {
+      rt.pinned = prevPinned;
+      rt.pin_reason = prevReason;
+      showToast(`解除锁定失败: ${err.message}`, "error");
+    }
+  } else {
+    const reason = window.prompt(
+      `锁定 ${rt.name} 的当前版本（防止升级/切换破坏项目兼容性，如 macOS 12.7 限制）。\n请输入锁定原因（可选）：`,
+      rt.pin_reason || ""
+    );
+    if (reason === null) return;
+
+    const cleanReason = reason.trim();
+    // Optimistic update
+    rt.pinned = true;
+    rt.pin_reason = cleanReason;
+    showToast(`已成功锁定 ${rt.name} 版本`, "success");
+
+    try {
+      const res = await fetch("/api/tools/pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tool: rt.id, pinned: true, reason: cleanReason, global: isGlobal }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
+      emit("log-event", "SUCCESS", `Pinned tool ${rt.id} (${scopeName}): ${cleanReason || "pinned"}`);
+    } catch (err: any) {
+      rt.pinned = prevPinned;
+      rt.pin_reason = prevReason;
+      showToast(`锁定失败: ${err.message}`, "error");
+    }
+  }
+}
+
 async function quickSwitch(toolId: string, ver: string, targetGlobal?: boolean) {
   const isGlobal = targetGlobal !== undefined ? targetGlobal : (currentScope.value === "user");
   const scopeName = isGlobal ? "用户" : "工作区";
+
+  // Check if tool is currently pinned
+  const targetRt = runtimes.value.find((r) => r.id === toolId);
+  if (targetRt && targetRt.pinned) {
+    const reasonText = targetRt.pin_reason ? `（锁定原因：${targetRt.pin_reason}）` : "";
+    const confirmSwitch = window.confirm(
+      `工具 ${targetRt.name} 当前处于版本锁定状态${reasonText}。\n切换版本将自动解除此锁定，确定要继续切换至 v${ver} 吗？`
+    );
+    if (!confirmSwitch) {
+      return;
+    }
+    // Automatically unpin
+    targetRt.pinned = false;
+    targetRt.pin_reason = "";
+    fetch("/api/tools/pin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tool: toolId, pinned: false, global: isGlobal }),
+    }).catch(() => {});
+  }
 
   // 1. Snapshot previous state for rollback
   const prevRuntimes = JSON.parse(JSON.stringify(runtimes.value));
@@ -1607,6 +1710,16 @@ onBeforeUnmount(() => {
   color: #fbbf24;
 }
 
+.source-pinned {
+  background: rgba(245, 158, 11, 0.2);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+}
+
+[data-theme="dark"] .source-pinned {
+  color: #fbbf24;
+}
+
 .source-project {
   background: rgba(2, 132, 199, 0.15);
   color: #0284c7;
@@ -1857,6 +1970,67 @@ onBeforeUnmount(() => {
   color: var(--text-muted);
 }
 
+.runtime-pin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 28px;
+  padding: 0 7px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-left: auto;
+  margin-right: 6px;
+}
+
+.runtime-pin-btn:hover {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #f59e0b;
+  transform: translateY(-1px);
+}
+
+.runtime-pin-btn.is-pinned {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #fbbf24;
+  box-shadow: 0 1px 3px rgba(245, 158, 11, 0.15);
+}
+
+.runtime-pin-btn.is-pinned:hover {
+  background: rgba(245, 158, 11, 0.25);
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+.pin-reason-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px dashed rgba(245, 158, 11, 0.35);
+  color: #f59e0b;
+  font-size: 0.68rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pin-reason-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .runtime-delete-btn {
   display: inline-flex;
   align-items: center;
@@ -1869,7 +2043,7 @@ onBeforeUnmount(() => {
   cursor: pointer;
   opacity: 1 !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  margin-left: auto;
+  margin-left: 0;
   padding: 0;
   border-radius: 6px;
   box-shadow: 0 1px 2px rgba(239, 68, 68, 0.08);

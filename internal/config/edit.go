@@ -497,3 +497,95 @@ func normalizeHeader(h string) string {
 	}
 	return "[" + strings.Join(norm, ".") + "]"
 }
+
+// UpsertPin adds or updates a tool pin entry in the TOML [pins] section.
+func UpsertPin(content, tool, reason string) string {
+	lines := strings.Split(content, "\n")
+	valToSet := quoteTOMLValue(reason)
+	if reason == "" {
+		valToSet = "true"
+	}
+	newEntry := fmt.Sprintf("%s = %s", quoteTOMLKey(tool), valToSet)
+
+	inPins := false
+	pinsStart := -1
+	pinsEnd := -1
+	matchingIdx := -1
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "[pins]" {
+			inPins = true
+			pinsStart = i
+			continue
+		}
+		if inPins {
+			if strings.HasPrefix(trimmed, "[") && trimmed != "[pins]" {
+				pinsEnd = i
+				inPins = false
+				break
+			}
+			existingKey := extractTOMLKey(line)
+			if existingKey == tool {
+				matchingIdx = i
+				break
+			}
+		}
+	}
+	if inPins {
+		pinsEnd = len(lines)
+	}
+
+	if pinsStart == -1 {
+		if content != "" && !strings.HasSuffix(content, "\n") {
+			content += "\n"
+		}
+		content += "\n[pins]\n" + newEntry + "\n"
+		return content
+	}
+
+	if matchingIdx != -1 {
+		lines[matchingIdx] = newEntry
+		return strings.Join(lines, "\n")
+	}
+
+	insertAt := pinsEnd
+	newLines := make([]string, 0, len(lines)+1)
+	newLines = append(newLines, lines[:insertAt]...)
+	newLines = append(newLines, newEntry)
+	newLines = append(newLines, lines[insertAt:]...)
+	return strings.Join(newLines, "\n")
+}
+
+// RemovePin removes a tool pin entry from the [pins] section of a TOML file.
+func RemovePin(content string, tool string) (string, bool) {
+	lines := strings.Split(content, "\n")
+	inPins := false
+	pinLineIdx := -1
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "[pins]" {
+			inPins = true
+			continue
+		}
+		if inPins {
+			if strings.HasPrefix(trimmed, "[") && trimmed != "[pins]" {
+				break
+			}
+			existingKey := extractTOMLKey(line)
+			if existingKey == tool {
+				pinLineIdx = i
+				break
+			}
+		}
+	}
+
+	if pinLineIdx != -1 {
+		lines = append(lines[:pinLineIdx], lines[pinLineIdx+1:]...)
+		return strings.Join(lines, "\n"), true
+	}
+
+	return content, false
+}
+

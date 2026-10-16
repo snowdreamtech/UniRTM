@@ -27,6 +27,7 @@ type Config struct {
 	Plugins      PluginMap                    `toml:"-" yaml:"-" mapstructure:"-"`
 	PluginsRaw   map[string]interface{}       `toml:"plugins,omitempty" yaml:"plugins,omitempty" mapstructure:"plugins,omitempty"`
 	NetworkRaw   map[string]interface{}       `toml:"network,omitempty" yaml:"network,omitempty" mapstructure:"network,omitempty"`
+	Pins         map[string]interface{}       `toml:"pins,omitempty" yaml:"pins,omitempty" mapstructure:"pins,omitempty"`
 	SourceFile    string            `toml:"-" yaml:"-" mapstructure:"-"`
 	LegacySources map[string]string `toml:"-" yaml:"-" mapstructure:"-"`
 }
@@ -48,16 +49,9 @@ type ToolConfig struct {
 	PostInstall       StringArray `toml:"post_install,omitempty" yaml:"post_install,omitempty" mapstructure:"post_install,omitempty"`
 	GPGKeys           []string    `toml:"gpg_keys,omitempty" yaml:"gpg_keys,omitempty" mapstructure:"gpg_keys,omitempty"`
 	MinimumReleaseAge string      `toml:"minimum_release_age,omitempty" yaml:"minimum_release_age,omitempty" mapstructure:"minimum_release_age,omitempty"`
-	// AssetPatterns maps a platform key (e.g. "macos-amd64") to the exact asset
-	// filename to download from the release.  When set, the heuristic asset-score
-	// matching is bypassed and the named asset is selected directly.
-	//
-	// Example in .unirtm.toml:
-	//
-	//   [tools."editorconfig-checker/editorconfig-checker".asset_patterns]
-	//   macos-amd64 = "editorconfig-checker-darwin-all.tar.gz"
-	//   macos-arm64 = "editorconfig-checker-darwin-all.tar.gz"
-	AssetPatterns map[string]string `toml:"asset_patterns,omitempty" yaml:"asset_patterns,omitempty" mapstructure:"asset_patterns,omitempty"`
+	AssetPatterns     map[string]string `toml:"asset_patterns,omitempty" yaml:"asset_patterns,omitempty" mapstructure:"asset_patterns,omitempty"`
+	Pinned            bool        `toml:"pinned,omitempty" yaml:"pinned,omitempty" mapstructure:"pinned,omitempty"`
+	PinReason         string      `toml:"pin_reason,omitempty" yaml:"pin_reason,omitempty" mapstructure:"pin_reason,omitempty"`
 }
 
 type ToolMap map[string]ToolConfig
@@ -69,6 +63,28 @@ func (c *Config) PostLoad() {
 		c.Tools = make(ToolMap)
 		for k, v := range c.ToolsRaw {
 			c.Tools[k] = parseToolConfig(v)
+		}
+	}
+	if c.Pins != nil {
+		if c.Tools == nil {
+			c.Tools = make(ToolMap)
+		}
+		for k, v := range c.Pins {
+			tc := c.Tools[k]
+			tc.Pinned = true
+			if reason, ok := v.(string); ok {
+				tc.PinReason = reason
+			} else if b, ok := v.(bool); ok {
+				tc.Pinned = b
+			} else if pinMap, ok := v.(map[string]interface{}); ok {
+				if r, ok := pinMap["reason"].(string); ok {
+					tc.PinReason = r
+				}
+				if p, ok := pinMap["pinned"].(bool); ok {
+					tc.Pinned = p
+				}
+			}
+			c.Tools[k] = tc
 		}
 	}
 	if c.PluginsRaw != nil {
@@ -100,6 +116,12 @@ func parseToolConfig(v interface{}) ToolConfig {
 	case map[string]interface{}:
 		if version, ok := val["version"].(string); ok {
 			tc.Version = version
+		}
+		if pinned, ok := val["pinned"].(bool); ok {
+			tc.Pinned = pinned
+		}
+		if pinReason, ok := val["pin_reason"].(string); ok {
+			tc.PinReason = pinReason
 		}
 		if backend, ok := val["backend"].(string); ok {
 			tc.Backend = backend
@@ -387,6 +409,16 @@ func (c *Config) Merge(other *Config) {
 	for k, v := range other.Tools {
 		if _, exists := c.Tools[k]; !exists {
 			c.Tools[k] = v
+		}
+	}
+
+	// Merge pins
+	if c.Pins == nil {
+		c.Pins = make(map[string]interface{})
+	}
+	for k, v := range other.Pins {
+		if _, exists := c.Pins[k]; !exists {
+			c.Pins[k] = v
 		}
 	}
 
