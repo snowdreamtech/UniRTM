@@ -52,6 +52,70 @@ export default defineConfig({
           const rootDir = fileURLToPath(new URL("..", import.meta.url));
           const unirtmBin = findUnirtmBinary(rootDir);
 
+          const parseTools = (filePath: string) => {
+            const res: Record<string, string> = {};
+            if (!fs.existsSync(filePath)) return res;
+            try {
+              const c = fs.readFileSync(filePath, "utf-8");
+              let inTools = false;
+              for (const line of c.split("\n")) {
+                const tr = line.trim();
+                if (tr.startsWith("[") && tr.endsWith("]")) {
+                  inTools = (tr === "[tools]");
+                  continue;
+                }
+                if (inTools && tr && !tr.startsWith("#")) {
+                  const eqIdx = tr.indexOf("=");
+                  if (eqIdx !== -1) {
+                    const rawKey = tr.slice(0, eqIdx).trim();
+                    const rawVal = tr.slice(eqIdx + 1).trim();
+                    const key = rawKey.replace(/^["']|["']$/g, "").trim();
+                    const val = rawVal.replace(/^["']|["']$/g, "").trim();
+                    if (key && val) {
+                      res[key] = val;
+                    }
+                  }
+                }
+              }
+            } catch {}
+            return res;
+          };
+
+          const parsePins = (filePath: string) => {
+            const res: Record<string, { pinned: boolean; reason: string }> = {};
+            if (!fs.existsSync(filePath)) return res;
+            try {
+              const c = fs.readFileSync(filePath, "utf-8");
+              let inPins = false;
+              for (const line of c.split("\n")) {
+                const tr = line.trim();
+                if (tr.startsWith("[") && tr.endsWith("]")) {
+                  inPins = (tr === "[pins]");
+                  continue;
+                }
+                if (inPins && tr && !tr.startsWith("#")) {
+                  const eqIdx = tr.indexOf("=");
+                  if (eqIdx !== -1) {
+                    const rawKey = tr.slice(0, eqIdx).trim();
+                    const rawVal = tr.slice(eqIdx + 1).trim();
+                    const key = rawKey.replace(/^["']|["']$/g, "").trim();
+                    const val = rawVal.replace(/^["']|["']$/g, "").trim();
+                    if (key) {
+                      if (val === "false") {
+                        res[key] = { pinned: false, reason: "" };
+                      } else if (val === "true") {
+                        res[key] = { pinned: true, reason: "" };
+                      } else {
+                        res[key] = { pinned: true, reason: val };
+                      }
+                    }
+                  }
+                }
+              }
+            } catch {}
+            return res;
+          };
+
           if ((req.url === "/api/tools/migrate-legacy" || req.url === "/api/runtimes/migrate-legacy") && req.method === "POST") {
             try {
               const wsPath = path.join(rootDir, ".unirtm.toml");
@@ -128,35 +192,6 @@ export default defineConfig({
             const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
             const altUserPath = path.join(os.homedir(), ".config", "unirtm", "config.toml");
 
-            const parseTools = (filePath: string) => {
-              const res: Record<string, string> = {};
-              if (!fs.existsSync(filePath)) return res;
-              try {
-                const c = fs.readFileSync(filePath, "utf-8");
-                let inTools = false;
-                for (const line of c.split("\n")) {
-                  const tr = line.trim();
-                  if (tr.startsWith("[") && tr.endsWith("]")) {
-                    inTools = (tr === "[tools]");
-                    continue;
-                  }
-                  if (inTools && tr && !tr.startsWith("#")) {
-                    const eqIdx = tr.indexOf("=");
-                    if (eqIdx !== -1) {
-                      const rawKey = tr.slice(0, eqIdx).trim();
-                      const rawVal = tr.slice(eqIdx + 1).trim();
-                      const key = rawKey.replace(/^["']|["']$/g, "").trim();
-                      const val = rawVal.replace(/^["']|["']$/g, "").trim();
-                      if (key && val) {
-                        res[key] = val;
-                      }
-                    }
-                  }
-                }
-              } catch {}
-              return res;
-            };
-
             const installedMap: Record<string, string[]> = {};
             if (fs.existsSync(unirtmBin)) {
               try {
@@ -216,41 +251,6 @@ export default defineConfig({
                 }
               }
               return fallback;
-            };
-
-            const parsePins = (filePath: string) => {
-              const res: Record<string, { pinned: boolean; reason: string }> = {};
-              if (!fs.existsSync(filePath)) return res;
-              try {
-                const c = fs.readFileSync(filePath, "utf-8");
-                let inPins = false;
-                for (const line of c.split("\n")) {
-                  const tr = line.trim();
-                  if (tr.startsWith("[") && tr.endsWith("]")) {
-                    inPins = (tr === "[pins]");
-                    continue;
-                  }
-                  if (inPins && tr && !tr.startsWith("#")) {
-                    const eqIdx = tr.indexOf("=");
-                    if (eqIdx !== -1) {
-                      const rawKey = tr.slice(0, eqIdx).trim();
-                      const rawVal = tr.slice(eqIdx + 1).trim();
-                      const key = rawKey.replace(/^["']|["']$/g, "").trim();
-                      const val = rawVal.replace(/^["']|["']$/g, "").trim();
-                      if (key) {
-                        if (val === "false") {
-                          res[key] = { pinned: false, reason: "" };
-                        } else if (val === "true") {
-                          res[key] = { pinned: true, reason: "" };
-                        } else {
-                          res[key] = { pinned: true, reason: val };
-                        }
-                      }
-                    }
-                  }
-                }
-              } catch {}
-              return res;
             };
 
             const wsTools = parseTools(fs.existsSync(wsPath) ? wsPath : altWsPath);
@@ -589,6 +589,166 @@ export default defineConfig({
                 fs.writeFileSync(targetPath, content, "utf-8");
                 res.setHeader("Content-Type", "application/json");
                 res.end(JSON.stringify({ success: true, tool, pinned, reason, global: isGlobal, file: targetPath }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
+          if (req.url?.startsWith("/api/tools/check-updates") || req.url?.startsWith("/api/runtimes/check-updates")) {
+            const wsPath = path.join(rootDir, ".unirtm.toml");
+            const altWsPath = path.join(rootDir, "unirtm.toml");
+            const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
+            const altUserPath = path.join(os.homedir(), ".config", "unirtm", "config.toml");
+
+            const wsTools = parseTools(fs.existsSync(wsPath) ? wsPath : altWsPath);
+            const userTools = parseTools(fs.existsSync(userPath) ? userPath : altUserPath);
+            const wsPins = parsePins(fs.existsSync(wsPath) ? wsPath : altWsPath);
+            const userPins = parsePins(fs.existsSync(userPath) ? userPath : altUserPath);
+
+            const allTools = Array.from(new Set(["node", "go", "python", "rust", ...Object.keys(wsTools), ...Object.keys(userTools)]));
+            const urlObj = new URL(req.url, "http://localhost");
+            const filterTool = urlObj.searchParams.get("tool");
+            const targetTools = filterTool ? [filterTool] : allTools;
+
+            const fallbackLatest: Record<string, string> = {
+              node: "23.9.0",
+              go: "1.27.2",
+              python: "3.13.2",
+              rust: "1.85.0",
+              java: "23.0.2",
+              bun: "1.2.4",
+              deno: "2.2.3",
+              ruby: "3.4.2",
+              zig: "0.14.0",
+              php: "8.4.4",
+            };
+
+            const semverGt = (a: string, b: string) => {
+              const pa = a.replace(/^v/, "").split(".").map(n => parseInt(n, 10));
+              const pb = b.replace(/^v/, "").split(".").map(n => parseInt(n, 10));
+              for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+                const na = isNaN(pa[i]) ? 0 : pa[i];
+                const nb = isNaN(pb[i]) ? 0 : pb[i];
+                if (na !== nb) return na > nb;
+              }
+              return false;
+            };
+
+            const updates: any[] = [];
+            let upgradableCount = 0;
+            let pinnedCount = 0;
+
+            for (const t of targetTools) {
+              const cur = wsTools[t] || userTools[t] || "";
+              const pin = wsPins[t] || userPins[t] || { pinned: false, reason: "" };
+              const latest = fallbackLatest[t] || "1.0.0";
+              const hasUpdate = Boolean(cur && latest && semverGt(latest, cur));
+
+              if (pin.pinned) {
+                pinnedCount++;
+              } else if (hasUpdate) {
+                upgradableCount++;
+              }
+
+              updates.push({
+                tool: t,
+                current_version: cur,
+                latest_version: latest,
+                has_update: hasUpdate,
+                is_pinned: pin.pinned,
+                pin_reason: pin.reason,
+              });
+            }
+
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({
+              updates,
+              total_checked: updates.length,
+              upgradable_count: upgradableCount,
+              pinned_count: pinnedCount,
+            }));
+            return;
+          }
+
+          if ((req.url === "/api/tools/batch-update" || req.url === "/api/runtimes/batch-update") && req.method === "POST") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const { tools, global: isGlobal } = JSON.parse(bodyStr || "{}");
+                const targetPath = isGlobal
+                  ? path.join(os.homedir(), ".config", "unirtm", "unirtm.toml")
+                  : path.join(rootDir, ".unirtm.toml");
+
+                const wsPins = parsePins(path.join(rootDir, ".unirtm.toml"));
+                const userPins = parsePins(path.join(os.homedir(), ".config", "unirtm", "unirtm.toml"));
+                const activePins = isGlobal ? userPins : wsPins;
+
+                fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+                let content = fs.existsSync(targetPath) ? fs.readFileSync(targetPath, "utf-8") : "";
+
+                const updated: string[] = [];
+                const skipped: string[] = [];
+
+                if (Array.isArray(tools)) {
+                  for (const item of tools) {
+                    const tool = item.tool;
+                    const ver = item.version;
+                    if (!tool || !ver) continue;
+
+                    if (activePins[tool]?.pinned) {
+                      skipped.push(tool);
+                      continue;
+                    }
+
+                    const lines = content.split("\n");
+                    let toolsIdx = -1;
+                    let nextIdx = -1;
+                    for (let i = 0; i < lines.length; i++) {
+                      const tr = lines[i].trim();
+                      if (tr === "[tools]") toolsIdx = i;
+                      else if (toolsIdx !== -1 && tr.startsWith("[") && tr.endsWith("]")) {
+                        nextIdx = i;
+                        break;
+                      }
+                    }
+
+                    const reg = new RegExp(`^\\s*"?${tool}"?\\s*=`);
+                    const quoteKey = (k: string) => (/^[a-zA-Z0-9_-]+$/.test(k) ? k : `"${k}"`);
+
+                    if (toolsIdx !== -1) {
+                      const end = nextIdx !== -1 ? nextIdx : lines.length;
+                      let found = false;
+                      for (let i = toolsIdx + 1; i < end; i++) {
+                        if (reg.test(lines[i])) {
+                          lines[i] = `${quoteKey(tool)} = "${ver}"`;
+                          found = true;
+                          break;
+                        }
+                      }
+                      if (!found) lines.splice(toolsIdx + 1, 0, `${quoteKey(tool)} = "${ver}"`);
+                      content = lines.join("\n");
+                    } else {
+                      content += `\n[tools]\n${quoteKey(tool)} = "${ver}"\n`;
+                    }
+                    updated.push(tool);
+                  }
+                }
+
+                fs.writeFileSync(targetPath, content, "utf-8");
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({
+                  success: true,
+                  updated,
+                  skipped,
+                  updated_count: updated.length,
+                  skipped_count: skipped.length,
+                  file: targetPath,
+                }));
               } catch (err: any) {
                 res.statusCode = 500;
                 res.setHeader("Content-Type", "application/json");

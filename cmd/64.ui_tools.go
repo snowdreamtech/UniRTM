@@ -15,6 +15,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/config"
 	"github.com/snowdreamtech/unirtm/internal/database"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
+	"github.com/snowdreamtech/unirtm/internal/pkg/version"
 	"github.com/snowdreamtech/unirtm/internal/repository/sqlite"
 )
 
@@ -586,6 +587,206 @@ func handlePinTool(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type ToolUpdateCheckResult struct {
+	Tool           string `json:"tool"`
+	CurrentVersion string `json:"current_version"`
+	LatestVersion  string `json:"latest_version"`
+	HasUpdate      bool   `json:"has_update"`
+	IsPinned       bool   `json:"is_pinned"`
+	PinReason      string `json:"pin_reason"`
+}
+
+type CheckUpdatesResponse struct {
+	Updates         []ToolUpdateCheckResult `json:"updates"`
+	TotalChecked    int                     `json:"total_checked"`
+	UpgradableCount int                     `json:"upgradable_count"`
+	PinnedCount     int                     `json:"pinned_count"`
+}
+
+func handleCheckToolsUpdates(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	targetTool := strings.TrimSpace(r.URL.Query().Get("tool"))
+
+	cfg, _ := config.LoadFull()
+	globalCfg, _ := config.LoadGlobal()
+
+	type toolCheckMeta struct {
+		curVer    string
+		pinned    bool
+		pinReason string
+	}
+	toolsToCheck := make(map[string]toolCheckMeta)
+
+	if globalCfg != nil {
+		for name, t := range globalCfg.Tools {
+			if targetTool == "" || targetTool == name {
+				toolsToCheck[name] = toolCheckMeta{
+					curVer:    t.Version,
+					pinned:    t.Pinned,
+					pinReason: t.PinReason,
+				}
+			}
+		}
+	}
+
+	if cfg != nil {
+		for name, t := range cfg.Tools {
+			if targetTool == "" || targetTool == name {
+				p := t.Pinned
+				pr := t.PinReason
+				if !p && toolsToCheck[name].pinned {
+					p = toolsToCheck[name].pinned
+					pr = toolsToCheck[name].pinReason
+				}
+				toolsToCheck[name] = toolCheckMeta{
+					curVer:    t.Version,
+					pinned:    p,
+					pinReason: pr,
+				}
+			}
+		}
+	}
+
+	if targetTool != "" && len(toolsToCheck) == 0 {
+		toolsToCheck[targetTool] = toolCheckMeta{curVer: ""}
+	}
+
+	var results []ToolUpdateCheckResult
+	upgradableCount := 0
+	pinnedCount := 0
+
+	nb := backend.NewNativeBackend()
+
+	var keys []string
+	for k := range toolsToCheck {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, name := range keys {
+		info := toolsToCheck[name]
+		var candidateVersions []string
+
+		if versions, err := nb.ListVersions(r.Context(), name, backend.CurrentPlatform()); err == nil && len(versions) > 0 {
+			for _, v := range versions {
+				candidateVersions = append(candidateVersions, v.Version)
+			}
+		} else {
+			candidateVersions = getFallbackRemoteVersions(name)
+		}
+
+		sort.Slice(candidateVersions, func(i, j int) bool {
+			return version.CompareVersions(candidateVersions[i], candidateVersions[j]) > 0
+		})
+
+		latestVer := ""
+		if len(candidateVersions) > 0 {
+			latestVer = candidateVersions[0]
+		}
+
+		hasUpdate := false
+		if info.curVer != "" && latestVer != "" {
+			if version.CompareVersions(latestVer, info.curVer) > 0 {
+				hasUpdate = true
+			}
+		}
+
+		if info.pinned {
+			pinnedCount++
+		} else if hasUpdate {
+			upgradableCount++
+		}
+
+		results = append(results, ToolUpdateCheckResult{
+			Tool:           name,
+			CurrentVersion: info.curVer,
+			LatestVersion:  latestVer,
+			HasUpdate:      hasUpdate,
+			IsPinned:       info.pinned,
+			PinReason:      info.pinReason,
+		})
+	}
+
+	_ = json.NewEncoder(w).Encode(CheckUpdatesResponse{
+		Updates:         results,
+		TotalChecked:    len(results),
+		UpgradableCount: upgradableCount,
+		PinnedCount:     pinnedCount,
+	})
+}
+
+func handleBatchUpdateTools(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		Tools []struct {
+			Tool    string `json:"tool"`
+			Version string `json:"version"`
+		} `json:"tools"`
+		Global bool `json:"global"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "invalid request body"})
+		return
+	}
+
+	var targetFile string
+	if req.Global {
+		targetFile = config.GetGlobalConfigPath()
+	} else {
+		targetFile = resolveConfigFilePath(false)
+	}
+
+	_ = os.MkdirAll(filepath.Dir(targetFile), 0755)
+	content, _ := config.ReadFileOrEmpty(targetFile)
+
+	cfg, _ := config.LoadFull()
+	var updated []string
+	var skipped []string
+
+	for _, item := range req.Tools {
+		toolName := strings.TrimSpace(item.Tool)
+		versionStr := strings.TrimSpace(item.Version)
+		if toolName == "" || versionStr == "" {
+			continue
+		}
+
+		// Skip if tool is pinned in current configuration
+		if cfg != nil {
+			if t, exists := cfg.Tools[toolName]; exists && t.Pinned {
+				skipped = append(skipped, toolName)
+				continue
+			}
+		}
+
+		content = config.UpsertToolVersion(content, toolName, versionStr)
+		updated = append(updated, toolName)
+	}
+
+	if len(updated) > 0 {
+		if err := os.WriteFile(targetFile, []byte(content), 0644); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		_, _ = config.FormatFile(targetFile, false)
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":       true,
+		"updated":       updated,
+		"skipped":       skipped,
+		"updated_count": len(updated),
+		"skipped_count": len(skipped),
+		"file":          targetFile,
+	})
+}
+
 // Backward-compatible function aliases
 var (
 	handleGetRuntimesStatus    = handleGetToolsStatus
@@ -594,5 +795,9 @@ var (
 	handleRemoveRuntime        = handleRemoveTool
 	handleMigrateLegacyRuntime = handleMigrateLegacyTool
 	handlePinRuntime           = handlePinTool
+	handleCheckRuntimesUpdates = handleCheckToolsUpdates
+	handleBatchUpdateRuntimes  = handleBatchUpdateTools
 )
+
+
 

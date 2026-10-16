@@ -190,6 +190,36 @@ node = "22.14.0"
 			break
 		}
 	}
+
+	// 7. Test GET /api/tools/check-updates
+	req = httptest.NewRequest("GET", "/api/tools/check-updates?tool=node", nil)
+	rr = httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	var checkResp CheckUpdatesResponse
+	_ = json.Unmarshal(rr.Body.Bytes(), &checkResp)
+	require.NotEmpty(t, checkResp.Updates)
+	assert.Equal(t, "node", checkResp.Updates[0].Tool)
+	assert.NotEmpty(t, checkResp.Updates[0].LatestVersion)
+
+	// 8. Test POST /api/tools/batch-update
+	batchBody, _ := json.Marshal(map[string]interface{}{
+		"tools": []map[string]string{
+			{"tool": "node", "version": "23.9.0"},
+			{"tool": "go", "version": "1.27.2"},
+		},
+		"global": false,
+	})
+	req = httptest.NewRequest("POST", "/api/tools/batch-update", bytes.NewReader(batchBody))
+	rr = httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	var batchResp map[string]interface{}
+	_ = json.Unmarshal(rr.Body.Bytes(), &batchResp)
+	assert.Equal(t, true, batchResp["success"])
+	assert.Equal(t, float64(2), batchResp["updated_count"])
 }
 
 // TestUIRuntimesAPI provides backward compatibility verification
