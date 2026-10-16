@@ -157,16 +157,65 @@ export default defineConfig({
               return res;
             };
 
-            const getInstalled = (toolId: string, fallback: string[]) => {
-              const dir = path.join(os.homedir(), ".local", "share", "unirtm", "installs", toolId);
-              if (!fs.existsSync(dir)) return fallback;
+            const installedMap: Record<string, string[]> = {};
+            if (fs.existsSync(unirtmBin)) {
               try {
-                const list = fs.readdirSync(dir).filter(f => !f.startsWith(".") && fs.statSync(path.join(dir, f)).isDirectory());
-                if (list.length === 0) return fallback;
-                return list.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
-              } catch {
-                return fallback;
+                const out = execFileSync(unirtmBin, ["list", "--json"], { cwd: rootDir, encoding: "utf-8", timeout: 5000 });
+                const data = JSON.parse(out);
+                const list = data.fields?.tools || data.tools || [];
+                for (const item of list) {
+                  const v = item.version;
+                  if (!v) continue;
+                  const add = (k: string) => {
+                    if (!installedMap[k]) installedMap[k] = [];
+                    if (!installedMap[k].includes(v)) installedMap[k].push(v);
+                  };
+                  add(item.tool);
+                  if (item.backend === "go-pkg" || item.backend === "go") {
+                    add(`go:${item.tool}`);
+                  } else if (item.backend && item.backend !== "native") {
+                    add(`${item.backend}:${item.tool}`);
+                  }
+                }
+              } catch (e) {
+                console.warn("[Vite Middleware] unirtm list fallback:", e);
               }
+            }
+
+            const getInstalled = (toolId: string, fallback: string[]) => {
+              if (installedMap[toolId] && installedMap[toolId].length > 0) {
+                return installedMap[toolId];
+              }
+              const bareTool = toolId.includes(":") ? toolId.split(":").slice(1).join(":") : toolId;
+              if (installedMap[bareTool] && installedMap[bareTool].length > 0) {
+                return installedMap[bareTool];
+              }
+
+              const installsRoot = path.join(os.homedir(), ".local", "share", "unirtm", "installs");
+              if (!fs.existsSync(installsRoot)) return fallback;
+
+              const candDirs = [
+                toolId,
+                bareTool,
+                toolId.replace(/[:/@]/g, "-"),
+                toolId.replace(/^go:/, "go-pkg-").replace(/[:/@]/g, "-"),
+                toolId.replace(/^npm:/, "npm-").replace(/[:/@]/g, "-"),
+                toolId.replace(/^github:/, "github-").replace(/[:/@]/g, "-"),
+                toolId.replace(/^pipx:/, "pipx-").replace(/[:/@]/g, "-"),
+              ];
+
+              for (const cand of candDirs) {
+                const dir = path.join(installsRoot, cand);
+                if (fs.existsSync(dir)) {
+                  try {
+                    const list = fs.readdirSync(dir).filter(f => !f.startsWith(".") && fs.statSync(path.join(dir, f)).isDirectory());
+                    if (list.length > 0) {
+                      return list.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+                    }
+                  } catch {}
+                }
+              }
+              return fallback;
             };
 
             const wsTools = parseTools(fs.existsSync(wsPath) ? wsPath : altWsPath);

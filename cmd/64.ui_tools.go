@@ -73,6 +73,11 @@ func handleGetToolsStatus(w http.ResponseWriter, r *http.Request) {
 				for _, inst := range installations {
 					if inst != nil {
 						installedMap[inst.Tool] = append(installedMap[inst.Tool], inst.Version)
+						if inst.Backend == "go-pkg" || inst.Backend == "go" {
+							installedMap["go:"+inst.Tool] = append(installedMap["go:"+inst.Tool], inst.Version)
+						} else if inst.Backend != "" && inst.Backend != "native" {
+							installedMap[inst.Backend+":"+inst.Tool] = append(installedMap[inst.Backend+":"+inst.Tool], inst.Version)
+						}
 					}
 				}
 			}

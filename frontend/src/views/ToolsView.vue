@@ -133,7 +133,7 @@
           <div class="runtime-icon-badge"><TechIcon :id="rt.id" :size="32" :colored="true" /></div>
           <div class="runtime-title-block">
             <div class="runtime-name-row">
-              <span class="runtime-name">{{ rt.name }}</span>
+              <span class="runtime-name" :title="rt.name">{{ formatToolTitle(rt.name) }}</span>
               <a
                 v-if="rt.homepage"
                 :href="rt.homepage"
@@ -168,13 +168,13 @@
               {{ t("runtimes.scope_workspace") || "工作区" }}:
             </span>
             <div v-if="rt.active_version" class="status-val-wrap">
-              <span class="active-pill font-mono">v{{ rt.active_version }}</span>
+              <span class="active-pill font-mono">{{ formatVersion(rt.active_version) }}</span>
               <span v-if="rt.is_legacy" class="source-tag source-legacy">
                 {{ rt.source }}
               </span>
             </div>
             <div v-else-if="rt.global_version" class="status-val-wrap">
-              <span class="active-pill font-mono muted">v{{ rt.global_version }}</span>
+              <span class="active-pill font-mono muted">{{ formatVersion(rt.global_version) }}</span>
               <span class="source-tag source-default">{{ t("runtimes.follow_user") || "跟随用户" }}</span>
             </div>
             <span v-else class="text-muted font-mono italic">未配置</span>
@@ -189,7 +189,7 @@
               {{ t("runtimes.scope_user") || "用户" }}:
             </span>
             <div v-if="rt.global_version" class="status-val-wrap">
-              <span class="global-pill font-mono">v{{ rt.global_version }}</span>
+              <span class="global-pill font-mono">{{ formatVersion(rt.global_version) }}</span>
             </div>
             <span v-else class="text-muted font-mono italic">未配置</span>
           </div>
@@ -217,7 +217,7 @@
                 v-if="(currentScope === 'workspace' && ver === rt.active_version) || (currentScope === 'user' && ver === rt.global_version)"
                 class="active-dot"
               >●</span>
-              <span>v{{ ver }}</span>
+              <span>{{ formatVersion(ver) }}</span>
             </button>
           </div>
           <div v-else class="empty-installed-text">
@@ -242,7 +242,7 @@
                 :key="ver"
                 :value="ver"
               >
-                v{{ ver }}{{ (currentScope === 'workspace' ? ver === rt.active_version : ver === rt.global_version) ? ' (当前)' : '' }}
+                {{ formatVersion(ver) }}{{ (currentScope === 'workspace' ? ver === rt.active_version : ver === rt.global_version) ? ' (当前)' : '' }}
               </option>
             </select>
           </div>
@@ -838,6 +838,24 @@ const filteredRuntimes = computed(() => {
       rt.active_version.includes(q)
   );
 });
+
+// Format tool title with 2-line middle-truncation
+function formatToolTitle(title: string, maxLen = 44): string {
+  if (!title || title.length <= maxLen) return title;
+  const keepStart = 24;
+  const keepEnd = maxLen - keepStart - 3;
+  return `${title.slice(0, keepStart)}...${title.slice(title.length - keepEnd)}`;
+}
+
+// Clean and format version strings without double 'v'
+function formatVersion(ver: string | undefined | null): string {
+  if (!ver) return "";
+  const clean = ver.trim();
+  if (clean.startsWith("v") || clean.startsWith("V")) {
+    return clean;
+  }
+  return `v${clean}`;
+}
 
 // Semver compare descending (newest version first)
 function compareSemverDesc(a: string, b: string): number {
@@ -1463,18 +1481,33 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 0.15rem;
   flex: 1;
+  min-width: 0;
 }
 
 .runtime-name-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 0.4rem;
+  width: 100%;
 }
 
 .runtime-name {
-  font-size: 1.1rem;
+  font-size: 1.02rem;
   font-weight: 700;
   color: var(--text-main);
+  line-height: 1.35;
+  min-height: 2.7em;
+  max-height: 2.7em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  flex: 1;
+  min-width: 0;
 }
 
 .runtime-homepage-link {
