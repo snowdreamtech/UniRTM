@@ -46,7 +46,7 @@
 
       <!-- TOOLS Navigation Items -->
       <template v-if="currentTab === 'tools'">
-        <div class="nav-group-title">{{ t("sidebar.group_tools") || "PROJECT RUNTIMES & TOOLS" }}</div>
+        <div class="nav-group-title">{{ t("sidebar.group_tools") || "PROJECT TOOLS" }}</div>
         <button
           v-for="tool in filteredToolItems"
           :key="tool.name"

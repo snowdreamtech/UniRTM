@@ -104,7 +104,7 @@
       </div>
       <div class="runtime-stats-badges">
         <span class="stat-badge">
-          <b>{{ filteredRuntimes.length }}</b> {{ t("runtimes.count_runtimes_suffix") || "个语言环境" }}
+          <b>{{ filteredRuntimes.length }}</b> {{ t("runtimes.count_runtimes_suffix") || "个工具" }}
         </span>
         <span class="stat-badge highlight">
           <b>{{ totalInstalled }}</b> {{ t("runtimes.count_installed_suffix") || "个已装版本" }}
@@ -421,8 +421,8 @@
               <TechIcon id="workbench:tools" :size="20" />
             </span>
             <div>
-              <h3 class="modal-title">{{ t("runtimes.add_runtime") || "添加运行环境" }}</h3>
-              <p class="modal-desc">为当前{{ currentScope === 'user' ? '用户默认' : '工作区' }}添加编程语言运行时与版本</p>
+              <h3 class="modal-title">{{ t("runtimes.add_runtime") || "添加工具" }}</h3>
+              <p class="modal-desc">为当前{{ currentScope === 'user' ? '用户默认' : '工作区' }}添加工具与版本</p>
             </div>
           </div>
           <button class="modal-close-btn" @click="isAddModalOpen = false">✕</button>

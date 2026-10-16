@@ -62,11 +62,11 @@ export const enUs: TranslationDict = {
   "runtimes.set_as_project": "Set for Workspace",
   "runtimes.search_placeholder": "Search environments, versions...",
   "runtimes.search_remote_placeholder": "Filter upstream releases (e.g. 20, lts, 1.24)...",
-  "runtimes.no_installed": "No versions installed locally for this environment",
+  "runtimes.no_installed": "No versions installed locally for this tool",
   "runtimes.modal_title": "Install Environment Release",
   "runtimes.modal_desc": "Select and install pre-compiled binaries from official and mirror repositories.",
   "runtimes.remote_list_tip": "Official releases available for installation",
-  "runtimes.count_runtimes_suffix": "Environments",
+  "runtimes.count_runtimes_suffix": "tools",
   "runtimes.count_installed_suffix": "Installed Releases",
   "runtimes.migrating": "Importing legacy version configurations to .unirtm.toml...",
   "runtimes.migrate_success": "Successfully migrated legacy version files into .unirtm.toml!",
@@ -92,7 +92,7 @@ export const enUs: TranslationDict = {
   "runtimes.install_custom_btn": "Try Installing Custom Version",
 
   "sidebar.group_overview": "PROJECT OVERVIEW",
-  "sidebar.group_tools": "RUNTIMES & TOOLS",
+  "sidebar.group_tools": "PROJECT TOOLS",
   "sidebar.group_tasks": "TASKS (.unirtm.toml)",
   "sidebar.group_marketplace": "FEATURED EXTENSIONS",
   "sidebar.group_doctor": "SYSTEM DIAGNOSTICS",
@@ -102,7 +102,7 @@ export const enUs: TranslationDict = {
   "tasks.run": "Run",
   "tasks.running": "Running",
 
-  "tools.title": "Project Toolchains & Runtimes",
+  "tools.title": "Project Tools",
   "tools.reshim": "Reshim",
 
   "doctor.title": "UniRTM Doctor Diagnostics",
