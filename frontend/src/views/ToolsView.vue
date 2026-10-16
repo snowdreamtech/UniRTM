@@ -2408,16 +2408,27 @@ onBeforeUnmount(() => {
 
 /* 危险操作：删除 */
 .card-action-btn.action-delete {
-  background: transparent;
-  border-color: rgba(239, 68, 68, 0.2);
-  color: rgba(239, 68, 68, 0.85);
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.28);
+  color: #ef4444;
+}
+[data-theme="dark"] .card-action-btn.action-delete {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(248, 113, 113, 0.35);
+  color: #f87171;
 }
 .card-action-btn.action-delete:hover {
-  background: rgba(239, 68, 68, 0.14);
+  background: rgba(239, 68, 68, 0.2);
   border-color: #ef4444;
-  color: #ef4444;
+  color: #dc2626;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+}
+[data-theme="dark"] .card-action-btn.action-delete:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #f87171;
+  color: #fca5a5;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
 }
 
 
