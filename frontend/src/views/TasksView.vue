@@ -130,21 +130,25 @@
           </div>
 
           <div class="task-actions-side">
-            <div class="task-secondary-actions">
+            <div class="task-more-menu-wrap" @click.stop>
               <button
-                class="task-icon-btn edit"
-                @click.stop="openEditModal(task)"
-                :title="`编辑任务: ${task.name}`"
+                class="task-more-btn"
+                :class="{ active: activeMenuTask === task.name }"
+                @click.stop="toggleTaskMenu(task.name)"
+                :title="`更多操作: ${task.name}`"
               >
-                <TechIcon id="workbench:edit" :size="12" />
+                ···
               </button>
-              <button
-                class="task-icon-btn delete"
-                @click.stop="openDeleteConfirm(task)"
-                :title="`删除任务: ${task.name}`"
-              >
-                <TechIcon id="workbench:delete" :size="12" />
-              </button>
+              <div v-if="activeMenuTask === task.name" class="task-dropdown-menu">
+                <button class="dropdown-item" @click.stop="handleEditFromMenu(task)">
+                  <TechIcon id="workbench:edit" :size="13" />
+                  <span>{{ t("tasks.edit_title") || "编辑任务" }}</span>
+                </button>
+                <button class="dropdown-item danger" @click.stop="handleDeleteFromMenu(task)">
+                  <TechIcon id="workbench:delete" :size="13" />
+                  <span>{{ t("tasks.delete_title") || "删除任务" }}</span>
+                </button>
+              </div>
             </div>
             <button
               class="run-task-btn"
@@ -211,7 +215,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted } from "vue";
 import { t } from "../i18n";
 import TechIcon from "../components/common/TechIcon.vue";
 import TaskModal, { type TaskFormData } from "../components/TaskModal.vue";
@@ -256,6 +260,27 @@ const savingTask = ref(false);
 // Delete confirm modal state
 const taskToDelete = ref<ProjectTask | null>(null);
 const deletingTask = ref(false);
+
+// Three-dots more menu state
+const activeMenuTask = ref<string | null>(null);
+
+function toggleTaskMenu(name: string) {
+  activeMenuTask.value = activeMenuTask.value === name ? null : name;
+}
+
+function handleEditFromMenu(task: ProjectTask) {
+  activeMenuTask.value = null;
+  openEditModal(task);
+}
+
+function handleDeleteFromMenu(task: ProjectTask) {
+  activeMenuTask.value = null;
+  openDeleteConfirm(task);
+}
+
+function closeTaskMenu() {
+  activeMenuTask.value = null;
+}
 
 const allTaskNames = computed(() => tasks.value.map((t) => t.name));
 
@@ -377,6 +402,11 @@ watch(
 
 onMounted(() => {
   fetchTasks();
+  window.addEventListener("click", closeTaskMenu);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("click", closeTaskMenu);
 });
 
 async function executeTask(task: ProjectTask) {
@@ -762,42 +792,89 @@ async function executeTask(task: ProjectTask) {
   flex-shrink: 0;
 }
 
-.task-secondary-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  opacity: 0.35;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+.task-more-menu-wrap {
+  position: relative;
+  display: inline-flex;
 }
 
-.task-row-card:hover .task-secondary-actions {
-  opacity: 1;
-}
-
-.task-icon-btn {
+.task-more-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 24px;
   height: 24px;
   border-radius: 6px;
-  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
-  background: var(--section-bg, rgba(255, 255, 255, 0.04));
-  color: var(--text-muted, #94a3b8);
+  border: 1px solid var(--card-border);
+  background: var(--section-bg);
+  color: var(--text-muted);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 1px;
   cursor: pointer;
+  opacity: 0.35;
   transition: all 0.2s ease;
+  line-height: 1;
+  padding: 0;
 }
 
-.task-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: var(--text-main, #fff);
+.task-more-btn:hover,
+.task-more-btn.active {
+  background: var(--input-bg);
+  color: var(--text-main);
   border-color: var(--card-border-active);
+  opacity: 1;
   transform: translateY(-1px);
 }
 
-.task-icon-btn.delete:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.4);
+.task-row-card:hover .task-more-btn {
+  opacity: 0.85;
+}
+
+.task-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 0 12px var(--accent-cyan-glow);
+  padding: 0.3rem;
+  z-index: 50;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.task-dropdown-menu .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-main);
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.task-dropdown-menu .dropdown-item:hover {
+  background: var(--input-bg);
+  color: var(--text-main);
+}
+
+.task-dropdown-menu .dropdown-item.danger {
+  color: #ef4444;
+}
+
+.task-dropdown-menu .dropdown-item.danger:hover {
+  background: rgba(239, 68, 68, 0.12);
   color: #ef4444;
 }
 
