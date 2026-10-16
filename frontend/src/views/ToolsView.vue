@@ -407,7 +407,7 @@
             <!-- Strictly validated custom version card when unlisted -->
             <div v-else-if="canInstallCustomVersion" class="custom-ver-install-box">
               <div class="custom-ver-header">
-                <span class="font-mono ver-name">v{{ cleanCustomVersion }}</span>
+                <span class="font-mono ver-name">{{ formatVersion(cleanCustomVersion) }}</span>
                 <span class="custom-badge font-mono">
                   {{ t('runtimes.custom_version_unlisted') || '官方未收录' }}
                 </span>
@@ -433,7 +433,7 @@
             class="remote-ver-row"
           >
             <div class="remote-ver-info">
-              <span class="font-mono ver-name">v{{ rv.version }}</span>
+              <span class="font-mono ver-name">{{ formatVersion(rv.version) }}</span>
               <span
                 v-if="isAlreadyInstalled(selectedRuntime?.id || '', rv.version)"
                 class="installed-tag"
@@ -488,7 +488,7 @@
                 <div class="preset-info">
                   <div class="preset-name-row">
                     <span class="preset-name">{{ preset.name }}</span>
-                    <span class="preset-tag font-mono">v{{ preset.defaultVersion }}</span>
+                    <span class="preset-tag font-mono">{{ formatVersion(preset.defaultVersion) }}</span>
                   </div>
                   <span class="preset-desc">{{ preset.description }}</span>
                 </div>
@@ -603,7 +603,7 @@
                     </div>
                   </td>
                   <td>
-                    <span class="diff-version-pill current font-mono">v{{ item.current_version || "未指定" }}</span>
+                    <span class="diff-version-pill current font-mono">{{ formatVersion(item.current_version) || "未指定" }}</span>
                   </td>
                   <td>
                     <div class="diff-version-target">
@@ -611,7 +611,7 @@
                         class="diff-version-pill latest font-mono"
                         :class="{ 'has-new': item.has_update && !item.pinned }"
                       >
-                        v{{ item.latest_version }}
+                        {{ formatVersion(item.latest_version) }}
                       </span>
                       <span v-if="item.has_update && !item.pinned" class="diff-delta-badge font-mono">
                         ↑ 升级
@@ -1079,14 +1079,12 @@ function formatToolTitle(title: string, maxLen = 44): string {
   return `${title.slice(0, keepStart)}...${title.slice(title.length - keepEnd)}`;
 }
 
-// Clean and format version strings without double 'v'
+// Clean and format version strings strictly with a single 'v', avoiding 'vv'
 function formatVersion(ver: string | undefined | null): string {
   if (!ver) return "";
   const clean = ver.trim();
-  if (clean.startsWith("v") || clean.startsWith("V")) {
-    return clean;
-  }
-  return `v${clean}`;
+  const stripped = clean.replace(/^[vV]+/, "");
+  return `v${stripped}`;
 }
 
 // Semver compare descending (newest version first)
