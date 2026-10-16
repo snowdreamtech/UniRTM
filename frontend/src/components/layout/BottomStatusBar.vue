@@ -12,11 +12,7 @@
         <span class="status-text">{{ statusReadyText }}</span>
       </div>
 
-      <div
-        class="status-pill status-warnings"
-        id="status-warnings"
-        :title="'0 Security Warnings'"
-      >
+      <div class="status-pill status-warnings" id="status-warnings" :title="'0 Security Warnings'">
         <span class="status-icon"><TechIcon id="workbench:warning" :size="14" /></span>
         <span class="status-text">0</span>
       </div>
@@ -24,13 +20,8 @@
 
     <!-- Center Section: Active Background Task / Dynamic Notification -->
     <div class="status-center">
-      <div
-        v-if="activeTaskName"
-        class="status-task-pill"
-        id="status-running-task"
-        @click="$emit('toggle-drawer')"
-      >
-        <span class="spin-icon"><TechIcon id="workbench:tasks" :size="14" :colored="false" /></span>
+      <div v-if="activeTaskName" class="status-task-pill" id="status-running-task" @click="$emit('toggle-drawer')">
+        <TechIcon id="workbench:sync" :size="13" class="spin-icon" />
         <span class="task-running-text">{{ runningTaskText }}: {{ activeTaskName }}</span>
       </div>
     </div>
@@ -41,24 +32,40 @@
       <button
         class="status-btn"
         id="btn-status-scope"
-        :title="activeScope === 'user' ? '当前作用域: 用户全局 (~/.unirtm) • 点击切换为工作区 (Alt+S)' : '当前作用域: 工作区 (.unirtm.toml) • 点击切换为用户全局 (Alt+S)'"
+        :title="
+          activeScope === 'user'
+            ? '当前作用域: 用户全局 (~/.unirtm) • 点击切换为工作区 (Alt+S)'
+            : '当前作用域: 工作区 (.unirtm.toml) • 点击切换为用户全局 (Alt+S)'
+        "
         @click="toggleScope(router)"
       >
         <span class="btn-icon">
-          <TechIcon :id="activeScope === 'user' ? 'workbench:settings' : 'workbench:folder'" :size="13" :colored="false" />
+          <TechIcon
+            :id="activeScope === 'user' ? 'workbench:settings' : 'workbench:folder'"
+            :size="13"
+            :colored="false"
+          />
         </span>
-        <span>{{ activeScope === 'user' ? (isZh ? '用户全局' : 'User') : (isZh ? '工作区' : 'Workspace') }}</span>
+        <span>{{ activeScope === "user" ? (isZh ? "用户全局" : "User") : isZh ? "工作区" : "Workspace" }}</span>
       </button>
 
       <!-- Active Toolchain Count -->
       <button
         class="status-btn"
         id="btn-status-tools"
-        :title="activeScope === 'user' ? (isZh ? '用户全局共 1 个工具' : '1 tool configured in user global') : (isZh ? '工作区共 5 个工具' : '5 tools configured in workspace')"
+        :title="
+          activeScope === 'user'
+            ? isZh
+              ? '用户全局共 1 个工具'
+              : '1 tool configured in user global'
+            : isZh
+              ? '工作区共 5 个工具'
+              : '5 tools configured in workspace'
+        "
         @click="$emit('select-tab', 'tools')"
       >
         <span class="btn-icon"><TechIcon id="workbench:tools" :size="14" :colored="false" /></span>
-        <span>{{ activeScope === 'user' ? 1 : 5 }} {{ toolsLabelText }}</span>
+        <span>{{ activeScope === "user" ? 1 : 5 }} {{ toolsLabelText }}</span>
       </button>
 
       <!-- Network Mirror & Latency -->
@@ -73,19 +80,13 @@
       </button>
 
       <!-- Lockfile status -->
-      <div
-        class="status-pill"
-        id="status-lockfile"
-        :title="'unirtm.lock is in sync with active dependencies'"
-      >
+      <div class="status-pill" id="status-lockfile" :title="'unirtm.lock is in sync with active dependencies'">
         <span class="btn-icon"><TechIcon id="unirtm.lock" :size="12" /></span>
         <span>{{ lockStatusText }}</span>
       </div>
 
       <!-- Core Version -->
-      <div class="status-version font-mono" title="UniRTM Core Version">
-        v0.35.0
-      </div>
+      <div class="status-version font-mono" title="UniRTM Core Version">v0.35.0</div>
     </div>
   </footer>
 </template>
@@ -199,8 +200,13 @@ const mirrorLabel = computed(() => {
 }
 
 @keyframes pulse-task {
-  0%, 100% { opacity: 0.9; }
-  50% { opacity: 0.6; }
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 
 .spin-icon {
@@ -209,8 +215,12 @@ const mirrorLabel = computed(() => {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .status-btn {

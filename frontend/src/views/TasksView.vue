@@ -124,13 +124,13 @@
               @click="executeTask(task)"
               :title="`运行任务: unirtm run ${task.name}`"
             >
-              <span v-if="runningTask === task.name" class="spin-icon" style="display: inline-flex; align-items: center; gap: 4px;">
-                <TechIcon id="workbench:sync" :size="12" />
-                {{ t("tasks.running") || "运行中..." }}
+              <span v-if="runningTask === task.name" style="display: inline-flex; align-items: center; gap: 6px;">
+                <TechIcon id="workbench:sync" :size="12" class="spin-icon" />
+                <span>{{ t("tasks.running") || "运行中..." }}</span>
               </span>
               <span v-else style="display: inline-flex; align-items: center; gap: 4px;">
                 <TechIcon id="workbench:tasks" :size="12" :colored="false" />
-                {{ t("tasks.run") || "运行" }}
+                <span>{{ t("tasks.run") || "运行" }}</span>
               </span>
             </button>
           </div>
