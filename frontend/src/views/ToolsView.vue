@@ -317,9 +317,18 @@
           <div class="modal-title-row">
             <span class="modal-icon"><TechIcon :id="selectedRuntime?.id || ''" :size="20" :colored="true" /></span>
             <div>
-              <h3 class="modal-title">
-                {{ selectedRuntime?.name }} {{ t("runtimes.install_version") || "Install Version" }}
-              </h3>
+              <div class="modal-title-text-wrap">
+                <h3 class="modal-title">
+                  {{ selectedRuntime?.name }} {{ t("runtimes.install_version") || "Install Version" }}
+                </h3>
+                <span
+                  v-if="selectedRuntime?.pinned"
+                  class="source-tag source-pinned"
+                  :title="selectedRuntime.pin_reason ? `版本锁定: ${selectedRuntime.pin_reason}` : '版本已锁定'"
+                >
+                  🔒 已锁定{{ selectedRuntime.pin_reason ? `: ${selectedRuntime.pin_reason}` : "" }}
+                </span>
+              </div>
               <p class="modal-desc">
                 {{ t("runtimes.remote_list_tip") || "Available official upstream releases" }}
               </p>
@@ -1015,6 +1024,12 @@ async function addCustomRuntime() {
 async function confirmRemoveRuntime(rt: RuntimeItem) {
   const isGlobal = currentScope.value === "user";
   const scopeName = isGlobal ? "用户配置" : "工作区";
+  if (rt.pinned) {
+    const reasonText = rt.pin_reason ? `（锁定原因：${rt.pin_reason}）` : "";
+    if (!window.confirm(`警告：工具 ${rt.name} 当前处于版本锁定保护状态${reasonText}。\n确定要强制将其从${scopeName}中移除吗？`)) {
+      return;
+    }
+  }
   const msg = (t("runtimes.remove_confirm") || "确定从当前工作区中移除 {name} 吗？").replace("{name}", rt.name);
   if (!window.confirm(msg)) {
     return;
@@ -1469,6 +1484,30 @@ async function installRemoteVersion(toolId: string, ver: string) {
   const scopeName = isGlobal ? "用户" : "工作区";
   const alreadyInstalled = isAlreadyInstalled(toolId, ver);
 
+  // Check if tool is currently pinned
+  const targetRt = runtimes.value.find((r) => r.id === toolId);
+  if (targetRt && targetRt.pinned) {
+    const reasonText = targetRt.pin_reason ? `（锁定原因：${targetRt.pin_reason}）` : "";
+    const confirmSwitch = window.confirm(
+      `工具 ${targetRt.name} 当前处于版本锁定状态${reasonText}。\n应用此版本将自动解除此锁定，确定要继续切换至 v${ver} 吗？`
+    );
+    if (!confirmSwitch) {
+      return;
+    }
+    // Automatically unpin
+    targetRt.pinned = false;
+    targetRt.pin_reason = "";
+    if (selectedRuntime.value && selectedRuntime.value.id === toolId) {
+      selectedRuntime.value.pinned = false;
+      selectedRuntime.value.pin_reason = "";
+    }
+    fetch("/api/tools/pin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tool: toolId, pinned: false, global: isGlobal }),
+    }).catch(() => {});
+  }
+
   const prevRuntimes = JSON.parse(JSON.stringify(runtimes.value));
   const prevSelectedRuntime = selectedRuntime.value ? JSON.parse(JSON.stringify(selectedRuntime.value)) : null;
 
@@ -1573,6 +1612,8 @@ async function runBatchUpdate() {
   const toolsPayload = selectedUpdateTools.value
     .map((toolId) => {
       const match = updateResults.value.find((r) => r.id === toolId);
+      // Strictly respect lock status: never upgrade pinned tools
+      if (match && match.pinned) return null;
       return match ? { id: toolId, version: match.latest_version } : null;
     })
     .filter(Boolean);
@@ -2047,6 +2088,12 @@ onBeforeUnmount(() => {
 
 [data-theme="dark"] .source-pinned {
   color: #fbbf24;
+}
+
+.modal-title-text-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .source-project {

@@ -220,6 +220,43 @@ node = "22.14.0"
 	_ = json.Unmarshal(rr.Body.Bytes(), &batchResp)
 	assert.Equal(t, true, batchResp["success"])
 	assert.Equal(t, float64(2), batchResp["updated_count"])
+
+	// 9. Test POST /api/tools/batch-update strictly respects tool pinning
+	pinNode, _ := json.Marshal(map[string]interface{}{
+		"tool":   "node",
+		"pinned": true,
+		"reason": "lock in production",
+		"global": false,
+	})
+	req = httptest.NewRequest("POST", "/api/tools/pin", bytes.NewReader(pinNode))
+	rr = httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	// Attempt batch-update containing pinned node and unpinned go
+	batchWithPin, _ := json.Marshal(map[string]interface{}{
+		"tools": []map[string]string{
+			{"tool": "node", "version": "24.0.0"},
+			{"tool": "go", "version": "1.27.3"},
+		},
+		"global": false,
+	})
+	req = httptest.NewRequest("POST", "/api/tools/batch-update", bytes.NewReader(batchWithPin))
+	rr = httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	assert.Equal(t, http.StatusOK, rr.Code)
+
+	var pinBatchResp struct {
+		Success      bool     `json:"success"`
+		UpdatedCount int      `json:"updated_count"`
+		Updated      []string `json:"updated"`
+		Skipped      []string `json:"skipped"`
+	}
+	_ = json.Unmarshal(rr.Body.Bytes(), &pinBatchResp)
+	assert.True(t, pinBatchResp.Success)
+	assert.Equal(t, 1, pinBatchResp.UpdatedCount)
+	assert.Contains(t, pinBatchResp.Updated, "go")
+	assert.Contains(t, pinBatchResp.Skipped, "node")
 }
 
 // TestUIRuntimesAPI provides backward compatibility verification

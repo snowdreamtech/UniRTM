@@ -714,7 +714,7 @@ export default defineConfig({
                     const ver = item.version;
                     if (!tool || !ver) continue;
 
-                    if (activePins[tool]?.pinned) {
+                    if (wsPins[tool]?.pinned || userPins[tool]?.pinned) {
                       skipped.push(tool);
                       continue;
                     }

@@ -749,6 +749,7 @@ func handleBatchUpdateTools(w http.ResponseWriter, r *http.Request) {
 	content, _ := config.ReadFileOrEmpty(targetFile)
 
 	cfg, _ := config.LoadFull()
+	globalCfg, _ := config.LoadGlobal()
 	var updated []string
 	var skipped []string
 
@@ -759,9 +760,15 @@ func handleBatchUpdateTools(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		// Skip if tool is pinned in current configuration
+		// Skip if tool is pinned in current configuration or global configuration
 		if cfg != nil {
 			if t, exists := cfg.Tools[toolName]; exists && t.Pinned {
+				skipped = append(skipped, toolName)
+				continue
+			}
+		}
+		if globalCfg != nil {
+			if t, exists := globalCfg.Tools[toolName]; exists && t.Pinned {
 				skipped = append(skipped, toolName)
 				continue
 			}
