@@ -1783,6 +1783,7 @@ onBeforeUnmount(() => {
   padding: 1.25rem;
   height: 100%;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   box-sizing: border-box;
 }
 

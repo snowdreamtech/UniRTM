@@ -392,6 +392,7 @@ onMounted(async () => {
 .sidebar-content-list {
   flex: 1;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   padding: 0.2rem 0.5rem;
 }
 

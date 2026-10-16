@@ -170,6 +170,10 @@ svg {
   scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 
 ::-webkit-scrollbar {
   width: 7px;
