@@ -16,6 +16,10 @@
           <TechIcon id="workbench:sync" :size="14" :class="{ 'spin-icon': loading }" />
           <span>{{ loading ? t("common.refreshing") || "刷新中..." : t("common.refresh") || "刷新" }}</span>
         </button>
+        <button class="tool-action-btn primary" @click="openCreateModal" title="新建工程自动化任务">
+          <TechIcon id="workbench:edit" :size="14" />
+          <span>{{ t("tasks.create_btn") || "新建任务" }}</span>
+        </button>
       </div>
     </div>
 
@@ -77,6 +81,10 @@
               ? '可在用户配置文件 (~/.config/unirtm/unirtm.toml) 中配置 [tasks.<name>] 定义通用任务。'
               : '可在项目根目录的 .unirtm.toml 中添加 [tasks.<name>] 定义构建、测试与安全扫描等自动化脚本。' }}
         </p>
+        <button v-if="!searchKey" class="tool-action-btn primary" style="margin-top: 0.75rem;" @click="openCreateModal">
+          <TechIcon id="workbench:edit" :size="14" />
+          <span>{{ t("tasks.create_first") || "创建第一个任务" }}</span>
+        </button>
       </div>
 
       <!-- Tasks List -->
@@ -133,6 +141,62 @@
                 <span>{{ t("tasks.run") || "运行" }}</span>
               </span>
             </button>
+            <button
+              class="task-icon-btn edit"
+              @click="openEditModal(task)"
+              :title="`编辑任务: ${task.name}`"
+            >
+              <TechIcon id="workbench:edit" :size="13" />
+            </button>
+            <button
+              class="task-icon-btn delete"
+              @click="openDeleteConfirm(task)"
+              :title="`删除任务: ${task.name}`"
+            >
+              <TechIcon id="workbench:delete" :size="13" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Task Editor Modal -->
+    <TaskModal
+      :is-open="isTaskModalOpen"
+      :is-edit="isEditMode"
+      :initial-task="editingTask"
+      :scope="activeScope"
+      :all-task-names="allTaskNames"
+      :saving="savingTask"
+      @close="isTaskModalOpen = false"
+      @save="handleSaveTask"
+    />
+
+    <!-- Delete Confirmation Modal -->
+    <div v-if="taskToDelete" class="modal-overlay" @click.self="taskToDelete = null">
+      <div class="modal-card glass-modal delete-confirm-modal">
+        <div class="modal-header">
+          <div class="header-title" style="color: #ef4444;">
+            <TechIcon id="workbench:warning" :size="20" />
+            <h3 style="margin: 0; font-size: 1.05rem;">{{ t("tasks.delete_title") || "确认删除任务" }}</h3>
+          </div>
+          <button class="close-btn" @click="taskToDelete = null">✕</button>
+        </div>
+        <div class="modal-body" style="padding: 1.25rem 1.4rem;">
+          <p style="margin: 0 0 0.75rem 0; font-size: 0.85rem; color: var(--text-main);">
+            确定要删除任务 <b class="font-mono" style="color: var(--accent-cyan);">{{ taskToDelete.name }}</b> 吗？
+          </p>
+          <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
+            此操作将从 {{ activeScope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml' }} 中移除该任务配置，删除后不可撤销。
+          </p>
+          <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+            <button class="tool-action-btn secondary" @click="taskToDelete = null" :disabled="deletingTask">
+              {{ t("common.cancel") || "取消" }}
+            </button>
+            <button class="tool-action-btn danger" @click="handleConfirmDelete" :disabled="deletingTask">
+              <TechIcon v-if="deletingTask" id="workbench:sync" :size="14" class="spin-icon" />
+              <span>{{ deletingTask ? (t("common.deleting") || "删除中...") : (t("common.delete") || "确认删除") }}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -144,7 +208,9 @@
 import { ref, computed, watch, onMounted } from "vue";
 import { t } from "../i18n";
 import TechIcon from "../components/common/TechIcon.vue";
+import TaskModal, { type TaskFormData } from "../components/TaskModal.vue";
 import { useAppScope } from "../composables/useAppScope";
+import { useToast } from "../composables/useToast";
 
 const props = defineProps<{
   activeSubItem?: string;
@@ -158,6 +224,7 @@ const emit = defineEmits<{
 }>();
 
 const { activeScope } = useAppScope();
+const { showToast } = useToast();
 
 export interface ProjectTask {
   name: string;
@@ -173,6 +240,86 @@ const tasks = ref<ProjectTask[]>([]);
 const loading = ref(false);
 const runningTask = ref<string | null>(null);
 const searchKey = ref("");
+
+// Task modal state
+const isTaskModalOpen = ref(false);
+const isEditMode = ref(false);
+const editingTask = ref<ProjectTask | null>(null);
+const savingTask = ref(false);
+
+// Delete confirm modal state
+const taskToDelete = ref<ProjectTask | null>(null);
+const deletingTask = ref(false);
+
+const allTaskNames = computed(() => tasks.value.map((t) => t.name));
+
+function openCreateModal() {
+  editingTask.value = null;
+  isEditMode.value = false;
+  isTaskModalOpen.value = true;
+}
+
+function openEditModal(task: ProjectTask) {
+  editingTask.value = task;
+  isEditMode.value = true;
+  isTaskModalOpen.value = true;
+}
+
+function openDeleteConfirm(task: ProjectTask) {
+  taskToDelete.value = task;
+}
+
+async function handleSaveTask(formData: TaskFormData) {
+  savingTask.value = true;
+  try {
+    const res = await fetch("/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...formData,
+        scope: activeScope.value,
+      }),
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast(isEditMode.value ? `任务 ${formData.name} 已更新` : `任务 ${formData.name} 创建成功`, "success");
+      emit("log-event", "SUCCESS", `[任务管理] 任务 ${formData.name} 保存成功`, undefined, "tasks");
+      isTaskModalOpen.value = false;
+      await fetchTasks();
+    } else {
+      showToast(data.error || "保存任务失败", "error");
+      emit("log-event", "ERROR", `[任务管理] 任务 ${formData.name} 保存失败: ${data.error}`, undefined, "tasks");
+    }
+  } catch (err: any) {
+    showToast(`保存异常: ${err.message}`, "error");
+  } finally {
+    savingTask.value = false;
+  }
+}
+
+async function handleConfirmDelete() {
+  if (!taskToDelete.value) return;
+  deletingTask.value = true;
+  const name = taskToDelete.value.name;
+  try {
+    const res = await fetch(`/api/tasks?name=${encodeURIComponent(name)}&scope=${activeScope.value}`, {
+      method: "DELETE",
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast(`任务 ${name} 已从配置中删除`, "success");
+      emit("log-event", "SUCCESS", `[任务管理] 任务 ${name} 已删除`, undefined, "tasks");
+      taskToDelete.value = null;
+      await fetchTasks();
+    } else {
+      showToast(data.error || "删除任务失败", "error");
+    }
+  } catch (err: any) {
+    showToast(`删除异常: ${err.message}`, "error");
+  } finally {
+    deletingTask.value = false;
+  }
+}
 
 const filteredTasks = computed(() => {
   const q = searchKey.value.trim().toLowerCase();
@@ -597,5 +744,110 @@ async function executeTask(task: ProjectTask) {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+.task-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  background: var(--button-secondary-bg, rgba(255, 255, 255, 0.05));
+  color: var(--text-muted, #94a3b8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.task-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-main, #fff);
+  border-color: var(--accent-cyan, #00e5ff);
+  transform: translateY(-1px);
+}
+
+.task-icon-btn.delete:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+
+.tool-action-btn.primary {
+  background: linear-gradient(135deg, var(--accent-cyan, #00e5ff), #0284c7);
+  color: #070a12;
+  border: none;
+}
+
+.tool-action-btn.primary:hover:not(:disabled) {
+  box-shadow: 0 4px 14px rgba(0, 229, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.tool-action-btn.danger {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+}
+
+.tool-action-btn.danger:hover:not(:disabled) {
+  background: #ef4444;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(4, 8, 16, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.glass-modal {
+  background: var(--card-bg, #111520);
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), 0 0 24px rgba(0, 229, 255, 0.15);
+  border-radius: 14px;
+  width: 92%;
+  max-width: 440px;
+  overflow: hidden;
+  color: var(--text-main, #e2e8f0);
+}
+
+.modal-header {
+  padding: 1rem 1.3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--card-border, rgba(255, 255, 255, 0.08));
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #94a3b8);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main, #fff);
 }
 </style>
