@@ -162,10 +162,10 @@
         </div>
 
 
-        <!-- Dual Scope Version Display -->
+        <!-- Scope-Aware Version Display (Only displays the current active scope) -->
         <div class="runtime-status-box">
-          <!-- Workspace Scope Version (First) -->
-          <div class="status-row" :class="{ 'highlight-scope': currentScope === 'workspace' }">
+          <!-- Workspace Scope Version (Shown when currentScope === 'workspace') -->
+          <div v-if="currentScope === 'workspace'" class="status-row highlight-scope">
             <span class="status-label">
               <span class="scope-mini-icon">
                 <TechIcon id="workbench:tools" :size="15" :colored="false" />
@@ -224,8 +224,8 @@
             <span v-else class="text-muted font-mono italic">未配置</span>
           </div>
 
-          <!-- User Scope Version (Second) -->
-          <div class="status-row" :class="{ 'highlight-scope': currentScope === 'user' }">
+          <!-- User Scope Version (Shown when currentScope === 'user') -->
+          <div v-else class="status-row highlight-scope">
             <span class="status-label">
               <span class="scope-mini-icon">
                 <TechIcon id="workbench:settings" :size="15" :colored="false" />
@@ -252,6 +252,9 @@
                 <span class="upgrade-arrow">↑</span>
                 <span>{{ formatVersion(getRemoteUpgradableVersion(rt.id)!) }}</span>
               </button>
+              <span v-if="rt.pinned" class="source-tag source-pinned" :title="rt.pin_reason ? `版本锁定: ${rt.pin_reason}` : '版本已锁定'">
+                🔒 锁定
+              </span>
             </div>
             <span v-else class="text-muted font-mono italic">未配置</span>
           </div>
