@@ -1962,17 +1962,18 @@ const nativePlugins = ref<PluginItem[]>([
 
 .type-tab-btn.active {
   color: var(--accent-cyan);
-  background: rgba(0, 229, 255, 0.14);
-  border-color: rgba(0, 229, 255, 0.35);
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.15);
+  background: var(--accent-cyan-glow, rgba(0, 229, 255, 0.14));
+  border-color: var(--card-border-active, rgba(0, 229, 255, 0.35));
+  box-shadow: 0 0 12px var(--accent-cyan-glow, rgba(0, 229, 255, 0.15));
   font-weight: 600;
 }
 
 .type-tab-btn.type-tab-installed.active {
-  color: #10b981;
+  color: var(--success, #10b981);
   background: rgba(16, 185, 129, 0.16);
-  border-color: rgba(16, 185, 129, 0.4);
+  border-color: var(--success, #10b981);
   box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
+  font-weight: 600;
 }
 
 .type-tab-btn .tab-badge {
@@ -2605,26 +2606,36 @@ const nativePlugins = ref<PluginItem[]>([
 
 :root[data-theme="light"] .type-tab-btn.active,
 [data-theme="light"] .type-tab-btn.active {
-  color: #0284c7;
-  background: rgba(2, 132, 199, 0.12);
-  border-color: rgba(2, 132, 199, 0.4);
-  box-shadow: 0 1px 6px rgba(2, 132, 199, 0.16);
-  font-weight: 600;
+  color: #0284c7 !important;
+  background: rgba(2, 132, 199, 0.12) !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 1px 6px rgba(2, 132, 199, 0.2) !important;
+  font-weight: 600 !important;
+}
+
+:root[data-theme="light"] .type-tab-btn.active span,
+[data-theme="light"] .type-tab-btn.active span {
+  color: inherit !important;
 }
 
 :root[data-theme="light"] .type-tab-btn.type-tab-installed.active,
 [data-theme="light"] .type-tab-btn.type-tab-installed.active {
-  color: #047857;
-  background: rgba(5, 150, 105, 0.12);
-  border-color: rgba(5, 150, 105, 0.4);
-  box-shadow: 0 1px 6px rgba(5, 150, 105, 0.16);
-  font-weight: 600;
+  color: #059669 !important;
+  background: rgba(5, 150, 105, 0.12) !important;
+  border-color: #059669 !important;
+  box-shadow: 0 1px 6px rgba(5, 150, 105, 0.2) !important;
+  font-weight: 600 !important;
+}
+
+:root[data-theme="light"] .type-tab-btn.type-tab-installed.active span,
+[data-theme="light"] .type-tab-btn.type-tab-installed.active span {
+  color: inherit !important;
 }
 
 :root[data-theme="light"] .type-tab-btn .tab-badge,
 [data-theme="light"] .type-tab-btn .tab-badge {
   background: rgba(5, 150, 105, 0.12);
-  color: #047857;
+  color: #059669;
   border-color: rgba(5, 150, 105, 0.35);
 }
 
