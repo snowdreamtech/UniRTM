@@ -137,6 +137,7 @@ export const zhCn: TranslationDict = {
   "tasks.save_failed": "保存任务失败",
   "tasks.delete_success": "任务 {name} 已删除",
   "tasks.delete_failed": "删除任务失败",
+  "tasks.count_suffix": "个任务",
 
   "tools.title": "项目工具",
   "tools.reshim": "刷新垫片",

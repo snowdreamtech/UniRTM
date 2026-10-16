@@ -117,6 +117,7 @@ export const zhTw: TranslationDict = {
   "tasks.save_failed": "儲存任務失敗",
   "tasks.delete_success": "任務 {name} 已刪除",
   "tasks.delete_failed": "刪除任務失敗",
+  "tasks.count_suffix": "個任務",
 
   "tools.title": "專案工具",
   "tools.reshim": "重新整理墊片",

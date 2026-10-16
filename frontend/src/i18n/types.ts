@@ -99,6 +99,7 @@ export interface TranslationDict {
   "tasks.save_failed"?: string;
   "tasks.delete_success"?: string;
   "tasks.delete_failed"?: string;
+  "tasks.count_suffix"?: string;
 
   "tools.title"?: string;
   "tools.reshim"?: string;

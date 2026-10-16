@@ -137,6 +137,7 @@ export const enUs: TranslationDict = {
   "tasks.save_failed": "Failed to save task",
   "tasks.delete_success": "Task {name} deleted",
   "tasks.delete_failed": "Failed to delete task",
+  "tasks.count_suffix": "Tasks",
 
   "tools.title": "Project Tools",
   "tools.reshim": "Reshim",

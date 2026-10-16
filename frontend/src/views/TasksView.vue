@@ -16,10 +16,6 @@
           <TechIcon id="workbench:sync" :size="14" :class="{ 'spin-icon': loading }" />
           <span>{{ loading ? t("common.refreshing") || "刷新中..." : t("common.refresh") || "刷新" }}</span>
         </button>
-        <button class="tool-action-btn primary" @click="openCreateModal" title="新建工程自动化任务">
-          <TechIcon id="workbench:edit" :size="14" />
-          <span>{{ t("tasks.create_btn") || "新建任务" }}</span>
-        </button>
       </div>
     </div>
 
@@ -57,8 +53,16 @@
       </div>
       <div class="task-stats-badges">
         <span class="stat-badge">
-          <b>{{ filteredTasks.length }}</b> 个任务
+          <b>{{ filteredTasks.length }}</b> {{ t("tasks.count_suffix") || "个任务" }}
         </span>
+        <button
+          class="tool-action-btn primary small"
+          id="btn-add-task"
+          @click="openCreateModal"
+          title="新建工程自动化任务"
+        >
+          <span>+ {{ t("tasks.create_btn") || "新建任务" }}</span>
+        </button>
       </div>
     </div>
 
@@ -782,6 +786,11 @@ async function executeTask(task: ProjectTask) {
 .tool-action-btn.primary:hover:not(:disabled) {
   box-shadow: 0 4px 14px rgba(0, 229, 255, 0.35);
   transform: translateY(-1px);
+}
+
+.tool-action-btn.small {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
 }
 
 .tool-action-btn.danger {
