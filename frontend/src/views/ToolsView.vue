@@ -444,17 +444,8 @@
           >
             <div class="remote-ver-info">
               <span class="font-mono ver-name">{{ formatVersion(rv.version) }}</span>
-              <!-- Active in selected modal scope -->
               <span
-                v-if="isActiveInModalScope(selectedRuntime?.id || '', rv.version)"
-                class="installed-tag active-scope-tag"
-                :title="modalInstallScope === 'user' ? '当前已在用户全局生效' : '当前已在工作区生效'"
-              >
-                ● {{ modalInstallScope === 'user' ? '用户全局生效' : '工作区生效' }}
-              </span>
-              <!-- Installed in local pool but not active in this scope -->
-              <span
-                v-else-if="isAlreadyInstalled(selectedRuntime?.id || '', rv.version)"
+                v-if="isAlreadyInstalled(selectedRuntime?.id || '', rv.version)"
                 class="installed-tag"
                 title="已保存在本地共享安装池中，切换无需下载"
               >
@@ -473,7 +464,7 @@
             >
               <span v-if="installingVer === rv.version">{{ t("runtimes.installing") || "Installing..." }}</span>
               <span v-else-if="isActiveInModalScope(selectedRuntime?.id || '', rv.version)">
-                ✓ 已在{{ modalInstallScope === 'user' ? '全局' : '工作区' }}生效
+                当前使用
               </span>
               <span v-else-if="isAlreadyInstalled(selectedRuntime?.id || '', rv.version)">
                 {{ modalInstallScope === 'user' ? (t("runtimes.set_user") || '设为用户') : (t("runtimes.set_workspace") || '设为工作区') }}
