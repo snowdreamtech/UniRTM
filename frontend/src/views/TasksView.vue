@@ -195,7 +195,7 @@
           <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
             {{ t("tasks.delete_warning", { file: activeScope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml' }) }}
           </p>
-          <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+          <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--card-border);">
             <button class="tool-action-btn secondary" @click="taskToDelete = null" :disabled="deletingTask">
               {{ t("common.cancel") || "取消" }}
             </button>
@@ -833,32 +833,33 @@ async function executeTask(task: ProjectTask) {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(4, 8, 16, 0.75);
+  background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
 }
 
-.glass-modal {
-  background: var(--card-bg, #111520);
-  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), 0 0 24px rgba(0, 229, 255, 0.15);
-  border-radius: 14px;
+.delete-confirm-modal {
+  background: var(--modal-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 20px 48px -10px rgba(0, 0, 0, 0.35);
+  border-radius: 16px;
   width: 92%;
   max-width: 440px;
   overflow: hidden;
-  color: var(--text-main, #e2e8f0);
+  color: var(--text-main);
 }
 
 .modal-header {
-  padding: 1rem 1.3rem;
+  padding: 1.15rem 1.4rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid var(--card-border, rgba(255, 255, 255, 0.08));
+  background: var(--section-bg);
+  border-bottom: 1px solid var(--card-border);
 }
 
 .header-title {
@@ -870,16 +871,16 @@ async function executeTask(task: ProjectTask) {
 .close-btn {
   background: transparent;
   border: none;
-  color: var(--text-muted, #94a3b8);
+  color: var(--text-muted);
   font-size: 1.1rem;
   cursor: pointer;
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
   transition: all 0.2s;
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-main, #fff);
+  background: var(--card-bg);
+  color: var(--text-main);
 }
 </style>
