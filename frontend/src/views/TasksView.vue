@@ -708,14 +708,15 @@ async function executeTask(task: ProjectTask) {
   font-weight: 600;
   cursor: pointer;
   background: linear-gradient(135deg, var(--accent-cyan), #0284c7);
-  color: #070a12;
+  color: #fff;
+  box-shadow: 0 2px 8px var(--accent-cyan-glow);
   transition: all 0.2s ease;
   white-space: nowrap;
 }
 
 .run-task-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(0, 229, 255, 0.35);
+  box-shadow: 0 4px 14px var(--accent-cyan-glow);
 }
 
 .run-task-btn:disabled {
@@ -801,13 +802,15 @@ async function executeTask(task: ProjectTask) {
 }
 
 .tool-action-btn.primary {
-  background: linear-gradient(135deg, var(--accent-cyan, #00e5ff), #0284c7);
-  color: #070a12;
+  background: linear-gradient(135deg, var(--accent-cyan), #0284c7);
+  color: #fff;
+  font-weight: 600;
   border: none;
+  box-shadow: 0 2px 8px var(--accent-cyan-glow);
 }
 
 .tool-action-btn.primary:hover:not(:disabled) {
-  box-shadow: 0 4px 14px rgba(0, 229, 255, 0.35);
+  box-shadow: 0 4px 14px var(--accent-cyan-glow);
   transform: translateY(-1px);
 }
 
