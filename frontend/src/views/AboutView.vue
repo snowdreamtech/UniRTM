@@ -164,8 +164,23 @@
         <div class="credit-item">
           <div class="credit-item-title">
             <span class="codicon codicon-vscode"></span>
-            <strong>VS Code Codicons (@vscode/codicons)</strong>
-            <span class="credit-license-badge">CC-BY-4.0</span>
+            <a
+              href="https://github.com/microsoft/vscode-codicons"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="credit-link"
+            >
+              VS Code Codicons (@vscode/codicons) ↗
+            </a>
+            <a
+              href="https://github.com/microsoft/vscode-codicons/blob/main/LICENSE"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="credit-license-badge"
+              title="查看 CC-BY-4.0 商业可用授权"
+            >
+              CC-BY-4.0 ↗
+            </a>
           </div>
           <p>
             {{ t("about.credits_codicons_desc") || "UniRTM 工作台标准产品操作与界面图标集。由 Microsoft 官方维护，遵循 CC-BY-4.0 商业可用许可，提供官方标准工作台交互视觉语言。" }}
@@ -175,8 +190,23 @@
         <div class="credit-item">
           <div class="credit-item-title">
             <span class="codicon codicon-file"></span>
-            <strong>Seti UI 图标集 (@vscode/seti-ui)</strong>
-            <span class="credit-license-badge">MIT License</span>
+            <a
+              href="https://github.com/jesseweed/seti-ui"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="credit-link"
+            >
+              Seti UI 图标集 (@vscode/seti-ui) ↗
+            </a>
+            <a
+              href="https://github.com/jesseweed/seti-ui/blob/master/LICENSE.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="credit-license-badge"
+              title="查看 MIT 授权协议"
+            >
+              MIT License ↗
+            </a>
           </div>
           <p>
             {{ t("about.credits_seti_desc") || "UniRTM 默认文件与开发语言图标集。由 Jesse Weed 与 Visual Studio Code 团队维护，遵循 MIT 许可，精准映射文件扩展名与语言标识。" }}
@@ -186,11 +216,31 @@
         <div class="credit-item">
           <div class="credit-item-title">
             <span class="codicon codicon-extensions"></span>
-            <strong>VS Code 主题扩展规范与 Open VSX</strong>
-            <span class="credit-license-badge">Open VSX</span>
+            <a
+              href="https://open-vsx.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="credit-link"
+            >
+              VS Code 主题扩展规范与 Open VSX ↗
+            </a>
+            <a
+              href="https://open-vsx.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="credit-license-badge"
+              title="访问 Open VSX 开放扩展市场"
+            >
+              Open VSX ↗
+            </a>
           </div>
           <p>
-            {{ t("about.credits_themes_desc") || "原生兼容 VS Code 三大扩展主题维度：颜色主题 (contributes.themes)、文件图标 (contributes.iconThemes) 与界面产品图标 (contributes.productIconThemes)。" }}
+            {{ t("about.credits_themes_desc") || "原生兼容 VS Code 三大扩展主题维度：" }}
+            <span class="manifest-links">
+              <a href="https://code.visualstudio.com/api/extension-guides/color-theme" target="_blank" rel="noopener noreferrer" class="sub-link">颜色主题 (contributes.themes) ↗</a>、
+              <a href="https://code.visualstudio.com/api/extension-guides/file-icon-theme" target="_blank" rel="noopener noreferrer" class="sub-link">文件图标 (contributes.iconThemes) ↗</a>、
+              <a href="https://code.visualstudio.com/api/extension-guides/product-icon-theme" target="_blank" rel="noopener noreferrer" class="sub-link">界面图标 (contributes.productIconThemes) ↗</a>。
+            </span>
           </p>
         </div>
       </div>
@@ -714,6 +764,18 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
+.credit-link {
+  color: var(--text-main);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.credit-link:hover {
+  color: var(--accent-cyan, #00e5ff);
+  text-decoration: underline;
+}
+
 .credit-license-badge {
   font-size: 0.7rem;
   padding: 2px 6px;
@@ -723,6 +785,34 @@ onMounted(() => {
   border: 1px solid rgba(0, 229, 255, 0.25);
   font-weight: 600;
   margin-left: auto;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+}
+
+.credit-license-badge:hover {
+  background: rgba(0, 229, 255, 0.25);
+  color: #ffffff;
+  border-color: var(--accent-cyan, #00e5ff);
+  transform: translateY(-1px);
+}
+
+.manifest-links {
+  display: inline;
+}
+
+.sub-link {
+  color: var(--accent-cyan, #00e5ff);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-family: var(--font-mono, monospace);
+  transition: opacity 0.2s ease;
+}
+
+.sub-link:hover {
+  text-decoration: underline;
+  opacity: 0.85;
 }
 
 .credit-item p {
