@@ -226,3 +226,27 @@ func TestWriteTOMLFile(t *testing.T) {
 	}
 }
 
+func TestUpsertAndRemoveTask(t *testing.T) {
+	content := "[tasks.build]\nrun = \"echo building\"\n\n[tasks.test]\nrun = \"echo testing\"\n"
+
+	// 1. Upsert new task
+	updated := UpsertTask(content, "lint", "Check code style", "npm run lint", []string{"build"})
+	if !strings.Contains(updated, "[tasks.lint]") || !strings.Contains(updated, "description = \"Check code style\"") {
+		t.Fatalf("UpsertTask failed to add new task: %s", updated)
+	}
+
+	// 2. Update existing task
+	updated2 := UpsertTask(updated, "build", "Updated build", "vite build", nil)
+	if !strings.Contains(updated2, "run = \"vite build\"") || strings.Contains(updated2, "echo building") {
+		t.Fatalf("UpsertTask failed to update existing task: %s", updated2)
+	}
+
+	// 3. Remove task
+	removed, ok := RemoveTask(updated2, "lint")
+	if !ok || strings.Contains(removed, "[tasks.lint]") {
+		t.Fatalf("RemoveTask failed to remove task: %s", removed)
+	}
+	if !strings.Contains(removed, "[tasks.build]") || !strings.Contains(removed, "[tasks.test]") {
+		t.Fatalf("RemoveTask accidentally deleted other tasks: %s", removed)
+	}
+}

@@ -2136,6 +2136,164 @@ print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes'
             return;
           }
 
+          if (req.url?.startsWith("/api/tasks") && (req.method === "POST" || req.method === "PUT")) {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const body = JSON.parse(bodyStr || "{}");
+                const name = (body.name || "").trim();
+                if (!name) {
+                  res.statusCode = 400;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: "Task name is required" }));
+                  return;
+                }
+                const scope = (body.scope || "workspace").toLowerCase();
+                const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
+                const wsPath = path.join(rootDir, ".unirtm.toml");
+                const targetPath = scope === "user" ? userPath : wsPath;
+
+                let content = fs.existsSync(targetPath) ? fs.readFileSync(targetPath, "utf-8") : "";
+
+                const removeTask = (raw: string, tName: string) => {
+                  const lines = raw.split("\n");
+                  let start = -1;
+                  let end = -1;
+                  for (let i = 0; i < lines.length; i++) {
+                    const tr = lines[i].trim();
+                    const m = tr.match(/^\[tasks\.(?:"([^"]+)"|'([^']+)'|([a-zA-Z0-9_\-:]+))\]$/);
+                    if (m) {
+                      const matched = m[1] || m[2] || m[3];
+                      if (start !== -1) {
+                        end = i;
+                        break;
+                      }
+                      if (matched === tName) {
+                        start = i;
+                        continue;
+                      }
+                    } else if (start !== -1 && tr.startsWith("[") && tr.endsWith("]")) {
+                      end = i;
+                      break;
+                    }
+                  }
+                  if (start !== -1) {
+                    if (end === -1) end = lines.length;
+                    lines.splice(start, end - start);
+                    return lines.join("\n");
+                  }
+                  return raw;
+                };
+
+                if (body.original_name && body.original_name !== name) {
+                  content = removeTask(content, body.original_name);
+                }
+                content = removeTask(content, name);
+
+                let newSection = `\n[tasks.${name}]\n`;
+                if (body.description) {
+                  newSection += `description = ${JSON.stringify(body.description)}\n`;
+                }
+                if (body.command) {
+                  if (body.command.includes("\n")) {
+                    newSection += `run = \'\'\'\n${body.command}\n\'\'\'\n`;
+                  } else {
+                    newSection += `run = ${JSON.stringify(body.command)}\n`;
+                  }
+                }
+                if (Array.isArray(body.depends) && body.depends.length > 0) {
+                  const depsStr = body.depends.map((d: string) => JSON.stringify(d)).join(", ");
+                  newSection += `depends = [${depsStr}]\n`;
+                }
+
+                content = content.trimEnd() + "\n" + newSection;
+                fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+                fs.writeFileSync(targetPath, content, "utf-8");
+
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, task: body }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
+          if (req.url?.startsWith("/api/tasks") && req.method === "DELETE") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const urlObj = new URL(req.url!, "http://localhost");
+                let name = urlObj.searchParams.get("name") || "";
+                let scope = urlObj.searchParams.get("scope") || "";
+
+                if (!name && bodyStr) {
+                  try {
+                    const parsed = JSON.parse(bodyStr);
+                    name = parsed.name || "";
+                    scope = scope || parsed.scope || "";
+                  } catch {}
+                }
+
+                name = name.trim();
+                scope = (scope || "workspace").toLowerCase();
+
+                if (!name) {
+                  res.statusCode = 400;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: "Task name is required" }));
+                  return;
+                }
+
+                const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
+                const wsPath = path.join(rootDir, ".unirtm.toml");
+                const targetPath = scope === "user" ? userPath : wsPath;
+
+                if (fs.existsSync(targetPath)) {
+                  let content = fs.readFileSync(targetPath, "utf-8");
+                  const lines = content.split("\n");
+                  let start = -1;
+                  let end = -1;
+                  for (let i = 0; i < lines.length; i++) {
+                    const tr = lines[i].trim();
+                    const m = tr.match(/^\[tasks\.(?:"([^"]+)"|'([^']+)'|([a-zA-Z0-9_\-:]+))\]$/);
+                    if (m) {
+                      const matched = m[1] || m[2] || m[3];
+                      if (start !== -1) {
+                        end = i;
+                        break;
+                      }
+                      if (matched === name) {
+                        start = i;
+                        continue;
+                      }
+                    } else if (start !== -1 && tr.startsWith("[") && tr.endsWith("]")) {
+                      end = i;
+                      break;
+                    }
+                  }
+                  if (start !== -1) {
+                    if (end === -1) end = lines.length;
+                    lines.splice(start, end - start);
+                    fs.writeFileSync(targetPath, lines.join("\n"), "utf-8");
+                  }
+                }
+
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
           if (req.url === "/api/config") {
             const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
             const wsPath = path.join(rootDir, ".unirtm.toml");

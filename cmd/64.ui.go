@@ -546,7 +546,19 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/runtimes/migrate-legacy", handleMigrateLegacyTool)
 
 	// Tasks Management APIs
-	mux.HandleFunc("/api/tasks", handleGetTasks)
+	mux.HandleFunc("/api/tasks", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleGetTasks(w, r)
+		case http.MethodPost, http.MethodPut:
+			handleUpsertTask(w, r)
+		case http.MethodDelete:
+			handleDeleteTask(w, r)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+		}
+	})
 	mux.HandleFunc("/api/tasks/run", handleRunTask)
 
 	// Theme Management APIs
@@ -737,6 +749,97 @@ func handleGetTasks(w http.ResponseWriter, r *http.Request) {
 		"tasks": res,
 		"total": len(res),
 		"scope": scope,
+	})
+}
+
+type UpsertTaskReq struct {
+	Name         string   `json:"name"`
+	OriginalName string   `json:"original_name,omitempty"`
+	Description  string   `json:"description,omitempty"`
+	Command      string   `json:"command"`
+	Depends      []string `json:"depends,omitempty"`
+	Scope        string   `json:"scope,omitempty"`
+}
+
+func handleUpsertTask(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var req UpsertTaskReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || strings.TrimSpace(req.Name) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "task name is required"})
+		return
+	}
+
+	targetFile := ".unirtm.toml"
+	if strings.ToLower(req.Scope) == "user" {
+		targetFile = config.GetGlobalConfigPath()
+	}
+
+	content, _ := config.ReadFileOrEmpty(targetFile)
+
+	if req.OriginalName != "" && req.OriginalName != req.Name {
+		content, _ = config.RemoveTask(content, req.OriginalName)
+	}
+
+	updated := config.UpsertTask(content, req.Name, req.Description, req.Command, req.Depends)
+	if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"task":    req,
+	})
+}
+
+func handleDeleteTask(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	name := strings.TrimSpace(r.URL.Query().Get("name"))
+	scope := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("scope")))
+
+	if name == "" {
+		var body struct {
+			Name  string `json:"name"`
+			Scope string `json:"scope"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err == nil {
+			name = strings.TrimSpace(body.Name)
+			if scope == "" {
+				scope = strings.ToLower(strings.TrimSpace(body.Scope))
+			}
+		}
+	}
+
+	if name == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "task name is required"})
+		return
+	}
+
+	targetFile := ".unirtm.toml"
+	if scope == "user" {
+		targetFile = config.GetGlobalConfigPath()
+	}
+
+	content, err := config.ReadFileOrEmpty(targetFile)
+	if err != nil || content == "" {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
+		return
+	}
+
+	updated, removed := config.RemoveTask(content, name)
+	if removed {
+		if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
+			return
+		}
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
 	})
 }
 
@@ -1590,7 +1693,3 @@ func handleMarketplaceDetail(w http.ResponseWriter, r *http.Request, themeMgr *t
 
 	_ = json.NewEncoder(w).Encode(detail)
 }
-
-
-
-

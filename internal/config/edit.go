@@ -589,3 +589,87 @@ func RemovePin(content string, tool string) (string, bool) {
 	return content, false
 }
 
+func matchTaskHeader(line string) (string, bool) {
+	trimmed := strings.TrimSpace(line)
+	if !strings.HasPrefix(trimmed, "[tasks.") || !strings.HasSuffix(trimmed, "]") {
+		return "", false
+	}
+	inner := strings.TrimSpace(trimmed[len("[tasks.") : len(trimmed)-1])
+	if len(inner) >= 2 {
+		if (strings.HasPrefix(inner, `"`) && strings.HasSuffix(inner, `"`)) ||
+			(strings.HasPrefix(inner, `'`) && strings.HasSuffix(inner, `'`)) {
+			return inner[1 : len(inner)-1], true
+		}
+	}
+	return inner, true
+}
+
+// RemoveTask removes a [tasks.<name>] section and its properties from TOML content.
+func RemoveTask(content string, name string) (string, bool) {
+	lines := strings.Split(content, "\n")
+	taskStart := -1
+	taskEnd := -1
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		tName, ok := matchTaskHeader(line)
+		if ok {
+			if taskStart != -1 {
+				taskEnd = i
+				break
+			}
+			if tName == name {
+				taskStart = i
+				continue
+			}
+		} else if taskStart != -1 && strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
+			taskEnd = i
+			break
+		}
+	}
+
+	if taskStart != -1 {
+		if taskEnd == -1 {
+			taskEnd = len(lines)
+		}
+		newLines := make([]string, 0, len(lines)-(taskEnd-taskStart))
+		newLines = append(newLines, lines[:taskStart]...)
+		newLines = append(newLines, lines[taskEnd:]...)
+		// Clean any consecutive blank lines at the splice point
+		result := strings.Join(newLines, "\n")
+		return result, true
+	}
+
+	return content, false
+}
+
+// UpsertTask adds or updates a [tasks.<name>] section in TOML content.
+func UpsertTask(content string, name string, description string, command string, depends []string) string {
+	cleaned, _ := RemoveTask(content, name)
+	trimmed := strings.TrimRight(cleaned, "\r\n")
+
+	var b strings.Builder
+	if trimmed != "" {
+		b.WriteString(trimmed)
+		b.WriteString("\n\n")
+	}
+	b.WriteString(fmt.Sprintf("[tasks.%s]\n", quoteTOMLKey(name)))
+	if description != "" {
+		b.WriteString(fmt.Sprintf("description = %s\n", quoteTOMLValue(description)))
+	}
+	if command != "" {
+		if strings.Contains(command, "\n") {
+			b.WriteString(fmt.Sprintf("run = '''\n%s\n'''\n", command))
+		} else {
+			b.WriteString(fmt.Sprintf("run = %s\n", quoteTOMLValue(command)))
+		}
+	}
+	if len(depends) > 0 {
+		var depQuoted []string
+		for _, d := range depends {
+			depQuoted = append(depQuoted, quoteTOMLValue(d))
+		}
+		b.WriteString(fmt.Sprintf("depends = [%s]\n", strings.Join(depQuoted, ", ")))
+	}
+	return b.String()
+}
