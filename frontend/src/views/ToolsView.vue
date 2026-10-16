@@ -167,36 +167,44 @@
         </div>
 
 
-        <!-- Card Actions & Switcher -->
+        <!-- Card Actions: Unified Four Action Bar [切换] [安装] [锁定] [删除] -->
         <div class="runtime-card-footer">
-          <div class="switch-control-group">
-            <select
-              v-if="rt.installed_versions && rt.installed_versions.length > 0"
-              class="runtime-select"
-              :value="currentScope === 'workspace' ? rt.active_version : rt.global_version"
-              @change="handleSelectChange(rt.id, $event)"
-            >
-              <option value="" disabled>
-                {{ currentScope === 'user' ? '切换用户默认版本...' : '切换工作区版本...' }}
-              </option>
-              <option
-                v-for="ver in rt.installed_versions"
-                :key="ver"
-                :value="ver"
-              >
-                {{ formatVersion(ver) }}{{ (currentScope === 'workspace' ? ver === rt.active_version : ver === rt.global_version) ? ' (当前)' : '' }}
-              </option>
-            </select>
-          </div>
           <button
-            class="install-remote-btn"
-            :id="'btn-install-remote-' + rt.id"
-            @click="openRemoteModal(rt)"
+            class="card-action-btn action-switch"
+            :id="'btn-switch-' + rt.id"
+            @click.stop="openSwitchVersionModal(rt)"
+            title="切换当前生效版本"
           >
-            <span>+ {{ t("runtimes.install_version") || "Install Version" }}</span>
+            {{ t("runtimes.action_switch") || "切换" }}
+          </button>
+          <button
+            class="card-action-btn action-install"
+            :id="'btn-install-' + rt.id"
+            @click.stop="openRemoteModal(rt)"
+            title="安装新版本"
+          >
+            {{ t("runtimes.action_install") || "安装" }}
+          </button>
+          <button
+            class="card-action-btn action-pin"
+            :class="{ 'is-pinned': rt.pinned }"
+            :id="'btn-pin-' + rt.id"
+            @click.stop="togglePin(rt)"
+            :title="rt.pinned ? (rt.pin_reason ? `版本已锁定：${rt.pin_reason} (点击解锁)` : '版本已锁定 (点击解锁)') : '锁定当前版本，防止意外升级'"
+          >
+            {{ rt.pinned ? (t("runtimes.action_unlock") || "解锁") : (t("runtimes.action_lock") || "锁定") }}
+          </button>
+          <button
+            class="card-action-btn action-delete"
+            :id="'btn-delete-' + rt.id"
+            @click.stop="confirmRemoveRuntime(rt)"
+            :title="t('runtimes.remove_runtime') || '删除环境'"
+          >
+            {{ t("runtimes.action_delete") || "删除" }}
           </button>
         </div>
       </div>
+
 
       <!-- Empty State When Scope Has No Configured Tools -->
       <div v-if="filteredRuntimes.length === 0" class="glass-card runtimes-empty-box" id="runtimes-empty-state">
@@ -1168,6 +1176,19 @@ function handleQuickUpgrade(rt: RuntimeItem) {
   if (remoteVer) {
     upgradeToRemoteVersion(rt, remoteVer, currentScope.value === "user");
   }
+}
+
+const isSwitchModalOpen = ref(false);
+const switchModalRuntime = ref<RuntimeItem | null>(null);
+
+function openSwitchVersionModal(rt: RuntimeItem) {
+  switchModalRuntime.value = rt;
+  isSwitchModalOpen.value = true;
+}
+
+function closeSwitchVersionModal() {
+  isSwitchModalOpen.value = false;
+  switchModalRuntime.value = null;
 }
 
 
@@ -2320,52 +2341,97 @@ onBeforeUnmount(() => {
   font-style: italic;
 }
 
-/* Card footer */
+/* Card footer: Unified four action bar [切换] [安装] [锁定] [删除] */
 .runtime-card-footer {
   margin-top: auto;
-  display: flex;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.45rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--card-border-subtle, rgba(255, 255, 255, 0.06));
+}
+
+.card-action-btn {
+  display: inline-flex;
   align-items: center;
-}
-
-.switch-control-group {
-  flex: 1;
-}
-
-.runtime-select {
-  width: 100%;
-  padding: 0.4rem 0.6rem;
-  border-radius: 6px;
-  background: var(--input-bg);
-  border: 1px solid var(--card-border);
-  color: var(--text-main);
-  font-size: 0.8rem;
-  outline: none;
-  transition: border-color 0.2s ease;
-}
-
-.runtime-select:focus {
-  border-color: var(--card-border-active);
-}
-
-.install-remote-btn {
-  padding: 0.4rem 0.75rem;
-  border-radius: 6px;
-  background: rgba(2, 132, 199, 0.1);
-  border: 1px solid rgba(2, 132, 199, 0.3);
-  color: var(--accent-cyan);
+  justify-content: center;
+  padding: 0.4rem 0.2rem;
   font-size: 0.8rem;
   font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--button-secondary-bg, rgba(255, 255, 255, 0.04));
+  color: var(--text-main);
   cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
-  transition: all 0.15s ease;
 }
 
-.install-remote-btn:hover {
-  background: var(--accent-cyan);
-  color: #fff;
-  border-color: var(--accent-cyan);
+/* 主操作：切换 */
+.card-action-btn.action-switch {
+  background: rgba(2, 132, 199, 0.08);
+  border-color: rgba(2, 132, 199, 0.28);
+  color: var(--accent-cyan);
 }
+.card-action-btn.action-switch:hover {
+  background: rgba(2, 132, 199, 0.18);
+  border-color: var(--accent-cyan);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.2);
+}
+
+/* 状态操作：安装 */
+.card-action-btn.action-install {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.28);
+  color: #10b981;
+}
+.card-action-btn.action-install:hover {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: #10b981;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+}
+[data-theme="dark"] .card-action-btn.action-install {
+  color: #34d399;
+}
+
+/* 状态操作：锁定 / 解锁 */
+.card-action-btn.action-pin {
+  background: rgba(148, 163, 184, 0.08);
+  border-color: rgba(148, 163, 184, 0.25);
+  color: var(--text-muted);
+}
+.card-action-btn.action-pin:hover {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #d97706;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+}
+.card-action-btn.action-pin.is-pinned {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #d97706;
+}
+[data-theme="dark"] .card-action-btn.action-pin.is-pinned {
+  color: #fbbf24;
+}
+
+/* 危险操作：删除 */
+.card-action-btn.action-delete {
+  background: transparent;
+  border-color: rgba(239, 68, 68, 0.2);
+  color: rgba(239, 68, 68, 0.85);
+}
+.card-action-btn.action-delete:hover {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: #ef4444;
+  color: #ef4444;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+}
+
 
 /* Modal */
 .modal-backdrop {
