@@ -16,6 +16,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
@@ -544,6 +545,10 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/runtimes/batch-update", handleBatchUpdateRuntimes)
 	mux.HandleFunc("/api/runtimes/migrate-legacy", handleMigrateLegacyTool)
 
+	// Tasks Management APIs
+	mux.HandleFunc("/api/tasks", handleGetTasks)
+	mux.HandleFunc("/api/tasks/run", handleRunTask)
+
 	// Theme Management APIs
 	themeMgr := theme.NewManager()
 	mux.HandleFunc("/api/themes", func(w http.ResponseWriter, r *http.Request) {
@@ -662,6 +667,117 @@ func handleGetConfig(w http.ResponseWriter, r *http.Request) {
 			"tasks":    wsCfg.Tasks,
 		},
 		"detected_browsers": detectInstalledBrowsers(),
+	})
+}
+
+func handleGetTasks(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	scope := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("scope")))
+	var tasksMap map[string]config.Task
+	if scope == "user" {
+		userCfg, _ := config.LoadGlobal()
+		if userCfg != nil {
+			tasksMap = userCfg.Tasks
+		}
+	} else {
+		cm := config.NewConfigManager()
+		cfg, _ := cm.LoadHierarchy(r.Context())
+		if cfg != nil {
+			tasksMap = cfg.Tasks
+		}
+	}
+	if tasksMap == nil {
+		tasksMap = make(map[string]config.Task)
+	}
+
+	type TaskResp struct {
+		Name        string   `json:"name"`
+		Description string   `json:"description"`
+		Command     string   `json:"command"`
+		Depends     []string `json:"depends,omitempty"`
+		Env         string   `json:"env,omitempty"`
+		Output      string   `json:"output,omitempty"`
+		Timeout     int      `json:"timeout,omitempty"`
+	}
+
+	var names []string
+	for n := range tasksMap {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+
+	var res []TaskResp
+	for _, n := range names {
+		t := tasksMap[n]
+		cmdStr := strings.TrimSpace(strings.Join(t.Run, " && "))
+		if cmdStr == "" && len(t.Depends) > 0 {
+			cmdStr = fmt.Sprintf("unirtm run %s", strings.Join(t.Depends, " "))
+		}
+		var envStr string
+		if len(t.Env) > 0 {
+			var parts []string
+			for k, v := range t.Env {
+				parts = append(parts, fmt.Sprintf("%s=%v", k, v))
+			}
+			sort.Strings(parts)
+			envStr = strings.Join(parts, " ")
+		}
+		res = append(res, TaskResp{
+			Name:        n,
+			Description: t.Description,
+			Command:     cmdStr,
+			Depends:     t.Depends,
+			Env:         envStr,
+			Output:      t.Output,
+			Timeout:     t.Timeout,
+		})
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"tasks": res,
+		"total": len(res),
+		"scope": scope,
+	})
+}
+
+func handleRunTask(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var body struct {
+		Name  string `json:"name"`
+		Scope string `json:"scope"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Name == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "task name is required"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, os.Args[0], "run", body.Name)
+	if body.Scope == "user" {
+		cmd.Args = append(cmd.Args, "--global")
+	}
+	out, err := cmd.CombinedOutput()
+	exitCode := 0
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		} else {
+			exitCode = 1
+		}
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":   exitCode == 0,
+		"exit_code": exitCode,
+		"output":    string(out),
+		"name":      body.Name,
 	})
 }
 

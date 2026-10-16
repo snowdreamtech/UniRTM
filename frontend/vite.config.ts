@@ -1982,6 +1982,160 @@ print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes'
             res.end(JSON.stringify({ browsers: [] }));
             return;
           }
+          // Tasks API: Read tasks from .unirtm.toml or user global config
+          if (req.url?.startsWith("/api/tasks/run") && req.method === "POST") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const { name, scope } = JSON.parse(bodyStr || "{}");
+                const unirtmBin = findUnirtmBinary(rootDir);
+                let output = "";
+                let exitCode = 0;
+                if (fs.existsSync(unirtmBin)) {
+                  try {
+                    const args = ["run", name];
+                    if (scope === "user") args.push("--global");
+                    output = execFileSync(unirtmBin, args, { cwd: rootDir, encoding: "utf-8", timeout: 60000 });
+                  } catch (e: any) {
+                    exitCode = e.status || 1;
+                    output = (e.stdout || "") + "\n" + (e.stderr || "") + "\n" + (e.message || "");
+                  }
+                } else {
+                  output = `[Mock] Executed task ${name} in ${scope} scope. (unirtm binary not found, simulated success)`;
+                }
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({
+                  success: exitCode === 0,
+                  exit_code: exitCode,
+                  output: output.trim(),
+                  name,
+                }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
+          if (req.url?.startsWith("/api/tasks") && req.method === "GET") {
+            const urlObj = new URL(req.url, "http://localhost");
+            const scope = urlObj.searchParams.get("scope") || "workspace";
+            const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
+            const wsPath = path.join(rootDir, ".unirtm.toml");
+            const targetPath = scope === "user" ? userPath : wsPath;
+
+            const parseTasksFromToml = (filePath: string) => {
+              if (!fs.existsSync(filePath)) return [];
+              const content = fs.readFileSync(filePath, "utf-8");
+              const lines = content.split("\n");
+              const tasks: any[] = [];
+              let currentTask: any = null;
+              let inRun = false;
+              let runBuf: string[] = [];
+              let inDeps = false;
+              let depsBuf: string[] = [];
+
+              const save = () => {
+                if (currentTask && currentTask.name) {
+                  if (!currentTask.command && currentTask.depends?.length) {
+                    currentTask.command = `unirtm run ${currentTask.depends.join(" ")}`;
+                  }
+                  tasks.push(currentTask);
+                }
+                currentTask = null;
+                inRun = false;
+                runBuf = [];
+                inDeps = false;
+                depsBuf = [];
+              };
+
+              for (const raw of lines) {
+                const tr = raw.trim();
+                const m = tr.match(/^\[tasks\.(?:"([^"]+)"|'([^']+)'|([a-zA-Z0-9_\-:]+))\]$/);
+                if (m) {
+                  save();
+                  currentTask = { name: m[1] || m[2] || m[3], description: "", command: "", depends: [], env: "" };
+                  continue;
+                }
+                if (tr.startsWith("[") && tr.endsWith("]") && !tr.startsWith("[tasks.")) {
+                  save();
+                  continue;
+                }
+                if (!currentTask) continue;
+
+                if (inRun) {
+                  if (tr.endsWith("'''") || tr.endsWith('"""')) {
+                    const last = tr.slice(0, -3);
+                    if (last) runBuf.push(last);
+                    currentTask.command = runBuf.map(l => l.trim()).filter(Boolean).join(" ; ");
+                    inRun = false;
+                    runBuf = [];
+                  } else {
+                    runBuf.push(raw);
+                  }
+                  continue;
+                }
+
+                if (inDeps) {
+                  if (tr.includes("]")) {
+                    const before = tr.slice(0, tr.indexOf("]"));
+                    const items = before.split(",").map(s => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+                    depsBuf.push(...items);
+                    currentTask.depends = [...depsBuf];
+                    inDeps = false;
+                    depsBuf = [];
+                  } else {
+                    const items = tr.split(",").map(s => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+                    depsBuf.push(...items);
+                  }
+                  continue;
+                }
+
+                if (tr.startsWith("description =")) {
+                  currentTask.description = tr.replace(/^description\s*=\s*["']?/, "").replace(/["']?$/, "");
+                } else if (tr.startsWith("run =")) {
+                  const rest = tr.slice(tr.indexOf("=") + 1).trim();
+                  if (rest.startsWith("'''") || rest.startsWith('"""')) {
+                    if ((rest.endsWith("'''") || rest.endsWith('"""')) && rest.length > 6) {
+                      currentTask.command = rest.slice(3, -3).trim();
+                    } else {
+                      inRun = true;
+                      runBuf = [rest.slice(3)];
+                    }
+                  } else {
+                    currentTask.command = rest.replace(/^["']|["']$/g, "");
+                  }
+                } else if (tr.startsWith("depends =")) {
+                  const rest = tr.slice(tr.indexOf("=") + 1).trim();
+                  if (rest.startsWith("[") && rest.endsWith("]")) {
+                    currentTask.depends = rest.slice(1, -1).split(",").map(s => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+                  } else if (rest.startsWith("[")) {
+                    inDeps = true;
+                    depsBuf = rest.slice(1).split(",").map(s => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+                  }
+                } else if (tr.startsWith("env =")) {
+                  const rest = tr.slice(tr.indexOf("=") + 1).trim();
+                  currentTask.env = rest.replace(/^\{|\}$/g, "").trim();
+                }
+              }
+              save();
+              return tasks;
+            };
+
+            const tasks = parseTasksFromToml(targetPath);
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({
+              tasks,
+              total: tasks.length,
+              scope,
+              file: targetPath,
+            }));
+            return;
+          }
+
           if (req.url === "/api/config") {
             const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
             const wsPath = path.join(rootDir, ".unirtm.toml");
