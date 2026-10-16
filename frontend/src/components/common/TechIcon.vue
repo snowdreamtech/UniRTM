@@ -80,6 +80,38 @@
     <path fill-rule="evenodd" clip-rule="evenodd" d="M9.1 4.4L8.6 2H7.4l-.5 2.4-.7.3-2-1.3-.9.8 1.3 2-.2.7-2.4.5v1.2l2.4.5.3.8-1.3 2 .8.8 2-1.3.8.3.4 2.3h1.2l.5-2.4.8-.3 2 1.3.8-.8-1.3-2 .3-.8 2.3-.4V7.4l-2.4-.5-.3-.7 1.3-2-.8-.9-2 1.3-.7-.2zM8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/>
   </svg>
   <svg
+    v-else-if="id === 'workbench:terminal'"
+    xmlns="http://www.w3.org/2000/svg"
+    :width="size"
+    :height="size"
+    viewBox="0 0 16 16"
+    fill="currentColor"
+    class="tech-icon tech-icon-svg"
+    :class="className"
+    :style="{ width: `${size}px`, height: `${size}px`, minWidth: `${size}px`, color: 'inherit' }"
+    role="img"
+    :title="id"
+    :aria-label="id"
+  >
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M1 3.5A1.5 1.5 0 0 1 2.5 2h11A1.5 1.5 0 0 1 15 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9zM2.5 3a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5h-11zM4.146 5.146a.5.5 0 0 1 .708 0l2.5 2.5a.5.5 0 0 1 0 .708l-2.5 2.5a.5.5 0 0 1-.708-.708L6.293 8 4.146 5.854a.5.5 0 0 1 0-.708zM8.5 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1H9a.5.5 0 0 1-.5-.5z"/>
+  </svg>
+  <svg
+    v-else-if="id === 'workbench:about'"
+    xmlns="http://www.w3.org/2000/svg"
+    :width="size"
+    :height="size"
+    viewBox="0 0 16 16"
+    fill="currentColor"
+    class="tech-icon tech-icon-svg"
+    :class="className"
+    :style="{ width: `${size}px`, height: `${size}px`, minWidth: `${size}px`, color: 'inherit' }"
+    role="img"
+    :title="id"
+    :aria-label="id"
+  >
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm7.25-2a.75.75 0 1 1 1.5 0 .75.75 0 0 1-1.5 0zM7 7.75A.75.75 0 0 1 7.75 7h.5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0V8.5h-.25A.75.75 0 0 1 7 7.75z"/>
+  </svg>
+  <svg
     v-else-if="isNpm"
     xmlns="http://www.w3.org/2000/svg"
     :width="size"
