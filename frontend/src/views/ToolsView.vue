@@ -773,9 +773,9 @@ const defaultRuntimes: RuntimeItem[] = [
     installed_versions: ["20.18.3", "26.8.1"],
     active_version: "20.18.3",
     global_version: "26.8.1",
-    source: ".nvmrc",
-    is_legacy: true,
-    legacy_file: ".nvmrc",
+    source: ".unirtm.toml",
+    is_legacy: false,
+    legacy_file: "",
   },
   {
     id: "go",
@@ -804,8 +804,8 @@ const defaultRuntimes: RuntimeItem[] = [
 ];
 
 const runtimes = ref<RuntimeItem[]>([...defaultRuntimes]);
-const totalInstalled = ref(7);
-const detectedLegacies = ref<string[]>([".nvmrc", ".go-version"]);
+const totalInstalled = ref(0);
+const detectedLegacies = ref<string[]>([]);
 const loading = ref(false);
 const migrating = ref(false);
 const searchKey = ref("");

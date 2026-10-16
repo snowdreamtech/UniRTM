@@ -48,6 +48,43 @@ export default defineConfig({
     {
       name: "dev-api-middleware",
       configureServer(server) {
+        const remoteVersionCache = new Map<string, { versions: string[]; timestamp: number }>();
+        const queryRemoteVersions = (tool: string, rootDir: string, unirtmBin: string): string[] => {
+          if (!tool || !fs.existsSync(unirtmBin)) return [];
+          const cached = remoteVersionCache.get(tool);
+          if (cached && Date.now() - cached.timestamp < 10 * 60 * 1000) {
+            return cached.versions;
+          }
+          try {
+            const res = spawnSync(unirtmBin, ["ls-remote", tool, "--json"], {
+              cwd: rootDir,
+              encoding: "utf-8",
+              maxBuffer: 50 * 1024 * 1024,
+              timeout: 3000,
+            });
+            const text = (res.stdout || "").trim() || (res.stderr || "").trim();
+            const start = text.indexOf("{");
+            const end = text.lastIndexOf("}");
+            if (start !== -1 && end !== -1 && end > start) {
+              const data = JSON.parse(text.slice(start, end + 1));
+              const rawList = data.fields?.versions || data.versions || (Array.isArray(data) ? data : []);
+              if (Array.isArray(rawList) && rawList.length > 0) {
+                const extracted = rawList
+                  .map((v: any) => v.Version || v.version || (typeof v === "string" ? v : ""))
+                  .filter((v: string) => v && !v.includes("rc") && !v.includes("beta") && !v.includes("alpha"));
+                const clean = Array.from(new Set(extracted));
+                if (clean.length > 0) {
+                  remoteVersionCache.set(tool, { versions: clean, timestamp: Date.now() });
+                  return clean;
+                }
+              }
+            }
+          } catch (e) {
+            console.warn(`[UniRTM DevServer] Remote lookup error for ${tool}:`, e);
+          }
+          return [];
+        };
+
         server.middlewares.use((req: any, res: any, next: any) => {
           const rootDir = fileURLToPath(new URL("..", import.meta.url));
           const unirtmBin = findUnirtmBinary(rootDir);
@@ -666,6 +703,15 @@ export default defineConfig({
               ruby: "3.4.2",
               zig: "0.14.0",
               php: "8.4.4",
+              trivy: "0.76.0",
+              "aquasecurity/trivy": "0.76.0",
+              "github:aquasecurity/trivy": "0.76.0",
+              checkmake: "0.2.2",
+              "checkmake/checkmake": "0.2.2",
+              "github:checkmake/checkmake": "0.2.2",
+              ruff: "0.16.10",
+              "astral-sh/ruff": "0.16.10",
+              "github:astral-sh/ruff": "0.16.10",
             };
 
             const semverGt = (a: string, b: string) => {
@@ -691,6 +737,14 @@ export default defineConfig({
               }
               if (fallbackLatest[bare] && !candidates.includes(fallbackLatest[bare])) {
                 candidates.push(fallbackLatest[bare]);
+              }
+
+              // Dynamic live remote check via unirtm ls-remote (cached)
+              if ((filterTool && filterTool === toolKey) || remoteVersionCache.has(toolKey)) {
+                const remotes = queryRemoteVersions(toolKey, rootDir, unirtmBin);
+                for (const v of remotes) {
+                  if (!candidates.includes(v)) candidates.push(v);
+                }
               }
 
               const candKeys = [toolKey, bare, `github:${toolKey}`, `github:${bare}`];
@@ -864,29 +918,7 @@ export default defineConfig({
 
             // 1. Dynamic live query via UniRTM CLI: unirtm ls-remote <tool> --json
             if (tool && fs.existsSync(unirtmBin)) {
-              try {
-                const res = spawnSync(unirtmBin, ["ls-remote", tool, "--json"], {
-                  cwd: rootDir,
-                  encoding: "utf-8",
-                  maxBuffer: 50 * 1024 * 1024,
-                  timeout: 10000,
-                });
-                const text = (res.stdout || "").trim() || (res.stderr || "").trim();
-                const start = text.indexOf("{");
-                const end = text.lastIndexOf("}");
-                if (start !== -1 && end !== -1 && end > start) {
-                  const data = JSON.parse(text.slice(start, end + 1));
-                  const rawList = data.fields?.versions || data.versions || (Array.isArray(data) ? data : []);
-                  if (Array.isArray(rawList) && rawList.length > 0) {
-                    const extracted = rawList
-                      .map((v: any) => v.Version || v.version || (typeof v === "string" ? v : ""))
-                      .filter((v: string) => v && !v.includes("rc") && !v.includes("beta") && !v.includes("alpha"));
-                    versions = Array.from(new Set(extracted));
-                  }
-                }
-              } catch (e) {
-                console.warn(`[UniRTM DevServer] Dynamic ls-remote fallback for ${tool}:`, e);
-              }
+              versions = queryRemoteVersions(tool, rootDir, unirtmBin);
             }
 
             // 2. Static fallback only if CLI or upstream network fails

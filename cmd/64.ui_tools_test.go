@@ -214,6 +214,17 @@ node = "22.14.0"
 	assert.NotEqual(t, "1.0", cmResp.Updates[0].LatestVersion)
 	assert.NotEqual(t, "1.0.0", cmResp.Updates[0].LatestVersion)
 
+	// Set trivy 0.75.0 in config to verify upgrade detection
+	useTrivyBody, _ := json.Marshal(map[string]interface{}{
+		"tool":    "github:aquasecurity/trivy",
+		"version": "0.75.0",
+		"global":  false,
+	})
+	useTrivyReq := httptest.NewRequest("POST", "/api/tools/use", bytes.NewReader(useTrivyBody))
+	useTrivyRr := httptest.NewRecorder()
+	mux.ServeHTTP(useTrivyRr, useTrivyReq)
+	assert.Equal(t, http.StatusOK, useTrivyRr.Code)
+
 	req = httptest.NewRequest("GET", "/api/tools/check-updates?tool=github:aquasecurity/trivy", nil)
 	rr = httptest.NewRecorder()
 	mux.ServeHTTP(rr, req)
@@ -223,6 +234,8 @@ node = "22.14.0"
 	require.NotEmpty(t, trivyResp.Updates)
 	assert.NotEqual(t, "1.0", trivyResp.Updates[0].LatestVersion)
 	assert.NotEqual(t, "1.0.0", trivyResp.Updates[0].LatestVersion)
+	assert.Equal(t, "0.76.0", trivyResp.Updates[0].LatestVersion)
+	assert.True(t, trivyResp.Updates[0].HasUpdate)
 
 	// 8. Test POST /api/tools/batch-update
 	batchBody, _ := json.Marshal(map[string]interface{}{

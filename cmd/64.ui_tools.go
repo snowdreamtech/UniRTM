@@ -403,6 +403,14 @@ func handleGetToolsRemote(w http.ResponseWriter, r *http.Request) {
 
 func getFallbackRemoteVersions(tool string) []string {
 	switch strings.ToLower(tool) {
+	case "trivy", "github:aquasecurity/trivy", "aquasecurity/trivy":
+		return []string{
+			"0.76.0", "0.75.0", "0.74.0", "0.73.0", "0.72.0",
+		}
+	case "checkmake", "github:checkmake/checkmake", "checkmake/checkmake":
+		return []string{
+			"0.2.2", "0.2.1", "0.2.0",
+		}
 	case "ruff", "github:astral-sh/ruff", "astral-sh/ruff":
 		return []string{
 			"0.16.10", "0.16.9", "0.16.8", "0.16.7", "0.16.6",
@@ -807,11 +815,11 @@ func handleCheckToolsUpdates(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		if len(candidateVersions) == 0 {
-			candidateVersions = getLockfileVersions(name)
+		for _, v := range getLockfileVersions(name) {
+			candidateVersions = append(candidateVersions, v)
 		}
-		if len(candidateVersions) == 0 {
-			candidateVersions = getFallbackRemoteVersions(name)
+		for _, v := range getFallbackRemoteVersions(name) {
+			candidateVersions = append(candidateVersions, v)
 		}
 		// Also scan locally installed versions to recognize local upgrade opportunities
 		for _, v := range getLocalInstalledVersions(name) {
