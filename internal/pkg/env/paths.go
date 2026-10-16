@@ -134,6 +134,11 @@ func GetColorThemesDir() string {
 	return filepath.Join(GetThemesDir(), "colors")
 }
 
+// GetProductIconThemesDir returns the directory for installed product icon themes.
+func GetProductIconThemesDir() string {
+	return filepath.Join(GetThemesDir(), "product_icons")
+}
+
 // GetCacheDir returns the directory where cache files are stored.
 // It follows XDG Base Directory Specification for cache home.
 func GetCacheDir() string {

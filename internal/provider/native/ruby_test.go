@@ -151,4 +151,3 @@ func TestRubyHandler_ResolveTag(t *testing.T) {
 	assert.True(t, platforms["linux-arm64"])
 	assert.True(t, platforms["linux-amd64"])
 }
-

@@ -483,4 +483,7 @@ export const ltLt: TranslationDict = {
   "tasks.delete_failed": "Failed to delete task",
   "tasks.count_suffix": "Tasks",
   "common.edit": "Edit",
+  "settings.product_icon_theme": "Product Icon Theme",
+  "settings.product_icon_theme_desc": "Product and workbench UI icon theme for buttons, actions, and status indicators. Supports Codicons and third-party product icon extensions.",
+  "marketplace.filter_product_icons": "Product Icons",
 };

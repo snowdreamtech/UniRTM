@@ -132,10 +132,10 @@ func TestMarketplace_DetailMock(t *testing.T) {
 	defer manifestServer.Close()
 
 	detail := MarketplaceExtensionDetail{
-		Namespace:     "test-ns",
-		Name:          "sample-ext",
-		DisplayName:   "Sample Extension",
-		Version:       "1.2.0",
+		Namespace:   "test-ns",
+		Name:        "sample-ext",
+		DisplayName: "Sample Extension",
+		Version:     "1.2.0",
 		Files: MarketplaceExtensionFiles{
 			Readme:   manifestServer.URL + "/README.md",
 			Manifest: manifestServer.URL + "/package.json",
@@ -146,4 +146,3 @@ func TestMarketplace_DetailMock(t *testing.T) {
 		t.Errorf("detail fields mismatch")
 	}
 }
-

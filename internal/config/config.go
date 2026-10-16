@@ -16,20 +16,20 @@ import (
 )
 
 type Config struct {
-	Tools        ToolMap                      `toml:"-" yaml:"-" mapstructure:"-"`
-	ToolsRaw     map[string]interface{}       `toml:"tools" yaml:"tools" mapstructure:"tools"`
-	Env          map[string]interface{}       `toml:"env" yaml:"env" mapstructure:"env"`
-	Settings     Settings                     `toml:"settings" yaml:"settings" mapstructure:"settings"`
-	Tasks        map[string]Task              `toml:"tasks" yaml:"tasks" mapstructure:"tasks"`
-	Hooks        map[string]string            `toml:"hooks,omitempty" yaml:"hooks,omitempty" mapstructure:"hooks,omitempty"`
-	Environments map[string]EnvironmentConfig `toml:"environments,omitempty" yaml:"environments,omitempty" mapstructure:"environments,omitempty"`
-	Aliases      map[string]map[string]string `toml:"aliases,omitempty" yaml:"aliases,omitempty" mapstructure:"aliases,omitempty"`
-	Plugins      PluginMap                    `toml:"-" yaml:"-" mapstructure:"-"`
-	PluginsRaw   map[string]interface{}       `toml:"plugins,omitempty" yaml:"plugins,omitempty" mapstructure:"plugins,omitempty"`
-	NetworkRaw   map[string]interface{}       `toml:"network,omitempty" yaml:"network,omitempty" mapstructure:"network,omitempty"`
-	Pins         map[string]interface{}       `toml:"pins,omitempty" yaml:"pins,omitempty" mapstructure:"pins,omitempty"`
-	SourceFile    string            `toml:"-" yaml:"-" mapstructure:"-"`
-	LegacySources map[string]string `toml:"-" yaml:"-" mapstructure:"-"`
+	Tools         ToolMap                      `toml:"-" yaml:"-" mapstructure:"-"`
+	ToolsRaw      map[string]interface{}       `toml:"tools" yaml:"tools" mapstructure:"tools"`
+	Env           map[string]interface{}       `toml:"env" yaml:"env" mapstructure:"env"`
+	Settings      Settings                     `toml:"settings" yaml:"settings" mapstructure:"settings"`
+	Tasks         map[string]Task              `toml:"tasks" yaml:"tasks" mapstructure:"tasks"`
+	Hooks         map[string]string            `toml:"hooks,omitempty" yaml:"hooks,omitempty" mapstructure:"hooks,omitempty"`
+	Environments  map[string]EnvironmentConfig `toml:"environments,omitempty" yaml:"environments,omitempty" mapstructure:"environments,omitempty"`
+	Aliases       map[string]map[string]string `toml:"aliases,omitempty" yaml:"aliases,omitempty" mapstructure:"aliases,omitempty"`
+	Plugins       PluginMap                    `toml:"-" yaml:"-" mapstructure:"-"`
+	PluginsRaw    map[string]interface{}       `toml:"plugins,omitempty" yaml:"plugins,omitempty" mapstructure:"plugins,omitempty"`
+	NetworkRaw    map[string]interface{}       `toml:"network,omitempty" yaml:"network,omitempty" mapstructure:"network,omitempty"`
+	Pins          map[string]interface{}       `toml:"pins,omitempty" yaml:"pins,omitempty" mapstructure:"pins,omitempty"`
+	SourceFile    string                       `toml:"-" yaml:"-" mapstructure:"-"`
+	LegacySources map[string]string            `toml:"-" yaml:"-" mapstructure:"-"`
 }
 
 type EnvironmentConfig struct {
@@ -42,16 +42,16 @@ type EnvironmentConfig struct {
 }
 
 type ToolConfig struct {
-	Version           string      `toml:"version" yaml:"version" mapstructure:"version"`
-	Backend           string      `toml:"backend,omitempty" yaml:"backend,omitempty" mapstructure:"backend,omitempty"`
-	Provider          string      `toml:"provider,omitempty" yaml:"provider,omitempty" mapstructure:"provider,omitempty"`
-	PreInstall        StringArray `toml:"pre_install,omitempty" yaml:"pre_install,omitempty" mapstructure:"pre_install,omitempty"`
-	PostInstall       StringArray `toml:"post_install,omitempty" yaml:"post_install,omitempty" mapstructure:"post_install,omitempty"`
-	GPGKeys           []string    `toml:"gpg_keys,omitempty" yaml:"gpg_keys,omitempty" mapstructure:"gpg_keys,omitempty"`
-	MinimumReleaseAge string      `toml:"minimum_release_age,omitempty" yaml:"minimum_release_age,omitempty" mapstructure:"minimum_release_age,omitempty"`
+	Version           string            `toml:"version" yaml:"version" mapstructure:"version"`
+	Backend           string            `toml:"backend,omitempty" yaml:"backend,omitempty" mapstructure:"backend,omitempty"`
+	Provider          string            `toml:"provider,omitempty" yaml:"provider,omitempty" mapstructure:"provider,omitempty"`
+	PreInstall        StringArray       `toml:"pre_install,omitempty" yaml:"pre_install,omitempty" mapstructure:"pre_install,omitempty"`
+	PostInstall       StringArray       `toml:"post_install,omitempty" yaml:"post_install,omitempty" mapstructure:"post_install,omitempty"`
+	GPGKeys           []string          `toml:"gpg_keys,omitempty" yaml:"gpg_keys,omitempty" mapstructure:"gpg_keys,omitempty"`
+	MinimumReleaseAge string            `toml:"minimum_release_age,omitempty" yaml:"minimum_release_age,omitempty" mapstructure:"minimum_release_age,omitempty"`
 	AssetPatterns     map[string]string `toml:"asset_patterns,omitempty" yaml:"asset_patterns,omitempty" mapstructure:"asset_patterns,omitempty"`
-	Pinned            bool        `toml:"pinned,omitempty" yaml:"pinned,omitempty" mapstructure:"pinned,omitempty"`
-	PinReason         string      `toml:"pin_reason,omitempty" yaml:"pin_reason,omitempty" mapstructure:"pin_reason,omitempty"`
+	Pinned            bool              `toml:"pinned,omitempty" yaml:"pinned,omitempty" mapstructure:"pinned,omitempty"`
+	PinReason         string            `toml:"pin_reason,omitempty" yaml:"pin_reason,omitempty" mapstructure:"pin_reason,omitempty"`
 }
 
 type ToolMap map[string]ToolConfig
@@ -204,6 +204,7 @@ type Settings struct {
 	Browser              string                            `toml:"browser,omitempty" yaml:"browser,omitempty" mapstructure:"browser,omitempty"`
 	Theme                string                            `toml:"theme,omitempty" yaml:"theme,omitempty" mapstructure:"theme,omitempty"`
 	IconTheme            string                            `toml:"icon_theme,omitempty" yaml:"icon_theme,omitempty" mapstructure:"icon_theme,omitempty"`
+	ProductIconTheme     string                            `toml:"product_icon_theme,omitempty" yaml:"product_icon_theme,omitempty" mapstructure:"product_icon_theme,omitempty"`
 	Appearance           string                            `toml:"appearance,omitempty" yaml:"appearance,omitempty" mapstructure:"appearance,omitempty"`
 	Language             string                            `toml:"language,omitempty" yaml:"language,omitempty" mapstructure:"language,omitempty"`
 	Shell                string                            `toml:"shell,omitempty" yaml:"shell,omitempty" mapstructure:"shell,omitempty"`

@@ -568,4 +568,3 @@ func TestResolveGitHubToken_PrefixesAndCase(t *testing.T) {
 		}
 	})
 }
-

@@ -1401,6 +1401,7 @@ func handleGetThemes(w http.ResponseWriter, r *http.Request, themeMgr *theme.Man
 
 	activeColor := "default"
 	activeIcon := "seti"
+	activeProduct := "codicons"
 	activeAppearance := "system"
 
 	checkCfg := func(c *config.Config) {
@@ -1422,6 +1423,9 @@ func handleGetThemes(w http.ResponseWriter, r *http.Request, themeMgr *theme.Man
 		if c.Settings.IconTheme != "" {
 			activeIcon = c.Settings.IconTheme
 		}
+		if c.Settings.ProductIconTheme != "" {
+			activeProduct = c.Settings.ProductIconTheme
+		}
 	}
 
 	if globalCfg, err := config.LoadGlobal(); err == nil && globalCfg != nil {
@@ -1433,6 +1437,7 @@ func handleGetThemes(w http.ResponseWriter, r *http.Request, themeMgr *theme.Man
 	}
 	resp.Active.Color = activeColor
 	resp.Active.Icon = activeIcon
+	resp.Active.Product = activeProduct
 	resp.Active.Appearance = activeAppearance
 
 	_ = json.NewEncoder(w).Encode(resp)
@@ -1510,6 +1515,7 @@ func handleApplyTheme(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Color      string `json:"color"`
 		Icon       string `json:"icon"`
+		Product    string `json:"product"`
 		Appearance string `json:"appearance"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -1555,6 +1561,15 @@ func handleApplyTheme(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if body.Product != "" {
+		content, err = config.UpsertTOMLSetting(content, []string{"settings", "product_icon_theme"}, body.Product)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "upsert product_icon_theme: " + err.Error()})
+			return
+		}
+	}
+
 	if body.Appearance != "" {
 		content, err = config.UpsertTOMLSetting(content, []string{"settings", "appearance"}, body.Appearance)
 		if err != nil {
@@ -1574,6 +1589,7 @@ func handleApplyTheme(w http.ResponseWriter, r *http.Request) {
 		"success":    true,
 		"color":      body.Color,
 		"icon":       body.Icon,
+		"product":    body.Product,
 		"appearance": body.Appearance,
 	})
 }
@@ -1622,6 +1638,11 @@ func handleMarketplaceSearch(w http.ResponseWriter, r *http.Request, themeMgr *t
 		for _, i := range themes.Icons {
 			if i.PackageID != "" {
 				installedIDs[i.PackageID] = true
+			}
+		}
+		for _, p := range themes.Products {
+			if p.PackageID != "" {
+				installedIDs[p.PackageID] = true
 			}
 		}
 	}
@@ -1680,6 +1701,11 @@ func handleMarketplaceDetail(w http.ResponseWriter, r *http.Request, themeMgr *t
 		for _, i := range themes.Icons {
 			if i.PackageID != "" {
 				installedIDs[i.PackageID] = true
+			}
+		}
+		for _, p := range themes.Products {
+			if p.PackageID != "" {
+				installedIDs[p.PackageID] = true
 			}
 		}
 	}

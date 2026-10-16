@@ -64,4 +64,3 @@ func getGitHubToken() string {
 	}
 	return ""
 }
-

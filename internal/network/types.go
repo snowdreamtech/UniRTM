@@ -5,10 +5,10 @@ package network
 
 // NetworkConfig represents the root network section in UniRTM config.
 type NetworkConfig struct {
-	ActiveProfile string                    `json:"active_profile" toml:"active_profile" yaml:"active_profile"`
-	Proxy         ProxyConfig               `json:"proxy" toml:"proxy" yaml:"proxy"`
-	Overrides           map[string]string         `json:"overrides,omitempty" toml:"overrides,omitempty" yaml:"overrides,omitempty"`
-	Profiles            map[string]NetworkProfile `json:"profiles,omitempty" toml:"profiles,omitempty" yaml:"profiles,omitempty"`
+	ActiveProfile      string                    `json:"active_profile" toml:"active_profile" yaml:"active_profile"`
+	Proxy              ProxyConfig               `json:"proxy" toml:"proxy" yaml:"proxy"`
+	Overrides          map[string]string         `json:"overrides,omitempty" toml:"overrides,omitempty" yaml:"overrides,omitempty"`
+	Profiles           map[string]NetworkProfile `json:"profiles,omitempty" toml:"profiles,omitempty" yaml:"profiles,omitempty"`
 	ExcludedEcosystems []string                  `json:"excluded_ecosystems,omitempty" toml:"excluded_ecosystems,omitempty" yaml:"excluded_ecosystems,omitempty"`
 }
 
@@ -24,9 +24,9 @@ type ProxyConfig struct {
 
 // NetworkProfile defines an end-to-end profile contract.
 type NetworkProfile struct {
-	ID          string            `json:"id" toml:"id" yaml:"id"`
-	Name        string            `json:"name" toml:"name" yaml:"name"`
-	Description string            `json:"description" toml:"description" yaml:"description"`
+	ID              string            `json:"id" toml:"id" yaml:"id"`
+	Name            string            `json:"name" toml:"name" yaml:"name"`
+	Description     string            `json:"description" toml:"description" yaml:"description"`
 	Builtin         bool              `json:"builtin" toml:"builtin" yaml:"builtin"`
 	FallbackProfile string            `json:"fallback_profile,omitempty" toml:"fallback_profile,omitempty" yaml:"fallback_profile,omitempty"`
 	Registries      map[string]string `json:"registries" toml:"registries" yaml:"registries"`

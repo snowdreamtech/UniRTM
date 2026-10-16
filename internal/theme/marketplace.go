@@ -39,9 +39,16 @@ type ContributedSubIconTheme struct {
 	Path  string `json:"path,omitempty"`
 }
 
+type ContributedSubProductIconTheme struct {
+	ID    string `json:"id,omitempty"`
+	Label string `json:"label"`
+	Path  string `json:"path,omitempty"`
+}
+
 type ExtensionContributions struct {
-	Themes     []ContributedSubTheme     `json:"themes,omitempty"`
-	IconThemes []ContributedSubIconTheme `json:"iconThemes,omitempty"`
+	Themes            []ContributedSubTheme            `json:"themes,omitempty"`
+	IconThemes        []ContributedSubIconTheme        `json:"iconThemes,omitempty"`
+	ProductIconThemes []ContributedSubProductIconTheme `json:"productIconThemes,omitempty"`
 }
 
 type MarketplaceExtensionDetail struct {
@@ -283,6 +290,11 @@ func GetOpenVSXExtensionDetail(namespace, name string, installedIDs map[string]b
 								Label string `json:"label"`
 								Path  string `json:"path"`
 							} `json:"iconThemes"`
+							ProductIconThemes []struct {
+								ID    string `json:"id"`
+								Label string `json:"label"`
+								Path  string `json:"path"`
+							} `json:"productIconThemes"`
 						} `json:"contributes"`
 					}
 					limited := io.LimitReader(mResp.Body, 512*1024)
@@ -310,6 +322,17 @@ func GetOpenVSXExtensionDetail(namespace, name string, installedIDs map[string]b
 								Path:  it.Path,
 							})
 						}
+						for _, pit := range pkg.Contributes.ProductIconThemes {
+							lbl := pit.Label
+							if lbl == "" {
+								lbl = pit.ID
+							}
+							detail.Contributes.ProductIconThemes = append(detail.Contributes.ProductIconThemes, ContributedSubProductIconTheme{
+								ID:    pit.ID,
+								Label: lbl,
+								Path:  pit.Path,
+							})
+						}
 					}
 				}
 			}
@@ -319,4 +342,3 @@ func GetOpenVSXExtensionDetail(namespace, name string, installedIDs map[string]b
 	wg.Wait()
 	return &detail, nil
 }
-

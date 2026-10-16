@@ -19,9 +19,10 @@ func TestThemeManager_Lifecycle(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	mgr := &Manager{
-		baseDir:   tempDir,
-		iconsDir:  filepath.Join(tempDir, "icons"),
-		colorsDir: filepath.Join(tempDir, "colors"),
+		baseDir:         tempDir,
+		iconsDir:        filepath.Join(tempDir, "icons"),
+		colorsDir:       filepath.Join(tempDir, "colors"),
+		productIconsDir: filepath.Join(tempDir, "product_icons"),
 	}
 
 	if err := mgr.EnsureDirectories(); err != nil {
@@ -38,6 +39,9 @@ func TestThemeManager_Lifecycle(t *testing.T) {
 	}
 	if len(initial.Icons) < 1 {
 		t.Errorf("expected at least 1 default icon theme, got %d", len(initial.Icons))
+	}
+	if len(initial.Products) < 1 {
+		t.Errorf("expected at least 1 default product icon theme, got %d", len(initial.Products))
 	}
 
 	// 2. Build mock .vsix with color theme & icon theme

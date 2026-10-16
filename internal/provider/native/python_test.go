@@ -255,4 +255,3 @@ func TestPythonHandler_ResolveVersions_DeterministicTieBreaker(t *testing.T) {
 	assert.Len(t, versions[0].Assets, 1)
 	assert.Equal(t, "cpython-3.14.7+20260929-x86_64-unknown-linux-gnu-install_only.tar.gz", versions[0].Assets[0].Filename)
 }
-

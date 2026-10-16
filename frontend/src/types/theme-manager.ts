@@ -4,7 +4,7 @@
 export interface ThemeItem {
   id: string;
   name: string;
-  type: "color" | "icon";
+  type: "color" | "icon" | "product";
   is_builtin: boolean;
   ui_theme?: string;
   package_id?: string;
@@ -16,9 +16,11 @@ export interface ThemeItem {
 export interface ThemesListResponse {
   colors: ThemeItem[];
   icons: ThemeItem[];
+  products: ThemeItem[];
   active: {
     color: string;
     icon: string;
+    product?: string;
   };
 }
 
@@ -58,9 +60,16 @@ export interface ContributedSubIconTheme {
   path?: string;
 }
 
+export interface ContributedSubProductIconTheme {
+  id?: string;
+  label: string;
+  path?: string;
+}
+
 export interface ExtensionContributions {
   themes?: ContributedSubTheme[];
   iconThemes?: ContributedSubIconTheme[];
+  productIconThemes?: ContributedSubProductIconTheme[];
 }
 
 export interface MarketplaceExtensionDetail {

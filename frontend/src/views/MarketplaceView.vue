@@ -210,7 +210,7 @@
                 v-if="activeDetail.contributes?.iconThemes && activeDetail.contributes.iconThemes.length > 0"
                 class="contribute-group"
               >
-                <h3 class="group-title">图标集 (Icon Themes)</h3>
+                <h3 class="group-title">文件图标 (Icon Themes)</h3>
                 <div class="contribute-list">
                   <div
                     v-for="sub in activeDetail.contributes.iconThemes"
@@ -232,9 +232,37 @@
                 </div>
               </div>
 
+              <!-- Product Icon Themes List -->
+              <div
+                v-if="activeDetail.contributes?.productIconThemes && activeDetail.contributes.productIconThemes.length > 0"
+                class="contribute-group"
+              >
+                <h3 class="group-title">界面图标 (Product Icon Themes)</h3>
+                <div class="contribute-list">
+                  <div
+                    v-for="sub in activeDetail.contributes.productIconThemes"
+                    :key="sub.label"
+                    class="contribute-item"
+                  >
+                    <div class="sub-info">
+                      <span class="sub-label">{{ sub.label }}</span>
+                      <span class="sub-mode-tag mode-product">界面图标</span>
+                    </div>
+                    <button
+                      v-if="activeDetail.is_installed"
+                      class="btn-apply-sub"
+                      @click="onApplySubProductIconTheme(sub.id || sub.label)"
+                    >
+                      应用
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div
                 v-if="(!activeDetail.contributes?.themes || activeDetail.contributes.themes.length === 0) &&
-                      (!activeDetail.contributes?.iconThemes || activeDetail.contributes.iconThemes.length === 0)"
+                      (!activeDetail.contributes?.iconThemes || activeDetail.contributes.iconThemes.length === 0) &&
+                      (!activeDetail.contributes?.productIconThemes || activeDetail.contributes.productIconThemes.length === 0)"
                 class="readme-empty-hint"
               >
                 <p>该扩展清单中未发现显式声明的主题子集</p>
@@ -529,11 +557,21 @@
                   <span class="card-namespace font-mono">{{ item.namespace }}</span>
                   <span
                     class="card-type-tag"
-                    :class="getExtensionType(item) === 'icon' ? 'type-icon' : 'type-color'"
+                    :class="{
+                      'type-product-icon': getExtensionType(item) === 'product_icon',
+                      'type-icon': getExtensionType(item) === 'icon',
+                      'type-color': getExtensionType(item) === 'theme'
+                    }"
                     style="display: inline-flex; align-items: center; gap: 4px;"
                   >
-                    <TechIcon :id="getExtensionType(item) === 'icon' ? 'workbench:tools' : 'workbench:marketplace'" :size="12" :colored="false" />
-                    {{ getExtensionType(item) === 'icon' ? (t('marketplace.filter_icons') || '图标') : (t('marketplace.filter_themes') || '主题') }}
+                    <TechIcon :id="getExtensionType(item) === 'theme' ? 'workbench:marketplace' : 'workbench:tools'" :size="12" :colored="false" />
+                    {{
+                      getExtensionType(item) === 'product_icon'
+                        ? (t('marketplace.filter_product_icons') || '界面图标')
+                        : (getExtensionType(item) === 'icon'
+                            ? (t('marketplace.filter_icons') || '文件图标')
+                            : (t('marketplace.filter_themes') || '颜色主题'))
+                    }}
                   </span>
                 </div>
               </div>
@@ -791,8 +829,10 @@ const {
 const {
   colorThemes,
   iconThemes,
+  productIconThemes,
   activeColorTheme,
   activeIconTheme,
+  activeProductIconTheme,
   fetchThemes,
   setActiveTheme,
   deleteTheme,
@@ -811,6 +851,10 @@ interface ThemeChipItem {
 const themeChips = computed<ThemeChipItem[]>(() => [
   { id: "all", labelKey: "marketplace.filter_all", query: "" },
   { id: "installed", labelKey: "marketplace.filter_installed", query: "", isInstalled: true },
+  { id: "themes", labelKey: "marketplace.filter_themes", query: "theme" },
+  { id: "icons", labelKey: "marketplace.filter_icons", query: "icon" },
+  { id: "product-icons", labelKey: "marketplace.filter_product_icons", query: "product icon" },
+  { id: "fluent", name: "Fluent Icons", query: "fluent-icons" },
   { id: "material", name: "Material", query: "Material" },
   { id: "dracula", name: "Dracula", query: "Dracula" },
   { id: "one-dark", name: "One Dark", query: "One Dark" },
@@ -887,6 +931,38 @@ const installedExtensions = computed<MarketplaceExtension[]>(() => {
     }
   }
 
+  for (const p of productIconThemes.value) {
+    if (!p.is_builtin && p.package_id) {
+      const key = `product:${p.package_id.toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const match = mpSearchResults.value.find(
+        (s) => (s.package_id && s.package_id.toLowerCase() === p.package_id?.toLowerCase()) ||
+               s.name.toLowerCase() === p.package_id?.toLowerCase()
+      );
+      if (match) {
+        list.push({ ...match, is_installed: true });
+      } else {
+        list.push({
+          namespace: p.package_id.includes(".") ? p.package_id.split(".")[0] : "",
+          name: p.package_id.includes(".") ? p.package_id.split(".")[1] : p.package_id,
+          displayName: p.name || p.package_id,
+          version: p.version || "",
+          description: "已安装的本地 VS Code 界面图标主题扩展包",
+          downloadCount: 0,
+          averageRating: 5.0,
+          is_installed: true,
+          package_id: p.package_id,
+          files: {
+            download: "",
+            icon: "",
+          },
+        });
+      }
+    }
+  }
+
   return list;
 });
 
@@ -924,7 +1000,8 @@ const renderedChangelog = computed(() => {
 const contributedThemesCount = computed(() => {
   const tCount = activeDetail.value?.contributes?.themes?.length || 0;
   const iCount = activeDetail.value?.contributes?.iconThemes?.length || 0;
-  return tCount + iCount;
+  const pCount = activeDetail.value?.contributes?.productIconThemes?.length || 0;
+  return tCount + iCount + pCount;
 });
 
 // Watch route params for detail page view
@@ -1012,10 +1089,14 @@ async function onChangePageSize(size: number) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function getExtensionType(item: MarketplaceExtension): "icon" | "theme" {
-  // Check local installed themes first for 100% exact type match
+function getExtensionType(item: MarketplaceExtension): "product_icon" | "icon" | "theme" {
   const pkgId = (item.package_id || item.name || "").toLowerCase();
   const name = (item.name || "").toLowerCase();
+
+  // Check local installed themes first for 100% exact type match
+  if (productIconThemes.value.some((p) => !p.is_builtin && ((p.package_id && p.package_id.toLowerCase() === pkgId) || p.id.toLowerCase() === name))) {
+    return "product_icon";
+  }
   if (iconThemes.value.some((i) => !i.is_builtin && ((i.package_id && i.package_id.toLowerCase() === pkgId) || i.id.toLowerCase() === name))) {
     return "icon";
   }
@@ -1023,15 +1104,26 @@ function getExtensionType(item: MarketplaceExtension): "icon" | "theme" {
     return "theme";
   }
 
-  // Name or displayName with 'icon' or 'icons' is an icon pack
   const nameText = `${item.name} ${item.displayName || ""}`.toLowerCase();
-  if (nameText.includes("icon") || nameText.includes("icons")) {
-    return "icon";
+  const desc = (item.description || "").toLowerCase();
+  const fullText = `${nameText} ${desc}`;
+
+  // Check for product icon keywords
+  if (
+    fullText.includes("product icon") ||
+    fullText.includes("product icons") ||
+    fullText.includes("product-icon") ||
+    fullText.includes("producticontheme") ||
+    fullText.includes("fluent-icons") ||
+    fullText.includes("fluent icons") ||
+    fullText.includes("codicons") ||
+    fullText.includes("carbon product icons")
+  ) {
+    return "product_icon";
   }
 
-  // Fallback to description
-  const desc = (item.description || "").toLowerCase();
-  if (desc.includes("icon theme") || desc.includes("icons theme") || desc.includes("file icons")) {
+  // Check for file icon keywords
+  if (nameText.includes("icon") || nameText.includes("icons") || desc.includes("icon theme") || desc.includes("file icons")) {
     return "icon";
   }
 
@@ -1062,7 +1154,16 @@ function isItemInstalled(item: { namespace?: string; name: string; displayName?:
     const iName = i.name.toLowerCase();
     return iPkg === pkgId || iPkg === name || iPkg === fullId || iId === pkgId || iId === name || (displayName && iName === displayName);
   });
-  return isIcon;
+  if (isIcon) return true;
+
+  const isProduct = productIconThemes.value.some((p) => {
+    if (p.is_builtin) return false;
+    const pPkg = (p.package_id || "").toLowerCase();
+    const pId = p.id.toLowerCase();
+    const pName = p.name.toLowerCase();
+    return pPkg === pkgId || pPkg === name || pPkg === fullId || pId === pkgId || pId === name || (displayName && pName === displayName);
+  });
+  return isProduct;
 }
 
 function isExtensionActive(item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean }): boolean {
@@ -1101,6 +1202,21 @@ function isExtensionActive(item: { namespace?: string; name: string; displayName
       if (iPkg && (iPkg === pkgId || iPkg === name || iPkg === fullId)) return true;
       if (iId === pkgId || iId === name || iId === fullId) return true;
       if (iName === displayName) return true;
+    }
+  }
+
+  // 3. Check against active product icon theme
+  if (activeProductIconTheme.value) {
+    const actProduct = activeProductIconTheme.value.toLowerCase();
+    if (actProduct === pkgId || actProduct === name || actProduct === fullId || actProduct === displayName) return true;
+    const activeProductItem = productIconThemes.value.find((p) => p.id.toLowerCase() === actProduct);
+    if (activeProductItem) {
+      const pPkg = (activeProductItem.package_id || "").toLowerCase();
+      const pId = activeProductItem.id.toLowerCase();
+      const pName = activeProductItem.name.toLowerCase();
+      if (pPkg && (pPkg === pkgId || pPkg === name || pPkg === fullId)) return true;
+      if (pId === pkgId || pId === name || pId === fullId) return true;
+      if (pName === displayName) return true;
     }
   }
 
@@ -1178,6 +1294,7 @@ async function onUninstallThemeCard(item: MarketplaceExtension) {
   try {
     await deleteTheme("color", pkgId);
     await deleteTheme("icon", pkgId);
+    await deleteTheme("product", pkgId);
     item.is_installed = false;
     const found = mpSearchResults.value.find(
       (s) => s.name === item.name || (s.package_id && s.package_id === pkgId)
@@ -1204,6 +1321,8 @@ async function onInstallTheme(item: MarketplaceExtension) {
         await setActiveTheme(first.id, undefined);
       } else if (first.type === "icon") {
         await setActiveTheme(undefined, first.id);
+      } else if (first.type === "product") {
+        await setActiveTheme(undefined, undefined, undefined, first.id);
       }
     }
   } catch (err: any) {
@@ -1239,6 +1358,7 @@ async function onUninstallDetail(detail: MarketplaceExtensionDetail) {
   try {
     await deleteTheme("color", pkgId);
     await deleteTheme("icon", pkgId);
+    await deleteTheme("product", pkgId);
     detail.is_installed = false;
     const found = mpSearchResults.value.find((s) => s.namespace === detail.namespace && s.name === detail.name);
     if (found) found.is_installed = false;
@@ -1283,6 +1403,22 @@ async function onApplySubIconTheme(label: string) {
   }
 }
 
+async function onApplySubProductIconTheme(labelOrId: string) {
+  const match = productIconThemes.value.find(
+    (p) => p.name.toLowerCase() === labelOrId.toLowerCase() || p.id.toLowerCase() === labelOrId.toLowerCase()
+  );
+  if (match) {
+    await setActiveTheme(undefined, undefined, undefined, match.id);
+    feedbackMsg.value = `✓ 已应用界面图标主题: ${match.name}`;
+    feedbackIsError.value = false;
+    showToast(`已应用界面图标主题: ${match.name}`, "success");
+  } else {
+    feedbackMsg.value = `已激活界面图标包，可在设置中选择应用 ${labelOrId}`;
+    feedbackIsError.value = false;
+    showToast(`已激活界面图标包: ${labelOrId}`, "info");
+  }
+}
+
 async function onApplyTheme(item: MarketplaceExtension) {
   try {
     // If local themes list isn't populated yet, fetch first
@@ -1311,6 +1447,14 @@ async function onApplyTheme(item: MarketplaceExtension) {
       return iPkg === pkgID || iPkg === name || iPkg === fullId || iId === pkgID || iId === name || iName === displayName;
     });
 
+    // Find matching product icon theme
+    const productMatch = productIconThemes.value.find((p) => {
+      const pPkg = (p.package_id || "").toLowerCase();
+      const pId = p.id.toLowerCase();
+      const pName = p.name.toLowerCase();
+      return pPkg === pkgID || pPkg === name || pPkg === fullId || pId === pkgID || pId === name || pName === displayName;
+    });
+
     let applied = false;
     if (colorMatch) {
       await setActiveTheme(colorMatch.id, undefined);
@@ -1320,10 +1464,16 @@ async function onApplyTheme(item: MarketplaceExtension) {
       await setActiveTheme(undefined, iconMatch.id);
       applied = true;
     }
+    if (productMatch) {
+      await setActiveTheme(undefined, undefined, undefined, productMatch.id);
+      applied = true;
+    }
 
     if (!applied) {
       // Fallback: apply directly by extension name according to type
-      if (getExtensionType(item) === "icon") {
+      if (getExtensionType(item) === "product_icon") {
+        await setActiveTheme(undefined, undefined, undefined, item.name);
+      } else if (getExtensionType(item) === "icon") {
         await setActiveTheme(undefined, item.name);
       } else {
         await setActiveTheme(item.name, undefined);
@@ -1980,6 +2130,12 @@ const nativePlugins = ref<PluginItem[]>([
   background: rgba(6, 182, 212, 0.12);
   color: #22d3ee;
   border: 1px solid rgba(6, 182, 212, 0.25);
+}
+
+.card-type-tag.type-product-icon {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
 .card-desc {
@@ -2818,6 +2974,12 @@ const nativePlugins = ref<PluginItem[]>([
   background: rgba(16, 185, 129, 0.15);
   color: #6ee7b7;
   border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.mode-product {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .btn-apply-sub {

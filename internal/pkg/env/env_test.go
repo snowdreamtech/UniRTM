@@ -275,4 +275,3 @@ func TestSmartCache_PrefixAndCaseTolerance(t *testing.T) {
 		t.Errorf("expected empty after Unset all variants, got %q", val)
 	}
 }
-

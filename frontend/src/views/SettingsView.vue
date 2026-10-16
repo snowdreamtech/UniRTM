@@ -175,6 +175,21 @@
               </div>
             </div>
 
+            <!-- Setting: Product Icon Theme -->
+            <div class="setting-item" :class="{ highlight: matchesSearch('product_icon') || matchesSearch('icon') }">
+              <div class="setting-meta">
+                <span class="setting-title">{{ t('settings.product_icon_theme') || '界面图标主题' }}</span>
+                <p class="setting-desc">{{ t('settings.product_icon_theme_desc') || '工作台按钮、操作与状态等界面产品图标主题，支持切换 Codicons 与第三方界面图标扩展。' }}</p>
+              </div>
+              <div class="setting-control">
+                <CustomSelect
+                  :model-value="activeProductIconTheme"
+                  :options="productIconThemeOptions"
+                  @change="onProductIconThemeChange"
+                />
+              </div>
+            </div>
+
             <!-- Setting: Theme Package Manager -->
             <div class="setting-item theme-manager-item" :class="{ highlight: matchesSearch('vsix') }">
               <div class="setting-meta full-width">
@@ -944,8 +959,10 @@ const { currentTheme } = useTheme();
 const {
   colorThemes,
   iconThemes,
+  productIconThemes,
   activeColorTheme,
   activeIconTheme,
+  activeProductIconTheme,
   activeAppearance,
   fetchThemes,
   installTheme,
@@ -1458,6 +1475,15 @@ const iconThemeOptions = computed(() => {
   });
 });
 
+const productIconThemeOptions = computed(() => {
+  return productIconThemes.value.map((item) => {
+    return {
+      value: item.id,
+      label: cleanThemeLabel(item.name),
+    };
+  });
+});
+
 
 interface DetectedBrowser {
   id: string;
@@ -1835,6 +1861,30 @@ async function onIconThemeChange(val: string) {
   } catch (err: any) {
     saveStatusType.value = "error";
     saveStatusText.value = `应用图标失败: ${err.message || err}`;
+  } finally {
+    isSaving.value = false;
+  }
+}
+
+async function onProductIconThemeChange(val: string) {
+  isSaving.value = true;
+  saveStatusType.value = "saving";
+  saveStatusText.value = "正在应用界面图标主题...";
+  try {
+    await setActiveTheme(undefined, undefined, undefined, val);
+    const prodObj = productIconThemes.value.find((p) => p.id === val);
+    const prodName = cleanThemeLabel(prodObj ? prodObj.name : val);
+    saveStatusType.value = "success";
+    saveStatusText.value = "已自动保存";
+    await loadConfigData();
+    showToast(`已应用界面图标主题: ${prodName}`, "success");
+    setTimeout(() => {
+      saveStatusType.value = "idle";
+      saveStatusText.value = "";
+    }, 2000);
+  } catch (err: any) {
+    saveStatusType.value = "error";
+    saveStatusText.value = `应用界面图标失败: ${err.message || err}`;
   } finally {
     isSaving.value = false;
   }

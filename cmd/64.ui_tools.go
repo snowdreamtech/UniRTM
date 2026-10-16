@@ -508,7 +508,6 @@ func getFallbackRemoteVersions(tool string) []string {
 	}
 }
 
-
 func handleUseTool(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
@@ -961,6 +960,3 @@ var (
 	handleCheckRuntimesUpdates = handleCheckToolsUpdates
 	handleBatchUpdateRuntimes  = handleBatchUpdateTools
 )
-
-
-

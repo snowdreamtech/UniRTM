@@ -290,7 +290,6 @@ func runUse(cmd *cobra.Command, args []string) error {
 
 	return nil
 
-
 }
 
 // findOrCreateConfigFile finds an existing config file in the directory,

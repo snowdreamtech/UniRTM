@@ -130,6 +130,8 @@ export interface TranslationDict {
   "settings.color_theme_desc"?: string;
   "settings.icon_theme"?: string;
   "settings.icon_theme_desc"?: string;
+  "settings.product_icon_theme"?: string;
+  "settings.product_icon_theme_desc"?: string;
   "settings.theme_pkg_manager"?: string;
   "settings.theme_pkg_desc"?: string;
   "settings.theme_tab_marketplace"?: string;
@@ -220,6 +222,7 @@ export interface TranslationDict {
   "marketplace.filter_installed"?: string;
   "marketplace.filter_themes"?: string;
   "marketplace.filter_icons"?: string;
+  "marketplace.filter_product_icons"?: string;
   "marketplace.installed_count"?: string;
   "marketplace.total_count"?: string;
   "marketplace.searching_openvsx"?: string;

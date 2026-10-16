@@ -260,67 +260,67 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-	globalPaths := []string{
-		filepath.Join(env.GetConfigDir(), "config.toml"),
-		filepath.Join(env.GetConfigDir(), "config.yaml"),
-		filepath.Join(env.GetConfigDir(), "config.yml"),
-	}
-	for _, p := range globalPaths {
-		if _, err := os.Stat(p); err == nil {
-			activeFiles = append(activeFiles, p)
+		globalPaths := []string{
+			filepath.Join(env.GetConfigDir(), "config.toml"),
+			filepath.Join(env.GetConfigDir(), "config.yaml"),
+			filepath.Join(env.GetConfigDir(), "config.yml"),
 		}
-	}
-
-	cwd, _ := os.Getwd()
-	curr := cwd
-	var projectFiles []string
-
-	isCeiling := func(path string) bool {
-		absPath, _ := filepath.Abs(path)
-		for _, cp := range cfg.Settings.CeilingPaths {
-			absCP, _ := filepath.Abs(cp)
-			if absPath == absCP {
-				return true
-			}
-		}
-		parent := filepath.Dir(absPath)
-		return parent == absPath
-	}
-
-	for {
-		files := []string{
-			filepath.Join(curr, ".mise.yml"),
-			filepath.Join(curr, ".mise.yaml"),
-			filepath.Join(curr, ".mise.toml"),
-			filepath.Join(curr, "unirtm.yml"),
-			filepath.Join(curr, "unirtm.yaml"),
-			filepath.Join(curr, "unirtm.toml"),
-			filepath.Join(curr, ".unirtm.yml"),
-			filepath.Join(curr, ".unirtm.yaml"),
-			filepath.Join(curr, ".unirtm.toml"),
-			filepath.Join(curr, ".mise.local.yml"),
-			filepath.Join(curr, ".mise.local.yaml"),
-			filepath.Join(curr, ".mise.local.toml"),
-			filepath.Join(curr, ".unirtm.local.yml"),
-			filepath.Join(curr, ".unirtm.local.yaml"),
-			filepath.Join(curr, ".unirtm.local.toml"),
-		}
-
-		var dirFiles []string
-		for _, p := range files {
+		for _, p := range globalPaths {
 			if _, err := os.Stat(p); err == nil {
-				dirFiles = append(dirFiles, p)
+				activeFiles = append(activeFiles, p)
 			}
 		}
-		projectFiles = append(dirFiles, projectFiles...)
 
-		if isCeiling(curr) {
-			break
+		cwd, _ := os.Getwd()
+		curr := cwd
+		var projectFiles []string
+
+		isCeiling := func(path string) bool {
+			absPath, _ := filepath.Abs(path)
+			for _, cp := range cfg.Settings.CeilingPaths {
+				absCP, _ := filepath.Abs(cp)
+				if absPath == absCP {
+					return true
+				}
+			}
+			parent := filepath.Dir(absPath)
+			return parent == absPath
 		}
-		curr = filepath.Dir(curr)
+
+		for {
+			files := []string{
+				filepath.Join(curr, ".mise.yml"),
+				filepath.Join(curr, ".mise.yaml"),
+				filepath.Join(curr, ".mise.toml"),
+				filepath.Join(curr, "unirtm.yml"),
+				filepath.Join(curr, "unirtm.yaml"),
+				filepath.Join(curr, "unirtm.toml"),
+				filepath.Join(curr, ".unirtm.yml"),
+				filepath.Join(curr, ".unirtm.yaml"),
+				filepath.Join(curr, ".unirtm.toml"),
+				filepath.Join(curr, ".mise.local.yml"),
+				filepath.Join(curr, ".mise.local.yaml"),
+				filepath.Join(curr, ".mise.local.toml"),
+				filepath.Join(curr, ".unirtm.local.yml"),
+				filepath.Join(curr, ".unirtm.local.yaml"),
+				filepath.Join(curr, ".unirtm.local.toml"),
+			}
+
+			var dirFiles []string
+			for _, p := range files {
+				if _, err := os.Stat(p); err == nil {
+					dirFiles = append(dirFiles, p)
+				}
+			}
+			projectFiles = append(dirFiles, projectFiles...)
+
+			if isCeiling(curr) {
+				break
+			}
+			curr = filepath.Dir(curr)
+		}
+		activeFiles = append(activeFiles, projectFiles...)
 	}
-	activeFiles = append(activeFiles, projectFiles...)
-}
 
 	if len(activeFiles) == 0 {
 		output.Info("  (no configuration files found)")

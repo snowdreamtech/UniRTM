@@ -288,7 +288,6 @@ exit 0
 	}
 }
 
-
 func TestRecommendedMirrorsOrdering(t *testing.T) {
 	mgr := NewManager(nil)
 	official := mgr.Config().Profiles["official"]
@@ -461,6 +460,3 @@ func TestDedicatedProfilesFallback(t *testing.T) {
 		t.Fatalf("expected override to take precedence over fallback: %+v", status.Effective["rust"])
 	}
 }
-
-
-

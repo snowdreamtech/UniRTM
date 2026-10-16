@@ -722,7 +722,6 @@ func (ls *LockService) Generate(
 		}
 	}
 
-
 	// Atomic Write Firewall: Refuse to write incomplete lockfile to disk unless AllowIncomplete is set
 	if !report.IsComplete() && !opts.AllowIncomplete {
 		logger.Warn("lockfile generate: lockfile incomplete, skipping save to disk", map[string]interface{}{

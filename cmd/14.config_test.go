@@ -250,4 +250,3 @@ func TestPluginManifestSchemaValidation(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not in allowed enums")
 }
-

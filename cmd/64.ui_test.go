@@ -194,4 +194,3 @@ func TestUIDetectBrowsers(t *testing.T) {
 		t.Error("resolveBrowserExecutable returned empty string")
 	}
 }
-

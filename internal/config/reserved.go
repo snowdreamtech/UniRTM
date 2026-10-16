@@ -42,15 +42,16 @@ func IsReservedRoot(rootName string) bool {
 
 // KnownSettingShorthands are common settings fields that can be specified without the 'settings.' prefix.
 var KnownSettingShorthands = map[string]bool{
-	"browser":   true,
-	"cache_ttl": true,
-	"theme":      true,
-	"icon_theme": true,
-	"language":   true,
-	"data_dir":  true,
-	"editor":    true,
-	"shell":     true,
-	"color":     true,
+	"browser":            true,
+	"cache_ttl":          true,
+	"theme":              true,
+	"icon_theme":         true,
+	"product_icon_theme": true,
+	"language":           true,
+	"data_dir":           true,
+	"editor":             true,
+	"shell":              true,
+	"color":              true,
 }
 
 // SplitConfigKey parses a dotted configuration key path into discrete segments,

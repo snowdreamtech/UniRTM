@@ -18,9 +18,10 @@ import (
 
 // Manager manages installed VS Code themes and icon packages.
 type Manager struct {
-	baseDir      string
-	iconsDir     string
-	colorsDir    string
+	baseDir         string
+	iconsDir        string
+	colorsDir       string
+	productIconsDir string
 }
 
 // NewManager creates and initializes a theme manager using standard user paths.
@@ -28,14 +29,17 @@ func NewManager() *Manager {
 	baseDir := env.GetThemesDir()
 	iconsDir := env.GetIconThemesDir()
 	colorsDir := env.GetColorThemesDir()
+	productIconsDir := env.GetProductIconThemesDir()
 
 	_ = os.MkdirAll(iconsDir, 0755)
 	_ = os.MkdirAll(colorsDir, 0755)
+	_ = os.MkdirAll(productIconsDir, 0755)
 
 	return &Manager{
-		baseDir:   baseDir,
-		iconsDir:  iconsDir,
-		colorsDir: colorsDir,
+		baseDir:         baseDir,
+		iconsDir:        iconsDir,
+		colorsDir:       colorsDir,
+		productIconsDir: productIconsDir,
 	}
 }
 
@@ -44,7 +48,10 @@ func (m *Manager) EnsureDirectories() error {
 	if err := os.MkdirAll(m.iconsDir, 0755); err != nil {
 		return err
 	}
-	return os.MkdirAll(m.colorsDir, 0755)
+	if err := os.MkdirAll(m.colorsDir, 0755); err != nil {
+		return err
+	}
+	return os.MkdirAll(m.productIconsDir, 0755)
 }
 
 // ListThemes scans user directory and returns both builtin and installed themes.
@@ -87,6 +94,15 @@ func (m *Manager) ListThemes() (*ThemesListResponse, error) {
 				Type:        ThemeTypeIcon,
 				IsBuiltin:   true,
 				Description: "Official Visual Studio Code default file icon theme",
+			},
+		},
+		Products: []ThemeItem{
+			{
+				ID:          "codicons",
+				Name:        "Codicons (VS Code Default)",
+				Type:        ThemeTypeProduct,
+				IsBuiltin:   true,
+				Description: "Official Visual Studio Code default product icon theme",
 			},
 		},
 	}
@@ -145,6 +161,36 @@ func (m *Manager) ListThemes() (*ThemesListResponse, error) {
 					IsBuiltin:    false,
 					PackageID:    entry.Name(),
 					RelativePath: ic.Path,
+					Description:  pkg.Description,
+					Version:      pkg.Version,
+				})
+			}
+		}
+	}
+
+	// Scan installed product icon themes
+	if productEntries, err := os.ReadDir(m.productIconsDir); err == nil {
+		for _, entry := range productEntries {
+			if !entry.IsDir() {
+				continue
+			}
+			pkgDir := filepath.Join(m.productIconsDir, entry.Name())
+			pkg, err := m.readPackageJSON(pkgDir)
+			if err != nil {
+				continue
+			}
+			for _, pit := range pkg.Contributes.ProductIconThemes {
+				pitID := pit.ID
+				if pitID == "" {
+					pitID = pit.Label
+				}
+				resp.Products = append(resp.Products, ThemeItem{
+					ID:           pitID,
+					Name:         pit.Label,
+					Type:         ThemeTypeProduct,
+					IsBuiltin:    false,
+					PackageID:    entry.Name(),
+					RelativePath: pit.Path,
 					Description:  pkg.Description,
 					Version:      pkg.Version,
 				})
@@ -218,9 +264,10 @@ func (m *Manager) InstallVSIX(r io.Reader) ([]ThemeItem, error) {
 
 	hasThemes := len(pkgJSON.Contributes.Themes) > 0
 	hasIconThemes := len(pkgJSON.Contributes.IconThemes) > 0
+	hasProductIconThemes := len(pkgJSON.Contributes.ProductIconThemes) > 0
 
-	if !hasThemes && !hasIconThemes {
-		return nil, errors.New("package does not contribute any color or icon themes")
+	if !hasThemes && !hasIconThemes && !hasProductIconThemes {
+		return nil, errors.New("package does not contribute any color, icon, or product icon themes")
 	}
 
 	pkgName := pkgJSON.Name
@@ -276,6 +323,29 @@ func (m *Manager) InstallVSIX(r io.Reader) ([]ThemeItem, error) {
 				IsBuiltin:    false,
 				PackageID:    pkgName,
 				RelativePath: ic.Path,
+				Description:  pkgJSON.Description,
+				Version:      pkgJSON.Version,
+			})
+		}
+	}
+
+	if hasProductIconThemes {
+		targetDir := filepath.Join(m.productIconsDir, pkgName)
+		if err := m.extractExtensionFiles(zipReader.File, targetDir); err != nil {
+			return nil, fmt.Errorf("failed to extract product icon theme files: %w", err)
+		}
+		for _, pit := range pkgJSON.Contributes.ProductIconThemes {
+			pitID := pit.ID
+			if pitID == "" {
+				pitID = pit.Label
+			}
+			installedItems = append(installedItems, ThemeItem{
+				ID:           pitID,
+				Name:         pit.Label,
+				Type:         ThemeTypeProduct,
+				IsBuiltin:    false,
+				PackageID:    pkgName,
+				RelativePath: pit.Path,
 				Description:  pkgJSON.Description,
 				Version:      pkgJSON.Version,
 			})
@@ -358,6 +428,8 @@ func (m *Manager) DeleteTheme(themeType ThemeType, packageID string) error {
 		targetDir = filepath.Join(m.colorsDir, packageID)
 	} else if themeType == ThemeTypeIcon {
 		targetDir = filepath.Join(m.iconsDir, packageID)
+	} else if themeType == ThemeTypeProduct {
+		targetDir = filepath.Join(m.productIconsDir, packageID)
 	} else {
 		return errors.New("invalid theme type")
 	}
@@ -376,6 +448,8 @@ func (m *Manager) ResolveThemeFile(themeType ThemeType, packageID, subpath strin
 		baseDir = filepath.Join(m.colorsDir, packageID)
 	} else if themeType == ThemeTypeIcon {
 		baseDir = filepath.Join(m.iconsDir, packageID)
+	} else if themeType == ThemeTypeProduct {
+		baseDir = filepath.Join(m.productIconsDir, packageID)
 	} else {
 		return "", errors.New("invalid theme type")
 	}

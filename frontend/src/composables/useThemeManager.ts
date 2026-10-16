@@ -6,6 +6,7 @@ import type { ThemeItem } from "../types/theme-manager";
 import { useColorTheme } from "./useColorTheme";
 import { useTheme } from "./useTheme";
 import { iconThemeService } from "../services/icon-theme/iconThemeService";
+import { productIconThemeService } from "../services/icon-theme/productIconThemeService";
 
 const PREF_DARK_KEY = "unirtm_pref_dark_theme";
 const PREF_LIGHT_KEY = "unirtm_pref_light_theme";
@@ -18,11 +19,17 @@ const defaultColors: ThemeItem[] = [
 const defaultIcons: ThemeItem[] = [
   { id: "seti", name: "Seti UI", type: "icon", is_builtin: true, description: "Official Visual Studio Code default file icon theme" },
 ];
+const defaultProducts: ThemeItem[] = [
+  { id: "codicons", name: "Codicons (默认)", type: "product", is_builtin: true, description: "Official Visual Studio Code product icon theme" },
+];
 
 const colorThemes = ref<ThemeItem[]>(defaultColors);
 const iconThemes = ref<ThemeItem[]>(defaultIcons);
+const productIconThemes = ref<ThemeItem[]>(defaultProducts);
+
 const activeColorTheme = ref<string>("default");
 const activeIconTheme = ref<string>("seti");
+const activeProductIconTheme = ref<string>("codicons");
 const activeAppearance = ref<string>("system");
 
 const preferredDarkTheme = ref<string>(
@@ -57,8 +64,11 @@ export function useThemeManager() {
       const data: any = await res.json();
       colorThemes.value = data.colors || data.color_themes || [];
       iconThemes.value = data.icons || data.icon_themes || [];
+      productIconThemes.value = data.products || data.product_icon_themes || defaultProducts;
+
       const serverColor = data.active?.color || data.active_color_theme || "default";
       activeIconTheme.value = data.active?.icon || data.active_icon_theme || "seti";
+      activeProductIconTheme.value = data.active?.product || data.active_product_icon_theme || "codicons";
       activeAppearance.value = data.active?.appearance || "system";
 
       // Apply appearance mode first
@@ -103,6 +113,13 @@ export function useThemeManager() {
       } else {
         await iconThemeService.switchTheme("seti");
       }
+
+      const activeProductItem = productIconThemes.value.find((p) => p.id === activeProductIconTheme.value);
+      if (activeProductItem) {
+        await productIconThemeService.loadAndApplyTheme(activeProductItem);
+      } else {
+        productIconThemeService.resetToDefault();
+      }
     } catch (err: any) {
       error.value = err.message || "Failed to load themes";
       console.error("[useThemeManager] fetchThemes error:", err);
@@ -138,7 +155,7 @@ export function useThemeManager() {
     }
   };
 
-  const deleteTheme = async (type: "color" | "icon", packageId: string) => {
+  const deleteTheme = async (type: "color" | "icon" | "product", packageId: string) => {
     loading.value = true;
     error.value = null;
     try {
@@ -170,6 +187,11 @@ export function useThemeManager() {
         if (deletedIcon) {
           await setActiveTheme(undefined, "seti");
         }
+      } else if (type === "product") {
+        const deletedProduct = productIconThemes.value.find((p) => p.package_id === packageId && p.id === activeProductIconTheme.value);
+        if (deletedProduct) {
+          await setActiveTheme(undefined, undefined, undefined, "codicons");
+        }
       }
 
       await fetchThemes();
@@ -181,7 +203,7 @@ export function useThemeManager() {
     }
   };
 
-  const setActiveTheme = async (colorId?: string, iconId?: string, appearance?: string) => {
+  const setActiveTheme = async (colorId?: string, iconId?: string, appearance?: string, productId?: string) => {
     loading.value = true;
     error.value = null;
     try {
@@ -250,6 +272,17 @@ export function useThemeManager() {
         }
       }
 
+      if (productId) {
+        payload.product = productId;
+        activeProductIconTheme.value = productId;
+        const prodItem = productIconThemes.value.find((p) => p.id === productId);
+        if (prodItem) {
+          await productIconThemeService.loadAndApplyTheme(prodItem);
+        } else {
+          productIconThemeService.resetToDefault();
+        }
+      }
+
       const res = await fetch("/api/themes/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -277,8 +310,10 @@ export function useThemeManager() {
   return {
     colorThemes,
     iconThemes,
+    productIconThemes,
     activeColorTheme,
     activeIconTheme,
+    activeProductIconTheme,
     activeAppearance,
     preferredDarkTheme,
     preferredLightTheme,
