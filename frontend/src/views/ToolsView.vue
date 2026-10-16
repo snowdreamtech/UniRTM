@@ -182,6 +182,15 @@
             </span>
             <div v-if="rt.active_version" class="status-val-wrap">
               <span class="active-pill font-mono">{{ formatVersion(rt.active_version) }}</span>
+              <button
+                v-if="!rt.pinned && getLocalUpgradableVersion(rt, 'workspace')"
+                class="local-upgrade-btn"
+                :title="'本地已安装更高版本 ' + formatVersion(getLocalUpgradableVersion(rt, 'workspace')) + '，点击秒级无感切换'"
+                @click.stop="quickSwitch(rt.id, getLocalUpgradableVersion(rt, 'workspace')!, false)"
+              >
+                <span class="upgrade-arrow">↑</span>
+                <span>{{ formatVersion(getLocalUpgradableVersion(rt, 'workspace')) }}</span>
+              </button>
               <span v-if="rt.pinned" class="source-tag source-pinned" :title="rt.pin_reason ? `版本锁定: ${rt.pin_reason}` : '版本已锁定'">
                 🔒 锁定
               </span>
@@ -191,6 +200,15 @@
             </div>
             <div v-else-if="rt.global_version" class="status-val-wrap">
               <span class="active-pill font-mono muted">{{ formatVersion(rt.global_version) }}</span>
+              <button
+                v-if="!rt.pinned && getLocalUpgradableVersion(rt, 'workspace')"
+                class="local-upgrade-btn"
+                :title="'本地已安装更高版本 ' + formatVersion(getLocalUpgradableVersion(rt, 'workspace')) + '，点击秒级无感切换'"
+                @click.stop="quickSwitch(rt.id, getLocalUpgradableVersion(rt, 'workspace')!, false)"
+              >
+                <span class="upgrade-arrow">↑</span>
+                <span>{{ formatVersion(getLocalUpgradableVersion(rt, 'workspace')) }}</span>
+              </button>
               <span class="source-tag source-default">{{ t("runtimes.follow_user") || "跟随用户" }}</span>
             </div>
             <span v-else class="text-muted font-mono italic">未配置</span>
@@ -206,6 +224,15 @@
             </span>
             <div v-if="rt.global_version" class="status-val-wrap">
               <span class="global-pill font-mono">{{ formatVersion(rt.global_version) }}</span>
+              <button
+                v-if="!rt.pinned && getLocalUpgradableVersion(rt, 'user')"
+                class="local-upgrade-btn"
+                :title="'本地已安装更高版本 ' + formatVersion(getLocalUpgradableVersion(rt, 'user')) + '，点击秒级无感切换'"
+                @click.stop="quickSwitch(rt.id, getLocalUpgradableVersion(rt, 'user')!, true)"
+              >
+                <span class="upgrade-arrow">↑</span>
+                <span>{{ formatVersion(getLocalUpgradableVersion(rt, 'user')) }}</span>
+              </button>
             </div>
             <span v-else class="text-muted font-mono italic">未配置</span>
           </div>
@@ -882,6 +909,36 @@ function compareSemverDesc(a: string, b: string): number {
   }
   return cleanB.localeCompare(cleanA);
 }
+
+// Detect the highest locally installed version that is strictly greater than the current version
+function getLocalUpgradableVersion(rt: RuntimeItem, scope: "workspace" | "user" = currentScope.value): string | null {
+  if (rt.pinned) return null;
+
+  const currentVer = scope === "workspace" ? (rt.active_version || rt.global_version) : rt.global_version;
+  if (!currentVer || !rt.installed_versions || rt.installed_versions.length === 0) {
+    return null;
+  }
+
+  const cleanCurrent = currentVer.replace(/^v/i, "").trim();
+  if (!/[0-9]/.test(cleanCurrent)) return null;
+
+  let highest: string | null = null;
+
+  for (const installed of rt.installed_versions) {
+    const cleanInstalled = installed.replace(/^v/i, "").trim();
+    if (!cleanInstalled || cleanInstalled === cleanCurrent) continue;
+
+    // compareSemverDesc(cleanInstalled, cleanCurrent) < 0 means cleanInstalled > cleanCurrent
+    if (compareSemverDesc(cleanInstalled, cleanCurrent) < 0) {
+      if (!highest || compareSemverDesc(cleanInstalled, highest.replace(/^v/i, "").trim()) < 0) {
+        highest = installed;
+      }
+    }
+  }
+
+  return highest;
+}
+
 
 
 
@@ -1731,6 +1788,63 @@ onBeforeUnmount(() => {
   color: var(--text-muted);
   border: 1px solid var(--card-border);
 }
+
+.local-upgrade-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #10b981;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.1);
+  animation: pulse-soft 3s infinite ease-in-out;
+}
+
+[data-theme="dark"] .local-upgrade-btn {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: rgba(52, 211, 153, 0.4);
+  color: #34d399;
+}
+
+.local-upgrade-btn:hover {
+  background: rgba(16, 185, 129, 0.28);
+  border-color: #10b981;
+  color: #059669;
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+}
+
+[data-theme="dark"] .local-upgrade-btn:hover {
+  color: #6ee7b7;
+  border-color: #34d399;
+  box-shadow: 0 2px 8px rgba(52, 211, 153, 0.3);
+}
+
+.upgrade-arrow {
+  font-weight: 800;
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.local-upgrade-btn:hover .upgrade-arrow {
+  transform: translateY(-1px);
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0);
+  }
+}
+
 
 /* Installed versions */
 .installed-versions-section {
