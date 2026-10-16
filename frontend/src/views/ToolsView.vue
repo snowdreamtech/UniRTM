@@ -1478,20 +1478,40 @@ async function installRemoteVersion(toolId: string, ver: string) {
   const alreadyInstalled = isAlreadyInstalled(toolId, ver);
 
   const prevRuntimes = JSON.parse(JSON.stringify(runtimes.value));
+  const prevSelectedRuntime = selectedRuntime.value ? JSON.parse(JSON.stringify(selectedRuntime.value)) : null;
 
-  // If already installed locally, perform optimistic update and close modal immediately
-  if (alreadyInstalled) {
+  const updateRuntimeState = (newVer: string, addInstalled: boolean) => {
     runtimes.value = runtimes.value.map((rt) => {
       if (rt.id === toolId) {
-        if (isGlobal) {
-          return { ...rt, global_version: ver };
-        } else {
-          return { ...rt, active_version: ver, is_legacy: false, source: ".unirtm.toml" };
-        }
+        const set = new Set(rt.installed_versions || []);
+        if (addInstalled) set.add(newVer);
+        return {
+          ...rt,
+          installed_versions: Array.from(set),
+          ...(isGlobal
+            ? { global_version: newVer }
+            : { active_version: newVer, is_legacy: false, source: ".unirtm.toml" }),
+        };
       }
       return rt;
     });
-    closeRemoteModal();
+
+    if (selectedRuntime.value && selectedRuntime.value.id === toolId) {
+      const set = new Set(selectedRuntime.value.installed_versions || []);
+      if (addInstalled) set.add(newVer);
+      selectedRuntime.value = {
+        ...selectedRuntime.value,
+        installed_versions: Array.from(set),
+        ...(isGlobal
+          ? { global_version: newVer }
+          : { active_version: newVer, is_legacy: false, source: ".unirtm.toml" }),
+      };
+    }
+  };
+
+  // If already installed locally, perform optimistic in-place update without auto-closing modal
+  if (alreadyInstalled) {
+    updateRuntimeState(ver, false);
   } else {
     installingVer.value = ver;
     showToast(`正在将 ${toolId} v${ver} 应用为${scopeName}...`, "info");
@@ -1510,36 +1530,15 @@ async function installRemoteVersion(toolId: string, ver: string) {
     }
 
     if (!alreadyInstalled) {
-      runtimes.value = runtimes.value.map((rt) => {
-        if (rt.id === toolId) {
-          const set = new Set(rt.installed_versions || []);
-          set.add(ver);
-          if (isGlobal) {
-            return {
-              ...rt,
-              global_version: ver,
-              installed_versions: Array.from(set),
-            };
-          } else {
-            return {
-              ...rt,
-              active_version: ver,
-              is_legacy: false,
-              source: ".unirtm.toml",
-              installed_versions: Array.from(set),
-            };
-          }
-        }
-        return rt;
-      });
-      closeRemoteModal();
+      updateRuntimeState(ver, true);
     }
 
     showToast(`成功将 ${toolId}@${ver} 设置为${scopeName}！`, "success");
     emit("log-event", "INFO", `Set ${toolId}@${ver} as ${scopeName}`);
   } catch (err: any) {
-    if (alreadyInstalled) {
-      runtimes.value = prevRuntimes;
+    runtimes.value = prevRuntimes;
+    if (prevSelectedRuntime) {
+      selectedRuntime.value = prevSelectedRuntime;
     }
     showToast(`设置失败: ${err.message}`, "error");
     emit("log-event", "ERROR", `Failed to set version: ${err.message}`);
