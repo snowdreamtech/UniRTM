@@ -143,14 +143,14 @@
                     'is-active': Boolean(getCurrentVersion(rt)),
                     'is-muted': !getCurrentVersion(rt),
                   }"
-                  :title="getCurrentVersion(rt) ? `当前生效版本: ${formatVersion(getCurrentVersion(rt))}` : '未配置/未生效'"
+                  :title="getCurrentVersion(rt) ? `${formatVersion(getCurrentVersion(rt))}` : t('runtimes.unconfigured')"
                 >
-                  {{ getCurrentVersion(rt) ? formatVersion(getCurrentVersion(rt)) : '未配置' }}
+                  {{ getCurrentVersion(rt) ? formatVersion(getCurrentVersion(rt)) : t('runtimes.unconfigured') }}
                 </span>
                 <button
                   v-if="!rt.pinned && (getLocalUpgradableVersion(rt, currentScope) || getRemoteUpgradableVersion(rt.id))"
                   class="local-upgrade-btn"
-                  :title="'可升级至 ' + formatVersion(getLocalUpgradableVersion(rt, currentScope) || getRemoteUpgradableVersion(rt.id)!)"
+                  :title="`${t('runtimes.count_upgradable_suffix')}: ` + formatVersion(getLocalUpgradableVersion(rt, currentScope) || getRemoteUpgradableVersion(rt.id)!)"
                   @click.stop="handleQuickUpgrade(rt)"
                 >
                   <span class="upgrade-arrow">↑</span>
@@ -173,34 +173,34 @@
             class="card-action-btn action-switch"
             :id="'btn-switch-' + rt.id"
             @click.stop="openSwitchVersionModal(rt)"
-            title="切换当前生效版本"
+            :title="t('runtimes.action_switch')"
           >
-            {{ t("runtimes.action_switch") || "切换" }}
+            {{ t("runtimes.action_switch") }}
           </button>
           <button
             class="card-action-btn action-install"
             :id="'btn-install-' + rt.id"
             @click.stop="openRemoteModal(rt)"
-            title="安装新版本"
+            :title="t('runtimes.action_install')"
           >
-            {{ t("runtimes.action_install") || "安装" }}
+            {{ t("runtimes.action_install") }}
           </button>
           <button
             class="card-action-btn action-pin"
             :class="{ 'is-pinned': rt.pinned }"
             :id="'btn-pin-' + rt.id"
             @click.stop="togglePin(rt)"
-            :title="rt.pinned ? (rt.pin_reason ? `版本已锁定：${rt.pin_reason} (点击解锁)` : '版本已锁定 (点击解锁)') : '锁定当前版本，防止意外升级'"
+            :title="rt.pinned ? (rt.pin_reason ? `${t('runtimes.action_unlock')}：${rt.pin_reason}` : t('runtimes.action_unlock')) : t('runtimes.action_lock')"
           >
-            {{ rt.pinned ? (t("runtimes.action_unlock") || "解锁") : (t("runtimes.action_lock") || "锁定") }}
+            {{ rt.pinned ? t("runtimes.action_unlock") : t("runtimes.action_lock") }}
           </button>
           <button
             class="card-action-btn action-delete"
             :id="'btn-delete-' + rt.id"
             @click.stop="confirmRemoveRuntime(rt)"
-            :title="t('runtimes.remove_runtime') || '删除环境'"
+            :title="t('runtimes.action_delete')"
           >
-            {{ t("runtimes.action_delete") || "删除" }}
+            {{ t("runtimes.action_delete") }}
           </button>
         </div>
       </div>
@@ -240,14 +240,14 @@
             </span>
             <div>
               <h3 class="modal-title">
-                {{ formatToolTitle(switchModalRuntime.name) }} · {{ t("runtimes.switch_version") || "切换版本" }}
+                {{ formatToolTitle(switchModalRuntime.name) }} · {{ t("runtimes.switch_version") }}
               </h3>
               <p class="modal-desc">
-                {{ currentScope === 'user' ? '选择生效的用户全局默认版本' : '选择当前工作区生效的版本' }}
+                {{ currentScope === 'user' ? t('runtimes.switch_scope_user_tip') : t('runtimes.switch_scope_workspace_tip') }}
               </p>
             </div>
           </div>
-          <button class="modal-close-btn" @click="closeSwitchVersionModal" title="关闭">✕</button>
+          <button class="modal-close-btn" @click="closeSwitchVersionModal" :title="t('runtimes.close')">✕</button>
         </div>
 
         <div class="switch-modal-body">
@@ -263,19 +263,19 @@
                 'is-active': ver === getCurrentVersion(switchModalRuntime),
                 'is-inactive': ver !== getCurrentVersion(switchModalRuntime),
               }"
-              :title="ver === getCurrentVersion(switchModalRuntime) ? '当前生效中' : `点击切换至 ${formatVersion(ver)}`"
+              :title="ver === getCurrentVersion(switchModalRuntime) ? t('runtimes.active_badge') : `${t('runtimes.action_switch')}: ${formatVersion(ver)}`"
               @click="handleSelectVersionAndClose(switchModalRuntime, ver)"
             >
               <span v-if="ver === getCurrentVersion(switchModalRuntime)" class="pill-active-dot">●</span>
               <span class="pill-ver-text">{{ formatVersion(ver) }}</span>
-              <span v-if="ver === getCurrentVersion(switchModalRuntime)" class="pill-active-tag">生效中</span>
+              <span v-if="ver === getCurrentVersion(switchModalRuntime)" class="pill-active-tag">{{ t("runtimes.active_badge") }}</span>
             </button>
           </div>
 
           <div v-else class="switch-empty-box">
-            <p class="switch-empty-tip">本地尚未安装该工具的任何版本</p>
+            <p class="switch-empty-tip">{{ t("runtimes.no_installed_versions") }}</p>
             <button class="switch-install-now-btn" @click="openInstallFromSwitch(switchModalRuntime)">
-              + 安装新版本
+              + {{ t("runtimes.action_install") }}
             </button>
           </div>
         </div>
