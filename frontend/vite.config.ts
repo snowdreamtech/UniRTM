@@ -2155,9 +2155,30 @@ print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes'
                 const targetPath = scope === "user" ? userPath : wsPath;
 
                 let content = fs.existsSync(targetPath) ? fs.readFileSync(targetPath, "utf-8") : "";
+                const lines = content.split("\n");
 
-                const removeTask = (raw: string, tName: string) => {
-                  const lines = raw.split("\n");
+                const formatTaskLines = () => {
+                  const res: string[] = [`[tasks.${name}]`];
+                  if (body.description) {
+                    res.push(`description = ${JSON.stringify(body.description)}`);
+                  }
+                  if (body.command) {
+                    if (body.command.includes("\n")) {
+                      res.push("run = \'\'\'");
+                      res.push(body.command);
+                      res.push("\'\'\'");
+                    } else {
+                      res.push(`run = ${JSON.stringify(body.command)}`);
+                    }
+                  }
+                  if (Array.isArray(body.depends) && body.depends.length > 0) {
+                    const depsStr = body.depends.map((d: string) => JSON.stringify(d)).join(", ");
+                    res.push(`depends = [${depsStr}]`);
+                  }
+                  return res;
+                };
+
+                const findBounds = (tName: string) => {
                   let start = -1;
                   let end = -1;
                   for (let i = 0; i < lines.length; i++) {
@@ -2178,38 +2199,51 @@ print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes'
                       break;
                     }
                   }
-                  if (start !== -1) {
-                    if (end === -1) end = lines.length;
-                    lines.splice(start, end - start);
-                    return lines.join("\n");
-                  }
-                  return raw;
+                  if (start !== -1 && end === -1) end = lines.length;
+                  return { start, end };
                 };
 
-                if (body.original_name && body.original_name !== name) {
-                  content = removeTask(content, body.original_name);
-                }
-                content = removeTask(content, name);
+                const newLines = formatTaskLines();
+                const targetMatchName = body.original_name || name;
+                const bounds = findBounds(targetMatchName);
 
-                let newSection = `\n[tasks.${name}]\n`;
-                if (body.description) {
-                  newSection += `description = ${JSON.stringify(body.description)}\n`;
-                }
-                if (body.command) {
-                  if (body.command.includes("\n")) {
-                    newSection += `run = \'\'\'\n${body.command}\n\'\'\'\n`;
+                if (bounds.start !== -1) {
+                  // In-place replacement preserving position
+                  lines.splice(bounds.start, bounds.end - bounds.start, ...newLines);
+                } else {
+                  // Find insertion point before settings/plugins or after last task
+                  let insertAt = -1;
+                  for (let i = lines.length - 1; i >= 0; i--) {
+                    if (/^\[tasks\.[^\]]+\]$/.test(lines[i].trim())) {
+                      for (let j = i + 1; j < lines.length; j++) {
+                        const tr = lines[j].trim();
+                        if (tr.startsWith("[") && tr.endsWith("]")) {
+                          insertAt = j;
+                          break;
+                        }
+                      }
+                      if (insertAt === -1) insertAt = lines.length;
+                      break;
+                    }
+                  }
+                  if (insertAt === -1) {
+                    for (let i = 0; i < lines.length; i++) {
+                      const tr = lines[i].trim();
+                      if (tr === "[settings]" || tr === "[plugins]" || tr === "[alias]") {
+                        insertAt = i;
+                        break;
+                      }
+                    }
+                  }
+                  if (insertAt !== -1 && insertAt < lines.length) {
+                    lines.splice(insertAt, 0, "", ...newLines);
                   } else {
-                    newSection += `run = ${JSON.stringify(body.command)}\n`;
+                    lines.push("", ...newLines);
                   }
                 }
-                if (Array.isArray(body.depends) && body.depends.length > 0) {
-                  const depsStr = body.depends.map((d: string) => JSON.stringify(d)).join(", ");
-                  newSection += `depends = [${depsStr}]\n`;
-                }
 
-                content = content.trimEnd() + "\n" + newSection;
                 fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-                fs.writeFileSync(targetPath, content, "utf-8");
+                fs.writeFileSync(targetPath, lines.join("\n"), "utf-8");
 
                 res.setHeader("Content-Type", "application/json");
                 res.end(JSON.stringify({ success: true, task: body }));

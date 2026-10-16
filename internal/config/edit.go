@@ -643,25 +643,21 @@ func RemoveTask(content string, name string) (string, bool) {
 	return content, false
 }
 
-// UpsertTask adds or updates a [tasks.<name>] section in TOML content.
-func UpsertTask(content string, name string, description string, command string, depends []string) string {
-	cleaned, _ := RemoveTask(content, name)
-	trimmed := strings.TrimRight(cleaned, "\r\n")
-
-	var b strings.Builder
-	if trimmed != "" {
-		b.WriteString(trimmed)
-		b.WriteString("\n\n")
-	}
-	b.WriteString(fmt.Sprintf("[tasks.%s]\n", quoteTOMLKey(name)))
+func formatTaskLines(name string, description string, command string, depends []string) []string {
+	var res []string
+	res = append(res, fmt.Sprintf("[tasks.%s]", quoteTOMLKey(name)))
 	if description != "" {
-		b.WriteString(fmt.Sprintf("description = %s\n", quoteTOMLValue(description)))
+		res = append(res, fmt.Sprintf("description = %s", quoteTOMLValue(description)))
 	}
 	if command != "" {
 		if strings.Contains(command, "\n") {
-			b.WriteString(fmt.Sprintf("run = '''\n%s\n'''\n", command))
+			res = append(res, "run = '''")
+			for _, l := range strings.Split(command, "\n") {
+				res = append(res, l)
+			}
+			res = append(res, "'''")
 		} else {
-			b.WriteString(fmt.Sprintf("run = %s\n", quoteTOMLValue(command)))
+			res = append(res, fmt.Sprintf("run = %s", quoteTOMLValue(command)))
 		}
 	}
 	if len(depends) > 0 {
@@ -669,7 +665,103 @@ func UpsertTask(content string, name string, description string, command string,
 		for _, d := range depends {
 			depQuoted = append(depQuoted, quoteTOMLValue(d))
 		}
-		b.WriteString(fmt.Sprintf("depends = [%s]\n", strings.Join(depQuoted, ", ")))
+		res = append(res, fmt.Sprintf("depends = [%s]", strings.Join(depQuoted, ", ")))
 	}
+	return res
+}
+
+// UpsertTask adds or updates a [tasks.<name>] section in TOML content via in-place line replacement.
+func UpsertTask(content string, name string, description string, command string, depends []string) string {
+	taskLines := formatTaskLines(name, description, command, depends)
+	lines := strings.Split(content, "\n")
+	taskStart := -1
+	taskEnd := -1
+
+	// Check if this task already exists
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		tName, ok := matchTaskHeader(line)
+		if ok {
+			if taskStart != -1 {
+				taskEnd = i
+				break
+			}
+			if tName == name {
+				taskStart = i
+				continue
+			}
+		} else if taskStart != -1 && strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
+			taskEnd = i
+			break
+		}
+	}
+
+	// 1. In-place line replacement if task exists
+	if taskStart != -1 {
+		if taskEnd == -1 {
+			taskEnd = len(lines)
+		}
+		newLines := make([]string, 0, len(lines)-(taskEnd-taskStart)+len(taskLines))
+		newLines = append(newLines, lines[:taskStart]...)
+		newLines = append(newLines, taskLines...)
+		newLines = append(newLines, lines[taskEnd:]...)
+		return strings.Join(newLines, "\n")
+	}
+
+	// 2. If it is a new task, find the best insertion point (after other tasks, or before settings/plugins)
+	insertAt := -1
+	for i := len(lines) - 1; i >= 0; i-- {
+		line := lines[i]
+		if _, ok := matchTaskHeader(line); ok {
+			// Find end of this task
+			for j := i + 1; j < len(lines); j++ {
+				tr := strings.TrimSpace(lines[j])
+				if strings.HasPrefix(tr, "[") && strings.HasSuffix(tr, "]") {
+					insertAt = j
+					break
+				}
+			}
+			if insertAt == -1 {
+				insertAt = len(lines)
+			}
+			break
+		}
+	}
+
+	// Fallback to inserting before [settings] or [plugins] or [alias] if no existing tasks
+	if insertAt == -1 {
+		for i, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			if trimmed == "[settings]" || trimmed == "[plugins]" || trimmed == "[alias]" {
+				insertAt = i
+				break
+			}
+		}
+	}
+
+	// If found in-file insertion position, insert cleanly without relocating other sections
+	if insertAt != -1 && insertAt < len(lines) {
+		newLines := make([]string, 0, len(lines)+len(taskLines)+2)
+		newLines = append(newLines, lines[:insertAt]...)
+		if insertAt > 0 && strings.TrimSpace(lines[insertAt-1]) != "" {
+			newLines = append(newLines, "")
+		}
+		newLines = append(newLines, taskLines...)
+		if strings.TrimSpace(lines[insertAt]) != "" {
+			newLines = append(newLines, "")
+		}
+		newLines = append(newLines, lines[insertAt:]...)
+		return strings.Join(newLines, "\n")
+	}
+
+	// Otherwise append to end
+	var b strings.Builder
+	trimmedContent := strings.TrimRight(content, "\r\n")
+	if trimmedContent != "" {
+		b.WriteString(trimmedContent)
+		b.WriteString("\n\n")
+	}
+	b.WriteString(strings.Join(taskLines, "\n"))
+	b.WriteString("\n")
 	return b.String()
 }
