@@ -466,7 +466,7 @@ export const zhTw: TranslationDict = {
   "marketplace.recommended_categories": "推薦分類",
   "marketplace.filter_all": "全部",
   "marketplace.filter_installed": "已安裝",
-  "marketplace.filter_themes": "主題",
+  "marketplace.filter_themes": "顏色主題",
   "marketplace.filter_icons": "檔案圖示",
   "marketplace.filter_product_icons": "介面圖示",
   "marketplace.installed_count": "已安裝 {count} 款主題與圖示包",

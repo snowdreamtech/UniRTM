@@ -483,7 +483,7 @@ export const enUs: TranslationDict = {
   "marketplace.recommended_categories": "Recommended Categories",
   "marketplace.filter_all": "All",
   "marketplace.filter_installed": "Installed",
-  "marketplace.filter_themes": "Themes",
+  "marketplace.filter_themes": "Color Themes",
   "marketplace.filter_icons": "File Icons",
   "marketplace.filter_product_icons": "Product Icons",
   "marketplace.installed_count": "{count} installed themes & icon packs",
