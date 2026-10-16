@@ -208,8 +208,8 @@ const primaryTabs = computed<ActivityTab[]>(() => [
 }
 
 .activity-badge.badge-tools {
-  background: #f59e0b;
-  color: #111827;
+  background: var(--success, #10b981);
+  color: #ffffff;
   font-weight: 800;
 }
 </style>

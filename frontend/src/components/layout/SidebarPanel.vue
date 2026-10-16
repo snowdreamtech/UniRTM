@@ -467,12 +467,12 @@ onMounted(async () => {
 }
 
 .status-indicator-dot.update {
-  color: #f59e0b;
+  color: var(--success, #10b981);
 }
 
 [data-theme="light"] .status-indicator-dot.update,
 :root[data-theme="light"] .status-indicator-dot.update {
-  color: #d97706;
+  color: var(--success, #059669);
 }
 
 .task-play-hint {
