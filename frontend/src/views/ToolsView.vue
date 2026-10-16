@@ -614,7 +614,7 @@
                     <input
                       type="checkbox"
                       :checked="isAllUpdatableSelected"
-                      :disabled="updatableCount === 0"
+                      :disabled="scopeUpgradableCount === 0"
                       @change="toggleSelectAllUpdatable"
                       title="全选/取消全选所有可升级工具"
                     />
@@ -627,7 +627,7 @@
               </thead>
               <tbody>
                 <tr
-                  v-for="item in updateResults"
+                  v-for="item in filteredUpdateResults"
                   :key="item.id"
                   class="diff-row"
                   :class="{
@@ -743,7 +743,6 @@ const {
   isChecking: checkingUpdates,
   checkUpdates,
   markToolUpdated,
-  updatableCount,
   syncFromToolsList,
 } = useToolUpdates();
 
@@ -1133,6 +1132,20 @@ function isToolUpgradable(rt: RuntimeItem): boolean {
 
 const scopeUpgradableCount = computed(() => {
   return filteredRuntimes.value.filter(isToolUpgradable).length;
+});
+
+const filteredUpdateResults = computed(() => {
+  return updateResults.value.filter((r) => {
+    if (currentScope.value === "user") {
+      if (r.in_user !== undefined) return Boolean(r.in_user);
+      if (r.scope !== undefined) return r.scope === "user" || r.scope === "both";
+      return false;
+    } else {
+      if (r.in_workspace !== undefined) return Boolean(r.in_workspace);
+      if (r.scope !== undefined) return r.scope === "workspace" || r.scope === "both";
+      return true;
+    }
+  });
 });
 
 watch(

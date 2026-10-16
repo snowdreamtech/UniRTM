@@ -54,11 +54,11 @@
       <button
         class="status-btn"
         id="btn-status-tools"
-        :title="'5 tools configured in current project'"
+        :title="activeScope === 'user' ? (isZh ? '用户全局共 1 个工具' : '1 tool configured in user global') : (isZh ? '工作区共 5 个工具' : '5 tools configured in workspace')"
         @click="$emit('select-tab', 'tools')"
       >
         <span class="btn-icon"><TechIcon id="workbench:tools" :size="14" :colored="false" /></span>
-        <span>5 {{ toolsLabelText }}</span>
+        <span>{{ activeScope === 'user' ? 1 : 5 }} {{ toolsLabelText }}</span>
       </button>
 
       <!-- Network Mirror & Latency -->

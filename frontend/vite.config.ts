@@ -690,7 +690,20 @@ export default defineConfig({
             const allTools = Array.from(new Set(["node", "go", "python", "rust", ...Object.keys(wsTools), ...Object.keys(userTools)]));
             const urlObj = new URL(req.url, "http://localhost");
             const filterTool = urlObj.searchParams.get("tool");
-            const targetTools = filterTool ? [filterTool] : allTools;
+            const filterScope = urlObj.searchParams.get("scope");
+            const isGlobal = urlObj.searchParams.get("global") === "true" || filterScope === "user";
+            const isWorkspace = filterScope === "workspace" || (urlObj.searchParams.get("global") === "false" && !filterScope);
+
+            let targetTools: string[];
+            if (filterTool) {
+              targetTools = [filterTool];
+            } else if (isGlobal) {
+              targetTools = Array.from(new Set(Object.keys(userTools)));
+            } else if (isWorkspace) {
+              targetTools = Array.from(new Set(Object.keys(wsTools)));
+            } else {
+              targetTools = allTools;
+            }
 
             const fallbackLatest: Record<string, string> = {
               node: "23.9.0",
@@ -794,8 +807,16 @@ export default defineConfig({
             let pinnedCount = 0;
 
             for (const t of targetTools) {
-              const cur = wsTools[t] || userTools[t] || "";
-              const pin = wsPins[t] || userPins[t] || { pinned: false, reason: "" };
+              const cur = isGlobal
+                ? (userTools[t] || "")
+                : isWorkspace
+                ? (wsTools[t] || "")
+                : (wsTools[t] || userTools[t] || "");
+              const pin = isGlobal
+                ? (userPins[t] || { pinned: false, reason: "" })
+                : isWorkspace
+                ? (wsPins[t] || { pinned: false, reason: "" })
+                : (wsPins[t] || userPins[t] || { pinned: false, reason: "" });
               const latest = getLatestVersion(t, cur);
               const cleanCur = cur.replace(/^[vV]+/, "").trim();
               const cleanLatest = latest.replace(/^[vV]+/, "").trim();
@@ -814,6 +835,9 @@ export default defineConfig({
                 has_update: hasUpdate,
                 is_pinned: pin.pinned,
                 pin_reason: pin.reason,
+                in_workspace: Boolean(wsTools[t]),
+                in_user: Boolean(userTools[t]),
+                scope: userTools[t] && !wsTools[t] ? "user" : (wsTools[t] && !userTools[t] ? "workspace" : "both"),
               });
             }
 

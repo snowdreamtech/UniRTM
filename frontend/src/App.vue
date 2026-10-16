@@ -186,6 +186,14 @@ watch(
   { immediate: true }
 );
 
+watch(
+  activeScope,
+  (newScope) => {
+    checkUpdates(newScope === "user").catch(() => {});
+  },
+  { immediate: true }
+);
+
 const activeRunningTask = ref<string | undefined>(undefined);
 const currentLatencyMs = ref<number | null>(18);
 const drawerActiveTab = ref<"output" | "tasks" | "doctor">("output");

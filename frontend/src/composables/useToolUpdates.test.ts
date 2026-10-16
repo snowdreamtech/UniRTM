@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { useToolUpdates } from "./useToolUpdates";
+import { useAppScope } from "./useAppScope";
 
 describe("useToolUpdates", () => {
   const {
@@ -134,4 +135,47 @@ describe("useToolUpdates", () => {
     expect(hasUpdate("node")).toBe(false);
     expect(updatableCount.value).toBe(1);
   });
+
+  it("should filter updatable tools according to activeScope", () => {
+    const { setScope } = useAppScope();
+    setScope("workspace");
+
+    setUpdateResults([
+      {
+        id: "trivy",
+        name: "trivy",
+        current_version: "0.50.0",
+        latest_version: "1.0.0",
+        has_update: true,
+        pinned: false,
+        in_workspace: true,
+        in_user: false,
+      },
+      {
+        id: "node",
+        name: "Node.js",
+        current_version: "24.0.0",
+        latest_version: "26.8.1",
+        has_update: true,
+        pinned: false,
+        in_workspace: false,
+        in_user: true,
+      },
+    ]);
+
+    // In workspace scope: only trivy is updatable
+    expect(updatableCount.value).toBe(1);
+    expect(hasUpdate("trivy")).toBe(true);
+    expect(hasUpdate("node")).toBe(false);
+
+    // Switch to user scope: only node is updatable
+    setScope("user");
+    expect(updatableCount.value).toBe(1);
+    expect(hasUpdate("trivy")).toBe(false);
+    expect(hasUpdate("node")).toBe(true);
+
+    // Reset back to workspace
+    setScope("workspace");
+  });
 });
+

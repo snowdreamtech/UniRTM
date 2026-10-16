@@ -1,4 +1,5 @@
 import { ref, computed } from "vue";
+import { useAppScope } from "./useAppScope";
 
 export interface ToolUpdateItem {
   id: string;
@@ -10,6 +11,9 @@ export interface ToolUpdateItem {
   pin_reason?: string;
   homepage?: string;
   error?: string;
+  in_workspace?: boolean;
+  in_user?: boolean;
+  scope?: "workspace" | "user" | "both";
 }
 
 const updateResults = ref<ToolUpdateItem[]>([]);
@@ -17,8 +21,21 @@ const isChecking = ref(false);
 const lastCheckedAt = ref<number | null>(null);
 
 export function useToolUpdates() {
+  const { activeScope } = useAppScope();
+
   const updatableList = computed(() =>
-    updateResults.value.filter((r) => r.has_update && !r.pinned)
+    updateResults.value.filter((r) => {
+      if (!r.has_update || r.pinned) return false;
+      if (activeScope.value === "user") {
+        if (r.in_user !== undefined) return Boolean(r.in_user);
+        if (r.scope !== undefined) return r.scope === "user" || r.scope === "both";
+        return false;
+      } else {
+        if (r.in_workspace !== undefined) return Boolean(r.in_workspace);
+        if (r.scope !== undefined) return r.scope === "workspace" || r.scope === "both";
+        return true;
+      }
+    })
   );
 
   const updatableCount = computed(() => updatableList.value.length);
@@ -109,6 +126,9 @@ export function useToolUpdates() {
             latest_version: bestVer,
             has_update: true,
             pinned: false,
+            in_workspace: Boolean(tool.active_version || (!tool.global_version && tool.source !== "unirtm.toml")),
+            in_user: Boolean(tool.global_version || tool.source === "unirtm.toml"),
+            scope: tool.global_version && tool.active_version ? "both" : (tool.global_version ? "user" : "workspace"),
           });
           changed = true;
         }
@@ -120,10 +140,12 @@ export function useToolUpdates() {
     }
   }
 
-  async function checkUpdates(isGlobal: boolean = false): Promise<ToolUpdateItem[]> {
+  async function checkUpdates(isGlobal?: boolean): Promise<ToolUpdateItem[]> {
     isChecking.value = true;
     try {
-      const res = await fetch(`/api/tools/check-updates?global=${isGlobal}`);
+      const targetGlobal = isGlobal !== undefined ? isGlobal : activeScope.value === "user";
+      const scopeParam = targetGlobal ? "user" : "workspace";
+      const res = await fetch(`/api/tools/check-updates?global=${targetGlobal}&scope=${scopeParam}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const rawList = data.results || data.updates || [];
@@ -137,6 +159,9 @@ export function useToolUpdates() {
         pin_reason: item.pin_reason || "",
         homepage: item.homepage,
         error: item.error,
+        in_workspace: item.in_workspace,
+        in_user: item.in_user,
+        scope: item.scope,
       }));
       lastCheckedAt.value = Date.now();
       return updateResults.value;
