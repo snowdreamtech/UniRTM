@@ -365,13 +365,23 @@
         </div>
 
         <!-- Quick Major Filter Tags -->
-        <div v-if="quickFilterTags.length > 0" class="quick-filter-chips">
+        <div v-if="quickFilterTags.length > 0 || (selectedRuntime?.installed_versions && selectedRuntime.installed_versions.length > 0)" class="quick-filter-chips">
           <button
             class="filter-chip"
             :class="{ active: selectedMajorFilter === '' }"
             @click="selectedMajorFilter = ''"
           >
             {{ t('runtimes.all_versions') || '全部' }}
+          </button>
+          <button
+            v-if="selectedRuntime?.installed_versions && selectedRuntime.installed_versions.length > 0"
+            class="filter-chip installed-chip"
+            :class="{ active: selectedMajorFilter === 'installed' }"
+            @click="selectedMajorFilter = selectedMajorFilter === 'installed' ? '' : 'installed'"
+            title="只查看本地共享安装池中已有的版本"
+          >
+            <span class="chip-installed-dot">●</span>
+            <span>已安装 ({{ selectedRuntime.installed_versions.length }})</span>
           </button>
           <button
             v-for="tag in quickFilterTags"
@@ -434,21 +444,37 @@
           >
             <div class="remote-ver-info">
               <span class="font-mono ver-name">{{ formatVersion(rv.version) }}</span>
+              <!-- Active in selected modal scope -->
               <span
-                v-if="isAlreadyInstalled(selectedRuntime?.id || '', rv.version)"
-                class="installed-tag"
+                v-if="isActiveInModalScope(selectedRuntime?.id || '', rv.version)"
+                class="installed-tag active-scope-tag"
+                :title="modalInstallScope === 'user' ? '当前已在用户全局生效' : '当前已在工作区生效'"
               >
-                {{ t("runtimes.installed") || "已安装" }}
+                ● {{ modalInstallScope === 'user' ? '用户全局生效' : '工作区生效' }}
+              </span>
+              <!-- Installed in local pool but not active in this scope -->
+              <span
+                v-else-if="isAlreadyInstalled(selectedRuntime?.id || '', rv.version)"
+                class="installed-tag"
+                title="已保存在本地共享安装池中，切换无需下载"
+              >
+                已安装
               </span>
             </div>
 
             <button
               class="install-action-btn"
-              :class="{ 'is-installed': isAlreadyInstalled(selectedRuntime?.id || '', rv.version) }"
-              :disabled="installingVer === rv.version"
+              :class="{
+                'is-active-ver': isActiveInModalScope(selectedRuntime?.id || '', rv.version),
+                'is-installed': isAlreadyInstalled(selectedRuntime?.id || '', rv.version)
+              }"
+              :disabled="installingVer === rv.version || isActiveInModalScope(selectedRuntime?.id || '', rv.version)"
               @click="installRemoteVersion(selectedRuntime?.id || '', rv.version)"
             >
               <span v-if="installingVer === rv.version">{{ t("runtimes.installing") || "Installing..." }}</span>
+              <span v-else-if="isActiveInModalScope(selectedRuntime?.id || '', rv.version)">
+                ✓ 已在{{ modalInstallScope === 'user' ? '全局' : '工作区' }}生效
+              </span>
               <span v-else-if="isAlreadyInstalled(selectedRuntime?.id || '', rv.version)">
                 {{ modalInstallScope === 'user' ? (t("runtimes.set_user") || '设为用户') : (t("runtimes.set_workspace") || '设为工作区') }}
               </span>
@@ -1177,8 +1203,10 @@ const filteredRemoteVersions = computed(() => {
     }
   }
 
-  // Filter by major tag if selected
-  if (selectedMajorFilter.value) {
+  // Filter by major tag or installed status if selected
+  if (selectedMajorFilter.value === "installed") {
+    list = list.filter((v) => isAlreadyInstalled(selectedRuntime.value?.id || "", v.version));
+  } else if (selectedMajorFilter.value) {
     const prefix = selectedMajorFilter.value.replace(/^v/, "").toLowerCase();
     list = list.filter((v) => {
       const clean = v.version.toLowerCase().replace(/^v/, "");
@@ -1202,6 +1230,16 @@ function isAlreadyInstalled(toolId: string, ver: string): boolean {
   const rt = runtimes.value.find((r) => r.id === toolId);
   if (!rt || !rt.installed_versions) return false;
   return rt.installed_versions.includes(ver) || rt.installed_versions.includes(ver.replace(/^v/, ""));
+}
+
+function isActiveInModalScope(toolId: string, ver: string): boolean {
+  const rt = runtimes.value.find((r) => r.id === toolId);
+  if (!rt) return false;
+  const targetVer = modalInstallScope.value === "user" ? rt.global_version : rt.active_version;
+  if (!targetVer) return false;
+  const cleanVer = ver.replace(/^[vV]+/, "").trim();
+  const cleanTarget = targetVer.replace(/^[vV]+/, "").trim();
+  return cleanVer === cleanTarget;
 }
 
 async function fetchStatus() {
@@ -2475,6 +2513,32 @@ onBeforeUnmount(() => {
   font-weight: 600;
 }
 
+.filter-chip.installed-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #10b981;
+}
+
+.filter-chip.installed-chip:hover {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.filter-chip.installed-chip.active {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  color: #10b981;
+  font-weight: 700;
+}
+
+.chip-installed-dot {
+  font-size: 0.65rem;
+  line-height: 1;
+}
+
 .custom-ver-highlight {
   background: rgba(6, 182, 212, 0.08);
   border: 1px dashed var(--accent-cyan);
@@ -2675,12 +2739,20 @@ onBeforeUnmount(() => {
 
 .installed-tag {
   font-size: 0.7rem;
-  color: var(--accent-cyan);
-  background: rgba(6, 182, 212, 0.12);
-  border: 1px solid rgba(6, 182, 212, 0.3);
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
   padding: 0.12rem 0.5rem;
   border-radius: 4px;
   font-weight: 600;
+}
+
+.installed-tag.active-scope-tag {
+  color: var(--accent-cyan);
+  background: rgba(6, 182, 212, 0.15);
+  border: 1px solid rgba(6, 182, 212, 0.4);
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.18);
+  font-weight: 700;
 }
 
 .install-action-btn {
@@ -2710,7 +2782,15 @@ onBeforeUnmount(() => {
   background: rgba(2, 132, 199, 0.28);
 }
 
-.install-action-btn:disabled {
+.install-action-btn.is-active-ver {
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  color: var(--accent-cyan);
+  opacity: 0.85;
+  cursor: default;
+}
+
+.install-action-btn:disabled:not(.is-active-ver) {
   opacity: 0.45;
   cursor: not-allowed;
   background: var(--input-bg);
