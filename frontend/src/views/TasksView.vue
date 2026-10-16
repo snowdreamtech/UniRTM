@@ -130,6 +130,22 @@
           </div>
 
           <div class="task-actions-side">
+            <div class="task-secondary-actions">
+              <button
+                class="task-icon-btn edit"
+                @click.stop="openEditModal(task)"
+                :title="`编辑任务: ${task.name}`"
+              >
+                <TechIcon id="workbench:edit" :size="12" />
+              </button>
+              <button
+                class="task-icon-btn delete"
+                @click.stop="openDeleteConfirm(task)"
+                :title="`删除任务: ${task.name}`"
+              >
+                <TechIcon id="workbench:delete" :size="12" />
+              </button>
+            </div>
             <button
               class="run-task-btn"
               :disabled="runningTask !== null"
@@ -144,20 +160,6 @@
                 <TechIcon id="workbench:tasks" :size="12" :colored="false" />
                 <span>{{ t("tasks.run") || "运行" }}</span>
               </span>
-            </button>
-            <button
-              class="task-icon-btn edit"
-              @click="openEditModal(task)"
-              :title="`编辑任务: ${task.name}`"
-            >
-              <TechIcon id="workbench:edit" :size="13" />
-            </button>
-            <button
-              class="task-icon-btn delete"
-              @click="openDeleteConfirm(task)"
-              :title="`删除任务: ${task.name}`"
-            >
-              <TechIcon id="workbench:delete" :size="13" />
             </button>
           </div>
         </div>
@@ -600,14 +602,14 @@ async function executeTask(task: ProjectTask) {
 
 .task-row-card {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
   padding: 0.95rem 1.15rem;
   background: var(--input-bg);
   border: 1px solid var(--card-border);
   border-radius: 10px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .task-row-card:hover {
@@ -750,15 +752,36 @@ async function executeTask(task: ProjectTask) {
   to { transform: rotate(360deg); }
 }
 
+.task-actions-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.task-secondary-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  opacity: 0.35;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.task-row-card:hover .task-secondary-actions {
+  opacity: 1;
+}
+
 .task-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 6px;
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
-  background: var(--button-secondary-bg, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
+  background: var(--section-bg, rgba(255, 255, 255, 0.04));
   color: var(--text-muted, #94a3b8);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -767,7 +790,7 @@ async function executeTask(task: ProjectTask) {
 .task-icon-btn:hover {
   background: rgba(255, 255, 255, 0.12);
   color: var(--text-main, #fff);
-  border-color: var(--accent-cyan, #00e5ff);
+  border-color: var(--card-border-active);
   transform: translateY(-1px);
 }
 
