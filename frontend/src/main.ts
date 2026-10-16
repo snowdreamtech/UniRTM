@@ -5,6 +5,7 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";
 import "./styles/theme.css";
+import "@vscode/codicons/dist/codicon.css";
 
 const STARTUP_LOADER_MIN_DURATION_MS = 300;
 const startupStartedAt = performance.now();
