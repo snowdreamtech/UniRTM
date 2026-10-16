@@ -1628,10 +1628,12 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.view-container,
+.tools-view,
 .runtimes-view {
   display: flex;
   flex-direction: column;
-  gap: 1.15rem;
+  gap: 1.35rem;
   padding: 1.25rem;
   height: 100%;
   overflow-y: auto;
@@ -1670,7 +1672,7 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.55rem 0.85rem;
+  padding: 0.65rem 1rem;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 12px;
@@ -1819,7 +1821,7 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.65rem 1rem;
+  padding: 0.75rem 1.15rem;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 12px;
