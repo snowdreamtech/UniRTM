@@ -117,7 +117,7 @@
           <b>{{ filteredRuntimes.length }}</b> {{ t("runtimes.count_runtimes_suffix") || "个工具" }}
         </span>
         <span class="stat-badge highlight">
-          <b>{{ totalInstalled }}</b> {{ t("runtimes.count_installed_suffix") || "个已装版本" }}
+          <b>{{ scopeInstalledCount }}</b> {{ t("runtimes.count_installed_suffix") || "个已装版本" }}
         </span>
         <button
           class="tool-action-btn primary small"
@@ -332,6 +332,24 @@
             <span>+ {{ t("runtimes.install_version") || "Install Version" }}</span>
           </button>
         </div>
+      </div>
+
+      <!-- Empty State When Scope Has No Configured Tools -->
+      <div v-if="filteredRuntimes.length === 0" class="glass-card runtimes-empty-box" id="runtimes-empty-state">
+        <div class="empty-icon-wrap">
+          <TechIcon id="workbench:tools" :size="32" :colored="false" />
+        </div>
+        <div class="empty-title">
+          {{ currentScope === 'user' ? '用户默认环境暂未配置工具' : '当前工作区暂未配置工具' }}
+        </div>
+        <p class="empty-desc">
+          {{ currentScope === 'user'
+              ? '用户区配置文件 (~/.config/unirtm/unirtm.toml) 提供未绑定工作区时的全局兜底环境，可通过上方「+ 添加运行环境」进行配置。'
+              : '工作区配置文件 (.unirtm.toml) 暂无匹配工具，可通过上方「+ 添加运行环境」添加。' }}
+        </p>
+        <button class="tool-action-btn primary small" @click="openAddModal">
+          <span>+ {{ t("runtimes.add_runtime") || "添加运行环境" }}</span>
+        </button>
       </div>
     </div>
 
@@ -724,7 +742,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { t } from "../i18n";
 import { useToast } from "../composables/useToast";
 import TechIcon from "../components/common/TechIcon.vue";
@@ -1092,6 +1110,16 @@ const emit = defineEmits<{
 
 const filteredRuntimes = computed(() => {
   let list = runtimes.value;
+
+  // Filter tools by active scope (Workspace vs User)
+  if (currentScope.value === "user") {
+    // User scope: only show tools configured in user global configuration (~/.config/unirtm/unirtm.toml)
+    list = list.filter((rt) => Boolean(rt.global_version && rt.global_version.trim()));
+  } else {
+    // Workspace scope: only show tools configured in workspace (.unirtm.toml) or detected legacy files
+    list = list.filter((rt) => Boolean((rt.active_version && rt.active_version.trim()) || rt.is_legacy));
+  }
+
   if (props.activeSubItem && props.activeSubItem.trim()) {
     const sub = props.activeSubItem.trim().toLowerCase();
     const matched = list.filter((rt) => rt.id.toLowerCase() === sub);
@@ -1106,9 +1134,30 @@ const filteredRuntimes = computed(() => {
       rt.name.toLowerCase().includes(q) ||
       rt.id.toLowerCase().includes(q) ||
       rt.description.toLowerCase().includes(q) ||
-      rt.active_version.includes(q)
+      (currentScope.value === "user" ? rt.global_version.includes(q) : rt.active_version.includes(q))
   );
 });
+
+const scopeInstalledCount = computed(() => {
+  return filteredRuntimes.value.reduce((acc, rt) => acc + (rt.installed_versions?.length || 0), 0);
+});
+
+watch(
+  () => props.activeSubItem,
+  (newVal: string | undefined) => {
+    if (newVal) {
+      const toolId = newVal.trim().toLowerCase();
+      const target = runtimes.value.find((rt) => rt.id.toLowerCase() === toolId);
+      if (target) {
+        if (currentScope.value === "user" && !target.global_version && target.active_version) {
+          currentScope.value = "workspace";
+        } else if (currentScope.value === "workspace" && !target.active_version && target.global_version) {
+          currentScope.value = "user";
+        }
+      }
+    }
+  }
+);
 
 // Format tool title with 2-line middle-truncation
 function formatToolTitle(title: string, maxLen = 44): string {
@@ -2697,6 +2746,27 @@ onBeforeUnmount(() => {
   padding: 2rem 0;
   color: var(--text-muted);
   font-size: 0.85rem;
+}
+
+.runtimes-empty-box {
+  grid-column: 1 / -1;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.75rem !important;
+  padding: 3.5rem 2rem !important;
+  text-align: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.runtimes-empty-box .empty-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  max-width: 500px;
+  line-height: 1.5;
+  margin: 0;
 }
 
 .remote-empty-box {
