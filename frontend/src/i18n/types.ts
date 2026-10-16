@@ -147,6 +147,7 @@ export interface TranslationDict {
   "settings.apply_theme"?: string;
   "settings.downloads"?: string;
   "common.uninstall"?: string;
+  "common.edit"?: string;
   "common.delete"?: string;
 
   "hello.input_placeholder": string;

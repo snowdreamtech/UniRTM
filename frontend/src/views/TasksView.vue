@@ -146,11 +146,11 @@
               <div v-if="activeMenuTask === task.name" class="task-dropdown-menu">
                 <button class="dropdown-item" @click.stop="handleEditFromMenu(task)">
                   <TechIcon id="workbench:edit" :size="13" />
-                  <span>{{ t("tasks.edit_title") || "编辑任务" }}</span>
+                  <span>{{ t("common.edit") || "编辑" }}</span>
                 </button>
                 <button class="dropdown-item danger" @click.stop="handleDeleteFromMenu(task)">
                   <TechIcon id="workbench:delete" :size="13" />
-                  <span>{{ t("tasks.delete_title") || "删除任务" }}</span>
+                  <span>{{ t("common.delete") || "删除" }}</span>
                 </button>
               </div>
             </div>

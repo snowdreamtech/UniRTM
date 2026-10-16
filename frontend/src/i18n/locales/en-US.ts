@@ -215,6 +215,7 @@ export const enUs: TranslationDict = {
   "settings.apply_theme": "Apply Theme",
   "settings.downloads": "downloads",
   "common.uninstall": "Uninstall",
+  "common.edit": "Edit",
   "common.delete": "Delete",
   "settings.app_update": "Software Updates",
   "settings.update_auto": "Automatically check on startup",

@@ -217,6 +217,7 @@ export const zhCn: TranslationDict = {
   "settings.apply_theme": "应用此主题",
   "settings.downloads": "次下载",
   "common.uninstall": "卸载",
+  "common.edit": "编辑",
   "common.delete": "删除",
   "settings.app_update": "软件更新",
   "settings.update_auto": "启动时自动检查最新版本",
