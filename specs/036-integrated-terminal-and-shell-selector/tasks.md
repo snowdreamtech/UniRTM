@@ -34,7 +34,7 @@
     - 支持手动点击“重新扫描终端”；
   - *提交命名*：`feat(settings): add terminal configuration section and persistence`
 
-- [ ] **Task 5: 全面测试回归与构建验证 (Validation & Polish)**
+- [x] **Task 5: 全面测试回归与构建验证 (Validation & Polish)**
   - 运行全量 Vitest 单元测试，确保无回归；
   - 运行 `vue-tsc` 与 Vite 生产构建；
   - 验证多语言切换与深浅主题切换下的终端视觉效果。

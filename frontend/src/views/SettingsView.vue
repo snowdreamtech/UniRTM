@@ -2195,7 +2195,6 @@ const customShellPath = ref("");
 const {
   terminals,
   currentTerminal,
-  defaultTerminal,
   fetchTerminals,
   setPreferredTerminal,
 } = useTerminal();

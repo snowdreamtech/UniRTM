@@ -287,7 +287,6 @@ const { showToast } = useToast();
 const {
   terminals,
   currentTerminal,
-  defaultTerminal,
   fetchTerminals,
   setPreferredTerminal,
 } = useTerminal();
@@ -579,7 +578,7 @@ async function handleRescan() {
   showToast(t("terminal.rescan") || "已重新检测终端环境", "info");
 }
 
-function handleGlobalClick(e: MouseEvent) {
+function handleGlobalClick() {
   isShellMenuOpen.value = false;
 }
 
