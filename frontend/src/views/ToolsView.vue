@@ -365,7 +365,9 @@
               </p>
             </div>
           </div>
-          <button class="modal-close-btn" @click="closeSwitchVersionModal" :title="t('runtimes.close')">✕</button>
+          <button class="btn btn-icon modal-close-btn" @click="closeSwitchVersionModal" :title="t('runtimes.close')">
+            <TechIcon id="workbench:close" :size="14" />
+          </button>
         </div>
 
         <div class="switch-modal-body">
@@ -424,7 +426,9 @@
               </p>
             </div>
           </div>
-          <button class="modal-close-btn" @click="closeRemoteModal">✕</button>
+          <button class="btn btn-icon modal-close-btn" @click="closeRemoteModal" :title="t('runtimes.close') || '关闭'">
+            <TechIcon id="workbench:close" :size="14" />
+          </button>
         </div>
 
         <!-- Scope Option Inside Modal -->
@@ -588,7 +592,9 @@
               <p class="modal-desc">为当前{{ currentScope === 'user' ? '用户默认' : '工作区' }}添加工具与版本</p>
             </div>
           </div>
-          <button class="modal-close-btn" @click="isAddModalOpen = false">✕</button>
+          <button class="btn btn-icon modal-close-btn" @click="isAddModalOpen = false" :title="t('runtimes.close') || '关闭'">
+            <TechIcon id="workbench:close" :size="14" />
+          </button>
         </div>
 
         <div class="add-preset-section">
@@ -658,7 +664,9 @@
                 : "当前所有工具均已是最新版本。" }}
             </p>
           </div>
-          <button class="modal-close-btn" @click="isDiffDrawerOpen = false" title="关闭">✕</button>
+          <button class="btn btn-icon modal-close-btn" @click="isDiffDrawerOpen = false" :title="t('common.close') || '关闭'">
+            <TechIcon id="workbench:close" :size="14" />
+          </button>
         </div>
 
         <!-- Select All Bar -->

@@ -308,7 +308,9 @@
             <TechIcon id="workbench:warning" :size="20" />
             <h3 style="margin: 0; font-size: 1.05rem;">{{ t("tasks.delete_title") || "确认删除任务" }}</h3>
           </div>
-          <button class="close-btn" @click="taskToDelete = null">✕</button>
+          <button class="btn btn-icon close-btn" @click="taskToDelete = null" :title="t('common.close') || '关闭'">
+            <TechIcon id="workbench:close" :size="14" />
+          </button>
         </div>
         <div class="modal-body" style="padding: 1.25rem 1.4rem;">
           <p style="margin: 0 0 0.75rem 0; font-size: 0.85rem; color: var(--text-main);">

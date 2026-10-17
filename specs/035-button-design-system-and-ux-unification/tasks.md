@@ -23,7 +23,7 @@
     - 统一已安装专栏的垃圾桶删除操作为标准 `.btn-icon.danger`。
   - *提交命名*：`refactor(marketplace): align action buttons and density with global design system`
 
-- [ ] **Task 4: 工具链与任务模块操作规范化 (Tools & Tasks)**
+- [x] **Task 4: 工具链与任务模块操作规范化 (Tools & Tasks)**
   - 检查并重构 `frontend/src/views/ToolsView.vue` 与 `frontend/src/views/TasksView.vue`；
   - 统一运行（Play）、升级、锁定、更多菜单的按钮规范，消除尺寸各异的内边距。
   - *提交命名*：`refactor(tools,tasks): standardize action buttons and run triggers`
