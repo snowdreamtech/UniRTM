@@ -2546,6 +2546,273 @@ print(json.dumps({
             return;
           }
 
+          // Environment Variables APIs (Mock Dev Server)
+          if (req.url?.startsWith("/api/env") && req.method === "GET") {
+            const urlObj = new URL(req.url, "http://localhost");
+            const scope = (urlObj.searchParams.get("scope") || "workspace").toLowerCase();
+            const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
+            const wsPath = path.join(rootDir, ".unirtm.toml");
+            const targetPath = scope === "user" ? userPath : wsPath;
+
+            const parseEnvFromToml = (filePath: string) => {
+              if (!fs.existsSync(filePath)) return [];
+              const content = fs.readFileSync(filePath, "utf-8");
+              const lines = content.split("\n");
+              const list: any[] = [];
+              let inEnv = false;
+
+              for (const raw of lines) {
+                const tr = raw.trim();
+                if (tr === "[env]") {
+                  inEnv = true;
+                  continue;
+                }
+                if (inEnv) {
+                  if (tr.startsWith("[") && tr !== "[env]") {
+                    break;
+                  }
+                  if (tr.startsWith("#") || !tr.includes("=")) continue;
+                  const eqIdx = tr.indexOf("=");
+                  const k = tr.slice(0, eqIdx).trim().replace(/^["']|["']$/g, "").toUpperCase();
+                  const rawVal = tr.slice(eqIdx + 1).trim();
+                  let val = rawVal;
+                  if ((rawVal.startsWith('"') && rawVal.endsWith('"')) || (rawVal.startsWith("'") && rawVal.endsWith("'"))) {
+                    val = rawVal.slice(1, -1);
+                  }
+                  const isSensitive = /(TOKEN|KEY|SECRET|PASSWORD|PASS|AUTH|PRIVATE|CREDENTIAL|APIKEY|ACCESS|CERT|SALT|HASH|SIGNATURE)/i.test(k);
+                  if (k) {
+                    list.push({
+                      name: k,
+                      value: val,
+                      scope,
+                      is_sensitive: isSensitive,
+                    });
+                  }
+                }
+              }
+              return list.sort((a, b) => a.name.localeCompare(b.name));
+            };
+
+            const envItems = parseEnvFromToml(targetPath);
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ env: envItems, total: envItems.length, scope }));
+            return;
+          }
+
+          if (req.url?.startsWith("/api/env") && (req.method === "POST" || req.method === "PUT")) {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const body = JSON.parse(bodyStr);
+                const rawKey = (body.key || "").trim();
+                const originalKey = (body.original_key || "").trim();
+                const value = String(body.value ?? "");
+                const scope = (body.scope || "workspace").toLowerCase();
+
+                if (!rawKey) {
+                  res.statusCode = 400;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: "Environment variable key is required" }));
+                  return;
+                }
+
+                const upperKey = rawKey.toUpperCase();
+                const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
+                const wsPath = path.join(rootDir, ".unirtm.toml");
+                const targetPath = scope === "user" ? userPath : wsPath;
+
+                const targetDir = path.dirname(targetPath);
+                if (!fs.existsSync(targetDir)) {
+                  fs.mkdirSync(targetDir, { recursive: true });
+                }
+
+                let content = fs.existsSync(targetPath) ? fs.readFileSync(targetPath, "utf-8") : "";
+                let lines = content.split("\n");
+
+                const quotedVal = JSON.stringify(value);
+                const newEntry = `${upperKey} = ${quotedVal}`;
+
+                let inEnv = false;
+                let envStart = -1;
+                let envEnd = -1;
+                let matchingIdx = -1;
+                const toRemoveIndices: number[] = [];
+
+                for (let i = 0; i < lines.length; i++) {
+                  const tr = lines[i].trim();
+                  if (tr === "[env]") {
+                    inEnv = true;
+                    envStart = i;
+                    continue;
+                  }
+                  if (inEnv) {
+                    if (tr.startsWith("[") && tr !== "[env]") {
+                      envEnd = i;
+                      inEnv = false;
+                      break;
+                    }
+                    if (tr.startsWith("#") || !tr.includes("=")) continue;
+                    const eqIdx = tr.indexOf("=");
+                    const existingKey = tr.slice(0, eqIdx).trim().replace(/^["']|["']$/g, "").toUpperCase();
+
+                    if (originalKey && existingKey === originalKey.toUpperCase() && existingKey !== upperKey) {
+                      toRemoveIndices.push(i);
+                    } else if (existingKey === upperKey) {
+                      if (matchingIdx === -1) {
+                        matchingIdx = i;
+                      } else {
+                        toRemoveIndices.push(i);
+                      }
+                    }
+                  }
+                }
+                if (inEnv && envEnd === -1) {
+                  envEnd = lines.length;
+                }
+
+                if (toRemoveIndices.length > 0) {
+                  lines = lines.filter((_, idx) => !toRemoveIndices.includes(idx));
+                  envStart = -1;
+                  envEnd = -1;
+                  matchingIdx = -1;
+                  inEnv = false;
+                  for (let i = 0; i < lines.length; i++) {
+                    const tr = lines[i].trim();
+                    if (tr === "[env]") {
+                      inEnv = true;
+                      envStart = i;
+                      continue;
+                    }
+                    if (inEnv) {
+                      if (tr.startsWith("[") && tr !== "[env]") {
+                        envEnd = i;
+                        inEnv = false;
+                        break;
+                      }
+                      if (tr.startsWith("#") || !tr.includes("=")) continue;
+                      const eqIdx = tr.indexOf("=");
+                      const existingKey = tr.slice(0, eqIdx).trim().replace(/^["']|["']$/g, "").toUpperCase();
+                      if (existingKey === upperKey && matchingIdx === -1) {
+                        matchingIdx = i;
+                      }
+                    }
+                  }
+                  if (inEnv && envEnd === -1) {
+                    envEnd = lines.length;
+                  }
+                }
+
+                if (envStart === -1) {
+                  if (content && !content.endsWith("\n")) {
+                    content += "\n";
+                  }
+                  content += `\n[env]\n${newEntry}\n`;
+                  fs.writeFileSync(targetPath, content, "utf-8");
+                } else if (matchingIdx !== -1) {
+                  lines[matchingIdx] = newEntry;
+                  fs.writeFileSync(targetPath, lines.join("\n"), "utf-8");
+                } else {
+                  lines.splice(envEnd, 0, newEntry);
+                  fs.writeFileSync(targetPath, lines.join("\n"), "utf-8");
+                }
+
+                const isSensitive = /(TOKEN|KEY|SECRET|PASSWORD|PASS|AUTH|PRIVATE|CREDENTIAL|APIKEY|ACCESS|CERT|SALT|HASH|SIGNATURE)/i.test(upperKey);
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({
+                  success: true,
+                  env: {
+                    name: upperKey,
+                    value,
+                    scope,
+                    is_sensitive: isSensitive,
+                  },
+                }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
+          if (req.url?.startsWith("/api/env") && req.method === "DELETE") {
+            let bodyStr = "";
+            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("end", () => {
+              try {
+                const urlObj = new URL(req.url!, "http://localhost");
+                let key = urlObj.searchParams.get("key") || "";
+                let scope = urlObj.searchParams.get("scope") || "";
+
+                if (!key && bodyStr) {
+                  try {
+                    const parsed = JSON.parse(bodyStr);
+                    key = parsed.key || "";
+                    scope = scope || parsed.scope || "";
+                  } catch {}
+                }
+
+                key = key.trim().toUpperCase();
+                scope = (scope || "workspace").toLowerCase();
+
+                if (!key) {
+                  res.statusCode = 400;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: "Environment variable key is required" }));
+                  return;
+                }
+
+                const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
+                const wsPath = path.join(rootDir, ".unirtm.toml");
+                const targetPath = scope === "user" ? userPath : wsPath;
+
+                if (fs.existsSync(targetPath)) {
+                  const content = fs.readFileSync(targetPath, "utf-8");
+                  const lines = content.split("\n");
+                  let inEnv = false;
+                  const newLines: string[] = [];
+
+                  for (let i = 0; i < lines.length; i++) {
+                    const tr = lines[i].trim();
+                    if (tr === "[env]") {
+                      inEnv = true;
+                      newLines.push(lines[i]);
+                      continue;
+                    }
+                    if (inEnv) {
+                      if (tr.startsWith("[") && tr !== "[env]") {
+                        inEnv = false;
+                        newLines.push(lines[i]);
+                        continue;
+                      }
+                      if (tr.startsWith("#") || !tr.includes("=")) {
+                        newLines.push(lines[i]);
+                        continue;
+                      }
+                      const eqIdx = tr.indexOf("=");
+                      const existingKey = tr.slice(0, eqIdx).trim().replace(/^["']|["']$/g, "").toUpperCase();
+                      if (existingKey === key) {
+                        continue;
+                      }
+                    }
+                    newLines.push(lines[i]);
+                  }
+                  fs.writeFileSync(targetPath, newLines.join("\n"), "utf-8");
+                }
+
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, deleted_key: key }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+            });
+            return;
+          }
+
           if (req.url === "/api/config") {
             const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
             const wsPath = path.join(rootDir, ".unirtm.toml");

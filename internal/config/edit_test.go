@@ -250,3 +250,24 @@ func TestUpsertAndRemoveTask(t *testing.T) {
 		t.Fatalf("RemoveTask accidentally deleted other tasks: %s", removed)
 	}
 }
+
+func TestGetEnvVarsFromContent(t *testing.T) {
+	// Empty content
+	if res := GetEnvVarsFromContent(""); len(res) != 0 {
+		t.Errorf("Expected empty map for empty content, got %v", res)
+	}
+
+	// Content with [env]
+	content := "[tools]\nnode = \"20\"\n\n[env]\nPORT = \"3000\"\ngithub_token = \"ghp_secret\"\nDEBUG = true\n"
+	res := GetEnvVarsFromContent(content)
+	if res["PORT"] != "3000" {
+		t.Errorf("Expected PORT=3000, got %s", res["PORT"])
+	}
+	if res["GITHUB_TOKEN"] != "ghp_secret" {
+		t.Errorf("Expected GITHUB_TOKEN=ghp_secret, got %s", res["GITHUB_TOKEN"])
+	}
+	if res["DEBUG"] != "true" {
+		t.Errorf("Expected DEBUG=true, got %s", res["DEBUG"])
+	}
+}
+

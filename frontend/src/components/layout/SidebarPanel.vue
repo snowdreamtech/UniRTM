@@ -90,6 +90,27 @@
         </button>
       </template>
 
+      <!-- ENVIRONMENTS Navigation Items -->
+      <template v-if="currentTab === 'environments'">
+        <div class="nav-group-title">
+          {{ activeScope === 'user' ? (t("environments.scope_user") || "用户全局环境变量") : (t("environments.scope_workspace") || "工作区环境变量") }}
+        </div>
+        <button
+          v-for="env in filteredEnvItems"
+          :key="env.name"
+          class="sidebar-item"
+          :class="{ active: activeSubItem === env.name }"
+          @click="handleSubItemClick(env.name)"
+        >
+          <span class="item-icon"><TechIcon id="workbench:config" :size="20" /></span>
+          <div class="item-dual">
+            <span class="item-label font-mono">{{ env.name }}</span>
+            <span class="item-sub font-mono">{{ env.isSensitive ? '••••••••' : env.value }}</span>
+          </div>
+          <span v-if="env.isSensitive" class="badge-installed" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; border-color: rgba(245, 158, 11, 0.4);" title="敏感字段">🔒</span>
+        </button>
+      </template>
+
       <!-- MARKETPLACE Navigation Items -->
       <template v-if="currentTab === 'marketplace'">
         <div class="nav-group-title">{{ t("sidebar.group_marketplace") || "FEATURED EXTENSIONS" }}</div>
@@ -191,6 +212,8 @@ const headerTitle = computed(() => {
       return t("nav.tools") || "TOOLCHAINS";
     case "tasks":
       return t("nav.tasks") || "TASK RUNNER";
+    case "environments":
+      return t("nav.environments") || "ENVIRONMENTS";
     case "marketplace":
       return t("nav.marketplace") || "MARKETPLACE";
     case "doctor":
@@ -314,6 +337,7 @@ watch(
   () => activeScope.value,
   () => {
     fetchSidebarTasks();
+    fetchSidebarEnvs();
   }
 );
 
@@ -322,9 +346,44 @@ watch(
   (newTab) => {
     if (newTab === "tasks") {
       fetchSidebarTasks();
+    } else if (newTab === "environments") {
+      fetchSidebarEnvs();
     }
   }
 );
+
+// Environment items dynamically synchronized with [env]
+interface SidebarEnvItem {
+  name: string;
+  value: string;
+  isSensitive: boolean;
+}
+
+const rawEnvs = ref<SidebarEnvItem[]>([]);
+
+async function fetchSidebarEnvs() {
+  try {
+    const res = await fetch(`/api/env?scope=${activeScope.value}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.env)) {
+        rawEnvs.value = data.env.map((e: any) => ({
+          name: e.name,
+          value: e.value,
+          isSensitive: e.is_sensitive,
+        }));
+      }
+    }
+  } catch {}
+}
+
+const filteredEnvItems = computed(() => {
+  if (!searchQuery.value) return rawEnvs.value;
+  const q = searchQuery.value.toLowerCase().trim();
+  return rawEnvs.value.filter(
+    (e) => e.name.toLowerCase().includes(q) || e.value.toLowerCase().includes(q)
+  );
+});
 
 // Marketplace extensions
 const extensions = [
@@ -349,6 +408,7 @@ const doctorChecks = [
 
 onMounted(async () => {
   fetchSidebarTasks();
+  fetchSidebarEnvs();
   try {
     const res = await fetch("/api/tools/status");
     if (res.ok) {

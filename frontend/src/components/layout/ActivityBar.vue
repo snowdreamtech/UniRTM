@@ -110,6 +110,11 @@ const primaryTabs = computed<ActivityTab[]>(() => [
     label: t("nav.tasks") || "Tasks",
   },
   {
+    id: "environments",
+    icon: "workbench:config",
+    label: t("nav.environments") || "Environments",
+  },
+  {
     id: "marketplace",
     icon: "workbench:marketplace",
     label: t("nav.marketplace") || "Marketplace",

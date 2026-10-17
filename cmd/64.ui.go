@@ -561,6 +561,21 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	})
 	mux.HandleFunc("/api/tasks/run", handleRunTask)
 
+	// Environment Variables Management APIs
+	mux.HandleFunc("/api/env", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleGetEnvVars(w, r)
+		case http.MethodPost, http.MethodPut:
+			handleUpsertEnvVar(w, r)
+		case http.MethodDelete:
+			handleDeleteEnvVar(w, r)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+		}
+	})
+
 	// Theme Management APIs
 	themeMgr := theme.NewManager()
 	mux.HandleFunc("/api/themes", func(w http.ResponseWriter, r *http.Request) {
@@ -881,6 +896,171 @@ func handleRunTask(w http.ResponseWriter, r *http.Request) {
 		"exit_code": exitCode,
 		"output":    string(out),
 		"name":      body.Name,
+	})
+}
+
+// ─── Environment Variables Management Handlers ────────────────────────────────
+
+func isSensitiveEnvKey(k string) bool {
+	upper := strings.ToUpper(k)
+	sensitiveSubstrings := []string{
+		"TOKEN", "KEY", "SECRET", "PASSWORD", "PASS", "AUTH",
+		"PRIVATE", "CREDENTIAL", "APIKEY", "ACCESS", "CERT",
+		"SALT", "HASH", "SIGNATURE",
+	}
+	for _, s := range sensitiveSubstrings {
+		if strings.Contains(upper, s) {
+			return true
+		}
+	}
+	return false
+}
+
+func handleGetEnvVars(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	scope := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("scope")))
+	if scope == "" {
+		scope = "workspace"
+	}
+
+	targetFile := ".unirtm.toml"
+	if scope == "user" {
+		targetFile = config.GetGlobalConfigPath()
+	}
+
+	content, _ := config.ReadFileOrEmpty(targetFile)
+	envMap := config.GetEnvVarsFromContent(content)
+
+	var names []string
+	for n := range envMap {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+
+	type EnvVarItem struct {
+		Name        string `json:"name"`
+		Value       string `json:"value"`
+		Scope       string `json:"scope"`
+		IsSensitive bool   `json:"is_sensitive"`
+	}
+
+	var res []EnvVarItem
+	for _, n := range names {
+		res = append(res, EnvVarItem{
+			Name:        n,
+			Value:       envMap[n],
+			Scope:       scope,
+			IsSensitive: isSensitiveEnvKey(n),
+		})
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"env":   res,
+		"total": len(res),
+		"scope": scope,
+	})
+}
+
+type UpsertEnvVarReq struct {
+	Key         string `json:"key"`
+	OriginalKey string `json:"original_key,omitempty"`
+	Value       string `json:"value"`
+	Scope       string `json:"scope,omitempty"`
+}
+
+func handleUpsertEnvVar(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var req UpsertEnvVarReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || strings.TrimSpace(req.Key) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "variable key is required"})
+		return
+	}
+
+	scope := strings.ToLower(strings.TrimSpace(req.Scope))
+	if scope == "" {
+		scope = "workspace"
+	}
+	targetFile := ".unirtm.toml"
+	if scope == "user" {
+		targetFile = config.GetGlobalConfigPath()
+	}
+
+	content, _ := config.ReadFileOrEmpty(targetFile)
+
+	if req.OriginalKey != "" && !strings.EqualFold(req.OriginalKey, req.Key) {
+		content, _ = config.UnsetEnvVar(content, req.OriginalKey)
+	}
+
+	updated := config.UpsertEnvVar(content, req.Key, req.Value)
+	if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
+		return
+	}
+
+	upperKey := strings.ToUpper(strings.TrimSpace(req.Key))
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"env": map[string]interface{}{
+			"name":         upperKey,
+			"value":        req.Value,
+			"scope":        scope,
+			"is_sensitive": isSensitiveEnvKey(upperKey),
+		},
+	})
+}
+
+func handleDeleteEnvVar(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	key := strings.TrimSpace(r.URL.Query().Get("key"))
+	scope := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("scope")))
+
+	if key == "" {
+		var body struct {
+			Key   string `json:"key"`
+			Scope string `json:"scope"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err == nil {
+			key = strings.TrimSpace(body.Key)
+			if scope == "" {
+				scope = strings.ToLower(strings.TrimSpace(body.Scope))
+			}
+		}
+	}
+
+	if key == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "variable key is required"})
+		return
+	}
+
+	if scope == "" {
+		scope = "workspace"
+	}
+	targetFile := ".unirtm.toml"
+	if scope == "user" {
+		targetFile = config.GetGlobalConfigPath()
+	}
+
+	content, err := config.ReadFileOrEmpty(targetFile)
+	if err != nil || content == "" {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
+		return
+	}
+
+	updated, removed := config.UnsetEnvVar(content, key)
+	if removed {
+		if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
+			return
+		}
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":     true,
+		"deleted_key": strings.ToUpper(key),
 	})
 }
 

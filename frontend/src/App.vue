@@ -224,6 +224,8 @@ const currentTabLabel = computed(() => {
       return t("nav.tools") || "Toolchains";
     case "tasks":
       return t("nav.tasks") || "Task Runner";
+    case "environments":
+      return t("nav.environments") || "Environment Variables";
     case "marketplace":
       return t("nav.marketplace") || "Extensions Marketplace";
     case "doctor":

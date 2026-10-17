@@ -161,6 +161,28 @@ func UnsetEnvVar(content, key string) (string, bool) {
 	return content, false
 }
 
+// GetEnvVarsFromContent extracts key-value pairs from the [env] section of a TOML content string.
+// Keys are normalized to uppercase.
+func GetEnvVarsFromContent(content string) map[string]string {
+	res := make(map[string]string)
+	if strings.TrimSpace(content) == "" {
+		return res
+	}
+	var doc struct {
+		Env map[string]interface{} `toml:"env"`
+	}
+	if err := toml.Unmarshal([]byte(content), &doc); err == nil && doc.Env != nil {
+		for k, v := range doc.Env {
+			if s, ok := v.(string); ok {
+				res[strings.ToUpper(strings.TrimSpace(k))] = s
+			} else {
+				res[strings.ToUpper(strings.TrimSpace(k))] = fmt.Sprintf("%v", v)
+			}
+		}
+	}
+	return res
+}
+
 func quoteTOMLKey(key string) string {
 	for _, c := range key {
 		if !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {

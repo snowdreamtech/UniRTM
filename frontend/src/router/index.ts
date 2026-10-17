@@ -31,6 +31,11 @@ const routes: Array<RouteRecordRaw> = [
     component: TasksView,
   },
   {
+    path: "/environments",
+    name: "environments",
+    component: () => import("../views/EnvironmentsView.vue"),
+  },
+  {
     path: "/marketplace/:namespace?/:name?",
     name: "marketplace",
     component: MarketplaceView,
