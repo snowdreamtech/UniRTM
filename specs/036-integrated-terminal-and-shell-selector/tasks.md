@@ -9,7 +9,7 @@
   - 完善持久化写入支持（支持通过 `/api/config` 写入并保存）；
   - *提交命名*：`feat(api): implement terminal detection and persistence endpoints`
 
-- [ ] **Task 2: 前端终端管理 Composable 与国际化字典 (Frontend Composable & i18n)**
+- [x] **Task 2: 前端终端管理 Composable 与国际化字典 (Frontend Composable & i18n)**
   - 创建 `frontend/src/composables/useTerminal.ts`：
     - 维护终端列表、当前终端、系统默认终端状态；
     - 封装 `fetchTerminals()` 与 `updateTerminal()` 方法；

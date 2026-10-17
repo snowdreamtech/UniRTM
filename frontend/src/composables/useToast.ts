@@ -12,9 +12,9 @@ export function useToast() {
     toastMessage.value = cleanMsg || msg;
     toastType.value = type;
     if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = window.setTimeout(() => {
+    toastTimer = setTimeout(() => {
       toastMessage.value = "";
-    }, 4000);
+    }, 4000) as unknown as number;
   }
 
   function dismissToast() {
