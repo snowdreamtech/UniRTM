@@ -477,7 +477,7 @@ export const zhTw: TranslationDict = {
   "marketplace.view_popular": "檢視熱門推薦",
   "marketplace.active": "生效中",
   "marketplace.in_use": "使用中",
-  "marketplace.currently_applied": "目前生效",
+  "marketplace.currently_applied": "已套用",
   "marketplace.current_active": "目前正在生效的主題",
   "marketplace.retry": "重試",
   "marketplace.uninstall_confirm": "確定要解除安裝主題包 \"{name}\" 嗎？",

@@ -200,7 +200,7 @@
                       disabled
                       :title="t('marketplace.current_active') || '当前正在生效的主题'"
                     >
-                      {{ t('marketplace.currently_applied') || '当前生效' }}
+                      {{ t('marketplace.currently_applied') || '已应用' }}
                     </button>
                     <button
                       v-else-if="activeDetail.is_installed"
@@ -235,7 +235,7 @@
                       disabled
                       :title="t('marketplace.current_active') || '当前正在生效的主题'"
                     >
-                      {{ t('marketplace.currently_applied') || '当前生效' }}
+                      {{ t('marketplace.currently_applied') || '已应用' }}
                     </button>
                     <button
                       v-else-if="activeDetail.is_installed"
@@ -270,7 +270,7 @@
                       disabled
                       :title="t('marketplace.current_active') || '当前正在生效的主题'"
                     >
-                      {{ t('marketplace.currently_applied') || '当前生效' }}
+                      {{ t('marketplace.currently_applied') || '已应用' }}
                     </button>
                     <button
                       v-else-if="activeDetail.is_installed"
@@ -687,7 +687,7 @@
                     disabled
                     :title="t('marketplace.current_active') || '当前正在生效的主题'"
                   >
-                    {{ t('marketplace.currently_applied') || '当前生效' }}
+                    {{ t('marketplace.currently_applied') || '已应用' }}
                   </button>
                   <!-- More Menu for Installed Themes (Uninstall) -->
                   <div
@@ -846,7 +846,7 @@
                         disabled
                         :title="t('marketplace.current_active') || '当前正在生效的主题'"
                       >
-                        {{ t('marketplace.currently_applied') || '当前生效' }}
+                        {{ t('marketplace.currently_applied') || '已应用' }}
                       </button>
                       <!-- More Menu for Installed Themes (Uninstall) -->
                       <div

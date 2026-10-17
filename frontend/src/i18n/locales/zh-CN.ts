@@ -594,7 +594,7 @@ export const zhCn: TranslationDict = {
   "marketplace.view_popular": "查看热门推荐",
   "marketplace.active": "生效中",
   "marketplace.in_use": "使用中",
-  "marketplace.currently_applied": "当前生效",
+  "marketplace.currently_applied": "已应用",
   "marketplace.current_active": "当前正在生效的主题",
   "marketplace.retry": "重试",
   "marketplace.uninstall_confirm": "确定要卸载主题包 \"{name}\" 吗？",
