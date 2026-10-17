@@ -2813,23 +2813,27 @@ print(json.dumps({
             return;
           }
 
-          if (req.url === "/api/config") {
+          if (req.url?.startsWith("/api/hooks")) {
+            const url = new URL(req.url, "http://localhost");
+            const pathname = url.pathname;
+            const scope = (url.searchParams.get("scope") || "workspace").toLowerCase();
             const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
             const wsPath = path.join(rootDir, ".unirtm.toml");
+            const targetPath = scope === "user" ? userPath : wsPath;
 
-            const parseSettings = (raw: string) => {
-              const res: Record<string, any> = {};
-              let inSettings = false;
+            const parseHooksTable = (raw: string) => {
+              const res: Record<string, string> = {};
+              let inTable = false;
               for (const line of raw.split("\n")) {
                 const tr = line.trim();
                 if (tr.startsWith("[") && tr.endsWith("]")) {
-                  inSettings = tr === "[settings]";
+                  inTable = tr === "[hooks]";
                   continue;
                 }
-                if (inSettings && tr && !tr.startsWith("#")) {
+                if (inTable && tr && !tr.startsWith("#")) {
                   const eq = tr.indexOf("=");
                   if (eq !== -1) {
-                    const k = tr.slice(0, eq).trim();
+                    const k = tr.slice(0, eq).trim().replace(/^["']|["']$/g, "");
                     let v = tr.slice(eq + 1).trim();
                     if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
                       v = v.slice(1, -1);
@@ -2840,6 +2844,276 @@ print(json.dumps({
               }
               return res;
             };
+
+            if (pathname === "/api/hooks" && req.method === "GET") {
+              const raw = fs.existsSync(targetPath) ? fs.readFileSync(targetPath, "utf-8") : "";
+              const hooksMap = parseHooksTable(raw);
+              const gitDir = path.join(rootDir, ".git");
+              const gitDirExists = fs.existsSync(gitDir) && fs.statSync(gitDir).isDirectory();
+
+              const hooksList = Object.keys(hooksMap).sort().map((name) => {
+                let installed = false;
+                if (scope !== "user" && gitDirExists) {
+                  const hookFile = path.join(gitDir, "hooks", name);
+                  if (fs.existsSync(hookFile)) {
+                    const content = fs.readFileSync(hookFile, "utf-8");
+                    installed = content.includes("unirtm hook");
+                  }
+                }
+                return {
+                  name,
+                  command: hooksMap[name],
+                  installed,
+                };
+              });
+
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify({
+                hooks: hooksList,
+                total: hooksList.length,
+                scope,
+                git_dir_exists: gitDirExists,
+              }));
+              return;
+            }
+
+            if (pathname === "/api/hooks" && (req.method === "POST" || req.method === "PUT")) {
+              let bodyStr = "";
+              req.on("data", (c) => { bodyStr += c; });
+              req.on("end", () => {
+                try {
+                  const { name, command, scope: reqScope, install_bridge } = JSON.parse(bodyStr || "{}");
+                  if (!name || !command) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "name and command are required" }));
+                    return;
+                  }
+                  const curScope = (reqScope || scope || "workspace").toLowerCase();
+                  const curTarget = curScope === "user" ? userPath : wsPath;
+                  fs.mkdirSync(path.dirname(curTarget), { recursive: true });
+                  const raw = fs.existsSync(curTarget) ? fs.readFileSync(curTarget, "utf-8") : "";
+
+                  const lines = raw.split("\n");
+                  let inHooks = false;
+                  let hooksStart = -1;
+                  let hooksEnd = -1;
+                  let matchIdx = -1;
+
+                  for (let i = 0; i < lines.length; i++) {
+                    const tr = lines[i].trim();
+                    if (tr === "[hooks]") {
+                      inHooks = true;
+                      hooksStart = i;
+                      continue;
+                    }
+                    if (inHooks) {
+                      if (tr.startsWith("[") && tr !== "[hooks]") {
+                        hooksEnd = i;
+                        inHooks = false;
+                        break;
+                      }
+                      const eq = tr.indexOf("=");
+                      if (eq !== -1) {
+                        const k = tr.slice(0, eq).trim().replace(/^["']|["']$/g, "");
+                        if (k.toLowerCase() === name.toLowerCase()) {
+                          matchIdx = i;
+                        }
+                      }
+                    }
+                  }
+                  if (inHooks) hooksEnd = lines.length;
+
+                  const newEntry = `${name} = ${JSON.stringify(command)}`;
+                  if (hooksStart === -1) {
+                    const appendStr = (raw && !raw.endsWith("\n") ? "\n" : "") + `\n[hooks]\n${newEntry}\n`;
+                    fs.writeFileSync(curTarget, raw + appendStr, "utf-8");
+                  } else if (matchIdx !== -1) {
+                    lines[matchIdx] = newEntry;
+                    fs.writeFileSync(curTarget, lines.join("\n"), "utf-8");
+                  } else {
+                    lines.splice(hooksEnd, 0, newEntry);
+                    fs.writeFileSync(curTarget, lines.join("\n"), "utf-8");
+                  }
+
+                  let installed = false;
+                  if (install_bridge && curScope !== "user") {
+                    const unirtmBin = findUnirtmBinary(rootDir);
+                    if (fs.existsSync(unirtmBin)) {
+                      try {
+                        execFileSync(unirtmBin, ["hook", "install", name], { cwd: rootDir, stdio: "pipe" });
+                        installed = true;
+                      } catch {}
+                    }
+                  }
+
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({
+                    success: true,
+                    name,
+                    command,
+                    scope: curScope,
+                    installed,
+                  }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            if (pathname === "/api/hooks" && req.method === "DELETE") {
+              let bodyStr = "";
+              req.on("data", (c) => { bodyStr += c; });
+              req.on("end", () => {
+                try {
+                  let hookName = url.searchParams.get("name") || "";
+                  let delScope = scope;
+                  if (!hookName && bodyStr) {
+                    try {
+                      const parsed = JSON.parse(bodyStr);
+                      hookName = parsed.name || "";
+                      delScope = parsed.scope || delScope;
+                    } catch {}
+                  }
+                  if (!hookName) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "hook name is required" }));
+                    return;
+                  }
+                  const curTarget = delScope === "user" ? userPath : wsPath;
+                  if (fs.existsSync(curTarget)) {
+                    const content = fs.readFileSync(curTarget, "utf-8");
+                    const lines = content.split("\n");
+                    let inHooks = false;
+                    const newLines: string[] = [];
+                    for (let i = 0; i < lines.length; i++) {
+                      const tr = lines[i].trim();
+                      if (tr === "[hooks]") {
+                        inHooks = true;
+                        newLines.push(lines[i]);
+                        continue;
+                      }
+                      if (inHooks) {
+                        if (tr.startsWith("[") && tr !== "[hooks]") {
+                          inHooks = false;
+                          newLines.push(lines[i]);
+                          continue;
+                        }
+                        const eq = tr.indexOf("=");
+                        if (eq !== -1) {
+                          const k = tr.slice(0, eq).trim().replace(/^["']|["']$/g, "");
+                          if (k.toLowerCase() === hookName.toLowerCase()) {
+                            continue;
+                          }
+                        }
+                      }
+                      newLines.push(lines[i]);
+                    }
+                    fs.writeFileSync(curTarget, newLines.join("\n"), "utf-8");
+                  }
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, deleted_name: hookName }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            if (pathname === "/api/hooks/install" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (c) => { bodyStr += c; });
+              req.on("end", () => {
+                try {
+                  const { name, all } = JSON.parse(bodyStr || "{}");
+                  const unirtmBin = findUnirtmBinary(rootDir);
+                  const args = ["hook", "install"];
+                  if (all || !name) {
+                    args.push("-a");
+                  } else {
+                    args.push(name);
+                  }
+                  let output = "";
+                  if (fs.existsSync(unirtmBin)) {
+                    output = execFileSync(unirtmBin, args, { cwd: rootDir, encoding: "utf-8" });
+                  }
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, installed: name ? [name] : ["all"], output }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            if (pathname === "/api/hooks/run" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (c) => { bodyStr += c; });
+              req.on("end", () => {
+                try {
+                  const { name, args: hArgs } = JSON.parse(bodyStr || "{}");
+                  const unirtmBin = findUnirtmBinary(rootDir);
+                  const runArgs = ["hook", "run", name || "all"];
+                  if (Array.isArray(hArgs)) {
+                    runArgs.push(...hArgs);
+                  }
+                  let output = "";
+                  let exitCode = 0;
+                  try {
+                    output = execFileSync(unirtmBin, runArgs, { cwd: rootDir, encoding: "utf-8" });
+                  } catch (runErr: any) {
+                    exitCode = runErr.status || 1;
+                    output = runErr.stdout || runErr.stderr || runErr.message;
+                  }
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: exitCode === 0, exit_code: exitCode, output, name }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+          }
+
+          if (req.url === "/api/config") {
+            const userPath = path.join(os.homedir(), ".config", "unirtm", "unirtm.toml");
+            const wsPath = path.join(rootDir, ".unirtm.toml");
+
+            const parseTable = (raw: string, tableName: string) => {
+              const res: Record<string, any> = {};
+              let inTable = false;
+              for (const line of raw.split("\n")) {
+                const tr = line.trim();
+                if (tr.startsWith("[") && tr.endsWith("]")) {
+                  inTable = tr === `[${tableName}]`;
+                  continue;
+                }
+                if (inTable && tr && !tr.startsWith("#")) {
+                  const eq = tr.indexOf("=");
+                  if (eq !== -1) {
+                    const k = tr.slice(0, eq).trim().replace(/^["']|["']$/g, "");
+                    let v = tr.slice(eq + 1).trim();
+                    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+                      v = v.slice(1, -1);
+                    }
+                    res[k] = v;
+                  }
+                }
+              }
+              return res;
+            };
+
+            const parseSettings = (raw: string) => parseTable(raw, "settings");
 
             if (req.method === "GET") {
               const userExists = fs.existsSync(userPath);
@@ -2855,12 +3129,14 @@ print(json.dumps({
                     exists: userExists,
                     raw: userRaw,
                     settings: parseSettings(userRaw),
+                    hooks: parseTable(userRaw, "hooks"),
                   },
                   workspace: {
                     path: wsPath,
                     exists: wsExists,
                     raw: wsRaw,
                     settings: parseSettings(wsRaw),
+                    hooks: parseTable(wsRaw, "hooks"),
                   },
                   detected_browsers: [],
                 })

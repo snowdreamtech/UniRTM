@@ -467,6 +467,148 @@
           </div>
         </section>
 
+        <!-- 2. Git & Lifecycle Hooks -->
+        <section
+          v-show="isCategoryVisible('hooks')"
+          id="section-hooks"
+          class="settings-category-section glass-card"
+        >
+          <div class="section-header">
+            <div class="section-title-wrap">
+              <span class="section-icon">
+                <TechIcon id="workbench:git" :size="20" />
+              </span>
+              <div>
+                <h2>{{ t('settings.cat_hooks') || '生命周期与 Git 钩子 (Hooks)' }}</h2>
+                <span class="section-sub">{{ t('settings.cat_hooks_sub') || 'Git 提交与操作生命周期自动化事件脚本' }}</span>
+              </div>
+            </div>
+            <div class="hooks-header-actions" style="display: flex; gap: 8px; align-items: center;">
+              <button
+                v-if="activeScope !== 'user'"
+                type="button"
+                class="btn-bridge-install"
+                :disabled="isInstallingBridges"
+                @click="installAllGitBridges"
+                :title="t('settings.hooks_install_bridges_tip') || '自动将 UniRTM 路由脚本注入到工作区 .git/hooks 目录'"
+              >
+                <TechIcon id="workbench:sync" :size="13" :class="{ spinning: isInstallingBridges }" />
+                <span>{{ isInstallingBridges ? (t('settings.hooks_installing_bridges') || '正在注入 Git 桥接...') : (t('settings.hooks_install_bridges') || '注入 Git 桥接') }}</span>
+              </button>
+              <button
+                type="button"
+                class="btn-add-hook"
+                @click="openAddHookModal()"
+              >
+                <TechIcon id="workbench:add" :size="13" />
+                <span>{{ t('settings.hooks_add_btn') || '+ 添加钩子' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Hooks Content List or Empty State -->
+          <div class="hooks-container">
+            <div v-if="isLoadingHooks" class="hooks-loading">
+              <span class="spinner-small"></span>
+              <span>{{ t('settings.hooks_loading') || '正在加载生命周期钩子...' }}</span>
+            </div>
+
+            <div v-else-if="hooksList.length === 0" class="hooks-empty-state">
+              <div class="empty-icon-wrap">
+                <TechIcon id="workbench:git" :size="32" />
+              </div>
+              <h4>{{ t('settings.hooks_empty_title') || '尚未配置任何生命周期钩子' }}</h4>
+              <p>{{ t('settings.hooks_empty_desc') || '配置 Git 钩子可在提交、推送或分支检出前后自动执行代码格式化、质量检查与测试。' }}</p>
+              <div class="hooks-preset-recommendations">
+                <span class="preset-label">{{ t('settings.hooks_recommended_label') || '常用推荐:' }}</span>
+                <button
+                  type="button"
+                  class="preset-chip-btn"
+                  @click="openAddHookModal('pre-commit', 'npm test')"
+                >
+                  <span>⚡ pre-commit (测试与质检)</span>
+                </button>
+                <button
+                  type="button"
+                  class="preset-chip-btn"
+                  @click="openAddHookModal('commit-msg', 'npx commitlint --edit $1')"
+                >
+                  <span>📝 commit-msg (提交信息规范)</span>
+                </button>
+                <button
+                  type="button"
+                  class="preset-chip-btn"
+                  @click="openAddHookModal('pre-push', 'npm run lint && npm test')"
+                >
+                  <span>🛡️ pre-push (推送前全量校验)</span>
+                </button>
+              </div>
+            </div>
+
+            <div v-else class="hooks-grid">
+              <div
+                v-for="hook in hooksList"
+                :key="hook.name"
+                class="hook-card"
+                :class="{ 'highlight': matchesSearch(hook.name) || matchesSearch(hook.command) }"
+              >
+                <div class="hook-card-header">
+                  <div class="hook-name-group">
+                    <span class="hook-badge-icon">
+                      <TechIcon id="workbench:git" :size="14" />
+                    </span>
+                    <span class="hook-name font-mono">{{ hook.name }}</span>
+                    <span v-if="activeScope !== 'user'" class="hook-bridge-badge" :class="hook.installed ? 'installed' : 'not-installed'">
+                      {{ hook.installed ? ('✓ ' + (t('settings.hooks_badge_bridged') || 'Git 已桥接')) : ('⚠ ' + (t('settings.hooks_badge_unbridged') || '未注入桥接')) }}
+                    </span>
+                  </div>
+                  <div class="hook-card-actions">
+                    <button
+                      type="button"
+                      class="btn-icon-action"
+                      :title="t('settings.hooks_run_tip') || '测试执行该钩子'"
+                      @click="runHookTest(hook.name)"
+                    >
+                      <TechIcon id="workbench:tasks" :size="14" />
+                      <span>{{ t('settings.hooks_run_btn') || '测试' }}</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-icon-action"
+                      :title="t('settings.hooks_edit_tip') || '编辑脚本命令'"
+                      @click="openEditHookModal(hook)"
+                    >
+                      <TechIcon id="workbench:edit" :size="14" />
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-icon-action danger"
+                      :title="t('settings.hooks_delete_tip') || '删除此钩子'"
+                      @click="deleteHook(hook.name)"
+                    >
+                      <TechIcon id="workbench:error" :size="14" />
+                    </button>
+                  </div>
+                </div>
+
+                <div class="hook-command-wrap">
+                  <div class="hook-command-code font-mono">
+                    <code>{{ hook.command }}</code>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn-copy-code"
+                    :title="t('settings.copy_command') || '复制命令'"
+                    @click="copyCommand(hook.command)"
+                  >
+                    <TechIcon id="workbench:edit" :size="12" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <!-- 3. Network & Mirrors -->
         <section
           v-show="isCategoryVisible('network')"
@@ -1068,6 +1210,111 @@
             </div>
           </div>
         </section>
+
+        <!-- Add/Edit Hook Modal Dialog -->
+        <div v-if="showHookModal" class="modal-backdrop" @click.self="showHookModal = false">
+          <div class="modal-dialog glass-card">
+            <div class="modal-header">
+              <div class="modal-title-group">
+                <span class="modal-icon">
+                  <TechIcon id="workbench:git" :size="20" />
+                </span>
+                <div>
+                  <h4>{{ isEditingHook ? (t('settings.hooks_modal_edit_title') || '编辑生命周期钩子') : (t('settings.hooks_modal_add_title') || '添加生命周期钩子') }}</h4>
+                  <span class="modal-subtitle">{{ t('settings.hooks_modal_sub') || '指定 Git 触发阶段与待执行的 Shell 脚本或任务命令' }}</span>
+                </div>
+              </div>
+              <button class="btn-modal-close" @click="showHookModal = false">✕</button>
+            </div>
+            <div class="modal-body">
+              <div class="modal-field">
+                <label class="modal-label">{{ t('settings.hooks_form_stage') || 'Git 触发阶段 (Hook Stage)' }}</label>
+                <CustomSelect
+                  v-if="!isEditingHook"
+                  :model-value="hookFormName"
+                  :options="standardHookPresets"
+                  @change="(val) => hookFormName = val"
+                />
+                <input
+                  v-if="hookFormName === 'custom' || isEditingHook"
+                  v-model="hookFormCustomName"
+                  type="text"
+                  class="modal-input font-mono"
+                  style="margin-top: 6px;"
+                  :placeholder="t('settings.hooks_form_name_placeholder') || '输入钩子名称 (例如 pre-commit, commit-msg)'"
+                  :disabled="isEditingHook"
+                />
+              </div>
+
+              <div class="modal-field">
+                <label class="modal-label">{{ t('settings.hooks_form_cmd') || '执行命令 / 脚本 (Command)' }}</label>
+                <textarea
+                  v-model="hookFormCommand"
+                  class="modal-textarea font-mono"
+                  rows="3"
+                  :placeholder="t('settings.hooks_form_cmd_placeholder') || '例如: npm test 或 unirtm run check'"
+                ></textarea>
+              </div>
+
+              <div v-if="activeScope !== 'user'" class="modal-field checkbox-field" style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                <input
+                  type="checkbox"
+                  id="hook-auto-bridge"
+                  v-model="hookFormAutoBridge"
+                />
+                <label for="hook-auto-bridge" style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer;">
+                  {{ t('settings.hooks_form_auto_bridge') || '同时自动将 UniRTM 路由脚本注入到 .git/hooks/' }}
+                </label>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-modal-cancel" @click="showHookModal = false">{{ t('common.cancel') || '取消' }}</button>
+              <button
+                class="btn-modal-confirm"
+                :disabled="isSavingHook"
+                @click="saveHook"
+              >
+                <span v-if="isSavingHook" class="spinner-small"></span>
+                <span>{{ isSavingHook ? (t('common.saving') || '保存中...') : (t('common.save') || '保存钩子') }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hook Test Run Modal Dialog -->
+        <div v-if="showHookRunModal" class="modal-backdrop" @click.self="showHookRunModal = false">
+          <div class="modal-dialog glass-card" style="max-width: 600px;">
+            <div class="modal-header">
+              <div class="modal-title-group">
+                <span class="modal-icon">
+                  <TechIcon id="workbench:tasks" :size="20" />
+                </span>
+                <div>
+                  <h4>{{ t('settings.hooks_run_modal_title') || '测试执行生命周期钩子' }}: <span class="font-mono text-cyan">{{ runningHookName }}</span></h4>
+                  <span class="modal-subtitle">{{ t('settings.hooks_run_modal_sub') || '在当前工作区环境下通过 UniRTM Multi-Engine 调度运行' }}</span>
+                </div>
+              </div>
+              <button class="btn-modal-close" @click="showHookRunModal = false">✕</button>
+            </div>
+            <div class="modal-body">
+              <div v-if="isRunningHook" class="hook-run-loading" style="display: flex; align-items: center; gap: 10px; padding: 24px; justify-content: center; color: var(--text-muted);">
+                <span class="spinner-small"></span>
+                <span>{{ t('settings.hooks_running') || '正在执行钩子脚本，请稍候...' }}</span>
+              </div>
+              <div v-else-if="hookRunResult" class="hook-run-result">
+                <div class="run-status-bar" style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                  <span class="run-status-badge" :style="{ color: hookRunResult.success ? '#10b981' : '#ef4444', fontWeight: '600' }">
+                    {{ hookRunResult.success ? '✓ 执行成功 (Exit Code 0)' : `✕ 执行失败 (Exit Code ${hookRunResult.exit_code})` }}
+                  </span>
+                </div>
+                <div class="terminal-output-box" style="background: #090d16; border: 1px solid var(--card-border); border-radius: 6px; padding: 12px; font-family: monospace; font-size: 0.85rem; max-height: 300px; overflow-y: auto; color: #e2e8f0; white-space: pre-wrap;">{{ hookRunResult.output || '(无标准输出)' }}</div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-modal-confirm" @click="showHookRunModal = false">{{ t('common.close') || '关闭' }}</button>
+            </div>
+          </div>
+        </div>
       </div>
   </div>
 </template>
@@ -1120,9 +1367,196 @@ const activeCategory = ref(props.activeCategory || "general");
 const showRawTomlModal = ref(false);
 const isCopied = ref(false);
 
+// Hooks Lifecycle Management State
+interface HookItem {
+  name: string;
+  command: string;
+  installed?: boolean;
+}
+
+const hooksList = ref<HookItem[]>([]);
+const isLoadingHooks = ref(false);
+const isInstallingBridges = ref(false);
+
+const showHookModal = ref(false);
+const isEditingHook = ref(false);
+const hookFormName = ref("pre-commit");
+const hookFormCustomName = ref("");
+const hookFormCommand = ref("");
+const hookFormAutoBridge = ref(true);
+const isSavingHook = ref(false);
+
+const showHookRunModal = ref(false);
+const runningHookName = ref("");
+const isRunningHook = ref(false);
+const hookRunResult = ref<{ success: boolean; exit_code: number; output: string } | null>(null);
+
+const standardHookPresets = [
+  { value: "pre-commit", label: "pre-commit (提交前校验 / Lint & Test)" },
+  { value: "prepare-commit-msg", label: "prepare-commit-msg (准备提交信息模板)" },
+  { value: "commit-msg", label: "commit-msg (提交信息格式规范检查)" },
+  { value: "post-commit", label: "post-commit (提交完成后续动作)" },
+  { value: "pre-push", label: "pre-push (推送远程前全量校验)" },
+  { value: "post-checkout", label: "post-checkout (检出切换分支依赖维护)" },
+  { value: "post-merge", label: "post-merge (合并后自动拉取/安装)" },
+  { value: "pre-rebase", label: "pre-rebase (变基前安全防御)" },
+  { value: "custom", label: "自定义名称 (Custom Hook)..." },
+];
+
+async function fetchHooksList() {
+  isLoadingHooks.value = true;
+  try {
+    const res = await fetch(`/api/hooks?scope=${activeScope.value}`);
+    if (res.ok) {
+      const data = await res.json();
+      hooksList.value = data.hooks || [];
+    }
+  } catch (err) {
+    console.warn("Failed to fetch /api/hooks:", err);
+  } finally {
+    isLoadingHooks.value = false;
+  }
+}
+
+function openAddHookModal(presetName?: string, presetCmd?: string) {
+  isEditingHook.value = false;
+  hookFormName.value = presetName || "pre-commit";
+  hookFormCustomName.value = presetName || "";
+  hookFormCommand.value = presetCmd || "";
+  hookFormAutoBridge.value = activeScope.value !== "user";
+  showHookModal.value = true;
+}
+
+function openEditHookModal(hook: HookItem) {
+  isEditingHook.value = true;
+  const isStandard = standardHookPresets.some(p => p.value === hook.name && p.value !== "custom");
+  if (isStandard) {
+    hookFormName.value = hook.name;
+    hookFormCustomName.value = "";
+  } else {
+    hookFormName.value = "custom";
+    hookFormCustomName.value = hook.name;
+  }
+  hookFormCommand.value = hook.command;
+  hookFormAutoBridge.value = hook.installed || false;
+  showHookModal.value = true;
+}
+
+async function saveHook() {
+  const finalName = hookFormName.value === "custom" ? hookFormCustomName.value.trim() : hookFormName.value.trim();
+  if (!finalName) {
+    showToast("请输入 Hook 名称", "warning");
+    return;
+  }
+  if (!hookFormCommand.value.trim()) {
+    showToast("请输入执行命令", "warning");
+    return;
+  }
+
+  isSavingHook.value = true;
+  try {
+    const res = await fetch("/api/hooks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        scope: activeScope.value,
+        name: finalName,
+        command: hookFormCommand.value.trim(),
+        install_bridge: hookFormAutoBridge.value,
+      }),
+    });
+    if (res.ok) {
+      showToast(isEditingHook.value ? "Hook 更新成功" : "Hook 创建成功", "success");
+      showHookModal.value = false;
+      await fetchHooksList();
+      await loadConfigData();
+    } else {
+      const data = await res.json();
+      showToast(`保存失败: ${data.error || "未知错误"}`, "error");
+    }
+  } catch (err: any) {
+    showToast(`保存失败: ${err.message}`, "error");
+  } finally {
+    isSavingHook.value = false;
+  }
+}
+
+async function deleteHook(name: string) {
+  if (!confirm(`确定要移除钩子 ${name} 吗？`)) return;
+  try {
+    const res = await fetch(`/api/hooks?name=${encodeURIComponent(name)}&scope=${activeScope.value}`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      showToast(`已移除 ${name}`, "success");
+      await fetchHooksList();
+      await loadConfigData();
+    } else {
+      const data = await res.json();
+      showToast(`删除失败: ${data.error}`, "error");
+    }
+  } catch (err: any) {
+    showToast(`删除失败: ${err.message}`, "error");
+  }
+}
+
+async function installAllGitBridges() {
+  isInstallingBridges.value = true;
+  try {
+    const res = await fetch("/api/hooks/install", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ all: true }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showToast(`✨ Git 桥接注入成功: ${data.installed?.join(", ") || "已生效"}`, "success");
+      await fetchHooksList();
+    } else {
+      showToast(`注入失败: ${data.error}`, "error");
+    }
+  } catch (err: any) {
+    showToast(`注入失败: ${err.message}`, "error");
+  } finally {
+    isInstallingBridges.value = false;
+  }
+}
+
+async function runHookTest(name: string) {
+  runningHookName.value = name;
+  isRunningHook.value = true;
+  hookRunResult.value = null;
+  showHookRunModal.value = true;
+  try {
+    const res = await fetch("/api/hooks/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, scope: activeScope.value }),
+    });
+    const data = await res.json();
+    hookRunResult.value = data;
+  } catch (err: any) {
+    hookRunResult.value = {
+      success: false,
+      exit_code: 1,
+      output: `执行失败: ${err.message}`,
+    };
+  } finally {
+    isRunningHook.value = false;
+  }
+}
+
+function copyCommand(cmd: string) {
+  if (navigator?.clipboard?.writeText) {
+    navigator.clipboard.writeText(cmd);
+    showToast("已复制命令到剪贴板", "success");
+  }
+}
+
 watch(activeScope, () => {
   loadConfigData();
   loadNetworkStatus();
+  fetchHooksList();
 });
 
 watch(
@@ -1773,6 +2207,20 @@ function isCategoryVisible(catId: string) {
       q.includes("任务") ||
       q.includes("超时") ||
       q.includes("实验"))
+  )
+    return true;
+  if (
+    catId === "hooks" &&
+    (q.includes("hook") ||
+      q.includes("git") ||
+      q.includes("commit") ||
+      q.includes("push") ||
+      q.includes("钩子") ||
+      q.includes("生命周期") ||
+      q.includes("自动化") ||
+      q.includes("脚本") ||
+      q.includes("提交") ||
+      q.includes("推送"))
   )
     return true;
   if (
@@ -2600,6 +3048,7 @@ async function handleRunProbeAll() {
 onMounted(() => {
   loadConfigData();
   loadNetworkStatus();
+  fetchHooksList();
   handleDetectProxy(false);
   fetchThemes();
   if (props.activeCategory) {
@@ -4555,6 +5004,339 @@ input:checked + .slider:before {
   background: #ecfdf5;
   border-color: #a7f3d0;
   color: #059669;
+}
+
+/* Hooks Section Styling */
+.btn-bridge-install,
+.btn-add-hook {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-bridge-install {
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+}
+
+.btn-bridge-install:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+  border-color: var(--border-color);
+}
+
+.btn-bridge-install:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-add-hook {
+  background: var(--accent-cyan);
+  border: 1px solid transparent;
+  color: #0b0f19;
+  font-weight: 600;
+}
+
+.btn-add-hook:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.35);
+}
+
+.hooks-container {
+  margin-top: 12px;
+}
+
+.hooks-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 24px;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.hooks-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--card-border);
+  border-radius: 8px;
+}
+
+.empty-icon-wrap {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(6, 182, 212, 0.1);
+  color: var(--accent-cyan);
+  margin-bottom: 12px;
+}
+
+.hooks-empty-state h4 {
+  margin: 0 0 6px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.hooks-empty-state p {
+  margin: 0 0 16px 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  max-width: 480px;
+  line-height: 1.5;
+}
+
+.hooks-preset-recommendations {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.preset-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.hooks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 12px;
+}
+
+.hook-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  transition: all 0.2s ease;
+}
+
+.hook-card:hover {
+  border-color: var(--border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.hook-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hook-name-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.hook-badge-icon {
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+}
+
+.hook-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.hook-bridge-badge {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.hook-bridge-badge.installed {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.hook-bridge-badge.not-installed {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.hook-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-icon-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 0.74rem;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-icon-action:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.btn-icon-action.danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+
+.hook-command-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  gap: 8px;
+}
+
+.hook-command-code {
+  font-size: 0.8rem;
+  color: #38bdf8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hook-command-code code {
+  font-family: var(--font-mono, monospace);
+}
+
+.btn-copy-code {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: color 0.15s ease;
+}
+
+.btn-copy-code:hover {
+  color: var(--text-main);
+}
+
+.modal-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  color: var(--text-main);
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  resize: vertical;
+  line-height: 1.4;
+  outline: none;
+}
+
+.modal-textarea:focus {
+  border-color: var(--accent-cyan);
+}
+
+/* Light Theme Overrides */
+:root[data-theme="light"] .btn-bridge-install,
+[data-theme="light"] .btn-bridge-install {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+:root[data-theme="light"] .btn-bridge-install:hover:not(:disabled),
+[data-theme="light"] .btn-bridge-install:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .btn-add-hook,
+[data-theme="light"] .btn-add-hook {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .hooks-empty-state,
+[data-theme="light"] .hooks-empty-state {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+:root[data-theme="light"] .hook-card,
+[data-theme="light"] .hook-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="light"] .hook-card:hover,
+[data-theme="light"] .hook-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+:root[data-theme="light"] .hook-command-wrap,
+[data-theme="light"] .hook-command-wrap {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+:root[data-theme="light"] .hook-command-code,
+[data-theme="light"] .hook-command-code {
+  color: #0284c7;
+}
+
+:root[data-theme="light"] .btn-icon-action,
+[data-theme="light"] .btn-icon-action {
+  border-color: #cbd5e1;
+  color: #64748b;
+}
+
+:root[data-theme="light"] .btn-icon-action:hover,
+[data-theme="light"] .btn-icon-action:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .modal-textarea,
+[data-theme="light"] .modal-textarea {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
 }
 </style>
 

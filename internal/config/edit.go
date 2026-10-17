@@ -787,3 +787,135 @@ func UpsertTask(content string, name string, description string, command string,
 	b.WriteString("\n")
 	return b.String()
 }
+
+// UpsertHook adds or updates a lifecycle hook in the TOML [hooks] section.
+func UpsertHook(content, name, command string) string {
+	cleanName := strings.TrimSpace(name)
+	lines := strings.Split(content, "\n")
+	newEntry := fmt.Sprintf("%s = %s", quoteTOMLKey(cleanName), quoteTOMLValue(command))
+
+	inHooks := false
+	hooksStart := -1
+	hooksEnd := -1
+	var matchingIndices []int
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "[hooks]" {
+			inHooks = true
+			hooksStart = i
+			continue
+		}
+		if inHooks {
+			if strings.HasPrefix(trimmed, "[") && trimmed != "[hooks]" {
+				hooksEnd = i
+				inHooks = false
+				break
+			}
+			existingKey := extractTOMLKey(line)
+			if strings.EqualFold(existingKey, cleanName) {
+				matchingIndices = append(matchingIndices, i)
+			}
+		}
+	}
+	if inHooks {
+		hooksEnd = len(lines)
+	}
+
+	if hooksStart == -1 {
+		if content != "" && !strings.HasSuffix(content, "\n") {
+			content += "\n"
+		}
+		content += "\n[hooks]\n" + newEntry + "\n"
+		return content
+	}
+
+	if len(matchingIndices) > 0 {
+		lines[matchingIndices[0]] = newEntry
+		if len(matchingIndices) > 1 {
+			toRemove := make(map[int]bool)
+			for _, idx := range matchingIndices[1:] {
+				toRemove[idx] = true
+			}
+			filtered := make([]string, 0, len(lines)-len(matchingIndices)+1)
+			for i, l := range lines {
+				if !toRemove[i] {
+					filtered = append(filtered, l)
+				}
+			}
+			lines = filtered
+		}
+		return strings.Join(lines, "\n")
+	}
+
+	insertAt := hooksEnd
+	newLines := make([]string, 0, len(lines)+1)
+	newLines = append(newLines, lines[:insertAt]...)
+	newLines = append(newLines, newEntry)
+	newLines = append(newLines, lines[insertAt:]...)
+	return strings.Join(newLines, "\n")
+}
+
+// UnsetHook removes a hook entry from the TOML [hooks] section.
+func UnsetHook(content, name string) (string, bool) {
+	matchName := strings.TrimSpace(name)
+	lines := strings.Split(content, "\n")
+
+	inHooks := false
+	var matchingIndices []int
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "[hooks]" {
+			inHooks = true
+			continue
+		}
+		if inHooks {
+			if strings.HasPrefix(trimmed, "[") && trimmed != "[hooks]" {
+				break
+			}
+			existingKey := extractTOMLKey(line)
+			if strings.EqualFold(existingKey, matchName) {
+				matchingIndices = append(matchingIndices, i)
+			}
+		}
+	}
+
+	if len(matchingIndices) > 0 {
+		toRemove := make(map[int]bool)
+		for _, idx := range matchingIndices {
+			toRemove[idx] = true
+		}
+		newLines := make([]string, 0, len(lines)-len(matchingIndices))
+		for i, l := range lines {
+			if !toRemove[i] {
+				newLines = append(newLines, l)
+			}
+		}
+		return strings.Join(newLines, "\n"), true
+	}
+
+	return content, false
+}
+
+// GetHooksFromContent extracts key-value pairs from the [hooks] section of a TOML content string.
+func GetHooksFromContent(content string) map[string]string {
+	res := make(map[string]string)
+	if strings.TrimSpace(content) == "" {
+		return res
+	}
+	var doc struct {
+		Hooks map[string]interface{} `toml:"hooks"`
+	}
+	if err := toml.Unmarshal([]byte(content), &doc); err == nil && doc.Hooks != nil {
+		for k, v := range doc.Hooks {
+			if s, ok := v.(string); ok {
+				res[strings.TrimSpace(k)] = s
+			} else {
+				res[strings.TrimSpace(k)] = fmt.Sprintf("%v", v)
+			}
+		}
+	}
+	return res
+}
+

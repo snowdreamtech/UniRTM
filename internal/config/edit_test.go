@@ -271,3 +271,41 @@ func TestGetEnvVarsFromContent(t *testing.T) {
 	}
 }
 
+func TestHooksHelpers(t *testing.T) {
+	// 1. UpsertHook on empty content
+	content := ""
+	res := UpsertHook(content, "pre-commit", "npm test")
+	if !strings.Contains(res, "[hooks]") || !strings.Contains(res, "pre-commit = \"npm test\"") {
+		t.Fatalf("UpsertHook failed on empty content: %s", res)
+	}
+
+	// 2. Add another hook to existing [hooks]
+	res2 := UpsertHook(res, "commit-msg", "npx commitlint --edit $1")
+	if !strings.Contains(res2, "pre-commit = \"npm test\"") || !strings.Contains(res2, "commit-msg = \"npx commitlint --edit $1\"") {
+		t.Fatalf("UpsertHook failed to append hook: %s", res2)
+	}
+
+	// 3. Update existing hook
+	res3 := UpsertHook(res2, "pre-commit", "npm run check && npm test")
+	if !strings.Contains(res3, "pre-commit = \"npm run check && npm test\"") || strings.Contains(res3, "\"npm test\"") {
+		t.Fatalf("UpsertHook failed to update hook: %s", res3)
+	}
+
+	// 4. GetHooksFromContent
+	hooks := GetHooksFromContent(res3)
+	if hooks["pre-commit"] != "npm run check && npm test" {
+		t.Fatalf("GetHooksFromContent failed for pre-commit, got: %s", hooks["pre-commit"])
+	}
+	if hooks["commit-msg"] != "npx commitlint --edit $1" {
+		t.Fatalf("GetHooksFromContent failed for commit-msg, got: %s", hooks["commit-msg"])
+	}
+
+	// 5. UnsetHook
+	unhooked, ok := UnsetHook(res3, "pre-commit")
+	if !ok || strings.Contains(unhooked, "pre-commit") {
+		t.Fatalf("UnsetHook failed to remove pre-commit: %s", unhooked)
+	}
+	if !strings.Contains(unhooked, "commit-msg") {
+		t.Fatalf("UnsetHook accidentally removed other hooks: %s", unhooked)
+	}
+}

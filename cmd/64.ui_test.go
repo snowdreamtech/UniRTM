@@ -6,6 +6,7 @@ package cmd
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"runtime"
 	"strings"
 	"testing"
@@ -194,3 +195,63 @@ func TestUIDetectBrowsers(t *testing.T) {
 		t.Error("resolveBrowserExecutable returned empty string")
 	}
 }
+
+func TestUIHooksAPI(t *testing.T) {
+	distFS, err := frontend.GetFS()
+	if err != nil {
+		t.Fatalf("GetFS failed: %v", err)
+	}
+	mux := setupUIMux(distFS)
+
+	// Switch to a temp workspace to isolate tests
+	tmpDir := t.TempDir()
+	origWd, _ := os.Getwd()
+	_ = os.Chdir(tmpDir)
+	defer func() { _ = os.Chdir(origWd) }()
+
+	// 1. Initial GET /api/hooks (should be empty)
+	reqGet := httptest.NewRequest("GET", "/api/hooks?scope=workspace", nil)
+	rrGet := httptest.NewRecorder()
+	mux.ServeHTTP(rrGet, reqGet)
+	if rrGet.Code != http.StatusOK {
+		t.Fatalf("Expected 200 on GET /api/hooks, got %d", rrGet.Code)
+	}
+
+	// 2. POST /api/hooks to add a pre-commit hook
+	bodyPost := strings.NewReader(`{"name":"pre-commit","command":"npm test","scope":"workspace"}`)
+	reqPost := httptest.NewRequest("POST", "/api/hooks", bodyPost)
+	reqPost.Header.Set("Content-Type", "application/json")
+	rrPost := httptest.NewRecorder()
+	mux.ServeHTTP(rrPost, reqPost)
+	if rrPost.Code != http.StatusOK {
+		t.Fatalf("Expected 200 on POST /api/hooks, got %d: %s", rrPost.Code, rrPost.Body.String())
+	}
+
+	// 3. GET /api/hooks to verify pre-commit exists
+	reqGet2 := httptest.NewRequest("GET", "/api/hooks?scope=workspace", nil)
+	rrGet2 := httptest.NewRecorder()
+	mux.ServeHTTP(rrGet2, reqGet2)
+	if rrGet2.Code != http.StatusOK {
+		t.Fatalf("Expected 200 on GET /api/hooks after insert, got %d", rrGet2.Code)
+	}
+	if !strings.Contains(rrGet2.Body.String(), "pre-commit") || !strings.Contains(rrGet2.Body.String(), "npm test") {
+		t.Fatalf("Expected pre-commit in GET /api/hooks response, got: %s", rrGet2.Body.String())
+	}
+
+	// 4. DELETE /api/hooks to remove pre-commit
+	reqDel := httptest.NewRequest("DELETE", "/api/hooks?name=pre-commit&scope=workspace", nil)
+	rrDel := httptest.NewRecorder()
+	mux.ServeHTTP(rrDel, reqDel)
+	if rrDel.Code != http.StatusOK {
+		t.Fatalf("Expected 200 on DELETE /api/hooks, got %d", rrDel.Code)
+	}
+
+	// 5. GET /api/hooks to verify removed
+	reqGet3 := httptest.NewRequest("GET", "/api/hooks?scope=workspace", nil)
+	rrGet3 := httptest.NewRecorder()
+	mux.ServeHTTP(rrGet3, reqGet3)
+	if strings.Contains(rrGet3.Body.String(), "npm test") {
+		t.Fatalf("Expected hook to be deleted from GET response, got: %s", rrGet3.Body.String())
+	}
+}
+

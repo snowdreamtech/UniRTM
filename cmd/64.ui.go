@@ -25,6 +25,7 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/frontend"
 	"github.com/snowdreamtech/unirtm/internal/config"
+	"github.com/snowdreamtech/unirtm/internal/hook"
 	"github.com/snowdreamtech/unirtm/internal/network"
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/theme"
@@ -576,6 +577,23 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 		}
 	})
 
+	// Lifecycle Hooks Management APIs
+	mux.HandleFunc("/api/hooks", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleGetHooks(w, r)
+		case http.MethodPost, http.MethodPut:
+			handleUpsertHook(w, r)
+		case http.MethodDelete:
+			handleDeleteHook(w, r)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+		}
+	})
+	mux.HandleFunc("/api/hooks/install", handleInstallHooks)
+	mux.HandleFunc("/api/hooks/run", handleRunHook)
+
 	// Theme Management APIs
 	themeMgr := theme.NewManager()
 	mux.HandleFunc("/api/themes", func(w http.ResponseWriter, r *http.Request) {
@@ -682,6 +700,7 @@ func handleGetConfig(w http.ResponseWriter, r *http.Request) {
 			"settings": userCfg.Settings,
 			"plugins":  userCfg.Plugins,
 			"env":      userCfg.Env,
+			"hooks":    userCfg.Hooks,
 		},
 		"workspace": map[string]interface{}{
 			"path":     wsPath,
@@ -692,6 +711,7 @@ func handleGetConfig(w http.ResponseWriter, r *http.Request) {
 			"env":      wsCfg.Env,
 			"tools":    wsCfg.Tools,
 			"tasks":    wsCfg.Tasks,
+			"hooks":    wsCfg.Hooks,
 		},
 		"detected_browsers": detectInstalledBrowsers(),
 	})
@@ -880,6 +900,278 @@ func handleRunTask(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.CommandContext(ctx, os.Args[0], "run", body.Name)
 	if body.Scope == "user" {
 		cmd.Args = append(cmd.Args, "--global")
+	}
+	out, err := cmd.CombinedOutput()
+	exitCode := 0
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		} else {
+			exitCode = 1
+		}
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":   exitCode == 0,
+		"exit_code": exitCode,
+		"output":    string(out),
+		"name":      body.Name,
+	})
+}
+
+// ─── Lifecycle Hooks Management Handlers ──────────────────────────────────────
+
+type HookResp struct {
+	Name      string `json:"name"`
+	Command   string `json:"command"`
+	Installed bool   `json:"installed"`
+}
+
+func checkHookInstalledInGit(hookName string) bool {
+	gitHooksDir := filepath.Join(".git", "hooks")
+	hookPath := filepath.Join(gitHooksDir, hookName)
+	data, err := os.ReadFile(hookPath)
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(data), "unirtm hook")
+}
+
+func handleGetHooks(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	scope := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("scope")))
+	if scope == "" {
+		scope = "workspace"
+	}
+
+	targetFile := ".unirtm.toml"
+	if scope == "user" {
+		targetFile = config.GetGlobalConfigPath()
+	}
+
+	content, _ := config.ReadFileOrEmpty(targetFile)
+	hooksMap := config.GetHooksFromContent(content)
+
+	var res []HookResp
+	var names []string
+	for k := range hooksMap {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+
+	gitDirExists := false
+	if fi, err := os.Stat(".git"); err == nil && fi.IsDir() {
+		gitDirExists = true
+	}
+
+	for _, name := range names {
+		installed := false
+		if scope != "user" && gitDirExists {
+			installed = checkHookInstalledInGit(name)
+		}
+		res = append(res, HookResp{
+			Name:      name,
+			Command:   hooksMap[name],
+			Installed: installed,
+		})
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"hooks":          res,
+		"total":          len(res),
+		"scope":          scope,
+		"git_dir_exists": gitDirExists,
+	})
+}
+
+func handleUpsertHook(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var req struct {
+		Name          string `json:"name"`
+		Command       string `json:"command"`
+		Scope         string `json:"scope"`
+		InstallBridge bool   `json:"install_bridge"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid request body: " + err.Error()})
+		return
+	}
+
+	req.Name = strings.TrimSpace(req.Name)
+	req.Command = strings.TrimSpace(req.Command)
+	if req.Scope == "" {
+		req.Scope = "workspace"
+	}
+	req.Scope = strings.ToLower(strings.TrimSpace(req.Scope))
+
+	if req.Name == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "hook name cannot be empty"})
+		return
+	}
+	if req.Command == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "command cannot be empty"})
+		return
+	}
+
+	targetFile := ".unirtm.toml"
+	if req.Scope == "user" {
+		targetFile = config.GetGlobalConfigPath()
+	}
+
+	content, _ := config.ReadFileOrEmpty(targetFile)
+	updated := config.UpsertHook(content, req.Name, req.Command)
+	if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
+		return
+	}
+
+	installed := false
+	if req.InstallBridge && req.Scope != "user" {
+		pwd, _ := os.Getwd()
+		_ = hook.InstallBridgeScript(r.Context(), pwd, req.Name)
+		installed = checkHookInstalledInGit(req.Name)
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":   true,
+		"name":      req.Name,
+		"command":   req.Command,
+		"scope":     req.Scope,
+		"installed": installed,
+	})
+}
+
+func handleDeleteHook(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	name := strings.TrimSpace(r.URL.Query().Get("name"))
+	scope := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("scope")))
+
+	if name == "" {
+		var body struct {
+			Name  string `json:"name"`
+			Scope string `json:"scope"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err == nil {
+			name = strings.TrimSpace(body.Name)
+			if scope == "" {
+				scope = strings.ToLower(strings.TrimSpace(body.Scope))
+			}
+		}
+	}
+
+	if name == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "hook name is required"})
+		return
+	}
+
+	if scope == "" {
+		scope = "workspace"
+	}
+	targetFile := ".unirtm.toml"
+	if scope == "user" {
+		targetFile = config.GetGlobalConfigPath()
+	}
+
+	content, err := config.ReadFileOrEmpty(targetFile)
+	if err != nil || content == "" {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
+		return
+	}
+
+	updated, removed := config.UnsetHook(content, name)
+	if removed {
+		if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
+			return
+		}
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":      true,
+		"deleted_name": name,
+	})
+}
+
+func handleInstallHooks(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var body struct {
+		Name string `json:"name"`
+		All  bool   `json:"all"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+
+	pwd, err := os.Getwd()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	if body.All || body.Name == "" {
+		updated, err := hook.InstallAllBridgeScripts(r.Context(), pwd)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"success":   true,
+			"installed": updated,
+		})
+		return
+	}
+
+	if err := hook.ValidateHookName(body.Name); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	if err := hook.InstallBridgeScript(r.Context(), pwd, body.Name); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":   true,
+		"installed": []string{body.Name},
+	})
+}
+
+func handleRunHook(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var body struct {
+		Name  string   `json:"name"`
+		Args  []string `json:"args"`
+		Scope string   `json:"scope"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Name == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "hook name is required"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 120*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, os.Args[0], "hook", "run", body.Name)
+	if len(body.Args) > 0 {
+		cmd.Args = append(cmd.Args, body.Args...)
 	}
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
