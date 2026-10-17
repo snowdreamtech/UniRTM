@@ -125,6 +125,7 @@ const WORKBENCH_CODICON_MAP: Record<string, string> = {
   "workbench:user": "codicon-account",
   "workbench:edit": "codicon-edit",
   "workbench:github": "codicon-github",
+  "workbench:git": "codicon-git-branch",
   "workbench:sparkle": "codicon-sparkle",
   "workbench:cards": "codicon-editor-layout",
   "workbench:list": "codicon-table",

@@ -358,7 +358,7 @@ export const zhCn: TranslationDict = {
   "settings.hooks_install_bridges": "注入 Git 桥接",
   "settings.hooks_install_bridges_tip": "自动将 UniRTM 路由脚本注入到工作区 .git/hooks 目录",
   "settings.hooks_installing_bridges": "正在注入 Git 桥接...",
-  "settings.hooks_add_btn": "+ 添加钩子",
+  "settings.hooks_add_btn": "添加钩子",
   "settings.hooks_loading": "正在加载生命周期钩子...",
   "settings.hooks_empty_title": "尚未配置任何生命周期钩子",
   "settings.hooks_empty_desc": "配置 Git 钩子可在提交、推送或分支检出前后自动执行代码格式化、质量检查与测试。",

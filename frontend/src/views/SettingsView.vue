@@ -501,7 +501,7 @@
                 @click="openAddHookModal()"
               >
                 <TechIcon id="workbench:add" :size="13" />
-                <span>{{ t('settings.hooks_add_btn') || '+ 添加钩子' }}</span>
+                <span>{{ t('settings.hooks_add_btn') || '添加钩子' }}</span>
               </button>
             </div>
           </div>
@@ -5294,6 +5294,12 @@ input:checked + .slider:before {
 [data-theme="light"] .hooks-empty-state {
   background: #f8fafc;
   border-color: #e2e8f0;
+}
+
+:root[data-theme="light"] .empty-icon-wrap,
+[data-theme="light"] .empty-icon-wrap {
+  background: #e0f2fe;
+  color: #0284c7;
 }
 
 :root[data-theme="light"] .hook-card,

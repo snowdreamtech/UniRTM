@@ -609,7 +609,7 @@ export const fiFi: TranslationDict = {
   "settings.hooks_install_bridges": "Inject Git Bridges",
   "settings.hooks_install_bridges_tip": "Automatically inject UniRTM route bridges into .git/hooks directory",
   "settings.hooks_installing_bridges": "Injecting Git bridges...",
-  "settings.hooks_add_btn": "+ Add Hook",
+  "settings.hooks_add_btn": "Add Hook",
   "settings.hooks_loading": "Loading lifecycle hooks...",
   "settings.hooks_empty_title": "No lifecycle hooks configured yet",
   "settings.hooks_empty_desc": "Configure Git hooks to automatically run formatters, linters, and tests before commits or pushes.",
