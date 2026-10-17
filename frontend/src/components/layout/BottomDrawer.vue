@@ -984,6 +984,10 @@ onUnmounted(() => {
 }
 
 .terminal-pane.active {
+  outline: none;
+}
+
+.terminal-panes-area:not(.split-none) .terminal-pane.active {
   outline: 1.5px solid rgba(0, 229, 255, 0.6);
   outline-offset: -1px;
   z-index: 2;
@@ -1193,7 +1197,7 @@ onUnmounted(() => {
   padding: 0;
   display: flex;
   flex-direction: column;
-  background: #18181b;
+  background: transparent;
 }
 
 .terminal-welcome {
@@ -1391,6 +1395,10 @@ onUnmounted(() => {
 }
 
 [data-theme="light"] .terminal-pane.active {
+  outline: none;
+}
+
+[data-theme="light"] .terminal-panes-area:not(.split-none) .terminal-pane.active {
   outline: 1.5px solid #0284c7;
 }
 

@@ -239,24 +239,43 @@ onBeforeUnmount(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  background-color: #ffffff;
+}
+
+[data-theme="dark"] .xterm-pane-wrapper {
+  background-color: #18181b;
 }
 
 .xterm-container {
   flex: 1;
   width: 100%;
   height: 100%;
-  padding: 4px 6px;
+  padding: 6px 10px;
   overflow: hidden;
   box-sizing: border-box;
+  background-color: transparent;
 }
 
 :deep(.xterm) {
   height: 100%;
-  padding: 2px;
+  padding: 0;
+  background-color: transparent !important;
 }
 
 :deep(.xterm-viewport) {
+  background-color: transparent !important;
   overflow-y: auto !important;
+}
+
+:deep(.xterm-screen) {
+  background-color: transparent !important;
+}
+
+:deep(.xterm:focus),
+:deep(.xterm.focus),
+:deep(.xterm-helper-textarea:focus) {
+  outline: none !important;
+  border: none !important;
 }
 
 .xterm-overlay {

@@ -71,19 +71,39 @@ export default defineConfig({
           const customPath = `${unirtmShims}:${unirtmBin}:${process.env.PATH || ""}`;
 
           const isWindows = process.platform === "win32";
-          const shellArgs = isWindows ? [] : ["-i"];
-          const child = spawn(shellPath, shellArgs, {
-            cwd: fs.existsSync(cwd) ? cwd : process.cwd(),
-            env: {
-              ...process.env,
-              PATH: customPath,
-              TERM: "xterm-256color",
-              COLORTERM: "truecolor",
-              UNIRTM_TERMINAL: "1",
-              LANG: process.env.LANG || "en_US.UTF-8",
-            },
-            stdio: ["pipe", "pipe", "pipe"],
-          });
+          const cols = urlObj.searchParams.get("cols") || "120";
+          const rows = urlObj.searchParams.get("rows") || "30";
+          const bridgeScript = fileURLToPath(new URL("./scripts/pty_bridge.py", import.meta.url));
+
+          let child: any;
+          if (!isWindows && fs.existsSync(bridgeScript)) {
+            child = spawn("python3", [bridgeScript, cols, rows, shellPath, cwd], {
+              cwd: fs.existsSync(cwd) ? cwd : process.cwd(),
+              env: {
+                ...process.env,
+                PATH: customPath,
+                TERM: "xterm-256color",
+                COLORTERM: "truecolor",
+                UNIRTM_TERMINAL: "1",
+                LANG: process.env.LANG || "en_US.UTF-8",
+              },
+              stdio: ["pipe", "pipe", "pipe"],
+            });
+          } else {
+            const shellArgs = isWindows ? [] : ["-i"];
+            child = spawn(shellPath, shellArgs, {
+              cwd: fs.existsSync(cwd) ? cwd : process.cwd(),
+              env: {
+                ...process.env,
+                PATH: customPath,
+                TERM: "xterm-256color",
+                COLORTERM: "truecolor",
+                UNIRTM_TERMINAL: "1",
+                LANG: process.env.LANG || "en_US.UTF-8",
+              },
+              stdio: ["pipe", "pipe", "pipe"],
+            });
+          }
 
           child.stdout?.on("data", (chunk: Buffer) => {
             if (ws.readyState === WebSocket.OPEN) {
@@ -102,6 +122,8 @@ export default defineConfig({
               const msg = JSON.parse(raw.toString());
               if (msg.type === "input" && typeof msg.data === "string") {
                 child.stdin?.write(msg.data);
+              } else if (msg.type === "resize") {
+                child.stdin?.write(JSON.stringify(msg));
               } else if (msg.type === "kill") {
                 child.kill();
               } else if (msg.type === "ping") {
