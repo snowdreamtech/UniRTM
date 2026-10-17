@@ -516,6 +516,28 @@
             <span v-if="mpIsSearching" class="spinner-small"></span>
             <span v-else>{{ t('marketplace.search') || '搜索' }}</span>
           </button>
+
+          <!-- View Mode Switcher -->
+          <div class="view-mode-toggle" id="marketplace-view-mode-toggle">
+            <button
+              type="button"
+              class="view-mode-btn"
+              :class="{ active: viewMode === 'cards' }"
+              @click="setViewMode('cards')"
+              :title="t('environments.view_cards') || '卡片视图'"
+            >
+              <TechIcon id="workbench:cards" :size="14" />
+            </button>
+            <button
+              type="button"
+              class="view-mode-btn"
+              :class="{ active: viewMode === 'list' }"
+              @click="setViewMode('list')"
+              :title="t('environments.view_list') || '列表视图'"
+            >
+              <TechIcon id="workbench:list" :size="14" />
+            </button>
+          </div>
         </div>
 
         <!-- Quick Chips & Results count -->
@@ -573,8 +595,8 @@
           <button class="btn-reset-chip" @click="onResetToPopular">{{ t('marketplace.view_popular') || '查看热门推荐' }}</button>
         </div>
 
-        <!-- Themes Grid -->
-        <div v-else class="extensions-grid">
+        <!-- Themes Cards View -->
+        <div v-else-if="viewMode === 'cards'" class="extensions-grid">
           <div
             v-for="item in displayedExtensions"
             :key="(item.namespace || '') + '.' + item.name"
@@ -691,6 +713,143 @@
           </div>
         </div>
 
+        <!-- Themes High-Density List / Table View -->
+        <div v-else class="market-list-table-wrapper glass-card">
+          <table class="market-table">
+            <thead>
+              <tr>
+                <th class="th-extension">{{ t("marketplace.col_extension") || "扩展与主题" }}</th>
+                <th class="th-publisher">{{ t("marketplace.col_publisher") || "发布者与分类" }}</th>
+                <th class="th-desc">{{ t("marketplace.col_desc") || "描述" }}</th>
+                <th class="th-stats">{{ t("marketplace.col_stats") || "数据" }}</th>
+                <th class="th-actions">{{ t("marketplace.col_actions") || "操作" }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="item in displayedExtensions"
+                :key="(item.namespace || '') + '.' + item.name"
+                class="market-table-row clickable-row"
+                :class="{ 'row-is-active': isExtensionActive(item) }"
+                @click="navigateToDetail(item.namespace || '', item.name)"
+              >
+                <!-- Col: Extension Info -->
+                <td class="td-extension">
+                  <div class="table-ext-cell">
+                    <div class="table-icon-wrap">
+                      <img
+                        v-if="item.files && item.files.icon"
+                        :src="item.files.icon"
+                        class="table-img-icon"
+                        loading="lazy"
+                        alt="icon"
+                        @error="(e: any) => { if (e && e.target) e.target.style.display = 'none'; }"
+                      />
+                      <span class="table-fallback-icon">
+                        <TechIcon id="workbench:marketplace" :size="18" />
+                      </span>
+                    </div>
+                    <div class="table-ext-info">
+                      <div class="table-ext-title-row">
+                        <span class="ext-name">{{ item.displayName || item.name }}</span>
+                        <span class="ext-ver font-mono">v{{ item.version }}</span>
+                        <span v-if="isExtensionActive(item)" class="badge-active-pill small">
+                          <span class="active-dot"></span>
+                          <span>{{ t('marketplace.active') || '生效中' }}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Col: Publisher & Category -->
+                <td class="td-publisher">
+                  <div class="table-publisher-cell">
+                    <span class="publisher-ns font-mono">{{ item.namespace }}</span>
+                    <span
+                      class="card-type-tag"
+                      :class="{
+                        'type-product-icon': getCardDisplayType(item) === 'product_icon',
+                        'type-icon': getCardDisplayType(item) === 'icon',
+                        'type-color': getCardDisplayType(item) === 'theme'
+                      }"
+                      style="display: inline-flex; align-items: center; gap: 4px;"
+                    >
+                      <TechIcon :id="getCardDisplayType(item) === 'theme' ? 'workbench:marketplace' : 'workbench:tools'" :size="11" :colored="false" />
+                      {{
+                        getCardDisplayType(item) === 'product_icon'
+                          ? (t('marketplace.filter_product_icons') || '界面图标')
+                          : (getCardDisplayType(item) === 'icon'
+                              ? (t('marketplace.filter_icons') || '文件图标')
+                              : (t('marketplace.filter_themes') || '颜色主题'))
+                      }}
+                    </span>
+                  </div>
+                </td>
+
+                <!-- Col: Description -->
+                <td class="td-desc">
+                  <span class="table-desc-text" :title="item.description">
+                    {{ item.description || "No description provided." }}
+                  </span>
+                </td>
+
+                <!-- Col: Stats -->
+                <td class="td-stats">
+                  <div class="table-stats-cell">
+                    <span class="stat-pill" :title="'Downloads: ' + item.downloadCount">
+                      ⬇️ {{ formatDownloads(item.downloadCount) }}
+                    </span>
+                    <span v-if="item.averageRating" class="stat-pill">
+                      ⭐ {{ item.averageRating.toFixed(1) }}
+                    </span>
+                  </div>
+                </td>
+
+                <!-- Col: Actions -->
+                <td class="td-actions" @click.stop>
+                  <div class="table-actions-cell">
+                    <div v-if="isItemInstalled(item)" class="installed-group">
+                      <button
+                        v-if="!isExtensionActive(item)"
+                        class="btn-apply-theme small"
+                        :title="t('settings.apply_theme') || '应用此主题'"
+                        @click="onApplyTheme(item)"
+                      >
+                        {{ t("settings.apply") || "应用" }}
+                      </button>
+                      <button
+                        v-else
+                        class="btn-applied-current small"
+                        disabled
+                        :title="t('marketplace.current_active') || '当前正在生效的主题'"
+                      >
+                        {{ t('marketplace.currently_applied') || '当前生效' }}
+                      </button>
+                      <button
+                        class="btn-table-delete"
+                        :title="t('common.delete') || '卸载此主题包'"
+                        @click="onUninstallThemeCard(item)"
+                      >
+                        <TechIcon id="workbench:delete" :size="12" />
+                      </button>
+                    </div>
+                    <button
+                      v-else
+                      class="btn-install-theme small"
+                      :disabled="mpIsInstalling(item)"
+                      @click="onInstallTheme(item)"
+                    >
+                      <span v-if="mpIsInstalling(item)" class="spinner-small"></span>
+                      <span>{{ mpIsInstalling(item) ? (t("settings.installing") || "安装中...") : (t("settings.install") || "安装") }}</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
         <!-- Pagination Bar -->
         <div v-if="selectedFilter !== 'installed' && mpTotalPages > 1" class="market-pagination-bar glass-card">
           <div class="pagination-summary">
@@ -796,8 +955,8 @@
           </div>
         </div>
 
-        <!-- Native Plugins Grid -->
-        <div class="extensions-grid">
+        <!-- Native Plugins Cards View -->
+        <div v-if="viewMode === 'cards'" class="extensions-grid">
           <div
             v-for="ext in nativePlugins"
             :key="ext.id"
@@ -841,6 +1000,78 @@
             </div>
           </div>
         </div>
+
+        <!-- Native Plugins High-Density List / Table View -->
+        <div v-else class="market-list-table-wrapper glass-card">
+          <table class="market-table">
+            <thead>
+              <tr>
+                <th class="th-extension">{{ t("marketplace.col_extension") || "插件" }}</th>
+                <th class="th-publisher">{{ t("marketplace.col_publisher") || "作者与标签" }}</th>
+                <th class="th-desc">{{ t("marketplace.col_desc") || "描述" }}</th>
+                <th class="th-stats">{{ t("marketplace.col_stats") || "数据" }}</th>
+                <th class="th-actions">{{ t("marketplace.col_actions") || "状态" }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="ext in nativePlugins"
+                :key="ext.id"
+                class="market-table-row"
+              >
+                <!-- Col: Extension Info -->
+                <td class="td-extension">
+                  <div class="table-ext-cell">
+                    <TechIcon :id="ext.id" :size="20" :colored="true" />
+                    <div class="table-ext-info">
+                      <div class="table-ext-title-row">
+                        <span class="ext-name">{{ ext.name }}</span>
+                        <span class="ext-ver font-mono">v{{ ext.version }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Col: Author & Tags -->
+                <td class="td-publisher">
+                  <div class="table-publisher-cell">
+                    <span class="publisher-ns font-mono">{{ ext.author }}</span>
+                    <div class="plugin-tags-row small" style="margin-top: 2px;">
+                      <span v-for="tag in ext.tags" :key="tag" class="plugin-tag">{{ tag }}</span>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Col: Description -->
+                <td class="td-desc">
+                  <span class="table-desc-text" :title="ext.description">
+                    {{ ext.description }}
+                  </span>
+                </td>
+
+                <!-- Col: Stats -->
+                <td class="td-stats">
+                  <div class="table-stats-cell">
+                    <span class="stat-pill" style="display: inline-flex; align-items: center; gap: 4px;">
+                      <TechIcon id="workbench:star" :size="11" />
+                      <span>{{ ext.stars }}</span>
+                    </span>
+                    <span class="stat-pill" style="display: inline-flex; align-items: center; gap: 4px;">
+                      <TechIcon id="workbench:package" :size="11" />
+                      <span>{{ ext.downloads }}</span>
+                    </span>
+                  </div>
+                </td>
+
+                <!-- Col: Status -->
+                <td class="td-actions">
+                  <span v-if="ext.installed" class="badge-installed">✓ {{ t("settings.installed") || "已启用" }}</span>
+                  <span v-else class="badge-soon">开发中</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </template>
   </div>
@@ -863,6 +1094,15 @@ const { showToast } = useToast();
 
 // Channels: 'themes' (Open VSX) vs 'plugins' (UniRTM Native Plugins)
 const currentChannel = ref<"themes" | "plugins">("themes");
+
+// View mode: 'cards' or 'list'
+const viewMode = ref<"cards" | "list">(
+  (localStorage.getItem("unirtm_view_mode_marketplace") as "cards" | "list") || "cards"
+);
+function setViewMode(mode: "cards" | "list") {
+  viewMode.value = mode;
+  localStorage.setItem("unirtm_view_mode_marketplace", mode);
+}
 
 // Detail view state
 const activeDetailTab = ref<"readme" | "contributes" | "changelog">("readme");
@@ -3750,5 +3990,322 @@ const nativePlugins = ref<PluginItem[]>([
 
 :deep(.markdown-body table tr:nth-child(even)) {
   background: rgba(255, 255, 255, 0.015);
+}
+
+/* Marketplace View Mode Switcher */
+.view-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.view-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.view-mode-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.view-mode-btn.active {
+  color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Marketplace High-Density Table Styles */
+.market-list-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.015);
+  margin-bottom: 1.5rem;
+}
+
+.market-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.84rem;
+}
+
+.market-table thead tr {
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.market-table th {
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.market-table th.th-extension {
+  width: 260px;
+}
+.market-table th.th-publisher {
+  width: 170px;
+}
+.market-table th.th-desc {
+  min-width: 220px;
+}
+.market-table th.th-stats {
+  width: 130px;
+}
+.market-table th.th-actions {
+  text-align: right;
+  width: 180px;
+}
+
+.market-table-row {
+  border-bottom: 1px solid var(--card-border, rgba(255, 255, 255, 0.05));
+  transition: background 0.15s ease;
+}
+
+.market-table-row:last-child {
+  border-bottom: none;
+}
+
+.market-table-row:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.market-table-row.clickable-row {
+  cursor: pointer;
+}
+
+.market-table-row.row-is-active {
+  border-left: 3px solid var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.05);
+}
+
+.market-table td {
+  padding: 0.65rem 1rem;
+  vertical-align: middle;
+}
+
+.market-table td.td-actions {
+  text-align: right;
+}
+
+.table-ext-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.table-icon-wrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+  flex-shrink: 0;
+}
+
+.table-img-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.table-ext-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.table-ext-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.table-ext-title-row .ext-name {
+  font-weight: 600;
+  color: var(--text-main);
+  letter-spacing: 0.2px;
+}
+
+.table-ext-title-row .ext-ver {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.badge-active-pill.small {
+  padding: 1px 6px;
+  font-size: 0.68rem;
+}
+
+.table-publisher-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-start;
+}
+
+.publisher-ns {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.table-desc-text {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  max-width: 380px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.35;
+}
+
+.table-stats-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.stat-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  font-size: 0.74rem;
+}
+
+.table-actions-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.btn-apply-theme.small,
+.btn-install-theme.small,
+.btn-applied-current.small {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+}
+
+.btn-table-delete {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  padding: 4px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-table-delete:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.plugin-tags-row.small {
+  gap: 3px;
+}
+
+.plugin-tags-row.small .plugin-tag {
+  font-size: 0.68rem;
+  padding: 1px 5px;
+}
+
+/* Light Theme Overrides for Marketplace Table */
+:root[data-theme="light"] .market-list-table-wrapper,
+[data-theme="light"] .market-list-table-wrapper {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+:root[data-theme="light"] .market-table thead tr,
+[data-theme="light"] .market-table thead tr {
+  background: #f8fafc;
+  border-bottom-color: #e2e8f0;
+}
+
+:root[data-theme="light"] .market-table th,
+[data-theme="light"] .market-table th {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .market-table-row,
+[data-theme="light"] .market-table-row {
+  border-bottom-color: #f1f5f9;
+}
+
+:root[data-theme="light"] .market-table-row:hover,
+[data-theme="light"] .market-table-row:hover {
+  background: rgba(2, 132, 199, 0.03);
+}
+
+:root[data-theme="light"] .stat-pill,
+[data-theme="light"] .stat-pill {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .table-icon-wrap,
+[data-theme="light"] .table-icon-wrap {
+  background: #f1f5f9;
+}
+
+:root[data-theme="light"] .view-mode-toggle,
+[data-theme="light"] .view-mode-toggle {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+:root[data-theme="light"] .view-mode-btn,
+[data-theme="light"] .view-mode-btn {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .view-mode-btn:hover,
+[data-theme="light"] .view-mode-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .view-mode-btn.active,
+[data-theme="light"] .view-mode-btn.active {
+  background: #ffffff;
+  color: #0284c7;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 </style>

@@ -578,4 +578,9 @@ export const jaJp: TranslationDict = {
   "runtimes.col_version": "Version",
   "runtimes.col_desc": "Description",
   "runtimes.col_actions": "Actions",
+  "marketplace.col_extension": "Extension & Theme",
+  "marketplace.col_publisher": "Publisher & Category",
+  "marketplace.col_desc": "Description",
+  "marketplace.col_stats": "Stats",
+  "marketplace.col_actions": "Actions",
 };
