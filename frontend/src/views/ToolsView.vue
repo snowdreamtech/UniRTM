@@ -214,7 +214,7 @@
           </div>
         </div>
 
-        <!-- Card Actions: Unified Four Action Bar [切换] [安装] [锁定] [删除] -->
+        <!-- Card Actions: Primary [切换] [安装] + More Menu [···] (锁定, 删除) -->
         <div class="runtime-card-footer">
           <button
             class="card-action-btn action-switch"
@@ -232,23 +232,41 @@
           >
             {{ t("runtimes.action_install") }}
           </button>
-          <button
-            class="card-action-btn action-pin"
-            :class="{ 'is-pinned': rt.pinned }"
-            :id="'btn-pin-' + rt.id"
-            @click.stop="togglePin(rt)"
-            :title="rt.pinned ? (rt.pin_reason ? `${t('runtimes.action_unlock')}：${rt.pin_reason}` : t('runtimes.action_unlock')) : t('runtimes.action_lock')"
-          >
-            {{ rt.pinned ? t("runtimes.action_unlock") : t("runtimes.action_lock") }}
-          </button>
-          <button
-            class="card-action-btn action-delete"
-            :id="'btn-delete-' + rt.id"
-            @click.stop="confirmRemoveRuntime(rt)"
-            :title="t('runtimes.action_delete')"
-          >
-            {{ t("runtimes.action_delete") }}
-          </button>
+          <div class="card-more-action-wrap">
+            <button
+              class="card-action-btn action-more"
+              :class="{ 'is-active': activeMenuRuntimeId === rt.id }"
+              :id="'btn-more-' + rt.id"
+              @click.stop="toggleRuntimeMenu(rt.id)"
+              :title="t('common.more_actions') || '更多操作'"
+            >
+              <TechIcon id="workbench:more" :size="15" />
+            </button>
+            <transition name="dropdown-fade">
+              <div v-if="activeMenuRuntimeId === rt.id" class="runtime-dropdown-menu" @click.stop>
+                <button
+                  class="dropdown-item"
+                  :class="{ 'is-pinned': rt.pinned }"
+                  :id="'btn-pin-' + rt.id"
+                  @click.stop="handleTogglePinFromMenu(rt)"
+                  :title="rt.pinned ? (rt.pin_reason ? `${t('runtimes.action_unlock')}：${rt.pin_reason}` : t('runtimes.action_unlock')) : t('runtimes.action_lock')"
+                >
+                  <TechIcon :id="rt.pinned ? 'workbench:unlock' : 'workbench:lock'" :size="13" />
+                  <span>{{ rt.pinned ? (t("runtimes.action_unlock") || "解除锁定") : (t("runtimes.action_lock") || "锁定版本") }}</span>
+                </button>
+                <div class="dropdown-divider"></div>
+                <button
+                  class="dropdown-item danger"
+                  :id="'btn-delete-' + rt.id"
+                  @click.stop="handleRemoveFromMenu(rt)"
+                  :title="t('runtimes.action_delete')"
+                >
+                  <TechIcon id="workbench:delete" :size="13" />
+                  <span>{{ t("runtimes.action_delete") || "移除工具" }}</span>
+                </button>
+              </div>
+            </transition>
+          </div>
         </div>
       </div>
     </div>
@@ -315,7 +333,7 @@
               </div>
             </td>
 
-            <!-- Col: Actions -->
+            <!-- Col: Actions (Switch, Install + More Menu) -->
             <td class="td-actions">
               <div class="table-actions-group">
                 <button
@@ -334,23 +352,41 @@
                 >
                   {{ t("runtimes.action_install") }}
                 </button>
-                <button
-                  class="row-action-btn action-pin"
-                  :class="{ 'is-pinned': rt.pinned }"
-                  :id="'btn-pin-' + rt.id"
-                  @click.stop="togglePin(rt)"
-                  :title="rt.pinned ? (rt.pin_reason ? `${t('runtimes.action_unlock')}：${rt.pin_reason}` : t('runtimes.action_unlock')) : t('runtimes.action_lock')"
-                >
-                  {{ rt.pinned ? t("runtimes.action_unlock") : t("runtimes.action_lock") }}
-                </button>
-                <button
-                  class="row-action-btn action-delete"
-                  :id="'btn-delete-' + rt.id"
-                  @click.stop="confirmRemoveRuntime(rt)"
-                  :title="t('runtimes.action_delete')"
-                >
-                  {{ t("runtimes.action_delete") }}
-                </button>
+                <div class="table-more-action-wrap">
+                  <button
+                    class="row-action-btn action-more"
+                    :class="{ 'is-active': activeMenuRuntimeId === rt.id }"
+                    :id="'btn-more-row-' + rt.id"
+                    @click.stop="toggleRuntimeMenu(rt.id)"
+                    :title="t('common.more_actions') || '更多操作'"
+                  >
+                    <TechIcon id="workbench:more" :size="14" />
+                  </button>
+                  <transition name="dropdown-fade">
+                    <div v-if="activeMenuRuntimeId === rt.id" class="runtime-dropdown-menu table-menu" @click.stop>
+                      <button
+                        class="dropdown-item"
+                        :class="{ 'is-pinned': rt.pinned }"
+                        :id="'btn-pin-row-' + rt.id"
+                        @click.stop="handleTogglePinFromMenu(rt)"
+                        :title="rt.pinned ? (rt.pin_reason ? `${t('runtimes.action_unlock')}：${rt.pin_reason}` : t('runtimes.action_unlock')) : t('runtimes.action_lock')"
+                      >
+                        <TechIcon :id="rt.pinned ? 'workbench:unlock' : 'workbench:lock'" :size="13" />
+                        <span>{{ rt.pinned ? (t("runtimes.action_unlock") || "解除锁定") : (t("runtimes.action_lock") || "锁定版本") }}</span>
+                      </button>
+                      <div class="dropdown-divider"></div>
+                      <button
+                        class="dropdown-item danger"
+                        :id="'btn-delete-row-' + rt.id"
+                        @click.stop="handleRemoveFromMenu(rt)"
+                        :title="t('runtimes.action_delete')"
+                      >
+                        <TechIcon id="workbench:delete" :size="13" />
+                        <span>{{ t("runtimes.action_delete") || "移除工具" }}</span>
+                      </button>
+                    </div>
+                  </transition>
+                </div>
               </div>
             </td>
           </tr>
@@ -1859,19 +1895,57 @@ async function runBatchUpdate() {
   }
 }
 
+// Overflow action menu state
+const activeMenuRuntimeId = ref<string | null>(null);
+
+function toggleRuntimeMenu(id: string) {
+  if (activeMenuRuntimeId.value === id) {
+    activeMenuRuntimeId.value = null;
+  } else {
+    activeMenuRuntimeId.value = id;
+  }
+}
+
+function closeRuntimeMenu() {
+  activeMenuRuntimeId.value = null;
+}
+
+function handleTogglePinFromMenu(rt: RuntimeItem) {
+  closeRuntimeMenu();
+  togglePin(rt);
+}
+
+function handleRemoveFromMenu(rt: RuntimeItem) {
+  closeRuntimeMenu();
+  confirmRemoveRuntime(rt);
+}
+
+function handleDocumentClick() {
+  if (activeMenuRuntimeId.value) {
+    closeRuntimeMenu();
+  }
+}
+
 function handleGlobalKeyDown(e: KeyboardEvent) {
-  if (e.key === "Escape" && isSwitchModalOpen.value) {
-    closeSwitchVersionModal();
+  if (e.key === "Escape") {
+    if (activeMenuRuntimeId.value) {
+      closeRuntimeMenu();
+    }
+    if (isSwitchModalOpen.value) {
+      closeSwitchVersionModal();
+    }
   }
 }
 
 onMounted(() => {
   fetchStatus();
   window.addEventListener("keydown", handleGlobalKeyDown);
+  document.addEventListener("click", handleDocumentClick);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("keydown", handleGlobalKeyDown);
+  document.removeEventListener("click", handleDocumentClick);
   if (remoteModalAbortController) {
     remoteModalAbortController.abort();
     remoteModalAbortController = null;
@@ -2492,14 +2566,20 @@ onBeforeUnmount(() => {
   font-style: italic;
 }
 
-/* Card footer: Unified four action bar [切换] [安装] [锁定] [删除] */
+/* Card footer: Primary [切换] [安装] + More Menu [···] */
 .runtime-card-footer {
   margin-top: auto;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  align-items: center;
   gap: 0.6rem;
   padding-top: 0.85rem;
   border-top: 1px solid var(--card-border-subtle, rgba(255, 255, 255, 0.06));
+}
+
+.runtime-card-footer .card-action-btn.action-switch,
+.runtime-card-footer .card-action-btn.action-install {
+  flex: 1;
+  min-width: 0;
 }
 
 .card-action-btn {
@@ -2547,51 +2627,114 @@ onBeforeUnmount(() => {
   color: #34d399;
 }
 
-/* 状态操作：锁定 / 解锁 */
-.card-action-btn.action-pin {
-  background: rgba(148, 163, 184, 0.08);
-  border-color: rgba(148, 163, 184, 0.25);
+/* 更多操作容器与按钮 */
+.card-more-action-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.card-action-btn.action-more {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  flex-shrink: 0;
   color: var(--text-muted);
 }
-.card-action-btn.action-pin:hover {
-  background: rgba(245, 158, 11, 0.12);
-  border-color: rgba(245, 158, 11, 0.4);
-  color: #d97706;
+.card-action-btn.action-more:hover,
+.card-action-btn.action-more.is-active {
+  background: rgba(2, 132, 199, 0.12);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.2);
 }
-.card-action-btn.action-pin.is-pinned {
-  background: rgba(245, 158, 11, 0.15);
-  border-color: rgba(245, 158, 11, 0.45);
+
+/* 下拉菜单通用样式 */
+.runtime-dropdown-menu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  background: var(--card-bg, #1e293b);
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 0 12px var(--accent-cyan-glow, rgba(2, 132, 199, 0.15));
+  padding: 0.35rem;
+  z-index: 50;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+[data-theme="light"] .runtime-dropdown-menu {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0 12px rgba(2, 132, 199, 0.1);
+}
+
+.runtime-dropdown-menu .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-main);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.runtime-dropdown-menu .dropdown-item:hover {
+  background: var(--input-bg, rgba(255, 255, 255, 0.06));
+  color: var(--text-main);
+}
+[data-theme="light"] .runtime-dropdown-menu .dropdown-item:hover {
+  background: #f1f5f9;
+}
+
+.runtime-dropdown-menu .dropdown-item.is-pinned {
   color: #d97706;
 }
-[data-theme="dark"] .card-action-btn.action-pin.is-pinned {
+[data-theme="dark"] .runtime-dropdown-menu .dropdown-item.is-pinned {
   color: #fbbf24;
 }
 
-/* 危险操作：删除 */
-.card-action-btn.action-delete {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.28);
+.runtime-dropdown-menu .dropdown-item.danger {
   color: #ef4444;
 }
-[data-theme="dark"] .card-action-btn.action-delete {
+.runtime-dropdown-menu .dropdown-item.danger:hover {
   background: rgba(239, 68, 68, 0.12);
-  border-color: rgba(248, 113, 113, 0.35);
+  color: #ef4444;
+}
+[data-theme="dark"] .runtime-dropdown-menu .dropdown-item.danger {
   color: #f87171;
 }
-.card-action-btn.action-delete:hover {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: #ef4444;
-  color: #dc2626;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+
+.runtime-dropdown-menu .dropdown-divider {
+  height: 1px;
+  margin: 3px 0;
+  background: var(--card-border-subtle, rgba(255, 255, 255, 0.08));
 }
-[data-theme="dark"] .card-action-btn.action-delete:hover {
-  background: rgba(239, 68, 68, 0.25);
-  border-color: #f87171;
-  color: #fca5a5;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
+[data-theme="light"] .runtime-dropdown-menu .dropdown-divider {
+  background: #e2e8f0;
+}
+
+/* 下拉菜单动画 */
+.dropdown-fade-enter-active,
+.dropdown-fade-leave-active {
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dropdown-fade-enter-from,
+.dropdown-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
 }
 
 
@@ -3703,7 +3846,7 @@ onBeforeUnmount(() => {
 }
 .tools-table th.th-actions {
   text-align: right;
-  width: 300px;
+  width: 180px;
 }
 
 .tool-table-row {
@@ -3841,37 +3984,29 @@ onBeforeUnmount(() => {
   color: #34d399;
 }
 
-.row-action-btn.action-pin {
-  background: rgba(148, 163, 184, 0.08);
-  border-color: rgba(148, 163, 184, 0.25);
-  color: var(--text-muted);
-}
-.row-action-btn.action-pin:hover {
-  background: rgba(245, 158, 11, 0.12);
-  border-color: rgba(245, 158, 11, 0.4);
-  color: #d97706;
-}
-.row-action-btn.action-pin.is-pinned {
-  background: rgba(245, 158, 11, 0.15);
-  border-color: rgba(245, 158, 11, 0.45);
-  color: #d97706;
-}
-[data-theme="dark"] .row-action-btn.action-pin.is-pinned {
-  color: #fbbf24;
+.table-more-action-wrap {
+  position: relative;
+  display: inline-flex;
 }
 
-.row-action-btn.action-delete {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.28);
-  color: #ef4444;
+.row-action-btn.action-more {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--text-muted);
 }
-.row-action-btn.action-delete:hover {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: #ef4444;
-  color: #dc2626;
+.row-action-btn.action-more:hover,
+.row-action-btn.action-more.is-active {
+  background: rgba(2, 132, 199, 0.12);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
 }
-[data-theme="dark"] .row-action-btn.action-delete {
-  color: #f87171;
+
+.table-more-action-wrap .runtime-dropdown-menu.table-menu {
+  top: calc(100% + 4px);
+  bottom: auto;
+  right: 0;
+  text-align: left;
 }
 
 /* Light Theme Overrides for Tools Table */

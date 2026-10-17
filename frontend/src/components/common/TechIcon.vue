@@ -129,6 +129,7 @@ const WORKBENCH_CODICON_MAP: Record<string, string> = {
   "workbench:sparkle": "codicon-sparkle",
   "workbench:cards": "codicon-editor-layout",
   "workbench:list": "codicon-table",
+  "workbench:more": "codicon-more",
 };
 
 const codiconClass = computed<string | null>(() => {
