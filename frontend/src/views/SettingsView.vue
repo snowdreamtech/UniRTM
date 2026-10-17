@@ -401,14 +401,40 @@
                     🛡️ 安全防护
                   </span>
                 </div>
-                <p class="setting-desc">{{ t('settings.minimum_release_age_desc') || '防止供应链投毒与恶意版本。仅允许安装或升级在官方源已发布满指定时间的版本（例如 7d、24h）。留空表示不限制。' }}</p>
+                <p class="setting-desc">{{ t('settings.minimum_release_age_desc') || '防范供应链投毒与零日漏洞。系统默认遵循 7 天安全冷却期（7d），延迟接纳刚发布的新版本。输入 0 可关闭冷却以立即获取绝对最新版本。' }}</p>
+                <div class="release-age-presets-row" style="margin-top: 8px; display: inline-flex; gap: 6px; flex-wrap: wrap;">
+                  <button
+                    type="button"
+                    class="preset-chip-btn"
+                    :class="{ active: (minimumReleaseAge || '7d') === '7d' }"
+                    @click="applyReleaseAgePreset('7d')"
+                  >
+                    <span>🛡️ {{ t('settings.release_age_preset_7d') || '7d (推荐默认)' }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="preset-chip-btn"
+                    :class="{ active: minimumReleaseAge === '14d' }"
+                    @click="applyReleaseAgePreset('14d')"
+                  >
+                    <span>🔒 {{ t('settings.release_age_preset_14d') || '14d (严格保守)' }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="preset-chip-btn"
+                    :class="{ active: minimumReleaseAge === '0' }"
+                    @click="applyReleaseAgePreset('0')"
+                  >
+                    <span>⚡ {{ t('settings.release_age_preset_0') || '0 (即刻获取)' }}</span>
+                  </button>
+                </div>
               </div>
               <div class="setting-control">
                 <input
                   v-model="minimumReleaseAge"
                   type="text"
                   class="setting-text-input font-mono"
-                  placeholder="例如: 7d, 24h, 14d"
+                  :placeholder="t('settings.minimum_release_age_placeholder') || '7d (系统默认推荐)'"
                   @change="onMinimumReleaseAgeChange"
                   @blur="onMinimumReleaseAgeChange"
                   @keydown.enter="onMinimumReleaseAgeChange"
@@ -1840,7 +1866,7 @@ function syncFieldsFromConfig() {
   autoInstall.value = s.auto_install !== false;
   taskTimeout.value = s.task_timeout !== undefined ? String(s.task_timeout) : "";
   taskOutput.value = s.task_output || "interleaved";
-  minimumReleaseAge.value = s.minimum_release_age || "";
+  minimumReleaseAge.value = s.minimum_release_age !== undefined && s.minimum_release_age !== "" ? s.minimum_release_age : "7d";
   experimental.value = Boolean(s.experimental);
 
   if (activeScope.value === "user") {
@@ -1882,6 +1908,11 @@ function onTaskOutputChange(val: string) {
 
 function onMinimumReleaseAgeChange() {
   const val = String(minimumReleaseAge.value).trim();
+  minimumReleaseAge.value = val;
+  saveSetting("settings.minimum_release_age", val);
+}
+
+function applyReleaseAgePreset(val: string) {
   minimumReleaseAge.value = val;
   saveSetting("settings.minimum_release_age", val);
 }
@@ -4470,6 +4501,60 @@ input:checked + .slider:before {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   border: 1px solid var(--card-border-active);
   font-weight: 600;
+}
+
+/* Release Age Preset Chips */
+.release-age-presets-row {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.preset-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 0.74rem;
+  border-radius: 4px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.preset-chip-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+  border-color: var(--border-color);
+}
+
+.preset-chip-btn.active {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #10b981;
+  font-weight: 600;
+}
+
+:root[data-theme="light"] .preset-chip-btn,
+[data-theme="light"] .preset-chip-btn {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #64748b;
+}
+
+:root[data-theme="light"] .preset-chip-btn:hover,
+[data-theme="light"] .preset-chip-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .preset-chip-btn.active,
+[data-theme="light"] .preset-chip-btn.active {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #059669;
 }
 </style>
 

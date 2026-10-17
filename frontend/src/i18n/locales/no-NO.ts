@@ -600,4 +600,8 @@ export const noNo: TranslationDict = {
   "settings.minimum_release_age_desc": "Safeguard against supply-chain attacks. Enforce minimum upstream age (e.g. 7d, 24h) before installing releases. Leave blank to disable.",
   "settings.experimental": "Experimental Features",
   "settings.experimental_desc": "Enable preview capabilities and experimental runtime features.",
+  "settings.minimum_release_age_placeholder": "7d (Recommended default)",
+  "settings.release_age_preset_7d": "7d (Default)",
+  "settings.release_age_preset_14d": "14d (Strict)",
+  "settings.release_age_preset_0": "0 (Immediate)",
 };
