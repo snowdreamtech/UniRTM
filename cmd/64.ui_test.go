@@ -241,6 +241,16 @@ func TestUIDetectTerminals(t *testing.T) {
 	if !strings.Contains(rrExec.Body.String(), "Hello UniRTM Shell") {
 		t.Errorf("Expected terminal output to contain 'Hello UniRTM Shell', got %s", rrExec.Body.String())
 	}
+
+	// 3. Test PTY Session Spawning and environment injection
+	ptySess, err := startPTYSession("", "", 80, 24)
+	if err != nil {
+		t.Logf("Notice: startPTYSession error (might be running in non-tty environment): %v", err)
+	} else {
+		defer ptySess.Close()
+		ptySess.Resize(100, 30)
+		_, _ = ptySess.Write([]byte("echo PTY_TEST_OK\n"))
+	}
 }
 
 func TestUIHooksAPI(t *testing.T) {

@@ -4,8 +4,9 @@ import { fileURLToPath, URL } from "node:url";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync, spawnSync, exec } from "node:child_process";
+import { execFileSync, spawnSync, exec, spawn } from "node:child_process";
 import { Buffer } from "node:buffer";
+import { WebSocketServer, WebSocket } from "ws";
 
 function findUnirtmBinary(rootDir: string): string {
   const isWindows = process.platform === "win32";
@@ -49,6 +50,83 @@ export default defineConfig({
     {
       name: "dev-api-middleware",
       configureServer(server) {
+        const wss = new WebSocketServer({ noServer: true });
+
+        server.httpServer?.on("upgrade", (req, socket, head) => {
+          if (req.url?.startsWith("/api/terminal/ws")) {
+            wss.handleUpgrade(req, socket, head, (ws) => {
+              wss.emit("connection", ws, req);
+            });
+          }
+        });
+
+        wss.on("connection", (ws: WebSocket, req: any) => {
+          const urlObj = new URL(req.url, "http://localhost");
+          const shellPath = urlObj.searchParams.get("shell") || "/bin/bash";
+          const cwd = urlObj.searchParams.get("cwd") || process.cwd();
+
+          const home = os.homedir();
+          const unirtmBin = path.join(home, ".unirtm", "bin");
+          const unirtmShims = path.join(home, ".unirtm", "shims");
+          const customPath = `${unirtmShims}:${unirtmBin}:${process.env.PATH || ""}`;
+
+          const isWindows = process.platform === "win32";
+          const shellArgs = isWindows ? [] : ["-i"];
+          const child = spawn(shellPath, shellArgs, {
+            cwd: fs.existsSync(cwd) ? cwd : process.cwd(),
+            env: {
+              ...process.env,
+              PATH: customPath,
+              TERM: "xterm-256color",
+              COLORTERM: "truecolor",
+              UNIRTM_TERMINAL: "1",
+              LANG: process.env.LANG || "en_US.UTF-8",
+            },
+            stdio: ["pipe", "pipe", "pipe"],
+          });
+
+          child.stdout?.on("data", (chunk: Buffer) => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: "output", data: chunk.toString("utf-8") }));
+            }
+          });
+
+          child.stderr?.on("data", (chunk: Buffer) => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: "output", data: chunk.toString("utf-8") }));
+            }
+          });
+
+          ws.on("message", (raw: any) => {
+            try {
+              const msg = JSON.parse(raw.toString());
+              if (msg.type === "input" && typeof msg.data === "string") {
+                child.stdin?.write(msg.data);
+              } else if (msg.type === "kill") {
+                child.kill();
+              } else if (msg.type === "ping") {
+                ws.send(JSON.stringify({ type: "pong" }));
+              }
+            } catch {
+              child.stdin?.write(raw);
+            }
+          });
+
+          const cleanup = () => {
+            try {
+              child.kill();
+            } catch {}
+          };
+
+          ws.on("close", cleanup);
+          ws.on("error", cleanup);
+          child.on("close", () => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.close();
+            }
+          });
+        });
+
         const remoteVersionCache = new Map<string, { versions: string[]; timestamp: number }>();
         const queryRemoteVersions = (tool: string, rootDir: string, unirtmBin: string): string[] => {
           if (!tool || !fs.existsSync(unirtmBin)) return [];

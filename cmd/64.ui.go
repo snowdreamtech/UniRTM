@@ -32,6 +32,7 @@ import (
 	"github.com/snowdreamtech/unirtm/internal/pkg/env"
 	"github.com/snowdreamtech/unirtm/internal/theme"
 	"github.com/spf13/cobra"
+	"golang.org/x/net/websocket"
 )
 
 var (
@@ -803,6 +804,7 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	})
 	mux.HandleFunc("/api/terminals", handleGetTerminals)
 	mux.HandleFunc("/api/terminal/exec", handleTerminalExec)
+	mux.Handle("/api/terminal/ws", websocket.Handler(handleTerminalWebSocket))
 
 	// ─── Network & Mirror API Endpoints ──────────────────────────────────────
 	mux.HandleFunc("/api/network/status", handleGetNetworkStatus)
