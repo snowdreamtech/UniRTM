@@ -160,22 +160,20 @@
                 @click.stop="toggleTaskMenu(task.name)"
                 :title="`更多操作: ${task.name}`"
               >
-                <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
-                  <circle cx="3" cy="8" r="1.5" />
-                  <circle cx="8" cy="8" r="1.5" />
-                  <circle cx="13" cy="8" r="1.5" />
-                </svg>
+                <TechIcon id="workbench:more" :size="15" />
               </button>
-              <div v-if="activeMenuTask === task.name" class="task-dropdown-menu">
-                <button class="dropdown-item" @click.stop="handleEditFromMenu(task)">
-                  <TechIcon id="workbench:edit" :size="13" />
-                  <span>{{ t("common.edit") || "编辑" }}</span>
-                </button>
-                <button class="dropdown-item danger" @click.stop="handleDeleteFromMenu(task)">
-                  <TechIcon id="workbench:delete" :size="13" />
-                  <span>{{ t("common.delete") || "删除" }}</span>
-                </button>
-              </div>
+              <transition name="dropdown-fade">
+                <div v-if="activeMenuTask === task.name" class="task-dropdown-menu">
+                  <button class="dropdown-item" @click.stop="handleEditFromMenu(task)">
+                    <TechIcon id="workbench:edit" :size="13" />
+                    <span>{{ t("common.edit") || "编辑" }}</span>
+                  </button>
+                  <button class="dropdown-item danger" @click.stop="handleDeleteFromMenu(task)">
+                    <TechIcon id="workbench:delete" :size="13" />
+                    <span>{{ t("common.delete") || "删除" }}</span>
+                  </button>
+                </div>
+              </transition>
             </div>
             <button
               class="run-task-btn"
@@ -266,20 +264,28 @@
                       <span>{{ t("tasks.run") || "运行" }}</span>
                     </span>
                   </button>
-                  <button
-                    class="action-btn edit-btn"
-                    @click="openEditModal(task)"
-                    :title="t('common.edit') || '编辑'"
-                  >
-                    <TechIcon id="workbench:edit" :size="14" />
-                  </button>
-                  <button
-                    class="action-btn delete-btn"
-                    @click="openDeleteConfirm(task)"
-                    :title="t('common.delete') || '删除'"
-                  >
-                    <TechIcon id="workbench:delete" :size="14" />
-                  </button>
+                  <div class="task-more-menu-wrap" @click.stop>
+                    <button
+                      class="task-more-btn table-more-btn"
+                      :class="{ active: activeMenuTask === task.name }"
+                      @click.stop="toggleTaskMenu(task.name)"
+                      :title="`更多操作: ${task.name}`"
+                    >
+                      <TechIcon id="workbench:more" :size="14" />
+                    </button>
+                    <transition name="dropdown-fade">
+                      <div v-if="activeMenuTask === task.name" class="task-dropdown-menu table-menu" @click.stop>
+                        <button class="dropdown-item" @click.stop="handleEditFromMenu(task)">
+                          <TechIcon id="workbench:edit" :size="13" />
+                          <span>{{ t("common.edit") || "编辑" }}</span>
+                        </button>
+                        <button class="dropdown-item danger" @click.stop="handleDeleteFromMenu(task)">
+                          <TechIcon id="workbench:delete" :size="13" />
+                          <span>{{ t("common.delete") || "删除" }}</span>
+                        </button>
+                      </div>
+                    </transition>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -529,13 +535,21 @@ watch(
   { immediate: true }
 );
 
+function handleGlobalKeyDown(e: KeyboardEvent) {
+  if (e.key === "Escape" && activeMenuTask.value) {
+    closeTaskMenu();
+  }
+}
+
 onMounted(() => {
   fetchTasks();
   window.addEventListener("click", closeTaskMenu);
+  window.addEventListener("keydown", handleGlobalKeyDown);
 });
 
 onUnmounted(() => {
   window.removeEventListener("click", closeTaskMenu);
+  window.removeEventListener("keydown", handleGlobalKeyDown);
 });
 
 async function executeTask(task: ProjectTask) {
@@ -979,6 +993,18 @@ async function executeTask(task: ProjectTask) {
   gap: 3px;
 }
 
+.task-dropdown-menu.table-menu {
+  top: calc(100% + 4px);
+  right: 0;
+  text-align: left;
+}
+
+[data-theme="light"] .task-dropdown-menu {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0 12px rgba(2, 132, 199, 0.1);
+}
+
 .task-dropdown-menu .dropdown-item {
   display: flex;
   align-items: center;
@@ -1001,6 +1027,9 @@ async function executeTask(task: ProjectTask) {
   background: var(--input-bg);
   color: var(--text-main);
 }
+[data-theme="light"] .task-dropdown-menu .dropdown-item:hover {
+  background: #f1f5f9;
+}
 
 .task-dropdown-menu .dropdown-item.danger {
   color: #ef4444;
@@ -1009,6 +1038,18 @@ async function executeTask(task: ProjectTask) {
 .task-dropdown-menu .dropdown-item.danger:hover {
   background: rgba(239, 68, 68, 0.12);
   color: #ef4444;
+}
+
+/* 下拉菜单动画 */
+.dropdown-fade-enter-active,
+.dropdown-fade-leave-active {
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dropdown-fade-enter-from,
+.dropdown-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
 }
 
 .tool-action-btn.primary {
@@ -1167,7 +1208,7 @@ async function executeTask(task: ProjectTask) {
 
 .tasks-table th.th-actions {
   text-align: right;
-  width: 140px;
+  width: 120px;
 }
 
 .task-table-row {
@@ -1253,24 +1294,17 @@ async function executeTask(task: ProjectTask) {
   font-size: 0.75rem;
 }
 
-.action-btn {
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-muted);
-  padding: 4px 6px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: all 0.15s;
+.task-more-btn.table-more-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  opacity: 0.75;
 }
 
-.action-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-main);
-}
-
-.action-btn.delete-btn:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.12);
+.task-more-btn.table-more-btn:hover,
+.task-more-btn.table-more-btn.active {
+  opacity: 1;
 }
 
 /* Light Theme Overrides for Tasks Table */
