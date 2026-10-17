@@ -103,7 +103,7 @@ import TitleBar from "./components/layout/TitleBar.vue";
 import ActivityBar from "./components/layout/ActivityBar.vue";
 import SidebarPanel from "./components/layout/SidebarPanel.vue";
 import BottomStatusBar from "./components/layout/BottomStatusBar.vue";
-import BottomDrawer, { type LogItem } from "./components/layout/BottomDrawer.vue";
+import BottomDrawer, { type LogItem, type DrawerTab } from "./components/layout/BottomDrawer.vue";
 import ToastNotification from "./components/ToastNotification.vue";
 
 import { t, selectedLangSetting, setLanguage } from "./i18n";
@@ -196,7 +196,7 @@ watch(
 
 const activeRunningTask = ref<string | undefined>(undefined);
 const currentLatencyMs = ref<number | null>(18);
-const drawerActiveTab = ref<"output" | "tasks" | "doctor">("output");
+const drawerActiveTab = ref<DrawerTab>("output");
 
 const runtimeLogs = ref<LogItem[]>([
   {
@@ -307,12 +307,12 @@ function openCommandPalette() {
   showToast("Command Palette: Press Ctrl+K (All quick commands available)", "info");
 }
 
-function handleOpenDrawerTab(tab: "output" | "tasks" | "doctor" = "output") {
+function handleOpenDrawerTab(tab: DrawerTab = "output") {
   isDrawerOpen.value = true;
   drawerActiveTab.value = tab;
 }
 
-function handleClearLogs(category?: "output" | "tasks" | "doctor") {
+function handleClearLogs(category?: DrawerTab) {
   if (category) {
     runtimeLogs.value = runtimeLogs.value.filter((log) => {
       const logCat = log.category || "output";

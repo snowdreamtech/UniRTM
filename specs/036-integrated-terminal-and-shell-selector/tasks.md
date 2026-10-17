@@ -17,7 +17,7 @@
   - 在 `zh-CN.ts`、`en-US.ts` 等字典中补充终端相关的国际化词条（`drawer.tab_terminal`, `terminal.default`, `terminal.select_placeholder`, `terminal.rescan`, `settings.terminal_title` 等）；
   - *提交命名*：`feat(terminal): add useTerminal composable, tests and i18n locales`
 
-- [ ] **Task 3: 底栏面板集成「终端」Tab 与快速切换器 (BottomDrawer Integration)**
+- [x] **Task 3: 底栏面板集成「终端」Tab 与快速切换器 (BottomDrawer Integration)**
   - 在 `frontend/src/components/layout/BottomDrawer.vue` 中：
     - 增加第四个选项卡：`[ 终端 (Terminal) ]`（使用 `workbench:terminal` 图标）；
     - 在抽屉顶部右侧/操作区增加终端下拉切换器，展示已检测到的 Shell 列表及默认标记；

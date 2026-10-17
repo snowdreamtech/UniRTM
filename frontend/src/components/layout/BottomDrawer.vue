@@ -6,6 +6,16 @@
       <div class="drawer-tabs">
         <button
           class="drawer-tab"
+          :class="{ active: currentTab === 'terminal' }"
+          @click="currentTab = 'terminal'"
+        >
+          <span style="display: inline-flex; align-items: center; gap: 6px;">
+            <TechIcon id="workbench:terminal" :size="13" />
+            {{ t("drawer.tab_terminal") || "终端" }}
+          </span>
+        </button>
+        <button
+          class="drawer-tab"
           :class="{ active: currentTab === 'output' }"
           @click="currentTab = 'output'"
         >
@@ -39,13 +49,60 @@
         </button>
       </div>
 
+      <!-- Center: Terminal Shell Selector (Only when in terminal tab) -->
+      <div v-if="currentTab === 'terminal'" class="terminal-shell-selector-wrap" @click.stop>
+        <button
+          class="shell-select-pill"
+          @click="isShellMenuOpen = !isShellMenuOpen"
+          :title="t('terminal.switch_shell') || '切换终端 Shell'"
+        >
+          <TechIcon id="workbench:terminal" :size="12" />
+          <span class="shell-name font-mono">{{ currentTerminal?.name || 'Shell' }}</span>
+          <span v-if="currentTerminal?.is_default" class="shell-default-tag">{{ t('terminal.default_badge') || '系统默认' }}</span>
+          <svg class="chevron-icon" :class="{ open: isShellMenuOpen }" viewBox="0 0 16 16" width="10" height="10" fill="currentColor">
+            <path d="M4.5 6l3.5 3.5 3.5-3.5" />
+          </svg>
+        </button>
+
+        <!-- Dropdown Shell List -->
+        <div v-if="isShellMenuOpen" class="shell-dropdown-menu">
+          <div class="shell-dropdown-header">
+            <span>{{ t("terminal.switch_shell") || "切换终端 Shell" }}</span>
+            <button class="rescan-btn" @click.stop="handleRescan" :title="t('terminal.rescan') || '重新检测'">
+              <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 8A6 6 0 1 1 9.5 2.5L14 3" />
+                <path d="M14 1v2.5H11.5" />
+              </svg>
+            </button>
+          </div>
+          <div class="shell-dropdown-list">
+            <div
+              v-for="term in terminals"
+              :key="term.path"
+              class="shell-option"
+              :class="{ active: term.path === currentTerminal?.path }"
+              @click="handleSelectTerminal(term.path)"
+            >
+              <div class="shell-option-main">
+                <span class="shell-option-name font-mono">{{ term.name }}</span>
+                <span v-if="term.is_default" class="shell-default-pill">{{ t('terminal.default_badge') || '系统默认' }}</span>
+              </div>
+              <span class="shell-option-path font-mono">{{ term.path }}</span>
+            </div>
+            <div v-if="terminals.length === 0" class="shell-dropdown-empty">
+              <span>{{ t('terminal.rescan') || '正在扫描可用 Shell...' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Action Tools on the right -->
       <div class="drawer-actions">
         <button
           class="drawer-action-btn"
           :title="clearLogsTitle"
           :data-tooltip="clearLogsTitle"
-          @click="$emit('clear-logs', currentTab)"
+          @click="handleClearCurrent"
         >
           <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="8" cy="8" r="6" />
@@ -68,6 +125,7 @@
           </svg>
         </button>
         <button
+          v-if="currentTab !== 'terminal'"
           class="drawer-action-btn"
           :class="{ active: autoScroll }"
           :title="autoScrollTitle"
@@ -107,8 +165,48 @@
       </div>
     </div>
 
-    <!-- Drawer Body -->
+    <!-- 1. Terminal View Body -->
     <div
+      v-if="currentTab === 'terminal'"
+      class="terminal-body font-mono"
+      :style="{ height: isMaximized ? '380px' : '170px' }"
+    >
+      <div class="terminal-banner">
+        <span class="term-status-dot"></span>
+        <span class="term-shell-info">UniRTM Integrated Terminal · {{ currentTerminal?.name || 'Shell' }} ({{ currentTerminal?.path }})</span>
+        <span v-if="currentTerminal?.is_default" class="term-default-pill font-mono">{{ t('terminal.default_badge') || '系统默认' }}</span>
+      </div>
+
+      <div class="terminal-screen" ref="terminalContainerRef">
+        <div class="terminal-welcome">
+          <div class="term-text-cyan">UniRTM Workbench Terminal v0.35.0 ({{ currentTerminal?.name || 'Shell' }})</div>
+          <div class="term-text-muted">{{ t('drawer.empty_terminal') || '集成终端准备就绪。在上方选择 Shell 或通过快捷指令运行任务。' }}</div>
+        </div>
+
+        <div v-for="(line, idx) in terminalLines" :key="idx" class="terminal-line" :class="'line-' + line.type">
+          <span v-if="line.type === 'input'" class="term-prompt">❯</span>
+          <span class="term-content">{{ line.text }}</span>
+        </div>
+
+        <!-- Terminal Interactive Input Row -->
+        <div class="terminal-input-row">
+          <span class="term-prompt">❯</span>
+          <input
+            v-model="terminalInput"
+            @keydown.enter="handleRunTerminalCommand"
+            @keydown.up.prevent="handleHistoryUp"
+            @keydown.down.prevent="handleHistoryDown"
+            class="terminal-cmd-input font-mono"
+            :placeholder="t('drawer.empty_terminal') || '输入命令并回车运行 (如 unirtm --help)...'"
+            spellcheck="false"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Logs Drawer Body (Output, Tasks, Doctor) -->
+    <div
+      v-else
       class="drawer-body font-mono"
       ref="logContainerRef"
       :style="{ height: isMaximized ? '380px' : '170px' }"
@@ -152,10 +250,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from "vue";
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from "vue";
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 import { useToast } from "../../composables/useToast";
+import { useTerminal } from "../../composables/useTerminal";
 
 export interface LogItem {
   timestamp: string;
@@ -165,11 +264,13 @@ export interface LogItem {
   category?: "output" | "tasks" | "doctor";
 }
 
+export type DrawerTab = "terminal" | "output" | "tasks" | "doctor";
+
 const props = withDefaults(
   defineProps<{
     isOpen: boolean;
     logs: LogItem[];
-    activeTab?: "output" | "tasks" | "doctor";
+    activeTab?: DrawerTab;
   }>(),
   {
     activeTab: undefined,
@@ -178,19 +279,35 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: "close"): void;
-  (e: "clear-logs", category?: "output" | "tasks" | "doctor"): void;
-  (e: "update:activeTab", tab: "output" | "tasks" | "doctor"): void;
+  (e: "clear-logs", category?: DrawerTab): void;
+  (e: "update:activeTab", tab: DrawerTab): void;
 }>();
+
+const { showToast } = useToast();
+const {
+  terminals,
+  currentTerminal,
+  defaultTerminal,
+  fetchTerminals,
+  setPreferredTerminal,
+} = useTerminal();
+
+const isShellMenuOpen = ref(false);
+const terminalInput = ref("");
+const terminalHistory = ref<string[]>([]);
+const historyIdx = ref(-1);
+const terminalLines = ref<Array<{ type: "input" | "output" | "error" | "info"; text: string }>>([]);
+const terminalContainerRef = ref<HTMLElement | null>(null);
 
 const DRAWER_TAB_KEY = "unirtm_drawer_tab";
 const DRAWER_MAX_KEY = "unirtm_drawer_maximized";
 const DRAWER_AUTOSCROLL_KEY = "unirtm_drawer_autoscroll";
 
-function getInitialTab(): "output" | "tasks" | "doctor" {
+function getInitialTab(): DrawerTab {
   if (typeof localStorage === "undefined") return "output";
   const saved = localStorage.getItem(DRAWER_TAB_KEY);
-  if (saved === "output" || saved === "tasks" || saved === "doctor") {
-    return saved;
+  if (saved === "terminal" || saved === "output" || saved === "tasks" || saved === "doctor") {
+    return saved as DrawerTab;
   }
   return "output";
 }
@@ -207,11 +324,11 @@ function getInitialAutoScroll(): boolean {
   return saved === "true";
 }
 
-const internalActiveTab = ref<"output" | "tasks" | "doctor">(getInitialTab());
+const internalActiveTab = ref<DrawerTab>(getInitialTab());
 
-const currentTab = computed<"output" | "tasks" | "doctor">({
+const currentTab = computed<DrawerTab>({
   get: () => props.activeTab ?? internalActiveTab.value,
-  set: (val: "output" | "tasks" | "doctor") => {
+  set: (val: DrawerTab) => {
     internalActiveTab.value = val;
     emit("update:activeTab", val);
   },
@@ -225,6 +342,7 @@ watch(currentTab, (val) => {
   if (typeof localStorage !== "undefined") {
     localStorage.setItem(DRAWER_TAB_KEY, val);
   }
+  isShellMenuOpen.value = false;
 });
 
 watch(isMaximized, (val) => {
@@ -272,38 +390,36 @@ const emptyStateText = computed(() => {
       "暂无环境体检报告。在环境诊断视图中执行“重新全面体检”以查看详情。"
     );
   }
-  return t("drawer.empty_logs") || "暂无系统输出日志。系统运行与扩展事件将在此显示。";
+  return (
+    t("drawer.empty_logs") ||
+    "暂无系统输出日志。系统运行与扩展事件将在此显示。"
+  );
 });
 
-const clearLogsTitle = computed(() => t("drawer.clear_logs") || "清空控制台日志");
-const copyAllTitle = computed(() => t("drawer.copy_all") || "复制全部日志");
+const clearLogsTitle = computed(() => t("drawer.clear_logs") || "清空当前面板");
+const copyAllTitle = computed(() => t("drawer.copy_all") || "复制全部输出");
 const autoScrollTitle = computed(() =>
-  autoScroll.value
-    ? t("drawer.scroll_enabled") || "自动滚动（已开启）"
-    : t("drawer.scroll_disabled") || "自动滚动（已暂停）"
+  autoScroll.value ? "自动滚动 (开启)" : "自动滚动 (关闭)"
 );
 const maximizeTitle = computed(() =>
-  isMaximized.value
-    ? t("drawer.restore") || "还原视窗默认高度"
-    : t("drawer.maximize") || "最大化视窗高度"
+  isMaximized.value ? "还原面板高度" : "最大化面板高度"
 );
-const closeTitle = computed(() => t("drawer.close_hint") || "关闭控制台面板");
+const closeTitle = computed(() => "关闭面板 (Ctrl+` 或 Esc)");
 
-const { showToast } = useToast();
 const isCopiedAll = ref(false);
 const copiedRowIdx = ref<number | null>(null);
 
 function formatLogLine(log: LogItem): string {
   const parts = [`[${log.timestamp}]`, `[${log.level}]`, log.message];
   if (log.details) {
-    parts.push(log.details);
+    parts.push(`\n${log.details}`);
   }
   return parts.join(" ");
 }
 
 async function copyText(text: string): Promise<boolean> {
   try {
-    if (navigator.clipboard && window.isSecureContext) {
+    if (typeof navigator !== "undefined" && navigator.clipboard && window.isSecureContext) {
       await navigator.clipboard.writeText(text);
       return true;
     }
@@ -311,23 +427,43 @@ async function copyText(text: string): Promise<boolean> {
     // fallback
   }
   try {
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-    textArea.style.position = "fixed";
-    textArea.style.left = "-9999px";
-    textArea.style.top = "-9999px";
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    const successful = document.execCommand("copy");
-    document.body.removeChild(textArea);
-    return successful;
+    if (typeof document !== "undefined") {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "-9999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand("copy");
+      document.body.removeChild(textArea);
+      return successful;
+    }
+    return false;
   } catch (e) {
     return false;
   }
 }
 
 async function handleCopyAll() {
+  if (currentTab.value === "terminal") {
+    if (terminalLines.value.length === 0) {
+      showToast(t("drawer.empty_copy") || "当前暂无日志可复制", "warning");
+      return;
+    }
+    const text = terminalLines.value.map((l) => l.text).join("\n");
+    const success = await copyText(text);
+    if (success) {
+      isCopiedAll.value = true;
+      setTimeout(() => {
+        isCopiedAll.value = false;
+      }, 1500);
+      showToast(t("drawer.copy_all_success") || "已复制当前面板全部日志到剪贴板", "success");
+    }
+    return;
+  }
+
   if (displayLogs.value.length === 0) {
     showToast(t("drawer.empty_copy") || "当前暂无日志可复制", "warning");
     return;
@@ -341,6 +477,13 @@ async function handleCopyAll() {
     }, 1500);
     showToast(t("drawer.copy_all_success") || "已复制当前面板全部日志到剪贴板", "success");
   }
+}
+
+function handleClearCurrent() {
+  if (currentTab.value === "terminal") {
+    terminalLines.value = [];
+  }
+  emit("clear-logs", currentTab.value);
 }
 
 async function handleCopyRow(log: LogItem, idx: number) {
@@ -357,6 +500,89 @@ async function handleCopyRow(log: LogItem, idx: number) {
   }
 }
 
+async function handleRunTerminalCommand() {
+  const cmd = terminalInput.value.trim();
+  if (!cmd) return;
+
+  terminalLines.value.push({ type: "input", text: cmd });
+  terminalHistory.value.push(cmd);
+  historyIdx.value = -1;
+  terminalInput.value = "";
+
+  if (cmd === "clear" || cmd === "cls") {
+    terminalLines.value = [];
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/tasks/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: cmd, scope: "workspace" }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.output) {
+        terminalLines.value.push({ type: "output", text: data.output });
+      } else {
+        terminalLines.value.push({
+          type: "info",
+          text: `[${currentTerminal.value?.name || "Shell"}] Command executed (exit code: 0).`,
+        });
+      }
+    } else {
+      terminalLines.value.push({ type: "error", text: "Command returned non-zero exit code." });
+    }
+  } catch (err: any) {
+    terminalLines.value.push({ type: "error", text: err.message || "Command execution error" });
+  }
+
+  nextTick(() => {
+    if (terminalContainerRef.value) {
+      terminalContainerRef.value.scrollTop = terminalContainerRef.value.scrollHeight;
+    }
+  });
+}
+
+function handleHistoryUp() {
+  if (terminalHistory.value.length === 0) return;
+  if (historyIdx.value === -1) {
+    historyIdx.value = terminalHistory.value.length - 1;
+  } else if (historyIdx.value > 0) {
+    historyIdx.value--;
+  }
+  terminalInput.value = terminalHistory.value[historyIdx.value] || "";
+}
+
+function handleHistoryDown() {
+  if (historyIdx.value === -1) return;
+  if (historyIdx.value < terminalHistory.value.length - 1) {
+    historyIdx.value++;
+    terminalInput.value = terminalHistory.value[historyIdx.value] || "";
+  } else {
+    historyIdx.value = -1;
+    terminalInput.value = "";
+  }
+}
+
+async function handleSelectTerminal(path: string) {
+  isShellMenuOpen.value = false;
+  await setPreferredTerminal(path);
+  terminalLines.value.push({
+    type: "info",
+    text: `[UniRTM] Active shell switched to: ${currentTerminal.value?.name || path} (${path})`,
+  });
+}
+
+async function handleRescan() {
+  await fetchTerminals();
+  showToast(t("terminal.rescan") || "已重新检测终端环境", "info");
+}
+
+function handleGlobalClick(e: MouseEvent) {
+  isShellMenuOpen.value = false;
+}
+
 watch(
   () => props.logs.length,
   () => {
@@ -369,6 +595,15 @@ watch(
     }
   }
 );
+
+onMounted(() => {
+  fetchTerminals();
+  window.addEventListener("click", handleGlobalClick);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("click", handleGlobalClick);
+});
 </script>
 
 <style scoped>
@@ -407,6 +642,7 @@ watch(
   padding: 0 0.5rem;
   user-select: none;
   -webkit-user-select: none;
+  position: relative;
 }
 
 .drawer-tabs {
@@ -458,6 +694,159 @@ watch(
 .drawer-tab.active .tab-badge {
   background: rgba(34, 211, 238, 0.15);
   color: var(--accent-cyan);
+}
+
+/* Shell Selector Pill & Dropdown */
+.terminal-shell-selector-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-left: 0.5rem;
+}
+
+.shell-select-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.shell-select-pill:hover {
+  border-color: var(--accent-cyan);
+  background: var(--btn-hover, rgba(0, 229, 255, 0.05));
+}
+
+.shell-name {
+  font-weight: 600;
+  color: var(--accent-cyan);
+}
+
+.shell-default-tag {
+  font-size: 0.65rem;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.chevron-icon {
+  transition: transform 0.2s ease;
+  color: var(--text-muted);
+}
+
+.chevron-icon.open {
+  transform: rotate(180deg);
+}
+
+.shell-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 260px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  z-index: 120;
+  overflow: hidden;
+}
+
+.shell-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--card-border);
+  background: var(--input-bg);
+}
+
+.rescan-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.rescan-btn:hover {
+  color: var(--accent-cyan);
+}
+
+.shell-dropdown-list {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.shell-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.shell-option:hover {
+  background: rgba(0, 229, 255, 0.08);
+}
+
+.shell-option.active {
+  background: rgba(0, 229, 255, 0.14);
+}
+
+.shell-option-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shell-option-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.shell-option.active .shell-option-name {
+  color: var(--accent-cyan);
+}
+
+.shell-default-pill {
+  font-size: 0.62rem;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.shell-option-path {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shell-dropdown-empty {
+  padding: 10px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: center;
 }
 
 .drawer-actions {
@@ -521,6 +910,129 @@ watch(
   transform: translateY(0);
 }
 
+/* Terminal View Styles */
+.terminal-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--section-bg, #0b0f19);
+  transition: height 0.2s ease;
+}
+
+.terminal-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 3px 0.75rem;
+  background: rgba(0, 0, 0, 0.15);
+  border-bottom: 1px solid var(--card-border);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.term-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.term-shell-info {
+  font-weight: 500;
+}
+
+.term-default-pill {
+  font-size: 0.62rem;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.terminal-screen {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.terminal-welcome {
+  margin-bottom: 0.35rem;
+}
+
+.term-text-cyan {
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.term-text-muted {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.terminal-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  word-break: break-all;
+}
+
+.term-prompt {
+  color: var(--accent-cyan);
+  font-weight: 700;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.line-input {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.line-output {
+  color: var(--text-main);
+  white-space: pre-wrap;
+}
+
+.line-info {
+  color: var(--accent-cyan);
+  font-style: italic;
+}
+
+.line-error {
+  color: #ef4444;
+}
+
+.terminal-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.terminal-cmd-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-main);
+  font-size: 0.75rem;
+  caret-color: var(--accent-cyan);
+  padding: 0;
+}
+
+.terminal-cmd-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+/* Classic Log View Styles */
 .drawer-body {
   overflow-y: auto;
   padding: 0.45rem 0.75rem;
