@@ -33,7 +33,7 @@
   - 统一保存、重置、别名删除、钩子执行等按钮规范。
   - *提交命名*：`refactor(settings): standardize form and modal buttons`
 
-- [ ] **Task 6: 自动化测试回归与生产构建验证 (Validation)**
+- [x] **Task 6: 自动化测试回归与生产构建验证 (Validation)**
   - 运行 Vitest 55 项单元测试确保无前端逻辑回归；
   - 运行 `vue-tsc` 与 `vite build` 生产构建；
   - 检查各页面主题（Dark/Light）对比度与交互响应。
