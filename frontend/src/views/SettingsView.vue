@@ -319,6 +319,125 @@
                 />
               </div>
             </div>
+
+            <!-- Setting: Concurrency (Jobs) -->
+            <div class="setting-item" :class="{ highlight: matchesSearch('jobs') || matchesSearch('concurrency') }">
+              <div class="setting-meta">
+                <span class="setting-title">{{ t('settings.jobs') || '并发线程数 (Jobs)' }}</span>
+                <p class="setting-desc">{{ t('settings.jobs_desc') || '工具并发下载及任务并行执行的线程数量上限。设为 0 表示自适应系统 CPU 核心数。' }}</p>
+              </div>
+              <div class="setting-control">
+                <input
+                  v-model.number="jobs"
+                  type="number"
+                  min="0"
+                  class="setting-text-input font-mono"
+                  :placeholder="t('settings.jobs_auto') || '0 (自动调度)'"
+                  @change="onJobsChange"
+                  @blur="onJobsChange"
+                  @keydown.enter="onJobsChange"
+                />
+              </div>
+            </div>
+
+            <!-- Setting: Auto Install Missing Tools -->
+            <div class="setting-item" :class="{ highlight: matchesSearch('auto_install') || matchesSearch('install') }">
+              <div class="setting-meta">
+                <span class="setting-title">{{ t('settings.auto_install') || '自动补齐工具 (Auto Install)' }}</span>
+                <p class="setting-desc">{{ t('settings.auto_install_desc') || '执行任务遇到未安装的环境依赖工具时，是否自动在后台静默拉取并安装。' }}</p>
+              </div>
+              <div class="setting-control">
+                <label class="toggle-switch-label">
+                  <input
+                    type="checkbox"
+                    :checked="autoInstall"
+                    @change="onAutoInstallToggle"
+                  />
+                  <span class="slider round"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Setting: Task Timeout -->
+            <div class="setting-item" :class="{ highlight: matchesSearch('timeout') || matchesSearch('task_timeout') }">
+              <div class="setting-meta">
+                <span class="setting-title">{{ t('settings.task_timeout') || '任务超时时长 (Task Timeout)' }}</span>
+                <p class="setting-desc">{{ t('settings.task_timeout_desc') || '任务运行的全局超时时间上限（例如 10m、30m 或 600s）。未设置或留空表示遵循任务自身定义。' }}</p>
+              </div>
+              <div class="setting-control">
+                <input
+                  v-model="taskTimeout"
+                  type="text"
+                  class="setting-text-input font-mono"
+                  placeholder="例如: 10m, 600"
+                  @change="onTaskTimeoutChange"
+                  @blur="onTaskTimeoutChange"
+                  @keydown.enter="onTaskTimeoutChange"
+                />
+              </div>
+            </div>
+
+            <!-- Setting: Task Output Mode -->
+            <div class="setting-item" :class="{ highlight: matchesSearch('output') || matchesSearch('task_output') }">
+              <div class="setting-meta">
+                <span class="setting-title">{{ t('settings.task_output') || '任务日志输出模式 (Task Output)' }}</span>
+                <p class="setting-desc">{{ t('settings.task_output_desc') || '多任务并发执行时的控制台日志汇总与渲染风格。' }}</p>
+              </div>
+              <div class="setting-control">
+                <CustomSelect
+                  :model-value="taskOutput"
+                  :options="taskOutputOptions"
+                  @change="onTaskOutputChange"
+                />
+              </div>
+            </div>
+
+            <!-- Setting: Minimum Release Age -->
+            <div class="setting-item" :class="{ highlight: matchesSearch('age') || matchesSearch('minimum_release_age') || matchesSearch('security') }">
+              <div class="setting-meta">
+                <div class="title-with-badge">
+                  <span class="setting-title">{{ t('settings.minimum_release_age') || '发布安全冷却时间 (Release Age)' }}</span>
+                  <span class="badge-custom-pkg" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border-color: rgba(16, 185, 129, 0.25);">
+                    🛡️ 安全防护
+                  </span>
+                </div>
+                <p class="setting-desc">{{ t('settings.minimum_release_age_desc') || '防止供应链投毒与恶意版本。仅允许安装或升级在官方源已发布满指定时间的版本（例如 7d、24h）。留空表示不限制。' }}</p>
+              </div>
+              <div class="setting-control">
+                <input
+                  v-model="minimumReleaseAge"
+                  type="text"
+                  class="setting-text-input font-mono"
+                  placeholder="例如: 7d, 24h, 14d"
+                  @change="onMinimumReleaseAgeChange"
+                  @blur="onMinimumReleaseAgeChange"
+                  @keydown.enter="onMinimumReleaseAgeChange"
+                />
+              </div>
+            </div>
+
+            <!-- Setting: Experimental Features -->
+            <div class="setting-item" :class="{ highlight: matchesSearch('experimental') }">
+              <div class="setting-meta">
+                <div class="title-with-badge">
+                  <span class="setting-title">{{ t('settings.experimental') || '实验性预览特性 (Experimental)' }}</span>
+                  <span class="badge-custom-pkg" style="background: rgba(245, 158, 11, 0.12); color: #d97706; border-color: rgba(245, 158, 11, 0.25);">
+                    🧪 预览阶段
+                  </span>
+                </div>
+                <p class="setting-desc">{{ t('settings.experimental_desc') || '启用 UniRTM 处于早期开发预览阶段的实验性功能与架构能力。' }}</p>
+              </div>
+              <div class="setting-control">
+                <label class="toggle-switch-label">
+                  <input
+                    type="checkbox"
+                    :checked="experimental"
+                    @change="onExperimentalToggle"
+                  />
+                  <span class="slider round"></span>
+                </label>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -1016,6 +1135,20 @@ const customBrowserPath = ref("");
 const githubProxy = ref("");
 const httpProxy = ref("");
 
+// Advanced Settings (Concurrency, Automation, Safety, Experimental)
+const jobs = ref<number | string>(0);
+const autoInstall = ref<boolean>(true);
+const taskTimeout = ref<string>("");
+const taskOutput = ref<"interleaved" | "prefix" | "quiet">("interleaved");
+const minimumReleaseAge = ref<string>("");
+const experimental = ref<boolean>(false);
+
+const taskOutputOptions = computed(() => [
+  { value: "interleaved", label: t("settings.task_output_interleaved") || "交叉流式 (Interleaved)" },
+  { value: "prefix", label: t("settings.task_output_prefix") || "任务前缀 (Prefix)" },
+  { value: "quiet", label: t("settings.task_output_quiet") || "静默模式 (Quiet)" },
+]);
+
 
 // Network matrix and profile state
 const isSavingProfile = ref(false);
@@ -1602,7 +1735,18 @@ function isCategoryVisible(catId: string) {
       q.includes("语言") ||
       q.includes("主题") ||
       q.includes("浏览器") ||
-      q.includes("缓存"))
+      q.includes("缓存") ||
+      q.includes("job") ||
+      q.includes("concur") ||
+      q.includes("task") ||
+      q.includes("timeout") ||
+      q.includes("auto") ||
+      q.includes("exper") ||
+      q.includes("age") ||
+      q.includes("并发") ||
+      q.includes("任务") ||
+      q.includes("超时") ||
+      q.includes("实验"))
   )
     return true;
   if (
@@ -1692,6 +1836,13 @@ function syncFieldsFromConfig() {
     appLanguage.value = s.language;
   }
 
+  jobs.value = s.jobs ?? 0;
+  autoInstall.value = s.auto_install !== false;
+  taskTimeout.value = s.task_timeout !== undefined ? String(s.task_timeout) : "";
+  taskOutput.value = s.task_output || "interleaved";
+  minimumReleaseAge.value = s.minimum_release_age || "";
+  experimental.value = Boolean(s.experimental);
+
   if (activeScope.value === "user") {
     const b = s.browser || "";
     const knownIds = ["chrome", "firefox", "msedge", "safari", "brave", "chromium", "arc", "opera", "vivaldi", "epiphany", ""];
@@ -1704,6 +1855,40 @@ function syncFieldsFromConfig() {
       customBrowserPath.value = b;
     }
   }
+}
+
+function onJobsChange() {
+  const num = parseInt(String(jobs.value), 10);
+  const normalized = isNaN(num) || num < 0 ? 0 : num;
+  jobs.value = normalized;
+  saveSetting("settings.jobs", normalized);
+}
+
+function onAutoInstallToggle() {
+  autoInstall.value = !autoInstall.value;
+  saveSetting("settings.auto_install", autoInstall.value);
+}
+
+function onTaskTimeoutChange() {
+  const val = String(taskTimeout.value).trim();
+  taskTimeout.value = val;
+  saveSetting("settings.task_timeout", val);
+}
+
+function onTaskOutputChange(val: string) {
+  taskOutput.value = val as any;
+  saveSetting("settings.task_output", val);
+}
+
+function onMinimumReleaseAgeChange() {
+  const val = String(minimumReleaseAge.value).trim();
+  minimumReleaseAge.value = val;
+  saveSetting("settings.minimum_release_age", val);
+}
+
+function onExperimentalToggle() {
+  experimental.value = !experimental.value;
+  saveSetting("settings.experimental", experimental.value);
 }
 
 async function saveSetting(key: string, value: any) {
