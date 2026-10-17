@@ -919,3 +919,173 @@ func GetHooksFromContent(content string) map[string]string {
 	return res
 }
 
+func matchAliasHeader(line string) (string, bool) {
+	trimmed := strings.TrimSpace(line)
+	if !strings.HasPrefix(trimmed, "[aliases.") || !strings.HasSuffix(trimmed, "]") {
+		return "", false
+	}
+	inner := strings.TrimSpace(trimmed[len("[aliases.") : len(trimmed)-1])
+	if len(inner) >= 2 {
+		if (strings.HasPrefix(inner, `"`) && strings.HasSuffix(inner, `"`)) ||
+			(strings.HasPrefix(inner, `'`) && strings.HasSuffix(inner, `'`)) {
+			return inner[1 : len(inner)-1], true
+		}
+	}
+	return inner, true
+}
+
+// UpsertAlias updates or inserts an alias version for a tool in the [aliases.<tool>] section.
+func UpsertAlias(content, tool, alias, version string) string {
+	tool = strings.TrimSpace(tool)
+	alias = strings.TrimSpace(alias)
+	version = strings.TrimSpace(version)
+	if tool == "" || alias == "" || version == "" {
+		return content
+	}
+
+	newEntry := fmt.Sprintf("%s = %q", alias, version)
+	lines := strings.Split(content, "\n")
+
+	secStart := -1
+	secEnd := -1
+	aliasLineIdx := -1
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		tName, ok := matchAliasHeader(line)
+		if ok {
+			if secStart != -1 {
+				secEnd = i
+				break
+			}
+			if strings.EqualFold(tName, tool) {
+				secStart = i
+				continue
+			}
+		} else if secStart != -1 && strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
+			secEnd = i
+			break
+		} else if secStart != -1 {
+			existingKey := extractTOMLKey(line)
+			if strings.EqualFold(existingKey, alias) {
+				aliasLineIdx = i
+			}
+		}
+	}
+	if secStart != -1 && secEnd == -1 {
+		secEnd = len(lines)
+	}
+
+	// 1. If tool section exists and alias exists within it -> in-place replace
+	if secStart != -1 && aliasLineIdx != -1 {
+		lines[aliasLineIdx] = newEntry
+		return strings.Join(lines, "\n")
+	}
+
+	// 2. If tool section exists but alias does not -> insert before secEnd
+	if secStart != -1 {
+		insertAt := secEnd
+		newLines := make([]string, 0, len(lines)+1)
+		newLines = append(newLines, lines[:insertAt]...)
+		newLines = append(newLines, newEntry)
+		newLines = append(newLines, lines[insertAt:]...)
+		return strings.Join(newLines, "\n")
+	}
+
+	// 3. Tool section does not exist -> append [aliases.<tool>]
+	if content != "" && !strings.HasSuffix(content, "\n") {
+		content += "\n"
+	}
+	secHeader := fmt.Sprintf("[aliases.%s]", tool)
+	content += "\n" + secHeader + "\n" + newEntry + "\n"
+	return content
+}
+
+// RemoveAlias removes an alias from the [aliases.<tool>] section in TOML content.
+func RemoveAlias(content, tool, alias string) (string, bool) {
+	tool = strings.TrimSpace(tool)
+	alias = strings.TrimSpace(alias)
+	if tool == "" || alias == "" {
+		return content, false
+	}
+
+	lines := strings.Split(content, "\n")
+	secStart := -1
+	secEnd := -1
+	aliasLineIdx := -1
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		tName, ok := matchAliasHeader(line)
+		if ok {
+			if secStart != -1 {
+				secEnd = i
+				break
+			}
+			if strings.EqualFold(tName, tool) {
+				secStart = i
+				continue
+			}
+		} else if secStart != -1 && strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
+			secEnd = i
+			break
+		} else if secStart != -1 {
+			existingKey := extractTOMLKey(line)
+			if strings.EqualFold(existingKey, alias) {
+				aliasLineIdx = i
+			}
+		}
+	}
+	if secStart != -1 && secEnd == -1 {
+		secEnd = len(lines)
+	}
+
+	if secStart == -1 || aliasLineIdx == -1 {
+		return content, false
+	}
+
+	// Remove the alias line
+	newLines := make([]string, 0, len(lines)-1)
+	newLines = append(newLines, lines[:aliasLineIdx]...)
+	newLines = append(newLines, lines[aliasLineIdx+1:]...)
+
+	// Check if this [aliases.<tool>] section has any other key-values left
+	hasOtherEntries := false
+	secLen := secEnd - 1
+	for i := secStart + 1; i < secLen; i++ {
+		if extractTOMLKey(newLines[i]) != "" {
+			hasOtherEntries = true
+			break
+		}
+	}
+
+	// If no entries remain in section, remove the header line and trailing blanks
+	if !hasOtherEntries {
+		cleanLines := make([]string, 0, len(newLines))
+		cleanLines = append(cleanLines, newLines[:secStart]...)
+		skipIdx := secStart + 1
+		for skipIdx < len(newLines) && strings.TrimSpace(newLines[skipIdx]) == "" {
+			skipIdx++
+		}
+		cleanLines = append(cleanLines, newLines[skipIdx:]...)
+		return strings.Join(cleanLines, "\n"), true
+	}
+
+	return strings.Join(newLines, "\n"), true
+}
+
+// GetAliasesFromContent extracts tool alias mappings from the [aliases] sections in TOML.
+func GetAliasesFromContent(content string) map[string]map[string]string {
+	res := make(map[string]map[string]string)
+	if strings.TrimSpace(content) == "" {
+		return res
+	}
+	var doc struct {
+		Aliases map[string]map[string]string `toml:"aliases"`
+	}
+	if err := toml.Unmarshal([]byte(content), &doc); err == nil && doc.Aliases != nil {
+		return doc.Aliases
+	}
+	return res
+}
+

@@ -594,6 +594,21 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/hooks/install", handleInstallHooks)
 	mux.HandleFunc("/api/hooks/run", handleRunHook)
 
+	// Version Aliases Management APIs
+	mux.HandleFunc("/api/aliases", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handleGetAliases(w, r)
+		case http.MethodPost, http.MethodPut:
+			handleUpsertAlias(w, r)
+		case http.MethodDelete:
+			handleDeleteAlias(w, r)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+		}
+	})
+
 	// Theme Management APIs
 	themeMgr := theme.NewManager()
 	mux.HandleFunc("/api/themes", func(w http.ResponseWriter, r *http.Request) {
@@ -701,6 +716,7 @@ func handleGetConfig(w http.ResponseWriter, r *http.Request) {
 			"plugins":  userCfg.Plugins,
 			"env":      userCfg.Env,
 			"hooks":    userCfg.Hooks,
+			"aliases":  userCfg.Aliases,
 		},
 		"workspace": map[string]interface{}{
 			"path":     wsPath,
@@ -712,6 +728,7 @@ func handleGetConfig(w http.ResponseWriter, r *http.Request) {
 			"tools":    wsCfg.Tools,
 			"tasks":    wsCfg.Tasks,
 			"hooks":    wsCfg.Hooks,
+			"aliases":  wsCfg.Aliases,
 		},
 		"detected_browsers": detectInstalledBrowsers(),
 	})
@@ -1194,6 +1211,160 @@ func handleRunHook(w http.ResponseWriter, r *http.Request) {
 		"exit_code": exitCode,
 		"output":    string(out),
 		"name":      body.Name,
+	})
+}
+
+// ─── Version Aliases Management Handlers ─────────────────────────────────────
+
+func handleGetAliases(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	scope := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("scope")))
+	if scope == "" {
+		scope = "workspace"
+	}
+
+	targetFile := ".unirtm.toml"
+	if scope == "user" {
+		targetFile = config.GetGlobalConfigPath()
+	}
+
+	content, _ := config.ReadFileOrEmpty(targetFile)
+	aliases := config.GetAliasesFromContent(content)
+	if aliases == nil {
+		aliases = make(map[string]map[string]string)
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"scope":   scope,
+		"aliases": aliases,
+	})
+}
+
+func handleUpsertAlias(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var req struct {
+		Tool    string `json:"tool"`
+		Alias   string `json:"alias"`
+		Version string `json:"version"`
+		Scope   string `json:"scope"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid request body: " + err.Error()})
+		return
+	}
+
+	req.Tool = strings.TrimSpace(req.Tool)
+	req.Alias = strings.TrimSpace(req.Alias)
+	req.Version = strings.TrimSpace(req.Version)
+	if req.Scope == "" {
+		req.Scope = "workspace"
+	}
+	req.Scope = strings.ToLower(strings.TrimSpace(req.Scope))
+
+	if req.Tool == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "tool name cannot be empty"})
+		return
+	}
+	if req.Alias == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "alias name cannot be empty"})
+		return
+	}
+	if req.Version == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "version cannot be empty"})
+		return
+	}
+
+	targetFile := ".unirtm.toml"
+	if req.Scope == "user" {
+		targetFile = config.GetGlobalConfigPath()
+	}
+
+	content, _ := config.ReadFileOrEmpty(targetFile)
+	updated := config.UpsertAlias(content, req.Tool, req.Alias, req.Version)
+	if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"tool":    req.Tool,
+		"alias":   req.Alias,
+		"version": req.Version,
+		"scope":   req.Scope,
+	})
+}
+
+func handleDeleteAlias(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	tool := strings.TrimSpace(r.URL.Query().Get("tool"))
+	alias := strings.TrimSpace(r.URL.Query().Get("alias"))
+	scope := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("scope")))
+
+	if tool == "" || alias == "" {
+		var body struct {
+			Tool  string `json:"tool"`
+			Alias string `json:"alias"`
+			Scope string `json:"scope"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err == nil {
+			if tool == "" {
+				tool = strings.TrimSpace(body.Tool)
+			}
+			if alias == "" {
+				alias = strings.TrimSpace(body.Alias)
+			}
+			if scope == "" {
+				scope = strings.ToLower(strings.TrimSpace(body.Scope))
+			}
+		}
+	}
+
+	if scope == "" {
+		scope = "workspace"
+	}
+
+	if tool == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "tool name is required"})
+		return
+	}
+	if alias == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "alias name is required"})
+		return
+	}
+
+	targetFile := ".unirtm.toml"
+	if scope == "user" {
+		targetFile = config.GetGlobalConfigPath()
+	}
+
+	content, err := config.ReadFileOrEmpty(targetFile)
+	if err != nil || content == "" {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
+		return
+	}
+
+	updated, removed := config.RemoveAlias(content, tool, alias)
+	if removed {
+		if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
+			return
+		}
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"tool":    tool,
+		"alias":   alias,
+		"scope":   scope,
 	})
 }
 

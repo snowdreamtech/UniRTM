@@ -255,3 +255,70 @@ func TestUIHooksAPI(t *testing.T) {
 	}
 }
 
+func TestUIAliasesAPI(t *testing.T) {
+	distFS, err := frontend.GetFS()
+	if err != nil {
+		t.Fatalf("GetFS failed: %v", err)
+	}
+	mux := setupUIMux(distFS)
+
+	// Switch to a temp workspace to isolate tests
+	tmpDir := t.TempDir()
+	origWd, _ := os.Getwd()
+	_ = os.Chdir(tmpDir)
+	defer func() { _ = os.Chdir(origWd) }()
+
+	// 1. Initial GET /api/aliases (should be empty)
+	reqGet := httptest.NewRequest("GET", "/api/aliases?scope=workspace", nil)
+	rrGet := httptest.NewRecorder()
+	mux.ServeHTTP(rrGet, reqGet)
+	if rrGet.Code != http.StatusOK {
+		t.Fatalf("Expected 200 on GET /api/aliases, got %d", rrGet.Code)
+	}
+
+	// 2. POST /api/aliases to add node.lts = 20
+	bodyPost := strings.NewReader(`{"tool":"node","alias":"lts","version":"20","scope":"workspace"}`)
+	reqPost := httptest.NewRequest("POST", "/api/aliases", bodyPost)
+	reqPost.Header.Set("Content-Type", "application/json")
+	rrPost := httptest.NewRecorder()
+	mux.ServeHTTP(rrPost, reqPost)
+	if rrPost.Code != http.StatusOK {
+		t.Fatalf("Expected 200 on POST /api/aliases, got %d: %s", rrPost.Code, rrPost.Body.String())
+	}
+
+	// 3. GET /api/aliases to verify node.lts exists
+	reqGet2 := httptest.NewRequest("GET", "/api/aliases?scope=workspace", nil)
+	rrGet2 := httptest.NewRecorder()
+	mux.ServeHTTP(rrGet2, reqGet2)
+	if rrGet2.Code != http.StatusOK {
+		t.Fatalf("Expected 200 on GET /api/aliases after insert, got %d", rrGet2.Code)
+	}
+	if !strings.Contains(rrGet2.Body.String(), "node") || !strings.Contains(rrGet2.Body.String(), "lts") || !strings.Contains(rrGet2.Body.String(), "20") {
+		t.Fatalf("Expected node.lts in GET /api/aliases response, got: %s", rrGet2.Body.String())
+	}
+
+	// 4. Verify GET /api/config includes aliases
+	reqCfg := httptest.NewRequest("GET", "/api/config", nil)
+	rrCfg := httptest.NewRecorder()
+	mux.ServeHTTP(rrCfg, reqCfg)
+	if rrCfg.Code != http.StatusOK || !strings.Contains(rrCfg.Body.String(), `"aliases"`) {
+		t.Fatalf("Expected GET /api/config to return aliases, got: %s", rrCfg.Body.String())
+	}
+
+	// 5. DELETE /api/aliases to remove node.lts
+	reqDel := httptest.NewRequest("DELETE", "/api/aliases?tool=node&alias=lts&scope=workspace", nil)
+	rrDel := httptest.NewRecorder()
+	mux.ServeHTTP(rrDel, reqDel)
+	if rrDel.Code != http.StatusOK {
+		t.Fatalf("Expected 200 on DELETE /api/aliases, got %d", rrDel.Code)
+	}
+
+	// 6. GET /api/aliases to verify removed
+	reqGet3 := httptest.NewRequest("GET", "/api/aliases?scope=workspace", nil)
+	rrGet3 := httptest.NewRecorder()
+	mux.ServeHTTP(rrGet3, reqGet3)
+	if strings.Contains(rrGet3.Body.String(), `"lts"`) {
+		t.Fatalf("Expected alias to be deleted from GET response, got: %s", rrGet3.Body.String())
+	}
+}
+
