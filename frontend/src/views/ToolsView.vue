@@ -2590,7 +2590,7 @@ onBeforeUnmount(() => {
   font-size: 0.82rem;
   font-weight: 600;
   border-radius: 7px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.12));
   background: var(--button-secondary-bg, rgba(255, 255, 255, 0.04));
   color: var(--text-main);
   cursor: pointer;
@@ -2638,15 +2638,28 @@ onBeforeUnmount(() => {
   height: 34px;
   padding: 0;
   flex-shrink: 0;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.25);
   color: var(--text-muted);
 }
 .card-action-btn.action-more:hover,
 .card-action-btn.action-more.is-active {
-  background: rgba(2, 132, 199, 0.12);
+  background: rgba(2, 132, 199, 0.15);
   border-color: var(--accent-cyan);
   color: var(--accent-cyan);
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(2, 132, 199, 0.2);
+}
+[data-theme="light"] .card-action-btn.action-more {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #64748b;
+}
+[data-theme="light"] .card-action-btn.action-more:hover,
+[data-theme="light"] .card-action-btn.action-more.is-active {
+  background: rgba(2, 132, 199, 0.08);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
 }
 
 /* 下拉菜单通用样式 */
@@ -3993,11 +4006,24 @@ onBeforeUnmount(() => {
   width: 28px;
   height: 28px;
   padding: 0;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.25);
   color: var(--text-muted);
 }
 .row-action-btn.action-more:hover,
 .row-action-btn.action-more.is-active {
-  background: rgba(2, 132, 199, 0.12);
+  background: rgba(2, 132, 199, 0.15);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+[data-theme="light"] .row-action-btn.action-more {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #64748b;
+}
+[data-theme="light"] .row-action-btn.action-more:hover,
+[data-theme="light"] .row-action-btn.action-more.is-active {
+  background: rgba(2, 132, 199, 0.08);
   border-color: var(--accent-cyan);
   color: var(--accent-cyan);
 }
