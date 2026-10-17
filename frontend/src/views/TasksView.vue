@@ -249,21 +249,7 @@
               <!-- Actions -->
               <td class="td-actions">
                 <div class="table-row-actions">
-                  <button
-                    class="run-task-btn small"
-                    :disabled="runningTask !== null"
-                    @click="executeTask(task)"
-                    :title="`运行任务: unirtm run ${task.name}`"
-                  >
-                    <span v-if="runningTask === task.name" style="display: inline-flex; align-items: center; gap: 4px;">
-                      <TechIcon id="workbench:sync" :size="12" class="spin-icon" />
-                      <span>{{ t("tasks.running") || "运行中..." }}</span>
-                    </span>
-                    <span v-else style="display: inline-flex; align-items: center; gap: 4px;">
-                      <TechIcon id="workbench:tasks" :size="12" :colored="false" />
-                      <span>{{ t("tasks.run") || "运行" }}</span>
-                    </span>
-                  </button>
+                  <!-- Row 1: More Actions Menu -->
                   <div class="task-more-menu-wrap" @click.stop>
                     <button
                       class="task-more-btn table-more-btn"
@@ -286,6 +272,23 @@
                       </div>
                     </transition>
                   </div>
+
+                  <!-- Row 2: Run Task Button -->
+                  <button
+                    class="run-task-btn small"
+                    :disabled="runningTask !== null"
+                    @click="executeTask(task)"
+                    :title="`运行任务: unirtm run ${task.name}`"
+                  >
+                    <span v-if="runningTask === task.name" style="display: inline-flex; align-items: center; gap: 4px;">
+                      <TechIcon id="workbench:sync" :size="12" class="spin-icon" />
+                      <span>{{ t("tasks.running") || "运行中..." }}</span>
+                    </span>
+                    <span v-else style="display: inline-flex; align-items: center; gap: 4px;">
+                      <TechIcon id="workbench:tasks" :size="12" :colored="false" />
+                      <span>{{ t("tasks.run") || "运行" }}</span>
+                    </span>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -947,13 +950,13 @@ async function executeTask(task: ProjectTask) {
   justify-content: center;
   width: 32px;
   height: 32px;
-  padding: 6px;
+  padding: 0;
   border-radius: 7px;
-  border: 1px solid var(--card-border);
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.12));
   background: var(--section-bg);
   color: var(--text-muted);
   cursor: pointer;
-  opacity: 0.6;
+  opacity: 0.75;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
 }
@@ -966,6 +969,19 @@ async function executeTask(task: ProjectTask) {
   opacity: 1;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   transform: translateY(-1px);
+}
+
+[data-theme="light"] .task-more-btn {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #64748b;
+}
+
+[data-theme="light"] .task-more-btn:hover,
+[data-theme="light"] .task-more-btn.active {
+  background: rgba(2, 132, 199, 0.08);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
 }
 
 .task-row-card:hover .task-more-btn {
@@ -1208,7 +1224,7 @@ async function executeTask(task: ProjectTask) {
 
 .tasks-table th.th-actions {
   text-align: right;
-  width: 120px;
+  width: 100px;
 }
 
 .task-table-row {
@@ -1283,10 +1299,11 @@ async function executeTask(task: ProjectTask) {
 }
 
 .table-row-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  justify-content: flex-end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 5px;
 }
 
 .run-task-btn.small {
@@ -1295,8 +1312,8 @@ async function executeTask(task: ProjectTask) {
 }
 
 .task-more-btn.table-more-btn {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   border-radius: 6px;
   opacity: 0.75;
