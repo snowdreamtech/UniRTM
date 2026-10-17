@@ -564,4 +564,10 @@ export const csCz: TranslationDict = {
   "network.direct_mode": "Direct Mode",
   "network.untested": "Untested",
   "runtimes.upgradable_tooltip": "There are {count} upgradeable tools in current scope, click for details",
+  "environments.view_cards": "Cards View",
+  "environments.view_list": "List View",
+  "environments.col_key": "Variable Name",
+  "environments.col_value": "Value",
+  "environments.col_scope": "Scope",
+  "environments.col_actions": "Actions",
 };

@@ -577,4 +577,10 @@ export const zhCn: TranslationDict = {
   "network.direct_mode": "官方直连",
   "network.untested": "未测试",
   "runtimes.upgradable_tooltip": "当前作用域有 {count} 个工具可升级，点击查看详情",
+  "environments.view_cards": "卡片视图",
+  "environments.view_list": "列表视图",
+  "environments.col_key": "变量名",
+  "environments.col_value": "变量值",
+  "environments.col_scope": "作用域",
+  "environments.col_actions": "操作",
 };

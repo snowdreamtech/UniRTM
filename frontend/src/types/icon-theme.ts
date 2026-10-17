@@ -84,7 +84,9 @@ export type WorkbenchIconKey =
   | "workbench:eye-closed"
   | "workbench:copy"
   | "workbench:github"
-  | "workbench:sparkle";
+  | "workbench:sparkle"
+  | "workbench:cards"
+  | "workbench:list";
 
 export interface SemanticIconMapping {
   candidates: string[];

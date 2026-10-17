@@ -61,6 +61,29 @@
           <TechIcon id="workbench:lock" :size="12" />
           <b>{{ sensitiveCount }}</b> {{ t("environments.sensitive_count_suffix") || "个敏感" }}
         </span>
+
+        <!-- View Mode Switcher -->
+        <div class="view-mode-toggle" id="env-view-mode-toggle">
+          <button
+            type="button"
+            class="view-mode-btn"
+            :class="{ active: viewMode === 'cards' }"
+            @click="setViewMode('cards')"
+            :title="t('environments.view_cards') || '卡片视图'"
+          >
+            <TechIcon id="workbench:cards" :size="14" />
+          </button>
+          <button
+            type="button"
+            class="view-mode-btn"
+            :class="{ active: viewMode === 'list' }"
+            @click="setViewMode('list')"
+            :title="t('environments.view_list') || '列表视图'"
+          >
+            <TechIcon id="workbench:list" :size="14" />
+          </button>
+        </div>
+
         <button
           class="tool-action-btn primary small"
           id="btn-add-env"
@@ -97,8 +120,8 @@
         </button>
       </div>
 
-      <!-- Environments Grid / Cards -->
-      <div v-else class="env-grid">
+      <!-- Environments Grid / Cards View -->
+      <div v-else-if="viewMode === 'cards'" class="env-grid">
         <div
           v-for="item in filteredEnvList"
           :key="item.name"
@@ -185,7 +208,111 @@
           </div>
         </div>
       </div>
+
+      <!-- Environments High-Density List / Table View -->
+      <div v-else class="env-list-table-wrapper">
+        <table class="env-table">
+          <thead>
+            <tr>
+              <th class="th-key">{{ t("environments.col_key") || "变量名" }}</th>
+              <th class="th-scope">{{ t("environments.col_scope") || "作用域" }}</th>
+              <th class="th-value">{{ t("environments.col_value") || "变量值" }}</th>
+              <th class="th-actions">{{ t("environments.col_actions") || "操作" }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="item in filteredEnvList"
+              :key="item.name"
+              class="env-table-row"
+              :class="{ sensitive: item.is_sensitive }"
+            >
+              <!-- Col: Key -->
+              <td class="td-key">
+                <div class="table-key-cell">
+                  <TechIcon
+                    :id="item.is_sensitive ? 'workbench:key' : 'workbench:variable'"
+                    :size="15"
+                    :style="{ color: item.is_sensitive ? '#f59e0b' : 'var(--accent-cyan)' }"
+                    class="key-type-icon"
+                  />
+                  <span class="key-name font-mono">{{ item.name }}</span>
+                  <span
+                    v-if="item.is_sensitive"
+                    class="sec-tag sensitive mini"
+                    :title="t('environments.sensitive_badge') || '敏感密钥'"
+                  >
+                    <TechIcon id="workbench:lock" :size="10" />
+                    <span>{{ t('environments.sensitive_badge') || '敏感' }}</span>
+                  </span>
+                </div>
+              </td>
+
+              <!-- Col: Scope -->
+              <td class="td-scope">
+                <span class="scope-tag" :class="item.scope">
+                  {{ item.scope === 'user' ? (t("environments.scope_user") || "用户") : (t("environments.scope_workspace") || "工作区") }}
+                </span>
+              </td>
+
+              <!-- Col: Value -->
+              <td class="td-value font-mono">
+                <div class="table-value-cell">
+                  <div class="table-value-text" :class="{ masked: item.is_sensitive && !item.isRevealed }">
+                    <span v-if="item.is_sensitive && !item.isRevealed" class="masked-dots">
+                      ••••••••••••••••
+                    </span>
+                    <span v-else class="revealed-text">
+                      {{ item.value }}
+                    </span>
+                  </div>
+                  <div class="table-value-actions">
+                    <button
+                      v-if="item.is_sensitive"
+                      class="value-btn eye-btn mini"
+                      :class="{ active: item.isRevealed }"
+                      @click="toggleReveal(item)"
+                      :title="item.isRevealed ? (t('environments.conceal') || '脱密隐藏') : (t('environments.reveal') || '显示明文')"
+                    >
+                      <TechIcon :id="item.isRevealed ? 'workbench:eye-closed' : 'workbench:eye'" :size="13" />
+                    </button>
+                    <button
+                      class="value-btn copy-btn mini"
+                      @click="copyValue(item)"
+                      :title="t('environments.copy_val') || '复制真实值'"
+                    >
+                      <TechIcon v-if="copiedKey === item.name" id="workbench:success" :size="13" class="copy-check" />
+                      <TechIcon v-else id="workbench:copy" :size="13" />
+                    </button>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Col: Actions -->
+              <td class="td-actions">
+                <div class="table-row-actions">
+                  <button
+                    class="action-btn edit-btn"
+                    @click="openEditModal(item)"
+                    :title="t('environments.edit_btn') || '编辑'"
+                  >
+                    <TechIcon id="workbench:edit" :size="14" />
+                  </button>
+                  <button
+                    class="action-btn delete-btn"
+                    @click="confirmDelete(item.name)"
+                    :title="t('environments.delete_btn') || '删除'"
+                  >
+                    <TechIcon id="workbench:delete" :size="14" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
+
 
     <!-- Create / Edit Environment Modal -->
     <EnvironmentModal
@@ -260,6 +387,15 @@ const deleteConfirmKey = ref("");
 const isDeleting = ref(false);
 const copiedKey = ref("");
 const toastMessage = ref("");
+
+const viewMode = ref<"cards" | "list">(
+  (localStorage.getItem("unirtm_view_mode_environments") as "cards" | "list") || "cards"
+);
+
+function setViewMode(mode: "cards" | "list") {
+  viewMode.value = mode;
+  localStorage.setItem("unirtm_view_mode_environments", mode);
+}
 
 function showToast(msg: string) {
   toastMessage.value = msg;
@@ -826,6 +962,173 @@ onMounted(() => {
 .copy-check {
   color: #10b981;
   font-weight: 700;
+}
+
+/* View Mode Switcher Toggle */
+.view-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.view-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.view-mode-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.view-mode-btn.active {
+  color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* High-Density List / Table View */
+.env-list-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.env-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.84rem;
+}
+
+.env-table thead tr {
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.env-table th {
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.env-table th.th-actions {
+  text-align: right;
+  width: 90px;
+}
+
+.env-table-row {
+  border-bottom: 1px solid var(--card-border, rgba(255, 255, 255, 0.05));
+  transition: background 0.15s ease;
+}
+
+.env-table-row:last-child {
+  border-bottom: none;
+}
+
+.env-table-row:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.env-table-row.sensitive {
+  border-left: 3px solid #f59e0b;
+}
+
+.env-table td {
+  padding: 0.65rem 1rem;
+  vertical-align: middle;
+}
+
+.env-table td.td-actions {
+  text-align: right;
+}
+
+.table-key-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.table-key-cell .key-name {
+  font-weight: 600;
+  color: var(--text-main);
+  letter-spacing: 0.4px;
+}
+
+.sec-tag.mini {
+  padding: 1px 5px;
+  font-size: 0.68rem;
+  gap: 3px;
+}
+
+.table-value-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  max-width: 460px;
+  min-height: 28px;
+  box-sizing: border-box;
+}
+
+.table-value-text {
+  flex: 1;
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-main);
+}
+
+.table-value-text.masked .masked-dots {
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  opacity: 0.8;
+  font-size: 0.92rem;
+}
+
+.table-value-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.value-btn.mini {
+  padding: 2px 6px;
+  font-size: 0.72rem;
+  gap: 2px;
+}
+
+.table-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
 }
 
 /* Delete confirmation modal */

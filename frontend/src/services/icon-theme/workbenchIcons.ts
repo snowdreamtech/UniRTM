@@ -145,6 +145,14 @@ export const workbenchSemanticIcons: Record<WorkbenchIconKey, SemanticIconMappin
     candidates: ["sparkle", "ai", "magic", "smart", "json"],
     fallbackSetiKey: "_json",
   },
+  "workbench:cards": {
+    candidates: ["editor-layout", "layout", "grid", "json"],
+    fallbackSetiKey: "_default",
+  },
+  "workbench:list": {
+    candidates: ["table", "list-flat", "list", "text"],
+    fallbackSetiKey: "_default",
+  },
 };
 
 /**
