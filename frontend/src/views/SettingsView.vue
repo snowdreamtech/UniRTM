@@ -467,8 +467,9 @@
           </div>
         </section>
 
-        <!-- 2. Git & Lifecycle Hooks -->
+        <!-- 2. Git & Lifecycle Hooks (Workspace Only) -->
         <section
+          v-if="activeScope !== 'user'"
           v-show="isCategoryVisible('hooks')"
           id="section-hooks"
           class="settings-category-section glass-card"
@@ -479,16 +480,11 @@
                 <TechIcon id="workbench:git" :size="20" />
               </span>
               <div>
-                <div class="title-with-badge" style="display: flex; align-items: center; gap: 8px;">
-                  <h2>{{ t('settings.cat_hooks') || '生命周期与 Git 钩子 (Hooks)' }}</h2>
-                  <span v-if="activeScope === 'user'" class="badge-global-only" style="background: rgba(6, 182, 212, 0.12); color: var(--accent-cyan); border-color: rgba(6, 182, 212, 0.25);">
-                    {{ t('settings.scope_workspace_only') || '仅限工作区' }}
-                  </span>
-                </div>
+                <h2>{{ t('settings.cat_hooks') || '生命周期与 Git 钩子 (Hooks)' }}</h2>
                 <span class="section-sub">{{ t('settings.cat_hooks_sub') || 'Git 提交与操作生命周期自动化事件脚本' }}</span>
               </div>
             </div>
-            <div v-if="activeScope !== 'user'" class="hooks-header-actions" style="display: flex; gap: 8px; align-items: center;">
+            <div class="hooks-header-actions" style="display: flex; gap: 8px; align-items: center;">
               <button
                 type="button"
                 class="btn-bridge-install"
@@ -512,23 +508,7 @@
 
           <!-- Hooks Content List or Empty State -->
           <div class="hooks-container">
-            <!-- User Scope Warning Banner -->
-            <div v-if="activeScope === 'user'" class="scope-notice-banner warning" style="margin-top: 4px;">
-              <div class="notice-icon">
-                <TechIcon id="workbench:warning" :size="16" />
-              </div>
-              <div class="notice-body">
-                <strong>{{ t('settings.hooks_workspace_only_banner') || 'Git 生命周期钩子仅限工作区生效' }}</strong>
-                <p>
-                  {{ t('settings.hooks_workspace_only_desc') || 'Git 钩子（如 pre-commit、commit-msg）直接与当前代码工程的 .git 目录及项目规范强绑定，无法在用户全局层级配置。' }}
-                </p>
-                <button class="btn-switch-scope" @click="switchScope('workspace', 'section-hooks')">
-                  {{ t('settings.switch_to_workspace') || '切换到工作区配置' }} ↗
-                </button>
-              </div>
-            </div>
-
-            <div v-else-if="isLoadingHooks" class="hooks-loading">
+            <div v-if="isLoadingHooks" class="hooks-loading">
               <span class="spinner-small"></span>
               <span>{{ t('settings.hooks_loading') || '正在加载生命周期钩子...' }}</span>
             </div>
