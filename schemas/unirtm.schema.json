@@ -55,6 +55,10 @@
           "type": "string",
           "description": "Machine-specific preferred editor (e.g. 'code', 'vim'). Recommended in global configuration only."
         },
+        "terminal": {
+          "type": "string",
+          "description": "Machine-specific preferred integrated shell or terminal binary path (e.g. '/bin/bash', '/usr/bin/zsh', 'pwsh'). Recommended in global configuration only."
+        },
         "cache_ttl": {
           "oneOf": [
             { "type": "integer" },

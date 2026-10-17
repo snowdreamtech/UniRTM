@@ -1,6 +1,6 @@
 # 任务分解与执行清单 (Tasks)
 
-- [ ] **Task 1: 后端终端扫描接口与配置持久化支持 (Backend & Schema)**
+- [x] **Task 1: 后端终端扫描接口与配置持久化支持 (Backend & Schema)**
   - 在 `schemas/unirtm.schema.json` 中为 `settings` 补充 `terminal` 字段定义；
   - 在 `cmd/64.ui.go` 与 `frontend/vite.config.ts` 中实现 `GET /api/terminals` 接口：
     - 读取 `/etc/shells` 与查找常见 Shell（bash, zsh, fish, sh, pwsh, cmd, git-bash）；

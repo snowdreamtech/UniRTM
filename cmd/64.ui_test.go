@@ -196,6 +196,45 @@ func TestUIDetectBrowsers(t *testing.T) {
 	}
 }
 
+func TestUIDetectTerminals(t *testing.T) {
+	distFS, err := frontend.GetFS()
+	if err != nil {
+		t.Fatalf("GetFS failed: %v", err)
+	}
+	mux := setupUIMux(distFS)
+
+	req := httptest.NewRequest("GET", "/api/terminals", nil)
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("Expected status 200 on /api/terminals, got %d", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), "terminals") {
+		t.Errorf("Expected response to contain 'terminals', got %s", rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), "default") {
+		t.Errorf("Expected response to contain 'default', got %s", rr.Body.String())
+	}
+
+	terms := detectInstalledTerminals()
+	t.Logf("Detected %d installed terminals on host (%s)", len(terms), runtime.GOOS)
+	if len(terms) == 0 {
+		t.Error("Expected at least one installed shell/terminal to be detected on host")
+	}
+
+	hasDefault := false
+	for _, term := range terms {
+		if term.IsDefault {
+			hasDefault = true
+			break
+		}
+	}
+	if !hasDefault {
+		t.Error("Expected at least one terminal to be marked as default")
+	}
+}
+
 func TestUIHooksAPI(t *testing.T) {
 	distFS, err := frontend.GetFS()
 	if err != nil {

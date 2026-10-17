@@ -345,6 +345,180 @@ func detectInstalledBrowsers() []DetectedBrowser {
 	return list
 }
 
+// DetectedTerminal represents an installed shell/terminal found on the host system.
+type DetectedTerminal struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Path      string `json:"path"`
+	IsDefault bool   `json:"is_default"`
+}
+
+// detectInstalledTerminals dynamically scans the host system for known installed shells/terminals.
+func detectInstalledTerminals() []DetectedTerminal {
+	var list []DetectedTerminal
+	seen := make(map[string]bool)
+
+	defaultShell := os.Getenv("SHELL")
+	if defaultShell == "" && runtime.GOOS == "windows" {
+		defaultShell = os.Getenv("COMSPEC")
+	}
+
+	addTerminal := func(id, name, path string) {
+		if path == "" || seen[path] {
+			return
+		}
+		seen[path] = true
+		isDef := false
+		if defaultShell != "" {
+			if path == defaultShell || filepath.Base(path) == filepath.Base(defaultShell) {
+				isDef = true
+			}
+		}
+		list = append(list, DetectedTerminal{
+			ID:        id,
+			Name:      name,
+			Path:      path,
+			IsDefault: isDef,
+		})
+	}
+
+	friendlyName := func(base string) string {
+		base = strings.ToLower(strings.TrimSuffix(base, ".exe"))
+		switch base {
+		case "bash":
+			return "Bash"
+		case "zsh":
+			return "Zsh"
+		case "fish":
+			return "Fish"
+		case "sh":
+			return "POSIX sh"
+		case "pwsh":
+			return "PowerShell Core"
+		case "powershell":
+			return "Windows PowerShell"
+		case "cmd":
+			return "Command Prompt"
+		case "dash":
+			return "Dash"
+		case "tcsh":
+			return "Tcsh"
+		case "csh":
+			return "Csh"
+		case "tmux":
+			return "Tmux"
+		case "wsl":
+			return "WSL"
+		default:
+			if len(base) > 0 {
+				return strings.ToUpper(base[:1]) + base[1:]
+			}
+			return base
+		}
+	}
+
+	// 1. On Unix-like systems, check /etc/shells
+	if runtime.GOOS != "windows" {
+		if content, err := os.ReadFile("/etc/shells"); err == nil {
+			lines := strings.Split(string(content), "\n")
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if line == "" || strings.HasPrefix(line, "#") {
+					continue
+				}
+				if _, err := os.Stat(line); err == nil {
+					base := filepath.Base(line)
+					addTerminal(strings.ToLower(base), friendlyName(base), line)
+				}
+			}
+		}
+	}
+
+	// 2. Scan common shells via PATH
+	commonShells := []string{"bash", "zsh", "fish", "sh", "pwsh", "dash"}
+	if runtime.GOOS == "windows" {
+		commonShells = []string{"powershell.exe", "pwsh.exe", "cmd.exe", "bash.exe", "wsl.exe"}
+	}
+	for _, sh := range commonShells {
+		if p, err := exec.LookPath(sh); err == nil {
+			base := filepath.Base(p)
+			id := strings.ToLower(strings.TrimSuffix(base, ".exe"))
+			addTerminal(id, friendlyName(base), p)
+		}
+	}
+
+	// 3. Special checks on Windows (e.g. Git Bash)
+	if runtime.GOOS == "windows" {
+		gitBashPaths := []string{
+			`C:\Program Files\Git\bin\bash.exe`,
+			`C:\Program Files (x86)\Git\bin\bash.exe`,
+			filepath.Join(os.Getenv("LocalAppData"), `Programs\Git\bin\bash.exe`),
+		}
+		for _, gbp := range gitBashPaths {
+			if _, err := os.Stat(gbp); err == nil {
+				addTerminal("git-bash", "Git Bash", gbp)
+				break
+			}
+		}
+	}
+
+	// 4. Ensure at least defaultShell is present if specified and exists
+	if defaultShell != "" && !seen[defaultShell] {
+		if _, err := os.Stat(defaultShell); err == nil {
+			base := filepath.Base(defaultShell)
+			addTerminal(strings.ToLower(strings.TrimSuffix(base, ".exe")), friendlyName(base), defaultShell)
+		}
+	}
+
+	// 5. Ensure at least one terminal is marked is_default
+	hasDefault := false
+	for _, t := range list {
+		if t.IsDefault {
+			hasDefault = true
+			break
+		}
+	}
+	if !hasDefault && len(list) > 0 {
+		list[0].IsDefault = true
+	}
+
+	return list
+}
+
+func handleGetTerminals(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	terms := detectInstalledTerminals()
+
+	defPath := ""
+	for _, t := range terms {
+		if t.IsDefault {
+			defPath = t.Path
+			break
+		}
+	}
+	if defPath == "" && len(terms) > 0 {
+		defPath = terms[0].Path
+	}
+
+	curPath := defPath
+	cfg, err := config.LoadGlobal()
+	if err == nil && cfg != nil && cfg.Settings.Terminal != "" {
+		configured := cfg.Settings.Terminal
+		for _, t := range terms {
+			if t.Path == configured || t.ID == configured {
+				curPath = t.Path
+				break
+			}
+		}
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"default":   defPath,
+		"current":   curPath,
+		"terminals": terms,
+	})
+}
+
 func resolveBrowserExecutable(target string) string {
 	switch strings.ToLower(target) {
 	case "chrome":
@@ -510,6 +684,7 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 			"browsers": detectInstalledBrowsers(),
 		})
 	})
+	mux.HandleFunc("/api/terminals", handleGetTerminals)
 
 	// ─── Network & Mirror API Endpoints ──────────────────────────────────────
 	mux.HandleFunc("/api/network/status", handleGetNetworkStatus)
@@ -1738,9 +1913,9 @@ func handlePostConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Machine-specific settings check: browser and editor are global-only
+	// Machine-specific settings check: browser, editor and terminal are global-only
 	cleanKey := strings.TrimPrefix(key, "settings.")
-	if scope == "workspace" && (cleanKey == "browser" || cleanKey == "editor") {
+	if scope == "workspace" && (cleanKey == "browser" || cleanKey == "editor" || cleanKey == "terminal") {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
 			"error": fmt.Sprintf("%s configuration is only permitted in global config to ensure project portability across team machines.", cleanKey),

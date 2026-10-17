@@ -2205,6 +2205,86 @@ print(json.dumps({
             res.end(JSON.stringify({ browsers: [] }));
             return;
           }
+
+          if (req.url === "/api/terminals" || req.url?.startsWith("/api/terminals?")) {
+            res.setHeader("Content-Type", "application/json");
+            const defaultShell = process.env.SHELL || (process.platform === "win32" ? process.env.COMSPEC || "cmd.exe" : "/bin/bash");
+            const terms: Array<{ id: string; name: string; path: string; is_default: boolean }> = [];
+            const seen = new Set<string>();
+
+            const addTerm = (id: string, name: string, shPath: string) => {
+              if (!shPath || seen.has(shPath)) return;
+              try {
+                if (fs.existsSync(shPath)) {
+                  seen.add(shPath);
+                  const isDef = Boolean(defaultShell && (shPath === defaultShell || path.basename(shPath) === path.basename(defaultShell)));
+                  terms.push({ id, name, path: shPath, is_default: isDef });
+                }
+              } catch (_) {}
+            };
+
+            if (process.platform !== "win32") {
+              if (fs.existsSync("/etc/shells")) {
+                try {
+                  const lines = fs.readFileSync("/etc/shells", "utf-8").split("\n");
+                  for (const line of lines) {
+                    const clean = line.trim();
+                    if (!clean || clean.startsWith("#")) continue;
+                    const b = path.basename(clean);
+                    let name = b.charAt(0).toUpperCase() + b.slice(1);
+                    if (b === "sh") name = "POSIX sh";
+                    if (b === "pwsh") name = "PowerShell Core";
+                    addTerm(b.toLowerCase(), name, clean);
+                  }
+                } catch (_) {}
+              }
+              const candidates = [
+                { id: "bash", name: "Bash", bin: "/bin/bash" },
+                { id: "zsh", name: "Zsh", bin: "/usr/bin/zsh" },
+                { id: "fish", name: "Fish", bin: "/usr/bin/fish" },
+                { id: "sh", name: "POSIX sh", bin: "/bin/sh" },
+                { id: "pwsh", name: "PowerShell Core", bin: "/usr/bin/pwsh" },
+              ];
+              for (const c of candidates) {
+                addTerm(c.id, c.name, c.bin);
+              }
+            } else {
+              addTerm("powershell", "Windows PowerShell", "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
+              addTerm("cmd", "Command Prompt", "C:\\Windows\\System32\\cmd.exe");
+              addTerm("git-bash", "Git Bash", "C:\\Program Files\\Git\\bin\\bash.exe");
+            }
+
+            if (defaultShell && !seen.has(defaultShell) && fs.existsSync(defaultShell)) {
+              const b = path.basename(defaultShell);
+              addTerm(b.toLowerCase(), b.charAt(0).toUpperCase() + b.slice(1), defaultShell);
+            }
+
+            let hasDef = terms.some(t => t.is_default);
+            if (!hasDef && terms.length > 0) {
+              terms[0].is_default = true;
+            }
+
+            const defTerm = terms.find(t => t.is_default)?.path || (terms[0]?.path || "/bin/bash");
+            let current = defTerm;
+            try {
+              const home = os.homedir();
+              const cfgPath = path.join(home, ".unirtm.toml");
+              if (fs.existsSync(cfgPath)) {
+                const c = fs.readFileSync(cfgPath, "utf-8");
+                const m = c.match(/terminal\s*=\s*"([^"]+)"/);
+                if (m && m[1]) {
+                  current = m[1];
+                }
+              }
+            } catch (_) {}
+
+            res.end(JSON.stringify({
+              default: defTerm,
+              current: current,
+              terminals: terms,
+            }));
+            return;
+          }
           // Tasks API: Read tasks from .unirtm.toml or user global config
           if (req.url?.startsWith("/api/tasks/run") && req.method === "POST") {
             let bodyStr = "";

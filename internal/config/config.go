@@ -209,6 +209,7 @@ type Settings struct {
 	Appearance           string                            `toml:"appearance,omitempty" yaml:"appearance,omitempty" mapstructure:"appearance,omitempty"`
 	Language             string                            `toml:"language,omitempty" yaml:"language,omitempty" mapstructure:"language,omitempty"`
 	Shell                string                            `toml:"shell,omitempty" yaml:"shell,omitempty" mapstructure:"shell,omitempty"`
+	Terminal             string                            `toml:"terminal,omitempty" yaml:"terminal,omitempty" mapstructure:"terminal,omitempty"`
 	AlwaysKeepDownload   bool                              `toml:"always_keep_download,omitempty" yaml:"always_keep_download,omitempty" mapstructure:"always_keep_download,omitempty"`
 	CeilingPaths         []string                          `toml:"ceiling_paths,omitempty" yaml:"ceiling_paths,omitempty" mapstructure:"ceiling_paths,omitempty"`
 	TrustedConfigPaths   []string                          `toml:"trusted_config_paths,omitempty" yaml:"trusted_config_paths,omitempty" mapstructure:"trusted_config_paths,omitempty"`
