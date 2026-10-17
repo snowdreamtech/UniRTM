@@ -1399,6 +1399,7 @@ func isSensitiveEnvKey(k string) bool {
 func handleGetEnvVars(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	scope := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("scope")))
+	profile := strings.TrimSpace(r.URL.Query().Get("profile"))
 	if scope == "" {
 		scope = "workspace"
 	}
@@ -1409,35 +1410,110 @@ func handleGetEnvVars(w http.ResponseWriter, r *http.Request) {
 	}
 
 	content, _ := config.ReadFileOrEmpty(targetFile)
-	envMap := config.GetEnvVarsFromContent(content)
-
-	var names []string
-	for n := range envMap {
-		names = append(names, n)
-	}
-	sort.Strings(names)
+	baseEnvMap := config.GetEnvVarsFromContent(content)
+	profiles := config.GetEnvironmentProfiles(content)
 
 	type EnvVarItem struct {
-		Name        string `json:"name"`
-		Value       string `json:"value"`
-		Scope       string `json:"scope"`
-		IsSensitive bool   `json:"is_sensitive"`
+		Name          string `json:"name"`
+		Value         string `json:"value"`
+		Scope         string `json:"scope"`
+		Profile       string `json:"profile,omitempty"`
+		IsSensitive   bool   `json:"is_sensitive"`
+		IsOverride    bool   `json:"is_override"`
+		BaseValue     string `json:"base_value,omitempty"`
+		IsProfileOnly bool   `json:"is_profile_only"`
+		IsInherited   bool   `json:"is_inherited"`
 	}
 
 	var res []EnvVarItem
-	for _, n := range names {
-		res = append(res, EnvVarItem{
-			Name:        n,
-			Value:       envMap[n],
-			Scope:       scope,
-			IsSensitive: isSensitiveEnvKey(n),
-		})
+
+	if profile == "" || scope == "user" {
+		var names []string
+		for n := range baseEnvMap {
+			names = append(names, n)
+		}
+		sort.Strings(names)
+
+		for _, n := range names {
+			res = append(res, EnvVarItem{
+				Name:        n,
+				Value:       baseEnvMap[n],
+				Scope:       scope,
+				Profile:     "",
+				IsSensitive: isSensitiveEnvKey(n),
+			})
+		}
+	} else {
+		// Specific workspace profile
+		envs := config.GetEnvironmentsFromContent(content)
+		var profEnvRaw map[string]interface{}
+		if cfg, exists := envs[profile]; exists {
+			profEnvRaw = cfg.Env
+		}
+		profEnvMap := make(map[string]string)
+		for k, v := range profEnvRaw {
+			profEnvMap[strings.ToUpper(k)] = fmt.Sprintf("%v", v)
+		}
+
+		// Union of profile keys and base keys
+		allKeysMap := make(map[string]bool)
+		for k := range profEnvMap {
+			allKeysMap[k] = true
+		}
+		for k := range baseEnvMap {
+			allKeysMap[k] = true
+		}
+		var names []string
+		for k := range allKeysMap {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+
+		for _, n := range names {
+			profVal, inProf := profEnvMap[n]
+			baseVal, inBase := baseEnvMap[n]
+
+			if inProf {
+				if inBase {
+					res = append(res, EnvVarItem{
+						Name:        n,
+						Value:       profVal,
+						Scope:       scope,
+						Profile:     profile,
+						IsSensitive: isSensitiveEnvKey(n),
+						IsOverride:  true,
+						BaseValue:   baseVal,
+					})
+				} else {
+					res = append(res, EnvVarItem{
+						Name:          n,
+						Value:         profVal,
+						Scope:         scope,
+						Profile:       profile,
+						IsSensitive:   isSensitiveEnvKey(n),
+						IsProfileOnly: true,
+					})
+				}
+			} else {
+				res = append(res, EnvVarItem{
+					Name:        n,
+					Value:       baseVal,
+					Scope:       scope,
+					Profile:     profile,
+					IsSensitive: isSensitiveEnvKey(n),
+					IsInherited: true,
+					BaseValue:   baseVal,
+				})
+			}
+		}
 	}
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"env":   res,
-		"total": len(res),
-		"scope": scope,
+		"env":      res,
+		"total":    len(res),
+		"scope":    scope,
+		"profile":  profile,
+		"profiles": profiles,
 	})
 }
 
@@ -1446,14 +1522,16 @@ type UpsertEnvVarReq struct {
 	OriginalKey string `json:"original_key,omitempty"`
 	Value       string `json:"value"`
 	Scope       string `json:"scope,omitempty"`
+	Profile     string `json:"profile,omitempty"`
+	Action      string `json:"action,omitempty"`
 }
 
 func handleUpsertEnvVar(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var req UpsertEnvVarReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || strings.TrimSpace(req.Key) == "" {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "variable key is required"})
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid json body: " + err.Error()})
 		return
 	}
 
@@ -1461,6 +1539,8 @@ func handleUpsertEnvVar(w http.ResponseWriter, r *http.Request) {
 	if scope == "" {
 		scope = "workspace"
 	}
+	profile := strings.TrimSpace(req.Profile)
+
 	targetFile := ".unirtm.toml"
 	if scope == "user" {
 		targetFile = config.GetGlobalConfigPath()
@@ -1468,15 +1548,67 @@ func handleUpsertEnvVar(w http.ResponseWriter, r *http.Request) {
 
 	content, _ := config.ReadFileOrEmpty(targetFile)
 
-	if req.OriginalKey != "" && !strings.EqualFold(req.OriginalKey, req.Key) {
-		content, _ = config.UnsetEnvVar(content, req.OriginalKey)
+	// Special action: create profile without adding variables yet
+	if req.Action == "create_profile" {
+		if scope == "user" {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "profiles are only supported in workspace scope"})
+			return
+		}
+		if profile == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "profile name cannot be empty"})
+			return
+		}
+		updated, err := config.CreateEnvironmentProfile(content, profile)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+			return
+		}
+		if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"profile": profile,
+		})
+		return
 	}
 
-	updated := config.UpsertEnvVar(content, req.Key, req.Value)
-	if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
+	if strings.TrimSpace(req.Key) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "variable key is required"})
 		return
+	}
+
+	if profile != "" && scope == "workspace" {
+		if req.OriginalKey != "" && !strings.EqualFold(req.OriginalKey, req.Key) {
+			content, _ = config.UnsetEnvironmentEnvVar(content, profile, req.OriginalKey)
+		}
+		updated, err := config.UpsertEnvironmentEnvVar(content, profile, req.Key, req.Value)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+			return
+		}
+		if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
+			return
+		}
+	} else {
+		if req.OriginalKey != "" && !strings.EqualFold(req.OriginalKey, req.Key) {
+			content, _ = config.UnsetEnvVar(content, req.OriginalKey)
+		}
+		updated := config.UpsertEnvVar(content, req.Key, req.Value)
+		if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
+			return
+		}
 	}
 
 	upperKey := strings.ToUpper(strings.TrimSpace(req.Key))
@@ -1486,6 +1618,7 @@ func handleUpsertEnvVar(w http.ResponseWriter, r *http.Request) {
 			"name":         upperKey,
 			"value":        req.Value,
 			"scope":        scope,
+			"profile":      profile,
 			"is_sensitive": isSensitiveEnvKey(upperKey),
 		},
 	})
@@ -1495,24 +1628,28 @@ func handleDeleteEnvVar(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	key := strings.TrimSpace(r.URL.Query().Get("key"))
 	scope := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("scope")))
+	profile := strings.TrimSpace(r.URL.Query().Get("profile"))
+	action := strings.TrimSpace(r.URL.Query().Get("action"))
 
-	if key == "" {
+	if key == "" && action == "" {
 		var body struct {
-			Key   string `json:"key"`
-			Scope string `json:"scope"`
+			Key     string `json:"key"`
+			Scope   string `json:"scope"`
+			Profile string `json:"profile"`
+			Action  string `json:"action"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err == nil {
 			key = strings.TrimSpace(body.Key)
 			if scope == "" {
 				scope = strings.ToLower(strings.TrimSpace(body.Scope))
 			}
+			if profile == "" {
+				profile = strings.TrimSpace(body.Profile)
+			}
+			if action == "" {
+				action = strings.TrimSpace(body.Action)
+			}
 		}
-	}
-
-	if key == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "variable key is required"})
-		return
 	}
 
 	if scope == "" {
@@ -1529,7 +1666,37 @@ func handleDeleteEnvVar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, removed := config.UnsetEnvVar(content, key)
+	// Delete entire profile
+	if action == "delete_profile" && profile != "" {
+		updated, removed := config.RemoveEnvironmentProfile(content, profile)
+		if removed {
+			if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to save config: " + err.Error()})
+				return
+			}
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"success":         true,
+			"deleted_profile": profile,
+		})
+		return
+	}
+
+	if key == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "variable key is required"})
+		return
+	}
+
+	var updated string
+	var removed bool
+	if profile != "" && scope == "workspace" {
+		updated, removed = config.UnsetEnvironmentEnvVar(content, profile, key)
+	} else {
+		updated, removed = config.UnsetEnvVar(content, key)
+	}
+
 	if removed {
 		if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -1541,6 +1708,7 @@ func handleDeleteEnvVar(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"success":     true,
 		"deleted_key": strings.ToUpper(key),
+		"profile":     profile,
 	})
 }
 

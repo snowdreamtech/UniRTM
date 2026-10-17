@@ -338,3 +338,54 @@ language = "zh-CN"
 		t.Fatalf("expected non_existent field removal to return false")
 	}
 }
+
+func TestEnvironmentProfileEditing(t *testing.T) {
+	base := `[env]
+PORT = "3000"
+DEBUG = "false"
+`
+	// 1. Add variable to development profile
+	u1, err := UpsertEnvironmentEnvVar(base, "development", "DEBUG", "true")
+	if err != nil {
+		t.Fatalf("UpsertEnvironmentEnvVar failed: %v", err)
+	}
+	if !strings.Contains(u1, "[environments.development.env]") || !strings.Contains(u1, "DEBUG = \"true\"") {
+		t.Fatalf("expected development env in TOML, got: %s", u1)
+	}
+
+	// 2. Add second variable to development profile
+	u2, err := UpsertEnvironmentEnvVar(u1, "development", "MOCK_SERVER", "http://127.0.0.1:8080")
+	if err != nil {
+		t.Fatalf("UpsertEnvironmentEnvVar 2 failed: %v", err)
+	}
+
+	// 3. Add variable to ci profile
+	u3, err := UpsertEnvironmentEnvVar(u2, "ci", "CI", "true")
+	if err != nil {
+		t.Fatalf("UpsertEnvironmentEnvVar ci failed: %v", err)
+	}
+
+	// 4. Verify GetEnvironmentProfiles
+	profiles := GetEnvironmentProfiles(u3)
+	if len(profiles) != 2 || profiles[0] != "ci" || profiles[1] != "development" {
+		t.Fatalf("expected profiles ['ci', 'development'], got: %v", profiles)
+	}
+
+	// 5. Unset single variable from development profile
+	u4, ok := UnsetEnvironmentEnvVar(u3, "development", "DEBUG")
+	if !ok || strings.Contains(u4, "DEBUG = \"true\"") {
+		t.Fatalf("expected DEBUG to be removed from development, got: %s", u4)
+	}
+	if !strings.Contains(u4, "MOCK_SERVER") {
+		t.Fatalf("expected MOCK_SERVER to remain: %s", u4)
+	}
+
+	// 6. Remove entire development profile
+	u5, ok := RemoveEnvironmentProfile(u4, "development")
+	if !ok || strings.Contains(u5, "development") {
+		t.Fatalf("expected development profile to be completely removed, got: %s", u5)
+	}
+	if !strings.Contains(u5, "[environments.ci.env]") {
+		t.Fatalf("expected ci profile to remain: %s", u5)
+	}
+}

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
@@ -1108,5 +1109,196 @@ func RemoveRootField(content, key string) (string, bool) {
 		}
 	}
 	return content, false
+}
+
+// GetEnvironmentsFromContent extracts environments mapping from TOML content.
+func GetEnvironmentsFromContent(content string) map[string]EnvironmentConfig {
+	res := make(map[string]EnvironmentConfig)
+	if strings.TrimSpace(content) == "" {
+		return res
+	}
+	var doc struct {
+		Environments map[string]EnvironmentConfig `toml:"environments"`
+	}
+	if err := toml.Unmarshal([]byte(content), &doc); err == nil && doc.Environments != nil {
+		return doc.Environments
+	}
+	return res
+}
+
+// GetEnvironmentProfiles extracts list of profile names defined under [environments] in TOML.
+func GetEnvironmentProfiles(content string) []string {
+	envs := GetEnvironmentsFromContent(content)
+	profiles := make([]string, 0, len(envs))
+	for p := range envs {
+		profiles = append(profiles, p)
+	}
+	sort.Strings(profiles)
+	return profiles
+}
+
+// CreateEnvironmentProfile adds a new [environments.<profile>] section if not already present.
+func CreateEnvironmentProfile(content, profile string) (string, error) {
+	profile = strings.TrimSpace(profile)
+	if profile == "" {
+		return content, fmt.Errorf("profile name cannot be empty")
+	}
+	lines := strings.Split(content, "\n")
+	header := fmt.Sprintf("[environments.%s]", quoteTOMLKey(profile))
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, fmt.Sprintf("[environments.%s", profile)) ||
+			strings.HasPrefix(trimmed, fmt.Sprintf("[environments.%q", profile)) {
+			return content, nil // Already exists
+		}
+	}
+	if len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) != "" {
+		lines = append(lines, "")
+	}
+	lines = append(lines, header)
+	return strings.Join(lines, "\n"), nil
+}
+
+func matchEnvironmentEnvHeader(line string) (string, bool) {
+	trimmed := strings.TrimSpace(line)
+	if !strings.HasPrefix(trimmed, "[environments.") || !strings.HasSuffix(trimmed, "]") {
+		return "", false
+	}
+	inner := strings.TrimSpace(trimmed[len("[environments.") : len(trimmed)-1])
+	if !strings.HasSuffix(inner, ".env") {
+		return "", false
+	}
+	prof := strings.TrimSuffix(inner, ".env")
+	prof = strings.TrimSpace(prof)
+	prof = strings.Trim(prof, `"'`)
+	return prof, true
+}
+
+// UpsertEnvironmentEnvVar adds or updates an environment variable for a specific profile under [environments.<profile>.env].
+func UpsertEnvironmentEnvVar(content, profile, key, value string) (string, error) {
+	profile = strings.TrimSpace(profile)
+	if profile == "" {
+		return content, fmt.Errorf("environment profile name cannot be empty")
+	}
+	upperKey := strings.ToUpper(strings.TrimSpace(key))
+	if upperKey == "" {
+		return content, fmt.Errorf("environment variable key cannot be empty")
+	}
+	return UpsertTOMLSetting(content, []string{"environments", profile, "env", upperKey}, value)
+}
+
+// UnsetEnvironmentEnvVar removes an environment variable from [environments.<profile>.env].
+func UnsetEnvironmentEnvVar(content, profile, key string) (string, bool) {
+	profile = strings.TrimSpace(profile)
+	key = strings.TrimSpace(key)
+	if profile == "" || key == "" {
+		return content, false
+	}
+
+	lines := strings.Split(content, "\n")
+	secStart := -1
+	secEnd := -1
+	keyLineIdx := -1
+
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		pName, ok := matchEnvironmentEnvHeader(line)
+		if ok {
+			if secStart != -1 {
+				secEnd = i
+				break
+			}
+			if strings.EqualFold(pName, profile) {
+				secStart = i
+				continue
+			}
+		} else if secStart != -1 && strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
+			secEnd = i
+			break
+		} else if secStart != -1 {
+			existingKey := extractTOMLKey(line)
+			if strings.EqualFold(existingKey, key) {
+				keyLineIdx = i
+			}
+		}
+	}
+	if secStart != -1 && secEnd == -1 {
+		secEnd = len(lines)
+	}
+
+	if secStart == -1 || keyLineIdx == -1 {
+		return content, false
+	}
+
+	newLines := make([]string, 0, len(lines)-1)
+	newLines = append(newLines, lines[:keyLineIdx]...)
+	newLines = append(newLines, lines[keyLineIdx+1:]...)
+
+	// Check if this [environments.<profile>.env] section has any other key-values left
+	hasOtherEntries := false
+	secLen := secEnd - 1
+	for i := secStart + 1; i < secLen; i++ {
+		if extractTOMLKey(newLines[i]) != "" {
+			hasOtherEntries = true
+			break
+		}
+	}
+
+	if !hasOtherEntries {
+		cleanLines := make([]string, 0, len(newLines))
+		cleanLines = append(cleanLines, newLines[:secStart]...)
+		skipIdx := secStart + 1
+		for skipIdx < len(newLines) && strings.TrimSpace(newLines[skipIdx]) == "" {
+			skipIdx++
+		}
+		cleanLines = append(cleanLines, newLines[skipIdx:]...)
+		return strings.Join(cleanLines, "\n"), true
+	}
+
+	return strings.Join(newLines, "\n"), true
+}
+
+// RemoveEnvironmentProfile removes all sections related to [environments.<profile>] from TOML content.
+func RemoveEnvironmentProfile(content, profile string) (string, bool) {
+	profile = strings.TrimSpace(profile)
+	if profile == "" {
+		return content, false
+	}
+	lines := strings.Split(content, "\n")
+	prefix1 := fmt.Sprintf("[environments.%s", profile)
+	prefix2 := fmt.Sprintf("[environments.%q", profile)
+	prefix3 := fmt.Sprintf("[environments.'%s'", profile)
+
+	isMatch := func(trimmed string) bool {
+		return (strings.HasPrefix(trimmed, prefix1) && (strings.HasSuffix(trimmed, "]") || strings.Contains(trimmed, "."))) ||
+			(strings.HasPrefix(trimmed, prefix2) && (strings.HasSuffix(trimmed, "]") || strings.Contains(trimmed, "."))) ||
+			(strings.HasPrefix(trimmed, prefix3) && (strings.HasSuffix(trimmed, "]") || strings.Contains(trimmed, ".")))
+	}
+
+	var newLines []string
+	inTarget := false
+	removed := false
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "[") && strings.HasSuffix(trimmed, "]") {
+			if isMatch(trimmed) {
+				inTarget = true
+				removed = true
+				continue
+			} else {
+				inTarget = false
+			}
+		}
+		if inTarget {
+			continue
+		}
+		newLines = append(newLines, line)
+	}
+
+	if !removed {
+		return content, false
+	}
+	return strings.Join(newLines, "\n"), true
 }
 

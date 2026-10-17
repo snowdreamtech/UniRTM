@@ -378,3 +378,80 @@ func TestUIMinVersionConfig(t *testing.T) {
 	}
 }
 
+func TestUIEnvironmentProfileAPI(t *testing.T) {
+	distFS, err := frontend.GetFS()
+	if err != nil {
+		t.Fatalf("GetFS failed: %v", err)
+	}
+	mux := setupUIMux(distFS)
+
+	tmpDir := t.TempDir()
+	origWd, _ := os.Getwd()
+	_ = os.Chdir(tmpDir)
+	defer func() { _ = os.Chdir(origWd) }()
+
+	// 1. Initial base variable
+	basePost := strings.NewReader(`{"scope":"workspace","key":"DEBUG","value":"false"}`)
+	reqBase := httptest.NewRequest("POST", "/api/env", basePost)
+	reqBase.Header.Set("Content-Type", "application/json")
+	rrBase := httptest.NewRecorder()
+	mux.ServeHTTP(rrBase, reqBase)
+	if rrBase.Code != http.StatusOK {
+		t.Fatalf("Failed to post base env: %s", rrBase.Body.String())
+	}
+
+	// 2. Create profile "development"
+	profPost := strings.NewReader(`{"scope":"workspace","profile":"development","action":"create_profile"}`)
+	reqProf := httptest.NewRequest("POST", "/api/env", profPost)
+	reqProf.Header.Set("Content-Type", "application/json")
+	rrProf := httptest.NewRecorder()
+	mux.ServeHTTP(rrProf, reqProf)
+	if rrProf.Code != http.StatusOK {
+		t.Fatalf("Failed to create profile: %s", rrProf.Body.String())
+	}
+
+	// 3. Override DEBUG in development profile
+	overPost := strings.NewReader(`{"scope":"workspace","profile":"development","key":"DEBUG","value":"true"}`)
+	reqOver := httptest.NewRequest("POST", "/api/env", overPost)
+	reqOver.Header.Set("Content-Type", "application/json")
+	rrOver := httptest.NewRecorder()
+	mux.ServeHTTP(rrOver, reqOver)
+	if rrOver.Code != http.StatusOK {
+		t.Fatalf("Failed to override DEBUG in profile: %s", rrOver.Body.String())
+	}
+
+	// 4. GET /api/env?scope=workspace&profile=development
+	reqGet := httptest.NewRequest("GET", "/api/env?scope=workspace&profile=development", nil)
+	rrGet := httptest.NewRecorder()
+	mux.ServeHTTP(rrGet, reqGet)
+	if rrGet.Code != http.StatusOK {
+		t.Fatalf("GET /api/env with profile failed: %s", rrGet.Body.String())
+	}
+	body := rrGet.Body.String()
+	if !strings.Contains(body, `"is_override":true`) || !strings.Contains(body, `"DEBUG"`) || !strings.Contains(body, `"development"`) {
+		t.Fatalf("Expected is_override: true for DEBUG in development profile, got: %s", body)
+	}
+
+	// 5. DELETE DEBUG from development profile
+	delReq := httptest.NewRequest("DELETE", "/api/env?scope=workspace&profile=development&key=DEBUG", nil)
+	rrDel := httptest.NewRecorder()
+	mux.ServeHTTP(rrDel, delReq)
+	if rrDel.Code != http.StatusOK {
+		t.Fatalf("DELETE env var in profile failed: %s", rrDel.Body.String())
+	}
+
+	// 6. DELETE entire development profile
+	delProfReq := httptest.NewRequest("DELETE", "/api/env?scope=workspace&profile=development&action=delete_profile", nil)
+	rrDelProf := httptest.NewRecorder()
+	mux.ServeHTTP(rrDelProf, delProfReq)
+	if rrDelProf.Code != http.StatusOK {
+		t.Fatalf("DELETE profile failed: %s", rrDelProf.Body.String())
+	}
+
+	raw, _ := os.ReadFile(".unirtm.toml")
+	if strings.Contains(string(raw), "development") {
+		t.Fatalf("Expected development profile to be deleted from file, got: %s", string(raw))
+	}
+}
+
+
