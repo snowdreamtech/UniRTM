@@ -10,7 +10,7 @@
   - 编写 `useTerminalSessions.test.ts` 单元测试验证核心逻辑；
   - *提交命名*：`feat(terminal): implement useTerminalSessions composable with multi-tab and split support`
 
-- [ ] **Task 2: 国际化多语言补齐 (i18n Locales)**
+- [x] **Task 2: 国际化多语言补齐 (i18n Locales)**
   - 在 `en-US.ts` 与 `zh-CN.ts` 中补充多终端与分屏操作相关词条：
     - `terminal.new_terminal`: 新建终端 / New Terminal
     - `terminal.split_vertical`: 竖直拆分终端 (一分为二) / Split Terminal Vertically

@@ -707,4 +707,10 @@ export const frFr: TranslationDict = {
   "terminal.path": "Executable Path",
   "terminal.desc": "Configure the default shell environment for UniRTM integrated terminal and task execution",
   "terminal.open_settings": "Terminal Settings",
+  "terminal.new_terminal": "New Terminal",
+  "terminal.split_vertical": "Split Terminal Vertically",
+  "terminal.split_horizontal": "Split Terminal Horizontally",
+  "terminal.kill_terminal": "Kill Terminal",
+  "terminal.tabs_title": "Terminal Tabs",
+  "terminal.split_badge": "Split",
 };
