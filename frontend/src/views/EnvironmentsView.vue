@@ -38,6 +38,76 @@
       </div>
     </div>
 
+    <!-- Environment Profiles Capsule Bar (Workspace Only) -->
+    <div v-if="activeScope === 'workspace'" class="profiles-bar glass-card" id="env-profiles-bar">
+      <div class="profiles-list">
+        <!-- Default Baseline Tab -->
+        <button
+          type="button"
+          class="profile-tab-btn"
+          :class="{ active: activeProfile === '' }"
+          @click="selectProfile('')"
+        >
+          <span class="tab-icon">✨</span>
+          <span class="tab-label">{{ t("environments.profile_default") || "默认基准 (Default)" }}</span>
+        </button>
+
+        <!-- User Defined Profiles -->
+        <div
+          v-for="p in profilesList"
+          :key="p"
+          class="profile-tab-item"
+          :class="{ active: activeProfile === p }"
+        >
+          <button
+            type="button"
+            class="profile-tab-btn profile-custom"
+            :class="{ active: activeProfile === p }"
+            @click="selectProfile(p)"
+          >
+            <span class="tab-icon">{{ getProfileIcon(p) }}</span>
+            <span class="tab-label font-mono">{{ p }}</span>
+            <span v-if="getProfileOverrideCount(p) > 0" class="profile-override-chip">
+              {{ getProfileOverrideCount(p) }} {{ t("environments.profile_overrides_chip") || "覆盖" }}
+            </span>
+          </button>
+          <button
+            type="button"
+            class="btn-delete-profile"
+            :title="t('environments.delete_profile') || '删除此环境配置'"
+            @click.stop="confirmDeleteProfile(p)"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Add Profile Trigger -->
+        <button
+          type="button"
+          class="profile-tab-btn btn-add-profile"
+          @click="openNewProfileModal"
+          :title="t('environments.create_profile') || '新建环境 Profile'"
+        >
+          <span>+ {{ t("environments.create_profile") || "新建环境 Profile" }}</span>
+        </button>
+      </div>
+
+      <!-- Active Profile Context Indicator -->
+      <div v-if="activeProfile" class="active-profile-hint">
+        <span class="profile-current-tag">
+          {{ getProfileIcon(activeProfile) }} {{ activeProfile }}
+        </span>
+        <button
+          type="button"
+          class="filter-toggle-btn"
+          :class="{ active: showOnlyOverrides }"
+          @click="showOnlyOverrides = !showOnlyOverrides"
+        >
+          <span>{{ showOnlyOverrides ? '● 仅看特有与覆盖项' : '全部生效变量' }}</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Filter & Search Toolbar -->
     <div class="env-filter-bar glass-card">
       <div class="search-input-wrapper">
@@ -146,6 +216,17 @@
                 <TechIcon :id="item.is_sensitive ? 'workbench:lock' : 'workbench:globe'" :size="11" />
                 <span>{{ item.is_sensitive ? (t('environments.sensitive_badge') || '敏感密钥') : (t('environments.public_badge') || '公开变量') }}</span>
               </span>
+              <!-- Profile Override Badges -->
+              <span v-if="item.is_override" class="sec-tag override" :title="'基准默认值: ' + item.base_value">
+                <span>🔄 {{ t('environments.badge_override') || '已覆盖' }}</span>
+              </span>
+              <span v-else-if="item.is_profile_only" class="sec-tag profile-only">
+                <span>🌱 {{ t('environments.badge_profile_only') || '环境专属' }}</span>
+              </span>
+              <span v-else-if="item.is_inherited && activeProfile" class="sec-tag inherited">
+                <span>⚡ {{ t('environments.badge_inherited') || '继承基准' }}</span>
+              </span>
+
               <span class="scope-tag" :class="item.scope">
                 {{ item.scope === 'user' ? (t("environments.scope_user") || "用户") : (t("environments.scope_workspace") || "工作区") }}
               </span>
@@ -153,6 +234,14 @@
 
             <!-- Card Actions: Edit & Delete -->
             <div class="card-btn-group">
+              <button
+                v-if="item.is_override"
+                class="action-btn restore-btn"
+                @click="restoreBaseValue(item.name)"
+                :title="t('environments.restore_base') || '恢复基准值'"
+              >
+                ↺
+              </button>
               <button
                 class="action-btn edit-btn"
                 @click="openEditModal(item)"
@@ -245,6 +334,16 @@
                     <TechIcon id="workbench:lock" :size="10" />
                     <span>{{ t('environments.sensitive_badge') || '敏感' }}</span>
                   </span>
+                  <!-- Profile Override Badges in Table View -->
+                  <span v-if="item.is_override" class="sec-tag override mini" :title="'基准默认值: ' + item.base_value">
+                    <span>🔄 {{ t('environments.badge_override') || '已覆盖' }}</span>
+                  </span>
+                  <span v-else-if="item.is_profile_only" class="sec-tag profile-only mini">
+                    <span>🌱 {{ t('environments.badge_profile_only') || '环境专属' }}</span>
+                  </span>
+                  <span v-else-if="item.is_inherited && activeProfile" class="sec-tag inherited mini">
+                    <span>⚡ {{ t('environments.badge_inherited') || '继承基准' }}</span>
+                  </span>
                 </div>
               </td>
 
@@ -292,6 +391,14 @@
               <td class="td-actions">
                 <div class="table-row-actions">
                   <button
+                    v-if="item.is_override"
+                    class="action-btn restore-btn"
+                    @click="restoreBaseValue(item.name)"
+                    :title="t('environments.restore_base') || '恢复基准值'"
+                  >
+                    ↺
+                  </button>
+                  <button
                     class="action-btn edit-btn"
                     @click="openEditModal(item)"
                     :title="t('environments.edit_btn') || '编辑'"
@@ -320,9 +427,73 @@
       :mode="modalMode"
       :initial-data="selectedEnv"
       :active-scope="activeScope"
+      :active-profile="activeScope === 'workspace' ? activeProfile : ''"
       @close="isModalOpen = false"
       @save="handleSaveEnv"
     />
+
+    <!-- Create Profile Modal -->
+    <div v-if="isNewProfileModalOpen" class="confirm-overlay" @click.self="isNewProfileModalOpen = false">
+      <div class="confirm-modal glass-card" style="max-width: 440px;">
+        <div class="confirm-header">
+          <TechIcon id="workbench:environments" :size="20" />
+          <h4>{{ t("environments.create_profile_title") || "新建环境 Profile" }}</h4>
+        </div>
+        <p class="confirm-desc">
+          {{ t("environments.create_profile_desc") || "为特定场景（如本地开发、CI 检查、测试环境）定义差异化环境变量覆盖。" }}
+        </p>
+        <div class="profile-modal-body" style="display: flex; flex-direction: column; gap: 10px; margin: 12px 0;">
+          <input
+            v-model="newProfileName"
+            type="text"
+            class="env-search-input font-mono"
+            style="width: 100%; border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 6px;"
+            :placeholder="t('environments.profile_name_placeholder') || '例如 development, ci, staging'"
+            @keydown.enter="executeCreateProfile"
+          />
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button
+              v-for="p in ['development', 'ci', 'staging', 'production', 'testing']"
+              :key="p"
+              type="button"
+              class="preset-chip font-mono"
+              @click="newProfileName = p"
+            >
+              {{ p }}
+            </button>
+          </div>
+        </div>
+        <div class="confirm-actions">
+          <button class="tool-action-btn secondary" @click="isNewProfileModalOpen = false">
+            {{ t("common.cancel") || "取消" }}
+          </button>
+          <button class="tool-action-btn primary" :disabled="!newProfileName.trim()" @click="executeCreateProfile">
+            <span>{{ t("common.create") || "创建" }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Profile Confirmation Modal -->
+    <div v-if="deleteProfileConfirm" class="confirm-overlay" @click.self="deleteProfileConfirm = ''">
+      <div class="confirm-modal glass-card">
+        <div class="confirm-header">
+          <TechIcon id="workbench:warning" :size="22" />
+          <h4>{{ t("environments.delete_profile_title") || "确认删除环境 Profile" }}</h4>
+        </div>
+        <p class="confirm-desc">
+          {{ t("environments.delete_profile_warning", { profile: deleteProfileConfirm }) }}
+        </p>
+        <div class="confirm-actions">
+          <button class="tool-action-btn secondary" @click="deleteProfileConfirm = ''">
+            {{ t("common.cancel") || "取消" }}
+          </button>
+          <button class="tool-action-btn danger" @click="executeDeleteProfile(deleteProfileConfirm)">
+            <span>{{ t("common.delete") || "删除" }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Delete Confirmation Modal -->
     <div v-if="deleteConfirmKey" class="confirm-overlay" @click.self="deleteConfirmKey = ''">
@@ -370,14 +541,26 @@ interface EnvItem {
   name: string;
   value: string;
   scope: "workspace" | "user";
+  profile?: string;
   is_sensitive: boolean;
   isRevealed?: boolean;
+  is_override?: boolean;
+  base_value?: string;
+  is_profile_only?: boolean;
+  is_inherited?: boolean;
 }
 
 const route = useRoute();
 const { activeScope, syncFromRoute } = useAppScope();
 
 const envList = ref<EnvItem[]>([]);
+const profilesList = ref<string[]>([]);
+const activeProfile = ref<string>("");
+const showOnlyOverrides = ref(false);
+const isNewProfileModalOpen = ref(false);
+const newProfileName = ref("");
+const deleteProfileConfirm = ref("");
+
 const loading = ref(false);
 const searchKey = ref("");
 const isModalOpen = ref(false);
@@ -387,6 +570,103 @@ const deleteConfirmKey = ref("");
 const isDeleting = ref(false);
 const copiedKey = ref("");
 const toastMessage = ref("");
+
+function getProfileIcon(p: string) {
+  const low = p.toLowerCase();
+  if (low.includes("dev")) return "🌱";
+  if (low.includes("ci")) return "⚡";
+  if (low.includes("prod")) return "🚀";
+  if (low.includes("stag")) return "📦";
+  if (low.includes("test")) return "🧪";
+  return "🏷️";
+}
+
+function getProfileOverrideCount(p: string) {
+  if (p === activeProfile.value) {
+    return envList.value.filter(e => e.is_override || e.is_profile_only).length;
+  }
+  return 0;
+}
+
+function selectProfile(p: string) {
+  activeProfile.value = p;
+  fetchEnvVars();
+}
+
+function openNewProfileModal() {
+  newProfileName.value = "";
+  isNewProfileModalOpen.value = true;
+}
+
+async function executeCreateProfile() {
+  const p = newProfileName.value.trim().toLowerCase();
+  if (!p) return;
+  try {
+    const res = await fetch("/api/env", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        scope: "workspace",
+        profile: p,
+        action: "create_profile",
+      }),
+    });
+    if (res.ok) {
+      isNewProfileModalOpen.value = false;
+      showToast(`✓ ${t("environments.create_profile") || "创建环境 Profile"}: ${p}`);
+      activeProfile.value = p;
+      await fetchEnvVars();
+    } else {
+      const err = await res.json();
+      showToast("创建环境失败: " + (err.error || "未知错误"));
+    }
+  } catch (err: any) {
+    showToast("创建错误: " + err.message);
+  }
+}
+
+function confirmDeleteProfile(p: string) {
+  deleteProfileConfirm.value = p;
+}
+
+async function executeDeleteProfile(p: string) {
+  try {
+    const res = await fetch(`/api/env?scope=workspace&profile=${encodeURIComponent(p)}&action=delete_profile`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      deleteProfileConfirm.value = "";
+      showToast(`✓ 已成功删除环境 Profile: ${p}`);
+      if (activeProfile.value === p) {
+        activeProfile.value = "";
+      }
+      await fetchEnvVars();
+    } else {
+      const err = await res.json();
+      showToast("删除环境失败: " + (err.error || "未知错误"));
+    }
+  } catch (err: any) {
+    showToast("删除错误: " + err.message);
+  }
+}
+
+async function restoreBaseValue(key: string) {
+  if (!activeProfile.value) return;
+  try {
+    const res = await fetch(`/api/env?key=${encodeURIComponent(key)}&scope=workspace&profile=${encodeURIComponent(activeProfile.value)}`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      showToast(`✓ 已恢复 ${key} 为默认基准值`);
+      await fetchEnvVars();
+    } else {
+      const err = await res.json();
+      showToast("恢复基准失败: " + (err.error || "未知错误"));
+    }
+  } catch (err: any) {
+    showToast("操作失败: " + err.message);
+  }
+}
 
 const viewMode = ref<"cards" | "list">(
   (localStorage.getItem("unirtm_view_mode_environments") as "cards" | "list") || "cards"
@@ -406,7 +686,6 @@ function showToast(msg: string) {
   }, 2500);
 }
 
-
 watch(
   () => route.query.scope,
   () => {
@@ -418,6 +697,7 @@ watch(
 watch(
   () => activeScope.value,
   () => {
+    activeProfile.value = "";
     fetchEnvVars();
   }
 );
@@ -425,16 +705,25 @@ watch(
 async function fetchEnvVars() {
   loading.value = true;
   try {
-    const res = await fetch(`/api/env?scope=${activeScope.value}`);
+    const pParam = activeScope.value === "workspace" && activeProfile.value ? `&profile=${encodeURIComponent(activeProfile.value)}` : "";
+    const res = await fetch(`/api/env?scope=${activeScope.value}${pParam}`);
     if (res.ok) {
       const data = await res.json();
+      if (Array.isArray(data.profiles)) {
+        profilesList.value = data.profiles;
+      }
       if (Array.isArray(data.env)) {
         envList.value = data.env.map((e: any) => ({
           name: e.name,
           value: e.value,
           scope: e.scope || activeScope.value,
+          profile: e.profile || "",
           is_sensitive: Boolean(e.is_sensitive),
           isRevealed: false,
+          is_override: Boolean(e.is_override),
+          base_value: e.base_value || "",
+          is_profile_only: Boolean(e.is_profile_only),
+          is_inherited: Boolean(e.is_inherited),
         }));
       }
     }
@@ -446,9 +735,13 @@ async function fetchEnvVars() {
 }
 
 const filteredEnvList = computed(() => {
-  if (!searchKey.value) return envList.value;
+  let list = envList.value;
+  if (activeScope.value === "workspace" && activeProfile.value && showOnlyOverrides.value) {
+    list = list.filter((e) => e.is_override || e.is_profile_only);
+  }
+  if (!searchKey.value) return list;
   const q = searchKey.value.toLowerCase().trim();
-  return envList.value.filter(
+  return list.filter(
     (e) => e.name.toLowerCase().includes(q) || e.value.toLowerCase().includes(q)
   );
 });
@@ -506,6 +799,7 @@ async function handleSaveEnv(payload: {
   original_key?: string;
   value: string;
   scope: "workspace" | "user";
+  profile?: string;
 }) {
   try {
     const res = await fetch("/api/env", {
@@ -537,7 +831,8 @@ function confirmDelete(name: string) {
 async function executeDelete(name: string) {
   isDeleting.value = true;
   try {
-    const res = await fetch(`/api/env?key=${encodeURIComponent(name)}&scope=${activeScope.value}`, {
+    const pParam = activeScope.value === "workspace" && activeProfile.value ? `&profile=${encodeURIComponent(activeProfile.value)}` : "";
+    const res = await fetch(`/api/env?key=${encodeURIComponent(name)}&scope=${activeScope.value}${pParam}`, {
       method: "DELETE",
     });
     if (res.ok) {
@@ -643,6 +938,155 @@ onMounted(() => {
 .scope-hint-text {
   font-size: 0.78rem;
   color: var(--text-muted);
+}
+
+/* Environment Profiles Capsule Bar */
+.profiles-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.85rem;
+  border-radius: 10px;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.profiles-list {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.profile-tab-item {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 8px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  transition: all 0.2s;
+}
+
+.profile-tab-item.active {
+  border-color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.08);
+}
+
+.profile-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.profile-tab-btn:hover {
+  color: var(--text-main);
+}
+
+.profile-tab-btn.active {
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.profiles-list > .profile-tab-btn {
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+}
+
+.profiles-list > .profile-tab-btn.active {
+  background: rgba(0, 229, 255, 0.08);
+  border-color: var(--accent-cyan);
+}
+
+.btn-delete-profile {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 4px;
+  line-height: 1;
+  transition: all 0.15s;
+}
+
+.btn-delete-profile:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.profile-override-chip {
+  font-size: 0.68rem;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  font-weight: 600;
+}
+
+.btn-add-profile {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  border: 1px dashed var(--card-border) !important;
+}
+
+.btn-add-profile:hover {
+  border-color: var(--accent-cyan) !important;
+  color: var(--accent-cyan);
+}
+
+.active-profile-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+}
+
+.profile-current-tag {
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.filter-toggle-btn {
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-toggle-btn.active {
+  color: #10b981;
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.preset-chip {
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.preset-chip:hover {
+  color: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.05);
 }
 
 /* Filter Bar */
@@ -855,6 +1299,24 @@ onMounted(() => {
   border: 1px solid rgba(2, 132, 199, 0.25);
 }
 
+.sec-tag.override {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.sec-tag.profile-only {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.sec-tag.inherited {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text-muted);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
 .scope-tag {
   font-size: 0.68rem;
   padding: 2px 8px;
@@ -885,6 +1347,16 @@ onMounted(() => {
   border-radius: 5px;
   cursor: pointer;
   transition: all 0.15s;
+}
+
+.action-btn.restore-btn {
+  color: #10b981;
+  font-weight: bold;
+}
+
+.action-btn.restore-btn:hover {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
 }
 
 .action-btn:hover {

@@ -9,7 +9,8 @@
             <h3>{{ isEdit ? (t("environments.edit_title") || "编辑环境变量") : (t("environments.create_title") || "新建环境变量") }}</h3>
             <span class="sub-title">
               {{ form.scope === 'user' ? (t("environments.scope_user") || "用户") : (t("environments.scope_workspace") || "工作区") }}
-              <span class="scope-file-tag font-mono">{{ form.scope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml' }}</span>
+              <span v-if="activeProfile && form.scope === 'workspace'" class="scope-file-tag font-mono">🌱 {{ activeProfile }} ([environments.{{ activeProfile }}.env])</span>
+              <span v-else class="scope-file-tag font-mono">{{ form.scope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml' }}</span>
             </span>
           </div>
         </div>
@@ -133,10 +134,12 @@ const props = withDefaults(
     mode?: "create" | "edit";
     initialData?: { name: string; value: string; scope?: "workspace" | "user" };
     activeScope?: "workspace" | "user";
+    activeProfile?: string;
   }>(),
   {
     mode: "create",
     activeScope: "workspace",
+    activeProfile: "",
   }
 );
 
@@ -149,6 +152,7 @@ const emit = defineEmits<{
       original_key?: string;
       value: string;
       scope: "workspace" | "user";
+      profile?: string;
     }
   ): void;
 }>();
@@ -209,6 +213,7 @@ function handleSubmit() {
     original_key: isEdit.value ? form.value.original_key : undefined,
     value: form.value.value,
     scope: form.value.scope,
+    profile: form.value.scope === "workspace" ? props.activeProfile : "",
   });
   saving.value = false;
 }
