@@ -58,7 +58,8 @@
           <b>{{ filteredEnvList.length }}</b> 个变量
         </span>
         <span v-if="sensitiveCount > 0" class="stat-badge sensitive-stat" title="已自动启用默认脱密保护">
-          🔒 <b>{{ sensitiveCount }}</b> 个敏感
+          <TechIcon id="workbench:lock" :size="12" />
+          <b>{{ sensitiveCount }}</b> 个敏感
         </span>
         <button
           class="tool-action-btn primary small"
@@ -107,13 +108,20 @@
           <!-- Card Header Line -->
           <div class="env-card-header">
             <div class="env-key-wrap">
+              <TechIcon
+                :id="item.is_sensitive ? 'workbench:key' : 'workbench:variable'"
+                :size="15"
+                :style="{ color: item.is_sensitive ? '#f59e0b' : 'var(--accent-cyan)' }"
+                class="key-type-icon"
+              />
               <span class="env-key font-mono">{{ item.name }}</span>
               <span
                 class="sec-tag"
                 :class="item.is_sensitive ? 'sensitive' : 'public'"
                 :title="item.is_sensitive ? '敏感字段：默认进行脱密遮掩' : '普通公开环境变量'"
               >
-                {{ item.is_sensitive ? '🔒 ' + (t('environments.sensitive_badge') || '敏感密钥') : '🌐 ' + (t('environments.public_badge') || '公开变量') }}
+                <TechIcon :id="item.is_sensitive ? 'workbench:lock' : 'workbench:globe'" :size="11" />
+                <span>{{ item.is_sensitive ? (t('environments.sensitive_badge') || '敏感密钥') : (t('environments.public_badge') || '公开变量') }}</span>
               </span>
               <span class="scope-tag" :class="item.scope">
                 {{ item.scope === 'user' ? (t("environments.scope_user") || "用户") : (t("environments.scope_workspace") || "工作区") }}
@@ -159,7 +167,7 @@
                 @click="toggleReveal(item)"
                 :title="item.isRevealed ? (t('environments.conceal') || '脱密隐藏') : (t('environments.reveal') || '显示明文')"
               >
-                <span>{{ item.isRevealed ? '👁️' : '👁️‍🗨️' }}</span>
+                <TechIcon :id="item.isRevealed ? 'workbench:eye-closed' : 'workbench:eye'" :size="14" />
                 <span class="btn-text-sm">{{ item.isRevealed ? '密文' : '明文' }}</span>
               </button>
 
@@ -169,8 +177,8 @@
                 @click="copyValue(item)"
                 :title="t('environments.copy_val') || '复制真实值'"
               >
-                <span v-if="copiedKey === item.name" class="copy-check">✓</span>
-                <span v-else>📋</span>
+                <TechIcon v-if="copiedKey === item.name" id="workbench:success" :size="13" class="copy-check" />
+                <TechIcon v-else id="workbench:copy" :size="13" />
                 <span class="btn-text-sm">{{ copiedKey === item.name ? '已复制' : '复制' }}</span>
               </button>
             </div>
@@ -544,6 +552,9 @@ onMounted(() => {
 }
 
 .stat-badge.sensitive-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   color: var(--warning, #f59e0b);
   background: rgba(245, 158, 11, 0.1);
   border-color: rgba(245, 158, 11, 0.25);
@@ -668,7 +679,14 @@ onMounted(() => {
   letter-spacing: 0.5px;
 }
 
+.key-type-icon {
+  flex-shrink: 0;
+}
+
 .sec-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.68rem;
   padding: 2px 8px;
   border-radius: 9999px;

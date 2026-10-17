@@ -54,12 +54,28 @@ export const workbenchSemanticIcons: Record<WorkbenchIconKey, SemanticIconMappin
     fallbackSetiKey: "_lock",
   },
   "workbench:environments": {
-    candidates: ["environment", "server-environment", "env", "dotenv"],
+    candidates: ["variable-group", "environment", "env", "dotenv"],
     fallbackSetiKey: "_config",
   },
   "workbench:variable": {
-    candidates: ["variable", "symbol-variable", "var", "key"],
+    candidates: ["symbol-variable", "variable", "var"],
     fallbackSetiKey: "_config",
+  },
+  "workbench:key": {
+    candidates: ["key", "symbol-key", "lock", "secret"],
+    fallbackSetiKey: "_lock",
+  },
+  "workbench:eye": {
+    candidates: ["eye", "preview", "view"],
+    fallbackSetiKey: "_info",
+  },
+  "workbench:eye-closed": {
+    candidates: ["eye-closed", "hide", "conceal"],
+    fallbackSetiKey: "_info",
+  },
+  "workbench:copy": {
+    candidates: ["copy", "clone", "clipboard"],
+    fallbackSetiKey: "_default",
   },
   "workbench:config": {
     candidates: ["config", "unirtm.toml", "configuration", "settings.json"],

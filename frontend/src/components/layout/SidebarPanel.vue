@@ -102,12 +102,16 @@
           :class="{ active: activeSubItem === env.name }"
           @click="handleSubItemClick(env.name)"
         >
-          <span class="item-icon"><TechIcon id="workbench:variable" :size="18" /></span>
+          <span class="item-icon">
+            <TechIcon :id="env.isSensitive ? 'workbench:key' : 'workbench:variable'" :size="18" :style="{ color: env.isSensitive ? '#f59e0b' : 'inherit' }" />
+          </span>
           <div class="item-dual">
             <span class="item-label font-mono">{{ env.name }}</span>
             <span class="item-sub font-mono">{{ env.isSensitive ? '••••••••' : env.value }}</span>
           </div>
-          <span v-if="env.isSensitive" class="badge-installed" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; border-color: rgba(245, 158, 11, 0.4);" title="敏感字段">🔒</span>
+          <span v-if="env.isSensitive" class="badge-installed" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3); display: inline-flex; align-items: center; padding: 2px 4px;" title="敏感字段">
+            <TechIcon id="workbench:lock" :size="11" />
+          </span>
         </button>
       </template>
 

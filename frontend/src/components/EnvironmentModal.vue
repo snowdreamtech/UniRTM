@@ -62,7 +62,7 @@
 
             <!-- Sensitive Detection Hint -->
             <div v-if="isSensitiveKey" class="sensitive-detected-banner">
-              <span class="sec-icon">🔒</span>
+              <span class="sec-icon"><TechIcon id="workbench:lock" :size="14" /></span>
               <span>系统已自动判定为<b>敏感密钥</b>，保存后默认脱密遮罩显示，需点击眼睛图标方可查看明文。</span>
             </div>
           </div>
@@ -90,7 +90,7 @@
                 @click="isValueRevealed = !isValueRevealed"
                 :title="isValueRevealed ? '隐藏密码' : '显示明文'"
               >
-                <span>{{ isValueRevealed ? '👁️' : '👁️‍🗨️' }}</span>
+                <TechIcon :id="isValueRevealed ? 'workbench:eye-closed' : 'workbench:eye'" :size="15" />
               </button>
             </div>
           </div>
