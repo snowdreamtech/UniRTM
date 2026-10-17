@@ -2141,6 +2141,8 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
   gap: 1.35rem;
+  min-height: calc(100vh - 290px);
+  align-content: start;
 }
 
 .runtime-card {
@@ -3659,6 +3661,10 @@ onBeforeUnmount(() => {
 /* Tools High-Density Table Styles */
 .tools-list-table-wrapper {
   width: 100%;
+  flex: 1;
+  min-height: calc(100vh - 290px);
+  display: flex;
+  flex-direction: column;
   overflow-x: auto;
   border: 1px solid var(--card-border);
   border-radius: 14px;
@@ -3671,7 +3677,7 @@ onBeforeUnmount(() => {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 0.86rem;
+  font-size: 0.88rem;
 }
 
 .tools-table thead tr {
@@ -3680,8 +3686,8 @@ onBeforeUnmount(() => {
 }
 
 .tools-table th {
-  padding: 0.95rem 1.25rem;
-  font-size: 0.78rem;
+  padding: 1.15rem 1.5rem;
+  font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -3697,7 +3703,7 @@ onBeforeUnmount(() => {
 }
 .tools-table th.th-actions {
   text-align: right;
-  width: 300px;
+  width: 320px;
 }
 
 .tool-table-row {
@@ -3714,7 +3720,7 @@ onBeforeUnmount(() => {
 }
 
 .tools-table td {
-  padding: 0.95rem 1.25rem;
+  padding: 1.35rem 1.5rem;
   vertical-align: middle;
 }
 
@@ -3725,7 +3731,7 @@ onBeforeUnmount(() => {
 .table-tool-cell {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .table-tool-cell .tool-icon {
@@ -3733,7 +3739,7 @@ onBeforeUnmount(() => {
 }
 
 .table-tool-cell .tool-title {
-  font-size: 0.92rem;
+  font-size: 0.96rem;
   font-weight: 600;
   color: var(--text-main);
   text-decoration: none;
@@ -3753,9 +3759,9 @@ onBeforeUnmount(() => {
 .table-version-cell .runtime-version-badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 8px;
+  padding: 4px 10px;
   border-radius: 6px;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 600;
   background: var(--input-bg);
   border: 1px solid var(--card-border);
@@ -3775,7 +3781,7 @@ onBeforeUnmount(() => {
 }
 
 .tool-desc-text {
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   color: var(--text-muted);
   max-width: 640px;
   overflow: hidden;
@@ -3784,7 +3790,7 @@ onBeforeUnmount(() => {
 }
 
 .pin-reason-text-sm {
-  font-size: 0.74rem;
+  font-size: 0.76rem;
   color: #d97706;
 }
 
@@ -3800,10 +3806,10 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 10px;
-  font-size: 0.78rem;
+  padding: 6px 14px;
+  font-size: 0.82rem;
   font-weight: 500;
-  border-radius: 6px;
+  border-radius: 7px;
   border: 1px solid var(--card-border);
   background: var(--button-secondary-bg, rgba(255, 255, 255, 0.04));
   color: var(--text-main);
