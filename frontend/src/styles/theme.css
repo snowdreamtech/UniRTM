@@ -394,3 +394,176 @@ html[dir="rtl"] .opt-check {
 .window-inactive .logo-img {
   filter: grayscale(0.2) opacity(0.88);
 }
+
+/* ==========================================================================
+   Global Unified Button Design System (Action Design System)
+   ========================================================================== */
+
+/* 1. Base Button Anchor */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+  line-height: 1;
+  text-decoration: none;
+  outline: none;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* 2. Primary Variant */
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-cyan), #0284c7);
+  color: #ffffff;
+  border-color: rgba(2, 132, 199, 0.4);
+  box-shadow: 0 2px 8px rgba(0, 229, 255, 0.18);
+  padding: 6px 14px;
+  height: 32px;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #00f0ff, #0369a1);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 4px 14px rgba(0, 229, 255, 0.32);
+}
+
+/* 3. Secondary / Outline Variant */
+.btn-secondary {
+  background: var(--input-bg);
+  border-color: var(--card-border);
+  color: var(--text-main);
+  padding: 6px 14px;
+  height: 32px;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--text-muted);
+  color: var(--text-main);
+}
+
+/* 4. Danger Variant */
+.btn-danger {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  padding: 6px 14px;
+  height: 32px;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.35);
+}
+
+/* 5. Ghost / Icon Button (Standard Square Action Icon) */
+.btn-icon {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  padding: 0;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.btn-icon.btn-icon-md {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+}
+
+.btn-icon.danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.28);
+  color: #ef4444;
+}
+
+.btn-icon.success:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.28);
+  color: #10b981;
+}
+
+.btn-icon.accent:hover:not(:disabled) {
+  background: rgba(0, 229, 255, 0.12);
+  border-color: rgba(0, 229, 255, 0.28);
+  color: var(--accent-cyan);
+}
+
+/* 6. Capsule Status / Trigger Button (Small Height: 26px) */
+.btn-capsule {
+  height: 26px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+}
+
+.btn-capsule:hover:not(:disabled) {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.06);
+}
+
+.btn-capsule.active,
+.btn-capsule.applied {
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.12);
+  cursor: default;
+}
+
+/* Light Theme Overrides */
+:root[data-theme="light"] .btn-secondary,
+[data-theme="light"] .btn-secondary {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+:root[data-theme="light"] .btn-secondary:hover:not(:disabled),
+[data-theme="light"] .btn-secondary:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .btn-icon:hover:not(:disabled),
+[data-theme="light"] .btn-icon:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+  color: #0f172a;
+}
+
