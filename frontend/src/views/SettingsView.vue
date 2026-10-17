@@ -12,7 +12,9 @@
           class="settings-search-input"
           :placeholder="t('settings.search_placeholder') || '搜索设置 (Search settings)...'"
         />
-        <button v-if="searchQuery" class="clear-search-btn" @click="searchQuery = ''" title="清除">✕</button>
+        <button v-if="searchQuery" class="btn btn-icon clear-search-btn" @click="searchQuery = ''" :title="t('common.clear') || '清除'">
+          <TechIcon id="workbench:close" :size="12" />
+        </button>
       </div>
 
       <!-- Scope Context Info: User vs Workspace -->
@@ -63,7 +65,9 @@
               <button class="btn-copy-toml" @click="copyRawToml">
                 {{ isCopied ? ('✓ ' + (t('settings.copied') || '已复制')) : (t('settings.copy_content') || '复制内容') }}
               </button>
-              <button class="btn-close-toml" @click="showRawTomlModal = false">✕</button>
+              <button class="btn btn-icon btn-close-toml" @click="showRawTomlModal = false" :title="t('common.close') || '关闭'">
+                <TechIcon id="workbench:close" :size="14" />
+              </button>
             </div>
           </div>
           <pre class="raw-toml-pre"><code>{{ currentRawToml || (t('settings.empty_toml') || '# 配置文件尚无自定义内容') }}</code></pre>
@@ -234,7 +238,9 @@
                 <!-- Feedback Alert in Installed Tab -->
                 <div v-if="themeInstallMsg" class="install-feedback-banner" :class="{ error: themeInstallError }">
                   <span>{{ themeInstallMsg }}</span>
-                  <button class="btn-close-msg" @click="themeInstallMsg = ''">✕</button>
+                  <button class="btn btn-icon btn-close-msg" @click="themeInstallMsg = ''" :title="t('common.close') || '关闭'">
+                    <TechIcon id="workbench:close" :size="12" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -1170,7 +1176,9 @@
                       <span class="modal-subtitle">将当前网络与各生态镜像配置保存为独立的 Profile 方案</span>
                     </div>
                   </div>
-                  <button class="btn-modal-close" @click="showCreateProfileModal = false">✕</button>
+                  <button class="btn btn-icon btn-modal-close" @click="showCreateProfileModal = false" :title="t('common.close') || '关闭'">
+                    <TechIcon id="workbench:close" :size="14" />
+                  </button>
                 </div>
 
                 <div class="modal-body">
@@ -1224,7 +1232,9 @@
                       <span class="modal-subtitle">{{ t('network.add_ecosystem_desc') || '选择常用语言生态预设或输入自定义生态标识与镜像地址' }}</span>
                     </div>
                   </div>
-                  <button class="btn-modal-close" @click="showAddEcoModal = false">✕</button>
+                  <button class="btn btn-icon btn-modal-close" @click="showAddEcoModal = false" :title="t('common.close') || '关闭'">
+                    <TechIcon id="workbench:close" :size="14" />
+                  </button>
                 </div>
 
                 <div class="modal-body">
@@ -1520,7 +1530,9 @@
                   <span class="modal-subtitle">{{ t('settings.hooks_modal_sub') || '指定 Git 触发阶段与待执行的 Shell 脚本或任务命令' }}</span>
                 </div>
               </div>
-              <button class="btn-modal-close" @click="showHookModal = false">✕</button>
+              <button class="btn btn-icon btn-modal-close" @click="showHookModal = false" :title="t('common.close') || '关闭'">
+                <TechIcon id="workbench:close" :size="14" />
+              </button>
             </div>
             <div class="modal-body">
               <div class="modal-field">
@@ -1590,7 +1602,9 @@
                   <span class="modal-subtitle">{{ t('settings.hooks_run_modal_sub') || '在当前工作区环境下通过 UniRTM Multi-Engine 调度运行' }}</span>
                 </div>
               </div>
-              <button class="btn-modal-close" @click="showHookRunModal = false">✕</button>
+              <button class="btn btn-icon btn-modal-close" @click="showHookRunModal = false" :title="t('common.close') || '关闭'">
+                <TechIcon id="workbench:close" :size="14" />
+              </button>
             </div>
             <div class="modal-body">
               <div v-if="isRunningHook" class="hook-run-loading" style="display: flex; align-items: center; gap: 10px; padding: 24px; justify-content: center; color: var(--text-muted);">
@@ -1625,7 +1639,9 @@
                   <span class="modal-subtitle">{{ t('settings.aliases_modal_sub') || '指定工具、别名标识及指向的目标版本' }}</span>
                 </div>
               </div>
-              <button class="btn-modal-close" @click="showAliasModal = false">✕</button>
+              <button class="btn btn-icon btn-modal-close" @click="showAliasModal = false" :title="t('common.close') || '关闭'">
+                <TechIcon id="workbench:close" :size="14" />
+              </button>
             </div>
             <div class="modal-body">
               <div class="modal-field">

@@ -28,7 +28,7 @@
   - 统一运行（Play）、升级、锁定、更多菜单的按钮规范，消除尺寸各异的内边距。
   - *提交命名*：`refactor(tools,tasks): standardize action buttons and run triggers`
 
-- [ ] **Task 5: 设置与通用弹窗按钮规范化 (Settings & Modals)**
+- [x] **Task 5: 设置与通用弹窗按钮规范化 (Settings & Modals)**
   - 重构 `frontend/src/views/SettingsView.vue` 与全局各类确认/编辑弹窗；
   - 统一保存、重置、别名删除、钩子执行等按钮规范。
   - *提交命名*：`refactor(settings): standardize form and modal buttons`
