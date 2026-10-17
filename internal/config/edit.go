@@ -1089,3 +1089,24 @@ func GetAliasesFromContent(content string) map[string]map[string]string {
 	return res
 }
 
+// RemoveRootField removes a scalar root-level key (such as min_version or network_preset) from TOML content.
+func RemoveRootField(content, key string) (string, bool) {
+	lines := strings.Split(content, "\n")
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "[") {
+			// Hit the first section header, stop scanning root keys
+			break
+		}
+		parts := strings.SplitN(trimmed, "=", 2)
+		if len(parts) == 2 {
+			k := strings.Trim(strings.TrimSpace(parts[0]), `"'`)
+			if k == key {
+				lines = append(lines[:i], lines[i+1:]...)
+				return strings.Join(lines, "\n"), true
+			}
+		}
+	}
+	return content, false
+}
+

@@ -16,6 +16,7 @@ import (
 )
 
 type Config struct {
+	MinVersion    string                       `toml:"min_version,omitempty" yaml:"min_version,omitempty" mapstructure:"min_version,omitempty"`
 	Tools         ToolMap                      `toml:"-" yaml:"-" mapstructure:"-"`
 	ToolsRaw      map[string]interface{}       `toml:"tools" yaml:"tools" mapstructure:"tools"`
 	Env           map[string]interface{}       `toml:"env" yaml:"env" mapstructure:"env"`
@@ -401,6 +402,10 @@ func (c *Config) Validate() error {
 func (c *Config) Merge(other *Config) {
 	if c == nil || other == nil {
 		return
+	}
+
+	if c.MinVersion == "" && other.MinVersion != "" {
+		c.MinVersion = other.MinVersion
 	}
 
 	// Merge tools

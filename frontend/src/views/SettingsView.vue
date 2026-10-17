@@ -342,6 +342,47 @@
               </div>
             </div>
 
+            <!-- Setting: Minimum Required UniRTM Version (Workspace Scope Only) -->
+            <div
+              v-if="activeScope === 'workspace'"
+              class="setting-item"
+              :class="{ highlight: matchesSearch('min_version') || matchesSearch('version') }"
+            >
+              <div class="setting-meta">
+                <span class="setting-title">{{ t('settings.min_version') || '最低版本要求 (min_version)' }}</span>
+                <p class="setting-desc">{{ t('settings.min_version_desc') || '项目团队协作所需的 UniRTM CLI 最低版本要求，保障多开发者开发环境一致性。仅在工作区生效。' }}</p>
+                <div v-if="currentCliVersion" class="release-age-presets-row" style="margin-top: 8px; display: inline-flex; gap: 6px; flex-wrap: wrap;">
+                  <button
+                    type="button"
+                    class="preset-chip-btn"
+                    :class="{ active: minVersion === currentCliVersion }"
+                    @click="applyMinVersionCurrent"
+                  >
+                    <span>{{ t('settings.set_current_version') || '设为当前版本' }} (v{{ currentCliVersion }})</span>
+                  </button>
+                  <button
+                    v-if="minVersion"
+                    type="button"
+                    class="preset-chip-btn"
+                    @click="clearMinVersion"
+                  >
+                    <span>{{ t('settings.clear_min_version') || '移除限制' }}</span>
+                  </button>
+                </div>
+              </div>
+              <div class="setting-control">
+                <input
+                  v-model="minVersion"
+                  type="text"
+                  class="setting-text-input font-mono"
+                  :placeholder="t('settings.min_version_placeholder') || '例如 0.35.0 (留空以移除限制)'"
+                  @change="onMinVersionChange"
+                  @blur="onMinVersionChange"
+                  @keydown.enter="onMinVersionChange"
+                />
+              </div>
+            </div>
+
             <!-- Setting: Cache TTL -->
             <div class="setting-item" :class="{ highlight: matchesSearch('cache_ttl') }">
               <div class="setting-meta">
@@ -2084,6 +2125,8 @@ const customShellPath = ref("");
 const alwaysKeepDownload = ref(false);
 const httpTimeout = ref("");
 const editor = ref("");
+const minVersion = ref("");
+const currentCliVersion = ref("");
 
 const shellPresetOptions = computed(() => [
   { value: "", label: t("settings.shell_auto") || "系统默认 (System Default)" },
@@ -2832,6 +2875,8 @@ function syncFieldsFromConfig() {
       selectedBrowserPreset.value = "custom";
       customBrowserPath.value = b;
     }
+  } else {
+    minVersion.value = target?.min_version || "";
   }
 }
 
@@ -2908,6 +2953,37 @@ function applyReleaseAgePreset(val: string) {
 function onExperimentalToggle() {
   experimental.value = !experimental.value;
   saveSetting("settings.experimental", experimental.value);
+}
+
+function onMinVersionChange() {
+  const clean = minVersion.value.trim().replace(/^v/, "");
+  minVersion.value = clean;
+  saveSetting("min_version", clean);
+}
+
+function applyMinVersionCurrent() {
+  if (!currentCliVersion.value) return;
+  minVersion.value = currentCliVersion.value;
+  saveSetting("min_version", currentCliVersion.value);
+}
+
+function clearMinVersion() {
+  minVersion.value = "";
+  saveSetting("min_version", "");
+}
+
+async function loadSystemStatus() {
+  try {
+    const res = await fetch("/api/status");
+    if (res.ok) {
+      const data = await res.json();
+      if (data.version && data.version !== "N/A") {
+        currentCliVersion.value = data.version.replace(/^v/, "");
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to fetch /api/status:", e);
+  }
 }
 
 async function saveSetting(key: string, value: any) {
@@ -3587,6 +3663,7 @@ async function handleRunProbeAll() {
 
 onMounted(() => {
   loadConfigData();
+  loadSystemStatus();
   loadNetworkStatus();
   fetchHooksList();
   fetchAliasesList();

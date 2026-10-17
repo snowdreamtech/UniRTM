@@ -309,3 +309,32 @@ func TestHooksHelpers(t *testing.T) {
 		t.Fatalf("UnsetHook accidentally removed other hooks: %s", unhooked)
 	}
 }
+
+func TestRemoveRootField(t *testing.T) {
+	content := `# Project config
+min_version = "0.27.0"
+network_preset = "direct"
+
+[settings]
+language = "zh-CN"
+`
+	updated, removed := RemoveRootField(content, "min_version")
+	if !removed {
+		t.Fatalf("expected min_version to be removed")
+	}
+	if strings.Contains(updated, "min_version") {
+		t.Fatalf("updated content still contains min_version: %s", updated)
+	}
+	if !strings.Contains(updated, "network_preset = \"direct\"") {
+		t.Fatalf("expected network_preset to remain: %s", updated)
+	}
+	if !strings.Contains(updated, "[settings]") {
+		t.Fatalf("expected [settings] to remain: %s", updated)
+	}
+
+	// Try removing non-existent field
+	updated2, removed2 := RemoveRootField(updated, "non_existent")
+	if removed2 || updated2 != updated {
+		t.Fatalf("expected non_existent field removal to return false")
+	}
+}

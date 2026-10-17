@@ -322,3 +322,59 @@ func TestUIAliasesAPI(t *testing.T) {
 	}
 }
 
+func TestUIMinVersionConfig(t *testing.T) {
+	distFS, err := frontend.GetFS()
+	if err != nil {
+		t.Fatalf("GetFS failed: %v", err)
+	}
+	mux := setupUIMux(distFS)
+
+	tmpDir := t.TempDir()
+	origWd, _ := os.Getwd()
+	_ = os.Chdir(tmpDir)
+	defer func() { _ = os.Chdir(origWd) }()
+
+	// 1. Trying to set min_version in user scope should be rejected (400)
+	userBody := strings.NewReader(`{"scope":"user","key":"min_version","value":"0.35.0"}`)
+	reqUser := httptest.NewRequest("POST", "/api/config", userBody)
+	reqUser.Header.Set("Content-Type", "application/json")
+	rrUser := httptest.NewRecorder()
+	mux.ServeHTTP(rrUser, reqUser)
+	if rrUser.Code != http.StatusBadRequest {
+		t.Fatalf("Expected 400 when setting min_version in user scope, got %d: %s", rrUser.Code, rrUser.Body.String())
+	}
+
+	// 2. Setting min_version in workspace scope should succeed (200)
+	wsBody := strings.NewReader(`{"scope":"workspace","key":"min_version","value":"0.35.0"}`)
+	reqWs := httptest.NewRequest("POST", "/api/config", wsBody)
+	reqWs.Header.Set("Content-Type", "application/json")
+	rrWs := httptest.NewRecorder()
+	mux.ServeHTTP(rrWs, reqWs)
+	if rrWs.Code != http.StatusOK {
+		t.Fatalf("Expected 200 when setting min_version in workspace scope, got %d: %s", rrWs.Code, rrWs.Body.String())
+	}
+
+	// 3. GET /api/config should contain min_version: "0.35.0"
+	reqGet := httptest.NewRequest("GET", "/api/config", nil)
+	rrGet := httptest.NewRecorder()
+	mux.ServeHTTP(rrGet, reqGet)
+	if rrGet.Code != http.StatusOK || !strings.Contains(rrGet.Body.String(), `"min_version":"0.35.0"`) {
+		t.Fatalf("Expected GET /api/config to include min_version: 0.35.0, got: %s", rrGet.Body.String())
+	}
+
+	// 4. Setting empty min_version should remove it
+	emptyBody := strings.NewReader(`{"scope":"workspace","key":"min_version","value":""}`)
+	reqEmpty := httptest.NewRequest("POST", "/api/config", emptyBody)
+	reqEmpty.Header.Set("Content-Type", "application/json")
+	rrEmpty := httptest.NewRecorder()
+	mux.ServeHTTP(rrEmpty, reqEmpty)
+	if rrEmpty.Code != http.StatusOK {
+		t.Fatalf("Expected 200 when clearing min_version, got %d: %s", rrEmpty.Code, rrEmpty.Body.String())
+	}
+
+	raw, _ := os.ReadFile(".unirtm.toml")
+	if strings.Contains(string(raw), "min_version") {
+		t.Fatalf("Expected min_version to be removed from .unirtm.toml, got: %s", string(raw))
+	}
+}
+

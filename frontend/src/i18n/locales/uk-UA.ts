@@ -676,4 +676,9 @@ export const ukUa: TranslationDict = {
   "settings.editor": "Default Text Editor",
   "settings.editor_desc": "Preferred program used when launching an external editor to inspect or edit files. System-dependent, user scope only.",
   "settings.editor_placeholder": "code or /usr/bin/nvim",
+  "settings.min_version": "Minimum Version (min_version)",
+  "settings.min_version_desc": "Minimum required UniRTM CLI version for project team collaboration, ensuring development environment consistency. Workspace only.",
+  "settings.min_version_placeholder": "e.g. 0.35.0 (leave empty to remove requirement)",
+  "settings.set_current_version": "Set to Current Version",
+  "settings.clear_min_version": "Remove Requirement",
 };

@@ -566,6 +566,19 @@ func (m *defaultConfigManager) Merge(configs ...*Config) (*Config, error) {
 			merged.Environments[envName] = envConfig
 		}
 
+		if config.MinVersion != "" {
+			merged.MinVersion = config.MinVersion
+		}
+
+		if config.Hooks != nil {
+			if merged.Hooks == nil {
+				merged.Hooks = make(map[string]string)
+			}
+			for k, v := range config.Hooks {
+				merged.Hooks[k] = v
+			}
+		}
+
 		// Merge Aliases (later overrides earlier)
 		for toolName, aliases := range config.Aliases {
 			if merged.Aliases[toolName] == nil {

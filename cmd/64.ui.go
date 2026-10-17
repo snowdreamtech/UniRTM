@@ -22,6 +22,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pelletier/go-toml/v2"
 	"github.com/pterm/pterm"
 	"github.com/snowdreamtech/unirtm/frontend"
 	"github.com/snowdreamtech/unirtm/internal/config"
@@ -706,29 +707,39 @@ func handleGetConfig(w http.ResponseWriter, r *http.Request) {
 	if wsCfg == nil {
 		wsCfg = &config.Config{}
 	}
+	if wsCfg.MinVersion == "" && wsRaw != "" {
+		var doc struct {
+			MinVersion string `toml:"min_version"`
+		}
+		if err := toml.Unmarshal([]byte(wsRaw), &doc); err == nil && doc.MinVersion != "" {
+			wsCfg.MinVersion = doc.MinVersion
+		}
+	}
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"user": map[string]interface{}{
-			"path":     userPath,
-			"exists":   userExists,
-			"raw":      userRaw,
-			"settings": userCfg.Settings,
-			"plugins":  userCfg.Plugins,
-			"env":      userCfg.Env,
-			"hooks":    userCfg.Hooks,
-			"aliases":  userCfg.Aliases,
+			"path":        userPath,
+			"exists":      userExists,
+			"raw":         userRaw,
+			"min_version": userCfg.MinVersion,
+			"settings":    userCfg.Settings,
+			"plugins":     userCfg.Plugins,
+			"env":         userCfg.Env,
+			"hooks":       userCfg.Hooks,
+			"aliases":     userCfg.Aliases,
 		},
 		"workspace": map[string]interface{}{
-			"path":     wsPath,
-			"exists":   wsExists,
-			"raw":      wsRaw,
-			"settings": wsCfg.Settings,
-			"plugins":  wsCfg.Plugins,
-			"env":      wsCfg.Env,
-			"tools":    wsCfg.Tools,
-			"tasks":    wsCfg.Tasks,
-			"hooks":    wsCfg.Hooks,
-			"aliases":  wsCfg.Aliases,
+			"path":        wsPath,
+			"exists":      wsExists,
+			"raw":         wsRaw,
+			"min_version": wsCfg.MinVersion,
+			"settings":    wsCfg.Settings,
+			"plugins":     wsCfg.Plugins,
+			"env":         wsCfg.Env,
+			"tools":       wsCfg.Tools,
+			"tasks":       wsCfg.Tasks,
+			"hooks":       wsCfg.Hooks,
+			"aliases":     wsCfg.Aliases,
 		},
 		"detected_browsers": detectInstalledBrowsers(),
 	})
@@ -1570,6 +1581,16 @@ func handlePostConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Workspace-specific settings check: min_version is workspace-only
+	if scope == "user" && key == "min_version" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "min_version configuration is only permitted in workspace config to ensure project compatibility.",
+			"hint":  "Please configure min_version in Workspace (工作区) scope instead.",
+		})
+		return
+	}
+
 	// Validate namespace adhering to reserved core tables and plugin namespaces
 	if err := config.ValidateKeyNamespace(key); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -1626,11 +1647,21 @@ func handlePostConfig(w http.ResponseWriter, r *http.Request) {
 	defer fileLock.Release()
 
 	existingRaw, _ := os.ReadFile(targetFile)
-	updatedTOML, err := config.UpsertTOMLSetting(string(existingRaw), config.SplitConfigKey(storeKey), valStr)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "update toml setting: " + err.Error()})
-		return
+	var updatedTOML string
+	if key == "min_version" && strings.TrimSpace(valStr) == "" {
+		var removed bool
+		updatedTOML, removed = config.RemoveRootField(string(existingRaw), "min_version")
+		if !removed {
+			updatedTOML = string(existingRaw)
+		}
+	} else {
+		var err error
+		updatedTOML, err = config.UpsertTOMLSetting(string(existingRaw), config.SplitConfigKey(storeKey), valStr)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "update toml setting: " + err.Error()})
+			return
+		}
 	}
 
 	if err := os.WriteFile(targetFile, []byte(updatedTOML), 0644); err != nil {
