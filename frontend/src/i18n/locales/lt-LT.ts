@@ -632,4 +632,8 @@ export const ltLt: TranslationDict = {
   "settings.hooks_run_modal_sub": "Dispatch and execute via UniRTM multi-engine in current workspace",
   "settings.hooks_running": "Executing hook script, please wait...",
   "settings.copy_command": "Copy Command",
+  "settings.scope_workspace_only": "Workspace Only",
+  "settings.hooks_workspace_only_banner": "Git Lifecycle Hooks are Workspace-Only",
+  "settings.hooks_workspace_only_desc": "Git hooks (such as pre-commit, commit-msg) bind directly to the local repository's .git directory and project conventions, and cannot be configured in User scope.",
+  "settings.switch_to_workspace": "Switch to Workspace Configuration",
 };

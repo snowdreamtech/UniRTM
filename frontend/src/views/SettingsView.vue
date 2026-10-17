@@ -479,13 +479,17 @@
                 <TechIcon id="workbench:git" :size="20" />
               </span>
               <div>
-                <h2>{{ t('settings.cat_hooks') || '生命周期与 Git 钩子 (Hooks)' }}</h2>
+                <div class="title-with-badge" style="display: flex; align-items: center; gap: 8px;">
+                  <h2>{{ t('settings.cat_hooks') || '生命周期与 Git 钩子 (Hooks)' }}</h2>
+                  <span v-if="activeScope === 'user'" class="badge-global-only" style="background: rgba(6, 182, 212, 0.12); color: var(--accent-cyan); border-color: rgba(6, 182, 212, 0.25);">
+                    {{ t('settings.scope_workspace_only') || '仅限工作区' }}
+                  </span>
+                </div>
                 <span class="section-sub">{{ t('settings.cat_hooks_sub') || 'Git 提交与操作生命周期自动化事件脚本' }}</span>
               </div>
             </div>
-            <div class="hooks-header-actions" style="display: flex; gap: 8px; align-items: center;">
+            <div v-if="activeScope !== 'user'" class="hooks-header-actions" style="display: flex; gap: 8px; align-items: center;">
               <button
-                v-if="activeScope !== 'user'"
                 type="button"
                 class="btn-bridge-install"
                 :disabled="isInstallingBridges"
@@ -508,7 +512,23 @@
 
           <!-- Hooks Content List or Empty State -->
           <div class="hooks-container">
-            <div v-if="isLoadingHooks" class="hooks-loading">
+            <!-- User Scope Warning Banner -->
+            <div v-if="activeScope === 'user'" class="scope-notice-banner warning" style="margin-top: 4px;">
+              <div class="notice-icon">
+                <TechIcon id="workbench:warning" :size="16" />
+              </div>
+              <div class="notice-body">
+                <strong>{{ t('settings.hooks_workspace_only_banner') || 'Git 生命周期钩子仅限工作区生效' }}</strong>
+                <p>
+                  {{ t('settings.hooks_workspace_only_desc') || 'Git 钩子（如 pre-commit、commit-msg）直接与当前代码工程的 .git 目录及项目规范强绑定，无法在用户全局层级配置。' }}
+                </p>
+                <button class="btn-switch-scope" @click="switchScope('workspace', 'section-hooks')">
+                  {{ t('settings.switch_to_workspace') || '切换到工作区配置' }} ↗
+                </button>
+              </div>
+            </div>
+
+            <div v-else-if="isLoadingHooks" class="hooks-loading">
               <span class="spinner-small"></span>
               <span>{{ t('settings.hooks_loading') || '正在加载生命周期钩子...' }}</span>
             </div>
@@ -558,7 +578,7 @@
                       <TechIcon id="workbench:git" :size="14" />
                     </span>
                     <span class="hook-name font-mono">{{ hook.name }}</span>
-                    <span v-if="activeScope !== 'user'" class="hook-bridge-badge" :class="hook.installed ? 'installed' : 'not-installed'">
+                    <span class="hook-bridge-badge" :class="hook.installed ? 'installed' : 'not-installed'">
                       {{ hook.installed ? ('✓ ' + (t('settings.hooks_badge_bridged') || 'Git 已桥接')) : ('⚠ ' + (t('settings.hooks_badge_unbridged') || '未注入桥接')) }}
                     </span>
                   </div>
@@ -1256,14 +1276,14 @@
                 ></textarea>
               </div>
 
-              <div v-if="activeScope !== 'user'" class="modal-field checkbox-field" style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-                <input
-                  type="checkbox"
-                  id="hook-auto-bridge"
-                  v-model="hookFormAutoBridge"
-                />
-                <label for="hook-auto-bridge" style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer;">
-                  {{ t('settings.hooks_form_auto_bridge') || '同时自动将 UniRTM 路由脚本注入到 .git/hooks/' }}
+              <div v-if="activeScope !== 'user'" class="modal-field-checkbox">
+                <label class="modal-checkbox-row" for="hook-auto-bridge">
+                  <input
+                    type="checkbox"
+                    id="hook-auto-bridge"
+                    v-model="hookFormAutoBridge"
+                  />
+                  <span>{{ t('settings.hooks_form_auto_bridge') || '同时自动将 UniRTM 路由脚本注入到 .git/hooks/' }}</span>
                 </label>
               </div>
             </div>
@@ -4392,6 +4412,49 @@ input:checked + .slider:before {
   font-size: 0.72rem;
   color: var(--text-muted);
   line-height: 1.4;
+}
+
+.modal-field-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-top: 4px;
+}
+
+.modal-checkbox-row {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.85rem !important;
+  color: var(--text-muted) !important;
+  text-align: left !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.modal-checkbox-row:hover {
+  color: var(--text-main) !important;
+}
+
+.modal-checkbox-row input[type="checkbox"] {
+  display: inline-block !important;
+  margin: 0 !important;
+  width: 15px !important;
+  height: 15px !important;
+  min-width: 15px !important;
+  cursor: pointer;
+  accent-color: var(--accent-cyan);
+  flex-shrink: 0 !important;
+}
+
+.modal-checkbox-row span {
+  display: inline !important;
+  line-height: 1.4 !important;
+  text-align: left !important;
 }
 
 .modal-footer {

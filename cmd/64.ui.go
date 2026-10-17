@@ -1005,6 +1005,15 @@ func handleUpsertHook(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Scope = strings.ToLower(strings.TrimSpace(req.Scope))
 
+	if req.Scope == "user" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "Git lifecycle hooks are only permitted in workspace scope as they bind to local repository .git/hooks.",
+			"hint":  "Please configure hooks in Workspace (工作区) scope instead.",
+		})
+		return
+	}
+
 	if req.Name == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "hook name cannot be empty"})
@@ -1017,10 +1026,6 @@ func handleUpsertHook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	targetFile := ".unirtm.toml"
-	if req.Scope == "user" {
-		targetFile = config.GetGlobalConfigPath()
-	}
-
 	content, _ := config.ReadFileOrEmpty(targetFile)
 	updated := config.UpsertHook(content, req.Name, req.Command)
 	if err := config.WriteTOMLFile(targetFile, []byte(updated)); err != nil {
@@ -1030,7 +1035,7 @@ func handleUpsertHook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	installed := false
-	if req.InstallBridge && req.Scope != "user" {
+	if req.InstallBridge {
 		pwd, _ := os.Getwd()
 		_ = hook.InstallBridgeScript(r.Context(), pwd, req.Name)
 		installed = checkHookInstalledInGit(req.Name)
@@ -1040,7 +1045,7 @@ func handleUpsertHook(w http.ResponseWriter, r *http.Request) {
 		"success":   true,
 		"name":      req.Name,
 		"command":   req.Command,
-		"scope":     req.Scope,
+		"scope":     "workspace",
 		"installed": installed,
 	})
 }
@@ -1063,20 +1068,21 @@ func handleDeleteHook(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if scope == "user" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": "Git lifecycle hooks are only permitted in workspace scope.",
+		})
+		return
+	}
+
 	if name == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "hook name is required"})
 		return
 	}
 
-	if scope == "" {
-		scope = "workspace"
-	}
 	targetFile := ".unirtm.toml"
-	if scope == "user" {
-		targetFile = config.GetGlobalConfigPath()
-	}
-
 	content, err := config.ReadFileOrEmpty(targetFile)
 	if err != nil || content == "" {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
