@@ -12,7 +12,7 @@
         </p>
       </div>
       <div class="view-actions" style="display: flex; gap: 8px; align-items: center;">
-        <button class="tool-action-btn secondary" @click="fetchEnvVars" :disabled="loading" title="刷新环境变量">
+        <button class="tool-action-btn secondary" @click="fetchEnvVars" :disabled="loading" :title="t('common.refresh') || '刷新'">
           <TechIcon id="workbench:sync" :size="14" :class="{ 'spin-icon': loading }" />
           <span>{{ loading ? (t("common.refreshing") || "刷新中...") : (t("common.refresh") || "刷新") }}</span>
         </button>
@@ -48,24 +48,24 @@
           v-model="searchKey"
           type="text"
           class="env-search-input"
-          placeholder="搜索环境变量名称、关键字或值..."
+          :placeholder="t('environments.search_placeholder') || '搜索环境变量名称、关键字或值...'"
         />
       </div>
 
 
       <div class="env-stats-badges">
         <span class="stat-badge">
-          <b>{{ filteredEnvList.length }}</b> 个变量
+          <b>{{ filteredEnvList.length }}</b> {{ t("environments.count_suffix") || "个变量" }}
         </span>
-        <span v-if="sensitiveCount > 0" class="stat-badge sensitive-stat" title="已自动启用默认脱密保护">
+        <span v-if="sensitiveCount > 0" class="stat-badge sensitive-stat" :title="t('environments.sensitive_hint') || '已自动启用默认脱密保护'">
           <TechIcon id="workbench:lock" :size="12" />
-          <b>{{ sensitiveCount }}</b> 个敏感
+          <b>{{ sensitiveCount }}</b> {{ t("environments.sensitive_count_suffix") || "个敏感" }}
         </span>
         <button
           class="tool-action-btn primary small"
           id="btn-add-env"
           @click="openCreateModal"
-          title="新建环境变量"
+          :title="t('environments.create_btn') || '新建变量'"
         >
           <span>+ {{ t("environments.create_btn") || "新建变量" }}</span>
         </button>
@@ -77,19 +77,19 @@
       <!-- Loading State -->
       <div v-if="loading && envList.length === 0" class="env-empty-box">
         <TechIcon id="workbench:sync" :size="24" class="spin-icon" />
-        <span style="font-size: 0.85rem; color: var(--text-muted);">正在读取 [env] 配置...</span>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">{{ t("environments.loading") || "正在读取 [env] 配置..." }}</span>
       </div>
 
       <!-- Empty State -->
       <div v-else-if="filteredEnvList.length === 0" class="env-empty-box">
         <TechIcon id="workbench:environments" :size="32" :colored="false" />
         <div class="empty-title">
-          {{ searchKey ? `未找到匹配 "${searchKey}" 的环境变量` : (t("environments.empty_title") || "暂未配置任何环境变量") }}
+          {{ searchKey ? (t("environments.empty_search", { query: searchKey }) || `未找到匹配 "${searchKey}" 的环境变量`) : (t("environments.empty_title") || "暂未配置任何环境变量") }}
         </div>
         <p class="empty-desc">
           {{ activeScope === 'user'
-              ? '可在用户全局配置 (~/.config/unirtm/unirtm.toml) 中添加 [env] 区块，为全局所有开发环境提供兜底环境变量。'
-              : '可在当前项目根目录的 .unirtm.toml 中添加 [env] 区块，锁定当前项目的专属环境变量与服务端口。' }}
+              ? (t("environments.empty_user_desc") || '可在用户全局配置 (~/.config/unirtm/unirtm.toml) 中添加 [env] 区块，为全局所有开发环境提供兜底环境变量。')
+              : (t("environments.empty_workspace_desc") || '可在当前项目根目录的 .unirtm.toml 中添加 [env] 区块，锁定当前项目的专属环境变量与服务端口。') }}
         </p>
         <button v-if="!searchKey" class="tool-action-btn primary" style="margin-top: 0.75rem;" @click="openCreateModal">
           <TechIcon id="workbench:edit" :size="14" />
@@ -118,7 +118,7 @@
               <span
                 class="sec-tag"
                 :class="item.is_sensitive ? 'sensitive' : 'public'"
-                :title="item.is_sensitive ? '敏感字段：默认进行脱密遮掩' : '普通公开环境变量'"
+                :title="item.is_sensitive ? (t('environments.sensitive_badge') || '敏感密钥') : (t('environments.public_badge') || '公开变量')"
               >
                 <TechIcon :id="item.is_sensitive ? 'workbench:lock' : 'workbench:globe'" :size="11" />
                 <span>{{ item.is_sensitive ? (t('environments.sensitive_badge') || '敏感密钥') : (t('environments.public_badge') || '公开变量') }}</span>
@@ -168,7 +168,7 @@
                 :title="item.isRevealed ? (t('environments.conceal') || '脱密隐藏') : (t('environments.reveal') || '显示明文')"
               >
                 <TechIcon :id="item.isRevealed ? 'workbench:eye-closed' : 'workbench:eye'" :size="14" />
-                <span class="btn-text-sm">{{ item.isRevealed ? '密文' : '明文' }}</span>
+                <span class="btn-text-sm">{{ item.isRevealed ? (t('environments.conceal_short') || '密文') : (t('environments.reveal_short') || '明文') }}</span>
               </button>
 
               <!-- One-click Copy Button -->
@@ -179,7 +179,7 @@
               >
                 <TechIcon v-if="copiedKey === item.name" id="workbench:success" :size="13" class="copy-check" />
                 <TechIcon v-else id="workbench:copy" :size="13" />
-                <span class="btn-text-sm">{{ copiedKey === item.name ? '已复制' : '复制' }}</span>
+                <span class="btn-text-sm">{{ copiedKey === item.name ? (t('common.copied') || '已复制') : (t('common.copy') || '复制') }}</span>
               </button>
             </div>
           </div>
@@ -202,16 +202,22 @@
       <div class="confirm-modal glass-card">
         <div class="confirm-header">
           <TechIcon id="workbench:warning" :size="22" />
-          <h4>确认删除环境变量</h4>
+          <h4>{{ t("environments.delete_title") || "确认删除环境变量" }}</h4>
         </div>
         <p class="confirm-desc">
-          确定要从 <b>{{ activeScope === 'user' ? '用户全局配置' : '当前工作区配置' }}</b> 中彻底删除环境变量
-          <code class="font-mono">{{ deleteConfirmKey }}</code> 吗？
-          删除后将不可恢复。
+          {{ t("environments.delete_warning", {
+            key: deleteConfirmKey,
+            scope: activeScope === 'user' ? (t("environments.scope_user") || "用户") : (t("environments.scope_workspace") || "工作区")
+          }) || `确定要从 ${activeScope === 'user' ? '用户全局配置' : '当前工作区配置'} 中彻底删除环境变量 ${deleteConfirmKey} 吗？删除后将不可恢复。` }}
         </p>
         <div class="confirm-actions">
-          <button class="tool-action-btn secondary" @click="deleteConfirmKey = ''">取消</button>
-          <button class="tool-action-btn danger" @click="executeDelete(deleteConfirmKey)">确认删除</button>
+          <button class="tool-action-btn secondary" @click="deleteConfirmKey = ''" :disabled="isDeleting">
+            {{ t("common.cancel") || "取消" }}
+          </button>
+          <button class="tool-action-btn danger" @click="executeDelete(deleteConfirmKey)" :disabled="isDeleting">
+            <TechIcon v-if="isDeleting" id="workbench:sync" :size="14" class="spin-icon" />
+            <span>{{ isDeleting ? (t("common.deleting") || "删除中...") : (t("common.delete") || "删除") }}</span>
+          </button>
         </div>
       </div>
     </div>
@@ -251,6 +257,7 @@ const isModalOpen = ref(false);
 const modalMode = ref<"create" | "edit">("create");
 const selectedEnv = ref<{ name: string; value: string; scope: "workspace" | "user" } | undefined>(undefined);
 const deleteConfirmKey = ref("");
+const isDeleting = ref(false);
 const copiedKey = ref("");
 const toastMessage = ref("");
 
@@ -331,7 +338,7 @@ async function copyValue(item: EnvItem) {
       document.body.removeChild(input);
     }
     copiedKey.value = item.name;
-    showToast(`✓ 已复制 ${item.name} 真实值到剪贴板`);
+    showToast(`✓ ${t("environments.copied_to_clipboard", { key: item.name }) || ('已复制 ' + item.name + ' 真实值到剪贴板')}`);
     setTimeout(() => {
       if (copiedKey.value === item.name) {
         copiedKey.value = "";
@@ -372,7 +379,11 @@ async function handleSaveEnv(payload: {
     });
     if (res.ok) {
       isModalOpen.value = false;
-      showToast(modalMode.value === "create" ? `✓ 成功创建环境变量 ${payload.key}` : `✓ 成功更新环境变量 ${payload.key}`);
+      showToast(
+        modalMode.value === "create"
+          ? `✓ ${t("environments.create_success", { key: payload.key }) || ('成功创建环境变量 ' + payload.key)}`
+          : `✓ ${t("environments.update_success", { key: payload.key }) || ('成功更新环境变量 ' + payload.key)}`
+      );
       await fetchEnvVars();
     } else {
       const err = await res.json();
@@ -388,13 +399,14 @@ function confirmDelete(name: string) {
 }
 
 async function executeDelete(name: string) {
+  isDeleting.value = true;
   try {
     const res = await fetch(`/api/env?key=${encodeURIComponent(name)}&scope=${activeScope.value}`, {
       method: "DELETE",
     });
     if (res.ok) {
       deleteConfirmKey.value = "";
-      showToast(`✓ 已成功删除环境变量 ${name}`);
+      showToast(`✓ ${t("environments.delete_success", { key: name }) || ('已成功删除环境变量 ' + name)}`);
       await fetchEnvVars();
     } else {
       const err = await res.json();
@@ -402,6 +414,8 @@ async function executeDelete(name: string) {
     }
   } catch (err: any) {
     showToast("网络删除错误: " + err.message);
+  } finally {
+    isDeleting.value = false;
   }
 }
 

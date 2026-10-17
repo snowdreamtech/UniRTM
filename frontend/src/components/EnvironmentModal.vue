@@ -6,14 +6,14 @@
         <div class="header-title">
           <TechIcon id="workbench:environments" :size="20" />
           <div>
-            <h3>{{ isEdit ? (t("environments.edit_btn") + " " + t("nav.environments")) : (t("environments.create_btn")) }}</h3>
+            <h3>{{ isEdit ? (t("environments.edit_title") || "编辑环境变量") : (t("environments.create_title") || "新建环境变量") }}</h3>
             <span class="sub-title">
               {{ form.scope === 'user' ? (t("environments.scope_user") || "用户") : (t("environments.scope_workspace") || "工作区") }}
               <span class="scope-file-tag font-mono">{{ form.scope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml' }}</span>
             </span>
           </div>
         </div>
-        <button class="close-btn" @click="$emit('close')" title="Close">✕</button>
+        <button class="close-btn" @click="$emit('close')" :title="t('common.close') || '关闭'">✕</button>
       </div>
 
       <!-- Modal Body -->
@@ -24,7 +24,7 @@
           <div class="form-group">
             <label class="form-label required">
               <span>{{ t("environments.key_label") || "变量名 (Key)" }}</span>
-              <span class="label-hint">（大写字母、数字及下划线组合）</span>
+              <span class="label-hint">{{ t("environments.key_hint") || "（大写字母、数字及下划线组合）" }}</span>
             </label>
             <div class="input-with-action">
               <input
@@ -40,7 +40,7 @@
                 type="button"
                 class="btn-uppercase"
                 @click="form.key = form.key.toUpperCase()"
-                title="转换为全大写"
+                :title="t('environments.to_uppercase') || '转换为全大写'"
               >
                 AA
               </button>
@@ -48,7 +48,7 @@
 
             <!-- Preset Chips -->
             <div class="preset-chips-wrap">
-              <span class="preset-hint">常用预设:</span>
+              <span class="preset-hint">{{ t("environments.presets") || "常用预设:" }}</span>
               <button
                 v-for="chip in PRESET_KEYS"
                 :key="chip"
@@ -63,7 +63,7 @@
             <!-- Sensitive Detection Hint -->
             <div v-if="isSensitiveKey" class="sensitive-detected-banner">
               <span class="sec-icon"><TechIcon id="workbench:lock" :size="14" /></span>
-              <span>系统已自动判定为<b>敏感密钥</b>，保存后默认脱密遮罩显示，需点击眼睛图标方可查看明文。</span>
+              <span>{{ t("environments.sensitive_hint") || "系统已自动判定为敏感密钥，保存后默认脱密遮罩显示，需点击眼睛图标方可查看明文。" }}</span>
             </div>
           </div>
 
@@ -71,7 +71,7 @@
           <div class="form-group">
             <label class="form-label required">
               <span>{{ t("environments.value_label") || "变量值 (Value)" }}</span>
-              <span v-if="isSensitiveKey" class="label-hint">（敏感密钥默认脱密，可点击眼睛查看）</span>
+              <span v-if="isSensitiveKey" class="label-hint">{{ t("environments.sensitive_field_hint") || "（敏感密钥默认脱密，可点击眼睛查看）" }}</span>
             </label>
             <div class="value-input-wrapper">
               <input
@@ -88,7 +88,7 @@
                 type="button"
                 class="btn-eye-toggle"
                 @click="isValueRevealed = !isValueRevealed"
-                :title="isValueRevealed ? '隐藏密码' : '显示明文'"
+                :title="isValueRevealed ? (t('environments.conceal') || '脱密隐藏') : (t('environments.reveal') || '显示明文')"
               >
                 <TechIcon :id="isValueRevealed ? 'workbench:eye-closed' : 'workbench:eye'" :size="15" />
               </button>
@@ -111,7 +111,7 @@
               :disabled="saving || !form.key.trim()"
             >
               <TechIcon v-if="saving" id="workbench:sync" :size="14" class="spin-icon" />
-              <span>{{ saving ? "正在保存..." : (isEdit ? (t("common.save") || "保存更新") : (t("common.create") || "立即创建")) }}</span>
+              <span>{{ saving ? (t("common.saving") || "保存中...") : (isEdit ? (t("common.save_changes") || "保存修改") : (t("common.create") || "新建")) }}</span>
             </button>
           </div>
         </form>
