@@ -3896,24 +3896,6 @@ onBeforeUnmount(() => {
   gap: 8px;
 }
 
-.table-version-cell .runtime-version-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  background: var(--input-bg);
-  border: 1px solid var(--card-border);
-  color: var(--accent-cyan);
-}
-
-.table-version-cell .runtime-version-badge.is-muted {
-  color: var(--text-muted);
-  font-style: italic;
-  font-weight: normal;
-}
-
 .table-desc-cell {
   display: flex;
   flex-direction: column;
@@ -4047,12 +4029,6 @@ onBeforeUnmount(() => {
   background: rgba(2, 132, 199, 0.03);
 }
 
-:root[data-theme="light"] .table-version-cell .runtime-version-badge,
-[data-theme="light"] .table-version-cell .runtime-version-badge {
-  background: #f8fafc;
-  border-color: #e2e8f0;
-  color: #0284c7;
-}
 
 :root[data-theme="light"] .view-mode-toggle,
 [data-theme="light"] .view-mode-toggle {
