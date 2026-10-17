@@ -21,7 +21,7 @@
   - 同步更新全站 53 个语言文件并运行 `i18n.test.ts` 验证；
   - *提交命名*：`feat(i18n): add multi-terminal and split pane translation keys for 53 locales`
 
-- [ ] **Task 3: 底部抽屉工具栏与 VSCode 操作按钮集成 (Toolbar Actions)**
+- [x] **Task 3: 底部抽屉工具栏与 VSCode 操作按钮集成 (Toolbar Actions)**
   - 在 `frontend/src/components/layout/BottomDrawer.vue` 顶部操作区中：
     - 集成 `+` 新建终端按钮与下拉 Shell 选单；
     - 集成竖直拆分按钮 `[ | ]` 与横向拆分按钮 `[ — ]`；
@@ -29,7 +29,7 @@
     - 联动 `useTerminalSessions` 状态；
   - *提交命名*：`feat(drawer): add vscode-like terminal toolbar actions for new, split, and kill`
 
-- [ ] **Task 4: VSCode 风格侧边终端列表与分屏视窗渲染 (Terminal Sidebar & Split Panes)**
+- [x] **Task 4: VSCode 风格侧边终端列表与分屏视窗渲染 (Terminal Sidebar & Split Panes)**
   - 在终端视窗内实现两栏布局：
     - 左侧主区域：根据 `splitDirection`（vertical/horizontal/none）灵活排版窗格（flex-row 或 flex-col）；
     - 每个窗格支持独立输入行、命令历史、欢迎信息以及激活边框高亮（focus border）；

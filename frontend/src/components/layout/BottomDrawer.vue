@@ -98,6 +98,90 @@
 
       <!-- Action Tools on the right -->
       <div class="drawer-actions">
+        <!-- Terminal Special Action Buttons (VSCode Style) -->
+        <template v-if="currentTab === 'terminal'">
+          <!-- 1. New Terminal Button Group (+) with Shell Dropdown -->
+          <div class="terminal-action-group">
+            <button
+              class="drawer-action-btn term-action-btn"
+              :title="t('terminal.new_terminal') || '新建终端'"
+              :data-tooltip="t('terminal.new_terminal') || '新建终端'"
+              @click="handleCreateDefaultSession"
+            >
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8 3v10M3 8h10" />
+              </svg>
+            </button>
+            <button
+              class="drawer-action-btn term-action-arrow"
+              :class="{ active: isNewMenuOpen }"
+              title="选择 Shell 新建终端"
+              @click.stop="isNewMenuOpen = !isNewMenuOpen"
+            >
+              <svg viewBox="0 0 16 16" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 6l4 4 4-4" />
+              </svg>
+            </button>
+
+            <!-- Dropdown to select Shell for new session -->
+            <div v-if="isNewMenuOpen" class="term-new-dropdown font-mono" @click.stop>
+              <div class="dropdown-header">{{ t('terminal.new_terminal') || '新建终端' }}</div>
+              <div
+                v-for="term in terminals"
+                :key="term.path"
+                class="shell-option"
+                @click="handleCreateSessionWithShell(term)"
+              >
+                <div class="shell-option-main">
+                  <span class="shell-option-name font-mono">{{ term.name }}</span>
+                  <span v-if="term.is_default" class="shell-default-pill">{{ t('terminal.default_badge') || '系统默认' }}</span>
+                </div>
+                <span class="shell-option-path font-mono">{{ term.path }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Vertical Split Button [ | ] (一分为二) -->
+          <button
+            class="drawer-action-btn"
+            :title="t('terminal.split_vertical') || '竖直拆分终端 (一分为二)'"
+            :data-tooltip="t('terminal.split_vertical') || '竖直拆分终端 (一分为二)'"
+            @click="handleSplitVertical"
+          >
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="2.5" width="12" height="11" rx="1.5" />
+              <path d="M8 2.5v11" />
+            </svg>
+          </button>
+
+          <!-- 3. Horizontal Split Button [ — ] (一分为二) -->
+          <button
+            class="drawer-action-btn"
+            :title="t('terminal.split_horizontal') || '横向拆分终端 (一分为二)'"
+            :data-tooltip="t('terminal.split_horizontal') || '横向拆分终端 (一分为二)'"
+            @click="handleSplitHorizontal"
+          >
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2.5" y="2" width="11" height="12" rx="1.5" />
+              <path d="M2.5 8h11" />
+            </svg>
+          </button>
+
+          <!-- 4. Kill Current Terminal (Trash) -->
+          <button
+            class="drawer-action-btn term-kill-btn"
+            :title="t('terminal.kill_terminal') || '关闭当前终端'"
+            :data-tooltip="t('terminal.kill_terminal') || '关闭当前终端'"
+            @click="handleKillCurrentTerminal"
+          >
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M12 4.5v8.5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 4 13V4.5" />
+              <path d="M6.5 7.5v4M9.5 7.5v4" />
+            </svg>
+          </button>
+        </template>
+
+        <!-- General Action Buttons -->
         <button
           class="drawer-action-btn"
           :title="clearLogsTitle"
@@ -165,41 +249,121 @@
       </div>
     </div>
 
-    <!-- 1. Terminal View Body -->
+    <!-- 1. Terminal View Body with VSCode Split Panes & Tabs Sidebar -->
     <div
       v-if="currentTab === 'terminal'"
-      class="terminal-body font-mono"
-      :style="{ height: isMaximized ? '380px' : '170px' }"
+      class="terminal-wrapper font-mono"
+      :style="{ height: isMaximized ? '420px' : '200px' }"
     >
-      <div class="terminal-banner">
-        <span class="term-status-dot"></span>
-        <span class="term-shell-info">UniRTM Integrated Terminal · {{ currentTerminal?.name || 'Shell' }} ({{ currentTerminal?.path }})</span>
-        <span v-if="currentTerminal?.is_default" class="term-default-pill font-mono">{{ t('terminal.default_badge') || '系统默认' }}</span>
+      <!-- Main: Terminal Panes Work Area -->
+      <div
+        class="terminal-panes-area"
+        :class="['split-' + (activeSession?.splitDirection || 'none')]"
+      >
+        <div
+          v-for="pane in activeSession?.panes"
+          :key="pane.id"
+          class="terminal-pane"
+          :class="{ active: pane.id === activeSession?.activePaneId }"
+          @click="setActivePane(pane.id)"
+        >
+          <!-- Pane Top Header / Status Banner -->
+          <div class="terminal-pane-banner">
+            <div class="pane-banner-left">
+              <span class="term-status-dot"></span>
+              <span class="term-shell-info font-mono">{{ pane.shellName }}</span>
+              <span class="term-shell-path font-mono">({{ pane.shellPath }})</span>
+              <span v-if="activeSession?.splitDirection !== 'none'" class="term-split-pill">
+                {{ activeSession?.splitDirection === 'vertical' ? '竖直拆分' : '横向拆分' }}
+              </span>
+            </div>
+            <div class="pane-banner-right">
+              <button
+                v-if="(activeSession?.panes.length || 0) > 1"
+                class="pane-close-btn"
+                :title="t('terminal.kill_terminal') || '关闭此窗格'"
+                @click.stop="closePane(pane.id)"
+              >
+                <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Pane Screen Output and Interactive Input -->
+          <div class="terminal-screen" :ref="el => setPaneRef(pane.id, el)">
+            <div class="terminal-welcome">
+              <div class="term-text-cyan">UniRTM Workbench Terminal ({{ pane.shellName }})</div>
+              <div class="term-text-muted">{{ t('drawer.empty_terminal') || '集成终端准备就绪。在上方选择 Shell 或通过快捷指令运行任务。' }}</div>
+            </div>
+
+            <div v-for="(line, idx) in pane.lines" :key="idx" class="terminal-line" :class="'line-' + line.type">
+              <span v-if="line.type === 'input'" class="term-prompt">❯</span>
+              <span class="term-content">{{ line.text }}</span>
+            </div>
+
+            <!-- Terminal Interactive Input Row -->
+            <div class="terminal-input-row">
+              <span class="term-prompt">❯</span>
+              <input
+                v-model="pane.input"
+                @keydown.enter="handlePaneRunCommand(pane)"
+                @keydown.up.prevent="handlePaneHistoryUp(pane)"
+                @keydown.down.prevent="handlePaneHistoryDown(pane)"
+                class="terminal-cmd-input font-mono"
+                :placeholder="t('drawer.empty_terminal') || '输入命令并回车运行 (如 unirtm --help)...'"
+                spellcheck="false"
+                @focus="setActivePane(pane.id)"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="terminal-screen" ref="terminalContainerRef">
-        <div class="terminal-welcome">
-          <div class="term-text-cyan">UniRTM Workbench Terminal v0.35.0 ({{ currentTerminal?.name || 'Shell' }})</div>
-          <div class="term-text-muted">{{ t('drawer.empty_terminal') || '集成终端准备就绪。在上方选择 Shell 或通过快捷指令运行任务。' }}</div>
+      <!-- Right: VSCode-style Terminal Tabs Sidebar -->
+      <div class="terminal-sidebar">
+        <div class="terminal-sidebar-header">
+          <span class="sidebar-title">{{ t('terminal.tabs_title') || '终端' }}</span>
+          <button
+            class="sidebar-add-btn"
+            :title="t('terminal.new_terminal') || '新建终端'"
+            @click="handleCreateDefaultSession"
+          >
+            <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 3v10M3 8h10" />
+            </svg>
+          </button>
         </div>
-
-        <div v-for="(line, idx) in terminalLines" :key="idx" class="terminal-line" :class="'line-' + line.type">
-          <span v-if="line.type === 'input'" class="term-prompt">❯</span>
-          <span class="term-content">{{ line.text }}</span>
-        </div>
-
-        <!-- Terminal Interactive Input Row -->
-        <div class="terminal-input-row">
-          <span class="term-prompt">❯</span>
-          <input
-            v-model="terminalInput"
-            @keydown.enter="handleRunTerminalCommand"
-            @keydown.up.prevent="handleHistoryUp"
-            @keydown.down.prevent="handleHistoryDown"
-            class="terminal-cmd-input font-mono"
-            :placeholder="t('drawer.empty_terminal') || '输入命令并回车运行 (如 unirtm --help)...'"
-            spellcheck="false"
-          />
+        <div class="terminal-tabs-list">
+          <div
+            v-for="s in sessions"
+            :key="s.id"
+            class="terminal-tab-item"
+            :class="{ active: s.id === activeSessionId }"
+            @click="setActiveSession(s.id)"
+          >
+            <div class="tab-item-icon">
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M3.5 5.5l3.5 2.5-3.5 2.5M8.5 10.5h4" />
+              </svg>
+            </div>
+            <div class="tab-item-info">
+              <span class="tab-item-name font-mono">{{ s.title }}</span>
+              <span v-if="s.splitDirection !== 'none'" class="tab-item-split-badge">
+                {{ s.splitDirection === 'vertical' ? '[|]' : '[—]' }}
+              </span>
+            </div>
+            <button
+              class="tab-item-close-btn"
+              :title="t('terminal.kill_terminal') || '关闭终端'"
+              @click.stop="closeSession(s.id)"
+            >
+              <svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -254,7 +418,8 @@ import { ref, computed, watch, nextTick, onMounted, onUnmounted } from "vue";
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 import { useToast } from "../../composables/useToast";
-import { useTerminal } from "../../composables/useTerminal";
+import { useTerminal, TerminalItem } from "../../composables/useTerminal";
+import { useTerminalSessions, TerminalPane } from "../../composables/useTerminalSessions";
 
 export interface LogItem {
   timestamp: string;
@@ -291,12 +456,25 @@ const {
   setPreferredTerminal,
 } = useTerminal();
 
+const {
+  sessions,
+  activeSessionId,
+  activeSession,
+  activePane,
+  createSession,
+  splitActiveSession,
+  setActiveSession,
+  setActivePane,
+  closePane,
+  closeSession,
+  closeActiveTerminal,
+  clearActivePane,
+  ensureInitialSession,
+} = useTerminalSessions();
+
 const isShellMenuOpen = ref(false);
-const terminalInput = ref("");
-const terminalHistory = ref<string[]>([]);
-const historyIdx = ref(-1);
-const terminalLines = ref<Array<{ type: "input" | "output" | "error" | "info"; text: string }>>([]);
-const terminalContainerRef = ref<HTMLElement | null>(null);
+const isNewMenuOpen = ref(false);
+const paneRefs = new Map<string, HTMLElement>();
 
 const DRAWER_TAB_KEY = "unirtm_drawer_tab";
 const DRAWER_MAX_KEY = "unirtm_drawer_maximized";
@@ -447,11 +625,11 @@ async function copyText(text: string): Promise<boolean> {
 
 async function handleCopyAll() {
   if (currentTab.value === "terminal") {
-    if (terminalLines.value.length === 0) {
+    if (!activePane.value || activePane.value.lines.length === 0) {
       showToast(t("drawer.empty_copy") || "当前暂无日志可复制", "warning");
       return;
     }
-    const text = terminalLines.value.map((l) => l.text).join("\n");
+    const text = activePane.value.lines.map((l) => l.text).join("\n");
     const success = await copyText(text);
     if (success) {
       isCopiedAll.value = true;
@@ -480,7 +658,7 @@ async function handleCopyAll() {
 
 function handleClearCurrent() {
   if (currentTab.value === "terminal") {
-    terminalLines.value = [];
+    clearActivePane();
   }
   emit("clear-logs", currentTab.value);
 }
@@ -499,17 +677,37 @@ async function handleCopyRow(log: LogItem, idx: number) {
   }
 }
 
-async function handleRunTerminalCommand() {
-  const cmd = terminalInput.value.trim();
+function setPaneRef(id: string, el: any) {
+  if (el) {
+    paneRefs.set(id, el as HTMLElement);
+  } else {
+    paneRefs.delete(id);
+  }
+}
+
+function scrollToPaneBottom(id: string) {
+  const el = paneRefs.get(id);
+  if (el) {
+    el.scrollTop = el.scrollHeight;
+  }
+}
+
+async function handlePaneRunCommand(pane: TerminalPane) {
+  const cmd = pane.input.trim();
   if (!cmd) return;
 
-  terminalLines.value.push({ type: "input", text: cmd });
-  terminalHistory.value.push(cmd);
-  historyIdx.value = -1;
-  terminalInput.value = "";
+  pane.lines.push({ type: "input", text: cmd });
+  pane.history.push(cmd);
+  pane.historyIndex = -1;
+  pane.input = "";
 
   if (cmd === "clear" || cmd === "cls") {
-    terminalLines.value = [];
+    pane.lines = [];
+    return;
+  }
+
+  if (cmd === "exit") {
+    closePane(pane.id);
     return;
   }
 
@@ -522,55 +720,87 @@ async function handleRunTerminalCommand() {
     if (res.ok) {
       const data = await res.json();
       if (data.output) {
-        terminalLines.value.push({ type: "output", text: data.output });
+        pane.lines.push({ type: "output", text: data.output });
       } else {
-        terminalLines.value.push({
+        pane.lines.push({
           type: "info",
-          text: `[${currentTerminal.value?.name || "Shell"}] Command executed (exit code: 0).`,
+          text: `[${pane.shellName}] Command executed (exit code: 0).`,
         });
       }
     } else {
-      terminalLines.value.push({ type: "error", text: "Command returned non-zero exit code." });
+      pane.lines.push({ type: "error", text: "Command returned non-zero exit code." });
     }
   } catch (err: any) {
-    terminalLines.value.push({ type: "error", text: err.message || "Command execution error" });
+    pane.lines.push({ type: "error", text: err.message || "Command execution error" });
   }
 
   nextTick(() => {
-    if (terminalContainerRef.value) {
-      terminalContainerRef.value.scrollTop = terminalContainerRef.value.scrollHeight;
-    }
+    scrollToPaneBottom(pane.id);
   });
 }
 
-function handleHistoryUp() {
-  if (terminalHistory.value.length === 0) return;
-  if (historyIdx.value === -1) {
-    historyIdx.value = terminalHistory.value.length - 1;
-  } else if (historyIdx.value > 0) {
-    historyIdx.value--;
+function handlePaneHistoryUp(pane: TerminalPane) {
+  if (pane.history.length === 0) return;
+  if (pane.historyIndex === -1) {
+    pane.historyIndex = pane.history.length - 1;
+  } else if (pane.historyIndex > 0) {
+    pane.historyIndex--;
   }
-  terminalInput.value = terminalHistory.value[historyIdx.value] || "";
+  pane.input = pane.history[pane.historyIndex] || "";
 }
 
-function handleHistoryDown() {
-  if (historyIdx.value === -1) return;
-  if (historyIdx.value < terminalHistory.value.length - 1) {
-    historyIdx.value++;
-    terminalInput.value = terminalHistory.value[historyIdx.value] || "";
+function handlePaneHistoryDown(pane: TerminalPane) {
+  if (pane.historyIndex === -1) return;
+  if (pane.historyIndex < pane.history.length - 1) {
+    pane.historyIndex++;
+    pane.input = pane.history[pane.historyIndex] || "";
   } else {
-    historyIdx.value = -1;
-    terminalInput.value = "";
+    pane.historyIndex = -1;
+    pane.input = "";
   }
+}
+
+function handleCreateDefaultSession() {
+  const s = createSession(
+    currentTerminal.value
+      ? { name: currentTerminal.value.name, path: currentTerminal.value.path }
+      : undefined
+  );
+  showToast(`${t("terminal.new_terminal") || "新建终端"}: ${s.title}`, "info");
+}
+
+function handleCreateSessionWithShell(term: TerminalItem) {
+  isNewMenuOpen.value = false;
+  const s = createSession({ name: term.name, path: term.path });
+  showToast(`${t("terminal.new_terminal") || "新建终端"}: ${s.title}`, "info");
+}
+
+function handleSplitVertical() {
+  splitActiveSession("vertical");
+  showToast(t("terminal.split_vertical") || "竖直拆分终端 (一分为二)", "info");
+}
+
+function handleSplitHorizontal() {
+  splitActiveSession("horizontal");
+  showToast(t("terminal.split_horizontal") || "横向拆分终端 (一分为二)", "info");
+}
+
+function handleKillCurrentTerminal() {
+  closeActiveTerminal();
 }
 
 async function handleSelectTerminal(path: string) {
   isShellMenuOpen.value = false;
   await setPreferredTerminal(path);
-  terminalLines.value.push({
-    type: "info",
-    text: `[UniRTM] Active shell switched to: ${currentTerminal.value?.name || path} (${path})`,
-  });
+  if (activePane.value) {
+    const term = terminals.value.find((t) => t.path === path);
+    activePane.value.shellPath = path;
+    activePane.value.shellName = term?.name || path;
+    activePane.value.lines.push({
+      type: "info",
+      text: `[UniRTM] Active shell switched to: ${activePane.value.shellName} (${path})`,
+    });
+  }
 }
 
 async function handleRescan() {
@@ -580,6 +810,7 @@ async function handleRescan() {
 
 function handleGlobalClick() {
   isShellMenuOpen.value = false;
+  isNewMenuOpen.value = false;
 }
 
 watch(
@@ -597,6 +828,7 @@ watch(
 
 onMounted(() => {
   fetchTerminals();
+  ensureInitialSession(currentTerminal.value);
   window.addEventListener("click", handleGlobalClick);
 });
 
@@ -909,25 +1141,290 @@ onUnmounted(() => {
   transform: translateY(0);
 }
 
-/* Terminal View Styles */
-.terminal-body {
+/* Terminal View Styles (VSCode Multi-Terminal & Split Panes) */
+.terminal-action-group {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.term-action-btn {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.term-action-arrow {
+  width: 14px !important;
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  margin-left: -2px;
+  opacity: 0.8;
+}
+
+.term-action-arrow:hover,
+.term-action-arrow.active {
+  opacity: 1;
+  background: var(--card-bg);
+  color: var(--accent-cyan);
+}
+
+.term-new-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 220px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  border-radius: 6px;
+  padding: 4px;
+  z-index: 120;
+}
+
+.dropdown-header {
+  padding: 4px 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--card-border);
+  margin-bottom: 4px;
+}
+
+.term-kill-btn:hover {
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.12) !important;
+}
+
+.terminal-wrapper {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   overflow: hidden;
   background: var(--section-bg, #0b0f19);
   transition: height 0.2s ease;
 }
 
-.terminal-banner {
+.terminal-panes-area {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.terminal-panes-area.split-vertical {
+  flex-direction: row;
+}
+
+.terminal-panes-area.split-horizontal {
+  flex-direction: column;
+}
+
+.terminal-panes-area.split-none {
+  flex-direction: row;
+}
+
+.terminal-pane {
+  flex: 1 1 50%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: var(--section-bg, #0b0f19);
+  box-sizing: border-box;
+}
+
+.terminal-panes-area.split-vertical .terminal-pane:not(:first-child) {
+  border-left: 1px solid var(--card-border);
+}
+
+.terminal-panes-area.split-horizontal .terminal-pane:not(:first-child) {
+  border-top: 1px solid var(--card-border);
+}
+
+.terminal-pane.active {
+  outline: 1.5px solid rgba(0, 229, 255, 0.6);
+  outline-offset: -1px;
+  z-index: 2;
+}
+
+.terminal-pane-banner {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.45rem;
-  padding: 3px 0.75rem;
-  background: rgba(0, 0, 0, 0.15);
+  padding: 3px 0.65rem;
+  background: rgba(0, 0, 0, 0.2);
   border-bottom: 1px solid var(--card-border);
   font-size: 0.68rem;
   color: var(--text-muted);
   flex-shrink: 0;
+}
+
+.pane-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.term-shell-path {
+  font-size: 0.62rem;
+  opacity: 0.7;
+}
+
+.term-split-pill {
+  font-size: 0.6rem;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: rgba(0, 229, 255, 0.15);
+  color: var(--accent-cyan);
+}
+
+.pane-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.pane-close-btn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+/* VSCode-style Terminal Tabs Sidebar */
+.terminal-sidebar {
+  width: 165px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.15);
+  border-left: 1px solid var(--card-border);
+  overflow: hidden;
+}
+
+.terminal-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--card-border);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-add-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-add-btn:hover {
+  color: var(--accent-cyan);
+  background: var(--card-bg);
+}
+
+.terminal-tabs-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.terminal-tab-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.terminal-tab-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.terminal-tab-item.active {
+  background: rgba(0, 229, 255, 0.12);
+  color: var(--accent-cyan);
+}
+
+.tab-item-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.terminal-tab-item.active .tab-item-icon {
+  color: var(--accent-cyan);
+}
+
+.tab-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tab-item-name {
+  font-size: 0.72rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-item-split-badge {
+  font-size: 0.62rem;
+  opacity: 0.75;
+  color: var(--accent-cyan);
+}
+
+.tab-item-close-btn {
+  opacity: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.terminal-tab-item:hover .tab-item-close-btn {
+  opacity: 0.8;
+}
+
+.tab-item-close-btn:hover {
+  opacity: 1 !important;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
 }
 
 .term-status-dot {
@@ -941,19 +1438,10 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-.term-default-pill {
-  font-size: 0.62rem;
-  padding: 0 4px;
-  border-radius: 3px;
-  background: rgba(16, 185, 129, 0.12);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.25);
-}
-
 .terminal-screen {
   flex: 1;
   overflow-y: auto;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.65rem;
   font-size: 0.75rem;
   line-height: 1.5;
   display: flex;
