@@ -26,7 +26,7 @@
   - 在 `frontend/src/App.vue` 中支持快捷键与任务启动时关联终端 Tab；
   - *提交命名*：`feat(drawer): integrate terminal tab with interactive shell switcher`
 
-- [ ] **Task 4: 设置中心「终端设置」卡片与可视化配置 (Settings Integration)**
+- [x] **Task 4: 设置中心「终端设置」卡片与可视化配置 (Settings Integration)**
   - 在 `frontend/src/views/SettingsView.vue` 中加入「集成终端设置」卡片：
     - 展示探测到的所有本地终端；
     - 提供路径、系统默认徽章与单选切换；

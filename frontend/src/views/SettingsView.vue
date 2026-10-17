@@ -283,6 +283,58 @@
               </div>
             </div>
 
+            <!-- Setting: Integrated Terminal (User Scope Only) -->
+            <div
+              v-if="activeScope === 'user'"
+              class="setting-item terminal-setting-item"
+              :class="{
+                highlight: matchesSearch('terminal') || matchesSearch('shell') || matchesSearch('终端')
+              }"
+            >
+              <div class="setting-meta">
+                <span class="setting-title">{{ t('terminal.title') || '集成终端 Shell (Terminal)' }}</span>
+                <p class="setting-desc">
+                  {{ t('terminal.desc') || '配置 UniRTM 底栏集成终端与任务执行所调用的默认 Shell 环境。遵循本机个人环境，仅在用户全局生效。' }}
+                </p>
+                <div v-if="terminals.length > 0" class="terminal-detected-chips" style="margin-top: 8px; display: inline-flex; gap: 6px; flex-wrap: wrap;">
+                  <button
+                    v-for="tItem in terminals"
+                    :key="tItem.path"
+                    type="button"
+                    class="preset-chip-btn font-mono"
+                    :class="{ active: currentTerminal?.path === tItem.path }"
+                    @click="onSelectTerminalSetting(tItem.path)"
+                    :title="tItem.path"
+                  >
+                    {{ tItem.name }}
+                    <span v-if="tItem.is_default" class="chip-badge">{{ t('terminal.default_badge') || '系统默认' }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Terminal Controls -->
+              <div class="setting-control">
+                <div class="terminal-input-box">
+                  <CustomSelect
+                    :model-value="selectedTerminalPath"
+                    :options="terminalPresetOptions"
+                    @change="onTerminalSelectChange"
+                  />
+                  <div v-if="selectedTerminalPath === 'custom'" class="custom-terminal-field" style="margin-top: 6px;">
+                    <input
+                      v-model="customTerminalPath"
+                      type="text"
+                      class="setting-text-input font-mono"
+                      :placeholder="'/bin/bash 或自定义 Shell 路径'"
+                      @change="saveSetting('settings.terminal', customTerminalPath)"
+                      @blur="saveSetting('settings.terminal', customTerminalPath)"
+                      @keydown.enter="saveSetting('settings.terminal', customTerminalPath)"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Setting: Preferred Editor (User Scope Only) -->
             <div
               v-if="activeScope === 'user'"
@@ -1710,6 +1762,7 @@ import { useTheme } from "../composables/useTheme";
 import { useThemeManager } from "../composables/useThemeManager";
 import { useToast } from "../composables/useToast";
 import { useAppScope } from "../composables/useAppScope";
+import { useTerminal } from "../composables/useTerminal";
 import CustomSelect from "../components/CustomSelect.vue";
 import TechIcon from "../components/common/TechIcon.vue";
 
@@ -2138,6 +2191,53 @@ const experimental = ref<boolean>(false);
 const defaultShell = ref("");
 const selectedShellPreset = ref("");
 const customShellPath = ref("");
+
+const {
+  terminals,
+  currentTerminal,
+  defaultTerminal,
+  fetchTerminals,
+  setPreferredTerminal,
+} = useTerminal();
+const customTerminalPath = ref("");
+
+const selectedTerminalPath = computed(() => {
+  if (!currentTerminal.value) return "";
+  const found = terminals.value.some((t) => t.path === currentTerminal.value?.path);
+  if (found) return currentTerminal.value.path;
+  return "custom";
+});
+
+const terminalPresetOptions = computed(() => {
+  const opts: Array<{ value: string; label: string }> = [];
+  for (const tItem of terminals.value) {
+    const isDef = tItem.is_default ? ` (${t("terminal.default_badge") || "系统默认"})` : "";
+    opts.push({
+      value: tItem.path,
+      label: `${tItem.name}${isDef} · ${tItem.path}`,
+    });
+  }
+  opts.push({
+    value: "custom",
+    label: t("settings.browser_custom") || "自定义路径...",
+  });
+  return opts;
+});
+
+async function onTerminalSelectChange(val: string) {
+  if (val === "custom") {
+    customTerminalPath.value = currentTerminal.value?.path || "";
+  } else {
+    customTerminalPath.value = "";
+    await setPreferredTerminal(val);
+  }
+}
+
+async function onSelectTerminalSetting(path: string) {
+  customTerminalPath.value = "";
+  await setPreferredTerminal(path);
+}
+
 const alwaysKeepDownload = ref(false);
 const httpTimeout = ref("");
 const editor = ref("");
@@ -3685,6 +3785,7 @@ onMounted(() => {
   fetchAliasesList();
   handleDetectProxy(false);
   fetchThemes();
+  fetchTerminals();
   if (props.activeCategory) {
     setTimeout(() => {
       scrollToCategory(props.activeCategory!);
