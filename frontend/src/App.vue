@@ -71,18 +71,18 @@
             </keep-alive>
           </router-view>
         </div>
+
+        <!-- 3. Bottom Drawer (Console / Task Terminal / Logs) - Aligned to Main Window -->
+        <BottomDrawer
+          :isOpen="isDrawerOpen"
+          :logs="runtimeLogs"
+          :activeTab="drawerActiveTab"
+          @update:activeTab="drawerActiveTab = $event"
+          @close="isDrawerOpen = false"
+          @clear-logs="handleClearLogs"
+        />
       </main>
     </div>
-
-    <!-- 3. Bottom Drawer (Console / Task Terminal / Logs) -->
-    <BottomDrawer
-      :isOpen="isDrawerOpen"
-      :logs="runtimeLogs"
-      :activeTab="drawerActiveTab"
-      @update:activeTab="drawerActiveTab = $event"
-      @close="isDrawerOpen = false"
-      @clear-logs="handleClearLogs"
-    />
 
     <!-- 4. Bottom StatusBar (VS Code Clean Status Bar) -->
     <BottomStatusBar
@@ -521,6 +521,7 @@ onUnmounted(() => {
   gap: 0.6rem;
   height: 32px;
   min-height: 32px;
+  flex-shrink: 0;
   background: var(--card-bg);
   border-bottom: 1px solid var(--card-border);
   padding: 0 1rem;
@@ -564,7 +565,7 @@ onUnmounted(() => {
 
 .canvas-content-wrapper {
   flex: 1;
-  height: calc(100% - 32px);
+  min-height: 0;
   overflow-y: auto;
   scrollbar-gutter: stable;
   position: relative;

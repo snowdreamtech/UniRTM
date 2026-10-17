@@ -374,6 +374,7 @@ watch(
 <style scoped>
 .bottom-drawer {
   width: 100%;
+  flex-shrink: 0;
   background: var(--card-bg);
   border-top: 1px solid var(--card-border);
   box-sizing: border-box;
