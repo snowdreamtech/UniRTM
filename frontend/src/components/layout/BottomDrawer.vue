@@ -49,53 +49,6 @@
         </button>
       </div>
 
-      <!-- Center: Terminal Shell Selector (Only when in terminal tab) -->
-      <div v-if="currentTab === 'terminal'" class="terminal-shell-selector-wrap" @click.stop>
-        <button
-          class="shell-select-pill"
-          @click="isShellMenuOpen = !isShellMenuOpen"
-          :title="t('terminal.switch_shell') || '切换终端 Shell'"
-        >
-          <TechIcon id="workbench:terminal" :size="12" />
-          <span class="shell-name font-mono">{{ currentTerminal?.name || 'Shell' }}</span>
-          <span v-if="currentTerminal?.is_default" class="shell-default-tag">{{ t('terminal.default_badge') || '系统默认' }}</span>
-          <svg class="chevron-icon" :class="{ open: isShellMenuOpen }" viewBox="0 0 16 16" width="10" height="10" fill="currentColor">
-            <path d="M4.5 6l3.5 3.5 3.5-3.5" />
-          </svg>
-        </button>
-
-        <!-- Dropdown Shell List -->
-        <div v-if="isShellMenuOpen" class="shell-dropdown-menu">
-          <div class="shell-dropdown-header">
-            <span>{{ t("terminal.switch_shell") || "切换终端 Shell" }}</span>
-            <button class="rescan-btn" @click.stop="handleRescan" :title="t('terminal.rescan') || '重新检测'">
-              <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 8A6 6 0 1 1 9.5 2.5L14 3" />
-                <path d="M14 1v2.5H11.5" />
-              </svg>
-            </button>
-          </div>
-          <div class="shell-dropdown-list">
-            <div
-              v-for="term in terminals"
-              :key="term.path"
-              class="shell-option"
-              :class="{ active: term.path === currentTerminal?.path }"
-              @click="handleSelectTerminal(term.path)"
-            >
-              <div class="shell-option-main">
-                <span class="shell-option-name font-mono">{{ term.name }}</span>
-                <span v-if="term.is_default" class="shell-default-pill">{{ t('terminal.default_badge') || '系统默认' }}</span>
-              </div>
-              <span class="shell-option-path font-mono">{{ term.path }}</span>
-            </div>
-            <div v-if="terminals.length === 0" class="shell-dropdown-empty">
-              <span>{{ t('terminal.rescan') || '正在扫描可用 Shell...' }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Action Tools on the right -->
       <div class="drawer-actions">
         <!-- Terminal Special Action Buttons (VSCode Style) -->
@@ -453,7 +406,6 @@ const {
   terminals,
   currentTerminal,
   fetchTerminals,
-  setPreferredTerminal,
 } = useTerminal();
 
 const {
@@ -472,7 +424,6 @@ const {
   ensureInitialSession,
 } = useTerminalSessions();
 
-const isShellMenuOpen = ref(false);
 const isNewMenuOpen = ref(false);
 const paneRefs = new Map<string, HTMLElement>();
 
@@ -519,7 +470,7 @@ watch(currentTab, (val) => {
   if (typeof localStorage !== "undefined") {
     localStorage.setItem(DRAWER_TAB_KEY, val);
   }
-  isShellMenuOpen.value = false;
+  isNewMenuOpen.value = false;
 });
 
 watch(isMaximized, (val) => {
@@ -789,27 +740,7 @@ function handleKillCurrentTerminal() {
   closeActiveTerminal();
 }
 
-async function handleSelectTerminal(path: string) {
-  isShellMenuOpen.value = false;
-  await setPreferredTerminal(path);
-  if (activePane.value) {
-    const term = terminals.value.find((t) => t.path === path);
-    activePane.value.shellPath = path;
-    activePane.value.shellName = term?.name || path;
-    activePane.value.lines.push({
-      type: "info",
-      text: `[UniRTM] Active shell switched to: ${activePane.value.shellName} (${path})`,
-    });
-  }
-}
-
-async function handleRescan() {
-  await fetchTerminals();
-  showToast(t("terminal.rescan") || "已重新检测终端环境", "info");
-}
-
 function handleGlobalClick() {
-  isShellMenuOpen.value = false;
   isNewMenuOpen.value = false;
 }
 
@@ -927,101 +858,7 @@ onUnmounted(() => {
   color: var(--accent-cyan);
 }
 
-/* Shell Selector Pill & Dropdown */
-.terminal-shell-selector-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  margin-left: 0.5rem;
-}
-
-.shell-select-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  color: var(--text-main);
-  font-size: 0.72rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.shell-select-pill:hover {
-  border-color: var(--accent-cyan);
-  background: var(--btn-hover, rgba(0, 229, 255, 0.05));
-}
-
-.shell-name {
-  font-weight: 600;
-  color: var(--accent-cyan);
-}
-
-.shell-default-tag {
-  font-size: 0.65rem;
-  padding: 0 4px;
-  border-radius: 3px;
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-.chevron-icon {
-  transition: transform 0.2s ease;
-  color: var(--text-muted);
-}
-
-.chevron-icon.open {
-  transform: rotate(180deg);
-}
-
-.shell-dropdown-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  min-width: 260px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  z-index: 120;
-  overflow: hidden;
-}
-
-.shell-dropdown-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 10px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  border-bottom: 1px solid var(--card-border);
-  background: var(--input-bg);
-}
-
-.rescan-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 3px;
-  display: inline-flex;
-  align-items: center;
-}
-
-.rescan-btn:hover {
-  color: var(--accent-cyan);
-}
-
-.shell-dropdown-list {
-  max-height: 220px;
-  overflow-y: auto;
-  padding: 4px;
-}
+/* Shell options for New Terminal dropdown */
 
 .shell-option {
   display: flex;
