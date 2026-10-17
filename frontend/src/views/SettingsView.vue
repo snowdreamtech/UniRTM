@@ -277,6 +277,71 @@
               </div>
             </div>
 
+            <!-- Setting: Preferred Editor (User Scope Only) -->
+            <div
+              v-if="activeScope === 'user'"
+              class="setting-item"
+              :class="{ highlight: matchesSearch('editor') }"
+            >
+              <div class="setting-meta">
+                <span class="setting-title">{{ t('settings.editor') || '默认文本编辑器 (Editor)' }}</span>
+                <p class="setting-desc">{{ t('settings.editor_desc') || '通过命令行或快捷动作调用外部编辑器查看文件时的首选程序。遵循本机个人环境，仅在用户全局生效。' }}</p>
+                <div class="release-age-presets-row" style="margin-top: 8px; display: inline-flex; gap: 6px; flex-wrap: wrap;">
+                  <button
+                    type="button"
+                    class="preset-chip-btn"
+                    :class="{ active: editor === 'code' }"
+                    @click="applyEditorPreset('code')"
+                  >
+                    <span>VS Code (code)</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="preset-chip-btn"
+                    :class="{ active: editor === 'cursor' }"
+                    @click="applyEditorPreset('cursor')"
+                  >
+                    <span>Cursor</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="preset-chip-btn"
+                    :class="{ active: editor === 'nvim' }"
+                    @click="applyEditorPreset('nvim')"
+                  >
+                    <span>Neovim</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="preset-chip-btn"
+                    :class="{ active: editor === 'vim' }"
+                    @click="applyEditorPreset('vim')"
+                  >
+                    <span>Vim</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="preset-chip-btn"
+                    :class="{ active: editor === 'nano' }"
+                    @click="applyEditorPreset('nano')"
+                  >
+                    <span>Nano</span>
+                  </button>
+                </div>
+              </div>
+              <div class="setting-control">
+                <input
+                  v-model="editor"
+                  type="text"
+                  class="setting-text-input font-mono"
+                  :placeholder="t('settings.editor_placeholder') || 'code 或 /usr/bin/nvim'"
+                  @change="onEditorChange"
+                  @blur="onEditorChange"
+                  @keydown.enter="onEditorChange"
+                />
+              </div>
+            </div>
+
             <!-- Setting: Cache TTL -->
             <div class="setting-item" :class="{ highlight: matchesSearch('cache_ttl') }">
               <div class="setting-meta">
@@ -293,6 +358,24 @@
                   @blur="saveSetting('settings.cache_ttl', cacheTtl)"
                   @keydown.enter="saveSetting('settings.cache_ttl', cacheTtl)"
                 />
+              </div>
+            </div>
+
+            <!-- Setting: Always Keep Download Archives -->
+            <div class="setting-item" :class="{ highlight: matchesSearch('keep') || matchesSearch('download') || matchesSearch('always_keep_download') }">
+              <div class="setting-meta">
+                <span class="setting-title">{{ t('settings.always_keep_download') || '保留下载安装包缓存 (Keep Downloads)' }}</span>
+                <p class="setting-desc">{{ t('settings.always_keep_download_desc') || '安装工具完成后，是否持久保留原始下载的归档安装包（.tar.gz / .zip）。启用可加快重新安装并节省重复下载流量，禁用可节省本地磁盘空间。' }}</p>
+              </div>
+              <div class="setting-control">
+                <label class="toggle-switch-label">
+                  <input
+                    type="checkbox"
+                    :checked="alwaysKeepDownload"
+                    @change="onAlwaysKeepDownloadToggle"
+                  />
+                  <span class="slider round"></span>
+                </label>
               </div>
             </div>
 
@@ -353,6 +436,59 @@
               </div>
             </div>
 
+            <!-- Setting: HTTP Request Timeout -->
+            <div class="setting-item" :class="{ highlight: matchesSearch('http_timeout') || matchesSearch('http') }">
+              <div class="setting-meta">
+                <span class="setting-title">{{ t('settings.http_timeout') || '网络请求超时 (HTTP Timeout)' }}</span>
+                <p class="setting-desc">{{ t('settings.http_timeout_desc') || '工具包下载与远程清单网络请求的超时时限（例如 30s、60s 或 2m）。' }}</p>
+                <div class="release-age-presets-row" style="margin-top: 8px; display: inline-flex; gap: 6px; flex-wrap: wrap;">
+                  <button
+                    type="button"
+                    class="preset-chip-btn"
+                    :class="{ active: (httpTimeout || '30s') === '15s' }"
+                    @click="applyHttpTimeoutPreset('15s')"
+                  >
+                    <span>⚡ 15s</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="preset-chip-btn"
+                    :class="{ active: (httpTimeout || '30s') === '30s' }"
+                    @click="applyHttpTimeoutPreset('30s')"
+                  >
+                    <span>🌐 30s (默认)</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="preset-chip-btn"
+                    :class="{ active: (httpTimeout || '30s') === '60s' }"
+                    @click="applyHttpTimeoutPreset('60s')"
+                  >
+                    <span>⏱️ 60s</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="preset-chip-btn"
+                    :class="{ active: (httpTimeout || '30s') === '120s' }"
+                    @click="applyHttpTimeoutPreset('120s')"
+                  >
+                    <span>📦 120s (大文件)</span>
+                  </button>
+                </div>
+              </div>
+              <div class="setting-control">
+                <input
+                  v-model="httpTimeout"
+                  type="text"
+                  class="setting-text-input font-mono"
+                  :placeholder="t('settings.http_timeout_placeholder') || '30s (默认)'"
+                  @change="onHttpTimeoutChange"
+                  @blur="onHttpTimeoutChange"
+                  @keydown.enter="onHttpTimeoutChange"
+                />
+              </div>
+            </div>
+
             <!-- Setting: Task Output Mode -->
             <div class="setting-item" :class="{ highlight: matchesSearch('output') || matchesSearch('task_output') }">
               <div class="setting-meta">
@@ -365,6 +501,33 @@
                   :options="taskOutputOptions"
                   @change="onTaskOutputChange"
                 />
+              </div>
+            </div>
+
+            <!-- Setting: Shell (Task Shell) -->
+            <div class="setting-item" :class="{ highlight: matchesSearch('shell') }">
+              <div class="setting-meta">
+                <span class="setting-title">{{ t('settings.shell') || '任务默认 Shell (Shell)' }}</span>
+                <p class="setting-desc">{{ t('settings.shell_desc') || '执行工程任务及生命周期钩子脚本时的默认解释器。留空表示遵循系统默认 Shell。' }}</p>
+              </div>
+              <div class="setting-control">
+                <div style="display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 320px;">
+                  <CustomSelect
+                    :model-value="selectedShellPreset"
+                    :options="shellPresetOptions"
+                    @change="onShellPresetChange"
+                  />
+                  <input
+                    v-if="selectedShellPreset === 'custom'"
+                    v-model="customShellPath"
+                    type="text"
+                    class="setting-text-input font-mono"
+                    :placeholder="t('settings.shell_custom_placeholder') || '/bin/bash 或自定义可执行路径'"
+                    @change="saveSetting('settings.shell', customShellPath)"
+                    @blur="saveSetting('settings.shell', customShellPath)"
+                    @keydown.enter="saveSetting('settings.shell', customShellPath)"
+                  />
+                </div>
               </div>
             </div>
 
@@ -1915,6 +2078,23 @@ const taskOutput = ref<"interleaved" | "prefix" | "quiet">("interleaved");
 const minimumReleaseAge = ref<string>("");
 const experimental = ref<boolean>(false);
 
+const defaultShell = ref("");
+const selectedShellPreset = ref("");
+const customShellPath = ref("");
+const alwaysKeepDownload = ref(false);
+const httpTimeout = ref("");
+const editor = ref("");
+
+const shellPresetOptions = computed(() => [
+  { value: "", label: t("settings.shell_auto") || "系统默认 (System Default)" },
+  { value: "bash", label: "Bash (/bin/bash)" },
+  { value: "zsh", label: "Zsh (/bin/zsh)" },
+  { value: "sh", label: "POSIX Shell (/bin/sh)" },
+  { value: "pwsh", label: "PowerShell (pwsh)" },
+  { value: "fish", label: "Fish (fish)" },
+  { value: "custom", label: t("settings.shell_custom") || "自定义路径 (Custom)..." },
+]);
+
 const taskOutputOptions = computed(() => [
   { value: "interleaved", label: t("settings.task_output_interleaved") || "交叉流式 (Interleaved)" },
   { value: "prefix", label: t("settings.task_output_prefix") || "任务前缀 (Prefix)" },
@@ -2627,7 +2807,21 @@ function syncFieldsFromConfig() {
   minimumReleaseAge.value = s.minimum_release_age !== undefined && s.minimum_release_age !== "" ? s.minimum_release_age : "7d";
   experimental.value = Boolean(s.experimental);
 
+  alwaysKeepDownload.value = Boolean(s.always_keep_download);
+  httpTimeout.value = s.http_timeout !== undefined ? String(s.http_timeout) : "";
+  const sh = s.shell || "";
+  const knownShells = ["", "bash", "zsh", "sh", "pwsh", "fish"];
+  if (knownShells.includes(sh)) {
+    selectedShellPreset.value = sh;
+    customShellPath.value = "";
+  } else {
+    selectedShellPreset.value = "custom";
+    customShellPath.value = sh;
+  }
+  defaultShell.value = sh;
+
   if (activeScope.value === "user") {
+    editor.value = s.editor || "";
     const b = s.browser || "";
     const knownIds = ["chrome", "firefox", "msedge", "safari", "brave", "chromium", "arc", "opera", "vivaldi", "epiphany", ""];
     const isDetectedOrKnown = knownIds.includes(b.toLowerCase()) || detectedBrowsers.value.some(d => d.id === b.toLowerCase());
@@ -2657,6 +2851,42 @@ function onTaskTimeoutChange() {
   const val = String(taskTimeout.value).trim();
   taskTimeout.value = val;
   saveSetting("settings.task_timeout", val);
+}
+
+function onShellPresetChange(val: string) {
+  selectedShellPreset.value = val;
+  if (val !== "custom") {
+    defaultShell.value = val;
+    customShellPath.value = "";
+    saveSetting("settings.shell", val);
+  }
+}
+
+function onAlwaysKeepDownloadToggle() {
+  alwaysKeepDownload.value = !alwaysKeepDownload.value;
+  saveSetting("settings.always_keep_download", alwaysKeepDownload.value);
+}
+
+function onHttpTimeoutChange() {
+  const val = String(httpTimeout.value).trim();
+  httpTimeout.value = val;
+  saveSetting("settings.http_timeout", val);
+}
+
+function applyHttpTimeoutPreset(preset: string) {
+  httpTimeout.value = preset;
+  saveSetting("settings.http_timeout", preset);
+}
+
+function onEditorChange() {
+  const val = String(editor.value).trim();
+  editor.value = val;
+  saveSetting("settings.editor", val);
+}
+
+function applyEditorPreset(preset: string) {
+  editor.value = preset;
+  saveSetting("settings.editor", preset);
 }
 
 function onTaskOutputChange(val: string) {

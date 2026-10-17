@@ -1559,13 +1559,13 @@ func handlePostConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Machine-specific settings check: browser is global-only
+	// Machine-specific settings check: browser and editor are global-only
 	cleanKey := strings.TrimPrefix(key, "settings.")
-	if scope == "workspace" && cleanKey == "browser" {
+	if scope == "workspace" && (cleanKey == "browser" || cleanKey == "editor") {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"error": "Browser configuration is only permitted in global config to ensure project portability across team machines.",
-			"hint":  "Please configure settings.browser in User (全局) scope instead.",
+			"error": fmt.Sprintf("%s configuration is only permitted in global config to ensure project portability across team machines.", cleanKey),
+			"hint":  fmt.Sprintf("Please configure settings.%s in User (全局) scope instead.", cleanKey),
 		})
 		return
 	}
