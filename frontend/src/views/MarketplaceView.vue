@@ -604,9 +604,9 @@
             :class="{ 'card-is-active': isExtensionActive(item) }"
             @click="navigateToDetail(item.namespace || '', item.name)"
           >
-            <!-- Top Right Delete Button for Installed Themes -->
+            <!-- Top Right Delete Button for Installed Themes (Only shown under 'installed' tab) -->
             <button
-              v-if="isItemInstalled(item)"
+              v-if="activeThemeTypeTab === 'installed' && isItemInstalled(item)"
               class="btn-card-delete"
               :title="t('common.delete') || '卸载此主题包'"
               @click.stop="onUninstallThemeCard(item)"
@@ -827,6 +827,7 @@
                         {{ t('marketplace.currently_applied') || '当前生效' }}
                       </button>
                       <button
+                        v-if="activeThemeTypeTab === 'installed'"
                         class="btn-table-delete"
                         :title="t('common.delete') || '卸载此主题包'"
                         @click="onUninstallThemeCard(item)"
