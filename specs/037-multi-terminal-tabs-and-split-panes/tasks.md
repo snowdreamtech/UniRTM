@@ -37,7 +37,7 @@
   - 完善深色与浅色主题适配；
   - *提交命名*：`feat(terminal): render vscode-style split panes and terminal tabs sidebar`
 
-- [ ] **Task 5: 全量回归与构建验证 (Validation & Polish)**
+- [x] **Task 5: 全量回归与构建验证 (Validation & Polish)**
   - 运行全量 Vitest 单元测试，确保测试套件全部通过；
   - 运行 `vue-tsc` 与生产打包编译，零警告零报错；
   - *提交命名*：`chore(terminal): complete multi-terminal split verification and tests`
