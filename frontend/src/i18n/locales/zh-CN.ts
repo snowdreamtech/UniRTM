@@ -583,4 +583,8 @@ export const zhCn: TranslationDict = {
   "environments.col_value": "变量值",
   "environments.col_scope": "作用域",
   "environments.col_actions": "操作",
+  "tasks.col_name": "任务名称",
+  "tasks.col_command": "命令",
+  "tasks.col_depends": "依赖与描述",
+  "tasks.col_actions": "操作",
 };

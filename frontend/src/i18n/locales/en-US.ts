@@ -585,4 +585,8 @@ export const enUs: TranslationDict = {
   "environments.col_value": "Value",
   "environments.col_scope": "Scope",
   "environments.col_actions": "Actions",
+  "tasks.col_name": "Task Name",
+  "tasks.col_command": "Command",
+  "tasks.col_depends": "Dependencies & Info",
+  "tasks.col_actions": "Actions",
 };

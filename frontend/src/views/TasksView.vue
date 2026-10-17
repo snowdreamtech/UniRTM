@@ -55,6 +55,29 @@
         <span class="stat-badge">
           <b>{{ filteredTasks.length }}</b> {{ t("tasks.count_suffix") || "个任务" }}
         </span>
+
+        <!-- View Mode Switcher -->
+        <div class="view-mode-toggle" id="tasks-view-mode-toggle">
+          <button
+            type="button"
+            class="view-mode-btn"
+            :class="{ active: viewMode === 'cards' }"
+            @click="setViewMode('cards')"
+            :title="t('environments.view_cards') || '卡片视图'"
+          >
+            <TechIcon id="workbench:cards" :size="14" />
+          </button>
+          <button
+            type="button"
+            class="view-mode-btn"
+            :class="{ active: viewMode === 'list' }"
+            @click="setViewMode('list')"
+            :title="t('environments.view_list') || '列表视图'"
+          >
+            <TechIcon id="workbench:list" :size="14" />
+          </button>
+        </div>
+
         <button
           class="tool-action-btn primary small"
           id="btn-add-task"
@@ -91,8 +114,8 @@
         </button>
       </div>
 
-      <!-- Tasks List -->
-      <div v-else class="tasks-list">
+      <!-- Tasks Cards View -->
+      <div v-else-if="viewMode === 'cards'" class="tasks-list">
         <div
           v-for="task in filteredTasks"
           :key="task.name"
@@ -171,6 +194,97 @@
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- Tasks High-Density Table / List View -->
+      <div v-else class="tasks-list-table-wrapper">
+        <table class="tasks-table">
+          <thead>
+            <tr>
+              <th class="th-name">{{ t("tasks.col_name") || "任务名称" }}</th>
+              <th class="th-command">{{ t("tasks.col_command") || "命令" }}</th>
+              <th class="th-depends">{{ t("tasks.col_depends") || "依赖与描述" }}</th>
+              <th class="th-actions">{{ t("tasks.col_actions") || "操作" }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="task in filteredTasks"
+              :key="task.name"
+              class="task-table-row"
+              :class="{ running: runningTask === task.name }"
+            >
+              <!-- Name & Env -->
+              <td class="td-name">
+                <div class="table-name-cell">
+                  <TechIcon id="workbench:tasks" :size="15" class="task-icon" />
+                  <span class="task-name font-mono">{{ task.name }}</span>
+                  <span v-if="task.env" class="task-env-pill font-mono" :title="`环境变量: ${task.env}`">
+                    env: {{ task.env }}
+                  </span>
+                </div>
+              </td>
+
+              <!-- Command -->
+              <td class="td-command">
+                <div class="table-cmd-box font-mono" :title="task.command">
+                  <span class="cmd-prompt">$</span>
+                  <span class="cmd-text">{{ task.command }}</span>
+                </div>
+              </td>
+
+              <!-- Dependencies & Description -->
+              <td class="td-depends">
+                <div class="table-meta-cell">
+                  <div v-if="task.depends && task.depends.length > 0" class="task-depends-wrap">
+                    <span v-for="dep in task.depends" :key="dep" class="depends-pill font-mono">
+                      {{ dep }}
+                    </span>
+                  </div>
+                  <span v-if="task.description" class="table-task-desc" :title="task.description">
+                    {{ task.description }}
+                  </span>
+                  <span v-else-if="!task.depends || task.depends.length === 0" style="color: var(--text-muted); opacity: 0.5;">-</span>
+                </div>
+              </td>
+
+              <!-- Actions -->
+              <td class="td-actions">
+                <div class="table-row-actions">
+                  <button
+                    class="run-task-btn small"
+                    :disabled="runningTask !== null"
+                    @click="executeTask(task)"
+                    :title="`运行任务: unirtm run ${task.name}`"
+                  >
+                    <span v-if="runningTask === task.name" style="display: inline-flex; align-items: center; gap: 4px;">
+                      <TechIcon id="workbench:sync" :size="12" class="spin-icon" />
+                      <span>{{ t("tasks.running") || "运行中..." }}</span>
+                    </span>
+                    <span v-else style="display: inline-flex; align-items: center; gap: 4px;">
+                      <TechIcon id="workbench:tasks" :size="12" :colored="false" />
+                      <span>{{ t("tasks.run") || "运行" }}</span>
+                    </span>
+                  </button>
+                  <button
+                    class="action-btn edit-btn"
+                    @click="openEditModal(task)"
+                    :title="t('common.edit') || '编辑'"
+                  >
+                    <TechIcon id="workbench:edit" :size="14" />
+                  </button>
+                  <button
+                    class="action-btn delete-btn"
+                    @click="openDeleteConfirm(task)"
+                    :title="t('common.delete') || '删除'"
+                  >
+                    <TechIcon id="workbench:delete" :size="14" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -254,6 +368,15 @@ const tasks = ref<ProjectTask[]>([]);
 const loading = ref(false);
 const runningTask = ref<string | null>(null);
 const searchKey = ref("");
+
+const viewMode = ref<"cards" | "list">(
+  (localStorage.getItem("unirtm_view_mode_tasks") as "cards" | "list") || "cards"
+);
+
+function setViewMode(mode: "cards" | "list") {
+  viewMode.value = mode;
+  localStorage.setItem("unirtm_view_mode_tasks", mode);
+}
 
 // Task modal state
 const isTaskModalOpen = ref(false);
@@ -970,5 +1093,251 @@ async function executeTask(task: ProjectTask) {
 .close-btn:hover {
   background: var(--card-bg);
   color: var(--text-main);
+}
+
+/* View Mode Switcher Toggle */
+.view-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.view-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.view-mode-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.view-mode-btn.active {
+  color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* High-Density Tasks Table */
+.tasks-list-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.tasks-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.84rem;
+}
+
+.tasks-table thead tr {
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.tasks-table th {
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.tasks-table th.th-actions {
+  text-align: right;
+  width: 140px;
+}
+
+.task-table-row {
+  border-bottom: 1px solid var(--card-border, rgba(255, 255, 255, 0.05));
+  transition: background 0.15s ease;
+}
+
+.task-table-row:last-child {
+  border-bottom: none;
+}
+
+.task-table-row:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.task-table-row.running {
+  border-left: 3px solid var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.06);
+}
+
+.tasks-table td {
+  padding: 0.65rem 1rem;
+  vertical-align: middle;
+}
+
+.tasks-table td.td-actions {
+  text-align: right;
+}
+
+.table-name-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.table-name-cell .task-name {
+  font-weight: 600;
+  color: var(--text-main);
+  letter-spacing: 0.3px;
+}
+
+.table-cmd-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  color: var(--accent-cyan);
+}
+
+.table-meta-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.table-task-desc {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.run-task-btn.small {
+  padding: 3px 9px;
+  font-size: 0.75rem;
+}
+
+.action-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  padding: 4px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.action-btn.delete-btn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+/* Light Theme Overrides for Tasks Table */
+:root[data-theme="light"] .tasks-list-table-wrapper,
+[data-theme="light"] .tasks-list-table-wrapper {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+:root[data-theme="light"] .tasks-table thead tr,
+[data-theme="light"] .tasks-table thead tr {
+  background: #f8fafc;
+  border-bottom-color: #e2e8f0;
+}
+
+:root[data-theme="light"] .tasks-table th,
+[data-theme="light"] .tasks-table th {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .task-table-row,
+[data-theme="light"] .task-table-row {
+  border-bottom-color: #f1f5f9;
+}
+
+:root[data-theme="light"] .task-table-row:hover,
+[data-theme="light"] .task-table-row:hover {
+  background: rgba(2, 132, 199, 0.03);
+}
+
+:root[data-theme="light"] .table-cmd-box,
+[data-theme="light"] .table-cmd-box {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #0284c7;
+}
+
+:root[data-theme="light"] .view-mode-toggle,
+[data-theme="light"] .view-mode-toggle {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+:root[data-theme="light"] .view-mode-btn,
+[data-theme="light"] .view-mode-btn {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .view-mode-btn:hover,
+[data-theme="light"] .view-mode-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .view-mode-btn.active,
+[data-theme="light"] .view-mode-btn.active {
+  background: #ffffff;
+  color: #0284c7;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme="light"] .action-btn,
+[data-theme="light"] .action-btn {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .action-btn:hover,
+[data-theme="light"] .action-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #0f172a;
 }
 </style>
