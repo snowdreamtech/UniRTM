@@ -1904,7 +1904,7 @@ print(json.dumps({
             if (parts.length >= 2) {
               let packageId = "";
               let subpathParts: string[] = [];
-              if (["product", "icons", "colors"].includes(parts[0])) {
+              if (["product", "products", "icon", "icons", "color", "colors"].includes(parts[0])) {
                 packageId = decodeURIComponent(parts[1]);
                 subpathParts = parts.slice(2);
               } else {
@@ -1966,6 +1966,8 @@ print(json.dumps({
                       try {
                         const p = JSON.parse(fs.readFileSync(pkgJson, "utf-8"));
                         const c = p.contributes || {};
+                        const iconPath = p.icon ? p.icon.replace(/^\.\//, "") : "";
+                        const iconUrl = iconPath ? `/api/themes/assets/icons/${d.name}/${iconPath}` : "";
                         for (const ct of c.themes || []) {
                           const id = ct.id || ct.label;
                           if (!colorThemes.some((item) => item.id === id)) {
@@ -1978,6 +1980,7 @@ print(json.dumps({
                               package_id: p.name,
                               version: p.version,
                               relative_path: ct.path,
+                              icon_url: iconUrl,
                             });
                           }
                         }
@@ -1992,6 +1995,7 @@ print(json.dumps({
                               package_id: p.name,
                               version: p.version,
                               relative_path: it.path,
+                              icon_url: iconUrl,
                             });
                           }
                         }
@@ -2006,6 +2010,7 @@ print(json.dumps({
                               package_id: p.name,
                               version: p.version,
                               relative_path: pit.path,
+                              icon_url: iconUrl,
                             });
                           }
                         }

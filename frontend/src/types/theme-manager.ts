@@ -38,6 +38,7 @@ export interface MarketplaceExtension {
   };
   url?: string;
   is_installed?: boolean;
+  is_builtin?: boolean;
   package_id?: string;
 }
 

@@ -600,9 +600,9 @@
           <div
             v-for="item in displayedExtensions"
             :key="(item.namespace || '') + '.' + item.name"
-            class="glass-card theme-card clickable-card"
-            :class="{ 'card-is-active': isExtensionActive(item) }"
-            @click="navigateToDetail(item.namespace || '', item.name)"
+            class="glass-card theme-card"
+            :class="{ 'card-is-active': isExtensionActive(item), 'clickable-card': !item.is_builtin && Boolean(item.namespace) }"
+            @click="!item.is_builtin && navigateToDetail(item.namespace || '', item.name)"
           >
 
             <div class="card-header-row">
@@ -616,7 +616,10 @@
                   @error="handleIconError(`${item.namespace || ''}.${item.name}`)"
                 />
                 <span v-else class="card-fallback-icon">
-                  <TechIcon id="workbench:marketplace" :size="24" />
+                  <TechIcon
+                    :id="getCardDisplayType(item) === 'theme' ? 'workbench:marketplace' : (getCardDisplayType(item) === 'icon' ? 'workbench:folder' : 'workbench:tools')"
+                    :size="24"
+                  />
                 </span>
               </div>
               <div class="card-title-col">
@@ -624,7 +627,8 @@
                   <span class="card-name" :title="item.displayName || item.name">
                     {{ item.displayName || item.name }}
                   </span>
-                  <span class="card-version font-mono">v{{ item.version }}</span>
+                  <span v-if="item.is_builtin" class="badge-builtin-pill">{{ t('network.tag_builtin') || '官方内置' }}</span>
+                  <span v-else class="card-version font-mono">v{{ item.version }}</span>
                   <span v-if="isExtensionActive(item)" class="badge-active-pill">
                     <span class="active-dot"></span>
                     <span>{{ t('marketplace.active') || '生效中' }}</span>
@@ -691,7 +695,7 @@
                   </button>
                   <!-- More Menu for Installed Themes (Uninstall) -->
                   <div
-                    v-if="activeThemeTypeTab === 'installed'"
+                    v-if="activeThemeTypeTab === 'installed' && !item.is_builtin"
                     class="theme-more-menu-wrap"
                     @click.stop
                   >
@@ -751,9 +755,9 @@
               <tr
                 v-for="item in displayedExtensions"
                 :key="(item.namespace || '') + '.' + item.name"
-                class="market-table-row clickable-row"
-                :class="{ 'row-is-active': isExtensionActive(item) }"
-                @click="navigateToDetail(item.namespace || '', item.name)"
+                class="market-table-row"
+                :class="{ 'row-is-active': isExtensionActive(item), 'clickable-row': !item.is_builtin && Boolean(item.namespace) }"
+                @click="!item.is_builtin && navigateToDetail(item.namespace || '', item.name)"
               >
                 <!-- Col: Extension Info -->
                 <td class="td-extension">
@@ -768,13 +772,17 @@
                         @error="handleIconError(`${item.namespace || ''}.${item.name}`)"
                       />
                       <span v-else class="table-fallback-icon">
-                        <TechIcon id="workbench:marketplace" :size="16" />
+                        <TechIcon
+                          :id="getCardDisplayType(item) === 'theme' ? 'workbench:marketplace' : (getCardDisplayType(item) === 'icon' ? 'workbench:folder' : 'workbench:tools')"
+                          :size="16"
+                        />
                       </span>
                     </div>
                     <div class="table-ext-info">
                       <div class="table-ext-title-row">
                         <span class="ext-name">{{ item.displayName || item.name }}</span>
-                        <span class="ext-ver font-mono">v{{ item.version }}</span>
+                        <span v-if="item.is_builtin" class="badge-builtin-pill">{{ t('network.tag_builtin') || '官方内置' }}</span>
+                        <span v-else class="ext-ver font-mono">v{{ item.version }}</span>
                         <span v-if="isExtensionActive(item)" class="badge-active-pill small">
                           <span class="active-dot"></span>
                           <span>{{ t('marketplace.active') || '生效中' }}</span>
@@ -850,7 +858,7 @@
                       </button>
                       <!-- More Menu for Installed Themes (Uninstall) -->
                       <div
-                        v-if="activeThemeTypeTab === 'installed'"
+                        v-if="activeThemeTypeTab === 'installed' && !item.is_builtin"
                         class="theme-more-menu-wrap"
                         @click.stop
                       >
@@ -897,7 +905,7 @@
         </div>
 
         <!-- Pagination Bar -->
-        <div v-if="selectedFilter !== 'installed' && mpTotalPages > 1" class="market-pagination-bar glass-card">
+        <div v-if="activeThemeTypeTab !== 'installed' && mpTotalPages > 1" class="market-pagination-bar glass-card">
           <div class="pagination-summary">
             <span>{{ t('marketplace.total_count', { count: mpTotalSize }) || `共收录 ${mpTotalSize} 款主题与图标包` }}</span>
             <span class="pagination-divider">•</span>
@@ -1309,6 +1317,66 @@ const installedExtensions = computed<MarketplaceExtension[]>(() => {
   const list: MarketplaceExtension[] = [];
   const seen = new Set<string>();
 
+  const setiSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%230284c7' d='M6 6a2 2 0 0 1 2-2h8l4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6z'/%3E%3Cpath fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M13 13l-3 3 3 3m6-6l3 3-3 3'/%3E%3C/svg%3E";
+  const codiconsSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231e293b'/%3E%3Cpath fill='%2338bdf8' d='M16 4l2.5 7.5L26 14l-7.5 2.5L16 24l-2.5-7.5L6 14l7.5-2.5z'/%3E%3Cpath fill='%230284c7' d='M23 20l1 3 3 1-3 1-1 3-1-3-3-1 3-1z'/%3E%3C/svg%3E";
+
+  // System Built-in themes (VS Code standard built-in items)
+  const builtinItems: MarketplaceExtension[] = [
+    {
+      namespace: "vscode",
+      name: "theme-defaults",
+      displayName: "UniRTM (默认) 配色主题",
+      version: "1.0.0",
+      description: "UniRTM 系统内置配色主题 (兼容 VS Code 标准色彩规范，支持浅色与深色模式)",
+      downloadCount: 0,
+      averageRating: 5.0,
+      is_installed: true,
+      is_builtin: true,
+      package_id: "vscode.theme-defaults",
+      files: {
+        download: "",
+        icon: "/logo.svg",
+      },
+    },
+    {
+      namespace: "vscode",
+      name: "theme-seti",
+      displayName: "Seti UI 文件图标",
+      version: "1.0.0",
+      description: "Visual Studio Code 官方内置默认文件图标主题",
+      downloadCount: 0,
+      averageRating: 5.0,
+      is_installed: true,
+      is_builtin: true,
+      package_id: "vscode.theme-seti",
+      files: {
+        download: "",
+        icon: setiSvg,
+      },
+    },
+    {
+      namespace: "vscode",
+      name: "theme-codicons",
+      displayName: "Codicons 界面图标",
+      version: "1.0.0",
+      description: "Visual Studio Code 官方内置默认界面产品图标主题",
+      downloadCount: 0,
+      averageRating: 5.0,
+      is_installed: true,
+      is_builtin: true,
+      package_id: "vscode.theme-codicons",
+      files: {
+        download: "",
+        icon: codiconsSvg,
+      },
+    },
+  ];
+
+  for (const b of builtinItems) {
+    list.push(b);
+    seen.add((b.package_id || b.name).toLowerCase());
+  }
+
   const processThemeItem = (themeItem: any, fallbackDesc: string) => {
     if (themeItem.is_builtin || !themeItem.package_id) return;
     const pkg = themeItem.package_id.toLowerCase();
@@ -1319,8 +1387,22 @@ const installedExtensions = computed<MarketplaceExtension[]>(() => {
       (s) => (s.package_id && s.package_id.toLowerCase() === pkg) ||
              s.name.toLowerCase() === pkg
     );
+
+    const resolvedIcon =
+      match?.files?.icon ||
+      (themeItem as any).icon_url ||
+      (themeItem as any).icon ||
+      "";
+
     if (match) {
-      list.push({ ...match, is_installed: true });
+      list.push({
+        ...match,
+        is_installed: true,
+        files: {
+          download: match.files?.download || "",
+          icon: match.files?.icon || resolvedIcon,
+        },
+      });
     } else {
       list.push({
         namespace: themeItem.package_id.includes(".") ? themeItem.package_id.split(".")[0] : "",
@@ -1334,7 +1416,7 @@ const installedExtensions = computed<MarketplaceExtension[]>(() => {
         package_id: themeItem.package_id,
         files: {
           download: "",
-          icon: "",
+          icon: resolvedIcon,
         },
       });
     }
@@ -1533,19 +1615,31 @@ async function onChangePageSize(size: number) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function hasInstalledColorTheme(item: { package_id?: string; name: string }): boolean {
+function hasInstalledColorTheme(item: { package_id?: string; name: string; is_builtin?: boolean }): boolean {
+  if (item.is_builtin) {
+    const pkg = (item.package_id || item.name || "").toLowerCase();
+    return pkg.includes("color") || pkg.includes("default");
+  }
   const pkgId = (item.package_id || item.name || "").toLowerCase();
   const name = (item.name || "").toLowerCase();
   return colorThemes.value.some((c) => !c.is_builtin && ((c.package_id && c.package_id.toLowerCase() === pkgId) || c.id.toLowerCase() === name || (c.package_id && c.package_id.toLowerCase() === name)));
 }
 
-function hasInstalledIconTheme(item: { package_id?: string; name: string }): boolean {
+function hasInstalledIconTheme(item: { package_id?: string; name: string; is_builtin?: boolean }): boolean {
+  if (item.is_builtin) {
+    const pkg = (item.package_id || item.name || "").toLowerCase();
+    return pkg.includes("seti") || pkg.includes("icon");
+  }
   const pkgId = (item.package_id || item.name || "").toLowerCase();
   const name = (item.name || "").toLowerCase();
   return iconThemes.value.some((i) => !i.is_builtin && ((i.package_id && i.package_id.toLowerCase() === pkgId) || i.id.toLowerCase() === name || (i.package_id && i.package_id.toLowerCase() === name)));
 }
 
-function hasInstalledProductIconTheme(item: { package_id?: string; name: string }): boolean {
+function hasInstalledProductIconTheme(item: { package_id?: string; name: string; is_builtin?: boolean }): boolean {
+  if (item.is_builtin) {
+    const pkg = (item.package_id || item.name || "").toLowerCase();
+    return pkg.includes("codicon") || pkg.includes("product");
+  }
   const pkgId = (item.package_id || item.name || "").toLowerCase();
   const name = (item.name || "").toLowerCase();
   return productIconThemes.value.some((p) => !p.is_builtin && ((p.package_id && p.package_id.toLowerCase() === pkgId) || p.id.toLowerCase() === name || (p.package_id && p.package_id.toLowerCase() === name)));
@@ -1568,6 +1662,12 @@ function getExtensionType(item: MarketplaceExtension): "product_icon" | "icon" |
   const name = (item.name || "").toLowerCase();
   const ns = (item.namespace || "").toLowerCase();
   const fullId = `${ns}.${name}`.toLowerCase();
+
+  if (item.is_builtin) {
+    if (pkgId.includes("codicon") || name.includes("codicon")) return "product_icon";
+    if (pkgId.includes("seti") || name.includes("seti")) return "icon";
+    return "theme";
+  }
 
   // 1. Calculate count of each contributed type from locally installed themes
   const colorCount = colorThemes.value.filter((c) => !c.is_builtin && ((c.package_id && c.package_id.toLowerCase() === pkgId) || c.id.toLowerCase() === name || (c.package_id && c.package_id.toLowerCase() === fullId))).length;
@@ -1651,8 +1751,8 @@ function getExtensionType(item: MarketplaceExtension): "product_icon" | "icon" |
   return "theme";
 }
 
-function isItemInstalled(item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean }): boolean {
-  if (item.is_installed) return true;
+function isItemInstalled(item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean; is_builtin?: boolean }): boolean {
+  if (item.is_installed || item.is_builtin) return true;
   const pkgId = (item.package_id || item.name || "").toLowerCase();
   const name = (item.name || "").toLowerCase();
   const ns = (item.namespace || "").toLowerCase();
@@ -1687,7 +1787,7 @@ function isItemInstalled(item: { namespace?: string; name: string; displayName?:
   return isProduct;
 }
 
-function isColorThemeActive(item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean }): boolean {
+function isColorThemeActive(item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean; is_builtin?: boolean }): boolean {
   if (!isItemInstalled(item) || !activeColorTheme.value) return false;
   const actColor = activeColorTheme.value.toLowerCase();
   const pkgId = (item.package_id || item.name || "").toLowerCase();
@@ -1695,6 +1795,10 @@ function isColorThemeActive(item: { namespace?: string; name: string; displayNam
   const ns = (item.namespace || "").toLowerCase();
   const fullId = `${ns}.${name}`.toLowerCase();
   const displayName = (item.displayName || "").toLowerCase();
+
+  if (item.is_builtin && (pkgId.includes("default") || pkgId.includes("color") || name.includes("theme-defaults"))) {
+    return actColor === "default" || actColor === "dark" || actColor === "light" || actColor.includes("unirtm");
+  }
 
   if (actColor === pkgId || actColor === name || actColor === fullId || actColor === displayName) return true;
 
@@ -1709,7 +1813,7 @@ function isColorThemeActive(item: { namespace?: string; name: string; displayNam
   });
 }
 
-function isFileIconActive(item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean }): boolean {
+function isFileIconActive(item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean; is_builtin?: boolean }): boolean {
   if (!isItemInstalled(item) || !activeIconTheme.value) return false;
   const actIcon = activeIconTheme.value.toLowerCase();
   const pkgId = (item.package_id || item.name || "").toLowerCase();
@@ -1717,6 +1821,10 @@ function isFileIconActive(item: { namespace?: string; name: string; displayName?
   const ns = (item.namespace || "").toLowerCase();
   const fullId = `${ns}.${name}`.toLowerCase();
   const displayName = (item.displayName || "").toLowerCase();
+
+  if (item.is_builtin && (pkgId.includes("seti") || name.includes("seti"))) {
+    return actIcon === "seti" || actIcon.includes("seti");
+  }
 
   if (actIcon === pkgId || actIcon === name || actIcon === fullId || actIcon === displayName) return true;
 
@@ -1731,7 +1839,7 @@ function isFileIconActive(item: { namespace?: string; name: string; displayName?
   });
 }
 
-function isProductIconActive(item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean }): boolean {
+function isProductIconActive(item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean; is_builtin?: boolean }): boolean {
   if (!isItemInstalled(item) || !activeProductIconTheme.value) return false;
   const actProd = activeProductIconTheme.value.toLowerCase();
   const pkgId = (item.package_id || item.name || "").toLowerCase();
@@ -1739,6 +1847,10 @@ function isProductIconActive(item: { namespace?: string; name: string; displayNa
   const ns = (item.namespace || "").toLowerCase();
   const fullId = `${ns}.${name}`.toLowerCase();
   const displayName = (item.displayName || "").toLowerCase();
+
+  if (item.is_builtin && (pkgId.includes("codicon") || name.includes("codicon"))) {
+    return actProd === "codicons" || actProd.includes("codicon");
+  }
 
   if (actProd === pkgId || actProd === name || actProd === fullId || actProd === displayName) return true;
 
@@ -1754,19 +1866,26 @@ function isProductIconActive(item: { namespace?: string; name: string; displayNa
 }
 
 function isExtensionActive(
-  item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean },
+  item: { namespace?: string; name: string; displayName?: string; package_id?: string; is_installed?: boolean; is_builtin?: boolean },
   explicitType?: "product_icon" | "icon" | "theme"
 ): boolean {
   if (!isItemInstalled(item)) return false;
 
-  const targetType = explicitType || getCardDisplayType(item as MarketplaceExtension);
-  if (targetType === "product_icon") {
+  if (explicitType === "product_icon") return isProductIconActive(item);
+  if (explicitType === "icon") return isFileIconActive(item);
+  if (explicitType === "theme") return isColorThemeActive(item);
+
+  if (activeThemeTypeTab.value === "product_icon" || (activeThemeTypeTab.value === "installed" && selectedInstalledSubFilter.value === "product_icon")) {
     return isProductIconActive(item);
   }
-  if (targetType === "icon") {
+  if (activeThemeTypeTab.value === "icon" || (activeThemeTypeTab.value === "installed" && selectedInstalledSubFilter.value === "icon")) {
     return isFileIconActive(item);
   }
-  return isColorThemeActive(item);
+  if (activeThemeTypeTab.value === "color" || (activeThemeTypeTab.value === "installed" && selectedInstalledSubFilter.value === "color")) {
+    return isColorThemeActive(item);
+  }
+
+  return isColorThemeActive(item) || isFileIconActive(item) || isProductIconActive(item);
 }
 
 function isSubColorActive(label?: string, id?: string): boolean {
@@ -2037,6 +2156,23 @@ async function onApplyTheme(item: MarketplaceExtension) {
     // If local themes list isn't populated yet, fetch first
     if (colorThemes.value.length <= 4 && iconThemes.value.length <= 2) {
       await fetchThemes();
+    }
+
+    if (item.is_builtin) {
+      const pkgID = (item.package_id || item.name || "").toLowerCase();
+      if (pkgID.includes("codicon") || item.name.includes("codicon")) {
+        await setActiveTheme(undefined, undefined, undefined, "codicons");
+      } else if (pkgID.includes("seti") || item.name.includes("seti")) {
+        await setActiveTheme(undefined, "seti");
+      } else {
+        await setActiveTheme("default", undefined);
+      }
+      await fetchThemes();
+      const targetName = item.displayName || item.name;
+      feedbackMsg.value = `已启用主题: ${targetName}`;
+      feedbackIsError.value = false;
+      showToast(`已启用并应用主题: ${targetName}`, "success");
+      return;
     }
 
     const pkgID = (item.package_id || item.name || "").toLowerCase();
@@ -2941,6 +3077,20 @@ const nativePlugins = ref<PluginItem[]>([
   border-radius: 4px;
 }
 
+.badge-builtin-pill {
+  font-size: 0.7rem;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.15);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: var(--text-secondary, #94a3b8);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
 .badge-active-pill {
   font-size: 0.72rem;
   padding: 2px 8px;
@@ -3132,6 +3282,13 @@ const nativePlugins = ref<PluginItem[]>([
   background: rgba(2, 132, 199, 0.12);
   border-color: rgba(2, 132, 199, 0.35);
   font-weight: 600;
+}
+
+:root[data-theme="light"] .badge-builtin-pill,
+[data-theme="light"] .badge-builtin-pill {
+  background: rgba(100, 116, 139, 0.1);
+  border-color: rgba(100, 116, 139, 0.25);
+  color: #475569;
 }
 
 :root[data-theme="light"] .badge-active-pill,

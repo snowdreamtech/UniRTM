@@ -198,22 +198,6 @@
           </div>
         </div>
 
-        <!-- Card Meta Info: Local Installed Count & Config Source -->
-        <div class="runtime-card-meta">
-          <div class="meta-item">
-            <span class="meta-label">{{ t("runtimes.installed") || "已安装" }}:</span>
-            <span class="meta-value font-mono">
-              {{ rt.installed_versions?.length || 0 }} {{ t("runtimes.count_installed_suffix") || "个版本" }}
-            </span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">来源:</span>
-            <span class="meta-value font-mono" :title="rt.source || (currentScope === 'workspace' ? '.unirtm.toml' : '~/.unirtm')">
-              {{ rt.source || (currentScope === 'workspace' ? '.unirtm.toml' : '~/.unirtm') }}
-            </span>
-          </div>
-        </div>
-
         <!-- Card Actions: Primary [切换] [安装] + More Menu [···] (锁定, 删除) -->
         <div class="runtime-card-footer">
           <button
