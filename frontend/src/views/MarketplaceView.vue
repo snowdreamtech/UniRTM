@@ -49,13 +49,13 @@
           <div class="hero-left">
             <div class="hero-icon-box">
               <img
-                v-if="activeDetail.files && activeDetail.files.icon"
-                :src="activeDetail.files.icon"
+                v-if="hasValidIcon(activeDetail)"
+                :src="activeDetail.files!.icon"
                 class="hero-img-icon"
                 alt="icon"
-                @error="(e: any) => { if (e && e.target) e.target.style.display = 'none'; }"
+                @error="handleIconError(`${activeDetail.namespace || ''}.${activeDetail.name}`)"
               />
-              <span class="hero-fallback-icon">
+              <span v-else class="hero-fallback-icon">
                 <TechIcon id="workbench:marketplace" :size="32" />
               </span>
             </div>
@@ -617,14 +617,14 @@
             <div class="card-header-row">
               <div class="card-icon-wrap">
                 <img
-                  v-if="item.files && item.files.icon"
-                  :src="item.files.icon"
+                  v-if="hasValidIcon(item)"
+                  :src="item.files!.icon"
                   class="card-img-icon"
                   loading="lazy"
                   alt="icon"
-                  @error="(e: any) => { if (e && e.target) e.target.style.display = 'none'; }"
+                  @error="handleIconError(`${item.namespace || ''}.${item.name}`)"
                 />
-                <span class="card-fallback-icon">
+                <span v-else class="card-fallback-icon">
                   <TechIcon id="workbench:marketplace" :size="24" />
                 </span>
               </div>
@@ -738,15 +738,15 @@
                   <div class="table-ext-cell">
                     <div class="table-icon-wrap">
                       <img
-                        v-if="item.files && item.files.icon"
-                        :src="item.files.icon"
+                        v-if="hasValidIcon(item)"
+                        :src="item.files!.icon"
                         class="table-img-icon"
                         loading="lazy"
                         alt="icon"
-                        @error="(e: any) => { if (e && e.target) e.target.style.display = 'none'; }"
+                        @error="handleIconError(`${item.namespace || ''}.${item.name}`)"
                       />
-                      <span class="table-fallback-icon">
-                        <TechIcon id="workbench:marketplace" :size="18" />
+                      <span v-else class="table-fallback-icon">
+                        <TechIcon id="workbench:marketplace" :size="16" />
                       </span>
                     </div>
                     <div class="table-ext-info">
@@ -1108,6 +1108,21 @@ function setViewMode(mode: "cards" | "list") {
 const activeDetailTab = ref<"readme" | "contributes" | "changelog">("readme");
 const isUninstalling = ref<boolean>(false);
 const changelogContent = ref<string>("");
+
+// Failed icons tracking to ensure fallback and img are strictly mutually exclusive
+const failedIconKeys = ref<Set<string>>(new Set());
+
+function handleIconError(key: string) {
+  if (key) {
+    failedIconKeys.value.add(key);
+  }
+}
+
+function hasValidIcon(item: { namespace?: string; name?: string; files?: { icon?: string } } | null | undefined): boolean {
+  if (!item || !item.files?.icon) return false;
+  const key = `${item.namespace || ""}.${item.name || ""}`;
+  return !failedIconKeys.value.has(key);
+}
 
 // --- Theme Marketplace Composable Integration ---
 const {
@@ -2621,21 +2636,26 @@ const nativePlugins = ref<PluginItem[]>([
   position: relative;
   flex-shrink: 0;
   font-size: 1.4rem;
+  padding: 4px;
+  box-sizing: border-box;
 }
 
 .card-img-icon {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 1;
+  object-fit: contain;
+  border-radius: 6px;
+  display: block;
 }
 
 .card-fallback-icon {
   font-size: 1.3rem;
-  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--text-muted);
 }
 
 .card-title-col {
@@ -4117,21 +4137,36 @@ const nativePlugins = ref<PluginItem[]>([
 }
 
 .table-icon-wrap {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 6px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.08));
   flex-shrink: 0;
+  box-sizing: border-box;
+  padding: 2px;
 }
 
 .table-img-icon {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  border-radius: 4px;
+  display: block;
+}
+
+.table-fallback-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--text-muted);
+  opacity: 0.7;
 }
 
 .table-ext-info {
