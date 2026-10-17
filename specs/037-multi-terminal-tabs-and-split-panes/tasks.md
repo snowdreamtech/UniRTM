@@ -1,6 +1,6 @@
 # 任务分解与执行清单 (Tasks)
 
-- [ ] **Task 1: 前端多终端会话与拆分状态管理 (Composable & Tests)**
+- [x] **Task 1: 前端多终端会话与拆分状态管理 (Composable & Tests)**
   - 实现 `frontend/src/composables/useTerminalSessions.ts`：
     - 定义 `TerminalPane`、`TerminalSession`、`SplitDirection` 类型；
     - 支持新建终端会话 `createSession`（以系统默认或指定 Shell）；
