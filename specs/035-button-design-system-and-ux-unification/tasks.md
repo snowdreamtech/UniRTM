@@ -6,7 +6,7 @@
   - 支持 `:active` 轻微物理按压反馈（`scale(0.96)`）。
   - *提交命名*：`style(theme): establish unified button design system classes in theme.css`
 
-- [ ] **Task 2: 环境变量模块操作统一与裸字符淘汰 (Environments)**
+- [x] **Task 2: 环境变量模块操作统一与裸字符淘汰 (Environments)**
   - 重构 `frontend/src/views/EnvironmentsView.vue`：
     - 将 Profile 标签栏中的 `✕` 替换为标准 TechIcon；
     - 将卡片与列表中的 `↺` 恢复基准值按钮升级为 `.btn-icon.success` 并使用标准图标；

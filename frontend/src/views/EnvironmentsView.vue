@@ -73,11 +73,11 @@
           </button>
           <button
             type="button"
-            class="btn-delete-profile"
+            class="btn btn-icon danger btn-delete-profile"
             :title="t('environments.delete_profile') || '删除此环境配置'"
             @click.stop="confirmDeleteProfile(p)"
           >
-            ✕
+            <TechIcon id="workbench:close" :size="11" />
           </button>
         </div>
 
@@ -236,21 +236,21 @@
             <div class="card-btn-group">
               <button
                 v-if="item.is_override"
-                class="action-btn restore-btn"
+                class="btn btn-icon success restore-btn"
                 @click="restoreBaseValue(item.name)"
                 :title="t('environments.restore_base') || '恢复基准值'"
               >
-                ↺
+                <TechIcon id="workbench:sync" :size="13" />
               </button>
               <button
-                class="action-btn edit-btn"
+                class="btn btn-icon accent edit-btn"
                 @click="openEditModal(item)"
                 :title="t('environments.edit_btn') || '编辑'"
               >
                 <TechIcon id="workbench:edit" :size="14" />
               </button>
               <button
-                class="action-btn delete-btn"
+                class="btn btn-icon danger delete-btn"
                 @click="confirmDelete(item.name)"
                 :title="t('environments.delete_btn') || '删除'"
               >
@@ -392,21 +392,21 @@
                 <div class="table-row-actions">
                   <button
                     v-if="item.is_override"
-                    class="action-btn restore-btn"
+                    class="btn btn-icon success restore-btn"
                     @click="restoreBaseValue(item.name)"
                     :title="t('environments.restore_base') || '恢复基准值'"
                   >
-                    ↺
+                    <TechIcon id="workbench:sync" :size="13" />
                   </button>
                   <button
-                    class="action-btn edit-btn"
+                    class="btn btn-icon accent edit-btn"
                     @click="openEditModal(item)"
                     :title="t('environments.edit_btn') || '编辑'"
                   >
                     <TechIcon id="workbench:edit" :size="14" />
                   </button>
                   <button
-                    class="action-btn delete-btn"
+                    class="btn btn-icon danger delete-btn"
                     @click="confirmDelete(item.name)"
                     :title="t('environments.delete_btn') || '删除'"
                   >

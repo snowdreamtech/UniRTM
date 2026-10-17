@@ -14,7 +14,9 @@
             </span>
           </div>
         </div>
-        <button class="close-btn" @click="$emit('close')" :title="t('common.close') || '关闭'">✕</button>
+        <button class="btn btn-icon close-btn" @click="$emit('close')" :title="t('common.close') || '关闭'">
+          <TechIcon id="workbench:close" :size="14" />
+        </button>
       </div>
 
       <!-- Modal Body -->
@@ -39,7 +41,7 @@
               />
               <button
                 type="button"
-                class="btn-uppercase"
+                class="btn btn-secondary btn-uppercase"
                 @click="form.key = form.key.toUpperCase()"
                 :title="t('environments.to_uppercase') || '转换为全大写'"
               >
@@ -87,7 +89,7 @@
               <button
                 v-if="isSensitiveKey"
                 type="button"
-                class="btn-eye-toggle"
+                class="btn btn-icon btn-eye-toggle"
                 @click="isValueRevealed = !isValueRevealed"
                 :title="isValueRevealed ? (t('environments.conceal') || '脱密隐藏') : (t('environments.reveal') || '显示明文')"
               >
@@ -100,7 +102,7 @@
           <div class="modal-footer">
             <button
               type="button"
-              class="btn-cancel"
+              class="btn btn-secondary btn-cancel"
               @click="$emit('close')"
               :disabled="saving"
             >
@@ -108,7 +110,7 @@
             </button>
             <button
               type="submit"
-              class="btn-submit"
+              class="btn btn-primary btn-submit"
               :disabled="saving || !form.key.trim()"
             >
               <TechIcon v-if="saving" id="workbench:sync" :size="14" class="spin-icon" />
