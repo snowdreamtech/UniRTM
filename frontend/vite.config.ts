@@ -4,7 +4,7 @@ import { fileURLToPath, URL } from "node:url";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync, spawnSync, exec } from "node:child_process";
 import { Buffer } from "node:buffer";
 
 function findUnirtmBinary(rootDir: string): string {
@@ -2305,13 +2305,12 @@ print(json.dumps({
                   return;
                 }
 
-                const childProcess = require("child_process");
                 const home = os.homedir();
                 const unirtmBin = path.join(home, ".unirtm", "bin");
                 const unirtmShims = path.join(home, ".unirtm", "shims");
                 const customPath = `${unirtmShims}:${unirtmBin}:${process.env.PATH || ""}`;
 
-                childProcess.exec(command, {
+                exec(command, {
                   shell: shell,
                   cwd: cwd,
                   env: { ...process.env, PATH: customPath },

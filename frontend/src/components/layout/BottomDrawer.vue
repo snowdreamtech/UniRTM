@@ -687,7 +687,11 @@ async function handlePaneRunCommand(pane: TerminalPane) {
         });
       }
     } else {
-      pane.lines.push({ type: "error", text: "Failed to communicate with terminal executor." });
+      const errData = await res.json().catch(() => ({}));
+      pane.lines.push({
+        type: "error",
+        text: errData.error || `Failed to communicate with terminal executor (${res.status} ${res.statusText}).`,
+      });
     }
   } catch (err: any) {
     pane.lines.push({ type: "error", text: err.message || "Command execution error" });
