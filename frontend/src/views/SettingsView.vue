@@ -239,48 +239,24 @@
               </div>
             </div>
 
-            <!-- Setting: Browser -->
+            <!-- Setting: Browser (User Scope Only) -->
             <div
+              v-if="activeScope === 'user'"
               class="setting-item browser-setting-item"
               :class="{
-                highlight: matchesSearch('browser'),
-                'is-restricted': activeScope === 'workspace'
+                highlight: matchesSearch('browser')
               }"
             >
               <div class="setting-meta">
-                <div class="title-with-badge">
-                  <span class="setting-title">{{ t('settings.browser_title') || '浏览器' }}</span>
-                  <span v-if="activeScope === 'workspace'" class="badge-global-only">
-                    {{ t('settings.scope_global_only') || '仅限用户' }}
-                  </span>
-                </div>
+                <span class="setting-title">{{ t('settings.browser_title') || '浏览器' }}</span>
                 <p class="setting-desc">
                   {{ t('settings.browser_desc') || '启动工作台时调用的浏览器。' }}
                 </p>
-
-                <!-- Workspace Scope Warning Banner -->
-                <div v-if="activeScope === 'workspace'" class="scope-notice-banner warning">
-                  <div class="notice-icon">
-                    <TechIcon id="workbench:warning" :size="16" />
-                  </div>
-                  <div class="notice-body">
-                    <strong>{{ t('settings.scope_global_only_banner') || '无法在工作区中配置浏览器' }}</strong>
-                    <p>
-                      {{ t('settings.scope_global_only_desc') || '浏览器偏好属于个人系统环境，无法在工作区配置，以避免污染团队共享环境。' }}
-                    </p>
-                    <button class="btn-switch-scope" @click="switchScope('user', 'settings.browser')">
-                      {{ t('settings.switch_to_user') || '在用户中编辑' }} ↗
-                    </button>
-                  </div>
-                </div>
               </div>
 
               <!-- Browser Controls -->
               <div class="setting-control">
-                <div v-if="activeScope === 'workspace'" class="control-disabled-notice">
-                  <span class="font-mono text-muted">{{ t('settings.disabled_in_workspace') || '在工作区中禁用' }}</span>
-                </div>
-                <div v-else class="browser-input-box">
+                <div class="browser-input-box">
                   <CustomSelect
                     :model-value="selectedBrowserPreset"
                     :options="browserPresetOptions"
@@ -1332,7 +1308,7 @@ import TechIcon from "../components/common/TechIcon.vue";
 
 const router = useRouter();
 const { showToast } = useToast();
-const { activeScope, setScope } = useAppScope();
+const { activeScope } = useAppScope();
 
 function navigateToMarketplace(tab = "themes") {
   router.push({ path: "/marketplace", query: { tab } });
@@ -2265,17 +2241,6 @@ function scrollToCategory(catId: string) {
   const target = document.getElementById(`section-${catId}`);
   if (target) {
     target.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-}
-
-function switchScope(scope: "user" | "workspace", scrollToId?: string) {
-  setScope(scope, router);
-  syncFieldsFromConfig();
-  loadNetworkStatus();
-  if (scrollToId) {
-    setTimeout(() => {
-      scrollToCategory("general");
-    }, 100);
   }
 }
 
