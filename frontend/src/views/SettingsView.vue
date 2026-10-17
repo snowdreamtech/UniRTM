@@ -585,7 +585,131 @@
           </div>
         </section>
 
-        <!-- 3. Network & Mirrors -->
+        <!-- 3. Tool Version Aliases -->
+        <section
+          v-show="isCategoryVisible('aliases')"
+          id="section-aliases"
+          class="settings-category-section glass-card"
+        >
+          <div class="section-header">
+            <div class="section-title-wrap">
+              <span class="section-icon">
+                <TechIcon id="workbench:tag" :size="20" />
+              </span>
+              <div>
+                <h2>{{ t('settings.cat_aliases') || '工具版本别名 (Aliases)' }}</h2>
+                <span class="section-sub">{{ t('settings.cat_aliases_sub') || '为常用工具定义语义化版本快捷映射 (如 node.lts -> 20, python.stable -> 3.12)' }}</span>
+              </div>
+            </div>
+            <div class="aliases-header-actions" style="display: flex; gap: 8px; align-items: center;">
+              <button
+                type="button"
+                class="btn-add-alias"
+                @click="openAddAliasModal()"
+              >
+                <TechIcon id="workbench:add" :size="13" />
+                <span>{{ t('settings.aliases_add_btn') || '添加别名' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Aliases Container -->
+          <div class="aliases-container">
+            <div v-if="isLoadingAliases" class="aliases-loading">
+              <span class="spinner-small"></span>
+              <span>{{ t('settings.aliases_loading') || '正在加载工具版本别名...' }}</span>
+            </div>
+
+            <!-- Aliases List by Tool Group -->
+            <div v-else-if="toolNamesWithAliases.length > 0" class="aliases-groups-list">
+              <div
+                v-for="tool in toolNamesWithAliases"
+                :key="tool"
+                class="alias-tool-card"
+                :class="{ 'highlight': matchesSearch(tool) }"
+              >
+                <div class="alias-tool-header">
+                  <div class="tool-info-left">
+                    <span class="tool-icon-wrapper">
+                      <TechIcon :id="tool" :size="18" />
+                    </span>
+                    <span class="tool-name font-mono">{{ tool }}</span>
+                    <span class="alias-count-badge">{{ Object.keys(aliasesData[tool] || {}).length }}</span>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn-tool-add-alias"
+                    :title="t('settings.aliases_add_for_tool') || '为此工具添加别名'"
+                    @click="openAddAliasModal(tool)"
+                  >
+                    <TechIcon id="workbench:add" :size="12" />
+                    <span>{{ t('settings.aliases_add_short') || '添加' }}</span>
+                  </button>
+                </div>
+
+                <div class="alias-chips-grid">
+                  <div
+                    v-for="(targetVersion, aliasName) in aliasesData[tool]"
+                    :key="aliasName"
+                    class="alias-chip-item"
+                    :class="{ 'highlight': matchesSearch(String(aliasName)) || matchesSearch(String(targetVersion)) }"
+                  >
+                    <div class="alias-chip-main">
+                      <span class="alias-tag-name font-mono">{{ aliasName }}</span>
+                      <span class="alias-arrow">→</span>
+                      <span class="alias-target-version font-mono" :title="String(targetVersion)">{{ targetVersion }}</span>
+                    </div>
+                    <div class="alias-chip-actions">
+                      <button
+                        type="button"
+                        class="btn-chip-action"
+                        :title="t('common.copy') || '复制目标版本'"
+                        @click="copyCommand(String(targetVersion))"
+                      >
+                        <TechIcon id="workbench:edit" :size="11" />
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-chip-action"
+                        :title="t('common.edit') || '编辑别名'"
+                        @click="openEditAliasModal(tool, String(aliasName), String(targetVersion))"
+                      >
+                        <TechIcon id="workbench:edit" :size="11" />
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-chip-action action-delete"
+                        :title="t('common.delete') || '删除别名'"
+                        @click="deleteAlias(tool, String(aliasName))"
+                      >
+                        <TechIcon id="workbench:close" :size="11" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else class="aliases-empty-state">
+              <div class="empty-icon-wrap">
+                <TechIcon id="workbench:tag" :size="24" />
+              </div>
+              <h4>{{ t('settings.aliases_empty_title') || '暂无工具版本别名' }}</h4>
+              <p>{{ t('settings.aliases_empty_desc') || '通过版本别名，您可以为常用工具设置语义化版本映射，例如将 lts 映射到 20 或 stable 映射到 3.12。' }}</p>
+              <button
+                type="button"
+                class="btn-empty-add"
+                @click="openAddAliasModal()"
+              >
+                <TechIcon id="workbench:add" :size="13" />
+                <span>{{ t('settings.aliases_empty_btn') || '添加首个别名' }}</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. Network & Mirrors -->
         <section
           v-show="isCategoryVisible('network')"
           id="section-network"
@@ -1291,6 +1415,77 @@
             </div>
           </div>
         </div>
+
+        <!-- Alias Add/Edit Modal Dialog -->
+        <div v-if="showAliasModal" class="modal-backdrop" @click.self="showAliasModal = false">
+          <div class="modal-dialog glass-card">
+            <div class="modal-header">
+              <div class="modal-title-group">
+                <span class="modal-icon">
+                  <TechIcon id="workbench:tag" :size="20" />
+                </span>
+                <div>
+                  <h4>{{ isEditingAlias ? (t('settings.aliases_modal_edit_title') || '编辑版本别名') : (t('settings.aliases_modal_add_title') || '添加版本别名') }}</h4>
+                  <span class="modal-subtitle">{{ t('settings.aliases_modal_sub') || '指定工具、别名标识及指向的目标版本' }}</span>
+                </div>
+              </div>
+              <button class="btn-modal-close" @click="showAliasModal = false">✕</button>
+            </div>
+            <div class="modal-body">
+              <div class="modal-field">
+                <label class="modal-label">{{ t('settings.aliases_form_tool') || '工具名称 (Tool)' }}</label>
+                <CustomSelect
+                  v-if="!isEditingAlias"
+                  :model-value="aliasFormTool"
+                  :options="standardToolPresets"
+                  @change="(val) => aliasFormTool = val"
+                />
+                <input
+                  v-if="aliasFormTool === 'custom' || isEditingAlias"
+                  v-model="aliasFormCustomTool"
+                  type="text"
+                  class="modal-input font-mono"
+                  style="margin-top: 6px;"
+                  :placeholder="t('settings.aliases_form_tool_placeholder') || '输入工具名称 (例如 node, python, go)'"
+                  :disabled="isEditingAlias"
+                />
+              </div>
+
+              <div class="modal-field">
+                <label class="modal-label">{{ t('settings.aliases_form_name') || '别名名称 (Alias Name)' }}</label>
+                <input
+                  v-model="aliasFormName"
+                  type="text"
+                  class="modal-input font-mono"
+                  :placeholder="t('settings.aliases_form_name_placeholder') || '例如: lts, stable, latest, nightly'"
+                  :disabled="isEditingAlias"
+                />
+              </div>
+
+              <div class="modal-field">
+                <label class="modal-label">{{ t('settings.aliases_form_version') || '目标版本 (Target Version)' }}</label>
+                <input
+                  v-model="aliasFormVersion"
+                  type="text"
+                  class="modal-input font-mono"
+                  :placeholder="t('settings.aliases_form_version_placeholder') || '例如: 20, 3.12, 1.22.0'"
+                  @keydown.enter="saveAlias"
+                />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-modal-cancel" @click="showAliasModal = false">{{ t('common.cancel') || '取消' }}</button>
+              <button
+                class="btn-modal-confirm"
+                :disabled="isSavingAlias"
+                @click="saveAlias"
+              >
+                <span v-if="isSavingAlias" class="spinner-small"></span>
+                <span>{{ isSavingAlias ? (t('common.saving') || '保存中...') : (t('common.save') || '保存别名') }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
   </div>
 </template>
@@ -1529,10 +1724,159 @@ function copyCommand(cmd: string) {
   }
 }
 
+// --- Aliases Management ---
+const aliasesData = ref<Record<string, Record<string, string>>>({});
+const isLoadingAliases = ref(false);
+const showAliasModal = ref(false);
+const isEditingAlias = ref(false);
+const isSavingAlias = ref(false);
+const aliasFormTool = ref("node");
+const aliasFormCustomTool = ref("");
+const aliasFormName = ref("");
+const aliasFormVersion = ref("");
+
+const standardToolPresets = [
+  { value: "node", label: "Node.js (node)" },
+  { value: "python", label: "Python (python)" },
+  { value: "go", label: "Go (go)" },
+  { value: "rust", label: "Rust (rust)" },
+  { value: "bun", label: "Bun (bun)" },
+  { value: "deno", label: "Deno (deno)" },
+  { value: "java", label: "Java (java)" },
+  { value: "pnpm", label: "pnpm (pnpm)" },
+  { value: "custom", label: "自定义工具 (Custom Tool)..." },
+];
+
+const toolNamesWithAliases = computed(() => {
+  return Object.keys(aliasesData.value || {}).filter(k => {
+    const group = aliasesData.value[k];
+    return group && Object.keys(group).length > 0;
+  });
+});
+
+async function fetchAliasesList() {
+  isLoadingAliases.value = true;
+  try {
+    const res = await fetch(`/api/aliases?scope=${activeScope.value}`);
+    if (res.ok) {
+      const data = await res.json();
+      aliasesData.value = data.aliases || {};
+    }
+  } catch (err) {
+    console.warn("Failed to fetch /api/aliases:", err);
+  } finally {
+    isLoadingAliases.value = false;
+  }
+}
+
+function openAddAliasModal(toolName?: string) {
+  isEditingAlias.value = false;
+  if (toolName) {
+    const isStandard = standardToolPresets.some(p => p.value === toolName && p.value !== "custom");
+    if (isStandard) {
+      aliasFormTool.value = toolName;
+      aliasFormCustomTool.value = "";
+    } else {
+      aliasFormTool.value = "custom";
+      aliasFormCustomTool.value = toolName;
+    }
+  } else {
+    aliasFormTool.value = "node";
+    aliasFormCustomTool.value = "";
+  }
+  aliasFormName.value = "";
+  aliasFormVersion.value = "";
+  showAliasModal.value = true;
+}
+
+function openEditAliasModal(tool: string, alias: string, version: string) {
+  isEditingAlias.value = true;
+  const isStandard = standardToolPresets.some(p => p.value === tool && p.value !== "custom");
+  if (isStandard) {
+    aliasFormTool.value = tool;
+    aliasFormCustomTool.value = tool;
+  } else {
+    aliasFormTool.value = "custom";
+    aliasFormCustomTool.value = tool;
+  }
+  aliasFormName.value = alias;
+  aliasFormVersion.value = version;
+  showAliasModal.value = true;
+}
+
+async function saveAlias() {
+  const finalTool = (aliasFormTool.value === "custom" ? aliasFormCustomTool.value : aliasFormTool.value).trim().toLowerCase();
+  const finalName = aliasFormName.value.trim().toLowerCase();
+  const finalVer = aliasFormVersion.value.trim();
+
+  if (!finalTool) {
+    showToast(t("settings.aliases_err_tool_empty") || "工具名称不能为空", "error");
+    return;
+  }
+  if (!finalName) {
+    showToast(t("settings.aliases_err_name_empty") || "别名标识不能为空", "error");
+    return;
+  }
+  if (!finalVer) {
+    showToast(t("settings.aliases_err_ver_empty") || "目标版本号不能为空", "error");
+    return;
+  }
+
+  isSavingAlias.value = true;
+  try {
+    const res = await fetch("/api/aliases", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tool: finalTool,
+        alias: finalName,
+        version: finalVer,
+        scope: activeScope.value,
+      }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      showToast(errData.error || t("settings.aliases_save_fail") || "保存别名失败", "error");
+      return;
+    }
+    showToast(t("settings.aliases_save_success") || "工具版本别名保存成功", "success");
+    showAliasModal.value = false;
+    await fetchAliasesList();
+  } catch (err: any) {
+    showToast(err.message || t("settings.aliases_save_fail") || "保存别名失败", "error");
+  } finally {
+    isSavingAlias.value = false;
+  }
+}
+
+async function deleteAlias(tool: string, alias: string) {
+  const confirmed = confirm(
+    (t("settings.aliases_delete_confirm") || `确定要删除工具 {tool} 的别名 {alias} 吗？`)
+      .replace("{tool}", tool)
+      .replace("{alias}", alias)
+  );
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(`/api/aliases?tool=${encodeURIComponent(tool)}&alias=${encodeURIComponent(alias)}&scope=${activeScope.value}`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      showToast(t("settings.aliases_delete_success") || "别名删除成功", "success");
+      await fetchAliasesList();
+    } else {
+      showToast(t("settings.aliases_delete_fail") || "别名删除失败", "error");
+    }
+  } catch (err: any) {
+    showToast(err.message || t("settings.aliases_delete_fail") || "别名删除失败", "error");
+  }
+}
+
 watch(activeScope, () => {
   loadConfigData();
   loadNetworkStatus();
   fetchHooksList();
+  fetchAliasesList();
 });
 
 watch(
@@ -2217,6 +2561,15 @@ function isCategoryVisible(catId: string) {
       q.includes("docker") ||
       q.includes("插件") ||
       q.includes("扩展"))
+  )
+    return true;
+  if (
+    catId === "aliases" &&
+    (q.includes("alias") ||
+      q.includes("version") ||
+      q.includes("别名") ||
+      q.includes("映射") ||
+      q.includes("版本"))
   )
     return true;
   if (
@@ -3014,6 +3367,7 @@ onMounted(() => {
   loadConfigData();
   loadNetworkStatus();
   fetchHooksList();
+  fetchAliasesList();
   handleDetectProxy(false);
   fetchThemes();
   if (props.activeCategory) {
@@ -5276,6 +5630,223 @@ input:checked + .slider:before {
 
 .modal-textarea:focus {
   border-color: var(--accent-cyan);
+}
+
+/* --- Tool Version Aliases Styles --- */
+.aliases-container {
+  margin-top: 12px;
+}
+
+.aliases-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 24px;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.btn-add-alias {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  background: var(--accent-cyan);
+  border: 1px solid transparent;
+  color: #0b0f19;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-add-alias:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.35);
+}
+
+.aliases-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.alias-tool-card {
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.alias-tool-card:hover {
+  border-color: var(--border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.alias-tool-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 8px;
+}
+
+.tool-info-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tool-icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tool-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.alias-count-badge {
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(6, 182, 212, 0.12);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+}
+
+.btn-tool-add-alias {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 0.74rem;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-tool-add-alias:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+  border-color: var(--border-color);
+}
+
+.alias-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.alias-chip-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--card-border);
+  transition: all 0.15s ease;
+}
+
+.alias-chip-item:hover {
+  background: rgba(0, 0, 0, 0.28);
+  border-color: rgba(6, 182, 212, 0.3);
+}
+
+.alias-chip-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.alias-tag-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.alias-arrow {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.alias-target-version {
+  font-size: 0.82rem;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alias-chip-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-chip-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 5px;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-chip-action:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.btn-chip-action.action-delete:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.aliases-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 32px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--card-border);
+  border-radius: 8px;
+}
+
+.aliases-empty-state h4 {
+  margin: 0 0 6px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.aliases-empty-state p {
+  margin: 0 0 16px 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  max-width: 480px;
+  line-height: 1.5;
 }
 
 /* Light Theme Overrides */
