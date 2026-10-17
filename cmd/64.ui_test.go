@@ -223,15 +223,23 @@ func TestUIDetectTerminals(t *testing.T) {
 		t.Error("Expected at least one installed shell/terminal to be detected on host")
 	}
 
-	hasDefault := false
-	for _, term := range terms {
-		if term.IsDefault {
-			hasDefault = true
-			break
-		}
+	// Verify top-ordering of default terminal
+	if len(terms) > 0 && !terms[0].IsDefault {
+		t.Errorf("Expected first detected terminal (%s) to be marked as default, but was not", terms[0].Path)
 	}
-	if !hasDefault {
-		t.Error("Expected at least one terminal to be marked as default")
+
+	// 2. Test POST /api/terminal/exec
+	execPayload := strings.NewReader(`{"command":"echo Hello UniRTM Shell","shell":""}`)
+	reqExec := httptest.NewRequest("POST", "/api/terminal/exec", execPayload)
+	reqExec.Header.Set("Content-Type", "application/json")
+	rrExec := httptest.NewRecorder()
+	mux.ServeHTTP(rrExec, reqExec)
+
+	if rrExec.Code != http.StatusOK {
+		t.Fatalf("Expected status 200 on /api/terminal/exec, got %d: %s", rrExec.Code, rrExec.Body.String())
+	}
+	if !strings.Contains(rrExec.Body.String(), "Hello UniRTM Shell") {
+		t.Errorf("Expected terminal output to contain 'Hello UniRTM Shell', got %s", rrExec.Body.String())
 	}
 }
 

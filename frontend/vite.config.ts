@@ -2264,6 +2264,9 @@ print(json.dumps({
               terms[0].is_default = true;
             }
 
+            // Ensure default terminal is sorted to the top
+            terms.sort((a, b) => (b.is_default ? 1 : 0) - (a.is_default ? 1 : 0));
+
             const defTerm = terms.find(t => t.is_default)?.path || (terms[0]?.path || "/bin/bash");
             let current = defTerm;
             try {
@@ -2283,6 +2286,50 @@ print(json.dumps({
               current: current,
               terminals: terms,
             }));
+            return;
+          }
+
+          if (req.url === "/api/terminal/exec" && req.method === "POST") {
+            res.setHeader("Content-Type", "application/json");
+            let body = "";
+            req.on("data", chunk => { body += chunk; });
+            req.on("end", () => {
+              try {
+                const parsed = JSON.parse(body || "{}");
+                const command = (parsed.command || "").trim();
+                const shell = parsed.shell || process.env.SHELL || "/bin/bash";
+                const cwd = parsed.cwd || process.cwd();
+
+                if (!command) {
+                  res.end(JSON.stringify({ output: "", exit_code: 0 }));
+                  return;
+                }
+
+                const childProcess = require("child_process");
+                const home = os.homedir();
+                const unirtmBin = path.join(home, ".unirtm", "bin");
+                const unirtmShims = path.join(home, ".unirtm", "shims");
+                const customPath = `${unirtmShims}:${unirtmBin}:${process.env.PATH || ""}`;
+
+                childProcess.exec(command, {
+                  shell: shell,
+                  cwd: cwd,
+                  env: { ...process.env, PATH: customPath },
+                  maxBuffer: 10 * 1024 * 1024,
+                }, (error: any, stdout: string, stderr: string) => {
+                  const combined = (stdout || "") + (stderr || "");
+                  const exitCode = error ? (error.code || 1) : 0;
+                  res.end(JSON.stringify({
+                    output: combined,
+                    exit_code: exitCode,
+                    error: error ? error.message : undefined,
+                  }));
+                });
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.end(JSON.stringify({ error: err.message, exit_code: 1 }));
+              }
+            });
             return;
           }
           // Tasks API: Read tasks from .unirtm.toml or user global config

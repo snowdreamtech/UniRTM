@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -482,6 +483,17 @@ func detectInstalledTerminals() []DetectedTerminal {
 		list[0].IsDefault = true
 	}
 
+	// Ensure system default terminal is strictly sorted to the top
+	sort.SliceStable(list, func(i, j int) bool {
+		if list[i].IsDefault && !list[j].IsDefault {
+			return true
+		}
+		if !list[i].IsDefault && list[j].IsDefault {
+			return false
+		}
+		return i < j
+	})
+
 	return list
 }
 
@@ -516,6 +528,111 @@ func handleGetTerminals(w http.ResponseWriter, r *http.Request) {
 		"default":   defPath,
 		"current":   curPath,
 		"terminals": terms,
+	})
+}
+
+type TerminalExecRequest struct {
+	Command string `json:"command"`
+	Shell   string `json:"shell"`
+	Cwd     string `json:"cwd"`
+}
+
+type TerminalExecResponse struct {
+	Output   string `json:"output"`
+	ExitCode int    `json:"exit_code"`
+	Error    string `json:"error,omitempty"`
+}
+
+func handleTerminalExec(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req TerminalExecRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	cmdStr := strings.TrimSpace(req.Command)
+	if cmdStr == "" {
+		_ = json.NewEncoder(w).Encode(TerminalExecResponse{
+			Output:   "",
+			ExitCode: 0,
+		})
+		return
+	}
+
+	shellPath := strings.TrimSpace(req.Shell)
+	if shellPath == "" {
+		if s := os.Getenv("SHELL"); s != "" {
+			shellPath = s
+		} else if runtime.GOOS == "windows" {
+			shellPath = "cmd.exe"
+		} else {
+			shellPath = "/bin/sh"
+		}
+	}
+
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" && strings.Contains(strings.ToLower(shellPath), "cmd") {
+		cmd = exec.Command(shellPath, "/c", cmdStr)
+	} else if runtime.GOOS == "windows" && strings.Contains(strings.ToLower(shellPath), "powershell") {
+		cmd = exec.Command(shellPath, "-NoProfile", "-Command", cmdStr)
+	} else {
+		cmd = exec.Command(shellPath, "-c", cmdStr)
+	}
+
+	if req.Cwd != "" {
+		cmd.Dir = req.Cwd
+	} else {
+		if pwd, err := os.Getwd(); err == nil {
+			cmd.Dir = pwd
+		}
+	}
+
+	// Environment: inherit system environment and prepend UniRTM shims and bin
+	env := os.Environ()
+	if homeDir, err := os.UserHomeDir(); err == nil && homeDir != "" {
+		unirtmBin := filepath.Join(homeDir, ".unirtm", "bin")
+		unirtmShims := filepath.Join(homeDir, ".unirtm", "shims")
+		pathKeyFound := false
+		for i, e := range env {
+			if strings.HasPrefix(strings.ToUpper(e), "PATH=") {
+				origPath := e[5:]
+				env[i] = fmt.Sprintf("PATH=%s%c%s%c%s", unirtmShims, os.PathListSeparator, unirtmBin, os.PathListSeparator, origPath)
+				pathKeyFound = true
+				break
+			}
+		}
+		if !pathKeyFound {
+			env = append(env, fmt.Sprintf("PATH=%s%c%s", unirtmShims, os.PathListSeparator, unirtmBin))
+		}
+	}
+	cmd.Env = env
+
+	var outBuf bytes.Buffer
+	cmd.Stdout = &outBuf
+	cmd.Stderr = &outBuf
+
+	err := cmd.Run()
+	exitCode := 0
+	errMsg := ""
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		} else {
+			exitCode = 1
+			errMsg = err.Error()
+		}
+	}
+
+	_ = json.NewEncoder(w).Encode(TerminalExecResponse{
+		Output:   outBuf.String(),
+		ExitCode: exitCode,
+		Error:    errMsg,
 	})
 }
 
@@ -685,6 +802,7 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 		})
 	})
 	mux.HandleFunc("/api/terminals", handleGetTerminals)
+	mux.HandleFunc("/api/terminal/exec", handleTerminalExec)
 
 	// ─── Network & Mirror API Endpoints ──────────────────────────────────────
 	mux.HandleFunc("/api/network/status", handleGetNetworkStatus)

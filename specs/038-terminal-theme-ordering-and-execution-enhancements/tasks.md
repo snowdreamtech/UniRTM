@@ -1,6 +1,6 @@
 # 任务分解与执行清单 (Tasks)
 
-- [ ] **Task 1: 后端排序优化与 Shell 执行接口 (Backend Engine & Sorting)**
+- [x] **Task 1: 后端排序优化与 Shell 执行接口 (Backend Engine & Sorting)**
   - 在 `cmd/64.ui.go` 中：
     - 在 `detectInstalledTerminals()` 中对终端列表进行优先级排序，使 `is_default: true` 始终居于第一位；
     - 实现 `POST /api/terminal/exec` 接口，接收 `{ command, shell, cwd }`，自动注入系统环境与 UniRTM PATH，使用真实 Shell 执行并返回 output 和 exit_code；
