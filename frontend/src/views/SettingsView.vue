@@ -696,15 +696,7 @@
                 <TechIcon id="workbench:tag" :size="24" />
               </div>
               <h4>{{ t('settings.aliases_empty_title') || '暂无工具版本别名' }}</h4>
-              <p>{{ t('settings.aliases_empty_desc') || '通过版本别名，您可以为常用工具设置语义化版本映射，例如将 lts 映射到 20 或 stable 映射到 3.12。' }}</p>
-              <button
-                type="button"
-                class="btn-empty-add"
-                @click="openAddAliasModal()"
-              >
-                <TechIcon id="workbench:add" :size="13" />
-                <span>{{ t('settings.aliases_empty_btn') || '添加首个别名' }}</span>
-              </button>
+              <p style="margin: 0;">{{ t('settings.aliases_empty_desc') || '通过版本别名，您可以为常用工具设置语义化版本映射，例如将 lts 映射到 20 或 stable 映射到 3.12。' }}</p>
             </div>
           </div>
         </section>
@@ -5864,15 +5856,65 @@ input:checked + .slider:before {
 }
 
 :root[data-theme="light"] .btn-add-hook,
-[data-theme="light"] .btn-add-hook {
-  background: #0284c7;
-  color: #ffffff;
+[data-theme="light"] .btn-add-hook,
+:root[data-theme="light"] .btn-add-alias,
+[data-theme="light"] .btn-add-alias {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #0284c7 !important;
+}
+
+:root[data-theme="light"] .btn-add-hook:hover,
+[data-theme="light"] .btn-add-hook:hover,
+:root[data-theme="light"] .btn-add-alias:hover,
+[data-theme="light"] .btn-add-alias:hover {
+  background: #0369a1 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.35);
 }
 
 :root[data-theme="light"] .hooks-empty-state,
-[data-theme="light"] .hooks-empty-state {
+[data-theme="light"] .hooks-empty-state,
+:root[data-theme="light"] .aliases-empty-state,
+[data-theme="light"] .aliases-empty-state {
   background: #f8fafc;
   border-color: #e2e8f0;
+}
+
+:root[data-theme="light"] .alias-tool-card,
+[data-theme="light"] .alias-tool-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="light"] .alias-tool-card:hover,
+[data-theme="light"] .alias-tool-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+:root[data-theme="light"] .alias-tool-header,
+[data-theme="light"] .alias-tool-header {
+  border-bottom-color: #f1f5f9;
+}
+
+:root[data-theme="light"] .alias-chip-item,
+[data-theme="light"] .alias-chip-item {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+:root[data-theme="light"] .alias-chip-item:hover,
+[data-theme="light"] .alias-chip-item:hover {
+  background: #f1f5f9;
+  border-color: #0284c7;
+}
+
+:root[data-theme="light"] .alias-tag-name,
+[data-theme="light"] .alias-tag-name {
+  color: #0284c7;
+  background: #e0f2fe;
 }
 
 :root[data-theme="light"] .empty-icon-wrap,
