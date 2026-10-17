@@ -1886,10 +1886,11 @@ onBeforeUnmount(() => {
 .runtimes-view {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
-  padding: 1rem 1.5rem 1.25rem 1.5rem;
-  height: 100%;
-  overflow: hidden;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem 2.5rem 1.5rem;
+  min-height: 100%;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
   box-sizing: border-box;
 }
 
@@ -2143,11 +2144,8 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
   gap: 1.25rem;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
+  min-height: 500px;
   align-content: start;
-  padding-bottom: 1rem;
 }
 
 .runtime-card {
@@ -3666,17 +3664,13 @@ onBeforeUnmount(() => {
 /* Tools High-Density Table Styles */
 .tools-list-table-wrapper {
   width: 100%;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
+  min-height: 700px;
   overflow-x: auto;
   border: 1px solid var(--card-border);
   border-radius: 14px;
   background: var(--card-bg);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
-  margin-bottom: 0;
+  margin-bottom: 2rem;
 }
 
 .tools-table {
@@ -3692,12 +3686,6 @@ onBeforeUnmount(() => {
 }
 
 .tools-table th {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  background: var(--card-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   padding: 0.85rem 1.25rem;
   font-size: 0.78rem;
   font-weight: 600;
@@ -3705,7 +3693,6 @@ onBeforeUnmount(() => {
   letter-spacing: 0.5px;
   color: var(--text-muted);
   white-space: nowrap;
-  box-shadow: 0 1px 0 var(--card-border);
 }
 
 .tools-table th.th-tool {
