@@ -71,18 +71,20 @@
           <div class="form-group">
             <label class="form-label required">
               <span>{{ t("environments.value_label") || "变量值 (Value)" }}</span>
-              <span class="label-hint">（点击小眼睛可自由切换密文/明文预览）</span>
+              <span v-if="isSensitiveKey" class="label-hint">（敏感密钥默认脱密，可点击眼睛查看）</span>
             </label>
             <div class="value-input-wrapper">
               <input
                 v-model="form.value"
-                :type="isValueRevealed ? 'text' : 'password'"
+                :type="isSensitiveKey ? (isValueRevealed ? 'text' : 'password') : 'text'"
                 class="form-input font-mono value-input"
+                :class="{ 'has-eye': isSensitiveKey }"
                 :placeholder="t('environments.value_placeholder') || '请输入变量值'"
                 required
                 :disabled="saving"
               />
               <button
+                v-if="isSensitiveKey"
                 type="button"
                 class="btn-eye-toggle"
                 @click="isValueRevealed = !isValueRevealed"
@@ -425,6 +427,10 @@ function handleSubmit() {
 }
 
 .value-input {
+  width: 100%;
+}
+
+.value-input.has-eye {
   padding-right: 36px;
 }
 
