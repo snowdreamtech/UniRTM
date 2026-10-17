@@ -27,7 +27,7 @@
     - 深色模式下保持低饱和度深色层次；
   - *提交命名*：`style(terminal): polish comprehensive dark and light theme styles for terminal`
 
-- [ ] **Task 5: 全量回归与构建验证 (Validation & Tests)**
+- [x] **Task 5: 全量回归与构建验证 (Validation & Tests)**
   - 运行全量 Vitest 单元测试；
   - 运行 Go 后端测试；
   - 运行 `vue-tsc` 与生产打包验证；
