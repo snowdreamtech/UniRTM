@@ -80,18 +80,33 @@ def main():
                         break
                     
                     # Check if it contains a JSON control message like {"type":"resize",...}
-                    if chunk.startswith(b'{"type":'):
-                        try:
-                            msg = json.loads(chunk.decode('utf-8', 'ignore'))
-                            if msg.get('type') == 'resize':
-                                r = int(msg.get('rows', rows))
-                                c = int(msg.get('cols', cols))
-                                set_winsize(master, r, c)
-                                continue
-                            elif msg.get('type') == 'kill':
+                    if b'{"type":' in chunk:
+                        # Split by closing brace or newline to safely parse concatenated frames
+                        raw_str = chunk.decode('utf-8', 'ignore')
+                        start = 0
+                        has_control = False
+                        while True:
+                            idx = raw_str.find('{"type":', start)
+                            if idx == -1:
                                 break
-                        except Exception:
-                            pass
+                            end_idx = raw_str.find('}', idx)
+                            if end_idx == -1:
+                                break
+                            has_control = True
+                            json_slice = raw_str[idx:end_idx+1]
+                            try:
+                                msg = json.loads(json_slice)
+                                if msg.get('type') == 'resize':
+                                    r = int(msg.get('rows', rows))
+                                    c = int(msg.get('cols', cols))
+                                    set_winsize(master, r, c)
+                                elif msg.get('type') == 'kill':
+                                    return
+                            except Exception:
+                                pass
+                            start = end_idx + 1
+                        if has_control:
+                            continue
                     
                     os.write(master, chunk)
                 except Exception:

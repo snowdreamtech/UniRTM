@@ -94,73 +94,58 @@
             </div>
           </div>
 
-          <!-- 2. Vertical Split Button [ | ] (一分为二) -->
-          <button
-            class="drawer-action-btn"
-            :title="t('terminal.split_vertical') || '竖直拆分终端 (一分为二)'"
-            :data-tooltip="t('terminal.split_vertical') || '竖直拆分终端 (一分为二)'"
-            @click="handleSplitVertical"
-          >
-            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="2.5" width="12" height="11" rx="1.5" />
-              <path d="M8 2.5v11" />
-            </svg>
-          </button>
-
-          <!-- 3. Horizontal Split Button [ — ] (一分为二) -->
-          <button
-            class="drawer-action-btn"
-            :title="t('terminal.split_horizontal') || '横向拆分终端 (一分为二)'"
-            :data-tooltip="t('terminal.split_horizontal') || '横向拆分终端 (一分为二)'"
-            @click="handleSplitHorizontal"
-          >
-            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2.5" y="2" width="11" height="12" rx="1.5" />
-              <path d="M2.5 8h11" />
-            </svg>
-          </button>
-
-          <!-- 4. Kill Current Terminal (Trash) -->
-          <button
-            class="drawer-action-btn term-kill-btn"
-            :title="t('terminal.kill_terminal') || '关闭当前终端'"
-            :data-tooltip="t('terminal.kill_terminal') || '关闭当前终端'"
-            @click="handleKillCurrentTerminal"
-          >
-            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M12 4.5v8.5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 4 13V4.5" />
-              <path d="M6.5 7.5v4M9.5 7.5v4" />
-            </svg>
-          </button>
         </template>
 
-        <!-- General Action Buttons -->
-        <button
-          class="drawer-action-btn"
-          :title="clearLogsTitle"
-          :data-tooltip="clearLogsTitle"
-          @click="handleClearCurrent"
-        >
-          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="8" cy="8" r="6" />
-            <path d="M3.8 3.8l8.4 8.4" />
-          </svg>
-        </button>
-        <button
-          class="drawer-action-btn"
-          :class="{ active: isCopiedAll }"
-          :title="copyAllTitle"
-          :data-tooltip="copyAllTitle"
-          @click="handleCopyAll"
-        >
-          <svg v-if="!isCopiedAll" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" />
-            <path d="M10.5 5.5V3.5a1.5 1.5 0 0 0-1.5-1.5h-5A1.5 1.5 0 0 0 2.5 3.5v5a1.5 1.5 0 0 0 1.5 1.5h1.5" />
-          </svg>
-          <svg v-else viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--success, #10b981);">
-            <path d="M3.5 8.5l3 3 6-6" />
-          </svg>
-        </button>
+        <!-- "更多" (More Actions) Dropdown Menu (复制日志, 清空日志, 关闭终端) -->
+        <div class="drawer-more-wrapper">
+          <button
+            class="drawer-action-btn"
+            :class="{ active: isMoreMenuOpen }"
+            title="更多操作"
+            data-tooltip="更多操作"
+            @click.stop="isMoreMenuOpen = !isMoreMenuOpen"
+          >
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
+              <circle cx="3" cy="8" r="1.5" />
+              <circle cx="8" cy="8" r="1.5" />
+              <circle cx="13" cy="8" r="1.5" />
+            </svg>
+          </button>
+
+          <!-- Dropdown menu with icons + text in exact required order -->
+          <div v-if="isMoreMenuOpen" class="drawer-more-dropdown font-mono" @click.stop>
+            <!-- 1. 复制日志 -->
+            <button class="more-menu-item" @click="handleMenuCopyLogs">
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" />
+                <path d="M10.5 5.5V3.5a1.5 1.5 0 0 0-1.5-1.5h-5A1.5 1.5 0 0 0 2.5 3.5v5a1.5 1.5 0 0 0 1.5 1.5h1.5" />
+              </svg>
+              <span>{{ t('drawer.copy_all') || '复制日志' }}</span>
+            </button>
+
+            <!-- 2. 清空日志 -->
+            <button class="more-menu-item" @click="handleMenuClearLogs">
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="8" cy="8" r="6" />
+                <path d="M3.8 3.8l8.4 8.4" />
+              </svg>
+              <span>{{ t('drawer.clear_logs') || '清空日志' }}</span>
+            </button>
+
+            <!-- 3. 关闭终端 (在终端 Tab 下提供) -->
+            <button
+              v-if="currentTab === 'terminal'"
+              class="more-menu-item danger"
+              @click="handleMenuKillTerminal"
+            >
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M12 4.5v8.5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 4 13V4.5" />
+                <path d="M6.5 7.5v4M9.5 7.5v4" />
+              </svg>
+              <span>{{ t('terminal.kill_terminal') || '关闭终端' }}</span>
+            </button>
+          </div>
+        </div>
         <button
           v-if="currentTab !== 'terminal'"
           class="drawer-action-btn"
@@ -290,6 +275,30 @@
                 {{ s.splitDirection === 'vertical' ? '[|]' : '[—]' }}
               </span>
             </div>
+            <!-- Split actions: on terminal tab before trash icon, active only -->
+            <div v-if="s.id === activeSessionId" class="tab-item-split-actions">
+              <button
+                class="tab-action-btn"
+                :title="t('terminal.split_vertical') || '竖直拆分终端 (一分为二)'"
+                @click.stop="handleSplitVertical"
+              >
+                <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="2.5" width="12" height="11" rx="1.5" />
+                  <path d="M8 2.5v11" />
+                </svg>
+              </button>
+              <button
+                class="tab-action-btn"
+                :title="t('terminal.split_horizontal') || '水平拆分终端 (一分为二)'"
+                @click.stop="handleSplitHorizontal"
+              >
+                <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2.5" y="2" width="11" height="12" rx="1.5" />
+                  <path d="M2.5 8h11" />
+                </svg>
+              </button>
+            </div>
+
             <button
               class="tab-item-close-btn"
               :title="t('terminal.kill_terminal') || '关闭终端'"
@@ -410,6 +419,7 @@ const {
 } = useTerminalSessions();
 
 const isNewMenuOpen = ref(false);
+const isMoreMenuOpen = ref(false);
 
 const DRAWER_TAB_KEY = "unirtm_drawer_tab";
 const DRAWER_MAX_KEY = "unirtm_drawer_maximized";
@@ -508,8 +518,6 @@ const emptyStateText = computed(() => {
   );
 });
 
-const clearLogsTitle = computed(() => t("drawer.clear_logs") || "清空当前面板");
-const copyAllTitle = computed(() => t("drawer.copy_all") || "复制全部输出");
 const autoScrollTitle = computed(() =>
   autoScroll.value ? "自动滚动 (开启)" : "自动滚动 (关闭)"
 );
@@ -641,8 +649,24 @@ function handleKillCurrentTerminal() {
   closeActiveTerminal();
 }
 
+function handleMenuCopyLogs() {
+  isMoreMenuOpen.value = false;
+  handleCopyAll();
+}
+
+function handleMenuClearLogs() {
+  isMoreMenuOpen.value = false;
+  handleClearCurrent();
+}
+
+function handleMenuKillTerminal() {
+  isMoreMenuOpen.value = false;
+  handleKillCurrentTerminal();
+}
+
 function handleGlobalClick() {
   isNewMenuOpen.value = false;
+  isMoreMenuOpen.value = false;
 }
 
 watch(
@@ -931,6 +955,56 @@ onUnmounted(() => {
   margin-bottom: 4px;
 }
 
+.drawer-more-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.drawer-more-dropdown {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  top: auto;
+  right: 0;
+  min-width: 130px;
+  background: var(--card-bg, #1e293b);
+  border: 1px solid var(--card-border, #334155);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
+  border-radius: 6px;
+  padding: 4px;
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.more-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 0.74rem;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-main, #f1f5f9);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.more-menu-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--accent-cyan, #38bdf8);
+}
+
+.more-menu-item.danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
 .term-kill-btn:hover {
   color: #ef4444 !important;
   background: rgba(239, 68, 68, 0.12) !important;
@@ -1048,7 +1122,7 @@ onUnmounted(() => {
 
 /* VSCode-style Terminal Tabs Sidebar */
 .terminal-sidebar {
-  width: 190px;
+  width: 215px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -1177,6 +1251,36 @@ onUnmounted(() => {
   opacity: 1 !important;
   color: #ef4444 !important;
   background: rgba(239, 68, 68, 0.18) !important;
+}
+
+.tab-item-split-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: 2px;
+  flex-shrink: 0;
+}
+
+.tab-action-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.tab-action-btn:hover {
+  opacity: 1;
+  color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.15);
 }
 
 .term-status-dot {
@@ -1518,5 +1622,30 @@ onUnmounted(() => {
 
 [data-theme="light"] .shell-option.active .shell-option-name {
   color: #0284c7;
+}
+
+[data-theme="light"] .drawer-more-dropdown {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .more-menu-item {
+  color: #334155;
+}
+
+[data-theme="light"] .more-menu-item:hover {
+  background: #f1f5f9;
+  color: #0284c7;
+}
+
+[data-theme="light"] .more-menu-item.danger:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+[data-theme="light"] .tab-action-btn:hover {
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.12);
 }
 </style>

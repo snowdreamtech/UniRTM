@@ -123,7 +123,9 @@ export default defineConfig({
               if (msg.type === "input" && typeof msg.data === "string") {
                 child.stdin?.write(msg.data);
               } else if (msg.type === "resize") {
-                child.stdin?.write(JSON.stringify(msg));
+                if (!isWindows && fs.existsSync(bridgeScript)) {
+                  child.stdin?.write(JSON.stringify(msg) + "\n");
+                }
               } else if (msg.type === "kill") {
                 child.kill();
               } else if (msg.type === "ping") {
