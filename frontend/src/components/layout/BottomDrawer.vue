@@ -283,7 +283,7 @@
             :title="t('terminal.new_terminal') || '新建终端'"
             @click="handleCreateDefaultSession"
           >
-            <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M8 3v10M3 8h10" />
             </svg>
           </button>
@@ -312,8 +312,9 @@
               :title="t('terminal.kill_terminal') || '关闭终端'"
               @click.stop="closeSession(s.id)"
             >
-              <svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M12 4.5v8.5a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 4 13V4.5" />
+                <path d="M6.5 7.5v4M9.5 7.5v4" />
               </svg>
             </button>
           </div>
@@ -1014,19 +1015,22 @@ onUnmounted(() => {
 
 .term-new-dropdown {
   position: absolute;
-  top: calc(100% + 4px);
+  bottom: calc(100% + 6px);
+  top: auto;
   right: 0;
-  width: 220px;
+  width: 240px;
+  max-height: 260px;
+  overflow-y: auto;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
   border-radius: 6px;
   padding: 4px;
   z-index: 120;
 }
 
 .dropdown-header {
-  padding: 4px 8px;
+  padding: 5px 8px;
   font-size: 0.68rem;
   font-weight: 700;
   color: var(--text-muted);
@@ -1097,7 +1101,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 0.45rem;
-  padding: 3px 0.65rem;
+  padding: 4px 0.75rem;
   background: rgba(0, 0, 0, 0.2);
   border-bottom: 1px solid var(--card-border);
   font-size: 0.68rem;
@@ -1132,8 +1136,8 @@ onUnmounted(() => {
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 2px;
-  border-radius: 3px;
+  padding: 3px;
+  border-radius: 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1147,7 +1151,7 @@ onUnmounted(() => {
 
 /* VSCode-style Terminal Tabs Sidebar */
 .terminal-sidebar {
-  width: 165px;
+  width: 190px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -1160,29 +1164,33 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 8px;
+  padding: 5px 8px 5px 10px;
   font-size: 0.68rem;
   font-weight: 700;
   color: var(--text-muted);
   border-bottom: 1px solid var(--card-border);
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .sidebar-add-btn {
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 3px;
+  width: 22px;
+  height: 22px;
+  margin-right: 6px;
+  border-radius: 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.15s ease;
 }
 
 .sidebar-add-btn:hover {
   color: var(--accent-cyan);
   background: var(--card-bg);
+  border-color: var(--card-border);
 }
 
 .terminal-tabs-list {
@@ -1197,12 +1205,13 @@ onUnmounted(() => {
 .terminal-tab-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 6px;
-  border-radius: 4px;
+  gap: 8px;
+  padding: 5px 8px 5px 10px;
+  border-radius: 5px;
   cursor: pointer;
   transition: all 0.15s ease;
   position: relative;
+  margin: 1px 2px;
 }
 
 .terminal-tab-item:hover {
@@ -1252,8 +1261,10 @@ onUnmounted(() => {
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 2px;
-  border-radius: 3px;
+  width: 22px;
+  height: 22px;
+  margin-right: 4px;
+  border-radius: 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1262,13 +1273,13 @@ onUnmounted(() => {
 }
 
 .terminal-tab-item:hover .tab-item-close-btn {
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 .tab-item-close-btn:hover {
   opacity: 1 !important;
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.18) !important;
 }
 
 .term-status-dot {
@@ -1475,5 +1486,137 @@ onUnmounted(() => {
 .log-details {
   color: var(--text-muted);
   font-size: 0.7rem;
+}
+
+/* Light Theme Polish for Integrated Terminal (VSCode Light Standards) */
+[data-theme="light"] .terminal-wrapper {
+  background: #ffffff;
+  color: #1e293b;
+}
+
+[data-theme="light"] .terminal-pane {
+  background: #ffffff;
+}
+
+[data-theme="light"] .terminal-pane.active {
+  outline: 1.5px solid #0284c7;
+}
+
+[data-theme="light"] .terminal-pane-banner {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
+[data-theme="light"] .term-shell-path {
+  color: #64748b;
+}
+
+[data-theme="light"] .term-split-pill {
+  background: rgba(2, 132, 199, 0.1);
+  color: #0284c7;
+}
+
+[data-theme="light"] .terminal-screen {
+  background: #ffffff;
+}
+
+[data-theme="light"] .term-text-cyan {
+  color: #0284c7;
+}
+
+[data-theme="light"] .term-text-muted {
+  color: #64748b;
+}
+
+[data-theme="light"] .term-prompt {
+  color: #0284c7;
+}
+
+[data-theme="light"] .line-input {
+  color: #0f172a;
+}
+
+[data-theme="light"] .line-output {
+  color: #334155;
+}
+
+[data-theme="light"] .line-info {
+  color: #0284c7;
+}
+
+[data-theme="light"] .terminal-cmd-input {
+  color: #0f172a;
+  caret-color: #0284c7;
+}
+
+[data-theme="light"] .terminal-cmd-input::placeholder {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .terminal-sidebar {
+  background: #f8fafc;
+  border-left-color: #e2e8f0;
+}
+
+[data-theme="light"] .terminal-sidebar-header {
+  background: #f1f5f9;
+  border-bottom-color: #e2e8f0;
+  color: #475569;
+}
+
+[data-theme="light"] .sidebar-add-btn:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #0284c7;
+}
+
+[data-theme="light"] .terminal-tab-item {
+  color: #334155;
+}
+
+[data-theme="light"] .terminal-tab-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .terminal-tab-item.active {
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+}
+
+[data-theme="light"] .terminal-tab-item.active .tab-item-icon {
+  color: #0284c7;
+}
+
+[data-theme="light"] .term-new-dropdown {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .dropdown-header {
+  background: #f8fafc;
+  border-bottom-color: #e2e8f0;
+  color: #475569;
+}
+
+[data-theme="light"] .shell-option:hover {
+  background: #f1f5f9;
+}
+
+[data-theme="light"] .shell-option.active {
+  background: rgba(2, 132, 199, 0.1);
+}
+
+[data-theme="light"] .shell-option-name {
+  color: #1e293b;
+}
+
+[data-theme="light"] .shell-option-path {
+  color: #64748b;
+}
+
+[data-theme="light"] .shell-option.active .shell-option-name {
+  color: #0284c7;
 }
 </style>

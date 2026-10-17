@@ -14,13 +14,13 @@
     - 将 `handlePaneRunCommand` 改为请求 `/api/terminal/exec`，实现真正的 Linux 命令执行与输出回显；
   - *提交命名*：`feat(terminal): connect real shell execution engine and ensure default terminal sorting`
 
-- [ ] **Task 3: 弹层向上展开与侧边栏加号/垃圾桶图标优化 (Popups & Sidebar Ergonomics)**
+- [x] **Task 3: 弹层向上展开与侧边栏加号/垃圾桶图标优化 (Popups & Sidebar Ergonomics)**
   - 修改 `.term-new-dropdown` 为向上弹出并带有滚动与阴影，防止被抽屉底部遮挡；
   - 加宽侧边栏至 185px，增大加号按钮并留出呼吸间距；
   - 将标签项关闭按钮替换为更清晰的大号垃圾桶图标（Trash Icon），加大点击区域与右边距；
   - *提交命名*：`feat(drawer): fix dropdown clipping with upward popup and improve sidebar ergonomics`
 
-- [ ] **Task 4: 深色模式与浅色模式终端全套主题精细化配色 (Dark/Light Palette)**
+- [x] **Task 4: 深色模式与浅色模式终端全套主题精细化配色 (Dark/Light Palette)**
   - 为 `BottomDrawer.vue` 补充浅色主题 `[data-theme="light"]` 专属变量：
     - 纯白终端背景、淡灰 Banner 与侧边栏背景，细致的边框；
     - 浅色模式下文字使用高对比度深色，命令提示符与高亮青色加深可读性；
