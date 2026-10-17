@@ -1886,24 +1886,24 @@ onBeforeUnmount(() => {
 .runtimes-view {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  padding: 1.5rem 1.75rem 2.5rem 1.75rem;
+  gap: 0.85rem;
+  padding: 1rem 1.5rem 1.25rem 1.5rem;
   height: 100%;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
 .view-header-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .view-title {
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  margin: 0 0 0.35rem 0;
+  margin: 0 0 0.2rem 0;
   color: var(--text-main);
   display: flex;
   align-items: center;
@@ -1911,14 +1911,14 @@ onBeforeUnmount(() => {
 }
 
 .view-icon {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
 }
 
 .view-desc {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 /* Scope Selection Bar */
@@ -1926,12 +1926,13 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.65rem 1rem;
+  padding: 0.5rem 1rem;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
   gap: 1rem;
+  flex-shrink: 0;
 }
 
 .scope-context-pill {
@@ -2073,12 +2074,13 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.85rem 1.25rem;
+  padding: 0.65rem 1.15rem;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
   gap: 1rem;
+  flex-shrink: 0;
 }
 
 .search-input-wrapper {
@@ -2140,9 +2142,12 @@ onBeforeUnmount(() => {
 .runtimes-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-  gap: 1.35rem;
-  min-height: 600px;
+  gap: 1.25rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   align-content: start;
+  padding-bottom: 1rem;
 }
 
 .runtime-card {
@@ -3662,15 +3667,16 @@ onBeforeUnmount(() => {
 .tools-list-table-wrapper {
   width: 100%;
   flex: 1;
-  min-height: 600px;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
   overflow-x: auto;
   border: 1px solid var(--card-border);
   border-radius: 14px;
   background: var(--card-bg);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
-  margin-bottom: 2rem;
+  margin-bottom: 0;
 }
 
 .tools-table {
@@ -3686,6 +3692,12 @@ onBeforeUnmount(() => {
 }
 
 .tools-table th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   padding: 0.85rem 1.25rem;
   font-size: 0.78rem;
   font-weight: 600;
@@ -3693,6 +3705,7 @@ onBeforeUnmount(() => {
   letter-spacing: 0.5px;
   color: var(--text-muted);
   white-space: nowrap;
+  box-shadow: 0 1px 0 var(--card-border);
 }
 
 .tools-table th.th-tool {
