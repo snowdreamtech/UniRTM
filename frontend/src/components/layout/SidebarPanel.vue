@@ -102,7 +102,7 @@
           :class="{ active: activeSubItem === env.name }"
           @click="handleSubItemClick(env.name)"
         >
-          <span class="item-icon"><TechIcon id="workbench:config" :size="20" /></span>
+          <span class="item-icon"><TechIcon id="workbench:variable" :size="18" /></span>
           <div class="item-dual">
             <span class="item-label font-mono">{{ env.name }}</span>
             <span class="item-sub font-mono">{{ env.isSensitive ? '••••••••' : env.value }}</span>

@@ -77,6 +77,8 @@ export type WorkbenchIconKey =
   | "workbench:star"
   | "workbench:user"
   | "workbench:edit"
+  | "workbench:environments"
+  | "workbench:variable"
   | "workbench:github"
   | "workbench:sparkle";
 

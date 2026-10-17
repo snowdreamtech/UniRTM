@@ -4,7 +4,7 @@
     <div class="view-header-row">
       <div>
         <h2 class="view-title" style="display: flex; align-items: center; gap: 8px;">
-          <TechIcon id="workbench:config" :size="20" />
+          <TechIcon id="workbench:environments" :size="20" />
           <span>{{ t("environments.title") || "环境变量管理" }}</span>
         </h2>
         <p class="view-desc">
@@ -52,23 +52,6 @@
         />
       </div>
 
-      <!-- Scope Switch Buttons -->
-      <div class="scope-toggle-chips">
-        <button
-          class="scope-chip-btn"
-          :class="{ active: activeScope === 'workspace' }"
-          @click="switchScope('workspace')"
-        >
-          <span>📁 工作区</span>
-        </button>
-        <button
-          class="scope-chip-btn"
-          :class="{ active: activeScope === 'user' }"
-          @click="switchScope('user')"
-        >
-          <span>🌐 用户全局</span>
-        </button>
-      </div>
 
       <div class="env-stats-badges">
         <span class="stat-badge">
@@ -98,7 +81,7 @@
 
       <!-- Empty State -->
       <div v-else-if="filteredEnvList.length === 0" class="env-empty-box">
-        <TechIcon id="workbench:config" :size="32" :colored="false" />
+        <TechIcon id="workbench:environments" :size="32" :colored="false" />
         <div class="empty-title">
           {{ searchKey ? `未找到匹配 "${searchKey}" 的环境变量` : (t("environments.empty_title") || "暂未配置任何环境变量") }}
         </div>
@@ -236,11 +219,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import { t } from "../i18n";
 import TechIcon from "../components/common/TechIcon.vue";
 import EnvironmentModal from "../components/EnvironmentModal.vue";
-import { useAppScope, type AppScope } from "../composables/useAppScope";
+import { useAppScope } from "../composables/useAppScope";
 
 interface EnvItem {
   name: string;
@@ -251,8 +234,7 @@ interface EnvItem {
 }
 
 const route = useRoute();
-const router = useRouter();
-const { activeScope, setScope, syncFromRoute } = useAppScope();
+const { activeScope, syncFromRoute } = useAppScope();
 
 const envList = ref<EnvItem[]>([]);
 const loading = ref(false);
@@ -273,9 +255,6 @@ function showToast(msg: string) {
   }, 2500);
 }
 
-function switchScope(scope: AppScope) {
-  setScope(scope, router);
-}
 
 watch(
   () => route.query.scope,
@@ -552,33 +531,6 @@ onMounted(() => {
   box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
 }
 
-.scope-toggle-chips {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(0, 0, 0, 0.2);
-  padding: 3px;
-  border-radius: 8px;
-  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.08));
-}
-
-.scope-chip-btn {
-  padding: 4px 12px;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.scope-chip-btn.active {
-  background: var(--accent-cyan);
-  color: #050b14;
-  box-shadow: 0 1px 4px rgba(0, 229, 255, 0.3);
-}
 
 .env-stats-badges {
   display: flex;

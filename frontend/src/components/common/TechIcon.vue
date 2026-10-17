@@ -102,6 +102,8 @@ const WORKBENCH_CODICON_MAP: Record<string, string> = {
   "workbench:logs": "codicon-output",
   "workbench:lock": "codicon-lock",
   "workbench:unlock": "codicon-unlock",
+  "workbench:environments": "codicon-server-environment",
+  "workbench:variable": "codicon-symbol-variable",
   "workbench:config": "codicon-gear",
   "workbench:success": "codicon-pass",
   "workbench:warning": "codicon-warning",

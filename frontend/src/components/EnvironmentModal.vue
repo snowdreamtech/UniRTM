@@ -4,7 +4,7 @@
       <!-- Modal Header -->
       <div class="modal-header">
         <div class="header-title">
-          <TechIcon id="workbench:config" :size="20" />
+          <TechIcon id="workbench:environments" :size="20" />
           <div>
             <h3>{{ isEdit ? (t("environments.edit_btn") + " " + t("nav.environments")) : (t("environments.create_btn")) }}</h3>
             <span class="sub-title">
@@ -19,28 +19,6 @@
       <!-- Modal Body -->
       <div class="modal-body">
         <form @submit.prevent="handleSubmit">
-          <!-- Target Scope Selector -->
-          <div class="form-group">
-            <label class="form-label required">
-              <span>{{ t("environments.scope_label") || "保存目标作用域" }}</span>
-            </label>
-            <div class="scope-radio-group">
-              <label class="scope-radio-item" :class="{ selected: form.scope === 'workspace' }">
-                <input type="radio" value="workspace" v-model="form.scope" :disabled="saving" />
-                <span class="radio-label">
-                  <span class="radio-title">{{ t("runtimes.scope_workspace") || "工作区" }} (.unirtm.toml)</span>
-                  <span class="radio-sub">仅对当前项目生效，便于团队协同共享</span>
-                </span>
-              </label>
-              <label class="scope-radio-item" :class="{ selected: form.scope === 'user' }">
-                <input type="radio" value="user" v-model="form.scope" :disabled="saving" />
-                <span class="radio-label">
-                  <span class="radio-title">{{ t("runtimes.scope_user") || "用户全局" }} (~/.config/unirtm/unirtm.toml)</span>
-                  <span class="radio-sub">所有未指定环境变量的项目通用全局配置</span>
-                </span>
-              </label>
-            </div>
-          </div>
 
           <!-- Variable Key -->
           <div class="form-group">
@@ -353,51 +331,6 @@ function handleSubmit() {
   color: var(--text-muted);
 }
 
-.scope-radio-group {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.scope-radio-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.15);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.scope-radio-item.selected {
-  border-color: var(--accent-cyan);
-  background: rgba(0, 229, 255, 0.08);
-}
-
-.scope-radio-item input {
-  margin-top: 3px;
-  accent-color: var(--accent-cyan);
-}
-
-.radio-label {
-  display: flex;
-  flex-direction: column;
-}
-
-.radio-title {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.radio-sub {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  margin-top: 2px;
-  line-height: 1.3;
-}
 
 .input-with-action {
   position: relative;

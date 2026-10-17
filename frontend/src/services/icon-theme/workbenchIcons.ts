@@ -53,6 +53,14 @@ export const workbenchSemanticIcons: Record<WorkbenchIconKey, SemanticIconMappin
     candidates: ["lock", "unirtm.lock", "package-lock.json", "yarn.lock"],
     fallbackSetiKey: "_lock",
   },
+  "workbench:environments": {
+    candidates: ["environment", "server-environment", "env", "dotenv"],
+    fallbackSetiKey: "_config",
+  },
+  "workbench:variable": {
+    candidates: ["variable", "symbol-variable", "var", "key"],
+    fallbackSetiKey: "_config",
+  },
   "workbench:config": {
     candidates: ["config", "unirtm.toml", "configuration", "settings.json"],
     fallbackSetiKey: "_config",
