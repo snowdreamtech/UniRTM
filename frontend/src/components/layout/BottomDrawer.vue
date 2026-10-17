@@ -244,32 +244,15 @@
             </div>
           </div>
 
-          <!-- Pane Screen Output and Interactive Input -->
-          <div class="terminal-screen" :ref="el => setPaneRef(pane.id, el)">
-            <div class="terminal-welcome">
-              <div class="term-text-cyan">UniRTM Workbench Terminal ({{ pane.shellName }})</div>
-              <div class="term-text-muted">{{ t('drawer.empty_terminal') || '集成终端准备就绪。在上方选择 Shell 或通过快捷指令运行任务。' }}</div>
-            </div>
-
-            <div v-for="(line, idx) in pane.lines" :key="idx" class="terminal-line" :class="'line-' + line.type">
-              <span v-if="line.type === 'input'" class="term-prompt">❯</span>
-              <span class="term-content">{{ line.text }}</span>
-            </div>
-
-            <!-- Terminal Interactive Input Row -->
-            <div class="terminal-input-row">
-              <span class="term-prompt">❯</span>
-              <input
-                v-model="pane.input"
-                @keydown.enter="handlePaneRunCommand(pane)"
-                @keydown.up.prevent="handlePaneHistoryUp(pane)"
-                @keydown.down.prevent="handlePaneHistoryDown(pane)"
-                class="terminal-cmd-input font-mono"
-                :placeholder="t('drawer.empty_terminal') || '输入命令并回车运行 (如 unirtm --help)...'"
-                spellcheck="false"
-                @focus="setActivePane(pane.id)"
-              />
-            </div>
+          <!-- Pane Screen Output and Interactive xterm.js PTY Canvas -->
+          <div class="terminal-screen">
+            <XTerminalPane
+              :pane-id="pane.id"
+              :shell-name="pane.shellName"
+              :shell-path="pane.shellPath"
+              :is-active="pane.id === activeSession?.activePaneId"
+              @focus="setActivePane(pane.id)"
+            />
           </div>
         </div>
       </div>
@@ -373,7 +356,8 @@ import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 import { useToast } from "../../composables/useToast";
 import { useTerminal, TerminalItem } from "../../composables/useTerminal";
-import { useTerminalSessions, TerminalPane } from "../../composables/useTerminalSessions";
+import { useTerminalSessions } from "../../composables/useTerminalSessions";
+import XTerminalPane from "../terminal/XTerminalPane.vue";
 
 export interface LogItem {
   timestamp: string;
@@ -426,7 +410,6 @@ const {
 } = useTerminalSessions();
 
 const isNewMenuOpen = ref(false);
-const paneRefs = new Map<string, HTMLElement>();
 
 const DRAWER_TAB_KEY = "unirtm_drawer_tab";
 const DRAWER_MAX_KEY = "unirtm_drawer_maximized";
@@ -626,100 +609,6 @@ async function handleCopyRow(log: LogItem, idx: number) {
       }
     }, 1500);
     showToast(t("drawer.copy_row_success") || "已复制单行日志", "success");
-  }
-}
-
-function setPaneRef(id: string, el: any) {
-  if (el) {
-    paneRefs.set(id, el as HTMLElement);
-  } else {
-    paneRefs.delete(id);
-  }
-}
-
-function scrollToPaneBottom(id: string) {
-  const el = paneRefs.get(id);
-  if (el) {
-    el.scrollTop = el.scrollHeight;
-  }
-}
-
-async function handlePaneRunCommand(pane: TerminalPane) {
-  const cmd = pane.input.trim();
-  if (!cmd) return;
-
-  pane.lines.push({ type: "input", text: cmd });
-  pane.history.push(cmd);
-  pane.historyIndex = -1;
-  pane.input = "";
-
-  if (cmd === "clear" || cmd === "cls") {
-    pane.lines = [];
-    return;
-  }
-
-  if (cmd === "exit") {
-    closePane(pane.id);
-    return;
-  }
-
-  try {
-    const res = await fetch("/api/terminal/exec", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        command: cmd,
-        shell: pane.shellPath,
-      }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.output && data.output.trim()) {
-        pane.lines.push({ type: "output", text: data.output.trimEnd() });
-      } else if (data.exit_code === 0) {
-        // Command completed silently (like touch, cd, export)
-      }
-
-      if (data.exit_code !== 0 && (!data.output || !data.output.trim())) {
-        pane.lines.push({
-          type: "error",
-          text: data.error || `Process exited with code ${data.exit_code}`,
-        });
-      }
-    } else {
-      const errData = await res.json().catch(() => ({}));
-      pane.lines.push({
-        type: "error",
-        text: errData.error || `Failed to communicate with terminal executor (${res.status} ${res.statusText}).`,
-      });
-    }
-  } catch (err: any) {
-    pane.lines.push({ type: "error", text: err.message || "Command execution error" });
-  }
-
-  nextTick(() => {
-    scrollToPaneBottom(pane.id);
-  });
-}
-
-function handlePaneHistoryUp(pane: TerminalPane) {
-  if (pane.history.length === 0) return;
-  if (pane.historyIndex === -1) {
-    pane.historyIndex = pane.history.length - 1;
-  } else if (pane.historyIndex > 0) {
-    pane.historyIndex--;
-  }
-  pane.input = pane.history[pane.historyIndex] || "";
-}
-
-function handlePaneHistoryDown(pane: TerminalPane) {
-  if (pane.historyIndex === -1) return;
-  if (pane.historyIndex < pane.history.length - 1) {
-    pane.historyIndex++;
-    pane.input = pane.history[pane.historyIndex] || "";
-  } else {
-    pane.historyIndex = -1;
-    pane.input = "";
   }
 }
 
@@ -1299,13 +1188,12 @@ onUnmounted(() => {
 
 .terminal-screen {
   flex: 1;
-  overflow-y: auto;
-  padding: 0.5rem 0.65rem;
-  font-size: 0.75rem;
-  line-height: 1.5;
+  position: relative;
+  overflow: hidden;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  background: #18181b;
 }
 
 .terminal-welcome {
