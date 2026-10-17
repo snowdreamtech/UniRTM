@@ -165,7 +165,7 @@
       >
         <!-- Card Header -->
         <div class="runtime-card-header">
-          <div class="runtime-icon-badge"><TechIcon :id="rt.id" :size="32" :colored="true" /></div>
+          <div class="runtime-icon-badge"><TechIcon :id="rt.id" :size="36" :colored="true" /></div>
           <div class="runtime-title-block">
             <div class="runtime-name-row">
               <a
@@ -195,6 +195,22 @@
               <span class="pin-reason-icon">📌</span>
               <span class="pin-reason-text">{{ rt.pin_reason }}</span>
             </div>
+          </div>
+        </div>
+
+        <!-- Card Meta Info: Local Installed Count & Config Source -->
+        <div class="runtime-card-meta">
+          <div class="meta-item">
+            <span class="meta-label">{{ t("runtimes.installed") || "已安装" }}:</span>
+            <span class="meta-value font-mono">
+              {{ rt.installed_versions?.length || 0 }} {{ t("runtimes.count_installed_suffix") || "个版本" }}
+            </span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">来源:</span>
+            <span class="meta-value font-mono" :title="rt.source || (currentScope === 'workspace' ? '.unirtm.toml' : '~/.unirtm')">
+              {{ rt.source || (currentScope === 'workspace' ? '.unirtm.toml' : '~/.unirtm') }}
+            </span>
           </div>
         </div>
 
@@ -259,7 +275,7 @@
             <!-- Col: Tool -->
             <td class="td-tool">
               <div class="table-tool-cell">
-                <TechIcon :id="rt.id" :size="20" :colored="true" class="tool-icon" />
+                <TechIcon :id="rt.id" :size="24" :colored="true" class="tool-icon" />
                 <a
                   :href="getToolHomepage(rt)"
                   target="_blank"
@@ -1870,8 +1886,8 @@ onBeforeUnmount(() => {
 .runtimes-view {
   display: flex;
   flex-direction: column;
-  gap: 1.35rem;
-  padding: 1.25rem;
+  gap: 1.25rem;
+  padding: 1.5rem 1.75rem 2.5rem 1.75rem;
   height: 100%;
   overflow-y: auto;
   scrollbar-gutter: stable;
@@ -2057,23 +2073,24 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 1.15rem;
+  padding: 0.85rem 1.25rem;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  gap: 1rem;
 }
 
 .search-input-wrapper {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.65rem;
   flex: 1;
-  max-width: 440px;
+  max-width: 520px;
 }
 
 .search-icon {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--text-muted);
 }
 
@@ -2083,12 +2100,13 @@ onBeforeUnmount(() => {
   border: none;
   outline: none;
   color: var(--text-main);
-  font-size: 0.82rem;
+  font-size: 0.86rem;
 }
 
 .runtime-stats-badges {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.65rem;
 }
 
 .stat-badge {
@@ -2121,20 +2139,21 @@ onBeforeUnmount(() => {
 /* Grid */
 .runtimes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.15rem;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 1.35rem;
 }
 
 .runtime-card {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1.25rem;
-  border-radius: 14px;
+  gap: 1.15rem;
+  padding: 1.4rem 1.5rem;
+  border-radius: 16px;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 200px;
 }
 
 .runtime-card:hover {
@@ -2146,32 +2165,36 @@ onBeforeUnmount(() => {
 .runtime-card-header {
   display: flex;
   align-items: flex-start;
-  gap: 0.85rem;
+  gap: 1rem;
 }
 
 .runtime-icon-badge {
-  font-size: 1.85rem;
+  font-size: 2.2rem;
   line-height: 1;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .runtime-title-block {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.3rem;
   flex: 1;
   min-width: 0;
 }
 
 .runtime-name-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 0.45rem;
+  gap: 0.6rem;
   width: 100%;
 }
 
 .runtime-name {
-  font-size: 1.02rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--text-main);
   line-height: 1.35;
@@ -2204,14 +2227,14 @@ onBeforeUnmount(() => {
 .runtime-header-badges {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.45rem;
   flex-shrink: 0;
 }
 
 .runtime-version-badge {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  padding: 0.18rem 0.5rem;
+  padding: 0.22rem 0.65rem;
   border-radius: 6px;
   line-height: 1.3;
   display: inline-flex;
@@ -2238,14 +2261,46 @@ onBeforeUnmount(() => {
 }
 
 .runtime-desc {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
-  line-height: 1.45;
-  height: 2.9em;
+  line-height: 1.5;
+  min-height: 2.6em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Card Meta Info Bar */
+.runtime-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.85rem;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  font-size: 0.76rem;
+}
+
+.runtime-card-meta .meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  overflow: hidden;
+}
+
+.runtime-card-meta .meta-label {
+  color: var(--text-muted);
+}
+
+.runtime-card-meta .meta-value {
+  color: var(--text-main);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 
@@ -2437,8 +2492,8 @@ onBeforeUnmount(() => {
   margin-top: auto;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0.45rem;
-  padding-top: 0.65rem;
+  gap: 0.6rem;
+  padding-top: 0.85rem;
   border-top: 1px solid var(--card-border-subtle, rgba(255, 255, 255, 0.06));
 }
 
@@ -2446,10 +2501,10 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.4rem 0.2rem;
-  font-size: 0.8rem;
+  padding: 0.48rem 0.65rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  border-radius: 6px;
+  border-radius: 7px;
   border: 1px solid var(--border-color);
   background: var(--button-secondary-bg, rgba(255, 255, 255, 0.04));
   color: var(--text-main);
@@ -3606,8 +3661,9 @@ onBeforeUnmount(() => {
   width: 100%;
   overflow-x: auto;
   border: 1px solid var(--card-border);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.015);
+  border-radius: 14px;
+  background: var(--card-bg);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
   margin-bottom: 2rem;
 }
 
@@ -3615,7 +3671,7 @@ onBeforeUnmount(() => {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 0.84rem;
+  font-size: 0.86rem;
 }
 
 .tools-table thead tr {
@@ -3624,8 +3680,8 @@ onBeforeUnmount(() => {
 }
 
 .tools-table th {
-  padding: 0.75rem 1rem;
-  font-size: 0.75rem;
+  padding: 0.95rem 1.25rem;
+  font-size: 0.78rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -3634,14 +3690,14 @@ onBeforeUnmount(() => {
 }
 
 .tools-table th.th-tool {
-  width: 180px;
+  width: 220px;
 }
 .tools-table th.th-version {
-  width: 140px;
+  width: 160px;
 }
 .tools-table th.th-actions {
   text-align: right;
-  width: 260px;
+  width: 300px;
 }
 
 .tool-table-row {
@@ -3658,7 +3714,7 @@ onBeforeUnmount(() => {
 }
 
 .tools-table td {
-  padding: 0.65rem 1rem;
+  padding: 0.95rem 1.25rem;
   vertical-align: middle;
 }
 
@@ -3669,10 +3725,15 @@ onBeforeUnmount(() => {
 .table-tool-cell {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
+
+.table-tool-cell .tool-icon {
+  flex-shrink: 0;
 }
 
 .table-tool-cell .tool-title {
+  font-size: 0.92rem;
   font-weight: 600;
   color: var(--text-main);
   text-decoration: none;
@@ -3686,15 +3747,15 @@ onBeforeUnmount(() => {
 .table-version-cell {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .table-version-cell .runtime-version-badge {
   display: inline-flex;
   align-items: center;
-  padding: 2px 7px;
-  border-radius: 5px;
-  font-size: 0.78rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
   font-weight: 600;
   background: var(--input-bg);
   border: 1px solid var(--card-border);
@@ -3710,20 +3771,20 @@ onBeforeUnmount(() => {
 .table-desc-cell {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .tool-desc-text {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
-  max-width: 480px;
+  max-width: 640px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .pin-reason-text-sm {
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   color: #d97706;
 }
 
@@ -3731,7 +3792,7 @@ onBeforeUnmount(() => {
 .table-actions-group {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   justify-content: flex-end;
 }
 
@@ -3739,10 +3800,10 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 3px 8px;
-  font-size: 0.76rem;
+  padding: 4px 10px;
+  font-size: 0.78rem;
   font-weight: 500;
-  border-radius: 5px;
+  border-radius: 6px;
   border: 1px solid var(--card-border);
   background: var(--button-secondary-bg, rgba(255, 255, 255, 0.04));
   color: var(--text-main);
