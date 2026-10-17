@@ -607,7 +607,7 @@
             <!-- Top Right Delete Button for Installed Themes (Only shown under 'installed' tab) -->
             <button
               v-if="activeThemeTypeTab === 'installed' && isItemInstalled(item)"
-              class="btn-card-delete"
+              class="btn btn-icon danger btn-card-delete"
               :title="t('common.delete') || '卸载此主题包'"
               @click.stop="onUninstallThemeCard(item)"
             >
@@ -812,7 +812,7 @@
                     <div v-if="isItemInstalled(item)" class="installed-group">
                       <button
                         v-if="!isExtensionActive(item)"
-                        class="btn-apply-theme small"
+                        class="btn btn-capsule btn-apply-theme"
                         :title="t('settings.apply_theme') || '应用此主题'"
                         @click="onApplyTheme(item)"
                       >
@@ -820,7 +820,7 @@
                       </button>
                       <button
                         v-else
-                        class="btn-applied-current small"
+                        class="btn btn-capsule applied btn-applied-current"
                         disabled
                         :title="t('marketplace.current_active') || '当前正在生效的主题'"
                       >
@@ -828,7 +828,7 @@
                       </button>
                       <button
                         v-if="activeThemeTypeTab === 'installed'"
-                        class="btn-table-delete"
+                        class="btn btn-icon danger btn-table-delete"
                         :title="t('common.delete') || '卸载此主题包'"
                         @click="onUninstallThemeCard(item)"
                       >
@@ -837,7 +837,7 @@
                     </div>
                     <button
                       v-else
-                      class="btn-install-theme small"
+                      class="btn btn-capsule btn-install-theme"
                       :disabled="mpIsInstalling(item)"
                       @click="onInstallTheme(item)"
                     >

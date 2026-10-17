@@ -16,7 +16,7 @@
     - 优化 `AA` 大写转换按钮与底部取消/确定按钮。
   - *提交命名*：`refactor(environments): unify action buttons and replace hardcoded raw characters`
 
-- [ ] **Task 3: 扩展市场操作列与卡片按钮治理 (Marketplace)**
+- [x] **Task 3: 扩展市场操作列与卡片按钮治理 (Marketplace)**
   - 重构 `frontend/src/views/MarketplaceView.vue`：
     - 统一列表视图与卡片视图中的操作按钮（安装、应用、生效中）；
     - 统一度量衡为标准高度 `26px`，确保中英文切换时不发生高度跳动；
