@@ -8,7 +8,7 @@
           <div>
             <h3>{{ isEdit ? (t("environments.edit_btn") + " " + t("nav.environments")) : (t("environments.create_btn")) }}</h3>
             <span class="sub-title">
-              {{ form.scope === 'user' ? (t("environments.scope_user") || "用户全局环境变量") : (t("environments.scope_workspace") || "工作区项目环境变量") }}
+              {{ form.scope === 'user' ? (t("environments.scope_user") || "用户") : (t("environments.scope_workspace") || "工作区") }}
               <span class="scope-file-tag font-mono">{{ form.scope === 'user' ? '~/.config/unirtm/unirtm.toml' : '.unirtm.toml' }}</span>
             </span>
           </div>

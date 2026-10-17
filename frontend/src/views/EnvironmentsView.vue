@@ -24,7 +24,7 @@
       <div class="scope-context-pill">
         <span class="scope-badge" :class="activeScope">
           <TechIcon :id="activeScope === 'user' ? 'workbench:settings' : 'workbench:folder'" :size="13" :colored="false" />
-          {{ activeScope === 'user' ? (t("environments.scope_user") || "用户全局环境变量") : (t("environments.scope_workspace") || "工作区项目环境变量") }}
+          {{ activeScope === 'user' ? (t("environments.scope_user") || "用户") : (t("environments.scope_workspace") || "工作区") }}
         </span>
         <span class="scope-hint-text">
           {{ activeScope === 'user'
@@ -116,7 +116,7 @@
                 {{ item.is_sensitive ? '🔒 ' + (t('environments.sensitive_badge') || '敏感密钥') : '🌐 ' + (t('environments.public_badge') || '公开变量') }}
               </span>
               <span class="scope-tag" :class="item.scope">
-                {{ item.scope === 'user' ? '用户' : '工作区' }}
+                {{ item.scope === 'user' ? (t("environments.scope_user") || "用户") : (t("environments.scope_workspace") || "工作区") }}
               </span>
             </div>
 
@@ -434,123 +434,119 @@ onMounted(() => {
   color: var(--text-muted);
 }
 
+/* Scope Banner */
 .scope-selection-bar {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
-  gap: 12px;
-  border-radius: 10px;
+  align-items: center;
+  padding: 0.65rem 1rem;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  gap: 1rem;
 }
 
 .scope-context-pill {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
 .scope-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
-  border-radius: 6px;
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
-.scope-badge.workspace {
-  background: rgba(0, 229, 255, 0.15);
-  border: 1px solid rgba(0, 229, 255, 0.4);
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: rgba(2, 132, 199, 0.12);
   color: var(--accent-cyan);
+  border: 1px solid rgba(2, 132, 199, 0.25);
 }
 
 .scope-badge.user {
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  color: var(--success, #10b981);
-}
-
-.scope-hint-text {
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+  border-color: rgba(168, 85, 247, 0.25);
 }
 
 .scope-context-config {
-  font-size: 0.78rem;
-  color: var(--accent-cyan);
-  background: rgba(0, 229, 255, 0.08);
-  border: 1px solid rgba(0, 229, 255, 0.2);
-  padding: 3px 9px;
-  border-radius: 6px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  opacity: 0.8;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
-/* Filter & Search Toolbar */
+.scope-hint-text {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* Filter Bar */
 .env-filter-bar {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
+  justify-content: space-between;
+  padding: 0.65rem 0.85rem;
   border-radius: 10px;
-  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .search-input-wrapper {
-  position: relative;
-  flex: 1;
-  min-width: 220px;
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  max-width: 450px;
 }
 
 .search-icon {
-  position: absolute;
-  left: 10px;
   color: var(--text-muted);
+  display: flex;
+  align-items: center;
 }
 
 .env-search-input {
   width: 100%;
-  padding: 7px 12px 7px 32px;
-  background: var(--input-bg, rgba(0, 0, 0, 0.25));
-  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.12));
-  border-radius: 6px;
+  padding: 0.45rem 0.75rem;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
   color: var(--text-main);
-  font-size: 0.84rem;
-  box-sizing: border-box;
+  font-size: 0.82rem;
+  outline: none;
   transition: all 0.2s;
 }
 
 .env-search-input:focus {
-  outline: none;
   border-color: var(--accent-cyan);
-  box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
+  box-shadow: 0 0 0 2px var(--accent-cyan-glow);
 }
-
 
 .env-stats-badges {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.65rem;
 }
 
 .stat-badge {
   font-size: 0.78rem;
   color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.05);
-  padding: 3px 8px;
+  background: var(--input-bg);
+  padding: 0.3rem 0.65rem;
   border-radius: 6px;
-  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--card-border);
 }
 
 .stat-badge.sensitive-stat {
-  color: #f59e0b;
+  color: var(--warning, #f59e0b);
   background: rgba(245, 158, 11, 0.1);
-  border-color: rgba(245, 158, 11, 0.3);
+  border-color: rgba(245, 158, 11, 0.25);
 }
 
 .tool-action-btn {
@@ -674,40 +670,37 @@ onMounted(() => {
 
 .sec-tag {
   font-size: 0.68rem;
-  padding: 1px 6px;
-  border-radius: 4px;
+  padding: 2px 8px;
+  border-radius: 9999px;
   font-weight: 600;
 }
 
 .sec-tag.sensitive {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--warning, #f59e0b);
+  border: 1px solid rgba(245, 158, 11, 0.25);
 }
 
 .sec-tag.public {
-  background: rgba(0, 229, 255, 0.1);
+  background: rgba(2, 132, 199, 0.12);
   color: var(--accent-cyan);
-  border: 1px solid rgba(0, 229, 255, 0.25);
+  border: 1px solid rgba(2, 132, 199, 0.25);
 }
 
 .scope-tag {
   font-size: 0.68rem;
-  padding: 1px 6px;
-  border-radius: 4px;
+  padding: 2px 8px;
+  border-radius: 9999px;
   font-weight: 600;
-}
-
-.scope-tag.workspace {
-  background: rgba(0, 229, 255, 0.08);
+  background: rgba(2, 132, 199, 0.12);
   color: var(--accent-cyan);
-  border: 1px solid rgba(0, 229, 255, 0.2);
+  border: 1px solid rgba(2, 132, 199, 0.25);
 }
 
 .scope-tag.user {
-  background: rgba(16, 185, 129, 0.08);
-  color: var(--success, #10b981);
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: rgba(168, 85, 247, 0.12);
+  color: #c084fc;
+  border-color: rgba(168, 85, 247, 0.25);
 }
 
 .card-btn-group {
@@ -899,23 +892,31 @@ onMounted(() => {
 }
 
 /* Light Theme Overrides */
-:root[data-theme="light"] .scope-badge.workspace,
-[data-theme="light"] .scope-badge.workspace {
-  background: rgba(2, 132, 199, 0.12);
-  border-color: #0284c7;
-  color: #0284c7;
+:root[data-theme="light"] .scope-badge.user,
+[data-theme="light"] .scope-badge.user,
+:root[data-theme="light"] .scope-tag.user,
+[data-theme="light"] .scope-tag.user {
+  background: rgba(124, 58, 237, 0.1);
+  color: #7c3aed;
+  border-color: rgba(124, 58, 237, 0.25);
 }
 
-:root[data-theme="light"] .scope-chip-btn.active,
-[data-theme="light"] .scope-chip-btn.active {
-  background: #0284c7;
-  color: #ffffff;
+:root[data-theme="light"] .scope-badge,
+[data-theme="light"] .scope-badge,
+:root[data-theme="light"] .scope-tag,
+[data-theme="light"] .scope-tag,
+:root[data-theme="light"] .sec-tag.public,
+[data-theme="light"] .sec-tag.public {
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+  border-color: rgba(2, 132, 199, 0.25);
 }
 
 :root[data-theme="light"] .tool-action-btn.primary,
 [data-theme="light"] .tool-action-btn.primary {
-  background: #0284c7;
+  background: linear-gradient(135deg, #0284c7, #0369a1);
   color: #ffffff;
+  border-color: #0284c7;
 }
 
 :root[data-theme="light"] .env-card,

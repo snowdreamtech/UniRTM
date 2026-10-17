@@ -93,7 +93,7 @@
       <!-- ENVIRONMENTS Navigation Items -->
       <template v-if="currentTab === 'environments'">
         <div class="nav-group-title">
-          {{ activeScope === 'user' ? (t("environments.scope_user") || "用户全局环境变量") : (t("environments.scope_workspace") || "工作区环境变量") }}
+          {{ activeScope === 'user' ? (t("environments.scope_user") || "用户") : (t("environments.scope_workspace") || "工作区") }}
         </div>
         <button
           v-for="env in filteredEnvItems"
