@@ -1228,6 +1228,7 @@ onUnmounted(() => {
 
 .tab-item-close-btn {
   opacity: 0;
+  pointer-events: none;
   background: transparent;
   border: none;
   color: var(--text-muted);
@@ -1239,18 +1240,23 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              background 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.15s ease;
   flex-shrink: 0;
 }
 
 .terminal-tab-item:hover .tab-item-close-btn {
   opacity: 0.85;
+  pointer-events: auto;
 }
 
 .tab-item-close-btn:hover {
   opacity: 1 !important;
   color: #ef4444 !important;
   background: rgba(239, 68, 68, 0.18) !important;
+  transform: scale(1.08);
 }
 
 .tab-item-split-actions {
@@ -1262,25 +1268,35 @@ onUnmounted(() => {
 }
 
 .tab-action-btn {
+  opacity: 0;
+  pointer-events: none;
   background: transparent;
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              background 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.15s ease;
   flex-shrink: 0;
+}
+
+.terminal-tab-item:hover .tab-action-btn {
   opacity: 0.85;
+  pointer-events: auto;
 }
 
 .tab-action-btn:hover {
-  opacity: 1;
-  color: var(--accent-cyan);
-  background: rgba(0, 229, 255, 0.15);
+  opacity: 1 !important;
+  color: var(--accent-cyan) !important;
+  background: rgba(0, 229, 255, 0.15) !important;
+  transform: scale(1.08);
 }
 
 .term-status-dot {
@@ -1645,7 +1661,7 @@ onUnmounted(() => {
 }
 
 [data-theme="light"] .tab-action-btn:hover {
-  color: #0284c7;
-  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7 !important;
+  background: rgba(2, 132, 199, 0.12) !important;
 }
 </style>
