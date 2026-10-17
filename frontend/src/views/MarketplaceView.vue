@@ -604,15 +604,6 @@
             :class="{ 'card-is-active': isExtensionActive(item) }"
             @click="navigateToDetail(item.namespace || '', item.name)"
           >
-            <!-- Top Right Delete Button for Installed Themes (Only shown under 'installed' tab) -->
-            <button
-              v-if="activeThemeTypeTab === 'installed' && isItemInstalled(item)"
-              class="btn btn-icon danger btn-card-delete"
-              :title="t('common.delete') || '卸载此主题包'"
-              @click.stop="onUninstallThemeCard(item)"
-            >
-              <TechIcon id="workbench:delete" :size="13" />
-            </button>
 
             <div class="card-header-row">
               <div class="card-icon-wrap">
@@ -698,6 +689,37 @@
                   >
                     {{ t('marketplace.currently_applied') || '当前生效' }}
                   </button>
+                  <!-- More Menu for Installed Themes (Uninstall) -->
+                  <div
+                    v-if="activeThemeTypeTab === 'installed'"
+                    class="theme-more-menu-wrap"
+                    @click.stop
+                  >
+                    <button
+                      class="btn-theme-more"
+                      :class="{ 'is-active': activeMenuThemePkgId === (item.package_id || item.name) }"
+                      @click.stop="toggleThemeMenu(item.package_id || item.name)"
+                      :title="t('common.more_actions') || '更多操作'"
+                    >
+                      <TechIcon id="workbench:more" :size="14" />
+                    </button>
+                    <transition name="dropdown-fade">
+                      <div
+                        v-if="activeMenuThemePkgId === (item.package_id || item.name)"
+                        class="theme-dropdown-menu"
+                        @click.stop
+                      >
+                        <button
+                          class="dropdown-item danger"
+                          @click.stop="handleUninstallFromMenu(item)"
+                          :title="t('common.delete') || '卸载此主题包'"
+                        >
+                          <TechIcon id="workbench:delete" :size="13" />
+                          <span>{{ t('common.delete') || '卸载此主题包' }}</span>
+                        </button>
+                      </div>
+                    </transition>
+                  </div>
                 </div>
                 <button
                   v-else
@@ -826,14 +848,37 @@
                       >
                         {{ t('marketplace.currently_applied') || '当前生效' }}
                       </button>
-                      <button
+                      <!-- More Menu for Installed Themes (Uninstall) -->
+                      <div
                         v-if="activeThemeTypeTab === 'installed'"
-                        class="btn btn-icon danger btn-table-delete"
-                        :title="t('common.delete') || '卸载此主题包'"
-                        @click="onUninstallThemeCard(item)"
+                        class="theme-more-menu-wrap"
+                        @click.stop
                       >
-                        <TechIcon id="workbench:delete" :size="12" />
-                      </button>
+                        <button
+                          class="btn-theme-more table-more-btn"
+                          :class="{ 'is-active': activeMenuThemePkgId === (item.package_id || item.name) }"
+                          @click.stop="toggleThemeMenu(item.package_id || item.name)"
+                          :title="t('common.more_actions') || '更多操作'"
+                        >
+                          <TechIcon id="workbench:more" :size="13" />
+                        </button>
+                        <transition name="dropdown-fade">
+                          <div
+                            v-if="activeMenuThemePkgId === (item.package_id || item.name)"
+                            class="theme-dropdown-menu table-menu"
+                            @click.stop
+                          >
+                            <button
+                              class="dropdown-item danger"
+                              @click.stop="handleUninstallFromMenu(item)"
+                              :title="t('common.delete') || '卸载此主题包'"
+                            >
+                              <TechIcon id="workbench:delete" :size="13" />
+                              <span>{{ t('common.delete') || '卸载此主题包' }}</span>
+                            </button>
+                          </div>
+                        </transition>
+                      </div>
                     </div>
                     <button
                       v-else
@@ -1079,7 +1124,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { t } from "../i18n";
 import { useThemeMarketplace } from "../composables/useThemeMarketplace";
@@ -1397,8 +1442,38 @@ watch(
   { immediate: true }
 );
 
+// Overflow action menu for installed themes
+const activeMenuThemePkgId = ref<string | null>(null);
+
+function toggleThemeMenu(pkgId: string) {
+  activeMenuThemePkgId.value = activeMenuThemePkgId.value === pkgId ? null : pkgId;
+}
+
+function closeThemeMenu() {
+  activeMenuThemePkgId.value = null;
+}
+
+function handleUninstallFromMenu(item: MarketplaceExtension) {
+  closeThemeMenu();
+  onUninstallThemeCard(item);
+}
+
+function handleGlobalClick() {
+  if (activeMenuThemePkgId.value) {
+    closeThemeMenu();
+  }
+}
+
+function handleGlobalKeyDown(e: KeyboardEvent) {
+  if (e.key === "Escape" && activeMenuThemePkgId.value) {
+    closeThemeMenu();
+  }
+}
+
 // Initialize channel and load installed themes on mount
 onMounted(async () => {
+  window.addEventListener("click", handleGlobalClick);
+  window.addEventListener("keydown", handleGlobalKeyDown);
   if (route.query.tab === "plugins") {
     currentChannel.value = "plugins";
   } else {
@@ -1410,6 +1485,11 @@ onMounted(async () => {
   if (!route.params.namespace || !route.params.name) {
     mpSearchThemes("");
   }
+});
+
+onUnmounted(() => {
+  window.removeEventListener("click", handleGlobalClick);
+  window.removeEventListener("keydown", handleGlobalKeyDown);
 });
 
 function switchChannel(channel: "themes" | "plugins") {
@@ -2584,43 +2664,124 @@ const nativePlugins = ref<PluginItem[]>([
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  padding-right: 28px;
 }
 
-.btn-card-delete {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.28);
-  color: #ef4444;
-  display: flex;
+/* Theme More Menu and Dropdown Styles (Installed Tab) */
+.theme-more-menu-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.btn-theme-more {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.2s ease;
-  z-index: 5;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
 }
 
-.btn-card-delete:hover {
-  background: #ef4444;
-  border-color: #ef4444;
-  color: #ffffff;
-  transform: scale(1.1);
-  box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4);
+.btn-theme-more:hover,
+.btn-theme-more.is-active {
+  background: rgba(2, 132, 199, 0.15);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.2);
 }
 
-.trash-icon {
-  stroke: currentColor;
-  stroke-width: 2;
-  transition: transform 0.2s ease;
+[data-theme="light"] .btn-theme-more {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #64748b;
 }
 
-.btn-card-delete:hover .trash-icon {
-  transform: scale(1.1);
+[data-theme="light"] .btn-theme-more:hover,
+[data-theme="light"] .btn-theme-more.is-active {
+  background: rgba(2, 132, 199, 0.08);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.btn-theme-more.table-more-btn {
+  width: 26px;
+  height: 26px;
+}
+
+.theme-dropdown-menu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  background: var(--card-bg, #1e293b);
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 0 12px var(--accent-cyan-glow, rgba(2, 132, 199, 0.15));
+  padding: 0.35rem;
+  z-index: 50;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.theme-dropdown-menu.table-menu {
+  top: calc(100% + 4px);
+  bottom: auto;
+  right: 0;
+  text-align: left;
+}
+
+[data-theme="light"] .theme-dropdown-menu {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0 12px rgba(2, 132, 199, 0.1);
+}
+
+.theme-dropdown-menu .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-main);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.theme-dropdown-menu .dropdown-item:hover {
+  background: var(--input-bg, rgba(255, 255, 255, 0.06));
+  color: var(--text-main);
+}
+
+[data-theme="light"] .theme-dropdown-menu .dropdown-item:hover {
+  background: #f1f5f9;
+}
+
+.theme-dropdown-menu .dropdown-item.danger {
+  color: #ef4444;
+}
+
+.theme-dropdown-menu .dropdown-item.danger:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+[data-theme="dark"] .theme-dropdown-menu .dropdown-item.danger {
+  color: #f87171;
 }
 
 .card-icon-wrap,
@@ -4254,23 +4415,6 @@ const nativePlugins = ref<PluginItem[]>([
   font-size: 0.75rem;
 }
 
-.btn-table-delete {
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-muted);
-  padding: 4px 6px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: all 0.15s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-table-delete:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.12);
-}
 
 .plugin-tags-row.small {
   gap: 3px;
