@@ -2141,7 +2141,7 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
   gap: 1.35rem;
-  min-height: calc(100vh - 290px);
+  min-height: 600px;
   align-content: start;
 }
 
@@ -3662,7 +3662,7 @@ onBeforeUnmount(() => {
 .tools-list-table-wrapper {
   width: 100%;
   flex: 1;
-  min-height: calc(100vh - 290px);
+  min-height: 600px;
   display: flex;
   flex-direction: column;
   overflow-x: auto;
@@ -3677,7 +3677,7 @@ onBeforeUnmount(() => {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 0.88rem;
+  font-size: 0.86rem;
 }
 
 .tools-table thead tr {
@@ -3686,8 +3686,8 @@ onBeforeUnmount(() => {
 }
 
 .tools-table th {
-  padding: 1.15rem 1.5rem;
-  font-size: 0.8rem;
+  padding: 0.85rem 1.25rem;
+  font-size: 0.78rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -3703,7 +3703,7 @@ onBeforeUnmount(() => {
 }
 .tools-table th.th-actions {
   text-align: right;
-  width: 320px;
+  width: 300px;
 }
 
 .tool-table-row {
@@ -3720,7 +3720,7 @@ onBeforeUnmount(() => {
 }
 
 .tools-table td {
-  padding: 1.35rem 1.5rem;
+  padding: 0.8rem 1.25rem;
   vertical-align: middle;
 }
 
@@ -3731,7 +3731,7 @@ onBeforeUnmount(() => {
 .table-tool-cell {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .table-tool-cell .tool-icon {
@@ -3739,7 +3739,7 @@ onBeforeUnmount(() => {
 }
 
 .table-tool-cell .tool-title {
-  font-size: 0.96rem;
+  font-size: 0.92rem;
   font-weight: 600;
   color: var(--text-main);
   text-decoration: none;
@@ -3759,9 +3759,9 @@ onBeforeUnmount(() => {
 .table-version-cell .runtime-version-badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-radius: 6px;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 600;
   background: var(--input-bg);
   border: 1px solid var(--card-border);
@@ -3777,11 +3777,11 @@ onBeforeUnmount(() => {
 .table-desc-cell {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .tool-desc-text {
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
   max-width: 640px;
   overflow: hidden;
@@ -3790,7 +3790,7 @@ onBeforeUnmount(() => {
 }
 
 .pin-reason-text-sm {
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   color: #d97706;
 }
 
@@ -3806,10 +3806,10 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 14px;
-  font-size: 0.82rem;
+  padding: 4px 10px;
+  font-size: 0.78rem;
   font-weight: 500;
-  border-radius: 7px;
+  border-radius: 6px;
   border: 1px solid var(--card-border);
   background: var(--button-secondary-bg, rgba(255, 255, 255, 0.04));
   color: var(--text-main);
