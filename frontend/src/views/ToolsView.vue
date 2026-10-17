@@ -103,6 +103,29 @@
         >
           <b>{{ scopeUpgradableCount }}</b> {{ t("runtimes.count_upgradable_suffix") || "个可升级" }}
         </span>
+
+        <!-- View Mode Switcher -->
+        <div class="view-mode-toggle" id="tools-view-mode-toggle">
+          <button
+            type="button"
+            class="view-mode-btn"
+            :class="{ active: viewMode === 'cards' }"
+            @click="setViewMode('cards')"
+            :title="t('environments.view_cards') || '卡片视图'"
+          >
+            <TechIcon id="workbench:cards" :size="14" />
+          </button>
+          <button
+            type="button"
+            class="view-mode-btn"
+            :class="{ active: viewMode === 'list' }"
+            @click="setViewMode('list')"
+            :title="t('environments.view_list') || '列表视图'"
+          >
+            <TechIcon id="workbench:list" :size="14" />
+          </button>
+        </div>
+
         <button
           class="tool-action-btn primary small"
           id="btn-add-runtime"
@@ -113,8 +136,26 @@
       </div>
     </div>
 
-    <!-- Runtimes Grid Cards -->
-    <div class="runtimes-grid">
+    <!-- Empty State When Scope Has No Configured Tools -->
+    <div v-if="filteredRuntimes.length === 0" class="glass-card runtimes-empty-box" id="runtimes-empty-state">
+      <div class="empty-icon-wrap">
+        <TechIcon id="workbench:tools" :size="32" :colored="false" />
+      </div>
+      <div class="empty-title">
+        {{ currentScope === 'user' ? '用户默认环境暂未配置工具' : '当前工作区暂未配置工具' }}
+      </div>
+      <p class="empty-desc">
+        {{ currentScope === 'user'
+            ? '用户区配置文件 (~/.config/unirtm/unirtm.toml) 提供未绑定工作区时的全局兜底环境，可通过上方「+ 添加运行环境」进行配置。'
+            : '工作区配置文件 (.unirtm.toml) 暂无匹配工具，可通过上方「+ 添加运行环境」添加。' }}
+      </p>
+      <button class="tool-action-btn primary small" @click="openAddModal">
+        <span>+ {{ t("runtimes.add_runtime") || "添加运行环境" }}</span>
+      </button>
+    </div>
+
+    <!-- Runtimes Grid Cards View -->
+    <div v-else-if="viewMode === 'cards'" class="runtimes-grid">
       <div
         v-for="rt in filteredRuntimes"
         :key="rt.id"
@@ -157,7 +198,6 @@
           </div>
         </div>
 
-
         <!-- Card Actions: Unified Four Action Bar [切换] [安装] [锁定] [删除] -->
         <div class="runtime-card-footer">
           <button
@@ -195,26 +235,113 @@
           </button>
         </div>
       </div>
-
-
-      <!-- Empty State When Scope Has No Configured Tools -->
-      <div v-if="filteredRuntimes.length === 0" class="glass-card runtimes-empty-box" id="runtimes-empty-state">
-        <div class="empty-icon-wrap">
-          <TechIcon id="workbench:tools" :size="32" :colored="false" />
-        </div>
-        <div class="empty-title">
-          {{ currentScope === 'user' ? '用户默认环境暂未配置工具' : '当前工作区暂未配置工具' }}
-        </div>
-        <p class="empty-desc">
-          {{ currentScope === 'user'
-              ? '用户区配置文件 (~/.config/unirtm/unirtm.toml) 提供未绑定工作区时的全局兜底环境，可通过上方「+ 添加运行环境」进行配置。'
-              : '工作区配置文件 (.unirtm.toml) 暂无匹配工具，可通过上方「+ 添加运行环境」添加。' }}
-        </p>
-        <button class="tool-action-btn primary small" @click="openAddModal">
-          <span>+ {{ t("runtimes.add_runtime") || "添加运行环境" }}</span>
-        </button>
-      </div>
     </div>
+
+    <!-- Runtimes High-Density List / Table View -->
+    <div v-else class="tools-list-table-wrapper glass-card">
+      <table class="tools-table">
+        <thead>
+          <tr>
+            <th class="th-tool">{{ t("runtimes.col_tool") || "工具" }}</th>
+            <th class="th-version">{{ t("runtimes.col_version") || "版本" }}</th>
+            <th class="th-desc">{{ t("runtimes.col_desc") || "描述" }}</th>
+            <th class="th-actions">{{ t("runtimes.col_actions") || "操作" }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="rt in filteredRuntimes"
+            :key="rt.id"
+            class="tool-table-row"
+            :class="{ active: currentScope === 'workspace' ? rt.active_version : rt.global_version }"
+            :id="'tool-row-' + rt.id"
+          >
+            <!-- Col: Tool -->
+            <td class="td-tool">
+              <div class="table-tool-cell">
+                <TechIcon :id="rt.id" :size="20" :colored="true" class="tool-icon" />
+                <a
+                  :href="getToolHomepage(rt)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="tool-title font-mono"
+                  :title="`${formatToolTitle(rt.name)} (访问官方主页/代码仓库)`"
+                >
+                  {{ formatToolTitle(rt.name) }}
+                </a>
+              </div>
+            </td>
+
+            <!-- Col: Version -->
+            <td class="td-version">
+              <div class="table-version-cell">
+                <span
+                  class="runtime-version-badge font-mono"
+                  :class="{
+                    'is-active': Boolean(getCurrentVersion(rt)),
+                    'is-muted': !getCurrentVersion(rt),
+                  }"
+                  :title="getCurrentVersion(rt) ? `${formatVersion(getCurrentVersion(rt))}` : t('runtimes.unconfigured')"
+                >
+                  {{ getCurrentVersion(rt) ? formatVersion(getCurrentVersion(rt)) : t('runtimes.unconfigured') }}
+                </span>
+                <span v-if="rt.pinned" class="pin-indicator" :title="rt.pin_reason || t('runtimes.action_lock')">📌</span>
+              </div>
+            </td>
+
+            <!-- Col: Description -->
+            <td class="td-desc">
+              <div class="table-desc-cell">
+                <span class="tool-desc-text" :title="rt.description">{{ rt.description }}</span>
+                <span v-if="rt.pinned && rt.pin_reason" class="pin-reason-text-sm" :title="rt.pin_reason">
+                  📌 {{ rt.pin_reason }}
+                </span>
+              </div>
+            </td>
+
+            <!-- Col: Actions -->
+            <td class="td-actions">
+              <div class="table-actions-group">
+                <button
+                  class="row-action-btn action-switch"
+                  :id="'btn-switch-' + rt.id"
+                  @click.stop="openSwitchVersionModal(rt)"
+                  :title="t('runtimes.action_switch')"
+                >
+                  {{ t("runtimes.action_switch") }}
+                </button>
+                <button
+                  class="row-action-btn action-install"
+                  :id="'btn-install-' + rt.id"
+                  @click.stop="openRemoteModal(rt)"
+                  :title="t('runtimes.action_install')"
+                >
+                  {{ t("runtimes.action_install") }}
+                </button>
+                <button
+                  class="row-action-btn action-pin"
+                  :class="{ 'is-pinned': rt.pinned }"
+                  :id="'btn-pin-' + rt.id"
+                  @click.stop="togglePin(rt)"
+                  :title="rt.pinned ? (rt.pin_reason ? `${t('runtimes.action_unlock')}：${rt.pin_reason}` : t('runtimes.action_unlock')) : t('runtimes.action_lock')"
+                >
+                  {{ rt.pinned ? t("runtimes.action_unlock") : t("runtimes.action_lock") }}
+                </button>
+                <button
+                  class="row-action-btn action-delete"
+                  :id="'btn-delete-' + rt.id"
+                  @click.stop="confirmRemoveRuntime(rt)"
+                  :title="t('runtimes.action_delete')"
+                >
+                  {{ t("runtimes.action_delete") }}
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
 
     <!-- Switch Version Modal -->
     <div
@@ -710,6 +837,15 @@ const detectedLegacies = ref<string[]>([]);
 const loading = ref(false);
 const migrating = ref(false);
 const searchKey = ref("");
+
+// View mode: 'cards' or 'list'
+const viewMode = ref<"cards" | "list">(
+  (localStorage.getItem("unirtm_view_mode_tools") as "cards" | "list") || "cards"
+);
+function setViewMode(mode: "cards" | "list") {
+  viewMode.value = mode;
+  localStorage.setItem("unirtm_view_mode_tools", mode);
+}
 
 // Remote modal state
 const isModalOpen = ref(false);
@@ -3418,5 +3554,307 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+}
+
+/* Tools View Mode Switcher */
+.view-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.view-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.view-mode-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.view-mode-btn.active {
+  color: var(--accent-cyan);
+  background: rgba(0, 229, 255, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Tools High-Density Table Styles */
+.tools-list-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.015);
+  margin-bottom: 2rem;
+}
+
+.tools-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.84rem;
+}
+
+.tools-table thead tr {
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.tools-table th {
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.tools-table th.th-tool {
+  width: 180px;
+}
+.tools-table th.th-version {
+  width: 140px;
+}
+.tools-table th.th-actions {
+  text-align: right;
+  width: 260px;
+}
+
+.tool-table-row {
+  border-bottom: 1px solid var(--card-border, rgba(255, 255, 255, 0.05));
+  transition: background 0.15s ease;
+}
+
+.tool-table-row:last-child {
+  border-bottom: none;
+}
+
+.tool-table-row:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.tools-table td {
+  padding: 0.65rem 1rem;
+  vertical-align: middle;
+}
+
+.tools-table td.td-actions {
+  text-align: right;
+}
+
+.table-tool-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.table-tool-cell .tool-title {
+  font-weight: 600;
+  color: var(--text-main);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.table-tool-cell .tool-title:hover {
+  color: var(--accent-cyan);
+}
+
+.table-version-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.table-version-cell .runtime-version-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  color: var(--accent-cyan);
+}
+
+.table-version-cell .runtime-version-badge.is-muted {
+  color: var(--text-muted);
+  font-style: italic;
+  font-weight: normal;
+}
+
+.table-desc-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tool-desc-text {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  max-width: 480px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pin-reason-text-sm {
+  font-size: 0.72rem;
+  color: #d97706;
+}
+
+/* Table Row Actions */
+.table-actions-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.row-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  font-size: 0.76rem;
+  font-weight: 500;
+  border-radius: 5px;
+  border: 1px solid var(--card-border);
+  background: var(--button-secondary-bg, rgba(255, 255, 255, 0.04));
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.row-action-btn.action-switch {
+  background: rgba(2, 132, 199, 0.08);
+  border-color: rgba(2, 132, 199, 0.28);
+  color: var(--accent-cyan);
+}
+.row-action-btn.action-switch:hover {
+  background: rgba(2, 132, 199, 0.18);
+  border-color: var(--accent-cyan);
+}
+
+.row-action-btn.action-install {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.28);
+  color: #10b981;
+}
+.row-action-btn.action-install:hover {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: #10b981;
+}
+[data-theme="dark"] .row-action-btn.action-install {
+  color: #34d399;
+}
+
+.row-action-btn.action-pin {
+  background: rgba(148, 163, 184, 0.08);
+  border-color: rgba(148, 163, 184, 0.25);
+  color: var(--text-muted);
+}
+.row-action-btn.action-pin:hover {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #d97706;
+}
+.row-action-btn.action-pin.is-pinned {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #d97706;
+}
+[data-theme="dark"] .row-action-btn.action-pin.is-pinned {
+  color: #fbbf24;
+}
+
+.row-action-btn.action-delete {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.28);
+  color: #ef4444;
+}
+.row-action-btn.action-delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #dc2626;
+}
+[data-theme="dark"] .row-action-btn.action-delete {
+  color: #f87171;
+}
+
+/* Light Theme Overrides for Tools Table */
+:root[data-theme="light"] .tools-list-table-wrapper,
+[data-theme="light"] .tools-list-table-wrapper {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+:root[data-theme="light"] .tools-table thead tr,
+[data-theme="light"] .tools-table thead tr {
+  background: #f8fafc;
+  border-bottom-color: #e2e8f0;
+}
+
+:root[data-theme="light"] .tools-table th,
+[data-theme="light"] .tools-table th {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .tool-table-row,
+[data-theme="light"] .tool-table-row {
+  border-bottom-color: #f1f5f9;
+}
+
+:root[data-theme="light"] .tool-table-row:hover,
+[data-theme="light"] .tool-table-row:hover {
+  background: rgba(2, 132, 199, 0.03);
+}
+
+:root[data-theme="light"] .table-version-cell .runtime-version-badge,
+[data-theme="light"] .table-version-cell .runtime-version-badge {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #0284c7;
+}
+
+:root[data-theme="light"] .view-mode-toggle,
+[data-theme="light"] .view-mode-toggle {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+:root[data-theme="light"] .view-mode-btn,
+[data-theme="light"] .view-mode-btn {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .view-mode-btn:hover,
+[data-theme="light"] .view-mode-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .view-mode-btn.active,
+[data-theme="light"] .view-mode-btn.active {
+  background: #ffffff;
+  color: #0284c7;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 </style>

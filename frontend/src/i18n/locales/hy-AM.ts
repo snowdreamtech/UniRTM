@@ -574,4 +574,8 @@ export const hyAm: TranslationDict = {
   "tasks.col_command": "Command",
   "tasks.col_depends": "Dependencies & Info",
   "tasks.col_actions": "Actions",
+  "runtimes.col_tool": "Tool",
+  "runtimes.col_version": "Version",
+  "runtimes.col_desc": "Description",
+  "runtimes.col_actions": "Actions",
 };

@@ -587,4 +587,8 @@ export const zhCn: TranslationDict = {
   "tasks.col_command": "命令",
   "tasks.col_depends": "依赖与描述",
   "tasks.col_actions": "操作",
+  "runtimes.col_tool": "工具",
+  "runtimes.col_version": "版本",
+  "runtimes.col_desc": "描述",
+  "runtimes.col_actions": "操作",
 };
