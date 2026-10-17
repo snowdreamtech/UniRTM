@@ -8,7 +8,7 @@
   - 在 `frontend/vite.config.ts` 中实现本地开发服务器对 `/api/terminal/exec` 的模拟支持；
   - *提交命名*：`feat(api): implement terminal command execution engine and default terminal top-sorting`
 
-- [ ] **Task 2: 前端对接 Shell 执行引擎与排序保障 (Frontend Execution & Ordering)**
+- [x] **Task 2: 前端对接 Shell 执行引擎与排序保障 (Frontend Execution & Ordering)**
   - 在 `frontend/src/composables/useTerminal.ts` 中添加排序保障（系统默认排第一）；
   - 在 `frontend/src/components/layout/BottomDrawer.vue` 中：
     - 将 `handlePaneRunCommand` 改为请求 `/api/terminal/exec`，实现真正的 Linux 命令执行与输出回显；

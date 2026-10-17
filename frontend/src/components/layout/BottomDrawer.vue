@@ -663,23 +663,30 @@ async function handlePaneRunCommand(pane: TerminalPane) {
   }
 
   try {
-    const res = await fetch("/api/tasks/run", {
+    const res = await fetch("/api/terminal/exec", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: cmd, scope: "workspace" }),
+      body: JSON.stringify({
+        command: cmd,
+        shell: pane.shellPath,
+      }),
     });
     if (res.ok) {
       const data = await res.json();
-      if (data.output) {
-        pane.lines.push({ type: "output", text: data.output });
-      } else {
+      if (data.output && data.output.trim()) {
+        pane.lines.push({ type: "output", text: data.output.trimEnd() });
+      } else if (data.exit_code === 0) {
+        // Command completed silently (like touch, cd, export)
+      }
+
+      if (data.exit_code !== 0 && (!data.output || !data.output.trim())) {
         pane.lines.push({
-          type: "info",
-          text: `[${pane.shellName}] Command executed (exit code: 0).`,
+          type: "error",
+          text: data.error || `Process exited with code ${data.exit_code}`,
         });
       }
     } else {
-      pane.lines.push({ type: "error", text: "Command returned non-zero exit code." });
+      pane.lines.push({ type: "error", text: "Failed to communicate with terminal executor." });
     }
   } catch (err: any) {
     pane.lines.push({ type: "error", text: err.message || "Command execution error" });

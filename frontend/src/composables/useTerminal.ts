@@ -41,7 +41,9 @@ export function useTerminal() {
       const res = await fetch("/api/terminals");
       if (res.ok) {
         const data = await res.json();
-        terminals.value = data.terminals || [];
+        const rawList: TerminalItem[] = data.terminals || [];
+        rawList.sort((a, b) => (b.is_default ? 1 : 0) - (a.is_default ? 1 : 0));
+        terminals.value = rawList;
         defaultTerminalPath.value = data.default || "";
         currentTerminalPath.value = data.current || data.default || "";
       } else {
