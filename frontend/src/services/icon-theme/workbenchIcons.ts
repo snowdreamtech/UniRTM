@@ -13,6 +13,10 @@ export const workbenchSemanticIcons: Record<WorkbenchIconKey, SemanticIconMappin
     candidates: ["dashboard", "chart", "analytics", "status", "overview", "json"],
     fallbackSetiKey: "_json",
   },
+  "workbench:explorer": {
+    candidates: ["explorer", "files", "folder", "default_folder", "directory"],
+    fallbackSetiKey: "_default",
+  },
   "workbench:runtimes": {
     candidates: ["runtimes", "globe", "environment", "html", "javascript"],
     fallbackSetiKey: "_html",

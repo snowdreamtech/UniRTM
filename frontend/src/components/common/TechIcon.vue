@@ -91,6 +91,7 @@ const { resolveIcon } = useIconTheme();
 
 const WORKBENCH_CODICON_MAP: Record<string, string> = {
   "workbench:dashboard": "codicon-graph",
+  "workbench:explorer": "codicon-files",
   "workbench:runtimes": "codicon-server",
   "workbench:tools": "codicon-tools",
   "workbench:tasks": "codicon-tasklist",

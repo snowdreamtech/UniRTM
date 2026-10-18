@@ -21,6 +21,11 @@ const routes: Array<RouteRecordRaw> = [
     component: DashboardView,
   },
   {
+    path: "/explorer",
+    name: "explorer",
+    component: () => import("../views/ExplorerView.vue"),
+  },
+  {
     path: "/tools",
     name: "tools",
     component: ToolsView,

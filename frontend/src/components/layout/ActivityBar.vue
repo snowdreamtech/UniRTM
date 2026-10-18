@@ -99,6 +99,11 @@ const primaryTabs = computed<ActivityTab[]>(() => [
     label: t("nav.dashboard") || "Dashboard",
   },
   {
+    id: "explorer",
+    icon: "workbench:explorer",
+    label: t("nav.explorer") || "Explorer",
+  },
+  {
     id: "tools",
     icon: "workbench:tools",
     label: t("nav.tools") || "Toolchains",

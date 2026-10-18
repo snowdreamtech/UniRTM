@@ -39,11 +39,26 @@ export interface TranslationDict {
   "console.title"?: string;
 
   "nav.dashboard"?: string;
+  "nav.explorer"?: string;
   "nav.runtimes"?: string;
   "nav.tools"?: string;
   "nav.tasks"?: string;
   "nav.marketplace"?: string;
   "nav.doctor"?: string;
+
+  "explorer.title"?: string;
+  "explorer.new_file"?: string;
+  "explorer.new_folder"?: string;
+  "explorer.refresh"?: string;
+  "explorer.collapse_all"?: string;
+  "explorer.rename"?: string;
+  "explorer.delete"?: string;
+  "explorer.copy_path"?: string;
+  "explorer.copy_relative_path"?: string;
+  "explorer.open_in_terminal"?: string;
+  "explorer.empty_folder"?: string;
+  "explorer.delete_confirm"?: string;
+  "explorer.delete_warning"?: string;
 
   "runtimes.title"?: string;
   "runtimes.desc"?: string;

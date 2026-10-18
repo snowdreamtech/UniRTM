@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -531,5 +532,96 @@ func TestUIEnvironmentProfileAPI(t *testing.T) {
 		t.Fatalf("Expected development profile to be deleted from file, got: %s", string(raw))
 	}
 }
+
+func TestUIFSApi(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/fs/tree", handleFSTree)
+	mux.HandleFunc("/api/fs/create", handleFSCreate)
+	mux.HandleFunc("/api/fs/rename", handleFSRename)
+	mux.HandleFunc("/api/fs/delete", handleFSDelete)
+	mux.HandleFunc("/api/fs/read", handleFSRead)
+	mux.HandleFunc("/api/fs/write", handleFSWrite)
+
+	// 1. Test handleFSTree on root
+	req := httptest.NewRequest("GET", "/api/fs/tree?depth=2", nil)
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK for /api/fs/tree, got %d: %s", rr.Code, rr.Body.String())
+	}
+	var tree FSTreeResponse
+	if err := json.Unmarshal(rr.Body.Bytes(), &tree); err != nil {
+		t.Fatalf("Failed to parse tree response: %v", err)
+	}
+	if tree.Root == "" || len(tree.Entries) == 0 {
+		t.Fatalf("Expected non-empty tree, got %+v", tree)
+	}
+
+	// 2. Test Path Traversal security: requesting ../../ must return 403 Forbidden
+	traversalReq := httptest.NewRequest("GET", "/api/fs/tree?path=../../", nil)
+	rrTrav := httptest.NewRecorder()
+	mux.ServeHTTP(rrTrav, traversalReq)
+	if rrTrav.Code != http.StatusForbidden {
+		t.Fatalf("Expected 403 Forbidden for path traversal, got %d", rrTrav.Code)
+	}
+
+	// 3. Test Create file
+	testFile := "tmp_test_explorer.txt"
+	createBody := strings.NewReader(`{"path":"` + testFile + `","is_dir":false}`)
+	createReq := httptest.NewRequest("POST", "/api/fs/create", createBody)
+	rrCreate := httptest.NewRecorder()
+	mux.ServeHTTP(rrCreate, createReq)
+	if rrCreate.Code != http.StatusOK {
+		t.Fatalf("Failed to create file: %s", rrCreate.Body.String())
+	}
+
+	// 4. Test Write file
+	writeBody := strings.NewReader(`{"path":"` + testFile + `","content":"Hello UniRTM Explorer"}`)
+	writeReq := httptest.NewRequest("POST", "/api/fs/write", writeBody)
+	rrWrite := httptest.NewRecorder()
+	mux.ServeHTTP(rrWrite, writeReq)
+	if rrWrite.Code != http.StatusOK {
+		t.Fatalf("Failed to write file: %s", rrWrite.Body.String())
+	}
+
+	// 5. Test Read file
+	readReq := httptest.NewRequest("GET", "/api/fs/read?path="+testFile, nil)
+	rrRead := httptest.NewRecorder()
+	mux.ServeHTTP(rrRead, readReq)
+	if rrRead.Code != http.StatusOK {
+		t.Fatalf("Failed to read file: %s", rrRead.Body.String())
+	}
+	if !strings.Contains(rrRead.Body.String(), "Hello UniRTM Explorer") {
+		t.Fatalf("Read file unexpected content: %s", rrRead.Body.String())
+	}
+
+	// 6. Test Rename file
+	renamedFile := "tmp_test_explorer_renamed.txt"
+	renameBody := strings.NewReader(`{"old_path":"` + testFile + `","new_path":"` + renamedFile + `"}`)
+	renameReq := httptest.NewRequest("POST", "/api/fs/rename", renameBody)
+	rrRename := httptest.NewRecorder()
+	mux.ServeHTTP(rrRename, renameReq)
+	if rrRename.Code != http.StatusOK {
+		t.Fatalf("Failed to rename file: %s", rrRename.Body.String())
+	}
+
+	// 7. Test Delete file
+	delBody := strings.NewReader(`{"path":"` + renamedFile + `"}`)
+	delReq := httptest.NewRequest("POST", "/api/fs/delete", delBody)
+	rrDel := httptest.NewRecorder()
+	mux.ServeHTTP(rrDel, delReq)
+	if rrDel.Code != http.StatusOK {
+		t.Fatalf("Failed to delete file: %s", rrDel.Body.String())
+	}
+
+	// Verify file is gone
+	readAfterDel := httptest.NewRequest("GET", "/api/fs/read?path="+renamedFile, nil)
+	rrAfterDel := httptest.NewRecorder()
+	mux.ServeHTTP(rrAfterDel, readAfterDel)
+	if rrAfterDel.Code != http.StatusNotFound {
+		t.Fatalf("Expected 404 for deleted file, got %d", rrAfterDel.Code)
+	}
+}
+
 
 

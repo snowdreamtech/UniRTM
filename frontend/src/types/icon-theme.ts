@@ -52,6 +52,7 @@ export interface ResolvedIcon {
 
 export type WorkbenchIconKey =
   | "workbench:dashboard"
+  | "workbench:explorer"
   | "workbench:runtimes"
   | "workbench:tools"
   | "workbench:tasks"

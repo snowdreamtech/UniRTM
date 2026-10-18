@@ -1078,6 +1078,14 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 		handleMarketplaceInstall(w, r, themeMgr)
 	})
 
+	// ─── File System API Handlers ─────────────────────────────────────────────
+	mux.HandleFunc("/api/fs/tree", handleFSTree)
+	mux.HandleFunc("/api/fs/create", handleFSCreate)
+	mux.HandleFunc("/api/fs/rename", handleFSRename)
+	mux.HandleFunc("/api/fs/delete", handleFSDelete)
+	mux.HandleFunc("/api/fs/read", handleFSRead)
+	mux.HandleFunc("/api/fs/write", handleFSWrite)
+
 	// ─── Static SPA Handler ───────────────────────────────────────────────────
 	fileServer := http.FileServer(http.FS(distFS))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -3001,3 +3009,395 @@ func handleMarketplaceDetail(w http.ResponseWriter, r *http.Request, themeMgr *t
 
 	_ = json.NewEncoder(w).Encode(detail)
 }
+
+// ─── File System API Handlers ────────────────────────────────────────────────
+
+type FSEntry struct {
+	Name      string    `json:"name"`
+	Path      string    `json:"path"`
+	IsDir     bool      `json:"is_dir"`
+	Size      int64     `json:"size"`
+	ModTime   string    `json:"mod_time"`
+	IsIgnored bool      `json:"is_ignored"`
+	Children  []FSEntry `json:"children,omitempty"`
+}
+
+type FSTreeResponse struct {
+	Root    string    `json:"root"`
+	Name    string    `json:"name"`
+	Path    string    `json:"path"`
+	Entries []FSEntry `json:"entries"`
+}
+
+// getSafeFSPath resolves a relative path within the current working directory,
+// preventing path traversal attacks.
+func getSafeFSPath(relPath string) (rootDir string, safePath string, err error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get current working directory: %w", err)
+	}
+	cleanRel := filepath.Clean(filepath.FromSlash(strings.TrimSpace(relPath)))
+	if cleanRel == "." || cleanRel == "/" || cleanRel == "\\" {
+		cleanRel = ""
+	}
+	target := filepath.Join(wd, cleanRel)
+	rel, err := filepath.Rel(wd, target)
+	if err != nil || strings.HasPrefix(rel, "..") || rel == ".." {
+		return "", "", fmt.Errorf("access denied: path outside workspace")
+	}
+	return wd, target, nil
+}
+
+func isCommonIgnored(name string) bool {
+	switch name {
+	case ".git", "node_modules", ".DS_Store", "dist", "target", ".turbo", ".idea", ".vscode", ".unirtm":
+		return true
+	default:
+		return false
+	}
+}
+
+func buildFSTree(wd, dirPath, currentRelPath string, currentDepth, maxDepth int, showHidden bool) ([]FSEntry, error) {
+	dirEntries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var dirs []FSEntry
+	var files []FSEntry
+
+	for _, d := range dirEntries {
+		name := d.Name()
+		if !showHidden && strings.HasPrefix(name, ".") && name != ".unirtm.toml" && name != ".gitignore" && name != ".env" {
+			continue
+		}
+
+		entryRelPath := filepath.ToSlash(filepath.Join(currentRelPath, name))
+		fullEntryPath := filepath.Join(dirPath, name)
+		fi, err := d.Info()
+		size := int64(0)
+		modTime := ""
+		if err == nil {
+			size = fi.Size()
+			modTime = fi.ModTime().UTC().Format(time.RFC3339)
+		}
+
+		isDir := d.IsDir()
+		isIgnored := isCommonIgnored(name)
+
+		entry := FSEntry{
+			Name:      name,
+			Path:      entryRelPath,
+			IsDir:     isDir,
+			Size:      size,
+			ModTime:   modTime,
+			IsIgnored: isIgnored,
+		}
+
+		if isDir {
+			if currentDepth < maxDepth && name != ".git" && name != "node_modules" {
+				subChildren, _ := buildFSTree(wd, fullEntryPath, entryRelPath, currentDepth+1, maxDepth, showHidden)
+				if subChildren == nil {
+					subChildren = []FSEntry{}
+				}
+				entry.Children = subChildren
+			}
+			dirs = append(dirs, entry)
+		} else {
+			files = append(files, entry)
+		}
+	}
+
+	sort.Slice(dirs, func(i, j int) bool {
+		return strings.ToLower(dirs[i].Name) < strings.ToLower(dirs[j].Name)
+	})
+	sort.Slice(files, func(i, j int) bool {
+		return strings.ToLower(files[i].Name) < strings.ToLower(files[j].Name)
+	})
+
+	return append(dirs, files...), nil
+}
+
+func handleFSTree(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	reqPath := r.URL.Query().Get("path")
+	depthStr := r.URL.Query().Get("depth")
+	showHiddenStr := r.URL.Query().Get("showHidden")
+
+	depth := 3
+	if d, err := strconv.Atoi(depthStr); err == nil && d > 0 && d <= 10 {
+		depth = d
+	}
+	showHidden := showHiddenStr == "true"
+
+	wd, targetDir, err := getSafeFSPath(reqPath)
+	if err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	st, err := os.Stat(targetDir)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "directory not found"})
+		return
+	}
+	if !st.IsDir() {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "path is not a directory"})
+		return
+	}
+
+	cleanRel, _ := filepath.Rel(wd, targetDir)
+	if cleanRel == "." {
+		cleanRel = ""
+	}
+
+	entries, err := buildFSTree(wd, targetDir, cleanRel, 1, depth, showHidden)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	resp := FSTreeResponse{
+		Root:    wd,
+		Name:    filepath.Base(wd),
+		Path:    cleanRel,
+		Entries: entries,
+	}
+	_ = json.NewEncoder(w).Encode(resp)
+}
+
+func handleFSCreate(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body struct {
+		Path  string `json:"path"`
+		IsDir bool   `json:"is_dir"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || strings.TrimSpace(body.Path) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "path is required"})
+		return
+	}
+
+	_, targetPath, err := getSafeFSPath(body.Path)
+	if err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	if body.IsDir {
+		if err := os.MkdirAll(targetPath, 0755); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+			return
+		}
+	} else {
+		parent := filepath.Dir(targetPath)
+		if err := os.MkdirAll(parent, 0755); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+			return
+		}
+		f, err := os.OpenFile(targetPath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0644)
+		if err != nil {
+			if os.IsExist(err) {
+				w.WriteHeader(http.StatusConflict)
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "file already exists"})
+				return
+			}
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+			return
+		}
+		_ = f.Close()
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "path": body.Path})
+}
+
+func handleFSRename(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body struct {
+		OldPath string `json:"old_path"`
+		NewPath string `json:"new_path"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || strings.TrimSpace(body.OldPath) == "" || strings.TrimSpace(body.NewPath) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "old_path and new_path are required"})
+		return
+	}
+
+	_, oldTarget, err := getSafeFSPath(body.OldPath)
+	if err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_, newTarget, err := getSafeFSPath(body.NewPath)
+	if err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	if err := os.Rename(oldTarget, newTarget); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "old_path": body.OldPath, "new_path": body.NewPath})
+}
+
+func handleFSDelete(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost && r.Method != http.MethodDelete {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body struct {
+		Path string `json:"path"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	if body.Path == "" {
+		body.Path = r.URL.Query().Get("path")
+	}
+	if strings.TrimSpace(body.Path) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "path is required"})
+		return
+	}
+
+	wd, target, err := getSafeFSPath(body.Path)
+	if err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	if target == wd {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "cannot delete workspace root"})
+		return
+	}
+
+	if err := os.RemoveAll(target); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "path": body.Path})
+}
+
+func handleFSRead(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	reqPath := r.URL.Query().Get("path")
+	if strings.TrimSpace(reqPath) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "path is required"})
+		return
+	}
+
+	_, target, err := getSafeFSPath(reqPath)
+	if err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	st, err := os.Stat(target)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "file not found"})
+		return
+	}
+	if st.IsDir() {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "path is a directory, not a file"})
+		return
+	}
+	if st.Size() > 10*1024*1024 {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "file too large (exceeds 10MB)"})
+		return
+	}
+
+	data, err := os.ReadFile(target)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"path":    reqPath,
+		"content": string(data),
+		"size":    st.Size(),
+	})
+}
+
+func handleFSWrite(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost && r.Method != http.MethodPut {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body struct {
+		Path    string `json:"path"`
+		Content string `json:"content"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || strings.TrimSpace(body.Path) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "path is required"})
+		return
+	}
+
+	_, target, err := getSafeFSPath(body.Path)
+	if err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	parent := filepath.Dir(target)
+	if err := os.MkdirAll(parent, 0755); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	if err := os.WriteFile(target, []byte(body.Content), 0644); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "path": body.Path, "size": len(body.Content)})
+}
+

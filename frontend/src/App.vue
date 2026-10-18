@@ -231,6 +231,8 @@ const currentTabLabel = computed(() => {
   switch (currentTab.value) {
     case "dashboard":
       return t("nav.dashboard") || "Dashboard";
+    case "explorer":
+      return t("nav.explorer") || "Explorer";
     case "tools":
       return t("nav.tools") || "Toolchains";
     case "tasks":

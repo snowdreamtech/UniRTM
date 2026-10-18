@@ -2798,6 +2798,258 @@ print(json.dumps({
             return;
           }
 
+          // ─── File System API Handlers ─────────────────────────────────────
+          if (req.url?.startsWith("/api/fs/")) {
+            const getSafeFSPath = (relPath: string) => {
+              const cleanRel = (relPath || "").trim().replace(/^\/+/, "");
+              const target = path.resolve(rootDir, cleanRel);
+              const rel = path.relative(rootDir, target);
+              if (rel.startsWith("..") || path.isAbsolute(rel)) {
+                throw new Error("Access denied: path outside workspace");
+              }
+              return { rootDir, safePath: target, relPath: rel === "" ? "" : rel.replace(/\\/g, "/") };
+            };
+
+            const isCommonIgnored = (name: string) => {
+              return [".git", "node_modules", ".DS_Store", "dist", "target", ".turbo", ".idea", ".vscode", ".unirtm"].includes(name);
+            };
+
+            const buildFSTree = (dirPath: string, currentRel: string, currentDepth: number, maxDepth: number, showHidden: boolean): any[] => {
+              if (!fs.existsSync(dirPath)) return [];
+              const items = fs.readdirSync(dirPath, { withFileTypes: true });
+              const dirs: any[] = [];
+              const files: any[] = [];
+
+              for (const item of items) {
+                const name = item.name;
+                if (!showHidden && name.startsWith(".") && name !== ".unirtm.toml" && name !== ".gitignore" && name !== ".env") {
+                  continue;
+                }
+                const entryRel = currentRel ? `${currentRel}/${name}` : name;
+                const fullEntryPath = path.join(dirPath, name);
+                const isDir = item.isDirectory();
+                let size = 0;
+                let modTime = "";
+                try {
+                  const stat = fs.statSync(fullEntryPath);
+                  size = stat.size;
+                  modTime = stat.mtime.toISOString();
+                } catch (_) {}
+
+                const entry: any = {
+                  name,
+                  path: entryRel,
+                  is_dir: isDir,
+                  size,
+                  mod_time: modTime,
+                  is_ignored: isCommonIgnored(name),
+                };
+
+                if (isDir) {
+                  if (currentDepth < maxDepth && name !== ".git" && name !== "node_modules") {
+                    entry.children = buildFSTree(fullEntryPath, entryRel, currentDepth + 1, maxDepth, showHidden);
+                  }
+                  dirs.push(entry);
+                } else {
+                  files.push(entry);
+                }
+              }
+
+              dirs.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+              files.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+              return [...dirs, ...files];
+            };
+
+            // GET /api/fs/tree
+            if (req.url.startsWith("/api/fs/tree") && req.method === "GET") {
+              try {
+                const urlObj = new URL(req.url, "http://localhost");
+                const p = urlObj.searchParams.get("path") || "";
+                const depth = parseInt(urlObj.searchParams.get("depth") || "3", 10);
+                const showHidden = urlObj.searchParams.get("showHidden") === "true";
+
+                const { rootDir: rd, safePath, relPath } = getSafeFSPath(p);
+                if (!fs.existsSync(safePath) || !fs.statSync(safePath).isDirectory()) {
+                  res.statusCode = 404;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: "Directory not found" }));
+                  return;
+                }
+
+                const entries = buildFSTree(safePath, relPath, 1, Math.min(depth || 3, 10), showHidden);
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({
+                  root: rd,
+                  name: path.basename(rd),
+                  path: relPath,
+                  entries,
+                }));
+              } catch (err: any) {
+                res.statusCode = err.message.includes("Access denied") ? 403 : 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+              return;
+            }
+
+            // POST /api/fs/create
+            if (req.url.startsWith("/api/fs/create") && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (c: any) => { bodyStr += c; });
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  if (!body.path) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "path is required" }));
+                    return;
+                  }
+                  const { safePath, relPath } = getSafeFSPath(body.path);
+                  if (body.is_dir) {
+                    fs.mkdirSync(safePath, { recursive: true });
+                  } else {
+                    fs.mkdirSync(path.dirname(safePath), { recursive: true });
+                    if (!fs.existsSync(safePath)) {
+                      fs.writeFileSync(safePath, "");
+                    }
+                  }
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, path: relPath }));
+                } catch (err: any) {
+                  res.statusCode = err.message.includes("Access denied") ? 403 : 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/fs/rename
+            if (req.url.startsWith("/api/fs/rename") && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (c: any) => { bodyStr += c; });
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  if (!body.old_path || !body.new_path) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "old_path and new_path are required" }));
+                    return;
+                  }
+                  const { safePath: oldTarget, relPath: oldRel } = getSafeFSPath(body.old_path);
+                  const { safePath: newTarget, relPath: newRel } = getSafeFSPath(body.new_path);
+                  fs.renameSync(oldTarget, newTarget);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, old_path: oldRel, new_path: newRel }));
+                } catch (err: any) {
+                  res.statusCode = err.message.includes("Access denied") ? 403 : 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/fs/delete
+            if ((req.url.startsWith("/api/fs/delete") || req.url === "/api/fs") && (req.method === "POST" || req.method === "DELETE")) {
+              let bodyStr = "";
+              req.on("data", (c: any) => { bodyStr += c; });
+              req.on("end", () => {
+                try {
+                  const urlObj = new URL(req.url!, "http://localhost");
+                  const body = JSON.parse(bodyStr || "{}");
+                  const targetP = body.path || urlObj.searchParams.get("path") || "";
+                  if (!targetP) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "path is required" }));
+                    return;
+                  }
+                  const { safePath, relPath, rootDir: rd } = getSafeFSPath(targetP);
+                  if (safePath === rd) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "Cannot delete workspace root" }));
+                    return;
+                  }
+                  fs.rmSync(safePath, { recursive: true, force: true });
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, path: relPath }));
+                } catch (err: any) {
+                  res.statusCode = err.message.includes("Access denied") ? 403 : 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // GET /api/fs/read
+            if (req.url.startsWith("/api/fs/read") && req.method === "GET") {
+              try {
+                const urlObj = new URL(req.url, "http://localhost");
+                const targetP = urlObj.searchParams.get("path") || "";
+                if (!targetP) {
+                  res.statusCode = 400;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: "path is required" }));
+                  return;
+                }
+                const { safePath, relPath } = getSafeFSPath(targetP);
+                if (!fs.existsSync(safePath) || fs.statSync(safePath).isDirectory()) {
+                  res.statusCode = 404;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: "File not found" }));
+                  return;
+                }
+                const stat = fs.statSync(safePath);
+                if (stat.size > 10 * 1024 * 1024) {
+                  res.statusCode = 400;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: "File too large (exceeds 10MB)" }));
+                  return;
+                }
+                const content = fs.readFileSync(safePath, "utf-8");
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ path: relPath, content, size: stat.size }));
+              } catch (err: any) {
+                res.statusCode = err.message.includes("Access denied") ? 403 : 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+              return;
+            }
+
+            // POST /api/fs/write
+            if (req.url.startsWith("/api/fs/write") && (req.method === "POST" || req.method === "PUT")) {
+              let bodyStr = "";
+              req.on("data", (c: any) => { bodyStr += c; });
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  if (!body.path) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "path is required" }));
+                    return;
+                  }
+                  const { safePath, relPath } = getSafeFSPath(body.path);
+                  fs.mkdirSync(path.dirname(safePath), { recursive: true });
+                  fs.writeFileSync(safePath, body.content || "", "utf-8");
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, path: relPath, size: (body.content || "").length }));
+                } catch (err: any) {
+                  res.statusCode = err.message.includes("Access denied") ? 403 : 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+          }
+
           if (req.url === "/api/system/browsers") {
             res.setHeader("Content-Type", "application/json");
             res.end(JSON.stringify({ browsers: [] }));
