@@ -8,11 +8,11 @@
   - [x] 1.3 创建 `frontend/src/services/editor/monacoLoader.ts`，配置本地 ESM Worker 离线加载环境与全套语言推导映射
   - [x] 1.4 验证 Monaco 离线加载与 TypeScript 类型并执行第一次提交
 
-- [ ] 2. **阶段 2：多标签页状态管理 (`useEditorTabs.ts`)**
-  - [ ] 2.1 封装 `frontend/src/composables/useEditorTabs.ts`，管理标签页集合（打开、激活切换、关闭、关闭其他、关闭全部）
-  - [ ] 2.2 实现文件读取缓存、双向内容绑定与 `isDirty` 未保存状态计算
-  - [ ] 2.3 与 `/api/fs/read` 及 `/api/fs/write` 接口打通，支持 `Ctrl+S` 单文件保存与批量保存
-  - [ ] 2.4 编写 `frontend/src/composables/useEditorTabs.test.ts` 单元测试并执行第二次提交
+- [x] 2. **阶段 2：多标签页状态管理 (`useEditorTabs.ts`)**
+  - [x] 2.1 封装 `frontend/src/composables/useEditorTabs.ts`，管理标签页集合（打开、激活切换、关闭、关闭其他、关闭全部）
+  - [x] 2.2 实现文件读取缓存、双向内容绑定与 `isDirty` 未保存状态计算
+  - [x] 2.3 与 `/api/fs/read` 及 `/api/fs/write` 接口打通，支持 `Ctrl+S` 单文件保存与批量保存
+  - [x] 2.4 编写 `frontend/src/composables/useEditorTabs.test.ts` 单元测试并执行第二次提交
 
 - [ ] 3. **阶段 3：Monaco 编辑器组件与主画布深度整合**
   - [ ] 3.1 封装 `frontend/src/components/editor/MonacoEditor.vue`，实现按需异步挂载、`ITextModel` 缓存复用、`Ctrl+S` 绑定、`ResizeObserver` 动态布局与主题自适应
