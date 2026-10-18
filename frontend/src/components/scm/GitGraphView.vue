@@ -135,9 +135,9 @@
             v-for="(commit, idx) in filteredCommits"
             :key="commit.hash"
             class="graph-row"
-            :class="{ selected: selectedCommit?.hash === commit.hash }"
+            :class="{ selected: isRowSelected(commit) }"
             :style="{ top: getRowTop(idx) + 'px', height: ROW_HEIGHT + 'px' }"
-            @click="handleSelectCommit(commit)"
+            @click="handleRowClick($event, commit)"
             @contextmenu.prevent="openContextMenu($event, commit)"
           >
             <!-- Col 1: Empty placeholder matching graph SVG width -->
@@ -221,10 +221,10 @@
 
           <!-- Inline Expanded Commit Detail Panel -->
           <div
-            v-if="selectedCommit && selectedCommitIndex !== -1"
+            v-if="selectedCommit && expandedCommitIndex !== -1"
             class="inline-commit-detail-panel"
             :style="{
-              top: ((selectedCommitIndex + 1) * ROW_HEIGHT) + 'px',
+              top: ((expandedCommitIndex + 1) * ROW_HEIGHT) + 'px',
               left: graphColWidth + 'px',
               height: EXPANDED_PANEL_HEIGHT + 'px',
               width: `calc(100% - ${graphColWidth}px)`
@@ -234,22 +234,38 @@
             <!-- Inline Action Bar (Top) -->
             <div class="inline-detail-actions-bar">
               <div class="inline-detail-actions-left">
-                <button
-                  class="inline-tool-btn"
-                  :title="t('scm.actions.tag')"
-                  @click="openModal('create-tag', selectedCommit)"
-                >
-                  <span class="codicon codicon-tag"></span>
-                  <span>{{ t('scm.actions.tag') }}</span>
-                </button>
-                <button
-                  class="inline-tool-btn"
-                  :title="t('scm.actions.branch')"
-                  @click="openModal('create-branch', selectedCommit)"
-                >
-                  <span class="codicon codicon-git-branch"></span>
-                  <span>{{ t('scm.actions.branch') }}</span>
-                </button>
+                <template v-if="isComparing && activeCompare">
+                  <div class="inline-compare-title">
+                    <span class="codicon codicon-diff"></span>
+                    <span>{{ t('scm.compare.comparing', { base: activeCompare.base.shortHash, target: activeCompare.target.shortHash }) }}</span>
+                  </div>
+                  <button
+                    class="inline-tool-btn"
+                    :title="t('scm.compare.swap')"
+                    @click="handleSwapCompare"
+                  >
+                    <span class="codicon codicon-arrow-swap"></span>
+                    <span>{{ t('scm.compare.swap') }}</span>
+                  </button>
+                </template>
+                <template v-else>
+                  <button
+                    class="inline-tool-btn"
+                    :title="t('scm.actions.tag')"
+                    @click="openModal('create-tag', selectedCommit)"
+                  >
+                    <span class="codicon codicon-tag"></span>
+                    <span>{{ t('scm.actions.tag') }}</span>
+                  </button>
+                  <button
+                    class="inline-tool-btn"
+                    :title="t('scm.actions.branch')"
+                    @click="openModal('create-branch', selectedCommit)"
+                  >
+                    <span class="codicon codicon-git-branch"></span>
+                    <span>{{ t('scm.actions.branch') }}</span>
+                  </button>
+                </template>
               </div>
 
               <div class="inline-detail-actions-right">
@@ -275,7 +291,7 @@
                 <button
                   class="inline-close-btn"
                   :title="t('common.close')"
-                  @click="selectedCommit = null"
+                  @click="closeDetailOrCompare"
                 >
                   <span class="codicon codicon-close"></span>
                 </button>
@@ -286,99 +302,159 @@
             <div class="inline-detail-columns">
               <!-- Left Column: Commit Metadata & GPG & Message -->
               <div class="inline-meta-column">
-                <div class="meta-field-group">
-                  <div class="meta-field">
-                    <span class="meta-field-label">{{ t('scm.detail.commit') }}:</span>
-                    <div class="meta-field-val hash-val font-mono">
-                      <span>{{ selectedCommit.hash }}</span>
-                      <button
-                        class="inline-copy-btn"
-                        :title="t('scm.actions.copy_hash')"
-                        @click="handleCopyHash(selectedCommit.hash)"
-                      >
-                        <span class="codicon codicon-copy"></span>
-                      </button>
+                <template v-if="isComparing && activeCompare">
+                  <!-- Compare Summary Stats Card -->
+                  <div class="compare-stats-card">
+                    <div class="compare-stats-header">
+                      <span class="codicon codicon-diff-multiple"></span>
+                      <span class="compare-stats-title">{{ t('scm.compare.title') }}</span>
+                    </div>
+                    <div class="compare-stats-pill font-mono">
+                      <span class="stat-files">{{ activeCompare.files.length }} {{ t('scm.changes.total') }}</span>
+                      <span class="stat-divider">•</span>
+                      <span class="stat-add">+{{ activeCompare.totalAdditions }}</span>
+                      <span class="stat-del">-{{ activeCompare.totalDeletions }}</span>
                     </div>
                   </div>
 
-                  <div v-if="selectedCommit.parents && selectedCommit.parents.length > 0" class="meta-field">
-                    <span class="meta-field-label">{{ t('scm.detail.parents') }}:</span>
-                    <div class="meta-field-val parents-val">
-                      <span
-                        v-for="p in selectedCommit.parents"
-                        :key="p"
-                        class="inline-parent-link font-mono"
-                        :title="p"
-                        @click="jumpToCommit(p)"
-                      >
-                        {{ p.slice(0, 7) }}
+                  <!-- Base Commit Card -->
+                  <div class="compare-commit-box">
+                    <div class="compare-box-label font-mono">
+                      <span class="box-badge base-badge">{{ t('scm.compare.base') }}</span>
+                      <span class="hash-link" @click="handleCopyHash(activeCompare.base.hash)">
+                        {{ activeCompare.base.shortHash }}
+                        <span class="codicon codicon-copy"></span>
                       </span>
                     </div>
-                  </div>
-
-                  <div class="meta-field">
-                    <span class="meta-field-label">{{ t('scm.detail.author') }}:</span>
-                    <div class="meta-field-val">
-                      {{ selectedCommit.author }} &lt;{{ selectedCommit.email }}&gt;
+                    <div class="compare-box-subject" :title="activeCompare.base.message">
+                      {{ activeCompare.base.message }}
+                    </div>
+                    <div class="compare-box-meta">
+                      <span>{{ activeCompare.base.author }}</span>
+                      <span class="meta-dot">•</span>
+                      <span>{{ formatRelativeTime(activeCompare.base.timestamp) }}</span>
                     </div>
                   </div>
 
-                  <div class="meta-field">
-                    <span class="meta-field-label">{{ t('scm.detail.author_date') }}:</span>
-                    <div class="meta-field-val">
-                      {{ formatExactDate(selectedCommit.timestamp) }}
+                  <div class="compare-arrow-divider">
+                    <span class="codicon codicon-arrow-down"></span>
+                  </div>
+
+                  <!-- Target Commit Card -->
+                  <div class="compare-commit-box">
+                    <div class="compare-box-label font-mono">
+                      <span class="box-badge target-badge">{{ t('scm.compare.target') }}</span>
+                      <span class="hash-link" @click="handleCopyHash(activeCompare.target.hash)">
+                        {{ activeCompare.target.shortHash }}
+                        <span class="codicon codicon-copy"></span>
+                      </span>
+                    </div>
+                    <div class="compare-box-subject" :title="activeCompare.target.message">
+                      {{ activeCompare.target.message }}
+                    </div>
+                    <div class="compare-box-meta">
+                      <span>{{ activeCompare.target.author }}</span>
+                      <span class="meta-dot">•</span>
+                      <span>{{ formatRelativeTime(activeCompare.target.timestamp) }}</span>
+                    </div>
+                  </div>
+                </template>
+
+                <template v-else>
+                  <div class="meta-field-group">
+                    <div class="meta-field">
+                      <span class="meta-field-label">{{ t('scm.detail.commit') }}:</span>
+                      <div class="meta-field-val hash-val font-mono">
+                        <span>{{ selectedCommit.hash }}</span>
+                        <button
+                          class="inline-copy-btn"
+                          :title="t('scm.actions.copy_hash')"
+                          @click="handleCopyHash(selectedCommit.hash)"
+                        >
+                          <span class="codicon codicon-copy"></span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div v-if="selectedCommit.parents && selectedCommit.parents.length > 0" class="meta-field">
+                      <span class="meta-field-label">{{ t('scm.detail.parents') }}:</span>
+                      <div class="meta-field-val parents-val">
+                        <span
+                          v-for="p in selectedCommit.parents"
+                          :key="p"
+                          class="inline-parent-link font-mono"
+                          :title="p"
+                          @click="jumpToCommit(p)"
+                        >
+                          {{ p.slice(0, 7) }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="meta-field">
+                      <span class="meta-field-label">{{ t('scm.detail.author') }}:</span>
+                      <div class="meta-field-val">
+                        {{ selectedCommit.author }} &lt;{{ selectedCommit.email }}&gt;
+                      </div>
+                    </div>
+
+                    <div class="meta-field">
+                      <span class="meta-field-label">{{ t('scm.detail.author_date') }}:</span>
+                      <div class="meta-field-val">
+                        {{ formatExactDate(selectedCommit.timestamp) }}
+                      </div>
+                    </div>
+
+                    <div v-if="selectedCommitDetail?.committer" class="meta-field">
+                      <span class="meta-field-label">{{ t('scm.detail.committer') }}:</span>
+                      <div class="meta-field-val">
+                        {{ selectedCommitDetail.committer }} &lt;{{ selectedCommitDetail.committerEmail }}&gt;
+                      </div>
+                    </div>
+
+                    <div v-if="selectedCommitDetail?.committerTimestamp" class="meta-field">
+                      <span class="meta-field-label">{{ t('scm.detail.committer_date') }}:</span>
+                      <div class="meta-field-val">
+                        {{ formatExactDate(selectedCommitDetail.committerTimestamp) }}
+                      </div>
                     </div>
                   </div>
 
-                  <div v-if="selectedCommitDetail?.committer" class="meta-field">
-                    <span class="meta-field-label">{{ t('scm.detail.committer') }}:</span>
-                    <div class="meta-field-val">
-                      {{ selectedCommitDetail.committer }} &lt;{{ selectedCommitDetail.committerEmail }}&gt;
+                  <!-- GPG Signature Card -->
+                  <div
+                    v-if="currentGpgInfo"
+                    class="inline-gpg-card"
+                    :class="'gpg-card-' + currentGpgInfo.status"
+                  >
+                    <div class="inline-gpg-header">
+                      <span class="codicon" :class="getGpgIcon(currentGpgInfo.status)"></span>
+                      <span class="inline-gpg-title">{{ getGpgFullLabel(currentGpgInfo.status) }}</span>
+                      <span class="inline-gpg-pill">{{ currentGpgInfo.status.toUpperCase() }}</span>
+                    </div>
+                    <div v-if="currentGpgInfo.status !== 'none'" class="inline-gpg-details font-mono">
+                      <div v-if="currentGpgInfo.signer">
+                        <span class="gpg-k">{{ t('scm.gpg.signer') }}:</span>
+                        <span class="gpg-v">{{ currentGpgInfo.signer }}</span>
+                      </div>
+                      <div v-if="currentGpgInfo.keyId">
+                        <span class="gpg-k">{{ t('scm.gpg.key_id') }}:</span>
+                        <span class="gpg-v">{{ currentGpgInfo.keyId }}</span>
+                      </div>
+                      <div v-if="currentGpgInfo.fingerprint">
+                        <span class="gpg-k">{{ t('scm.gpg.fingerprint') }}:</span>
+                        <span class="gpg-v fingerprint">{{ currentGpgInfo.fingerprint }}</span>
+                      </div>
+                    </div>
+                    <div v-else class="inline-gpg-unsigned">
+                      <span>{{ t('scm.gpg.unsigned_hint') }}</span>
                     </div>
                   </div>
 
-                  <div v-if="selectedCommitDetail?.committerTimestamp" class="meta-field">
-                    <span class="meta-field-label">{{ t('scm.detail.committer_date') }}:</span>
-                    <div class="meta-field-val">
-                      {{ formatExactDate(selectedCommitDetail.committerTimestamp) }}
-                    </div>
+                  <!-- Full Commit Message -->
+                  <div class="inline-message-box">
+                    <pre class="inline-message-text">{{ selectedCommitDetail?.message || selectedCommit.message }}</pre>
                   </div>
-                </div>
-
-                <!-- GPG Signature Card -->
-                <div
-                  v-if="currentGpgInfo"
-                  class="inline-gpg-card"
-                  :class="'gpg-card-' + currentGpgInfo.status"
-                >
-                  <div class="inline-gpg-header">
-                    <span class="codicon" :class="getGpgIcon(currentGpgInfo.status)"></span>
-                    <span class="inline-gpg-title">{{ getGpgFullLabel(currentGpgInfo.status) }}</span>
-                    <span class="inline-gpg-pill">{{ currentGpgInfo.status.toUpperCase() }}</span>
-                  </div>
-                  <div v-if="currentGpgInfo.status !== 'none'" class="inline-gpg-details font-mono">
-                    <div v-if="currentGpgInfo.signer">
-                      <span class="gpg-k">{{ t('scm.gpg.signer') }}:</span>
-                      <span class="gpg-v">{{ currentGpgInfo.signer }}</span>
-                    </div>
-                    <div v-if="currentGpgInfo.keyId">
-                      <span class="gpg-k">{{ t('scm.gpg.key_id') }}:</span>
-                      <span class="gpg-v">{{ currentGpgInfo.keyId }}</span>
-                    </div>
-                    <div v-if="currentGpgInfo.fingerprint">
-                      <span class="gpg-k">{{ t('scm.gpg.fingerprint') }}:</span>
-                      <span class="gpg-v fingerprint">{{ currentGpgInfo.fingerprint }}</span>
-                    </div>
-                  </div>
-                  <div v-else class="inline-gpg-unsigned">
-                    <span>{{ t('scm.gpg.unsigned_hint') }}</span>
-                  </div>
-                </div>
-
-                <!-- Full Commit Message -->
-                <div class="inline-message-box">
-                  <pre class="inline-message-text">{{ selectedCommitDetail?.message || selectedCommit.message }}</pre>
-                </div>
+                </template>
               </div>
 
               <!-- Vertical Divider -->
@@ -388,7 +464,7 @@
               <div class="inline-files-column">
                 <div class="inline-files-header">
                   <span class="inline-files-count">
-                    {{ t('scm.detail.changed_files') }} ({{ selectedCommitDetail?.files?.length ?? 0 }})
+                    {{ t('scm.detail.changed_files') }} ({{ currentFiles.length }})
                   </span>
                   <div class="inline-files-search">
                     <span class="codicon codicon-search"></span>
@@ -408,7 +484,7 @@
                   </div>
                 </div>
 
-                <div v-if="isLoadingDetail" class="inline-files-loading">
+                <div v-if="isLoadingDetail || isLoadingCompare" class="inline-files-loading">
                   <span class="codicon codicon-loading codicon-modifier-spin"></span>
                   <span>{{ t('scm.graph.loading_files') }}</span>
                 </div>
@@ -424,7 +500,7 @@
                     class="tree-node-row"
                     :class="{ 'is-dir': row.isDir, 'is-file': !row.isDir }"
                     :style="{ paddingLeft: (row.depth * 16 + 8) + 'px' }"
-                    @click="row.isDir ? toggleFolder(row.path) : handleOpenFileDiff(row.path, selectedCommit.hash, selectedCommit.parents?.[0])"
+                    @click="row.isDir ? toggleFolder(row.path) : handleFileClick(row.path)"
                   >
                     <!-- Folder row -->
                     <template v-if="row.isDir">
@@ -455,7 +531,7 @@
                         <button
                           class="node-action-btn"
                           :title="t('scm.actions.diff')"
-                          @click.stop="handleOpenFileDiff(row.path, selectedCommit.hash, selectedCommit.parents?.[0])"
+                          @click.stop="handleFileClick(row.path)"
                         >
                           <span class="codicon codicon-diff"></span>
                         </button>
@@ -484,7 +560,7 @@
                     v-for="file in flatFileList"
                     :key="file.path"
                     class="list-file-row"
-                    @click="handleOpenFileDiff(file.path, selectedCommit.hash, selectedCommit.parents?.[0])"
+                    @click="handleFileClick(file.path)"
                   >
                     <TechIcon :id="getFileName(file.path)" :size="15" />
                     <span class="file-status-pill" :class="'badge-' + file.status">{{ file.status }}</span>
@@ -499,7 +575,7 @@
                       <button
                         class="node-action-btn"
                         :title="t('scm.actions.diff')"
-                        @click.stop="handleOpenFileDiff(file.path, selectedCommit.hash, selectedCommit.parents?.[0])"
+                        @click.stop="handleFileClick(file.path)"
                       >
                         <span class="codicon codicon-diff"></span>
                       </button>
@@ -539,6 +615,12 @@
         :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
         @click.stop
       >
+        <template v-if="comparePair">
+          <div class="menu-item primary-action" @click="handleContextAction('compare')">
+            {{ t('scm.commit.compare_with', { base: comparePair.base.shortHash, target: comparePair.target.shortHash }) }}
+          </div>
+          <div class="menu-separator"></div>
+        </template>
         <div class="menu-item" @click="handleContextAction('add-tag')">
           {{ t('scm.commit.add_tag') }}
         </div>
@@ -742,6 +824,8 @@ const {
   cherryPick,
   revertCommit,
   resetToCommit,
+  activeCompare,
+  fetchCompare,
 } = useGit();
 
 const { showToast } = useToast();
@@ -750,6 +834,26 @@ const selectedBranch = ref(graphFilterBranch.value || "all");
 const searchQuery = ref("");
 const tableWrapperRef = ref<HTMLElement | null>(null);
 const isLoadingDetail = ref(false);
+const isLoadingCompare = ref(false);
+const compareCommit = ref<GitGraphCommit | null>(null);
+
+const isComparing = computed(() => {
+  return !!(selectedCommit.value && compareCommit.value && activeCompare.value);
+});
+
+const comparePair = computed<{ base: GitGraphCommit; target: GitGraphCommit } | null>(() => {
+  if (compareCommit.value && selectedCommit.value) {
+    return { base: selectedCommit.value, target: compareCommit.value };
+  }
+  if (
+    contextCommit.value &&
+    selectedCommit.value &&
+    contextCommit.value.hash !== selectedCommit.value.hash
+  ) {
+    return { base: selectedCommit.value, target: contextCommit.value };
+  }
+  return null;
+});
 
 // Inline File Tree & Search State
 const filesViewMode = ref<"tree" | "list">("tree");
@@ -811,15 +915,29 @@ const filteredCommits = computed(() => {
   });
 });
 
-const selectedCommitIndex = computed(() => {
+const expandedCommitIndex = computed(() => {
   if (!selectedCommit.value) return -1;
-  return filteredCommits.value.findIndex(
+  const idxA = filteredCommits.value.findIndex(
     (c) => c.hash === selectedCommit.value?.hash
   );
+  if (!compareCommit.value) return idxA;
+  const idxB = filteredCommits.value.findIndex(
+    (c) => c.hash === compareCommit.value?.hash
+  );
+  if (idxA === -1) return idxB;
+  if (idxB === -1) return idxA;
+  return Math.max(idxA, idxB);
 });
 
+function isRowSelected(commit: GitGraphCommit): boolean {
+  return (
+    selectedCommit.value?.hash === commit.hash ||
+    compareCommit.value?.hash === commit.hash
+  );
+}
+
 function getRowTop(idx: number): number {
-  if (selectedCommitIndex.value === -1 || idx <= selectedCommitIndex.value) {
+  if (expandedCommitIndex.value === -1 || idx <= expandedCommitIndex.value) {
     return idx * ROW_HEIGHT;
   }
   return idx * ROW_HEIGHT + EXPANDED_PANEL_HEIGHT;
@@ -831,7 +949,7 @@ const graphLayout = computed(() => {
     rowHeight: ROW_HEIGHT,
     laneWidth: 18,
     startX: 16,
-    expandedIndex: selectedCommitIndex.value,
+    expandedIndex: expandedCommitIndex.value,
     expandedHeight: EXPANDED_PANEL_HEIGHT,
   });
 });
@@ -842,7 +960,7 @@ const graphColWidth = computed(() => {
 
 const totalBodyHeight = computed(() => {
   const base = filteredCommits.value.length * ROW_HEIGHT;
-  const extra = selectedCommitIndex.value !== -1 ? EXPANDED_PANEL_HEIGHT : 0;
+  const extra = expandedCommitIndex.value !== -1 ? EXPANDED_PANEL_HEIGHT : 0;
   return Math.max(ROW_HEIGHT, base + extra);
 });
 
@@ -864,8 +982,15 @@ interface FlatTreeRow {
   collapsed?: boolean;
 }
 
+const currentFiles = computed<GitCommitFileItem[]>(() => {
+  if (isComparing.value && activeCompare.value) {
+    return activeCompare.value.files;
+  }
+  return selectedCommitDetail.value?.files || [];
+});
+
 const fileTreeData = computed<FileTreeNode[]>(() => {
-  const files = selectedCommitDetail.value?.files || [];
+  const files = currentFiles.value;
   const query = filesSearchQuery.value.trim().toLowerCase();
   const filtered = query
     ? files.filter((f) => f.path.toLowerCase().includes(query))
@@ -940,7 +1065,7 @@ const flatTreeRows = computed<FlatTreeRow[]>(() => {
 });
 
 const flatFileList = computed(() => {
-  const files = selectedCommitDetail.value?.files || [];
+  const files = currentFiles.value;
   const query = filesSearchQuery.value.trim().toLowerCase();
   if (!query) return files;
   return files.filter((f) => f.path.toLowerCase().includes(query));
@@ -951,6 +1076,79 @@ function toggleFolder(folderPath: string) {
     collapsedFolders.value.delete(folderPath);
   } else {
     collapsedFolders.value.add(folderPath);
+  }
+}
+
+function handleFileClick(path: string) {
+  if (isComparing.value && activeCompare.value) {
+    handleOpenFileDiff(
+      path,
+      activeCompare.value.target.hash,
+      activeCompare.value.base.hash
+    );
+  } else if (selectedCommit.value) {
+    handleOpenFileDiff(
+      path,
+      selectedCommit.value.hash,
+      selectedCommit.value.parents?.[0]
+    );
+  }
+}
+
+async function triggerCompare(baseHash: string, targetHash: string) {
+  isLoadingCompare.value = true;
+  try {
+    await fetchCompare(baseHash, targetHash);
+  } finally {
+    isLoadingCompare.value = false;
+  }
+}
+
+async function handleSwapCompare() {
+  if (!selectedCommit.value || !compareCommit.value) return;
+  const temp = selectedCommit.value;
+  selectedCommit.value = compareCommit.value;
+  compareCommit.value = temp;
+  await triggerCompare(selectedCommit.value.hash, compareCommit.value.hash);
+}
+
+function closeDetailOrCompare() {
+  if (compareCommit.value) {
+    compareCommit.value = null;
+    activeCompare.value = null;
+  } else {
+    selectedCommit.value = null;
+    selectedCommitDetail.value = null;
+  }
+}
+
+async function handleRowClick(event: MouseEvent, commit: GitGraphCommit) {
+  if (event.ctrlKey || event.metaKey) {
+    if (!selectedCommit.value) {
+      await handleSelectCommit(commit);
+    } else if (selectedCommit.value.hash === commit.hash) {
+      if (compareCommit.value) {
+        selectedCommit.value = compareCommit.value;
+        compareCommit.value = null;
+        activeCompare.value = null;
+        await handleSelectCommit(selectedCommit.value);
+      } else {
+        selectedCommit.value = null;
+        selectedCommitDetail.value = null;
+      }
+    } else if (compareCommit.value?.hash === commit.hash) {
+      compareCommit.value = null;
+      activeCompare.value = null;
+    } else {
+      compareCommit.value = commit;
+      await triggerCompare(selectedCommit.value.hash, commit.hash);
+    }
+  } else {
+    if (compareCommit.value) {
+      compareCommit.value = null;
+      activeCompare.value = null;
+    }
+    await handleSelectCommit(commit);
   }
 }
 
@@ -1062,6 +1260,18 @@ async function handleContextAction(action: string) {
   if (!contextCommit.value) return;
   const commit = contextCommit.value;
   closeContextMenu();
+
+  if (action === "compare") {
+    if (comparePair.value) {
+      selectedCommit.value = comparePair.value.base;
+      compareCommit.value = comparePair.value.target;
+      await triggerCompare(
+        comparePair.value.base.hash,
+        comparePair.value.target.hash
+      );
+    }
+    return;
+  }
 
   if (action === "copy-hash") {
     handleCopyHash(commit.hash);
@@ -2302,5 +2512,123 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
 
 :root[data-theme="light"] .menu-separator {
   background: #e2e8f0;
+}
+
+/* Compare Mode Styles */
+.inline-compare-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-cyan, #00e5ff);
+}
+
+.compare-stats-card {
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  background: rgba(0, 229, 255, 0.05);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 4px;
+}
+
+.compare-stats-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-cyan, #00e5ff);
+  margin-bottom: 4px;
+}
+
+.compare-stats-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.stat-divider {
+  color: var(--text-muted);
+}
+
+.compare-commit-box {
+  padding: 8px 12px;
+  background: rgba(128, 128, 128, 0.06);
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.compare-box-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.box-badge {
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.box-badge.base-badge {
+  background: rgba(255, 171, 0, 0.15);
+  color: #ffab00;
+  border: 1px solid rgba(255, 171, 0, 0.3);
+}
+
+.box-badge.target-badge {
+  background: rgba(0, 230, 118, 0.15);
+  color: #00e676;
+  border: 1px solid rgba(0, 230, 118, 0.3);
+}
+
+.hash-link {
+  cursor: pointer;
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hash-link:hover {
+  text-decoration: underline;
+}
+
+.compare-box-subject {
+  font-size: 12px;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.compare-box-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.compare-arrow-divider {
+  display: flex;
+  justify-content: center;
+  margin: 2px 0 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.graph-context-menu .menu-item.primary-action {
+  font-weight: 600;
+  color: var(--accent-cyan, #00e5ff);
 }
 </style>

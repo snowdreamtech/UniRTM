@@ -3680,6 +3680,128 @@ print(json.dumps({
               return;
             }
 
+            // GET /api/git/compare?base=...&target=...
+            if (req.url?.startsWith("/api/git/compare") && req.method === "GET") {
+              try {
+                const parsedUrl = new URL(req.url, "http://localhost");
+                const base = parsedUrl.searchParams.get("base");
+                const target = parsedUrl.searchParams.get("target");
+
+                if (!base || !target) {
+                  res.statusCode = 400;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: "base and target hashes are required" }));
+                  return;
+                }
+
+                const parseMeta = (h: string) => {
+                  try {
+                    const out = runGit(["show", "-s", "--format=%H%x09%h%x09%an%x09%at%x09%s", h]);
+                    const [fullH, shortH, an, at, s] = out.split("\t");
+                    return {
+                      hash: fullH || h,
+                      shortHash: shortH || h.slice(0, 8),
+                      author: an || "",
+                      timestamp: parseInt(at || "0", 10),
+                      message: (s || "").trim(),
+                    };
+                  } catch (_) {
+                    return {
+                      hash: h,
+                      shortHash: h.slice(0, 8),
+                      author: "",
+                      timestamp: 0,
+                      message: "",
+                    };
+                  }
+                };
+
+                const baseMeta = parseMeta(base);
+                const targetMeta = parseMeta(target);
+
+                let nameStatusOut = "";
+                try {
+                  nameStatusOut = runGit(["diff-tree", "--no-commit-id", "--name-status", "-r", base, target]);
+                } catch (_) {
+                  nameStatusOut = "";
+                }
+
+                let numstatOut = "";
+                try {
+                  numstatOut = runGit(["diff", "--numstat", base, target]);
+                } catch (_) {
+                  numstatOut = "";
+                }
+
+                const numstatMap = new Map<string, { additions: number; deletions: number }>();
+                for (const line of numstatOut.split("\n").filter(Boolean)) {
+                  const [addStr, delStr, filePath] = line.split("\t");
+                  if (filePath) {
+                    numstatMap.set(filePath.trim(), {
+                      additions: parseInt(addStr, 10) || 0,
+                      deletions: parseInt(delStr, 10) || 0,
+                    });
+                  }
+                }
+
+                const files: Array<{
+                  path: string;
+                  status: string;
+                  additions: number;
+                  deletions: number;
+                  oldPath?: string;
+                }> = [];
+
+                let totalAdditions = 0;
+                let totalDeletions = 0;
+
+                for (const line of nameStatusOut.split("\n").filter(Boolean)) {
+                  const parts = line.split("\t");
+                  const statusCode = parts[0]?.trim() || "M";
+                  const p1 = parts[1]?.trim() || "";
+                  const p2 = parts[2]?.trim();
+
+                  let finalPath = p1;
+                  let oldPath: string | undefined = undefined;
+                  if (p2) {
+                    oldPath = p1;
+                    finalPath = p2;
+                  }
+
+                  const stats = numstatMap.get(finalPath) || { additions: 0, deletions: 0 };
+                  totalAdditions += stats.additions;
+                  totalDeletions += stats.deletions;
+
+                  files.push({
+                    path: finalPath,
+                    oldPath,
+                    status: statusCode.charAt(0).toUpperCase(),
+                    additions: stats.additions,
+                    deletions: stats.deletions,
+                  });
+                }
+
+                res.setHeader("Content-Type", "application/json");
+                res.end(
+                  JSON.stringify({
+                    success: true,
+                    compare: {
+                      base: baseMeta,
+                      target: targetMeta,
+                      files,
+                      totalAdditions,
+                      totalDeletions,
+                    },
+                  })
+                );
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+              return;
+            }
+
             // POST /api/git/tag
             if (req.url === "/api/git/tag" && req.method === "POST") {
               let bodyStr = "";

@@ -363,5 +363,43 @@ describe("useGit composable", () => {
       body: JSON.stringify({ name: "v1.0.0", force: true }),
     }));
   });
+
+  it("fetchCompare fetches comparison between two commits", async () => {
+    const mockCompare = {
+      base: {
+        hash: "1111111111111111",
+        shortHash: "11111111",
+        author: "Dev1",
+        timestamp: 123456,
+        message: "First commit",
+      },
+      target: {
+        hash: "2222222222222222",
+        shortHash: "22222222",
+        author: "Dev2",
+        timestamp: 123457,
+        message: "Second commit",
+      },
+      files: [
+        { path: "src/app.ts", status: "M", additions: 5, deletions: 1 },
+      ],
+      totalAdditions: 5,
+      totalDeletions: 1,
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, compare: mockCompare }),
+    });
+
+    const { fetchCompare, activeCompare } = useGit();
+    const res = await fetchCompare("11111111", "22222222");
+
+    expect(res).toEqual(mockCompare);
+    expect(activeCompare.value).toEqual(mockCompare);
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/api/git/compare?base=11111111&target=22222222")
+    );
+  });
 });
 

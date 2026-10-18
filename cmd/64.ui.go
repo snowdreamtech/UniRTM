@@ -1100,6 +1100,7 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/git/graph", handleGitGraph)
 	mux.HandleFunc("/api/git/commit-detail", handleGitCommitDetail)
 	mux.HandleFunc("/api/git/commit-diff", handleGitCommitDiff)
+	mux.HandleFunc("/api/git/compare", handleGitCompare)
 	mux.HandleFunc("/api/git/tag", handleGitTag)
 	mux.HandleFunc("/api/git/branch/create", handleGitBranchCreate)
 	mux.HandleFunc("/api/git/cherry-pick", handleGitCherryPick)
@@ -4213,6 +4214,134 @@ func handleGitCommitDiff(w http.ResponseWriter, r *http.Request) {
 		"parent":   parent,
 		"original": original,
 		"modified": modified,
+	})
+}
+
+type GitCompareCommitInfo struct {
+	Hash      string `json:"hash"`
+	ShortHash string `json:"shortHash"`
+	Author    string `json:"author"`
+	Timestamp int64  `json:"timestamp"`
+	Message   string `json:"message"`
+}
+
+type GitCompareResult struct {
+	Base           GitCompareCommitInfo `json:"base"`
+	Target         GitCompareCommitInfo `json:"target"`
+	Files          []GitCommitFileItem  `json:"files"`
+	TotalAdditions int                  `json:"totalAdditions"`
+	TotalDeletions int                  `json:"totalDeletions"`
+}
+
+func handleGitCompare(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	base := r.URL.Query().Get("base")
+	target := r.URL.Query().Get("target")
+
+	if base == "" || target == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "base and target are required"})
+		return
+	}
+
+	parseMeta := func(h string) GitCompareCommitInfo {
+		info := GitCompareCommitInfo{
+			Hash:      h,
+			ShortHash: h,
+		}
+		if len(h) >= 8 {
+			info.ShortHash = h[:8]
+		}
+		out, err := runGitCommand("show", "-s", "--format=%H%x09%h%x09%an%x09%at%x09%s", h)
+		if err == nil {
+			parts := strings.Split(out, "\t")
+			if len(parts) >= 5 {
+				info.Hash = parts[0]
+				info.ShortHash = parts[1]
+				info.Author = parts[2]
+				_, _ = fmt.Sscanf(parts[3], "%d", &info.Timestamp)
+				info.Message = strings.TrimSpace(parts[4])
+			}
+		}
+		return info
+	}
+
+	baseMeta := parseMeta(base)
+	targetMeta := parseMeta(target)
+
+	nameStatusOut, _ := runGitCommand("diff-tree", "--no-commit-id", "--name-status", "-r", base, target)
+	numstatOut, _ := runGitCommand("diff", "--numstat", base, target)
+
+	numstatMap := make(map[string][2]int)
+	for _, line := range strings.Split(numstatOut, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.Split(line, "\t")
+		if len(parts) >= 3 {
+			var a, d int
+			_, _ = fmt.Sscanf(parts[0], "%d", &a)
+			_, _ = fmt.Sscanf(parts[1], "%d", &d)
+			numstatMap[strings.TrimSpace(parts[2])] = [2]int{a, d}
+		}
+	}
+
+	var files []GitCommitFileItem
+	totalAdd := 0
+	totalDel := 0
+
+	for _, line := range strings.Split(nameStatusOut, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.Split(line, "\t")
+		statusCode := "M"
+		if len(parts) > 0 && len(parts[0]) > 0 {
+			statusCode = strings.ToUpper(string(parts[0][0]))
+		}
+
+		var finalPath, oldPath string
+		if len(parts) >= 3 {
+			oldPath = parts[1]
+			finalPath = parts[2]
+		} else if len(parts) >= 2 {
+			finalPath = parts[1]
+		}
+
+		if finalPath != "" {
+			var a, d int
+			if stats, ok := numstatMap[finalPath]; ok {
+				a = stats[0]
+				d = stats[1]
+			}
+			totalAdd += a
+			totalDel += d
+			files = append(files, GitCommitFileItem{
+				Path:      finalPath,
+				OldPath:   oldPath,
+				Status:    statusCode,
+				Additions: a,
+				Deletions: d,
+			})
+		}
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"compare": GitCompareResult{
+			Base:           baseMeta,
+			Target:         targetMeta,
+			Files:          files,
+			TotalAdditions: totalAdd,
+			TotalDeletions: totalDel,
+		},
 	})
 }
 

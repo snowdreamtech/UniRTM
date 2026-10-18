@@ -101,6 +101,22 @@ export interface GitCommitDiffResult {
   modified: string;
 }
 
+export interface GitCompareCommitInfo {
+  hash: string;
+  shortHash: string;
+  author: string;
+  timestamp: number;
+  message: string;
+}
+
+export interface GitCompareResult {
+  base: GitCompareCommitInfo;
+  target: GitCompareCommitInfo;
+  files: GitCommitFileItem[];
+  totalAdditions: number;
+  totalDeletions: number;
+}
+
 const status = ref<GitStatusData>({
   branch: "main",
   ahead: 0,
@@ -116,6 +132,7 @@ const graphCommits = ref<GitGraphCommit[]>([]);
 const selectedCommit = ref<GitGraphCommit | null>(null);
 const selectedCommitDetail = ref<GitCommitDetail | null>(null);
 const activeCommitDiff = ref<GitCommitDiffResult | null>(null);
+const activeCompare = ref<GitCompareResult | null>(null);
 const graphFilterBranch = ref<string>("all");
 const graphFilterPath = ref<string | null>(null);
 const graphSearchQuery = ref<string>("");
@@ -495,6 +512,26 @@ export function useGit() {
   }
 
   /**
+   * Compares two commits and returns file changes and diff statistics.
+   */
+  async function fetchCompare(base: string, target: string): Promise<GitCompareResult | null> {
+    try {
+      const q = new URLSearchParams({ base, target });
+      const res = await fetch(`/api/git/compare?${q.toString()}`);
+      if (!res.ok) throw new Error(`Fetch compare failed: HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.success && data.compare) {
+        activeCompare.value = data.compare;
+        return data.compare;
+      }
+      return null;
+    } catch (err: any) {
+      showToast(err.message || "比对提交失败", "error");
+      return null;
+    }
+  }
+
+  /**
    * Creates a Git tag on a specific commit.
    */
   async function createTag(name: string, hash: string, message?: string): Promise<boolean> {
@@ -832,6 +869,8 @@ export function useGit() {
     fetchGraph,
     fetchCommitDetail,
     fetchCommitDiff,
+    activeCompare,
+    fetchCompare,
     createTag,
     createBranchFromCommit,
     renameBranch,
