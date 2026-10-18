@@ -14,15 +14,15 @@
   - [x] 2.3 与 `/api/fs/read` 及 `/api/fs/write` 接口打通，支持 `Ctrl+S` 单文件保存与批量保存
   - [x] 2.4 编写 `frontend/src/composables/useEditorTabs.test.ts` 单元测试并执行第二次提交
 
-- [ ] 3. **阶段 3：Monaco 编辑器组件与主画布深度整合**
-  - [ ] 3.1 封装 `frontend/src/components/editor/MonacoEditor.vue`，实现按需异步挂载、`ITextModel` 缓存复用、`Ctrl+S` 绑定、`ResizeObserver` 动态布局与主题自适应
-  - [ ] 3.2 升级 `frontend/src/views/ExplorerView.vue`，集成 VS Code 风格多 Tab 头部栏、未保存指示小圆点、关闭快捷按钮与快速切换
-  - [ ] 3.3 保持非文本文件兼容性（支持图片预览、大文件安全提示与文件夹概览）
-  - [ ] 3.4 增强编辑器底部状态栏（光标行号列号、UTF-8 编码、LF 换行符与语言模式标签）
-  - [ ] 3.5 联调左侧资源管理器点击文件无缝开 Tab 并执行第三次提交
+- [x] 3. **阶段 3：Monaco 编辑器组件与主画布深度整合**
+  - [x] 3.1 封装 `frontend/src/components/editor/MonacoEditor.vue`，实现按需异步挂载、`ITextModel` 缓存复用、`Ctrl+S` 绑定、`ResizeObserver` 动态布局与主题自适应
+  - [x] 3.2 升级 `frontend/src/views/ExplorerView.vue`，集成 VS Code 风格多 Tab 头部栏、未保存指示小圆点、关闭快捷按钮与快速切换
+  - [x] 3.3 保持非文本文件兼容性（支持图片预览、大文件安全提示与文件夹概览）
+  - [x] 3.4 增强编辑器底部状态栏（光标行号列号、UTF-8 编码、LF 换行符与语言模式标签）
+  - [x] 3.5 联调左侧资源管理器点击文件无缝开 Tab 并执行第三次提交
 
-- [ ] 4. **阶段 4：测试套件、构建与完整性验证**
-  - [ ] 4.1 运行前端 Vitest 单元测试 `npm test -- --run`，确保全部测试通过
-  - [ ] 4.2 运行 Go 后端测试 `go test -v ./cmd -run TestUIFSApi`
-  - [ ] 4.3 执行 `npm run build` 确保生产环境打包成功且零报错
-  - [ ] 4.4 检查所有提交日志与文档完整性并交付
+- [x] 4. **阶段 4：测试套件、构建与完整性验证**
+  - [x] 4.1 运行前端 Vitest 单元测试 `npm test -- --run`，确保全部测试通过
+  - [x] 4.2 运行 Go 后端测试 `go test -v ./cmd -run TestUIFSApi`
+  - [x] 4.3 执行 `npm run build` 确保生产环境打包成功且零报错
+  - [x] 4.4 检查所有提交日志与文档完整性并交付

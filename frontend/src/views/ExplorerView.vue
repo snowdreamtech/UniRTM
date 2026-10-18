@@ -1,91 +1,102 @@
 <template>
   <div class="view-container explorer-view" id="view-explorer">
-    <!-- 1. Active File Selected -->
-    <div v-if="selectedNode && !selectedNode.is_dir" class="editor-workspace">
-      <!-- VS Code Style Tab Bar -->
-      <div class="editor-tabs-bar">
-        <div class="editor-tab active">
-          <TechIcon :id="selectedNode.name" :size="16" class="tab-icon" />
-          <span class="tab-title">{{ selectedNode.name }}</span>
-          <span v-if="isModified" class="dirty-dot" title="未保存更改">●</span>
-          <button class="tab-close-btn" title="关闭" @click="closeActiveFile">
+    <!-- 1. Tabs Bar (Displayed when one or more tabs are open) -->
+    <div v-if="tabs.length > 0" class="editor-tabs-bar">
+      <div class="tabs-scroll-container">
+        <div
+          v-for="tab in tabs"
+          :key="tab.id"
+          class="editor-tab"
+          :class="{ active: tab.id === activeTabId }"
+          @click="handleSelectTab(tab.id)"
+          @auxclick.stop="closeTab(tab.id)"
+          :title="tab.path"
+        >
+          <TechIcon :id="tab.name" :size="16" class="tab-icon" />
+          <span class="tab-title">{{ tab.name }}</span>
+          <span v-if="tab.isDirty" class="dirty-dot" title="未保存更改">●</span>
+          <button
+            class="tab-close-btn"
+            title="关闭 (中键亦可关闭)"
+            @click.stop="closeTab(tab.id)"
+          >
             <span class="codicon codicon-close"></span>
-          </button>
-        </div>
-
-        <div class="tab-actions-right">
-          <button
-            v-if="isModified"
-            class="action-btn primary"
-            title="保存更改 (Ctrl+S)"
-            @click="handleSave"
-          >
-            <span class="codicon codicon-save"></span>
-            <span>保存</span>
-          </button>
-          <button
-            class="action-btn"
-            title="复制相对路径"
-            @click="copyRelativePath(selectedNode.path)"
-          >
-            <span class="codicon codicon-copy"></span>
-          </button>
-          <button
-            class="action-btn"
-            title="在终端中打开所在目录"
-            @click="handleOpenParentTerminal"
-          >
-            <span class="codicon codicon-terminal"></span>
-          </button>
-          <button
-            class="action-btn danger"
-            title="删除文件"
-            @click="promptDelete(selectedNode)"
-          >
-            <span class="codicon codicon-trash"></span>
           </button>
         </div>
       </div>
 
+      <div class="tab-actions-right">
+        <button
+          v-if="activeTab?.isDirty"
+          class="action-btn primary"
+          title="保存当前文件 (Ctrl+S)"
+          @click="handleSave"
+        >
+          <span class="codicon codicon-save"></span>
+          <span>保存</span>
+        </button>
+        <button
+          v-if="hasDirtyTabs"
+          class="action-btn"
+          title="全部保存"
+          @click="saveAllTabs"
+        >
+          <span class="codicon codicon-save-all"></span>
+        </button>
+        <button
+          v-if="activeTab"
+          class="action-btn"
+          title="复制相对路径"
+          @click="handleCopyPath"
+        >
+          <span class="codicon codicon-copy"></span>
+        </button>
+        <button
+          v-if="activeTab"
+          class="action-btn"
+          title="在集成终端中打开所在目录"
+          @click="handleOpenParentTerminal"
+        >
+          <span class="codicon codicon-terminal"></span>
+        </button>
+        <button
+          class="action-btn"
+          title="关闭全部标签页"
+          @click="closeAllTabs"
+        >
+          <span class="codicon codicon-close-all"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. Active Tab Workspace (Code Editor or Image Preview) -->
+    <div v-if="activeTab" class="editor-workspace">
       <!-- File Breadcrumb Bar -->
       <div class="editor-breadcrumb">
         <span class="codicon codicon-folder"></span>
-        <span class="bc-path">{{ selectedNode.path }}</span>
+        <span class="bc-path">{{ activeTab.path }}</span>
       </div>
 
       <!-- Editor Content Area -->
       <div class="editor-content-area">
-        <!-- Loading State -->
-        <div v-if="isFileLoading" class="editor-loading">
-          <span class="codicon codicon-loading codicon-modifier-spin"></span>
-          <span>加载中...</span>
-        </div>
-
         <!-- Image Preview -->
-        <div v-else-if="isImageFile(selectedNode.name)" class="image-preview-container">
+        <div v-if="isImageFile(activeTab.name)" class="image-preview-container">
           <div class="image-wrapper">
-            <img :src="imagePreviewSrc" :alt="selectedNode.name" class="preview-img" />
+            <img :src="imagePreviewSrc" :alt="activeTab.name" class="preview-img" />
           </div>
           <div class="image-meta">
-            <span>{{ selectedNode.name }}</span>
-            <span>{{ formatFileSize(selectedNode.size) }}</span>
+            <span>{{ activeTab.name }}</span>
           </div>
         </div>
 
-        <!-- Text / Code Editor Area -->
-        <div v-else class="text-editor-container">
-          <div class="line-numbers">
-            <span v-for="n in lineCount" :key="n" class="line-num">{{ n }}</span>
-          </div>
-          <textarea
-            v-model="editableContent"
-            class="code-textarea"
-            spellcheck="false"
-            autocomplete="off"
-            autocapitalize="off"
-            @keydown="handleKeydown"
-          ></textarea>
-        </div>
+        <!-- Monaco Code Editor -->
+        <MonacoEditor
+          v-else
+          :tab="activeTab"
+          @change="handleEditorChange"
+          @cursor-change="handleCursorChange"
+          @save="handleSave"
+        />
       </div>
 
       <!-- Editor Footer Status Bar -->
@@ -93,15 +104,15 @@
         <div class="footer-left">
           <span class="footer-item">UTF-8</span>
           <span class="footer-item">LF</span>
-          <span class="footer-item">{{ formatFileSize(selectedNode.size) }}</span>
+          <span class="footer-item language-tag">{{ activeTabLanguage }}</span>
         </div>
         <div class="footer-right">
-          <span class="footer-item">行 {{ lineCount }}, 列 {{ cursorColumn }}</span>
+          <span class="footer-item">行 {{ cursorLine }}, 列 {{ cursorColumn }}</span>
         </div>
       </div>
     </div>
 
-    <!-- 2. Active Directory Selected -->
+    <!-- 3. Active Directory Selected (No active tab) -->
     <div v-else-if="selectedNode && selectedNode.is_dir" class="folder-overview-workspace">
       <div class="folder-hero-card">
         <div class="folder-icon-large">
@@ -147,7 +158,7 @@
       </div>
     </div>
 
-    <!-- 3. No File/Folder Selected (VS Code Watermark Welcome Screen) -->
+    <!-- 4. No File/Folder Selected (Watermark Welcome Screen) -->
     <div v-else class="explorer-welcome-workspace">
       <div class="welcome-watermark">
         <TechIcon id="workbench:explorer" :size="56" class="watermark-icon" />
@@ -159,8 +170,12 @@
         <div class="welcome-shortcuts">
           <div class="shortcut-list">
             <div class="shortcut-row">
-              <span class="key-badge">单击</span>
-              <span class="shortcut-desc">选择文件并在主视图中查看详情</span>
+              <span class="key-badge">单击文件</span>
+              <span class="shortcut-desc">打开文件代码编辑器标签页</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="key-badge">中键 / ✕</span>
+              <span class="shortcut-desc">关闭当前文件标签页</span>
             </div>
             <div class="shortcut-row">
               <span class="key-badge">双击 / 箭头</span>
@@ -168,7 +183,7 @@
             </div>
             <div class="shortcut-row">
               <span class="key-badge">右键</span>
-              <span class="shortcut-desc">弹出上下文菜单 (重命名、删除、在终端中打开)</span>
+              <span class="shortcut-desc">弹出上下文菜单 (重命名、删除、在终端打开)</span>
             </div>
             <div class="shortcut-row">
               <span class="key-badge">F2</span>
@@ -186,10 +201,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed } from "vue";
 import { t } from "../i18n";
 import TechIcon from "../components/common/TechIcon.vue";
+import MonacoEditor from "../components/editor/MonacoEditor.vue";
 import { useFileTree } from "../composables/useFileTree";
+import { useEditorTabs } from "../composables/useEditorTabs";
 
 const emit = defineEmits<{
   (e: "open-drawer", tab: string): void;
@@ -197,32 +214,28 @@ const emit = defineEmits<{
 
 const {
   selectedNode,
-  activeFileContent,
-  isFileLoading,
-  saveFile,
   copyRelativePath,
-  promptDelete,
   startInlineCreate,
 } = useFileTree();
 
-const editableContent = ref<string>("");
+const {
+  tabs,
+  activeTabId,
+  activeTab,
+  hasDirtyTabs,
+  switchTab,
+  updateContent,
+  saveTab,
+  saveAllTabs,
+  closeTab,
+  closeAllTabs,
+} = useEditorTabs();
+
+const cursorLine = ref<number>(1);
 const cursorColumn = ref<number>(1);
 
-watch(
-  activeFileContent,
-  (val) => {
-    editableContent.value = val;
-  },
-  { immediate: true }
-);
-
-const isModified = computed(() => {
-  return editableContent.value !== activeFileContent.value;
-});
-
-const lineCount = computed(() => {
-  if (!editableContent.value) return 1;
-  return editableContent.value.split("\n").length;
+const activeTabLanguage = computed(() => {
+  return (activeTab.value?.language || "plaintext").toUpperCase();
 });
 
 function isImageFile(filename: string): boolean {
@@ -230,32 +243,32 @@ function isImageFile(filename: string): boolean {
 }
 
 const imagePreviewSrc = computed(() => {
-  if (!selectedNode.value) return "";
-  return `/api/fs/read?path=${encodeURIComponent(selectedNode.value.path)}`;
+  if (!activeTab.value) return "";
+  return `/api/fs/read?path=${encodeURIComponent(activeTab.value.path)}`;
 });
 
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+function handleSelectTab(tabId: string) {
+  switchTab(tabId);
 }
 
-function closeActiveFile() {
-  selectedNode.value = null;
-  activeFileContent.value = "";
+function handleEditorChange(newContent: string) {
+  if (activeTab.value) {
+    updateContent(activeTab.value.id, newContent);
+  }
+}
+
+function handleCursorChange(line: number, col: number) {
+  cursorLine.value = line;
+  cursorColumn.value = col;
 }
 
 async function handleSave() {
-  if (!selectedNode.value) return;
-  await saveFile(selectedNode.value.path, editableContent.value);
+  await saveTab();
 }
 
-function handleKeydown(e: KeyboardEvent) {
-  if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-    e.preventDefault();
-    handleSave();
+function handleCopyPath() {
+  if (activeTab.value) {
+    copyRelativePath(activeTab.value.path);
   }
 }
 
@@ -294,14 +307,7 @@ function handleCreateFolderInside() {
   overflow: hidden;
 }
 
-/* 1. Editor Workspace */
-.editor-workspace {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-}
-
+/* 1. Editor Tabs Bar */
 .editor-tabs-bar {
   display: flex;
   align-items: center;
@@ -309,6 +315,21 @@ function handleCreateFolderInside() {
   background-color: var(--card-bg);
   height: 35px;
   border-bottom: 1px solid var(--card-border);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.tabs-scroll-container {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.tabs-scroll-container::-webkit-scrollbar {
+  display: none;
 }
 
 .editor-tab {
@@ -317,13 +338,26 @@ function handleCreateFolderInside() {
   gap: 6px;
   padding: 0 12px;
   height: 100%;
-  background-color: var(--bg-color);
-  color: var(--text-main);
-  border-top: 2px solid var(--accent-cyan);
+  background-color: var(--card-bg);
+  color: var(--text-muted);
   border-right: 1px solid var(--card-border);
   font-size: 13px;
   cursor: pointer;
   user-select: none;
+  white-space: nowrap;
+  border-top: 2px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.editor-tab:hover {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+}
+
+.editor-tab.active {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  border-top: 2px solid var(--accent-cyan);
 }
 
 .tab-icon {
@@ -331,7 +365,7 @@ function handleCreateFolderInside() {
 }
 
 .tab-title {
-  max-width: 180px;
+  max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -357,7 +391,7 @@ function handleCreateFolderInside() {
 }
 
 .tab-close-btn:hover {
-  background-color: rgba(128, 128, 128, 0.15);
+  background-color: rgba(128, 128, 128, 0.2);
   color: var(--text-main);
 }
 
@@ -366,6 +400,7 @@ function handleCreateFolderInside() {
   align-items: center;
   gap: 4px;
   padding-right: 8px;
+  flex-shrink: 0;
 }
 
 .action-btn {
@@ -379,10 +414,11 @@ function handleCreateFolderInside() {
   align-items: center;
   gap: 4px;
   font-size: 12px;
+  transition: all 0.15s ease;
 }
 
 .action-btn:hover {
-  background-color: rgba(128, 128, 128, 0.12);
+  background-color: rgba(128, 128, 128, 0.15);
   color: var(--text-main);
 }
 
@@ -390,14 +426,20 @@ function handleCreateFolderInside() {
   background-color: var(--accent-cyan);
   color: #ffffff;
   padding: 3px 8px;
+  font-weight: 500;
 }
 
 .action-btn.primary:hover {
   filter: brightness(1.1);
 }
 
-.action-btn.danger:hover {
-  color: var(--error, #ef4444);
+/* 2. Editor Workspace */
+.editor-workspace {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
 }
 
 .editor-breadcrumb {
@@ -409,6 +451,7 @@ function handleCreateFolderInside() {
   color: var(--text-muted);
   font-size: 11px;
   border-bottom: 1px solid var(--card-border);
+  flex-shrink: 0;
 }
 
 .editor-content-area {
@@ -416,54 +459,8 @@ function handleCreateFolderInside() {
   position: relative;
   overflow: hidden;
   display: flex;
-}
-
-.editor-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  gap: 8px;
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
-.text-editor-container {
-  display: flex;
   width: 100%;
   height: 100%;
-}
-
-.line-numbers {
-  display: flex;
-  flex-direction: column;
-  padding: 8px 12px;
-  background-color: var(--bg-color);
-  border-right: 1px solid var(--card-border);
-  user-select: none;
-  color: var(--text-muted);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 13px;
-  line-height: 20px;
-  text-align: right;
-  min-width: 32px;
-  opacity: 0.65;
-}
-
-.code-textarea {
-  flex: 1;
-  background-color: var(--bg-color);
-  color: var(--text-main);
-  border: none;
-  outline: none;
-  resize: none;
-  padding: 8px 12px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 13px;
-  line-height: 20px;
-  white-space: pre;
-  overflow: auto;
-  tab-size: 2;
 }
 
 .image-preview-container {
@@ -512,6 +509,7 @@ function handleCreateFolderInside() {
   border-top: 1px solid var(--card-border);
   color: var(--text-muted);
   font-size: 11px;
+  flex-shrink: 0;
 }
 
 .footer-left,
@@ -526,7 +524,12 @@ function handleCreateFolderInside() {
   align-items: center;
 }
 
-/* 2. Folder Overview */
+.language-tag {
+  color: var(--accent-cyan);
+  font-weight: 500;
+}
+
+/* 3. Folder Overview */
 .folder-overview-workspace {
   display: flex;
   flex-direction: column;
@@ -650,7 +653,7 @@ function handleCreateFolderInside() {
   color: var(--text-muted);
 }
 
-/* 3. Welcome Screen (VS Code Style Watermark) */
+/* 4. Welcome Screen */
 .explorer-welcome-workspace {
   display: flex;
   align-items: center;

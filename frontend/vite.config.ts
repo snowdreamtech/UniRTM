@@ -4410,7 +4410,7 @@ print(json.dumps({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes("monaco-editor")) {
+          if (id.includes("monaco-editor") && !id.includes("worker")) {
             return "vendor-monaco";
           }
         },

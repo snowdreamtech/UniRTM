@@ -3,6 +3,7 @@
 
 import { ref, computed } from "vue";
 import { useToast } from "./useToast";
+import { useEditorTabs } from "./useEditorTabs";
 import { t } from "../i18n";
 
 export interface FSNode {
@@ -141,6 +142,8 @@ export function useFileTree() {
     if (node.is_dir) {
       toggleExpand(node.path);
     } else {
+      const { openTab } = useEditorTabs();
+      await openTab({ path: node.path, name: node.name });
       await loadFileContent(node.path);
     }
   }
