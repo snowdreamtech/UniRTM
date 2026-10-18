@@ -3944,7 +3944,27 @@ func handleGitGraph(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	branch := r.URL.Query().Get("branch")
+	rawBranches := r.URL.Query()["branch"]
+	var branchList []string
+	for _, b := range rawBranches {
+		for _, part := range strings.Split(b, ",") {
+			part = strings.TrimSpace(part)
+			if part != "" {
+				branchList = append(branchList, part)
+			}
+		}
+	}
+
+	isAll := len(branchList) == 0
+	var validBranches []string
+	for _, b := range branchList {
+		if b == "all" {
+			isAll = true
+			break
+		}
+		validBranches = append(validBranches, b)
+	}
+
 	filePath := r.URL.Query().Get("path")
 	limitStr := r.URL.Query().Get("limit")
 	if limitStr == "" {
@@ -3952,8 +3972,8 @@ func handleGitGraph(w http.ResponseWriter, r *http.Request) {
 	}
 
 	args := []string{"log", "--date-order", "-n", limitStr, "--pretty=format:%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%s%x09%D%x09%G?%x09%GK%x09%GS%x09%GF"}
-	if branch != "" && branch != "all" {
-		args = append(args, branch)
+	if !isAll && len(validBranches) > 0 {
+		args = append(args, validBranches...)
 	} else {
 		args = append(args, "--all")
 	}

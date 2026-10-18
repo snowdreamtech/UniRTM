@@ -190,6 +190,30 @@ describe("useGit composable", () => {
     expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/api/git/graph?branch=dev&limit=200"));
   });
 
+  it("fetchGraph supports multiple branches array parameter", async () => {
+    const mockGraphCommits = [
+      {
+        hash: "c2",
+        shortHash: "c2",
+        parents: ["c1"],
+        author: "snowdream",
+        email: "test@example.com",
+        timestamp: 1792334000,
+        message: "feat: add git graph",
+        refs: [{ name: "dev", type: "branch", current: true }],
+      },
+    ];
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, commits: mockGraphCommits }),
+    });
+
+    const { fetchGraph } = useGit();
+    await fetchGraph({ branch: ["dev", "main"] });
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/api/git/graph?branch=dev%2Cmain&limit=200"));
+  });
+
   it("fetchCommitDetail fetches detailed commit and changed files", async () => {
     const mockDetail = {
       hash: "c2",

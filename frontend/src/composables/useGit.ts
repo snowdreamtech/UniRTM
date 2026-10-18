@@ -133,7 +133,13 @@ const selectedCommit = ref<GitGraphCommit | null>(null);
 const selectedCommitDetail = ref<GitCommitDetail | null>(null);
 const activeCommitDiff = ref<GitCommitDiffResult | null>(null);
 const activeCompare = ref<GitCompareResult | null>(null);
-const graphFilterBranch = ref<string>("all");
+const graphFilterBranches = ref<string[]>(["all"]);
+const graphFilterBranch = computed<string>({
+  get: () => graphFilterBranches.value[0] || "all",
+  set: (val: string) => {
+    graphFilterBranches.value = val ? [val] : ["all"];
+  },
+});
 const graphFilterPath = ref<string | null>(null);
 const graphSearchQuery = ref<string>("");
 const isLoadingGraph = ref<boolean>(false);
@@ -432,18 +438,24 @@ export function useGit() {
    * Fetches the commit graph for Git Graph DAG view.
    */
   async function fetchGraph(options?: {
-    branch?: string;
+    branch?: string | string[];
     path?: string | null;
     limit?: number;
   }): Promise<GitGraphCommit[]> {
     isLoadingGraph.value = true;
     try {
-      const b = options?.branch !== undefined ? options.branch : graphFilterBranch.value;
+      const b = options?.branch !== undefined ? options.branch : graphFilterBranches.value;
       const p = options?.path !== undefined ? options.path : graphFilterPath.value;
       const limit = options?.limit || 200;
 
       const q = new URLSearchParams();
-      if (b && b !== "all") q.set("branch", b);
+      if (Array.isArray(b)) {
+        if (b.length > 0 && !b.includes("all")) {
+          q.set("branch", b.join(","));
+        }
+      } else if (b && b !== "all") {
+        q.set("branch", b);
+      }
       if (p) q.set("path", p);
       q.set("limit", String(limit));
 
@@ -967,6 +979,7 @@ export function useGit() {
     selectedCommitDetail,
     activeCommitDiff,
     graphFilterBranch,
+    graphFilterBranches,
     graphFilterPath,
     graphSearchQuery,
     isLoadingGraph,

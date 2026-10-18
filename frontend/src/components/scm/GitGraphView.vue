@@ -2,24 +2,14 @@
   <div class="git-graph-container" id="git-graph-view">
     <!-- Top Control & Filter Bar -->
     <div class="graph-toolbar">
-      <!-- 1. Branch Selector -->
-      <div class="toolbar-item branch-select-group">
-        <span class="codicon codicon-git-branch"></span>
-        <select
-          v-model="selectedBranch"
-          class="graph-select"
-          :title="t('scm.branch.switch')"
-          @change="handleBranchChange"
-        >
-          <option value="all">{{ t('scm.graph.all_branches') }}</option>
-          <option
-            v-for="b in branches"
-            :key="b.name"
-            :value="b.name"
-          >
-            {{ b.name }}{{ b.current ? ` (${t('scm.graph.current_badge')})` : '' }}
-          </option>
-        </select>
+      <!-- 1. Branch Selector (Multi-Branch Filter Popover) -->
+      <div class="toolbar-item">
+        <GitBranchFilterPopover
+          v-model="selectedBranches"
+          :branches="branches"
+          :current-branch="currentBranch"
+          @change="handleBranchesChange"
+        />
       </div>
 
       <!-- 2. File Filter Badge (When filtered by specific file) -->
@@ -899,6 +889,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import TechIcon from "../common/TechIcon.vue";
 import GitActionModal, { type GitModalActionType } from "./GitActionModal.vue";
+import GitBranchFilterPopover from "./GitBranchFilterPopover.vue";
 import {
   useGit,
   type GitGraphCommit,
@@ -916,11 +907,12 @@ const EXPANDED_PANEL_HEIGHT = 320;
 const {
   branches,
   status,
+  currentBranch,
   totalChanges,
   graphCommits,
   selectedCommit,
   selectedCommitDetail,
-  graphFilterBranch,
+  graphFilterBranches,
   graphFilterPath,
   isLoadingGraph,
   fetchBranches,
@@ -951,7 +943,11 @@ const {
 
 const { showToast } = useToast();
 
-const selectedBranch = ref(graphFilterBranch.value || "all");
+const selectedBranches = ref<string[]>(
+  graphFilterBranches.value && graphFilterBranches.value.length > 0
+    ? [...graphFilterBranches.value]
+    : ["all"]
+);
 const searchQuery = ref("");
 const tableWrapperRef = ref<HTMLElement | null>(null);
 const isLoadingDetail = ref(false);
@@ -1010,7 +1006,7 @@ const isRefCurrent = computed(() => {
 });
 
 const isBranchFiltered = computed(() => {
-  return selectedBranch.value === selectedRef.value?.name;
+  return selectedBranches.value.includes(selectedRef.value?.name || "");
 });
 
 const emit = defineEmits<{
@@ -1353,13 +1349,14 @@ onBeforeUnmount(() => {
 async function refreshGraph() {
   await fetchStatus();
   await fetchGraph({
-    branch: selectedBranch.value,
+    branch: selectedBranches.value,
     path: graphFilterPath.value,
   });
 }
 
-function handleBranchChange() {
-  graphFilterBranch.value = selectedBranch.value;
+function handleBranchesChange(newBranches: string[]) {
+  selectedBranches.value = newBranches;
+  graphFilterBranches.value = newBranches;
   refreshGraph();
 }
 
@@ -1541,12 +1538,19 @@ async function handleRefAction(action: string) {
   }
 
   if (action === "toggle-dropdown-filter") {
-    if (isBranchFiltered.value) {
-      selectedBranch.value = "all";
+    if (selectedBranches.value.includes(refItem.name)) {
+      selectedBranches.value = selectedBranches.value.filter((b) => b !== refItem.name);
+      if (selectedBranches.value.length === 0) {
+        selectedBranches.value = ["all"];
+      }
     } else {
-      selectedBranch.value = refItem.name;
+      if (selectedBranches.value.includes("all")) {
+        selectedBranches.value = [refItem.name];
+      } else {
+        selectedBranches.value.push(refItem.name);
+      }
     }
-    handleBranchChange();
+    handleBranchesChange(selectedBranches.value);
     return;
   }
 

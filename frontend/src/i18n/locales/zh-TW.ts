@@ -1008,4 +1008,13 @@ export const zhTw: TranslationDict = {
   "scm.file_menu.copy_relative_path": "複製相對路徑",
   "scm.file_menu.copied_path": "已複製檔案路徑",
   "scm.file_menu.copied_relative_path": "已複製檔案相對路徑",
+  "scm.graph.branch_filter.title": "分支篩選",
+  "scm.graph.branch_filter.filter_placeholder": "過濾分支...",
+  "scm.graph.branch_filter.all": "全部",
+  "scm.graph.branch_filter.current": "當前",
+  "scm.graph.branch_filter.clear": "清空",
+  "scm.graph.branch_filter.local": "本地分支",
+  "scm.graph.branch_filter.remote": "遠程分支",
+  "scm.graph.branch_filter.multiple_selected": "{count} 個分支",
+  "scm.graph.branch_filter.no_branches_found": "未找到匹配分支",
 };

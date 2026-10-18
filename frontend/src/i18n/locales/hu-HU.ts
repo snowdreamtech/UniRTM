@@ -1000,4 +1000,13 @@ export const huHu: TranslationDict = {
   "scm.file_menu.copy_relative_path": "Copy Relative Path",
   "scm.file_menu.copied_path": "Copied file path to clipboard",
   "scm.file_menu.copied_relative_path": "Copied relative path to clipboard",
+  "scm.graph.branch_filter.title": "Branches",
+  "scm.graph.branch_filter.filter_placeholder": "Filter branches...",
+  "scm.graph.branch_filter.all": "All",
+  "scm.graph.branch_filter.current": "Current",
+  "scm.graph.branch_filter.clear": "Clear",
+  "scm.graph.branch_filter.local": "Local Branches",
+  "scm.graph.branch_filter.remote": "Remote Branches",
+  "scm.graph.branch_filter.multiple_selected": "{count} branches",
+  "scm.graph.branch_filter.no_branches_found": "No branches found",
 };

@@ -3429,13 +3429,23 @@ print(json.dumps({
             if (req.url?.startsWith("/api/git/graph") && req.method === "GET") {
               try {
                 const parsedUrl = new URL(req.url, "http://localhost");
-                const branch = parsedUrl.searchParams.get("branch") || "all";
+                const rawBranches = parsedUrl.searchParams.getAll("branch");
+                const branchList: string[] = [];
+                for (const b of rawBranches) {
+                  for (const part of b.split(",")) {
+                    const trimmed = part.trim();
+                    if (trimmed) branchList.push(trimmed);
+                  }
+                }
+                const isAll = branchList.length === 0 || branchList.includes("all");
+                const validBranches = branchList.filter((b) => b !== "all");
+
                 const filePath = parsedUrl.searchParams.get("path");
                 const limit = parseInt(parsedUrl.searchParams.get("limit") || "200", 10);
 
                 const args = ["log", "--date-order", "-n", String(limit), "--pretty=format:%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%s%x09%D%x09%G?%x09%GK%x09%GS%x09%GF"];
-                if (branch && branch !== "all") {
-                  args.push(branch);
+                if (!isAll && validBranches.length > 0) {
+                  args.push(...validBranches);
                 } else {
                   args.push("--all");
                 }

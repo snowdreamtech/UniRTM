@@ -1012,4 +1012,13 @@ export const zhCn: TranslationDict = {
   "scm.file_menu.copy_relative_path": "复制相对路径",
   "scm.file_menu.copied_path": "已复制文件路径",
   "scm.file_menu.copied_relative_path": "已复制文件相对路径",
+  "scm.graph.branch_filter.title": "分支筛选",
+  "scm.graph.branch_filter.filter_placeholder": "过滤分支...",
+  "scm.graph.branch_filter.all": "全部",
+  "scm.graph.branch_filter.current": "当前",
+  "scm.graph.branch_filter.clear": "清空",
+  "scm.graph.branch_filter.local": "本地分支",
+  "scm.graph.branch_filter.remote": "远程分支",
+  "scm.graph.branch_filter.multiple_selected": "{count} 个分支",
+  "scm.graph.branch_filter.no_branches_found": "未找到匹配分支",
 };
