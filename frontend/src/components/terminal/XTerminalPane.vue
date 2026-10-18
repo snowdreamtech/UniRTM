@@ -4,6 +4,7 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 import { getXtermTheme } from "../../utils/terminalTheme";
+import { registerTerminalSender, unregisterTerminalSender } from "../../composables/useTerminalSessions";
 
 const props = defineProps<{
   paneId: string;
@@ -65,6 +66,11 @@ function connectWebSocket() {
     isConnected.value = true;
     isConnecting.value = false;
     connectionError.value = null;
+    registerTerminalSender(props.paneId, (data: string) => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "input", data }));
+      }
+    });
     if (fitAddon) {
       fitAddon.fit();
       sendResize();
@@ -192,6 +198,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
+  unregisterTerminalSender(props.paneId);
   if (resizeObserver) {
     resizeObserver.disconnect();
     resizeObserver = null;

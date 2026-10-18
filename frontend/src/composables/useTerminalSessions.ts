@@ -31,6 +31,29 @@ const activeSessionId = ref<string>("");
 let sessionCounter = 0;
 let paneCounter = 0;
 
+type TerminalDataSender = (data: string) => void;
+const activeTerminalSenders = new Map<string, TerminalDataSender>();
+
+export function registerTerminalSender(paneId: string, sender: TerminalDataSender) {
+  activeTerminalSenders.set(paneId, sender);
+}
+
+export function unregisterTerminalSender(paneId: string) {
+  activeTerminalSenders.delete(paneId);
+}
+
+export function sendToTerminal(paneId: string | undefined, data: string): boolean {
+  if (paneId && activeTerminalSenders.has(paneId)) {
+    activeTerminalSenders.get(paneId)!(data);
+    return true;
+  }
+  for (const sender of activeTerminalSenders.values()) {
+    sender(data);
+    return true;
+  }
+  return false;
+}
+
 export function useTerminalSessions() {
   const { currentTerminal, defaultTerminal } = useTerminal();
 
@@ -226,6 +249,9 @@ export function useTerminalSessions() {
       text: `[${pane.shellName}] executed: ${trimmed}`,
       type: "output",
     });
+
+    // Send command directly to live WebSocket PTY shell
+    sendToTerminal(paneId, `${trimmed}\r`);
   }
 
   function clearActivePane() {
@@ -255,6 +281,7 @@ export function useTerminalSessions() {
     closeSession,
     closeActiveTerminal,
     runCommand,
+    sendToTerminal,
     clearActivePane,
     ensureInitialSession,
   };

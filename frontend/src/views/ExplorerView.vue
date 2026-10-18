@@ -275,6 +275,7 @@ import TechIcon from "../components/common/TechIcon.vue";
 import MonacoEditor from "../components/editor/MonacoEditor.vue";
 import { useFileTree } from "../composables/useFileTree";
 import { useEditorTabs } from "../composables/useEditorTabs";
+import { useTerminalSessions } from "../composables/useTerminalSessions";
 
 const emit = defineEmits<{
   (e: "open-drawer", tab: string): void;
@@ -420,10 +421,37 @@ function handleCopyPath() {
 
 function handleOpenParentTerminal() {
   emit("open-drawer", "terminal");
+  const { ensureInitialSession, activePane, runCommand } = useTerminalSessions();
+  ensureInitialSession();
+  const pane = activePane.value;
+  if (activeTab.value) {
+    const fileName = activeTab.value.name;
+    const filePath = activeTab.value.path;
+    const lastSlash = filePath.lastIndexOf("/");
+    const parentDir = lastSlash >= 0 ? filePath.slice(0, lastSlash) : "";
+
+    setTimeout(() => {
+      const paneId = pane?.id || "";
+      if (parentDir) {
+        runCommand(paneId, `cd "${parentDir}" && ./${fileName}`);
+      } else {
+        runCommand(paneId, `if [ -f "./${fileName}" ]; then ./${fileName}; else cd .. && ./${fileName}; fi`);
+      }
+    }, 150);
+  }
 }
 
 function handleOpenFolderInTerminal() {
   emit("open-drawer", "terminal");
+  if (selectedNode.value) {
+    const { ensureInitialSession, activePane, runCommand } = useTerminalSessions();
+    ensureInitialSession();
+    const pane = activePane.value;
+    const targetPath = selectedNode.value.path || ".";
+    setTimeout(() => {
+      runCommand(pane?.id || "", `cd "${targetPath}"`);
+    }, 150);
+  }
 }
 
 function handleCreateFileInside() {
