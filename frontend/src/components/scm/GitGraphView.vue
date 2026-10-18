@@ -1200,7 +1200,7 @@ async function handleModalConfirm(payload: {
     } else if (action === "delete-tag") {
       await deleteTag(data.name);
     } else if (action === "push-tag") {
-      await pushTag(data.name);
+      await pushTag(data.name, data.force);
     } else if (action === "reset") {
       if (commit) await resetToCommit(commit.hash, data.mode);
     } else if (action === "cherry-pick") {

@@ -4537,14 +4537,20 @@ func handleGitTagPush(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Name string `json:"name"`
+		Name  string `json:"name"`
+		Force bool   `json:"force"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Name == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "Tag name is required"})
 		return
 	}
-	out, err := runGitCommand("push", "origin", body.Name)
+	args := []string{"push"}
+	if body.Force {
+		args = append(args, "--force")
+	}
+	args = append(args, "origin", body.Name)
+	out, err := runGitCommand(args...)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})

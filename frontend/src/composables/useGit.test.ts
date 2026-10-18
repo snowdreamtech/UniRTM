@@ -357,8 +357,11 @@ describe("useGit composable", () => {
     await deleteTag("v1.0.0");
     expect(global.fetch).toHaveBeenCalledWith("/api/git/tag/delete", expect.objectContaining({ method: "POST" }));
 
-    await pushTag("v1.0.0");
-    expect(global.fetch).toHaveBeenCalledWith("/api/git/tag/push", expect.objectContaining({ method: "POST" }));
+    await pushTag("v1.0.0", true);
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/tag/push", expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({ name: "v1.0.0", force: true }),
+    }));
   });
 });
 

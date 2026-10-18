@@ -747,12 +747,12 @@ export function useGit() {
   /**
    * Pushes a tag to remote.
    */
-  async function pushTag(name: string): Promise<boolean> {
+  async function pushTag(name: string, force: boolean = false): Promise<boolean> {
     try {
       const res = await fetch("/api/git/tag/push", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, force }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || "推送标签失败");

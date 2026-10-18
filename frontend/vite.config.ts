@@ -3987,7 +3987,10 @@ print(json.dumps({
                     res.end(JSON.stringify({ error: "Tag name is required" }));
                     return;
                   }
-                  const out = runGit(["push", "origin", body.name]);
+                  const args = ["push"];
+                  if (body.force) args.push("--force");
+                  args.push("origin", body.name);
+                  const out = runGit(args);
                   res.setHeader("Content-Type", "application/json");
                   res.end(JSON.stringify({ success: true, name: body.name, output: out }));
                 } catch (err: any) {

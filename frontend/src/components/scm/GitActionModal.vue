@@ -127,6 +127,10 @@
         <!-- 9. Push Tag Confirm -->
         <div v-else-if="actionType === 'push-tag'" class="form-group">
           <p class="confirm-message">{{ t('scm.modal.push_tag_confirm', { name: targetRefName || '' }) }}</p>
+          <label class="checkbox-label mt-3">
+            <input v-model="forcePush" type="checkbox" />
+            <span class="text-warning">{{ t('scm.modal.force_push') }}</span>
+          </label>
         </div>
 
         <!-- 10. Reset To Commit Form -->
@@ -409,7 +413,7 @@ function handleConfirm() {
   } else if (props.actionType === "delete-tag") {
     data = { name: props.targetRefName };
   } else if (props.actionType === "push-tag") {
-    data = { name: props.targetRefName };
+    data = { name: props.targetRefName, force: forcePush.value };
   } else if (props.actionType === "reset") {
     data = { mode: resetMode.value };
   }
