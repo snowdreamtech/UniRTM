@@ -618,6 +618,42 @@ url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.2/gorele
 checksum = "sha256:d2aebc59bee96078c1f529160f170e02ffc96fd5d31b5e33eef66cdd7256f602"
 url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.2/goreleaser_Windows_arm64.zip"
 
+[[tools."github:goreleaser/goreleaser"]]
+version = "2.18.3"
+backend = "github"
+
+[tools."github:goreleaser/goreleaser"."platforms.linux-amd64"]
+checksum = "sha256:b8dee4728bca1aba0d71a832a17cd0a3799f75372878e7ffa36aef2343bce0bc"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.3/goreleaser_Linux_x86_64.tar.gz"
+
+[tools."github:goreleaser/goreleaser"."platforms.linux-amd64-musl"]
+checksum = "sha256:b8dee4728bca1aba0d71a832a17cd0a3799f75372878e7ffa36aef2343bce0bc"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.3/goreleaser_Linux_x86_64.tar.gz"
+
+[tools."github:goreleaser/goreleaser"."platforms.linux-arm64"]
+checksum = "sha256:fa7011a7f8de3b504326b8552cf21c708ed3089519b01d372da32ef4e8d298d7"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.3/goreleaser_Linux_arm64.tar.gz"
+
+[tools."github:goreleaser/goreleaser"."platforms.linux-arm64-musl"]
+checksum = "sha256:fa7011a7f8de3b504326b8552cf21c708ed3089519b01d372da32ef4e8d298d7"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.3/goreleaser_Linux_arm64.tar.gz"
+
+[tools."github:goreleaser/goreleaser"."platforms.macos-amd64"]
+checksum = "sha256:dbc39347d9ca25a2da9bcc03633f39130bb3a67c9f2a0da86ba15b8b00bf86ce"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.3/goreleaser_Darwin_x86_64.tar.gz"
+
+[tools."github:goreleaser/goreleaser"."platforms.macos-arm64"]
+checksum = "sha256:821c58ab8c31d57bb331cab9f1a703eb3673bff4fce0db9cc3c4a038af14f76f"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.3/goreleaser_Darwin_arm64.tar.gz"
+
+[tools."github:goreleaser/goreleaser"."platforms.windows-amd64"]
+checksum = "sha256:5e7455df2accbfe69416cf9ccbc6aefe9abd2543525d5d6da24426d827aa8171"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.3/goreleaser_Windows_x86_64.zip"
+
+[tools."github:goreleaser/goreleaser"."platforms.windows-arm64"]
+checksum = "sha256:371da2dddac0c19c729a74d26305c2d168cff50728ebe14b581fe5b7c5d98b59"
+url = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.3/goreleaser_Windows_arm64.zip"
+
 [[tools."github:hadolint/hadolint"]]
 version = "2.15.1"
 backend = "github"
@@ -1265,6 +1301,26 @@ backend = "npm"
 
 [tools."npm:eslint"."platforms.windows-arm64"]
 
+[[tools."npm:eslint"]]
+version = "10.13.0"
+backend = "npm"
+
+[tools."npm:eslint"."platforms.linux-amd64"]
+
+[tools."npm:eslint"."platforms.linux-amd64-musl"]
+
+[tools."npm:eslint"."platforms.linux-arm64"]
+
+[tools."npm:eslint"."platforms.linux-arm64-musl"]
+
+[tools."npm:eslint"."platforms.macos-amd64"]
+
+[tools."npm:eslint"."platforms.macos-arm64"]
+
+[tools."npm:eslint"."platforms.windows-amd64"]
+
+[tools."npm:eslint"."platforms.windows-arm64"]
+
 [[tools."npm:markdownlint-cli2"]]
 version = "0.23.2"
 backend = "npm"
@@ -1367,6 +1423,26 @@ backend = "npm"
 
 [[tools."npm:sort-package-json"]]
 version = "4.0.0"
+backend = "npm"
+
+[tools."npm:sort-package-json"."platforms.linux-amd64"]
+
+[tools."npm:sort-package-json"."platforms.linux-amd64-musl"]
+
+[tools."npm:sort-package-json"."platforms.linux-arm64"]
+
+[tools."npm:sort-package-json"."platforms.linux-arm64-musl"]
+
+[tools."npm:sort-package-json"."platforms.macos-amd64"]
+
+[tools."npm:sort-package-json"."platforms.macos-arm64"]
+
+[tools."npm:sort-package-json"."platforms.windows-amd64"]
+
+[tools."npm:sort-package-json"."platforms.windows-arm64"]
+
+[[tools."npm:sort-package-json"]]
+version = "4.1.0"
 backend = "npm"
 
 [tools."npm:sort-package-json"."platforms.linux-amd64"]
