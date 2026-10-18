@@ -38,6 +38,13 @@ function findUnirtmBinary(rootDir: string): string {
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  resolve: {
+    alias: {
+      "monaco-editor/min/vs/editor/editor.main.css": fileURLToPath(
+        new URL("./node_modules/monaco-editor/min/vs/editor/editor.main.css", import.meta.url)
+      ),
+    },
+  },
   plugins: [
     vue(),
     {

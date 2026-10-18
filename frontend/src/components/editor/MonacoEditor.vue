@@ -18,6 +18,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import type * as MonacoType from "monaco-editor";
+import "monaco-editor/min/vs/editor/editor.main.css";
 import { loadMonaco, getLanguageForFile } from "../../services/editor/monacoLoader";
 import type { EditorTab } from "../../composables/useEditorTabs";
 
