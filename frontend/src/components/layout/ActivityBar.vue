@@ -217,17 +217,18 @@ const primaryTabs = computed<ActivityTab[]>(() => [
   position: absolute;
   top: 3px;
   right: 2px;
-  background: var(--accent-purple);
+  background: var(--success, #10b981);
   color: #ffffff;
   font-size: 0.62rem;
-  font-weight: 700;
+  font-weight: 800;
   padding: 0.05rem 0.3rem;
   border-radius: 9999px;
   line-height: 1.1;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
-.activity-badge.badge-tools {
+.activity-badge.badge-tools,
+.activity-badge.badge-scm {
   background: var(--success, #10b981);
   color: #ffffff;
   font-weight: 800;
