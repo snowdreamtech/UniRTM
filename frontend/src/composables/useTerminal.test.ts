@@ -49,4 +49,31 @@ describe("useTerminal composable", () => {
       }),
     }));
   });
+
+  it("deduplicates redundant terminals and ensures exactly one default terminal", async () => {
+    const mockResponse = {
+      default: "/bin/bash",
+      current: "/bin/bash",
+      terminals: [
+        { id: "bash", name: "Bash", path: "/bin/bash", is_default: true },
+        { id: "bash", name: "Bash", path: "/usr/bin/bash", is_default: true },
+        { id: "sh", name: "POSIX sh", path: "/bin/sh", is_default: false },
+        { id: "sh", name: "POSIX sh", path: "/usr/bin/sh", is_default: false },
+      ],
+    };
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockResponse,
+    });
+
+    const { fetchTerminals, terminals } = useTerminal();
+    await fetchTerminals();
+
+    expect(terminals.value).toHaveLength(2);
+    expect(terminals.value[0].id).toBe("bash");
+    expect(terminals.value[0].is_default).toBe(true);
+    expect(terminals.value[1].id).toBe("sh");
+    expect(terminals.value[1].is_default).toBe(false);
+  });
 });

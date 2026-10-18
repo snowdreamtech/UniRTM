@@ -2311,17 +2311,72 @@ print(json.dumps({
           if (req.url === "/api/terminals" || req.url?.startsWith("/api/terminals?")) {
             res.setHeader("Content-Type", "application/json");
             const defaultShell = process.env.SHELL || (process.platform === "win32" ? process.env.COMSPEC || "cmd.exe" : "/bin/bash");
-            const terms: Array<{ id: string; name: string; path: string; is_default: boolean }> = [];
-            const seen = new Set<string>();
+            let realDefaultShell = "";
+            try {
+              if (defaultShell && fs.existsSync(defaultShell)) {
+                realDefaultShell = fs.realpathSync(defaultShell);
+              }
+            } catch (_) {}
+
+            const isRestrictedOrStub = (baseName: string) => {
+              const b = baseName.toLowerCase().replace(/\.exe$/, "");
+              return ["rbash", "rksh", "rzsh", "rsh", "nologin", "false", "sync", "halt", "shutdown"].includes(b);
+            };
+
+            interface InternalTerm {
+              id: string;
+              name: string;
+              path: string;
+              realPath: string;
+              devIno: string;
+            }
+
+            const terms: InternalTerm[] = [];
 
             const addTerm = (id: string, name: string, shPath: string) => {
-              if (!shPath || seen.has(shPath)) return;
+              if (!shPath) return;
+              const base = path.basename(shPath).toLowerCase().replace(/\.exe$/, "");
+              if (isRestrictedOrStub(base)) return;
+
               try {
-                if (fs.existsSync(shPath)) {
-                  seen.add(shPath);
-                  const isDef = Boolean(defaultShell && (shPath === defaultShell || path.basename(shPath) === path.basename(defaultShell)));
-                  terms.push({ id, name, path: shPath, is_default: isDef });
+                if (!fs.existsSync(shPath)) return;
+                let realPath = shPath;
+                try {
+                  realPath = fs.realpathSync(shPath);
+                } catch (_) {}
+
+                let devIno = "";
+                try {
+                  const stat = fs.statSync(shPath);
+                  devIno = `${stat.dev}:${stat.ino}`;
+                } catch (_) {}
+
+                for (let i = 0; i < terms.length; i++) {
+                  const ex = terms[i];
+                  if (ex.path === shPath) return;
+
+                  const sameUnderlying = (realPath && ex.realPath === realPath) || (devIno && ex.devIno === devIno);
+                  if (sameUnderlying) {
+                    if (ex.id === id || (id === "dash" && ex.id === "sh") || (id === "sh" && ex.id === "dash")) {
+                      if (defaultShell && shPath === defaultShell) {
+                        ex.path = shPath;
+                        ex.id = id;
+                        ex.name = name;
+                      }
+                      return;
+                    }
+                  }
+
+                  if (ex.id === id) {
+                    if (defaultShell && shPath === defaultShell) {
+                      ex.path = shPath;
+                      ex.name = name;
+                    }
+                    return;
+                  }
                 }
+
+                terms.push({ id, name, path: shPath, realPath, devIno });
               } catch (_) {}
             };
 
@@ -2356,20 +2411,37 @@ print(json.dumps({
               addTerm("git-bash", "Git Bash", "C:\\Program Files\\Git\\bin\\bash.exe");
             }
 
-            if (defaultShell && !seen.has(defaultShell) && fs.existsSync(defaultShell)) {
+            if (defaultShell && fs.existsSync(defaultShell)) {
               const b = path.basename(defaultShell);
               addTerm(b.toLowerCase(), b.charAt(0).toUpperCase() + b.slice(1), defaultShell);
             }
 
-            let hasDef = terms.some(t => t.is_default);
-            if (!hasDef && terms.length > 0) {
-              terms[0].is_default = true;
+            // Resolve is_default: Exactly ONE terminal must be default
+            let defaultIdx = -1;
+            if (defaultShell) {
+              defaultIdx = terms.findIndex(t => t.path === defaultShell);
+            }
+            if (defaultIdx === -1 && realDefaultShell) {
+              defaultIdx = terms.findIndex(t => t.realPath === realDefaultShell);
+            }
+            if (defaultIdx === -1 && defaultShell) {
+              const defBase = path.basename(defaultShell).toLowerCase().replace(/\.exe$/, "");
+              defaultIdx = terms.findIndex(t => t.id === defBase);
+            }
+            if (defaultIdx === -1 && terms.length > 0) {
+              defaultIdx = 0;
             }
 
-            // Ensure default terminal is sorted to the top
-            terms.sort((a, b) => (b.is_default ? 1 : 0) - (a.is_default ? 1 : 0));
+            const formattedTerms = terms.map((t, idx) => ({
+              id: t.id,
+              name: t.name,
+              path: t.path,
+              is_default: idx === defaultIdx,
+            }));
 
-            const defTerm = terms.find(t => t.is_default)?.path || (terms[0]?.path || "/bin/bash");
+            formattedTerms.sort((a, b) => (b.is_default ? 1 : 0) - (a.is_default ? 1 : 0));
+
+            const defTerm = formattedTerms.find(t => t.is_default)?.path || (formattedTerms[0]?.path || "/bin/bash");
             let current = defTerm;
             try {
               const home = os.homedir();
@@ -2386,7 +2458,7 @@ print(json.dumps({
             res.end(JSON.stringify({
               default: defTerm,
               current: current,
-              terminals: terms,
+              terminals: formattedTerms,
             }));
             return;
           }

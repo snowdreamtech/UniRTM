@@ -42,10 +42,31 @@ export function useTerminal() {
       if (res.ok) {
         const data = await res.json();
         const rawList: TerminalItem[] = data.terminals || [];
-        rawList.sort((a, b) => (b.is_default ? 1 : 0) - (a.is_default ? 1 : 0));
-        terminals.value = rawList;
-        defaultTerminalPath.value = data.default || "";
-        currentTerminalPath.value = data.current || data.default || "";
+        const seen = new Set<string>();
+        const uniqueList: TerminalItem[] = [];
+        let defaultFound = false;
+
+        for (const item of rawList) {
+          const key = (item.id || item.name || item.path).toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+
+          const isDef = Boolean(item.is_default && !defaultFound);
+          if (isDef) defaultFound = true;
+          uniqueList.push({
+            ...item,
+            is_default: isDef,
+          });
+        }
+
+        if (!defaultFound && uniqueList.length > 0) {
+          uniqueList[0].is_default = true;
+        }
+
+        uniqueList.sort((a, b) => (b.is_default ? 1 : 0) - (a.is_default ? 1 : 0));
+        terminals.value = uniqueList;
+        defaultTerminalPath.value = data.default || (uniqueList[0]?.path || "");
+        currentTerminalPath.value = data.current || data.default || (uniqueList[0]?.path || "");
       } else {
         terminalError.value = "Failed to load terminals";
       }

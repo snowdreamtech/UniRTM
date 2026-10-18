@@ -355,32 +355,103 @@ type DetectedTerminal struct {
 	IsDefault bool   `json:"is_default"`
 }
 
-// detectInstalledTerminals dynamically scans the host system for known installed shells/terminals.
+// isRestrictedOrStubShell returns true if the shell is a restricted or non-interactive stub shell.
+func isRestrictedOrStubShell(base string) bool {
+	base = strings.ToLower(strings.TrimSuffix(base, ".exe"))
+	switch base {
+	case "rbash", "rksh", "rzsh", "rsh", "nologin", "false", "sync", "halt", "shutdown":
+		return true
+	default:
+		return false
+	}
+}
+
+// detectInstalledTerminals dynamically scans the host system for known installed shells/terminals,
+// canonicalizing symlinks and hardlinks to eliminate duplicate aliases.
 func detectInstalledTerminals() []DetectedTerminal {
-	var list []DetectedTerminal
-	seen := make(map[string]bool)
+	type termEntry struct {
+		term     DetectedTerminal
+		realPath string
+	}
+	var list []termEntry
 
 	defaultShell := os.Getenv("SHELL")
 	if defaultShell == "" && runtime.GOOS == "windows" {
 		defaultShell = os.Getenv("COMSPEC")
 	}
+	realDefaultShell := ""
+	if defaultShell != "" {
+		if rp, err := filepath.EvalSymlinks(defaultShell); err == nil {
+			realDefaultShell = rp
+		} else {
+			realDefaultShell = filepath.Clean(defaultShell)
+		}
+	}
 
 	addTerminal := func(id, name, path string) {
-		if path == "" || seen[path] {
+		if path == "" {
 			return
 		}
-		seen[path] = true
-		isDef := false
-		if defaultShell != "" {
-			if path == defaultShell || filepath.Base(path) == filepath.Base(defaultShell) {
-				isDef = true
+		base := strings.ToLower(strings.TrimSuffix(filepath.Base(path), ".exe"))
+		if isRestrictedOrStubShell(base) {
+			return
+		}
+
+		fi, err := os.Stat(path)
+		if err != nil {
+			return
+		}
+
+		realPath, err := filepath.EvalSymlinks(path)
+		if err != nil {
+			realPath = filepath.Clean(path)
+		}
+
+		// Check against already registered entries to eliminate symlink/hardlink duplicates
+		for i, existing := range list {
+			if existing.term.Path == path {
+				return
+			}
+
+			sameUnderlying := (realPath != "" && existing.realPath == realPath)
+			if !sameUnderlying {
+				if exFi, err := os.Stat(existing.term.Path); err == nil {
+					sameUnderlying = os.SameFile(fi, exFi)
+				}
+			}
+
+			if sameUnderlying {
+				// Same physical binary:
+				// If both share the same ID, or if one is 'sh' and one is 'dash' (POSIX sh alias):
+				if existing.term.ID == id || (id == "dash" && existing.term.ID == "sh") || (id == "sh" && existing.term.ID == "dash") {
+					// If the newly scanned path matches the user's $SHELL exactly, prioritize this path
+					if defaultShell != "" && path == defaultShell {
+						list[i].term.Path = path
+						list[i].term.ID = id
+						list[i].term.Name = name
+					}
+					return
+				}
+			}
+
+			// Same shell ID (e.g. "bash" found at another location)
+			if existing.term.ID == id {
+				if defaultShell != "" && path == defaultShell {
+					list[i].term.Path = path
+					list[i].term.Name = name
+				}
+				return
 			}
 		}
-		list = append(list, DetectedTerminal{
-			ID:        id,
-			Name:      name,
-			Path:      path,
-			IsDefault: isDef,
+
+		list = append(list, termEntry{
+			term: DetectedTerminal{
+				ID:        id,
+				Name:      name,
+				Path:      path,
+				IsDefault: false,
+			},
+			realPath: realPath,
 		})
 	}
 
@@ -465,37 +536,71 @@ func detectInstalledTerminals() []DetectedTerminal {
 	}
 
 	// 4. Ensure at least defaultShell is present if specified and exists
-	if defaultShell != "" && !seen[defaultShell] {
+	if defaultShell != "" {
 		if _, err := os.Stat(defaultShell); err == nil {
 			base := filepath.Base(defaultShell)
 			addTerminal(strings.ToLower(strings.TrimSuffix(base, ".exe")), friendlyName(base), defaultShell)
 		}
 	}
 
-	// 5. Ensure at least one terminal is marked is_default
-	hasDefault := false
-	for _, t := range list {
-		if t.IsDefault {
-			hasDefault = true
-			break
+	// 5. Resolve is_default: Exactly ONE terminal must be marked as default
+	defaultIndex := -1
+
+	// 5a. Prioritize exact path match with $SHELL
+	if defaultShell != "" {
+		for i, item := range list {
+			if item.term.Path == defaultShell {
+				defaultIndex = i
+				break
+			}
 		}
 	}
-	if !hasDefault && len(list) > 0 {
-		list[0].IsDefault = true
+
+	// 5b. Prioritize realPath match with realDefaultShell
+	if defaultIndex == -1 && realDefaultShell != "" {
+		for i, item := range list {
+			if item.realPath == realDefaultShell {
+				defaultIndex = i
+				break
+			}
+		}
+	}
+
+	// 5c. Match base name of default shell
+	if defaultIndex == -1 && defaultShell != "" {
+		defBase := strings.ToLower(strings.TrimSuffix(filepath.Base(defaultShell), ".exe"))
+		for i, item := range list {
+			if item.term.ID == defBase {
+				defaultIndex = i
+				break
+			}
+		}
+	}
+
+	// 5d. Fallback to first available terminal
+	if defaultIndex == -1 && len(list) > 0 {
+		defaultIndex = 0
+	}
+
+	var results []DetectedTerminal
+	for i, item := range list {
+		t := item.term
+		t.IsDefault = (i == defaultIndex)
+		results = append(results, t)
 	}
 
 	// Ensure system default terminal is strictly sorted to the top
-	sort.SliceStable(list, func(i, j int) bool {
-		if list[i].IsDefault && !list[j].IsDefault {
+	sort.SliceStable(results, func(i, j int) bool {
+		if results[i].IsDefault && !results[j].IsDefault {
 			return true
 		}
-		if !list[i].IsDefault && list[j].IsDefault {
+		if !results[i].IsDefault && results[j].IsDefault {
 			return false
 		}
 		return i < j
 	})
 
-	return list
+	return results
 }
 
 func handleGetTerminals(w http.ResponseWriter, r *http.Request) {

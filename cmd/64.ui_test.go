@@ -228,6 +228,27 @@ func TestUIDetectTerminals(t *testing.T) {
 		t.Errorf("Expected first detected terminal (%s) to be marked as default, but was not", terms[0].Path)
 	}
 
+	// Verify strict deduplication and single default badge
+	seenIDs := make(map[string]bool)
+	seenPaths := make(map[string]bool)
+	defaultCount := 0
+	for _, term := range terms {
+		if seenIDs[term.ID] {
+			t.Errorf("Duplicate terminal ID detected: %s", term.ID)
+		}
+		seenIDs[term.ID] = true
+		if seenPaths[term.Path] {
+			t.Errorf("Duplicate terminal Path detected: %s", term.Path)
+		}
+		seenPaths[term.Path] = true
+		if term.IsDefault {
+			defaultCount++
+		}
+	}
+	if defaultCount != 1 {
+		t.Errorf("Expected exactly 1 default terminal, got %d", defaultCount)
+	}
+
 	// 2. Test POST /api/terminal/exec
 	execPayload := strings.NewReader(`{"command":"echo Hello UniRTM Shell","shell":""}`)
 	reqExec := httptest.NewRequest("POST", "/api/terminal/exec", execPayload)
