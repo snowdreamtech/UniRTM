@@ -40,10 +40,62 @@ let monaco: typeof MonacoType | null = null;
 let editorInstance: MonacoType.editor.IStandaloneCodeEditor | null = null;
 let resizeObserver: ResizeObserver | null = null;
 
+function initMonacoThemes(m: typeof MonacoType): void {
+  m.editor.defineTheme("unirtm-light", {
+    base: "vs",
+    inherit: true,
+    rules: [],
+    colors: {
+      "menu.background": "#ffffff",
+      "menu.foreground": "#0f172a",
+      "menu.selectionBackground": "#0284c7",
+      "menu.selectionForeground": "#ffffff",
+      "menu.selectionBorder": "transparent",
+      "menu.separatorBackground": "#e2e8f0",
+      "menu.border": "#cbd5e1",
+      "widget.shadow": "rgba(0, 0, 0, 0.16)",
+      "editorWidget.background": "#ffffff",
+      "editorWidget.border": "#cbd5e1",
+      "editorWidget.foreground": "#0f172a",
+      "editorSuggestWidget.background": "#ffffff",
+      "editorSuggestWidget.border": "#cbd5e1",
+      "editorSuggestWidget.selectedBackground": "#e0f2fe",
+      "editorSuggestWidget.highlightForeground": "#0284c7",
+      "editorHoverWidget.background": "#ffffff",
+      "editorHoverWidget.border": "#cbd5e1",
+    },
+  });
+
+  m.editor.defineTheme("unirtm-dark", {
+    base: "vs-dark",
+    inherit: true,
+    rules: [],
+    colors: {
+      "menu.background": "#111827",
+      "menu.foreground": "#f8fafc",
+      "menu.selectionBackground": "rgba(0, 229, 255, 0.2)",
+      "menu.selectionForeground": "#00e5ff",
+      "menu.selectionBorder": "rgba(0, 229, 255, 0.4)",
+      "menu.separatorBackground": "rgba(255, 255, 255, 0.12)",
+      "menu.border": "rgba(0, 229, 255, 0.3)",
+      "widget.shadow": "rgba(0, 0, 0, 0.65)",
+      "editorWidget.background": "#111827",
+      "editorWidget.border": "rgba(0, 229, 255, 0.3)",
+      "editorWidget.foreground": "#f8fafc",
+      "editorSuggestWidget.background": "#111827",
+      "editorSuggestWidget.border": "rgba(0, 229, 255, 0.3)",
+      "editorSuggestWidget.selectedBackground": "rgba(0, 229, 255, 0.15)",
+      "editorSuggestWidget.highlightForeground": "#00e5ff",
+      "editorHoverWidget.background": "#111827",
+      "editorHoverWidget.border": "rgba(0, 229, 255, 0.3)",
+    },
+  });
+}
+
 function applyTheme(): void {
   if (!monaco) return;
   const isLight = document.documentElement.getAttribute("data-theme") === "light";
-  monaco.editor.setTheme(isLight ? "vs" : "vs-dark");
+  monaco.editor.setTheme(isLight ? "unirtm-light" : "unirtm-dark");
 }
 
 function getOrCreateModel(tab: EditorTab): MonacoType.editor.ITextModel | null {
@@ -67,6 +119,7 @@ function getOrCreateModel(tab: EditorTab): MonacoType.editor.ITextModel | null {
 onMounted(async () => {
   try {
     monaco = await loadMonaco();
+    initMonacoThemes(monaco);
     applyTheme();
 
     if (!editorContainerRef.value) return;

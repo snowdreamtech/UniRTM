@@ -567,3 +567,165 @@ html[dir="rtl"] .opt-check {
   color: #0f172a;
 }
 
+/* ==========================================================================
+   7. Monaco Editor Context Menu & Elevation Widgets
+   ========================================================================== */
+.context-view {
+  z-index: 2500 !important;
+}
+
+.context-view.monaco-menu-container,
+.context-view > .monaco-menu-container,
+.context-view .monaco-menu,
+.monaco-menu-container,
+.monaco-menu {
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+.context-view.monaco-menu-container .monaco-menu,
+.monaco-menu-container .monaco-menu {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.monaco-menu .monaco-action-bar.vertical {
+  padding: 6px !important;
+}
+
+.monaco-menu .monaco-action-bar.vertical .action-item {
+  height: 28px !important;
+  line-height: 28px !important;
+  padding: 0 !important;
+  margin: 1px 0 !important;
+}
+
+.monaco-menu .monaco-action-bar.vertical .action-item .action-menu-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  height: 28px !important;
+  padding: 0 12px !important;
+  border-radius: 5px !important;
+  color: inherit !important;
+  font-size: 13px !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.monaco-menu .monaco-action-bar.vertical .action-item.disabled .action-menu-item {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+.monaco-menu .monaco-action-bar.vertical .action-item .action-label {
+  font-size: 13px !important;
+  flex: 1 !important;
+  text-align: left !important;
+}
+
+.monaco-menu .monaco-action-bar.vertical .action-item .keybinding {
+  font-size: 11.5px !important;
+  opacity: 0.65 !important;
+  margin-left: 28px !important;
+  letter-spacing: 0.5px !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+}
+
+.monaco-menu .monaco-action-bar.vertical .action-item .action-label.separator {
+  height: 1px !important;
+  margin: 4px 6px !important;
+  padding: 0 !important;
+  min-height: 1px !important;
+}
+
+/* Light Theme Menu (Default fallback) */
+.context-view.monaco-menu-container,
+.context-view > .monaco-menu-container,
+.context-view .monaco-menu,
+.monaco-menu,
+:root[data-theme="light"] .context-view.monaco-menu-container,
+[data-theme="light"] .context-view.monaco-menu-container,
+:root[data-theme="light"] .monaco-menu,
+[data-theme="light"] .monaco-menu,
+.vs .monaco-menu {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.18), 0 4px 12px -2px rgba(0, 0, 0, 0.08) !important;
+}
+
+.monaco-menu .action-item.focused .action-menu-item,
+.monaco-menu .action-item:hover .action-menu-item,
+:root[data-theme="light"] .monaco-menu .action-item.focused .action-menu-item,
+:root[data-theme="light"] .monaco-menu .action-item:hover .action-menu-item,
+[data-theme="light"] .monaco-menu .action-item.focused .action-menu-item,
+[data-theme="light"] .monaco-menu .action-item:hover .action-menu-item,
+.vs .monaco-menu .action-item.focused .action-menu-item,
+.vs .monaco-menu .action-item:hover .action-menu-item {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+.monaco-menu .action-item.focused .keybinding,
+.monaco-menu .action-item:hover .keybinding,
+:root[data-theme="light"] .monaco-menu .action-item.focused .keybinding,
+:root[data-theme="light"] .monaco-menu .action-item:hover .keybinding,
+[data-theme="light"] .monaco-menu .action-item.focused .keybinding,
+[data-theme="light"] .monaco-menu .action-item:hover .keybinding,
+.vs .monaco-menu .action-item.focused .keybinding,
+.vs .monaco-menu .action-item:hover .keybinding {
+  color: #ffffff !important;
+  opacity: 0.9 !important;
+}
+
+.monaco-menu .action-label.separator,
+:root[data-theme="light"] .monaco-menu .action-label.separator,
+[data-theme="light"] .monaco-menu .action-label.separator,
+.vs .monaco-menu .action-label.separator {
+  background-color: #e2e8f0 !important;
+}
+
+/* Dark Theme Menu */
+:root[data-theme="dark"] .context-view.monaco-menu-container,
+:root[data-theme="dark"] .context-view > .monaco-menu-container,
+[data-theme="dark"] .context-view.monaco-menu-container,
+:root[data-theme="dark"] .monaco-menu,
+[data-theme="dark"] .monaco-menu,
+.vs-dark .monaco-menu,
+:root[data-theme="dark"] .context-view .monaco-menu {
+  background-color: #111827 !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(0, 229, 255, 0.35) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7), 0 0 1px rgba(0, 229, 255, 0.5) !important;
+}
+
+:root[data-theme="dark"] .monaco-menu .action-item.focused .action-menu-item,
+:root[data-theme="dark"] .monaco-menu .action-item:hover .action-menu-item,
+[data-theme="dark"] .monaco-menu .action-item.focused .action-menu-item,
+[data-theme="dark"] .monaco-menu .action-item:hover .action-menu-item,
+.vs-dark .monaco-menu .action-item.focused .action-menu-item,
+.vs-dark .monaco-menu .action-item:hover .action-menu-item {
+  background-color: rgba(0, 229, 255, 0.18) !important;
+  color: #00e5ff !important;
+}
+
+:root[data-theme="dark"] .monaco-menu .action-item.focused .keybinding,
+:root[data-theme="dark"] .monaco-menu .action-item:hover .keybinding,
+[data-theme="dark"] .monaco-menu .action-item.focused .keybinding,
+[data-theme="dark"] .monaco-menu .action-item:hover .keybinding,
+.vs-dark .monaco-menu .action-item.focused .keybinding,
+.vs-dark .monaco-menu .action-item:hover .keybinding {
+  color: #00e5ff !important;
+  opacity: 0.9 !important;
+}
+
+:root[data-theme="dark"] .monaco-menu .action-label.separator,
+[data-theme="dark"] .monaco-menu .action-label.separator,
+.vs-dark .monaco-menu .action-label.separator {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
