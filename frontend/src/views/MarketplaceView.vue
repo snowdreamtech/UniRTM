@@ -435,6 +435,7 @@
           >
             <TechIcon id="workbench:tools" :size="16" />
             <span>{{ t("settings.cat_plugins") || "功能插件 (UniRTM 生态)" }}</span>
+            <span class="channel-soon-tag">开发中</span>
           </button>
         </div>
       </div>
@@ -994,137 +995,155 @@
         </div>
       </div>
 
-      <!-- CHANNEL 2: Native Plugins & Ecosystem (UniRTM Extensions) -->
-      <div v-show="currentChannel === 'plugins'" class="market-channel-content">
-        <!-- Ecosystem Banner -->
-        <div class="plugin-isolation-banner glass-card">
-          <span class="banner-icon">
-            <TechIcon id="workbench:lock" :size="20" />
-          </span>
-          <div class="banner-text">
-            <strong>三层隔离架构与工具提供者准则</strong>
-            <p>
-              UniRTM 原生功能插件运行于独立外部进程中，绝不臃肿核心运行时。所有插件配置与存储严格限定于 plugins.&lt;plugin-id&gt;.* 命名空间内。
+      <!-- CHANNEL 2: Native Plugins & Ecosystem (UniRTM Extensions) - COMING SOON SHOWCASE -->
+      <div v-show="currentChannel === 'plugins'" class="market-channel-content plugins-channel-wrapper">
+        <!-- Coming Soon Hero Showcase -->
+        <div class="plugins-coming-soon-hero glass-card">
+          <div class="hero-glow-layer"></div>
+          <div class="hero-content">
+            <div class="hero-badge-pill">
+              <span class="pulse-indicator"></span>
+              <span class="badge-text font-mono">ARCHITECTURAL DESIGN · 架构设计中</span>
+            </div>
+            <h3 class="hero-main-title">UniRTM 原生功能扩展体系</h3>
+            <p class="hero-subtitle">
+              探索中，敬请期待！我们正在规划兼顾高隔离安全性、极简调度与生态兼容的原生插件架构。
             </p>
-          </div>
-        </div>
-
-        <!-- Native Plugins Cards View -->
-        <div v-if="viewMode === 'cards'" class="extensions-grid">
-          <div
-            v-for="ext in nativePlugins"
-            :key="ext.id"
-            class="glass-card plugin-card"
-          >
-            <div class="card-header-row">
-              <div class="card-icon-box">
-                <TechIcon :id="ext.id" :size="28" :colored="true" />
-              </div>
-              <div class="card-title-col">
-                <div class="card-name-row">
-                  <span class="card-name">{{ ext.name }}</span>
-                  <span class="card-version font-mono">v{{ ext.version }}</span>
-                </div>
-                <span class="card-namespace font-mono">{{ ext.author }}</span>
-              </div>
-            </div>
-
-            <p class="card-desc">{{ ext.description }}</p>
-
-            <div class="plugin-tags-row">
-              <span v-for="tag in ext.tags" :key="tag" class="plugin-tag">{{ tag }}</span>
-            </div>
-
-            <div class="card-footer-row">
-              <div class="card-stats">
-                <span class="stat-item" style="display: inline-flex; align-items: center; gap: 4px;">
-                  <TechIcon id="workbench:star" :size="12" />
-                  <span>{{ ext.stars }}</span>
-                </span>
-                <span class="stat-item" style="display: inline-flex; align-items: center; gap: 4px;">
-                  <TechIcon id="workbench:package" :size="12" />
-                  <span>{{ ext.downloads }}</span>
-                </span>
-              </div>
-
-              <div class="card-actions">
-                <span v-if="ext.installed" class="badge-installed">✓ {{ t("settings.installed") || "已启用" }}</span>
-                <span v-else class="badge-soon">开发中</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Native Plugins High-Density List / Table View -->
-        <div v-else class="market-list-table-wrapper glass-card">
-          <table class="market-table">
-            <thead>
-              <tr>
-                <th class="th-extension">{{ t("marketplace.col_extension") || "插件" }}</th>
-                <th class="th-publisher">{{ t("marketplace.col_publisher") || "作者与标签" }}</th>
-                <th class="th-desc">{{ t("marketplace.col_desc") || "描述" }}</th>
-                <th class="th-stats">{{ t("marketplace.col_stats") || "数据" }}</th>
-                <th class="th-actions">{{ t("marketplace.col_actions") || "状态" }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="ext in nativePlugins"
-                :key="ext.id"
-                class="market-table-row"
+            <p class="hero-detail-text">
+              为了确保 UniRTM 核心运行时的极致性能与稳定性，真正的功能插件将通过轻量级进程隔离、标准协议（LSP / MCP）与强作用域命名空间与工作台通讯，避免因第三方插件而引入内存泄漏或宿主崩溃。
+            </p>
+            <div class="hero-actions-row">
+              <a
+                href="https://github.com/snowdreamtech/UniRTM/discussions"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn-hero-primary"
               >
-                <!-- Col: Extension Info -->
-                <td class="td-extension">
-                  <div class="table-ext-cell">
-                    <TechIcon :id="ext.id" :size="20" :colored="true" />
-                    <div class="table-ext-info">
-                      <div class="table-ext-title-row">
-                        <span class="ext-name">{{ ext.name }}</span>
-                        <span class="ext-ver font-mono">v{{ ext.version }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </td>
+                <TechIcon id="workbench:github" :size="16" />
+                <span>参与架构讨论与建议 (Discussions)</span>
+              </a>
+              <button class="btn-hero-secondary" @click="switchChannel('themes')">
+                <TechIcon id="workbench:marketplace" :size="16" />
+                <span>浏览主题与图标市场</span>
+              </button>
+            </div>
+          </div>
+        </div>
 
-                <!-- Col: Author & Tags -->
-                <td class="td-publisher">
-                  <div class="table-publisher-cell">
-                    <span class="publisher-ns font-mono">{{ ext.author }}</span>
-                    <div class="plugin-tags-row small" style="margin-top: 2px;">
-                      <span v-for="tag in ext.tags" :key="tag" class="plugin-tag">{{ tag }}</span>
-                    </div>
-                  </div>
-                </td>
+        <!-- 3 Design Pillars Grid -->
+        <div class="coming-soon-pillars">
+          <div class="pillar-card glass-card">
+            <div class="pillar-icon-box">
+              <TechIcon id="workbench:lock" :size="24" :colored="true" />
+            </div>
+            <h4 class="pillar-title">外部进程沙箱隔离</h4>
+            <p class="pillar-desc">
+              功能扩展运行在独立外部子进程中，严格限制宿主系统权限。插件生命周期异常自动隔离退出，绝不阻塞核心终端与工作台响应。
+            </p>
+            <div class="pillar-tag font-mono">Process-Level Sandbox</div>
+          </div>
 
-                <!-- Col: Description -->
-                <td class="td-desc">
-                  <span class="table-desc-text" :title="ext.description">
-                    {{ ext.description }}
-                  </span>
-                </td>
+          <div class="pillar-card glass-card">
+            <div class="pillar-icon-box">
+              <TechIcon id="workbench:layers" :size="24" :colored="true" />
+            </div>
+            <h4 class="pillar-title">统一 Provider 规范</h4>
+            <p class="pillar-desc">
+              采用极简能力暴露标准（Runtime Provider、Linter Provider、Tool Provider），通过标准化 JSON-RPC / MCP 接口接入工作区统一调度。
+            </p>
+            <div class="pillar-tag font-mono">Provider Contracts</div>
+          </div>
 
-                <!-- Col: Stats -->
-                <td class="td-stats">
-                  <div class="table-stats-cell">
-                    <span class="stat-pill" style="display: inline-flex; align-items: center; gap: 4px;">
-                      <TechIcon id="workbench:star" :size="11" />
-                      <span>{{ ext.stars }}</span>
-                    </span>
-                    <span class="stat-pill" style="display: inline-flex; align-items: center; gap: 4px;">
-                      <TechIcon id="workbench:package" :size="11" />
-                      <span>{{ ext.downloads }}</span>
-                    </span>
-                  </div>
-                </td>
+          <div class="pillar-card glass-card">
+            <div class="pillar-icon-box">
+              <TechIcon id="workbench:shield" :size="24" :colored="true" />
+            </div>
+            <h4 class="pillar-title">命名空间存储约束</h4>
+            <p class="pillar-desc">
+              所有插件配置与持久化存储严格限制在 <code>plugins.&lt;plugin-id&gt;.*</code> 作用域，配置清晰透明、杜绝隐蔽写盘，卸载零残留。
+            </p>
+            <div class="pillar-tag font-mono">Scoped Persistence</div>
+          </div>
+        </div>
 
-                <!-- Col: Status -->
-                <td class="td-actions">
-                  <span v-if="ext.installed" class="badge-installed">✓ {{ t("settings.installed") || "已启用" }}</span>
-                  <span v-else class="badge-soon">开发中</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- Roadmap & Milestones Section -->
+        <div class="roadmap-card glass-card">
+          <div class="roadmap-header">
+            <div class="roadmap-title-col">
+              <h4 class="roadmap-title">
+                <TechIcon id="workbench:tools" :size="18" />
+                <span>插件系统演进路线图 (Roadmap)</span>
+              </h4>
+              <span class="roadmap-desc">当前阶段尚未定型，欢迎开发者提出宝贵的架构构想与场景需求</span>
+            </div>
+            <span class="roadmap-status-badge">Phase 1 in progress</span>
+          </div>
+
+          <div class="roadmap-steps-list">
+            <div class="roadmap-step-item active">
+              <div class="step-marker font-mono">01</div>
+              <div class="step-info">
+                <div class="step-name-row">
+                  <span class="step-name">架构设计与 RFC 需求梳理</span>
+                  <span class="step-state-tag current">当前阶段</span>
+                </div>
+                <p class="step-desc">明确插件通信边界、清单元数据 Manifest 规范与安全沙箱模型。</p>
+              </div>
+            </div>
+
+            <div class="roadmap-step-item">
+              <div class="step-marker font-mono">02</div>
+              <div class="step-info">
+                <div class="step-name-row">
+                  <span class="step-name">插件进程宿主与 IPC 原型</span>
+                  <span class="step-state-tag pending">待启动</span>
+                </div>
+                <p class="step-desc">实现独立子进程生命周期守护、心跳探测与轻量级 RPC 通讯信道。</p>
+              </div>
+            </div>
+
+            <div class="roadmap-step-item">
+              <div class="step-marker font-mono">03</div>
+              <div class="step-info">
+                <div class="step-name-row">
+                  <span class="step-name">开发者 SDK 与本地单步调试</span>
+                  <span class="step-state-tag pending">待启动</span>
+                </div>
+                <p class="step-desc">提供 TypeScript / Go 官方 SDK 脚手架，支持本地一键开发、热加载与自测。</p>
+              </div>
+            </div>
+
+            <div class="roadmap-step-item">
+              <div class="step-marker font-mono">04</div>
+              <div class="step-info">
+                <div class="step-name-row">
+                  <span class="step-name">插件市场中心与社区生态</span>
+                  <span class="step-state-tag pending">待启动</span>
+                </div>
+                <p class="step-desc">支持安全签名审计、版本兼容性校验、图形化一键发现与热拔插管理。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Community Callout Footer -->
+        <div class="feedback-callout-card glass-card">
+          <div class="callout-left">
+            <span class="callout-icon">💡</span>
+            <div class="callout-text">
+              <strong>您对 UniRTM 扩展系统有哪些期待？</strong>
+              <p>无论是 AI 智能 Agent、跨环境部署工具还是特定语言工具链，欢迎提交您的建议！</p>
+            </div>
+          </div>
+          <a
+            href="https://github.com/snowdreamtech/UniRTM/issues/new?title=%5BRFC%5D+%E6%8F%92%E4%BB%B6%E6%89%A9%E5%B1%95%E4%BD%93%E7%B3%BB%E5%BB%BA%E8%AE%AE"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-submit-rfc"
+          >
+            <span>提交需求建议 / Issue</span>
+            <span>↗</span>
+          </a>
         </div>
       </div>
     </template>
@@ -1142,12 +1161,45 @@ import { renderMarkdown } from "../utils/markdown";
 import type { MarketplaceExtension, MarketplaceExtensionDetail } from "../types/theme-manager";
 import TechIcon from "../components/common/TechIcon.vue";
 
+interface Props {
+  activeSubItem?: string;
+  activeCategory?: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  activeSubItem: "",
+  activeCategory: "",
+});
+
 const route = useRoute();
 const router = useRouter();
 const { showToast } = useToast();
 
 // Channels: 'themes' (Open VSX) vs 'plugins' (UniRTM Native Plugins)
 const currentChannel = ref<"themes" | "plugins">("themes");
+
+watch(
+  () => props.activeSubItem,
+  (val) => {
+    if (val === "plugins") {
+      currentChannel.value = "plugins";
+    } else if (val === "themes") {
+      currentChannel.value = "themes";
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => route.query.tab,
+  (tab) => {
+    if (tab === "plugins") {
+      currentChannel.value = "plugins";
+    } else if (tab === "themes") {
+      currentChannel.value = "themes";
+    }
+  }
+);
 
 // View mode: 'cards' or 'list'
 const viewMode = ref<"cards" | "list">(
@@ -1576,6 +1628,9 @@ onUnmounted(() => {
 
 function switchChannel(channel: "themes" | "plugins") {
   currentChannel.value = channel;
+  if (route.query.tab !== channel) {
+    router.replace({ query: { ...route.query, tab: channel } }).catch(() => {});
+  }
 }
 
 // --- Pagination State & Handlers ---
@@ -2267,65 +2322,7 @@ function cleanGitUrl(url: string): string {
   return url.replace(/^git\+/, "").replace(/\.git$/, "");
 }
 
-// --- Channel 2: UniRTM Ecosystem Native Plugins ---
-interface PluginItem {
-  id: string;
-  name: string;
-  version: string;
-  author: string;
-  description: string;
-  tags: string[];
-  stars: string;
-  downloads: string;
-  installed: boolean;
-}
 
-const nativePlugins = ref<PluginItem[]>([
-  {
-    id: "uniagent",
-    name: "UniAgent 智能排错助手",
-    version: "0.1.0",
-    author: "SnowdreamTech 官方认证",
-    description: "专注于开发编译与环境配置诊断的 AI 智能助手，通过独立 MCP 协议与工作台通讯，零内核侵入。",
-    tags: ["AI Agent", "MCP Server", "Troubleshooter"],
-    stars: "1.2k",
-    downloads: "28k",
-    installed: true,
-  },
-  {
-    id: "security-suite",
-    name: "Security Suite Pack",
-    version: "1.2.0",
-    author: "SnowdreamTech 官方认证",
-    description: "集成 Trivy、Syft、Gitleaks 深度源码与依赖漏洞扫描，自动生成 SBOM 软件物料清单。",
-    tags: ["Trivy", "CVE Scan", "SBOM"],
-    stars: "890",
-    downloads: "15k",
-    installed: true,
-  },
-  {
-    id: "rust-provider",
-    name: "Rust & Cargo Provider",
-    version: "1.85.0",
-    author: "社区维护",
-    description: "为 UniRTM 提供原生 Rust/Cargo 极速版本下载与跨平台构建环境隔离支持。",
-    tags: ["Rust", "Cargo", "Tool Provider"],
-    stars: "640",
-    downloads: "9.2k",
-    installed: false,
-  },
-  {
-    id: "datascience-pack",
-    name: "Python DataScience Pack",
-    version: "2.0.0",
-    author: "社区维护",
-    description: "预置 uv、ruff、ipython、jupyter 数据科学轻量级任务流与环境配置模板。",
-    tags: ["Python", "uv", "Jupyter"],
-    stars: "520",
-    downloads: "7.1k",
-    installed: false,
-  },
-]);
 </script>
 
 <style scoped>
@@ -4644,5 +4641,484 @@ const nativePlugins = ref<PluginItem[]>([
   background: #ffffff;
   color: #0284c7;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================================
+   CHANNEL 2: COMING SOON SHOWCASE STYLES
+   ======================================================== */
+.channel-soon-tag {
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.plugins-channel-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding-bottom: 2rem;
+}
+
+.plugins-coming-soon-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 2.25rem 2rem;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 229, 255, 0.18);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%);
+  backdrop-filter: blur(12px);
+}
+
+.hero-glow-layer {
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.12) 0%, rgba(99, 102, 241, 0.05) 50%, transparent 70%);
+  pointer-events: none;
+  filter: blur(40px);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 820px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.hero-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  width: fit-content;
+}
+
+.pulse-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulse-ring 2s infinite ease-in-out;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.25); opacity: 1; box-shadow: 0 0 12px #10b981; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
+
+.hero-badge-pill .badge-text {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #10b981;
+  letter-spacing: 0.05em;
+}
+
+.hero-main-title {
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: var(--text-main, #f8fafc);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.hero-subtitle {
+  font-size: 1.02rem;
+  color: var(--accent-cyan, #00e5ff);
+  font-weight: 500;
+  margin: 0;
+}
+
+.hero-detail-text {
+  font-size: 0.88rem;
+  color: var(--text-muted, #94a3b8);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.hero-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn-hero-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+}
+
+.btn-hero-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.35);
+  opacity: 0.95;
+}
+
+.btn-hero-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  color: var(--text-main, #cbd5e1);
+  font-size: 0.84rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-hero-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main, #ffffff);
+  transform: translateY(-1px);
+}
+
+.coming-soon-pillars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.pillar-card {
+  padding: 1.35rem;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  background: rgba(255, 255, 255, 0.02);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pillar-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 229, 255, 0.35);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.pillar-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pillar-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-main, #f1f5f9);
+  margin: 0;
+}
+
+.pillar-desc {
+  font-size: 0.84rem;
+  color: var(--text-muted, #94a3b8);
+  line-height: 1.55;
+  margin: 0;
+  flex: 1;
+}
+
+.pillar-tag {
+  font-size: 0.72rem;
+  color: var(--accent-cyan, #00e5ff);
+  background: rgba(0, 229, 255, 0.06);
+  padding: 3px 8px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.roadmap-card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+}
+
+.roadmap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.roadmap-title-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.roadmap-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-main, #f8fafc);
+  margin: 0;
+}
+
+.roadmap-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+.roadmap-status-badge {
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: rgba(14, 165, 233, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.roadmap-steps-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.roadmap-step-item {
+  padding: 1rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  gap: 12px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.roadmap-step-item.active {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.step-marker {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-muted, #64748b);
+  line-height: 1;
+}
+
+.roadmap-step-item.active .step-marker {
+  color: #10b981;
+}
+
+.step-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.step-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.step-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main, #f1f5f9);
+}
+
+.step-state-tag {
+  font-size: 0.68rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.step-state-tag.current {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  font-weight: 600;
+}
+
+.step-state-tag.pending {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted, #94a3b8);
+}
+
+.step-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted, #94a3b8);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.feedback-callout-card {
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(147, 51, 234, 0.04) 100%);
+}
+
+.callout-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.callout-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.callout-text strong {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--text-main, #f8fafc);
+  margin-bottom: 3px;
+}
+
+.callout-text p {
+  font-size: 0.82rem;
+  color: var(--text-muted, #94a3b8);
+  margin: 0;
+}
+
+.btn-submit-rfc {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: rgba(99, 102, 241, 0.18);
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  color: #a5b4fc;
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-submit-rfc:hover {
+  background: rgba(99, 102, 241, 0.3);
+  color: #c7d2fe;
+  transform: translateY(-1px);
+}
+
+/* Light Theme Overrides */
+:root[data-theme="light"] .plugins-coming-soon-hero,
+[data-theme="light"] .plugins-coming-soon-hero {
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme="light"] .hero-main-title,
+[data-theme="light"] .hero-main-title {
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .hero-subtitle,
+[data-theme="light"] .hero-subtitle {
+  color: #0284c7;
+}
+
+:root[data-theme="light"] .pillar-card,
+[data-theme="light"] .pillar-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+:root[data-theme="light"] .pillar-title,
+[data-theme="light"] .pillar-title {
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .roadmap-card,
+[data-theme="light"] .roadmap-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+:root[data-theme="light"] .roadmap-title,
+[data-theme="light"] .roadmap-title {
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .roadmap-step-item,
+[data-theme="light"] .roadmap-step-item {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+:root[data-theme="light"] .step-name,
+[data-theme="light"] .step-name {
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .feedback-callout-card,
+[data-theme="light"] .feedback-callout-card {
+  background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 100%);
+  border-color: #c7d2fe;
+}
+
+:root[data-theme="light"] .callout-text strong,
+[data-theme="light"] .callout-text strong {
+  color: #1e1b4b;
+}
+
+:root[data-theme="light"] .btn-submit-rfc,
+[data-theme="light"] .btn-submit-rfc {
+  background: #6366f1;
+  color: #ffffff;
+  border-color: #4f46e5;
+}
+
+:root[data-theme="light"] .btn-hero-secondary,
+[data-theme="light"] .btn-hero-secondary {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #334155;
 }
 </style>

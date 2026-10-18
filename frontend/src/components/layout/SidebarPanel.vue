@@ -123,20 +123,30 @@
 
       <!-- MARKETPLACE Navigation Items -->
       <template v-if="currentTab === 'marketplace'">
-        <div class="nav-group-title">{{ t("sidebar.group_marketplace") || "FEATURED EXTENSIONS" }}</div>
+        <div class="nav-group-title">{{ t("sidebar.group_marketplace") || "MARKETPLACE" }}</div>
         <button
-          v-for="ext in filteredExtensions"
-          :key="ext.id"
           class="sidebar-item"
-          :class="{ active: activeSubItem === ext.id }"
-          @click="handleSubItemClick(ext.id)"
+          :class="{ active: activeSubItem === 'themes' || (!activeSubItem && currentTab === 'marketplace') }"
+          @click="handleSubItemClick('themes')"
         >
-          <span class="item-icon"><TechIcon :id="ext.icon" :size="20" /></span>
+          <span class="item-icon"><TechIcon id="workbench:marketplace" :size="20" /></span>
           <div class="item-dual">
-            <span class="item-label">{{ ext.name }}</span>
-            <span class="item-sub">{{ ext.desc }}</span>
+            <span class="item-label">{{ t("settings.theme_tab_marketplace") || "主题与图标" }}</span>
+            <span class="item-sub">Open VSX 扩展源</span>
           </div>
-          <span v-if="ext.installed" class="badge-installed">✓</span>
+        </button>
+
+        <button
+          class="sidebar-item"
+          :class="{ active: activeSubItem === 'plugins' }"
+          @click="handleSubItemClick('plugins')"
+        >
+          <span class="item-icon"><TechIcon id="workbench:tools" :size="20" /></span>
+          <div class="item-dual">
+            <span class="item-label">{{ t("settings.cat_plugins") || "功能插件" }}</span>
+            <span class="item-sub">敬请期待</span>
+          </div>
+          <span class="badge-soon" style="font-size: 0.6rem; padding: 1px 4px;">开发中</span>
         </button>
       </template>
 
@@ -477,18 +487,7 @@ const filteredEnvItems = computed(() => {
   );
 });
 
-// Marketplace extensions
-const extensions = [
-  { id: "uniagent", icon: "workbench:doctor", name: "UniAgent", desc: "AI Troubleshooter", installed: true },
-  { id: "security-suite", icon: "workbench:lock", name: "Security Suite", desc: "Trivy & Syft Scans", installed: true },
-  { id: "rust-provider", icon: "rust", name: "Rust Provider", desc: "Cargo & Rust Toolchain", installed: false },
-  { id: "datascience", icon: "python", name: "DataScience Pack", desc: "Python uv & Jupyter", installed: false },
-];
 
-const filteredExtensions = computed(() => {
-  if (!searchQuery.value) return extensions;
-  return extensions.filter((e) => e.name.toLowerCase().includes(searchQuery.value.toLowerCase()));
-});
 
 // Doctor checks
 const doctorChecks = [
