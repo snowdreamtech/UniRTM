@@ -191,6 +191,7 @@
     <div
       v-if="currentTab === 'terminal'"
       class="terminal-wrapper font-mono"
+      :class="{ 'is-resizing': isTermSidebarDragging }"
       :style="{ height: isMaximized ? '420px' : '200px' }"
     >
       <!-- Main: Terminal Panes Work Area -->
@@ -242,8 +243,22 @@
         </div>
       </div>
 
+      <!-- Resizer Sash between terminal panes and terminal tabs sidebar -->
+      <div
+        class="terminal-sidebar-sash"
+        :class="{ active: isTermSidebarDragging }"
+        @pointerdown="handleTermSidebarPointerDown"
+        @dblclick="resetTermSidebarWidth"
+        title="双击恢复默认宽度，拖拽调节大小"
+      >
+        <div class="sash-indicator"></div>
+      </div>
+
       <!-- Right: VSCode-style Terminal Tabs Sidebar -->
-      <div class="terminal-sidebar">
+      <div
+        class="terminal-sidebar"
+        :style="{ width: `${termSidebarWidth}px` }"
+      >
         <div class="terminal-sidebar-header">
           <span class="sidebar-title">{{ t('terminal.tabs_title') || '终端' }}</span>
           <button
@@ -312,6 +327,9 @@
           </div>
         </div>
       </div>
+
+      <!-- Dragging overlay for terminal sidebar -->
+      <div v-if="isTermSidebarDragging" class="term-sash-drag-overlay"></div>
     </div>
 
     <!-- 2. Logs Drawer Body (Output, Tasks, Doctor) -->
@@ -424,6 +442,74 @@ const isMoreMenuOpen = ref(false);
 const DRAWER_TAB_KEY = "unirtm_drawer_tab";
 const DRAWER_MAX_KEY = "unirtm_drawer_maximized";
 const DRAWER_AUTOSCROLL_KEY = "unirtm_drawer_autoscroll";
+
+const TERM_SIDEBAR_WIDTH_KEY = "unirtm_term_sidebar_width";
+const DEFAULT_TERM_SIDEBAR_WIDTH = 215;
+const MIN_TERM_SIDEBAR_WIDTH = 130;
+const MAX_TERM_SIDEBAR_WIDTH = 500;
+
+function getInitialTermSidebarWidth(): number {
+  if (typeof localStorage === "undefined") return DEFAULT_TERM_SIDEBAR_WIDTH;
+  try {
+    const saved = localStorage.getItem(TERM_SIDEBAR_WIDTH_KEY);
+    if (saved) {
+      const parsed = Number(saved);
+      if (!isNaN(parsed) && parsed >= MIN_TERM_SIDEBAR_WIDTH && parsed <= MAX_TERM_SIDEBAR_WIDTH) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return DEFAULT_TERM_SIDEBAR_WIDTH;
+}
+
+const termSidebarWidth = ref(getInitialTermSidebarWidth());
+const isTermSidebarDragging = ref(false);
+
+function resetTermSidebarWidth() {
+  termSidebarWidth.value = DEFAULT_TERM_SIDEBAR_WIDTH;
+  try {
+    localStorage.setItem(TERM_SIDEBAR_WIDTH_KEY, String(DEFAULT_TERM_SIDEBAR_WIDTH));
+  } catch {}
+}
+
+let termDragStartX = 0;
+let termDragStartWidth = 0;
+
+function handleTermSidebarPointerDown(e: PointerEvent) {
+  e.preventDefault();
+  isTermSidebarDragging.value = true;
+  termDragStartX = e.clientX;
+  termDragStartWidth = termSidebarWidth.value;
+
+  document.body.style.cursor = "col-resize";
+  document.body.style.userSelect = "none";
+
+  const onPointerMove = (ev: PointerEvent) => {
+    if (!isTermSidebarDragging.value) return;
+    const delta = termDragStartX - ev.clientX; // dragging left expands right sidebar
+    const maxAllowed = Math.min(MAX_TERM_SIDEBAR_WIDTH, Math.floor(window.innerWidth * 0.5));
+    const newWidth = Math.max(MIN_TERM_SIDEBAR_WIDTH, Math.min(maxAllowed, termDragStartWidth + delta));
+    termSidebarWidth.value = Math.round(newWidth);
+  };
+
+  const onPointerUp = () => {
+    if (isTermSidebarDragging.value) {
+      isTermSidebarDragging.value = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      try {
+        localStorage.setItem(TERM_SIDEBAR_WIDTH_KEY, String(termSidebarWidth.value));
+      } catch {}
+    }
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", onPointerUp);
+    window.removeEventListener("pointercancel", onPointerUp);
+  };
+
+  window.addEventListener("pointermove", onPointerMove);
+  window.addEventListener("pointerup", onPointerUp);
+  window.addEventListener("pointercancel", onPointerUp);
+}
 
 function getInitialTab(): DrawerTab {
   if (typeof localStorage === "undefined") return "output";
@@ -1016,6 +1102,53 @@ onUnmounted(() => {
   overflow: hidden;
   background: var(--section-bg, #0b0f19);
   transition: height 0.2s ease;
+  position: relative;
+}
+
+.terminal-wrapper.is-resizing {
+  user-select: none;
+}
+
+.terminal-wrapper.is-resizing .terminal-panes-area {
+  pointer-events: none;
+}
+
+/* Draggable resizer sash between terminal panes and terminal sidebar */
+.terminal-sidebar-sash {
+  position: relative;
+  width: 0;
+  height: 100%;
+  z-index: 15;
+  flex-shrink: 0;
+  user-select: none;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.terminal-sidebar-sash .sash-indicator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -2px;
+  width: 5px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.terminal-sidebar-sash:hover .sash-indicator,
+.terminal-sidebar-sash.active .sash-indicator {
+  background: var(--accent-cyan, #00e5ff);
+}
+
+.term-sash-drag-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 99999;
+  cursor: col-resize;
+  background: transparent;
 }
 
 .terminal-panes-area {
@@ -1122,7 +1255,7 @@ onUnmounted(() => {
 
 /* VSCode-style Terminal Tabs Sidebar */
 .terminal-sidebar {
-  width: 215px;
+  min-width: 0;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
