@@ -191,7 +191,7 @@ const mirrorLabel = computed(() => {
 }
 
 .status-git:hover {
-  background-color: var(--item-hover-bg, rgba(255, 255, 255, 0.1));
+  background-color: var(--item-hover-bg, rgba(128, 128, 128, 0.12));
 }
 
 .git-sync-btn {
@@ -208,7 +208,7 @@ const mirrorLabel = computed(() => {
 }
 
 .git-sync-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--item-hover-bg, rgba(128, 128, 128, 0.15));
 }
 
 .status-center {

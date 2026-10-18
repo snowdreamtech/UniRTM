@@ -324,11 +324,12 @@ function handleSelectFileDiff(path: string, staged: boolean) {
   display: flex;
   flex-direction: column;
   height: 100%;
-  color: var(--text-main, #cccccc);
+  color: var(--text-main);
   font-size: 13px;
   user-select: none;
-  background: var(--bg-sidebar, #252526);
+  background-color: var(--card-bg);
   position: relative;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Branch bar */
@@ -337,7 +338,7 @@ function handleSelectFileDiff(path: string, staged: boolean) {
   align-items: center;
   justify-content: space-between;
   padding: 6px 12px;
-  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-bottom: 1px solid var(--card-border);
 }
 
 .branch-selector {
@@ -353,19 +354,21 @@ function handleSelectFileDiff(path: string, staged: boolean) {
 }
 
 .branch-selector:hover {
-  background: var(--item-hover-bg, rgba(255, 255, 255, 0.08));
+  background: var(--section-bg);
 }
 
 .branch-name {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--text-main);
 }
 
 .branch-sync-pill {
   font-size: 11px;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 1px 5px;
+  background: var(--section-bg);
+  color: var(--text-muted);
+  padding: 1px 6px;
   border-radius: 10px;
   font-family: monospace;
 }
@@ -373,6 +376,7 @@ function handleSelectFileDiff(path: string, staged: boolean) {
 .twistie {
   font-size: 12px;
   opacity: 0.8;
+  color: var(--text-muted);
 }
 
 .scm-header-actions {
@@ -384,7 +388,7 @@ function handleSelectFileDiff(path: string, staged: boolean) {
 .scm-action-btn {
   background: transparent;
   border: none;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 4px;
   border-radius: 3px;
@@ -394,8 +398,8 @@ function handleSelectFileDiff(path: string, staged: boolean) {
 }
 
 .scm-action-btn:hover {
-  color: var(--text-main, #ffffff);
-  background: var(--item-hover-bg, rgba(255, 255, 255, 0.08));
+  color: var(--text-main);
+  background: var(--section-bg);
 }
 
 .scm-action-btn.is-loading .codicon {
@@ -408,10 +412,10 @@ function handleSelectFileDiff(path: string, staged: boolean) {
   top: 36px;
   left: 10px;
   right: 10px;
-  background: var(--bg-dropdown, #2d2d2d);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
-  border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  background: var(--modal-bg, var(--card-bg));
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   z-index: 100;
   max-height: 240px;
   display: flex;
@@ -425,16 +429,20 @@ function handleSelectFileDiff(path: string, staged: boolean) {
   padding: 6px 10px;
   font-size: 11px;
   text-transform: uppercase;
-  color: var(--text-muted, #858585);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--card-border);
 }
 
 .branch-close-btn {
   background: transparent;
   border: none;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
   font-size: 14px;
   cursor: pointer;
+}
+
+.branch-close-btn:hover {
+  color: var(--text-main);
 }
 
 .branch-list {
@@ -448,14 +456,16 @@ function handleSelectFileDiff(path: string, staged: boolean) {
   gap: 8px;
   padding: 6px 12px;
   cursor: pointer;
+  color: var(--text-main);
+  font-size: 12px;
 }
 
 .branch-item:hover {
-  background: var(--item-hover-bg, rgba(255, 255, 255, 0.08));
+  background: var(--section-bg);
 }
 
 .branch-item.is-current {
-  color: var(--accent-color, #007acc);
+  color: var(--accent-cyan);
   font-weight: 600;
 }
 
@@ -468,8 +478,8 @@ function handleSelectFileDiff(path: string, staged: boolean) {
 
 .branch-remote-tag {
   font-size: 10px;
-  opacity: 0.6;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-muted);
+  border: 1px solid var(--card-border);
   border-radius: 3px;
   padding: 0 4px;
 }
@@ -480,7 +490,7 @@ function handleSelectFileDiff(path: string, staged: boolean) {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-bottom: 1px solid var(--card-border);
 }
 
 .commit-input-wrapper {
@@ -490,9 +500,9 @@ function handleSelectFileDiff(path: string, staged: boolean) {
 .commit-textarea {
   width: 100%;
   box-sizing: border-box;
-  background: var(--bg-input, #1e1e1e);
-  color: var(--text-main, #cccccc);
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  background: var(--input-bg);
+  color: var(--text-main);
+  border: 1px solid var(--card-border);
   border-radius: 4px;
   padding: 6px 8px;
   font-family: inherit;
@@ -502,8 +512,8 @@ function handleSelectFileDiff(path: string, staged: boolean) {
 }
 
 .commit-textarea:focus {
-  outline: 1px solid var(--accent-color, #007acc);
-  border-color: var(--accent-color, #007acc);
+  outline: 1px solid var(--accent-cyan);
+  border-color: var(--accent-cyan);
 }
 
 .commit-btn {
@@ -511,22 +521,22 @@ function handleSelectFileDiff(path: string, staged: boolean) {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: var(--btn-primary-bg, #007acc);
-  color: #ffffff;
+  background: var(--accent-cyan);
+  color: #ffffff !important;
   border: none;
   padding: 6px 12px;
-  border-radius: 3px;
+  border-radius: 4px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .commit-btn:hover:not(:disabled) {
-  background: var(--btn-primary-hover, #0062a3);
+  filter: brightness(1.1);
 }
 
 .commit-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
@@ -545,12 +555,12 @@ function handleSelectFileDiff(path: string, staged: boolean) {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  color: var(--text-muted, #bbbbbb);
+  color: var(--text-muted);
   text-transform: uppercase;
 }
 
 .group-header:hover {
-  background: var(--item-hover-bg, rgba(255, 255, 255, 0.04));
+  background: var(--section-bg);
 }
 
 .group-left {
@@ -560,7 +570,8 @@ function handleSelectFileDiff(path: string, staged: boolean) {
 }
 
 .group-count {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--section-bg);
+  color: var(--text-muted);
   padding: 1px 6px;
   border-radius: 10px;
   font-size: 10px;
@@ -575,7 +586,7 @@ function handleSelectFileDiff(path: string, staged: boolean) {
 .group-btn {
   background: transparent;
   border: none;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 2px 4px;
   border-radius: 3px;
@@ -585,8 +596,8 @@ function handleSelectFileDiff(path: string, staged: boolean) {
 }
 
 .group-btn:hover {
-  color: var(--text-main, #ffffff);
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  background: var(--section-bg);
 }
 
 .group-items-list {
@@ -602,14 +613,16 @@ function handleSelectFileDiff(path: string, staged: boolean) {
   cursor: pointer;
   font-size: 13px;
   position: relative;
+  transition: background 0.1s ease;
 }
 
 .change-item:hover {
-  background: var(--item-hover-bg, rgba(255, 255, 255, 0.06));
+  background: var(--section-bg);
 }
 
 .change-item.active {
-  background: var(--item-active-bg, rgba(0, 122, 204, 0.25));
+  background: var(--accent-cyan-glow, rgba(0, 229, 255, 0.15));
+  color: var(--accent-cyan);
 }
 
 .change-icon {
@@ -629,12 +642,12 @@ function handleSelectFileDiff(path: string, staged: boolean) {
 
 .change-filename {
   font-weight: 400;
-  color: var(--text-main, #cccccc);
+  color: var(--text-main);
 }
 
 .change-dirname {
   font-size: 11px;
-  color: var(--text-muted, #777777);
+  color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -647,20 +660,39 @@ function handleSelectFileDiff(path: string, staged: boolean) {
 }
 
 .change-status-badge.badge-M {
-  color: #e2c08d; /* Amber modified */
+  color: var(--warning, #f59e0b);
 }
 
 .change-status-badge.badge-A,
+.change-status-badge.badge-U,
 .change-status-badge.badge-\? {
-  color: #73c991; /* Green added */
+  color: var(--success, #10b981);
 }
 
 .change-status-badge.badge-D {
-  color: #c74e39; /* Red deleted */
+  color: #ef4444;
 }
 
 .change-status-badge.badge-R {
-  color: #4ec9b0; /* Teal renamed */
+  color: #06b6d4;
+}
+
+:root[data-theme="light"] .change-status-badge.badge-M {
+  color: #b45309;
+}
+
+:root[data-theme="light"] .change-status-badge.badge-A,
+:root[data-theme="light"] .change-status-badge.badge-U,
+:root[data-theme="light"] .change-status-badge.badge-\? {
+  color: #059669;
+}
+
+:root[data-theme="light"] .change-status-badge.badge-D {
+  color: #dc2626;
+}
+
+:root[data-theme="light"] .change-status-badge.badge-R {
+  color: #0284c7;
 }
 
 .change-item-actions {
@@ -669,7 +701,7 @@ function handleSelectFileDiff(path: string, staged: boolean) {
   gap: 2px;
   position: absolute;
   right: 8px;
-  background: var(--bg-sidebar, #252526);
+  background: var(--card-bg);
   padding-left: 4px;
 }
 
@@ -680,7 +712,7 @@ function handleSelectFileDiff(path: string, staged: boolean) {
 .item-action-btn {
   background: transparent;
   border: none;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 2px 4px;
   border-radius: 3px;
@@ -690,14 +722,14 @@ function handleSelectFileDiff(path: string, staged: boolean) {
 }
 
 .item-action-btn:hover {
-  color: var(--text-main, #ffffff);
-  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-main);
+  background: var(--section-bg);
 }
 
 .empty-hint {
   padding: 8px 16px;
   font-size: 12px;
-  color: var(--text-muted, #777777);
+  color: var(--text-muted);
   font-style: italic;
 }
 </style>

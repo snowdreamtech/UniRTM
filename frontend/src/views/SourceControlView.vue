@@ -264,11 +264,13 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from "vue"
 import { useRoute, useRouter } from "vue-router";
 import { useGit } from "../composables/useGit";
 import { useEditorTabs } from "../composables/useEditorTabs";
+import { useTheme } from "../composables/useTheme";
 import { loadMonaco, getLanguageForFile } from "../services/editor/monacoLoader";
 import TechIcon from "../components/common/TechIcon.vue";
 
 const route = useRoute();
 const router = useRouter();
+const { isDarkTheme } = useTheme();
 
 const {
   status,
@@ -347,7 +349,7 @@ async function renderDiff(filePath: string, staged: boolean) {
       renderSideBySide: !isInlineDiff.value,
       readOnly: true,
       automaticLayout: true,
-      theme: "vs-dark",
+      theme: isDarkTheme.value ? "vs-dark" : "vs",
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
       lineNumbers: "on",
@@ -374,6 +376,14 @@ function toggleInlineDiff() {
     });
   }
 }
+
+watch(isDarkTheme, (dark) => {
+  if (monacoDiffEditor) {
+    loadMonaco().then((monaco) => {
+      monaco.editor.setTheme(dark ? "vs-dark" : "vs");
+    });
+  }
+});
 
 async function handleStageActiveFile() {
   if (!activeDiffFile.value) return;
@@ -432,6 +442,7 @@ function openDiff(path: string, staged: boolean) {
 
 function handleManualRefresh() {
   fetchStatus().catch(() => {});
+  fetchLog().catch(() => {});
 }
 
 watch(
@@ -477,8 +488,9 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: var(--bg-canvas, #1e1e1e);
-  color: var(--text-main, #cccccc);
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Diff Header Bar */
@@ -487,8 +499,8 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  background: var(--bg-header, #252526);
-  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--card-border);
   gap: 12px;
 }
 
@@ -502,6 +514,7 @@ onBeforeUnmount(() => {
 .diff-file-path {
   font-weight: 500;
   font-size: 13px;
+  color: var(--text-main);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -515,15 +528,27 @@ onBeforeUnmount(() => {
 }
 
 .pill-staged {
-  background: rgba(115, 201, 145, 0.2);
-  color: #73c991;
-  border: 1px solid rgba(115, 201, 145, 0.4);
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success, #10b981);
+  border: 1px solid rgba(16, 185, 129, 0.35);
 }
 
 .pill-unstaged {
-  background: rgba(226, 192, 141, 0.2);
-  color: #e2c08d;
-  border: 1px solid rgba(226, 192, 141, 0.4);
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning, #f59e0b);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+:root[data-theme="light"] .pill-staged {
+  background: rgba(5, 150, 105, 0.12);
+  color: #059669;
+  border-color: rgba(5, 150, 105, 0.3);
+}
+
+:root[data-theme="light"] .pill-unstaged {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+  border-color: rgba(217, 119, 6, 0.3);
 }
 
 .diff-actions {
@@ -539,36 +564,41 @@ onBeforeUnmount(() => {
   padding: 4px 10px;
   font-size: 12px;
   border-radius: 4px;
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-main, #cccccc);
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text-main);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .diff-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background: var(--section-bg);
 }
 
 .diff-btn.primary {
-  background: var(--accent-color, #007acc);
-  color: #ffffff;
-  border-color: var(--accent-color, #007acc);
+  background: var(--accent-cyan);
+  color: #ffffff !important;
+  border-color: var(--accent-cyan);
 }
 
 .diff-btn.primary:hover {
-  background: #0062a3;
+  filter: brightness(1.1);
 }
 
 .diff-btn.danger {
-  background: rgba(235, 87, 87, 0.15);
-  color: #eb5757;
-  border-color: rgba(235, 87, 87, 0.4);
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 .diff-btn.danger:hover {
-  background: rgba(235, 87, 87, 0.25);
+  background: rgba(239, 68, 68, 0.22);
+}
+
+:root[data-theme="light"] .diff-btn.danger {
+  background: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.25);
 }
 
 .diff-btn.close-btn {
@@ -595,7 +625,7 @@ onBeforeUnmount(() => {
 }
 
 .overview-header {
-  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-bottom: 1px solid var(--card-border);
   padding-bottom: 16px;
 }
 
@@ -613,19 +643,19 @@ onBeforeUnmount(() => {
 
 .scm-icon-large {
   font-size: 36px;
-  color: var(--accent-color, #007acc);
+  color: var(--accent-cyan);
 }
 
 .repo-title {
   font-size: 20px;
   font-weight: 600;
   margin: 0;
-  color: #ffffff;
+  color: var(--text-main);
 }
 
 .repo-subtitle {
   font-size: 13px;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
   margin: 4px 0 0 0;
 }
 
@@ -633,17 +663,19 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
   padding: 6px 14px;
   border-radius: 20px;
   font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .branch-sync-badge {
   font-size: 11px;
-  background: var(--accent-color, #007acc);
-  color: #fff;
+  background: var(--accent-cyan);
+  color: #ffffff;
   padding: 1px 6px;
   border-radius: 10px;
 }
@@ -660,9 +692,16 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 14px;
   padding: 14px 18px;
-  background: var(--bg-card, rgba(255, 255, 255, 0.03));
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .stat-icon-wrapper {
@@ -676,23 +715,23 @@ onBeforeUnmount(() => {
 }
 
 .stat-icon-wrapper.blue {
-  background: rgba(0, 122, 204, 0.15);
-  color: #007acc;
+  background: rgba(2, 132, 199, 0.15);
+  color: var(--accent-cyan);
 }
 
 .stat-icon-wrapper.green {
-  background: rgba(115, 201, 145, 0.15);
-  color: #73c991;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success, #10b981);
 }
 
 .stat-icon-wrapper.amber {
-  background: rgba(226, 192, 141, 0.15);
-  color: #e2c08d;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning, #f59e0b);
 }
 
 .stat-icon-wrapper.purple {
-  background: rgba(179, 136, 255, 0.15);
-  color: #b388ff;
+  background: rgba(168, 85, 247, 0.15);
+  color: var(--accent-purple, #a855f7);
 }
 
 .stat-details {
@@ -703,12 +742,12 @@ onBeforeUnmount(() => {
 .stat-value {
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text-main);
 }
 
 .stat-label {
   font-size: 12px;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
 }
 
 /* Actions Card */
@@ -730,30 +769,29 @@ onBeforeUnmount(() => {
   padding: 8px 16px;
   font-size: 13px;
   border-radius: 4px;
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-main, #cccccc);
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text-main);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .action-pill:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background: var(--section-bg);
 }
 
 .action-pill.primary {
-  background: var(--accent-color, #007acc);
-  color: #ffffff;
-  border-color: var(--accent-color, #007acc);
+  background: var(--accent-cyan);
+  color: #ffffff !important;
+  border-color: var(--accent-cyan);
 }
 
 .action-pill.primary:hover:not(:disabled) {
-  background: #0062a3;
+  filter: brightness(1.1);
 }
 
 .action-pill:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
@@ -768,10 +806,11 @@ onBeforeUnmount(() => {
 .changes-box {
   display: flex;
   flex-direction: column;
-  background: var(--bg-card, rgba(255, 255, 255, 0.02));
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 6px;
   overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .box-header {
@@ -779,8 +818,9 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.06));
+  background: var(--section-bg);
+  border-bottom: 1px solid var(--card-border);
+  color: var(--text-main);
 }
 
 .box-title {
@@ -794,16 +834,27 @@ onBeforeUnmount(() => {
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 10px;
+  font-weight: 500;
 }
 
 .box-badge.green {
-  background: rgba(115, 201, 145, 0.2);
-  color: #73c991;
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success, #10b981);
 }
 
 .box-badge.amber {
-  background: rgba(226, 192, 141, 0.2);
-  color: #e2c08d;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning, #f59e0b);
+}
+
+:root[data-theme="light"] .box-badge.green {
+  background: rgba(5, 150, 105, 0.12);
+  color: #059669;
+}
+
+:root[data-theme="light"] .box-badge.amber {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
 }
 
 .box-content {
@@ -819,23 +870,23 @@ onBeforeUnmount(() => {
   gap: 8px;
   padding: 8px 14px;
   cursor: pointer;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--card-border);
   transition: background 0.15s ease;
 }
 
 .box-file-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--section-bg);
 }
 
 .file-name {
   font-weight: 500;
-  color: #ffffff;
+  color: var(--text-main);
 }
 
 .file-dir {
   flex: 1;
   font-size: 11px;
-  color: var(--text-muted, #777777);
+  color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -849,16 +900,29 @@ onBeforeUnmount(() => {
 }
 
 .status-tag.tag-M {
-  color: #e2c08d;
+  color: #f59e0b;
 }
 
 .status-tag.tag-A,
 .status-tag.tag-\? {
-  color: #73c991;
+  color: #10b981;
 }
 
 .status-tag.tag-D {
-  color: #c74e39;
+  color: #ef4444;
+}
+
+:root[data-theme="light"] .status-tag.tag-M {
+  color: #b45309;
+}
+
+:root[data-theme="light"] .status-tag.tag-A,
+:root[data-theme="light"] .status-tag.tag-\? {
+  color: #059669;
+}
+
+:root[data-theme="light"] .status-tag.tag-D {
+  color: #dc2626;
 }
 
 .empty-state {
@@ -868,7 +932,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   padding: 36px 16px;
   gap: 8px;
-  color: var(--text-muted, #666666);
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -881,11 +945,12 @@ onBeforeUnmount(() => {
 .commits-history-card {
   display: flex;
   flex-direction: column;
-  background: var(--bg-card, rgba(255, 255, 255, 0.02));
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 6px;
   overflow: hidden;
   margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .action-pill.small {
@@ -905,23 +970,24 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 12px;
   padding: 8px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--card-border);
   font-size: 12px;
+  transition: background 0.15s ease;
 }
 
 .commit-item:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--section-bg);
 }
 
 .commit-hash {
-  color: var(--accent-color, #007acc);
+  color: var(--accent-cyan);
   font-weight: 600;
   min-width: 65px;
 }
 
 .commit-message {
   flex: 1;
-  color: #ffffff;
+  color: var(--text-main);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -931,11 +997,11 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: var(--text-muted, #777777);
+  color: var(--text-muted);
   font-size: 11px;
 }
 
 .commit-author {
-  color: var(--text-muted, #999999);
+  color: var(--text-muted);
 }
 </style>

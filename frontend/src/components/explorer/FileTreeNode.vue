@@ -437,6 +437,47 @@ async function commitCreate() {
   color: #e2c08d;
 }
 
+:root[data-theme="light"] .tree-label.git-color-M {
+  color: #b45309 !important;
+}
+
+:root[data-theme="light"] .tree-label.git-color-A,
+:root[data-theme="light"] .tree-label.git-color-U,
+:root[data-theme="light"] .tree-label.git-color-\? {
+  color: #059669 !important;
+}
+
+:root[data-theme="light"] .tree-label.git-color-D {
+  color: #dc2626 !important;
+}
+
+:root[data-theme="light"] .tree-label.git-color-R {
+  color: #0284c7 !important;
+}
+
+:root[data-theme="light"] .git-tree-badge.badge-M {
+  color: #b45309;
+}
+
+:root[data-theme="light"] .git-tree-badge.badge-A,
+:root[data-theme="light"] .git-tree-badge.badge-U,
+:root[data-theme="light"] .git-tree-badge.badge-\? {
+  color: #059669;
+}
+
+:root[data-theme="light"] .git-tree-badge.badge-D {
+  color: #dc2626;
+}
+
+:root[data-theme="light"] .git-tree-badge.badge-R {
+  color: #0284c7;
+}
+
+:root[data-theme="light"] .git-dir-badge {
+  background: rgba(180, 83, 9, 0.12);
+  color: #b45309;
+}
+
 .tree-inline-input {
   width: 100%;
   background-color: var(--input-bg);
