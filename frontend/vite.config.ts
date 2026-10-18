@@ -4407,6 +4407,15 @@ print(json.dumps({
   build: {
     outDir: fileURLToPath(new URL("./dist", import.meta.url)),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("monaco-editor")) {
+            return "vendor-monaco";
+          }
+        },
+      },
+    },
   },
   server: {
     port: process.env.PORT ? parseInt(process.env.PORT, 10) : 5173,

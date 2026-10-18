@@ -13,6 +13,7 @@
     "@vscode/codicons": "^0.0.46-24",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
+    "monaco-editor": "^0.57.0",
     "vue": "^3.4.21",
     "vue-router": "^4.6.4",
     "ws": "^8.22.0"
