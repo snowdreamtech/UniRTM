@@ -218,20 +218,53 @@
           <!-- Staged Box -->
           <div class="changes-box">
             <div class="box-header">
-              <span class="box-title">{{ t('scm.staged.title') }} ({{ status.staged.length }})</span>
-              <span v-if="status.staged.length > 0" class="box-badge green">{{ t('common.save') }}</span>
+              <div class="box-header-left">
+                <span class="box-title">{{ t('scm.staged.title') }} ({{ status.staged.length }})</span>
+                <span v-if="status.staged.length > 0" class="box-badge green">{{ t('scm.diff.staged_badge') }}</span>
+              </div>
+              <div v-if="status.staged.length > 0" class="box-header-actions" @click.stop>
+                <button
+                  class="box-header-btn"
+                  :title="t('scm.actions.unstage_all')"
+                  @click="unstage([])"
+                >
+                  <span class="codicon codicon-remove"></span>
+                  <span>{{ t('scm.actions.unstage_all') }}</span>
+                </button>
+              </div>
             </div>
             <div class="box-content">
               <div
                 v-for="item in status.staged"
                 :key="'staged:' + item.path"
                 class="box-file-item"
+                :title="item.path"
                 @click="openDiff(item.path, true)"
               >
-                <TechIcon :id="getFileName(item.path)" :size="16" />
-                <span class="file-name">{{ getFileName(item.path) }}</span>
-                <span class="file-dir">{{ getDirName(item.path) }}</span>
-                <span class="status-tag" :class="'tag-' + item.status">{{ item.status }}</span>
+                <div class="file-item-main">
+                  <TechIcon :id="getFileName(item.path)" :size="16" />
+                  <span class="file-name">{{ getFileName(item.path) }}</span>
+                  <span class="file-dir">{{ getDirName(item.path) }}</span>
+                </div>
+                <div class="file-item-right">
+                  <span class="status-tag" :class="'tag-' + item.status">{{ item.status }}</span>
+                  <div class="item-hover-actions" @click.stop>
+                    <button
+                      class="file-action-icon-btn"
+                      :title="t('scm.diff.open_file')"
+                      @click="handleOpenFile(item.path)"
+                    >
+                      <span class="codicon codicon-go-to-file"></span>
+                    </button>
+                    <button
+                      class="file-action-icon-btn"
+                      :title="t('scm.diff.unstage_file')"
+                      @click="handleUnstageSingleFile(item.path)"
+                    >
+                      <span class="codicon codicon-remove"></span>
+                    </button>
+                  </div>
+                </div>
               </div>
               <div v-if="status.staged.length === 0" class="empty-state">
                 <span class="codicon codicon-inbox"></span>
@@ -243,19 +276,67 @@
           <!-- Unstaged Box -->
           <div class="changes-box">
             <div class="box-header">
-              <span class="box-title">{{ t('scm.unstaged.title') }} ({{ status.unstaged.length }})</span>
+              <div class="box-header-left">
+                <span class="box-title">{{ t('scm.unstaged.title') }} ({{ status.unstaged.length }})</span>
+              </div>
+              <div v-if="status.unstaged.length > 0" class="box-header-actions" @click.stop>
+                <button
+                  class="box-header-btn danger"
+                  :title="t('scm.actions.discard_all')"
+                  @click="handleDiscardAllUnstaged"
+                >
+                  <span class="codicon codicon-discard"></span>
+                  <span>{{ t('scm.actions.discard_all') }}</span>
+                </button>
+                <button
+                  class="box-header-btn primary"
+                  :title="t('scm.actions.stage_all')"
+                  @click="stage([])"
+                >
+                  <span class="codicon codicon-add"></span>
+                  <span>{{ t('scm.actions.stage_all') }}</span>
+                </button>
+              </div>
             </div>
             <div class="box-content">
               <div
                 v-for="item in status.unstaged"
                 :key="'unstaged:' + item.path"
                 class="box-file-item"
+                :title="item.path"
                 @click="openDiff(item.path, false)"
               >
-                <TechIcon :id="getFileName(item.path)" :size="16" />
-                <span class="file-name">{{ getFileName(item.path) }}</span>
-                <span class="file-dir">{{ getDirName(item.path) }}</span>
-                <span class="status-tag" :class="'tag-' + item.status">{{ item.status }}</span>
+                <div class="file-item-main">
+                  <TechIcon :id="getFileName(item.path)" :size="16" />
+                  <span class="file-name">{{ getFileName(item.path) }}</span>
+                  <span class="file-dir">{{ getDirName(item.path) }}</span>
+                </div>
+                <div class="file-item-right">
+                  <span class="status-tag" :class="'tag-' + item.status">{{ item.status }}</span>
+                  <div class="item-hover-actions" @click.stop>
+                    <button
+                      class="file-action-icon-btn"
+                      :title="t('scm.diff.open_file')"
+                      @click="handleOpenFile(item.path)"
+                    >
+                      <span class="codicon codicon-go-to-file"></span>
+                    </button>
+                    <button
+                      class="file-action-icon-btn danger"
+                      :title="t('scm.diff.discard_file')"
+                      @click="handleDiscardSingleFile(item.path)"
+                    >
+                      <span class="codicon codicon-discard"></span>
+                    </button>
+                    <button
+                      class="file-action-icon-btn primary"
+                      :title="t('scm.diff.stage_file')"
+                      @click="handleStageSingleFile(item.path)"
+                    >
+                      <span class="codicon codicon-add"></span>
+                    </button>
+                  </div>
+                </div>
               </div>
               <div v-if="status.unstaged.length === 0" class="empty-state">
                 <span class="codicon codicon-pass"></span>
@@ -509,11 +590,37 @@ async function handleDiscardActiveFile() {
   }
 }
 
-function handleOpenFileInEditor() {
-  if (!activeDiffFile.value) return;
-  const fileName = getFileName(activeDiffFile.value);
-  openTab({ path: activeDiffFile.value, name: fileName });
+function handleOpenFile(targetPath?: string) {
+  const p = targetPath || activeDiffFile.value;
+  if (!p) return;
+  const fileName = getFileName(p);
+  openTab({ path: p, name: fileName });
   router.push({ name: "explorer" }).catch(() => {});
+}
+
+function handleOpenFileInEditor() {
+  handleOpenFile();
+}
+
+async function handleStageSingleFile(path: string) {
+  await stage([path]);
+}
+
+async function handleUnstageSingleFile(path: string) {
+  await unstage([path]);
+}
+
+async function handleDiscardSingleFile(path: string) {
+  if (confirm(t("scm.diff.discard_confirm", { path }))) {
+    await discard([path]);
+  }
+}
+
+async function handleDiscardAllUnstaged() {
+  if (confirm(t("scm.diff.discard_confirm", { path: "*" }))) {
+    const allPaths = status.value.unstaged.map((i) => i.path);
+    await discard(allPaths);
+  }
 }
 
 function closeDiffView() {
@@ -951,10 +1058,56 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
+  padding: 8px 14px;
   background: var(--section-bg);
   border-bottom: 1px solid var(--card-border);
   color: var(--text-main);
+  min-height: 40px;
+}
+
+.box-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.box-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.box-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.box-header-btn:hover {
+  color: var(--text-main);
+  background: var(--card-bg-hover, rgba(255, 255, 255, 0.08));
+  border-color: var(--border-hover, rgba(255, 255, 255, 0.2));
+}
+
+.box-header-btn.primary:hover {
+  color: #ffffff;
+  background: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+}
+
+.box-header-btn.danger:hover {
+  color: #ffffff;
+  background: #ef4444;
+  border-color: #ef4444;
 }
 
 .box-title {
@@ -1001,8 +1154,9 @@ onBeforeUnmount(() => {
 .box-file-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 14px;
   cursor: pointer;
   border-bottom: 1px solid var(--card-border);
   transition: background 0.15s ease;
@@ -1012,13 +1166,82 @@ onBeforeUnmount(() => {
   background: var(--section-bg);
 }
 
+.file-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.file-item-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.item-hover-actions {
+  display: none;
+  align-items: center;
+  gap: 3px;
+}
+
+.box-file-item:hover .item-hover-actions {
+  display: flex;
+}
+
+.file-action-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 13px;
+}
+
+.file-action-icon-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.file-action-icon-btn.primary:hover {
+  color: #ffffff;
+  background: var(--accent-cyan);
+}
+
+.file-action-icon-btn.danger:hover {
+  color: #ffffff;
+  background: #ef4444;
+}
+
+:root[data-theme="light"] .file-action-icon-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+:root[data-theme="light"] .file-action-icon-btn.primary:hover {
+  color: #ffffff;
+  background: var(--accent-cyan);
+}
+
+:root[data-theme="light"] .file-action-icon-btn.danger:hover {
+  color: #ffffff;
+  background: #dc2626;
+}
+
 .file-name {
   font-weight: 500;
   color: var(--text-main);
+  white-space: nowrap;
 }
 
 .file-dir {
-  flex: 1;
   font-size: 11px;
   color: var(--text-muted);
   overflow: hidden;
