@@ -28,6 +28,13 @@
         >
           <span class="codicon codicon-refresh"></span>
         </button>
+        <button
+          class="scm-action-btn"
+          :title="t('scm.actions.more')"
+          @click.stop="toggleMoreMenu"
+        >
+          <span class="codicon codicon-ellipsis"></span>
+        </button>
       </div>
     </div>
 
@@ -220,6 +227,25 @@
         </div>
       </div>
     </div>
+
+    <!-- Repository More Actions Menu (Teleported) -->
+    <GitMoreActionsMenu
+      :visible="isMoreMenuOpen"
+      :position="moreMenuPos"
+      @close="isMoreMenuOpen = false"
+      @action="handleMoreAction"
+    />
+
+    <!-- Git Action Modal Dialog -->
+    <GitActionModal
+      :visible="modalVisible"
+      :action-type="activeModalType"
+      :target-commit="null"
+      :target-ref-name="modalTargetRefName"
+      :current-branch-name="currentBranch"
+      @cancel="modalVisible = false"
+      @confirm="handleModalConfirm"
+    />
   </div>
 </template>
 
@@ -228,11 +254,15 @@ import { ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useGit } from "../../composables/useGit";
 import { useEditorTabs } from "../../composables/useEditorTabs";
+import { useToast } from "../../composables/useToast";
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
+import GitMoreActionsMenu from "./GitMoreActionsMenu.vue";
+import GitActionModal, { type GitModalActionType } from "./GitActionModal.vue";
 
 const router = useRouter();
 const route = useRoute();
+const { showToast } = useToast();
 const {
   status,
   branches,
@@ -247,6 +277,21 @@ const {
   discard,
   commit,
   checkout,
+  pull,
+  fetchRemote,
+  sync,
+  createBranchFromCommit,
+  renameBranch,
+  deleteBranch,
+  mergeBranch,
+  rebaseBranch,
+  pushBranch,
+  createTag,
+  deleteTag,
+  pushTag,
+  stashUncommitted,
+  resetUncommitted,
+  cleanUntracked,
 } = useGit();
 
 const { openTab } = useEditorTabs();
@@ -255,6 +300,13 @@ const isStagedExpanded = ref(true);
 const isUnstagedExpanded = ref(true);
 const isBranchMenuOpen = ref(false);
 const signCommit = ref(true);
+
+const isMoreMenuOpen = ref(false);
+const moreMenuPos = ref({ x: 0, y: 0 });
+
+const modalVisible = ref(false);
+const activeModalType = ref<GitModalActionType | null>(null);
+const modalTargetRefName = ref<string | undefined>(undefined);
 
 const selectedDiffPath = ref<string>("");
 const selectedIsStaged = ref<boolean>(false);
@@ -344,6 +396,222 @@ function handleSelectFileDiff(path: string, staged: boolean) {
       staged: String(staged),
     },
   }).catch(() => {});
+}
+
+function toggleMoreMenu(event: MouseEvent) {
+  if (isMoreMenuOpen.value) {
+    isMoreMenuOpen.value = false;
+    return;
+  }
+  const btn = event.currentTarget as HTMLElement | null;
+  if (btn) {
+    const rect = btn.getBoundingClientRect();
+    moreMenuPos.value = {
+      x: rect.right - 240,
+      y: rect.bottom + 4,
+    };
+  } else {
+    moreMenuPos.value = { x: event.clientX, y: event.clientY };
+  }
+  isMoreMenuOpen.value = true;
+}
+
+function openModal(action: GitModalActionType, targetRefName?: string) {
+  activeModalType.value = action;
+  modalTargetRefName.value = targetRefName || currentBranch.value;
+  modalVisible.value = true;
+}
+
+async function handleMoreAction(action: string) {
+  isMoreMenuOpen.value = false;
+
+  if (action === "view-graph") {
+    openGitGraph();
+    return;
+  }
+
+  if (action === "pull") {
+    await pull(false);
+    return;
+  }
+
+  if (action === "pull-rebase") {
+    await pull(true);
+    return;
+  }
+
+  if (action === "push") {
+    await pushBranch(currentBranch.value, false, false);
+    return;
+  }
+
+  if (action === "push-force") {
+    await pushBranch(currentBranch.value, false, true);
+    return;
+  }
+
+  if (action === "clone") {
+    showToast(t("scm.actions.more") + ": Clone", "info");
+    return;
+  }
+
+  if (action === "checkout") {
+    isBranchMenuOpen.value = true;
+    return;
+  }
+
+  if (action === "fetch") {
+    await fetchRemote();
+    return;
+  }
+
+  if (action === "commit") {
+    await commit(undefined, false, signCommit.value);
+    return;
+  }
+
+  if (action === "commit-amend") {
+    await commit(undefined, true, signCommit.value);
+    return;
+  }
+
+  if (action === "commit-staged") {
+    await commit(undefined, false, signCommit.value);
+    return;
+  }
+
+  if (action === "commit-all") {
+    await stage([]);
+    await commit(undefined, false, signCommit.value);
+    return;
+  }
+
+  if (action === "stage-all") {
+    await handleStageAll();
+    return;
+  }
+
+  if (action === "unstage-all") {
+    await handleUnstageAll();
+    return;
+  }
+
+  if (action === "discard-all") {
+    await handleDiscardAll();
+    return;
+  }
+
+  if (action === "sync") {
+    await sync();
+    return;
+  }
+
+  if (action === "create-branch") {
+    openModal("create-branch");
+    return;
+  }
+
+  if (action === "rename-branch") {
+    openModal("rename-branch");
+    return;
+  }
+
+  if (action === "delete-branch") {
+    openModal("delete-branch");
+    return;
+  }
+
+  if (action === "merge-branch") {
+    openModal("merge-branch");
+    return;
+  }
+
+  if (action === "rebase-branch") {
+    openModal("rebase-branch");
+    return;
+  }
+
+  if (action === "stash") {
+    openModal("stash-uncommitted");
+    return;
+  }
+
+  if (action === "stash-untracked") {
+    openModal("stash-uncommitted");
+    return;
+  }
+
+  if (action === "reset-uncommitted") {
+    openModal("reset-uncommitted");
+    return;
+  }
+
+  if (action === "clean-untracked") {
+    openModal("clean-uncommitted");
+    return;
+  }
+
+  if (action === "create-tag") {
+    openModal("create-tag");
+    return;
+  }
+
+  if (action === "push-tags") {
+    await pushTag("", false);
+    return;
+  }
+
+  if (action === "push-tags-force") {
+    await pushTag("", true);
+    return;
+  }
+
+  if (action === "delete-tag") {
+    openModal("delete-tag");
+    return;
+  }
+
+  if (action === "show-output") {
+    router.push({ name: "terminal" }).catch(() => {});
+    return;
+  }
+}
+
+async function handleModalConfirm(payload: {
+  action: GitModalActionType;
+  commit?: any;
+  targetRefName?: string;
+  data?: any;
+}) {
+  modalVisible.value = false;
+  const { action, data } = payload;
+  try {
+    if (action === "create-tag") {
+      await createTag(data.name, "", data.message);
+    } else if (action === "create-branch") {
+      await createBranchFromCommit(data.name, "", data.checkout);
+    } else if (action === "rename-branch") {
+      await renameBranch(data.oldName, data.newName);
+    } else if (action === "delete-branch") {
+      await deleteBranch(data.name, data.force);
+    } else if (action === "merge-branch") {
+      await mergeBranch(data.branch, data.noFf, data.squash);
+    } else if (action === "rebase-branch") {
+      await rebaseBranch(data.branch);
+    } else if (action === "delete-tag") {
+      await deleteTag(data.name);
+    } else if (action === "stash-uncommitted") {
+      await stashUncommitted(data?.message, data?.includeUntracked);
+    } else if (action === "reset-uncommitted") {
+      await resetUncommitted();
+    } else if (action === "clean-uncommitted") {
+      await cleanUntracked();
+    }
+    await fetchBranches();
+    await fetchStatus();
+  } catch (err: any) {
+    showToast(err.message || t("scm.graph.action_failed"), "error");
+  }
 }
 </script>
 

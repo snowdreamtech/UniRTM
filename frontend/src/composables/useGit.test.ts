@@ -428,5 +428,27 @@ describe("useGit composable", () => {
       method: "POST",
     }));
   });
+
+  it("pull and fetchRemote call respective endpoints", async () => {
+    global.fetch = vi.fn().mockImplementation(() => {
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ success: true }),
+      });
+    });
+
+    const { pull, fetchRemote } = useGit();
+
+    await pull(true);
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/pull", expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({ rebase: true }),
+    }));
+
+    await fetchRemote();
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/fetch", expect.objectContaining({
+      method: "POST",
+    }));
+  });
 });
 

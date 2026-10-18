@@ -1117,6 +1117,8 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/git/stash", handleGitStash)
 	mux.HandleFunc("/api/git/reset-uncommitted", handleGitResetUncommitted)
 	mux.HandleFunc("/api/git/clean", handleGitClean)
+	mux.HandleFunc("/api/git/pull", handleGitPull)
+	mux.HandleFunc("/api/git/fetch", handleGitFetch)
 
 	// ─── Static SPA Handler ───────────────────────────────────────────────────
 	fileServer := http.FileServer(http.FS(distFS))
@@ -4770,6 +4772,50 @@ func handleGitClean(w http.ResponseWriter, r *http.Request) {
 	}
 
 	out, err := runGitCommand("clean", "-fd")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "output": out})
+}
+
+func handleGitPull(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body struct {
+		Rebase bool `json:"rebase"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+
+	args := []string{"pull"}
+	if body.Rebase {
+		args = append(args, "--rebase")
+	}
+
+	out, err := runGitCommand(args...)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "output": out})
+}
+
+func handleGitFetch(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	out, err := runGitCommand("fetch", "--all", "--prune")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})

@@ -904,6 +904,60 @@ export function useGit() {
     }
   }
 
+  /**
+   * Pulls remote changes (git pull), optionally with rebase.
+   */
+  async function pull(rebase: boolean = false): Promise<boolean> {
+    isLoading.value = true;
+    try {
+      const res = await fetch("/api/git/pull", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rebase }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "拉取失败");
+      }
+      showToast(t("scm.actions.pull_success"), "success");
+      await fetchStatus();
+      await fetchBranches();
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "拉取失败", "error");
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /**
+   * Fetches remote branches and tags from remotes (git fetch --all --prune).
+   */
+  async function fetchRemote(): Promise<boolean> {
+    isLoading.value = true;
+    try {
+      const res = await fetch("/api/git/fetch", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "抓取失败");
+      }
+      showToast(t("scm.actions.fetch_success"), "success");
+      await fetchStatus();
+      await fetchBranches();
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "抓取失败", "error");
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   return {
     status,
     branches,
@@ -952,6 +1006,8 @@ export function useGit() {
     stashUncommitted,
     resetUncommitted,
     cleanUntracked,
+    pull,
+    fetchRemote,
     setGraphFilterPath,
     clearGraphFilterPath,
     sync,

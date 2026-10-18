@@ -3989,6 +3989,41 @@ print(json.dumps({
               return;
             }
 
+            // POST /api/git/pull
+            if (req.url === "/api/git/pull" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  const args = ["pull"];
+                  if (body.rebase) args.push("--rebase");
+                  const out = runGit(args);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, output: out }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/fetch
+            if (req.url === "/api/git/fetch" && req.method === "POST") {
+              try {
+                const out = runGit(["fetch", "--all", "--prune"]);
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, output: out }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+              return;
+            }
+
             // POST /api/git/branch/rename
             if (req.url === "/api/git/branch/rename" && req.method === "POST") {
               let bodyStr = "";
