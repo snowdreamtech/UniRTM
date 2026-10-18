@@ -151,9 +151,9 @@
     <div v-else class="explorer-welcome-workspace">
       <div class="welcome-watermark">
         <TechIcon id="workbench:explorer" :size="56" class="watermark-icon" />
-        <h2 class="welcome-title">{{ t("explorer.title") || "UniRTM 资源管理器" }}</h2>
+        <h2 class="welcome-title">{{ t("explorer.title") || "资源管理器" }}</h2>
         <p class="welcome-desc">
-          对标 Visual Studio Code 标准工作区体验，支持快速文件树浏览、增删改查与终端联动。
+          在左侧选择文件以查看详情或编辑，支持文件浏览、增删改查与终端快捷联动。
         </p>
 
         <div class="welcome-shortcuts">
