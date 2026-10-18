@@ -735,26 +735,51 @@ html[dir="rtl"] .opt-check {
   z-index: 99999 !important;
   user-select: none;
   min-width: 250px;
+  overflow: visible !important;
   animation: tabMenuFadeIn 0.12s ease-out;
 }
 
-@keyframes tabMenuFadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+.tab-context-menu .monaco-menu {
+  overflow: visible !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
 }
 
-.tab-context-menu .monaco-menu {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important;
+.tab-context-menu .monaco-action-bar.vertical {
+  overflow: visible !important;
+}
+
+.tab-context-menu .actions-container {
+  overflow: visible !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  list-style: none !important;
+}
+
+/* Compact 1px Separators (eliminates huge empty gap) */
+.tab-context-menu .action-separator {
+  height: 1px !important;
+  min-height: 1px !important;
+  max-height: 1px !important;
+  line-height: 1px !important;
+  padding: 0 !important;
+  margin: 4px 6px !important;
+  background-color: rgba(128, 128, 128, 0.22) !important;
+  border: none !important;
+  list-style: none !important;
+  overflow: hidden !important;
+}
+
+:root[data-theme="dark"] .tab-context-menu .action-separator {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+:root[data-theme="light"] .tab-context-menu .action-separator {
+  background-color: rgba(0, 0, 0, 0.1) !important;
 }
 
 .tab-context-menu .action-item.has-submenu {
-  position: relative;
+  position: relative !important;
+  overflow: visible !important;
 }
 
 .tab-context-menu .submenu-arrow {
@@ -763,30 +788,53 @@ html[dir="rtl"] .opt-check {
   opacity: 0.7;
 }
 
+/* Flyout Secondary Submenu */
 .tab-context-menu .submenu-flyout {
-  position: absolute;
-  left: calc(100% - 4px);
-  top: -4px;
-  min-width: 170px;
-  z-index: 100000;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important;
+  position: absolute !important;
+  left: calc(100% - 2px) !important;
+  top: -4px !important;
+  min-width: 170px !important;
+  z-index: 100000 !important;
+  overflow: visible !important;
   animation: tabSubMenuFadeIn 0.1s ease-out;
 }
 
-@keyframes tabSubMenuFadeIn {
-  from {
-    opacity: 0;
-    transform: translateX(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+/* Seamless bridge so mouse doesn't lose hover between parent item and flyout */
+.tab-context-menu .submenu-flyout::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: -12px;
+  width: 12px;
+}
+
+.tab-context-menu .submenu-flyout .monaco-menu {
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
+}
+
+:root[data-theme="dark"] .tab-context-menu .submenu-flyout .monaco-menu {
+  background-color: #1e1e1e !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: #cccccc !important;
+}
+
+:root[data-theme="light"] .tab-context-menu .submenu-flyout .monaco-menu {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
 }
 
 .tab-context-menu.submenu-left .submenu-flyout {
+  left: auto !important;
+  right: calc(100% - 2px) !important;
+}
+
+.tab-context-menu.submenu-left .submenu-flyout::before {
   left: auto;
-  right: calc(100% - 4px);
+  right: -12px;
 }
 
 

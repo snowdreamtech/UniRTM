@@ -431,9 +431,7 @@
               </li>
 
               <!-- Separator -->
-              <li class="action-item" role="presentation">
-                <div class="action-label separator"></div>
-              </li>
+              <li class="action-separator" role="separator"></li>
 
               <!-- Group 2: Copy Paths -->
               <li class="action-item" role="none" @click="handleCopyAbsolutePath">
@@ -450,9 +448,7 @@
               </li>
 
               <!-- Separator -->
-              <li class="action-item" role="presentation">
-                <div class="action-label separator"></div>
-              </li>
+              <li class="action-separator" role="separator"></li>
 
               <!-- Group 3: Reveal in Explorer View -->
               <li class="action-item" role="none" @click="handleRevealInExplorer">
@@ -462,9 +458,7 @@
               </li>
 
               <!-- Separator -->
-              <li class="action-item" role="presentation">
-                <div class="action-label separator"></div>
-              </li>
+              <li class="action-separator" role="separator"></li>
 
               <!-- Group 4: Pin / Unpin Tab -->
               <li class="action-item" role="none" @click="handleTogglePin">
@@ -479,9 +473,7 @@
               </li>
 
               <!-- Separator -->
-              <li class="action-item" role="presentation">
-                <div class="action-label separator"></div>
-              </li>
+              <li class="action-separator" role="separator"></li>
 
               <!-- Group 5: Split Editor -->
               <li class="action-item" role="none" @click="handleSplitRight">
@@ -503,7 +495,7 @@
                 <!-- Flyout Submenu for Split & Move -->
                 <div
                   v-show="isSubmenuOpen"
-                  class="context-view monaco-menu-container submenu-flyout"
+                  class="submenu-flyout"
                 >
                   <div class="monaco-menu">
                     <div class="monaco-action-bar vertical">
@@ -526,6 +518,29 @@
                         <li class="action-item" role="none" @click.stop="handleSplitEditor('right')">
                           <a class="action-menu-item" role="menuitem">
                             <span class="action-label">向右拆分</span>
+                          </a>
+                        </li>
+
+                        <li class="action-separator" role="separator"></li>
+
+                        <li class="action-item" role="none" @click.stop="handleSplitEditor('up')">
+                          <a class="action-menu-item" role="menuitem">
+                            <span class="action-label">上移</span>
+                          </a>
+                        </li>
+                        <li class="action-item" role="none" @click.stop="handleSplitEditor('down')">
+                          <a class="action-menu-item" role="menuitem">
+                            <span class="action-label">下移</span>
+                          </a>
+                        </li>
+                        <li class="action-item" role="none" @click.stop="handleSplitEditor('left')">
+                          <a class="action-menu-item" role="menuitem">
+                            <span class="action-label">左移</span>
+                          </a>
+                        </li>
+                        <li class="action-item" role="none" @click.stop="handleSplitEditor('right')">
+                          <a class="action-menu-item" role="menuitem">
+                            <span class="action-label">右移</span>
                           </a>
                         </li>
                       </ul>
