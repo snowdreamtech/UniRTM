@@ -71,11 +71,43 @@
 
     <!-- 2. Active Tab Workspace (Code Editor or Image Preview) -->
     <div v-if="activeTab" class="editor-workspace">
-      <!-- File Breadcrumb Bar -->
-      <div class="editor-breadcrumb">
-        <span class="codicon codicon-folder"></span>
-        <span class="bc-path">{{ activeTab.path }}</span>
-      </div>
+      <!-- File Breadcrumbs Navigation Bar (VS Code aligned) -->
+      <nav class="editor-breadcrumb" aria-label="文件导航路径">
+        <div class="bc-items-scroll">
+          <template v-for="(item, index) in breadcrumbs" :key="item.id">
+            <span
+              v-if="index > 0"
+              class="codicon codicon-chevron-right bc-separator"
+              aria-hidden="true"
+            ></span>
+            <button
+              type="button"
+              class="bc-item"
+              :class="{
+                'is-file': item.isFile,
+                'is-dir': item.isDir,
+                'is-root': item.isRoot,
+                'is-active': index === breadcrumbs.length - 1,
+              }"
+              :title="item.path ? `${item.path} (单击在资源管理器中定位)` : item.name"
+              @click="handleBreadcrumbClick(item)"
+            >
+              <span class="bc-icon-wrapper">
+                <template v-if="item.isRoot">
+                  <span class="codicon codicon-root-folder bc-icon"></span>
+                </template>
+                <template v-else-if="item.isDir">
+                  <span class="codicon codicon-folder bc-icon"></span>
+                </template>
+                <template v-else>
+                  <TechIcon :id="item.name" :size="14" class="bc-icon" />
+                </template>
+              </span>
+              <span class="bc-label">{{ item.name }}</span>
+            </button>
+          </template>
+        </div>
+      </nav>
 
       <!-- Editor Content Area -->
       <div class="editor-content-area">
@@ -214,9 +246,12 @@ const emit = defineEmits<{
 }>();
 
 const {
+  tree,
   selectedNode,
   copyRelativePath,
   startInlineCreate,
+  expandPath,
+  selectNode,
 } = useFileTree();
 
 const {
@@ -231,6 +266,74 @@ const {
   closeTab,
   closeAllTabs,
 } = useEditorTabs();
+
+interface BreadcrumbItem {
+  id: string;
+  name: string;
+  path: string;
+  isRoot: boolean;
+  isDir: boolean;
+  isFile: boolean;
+}
+
+const breadcrumbs = computed<BreadcrumbItem[]>(() => {
+  if (!activeTab.value) return [];
+  const rawPath = activeTab.value.path || activeTab.value.name;
+  const parts = rawPath.split("/").filter(Boolean);
+
+  const rootName = tree.value?.name || "UniRTM";
+  const items: BreadcrumbItem[] = [
+    {
+      id: "bc-root",
+      name: rootName,
+      path: "",
+      isRoot: true,
+      isDir: true,
+      isFile: false,
+    },
+  ];
+
+  let accumulated = "";
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    accumulated = accumulated ? `${accumulated}/${part}` : part;
+    const isLast = i === parts.length - 1;
+    items.push({
+      id: `bc-${accumulated}`,
+      name: part,
+      path: accumulated,
+      isRoot: false,
+      isDir: !isLast,
+      isFile: isLast,
+    });
+  }
+
+  return items;
+});
+
+function handleBreadcrumbClick(item: BreadcrumbItem) {
+  if (item.isDir) {
+    if (item.path) {
+      expandPath(item.path);
+    }
+    const findNodeByPath = (node: any, targetPath: string): any => {
+      if (node.path === targetPath) return node;
+      if (node.children) {
+        for (const child of node.children) {
+          const found = findNodeByPath(child, targetPath);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    if (tree.value) {
+      const target = item.path === "" ? tree.value : findNodeByPath(tree.value, item.path);
+      if (target) {
+        selectNode(target);
+      }
+    }
+  }
+}
 
 const cursorLine = ref<number>(1);
 const cursorColumn = ref<number>(1);
@@ -449,13 +552,83 @@ function handleCreateFolderInside() {
 .editor-breadcrumb {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 16px;
+  height: 26px;
+  min-height: 26px;
+  padding: 0 12px;
   background-color: var(--section-bg, var(--bg-color));
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 11.5px;
   border-bottom: 1px solid var(--card-border);
   flex-shrink: 0;
+  overflow: hidden;
+  user-select: none;
+}
+
+.bc-items-scroll {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.bc-items-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.bc-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4.5px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-family: inherit;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  line-height: 1;
+}
+
+.bc-item:hover {
+  background-color: rgba(125, 125, 125, 0.12);
+  color: var(--text-color, #0f172a);
+}
+
+.bc-item.is-active {
+  color: var(--text-color, #0f172a);
+  font-weight: 500;
+}
+
+.bc-icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.bc-icon {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.bc-label {
+  line-height: 1.2;
+  letter-spacing: -0.1px;
+}
+
+.bc-separator {
+  font-size: 10px;
+  color: var(--text-muted);
+  opacity: 0.55;
+  margin: 0 1px;
+  display: inline-flex;
+  align-items: center;
+  user-select: none;
 }
 
 .editor-content-area {
