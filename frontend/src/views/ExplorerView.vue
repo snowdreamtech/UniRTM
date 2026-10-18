@@ -482,71 +482,80 @@
                 </a>
               </li>
               <li
+                ref="submenuTriggerRef"
                 class="action-item has-submenu"
+                :class="{ focused: isSubmenuVisible }"
                 role="none"
-                @mouseenter="isSubmenuOpen = true"
-                @mouseleave="isSubmenuOpen = false"
+                @mouseenter="handleSubmenuTriggerEnter"
+                @mouseleave="handleSubmenuTriggerLeave"
               >
                 <a class="action-menu-item" role="menuitem">
                   <span class="action-label">拆分和移动</span>
                   <span class="codicon codicon-chevron-right submenu-arrow"></span>
                 </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </Teleport>
 
-                <!-- Flyout Submenu for Split & Move -->
-                <div
-                  v-show="isSubmenuOpen"
-                  class="submenu-flyout"
-                >
-                  <div class="monaco-menu">
-                    <div class="monaco-action-bar vertical">
-                      <ul class="actions-container" role="menu">
-                        <li class="action-item" role="none" @click.stop="handleSplitEditor('up')">
-                          <a class="action-menu-item" role="menuitem">
-                            <span class="action-label">向上拆分</span>
-                          </a>
-                        </li>
-                        <li class="action-item" role="none" @click.stop="handleSplitEditor('down')">
-                          <a class="action-menu-item" role="menuitem">
-                            <span class="action-label">向下拆分</span>
-                          </a>
-                        </li>
-                        <li class="action-item" role="none" @click.stop="handleSplitEditor('left')">
-                          <a class="action-menu-item" role="menuitem">
-                            <span class="action-label">向左拆分</span>
-                          </a>
-                        </li>
-                        <li class="action-item" role="none" @click.stop="handleSplitEditor('right')">
-                          <a class="action-menu-item" role="menuitem">
-                            <span class="action-label">向右拆分</span>
-                          </a>
-                        </li>
+    <!-- 6. Independent Secondary Submenu (Completely separate from parent container) -->
+    <Teleport to="body">
+      <div
+        v-if="isContextMenuVisible && isSubmenuVisible"
+        ref="submenuContentRef"
+        class="context-view monaco-menu-container tab-submenu-independent"
+        :style="{ left: submenuPos.x + 'px', top: submenuPos.y + 'px' }"
+        @mouseenter="handleSubmenuContentEnter"
+        @mouseleave="handleSubmenuContentLeave"
+        @contextmenu.prevent
+      >
+        <div class="monaco-menu">
+          <div class="monaco-action-bar vertical">
+            <ul class="actions-container" role="menu">
+              <li class="action-item" role="none" @click.stop="handleSplitEditor('up')">
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">向上拆分</span>
+                </a>
+              </li>
+              <li class="action-item" role="none" @click.stop="handleSplitEditor('down')">
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">向下拆分</span>
+                </a>
+              </li>
+              <li class="action-item" role="none" @click.stop="handleSplitEditor('left')">
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">向左拆分</span>
+                </a>
+              </li>
+              <li class="action-item" role="none" @click.stop="handleSplitEditor('right')">
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">向右拆分</span>
+                </a>
+              </li>
 
-                        <li class="action-separator" role="separator"></li>
+              <li class="action-separator" role="separator"></li>
 
-                        <li class="action-item" role="none" @click.stop="handleSplitEditor('up')">
-                          <a class="action-menu-item" role="menuitem">
-                            <span class="action-label">上移</span>
-                          </a>
-                        </li>
-                        <li class="action-item" role="none" @click.stop="handleSplitEditor('down')">
-                          <a class="action-menu-item" role="menuitem">
-                            <span class="action-label">下移</span>
-                          </a>
-                        </li>
-                        <li class="action-item" role="none" @click.stop="handleSplitEditor('left')">
-                          <a class="action-menu-item" role="menuitem">
-                            <span class="action-label">左移</span>
-                          </a>
-                        </li>
-                        <li class="action-item" role="none" @click.stop="handleSplitEditor('right')">
-                          <a class="action-menu-item" role="menuitem">
-                            <span class="action-label">右移</span>
-                          </a>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
+              <li class="action-item" role="none" @click.stop="handleSplitEditor('up')">
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">上移</span>
+                </a>
+              </li>
+              <li class="action-item" role="none" @click.stop="handleSplitEditor('down')">
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">下移</span>
+                </a>
+              </li>
+              <li class="action-item" role="none" @click.stop="handleSplitEditor('left')">
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">左移</span>
+                </a>
+              </li>
+              <li class="action-item" role="none" @click.stop="handleSplitEditor('right')">
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">右移</span>
+                </a>
               </li>
             </ul>
           </div>
@@ -603,7 +612,61 @@ const contextMenuRef = ref<HTMLDivElement | null>(null);
 const isContextMenuVisible = ref(false);
 const contextMenuPos = ref({ x: 0, y: 0 });
 const targetTab = ref<EditorTab | null>(null);
-const isSubmenuOpen = ref(false);
+
+// Independent Submenu State
+const submenuTriggerRef = ref<HTMLElement | null>(null);
+const submenuContentRef = ref<HTMLDivElement | null>(null);
+const isSubmenuVisible = ref(false);
+const submenuPos = ref({ x: 0, y: 0 });
+let submenuCloseTimer: ReturnType<typeof setTimeout> | null = null;
+
+function handleSubmenuTriggerEnter(e: MouseEvent) {
+  if (submenuCloseTimer) {
+    clearTimeout(submenuCloseTimer);
+    submenuCloseTimer = null;
+  }
+  const target = (e.currentTarget as HTMLElement) || submenuTriggerRef.value;
+  if (!target) return;
+  const rect = target.getBoundingClientRect();
+  const submenuWidth = 175;
+  const submenuHeight = 260;
+
+  let x = rect.right + 2;
+  let y = rect.top - 4;
+
+  if (x + submenuWidth > window.innerWidth - 8) {
+    x = rect.left - submenuWidth - 2;
+  }
+
+  if (y + submenuHeight > window.innerHeight - 8) {
+    y = Math.max(8, window.innerHeight - submenuHeight - 8);
+  }
+
+  submenuPos.value = { x, y };
+  isSubmenuVisible.value = true;
+}
+
+function handleSubmenuTriggerLeave() {
+  if (submenuCloseTimer) clearTimeout(submenuCloseTimer);
+  submenuCloseTimer = setTimeout(() => {
+    isSubmenuVisible.value = false;
+  }, 160);
+}
+
+function handleSubmenuContentEnter() {
+  if (submenuCloseTimer) {
+    clearTimeout(submenuCloseTimer);
+    submenuCloseTimer = null;
+  }
+  isSubmenuVisible.value = true;
+}
+
+function handleSubmenuContentLeave() {
+  if (submenuCloseTimer) clearTimeout(submenuCloseTimer);
+  submenuCloseTimer = setTimeout(() => {
+    isSubmenuVisible.value = false;
+  }, 160);
+}
 
 const isMac = computed(() => {
   if (typeof navigator === "undefined") return false;
@@ -645,12 +708,20 @@ function openTabContextMenu(e: MouseEvent, tab: EditorTab) {
   const y = Math.min(e.clientY, window.innerHeight - menuHeight - 10);
   contextMenuPos.value = { x: Math.max(10, x), y: Math.max(10, y) };
   isContextMenuVisible.value = true;
-  isSubmenuOpen.value = false;
+  isSubmenuVisible.value = false;
+  if (submenuCloseTimer) {
+    clearTimeout(submenuCloseTimer);
+    submenuCloseTimer = null;
+  }
 }
 
 function closeContextMenu() {
   isContextMenuVisible.value = false;
-  isSubmenuOpen.value = false;
+  isSubmenuVisible.value = false;
+  if (submenuCloseTimer) {
+    clearTimeout(submenuCloseTimer);
+    submenuCloseTimer = null;
+  }
   targetTab.value = null;
 }
 
@@ -817,7 +888,12 @@ watch(tabs, (currTabs) => {
 function handleGlobalPointerDown(e: MouseEvent) {
   if (isContextMenuVisible.value) {
     const el = contextMenuRef.value;
-    if (el && !el.contains(e.target as Node)) {
+    const subEl = submenuContentRef.value;
+    const target = e.target as Node;
+    if (
+      (!el || !el.contains(target)) &&
+      (!subEl || !subEl.contains(target))
+    ) {
       closeContextMenu();
     }
   }

@@ -788,53 +788,55 @@ html[dir="rtl"] .opt-check {
   opacity: 0.7;
 }
 
-/* Flyout Secondary Submenu */
-.tab-context-menu .submenu-flyout {
-  position: absolute !important;
-  left: calc(100% - 2px) !important;
-  top: -4px !important;
-  min-width: 170px !important;
+/* Independent Secondary Submenu (Teleported to body) */
+.tab-submenu-independent {
+  position: fixed !important;
   z-index: 100000 !important;
-  overflow: visible !important;
+  user-select: none;
+  min-width: 175px !important;
   animation: tabSubMenuFadeIn 0.1s ease-out;
 }
 
-/* Seamless bridge so mouse doesn't lose hover between parent item and flyout */
-.tab-context-menu .submenu-flyout::before {
-  content: "";
-  position: absolute;
-  top: -4px;
-  bottom: -4px;
-  left: -12px;
-  width: 12px;
+@keyframes tabSubMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-.tab-context-menu .submenu-flyout .monaco-menu {
-  border-radius: 8px !important;
-  overflow: hidden !important;
+.tab-submenu-independent .monaco-menu {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
 }
 
-:root[data-theme="dark"] .tab-context-menu .submenu-flyout .monaco-menu {
-  background-color: #1e1e1e !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
-  color: #cccccc !important;
+.tab-submenu-independent .actions-container {
+  padding: 0 !important;
+  margin: 0 !important;
+  list-style: none !important;
 }
 
-:root[data-theme="light"] .tab-context-menu .submenu-flyout .monaco-menu {
-  background-color: #ffffff !important;
-  border: 1px solid #cbd5e1 !important;
-  color: #0f172a !important;
+.tab-submenu-independent .action-separator {
+  height: 1px !important;
+  min-height: 1px !important;
+  max-height: 1px !important;
+  line-height: 1px !important;
+  padding: 0 !important;
+  margin: 4px 6px !important;
+  background-color: rgba(128, 128, 128, 0.22) !important;
+  border: none !important;
+  list-style: none !important;
+  overflow: hidden !important;
 }
 
-.tab-context-menu.submenu-left .submenu-flyout {
-  left: auto !important;
-  right: calc(100% - 2px) !important;
+:root[data-theme="dark"] .tab-submenu-independent .action-separator {
+  background-color: rgba(255, 255, 255, 0.12) !important;
 }
 
-.tab-context-menu.submenu-left .submenu-flyout::before {
-  left: auto;
-  right: -12px;
+:root[data-theme="light"] .tab-submenu-independent .action-separator {
+  background-color: rgba(0, 0, 0, 0.1) !important;
 }
 
 
