@@ -3935,6 +3935,60 @@ print(json.dumps({
               return;
             }
 
+            // POST /api/git/stash
+            if (req.url === "/api/git/stash" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  const args = ["stash", "push"];
+                  if (body.includeUntracked) {
+                    args.push("--include-untracked");
+                  }
+                  if (body.message && body.message.trim()) {
+                    args.push("-m", body.message.trim());
+                  }
+                  const out = runGit(args);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, output: out }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/reset-uncommitted
+            if (req.url === "/api/git/reset-uncommitted" && req.method === "POST") {
+              try {
+                const out = runGit(["reset", "--hard", "HEAD"]);
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, output: out }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+              return;
+            }
+
+            // POST /api/git/clean
+            if (req.url === "/api/git/clean" && req.method === "POST") {
+              try {
+                const out = runGit(["clean", "-fd"]);
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, output: out }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+              return;
+            }
+
             // POST /api/git/branch/rename
             if (req.url === "/api/git/branch/rename" && req.method === "POST") {
               let bodyStr = "";

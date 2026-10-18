@@ -839,6 +839,71 @@ export function useGit() {
     fetchGraph({ path: null });
   }
 
+  /**
+   * Stashes uncommitted changes.
+   */
+  async function stashUncommitted(message?: string, includeUntracked: boolean = true): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/stash", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, includeUntracked }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "暂存失败");
+      showToast(t("scm.uncommitted.stash_success"), "success");
+      await fetchStatus();
+      await fetchBranches();
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "暂存失败", "error");
+      return false;
+    }
+  }
+
+  /**
+   * Resets all tracked uncommitted changes to HEAD.
+   */
+  async function resetUncommitted(): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/reset-uncommitted", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "重置未提交更改失败");
+      showToast(t("scm.uncommitted.reset_success"), "success");
+      await fetchStatus();
+      await fetchBranches();
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "重置未提交更改失败", "error");
+      return false;
+    }
+  }
+
+  /**
+   * Cleans all untracked files and directories.
+   */
+  async function cleanUntracked(): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/clean", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "清理未跟踪文件失败");
+      showToast(t("scm.uncommitted.clean_success"), "success");
+      await fetchStatus();
+      await fetchBranches();
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "清理未跟踪文件失败", "error");
+      return false;
+    }
+  }
+
   return {
     status,
     branches,
@@ -884,6 +949,9 @@ export function useGit() {
     cherryPick,
     revertCommit,
     resetToCommit,
+    stashUncommitted,
+    resetUncommitted,
+    cleanUntracked,
     setGraphFilterPath,
     clearGraphFilterPath,
     sync,

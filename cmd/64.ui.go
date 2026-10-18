@@ -1114,6 +1114,9 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/git/tag/delete", handleGitTagDelete)
 	mux.HandleFunc("/api/git/tag/push", handleGitTagPush)
 	mux.HandleFunc("/api/git/archive", handleGitArchive)
+	mux.HandleFunc("/api/git/stash", handleGitStash)
+	mux.HandleFunc("/api/git/reset-uncommitted", handleGitResetUncommitted)
+	mux.HandleFunc("/api/git/clean", handleGitClean)
 
 	// ─── Static SPA Handler ───────────────────────────────────────────────────
 	fileServer := http.FileServer(http.FS(distFS))
@@ -4709,6 +4712,71 @@ func handleGitArchive(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.Command("git", "archive", "--format=zip", cleanRef)
 	cmd.Stdout = w
 	_ = cmd.Run()
+}
+
+func handleGitStash(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body struct {
+		Message          string `json:"message"`
+		IncludeUntracked bool   `json:"includeUntracked"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+
+	args := []string{"stash", "push"}
+	if body.IncludeUntracked {
+		args = append(args, "--include-untracked")
+	}
+	if strings.TrimSpace(body.Message) != "" {
+		args = append(args, "-m", strings.TrimSpace(body.Message))
+	}
+
+	out, err := runGitCommand(args...)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "output": out})
+}
+
+func handleGitResetUncommitted(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	out, err := runGitCommand("reset", "--hard", "HEAD")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "output": out})
+}
+
+func handleGitClean(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	out, err := runGitCommand("clean", "-fd")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "output": out})
 }
 
 

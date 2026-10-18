@@ -96,37 +96,53 @@
               :key="p.id"
               :d="p.d"
               :stroke="p.color"
+              :stroke-dasharray="p.id.includes('*') ? '3 3' : undefined"
               stroke-width="2"
               fill="none"
               stroke-linecap="round"
               stroke-linejoin="round"
               class="graph-path-line"
+              :class="{ 'uncommitted-path': p.id.includes('*') }"
             />
 
             <!-- 2. Commit Nodes (Dots) -->
             <g v-for="node in graphLayout.nodes" :key="'node:' + node.hash">
-              <!-- Outer Ring for HEAD -->
-              <circle
-                v-if="node.isHead"
-                :cx="node.x"
-                :cy="node.y"
-                r="7"
-                fill="none"
-                :stroke="node.color"
-                stroke-width="1.8"
-                class="node-head-ring"
-              />
-              <!-- Commit Dot -->
-              <circle
-                :cx="node.x"
-                :cy="node.y"
-                :r="node.isHead ? 4 : 4.5"
-                :fill="node.color"
-                stroke="var(--card-bg, #070a12)"
-                stroke-width="1.5"
-                class="node-circle"
-                :class="{ active: selectedCommit?.hash === node.hash }"
-              />
+              <!-- Uncommitted Changes Hollow Ring -->
+              <template v-if="node.hash === '*'">
+                <circle
+                  :cx="node.x"
+                  :cy="node.y"
+                  r="5.5"
+                  fill="var(--card-bg, #081a24)"
+                  :stroke="node.color"
+                  stroke-width="2"
+                  class="node-uncommitted-ring"
+                />
+              </template>
+              <template v-else>
+                <!-- Outer Ring for HEAD -->
+                <circle
+                  v-if="node.isHead"
+                  :cx="node.x"
+                  :cy="node.y"
+                  r="7"
+                  fill="none"
+                  :stroke="node.color"
+                  stroke-width="1.8"
+                  class="node-head-ring"
+                />
+                <!-- Commit Dot -->
+                <circle
+                  :cx="node.x"
+                  :cy="node.y"
+                  :r="node.isHead ? 4 : 4.5"
+                  :fill="node.color"
+                  stroke="var(--card-bg, #070a12)"
+                  stroke-width="1.5"
+                  class="node-circle"
+                  :class="{ active: selectedCommit?.hash === node.hash }"
+                />
+              </template>
             </g>
           </svg>
 
@@ -135,7 +151,10 @@
             v-for="(commit, idx) in filteredCommits"
             :key="commit.hash"
             class="graph-row"
-            :class="{ selected: isRowSelected(commit) }"
+            :class="{
+              selected: isRowSelected(commit),
+              'uncommitted-row': commit.hash === '*'
+            }"
             :style="{ top: getRowTop(idx) + 'px', height: ROW_HEIGHT + 'px' }"
             @click="handleRowClick($event, commit)"
             @contextmenu.prevent="openContextMenu($event, commit)"
@@ -145,60 +164,74 @@
 
             <!-- Col 2: Ref Badges & Commit Message -->
             <div class="col-cell col-desc">
-              <!-- Ref Badges (Branches, Remotes, Tags) -->
-              <div v-if="commit.refs && commit.refs.length > 0" class="ref-badges-group">
-                <span
-                  v-for="(refItem, rIdx) in commit.refs"
-                  :key="rIdx"
-                  class="ref-badge"
-                  :class="['badge-' + refItem.type, { current: refItem.current }]"
-                  :title="refItem.name"
-                  @contextmenu.stop.prevent="openRefContextMenu($event, refItem, commit)"
-                >
+              <!-- Uncommitted Changes virtual row -->
+              <template v-if="commit.hash === '*'">
+                <span class="uncommitted-circle-icon">○</span>
+                <span class="commit-subject uncommitted-title" :title="commit.message">{{ commit.message }}</span>
+              </template>
+              <!-- Regular Commit row -->
+              <template v-else>
+                <!-- Ref Badges (Branches, Remotes, Tags) -->
+                <div v-if="commit.refs && commit.refs.length > 0" class="ref-badges-group">
                   <span
-                    class="codicon"
-                    :class="
-                      refItem.type === 'tag'
-                        ? 'codicon-tag'
-                        : refItem.type === 'remote'
-                        ? 'codicon-cloud'
-                        : 'codicon-git-branch'
-                    "
-                  ></span>
-                  <span class="ref-name">{{ refItem.name }}</span>
+                    v-for="(refItem, rIdx) in commit.refs"
+                    :key="rIdx"
+                    class="ref-badge"
+                    :class="['badge-' + refItem.type, { current: refItem.current }]"
+                    :title="refItem.name"
+                    @contextmenu.stop.prevent="openRefContextMenu($event, refItem, commit)"
+                  >
+                    <span
+                      class="codicon"
+                      :class="
+                        refItem.type === 'tag'
+                          ? 'codicon-tag'
+                          : refItem.type === 'remote'
+                          ? 'codicon-cloud'
+                          : 'codicon-git-branch'
+                      "
+                    ></span>
+                    <span class="ref-name">{{ refItem.name }}</span>
+                  </span>
+                </div>
+
+                <!-- GPG Signature Badge -->
+                <span
+                  v-if="commit.gpg && commit.gpg.status !== 'none'"
+                  class="gpg-badge"
+                  :class="'gpg-' + commit.gpg.status"
+                  :title="getGpgTooltip(commit.gpg)"
+                >
+                  <span class="codicon" :class="getGpgIcon(commit.gpg.status)"></span>
+                  <span class="gpg-badge-label">{{ getGpgBadgeLabel(commit.gpg.status) }}</span>
                 </span>
-              </div>
 
-              <!-- GPG Signature Badge -->
-              <span
-                v-if="commit.gpg && commit.gpg.status !== 'none'"
-                class="gpg-badge"
-                :class="'gpg-' + commit.gpg.status"
-                :title="getGpgTooltip(commit.gpg)"
-              >
-                <span class="codicon" :class="getGpgIcon(commit.gpg.status)"></span>
-                <span class="gpg-badge-label">{{ getGpgBadgeLabel(commit.gpg.status) }}</span>
-              </span>
-
-              <!-- Message Text -->
-              <span class="commit-subject" :title="commit.message">{{ commit.message }}</span>
+                <!-- Message Text -->
+                <span class="commit-subject" :title="commit.message">{{ commit.message }}</span>
+              </template>
             </div>
 
             <!-- Col 3: Date -->
-            <div class="col-cell col-date" :title="formatExactDate(commit.timestamp)">
-              {{ formatRelativeTime(commit.timestamp) }}
+            <div class="col-cell col-date" :title="commit.hash === '*' ? '*' : formatExactDate(commit.timestamp)">
+              {{ commit.hash === '*' ? '*' : formatRelativeTime(commit.timestamp) }}
             </div>
 
             <!-- Col 4: Author -->
-            <div class="col-cell col-author" :title="`${commit.author} <${commit.email}>`">
-              <span class="author-avatar">{{ getInitials(commit.author) }}</span>
-              <span class="author-name">{{ commit.author }}</span>
+            <div class="col-cell col-author" :title="commit.hash === '*' ? '*' : `${commit.author} <${commit.email}>`">
+              <template v-if="commit.hash === '*'">
+                <span class="author-star font-mono">*</span>
+              </template>
+              <template v-else>
+                <span class="author-avatar">{{ getInitials(commit.author) }}</span>
+                <span class="author-name">{{ commit.author }}</span>
+              </template>
             </div>
 
             <!-- Col 5: Short Hash -->
             <div class="col-cell col-hash">
               <span class="hash-text font-mono">{{ commit.shortHash }}</span>
               <button
+                v-if="commit.hash !== '*'"
                 class="copy-hash-btn"
                 :title="t('scm.actions.copy_hash')"
                 @click.stop="handleCopyHash(commit.hash)"
@@ -246,6 +279,40 @@
                   >
                     <span class="codicon codicon-arrow-swap"></span>
                     <span>{{ t('scm.compare.swap') }}</span>
+                  </button>
+                </template>
+                <template v-else-if="selectedCommit?.hash === '*'">
+                  <button
+                    class="inline-tool-btn"
+                    :title="t('scm.uncommitted.stash')"
+                    @click="openModal('stash-uncommitted', selectedCommit)"
+                  >
+                    <span class="codicon codicon-archive"></span>
+                    <span>{{ t('scm.uncommitted.stash') }}</span>
+                  </button>
+                  <button
+                    class="inline-tool-btn danger"
+                    :title="t('scm.uncommitted.reset')"
+                    @click="openModal('reset-uncommitted', selectedCommit)"
+                  >
+                    <span class="codicon codicon-discard"></span>
+                    <span>{{ t('scm.uncommitted.reset') }}</span>
+                  </button>
+                  <button
+                    class="inline-tool-btn danger"
+                    :title="t('scm.uncommitted.clean')"
+                    @click="openModal('clean-uncommitted', selectedCommit)"
+                  >
+                    <span class="codicon codicon-trash"></span>
+                    <span>{{ t('scm.uncommitted.clean') }}</span>
+                  </button>
+                  <button
+                    class="inline-tool-btn"
+                    :title="t('scm.uncommitted.open_scm')"
+                    @click="emit('switch-tab', 'changes')"
+                  >
+                    <span class="codicon codicon-source-control"></span>
+                    <span>{{ t('scm.uncommitted.open_scm') }}</span>
                   </button>
                 </template>
                 <template v-else>
@@ -356,6 +423,33 @@
                       <span>{{ activeCompare.target.author }}</span>
                       <span class="meta-dot">•</span>
                       <span>{{ formatRelativeTime(activeCompare.target.timestamp) }}</span>
+                    </div>
+                  </div>
+                </template>
+
+                <template v-else-if="selectedCommit.hash === '*'">
+                  <div class="uncommitted-meta-card">
+                    <div class="uncommitted-card-header">
+                      <span class="codicon codicon-diff-ignored"></span>
+                      <span class="uncommitted-card-title">{{ t('scm.uncommitted.displaying') }}</span>
+                    </div>
+                    <div class="uncommitted-stats-list">
+                      <div class="uncommitted-stat-row">
+                        <span class="stat-label">{{ t('scm.changes.staged') }}:</span>
+                        <span class="stat-num staged font-mono">{{ status.staged.length }}</span>
+                      </div>
+                      <div class="uncommitted-stat-row">
+                        <span class="stat-label">{{ t('scm.changes.unstaged') }}:</span>
+                        <span class="stat-num unstaged font-mono">{{ status.unstaged.length }}</span>
+                      </div>
+                      <div class="uncommitted-stat-row total-row">
+                        <span class="stat-label">{{ t('scm.changes.total') }}:</span>
+                        <span class="stat-num total font-mono">{{ totalChanges }}</span>
+                      </div>
+                    </div>
+                    <div class="uncommitted-card-hint">
+                      <span class="codicon codicon-info"></span>
+                      <span>{{ t('scm.uncommitted.hint') }}</span>
                     </div>
                   </div>
                 </template>
@@ -615,45 +709,66 @@
         :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
         @click.stop
       >
-        <template v-if="comparePair">
-          <div class="menu-item primary-action" @click="handleContextAction('compare')">
-            {{ t('scm.commit.compare_with', { base: comparePair.base.shortHash, target: comparePair.target.shortHash }) }}
+        <!-- Uncommitted Changes Dedicated Menu (Aligned with Git Graph) -->
+        <template v-if="contextCommit?.hash === '*'">
+          <div class="menu-item" @click="handleContextAction('stash-uncommitted')">
+            {{ t('scm.uncommitted.stash') }}
           </div>
           <div class="menu-separator"></div>
+          <div class="menu-item danger" @click="handleContextAction('reset-uncommitted')">
+            {{ t('scm.uncommitted.reset') }}
+          </div>
+          <div class="menu-item danger" @click="handleContextAction('clean-uncommitted')">
+            {{ t('scm.uncommitted.clean') }}
+          </div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" @click="handleContextAction('open-scm-view')">
+            {{ t('scm.uncommitted.open_scm') }}
+          </div>
         </template>
-        <div class="menu-item" @click="handleContextAction('add-tag')">
-          {{ t('scm.commit.add_tag') }}
-        </div>
-        <div class="menu-item" @click="handleContextAction('create-branch')">
-          {{ t('scm.commit.create_branch') }}
-        </div>
-        <div class="menu-separator"></div>
-        <div class="menu-item" @click="handleContextAction('checkout')">
-          {{ t('scm.commit.checkout') }}
-        </div>
-        <div class="menu-item" @click="handleContextAction('cherry-pick')">
-          {{ t('scm.commit.cherry_pick') }}
-        </div>
-        <div class="menu-item" @click="handleContextAction('revert')">
-          {{ t('scm.commit.revert') }}
-        </div>
-        <div class="menu-separator"></div>
-        <div class="menu-item" @click="handleContextAction('merge')">
-          {{ t('scm.commit.merge') }}
-        </div>
-        <div class="menu-item" @click="handleContextAction('rebase')">
-          {{ t('scm.commit.rebase') }}
-        </div>
-        <div class="menu-item danger" @click="handleContextAction('reset')">
-          {{ t('scm.commit.reset') }}
-        </div>
-        <div class="menu-separator"></div>
-        <div class="menu-item" @click="handleContextAction('copy-hash')">
-          {{ t('scm.commit.copy_hash') }}
-        </div>
-        <div class="menu-item" @click="handleContextAction('copy-subject')">
-          {{ t('scm.commit.copy_subject') }}
-        </div>
+
+        <!-- Regular Commit Context Menu -->
+        <template v-else>
+          <template v-if="comparePair">
+            <div class="menu-item primary-action" @click="handleContextAction('compare')">
+              {{ t('scm.commit.compare_with', { base: comparePair.base.shortHash, target: comparePair.target.shortHash }) }}
+            </div>
+            <div class="menu-separator"></div>
+          </template>
+          <div class="menu-item" @click="handleContextAction('add-tag')">
+            {{ t('scm.commit.add_tag') }}
+          </div>
+          <div class="menu-item" @click="handleContextAction('create-branch')">
+            {{ t('scm.commit.create_branch') }}
+          </div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" @click="handleContextAction('checkout')">
+            {{ t('scm.commit.checkout') }}
+          </div>
+          <div class="menu-item" @click="handleContextAction('cherry-pick')">
+            {{ t('scm.commit.cherry_pick') }}
+          </div>
+          <div class="menu-item" @click="handleContextAction('revert')">
+            {{ t('scm.commit.revert') }}
+          </div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" @click="handleContextAction('merge')">
+            {{ t('scm.commit.merge') }}
+          </div>
+          <div class="menu-item" @click="handleContextAction('rebase')">
+            {{ t('scm.commit.rebase') }}
+          </div>
+          <div class="menu-item danger" @click="handleContextAction('reset')">
+            {{ t('scm.commit.reset') }}
+          </div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" @click="handleContextAction('copy-hash')">
+            {{ t('scm.commit.copy_hash') }}
+          </div>
+          <div class="menu-item" @click="handleContextAction('copy-subject')">
+            {{ t('scm.commit.copy_subject') }}
+          </div>
+        </template>
       </div>
 
       <!-- Ref Badge Context Menu (Aligned with 图 1 & 图 2) -->
@@ -800,6 +915,8 @@ const EXPANDED_PANEL_HEIGHT = 320;
 
 const {
   branches,
+  status,
+  totalChanges,
   graphCommits,
   selectedCommit,
   selectedCommitDetail,
@@ -808,6 +925,7 @@ const {
   isLoadingGraph,
   fetchBranches,
   fetchGraph,
+  fetchStatus,
   fetchCommitDetail,
   clearGraphFilterPath,
   checkout,
@@ -826,6 +944,9 @@ const {
   resetToCommit,
   activeCompare,
   fetchCompare,
+  stashUncommitted,
+  resetUncommitted,
+  cleanUntracked,
 } = useGit();
 
 const { showToast } = useToast();
@@ -897,14 +1018,48 @@ const emit = defineEmits<{
     e: "open-commit-diff",
     payload: { path: string; hash: string; parentHash?: string }
   ): void;
+  (e: "open-diff", payload: { path: string; staged: boolean }): void;
+  (e: "switch-tab", tab: "changes" | "graph"): void;
   (e: "open-file", path: string): void;
 }>();
 
+// Virtual Uncommitted Commit node injected at top when totalChanges > 0
+const currentHeadCommit = computed(() => {
+  return (
+    graphCommits.value.find((c) =>
+      c.refs?.some((r) => r.current || r.type === "head")
+    ) || graphCommits.value[0]
+  );
+});
+
+const uncommittedVirtualCommit = computed<GitGraphCommit | null>(() => {
+  if (totalChanges.value <= 0) return null;
+  const head = currentHeadCommit.value;
+  return {
+    hash: "*",
+    shortHash: "*",
+    parents: head ? [head.hash] : [],
+    author: "*",
+    email: "",
+    timestamp: Math.floor(Date.now() / 1000),
+    message: `${t("scm.uncommitted.title")} (${totalChanges.value})`,
+    refs: [],
+  };
+});
+
+const allGraphCommits = computed(() => {
+  if (uncommittedVirtualCommit.value) {
+    return [uncommittedVirtualCommit.value, ...graphCommits.value];
+  }
+  return graphCommits.value;
+});
+
 // Filtered Commits by live search
 const filteredCommits = computed(() => {
+  const list = allGraphCommits.value;
   const query = searchQuery.value.trim().toLowerCase();
-  if (!query) return graphCommits.value;
-  return graphCommits.value.filter((c) => {
+  if (!query) return list;
+  return list.filter((c) => {
     return (
       c.message.toLowerCase().includes(query) ||
       c.author.toLowerCase().includes(query) ||
@@ -983,6 +1138,33 @@ interface FlatTreeRow {
 }
 
 const currentFiles = computed<GitCommitFileItem[]>(() => {
+  if (selectedCommit.value?.hash === "*") {
+    const list: GitCommitFileItem[] = [];
+    const seen = new Set<string>();
+    for (const f of status.value.staged) {
+      if (!seen.has(f.path)) {
+        seen.add(f.path);
+        list.push({
+          path: f.path,
+          status: f.status,
+          additions: 0,
+          deletions: 0,
+        });
+      }
+    }
+    for (const f of status.value.unstaged) {
+      if (!seen.has(f.path)) {
+        seen.add(f.path);
+        list.push({
+          path: f.path,
+          status: f.status,
+          additions: 0,
+          deletions: 0,
+        });
+      }
+    }
+    return list;
+  }
   if (isComparing.value && activeCompare.value) {
     return activeCompare.value.files;
   }
@@ -1080,6 +1262,11 @@ function toggleFolder(folderPath: string) {
 }
 
 function handleFileClick(path: string) {
+  if (selectedCommit.value?.hash === "*") {
+    const isStaged = status.value.staged.some((s) => s.path === path);
+    emit("open-diff", { path, staged: isStaged });
+    return;
+  }
   if (isComparing.value && activeCompare.value) {
     handleOpenFileDiff(
       path,
@@ -1153,6 +1340,7 @@ async function handleRowClick(event: MouseEvent, commit: GitGraphCommit) {
 }
 
 onMounted(async () => {
+  await fetchStatus();
   await fetchBranches();
   await refreshGraph();
   window.addEventListener("click", closeAllContextMenus);
@@ -1163,6 +1351,7 @@ onBeforeUnmount(() => {
 });
 
 async function refreshGraph() {
+  await fetchStatus();
   await fetchGraph({
     branch: selectedBranch.value,
     path: graphFilterPath.value,
@@ -1180,6 +1369,10 @@ async function handleSelectCommit(commit: GitGraphCommit) {
     return;
   }
   selectedCommit.value = commit;
+  if (commit.hash === "*") {
+    await fetchStatus();
+    return;
+  }
   isLoadingDetail.value = true;
   try {
     await fetchCommitDetail(commit.hash);
@@ -1288,6 +1481,26 @@ async function handleContextAction(action: string) {
     return;
   }
 
+  if (action === "stash-uncommitted") {
+    openModal("stash-uncommitted", commit);
+    return;
+  }
+
+  if (action === "reset-uncommitted") {
+    openModal("reset-uncommitted", commit);
+    return;
+  }
+
+  if (action === "clean-uncommitted") {
+    openModal("clean-uncommitted", commit);
+    return;
+  }
+
+  if (action === "open-scm-view") {
+    emit("switch-tab", "changes");
+    return;
+  }
+
   if (action === "add-tag") {
     openModal("create-tag", commit);
     return;
@@ -1393,7 +1606,16 @@ async function handleModalConfirm(payload: {
   const { action, commit, data } = payload;
 
   try {
-    if (action === "create-tag") {
+    if (action === "stash-uncommitted") {
+      await stashUncommitted(data?.message, data?.includeUntracked);
+      await fetchStatus();
+    } else if (action === "reset-uncommitted") {
+      await resetUncommitted();
+      await fetchStatus();
+    } else if (action === "clean-uncommitted") {
+      await cleanUntracked();
+      await fetchStatus();
+    } else if (action === "create-tag") {
       if (commit) await createTag(data.name, commit.hash, data.message);
     } else if (action === "create-branch") {
       if (commit) await createBranchFromCommit(data.name, commit.hash, data.checkout);
@@ -1422,6 +1644,9 @@ async function handleModalConfirm(payload: {
     }
     await fetchBranches();
     await refreshGraph();
+    if (totalChanges.value === 0 && selectedCommit.value?.hash === "*") {
+      selectedCommit.value = null;
+    }
   } catch (err: any) {
     showToast(err.message || t("scm.graph.action_failed"), "error");
   }
@@ -2630,5 +2855,125 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
 .graph-context-menu .menu-item.primary-action {
   font-weight: 600;
   color: var(--accent-cyan, #00e5ff);
+}
+
+/* Uncommitted Changes Node and Row Styles */
+.node-uncommitted-ring {
+  stroke-dasharray: 2 1.5;
+  filter: drop-shadow(0 0 3px rgba(255, 171, 0, 0.4));
+  transition: all 0.2s ease;
+}
+
+.graph-path-line.uncommitted-path {
+  stroke-dasharray: 3 3;
+  opacity: 0.85;
+}
+
+.graph-row.uncommitted-row {
+  font-style: normal;
+}
+
+.graph-row.uncommitted-row .commit-subject.uncommitted-title {
+  color: #ffb74d;
+  font-weight: 600;
+}
+
+.uncommitted-circle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  line-height: 1;
+  color: #ffb74d;
+  margin-right: 6px;
+  font-weight: 700;
+}
+
+.author-star {
+  display: inline-block;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Uncommitted Meta Card */
+.uncommitted-meta-card {
+  padding: 12px 14px;
+  background: rgba(255, 171, 0, 0.05);
+  border: 1px solid rgba(255, 171, 0, 0.25);
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+:root[data-theme="light"] .uncommitted-meta-card {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.uncommitted-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffb74d;
+  margin-bottom: 10px;
+}
+
+:root[data-theme="light"] .uncommitted-card-header {
+  color: #b45309;
+}
+
+.uncommitted-stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.uncommitted-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.uncommitted-stat-row .stat-label {
+  color: var(--text-muted);
+}
+
+.uncommitted-stat-row .stat-num {
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.uncommitted-stat-row .stat-num.staged {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+.uncommitted-stat-row .stat-num.unstaged {
+  background: rgba(234, 179, 8, 0.15);
+  color: #facc15;
+}
+
+.uncommitted-stat-row.total-row {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.uncommitted-stat-row .stat-num.total {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+}
+
+.uncommitted-card-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--text-muted);
 }
 </style>

@@ -401,5 +401,32 @@ describe("useGit composable", () => {
       expect.stringContaining("/api/git/compare?base=11111111&target=22222222")
     );
   });
+
+  it("stashUncommitted, resetUncommitted, cleanUntracked call respective endpoints", async () => {
+    global.fetch = vi.fn().mockImplementation(() => {
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ success: true }),
+      });
+    });
+
+    const { stashUncommitted, resetUncommitted, cleanUntracked } = useGit();
+
+    await stashUncommitted("WIP changes", true);
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/stash", expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({ message: "WIP changes", includeUntracked: true }),
+    }));
+
+    await resetUncommitted();
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/reset-uncommitted", expect.objectContaining({
+      method: "POST",
+    }));
+
+    await cleanUntracked();
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/clean", expect.objectContaining({
+      method: "POST",
+    }));
+  });
 });
 

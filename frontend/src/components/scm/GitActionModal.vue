@@ -185,6 +185,34 @@
           <p>{{ t('scm.modal.checkout_confirm', { hash: targetCommit?.shortHash ?? '' }) }}</p>
           <p class="text-muted text-sm mt-1">{{ t('scm.modal.checkout_desc') }}</p>
         </div>
+
+        <!-- 14. Stash Uncommitted Changes Form -->
+        <div v-else-if="actionType === 'stash-uncommitted'" class="form-group">
+          <label class="form-label" for="input-stash-msg">{{ t('scm.uncommitted.stash_msg_label') }}</label>
+          <input
+            id="input-stash-msg"
+            v-model="stashMessage"
+            type="text"
+            class="form-input"
+            :placeholder="t('scm.uncommitted.stash_msg_placeholder')"
+            autofocus
+            @keydown.enter="handleConfirm"
+          />
+          <label class="checkbox-label mt-3">
+            <input v-model="includeUntracked" type="checkbox" />
+            <span>{{ t('scm.uncommitted.include_untracked') }}</span>
+          </label>
+        </div>
+
+        <!-- 15. Reset Uncommitted Changes Confirm -->
+        <div v-else-if="actionType === 'reset-uncommitted'" class="confirm-message">
+          <p class="text-danger font-semibold">{{ t('scm.uncommitted.reset_confirm') }}</p>
+        </div>
+
+        <!-- 16. Clean Untracked Files Confirm -->
+        <div v-else-if="actionType === 'clean-uncommitted'" class="confirm-message">
+          <p class="text-danger font-semibold">{{ t('scm.uncommitted.clean_confirm') }}</p>
+        </div>
       </div>
 
       <div class="modal-footer">
@@ -221,7 +249,10 @@ export type GitModalActionType =
   | "rebase-branch"
   | "push-branch"
   | "delete-tag"
-  | "push-tag";
+  | "push-tag"
+  | "stash-uncommitted"
+  | "reset-uncommitted"
+  | "clean-uncommitted";
 
 const props = defineProps<{
   visible: boolean;
@@ -257,6 +288,8 @@ const squash = ref(false);
 const setUpstream = ref(true);
 const forcePush = ref(false);
 const isSubmitting = ref(false);
+const stashMessage = ref("");
+const includeUntracked = ref(true);
 
 watch(
   () => props.visible,
@@ -274,6 +307,8 @@ watch(
       setUpstream.value = true;
       forcePush.value = false;
       isSubmitting.value = false;
+      stashMessage.value = "";
+      includeUntracked.value = true;
     }
   }
 );
@@ -306,6 +341,12 @@ const modalTitle = computed(() => {
       return t("scm.modal.title_cherry_pick");
     case "checkout":
       return t("scm.modal.title_checkout");
+    case "stash-uncommitted":
+      return t("scm.uncommitted.stash");
+    case "reset-uncommitted":
+      return t("scm.uncommitted.reset");
+    case "clean-uncommitted":
+      return t("scm.uncommitted.clean");
     default:
       return t("scm.modal.title_action");
   }
@@ -332,6 +373,12 @@ const modalIcon = computed(() => {
       return "codicon-git-pull-request";
     case "checkout":
       return "codicon-check";
+    case "stash-uncommitted":
+      return "codicon-archive";
+    case "reset-uncommitted":
+      return "codicon-discard";
+    case "clean-uncommitted":
+      return "codicon-clear-all";
     default:
       return "codicon-git-commit";
   }
@@ -340,6 +387,7 @@ const modalIcon = computed(() => {
 const isDangerAction = computed(() => {
   if (props.actionType === "reset" && resetMode.value === "hard") return true;
   if (props.actionType === "delete-branch" || props.actionType === "delete-tag") return true;
+  if (props.actionType === "reset-uncommitted" || props.actionType === "clean-uncommitted") return true;
   return false;
 });
 
@@ -382,6 +430,12 @@ const confirmButtonText = computed(() => {
       return t("scm.modal.confirm_cherry_pick_btn");
     case "checkout":
       return t("scm.modal.confirm_checkout_btn");
+    case "stash-uncommitted":
+      return t("scm.uncommitted.stash_btn");
+    case "reset-uncommitted":
+      return t("scm.uncommitted.reset_btn");
+    case "clean-uncommitted":
+      return t("scm.uncommitted.clean_btn");
     default:
       return t("scm.modal.confirm");
   }
@@ -416,6 +470,10 @@ function handleConfirm() {
     data = { name: props.targetRefName, force: forcePush.value };
   } else if (props.actionType === "reset") {
     data = { mode: resetMode.value };
+  } else if (props.actionType === "stash-uncommitted") {
+    data = { message: stashMessage.value.trim(), includeUntracked: includeUntracked.value };
+  } else if (props.actionType === "reset-uncommitted" || props.actionType === "clean-uncommitted") {
+    data = {};
   }
 
   emit("confirm", {

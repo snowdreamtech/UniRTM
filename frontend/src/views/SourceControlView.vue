@@ -390,6 +390,8 @@
         class="git-graph-embedded"
         @open-commit-diff="handleOpenCommitDiff"
         @open-file="handleOpenFileFromGraph"
+        @open-diff="handleOpenDiffFromGraph"
+        @switch-tab="switchTab"
       />
     </div>
   </div>
@@ -660,6 +662,10 @@ function handleOpenFileFromGraph(path: string) {
   const fileName = getFileName(path);
   openTab({ path, name: fileName });
   router.push({ name: "explorer" }).catch(() => {});
+}
+
+function handleOpenDiffFromGraph(payload: { path: string; staged: boolean }) {
+  openDiff(payload.path, payload.staged);
 }
 
 function openDiff(path: string, staged: boolean) {
