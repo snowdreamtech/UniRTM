@@ -9,8 +9,8 @@
           class="editor-tab"
           :class="{ active: tab.id === activeTabId, 'is-pinned': tab.isPinned }"
           @click="handleSelectTab(tab.id)"
-          @auxclick.stop="closeTab(tab.id)"
-          @contextmenu.prevent="openTabContextMenu($event, tab)"
+          @auxclick.middle.stop="closeTab(tab.id)"
+          @contextmenu.prevent.stop="openTabContextMenu($event, tab)"
           :title="tab.path + (tab.isPinned ? ' (已固定)' : '')"
         >
           <TechIcon :id="tab.name" :size="16" class="tab-icon" />
@@ -620,7 +620,10 @@ const canCloseSaved = computed(() => {
 });
 
 function openTabContextMenu(e: MouseEvent, tab: EditorTab) {
+  e.preventDefault();
+  e.stopPropagation();
   targetTab.value = tab;
+  switchTab(tab.id);
   const menuWidth = 260;
   const menuHeight = 360;
   const x = Math.min(e.clientX, window.innerWidth - menuWidth - 10);
