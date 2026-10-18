@@ -8,16 +8,16 @@
         <span
           v-if="isCommitDiff"
           class="diff-status-pill pill-commit"
-          :title="`历史提交: ${commitHash}`"
+          :title="`${t('scm.diff.commit_badge')}: ${commitHash}`"
         >
-          提交 {{ commitHash.slice(0, 7) }}{{ parentHash ? ' vs ' + parentHash.slice(0, 7) : '' }}
+          {{ t('scm.diff.commit_badge') }} {{ commitHash.slice(0, 7) }}{{ parentHash ? ' vs ' + parentHash.slice(0, 7) : '' }}
         </span>
         <span
           v-else
           class="diff-status-pill"
           :class="isStaged ? 'pill-staged' : 'pill-unstaged'"
         >
-          {{ isStaged ? "已暂存 (Index)" : "工作区 (Working Tree)" }}
+          {{ isStaged ? t('scm.diff.staged_badge') : t('scm.diff.unstaged_badge') }}
         </span>
       </div>
 
@@ -25,11 +25,11 @@
         <!-- Toggle Inline vs Side-by-Side Diff -->
         <button
           class="diff-btn"
-          :title="isInlineDiff ? '切换为并排比对 (Side by Side)' : '切换为内联比对 (Inline)'"
+          :title="isInlineDiff ? t('scm.diff.toggle_side_by_side') : t('scm.diff.toggle_inline')"
           @click="toggleInlineDiff"
         >
           <span class="codicon" :class="isInlineDiff ? 'codicon-split-horizontal' : 'codicon-list-flat'"></span>
-          <span>{{ isInlineDiff ? "并排比对" : "内联比对" }}</span>
+          <span>{{ isInlineDiff ? t('scm.diff.side_by_side') : t('scm.diff.inline') }}</span>
         </button>
 
         <!-- Working Tree Stage / Unstage / Discard Actions (only when not commit diff) -->
@@ -38,48 +38,48 @@
           <button
             v-if="!isStaged"
             class="diff-btn primary"
-            title="暂存此更改"
+            :title="t('scm.diff.stage_file')"
             @click="handleStageActiveFile"
           >
             <span class="codicon codicon-add"></span>
-            <span>暂存更改</span>
+            <span>{{ t('scm.diff.stage_file') }}</span>
           </button>
           <button
             v-else
             class="diff-btn"
-            title="取消暂存此更改"
+            :title="t('scm.diff.unstage_file')"
             @click="handleUnstageActiveFile"
           >
             <span class="codicon codicon-remove"></span>
-            <span>取消暂存</span>
+            <span>{{ t('scm.diff.unstage_file') }}</span>
           </button>
 
           <!-- Discard Action (unstaged only) -->
           <button
             v-if="!isStaged"
             class="diff-btn danger"
-            title="放弃此文件的所有更改"
+            :title="t('scm.diff.discard_file')"
             @click="handleDiscardActiveFile"
           >
             <span class="codicon codicon-discard"></span>
-            <span>放弃更改</span>
+            <span>{{ t('scm.diff.discard_file') }}</span>
           </button>
         </template>
 
         <!-- Open File in Editor -->
         <button
           class="diff-btn"
-          title="在代码编辑器中打开"
+          :title="t('scm.diff.open_file')"
           @click="handleOpenFileInEditor"
         >
           <span class="codicon codicon-go-to-file"></span>
-          <span>打开文件</span>
+          <span>{{ t('scm.diff.open_file') }}</span>
         </button>
 
         <!-- Close Diff / Back to Overview or Graph -->
         <button
           class="diff-btn close-btn"
-          title="关闭比对视图"
+          :title="t('scm.diff.close')"
           @click="closeDiffView"
         >
           <span class="codicon codicon-close"></span>
@@ -101,8 +101,8 @@
           <div class="title-with-icon">
             <span class="codicon codicon-source-control scm-icon-large"></span>
             <div>
-              <h2 class="repo-title">Git 源代码管理</h2>
-              <p class="repo-subtitle">统一版本控制中心 · 分支、变更与提交图谱融合管理</p>
+              <h2 class="repo-title">{{ t('scm.title') }}</h2>
+              <p class="repo-subtitle">{{ t('scm.subtitle') }}</p>
             </div>
           </div>
 
@@ -115,7 +115,7 @@
                 @click="switchTab('changes')"
               >
                 <span class="codicon codicon-diff-modified"></span>
-                <span>工作区变更 ({{ totalChanges }})</span>
+                <span>{{ t('scm.tabs.changes') }} ({{ totalChanges }})</span>
               </button>
               <button
                 class="mode-tab-btn"
@@ -123,7 +123,7 @@
                 @click="switchTab('graph')"
               >
                 <span class="codicon codicon-git-commit"></span>
-                <span>提交图谱 (Git Graph)</span>
+                <span>{{ t('scm.tabs.graph') }}</span>
               </button>
             </div>
 
@@ -149,7 +149,7 @@
             </div>
             <div class="stat-details">
               <span class="stat-value">{{ currentBranch }}</span>
-              <span class="stat-label">当前活跃分支</span>
+              <span class="stat-label">{{ t('scm.branch.active') }}</span>
             </div>
           </div>
 
@@ -159,7 +159,7 @@
             </div>
             <div class="stat-details">
               <span class="stat-value">{{ status.staged.length }}</span>
-              <span class="stat-label">暂存更改 (Staged)</span>
+              <span class="stat-label">{{ t('scm.changes.staged') }}</span>
             </div>
           </div>
 
@@ -169,7 +169,7 @@
             </div>
             <div class="stat-details">
               <span class="stat-value">{{ status.unstaged.length }}</span>
-              <span class="stat-label">未暂存更改 (Unstaged)</span>
+              <span class="stat-label">{{ t('scm.changes.unstaged') }}</span>
             </div>
           </div>
 
@@ -179,7 +179,7 @@
             </div>
             <div class="stat-details">
               <span class="stat-value">{{ totalChanges }}</span>
-              <span class="stat-label">待处理文件总数</span>
+              <span class="stat-label">{{ t('scm.changes.total') }}</span>
             </div>
           </div>
         </div>
@@ -193,7 +193,7 @@
               @click="stage([])"
             >
               <span class="codicon codicon-add"></span>
-              <span>暂存所有更改 (Stage All)</span>
+              <span>{{ t('scm.actions.stage_all') }}</span>
             </button>
             <button
               class="action-pill"
@@ -201,14 +201,14 @@
               @click="unstage([])"
             >
               <span class="codicon codicon-remove"></span>
-              <span>取消全部暂存 (Unstage All)</span>
+              <span>{{ t('scm.actions.unstage_all') }}</span>
             </button>
             <button
               class="action-pill"
               @click="handleManualRefresh"
             >
               <span class="codicon codicon-refresh"></span>
-              <span>刷新状态 (Refresh)</span>
+              <span>{{ t('scm.actions.refresh') }}</span>
             </button>
           </div>
         </div>
@@ -218,8 +218,8 @@
           <!-- Staged Box -->
           <div class="changes-box">
             <div class="box-header">
-              <span class="box-title">暂存更改 ({{ status.staged.length }})</span>
-              <span v-if="status.staged.length > 0" class="box-badge green">已准备提交</span>
+              <span class="box-title">{{ t('scm.staged.title') }} ({{ status.staged.length }})</span>
+              <span v-if="status.staged.length > 0" class="box-badge green">{{ t('common.save') }}</span>
             </div>
             <div class="box-content">
               <div
@@ -235,7 +235,7 @@
               </div>
               <div v-if="status.staged.length === 0" class="empty-state">
                 <span class="codicon codicon-inbox"></span>
-                <span>暂无已暂存的更改</span>
+                <span>{{ t('scm.staged.empty') }}</span>
               </div>
             </div>
           </div>
@@ -243,8 +243,7 @@
           <!-- Unstaged Box -->
           <div class="changes-box">
             <div class="box-header">
-              <span class="box-title">工作区更改 ({{ status.unstaged.length }})</span>
-              <span v-if="status.unstaged.length > 0" class="box-badge amber">需处理</span>
+              <span class="box-title">{{ t('scm.unstaged.title') }} ({{ status.unstaged.length }})</span>
             </div>
             <div class="box-content">
               <div
@@ -260,7 +259,7 @@
               </div>
               <div v-if="status.unstaged.length === 0" class="empty-state">
                 <span class="codicon codicon-pass"></span>
-                <span>工作区树干净 (Working tree clean)</span>
+                <span>{{ t('scm.unstaged.empty') }}</span>
               </div>
             </div>
           </div>
@@ -271,12 +270,13 @@
           <div class="box-header">
             <div class="title-with-icon">
               <span class="codicon codicon-history"></span>
-              <span class="box-title">最近提交历史 (Commit History)</span>
+              <span class="box-title">{{ t('scm.history.title') }}</span>
             </div>
             <button class="action-pill small" @click="fetchLog">
               <span class="codicon codicon-refresh"></span>
-              <span>刷新</span>
+              <span>{{ t('common.refresh') }}</span>
             </button>
+          </div>
           <div class="commits-list">
             <div v-for="c in commits" :key="c.hash" class="commit-item">
               <span class="commit-hash font-mono">{{ c.shortHash }}</span>
@@ -284,10 +284,10 @@
                 v-if="c.gpg && c.gpg.status !== 'none'"
                 class="gpg-mini-badge"
                 :class="'gpg-' + c.gpg.status"
-                :title="c.gpg.status === 'verified' ? `GPG 签名已验证 • ${c.gpg.signer || c.gpg.keyId || ''}` : `GPG 状态: ${c.gpg.status}`"
+                :title="c.gpg.status === 'verified' ? (t('scm.gpg.verified') + ' • ' + (c.gpg.signer || c.gpg.keyId || '')) : (t('scm.gpg.unverified') + ': ' + c.gpg.status)"
               >
                 <span class="codicon" :class="c.gpg.status === 'verified' ? 'codicon-verified' : 'codicon-shield'"></span>
-                <span>{{ c.gpg.status === 'verified' ? 'Verified' : c.gpg.status }}</span>
+                <span>{{ c.gpg.status === 'verified' ? t('scm.gpg.verified') : c.gpg.status }}</span>
               </span>
               <span class="commit-message">{{ c.message }}</span>
               <div class="commit-meta">
@@ -297,7 +297,7 @@
             </div>
             <div v-if="commits.length === 0" class="empty-state">
               <span class="codicon codicon-history"></span>
-              <span>暂无提交历史记录</span>
+              <span>{{ t('scm.history.empty') }}</span>
             </div>
           </div>
         </div>
@@ -323,6 +323,7 @@ import { useTheme } from "../composables/useTheme";
 import { loadMonaco, getLanguageForFile } from "../services/editor/monacoLoader";
 import TechIcon from "../components/common/TechIcon.vue";
 import GitGraphView from "../components/scm/GitGraphView.vue";
+import { t } from "../i18n";
 
 const route = useRoute();
 const router = useRouter();
@@ -502,7 +503,7 @@ async function handleUnstageActiveFile() {
 
 async function handleDiscardActiveFile() {
   if (!activeDiffFile.value) return;
-  if (confirm(`确定放弃对 "${activeDiffFile.value}" 的所有更改吗？此操作无法撤销。`)) {
+  if (confirm(t("scm.diff.discard_confirm", { path: activeDiffFile.value }))) {
     await discard([activeDiffFile.value]);
     closeDiffView();
   }

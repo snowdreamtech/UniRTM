@@ -8,16 +8,16 @@
         <select
           v-model="selectedBranch"
           class="graph-select"
-          title="选择查看的分支"
+          :title="t('scm.branch.switch')"
           @change="handleBranchChange"
         >
-          <option value="all">全部分支 (All Branches)</option>
+          <option value="all">{{ t('scm.graph.all_branches') }}</option>
           <option
             v-for="b in branches"
             :key="b.name"
             :value="b.name"
           >
-            {{ b.name }}{{ b.current ? " (当前)" : "" }}
+            {{ b.name }}{{ b.current ? ` (${t('scm.graph.current_badge')})` : '' }}
           </option>
         </select>
       </div>
@@ -28,7 +28,7 @@
         <span class="file-path-text font-mono" :title="graphFilterPath">{{ getFileName(graphFilterPath) }}</span>
         <button
           class="clear-filter-btn"
-          title="清除文件过滤，查看全库提交图谱"
+          :title="t('scm.graph.clear_filter')"
           @click="clearGraphFilterPath"
         >
           <span class="codicon codicon-close"></span>
@@ -42,12 +42,12 @@
           v-model="searchQuery"
           type="text"
           class="graph-search-input"
-          placeholder="搜索提交信息 / 作者 / Hash..."
+          :placeholder="t('scm.graph.search_placeholder')"
         />
         <button
           v-if="searchQuery"
           class="clear-search-btn"
-          title="清空搜索"
+          :title="t('scm.graph.clear_search')"
           @click="searchQuery = ''"
         >
           <span class="codicon codicon-close"></span>
@@ -58,16 +58,16 @@
       <button
         class="toolbar-btn"
         :class="{ loading: isLoadingGraph }"
-        title="刷新 Git 提交图谱"
+        :title="t('scm.actions.refresh')"
         @click="refreshGraph"
       >
         <span class="codicon" :class="isLoadingGraph ? 'codicon-sync codicon-modifier-spin' : 'codicon-refresh'"></span>
-        <span>刷新</span>
+        <span>{{ t('scm.graph.refresh') }}</span>
       </button>
 
       <!-- 5. Commit Count Badge -->
       <div class="commit-count-pill">
-        <span>{{ filteredCommits.length }} 次提交</span>
+        <span>{{ t('scm.graph.commits_count', { count: filteredCommits.length }) }}</span>
       </div>
     </div>
 
@@ -76,12 +76,12 @@
       <!-- Graph Table Area -->
       <div class="graph-table-wrapper" ref="tableWrapperRef" @scroll="handleScroll">
         <div class="graph-table-header">
-          <div class="col-header col-graph" :style="{ width: graphColWidth + 'px' }">图谱</div>
-          <div class="col-header col-desc">描述 (Description)</div>
-          <div class="col-header col-date">日期</div>
-          <div class="col-header col-author">作者</div>
-          <div class="col-header col-hash">Commit</div>
-          <div class="col-header col-actions">操作</div>
+          <div class="col-header col-graph" :style="{ width: graphColWidth + 'px' }">{{ t('scm.graph.col_graph') }}</div>
+          <div class="col-header col-desc">{{ t('scm.graph.col_desc') }}</div>
+          <div class="col-header col-date">{{ t('scm.graph.col_date') }}</div>
+          <div class="col-header col-author">{{ t('scm.graph.col_author') }}</div>
+          <div class="col-header col-hash">{{ t('scm.graph.col_commit') }}</div>
+          <div class="col-header col-actions">{{ t('scm.graph.col_actions') }}</div>
         </div>
 
         <div class="graph-table-body" :style="{ height: totalBodyHeight + 'px' }">
@@ -199,7 +199,7 @@
               <span class="hash-text font-mono">{{ commit.shortHash }}</span>
               <button
                 class="copy-hash-btn"
-                title="复制 Commit SHA"
+                :title="t('scm.actions.copy_hash')"
                 @click.stop="handleCopyHash(commit.hash)"
               >
                 <span class="codicon codicon-copy"></span>
@@ -210,7 +210,7 @@
             <div class="col-cell col-actions">
               <button
                 class="row-action-btn"
-                title="高阶 Git 操作"
+                :title="t('scm.modal.title_action')"
                 @click.stop="openContextMenu($event, commit)"
               >
                 <span class="codicon codicon-ellipsis"></span>
@@ -221,7 +221,7 @@
           <!-- Empty State -->
           <div v-if="filteredCommits.length === 0 && !isLoadingGraph" class="graph-empty-state">
             <span class="codicon codicon-inbox empty-icon"></span>
-            <span>没有匹配的提交记录</span>
+            <span>{{ t('scm.graph.no_commits') }}</span>
           </div>
         </div>
       </div>
@@ -234,7 +234,7 @@
             <span class="detail-hash font-mono">{{ selectedCommit.hash }}</span>
             <button
               class="copy-detail-hash-btn"
-              title="复制完整 SHA"
+              :title="t('scm.actions.copy_hash')"
               @click="handleCopyHash(selectedCommit.hash)"
             >
               <span class="codicon codicon-copy"></span>
@@ -244,23 +244,23 @@
           <div class="detail-actions">
             <button
               class="detail-action-btn"
-              title="为此提交创建标签"
+              :title="t('scm.actions.tag')"
               @click="openModal('create-tag', selectedCommit)"
             >
               <span class="codicon codicon-tag"></span>
-              <span>打标签</span>
+              <span>{{ t('scm.actions.tag') }}</span>
             </button>
             <button
               class="detail-action-btn"
-              title="从此提交检出并新建分支"
+              :title="t('scm.actions.branch')"
               @click="openModal('create-branch', selectedCommit)"
             >
               <span class="codicon codicon-git-branch"></span>
-              <span>新建分支</span>
+              <span>{{ t('scm.actions.branch') }}</span>
             </button>
             <button
               class="detail-close-btn"
-              title="关闭详情"
+              :title="t('common.close')"
               @click="selectedCommit = null"
             >
               <span class="codicon codicon-close"></span>
@@ -272,21 +272,21 @@
           <!-- Metadata Meta Row -->
           <div class="meta-row">
             <div class="meta-item">
-              <span class="meta-label">作者:</span>
+              <span class="meta-label">{{ t('scm.detail.author') }}:</span>
               <span class="meta-value">{{ selectedCommit.author }} &lt;{{ selectedCommit.email }}&gt;</span>
             </div>
             <div class="meta-item">
-              <span class="meta-label">日期:</span>
+              <span class="meta-label">{{ t('scm.detail.date') }}:</span>
               <span class="meta-value">{{ formatExactDate(selectedCommit.timestamp) }}</span>
             </div>
             <div v-if="selectedCommit.parents && selectedCommit.parents.length > 0" class="meta-item">
-              <span class="meta-label">父提交:</span>
+              <span class="meta-label">{{ t('scm.detail.parents') }}:</span>
               <span class="meta-parents">
                 <span
                   v-for="p in selectedCommit.parents"
                   :key="p"
                   class="parent-link font-mono"
-                  title="跳转至父提交"
+                  :title="t('scm.detail.parents')"
                   @click="jumpToCommit(p)"
                 >
                   {{ p.slice(0, 7) }}
@@ -317,16 +317,16 @@
 
             <div v-if="currentGpgInfo.status !== 'none'" class="gpg-card-grid">
               <div v-if="currentGpgInfo.signer" class="gpg-grid-item col-span-2">
-                <span class="gpg-grid-label">签名者:</span>
+                <span class="gpg-grid-label">{{ t('scm.gpg.signer') }}:</span>
                 <span class="gpg-grid-value font-mono">{{ currentGpgInfo.signer }}</span>
               </div>
               <div v-if="currentGpgInfo.keyId" class="gpg-grid-item">
-                <span class="gpg-grid-label">密钥 ID:</span>
+                <span class="gpg-grid-label">{{ t('scm.gpg.key_id') }}:</span>
                 <div class="gpg-grid-copyable">
                   <span class="gpg-grid-value font-mono">{{ currentGpgInfo.keyId }}</span>
                   <button
                     class="gpg-copy-btn"
-                    title="复制密钥 ID"
+                    :title="t('scm.gpg.key_id')"
                     @click="handleCopyHash(currentGpgInfo.keyId)"
                   >
                     <span class="codicon codicon-copy"></span>
@@ -334,12 +334,12 @@
                 </div>
               </div>
               <div v-if="currentGpgInfo.fingerprint" class="gpg-grid-item col-span-2">
-                <span class="gpg-grid-label">主密钥指纹:</span>
+                <span class="gpg-grid-label">{{ t('scm.gpg.fingerprint') }}:</span>
                 <div class="gpg-grid-copyable">
                   <span class="gpg-grid-value font-mono fingerprint-text">{{ currentGpgInfo.fingerprint }}</span>
                   <button
                     class="gpg-copy-btn"
-                    title="复制主密钥指纹"
+                    :title="t('scm.gpg.fingerprint')"
                     @click="handleCopyHash(currentGpgInfo.fingerprint)"
                   >
                     <span class="codicon codicon-copy"></span>
@@ -349,7 +349,7 @@
             </div>
             <div v-else class="gpg-unsigned-hint">
               <span class="codicon codicon-info"></span>
-              <span>此提交未经数字签名保护 (未检测到有效的 GPG 或 SSH 密钥签名)</span>
+              <span>{{ t('scm.gpg.unsigned_hint') }}</span>
             </div>
           </div>
 
@@ -357,14 +357,14 @@
           <div class="detail-files-section">
             <div class="files-header">
               <span class="files-title">
-                变更文件 ({{ selectedCommitDetail?.files?.length ?? 0 }})
+                {{ t('scm.detail.changed_files') }} ({{ selectedCommitDetail?.files?.length ?? 0 }})
               </span>
-              <span class="files-hint text-muted">点击任意文件立即打开 Monaco 差异比对</span>
+              <span class="files-hint text-muted">{{ t('scm.detail.diff_hint') }}</span>
             </div>
 
             <div v-if="isLoadingDetail" class="files-loading">
               <span class="codicon codicon-loading codicon-modifier-spin"></span>
-              <span>正在获取变更文件...</span>
+              <span>{{ t('scm.graph.loading_files') }}</span>
             </div>
 
             <div v-else class="files-list">
@@ -386,15 +386,15 @@
                 <div class="file-item-actions">
                   <button
                     class="file-diff-btn"
-                    title="在工作区 Monaco 编辑器中比对差异"
+                    :title="t('scm.actions.diff')"
                     @click.stop="handleOpenFileDiff(file.path, selectedCommit.hash, selectedCommit.parents?.[0])"
                   >
                     <span class="codicon codicon-diff"></span>
-                    <span>比对差异</span>
+                    <span>{{ t('scm.actions.diff') }}</span>
                   </button>
                   <button
                     class="file-open-btn"
-                    title="在代码编辑器中打开此文件"
+                    :title="t('scm.diff.open_file')"
                     @click.stop="handleOpenFileInEditor(file.path)"
                   >
                     <span class="codicon codicon-go-to-file"></span>
@@ -417,34 +417,34 @@
       >
         <div class="menu-item" @click="handleContextAction('checkout')">
           <span class="codicon codicon-check"></span>
-          <span>检出此提交 (Checkout)</span>
+          <span>{{ t('scm.context.checkout') }}</span>
         </div>
         <div class="menu-item" @click="handleContextAction('create-branch')">
           <span class="codicon codicon-git-branch"></span>
-          <span>从此提交新建分支 (Create Branch)...</span>
+          <span>{{ t('scm.context.create_branch') }}</span>
         </div>
         <div class="menu-item" @click="handleContextAction('create-tag')">
           <span class="codicon codicon-tag"></span>
-          <span>为此提交打标签 (Create Tag)...</span>
+          <span>{{ t('scm.context.create_tag') }}</span>
         </div>
         <div class="menu-separator"></div>
         <div class="menu-item" @click="handleContextAction('cherry-pick')">
           <span class="codicon codicon-git-pull-request"></span>
-          <span>拣选此提交 (Cherry-Pick)</span>
+          <span>{{ t('scm.context.cherry_pick') }}</span>
         </div>
         <div class="menu-item" @click="handleContextAction('revert')">
           <span class="codicon codicon-history"></span>
-          <span>撤销此提交 (Revert)</span>
+          <span>{{ t('scm.context.revert') }}</span>
         </div>
         <div class="menu-separator"></div>
         <div class="menu-item danger" @click="handleContextAction('reset')">
           <span class="codicon codicon-discard"></span>
-          <span>重置分支到此提交 (Reset Branch)...</span>
+          <span>{{ t('scm.context.reset') }}</span>
         </div>
         <div class="menu-separator"></div>
         <div class="menu-item" @click="handleContextAction('copy-hash')">
           <span class="codicon codicon-copy"></span>
-          <span>复制 Commit SHA</span>
+          <span>{{ t('scm.context.copy_hash') }}</span>
         </div>
       </div>
     </Teleport>
@@ -471,6 +471,7 @@ import {
 } from "../../composables/useGit";
 import { layoutGitGraph } from "../../utils/gitGraphLayout";
 import { useToast } from "../../composables/useToast";
+import { t } from "../../i18n";
 
 const ROW_HEIGHT = 34;
 
@@ -593,7 +594,7 @@ function handleOpenFileInEditor(path: string) {
 
 function handleCopyHash(hash: string) {
   navigator.clipboard.writeText(hash).then(() => {
-    showToast(`已复制 Commit SHA: ${hash.slice(0, 8)}`, "info");
+    showToast(t("scm.graph.copied_hash", { hash: hash.slice(0, 8) }), "info");
   });
 }
 
@@ -608,7 +609,7 @@ function jumpToCommit(parentHash: string) {
       tableWrapperRef.value.scrollTop = Math.max(0, idx * ROW_HEIGHT - 100);
     }
   } else {
-    showToast(`未在当前加载的提交列表中找到父提交: ${parentHash.slice(0, 7)}`, "warning");
+    showToast(t("scm.graph.parent_not_found", { hash: parentHash.slice(0, 7) }), "warning");
   }
 }
 
@@ -674,7 +675,7 @@ async function handleModalConfirm(payload: {
       await checkout(commit.hash);
     }
   } catch (err: any) {
-    showToast(err.message || "Git 操作失败", "error");
+    showToast(err.message || t("scm.graph.action_failed"), "error");
   }
 }
 
@@ -702,10 +703,10 @@ function formatRelativeTime(timestamp: number): string {
   if (!timestamp) return "";
   const now = Math.floor(Date.now() / 1000);
   const diff = now - timestamp;
-  if (diff < 60) return "刚刚";
-  if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`;
-  if (diff < 2592000) return `${Math.floor(diff / 86400)} 天前`;
+  if (diff < 60) return t("scm.graph.now");
+  if (diff < 3600) return t("scm.graph.minutes_ago", { count: Math.floor(diff / 60) });
+  if (diff < 86400) return t("scm.graph.hours_ago", { count: Math.floor(diff / 3600) });
+  if (diff < 2592000) return t("scm.graph.days_ago", { count: Math.floor(diff / 86400) });
   return new Date(timestamp * 1000).toLocaleDateString();
 }
 
@@ -733,15 +734,15 @@ function getGpgIcon(status?: string): string {
 function getGpgBadgeLabel(status?: string): string {
   switch (status) {
     case "verified":
-      return "Verified";
+      return t("scm.gpg.verified");
     case "unverified":
-      return "Unverified";
+      return t("scm.gpg.unverified");
     case "bad":
-      return "Bad";
+      return t("scm.gpg.bad");
     case "expired":
-      return "Expired";
+      return t("scm.gpg.expired");
     case "revoked":
-      return "Revoked";
+      return t("scm.gpg.revoked");
     default:
       return "";
   }
@@ -750,39 +751,26 @@ function getGpgBadgeLabel(status?: string): string {
 function getGpgFullLabel(status?: string): string {
   switch (status) {
     case "verified":
-      return "已验证数字签名 (Verified Signature)";
+      return t("scm.gpg.verified");
     case "unverified":
-      return "未受信任签名 (Unverified Signature)";
+      return t("scm.gpg.unverified");
     case "bad":
-      return "无效或损坏签名 (Bad Signature)";
+      return t("scm.gpg.bad");
     case "expired":
-      return "已过期密钥签名 (Expired Key)";
+      return t("scm.gpg.expired");
     case "revoked":
-      return "已吊销密钥签名 (Revoked Key)";
+      return t("scm.gpg.revoked");
     case "none":
     default:
-      return "无数字签名 (Unsigned)";
+      return t("scm.gpg.none");
   }
 }
 
 function getGpgTooltip(gpg?: GitGpgInfo): string {
-  if (!gpg || gpg.status === "none") return "无 GPG 签名";
-  const signer = gpg.signer ? ` • 签名者: ${gpg.signer}` : "";
-  const key = gpg.keyId ? ` • 密钥: ${gpg.keyId}` : "";
-  switch (gpg.status) {
-    case "verified":
-      return `GPG 签名已验证${signer}${key}`;
-    case "unverified":
-      return `GPG 签名有效但公钥未受信任${key}`;
-    case "bad":
-      return `无效的 GPG 签名${key}`;
-    case "expired":
-      return `GPG 签名密钥已过期${key}`;
-    case "revoked":
-      return `GPG 签名密钥已被吊销${key}`;
-    default:
-      return "GPG 签名";
-  }
+  if (!gpg || gpg.status === "none") return t("scm.gpg.none");
+  const signer = gpg.signer ? ` • ${t("scm.gpg.signer")}: ${gpg.signer}` : "";
+  const key = gpg.keyId ? ` • ${t("scm.gpg.key_id")}: ${gpg.keyId}` : "";
+  return `${getGpgFullLabel(gpg.status)}${signer}${key}`;
 }
 </script>
 

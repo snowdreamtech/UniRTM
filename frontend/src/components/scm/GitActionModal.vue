@@ -6,7 +6,7 @@
           <span class="codicon" :class="modalIcon"></span>
           <h3 :id="titleId" class="modal-title">{{ modalTitle }}</h3>
         </div>
-        <button class="modal-close-btn" title="关闭" @click="handleCancel">
+        <button class="modal-close-btn" :title="t('scm.modal.cancel')" @click="handleCancel">
           <span class="codicon codicon-close"></span>
         </button>
       </div>
@@ -21,102 +21,102 @@
 
         <!-- 1. Create Tag Form -->
         <div v-if="actionType === 'create-tag'" class="form-group">
-          <label class="form-label" for="input-tag-name">标签名称 (Tag Name) <span class="required">*</span></label>
+          <label class="form-label" for="input-tag-name">{{ t('scm.modal.tag_name') }} <span class="required">*</span></label>
           <input
             id="input-tag-name"
             v-model="tagName"
             type="text"
             class="form-input"
-            placeholder="例如: v1.0.0, release-20261018"
+            :placeholder="t('scm.modal.tag_name_placeholder')"
             autofocus
             @keydown.enter="handleConfirm"
           />
 
-          <label class="form-label mt-3" for="input-tag-msg">说明备注 (Optional Message)</label>
+          <label class="form-label mt-3" for="input-tag-msg">{{ t('scm.modal.tag_message') }}</label>
           <textarea
             id="input-tag-msg"
             v-model="tagMessage"
             class="form-textarea"
             rows="2"
-            placeholder="附注标签说明信息 (可选)"
+            :placeholder="t('scm.modal.tag_message_placeholder')"
           ></textarea>
         </div>
 
         <!-- 2. Create Branch Form -->
         <div v-else-if="actionType === 'create-branch'" class="form-group">
-          <label class="form-label" for="input-branch-name">新分支名称 (Branch Name) <span class="required">*</span></label>
+          <label class="form-label" for="input-branch-name">{{ t('scm.modal.branch_name') }} <span class="required">*</span></label>
           <input
             id="input-branch-name"
             v-model="branchName"
             type="text"
             class="form-input"
-            placeholder="例如: feature/awesome-feature, bugfix/scm-fix"
+            :placeholder="t('scm.modal.branch_name_placeholder')"
             autofocus
             @keydown.enter="handleConfirm"
           />
 
           <label class="checkbox-label mt-3">
             <input v-model="checkoutBranch" type="checkbox" />
-            <span>创建后立即检出并切换到该分支 (Checkout Branch)</span>
+            <span>{{ t('scm.modal.checkout_after_create') }}</span>
           </label>
         </div>
 
         <!-- 3. Reset To Commit Form -->
         <div v-else-if="actionType === 'reset'" class="form-group">
-          <p class="form-hint">请选择重置模式。将当前分支的 HEAD 移动到目标提交：</p>
+          <p class="form-hint">{{ t('scm.modal.reset_mode_hint') }}</p>
           <div class="radio-options">
             <label class="radio-card" :class="{ selected: resetMode === 'soft' }">
               <input v-model="resetMode" type="radio" value="soft" />
               <div class="radio-card-content">
-                <span class="radio-title">Soft (软重置 --soft)</span>
-                <span class="radio-desc">保留工作区与暂存区的所有更改，仅撤销该提交之后的 Commit 记录。</span>
+                <span class="radio-title">{{ t('scm.modal.reset_soft') }}</span>
+                <span class="radio-desc">{{ t('scm.modal.reset_soft_desc') }}</span>
               </div>
             </label>
 
             <label class="radio-card" :class="{ selected: resetMode === 'mixed' }">
               <input v-model="resetMode" type="radio" value="mixed" />
               <div class="radio-card-content">
-                <span class="radio-title">Mixed (默认混合模式 --mixed)</span>
-                <span class="radio-desc">保留工作区修改，但重置暂存区（撤销 git add）。</span>
+                <span class="radio-title">{{ t('scm.modal.reset_mixed') }}</span>
+                <span class="radio-desc">{{ t('scm.modal.reset_mixed_desc') }}</span>
               </div>
             </label>
 
             <label class="radio-card danger" :class="{ selected: resetMode === 'hard' }">
               <input v-model="resetMode" type="radio" value="hard" />
               <div class="radio-card-content">
-                <span class="radio-title">Hard (硬重置 --hard - 危险)</span>
-                <span class="radio-desc">丢弃所有自该提交以来的工作区和暂存区更改！</span>
+                <span class="radio-title">{{ t('scm.modal.reset_hard') }}</span>
+                <span class="radio-desc">{{ t('scm.modal.reset_hard_desc') }}</span>
               </div>
             </label>
           </div>
 
           <div v-if="resetMode === 'hard'" class="danger-alert">
             <span class="codicon codicon-warning"></span>
-            <span>注意：硬重置将不可恢复地丢弃自此提交之后的所有未提交修改！</span>
+            <span>{{ t('scm.modal.reset_hard_warning') }}</span>
           </div>
         </div>
 
         <!-- 4. Revert Confirm -->
         <div v-else-if="actionType === 'revert'" class="confirm-message">
-          <p>确定要撤销 (Revert) 此提交的更改吗？</p>
-          <p class="text-muted text-sm mt-1">Git 将创建一个新的反向提交来撤销此次变更引入的代码。</p>
+          <p>{{ t('scm.modal.revert_confirm') }}</p>
+          <p class="text-muted text-sm mt-1">{{ t('scm.modal.revert_desc') }}</p>
         </div>
 
         <!-- 5. Cherry Pick Confirm -->
         <div v-else-if="actionType === 'cherry-pick'" class="confirm-message">
-          <p>确定将此提交拣选 (Cherry-pick) 应用到当前分支吗？</p>
-          <p class="text-muted text-sm mt-1">该提交引入的变动将被应用并作为新提交追加在当前分支顶部。</p>
+          <p>{{ t('scm.modal.cherry_pick_confirm') }}</p>
+          <p class="text-muted text-sm mt-1">{{ t('scm.modal.cherry_pick_desc') }}</p>
         </div>
 
         <!-- 6. Checkout Confirm -->
         <div v-else-if="actionType === 'checkout'" class="confirm-message">
-          <p>确定要检出 (Checkout) 提交 <span class="font-mono">{{ targetCommit?.shortHash }}</span> 吗？</p>
-          <p class="text-muted text-sm mt-1">检出特定 Commit 会将 HEAD 处于分离状态 (Detached HEAD)。</p>
+          <p>{{ t('scm.modal.checkout_confirm', { hash: targetCommit?.shortHash ?? '' }) }}</p>
+          <p class="text-muted text-sm mt-1">{{ t('scm.modal.checkout_desc') }}</p>
         </div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-secondary" @click="handleCancel">取消</button>
+        <button class="btn btn-secondary" @click="handleCancel">{{ t('scm.modal.cancel') }}</button>
         <button
           class="btn"
           :class="isDangerAction ? 'btn-danger' : 'btn-primary'"
@@ -134,6 +134,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import type { GitGraphCommit } from "../../composables/useGit";
+import { t } from "../../i18n";
 
 export type GitModalActionType =
   | "create-tag"
@@ -186,19 +187,19 @@ watch(
 const modalTitle = computed(() => {
   switch (props.actionType) {
     case "create-tag":
-      return "为提交创建标签 (Create Tag)";
+      return t("scm.modal.title_tag");
     case "create-branch":
-      return "从此提交新建分支 (Create Branch)";
+      return t("scm.modal.title_branch");
     case "reset":
-      return "重置分支到此提交 (Reset Branch)";
+      return t("scm.modal.title_reset");
     case "revert":
-      return "撤销此提交 (Revert Commit)";
+      return t("scm.modal.title_revert");
     case "cherry-pick":
-      return "拣选此提交 (Cherry-Pick)";
+      return t("scm.modal.title_cherry_pick");
     case "checkout":
-      return "检出此提交 (Checkout Commit)";
+      return t("scm.modal.title_checkout");
     default:
-      return "Git 操作";
+      return t("scm.modal.title_action");
   }
 });
 
@@ -238,19 +239,19 @@ const isConfirmDisabled = computed(() => {
 const confirmButtonText = computed(() => {
   switch (props.actionType) {
     case "create-tag":
-      return "创建标签";
+      return t("scm.modal.create_tag_btn");
     case "create-branch":
-      return "创建分支";
+      return t("scm.modal.create_branch_btn");
     case "reset":
-      return resetMode.value === "hard" ? "强制重置 (丢弃修改)" : "确认重置";
+      return resetMode.value === "hard" ? t("scm.modal.confirm_hard_reset_btn") : t("scm.modal.confirm_reset_btn");
     case "revert":
-      return "确认撤销";
+      return t("scm.modal.confirm_revert_btn");
     case "cherry-pick":
-      return "执行拣选";
+      return t("scm.modal.confirm_cherry_pick_btn");
     case "checkout":
-      return "检出提交";
+      return t("scm.modal.confirm_checkout_btn");
     default:
-      return "确认";
+      return t("scm.modal.confirm");
   }
 });
 

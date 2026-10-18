@@ -2,7 +2,7 @@
   <div class="scm-sidebar-container" id="scm-sidebar">
     <!-- 1. SCM Header: Branch info & Sync -->
     <div class="scm-header-bar">
-      <div class="branch-selector" :title="`当前分支: ${currentBranch}${status.upstream ? ' -> ' + status.upstream : ''}`" @click="isBranchMenuOpen = !isBranchMenuOpen">
+      <div class="branch-selector" :title="`${t('scm.branch.current')}: ${currentBranch}${status.upstream ? ' -> ' + status.upstream : ''}`" @click="isBranchMenuOpen = !isBranchMenuOpen">
         <span class="codicon codicon-git-branch"></span>
         <span class="branch-name">{{ currentBranch }}</span>
         <span v-if="status.ahead > 0 || status.behind > 0" class="branch-sync-pill">
@@ -15,14 +15,14 @@
       <div class="scm-header-actions">
         <button
           class="scm-action-btn"
-          title="查看 Git Graph 提交图谱 (对齐 vscode-git-graph)"
+          :title="t('scm.tabs.graph')"
           @click.stop="openGitGraph"
         >
           <span class="codicon codicon-git-commit"></span>
         </button>
         <button
           class="scm-action-btn"
-          title="刷新状态"
+          :title="t('scm.actions.refresh')"
           :class="{ 'is-loading': isLoading }"
           @click.stop="handleRefresh"
         >
@@ -34,7 +34,7 @@
     <!-- Branch Dropdown Popover -->
     <div v-if="isBranchMenuOpen" class="branch-dropdown-menu">
       <div class="branch-dropdown-header">
-        <span>切换分支</span>
+        <span>{{ t('scm.branch.switch') }}</span>
         <button class="branch-close-btn" @click="isBranchMenuOpen = false">×</button>
       </div>
       <div class="branch-list">
@@ -47,7 +47,7 @@
         >
           <span class="codicon" :class="b.current ? 'codicon-check' : 'codicon-git-branch'"></span>
           <span class="branch-item-name">{{ b.name }}</span>
-          <span v-if="b.remote" class="branch-remote-tag">remote</span>
+          <span v-if="b.remote" class="branch-remote-tag">{{ t('scm.branch.remote') }}</span>
         </div>
       </div>
     </div>
@@ -58,7 +58,7 @@
         <textarea
           v-model="commitMessage"
           class="commit-textarea"
-          placeholder="提交信息 (Ctrl+Enter 提交)"
+          :placeholder="t('scm.sidebar.commit_placeholder')"
           rows="3"
           @keydown.ctrl.enter.prevent="handleCommit"
           @keydown.meta.enter.prevent="handleCommit"
@@ -66,10 +66,10 @@
       </div>
 
       <div class="commit-options-bar">
-        <label class="gpg-sign-toggle" title="使用 GPG 签名签署提交 (-S)">
+        <label class="gpg-sign-toggle" :title="t('scm.sidebar.gpg_sign')">
           <input type="checkbox" v-model="signCommit" class="gpg-sign-checkbox" />
           <span class="codicon codicon-verified gpg-sign-icon"></span>
-          <span class="gpg-sign-text">GPG 签名提交</span>
+          <span class="gpg-sign-text">{{ t('scm.sidebar.gpg_sign') }}</span>
         </label>
       </div>
 
@@ -80,7 +80,7 @@
       >
         <span v-if="isCommitting" class="codicon codicon-loading codicon-modifier-spin"></span>
         <span v-else class="codicon codicon-check"></span>
-        <span>提交</span>
+        <span>{{ t('scm.sidebar.commit') }}</span>
       </button>
     </div>
 
@@ -89,14 +89,14 @@
       <div class="group-header" @click="isStagedExpanded = !isStagedExpanded">
         <div class="group-left">
           <span class="codicon twistie" :class="isStagedExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
-          <span class="group-title">暂存的更改</span>
+          <span class="group-title">{{ t('scm.sidebar.staged') }}</span>
           <span class="group-count">{{ status.staged.length }}</span>
         </div>
         <div class="group-actions" @click.stop>
           <button
             v-if="status.staged.length > 0"
             class="group-btn"
-            title="全部取消暂存"
+            :title="t('scm.actions.unstage_all')"
             @click="handleUnstageAll"
           >
             <span class="codicon codicon-remove"></span>
@@ -124,14 +124,14 @@
           <div class="change-item-actions" @click.stop>
             <button
               class="item-action-btn"
-              title="在编辑器中打开"
+              :title="t('scm.diff.open_file')"
               @click="handleOpenFileInEditor(item.path)"
             >
               <span class="codicon codicon-go-to-file"></span>
             </button>
             <button
               class="item-action-btn"
-              title="取消暂存更改"
+              :title="t('scm.diff.unstage_file')"
               @click="handleUnstageFile(item.path)"
             >
               <span class="codicon codicon-remove"></span>
@@ -140,7 +140,7 @@
         </div>
 
         <div v-if="status.staged.length === 0" class="empty-hint">
-          <span>无暂存更改</span>
+          <span>{{ t('scm.sidebar.no_staged') }}</span>
         </div>
       </div>
     </div>
@@ -150,14 +150,14 @@
       <div class="group-header" @click="isUnstagedExpanded = !isUnstagedExpanded">
         <div class="group-left">
           <span class="codicon twistie" :class="isUnstagedExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
-          <span class="group-title">更改</span>
+          <span class="group-title">{{ t('scm.sidebar.unstaged') }}</span>
           <span class="group-count">{{ status.unstaged.length }}</span>
         </div>
         <div class="group-actions" @click.stop>
           <button
             v-if="status.unstaged.length > 0"
             class="group-btn"
-            title="全部放弃更改"
+            :title="t('scm.actions.discard_all')"
             @click="handleDiscardAll"
           >
             <span class="codicon codicon-discard"></span>
@@ -165,7 +165,7 @@
           <button
             v-if="status.unstaged.length > 0"
             class="group-btn"
-            title="全部暂存更改"
+            :title="t('scm.actions.stage_all')"
             @click="handleStageAll"
           >
             <span class="codicon codicon-add"></span>
@@ -193,21 +193,21 @@
           <div class="change-item-actions" @click.stop>
             <button
               class="item-action-btn"
-              title="在编辑器中打开"
+              :title="t('scm.diff.open_file')"
               @click="handleOpenFileInEditor(item.path)"
             >
               <span class="codicon codicon-go-to-file"></span>
             </button>
             <button
               class="item-action-btn"
-              title="放弃更改"
+              :title="t('scm.diff.discard_file')"
               @click="handleDiscardFile(item.path)"
             >
               <span class="codicon codicon-discard"></span>
             </button>
             <button
               class="item-action-btn"
-              title="暂存更改"
+              :title="t('scm.diff.stage_file')"
               @click="handleStageFile(item.path)"
             >
               <span class="codicon codicon-add"></span>
@@ -216,7 +216,7 @@
         </div>
 
         <div v-if="status.unstaged.length === 0" class="empty-hint">
-          <span>工作区干净，无未暂存更改</span>
+          <span>{{ t('scm.sidebar.clean_working_tree') }}</span>
         </div>
       </div>
     </div>
@@ -228,6 +228,7 @@ import { ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useGit } from "../../composables/useGit";
 import { useEditorTabs } from "../../composables/useEditorTabs";
+import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 
 const router = useRouter();
@@ -314,13 +315,13 @@ async function handleUnstageAll() {
 }
 
 async function handleDiscardFile(path: string) {
-  if (confirm(`确定放弃对 "${path}" 的所有未暂存更改吗？此操作无法撤销。`)) {
+  if (confirm(t("scm.diff.discard_confirm", { path }))) {
     await discard([path]);
   }
 }
 
 async function handleDiscardAll() {
-  if (confirm("确定放弃所有未暂存的更改吗？此操作无法撤销。")) {
+  if (confirm(t("scm.diff.discard_confirm", { path: "*" }))) {
     const allPaths = status.value.unstaged.map((i) => i.path);
     await discard(allPaths);
   }
