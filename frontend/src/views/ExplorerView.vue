@@ -27,7 +27,7 @@
 
       <div class="tab-actions-right">
         <button
-          v-if="activeTab?.isDirty"
+          v-if="activeTab?.isDirty && !activeTab?.isBinary"
           class="action-btn primary"
           title="保存当前文件 (Ctrl+S)"
           @click="handleSave"
@@ -111,7 +111,7 @@
 
       <!-- Editor Content Area -->
       <div class="editor-content-area">
-        <!-- Image Preview -->
+        <!-- 1. Image Preview -->
         <div v-if="isImageFile(activeTab.name)" class="image-preview-container">
           <div class="image-wrapper">
             <img :src="imagePreviewSrc" :alt="activeTab.name" class="preview-img" />
@@ -121,7 +121,36 @@
           </div>
         </div>
 
-        <!-- Monaco Code Editor -->
+        <!-- 2. Binary or Large File Notice (VS Code Aligned) -->
+        <div v-else-if="activeTab.isBinary" class="binary-file-container">
+          <div class="binary-card">
+            <div class="binary-icon-box">
+              <span class="codicon codicon-file-binary binary-hero-icon"></span>
+            </div>
+            <h3 class="binary-title">{{ activeTab.name }}</h3>
+            <div class="binary-meta">
+              <span v-if="activeTab.size" class="binary-badge">{{ formatFileSize(activeTab.size) }}</span>
+              <span class="binary-badge tag">{{ activeTab.binaryReason === 'too_large' ? '大文件' : '二进制文件' }}</span>
+            </div>
+            <p class="binary-message">
+              {{ activeTab.binaryReason === 'too_large' 
+                 ? '该文件体积过大 (超过 10 MB)，无法在文本编辑器中显示。' 
+                 : '该文件未在文本编辑器中显示，因为它是二进制文件或使用了不受支持的文本编码。' }}
+            </p>
+            <div class="binary-actions">
+              <button type="button" class="action-btn-primary" @click="handleOpenParentTerminal">
+                <span class="codicon codicon-terminal"></span>
+                <span>在终端中查看 / 运行</span>
+              </button>
+              <button type="button" class="action-btn-secondary" @click="handleCopyPath">
+                <span class="codicon codicon-copy"></span>
+                <span>复制相对路径</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Monaco Code Editor -->
         <MonacoEditor
           v-else
           :key="activeTab.id"
@@ -135,12 +164,18 @@
       <!-- Editor Footer Status Bar -->
       <div class="editor-footer">
         <div class="footer-left">
-          <span class="footer-item">UTF-8</span>
-          <span class="footer-item">LF</span>
-          <span class="footer-item language-tag">{{ activeTabLanguage }}</span>
+          <template v-if="activeTab.isBinary">
+            <span class="footer-item">BINARY</span>
+            <span v-if="activeTab.size" class="footer-item">{{ formatFileSize(activeTab.size) }}</span>
+          </template>
+          <template v-else>
+            <span class="footer-item">UTF-8</span>
+            <span class="footer-item">LF</span>
+            <span class="footer-item language-tag">{{ activeTabLanguage }}</span>
+          </template>
         </div>
         <div class="footer-right">
-          <span class="footer-item">行 {{ cursorLine }}, 列 {{ cursorColumn }}</span>
+          <span v-if="!activeTab.isBinary" class="footer-item">行 {{ cursorLine }}, 列 {{ cursorColumn }}</span>
         </div>
       </div>
     </div>
@@ -344,6 +379,13 @@ const activeTabLanguage = computed(() => {
 
 function isImageFile(filename: string): boolean {
   return /\.(png|jpe?g|gif|svg|webp|ico|bmp)$/i.test(filename);
+}
+
+function formatFileSize(bytes?: number): string {
+  if (!bytes || bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
 const imagePreviewSrc = computed(() => {
@@ -677,6 +719,135 @@ function handleCreateFolderInside() {
   gap: 16px;
   color: var(--text-muted);
   font-size: 12px;
+}
+
+/* Binary / Large File Placeholder (VS Code Aligned) */
+.binary-file-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 32px 24px;
+  background-color: var(--bg-color);
+  user-select: none;
+}
+
+.binary-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 460px;
+  padding: 36px 32px;
+  background-color: var(--card-bg, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.binary-icon-box {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: rgba(148, 163, 184, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.binary-hero-icon {
+  font-size: 32px;
+  color: var(--text-muted);
+}
+
+.binary-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color, #0f172a);
+  margin: 0 0 10px 0;
+  word-break: break-all;
+}
+
+.binary-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.binary-badge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--text-muted);
+}
+
+.binary-badge.tag {
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+}
+
+[data-theme="dark"] .binary-badge.tag {
+  background: rgba(0, 229, 255, 0.15);
+  color: #00e5ff;
+}
+
+.binary-message {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin: 0 0 24px 0;
+}
+
+.binary-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.action-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 6px;
+  background-color: var(--accent-cyan, #0284c7);
+  color: #ffffff;
+  border: none;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.action-btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.action-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-color, #0f172a);
+  border: 1px solid var(--card-border, rgba(0, 0, 0, 0.15));
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.action-btn-secondary:hover {
+  background-color: rgba(125, 125, 125, 0.1);
 }
 
 .editor-footer {

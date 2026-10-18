@@ -3017,7 +3017,7 @@ print(json.dumps({
                 if (stat.size > 10 * 1024 * 1024) {
                   res.statusCode = 400;
                   res.setHeader("Content-Type", "application/json");
-                  res.end(JSON.stringify({ error: "File too large (exceeds 10MB)" }));
+                  res.end(JSON.stringify({ error: "File too large (exceeds 10MB)", size: stat.size, is_too_large: true }));
                   return;
                 }
                 const content = fs.readFileSync(safePath, "utf-8");

@@ -120,4 +120,34 @@ describe("useEditorTabs", () => {
     expect(tabs.value.length).toBe(0);
     expect(activeTabId.value).toBe("");
   });
+
+  it("handles oversized and binary files gracefully without throwing errors", async () => {
+    // 1. Oversized file via pre-known size (e.g. 63MB unirtm executable)
+    const { tabs, openTab } = useEditorTabs();
+    await openTab({ path: "unirtm", name: "unirtm", size: 66258944 });
+
+    expect(tabs.value.length).toBe(1);
+    expect(tabs.value[0].isBinary).toBe(true);
+    expect(tabs.value[0].binaryReason).toBe("too_large");
+    expect(tabs.value[0].size).toBe(66258944);
+
+    // 2. Known binary extension (e.g. package.zip)
+    await openTab({ path: "dist/bundle.zip", name: "bundle.zip" });
+    expect(tabs.value.length).toBe(2);
+    expect(tabs.value[1].isBinary).toBe(true);
+    expect(tabs.value[1].binaryReason).toBe("binary");
+
+    // 3. Oversized file via HTTP 400 response
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({ error: "File too large (exceeds 10MB)", size: 15000000 }),
+    } as any);
+
+    await openTab({ path: "huge.dat", name: "huge.dat" });
+    expect(tabs.value.length).toBe(3);
+    expect(tabs.value[2].isBinary).toBe(true);
+    expect(tabs.value[2].binaryReason).toBe("too_large");
+    expect(tabs.value[2].size).toBe(15000000);
+  });
 });

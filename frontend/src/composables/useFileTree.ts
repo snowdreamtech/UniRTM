@@ -143,8 +143,7 @@ export function useFileTree() {
       toggleExpand(node.path);
     } else {
       const { openTab } = useEditorTabs();
-      await openTab({ path: node.path, name: node.name });
-      await loadFileContent(node.path);
+      await openTab({ path: node.path, name: node.name, size: node.size });
     }
   }
 
@@ -153,6 +152,10 @@ export function useFileTree() {
     try {
       const res = await fetch(`/api/fs/read?path=${encodeURIComponent(path)}`);
       if (!res.ok) {
+        if (res.status === 400) {
+          // Binary or oversized file: silently skip without error toast
+          return;
+        }
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       }
       const data = await res.json();
@@ -164,7 +167,6 @@ export function useFileTree() {
       }
     } catch (err: any) {
       activeFileContent.value = `// Error loading file: ${err.message}`;
-      showToast(`读取文件失败: ${err.message}`, "error");
     } finally {
       isFileLoading.value = false;
     }

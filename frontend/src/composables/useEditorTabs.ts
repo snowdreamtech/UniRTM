@@ -14,7 +14,20 @@ export interface EditorTab {
   originalContent: string;
   isDirty: boolean;
   isLoading: boolean;
+  isBinary?: boolean;
+  size?: number;
+  binaryReason?: "too_large" | "binary" | "unsupported";
 }
+
+export const KNOWN_BINARY_EXTENSIONS = new Set([
+  "exe", "dll", "so", "dylib", "bin", "elf", "wasm",
+  "zip", "tar", "gz", "tgz", "bz2", "xz", "7z", "rar", "iso", "dmg", "pkg", "deb", "rpm",
+  "o", "a", "lib", "class", "pyc", "pyo",
+  "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+  "mp3", "mp4", "wav", "ogg", "avi", "mov", "flv", "mkv",
+  "db", "sqlite", "sqlite3", "db3", "rdb",
+  "woff", "woff2", "ttf", "otf", "eot",
+]);
 
 const tabs = ref<EditorTab[]>([]);
 const activeTabId = ref<string>("");
@@ -30,11 +43,11 @@ export function useEditorTabs() {
     return tabs.value.some((t) => t.isDirty);
   });
 
-  async function openTab(file: { path: string; name: string }): Promise<void> {
+  async function openTab(file: { path: string; name: string; size?: number }): Promise<void> {
     const existing = tabs.value.find((t) => t.id === file.path);
     if (existing) {
       activeTabId.value = existing.id;
-      if (!existing.content && !existing.isDirty) {
+      if (!existing.content && !existing.isDirty && !existing.isBinary) {
         try {
           const res = await fetch(`/api/fs/read?path=${encodeURIComponent(file.path)}`);
           if (res.ok) {
@@ -50,17 +63,56 @@ export function useEditorTabs() {
 
     const language = getLanguageForFile(file.name);
     let fileContent = "";
+    let isBinary = false;
+    let binaryReason: "too_large" | "binary" | "unsupported" | undefined;
+    let fileSize = file.size;
 
-    try {
-      const res = await fetch(`/api/fs/read?path=${encodeURIComponent(file.path)}`);
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    // Check pre-known size or binary extension
+    if (fileSize && fileSize > 10 * 1024 * 1024) {
+      isBinary = true;
+      binaryReason = "too_large";
+    } else {
+      const ext = file.name.slice(file.name.lastIndexOf(".") + 1).toLowerCase();
+      if (file.name.includes(".") && KNOWN_BINARY_EXTENSIONS.has(ext)) {
+        isBinary = true;
+        binaryReason = "binary";
       }
-      const data = await res.json();
-      fileContent = data.content !== undefined ? data.content : data.data?.content ?? "";
-    } catch (err: any) {
-      fileContent = `// 读取文件失败: ${err.message}`;
-      showToast(`读取文件失败: ${err.message}`, "error");
+    }
+
+    // Only read file content if not already known to be binary or too large
+    if (!isBinary) {
+      try {
+        const res = await fetch(`/api/fs/read?path=${encodeURIComponent(file.path)}`);
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          const errMsg = String(errorData.error || res.statusText || "");
+          if (errMsg.toLowerCase().includes("too large") || res.status === 400) {
+            isBinary = true;
+            binaryReason = errMsg.toLowerCase().includes("too large") ? "too_large" : "binary";
+            if (errorData.size) {
+              fileSize = errorData.size;
+            }
+          } else {
+            throw new Error(errMsg || `HTTP ${res.status}`);
+          }
+        } else {
+          const data = await res.json();
+          fileContent = data.content !== undefined ? data.content : data.data?.content ?? "";
+          if (data.size) {
+            fileSize = data.size;
+          }
+          // Detect null bytes in initial chunk (standard binary sniffing)
+          if (fileContent.slice(0, 1024).includes("\0")) {
+            isBinary = true;
+            binaryReason = "binary";
+          }
+        }
+      } catch (err: any) {
+        if (!isBinary) {
+          fileContent = `// 读取文件失败: ${err.message}`;
+          showToast(`读取文件失败: ${err.message}`, "error");
+        }
+      }
     }
 
     const newTab: EditorTab = {
@@ -72,6 +124,9 @@ export function useEditorTabs() {
       originalContent: fileContent,
       isDirty: false,
       isLoading: false,
+      isBinary,
+      size: fileSize,
+      binaryReason,
     };
 
     tabs.value.push(newTab);

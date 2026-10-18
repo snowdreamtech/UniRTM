@@ -3347,7 +3347,11 @@ func handleFSRead(w http.ResponseWriter, r *http.Request) {
 	}
 	if st.Size() > 10*1024*1024 {
 		w.WriteHeader(http.StatusBadRequest)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "file too large (exceeds 10MB)"})
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error":        "file too large (exceeds 10MB)",
+			"size":         st.Size(),
+			"is_too_large": true,
+		})
 		return
 	}
 
