@@ -194,9 +194,20 @@ watch(
   { immediate: true }
 );
 
+function getInitialDrawerTab(): DrawerTab {
+  if (typeof localStorage === "undefined") return "terminal";
+  try {
+    const saved = localStorage.getItem("unirtm_drawer_tab");
+    if (saved === "terminal" || saved === "output" || saved === "tasks" || saved === "doctor") {
+      return saved as DrawerTab;
+    }
+  } catch {}
+  return "terminal";
+}
+
 const activeRunningTask = ref<string | undefined>(undefined);
 const currentLatencyMs = ref<number | null>(18);
-const drawerActiveTab = ref<DrawerTab>("output");
+const drawerActiveTab = ref<DrawerTab>(getInitialDrawerTab());
 
 const runtimeLogs = ref<LogItem[]>([
   {
@@ -307,7 +318,7 @@ function openCommandPalette() {
   showToast("Command Palette: Press Ctrl+K (All quick commands available)", "info");
 }
 
-function handleOpenDrawerTab(tab: DrawerTab = "output") {
+function handleOpenDrawerTab(tab: DrawerTab = "terminal") {
   isDrawerOpen.value = true;
   drawerActiveTab.value = tab;
 }
@@ -450,10 +461,17 @@ function handleGlobalKeydown(e: KeyboardEvent) {
     e.preventDefault();
     isSidebarOpen.value = !isSidebarOpen.value;
   }
-  // Ctrl+` / Cmd+`: Toggle Console Drawer (VS Code shortcut)
+  // Ctrl+` / Cmd+`: Toggle Terminal Drawer (VS Code shortcut)
   else if ((e.ctrlKey || e.metaKey) && e.key === "`") {
     e.preventDefault();
-    isDrawerOpen.value = !isDrawerOpen.value;
+    if (!isDrawerOpen.value) {
+      drawerActiveTab.value = "terminal";
+      isDrawerOpen.value = true;
+    } else if (drawerActiveTab.value !== "terminal") {
+      drawerActiveTab.value = "terminal";
+    } else {
+      isDrawerOpen.value = false;
+    }
   }
   // Ctrl+K: Command search
   else if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {

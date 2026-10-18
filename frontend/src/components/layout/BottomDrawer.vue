@@ -623,12 +623,12 @@ function handleDrawerHeightPointerDown(e: PointerEvent) {
 }
 
 function getInitialTab(): DrawerTab {
-  if (typeof localStorage === "undefined") return "output";
+  if (typeof localStorage === "undefined") return "terminal";
   const saved = localStorage.getItem(DRAWER_TAB_KEY);
   if (saved === "terminal" || saved === "output" || saved === "tasks" || saved === "doctor") {
     return saved as DrawerTab;
   }
-  return "output";
+  return "terminal";
 }
 
 function getInitialMaximized(): boolean {
