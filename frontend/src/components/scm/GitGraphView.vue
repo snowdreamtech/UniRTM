@@ -151,8 +151,9 @@
                   v-for="(refItem, rIdx) in commit.refs"
                   :key="rIdx"
                   class="ref-badge"
-                  :class="'badge-' + refItem.type"
+                  :class="['badge-' + refItem.type, { current: refItem.current }]"
                   :title="refItem.name"
+                  @contextmenu.stop.prevent="openRefContextMenu($event, refItem, commit)"
                 >
                   <span
                     class="codicon"
@@ -531,6 +532,7 @@
 
     <!-- Right-click Context Menu (Teleported) -->
     <Teleport to="body">
+      <!-- Commit Context Menu -->
       <div
         v-if="contextMenuVisible"
         class="graph-context-menu"
@@ -569,6 +571,113 @@
           <span>{{ t('scm.context.copy_hash') }}</span>
         </div>
       </div>
+
+      <!-- Ref Badge Context Menu (Aligned with 图 1 & 图 2) -->
+      <div
+        v-if="refContextMenuVisible"
+        class="graph-context-menu"
+        :style="{ left: refContextMenuPos.x + 'px', top: refContextMenuPos.y + 'px' }"
+        @click.stop
+      >
+        <!-- Branch Context Menu -->
+        <template v-if="selectedRef?.type === 'branch' || selectedRef?.type === 'head'">
+          <!-- 图 1: Current Branch Context Menu -->
+          <template v-if="isRefCurrent">
+            <div class="menu-item" @click="handleRefAction('rename-branch')">
+              {{ t('scm.branch.rename') }}
+            </div>
+            <div class="menu-item" @click="handleRefAction('push-branch')">
+              {{ t('scm.branch.push') }}
+            </div>
+            <div class="menu-separator"></div>
+            <div class="menu-item" @click="handleRefAction('archive')">
+              {{ t('scm.branch.archive') }}
+            </div>
+            <div class="menu-item" @click="handleRefAction('toggle-dropdown-filter')">
+              {{ isBranchFiltered ? t('scm.branch.unselect_filter') : t('scm.branch.select_filter') }}
+            </div>
+            <div class="menu-separator"></div>
+            <div class="menu-item" @click="handleRefAction('copy-name')">
+              {{ t('scm.branch.copy_name') }}
+            </div>
+          </template>
+
+          <!-- 图 2: Inactive Branch Context Menu -->
+          <template v-else>
+            <div class="menu-item" @click="handleRefAction('checkout-branch')">
+              {{ t('scm.branch.checkout') }}
+            </div>
+            <div class="menu-item" @click="handleRefAction('rename-branch')">
+              {{ t('scm.branch.rename') }}
+            </div>
+            <div class="menu-item danger" @click="handleRefAction('delete-branch')">
+              {{ t('scm.branch.delete') }}
+            </div>
+            <div class="menu-item" @click="handleRefAction('merge-branch')">
+              {{ t('scm.branch.merge') }}
+            </div>
+            <div class="menu-item" @click="handleRefAction('rebase-branch')">
+              {{ t('scm.branch.rebase') }}
+            </div>
+            <div class="menu-item" @click="handleRefAction('push-branch')">
+              {{ t('scm.branch.push') }}
+            </div>
+            <div class="menu-separator"></div>
+            <div class="menu-item" @click="handleRefAction('archive')">
+              {{ t('scm.branch.archive') }}
+            </div>
+            <div class="menu-item" @click="handleRefAction('toggle-dropdown-filter')">
+              {{ isBranchFiltered ? t('scm.branch.unselect_filter') : t('scm.branch.select_filter') }}
+            </div>
+            <div class="menu-separator"></div>
+            <div class="menu-item" @click="handleRefAction('copy-name')">
+              {{ t('scm.branch.copy_name') }}
+            </div>
+          </template>
+        </template>
+
+        <!-- Tag Context Menu -->
+        <template v-else-if="selectedRef?.type === 'tag'">
+          <div class="menu-item" @click="handleRefAction('create-branch-from-tag')">
+            {{ t('scm.tag.create_branch') }}
+          </div>
+          <div class="menu-item danger" @click="handleRefAction('delete-tag')">
+            {{ t('scm.tag.delete') }}
+          </div>
+          <div class="menu-item" @click="handleRefAction('push-tag')">
+            {{ t('scm.tag.push') }}
+          </div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" @click="handleRefAction('archive')">
+            {{ t('scm.branch.archive') }}
+          </div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" @click="handleRefAction('copy-name')">
+            {{ t('scm.tag.copy_name') }}
+          </div>
+        </template>
+
+        <!-- Remote Branch Context Menu -->
+        <template v-else-if="selectedRef?.type === 'remote'">
+          <div class="menu-item" @click="handleRefAction('checkout-remote')">
+            {{ t('scm.remote.checkout') }}
+          </div>
+          <div class="menu-item" @click="handleRefAction('pull-remote')">
+            {{ t('scm.remote.pull') }}
+          </div>
+          <div class="menu-item" @click="handleRefAction('merge-remote')">
+            {{ t('scm.remote.merge') }}
+          </div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" @click="handleRefAction('archive')">
+            {{ t('scm.branch.archive') }}
+          </div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" @click="handleRefAction('copy-name')">
+            {{ t('scm.branch.copy_name') }}
+          </div>
+        </template>
+      </div>
     </Teleport>
 
     <!-- High-order Git Action Modal Dialog -->
@@ -576,6 +685,8 @@
       :visible="modalVisible"
       :action-type="activeModalType"
       :target-commit="modalTargetCommit"
+      :target-ref-name="modalTargetRefName"
+      :current-branch-name="currentBranchName"
       @cancel="modalVisible = false"
       @confirm="handleModalConfirm"
     />
@@ -591,6 +702,7 @@ import {
   type GitGraphCommit,
   type GitGpgInfo,
   type GitCommitFileItem,
+  type GitGraphRef,
 } from "../../composables/useGit";
 import { layoutGitGraph } from "../../utils/gitGraphLayout";
 import { useToast } from "../../composables/useToast";
@@ -614,6 +726,14 @@ const {
   checkout,
   createTag,
   createBranchFromCommit,
+  renameBranch,
+  deleteBranch,
+  mergeBranch,
+  rebaseBranch,
+  pushBranch,
+  deleteTag,
+  pushTag,
+  downloadArchive,
   cherryPick,
   revertCommit,
   resetToCommit,
@@ -636,10 +756,32 @@ const contextMenuVisible = ref(false);
 const contextMenuPos = ref({ x: 0, y: 0 });
 const contextCommit = ref<GitGraphCommit | null>(null);
 
+// Ref Context Menu State (Branch / Tag context menu)
+const refContextMenuVisible = ref(false);
+const refContextMenuPos = ref({ x: 0, y: 0 });
+const selectedRef = ref<GitGraphRef | null>(null);
+const selectedRefCommit = ref<GitGraphCommit | null>(null);
+
 // Modal Dialog State
 const modalVisible = ref(false);
 const activeModalType = ref<GitModalActionType | null>(null);
 const modalTargetCommit = ref<GitGraphCommit | null>(null);
+const modalTargetRefName = ref<string | undefined>(undefined);
+
+const currentBranchName = computed(() => {
+  return branches.value.find((b) => b.current)?.name || "";
+});
+
+const isRefCurrent = computed(() => {
+  if (!selectedRef.value) return false;
+  if (selectedRef.value.current) return true;
+  if (currentBranchName.value && selectedRef.value.name === currentBranchName.value) return true;
+  return false;
+});
+
+const isBranchFiltered = computed(() => {
+  return selectedBranch.value === selectedRef.value?.name;
+});
 
 const emit = defineEmits<{
   (
@@ -810,11 +952,11 @@ function toggleFolder(folderPath: string) {
 onMounted(async () => {
   await fetchBranches();
   await refreshGraph();
-  window.addEventListener("click", closeContextMenu);
+  window.addEventListener("click", closeAllContextMenus);
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener("click", closeContextMenu);
+  window.removeEventListener("click", closeAllContextMenus);
 });
 
 async function refreshGraph() {
@@ -873,11 +1015,12 @@ function jumpToCommit(parentHash: string) {
 }
 
 function handleScroll() {
-  closeContextMenu();
+  closeAllContextMenus();
 }
 
 // Context Menu Handling
 function openContextMenu(event: MouseEvent, commit: GitGraphCommit) {
+  closeAllContextMenus();
   contextCommit.value = commit;
   contextMenuPos.value = {
     x: Math.min(event.clientX, window.innerWidth - 240),
@@ -888,6 +1031,26 @@ function openContextMenu(event: MouseEvent, commit: GitGraphCommit) {
 
 function closeContextMenu() {
   contextMenuVisible.value = false;
+}
+
+function closeRefContextMenu() {
+  refContextMenuVisible.value = false;
+}
+
+function closeAllContextMenus() {
+  closeContextMenu();
+  closeRefContextMenu();
+}
+
+function openRefContextMenu(event: MouseEvent, refItem: GitGraphRef, commit: GitGraphCommit) {
+  closeAllContextMenus();
+  selectedRef.value = refItem;
+  selectedRefCommit.value = commit;
+  refContextMenuPos.value = {
+    x: Math.min(event.clientX, window.innerWidth - 260),
+    y: Math.min(event.clientY, window.innerHeight - 380),
+  };
+  refContextMenuVisible.value = true;
 }
 
 async function handleContextAction(
@@ -905,15 +1068,87 @@ async function handleContextAction(
   openModal(action, commit);
 }
 
+async function handleRefAction(action: string) {
+  const refItem = selectedRef.value;
+  const commit = selectedRefCommit.value;
+  closeRefContextMenu();
+  if (!refItem) return;
+
+  if (action === "copy-name") {
+    try {
+      await navigator.clipboard.writeText(refItem.name);
+      showToast(t("scm.branch.copied", { name: refItem.name }), "info");
+    } catch {
+      showToast(refItem.name, "info");
+    }
+    return;
+  }
+
+  if (action === "archive") {
+    downloadArchive(refItem.name);
+    return;
+  }
+
+  if (action === "toggle-dropdown-filter") {
+    if (isBranchFiltered.value) {
+      selectedBranch.value = "all";
+    } else {
+      selectedBranch.value = refItem.name;
+    }
+    handleBranchChange();
+    return;
+  }
+
+  if (action === "checkout-branch") {
+    try {
+      await checkout(refItem.name);
+      await fetchBranches();
+      await refreshGraph();
+    } catch (err: any) {
+      showToast(err.message || t("scm.graph.action_failed"), "error");
+    }
+    return;
+  }
+
+  if (action === "create-branch-from-tag") {
+    if (commit) {
+      openModal("create-branch", commit);
+    }
+    return;
+  }
+
+  if (action === "checkout-remote") {
+    try {
+      await checkout(refItem.name);
+      await fetchBranches();
+      await refreshGraph();
+    } catch (err: any) {
+      showToast(err.message || t("scm.graph.action_failed"), "error");
+    }
+    return;
+  }
+
+  openRefModal(action as GitModalActionType, refItem.name, commit);
+}
+
+function openRefModal(action: GitModalActionType, refName?: string, commit?: GitGraphCommit | null) {
+  activeModalType.value = action;
+  modalTargetRefName.value = refName;
+  modalTargetCommit.value = commit || null;
+  modalVisible.value = true;
+}
+
 function openModal(action: GitModalActionType, commit: GitGraphCommit) {
   activeModalType.value = action;
   modalTargetCommit.value = commit;
+  modalTargetRefName.value = undefined;
   modalVisible.value = true;
 }
 
 async function handleModalConfirm(payload: {
   action: GitModalActionType;
-  commit: GitGraphCommit;
+  commit?: GitGraphCommit | null;
+  targetRefName?: string;
   data?: any;
 }) {
   modalVisible.value = false;
@@ -921,18 +1156,34 @@ async function handleModalConfirm(payload: {
 
   try {
     if (action === "create-tag") {
-      await createTag(data.name, commit.hash, data.message);
+      if (commit) await createTag(data.name, commit.hash, data.message);
     } else if (action === "create-branch") {
-      await createBranchFromCommit(data.name, commit.hash, data.checkout);
+      if (commit) await createBranchFromCommit(data.name, commit.hash, data.checkout);
+    } else if (action === "rename-branch") {
+      await renameBranch(data.oldName, data.newName);
+    } else if (action === "delete-branch") {
+      await deleteBranch(data.name, data.force);
+    } else if (action === "merge-branch") {
+      await mergeBranch(data.branch, data.noFf, data.squash);
+    } else if (action === "rebase-branch") {
+      await rebaseBranch(data.branch);
+    } else if (action === "push-branch") {
+      await pushBranch(data.branch, data.setUpstream, data.force);
+    } else if (action === "delete-tag") {
+      await deleteTag(data.name);
+    } else if (action === "push-tag") {
+      await pushTag(data.name);
     } else if (action === "reset") {
-      await resetToCommit(commit.hash, data.mode);
+      if (commit) await resetToCommit(commit.hash, data.mode);
     } else if (action === "cherry-pick") {
-      await cherryPick(commit.hash);
+      if (commit) await cherryPick(commit.hash);
     } else if (action === "revert") {
-      await revertCommit(commit.hash);
+      if (commit) await revertCommit(commit.hash);
     } else if (action === "checkout") {
-      await checkout(commit.hash);
+      if (commit) await checkout(commit.hash);
     }
+    await fetchBranches();
+    await refreshGraph();
   } catch (err: any) {
     showToast(err.message || t("scm.graph.action_failed"), "error");
   }
@@ -1315,6 +1566,13 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
   font-weight: 600;
   padding: 1px 6px;
   border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: filter 0.15s ease;
+}
+
+.ref-badge:hover {
+  filter: brightness(1.2);
 }
 
 .badge-branch {
@@ -1960,46 +2218,61 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
 /* Context Menu */
 .graph-context-menu {
   position: fixed;
-  background: var(--card-bg, #182234);
-  border: 1px solid var(--card-border, rgba(0, 229, 255, 0.2));
-  border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  background: #081a24;
+  border: 1px solid #143547;
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
   padding: 4px 0;
-  min-width: 210px;
+  min-width: 230px;
   z-index: 2000;
   display: flex;
   flex-direction: column;
+}
+
+:root[data-theme="light"] .graph-context-menu {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .menu-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
-  font-size: 12px;
-  color: var(--text-main);
+  padding: 5px 16px;
+  font-size: 13px;
+  color: #e2e8f0;
   cursor: pointer;
-  transition: background-color 0.1s ease;
+  transition: background-color 0.08s ease, color 0.08s ease;
+  white-space: nowrap;
 }
 
 .menu-item:hover {
-  background: rgba(0, 229, 255, 0.12);
-  color: var(--accent-cyan);
+  background: #005f73;
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .menu-item {
+  color: #334155;
 }
 
 :root[data-theme="light"] .menu-item:hover {
-  background: rgba(2, 132, 199, 0.1);
-  color: #0284c7;
+  background: #005f73;
+  color: #ffffff;
 }
 
 .menu-item.danger:hover {
-  background: rgba(239, 68, 68, 0.12);
-  color: var(--error, #ef4444);
+  background: #dc2626;
+  color: #ffffff;
 }
 
 .menu-separator {
   height: 1px;
-  background: var(--card-border);
+  background: #183745;
   margin: 4px 0;
+}
+
+:root[data-theme="light"] .menu-separator {
+  background: #e2e8f0;
 }
 </style>

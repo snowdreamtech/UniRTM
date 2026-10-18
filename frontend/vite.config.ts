@@ -3812,6 +3812,215 @@ print(json.dumps({
               });
               return;
             }
+
+            // POST /api/git/branch/rename
+            if (req.url === "/api/git/branch/rename" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  if (!body.oldName || !body.newName) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "Both oldName and newName are required" }));
+                    return;
+                  }
+                  runGit(["branch", "-m", body.oldName, body.newName]);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, oldName: body.oldName, newName: body.newName }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/branch/delete
+            if (req.url === "/api/git/branch/delete" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  if (!body.name) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "Branch name is required" }));
+                    return;
+                  }
+                  runGit(["branch", body.force ? "-D" : "-d", body.name]);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, name: body.name }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/branch/merge
+            if (req.url === "/api/git/branch/merge" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  if (!body.branch) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "Branch is required" }));
+                    return;
+                  }
+                  const args = ["merge"];
+                  if (body.noFf) args.push("--no-ff");
+                  if (body.squash) args.push("--squash");
+                  args.push(body.branch);
+                  const out = runGit(args);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, branch: body.branch, output: out }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/branch/rebase
+            if (req.url === "/api/git/branch/rebase" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  if (!body.branch) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "Branch is required" }));
+                    return;
+                  }
+                  const out = runGit(["rebase", body.branch]);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, branch: body.branch, output: out }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/branch/push
+            if (req.url === "/api/git/branch/push" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  if (!body.branch) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "Branch is required" }));
+                    return;
+                  }
+                  const args = ["push"];
+                  if (body.force) args.push("--force");
+                  if (body.setUpstream) {
+                    args.push("-u", "origin", body.branch);
+                  } else {
+                    args.push("origin", body.branch);
+                  }
+                  const out = runGit(args);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, branch: body.branch, output: out }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/tag/delete
+            if (req.url === "/api/git/tag/delete" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  if (!body.name) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "Tag name is required" }));
+                    return;
+                  }
+                  runGit(["tag", "-d", body.name]);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, name: body.name }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/tag/push
+            if (req.url === "/api/git/tag/push" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  if (!body.name) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "Tag name is required" }));
+                    return;
+                  }
+                  const out = runGit(["push", "origin", body.name]);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, name: body.name, output: out }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // GET /api/git/archive?ref=...
+            if (req.url?.startsWith("/api/git/archive") && req.method === "GET") {
+              try {
+                const parsedUrl = new URL(req.url, "http://localhost");
+                const ref = parsedUrl.searchParams.get("ref") || "HEAD";
+                const { execSync } = require("child_process");
+                const safeRef = ref.replace(/[^a-zA-Z0-9._/-]/g, "");
+                const zipBuf = execSync(`git archive --format=zip ${safeRef}`, {
+                  cwd: projectRoot,
+                  maxBuffer: 100 * 1024 * 1024,
+                });
+                const filename = `${safeRef.replace(/\//g, "_")}.zip`;
+                res.setHeader("Content-Type", "application/zip");
+                res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+                res.end(zipBuf);
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+              return;
+            }
           }
 
           if (req.url === "/api/system/browsers") {

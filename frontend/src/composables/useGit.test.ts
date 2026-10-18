@@ -320,5 +320,45 @@ describe("useGit composable", () => {
     expect(selectedCommitDetail.value?.gpg?.keyId).toBe("72E7E2103C6A70EB");
     expect(selectedCommitDetail.value?.gpg?.signer).toBe("Hui Yang <sn0wdr1am@gmail.com>");
   });
+
+  it("renameBranch, deleteBranch, mergeBranch, rebaseBranch, pushBranch, deleteTag, pushTag call endpoints", async () => {
+    global.fetch = vi.fn().mockImplementation(() => {
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ success: true, branches: [], commits: [] }),
+      });
+    });
+
+    const {
+      renameBranch,
+      deleteBranch,
+      mergeBranch,
+      rebaseBranch,
+      pushBranch,
+      deleteTag,
+      pushTag,
+    } = useGit();
+
+    await renameBranch("old", "new");
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/branch/rename", expect.objectContaining({ method: "POST" }));
+
+    await deleteBranch("test-branch", true);
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/branch/delete", expect.objectContaining({ method: "POST" }));
+
+    await mergeBranch("feature", true, false);
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/branch/merge", expect.objectContaining({ method: "POST" }));
+
+    await rebaseBranch("main");
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/branch/rebase", expect.objectContaining({ method: "POST" }));
+
+    await pushBranch("main", true, false);
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/branch/push", expect.objectContaining({ method: "POST" }));
+
+    await deleteTag("v1.0.0");
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/tag/delete", expect.objectContaining({ method: "POST" }));
+
+    await pushTag("v1.0.0");
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/tag/push", expect.objectContaining({ method: "POST" }));
+  });
 });
 

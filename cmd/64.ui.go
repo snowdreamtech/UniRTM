@@ -1105,6 +1105,14 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/git/cherry-pick", handleGitCherryPick)
 	mux.HandleFunc("/api/git/revert", handleGitRevert)
 	mux.HandleFunc("/api/git/reset", handleGitReset)
+	mux.HandleFunc("/api/git/branch/rename", handleGitBranchRename)
+	mux.HandleFunc("/api/git/branch/delete", handleGitBranchDelete)
+	mux.HandleFunc("/api/git/branch/merge", handleGitBranchMerge)
+	mux.HandleFunc("/api/git/branch/rebase", handleGitBranchRebase)
+	mux.HandleFunc("/api/git/branch/push", handleGitBranchPush)
+	mux.HandleFunc("/api/git/tag/delete", handleGitTagDelete)
+	mux.HandleFunc("/api/git/tag/push", handleGitTagPush)
+	mux.HandleFunc("/api/git/archive", handleGitArchive)
 
 	// ─── Static SPA Handler ───────────────────────────────────────────────────
 	fileServer := http.FileServer(http.FS(distFS))
@@ -4358,6 +4366,214 @@ func handleGitReset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "mode": mode, "output": out})
+}
+
+func handleGitBranchRename(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var body struct {
+		OldName string `json:"oldName"`
+		NewName string `json:"newName"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.OldName == "" || body.NewName == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "Both oldName and newName are required"})
+		return
+	}
+	if _, err := runGitCommand("branch", "-m", body.OldName, body.NewName); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "oldName": body.OldName, "newName": body.NewName})
+}
+
+func handleGitBranchDelete(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var body struct {
+		Name  string `json:"name"`
+		Force bool   `json:"force"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Name == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "Branch name is required"})
+		return
+	}
+	flag := "-d"
+	if body.Force {
+		flag = "-D"
+	}
+	if _, err := runGitCommand("branch", flag, body.Name); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "name": body.Name})
+}
+
+func handleGitBranchMerge(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var body struct {
+		Branch string `json:"branch"`
+		NoFf   bool   `json:"noFf"`
+		Squash bool   `json:"squash"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Branch == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "Branch is required"})
+		return
+	}
+	args := []string{"merge"}
+	if body.NoFf {
+		args = append(args, "--no-ff")
+	}
+	if body.Squash {
+		args = append(args, "--squash")
+	}
+	args = append(args, body.Branch)
+	out, err := runGitCommand(args...)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "branch": body.Branch, "output": out})
+}
+
+func handleGitBranchRebase(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var body struct {
+		Branch string `json:"branch"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Branch == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "Branch is required"})
+		return
+	}
+	out, err := runGitCommand("rebase", body.Branch)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "branch": body.Branch, "output": out})
+}
+
+func handleGitBranchPush(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var body struct {
+		Branch      string `json:"branch"`
+		SetUpstream bool   `json:"setUpstream"`
+		Force       bool   `json:"force"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Branch == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "Branch is required"})
+		return
+	}
+	args := []string{"push"}
+	if body.Force {
+		args = append(args, "--force")
+	}
+	if body.SetUpstream {
+		args = append(args, "-u", "origin", body.Branch)
+	} else {
+		args = append(args, "origin", body.Branch)
+	}
+	out, err := runGitCommand(args...)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "branch": body.Branch, "output": out})
+}
+
+func handleGitTagDelete(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var body struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Name == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "Tag name is required"})
+		return
+	}
+	if _, err := runGitCommand("tag", "-d", body.Name); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "name": body.Name})
+}
+
+func handleGitTagPush(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var body struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Name == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "Tag name is required"})
+		return
+	}
+	out, err := runGitCommand("push", "origin", body.Name)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "name": body.Name, "output": out})
+}
+
+func handleGitArchive(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	ref := r.URL.Query().Get("ref")
+	if ref == "" {
+		ref = "HEAD"
+	}
+	cleanRef := strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '.' || r == '_' || r == '-' || r == '/' {
+			return r
+		}
+		return -1
+	}, ref)
+	filename := strings.ReplaceAll(cleanRef, "/", "_") + ".zip"
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	cmd := exec.Command("git", "archive", "--format=zip", cleanRef)
+	cmd.Stdout = w
+	_ = cmd.Run()
 }
 
 

@@ -610,6 +610,167 @@ export function useGit() {
     }
   }
 
+  /**
+   * Renames a branch.
+   */
+  async function renameBranch(oldName: string, newName: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/branch/rename", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldName, newName }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "重命名分支失败");
+      await fetchBranches();
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "重命名分支失败", "error");
+      return false;
+    }
+  }
+
+  /**
+   * Deletes a branch.
+   */
+  async function deleteBranch(name: string, force: boolean = false): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/branch/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, force }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "删除分支失败");
+      await fetchBranches();
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "删除分支失败", "error");
+      return false;
+    }
+  }
+
+  /**
+   * Merges specified branch into current branch.
+   */
+  async function mergeBranch(
+    branch: string,
+    noFf: boolean = false,
+    squash: boolean = false
+  ): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/branch/merge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ branch, noFf, squash }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "合并分支失败");
+      await fetchStatus();
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "合并分支失败", "error");
+      return false;
+    }
+  }
+
+  /**
+   * Rebases current branch onto specified branch.
+   */
+  async function rebaseBranch(branch: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/branch/rebase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ branch }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "变基分支失败");
+      await fetchStatus();
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "变基分支失败", "error");
+      return false;
+    }
+  }
+
+  /**
+   * Pushes branch to remote.
+   */
+  async function pushBranch(
+    branch: string,
+    setUpstream: boolean = false,
+    force: boolean = false
+  ): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/branch/push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ branch, setUpstream, force }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "推送分支失败");
+      await fetchBranches();
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "推送分支失败", "error");
+      return false;
+    }
+  }
+
+  /**
+   * Deletes a tag.
+   */
+  async function deleteTag(name: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/tag/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "删除标签失败");
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "删除标签失败", "error");
+      return false;
+    }
+  }
+
+  /**
+   * Pushes a tag to remote.
+   */
+  async function pushTag(name: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/tag/push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "推送标签失败");
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "推送标签失败", "error");
+      return false;
+    }
+  }
+
+  function downloadArchive(ref: string) {
+    const a = document.createElement("a");
+    a.href = `/api/git/archive?ref=${encodeURIComponent(ref)}`;
+    a.download = `${ref.replace(/\//g, "_")}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
   function setGraphFilterPath(p: string | null) {
     graphFilterPath.value = p;
     fetchGraph({ path: p });
@@ -652,6 +813,14 @@ export function useGit() {
     fetchCommitDiff,
     createTag,
     createBranchFromCommit,
+    renameBranch,
+    deleteBranch,
+    mergeBranch,
+    rebaseBranch,
+    pushBranch,
+    deleteTag,
+    pushTag,
+    downloadArchive,
     cherryPick,
     revertCommit,
     resetToCommit,
