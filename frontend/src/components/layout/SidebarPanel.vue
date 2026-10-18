@@ -355,9 +355,6 @@ const settingsNavItems = computed(() => [
 ]);
 
 const searchPlaceholder = computed(() => {
-  if (props.currentTab === "explorer") {
-    return t("explorer.search_placeholder") || "按名称过滤文件 (Filter files)...";
-  }
   return t("common.filter") || "Filter...";
 });
 

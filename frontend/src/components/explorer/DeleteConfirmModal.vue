@@ -74,14 +74,14 @@ onUnmounted(() => {
 }
 
 .modal-dialog {
-  background-color: var(--modal-bg, #252526);
-  border: 1px solid var(--modal-border, #454545);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  border-radius: 6px;
+  background-color: var(--modal-bg, var(--card-bg));
+  border: 1px solid var(--card-border);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
   width: 90%;
   max-width: 420px;
-  padding: 18px 20px;
-  color: var(--text-main, #cccccc);
+  padding: 20px 24px;
+  color: var(--text-main);
   animation: modal-pop 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -112,7 +112,7 @@ onUnmounted(() => {
   margin: 0;
   font-size: 15px;
   font-weight: 600;
-  color: var(--text-heading, #ffffff);
+  color: var(--text-main);
 }
 
 .modal-body {
@@ -126,14 +126,14 @@ onUnmounted(() => {
 }
 
 .target-name {
-  color: var(--text-heading, #ffffff);
+  color: var(--accent-cyan);
   word-break: break-all;
 }
 
 .modal-subtext {
   margin: 0;
   font-size: 12px;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
 }
 
 .modal-footer {
@@ -144,7 +144,7 @@ onUnmounted(() => {
 
 .btn {
   padding: 6px 14px;
-  border-radius: 3px;
+  border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -154,13 +154,12 @@ onUnmounted(() => {
 
 .btn-secondary {
   background-color: transparent;
-  border-color: var(--btn-secondary-border, #454545);
-  color: var(--text-main, #cccccc);
+  border-color: var(--card-border);
+  color: var(--text-main);
 }
 
 .btn-secondary:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  background-color: rgba(128, 128, 128, 0.15);
 }
 
 .btn-danger {
@@ -169,6 +168,6 @@ onUnmounted(() => {
 }
 
 .btn-danger:hover {
-  background-color: #d01200;
+  filter: brightness(1.1);
 }
 </style>

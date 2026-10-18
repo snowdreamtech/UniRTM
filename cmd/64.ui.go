@@ -3023,10 +3023,12 @@ type FSEntry struct {
 }
 
 type FSTreeResponse struct {
-	Root    string    `json:"root"`
-	Name    string    `json:"name"`
-	Path    string    `json:"path"`
-	Entries []FSEntry `json:"entries"`
+	Success  bool      `json:"success"`
+	Root     string    `json:"root"`
+	Name     string    `json:"name"`
+	Path     string    `json:"path"`
+	Entries  []FSEntry `json:"entries"`
+	Children []FSEntry `json:"children"`
 }
 
 // getSafeFSPath resolves a relative path within the current working directory,
@@ -3167,10 +3169,12 @@ func handleFSTree(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := FSTreeResponse{
-		Root:    wd,
-		Name:    filepath.Base(wd),
-		Path:    cleanRel,
-		Entries: entries,
+		Success:  true,
+		Root:     wd,
+		Name:     filepath.Base(wd),
+		Path:     cleanRel,
+		Entries:  entries,
+		Children: entries,
 	}
 	_ = json.NewEncoder(w).Encode(resp)
 }

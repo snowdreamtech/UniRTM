@@ -135,4 +135,43 @@ describe("useFileTree", () => {
     expect(isLoading.value).toBe(false);
     expect(tree.value?.name).toBe("UniRTM");
   });
+
+  it("normalizes backend { root, name, entries } response format", async () => {
+    const rawBackendResp = {
+      root: "/workspace",
+      name: "UniRTM",
+      path: "",
+      entries: [
+        {
+          name: "cmd",
+          path: "cmd",
+          is_dir: true,
+          size: 0,
+          mod_time: "2026-10-18T00:00:00Z",
+          children: [
+            {
+              name: "main.go",
+              path: "cmd/main.go",
+              is_dir: false,
+              size: 400,
+              mod_time: "2026-10-18T00:00:00Z",
+            },
+          ],
+        },
+      ],
+    };
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      json: async () => rawBackendResp,
+    } as any);
+
+    const { tree, fetchTree } = useFileTree();
+    await fetchTree();
+
+    expect(tree.value?.name).toBe("UniRTM");
+    expect(tree.value?.children?.length).toBe(1);
+    expect(tree.value?.children?.[0].name).toBe("cmd");
+    expect(tree.value?.children?.[0].children?.[0].name).toBe("main.go");
+  });
 });

@@ -2879,10 +2879,12 @@ print(json.dumps({
                 const entries = buildFSTree(safePath, relPath, 1, Math.min(depth || 3, 10), showHidden);
                 res.setHeader("Content-Type", "application/json");
                 res.end(JSON.stringify({
+                  success: true,
                   root: rd,
                   name: path.basename(rd),
                   path: relPath,
                   entries,
+                  children: entries,
                 }));
               } catch (err: any) {
                 res.statusCode = err.message.includes("Access denied") ? 403 : 500;

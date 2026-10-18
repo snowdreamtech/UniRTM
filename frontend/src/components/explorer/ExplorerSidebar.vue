@@ -257,13 +257,13 @@ onMounted(() => {
   justify-content: space-between;
   height: 28px;
   padding: 0 8px 0 6px;
-  background-color: var(--sideBarSectionHeader-background, rgba(255, 255, 255, 0.02));
-  color: var(--sideBarSectionHeader-foreground, #bbbbbb);
+  background-color: var(--section-bg, transparent);
+  color: var(--text-muted);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  border-top: 1px solid var(--sideBar-border, rgba(255, 255, 255, 0.05));
-  border-bottom: 1px solid var(--sideBar-border, rgba(255, 255, 255, 0.05));
+  border-top: 1px solid var(--card-border);
+  border-bottom: 1px solid var(--card-border);
 }
 
 .workspace-title-group {
@@ -274,10 +274,12 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--text-main);
 }
 
 .workspace-title {
   text-transform: uppercase;
+  font-weight: 700;
 }
 
 .explorer-toolbar {
@@ -289,7 +291,7 @@ onMounted(() => {
 .toolbar-btn {
   background: transparent;
   border: none;
-  color: var(--icon-foreground, #c5c5c5);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 2px 4px;
   border-radius: 3px;
@@ -298,11 +300,12 @@ onMounted(() => {
   justify-content: center;
   font-size: 13px;
   line-height: 1;
+  transition: all 0.15s ease;
 }
 
 .toolbar-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background-color: rgba(128, 128, 128, 0.15);
+  color: var(--text-main);
 }
 
 .toolbar-btn.is-loading .codicon-refresh {
@@ -331,7 +334,7 @@ onMounted(() => {
   justify-content: center;
   gap: 8px;
   padding: 24px 12px;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -343,8 +346,8 @@ onMounted(() => {
 .retry-btn {
   margin-top: 6px;
   background-color: transparent;
-  border: 1px solid var(--border-subtle, #454545);
-  color: var(--text-main, #cccccc);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
   padding: 3px 10px;
   border-radius: 3px;
   cursor: pointer;
@@ -352,13 +355,13 @@ onMounted(() => {
 }
 
 .retry-btn:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  background-color: rgba(128, 128, 128, 0.12);
+  color: var(--text-main);
 }
 
 .tree-empty-state {
   padding: 20px 16px;
-  color: var(--text-muted, #71717a);
+  color: var(--text-muted);
   font-size: 12px;
   text-align: center;
 }
@@ -393,14 +396,14 @@ onMounted(() => {
 
 .tree-inline-input {
   width: 100%;
-  background-color: var(--input-bg, #3c3c3c);
-  color: var(--input-fg, #cccccc);
-  border: 1px solid var(--focus-border, #007acc);
-  border-radius: 2px;
-  padding: 1px 4px;
+  background-color: var(--input-bg);
+  color: var(--text-main);
+  border: 1px solid var(--accent-cyan, #00e5ff);
+  border-radius: 3px;
+  padding: 1px 6px;
   font-size: 12px;
   line-height: 18px;
   outline: none;
-  box-shadow: 0 0 0 1px var(--focus-border, #007acc);
+  box-shadow: 0 0 0 1px var(--accent-cyan, #00e5ff);
 }
 </style>

@@ -147,17 +147,16 @@
       </div>
     </div>
 
-    <!-- 3. No File/Folder Selected (Welcome Screen) -->
+    <!-- 3. No File/Folder Selected (VS Code Watermark Welcome Screen) -->
     <div v-else class="explorer-welcome-workspace">
       <div class="welcome-watermark">
-        <TechIcon id="workbench:explorer" :size="64" class="watermark-icon" />
+        <TechIcon id="workbench:explorer" :size="56" class="watermark-icon" />
         <h2 class="welcome-title">{{ t("explorer.title") || "UniRTM 资源管理器" }}</h2>
         <p class="welcome-desc">
           对标 Visual Studio Code 标准工作区体验，支持快速文件树浏览、增删改查与终端联动。
         </p>
 
         <div class="welcome-shortcuts">
-          <h4 class="shortcuts-title">常用操作指南</h4>
           <div class="shortcut-list">
             <div class="shortcut-row">
               <span class="key-badge">单击</span>
@@ -290,7 +289,8 @@ function handleCreateFolderInside() {
   padding: 0;
   margin: 0;
   box-sizing: border-box;
-  background-color: var(--editor-bg, #1e1e1e);
+  background-color: var(--bg-color);
+  color: var(--text-main);
   overflow: hidden;
 }
 
@@ -306,9 +306,9 @@ function handleCreateFolderInside() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: var(--tab-bar-bg, #252526);
+  background-color: var(--card-bg);
   height: 35px;
-  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  border-bottom: 1px solid var(--card-border);
 }
 
 .editor-tab {
@@ -317,10 +317,10 @@ function handleCreateFolderInside() {
   gap: 6px;
   padding: 0 12px;
   height: 100%;
-  background-color: var(--tab-active-bg, #1e1e1e);
-  color: var(--tab-active-fg, #ffffff);
-  border-top: 1px solid var(--focus-border, #007acc);
-  border-right: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  border-top: 2px solid var(--accent-cyan);
+  border-right: 1px solid var(--card-border);
   font-size: 13px;
   cursor: pointer;
   user-select: none;
@@ -338,7 +338,7 @@ function handleCreateFolderInside() {
 }
 
 .dirty-dot {
-  color: var(--text-main, #ffffff);
+  color: var(--accent-cyan);
   font-size: 12px;
   line-height: 1;
 }
@@ -346,7 +346,7 @@ function handleCreateFolderInside() {
 .tab-close-btn {
   background: transparent;
   border: none;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 2px;
   border-radius: 3px;
@@ -357,8 +357,8 @@ function handleCreateFolderInside() {
 }
 
 .tab-close-btn:hover {
-  background-color: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background-color: rgba(128, 128, 128, 0.15);
+  color: var(--text-main);
 }
 
 .tab-actions-right {
@@ -371,7 +371,7 @@ function handleCreateFolderInside() {
 .action-btn {
   background: transparent;
   border: none;
-  color: var(--icon-foreground, #c5c5c5);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 4px 6px;
   border-radius: 3px;
@@ -382,18 +382,18 @@ function handleCreateFolderInside() {
 }
 
 .action-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background-color: rgba(128, 128, 128, 0.12);
+  color: var(--text-main);
 }
 
 .action-btn.primary {
-  background-color: var(--btn-primary-bg, #0e639c);
+  background-color: var(--accent-cyan);
   color: #ffffff;
   padding: 3px 8px;
 }
 
 .action-btn.primary:hover {
-  background-color: #1177bb;
+  filter: brightness(1.1);
 }
 
 .action-btn.danger:hover {
@@ -405,10 +405,10 @@ function handleCreateFolderInside() {
   align-items: center;
   gap: 6px;
   padding: 4px 16px;
-  background-color: var(--editor-bg, #1e1e1e);
-  color: var(--text-muted, #858585);
+  background-color: var(--section-bg, var(--bg-color));
+  color: var(--text-muted);
   font-size: 11px;
-  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.04));
+  border-bottom: 1px solid var(--card-border);
 }
 
 .editor-content-area {
@@ -424,7 +424,7 @@ function handleCreateFolderInside() {
   justify-content: center;
   width: 100%;
   gap: 8px;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
   font-size: 13px;
 }
 
@@ -438,21 +438,22 @@ function handleCreateFolderInside() {
   display: flex;
   flex-direction: column;
   padding: 8px 12px;
-  background-color: var(--editor-bg, #1e1e1e);
-  border-right: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  background-color: var(--bg-color);
+  border-right: 1px solid var(--card-border);
   user-select: none;
-  color: var(--text-muted, #555555);
+  color: var(--text-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 13px;
   line-height: 20px;
   text-align: right;
   min-width: 32px;
+  opacity: 0.65;
 }
 
 .code-textarea {
   flex: 1;
-  background-color: var(--editor-bg, #1e1e1e);
-  color: var(--text-main, #d4d4d4);
+  background-color: var(--bg-color);
+  color: var(--text-main);
   border: none;
   outline: none;
   resize: none;
@@ -481,8 +482,8 @@ function handleCreateFolderInside() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: repeating-conic-gradient(#252526 0% 25%, #1e1e1e 0% 50%) 50% / 16px 16px;
-  border: 1px solid var(--border-subtle, #333333);
+  background: repeating-conic-gradient(var(--card-bg) 0% 25%, var(--bg-color) 0% 50%) 50% / 16px 16px;
+  border: 1px solid var(--card-border);
   border-radius: 4px;
   padding: 12px;
 }
@@ -497,7 +498,7 @@ function handleCreateFolderInside() {
   margin-top: 12px;
   display: flex;
   gap: 16px;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -507,8 +508,9 @@ function handleCreateFolderInside() {
   justify-content: space-between;
   height: 24px;
   padding: 0 12px;
-  background-color: var(--statusBar-background, #007acc);
-  color: var(--statusBar-foreground, #ffffff);
+  background-color: var(--card-bg);
+  border-top: 1px solid var(--card-border);
+  color: var(--text-muted);
   font-size: 11px;
 }
 
@@ -538,8 +540,8 @@ function handleCreateFolderInside() {
   align-items: center;
   gap: 20px;
   padding: 24px;
-  background: var(--card-bg, rgba(255, 255, 255, 0.03));
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
 }
 
@@ -557,13 +559,13 @@ function handleCreateFolderInside() {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: var(--text-main, #ffffff);
+  color: var(--text-main);
 }
 
 .folder-path {
   margin: 0;
   font-size: 12px;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
   font-family: monospace;
 }
 
@@ -575,16 +577,17 @@ function handleCreateFolderInside() {
 }
 
 .badge {
-  background-color: rgba(55, 148, 255, 0.15);
-  color: #60a5fa;
+  background-color: var(--accent-cyan-glow, rgba(0, 229, 255, 0.15));
+  color: var(--accent-cyan);
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 11px;
+  font-weight: 500;
 }
 
 .mod-time {
   font-size: 11px;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
 }
 
 .folder-quick-actions {
@@ -597,7 +600,7 @@ function handleCreateFolderInside() {
   margin: 0;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -613,22 +616,22 @@ function handleCreateFolderInside() {
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  background: var(--card-bg, rgba(255, 255, 255, 0.03));
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .action-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--focus-border, #007acc);
+  background: var(--input-bg);
+  border-color: var(--accent-cyan);
   transform: translateY(-1px);
 }
 
 .card-icon {
   font-size: 22px;
-  color: var(--focus-border, #007acc);
+  color: var(--accent-cyan);
 }
 
 .card-text {
@@ -639,15 +642,15 @@ function handleCreateFolderInside() {
 .card-title {
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-main, #ffffff);
+  color: var(--text-main);
 }
 
 .card-desc {
   font-size: 11px;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
 }
 
-/* 3. Welcome Screen */
+/* 3. Welcome Screen (VS Code Style Watermark) */
 .explorer-welcome-workspace {
   display: flex;
   align-items: center;
@@ -661,44 +664,35 @@ function handleCreateFolderInside() {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  max-width: 500px;
+  max-width: 480px;
   padding: 24px;
 }
 
 .watermark-icon {
-  color: var(--text-muted, #454545);
+  color: var(--text-muted);
   margin-bottom: 12px;
-  opacity: 0.6;
+  opacity: 0.35;
 }
 
 .welcome-title {
-  margin: 0 0 8px;
-  font-size: 20px;
+  margin: 0 0 6px;
+  font-size: 18px;
   font-weight: 600;
-  color: var(--text-main, #ffffff);
+  color: var(--text-main);
 }
 
 .welcome-desc {
-  margin: 0 0 28px;
+  margin: 0 0 24px;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
 }
 
 .welcome-shortcuts {
   width: 100%;
-  background: var(--card-bg, rgba(255, 255, 255, 0.02));
-  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.05));
-  border-radius: 8px;
-  padding: 16px 20px;
-}
-
-.shortcuts-title {
-  margin: 0 0 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted, #858585);
-  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 0;
 }
 
 .shortcut-list {
@@ -712,19 +706,26 @@ function handleCreateFolderInside() {
   align-items: center;
   justify-content: space-between;
   font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.shortcut-row:hover {
+  background-color: rgba(128, 128, 128, 0.08);
 }
 
 .key-badge {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 3px;
-  padding: 2px 6px;
-  font-family: monospace;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
-  color: var(--text-main, #d4d4d4);
+  color: var(--text-main);
 }
 
 .shortcut-desc {
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
 }
 </style>

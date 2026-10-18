@@ -50,6 +50,25 @@ const deleteConfirmModal = ref<{ visible: boolean; node: FSNode | null }>({
 const activeFileContent = ref<string>("");
 const isFileLoading = ref<boolean>(false);
 
+function normalizeNode(raw: any): FSNode {
+  const rawChildren = raw.entries || raw.Entries || raw.children || raw.Children;
+  return {
+    name: raw.name || raw.Name || "",
+    path: raw.path || raw.Path || "",
+    is_dir: Boolean(
+      raw.is_dir !== undefined
+        ? raw.is_dir
+        : raw.IsDir !== undefined
+        ? raw.IsDir
+        : Array.isArray(rawChildren) && rawChildren.length > 0
+    ),
+    size: raw.size || raw.Size || 0,
+    mod_time: raw.mod_time || raw.ModTime || "",
+    is_ignored: Boolean(raw.is_ignored || raw.IsIgnored),
+    children: Array.isArray(rawChildren) ? rawChildren.map(normalizeNode) : undefined,
+  };
+}
+
 export function useFileTree() {
   const { showToast } = useToast();
 
@@ -62,8 +81,18 @@ export function useFileTree() {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       }
       const data = await res.json();
-      if (data.success && data.data) {
-        tree.value = data.data;
+      if (data && (data.entries || data.Entries || data.children || data.Children || data.data || data.name || data.Name)) {
+        const rootRaw = data.data || data;
+        const rootChildren = rootRaw.entries || rootRaw.Entries || rootRaw.children || rootRaw.Children || [];
+        tree.value = {
+          name: rootRaw.name || rootRaw.Name || "UNIRTM",
+          path: rootRaw.path || rootRaw.Path || "",
+          is_dir: true,
+          size: 0,
+          mod_time: new Date().toISOString(),
+          is_ignored: false,
+          children: rootChildren.map(normalizeNode),
+        };
         // Keep root path expanded by default
         if (!expandedPaths.value.has("")) {
           expandedPaths.value.add("");
@@ -124,8 +153,9 @@ export function useFileTree() {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       }
       const data = await res.json();
-      if (data.success && data.data) {
-        activeFileContent.value = data.data.content || "";
+      const content = data.content !== undefined ? data.content : data.data?.content;
+      if (content !== undefined) {
+        activeFileContent.value = content;
       } else {
         throw new Error(data.error || "Failed to read file");
       }
@@ -149,7 +179,7 @@ export function useFileTree() {
         body: JSON.stringify({ path: targetPath, is_dir: false }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (res.ok && !data.error && data.success !== false) {
         showToast(t("explorer.created") || "文件创建成功", "success");
         inlineAction.value = null;
         expandPath(parentPath);
@@ -176,7 +206,7 @@ export function useFileTree() {
         body: JSON.stringify({ path: targetPath, is_dir: true }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (res.ok && !data.error && data.success !== false) {
         showToast(t("explorer.created") || "文件夹创建成功", "success");
         inlineAction.value = null;
         expandPath(parentPath);
@@ -212,7 +242,7 @@ export function useFileTree() {
         body: JSON.stringify({ old_path: oldPath, new_path: newPath }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (res.ok && !data.error && data.success !== false) {
         showToast(t("explorer.renamed") || "重命名成功", "success");
         inlineAction.value = null;
         if (selectedNode.value?.path === oldPath) {
@@ -238,7 +268,7 @@ export function useFileTree() {
         body: JSON.stringify({ path }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (res.ok && !data.error && data.success !== false) {
         showToast(t("explorer.deleted") || "删除成功", "success");
         if (selectedNode.value?.path === path || selectedNode.value?.path.startsWith(`${path}/`)) {
           selectedNode.value = null;
@@ -264,7 +294,7 @@ export function useFileTree() {
         body: JSON.stringify({ path, content }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (res.ok && !data.error && data.success !== false) {
         showToast("文件已保存", "success");
         activeFileContent.value = content;
         return true;

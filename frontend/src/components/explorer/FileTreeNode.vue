@@ -291,20 +291,21 @@ async function commitCreate() {
   align-items: center;
   height: 24px;
   cursor: pointer;
-  border-radius: 3px;
+  border-radius: 4px;
   margin: 1px 4px;
   padding-right: 6px;
-  color: var(--text-main, #cccccc);
+  color: var(--text-main);
   transition: background-color 0.1s ease;
 }
 
 .tree-node-row:hover {
-  background-color: var(--list-hover-bg, rgba(255, 255, 255, 0.06));
+  background-color: rgba(128, 128, 128, 0.08);
 }
 
 .tree-node-row.is-selected {
-  background-color: var(--list-active-selection-bg, rgba(55, 148, 255, 0.25));
-  color: var(--list-active-selection-fg, #ffffff);
+  background-color: var(--accent-cyan-glow, rgba(0, 229, 255, 0.15));
+  color: var(--accent-cyan);
+  font-weight: 500;
 }
 
 .tree-node-row.is-ignored {
@@ -316,7 +317,7 @@ async function commitCreate() {
   top: 0;
   bottom: 0;
   width: 1px;
-  background-color: var(--tree-indent-guide, rgba(255, 255, 255, 0.08));
+  background-color: var(--card-border, rgba(128, 128, 128, 0.15));
   pointer-events: none;
 }
 
@@ -327,7 +328,7 @@ async function commitCreate() {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
   font-size: 12px;
 }
 
@@ -361,15 +362,15 @@ async function commitCreate() {
 
 .tree-inline-input {
   width: 100%;
-  background-color: var(--input-bg, #3c3c3c);
-  color: var(--input-fg, #cccccc);
-  border: 1px solid var(--focus-border, #007acc);
-  border-radius: 2px;
-  padding: 1px 4px;
+  background-color: var(--input-bg);
+  color: var(--text-main);
+  border: 1px solid var(--accent-cyan, #00e5ff);
+  border-radius: 3px;
+  padding: 1px 6px;
   font-size: 12px;
   line-height: 18px;
   outline: none;
-  box-shadow: 0 0 0 1px var(--focus-border, #007acc);
+  box-shadow: 0 0 0 1px var(--accent-cyan, #00e5ff);
 }
 
 .tree-row-actions {
@@ -386,7 +387,7 @@ async function commitCreate() {
 .tree-action-btn {
   background: transparent;
   border: none;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
   cursor: pointer;
   padding: 2px 4px;
   border-radius: 3px;
@@ -397,8 +398,8 @@ async function commitCreate() {
 }
 
 .tree-action-btn:hover {
-  background-color: rgba(255, 255, 255, 0.12);
-  color: var(--text-main, #ffffff);
+  background-color: rgba(128, 128, 128, 0.15);
+  color: var(--text-main);
 }
 
 .tree-action-btn.danger:hover {

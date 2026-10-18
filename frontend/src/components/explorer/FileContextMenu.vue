@@ -159,34 +159,34 @@ onUnmounted(() => {
 .file-context-menu {
   position: fixed;
   z-index: 9999;
-  background-color: var(--dropdown-background, #252526);
-  border: 1px solid var(--dropdown-border, #454545);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  border-radius: 5px;
+  background-color: var(--modal-bg, var(--card-bg));
+  border: 1px solid var(--card-border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  border-radius: 6px;
   padding: 4px 0;
   min-width: 190px;
   font-size: 13px;
-  color: var(--dropdown-foreground, #cccccc);
+  color: var(--text-main);
   user-select: none;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  padding: 5px 12px;
+  padding: 6px 12px;
   cursor: pointer;
   gap: 8px;
-  transition: background-color 0.1s;
+  transition: all 0.1s ease;
 }
 
 .menu-item:hover {
-  background-color: var(--list-active-selection-bg, #094771);
-  color: #ffffff;
+  background-color: var(--accent-cyan-glow, rgba(0, 229, 255, 0.15));
+  color: var(--accent-cyan);
 }
 
 .menu-item.danger:hover {
-  background-color: rgba(239, 68, 68, 0.2);
-  color: #f87171;
+  background-color: rgba(239, 68, 68, 0.15);
+  color: var(--error, #ef4444);
 }
 
 .menu-icon {
@@ -203,13 +203,13 @@ onUnmounted(() => {
 
 .menu-shortcut {
   font-size: 11px;
-  color: var(--text-muted, #858585);
+  color: var(--text-muted);
   margin-left: 12px;
 }
 
 .menu-separator {
   height: 1px;
-  background-color: var(--dropdown-border, #3a3d41);
+  background-color: var(--card-border);
   margin: 4px 0;
 }
 </style>
