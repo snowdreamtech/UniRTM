@@ -171,7 +171,7 @@
             <div class="split-pane-header">
               <div class="split-pane-info">
                 <TechIcon :id="splitState.tab.name" :size="14" class="split-pane-icon" />
-                <span class="split-pane-name">{{ splitState.tab.name }}</span>
+                <span class="split-pane-name">{{ splitState.tab.name }}{{ splitState.inGroup ? ' (组内拆分)' : '' }}</span>
                 <span v-if="splitState.tab.isDirty" class="dirty-dot">●</span>
               </div>
               <div class="split-pane-tools">
@@ -557,6 +557,14 @@
                   <span class="action-label">右移</span>
                 </a>
               </li>
+
+              <li class="action-separator" role="separator"></li>
+
+              <li class="action-item" role="none" @click.stop="handleSplitInGroup">
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">{{ splitState.active && splitState.inGroup ? '加入编辑器组' : '在组中拆分' }}</span>
+                </a>
+              </li>
             </ul>
           </div>
         </div>
@@ -834,11 +842,13 @@ const splitState = ref<{
   direction: "horizontal" | "vertical";
   position: "up" | "down" | "left" | "right";
   tab: EditorTab | null;
+  inGroup?: boolean;
 }>({
   active: false,
   direction: "horizontal",
   position: "right",
   tab: null,
+  inGroup: false,
 });
 
 function handleSplitRight() {
@@ -852,7 +862,25 @@ function handleSplitEditor(direction: "up" | "down" | "left" | "right") {
     direction: direction === "up" || direction === "down" ? "vertical" : "horizontal",
     position: direction,
     tab: targetTab.value,
+    inGroup: false,
   };
+  closeContextMenu();
+}
+
+function handleSplitInGroup() {
+  const currentTab = targetTab.value || activeTab.value;
+  if (!currentTab) return;
+  if (splitState.value.active && splitState.value.inGroup) {
+    closeSplitEditor();
+  } else {
+    splitState.value = {
+      active: true,
+      direction: "horizontal",
+      position: "right",
+      tab: currentTab,
+      inGroup: true,
+    };
+  }
   closeContextMenu();
 }
 
@@ -862,6 +890,7 @@ function closeSplitEditor() {
     direction: "horizontal",
     position: "right",
     tab: null,
+    inGroup: false,
   };
 }
 
