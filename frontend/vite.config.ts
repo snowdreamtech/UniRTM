@@ -4004,10 +4004,9 @@ print(json.dumps({
               try {
                 const parsedUrl = new URL(req.url, "http://localhost");
                 const ref = parsedUrl.searchParams.get("ref") || "HEAD";
-                const { execSync } = require("child_process");
                 const safeRef = ref.replace(/[^a-zA-Z0-9._/-]/g, "");
-                const zipBuf = execSync(`git archive --format=zip ${safeRef}`, {
-                  cwd: projectRoot,
+                const zipBuf = execFileSync("git", ["archive", "--format=zip", safeRef], {
+                  cwd: rootDir,
                   maxBuffer: 100 * 1024 * 1024,
                 });
                 const filename = `${safeRef.replace(/\//g, "_")}.zip`;
