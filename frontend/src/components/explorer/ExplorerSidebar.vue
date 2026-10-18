@@ -1,0 +1,406 @@
+<template>
+  <div class="explorer-sidebar-container" @click="handleBackgroundClick" @contextmenu.prevent="handleBackgroundContextMenu">
+    <!-- VS Code Section Header -->
+    <div class="explorer-section-header">
+      <div class="workspace-title-group" @click.stop="toggleRootExpand">
+        <span class="codicon" :class="isRootExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
+        <span class="workspace-title">{{ workspaceName }}</span>
+      </div>
+
+      <!-- Action Toolbar (New File, New Folder, Refresh, Collapse All) -->
+      <div class="explorer-toolbar">
+        <button
+          class="toolbar-btn"
+          title="新建文件"
+          @click.stop="handleToolbarNewFile"
+        >
+          <span class="codicon codicon-new-file"></span>
+        </button>
+        <button
+          class="toolbar-btn"
+          title="新建文件夹"
+          @click.stop="handleToolbarNewFolder"
+        >
+          <span class="codicon codicon-new-folder"></span>
+        </button>
+        <button
+          class="toolbar-btn"
+          title="刷新资源管理器"
+          :class="{ 'is-loading': isLoading }"
+          @click.stop="handleRefresh"
+        >
+          <span class="codicon codicon-refresh"></span>
+        </button>
+        <button
+          class="toolbar-btn"
+          title="全部折叠"
+          @click.stop="collapseAll"
+        >
+          <span class="codicon codicon-collapse-all"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tree Content Area -->
+    <div v-show="isRootExpanded" class="explorer-tree-body">
+      <!-- Loading State -->
+      <div v-if="isLoading && !filteredTree" class="tree-status-state">
+        <span class="codicon codicon-loading codicon-modifier-spin"></span>
+        <span class="status-text">加载目录树中...</span>
+      </div>
+
+      <!-- Error State -->
+      <div v-else-if="error" class="tree-status-state is-error">
+        <span class="codicon codicon-error"></span>
+        <span class="status-text">{{ error }}</span>
+        <button class="retry-btn" @click.stop="fetchTree">重试</button>
+      </div>
+
+      <!-- Tree Nodes -->
+      <div v-else-if="filteredTree" class="tree-nodes-list">
+        <!-- Root Inline Creation Input -->
+        <div
+          v-if="isInlineCreatingRoot"
+          class="root-inline-row"
+          :style="{ paddingLeft: '20px' }"
+        >
+          <span class="root-twistie">
+            <span v-if="inlineAction?.type === 'new-folder'" class="codicon codicon-chevron-right"></span>
+          </span>
+          <span class="root-icon">
+            <TechIcon
+              :id="inlineAction?.type === 'new-folder' ? 'codicon:folder' : (createRootInputValue || 'file.txt')"
+              :size="16"
+            />
+          </span>
+          <div class="root-input-box">
+            <input
+              ref="rootCreateInputRef"
+              v-model="createRootInputValue"
+              type="text"
+              class="tree-inline-input"
+              :placeholder="inlineAction?.type === 'new-folder' ? '文件夹名称' : '文件名'"
+              @keydown.enter.stop="commitRootCreate"
+              @keydown.esc.stop="cancelInlineAction"
+              @blur="commitRootCreate"
+              @click.stop
+            />
+          </div>
+        </div>
+
+        <!-- Render top-level children -->
+        <template v-if="sortedRootChildren.length > 0">
+          <FileTreeNode
+            v-for="child in sortedRootChildren"
+            :key="child.path || child.name"
+            :node="child"
+            :depth="0"
+          />
+        </template>
+
+        <div v-else-if="!isInlineCreatingRoot" class="tree-empty-state">
+          <span>暂无文件</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Global Context Menu & Delete Modal -->
+    <FileContextMenu @open-terminal="handleOpenTerminal" />
+    <DeleteConfirmModal />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, nextTick, watch } from "vue";
+import { useFileTree } from "../../composables/useFileTree";
+import FileTreeNode from "./FileTreeNode.vue";
+import FileContextMenu from "./FileContextMenu.vue";
+import DeleteConfirmModal from "./DeleteConfirmModal.vue";
+import TechIcon from "../common/TechIcon.vue";
+
+const emit = defineEmits<{
+  (e: "open-terminal", dirPath: string): void;
+}>();
+
+const {
+  tree,
+  filteredTree,
+  isLoading,
+  error,
+  selectedNode,
+  expandedPaths,
+  inlineAction,
+  fetchTree,
+  toggleExpand,
+  collapseAll,
+  startInlineCreate,
+  cancelInlineAction,
+  createFile,
+  createFolder,
+  openContextMenu,
+} = useFileTree();
+
+const rootCreateInputRef = ref<HTMLInputElement | null>(null);
+const createRootInputValue = ref("");
+
+const workspaceName = computed(() => {
+  return (tree.value?.name || "UNIRTM").toUpperCase();
+});
+
+const isRootExpanded = computed(() => {
+  return expandedPaths.value.has("");
+});
+
+function toggleRootExpand() {
+  toggleExpand("");
+}
+
+const isInlineCreatingRoot = computed(() => {
+  return (
+    (inlineAction.value?.type === "new-file" ||
+      inlineAction.value?.type === "new-folder") &&
+    inlineAction.value.parentPath === ""
+  );
+});
+
+watch(
+  isInlineCreatingRoot,
+  (val) => {
+    if (val) {
+      createRootInputValue.value = "";
+      nextTick(() => {
+        rootCreateInputRef.value?.focus();
+      });
+    }
+  },
+  { immediate: true }
+);
+
+const sortedRootChildren = computed(() => {
+  const children = filteredTree.value?.children || [];
+  return [...children].sort((a, b) => {
+    if (a.is_dir && !b.is_dir) return -1;
+    if (!a.is_dir && b.is_dir) return 1;
+    return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+  });
+});
+
+function handleToolbarNewFile() {
+  const parent = selectedNode.value?.is_dir ? selectedNode.value.path : "";
+  startInlineCreate(parent, "new-file");
+}
+
+function handleToolbarNewFolder() {
+  const parent = selectedNode.value?.is_dir ? selectedNode.value.path : "";
+  startInlineCreate(parent, "new-folder");
+}
+
+function handleRefresh() {
+  fetchTree();
+}
+
+async function commitRootCreate() {
+  if (!isInlineCreatingRoot.value) return;
+  const val = createRootInputValue.value.trim();
+  if (!val) {
+    cancelInlineAction();
+    return;
+  }
+  const isDir = inlineAction.value?.type === "new-folder";
+  if (isDir) {
+    await createFolder("", val);
+  } else {
+    await createFile("", val);
+  }
+}
+
+function handleBackgroundClick() {
+  selectedNode.value = null;
+}
+
+function handleBackgroundContextMenu(e: MouseEvent) {
+  if (tree.value) {
+    openContextMenu(e, {
+      name: tree.value.name,
+      path: "",
+      is_dir: true,
+      size: 0,
+      mod_time: new Date().toISOString(),
+    });
+  }
+}
+
+function handleOpenTerminal(dirPath: string) {
+  emit("open-terminal", dirPath);
+}
+
+onMounted(() => {
+  if (!tree.value) {
+    fetchTree();
+  }
+});
+</script>
+
+<style scoped>
+.explorer-sidebar-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  user-select: none;
+}
+
+.explorer-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 28px;
+  padding: 0 8px 0 6px;
+  background-color: var(--sideBarSectionHeader-background, rgba(255, 255, 255, 0.02));
+  color: var(--sideBarSectionHeader-foreground, #bbbbbb);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-top: 1px solid var(--sideBar-border, rgba(255, 255, 255, 0.05));
+  border-bottom: 1px solid var(--sideBar-border, rgba(255, 255, 255, 0.05));
+}
+
+.workspace-title-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-title {
+  text-transform: uppercase;
+}
+
+.explorer-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.toolbar-btn {
+  background: transparent;
+  border: none;
+  color: var(--icon-foreground, #c5c5c5);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.toolbar-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.toolbar-btn.is-loading .codicon-refresh {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.explorer-tree-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-top: 2px;
+}
+
+.tree-status-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 12px;
+  color: var(--text-muted, #858585);
+  font-size: 12px;
+}
+
+.tree-status-state.is-error {
+  flex-direction: column;
+  color: var(--error, #ef4444);
+}
+
+.retry-btn {
+  margin-top: 6px;
+  background-color: transparent;
+  border: 1px solid var(--border-subtle, #454545);
+  color: var(--text-main, #cccccc);
+  padding: 3px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.retry-btn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.tree-empty-state {
+  padding: 20px 16px;
+  color: var(--text-muted, #71717a);
+  font-size: 12px;
+  text-align: center;
+}
+
+.root-inline-row {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  margin: 1px 4px;
+}
+
+.root-twistie {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.root-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 6px;
+}
+
+.root-input-box {
+  flex: 1;
+}
+
+.tree-inline-input {
+  width: 100%;
+  background-color: var(--input-bg, #3c3c3c);
+  color: var(--input-fg, #cccccc);
+  border: 1px solid var(--focus-border, #007acc);
+  border-radius: 2px;
+  padding: 1px 4px;
+  font-size: 12px;
+  line-height: 18px;
+  outline: none;
+  box-shadow: 0 0 0 1px var(--focus-border, #007acc);
+}
+</style>

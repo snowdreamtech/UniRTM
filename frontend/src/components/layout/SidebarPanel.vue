@@ -48,6 +48,11 @@
         </button>
       </template>
 
+      <!-- EXPLORER Navigation Items -->
+      <template v-if="currentTab === 'explorer'">
+        <ExplorerSidebar @open-terminal="$emit('open-terminal', $event)" />
+      </template>
+
 
 
       <!-- TOOLS Navigation Items -->
@@ -210,6 +215,8 @@
 import { ref, computed, watch, onMounted } from "vue";
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
+import ExplorerSidebar from "../explorer/ExplorerSidebar.vue";
+import { useFileTree } from "../../composables/useFileTree";
 import { useToolUpdates } from "../../composables/useToolUpdates";
 import { useToolScope } from "../../composables/useToolScope";
 
@@ -294,6 +301,7 @@ const emit = defineEmits<{
   (e: "toggle-collapse"): void;
   (e: "select-sub-item", id: string): void;
   (e: "run-task", taskName: string): void;
+  (e: "open-terminal", dirPath: string): void;
 }>();
 
 function handleSubItemClick(id: string) {
@@ -306,10 +314,20 @@ function handleSubItemClick(id: string) {
 
 const searchQuery = ref("");
 
+const { searchQuery: fileTreeSearchQuery } = useFileTree();
+
+watch(searchQuery, (newVal) => {
+  if (props.currentTab === "explorer") {
+    fileTreeSearchQuery.value = newVal;
+  }
+});
+
 const headerTitle = computed(() => {
   switch (props.currentTab) {
     case "dashboard":
       return t("nav.dashboard") || "DASHBOARD";
+    case "explorer":
+      return t("nav.explorer") || "EXPLORER";
     case "tools":
       return t("nav.tools") || "TOOLCHAINS";
     case "tasks":
@@ -337,6 +355,9 @@ const settingsNavItems = computed(() => [
 ]);
 
 const searchPlaceholder = computed(() => {
+  if (props.currentTab === "explorer") {
+    return t("explorer.search_placeholder") || "按名称过滤文件 (Filter files)...";
+  }
   return t("common.filter") || "Filter...";
 });
 
