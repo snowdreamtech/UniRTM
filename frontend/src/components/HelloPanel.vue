@@ -191,7 +191,7 @@ const sysInfo = ref<{
   arch: "arm64",
   goVersion: "go1.27",
   appName: "UniRTM",
-  version: "v0.1.0",
+  version: "v0.35.0",
 });
 
 const testingNetwork = ref(false);
@@ -257,14 +257,34 @@ const openDocs = () => {
   window.open("https://github.com/snowdreamtech/unirtm", "_blank", "noopener,noreferrer");
 };
 
-onMounted(() => {
+onMounted(async () => {
   sysInfo.value = {
     os: "macOS / Linux / Windows",
     arch: "arm64 / amd64",
     goVersion: "Go 1.27+",
     appName: "UniRTM",
-    version: "v0.1.0",
+    version: "v0.35.0",
   };
+  try {
+    const res = await fetch("/api/status");
+    if (res.ok) {
+      const data = await res.json();
+      if (data.version && data.version !== "N/A") {
+        sysInfo.value.version = data.version.startsWith("v") ? data.version : `v${data.version}`;
+      }
+      if (data.platform) {
+        const parts = data.platform.split("/");
+        sysInfo.value.os = parts[0] || sysInfo.value.os;
+        sysInfo.value.arch = parts[1] || sysInfo.value.arch;
+      }
+      if (data.go_version) {
+        sysInfo.value.goVersion = data.go_version;
+      }
+      if (data.project_name) {
+        sysInfo.value.appName = data.project_name;
+      }
+    }
+  } catch {}
 });
 </script>
 

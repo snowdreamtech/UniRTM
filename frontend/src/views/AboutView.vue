@@ -287,8 +287,8 @@ interface AppInfo {
 
 const appInfo = ref<AppInfo>({
   projectName: "UniRTM",
-  version: "v0.1.0",
-  gitTag: "v0.1.0",
+  version: "v0.35.0",
+  gitTag: "v0.35.0",
   commitHash: "HEAD",
   buildTime: new Date().toISOString().slice(0, 10),
   copyright: "Copyright © 2026 SnowdreamTech. All rights reserved.",
@@ -296,8 +296,8 @@ const appInfo = ref<AppInfo>({
   osArch: "Web / Universal",
 });
 
-const displayVersion = computed(() => appInfo.value.version || appInfo.value.gitTag || "v0.1.0");
-const displayGitTag = computed(() => appInfo.value.gitTag || "v0.1.0");
+const displayVersion = computed(() => appInfo.value.version || appInfo.value.gitTag || "v0.35.0");
+const displayGitTag = computed(() => appInfo.value.gitTag || "v0.35.0");
 const displayCommitHash = computed(() => appInfo.value.commitHash || "dev");
 const displayBuildTime = computed(() => appInfo.value.buildTime || "N/A");
 
@@ -352,13 +352,48 @@ License: MIT License
   }
 };
 
+async function fetchSystemStatus() {
+  try {
+    const res = await fetch("/api/status");
+    if (res.ok) {
+      const data = await res.json();
+      if (data.version && data.version !== "N/A") {
+        const v = data.version.startsWith("v") ? data.version : `v${data.version}`;
+        appInfo.value.version = v;
+        appInfo.value.gitTag = data.git_tag || v;
+      }
+      if (data.commit && data.commit !== "N/A") {
+        appInfo.value.commitHash = data.commit;
+      }
+      if (data.build_time && data.build_time !== "N/A") {
+        appInfo.value.buildTime = data.build_time;
+      }
+      if (data.platform) {
+        appInfo.value.osArch = data.platform;
+      }
+      if (data.go_version) {
+        appInfo.value.goVersion = data.go_version;
+      }
+      if (data.project_name) {
+        appInfo.value.projectName = data.project_name;
+      }
+      if (data.copyright) {
+        appInfo.value.copyright = data.copyright;
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to fetch system status from /api/status:", err);
+  }
+}
+
 const handleCheckUpdate = async () => {
   checking.value = true;
   updateMessage.value = "";
+  await fetchSystemStatus();
   setTimeout(() => {
     checking.value = false;
     hasUpdateAvailable.value = false;
-    updateMessage.value = t("about.isLatest") || "当前已是最新版本 (v0.1.0)";
+    updateMessage.value = t("about.isLatest", { version: displayVersion.value }) || `当前已是最新版本 (${displayVersion.value})`;
     updateStatusClass.value = "is-latest";
   }, 600);
 };
@@ -397,17 +432,8 @@ const handleRestartApp = async () => {
   }, 600);
 };
 
-onMounted(() => {
-  appInfo.value = {
-    projectName: "UniRTM",
-    version: "v0.1.0",
-    gitTag: "v0.1.0",
-    commitHash: "HEAD",
-    buildTime: new Date().toISOString().slice(0, 10),
-    osArch: "Web Client",
-    goVersion: "Go 1.27+",
-    copyright: "Copyright © 2026 SnowdreamTech. All rights reserved.",
-  };
+onMounted(async () => {
+  await fetchSystemStatus();
 });
 </script>
 

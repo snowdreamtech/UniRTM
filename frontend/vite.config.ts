@@ -283,6 +283,58 @@ export default defineConfig({
             return res;
           };
 
+          if (req.url === "/api/status" || req.url?.startsWith("/api/status?")) {
+            let version = "0.35.0";
+            let gitTag = "v0.35.0";
+            let commit = "dev";
+            let buildTime = new Date().toISOString().slice(0, 10);
+
+            try {
+              const versionFile = path.join(rootDir, "VERSION");
+              if (fs.existsSync(versionFile)) {
+                const lines = fs.readFileSync(versionFile, "utf-8").split("\n");
+                for (const l of lines) {
+                  const tr = l.trim();
+                  if (tr && !tr.startsWith("#")) {
+                    version = tr.replace(/^v/, "");
+                    gitTag = `v${version}`;
+                    break;
+                  }
+                }
+              }
+            } catch {}
+
+            try {
+              const gitRev = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: rootDir, encoding: "utf-8", timeout: 2000 }).trim();
+              if (gitRev) commit = gitRev;
+            } catch {}
+
+            try {
+              const gitDate = execFileSync("git", ["log", "-1", "--format=%cs"], { cwd: rootDir, encoding: "utf-8", timeout: 2000 }).trim();
+              if (gitDate) buildTime = gitDate;
+            } catch {}
+
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({
+              status: "ready",
+              version: gitTag,
+              git_tag: gitTag,
+              commit: commit,
+              build_time: buildTime,
+              platform: `${process.platform}/${process.arch}`,
+              go_version: "go1.27+",
+              project_name: "unirtm",
+              author: "Snowdream Tech <snowdreamtech@qq.com>",
+              license: "MIT License",
+              copyright: "Copyright (c) 2026 SnowdreamTech. All rights reserved.",
+              tools_count: 5,
+              tasks_count: 4,
+              plugins_count: 0,
+              timestamp: Math.floor(Date.now() / 1000),
+            }));
+            return;
+          }
+
           if ((req.url === "/api/tools/migrate-legacy" || req.url === "/api/runtimes/migrate-legacy") && req.method === "POST") {
             try {
               const wsPath = path.join(rootDir, ".unirtm.toml");

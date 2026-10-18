@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 )
@@ -253,6 +254,60 @@ var (
 
 	//CommitHash Commit Hash
 	CommitHash string = "N/A"
+)
+
+func init() {
+	if dir, err := os.Getwd(); err == nil {
+		for i := 0; i < 5; i++ {
+			if GitTag == "N/A" || GitTag == "" {
+				vPath := filepath.Join(dir, "VERSION")
+				if data, rErr := os.ReadFile(vPath); rErr == nil {
+					for _, line := range strings.Split(string(data), "\n") {
+						t := strings.TrimSpace(line)
+						if t != "" && !strings.HasPrefix(t, "#") {
+							GitTag = "v" + strings.TrimPrefix(t, "v")
+							break
+						}
+					}
+				}
+			}
+
+			if CommitHash == "N/A" || CommitHash == "" {
+				if headData, hErr := os.ReadFile(filepath.Join(dir, ".git", "HEAD")); hErr == nil {
+					ref := strings.TrimSpace(string(headData))
+					if strings.HasPrefix(ref, "ref: ") {
+						refPath := strings.TrimPrefix(ref, "ref: ")
+						if refData, rErr := os.ReadFile(filepath.Join(dir, ".git", refPath)); rErr == nil {
+							h := strings.TrimSpace(string(refData))
+							if len(h) >= 8 {
+								CommitHash = h[:8]
+								CommitHashFull = h
+							}
+						}
+					} else if len(ref) >= 8 {
+						CommitHash = ref[:8]
+						CommitHashFull = ref
+					}
+				}
+			}
+
+			if (GitTag != "N/A" && GitTag != "") && (CommitHash != "N/A" && CommitHash != "") {
+				break
+			}
+
+			parent := filepath.Dir(dir)
+			if parent == dir {
+				break
+			}
+			dir = parent
+		}
+	}
+	if GitTag == "N/A" || GitTag == "" {
+		GitTag = "v0.35.0"
+	}
+}
+
+var (
 
 	//CommitHashFull Commit Hash
 	CommitHashFull string = "N/A"
