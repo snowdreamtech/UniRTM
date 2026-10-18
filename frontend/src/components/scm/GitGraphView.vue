@@ -532,43 +532,45 @@
 
     <!-- Right-click Context Menu (Teleported) -->
     <Teleport to="body">
-      <!-- Commit Context Menu -->
+      <!-- Commit Context Menu (Aligned with Git Graph) -->
       <div
         v-if="contextMenuVisible"
         class="graph-context-menu"
         :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
         @click.stop
       >
-        <div class="menu-item" @click="handleContextAction('checkout')">
-          <span class="codicon codicon-check"></span>
-          <span>{{ t('scm.context.checkout') }}</span>
+        <div class="menu-item" @click="handleContextAction('add-tag')">
+          {{ t('scm.commit.add_tag') }}
         </div>
         <div class="menu-item" @click="handleContextAction('create-branch')">
-          <span class="codicon codicon-git-branch"></span>
-          <span>{{ t('scm.context.create_branch') }}</span>
-        </div>
-        <div class="menu-item" @click="handleContextAction('create-tag')">
-          <span class="codicon codicon-tag"></span>
-          <span>{{ t('scm.context.create_tag') }}</span>
+          {{ t('scm.commit.create_branch') }}
         </div>
         <div class="menu-separator"></div>
+        <div class="menu-item" @click="handleContextAction('checkout')">
+          {{ t('scm.commit.checkout') }}
+        </div>
         <div class="menu-item" @click="handleContextAction('cherry-pick')">
-          <span class="codicon codicon-git-pull-request"></span>
-          <span>{{ t('scm.context.cherry_pick') }}</span>
+          {{ t('scm.commit.cherry_pick') }}
         </div>
         <div class="menu-item" @click="handleContextAction('revert')">
-          <span class="codicon codicon-history"></span>
-          <span>{{ t('scm.context.revert') }}</span>
+          {{ t('scm.commit.revert') }}
         </div>
         <div class="menu-separator"></div>
+        <div class="menu-item" @click="handleContextAction('merge')">
+          {{ t('scm.commit.merge') }}
+        </div>
+        <div class="menu-item" @click="handleContextAction('rebase')">
+          {{ t('scm.commit.rebase') }}
+        </div>
         <div class="menu-item danger" @click="handleContextAction('reset')">
-          <span class="codicon codicon-discard"></span>
-          <span>{{ t('scm.context.reset') }}</span>
+          {{ t('scm.commit.reset') }}
         </div>
         <div class="menu-separator"></div>
         <div class="menu-item" @click="handleContextAction('copy-hash')">
-          <span class="codicon codicon-copy"></span>
-          <span>{{ t('scm.context.copy_hash') }}</span>
+          {{ t('scm.commit.copy_hash') }}
+        </div>
+        <div class="menu-item" @click="handleContextAction('copy-subject')">
+          {{ t('scm.commit.copy_subject') }}
         </div>
       </div>
 
@@ -638,6 +640,9 @@
 
         <!-- Tag Context Menu -->
         <template v-else-if="selectedRef?.type === 'tag'">
+          <div class="menu-item" @click="handleRefAction('checkout-tag')">
+            {{ t('scm.tag.checkout') }}
+          </div>
           <div class="menu-item" @click="handleRefAction('create-branch-from-tag')">
             {{ t('scm.tag.create_branch') }}
           </div>
@@ -1053,9 +1058,7 @@ function openRefContextMenu(event: MouseEvent, refItem: GitGraphRef, commit: Git
   refContextMenuVisible.value = true;
 }
 
-async function handleContextAction(
-  action: GitModalActionType | "copy-hash"
-) {
+async function handleContextAction(action: string) {
   if (!contextCommit.value) return;
   const commit = contextCommit.value;
   closeContextMenu();
@@ -1065,7 +1068,32 @@ async function handleContextAction(
     return;
   }
 
-  openModal(action, commit);
+  if (action === "copy-subject") {
+    try {
+      await navigator.clipboard.writeText(commit.message);
+      showToast(t("scm.commit.copied_subject"), "info");
+    } catch {
+      showToast(commit.message, "info");
+    }
+    return;
+  }
+
+  if (action === "add-tag") {
+    openModal("create-tag", commit);
+    return;
+  }
+
+  if (action === "merge") {
+    openRefModal("merge-branch", commit.shortHash, commit);
+    return;
+  }
+
+  if (action === "rebase") {
+    openRefModal("rebase-branch", commit.shortHash, commit);
+    return;
+  }
+
+  openModal(action as GitModalActionType, commit);
 }
 
 async function handleRefAction(action: string) {
@@ -1099,7 +1127,7 @@ async function handleRefAction(action: string) {
     return;
   }
 
-  if (action === "checkout-branch") {
+  if (action === "checkout-branch" || action === "checkout-tag") {
     try {
       await checkout(refItem.name);
       await fetchBranches();
