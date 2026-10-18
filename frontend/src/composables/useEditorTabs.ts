@@ -34,6 +34,17 @@ export function useEditorTabs() {
     const existing = tabs.value.find((t) => t.id === file.path);
     if (existing) {
       activeTabId.value = existing.id;
+      if (!existing.content && !existing.isDirty) {
+        try {
+          const res = await fetch(`/api/fs/read?path=${encodeURIComponent(file.path)}`);
+          if (res.ok) {
+            const data = await res.json();
+            const content = data.content !== undefined ? data.content : data.data?.content ?? "";
+            existing.content = content;
+            existing.originalContent = content;
+          }
+        } catch {}
+      }
       return;
     }
 

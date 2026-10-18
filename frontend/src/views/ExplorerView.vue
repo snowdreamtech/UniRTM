@@ -92,6 +92,7 @@
         <!-- Monaco Code Editor -->
         <MonacoEditor
           v-else
+          :key="activeTab.id"
           :tab="activeTab"
           @change="handleEditorChange"
           @cursor-change="handleCursorChange"

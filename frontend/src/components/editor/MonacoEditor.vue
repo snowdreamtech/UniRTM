@@ -4,6 +4,13 @@
       <span class="codicon codicon-loading codicon-modifier-spin"></span>
       <span>加载编辑器中...</span>
     </div>
+    <div v-else-if="mountError" class="monaco-error-overlay">
+      <span class="codicon codicon-error error-icon"></span>
+      <div class="error-msg">
+        <p class="error-title">编辑器加载异常</p>
+        <p class="error-detail">{{ mountError }}</p>
+      </div>
+    </div>
     <div ref="editorContainerRef" class="monaco-host-container"></div>
   </div>
 </template>
@@ -26,6 +33,7 @@ const emit = defineEmits<{
 
 const editorContainerRef = ref<HTMLDivElement | null>(null);
 const isLoading = ref<boolean>(true);
+const mountError = ref<string>("");
 
 let monaco: typeof MonacoType | null = null;
 let editorInstance: MonacoType.editor.IStandaloneCodeEditor | null = null;
@@ -34,31 +42,7 @@ let resizeObserver: ResizeObserver | null = null;
 function applyTheme(): void {
   if (!monaco) return;
   const isLight = document.documentElement.getAttribute("data-theme") === "light";
-  
-  // Custom theme definition matching UniRTM design tokens
-  const style = getComputedStyle(document.documentElement);
-  const bgColor = style.getPropertyValue("--bg-color").trim() || (isLight ? "#f8fafc" : "#1e1e1e");
-  const textColor = style.getPropertyValue("--text-main").trim() || (isLight ? "#0f172a" : "#d4d4d4");
-  const borderColor = style.getPropertyValue("--card-border").trim() || (isLight ? "#cbd5e1" : "#333333");
-
-  monaco.editor.defineTheme("unirtm-theme", {
-    base: isLight ? "vs" : "vs-dark",
-    inherit: true,
-    rules: [],
-    colors: {
-      "editor.background": bgColor,
-      "editor.foreground": textColor,
-      "editorLineNumber.foreground": isLight ? "#94a3b8" : "#64748b",
-      "editorLineNumber.activeForeground": textColor,
-      "editorGutter.background": bgColor,
-      "editorWidget.background": isLight ? "#ffffff" : "#252526",
-      "editorWidget.border": borderColor,
-      "input.background": isLight ? "#ffffff" : "#1e1e1e",
-      "input.border": borderColor,
-    },
-  });
-
-  monaco.editor.setTheme("unirtm-theme");
+  monaco.editor.setTheme(isLight ? "vs" : "vs-dark");
 }
 
 function getOrCreateModel(tab: EditorTab): MonacoType.editor.ITextModel | null {
@@ -137,8 +121,9 @@ onMounted(async () => {
     if (pos) {
       emit("cursor-change", pos.lineNumber, pos.column);
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error("[MonacoEditor] Mount failed:", err);
+    mountError.value = String(err?.message || err);
   } finally {
     isLoading.value = false;
   }
@@ -208,33 +193,55 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .monaco-wrapper {
-  position: relative;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  flex: 1;
-  min-height: 0;
-  min-width: 0;
   overflow: hidden;
   background-color: var(--bg-color);
 }
 
 .monaco-host-container {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  min-height: 0;
-  min-width: 0;
 }
 
-.monaco-loading-overlay {
+.monaco-loading-overlay,
+.monaco-error-overlay {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   background-color: var(--bg-color);
   color: var(--text-muted);
   font-size: 13px;
   z-index: 10;
+}
+
+.monaco-error-overlay {
+  flex-direction: column;
+  padding: 24px;
+  text-align: center;
+}
+
+.error-icon {
+  font-size: 28px;
+  color: #ef4444;
+}
+
+.error-title {
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.error-detail {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: monospace;
 }
 </style>
