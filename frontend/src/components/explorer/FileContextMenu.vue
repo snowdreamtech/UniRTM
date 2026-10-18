@@ -53,12 +53,29 @@
       <span class="menu-icon codicon codicon-terminal"></span>
       <span class="menu-label">在集成终端中打开</span>
     </div>
+
+    <div class="menu-separator"></div>
+
+    <!-- Git SCM & Git Graph Actions -->
+    <div class="menu-item" @click="handleViewGitHistory">
+      <span class="menu-icon codicon codicon-git-commit"></span>
+      <span class="menu-label">在 Git Graph 中查看提交历史</span>
+    </div>
+    <div v-if="hasGitChanges" class="menu-item" @click="handleOpenDiff">
+      <span class="menu-icon codicon codicon-diff"></span>
+      <span class="menu-label">打开差异比对 (Diff)</span>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
 import { useFileTree } from "../../composables/useFileTree";
+import { useGit } from "../../composables/useGit";
+
+const router = useRouter();
+const { getGitStatus, setGraphFilterPath } = useGit();
 
 const emit = defineEmits<{
   (e: "open-terminal", dirPath: string): void;
@@ -73,6 +90,39 @@ const {
   copyRelativePath,
   copyFileName,
 } = useFileTree();
+
+const hasGitChanges = computed(() => {
+  const node = contextMenu.value.node;
+  if (!node || node.is_dir) return false;
+  return !!getGitStatus(node.path);
+});
+
+function handleViewGitHistory() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (!node) return;
+  setGraphFilterPath(node.path);
+  router.push({
+    name: "scm",
+    query: {
+      tab: "graph",
+      path: node.path,
+    },
+  });
+}
+
+function handleOpenDiff() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (!node) return;
+  router.push({
+    name: "scm",
+    query: {
+      path: node.path,
+      staged: "false",
+    },
+  });
+}
 
 const menuRef = ref<HTMLElement | null>(null);
 

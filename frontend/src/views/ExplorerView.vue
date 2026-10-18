@@ -460,6 +460,21 @@
               <!-- Separator -->
               <li class="action-separator" role="separator"></li>
 
+              <!-- Git Graph & Diff Actions -->
+              <li class="action-item" role="none" @click="handleViewFileGitGraph">
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">在 Git Graph 中查看该文件提交历史</span>
+                </a>
+              </li>
+              <li v-if="targetTabHasGitChanges" class="action-item" role="none" @click="handleOpenTabDiff">
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">打开差异比对 (Diff)</span>
+                </a>
+              </li>
+
+              <!-- Separator -->
+              <li class="action-separator" role="separator"></li>
+
               <!-- Group 4: Pin / Unpin Tab -->
               <li class="action-item" role="none" @click="handleTogglePin">
                 <a class="action-menu-item" role="menuitem">
@@ -575,6 +590,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { t } from "../i18n";
 import TechIcon from "../components/common/TechIcon.vue";
 import MonacoEditor from "../components/editor/MonacoEditor.vue";
@@ -582,6 +598,11 @@ import { useFileTree } from "../composables/useFileTree";
 import { useEditorTabs, type EditorTab } from "../composables/useEditorTabs";
 import { useTerminalSessions } from "../composables/useTerminalSessions";
 import { useToast } from "../composables/useToast";
+import { useGit } from "../composables/useGit";
+
+const router = useRouter();
+const route = useRoute();
+const { getGitStatus, setGraphFilterPath } = useGit();
 
 const emit = defineEmits<{
   (e: "open-drawer", tab: string): void;
@@ -834,6 +855,40 @@ function handleTogglePin() {
     togglePinTab(targetTab.value.id);
   }
   closeContextMenu();
+}
+
+const targetTabHasGitChanges = computed(() => {
+  if (!targetTab.value) return false;
+  return !!getGitStatus(targetTab.value.path);
+});
+
+function handleViewFileGitGraph() {
+  if (!targetTab.value) return;
+  const filePath = targetTab.value.path;
+  closeContextMenu();
+  setGraphFilterPath(filePath);
+  router.push({
+    name: "scm",
+    query: {
+      scope: route.query.scope || "workspace",
+      tab: "graph",
+      path: filePath,
+    },
+  });
+}
+
+function handleOpenTabDiff() {
+  if (!targetTab.value) return;
+  const filePath = targetTab.value.path;
+  closeContextMenu();
+  router.push({
+    name: "scm",
+    query: {
+      scope: route.query.scope || "workspace",
+      path: filePath,
+      staged: "false",
+    },
+  });
 }
 
 // Split Editor State

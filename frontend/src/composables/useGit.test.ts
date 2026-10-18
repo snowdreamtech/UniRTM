@@ -163,5 +163,110 @@ describe("useGit composable", () => {
     expect(getDirGitCount("src/sub")).toBe(1);
     expect(getDirGitCount("other")).toBe(0);
   });
+
+  it("fetchGraph fetches topological DAG commits properly", async () => {
+    const mockGraphCommits = [
+      {
+        hash: "c2",
+        shortHash: "c2",
+        parents: ["c1"],
+        author: "snowdream",
+        email: "test@example.com",
+        timestamp: 1792334000,
+        message: "feat: add git graph",
+        refs: [{ name: "dev", type: "branch", current: true }],
+      },
+    ];
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, commits: mockGraphCommits }),
+    });
+
+    const { graphCommits, fetchGraph } = useGit();
+    const res = await fetchGraph({ branch: "dev" });
+    expect(res).toHaveLength(1);
+    expect(graphCommits.value[0].shortHash).toBe("c2");
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/api/git/graph?branch=dev&limit=200"));
+  });
+
+  it("fetchCommitDetail fetches detailed commit and changed files", async () => {
+    const mockDetail = {
+      hash: "c2",
+      shortHash: "c2",
+      parents: ["c1"],
+      author: "snowdream",
+      email: "test@example.com",
+      timestamp: 1792334000,
+      committer: "snowdream",
+      committerEmail: "test@example.com",
+      committerTimestamp: 1792334000,
+      message: "feat: add git graph",
+      files: [{ path: "src/main.ts", status: "M", additions: 10, deletions: 2 }],
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, commit: mockDetail }),
+    });
+
+    const { fetchCommitDetail, selectedCommitDetail } = useGit();
+    const res = await fetchCommitDetail("c2");
+    expect(res).toBeDefined();
+    expect(selectedCommitDetail.value?.files).toHaveLength(1);
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/commit-detail?hash=c2");
+  });
+
+  it("fetchCommitDiff fetches commit diff with parent", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        path: "src/main.ts",
+        hash: "c2",
+        parent: "c1",
+        original: "const a = 1;",
+        modified: "const a = 2;",
+      }),
+    });
+
+    const { fetchCommitDiff, activeCommitDiff } = useGit();
+    const res = await fetchCommitDiff("c2", "src/main.ts", "c1");
+    expect(res?.original).toBe("const a = 1;");
+    expect(res?.modified).toBe("const a = 2;");
+    expect(activeCommitDiff.value?.hash).toBe("c2");
+  });
+
+  it("createTag, createBranchFromCommit, cherryPick, revertCommit, resetToCommit call endpoints", async () => {
+    global.fetch = vi.fn().mockImplementation(() => {
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ success: true, commits: [] }),
+      });
+    });
+
+    const {
+      createTag,
+      createBranchFromCommit,
+      cherryPick,
+      revertCommit,
+      resetToCommit,
+    } = useGit();
+
+    await createTag("v1.0.0", "c2", "first release");
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/tag", expect.objectContaining({ method: "POST" }));
+
+    await createBranchFromCommit("feature/test", "c2", true);
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/branch/create", expect.objectContaining({ method: "POST" }));
+
+    await cherryPick("c2");
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/cherry-pick", expect.objectContaining({ method: "POST" }));
+
+    await revertCommit("c2");
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/revert", expect.objectContaining({ method: "POST" }));
+
+    await resetToCommit("c2", "hard");
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/reset", expect.objectContaining({ method: "POST" }));
+  });
 });
 

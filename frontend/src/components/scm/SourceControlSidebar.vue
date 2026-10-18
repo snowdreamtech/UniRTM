@@ -15,6 +15,13 @@
       <div class="scm-header-actions">
         <button
           class="scm-action-btn"
+          title="查看 Git Graph 提交图谱 (对齐 vscode-git-graph)"
+          @click.stop="openGitGraph"
+        >
+          <span class="codicon codicon-git-commit"></span>
+        </button>
+        <button
+          class="scm-action-btn"
           title="刷新状态"
           :class="{ 'is-loading': isLoading }"
           @click.stop="handleRefresh"
@@ -210,12 +217,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { useGit } from "../../composables/useGit";
 import { useEditorTabs } from "../../composables/useEditorTabs";
 import TechIcon from "../common/TechIcon.vue";
 
 const router = useRouter();
+const route = useRoute();
 const {
   status,
   branches,
@@ -248,6 +256,16 @@ onMounted(async () => {
 function handleRefresh() {
   fetchStatus().catch(() => {});
   fetchBranches().catch(() => {});
+}
+
+function openGitGraph() {
+  router.push({
+    name: "scm",
+    query: {
+      scope: route.query.scope || "workspace",
+      tab: "graph",
+    },
+  });
 }
 
 function getFileName(filePath: string): string {

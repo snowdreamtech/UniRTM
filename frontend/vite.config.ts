@@ -3400,6 +3400,388 @@ print(json.dumps({
               }
               return;
             }
+
+            // GET /api/git/graph - Git Graph DAG topological log
+            if (req.url?.startsWith("/api/git/graph") && req.method === "GET") {
+              try {
+                const parsedUrl = new URL(req.url, "http://localhost");
+                const branch = parsedUrl.searchParams.get("branch") || "all";
+                const filePath = parsedUrl.searchParams.get("path");
+                const limit = parseInt(parsedUrl.searchParams.get("limit") || "200", 10);
+
+                const args = ["log", "--date-order", "-n", String(limit), "--pretty=format:%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%s%x09%D"];
+                if (branch && branch !== "all") {
+                  args.push(branch);
+                } else {
+                  args.push("--all");
+                }
+                if (filePath) {
+                  args.push("--", filePath);
+                }
+
+                let out = "";
+                try {
+                  out = runGit(args);
+                } catch (e: any) {
+                  out = "";
+                }
+
+                const commits = out
+                  .split("\n")
+                  .filter(Boolean)
+                  .map((line: string) => {
+                    const [hash, shortHash, parentsStr, author, email, timestamp, message, refsStr] = line.split("\t");
+                    const parents = (parentsStr || "").trim().split(/\s+/).filter(Boolean);
+                    const refs: Array<{ name: string; type: "head" | "branch" | "remote" | "tag"; current: boolean }> = [];
+
+                    if (refsStr) {
+                      const rawRefs = refsStr.split(",").map((s) => s.trim()).filter(Boolean);
+                      for (const raw of rawRefs) {
+                        if (raw.startsWith("HEAD -> ")) {
+                          const name = raw.slice(8).trim();
+                          refs.push({ name, type: "branch", current: true });
+                        } else if (raw === "HEAD") {
+                          refs.push({ name: "HEAD", type: "head", current: true });
+                        } else if (raw.startsWith("tag: ")) {
+                          refs.push({ name: raw.slice(5).trim(), type: "tag", current: false });
+                        } else if (raw.startsWith("refs/tags/")) {
+                          refs.push({ name: raw.slice(10).trim(), type: "tag", current: false });
+                        } else if (raw.includes("/")) {
+                          refs.push({ name: raw, type: "remote", current: false });
+                        } else {
+                          refs.push({ name: raw, type: "branch", current: false });
+                        }
+                      }
+                    }
+
+                    return {
+                      hash,
+                      shortHash,
+                      parents,
+                      author,
+                      email,
+                      timestamp: parseInt(timestamp || "0", 10),
+                      message: message || "",
+                      refs,
+                    };
+                  });
+
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, commits }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+              return;
+            }
+
+            // GET /api/git/commit-detail?hash=...
+            if (req.url?.startsWith("/api/git/commit-detail") && req.method === "GET") {
+              try {
+                const parsedUrl = new URL(req.url, "http://localhost");
+                const hash = parsedUrl.searchParams.get("hash");
+                if (!hash) {
+                  res.statusCode = 400;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: "Hash is required" }));
+                  return;
+                }
+
+                // 1. Commit Metadata
+                const metaOut = runGit([
+                  "show",
+                  "-s",
+                  "--format=%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%cn%x09%ce%x09%ct%x09%B",
+                  hash,
+                ]);
+                const metaParts = metaOut.split("\t");
+                const fullHash = metaParts[0] || hash;
+                const shortHash = metaParts[1] || hash.slice(0, 8);
+                const parents = (metaParts[2] || "").trim().split(/\s+/).filter(Boolean);
+                const author = metaParts[3] || "";
+                const email = metaParts[4] || "";
+                const timestamp = parseInt(metaParts[5] || "0", 10);
+                const committer = metaParts[6] || "";
+                const committerEmail = metaParts[7] || "";
+                const committerTimestamp = parseInt(metaParts[8] || "0", 10);
+                const fullBody = metaParts[9] || "";
+
+                // 2. File Statuses
+                let nameStatusOut = "";
+                try {
+                  nameStatusOut = runGit(["diff-tree", "--no-commit-id", "--name-status", "-r", "-m", "--first-parent", hash]);
+                } catch (_) {
+                  nameStatusOut = "";
+                }
+
+                // 3. Numstat (Additions, Deletions)
+                let numstatOut = "";
+                try {
+                  numstatOut = runGit(["show", "--numstat", "--pretty=", hash]);
+                } catch (_) {
+                  numstatOut = "";
+                }
+
+                const numstatMap = new Map<string, { additions: number; deletions: number }>();
+                for (const line of numstatOut.split("\n").filter(Boolean)) {
+                  const [addStr, delStr, filePath] = line.split("\t");
+                  if (filePath) {
+                    numstatMap.set(filePath.trim(), {
+                      additions: parseInt(addStr, 10) || 0,
+                      deletions: parseInt(delStr, 10) || 0,
+                    });
+                  }
+                }
+
+                const files: Array<{
+                  path: string;
+                  status: string;
+                  additions: number;
+                  deletions: number;
+                  oldPath?: string;
+                }> = [];
+
+                for (const line of nameStatusOut.split("\n").filter(Boolean)) {
+                  const parts = line.split("\t");
+                  const statusCode = parts[0]?.trim() || "M";
+                  const p1 = parts[1]?.trim() || "";
+                  const p2 = parts[2]?.trim();
+
+                  let finalPath = p1;
+                  let oldPath: string | undefined = undefined;
+                  if (p2) {
+                    oldPath = p1;
+                    finalPath = p2;
+                  }
+
+                  const stats = numstatMap.get(finalPath) || { additions: 0, deletions: 0 };
+                  files.push({
+                    path: finalPath,
+                    oldPath,
+                    status: statusCode.charAt(0).toUpperCase(),
+                    additions: stats.additions,
+                    deletions: stats.deletions,
+                  });
+                }
+
+                res.setHeader("Content-Type", "application/json");
+                res.end(
+                  JSON.stringify({
+                    success: true,
+                    commit: {
+                      hash: fullHash,
+                      shortHash,
+                      parents,
+                      author,
+                      email,
+                      timestamp,
+                      committer,
+                      committerEmail,
+                      committerTimestamp,
+                      message: fullBody.trim(),
+                      files,
+                    },
+                  })
+                );
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+              return;
+            }
+
+            // GET /api/git/commit-diff?hash=...&path=...&parent=...
+            if (req.url?.startsWith("/api/git/commit-diff") && req.method === "GET") {
+              try {
+                const parsedUrl = new URL(req.url, "http://localhost");
+                const hash = parsedUrl.searchParams.get("hash");
+                const filePath = parsedUrl.searchParams.get("path");
+                let parent = parsedUrl.searchParams.get("parent");
+
+                if (!hash || !filePath) {
+                  res.statusCode = 400;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: "hash and path are required" }));
+                  return;
+                }
+
+                if (!parent) {
+                  try {
+                    parent = runGit(["rev-parse", `${hash}^`]);
+                  } catch (_) {
+                    parent = "";
+                  }
+                }
+
+                let original = "";
+                if (parent) {
+                  try {
+                    original = runGit(["show", `${parent}:${filePath}`]);
+                  } catch (_) {
+                    original = "";
+                  }
+                }
+
+                let modified = "";
+                try {
+                  modified = runGit(["show", `${hash}:${filePath}`]);
+                } catch (_) {
+                  modified = "";
+                }
+
+                res.setHeader("Content-Type", "application/json");
+                res.end(
+                  JSON.stringify({
+                    success: true,
+                    path: filePath,
+                    hash,
+                    parent,
+                    original,
+                    modified,
+                  })
+                );
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+              return;
+            }
+
+            // POST /api/git/tag
+            if (req.url === "/api/git/tag" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  if (!body.name || !body.hash) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "Tag name and commit hash are required" }));
+                    return;
+                  }
+                  if (body.message) {
+                    runGit(["tag", "-a", body.name, "-m", body.message, body.hash]);
+                  } else {
+                    runGit(["tag", body.name, body.hash]);
+                  }
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, name: body.name }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/branch/create
+            if (req.url === "/api/git/branch/create" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  if (!body.name || !body.hash) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "Branch name and start commit hash are required" }));
+                    return;
+                  }
+                  runGit(["branch", body.name, body.hash]);
+                  if (body.checkout) {
+                    runGit(["checkout", body.name]);
+                  }
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, name: body.name, checkout: !!body.checkout }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/cherry-pick
+            if (req.url === "/api/git/cherry-pick" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  if (!body.hash) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "Commit hash is required" }));
+                    return;
+                  }
+                  const out = runGit(["cherry-pick", body.hash]);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, output: out }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/revert
+            if (req.url === "/api/git/revert" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  if (!body.hash) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "Commit hash is required" }));
+                    return;
+                  }
+                  const out = runGit(["revert", "--no-edit", body.hash]);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, output: out }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/reset
+            if (req.url === "/api/git/reset" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  if (!body.hash) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "Commit hash is required" }));
+                    return;
+                  }
+                  const mode = ["soft", "mixed", "hard"].includes(body.mode) ? body.mode : "mixed";
+                  const out = runGit(["reset", `--${mode}`, body.hash]);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, mode, output: out }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
           }
 
           if (req.url === "/api/system/browsers") {
@@ -3620,7 +4002,7 @@ print(json.dumps({
           if (req.url === "/api/terminal/exec" && req.method === "POST") {
             res.setHeader("Content-Type", "application/json");
             let body = "";
-            req.on("data", (chunk) => {
+            req.on("data", (chunk: any) => {
               body += chunk;
             });
             req.on("end", () => {
@@ -4429,7 +4811,7 @@ print(json.dumps({
 
             if (pathname === "/api/hooks" && (req.method === "POST" || req.method === "PUT")) {
               let bodyStr = "";
-              req.on("data", (c) => {
+              req.on("data", (c: any) => {
                 bodyStr += c;
               });
               req.on("end", () => {
@@ -4523,7 +4905,7 @@ print(json.dumps({
 
             if (pathname === "/api/hooks" && req.method === "DELETE") {
               let bodyStr = "";
-              req.on("data", (c) => {
+              req.on("data", (c: any) => {
                 bodyStr += c;
               });
               req.on("end", () => {
@@ -4590,7 +4972,7 @@ print(json.dumps({
 
             if (pathname === "/api/hooks/install" && req.method === "POST") {
               let bodyStr = "";
-              req.on("data", (c) => {
+              req.on("data", (c: any) => {
                 bodyStr += c;
               });
               req.on("end", () => {
@@ -4620,7 +5002,7 @@ print(json.dumps({
 
             if (pathname === "/api/hooks/run" && req.method === "POST") {
               let bodyStr = "";
-              req.on("data", (c) => {
+              req.on("data", (c: any) => {
                 bodyStr += c;
               });
               req.on("end", () => {

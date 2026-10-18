@@ -43,6 +43,53 @@ export interface GitCommitItem {
   message: string;
 }
 
+export interface GitGraphRef {
+  name: string;
+  type: "head" | "branch" | "remote" | "tag";
+  current: boolean;
+}
+
+export interface GitGraphCommit {
+  hash: string;
+  shortHash: string;
+  parents: string[];
+  author: string;
+  email: string;
+  timestamp: number;
+  message: string;
+  refs: GitGraphRef[];
+}
+
+export interface GitCommitFileItem {
+  path: string;
+  oldPath?: string;
+  status: string;
+  additions: number;
+  deletions: number;
+}
+
+export interface GitCommitDetail {
+  hash: string;
+  shortHash: string;
+  parents: string[];
+  author: string;
+  email: string;
+  timestamp: number;
+  committer: string;
+  committerEmail: string;
+  committerTimestamp: number;
+  message: string;
+  files: GitCommitFileItem[];
+}
+
+export interface GitCommitDiffResult {
+  path: string;
+  hash: string;
+  parent?: string;
+  original: string;
+  modified: string;
+}
+
 const status = ref<GitStatusData>({
   branch: "main",
   ahead: 0,
@@ -54,6 +101,14 @@ const status = ref<GitStatusData>({
 
 const branches = ref<GitBranchItem[]>([]);
 const commits = ref<GitCommitItem[]>([]);
+const graphCommits = ref<GitGraphCommit[]>([]);
+const selectedCommit = ref<GitGraphCommit | null>(null);
+const selectedCommitDetail = ref<GitCommitDetail | null>(null);
+const activeCommitDiff = ref<GitCommitDiffResult | null>(null);
+const graphFilterBranch = ref<string>("all");
+const graphFilterPath = ref<string | null>(null);
+const graphSearchQuery = ref<string>("");
+const isLoadingGraph = ref<boolean>(false);
 const commitMessage = ref<string>("");
 const isLoading = ref<boolean>(false);
 const isCommitting = ref<boolean>(false);
@@ -341,10 +396,228 @@ export function useGit() {
     }
   }
 
+  /**
+   * Fetches the commit graph for Git Graph DAG view.
+   */
+  async function fetchGraph(options?: {
+    branch?: string;
+    path?: string | null;
+    limit?: number;
+  }): Promise<GitGraphCommit[]> {
+    isLoadingGraph.value = true;
+    try {
+      const b = options?.branch !== undefined ? options.branch : graphFilterBranch.value;
+      const p = options?.path !== undefined ? options.path : graphFilterPath.value;
+      const limit = options?.limit || 200;
+
+      const q = new URLSearchParams();
+      if (b && b !== "all") q.set("branch", b);
+      if (p) q.set("path", p);
+      q.set("limit", String(limit));
+
+      const res = await fetch(`/api/git/graph?${q.toString()}`);
+      if (!res.ok) throw new Error(`Git graph failed: HTTP ${res.status}`);
+      const data = await res.json();
+      graphCommits.value = Array.isArray(data.commits) ? data.commits : [];
+      return graphCommits.value;
+    } catch (err: any) {
+      console.error("fetchGraph error:", err);
+      showToast(err.message || "获取 Git 提交图谱失败", "error");
+      return [];
+    } finally {
+      isLoadingGraph.value = false;
+    }
+  }
+
+  /**
+   * Fetches full commit details and changed files with diff stats.
+   */
+  async function fetchCommitDetail(hash: string): Promise<GitCommitDetail | null> {
+    try {
+      const res = await fetch(`/api/git/commit-detail?hash=${encodeURIComponent(hash)}`);
+      if (!res.ok) throw new Error(`Fetch commit detail failed: HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.success && data.commit) {
+        selectedCommitDetail.value = data.commit;
+        return data.commit;
+      }
+      return null;
+    } catch (err: any) {
+      showToast(err.message || "获取提交详情失败", "error");
+      return null;
+    }
+  }
+
+  /**
+   * Fetches diff for a file in a specific historical commit vs its parent.
+   */
+  async function fetchCommitDiff(
+    hash: string,
+    path: string,
+    parentHash?: string
+  ): Promise<GitCommitDiffResult | null> {
+    try {
+      const q = new URLSearchParams({ hash, path });
+      if (parentHash) q.set("parent", parentHash);
+      const res = await fetch(`/api/git/commit-diff?${q.toString()}`);
+      if (!res.ok) throw new Error(`Fetch commit diff failed: HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.success) {
+        activeCommitDiff.value = {
+          path: data.path,
+          hash: data.hash,
+          parent: data.parent,
+          original: data.original || "",
+          modified: data.modified || "",
+        };
+        return activeCommitDiff.value;
+      }
+      return null;
+    } catch (err: any) {
+      showToast(err.message || "获取历史差异对比失败", "error");
+      return null;
+    }
+  }
+
+  /**
+   * Creates a Git tag on a specific commit.
+   */
+  async function createTag(name: string, hash: string, message?: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/tag", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, hash, message }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "创建标签失败");
+      showToast(`已成功创建标签: ${name}`, "success");
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "创建标签失败", "error");
+      return false;
+    }
+  }
+
+  /**
+   * Creates a new branch pointing to a specific commit.
+   */
+  async function createBranchFromCommit(
+    name: string,
+    hash: string,
+    checkoutBranch: boolean = false
+  ): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/branch/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, hash, checkout: checkoutBranch }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "创建分支失败");
+      showToast(`已成功创建分支: ${name}${checkoutBranch ? " 并已切换" : ""}`, "success");
+      await fetchBranches();
+      await fetchStatus();
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "创建分支失败", "error");
+      return false;
+    }
+  }
+
+  /**
+   * Cherry-picks a commit onto current HEAD.
+   */
+  async function cherryPick(hash: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/cherry-pick", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hash }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Cherry-pick 失败");
+      showToast(`已拣选提交: ${hash.slice(0, 8)}`, "success");
+      await fetchStatus();
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "Cherry-pick 失败", "error");
+      return false;
+    }
+  }
+
+  /**
+   * Reverts a commit.
+   */
+  async function revertCommit(hash: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/revert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hash }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "撤销提交失败");
+      showToast(`已成功撤销提交: ${hash.slice(0, 8)}`, "success");
+      await fetchStatus();
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "撤销提交失败", "error");
+      return false;
+    }
+  }
+
+  /**
+   * Resets branch to specific commit.
+   */
+  async function resetToCommit(
+    hash: string,
+    mode: "soft" | "mixed" | "hard" = "mixed"
+  ): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hash, mode }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "重置失败");
+      showToast(`已重置到提交 ${hash.slice(0, 8)} (${mode})`, "info");
+      await fetchStatus();
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "重置失败", "error");
+      return false;
+    }
+  }
+
+  function setGraphFilterPath(p: string | null) {
+    graphFilterPath.value = p;
+    fetchGraph({ path: p });
+  }
+
+  function clearGraphFilterPath() {
+    graphFilterPath.value = null;
+    fetchGraph({ path: null });
+  }
+
   return {
     status,
     branches,
     commits,
+    graphCommits,
+    selectedCommit,
+    selectedCommitDetail,
+    activeCommitDiff,
+    graphFilterBranch,
+    graphFilterPath,
+    graphSearchQuery,
+    isLoadingGraph,
     commitMessage,
     isLoading,
     isCommitting,
@@ -360,6 +633,16 @@ export function useGit() {
     fetchStatus,
     fetchBranches,
     fetchLog,
+    fetchGraph,
+    fetchCommitDetail,
+    fetchCommitDiff,
+    createTag,
+    createBranchFromCommit,
+    cherryPick,
+    revertCommit,
+    resetToCommit,
+    setGraphFilterPath,
+    clearGraphFilterPath,
     sync,
     stage,
     unstage,
