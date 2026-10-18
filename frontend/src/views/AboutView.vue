@@ -449,47 +449,85 @@ onMounted(() => {
 }
 
 .about-action-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  padding: 7px 14px;
-  border-radius: 6px;
+  padding: 7px 16px;
+  border-radius: 8px;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  line-height: 1.4;
+  user-select: none;
 }
 
 .about-action-btn.primary {
-  background: var(--accent-cyan);
-  color: #070a12;
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.28);
+}
+
+.about-action-btn.primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  border-color: #38bdf8;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+  transform: translateY(-1px);
 }
 
 .about-action-btn.secondary {
-  background: var(--input-bg);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-main);
-  border-color: var(--card-border);
+  border: 1px solid var(--card-border);
+}
+
+.about-action-btn.secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--card-border-active);
+  transform: translateY(-1px);
 }
 
 .about-action-btn.restart {
-  background: var(--success);
-  color: #070a12;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff !important;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.28);
+}
+
+.about-action-btn.restart:hover:not(:disabled) {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  border-color: #6ee7b7;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
 }
 
 .about-action-btn.update {
-  background: var(--accent-purple);
-  color: #ffffff;
+  background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
+  color: #ffffff !important;
+  border: 1px solid rgba(147, 51, 234, 0.4);
+  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.28);
 }
 
-.about-action-btn:hover:not(:disabled) {
-  opacity: 0.9;
+.about-action-btn.update:hover:not(:disabled) {
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+  border-color: #c084fc;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(147, 51, 234, 0.4);
   transform: translateY(-1px);
+}
+
+.about-action-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .about-action-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 /* Update Banner */
@@ -875,5 +913,81 @@ onMounted(() => {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* ========================================================
+   LIGHT THEME OVERRIDES FOR ABOUT VIEW
+   ======================================================== */
+:root[data-theme="light"] .about-action-btn.primary,
+[data-theme="light"] .about-action-btn.primary {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff !important;
+  border: 1px solid #0284c7;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.28);
+}
+
+:root[data-theme="light"] .about-action-btn.primary:hover:not(:disabled),
+[data-theme="light"] .about-action-btn.primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  border-color: #0284c7;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.38);
+}
+
+:root[data-theme="light"] .about-action-btn.secondary,
+[data-theme="light"] .about-action-btn.secondary {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #334155;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="light"] .about-action-btn.secondary:hover:not(:disabled),
+[data-theme="light"] .about-action-btn.secondary:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .about-action-btn.restart,
+[data-theme="light"] .about-action-btn.restart {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff !important;
+  border: 1px solid #059669;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.28);
+}
+
+:root[data-theme="light"] .about-action-btn.update,
+[data-theme="light"] .about-action-btn.update {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: #ffffff !important;
+  border: 1px solid #7c3aed;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.28);
+}
+
+:root[data-theme="light"] .hero-tag,
+[data-theme="light"] .hero-tag {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+:root[data-theme="light"] .credit-item,
+[data-theme="light"] .credit-item {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+:root[data-theme="light"] .credit-license-badge,
+[data-theme="light"] .credit-license-badge {
+  background: rgba(2, 132, 199, 0.1);
+  border-color: rgba(2, 132, 199, 0.25);
+  color: #0284c7;
+}
+
+:root[data-theme="light"] .credit-license-badge:hover,
+[data-theme="light"] .credit-license-badge:hover {
+  background: rgba(2, 132, 199, 0.2);
+  color: #0284c7;
 }
 </style>
