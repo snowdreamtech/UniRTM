@@ -38,19 +38,7 @@ export function useEditorTabs() {
     }
 
     const language = getLanguageForFile(file.name);
-    const newTab: EditorTab = {
-      id: file.path,
-      path: file.path,
-      name: file.name,
-      language,
-      content: "",
-      originalContent: "",
-      isDirty: false,
-      isLoading: true,
-    };
-
-    tabs.value.push(newTab);
-    activeTabId.value = newTab.id;
+    let fileContent = "";
 
     try {
       const res = await fetch(`/api/fs/read?path=${encodeURIComponent(file.path)}`);
@@ -58,17 +46,25 @@ export function useEditorTabs() {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       }
       const data = await res.json();
-      const content = data.content !== undefined ? data.content : data.data?.content ?? "";
-      newTab.content = content;
-      newTab.originalContent = content;
-      newTab.isDirty = false;
+      fileContent = data.content !== undefined ? data.content : data.data?.content ?? "";
     } catch (err: any) {
-      newTab.content = `// Error loading file: ${err.message}`;
-      newTab.originalContent = newTab.content;
+      fileContent = `// 读取文件失败: ${err.message}`;
       showToast(`读取文件失败: ${err.message}`, "error");
-    } finally {
-      newTab.isLoading = false;
     }
+
+    const newTab: EditorTab = {
+      id: file.path,
+      path: file.path,
+      name: file.name,
+      language,
+      content: fileContent,
+      originalContent: fileContent,
+      isDirty: false,
+      isLoading: false,
+    };
+
+    tabs.value.push(newTab);
+    activeTabId.value = newTab.id;
   }
 
   function switchTab(tabId: string): void {

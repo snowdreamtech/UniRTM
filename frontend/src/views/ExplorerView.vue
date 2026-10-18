@@ -439,6 +439,9 @@ function handleCreateFolderInside() {
   flex-direction: column;
   flex: 1;
   width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -459,8 +462,11 @@ function handleCreateFolderInside() {
   position: relative;
   overflow: hidden;
   display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
+  min-height: 0;
+  min-width: 0;
 }
 
 .image-preview-container {

@@ -614,5 +614,7 @@ onUnmounted(() => {
   overflow-y: auto;
   scrollbar-gutter: stable;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 </style>

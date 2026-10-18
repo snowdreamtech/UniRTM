@@ -90,7 +90,7 @@ onMounted(async () => {
 
     editorInstance = monaco.editor.create(editorContainerRef.value, {
       model,
-      automaticLayout: false,
+      automaticLayout: true,
       fontSize: 13,
       fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
       minimap: { enabled: true, maxColumn: 80 },
@@ -127,6 +127,11 @@ onMounted(async () => {
     });
     resizeObserver.observe(editorContainerRef.value);
 
+    // Immediate layout pass
+    setTimeout(() => {
+      editorInstance?.layout();
+    }, 50);
+
     // Initial position
     const pos = editorInstance.getPosition();
     if (pos) {
@@ -147,11 +152,24 @@ watch(
     const model = getOrCreateModel(props.tab);
     if (model) {
       editorInstance.setModel(model);
+      editorInstance.layout();
       const pos = editorInstance.getPosition();
       if (pos) {
         emit("cursor-change", pos.lineNumber, pos.column);
       }
       editorInstance.focus();
+    }
+  }
+);
+
+// Watch tab content updates
+watch(
+  () => props.tab.content,
+  (newContent) => {
+    if (!editorInstance || !monaco) return;
+    const model = editorInstance.getModel();
+    if (model && model.getValue() !== newContent && !props.tab.isDirty) {
+      model.setValue(newContent);
     }
   }
 );
@@ -193,6 +211,9 @@ onBeforeUnmount(() => {
   position: relative;
   width: 100%;
   height: 100%;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
   overflow: hidden;
   background-color: var(--bg-color);
 }
@@ -200,6 +221,8 @@ onBeforeUnmount(() => {
 .monaco-host-container {
   width: 100%;
   height: 100%;
+  min-height: 0;
+  min-width: 0;
 }
 
 .monaco-loading-overlay {
