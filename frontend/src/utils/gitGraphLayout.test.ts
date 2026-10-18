@@ -122,6 +122,45 @@ describe("gitGraphLayout", () => {
     expect(curvePath).toBeDefined();
   });
 
+  it("shifts subsequent nodes and extends total height when expandedIndex is provided", () => {
+    const commits: GitGraphCommit[] = [
+      {
+        hash: "c2",
+        shortHash: "c2",
+        parents: ["c1"],
+        author: "Alice",
+        email: "alice@example.com",
+        timestamp: 2000,
+        message: "Second commit",
+        refs: [],
+      },
+      {
+        hash: "c1",
+        shortHash: "c1",
+        parents: [],
+        author: "Alice",
+        email: "alice@example.com",
+        timestamp: 1000,
+        message: "First commit",
+        refs: [],
+      },
+    ];
+
+    const normal = layoutGitGraph(commits, { rowHeight: 30 });
+    const expanded = layoutGitGraph(commits, {
+      rowHeight: 30,
+      expandedIndex: 0,
+      expandedHeight: 200,
+    });
+
+    // Node 0 remains at y = 15
+    expect(expanded.nodes[0].y).toBe(normal.nodes[0].y);
+    // Node 1 is shifted down by 200px
+    expect(expanded.nodes[1].y).toBe(normal.nodes[1].y + 200);
+    // Total height extends by 200px
+    expect(expanded.height).toBe(normal.height + 200);
+  });
+
   it("getLaneColor wraps around colors properly", () => {
     expect(getLaneColor(0)).toBe(GRAPH_COLORS[0]);
     expect(getLaneColor(GRAPH_COLORS.length)).toBe(GRAPH_COLORS[0]);

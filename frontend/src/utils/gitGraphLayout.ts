@@ -44,16 +44,40 @@ export function getLaneColor(lane: number): string {
   return GRAPH_COLORS[lane % GRAPH_COLORS.length];
 }
 
+export interface GraphLayoutOptions {
+  rowHeight?: number;
+  laneWidth?: number;
+  startX?: number;
+  expandedIndex?: number;
+  expandedHeight?: number;
+}
+
 /**
  * Computes topological lanes and SVG paths for Git Graph DAG commits.
  */
 export function layoutGitGraph(
   commits: GitGraphCommit[],
-  options: { rowHeight?: number; laneWidth?: number; startX?: number } = {}
+  options: GraphLayoutOptions = {}
 ): GraphLayoutResult {
   const rowHeight = options.rowHeight ?? 34;
   const laneWidth = options.laneWidth ?? 18;
   const startX = options.startX ?? 16;
+  const expandedIndex = options.expandedIndex;
+  const expandedHeight =
+    expandedIndex !== undefined && expandedIndex >= 0
+      ? options.expandedHeight ?? 280
+      : 0;
+
+  function getRowTop(idx: number): number {
+    if (expandedIndex === undefined || expandedIndex < 0 || idx <= expandedIndex) {
+      return idx * rowHeight;
+    }
+    return idx * rowHeight + expandedHeight;
+  }
+
+  function getNodeY(idx: number): number {
+    return getRowTop(idx) + rowHeight / 2;
+  }
 
   if (!commits || commits.length === 0) {
     return {
@@ -126,7 +150,7 @@ export function layoutGitGraph(
     const commit = commits[i];
     const lane = commitLanes.get(commit.hash) ?? 0;
     const x = startX + lane * laneWidth;
-    const y = i * rowHeight + rowHeight / 2;
+    const y = getNodeY(i);
     const color = getLaneColor(lane);
     const isHead = commit.refs?.some((r) => r.type === "head" || r.current) ?? false;
 
@@ -147,7 +171,7 @@ export function layoutGitGraph(
       if (parentIdx !== undefined) {
         const parentLane = commitLanes.get(parentHash) ?? lane;
         const parentX = startX + parentLane * laneWidth;
-        const parentY = parentIdx * rowHeight + rowHeight / 2;
+        const parentY = getNodeY(parentIdx);
         const pathColor = pIdx === 0 ? color : getLaneColor(parentLane);
 
         if (lane === parentLane) {
@@ -177,7 +201,7 @@ export function layoutGitGraph(
   }
 
   const width = Math.max(48, startX + (maxLane + 1) * laneWidth + 12);
-  const height = Math.max(rowHeight, commits.length * rowHeight);
+  const height = Math.max(rowHeight, commits.length * rowHeight + expandedHeight);
 
   return {
     nodes,
