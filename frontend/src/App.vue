@@ -302,7 +302,9 @@ function openSettings(scope?: "user" | "workspace") {
   isSidebarOpen.value = true;
   const targetScope = scope || activeScope.value;
   if (route.name === "settings") {
-    router.replace({ name: "settings", params: route.params, query: { ...route.query, scope: targetScope } }).catch(() => {});
+    router
+      .replace({ name: "settings", params: route.params, query: { ...route.query, scope: targetScope } })
+      .catch(() => {});
   } else {
     router.push({ name: "settings", query: { ...route.query, scope: targetScope } }).catch(() => {});
   }
@@ -365,6 +367,7 @@ async function handleSidebarTaskRun(taskName: string) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        name: taskName,
         task: taskName,
         scope: activeScope.value || "workspace",
       }),
@@ -373,7 +376,12 @@ async function handleSidebarTaskRun(taskName: string) {
     if (res.ok && data.success) {
       addLog("SUCCESS", `[unirtm run ${taskName}] 任务执行完成 (退出码: 0)`, data.output, "tasks");
     } else {
-      addLog("ERROR", `[unirtm run ${taskName}] 任务执行失败 (退出码: ${data.exit_code ?? 1})`, data.error || data.output, "tasks");
+      addLog(
+        "ERROR",
+        `[unirtm run ${taskName}] 任务执行失败 (退出码: ${data.exit_code ?? 1})`,
+        data.error || data.output,
+        "tasks"
+      );
     }
   } catch (err: any) {
     addLog("ERROR", `[unirtm run ${taskName}] 任务调用异常: ${err.message}`, undefined, "tasks");
@@ -442,7 +450,11 @@ async function loadConfig() {
     if (res.ok) {
       const data = await res.json();
       const userSettings = data?.user?.settings || {};
-      const app = userSettings.appearance || (userSettings.theme === "light" || userSettings.theme === "dark" || userSettings.theme === "system" ? userSettings.theme : undefined);
+      const app =
+        userSettings.appearance ||
+        (userSettings.theme === "light" || userSettings.theme === "dark" || userSettings.theme === "system"
+          ? userSettings.theme
+          : undefined);
       if (app) {
         applyTheme(app);
       }

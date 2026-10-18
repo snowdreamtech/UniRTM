@@ -19,12 +19,17 @@
 
         <button
           v-if="!hasUpdateAvailable && !isRestartReady"
-          class="about-action-btn primary"
+          class="about-action-btn"
+          :class="isLatestChecked ? 'latest' : 'primary'"
           @click="handleCheckUpdate"
           :disabled="checking || updating"
         >
           <span v-if="checking" class="spin-icon">
             <TechIcon id="workbench:sync" :size="14" />
+          </span>
+          <span v-else-if="isLatestChecked" style="display: inline-flex; align-items: center; gap: 6px;">
+            <TechIcon id="workbench:check" :size="14" />
+            <span>{{ t("about.isLatest") || "已是最新版本" }}</span>
           </span>
           <span v-else style="display: inline-flex; align-items: center; gap: 6px;">
             <TechIcon id="workbench:search" :size="14" />
@@ -53,13 +58,15 @@
       </div>
     </div>
 
-    <!-- Update Feedback Banner -->
-    <div v-if="updateMessage" class="update-status-banner glass-card" :class="updateStatusClass">
-      <span class="banner-icon">
-        <TechIcon :id="isRestartReady ? 'workbench:sparkle' : 'workbench:info'" :size="16" />
-      </span>
-      <span class="banner-text">{{ updateMessage }}</span>
-    </div>
+    <!-- Update Feedback Banner (displayed only when user action/restart is required) -->
+    <transition name="fade-slide">
+      <div v-if="updateMessage && isRestartReady" class="update-status-banner glass-card" :class="updateStatusClass">
+        <span class="banner-icon">
+          <TechIcon :id="isRestartReady ? 'workbench:sparkle' : 'workbench:info'" :size="16" />
+        </span>
+        <span class="banner-text">{{ updateMessage }}</span>
+      </div>
+    </transition>
 
     <!-- Progress Bar during download -->
     <div v-if="updating" class="update-progress-card glass-card">
@@ -235,13 +242,15 @@
             </a>
           </div>
           <p>
-            {{ t("about.credits_themes_desc") || "原生兼容 VS Code 三大扩展主题维度：" }}
-            <span class="manifest-links">
-              <a href="https://code.visualstudio.com/api/extension-guides/color-theme" target="_blank" rel="noopener noreferrer" class="sub-link">颜色主题 (contributes.themes) ↗</a>、
-              <a href="https://code.visualstudio.com/api/extension-guides/file-icon-theme" target="_blank" rel="noopener noreferrer" class="sub-link">文件图标 (contributes.iconThemes) ↗</a>、
-              <a href="https://code.visualstudio.com/api/extension-guides/product-icon-theme" target="_blank" rel="noopener noreferrer" class="sub-link">界面图标 (contributes.productIconThemes) ↗</a>。
-            </span>
+            {{ t("about.credits_themes_desc") || "原生兼容 VS Code 三大扩展主题维度：颜色主题 (contributes.themes)、文件图标 (contributes.iconThemes) 与界面产品图标 (contributes.productIconThemes)。" }}
           </p>
+          <div class="manifest-links" style="margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap;">
+            <a href="https://code.visualstudio.com/api/extension-guides/color-theme" target="_blank" rel="noopener noreferrer" class="sub-link">颜色主题规范 ↗</a>
+            <span style="color: var(--text-muted); opacity: 0.5;">•</span>
+            <a href="https://code.visualstudio.com/api/extension-guides/file-icon-theme" target="_blank" rel="noopener noreferrer" class="sub-link">文件图标规范 ↗</a>
+            <span style="color: var(--text-muted); opacity: 0.5;">•</span>
+            <a href="https://code.visualstudio.com/api/extension-guides/product-icon-theme" target="_blank" rel="noopener noreferrer" class="sub-link">界面图标规范 ↗</a>
+          </div>
         </div>
       </div>
     </div>
@@ -268,8 +277,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { t } from "../i18n";
+import { useToast } from "../composables/useToast";
 import { formatUpdateProgress, type UpdateProgressPayload } from "../utils/updater";
 import TechIcon from "../components/common/TechIcon.vue";
+
+const { showToast } = useToast();
 
 interface AppInfo {
   projectName?: string;
@@ -317,6 +329,8 @@ const hasUpdateAvailable = ref(false);
 const latestTag = ref("");
 const updateMessage = ref("");
 const updateStatusClass = ref("");
+const isLatestChecked = ref(false);
+let isLatestTimer: number | undefined;
 
 const openUrl = (url: string) => {
   window.open(url, "_blank", "noopener,noreferrer");
@@ -389,12 +403,20 @@ async function fetchSystemStatus() {
 const handleCheckUpdate = async () => {
   checking.value = true;
   updateMessage.value = "";
+  isLatestChecked.value = false;
   await fetchSystemStatus();
   setTimeout(() => {
     checking.value = false;
     hasUpdateAvailable.value = false;
-    updateMessage.value = t("about.isLatest", { version: displayVersion.value }) || `当前已是最新版本 (${displayVersion.value})`;
-    updateStatusClass.value = "is-latest";
+    isLatestChecked.value = true;
+    showToast(
+      t("about.isLatest", { version: displayVersion.value }) || `当前已是最新版本 (${displayVersion.value})`,
+      "success"
+    );
+    if (isLatestTimer) clearTimeout(isLatestTimer);
+    isLatestTimer = window.setTimeout(() => {
+      isLatestChecked.value = false;
+    }, 2500);
   }, 600);
 };
 
@@ -523,6 +545,18 @@ onMounted(async () => {
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.28);
 }
 
+.about-action-btn.latest {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981 !important;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+}
+
+.about-action-btn.latest:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: #34d399;
+}
+
 .about-action-btn.restart:hover:not(:disabled) {
   background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
   border-color: #6ee7b7;
@@ -567,6 +601,17 @@ onMounted(async () => {
   border: 1px solid rgba(16, 185, 129, 0.25);
   color: var(--success);
   font-size: 0.85rem;
+}
+
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 .update-progress-card {

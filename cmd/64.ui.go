@@ -520,17 +520,41 @@ func detectInstalledTerminals() []DetectedTerminal {
 		}
 	}
 
-	// 3. Special checks on Windows (e.g. Git Bash)
+	// 3. Special checks on Windows (e.g. Git Bash, PowerShell Core, WSL, System32 fallbacks)
 	if runtime.GOOS == "windows" {
+		winDir := os.Getenv("SystemRoot")
+		if winDir == "" {
+			winDir = `C:\Windows`
+		}
+		systemFallbacks := []struct {
+			id   string
+			name string
+			path string
+		}{
+			{"powershell", "Windows PowerShell", filepath.Join(winDir, `System32\WindowsPowerShell\v1.0\powershell.exe`)},
+			{"pwsh", "PowerShell Core", `C:\Program Files\PowerShell\7\pwsh.exe`},
+			{"pwsh", "PowerShell Core", `C:\Program Files\PowerShell\6\pwsh.exe`},
+			{"cmd", "Command Prompt", filepath.Join(winDir, `System32\cmd.exe`)},
+			{"wsl", "WSL", filepath.Join(winDir, `System32\wsl.exe`)},
+		}
+		for _, sf := range systemFallbacks {
+			if _, err := os.Stat(sf.path); err == nil {
+				addTerminal(sf.id, sf.name, sf.path)
+			}
+		}
+
 		gitBashPaths := []string{
 			`C:\Program Files\Git\bin\bash.exe`,
 			`C:\Program Files (x86)\Git\bin\bash.exe`,
 			filepath.Join(os.Getenv("LocalAppData"), `Programs\Git\bin\bash.exe`),
+			filepath.Join(os.Getenv("UserProfile"), `AppData\Local\Programs\Git\bin\bash.exe`),
 		}
 		for _, gbp := range gitBashPaths {
-			if _, err := os.Stat(gbp); err == nil {
-				addTerminal("git-bash", "Git Bash", gbp)
-				break
+			if gbp != "" {
+				if _, err := os.Stat(gbp); err == nil {
+					addTerminal("git-bash", "Git Bash", gbp)
+					break
+				}
 			}
 		}
 	}
@@ -1314,9 +1338,19 @@ func handleRunTask(w http.ResponseWriter, r *http.Request) {
 	}
 	var body struct {
 		Name  string `json:"name"`
+		Task  string `json:"task"`
 		Scope string `json:"scope"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Name == "" {
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid request body"})
+		return
+	}
+	taskName := strings.TrimSpace(body.Name)
+	if taskName == "" {
+		taskName = strings.TrimSpace(body.Task)
+	}
+	if taskName == "" || taskName == "undefined" {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "task name is required"})
 		return
@@ -1325,7 +1359,7 @@ func handleRunTask(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, os.Args[0], "run", body.Name)
+	cmd := exec.CommandContext(ctx, os.Args[0], "run", taskName)
 	if body.Scope == "user" {
 		cmd.Args = append(cmd.Args, "--global")
 	}

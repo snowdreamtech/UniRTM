@@ -105,8 +105,8 @@
         </div>
         <p class="empty-desc">
           {{ activeScope === 'user'
-              ? '可在用户配置文件 (~/.config/unirtm/unirtm.toml) 中配置 [tasks.<name>] 定义通用任务。'
-              : '可在项目根目录的 .unirtm.toml 中添加 [tasks.<name>] 定义构建、测试与安全扫描等自动化脚本。' }}
+              ? '可在用户配置文件 (~/.config/unirtm/unirtm.toml) 中配置 [tasks.task-name] 定义通用任务。'
+              : '可在项目根目录的 .unirtm.toml 中添加 [tasks.task-name] 定义构建、测试与安全扫描等自动化脚本。' }}
         </p>
         <button v-if="!searchKey" class="tool-action-btn primary" style="margin-top: 0.75rem;" @click="openCreateModal">
           <TechIcon id="workbench:edit" :size="14" />
@@ -557,16 +557,19 @@ onUnmounted(() => {
 
 async function executeTask(task: ProjectTask) {
   if (runningTask.value !== null) return;
-  runningTask.value = task.name;
-  emit("task-started", task.name);
-  emit("log-event", "INFO", `[unirtm run ${task.name}] 正在启动任务...`, `执行命令: ${task.command}`, "tasks");
+  const taskName = task?.name || (task as any)?.id;
+  if (!taskName) return;
+  runningTask.value = taskName;
+  emit("task-started", taskName);
+  emit("log-event", "INFO", `[unirtm run ${taskName}] 正在启动任务...`, `执行命令: ${task.command}`, "tasks");
 
   try {
     const res = await fetch("/api/tasks/run", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name: task.name,
+        name: taskName,
+        task: taskName,
         scope: activeScope.value,
       }),
     });
@@ -576,7 +579,7 @@ async function executeTask(task: ProjectTask) {
       emit(
         "log-event",
         "SUCCESS",
-        `[${task.name}] 任务执行成功 (退出码: 0)`,
+        `[${taskName}] 任务执行成功 (退出码: 0)`,
         data.output ? data.output : undefined,
         "tasks"
       );
@@ -584,15 +587,15 @@ async function executeTask(task: ProjectTask) {
       emit(
         "log-event",
         "ERROR",
-        `[${task.name}] 任务执行失败 (退出码: ${data.exit_code ?? 1})`,
+        `[${taskName}] 任务执行失败 (退出码: ${data.exit_code ?? 1})`,
         data.output || data.error || undefined,
         "tasks"
       );
     }
   } catch (err: any) {
-    emit("log-event", "ERROR", `[${task.name}] 执行网络异常: ${err.message}`, undefined, "tasks");
+    emit("log-event", "ERROR", `[${taskName}] 执行网络异常: ${err.message}`, undefined, "tasks");
   } finally {
-    emit("task-finished", task.name);
+    emit("task-finished", taskName);
     runningTask.value = null;
   }
 }

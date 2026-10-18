@@ -201,7 +201,7 @@ export default defineConfig({
               for (const line of c.split("\n")) {
                 const tr = line.trim();
                 if (tr.startsWith("[") && tr.endsWith("]")) {
-                  inTools = (tr === "[tools]");
+                  inTools = tr === "[tools]";
                   continue;
                 }
                 if (inTools && tr && !tr.startsWith("#")) {
@@ -230,7 +230,7 @@ export default defineConfig({
               for (const line of c.split("\n")) {
                 const tr = line.trim();
                 if (tr.startsWith("[") && tr.endsWith("]")) {
-                  inPins = (tr === "[pins]");
+                  inPins = tr === "[pins]";
                   continue;
                 }
                 if (inPins && tr && !tr.startsWith("#")) {
@@ -305,37 +305,50 @@ export default defineConfig({
             } catch {}
 
             try {
-              const gitRev = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: rootDir, encoding: "utf-8", timeout: 2000 }).trim();
+              const gitRev = execFileSync("git", ["rev-parse", "--short", "HEAD"], {
+                cwd: rootDir,
+                encoding: "utf-8",
+                timeout: 2000,
+              }).trim();
               if (gitRev) commit = gitRev;
             } catch {}
 
             try {
-              const gitDate = execFileSync("git", ["log", "-1", "--format=%cs"], { cwd: rootDir, encoding: "utf-8", timeout: 2000 }).trim();
+              const gitDate = execFileSync("git", ["log", "-1", "--format=%cs"], {
+                cwd: rootDir,
+                encoding: "utf-8",
+                timeout: 2000,
+              }).trim();
               if (gitDate) buildTime = gitDate;
             } catch {}
 
             res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({
-              status: "ready",
-              version: gitTag,
-              git_tag: gitTag,
-              commit: commit,
-              build_time: buildTime,
-              platform: `${process.platform}/${process.arch}`,
-              go_version: "go1.27+",
-              project_name: "unirtm",
-              author: "Snowdream Tech <snowdreamtech@qq.com>",
-              license: "MIT License",
-              copyright: "Copyright (c) 2026 SnowdreamTech. All rights reserved.",
-              tools_count: 5,
-              tasks_count: 4,
-              plugins_count: 0,
-              timestamp: Math.floor(Date.now() / 1000),
-            }));
+            res.end(
+              JSON.stringify({
+                status: "ready",
+                version: gitTag,
+                git_tag: gitTag,
+                commit: commit,
+                build_time: buildTime,
+                platform: `${process.platform}/${process.arch}`,
+                go_version: "go1.27+",
+                project_name: "unirtm",
+                author: "Snowdream Tech <snowdreamtech@qq.com>",
+                license: "MIT License",
+                copyright: "Copyright (c) 2026 SnowdreamTech. All rights reserved.",
+                tools_count: 5,
+                tasks_count: 4,
+                plugins_count: 0,
+                timestamp: Math.floor(Date.now() / 1000),
+              })
+            );
             return;
           }
 
-          if ((req.url === "/api/tools/migrate-legacy" || req.url === "/api/runtimes/migrate-legacy") && req.method === "POST") {
+          if (
+            (req.url === "/api/tools/migrate-legacy" || req.url === "/api/runtimes/migrate-legacy") &&
+            req.method === "POST"
+          ) {
             try {
               const wsPath = path.join(rootDir, ".unirtm.toml");
               let content = fs.existsSync(wsPath) ? fs.readFileSync(wsPath, "utf-8") : "";
@@ -414,7 +427,11 @@ export default defineConfig({
             const installedMap: Record<string, string[]> = {};
             if (fs.existsSync(unirtmBin)) {
               try {
-                const out = execFileSync(unirtmBin, ["list", "--json"], { cwd: rootDir, encoding: "utf-8", timeout: 5000 });
+                const out = execFileSync(unirtmBin, ["list", "--json"], {
+                  cwd: rootDir,
+                  encoding: "utf-8",
+                  timeout: 5000,
+                });
                 const data = JSON.parse(out);
                 const list = data.fields?.tools || data.tools || [];
                 for (const item of list) {
@@ -462,7 +479,9 @@ export default defineConfig({
                 const dir = path.join(installsRoot, cand);
                 if (fs.existsSync(dir)) {
                   try {
-                    const list = fs.readdirSync(dir).filter(f => !f.startsWith(".") && fs.statSync(path.join(dir, f)).isDirectory());
+                    const list = fs
+                      .readdirSync(dir)
+                      .filter((f) => !f.startsWith(".") && fs.statSync(path.join(dir, f)).isDirectory());
                     if (list.length > 0) {
                       return list.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
                     }
@@ -488,7 +507,14 @@ export default defineConfig({
             if (fs.existsSync(goVer)) detected_legacies.push(".go-version");
             if (fs.existsSync(pyVer)) detected_legacies.push(".python-version");
 
-            const getToolItem = (id: string, name: string, desc: string, hp: string, defaultVer: string, fallbackInstalled: string[]) => {
+            const getToolItem = (
+              id: string,
+              name: string,
+              desc: string,
+              hp: string,
+              defaultVer: string,
+              fallbackInstalled: string[]
+            ) => {
               const installed = getInstalled(id, fallbackInstalled);
               let active = wsTools[id] || "";
               let source = active ? ".unirtm.toml" : "";
@@ -538,23 +564,106 @@ export default defineConfig({
               };
             };
 
-            const knownLanguageRuntimes: Record<string, { name: string; desc: string; hp: string; defaultVer: string }> = {
-              node: { name: "Node.js", desc: "JavaScript / TypeScript runtime (NVM superset)", hp: "https://nodejs.org", defaultVer: "20.18.3" },
-              go: { name: "Go", desc: "Go programming language (GVM superset)", hp: "https://go.dev", defaultVer: "1.27.2" },
-              python: { name: "Python", desc: "Python language interpreter (Pyenv superset)", hp: "https://python.org", defaultVer: "3.14.7" },
-              rust: { name: "Rust", desc: "Rust toolchain & cargo build system", hp: "https://rust-lang.org", defaultVer: "1.85.0" },
-              java: { name: "Java", desc: "OpenJDK / Java runtime environment", hp: "https://openjdk.org", defaultVer: "21.0.2" },
-              ruby: { name: "Ruby", desc: "Dynamic open source programming language with a focus on simplicity", hp: "https://ruby-lang.org", defaultVer: "3.4.1" },
-              bun: { name: "Bun", desc: "Incredibly fast all-in-one JavaScript & TypeScript toolkit", hp: "https://bun.sh", defaultVer: "1.2.4" },
-              deno: { name: "Deno", desc: "Next-generation JavaScript and TypeScript runtime", hp: "https://deno.com", defaultVer: "2.1.9" },
-              zig: { name: "Zig", desc: "General-purpose programming language and toolchain", hp: "https://ziglang.org", defaultVer: "0.13.0" },
-              php: { name: "PHP", desc: "Popular general-purpose scripting language suited for web development", hp: "https://php.net", defaultVer: "8.4.3" },
-              dotnet: { name: "Dotnet", desc: ".NET Developer Platform and SDK", hp: "https://dotnet.microsoft.com", defaultVer: "9.0.100" },
-              elixir: { name: "Elixir", desc: "Dynamic functional language designed for building scalable applications", hp: "https://elixir-lang.org", defaultVer: "1.18.1" },
-              erlang: { name: "Erlang", desc: "Programming language used to build massively scalable soft real-time systems", hp: "https://www.erlang.org", defaultVer: "27.2.1" },
-              flutter: { name: "Flutter", desc: "UI software development kit by Google", hp: "https://flutter.dev", defaultVer: "3.27.3" },
-              lua: { name: "Lua", desc: "Powerful, efficient, lightweight, embeddable scripting language", hp: "https://www.lua.org", defaultVer: "5.4.7" },
-              swift: { name: "Swift", desc: "General-purpose programming language developed by Apple", hp: "https://swift.org", defaultVer: "6.0.3" },
+            const knownLanguageRuntimes: Record<
+              string,
+              { name: string; desc: string; hp: string; defaultVer: string }
+            > = {
+              node: {
+                name: "Node.js",
+                desc: "JavaScript / TypeScript runtime (NVM superset)",
+                hp: "https://nodejs.org",
+                defaultVer: "20.18.3",
+              },
+              go: {
+                name: "Go",
+                desc: "Go programming language (GVM superset)",
+                hp: "https://go.dev",
+                defaultVer: "1.27.2",
+              },
+              python: {
+                name: "Python",
+                desc: "Python language interpreter (Pyenv superset)",
+                hp: "https://python.org",
+                defaultVer: "3.14.7",
+              },
+              rust: {
+                name: "Rust",
+                desc: "Rust toolchain & cargo build system",
+                hp: "https://rust-lang.org",
+                defaultVer: "1.85.0",
+              },
+              java: {
+                name: "Java",
+                desc: "OpenJDK / Java runtime environment",
+                hp: "https://openjdk.org",
+                defaultVer: "21.0.2",
+              },
+              ruby: {
+                name: "Ruby",
+                desc: "Dynamic open source programming language with a focus on simplicity",
+                hp: "https://ruby-lang.org",
+                defaultVer: "3.4.1",
+              },
+              bun: {
+                name: "Bun",
+                desc: "Incredibly fast all-in-one JavaScript & TypeScript toolkit",
+                hp: "https://bun.sh",
+                defaultVer: "1.2.4",
+              },
+              deno: {
+                name: "Deno",
+                desc: "Next-generation JavaScript and TypeScript runtime",
+                hp: "https://deno.com",
+                defaultVer: "2.1.9",
+              },
+              zig: {
+                name: "Zig",
+                desc: "General-purpose programming language and toolchain",
+                hp: "https://ziglang.org",
+                defaultVer: "0.13.0",
+              },
+              php: {
+                name: "PHP",
+                desc: "Popular general-purpose scripting language suited for web development",
+                hp: "https://php.net",
+                defaultVer: "8.4.3",
+              },
+              dotnet: {
+                name: "Dotnet",
+                desc: ".NET Developer Platform and SDK",
+                hp: "https://dotnet.microsoft.com",
+                defaultVer: "9.0.100",
+              },
+              elixir: {
+                name: "Elixir",
+                desc: "Dynamic functional language designed for building scalable applications",
+                hp: "https://elixir-lang.org",
+                defaultVer: "1.18.1",
+              },
+              erlang: {
+                name: "Erlang",
+                desc: "Programming language used to build massively scalable soft real-time systems",
+                hp: "https://www.erlang.org",
+                defaultVer: "27.2.1",
+              },
+              flutter: {
+                name: "Flutter",
+                desc: "UI software development kit by Google",
+                hp: "https://flutter.dev",
+                defaultVer: "3.27.3",
+              },
+              lua: {
+                name: "Lua",
+                desc: "Powerful, efficient, lightweight, embeddable scripting language",
+                hp: "https://www.lua.org",
+                defaultVer: "5.4.7",
+              },
+              swift: {
+                name: "Swift",
+                desc: "General-purpose programming language developed by Apple",
+                hp: "https://swift.org",
+                defaultVer: "6.0.3",
+              },
             };
 
             // 1. Collect all tool IDs that are actually configured (workspace/user) or active via legacy files
@@ -564,11 +673,7 @@ export default defineConfig({
             if (fs.existsSync(pyVer)) activeLegacyIds.push("python");
 
             const configuredIds = Array.from(
-              new Set([
-                ...Object.keys(wsTools),
-                ...Object.keys(userTools),
-                ...activeLegacyIds,
-              ])
+              new Set([...Object.keys(wsTools), ...Object.keys(userTools), ...activeLegacyIds])
             );
 
             // Priority order for standard language runtimes if they are configured
@@ -609,7 +714,9 @@ export default defineConfig({
 
           if ((req.url === "/api/tools/use" || req.url === "/api/runtimes/use") && req.method === "POST") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const { tool, version, global: isGlobal } = JSON.parse(bodyStr || "{}");
@@ -670,7 +777,9 @@ export default defineConfig({
                       let lockContent = fs.readFileSync(lockPath, "utf-8");
                       const toolBlockHeader = `[[tools."${tool}"]]`;
                       if (lockContent.includes(toolBlockHeader)) {
-                        const toolRegex = new RegExp(`(\\[\\[tools\\."${tool}"\\]\\][\\s\\S]*?version\\s*=\\s*)"[^"]+"`);
+                        const toolRegex = new RegExp(
+                          `(\\[\\[tools\\."${tool}"\\]\\][\\s\\S]*?version\\s*=\\s*)"[^"]+"`
+                        );
                         lockContent = lockContent.replace(toolRegex, `$1"${version}"`);
                       } else {
                         lockContent += `\n[[tools."${tool}"]]\nversion = "${version}"\nbackend = "native"\n`;
@@ -681,7 +790,6 @@ export default defineConfig({
                 }
                 res.setHeader("Content-Type", "application/json");
                 res.end(JSON.stringify({ success: true, tool, version, global: isGlobal, cli: executedCli }));
-
               } catch (err: any) {
                 res.statusCode = 500;
                 res.setHeader("Content-Type", "application/json");
@@ -693,7 +801,9 @@ export default defineConfig({
 
           if ((req.url === "/api/tools/remove" || req.url === "/api/runtimes/remove") && req.method === "POST") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const { tool, global: isGlobal } = JSON.parse(bodyStr || "{}");
@@ -763,7 +873,9 @@ export default defineConfig({
 
           if ((req.url === "/api/tools/pin" || req.url === "/api/runtimes/pin") && req.method === "POST") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const { tool, pinned, reason, global: isGlobal } = JSON.parse(bodyStr || "{}");
@@ -842,12 +954,15 @@ export default defineConfig({
             const wsPins = parsePins(fs.existsSync(wsPath) ? wsPath : altWsPath);
             const userPins = parsePins(fs.existsSync(userPath) ? userPath : altUserPath);
 
-            const allTools = Array.from(new Set(["node", "go", "python", "rust", ...Object.keys(wsTools), ...Object.keys(userTools)]));
+            const allTools = Array.from(
+              new Set(["node", "go", "python", "rust", ...Object.keys(wsTools), ...Object.keys(userTools)])
+            );
             const urlObj = new URL(req.url, "http://localhost");
             const filterTool = urlObj.searchParams.get("tool");
             const filterScope = urlObj.searchParams.get("scope");
             const isGlobal = urlObj.searchParams.get("global") === "true" || filterScope === "user";
-            const isWorkspace = filterScope === "workspace" || (urlObj.searchParams.get("global") === "false" && !filterScope);
+            const isWorkspace =
+              filterScope === "workspace" || (urlObj.searchParams.get("global") === "false" && !filterScope);
 
             let targetTools: string[];
             if (filterTool) {
@@ -883,8 +998,14 @@ export default defineConfig({
             };
 
             const semverGt = (a: string, b: string) => {
-              const pa = a.replace(/^[vV]+/, "").split(".").map(n => parseInt(n, 10));
-              const pb = b.replace(/^[vV]+/, "").split(".").map(n => parseInt(n, 10));
+              const pa = a
+                .replace(/^[vV]+/, "")
+                .split(".")
+                .map((n) => parseInt(n, 10));
+              const pb = b
+                .replace(/^[vV]+/, "")
+                .split(".")
+                .map((n) => parseInt(n, 10));
               for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
                 const na = isNaN(pa[i]) ? 0 : pa[i];
                 const nb = isNaN(pb[i]) ? 0 : pb[i];
@@ -940,7 +1061,9 @@ export default defineConfig({
                   const dir = path.join(installsRoot, d);
                   if (fs.existsSync(dir)) {
                     try {
-                      const list = fs.readdirSync(dir).filter((f: string) => !f.startsWith(".") && fs.statSync(path.join(dir, f)).isDirectory());
+                      const list = fs
+                        .readdirSync(dir)
+                        .filter((f: string) => !f.startsWith(".") && fs.statSync(path.join(dir, f)).isDirectory());
                       for (const v of list) {
                         if (!candidates.includes(v)) candidates.push(v);
                       }
@@ -963,15 +1086,15 @@ export default defineConfig({
 
             for (const t of targetTools) {
               const cur = isGlobal
-                ? (userTools[t] || "")
+                ? userTools[t] || ""
                 : isWorkspace
-                ? (wsTools[t] || "")
-                : (wsTools[t] || userTools[t] || "");
+                  ? wsTools[t] || ""
+                  : wsTools[t] || userTools[t] || "";
               const pin = isGlobal
-                ? (userPins[t] || { pinned: false, reason: "" })
+                ? userPins[t] || { pinned: false, reason: "" }
                 : isWorkspace
-                ? (wsPins[t] || { pinned: false, reason: "" })
-                : (wsPins[t] || userPins[t] || { pinned: false, reason: "" });
+                  ? wsPins[t] || { pinned: false, reason: "" }
+                  : wsPins[t] || userPins[t] || { pinned: false, reason: "" };
               const latest = getLatestVersion(t, cur);
               const cleanCur = cur.replace(/^[vV]+/, "").trim();
               const cleanLatest = latest.replace(/^[vV]+/, "").trim();
@@ -986,29 +1109,36 @@ export default defineConfig({
               updates.push({
                 tool: t,
                 current_version: cur,
-                latest_version: hasUpdate ? latest : (cur || latest || ""),
+                latest_version: hasUpdate ? latest : cur || latest || "",
                 has_update: hasUpdate,
                 is_pinned: pin.pinned,
                 pin_reason: pin.reason,
                 in_workspace: Boolean(wsTools[t]),
                 in_user: Boolean(userTools[t]),
-                scope: userTools[t] && !wsTools[t] ? "user" : (wsTools[t] && !userTools[t] ? "workspace" : "both"),
+                scope: userTools[t] && !wsTools[t] ? "user" : wsTools[t] && !userTools[t] ? "workspace" : "both",
               });
             }
 
             res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({
-              updates,
-              total_checked: updates.length,
-              upgradable_count: upgradableCount,
-              pinned_count: pinnedCount,
-            }));
+            res.end(
+              JSON.stringify({
+                updates,
+                total_checked: updates.length,
+                upgradable_count: upgradableCount,
+                pinned_count: pinnedCount,
+              })
+            );
             return;
           }
 
-          if ((req.url === "/api/tools/batch-update" || req.url === "/api/runtimes/batch-update") && req.method === "POST") {
+          if (
+            (req.url === "/api/tools/batch-update" || req.url === "/api/runtimes/batch-update") &&
+            req.method === "POST"
+          ) {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const { tools, global: isGlobal } = JSON.parse(bodyStr || "{}");
@@ -1073,14 +1203,16 @@ export default defineConfig({
 
                 fs.writeFileSync(targetPath, content, "utf-8");
                 res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({
-                  success: true,
-                  updated,
-                  skipped,
-                  updated_count: updated.length,
-                  skipped_count: skipped.length,
-                  file: targetPath,
-                }));
+                res.end(
+                  JSON.stringify({
+                    success: true,
+                    updated,
+                    skipped,
+                    updated_count: updated.length,
+                    skipped_count: skipped.length,
+                    file: targetPath,
+                  })
+                );
               } catch (err: any) {
                 res.statusCode = 500;
                 res.setHeader("Content-Type", "application/json");
@@ -1103,133 +1235,346 @@ export default defineConfig({
             // 2. Static fallback only if CLI or upstream network fails
             if (versions.length === 0) {
               if (tool === "node" || tool === "nodejs") {
-              versions = [
-                "23.9.0", "23.8.0", "23.7.0", "23.6.0", "23.0.0",
-                "22.14.0", "22.13.1", "22.13.0", "22.12.0", "22.11.0", "22.9.0", "22.0.0",
-                "21.7.3", "21.6.2", "21.1.0",
-                "20.18.3", "20.18.2", "20.18.0", "20.17.0", "20.16.0", "20.15.1", "20.14.0", "20.12.2", "20.11.1", "20.10.0", "20.9.0",
-                "19.9.0", "19.8.1",
-                "18.20.7", "18.20.6", "18.20.5", "18.20.4", "18.20.0", "18.19.1", "18.18.2", "18.17.1", "18.16.0", "18.14.2", "18.12.1",
-                "16.20.2", "16.20.0", "16.19.1", "16.18.0", "16.14.2",
-                "14.21.3", "14.20.1", "14.19.3",
-              ];
-            } else if (tool === "python" || tool === "python3") {
-              versions = [
-                "3.14.0a4",
-                "3.13.2", "3.13.1", "3.13.0",
-                "3.12.9", "3.12.8", "3.12.7", "3.12.6", "3.12.5", "3.12.4", "3.12.3", "3.12.2", "3.12.1", "3.12.0",
-                "3.11.11", "3.11.10", "3.11.9", "3.11.8", "3.11.7", "3.11.6", "3.11.5", "3.11.4", "3.11.0",
-                "3.10.16", "3.10.15", "3.10.14", "3.10.13", "3.10.12", "3.10.11", "3.10.8", "3.10.0",
-                "3.9.21", "3.9.20", "3.9.19", "3.9.18", "3.9.16", "3.9.13", "3.9.0",
-                "3.8.20", "3.8.18", "3.8.16", "3.8.12", "3.8.0",
-                "3.7.17", "3.7.12",
-              ];
-            } else if (tool === "go" || tool === "golang") {
-              versions = [
-                "1.27.2", "1.27.1", "1.27.0",
-                "1.26.5", "1.26.4", "1.26.3", "1.26.2", "1.26.1", "1.26.0",
-                "1.25.8", "1.25.7", "1.25.6", "1.25.5", "1.25.4", "1.25.3", "1.25.2", "1.25.1", "1.25.0",
-                "1.24.5", "1.24.4", "1.24.3", "1.24.2", "1.24.1", "1.24.0",
-                "1.23.6", "1.23.5", "1.23.4", "1.23.3", "1.23.2", "1.23.1", "1.23.0",
-                "1.22.12", "1.22.11", "1.22.10", "1.22.9", "1.22.8", "1.22.6", "1.22.5", "1.22.2", "1.22.0",
-                "1.21.13", "1.21.12", "1.21.11", "1.21.8", "1.21.6", "1.21.0",
-                "1.20.14", "1.20.12", "1.20.7", "1.20.0",
-                "1.19.13", "1.19.8", "1.19.0",
-                "1.18.10", "1.18.5",
-              ];
-            } else if (tool === "rust") {
-              versions = [
-                "1.85.0", "1.84.1", "1.84.0", "1.83.0", "1.82.0", "1.81.0",
-                "1.80.1", "1.80.0", "1.79.0", "1.78.0", "1.77.2", "1.77.0",
-                "1.76.0", "1.75.0", "1.74.1", "1.73.0", "1.72.1", "1.71.1", "1.70.0",
-                "1.69.0", "1.68.2", "1.67.1", "1.66.1", "1.65.0",
-              ];
-            } else if (tool === "java" || tool === "openjdk") {
-              versions = [
-                "23.0.2", "23.0.1",
-                "22.0.2", "22.0.1",
-                "21.0.6", "21.0.5", "21.0.4", "21.0.2", "21.0.1", "21.0.0",
-                "17.0.14", "17.0.12", "17.0.10", "17.0.9", "17.0.8", "17.0.2",
-                "11.0.26", "11.0.22", "11.0.20", "11.0.18",
-                "8.0.442", "8.0.402", "8.0.392", "8.0.352",
-              ];
-            } else if (tool === "bun") {
-              versions = [
-                "1.2.4", "1.2.3", "1.2.2", "1.2.1", "1.2.0",
-                "1.1.45", "1.1.42", "1.1.38", "1.1.34", "1.1.30", "1.1.25", "1.1.20", "1.1.10", "1.1.0",
-                "1.0.36", "1.0.35", "1.0.30", "1.0.25", "1.0.20", "1.0.18", "1.0.0",
-              ];
-            } else if (tool === "deno") {
-              versions = [
-                "2.2.3", "2.2.2", "2.2.1", "2.2.0",
-                "2.1.9", "2.1.4", "2.1.0",
-                "2.0.6", "2.0.4", "2.0.0",
-                "1.46.3", "1.45.5", "1.44.4", "1.43.6", "1.42.4", "1.41.2", "1.40.5", "1.39.4", "1.38.2",
-              ];
-            } else if (tool === "zig") {
-              versions = [
-                "0.14.0", "0.13.0", "0.12.1", "0.12.0", "0.11.0", "0.10.1", "0.9.1", "0.8.1",
-              ];
-            } else if (tool === "ruby") {
-              versions = [
-                "3.4.2", "3.4.1",
-                "3.3.7", "3.3.6", "3.3.5", "3.3.0",
-                "3.2.7", "3.2.6", "3.2.3", "3.2.0",
-                "3.1.6", "3.1.4", "3.1.2",
-                "3.0.7", "3.0.6",
-              ];
-            } else if (tool === "php") {
-              versions = [
-                "8.4.4", "8.4.3", "8.4.1",
-                "8.3.17", "8.3.16", "8.3.14", "8.3.10", "8.3.0",
-                "8.2.27", "8.2.26", "8.2.20", "8.2.15",
-                "8.1.31", "8.1.28", "8.1.20",
-                "8.0.30", "8.0.28",
-              ];
-            } else {
-              const lockPath = path.join(rootDir, "unirtm.lock");
-              const lockTools = parseLockTools(lockPath);
-              const bare = tool && tool.includes(":") ? tool.split(":").slice(1).join(":") : tool;
-              const candKeys = [tool, bare, `github:${tool}`, `github:${bare}`];
-              for (const k of candKeys) {
-                if (k && lockTools[k] && lockTools[k].length > 0) {
-                  versions = [...lockTools[k]];
-                  break;
+                versions = [
+                  "23.9.0",
+                  "23.8.0",
+                  "23.7.0",
+                  "23.6.0",
+                  "23.0.0",
+                  "22.14.0",
+                  "22.13.1",
+                  "22.13.0",
+                  "22.12.0",
+                  "22.11.0",
+                  "22.9.0",
+                  "22.0.0",
+                  "21.7.3",
+                  "21.6.2",
+                  "21.1.0",
+                  "20.18.3",
+                  "20.18.2",
+                  "20.18.0",
+                  "20.17.0",
+                  "20.16.0",
+                  "20.15.1",
+                  "20.14.0",
+                  "20.12.2",
+                  "20.11.1",
+                  "20.10.0",
+                  "20.9.0",
+                  "19.9.0",
+                  "19.8.1",
+                  "18.20.7",
+                  "18.20.6",
+                  "18.20.5",
+                  "18.20.4",
+                  "18.20.0",
+                  "18.19.1",
+                  "18.18.2",
+                  "18.17.1",
+                  "18.16.0",
+                  "18.14.2",
+                  "18.12.1",
+                  "16.20.2",
+                  "16.20.0",
+                  "16.19.1",
+                  "16.18.0",
+                  "16.14.2",
+                  "14.21.3",
+                  "14.20.1",
+                  "14.19.3",
+                ];
+              } else if (tool === "python" || tool === "python3") {
+                versions = [
+                  "3.14.0a4",
+                  "3.13.2",
+                  "3.13.1",
+                  "3.13.0",
+                  "3.12.9",
+                  "3.12.8",
+                  "3.12.7",
+                  "3.12.6",
+                  "3.12.5",
+                  "3.12.4",
+                  "3.12.3",
+                  "3.12.2",
+                  "3.12.1",
+                  "3.12.0",
+                  "3.11.11",
+                  "3.11.10",
+                  "3.11.9",
+                  "3.11.8",
+                  "3.11.7",
+                  "3.11.6",
+                  "3.11.5",
+                  "3.11.4",
+                  "3.11.0",
+                  "3.10.16",
+                  "3.10.15",
+                  "3.10.14",
+                  "3.10.13",
+                  "3.10.12",
+                  "3.10.11",
+                  "3.10.8",
+                  "3.10.0",
+                  "3.9.21",
+                  "3.9.20",
+                  "3.9.19",
+                  "3.9.18",
+                  "3.9.16",
+                  "3.9.13",
+                  "3.9.0",
+                  "3.8.20",
+                  "3.8.18",
+                  "3.8.16",
+                  "3.8.12",
+                  "3.8.0",
+                  "3.7.17",
+                  "3.7.12",
+                ];
+              } else if (tool === "go" || tool === "golang") {
+                versions = [
+                  "1.27.2",
+                  "1.27.1",
+                  "1.27.0",
+                  "1.26.5",
+                  "1.26.4",
+                  "1.26.3",
+                  "1.26.2",
+                  "1.26.1",
+                  "1.26.0",
+                  "1.25.8",
+                  "1.25.7",
+                  "1.25.6",
+                  "1.25.5",
+                  "1.25.4",
+                  "1.25.3",
+                  "1.25.2",
+                  "1.25.1",
+                  "1.25.0",
+                  "1.24.5",
+                  "1.24.4",
+                  "1.24.3",
+                  "1.24.2",
+                  "1.24.1",
+                  "1.24.0",
+                  "1.23.6",
+                  "1.23.5",
+                  "1.23.4",
+                  "1.23.3",
+                  "1.23.2",
+                  "1.23.1",
+                  "1.23.0",
+                  "1.22.12",
+                  "1.22.11",
+                  "1.22.10",
+                  "1.22.9",
+                  "1.22.8",
+                  "1.22.6",
+                  "1.22.5",
+                  "1.22.2",
+                  "1.22.0",
+                  "1.21.13",
+                  "1.21.12",
+                  "1.21.11",
+                  "1.21.8",
+                  "1.21.6",
+                  "1.21.0",
+                  "1.20.14",
+                  "1.20.12",
+                  "1.20.7",
+                  "1.20.0",
+                  "1.19.13",
+                  "1.19.8",
+                  "1.19.0",
+                  "1.18.10",
+                  "1.18.5",
+                ];
+              } else if (tool === "rust") {
+                versions = [
+                  "1.85.0",
+                  "1.84.1",
+                  "1.84.0",
+                  "1.83.0",
+                  "1.82.0",
+                  "1.81.0",
+                  "1.80.1",
+                  "1.80.0",
+                  "1.79.0",
+                  "1.78.0",
+                  "1.77.2",
+                  "1.77.0",
+                  "1.76.0",
+                  "1.75.0",
+                  "1.74.1",
+                  "1.73.0",
+                  "1.72.1",
+                  "1.71.1",
+                  "1.70.0",
+                  "1.69.0",
+                  "1.68.2",
+                  "1.67.1",
+                  "1.66.1",
+                  "1.65.0",
+                ];
+              } else if (tool === "java" || tool === "openjdk") {
+                versions = [
+                  "23.0.2",
+                  "23.0.1",
+                  "22.0.2",
+                  "22.0.1",
+                  "21.0.6",
+                  "21.0.5",
+                  "21.0.4",
+                  "21.0.2",
+                  "21.0.1",
+                  "21.0.0",
+                  "17.0.14",
+                  "17.0.12",
+                  "17.0.10",
+                  "17.0.9",
+                  "17.0.8",
+                  "17.0.2",
+                  "11.0.26",
+                  "11.0.22",
+                  "11.0.20",
+                  "11.0.18",
+                  "8.0.442",
+                  "8.0.402",
+                  "8.0.392",
+                  "8.0.352",
+                ];
+              } else if (tool === "bun") {
+                versions = [
+                  "1.2.4",
+                  "1.2.3",
+                  "1.2.2",
+                  "1.2.1",
+                  "1.2.0",
+                  "1.1.45",
+                  "1.1.42",
+                  "1.1.38",
+                  "1.1.34",
+                  "1.1.30",
+                  "1.1.25",
+                  "1.1.20",
+                  "1.1.10",
+                  "1.1.0",
+                  "1.0.36",
+                  "1.0.35",
+                  "1.0.30",
+                  "1.0.25",
+                  "1.0.20",
+                  "1.0.18",
+                  "1.0.0",
+                ];
+              } else if (tool === "deno") {
+                versions = [
+                  "2.2.3",
+                  "2.2.2",
+                  "2.2.1",
+                  "2.2.0",
+                  "2.1.9",
+                  "2.1.4",
+                  "2.1.0",
+                  "2.0.6",
+                  "2.0.4",
+                  "2.0.0",
+                  "1.46.3",
+                  "1.45.5",
+                  "1.44.4",
+                  "1.43.6",
+                  "1.42.4",
+                  "1.41.2",
+                  "1.40.5",
+                  "1.39.4",
+                  "1.38.2",
+                ];
+              } else if (tool === "zig") {
+                versions = ["0.14.0", "0.13.0", "0.12.1", "0.12.0", "0.11.0", "0.10.1", "0.9.1", "0.8.1"];
+              } else if (tool === "ruby") {
+                versions = [
+                  "3.4.2",
+                  "3.4.1",
+                  "3.3.7",
+                  "3.3.6",
+                  "3.3.5",
+                  "3.3.0",
+                  "3.2.7",
+                  "3.2.6",
+                  "3.2.3",
+                  "3.2.0",
+                  "3.1.6",
+                  "3.1.4",
+                  "3.1.2",
+                  "3.0.7",
+                  "3.0.6",
+                ];
+              } else if (tool === "php") {
+                versions = [
+                  "8.4.4",
+                  "8.4.3",
+                  "8.4.1",
+                  "8.3.17",
+                  "8.3.16",
+                  "8.3.14",
+                  "8.3.10",
+                  "8.3.0",
+                  "8.2.27",
+                  "8.2.26",
+                  "8.2.20",
+                  "8.2.15",
+                  "8.1.31",
+                  "8.1.28",
+                  "8.1.20",
+                  "8.0.30",
+                  "8.0.28",
+                ];
+              } else {
+                const lockPath = path.join(rootDir, "unirtm.lock");
+                const lockTools = parseLockTools(lockPath);
+                const bare = tool && tool.includes(":") ? tool.split(":").slice(1).join(":") : tool;
+                const candKeys = [tool, bare, `github:${tool}`, `github:${bare}`];
+                for (const k of candKeys) {
+                  if (k && lockTools[k] && lockTools[k].length > 0) {
+                    versions = [...lockTools[k]];
+                    break;
+                  }
                 }
-              }
-              if (versions.length === 0 && tool) {
-                const installsRoot = path.join(os.homedir(), ".local", "share", "unirtm", "installs");
-                if (fs.existsSync(installsRoot)) {
-                  const candDirs = [
-                    tool,
-                    bare,
-                    tool.replace(/[:/@]/g, "-"),
-                    tool.replace(/^github:/, "github-").replace(/[:/@]/g, "-"),
-                    tool.replace(/^npm:/, "npm-").replace(/[:/@]/g, "-"),
-                    tool.replace(/^go:/, "go-pkg-").replace(/[:/@]/g, "-"),
-                    tool.replace(/^pipx:/, "pipx-").replace(/[:/@]/g, "-"),
-                  ];
-                  for (const cand of candDirs) {
-                    const dir = path.join(installsRoot, cand);
-                    if (fs.existsSync(dir)) {
-                      try {
-                        const list = fs.readdirSync(dir).filter(f => !f.startsWith(".") && fs.statSync(path.join(dir, f)).isDirectory());
-                        if (list.length > 0) {
-                          versions = list.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
-                          break;
-                        }
-                      } catch {}
+                if (versions.length === 0 && tool) {
+                  const installsRoot = path.join(os.homedir(), ".local", "share", "unirtm", "installs");
+                  if (fs.existsSync(installsRoot)) {
+                    const candDirs = [
+                      tool,
+                      bare,
+                      tool.replace(/[:/@]/g, "-"),
+                      tool.replace(/^github:/, "github-").replace(/[:/@]/g, "-"),
+                      tool.replace(/^npm:/, "npm-").replace(/[:/@]/g, "-"),
+                      tool.replace(/^go:/, "go-pkg-").replace(/[:/@]/g, "-"),
+                      tool.replace(/^pipx:/, "pipx-").replace(/[:/@]/g, "-"),
+                    ];
+                    for (const cand of candDirs) {
+                      const dir = path.join(installsRoot, cand);
+                      if (fs.existsSync(dir)) {
+                        try {
+                          const list = fs
+                            .readdirSync(dir)
+                            .filter((f) => !f.startsWith(".") && fs.statSync(path.join(dir, f)).isDirectory());
+                          if (list.length > 0) {
+                            versions = list.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+                            break;
+                          }
+                        } catch {}
+                      }
                     }
                   }
                 }
               }
             }
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ tool, versions: versions.map((v) => ({ version: v })) }));
+            return;
           }
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ tool, versions: versions.map((v) => ({ version: v })) }));
-          return;
-          }
-
 
           if (req.url?.startsWith("/api/network/status")) {
             const urlObj = new URL(req.url, "http://localhost");
@@ -1250,7 +1595,9 @@ export default defineConfig({
 
           if (req.url === "/api/network/profile/use" && req.method === "POST") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const { profile_id, scope } = JSON.parse(bodyStr || "{}");
@@ -1270,7 +1617,9 @@ export default defineConfig({
 
           if (req.url === "/api/network/profile/save" && req.method === "POST") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const { profile_id, name, scope } = JSON.parse(bodyStr || "{}");
@@ -1290,7 +1639,9 @@ export default defineConfig({
 
           if (req.url === "/api/network/profile/reset" && req.method === "POST") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const { profile_id, scope } = JSON.parse(bodyStr || "{}");
@@ -1310,7 +1661,9 @@ export default defineConfig({
 
           if (req.url === "/api/network/profile/delete" && req.method === "POST") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const { profile_id, scope } = JSON.parse(bodyStr || "{}");
@@ -1330,7 +1683,9 @@ export default defineConfig({
 
           if (req.url === "/api/network/registry/override" && req.method === "POST") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const { ecosystem, url, scope } = JSON.parse(bodyStr || "{}");
@@ -1350,7 +1705,9 @@ export default defineConfig({
 
           if (req.url === "/api/network/registry/add" && req.method === "POST") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const { ecosystem, url, scope } = JSON.parse(bodyStr || "{}");
@@ -1370,7 +1727,9 @@ export default defineConfig({
 
           if (req.url === "/api/network/registry/delete" && req.method === "POST") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const { ecosystem, scope } = JSON.parse(bodyStr || "{}");
@@ -1390,7 +1749,9 @@ export default defineConfig({
 
           if (req.url === "/api/network/registry/reset" && req.method === "POST") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const { ecosystem, scope } = JSON.parse(bodyStr || "{}");
@@ -1410,7 +1771,9 @@ export default defineConfig({
 
           if (req.url === "/api/network/registry/reset-all" && req.method === "POST") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const { scope } = JSON.parse(bodyStr || "{}");
@@ -1430,7 +1793,9 @@ export default defineConfig({
 
           if (req.url === "/api/network/proxy" && req.method === "POST") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const body = JSON.parse(bodyStr || "{}");
@@ -1512,12 +1877,16 @@ export default defineConfig({
 
           if (req.url === "/api/network/proxy/test") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", async () => {
               try {
                 let proxyCfg: any = {};
                 if (bodyStr) {
-                  try { proxyCfg = JSON.parse(bodyStr); } catch {}
+                  try {
+                    proxyCfg = JSON.parse(bodyStr);
+                  } catch {}
                 }
                 const httpProxy = proxyCfg.http || proxyCfg.https;
                 if (!httpProxy && !proxyCfg.socks5) {
@@ -1536,26 +1905,32 @@ export default defineConfig({
                   const rtt = Date.now() - start;
                   socket.destroy();
                   res.setHeader("Content-Type", "application/json");
-                  res.end(JSON.stringify({
-                    success: true,
-                    rtt_ms: rtt,
-                    message: "代理服务器连通正常"
-                  }));
+                  res.end(
+                    JSON.stringify({
+                      success: true,
+                      rtt_ms: rtt,
+                      message: "代理服务器连通正常",
+                    })
+                  );
                 });
                 socket.on("error", (err: any) => {
                   res.setHeader("Content-Type", "application/json");
-                  res.end(JSON.stringify({
-                    success: false,
-                    error: `代理服务器端口无法连通 (${testHost}:${testPort}): ${err.message}`
-                  }));
+                  res.end(
+                    JSON.stringify({
+                      success: false,
+                      error: `代理服务器端口无法连通 (${testHost}:${testPort}): ${err.message}`,
+                    })
+                  );
                 });
                 socket.on("timeout", () => {
                   socket.destroy();
                   res.setHeader("Content-Type", "application/json");
-                  res.end(JSON.stringify({
-                    success: false,
-                    error: `连接代理服务器端口超时 (${testHost}:${testPort})`
-                  }));
+                  res.end(
+                    JSON.stringify({
+                      success: false,
+                      error: `连接代理服务器端口超时 (${testHost}:${testPort})`,
+                    })
+                  );
                 });
               } catch (err: any) {
                 res.setHeader("Content-Type", "application/json");
@@ -1567,7 +1942,9 @@ export default defineConfig({
 
           if (req.url?.startsWith("/api/network/ping")) {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", async () => {
               try {
                 let targets: Array<{ ecosystem: string; name?: string; url: string }> = [];
@@ -1577,7 +1954,13 @@ export default defineConfig({
                     if (Array.isArray(parsed.targets)) {
                       targets = parsed.targets;
                     } else if (parsed.url) {
-                      targets = [{ ecosystem: parsed.ecosystem || "custom", name: parsed.name || parsed.ecosystem, url: parsed.url }];
+                      targets = [
+                        {
+                          ecosystem: parsed.ecosystem || "custom",
+                          name: parsed.name || parsed.ecosystem,
+                          url: parsed.url,
+                        },
+                      ];
                     }
                   } catch {}
                 }
@@ -1591,12 +1974,24 @@ export default defineConfig({
                     { ecosystem: "ruby", name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/rubygems/" },
                     { ecosystem: "composer", name: "阿里云 Composer", url: "https://mirrors.aliyun.com/composer/" },
                     { ecosystem: "maven", name: "阿里云 Maven", url: "https://maven.aliyun.com/repository/public" },
-                    { ecosystem: "nuget", name: "华为云 NuGet", url: "https://repo.huaweicloud.com/repository/nuget/v3/index.json" },
+                    {
+                      ecosystem: "nuget",
+                      name: "华为云 NuGet",
+                      url: "https://repo.huaweicloud.com/repository/nuget/v3/index.json",
+                    },
                     { ecosystem: "docker", name: "阿里云 Docker", url: "https://registry.cn-hangzhou.aliyuncs.com" },
                     { ecosystem: "dart", name: "清华大学 TUNA", url: "https://mirrors.tuna.tsinghua.edu.cn/dart-pub" },
                     { ecosystem: "cocoapods", name: "CocoaPods CDN", url: "https://cdn.cocoapods.org" },
-                    { ecosystem: "conda", name: "清华大学 Conda", url: "https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main" },
-                    { ecosystem: "homebrew", name: "清华大学 Homebrew", url: "https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles" },
+                    {
+                      ecosystem: "conda",
+                      name: "清华大学 Conda",
+                      url: "https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main",
+                    },
+                    {
+                      ecosystem: "homebrew",
+                      name: "清华大学 Homebrew",
+                      url: "https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles",
+                    },
                     { ecosystem: "git", name: "GitHub", url: "https://github.com" },
                   ];
                 }
@@ -1680,7 +2075,7 @@ export default defineConfig({
             const targetURL = `https://open-vsx.org/api/-/search?category=Themes&query=${encodeURIComponent(q)}&size=${size}&offset=${offset}`;
 
             fetch(targetURL, {
-              headers: { "User-Agent": "UniRTM-Workbench-Dev/0.1.0" }
+              headers: { "User-Agent": "UniRTM-Workbench-Dev/0.1.0" },
             })
               .then(async (resp) => {
                 if (!resp.ok) {
@@ -1733,11 +2128,13 @@ export default defineConfig({
                 });
 
                 res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({
-                  offset: data.offset || 0,
-                  totalSize: data.totalSize || 0,
-                  extensions,
-                }));
+                res.end(
+                  JSON.stringify({
+                    offset: data.offset || 0,
+                    totalSize: data.totalSize || 0,
+                    extensions,
+                  })
+                );
               })
               .catch((err) => {
                 res.statusCode = 500;
@@ -1760,7 +2157,7 @@ export default defineConfig({
 
             const targetURL = `https://open-vsx.org/api/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`;
             fetch(targetURL, {
-              headers: { "User-Agent": "UniRTM-Workbench-Dev/0.1.0" }
+              headers: { "User-Agent": "UniRTM-Workbench-Dev/0.1.0" },
             })
               .then(async (resp) => {
                 if (!resp.ok) {
@@ -1775,17 +2172,21 @@ export default defineConfig({
                 if (data.files?.readme) {
                   try {
                     const rRes = await fetch(data.files.readme, {
-                      headers: { "User-Agent": "UniRTM-Workbench-Dev/0.1.0" }
+                      headers: { "User-Agent": "UniRTM-Workbench-Dev/0.1.0" },
                     });
                     if (rRes.ok) readme = await rRes.text();
                   } catch {}
                 }
 
-                const contributes: { themes: any[]; iconThemes: any[]; productIconThemes: any[] } = { themes: [], iconThemes: [], productIconThemes: [] };
+                const contributes: { themes: any[]; iconThemes: any[]; productIconThemes: any[] } = {
+                  themes: [],
+                  iconThemes: [],
+                  productIconThemes: [],
+                };
                 if (data.files?.manifest) {
                   try {
                     const mRes = await fetch(data.files.manifest, {
-                      headers: { "User-Agent": "UniRTM-Workbench-Dev/0.1.0" }
+                      headers: { "User-Agent": "UniRTM-Workbench-Dev/0.1.0" },
                     });
                     if (mRes.ok) {
                       const pkg = await mRes.json();
@@ -1840,29 +2241,31 @@ export default defineConfig({
                 const isInstalled = installedPkgIds.has(pkgId.toLowerCase()) || installedPkgIds.has(nsPkgId);
 
                 res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({
-                  namespace: data.namespace,
-                  name: data.name,
-                  displayName: data.displayName || data.name,
-                  version: data.version,
-                  description: data.description || "",
-                  downloadCount: data.downloadCount || 0,
-                  averageRating: data.averageRating || 0,
-                  reviewCount: data.reviewCount || 0,
-                  repository: data.repository || "",
-                  homepage: data.homepage || "",
-                  bugs: data.bugs || "",
-                  license: data.license || "",
-                  timestamp: data.timestamp || "",
-                  tags: data.tags || [],
-                  categories: data.categories || [],
-                  files: data.files || {},
-                  url: data.url || "",
-                  is_installed: isInstalled,
-                  package_id: data.name,
-                  readme,
-                  contributes,
-                }));
+                res.end(
+                  JSON.stringify({
+                    namespace: data.namespace,
+                    name: data.name,
+                    displayName: data.displayName || data.name,
+                    version: data.version,
+                    description: data.description || "",
+                    downloadCount: data.downloadCount || 0,
+                    averageRating: data.averageRating || 0,
+                    reviewCount: data.reviewCount || 0,
+                    repository: data.repository || "",
+                    homepage: data.homepage || "",
+                    bugs: data.bugs || "",
+                    license: data.license || "",
+                    timestamp: data.timestamp || "",
+                    tags: data.tags || [],
+                    categories: data.categories || [],
+                    files: data.files || {},
+                    url: data.url || "",
+                    is_installed: isInstalled,
+                    package_id: data.name,
+                    readme,
+                    contributes,
+                  })
+                );
               })
               .catch((err) => {
                 res.statusCode = 500;
@@ -1874,7 +2277,9 @@ export default defineConfig({
 
           if (req.url === "/api/themes/marketplace/install" && req.method === "POST") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", async () => {
               try {
                 const { download_url } = JSON.parse(bodyStr || "{}");
@@ -1913,7 +2318,9 @@ for member in zf.namelist():
 print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes': pkg.get('contributes', {}).get('themes', []), 'iconThemes': pkg.get('contributes', {}).get('iconThemes', []), 'productIconThemes': pkg.get('contributes', {}).get('productIconThemes', [])}))
 `;
                 const outStr = execFileSync("python3", ["-c", script, tmpZip], { encoding: "utf-8" });
-                try { fs.unlinkSync(tmpZip); } catch {}
+                try {
+                  fs.unlinkSync(tmpZip);
+                } catch {}
                 const parsed = JSON.parse(outStr.trim());
                 const installed: any[] = [];
                 for (const t of parsed.themes || []) {
@@ -1960,7 +2367,9 @@ print(json.dumps({'name': name, 'version': pkg.get('version', '0.0.1'), 'themes'
 
           if (req.url === "/api/themes/install" && req.method === "POST") {
             const chunks: any[] = [];
-            req.on("data", (c: any) => { chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c)); });
+            req.on("data", (c: any) => {
+              chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c));
+            });
             req.on("end", async () => {
               try {
                 const totalBuffer = Buffer.concat(chunks);
@@ -2000,7 +2409,9 @@ print(json.dumps({
 `;
                 fs.writeFileSync(tmpZip, totalBuffer);
                 const outStr = execFileSync("python3", ["-c", script, tmpZip], { encoding: "utf-8" });
-                try { fs.unlinkSync(tmpZip); } catch {}
+                try {
+                  fs.unlinkSync(tmpZip);
+                } catch {}
                 const parsed = JSON.parse(outStr.trim());
                 if (parsed.error) {
                   res.statusCode = 400;
@@ -2103,10 +2514,22 @@ print(json.dumps({
               { id: "light", name: "UniRTM Light", type: "color", is_builtin: true, ui_theme: "vs" },
             ];
             const iconThemes: any[] = [
-              { id: "seti", name: "Seti UI (VS Code Default)", type: "icon", is_builtin: true, description: "Official Visual Studio Code default file icon theme" },
+              {
+                id: "seti",
+                name: "Seti UI (VS Code Default)",
+                type: "icon",
+                is_builtin: true,
+                description: "Official Visual Studio Code default file icon theme",
+              },
             ];
             const productIconThemes: any[] = [
-              { id: "codicons", name: "Codicons (默认)", type: "product", is_builtin: true, description: "Official Visual Studio Code product icon theme" },
+              {
+                id: "codicons",
+                name: "Codicons (默认)",
+                type: "product",
+                is_builtin: true,
+                description: "Official Visual Studio Code product icon theme",
+              },
             ];
 
             const scanDir = (themesDir: string) => {
@@ -2218,23 +2641,25 @@ print(json.dumps({
             readSetting(userPath);
 
             res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({
-              active: {
-                color: activeColor,
-                icon: activeIcon,
-                product: activeProduct,
-                appearance: activeAppearance,
-              },
-              active_color_theme: activeColor,
-              active_icon_theme: activeIcon,
-              active_product_icon_theme: activeProduct,
-              colors: colorThemes,
-              icons: iconThemes,
-              products: productIconThemes,
-              color_themes: colorThemes,
-              icon_themes: iconThemes,
-              product_icon_themes: productIconThemes,
-            }));
+            res.end(
+              JSON.stringify({
+                active: {
+                  color: activeColor,
+                  icon: activeIcon,
+                  product: activeProduct,
+                  appearance: activeAppearance,
+                },
+                active_color_theme: activeColor,
+                active_icon_theme: activeIcon,
+                active_product_icon_theme: activeProduct,
+                colors: colorThemes,
+                icons: iconThemes,
+                products: productIconThemes,
+                color_themes: colorThemes,
+                icon_themes: iconThemes,
+                product_icon_themes: productIconThemes,
+              })
+            );
             return;
           }
 
@@ -2259,10 +2684,11 @@ print(json.dumps({
                         try {
                           const p = JSON.parse(fs.readFileSync(pkgJson, "utf-8"));
                           const c = p.contributes || {};
-                          const hasTheme = (c.themes || []).some((t: any) => (t.id || t.label) === id) ||
-                                           (c.iconThemes || []).some((t: any) => (t.id || t.label) === id) ||
-                                           (c.productIconThemes || []).some((t: any) => (t.id || t.label) === id) ||
-                                           p.name === id;
+                          const hasTheme =
+                            (c.themes || []).some((t: any) => (t.id || t.label) === id) ||
+                            (c.iconThemes || []).some((t: any) => (t.id || t.label) === id) ||
+                            (c.productIconThemes || []).some((t: any) => (t.id || t.label) === id) ||
+                            p.name === id;
                           if (hasTheme) {
                             fs.rmSync(itemDir, { recursive: true, force: true });
                           }
@@ -2280,7 +2706,9 @@ print(json.dumps({
 
           if (req.url === "/api/themes/apply" && req.method === "POST") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const body = JSON.parse(bodyStr || "{}");
@@ -2292,16 +2720,31 @@ print(json.dumps({
                 if (fs.existsSync(unirtmBin)) {
                   try {
                     if (color_theme_id) {
-                      execFileSync(unirtmBin, ["config", "set", "--global", "settings.theme", String(color_theme_id)], { cwd: rootDir, stdio: "pipe" });
+                      execFileSync(unirtmBin, ["config", "set", "--global", "settings.theme", String(color_theme_id)], {
+                        cwd: rootDir,
+                        stdio: "pipe",
+                      });
                     }
                     if (icon_theme_id) {
-                      execFileSync(unirtmBin, ["config", "set", "--global", "settings.icon_theme", String(icon_theme_id)], { cwd: rootDir, stdio: "pipe" });
+                      execFileSync(
+                        unirtmBin,
+                        ["config", "set", "--global", "settings.icon_theme", String(icon_theme_id)],
+                        { cwd: rootDir, stdio: "pipe" }
+                      );
                     }
                     if (product_theme_id) {
-                      execFileSync(unirtmBin, ["config", "set", "--global", "settings.product_icon_theme", String(product_theme_id)], { cwd: rootDir, stdio: "pipe" });
+                      execFileSync(
+                        unirtmBin,
+                        ["config", "set", "--global", "settings.product_icon_theme", String(product_theme_id)],
+                        { cwd: rootDir, stdio: "pipe" }
+                      );
                     }
                     if (appearance) {
-                      execFileSync(unirtmBin, ["config", "set", "--global", "settings.appearance", String(appearance)], { cwd: rootDir, stdio: "pipe" });
+                      execFileSync(
+                        unirtmBin,
+                        ["config", "set", "--global", "settings.appearance", String(appearance)],
+                        { cwd: rootDir, stdio: "pipe" }
+                      );
                     }
                   } catch (e) {
                     console.warn("[Vite Middleware] unirtm config set fallback:", e);
@@ -2337,13 +2780,15 @@ print(json.dumps({
                 }
 
                 res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({
-                  success: true,
-                  color: color_theme_id,
-                  icon: icon_theme_id,
-                  product: product_theme_id,
-                  appearance,
-                }));
+                res.end(
+                  JSON.stringify({
+                    success: true,
+                    color: color_theme_id,
+                    icon: icon_theme_id,
+                    product: product_theme_id,
+                    appearance,
+                  })
+                );
               } catch (err: any) {
                 res.statusCode = 500;
                 res.setHeader("Content-Type", "application/json");
@@ -2353,7 +2798,6 @@ print(json.dumps({
             return;
           }
 
-
           if (req.url === "/api/system/browsers") {
             res.setHeader("Content-Type", "application/json");
             res.end(JSON.stringify({ browsers: [] }));
@@ -2362,7 +2806,8 @@ print(json.dumps({
 
           if (req.url === "/api/terminals" || req.url?.startsWith("/api/terminals?")) {
             res.setHeader("Content-Type", "application/json");
-            const defaultShell = process.env.SHELL || (process.platform === "win32" ? process.env.COMSPEC || "cmd.exe" : "/bin/bash");
+            const defaultShell =
+              process.env.SHELL || (process.platform === "win32" ? process.env.COMSPEC || "cmd.exe" : "/bin/bash");
             let realDefaultShell = "";
             try {
               if (defaultShell && fs.existsSync(defaultShell)) {
@@ -2387,7 +2832,10 @@ print(json.dumps({
 
             const addTerm = (id: string, name: string, shPath: string) => {
               if (!shPath) return;
-              const base = path.basename(shPath).toLowerCase().replace(/\.exe$/, "");
+              const base = path
+                .basename(shPath)
+                .toLowerCase()
+                .replace(/\.exe$/, "");
               if (isRestrictedOrStub(base)) return;
 
               try {
@@ -2458,9 +2906,54 @@ print(json.dumps({
                 addTerm(c.id, c.name, c.bin);
               }
             } else {
-              addTerm("powershell", "Windows PowerShell", "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
-              addTerm("cmd", "Command Prompt", "C:\\Windows\\System32\\cmd.exe");
-              addTerm("git-bash", "Git Bash", "C:\\Program Files\\Git\\bin\\bash.exe");
+              const winDir = process.env.SystemRoot || "C:\\Windows";
+              const winFallbacks = [
+                {
+                  id: "powershell",
+                  name: "Windows PowerShell",
+                  path: path.join(winDir, "System32\\WindowsPowerShell\\v1.0\\powershell.exe"),
+                },
+                {
+                  id: "pwsh",
+                  name: "PowerShell Core",
+                  path: "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+                },
+                {
+                  id: "pwsh",
+                  name: "PowerShell Core",
+                  path: "C:\\Program Files\\PowerShell\\6\\pwsh.exe",
+                },
+                {
+                  id: "cmd",
+                  name: "Command Prompt",
+                  path: path.join(winDir, "System32\\cmd.exe"),
+                },
+                {
+                  id: "wsl",
+                  name: "WSL",
+                  path: path.join(winDir, "System32\\wsl.exe"),
+                },
+              ];
+              for (const fb of winFallbacks) {
+                addTerm(fb.id, fb.name, fb.path);
+              }
+
+              const gitBashPaths = [
+                "C:\\Program Files\\Git\\bin\\bash.exe",
+                "C:\\Program Files (x86)\\Git\\bin\\bash.exe",
+                process.env.LOCALAPPDATA
+                  ? path.join(process.env.LOCALAPPDATA, "Programs\\Git\\bin\\bash.exe")
+                  : "",
+                process.env.USERPROFILE
+                  ? path.join(process.env.USERPROFILE, "AppData\\Local\\Programs\\Git\\bin\\bash.exe")
+                  : "",
+              ];
+              for (const gbp of gitBashPaths) {
+                if (gbp && fs.existsSync(gbp)) {
+                  addTerm("git-bash", "Git Bash", gbp);
+                  break;
+                }
+              }
             }
 
             if (defaultShell && fs.existsSync(defaultShell)) {
@@ -2471,14 +2964,17 @@ print(json.dumps({
             // Resolve is_default: Exactly ONE terminal must be default
             let defaultIdx = -1;
             if (defaultShell) {
-              defaultIdx = terms.findIndex(t => t.path === defaultShell);
+              defaultIdx = terms.findIndex((t) => t.path === defaultShell);
             }
             if (defaultIdx === -1 && realDefaultShell) {
-              defaultIdx = terms.findIndex(t => t.realPath === realDefaultShell);
+              defaultIdx = terms.findIndex((t) => t.realPath === realDefaultShell);
             }
             if (defaultIdx === -1 && defaultShell) {
-              const defBase = path.basename(defaultShell).toLowerCase().replace(/\.exe$/, "");
-              defaultIdx = terms.findIndex(t => t.id === defBase);
+              const defBase = path
+                .basename(defaultShell)
+                .toLowerCase()
+                .replace(/\.exe$/, "");
+              defaultIdx = terms.findIndex((t) => t.id === defBase);
             }
             if (defaultIdx === -1 && terms.length > 0) {
               defaultIdx = 0;
@@ -2493,7 +2989,7 @@ print(json.dumps({
 
             formattedTerms.sort((a, b) => (b.is_default ? 1 : 0) - (a.is_default ? 1 : 0));
 
-            const defTerm = formattedTerms.find(t => t.is_default)?.path || (formattedTerms[0]?.path || "/bin/bash");
+            const defTerm = formattedTerms.find((t) => t.is_default)?.path || formattedTerms[0]?.path || "/bin/bash";
             let current = defTerm;
             try {
               const home = os.homedir();
@@ -2507,18 +3003,22 @@ print(json.dumps({
               }
             } catch (_) {}
 
-            res.end(JSON.stringify({
-              default: defTerm,
-              current: current,
-              terminals: formattedTerms,
-            }));
+            res.end(
+              JSON.stringify({
+                default: defTerm,
+                current: current,
+                terminals: formattedTerms,
+              })
+            );
             return;
           }
 
           if (req.url === "/api/terminal/exec" && req.method === "POST") {
             res.setHeader("Content-Type", "application/json");
             let body = "";
-            req.on("data", chunk => { body += chunk; });
+            req.on("data", (chunk) => {
+              body += chunk;
+            });
             req.on("end", () => {
               try {
                 const parsed = JSON.parse(body || "{}");
@@ -2536,20 +3036,26 @@ print(json.dumps({
                 const unirtmShims = path.join(home, ".unirtm", "shims");
                 const customPath = `${unirtmShims}:${unirtmBin}:${process.env.PATH || ""}`;
 
-                exec(command, {
-                  shell: shell,
-                  cwd: cwd,
-                  env: { ...process.env, PATH: customPath },
-                  maxBuffer: 10 * 1024 * 1024,
-                }, (error: any, stdout: string, stderr: string) => {
-                  const combined = (stdout || "") + (stderr || "");
-                  const exitCode = error ? (error.code || 1) : 0;
-                  res.end(JSON.stringify({
-                    output: combined,
-                    exit_code: exitCode,
-                    error: error ? error.message : undefined,
-                  }));
-                });
+                exec(
+                  command,
+                  {
+                    shell: shell,
+                    cwd: cwd,
+                    env: { ...process.env, PATH: customPath },
+                    maxBuffer: 10 * 1024 * 1024,
+                  },
+                  (error: any, stdout: string, stderr: string) => {
+                    const combined = (stdout || "") + (stderr || "");
+                    const exitCode = error ? error.code || 1 : 0;
+                    res.end(
+                      JSON.stringify({
+                        output: combined,
+                        exit_code: exitCode,
+                        error: error ? error.message : undefined,
+                      })
+                    );
+                  }
+                );
               } catch (err: any) {
                 res.statusCode = 500;
                 res.end(JSON.stringify({ error: err.message, exit_code: 1 }));
@@ -2560,16 +3066,35 @@ print(json.dumps({
           // Tasks API: Read tasks from .unirtm.toml or user global config
           if (req.url?.startsWith("/api/tasks/run") && req.method === "POST") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
-                const { name, scope } = JSON.parse(bodyStr || "{}");
+                const payload = JSON.parse(bodyStr || "{}");
+                const taskName = payload.name || payload.task || payload.taskName || payload.id;
+                const scope = payload.scope;
+
+                if (!taskName || typeof taskName !== "string" || taskName.trim() === "" || taskName === "undefined") {
+                  res.statusCode = 400;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(
+                    JSON.stringify({
+                      success: false,
+                      exit_code: 1,
+                      error: "Task name is required",
+                    })
+                  );
+                  return;
+                }
+
+                const trimmedName = taskName.trim();
                 const unirtmBin = findUnirtmBinary(rootDir);
                 let output = "";
                 let exitCode = 0;
                 if (fs.existsSync(unirtmBin)) {
                   try {
-                    const args = ["run", name];
+                    const args = ["run", trimmedName];
                     if (scope === "user") args.push("--global");
                     output = execFileSync(unirtmBin, args, { cwd: rootDir, encoding: "utf-8", timeout: 60000 });
                   } catch (e: any) {
@@ -2577,19 +3102,22 @@ print(json.dumps({
                     output = (e.stdout || "") + "\n" + (e.stderr || "") + "\n" + (e.message || "");
                   }
                 } else {
-                  output = `[Mock] Executed task ${name} in ${scope} scope. (unirtm binary not found, simulated success)`;
+                  output = `[Mock] Executed task ${trimmedName} in ${scope} scope. (unirtm binary not found, simulated success)`;
                 }
                 res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({
-                  success: exitCode === 0,
-                  exit_code: exitCode,
-                  output: output.trim(),
-                  name,
-                }));
+                res.end(
+                  JSON.stringify({
+                    success: exitCode === 0,
+                    exit_code: exitCode,
+                    output: output.trim(),
+                    name: trimmedName,
+                    task: trimmedName,
+                  })
+                );
               } catch (err: any) {
                 res.statusCode = 500;
                 res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({ error: err.message }));
+                res.end(JSON.stringify({ error: err.message, success: false, exit_code: 1 }));
               }
             });
             return;
@@ -2645,7 +3173,10 @@ print(json.dumps({
                   if (tr.endsWith("'''") || tr.endsWith('"""')) {
                     const last = tr.slice(0, -3);
                     if (last) runBuf.push(last);
-                    currentTask.command = runBuf.map(l => l.trim()).filter(Boolean).join(" ; ");
+                    currentTask.command = runBuf
+                      .map((l) => l.trim())
+                      .filter(Boolean)
+                      .join(" ; ");
                     inRun = false;
                     runBuf = [];
                   } else {
@@ -2657,13 +3188,19 @@ print(json.dumps({
                 if (inDeps) {
                   if (tr.includes("]")) {
                     const before = tr.slice(0, tr.indexOf("]"));
-                    const items = before.split(",").map(s => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+                    const items = before
+                      .split(",")
+                      .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+                      .filter(Boolean);
                     depsBuf.push(...items);
                     currentTask.depends = [...depsBuf];
                     inDeps = false;
                     depsBuf = [];
                   } else {
-                    const items = tr.split(",").map(s => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+                    const items = tr
+                      .split(",")
+                      .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+                      .filter(Boolean);
                     depsBuf.push(...items);
                   }
                   continue;
@@ -2686,10 +3223,18 @@ print(json.dumps({
                 } else if (tr.startsWith("depends =")) {
                   const rest = tr.slice(tr.indexOf("=") + 1).trim();
                   if (rest.startsWith("[") && rest.endsWith("]")) {
-                    currentTask.depends = rest.slice(1, -1).split(",").map(s => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+                    currentTask.depends = rest
+                      .slice(1, -1)
+                      .split(",")
+                      .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+                      .filter(Boolean);
                   } else if (rest.startsWith("[")) {
                     inDeps = true;
-                    depsBuf = rest.slice(1).split(",").map(s => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+                    depsBuf = rest
+                      .slice(1)
+                      .split(",")
+                      .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+                      .filter(Boolean);
                   }
                 } else if (tr.startsWith("env =")) {
                   const rest = tr.slice(tr.indexOf("=") + 1).trim();
@@ -2702,18 +3247,22 @@ print(json.dumps({
 
             const tasks = parseTasksFromToml(targetPath);
             res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({
-              tasks,
-              total: tasks.length,
-              scope,
-              file: targetPath,
-            }));
+            res.end(
+              JSON.stringify({
+                tasks,
+                total: tasks.length,
+                scope,
+                file: targetPath,
+              })
+            );
             return;
           }
 
           if (req.url?.startsWith("/api/tasks") && (req.method === "POST" || req.method === "PUT")) {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const body = JSON.parse(bodyStr || "{}");
@@ -2833,7 +3382,9 @@ print(json.dumps({
 
           if (req.url?.startsWith("/api/tasks") && req.method === "DELETE") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const urlObj = new URL(req.url!, "http://localhost");
@@ -2930,13 +3481,23 @@ print(json.dumps({
                   }
                   if (tr.startsWith("#") || !tr.includes("=")) continue;
                   const eqIdx = tr.indexOf("=");
-                  const k = tr.slice(0, eqIdx).trim().replace(/^["']|["']$/g, "").toUpperCase();
+                  const k = tr
+                    .slice(0, eqIdx)
+                    .trim()
+                    .replace(/^["']|["']$/g, "")
+                    .toUpperCase();
                   const rawVal = tr.slice(eqIdx + 1).trim();
                   let val = rawVal;
-                  if ((rawVal.startsWith('"') && rawVal.endsWith('"')) || (rawVal.startsWith("'") && rawVal.endsWith("'"))) {
+                  if (
+                    (rawVal.startsWith('"') && rawVal.endsWith('"')) ||
+                    (rawVal.startsWith("'") && rawVal.endsWith("'"))
+                  ) {
                     val = rawVal.slice(1, -1);
                   }
-                  const isSensitive = /(TOKEN|KEY|SECRET|PASSWORD|PASS|AUTH|PRIVATE|CREDENTIAL|APIKEY|ACCESS|CERT|SALT|HASH|SIGNATURE)/i.test(k);
+                  const isSensitive =
+                    /(TOKEN|KEY|SECRET|PASSWORD|PASS|AUTH|PRIVATE|CREDENTIAL|APIKEY|ACCESS|CERT|SALT|HASH|SIGNATURE)/i.test(
+                      k
+                    );
                   if (k) {
                     list.push({
                       name: k,
@@ -2958,7 +3519,9 @@ print(json.dumps({
 
           if (req.url?.startsWith("/api/env") && (req.method === "POST" || req.method === "PUT")) {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const body = JSON.parse(bodyStr);
@@ -3011,7 +3574,11 @@ print(json.dumps({
                     }
                     if (tr.startsWith("#") || !tr.includes("=")) continue;
                     const eqIdx = tr.indexOf("=");
-                    const existingKey = tr.slice(0, eqIdx).trim().replace(/^["']|["']$/g, "").toUpperCase();
+                    const existingKey = tr
+                      .slice(0, eqIdx)
+                      .trim()
+                      .replace(/^["']|["']$/g, "")
+                      .toUpperCase();
 
                     if (originalKey && existingKey === originalKey.toUpperCase() && existingKey !== upperKey) {
                       toRemoveIndices.push(i);
@@ -3049,7 +3616,11 @@ print(json.dumps({
                       }
                       if (tr.startsWith("#") || !tr.includes("=")) continue;
                       const eqIdx = tr.indexOf("=");
-                      const existingKey = tr.slice(0, eqIdx).trim().replace(/^["']|["']$/g, "").toUpperCase();
+                      const existingKey = tr
+                        .slice(0, eqIdx)
+                        .trim()
+                        .replace(/^["']|["']$/g, "")
+                        .toUpperCase();
                       if (existingKey === upperKey && matchingIdx === -1) {
                         matchingIdx = i;
                       }
@@ -3074,17 +3645,22 @@ print(json.dumps({
                   fs.writeFileSync(targetPath, lines.join("\n"), "utf-8");
                 }
 
-                const isSensitive = /(TOKEN|KEY|SECRET|PASSWORD|PASS|AUTH|PRIVATE|CREDENTIAL|APIKEY|ACCESS|CERT|SALT|HASH|SIGNATURE)/i.test(upperKey);
+                const isSensitive =
+                  /(TOKEN|KEY|SECRET|PASSWORD|PASS|AUTH|PRIVATE|CREDENTIAL|APIKEY|ACCESS|CERT|SALT|HASH|SIGNATURE)/i.test(
+                    upperKey
+                  );
                 res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({
-                  success: true,
-                  env: {
-                    name: upperKey,
-                    value,
-                    scope,
-                    is_sensitive: isSensitive,
-                  },
-                }));
+                res.end(
+                  JSON.stringify({
+                    success: true,
+                    env: {
+                      name: upperKey,
+                      value,
+                      scope,
+                      is_sensitive: isSensitive,
+                    },
+                  })
+                );
               } catch (err: any) {
                 res.statusCode = 500;
                 res.setHeader("Content-Type", "application/json");
@@ -3096,7 +3672,9 @@ print(json.dumps({
 
           if (req.url?.startsWith("/api/env") && req.method === "DELETE") {
             let bodyStr = "";
-            req.on("data", (c: any) => { bodyStr += c; });
+            req.on("data", (c: any) => {
+              bodyStr += c;
+            });
             req.on("end", () => {
               try {
                 const urlObj = new URL(req.url!, "http://localhost");
@@ -3149,7 +3727,11 @@ print(json.dumps({
                         continue;
                       }
                       const eqIdx = tr.indexOf("=");
-                      const existingKey = tr.slice(0, eqIdx).trim().replace(/^["']|["']$/g, "").toUpperCase();
+                      const existingKey = tr
+                        .slice(0, eqIdx)
+                        .trim()
+                        .replace(/^["']|["']$/g, "")
+                        .toUpperCase();
                       if (existingKey === key) {
                         continue;
                       }
@@ -3190,7 +3772,10 @@ print(json.dumps({
                 if (inTable && tr && !tr.startsWith("#")) {
                   const eq = tr.indexOf("=");
                   if (eq !== -1) {
-                    const k = tr.slice(0, eq).trim().replace(/^["']|["']$/g, "");
+                    const k = tr
+                      .slice(0, eq)
+                      .trim()
+                      .replace(/^["']|["']$/g, "");
                     let v = tr.slice(eq + 1).trim();
                     if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
                       v = v.slice(1, -1);
@@ -3208,35 +3793,41 @@ print(json.dumps({
               const gitDir = path.join(rootDir, ".git");
               const gitDirExists = fs.existsSync(gitDir) && fs.statSync(gitDir).isDirectory();
 
-              const hooksList = Object.keys(hooksMap).sort().map((name) => {
-                let installed = false;
-                if (scope !== "user" && gitDirExists) {
-                  const hookFile = path.join(gitDir, "hooks", name);
-                  if (fs.existsSync(hookFile)) {
-                    const content = fs.readFileSync(hookFile, "utf-8");
-                    installed = content.includes("unirtm hook");
+              const hooksList = Object.keys(hooksMap)
+                .sort()
+                .map((name) => {
+                  let installed = false;
+                  if (scope !== "user" && gitDirExists) {
+                    const hookFile = path.join(gitDir, "hooks", name);
+                    if (fs.existsSync(hookFile)) {
+                      const content = fs.readFileSync(hookFile, "utf-8");
+                      installed = content.includes("unirtm hook");
+                    }
                   }
-                }
-                return {
-                  name,
-                  command: hooksMap[name],
-                  installed,
-                };
-              });
+                  return {
+                    name,
+                    command: hooksMap[name],
+                    installed,
+                  };
+                });
 
               res.setHeader("Content-Type", "application/json");
-              res.end(JSON.stringify({
-                hooks: hooksList,
-                total: hooksList.length,
-                scope,
-                git_dir_exists: gitDirExists,
-              }));
+              res.end(
+                JSON.stringify({
+                  hooks: hooksList,
+                  total: hooksList.length,
+                  scope,
+                  git_dir_exists: gitDirExists,
+                })
+              );
               return;
             }
 
             if (pathname === "/api/hooks" && (req.method === "POST" || req.method === "PUT")) {
               let bodyStr = "";
-              req.on("data", (c) => { bodyStr += c; });
+              req.on("data", (c) => {
+                bodyStr += c;
+              });
               req.on("end", () => {
                 try {
                   const { name, command, scope: reqScope, install_bridge } = JSON.parse(bodyStr || "{}");
@@ -3272,7 +3863,10 @@ print(json.dumps({
                       }
                       const eq = tr.indexOf("=");
                       if (eq !== -1) {
-                        const k = tr.slice(0, eq).trim().replace(/^["']|["']$/g, "");
+                        const k = tr
+                          .slice(0, eq)
+                          .trim()
+                          .replace(/^["']|["']$/g, "");
                         if (k.toLowerCase() === name.toLowerCase()) {
                           matchIdx = i;
                         }
@@ -3305,13 +3899,15 @@ print(json.dumps({
                   }
 
                   res.setHeader("Content-Type", "application/json");
-                  res.end(JSON.stringify({
-                    success: true,
-                    name,
-                    command,
-                    scope: curScope,
-                    installed,
-                  }));
+                  res.end(
+                    JSON.stringify({
+                      success: true,
+                      name,
+                      command,
+                      scope: curScope,
+                      installed,
+                    })
+                  );
                 } catch (err: any) {
                   res.statusCode = 500;
                   res.setHeader("Content-Type", "application/json");
@@ -3323,7 +3919,9 @@ print(json.dumps({
 
             if (pathname === "/api/hooks" && req.method === "DELETE") {
               let bodyStr = "";
-              req.on("data", (c) => { bodyStr += c; });
+              req.on("data", (c) => {
+                bodyStr += c;
+              });
               req.on("end", () => {
                 try {
                   let hookName = url.searchParams.get("name") || "";
@@ -3362,7 +3960,10 @@ print(json.dumps({
                         }
                         const eq = tr.indexOf("=");
                         if (eq !== -1) {
-                          const k = tr.slice(0, eq).trim().replace(/^["']|["']$/g, "");
+                          const k = tr
+                            .slice(0, eq)
+                            .trim()
+                            .replace(/^["']|["']$/g, "");
                           if (k.toLowerCase() === hookName.toLowerCase()) {
                             continue;
                           }
@@ -3385,7 +3986,9 @@ print(json.dumps({
 
             if (pathname === "/api/hooks/install" && req.method === "POST") {
               let bodyStr = "";
-              req.on("data", (c) => { bodyStr += c; });
+              req.on("data", (c) => {
+                bodyStr += c;
+              });
               req.on("end", () => {
                 try {
                   const { name, all } = JSON.parse(bodyStr || "{}");
@@ -3413,7 +4016,9 @@ print(json.dumps({
 
             if (pathname === "/api/hooks/run" && req.method === "POST") {
               let bodyStr = "";
-              req.on("data", (c) => { bodyStr += c; });
+              req.on("data", (c) => {
+                bodyStr += c;
+              });
               req.on("end", () => {
                 try {
                   const { name, args: hArgs } = JSON.parse(bodyStr || "{}");
@@ -3458,7 +4063,10 @@ print(json.dumps({
                 if (inTable && tr && !tr.startsWith("#")) {
                   const eq = tr.indexOf("=");
                   if (eq !== -1) {
-                    const k = tr.slice(0, eq).trim().replace(/^["']|["']$/g, "");
+                    const k = tr
+                      .slice(0, eq)
+                      .trim()
+                      .replace(/^["']|["']$/g, "");
                     let v = tr.slice(eq + 1).trim();
                     if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
                       v = v.slice(1, -1);
