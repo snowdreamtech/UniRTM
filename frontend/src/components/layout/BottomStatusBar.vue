@@ -2,6 +2,27 @@
   <footer class="status-bar" id="app-status-bar" role="contentinfo">
     <!-- Left Section: Overall Health & Diagnostics -->
     <div class="status-left">
+      <!-- Git Branch & Sync Indicator -->
+      <div
+        class="status-pill status-git"
+        id="status-git-branch"
+        :title="`Git: ${currentBranch}${status.upstream ? ' -> ' + status.upstream : ''} (${status.behind}↓ ${status.ahead}↑) • 点击打开源代码管理`"
+        @click="$emit('select-tab', 'scm')"
+      >
+        <span class="status-icon"><TechIcon id="workbench:git" :size="13" :colored="false" /></span>
+        <span class="status-text font-mono">{{ currentBranch }}</span>
+        <button
+          v-if="status.ahead > 0 || status.behind > 0"
+          class="git-sync-btn"
+          :title="`同步变更: ${status.behind} 落后, ${status.ahead} 领先 (点击同步)`"
+          :disabled="isSyncing"
+          @click.stop="handleSync"
+        >
+          <span class="codicon" :class="isSyncing ? 'codicon-sync codicon-modifier-spin' : 'codicon-sync'"></span>
+          <span>{{ status.behind }}↓ {{ status.ahead }}↑</span>
+        </button>
+      </div>
+
       <div
         class="status-pill status-ready"
         id="status-health"
@@ -96,9 +117,15 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import TechIcon from "../common/TechIcon.vue";
 import { useAppScope } from "../../composables/useAppScope";
+import { useGit } from "../../composables/useGit";
 
 const router = useRouter();
 const { activeScope, toggleScope } = useAppScope();
+const { currentBranch, status, isSyncing, sync } = useGit();
+
+async function handleSync() {
+  await sync();
+}
 
 const props = defineProps<{
   activeTaskName?: string;
@@ -151,6 +178,37 @@ const mirrorLabel = computed(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.status-git {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  padding: 1px 6px;
+  border-radius: 3px;
+  transition: background-color 0.15s ease;
+}
+
+.status-git:hover {
+  background-color: var(--item-hover-bg, rgba(255, 255, 255, 0.1));
+}
+
+.git-sync-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0 4px;
+  border-radius: 3px;
+}
+
+.git-sync-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .status-center {

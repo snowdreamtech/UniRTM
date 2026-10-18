@@ -65,12 +65,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 import { useToolUpdates } from "../../composables/useToolUpdates";
+import { useGit } from "../../composables/useGit";
 
 const { updatableCount } = useToolUpdates();
+const { totalChanges, fetchStatus } = useGit();
+
+onMounted(() => {
+  fetchStatus().catch(() => {});
+});
 
 export interface ActivityTab {
   id: string;
@@ -102,6 +108,12 @@ const primaryTabs = computed<ActivityTab[]>(() => [
     id: "explorer",
     icon: "workbench:explorer",
     label: t("nav.explorer") || "Explorer",
+  },
+  {
+    id: "scm",
+    icon: "workbench:scm",
+    label: t("nav.scm") || "源代码管理",
+    badge: totalChanges.value > 0 ? totalChanges.value : undefined,
   },
   {
     id: "tools",

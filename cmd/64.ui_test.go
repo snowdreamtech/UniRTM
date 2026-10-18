@@ -623,5 +623,54 @@ func TestUIFSApi(t *testing.T) {
 	}
 }
 
+func TestUIGitAPI(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/git/status", handleGitStatus)
+	mux.HandleFunc("/api/git/branches", handleGitBranches)
+	mux.HandleFunc("/api/git/diff", handleGitDiff)
+	mux.HandleFunc("/api/git/log", handleGitLog)
+	mux.HandleFunc("/api/git/sync", handleGitSync)
+
+	// 1. Test GET /api/git/status
+	reqStatus := httptest.NewRequest("GET", "/api/git/status", nil)
+	rrStatus := httptest.NewRecorder()
+	mux.ServeHTTP(rrStatus, reqStatus)
+	if rrStatus.Code != http.StatusOK {
+		t.Fatalf("Expected 200 for /api/git/status, got %d: %s", rrStatus.Code, rrStatus.Body.String())
+	}
+	var statusData map[string]interface{}
+	if err := json.Unmarshal(rrStatus.Body.Bytes(), &statusData); err != nil {
+		t.Fatalf("Failed to parse status JSON: %v", err)
+	}
+	if statusData["success"] != true {
+		t.Fatalf("Expected success true, got %v", statusData["success"])
+	}
+
+	// 2. Test GET /api/git/branches
+	reqBranches := httptest.NewRequest("GET", "/api/git/branches", nil)
+	rrBranches := httptest.NewRecorder()
+	mux.ServeHTTP(rrBranches, reqBranches)
+	if rrBranches.Code != http.StatusOK {
+		t.Fatalf("Expected 200 for /api/git/branches, got %d: %s", rrBranches.Code, rrBranches.Body.String())
+	}
+
+	// 3. Test GET /api/git/diff with empty path (graceful handling)
+	reqDiff := httptest.NewRequest("GET", "/api/git/diff?path=cmd/64.ui.go&staged=false", nil)
+	rrDiff := httptest.NewRecorder()
+	mux.ServeHTTP(rrDiff, reqDiff)
+	if rrDiff.Code != http.StatusOK {
+		t.Fatalf("Expected 200 for /api/git/diff, got %d: %s", rrDiff.Code, rrDiff.Body.String())
+	}
+
+	// 4. Test GET /api/git/log
+	reqLog := httptest.NewRequest("GET", "/api/git/log", nil)
+	rrLog := httptest.NewRecorder()
+	mux.ServeHTTP(rrLog, reqLog)
+	if rrLog.Code != http.StatusOK {
+		t.Fatalf("Expected 200 for /api/git/log, got %d: %s", rrLog.Code, rrLog.Body.String())
+	}
+}
+
+
 
 

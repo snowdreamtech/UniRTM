@@ -1086,6 +1086,18 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/fs/read", handleFSRead)
 	mux.HandleFunc("/api/fs/write", handleFSWrite)
 
+	// ─── Git SCM API Handlers ─────────────────────────────────────────────────
+	mux.HandleFunc("/api/git/status", handleGitStatus)
+	mux.HandleFunc("/api/git/stage", handleGitStage)
+	mux.HandleFunc("/api/git/unstage", handleGitUnstage)
+	mux.HandleFunc("/api/git/discard", handleGitDiscard)
+	mux.HandleFunc("/api/git/commit", handleGitCommit)
+	mux.HandleFunc("/api/git/diff", handleGitDiff)
+	mux.HandleFunc("/api/git/branches", handleGitBranches)
+	mux.HandleFunc("/api/git/checkout", handleGitCheckout)
+	mux.HandleFunc("/api/git/sync", handleGitSync)
+	mux.HandleFunc("/api/git/log", handleGitLog)
+
 	// ─── Static SPA Handler ───────────────────────────────────────────────────
 	fileServer := http.FileServer(http.FS(distFS))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -3408,4 +3420,434 @@ func handleFSWrite(w http.ResponseWriter, r *http.Request) {
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "path": body.Path, "size": len(body.Content)})
 }
+
+// ─── Git SCM Handlers Implementation ───────────────────────────────────────
+
+type GitChangeItem struct {
+	Path   string `json:"path"`
+	Status string `json:"status"`
+}
+
+type GitStatusResponse struct {
+	Success      bool            `json:"success"`
+	Branch       string          `json:"branch"`
+	Upstream     string          `json:"upstream"`
+	Ahead        int             `json:"ahead"`
+	Behind       int             `json:"behind"`
+	Staged       []GitChangeItem `json:"staged"`
+	Unstaged     []GitChangeItem `json:"unstaged"`
+	Untracked    []GitChangeItem `json:"untracked"`
+	TotalChanges int             `json:"totalChanges"`
+}
+
+func runGitCommand(args ...string) (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	cmd := exec.Command("git", args...)
+	cmd.Dir = wd
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		errStr := stderr.String()
+		if errStr == "" {
+			errStr = err.Error()
+		}
+		return "", errors.New(strings.TrimSpace(errStr))
+	}
+	return strings.TrimSpace(stdout.String()), nil
+}
+
+func handleGitStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	porcelain, err := runGitCommand("status", "--porcelain=v1", "-b")
+	if err != nil {
+		// Not a git repository or git error
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"success":      false,
+			"error":        err.Error(),
+			"isGitRepo":    false,
+			"branch":       "",
+			"totalChanges": 0,
+		})
+		return
+	}
+
+	lines := strings.Split(porcelain, "\n")
+	branch := "HEAD"
+	upstream := ""
+	ahead := 0
+	behind := 0
+
+	staged := []GitChangeItem{}
+	unstaged := []GitChangeItem{}
+	untracked := []GitChangeItem{}
+
+	for _, line := range lines {
+		line = strings.TrimRight(line, "\r")
+		if strings.HasPrefix(line, "## ") {
+			header := strings.TrimPrefix(line, "## ")
+			header = strings.TrimSpace(header)
+			if strings.Contains(header, "...") {
+				parts := strings.Split(header, "...")
+				branch = parts[0]
+				rest := parts[1]
+				if idx := strings.Index(rest, " "); idx != -1 {
+					upstream = rest[:idx]
+					statusPart := rest[idx:]
+					if strings.Contains(statusPart, "ahead") {
+						var a int
+						if n, _ := fmt.Sscanf(statusPart[strings.Index(statusPart, "ahead")+5:], "%d", &a); n > 0 {
+							ahead = a
+						}
+					}
+					if strings.Contains(statusPart, "behind") {
+						var b int
+						if n, _ := fmt.Sscanf(statusPart[strings.Index(statusPart, "behind")+6:], "%d", &b); n > 0 {
+							behind = b
+						}
+					}
+				} else {
+					upstream = rest
+				}
+			} else {
+				branch = header
+			}
+			continue
+		}
+
+		if len(line) < 3 {
+			continue
+		}
+
+		x := line[0]
+		y := line[1]
+		fPath := strings.TrimSpace(line[3:])
+		fPath = strings.Trim(fPath, "\"")
+
+		if x == '?' && y == '?' {
+			untracked = append(untracked, GitChangeItem{Path: fPath, Status: "U"})
+		} else {
+			if x != ' ' && x != '?' {
+				staged = append(staged, GitChangeItem{Path: fPath, Status: string(x)})
+			}
+			if y != ' ' && y != '?' {
+				unstaged = append(unstaged, GitChangeItem{Path: fPath, Status: string(y)})
+			}
+		}
+	}
+
+	resp := GitStatusResponse{
+		Success:      true,
+		Branch:       branch,
+		Upstream:     upstream,
+		Ahead:        ahead,
+		Behind:       behind,
+		Staged:       staged,
+		Unstaged:     unstaged,
+		Untracked:    untracked,
+		TotalChanges: len(staged) + len(unstaged) + len(untracked),
+	}
+	_ = json.NewEncoder(w).Encode(resp)
+}
+
+func handleGitStage(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body struct {
+		Paths []string `json:"paths"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+
+	args := []string{"add", "--"}
+	if len(body.Paths) == 0 || (len(body.Paths) == 1 && (body.Paths[0] == "." || body.Paths[0] == "*")) {
+		args = []string{"add", "-A"}
+	} else {
+		args = append(args, body.Paths...)
+	}
+
+	if _, err := runGitCommand(args...); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
+}
+
+func handleGitUnstage(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body struct {
+		Paths []string `json:"paths"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+
+	args := []string{"reset", "HEAD", "--"}
+	if len(body.Paths) > 0 && !(len(body.Paths) == 1 && (body.Paths[0] == "." || body.Paths[0] == "*")) {
+		args = append(args, body.Paths...)
+	}
+
+	if _, err := runGitCommand(args...); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
+}
+
+func handleGitDiscard(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body struct {
+		Paths []string `json:"paths"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+
+	for _, p := range body.Paths {
+		if _, err := runGitCommand("checkout", "--", p); err != nil {
+			_, _ = runGitCommand("clean", "-fd", "--", p)
+		}
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
+}
+
+func handleGitCommit(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body struct {
+		Message string `json:"message"`
+		Amend   bool   `json:"amend"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || strings.TrimSpace(body.Message) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "Commit message is required"})
+		return
+	}
+
+	args := []string{"commit", "-m", strings.TrimSpace(body.Message)}
+	if body.Amend {
+		args = append([]string{"commit", "--amend", "-m", strings.TrimSpace(body.Message)})
+	}
+
+	out, err := runGitCommand(args...)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "output": out})
+}
+
+func handleGitDiff(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	filePath := r.URL.Query().Get("path")
+	isStaged := r.URL.Query().Get("staged") == "true"
+
+	original := ""
+	modified := ""
+
+	if isStaged {
+		orig, _ := runGitCommand("show", "HEAD:"+filePath)
+		original = orig
+		mod, _ := runGitCommand("show", ":"+filePath)
+		modified = mod
+	} else {
+		orig, err := runGitCommand("show", ":"+filePath)
+		if err != nil {
+			orig, _ = runGitCommand("show", "HEAD:"+filePath)
+		}
+		original = orig
+
+		wd, safePath, err := getSafeFSPath(filePath)
+		if err == nil && wd != "" {
+			data, _ := os.ReadFile(safePath)
+			modified = string(data)
+		}
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":  true,
+		"path":     filePath,
+		"original": original,
+		"modified": modified,
+	})
+}
+
+type GitBranchItem struct {
+	Name      string `json:"name"`
+	IsCurrent bool   `json:"isCurrent"`
+	IsRemote  bool   `json:"isRemote"`
+}
+
+func handleGitBranches(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	out, err := runGitCommand("branch", "-a", "--format=%(refname:short)|%(HEAD)")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	lines := strings.Split(out, "\n")
+	current := ""
+	branches := []GitBranchItem{}
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.Split(line, "|")
+		bName := parts[0]
+		isHead := len(parts) > 1 && parts[1] == "*"
+		if isHead {
+			current = bName
+		}
+		branches = append(branches, GitBranchItem{
+			Name:      bName,
+			IsCurrent: isHead,
+			IsRemote:  strings.HasPrefix(bName, "origin/"),
+		})
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":  true,
+		"current":  current,
+		"branches": branches,
+	})
+}
+
+func handleGitCheckout(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var body struct {
+		Branch string `json:"branch"`
+		Create bool   `json:"create"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || strings.TrimSpace(body.Branch) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "Branch name is required"})
+		return
+	}
+
+	args := []string{"checkout", body.Branch}
+	if body.Create {
+		args = []string{"checkout", "-b", body.Branch}
+	}
+
+	if _, err := runGitCommand(args...); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "branch": body.Branch})
+}
+
+func handleGitSync(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	pullOut, _ := runGitCommand("pull", "--ff-only")
+	pushOut, _ := runGitCommand("push")
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"pull":    pullOut,
+		"push":    pushOut,
+	})
+}
+
+type GitCommitItem struct {
+	Hash      string `json:"hash"`
+	ShortHash string `json:"shortHash"`
+	Author    string `json:"author"`
+	Email     string `json:"email"`
+	Timestamp int64  `json:"timestamp"`
+	Message   string `json:"message"`
+}
+
+func handleGitLog(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	out, err := runGitCommand("log", "-n", "30", "--pretty=format:%H%x09%h%x09%an%x09%ae%x09%at%x09%s")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+
+	lines := strings.Split(out, "\n")
+	commits := []GitCommitItem{}
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.Split(line, "\t")
+		if len(parts) >= 6 {
+			var ts int64
+			_, _ = fmt.Sscanf(parts[4], "%d", &ts)
+			commits = append(commits, GitCommitItem{
+				Hash:      parts[0],
+				ShortHash: parts[1],
+				Author:    parts[2],
+				Email:     parts[3],
+				Timestamp: ts,
+				Message:   parts[5],
+			})
+		}
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"commits": commits,
+	})
+}
+
+
 

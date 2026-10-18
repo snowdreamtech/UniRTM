@@ -53,6 +53,11 @@
         <ExplorerSidebar @open-terminal="$emit('open-terminal', $event)" />
       </template>
 
+      <!-- SCM Navigation Items -->
+      <template v-if="currentTab === 'scm'">
+        <SourceControlSidebar />
+      </template>
+
 
 
       <!-- TOOLS Navigation Items -->
@@ -216,6 +221,7 @@ import { ref, computed, watch, onMounted } from "vue";
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 import ExplorerSidebar from "../explorer/ExplorerSidebar.vue";
+import SourceControlSidebar from "../scm/SourceControlSidebar.vue";
 import { useFileTree } from "../../composables/useFileTree";
 import { useToolUpdates } from "../../composables/useToolUpdates";
 import { useToolScope } from "../../composables/useToolScope";
@@ -328,6 +334,8 @@ const headerTitle = computed(() => {
       return t("nav.dashboard") || "DASHBOARD";
     case "explorer":
       return t("nav.explorer") || "EXPLORER";
+    case "scm":
+      return t("nav.scm") || "SOURCE CONTROL";
     case "tools":
       return t("nav.tools") || "TOOLCHAINS";
     case "tasks":

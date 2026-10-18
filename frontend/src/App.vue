@@ -235,6 +235,8 @@ const currentTabLabel = computed(() => {
       return t("nav.dashboard") || "Dashboard";
     case "explorer":
       return t("nav.explorer") || "Explorer";
+    case "scm":
+      return t("nav.scm") || "Source Control";
     case "tools":
       return t("nav.tools") || "Toolchains";
     case "tasks":

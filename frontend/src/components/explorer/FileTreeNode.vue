@@ -58,7 +58,18 @@
           @blur="commitRename"
           @click.stop
         />
-        <span v-else class="tree-label">{{ node.name }}</span>
+        <span
+          v-else
+          class="tree-label"
+          :class="[
+            gitStatus ? 'git-color-' + gitStatus : '',
+            dirGitCount > 0 ? 'git-has-changes' : ''
+          ]"
+        >
+          {{ node.name }}
+        </span>
+        <span v-if="gitStatus" class="git-tree-badge" :class="'badge-' + gitStatus">{{ gitStatus }}</span>
+        <span v-else-if="dirGitCount > 0 && !isExpanded" class="git-dir-badge">{{ dirGitCount }}</span>
       </div>
 
       <!-- Actions on Hover (Rename, Delete) -->
@@ -134,6 +145,7 @@
 import { ref, computed, nextTick, watch } from "vue";
 import type { FSNode } from "../../composables/useFileTree";
 import { useFileTree } from "../../composables/useFileTree";
+import { useGit } from "../../composables/useGit";
 import TechIcon from "../common/TechIcon.vue";
 
 const props = defineProps<{
@@ -163,6 +175,18 @@ const createInputValue = ref("");
 
 const isExpanded = computed(() => {
   return expandedPaths.value.has(props.node.path);
+});
+
+const { getGitStatus, getDirGitCount } = useGit();
+
+const gitStatus = computed(() => {
+  if (props.node.is_dir) return undefined;
+  return getGitStatus(props.node.path);
+});
+
+const dirGitCount = computed(() => {
+  if (!props.node.is_dir) return 0;
+  return getDirGitCount(props.node.path);
 });
 
 const isSelected = computed(() => {
@@ -358,6 +382,59 @@ async function commitCreate() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tree-label.git-color-M {
+  color: #e2c08d !important;
+}
+
+.tree-label.git-color-A,
+.tree-label.git-color-U,
+.tree-label.git-color-\? {
+  color: #73c991 !important;
+}
+
+.tree-label.git-color-D {
+  color: #c74e39 !important;
+}
+
+.tree-label.git-color-R {
+  color: #4ec9b0 !important;
+}
+
+.git-tree-badge {
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: auto;
+  padding: 0 4px;
+}
+
+.git-tree-badge.badge-M {
+  color: #e2c08d;
+}
+
+.git-tree-badge.badge-A,
+.git-tree-badge.badge-U,
+.git-tree-badge.badge-\? {
+  color: #73c991;
+}
+
+.git-tree-badge.badge-D {
+  color: #c74e39;
+}
+
+.git-tree-badge.badge-R {
+  color: #4ec9b0;
+}
+
+.git-dir-badge {
+  font-size: 10px;
+  font-weight: 600;
+  margin-left: auto;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: rgba(226, 192, 141, 0.18);
+  color: #e2c08d;
 }
 
 .tree-inline-input {

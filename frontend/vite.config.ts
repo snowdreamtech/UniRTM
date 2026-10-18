@@ -3059,6 +3059,349 @@ print(json.dumps({
             }
           }
 
+          // ─── Git SCM API Handlers ─────────────────────────────────────────
+          if (req.url?.startsWith("/api/git/")) {
+            const runGit = (args: string[]): string => {
+              try {
+                return execFileSync("git", args, { cwd: rootDir, encoding: "utf-8" }).trim();
+              } catch (err: any) {
+                const stderr = err.stderr ? err.stderr.toString() : err.message;
+                throw new Error(stderr || err.message);
+              }
+            };
+
+            // GET /api/git/status
+            if (req.url === "/api/git/status" && req.method === "GET") {
+              try {
+                let porcelain = "";
+                try {
+                  porcelain = runGit(["status", "--porcelain=v1", "-b"]);
+                } catch (_) {
+                  porcelain = "";
+                }
+
+                const lines = porcelain ? porcelain.split("\n").filter(Boolean) : [];
+                let branch = "HEAD";
+                let upstream = "";
+                let ahead = 0;
+                let behind = 0;
+
+                const staged: { path: string; status: string }[] = [];
+                const unstaged: { path: string; status: string }[] = [];
+                const untracked: { path: string; status: string }[] = [];
+
+                for (let i = 0; i < lines.length; i++) {
+                  const line = lines[i];
+                  if (line.startsWith("## ")) {
+                    const header = line.slice(3).trim();
+                    const branchMatch = header.match(/^([^.\s]+)(?:\.\.\.([^\s]+))?(?:\s+\[ahead\s+(\d+)(?:,\s+behind\s+(\d+))?\]|\s+\[behind\s+(\d+)\])?/);
+                    if (branchMatch) {
+                      branch = branchMatch[1] || "HEAD";
+                      upstream = branchMatch[2] || "";
+                      ahead = parseInt(branchMatch[3] || "0", 10);
+                      behind = parseInt(branchMatch[4] || branchMatch[5] || "0", 10);
+                    } else {
+                      branch = header.split("...")[0] || header;
+                    }
+                    continue;
+                  }
+
+                  if (line.length < 3) continue;
+                  const x = line[0];
+                  const y = line[1];
+                  const filePath = line.slice(3).trim().replace(/^"|"$/g, "");
+
+                  if (x === "?" && y === "?") {
+                    untracked.push({ path: filePath, status: "U" });
+                  } else {
+                    if (x !== " " && x !== "?") {
+                      staged.push({ path: filePath, status: x });
+                    }
+                    if (y !== " " && y !== "?") {
+                      unstaged.push({ path: filePath, status: y });
+                    }
+                  }
+                }
+
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({
+                  success: true,
+                  branch,
+                  upstream,
+                  ahead,
+                  behind,
+                  staged,
+                  unstaged,
+                  untracked,
+                  totalChanges: staged.length + unstaged.length + untracked.length,
+                }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+              return;
+            }
+
+            // POST /api/git/stage
+            if (req.url === "/api/git/stage" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  const paths = Array.isArray(body.paths) && body.paths.length ? body.paths : ["."];
+                  if (paths.includes(".") || paths.includes("*")) {
+                    runGit(["add", "-A"]);
+                  } else {
+                    runGit(["add", "--", ...paths]);
+                  }
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/unstage
+            if (req.url === "/api/git/unstage" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  const paths = Array.isArray(body.paths) && body.paths.length ? body.paths : ["."];
+                  if (paths.includes(".") || paths.includes("*")) {
+                    runGit(["reset", "HEAD", "--"]);
+                  } else {
+                    runGit(["reset", "HEAD", "--", ...paths]);
+                  }
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/discard
+            if (req.url === "/api/git/discard" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  const paths = Array.isArray(body.paths) && body.paths.length ? body.paths : [];
+                  for (const p of paths) {
+                    try {
+                      runGit(["checkout", "--", p]);
+                    } catch (_) {
+                      try {
+                        runGit(["clean", "-fd", "--", p]);
+                      } catch (_) {}
+                    }
+                  }
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/commit
+            if (req.url === "/api/git/commit" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  if (!body.message || !body.message.trim()) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "Commit message is required" }));
+                    return;
+                  }
+                  const args = ["commit", "-m", body.message.trim()];
+                  if (body.amend) {
+                    args.splice(1, 0, "--amend");
+                  }
+                  const out = runGit(args);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, output: out }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // GET /api/git/diff
+            if (req.url?.startsWith("/api/git/diff") && req.method === "GET") {
+              try {
+                const urlObj = new URL(req.url, "http://localhost");
+                const filePath = urlObj.searchParams.get("path") || "";
+                const isStaged = urlObj.searchParams.get("staged") === "true";
+
+                let original = "";
+                let modified = "";
+
+                if (isStaged) {
+                  try {
+                    original = runGit(["show", `HEAD:${filePath}`]);
+                  } catch (_) {
+                    original = "";
+                  }
+                  try {
+                    modified = runGit(["show", `:${filePath}`]);
+                  } catch (_) {
+                    modified = "";
+                  }
+                } else {
+                  try {
+                    original = runGit(["show", `:${filePath}`]);
+                  } catch (_) {
+                    try {
+                      original = runGit(["show", `HEAD:${filePath}`]);
+                    } catch (_) {
+                      original = "";
+                    }
+                  }
+                  const absPath = path.resolve(rootDir, filePath);
+                  if (fs.existsSync(absPath)) {
+                    modified = fs.readFileSync(absPath, "utf-8");
+                  }
+                }
+
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, path: filePath, original, modified }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+              return;
+            }
+
+            // GET /api/git/branches
+            if (req.url === "/api/git/branches" && req.method === "GET") {
+              try {
+                const out = runGit(["branch", "-a", "--format=%(refname:short)|%(HEAD)"]);
+                const lines = out.split("\n").filter(Boolean);
+                let current = "";
+                const branches: { name: string; isCurrent: boolean; isRemote: boolean }[] = [];
+
+                for (const line of lines) {
+                  const [bName, isHead] = line.split("|");
+                  const isCurrent = isHead === "*";
+                  if (isCurrent) current = bName;
+                  branches.push({
+                    name: bName,
+                    isCurrent,
+                    isRemote: bName.startsWith("origin/"),
+                  });
+                }
+
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, current, branches }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+              return;
+            }
+
+            // POST /api/git/checkout
+            if (req.url === "/api/git/checkout" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  if (!body.branch) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "Branch name is required" }));
+                    return;
+                  }
+                  if (body.create) {
+                    runGit(["checkout", "-b", body.branch]);
+                  } else {
+                    runGit(["checkout", body.branch]);
+                  }
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, branch: body.branch }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            if (req.url === "/api/git/sync" && req.method === "POST") {
+              try {
+                let pullOut = "";
+                try {
+                  pullOut = runGit(["pull", "--ff-only"]);
+                } catch (e: any) {
+                  pullOut = e.message || String(e);
+                }
+                let pushOut = "";
+                try {
+                  pushOut = runGit(["push"]);
+                } catch (e: any) {
+                  pushOut = e.message || String(e);
+                }
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, pull: pullOut, push: pushOut }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+              return;
+            }
+
+            if (req.url?.startsWith("/api/git/log") && req.method === "GET") {
+              try {
+                const out = runGit(["log", "-n", "30", "--pretty=format:%H%x09%h%x09%an%x09%ae%x09%at%x09%s"]);
+                const commits = out.split("\n").filter(Boolean).map((line: string) => {
+                  const [hash, shortHash, author, email, timestamp, message] = line.split("\t");
+                  return {
+                    hash,
+                    shortHash,
+                    author,
+                    email,
+                    timestamp: parseInt(timestamp || "0", 10),
+                    message: message || "",
+                  };
+                });
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, commits }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+              return;
+            }
+          }
+
           if (req.url === "/api/system/browsers") {
             res.setHeader("Content-Type", "application/json");
             res.end(JSON.stringify({ browsers: [] }));
