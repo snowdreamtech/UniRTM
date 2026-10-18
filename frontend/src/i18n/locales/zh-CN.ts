@@ -1021,4 +1021,12 @@ export const zhCn: TranslationDict = {
   "scm.graph.branch_filter.remote": "远程分支",
   "scm.graph.branch_filter.multiple_selected": "{count} 个分支",
   "scm.graph.branch_filter.no_branches_found": "未找到匹配分支",
+  "scm.stash.apply": "应用暂存",
+  "scm.stash.apply_confirm": "确定要应用暂存 {name} 吗？",
+  "scm.stash.pop": "弹出暂存",
+  "scm.stash.pop_confirm": "确定要弹出暂存 {name} 吗？",
+  "scm.stash.drop": "删除暂存...",
+  "scm.stash.drop_confirm": "确定要永久删除暂存 {name} 吗？此操作无法撤销！",
+  "scm.stash.create_branch": "基于暂存创建分支...",
+  "scm.graph.toggle_stashes": "显示暂存记录",
 };

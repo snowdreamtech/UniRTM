@@ -3501,6 +3501,52 @@ print(json.dumps({
                     };
                   });
 
+                const showStashes = parsedUrl.searchParams.get("showStashes");
+                if (showStashes !== "false") {
+                  try {
+                    const stashOut = runGit(["stash", "list", "--pretty=format:%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%s%x09%gd"]);
+                    if (stashOut && stashOut.trim()) {
+                      for (const sLine of stashOut.split("\n")) {
+                        const trimmed = sLine.trim();
+                        if (!trimmed) continue;
+                        const sParts = trimmed.split("\t");
+                        if (sParts.length >= 8) {
+                          const sParents = (sParts[2] || "").trim().split(/\s+/).filter(Boolean);
+                          const sCommit = {
+                            hash: sParts[0],
+                            shortHash: sParts[1],
+                            parents: sParents,
+                            author: sParts[3],
+                            email: sParts[4],
+                            timestamp: parseInt(sParts[5] || "0", 10),
+                            message: sParts[6],
+                            refs: [
+                              {
+                                name: sParts[7],
+                                type: "stash" as const,
+                                current: false,
+                              },
+                            ],
+                            gpg: { status: "none" as const },
+                            isStash: true,
+                          };
+                          let inserted = false;
+                          for (let idx = 0; idx < commits.length; idx++) {
+                            if (sCommit.timestamp >= commits[idx].timestamp) {
+                              commits.splice(idx, 0, sCommit);
+                              inserted = true;
+                              break;
+                            }
+                          }
+                          if (!inserted) {
+                            commits.push(sCommit);
+                          }
+                        }
+                      }
+                    }
+                  } catch {}
+                }
+
                 res.setHeader("Content-Type", "application/json");
                 res.end(JSON.stringify({ success: true, commits }));
               } catch (err: any) {
@@ -3960,6 +4006,95 @@ print(json.dumps({
                     args.push("-m", body.message.trim());
                   }
                   const out = runGit(args);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, output: out }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/stash/apply
+            if (req.url === "/api/git/stash/apply" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  const args = ["stash", "apply"];
+                  if (body.stash && body.stash.trim()) args.push(body.stash.trim());
+                  const out = runGit(args);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, output: out }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/stash/pop
+            if (req.url === "/api/git/stash/pop" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  const args = ["stash", "pop"];
+                  if (body.stash && body.stash.trim()) args.push(body.stash.trim());
+                  const out = runGit(args);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, output: out }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/stash/drop
+            if (req.url === "/api/git/stash/drop" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  const args = ["stash", "drop"];
+                  if (body.stash && body.stash.trim()) args.push(body.stash.trim());
+                  const out = runGit(args);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, output: out }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/git/stash/branch
+            if (req.url === "/api/git/stash/branch" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  if (!body.branch || !body.branch.trim()) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "branch is required" }));
+                    return;
+                  }
+                  const stashRef = body.stash && body.stash.trim() ? body.stash.trim() : "stash@{0}";
+                  const out = runGit(["stash", "branch", body.branch.trim(), stashRef]);
                   res.setHeader("Content-Type", "application/json");
                   res.end(JSON.stringify({ success: true, output: out }));
                 } catch (err: any) {

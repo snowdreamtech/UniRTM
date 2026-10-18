@@ -54,7 +54,7 @@ export interface GitCommitItem {
 
 export interface GitGraphRef {
   name: string;
-  type: "head" | "branch" | "remote" | "tag";
+  type: "head" | "branch" | "remote" | "tag" | "stash";
   current: boolean;
 }
 
@@ -68,6 +68,7 @@ export interface GitGraphCommit {
   message: string;
   refs: GitGraphRef[];
   gpg?: GitGpgInfo;
+  isStash?: boolean;
 }
 
 export interface GitCommitFileItem {
@@ -441,6 +442,7 @@ export function useGit() {
     branch?: string | string[];
     path?: string | null;
     limit?: number;
+    showStashes?: boolean;
   }): Promise<GitGraphCommit[]> {
     isLoadingGraph.value = true;
     try {
@@ -457,6 +459,9 @@ export function useGit() {
         q.set("branch", b);
       }
       if (p) q.set("path", p);
+      if (options?.showStashes !== undefined) {
+        q.set("showStashes", String(options.showStashes));
+      }
       q.set("limit", String(limit));
 
       const res = await fetch(`/api/git/graph?${q.toString()}`);
@@ -875,6 +880,95 @@ export function useGit() {
   }
 
   /**
+   * Applies a stash to working tree.
+   */
+  async function stashApply(stash?: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/stash/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stash }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "应用暂存失败");
+      showToast("已成功应用暂存", "success");
+      await fetchStatus();
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "应用暂存失败", "error");
+      return false;
+    }
+  }
+
+  /**
+   * Pops a stash to working tree and removes it from stash list.
+   */
+  async function stashPop(stash?: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/stash/pop", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stash }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "弹出暂存失败");
+      showToast("已成功弹出暂存", "success");
+      await fetchStatus();
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "弹出暂存失败", "error");
+      return false;
+    }
+  }
+
+  /**
+   * Drops a stash permanently.
+   */
+  async function stashDrop(stash?: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/stash/drop", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stash }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "删除暂存失败");
+      showToast("已删除暂存", "success");
+      await fetchStatus();
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "删除暂存失败", "error");
+      return false;
+    }
+  }
+
+  /**
+   * Creates a new branch from stash and applies it.
+   */
+  async function stashBranch(branch: string, stash?: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/git/stash/branch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ branch, stash }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "基于暂存创建分支失败");
+      showToast(`已成功基于暂存创建分支: ${branch}`, "success");
+      await fetchBranches();
+      await fetchStatus();
+      await fetchGraph();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "基于暂存创建分支失败", "error");
+      return false;
+    }
+  }
+
+  /**
    * Resets all tracked uncommitted changes to HEAD.
    */
   async function resetUncommitted(): Promise<boolean> {
@@ -1017,6 +1111,10 @@ export function useGit() {
     revertCommit,
     resetToCommit,
     stashUncommitted,
+    stashApply,
+    stashPop,
+    stashDrop,
+    stashBranch,
     resetUncommitted,
     cleanUntracked,
     pull,

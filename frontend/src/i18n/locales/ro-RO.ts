@@ -1009,4 +1009,12 @@ export const roRo: TranslationDict = {
   "scm.graph.branch_filter.remote": "Remote Branches",
   "scm.graph.branch_filter.multiple_selected": "{count} branches",
   "scm.graph.branch_filter.no_branches_found": "No branches found",
+  "scm.stash.apply": "Apply Stash",
+  "scm.stash.apply_confirm": "Are you sure you want to apply {name}?",
+  "scm.stash.pop": "Pop Stash",
+  "scm.stash.pop_confirm": "Are you sure you want to pop {name}?",
+  "scm.stash.drop": "Drop Stash...",
+  "scm.stash.drop_confirm": "Are you sure you want to permanently drop {name}?",
+  "scm.stash.create_branch": "Branch from Stash...",
+  "scm.graph.toggle_stashes": "Show Stashes",
 };

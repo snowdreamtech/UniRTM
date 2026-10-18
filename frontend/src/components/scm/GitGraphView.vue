@@ -55,6 +55,17 @@
         <span>{{ t('common.refresh') }}</span>
       </button>
 
+      <!-- 5. Show Stashes Toggle Button -->
+      <button
+        class="toolbar-btn"
+        :class="{ active: showStashes }"
+        :title="t('scm.graph.toggle_stashes')"
+        @click="toggleShowStashes"
+      >
+        <span class="codicon codicon-archive"></span>
+        <span>{{ t('scm.graph.toggle_stashes') }}</span>
+      </button>
+
       <!-- 5. Commit Count Badge -->
       <div class="commit-count-pill">
         <span>{{ t('scm.graph.commits_count', { count: filteredCommits.length }) }}</span>
@@ -178,6 +189,8 @@
                           ? 'codicon-tag'
                           : refItem.type === 'remote'
                           ? 'codicon-cloud'
+                          : refItem.type === 'stash'
+                          ? 'codicon-archive'
                           : 'codicon-git-branch'
                       "
                     ></span>
@@ -849,6 +862,27 @@
           </div>
         </template>
 
+        <!-- Stash Context Menu -->
+        <template v-else-if="selectedRef?.type === 'stash'">
+          <div class="menu-item" @click="handleRefAction('apply-stash')">
+            {{ t('scm.stash.apply') }}
+          </div>
+          <div class="menu-item" @click="handleRefAction('pop-stash')">
+            {{ t('scm.stash.pop') }}
+          </div>
+          <div class="menu-item danger" @click="handleRefAction('drop-stash')">
+            {{ t('scm.stash.drop') }}
+          </div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" @click="handleRefAction('branch-from-stash')">
+            {{ t('scm.stash.create_branch') }}
+          </div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" @click="handleRefAction('copy-name')">
+            {{ t('scm.branch.copy_name') }}
+          </div>
+        </template>
+
         <!-- Remote Branch Context Menu -->
         <template v-else-if="selectedRef?.type === 'remote'">
           <div class="menu-item" @click="handleRefAction('checkout-remote')">
@@ -937,6 +971,10 @@ const {
   activeCompare,
   fetchCompare,
   stashUncommitted,
+  stashApply,
+  stashPop,
+  stashDrop,
+  stashBranch,
   resetUncommitted,
   cleanUntracked,
 } = useGit();
@@ -948,6 +986,7 @@ const selectedBranches = ref<string[]>(
     ? [...graphFilterBranches.value]
     : ["all"]
 );
+const showStashes = ref(true);
 const searchQuery = ref("");
 const tableWrapperRef = ref<HTMLElement | null>(null);
 const isLoadingDetail = ref(false);
@@ -1351,7 +1390,13 @@ async function refreshGraph() {
   await fetchGraph({
     branch: selectedBranches.value,
     path: graphFilterPath.value,
+    showStashes: showStashes.value,
   });
+}
+
+function toggleShowStashes() {
+  showStashes.value = !showStashes.value;
+  refreshGraph();
 }
 
 function handleBranchesChange(newBranches: string[]) {
@@ -1572,6 +1617,32 @@ async function handleRefAction(action: string) {
     return;
   }
 
+  if (action === "apply-stash") {
+    if (confirm(t("scm.stash.apply_confirm", { name: refItem.name }))) {
+      await stashApply(refItem.name);
+    }
+    return;
+  }
+
+  if (action === "pop-stash") {
+    if (confirm(t("scm.stash.pop_confirm", { name: refItem.name }))) {
+      await stashPop(refItem.name);
+    }
+    return;
+  }
+
+  if (action === "drop-stash") {
+    if (confirm(t("scm.stash.drop_confirm", { name: refItem.name }))) {
+      await stashDrop(refItem.name);
+    }
+    return;
+  }
+
+  if (action === "branch-from-stash") {
+    openRefModal("create-branch", refItem.name, commit);
+    return;
+  }
+
   if (action === "checkout-remote") {
     try {
       await checkout(refItem.name);
@@ -1622,7 +1693,11 @@ async function handleModalConfirm(payload: {
     } else if (action === "create-tag") {
       if (commit) await createTag(data.name, commit.hash, data.message);
     } else if (action === "create-branch") {
-      if (commit) await createBranchFromCommit(data.name, commit.hash, data.checkout);
+      if (payload.targetRefName?.startsWith("stash@{")) {
+        await stashBranch(data.name, payload.targetRefName);
+      } else if (commit) {
+        await createBranchFromCommit(data.name, commit.hash, data.checkout);
+      }
     } else if (action === "rename-branch") {
       await renameBranch(data.oldName, data.newName);
     } else if (action === "delete-branch") {
@@ -2070,6 +2145,16 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
 
 :root[data-theme="light"] .badge-tag {
   color: #b45309;
+}
+
+.badge-stash {
+  background: rgba(236, 72, 153, 0.15);
+  color: #f472b6;
+  border: 1px solid rgba(236, 72, 153, 0.35);
+}
+
+:root[data-theme="light"] .badge-stash {
+  color: #db2777;
 }
 
 .commit-subject {

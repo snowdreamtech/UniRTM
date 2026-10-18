@@ -1115,6 +1115,10 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/git/tag/push", handleGitTagPush)
 	mux.HandleFunc("/api/git/archive", handleGitArchive)
 	mux.HandleFunc("/api/git/stash", handleGitStash)
+	mux.HandleFunc("/api/git/stash/apply", handleGitStashApply)
+	mux.HandleFunc("/api/git/stash/pop", handleGitStashPop)
+	mux.HandleFunc("/api/git/stash/drop", handleGitStashDrop)
+	mux.HandleFunc("/api/git/stash/branch", handleGitStashBranch)
 	mux.HandleFunc("/api/git/reset-uncommitted", handleGitResetUncommitted)
 	mux.HandleFunc("/api/git/clean", handleGitClean)
 	mux.HandleFunc("/api/git/pull", handleGitPull)
@@ -3935,6 +3939,7 @@ type GitGraphCommit struct {
 	Message   string        `json:"message"`
 	Refs      []GitGraphRef `json:"refs"`
 	Gpg       *GitGpgInfo   `json:"gpg,omitempty"`
+	IsStash   bool          `json:"isStash,omitempty"`
 }
 
 func handleGitGraph(w http.ResponseWriter, r *http.Request) {
@@ -4048,6 +4053,59 @@ func handleGitGraph(w http.ResponseWriter, r *http.Request) {
 				Refs:      refs,
 				Gpg:       gpg,
 			})
+		}
+	}
+
+	// Also parse stashes if showStashes != "false"
+	showStashes := r.URL.Query().Get("showStashes")
+	if showStashes != "false" {
+		stashOut, err := runGitCommand("stash", "list", "--pretty=format:%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%s%x09%gd")
+		if err == nil && strings.TrimSpace(stashOut) != "" {
+			for _, sLine := range strings.Split(stashOut, "\n") {
+				sLine = strings.TrimSpace(sLine)
+				if sLine == "" {
+					continue
+				}
+				sParts := strings.Split(sLine, "\t")
+				if len(sParts) >= 8 {
+					var sTs int64
+					_, _ = fmt.Sscanf(sParts[5], "%d", &sTs)
+					sParents := []string{}
+					if sParts[2] != "" {
+						sParents = strings.Fields(sParts[2])
+					}
+					sRefName := sParts[7]
+					sCommit := GitGraphCommit{
+						Hash:      sParts[0],
+						ShortHash: sParts[1],
+						Parents:   sParents,
+						Author:    sParts[3],
+						Email:     sParts[4],
+						Timestamp: sTs,
+						Message:   sParts[6],
+						Refs: []GitGraphRef{
+							{
+								Name:    sRefName,
+								Type:    "stash",
+								Current: false,
+							},
+						},
+						Gpg:     &GitGpgInfo{Status: "none"},
+						IsStash: true,
+					}
+					inserted := false
+					for idx, c := range commits {
+						if sCommit.Timestamp >= c.Timestamp {
+							commits = append(commits[:idx], append([]GitGraphCommit{sCommit}, commits[idx:]...)...)
+							inserted = true
+							break
+						}
+					}
+					if !inserted {
+						commits = append(commits, sCommit)
+					}
+				}
+			}
 		}
 	}
 
@@ -4842,6 +4900,104 @@ func handleGitFetch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "output": out})
+}
+
+func handleGitStashApply(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var body struct {
+		Stash string `json:"stash"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	args := []string{"stash", "apply"}
+	if strings.TrimSpace(body.Stash) != "" {
+		args = append(args, strings.TrimSpace(body.Stash))
+	}
+	out, err := runGitCommand(args...)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "output": out})
+}
+
+func handleGitStashPop(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var body struct {
+		Stash string `json:"stash"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	args := []string{"stash", "pop"}
+	if strings.TrimSpace(body.Stash) != "" {
+		args = append(args, strings.TrimSpace(body.Stash))
+	}
+	out, err := runGitCommand(args...)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "output": out})
+}
+
+func handleGitStashDrop(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var body struct {
+		Stash string `json:"stash"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	args := []string{"stash", "drop"}
+	if strings.TrimSpace(body.Stash) != "" {
+		args = append(args, strings.TrimSpace(body.Stash))
+	}
+	out, err := runGitCommand(args...)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "output": out})
+}
+
+func handleGitStashBranch(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var body struct {
+		Branch string `json:"branch"`
+		Stash  string `json:"stash"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	if strings.TrimSpace(body.Branch) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "branch is required"})
+		return
+	}
+	stashRef := "stash@{0}"
+	if strings.TrimSpace(body.Stash) != "" {
+		stashRef = strings.TrimSpace(body.Stash)
+	}
+	out, err := runGitCommand("stash", "branch", strings.TrimSpace(body.Branch), stashRef)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "output": out})
 }
 

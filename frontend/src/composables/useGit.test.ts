@@ -453,6 +453,41 @@ describe("useGit composable", () => {
     }));
   });
 
+  it("stashApply, stashPop, stashDrop, stashBranch call respective endpoints", async () => {
+    global.fetch = vi.fn().mockImplementation(() => {
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ success: true }),
+      });
+    });
+
+    const { stashApply, stashPop, stashDrop, stashBranch } = useGit();
+
+    await stashApply("stash@{1}");
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/stash/apply", expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({ stash: "stash@{1}" }),
+    }));
+
+    await stashPop("stash@{0}");
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/stash/pop", expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({ stash: "stash@{0}" }),
+    }));
+
+    await stashDrop("stash@{2}");
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/stash/drop", expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({ stash: "stash@{2}" }),
+    }));
+
+    await stashBranch("feat-stash-branch", "stash@{0}");
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/stash/branch", expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({ branch: "feat-stash-branch", stash: "stash@{0}" }),
+    }));
+  });
+
   it("pull and fetchRemote call respective endpoints", async () => {
     global.fetch = vi.fn().mockImplementation(() => {
       return Promise.resolve({
