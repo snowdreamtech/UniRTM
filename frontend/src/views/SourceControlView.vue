@@ -277,10 +277,18 @@
               <span class="codicon codicon-refresh"></span>
               <span>刷新</span>
             </button>
-          </div>
           <div class="commits-list">
             <div v-for="c in commits" :key="c.hash" class="commit-item">
               <span class="commit-hash font-mono">{{ c.shortHash }}</span>
+              <span
+                v-if="c.gpg && c.gpg.status !== 'none'"
+                class="gpg-mini-badge"
+                :class="'gpg-' + c.gpg.status"
+                :title="c.gpg.status === 'verified' ? `GPG 签名已验证 • ${c.gpg.signer || c.gpg.keyId || ''}` : `GPG 状态: ${c.gpg.status}`"
+              >
+                <span class="codicon" :class="c.gpg.status === 'verified' ? 'codicon-verified' : 'codicon-shield'"></span>
+                <span>{{ c.gpg.status === 'verified' ? 'Verified' : c.gpg.status }}</span>
+              </span>
               <span class="commit-message">{{ c.message }}</span>
               <div class="commit-meta">
                 <span class="commit-author">{{ c.author }}</span>
@@ -1108,6 +1116,52 @@ onBeforeUnmount(() => {
   color: var(--accent-cyan);
   font-weight: 600;
   min-width: 65px;
+}
+
+.gpg-mini-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.gpg-mini-badge .codicon {
+  font-size: 11px;
+}
+
+.gpg-mini-badge.gpg-verified {
+  background: rgba(46, 160, 67, 0.15);
+  color: #3fb950;
+  border: 1px solid rgba(46, 160, 67, 0.4);
+}
+
+:root[data-theme="light"] .gpg-mini-badge.gpg-verified {
+  background: rgba(46, 160, 67, 0.12);
+  color: #1a7f37;
+  border-color: rgba(26, 127, 55, 0.35);
+}
+
+.gpg-mini-badge.gpg-unverified {
+  background: rgba(210, 153, 34, 0.15);
+  color: #e3b341;
+  border: 1px solid rgba(210, 153, 34, 0.4);
+}
+
+:root[data-theme="light"] .gpg-mini-badge.gpg-unverified {
+  background: rgba(154, 103, 0, 0.12);
+  color: #9a6700;
+  border-color: rgba(154, 103, 0, 0.35);
+}
+
+.gpg-mini-badge.gpg-bad,
+.gpg-mini-badge.gpg-revoked {
+  background: rgba(248, 81, 73, 0.15);
+  color: #f85149;
+  border: 1px solid rgba(248, 81, 73, 0.4);
 }
 
 .commit-message {

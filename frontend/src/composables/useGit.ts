@@ -34,6 +34,13 @@ export interface GitDiffResult {
   modified: string;
 }
 
+export interface GitGpgInfo {
+  status: "verified" | "unverified" | "bad" | "expired" | "revoked" | "none";
+  keyId?: string;
+  signer?: string;
+  fingerprint?: string;
+}
+
 export interface GitCommitItem {
   hash: string;
   shortHash: string;
@@ -41,6 +48,7 @@ export interface GitCommitItem {
   email: string;
   timestamp: number;
   message: string;
+  gpg?: GitGpgInfo;
 }
 
 export interface GitGraphRef {
@@ -58,6 +66,7 @@ export interface GitGraphCommit {
   timestamp: number;
   message: string;
   refs: GitGraphRef[];
+  gpg?: GitGpgInfo;
 }
 
 export interface GitCommitFileItem {
@@ -79,6 +88,7 @@ export interface GitCommitDetail {
   committerEmail: string;
   committerTimestamp: number;
   message: string;
+  gpg?: GitGpgInfo;
   files: GitCommitFileItem[];
 }
 
@@ -284,7 +294,7 @@ export function useGit() {
   /**
    * Commit changes.
    */
-  async function commit(msg?: string, amend: boolean = false): Promise<boolean> {
+  async function commit(msg?: string, amend: boolean = false, sign?: boolean): Promise<boolean> {
     const message = (msg !== undefined ? msg : commitMessage.value).trim();
     if (!message && !amend) {
       showToast("请输入提交信息 (Commit message)", "warning");
@@ -292,10 +302,14 @@ export function useGit() {
     }
     isCommitting.value = true;
     try {
+      const payload: { message: string; amend: boolean; sign?: boolean } = { message, amend };
+      if (typeof sign === "boolean") {
+        payload.sign = sign;
+      }
       const res = await fetch("/api/git/commit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, amend }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {

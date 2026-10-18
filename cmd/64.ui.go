@@ -3648,6 +3648,7 @@ func handleGitCommit(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Message string `json:"message"`
 		Amend   bool   `json:"amend"`
+		Sign    *bool  `json:"sign"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || strings.TrimSpace(body.Message) == "" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -3658,6 +3659,13 @@ func handleGitCommit(w http.ResponseWriter, r *http.Request) {
 	args := []string{"commit", "-m", strings.TrimSpace(body.Message)}
 	if body.Amend {
 		args = []string{"commit", "--amend", "-m", strings.TrimSpace(body.Message)}
+	}
+	if body.Sign != nil {
+		if *body.Sign {
+			args = append(args, "-S")
+		} else {
+			args = append(args, "--no-gpg-sign")
+		}
 	}
 
 	out, err := runGitCommand(args...)
@@ -3806,13 +3814,46 @@ func handleGitSync(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type GitGpgInfo struct {
+	Status      string `json:"status"` // "verified" | "unverified" | "bad" | "expired" | "revoked" | "none"
+	KeyID       string `json:"keyId,omitempty"`
+	Signer      string `json:"signer,omitempty"`
+	Fingerprint string `json:"fingerprint,omitempty"`
+}
+
+func parseGpgInfo(rawStatus, keyID, signer, fingerprint string) *GitGpgInfo {
+	s := strings.ToUpper(strings.TrimSpace(rawStatus))
+	status := "none"
+	switch s {
+	case "G":
+		status = "verified"
+	case "U":
+		status = "unverified"
+	case "B":
+		status = "bad"
+	case "X", "Y":
+		status = "expired"
+	case "R":
+		status = "revoked"
+	default:
+		status = "none"
+	}
+	return &GitGpgInfo{
+		Status:      status,
+		KeyID:       strings.TrimSpace(keyID),
+		Signer:      strings.TrimSpace(signer),
+		Fingerprint: strings.TrimSpace(fingerprint),
+	}
+}
+
 type GitCommitItem struct {
-	Hash      string `json:"hash"`
-	ShortHash string `json:"shortHash"`
-	Author    string `json:"author"`
-	Email     string `json:"email"`
-	Timestamp int64  `json:"timestamp"`
-	Message   string `json:"message"`
+	Hash      string      `json:"hash"`
+	ShortHash string      `json:"shortHash"`
+	Author    string      `json:"author"`
+	Email     string      `json:"email"`
+	Timestamp int64       `json:"timestamp"`
+	Message   string      `json:"message"`
+	Gpg       *GitGpgInfo `json:"gpg,omitempty"`
 }
 
 func handleGitLog(w http.ResponseWriter, r *http.Request) {
@@ -3822,7 +3863,7 @@ func handleGitLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := runGitCommand("log", "-n", "30", "--pretty=format:%H%x09%h%x09%an%x09%ae%x09%at%x09%s")
+	out, err := runGitCommand("log", "-n", "30", "--pretty=format:%H%x09%h%x09%an%x09%ae%x09%at%x09%s%x09%G?%x09%GK%x09%GS%x09%GF")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -3840,6 +3881,12 @@ func handleGitLog(w http.ResponseWriter, r *http.Request) {
 		if len(parts) >= 6 {
 			var ts int64
 			_, _ = fmt.Sscanf(parts[4], "%d", &ts)
+			var gpg *GitGpgInfo
+			if len(parts) >= 10 {
+				gpg = parseGpgInfo(parts[6], parts[7], parts[8], parts[9])
+			} else {
+				gpg = parseGpgInfo("", "", "", "")
+			}
 			commits = append(commits, GitCommitItem{
 				Hash:      parts[0],
 				ShortHash: parts[1],
@@ -3847,6 +3894,7 @@ func handleGitLog(w http.ResponseWriter, r *http.Request) {
 				Email:     parts[3],
 				Timestamp: ts,
 				Message:   parts[5],
+				Gpg:       gpg,
 			})
 		}
 	}
@@ -3872,6 +3920,7 @@ type GitGraphCommit struct {
 	Timestamp int64         `json:"timestamp"`
 	Message   string        `json:"message"`
 	Refs      []GitGraphRef `json:"refs"`
+	Gpg       *GitGpgInfo   `json:"gpg,omitempty"`
 }
 
 func handleGitGraph(w http.ResponseWriter, r *http.Request) {
@@ -3888,7 +3937,7 @@ func handleGitGraph(w http.ResponseWriter, r *http.Request) {
 		limitStr = "200"
 	}
 
-	args := []string{"log", "--date-order", "-n", limitStr, "--pretty=format:%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%s%x09%D"}
+	args := []string{"log", "--date-order", "-n", limitStr, "--pretty=format:%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%s%x09%D%x09%G?%x09%GK%x09%GS%x09%GF"}
 	if branch != "" && branch != "all" {
 		args = append(args, branch)
 	} else {
@@ -3947,6 +3996,13 @@ func handleGitGraph(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
+			var gpg *GitGpgInfo
+			if len(parts) >= 12 {
+				gpg = parseGpgInfo(parts[8], parts[9], parts[10], parts[11])
+			} else {
+				gpg = parseGpgInfo("", "", "", "")
+			}
+
 			commits = append(commits, GitGraphCommit{
 				Hash:      parts[0],
 				ShortHash: parts[1],
@@ -3956,6 +4012,7 @@ func handleGitGraph(w http.ResponseWriter, r *http.Request) {
 				Timestamp: ts,
 				Message:   parts[6],
 				Refs:      refs,
+				Gpg:       gpg,
 			})
 		}
 	}
@@ -3988,7 +4045,7 @@ func handleGitCommitDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metaOut, err := runGitCommand("show", "-s", "--format=%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%cn%x09%ce%x09%ct%x09%B", hash)
+	metaOut, err := runGitCommand("show", "-s", "--format=%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%cn%x09%ce%x09%ct%x09%G?%x09%GK%x09%GS%x09%GF%x09%B", hash)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -3999,8 +4056,23 @@ func handleGitCommitDetail(w http.ResponseWriter, r *http.Request) {
 	var fullHash, shortHash, author, email, committer, committerEmail, fullBody string
 	var ts, cTs int64
 	var parents []string
+	var gpg *GitGpgInfo
 
-	if len(metaParts) >= 10 {
+	if len(metaParts) >= 14 {
+		fullHash = metaParts[0]
+		shortHash = metaParts[1]
+		if pStr := strings.TrimSpace(metaParts[2]); pStr != "" {
+			parents = strings.Fields(pStr)
+		}
+		author = metaParts[3]
+		email = metaParts[4]
+		_, _ = fmt.Sscanf(metaParts[5], "%d", &ts)
+		committer = metaParts[6]
+		committerEmail = metaParts[7]
+		_, _ = fmt.Sscanf(metaParts[8], "%d", &cTs)
+		gpg = parseGpgInfo(metaParts[9], metaParts[10], metaParts[11], metaParts[12])
+		fullBody = strings.Join(metaParts[13:], "\t")
+	} else if len(metaParts) >= 10 {
 		fullHash = metaParts[0]
 		shortHash = metaParts[1]
 		if pStr := strings.TrimSpace(metaParts[2]); pStr != "" {
@@ -4013,6 +4085,7 @@ func handleGitCommitDetail(w http.ResponseWriter, r *http.Request) {
 		committerEmail = metaParts[7]
 		_, _ = fmt.Sscanf(metaParts[8], "%d", &cTs)
 		fullBody = metaParts[9]
+		gpg = parseGpgInfo("", "", "", "")
 	}
 
 	nameStatusOut, _ := runGitCommand("diff-tree", "--no-commit-id", "--name-status", "-r", "-m", "--first-parent", hash)
@@ -4081,6 +4154,7 @@ func handleGitCommitDetail(w http.ResponseWriter, r *http.Request) {
 			"committerEmail":     committerEmail,
 			"committerTimestamp": cTs,
 			"message":            strings.TrimSpace(fullBody),
+			"gpg":                gpg,
 			"files":              files,
 		},
 	})

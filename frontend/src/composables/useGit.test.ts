@@ -268,5 +268,57 @@ describe("useGit composable", () => {
     await resetToCommit("c2", "hard");
     expect(global.fetch).toHaveBeenCalledWith("/api/git/reset", expect.objectContaining({ method: "POST" }));
   });
+
+  it("commit passes sign parameter to /api/git/commit", async () => {
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url === "/api/git/commit") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ branch: "dev", staged: [], unstaged: [] }),
+      });
+    });
+
+    const { commit } = useGit();
+    await commit("feat: signed commit", false, true);
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/commit", expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({ message: "feat: signed commit", amend: false, sign: true }),
+    }));
+  });
+
+  it("fetchCommitDetail and fetchGraph preserve gpg metadata", async () => {
+    const mockGpg = {
+      status: "verified" as const,
+      keyId: "72E7E2103C6A70EB",
+      signer: "Hui Yang <sn0wdr1am@gmail.com>",
+      fingerprint: "B8D4F1FEDB5B9ADC8B3EDBC072E7E2103C6A70EB",
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        commit: {
+          hash: "c815da96",
+          shortHash: "c815da96",
+          author: "Hui Yang",
+          message: "feat: aligned git graph",
+          gpg: mockGpg,
+          files: [],
+        },
+      }),
+    });
+
+    const { fetchCommitDetail, selectedCommitDetail } = useGit();
+    await fetchCommitDetail("c815da96");
+    expect(selectedCommitDetail.value?.gpg?.status).toBe("verified");
+    expect(selectedCommitDetail.value?.gpg?.keyId).toBe("72E7E2103C6A70EB");
+    expect(selectedCommitDetail.value?.gpg?.signer).toBe("Hui Yang <sn0wdr1am@gmail.com>");
+  });
 });
 

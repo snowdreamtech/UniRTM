@@ -3236,6 +3236,11 @@ print(json.dumps({
                   if (body.amend) {
                     args.splice(1, 0, "--amend");
                   }
+                  if (body.sign === true) {
+                    args.push("-S");
+                  } else if (body.sign === false) {
+                    args.push("--no-gpg-sign");
+                  }
                   const out = runGit(args);
                   res.setHeader("Content-Type", "application/json");
                   res.end(JSON.stringify({ success: true, output: out }));
@@ -3377,11 +3382,29 @@ print(json.dumps({
               return;
             }
 
+            const parseGpgInfo = (rawStatus?: string, keyId?: string, signer?: string, fingerprint?: string) => {
+              const s = (rawStatus || "").trim().toUpperCase();
+              let status: "verified" | "unverified" | "bad" | "expired" | "revoked" | "none" = "none";
+              if (s === "G") status = "verified";
+              else if (s === "U") status = "unverified";
+              else if (s === "B") status = "bad";
+              else if (s === "X" || s === "Y") status = "expired";
+              else if (s === "R") status = "revoked";
+              else status = "none";
+
+              return {
+                status,
+                keyId: keyId?.trim() || undefined,
+                signer: signer?.trim() || undefined,
+                fingerprint: fingerprint?.trim() || undefined,
+              };
+            };
+
             if (req.url?.startsWith("/api/git/log") && req.method === "GET") {
               try {
-                const out = runGit(["log", "-n", "30", "--pretty=format:%H%x09%h%x09%an%x09%ae%x09%at%x09%s"]);
+                const out = runGit(["log", "-n", "30", "--pretty=format:%H%x09%h%x09%an%x09%ae%x09%at%x09%s%x09%G?%x09%GK%x09%GS%x09%GF"]);
                 const commits = out.split("\n").filter(Boolean).map((line: string) => {
-                  const [hash, shortHash, author, email, timestamp, message] = line.split("\t");
+                  const [hash, shortHash, author, email, timestamp, message, gpgStatus, gpgKeyId, gpgSigner, gpgFp] = line.split("\t");
                   return {
                     hash,
                     shortHash,
@@ -3389,6 +3412,7 @@ print(json.dumps({
                     email,
                     timestamp: parseInt(timestamp || "0", 10),
                     message: message || "",
+                    gpg: parseGpgInfo(gpgStatus, gpgKeyId, gpgSigner, gpgFp),
                   };
                 });
                 res.setHeader("Content-Type", "application/json");
@@ -3409,7 +3433,7 @@ print(json.dumps({
                 const filePath = parsedUrl.searchParams.get("path");
                 const limit = parseInt(parsedUrl.searchParams.get("limit") || "200", 10);
 
-                const args = ["log", "--date-order", "-n", String(limit), "--pretty=format:%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%s%x09%D"];
+                const args = ["log", "--date-order", "-n", String(limit), "--pretty=format:%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%s%x09%D%x09%G?%x09%GK%x09%GS%x09%GF"];
                 if (branch && branch !== "all") {
                   args.push(branch);
                 } else {
@@ -3430,7 +3454,7 @@ print(json.dumps({
                   .split("\n")
                   .filter(Boolean)
                   .map((line: string) => {
-                    const [hash, shortHash, parentsStr, author, email, timestamp, message, refsStr] = line.split("\t");
+                    const [hash, shortHash, parentsStr, author, email, timestamp, message, refsStr, gpgStatus, gpgKeyId, gpgSigner, gpgFp] = line.split("\t");
                     const parents = (parentsStr || "").trim().split(/\s+/).filter(Boolean);
                     const refs: Array<{ name: string; type: "head" | "branch" | "remote" | "tag"; current: boolean }> = [];
 
@@ -3463,6 +3487,7 @@ print(json.dumps({
                       timestamp: parseInt(timestamp || "0", 10),
                       message: message || "",
                       refs,
+                      gpg: parseGpgInfo(gpgStatus, gpgKeyId, gpgSigner, gpgFp),
                     };
                   });
 
@@ -3492,7 +3517,7 @@ print(json.dumps({
                 const metaOut = runGit([
                   "show",
                   "-s",
-                  "--format=%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%cn%x09%ce%x09%ct%x09%B",
+                  "--format=%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%cn%x09%ce%x09%ct%x09%G?%x09%GK%x09%GS%x09%GF%x09%B",
                   hash,
                 ]);
                 const metaParts = metaOut.split("\t");
@@ -3505,7 +3530,11 @@ print(json.dumps({
                 const committer = metaParts[6] || "";
                 const committerEmail = metaParts[7] || "";
                 const committerTimestamp = parseInt(metaParts[8] || "0", 10);
-                const fullBody = metaParts[9] || "";
+                const gpgStatus = metaParts[9] || "";
+                const gpgKeyId = metaParts[10] || "";
+                const gpgSigner = metaParts[11] || "";
+                const gpgFp = metaParts[12] || "";
+                const fullBody = metaParts.slice(13).join("\t") || "";
 
                 // 2. File Statuses
                 let nameStatusOut = "";
@@ -3580,6 +3609,7 @@ print(json.dumps({
                       committerEmail,
                       committerTimestamp,
                       message: fullBody.trim(),
+                      gpg: parseGpgInfo(gpgStatus, gpgKeyId, gpgSigner, gpgFp),
                       files,
                     },
                   })

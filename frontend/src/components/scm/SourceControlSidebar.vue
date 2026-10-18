@@ -65,6 +65,14 @@
         ></textarea>
       </div>
 
+      <div class="commit-options-bar">
+        <label class="gpg-sign-toggle" title="使用 GPG 签名签署提交 (-S)">
+          <input type="checkbox" v-model="signCommit" class="gpg-sign-checkbox" />
+          <span class="codicon codicon-verified gpg-sign-icon"></span>
+          <span class="gpg-sign-text">GPG 签名提交</span>
+        </label>
+      </div>
+
       <button
         class="commit-btn"
         :disabled="isCommitting || !commitMessage.trim()"
@@ -245,6 +253,7 @@ const { openTab } = useEditorTabs();
 const isStagedExpanded = ref(true);
 const isUnstagedExpanded = ref(true);
 const isBranchMenuOpen = ref(false);
+const signCommit = ref(true);
 
 const selectedDiffPath = ref<string>("");
 const selectedIsStaged = ref<boolean>(false);
@@ -285,7 +294,7 @@ async function handleSelectBranch(branchName: string) {
 }
 
 async function handleCommit() {
-  await commit();
+  await commit(undefined, false, signCommit.value);
 }
 
 async function handleStageFile(path: string) {
@@ -532,6 +541,46 @@ function handleSelectFileDiff(path: string, staged: boolean) {
 .commit-textarea:focus {
   outline: 1px solid var(--accent-cyan);
   border-color: var(--accent-cyan);
+}
+
+.commit-options-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 2px 2px;
+}
+
+.gpg-sign-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.gpg-sign-toggle:hover {
+  color: var(--text-main);
+}
+
+.gpg-sign-checkbox {
+  cursor: pointer;
+  accent-color: var(--accent-cyan);
+}
+
+.gpg-sign-icon {
+  font-size: 13px;
+  color: #3fb950;
+}
+
+:root[data-theme="light"] .gpg-sign-icon {
+  color: #1a7f37;
+}
+
+.gpg-sign-text {
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .commit-btn {

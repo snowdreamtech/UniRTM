@@ -168,6 +168,17 @@
                 </span>
               </div>
 
+              <!-- GPG Signature Badge -->
+              <span
+                v-if="commit.gpg && commit.gpg.status !== 'none'"
+                class="gpg-badge"
+                :class="'gpg-' + commit.gpg.status"
+                :title="getGpgTooltip(commit.gpg)"
+              >
+                <span class="codicon" :class="getGpgIcon(commit.gpg.status)"></span>
+                <span class="gpg-badge-label">{{ getGpgBadgeLabel(commit.gpg.status) }}</span>
+              </span>
+
               <!-- Message Text -->
               <span class="commit-subject" :title="commit.message">{{ commit.message }}</span>
             </div>
@@ -289,6 +300,59 @@
             <pre class="detail-message-text">{{ selectedCommitDetail?.message || selectedCommit.message }}</pre>
           </div>
 
+          <!-- GPG Signature Security Card -->
+          <div
+            v-if="currentGpgInfo"
+            class="detail-gpg-card"
+            :class="'gpg-card-' + currentGpgInfo.status"
+          >
+            <div class="gpg-card-header">
+              <div class="gpg-card-status">
+                <span class="codicon" :class="getGpgIcon(currentGpgInfo.status)"></span>
+                <span class="gpg-status-text">{{ getGpgFullLabel(currentGpgInfo.status) }}</span>
+                <span class="gpg-status-pill">{{ currentGpgInfo.status.toUpperCase() }}</span>
+              </div>
+              <span class="gpg-algorithm-badge">GnuPG / OpenPGP</span>
+            </div>
+
+            <div v-if="currentGpgInfo.status !== 'none'" class="gpg-card-grid">
+              <div v-if="currentGpgInfo.signer" class="gpg-grid-item col-span-2">
+                <span class="gpg-grid-label">签名者:</span>
+                <span class="gpg-grid-value font-mono">{{ currentGpgInfo.signer }}</span>
+              </div>
+              <div v-if="currentGpgInfo.keyId" class="gpg-grid-item">
+                <span class="gpg-grid-label">密钥 ID:</span>
+                <div class="gpg-grid-copyable">
+                  <span class="gpg-grid-value font-mono">{{ currentGpgInfo.keyId }}</span>
+                  <button
+                    class="gpg-copy-btn"
+                    title="复制密钥 ID"
+                    @click="handleCopyHash(currentGpgInfo.keyId)"
+                  >
+                    <span class="codicon codicon-copy"></span>
+                  </button>
+                </div>
+              </div>
+              <div v-if="currentGpgInfo.fingerprint" class="gpg-grid-item col-span-2">
+                <span class="gpg-grid-label">主密钥指纹:</span>
+                <div class="gpg-grid-copyable">
+                  <span class="gpg-grid-value font-mono fingerprint-text">{{ currentGpgInfo.fingerprint }}</span>
+                  <button
+                    class="gpg-copy-btn"
+                    title="复制主密钥指纹"
+                    @click="handleCopyHash(currentGpgInfo.fingerprint)"
+                  >
+                    <span class="codicon codicon-copy"></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div v-else class="gpg-unsigned-hint">
+              <span class="codicon codicon-info"></span>
+              <span>此提交未经数字签名保护 (未检测到有效的 GPG 或 SSH 密钥签名)</span>
+            </div>
+          </div>
+
           <!-- Changed Files Section -->
           <div class="detail-files-section">
             <div class="files-header">
@@ -403,6 +467,7 @@ import GitActionModal, { type GitModalActionType } from "./GitActionModal.vue";
 import {
   useGit,
   type GitGraphCommit,
+  type GitGpgInfo,
 } from "../../composables/useGit";
 import { layoutGitGraph } from "../../utils/gitGraphLayout";
 import { useToast } from "../../composables/useToast";
@@ -642,6 +707,82 @@ function formatRelativeTime(timestamp: number): string {
   if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`;
   if (diff < 2592000) return `${Math.floor(diff / 86400)} 天前`;
   return new Date(timestamp * 1000).toLocaleDateString();
+}
+
+const currentGpgInfo = computed<GitGpgInfo | undefined>(() => {
+  return selectedCommitDetail.value?.gpg || selectedCommit.value?.gpg;
+});
+
+function getGpgIcon(status?: string): string {
+  switch (status) {
+    case "verified":
+      return "codicon-verified";
+    case "unverified":
+      return "codicon-shield";
+    case "bad":
+      return "codicon-warning";
+    case "expired":
+      return "codicon-history";
+    case "revoked":
+      return "codicon-error";
+    default:
+      return "codicon-shield";
+  }
+}
+
+function getGpgBadgeLabel(status?: string): string {
+  switch (status) {
+    case "verified":
+      return "Verified";
+    case "unverified":
+      return "Unverified";
+    case "bad":
+      return "Bad";
+    case "expired":
+      return "Expired";
+    case "revoked":
+      return "Revoked";
+    default:
+      return "";
+  }
+}
+
+function getGpgFullLabel(status?: string): string {
+  switch (status) {
+    case "verified":
+      return "已验证数字签名 (Verified Signature)";
+    case "unverified":
+      return "未受信任签名 (Unverified Signature)";
+    case "bad":
+      return "无效或损坏签名 (Bad Signature)";
+    case "expired":
+      return "已过期密钥签名 (Expired Key)";
+    case "revoked":
+      return "已吊销密钥签名 (Revoked Key)";
+    case "none":
+    default:
+      return "无数字签名 (Unsigned)";
+  }
+}
+
+function getGpgTooltip(gpg?: GitGpgInfo): string {
+  if (!gpg || gpg.status === "none") return "无 GPG 签名";
+  const signer = gpg.signer ? ` • 签名者: ${gpg.signer}` : "";
+  const key = gpg.keyId ? ` • 密钥: ${gpg.keyId}` : "";
+  switch (gpg.status) {
+    case "verified":
+      return `GPG 签名已验证${signer}${key}`;
+    case "unverified":
+      return `GPG 签名有效但公钥未受信任${key}`;
+    case "bad":
+      return `无效的 GPG 签名${key}`;
+    case "expired":
+      return `GPG 签名密钥已过期${key}`;
+    case "revoked":
+      return `GPG 签名密钥已被吊销${key}`;
+    default:
+      return "GPG 签名";
+  }
 }
 </script>
 
@@ -1197,6 +1338,221 @@ function formatRelativeTime(timestamp: number): string {
   line-height: 1.5;
   white-space: pre-wrap;
   color: var(--text-main);
+}
+
+/* GPG Badges in Git Graph Rows */
+.gpg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  letter-spacing: 0.2px;
+}
+
+.gpg-badge .codicon {
+  font-size: 11px;
+}
+
+.gpg-badge.gpg-verified {
+  background: rgba(46, 160, 67, 0.15);
+  color: #3fb950;
+  border: 1px solid rgba(46, 160, 67, 0.4);
+}
+
+:root[data-theme="light"] .gpg-badge.gpg-verified {
+  background: rgba(46, 160, 67, 0.12);
+  color: #1a7f37;
+  border-color: rgba(26, 127, 55, 0.35);
+}
+
+.gpg-badge.gpg-unverified {
+  background: rgba(210, 153, 34, 0.15);
+  color: #e3b341;
+  border: 1px solid rgba(210, 153, 34, 0.4);
+}
+
+:root[data-theme="light"] .gpg-badge.gpg-unverified {
+  background: rgba(154, 103, 0, 0.12);
+  color: #9a6700;
+  border-color: rgba(154, 103, 0, 0.35);
+}
+
+.gpg-badge.gpg-bad,
+.gpg-badge.gpg-revoked {
+  background: rgba(248, 81, 73, 0.15);
+  color: #f85149;
+  border: 1px solid rgba(248, 81, 73, 0.4);
+}
+
+:root[data-theme="light"] .gpg-badge.gpg-bad,
+:root[data-theme="light"] .gpg-badge.gpg-revoked {
+  background: rgba(207, 34, 46, 0.12);
+  color: #cf222e;
+  border-color: rgba(207, 34, 46, 0.35);
+}
+
+.gpg-badge.gpg-expired {
+  background: rgba(219, 109, 40, 0.15);
+  color: #db6d28;
+  border: 1px solid rgba(219, 109, 40, 0.4);
+}
+
+:root[data-theme="light"] .gpg-badge.gpg-expired {
+  background: rgba(188, 76, 0, 0.12);
+  color: #bc4c00;
+  border-color: rgba(188, 76, 0, 0.35);
+}
+
+/* GPG Signature Detail Card in Commit Drawer */
+.detail-gpg-card {
+  border-radius: 6px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.detail-gpg-card.gpg-card-verified {
+  background: linear-gradient(135deg, rgba(46, 160, 67, 0.08) 0%, rgba(13, 25, 18, 0.4) 100%);
+  border: 1px solid rgba(46, 160, 67, 0.35);
+}
+
+:root[data-theme="light"] .detail-gpg-card.gpg-card-verified {
+  background: linear-gradient(135deg, rgba(46, 160, 67, 0.08) 0%, rgba(240, 253, 244, 0.95) 100%);
+  border: 1px solid rgba(26, 127, 55, 0.3);
+}
+
+.detail-gpg-card.gpg-card-unverified {
+  background: rgba(210, 153, 34, 0.08);
+  border: 1px solid rgba(210, 153, 34, 0.35);
+}
+
+.detail-gpg-card.gpg-card-bad,
+.detail-gpg-card.gpg-card-revoked {
+  background: rgba(248, 81, 73, 0.08);
+  border: 1px solid rgba(248, 81, 73, 0.35);
+}
+
+.detail-gpg-card.gpg-card-none {
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+}
+
+.gpg-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gpg-card-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.gpg-card-verified .gpg-card-status {
+  color: #3fb950;
+}
+
+:root[data-theme="light"] .gpg-card-verified .gpg-card-status {
+  color: #1a7f37;
+}
+
+.gpg-card-unverified .gpg-card-status {
+  color: #e3b341;
+}
+
+.gpg-card-bad .gpg-card-status,
+.gpg-card-revoked .gpg-card-status {
+  color: #f85149;
+}
+
+.gpg-card-none .gpg-card-status {
+  color: var(--text-muted);
+}
+
+.gpg-status-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(128, 128, 128, 0.15);
+  letter-spacing: 0.5px;
+}
+
+.gpg-algorithm-badge {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+.gpg-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 16px;
+  font-size: 11px;
+}
+
+.gpg-grid-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gpg-grid-item.col-span-2 {
+  grid-column: span 2;
+}
+
+.gpg-grid-label {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.gpg-grid-value {
+  color: var(--text-main);
+  word-break: break-all;
+}
+
+.gpg-grid-copyable {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fingerprint-text {
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.gpg-copy-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+}
+
+.gpg-copy-btn:hover {
+  background: rgba(128, 128, 128, 0.15);
+  color: var(--text-main);
+}
+
+.gpg-unsigned-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
 .detail-files-section {
