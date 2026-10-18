@@ -248,6 +248,7 @@
                 class="box-file-item"
                 :title="item.path"
                 @click="openDiff(item.path, true)"
+                @contextmenu.prevent="openFileContextMenu($event, item, true)"
               >
                 <div class="file-item-main">
                   <TechIcon :id="getFileName(item.path)" :size="16" />
@@ -313,6 +314,7 @@
                 class="box-file-item"
                 :title="item.path"
                 @click="openDiff(item.path, false)"
+                @contextmenu.prevent="openFileContextMenu($event, item, false)"
               >
                 <div class="file-item-main">
                   <TechIcon :id="getFileName(item.path)" :size="16" />
@@ -411,6 +413,15 @@
       @action="handleMoreAction"
     />
 
+    <!-- File Context Menu (Teleported) -->
+    <GitFileContextMenu
+      :visible="isFileContextMenuOpen"
+      :position="fileContextMenuPos"
+      :file="fileContextMenuTarget"
+      @close="isFileContextMenuOpen = false"
+      @action="handleFileMenuAction"
+    />
+
     <!-- Git Action Modal Dialog -->
     <GitActionModal
       :visible="modalVisible"
@@ -434,6 +445,7 @@ import { loadMonaco, getLanguageForFile } from "../services/editor/monacoLoader"
 import TechIcon from "../components/common/TechIcon.vue";
 import GitGraphView from "../components/scm/GitGraphView.vue";
 import GitMoreActionsMenu from "../components/scm/GitMoreActionsMenu.vue";
+import GitFileContextMenu, { type ContextMenuTargetFile, type FileMenuActionType } from "../components/scm/GitFileContextMenu.vue";
 import GitActionModal, { type GitModalActionType } from "../components/scm/GitActionModal.vue";
 import { useToast } from "../composables/useToast";
 import { t } from "../i18n";
@@ -480,6 +492,10 @@ const currentTab = ref<"changes" | "graph">(
 
 const isMoreMenuOpen = ref(false);
 const moreMenuPos = ref({ x: 0, y: 0 });
+
+const isFileContextMenuOpen = ref(false);
+const fileContextMenuPos = ref({ x: 0, y: 0 });
+const fileContextMenuTarget = ref<ContextMenuTargetFile | null>(null);
 
 const modalVisible = ref(false);
 const activeModalType = ref<GitModalActionType | null>(null);
@@ -889,6 +905,57 @@ async function handleUnstageSingleFile(path: string) {
 async function handleDiscardSingleFile(path: string) {
   if (confirm(t("scm.diff.discard_confirm", { path }))) {
     await discard([path]);
+  }
+}
+
+function openFileContextMenu(event: MouseEvent, item: { path: string; status?: string }, isStaged: boolean) {
+  fileContextMenuTarget.value = {
+    path: item.path,
+    status: item.status,
+    isStaged,
+  };
+  fileContextMenuPos.value = { x: event.clientX, y: event.clientY };
+  isFileContextMenuOpen.value = true;
+}
+
+async function handleFileMenuAction(action: FileMenuActionType, file: ContextMenuTargetFile) {
+  isFileContextMenuOpen.value = false;
+  switch (action) {
+    case "open-changes":
+      openDiff(file.path, file.isStaged);
+      break;
+    case "open-file":
+      handleOpenFile(file.path);
+      break;
+    case "stage":
+      await handleStageSingleFile(file.path);
+      break;
+    case "unstage":
+      await handleUnstageSingleFile(file.path);
+      break;
+    case "discard":
+      await handleDiscardSingleFile(file.path);
+      break;
+    case "reveal-explorer":
+      handleOpenFile(file.path);
+      break;
+    case "copy-path":
+      try {
+        const fullPath = file.path.startsWith("/") ? file.path : `/${file.path}`;
+        await navigator.clipboard.writeText(fullPath);
+        showToast(t("scm.file_menu.copied_path"), "info");
+      } catch {
+        showToast("Copy failed", "error");
+      }
+      break;
+    case "copy-relative-path":
+      try {
+        await navigator.clipboard.writeText(file.path);
+        showToast(t("scm.file_menu.copied_relative_path"), "info");
+      } catch {
+        showToast("Copy failed", "error");
+      }
+      break;
   }
 }
 

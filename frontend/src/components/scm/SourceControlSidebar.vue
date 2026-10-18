@@ -118,6 +118,7 @@
           class="change-item"
           :class="{ active: selectedDiffPath === item.path && selectedIsStaged === true }"
           @click="handleSelectFileDiff(item.path, true)"
+          @contextmenu.prevent="openFileContextMenu($event, item, true)"
           :title="item.path"
         >
           <span class="change-icon">
@@ -187,6 +188,7 @@
           class="change-item"
           :class="{ active: selectedDiffPath === item.path && selectedIsStaged === false }"
           @click="handleSelectFileDiff(item.path, false)"
+          @contextmenu.prevent="openFileContextMenu($event, item, false)"
           :title="item.path"
         >
           <span class="change-icon">
@@ -236,6 +238,15 @@
       @action="handleMoreAction"
     />
 
+    <!-- File Context Menu (Teleported) -->
+    <GitFileContextMenu
+      :visible="isFileContextMenuOpen"
+      :position="fileContextMenuPos"
+      :file="fileContextMenuTarget"
+      @close="isFileContextMenuOpen = false"
+      @action="handleFileMenuAction"
+    />
+
     <!-- Git Action Modal Dialog -->
     <GitActionModal
       :visible="modalVisible"
@@ -258,6 +269,7 @@ import { useToast } from "../../composables/useToast";
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 import GitMoreActionsMenu from "./GitMoreActionsMenu.vue";
+import GitFileContextMenu, { type ContextMenuTargetFile, type FileMenuActionType } from "./GitFileContextMenu.vue";
 import GitActionModal, { type GitModalActionType } from "./GitActionModal.vue";
 
 const router = useRouter();
@@ -310,6 +322,10 @@ const modalTargetRefName = ref<string | undefined>(undefined);
 
 const selectedDiffPath = ref<string>("");
 const selectedIsStaged = ref<boolean>(false);
+
+const isFileContextMenuOpen = ref(false);
+const fileContextMenuPos = ref({ x: 0, y: 0 });
+const fileContextMenuTarget = ref<ContextMenuTargetFile | null>(null);
 
 onMounted(async () => {
   await Promise.all([fetchStatus(), fetchBranches()]);
@@ -396,6 +412,57 @@ function handleSelectFileDiff(path: string, staged: boolean) {
       staged: String(staged),
     },
   }).catch(() => {});
+}
+
+function openFileContextMenu(event: MouseEvent, item: { path: string; status?: string }, isStaged: boolean) {
+  fileContextMenuTarget.value = {
+    path: item.path,
+    status: item.status,
+    isStaged,
+  };
+  fileContextMenuPos.value = { x: event.clientX, y: event.clientY };
+  isFileContextMenuOpen.value = true;
+}
+
+async function handleFileMenuAction(action: FileMenuActionType, file: ContextMenuTargetFile) {
+  isFileContextMenuOpen.value = false;
+  switch (action) {
+    case "open-changes":
+      handleSelectFileDiff(file.path, file.isStaged);
+      break;
+    case "open-file":
+      handleOpenFileInEditor(file.path);
+      break;
+    case "stage":
+      await handleStageFile(file.path);
+      break;
+    case "unstage":
+      await handleUnstageFile(file.path);
+      break;
+    case "discard":
+      await handleDiscardFile(file.path);
+      break;
+    case "reveal-explorer":
+      handleOpenFileInEditor(file.path);
+      break;
+    case "copy-path":
+      try {
+        const fullPath = file.path.startsWith("/") ? file.path : `/${file.path}`;
+        await navigator.clipboard.writeText(fullPath);
+        showToast(t("scm.file_menu.copied_path"), "info");
+      } catch {
+        showToast("Copy failed", "error");
+      }
+      break;
+    case "copy-relative-path":
+      try {
+        await navigator.clipboard.writeText(file.path);
+        showToast(t("scm.file_menu.copied_relative_path"), "info");
+      } catch {
+        showToast("Copy failed", "error");
+      }
+      break;
+  }
 }
 
 function toggleMoreMenu(event: MouseEvent) {
