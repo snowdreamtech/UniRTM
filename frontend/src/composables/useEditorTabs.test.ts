@@ -150,4 +150,56 @@ describe("useEditorTabs", () => {
     expect(tabs.value[2].binaryReason).toBe("too_large");
     expect(tabs.value[2].size).toBe(15000000);
   });
+
+  it("supports closeTabsToRight, closeSavedTabs, and tab pinning", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ content: "" }),
+    } as any);
+
+    const {
+      tabs,
+      openTab,
+      updateContent,
+      closeTabsToRight,
+      closeSavedTabs,
+      closeAllTabs,
+      togglePinTab,
+    } = useEditorTabs();
+
+    await openTab({ path: "1.js", name: "1.js" });
+    await openTab({ path: "2.js", name: "2.js" });
+    await openTab({ path: "3.js", name: "3.js" });
+    await openTab({ path: "4.js", name: "4.js" });
+
+    expect(tabs.value.length).toBe(4);
+
+    // Pin tab 4.js, it moves to the front
+    togglePinTab("4.js");
+    expect(tabs.value[0].id).toBe("4.js");
+    expect(tabs.value[0].isPinned).toBe(true);
+
+    // Close tabs to right of 2.js (tabs: [4.js (pinned), 1.js, 2.js, 3.js])
+    closeTabsToRight("2.js");
+    // 3.js is closed, 4.js is retained because it's pinned
+    expect(tabs.value.map((t) => t.id)).toEqual(["4.js", "1.js", "2.js"]);
+
+    // Make 1.js dirty
+    updateContent("1.js", "modified");
+    expect(tabs.value.find((t) => t.id === "1.js")?.isDirty).toBe(true);
+
+    // Close saved tabs: 2.js should close, 1.js (dirty) and 4.js (pinned) stay
+    closeSavedTabs();
+    expect(tabs.value.map((t) => t.id)).toEqual(["4.js", "1.js"]);
+
+    // Normal closeAllTabs retains pinned tabs
+    closeAllTabs(false);
+    expect(tabs.value.length).toBe(1);
+    expect(tabs.value[0].id).toBe("4.js");
+
+    // Force closeAllTabs removes everything
+    closeAllTabs(true);
+    expect(tabs.value.length).toBe(0);
+  });
 });
+

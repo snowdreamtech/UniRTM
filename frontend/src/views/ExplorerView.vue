@@ -7,15 +7,25 @@
           v-for="tab in tabs"
           :key="tab.id"
           class="editor-tab"
-          :class="{ active: tab.id === activeTabId }"
+          :class="{ active: tab.id === activeTabId, 'is-pinned': tab.isPinned }"
           @click="handleSelectTab(tab.id)"
           @auxclick.stop="closeTab(tab.id)"
-          :title="tab.path"
+          @contextmenu.prevent="openTabContextMenu($event, tab)"
+          :title="tab.path + (tab.isPinned ? ' (已固定)' : '')"
         >
           <TechIcon :id="tab.name" :size="16" class="tab-icon" />
           <span class="tab-title">{{ tab.name }}</span>
           <span v-if="tab.isDirty" class="dirty-dot" title="未保存更改">●</span>
           <button
+            v-if="tab.isPinned"
+            class="tab-pin-btn"
+            title="取消固定"
+            @click.stop="togglePinTab(tab.id)"
+          >
+            <span class="codicon codicon-pinned"></span>
+          </button>
+          <button
+            v-else
             class="tab-close-btn"
             title="关闭 (中键亦可关闭)"
             @click.stop="closeTab(tab.id)"
@@ -62,7 +72,7 @@
         <button
           class="action-btn"
           title="关闭全部标签页"
-          @click="closeAllTabs"
+          @click="() => closeAllTabs()"
         >
           <span class="codicon codicon-close-all"></span>
         </button>
@@ -111,54 +121,149 @@
 
       <!-- Editor Content Area -->
       <div class="editor-content-area">
-        <!-- 1. Image Preview -->
-        <div v-if="isImageFile(activeTab.name)" class="image-preview-container">
-          <div class="image-wrapper">
-            <img :src="imagePreviewSrc" :alt="activeTab.name" class="preview-img" />
+        <!-- Dual Pane Split View Layout -->
+        <div
+          v-if="splitState.active && splitState.tab"
+          class="editor-split-container"
+          :class="[
+            'split-' + splitState.direction,
+            'split-pos-' + splitState.position,
+          ]"
+        >
+          <!-- Primary Pane (Active Tab) -->
+          <div class="split-pane split-primary-pane">
+            <div class="split-pane-header">
+              <div class="split-pane-info">
+                <TechIcon :id="activeTab.name" :size="14" class="split-pane-icon" />
+                <span class="split-pane-name">{{ activeTab.name }}</span>
+                <span v-if="activeTab.isDirty" class="dirty-dot">●</span>
+              </div>
+            </div>
+            <div class="split-pane-body">
+              <div v-if="isImageFile(activeTab.name)" class="image-preview-container">
+                <div class="image-wrapper">
+                  <img :src="imagePreviewSrc" :alt="activeTab.name" class="preview-img" />
+                </div>
+              </div>
+              <div v-else-if="activeTab.isBinary" class="binary-file-container compact">
+                <div class="binary-card">
+                  <span class="codicon codicon-file-binary binary-hero-icon"></span>
+                  <h4 class="binary-title">{{ activeTab.name }}</h4>
+                  <p class="binary-message">无法在拆分视图中编辑二进制文件</p>
+                </div>
+              </div>
+              <MonacoEditor
+                v-else
+                :key="'primary-' + activeTab.id"
+                :tab="activeTab"
+                @change="handleEditorChange"
+                @cursor-change="handleCursorChange"
+                @save="handleSave"
+              />
+            </div>
           </div>
-          <div class="image-meta">
-            <span>{{ activeTab.name }}</span>
+
+          <!-- Split Sash / Divider -->
+          <div class="split-divider" :class="'divider-' + splitState.direction"></div>
+
+          <!-- Secondary Pane (Split Tab) -->
+          <div class="split-pane split-secondary-pane">
+            <div class="split-pane-header">
+              <div class="split-pane-info">
+                <TechIcon :id="splitState.tab.name" :size="14" class="split-pane-icon" />
+                <span class="split-pane-name">{{ splitState.tab.name }}</span>
+                <span v-if="splitState.tab.isDirty" class="dirty-dot">●</span>
+              </div>
+              <div class="split-pane-tools">
+                <button
+                  type="button"
+                  class="split-tool-btn"
+                  title="关闭拆分视图"
+                  @click="closeSplitEditor"
+                >
+                  <span class="codicon codicon-close"></span>
+                </button>
+              </div>
+            </div>
+            <div class="split-pane-body">
+              <div v-if="isImageFile(splitState.tab.name)" class="image-preview-container">
+                <div class="image-wrapper">
+                  <img
+                    :src="'/api/fs/read?path=' + encodeURIComponent(splitState.tab.path)"
+                    :alt="splitState.tab.name"
+                    class="preview-img"
+                  />
+                </div>
+              </div>
+              <div v-else-if="splitState.tab.isBinary" class="binary-file-container compact">
+                <div class="binary-card">
+                  <span class="codicon codicon-file-binary binary-hero-icon"></span>
+                  <h4 class="binary-title">{{ splitState.tab.name }}</h4>
+                  <p class="binary-message">无法在拆分视图中编辑二进制文件</p>
+                </div>
+              </div>
+              <MonacoEditor
+                v-else
+                :key="'split-' + splitState.tab.id"
+                :tab="splitState.tab"
+                @change="handleSplitEditorChange"
+                @save="handleSplitEditorSave"
+              />
+            </div>
           </div>
         </div>
 
-        <!-- 2. Binary or Large File Notice (VS Code Aligned) -->
-        <div v-else-if="activeTab.isBinary" class="binary-file-container">
-          <div class="binary-card">
-            <div class="binary-icon-box">
-              <span class="codicon codicon-file-binary binary-hero-icon"></span>
+        <!-- Normal Single Editor Workspace -->
+        <template v-else>
+          <!-- 1. Image Preview -->
+          <div v-if="isImageFile(activeTab.name)" class="image-preview-container">
+            <div class="image-wrapper">
+              <img :src="imagePreviewSrc" :alt="activeTab.name" class="preview-img" />
             </div>
-            <h3 class="binary-title">{{ activeTab.name }}</h3>
-            <div class="binary-meta">
-              <span v-if="activeTab.size" class="binary-badge">{{ formatFileSize(activeTab.size) }}</span>
-              <span class="binary-badge tag">{{ activeTab.binaryReason === 'too_large' ? '大文件' : '二进制文件' }}</span>
-            </div>
-            <p class="binary-message">
-              {{ activeTab.binaryReason === 'too_large' 
-                 ? '该文件体积过大 (超过 10 MB)，无法在文本编辑器中显示。' 
-                 : '该文件未在文本编辑器中显示，因为它是二进制文件或使用了不受支持的文本编码。' }}
-            </p>
-            <div class="binary-actions">
-              <button type="button" class="action-btn-primary" @click="handleOpenParentTerminal">
-                <span class="codicon codicon-terminal"></span>
-                <span>在终端中查看 / 运行</span>
-              </button>
-              <button type="button" class="action-btn-secondary" @click="handleCopyPath">
-                <span class="codicon codicon-copy"></span>
-                <span>复制相对路径</span>
-              </button>
+            <div class="image-meta">
+              <span>{{ activeTab.name }}</span>
             </div>
           </div>
-        </div>
 
-        <!-- 3. Monaco Code Editor -->
-        <MonacoEditor
-          v-else
-          :key="activeTab.id"
-          :tab="activeTab"
-          @change="handleEditorChange"
-          @cursor-change="handleCursorChange"
-          @save="handleSave"
-        />
+          <!-- 2. Binary or Large File Notice (VS Code Aligned) -->
+          <div v-else-if="activeTab.isBinary" class="binary-file-container">
+            <div class="binary-card">
+              <div class="binary-icon-box">
+                <span class="codicon codicon-file-binary binary-hero-icon"></span>
+              </div>
+              <h3 class="binary-title">{{ activeTab.name }}</h3>
+              <div class="binary-meta">
+                <span v-if="activeTab.size" class="binary-badge">{{ formatFileSize(activeTab.size) }}</span>
+                <span class="binary-badge tag">{{ activeTab.binaryReason === 'too_large' ? '大文件' : '二进制文件' }}</span>
+              </div>
+              <p class="binary-message">
+                {{ activeTab.binaryReason === 'too_large' 
+                   ? '该文件体积过大 (超过 10 MB)，无法在文本编辑器中显示。' 
+                   : '该文件未在文本编辑器中显示，因为它是二进制文件或使用了不受支持的文本编码。' }}
+              </p>
+              <div class="binary-actions">
+                <button type="button" class="action-btn-primary" @click="handleOpenParentTerminal">
+                  <span class="codicon codicon-terminal"></span>
+                  <span>在终端中查看 / 运行</span>
+                </button>
+                <button type="button" class="action-btn-secondary" @click="handleCopyPath">
+                  <span class="codicon codicon-copy"></span>
+                  <span>复制相对路径</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Monaco Code Editor -->
+          <MonacoEditor
+            v-else
+            :key="activeTab.id"
+            :tab="activeTab"
+            @change="handleEditorChange"
+            @cursor-change="handleCursorChange"
+            @save="handleSave"
+          />
+        </template>
       </div>
 
       <!-- Editor Footer Status Bar -->
@@ -265,21 +370,192 @@
         </div>
       </div>
     </div>
+
+    <!-- 5. Tab Context Menu (VS Code Aligned 5 Groups) -->
+    <Teleport to="body">
+      <div
+        v-if="isContextMenuVisible && targetTab"
+        ref="contextMenuRef"
+        class="context-view monaco-menu-container tab-context-menu"
+        :class="{ 'submenu-left': isSubmenuNearRightEdge }"
+        :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
+        @contextmenu.prevent
+      >
+        <div class="monaco-menu">
+          <div class="monaco-action-bar vertical">
+            <ul class="actions-container" role="menu">
+              <!-- Group 1: Close Actions -->
+              <li class="action-item" role="none" @click="handleCloseCurrent">
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">关闭</span>
+                  <span class="keybinding">{{ isMac ? '⌘W' : 'Ctrl+W' }}</span>
+                </a>
+              </li>
+              <li
+                class="action-item"
+                :class="{ disabled: !canCloseOthers }"
+                role="none"
+                @click="handleCloseOthers"
+              >
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">关闭其他</span>
+                  <span class="keybinding">{{ isMac ? '⌥⌘T' : 'Alt+Ctrl+T' }}</span>
+                </a>
+              </li>
+              <li
+                class="action-item"
+                :class="{ disabled: !canCloseToRight }"
+                role="none"
+                @click="handleCloseToRight"
+              >
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">关闭右侧标签页</span>
+                </a>
+              </li>
+              <li
+                class="action-item"
+                :class="{ disabled: !canCloseSaved }"
+                role="none"
+                @click="handleCloseSaved"
+              >
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">关闭已保存</span>
+                  <span class="keybinding">{{ isMac ? '[⌘K U]' : '[Ctrl+K U]' }}</span>
+                </a>
+              </li>
+              <li class="action-item" role="none" @click="handleCloseAll">
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">全部关闭</span>
+                  <span class="keybinding">{{ isMac ? '[⌘K W]' : '[Ctrl+K W]' }}</span>
+                </a>
+              </li>
+
+              <!-- Separator -->
+              <li class="action-item" role="presentation">
+                <div class="action-label separator"></div>
+              </li>
+
+              <!-- Group 2: Copy Paths -->
+              <li class="action-item" role="none" @click="handleCopyAbsolutePath">
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">复制路径</span>
+                  <span class="keybinding">{{ isMac ? '⌥⌘C' : 'Shift+Alt+C' }}</span>
+                </a>
+              </li>
+              <li class="action-item" role="none" @click="handleCopyRelativePath">
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">复制相对路径</span>
+                  <span class="keybinding">{{ isMac ? '⌥⇧⌘C' : 'Ctrl+K Ctrl+C' }}</span>
+                </a>
+              </li>
+
+              <!-- Separator -->
+              <li class="action-item" role="presentation">
+                <div class="action-label separator"></div>
+              </li>
+
+              <!-- Group 3: Reveal in Explorer View -->
+              <li class="action-item" role="none" @click="handleRevealInExplorer">
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">在资源管理器视图中显示</span>
+                </a>
+              </li>
+
+              <!-- Separator -->
+              <li class="action-item" role="presentation">
+                <div class="action-label separator"></div>
+              </li>
+
+              <!-- Group 4: Pin / Unpin Tab -->
+              <li class="action-item" role="none" @click="handleTogglePin">
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">{{ targetTab?.isPinned ? '取消固定' : '固定' }}</span>
+                  <span class="keybinding">{{
+                    targetTab?.isPinned
+                      ? (isMac ? '[⌘K ⇧Enter]' : '[Ctrl+K Shift+Enter]')
+                      : (isMac ? '[⌘K Enter]' : '[Ctrl+K Enter]')
+                  }}</span>
+                </a>
+              </li>
+
+              <!-- Separator -->
+              <li class="action-item" role="presentation">
+                <div class="action-label separator"></div>
+              </li>
+
+              <!-- Group 5: Split Editor -->
+              <li class="action-item" role="none" @click="handleSplitRight">
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">向右拆分</span>
+                </a>
+              </li>
+              <li
+                class="action-item has-submenu"
+                role="none"
+                @mouseenter="isSubmenuOpen = true"
+                @mouseleave="isSubmenuOpen = false"
+              >
+                <a class="action-menu-item" role="menuitem">
+                  <span class="action-label">拆分和移动</span>
+                  <span class="codicon codicon-chevron-right submenu-arrow"></span>
+                </a>
+
+                <!-- Flyout Submenu for Split & Move -->
+                <div
+                  v-show="isSubmenuOpen"
+                  class="context-view monaco-menu-container submenu-flyout"
+                >
+                  <div class="monaco-menu">
+                    <div class="monaco-action-bar vertical">
+                      <ul class="actions-container" role="menu">
+                        <li class="action-item" role="none" @click.stop="handleSplitEditor('up')">
+                          <a class="action-menu-item" role="menuitem">
+                            <span class="action-label">向上拆分</span>
+                          </a>
+                        </li>
+                        <li class="action-item" role="none" @click.stop="handleSplitEditor('down')">
+                          <a class="action-menu-item" role="menuitem">
+                            <span class="action-label">向下拆分</span>
+                          </a>
+                        </li>
+                        <li class="action-item" role="none" @click.stop="handleSplitEditor('left')">
+                          <a class="action-menu-item" role="menuitem">
+                            <span class="action-label">向左拆分</span>
+                          </a>
+                        </li>
+                        <li class="action-item" role="none" @click.stop="handleSplitEditor('right')">
+                          <a class="action-menu-item" role="menuitem">
+                            <span class="action-label">向右拆分</span>
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { t } from "../i18n";
 import TechIcon from "../components/common/TechIcon.vue";
 import MonacoEditor from "../components/editor/MonacoEditor.vue";
 import { useFileTree } from "../composables/useFileTree";
-import { useEditorTabs } from "../composables/useEditorTabs";
+import { useEditorTabs, type EditorTab } from "../composables/useEditorTabs";
 import { useTerminalSessions } from "../composables/useTerminalSessions";
+import { useToast } from "../composables/useToast";
 
 const emit = defineEmits<{
   (e: "open-drawer", tab: string): void;
 }>();
+
+const { showToast } = useToast();
 
 const {
   tree,
@@ -300,8 +576,250 @@ const {
   saveTab,
   saveAllTabs,
   closeTab,
+  closeOtherTabs,
+  closeTabsToRight,
+  closeSavedTabs,
   closeAllTabs,
+  togglePinTab,
 } = useEditorTabs();
+
+// Tab Context Menu State
+const contextMenuRef = ref<HTMLDivElement | null>(null);
+const isContextMenuVisible = ref(false);
+const contextMenuPos = ref({ x: 0, y: 0 });
+const targetTab = ref<EditorTab | null>(null);
+const isSubmenuOpen = ref(false);
+
+const isMac = computed(() => {
+  if (typeof navigator === "undefined") return false;
+  return /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent);
+});
+
+const isSubmenuNearRightEdge = computed(() => {
+  if (typeof window === "undefined") return false;
+  return contextMenuPos.value.x + 250 + 160 > window.innerWidth;
+});
+
+const targetTabIndex = computed(() => {
+  if (!targetTab.value) return -1;
+  return tabs.value.findIndex((t) => t.id === targetTab.value?.id);
+});
+
+const canCloseOthers = computed(() => {
+  if (!targetTab.value) return false;
+  return tabs.value.filter((t) => t.id !== targetTab.value?.id).length > 0;
+});
+
+const canCloseToRight = computed(() => {
+  if (targetTabIndex.value === -1) return false;
+  return targetTabIndex.value < tabs.value.length - 1;
+});
+
+const canCloseSaved = computed(() => {
+  return tabs.value.some((t) => !t.isDirty && !t.isPinned);
+});
+
+function openTabContextMenu(e: MouseEvent, tab: EditorTab) {
+  targetTab.value = tab;
+  const menuWidth = 260;
+  const menuHeight = 360;
+  const x = Math.min(e.clientX, window.innerWidth - menuWidth - 10);
+  const y = Math.min(e.clientY, window.innerHeight - menuHeight - 10);
+  contextMenuPos.value = { x: Math.max(10, x), y: Math.max(10, y) };
+  isContextMenuVisible.value = true;
+  isSubmenuOpen.value = false;
+}
+
+function closeContextMenu() {
+  isContextMenuVisible.value = false;
+  isSubmenuOpen.value = false;
+  targetTab.value = null;
+}
+
+function handleCloseCurrent() {
+  if (targetTab.value) {
+    closeTab(targetTab.value.id);
+  }
+  closeContextMenu();
+}
+
+function handleCloseOthers() {
+  if (targetTab.value && canCloseOthers.value) {
+    closeOtherTabs(targetTab.value.id);
+  }
+  closeContextMenu();
+}
+
+function handleCloseToRight() {
+  if (targetTab.value && canCloseToRight.value) {
+    closeTabsToRight(targetTab.value.id);
+  }
+  closeContextMenu();
+}
+
+function handleCloseSaved() {
+  if (canCloseSaved.value) {
+    closeSavedTabs();
+  }
+  closeContextMenu();
+}
+
+function handleCloseAll() {
+  closeAllTabs();
+  closeContextMenu();
+}
+
+function handleCopyAbsolutePath() {
+  if (!targetTab.value) return;
+  const rel = targetTab.value.path;
+  const root = tree.value?.path || "";
+  let fullPath = rel;
+  if (!rel.startsWith("/")) {
+    fullPath = root ? (root.endsWith("/") ? `${root}${rel}` : `${root}/${rel}`) : rel;
+  }
+  navigator.clipboard?.writeText(fullPath).then(() => {
+    showToast(t("explorer.copied_full_path") || `已复制完整路径: ${fullPath}`, "success");
+  }).catch(() => {
+    showToast("复制路径失败", "error");
+  });
+  closeContextMenu();
+}
+
+function handleCopyRelativePath() {
+  if (!targetTab.value) return;
+  const rel = targetTab.value.path;
+  navigator.clipboard?.writeText(rel).then(() => {
+    showToast(t("explorer.copied_path") || `已复制相对路径: ${rel}`, "success");
+  }).catch(() => {
+    showToast("复制相对路径失败", "error");
+  });
+  closeContextMenu();
+}
+
+function handleRevealInExplorer() {
+  if (!targetTab.value) return;
+  const relPath = targetTab.value.path;
+  const lastSlash = relPath.lastIndexOf("/");
+  if (lastSlash > 0) {
+    const parentDir = relPath.slice(0, lastSlash);
+    expandPath(parentDir);
+  }
+  const findNode = (node: any): any => {
+    if (!node) return null;
+    if (node.path === relPath) return node;
+    if (node.children) {
+      for (const child of node.children) {
+        const found = findNode(child);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+  if (tree.value) {
+    const node = findNode(tree.value);
+    if (node) {
+      selectNode(node);
+      setTimeout(() => {
+        const el =
+          document.querySelector(`[data-path="${CSS.escape(relPath)}"]`) ||
+          document.querySelector(`[title*="${CSS.escape(targetTab.value?.name || "")}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+      }, 100);
+    }
+  }
+  closeContextMenu();
+}
+
+function handleTogglePin() {
+  if (targetTab.value) {
+    togglePinTab(targetTab.value.id);
+  }
+  closeContextMenu();
+}
+
+// Split Editor State
+const splitState = ref<{
+  active: boolean;
+  direction: "horizontal" | "vertical";
+  position: "up" | "down" | "left" | "right";
+  tab: EditorTab | null;
+}>({
+  active: false,
+  direction: "horizontal",
+  position: "right",
+  tab: null,
+});
+
+function handleSplitRight() {
+  handleSplitEditor("right");
+}
+
+function handleSplitEditor(direction: "up" | "down" | "left" | "right") {
+  if (!targetTab.value) return;
+  splitState.value = {
+    active: true,
+    direction: direction === "up" || direction === "down" ? "vertical" : "horizontal",
+    position: direction,
+    tab: targetTab.value,
+  };
+  closeContextMenu();
+}
+
+function closeSplitEditor() {
+  splitState.value = {
+    active: false,
+    direction: "horizontal",
+    position: "right",
+    tab: null,
+  };
+}
+
+function handleSplitEditorChange(newContent: string) {
+  if (splitState.value.tab) {
+    updateContent(splitState.value.tab.id, newContent);
+  }
+}
+
+async function handleSplitEditorSave() {
+  if (splitState.value.tab) {
+    await saveTab(splitState.value.tab.id);
+  }
+}
+
+watch(tabs, (currTabs) => {
+  if (splitState.value.active && splitState.value.tab) {
+    if (!currTabs.some((t) => t.id === splitState.value.tab?.id)) {
+      closeSplitEditor();
+    }
+  }
+});
+
+function handleGlobalPointerDown(e: MouseEvent) {
+  if (isContextMenuVisible.value) {
+    const el = contextMenuRef.value;
+    if (el && !el.contains(e.target as Node)) {
+      closeContextMenu();
+    }
+  }
+}
+
+function handleGlobalKeyDown(e: KeyboardEvent) {
+  if (e.key === "Escape" && isContextMenuVisible.value) {
+    closeContextMenu();
+  }
+}
+
+onMounted(() => {
+  window.addEventListener("pointerdown", handleGlobalPointerDown);
+  window.addEventListener("keydown", handleGlobalKeyDown);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("pointerdown", handleGlobalPointerDown);
+  window.removeEventListener("keydown", handleGlobalKeyDown);
+});
 
 interface BreadcrumbItem {
   id: string;
@@ -1109,5 +1627,139 @@ function handleCreateFolderInside() {
 
 .shortcut-desc {
   color: var(--text-muted);
+}
+
+/* Pinned Tabs */
+.editor-tab.is-pinned {
+  border-top: 2px solid var(--accent-cyan);
+  font-weight: 500;
+}
+
+.editor-tab .tab-pin-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  transition: all 0.15s ease;
+}
+
+.editor-tab .tab-pin-btn:hover {
+  background-color: rgba(128, 128, 128, 0.2);
+  color: var(--text-main);
+}
+
+/* Dual Pane Split Editor Container */
+.editor-split-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.editor-split-container.split-horizontal {
+  flex-direction: row;
+}
+
+.editor-split-container.split-horizontal.split-pos-left {
+  flex-direction: row-reverse;
+}
+
+.editor-split-container.split-vertical {
+  flex-direction: column;
+}
+
+.editor-split-container.split-vertical.split-pos-up {
+  flex-direction: column-reverse;
+}
+
+.split-pane {
+  flex: 1 1 50%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--bg-color);
+}
+
+.split-pane-header {
+  height: 28px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--card-border);
+  user-select: none;
+}
+
+.split-pane-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-main);
+}
+
+.split-pane-name {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.split-pane-tools {
+  display: flex;
+  align-items: center;
+}
+
+.split-tool-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.15s ease;
+}
+
+.split-tool-btn:hover {
+  background-color: rgba(128, 128, 128, 0.2);
+  color: var(--text-main);
+}
+
+.split-pane-body {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.split-divider {
+  background-color: var(--card-border);
+  flex-shrink: 0;
+  z-index: 5;
+}
+
+.split-divider.divider-horizontal {
+  width: 2px;
+  cursor: col-resize;
+}
+
+.split-divider.divider-vertical {
+  height: 2px;
+  cursor: row-resize;
 }
 </style>

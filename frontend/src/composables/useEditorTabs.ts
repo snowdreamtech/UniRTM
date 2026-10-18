@@ -17,6 +17,7 @@ export interface EditorTab {
   isBinary?: boolean;
   size?: number;
   binaryReason?: "too_large" | "binary" | "unsupported";
+  isPinned?: boolean;
 }
 
 export const KNOWN_BINARY_EXTENSIONS = new Set([
@@ -197,13 +198,54 @@ export function useEditorTabs() {
   }
 
   function closeOtherTabs(tabId: string): void {
-    tabs.value = tabs.value.filter((t) => t.id === tabId);
+    tabs.value = tabs.value.filter((t) => t.id === tabId || t.isPinned);
     activeTabId.value = tabId;
   }
 
-  function closeAllTabs(): void {
-    tabs.value = [];
-    activeTabId.value = "";
+  function closeTabsToRight(tabId: string): void {
+    const index = tabs.value.findIndex((t) => t.id === tabId);
+    if (index === -1) return;
+
+    const activeIndex = tabs.value.findIndex((t) => t.id === activeTabId.value);
+    if (activeIndex > index) {
+      activeTabId.value = tabId;
+    }
+
+    tabs.value = tabs.value.filter((tab, idx) => idx <= index || tab.isPinned);
+  }
+
+  function closeSavedTabs(): void {
+    const retained = tabs.value.filter((t) => t.isDirty || t.isPinned);
+    tabs.value = retained;
+    if (!retained.some((t) => t.id === activeTabId.value)) {
+      activeTabId.value = retained[0]?.id || "";
+    }
+  }
+
+  function closeAllTabs(forceAll = false): void {
+    if (forceAll) {
+      tabs.value = [];
+      activeTabId.value = "";
+    } else {
+      const pinned = tabs.value.filter((t) => t.isPinned);
+      tabs.value = pinned;
+      if (!pinned.some((t) => t.id === activeTabId.value)) {
+        activeTabId.value = pinned[0]?.id || "";
+      }
+    }
+  }
+
+  function togglePinTab(tabId: string): void {
+    const tab = tabs.value.find((t) => t.id === tabId);
+    if (tab) {
+      tab.isPinned = !tab.isPinned;
+      tabs.value.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return 0;
+      });
+      showToast(tab.isPinned ? `已固定标签页: ${tab.name}` : `已取消固定: ${tab.name}`, "info");
+    }
   }
 
   return {
@@ -218,6 +260,9 @@ export function useEditorTabs() {
     saveAllTabs,
     closeTab,
     closeOtherTabs,
+    closeTabsToRight,
+    closeSavedTabs,
     closeAllTabs,
+    togglePinTab,
   };
 }
