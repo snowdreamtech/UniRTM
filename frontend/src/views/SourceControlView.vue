@@ -494,7 +494,7 @@ function toggleMoreMenu(event: MouseEvent) {
   if (btn) {
     const rect = btn.getBoundingClientRect();
     moreMenuPos.value = {
-      x: rect.right - 240,
+      x: rect.left,
       y: rect.bottom + 4,
     };
   } else {
