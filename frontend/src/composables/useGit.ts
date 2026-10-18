@@ -3,6 +3,7 @@
 
 import { ref, computed } from "vue";
 import { useToast } from "./useToast";
+import { t } from "../i18n";
 
 export interface GitChangeItem {
   path: string;
@@ -762,13 +763,33 @@ export function useGit() {
     }
   }
 
-  function downloadArchive(ref: string) {
-    const a = document.createElement("a");
-    a.href = `/api/git/archive?ref=${encodeURIComponent(ref)}`;
-    a.download = `${ref.replace(/\//g, "_")}.zip`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  async function downloadArchive(ref: string): Promise<boolean> {
+    const filename = `${ref.replace(/\//g, "_")}.zip`;
+    showToast(t("scm.branch.archive_generating", { ref }), "info");
+    try {
+      const res = await fetch(`/api/git/archive?ref=${encodeURIComponent(ref)}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(data.error || "下载归档失败");
+      }
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+      showToast(t("scm.branch.archive_success", { name: filename }), "success");
+      return true;
+    } catch (err: any) {
+      try {
+        window.open(`/api/git/archive?ref=${encodeURIComponent(ref)}`, "_blank");
+      } catch (_) {}
+      showToast(err.message || "下载归档失败", "error");
+      return false;
+    }
   }
 
   function setGraphFilterPath(p: string | null) {

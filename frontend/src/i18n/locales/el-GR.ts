@@ -904,4 +904,6 @@ export const elGr: TranslationDict = {
   "scm.graph.hours_ago": "{count} hours ago",
   "scm.graph.days_ago": "{count} days ago",
   "scm.graph.current_badge": "current",
+  "scm.branch.archive_generating": "Generating repository archive ({ref})...",
+  "scm.branch.archive_success": "Archive downloaded successfully: {name}",
 };

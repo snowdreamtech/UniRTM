@@ -914,4 +914,6 @@ export const zhTw: TranslationDict = {
   "scm.graph.hours_ago": "{count} hours ago",
   "scm.graph.days_ago": "{count} days ago",
   "scm.graph.current_badge": "current",
+  "scm.branch.archive_generating": "正在產生存放庫封存 ({ref})...",
+  "scm.branch.archive_success": "已成功產生並下載封存: {name}",
 };

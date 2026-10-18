@@ -918,4 +918,6 @@ export const zhCn: TranslationDict = {
   "scm.graph.hours_ago": "{count} 小时前",
   "scm.graph.days_ago": "{count} 天前",
   "scm.graph.current_badge": "当前",
+  "scm.branch.archive_generating": "正在生成仓库归档 ({ref})...",
+  "scm.branch.archive_success": "已成功生成并下载归档: {name}",
 };
