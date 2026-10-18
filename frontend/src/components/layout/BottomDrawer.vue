@@ -1,5 +1,21 @@
 <template>
-  <div v-if="isOpen" class="bottom-drawer" id="app-bottom-drawer">
+  <div
+    v-if="isOpen"
+    class="bottom-drawer"
+    :class="{ 'is-resizing': isDrawerHeightDragging }"
+    id="app-bottom-drawer"
+  >
+    <!-- Top Horizontal Sash for vertical drag-resizing (VS Code style) -->
+    <div
+      class="drawer-top-resizer-sash"
+      :class="{ active: isDrawerHeightDragging }"
+      @pointerdown="handleDrawerHeightPointerDown"
+      @dblclick="handleToggleMaximizeOrReset"
+      title="双击切换最大化，上下拖拽调节高度"
+    >
+      <div class="sash-indicator-horizontal"></div>
+    </div>
+
     <!-- Drawer Header Bar -->
     <div class="drawer-header">
       <!-- Tabs on the left -->
@@ -191,8 +207,8 @@
     <div
       v-if="currentTab === 'terminal'"
       class="terminal-wrapper font-mono"
-      :class="{ 'is-resizing': isTermSidebarDragging }"
-      :style="{ height: isMaximized ? '420px' : '200px' }"
+      :class="{ 'is-resizing': isTermSidebarDragging || isDrawerHeightDragging }"
+      :style="{ height: `${effectiveBodyHeight}px` }"
     >
       <!-- Main: Terminal Panes Work Area -->
       <div
@@ -337,7 +353,7 @@
       v-else
       class="drawer-body font-mono"
       ref="logContainerRef"
-      :style="{ height: isMaximized ? '380px' : '170px' }"
+      :style="{ height: `${effectiveBodyHeight}px` }"
     >
       <div v-if="displayLogs.length === 0" class="empty-logs">
         <span>{{ emptyStateText }}</span>
@@ -374,6 +390,9 @@
         </button>
       </div>
     </div>
+
+    <!-- Dragging overlay for drawer height -->
+    <div v-if="isDrawerHeightDragging" class="drawer-height-drag-overlay"></div>
   </div>
 </template>
 
@@ -499,6 +518,98 @@ function handleTermSidebarPointerDown(e: PointerEvent) {
       document.body.style.userSelect = "";
       try {
         localStorage.setItem(TERM_SIDEBAR_WIDTH_KEY, String(termSidebarWidth.value));
+      } catch {}
+    }
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", onPointerUp);
+    window.removeEventListener("pointercancel", onPointerUp);
+  };
+
+  window.addEventListener("pointermove", onPointerMove);
+  window.addEventListener("pointerup", onPointerUp);
+  window.addEventListener("pointercancel", onPointerUp);
+}
+
+const DRAWER_HEIGHT_KEY = "unirtm_drawer_height";
+const DEFAULT_DRAWER_BODY_HEIGHT = 200;
+const MIN_DRAWER_BODY_HEIGHT = 100;
+const MAX_DRAWER_BODY_HEIGHT = 800;
+
+function getInitialDrawerBodyHeight(): number {
+  if (typeof localStorage === "undefined") return DEFAULT_DRAWER_BODY_HEIGHT;
+  try {
+    const saved = localStorage.getItem(DRAWER_HEIGHT_KEY);
+    if (saved) {
+      const parsed = Number(saved);
+      if (!isNaN(parsed) && parsed >= MIN_DRAWER_BODY_HEIGHT && parsed <= MAX_DRAWER_BODY_HEIGHT) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return DEFAULT_DRAWER_BODY_HEIGHT;
+}
+
+const drawerBodyHeight = ref(getInitialDrawerBodyHeight());
+const isDrawerHeightDragging = ref(false);
+
+const effectiveBodyHeight = computed(() => {
+  if (isMaximized.value) {
+    if (typeof window !== "undefined") {
+      return Math.max(380, Math.floor(window.innerHeight * 0.65));
+    }
+    return 420;
+  }
+  return drawerBodyHeight.value;
+});
+
+function handleToggleMaximizeOrReset() {
+  if (isMaximized.value) {
+    isMaximized.value = false;
+  } else {
+    if (drawerBodyHeight.value !== DEFAULT_DRAWER_BODY_HEIGHT) {
+      drawerBodyHeight.value = DEFAULT_DRAWER_BODY_HEIGHT;
+      try {
+        localStorage.setItem(DRAWER_HEIGHT_KEY, String(DEFAULT_DRAWER_BODY_HEIGHT));
+      } catch {}
+    } else {
+      isMaximized.value = true;
+    }
+  }
+}
+
+let heightDragStartY = 0;
+let heightDragStartHeight = 0;
+
+function handleDrawerHeightPointerDown(e: PointerEvent) {
+  e.preventDefault();
+  isDrawerHeightDragging.value = true;
+  heightDragStartY = e.clientY;
+
+  if (isMaximized.value) {
+    heightDragStartHeight = effectiveBodyHeight.value;
+    isMaximized.value = false;
+  } else {
+    heightDragStartHeight = drawerBodyHeight.value;
+  }
+
+  document.body.style.cursor = "row-resize";
+  document.body.style.userSelect = "none";
+
+  const onPointerMove = (ev: PointerEvent) => {
+    if (!isDrawerHeightDragging.value) return;
+    const deltaY = heightDragStartY - ev.clientY; // dragging up increases height
+    const maxAllowed = Math.min(MAX_DRAWER_BODY_HEIGHT, Math.floor(window.innerHeight * 0.8));
+    const newHeight = Math.max(MIN_DRAWER_BODY_HEIGHT, Math.min(maxAllowed, heightDragStartHeight + deltaY));
+    drawerBodyHeight.value = Math.round(newHeight);
+  };
+
+  const onPointerUp = () => {
+    if (isDrawerHeightDragging.value) {
+      isDrawerHeightDragging.value = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      try {
+        localStorage.setItem(DRAWER_HEIGHT_KEY, String(drawerBodyHeight.value));
       } catch {}
     }
     window.removeEventListener("pointermove", onPointerMove);
@@ -781,6 +892,7 @@ onUnmounted(() => {
 
 <style scoped>
 .bottom-drawer {
+  position: relative;
   width: 100%;
   flex-shrink: 0;
   background: var(--card-bg);
@@ -791,6 +903,52 @@ onUnmounted(() => {
   z-index: 55;
   backdrop-filter: blur(12px);
   animation: drawer-slide-up 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bottom-drawer.is-resizing {
+  user-select: none;
+}
+
+.bottom-drawer.is-resizing .terminal-panes-area,
+.bottom-drawer.is-resizing .terminal-screen {
+  pointer-events: none;
+}
+
+.drawer-top-resizer-sash {
+  position: absolute;
+  top: -3px;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: row-resize;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+.drawer-top-resizer-sash .sash-indicator-horizontal {
+  width: 100%;
+  height: 2px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.drawer-top-resizer-sash:hover .sash-indicator-horizontal,
+.drawer-top-resizer-sash.active .sash-indicator-horizontal {
+  background: var(--accent-cyan, #00e5ff);
+}
+
+.drawer-height-drag-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 99999;
+  cursor: row-resize;
+  background: transparent;
 }
 
 @keyframes drawer-slide-up {
