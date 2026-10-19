@@ -47,7 +47,7 @@ import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import type * as MonacoType from "monaco-editor";
 import "monaco-editor/min/vs/editor/editor.main.css";
 import { loadMonaco, getLanguageForFile } from "../../services/editor/monacoLoader";
-import { computeLineDiff } from "../../utils/diffGutter";
+import { computeLineDiff, type DiffLineChange } from "../../utils/diffGutter";
 import type { EditorTab } from "../../composables/useEditorTabs";
 
 const props = defineProps<{

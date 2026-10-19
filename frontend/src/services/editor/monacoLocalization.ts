@@ -139,6 +139,25 @@ export function translateActiveMonacoMenus(): void {
   if (typeof document === "undefined") return;
   const labels = document.querySelectorAll(".action-label");
   labels.forEach((item) => translateSingleLabelElement(item));
+
+  // 高反差实心菜单双重兜底保障（深色模式浅色菜单，浅色模式深色菜单，绝对杜绝透明）
+  const isLight = document.documentElement.getAttribute("data-theme") === "light";
+  const bg = isLight ? "#1e1e1e" : "#ffffff";
+  const fg = isLight ? "#cccccc" : "#1e293b";
+  const border = isLight ? "#3c3c3c" : "#cbd5e1";
+  const shadow = isLight ? "0 12px 32px rgba(0, 0, 0, 0.55)" : "0 10px 30px -4px rgba(0, 0, 0, 0.4)";
+  const menus = document.querySelectorAll<HTMLElement>(
+    ".context-view.monaco-menu-container, .monaco-menu-container, .context-view .monaco-menu, .monaco-menu, .monaco-scrollable-element"
+  );
+  menus.forEach((m) => {
+    m.style.setProperty("background-color", bg, "important");
+    m.style.setProperty("color", fg, "important");
+    if (m.classList.contains("monaco-menu-container")) {
+      m.style.setProperty("border", `1px solid ${border}`, "important");
+      m.style.setProperty("box-shadow", shadow, "important");
+      m.style.setProperty("border-radius", "6px", "important");
+    }
+  });
 }
 
 /**
