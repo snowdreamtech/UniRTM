@@ -84,17 +84,33 @@
     - 修复 Shadow DOM 样式对比度并对齐 53 种语言本地化标签。
     - **分步提交 10**：`style(editor): ensure outline and border none on context menu action items`
 
-11. **阶段 11：行内代码块一键暂存与部分提交 (Stage Chunk / Partial Staging)** [待执行]
+11. **阶段 11：行内代码块一键暂存与部分提交 (Stage Chunk / Partial Staging)** [已完成]
     - 在 Inline Diff Peek 浮层中增加「暂存此块 (Stage Chunk)」动作；
     - 联动 `useGit` 完成差异代码块暂存并即刻刷新 Gutter 与 SCM 状态；编写单元测试。
-    - **分步提交 11**：`feat(editor): support staging single diff chunk from inline peek widget`
+    - **分步提交 11**：`feat(editor): support staging single diff chunk from inline peek widget` (`07f4c435`)
 
-12. **阶段 12：文件树折叠目录变更聚合徽标 (Folder Git Bubble Badges)** [待执行]
+12. **阶段 12：文件树折叠目录变更聚合徽标 (Folder Git Bubble Badges)** [已完成]
     - 在 `useFileTree` 中增加折叠父级目录的递归变动总数统计算法；
     - 在 `FileTreeNode.vue` 中渲染微型气泡徽标（Bubble Count）；编写单元测试。
-    - **分步提交 12**：`feat(explorer): display aggregated git change badges on collapsed directory nodes`
+    - **分步提交 12**：`feat(explorer): display aggregated git change badges on collapsed directory nodes` (`2b0c8a7f`)
 
-13. **阶段 13：全量 53 国多语言同步与端到端回归验证 (Final Verification)** [待执行]
+13. **阶段 13：全量 53 国多语言同步与端到端回归验证 (Final Verification)** [已完成]
     - 补齐新增词条，跑通 `npm run test` 与 `npm run build`，更新任务清单。
-    - **分步提交 13**：`feat(i18n): sync multi-language keys and finalize phase 11-12 validation`
+    - **分步提交 13**：`feat(i18n): sync multi-language keys and finalize phase 11-12 validation` (`04f927dc`)
+
+14. **阶段 14：Git 合并冲突智能识别与就地一键合并 (Merge Conflict Resolution)** [待执行]
+    - 实现 `frontend/src/utils/mergeConflict.ts` 高效冲突标记解析器；
+    - 在 `MonacoEditor.vue` 中行内挂载冲突操作浮窗/操作条，提供「采用当前 (Accept Current)」、「采用传入 (Accept Incoming)」、「保留两者 (Accept Both)」一键操作；
+    - 编写单元测试验证各种边界标记的解析与原子化代码替换。
+    - **分步提交 14**：`feat(editor): implement merge conflict detection and inline one-click resolution actions`
+
+15. **阶段 15：无 Git 依赖的本地时间胶囊 (Local History & Snapshot Timeline)** [待执行]
+    - 创建 `frontend/src/composables/useLocalHistory.ts`，在文件保存时自动记录本地时间戳快照；
+    - 在 `FileContextMenu.vue` 中注入「本地历史记录 (Local History)」，支持查看快照列表、调起 Diff 标签页并一键恢复；
+    - 编写单元测试验证快照保存、轮转限制与内容还原逻辑。
+    - **分步提交 15**：`feat(workbench): implement local history snapshots and revision diff comparison`
+
+16. **阶段 16：全量 53 国多语言适配与端到端回归验证 (Final Verification)** [待执行]
+    - 补齐冲突消解与本地历史多语言词条；跑通全量单元测试与构建。
+    - **分步提交 16**：`feat(i18n): sync translation keys and finalize workbench trinity deep features`
 

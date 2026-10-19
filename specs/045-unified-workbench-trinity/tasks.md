@@ -92,3 +92,27 @@
 - [x] 13.4 **执行提交 13**：`feat(i18n): sync multi-language keys and finalize phase 11-12 validation`
 
 
+## 阶段 14：Git 合并冲突智能识别与就地一键合并 (Merge Conflict Resolution) [待执行]
+- [ ] 14.1 实现 `frontend/src/utils/mergeConflict.ts`：解析标准 Git 冲突标记（`<<<<<<<`, `=======`, `>>>>>>>`），提取冲突区间、分支标签与代码块
+- [ ] 14.2 编写 `frontend/src/utils/mergeConflict.test.ts` 单元测试，覆盖单冲突、多冲突、非法嵌套及边界用例
+- [ ] 14.3 在 `frontend/src/components/editor/MonacoEditor.vue` 中挂载冲突标记感知条与一键操作（Accept Current, Accept Incoming, Accept Both）
+- [ ] 14.4 执行合并操作后通过 Monaco `executeEdits` 替换并自动清理标记，通知工作区总线
+- [ ] 14.5 **执行提交 14**：`feat(editor): implement merge conflict detection and inline one-click resolution actions`
+
+
+## 阶段 15：无 Git 依赖的本地时间胶囊 (Local History & Snapshot Timeline) [待执行]
+- [ ] 15.1 创建 `frontend/src/composables/useLocalHistory.ts`，在文件保存时自动记录本地时间戳快照并限制轮转深度（最多保留 20 份）
+- [ ] 15.2 编写 `frontend/src/composables/useLocalHistory.test.ts` 单元测试，验证快照写入、按路径检索与按版本回退
+- [ ] 15.3 在 `FileContextMenu.vue` 中新增「本地历史记录 (Local History)」选项，点击唤起历史快照列表弹窗/抽屉
+- [ ] 15.4 点击历史快照项时，在主编辑器中调起 Diff 标签页并支持一键恢复到历史版本
+- [ ] 15.5 **执行提交 15**：`feat(workbench): implement local history snapshots and revision diff comparison`
+
+
+## 阶段 16：全量 53 国多语言适配与端到端回归验证 (Final Verification) [待执行]
+- [ ] 16.1 在 `frontend/src/i18n/` 补充冲突解决与本地历史相关的全部文案，并同步到 53 种语言包
+- [ ] 16.2 运行前端全量单元测试（`npm run test -- --run`）与生产构建（`npm run build`），确保 0 警告 0 报错
+- [ ] 16.3 更新 `tasks.md` 标记全部阶段任务为已完成 `[x]`
+- [ ] 16.4 **执行提交 16**：`feat(i18n): sync translation keys and finalize workbench trinity deep features`
+
+
+
