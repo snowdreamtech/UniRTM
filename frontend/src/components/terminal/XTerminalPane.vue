@@ -9,6 +9,8 @@ import { usePorts } from "../../composables/usePorts";
 import { createTerminalLinkProvider } from "../../composables/useTerminalLinks";
 import { SearchAddon } from "@xterm/addon-search";
 import TerminalSearchWidget from "./TerminalSearchWidget.vue";
+import TerminalContextMenu from "./TerminalContextMenu.vue";
+import { useWorkspaceBus } from "../../composables/useWorkspaceBus";
 
 const { registerDetectedPort } = usePorts();
 const detectedPorts = new Set<number>();
@@ -44,6 +46,13 @@ const connectionError = ref<string | null>(null);
 const isSearchVisible = ref(false);
 const searchAddonInstance = ref<SearchAddon | null>(null);
 
+const contextMenuVisible = ref(false);
+const contextMenuX = ref(0);
+const contextMenuY = ref(0);
+const hasSelection = ref(false);
+
+const busCleanups: (() => void)[] = [];
+
 function closeSearch() {
   isSearchVisible.value = false;
   term?.focus();
@@ -51,6 +60,47 @@ function closeSearch() {
 
 function openSearch() {
   isSearchVisible.value = true;
+}
+
+function handleContextMenu(e: MouseEvent) {
+  contextMenuX.value = e.clientX;
+  contextMenuY.value = e.clientY;
+  hasSelection.value = !!term?.hasSelection();
+  contextMenuVisible.value = true;
+}
+
+async function handleCopy() {
+  if (!term) return;
+  const selection = term.getSelection();
+  if (selection && typeof navigator !== "undefined" && navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(selection);
+    } catch (err) {
+      console.error("[XTerminalPane] Failed to copy selection:", err);
+    }
+  }
+}
+
+async function handlePaste() {
+  if (!term || !ws || ws.readyState !== WebSocket.OPEN) return;
+  if (typeof navigator !== "undefined" && navigator.clipboard) {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        ws.send(JSON.stringify({ type: "input", data: text }));
+      }
+    } catch (err) {
+      console.error("[XTerminalPane] Failed to paste text:", err);
+    }
+  }
+}
+
+function handleSelectAll() {
+  term?.selectAll();
+}
+
+function handleClear() {
+  term?.clear();
 }
 
 let term: Terminal | null = null;
@@ -231,6 +281,24 @@ onMounted(() => {
     attributes: true,
     attributeFilter: ["data-theme"],
   });
+
+  // Listen to workspace bus events
+  const bus = useWorkspaceBus();
+  busCleanups.push(
+    bus.onSendToTerminal((req) => {
+      if (!props.isActive) return;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        const textToSend = req.addNewline !== false ? `${req.text}\n` : req.text;
+        ws.send(JSON.stringify({ type: "input", data: textToSend }));
+      }
+    }),
+    bus.onRevealInTerminal((req) => {
+      if (!props.isActive) return;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "input", data: `cd "${req.directoryPath}"\n` }));
+      }
+    })
+  );
 });
 
 watch(
@@ -247,6 +315,8 @@ watch(
 );
 
 onBeforeUnmount(() => {
+  busCleanups.forEach((fn) => fn());
+  busCleanups.length = 0;
   unregisterTerminalSender(props.paneId);
   if (resizeObserver) {
     resizeObserver.disconnect();
@@ -271,7 +341,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="xterm-pane-wrapper" @click="emit('focus')">
+  <div
+    class="xterm-pane-wrapper"
+    @click="emit('focus')"
+    @contextmenu.prevent="handleContextMenu"
+  >
     <div ref="terminalContainer" class="xterm-container"></div>
 
     <!-- Floating Search Widget -->
@@ -279,6 +353,21 @@ onBeforeUnmount(() => {
       :visible="isSearchVisible"
       :search-addon="searchAddonInstance"
       @close="closeSearch"
+    />
+
+    <!-- Context Menu -->
+    <TerminalContextMenu
+      :visible="contextMenuVisible"
+      :x="contextMenuX"
+      :y="contextMenuY"
+      :has-selection="hasSelection"
+      @close="contextMenuVisible = false"
+      @copy="handleCopy"
+      @paste="handlePaste"
+      @select-all="handleSelectAll"
+      @clear="handleClear"
+      @find="openSearch"
+      @restart="reconnect"
     />
 
     <!-- Reconnect / Error Overlay -->

@@ -88,6 +88,7 @@ import {
   type MergeConflictRegion,
   type ConflictResolution,
 } from "../../utils/mergeConflict";
+import { useWorkspaceBus } from "../../composables/useWorkspaceBus";
 
 const props = defineProps<{
   tab: EditorTab;
@@ -405,6 +406,39 @@ onMounted(async () => {
 
     localizeEditorActions(editorInstance);
     setupEditorContextMenuLocalization(editorInstance, editorContainerRef.value);
+
+    // Register Send to Terminal Action & Shortcut (Shift+Enter)
+    editorInstance.addAction({
+      id: "unirtm.sendSelectionToTerminal",
+      label: "在活动终端中运行 (Run in Active Terminal)",
+      keybindings: [monaco.KeyMod.Shift | monaco.KeyCode.Enter],
+      contextMenuGroupId: "navigation",
+      contextMenuOrder: 1.5,
+      run: (ed) => {
+        const selection = ed.getSelection();
+        const model = ed.getModel();
+        if (!model) return;
+
+        let textToSend = "";
+        if (selection && !selection.isEmpty()) {
+          textToSend = model.getValueInRange(selection);
+        } else {
+          const pos = ed.getPosition();
+          if (pos) {
+            textToSend = model.getLineContent(pos.lineNumber);
+            // Move cursor to next line
+            if (pos.lineNumber < model.getLineCount()) {
+              ed.setPosition({ lineNumber: pos.lineNumber + 1, column: pos.column });
+            }
+          }
+        }
+
+        if (textToSend) {
+          useWorkspaceBus().sendToTerminal({ text: textToSend, addNewline: true });
+        }
+      },
+    });
+
     scanConflicts();
 
     // Content change

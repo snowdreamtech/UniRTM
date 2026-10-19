@@ -31,12 +31,12 @@
 ---
 
 ## Phase 3: 终端右键上下文菜单与编辑器/文件树双向互通 (Context Menu & Bidirectional Flow)
-- [ ] Task 3.1: 创建 `frontend/src/components/terminal/TerminalContextMenu.vue` 右键菜单（复制/粘贴/清屏/全选/拆分/查找）
-- [ ] Task 3.2: 升级 `useWorkspaceBus.ts`，增加 `sendToTerminal` 与 `openInIntegratedTerminal` 通道
-- [ ] Task 3.3: 在 `MonacoEditor.vue` 中注册 `Shift+Enter` 快捷键及右键菜单「在活动终端中运行代码」
-- [ ] Task 3.4: 在 `FileTreeNode.vue` 中为目录节点右键菜单新增「在集成终端中打开」
-- [ ] Task 3.5: 编写相关单元测试并通过验证
-- [ ] Task 3.6: 阶段性 Git 提交：`feat(terminal): implement context menu and bidirectional workbench flow`
+- [x] Task 3.1: 创建 `frontend/src/components/terminal/TerminalContextMenu.vue` 右键菜单（复制/粘贴/清屏/全选/拆分/查找）
+- [x] Task 3.2: 升级 `useWorkspaceBus.ts`，增加 `sendToTerminal` 与 `openInIntegratedTerminal` 通道
+- [x] Task 3.3: 在 `MonacoEditor.vue` 中注册 `Shift+Enter` 快捷键及右键菜单「在活动终端中运行代码」
+- [x] Task 3.4: 在 `FileTreeNode.vue` 中为目录节点右键菜单新增「在集成终端中打开」
+- [x] Task 3.5: 编写相关单元测试并通过验证
+- [x] Task 3.6: 阶段性 Git 提交：`feat(terminal): implement context menu and bidirectional workbench flow`
 
 ---
 

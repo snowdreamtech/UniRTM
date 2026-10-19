@@ -650,7 +650,7 @@ import { useGit } from "../composables/useGit";
 const router = useRouter();
 const route = useRoute();
 const { status: gitStatusData, getGitStatus, setGraphFilterPath, fetchStatus } = useGit();
-const { onOpenDiff, setActiveFilePath, onGitStatusChanged, onOpenInEditor } = useWorkspaceBus();
+const { onOpenDiff, setActiveFilePath, onGitStatusChanged, onOpenInEditor, onSendToTerminal, onRevealInTerminal } = useWorkspaceBus();
 
 const currentGitBranch = computed(() => {
   return gitStatusData.value?.branch || "main";
@@ -1106,6 +1106,12 @@ onMounted(() => {
     onGitStatusChanged(() => {
       fetchStatus();
       fetchTree();
+    }),
+    onSendToTerminal(() => {
+      emit("open-drawer", "terminal");
+    }),
+    onRevealInTerminal(() => {
+      emit("open-drawer", "terminal");
     })
   );
 });

@@ -264,6 +264,7 @@ function handleOpenTerminal() {
   if (node) {
     const dir = node.is_dir ? node.path : getTargetParent();
     emit("open-terminal", dir);
+    useWorkspaceBus().revealInTerminal(dir);
   }
 }
 
