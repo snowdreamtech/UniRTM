@@ -274,6 +274,7 @@ onMounted(async () => {
       smoothScrolling: true,
       contextmenu: true,
       fixedOverflowWidgets: true,
+      useShadowDOM: false,
     });
 
     localizeEditorActions(editorInstance);

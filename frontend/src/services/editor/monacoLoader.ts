@@ -41,7 +41,7 @@ export function loadMonaco(): Promise<typeof import("monaco-editor")> {
   if (!monacoPromise) {
     monacoPromise = (async () => {
       await setupMonacoEnvironment();
-      setupMonacoLocalization();
+      await setupMonacoLocalization();
       const monaco = await import("monaco-editor");
       return monaco;
     })();

@@ -98,7 +98,6 @@ export function translateMonacoLabel(label: string, lang?: string): string {
 
 /**
  * 本地化指定 Monaco Standalone Editor 实例中注册的 Action 的 label 属性。
- * 必须在每次右键弹出前调用，因为 Monaco 在每次弹出时从 action.label 重建菜单。
  */
 export function localizeEditorActions(editor: any): void {
   if (!editor || typeof editor.getSupportedActions !== "function") return;
@@ -118,29 +117,103 @@ export function localizeEditorActions(editor: any): void {
 }
 
 /**
- * 在 editor DOM 容器上注册 contextmenu 事件监听器。
- * 每次右键弹出前，先修改 action label 为当前语言。
- * 这是穿透 Shadow DOM 的唯一可靠方案。
+ * 翻译当前 DOM 中所有活动的 Monaco 菜单项（包括主右键菜单与子菜单）。
+ * 存储原始文本到 dataset.origLabel，以便多次右键或切换语言时准确翻译。
+ */
+export function translateActiveMonacoMenus(root: ParentNode = document): void {
+  try {
+    const labels = root.querySelectorAll<HTMLElement>(
+      ".context-view .action-label:not(.separator), .monaco-menu .action-label:not(.separator)"
+    );
+    for (let i = 0; i < labels.length; i++) {
+      const el = labels[i];
+      const orig = el.dataset.origLabel || el.textContent || "";
+      if (!el.dataset.origLabel && orig) {
+        el.dataset.origLabel = orig;
+      }
+      const translated = translateMonacoLabel(orig);
+      if (translated && el.textContent !== translated) {
+        el.textContent = translated;
+      }
+    }
+  } catch {
+    // ignore
+  }
+}
+
+let globalMenuObserver: MutationObserver | null = null;
+
+function ensureGlobalMenuObserver(): void {
+  if (globalMenuObserver || typeof document === "undefined") return;
+  globalMenuObserver = new MutationObserver((mutations) => {
+    let shouldTranslate = false;
+    for (let i = 0; i < mutations.length; i++) {
+      const mut = mutations[i];
+      if (mut.addedNodes.length > 0) {
+        for (let j = 0; j < mut.addedNodes.length; j++) {
+          const node = mut.addedNodes[j];
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const el = node as HTMLElement;
+            if (
+              el.classList?.contains("context-view") ||
+              el.classList?.contains("monaco-menu-container") ||
+              el.querySelector?.(".action-label")
+            ) {
+              shouldTranslate = true;
+              break;
+            }
+          }
+        }
+      }
+      if (shouldTranslate) break;
+    }
+    if (shouldTranslate) {
+      translateActiveMonacoMenus();
+    }
+  });
+
+  globalMenuObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+}
+
+/**
+ * 初始化 Monaco 官方 NLS 本地化模块并启动全局右键菜单翻译监听器。
+ */
+export async function setupMonacoLocalization(): Promise<void> {
+  try {
+    const lang = currentLocale.value || "en-US";
+    if (lang === "zh-TW" || lang === "zh-HK" || lang === "zh-Hant") {
+      // @ts-ignore
+      await import("monaco-editor/min/vs/nls/lang/zh-tw.js");
+    } else if (lang.startsWith("zh")) {
+      // @ts-ignore
+      await import("monaco-editor/min/vs/nls/lang/zh-cn.js");
+    }
+  } catch (err) {
+    console.warn("[monacoLocalization] Failed to load Monaco NLS messages:", err);
+  }
+
+  ensureGlobalMenuObserver();
+}
+
+/**
+ * 为指定编辑器绑定右键菜单本地化捕获钩子。
  */
 export function setupEditorContextMenuLocalization(editor: any, container: HTMLElement): void {
   if (!container || !editor) return;
-  container.addEventListener("contextmenu", () => {
+  ensureGlobalMenuObserver();
+
+  const handleContextMenu = () => {
     localizeEditorActions(editor);
-  }, { capture: true });
-}
+    // 菜单由 Monaco 异步挂载到 DOM，多次微任务与动画帧轮询确保即时汉化
+    requestAnimationFrame(() => {
+      translateActiveMonacoMenus();
+      setTimeout(translateActiveMonacoMenus, 20);
+      setTimeout(translateActiveMonacoMenus, 60);
+    });
+  };
 
-/**
- * setupMonacoLocalization 现已不再需要全局 DOM 监听。
- * 保留空实现以保持向后兼容。
- */
-export function setupMonacoLocalization(): void {
-  // 菜单样式完全由 defineTheme 的 menu.* token 控制（穿透 Shadow DOM）。
-  // 本地化由 setupEditorContextMenuLocalization 在每个 editor 实例上处理。
-}
-
-/**
- * 保留 translateActiveMonacoMenus 导出以保持向后兼容。
- */
-export function translateActiveMonacoMenus(): void {
-  // no-op: Monaco 菜单在 Shadow DOM 中，外部 DOM 操作无法触达。
+  container.addEventListener("contextmenu", handleContextMenu, { capture: true });
 }

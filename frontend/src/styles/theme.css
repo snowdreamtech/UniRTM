@@ -16,6 +16,13 @@
   --accent-purple: #9d4edd;
   --success: #10b981;
   --warning: #f59e0b;
+  /* Inverted context menu: Dark editor -> Light contrast menu */
+  --vscode-menu-background: #ffffff;
+  --vscode-menu-foreground: #0f172a;
+  --vscode-menu-selectionBackground: #0060c0;
+  --vscode-menu-selectionForeground: #ffffff;
+  --vscode-menu-separatorBackground: #e2e8f0;
+  --vscode-menu-border: #cbd5e1;
 }
 
 [data-theme="light"] {
@@ -34,6 +41,13 @@
   --accent-purple: #7c3aed;
   --success: #059669;
   --warning: #d97706;
+  /* Inverted context menu: Light editor -> Dark contrast menu */
+  --vscode-menu-background: #1e1e1e;
+  --vscode-menu-foreground: #f1f5f9;
+  --vscode-menu-selectionBackground: #04395e;
+  --vscode-menu-selectionForeground: #ffffff;
+  --vscode-menu-separatorBackground: #334155;
+  --vscode-menu-border: #334155;
 }
 
 /* Global Select & Option Dropdown Light/Dark Theme Adaptations */
@@ -568,13 +582,135 @@ html[dir="rtl"] .opt-check {
 }
 
 /* ==========================================================================
-   7. Monaco Editor Context Menu
-   ==========================================================================
-   Monaco standalone editor renders its context menu inside a Shadow DOM.
-   External CSS cannot penetrate the shadow boundary.
-   Menu colors are controlled exclusively via defineTheme() menu.* tokens
-   in MonacoEditor.vue (see initMonacoThemes).
+   7. Monaco Editor Context Menu (Contrast Theme & Solid Background)
    ========================================================================== */
+
+/* Universal context menu container & scrollable container base */
+.context-view.monaco-menu-container,
+.context-view .monaco-scrollable-element,
+.context-view .monaco-menu {
+  border-radius: 8px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 12px !important;
+  overflow: hidden !important;
+}
+
+.context-view .monaco-menu .monaco-action-bar.vertical .action-menu-item {
+  height: 26px !important;
+  line-height: 26px !important;
+  border-radius: 4px !important;
+  margin: 1px 4px !important;
+  padding: 0 4px !important;
+  transition: background-color 0.12s ease, color 0.12s ease !important;
+}
+
+.context-view .monaco-menu .monaco-action-bar.vertical .action-label {
+  font-size: 12px !important;
+  line-height: 26px !important;
+}
+
+.context-view .monaco-menu .monaco-action-bar.vertical .keybinding {
+  font-size: 11px !important;
+  line-height: 26px !important;
+}
+
+/* 1. Light Theme Editor -> Dark Inverted Contrast Context Menu */
+:root[data-theme="light"] .context-view.monaco-menu-container,
+:root[data-theme="light"] .context-view .monaco-scrollable-element,
+:root[data-theme="light"] .context-view .monaco-menu,
+[data-theme="light"] .context-view.monaco-menu-container,
+[data-theme="light"] .context-view .monaco-scrollable-element,
+[data-theme="light"] .context-view .monaco-menu {
+  background-color: #1e1e1e !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #334155 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4) !important;
+}
+
+:root[data-theme="light"] .context-view .monaco-menu .action-menu-item,
+[data-theme="light"] .context-view .monaco-menu .action-menu-item {
+  color: #f1f5f9 !important;
+  background-color: transparent !important;
+}
+
+:root[data-theme="light"] .context-view .monaco-menu .keybinding,
+[data-theme="light"] .context-view .monaco-menu .keybinding {
+  color: #94a3b8 !important;
+}
+
+:root[data-theme="light"] .context-view .monaco-menu .action-label.separator,
+[data-theme="light"] .context-view .monaco-menu .action-label.separator {
+  border-bottom: 1px solid #334155 !important;
+}
+
+:root[data-theme="light"] .context-view .monaco-menu .action-item.focused > .action-menu-item,
+:root[data-theme="light"] .context-view .monaco-menu .action-menu-item:hover,
+[data-theme="light"] .context-view .monaco-menu .action-item.focused > .action-menu-item,
+[data-theme="light"] .context-view .monaco-menu .action-menu-item:hover {
+  background-color: #04395e !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="light"] .context-view .monaco-menu .action-item.focused > .action-menu-item .keybinding,
+:root[data-theme="light"] .context-view .monaco-menu .action-menu-item:hover .keybinding,
+[data-theme="light"] .context-view .monaco-menu .action-item.focused > .action-menu-item .keybinding,
+[data-theme="light"] .context-view .monaco-menu .action-menu-item:hover .keybinding {
+  color: #e0f2fe !important;
+}
+
+:root[data-theme="light"] .context-view .monaco-menu .action-item.disabled .action-menu-item,
+[data-theme="light"] .context-view .monaco-menu .action-item.disabled .action-menu-item {
+  color: #64748b !important;
+}
+
+/* 2. Dark Theme Editor -> Light Inverted Contrast Context Menu */
+:root[data-theme="dark"] .context-view.monaco-menu-container,
+:root[data-theme="dark"] .context-view .monaco-scrollable-element,
+:root[data-theme="dark"] .context-view .monaco-menu,
+[data-theme="dark"] .context-view.monaco-menu-container,
+[data-theme="dark"] .context-view .monaco-scrollable-element,
+[data-theme="dark"] .context-view .monaco-menu {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.15) !important;
+}
+
+:root[data-theme="dark"] .context-view .monaco-menu .action-menu-item,
+[data-theme="dark"] .context-view .monaco-menu .action-menu-item {
+  color: #0f172a !important;
+  background-color: transparent !important;
+}
+
+:root[data-theme="dark"] .context-view .monaco-menu .keybinding,
+[data-theme="dark"] .context-view .monaco-menu .keybinding {
+  color: #64748b !important;
+}
+
+:root[data-theme="dark"] .context-view .monaco-menu .action-label.separator,
+[data-theme="dark"] .context-view .monaco-menu .action-label.separator {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+:root[data-theme="dark"] .context-view .monaco-menu .action-item.focused > .action-menu-item,
+:root[data-theme="dark"] .context-view .monaco-menu .action-menu-item:hover,
+[data-theme="dark"] .context-view .monaco-menu .action-item.focused > .action-menu-item,
+[data-theme="dark"] .context-view .monaco-menu .action-menu-item:hover {
+  background-color: #0060c0 !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] .context-view .monaco-menu .action-item.focused > .action-menu-item .keybinding,
+:root[data-theme="dark"] .context-view .monaco-menu .action-menu-item:hover .keybinding,
+[data-theme="dark"] .context-view .monaco-menu .action-item.focused > .action-menu-item .keybinding,
+[data-theme="dark"] .context-view .monaco-menu .action-menu-item:hover .keybinding {
+  color: #f1f5f9 !important;
+}
+
+:root[data-theme="dark"] .context-view .monaco-menu .action-item.disabled .action-menu-item,
+[data-theme="dark"] .context-view .monaco-menu .action-item.disabled .action-menu-item {
+  color: #94a3b8 !important;
+}
 
 /* Tab Context Menu & Submenus (VS Code Aligned) */
 .tab-context-menu {
