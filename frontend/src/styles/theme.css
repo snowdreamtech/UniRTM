@@ -23,6 +23,21 @@
   --vscode-menu-selectionForeground: #ffffff;
   --vscode-menu-separatorBackground: #e2e8f0;
   --vscode-menu-border: #cbd5e1;
+  /* Terminal / Editor Floating Search Widget Tokens (Dark) */
+  --vscode-editorWidget-background: #252526;
+  --vscode-editorWidget-border: #454545;
+  --vscode-editorWidget-foreground: #cccccc;
+  --vscode-input-background: #3c3c3c;
+  --vscode-input-border: #3c3c3c;
+  --vscode-input-foreground: #cccccc;
+  --vscode-input-placeholderForeground: #8c8c8c;
+  --vscode-descriptionForeground: #999999;
+  --vscode-icon-foreground: #c5c5c5;
+  --vscode-focusBorder: #007fd4;
+  --vscode-toolbar-hoverBackground: rgba(90, 93, 94, 0.31);
+  --vscode-inputOption-activeBackground: rgba(0, 127, 212, 0.4);
+  --vscode-inputOption-activeBorder: #007fd4;
+  --vscode-inputOption-activeForeground: #ffffff;
 }
 
 [data-theme="light"] {
@@ -48,6 +63,21 @@
   --vscode-menu-selectionForeground: #ffffff;
   --vscode-menu-separatorBackground: #334155;
   --vscode-menu-border: #334155;
+  /* Terminal / Editor Floating Search Widget Tokens (Light) */
+  --vscode-editorWidget-background: #ffffff;
+  --vscode-editorWidget-border: #cbd5e1;
+  --vscode-editorWidget-foreground: #0f172a;
+  --vscode-input-background: #f8fafc;
+  --vscode-input-border: #cbd5e1;
+  --vscode-input-foreground: #0f172a;
+  --vscode-input-placeholderForeground: #94a3b8;
+  --vscode-descriptionForeground: #64748b;
+  --vscode-icon-foreground: #475569;
+  --vscode-focusBorder: #0284c7;
+  --vscode-toolbar-hoverBackground: rgba(0, 0, 0, 0.08);
+  --vscode-inputOption-activeBackground: rgba(2, 132, 199, 0.15);
+  --vscode-inputOption-activeBorder: #0284c7;
+  --vscode-inputOption-activeForeground: #0284c7;
 }
 
 /* Global Select & Option Dropdown Light/Dark Theme Adaptations */

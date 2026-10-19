@@ -192,10 +192,11 @@ watch(
   background: var(--vscode-editorWidget-background, #252526);
   border: 1px solid var(--vscode-editorWidget-border, #454545);
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 12px;
   color: var(--vscode-editorWidget-foreground, #cccccc);
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .search-input-box {
@@ -206,10 +207,12 @@ watch(
   border: 1px solid var(--vscode-input-border, #3c3c3c);
   border-radius: 3px;
   padding: 2px 4px;
+  transition: all 0.15s ease;
 }
 
 .search-input-box:focus-within {
   border-color: var(--vscode-focusBorder, #007fd4);
+  box-shadow: 0 0 0 1px var(--vscode-focusBorder, #007fd4);
 }
 
 .search-input {
@@ -247,7 +250,7 @@ watch(
   background: transparent;
   border: 1px solid transparent;
   border-radius: 2px;
-  color: var(--vscode-editorWidget-foreground, #aaaaaa);
+  color: var(--vscode-descriptionForeground, #aaaaaa);
   font-size: 11px;
   font-family: monospace;
   font-weight: bold;
@@ -258,7 +261,7 @@ watch(
 
 .option-btn:hover {
   background: var(--vscode-toolbar-hoverBackground, rgba(90, 93, 94, 0.31));
-  color: #ffffff;
+  color: var(--vscode-editorWidget-foreground, #ffffff);
 }
 
 .option-btn.active {
@@ -289,16 +292,81 @@ watch(
 
 .action-btn:hover:not(:disabled) {
   background: var(--vscode-toolbar-hoverBackground, rgba(90, 93, 94, 0.31));
-  color: #ffffff;
+  color: var(--vscode-editorWidget-foreground, #ffffff);
 }
 
 .action-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
 .close-btn:hover {
-  color: #f87171;
+  color: #ef4444 !important;
+}
+
+/* Light Theme Precise Adaptations */
+:global([data-theme="light"]) .terminal-search-widget,
+[data-theme="light"] .terminal-search-widget {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  color: #0f172a;
+}
+
+:global([data-theme="light"]) .terminal-search-widget .search-input-box,
+[data-theme="light"] .terminal-search-widget .search-input-box {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+:global([data-theme="light"]) .terminal-search-widget .search-input-box:focus-within,
+[data-theme="light"] .terminal-search-widget .search-input-box:focus-within {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 1px #0284c7;
+}
+
+:global([data-theme="light"]) .terminal-search-widget .search-input,
+[data-theme="light"] .terminal-search-widget .search-input {
+  color: #0f172a;
+}
+
+:global([data-theme="light"]) .terminal-search-widget .search-input::placeholder,
+[data-theme="light"] .terminal-search-widget .search-input::placeholder {
+  color: #94a3b8;
+}
+
+:global([data-theme="light"]) .terminal-search-widget .match-count,
+[data-theme="light"] .terminal-search-widget .match-count {
+  color: #64748b;
+}
+
+:global([data-theme="light"]) .terminal-search-widget .option-btn,
+[data-theme="light"] .terminal-search-widget .option-btn {
+  color: #64748b;
+}
+
+:global([data-theme="light"]) .terminal-search-widget .option-btn:hover,
+[data-theme="light"] .terminal-search-widget .option-btn:hover {
+  background: rgba(0, 0, 0, 0.07);
+  color: #0f172a;
+}
+
+:global([data-theme="light"]) .terminal-search-widget .option-btn.active,
+[data-theme="light"] .terminal-search-widget .option-btn.active {
+  background: rgba(2, 132, 199, 0.15);
+  border-color: #0284c7;
+  color: #0284c7;
+}
+
+:global([data-theme="light"]) .terminal-search-widget .action-btn,
+[data-theme="light"] .terminal-search-widget .action-btn {
+  color: #475569;
+}
+
+:global([data-theme="light"]) .terminal-search-widget .action-btn:hover:not(:disabled),
+[data-theme="light"] .terminal-search-widget .action-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.07);
+  color: #0f172a;
 }
 
 /* Slide Transition */
