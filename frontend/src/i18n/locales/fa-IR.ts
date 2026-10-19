@@ -1049,4 +1049,6 @@ export const faIr: TranslationDict = {
   "ports.no_forwarded_ports": "No Forwarded Ports",
   "ports.empty_hint": "Local services will be automatically discovered and displayed here, or you can add ports manually.",
   "ports.process_unavailable": "Process info unavailable",
+    "ports.expected_service": "Expected workspace service",
+    "ports.probe_detected": "Probe detected service",
 };

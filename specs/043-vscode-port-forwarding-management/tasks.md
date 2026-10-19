@@ -58,9 +58,9 @@
 - [x] 7.5 编写工作区上下文提取与融合测试用例
 
 ## 阶段 8：UI 增强、全 53 国多语言支持与端到端质量验证
-- [ ] 8.1 在 `frontend/src/components/ports/PortsPanelView.vue` 中美化呈现：
+- [x] 8.1 在 `frontend/src/components/ports/PortsPanelView.vue` 中美化呈现：
   - 方式 B 探测出的 HTTPS 锁标、HTTP Server 标签、框架角标
   - 方式 C 关联的工作区文件来源徽标（如 `compose: web`, `pkg: frontend`）
-- [ ] 8.2 更新全 53 种语言字典，补齐方式 B/C 新增的多语言文本词条
-- [ ] 8.3 运行全量 `npm run test`、`npx vue-tsc --noEmit`、`go vet ./...` 与 `go test ./cmd/...`，确保 0 报错
+- [x] 8.2 更新全 53 种语言字典，补齐方式 B/C 新增的多语言文本词条
+- [x] 8.3 运行全量 `npm run test`、`npx vue-tsc --noEmit`、`go vet ./...` 与 `go test ./cmd/...`，确保 0 报错
 

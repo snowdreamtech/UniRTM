@@ -1062,4 +1062,6 @@ export const zhCn: TranslationDict = {
   "ports.no_forwarded_ports": "暂无转发的端口",
   "ports.empty_hint": "运行任何本地服务时将自动感知并呈现，您也可以手动添加端口。",
   "ports.process_unavailable": "流程信息不可用",
+    "ports.expected_service": "预期工作区服务",
+    "ports.probe_detected": "探针嗅探服务",
 };

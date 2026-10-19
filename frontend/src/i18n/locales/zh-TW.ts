@@ -1058,4 +1058,6 @@ export const zhTw: TranslationDict = {
   "ports.no_forwarded_ports": "暫無轉發的埠號",
   "ports.empty_hint": "執行任何本機服務時將自動感知並呈現，您也可以手動新增埠號。",
   "ports.process_unavailable": "行程資訊不可用",
+    "ports.expected_service": "預期工作區服務",
+    "ports.probe_detected": "探針嗅探服務",
 };

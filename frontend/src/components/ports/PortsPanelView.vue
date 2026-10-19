@@ -93,6 +93,26 @@
                   &rarr; {{ item.localPort }}
                 </span>
 
+                <!-- Method B: HTTPS Badge -->
+                <span
+                  v-if="item.probe?.isHttps || item.protocol === 'https'"
+                  class="protocol-badge https"
+                  title="TLS/HTTPS 加密协议"
+                >
+                  <span class="codicon codicon-lock"></span>
+                  <span>HTTPS</span>
+                </span>
+
+                <!-- Method C: Workspace Origin Pill -->
+                <span
+                  v-if="item.workspaceHint"
+                  class="origin-pill"
+                  :class="item.workspaceHint.serviceType"
+                  :title="`工作区语义: ${item.workspaceHint.sourceFile} (${item.workspaceHint.framework || ''})`"
+                >
+                  {{ item.workspaceHint.sourceFile.includes('compose') ? 'compose' : 'workspace' }}
+                </span>
+
                 <!-- Label / Service Recognition Tag -->
                 <template v-if="editingPortId === item.id">
                   <input
@@ -180,12 +200,23 @@
 
             <!-- 3. Running Process & Command line -->
             <td class="td-process">
-              <div
-                class="process-text font-mono"
-                :class="{ 'is-empty': !item.commandLine && !item.process }"
-                :title="item.commandLine || (item.pid ? `PID: ${item.pid}` : '')"
-              >
-                {{ item.commandLine || item.process || (t('ports.process_unavailable') || '流程信息不可用') }}
+              <div class="process-cell-wrapper">
+                <div
+                  class="process-text font-mono"
+                  :class="{ 'is-empty': !item.commandLine && !item.process }"
+                  :title="item.commandLine || (item.pid ? `PID: ${item.pid}` : '')"
+                >
+                  {{ item.commandLine || item.process || (item.workspaceHint ? (t('ports.expected_service') || '预期工作区服务') : (t('ports.process_unavailable') || '流程信息不可用')) }}
+                </div>
+                <!-- Method B Probe Banner if detected -->
+                <div
+                  v-if="item.probe?.detectedService"
+                  class="probe-banner"
+                  :title="`探针探测服务: ${item.probe.detectedService} (耗时 ${item.probe.probeDurationMs || 0}ms)`"
+                >
+                  <span class="codicon codicon-pulse"></span>
+                  <span class="probe-text">{{ item.probe.detectedService }}</span>
+                </div>
               </div>
             </td>
 
@@ -718,6 +749,39 @@ async function handleContextAction(action: string) {
   border-radius: 4px;
 }
 
+.protocol-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.protocol-badge.https {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.origin-pill {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--text-muted, #94a3b8);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  text-transform: lowercase;
+}
+
+.origin-pill.compose {
+  background: rgba(14, 165, 233, 0.15);
+  color: #38bdf8;
+  border-color: rgba(14, 165, 233, 0.3);
+}
+
 .port-label {
   font-size: 11px;
   color: var(--text-muted, #94a3b8);
@@ -790,6 +854,12 @@ async function handleContextAction(action: string) {
 }
 
 /* Process Cell */
+.process-cell-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .process-text {
   font-size: 11px;
   color: var(--text-main, #e2e8f0);
@@ -802,6 +872,23 @@ async function handleContextAction(action: string) {
 .process-text.is-empty {
   color: var(--text-muted, #64748b);
   font-style: italic;
+}
+
+.probe-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #a855f7;
+  background: rgba(168, 85, 247, 0.12);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  padding: 1px 5px;
+  border-radius: 3px;
+  width: fit-content;
+}
+
+.probe-banner .codicon {
+  font-size: 10px;
 }
 
 /* Source & Visibility Badges */
