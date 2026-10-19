@@ -5113,6 +5113,52 @@ func scanListeningPorts() ([]SystemListeningPort, error) {
 		}
 	}
 
+	// 3. Try netstat (standard fallback for Windows: netstat -ano -p tcp)
+	if netstatPath, err := exec.LookPath("netstat"); err == nil {
+		netstatArgs := []string{"-ano", "-p", "tcp"}
+		if runtime.GOOS != "windows" {
+			netstatArgs = []string{"-tuln"}
+		}
+		out, err := exec.Command(netstatPath, netstatArgs...).Output()
+		if err == nil {
+			lines := strings.Split(string(out), "\n")
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if !strings.Contains(line, "LISTEN") {
+					continue
+				}
+				fields := strings.Fields(line)
+				if len(fields) < 4 {
+					continue
+				}
+				localAddr := fields[1]
+				if runtime.GOOS != "windows" && len(fields) >= 4 {
+					localAddr = fields[3]
+				}
+				port := extractPortFromAddr(localAddr)
+				if port <= 0 || port > 65535 {
+					continue
+				}
+
+				if _, exists := portsMap[port]; !exists {
+					item := SystemListeningPort{
+						Port:         port,
+						Protocol:     "tcp",
+						LocalAddress: localAddr,
+					}
+					if len(fields) >= 5 {
+						lastField := fields[len(fields)-1]
+						if pid, err := strconv.Atoi(lastField); err == nil && pid > 0 {
+							item.Pid = pid
+							item.CommandLine = readProcessCmdline(pid)
+						}
+					}
+					portsMap[port] = item
+				}
+			}
+		}
+	}
+
 	result := make([]SystemListeningPort, 0, len(portsMap))
 	for _, item := range portsMap {
 		result = append(result, item)
@@ -5162,11 +5208,32 @@ func extractProcessNameFromUsers(s string) string {
 }
 
 func readProcessCmdline(pid int) string {
+	// 1. Linux: /proc/<pid>/cmdline
 	cmdPath := fmt.Sprintf("/proc/%d/cmdline", pid)
 	data, err := os.ReadFile(cmdPath)
 	if err == nil && len(data) > 0 {
 		return strings.TrimSpace(strings.ReplaceAll(string(data), "\x00", " "))
 	}
+
+	// 2. macOS / BSD: ps -p <pid> -o command=
+	if runtime.GOOS == "darwin" {
+		out, err := exec.Command("ps", "-p", strconv.Itoa(pid), "-o", "command=").Output()
+		if err == nil && len(out) > 0 {
+			return strings.TrimSpace(string(out))
+		}
+	}
+
+	// 3. Windows: tasklist /FI "PID eq <pid>" /FO CSV /NH
+	if runtime.GOOS == "windows" {
+		out, err := exec.Command("tasklist", "/FI", fmt.Sprintf("PID eq %d", pid), "/FO", "CSV", "/NH").Output()
+		if err == nil && len(out) > 0 {
+			parts := strings.Split(string(out), ",")
+			if len(parts) > 0 {
+				return strings.Trim(parts[0], "\" \r\n")
+			}
+		}
+	}
+
 	return ""
 }
 

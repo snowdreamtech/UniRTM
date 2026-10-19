@@ -4470,6 +4470,51 @@ print(json.dumps({
                   } catch (_) {}
                 }
 
+                // 3. Fallback to netstat (standard on Windows)
+                if (portsMap.size === 0) {
+                  try {
+                    const isWin = process.platform === "win32";
+                    const netstatArgs = isWin ? ["-ano", "-p", "tcp"] : ["-tuln"];
+                    const out = execFileSync("netstat", netstatArgs, { encoding: "utf8" });
+                    for (const line of out.split("\n")) {
+                      const trimmed = line.trim();
+                      if (!trimmed.includes("LISTEN")) continue;
+                      const fields = trimmed.split(/\s+/);
+                      if (fields.length < 4) continue;
+                      const localAddr = isWin ? fields[1] : fields[3];
+                      const idx = localAddr.lastIndexOf(":");
+                      if (idx === -1) continue;
+                      const port = parseInt(localAddr.slice(idx + 1), 10);
+                      if (!port || port <= 0 || port > 65535) continue;
+
+                      let pid = 0;
+                      let cmdline = "";
+                      if (isWin && fields.length >= 5) {
+                        pid = parseInt(fields[fields.length - 1], 10);
+                        if (pid) {
+                          try {
+                            const tlOut = execFileSync("tasklist", ["/FI", `PID eq ${pid}`, "/FO", "CSV", "/NH"], { encoding: "utf8" });
+                            const parts = tlOut.split(",");
+                            if (parts.length > 0) {
+                              cmdline = parts[0].replace(/["\r\n]/g, "").trim();
+                            }
+                          } catch (_) {}
+                        }
+                      }
+
+                      if (!portsMap.has(port)) {
+                        portsMap.set(port, {
+                          port,
+                          protocol: "tcp",
+                          localAddress: localAddr,
+                          pid: pid || undefined,
+                          commandLine: cmdline || undefined,
+                        });
+                      }
+                    }
+                  } catch (_) {}
+                }
+
                 const listening = Array.from(portsMap.values()).sort((a, b) => a.port - b.port);
                 res.setHeader("Content-Type", "application/json");
                 res.end(JSON.stringify({ success: true, listening }));
