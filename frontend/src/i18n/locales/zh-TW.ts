@@ -1139,4 +1139,9 @@ export const zhTw: TranslationDict = {
   "scm.active_repo": "目前使用中的存放庫",
   "scm.sidebar.commit_placeholder_branch": "訊息 (按 Enter 在「{branch}」提交)",
   "scm.graph.repo_label": "存放庫:",
+  "sidebar.tools_missing": "待安裝",
+  "sidebar.tools_missing_hint": "工作區已設定但尚未在本地安裝的工具",
+  "sidebar.tools_upgradable": "可升級",
+  "sidebar.tools_upgradable_hint": "發現更高可用版本，支援一鍵升級",
+  "sidebar.tools_ready": "已就緒",
 };

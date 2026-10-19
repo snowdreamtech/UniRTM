@@ -1144,4 +1144,9 @@ export const zhCn: TranslationDict = {
   "scm.active_repo": "当前活动存储库",
   "scm.sidebar.commit_placeholder_branch": "消息(按Enter在“{branch}”提交)",
   "scm.graph.repo_label": "存储库:",
+  "sidebar.tools_missing": "待安装",
+  "sidebar.tools_missing_hint": "工作区已配置但尚未在本地安装的工具",
+  "sidebar.tools_upgradable": "可升级",
+  "sidebar.tools_upgradable_hint": "发现更高可用版本，支持一键升级",
+  "sidebar.tools_ready": "已就绪",
 };

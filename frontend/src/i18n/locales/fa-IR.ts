@@ -1130,4 +1130,9 @@ export const faIr: TranslationDict = {
   "scm.active_repo": "Active Repository",
   "scm.sidebar.commit_placeholder_branch": "Message (press Enter to commit on \"{branch}\")",
   "scm.graph.repo_label": "Repo:",
+  "sidebar.tools_missing": "Missing (Pending Installation)",
+  "sidebar.tools_missing_hint": "Configured in workspace but not installed locally",
+  "sidebar.tools_upgradable": "Upgradable",
+  "sidebar.tools_upgradable_hint": "Newer version available, supports one-click upgrade",
+  "sidebar.tools_ready": "Ready / Installed",
 };
