@@ -64,14 +64,17 @@
           class="tree-label"
           :class="[
             gitStatus ? 'git-color-' + gitStatus : '',
+            node.is_ignored ? 'is-ignored-text' : '',
             dirGitCount > 0 ? 'git-has-changes' : ''
           ]"
         >
           {{ node.name }}
         </span>
         <span v-if="gitStatus" class="git-tree-badge" :class="'badge-' + gitStatus">{{ gitStatus }}</span>
+        <span v-else-if="node.is_ignored" class="git-tree-badge badge-ignored" title="已由 .gitignore 排除">ignored</span>
         <span v-else-if="dirGitCount > 0 && !isExpanded" class="git-dir-badge">{{ dirGitCount }}</span>
       </div>
+
 
       <!-- Actions on Hover (Rename, Delete) -->
       <div class="tree-row-actions">
@@ -334,21 +337,22 @@ async function commitCreate() {
 }
 
 .tree-node-row.is-ignored {
-  opacity: 0.55;
+  opacity: 0.6;
 }
 
 .tree-node-row.is-ignored .tree-label {
-  color: var(--text-muted, #858585) !important;
+  color: #8c8c8c !important;
   font-style: italic;
 }
 
 .tree-node-row.is-ignored .tree-icon {
-  filter: grayscale(85%) opacity(0.65);
+  filter: grayscale(100%) opacity(0.4) !important;
 }
 
 .tree-node-row.is-ignored:hover {
-  opacity: 0.85;
+  opacity: 0.9;
 }
+
 
 
 .tree-indent-guide {
@@ -442,6 +446,16 @@ async function commitCreate() {
   color: #4ec9b0;
 }
 
+.git-tree-badge.badge-ignored {
+  font-size: 10px;
+  font-weight: 500;
+  color: #8c8c8c;
+  background: rgba(140, 140, 140, 0.12);
+  padding: 1px 4px;
+  border-radius: 3px;
+  letter-spacing: 0.2px;
+}
+
 .git-dir-badge {
   font-size: 10px;
   font-weight: 600;
@@ -491,6 +505,19 @@ async function commitCreate() {
 :root[data-theme="light"] .git-dir-badge {
   background: rgba(180, 83, 9, 0.12);
   color: #b45309;
+}
+
+:root[data-theme="light"] .tree-node-row.is-ignored .tree-label {
+  color: #94a3b8 !important;
+}
+
+:root[data-theme="light"] .tree-node-row.is-ignored .tree-icon {
+  filter: grayscale(100%) opacity(0.35) !important;
+}
+
+:root[data-theme="light"] .git-tree-badge.badge-ignored {
+  color: #94a3b8;
+  background: rgba(148, 163, 184, 0.16);
 }
 
 .tree-inline-input {

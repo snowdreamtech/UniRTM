@@ -2821,7 +2821,42 @@ print(json.dumps({
               return [".git", "node_modules", ".DS_Store", "dist", "target", ".turbo", ".idea", ".vscode", ".unirtm"].includes(name);
             };
 
-            const buildFSTree = (dirPath: string, currentRel: string, currentDepth: number, maxDepth: number, showHidden: boolean): any[] => {
+            const getGitIgnoredPaths = (cwd: string): Set<string> => {
+              const ignored = new Set<string>();
+              try {
+                const out = spawnSync("git", ["status", "--ignored=matching", "--porcelain=v1"], {
+                  cwd,
+                  encoding: "utf-8",
+                });
+                if (out.status === 0 && out.stdout) {
+                  const lines = out.stdout.split("\n");
+                  for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (trimmed.startsWith("!! ")) {
+                      let p = trimmed.slice(3).trim();
+                      if (p.endsWith("/")) p = p.slice(0, -1);
+                      if (p) ignored.add(p.replace(/\\/g, "/"));
+                    }
+                  }
+                }
+              } catch (_) {}
+              return ignored;
+            };
+
+            const isPathIgnored = (relPath: string, name: string, ignoredSet: Set<string>, parentIgnored: boolean): boolean => {
+              if (parentIgnored || isCommonIgnored(name)) return true;
+              const cleanRel = relPath.replace(/\\/g, "/");
+              if (ignoredSet.has(cleanRel)) return true;
+              const parts = cleanRel.split("/");
+              let current = "";
+              for (let i = 0; i < parts.length - 1; i++) {
+                current = current ? `${current}/${parts[i]}` : parts[i];
+                if (ignoredSet.has(current)) return true;
+              }
+              return false;
+            };
+
+            const buildFSTree = (dirPath: string, currentRel: string, currentDepth: number, maxDepth: number, showHidden: boolean, ignoredSet: Set<string>, parentIgnored: boolean): any[] => {
               if (!fs.existsSync(dirPath)) return [];
               const items = fs.readdirSync(dirPath, { withFileTypes: true });
               const dirs: any[] = [];
@@ -2843,18 +2878,20 @@ print(json.dumps({
                   modTime = stat.mtime.toISOString();
                 } catch (_) {}
 
+                const isIgnored = isPathIgnored(entryRel, name, ignoredSet, parentIgnored);
+
                 const entry: any = {
                   name,
                   path: entryRel,
                   is_dir: isDir,
                   size,
                   mod_time: modTime,
-                  is_ignored: isCommonIgnored(name),
+                  is_ignored: isIgnored,
                 };
 
                 if (isDir) {
                   if (currentDepth < maxDepth && name !== ".git" && name !== "node_modules") {
-                    entry.children = buildFSTree(fullEntryPath, entryRel, currentDepth + 1, maxDepth, showHidden);
+                    entry.children = buildFSTree(fullEntryPath, entryRel, currentDepth + 1, maxDepth, showHidden, ignoredSet, isIgnored);
                   }
                   dirs.push(entry);
                 } else {
@@ -2883,7 +2920,9 @@ print(json.dumps({
                   return;
                 }
 
-                const entries = buildFSTree(safePath, relPath, 1, Math.min(depth || 3, 10), showHidden);
+                const ignoredSet = getGitIgnoredPaths(rd);
+                const entries = buildFSTree(safePath, relPath, 1, Math.min(depth || 3, 10), showHidden, ignoredSet, false);
+
                 res.setHeader("Content-Type", "application/json");
                 res.end(JSON.stringify({
                   success: true,
