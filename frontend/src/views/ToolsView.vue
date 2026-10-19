@@ -720,7 +720,7 @@
                 <div class="preset-info">
                   <div class="preset-name-row">
                     <span class="preset-name">{{ preset.name }}</span>
-                    <span class="preset-tag font-mono">{{ formatVersion(preset.defaultVersion) }}</span>
+                    <span class="preset-tag font-mono">{{ t("tools.official") || "官方" }}</span>
                   </div>
                   <span class="preset-desc">{{ preset.description }}</span>
                 </div>
@@ -1249,26 +1249,22 @@ function openAddModal() {
 }
 
 async function addRuntimeFromPreset(preset: PresetRuntime) {
+  isAddModalOpen.value = false;
   const isGlobal = currentScope.value === "user";
-  const newItem: RuntimeItem = {
+  const rt: RuntimeItem = {
     id: preset.id,
     name: preset.name,
     description: preset.description,
     homepage: preset.homepage,
-    installed_versions: [preset.defaultVersion],
-    active_version: isGlobal ? "" : preset.defaultVersion,
-    global_version: isGlobal ? preset.defaultVersion : "",
+    installed_versions: [],
+    active_version: "",
+    global_version: "",
     source: isGlobal ? "~/.config/unirtm/unirtm.toml" : ".unirtm.toml",
     is_legacy: false,
     legacy_file: "",
   };
 
-  runtimes.value.push(newItem);
-  isAddModalOpen.value = false;
-  showToast(`已成功添加 ${preset.name} 环境 (v${preset.defaultVersion})`, "success");
-
-  // Persist to .unirtm.toml & unirtm.lock
-  await quickSwitch(preset.id, preset.defaultVersion, isGlobal);
+  await openRemoteModal(rt);
 }
 
 async function addCustomRuntime() {
@@ -1924,20 +1920,33 @@ async function installRemoteVersion(toolId: string, ver: string) {
   const prevSelectedRuntime = selectedRuntime.value ? JSON.parse(JSON.stringify(selectedRuntime.value)) : null;
 
   const updateRuntimeState = (newVer: string, addInstalled: boolean) => {
-    runtimes.value = runtimes.value.map((rt) => {
-      if (rt.id === toolId) {
-        const set = new Set(rt.installed_versions || []);
-        if (addInstalled) set.add(newVer);
-        return {
-          ...rt,
-          installed_versions: Array.from(set),
-          ...(isGlobal
-            ? { global_version: newVer }
-            : { active_version: newVer, is_legacy: false, source: ".unirtm.toml" }),
-        };
-      }
-      return rt;
-    });
+    const exists = runtimes.value.some((rt) => rt.id === toolId);
+    if (!exists && selectedRuntime.value) {
+      runtimes.value.push({
+        ...selectedRuntime.value,
+        installed_versions: addInstalled ? [newVer] : [],
+        active_version: isGlobal ? "" : newVer,
+        global_version: isGlobal ? newVer : "",
+        source: isGlobal ? "~/.config/unirtm/unirtm.toml" : ".unirtm.toml",
+        is_legacy: false,
+        legacy_file: "",
+      });
+    } else {
+      runtimes.value = runtimes.value.map((rt) => {
+        if (rt.id === toolId) {
+          const set = new Set(rt.installed_versions || []);
+          if (addInstalled) set.add(newVer);
+          return {
+            ...rt,
+            installed_versions: Array.from(set),
+            ...(isGlobal
+              ? { global_version: newVer }
+              : { active_version: newVer, is_legacy: false, source: ".unirtm.toml" }),
+          };
+        }
+        return rt;
+      });
+    }
 
     if (selectedRuntime.value && selectedRuntime.value.id === toolId) {
       const set = new Set(selectedRuntime.value.installed_versions || []);

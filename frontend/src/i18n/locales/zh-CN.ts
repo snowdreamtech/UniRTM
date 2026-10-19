@@ -1156,4 +1156,5 @@ export const zhCn: TranslationDict = {
   "common.add": "添加",
   "tools.official_recommended": "官方支持推荐语言",
   "tools.already_added": "已添加",
+  "tools.official": "官方",
 };

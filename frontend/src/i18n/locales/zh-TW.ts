@@ -1151,4 +1151,5 @@ export const zhTw: TranslationDict = {
   "common.add": "新增",
   "tools.official_recommended": "官方支援推薦語言",
   "tools.already_added": "已新增",
+  "tools.official": "官方",
 };

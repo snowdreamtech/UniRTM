@@ -1142,4 +1142,5 @@ export const ocFr: TranslationDict = {
   "common.add": "Add",
   "tools.official_recommended": "Official Recommended Languages & Toolchains",
   "tools.already_added": "Already Added",
+  "tools.official": "Official",
 };

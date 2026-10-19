@@ -32,3 +32,12 @@
 - [x] Task 3.1: 在 53 种语言包中增加前缀说明与版本号占位文案（`tools.custom.section_title`, `tools.custom.prefix_hint`, `tools.custom.version_placeholder`, `tools.custom.preview_label`）
 - [x] Task 3.2: 运行全量单元测试与类型检查确保 0 报错
 - [x] Task 3.3: 阶段性 Git 提交：`feat(i18n): complete 53 locales and finalize custom tool input UX`
+
+---
+
+## Phase 4: 推荐预设官方实时版本面板直达 (Live Official Remote Modal for Presets)
+- [x] Task 4.1: 移除预设卡片中写死容易过时的静态版本号，改用 `tools.official` 官方生态标签
+- [x] Task 4.2: 点击预设卡片 `+ 添加` 时直达官方实时全量版本选择面板，由开发者自主挑选确定性版本
+- [x] Task 4.3: 完善 `installRemoteVersion` 针对新增预设工具的响应式追加处理
+- [x] Task 4.4: 53 种语言包补充 `tools.official` 字段并全量回归测试
+- [x] Task 4.5: 阶段性 Git 提交：`feat(tools): open official remote versions modal on preset add and replace obsolete version tag`
