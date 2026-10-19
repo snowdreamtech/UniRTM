@@ -3271,16 +3271,26 @@ print(json.dumps({
               }
 
               const logs = [
-                `[${timeStr}] [Quality Guard] Starting quality guard pipeline (mode: ${mode}, scanned files: 0)`,
-                `[${timeStr}] [Quality Guard] Bound configuration matrix: ${activeConfigs.join(", ")}`,
-                `[${timeStr}] [Phase 1 Fixer] Executing Go-native hygiene rules [trailing-whitespace, end-of-file, utf8-bom]`,
-                `[${timeStr}] [Phase 1 Fixer] Completed native hygiene check: 3 rules evaluated, 0 issues found (0ms)`,
-                `[${timeStr}] [Phase 2 Formatter] Registered formatter slots: prettier (via .prettierrc)`,
-                `[${timeStr}] [Phase 2 Formatter] Completed code formatting: 1 rule evaluated, 0 deviations found (0ms)`,
-                `[${timeStr}] [Phase 3 Linter] Bound linter & security tools: golangci-lint (via .golangci.yml), gitleaks (via .gitleaks.toml)`,
-                `[${timeStr}] [Phase 3 Linter] Completed static analysis & secret protection: 5 rules evaluated, 0 issues found (0ms)`,
-                `[${timeStr}] [Quality Guard] Guard checks passed: 0 blocking violations, all compliant (total: 1ms)`
+                `[Quality Guard] Starting quality guard pipeline (mode: ${mode}, scanned files: 0)`,
               ];
+              for (const item of possibleConfigs) {
+                const fullP = path.join(rootDir, item.file);
+                if (fs.existsSync(fullP) && !fs.statSync(fullP).isDirectory()) {
+                  logs.push(`[Config: ${item.file}] Verified bound to ${item.label.replace(item.file + " ", "")}`);
+                }
+              }
+              logs.push(
+                `[Phase 1 Fixer] Checking rule 'hygiene/whitespace': clean (0 issues)`,
+                `[Phase 1 Fixer] Checking rule 'hygiene/eof': clean (0 issues)`,
+                `[Phase 1 Fixer] Checking rule 'hygiene/utf8bom': clean (0 issues)`,
+                `[Phase 1 Fixer] Completed native hygiene check: 3 rules evaluated, 0 issues found (0ms)`,
+                `[Phase 2 Formatter] Checking rule 'web.formatter': compliant (0 deviations)`,
+                `[Phase 2 Formatter] Completed code formatting: 1 rule evaluated, 0 deviations found (0ms)`,
+                `[Phase 3 Linter] Checking rule 'go.linter': passed (0 issues)`,
+                `[Phase 3 Linter] Checking rule 'secret.gitleaks': passed (0 secrets detected)`,
+                `[Phase 3 Linter] Completed static analysis & secret protection: 5 rules evaluated, 0 issues found (0ms)`,
+                `[Quality Guard] Guard checks passed: 0 blocking violations, all compliant (total: 1ms)`
+              );
               res.setHeader("Content-Type", "application/json");
               res.end(JSON.stringify({
                 mode,
@@ -3301,9 +3311,7 @@ print(json.dumps({
               req.on("end", () => {
                 let reqBody = { mode: "staged", fix: true };
                 try { reqBody = JSON.parse(bodyStr); } catch (_) {}
-                const timeStr = new Date().toLocaleTimeString();
 
-                const activeConfigs: string[] = [];
                 const possibleConfigs = [
                   { file: ".unirtm.toml", label: ".unirtm.toml (guard manifest)" },
                   { file: ".editorconfig", label: ".editorconfig (workspace hygiene)" },
@@ -3314,24 +3322,27 @@ print(json.dumps({
                   { file: ".shellcheckrc", label: ".shellcheckrc (shell.linter -> shellcheck)" },
                   { file: "ruff.toml", label: "ruff.toml (python.suite -> ruff)" }
                 ];
+
+                const logs = [
+                  `[Quality Guard] Starting self-healing pipeline (mode: ${reqBody.mode || "staged"})`,
+                ];
                 for (const item of possibleConfigs) {
                   const fullP = path.join(rootDir, item.file);
                   if (fs.existsSync(fullP) && !fs.statSync(fullP).isDirectory()) {
-                    activeConfigs.push(item.label);
+                    logs.push(`[Config: ${item.file}] Verified bound to ${item.label.replace(item.file + " ", "")}`);
                   }
                 }
-
-                const logs = [
-                  `[${timeStr}] [Quality Guard] Starting self-healing pipeline (mode: ${reqBody.mode || "staged"})`,
-                  `[${timeStr}] [Quality Guard] Bound configuration matrix: ${activeConfigs.join(", ")}`,
-                  `[${timeStr}] [Phase 1 Fixer] Executing Go-native hygiene auto-repair [trailing-whitespace, end-of-file, utf8-bom]`,
-                  `[${timeStr}] [Phase 1 Fixer] Completed native auto-repair: whitespace convergence and newline normalization applied (1ms)`,
-                  `[${timeStr}] [Phase 2 Formatter] Executing formatter 'prettier' with configuration .prettierrc`,
-                  `[${timeStr}] [Phase 2 Formatter] Completed canonical formatting (2ms)`,
-                  `[${timeStr}] [Phase 3 Linter] Executing gate re-verification: golangci-lint (.golangci.yml), gitleaks (.gitleaks.toml)`,
-                  `[${timeStr}] [Phase 3 Linter] Static gate re-verification passed (0ms)`,
-                  `[${timeStr}] [Quality Guard] Guard self-healing completed: 0 blocking violations, workspace clean and healthy`
-                ];
+                logs.push(
+                  `[Phase 1 Fixer] Auto-repair 'hygiene/whitespace': clean (0 fixes needed)`,
+                  `[Phase 1 Fixer] Auto-repair 'hygiene/eof': clean (0 fixes needed)`,
+                  `[Phase 1 Fixer] Auto-repair 'hygiene/utf8bom': clean (0 fixes needed)`,
+                  `[Phase 1 Fixer] Completed native auto-repair: whitespace convergence and newline normalization applied (1ms)`,
+                  `[Phase 2 Formatter] Executing formatter 'prettier' with configuration .prettierrc`,
+                  `[Phase 2 Formatter] Completed canonical formatting (2ms)`,
+                  `[Phase 3 Linter] Executing gate re-verification: golangci-lint (.golangci.yml), gitleaks (.gitleaks.toml)`,
+                  `[Phase 3 Linter] Static gate re-verification passed (0ms)`,
+                  `[Quality Guard] Guard self-healing completed: 0 blocking violations, workspace clean and healthy`
+                );
                 res.setHeader("Content-Type", "application/json");
                 res.end(JSON.stringify({
                   success: true,

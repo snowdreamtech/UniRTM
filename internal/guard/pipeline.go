@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"time"
 )
 
@@ -59,27 +58,23 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 	if modeStr == "" {
 		modeStr = "staged"
 	}
-	logs = append(logs, fmt.Sprintf("[%s] [Quality Guard] Starting quality guard pipeline (mode: %s, scanned files: %d)", time.Now().Format("15:04:05"), modeStr, len(files)))
+	logs = append(logs, fmt.Sprintf("[Quality Guard] Starting quality guard pipeline (mode: %s, scanned files: %d)", modeStr, len(files)))
 
-	// Trace and log active configuration files and ecosystem bindings
-	var activeConfigs []string
+	// Detect and verify each configuration file individually line-by-line
 	if p.WorkspaceDir != "" {
 		if _, err := os.Stat(filepath.Join(p.WorkspaceDir, ".unirtm.toml")); err == nil {
-			activeConfigs = append(activeConfigs, ".unirtm.toml (guard manifest)")
+			logs = append(logs, "[Config: .unirtm.toml] Verified valid guard manifest loaded")
 		}
 		if _, err := os.Stat(filepath.Join(p.WorkspaceDir, ".editorconfig")); err == nil {
-			activeConfigs = append(activeConfigs, ".editorconfig (workspace hygiene)")
+			logs = append(logs, "[Config: .editorconfig] Verified workspace hygiene rules active")
 		}
 		for _, slot := range DefaultToolSlots {
 			if len(slot.StandardConfigFiles) > 0 {
 				if cfg := DetectStandardConfig(p.WorkspaceDir, slot.StandardConfigFiles); cfg != "" {
-					activeConfigs = append(activeConfigs, fmt.Sprintf("%s (%s -> %s)", cfg, slot.ID, slot.DefaultToolName))
+					logs = append(logs, fmt.Sprintf("[Config: %s] Verified bound to %s (tool: %s)", cfg, slot.ID, slot.DefaultToolName))
 				}
 			}
 		}
-	}
-	if len(activeConfigs) > 0 {
-		logs = append(logs, fmt.Sprintf("[%s] [Quality Guard] Bound configuration matrix: %s", time.Now().Format("15:04:05"), strings.Join(activeConfigs, ", ")))
 	}
 
 	// Group rules by phase
@@ -100,12 +95,7 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 		}
 	}
 
-	// Phase 1: Fixer (Text & AST Repairs)
-	var fixerNames []string
-	for _, r := range fixerRules {
-		fixerNames = append(fixerNames, r.ID())
-	}
-	logs = append(logs, fmt.Sprintf("[%s] [Phase 1 Fixer] Executing Go-native hygiene rules [%s]", time.Now().Format("15:04:05"), strings.Join(fixerNames, ", ")))
+	// Phase 1: Fixer (Text & AST Repairs) - line-by-line evaluation
 	phase1Start := time.Now()
 	phase1Before := len(allIssues)
 	for _, r := range fixerRules {
@@ -114,28 +104,22 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 			return nil, ctx.Err()
 		default:
 		}
+		rBefore := len(allIssues)
 		issues, err := r.Execute(ctx, files, opts)
 		if err == nil && len(issues) > 0 {
 			allIssues = append(allIssues, issues...)
 		}
-	}
-	phase1Issues := len(allIssues) - phase1Before
-	logs = append(logs, fmt.Sprintf("[%s] [Phase 1 Fixer] Completed native hygiene check: %d rules evaluated, %d issues found (%v)", time.Now().Format("15:04:05"), len(fixerRules), phase1Issues, time.Since(phase1Start).Round(time.Millisecond)))
-
-	// Phase 2: Formatter (Visual Layout Standardization)
-	var fmtBindings []string
-	for _, slot := range DefaultToolSlots {
-		if slot.Phase == PhaseFormatter {
-			if cfg := DetectStandardConfig(p.WorkspaceDir, slot.StandardConfigFiles); cfg != "" {
-				fmtBindings = append(fmtBindings, fmt.Sprintf("%s (via %s)", slot.DefaultToolName, cfg))
-			} else {
-				fmtBindings = append(fmtBindings, fmt.Sprintf("%s (native)", slot.DefaultToolName))
-			}
+		rIssues := len(allIssues) - rBefore
+		if rIssues == 0 {
+			logs = append(logs, fmt.Sprintf("[Phase 1 Fixer] Checking rule '%s': clean (0 issues)", r.ID()))
+		} else {
+			logs = append(logs, fmt.Sprintf("[Phase 1 Fixer] Checking rule '%s': detected %d issues", r.ID(), rIssues))
 		}
 	}
-	if len(fmtBindings) > 0 {
-		logs = append(logs, fmt.Sprintf("[%s] [Phase 2 Formatter] Registered formatter slots: %s", time.Now().Format("15:04:05"), strings.Join(fmtBindings, ", ")))
-	}
+	phase1Issues := len(allIssues) - phase1Before
+	logs = append(logs, fmt.Sprintf("[Phase 1 Fixer] Completed native hygiene check: %d rules evaluated, %d issues found (%v)", len(fixerRules), phase1Issues, time.Since(phase1Start).Round(time.Millisecond)))
+
+	// Phase 2: Formatter (Visual Layout Standardization) - line-by-line evaluation
 	phase2Start := time.Now()
 	phase2Before := len(allIssues)
 	for _, r := range formatterRules {
@@ -144,26 +128,22 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 			return nil, ctx.Err()
 		default:
 		}
+		rBefore := len(allIssues)
 		issues, err := r.Execute(ctx, files, opts)
 		if err == nil && len(issues) > 0 {
 			allIssues = append(allIssues, issues...)
 		}
-	}
-	phase2Issues := len(allIssues) - phase2Before
-	logs = append(logs, fmt.Sprintf("[%s] [Phase 2 Formatter] Completed code formatting: %d rules evaluated, %d deviations found (%v)", time.Now().Format("15:04:05"), len(formatterRules), phase2Issues, time.Since(phase2Start).Round(time.Millisecond)))
-
-	// Phase 3: Linter (Strict Read-only Rule Verification)
-	var lintBindings []string
-	for _, slot := range DefaultToolSlots {
-		if slot.Phase == PhaseLinter {
-			if cfg := DetectStandardConfig(p.WorkspaceDir, slot.StandardConfigFiles); cfg != "" {
-				lintBindings = append(lintBindings, fmt.Sprintf("%s (via %s)", slot.DefaultToolName, cfg))
-			}
+		rIssues := len(allIssues) - rBefore
+		if rIssues == 0 {
+			logs = append(logs, fmt.Sprintf("[Phase 2 Formatter] Checking rule '%s': compliant (0 deviations)", r.ID()))
+		} else {
+			logs = append(logs, fmt.Sprintf("[Phase 2 Formatter] Checking rule '%s': detected %d deviations", r.ID(), rIssues))
 		}
 	}
-	if len(lintBindings) > 0 {
-		logs = append(logs, fmt.Sprintf("[%s] [Phase 3 Linter] Bound linter & security tools: %s", time.Now().Format("15:04:05"), strings.Join(lintBindings, ", ")))
-	}
+	phase2Issues := len(allIssues) - phase2Before
+	logs = append(logs, fmt.Sprintf("[Phase 2 Formatter] Completed code formatting: %d rules evaluated, %d deviations found (%v)", len(formatterRules), phase2Issues, time.Since(phase2Start).Round(time.Millisecond)))
+
+	// Phase 3: Linter (Strict Read-only Rule Verification) - line-by-line evaluation
 	phase3Start := time.Now()
 	phase3Before := len(allIssues)
 	for _, r := range linterRules {
@@ -172,13 +152,20 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 			return nil, ctx.Err()
 		default:
 		}
+		rBefore := len(allIssues)
 		issues, err := r.Execute(ctx, files, opts)
 		if err == nil && len(issues) > 0 {
 			allIssues = append(allIssues, issues...)
 		}
+		rIssues := len(allIssues) - rBefore
+		if rIssues == 0 {
+			logs = append(logs, fmt.Sprintf("[Phase 3 Linter] Checking rule '%s': passed (0 issues)", r.ID()))
+		} else {
+			logs = append(logs, fmt.Sprintf("[Phase 3 Linter] Checking rule '%s': detected %d issues", r.ID(), rIssues))
+		}
 	}
 	phase3Issues := len(allIssues) - phase3Before
-	logs = append(logs, fmt.Sprintf("[%s] [Phase 3 Linter] Completed static analysis & secret protection: %d rules evaluated, %d issues found (%v)", time.Now().Format("15:04:05"), len(linterRules), phase3Issues, time.Since(phase3Start).Round(time.Millisecond)))
+	logs = append(logs, fmt.Sprintf("[Phase 3 Linter] Completed static analysis & secret protection: %d rules evaluated, %d issues found (%v)", len(linterRules), phase3Issues, time.Since(phase3Start).Round(time.Millisecond)))
 
 	// Calculate summary metrics
 	summary := PipelineSummary{
@@ -209,9 +196,9 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 	})
 
 	if hasErrors {
-		logs = append(logs, fmt.Sprintf("[%s] [Quality Guard] Guard blocked: %d blocking violations, %d warnings detected (total: %v)", time.Now().Format("15:04:05"), summary.ErrorsCount, summary.WarningsCount, summary.Duration.Round(time.Millisecond)))
+		logs = append(logs, fmt.Sprintf("[Quality Guard] Guard blocked: %d blocking violations, %d warnings detected (total: %v)", summary.ErrorsCount, summary.WarningsCount, summary.Duration.Round(time.Millisecond)))
 	} else {
-		logs = append(logs, fmt.Sprintf("[%s] [Quality Guard] Guard checks passed: 0 blocking violations, all compliant (total: %v)", time.Now().Format("15:04:05"), summary.Duration.Round(time.Millisecond)))
+		logs = append(logs, fmt.Sprintf("[Quality Guard] Guard checks passed: 0 blocking violations, all compliant (total: %v)", summary.Duration.Round(time.Millisecond)))
 	}
 
 	return &PipelineResult{

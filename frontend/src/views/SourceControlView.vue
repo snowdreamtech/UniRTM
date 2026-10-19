@@ -784,7 +784,9 @@ const guardIssuesCount = computed(() => {
 
 function streamGuardLogs(logs?: string[]) {
   if (!logs || logs.length === 0) return;
-  for (const line of logs) {
+  for (let rawLine of logs) {
+    // Strip redundant leading timestamp [HH:MM:SS] if present to avoid double timestamp in output panel
+    const line = rawLine.replace(/^\[\d{1,2}:\d{2}:\d{2}\]\s*/, "");
     let level: "INFO" | "SUCCESS" | "WARN" | "ERROR" = "INFO";
     const lower = line.toLowerCase();
 
