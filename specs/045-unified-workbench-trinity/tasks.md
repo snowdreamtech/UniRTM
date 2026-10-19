@@ -108,11 +108,11 @@
 - [x] 15.5 **执行提交 15**：`feat(workbench): implement local history snapshots and revision diff comparison`
 
 
-## 阶段 16：全量 53 国多语言适配与端到端回归验证 (Final Verification) [待执行]
-- [ ] 16.1 在 `frontend/src/i18n/` 补充冲突解决与本地历史相关的全部文案，并同步到 53 种语言包
-- [ ] 16.2 运行前端全量单元测试（`npm run test -- --run`）与生产构建（`npm run build`），确保 0 警告 0 报错
-- [ ] 16.3 更新 `tasks.md` 标记全部阶段任务为已完成 `[x]`
-- [ ] 16.4 **执行提交 16**：`feat(i18n): sync translation keys and finalize workbench trinity deep features`
+## 阶段 16：全量 53 国多语言适配与端到端回归验证 (Final Verification) [已完成]
+- [x] 16.1 在 `frontend/src/i18n/` 补充冲突解决与本地历史相关的全部文案，并同步到 53 种语言包
+- [x] 16.2 运行前端全量单元测试（`npm run test -- --run`）与生产构建（`npm run build`），确保 0 警告 0 报错
+- [x] 16.3 更新 `tasks.md` 标记全部阶段任务为已完成 `[x]`
+- [x] 16.4 **执行提交 16**：`feat(i18n): sync translation keys and finalize workbench trinity deep features`
 
 
 
