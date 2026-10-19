@@ -49,13 +49,13 @@
 - [x] 6.6 编写单元测试验证探针解析器与协议自适应逻辑
 
 ## 阶段 7：方式 C 工作区上下文语义关联推断 (Workspace Context Inference) 实现
-- [ ] 7.1 在 `frontend/src/types/ports.ts` 中定义 `WorkspaceServiceHint` 工作区服务推断结构
-- [ ] 7.2 在后端 `cmd/64.ui.go` 与前端同构中间件中实现工作区配置解析器（扫描解析 `package.json`、`docker-compose.yml`、`.env` 获得预声明端口和业务服务名）
-- [ ] 7.3 提供 `GET /api/ports/workspace-hints` 接口返回工作区上下文预声明服务
-- [ ] 7.4 在 `frontend/src/composables/usePorts.ts` 中实现三维多源融合推荐：
+- [x] 7.1 在 `frontend/src/types/ports.ts` 中定义 `WorkspaceServiceHint` 工作区服务推断结构
+- [x] 7.2 在后端 `cmd/64.ui.go` 与前端同构中间件中实现工作区配置解析器（扫描解析 `package.json`、`docker-compose.yml`、`.env` 获得预声明端口和业务服务名）
+- [x] 7.3 提供 `GET /api/ports/workspace-hints` 接口返回工作区上下文预声明服务
+- [x] 7.4 在 `frontend/src/composables/usePorts.ts` 中实现三维多源融合推荐：
   - 融合优先级：`用户手动自定义 > 方式 C 工作区业务名 > 方式 B 探针应用框架 > 方式 A 进程名 > 默认保底`
   - 智能提供“预占位/推荐转发端口”（未启动的服务以空心圆指示）
-- [ ] 7.5 编写工作区上下文提取与融合测试用例
+- [x] 7.5 编写工作区上下文提取与融合测试用例
 
 ## 阶段 8：UI 增强、全 53 国多语言支持与端到端质量验证
 - [ ] 8.1 在 `frontend/src/components/ports/PortsPanelView.vue` 中美化呈现：

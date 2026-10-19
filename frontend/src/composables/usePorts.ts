@@ -10,6 +10,7 @@ import type {
   PortVisibility,
   PortProtocol,
   PortProbeInfo,
+  WorkspaceServiceHint,
 } from "../types/ports";
 import { recognizePortService } from "../utils/portServiceRecognizer";
 import { useToast } from "./useToast";
@@ -18,6 +19,7 @@ const STORAGE_KEY = "unirtm_user_forwarded_ports";
 
 const ports = ref<PortForwardItem[]>([]);
 const listeningPorts = ref<SystemListeningPort[]>([]);
+const workspaceHints = ref<WorkspaceServiceHint[]>([]);
 const userDefinedPorts = ref<Map<number, Partial<PortForwardItem>>>(new Map());
 const userStoppedPorts = ref<Set<number>>(new Set());
 const userIgnoredAutoPorts = ref<Set<number>>(new Set());
@@ -101,9 +103,41 @@ export function usePorts() {
   /**
    * Merge system listening ports and user-defined ports into reactive ports list.
    */
+  /**
+   * Method C: Fetch workspace service hints (package.json, docker-compose, .env)
+   */
+  async function fetchWorkspaceHints(): Promise<WorkspaceServiceHint[]> {
+    try {
+      const res = await fetch("/api/ports/workspace-hints");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.hints)) {
+          workspaceHints.value = data.hints;
+        }
+      }
+    } catch (e) {
+      console.warn("fetchWorkspaceHints failed:", e);
+    }
+    return workspaceHints.value;
+  }
+
+  /**
+   * Merge system listening ports, workspace hints, and user-defined ports into reactive ports list.
+   * Multi-Source Fusion Priority:
+   * 1. User Defined Custom Config
+   * 2. Method C: Workspace Semantic Hint (package.json, compose)
+   * 3. Method B: Protocol Probe (HTTPS, Server Banner, Framework)
+   * 4. Method A: Process and Command Line Inspection
+   * 5. Well-Known Port Fallback
+   */
   function syncPortsList() {
     const mergedMap = new Map<number, PortForwardItem>();
     const listeningMap = new Map<number, SystemListeningPort>();
+    const hintMap = new Map<number, WorkspaceServiceHint>();
+
+    for (const h of workspaceHints.value) {
+      hintMap.set(h.port, h);
+    }
 
     for (const lp of listeningPorts.value) {
       listeningMap.set(lp.port, lp);
@@ -114,9 +148,10 @@ export function usePorts() {
       const isListening = listeningMap.has(portNum);
       const isStopped = userStoppedPorts.value.has(portNum);
       const lp = listeningMap.get(portNum);
+      const hint = hintMap.get(portNum);
 
       const status: PortStatus = isStopped ? "inactive" : isListening ? "active" : "inactive";
-      const recognized = recognizePortService(portNum, lp?.process, lp?.commandLine, lp?.probe);
+      const recognized = recognizePortService(portNum, lp?.process, lp?.commandLine, lp?.probe, hint);
 
       const localPort = userConfig.localPort || portNum;
       const protocol: PortProtocol = userConfig.protocol || recognized.defaultProtocol || "http";
@@ -139,6 +174,7 @@ export function usePorts() {
         previewUrl: `${protocol}://localhost:${localPort}/`,
         icon: userConfig.icon || recognized.icon,
         probe: lp?.probe,
+        workspaceHint: hint,
       };
 
       mergedMap.set(portNum, item);
@@ -151,7 +187,8 @@ export function usePorts() {
         if (userIgnoredAutoPorts.value.has(lp.port)) continue;
 
         const isStopped = userStoppedPorts.value.has(lp.port);
-        const recognized = recognizePortService(lp.port, lp.process, lp.commandLine, lp.probe);
+        const hint = hintMap.get(lp.port);
+        const recognized = recognizePortService(lp.port, lp.process, lp.commandLine, lp.probe, hint);
         const localPort = lp.port;
         const protocol: PortProtocol = recognized.defaultProtocol || "http";
 
@@ -171,9 +208,39 @@ export function usePorts() {
           previewUrl: `${protocol}://localhost:${localPort}/`,
           icon: recognized.icon,
           probe: lp.probe,
+          workspaceHint: hint,
         };
 
         mergedMap.set(lp.port, item);
+      }
+    }
+
+    // 3. Method C: Intelligent Pre-reservation (Expected ports declared in workspace but not yet started)
+    if (autoDetectEnabled.value) {
+      for (const hint of workspaceHints.value) {
+        if (mergedMap.has(hint.port)) continue;
+        if (userIgnoredAutoPorts.value.has(hint.port)) continue;
+
+        const recognized = recognizePortService(hint.port, undefined, undefined, undefined, hint);
+        const localPort = hint.port;
+        const protocol: PortProtocol = recognized.defaultProtocol || "http";
+
+        const item: PortForwardItem = {
+          id: `port-${hint.port}`,
+          port: hint.port,
+          localPort,
+          label: hint.name,
+          protocol,
+          source: "auto",
+          status: "inactive", // Inactive hollow circle indicator
+          visibility: "private",
+          forwardAddress: `localhost:${localPort}`,
+          previewUrl: `${protocol}://localhost:${localPort}/`,
+          icon: recognized.icon,
+          workspaceHint: hint,
+        };
+
+        mergedMap.set(hint.port, item);
       }
     }
 
@@ -182,14 +249,18 @@ export function usePorts() {
   }
 
   /**
-   * Fetch system listening ports from backend API with protocol probe.
+   * Fetch system listening ports and workspace hints.
    */
   async function fetchPorts(): Promise<PortForwardItem[]> {
     isLoading.value = true;
     try {
-      const res = await fetch("/api/ports/list?probe=true");
-      if (res.ok) {
-        const data = await res.json();
+      // Parallel fetch of workspace hints and listening ports with probe
+      const [, portsRes] = await Promise.all([
+        fetchWorkspaceHints(),
+        fetch("/api/ports/list?probe=true"),
+      ]);
+      if (portsRes.ok) {
+        const data = await portsRes.json();
         if (data.success && Array.isArray(data.listening)) {
           listeningPorts.value = data.listening;
         }
@@ -438,11 +509,13 @@ export function usePorts() {
     ports,
     filteredPorts,
     listeningPorts,
+    workspaceHints,
     activePortsCount,
     isLoading,
     searchQuery,
     autoDetectEnabled,
     fetchPorts,
+    fetchWorkspaceHints,
     probeSinglePort,
     addPort,
     updatePort,

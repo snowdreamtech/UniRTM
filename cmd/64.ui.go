@@ -19,6 +19,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strconv"
@@ -1136,6 +1137,7 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/ports/unforward", handlePortUnforward)
 	mux.HandleFunc("/api/ports/preview/", handlePortPreview)
 	mux.HandleFunc("/api/ports/probe", handlePortProbe)
+	mux.HandleFunc("/api/ports/workspace-hints", handlePortsWorkspaceHints)
 
 	// ─── Static SPA Handler ───────────────────────────────────────────────────
 	fileServer := http.FileServer(http.FS(distFS))
@@ -5027,6 +5029,14 @@ type PortProbeInfo struct {
 	ProbeDurationMs int64  `json:"probeDurationMs,omitempty"`
 }
 
+type WorkspaceServiceHint struct {
+	Port        int    `json:"port"`
+	Name        string `json:"name"`
+	SourceFile  string `json:"sourceFile"`
+	ServiceType string `json:"serviceType"`
+	Framework   string `json:"framework,omitempty"`
+}
+
 type SystemListeningPort struct {
 	Port         int            `json:"port"`
 	Protocol     string         `json:"protocol"`
@@ -5538,6 +5548,187 @@ func handlePortPreview(w http.ResponseWriter, r *http.Request) {
 
 	proxy.ServeHTTP(w, r)
 }
+
+func scanWorkspaceServiceHints(rootDir string) []WorkspaceServiceHint {
+	hints := make([]WorkspaceServiceHint, 0)
+	portMap := make(map[int]WorkspaceServiceHint)
+
+	if rootDir == "" {
+		rootDir, _ = os.Getwd()
+	}
+
+	// 1. Scan package.json in root and frontend subfolder
+	pkgFiles := []string{
+		filepath.Join(rootDir, "package.json"),
+		filepath.Join(rootDir, "frontend", "package.json"),
+	}
+	portRegex := regexp.MustCompile(`--port\s+(\d+)|-p\s+(\d+)|PORT=(\d+)`)
+	for _, pkgPath := range pkgFiles {
+		data, err := os.ReadFile(pkgPath)
+		if err == nil {
+			var pkg struct {
+				Name         string            `json:"name"`
+				Scripts      map[string]string `json:"scripts"`
+				Dependencies map[string]string `json:"dependencies"`
+			}
+			if json.Unmarshal(data, &pkg) == nil {
+				fw := "Node.js"
+				if _, ok := pkg.Dependencies["next"]; ok {
+					fw = "Next.js"
+				} else if _, ok := pkg.Dependencies["vite"]; ok {
+					fw = "Vite"
+				} else if _, ok := pkg.Dependencies["vue"]; ok {
+					fw = "Vue"
+				} else if _, ok := pkg.Dependencies["react"]; ok {
+					fw = "React"
+				}
+
+				for sName, sCmd := range pkg.Scripts {
+					matches := portRegex.FindStringSubmatch(sCmd)
+					if len(matches) > 0 {
+						for _, m := range matches[1:] {
+							if m != "" {
+								if p, err := strconv.Atoi(m); err == nil && p > 0 && p <= 65535 {
+									name := fmt.Sprintf("%s (%s:%s)", pkg.Name, filepath.Base(pkgPath), sName)
+									if pkg.Name == "" {
+										name = fmt.Sprintf("Web App (%s:%s)", filepath.Base(pkgPath), sName)
+									}
+									portMap[p] = WorkspaceServiceHint{
+										Port:        p,
+										Name:        name,
+										SourceFile:  filepath.Base(pkgPath),
+										ServiceType: "npm-script",
+										Framework:   fw,
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 2. Scan compose files
+	composeFiles := []string{
+		filepath.Join(rootDir, "docker-compose.yml"),
+		filepath.Join(rootDir, "docker-compose.yaml"),
+		filepath.Join(rootDir, "compose.yml"),
+		filepath.Join(rootDir, "compose.yaml"),
+	}
+	for _, cPath := range composeFiles {
+		data, err := os.ReadFile(cPath)
+		if err == nil {
+			lines := strings.Split(string(data), "\n")
+			currentService := ""
+			inPorts := false
+			for _, line := range lines {
+				trimmed := strings.TrimSpace(line)
+				if strings.HasSuffix(trimmed, ":") && !strings.HasPrefix(line, " ") && !strings.HasPrefix(line, "\t") {
+					continue
+				}
+				if strings.HasPrefix(line, "  ") && !strings.HasPrefix(line, "    ") && strings.HasSuffix(trimmed, ":") {
+					currentService = strings.TrimSuffix(trimmed, ":")
+					inPorts = false
+					continue
+				}
+				if trimmed == "ports:" {
+					inPorts = true
+					continue
+				}
+				if inPorts && strings.HasPrefix(trimmed, "-") {
+					val := strings.Trim(strings.TrimPrefix(trimmed, "-"), " \"'")
+					parts := strings.Split(val, ":")
+					var hostPortStr string
+					if len(parts) == 2 {
+						hostPortStr = parts[0]
+					} else if len(parts) == 3 {
+						hostPortStr = parts[1]
+					}
+					if hostPortStr != "" {
+						if p, err := strconv.Atoi(hostPortStr); err == nil && p > 0 && p <= 65535 {
+							fw := "Docker Service"
+							srvLower := strings.ToLower(currentService)
+							if strings.Contains(srvLower, "postgres") || strings.Contains(srvLower, "db") {
+								fw = "PostgreSQL"
+							} else if strings.Contains(srvLower, "redis") {
+								fw = "Redis"
+							} else if strings.Contains(srvLower, "mysql") {
+								fw = "MySQL"
+							} else if strings.Contains(srvLower, "mongo") {
+								fw = "MongoDB"
+							}
+							portMap[p] = WorkspaceServiceHint{
+								Port:        p,
+								Name:        fmt.Sprintf("%s (compose: %s)", currentService, currentService),
+								SourceFile:  filepath.Base(cPath),
+								ServiceType: "compose",
+								Framework:   fw,
+							}
+						}
+					}
+				} else if inPorts && !strings.HasPrefix(line, "    ") && !strings.HasPrefix(line, "\t\t") {
+					inPorts = false
+				}
+			}
+		}
+	}
+
+	// 3. Scan .env files
+	envFiles := []string{
+		filepath.Join(rootDir, ".env"),
+		filepath.Join(rootDir, ".env.local"),
+		filepath.Join(rootDir, ".env.development"),
+	}
+	for _, envPath := range envFiles {
+		data, err := os.ReadFile(envPath)
+		if err == nil {
+			lines := strings.Split(string(data), "\n")
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if strings.HasPrefix(line, "#") || !strings.Contains(line, "=") {
+					continue
+				}
+				parts := strings.SplitN(line, "=", 2)
+				k := strings.ToUpper(strings.TrimSpace(parts[0]))
+				v := strings.Trim(strings.TrimSpace(parts[1]), "\"'")
+				if strings.Contains(k, "PORT") {
+					if p, err := strconv.Atoi(v); err == nil && p > 0 && p <= 65535 {
+						if _, exists := portMap[p]; !exists {
+							portMap[p] = WorkspaceServiceHint{
+								Port:        p,
+								Name:        fmt.Sprintf("Env Service (%s)", k),
+								SourceFile:  filepath.Base(envPath),
+								ServiceType: "env-var",
+								Framework:   "Custom",
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	for _, item := range portMap {
+		hints = append(hints, item)
+	}
+	sort.Slice(hints, func(i, j int) bool {
+		return hints[i].Port < hints[j].Port
+	})
+
+	return hints
+}
+
+func handlePortsWorkspaceHints(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	pwd, _ := os.Getwd()
+	hints := scanWorkspaceServiceHints(pwd)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"hints":   hints,
+	})
+}
+
 
 
 

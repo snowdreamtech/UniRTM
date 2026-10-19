@@ -157,5 +157,64 @@ describe("usePorts composable", () => {
     expect(uvicornPort?.previewUrl).toContain("https://localhost:8443/");
     expect(uvicornPort?.probe?.isHttps).toBe(true);
   });
+
+  it("fetchPorts incorporates Method C workspace hints and pre-reserves unstarted expected ports", async () => {
+    const mockListening = [
+      {
+        port: 5173,
+        protocol: "tcp",
+        localAddress: "127.0.0.1:5173",
+        process: "node",
+      },
+    ];
+
+    const mockWorkspaceHints = [
+      {
+        port: 5173,
+        name: "UniRTM Portal Web",
+        sourceFile: "package.json",
+        serviceType: "npm-script",
+        framework: "Vite",
+      },
+      {
+        port: 5432,
+        name: "PostgreSQL Database (compose: db)",
+        sourceFile: "docker-compose.yml",
+        serviceType: "compose",
+        framework: "PostgreSQL",
+      },
+    ];
+
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("/api/ports/workspace-hints")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true, hints: mockWorkspaceHints }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ success: true, listening: mockListening }),
+      });
+    });
+
+    const { ports, fetchPorts } = usePorts();
+    await fetchPorts();
+
+    // 1. Running port 5173 gets enriched with workspace business name
+    const webPort = ports.value.find((p) => p.port === 5173);
+    expect(webPort).toBeDefined();
+    expect(webPort?.label).toBe("UniRTM Portal Web");
+    expect(webPort?.status).toBe("active");
+    expect(webPort?.workspaceHint?.framework).toBe("Vite");
+
+    // 2. Expected but not yet started compose port 5432 is pre-reserved as inactive
+    const dbPort = ports.value.find((p) => p.port === 5432);
+    expect(dbPort).toBeDefined();
+    expect(dbPort?.label).toBe("PostgreSQL Database (compose: db)");
+    expect(dbPort?.status).toBe("inactive");
+    expect(dbPort?.workspaceHint?.sourceFile).toBe("docker-compose.yml");
+  });
 });
+
 

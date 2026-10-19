@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -173,4 +175,71 @@ func TestPortProbeAPI(t *testing.T) {
 		t.Fatalf("Expected 200 for /api/ports/list?probe=true, got %d", rrListProbe.Code)
 	}
 }
+
+func TestWorkspaceServiceHints(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// 1. Write mock package.json
+	pkgContent := `{
+		"name": "my-mock-app",
+		"scripts": {
+			"dev": "vite --port 5173",
+			"start": "next start -p 3000"
+		},
+		"dependencies": {
+			"vite": "^5.0.0"
+		}
+	}`
+	_ = os.WriteFile(filepath.Join(tempDir, "package.json"), []byte(pkgContent), 0644)
+
+	// 2. Write mock docker-compose.yml
+	composeContent := `version: '3.8'
+services:
+  db:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+`
+	_ = os.WriteFile(filepath.Join(tempDir, "docker-compose.yml"), []byte(composeContent), 0644)
+
+	// 3. Write mock .env
+	envContent := `PORT=8000
+DATABASE_URL=postgres://localhost:5432/db
+`
+	_ = os.WriteFile(filepath.Join(tempDir, ".env"), []byte(envContent), 0644)
+
+	hints := scanWorkspaceServiceHints(tempDir)
+	if len(hints) < 4 {
+		t.Fatalf("Expected at least 4 hints, got %d: %+v", len(hints), hints)
+	}
+
+	hintMap := make(map[int]WorkspaceServiceHint)
+	for _, h := range hints {
+		hintMap[h.Port] = h
+	}
+
+	if h, ok := hintMap[5173]; !ok || h.Framework != "Vite" {
+		t.Errorf("Expected port 5173 with Vite framework, got %+v", h)
+	}
+	if h, ok := hintMap[5432]; !ok || h.Framework != "PostgreSQL" {
+		t.Errorf("Expected port 5432 with PostgreSQL framework, got %+v", h)
+	}
+	if h, ok := hintMap[8000]; !ok || h.ServiceType != "env-var" {
+		t.Errorf("Expected port 8000 from env-var, got %+v", h)
+	}
+
+	// Test GET /api/ports/workspace-hints endpoint
+	req := httptest.NewRequest("GET", "/api/ports/workspace-hints", nil)
+	rr := httptest.NewRecorder()
+	handlePortsWorkspaceHints(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("Expected 200 for /api/ports/workspace-hints, got %d", rr.Code)
+	}
+}
+
 

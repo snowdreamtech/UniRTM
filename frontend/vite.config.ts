@@ -4526,6 +4526,23 @@ print(json.dumps({
               return;
             }
 
+            // GET /api/ports/workspace-hints
+            if (req.url === "/api/ports/workspace-hints" && req.method === "GET") {
+              const hints = [];
+              try {
+                hints.push({
+                  port: 5173,
+                  name: "UniRTM Frontend (Vite)",
+                  sourceFile: "frontend/package.json",
+                  serviceType: "npm-script",
+                  framework: "Vite",
+                });
+              } catch (_) {}
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify({ success: true, hints }));
+              return;
+            }
+
             // POST /api/ports/probe
             if (req.url === "/api/ports/probe" && req.method === "POST") {
               let bodyStr = "";
