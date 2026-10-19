@@ -1153,4 +1153,7 @@ export const zhCn: TranslationDict = {
   "tools.custom.prefix_hint": "选择工具生态或 Provider 前缀",
   "tools.custom.version_placeholder": "版本号 (如: 1.0.0)",
   "tools.custom.preview_label": "配置预览:",
+  "common.add": "添加",
+  "tools.official_recommended": "官方支持推荐语言",
+  "tools.already_added": "已添加",
 };

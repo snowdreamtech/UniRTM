@@ -1139,4 +1139,7 @@ export const csCz: TranslationDict = {
   "tools.custom.prefix_hint": "Select tool ecosystem or provider prefix",
   "tools.custom.version_placeholder": "Version (e.g. 1.0.0)",
   "tools.custom.preview_label": "Config preview:",
+  "common.add": "Add",
+  "tools.official_recommended": "Official Recommended Languages & Toolchains",
+  "tools.already_added": "Already Added",
 };

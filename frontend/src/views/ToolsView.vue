@@ -707,12 +707,13 @@
         </div>
 
         <div class="add-preset-section">
-          <div class="preset-section-title">官方支持推荐语言</div>
+          <div class="preset-section-title">{{ t("tools.official_recommended") || "官方支持推荐语言" }}</div>
           <div class="add-preset-grid">
             <div
-              v-for="preset in availablePresetRuntimes"
+              v-for="preset in presetRuntimes"
               :key="preset.id"
               class="add-preset-card"
+              :class="{ 'is-added': isPresetAdded(preset.id) }"
             >
               <div class="preset-card-left">
                 <span class="preset-icon"><TechIcon :id="preset.id" :size="20" :colored="true" /></span>
@@ -725,11 +726,19 @@
                 </div>
               </div>
               <button
+                v-if="!isPresetAdded(preset.id)"
                 class="tool-action-btn primary small"
                 @click="addRuntimeFromPreset(preset)"
               >
-                + 添加
+                + {{ t("common.add") }}
               </button>
+              <span
+                v-else
+                class="preset-added-badge"
+                :title="t('tools.already_added')"
+              >
+                ✓ {{ t("tools.already_added") }}
+              </span>
             </div>
           </div>
         </div>
@@ -788,7 +797,7 @@
               :disabled="!isCustomFormValid"
               @click="addCustomRuntime"
             >
-              + {{ t("common.add") || "添加" }}
+              + {{ t("common.add") }}
             </button>
           </div>
 
@@ -1114,20 +1123,6 @@ interface PresetRuntime {
 
 const presetRuntimes: PresetRuntime[] = [
   {
-    id: "bun",
-    name: "Bun",
-    description: "Incredibly fast all-in-one JavaScript & TypeScript toolkit",
-    homepage: "https://bun.sh",
-    defaultVersion: "1.2.4",
-  },
-  {
-    id: "deno",
-    name: "Deno",
-    description: "Modern, secure runtime for JavaScript and TypeScript",
-    homepage: "https://deno.com",
-    defaultVersion: "2.2.2",
-  },
-  {
     id: "node",
     name: "Node.js",
     description: "JavaScript / TypeScript runtime (NVM superset)",
@@ -1161,6 +1156,20 @@ const presetRuntimes: PresetRuntime[] = [
     description: "Enterprise multi-platform Java Development Kit & Virtual Machine",
     homepage: "https://openjdk.org",
     defaultVersion: "21.0.2",
+  },
+  {
+    id: "bun",
+    name: "Bun",
+    description: "Incredibly fast all-in-one JavaScript & TypeScript toolkit",
+    homepage: "https://bun.sh",
+    defaultVersion: "1.2.4",
+  },
+  {
+    id: "deno",
+    name: "Deno",
+    description: "Modern, secure runtime for JavaScript and TypeScript",
+    homepage: "https://deno.com",
+    defaultVersion: "2.2.2",
   },
   {
     id: "zig",
@@ -1227,10 +1236,10 @@ const presetRuntimes: PresetRuntime[] = [
   },
 ];
 
-const availablePresetRuntimes = computed(() => {
-  const currentIds = new Set(runtimes.value.map((r) => r.id.toLowerCase()));
-  return presetRuntimes.filter((p) => !currentIds.has(p.id.toLowerCase()));
-});
+function isPresetAdded(presetId: string): boolean {
+  const norm = presetId.toLowerCase();
+  return runtimes.value.some((r) => r.id.toLowerCase() === norm);
+}
 
 function openAddModal() {
   customPrefix.value = "";
@@ -3737,6 +3746,22 @@ onBeforeUnmount(() => {
   background: var(--input-bg);
   border: 1px solid var(--card-border);
   transition: all 0.15s ease;
+}
+
+.add-preset-card.is-added {
+  opacity: 0.82;
+}
+
+.preset-added-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  padding: 0.22rem 0.55rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  user-select: none;
 }
 
 .add-preset-card:hover {

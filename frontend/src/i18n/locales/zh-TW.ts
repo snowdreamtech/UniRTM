@@ -1148,4 +1148,7 @@ export const zhTw: TranslationDict = {
   "tools.custom.prefix_hint": "選擇工具生態或 Provider 前置字元",
   "tools.custom.version_placeholder": "版本號 (如: 1.0.0)",
   "tools.custom.preview_label": "設定預覽:",
+  "common.add": "新增",
+  "tools.official_recommended": "官方支援推薦語言",
+  "tools.already_added": "已新增",
 };
