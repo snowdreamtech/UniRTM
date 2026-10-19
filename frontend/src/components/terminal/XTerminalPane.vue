@@ -7,6 +7,8 @@ import { getXtermTheme } from "../../utils/terminalTheme";
 import { registerTerminalSender, unregisterTerminalSender } from "../../composables/useTerminalSessions";
 import { usePorts } from "../../composables/usePorts";
 import { createTerminalLinkProvider } from "../../composables/useTerminalLinks";
+import { SearchAddon } from "@xterm/addon-search";
+import TerminalSearchWidget from "./TerminalSearchWidget.vue";
 
 const { registerDetectedPort } = usePorts();
 const detectedPorts = new Set<number>();
@@ -39,6 +41,17 @@ const terminalContainer = ref<HTMLDivElement | null>(null);
 const isConnected = ref(false);
 const isConnecting = ref(true);
 const connectionError = ref<string | null>(null);
+const isSearchVisible = ref(false);
+const searchAddonInstance = ref<SearchAddon | null>(null);
+
+function closeSearch() {
+  isSearchVisible.value = false;
+  term?.focus();
+}
+
+function openSearch() {
+  isSearchVisible.value = true;
+}
 
 let term: Terminal | null = null;
 let fitAddon: FitAddon | null = null;
@@ -163,7 +176,22 @@ onMounted(() => {
 
   fitAddon = new FitAddon();
   term.loadAddon(fitAddon);
+
+  const searchAddon = new SearchAddon();
+  term.loadAddon(searchAddon);
+  searchAddonInstance.value = searchAddon;
+
   term.registerLinkProvider(createTerminalLinkProvider(term));
+
+  term.attachCustomKeyEventHandler((e: KeyboardEvent) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
+      e.preventDefault();
+      e.stopPropagation();
+      openSearch();
+      return false;
+    }
+    return true;
+  });
 
   term.open(terminalContainer.value);
 
@@ -245,6 +273,13 @@ onBeforeUnmount(() => {
 <template>
   <div class="xterm-pane-wrapper" @click="emit('focus')">
     <div ref="terminalContainer" class="xterm-container"></div>
+
+    <!-- Floating Search Widget -->
+    <TerminalSearchWidget
+      :visible="isSearchVisible"
+      :search-addon="searchAddonInstance"
+      @close="closeSearch"
+    />
 
     <!-- Reconnect / Error Overlay -->
     <div v-if="!isConnected && !isConnecting" class="xterm-overlay">

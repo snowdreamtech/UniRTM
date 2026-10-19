@@ -22,11 +22,11 @@
 ---
 
 ## Phase 2: 终端浮动搜索工具条 (Terminal In-Panel Search)
-- [ ] Task 2.1: 创建 `frontend/src/components/terminal/TerminalSearchWidget.vue` 浮动搜索条组件
-- [ ] Task 2.2: 在 `XTerminalPane.vue` 中集成 `@xterm/addon-search` 的 `SearchAddon` 实例并与搜索组件绑定
-- [ ] Task 2.3: 支持快捷键 `Ctrl+F` 呼出/聚焦，`Enter` / `Shift+Enter` 查找与 `Esc` 退出
-- [ ] Task 2.4: 编写 `frontend/src/components/terminal/TerminalSearchWidget.test.ts` 测试并通过验证
-- [ ] Task 2.5: 阶段性 Git 提交：`feat(terminal): add in-terminal search widget and shortcut navigation`
+- [x] Task 2.1: 创建 `frontend/src/components/terminal/TerminalSearchWidget.vue` 浮动搜索条组件
+- [x] Task 2.2: 在 `XTerminalPane.vue` 中集成 `@xterm/addon-search` 的 `SearchAddon` 实例并与搜索组件绑定
+- [x] Task 2.3: 支持快捷键 `Ctrl+F` 呼出/聚焦，`Enter` / `Shift+Enter` 查找与 `Esc` 退出
+- [x] Task 2.4: 编写 `frontend/src/composables/useTerminalSearch.test.ts` 测试并通过验证
+- [x] Task 2.5: 阶段性 Git 提交：`feat(terminal): add in-terminal search widget and shortcut navigation`
 
 ---
 
