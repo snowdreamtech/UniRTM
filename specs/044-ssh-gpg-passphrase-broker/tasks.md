@@ -13,11 +13,11 @@
 - [x] 2.4 **执行提交 2**：`feat(ui): add modern PassphraseModal component with session keyring option`
 
 ## 阶段 3：Go 后端凭据协调器与内存安全缓存 (Backend Broker Core)
-- [ ] 3.1 在后端 `cmd/64.ui.go` 中实现线程安全的内存 Keyring 缓存 `sessionKeyring`（支持 TTL 超时清理）
-- [ ] 3.2 实现凭据事务挂起等待队列 `credentialCoordinator`（通过 Go channel 协调底层等待与前端应答）
-- [ ] 3.3 新增 `/api/git/credential-pending`、`/api/git/credential-respond` 与 `/api/git/credential-clear-cache` REST API
-- [ ] 3.4 编写 Go 端单元测试验证超时保底机制与 channel 唤醒
-- [ ] 3.5 **执行提交 3**：`feat(backend): implement credential coordinator and in-memory session keyring`
+- [x] 3.1 在后端 `cmd/64.ui.go` 与 `cmd/64.ui_credential.go` 中实现线程安全的内存 Keyring 缓存 `sessionKeyring`（支持 TTL 超时清理）
+- [x] 3.2 实现凭据事务挂起等待队列 `credentialCoordinator`（通过 Go channel 协调底层等待与前端应答）
+- [x] 3.3 新增 `/api/git/credential-pending`、`/api/git/credential-respond` 与 `/api/git/credential-clear-cache` REST API
+- [x] 3.4 编写 Go 端单元测试验证超时保底机制与 channel 唤醒
+- [x] 3.5 **执行提交 3**：`feat(backend): implement credential coordinator and in-memory session keyring`
 
 ## 阶段 4：Git/SSH/GPG 命令执行链路拦截与注入 (Execution Integration)
 - [ ] 4.1 在 `cmd/64.ui.go` 的 `runGitCommand` 中封装统一的 Broker 执行器，自动注入 `GIT_ASKPASS` 与 `SSH_ASKPASS`

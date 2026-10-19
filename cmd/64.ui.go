@@ -1128,6 +1128,9 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/git/clean", handleGitClean)
 	mux.HandleFunc("/api/git/pull", handleGitPull)
 	mux.HandleFunc("/api/git/fetch", handleGitFetch)
+	mux.HandleFunc("/api/git/credential-pending", handleGitCredentialPending)
+	mux.HandleFunc("/api/git/credential-respond", handleGitCredentialRespond)
+	mux.HandleFunc("/api/git/credential-clear-cache", handleGitCredentialClearCache)
 
 	// ─── Port Forwarding API Handlers ──────────────────────────────────────────
 	mux.HandleFunc("/api/ports/list", handlePortsList)
