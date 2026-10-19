@@ -20,6 +20,7 @@ import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import type * as MonacoType from "monaco-editor";
 import "monaco-editor/min/vs/editor/editor.main.css";
 import { loadMonaco, getLanguageForFile } from "../../services/editor/monacoLoader";
+import { computeLineDiff } from "../../utils/diffGutter";
 import type { EditorTab } from "../../composables/useEditorTabs";
 
 const props = defineProps<{
@@ -39,6 +40,40 @@ const mountError = ref<string>("");
 let monaco: typeof MonacoType | null = null;
 let editorInstance: MonacoType.editor.IStandaloneCodeEditor | null = null;
 let resizeObserver: ResizeObserver | null = null;
+let gutterDecorationIds: string[] = [];
+let diffDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+function updateGutterDecorations(): void {
+  if (!editorInstance || !monaco) return;
+  const model = editorInstance.getModel();
+  if (!model) return;
+
+  const originalText = props.tab.originalContent ?? "";
+  const currentText = model.getValue();
+
+  if (originalText === currentText) {
+    gutterDecorationIds = editorInstance.deltaDecorations(gutterDecorationIds, []);
+    return;
+  }
+
+  const diffs = computeLineDiff(originalText, currentText);
+  const newDecorations: MonacoType.editor.IModelDeltaDecoration[] = diffs.map((diff) => ({
+    range: new monaco!.Range(diff.startLineNumber, 1, diff.endLineNumber, 1),
+    options: {
+      isWholeLine: true,
+      linesDecorationsClassName: `gutter-diff-${diff.type}`,
+    },
+  }));
+
+  gutterDecorationIds = editorInstance.deltaDecorations(gutterDecorationIds, newDecorations);
+}
+
+function scheduleGutterDiffUpdate(): void {
+  if (diffDebounceTimer) clearTimeout(diffDebounceTimer);
+  diffDebounceTimer = setTimeout(() => {
+    updateGutterDecorations();
+  }, 100);
+}
 
 function initMonacoThemes(m: typeof MonacoType): void {
   m.editor.defineTheme("unirtm-light", {
@@ -146,6 +181,7 @@ onMounted(async () => {
     editorInstance.onDidChangeModelContent(() => {
       if (editorInstance) {
         emit("change", editorInstance.getValue());
+        scheduleGutterDiffUpdate();
       }
     });
 
@@ -192,6 +228,7 @@ watch(
     if (model) {
       editorInstance.setModel(model);
       editorInstance.layout();
+      updateGutterDecorations();
       const pos = editorInstance.getPosition();
       if (pos) {
         emit("cursor-change", pos.lineNumber, pos.column);
@@ -210,6 +247,7 @@ watch(
     if (model && model.getValue() !== newContent && !props.tab.isDirty) {
       model.setValue(newContent);
     }
+    scheduleGutterDiffUpdate();
   }
 );
 
@@ -222,6 +260,7 @@ watch(
     if (model && model.getValue() !== newOrig) {
       model.setValue(newOrig);
     }
+    updateGutterDecorations();
   }
 );
 
@@ -297,5 +336,33 @@ onBeforeUnmount(() => {
   font-size: 12px;
   color: var(--text-muted);
   font-family: monospace;
+}
+
+:deep(.gutter-diff-added) {
+  border-left: 3px solid #2ea043 !important;
+  margin-left: 3px;
+}
+
+:deep(.gutter-diff-modified) {
+  border-left: 3px solid #007acc !important;
+  margin-left: 3px;
+}
+
+:deep(.gutter-diff-deleted) {
+  border-bottom: 2px solid #f85149 !important;
+  width: 6px;
+  margin-left: 2px;
+}
+
+:root[data-theme="light"] :deep(.gutter-diff-added) {
+  border-left-color: #10b981 !important;
+}
+
+:root[data-theme="light"] :deep(.gutter-diff-modified) {
+  border-left-color: #0284c7 !important;
+}
+
+:root[data-theme="light"] :deep(.gutter-diff-deleted) {
+  border-bottom-color: #ef4444 !important;
 }
 </style>
