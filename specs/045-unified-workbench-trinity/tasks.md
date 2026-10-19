@@ -77,12 +77,12 @@
 - [x] 11.5 **执行提交 11**：`feat(editor): support staging single diff chunk from inline peek widget`
 
 
-## 阶段 12：文件树折叠目录变更聚合徽标 (Folder Git Bubble Badges) [待执行]
-- [ ] 12.1 在 `frontend/src/composables/useFileTree.ts` 中增加递归计算折叠目录内部子孙变动文件总数的响应式方法
-- [ ] 12.2 在 `frontend/src/components/explorer/FileTreeNode.vue` 目录节点行尾增加高对比度数字气泡徽标（Bubble Count Badge）
-- [ ] 12.3 折叠时显示气泡，展开时自适应隐藏或淡化，避免视觉杂乱
-- [ ] 12.4 编写单测验证目录聚合徽标计算正确性
-- [ ] 12.5 **执行提交 12**：`feat(explorer): display aggregated git change badges on collapsed directory nodes`
+## 阶段 12：文件树折叠目录变更聚合徽标 (Folder Git Bubble Badges) [已完成]
+- [x] 12.1 在 `frontend/src/composables/useFileTree.ts` 中增加递归计算折叠目录内部子孙变动文件总数的响应式方法
+- [x] 12.2 在 `frontend/src/components/explorer/FileTreeNode.vue` 目录节点行尾增加高对比度数字气泡徽标（Bubble Count Badge）
+- [x] 12.3 折叠时显示气泡，展开时自适应隐藏或淡化，避免视觉杂乱
+- [x] 12.4 编写单测验证目录聚合徽标计算正确性
+- [x] 12.5 **执行提交 12**：`feat(explorer): display aggregated git change badges on collapsed directory nodes`
 
 
 ## 阶段 13：全量 53 国多语言同步与端到端回归验证 (Final Verification) [待执行]

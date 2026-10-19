@@ -505,11 +505,21 @@ export function useFileTree() {
     return filterNode(base, query);
   });
 
+  function getNodeGitChangeCount(node: FSNode): number {
+    if (!node.is_dir) {
+      const gitPaths = getChangedPathsSet();
+      return gitPaths.has(node.path) ? 1 : 0;
+    }
+    const { getDirGitCount } = useGit();
+    return getDirGitCount(node.path);
+  }
+
   return {
     tree,
     filteredTree,
     isGitFilterActive,
     toggleGitFilter,
+    getNodeGitChangeCount,
     isLoading,
     error,
     selectedNode,

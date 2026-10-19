@@ -287,5 +287,58 @@ describe("useFileTree", () => {
     expect(isGitFilterActive.value).toBe(false);
     expect(filteredTree.value?.children?.length).toBe(2);
   });
+
+  it("calculates recursive Git change count for directory and file nodes", () => {
+    const { getNodeGitChangeCount } = useFileTree();
+    const { status } = useGit();
+
+    status.value.unstaged = [
+      { path: "src/utils/math.ts", status: "M", label: "src/utils/math.ts" },
+      { path: "src/components/Header.vue", status: "M", label: "src/components/Header.vue" },
+    ];
+    status.value.staged = [
+      { path: "src/App.vue", status: "A", label: "src/App.vue" },
+    ];
+
+    expect(
+      getNodeGitChangeCount({
+        name: "src",
+        path: "src",
+        is_dir: true,
+        size: 0,
+        mod_time: "2026-10-18T00:00:00Z",
+      })
+    ).toBe(3);
+
+    expect(
+      getNodeGitChangeCount({
+        name: "components",
+        path: "src/components",
+        is_dir: true,
+        size: 0,
+        mod_time: "2026-10-18T00:00:00Z",
+      })
+    ).toBe(1);
+
+    expect(
+      getNodeGitChangeCount({
+        name: "App.vue",
+        path: "src/App.vue",
+        is_dir: false,
+        size: 100,
+        mod_time: "2026-10-18T00:00:00Z",
+      })
+    ).toBe(1);
+
+    expect(
+      getNodeGitChangeCount({
+        name: "docs",
+        path: "docs",
+        is_dir: true,
+        size: 0,
+        mod_time: "2026-10-18T00:00:00Z",
+      })
+    ).toBe(0);
+  });
 });
 

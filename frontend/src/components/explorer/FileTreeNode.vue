@@ -71,7 +71,7 @@
           {{ node.name }}
         </span>
         <span v-if="gitStatus" class="git-tree-badge" :class="'badge-' + gitStatus">{{ gitStatus }}</span>
-        <span v-else-if="dirGitCount > 0 && !isExpanded" class="git-dir-badge">{{ dirGitCount }}</span>
+        <span v-else-if="dirGitCount > 0 && !isExpanded" class="git-dir-badge" :title="`包含 ${dirGitCount} 个待提交的变动文件`">+{{ dirGitCount }}</span>
       </div>
 
 
@@ -449,10 +449,15 @@ async function commitCreate() {
   font-size: 10px;
   font-weight: 600;
   margin-left: auto;
-  padding: 0 5px;
+  padding: 1px 6px;
   border-radius: 10px;
-  background: rgba(226, 192, 141, 0.18);
+  background: rgba(226, 192, 141, 0.2);
   color: #e2c08d;
+  line-height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
 }
 
 :root[data-theme="light"] .tree-label.git-color-M {
