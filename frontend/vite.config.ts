@@ -4526,6 +4526,35 @@ print(json.dumps({
               return;
             }
 
+            // POST /api/ports/probe
+            if (req.url === "/api/ports/probe" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  const port = body.port || 0;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(
+                    JSON.stringify({
+                      success: true,
+                      probe: {
+                        port,
+                        isHttps: false,
+                        detectedService: port === 5173 ? "Vite Dev Server" : undefined,
+                        probeDurationMs: 2,
+                      },
+                    })
+                  );
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
             // POST /api/ports/forward, /update, /stop, /unforward
             if (
               (req.url === "/api/ports/forward" ||

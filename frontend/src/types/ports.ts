@@ -6,6 +6,25 @@ export type PortStatus = "active" | "inactive";
 export type PortVisibility = "private" | "public";
 export type PortProtocol = "http" | "https";
 
+export interface PortProbeInfo {
+  port: number;
+  isHttps: boolean;
+  httpStatus?: number;
+  serverHeader?: string;
+  xPoweredBy?: string;
+  location?: string;
+  detectedService?: string;
+  probeDurationMs?: number;
+}
+
+export interface WorkspaceServiceHint {
+  port: number;
+  name: string;
+  sourceFile: string;
+  serviceType?: "compose" | "npm-script" | "env-var" | "custom";
+  framework?: string;
+}
+
 export interface SystemListeningPort {
   port: number;
   protocol: string;
@@ -13,6 +32,7 @@ export interface SystemListeningPort {
   pid?: number;
   process?: string;
   commandLine?: string;
+  probe?: PortProbeInfo;
 }
 
 export interface PortForwardItem {
@@ -30,6 +50,8 @@ export interface PortForwardItem {
   forwardAddress: string;
   previewUrl: string;
   icon?: string;
+  probe?: PortProbeInfo;
+  workspaceHint?: WorkspaceServiceHint;
 }
 
 export interface PortForwardPayload {
@@ -39,3 +61,4 @@ export interface PortForwardPayload {
   protocol?: PortProtocol;
   visibility?: PortVisibility;
 }
+

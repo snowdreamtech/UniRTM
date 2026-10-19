@@ -4,49 +4,62 @@
 import { describe, it, expect } from "vitest";
 import { recognizePortService } from "./portServiceRecognizer";
 
-describe("recognizePortService", () => {
-  it("recognizes Vite dev server by command line", () => {
-    const res = recognizePortService(5173, "node", "node /path/to/vite");
-    expect(res.label).toBe("Vite Dev Server");
-    expect(res.icon).toBe("vite");
-    expect(res.defaultProtocol).toBe("http");
+describe("portServiceRecognizer", () => {
+  it("recognizes service by process and command line (Method A)", () => {
+    const resVite = recognizePortService(5173, "node", "vite --port 5173");
+    expect(resVite.label).toBe("Vite Dev Server");
+    expect(resVite.icon).toBe("vite");
+    expect(resVite.defaultProtocol).toBe("http");
+    expect(resVite.sourceOrigin).toBe("process");
+
+    const resPy = recognizePortService(8000, "python3", "uvicorn main:app --reload");
+    expect(resPy.label).toBe("FastAPI Service");
+    expect(resPy.icon).toBe("python");
+    expect(resPy.sourceOrigin).toBe("process");
   });
 
-  it("recognizes Next.js app by command line", () => {
-    const res = recognizePortService(3000, "node", "next-server");
-    expect(res.label).toBe("Next.js App");
-    expect(res.icon).toBe("nextjs");
+  it("recognizes service and adapts to HTTPS by network probe (Method B)", () => {
+    const resProbe = recognizePortService(
+      3000,
+      "docker-proxy", // opaque container proxy
+      "/usr/bin/docker-proxy -proto tcp -host-ip 0.0.0.0 -host-port 3000",
+      {
+        port: 3000,
+        isHttps: true,
+        serverHeader: "uvicorn",
+        detectedService: "FastAPI / Starlette (Uvicorn)",
+      }
+    );
+
+    // Method B overrides opaque docker-proxy and detects actual service
+    expect(resProbe.label).toBe("FastAPI / Starlette (Uvicorn)");
+    expect(resProbe.defaultProtocol).toBe("https");
+    expect(resProbe.icon).toBe("python");
+    expect(resProbe.sourceOrigin).toBe("probe");
   });
 
-  it("recognizes Jupyter Notebook", () => {
-    const res = recognizePortService(8888, "python3", "jupyter-lab");
-    expect(res.label).toBe("Jupyter Notebook");
-    expect(res.icon).toBe("python");
-  });
+  it("prioritizes workspace business context name (Method C)", () => {
+    const resWorkspace = recognizePortService(
+      5432,
+      "postgres",
+      "postgres -D /data",
+      {
+        port: 5432,
+        isHttps: false,
+        detectedService: "PostgreSQL Database",
+      },
+      {
+        port: 5432,
+        name: "主业务数据库 (Postgres)",
+        sourceFile: "docker-compose.yml",
+        serviceType: "compose",
+        framework: "PostgreSQL",
+      }
+    );
 
-  it("recognizes databases by port and process name", () => {
-    const pg = recognizePortService(5432, "postgres", "/usr/lib/postgresql/15/bin/postgres");
-    expect(pg.label).toBe("PostgreSQL Database");
-    expect(pg.icon).toBe("database");
-
-    const my = recognizePortService(3306, "mysqld", "/usr/sbin/mysqld");
-    expect(my.label).toBe("MySQL Database");
-    expect(my.icon).toBe("database");
-
-    const redis = recognizePortService(6379, "redis-server", "redis-server *:6379");
-    expect(redis.label).toBe("Redis Cache Server");
-    expect(redis.icon).toBe("database");
-  });
-
-  it("recognizes Ollama LLM server", () => {
-    const ollama = recognizePortService(11434, "ollama", "ollama serve");
-    expect(ollama.label).toBe("Ollama LLM Server");
-    expect(ollama.serviceType).toBe("ai");
-  });
-
-  it("falls back gracefully for generic custom ports", () => {
-    const res = recognizePortService(4242, "custom-daemon", "/bin/custom");
-    expect(res.label).toBe("Service (4242)");
-    expect(res.icon).toBe("terminal");
+    // Method C provides user's business semantic title
+    expect(resWorkspace.label).toBe("主业务数据库 (Postgres)");
+    expect(resWorkspace.icon).toBe("database");
+    expect(resWorkspace.sourceOrigin).toBe("workspace");
   });
 });

@@ -6,6 +6,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,6 +23,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -1133,6 +1135,7 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/ports/stop", handlePortStop)
 	mux.HandleFunc("/api/ports/unforward", handlePortUnforward)
 	mux.HandleFunc("/api/ports/preview/", handlePortPreview)
+	mux.HandleFunc("/api/ports/probe", handlePortProbe)
 
 	// ─── Static SPA Handler ───────────────────────────────────────────────────
 	fileServer := http.FileServer(http.FS(distFS))
@@ -5013,13 +5016,25 @@ func handleGitStashBranch(w http.ResponseWriter, r *http.Request) {
 
 // ─── Port Forwarding Management ─────────────────────────────────────────────
 
+type PortProbeInfo struct {
+	Port            int    `json:"port"`
+	IsHTTPS         bool   `json:"isHttps"`
+	HTTPStatus      int    `json:"httpStatus,omitempty"`
+	ServerHeader    string `json:"serverHeader,omitempty"`
+	XPoweredBy      string `json:"xPoweredBy,omitempty"`
+	Location        string `json:"location,omitempty"`
+	DetectedService string `json:"detectedService,omitempty"`
+	ProbeDurationMs int64  `json:"probeDurationMs,omitempty"`
+}
+
 type SystemListeningPort struct {
-	Port         int    `json:"port"`
-	Protocol     string `json:"protocol"`
-	LocalAddress string `json:"localAddress"`
-	Pid          int    `json:"pid,omitempty"`
-	Process      string `json:"process,omitempty"`
-	CommandLine  string `json:"commandLine,omitempty"`
+	Port         int            `json:"port"`
+	Protocol     string         `json:"protocol"`
+	LocalAddress string         `json:"localAddress"`
+	Pid          int            `json:"pid,omitempty"`
+	Process      string         `json:"process,omitempty"`
+	CommandLine  string         `json:"commandLine,omitempty"`
+	Probe        *PortProbeInfo `json:"probe,omitempty"`
 }
 
 type PortForwardRequest struct {
@@ -5237,6 +5252,152 @@ func readProcessCmdline(pid int) string {
 	return ""
 }
 
+func probePort(port int) PortProbeInfo {
+	start := time.Now()
+	info := PortProbeInfo{
+		Port:    port,
+		IsHTTPS: false,
+	}
+
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+
+	// 1. Try TLS probe first (<= 35ms timeout)
+	tlsDialer := &net.Dialer{Timeout: 35 * time.Millisecond}
+	tlsConn, err := tls.DialWithDialer(tlsDialer, "tcp", addr, &tls.Config{
+		InsecureSkipVerify: true,
+	})
+	if err == nil {
+		info.IsHTTPS = true
+		_ = tlsConn.SetDeadline(time.Now().Add(25 * time.Millisecond))
+		reqStr := fmt.Sprintf("HEAD / HTTP/1.1\r\nHost: 127.0.0.1:%d\r\nUser-Agent: UniRTM-Probe\r\nConnection: close\r\n\r\n", port)
+		_, _ = tlsConn.Write([]byte(reqStr))
+		buf := make([]byte, 1024)
+		n, _ := tlsConn.Read(buf)
+		_ = tlsConn.Close()
+		if n > 0 {
+			parseHTTPProbeResponse(string(buf[:n]), &info)
+		}
+		info.ProbeDurationMs = time.Since(start).Milliseconds()
+		return info
+	}
+
+	// 2. Plain TCP probe (<= 35ms timeout)
+	conn, err := net.DialTimeout("tcp", addr, 35*time.Millisecond)
+	if err != nil {
+		info.ProbeDurationMs = time.Since(start).Milliseconds()
+		return info
+	}
+	defer conn.Close()
+
+	_ = conn.SetDeadline(time.Now().Add(25 * time.Millisecond))
+	reqStr := fmt.Sprintf("HEAD / HTTP/1.1\r\nHost: 127.0.0.1:%d\r\nUser-Agent: UniRTM-Probe\r\nConnection: close\r\n\r\n", port)
+	_, _ = conn.Write([]byte(reqStr))
+
+	buf := make([]byte, 1024)
+	n, readErr := conn.Read(buf)
+	if readErr == nil && n > 0 {
+		respStr := string(buf[:n])
+		if strings.HasPrefix(respStr, "HTTP/") {
+			parseHTTPProbeResponse(respStr, &info)
+			info.ProbeDurationMs = time.Since(start).Milliseconds()
+			return info
+		}
+		detectNonHTTPProtocols(respStr, &info)
+		if info.DetectedService != "" {
+			info.ProbeDurationMs = time.Since(start).Milliseconds()
+			return info
+		}
+	}
+
+	// 3. If no HTTP response or port is 6379, try Redis PING
+	if port == 6379 || info.DetectedService == "" {
+		if rConn, err := net.DialTimeout("tcp", addr, 25*time.Millisecond); err == nil {
+			_ = rConn.SetDeadline(time.Now().Add(20 * time.Millisecond))
+			_, _ = rConn.Write([]byte("*1\r\n$4\r\nPING\r\n"))
+			rBuf := make([]byte, 256)
+			rn, rErr := rConn.Read(rBuf)
+			_ = rConn.Close()
+			if rErr == nil && rn > 0 {
+				rStr := string(rBuf[:rn])
+				if strings.HasPrefix(rStr, "+PONG") || strings.Contains(rStr, "NOAUTH") || strings.Contains(rStr, "ERR") {
+					info.DetectedService = "Redis"
+				}
+			}
+		}
+	}
+
+	info.ProbeDurationMs = time.Since(start).Milliseconds()
+	return info
+}
+
+func parseHTTPProbeResponse(respStr string, info *PortProbeInfo) {
+	lines := strings.Split(respStr, "\r\n")
+	if len(lines) == 0 {
+		return
+	}
+	statusLine := lines[0]
+	statusParts := strings.Fields(statusLine)
+	if len(statusParts) >= 2 {
+		if code, err := strconv.Atoi(statusParts[1]); err == nil {
+			info.HTTPStatus = code
+		}
+	}
+
+	for _, line := range lines[1:] {
+		if line == "" {
+			break
+		}
+		parts := strings.SplitN(line, ":", 2)
+		if len(parts) == 2 {
+			k := strings.ToLower(strings.TrimSpace(parts[0]))
+			v := strings.TrimSpace(parts[1])
+			switch k {
+			case "server":
+				info.ServerHeader = v
+			case "x-powered-by":
+				info.XPoweredBy = v
+			case "location":
+				info.Location = v
+			}
+		}
+	}
+
+	serverLower := strings.ToLower(info.ServerHeader)
+	xPoweredLower := strings.ToLower(info.XPoweredBy)
+
+	if strings.Contains(serverLower, "uvicorn") {
+		info.DetectedService = "FastAPI / Starlette (Uvicorn)"
+	} else if strings.Contains(serverLower, "werkzeug") {
+		info.DetectedService = "Flask (Werkzeug)"
+	} else if strings.Contains(serverLower, "gunicorn") {
+		info.DetectedService = "Gunicorn WSGI"
+	} else if strings.Contains(xPoweredLower, "express") {
+		info.DetectedService = "Express (Node.js)"
+	} else if strings.Contains(xPoweredLower, "next.js") {
+		info.DetectedService = "Next.js"
+	} else if strings.Contains(serverLower, "nginx") {
+		info.DetectedService = "Nginx Proxy"
+	} else if strings.Contains(serverLower, "caddy") {
+		info.DetectedService = "Caddy Server"
+	} else if strings.Contains(serverLower, "apache") {
+		info.DetectedService = "Apache HTTP Server"
+	} else if strings.Contains(serverLower, "kestrel") {
+		info.DetectedService = "ASP.NET Core (Kestrel)"
+	} else if info.ServerHeader != "" {
+		info.DetectedService = info.ServerHeader
+	} else if info.XPoweredBy != "" {
+		info.DetectedService = info.XPoweredBy
+	}
+}
+
+func detectNonHTTPProtocols(data string, info *PortProbeInfo) {
+	if strings.Contains(data, "mysql_native_password") || strings.Contains(data, "caching_sha2_password") || strings.Contains(data, "MariaDB") {
+		info.DetectedService = "MySQL / MariaDB"
+	} else if strings.Contains(data, "SSH-") {
+		info.DetectedService = "SSH Server"
+	}
+}
+
 func handlePortsList(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ports, err := scanListeningPorts()
@@ -5245,9 +5406,45 @@ func handlePortsList(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
 		return
 	}
+
+	if r.URL.Query().Get("probe") == "true" {
+		var wg sync.WaitGroup
+		for i := range ports {
+			wg.Add(1)
+			go func(idx int) {
+				defer wg.Done()
+				probeRes := probePort(ports[idx].Port)
+				ports[idx].Probe = &probeRes
+			}(i)
+		}
+		wg.Wait()
+	}
+
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"success":   true,
 		"listening": ports,
+	})
+}
+
+func handlePortProbe(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Port int `json:"port"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+	if req.Port <= 0 || req.Port > 65535 {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid port"})
+		return
+	}
+	res := probePort(req.Port)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"probe":   res,
 	})
 }
 

@@ -9,6 +9,7 @@ import type {
   PortStatus,
   PortVisibility,
   PortProtocol,
+  PortProbeInfo,
 } from "../types/ports";
 import { recognizePortService } from "../utils/portServiceRecognizer";
 import { useToast } from "./useToast";
@@ -115,7 +116,7 @@ export function usePorts() {
       const lp = listeningMap.get(portNum);
 
       const status: PortStatus = isStopped ? "inactive" : isListening ? "active" : "inactive";
-      const recognized = recognizePortService(portNum, lp?.process, lp?.commandLine);
+      const recognized = recognizePortService(portNum, lp?.process, lp?.commandLine, lp?.probe);
 
       const localPort = userConfig.localPort || portNum;
       const protocol: PortProtocol = userConfig.protocol || recognized.defaultProtocol || "http";
@@ -137,6 +138,7 @@ export function usePorts() {
         forwardAddress: `localhost:${localPort}`,
         previewUrl: `${protocol}://localhost:${localPort}/`,
         icon: userConfig.icon || recognized.icon,
+        probe: lp?.probe,
       };
 
       mergedMap.set(portNum, item);
@@ -149,7 +151,7 @@ export function usePorts() {
         if (userIgnoredAutoPorts.value.has(lp.port)) continue;
 
         const isStopped = userStoppedPorts.value.has(lp.port);
-        const recognized = recognizePortService(lp.port, lp.process, lp.commandLine);
+        const recognized = recognizePortService(lp.port, lp.process, lp.commandLine, lp.probe);
         const localPort = lp.port;
         const protocol: PortProtocol = recognized.defaultProtocol || "http";
 
@@ -168,6 +170,7 @@ export function usePorts() {
           forwardAddress: `localhost:${localPort}`,
           previewUrl: `${protocol}://localhost:${localPort}/`,
           icon: recognized.icon,
+          probe: lp.probe,
         };
 
         mergedMap.set(lp.port, item);
@@ -179,12 +182,12 @@ export function usePorts() {
   }
 
   /**
-   * Fetch system listening ports from backend API.
+   * Fetch system listening ports from backend API with protocol probe.
    */
   async function fetchPorts(): Promise<PortForwardItem[]> {
     isLoading.value = true;
     try {
-      const res = await fetch("/api/ports/list");
+      const res = await fetch("/api/ports/list?probe=true");
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.listening)) {
@@ -404,6 +407,33 @@ export function usePorts() {
     window.open(url, "_blank");
   }
 
+  /**
+   * Method B: Actively probe a single port for TLS / HTTP server headers.
+   */
+  async function probeSinglePort(port: number): Promise<PortProbeInfo | null> {
+    try {
+      const res = await fetch("/api/ports/probe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ port }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.probe) {
+          const lp = listeningPorts.value.find((p) => p.port === port);
+          if (lp) {
+            lp.probe = data.probe;
+            syncPortsList();
+          }
+          return data.probe;
+        }
+      }
+    } catch (e) {
+      console.warn(`Probe failed for port ${port}:`, e);
+    }
+    return null;
+  }
+
   return {
     ports,
     filteredPorts,
@@ -413,6 +443,7 @@ export function usePorts() {
     searchQuery,
     autoDetectEnabled,
     fetchPorts,
+    probeSinglePort,
     addPort,
     updatePort,
     stopPort,

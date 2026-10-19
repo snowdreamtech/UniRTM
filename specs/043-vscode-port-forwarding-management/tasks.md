@@ -37,16 +37,16 @@
 - [x] 5.3 运行 `go vet ./...` 与 `go test ./cmd/...` 确保后端稳健
 
 ## 阶段 6：方式 B 网络层应用协议探针 (Protocol Probing) 实现
-- [ ] 6.1 在 `frontend/src/types/ports.ts` 中定义 `PortProbeInfo` 探针数据结构与 `protocol` 协议推断增强
-- [ ] 6.2 在 `cmd/64.ui.go` 中实现并发轻量级网络应用协议探针：
+- [x] 6.1 在 `frontend/src/types/ports.ts` 中定义 `PortProbeInfo` 探针数据结构与 `protocol` 协议推断增强
+- [x] 6.2 在 `cmd/64.ui.go` 中实现并发轻量级网络应用协议探针：
   - 严格限制并发超时（<= 40ms），保障系统高吞吐
   - TLS 握手嗅探（发送 TLS ClientHello 探测是否为原生 HTTPS/TLS 服务）
   - HTTP 协议与 Server 标头嗅探（发送 `HEAD /` 提取 `Server`、`X-Powered-By`、`Location`）
   - 常见数据库/中间件握手指纹探测（Redis `PING` / MySQL 握手包）
-- [ ] 6.3 扩展后端 API：`GET /api/ports/list?probe=true` 及 `POST /api/ports/probe`
-- [ ] 6.4 在 `frontend/vite.config.ts` 中实现同构的本地 Dev 开发中间件探针路由
-- [ ] 6.5 在 `frontend/src/utils/portServiceRecognizer.ts` 与 `frontend/src/composables/usePorts.ts` 中联动探针结果，实现自动升级协议为 `https` 及提取精确框架/容器服务名称
-- [ ] 6.6 编写单元测试验证探针解析器与协议自适应逻辑
+- [x] 6.3 扩展后端 API：`GET /api/ports/list?probe=true` 及 `POST /api/ports/probe`
+- [x] 6.4 在 `frontend/vite.config.ts` 中实现同构的本地 Dev 开发中间件探针路由
+- [x] 6.5 在 `frontend/src/utils/portServiceRecognizer.ts` 与 `frontend/src/composables/usePorts.ts` 中联动探针结果，实现自动升级协议为 `https` 及提取精确框架/容器服务名称
+- [x] 6.6 编写单元测试验证探针解析器与协议自适应逻辑
 
 ## 阶段 7：方式 C 工作区上下文语义关联推断 (Workspace Context Inference) 实现
 - [ ] 7.1 在 `frontend/src/types/ports.ts` 中定义 `WorkspaceServiceHint` 工作区服务推断结构

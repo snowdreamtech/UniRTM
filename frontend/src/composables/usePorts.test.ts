@@ -123,4 +123,39 @@ describe("usePorts composable", () => {
     const nextPort = findAvailableLocalPort(8080);
     expect(nextPort).toBe(8081);
   });
+
+  it("fetchPorts adapts to HTTPS and detected framework banner from probe", async () => {
+    const mockListening = [
+      {
+        port: 8443,
+        protocol: "tcp",
+        localAddress: "127.0.0.1:8443",
+        process: "uvicorn",
+        probe: {
+          port: 8443,
+          isHttps: true,
+          httpStatus: 200,
+          serverHeader: "uvicorn",
+          detectedService: "FastAPI / Starlette (Uvicorn)",
+          probeDurationMs: 5,
+        },
+      },
+    ];
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, listening: mockListening }),
+    });
+
+    const { ports, fetchPorts } = usePorts();
+    await fetchPorts();
+
+    const uvicornPort = ports.value.find((p) => p.port === 8443);
+    expect(uvicornPort).toBeDefined();
+    expect(uvicornPort?.protocol).toBe("https");
+    expect(uvicornPort?.label).toBe("FastAPI / Starlette (Uvicorn)");
+    expect(uvicornPort?.previewUrl).toContain("https://localhost:8443/");
+    expect(uvicornPort?.probe?.isHttps).toBe(true);
+  });
 });
+
