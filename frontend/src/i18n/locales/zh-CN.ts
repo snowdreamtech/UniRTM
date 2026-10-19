@@ -1140,4 +1140,8 @@ export const zhCn: TranslationDict = {
   "explorer.added_to_workspace": "已将文件夹添加到工作区",
   "explorer.removed_from_workspace": "已将文件夹从工作区删除",
   "explorer.workspace_multi_title": "工作区 ({count} 个文件夹)",
+  "scm.repositories": "存储库",
+  "scm.active_repo": "当前活动存储库",
+  "scm.sidebar.commit_placeholder_branch": "消息(按Enter在“{branch}”提交)",
+  "scm.graph.repo_label": "存储库:",
 };

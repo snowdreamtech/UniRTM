@@ -1135,4 +1135,8 @@ export const zhTw: TranslationDict = {
   "explorer.added_to_workspace": "已將資料夾新增至工作區",
   "explorer.removed_from_workspace": "已將資料夾從工作區移除",
   "explorer.workspace_multi_title": "工作區 ({count} 個資料夾)",
+  "scm.repositories": "存放庫",
+  "scm.active_repo": "目前使用中的存放庫",
+  "scm.sidebar.commit_placeholder_branch": "訊息 (按 Enter 在「{branch}」提交)",
+  "scm.graph.repo_label": "存放庫:",
 };

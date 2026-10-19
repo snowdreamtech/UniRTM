@@ -1125,4 +1125,8 @@ export const noNo: TranslationDict = {
   "explorer.added_to_workspace": "Added folder to workspace",
   "explorer.removed_from_workspace": "Removed folder from workspace",
   "explorer.workspace_multi_title": "WORKSPACE ({count} FOLDERS)",
+  "scm.repositories": "Repositories",
+  "scm.active_repo": "Active Repository",
+  "scm.sidebar.commit_placeholder_branch": "Message (press Enter to commit on \"{branch}\")",
+  "scm.graph.repo_label": "Repo:",
 };
