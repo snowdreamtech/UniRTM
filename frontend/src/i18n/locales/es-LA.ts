@@ -1071,4 +1071,5 @@ export const esLa: TranslationDict = {
   "ports.keep_private_recommended": "Keep Private (Recommended)",
   "ports.force_public": "Force Make Public",
   "ports.high_risk_ack": "I acknowledge data exposure and security risks, and confirm exposing this database/infra service externally",
+  "drawer.panel_views": "Panel Views",
 };

@@ -1080,4 +1080,5 @@ export const zhTw: TranslationDict = {
   "ports.keep_private_recommended": "保持私有 (推荐)",
   "ports.force_public": "强制设为公开",
   "ports.high_risk_ack": "我已知晓数据泄露与网络安全风险，仍确认将该数据库/管理服务暴露给外部网络",
+  "drawer.panel_views": "面板视图",
 };

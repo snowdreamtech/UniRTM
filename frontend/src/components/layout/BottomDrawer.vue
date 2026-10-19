@@ -21,7 +21,7 @@
       <!-- Tabs on the left (draggable with VS Code drop indicator) -->
       <div class="drawer-tabs" @contextmenu.prevent="handleTabContextMenu($event)">
         <button
-          v-for="tabId in tabOrder"
+          v-for="tabId in visibleTabs"
           :key="tabId"
           class="drawer-tab"
           :class="{
@@ -390,7 +390,7 @@
     <!-- Dragging overlay for drawer height -->
     <div v-if="isDrawerHeightDragging" class="drawer-height-drag-overlay"></div>
 
-    <!-- Tab Context Menu (VS Code style right-click to reset) -->
+    <!-- Tab Context Menu (VS Code style right-click menu with visibility checks) -->
     <Teleport to="body">
       <div
         v-if="isTabContextMenuOpen"
@@ -398,12 +398,42 @@
         :style="{ top: `${tabContextMenuY}px`, left: `${tabContextMenuX}px` }"
         @click.stop
       >
+        <div class="context-menu-header">{{ t("drawer.panel_views") || "面板视图" }}</div>
+        <div
+          v-for="tabId in DEFAULT_TAB_ORDER"
+          :key="tabId"
+          class="tab-context-menu-item"
+          :class="{ disabled: !hiddenTabs.has(tabId) && visibleTabs.length <= 1 }"
+          @click="toggleTabVisibility(tabId)"
+        >
+          <span class="context-check-icon">
+            <svg
+              v-if="!hiddenTabs.has(tabId)"
+              viewBox="0 0 16 16"
+              width="13"
+              height="13"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="3 8.5 6.5 12 13 4" />
+            </svg>
+          </span>
+          <TechIcon :id="tabDefinitions[tabId].icon" :size="13" />
+          <span class="context-item-label">{{ tabDefinitions[tabId].label }}</span>
+        </div>
+
+        <div class="context-menu-divider"></div>
+
         <div class="tab-context-menu-item" @click="handleResetTabOrder">
+          <span class="context-check-icon"></span>
           <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M2.5 8a5.5 5.5 0 1 0 1.5-3.8L2 6" />
             <path d="M2 2.5v3.5h3.5" />
           </svg>
-          <span>{{ t("drawer.reset_tab_order") || "重置标签页顺序" }}</span>
+          <span>{{ t("drawer.reset_tab_order") || "重置标签页顺序与可见性" }}</span>
         </div>
       </div>
     </Teleport>
@@ -676,6 +706,14 @@ const isMaximized = ref(getInitialMaximized());
 const logContainerRef = ref<HTMLElement | null>(null);
 
 watch(currentTab, (val) => {
+  if (hiddenTabs.value.has(val)) {
+    const newHidden = new Set(hiddenTabs.value);
+    newHidden.delete(val);
+    hiddenTabs.value = newHidden;
+    try {
+      localStorage.setItem(DRAWER_TAB_HIDDEN_KEY, JSON.stringify([...newHidden]));
+    } catch {}
+  }
   if (typeof localStorage !== "undefined") {
     localStorage.setItem(DRAWER_TAB_KEY, val);
   }
@@ -705,6 +743,7 @@ const doctorLogs = computed(() =>
 );
 
 const DRAWER_TAB_ORDER_KEY = "unirtm_drawer_tab_order";
+const DRAWER_TAB_HIDDEN_KEY = "unirtm_drawer_tab_hidden";
 const DEFAULT_TAB_ORDER: DrawerTab[] = ["terminal", "output", "tasks", "doctor", "ports"];
 
 function getInitialTabOrder(): DrawerTab[] {
@@ -723,7 +762,27 @@ function getInitialTabOrder(): DrawerTab[] {
   return [...DEFAULT_TAB_ORDER];
 }
 
+function getInitialHiddenTabs(): Set<DrawerTab> {
+  if (typeof localStorage === "undefined") return new Set();
+  try {
+    const saved = localStorage.getItem(DRAWER_TAB_HIDDEN_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return new Set(parsed.filter((id): id is DrawerTab => DEFAULT_TAB_ORDER.includes(id as DrawerTab)));
+      }
+    }
+  } catch {}
+  return new Set();
+}
+
 const tabOrder = ref<DrawerTab[]>(getInitialTabOrder());
+const hiddenTabs = ref<Set<DrawerTab>>(getInitialHiddenTabs());
+
+const visibleTabs = computed<DrawerTab[]>(() => {
+  const visible = tabOrder.value.filter((id) => !hiddenTabs.value.has(id));
+  return visible.length > 0 ? visible : ["terminal"];
+});
 
 interface TabDefinition {
   id: DrawerTab;
@@ -873,10 +932,37 @@ function handleTabContextMenu(e: MouseEvent) {
   isTabContextMenuOpen.value = true;
 }
 
+function toggleTabVisibility(tabId: DrawerTab) {
+  const newHidden = new Set(hiddenTabs.value);
+  if (newHidden.has(tabId)) {
+    newHidden.delete(tabId);
+  } else {
+    // 保护：至少保留 1 个可见 Tab
+    if (visibleTabs.value.length <= 1) {
+      return;
+    }
+    newHidden.add(tabId);
+
+    // 如果被隐藏的 Tab 正好是当前激活的 Tab，则自动切换到剩余可见的第一个 Tab
+    if (currentTab.value === tabId) {
+      const remaining = tabOrder.value.filter((id) => !newHidden.has(id));
+      if (remaining.length > 0) {
+        currentTab.value = remaining[0];
+      }
+    }
+  }
+  hiddenTabs.value = newHidden;
+  try {
+    localStorage.setItem(DRAWER_TAB_HIDDEN_KEY, JSON.stringify([...newHidden]));
+  } catch {}
+}
+
 function handleResetTabOrder() {
   tabOrder.value = [...DEFAULT_TAB_ORDER];
+  hiddenTabs.value = new Set();
   try {
     localStorage.removeItem(DRAWER_TAB_ORDER_KEY);
+    localStorage.removeItem(DRAWER_TAB_HIDDEN_KEY);
   } catch {}
   isTabContextMenuOpen.value = false;
 }
@@ -1293,6 +1379,37 @@ onUnmounted(() => {
   }
 }
 
+.context-menu-header {
+  padding: 4px 10px 6px 10px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted, #9ca3af);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 3px;
+}
+
+.context-menu-divider {
+  height: 1px;
+  background: var(--card-border, #1f2937);
+  margin: 4px 0;
+}
+
+.context-check-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-cyan, #00e5ff);
+  flex-shrink: 0;
+}
+
+.context-item-label {
+  flex: 1;
+}
+
 .tab-context-menu-item {
   display: flex;
   align-items: center;
@@ -1303,9 +1420,14 @@ onUnmounted(() => {
   transition: background 0.12s ease, color 0.12s ease;
 }
 
-.tab-context-menu-item:hover {
+.tab-context-menu-item:hover:not(.disabled) {
   background: rgba(0, 229, 255, 0.12);
   color: var(--accent-cyan, #00e5ff);
+}
+
+.tab-context-menu-item.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* Shell options for New Terminal dropdown */
