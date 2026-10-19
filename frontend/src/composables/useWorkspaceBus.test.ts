@@ -64,6 +64,20 @@ describe("useWorkspaceBus", () => {
     unsubscribe();
   });
 
+  it("handles file reload notifications", () => {
+    const bus = useWorkspaceBus();
+    const listener = vi.fn();
+    const unsubscribe = bus.onFileReloadNeeded(listener);
+
+    bus.notifyFileReloadNeeded(["src/main.ts", "package.json"]);
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith(["src/main.ts", "package.json"]);
+
+    unsubscribe();
+    bus.notifyFileReloadNeeded(["src/main.ts"]);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
   it("records and updates active file path", () => {
     const bus = useWorkspaceBus();
     expect(bus.currentActiveFilePath.value).toBe("");

@@ -253,6 +253,48 @@ describe("useEditorTabs", () => {
     setTabGitStatus("foo.ts", "M");
     expect(tabs.value[0].gitStatus).toBe("M");
   });
+
+  it("safely saves dirty tabs matching specified paths", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ content: "init-1" }) } as any)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ content: "init-2" }) } as any)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) } as any);
+
+    const { tabs, openTab, updateContent, saveDirtyTabsForPaths } = useEditorTabs();
+
+    await openTab({ path: "file1.ts", name: "file1.ts" });
+    await openTab({ path: "file2.ts", name: "file2.ts" });
+
+    updateContent("file1.ts", "dirty-1");
+    updateContent("file2.ts", "dirty-2");
+
+    expect(tabs.value[0].isDirty).toBe(true);
+    expect(tabs.value[1].isDirty).toBe(true);
+
+    // Save only file1.ts
+    await saveDirtyTabsForPaths(["file1.ts"]);
+
+    expect(tabs.value[0].isDirty).toBe(false);
+    expect(tabs.value[1].isDirty).toBe(true);
+  });
+
+  it("reloads tabs matching specified paths and resets dirty status", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ content: "old-content" }) } as any)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ content: "reloaded-content" }) } as any);
+
+    const { tabs, openTab, updateContent, reloadTabsForPaths } = useEditorTabs();
+
+    await openTab({ path: "file.txt", name: "file.txt" });
+    updateContent("file.txt", "uncommitted-dirty");
+    expect(tabs.value[0].isDirty).toBe(true);
+
+    await reloadTabsForPaths(["file.txt"]);
+
+    expect(tabs.value[0].content).toBe("reloaded-content");
+    expect(tabs.value[0].originalContent).toBe("reloaded-content");
+    expect(tabs.value[0].isDirty).toBe(false);
+  });
 });
 
 

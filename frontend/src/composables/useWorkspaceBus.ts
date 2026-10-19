@@ -21,12 +21,14 @@ export interface WorkspaceDiffRequest {
 type RevealListener = (req: RevealRequest) => void;
 type GitStatusChangeListener = () => void;
 type OpenDiffListener = (req: WorkspaceDiffRequest) => void;
+type FileReloadListener = (paths: string[]) => void;
 
 const lastRevealRequest = ref<RevealRequest | null>(null);
 const currentActiveFilePath = ref<string>("");
 const revealListeners = new Set<RevealListener>();
 const gitStatusChangeListeners = new Set<GitStatusChangeListener>();
 const openDiffListeners = new Set<OpenDiffListener>();
+const fileReloadListeners = new Set<FileReloadListener>();
 
 /**
  * useWorkspaceBus: 轻量级跨组件协同状态总线
@@ -106,6 +108,30 @@ export function useWorkspaceBus() {
   }
 
   /**
+   * 通知指定路径的文件需要从磁盘重新加载最新内容（如执行了 Git Discard、外部变更或 Checkout）
+   */
+  function notifyFileReloadNeeded(paths: string[]): void {
+    if (!paths || paths.length === 0) return;
+    fileReloadListeners.forEach((fn) => {
+      try {
+        fn(paths);
+      } catch (err) {
+        console.error("[WorkspaceBus] Error in file reload listener:", err);
+      }
+    });
+  }
+
+  /**
+   * 注册文件重新加载监听器
+   */
+  function onFileReloadNeeded(listener: FileReloadListener): () => void {
+    fileReloadListeners.add(listener);
+    return () => {
+      fileReloadListeners.delete(listener);
+    };
+  }
+
+  /**
    * 记录当前编辑器聚焦的活跃文件
    */
   function setActiveFilePath(path: string): void {
@@ -119,6 +145,7 @@ export function useWorkspaceBus() {
     revealListeners.clear();
     gitStatusChangeListeners.clear();
     openDiffListeners.clear();
+    fileReloadListeners.clear();
     lastRevealRequest.value = null;
     currentActiveFilePath.value = "";
   }
@@ -132,6 +159,8 @@ export function useWorkspaceBus() {
     onGitStatusChanged,
     openDiff,
     onOpenDiff,
+    notifyFileReloadNeeded,
+    onFileReloadNeeded,
     setActiveFilePath,
     _clearAllListeners,
   };

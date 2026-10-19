@@ -4,6 +4,7 @@
 import { ref, computed } from "vue";
 import { getLanguageForFile } from "../services/editor/monacoLoader";
 import { useToast } from "./useToast";
+import { useWorkspaceBus } from "./useWorkspaceBus";
 
 export interface DiffTabMeta {
   originalPath?: string;
@@ -205,6 +206,47 @@ export function useEditorTabs() {
     }
   }
 
+  /**
+   * 保存指定路径列表中处于未保存（dirty）状态的标签页。
+   * 如果 paths 未提供或为空，则保存所有处于 dirty 状态的标签页。
+   */
+  async function saveDirtyTabsForPaths(paths?: string[]): Promise<void> {
+    const pathSet = paths && paths.length > 0 ? new Set(paths) : null;
+    const dirtyTabs = tabs.value.filter((t) => t.isDirty && (!pathSet || pathSet.has(t.path)));
+    for (const tab of dirtyTabs) {
+      await saveTab(tab.id);
+    }
+  }
+
+  /**
+   * 重新拉取指定路径列表在磁盘上的最新内容，用于 Git Discard 或外部文件变更时同步。
+   */
+  async function reloadTabsForPaths(paths: string[]): Promise<void> {
+    if (!paths || paths.length === 0) return;
+    const pathSet = new Set(paths);
+    const targetTabs = tabs.value.filter((t) => !t.isDiff && pathSet.has(t.path));
+    for (const tab of targetTabs) {
+      try {
+        const res = await fetch(`/api/fs/read?path=${encodeURIComponent(tab.path)}`);
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.content !== undefined ? data.content : data.data?.content ?? "";
+          tab.content = content;
+          tab.originalContent = content;
+          tab.isDirty = false;
+        }
+      } catch (err) {
+        console.warn(`[useEditorTabs] Failed to reload tab ${tab.path}:`, err);
+      }
+    }
+  }
+
+  // 监听工作区总线触发的文件重载通知（如 Git Discard、外部变更或分支切换）
+  const workspaceBus = useWorkspaceBus();
+  workspaceBus.onFileReloadNeeded((paths) => {
+    reloadTabsForPaths(paths);
+  });
+
   function closeTab(tabId: string): void {
     const index = tabs.value.findIndex((t) => t.id === tabId);
     if (index === -1) return;
@@ -346,6 +388,8 @@ export function useEditorTabs() {
     updateContent,
     saveTab,
     saveAllTabs,
+    saveDirtyTabsForPaths,
+    reloadTabsForPaths,
     closeTab,
     closeOtherTabs,
     closeTabsToRight,

@@ -4,6 +4,8 @@
 import { ref, computed } from "vue";
 import { useToast } from "./useToast";
 import { t } from "../i18n";
+import { useWorkspaceBus } from "./useWorkspaceBus";
+import { useEditorTabs } from "./useEditorTabs";
 
 export interface GitChangeItem {
   path: string;
@@ -249,6 +251,14 @@ export function useGit() {
   async function stage(paths?: string[]): Promise<boolean> {
     isLoading.value = true;
     try {
+      // 防冲突：如果暂存的文件在编辑器中处于未保存（dirty）状态，先安全刷盘保存
+      try {
+        const { saveDirtyTabsForPaths } = useEditorTabs();
+        await saveDirtyTabsForPaths(paths);
+      } catch (saveErr) {
+        console.warn("[useGit] Failed to pre-save dirty tabs before stage:", saveErr);
+      }
+
       const res = await fetch("/api/git/stage", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -259,6 +269,7 @@ export function useGit() {
         throw new Error(data.error || "暂存操作失败");
       }
       await fetchStatus();
+      useWorkspaceBus().notifyGitStatusChanged();
       return true;
     } catch (err: any) {
       showToast(err.message || "暂存失败", "error");
@@ -311,6 +322,12 @@ export function useGit() {
       }
       showToast(`已放弃 ${paths.length} 个文件的更改`, "info");
       await fetchStatus();
+
+      // 通知编辑器重新加载最新还原后的磁盘内容，防止旧脏状态滞留
+      const bus = useWorkspaceBus();
+      bus.notifyGitStatusChanged();
+      bus.notifyFileReloadNeeded(paths);
+
       return true;
     } catch (err: any) {
       showToast(err.message || "放弃更改失败", "error");
@@ -374,6 +391,20 @@ export function useGit() {
       }
       showToast(`已切换至分支: ${branch}`, "success");
       await Promise.all([fetchStatus(), fetchBranches()]);
+
+      const bus = useWorkspaceBus();
+      bus.notifyGitStatusChanged();
+      // 通知所有已打开的普通标签页刷新内容（因为切换分支后文件版本变了）
+      try {
+        const { tabs } = useEditorTabs();
+        const openPaths = tabs.value.filter((t) => !t.isDiff).map((t) => t.path);
+        if (openPaths.length > 0) {
+          bus.notifyFileReloadNeeded(openPaths);
+        }
+      } catch (tabsErr) {
+        console.warn("[useGit] Failed to notify tabs on checkout:", tabsErr);
+      }
+
       return true;
     } catch (err: any) {
       showToast(err.message || "切换分支失败", "error");
