@@ -40,6 +40,9 @@ function findUnirtmBinary(rootDir: string): string {
 export default defineConfig({
   resolve: {
     alias: {
+      "monaco-editor/min": fileURLToPath(
+        new URL("./node_modules/monaco-editor/min", import.meta.url)
+      ),
       "monaco-editor/min/vs/editor/editor.main.css": fileURLToPath(
         new URL("./node_modules/monaco-editor/min/vs/editor/editor.main.css", import.meta.url)
       ),

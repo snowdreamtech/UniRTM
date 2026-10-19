@@ -46,6 +46,7 @@ import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import type * as MonacoType from "monaco-editor";
 import "monaco-editor/min/vs/editor/editor.main.css";
 import { loadMonaco, getLanguageForFile } from "../../services/editor/monacoLoader";
+import { setupEditorContextMenuLocalization } from "../../services/editor/monacoLocalization";
 import type { EditorTab } from "../../composables/useEditorTabs";
 
 const props = defineProps<{
@@ -98,9 +99,8 @@ function updateModels(): void {
 }
 
 function getPreferredTheme(): string {
-  const isDark = document.documentElement.classList.contains("dark") ||
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
-  return isDark ? "vs-dark" : "vs";
+  const isLight = document.documentElement.getAttribute("data-theme") === "light";
+  return isLight ? "unirtm-light" : "unirtm-dark";
 }
 
 onMounted(async () => {
@@ -120,7 +120,14 @@ onMounted(async () => {
       lineNumbers: "on",
       fontSize: 13,
       fontFamily: "'Fira Code', 'JetBrains Mono', Consolas, 'Courier New', monospace",
+      fixedOverflowWidgets: true,
+      useShadowDOM: false,
     });
+
+    const origEd = diffEditorInstance.getOriginalEditor();
+    const modEd = diffEditorInstance.getModifiedEditor();
+    if (origEd) setupEditorContextMenuLocalization(origEd, containerRef.value);
+    if (modEd) setupEditorContextMenuLocalization(modEd, containerRef.value);
 
     updateModels();
     isLoading.value = false;

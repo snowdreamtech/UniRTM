@@ -614,6 +614,51 @@ html[dir="rtl"] .opt-check {
   line-height: 26px !important;
 }
 
+/* Universal / Fallback (Dark Theme Editor -> Light Inverted Contrast Context Menu) */
+.context-view.monaco-menu-container,
+.context-view .monaco-scrollable-element,
+.context-view .monaco-menu {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.15) !important;
+}
+
+.context-view .monaco-menu .action-menu-item {
+  color: #0f172a !important;
+  background-color: transparent !important;
+}
+
+.context-view .monaco-menu .action-label {
+  color: inherit !important;
+}
+
+.context-view .monaco-menu .keybinding {
+  color: #64748b !important;
+}
+
+.context-view .monaco-menu .action-label.separator {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.context-view .monaco-menu .action-item.focused > .action-menu-item,
+.context-view .monaco-menu .action-item:hover > .action-menu-item,
+.context-view .monaco-menu .action-menu-item:hover {
+  background-color: #0060c0 !important;
+  color: #ffffff !important;
+}
+
+.context-view .monaco-menu .action-item.focused > .action-menu-item .keybinding,
+.context-view .monaco-menu .action-item:hover > .action-menu-item .keybinding,
+.context-view .monaco-menu .action-menu-item:hover .keybinding {
+  color: #f1f5f9 !important;
+}
+
+.context-view .monaco-menu .action-item.disabled .action-menu-item {
+  color: #94a3b8 !important;
+  background-color: transparent !important;
+}
+
 /* 1. Light Theme Editor -> Dark Inverted Contrast Context Menu */
 :root[data-theme="light"] .context-view.monaco-menu-container,
 :root[data-theme="light"] .context-view .monaco-scrollable-element,
@@ -643,9 +688,16 @@ html[dir="rtl"] .opt-check {
   border-bottom: 1px solid #334155 !important;
 }
 
+:root[data-theme="light"] .context-view .monaco-menu .action-label,
+[data-theme="light"] .context-view .monaco-menu .action-label {
+  color: inherit !important;
+}
+
 :root[data-theme="light"] .context-view .monaco-menu .action-item.focused > .action-menu-item,
+:root[data-theme="light"] .context-view .monaco-menu .action-item:hover > .action-menu-item,
 :root[data-theme="light"] .context-view .monaco-menu .action-menu-item:hover,
 [data-theme="light"] .context-view .monaco-menu .action-item.focused > .action-menu-item,
+[data-theme="light"] .context-view .monaco-menu .action-item:hover > .action-menu-item,
 [data-theme="light"] .context-view .monaco-menu .action-menu-item:hover {
   background-color: #04395e !important;
   color: #ffffff !important;
@@ -692,9 +744,16 @@ html[dir="rtl"] .opt-check {
   border-bottom: 1px solid #e2e8f0 !important;
 }
 
+:root[data-theme="dark"] .context-view .monaco-menu .action-label,
+[data-theme="dark"] .context-view .monaco-menu .action-label {
+  color: inherit !important;
+}
+
 :root[data-theme="dark"] .context-view .monaco-menu .action-item.focused > .action-menu-item,
+:root[data-theme="dark"] .context-view .monaco-menu .action-item:hover > .action-menu-item,
 :root[data-theme="dark"] .context-view .monaco-menu .action-menu-item:hover,
 [data-theme="dark"] .context-view .monaco-menu .action-item.focused > .action-menu-item,
+[data-theme="dark"] .context-view .monaco-menu .action-item:hover > .action-menu-item,
 [data-theme="dark"] .context-view .monaco-menu .action-menu-item:hover {
   background-color: #0060c0 !important;
   color: #ffffff !important;

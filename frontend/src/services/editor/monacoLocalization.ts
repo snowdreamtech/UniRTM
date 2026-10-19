@@ -149,12 +149,21 @@ function ensureGlobalMenuObserver(): void {
     let shouldTranslate = false;
     for (let i = 0; i < mutations.length; i++) {
       const mut = mutations[i];
+      const target = mut.target as HTMLElement;
+      if (
+        (target && target.nodeType === Node.ELEMENT_NODE && target.closest?.(".context-view, .monaco-menu")) ||
+        (target && target.parentElement?.closest?.(".context-view, .monaco-menu"))
+      ) {
+        shouldTranslate = true;
+        break;
+      }
       if (mut.addedNodes.length > 0) {
         for (let j = 0; j < mut.addedNodes.length; j++) {
           const node = mut.addedNodes[j];
           if (node.nodeType === Node.ELEMENT_NODE) {
             const el = node as HTMLElement;
             if (
+              el.matches?.(".action-label, .action-menu-item, .monaco-menu, .context-view") ||
               el.classList?.contains("context-view") ||
               el.classList?.contains("monaco-menu-container") ||
               el.querySelector?.(".action-label")
@@ -175,6 +184,7 @@ function ensureGlobalMenuObserver(): void {
   globalMenuObserver.observe(document.body, {
     childList: true,
     subtree: true,
+    characterData: true,
   });
 }
 
@@ -190,6 +200,39 @@ export async function setupMonacoLocalization(): Promise<void> {
     } else if (lang.startsWith("zh")) {
       // @ts-ignore
       await import("monaco-editor/min/vs/nls/lang/zh-cn.js");
+    } else if (lang.startsWith("ja")) {
+      // @ts-ignore
+      await import("monaco-editor/min/vs/nls/lang/ja.js");
+    } else if (lang.startsWith("ko")) {
+      // @ts-ignore
+      await import("monaco-editor/min/vs/nls/lang/ko.js");
+    } else if (lang.startsWith("de")) {
+      // @ts-ignore
+      await import("monaco-editor/min/vs/nls/lang/de.js");
+    } else if (lang.startsWith("fr")) {
+      // @ts-ignore
+      await import("monaco-editor/min/vs/nls/lang/fr.js");
+    } else if (lang.startsWith("es")) {
+      // @ts-ignore
+      await import("monaco-editor/min/vs/nls/lang/es.js");
+    } else if (lang.startsWith("ru")) {
+      // @ts-ignore
+      await import("monaco-editor/min/vs/nls/lang/ru.js");
+    } else if (lang.startsWith("it")) {
+      // @ts-ignore
+      await import("monaco-editor/min/vs/nls/lang/it.js");
+    } else if (lang === "pt-BR") {
+      // @ts-ignore
+      await import("monaco-editor/min/vs/nls/lang/pt-br.js");
+    } else if (lang.startsWith("tr")) {
+      // @ts-ignore
+      await import("monaco-editor/min/vs/nls/lang/tr.js");
+    } else if (lang.startsWith("pl")) {
+      // @ts-ignore
+      await import("monaco-editor/min/vs/nls/lang/pl.js");
+    } else if (lang.startsWith("cs")) {
+      // @ts-ignore
+      await import("monaco-editor/min/vs/nls/lang/cs.js");
     }
   } catch (err) {
     console.warn("[monacoLocalization] Failed to load Monaco NLS messages:", err);
@@ -207,11 +250,14 @@ export function setupEditorContextMenuLocalization(editor: any, container: HTMLE
 
   const handleContextMenu = () => {
     localizeEditorActions(editor);
-    // 菜单由 Monaco 异步挂载到 DOM，多次微任务与动画帧轮询确保即时汉化
+    // 菜单由 Monaco 异步挂载到 DOM，多次微任务与动画帧轮询确保即时汉化，杜绝二次右键时变回英文
+    translateActiveMonacoMenus();
     requestAnimationFrame(() => {
       translateActiveMonacoMenus();
-      setTimeout(translateActiveMonacoMenus, 20);
-      setTimeout(translateActiveMonacoMenus, 60);
+      setTimeout(translateActiveMonacoMenus, 10);
+      setTimeout(translateActiveMonacoMenus, 30);
+      setTimeout(translateActiveMonacoMenus, 80);
+      setTimeout(translateActiveMonacoMenus, 150);
     });
   };
 
