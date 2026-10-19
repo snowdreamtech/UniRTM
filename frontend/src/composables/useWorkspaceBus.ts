@@ -18,10 +18,18 @@ export interface WorkspaceDiffRequest {
   parentHash?: string;
 }
 
+export interface FileRenameEvent {
+  oldPath: string;
+  newPath: string;
+  isDir?: boolean;
+}
+
 type RevealListener = (req: RevealRequest) => void;
 type GitStatusChangeListener = () => void;
 type OpenDiffListener = (req: WorkspaceDiffRequest) => void;
 type FileReloadListener = (paths: string[]) => void;
+type FileRenameListener = (evt: FileRenameEvent) => void;
+type FileDeleteListener = (path: string) => void;
 
 const lastRevealRequest = ref<RevealRequest | null>(null);
 const currentActiveFilePath = ref<string>("");
@@ -29,6 +37,8 @@ const revealListeners = new Set<RevealListener>();
 const gitStatusChangeListeners = new Set<GitStatusChangeListener>();
 const openDiffListeners = new Set<OpenDiffListener>();
 const fileReloadListeners = new Set<FileReloadListener>();
+const fileRenameListeners = new Set<FileRenameListener>();
+const fileDeleteListeners = new Set<FileDeleteListener>();
 
 /**
  * useWorkspaceBus: 轻量级跨组件协同状态总线
@@ -132,6 +142,54 @@ export function useWorkspaceBus() {
   }
 
   /**
+   * 广播文件或目录重命名事件
+   */
+  function notifyFileRenamed(evt: FileRenameEvent): void {
+    if (!evt || !evt.oldPath || !evt.newPath) return;
+    fileRenameListeners.forEach((fn) => {
+      try {
+        fn(evt);
+      } catch (err) {
+        console.error("[WorkspaceBus] Error in file renamed listener:", err);
+      }
+    });
+  }
+
+  /**
+   * 注册文件或目录重命名监听器
+   */
+  function onFileRenamed(listener: FileRenameListener): () => void {
+    fileRenameListeners.add(listener);
+    return () => {
+      fileRenameListeners.delete(listener);
+    };
+  }
+
+  /**
+   * 广播文件或目录删除事件
+   */
+  function notifyFileDeleted(path: string): void {
+    if (!path) return;
+    fileDeleteListeners.forEach((fn) => {
+      try {
+        fn(path);
+      } catch (err) {
+        console.error("[WorkspaceBus] Error in file deleted listener:", err);
+      }
+    });
+  }
+
+  /**
+   * 注册文件或目录删除监听器
+   */
+  function onFileDeleted(listener: FileDeleteListener): () => void {
+    fileDeleteListeners.add(listener);
+    return () => {
+      fileDeleteListeners.delete(listener);
+    };
+  }
+
+  /**
    * 记录当前编辑器聚焦的活跃文件
    */
   function setActiveFilePath(path: string): void {
@@ -146,6 +204,8 @@ export function useWorkspaceBus() {
     gitStatusChangeListeners.clear();
     openDiffListeners.clear();
     fileReloadListeners.clear();
+    fileRenameListeners.clear();
+    fileDeleteListeners.clear();
     lastRevealRequest.value = null;
     currentActiveFilePath.value = "";
   }
@@ -161,6 +221,10 @@ export function useWorkspaceBus() {
     onOpenDiff,
     notifyFileReloadNeeded,
     onFileReloadNeeded,
+    notifyFileRenamed,
+    onFileRenamed,
+    notifyFileDeleted,
+    onFileDeleted,
     setActiveFilePath,
     _clearAllListeners,
   };

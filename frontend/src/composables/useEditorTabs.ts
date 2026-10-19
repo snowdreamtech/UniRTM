@@ -241,10 +241,67 @@ export function useEditorTabs() {
     }
   }
 
+  /**
+   * 处理文件或目录重命名，平滑迁移已打开标签页的路径和元数据
+   */
+  function handleFileRenamed({ oldPath, newPath }: { oldPath: string; newPath: string }): void {
+    const isDirRename = oldPath.endsWith("/") || tabs.value.some((t) => t.path.startsWith(`${oldPath}/`));
+    tabs.value.forEach((tab) => {
+      if (tab.isDiff) return;
+
+      if (tab.path === oldPath) {
+        // 单文件重命名
+        const newName = newPath.split("/").pop() || newPath;
+        tab.path = newPath;
+        tab.name = newName;
+        tab.language = getLanguageForFile(newName);
+        if (tab.id === oldPath) {
+          tab.id = newPath;
+          if (activeTabId.value === oldPath) {
+            activeTabId.value = newPath;
+          }
+        }
+      } else if (isDirRename && tab.path.startsWith(`${oldPath}/`)) {
+        // 目录重命名带来的子文件路径迁移
+        const relativeSuffix = tab.path.slice(oldPath.length);
+        const updatedPath = `${newPath}${relativeSuffix}`;
+        tab.path = updatedPath;
+        if (tab.id.startsWith(oldPath)) {
+          const oldId = tab.id;
+          tab.id = `${newPath}${relativeSuffix}`;
+          if (activeTabId.value === oldId) {
+            activeTabId.value = tab.id;
+          }
+        }
+      }
+    });
+  }
+
+  /**
+   * 处理文件或目录删除，自动关闭相关标签页
+   */
+  function handleFileDeleted(deletedPath: string): void {
+    const toClose: string[] = [];
+    tabs.value.forEach((tab) => {
+      if (tab.path === deletedPath || tab.path.startsWith(`${deletedPath}/`)) {
+        toClose.push(tab.id);
+      }
+    });
+    toClose.forEach((id) => closeTab(id));
+  }
+
   // 监听工作区总线触发的文件重载通知（如 Git Discard、外部变更或分支切换）
   const workspaceBus = useWorkspaceBus();
   workspaceBus.onFileReloadNeeded((paths) => {
     reloadTabsForPaths(paths);
+  });
+
+  workspaceBus.onFileRenamed((evt) => {
+    handleFileRenamed(evt);
+  });
+
+  workspaceBus.onFileDeleted((path) => {
+    handleFileDeleted(path);
   });
 
   function closeTab(tabId: string): void {
@@ -390,6 +447,8 @@ export function useEditorTabs() {
     saveAllTabs,
     saveDirtyTabsForPaths,
     reloadTabsForPaths,
+    handleFileRenamed,
+    handleFileDeleted,
     closeTab,
     closeOtherTabs,
     closeTabsToRight,

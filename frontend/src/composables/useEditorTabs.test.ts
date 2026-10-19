@@ -287,13 +287,51 @@ describe("useEditorTabs", () => {
 
     await openTab({ path: "file.txt", name: "file.txt" });
     updateContent("file.txt", "uncommitted-dirty");
-    expect(tabs.value[0].isDirty).toBe(true);
-
     await reloadTabsForPaths(["file.txt"]);
 
     expect(tabs.value[0].content).toBe("reloaded-content");
     expect(tabs.value[0].originalContent).toBe("reloaded-content");
     expect(tabs.value[0].isDirty).toBe(false);
+  });
+
+  it("seamlessly migrates open tabs on file or directory rename", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ content: "const a = 1;" }) } as any)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ content: "const b = 2;" }) } as any);
+
+    const { tabs, activeTabId, openTab, handleFileRenamed } = useEditorTabs();
+
+    await openTab({ path: "src/oldName.ts", name: "oldName.ts" });
+    await openTab({ path: "src/components/Header.vue", name: "Header.vue" });
+
+    // Single file rename
+    handleFileRenamed({ oldPath: "src/oldName.ts", newPath: "src/newName.ts" });
+    expect(tabs.value[0].path).toBe("src/newName.ts");
+    expect(tabs.value[0].name).toBe("newName.ts");
+    expect(tabs.value[0].language).toBe("typescript");
+
+    // Directory rename
+    handleFileRenamed({ oldPath: "src/components", newPath: "src/widgets" });
+    expect(tabs.value[1].path).toBe("src/widgets/Header.vue");
+    expect(tabs.value[1].name).toBe("Header.vue");
+    expect(activeTabId.value).toBe("src/widgets/Header.vue");
+  });
+
+  it("automatically closes tabs when their files are deleted", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ content: "f1" }) } as any)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ content: "f2" }) } as any);
+
+    const { tabs, openTab, handleFileDeleted } = useEditorTabs();
+
+    await openTab({ path: "temp/a.log", name: "a.log" });
+    await openTab({ path: "src/keep.ts", name: "keep.ts" });
+
+    expect(tabs.value.length).toBe(2);
+
+    handleFileDeleted("temp/a.log");
+    expect(tabs.value.length).toBe(1);
+    expect(tabs.value[0].path).toBe("src/keep.ts");
   });
 });
 

@@ -4,6 +4,7 @@
 import { ref, computed } from "vue";
 import { useToast } from "./useToast";
 import { useEditorTabs } from "./useEditorTabs";
+import { useWorkspaceBus } from "./useWorkspaceBus";
 import { t } from "../i18n";
 
 export interface FSNode {
@@ -281,6 +282,11 @@ export function useFileTree() {
           selectedNode.value.path = newPath;
           selectedNode.value.name = cleanName;
         }
+
+        const bus = useWorkspaceBus();
+        bus.notifyFileRenamed({ oldPath, newPath });
+        bus.notifyGitStatusChanged();
+
         await fetchTree();
         return true;
       } else {
@@ -307,6 +313,11 @@ export function useFileTree() {
           activeFileContent.value = "";
         }
         deleteConfirmModal.value = { visible: false, node: null };
+
+        const bus = useWorkspaceBus();
+        bus.notifyFileDeleted(path);
+        bus.notifyGitStatusChanged();
+
         await fetchTree();
         return true;
       } else {

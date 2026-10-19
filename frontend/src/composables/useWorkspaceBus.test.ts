@@ -78,6 +78,30 @@ describe("useWorkspaceBus", () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
+  it("handles file renamed and deleted broadcasts", () => {
+    const bus = useWorkspaceBus();
+    const renameListener = vi.fn();
+    const deleteListener = vi.fn();
+
+    const unsubRename = bus.onFileRenamed(renameListener);
+    const unsubDelete = bus.onFileDeleted(deleteListener);
+
+    bus.notifyFileRenamed({ oldPath: "old.ts", newPath: "new.ts" });
+    expect(renameListener).toHaveBeenCalledTimes(1);
+    expect(renameListener).toHaveBeenCalledWith({ oldPath: "old.ts", newPath: "new.ts" });
+
+    bus.notifyFileDeleted("deprecated.ts");
+    expect(deleteListener).toHaveBeenCalledTimes(1);
+    expect(deleteListener).toHaveBeenCalledWith("deprecated.ts");
+
+    unsubRename();
+    unsubDelete();
+    bus.notifyFileRenamed({ oldPath: "a", newPath: "b" });
+    bus.notifyFileDeleted("c");
+    expect(renameListener).toHaveBeenCalledTimes(1);
+    expect(deleteListener).toHaveBeenCalledTimes(1);
+  });
+
   it("records and updates active file path", () => {
     const bus = useWorkspaceBus();
     expect(bus.currentActiveFilePath.value).toBe("");
