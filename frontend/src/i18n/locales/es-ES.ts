@@ -1107,4 +1107,7 @@ export const esEs: TranslationDict = {
   "terminal.menu.restart": "Restart Session",
   "terminal.editor.run_in_terminal": "Run in Active Terminal",
   "explorer.context_menu.open_terminal": "Open in Integrated Terminal",
+  "terminal.menu.export_log": "Exportar registro de terminal",
+  "terminal.menu.clear_history": "Borrar historial de sesión",
+  "terminal.rename_tab": "Renombrar terminal",
 };

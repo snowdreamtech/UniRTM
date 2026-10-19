@@ -1106,4 +1106,7 @@ export const koKr: TranslationDict = {
   "terminal.menu.restart": "Restart Session",
   "terminal.editor.run_in_terminal": "Run in Active Terminal",
   "explorer.context_menu.open_terminal": "Open in Integrated Terminal",
+  "terminal.menu.export_log": "터미널 로그 내보내기",
+  "terminal.menu.clear_history": "세션 기록 캐시 지우기",
+  "terminal.rename_tab": "터미널 이름 바꾸기",
 };

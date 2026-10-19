@@ -447,4 +447,8 @@ export interface TranslationDict {
   "icon_picker.reader_desc": string;
   "icon_picker.hdd_desc": string;
   "icon_picker.key_desc": string;
+
+  "terminal.menu.export_log"?: string;
+  "terminal.menu.clear_history"?: string;
+  "terminal.rename_tab"?: string;
 }

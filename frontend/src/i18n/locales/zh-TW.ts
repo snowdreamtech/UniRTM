@@ -1116,4 +1116,7 @@ export const zhTw: TranslationDict = {
   "terminal.menu.restart": "Restart Session",
   "terminal.editor.run_in_terminal": "Run in Active Terminal",
   "explorer.context_menu.open_terminal": "Open in Integrated Terminal",
+  "terminal.menu.export_log": "匯出終端機記錄",
+  "terminal.menu.clear_history": "清除工作階段歷史快取",
+  "terminal.rename_tab": "重新命名終端機",
 };

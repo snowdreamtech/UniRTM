@@ -1107,4 +1107,7 @@ export const hiIn: TranslationDict = {
   "terminal.menu.restart": "Restart Session",
   "terminal.editor.run_in_terminal": "Run in Active Terminal",
   "explorer.context_menu.open_terminal": "Open in Integrated Terminal",
+  "terminal.menu.export_log": "Export Terminal Log",
+  "terminal.menu.clear_history": "Clear Session History",
+  "terminal.rename_tab": "Rename Terminal",
 };

@@ -1108,4 +1108,7 @@ export const itIt: TranslationDict = {
   "terminal.menu.restart": "Restart Session",
   "terminal.editor.run_in_terminal": "Run in Active Terminal",
   "explorer.context_menu.open_terminal": "Open in Integrated Terminal",
+  "terminal.menu.export_log": "Esporta registro del terminale",
+  "terminal.menu.clear_history": "Cancella cronologia sessione",
+  "terminal.rename_tab": "Rinomina terminale",
 };

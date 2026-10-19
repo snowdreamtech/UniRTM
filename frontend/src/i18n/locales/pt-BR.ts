@@ -1108,4 +1108,7 @@ export const ptBr: TranslationDict = {
   "terminal.menu.restart": "Restart Session",
   "terminal.editor.run_in_terminal": "Run in Active Terminal",
   "explorer.context_menu.open_terminal": "Open in Integrated Terminal",
+  "terminal.menu.export_log": "Exportar log do terminal",
+  "terminal.menu.clear_history": "Limpar histórico da sessão",
+  "terminal.rename_tab": "Renomear terminal",
 };

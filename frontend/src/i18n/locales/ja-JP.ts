@@ -1107,4 +1107,7 @@ export const jaJp: TranslationDict = {
   "terminal.menu.restart": "Restart Session",
   "terminal.editor.run_in_terminal": "Run in Active Terminal",
   "explorer.context_menu.open_terminal": "Open in Integrated Terminal",
+  "terminal.menu.export_log": "ターミナルログのエクスポート",
+  "terminal.menu.clear_history": "セッション履歴の消去",
+  "terminal.rename_tab": "ターミナルの名前変更",
 };

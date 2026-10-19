@@ -1121,4 +1121,7 @@ export const zhCn: TranslationDict = {
   "terminal.menu.restart": "重新连接会话",
   "terminal.editor.run_in_terminal": "在活动终端中运行",
   "explorer.context_menu.open_terminal": "在集成终端中打开",
+  "terminal.menu.export_log": "导出终端日志",
+  "terminal.menu.clear_history": "清空历史缓存",
+  "terminal.rename_tab": "重命名终端",
 };
