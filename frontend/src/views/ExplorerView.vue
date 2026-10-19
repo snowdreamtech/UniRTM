@@ -293,6 +293,24 @@
       <!-- Editor Footer Status Bar -->
       <div class="editor-footer">
         <div class="footer-left">
+          <span
+            class="footer-item branch-item clickable"
+            title="当前 Git 分支 (点击进入源代码管理)"
+            @click="navigateToScmForActiveFile"
+          >
+            <span class="codicon codicon-git-branch"></span>
+            {{ currentGitBranch }}
+          </span>
+          <span
+            v-if="activeTabGitStatus"
+            class="footer-item git-status-tag clickable"
+            :class="'git-' + activeTabGitStatus.type"
+            :title="`文件状态: ${activeTabGitStatus.label} (点击在源代码管理中查看)`"
+            @click="navigateToScmForActiveFile"
+          >
+            <span class="codicon codicon-source-control"></span>
+            {{ activeTabGitStatus.label }}
+          </span>
           <template v-if="activeTab.isBinary">
             <span class="footer-item">BINARY</span>
             <span v-if="activeTab.size" class="footer-item">{{ formatFileSize(activeTab.size) }}</span>
@@ -628,8 +646,43 @@ import { useGit } from "../composables/useGit";
 
 const router = useRouter();
 const route = useRoute();
-const { getGitStatus, setGraphFilterPath, fetchStatus } = useGit();
+const { status: gitStatusData, getGitStatus, setGraphFilterPath, fetchStatus } = useGit();
 const { onOpenDiff, setActiveFilePath, onGitStatusChanged } = useWorkspaceBus();
+
+const currentGitBranch = computed(() => {
+  return gitStatusData.value?.branch || "main";
+});
+
+const activeTabGitStatus = computed(() => {
+  if (!activeTab.value) return null;
+  const p = activeTab.value.path;
+  const stagedItem = gitStatusData.value?.staged?.find((item) => item.path === p);
+  if (stagedItem) {
+    return { type: "staged", label: "已暂存 (Staged)" };
+  }
+  const unstagedItem = gitStatusData.value?.unstaged?.find((item) => item.path === p);
+  if (unstagedItem) {
+    if (unstagedItem.status === "M") return { type: "modified", label: "已修改 (Modified)" };
+    if (unstagedItem.status === "U" || unstagedItem.status === "?") return { type: "未跟踪 (Untracked)" };
+    if (unstagedItem.status === "D") return { type: "deleted", label: "已删除 (Deleted)" };
+    return { type: "modified", label: unstagedItem.status };
+  }
+  return null;
+});
+
+function navigateToScmForActiveFile() {
+  if (!activeTab.value) {
+    router.push({ name: "scm", query: { scope: route.query.scope || "workspace" } });
+    return;
+  }
+  router.push({
+    name: "scm",
+    query: {
+      scope: route.query.scope || "workspace",
+      path: activeTab.value.path,
+    },
+  });
+}
 
 const emit = defineEmits<{
   (e: "open-drawer", tab: string): void;
@@ -1720,6 +1773,53 @@ function handleCreateFolderInside() {
 .footer-item {
   display: inline-flex;
   align-items: center;
+}
+
+.footer-item.clickable {
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 1px 4px;
+  transition: background-color 0.15s ease;
+}
+
+.footer-item.clickable:hover {
+  background-color: rgba(128, 128, 128, 0.18);
+}
+
+.branch-item {
+  color: var(--accent-cyan, #00e5ff);
+  gap: 4px;
+}
+
+:root[data-theme="light"] .branch-item {
+  color: #0284c7;
+}
+
+.git-status-tag {
+  gap: 4px;
+  font-weight: 500;
+  padding: 0 4px;
+  border-radius: 3px;
+}
+
+.git-status-tag.git-modified {
+  color: #e2c08d;
+}
+
+:root[data-theme="light"] .git-status-tag.git-modified {
+  color: #b45309;
+}
+
+.git-status-tag.git-untracked {
+  color: #73c991;
+}
+
+:root[data-theme="light"] .git-status-tag.git-untracked {
+  color: #059669;
+}
+
+.git-status-tag.git-staged {
+  color: #4ec9b0;
 }
 
 .language-tag {
