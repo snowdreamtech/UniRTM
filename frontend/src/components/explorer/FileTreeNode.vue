@@ -7,6 +7,7 @@
         'is-selected': isSelected,
         'is-ignored': node.is_ignored,
         'is-renaming': isRenaming,
+        'is-root-node': node.isRoot,
       }"
       :style="{ paddingLeft: `${depth * 14 + 6}px` }"
       @click="handleClick"
@@ -333,6 +334,12 @@ async function commitCreate() {
   background-color: var(--accent-cyan-glow, rgba(0, 229, 255, 0.15));
   color: var(--accent-cyan);
   font-weight: 500;
+}
+
+.tree-node-row.is-root-node .tree-label {
+  font-weight: 700;
+  color: var(--text-main, #f1f5f9);
+  letter-spacing: 0.02em;
 }
 
 .tree-node-row.is-ignored {

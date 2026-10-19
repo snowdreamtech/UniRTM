@@ -41,6 +41,13 @@
         </button>
         <button
           class="toolbar-btn"
+          title="将文件夹添加到工作区..."
+          @click.stop="openAddFolderModal('', '')"
+        >
+          <span class="codicon codicon-folder-library"></span>
+        </button>
+        <button
+          class="toolbar-btn"
           title="全部折叠"
           @click.stop="collapseAll"
         >
@@ -113,9 +120,10 @@
       </div>
     </div>
 
-    <!-- Global Context Menu & Delete Modal -->
+    <!-- Global Context Menu, Delete Modal & Add Folder Modal -->
     <FileContextMenu @open-terminal="handleOpenTerminal" />
     <DeleteConfirmModal />
+    <AddFolderModal />
   </div>
 </template>
 
@@ -125,7 +133,9 @@ import { useFileTree } from "../../composables/useFileTree";
 import FileTreeNode from "./FileTreeNode.vue";
 import FileContextMenu from "./FileContextMenu.vue";
 import DeleteConfirmModal from "./DeleteConfirmModal.vue";
+import AddFolderModal from "./AddFolderModal.vue";
 import TechIcon from "../common/TechIcon.vue";
+import { t } from "../../i18n";
 
 import { useWorkspaceBus } from "../../composables/useWorkspaceBus";
 
@@ -148,6 +158,9 @@ const {
   revealPath,
   collapseAll,
 
+  isMultiRoot,
+  workspaceRoots,
+  openAddFolderModal,
   startInlineCreate,
   cancelInlineAction,
   createFile,
@@ -162,6 +175,9 @@ const rootCreateInputRef = ref<HTMLInputElement | null>(null);
 const createRootInputValue = ref("");
 
 const workspaceName = computed(() => {
+  if (isMultiRoot.value) {
+    return t("explorer.workspace_multi_title", { count: workspaceRoots.value.length }) || `工作区 (${workspaceRoots.value.length} 个文件夹)`;
+  }
   return (tree.value?.name || "UNIRTM").toUpperCase();
 });
 

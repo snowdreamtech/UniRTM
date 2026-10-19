@@ -60,6 +60,25 @@
       <span class="menu-label">{{ t('explorer.context_menu.open_terminal') }}</span>
     </div>
 
+    <!-- Workspace Multi-root Actions -->
+    <template v-if="contextMenu.node?.is_dir">
+      <div class="menu-separator"></div>
+
+      <div class="menu-item" @click="handleAddToWorkspace">
+        <span class="menu-icon codicon codicon-folder-library"></span>
+        <span class="menu-label">{{ t('explorer.add_folder_to_workspace') || '将文件夹添加到工作区...' }}</span>
+      </div>
+
+      <div
+        v-if="isWorkspaceRoot(contextMenu.node)"
+        class="menu-item danger"
+        @click="handleRemoveFromWorkspace"
+      >
+        <span class="menu-icon codicon codicon-close"></span>
+        <span class="menu-label">{{ t('explorer.remove_folder_from_workspace') || '将文件夹从工作区删除' }}</span>
+      </div>
+    </template>
+
     <div class="menu-separator"></div>
 
     <!-- Git SCM & Git Graph Actions -->
@@ -136,6 +155,9 @@ const {
   copyPath,
   copyRelativePath,
   copyFileName,
+  isWorkspaceRoot,
+  openAddFolderModal,
+  removeFolderFromWorkspace,
 } = useFileTree();
 
 const gitStateInfo = computed(() => {
@@ -248,6 +270,28 @@ function handleCopyRelativePath() {
     copyRelativePath(node.path);
   }
   closeContextMenu();
+}
+
+function handleAddToWorkspace() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (node && node.is_dir) {
+    openAddFolderModal(node.path, node.name);
+  } else {
+    openAddFolderModal("", "");
+  }
+}
+
+async function handleRemoveFromWorkspace() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (!node) return;
+  const ok = window.confirm(
+    `确定要将文件夹 [${node.name}] 从工作区中删除吗？\n此操作仅将其从工作区视图中移出，绝对不会删除磁盘上的任何文件。`
+  );
+  if (ok) {
+    await removeFolderFromWorkspace(node.path);
+  }
 }
 
 function handleCopyName() {
