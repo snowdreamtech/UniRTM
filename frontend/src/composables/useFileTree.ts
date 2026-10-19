@@ -5,6 +5,7 @@ import { ref, computed } from "vue";
 import { useToast } from "./useToast";
 import { useEditorTabs } from "./useEditorTabs";
 import { useWorkspaceBus } from "./useWorkspaceBus";
+import { useGit } from "./useGit";
 import { t } from "../i18n";
 
 export interface FSNode {
@@ -438,16 +439,77 @@ export function useFileTree() {
     return isSelfMatch ? node : null;
   }
 
+  const isGitFilterActive = ref<boolean>(false);
+
+  function getChangedPathsSet(): Set<string> {
+    const { status } = useGit();
+    const set = new Set<string>();
+    status.value.staged.forEach((item) => set.add(item.path));
+    status.value.unstaged.forEach((item) => set.add(item.path));
+    return set;
+  }
+
+  function filterGitNode(node: FSNode, changedPaths: Set<string>): FSNode | null {
+    const isSelfChanged = changedPaths.has(node.path);
+
+    if (node.is_dir && node.children) {
+      const filteredChildren: FSNode[] = [];
+      for (const child of node.children) {
+        const filtered = filterGitNode(child, changedPaths);
+        if (filtered) {
+          filteredChildren.push(filtered);
+        }
+      }
+      if (filteredChildren.length > 0 || isSelfChanged) {
+        return {
+          ...node,
+          children: filteredChildren,
+        };
+      }
+      return null;
+    }
+
+    return isSelfChanged ? node : null;
+  }
+
+  function toggleGitFilter(): void {
+    isGitFilterActive.value = !isGitFilterActive.value;
+    if (isGitFilterActive.value && tree.value) {
+      // 开启 Git 聚焦模式时，自动展开含有变动的目录分支
+      const gitPaths = getChangedPathsSet();
+      gitPaths.forEach((p) => {
+        expandPath(p);
+      });
+    }
+  }
+
   const filteredTree = computed(() => {
     if (!tree.value) return null;
+    let base = tree.value;
+
+    if (isGitFilterActive.value) {
+      const gitPaths = getChangedPathsSet();
+      const gitFiltered = filterGitNode(base, gitPaths);
+      if (!gitFiltered) {
+        // 无任何改动时返回空子节点的根，避免树结构崩溃
+        return {
+          ...base,
+          children: [],
+        };
+      }
+      base = gitFiltered;
+    }
+
     const query = searchQuery.value.trim();
-    if (!query) return tree.value;
-    return filterNode(tree.value, query);
+    if (!query) return base;
+    return filterNode(base, query);
   });
 
   return {
     tree,
     filteredTree,
+    isGitFilterActive,
+    toggleGitFilter,
     isLoading,
     error,
     selectedNode,

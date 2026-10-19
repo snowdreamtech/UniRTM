@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useFileTree } from "./useFileTree";
+import { useGit } from "./useGit";
 
 describe("useFileTree", () => {
   beforeEach(() => {
@@ -209,6 +210,82 @@ describe("useFileTree", () => {
     expect(selectedNode.value?.path).toBe("src/App.vue");
     expect(expandedPaths.value.has("src")).toBe(true);
     expect(expandedPaths.value.has("src/App.vue")).toBe(true);
+  });
+
+  it("filters tree to show only Git changed files in Git Focus mode", () => {
+    const { tree, filteredTree, isGitFilterActive, toggleGitFilter } = useFileTree();
+
+    tree.value = {
+      name: "UniRTM",
+      path: "",
+      is_dir: true,
+      size: 0,
+      mod_time: "2026-10-18T00:00:00Z",
+      children: [
+        {
+          name: "src",
+          path: "src",
+          is_dir: true,
+          size: 0,
+          mod_time: "2026-10-18T00:00:00Z",
+          children: [
+            {
+              name: "changed.ts",
+              path: "src/changed.ts",
+              is_dir: false,
+              size: 200,
+              mod_time: "2026-10-18T00:00:00Z",
+            },
+            {
+              name: "unchanged.ts",
+              path: "src/unchanged.ts",
+              is_dir: false,
+              size: 300,
+              mod_time: "2026-10-18T00:00:00Z",
+            },
+          ],
+        },
+        {
+          name: "docs",
+          path: "docs",
+          is_dir: true,
+          size: 0,
+          mod_time: "2026-10-18T00:00:00Z",
+          children: [
+            {
+              name: "readme.md",
+              path: "docs/readme.md",
+              is_dir: false,
+              size: 100,
+              mod_time: "2026-10-18T00:00:00Z",
+            },
+          ],
+        },
+      ],
+    };
+
+    // Before Git filter: all children visible
+    expect(filteredTree.value?.children?.length).toBe(2);
+
+    // Mock useGit status
+    const { status } = useGit();
+    status.value.unstaged = [
+      { path: "src/changed.ts", status: "M", label: "src/changed.ts" },
+    ];
+
+    toggleGitFilter();
+    expect(isGitFilterActive.value).toBe(true);
+
+    // After Git filter: docs directory is pruned, only src/changed.ts remains
+    expect(filteredTree.value?.children?.length).toBe(1);
+    expect(filteredTree.value?.children?.[0].name).toBe("src");
+    expect(filteredTree.value?.children?.[0].children?.length).toBe(1);
+    expect(filteredTree.value?.children?.[0].children?.[0].name).toBe("changed.ts");
+
+    // Toggle off
+    toggleGitFilter();
+    expect(isGitFilterActive.value).toBe(false);
+    expect(filteredTree.value?.children?.length).toBe(2);
   });
 });
 

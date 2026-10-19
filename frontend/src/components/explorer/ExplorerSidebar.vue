@@ -25,6 +25,14 @@
         </button>
         <button
           class="toolbar-btn"
+          :class="{ 'is-active': isGitFilterActive }"
+          :title="isGitFilterActive ? '显示全部文件 (退出 Git 聚焦)' : '仅显示 Git 变更 (Git 聚焦模式)'"
+          @click.stop="toggleGitFilter"
+        >
+          <span class="codicon codicon-source-control"></span>
+        </button>
+        <button
+          class="toolbar-btn"
           title="刷新资源管理器"
           :class="{ 'is-loading': isLoading }"
           @click.stop="handleRefresh"
@@ -99,7 +107,8 @@
         </template>
 
         <div v-else-if="!isInlineCreatingRoot" class="tree-empty-state">
-          <span>暂无文件</span>
+          <span v-if="isGitFilterActive">无 Git 变更项 (工作区干净)</span>
+          <span v-else>暂无文件</span>
         </div>
       </div>
     </div>
@@ -127,6 +136,8 @@ const emit = defineEmits<{
 const {
   tree,
   filteredTree,
+  isGitFilterActive,
+  toggleGitFilter,
   isLoading,
   error,
   selectedNode,
@@ -339,6 +350,16 @@ onBeforeUnmount(() => {
 .toolbar-btn:hover {
   background-color: rgba(128, 128, 128, 0.15);
   color: var(--text-main);
+}
+
+.toolbar-btn.is-active {
+  background-color: var(--accent-cyan-glow, rgba(0, 229, 255, 0.15)) !important;
+  color: var(--accent-cyan, #00e5ff) !important;
+}
+
+:root[data-theme="light"] .toolbar-btn.is-active {
+  background-color: rgba(2, 132, 199, 0.15) !important;
+  color: #0284c7 !important;
 }
 
 .toolbar-btn.is-loading .codicon-refresh {
