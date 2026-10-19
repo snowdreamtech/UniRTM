@@ -735,22 +735,70 @@
         </div>
 
         <div class="custom-add-section">
-          <div class="preset-section-title">或输入自定义工具名</div>
+          <div class="preset-section-title">
+            {{ t("tools.custom.section_title") || "或输入自定义工具与固定版本" }}
+          </div>
           <div class="custom-add-form">
-            <input
-              v-model="customToolInput"
-              type="text"
-              class="custom-tool-input font-mono"
-              placeholder="例如: elixir, zig, php..."
-              @keyup.enter="addCustomRuntime"
-            />
+            <!-- 1. 常用前缀下拉选择 -->
+            <div class="custom-field prefix-field">
+              <select
+                v-model="customPrefix"
+                class="custom-prefix-select"
+                :title="t('tools.custom.prefix_hint') || '选择工具生态或 Provider 前缀'"
+              >
+                <option
+                  v-for="opt in COMMON_TOOL_PREFIXES"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </option>
+              </select>
+            </div>
+
+            <!-- 2. 具体工具名输入框 -->
+            <div class="custom-field name-field">
+              <input
+                v-model="customToolName"
+                type="text"
+                class="custom-tool-input font-mono"
+                :placeholder="customPlaceholder"
+                @paste="handleCustomPaste"
+                @keyup.enter="isCustomFormValid && addCustomRuntime()"
+              />
+            </div>
+
+            <span class="custom-at-separator">@</span>
+
+            <!-- 3. 固定确切版本号输入框 (不提供 latest，严禁确定性缺失) -->
+            <div class="custom-field version-field">
+              <input
+                v-model="customToolVersion"
+                type="text"
+                class="custom-tool-input custom-version-input font-mono"
+                :placeholder="t('tools.custom.version_placeholder') || '版本号 (如: 1.0.0)'"
+                @paste="handleCustomPaste"
+                @keyup.enter="isCustomFormValid && addCustomRuntime()"
+              />
+            </div>
+
+            <!-- 4. 添加按钮 -->
             <button
-              class="tool-action-btn primary small"
-              :disabled="!customToolInput.trim()"
+              class="tool-action-btn primary small custom-submit-btn"
+              :disabled="!isCustomFormValid"
               @click="addCustomRuntime"
             >
-              添加
+              + {{ t("common.add") || "添加" }}
             </button>
+          </div>
+
+          <!-- 5. 实时配置预览 -->
+          <div v-if="customSpec.previewToml" class="custom-config-preview">
+            <span class="preview-label">{{ t("tools.custom.preview_label") || "配置预览:" }}</span>
+            <code class="preview-code">{{ customSpec.previewToml }}</code>
+            <span v-if="customToolVersion.toLowerCase() === 'latest'" class="preview-warning text-warning">
+              ⚠️ 不建议使用 latest，请指定固定版本以保证构建确定性
+            </span>
           </div>
         </div>
       </div>
@@ -876,6 +924,7 @@ import { validateRuntimeVersion } from "../utils/versionValidator";
 import { useToolUpdates, type ToolUpdateItem } from "../composables/useToolUpdates";
 import { getToolHomepage } from "../utils/toolHomepage";
 import { computeToolStatus, type ToolStatusResult } from "../utils/toolStatus";
+import { COMMON_TOOL_PREFIXES, parseToolSpec, composeToolSpec } from "../utils/toolSpecParser";
 
 import { useToolScope } from "../composables/useToolScope";
 
@@ -990,7 +1039,45 @@ function closeRemoteModal() {
 
 // Add Runtime modal state
 const isAddModalOpen = ref(false);
-const customToolInput = ref("");
+const customPrefix = ref("");
+const customToolName = ref("");
+const customToolVersion = ref("");
+
+const customSpec = computed(() => {
+  return composeToolSpec(
+    customPrefix.value,
+    customToolName.value,
+    customToolVersion.value
+  );
+});
+
+const customPlaceholder = computed(() => {
+  const match = COMMON_TOOL_PREFIXES.find((p) => p.value === customPrefix.value);
+  return match?.placeholder || "例如: zig, elixir, php...";
+});
+
+const isCustomFormValid = computed(() => {
+  const name = customToolName.value.trim();
+  const ver = customToolVersion.value.trim();
+  return Boolean(name && ver && ver.toLowerCase() !== "latest");
+});
+
+function handleCustomPaste(e: ClipboardEvent) {
+  const text = e.clipboardData?.getData("text") || "";
+  if (text.includes(":") || text.includes("@")) {
+    const parsed = parseToolSpec(text);
+    if (parsed.name) {
+      e.preventDefault();
+      if (parsed.prefix) {
+        customPrefix.value = parsed.prefix;
+      }
+      customToolName.value = parsed.name;
+      if (parsed.version && parsed.version.toLowerCase() !== "latest") {
+        customToolVersion.value = parsed.version;
+      }
+    }
+  }
+}
 
 // Remote update detection & Diff Drawer state
 export type ToolUpdateResult = ToolUpdateItem;
@@ -1146,7 +1233,9 @@ const availablePresetRuntimes = computed(() => {
 });
 
 function openAddModal() {
-  customToolInput.value = "";
+  customPrefix.value = "";
+  customToolName.value = "";
+  customToolVersion.value = "";
   isAddModalOpen.value = true;
 }
 
@@ -1174,29 +1263,33 @@ async function addRuntimeFromPreset(preset: PresetRuntime) {
 }
 
 async function addCustomRuntime() {
-  const toolName = customToolInput.value.trim().toLowerCase();
-  if (!toolName) return;
+  const name = customToolName.value.trim();
+  const ver = customToolVersion.value.trim();
+  if (!name || !ver || ver.toLowerCase() === "latest") return;
 
+  const toolKey = customSpec.value.toolKey;
   const isGlobal = currentScope.value === "user";
   const newItem: RuntimeItem = {
-    id: toolName,
-    name: toolName.charAt(0).toUpperCase() + toolName.slice(1),
-    description: `${toolName} runtime environment`,
+    id: toolKey,
+    name: name,
+    description: `${toolKey} runtime environment`,
     homepage: "",
-    installed_versions: ["latest"],
-    active_version: isGlobal ? "" : "latest",
-    global_version: isGlobal ? "latest" : "",
+    installed_versions: [ver],
+    active_version: isGlobal ? "" : ver,
+    global_version: isGlobal ? ver : "",
     source: isGlobal ? "~/.config/unirtm/unirtm.toml" : ".unirtm.toml",
     is_legacy: false,
     legacy_file: "",
   };
 
   runtimes.value.push(newItem);
-  customToolInput.value = "";
+  customPrefix.value = "";
+  customToolName.value = "";
+  customToolVersion.value = "";
   isAddModalOpen.value = false;
-  showToast(`已成功添加 ${newItem.name} 环境`, "success");
+  showToast(`已成功添加 ${toolKey} (v${ver}) 环境`, "success");
 
-  await quickSwitch(toolName, "latest", isGlobal);
+  await quickSwitch(toolKey, ver, isGlobal);
 }
 
 async function confirmRemoveRuntime(rt: RuntimeItem) {
@@ -3703,8 +3796,81 @@ onBeforeUnmount(() => {
 
 .custom-add-form {
   display: flex;
-  gap: 0.6rem;
+  gap: 0.5rem;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.custom-field {
+  display: flex;
+  align-items: center;
+}
+
+.custom-field.prefix-field {
+  flex: 0 0 160px;
+}
+
+.custom-field.name-field {
+  flex: 1 1 180px;
+}
+
+.custom-field.version-field {
+  flex: 0 0 135px;
+}
+
+.custom-prefix-select {
+  width: 100%;
+  padding: 0.45rem 0.5rem;
+  border-radius: 6px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  font-size: 0.8rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.custom-prefix-select:focus {
+  border-color: var(--accent-cyan, #00e5ff);
+}
+
+.custom-at-separator {
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 0.85rem;
+  user-select: none;
+}
+
+.custom-version-input {
+  width: 100%;
+}
+
+.custom-submit-btn {
+  white-space: nowrap;
+}
+
+.custom-config-preview {
+  margin-top: 0.45rem;
+  padding: 0.35rem 0.6rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.preview-code {
+  color: var(--accent-cyan, #00e5ff);
+  font-family: monospace;
+  font-weight: 600;
+}
+
+.preview-warning {
+  font-size: 0.72rem;
+  color: #f59e0b;
 }
 
 .custom-tool-input {
