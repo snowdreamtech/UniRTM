@@ -96,73 +96,87 @@ export function translateMonacoLabel(label: string, lang?: string): string {
   return dict[trimmed] || label;
 }
 
-let observer: MutationObserver | null = null;
-let isEventsRegistered = false;
-
-function translateSingleLabelElement(el: Element): void {
-  const raw = el.textContent?.trim();
-  if (raw) {
-    const translated = translateMonacoLabel(raw);
-    if (translated !== raw) {
-      el.textContent = translated;
-    }
-  }
+// ---------------------------------------------------------------------------
+// 获取高反差配色（深色模式 → 浅色菜单，浅色模式 → 深色菜单）
+// ---------------------------------------------------------------------------
+function getContrastMenuColors() {
+  const isLight = typeof document !== "undefined"
+    ? document.documentElement.getAttribute("data-theme") === "light"
+    : false;
+  return isLight
+    ? { bg: "#1e1e1e", fg: "#cccccc", border: "#3c3c3c", shadow: "0 12px 32px rgba(0,0,0,0.55)", hoverBg: "#04395e", hoverFg: "#ffffff", sep: "#333333", keybinding: "#858585" }
+    : { bg: "#ffffff", fg: "#1e293b", border: "#cbd5e1", shadow: "0 10px 30px -4px rgba(0,0,0,0.4)", hoverBg: "#0060c0", hoverFg: "#ffffff", sep: "#e2e8f0", keybinding: "#64748b" };
 }
 
-function translateTree(node: Node): void {
-  if (node.nodeType === Node.TEXT_NODE) {
-    const parent = (node as Text).parentElement;
-    if (parent?.classList.contains("action-label")) {
-      translateSingleLabelElement(parent);
-    }
-    return;
-  }
+// ---------------------------------------------------------------------------
+// 对单个 .context-view 节点注入实心反差样式 + 翻译标签
+// ---------------------------------------------------------------------------
+function patchContextView(contextView: HTMLElement): void {
+  const c = getContrastMenuColors();
 
-  if (node.nodeType !== Node.ELEMENT_NODE) return;
-  const el = node as Element;
+  // 1) 外层容器 (context-view 本身，或 monaco-menu-container)
+  contextView.style.setProperty("background-color", c.bg, "important");
+  contextView.style.setProperty("color", c.fg, "important");
+  contextView.style.setProperty("border", `1px solid ${c.border}`, "important");
+  contextView.style.setProperty("box-shadow", c.shadow, "important");
+  contextView.style.setProperty("border-radius", "6px", "important");
+  contextView.style.setProperty("overflow", "hidden", "important");
 
-  if (el.classList.contains("action-label")) {
-    translateSingleLabelElement(el);
-    return;
-  }
-
-  const actionLabels = el.querySelectorAll?.(".action-label");
-  if (actionLabels && actionLabels.length > 0) {
-    actionLabels.forEach((item) => translateSingleLabelElement(item));
-  }
-}
-
-/**
- * 手动对当前已经展开或 DOM 中存在的菜单进行全量翻译检查
- */
-export function translateActiveMonacoMenus(): void {
-  if (typeof document === "undefined") return;
-  const labels = document.querySelectorAll(".action-label");
-  labels.forEach((item) => translateSingleLabelElement(item));
-
-  // 高反差实心菜单双重兜底保障（深色模式浅色菜单，浅色模式深色菜单，绝对杜绝透明）
-  const isLight = document.documentElement.getAttribute("data-theme") === "light";
-  const bg = isLight ? "#1e1e1e" : "#ffffff";
-  const fg = isLight ? "#cccccc" : "#1e293b";
-  const border = isLight ? "#3c3c3c" : "#cbd5e1";
-  const shadow = isLight ? "0 12px 32px rgba(0, 0, 0, 0.55)" : "0 10px 30px -4px rgba(0, 0, 0, 0.4)";
-  const menus = document.querySelectorAll<HTMLElement>(
-    ".context-view.monaco-menu-container, .monaco-menu-container, .context-view .monaco-menu, .monaco-menu, .monaco-scrollable-element"
+  // 2) 所有子层：scrollable-element, monaco-menu, action-bar
+  const innerContainers = contextView.querySelectorAll<HTMLElement>(
+    ".monaco-scrollable-element, .monaco-menu, .monaco-action-bar.vertical"
   );
-  menus.forEach((m) => {
-    m.style.setProperty("background-color", bg, "important");
-    m.style.setProperty("color", fg, "important");
-    if (m.classList.contains("monaco-menu-container")) {
-      m.style.setProperty("border", `1px solid ${border}`, "important");
-      m.style.setProperty("box-shadow", shadow, "important");
-      m.style.setProperty("border-radius", "6px", "important");
+  innerContainers.forEach((el) => {
+    el.style.setProperty("background-color", c.bg, "important");
+    el.style.setProperty("color", c.fg, "important");
+  });
+
+  // 3) 菜单项：覆盖 Monaco 的 inline style（applyStyle() 在 render/focus/blur 时设置）
+  const menuItems = contextView.querySelectorAll<HTMLElement>(".action-menu-item");
+  menuItems.forEach((item) => {
+    item.style.setProperty("color", c.fg, "important");
+    // 不设置 backgroundColor（让 hover 态由下面处理）
+    if (item.style.backgroundColor) {
+      item.style.removeProperty("background-color");
+    }
+  });
+
+  // 4) keybinding
+  const keybindings = contextView.querySelectorAll<HTMLElement>(".keybinding");
+  keybindings.forEach((kb) => {
+    kb.style.setProperty("color", c.keybinding, "important");
+  });
+
+  // 5) 分割线
+  const separators = contextView.querySelectorAll<HTMLElement>(".action-label.separator");
+  separators.forEach((sep) => {
+    sep.style.setProperty("border-bottom-color", c.sep, "important");
+  });
+
+  // 6) 翻译所有 action-label
+  const labels = contextView.querySelectorAll<HTMLElement>(".action-label:not(.separator)");
+  labels.forEach((el) => {
+    const raw = el.textContent?.trim();
+    if (raw) {
+      const translated = translateMonacoLabel(raw);
+      if (translated !== raw) {
+        el.textContent = translated;
+      }
     }
   });
 }
 
-/**
- * 本地化指定 Monaco Standalone Editor 实例中注册的 Action 的 label 属性
- */
+// ---------------------------------------------------------------------------
+// 全局翻译（兼容自定义菜单和 Monaco 菜单）
+// ---------------------------------------------------------------------------
+export function translateActiveMonacoMenus(): void {
+  if (typeof document === "undefined") return;
+  document.querySelectorAll<HTMLElement>(".context-view").forEach(patchContextView);
+}
+
+// ---------------------------------------------------------------------------
+// 本地化 Monaco Editor Action 实例的 label（首次打开有效）
+// ---------------------------------------------------------------------------
 export function localizeEditorActions(editor: any): void {
   if (!editor || typeof editor.getSupportedActions !== "function") return;
   try {
@@ -180,78 +194,80 @@ export function localizeEditorActions(editor: any): void {
   }
 }
 
-let pollingTimer: any = null;
-
-function startMenuPolling(): void {
-  if (typeof window === "undefined") return;
-  translateActiveMonacoMenus();
-  if (pollingTimer) clearInterval(pollingTimer);
-  let ticks = 0;
-  pollingTimer = setInterval(() => {
-    translateActiveMonacoMenus();
-    ticks++;
-    if (ticks > 40) {
-      clearInterval(pollingTimer);
-      pollingTimer = null;
-    }
-  }, 30);
-}
+// ---------------------------------------------------------------------------
+// 核心：监听 context-view 插入并持续修补
+// ---------------------------------------------------------------------------
+let observer: MutationObserver | null = null;
+let isEventsRegistered = false;
 
 /**
- * 监听 Monaco 上下文菜单弹出并执行本地化（支持首次及后续每次弹出）
+ * 当检测到 .context-view 出现在 DOM 中时，启动一个短时高频轮询来持续修补。
+ * 这是因为 Monaco 的 Menu 构造过程是：
+ *   1. 创建 context-view 容器并 append 到 body
+ *   2. 异步/帧内逐步 push action items → 触发 render → updateLabel → applyStyle
+ * 我们需要在所有 action items 完成 render 之后再做修补。
+ * 高频轮询 (每 20ms) 持续 800ms 确保覆盖 Monaco 的所有异步阶段。
  */
+function startPatchCycle(): void {
+  if (typeof document === "undefined") return;
+  // 立即执行一次
+  translateActiveMonacoMenus();
+  let ticks = 0;
+  const timer = setInterval(() => {
+    translateActiveMonacoMenus();
+    ticks++;
+    if (ticks > 40) { // 40 × 20ms = 800ms
+      clearInterval(timer);
+    }
+  }, 20);
+}
+
 export function setupMonacoLocalization(): void {
   if (typeof document === "undefined") return;
 
   if (!observer) {
     observer = new MutationObserver((mutations) => {
+      let hasNewMenu = false;
       for (const mutation of mutations) {
-        if (mutation.type === "characterData") {
-          const parent = mutation.target.parentElement;
-          if (parent?.classList.contains("action-label")) {
-            translateSingleLabelElement(parent);
-          }
-          continue;
-        }
-
         for (const node of mutation.addedNodes) {
-          translateTree(node);
+          if (node.nodeType !== Node.ELEMENT_NODE) continue;
+          const el = node as HTMLElement;
+          // 检测 context-view 节点被插入 DOM
+          if (el.classList?.contains("context-view") || el.querySelector?.(".context-view")) {
+            hasNewMenu = true;
+          }
         }
+      }
+      if (hasNewMenu) {
+        startPatchCycle();
       }
     });
 
     observer.observe(document.documentElement, {
       childList: true,
       subtree: true,
-      characterData: true,
     });
   }
 
   if (!isEventsRegistered && typeof window !== "undefined") {
     isEventsRegistered = true;
 
-    // 当用户触发右键上下文菜单时，高频轮询保证后续第 2、3...次弹出均被精确汉化
-    window.addEventListener("contextmenu", startMenuPolling, { capture: true });
+    // 右键、pointerdown(button=2)、Shift+F10、F1 触发时启动修补
+    const triggerPatch = () => startPatchCycle();
+
+    window.addEventListener("contextmenu", triggerPatch, { capture: true });
     window.addEventListener(
       "pointerdown",
-      (e) => {
-        if (e.button === 2) {
-          startMenuPolling();
-        }
-      },
+      (e) => { if (e.button === 2) triggerPatch(); },
       { capture: true }
     );
     window.addEventListener(
       "keydown",
-      (e) => {
-        if ((e.shiftKey && e.key === "F10") || e.key === "F1") {
-          startMenuPolling();
-        }
-      },
+      (e) => { if ((e.shiftKey && e.key === "F10") || e.key === "F1") triggerPatch(); },
       { capture: true }
     );
 
-    // 鼠标移入菜单时保持本地化
+    // 鼠标移入菜单区域时也修补（防止 focus/blur 时 Monaco 的 applyStyle 覆盖颜色）
     document.addEventListener(
       "pointerover",
       (e) => {
@@ -264,4 +280,3 @@ export function setupMonacoLocalization(): void {
     );
   }
 }
-
