@@ -213,6 +213,14 @@
           <div class="terminal-pane-banner">
             <div class="pane-banner-left">
               <span class="term-status-dot"></span>
+              <span
+                v-if="getActiveProcess(pane.id)"
+                class="term-process-badge"
+                :style="{ backgroundColor: `${getActiveProcess(pane.id)?.color}25`, color: getActiveProcess(pane.id)?.color, borderColor: `${getActiveProcess(pane.id)?.color}60` }"
+                :title="`Running: ${getActiveProcess(pane.id)?.name}`"
+              >
+                {{ getActiveProcess(pane.id)?.name }}
+              </span>
               <span class="term-shell-info font-mono">{{ pane.shellName }}</span>
               <span class="term-shell-path font-mono">({{ pane.shellPath }})</span>
               <span v-if="activeSession?.splitDirection !== 'none'" class="term-split-pill">
@@ -281,14 +289,34 @@
             class="terminal-tab-item"
             :class="{ active: s.id === activeSessionId }"
             @click="setActiveSession(s.id)"
+            @dblclick.stop="startRenameSession(s.id, getEffectiveTitle(s.id, s.title))"
           >
             <div class="tab-item-icon">
-              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8">
+              <span
+                v-if="getActiveProcess(s.activePaneId)"
+                class="tab-process-indicator font-mono"
+                :style="{ color: getActiveProcess(s.activePaneId)?.color }"
+                :title="getActiveProcess(s.activePaneId)?.name"
+              >
+                ●
+              </span>
+              <svg v-else viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8">
                 <path d="M3.5 5.5l3.5 2.5-3.5 2.5M8.5 10.5h4" />
               </svg>
             </div>
             <div class="tab-item-info">
-              <span class="tab-item-name font-mono">{{ s.title }}</span>
+              <input
+                v-if="editingSessionId === s.id"
+                :class="`tab-rename-input tab-rename-input-${s.id}`"
+                v-model="editingTitleInput"
+                @blur="finishRenameSession(s.id)"
+                @keydown.enter.prevent="finishRenameSession(s.id)"
+                @keydown.esc.prevent="cancelRenameSession"
+                @click.stop
+              />
+              <span v-else class="tab-item-name font-mono" :title="getEffectiveTitle(s.id, s.title)">
+                {{ getEffectiveTitle(s.id, s.title) }}
+              </span>
               <span v-if="s.splitDirection !== 'none'" class="tab-item-split-badge">
                 {{ s.splitDirection === 'vertical' ? '[|]' : '[—]' }}
               </span>
@@ -450,6 +478,7 @@ import { useTerminalSessions } from "../../composables/useTerminalSessions";
 import XTerminalPane from "../terminal/XTerminalPane.vue";
 import PortsPanelView from "../ports/PortsPanelView.vue";
 import { usePorts } from "../../composables/usePorts";
+import { useTerminalProcessWatcher } from "../../composables/useTerminalProcessWatcher";
 
 export interface LogItem {
   timestamp: string;
@@ -502,6 +531,37 @@ const {
   clearActivePane,
   ensureInitialSession,
 } = useTerminalSessions();
+
+const { getActiveProcess, getEffectiveTitle, setCustomTitle } = useTerminalProcessWatcher();
+
+// 双击就地重命名终端 Tab
+const editingSessionId = ref<string | null>(null);
+const editingTitleInput = ref("");
+
+function startRenameSession(sessionId: string, currentTitle: string) {
+  editingSessionId.value = sessionId;
+  editingTitleInput.value = currentTitle;
+  nextTick(() => {
+    const inputEl = document.querySelector(`.tab-rename-input-${sessionId}`) as HTMLInputElement;
+    if (inputEl) {
+      inputEl.focus();
+      inputEl.select();
+    }
+  });
+}
+
+function finishRenameSession(sessionId: string) {
+  if (editingSessionId.value === sessionId) {
+    if (editingTitleInput.value.trim()) {
+      setCustomTitle(sessionId, editingTitleInput.value.trim());
+    }
+    editingSessionId.value = null;
+  }
+}
+
+function cancelRenameSession() {
+  editingSessionId.value = null;
+}
 
 const isNewMenuOpen = ref(false);
 const isMoreMenuOpen = ref(false);
@@ -1912,6 +1972,36 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tab-rename-input {
+  width: 100%;
+  font-size: 0.72rem;
+  font-family: inherit;
+  background: var(--bg-surface-elevated, #1e1e1e);
+  color: var(--text-main, #ffffff);
+  border: 1px solid var(--accent-cyan, #00e5ff);
+  border-radius: 3px;
+  padding: 1px 4px;
+  outline: none;
+}
+
+.tab-process-indicator {
+  font-size: 0.65rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.term-process-badge {
+  font-size: 0.62rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .tab-item-split-badge {

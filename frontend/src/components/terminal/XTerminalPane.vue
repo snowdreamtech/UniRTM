@@ -12,6 +12,7 @@ import TerminalSearchWidget from "./TerminalSearchWidget.vue";
 import TerminalContextMenu from "./TerminalContextMenu.vue";
 import { useWorkspaceBus } from "../../composables/useWorkspaceBus";
 import { useTerminalPersistence } from "../../composables/useTerminalPersistence";
+import { useTerminalProcessWatcher } from "../../composables/useTerminalProcessWatcher";
 
 const { registerDetectedPort } = usePorts();
 const detectedPorts = new Set<number>();
@@ -97,6 +98,7 @@ async function handlePaste() {
 }
 
 const { appendChunk, getBuffer, hasBuffer, clearBuffer, exportLog } = useTerminalPersistence();
+const { recordChunk } = useTerminalProcessWatcher();
 
 function handleSelectAll() {
   term?.selectAll();
@@ -177,12 +179,14 @@ function connectWebSocket() {
       if (msg.type === "output" && typeof msg.data === "string") {
         term.write(msg.data);
         appendChunk(props.paneId, msg.data);
+        recordChunk(props.paneId, msg.data);
         sniffTerminalPorts(msg.data);
       }
     } catch {
       // Raw string fallback
       term.write(event.data);
       appendChunk(props.paneId, String(event.data));
+      recordChunk(props.paneId, String(event.data));
       sniffTerminalPorts(String(event.data));
     }
   };

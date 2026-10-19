@@ -1,8 +1,8 @@
 # 任务拆分与执行跟踪清单：集成终端会话持久化、动态状态感知与高级体验系统 (Tasks)
 
 ## 任务执行进度概览
-- **当前阶段**：Phase 0 - 准备就绪
-- **总体进度**：0 / 14 已完成 (0%)
+- **当前阶段**：Phase 2 - 动态子进程感知与 Tab 智能重命名完成
+- **总体进度**：7 / 14 已完成 (50%)
 
 ---
 
@@ -22,11 +22,11 @@
 ---
 
 ## Phase 2: 动态子进程感知与 Tab 智能重命名 (Dynamic Process Tabs)
-- [ ] Task 2.1: 实现 `frontend/src/composables/useTerminalProcessWatcher.ts` 前台子进程嗅探器
-- [ ] Task 2.2: 在 `frontend/src/components/terminal/XTerminalPane.vue` 中接入进程状态监听
-- [ ] Task 2.3: 在终端 Tab 栏支持动态展示进程图标与双击自定义重命名
-- [ ] Task 2.4: 编写 `frontend/src/composables/useTerminalProcessWatcher.test.ts` 测试并通过验证
-- [ ] Task 2.5: 阶段性 Git 提交：`feat(terminal): add dynamic process watching and custom tab renaming`
+- [x] Task 2.1: 实现 `frontend/src/composables/useTerminalProcessWatcher.ts` 前台子进程嗅探器
+- [x] Task 2.2: 在 `frontend/src/components/terminal/XTerminalPane.vue` 中接入进程状态监听
+- [x] Task 2.3: 在终端 Tab 栏支持动态展示进程图标与双击自定义重命名
+- [x] Task 2.4: 编写 `frontend/src/composables/useTerminalProcessWatcher.test.ts` 测试并通过验证
+- [x] Task 2.5: 阶段性 Git 提交：`feat(terminal): add dynamic process watching and custom tab renaming`
 
 ---
 
