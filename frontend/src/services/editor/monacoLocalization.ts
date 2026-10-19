@@ -96,91 +96,10 @@ export function translateMonacoLabel(label: string, lang?: string): string {
   return dict[trimmed] || label;
 }
 
-// ---------------------------------------------------------------------------
-// 获取高反差配色（深色模式 → 浅色菜单，浅色模式 → 深色菜单）
-// ---------------------------------------------------------------------------
-function getContrastMenuColors() {
-  const isLight = typeof document !== "undefined"
-    ? document.documentElement.getAttribute("data-theme") === "light"
-    : false;
-  return isLight
-    ? { bg: "#1e1e1e", fg: "#cccccc", border: "#3c3c3c", shadow: "0 12px 32px rgba(0,0,0,0.55)", hoverBg: "#04395e", hoverFg: "#ffffff", sep: "#333333", keybinding: "#858585" }
-    : { bg: "#ffffff", fg: "#1e293b", border: "#cbd5e1", shadow: "0 10px 30px -4px rgba(0,0,0,0.4)", hoverBg: "#0060c0", hoverFg: "#ffffff", sep: "#e2e8f0", keybinding: "#64748b" };
-}
-
-// ---------------------------------------------------------------------------
-// 对单个 .context-view 节点注入实心反差样式 + 翻译标签
-// ---------------------------------------------------------------------------
-function patchContextView(contextView: HTMLElement): void {
-  const c = getContrastMenuColors();
-
-  // 1) 外层容器
-  contextView.style.setProperty("background-color", c.bg, "important");
-  contextView.style.setProperty("color", c.fg, "important");
-  contextView.style.setProperty("border", `1px solid ${c.border}`, "important");
-  contextView.style.setProperty("box-shadow", c.shadow, "important");
-  contextView.style.setProperty("border-radius", "6px", "important");
-  contextView.style.setProperty("overflow", "hidden", "important");
-
-  // 2) 所有子层容器
-  contextView.querySelectorAll<HTMLElement>(
-    ".monaco-scrollable-element, .monaco-menu, .monaco-action-bar.vertical"
-  ).forEach((el) => {
-    el.style.setProperty("background-color", c.bg, "important");
-    el.style.setProperty("color", c.fg, "important");
-  });
-
-  // 3) 菜单项：区分 focused/hover 和普通态
-  contextView.querySelectorAll<HTMLElement>(".action-item").forEach((actionItem) => {
-    const menuItem = actionItem.querySelector<HTMLElement>(".action-menu-item");
-    if (!menuItem) return;
-    const isFocused = actionItem.classList.contains("focused");
-    if (isFocused) {
-      menuItem.style.setProperty("background-color", c.hoverBg, "important");
-      menuItem.style.setProperty("color", c.hoverFg, "important");
-    } else {
-      menuItem.style.setProperty("background-color", "transparent", "important");
-      menuItem.style.setProperty("color", c.fg, "important");
-    }
-    // keybinding in this item
-    const kb = menuItem.querySelector<HTMLElement>(".keybinding");
-    if (kb) {
-      kb.style.setProperty("color", isFocused ? c.hoverFg : c.keybinding, "important");
-    }
-  });
-
-  // 4) 分割线
-  contextView.querySelectorAll<HTMLElement>(".action-label.separator").forEach((sep) => {
-    sep.style.setProperty("border-bottom-color", c.sep, "important");
-    sep.style.setProperty("background-color", c.sep, "important");
-  });
-
-  // 5) 翻译所有 action-label
-  contextView.querySelectorAll<HTMLElement>(".action-label:not(.separator)").forEach((el) => {
-    const raw = el.textContent?.trim();
-    if (raw) {
-      const translated = translateMonacoLabel(raw);
-      if (translated !== raw) {
-        el.textContent = translated;
-      }
-    }
-  });
-}
-
-// ---------------------------------------------------------------------------
-// 全局翻译（兼容自定义菜单和 Monaco 菜单）
-// ---------------------------------------------------------------------------
-export function translateActiveMonacoMenus(): void {
-  if (typeof document === "undefined") return;
-  // Monaco 编辑器右键菜单
-  document.querySelectorAll<HTMLElement>(".context-view").forEach(patchContextView);
-  // Vue 自定义菜单（标签页右键菜单、文件树右键菜单）
-  document.querySelectorAll<HTMLElement>(".tab-context-menu, .tab-submenu-independent").forEach(patchContextView);
-}
-
-// ---------------------------------------------------------------------------
-// 本地化 Monaco Editor Action 实例的 label（首次打开有效）
-// ---------------------------------------------------------------------------
+/**
+ * 本地化指定 Monaco Standalone Editor 实例中注册的 Action 的 label 属性。
+ * 必须在每次右键弹出前调用，因为 Monaco 在每次弹出时从 action.label 重建菜单。
+ */
 export function localizeEditorActions(editor: any): void {
   if (!editor || typeof editor.getSupportedActions !== "function") return;
   try {
@@ -198,94 +117,30 @@ export function localizeEditorActions(editor: any): void {
   }
 }
 
-// ---------------------------------------------------------------------------
-// 核心：监听 context-view 插入并持续修补
-// ---------------------------------------------------------------------------
-let observer: MutationObserver | null = null;
-let isEventsRegistered = false;
-
 /**
- * 当检测到 .context-view 出现在 DOM 中时，启动一个短时高频轮询来持续修补。
- * 这是因为 Monaco 的 Menu 构造过程是：
- *   1. 创建 context-view 容器并 append 到 body
- *   2. 异步/帧内逐步 push action items → 触发 render → updateLabel → applyStyle
- * 我们需要在所有 action items 完成 render 之后再做修补。
- * 高频轮询 (每 20ms) 持续 800ms 确保覆盖 Monaco 的所有异步阶段。
+ * 在 editor DOM 容器上注册 contextmenu 事件监听器。
+ * 每次右键弹出前，先修改 action label 为当前语言。
+ * 这是穿透 Shadow DOM 的唯一可靠方案。
  */
-function startPatchCycle(): void {
-  if (typeof document === "undefined") return;
-  // 立即执行一次
-  translateActiveMonacoMenus();
-  let ticks = 0;
-  const timer = setInterval(() => {
-    translateActiveMonacoMenus();
-    ticks++;
-    if (ticks > 40) { // 40 × 20ms = 800ms
-      clearInterval(timer);
-    }
-  }, 20);
+export function setupEditorContextMenuLocalization(editor: any, container: HTMLElement): void {
+  if (!container || !editor) return;
+  container.addEventListener("contextmenu", () => {
+    localizeEditorActions(editor);
+  }, { capture: true });
 }
 
+/**
+ * setupMonacoLocalization 现已不再需要全局 DOM 监听。
+ * 保留空实现以保持向后兼容。
+ */
 export function setupMonacoLocalization(): void {
-  if (typeof document === "undefined") return;
+  // 菜单样式完全由 defineTheme 的 menu.* token 控制（穿透 Shadow DOM）。
+  // 本地化由 setupEditorContextMenuLocalization 在每个 editor 实例上处理。
+}
 
-  if (!observer) {
-    observer = new MutationObserver((mutations) => {
-      let hasNewMenu = false;
-      for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) {
-          if (node.nodeType !== Node.ELEMENT_NODE) continue;
-          const el = node as HTMLElement;
-          // 检测 context-view 或 Vue 自定义菜单节点被插入 DOM
-          if (
-            el.classList?.contains("context-view") ||
-            el.classList?.contains("tab-context-menu") ||
-            el.classList?.contains("tab-submenu-independent") ||
-            el.querySelector?.(".context-view, .tab-context-menu, .tab-submenu-independent")
-          ) {
-            hasNewMenu = true;
-          }
-        }
-      }
-      if (hasNewMenu) {
-        startPatchCycle();
-      }
-    });
-
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-    });
-  }
-
-  if (!isEventsRegistered && typeof window !== "undefined") {
-    isEventsRegistered = true;
-
-    // 右键、pointerdown(button=2)、Shift+F10、F1 触发时启动修补
-    const triggerPatch = () => startPatchCycle();
-
-    window.addEventListener("contextmenu", triggerPatch, { capture: true });
-    window.addEventListener(
-      "pointerdown",
-      (e) => { if (e.button === 2) triggerPatch(); },
-      { capture: true }
-    );
-    window.addEventListener(
-      "keydown",
-      (e) => { if ((e.shiftKey && e.key === "F10") || e.key === "F1") triggerPatch(); },
-      { capture: true }
-    );
-
-    // 鼠标移入菜单区域时也修补（防止 focus/blur 时 Monaco 的 applyStyle 覆盖颜色）
-    document.addEventListener(
-      "pointerover",
-      (e) => {
-        const target = e.target as Element | null;
-        if (target?.closest?.(".context-view, .monaco-menu")) {
-          translateActiveMonacoMenus();
-        }
-      },
-      { capture: true, passive: true }
-    );
-  }
+/**
+ * 保留 translateActiveMonacoMenus 导出以保持向后兼容。
+ */
+export function translateActiveMonacoMenus(): void {
+  // no-op: Monaco 菜单在 Shadow DOM 中，外部 DOM 操作无法触达。
 }

@@ -170,7 +170,7 @@ function scheduleGutterDiffUpdate(): void {
   }, 100);
 }
 
-import { localizeEditorActions } from "../../services/editor/monacoLocalization";
+import { localizeEditorActions, setupEditorContextMenuLocalization } from "../../services/editor/monacoLocalization";
 
 function initMonacoThemes(m: typeof MonacoType): void {
   // 浅色编辑器 -> 深色反差右键菜单
@@ -277,6 +277,7 @@ onMounted(async () => {
     });
 
     localizeEditorActions(editorInstance);
+    setupEditorContextMenuLocalization(editorInstance, editorContainerRef.value);
 
     // Content change
     editorInstance.onDidChangeModelContent(() => {
