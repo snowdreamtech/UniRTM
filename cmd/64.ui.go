@@ -1083,6 +1083,11 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 		handleMarketplaceInstall(w, r, themeMgr)
 	})
 
+	// ─── Multi-root Workspace API Handlers ────────────────────────────────────
+	mux.HandleFunc("/api/workspace/roots", handleGetWorkspaceRoots)
+	mux.HandleFunc("/api/workspace/roots/add", handleAddWorkspaceRoot)
+	mux.HandleFunc("/api/workspace/roots/remove", handleRemoveWorkspaceRoot)
+
 	// ─── File System API Handlers ─────────────────────────────────────────────
 	mux.HandleFunc("/api/fs/tree", handleFSTree)
 	mux.HandleFunc("/api/fs/create", handleFSCreate)
@@ -3222,6 +3227,160 @@ func buildFSTree(wd, dirPath, currentRelPath string, currentDepth, maxDepth int,
 	})
 
 	return append(dirs, files...), nil
+}
+
+type WorkspaceRootItem struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Path string `json:"path"`
+}
+
+func getWorkspaceConfigFile(rootDir string) string {
+	return filepath.Join(rootDir, ".unirtm", "workspaces.json")
+}
+
+func loadWorkspaceRoots(rootDir string) []WorkspaceRootItem {
+	conf := getWorkspaceConfigFile(rootDir)
+	data, err := os.ReadFile(conf)
+	if err == nil {
+		var wrapper struct {
+			Roots []WorkspaceRootItem `json:"roots"`
+		}
+		if err := json.Unmarshal(data, &wrapper); err == nil && len(wrapper.Roots) > 0 {
+			return wrapper.Roots
+		}
+	}
+	name := filepath.Base(rootDir)
+	if name == "" || name == "." || name == "/" {
+		name = "workspace"
+	}
+	return []WorkspaceRootItem{
+		{
+			ID:   "root-primary",
+			Name: name,
+			Path: "",
+		},
+	}
+}
+
+func saveWorkspaceRoots(rootDir string, roots []WorkspaceRootItem) error {
+	confDir := filepath.Join(rootDir, ".unirtm")
+	if err := os.MkdirAll(confDir, 0755); err != nil {
+		return err
+	}
+	wrapper := struct {
+		Roots []WorkspaceRootItem `json:"roots"`
+	}{
+		Roots: roots,
+	}
+	bytes, err := json.MarshalIndent(wrapper, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(getWorkspaceConfigFile(rootDir), bytes, 0644)
+}
+
+func handleGetWorkspaceRoots(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		wd = "."
+	}
+	roots := loadWorkspaceRoots(wd)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"roots":   roots,
+	})
+}
+
+func handleAddWorkspaceRoot(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Path string `json:"path"`
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid request body"})
+		return
+	}
+	cleanPath := strings.TrimSpace(req.Path)
+	wd, err := os.Getwd()
+	if err != nil {
+		wd = "."
+	}
+	roots := loadWorkspaceRoots(wd)
+	folderName := strings.TrimSpace(req.Name)
+	if folderName == "" {
+		folderName = filepath.Base(cleanPath)
+		if folderName == "" || folderName == "." {
+			folderName = "Folder"
+		}
+	}
+	exists := false
+	for _, rt := range roots {
+		if rt.Path == cleanPath {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		roots = append(roots, WorkspaceRootItem{
+			ID:   fmt.Sprintf("root-%d", time.Now().UnixNano()),
+			Name: folderName,
+			Path: cleanPath,
+		})
+		_ = saveWorkspaceRoots(wd, roots)
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"roots":   roots,
+	})
+}
+
+func handleRemoveWorkspaceRoot(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Path string `json:"path"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid request body"})
+		return
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		wd = "."
+	}
+	roots := loadWorkspaceRoots(wd)
+	if len(roots) <= 1 {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "cannot remove the only root folder"})
+		return
+	}
+	var filtered []WorkspaceRootItem
+	for _, item := range roots {
+		if item.Path != req.Path {
+			filtered = append(filtered, item)
+		}
+	}
+	_ = saveWorkspaceRoots(wd, filtered)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"roots":   filtered,
+	})
 }
 
 func handleFSTree(w http.ResponseWriter, r *http.Request) {

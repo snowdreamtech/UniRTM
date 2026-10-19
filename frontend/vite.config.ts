@@ -2907,6 +2907,98 @@ print(json.dumps({
               return [...dirs, ...files];
             };
 
+            // Multi-root Workspace management
+            const getWorkspaceConfigFile = () => path.join(rootDir, ".unirtm", "workspaces.json");
+            const loadWorkspaceRoots = (): Array<{ id: string; name: string; path: string }> => {
+              try {
+                const conf = getWorkspaceConfigFile();
+                if (fs.existsSync(conf)) {
+                  const data = JSON.parse(fs.readFileSync(conf, "utf-8"));
+                  if (Array.isArray(data.roots) && data.roots.length > 0) {
+                    return data.roots;
+                  }
+                }
+              } catch (_) {}
+              return [{ id: "root-primary", name: path.basename(rootDir), path: "" }];
+            };
+            const saveWorkspaceRoots = (roots: Array<{ id: string; name: string; path: string }>) => {
+              try {
+                const confDir = path.join(rootDir, ".unirtm");
+                if (!fs.existsSync(confDir)) fs.mkdirSync(confDir, { recursive: true });
+                fs.writeFileSync(getWorkspaceConfigFile(), JSON.stringify({ roots }, null, 2), "utf-8");
+              } catch (_) {}
+            };
+
+            // GET /api/workspace/roots
+            if (req.url === "/api/workspace/roots" && req.method === "GET") {
+              const roots = loadWorkspaceRoots();
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify({ success: true, roots }));
+              return;
+            }
+
+            // POST /api/workspace/roots/add
+            if (req.url === "/api/workspace/roots/add" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (c: any) => { bodyStr += c; });
+              req.on("end", () => {
+                try {
+                  const { path: folderPath, name } = JSON.parse(bodyStr || "{}");
+                  if (folderPath === undefined || folderPath === null) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "Folder path is required" }));
+                    return;
+                  }
+                  const roots = loadWorkspaceRoots();
+                  const cleanPath = String(folderPath).trim();
+                  const folderName = name || path.basename(cleanPath) || "Folder";
+                  if (!roots.some(r => r.path === cleanPath)) {
+                    roots.push({
+                      id: `root-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                      name: folderName,
+                      path: cleanPath
+                    });
+                    saveWorkspaceRoots(roots);
+                  }
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, roots }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
+            // POST /api/workspace/roots/remove
+            if (req.url === "/api/workspace/roots/remove" && req.method === "POST") {
+              let bodyStr = "";
+              req.on("data", (c: any) => { bodyStr += c; });
+              req.on("end", () => {
+                try {
+                  const { path: folderPath } = JSON.parse(bodyStr || "{}");
+                  let roots = loadWorkspaceRoots();
+                  if (roots.length <= 1) {
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "application/json");
+                    res.end(JSON.stringify({ error: "Cannot remove the only root folder" }));
+                    return;
+                  }
+                  roots = roots.filter(r => r.path !== folderPath);
+                  saveWorkspaceRoots(roots);
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, roots }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+
             // GET /api/fs/tree
             if (req.url.startsWith("/api/fs/tree") && req.method === "GET") {
               try {

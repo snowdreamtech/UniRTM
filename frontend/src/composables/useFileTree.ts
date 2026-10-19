@@ -16,7 +16,14 @@ export interface FSNode {
   size: number;
   mod_time: string;
   is_ignored?: boolean;
+  isRoot?: boolean;
   children?: FSNode[];
+}
+
+export interface WorkspaceRoot {
+  id: string;
+  name: string;
+  path: string;
 }
 
 export interface InlineAction {
@@ -51,6 +58,21 @@ const deleteConfirmModal = ref<{ visible: boolean; node: FSNode | null }>({
   node: null,
 });
 
+export interface AddFolderModalState {
+  visible: boolean;
+  defaultPath: string;
+  defaultName: string;
+}
+
+const addFolderModal = ref<AddFolderModalState>({
+  visible: false,
+  defaultPath: "",
+  defaultName: "",
+});
+
+const workspaceRoots = ref<WorkspaceRoot[]>([]);
+const isMultiRoot = computed(() => workspaceRoots.value.length > 1);
+
 const activeFileContent = ref<string>("");
 const isFileLoading = ref<boolean>(false);
 
@@ -76,33 +98,177 @@ function normalizeNode(raw: any): FSNode {
 export function useFileTree() {
   const { showToast } = useToast();
 
+  function isWorkspaceRoot(node: FSNode | null | undefined): boolean {
+    if (!node || !node.is_dir) return false;
+    if (node.isRoot) return true;
+    if (!isMultiRoot.value) return false;
+    return workspaceRoots.value.some((r) => r.path === node.path);
+  }
+
+  function openAddFolderModal(defaultPath = "", defaultName = ""): void {
+    addFolderModal.value = {
+      visible: true,
+      defaultPath,
+      defaultName,
+    };
+  }
+
+  function closeAddFolderModal(): void {
+    addFolderModal.value.visible = false;
+  }
+
+  async function fetchWorkspaceRoots(): Promise<WorkspaceRoot[]> {
+    try {
+      const res = await fetch("/api/workspace/roots");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.roots) && data.roots.length > 0) {
+          workspaceRoots.value = data.roots;
+          return data.roots;
+        }
+      }
+    } catch {
+      // fallback
+    }
+    if (workspaceRoots.value.length === 0) {
+      workspaceRoots.value = [{ id: "root-primary", name: "UNIRTM", path: "" }];
+    }
+    return workspaceRoots.value;
+  }
+
+  async function addFolderToWorkspace(folderPath: string, name?: string): Promise<boolean> {
+    try {
+      const cleanPath = folderPath.trim();
+      const res = await fetch("/api/workspace/roots/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: cleanPath, name }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (Array.isArray(data.roots)) {
+        workspaceRoots.value = data.roots;
+      }
+      showToast(t("explorer.added_to_workspace") || "已将文件夹添加到工作区", "success");
+      await fetchTree();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "添加文件夹失败", "error");
+      return false;
+    }
+  }
+
+  async function removeFolderFromWorkspace(folderPath: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/workspace/roots/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: folderPath }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (Array.isArray(data.roots)) {
+        workspaceRoots.value = data.roots;
+      }
+      showToast(t("explorer.removed_from_workspace") || "已将文件夹从工作区删除", "info");
+      await fetchTree();
+      return true;
+    } catch (err: any) {
+      showToast(err.message || "移除文件夹失败", "error");
+      return false;
+    }
+  }
+
   async function fetchTree(): Promise<void> {
     isLoading.value = true;
     error.value = null;
     try {
-      const res = await fetch("/api/fs/tree");
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      if (workspaceRoots.value.length === 0) {
+        await fetchWorkspaceRoots();
       }
-      const data = await res.json();
-      if (data && (data.entries || data.Entries || data.children || data.Children || data.data || data.name || data.Name)) {
-        const rootRaw = data.data || data;
-        const rootChildren = rootRaw.entries || rootRaw.Entries || rootRaw.children || rootRaw.Children || [];
+      const roots = workspaceRoots.value;
+      if (roots.length > 1) {
+        // Multi-root mode: fetch trees for all roots concurrently
+        const rootNodes = await Promise.all(
+          roots.map(async (r) => {
+            try {
+              const res = await fetch(`/api/fs/tree?path=${encodeURIComponent(r.path)}`);
+              if (res.ok) {
+                const data = await res.json();
+                const rootRaw = data.data || data;
+                const rootChildren = rootRaw.entries || rootRaw.Entries || rootRaw.children || rootRaw.Children || [];
+                return {
+                  name: r.name || rootRaw.name || "Folder",
+                  path: r.path,
+                  is_dir: true,
+                  size: 0,
+                  mod_time: new Date().toISOString(),
+                  is_ignored: false,
+                  isRoot: true,
+                  children: rootChildren.map(normalizeNode),
+                };
+              }
+            } catch {}
+            return {
+              name: r.name || "Folder",
+              path: r.path,
+              is_dir: true,
+              size: 0,
+              mod_time: new Date().toISOString(),
+              is_ignored: false,
+              isRoot: true,
+              children: [],
+            };
+          })
+        );
+
         tree.value = {
-          name: rootRaw.name || rootRaw.Name || "UNIRTM",
-          path: rootRaw.path || rootRaw.Path || "",
+          name: t("explorer.workspace_title", { count: roots.length }) || `工作区 (${roots.length} 个文件夹)`,
+          path: "",
           is_dir: true,
           size: 0,
           mod_time: new Date().toISOString(),
           is_ignored: false,
-          children: rootChildren.map(normalizeNode),
+          children: rootNodes,
         };
-        // Keep root path expanded by default
-        if (!expandedPaths.value.has("")) {
-          expandedPaths.value.add("");
+
+        for (const r of roots) {
+          if (!expandedPaths.value.has(r.path)) {
+            expandedPaths.value.add(r.path);
+          }
         }
       } else {
-        throw new Error(data.error || "Failed to load directory tree");
+        // Single root mode
+        const primaryPath = roots[0]?.path || "";
+        const res = await fetch(`/api/fs/tree${primaryPath ? `?path=${encodeURIComponent(primaryPath)}` : ""}`);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        const data = await res.json();
+        if (data && (data.entries || data.Entries || data.children || data.Children || data.data || data.name || data.Name)) {
+          const rootRaw = data.data || data;
+          const rootChildren = rootRaw.entries || rootRaw.Entries || rootRaw.children || rootRaw.Children || [];
+          tree.value = {
+            name: rootRaw.name || rootRaw.Name || roots[0]?.name || "UNIRTM",
+            path: roots[0]?.path || rootRaw.path || rootRaw.Path || "",
+            is_dir: true,
+            size: 0,
+            mod_time: new Date().toISOString(),
+            is_ignored: false,
+            children: rootChildren.map(normalizeNode),
+          };
+          if (!expandedPaths.value.has("")) {
+            expandedPaths.value.add("");
+          }
+        } else {
+          throw new Error(data.error || "Failed to load directory tree");
+        }
       }
     } catch (err: any) {
       error.value = err.message || "Failed to load directory tree";
@@ -577,6 +743,15 @@ export function useFileTree() {
     copyPath,
     copyRelativePath,
     copyFileName,
+    workspaceRoots,
+    isMultiRoot,
+    isWorkspaceRoot,
+    addFolderModal,
+    openAddFolderModal,
+    closeAddFolderModal,
+    fetchWorkspaceRoots,
+    addFolderToWorkspace,
+    removeFolderFromWorkspace,
     startInlineCreate,
     startInlineRename,
     cancelInlineAction,

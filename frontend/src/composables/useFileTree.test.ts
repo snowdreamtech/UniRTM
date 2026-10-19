@@ -5,11 +5,12 @@ import { useGit } from "./useGit";
 describe("useFileTree", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    const { collapseAll, searchQuery, cancelInlineAction, selectedNode } = useFileTree();
+    const { collapseAll, searchQuery, cancelInlineAction, selectedNode, workspaceRoots } = useFileTree();
     collapseAll();
     searchQuery.value = "";
     cancelInlineAction();
     selectedNode.value = null;
+    workspaceRoots.value = [{ id: "root-1", name: "UNIRTM", path: "" }];
   });
 
   it("handles directory expansion, collapseAll and nested path expansion", () => {
@@ -377,6 +378,109 @@ describe("useFileTree", () => {
     const nameResult = await copyFileName("main.ts");
     expect(nameResult).toBe("main.ts");
     expect(writeTextMock).toHaveBeenCalledWith("main.ts");
+  });
+
+  it("manages multi-root workspace roots, modal state, and isWorkspaceRoot", async () => {
+    const {
+      workspaceRoots,
+      isMultiRoot,
+      isWorkspaceRoot,
+      addFolderModal,
+      openAddFolderModal,
+      closeAddFolderModal,
+      addFolderToWorkspace,
+      removeFolderFromWorkspace,
+    } = useFileTree();
+
+    // 1. Initial single-root state
+    workspaceRoots.value = [{ id: "root-1", name: "UNIRTM", path: "" }];
+    expect(isMultiRoot.value).toBe(false);
+
+    const subDirNode = {
+      name: "src",
+      path: "src",
+      is_dir: true,
+      size: 0,
+      mod_time: new Date().toISOString(),
+    };
+    expect(isWorkspaceRoot(subDirNode)).toBe(false);
+
+    // 2. Modal open and close
+    openAddFolderModal("pkg-extra", "pkg-extra");
+    expect(addFolderModal.value.visible).toBe(true);
+    expect(addFolderModal.value.defaultPath).toBe("pkg-extra");
+    closeAddFolderModal();
+    expect(addFolderModal.value.visible).toBe(false);
+
+    // 3. Mock fetch for adding folder
+    const fetchMock = vi.fn().mockImplementation((url: string, _options?: any) => {
+      if (url === "/api/workspace/roots/add") {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              success: true,
+              roots: [
+                { id: "root-1", name: "UNIRTM", path: "" },
+                { id: "root-2", name: "pkg-extra", path: "pkg-extra" },
+              ],
+            }),
+        });
+      }
+      if (url === "/api/workspace/roots/remove") {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              success: true,
+              roots: [{ id: "root-1", name: "UNIRTM", path: "" }],
+            }),
+        });
+      }
+      if (url.startsWith("/api/fs/tree")) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              name: "Folder",
+              entries: [],
+            }),
+        });
+      }
+      if (url === "/api/workspace/roots") {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              roots: workspaceRoots.value,
+            }),
+        });
+      }
+      return Promise.reject(new Error("Unknown URL"));
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    // Add folder
+    const addSuccess = await addFolderToWorkspace("pkg-extra", "pkg-extra");
+    expect(addSuccess).toBe(true);
+    expect(workspaceRoots.value.length).toBe(2);
+    expect(isMultiRoot.value).toBe(true);
+
+    const rootDirNode = {
+      name: "pkg-extra",
+      path: "pkg-extra",
+      is_dir: true,
+      size: 0,
+      mod_time: new Date().toISOString(),
+    };
+    expect(isWorkspaceRoot(rootDirNode)).toBe(true);
+
+    // Remove folder
+    const removeSuccess = await removeFolderFromWorkspace("pkg-extra");
+    expect(removeSuccess).toBe(true);
+    expect(workspaceRoots.value.length).toBe(1);
+    expect(isMultiRoot.value).toBe(false);
   });
 });
 
