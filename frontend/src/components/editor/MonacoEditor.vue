@@ -170,6 +170,8 @@ function scheduleGutterDiffUpdate(): void {
   }, 100);
 }
 
+import { localizeEditorActions } from "../../services/editor/monacoLocalization";
+
 function initMonacoThemes(m: typeof MonacoType): void {
   m.editor.defineTheme("unirtm-light", {
     base: "vs",
@@ -177,8 +179,8 @@ function initMonacoThemes(m: typeof MonacoType): void {
     rules: [],
     colors: {
       "menu.background": "#ffffff",
-      "menu.foreground": "#0f172a",
-      "menu.selectionBackground": "#0284c7",
+      "menu.foreground": "#1e293b",
+      "menu.selectionBackground": "#0060c0",
       "menu.selectionForeground": "#ffffff",
       "menu.selectionBorder": "transparent",
       "menu.separatorBackground": "#e2e8f0",
@@ -186,11 +188,11 @@ function initMonacoThemes(m: typeof MonacoType): void {
       "widget.shadow": "rgba(0, 0, 0, 0.16)",
       "editorWidget.background": "#ffffff",
       "editorWidget.border": "#cbd5e1",
-      "editorWidget.foreground": "#0f172a",
+      "editorWidget.foreground": "#1e293b",
       "editorSuggestWidget.background": "#ffffff",
       "editorSuggestWidget.border": "#cbd5e1",
       "editorSuggestWidget.selectedBackground": "#e0f2fe",
-      "editorSuggestWidget.highlightForeground": "#0284c7",
+      "editorSuggestWidget.highlightForeground": "#0060c0",
       "editorHoverWidget.background": "#ffffff",
       "editorHoverWidget.border": "#cbd5e1",
     },
@@ -201,23 +203,23 @@ function initMonacoThemes(m: typeof MonacoType): void {
     inherit: true,
     rules: [],
     colors: {
-      "menu.background": "#111827",
-      "menu.foreground": "#f8fafc",
-      "menu.selectionBackground": "rgba(0, 229, 255, 0.2)",
-      "menu.selectionForeground": "#00e5ff",
-      "menu.selectionBorder": "rgba(0, 229, 255, 0.4)",
-      "menu.separatorBackground": "rgba(255, 255, 255, 0.12)",
-      "menu.border": "rgba(0, 229, 255, 0.3)",
+      "menu.background": "#1e1e1e",
+      "menu.foreground": "#cccccc",
+      "menu.selectionBackground": "#04395e",
+      "menu.selectionForeground": "#ffffff",
+      "menu.selectionBorder": "transparent",
+      "menu.separatorBackground": "#333333",
+      "menu.border": "#3c3c3c",
       "widget.shadow": "rgba(0, 0, 0, 0.65)",
-      "editorWidget.background": "#111827",
-      "editorWidget.border": "rgba(0, 229, 255, 0.3)",
-      "editorWidget.foreground": "#f8fafc",
-      "editorSuggestWidget.background": "#111827",
-      "editorSuggestWidget.border": "rgba(0, 229, 255, 0.3)",
-      "editorSuggestWidget.selectedBackground": "rgba(0, 229, 255, 0.15)",
-      "editorSuggestWidget.highlightForeground": "#00e5ff",
-      "editorHoverWidget.background": "#111827",
-      "editorHoverWidget.border": "rgba(0, 229, 255, 0.3)",
+      "editorWidget.background": "#1e1e1e",
+      "editorWidget.border": "#3c3c3c",
+      "editorWidget.foreground": "#cccccc",
+      "editorSuggestWidget.background": "#1e1e1e",
+      "editorSuggestWidget.border": "#3c3c3c",
+      "editorSuggestWidget.selectedBackground": "#04395e",
+      "editorSuggestWidget.highlightForeground": "#38bdf8",
+      "editorHoverWidget.background": "#1e1e1e",
+      "editorHoverWidget.border": "#3c3c3c",
     },
   });
 }
@@ -271,6 +273,8 @@ onMounted(async () => {
       contextmenu: true,
       fixedOverflowWidgets: true,
     });
+
+    localizeEditorActions(editorInstance);
 
     // Content change
     editorInstance.onDidChangeModelContent(() => {
