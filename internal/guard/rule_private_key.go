@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package builtin
+package guard
 
 import (
 	"bytes"
@@ -11,14 +11,13 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/snowdreamtech/unirtm/internal/guard"
 )
 
 var privateKeyRegex = regexp.MustCompile(`-----BEGIN (?:[A-Z0-9 ]+ )?PRIVATE KEY-----`)
 
 type PrivateKeyRule struct{}
 
-func NewPrivateKeyRule() guard.Rule {
+func NewPrivateKeyRule() Rule {
 	return &PrivateKeyRule{}
 }
 
@@ -26,20 +25,20 @@ func (r *PrivateKeyRule) ID() string {
 	return "builtin:detect-private-key"
 }
 
-func (r *PrivateKeyRule) Category() guard.Category {
-	return guard.CategorySecret
+func (r *PrivateKeyRule) Category() Category {
+	return CategorySecret
 }
 
-func (r *PrivateKeyRule) Phase() guard.Phase {
-	return guard.PhaseLinter
+func (r *PrivateKeyRule) Phase() Phase {
+	return PhaseLinter
 }
 
 func (r *PrivateKeyRule) DefaultExtensions() []string {
 	return nil
 }
 
-func (r *PrivateKeyRule) Execute(ctx context.Context, files []string, opts guard.ExecuteOptions) ([]guard.Issue, error) {
-	var issues []guard.Issue
+func (r *PrivateKeyRule) Execute(ctx context.Context, files []string, opts ExecuteOptions) ([]Issue, error) {
+	var issues []Issue
 
 	for _, rel := range files {
 		select {
@@ -50,20 +49,20 @@ func (r *PrivateKeyRule) Execute(ctx context.Context, files []string, opts guard
 
 		base := strings.ToLower(filepath.Base(rel))
 		if base == "id_rsa" || base == "id_dsa" || base == "id_ecdsa" || base == "id_ed25519" {
-			issues = append(issues, guard.Issue{
+			issues = append(issues, Issue{
 				FilePath: rel,
 				Line:     1,
 				RuleID:   r.ID(),
 				Category: r.Category(),
 				Phase:    r.Phase(),
-				Severity: guard.SeverityError,
+				Severity: SeverityError,
 				Message:  "Private key file detected by filename: " + base,
 				Fixable:  false,
 			})
 			continue
 		}
 
-		fullPath := filepath.Join(opts.WorkspaceDir, rel)
+		fullPath := rel; if !filepath.IsAbs(fullPath) { fullPath = filepath.Join(opts.WorkspaceDir, rel) }
 		fi, err := os.Lstat(fullPath)
 		if err != nil || fi.Mode()&os.ModeSymlink != 0 || fi.Size() > 2*1024*1024 {
 			continue
@@ -86,13 +85,13 @@ func (r *PrivateKeyRule) Execute(ctx context.Context, files []string, opts guard
 		if loc := privateKeyRegex.FindIndex(content); loc != nil {
 			// Find line number
 			line := bytes.Count(content[:loc[0]], []byte("\n")) + 1
-			issues = append(issues, guard.Issue{
+			issues = append(issues, Issue{
 				FilePath: rel,
 				Line:     line,
 				RuleID:   r.ID(),
 				Category: r.Category(),
 				Phase:    r.Phase(),
-				Severity: guard.SeverityError,
+				Severity: SeverityError,
 				Message:  "Sensitive private key header pattern detected (leak hazard)",
 				Fixable:  false,
 			})

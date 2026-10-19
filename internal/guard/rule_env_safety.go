@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package builtin
+package guard
 
 import (
 	"bufio"
@@ -11,14 +11,13 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/snowdreamtech/unirtm/internal/guard"
 )
 
 var sensitiveKeyRegex = regexp.MustCompile(`(?i)(?:AWS_SECRET|GITHUB_TOKEN|PRIVATE_KEY|DATABASE_URL|SECRET_KEY|AUTH_TOKEN|PASSWORD|API_KEY)\s*=\s*['"]?([^\s'"]+)`)
 
 type EnvSafetyRule struct{}
 
-func NewEnvSafetyRule() guard.Rule {
+func NewEnvSafetyRule() Rule {
 	return &EnvSafetyRule{}
 }
 
@@ -26,20 +25,20 @@ func (r *EnvSafetyRule) ID() string {
 	return "builtin:check-env-safety"
 }
 
-func (r *EnvSafetyRule) Category() guard.Category {
-	return guard.CategorySecret
+func (r *EnvSafetyRule) Category() Category {
+	return CategorySecret
 }
 
-func (r *EnvSafetyRule) Phase() guard.Phase {
-	return guard.PhaseLinter
+func (r *EnvSafetyRule) Phase() Phase {
+	return PhaseLinter
 }
 
 func (r *EnvSafetyRule) DefaultExtensions() []string {
 	return nil
 }
 
-func (r *EnvSafetyRule) Execute(ctx context.Context, files []string, opts guard.ExecuteOptions) ([]guard.Issue, error) {
-	var issues []guard.Issue
+func (r *EnvSafetyRule) Execute(ctx context.Context, files []string, opts ExecuteOptions) ([]Issue, error) {
+	var issues []Issue
 
 	for _, rel := range files {
 		select {
@@ -59,7 +58,7 @@ func (r *EnvSafetyRule) Execute(ctx context.Context, files []string, opts guard.
 			continue
 		}
 
-		fullPath := filepath.Join(opts.WorkspaceDir, rel)
+		fullPath := rel; if !filepath.IsAbs(fullPath) { fullPath = filepath.Join(opts.WorkspaceDir, rel) }
 		f, err := os.Open(fullPath)
 		if err != nil {
 			continue
@@ -83,13 +82,13 @@ func (r *EnvSafetyRule) Execute(ctx context.Context, files []string, opts guard.
 					continue
 				}
 
-				issues = append(issues, guard.Issue{
+				issues = append(issues, Issue{
 					FilePath: rel,
 					Line:     lineNum,
 					RuleID:   r.ID(),
 					Category: r.Category(),
 					Phase:    r.Phase(),
-					Severity: guard.SeverityError,
+					Severity: SeverityError,
 					Message:  "Potential raw production secret detected in .env file (leak risk)",
 					Fixable:  false,
 				})

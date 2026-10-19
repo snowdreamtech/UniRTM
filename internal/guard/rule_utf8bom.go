@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package builtin
+package guard
 
 import (
 	"bytes"
@@ -9,14 +9,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/snowdreamtech/unirtm/internal/guard"
 )
 
 var utf8BOM = []byte{0xEF, 0xBB, 0xBF}
 
 type Utf8BOMRule struct{}
 
-func NewUtf8BOMRule() guard.Rule {
+func NewUtf8BOMRule() Rule {
 	return &Utf8BOMRule{}
 }
 
@@ -24,20 +23,20 @@ func (r *Utf8BOMRule) ID() string {
 	return "builtin:check-utf8-bom"
 }
 
-func (r *Utf8BOMRule) Category() guard.Category {
-	return guard.CategoryHygiene
+func (r *Utf8BOMRule) Category() Category {
+	return CategoryHygiene
 }
 
-func (r *Utf8BOMRule) Phase() guard.Phase {
-	return guard.PhaseFixer
+func (r *Utf8BOMRule) Phase() Phase {
+	return PhaseFixer
 }
 
 func (r *Utf8BOMRule) DefaultExtensions() []string {
 	return nil
 }
 
-func (r *Utf8BOMRule) Execute(ctx context.Context, files []string, opts guard.ExecuteOptions) ([]guard.Issue, error) {
-	var issues []guard.Issue
+func (r *Utf8BOMRule) Execute(ctx context.Context, files []string, opts ExecuteOptions) ([]Issue, error) {
+	var issues []Issue
 
 	for _, rel := range files {
 		select {
@@ -46,7 +45,7 @@ func (r *Utf8BOMRule) Execute(ctx context.Context, files []string, opts guard.Ex
 		default:
 		}
 
-		fullPath := filepath.Join(opts.WorkspaceDir, rel)
+		fullPath := rel; if !filepath.IsAbs(fullPath) { fullPath = filepath.Join(opts.WorkspaceDir, rel) }
 		fi, err := os.Lstat(fullPath)
 		if err != nil || fi.Mode()&os.ModeSymlink != 0 || fi.Size() < 3 {
 			continue
@@ -66,13 +65,13 @@ func (r *Utf8BOMRule) Execute(ctx context.Context, files []string, opts guard.Ex
 				}
 			}
 
-			issues = append(issues, guard.Issue{
+			issues = append(issues, Issue{
 				FilePath: rel,
 				Line:     1,
 				RuleID:   r.ID(),
 				Category: r.Category(),
 				Phase:    r.Phase(),
-				Severity: guard.SeverityWarning,
+				Severity: SeverityWarning,
 				Message:  "Contains prohibited UTF-8 Byte Order Mark (BOM)",
 				Fixable:  true,
 				Fixed:    fixed,

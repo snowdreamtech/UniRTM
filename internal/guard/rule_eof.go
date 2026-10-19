@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package builtin
+package guard
 
 import (
 	"bytes"
@@ -9,12 +9,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/snowdreamtech/unirtm/internal/guard"
 )
 
 type EndOfFileRule struct{}
 
-func NewEndOfFileRule() guard.Rule {
+func NewEndOfFileRule() Rule {
 	return &EndOfFileRule{}
 }
 
@@ -22,20 +21,20 @@ func (r *EndOfFileRule) ID() string {
 	return "builtin:end-of-file"
 }
 
-func (r *EndOfFileRule) Category() guard.Category {
-	return guard.CategoryHygiene
+func (r *EndOfFileRule) Category() Category {
+	return CategoryHygiene
 }
 
-func (r *EndOfFileRule) Phase() guard.Phase {
-	return guard.PhaseFixer
+func (r *EndOfFileRule) Phase() Phase {
+	return PhaseFixer
 }
 
 func (r *EndOfFileRule) DefaultExtensions() []string {
 	return nil
 }
 
-func (r *EndOfFileRule) Execute(ctx context.Context, files []string, opts guard.ExecuteOptions) ([]guard.Issue, error) {
-	var issues []guard.Issue
+func (r *EndOfFileRule) Execute(ctx context.Context, files []string, opts ExecuteOptions) ([]Issue, error) {
+	var issues []Issue
 	maxSize := opts.MaxFileSize
 	if maxSize <= 0 {
 		maxSize = 2 * 1024 * 1024 // 2MB
@@ -48,7 +47,7 @@ func (r *EndOfFileRule) Execute(ctx context.Context, files []string, opts guard.
 		default:
 		}
 
-		fullPath := filepath.Join(opts.WorkspaceDir, rel)
+		fullPath := rel; if !filepath.IsAbs(fullPath) { fullPath = filepath.Join(opts.WorkspaceDir, rel) }
 		fi, err := os.Lstat(fullPath)
 		if err != nil || fi.Mode()&os.ModeSymlink != 0 || fi.Size() == 0 || fi.Size() > maxSize {
 			continue
@@ -87,13 +86,13 @@ func (r *EndOfFileRule) Execute(ctx context.Context, files []string, opts guard.
 				}
 			}
 
-			issues = append(issues, guard.Issue{
+			issues = append(issues, Issue{
 				FilePath: rel,
 				Line:     1,
 				RuleID:   r.ID(),
 				Category: r.Category(),
 				Phase:    r.Phase(),
-				Severity: guard.SeverityWarning,
+				Severity: SeverityWarning,
 				Message:  "File does not end with a single newline",
 				Fixable:  true,
 				Fixed:    fixed,

@@ -31,11 +31,11 @@
 ---
 
 ## Phase 2: 工具插槽 (Slots)、三阶执行管道 (Pipeline) 与 CLI 命令 (`unirtm check/fix`)
-- [ ] Task 2.1: 实现 `internal/guard/slots.go`（支持插槽定义如 `web.formatter`, `web.linter`, `go.linter`，并支持自定义工具动态替换）
-- [ ] Task 2.2: 实现 `internal/guard/pipeline.go`（严格按照 Fixer -> Formatter -> Linter 顺序执行调度，支持自动探测 `.golangci.yml`, `.prettierrc` 等原生配置文件）
-- [ ] Task 2.3: 实现 CLI 命令 `cmd/66.check.go` (`unirtm check [--staged|--all]`) 与 `unirtm fix`
-- [ ] Task 2.4: 编写 CLI 命令行单元测试与 E2E 测试
-- [ ] Task 2.5: 阶段性 Git 提交：`feat(guard): implement pluggable tool slots, 3-phase pipeline, and check/fix CLI`
+- [x] Task 2.1: 实现 `internal/guard/slots.go`（支持插槽定义如 `web.formatter`, `web.linter`, `go.linter`，并支持自定义工具动态替换）
+- [x] Task 2.2: 实现 `internal/guard/pipeline.go`（严格按照 Fixer -> Formatter -> Linter 顺序执行调度，支持自动探测 `.golangci.yml`, `.prettierrc` 等原生配置文件）
+- [x] Task 2.3: 实现 CLI 命令 `cmd/66.check.go` (`unirtm check [--staged|--all]`) 与 `unirtm fix`
+- [x] Task 2.4: 编写 CLI 命令行单元测试与 E2E 测试
+- [x] Task 2.5: 阶段性 Git 提交：`feat(guard): implement pluggable tool slots, 3-phase pipeline, and check/fix CLI`
 
 ---
 

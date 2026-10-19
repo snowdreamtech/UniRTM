@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package builtin
+package guard
 
 import (
 	"context"
@@ -9,12 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/snowdreamtech/unirtm/internal/guard"
 )
 
 type CaseConflictRule struct{}
 
-func NewCaseConflictRule() guard.Rule {
+func NewCaseConflictRule() Rule {
 	return &CaseConflictRule{}
 }
 
@@ -22,20 +21,20 @@ func (r *CaseConflictRule) ID() string {
 	return "builtin:check-case-conflict"
 }
 
-func (r *CaseConflictRule) Category() guard.Category {
-	return guard.CategoryHygiene
+func (r *CaseConflictRule) Category() Category {
+	return CategoryHygiene
 }
 
-func (r *CaseConflictRule) Phase() guard.Phase {
-	return guard.PhaseLinter
+func (r *CaseConflictRule) Phase() Phase {
+	return PhaseLinter
 }
 
 func (r *CaseConflictRule) DefaultExtensions() []string {
 	return nil
 }
 
-func (r *CaseConflictRule) Execute(ctx context.Context, files []string, opts guard.ExecuteOptions) ([]guard.Issue, error) {
-	var issues []guard.Issue
+func (r *CaseConflictRule) Execute(ctx context.Context, files []string, opts ExecuteOptions) ([]Issue, error) {
+	var issues []Issue
 	// Group files by lowercase path
 	seen := make(map[string]string) // lowerPath -> originalPath
 
@@ -50,13 +49,13 @@ func (r *CaseConflictRule) Execute(ctx context.Context, files []string, opts gua
 		lower := strings.ToLower(cleanPath)
 
 		if existing, exists := seen[lower]; exists && existing != cleanPath {
-			issues = append(issues, guard.Issue{
+			issues = append(issues, Issue{
 				FilePath: cleanPath,
 				Line:     1,
 				RuleID:   r.ID(),
 				Category: r.Category(),
 				Phase:    r.Phase(),
-				Severity: guard.SeverityError,
+				Severity: SeverityError,
 				Message: fmt.Sprintf("Case-insensitive filename conflict detected between %q and %q (breaks macOS/Windows checkout)",
 					cleanPath, existing),
 				Fixable: false,

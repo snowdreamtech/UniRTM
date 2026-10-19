@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package builtin
+package guard
 
 import (
 	"bufio"
@@ -11,13 +11,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/snowdreamtech/unirtm/internal/guard"
 )
 
 // LockfileCoexistenceRule ensures only one Node.js package manager lockfile exists per folder
 type LockfileCoexistenceRule struct{}
 
-func NewLockfileCoexistenceRule() guard.Rule {
+func NewLockfileCoexistenceRule() Rule {
 	return &LockfileCoexistenceRule{}
 }
 
@@ -25,20 +24,20 @@ func (r *LockfileCoexistenceRule) ID() string {
 	return "builtin:check-lockfile-coexistence"
 }
 
-func (r *LockfileCoexistenceRule) Category() guard.Category {
-	return guard.CategoryHygiene
+func (r *LockfileCoexistenceRule) Category() Category {
+	return CategoryHygiene
 }
 
-func (r *LockfileCoexistenceRule) Phase() guard.Phase {
-	return guard.PhaseLinter
+func (r *LockfileCoexistenceRule) Phase() Phase {
+	return PhaseLinter
 }
 
 func (r *LockfileCoexistenceRule) DefaultExtensions() []string {
 	return nil
 }
 
-func (r *LockfileCoexistenceRule) Execute(ctx context.Context, files []string, opts guard.ExecuteOptions) ([]guard.Issue, error) {
-	var issues []guard.Issue
+func (r *LockfileCoexistenceRule) Execute(ctx context.Context, files []string, opts ExecuteOptions) ([]Issue, error) {
+	var issues []Issue
 	// Group node lockfiles by directory
 	dirLockfiles := make(map[string][]string)
 
@@ -74,13 +73,13 @@ func (r *LockfileCoexistenceRule) Execute(ctx context.Context, files []string, o
 			for k := range unique {
 				names = append(names, k)
 			}
-			issues = append(issues, guard.Issue{
+			issues = append(issues, Issue{
 				FilePath: filepath.Join(dir, names[0]),
 				Line:     1,
 				RuleID:   r.ID(),
 				Category: r.Category(),
 				Phase:    r.Phase(),
-				Severity: guard.SeverityError,
+				Severity: SeverityError,
 				Message: fmt.Sprintf("Multiple conflicting Node.js lockfiles found in %q: %v. Keep only one.",
 					dir, names),
 				Fixable: false,
@@ -94,7 +93,7 @@ func (r *LockfileCoexistenceRule) Execute(ctx context.Context, files []string, o
 // LockfileConflictsRule checks conflict markers in large lockfiles without line-length limits
 type LockfileConflictsRule struct{}
 
-func NewLockfileConflictsRule() guard.Rule {
+func NewLockfileConflictsRule() Rule {
 	return &LockfileConflictsRule{}
 }
 
@@ -102,20 +101,20 @@ func (r *LockfileConflictsRule) ID() string {
 	return "builtin:check-lockfile-conflicts"
 }
 
-func (r *LockfileConflictsRule) Category() guard.Category {
-	return guard.CategoryHygiene
+func (r *LockfileConflictsRule) Category() Category {
+	return CategoryHygiene
 }
 
-func (r *LockfileConflictsRule) Phase() guard.Phase {
-	return guard.PhaseLinter
+func (r *LockfileConflictsRule) Phase() Phase {
+	return PhaseLinter
 }
 
 func (r *LockfileConflictsRule) DefaultExtensions() []string {
 	return nil
 }
 
-func (r *LockfileConflictsRule) Execute(ctx context.Context, files []string, opts guard.ExecuteOptions) ([]guard.Issue, error) {
-	var issues []guard.Issue
+func (r *LockfileConflictsRule) Execute(ctx context.Context, files []string, opts ExecuteOptions) ([]Issue, error) {
+	var issues []Issue
 
 	isLockfile := func(path string) bool {
 		lower := strings.ToLower(path)
@@ -138,7 +137,7 @@ func (r *LockfileConflictsRule) Execute(ctx context.Context, files []string, opt
 			continue
 		}
 
-		fullPath := filepath.Join(opts.WorkspaceDir, rel)
+		fullPath := rel; if !filepath.IsAbs(fullPath) { fullPath = filepath.Join(opts.WorkspaceDir, rel) }
 		f, err := os.Open(fullPath)
 		if err != nil {
 			continue
@@ -152,13 +151,13 @@ func (r *LockfileConflictsRule) Execute(ctx context.Context, files []string, opt
 			if strings.HasPrefix(line, "<<<<<<< ") ||
 				strings.HasPrefix(line, "=======") && len(strings.TrimSpace(line)) == 7 ||
 				strings.HasPrefix(line, ">>>>>>> ") {
-				issues = append(issues, guard.Issue{
+				issues = append(issues, Issue{
 					FilePath: rel,
 					Line:     lineNum,
 					RuleID:   r.ID(),
 					Category: r.Category(),
 					Phase:    r.Phase(),
-					Severity: guard.SeverityError,
+					Severity: SeverityError,
 					Message:  "Lockfile contains unresolved Git conflict marker: " + strings.TrimSpace(line),
 					Fixable:  false,
 				})

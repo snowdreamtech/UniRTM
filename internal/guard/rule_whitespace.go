@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package builtin
+package guard
 
 import (
 	"bytes"
@@ -10,14 +10,13 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/snowdreamtech/unirtm/internal/guard"
 )
 
 var trailingWhitespaceRegex = regexp.MustCompile(`[ \t]+(\r?\n|$)`)
 
 type TrailingWhitespaceRule struct{}
 
-func NewTrailingWhitespaceRule() guard.Rule {
+func NewTrailingWhitespaceRule() Rule {
 	return &TrailingWhitespaceRule{}
 }
 
@@ -25,20 +24,20 @@ func (r *TrailingWhitespaceRule) ID() string {
 	return "builtin:trailing-whitespace"
 }
 
-func (r *TrailingWhitespaceRule) Category() guard.Category {
-	return guard.CategoryHygiene
+func (r *TrailingWhitespaceRule) Category() Category {
+	return CategoryHygiene
 }
 
-func (r *TrailingWhitespaceRule) Phase() guard.Phase {
-	return guard.PhaseFixer
+func (r *TrailingWhitespaceRule) Phase() Phase {
+	return PhaseFixer
 }
 
 func (r *TrailingWhitespaceRule) DefaultExtensions() []string {
 	return nil // Matches all text files unless excluded
 }
 
-func (r *TrailingWhitespaceRule) Execute(ctx context.Context, files []string, opts guard.ExecuteOptions) ([]guard.Issue, error) {
-	var issues []guard.Issue
+func (r *TrailingWhitespaceRule) Execute(ctx context.Context, files []string, opts ExecuteOptions) ([]Issue, error) {
+	var issues []Issue
 	maxSize := opts.MaxFileSize
 	if maxSize <= 0 {
 		maxSize = 2 * 1024 * 1024 // 2MB
@@ -51,7 +50,7 @@ func (r *TrailingWhitespaceRule) Execute(ctx context.Context, files []string, op
 		default:
 		}
 
-		fullPath := filepath.Join(opts.WorkspaceDir, rel)
+		fullPath := rel; if !filepath.IsAbs(fullPath) { fullPath = filepath.Join(opts.WorkspaceDir, rel) }
 		fi, err := os.Lstat(fullPath)
 		if err != nil || fi.Mode()&os.ModeSymlink != 0 || fi.Size() > maxSize {
 			continue
@@ -80,13 +79,13 @@ func (r *TrailingWhitespaceRule) Execute(ctx context.Context, files []string, op
 				}
 			}
 
-			issues = append(issues, guard.Issue{
+			issues = append(issues, Issue{
 				FilePath: rel,
 				Line:     1,
 				RuleID:   r.ID(),
 				Category: r.Category(),
 				Phase:    r.Phase(),
-				Severity: guard.SeverityWarning,
+				Severity: SeverityWarning,
 				Message:  "Contains trailing whitespace on one or more lines",
 				Fixable:  true,
 				Fixed:    fixed,

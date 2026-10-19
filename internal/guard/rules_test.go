@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package builtin_test
+package guard_test
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/snowdreamtech/unirtm/internal/guard"
-	"github.com/snowdreamtech/unirtm/internal/guard/builtin"
 )
 
 func TestBuiltinRules_WhitespaceAndFix(t *testing.T) {
@@ -23,7 +22,7 @@ func TestBuiltinRules_WhitespaceAndFix(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	rule := builtin.NewTrailingWhitespaceRule()
+	rule := guard.NewTrailingWhitespaceRule()
 	ctx := context.Background()
 
 	// 1. Check without fix
@@ -66,7 +65,7 @@ func TestBuiltinRules_EndOfFileAndFix(t *testing.T) {
 	// Missing trailing newline
 	_ = os.WriteFile(filePath, []byte("line without newline"), 0644)
 
-	rule := builtin.NewEndOfFileRule()
+	rule := guard.NewEndOfFileRule()
 	ctx := context.Background()
 
 	// Check with fix
@@ -93,7 +92,7 @@ func TestBuiltinRules_Utf8BOM(t *testing.T) {
 	// Write UTF-8 BOM + "hello\n"
 	_ = os.WriteFile(filePath, append([]byte{0xEF, 0xBB, 0xBF}, []byte("hello\n")...), 0644)
 
-	rule := builtin.NewUtf8BOMRule()
+	rule := guard.NewUtf8BOMRule()
 	ctx := context.Background()
 
 	issues, err := rule.Execute(ctx, []string{"bom.txt"}, guard.ExecuteOptions{
@@ -126,7 +125,7 @@ func bar() {}
 `
 	_ = os.WriteFile(filePath, []byte(conflictContent), 0644)
 
-	rule := builtin.NewMergeConflictRule()
+	rule := guard.NewMergeConflictRule()
 	ctx := context.Background()
 
 	issues, err := rule.Execute(ctx, []string{"conflict.go"}, guard.ExecuteOptions{
@@ -148,7 +147,7 @@ func TestBuiltinRules_PrivateKey(t *testing.T) {
 	filePath := filepath.Join(tmpDir, "secret.key")
 	_ = os.WriteFile(filePath, []byte("-----BEGIN RSA PRIVATE KEY-----\nMIIE...\n-----END RSA PRIVATE KEY-----\n"), 0600)
 
-	rule := builtin.NewPrivateKeyRule()
+	rule := guard.NewPrivateKeyRule()
 	ctx := context.Background()
 
 	issues, err := rule.Execute(ctx, []string{"secret.key"}, guard.ExecuteOptions{
@@ -167,7 +166,7 @@ func TestBuiltinRules_EnvSafety(t *testing.T) {
 	envPath := filepath.Join(tmpDir, ".env")
 	_ = os.WriteFile(envPath, []byte("DATABASE_URL=postgres://user:super_secret_password_123@db:5432/prod\n"), 0644)
 
-	rule := builtin.NewEnvSafetyRule()
+	rule := guard.NewEnvSafetyRule()
 	ctx := context.Background()
 
 	issues, err := rule.Execute(ctx, []string{".env"}, guard.ExecuteOptions{
@@ -187,7 +186,7 @@ func TestBuiltinRules_LargeFiles(t *testing.T) {
 	// Write 1.5MB file
 	_ = os.WriteFile(bigPath, make([]byte, 1500*1024), 0644)
 
-	rule := builtin.NewLargeFilesRule()
+	rule := guard.NewLargeFilesRule()
 	ctx := context.Background()
 
 	issues, err := rule.Execute(ctx, []string{"big.bin"}, guard.ExecuteOptions{
@@ -203,7 +202,7 @@ func TestBuiltinRules_LargeFiles(t *testing.T) {
 }
 
 func TestBuiltinRules_CaseConflict(t *testing.T) {
-	rule := builtin.NewCaseConflictRule()
+	rule := guard.NewCaseConflictRule()
 	ctx := context.Background()
 
 	issues, err := rule.Execute(ctx, []string{"pkg/User.go", "pkg/user.go"}, guard.ExecuteOptions{})
@@ -219,7 +218,7 @@ func TestBuiltinRules_CaseConflict(t *testing.T) {
 }
 
 func TestBuiltinRules_Lockfiles(t *testing.T) {
-	ruleCoex := builtin.NewLockfileCoexistenceRule()
+	ruleCoex := guard.NewLockfileCoexistenceRule()
 	ctx := context.Background()
 
 	// 1. Coexistence of pnpm-lock.yaml and package-lock.json in same dir
@@ -236,7 +235,7 @@ func TestBuiltinRules_Lockfiles(t *testing.T) {
 	lockPath := filepath.Join(tmpDir, "Cargo.lock")
 	_ = os.WriteFile(lockPath, []byte("version = 3\n<<<<<<< HEAD\nfoo = 1\n=======\nfoo = 2\n>>>>>>> main\n"), 0644)
 
-	ruleConflict := builtin.NewLockfileConflictsRule()
+	ruleConflict := guard.NewLockfileConflictsRule()
 	issuesConflict, err := ruleConflict.Execute(ctx, []string{"Cargo.lock"}, guard.ExecuteOptions{
 		WorkspaceDir: tmpDir,
 	})
@@ -249,7 +248,7 @@ func TestBuiltinRules_Lockfiles(t *testing.T) {
 }
 
 func TestBuiltinRegistry(t *testing.T) {
-	rules := builtin.GetAllBuiltinRules()
+	rules := guard.GetAllBuiltinRules()
 	if len(rules) < 9 {
 		t.Errorf("Expected at least 9 builtin rules, got %d", len(rules))
 	}

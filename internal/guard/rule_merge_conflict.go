@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SnowdreamTech. All rights reserved.
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
-package builtin
+package guard
 
 import (
 	"bufio"
@@ -11,12 +11,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/snowdreamtech/unirtm/internal/guard"
 )
 
 type MergeConflictRule struct{}
 
-func NewMergeConflictRule() guard.Rule {
+func NewMergeConflictRule() Rule {
 	return &MergeConflictRule{}
 }
 
@@ -24,20 +23,20 @@ func (r *MergeConflictRule) ID() string {
 	return "builtin:check-merge-conflict"
 }
 
-func (r *MergeConflictRule) Category() guard.Category {
-	return guard.CategoryHygiene
+func (r *MergeConflictRule) Category() Category {
+	return CategoryHygiene
 }
 
-func (r *MergeConflictRule) Phase() guard.Phase {
-	return guard.PhaseLinter
+func (r *MergeConflictRule) Phase() Phase {
+	return PhaseLinter
 }
 
 func (r *MergeConflictRule) DefaultExtensions() []string {
 	return nil
 }
 
-func (r *MergeConflictRule) Execute(ctx context.Context, files []string, opts guard.ExecuteOptions) ([]guard.Issue, error) {
-	var issues []guard.Issue
+func (r *MergeConflictRule) Execute(ctx context.Context, files []string, opts ExecuteOptions) ([]Issue, error) {
+	var issues []Issue
 	maxSize := opts.MaxFileSize
 	if maxSize <= 0 {
 		maxSize = 5 * 1024 * 1024 // 5MB
@@ -50,7 +49,7 @@ func (r *MergeConflictRule) Execute(ctx context.Context, files []string, opts gu
 		default:
 		}
 
-		fullPath := filepath.Join(opts.WorkspaceDir, rel)
+		fullPath := rel; if !filepath.IsAbs(fullPath) { fullPath = filepath.Join(opts.WorkspaceDir, rel) }
 		fi, err := os.Lstat(fullPath)
 		if err != nil || fi.Mode()&os.ModeSymlink != 0 || fi.Size() > maxSize {
 			continue
@@ -80,13 +79,13 @@ func (r *MergeConflictRule) Execute(ctx context.Context, files []string, opts gu
 			if strings.HasPrefix(line, "<<<<<<< ") ||
 				strings.HasPrefix(line, "=======") && len(strings.TrimSpace(line)) == 7 ||
 				strings.HasPrefix(line, ">>>>>>> ") {
-				issues = append(issues, guard.Issue{
+				issues = append(issues, Issue{
 					FilePath: rel,
 					Line:     lineNum,
 					RuleID:   r.ID(),
 					Category: r.Category(),
 					Phase:    r.Phase(),
-					Severity: guard.SeverityError,
+					Severity: SeverityError,
 					Message:  "Unresolved Git merge conflict marker detected: " + strings.TrimSpace(line),
 					Fixable:  false,
 				})
