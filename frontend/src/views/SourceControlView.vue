@@ -570,17 +570,17 @@
           <div class="matrix-header">
             <div class="matrix-title-group">
               <span class="codicon codicon-settings-gear"></span>
-              <span class="matrix-title">{{ t('guard.config.title') || '配置文件感知与管理' }}</span>
-              <span class="matrix-badge">{{ guardConfigFiles.filter(c => c.exists).length }}/{{ guardConfigFiles.length }} 项生效中</span>
+              <span class="matrix-title">{{ t('guard.config.title') }}</span>
+              <span class="matrix-badge">{{ guardConfigFiles.filter(c => c.exists).length }}/{{ guardConfigFiles.length }} {{ t('guard.config.active') }}</span>
             </div>
             <div class="matrix-actions">
-              <button class="matrix-btn-output" @click="emit('open-drawer', 'output')" :title="t('guard.actions.view_output') || '在底部输出窗口查看日志'">
+              <button class="matrix-btn-output" @click="emit('open-drawer', 'output')" :title="t('guard.actions.view_output')">
                 <span class="codicon codicon-output"></span>
-                <span>{{ t('guard.actions.view_output') || '查看输出日志' }}</span>
+                <span>{{ t('guard.actions.view_output') }}</span>
               </button>
               <button class="matrix-btn-primary" @click="handleOpenConfigFile('.unirtm.toml')">
                 <span class="codicon codicon-edit"></span>
-                <span>编辑主配置 .unirtm.toml</span>
+                <span>{{ t('guard.config.edit_main') }}</span>
               </button>
             </div>
           </div>
@@ -602,9 +602,9 @@
               <div class="chip-desc">{{ cfg.description }}</div>
               <div class="chip-bottom">
                 <span class="chip-status-text" :class="cfg.exists ? 'text-green' : 'text-muted'">
-                  {{ cfg.exists ? '● 已检测到并生效' : '○ 未配置 (使用内置默认)' }}
+                  {{ cfg.exists ? ('● ' + t('guard.config.detected')) : ('○ ' + t('guard.config.unconfigured')) }}
                 </span>
-                <span class="chip-action-btn">{{ cfg.exists ? '打开编辑 ↗' : '创建模板 +' }}</span>
+                <span class="chip-action-btn">{{ cfg.exists ? t('guard.config.open_edit') : t('guard.config.create_template') }}</span>
               </div>
             </div>
           </div>
@@ -614,10 +614,10 @@
         <div class="guard-diagnostics-section">
           <div class="diagnostics-bar">
             <div class="diagnostics-summary">
-              <span class="diag-title">{{ t('guard.diagnostics.title') || '质量守卫诊断结果' }}</span>
+              <span class="diag-title">{{ t('guard.diagnostics.title') }}</span>
               <span class="diag-badge-clean" v-if="guardStatus.clean">
                 <span class="codicon codicon-pass text-green"></span>
-                <span>{{ t('guard.status.passed') || '质量守卫通过' }}</span>
+                <span>{{ t('guard.status.passed') }}</span>
               </span>
               <span class="diag-badge-errors" v-if="guardStatus.errors_count > 0">
                 <span class="codicon codicon-error text-red"></span>
@@ -629,9 +629,9 @@
               </span>
             </div>
             <div class="diag-bar-right">
-              <button class="diag-output-btn" @click="emit('open-drawer', 'output')" :title="t('guard.actions.view_output') || '在底部输出窗口查看质检日志'">
+              <button class="diag-output-btn" @click="emit('open-drawer', 'output')" :title="t('guard.actions.view_output')">
                 <span class="codicon codicon-output"></span>
-                <span>输出日志</span>
+                <span>{{ t('guard.actions.output') }}</span>
               </button>
               <span class="diag-files-count">已扫描 {{ guardStatus.scanned }} 个文件</span>
             </div>
@@ -653,7 +653,7 @@
               </div>
               <div class="issue-msg">{{ issue.message }}</div>
               <div class="issue-right">
-                <span v-if="issue.fixable" class="issue-fixable-pill">⚡ {{ t('guard.fixable') || '可自愈' }}</span>
+                <span v-if="issue.fixable" class="issue-fixable-pill">⚡ {{ t('guard.fixable') }}</span>
                 <span class="issue-phase-tag font-mono">{{ issue.phase }}</span>
               </div>
             </div>
@@ -662,10 +662,12 @@
           <!-- Clean State Illustration -->
           <div v-else class="guard-clean-state">
             <span class="codicon codicon-verified clean-icon"></span>
-            <h3 class="clean-title">{{ t('guard.status.passed') || '质量守卫已通过' }}</h3>
-            <p class="clean-subtitle">
-              当前扫描范围内未发现任何格式违规、代码坏味道或泄密风险，符合提交规范。
-            </p>
+            <div class="clean-text-group">
+              <h3 class="clean-title">{{ t('guard.status.passed') }}</h3>
+              <p class="clean-subtitle">
+                当前扫描范围内未发现任何格式违规、代码坏味道或泄密风险，符合提交规范。
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -2922,17 +2924,16 @@ onBeforeUnmount(() => {
 
 .guard-clean-state {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 32px 20px;
-  text-align: center;
+  gap: 16px;
+  padding: 16px 20px;
+  text-align: left;
 }
 
 .guard-clean-state .clean-icon {
-  font-size: 40px;
+  font-size: 28px;
   color: #34d399;
-  margin-bottom: 10px;
+  flex-shrink: 0;
   line-height: 1;
 }
 
@@ -2940,20 +2941,25 @@ onBeforeUnmount(() => {
   color: #059669;
 }
 
+.clean-text-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .guard-clean-state .clean-title {
   margin: 0;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-main);
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .guard-clean-state .clean-subtitle {
-  margin: 8px 0 0 0;
-  font-size: 13px;
+  margin: 0;
+  font-size: 12px;
   color: var(--text-muted);
-  max-width: 480px;
-  line-height: 1.6;
+  line-height: 1.4;
 }
 
 :root[data-theme="light"] .guard-clean-state .clean-subtitle {

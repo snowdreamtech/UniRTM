@@ -1165,4 +1165,13 @@ export const zhTw: TranslationDict = {
   "guard.fixable": "可修復",
   "guard.toast.fixed": "✨ 已自動完成代碼格式與衛生修復",
   "guard.toast.blocked": "品質守衛檢測到阻斷違規，請先解決或修復後提交",
+  "guard.config.title": "配置文件感知與管理",
+  "guard.config.active": "項生效中",
+  "guard.config.edit_main": "編輯主配置 .unirtm.toml",
+  "guard.config.detected": "已檢測到並生效",
+  "guard.config.unconfigured": "未配置 (使用內建預設)",
+  "guard.config.open_edit": "打開編輯 ↗",
+  "guard.config.create_template": "建立範本 +",
+  "guard.actions.view_output": "查看輸出日誌",
+  "guard.actions.output": "輸出日誌",
 };

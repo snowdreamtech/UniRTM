@@ -1156,4 +1156,13 @@ export const hiIn: TranslationDict = {
   "guard.fixable": "Fixable",
   "guard.toast.fixed": "✨ Auto-fixed formatting and hygiene issues",
   "guard.toast.blocked": "Quality Guard detected blocking issues, please fix before committing",
+  "guard.config.title": "Configuration Perception & Management",
+  "guard.config.active": "Active",
+  "guard.config.edit_main": "Edit .unirtm.toml",
+  "guard.config.detected": "Detected & Active",
+  "guard.config.unconfigured": "Not configured (Using default)",
+  "guard.config.open_edit": "Open & Edit ↗",
+  "guard.config.create_template": "Create Template +",
+  "guard.actions.view_output": "View Output Logs",
+  "guard.actions.output": "Output Logs",
 };
