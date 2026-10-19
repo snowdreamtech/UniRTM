@@ -584,40 +584,29 @@ html[dir="rtl"] .opt-check {
   border-radius: 6px !important;
 }
 
-/* Default / Dark Theme Tokens */
-:root {
-  --monaco-ctx-bg: #1e1e1e;
-  --monaco-ctx-fg: #cccccc;
-  --monaco-ctx-border: #3c3c3c;
-  --monaco-ctx-shadow: 0 10px 28px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
-  --monaco-ctx-hover-bg: #04395e;
-  --monaco-ctx-hover-fg: #ffffff;
-  --monaco-ctx-keybinding: #858585;
-  --monaco-ctx-sep: #333333;
-}
-
-/* Light Theme Tokens */
-:root[data-theme="light"],
-[data-theme="light"],
-.vs {
+/* Default / Dark Mode: Editor is dark, Context Menu is LIGHT for high contrast */
+:root,
+:root[data-theme="dark"],
+[data-theme="dark"],
+.vs-dark {
   --monaco-ctx-bg: #ffffff;
   --monaco-ctx-fg: #1e293b;
   --monaco-ctx-border: #cbd5e1;
-  --monaco-ctx-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.16), 0 2px 6px -1px rgba(0, 0, 0, 0.08);
+  --monaco-ctx-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.4), 0 4px 10px -2px rgba(0, 0, 0, 0.25);
   --monaco-ctx-hover-bg: #0060c0;
   --monaco-ctx-hover-fg: #ffffff;
   --monaco-ctx-keybinding: #64748b;
   --monaco-ctx-sep: #e2e8f0;
 }
 
-/* Dark Theme Tokens (Explicit) */
-:root[data-theme="dark"],
-[data-theme="dark"],
-.vs-dark {
+/* Light Mode: Editor is light, Context Menu is DARK for high contrast */
+:root[data-theme="light"],
+[data-theme="light"],
+.vs {
   --monaco-ctx-bg: #1e1e1e;
   --monaco-ctx-fg: #cccccc;
   --monaco-ctx-border: #3c3c3c;
-  --monaco-ctx-shadow: 0 10px 28px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --monaco-ctx-shadow: 0 12px 32px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
   --monaco-ctx-hover-bg: #04395e;
   --monaco-ctx-hover-fg: #ffffff;
   --monaco-ctx-keybinding: #858585;

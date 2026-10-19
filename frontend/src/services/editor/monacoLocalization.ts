@@ -161,6 +161,23 @@ export function localizeEditorActions(editor: any): void {
   }
 }
 
+let pollingTimer: any = null;
+
+function startMenuPolling(): void {
+  if (typeof window === "undefined") return;
+  translateActiveMonacoMenus();
+  if (pollingTimer) clearInterval(pollingTimer);
+  let ticks = 0;
+  pollingTimer = setInterval(() => {
+    translateActiveMonacoMenus();
+    ticks++;
+    if (ticks > 40) {
+      clearInterval(pollingTimer);
+      pollingTimer = null;
+    }
+  }, 30);
+}
+
 /**
  * 监听 Monaco 上下文菜单弹出并执行本地化（支持首次及后续每次弹出）
  */
@@ -184,7 +201,7 @@ export function setupMonacoLocalization(): void {
       }
     });
 
-    observer.observe(document.body, {
+    observer.observe(document.documentElement, {
       childList: true,
       subtree: true,
       characterData: true,
@@ -194,17 +211,23 @@ export function setupMonacoLocalization(): void {
   if (!isEventsRegistered && typeof window !== "undefined") {
     isEventsRegistered = true;
 
-    // 当用户触发右键上下文菜单时，多阶段检查确保后续第 2、3...次弹出均被精确汉化
+    // 当用户触发右键上下文菜单时，高频轮询保证后续第 2、3...次弹出均被精确汉化
+    window.addEventListener("contextmenu", startMenuPolling, { capture: true });
     window.addEventListener(
-      "contextmenu",
-      () => {
-        translateActiveMonacoMenus();
-        requestAnimationFrame(() => {
-          translateActiveMonacoMenus();
-        });
-        setTimeout(translateActiveMonacoMenus, 16);
-        setTimeout(translateActiveMonacoMenus, 60);
-        setTimeout(translateActiveMonacoMenus, 150);
+      "pointerdown",
+      (e) => {
+        if (e.button === 2) {
+          startMenuPolling();
+        }
+      },
+      { capture: true }
+    );
+    window.addEventListener(
+      "keydown",
+      (e) => {
+        if ((e.shiftKey && e.key === "F10") || e.key === "F1") {
+          startMenuPolling();
+        }
       },
       { capture: true }
     );

@@ -173,19 +173,20 @@ function scheduleGutterDiffUpdate(): void {
 import { localizeEditorActions } from "../../services/editor/monacoLocalization";
 
 function initMonacoThemes(m: typeof MonacoType): void {
+  // 浅色编辑器 -> 深色反差右键菜单
   m.editor.defineTheme("unirtm-light", {
     base: "vs",
     inherit: true,
     rules: [],
     colors: {
-      "menu.background": "#ffffff",
-      "menu.foreground": "#1e293b",
-      "menu.selectionBackground": "#0060c0",
+      "menu.background": "#1e1e1e",
+      "menu.foreground": "#cccccc",
+      "menu.selectionBackground": "#04395e",
       "menu.selectionForeground": "#ffffff",
       "menu.selectionBorder": "transparent",
-      "menu.separatorBackground": "#e2e8f0",
-      "menu.border": "#cbd5e1",
-      "widget.shadow": "rgba(0, 0, 0, 0.16)",
+      "menu.separatorBackground": "#333333",
+      "menu.border": "#3c3c3c",
+      "widget.shadow": "rgba(0, 0, 0, 0.55)",
       "editorWidget.background": "#ffffff",
       "editorWidget.border": "#cbd5e1",
       "editorWidget.foreground": "#1e293b",
@@ -198,19 +199,20 @@ function initMonacoThemes(m: typeof MonacoType): void {
     },
   });
 
+  // 深色编辑器 -> 浅色反差右键菜单
   m.editor.defineTheme("unirtm-dark", {
     base: "vs-dark",
     inherit: true,
     rules: [],
     colors: {
-      "menu.background": "#1e1e1e",
-      "menu.foreground": "#cccccc",
-      "menu.selectionBackground": "#04395e",
+      "menu.background": "#ffffff",
+      "menu.foreground": "#1e293b",
+      "menu.selectionBackground": "#0060c0",
       "menu.selectionForeground": "#ffffff",
       "menu.selectionBorder": "transparent",
-      "menu.separatorBackground": "#333333",
-      "menu.border": "#3c3c3c",
-      "widget.shadow": "rgba(0, 0, 0, 0.65)",
+      "menu.separatorBackground": "#e2e8f0",
+      "menu.border": "#cbd5e1",
+      "widget.shadow": "rgba(0, 0, 0, 0.35)",
       "editorWidget.background": "#1e1e1e",
       "editorWidget.border": "#3c3c3c",
       "editorWidget.foreground": "#cccccc",
