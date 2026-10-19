@@ -786,9 +786,38 @@ function streamGuardLogs(logs?: string[]) {
   if (!logs || logs.length === 0) return;
   for (const line of logs) {
     let level: "INFO" | "SUCCESS" | "WARN" | "ERROR" = "INFO";
-    if (line.includes("守卫检查通过")) level = "SUCCESS";
-    else if (line.includes("守卫发现阻断") || line.includes("错误")) level = "ERROR";
-    else if (line.includes("警告") || line.includes("问题")) level = "WARN";
+    const lower = line.toLowerCase();
+
+    // 1. Clean passed states
+    if (
+      lower.includes("guard checks passed") ||
+      lower.includes("all compliant") ||
+      lower.includes("self-healing completed") ||
+      lower.includes("守卫检查通过") ||
+      lower.includes("守卫自愈完成")
+    ) {
+      level = "SUCCESS";
+    }
+    // 2. Blocking errors (excluding 0 blocking)
+    else if (
+      lower.includes("guard blocked") ||
+      lower.includes("守卫发现阻断") ||
+      (lower.includes("blocking") && !lower.includes("0 blocking")) ||
+      (lower.includes("error") && !lower.includes("0 error") && !lower.includes("0 errors"))
+    ) {
+      level = "ERROR";
+    }
+    // 3. Genuine warnings: only if positive non-zero issues/warnings exist
+    else if (
+      /\b([1-9]\d*)\s+(?:issues?|deviations?|warnings?|violations?)\b/i.test(line) ||
+      (lower.includes("warn") && !lower.includes("0 warn") && !lower.includes("0 warnings") && !lower.includes("0 warning")) ||
+      (line.includes("警告") && !line.includes("0 处") && !line.includes("0 个") && !line.includes("0处") && !line.includes("0个")) ||
+      (line.includes("问题") && !line.includes("0 处") && !line.includes("0 个") && !line.includes("0处") && !line.includes("0个"))
+    ) {
+      level = "WARN";
+    }
+    // 4. Clean passes, zero issues detected, and progress steps stay strictly INFO
+
     emit("log-event", level, line, undefined, "output");
   }
 }

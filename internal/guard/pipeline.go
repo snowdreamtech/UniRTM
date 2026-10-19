@@ -56,7 +56,7 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 	if modeStr == "" {
 		modeStr = "staged"
 	}
-	logs = append(logs, fmt.Sprintf("[%s] [Quality Guard] 启动代码质量守卫 (模式: %s, 扫描文件数: %d)", time.Now().Format("15:04:05"), modeStr, len(files)))
+	logs = append(logs, fmt.Sprintf("[%s] [Quality Guard] Starting quality guard pipeline (mode: %s, scanned files: %d)", time.Now().Format("15:04:05"), modeStr, len(files)))
 
 	// Group rules by phase
 	var fixerRules, formatterRules, linterRules []Rule
@@ -91,7 +91,7 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 		}
 	}
 	phase1Issues := len(allIssues) - phase1Before
-	logs = append(logs, fmt.Sprintf("[%s] [Phase 1 Fixer] 原生自愈检测完成: 检查 %d 项规则, 发现/自愈 %d 个问题 (%v)", time.Now().Format("15:04:05"), len(fixerRules), phase1Issues, time.Since(phase1Start).Round(time.Millisecond)))
+	logs = append(logs, fmt.Sprintf("[%s] [Phase 1 Fixer] Completed native hygiene check: %d rules evaluated, %d issues found (%v)", time.Now().Format("15:04:05"), len(fixerRules), phase1Issues, time.Since(phase1Start).Round(time.Millisecond)))
 
 	// Phase 2: Formatter (Visual Layout Standardization)
 	phase2Start := time.Now()
@@ -108,7 +108,7 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 		}
 	}
 	phase2Issues := len(allIssues) - phase2Before
-	logs = append(logs, fmt.Sprintf("[%s] [Phase 2 Formatter] 代码排版格式化完成: 检查 %d 项规则, 发现/修复 %d 处格式偏差 (%v)", time.Now().Format("15:04:05"), len(formatterRules), phase2Issues, time.Since(phase2Start).Round(time.Millisecond)))
+	logs = append(logs, fmt.Sprintf("[%s] [Phase 2 Formatter] Completed code formatting: %d rules evaluated, %d deviations found (%v)", time.Now().Format("15:04:05"), len(formatterRules), phase2Issues, time.Since(phase2Start).Round(time.Millisecond)))
 
 	// Phase 3: Linter (Strict Read-only Rule Verification)
 	phase3Start := time.Now()
@@ -125,7 +125,7 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 		}
 	}
 	phase3Issues := len(allIssues) - phase3Before
-	logs = append(logs, fmt.Sprintf("[%s] [Phase 3 Linter] 静态检查与密钥防泄密门禁完成: 检查 %d 项规则, 发现 %d 处待处理问题 (%v)", time.Now().Format("15:04:05"), len(linterRules), phase3Issues, time.Since(phase3Start).Round(time.Millisecond)))
+	logs = append(logs, fmt.Sprintf("[%s] [Phase 3 Linter] Completed static analysis & secret protection: %d rules evaluated, %d issues found (%v)", time.Now().Format("15:04:05"), len(linterRules), phase3Issues, time.Since(phase3Start).Round(time.Millisecond)))
 
 	// Calculate summary metrics
 	summary := PipelineSummary{
@@ -156,9 +156,9 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 	})
 
 	if hasErrors {
-		logs = append(logs, fmt.Sprintf("[%s] [Quality Guard] 守卫发现阻断: 存在 %d 处阻断违规, %d 处待优化项 (总耗时: %v)", time.Now().Format("15:04:05"), summary.ErrorsCount, summary.WarningsCount, summary.Duration.Round(time.Millisecond)))
+		logs = append(logs, fmt.Sprintf("[%s] [Quality Guard] Guard blocked: %d blocking violations, %d warnings detected (total: %v)", time.Now().Format("15:04:05"), summary.ErrorsCount, summary.WarningsCount, summary.Duration.Round(time.Millisecond)))
 	} else {
-		logs = append(logs, fmt.Sprintf("[%s] [Quality Guard] 守卫检查通过: 0 阻断违规, 全部合规就绪 (总耗时: %v)", time.Now().Format("15:04:05"), summary.Duration.Round(time.Millisecond)))
+		logs = append(logs, fmt.Sprintf("[%s] [Quality Guard] Guard checks passed: 0 blocking violations, all compliant (total: %v)", time.Now().Format("15:04:05"), summary.Duration.Round(time.Millisecond)))
 	}
 
 	return &PipelineResult{

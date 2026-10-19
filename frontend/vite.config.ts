@@ -3251,11 +3251,11 @@ print(json.dumps({
               const mode = urlObj.searchParams.get("mode") || "staged";
               const timeStr = new Date().toLocaleTimeString();
               const logs = [
-                `[${timeStr}] [Quality Guard] 启动代码质量守卫 (模式: ${mode}, 扫描文件数: 0)`,
-                `[${timeStr}] [Phase 1 Fixer] 原生自愈检测完成: 检查 3 项规则, 发现/自愈 0 个问题 (0ms)`,
-                `[${timeStr}] [Phase 2 Formatter] 代码排版格式化完成: 检查 1 项规则, 发现/修复 0 处格式偏差 (0ms)`,
-                `[${timeStr}] [Phase 3 Linter] 静态检查与密钥防泄密门禁完成: 检查 5 项规则, 发现 0 处待处理问题 (0ms)`,
-                `[${timeStr}] [Quality Guard] 守卫检查通过: 0 阻断违规, 全部合规就绪 (总耗时: 1ms)`
+                `[${timeStr}] [Quality Guard] Starting quality guard pipeline (mode: ${mode}, scanned files: 0)`,
+                `[${timeStr}] [Phase 1 Fixer] Completed native hygiene check: 3 rules evaluated, 0 issues found (0ms)`,
+                `[${timeStr}] [Phase 2 Formatter] Completed code formatting: 1 rule evaluated, 0 deviations found (0ms)`,
+                `[${timeStr}] [Phase 3 Linter] Completed static analysis & secret protection: 5 rules evaluated, 0 issues found (0ms)`,
+                `[${timeStr}] [Quality Guard] Guard checks passed: 0 blocking violations, all compliant (total: 1ms)`
               ];
               res.setHeader("Content-Type", "application/json");
               res.end(JSON.stringify({
@@ -3279,11 +3279,11 @@ print(json.dumps({
                 try { reqBody = JSON.parse(bodyStr); } catch (_) {}
                 const timeStr = new Date().toLocaleTimeString();
                 const logs = [
-                  `[${timeStr}] [Quality Guard] 启动自愈修复流水线 (模式: ${reqBody.mode || "staged"})`,
-                  `[${timeStr}] [Phase 1 Fixer] 自动执行原生自愈: 空白符收敛与末尾换行修复完成`,
-                  `[${timeStr}] [Phase 2 Formatter] 标杆工具格式化排版完成`,
-                  `[${timeStr}] [Phase 3 Linter] 门禁静态复检通过`,
-                  `[${timeStr}] [Quality Guard] 守卫自愈完成: 0 阻断, 代码已恢复整洁健康`
+                  `[${timeStr}] [Quality Guard] Starting self-healing pipeline (mode: ${reqBody.mode || "staged"})`,
+                  `[${timeStr}] [Phase 1 Fixer] Completed native hygiene auto-repair: whitespace convergence and newline fixes applied`,
+                  `[${timeStr}] [Phase 2 Formatter] Completed canonical formatting`,
+                  `[${timeStr}] [Phase 3 Linter] Static gate re-verification passed`,
+                  `[${timeStr}] [Quality Guard] Guard self-healing completed: 0 blocking violations, workspace clean and healthy`
                 ];
                 res.setHeader("Content-Type", "application/json");
                 res.end(JSON.stringify({
