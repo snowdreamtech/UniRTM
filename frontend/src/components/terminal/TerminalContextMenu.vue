@@ -17,6 +17,8 @@ const emit = defineEmits<{
   (e: "paste"): void;
   (e: "select-all"): void;
   (e: "clear"): void;
+  (e: "clear-history"): void;
+  (e: "export-log"): void;
   (e: "find"): void;
   (e: "restart"): void;
 }>();
@@ -127,6 +129,17 @@ onBeforeUnmount(() => {
       <span class="menu-shortcut">Ctrl+A</span>
     </div>
 
+    <!-- Export Log -->
+    <div
+      class="menu-item"
+      role="menuitem"
+      tabindex="0"
+      @click="handleItemClick(() => emit('export-log'))"
+    >
+      <span class="menu-icon codicon codicon-cloud-download"></span>
+      <span class="menu-label">{{ t('terminal.menu.export_log') }}</span>
+    </div>
+
     <!-- Clear Buffer -->
     <div
       class="menu-item"
@@ -137,6 +150,17 @@ onBeforeUnmount(() => {
       <span class="menu-icon codicon codicon-clear-all"></span>
       <span class="menu-label">{{ t('terminal.menu.clear') }}</span>
       <span class="menu-shortcut">Ctrl+K</span>
+    </div>
+
+    <!-- Clear Persistent Buffer -->
+    <div
+      class="menu-item"
+      role="menuitem"
+      tabindex="0"
+      @click="handleItemClick(() => emit('clear-history'))"
+    >
+      <span class="menu-icon codicon codicon-trash"></span>
+      <span class="menu-label">{{ t('terminal.menu.clear_history') }}</span>
     </div>
 
     <div class="menu-separator"></div>

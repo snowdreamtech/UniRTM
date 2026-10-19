@@ -11,6 +11,7 @@ import { SearchAddon } from "@xterm/addon-search";
 import TerminalSearchWidget from "./TerminalSearchWidget.vue";
 import TerminalContextMenu from "./TerminalContextMenu.vue";
 import { useWorkspaceBus } from "../../composables/useWorkspaceBus";
+import { useTerminalPersistence } from "../../composables/useTerminalPersistence";
 
 const { registerDetectedPort } = usePorts();
 const detectedPorts = new Set<number>();
@@ -95,12 +96,23 @@ async function handlePaste() {
   }
 }
 
+const { appendChunk, getBuffer, hasBuffer, clearBuffer, exportLog } = useTerminalPersistence();
+
 function handleSelectAll() {
   term?.selectAll();
 }
 
 function handleClear() {
   term?.clear();
+}
+
+function handleClearHistory() {
+  clearBuffer(props.paneId);
+  term?.clear();
+}
+
+function handleExportLog() {
+  exportLog(props.paneId, props.shellName || "terminal");
 }
 
 let term: Terminal | null = null;
@@ -164,11 +176,13 @@ function connectWebSocket() {
       const msg = JSON.parse(event.data);
       if (msg.type === "output" && typeof msg.data === "string") {
         term.write(msg.data);
+        appendChunk(props.paneId, msg.data);
         sniffTerminalPorts(msg.data);
       }
     } catch {
       // Raw string fallback
       term.write(event.data);
+      appendChunk(props.paneId, String(event.data));
       sniffTerminalPorts(String(event.data));
     }
   };
@@ -244,6 +258,14 @@ onMounted(() => {
   });
 
   term.open(terminalContainer.value);
+
+  // Replay persistent history if available
+  if (hasBuffer(props.paneId)) {
+    const historical = getBuffer(props.paneId);
+    if (historical) {
+      term.write(historical);
+    }
+  }
 
   // Hook user keystrokes to websocket
   term.onData((data) => {
@@ -366,6 +388,8 @@ onBeforeUnmount(() => {
       @paste="handlePaste"
       @select-all="handleSelectAll"
       @clear="handleClear"
+      @clear-history="handleClearHistory"
+      @export-log="handleExportLog"
       @find="openSearch"
       @restart="reconnect"
     />

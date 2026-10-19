@@ -13,11 +13,11 @@
 ---
 
 ## Phase 1: 终端会话持久化与日志导出功能 (Session Persistence & Export)
-- [ ] Task 1.1: 实现 `frontend/src/composables/useTerminalPersistence.ts`（Ring Buffer、缓存回放与日志导出）
-- [ ] Task 1.2: 在 `frontend/src/components/terminal/XTerminalPane.vue` 中接入重连历史恢复机制
-- [ ] Task 1.3: 在 `frontend/src/components/terminal/TerminalContextMenu.vue` 中新增「导出日志」与「清空历史缓存」菜单项
-- [ ] Task 1.4: 编写 `frontend/src/composables/useTerminalPersistence.test.ts` 单元测试并通过验证
-- [ ] Task 1.5: 阶段性 Git 提交：`feat(terminal): implement session persistence and log export`
+- [x] Task 1.1: 实现 `frontend/src/composables/useTerminalPersistence.ts`（Ring Buffer、缓存回放与日志导出）
+- [x] Task 1.2: 在 `frontend/src/components/terminal/XTerminalPane.vue` 中接入重连历史恢复机制
+- [x] Task 1.3: 在 `frontend/src/components/terminal/TerminalContextMenu.vue` 中新增「导出日志」与「清空历史缓存」菜单项
+- [x] Task 1.4: 编写 `frontend/src/composables/useTerminalPersistence.test.ts` 单元测试并通过验证
+- [x] Task 1.5: 阶段性 Git 提交：`feat(terminal): implement session persistence and log export`
 
 ---
 
