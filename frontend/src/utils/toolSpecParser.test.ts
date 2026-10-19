@@ -6,14 +6,17 @@ import { parseToolSpec, composeToolSpec, COMMON_TOOL_PREFIXES } from "./toolSpec
 
 describe("toolSpecParser", () => {
   describe("COMMON_TOOL_PREFIXES", () => {
-    it("includes standard prefixes with default empty option", () => {
-      expect(COMMON_TOOL_PREFIXES.length).toBeGreaterThanOrEqual(6);
-      expect(COMMON_TOOL_PREFIXES[0].value).toBe("");
-      expect(COMMON_TOOL_PREFIXES.some((p) => p.value === "npm:")).toBe(true);
-      expect(COMMON_TOOL_PREFIXES.some((p) => p.value === "cargo:")).toBe(true);
-      expect(COMMON_TOOL_PREFIXES.some((p) => p.value === "pipx:")).toBe(true);
-      expect(COMMON_TOOL_PREFIXES.some((p) => p.value === "go:")).toBe(true);
-      expect(COMMON_TOOL_PREFIXES.some((p) => p.value === "github:")).toBe(true);
+    it("includes standard prefixes in exact designated order", () => {
+      expect(COMMON_TOOL_PREFIXES.map((p) => p.value)).toEqual([
+        "",
+        "github:",
+        "npm:",
+        "go:",
+        "pipx:",
+        "cargo:",
+        "aqua:",
+        "asdf:",
+      ]);
     });
   });
 

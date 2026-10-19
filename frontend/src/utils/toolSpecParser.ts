@@ -10,11 +10,11 @@ export interface ToolPrefixOption {
 
 export const COMMON_TOOL_PREFIXES: ToolPrefixOption[] = [
   { value: "", label: "默认 / 原生 (Core)", placeholder: "例如: zig, elixir, php, julia..." },
-  { value: "npm:", label: "npm: (Node.js)", placeholder: "例如: @biomejs/biome, prettier, pnpm..." },
-  { value: "cargo:", label: "cargo: (Rust)", placeholder: "例如: ripgrep, eza, bat, zellij..." },
-  { value: "pipx:", label: "pipx: (Python)", placeholder: "例如: ruff, uv, black, poetry..." },
-  { value: "go:", label: "go: (Go Module)", placeholder: "例如: github.com/golangci/golangci-lint/cmd/golangci-lint..." },
   { value: "github:", label: "github: (Releases)", placeholder: "例如: sharkdp/bat, BurntSushi/ripgrep..." },
+  { value: "npm:", label: "npm: (Node.js)", placeholder: "例如: @biomejs/biome, prettier, pnpm..." },
+  { value: "go:", label: "go: (Go Module)", placeholder: "例如: github.com/golangci/golangci-lint/cmd/golangci-lint..." },
+  { value: "pipx:", label: "pipx: (Python)", placeholder: "例如: ruff, uv, black, poetry..." },
+  { value: "cargo:", label: "cargo: (Rust)", placeholder: "例如: ripgrep, eza, bat, zellij..." },
   { value: "aqua:", label: "aqua: (Aqua)", placeholder: "例如: aquaproj/aqua..." },
   { value: "asdf:", label: "asdf: (Plugin)", placeholder: "例如: asdf-vm/asdf-nodejs..." },
 ];
