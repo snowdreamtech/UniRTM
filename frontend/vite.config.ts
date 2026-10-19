@@ -3250,10 +3250,34 @@ print(json.dumps({
               const urlObj = new URL(reqUrl, "http://localhost");
               const mode = urlObj.searchParams.get("mode") || "staged";
               const timeStr = new Date().toLocaleTimeString();
+
+              // Discover active workspace configs
+              const activeConfigs: string[] = [];
+              const possibleConfigs = [
+                { file: ".unirtm.toml", label: ".unirtm.toml (guard manifest)" },
+                { file: ".editorconfig", label: ".editorconfig (workspace hygiene)" },
+                { file: ".golangci.yml", label: ".golangci.yml (go.linter -> golangci-lint)" },
+                { file: ".prettierrc", label: ".prettierrc (web.formatter -> prettier)" },
+                { file: ".gitleaks.toml", label: ".gitleaks.toml (secret.gitleaks -> gitleaks)" },
+                { file: "eslint.config.mjs", label: "eslint.config.mjs (web.linter -> eslint)" },
+                { file: ".shellcheckrc", label: ".shellcheckrc (shell.linter -> shellcheck)" },
+                { file: "ruff.toml", label: "ruff.toml (python.suite -> ruff)" }
+              ];
+              for (const item of possibleConfigs) {
+                const fullP = path.join(rootDir, item.file);
+                if (fs.existsSync(fullP) && !fs.statSync(fullP).isDirectory()) {
+                  activeConfigs.push(item.label);
+                }
+              }
+
               const logs = [
                 `[${timeStr}] [Quality Guard] Starting quality guard pipeline (mode: ${mode}, scanned files: 0)`,
+                `[${timeStr}] [Quality Guard] Bound configuration matrix: ${activeConfigs.join(", ")}`,
+                `[${timeStr}] [Phase 1 Fixer] Executing Go-native hygiene rules [trailing-whitespace, end-of-file, utf8-bom]`,
                 `[${timeStr}] [Phase 1 Fixer] Completed native hygiene check: 3 rules evaluated, 0 issues found (0ms)`,
+                `[${timeStr}] [Phase 2 Formatter] Registered formatter slots: prettier (via .prettierrc)`,
                 `[${timeStr}] [Phase 2 Formatter] Completed code formatting: 1 rule evaluated, 0 deviations found (0ms)`,
+                `[${timeStr}] [Phase 3 Linter] Bound linter & security tools: golangci-lint (via .golangci.yml), gitleaks (via .gitleaks.toml)`,
                 `[${timeStr}] [Phase 3 Linter] Completed static analysis & secret protection: 5 rules evaluated, 0 issues found (0ms)`,
                 `[${timeStr}] [Quality Guard] Guard checks passed: 0 blocking violations, all compliant (total: 1ms)`
               ];
@@ -3278,11 +3302,34 @@ print(json.dumps({
                 let reqBody = { mode: "staged", fix: true };
                 try { reqBody = JSON.parse(bodyStr); } catch (_) {}
                 const timeStr = new Date().toLocaleTimeString();
+
+                const activeConfigs: string[] = [];
+                const possibleConfigs = [
+                  { file: ".unirtm.toml", label: ".unirtm.toml (guard manifest)" },
+                  { file: ".editorconfig", label: ".editorconfig (workspace hygiene)" },
+                  { file: ".golangci.yml", label: ".golangci.yml (go.linter -> golangci-lint)" },
+                  { file: ".prettierrc", label: ".prettierrc (web.formatter -> prettier)" },
+                  { file: ".gitleaks.toml", label: ".gitleaks.toml (secret.gitleaks -> gitleaks)" },
+                  { file: "eslint.config.mjs", label: "eslint.config.mjs (web.linter -> eslint)" },
+                  { file: ".shellcheckrc", label: ".shellcheckrc (shell.linter -> shellcheck)" },
+                  { file: "ruff.toml", label: "ruff.toml (python.suite -> ruff)" }
+                ];
+                for (const item of possibleConfigs) {
+                  const fullP = path.join(rootDir, item.file);
+                  if (fs.existsSync(fullP) && !fs.statSync(fullP).isDirectory()) {
+                    activeConfigs.push(item.label);
+                  }
+                }
+
                 const logs = [
                   `[${timeStr}] [Quality Guard] Starting self-healing pipeline (mode: ${reqBody.mode || "staged"})`,
-                  `[${timeStr}] [Phase 1 Fixer] Completed native hygiene auto-repair: whitespace convergence and newline fixes applied`,
-                  `[${timeStr}] [Phase 2 Formatter] Completed canonical formatting`,
-                  `[${timeStr}] [Phase 3 Linter] Static gate re-verification passed`,
+                  `[${timeStr}] [Quality Guard] Bound configuration matrix: ${activeConfigs.join(", ")}`,
+                  `[${timeStr}] [Phase 1 Fixer] Executing Go-native hygiene auto-repair [trailing-whitespace, end-of-file, utf8-bom]`,
+                  `[${timeStr}] [Phase 1 Fixer] Completed native auto-repair: whitespace convergence and newline normalization applied (1ms)`,
+                  `[${timeStr}] [Phase 2 Formatter] Executing formatter 'prettier' with configuration .prettierrc`,
+                  `[${timeStr}] [Phase 2 Formatter] Completed canonical formatting (2ms)`,
+                  `[${timeStr}] [Phase 3 Linter] Executing gate re-verification: golangci-lint (.golangci.yml), gitleaks (.gitleaks.toml)`,
+                  `[${timeStr}] [Phase 3 Linter] Static gate re-verification passed (0ms)`,
                   `[${timeStr}] [Quality Guard] Guard self-healing completed: 0 blocking violations, workspace clean and healthy`
                 ];
                 res.setHeader("Content-Type", "application/json");

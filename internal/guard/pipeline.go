@@ -6,7 +6,10 @@ package guard
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -58,6 +61,27 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 	}
 	logs = append(logs, fmt.Sprintf("[%s] [Quality Guard] Starting quality guard pipeline (mode: %s, scanned files: %d)", time.Now().Format("15:04:05"), modeStr, len(files)))
 
+	// Trace and log active configuration files and ecosystem bindings
+	var activeConfigs []string
+	if p.WorkspaceDir != "" {
+		if _, err := os.Stat(filepath.Join(p.WorkspaceDir, ".unirtm.toml")); err == nil {
+			activeConfigs = append(activeConfigs, ".unirtm.toml (guard manifest)")
+		}
+		if _, err := os.Stat(filepath.Join(p.WorkspaceDir, ".editorconfig")); err == nil {
+			activeConfigs = append(activeConfigs, ".editorconfig (workspace hygiene)")
+		}
+		for _, slot := range DefaultToolSlots {
+			if len(slot.StandardConfigFiles) > 0 {
+				if cfg := DetectStandardConfig(p.WorkspaceDir, slot.StandardConfigFiles); cfg != "" {
+					activeConfigs = append(activeConfigs, fmt.Sprintf("%s (%s -> %s)", cfg, slot.ID, slot.DefaultToolName))
+				}
+			}
+		}
+	}
+	if len(activeConfigs) > 0 {
+		logs = append(logs, fmt.Sprintf("[%s] [Quality Guard] Bound configuration matrix: %s", time.Now().Format("15:04:05"), strings.Join(activeConfigs, ", ")))
+	}
+
 	// Group rules by phase
 	var fixerRules, formatterRules, linterRules []Rule
 	for _, r := range p.Rules {
@@ -77,6 +101,11 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 	}
 
 	// Phase 1: Fixer (Text & AST Repairs)
+	var fixerNames []string
+	for _, r := range fixerRules {
+		fixerNames = append(fixerNames, r.ID())
+	}
+	logs = append(logs, fmt.Sprintf("[%s] [Phase 1 Fixer] Executing Go-native hygiene rules [%s]", time.Now().Format("15:04:05"), strings.Join(fixerNames, ", ")))
 	phase1Start := time.Now()
 	phase1Before := len(allIssues)
 	for _, r := range fixerRules {
@@ -94,6 +123,19 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 	logs = append(logs, fmt.Sprintf("[%s] [Phase 1 Fixer] Completed native hygiene check: %d rules evaluated, %d issues found (%v)", time.Now().Format("15:04:05"), len(fixerRules), phase1Issues, time.Since(phase1Start).Round(time.Millisecond)))
 
 	// Phase 2: Formatter (Visual Layout Standardization)
+	var fmtBindings []string
+	for _, slot := range DefaultToolSlots {
+		if slot.Phase == PhaseFormatter {
+			if cfg := DetectStandardConfig(p.WorkspaceDir, slot.StandardConfigFiles); cfg != "" {
+				fmtBindings = append(fmtBindings, fmt.Sprintf("%s (via %s)", slot.DefaultToolName, cfg))
+			} else {
+				fmtBindings = append(fmtBindings, fmt.Sprintf("%s (native)", slot.DefaultToolName))
+			}
+		}
+	}
+	if len(fmtBindings) > 0 {
+		logs = append(logs, fmt.Sprintf("[%s] [Phase 2 Formatter] Registered formatter slots: %s", time.Now().Format("15:04:05"), strings.Join(fmtBindings, ", ")))
+	}
 	phase2Start := time.Now()
 	phase2Before := len(allIssues)
 	for _, r := range formatterRules {
@@ -111,6 +153,17 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 	logs = append(logs, fmt.Sprintf("[%s] [Phase 2 Formatter] Completed code formatting: %d rules evaluated, %d deviations found (%v)", time.Now().Format("15:04:05"), len(formatterRules), phase2Issues, time.Since(phase2Start).Round(time.Millisecond)))
 
 	// Phase 3: Linter (Strict Read-only Rule Verification)
+	var lintBindings []string
+	for _, slot := range DefaultToolSlots {
+		if slot.Phase == PhaseLinter {
+			if cfg := DetectStandardConfig(p.WorkspaceDir, slot.StandardConfigFiles); cfg != "" {
+				lintBindings = append(lintBindings, fmt.Sprintf("%s (via %s)", slot.DefaultToolName, cfg))
+			}
+		}
+	}
+	if len(lintBindings) > 0 {
+		logs = append(logs, fmt.Sprintf("[%s] [Phase 3 Linter] Bound linter & security tools: %s", time.Now().Format("15:04:05"), strings.Join(lintBindings, ", ")))
+	}
 	phase3Start := time.Now()
 	phase3Before := len(allIssues)
 	for _, r := range linterRules {
