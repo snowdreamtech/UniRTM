@@ -1,8 +1,8 @@
 # 任务拆分与执行跟踪清单：工具链状态清晰化与低噪音升级系统 (Tasks)
 
 ## 任务执行进度概览
-- **当前阶段**：Phase 0 - 准备就绪
-- **总体进度**：0 / 12 已完成 (0%)
+- **当前阶段**：Phase 1 - 工具状态计算核心与测试完成
+- **总体进度**：5 / 12 已完成 (42%)
 
 ---
 
@@ -13,9 +13,9 @@
 ---
 
 ## Phase 1: 工具状态计算核心与测试 (State Machine & Unit Tests)
-- [ ] Task 1.1: 在前端提取并实现工具状态计算函数 `computeToolState`（支持 ready/upgradable/missing/unconfigured）
-- [ ] Task 1.2: 编写工具状态核心单测文件覆盖 4 种典型状态转换
-- [ ] Task 1.3: 阶段性 Git 提交：`feat(tools): implement toolchain state machine and unit tests`
+- [x] Task 1.1: 在前端提取并实现工具状态计算函数 `computeToolStatus`（支持 ready/upgradable/missing/unconfigured）
+- [x] Task 1.2: 编写工具状态核心单测文件覆盖 4 种典型状态转换
+- [x] Task 1.3: 阶段性 Git 提交：`feat(tools): implement toolchain state machine and unit tests`
 
 ---
 
