@@ -601,6 +601,8 @@ html[dir="rtl"] .opt-check {
   border-radius: 4px !important;
   margin: 1px 4px !important;
   padding: 0 4px !important;
+  outline: none !important;
+  border: none !important;
   transition: background-color 0.12s ease, color 0.12s ease !important;
 }
 
@@ -646,6 +648,8 @@ html[dir="rtl"] .opt-check {
 .context-view .monaco-menu .action-menu-item:hover {
   background-color: #0060c0 !important;
   color: #ffffff !important;
+  outline: none !important;
+  border: none !important;
 }
 
 .context-view .monaco-menu .action-item.focused > .action-menu-item .keybinding,
@@ -701,6 +705,8 @@ html[dir="rtl"] .opt-check {
 [data-theme="light"] .context-view .monaco-menu .action-menu-item:hover {
   background-color: #04395e !important;
   color: #ffffff !important;
+  outline: none !important;
+  border: none !important;
 }
 
 :root[data-theme="light"] .context-view .monaco-menu .action-item.focused > .action-menu-item .keybinding,
@@ -757,6 +763,8 @@ html[dir="rtl"] .opt-check {
 [data-theme="dark"] .context-view .monaco-menu .action-menu-item:hover {
   background-color: #0060c0 !important;
   color: #ffffff !important;
+  outline: none !important;
+  border: none !important;
 }
 
 :root[data-theme="dark"] .context-view .monaco-menu .action-item.focused > .action-menu-item .keybinding,
