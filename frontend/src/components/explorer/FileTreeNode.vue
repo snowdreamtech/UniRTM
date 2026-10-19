@@ -12,8 +12,9 @@
       @click="handleClick"
       @dblclick="handleDblClick"
       @contextmenu="handleContextMenu"
-      :title="node.path || node.name"
+      :title="(node.path || node.name) + (node.is_ignored ? ' (已由 .gitignore 排除)' : '')"
     >
+
       <!-- Indent guide lines for deep nesting -->
       <div
         v-for="i in depth"
@@ -333,8 +334,22 @@ async function commitCreate() {
 }
 
 .tree-node-row.is-ignored {
-  opacity: 0.52;
+  opacity: 0.55;
 }
+
+.tree-node-row.is-ignored .tree-label {
+  color: var(--text-muted, #858585) !important;
+  font-style: italic;
+}
+
+.tree-node-row.is-ignored .tree-icon {
+  filter: grayscale(85%) opacity(0.65);
+}
+
+.tree-node-row.is-ignored:hover {
+  opacity: 0.85;
+}
+
 
 .tree-indent-guide {
   position: absolute;

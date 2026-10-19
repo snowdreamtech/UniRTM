@@ -3116,7 +3116,54 @@ func isCommonIgnored(name string) bool {
 	}
 }
 
-func buildFSTree(wd, dirPath, currentRelPath string, currentDepth, maxDepth int, showHidden bool) ([]FSEntry, error) {
+func getGitIgnoredPaths(wd string) map[string]bool {
+	ignored := make(map[string]bool)
+	cmd := exec.Command("git", "status", "--ignored=matching", "--porcelain=v1")
+	cmd.Dir = wd
+	out, err := cmd.Output()
+	if err != nil {
+		return ignored
+	}
+	lines := strings.Split(string(out), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "!! ") {
+			p := strings.TrimPrefix(line, "!! ")
+			p = strings.TrimSpace(p)
+			p = strings.TrimSuffix(p, "/")
+			if p != "" {
+				ignored[filepath.ToSlash(p)] = true
+			}
+		}
+	}
+	return ignored
+}
+
+func isPathIgnored(relPath, name string, ignoredMap map[string]bool, parentIgnored bool) bool {
+	if parentIgnored || isCommonIgnored(name) {
+		return true
+	}
+	cleanRel := filepath.ToSlash(relPath)
+	if ignoredMap[cleanRel] {
+		return true
+	}
+	// Check if any ancestor path is in ignoredMap
+	parts := strings.Split(cleanRel, "/")
+	current := ""
+	for i := 0; i < len(parts)-1; i++ {
+		if current == "" {
+			current = parts[i]
+		} else {
+			current = current + "/" + parts[i]
+		}
+		if ignoredMap[current] {
+			return true
+		}
+	}
+	return false
+}
+
+func buildFSTree(wd, dirPath, currentRelPath string, currentDepth, maxDepth int, showHidden bool, ignoredMap map[string]bool, parentIgnored bool) ([]FSEntry, error) {
 	dirEntries, err := os.ReadDir(dirPath)
 	if err != nil {
 		return nil, err
@@ -3142,7 +3189,7 @@ func buildFSTree(wd, dirPath, currentRelPath string, currentDepth, maxDepth int,
 		}
 
 		isDir := d.IsDir()
-		isIgnored := isCommonIgnored(name)
+		isIgnored := isPathIgnored(entryRelPath, name, ignoredMap, parentIgnored)
 
 		entry := FSEntry{
 			Name:      name,
@@ -3155,7 +3202,7 @@ func buildFSTree(wd, dirPath, currentRelPath string, currentDepth, maxDepth int,
 
 		if isDir {
 			if currentDepth < maxDepth && name != ".git" && name != "node_modules" {
-				subChildren, _ := buildFSTree(wd, fullEntryPath, entryRelPath, currentDepth+1, maxDepth, showHidden)
+				subChildren, _ := buildFSTree(wd, fullEntryPath, entryRelPath, currentDepth+1, maxDepth, showHidden, ignoredMap, isIgnored)
 				if subChildren == nil {
 					subChildren = []FSEntry{}
 				}
@@ -3218,7 +3265,9 @@ func handleFSTree(w http.ResponseWriter, r *http.Request) {
 		cleanRel = ""
 	}
 
-	entries, err := buildFSTree(wd, targetDir, cleanRel, 1, depth, showHidden)
+	ignoredMap := getGitIgnoredPaths(wd)
+	entries, err := buildFSTree(wd, targetDir, cleanRel, 1, depth, showHidden, ignoredMap, false)
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
