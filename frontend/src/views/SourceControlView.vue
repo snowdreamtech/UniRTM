@@ -2146,14 +2146,10 @@ onBeforeUnmount(() => {
 
 /* Quality Guard Hub Layout */
 .guard-hub-view {
-  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 20px 24px;
-  background: var(--bg-color);
   color: var(--text-main);
-  overflow-y: auto;
 }
 
 .guard-hub-header {
@@ -2383,10 +2379,10 @@ onBeforeUnmount(() => {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 8px;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
 }
 
 :root[data-theme="light"] .guard-diagnostics-section {
@@ -2599,14 +2595,15 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 20px;
+  padding: 32px 20px;
   text-align: center;
 }
 
 .guard-clean-state .clean-icon {
-  font-size: 48px;
+  font-size: 40px;
   color: #34d399;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
+  line-height: 1;
 }
 
 :root[data-theme="light"] .guard-clean-state .clean-icon {
