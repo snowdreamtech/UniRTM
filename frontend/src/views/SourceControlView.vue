@@ -718,8 +718,8 @@
             </div>
             <div class="header-actions">
               <button class="modal-action-btn secondary" @click="handleOpenInExplorer(activeEditingConfig.name)" :title="t('guard.config.open_in_explorer_title') || '在资源管理器以完整编辑器打开'">
-                <span class="codicon codicon-link-external"></span>
-                <span>{{ t('guard.config.open_in_explorer') || '全屏编辑器打开' }}</span>
+                <span class="codicon codicon-screen-full"></span>
+                <span>{{ t('guard.config.open_in_explorer') || '全屏' }}</span>
               </button>
               <button class="modal-action-btn close" @click="handleCloseConfigEditor" title="关闭 (Esc)">
                 <span class="codicon codicon-close"></span>
@@ -3363,33 +3363,62 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 10px;
+  padding: 5px 12px;
   font-size: 12px;
+  font-weight: 500;
   border-radius: 4px;
   cursor: pointer;
-  border: 1px solid transparent;
   transition: all 0.15s ease;
 }
 
 .modal-action-btn.secondary {
-  background: var(--vscode-button-secondaryBackground, rgba(255, 255, 255, 0.08));
-  color: var(--vscode-button-secondaryForeground, #e2e8f0);
-  border-color: var(--vscode-panel-border, rgba(255, 255, 255, 0.12));
+  background: #2563eb;
+  color: #ffffff;
+  border: 1px solid #1d4ed8;
 }
 
 .modal-action-btn.secondary:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: #1d4ed8;
+  border-color: #1e40af;
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .modal-action-btn.secondary {
+  background: #0284c7;
+  color: #ffffff;
+  border: 1px solid #0369a1;
+}
+
+:root[data-theme="light"] .modal-action-btn.secondary:hover {
+  background: #0369a1;
+  color: #ffffff;
 }
 
 .modal-action-btn.close {
-  background: transparent;
-  color: var(--text-muted, #94a3b8);
-  font-size: 16px;
-  padding: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 14px;
+  padding: 5px 8px;
+  border-radius: 4px;
 }
 
 .modal-action-btn.close:hover {
-  color: #ef4444;
+  color: #ffffff;
+  background: #ef4444;
+  border-color: #dc2626;
+}
+
+:root[data-theme="light"] .modal-action-btn.close {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+:root[data-theme="light"] .modal-action-btn.close:hover {
+  color: #ffffff;
+  background: #ef4444;
+  border-color: #dc2626;
 }
 
 .config-editor-body {

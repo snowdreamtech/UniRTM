@@ -1176,7 +1176,7 @@ export const zhTw: TranslationDict = {
   "guard.actions.output": "輸出日誌",
   "guard.actions.return_to_guard": "返回質量守衛",
   "guard.config.editing_context": "正在編輯質量守衛配置文件",
-  "guard.config.open_in_explorer": "全螢幕編輯器開啟",
+  "guard.config.open_in_explorer": "全螢幕",
   "guard.config.open_in_explorer_title": "在檔案總管以完整編輯器開啟",
   "guard.config.save_success": "已成功儲存設定檔",
   "guard.config.save_failed": "儲存設定檔失敗",

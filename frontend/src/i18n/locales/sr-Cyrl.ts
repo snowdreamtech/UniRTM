@@ -1167,7 +1167,7 @@ export const srCyrl: TranslationDict = {
   "guard.actions.output": "Output Logs",
   "guard.actions.return_to_guard": "Return to Quality Guard",
   "guard.config.editing_context": "Editing Quality Guard configuration file",
-  "guard.config.open_in_explorer": "Open in Full Editor",
+  "guard.config.open_in_explorer": "Fullscreen",
   "guard.config.open_in_explorer_title": "Open in Explorer with full editor tabs",
   "guard.config.save_success": "Configuration file saved successfully",
   "guard.config.save_failed": "Failed to save configuration file",
