@@ -1,8 +1,8 @@
 # 任务拆分与执行跟踪清单：集成终端会话持久化、动态状态感知与高级体验系统 (Tasks)
 
 ## 任务执行进度概览
-- **当前阶段**：Phase 2 - 动态子进程感知与 Tab 智能重命名完成
-- **总体进度**：7 / 14 已完成 (50%)
+- **当前阶段**：Phase 3 - 后台长任务监控通知与硬件加速渲染完成
+- **总体进度**：11 / 14 已完成 (78%)
 
 ---
 
@@ -31,11 +31,11 @@
 ---
 
 ## Phase 3: 后台长任务监控通知与硬件加速渲染 (Task Alerts & WebGL Acceleration)
-- [ ] Task 3.1: 实现 `frontend/src/composables/useTerminalNotifier.ts` 后台耗时任务完成感知
-- [ ] Task 3.2: 在 `XTerminalPane.vue` 中集成长任务通知与退出状态检测
-- [ ] Task 3.3: 安装并配置 `@xterm/addon-webgl` 硬件加速及代码连字字体平滑支持
-- [ ] Task 3.4: 编写 `frontend/src/composables/useTerminalNotifier.test.ts` 单元测试并通过验证
-- [ ] Task 3.5: 阶段性 Git 提交：`feat(terminal): implement background task alerts and webgl acceleration`
+- [x] Task 3.1: 实现 `frontend/src/composables/useTerminalNotifier.ts` 后台耗时任务完成感知
+- [x] Task 3.2: 在 `XTerminalPane.vue` 中集成长任务通知与退出状态检测
+- [x] Task 3.3: 安装并配置 `@xterm/addon-webgl` 硬件加速及代码连字字体平滑支持
+- [x] Task 3.4: 编写 `frontend/src/composables/useTerminalNotifier.test.ts` 单元测试并通过验证
+- [x] Task 3.5: 阶段性 Git 提交：`feat(terminal): implement background task alerts and webgl acceleration`
 
 ---
 

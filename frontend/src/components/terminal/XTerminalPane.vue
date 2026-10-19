@@ -13,6 +13,7 @@ import TerminalContextMenu from "./TerminalContextMenu.vue";
 import { useWorkspaceBus } from "../../composables/useWorkspaceBus";
 import { useTerminalPersistence } from "../../composables/useTerminalPersistence";
 import { useTerminalProcessWatcher } from "../../composables/useTerminalProcessWatcher";
+import { useTerminalNotifier } from "../../composables/useTerminalNotifier";
 
 const { registerDetectedPort } = usePorts();
 const detectedPorts = new Set<number>();
@@ -99,6 +100,7 @@ async function handlePaste() {
 
 const { appendChunk, getBuffer, hasBuffer, clearBuffer, exportLog } = useTerminalPersistence();
 const { recordChunk } = useTerminalProcessWatcher();
+const { startTracking, feedOutput } = useTerminalNotifier();
 
 function handleSelectAll() {
   term?.selectAll();
@@ -180,6 +182,7 @@ function connectWebSocket() {
         term.write(msg.data);
         appendChunk(props.paneId, msg.data);
         recordChunk(props.paneId, msg.data);
+        feedOutput(props.paneId, msg.data);
         sniffTerminalPorts(msg.data);
       }
     } catch {
@@ -187,6 +190,7 @@ function connectWebSocket() {
       term.write(event.data);
       appendChunk(props.paneId, String(event.data));
       recordChunk(props.paneId, String(event.data));
+      feedOutput(props.paneId, String(event.data));
       sniffTerminalPorts(String(event.data));
     }
   };
@@ -271,8 +275,35 @@ onMounted(() => {
     }
   }
 
-  // Hook user keystrokes to websocket
+  // Load WebGL Addon with graceful fallback
+  (async () => {
+    if (typeof window === "undefined" || !term) return;
+    try {
+      const { WebglAddon } = await import("@xterm/addon-webgl");
+      const webgl = new WebglAddon();
+      webgl.onContextLoss(() => {
+        webgl.dispose();
+      });
+      term.loadAddon(webgl);
+    } catch {
+      // Graceful fallback to DOM renderer
+    }
+  })();
+
+  // Hook user keystrokes to websocket and command tracking
+  let currentInputLine = "";
   term.onData((data) => {
+    if (data === "\r" || data === "\n") {
+      if (currentInputLine.trim()) {
+        startTracking(props.paneId, currentInputLine.trim());
+      }
+      currentInputLine = "";
+    } else if (data === "\x7f" || data === "\b") {
+      currentInputLine = currentInputLine.slice(0, -1);
+    } else if (data >= " ") {
+      currentInputLine += data;
+    }
+
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: "input", data }));
     }
@@ -313,6 +344,9 @@ onMounted(() => {
   busCleanups.push(
     bus.onSendToTerminal((req) => {
       if (!props.isActive) return;
+      if (req.text && req.text.trim()) {
+        startTracking(props.paneId, req.text.trim());
+      }
       if (ws && ws.readyState === WebSocket.OPEN) {
         const textToSend = req.addNewline !== false ? `${req.text}\n` : req.text;
         ws.send(JSON.stringify({ type: "input", data: textToSend }));
