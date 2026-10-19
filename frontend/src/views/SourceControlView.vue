@@ -76,12 +76,23 @@
           <span>{{ t('scm.diff.open_file') }}</span>
         </button>
 
+        <!-- Reveal File in Explorer -->
+        <button
+          class="diff-btn"
+          title="在资源管理器中揭示"
+          @click="handleRevealFileInExplorer(activeDiffFile)"
+        >
+          <span class="codicon codicon-folder-opened"></span>
+          <span>定位</span>
+        </button>
+
         <!-- Close Diff / Back to Overview or Graph -->
         <button
           class="diff-btn close-btn"
           :title="t('scm.diff.close')"
           @click="closeDiffView"
         >
+
           <span class="codicon codicon-close"></span>
         </button>
       </div>
@@ -260,6 +271,13 @@
                   <div class="item-hover-actions" @click.stop>
                     <button
                       class="file-action-icon-btn"
+                      title="在资源管理器中揭示"
+                      @click="handleRevealFileInExplorer(item.path)"
+                    >
+                      <span class="codicon codicon-folder-opened"></span>
+                    </button>
+                    <button
+                      class="file-action-icon-btn"
                       :title="t('scm.diff.open_file')"
                       @click="handleOpenFile(item.path)"
                     >
@@ -273,6 +291,7 @@
                       <span class="codicon codicon-remove"></span>
                     </button>
                   </div>
+
                 </div>
               </div>
               <div v-if="status.staged.length === 0" class="empty-state">
@@ -326,6 +345,13 @@
                   <div class="item-hover-actions" @click.stop>
                     <button
                       class="file-action-icon-btn"
+                      title="在资源管理器中揭示"
+                      @click="handleRevealFileInExplorer(item.path)"
+                    >
+                      <span class="codicon codicon-folder-opened"></span>
+                    </button>
+                    <button
+                      class="file-action-icon-btn"
                       :title="t('scm.diff.open_file')"
                       @click="handleOpenFile(item.path)"
                     >
@@ -346,6 +372,7 @@
                       <span class="codicon codicon-add"></span>
                     </button>
                   </div>
+
                 </div>
               </div>
               <div v-if="status.unstaged.length === 0" class="empty-state">
@@ -440,7 +467,9 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from "vue"
 import { useRoute, useRouter } from "vue-router";
 import { useGit } from "../composables/useGit";
 import { useEditorTabs } from "../composables/useEditorTabs";
+import { useWorkspaceBus } from "../composables/useWorkspaceBus";
 import { useTheme } from "../composables/useTheme";
+
 import { loadMonaco, getLanguageForFile } from "../services/editor/monacoLoader";
 import TechIcon from "../components/common/TechIcon.vue";
 import GitGraphView from "../components/scm/GitGraphView.vue";
@@ -737,6 +766,8 @@ function formatTime(ts: number): string {
 }
 
 const { openTab } = useEditorTabs();
+const { revealInExplorer } = useWorkspaceBus();
+
 
 const diffEditorContainer = ref<HTMLElement | null>(null);
 let monacoDiffEditor: any = null;
@@ -890,6 +921,13 @@ function handleOpenFile(targetPath?: string) {
   router.push({ name: "explorer" }).catch(() => {});
 }
 
+function handleRevealFileInExplorer(targetPath?: string) {
+  const p = targetPath || activeDiffFile.value;
+  if (!p) return;
+  revealInExplorer(p);
+  router.push({ name: "explorer" }).catch(() => {});
+}
+
 function handleOpenFileInEditor() {
   handleOpenFile();
 }
@@ -937,8 +975,9 @@ async function handleFileMenuAction(action: FileMenuActionType, file: ContextMen
       await handleDiscardSingleFile(file.path);
       break;
     case "reveal-explorer":
-      handleOpenFile(file.path);
+      handleRevealFileInExplorer(file.path);
       break;
+
     case "copy-path":
       try {
         const fullPath = file.path.startsWith("/") ? file.path : `/${file.path}`;

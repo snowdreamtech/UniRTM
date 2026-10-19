@@ -132,7 +132,34 @@ export function useFileTree() {
     expandedPaths.value = next;
   }
 
+  function revealPath(path: string): FSNode | null {
+
+    if (!path) return null;
+    expandPath(path);
+
+    const findNode = (curr: FSNode): FSNode | null => {
+      if (curr.path === path) return curr;
+      if (curr.children) {
+        for (const child of curr.children) {
+          const res = findNode(child);
+          if (res) return res;
+        }
+      }
+      return null;
+    };
+
+    if (tree.value) {
+      const target = findNode(tree.value);
+      if (target) {
+        selectedNode.value = target;
+      }
+      return target;
+    }
+    return null;
+  }
+
   function collapseAll(): void {
+
     // Keep only root folder expanded so user sees the workspace container
     expandedPaths.value = new Set([""]);
   }
@@ -423,7 +450,9 @@ export function useFileTree() {
     fetchTree,
     toggleExpand,
     expandPath,
+    revealPath,
     collapseAll,
+
     selectNode,
     loadFileContent,
     createFile,

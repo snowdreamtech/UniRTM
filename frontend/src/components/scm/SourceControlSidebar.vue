@@ -265,7 +265,9 @@ import { ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useGit } from "../../composables/useGit";
 import { useEditorTabs } from "../../composables/useEditorTabs";
+import { useWorkspaceBus } from "../../composables/useWorkspaceBus";
 import { useToast } from "../../composables/useToast";
+
 import { t } from "../../i18n";
 import TechIcon from "../common/TechIcon.vue";
 import GitMoreActionsMenu from "./GitMoreActionsMenu.vue";
@@ -424,6 +426,8 @@ function openFileContextMenu(event: MouseEvent, item: { path: string; status?: s
   isFileContextMenuOpen.value = true;
 }
 
+const { revealInExplorer } = useWorkspaceBus();
+
 async function handleFileMenuAction(action: FileMenuActionType, file: ContextMenuTargetFile) {
   isFileContextMenuOpen.value = false;
   switch (action) {
@@ -443,9 +447,11 @@ async function handleFileMenuAction(action: FileMenuActionType, file: ContextMen
       await handleDiscardFile(file.path);
       break;
     case "reveal-explorer":
-      handleOpenFileInEditor(file.path);
+      revealInExplorer(file.path);
+      router.push({ name: "explorer" }).catch(() => {});
       break;
     case "copy-path":
+
       try {
         const fullPath = file.path.startsWith("/") ? file.path : `/${file.path}`;
         await navigator.clipboard.writeText(fullPath);

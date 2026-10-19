@@ -16,10 +16,11 @@
 
 
 ## 阶段 3：文件管理器 ⟷ SCM 双向定位联动 (Bidirectional Reveal & Navigation)
-- [ ] 3.1 在 `frontend/src/views/ExplorerView.vue` 中监听 `workspaceBus.onRevealFile` 事件，实现递归自动展开父级目录并滚动平滑聚焦
-- [ ] 3.2 在 `frontend/src/views/SourceControlView.vue` 变更列表项中增加「在资源管理器中揭示」按钮
-- [ ] 3.3 在 SCM 列表点击文件或点击对比按钮时，通过总线在主编辑器中无缝打开 Diff Tab 并切换导航
-- [ ] 3.4 **执行提交 3**：`feat(explorer): implement auto-reveal and highlight from source control`
+- [x] 3.1 在 `frontend/src/views/ExplorerView.vue` 中监听 `workspaceBus.onRevealFile` 事件，实现递归自动展开父级目录并滚动平滑聚焦
+- [x] 3.2 在 `frontend/src/views/SourceControlView.vue` 变更列表项中增加「在资源管理器中揭示」按钮
+- [x] 3.3 在 SCM 列表点击文件或点击对比按钮时，通过总线在主编辑器中无缝打开 Diff Tab 并切换导航
+- [x] 3.4 **执行提交 3**：`feat(explorer): implement auto-reveal and highlight from source control`
+
 
 ## 阶段 4：文件管理器右键 Git 上下文动作融合 (Context Menu Cross-Pollination)
 - [ ] 4.1 在 `frontend/src/components/explorer/FileContextMenu.vue` 中动态根据当前选中项的 Git 状态注入 Git 操作组（暂存/取消暂存/放弃更改/对比差异）

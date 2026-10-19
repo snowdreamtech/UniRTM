@@ -118,6 +118,8 @@ import FileContextMenu from "./FileContextMenu.vue";
 import DeleteConfirmModal from "./DeleteConfirmModal.vue";
 import TechIcon from "../common/TechIcon.vue";
 
+import { useWorkspaceBus } from "../../composables/useWorkspaceBus";
+
 const emit = defineEmits<{
   (e: "open-terminal", dirPath: string): void;
 }>();
@@ -132,6 +134,8 @@ const {
   inlineAction,
   fetchTree,
   toggleExpand,
+  expandPath,
+  revealPath,
   collapseAll,
   startInlineCreate,
   cancelInlineAction,
@@ -139,6 +143,9 @@ const {
   createFolder,
   openContextMenu,
 } = useFileTree();
+
+const { onRevealFile } = useWorkspaceBus();
+
 
 const rootCreateInputRef = ref<HTMLInputElement | null>(null);
 const createRootInputValue = ref("");
@@ -234,12 +241,38 @@ function handleOpenTerminal(dirPath: string) {
   emit("open-terminal", dirPath);
 }
 
+let revealCleanup: (() => void) | null = null;
+
 onMounted(() => {
   if (!tree.value) {
     fetchTree();
   }
+
+  revealCleanup = onRevealFile((req) => {
+    revealPath(req.path);
+    nextTick(() => {
+      const fileName = req.path.split("/").pop() || req.path;
+      const el =
+        document.querySelector(`.tree-node-row[title*="${CSS.escape(req.path)}"]`) ||
+        document.querySelector(`.tree-node-row[title*="${CSS.escape(fileName)}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        el.classList.add("reveal-flash");
+        setTimeout(() => {
+          el.classList.remove("reveal-flash");
+        }, 1800);
+      }
+    });
+  });
+});
+
+onBeforeUnmount(() => {
+  if (revealCleanup) {
+    revealCleanup();
+  }
 });
 </script>
+
 
 <style scoped>
 .explorer-sidebar-container {
@@ -406,4 +439,24 @@ onMounted(() => {
   outline: none;
   box-shadow: 0 0 0 1px var(--accent-cyan, #00e5ff);
 }
+
+:deep(.reveal-flash) {
+  animation: revealPulse 1.8s ease-out;
+}
+
+@keyframes revealPulse {
+  0% {
+    background-color: rgba(56, 189, 248, 0.45);
+    outline: 2px solid #38bdf8;
+  }
+  50% {
+    background-color: rgba(56, 189, 248, 0.25);
+    outline: 1px solid #38bdf8;
+  }
+  100% {
+    background-color: transparent;
+    outline: none;
+  }
+}
 </style>
+

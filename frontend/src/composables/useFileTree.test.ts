@@ -174,4 +174,41 @@ describe("useFileTree", () => {
     expect(tree.value?.children?.[0].name).toBe("cmd");
     expect(tree.value?.children?.[0].children?.[0].name).toBe("main.go");
   });
+
+  it("reveals nested path and selects the target node", () => {
+    const { tree, expandedPaths, selectedNode, revealPath } = useFileTree();
+
+    tree.value = {
+      name: "UniRTM",
+      path: "",
+      is_dir: true,
+      size: 0,
+      mod_time: "2026-10-18T00:00:00Z",
+      children: [
+        {
+          name: "src",
+          path: "src",
+          is_dir: true,
+          size: 0,
+          mod_time: "2026-10-18T00:00:00Z",
+          children: [
+            {
+              name: "App.vue",
+              path: "src/App.vue",
+              is_dir: false,
+              size: 200,
+              mod_time: "2026-10-18T00:00:00Z",
+            },
+          ],
+        },
+      ],
+    };
+
+    const target = revealPath("src/App.vue");
+    expect(target?.name).toBe("App.vue");
+    expect(selectedNode.value?.path).toBe("src/App.vue");
+    expect(expandedPaths.value.has("src")).toBe(true);
+    expect(expandedPaths.value.has("src/App.vue")).toBe(true);
+  });
 });
+
