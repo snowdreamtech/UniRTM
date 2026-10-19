@@ -2,7 +2,7 @@
 
 ## 1. 架构总览与技术栈 (Architecture & Tech Stack)
 
-本系统由前端响应式状态层与 UI 组件、终端嗅探器、云端安全反向代理网关及后端系统级端口扫描引擎共同构成：
+本系统构建了由**三维一体智能推断体系 (方式 A + 方式 B + 方式 C)** 驱动的现代端口转发引擎：
 
 ```mermaid
 graph TD
@@ -10,16 +10,24 @@ graph TD
     TerminalOutput["XTerminalPane 输出流"] --> Sniffer["Terminal URL 智能嗅探器"]
     Sniffer --> usePorts["usePorts Composable"]
     PortsView --> usePorts
-    usePorts --> LocalStore["持久化用户端口 (localStorage / config)"]
+    usePorts --> LocalStore["持久化用户端口 (localStorage)"]
     usePorts --> BackendAPI["/api/ports/* REST API"]
     
+    subgraph "三维一体智能推断体系"
+        MethodA["方式 A: 宿主进程语义分析 (/proc/cmdline, ps, tasklist)"]
+        MethodB["方式 B: 网络应用探针 (TLS 握手 + HTTP Server Header + 协议嗅探)"]
+        MethodC["方式 C: 工作区上下文分析 (package.json + docker-compose + .env)"]
+    end
+
+    BackendAPI --> MethodA
+    BackendAPI --> MethodB
+    usePorts --> MethodC
+    
     subgraph "后端服务 (Go cmd/64.ui.go / Vite Connect)"
-        BackendAPI --> PortScanner["系统级端口监听扫描器 (Linux /proc/net/tcp, macOS/Win)"]
+        BackendAPI --> PortScanner["系统级端口监听扫描器"]
+        BackendAPI --> PortProber["并发安全网络探针引擎 (超时 <= 40ms)"]
         BackendAPI --> PortProxy["智能安全反向代理 (/api/ports/preview/:port/)"]
     end
-    
-    PortScanner --> OSNetwork["操作系统 Socket 监听表 (LISTEN)"]
-    PortProxy --> LocalService["本地开发服务 (localhost:5173 / 3000 / ...)"]
 ```
 
 ---
@@ -28,20 +36,39 @@ graph TD
 
 ### 2.1 端口实体接口 (`PortItem`)
 ```typescript
+export interface PortProbeInfo {
+  protocol: "http" | "https" | "tcp";
+  isTls: boolean;
+  serverHeader?: string;       // e.g. "uvicorn", "nginx/1.24", "Werkzeug/3.0"
+  xPoweredBy?: string;         // e.g. "Express", "Next.js"
+  contentType?: string;        // e.g. "text/html", "application/json"
+  detectedFramework?: string;  // e.g. "FastAPI", "Express", "Django", "Redis"
+}
+
+export interface WorkspaceServiceHint {
+  port: number;
+  serviceName: string;         // e.g. "前端门户 (Vite)", "主数据库 (Postgres)"
+  sourceFile: "package.json" | "docker-compose.yml" | ".env";
+  icon?: string;
+}
+
 export interface PortForwardItem {
   id: string;                      // 唯一标识 (如 "port-5173")
   port: number;                    // 目标监听端口号 (e.g. 5173)
-  localPort?: number;              // 本地转发映射端口 (若发生端口冲突或重映射时使用)
-  label: string;                   // 友好标签 (如 "Vite Dev Server")
-  protocol: "http" | "https";      // 协议类型
-  source: "auto" | "user";         // 来源: 自动转发 (auto) 或 用户手动转发 (user)
-  status: "active" | "inactive";   // 状态: 活跃 (实心绿) 或 停止/未就绪 (空心灰)
-  visibility: "private" | "public";// 可见性: 私有 (private) 或 公开 (public)
-  process?: string;                // 占用进程命令行或程序名 (如 "node vite", "python app.py")
-  pid?: number;                    // 关联进程 PID
-  forwardAddress: string;          // 转发地址 (如 "localhost:5173" 或 "127.0.0.1:5173")
-  previewUrl: string;              // 浏览器直达预览 URL
-  icon?: string;                   // 智能识别的服务图标标识 (如 "vue", "react", "python", "database")
+  localPort: number;               // 本地转发映射端口
+  label: string;                   // 友好标签 (结合 方式 A/B/C 综合生成的业务标签)
+  protocol: "http" | "https";      // 协议类型 (结合 方式 B 自动升级为 https)
+  source: "auto" | "user" | "workspace"; // 来源
+  status: "active" | "inactive";   // 状态
+  visibility: "private" | "public";// 可见性
+  process?: string;                // 进程名称
+  commandLine?: string;            // 进程命令行
+  pid?: number;                    // PID
+  forwardAddress: string;          // 转发地址
+  previewUrl: string;              // 浏览器预览 URL
+  icon?: string;                   // 技术栈图标
+  probe?: PortProbeInfo;           // 方式 B 探针检测结果
+  workspaceHint?: WorkspaceServiceHint; // 方式 C 工作区上下文推断结果
 }
 ```
 
@@ -51,31 +78,46 @@ export interface PortForwardItem {
 
 | 接口路径 | 方法 | 请求参数 / Body | 返回结构 | 说明 |
 | :--- | :---: | :--- | :--- | :--- |
-| `/api/ports/list` | GET | 无 | `{ success: boolean, listening: SystemListeningPort[] }` | 扫描操作系统当前所有处于 `LISTEN` 状态的 TCP 端口及进程 |
-| `/api/ports/forward` | POST | `{ port: number, localPort?: number, label?: string, protocol?: string, visibility?: string }` | 添加或激活手动端口转发 |
-| `/api/ports/update` | POST | `{ port: number, label?: string, localPort?: number, protocol?: string, visibility?: string }` | 更新端口转发配置 |
-| `/api/ports/stop` | POST | `{ port: number }` | `{ success: boolean }` | 暂停/停止该端口的转发中继 |
-| `/api/ports/unforward`| POST | `{ port: number }` | `{ success: boolean }` | 删除/移除端口转发项 |
-| `/api/ports/preview/:port/*` | GET/POST | 通配路径 | 反向代理流转发至 `127.0.0.1:port` | 云端开发智能安全预览反向代理路由 |
+| `/api/ports/list` | GET | `?probe=bool` | `{ success: boolean, listening: SystemListeningPort[] }` | 扫描操作系统监听端口，当 `probe=true` 时并发执行方式 B 网络探针 |
+| `/api/ports/probe` | POST | `{ port: number }` | `{ success: boolean, probe: PortProbeInfo }` | 对指定端口单独执行深入协议与服务头探针 |
+| `/api/ports/workspace-hints` | GET | 无 | `{ success: boolean, hints: WorkspaceServiceHint[] }` | 方式 C：解析工作区配置文件生成预期服务占位 |
+| `/api/ports/forward` | POST | `{ port: number, ... }` | `{ success: boolean }` | 添加或激活端口转发 |
+| `/api/ports/update` | POST | `{ port: number, ... }` | `{ success: boolean }` | 更新端口转发配置 |
+| `/api/ports/stop` | POST | `{ port: number }` | `{ success: boolean }` | 暂停/停止转发 |
+| `/api/ports/unforward`| POST | `{ port: number }` | `{ success: boolean }` | 删除端口转发 |
+| `/api/ports/preview/:port/*` | GET/POST | 通配路径 | 反向代理流转发至目标端口 | 云端开发智能安全预览反向代理路由 |
 
 ---
 
-## 4. 关键子模块设计与实现策略
+## 4. 三维一体推断引擎设计
 
-### 4.1 系统级端口探测器（跨平台支持）
-- **Linux 生产环境**：优先解析 `/proc/net/tcp` 与 `/proc/net/tcp6`（无需创建子进程，0 资源开销微秒级获取 inode），再根据 `/proc/[pid]/fd` 反查进程名与命令行；在无权限或简易模式下，降级调用 `ss -tulpn` 或 `lsof -iTCP -sTCP:LISTEN -P -n`。
-- **macOS / Windows 环境**：通过标准 `lsof` / `netstat -ano` 解析。
-- **开发环境**：在 `vite.config.ts` 中通过 Node.js 内置网络与进程检查提供同构的 `/api/ports/*` 假数据或真实宿主扫描。
+### 4.1 方式 B：网络层协议探针 (Protocol Probing Engine)
+- **并发与超时控制**：采用 Go `goroutine` + `select timeout(40ms)` 并发测试。
+- **阶段 1：TLS / HTTPS 探针**：
+  - 建立 TCP 连接后，发送标准 TLS 1.2 / 1.3 ClientHello 握手包。
+  - 若对方返回 ServerHello 或 TLS Alert，直接 100% 确认该端口支持并要求 `HTTPS`，将协议切换为 `https`。
+- **阶段 2：HTTP 服务头探针**：
+  - 若非 TLS，发送标准 `HEAD / HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n`。
+  - 解析响应头：
+    - `Server: uvicorn` -> `FastAPI / Uvicorn`
+    - `Server: Werkzeug/x.x.x` -> `Flask App`
+    - `X-Powered-By: Express` -> `Express.js App`
+    - `X-Powered-By: Next.js` -> `Next.js App`
+    - `Server: nginx` -> `Nginx Gateway`
+    - `Server: Caddy` -> `Caddy Web Server`
+- **阶段 3：非 HTTP 数据库服务特征探测**：
+  - 发送 Redis `PING\r\n`，若收到 `+PONG` 确认为 Redis；
+  - 检查服务端返回的握手包开头的协议版本号（如 MySQL 初始握手包的协议 10）。
 
-### 4.2 智能服务识别算法（指纹库）
-前端与后端内置常见服务指纹匹配引擎：
-- 端口 `5173` / `5174` -> `Vite Dev Server`，图标 `vue` / `vite`；
-- 端口 `3000` / `3001` -> `React / Next.js Web App`，图标 `react` / `nextjs`；
-- 端口 `8000` / `8080` / `5000` -> 结合进程命令行判断：若包含 `uvicorn` / `python` 识别为 `FastAPI/Django`，若包含 `node` 识别为 `Node API`，若包含 `go` 识别为 `Go API`；
-- 端口 `3306` -> `MySQL Database`；`5432` -> `PostgreSQL`；`6379` -> `Redis`；`27017` -> `MongoDB`；
-- 端口 `8888` -> `Jupyter Notebook / Lab`。
-
-### 4.3 云端开发反向代理（安全预览网关）
-- 当 UniRTM 部署在云主机、远程开发机或 Docker 容器中时，远程的 `127.0.0.1:5173` 外部浏览器无法直接连通。
-- UniRTM 后端提供内置反向代理 `/api/ports/preview/:port/`，自动重写请求头（`Host`, `X-Forwarded-For`）并支持 HTTP/WebSocket 双向穿透。
-- 允许一键复制云端预览链接或手机扫码预览。
+### 4.2 方式 C：工作区上下文推断 (Workspace Context Engine)
+- **自动扫描工作区根目录**：
+  - **`package.json`**：
+    - 遍历 `scripts`：如 `"dev": "vite"` -> `5173` 关联到 `"前端门户 (Vite)"`；`"storybook": "storybook dev -p 6006"` -> `6006` 关联到 `"组件库文档 (Storybook)"`；
+    - 分析常用端口参数：正则提取 `--port (\d+)`、`-p (\d+)`。
+  - **`docker-compose.yml` / `compose.yaml`**：
+    - 解析 `services`：如 `db: image: postgres, ports: ["5432:5432"]` -> 预置 `5432` 对应 `"主数据库 (compose: db)"`；
+    - `redis: ports: ["6379:6379"]` -> 预置 `6379` 对应 `"缓存数据库 (compose: redis)"`。
+  - **`.env` / `.env.local`**：
+    - 提取 `PORT=...`, `VITE_PORT=...`, `APP_PORT=...`。
+- **三者综合加权（Multi-Source Fusion）**：
+  - 标签生成优先级：`用户自定义标签 > 方式 C 工作区业务名 > 方式 B 探针精确框架 > 方式 A 进程名 > 默认保底`。
