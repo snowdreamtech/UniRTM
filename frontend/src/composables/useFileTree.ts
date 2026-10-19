@@ -358,21 +358,44 @@ export function useFileTree() {
     }
   }
 
-  async function copyRelativePath(path: string): Promise<void> {
+  function getAbsolutePath(relPath: string): string {
+    const root = tree.value?.path || "";
+    if (!relPath) return root;
+    if (relPath.startsWith("/")) return relPath;
+    return root ? (root.endsWith("/") ? `${root}${relPath}` : `${root}/${relPath}`) : relPath;
+  }
+
+  async function copyPath(path: string): Promise<string> {
     try {
-      await navigator.clipboard.writeText(path);
-      showToast("已复制相对路径", "info");
+      const fullPath = getAbsolutePath(path);
+      await navigator.clipboard.writeText(fullPath);
+      showToast(t("explorer.copied_full_path") || `已复制完整路径: ${fullPath}`, "info");
+      return fullPath;
     } catch {
       showToast("复制失败", "error");
+      return "";
     }
   }
 
-  async function copyFileName(name: string): Promise<void> {
+  async function copyRelativePath(path: string): Promise<string> {
+    try {
+      await navigator.clipboard.writeText(path);
+      showToast(t("explorer.copied_path") || `已复制相对路径: ${path}`, "info");
+      return path;
+    } catch {
+      showToast("复制失败", "error");
+      return "";
+    }
+  }
+
+  async function copyFileName(name: string): Promise<string> {
     try {
       await navigator.clipboard.writeText(name);
       showToast("已复制文件名", "info");
+      return name;
     } catch {
       showToast("复制失败", "error");
+      return "";
     }
   }
 
@@ -550,6 +573,8 @@ export function useFileTree() {
     renameItem,
     deleteItem,
     saveFile,
+    getAbsolutePath,
+    copyPath,
     copyRelativePath,
     copyFileName,
     startInlineCreate,

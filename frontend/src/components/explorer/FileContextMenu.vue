@@ -18,8 +18,14 @@
 
     <div class="menu-separator"></div>
 
-    <!-- Copy Relative Path -->
+    <!-- Copy Path -->
     <div class="menu-item" @click="handleCopyPath">
+      <span class="menu-icon codicon codicon-copy"></span>
+      <span class="menu-label">复制路径</span>
+    </div>
+
+    <!-- Copy Relative Path -->
+    <div class="menu-item" @click="handleCopyRelativePath">
       <span class="menu-icon codicon codicon-copy"></span>
       <span class="menu-label">复制相对路径</span>
     </div>
@@ -127,6 +133,7 @@ const {
   startInlineCreate,
   startInlineRename,
   promptDelete,
+  copyPath,
   copyRelativePath,
   copyFileName,
 } = useFileTree();
@@ -228,6 +235,14 @@ function handleNewFolder() {
 }
 
 function handleCopyPath() {
+  const node = contextMenu.value.node;
+  if (node) {
+    copyPath(node.path);
+  }
+  closeContextMenu();
+}
+
+function handleCopyRelativePath() {
   const node = contextMenu.value.node;
   if (node) {
     copyRelativePath(node.path);

@@ -340,5 +340,43 @@ describe("useFileTree", () => {
       })
     ).toBe(0);
   });
+
+  it("handles getAbsolutePath, copyPath, copyRelativePath, and copyFileName", async () => {
+    const { tree, getAbsolutePath, copyPath, copyRelativePath, copyFileName } = useFileTree();
+
+    tree.value = {
+      name: "root",
+      path: "/home/user/project",
+      is_dir: true,
+      size: 0,
+      mod_time: "2026-10-18T00:00:00Z",
+      children: [],
+    };
+
+    // getAbsolutePath
+    expect(getAbsolutePath("src/App.vue")).toBe("/home/user/project/src/App.vue");
+    expect(getAbsolutePath("/absolute/path/file.ts")).toBe("/absolute/path/file.ts");
+    expect(getAbsolutePath("")).toBe("/home/user/project");
+
+    // Mock clipboard
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: writeTextMock },
+      writable: true,
+      configurable: true,
+    });
+
+    const fullPathResult = await copyPath("src/main.ts");
+    expect(fullPathResult).toBe("/home/user/project/src/main.ts");
+    expect(writeTextMock).toHaveBeenCalledWith("/home/user/project/src/main.ts");
+
+    const relResult = await copyRelativePath("src/main.ts");
+    expect(relResult).toBe("src/main.ts");
+    expect(writeTextMock).toHaveBeenCalledWith("src/main.ts");
+
+    const nameResult = await copyFileName("main.ts");
+    expect(nameResult).toBe("main.ts");
+    expect(writeTextMock).toHaveBeenCalledWith("main.ts");
+  });
 });
 
