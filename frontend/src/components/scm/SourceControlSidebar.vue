@@ -127,7 +127,7 @@
       </div>
 
       <!-- Quality Guard Status Capsule & Actions -->
-      <div v-if="status.staged.length > 0" class="guard-capsule-bar">
+      <div class="guard-capsule-bar">
         <div class="guard-status-capsule" :class="guardCapsuleClass" :title="guardTooltip" @click="isGuardDetailsOpen = !isGuardDetailsOpen">
           <span class="codicon" :class="guardIconClass"></span>
           <span class="guard-capsule-text">{{ guardLabelText }}</span>
@@ -156,12 +156,12 @@
       </div>
 
       <!-- Expandable Guard Diagnostics Dropdown -->
-      <div v-if="isGuardDetailsOpen && guardStatus.issues.length > 0" class="guard-diagnostics-drawer">
+      <div v-if="isGuardDetailsOpen" class="guard-diagnostics-drawer">
         <div class="guard-drawer-header">
           <span class="guard-drawer-title">{{ t('guard.diagnostics.title') || '质量守门诊断结果' }}</span>
           <button class="guard-close-btn" @click="isGuardDetailsOpen = false">×</button>
         </div>
-        <div class="guard-issues-list">
+        <div v-if="guardStatus.issues.length > 0" class="guard-issues-list">
           <div
             v-for="(iss, idx) in guardStatus.issues"
             :key="idx"
@@ -176,6 +176,10 @@
             </div>
             <span v-if="iss.fixable" class="guard-fixable-tag">{{ t('guard.fixable') || '可修复' }}</span>
           </div>
+        </div>
+        <div v-else class="guard-issues-empty">
+          <span class="codicon codicon-check"></span>
+          <span>{{ t('guard.status.passed') || '质量守门通过，未检测到违规项' }}</span>
         </div>
       </div>
 
@@ -1616,5 +1620,16 @@ async function handleModalConfirm(payload: {
   border-radius: 3px;
   background: rgba(46, 160, 67, 0.2);
   color: #3fb950;
+}
+
+.guard-issues-empty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  font-size: 11px;
+  color: #3fb950;
+  background: rgba(46, 160, 67, 0.1);
+  border-radius: 4px;
 }
 </style>

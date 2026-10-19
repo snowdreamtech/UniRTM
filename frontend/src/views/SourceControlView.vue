@@ -136,6 +136,21 @@
                 <span class="codicon codicon-git-commit"></span>
                 <span>{{ t('scm.tabs.graph') }}</span>
               </button>
+              <button
+                class="mode-tab-btn"
+                :class="{ active: currentTab === 'guard' }"
+                @click="switchTab('guard')"
+              >
+                <span class="codicon codicon-shield"></span>
+                <span>{{ t('guard.title') || '质量守门' }}</span>
+                <span
+                  v-if="guardIssuesCount > 0"
+                  class="tab-count-pill"
+                  :class="guardStatus.errors_count > 0 ? 'pill-error' : 'pill-warning'"
+                >
+                  {{ guardIssuesCount }}
+                </span>
+              </button>
             </div>
 
             <div class="header-branch-pill">
@@ -194,7 +209,7 @@
             </div>
           </div>
 
-          <div class="stat-card" :title="guardTooltip" @click="handleRunGuardFix">
+          <div class="stat-card clickable-guard-card" :title="guardTooltip" @click="switchTab('guard')">
             <div class="stat-icon-wrapper" :class="guardCardIconColor">
               <span class="codicon" :class="guardCardIcon"></span>
             </div>
@@ -449,6 +464,151 @@
         @open-diff="handleOpenDiffFromGraph"
         @switch-tab="switchTab"
       />
+
+      <!-- Mode 3: VS Code Grade Quality Guard Hub -->
+      <div v-else-if="currentTab === 'guard'" class="guard-hub-view">
+        <div class="guard-hub-header">
+          <div class="guard-hub-title-group">
+            <div class="guard-badge-large" :class="guardCardIconColor">
+              <span class="codicon" :class="guardCardIcon"></span>
+            </div>
+            <div class="guard-hub-title-text">
+              <h2 class="guard-hub-title">{{ t('guard.title') || '质量守门与合规中心' }}</h2>
+              <p class="guard-hub-desc">
+                Pre-commit & CI 双守门流水线：Phase 1 Fixer 原生自愈 ➔ Phase 2 Formatter 格式化 ➔ Phase 3 Linter & Security 门禁阻断与密钥防泄漏
+              </p>
+            </div>
+          </div>
+          <div class="guard-hub-actions">
+            <div class="guard-scope-toggle">
+              <button
+                class="scope-btn"
+                :class="{ active: currentGuardScope === 'staged' }"
+                @click="handleChangeGuardScope('staged')"
+              >
+                {{ t('scm.sidebar.staged') || '暂存区' }} ({{ status.staged.length }})
+              </button>
+              <button
+                class="scope-btn"
+                :class="{ active: currentGuardScope === 'all' }"
+                @click="handleChangeGuardScope('all')"
+              >
+                {{ t('scm.changes.total') || '所有变更' }} ({{ totalChanges }})
+              </button>
+            </div>
+            <button
+              v-if="guardStatus.fixable_count > 0"
+              class="action-pill warning"
+              :disabled="isGuardFixing"
+              @click="handleRunGuardFix"
+            >
+              <span class="codicon" :class="isGuardFixing ? 'codicon-loading codicon-modifier-spin' : 'codicon-wand'"></span>
+              <span>{{ t('guard.actions.auto_fix') || '一键自动修复' }} ({{ guardStatus.fixable_count }})</span>
+            </button>
+            <button
+              class="action-pill primary"
+              :disabled="isGuardLoading"
+              @click="handleRefreshGuard"
+            >
+              <span class="codicon codicon-refresh" :class="{ 'codicon-modifier-spin': isGuardLoading }"></span>
+              <span>{{ t('guard.actions.rescan') || '重新扫描' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3-Phase Pipeline Architecture Cards -->
+        <div class="guard-pipeline-grid">
+          <div class="pipeline-step-card">
+            <div class="step-header">
+              <span class="step-badge">Phase 1</span>
+              <span class="step-title">Fixer (自愈修复)</span>
+            </div>
+            <div class="step-desc">
+              Go 原生极速自愈：末尾换行符补全、行尾多余空白清除、统一换行符、行尾空行收敛。
+            </div>
+            <div class="step-status">
+              <span class="codicon codicon-check text-green"></span>
+              <span>内置 32 项 Go 原生规则</span>
+            </div>
+          </div>
+
+          <div class="pipeline-arrow">➔</div>
+
+          <div class="pipeline-step-card">
+            <div class="step-header">
+              <span class="step-badge">Phase 2</span>
+              <span class="step-title">Formatter (代码格式化)</span>
+            </div>
+            <div class="step-desc">
+              标杆格式化工具插槽：gofumpt (Go)、prettier (Web/TS/CSS/JSON)、shfmt (Shell)。
+            </div>
+            <div class="step-status">
+              <span class="codicon codicon-check text-green"></span>
+              <span>自动识别语言格式化</span>
+            </div>
+          </div>
+
+          <div class="pipeline-arrow">➔</div>
+
+          <div class="pipeline-step-card">
+            <div class="step-header">
+              <span class="step-badge">Phase 3</span>
+              <span class="step-title">Linter & Security (门禁阻断)</span>
+            </div>
+            <div class="step-desc">
+              静态代码门禁与安全卡点：gitleaks 密钥敏感凭证防泄漏扫描 + golangci-lint。
+            </div>
+            <div class="step-status">
+              <span class="codicon codicon-shield text-blue"></span>
+              <span>Pre-commit & CI 双守门</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Diagnostics Panel (VS Code Problems Explorer) -->
+        <div class="guard-diagnostics-section">
+          <div class="diagnostics-bar">
+            <div class="diagnostics-summary">
+              <span class="diag-title">{{ t('guard.diagnostics.title') || '质量守门诊断结果' }}</span>
+              <span class="diag-badge-clean" v-if="guardStatus.clean">🟢 {{ t('guard.status.passed') || '质量守门通过' }}</span>
+              <span class="diag-badge-errors" v-if="guardStatus.errors_count > 0">🔴 {{ guardStatus.errors_count }} 阻断违规</span>
+              <span class="diag-badge-warnings" v-if="guardStatus.warnings_count > 0">🟡 {{ guardStatus.warnings_count }} 待优化项</span>
+            </div>
+            <span class="diag-files-count">已扫描 {{ guardStatus.scanned }} 个文件</span>
+          </div>
+
+          <!-- Issues Table / List -->
+          <div v-if="guardStatus.issues.length > 0" class="guard-issues-table">
+            <div
+              v-for="(issue, idx) in guardStatus.issues"
+              :key="idx"
+              class="issue-row"
+              :class="'severity-' + issue.severity"
+              @click="handleOpenIssueFile(issue.file_path)"
+            >
+              <div class="issue-left">
+                <span class="codicon" :class="issue.severity === 'error' ? 'codicon-error' : 'codicon-warning'"></span>
+                <span class="issue-file font-mono">{{ issue.file_path }}<span v-if="issue.line" class="issue-line">:{{ issue.line }}</span></span>
+                <span class="issue-rule font-mono">{{ issue.rule_id }}</span>
+              </div>
+              <div class="issue-msg">{{ issue.message }}</div>
+              <div class="issue-right">
+                <span v-if="issue.fixable" class="issue-fixable-pill">⚡ {{ t('guard.fixable') || '可自愈' }}</span>
+                <span class="issue-phase-tag font-mono">{{ issue.phase }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Clean State Illustration -->
+          <div v-else class="guard-clean-state">
+            <span class="codicon codicon-shield-check clean-icon"></span>
+            <h3 class="clean-title">{{ t('guard.status.passed') || '质量守门已通过' }}</h3>
+            <p class="clean-subtitle">
+              当前扫描范围内未发现任何格式违规、代码坏味道或泄密风险，符合提交规范。
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Repository More Actions Menu (Teleported) -->
@@ -535,8 +695,8 @@ const {
   cleanUntracked,
 } = useGit();
 
-const currentTab = ref<"changes" | "graph">(
-  route.query.tab === "graph" ? "graph" : "changes"
+const currentTab = ref<"changes" | "graph" | "guard">(
+  route.query.tab === "graph" ? "graph" : route.query.tab === "guard" ? "guard" : "changes"
 );
 
 const {
@@ -546,6 +706,21 @@ const {
   fetchStatus: fetchGuardStatus,
   runFix: runGuardFix,
 } = useGuard();
+
+const currentGuardScope = ref<"staged" | "all">("staged");
+
+const guardIssuesCount = computed(() => {
+  return (guardStatus.value.errors_count || 0) + (guardStatus.value.warnings_count || 0);
+});
+
+async function handleChangeGuardScope(scope: "staged" | "all") {
+  currentGuardScope.value = scope;
+  await fetchGuardStatus(scope);
+}
+
+async function handleRefreshGuard() {
+  await fetchGuardStatus(currentGuardScope.value);
+}
 
 const guardCardValue = computed(() => {
   if (isGuardLoading.value) return "...";
@@ -569,17 +744,23 @@ const guardCardIconColor = computed(() => {
 
 const guardTooltip = computed(() => {
   if (guardStatus.value.fixable_count > 0) {
-    return `质量守门发现 ${guardStatus.value.fixable_count} 处可修复问题，点击一键自动修复`;
+    return `质量守门发现 ${guardStatus.value.fixable_count} 处可修复问题，点击查看守门中心`;
   }
-  return "质量守门通过，暂存区符合规范";
+  return "质量守门通过，点击打开守门中心";
 });
 
 async function handleRunGuardFix() {
-  const ok = await runGuardFix("staged");
+  const ok = await runGuardFix(currentGuardScope.value);
   if (ok) {
     showToast(t("guard.toast.fixed") || "✨ 已自动完成代码格式与卫生修复", "success");
     await fetchStatus();
   }
+}
+
+function handleOpenIssueFile(path: string) {
+  const fileName = getFileName(path);
+  openTab({ path, name: fileName });
+  router.push({ name: "explorer" }).catch(() => {});
 }
 
 const isMoreMenuOpen = ref(false);
@@ -812,7 +993,7 @@ async function handleModalConfirm(payload: {
   }
 }
 
-function switchTab(tab: "changes" | "graph") {
+function switchTab(tab: "changes" | "graph" | "guard") {
   currentTab.value = tab;
   router.replace({
     query: {
@@ -1145,7 +1326,7 @@ watch(
 watch(
   () => route.query.tab,
   (tab) => {
-    if (tab === "graph" || tab === "changes") {
+    if (tab === "graph" || tab === "changes" || tab === "guard") {
       currentTab.value = tab;
     }
   }
@@ -1924,5 +2105,362 @@ onBeforeUnmount(() => {
   border-radius: 6px;
   overflow: hidden;
   border: 1px solid var(--card-border);
+}
+
+.clickable-guard-card {
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.clickable-guard-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent-cyan);
+}
+
+.tab-count-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  line-height: 1.2;
+}
+
+.tab-count-pill.pill-error {
+  background: rgba(248, 81, 73, 0.2);
+  color: #f85149;
+}
+
+.tab-count-pill.pill-warning {
+  background: rgba(210, 153, 34, 0.2);
+  color: #d29922;
+}
+
+/* Quality Guard Hub Layout */
+.guard-hub-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+  background: var(--bg-primary);
+  overflow-y: auto;
+}
+
+.guard-hub-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+}
+
+.guard-hub-title-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.guard-badge-large {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 24px;
+}
+
+.guard-badge-large.green {
+  background: rgba(46, 160, 67, 0.15);
+  color: #3fb950;
+  border: 1px solid rgba(46, 160, 67, 0.3);
+}
+
+.guard-badge-large.amber {
+  background: rgba(210, 153, 34, 0.15);
+  color: #d29922;
+  border: 1px solid rgba(210, 153, 34, 0.3);
+}
+
+.guard-badge-large.red {
+  background: rgba(248, 81, 73, 0.15);
+  color: #f85149;
+  border: 1px solid rgba(248, 81, 73, 0.3);
+}
+
+.guard-hub-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.guard-hub-desc {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.guard-hub-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.guard-scope-toggle {
+  display: inline-flex;
+  background: var(--bg-secondary);
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid var(--card-border);
+}
+
+.guard-scope-toggle .scope-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.guard-scope-toggle .scope-btn.active {
+  background: var(--card-bg);
+  color: var(--accent-cyan);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* 3-Phase Pipeline Architecture Grid */
+.guard-pipeline-grid {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pipeline-step-card {
+  flex: 1;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pipeline-arrow {
+  color: var(--text-secondary);
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  font-family: monospace;
+}
+
+.step-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.step-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  min-height: 34px;
+}
+
+.step-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--card-border);
+  padding-top: 8px;
+}
+
+.text-green { color: #3fb950; }
+.text-blue { color: #58a6ff; }
+
+/* Diagnostics Panel */
+.guard-diagnostics-section {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.diagnostics-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.diagnostics-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.diag-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.diag-badge-clean {
+  font-size: 12px;
+  color: #3fb950;
+  font-weight: 500;
+}
+
+.diag-badge-errors {
+  font-size: 12px;
+  color: #f85149;
+  font-weight: 600;
+}
+
+.diag-badge-warnings {
+  font-size: 12px;
+  color: #d29922;
+  font-weight: 600;
+}
+
+.diag-files-count {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.guard-issues-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.issue-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--card-border);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.issue-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.issue-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 240px;
+}
+
+.issue-row.severity-error .codicon-error {
+  color: #f85149;
+}
+
+.issue-row.severity-warning .codicon-warning {
+  color: #d29922;
+}
+
+.issue-file {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.issue-line {
+  color: #58a6ff;
+}
+
+.issue-rule {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+}
+
+.issue-msg {
+  flex: 1;
+  color: var(--text-secondary);
+}
+
+.issue-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.issue-fixable-pill {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(46, 160, 67, 0.15);
+  color: #3fb950;
+  font-weight: 600;
+}
+
+.issue-phase-tag {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.guard-clean-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.guard-clean-state .clean-icon {
+  font-size: 48px;
+  color: #3fb950;
+  margin-bottom: 12px;
+}
+
+.guard-clean-state .clean-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.guard-clean-state .clean-subtitle {
+  margin: 6px 0 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  max-width: 480px;
 }
 </style>
