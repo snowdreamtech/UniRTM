@@ -629,8 +629,7 @@ import { useGit } from "../composables/useGit";
 const router = useRouter();
 const route = useRoute();
 const { getGitStatus, setGraphFilterPath, fetchStatus } = useGit();
-const { onOpenDiff, onRevealFile, setActiveFilePath, onGitStatusChanged } = useWorkspaceBus();
-
+const { onOpenDiff, setActiveFilePath, onGitStatusChanged } = useWorkspaceBus();
 
 const emit = defineEmits<{
   (e: "open-drawer", tab: string): void;
@@ -645,6 +644,7 @@ const {
   startInlineCreate,
   expandPath,
   selectNode,
+  fetchTree,
 } = useFileTree();
 
 const {
@@ -653,9 +653,9 @@ const {
   activeTab,
   hasDirtyTabs,
   openDiffTab,
-  setTabGitStatus,
   switchTab,
   updateContent,
+
   saveTab,
   saveAllTabs,
   closeTab,

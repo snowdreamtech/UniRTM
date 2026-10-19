@@ -1085,4 +1085,11 @@ export const ptBr: TranslationDict = {
   "credential.caps_lock": "Caps Lock On",
   "credential.unlock_btn": "Unlock & Continue (Enter)",
   "credential.validating_btn": "Validating...",
+  "explorer.context_menu.view_history": "View Commit History in Git Graph",
+  "explorer.context_menu.open_diff": "Open Changes (Diff)",
+  "explorer.context_menu.stage_file": "Stage Changes",
+  "explorer.context_menu.unstage_file": "Unstage Changes",
+  "explorer.context_menu.discard_file": "Discard Changes",
+  "explorer.context_menu.discard_confirm": "Are you sure you want to discard all unstaged changes in {name}? This cannot be undone.",
+  "scm.diff.reveal_in_explorer": "Reveal in Explorer",
 };

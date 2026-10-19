@@ -30,7 +30,8 @@
 
 
 ## 阶段 5：全 53 国多语言支持与端到端验证 (i18n & Verification)
-- [ ] 5.1 更新 `frontend/src/i18n/types.ts`、`zh-CN.ts` 与 `en-US.ts`，增加 Reveal、Diff Tab、Git 菜单相关词条
-- [ ] 5.2 自动同步词条到所有 53 种语言文件，确保 `i18n.test.ts` 0 报错
-- [ ] 5.3 运行全量 `npm run test` 与 `npm run build`，确保 100% 成功
-- [ ] 5.4 **执行提交 5**：`feat(i18n): sync multi-language keys and finalize workbench trinity verification`
+- [x] 5.1 更新 `frontend/src/i18n/types.ts`、`zh-CN.ts` 与 `en-US.ts`，增加 Reveal、Diff Tab、Git 菜单相关词条
+- [x] 5.2 自动同步词条到所有 53 种语言文件，确保 `i18n.test.ts` 0 报错
+- [x] 5.3 运行全量 `npm run test` 与 `npm run build`，确保 100% 成功
+- [x] 5.4 **执行提交 5**：`feat(i18n): sync multi-language keys and finalize workbench trinity verification`
+

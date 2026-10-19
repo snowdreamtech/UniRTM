@@ -111,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from "vue";
 import { useFileTree } from "../../composables/useFileTree";
 import FileTreeNode from "./FileTreeNode.vue";
 import FileContextMenu from "./FileContextMenu.vue";
@@ -134,9 +134,9 @@ const {
   inlineAction,
   fetchTree,
   toggleExpand,
-  expandPath,
   revealPath,
   collapseAll,
+
   startInlineCreate,
   cancelInlineAction,
   createFile,

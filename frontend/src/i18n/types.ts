@@ -25,7 +25,15 @@ export interface TranslationDict {
   "drawer.reset_tab_order"?: string;
   "drawer.drag_reorder_tip"?: string;
   "drawer.panel_views"?: string;
+  "explorer.context_menu.view_history"?: string;
+  "explorer.context_menu.open_diff"?: string;
+  "explorer.context_menu.stage_file"?: string;
+  "explorer.context_menu.unstage_file"?: string;
+  "explorer.context_menu.discard_file"?: string;
+  "explorer.context_menu.discard_confirm"?: string;
+  "scm.diff.reveal_in_explorer"?: string;
   "credential.unlock_ssh_title"?: string;
+
   "credential.unlock_gpg_title"?: string;
   "credential.unlock_git_title"?: string;
   "credential.passphrase_label"?: string;

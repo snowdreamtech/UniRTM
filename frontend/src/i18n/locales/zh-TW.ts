@@ -1093,4 +1093,11 @@ export const zhTw: TranslationDict = {
   "credential.caps_lock": "大写锁定已开启 (Caps Lock On)",
   "credential.unlock_btn": "解锁并继续 (Enter)",
   "credential.validating_btn": "验证中...",
+  "explorer.context_menu.view_history": "在 Git Graph 中查看提交历史",
+  "explorer.context_menu.open_diff": "打开差异比对 (Diff)",
+  "explorer.context_menu.stage_file": "暂存更改 (Stage)",
+  "explorer.context_menu.unstage_file": "取消暂存更改 (Unstage)",
+  "explorer.context_menu.discard_file": "放弃更改 (Discard)",
+  "explorer.context_menu.discard_confirm": "确定要放弃对 {name} 的所有未暂存更改吗？此操作无法撤销。",
+  "scm.diff.reveal_in_explorer": "在资源管理器中揭示 (Reveal in Explorer)",
 };
