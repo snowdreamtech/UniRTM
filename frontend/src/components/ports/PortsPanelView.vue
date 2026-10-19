@@ -561,8 +561,8 @@ async function handleContextAction(action: string) {
   flex-direction: column;
   height: 100%;
   width: 100%;
-  background: var(--bg-main, #0b1120);
-  color: var(--text-main, #e2e8f0);
+  background: var(--card-bg, #0b1120);
+  color: var(--text-main, #f8fafc);
   overflow: hidden;
   font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
 }
@@ -574,7 +574,7 @@ async function handleContextAction(action: string) {
   justify-content: space-between;
   padding: 6px 12px;
   border-bottom: 1px solid var(--card-border, #1e293b);
-  background: var(--card-bg, #0f172a);
+  background: var(--card-bg, #0b1120);
   gap: 12px;
   flex-shrink: 0;
 }
@@ -591,20 +591,20 @@ async function handleContextAction(action: string) {
   position: absolute;
   left: 8px;
   font-size: 13px;
-  color: var(--text-muted, #64748b);
+  color: var(--text-muted, #94a3b8);
   pointer-events: none;
 }
 
 .ports-search-input {
   width: 100%;
-  background: var(--input-bg, #1e293b);
+  background: var(--input-bg, #0f172a);
   border: 1px solid var(--card-border, #334155);
   border-radius: 4px;
   color: var(--text-main, #f8fafc);
   font-size: 12px;
   padding: 4px 26px 4px 28px;
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .ports-search-input:focus {
@@ -616,9 +616,12 @@ async function handleContextAction(action: string) {
   right: 6px;
   background: transparent;
   border: none;
-  color: var(--text-muted);
+  color: var(--text-muted, #94a3b8);
   cursor: pointer;
   padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .toolbar-actions {
@@ -661,6 +664,7 @@ async function handleContextAction(action: string) {
   flex: 1;
   overflow-y: auto;
   position: relative;
+  background: var(--card-bg, #0b1120);
 }
 
 .ports-table {
@@ -673,7 +677,7 @@ async function handleContextAction(action: string) {
 .ports-table thead th {
   position: sticky;
   top: 0;
-  background: var(--card-bg, #0f172a);
+  background: var(--header-bg, #0f172a);
   color: var(--text-muted, #94a3b8);
   font-weight: 600;
   padding: 6px 12px;
@@ -693,10 +697,11 @@ async function handleContextAction(action: string) {
   border-bottom: 1px solid var(--card-border, #1e293b);
   transition: background-color 0.1s ease;
   cursor: pointer;
+  background: transparent;
 }
 
 .port-row:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(128, 128, 128, 0.08);
 }
 
 .port-row.active {
@@ -727,8 +732,8 @@ async function handleContextAction(action: string) {
 }
 
 .port-status-dot.dot-active {
-  background: #22c55e;
-  box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
 }
 
 .port-status-dot.dot-inactive {
@@ -761,9 +766,9 @@ async function handleContextAction(action: string) {
 }
 
 .protocol-badge.https {
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
 .origin-pill {
@@ -778,7 +783,7 @@ async function handleContextAction(action: string) {
 
 .origin-pill.compose {
   background: rgba(14, 165, 233, 0.15);
-  color: #38bdf8;
+  color: #0284c7;
   border-color: rgba(14, 165, 233, 0.3);
 }
 
@@ -792,10 +797,10 @@ async function handleContextAction(action: string) {
 }
 
 .inline-edit-input {
-  background: var(--input-bg);
+  background: var(--input-bg, #0f172a);
   border: 1px solid var(--primary, #3b82f6);
   border-radius: 3px;
-  color: var(--text-main);
+  color: var(--text-main, #f8fafc);
   font-size: 11px;
   padding: 1px 6px;
   outline: none;
@@ -813,6 +818,7 @@ async function handleContextAction(action: string) {
   color: #38bdf8;
   text-decoration: none;
   font-size: 12px;
+  font-weight: 500;
 }
 
 .address-link:hover {
@@ -916,14 +922,14 @@ async function handleContextAction(action: string) {
 }
 
 .visibility-toggle-btn.vis-public {
-  color: #22c55e;
+  color: #10b981;
 }
 
 /* More Actions */
 .more-action-btn {
   background: transparent;
   border: none;
-  color: var(--text-muted);
+  color: var(--text-muted, #94a3b8);
   cursor: pointer;
   padding: 3px;
   border-radius: 3px;
@@ -938,14 +944,14 @@ async function handleContextAction(action: string) {
 .table-bottom-bar {
   padding: 8px 12px;
   border-top: 1px solid var(--card-border, #1e293b);
-  background: var(--card-bg, #0f172a);
+  background: var(--card-bg, #0b1120);
 }
 
 .bottom-add-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #0284c7;
+  background: var(--primary, #0284c7);
   color: #fff;
   border: none;
   padding: 5px 12px;
@@ -957,7 +963,7 @@ async function handleContextAction(action: string) {
 }
 
 .bottom-add-btn:hover {
-  background: #0369a1;
+  filter: brightness(1.1);
 }
 
 /* Adding Inline Row */
@@ -967,10 +973,10 @@ async function handleContextAction(action: string) {
 
 .inline-port-input {
   width: 90px;
-  background: var(--input-bg);
+  background: var(--input-bg, #0f172a);
   border: 1px solid var(--primary, #3b82f6);
   border-radius: 3px;
-  color: var(--text-main);
+  color: var(--text-main, #f8fafc);
   font-size: 12px;
   padding: 3px 6px;
   outline: none;
@@ -978,10 +984,10 @@ async function handleContextAction(action: string) {
 
 .inline-label-input {
   width: 130px;
-  background: var(--input-bg);
-  border: 1px solid var(--card-border);
+  background: var(--input-bg, #0f172a);
+  border: 1px solid var(--card-border, #334155);
   border-radius: 3px;
-  color: var(--text-main);
+  color: var(--text-main, #f8fafc);
   font-size: 12px;
   padding: 3px 6px;
   outline: none;
@@ -1003,7 +1009,7 @@ async function handleContextAction(action: string) {
 }
 
 .inline-btn.confirm {
-  color: #22c55e;
+  color: #10b981;
 }
 
 .inline-btn.cancel {
@@ -1018,7 +1024,7 @@ async function handleContextAction(action: string) {
   justify-content: center;
   padding: 48px 24px;
   gap: 8px;
-  color: var(--text-muted);
+  color: var(--text-muted, #94a3b8);
 }
 
 .empty-icon {
@@ -1030,7 +1036,7 @@ async function handleContextAction(action: string) {
 .empty-title {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-main);
+  color: var(--text-main, #f8fafc);
 }
 
 .empty-desc {
@@ -1094,5 +1100,269 @@ async function handleContextAction(action: string) {
   height: 1px;
   background: var(--card-border, #334155);
   margin: 4px 0;
+}
+
+/* ==========================================================================
+   LIGHT THEME POLISH (Aligning with VS Code & UniRTM Light Palette)
+   ========================================================================== */
+:root[data-theme="light"] .ports-panel-container,
+[data-theme="light"] .ports-panel-container {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .ports-toolbar,
+[data-theme="light"] .ports-toolbar {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+:root[data-theme="light"] .ports-search-input,
+[data-theme="light"] .ports-search-input {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .ports-search-input:focus,
+[data-theme="light"] .ports-search-input:focus {
+  border-color: #0284c7;
+}
+
+:root[data-theme="light"] .ports-tool-btn,
+[data-theme="light"] .ports-tool-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+:root[data-theme="light"] .ports-tool-btn:hover,
+[data-theme="light"] .ports-tool-btn:hover {
+  background: #f1f5f9;
+  border-color: #0284c7;
+  color: #0284c7;
+}
+
+:root[data-theme="light"] .ports-tool-btn.primary,
+[data-theme="light"] .ports-tool-btn.primary {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .ports-tool-btn.primary:hover,
+[data-theme="light"] .ports-tool-btn.primary:hover {
+  background: #0369a1;
+}
+
+:root[data-theme="light"] .ports-table-wrapper,
+[data-theme="light"] .ports-table-wrapper {
+  background: #ffffff;
+}
+
+:root[data-theme="light"] .ports-table thead th,
+[data-theme="light"] .ports-table thead th {
+  background: #f8fafc;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+:root[data-theme="light"] .port-row,
+[data-theme="light"] .port-row {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+:root[data-theme="light"] .port-row:hover,
+[data-theme="light"] .port-row:hover {
+  background: rgba(2, 132, 199, 0.04);
+}
+
+:root[data-theme="light"] .port-row.active,
+[data-theme="light"] .port-row.active {
+  background: rgba(2, 132, 199, 0.1);
+}
+
+:root[data-theme="light"] .port-number,
+[data-theme="light"] .port-number {
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .port-mapping-pill,
+[data-theme="light"] .port-mapping-pill {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+:root[data-theme="light"] .origin-pill,
+[data-theme="light"] .origin-pill {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+:root[data-theme="light"] .origin-pill.compose,
+[data-theme="light"] .origin-pill.compose {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #bae6fd;
+}
+
+:root[data-theme="light"] .port-label,
+[data-theme="light"] .port-label {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .inline-edit-input,
+[data-theme="light"] .inline-edit-input {
+  background: #ffffff;
+  border-color: #0284c7;
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .address-link,
+[data-theme="light"] .address-link {
+  color: #0284c7;
+}
+
+:root[data-theme="light"] .address-link:hover,
+[data-theme="light"] .address-link:hover {
+  color: #0369a1;
+}
+
+:root[data-theme="light"] .icon-action-btn,
+[data-theme="light"] .icon-action-btn {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .icon-action-btn:hover,
+[data-theme="light"] .icon-action-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .process-text,
+[data-theme="light"] .process-text {
+  color: #334155;
+}
+
+:root[data-theme="light"] .process-text.is-empty,
+[data-theme="light"] .process-text.is-empty {
+  color: #94a3b8;
+}
+
+:root[data-theme="light"] .probe-banner,
+[data-theme="light"] .probe-banner {
+  color: #7c3aed;
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+}
+
+:root[data-theme="light"] .source-badge,
+[data-theme="light"] .source-badge {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .visibility-toggle-btn,
+[data-theme="light"] .visibility-toggle-btn {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .visibility-toggle-btn:hover,
+[data-theme="light"] .visibility-toggle-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .visibility-toggle-btn.vis-public,
+[data-theme="light"] .visibility-toggle-btn.vis-public {
+  color: #16a34a;
+}
+
+:root[data-theme="light"] .more-action-btn,
+[data-theme="light"] .more-action-btn {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .more-action-btn:hover,
+[data-theme="light"] .more-action-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+:root[data-theme="light"] .table-bottom-bar,
+[data-theme="light"] .table-bottom-bar {
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+}
+
+:root[data-theme="light"] .bottom-add-btn,
+[data-theme="light"] .bottom-add-btn {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .bottom-add-btn:hover,
+[data-theme="light"] .bottom-add-btn:hover {
+  background: #0369a1;
+}
+
+:root[data-theme="light"] .adding-row,
+[data-theme="light"] .adding-row {
+  background: rgba(2, 132, 199, 0.06);
+}
+
+:root[data-theme="light"] .inline-port-input,
+:root[data-theme="light"] .inline-label-input,
+[data-theme="light"] .inline-port-input,
+[data-theme="light"] .inline-label-input {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+:root[data-theme="light"] .inline-port-input:focus,
+:root[data-theme="light"] .inline-label-input:focus,
+[data-theme="light"] .inline-port-input:focus,
+[data-theme="light"] .inline-label-input:focus {
+  border-color: #0284c7;
+}
+
+:root[data-theme="light"] .ports-empty-state,
+[data-theme="light"] .ports-empty-state {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .empty-title,
+[data-theme="light"] .empty-title {
+  color: #0f172a;
+}
+
+:global(:root[data-theme="light"] .ports-context-menu),
+:global([data-theme="light"] .ports-context-menu) {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+}
+
+:global(:root[data-theme="light"] .ports-context-menu .menu-item),
+:global([data-theme="light"] .ports-context-menu .menu-item) {
+  color: #1e293b !important;
+}
+
+:global(:root[data-theme="light"] .ports-context-menu .menu-item:hover),
+:global([data-theme="light"] .ports-context-menu .menu-item:hover) {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+:global(:root[data-theme="light"] .ports-context-menu .menu-item.danger:hover),
+:global([data-theme="light"] .ports-context-menu .menu-item.danger:hover) {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+:global(:root[data-theme="light"] .ports-context-menu .menu-separator),
+:global([data-theme="light"] .ports-context-menu .menu-separator) {
+  background: #e2e8f0 !important;
 }
 </style>

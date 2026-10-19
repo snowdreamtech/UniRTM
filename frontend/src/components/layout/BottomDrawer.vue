@@ -174,7 +174,7 @@
           </div>
         </div>
         <button
-          v-if="currentTab !== 'terminal'"
+          v-if="currentTab === 'output' || currentTab === 'tasks' || currentTab === 'doctor'"
           class="drawer-action-btn"
           :class="{ active: autoScroll }"
           :title="autoScrollTitle"
@@ -361,7 +361,7 @@
 
     <!-- 2. Logs Drawer Body (Output, Tasks, Doctor) -->
     <div
-      v-else
+      v-else-if="currentTab === 'output' || currentTab === 'tasks' || currentTab === 'doctor'"
       class="drawer-body font-mono"
       ref="logContainerRef"
       :style="{ height: `${effectiveBodyHeight}px` }"
@@ -402,9 +402,9 @@
       </div>
     </div>
 
-    <!-- 5. Ports View Body -->
+    <!-- 3. Ports View Body -->
     <div
-      v-if="currentTab === 'ports'"
+      v-else-if="currentTab === 'ports'"
       class="ports-drawer-wrapper"
       :style="{ height: `${effectiveBodyHeight}px` }"
     >
@@ -1978,5 +1978,19 @@ onUnmounted(() => {
 [data-theme="light"] .tab-action-btn:hover {
   color: #0284c7 !important;
   background: rgba(2, 132, 199, 0.12) !important;
+}
+
+/* Ports View Wrapper */
+.ports-drawer-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--card-bg, #070a12);
+}
+
+[data-theme="light"] .ports-drawer-wrapper {
+  background: #ffffff;
 }
 </style>
