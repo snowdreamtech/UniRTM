@@ -1149,4 +1149,8 @@ export const zhCn: TranslationDict = {
   "sidebar.tools_upgradable": "可升级",
   "sidebar.tools_upgradable_hint": "发现更高可用版本，支持一键升级",
   "sidebar.tools_ready": "已就绪",
+  "tools.custom.section_title": "或输入自定义工具与固定版本",
+  "tools.custom.prefix_hint": "选择工具生态或 Provider 前缀",
+  "tools.custom.version_placeholder": "版本号 (如: 1.0.0)",
+  "tools.custom.preview_label": "配置预览:",
 };

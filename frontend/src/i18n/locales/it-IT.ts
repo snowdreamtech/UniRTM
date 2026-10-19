@@ -1136,4 +1136,8 @@ export const itIt: TranslationDict = {
   "sidebar.tools_upgradable": "Upgradable",
   "sidebar.tools_upgradable_hint": "Newer version available, supports one-click upgrade",
   "sidebar.tools_ready": "Ready / Installed",
+  "tools.custom.section_title": "Or enter custom tool and explicit version",
+  "tools.custom.prefix_hint": "Select tool ecosystem or provider prefix",
+  "tools.custom.version_placeholder": "Version (e.g. 1.0.0)",
+  "tools.custom.preview_label": "Config preview:",
 };
