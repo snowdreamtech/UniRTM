@@ -570,9 +570,18 @@
           <div class="diagnostics-bar">
             <div class="diagnostics-summary">
               <span class="diag-title">{{ t('guard.diagnostics.title') || '质量守卫诊断结果' }}</span>
-              <span class="diag-badge-clean" v-if="guardStatus.clean">🟢 {{ t('guard.status.passed') || '质量守卫通过' }}</span>
-              <span class="diag-badge-errors" v-if="guardStatus.errors_count > 0">🔴 {{ guardStatus.errors_count }} 阻断违规</span>
-              <span class="diag-badge-warnings" v-if="guardStatus.warnings_count > 0">🟡 {{ guardStatus.warnings_count }} 待优化项</span>
+              <span class="diag-badge-clean" v-if="guardStatus.clean">
+                <span class="codicon codicon-pass text-green"></span>
+                <span>{{ t('guard.status.passed') || '质量守卫通过' }}</span>
+              </span>
+              <span class="diag-badge-errors" v-if="guardStatus.errors_count > 0">
+                <span class="codicon codicon-error text-red"></span>
+                <span>{{ guardStatus.errors_count }} 阻断违规</span>
+              </span>
+              <span class="diag-badge-warnings" v-if="guardStatus.warnings_count > 0">
+                <span class="codicon codicon-warning text-amber"></span>
+                <span>{{ guardStatus.warnings_count }} 待优化项</span>
+              </span>
             </div>
             <span class="diag-files-count">已扫描 {{ guardStatus.scanned }} 个文件</span>
           </div>
@@ -601,7 +610,7 @@
 
           <!-- Clean State Illustration -->
           <div v-else class="guard-clean-state">
-            <span class="codicon codicon-shield-check clean-icon"></span>
+            <span class="codicon codicon-verified clean-icon"></span>
             <h3 class="clean-title">{{ t('guard.status.passed') || '质量守卫已通过' }}</h3>
             <p class="clean-subtitle">
               当前扫描范围内未发现任何格式违规、代码坏味道或泄密风险，符合提交规范。
@@ -731,9 +740,9 @@ const guardCardValue = computed(() => {
 
 const guardCardIcon = computed(() => {
   if (isGuardLoading.value || isGuardFixing.value) return "codicon-loading codicon-modifier-spin";
-  if (guardStatus.value.errors_count > 0) return "codicon-shield-x";
-  if (guardStatus.value.warnings_count > 0) return "codicon-shield-alert";
-  return "codicon-shield-check";
+  if (guardStatus.value.errors_count > 0) return "codicon-error";
+  if (guardStatus.value.warnings_count > 0) return "codicon-warning";
+  return "codicon-verified";
 });
 
 const guardCardIconColor = computed(() => {
@@ -2419,7 +2428,16 @@ onBeforeUnmount(() => {
   line-height: 1.5;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  vertical-align: middle;
+}
+
+.diag-badge-clean span,
+.diag-badge-errors span,
+.diag-badge-warnings span {
+  display: inline-block;
+  line-height: 1.5;
+  vertical-align: middle;
 }
 
 :root[data-theme="light"] .diag-badge-clean {
@@ -2431,6 +2449,10 @@ onBeforeUnmount(() => {
   color: #f87171;
   font-weight: 600;
   line-height: 1.5;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  vertical-align: middle;
 }
 
 :root[data-theme="light"] .diag-badge-errors {
@@ -2442,6 +2464,10 @@ onBeforeUnmount(() => {
   color: #fbbf24;
   font-weight: 600;
   line-height: 1.5;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  vertical-align: middle;
 }
 
 :root[data-theme="light"] .diag-badge-warnings {

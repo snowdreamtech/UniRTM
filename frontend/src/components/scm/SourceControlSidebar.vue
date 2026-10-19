@@ -128,7 +128,7 @@
 
       <!-- Quality Guard Status Capsule & Actions -->
       <div class="guard-capsule-bar">
-        <div class="guard-status-capsule" :class="guardCapsuleClass" :title="guardTooltip" @click="isGuardDetailsOpen = !isGuardDetailsOpen">
+        <div class="guard-status-capsule" :class="guardCapsuleClass" :title="guardTooltip" @click="handleCapsuleClick">
           <span class="codicon" :class="guardIconClass"></span>
           <span class="guard-capsule-text">{{ guardLabelText }}</span>
           <span v-if="guardIssuesCount > 0" class="guard-count-pill">{{ guardIssuesCount }}</span>
@@ -155,13 +155,13 @@
         </div>
       </div>
 
-      <!-- Expandable Guard Diagnostics Dropdown -->
-      <div v-if="isGuardDetailsOpen" class="guard-diagnostics-drawer">
+      <!-- Expandable Guard Diagnostics Dropdown (Only when there are issues) -->
+      <div v-if="isGuardDetailsOpen && guardStatus.issues.length > 0" class="guard-diagnostics-drawer">
         <div class="guard-drawer-header">
           <span class="guard-drawer-title">{{ t('guard.diagnostics.title') || '质量守卫诊断结果' }}</span>
           <button class="guard-close-btn" @click="isGuardDetailsOpen = false">×</button>
         </div>
-        <div v-if="guardStatus.issues.length > 0" class="guard-issues-list">
+        <div class="guard-issues-list">
           <div
             v-for="(iss, idx) in guardStatus.issues"
             :key="idx"
@@ -176,10 +176,6 @@
             </div>
             <span v-if="iss.fixable" class="guard-fixable-tag">{{ t('guard.fixable') || '可修复' }}</span>
           </div>
-        </div>
-        <div v-else class="guard-issues-empty">
-          <span class="codicon codicon-check"></span>
-          <span>{{ t('guard.status.passed') || '质量守卫通过，未检测到违规项' }}</span>
         </div>
       </div>
 
@@ -539,6 +535,15 @@ const guardLabelText = computed(() => {
 const guardTooltip = computed(() => {
   return `${guardLabelText.value} (${guardStatus.value.scanned} files inspected)`;
 });
+
+function handleCapsuleClick() {
+  if (guardIssuesCount.value === 0) {
+    showToast(t("guard.status.passed") || "质量守卫通过，未检测到违规项", "success");
+    isGuardDetailsOpen.value = false;
+  } else {
+    isGuardDetailsOpen.value = !isGuardDetailsOpen.value;
+  }
+}
 
 async function handleRunGuardFix() {
   const ok = await runGuardFix("staged");
@@ -1452,14 +1457,21 @@ async function handleModalConfirm(payload: {
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
+  min-height: 24px;
   border-radius: 12px;
   font-size: 11px;
-  line-height: 1.4;
+  line-height: 1.5;
   cursor: pointer;
   user-select: none;
   transition: all 0.15s ease;
   border: 1px solid transparent;
   box-sizing: border-box;
+}
+
+.guard-capsule-text {
+  display: inline-block;
+  line-height: 1.5;
+  vertical-align: middle;
 }
 
 .guard-status-capsule.status-pass {
