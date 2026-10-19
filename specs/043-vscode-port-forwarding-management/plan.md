@@ -121,3 +121,25 @@ export interface PortForwardItem {
     - 提取 `PORT=...`, `VITE_PORT=...`, `APP_PORT=...`。
 - **三者综合加权（Multi-Source Fusion）**：
   - 标签生成优先级：`用户自定义标签 > 方式 C 工作区业务名 > 方式 B 探针精确框架 > 方式 A 进程名 > 默认保底`。
+
+### 4.3 VS Code 原生右键菜单与 Simple Browser 简易浏览器设计
+- **右键上下文菜单**：
+  - 采用 Vue `<Teleport to="body">` 浮层挂载，避免受父容器 `overflow: hidden` 与滚动裁剪影响；
+  - 100% 对齐 VS Code 8 项功能架构，包含二级悬浮协议切换子菜单（`✓ HTTP` / `HTTPS`）；
+  - 键盘快捷键监听：`tr` 行增加 `tabindex="0"` 与 `@keydown` 处理器，实现选中行按 `Enter` 触发改标签、`⌘C`/`Ctrl+C` 复制本地地址、`⌘⌫`/`Del` 停止/恢复转发。
+- **Simple Browser 简易浏览器集成**：
+  - 在 IDE 内部创建 Webview 沙箱弹窗，利用 `<iframe>` 加载被转发的本地服务；
+  - 顶部集成轻量控制台（刷新、URL 地址栏只读展示、外部浏览器一键打开、关闭）。
+
+### 4.4 智能访问控制与安全风险分级技术实现方案 (Security & Visibility Governance)
+- **智能风险评估模型 (`assessPortRiskLevel`)**：
+  - **高危端口 (High-Risk)**：基于 `portServiceRecognizer.ts` 中的服务类型。若服务识别为数据库（MySQL 3306、Postgres 5432、Redis 6379、MongoDB 27017、Oracle 1521、Elasticsearch 9200）或系统管理（Docker 2375、SSH 22、Kubernetes 6443），标记为 `riskLevel: 'high'`；
+  - **普通 Web 端口 (Low-Risk)**：前端框架、Node/Python/Go Web API 标记为 `riskLevel: 'standard'`。
+- **状态感知与免打扰记忆 (`unirtm_skip_public_warning`)**：
+  - 使用 `sessionStorage` 或 `localStorage` 维护用户是否勾选了“本会话/以后不再提示”；
+  - 当端口为 `standard` 且用户已勾选不再提示时，点击公开直接放行，零阻断、零弹窗打扰；
+  - 当端口为 `high` 时，**无视免打扰标记，强制拦截并渲染红色醒目警告弹窗**，必须手动二次确认，确保数据库等敏感服务绝不被意外公网暴露。
+- **常态化感知与自动过期收敛**：
+  - 面板顶部常态显示公开端口数量与黄色预警；
+  - 在工作区挂载卸载时，自动对公开端口执行安全合规收敛，避免长期公网裸奔。
+

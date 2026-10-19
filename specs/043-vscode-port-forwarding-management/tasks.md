@@ -64,3 +64,20 @@
 - [x] 8.2 更新全 53 种语言字典，补齐方式 B/C 新增的多语言文本词条
 - [x] 8.3 运行全量 `npm run test`、`npx vue-tsc --noEmit`、`go vet ./...` 与 `go test ./cmd/...`，确保 0 报错
 
+## 阶段 9：VS Code 原生交互与右键菜单 1:1 像素级对齐及深浅色模式重构
+- [x] 9.1 修复底部抽屉 Tab 互斥渲染，彻底根除端口面板与输出日志重叠 Bug
+- [x] 9.2 全面重构 `PortsPanelView.vue` 样式系统，注入完整的深色/浅色模式专属规则，消除所有不协调的死黑底色与对比度问题
+- [x] 9.3 1:1 对齐 VS Code 原生右键菜单架构（在浏览器打开、在编辑器预览、设置标签、复制本地地址、更改本地地址端口、更改端口协议二级子菜单、停止/恢复转发、转发端口）
+- [x] 9.4 增加集成简易浏览器 Simple Browser 内嵌预览 Webview 窗口
+- [x] 9.5 增加更改本地端口映射模态对话框
+- [x] 9.6 支持端口行键盘交互（Enter 改标签、⌘C 复制地址、⌘⌫ 停止/恢复转发）
+
+## 阶段 10：端口访问控制安全防护与智能风控权衡系统（Smart Visibility Security Governance）
+- [ ] 10.1 在 `frontend/src/utils/portServiceRecognizer.ts` 中增加服务风险等级评估器 `assessPortRisk(port, item)`，精确判定 High-Risk 敏感端口（MySQL、Redis、Postgres、MongoDB、Docker、SSH 等）与 Standard-Web 端口
+- [ ] 10.2 在 `PortsPanelView.vue` 中实现智能公开确认对话框：
+  - 普通 Web 端口支持 `[ ] 本次会话不再提醒` 复选框，勾选后持久化到会话存储，后续一键切换零打扰
+  - 数据库等高危端口触发不可跳过的红色醒目强制警告弹窗（“高危服务公开警告”，防止致命越权暴露）
+- [ ] 10.3 在端口面板顶部或状态栏增加常态化公开端口告警指示条（Ambient Warning Banner）与「一键全部重置为私有」快捷安全收敛按钮
+- [ ] 10.4 编写针对风险评估与安全弹窗交互的单元测试
+
+
