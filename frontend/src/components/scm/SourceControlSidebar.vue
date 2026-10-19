@@ -126,6 +126,59 @@
         </label>
       </div>
 
+      <!-- Quality Guard Status Capsule & Actions -->
+      <div v-if="status.staged.length > 0" class="guard-capsule-bar">
+        <div class="guard-status-capsule" :class="guardCapsuleClass" :title="guardTooltip" @click="isGuardDetailsOpen = !isGuardDetailsOpen">
+          <span class="codicon" :class="guardIconClass"></span>
+          <span class="guard-capsule-text">{{ guardLabelText }}</span>
+          <span v-if="guardIssuesCount > 0" class="guard-count-pill">{{ guardIssuesCount }}</span>
+        </div>
+        <div class="guard-actions-group">
+          <button
+            v-if="guardStatus.fixable_count > 0"
+            class="guard-btn-fix"
+            :disabled="isGuardFixing"
+            :title="t('guard.actions.auto_fix') || '一键自动修复'"
+            @click.stop="handleRunGuardFix"
+          >
+            <span class="codicon" :class="isGuardFixing ? 'codicon-loading codicon-modifier-spin' : 'codicon-wand'"></span>
+            <span>{{ t('guard.actions.fix') || '自动修复' }}</span>
+          </button>
+          <button
+            class="guard-btn-refresh"
+            :disabled="isGuardLoading"
+            :title="t('guard.actions.rescan') || '重新质检'"
+            @click.stop="handleRefreshGuard"
+          >
+            <span class="codicon codicon-refresh" :class="{ 'codicon-modifier-spin': isGuardLoading }"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Expandable Guard Diagnostics Dropdown -->
+      <div v-if="isGuardDetailsOpen && guardStatus.issues.length > 0" class="guard-diagnostics-drawer">
+        <div class="guard-drawer-header">
+          <span class="guard-drawer-title">{{ t('guard.diagnostics.title') || '质量守门诊断结果' }}</span>
+          <button class="guard-close-btn" @click="isGuardDetailsOpen = false">×</button>
+        </div>
+        <div class="guard-issues-list">
+          <div
+            v-for="(iss, idx) in guardStatus.issues"
+            :key="idx"
+            class="guard-issue-item"
+            :class="'severity-' + iss.severity"
+            @click="handleOpenFileInEditor(iss.file_path)"
+          >
+            <span class="codicon" :class="iss.severity === 'error' ? 'codicon-error' : 'codicon-warning'"></span>
+            <div class="guard-issue-info">
+              <span class="guard-issue-file font-mono">{{ iss.file_path }}{{ iss.line ? ':' + iss.line : '' }}</span>
+              <span class="guard-issue-msg">{{ iss.message }}</span>
+            </div>
+            <span v-if="iss.fixable" class="guard-fixable-tag">{{ t('guard.fixable') || '可修复' }}</span>
+          </div>
+        </div>
+      </div>
+
       <button
         class="commit-btn"
         :disabled="isCommitting || !commitMessage.trim()"
@@ -319,6 +372,7 @@ import TechIcon from "../common/TechIcon.vue";
 import GitMoreActionsMenu from "./GitMoreActionsMenu.vue";
 import GitFileContextMenu, { type ContextMenuTargetFile, type FileMenuActionType } from "./GitFileContextMenu.vue";
 import GitActionModal, { type GitModalActionType } from "./GitActionModal.vue";
+import { useGuard } from "../../composables/useGuard";
 
 const router = useRouter();
 const route = useRoute();
@@ -442,7 +496,64 @@ async function handleSelectBranch(branchName: string) {
   await checkout(branchName);
 }
 
+const {
+  status: guardStatus,
+  isLoading: isGuardLoading,
+  isFixing: isGuardFixing,
+  fetchStatus: fetchGuardStatus,
+  runFix: runGuardFix,
+} = useGuard();
+
+const isGuardDetailsOpen = ref(false);
+
+const guardIssuesCount = computed(() => {
+  return (guardStatus.value.errors_count || 0) + (guardStatus.value.warnings_count || 0);
+});
+
+const guardCapsuleClass = computed(() => {
+  if (isGuardLoading.value || isGuardFixing.value) return "status-loading";
+  if (guardStatus.value.errors_count > 0) return "status-error";
+  if (guardStatus.value.warnings_count > 0) return "status-warning";
+  return "status-pass";
+});
+
+const guardIconClass = computed(() => {
+  if (isGuardLoading.value || isGuardFixing.value) return "codicon-loading codicon-modifier-spin";
+  if (guardStatus.value.errors_count > 0) return "codicon-error";
+  if (guardStatus.value.warnings_count > 0) return "codicon-warning";
+  return "codicon-check";
+});
+
+const guardLabelText = computed(() => {
+  if (isGuardLoading.value) return t("guard.status.checking") || "守门质检中...";
+  if (isGuardFixing.value) return t("guard.status.fixing") || "正在自动修复...";
+  if (guardStatus.value.errors_count > 0) return t("guard.status.blocked") || "拦截违规";
+  if (guardStatus.value.fixable_count > 0) return `${guardStatus.value.fixable_count} ` + (t("guard.status.fixable") || "处可自愈");
+  return t("guard.status.passed") || "质量守门通过";
+});
+
+const guardTooltip = computed(() => {
+  return `${guardLabelText.value} (${guardStatus.value.scanned} files inspected)`;
+});
+
+async function handleRunGuardFix() {
+  const ok = await runGuardFix("staged");
+  if (ok) {
+    showToast(t("guard.toast.fixed") || "✨ 已自动完成代码格式与卫生修复", "success");
+    await fetchStatus();
+  }
+}
+
+async function handleRefreshGuard() {
+  await fetchGuardStatus("staged");
+}
+
 async function handleCommit() {
+  if (guardStatus.value.errors_count > 0) {
+    isGuardDetailsOpen.value = true;
+    showToast(t("guard.toast.blocked") || "质量守门检测到阻断违规，请先解决或修复后提交", "error");
+    return;
+  }
   await commit(undefined, false, signCommit.value);
 }
 
@@ -1321,5 +1432,189 @@ async function handleModalConfirm(payload: {
 
 .repo-item:hover .repo-item-actions {
   display: flex;
+}
+
+/* Quality Guard Capsule Bar */
+.guard-capsule-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.guard-status-capsule {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.guard-status-capsule.status-pass {
+  background: rgba(46, 160, 67, 0.12);
+  color: #3fb950;
+  border-color: rgba(46, 160, 67, 0.25);
+}
+
+.guard-status-capsule.status-warning {
+  background: rgba(210, 153, 34, 0.12);
+  color: #d29922;
+  border-color: rgba(210, 153, 34, 0.25);
+}
+
+.guard-status-capsule.status-error {
+  background: rgba(248, 81, 73, 0.12);
+  color: #f85149;
+  border-color: rgba(248, 81, 73, 0.25);
+}
+
+.guard-status-capsule.status-loading {
+  background: rgba(255, 255, 255, 0.08);
+  color: #8b949e;
+}
+
+.guard-count-pill {
+  padding: 1px 5px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  background: currentColor;
+  color: #1e1e1e;
+}
+
+.guard-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.guard-btn-fix {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background: #0078d4;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
+.guard-btn-fix:hover:not(:disabled) {
+  background: #026ec1;
+}
+
+.guard-btn-refresh {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  color: #8b949e;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.guard-btn-refresh:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* Guard Diagnostics Drawer */
+.guard-diagnostics-drawer {
+  background: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.guard-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.guard-close-btn {
+  background: transparent;
+  border: none;
+  color: #8b949e;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.guard-issues-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.guard-issue-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.guard-issue-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.guard-issue-item.severity-error {
+  color: #f85149;
+}
+
+.guard-issue-item.severity-warning {
+  color: #d29922;
+}
+
+.guard-issue-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.guard-issue-file {
+  font-size: 10px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.guard-issue-msg {
+  font-size: 11px;
+  color: #8b949e;
+}
+
+.guard-fixable-tag {
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(46, 160, 67, 0.2);
+  color: #3fb950;
 }
 </style>

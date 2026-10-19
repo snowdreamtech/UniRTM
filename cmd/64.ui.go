@@ -1024,6 +1024,11 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/hooks/install", handleInstallHooks)
 	mux.HandleFunc("/api/hooks/run", handleRunHook)
 
+	// Quality Guard & Harness Management APIs
+	mux.HandleFunc("/api/guard/status", handleGuardStatus)
+	mux.HandleFunc("/api/guard/run", handleGuardRun)
+	mux.HandleFunc("/api/guard/rules", handleGuardRules)
+
 	// Version Aliases Management APIs
 	mux.HandleFunc("/api/aliases", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {

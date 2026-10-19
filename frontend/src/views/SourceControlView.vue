@@ -193,11 +193,30 @@
               <span class="stat-label">{{ t('scm.changes.total') }}</span>
             </div>
           </div>
+
+          <div class="stat-card" :title="guardTooltip" @click="handleRunGuardFix">
+            <div class="stat-icon-wrapper" :class="guardCardIconColor">
+              <span class="codicon" :class="guardCardIcon"></span>
+            </div>
+            <div class="stat-details">
+              <span class="stat-value">{{ guardCardValue }}</span>
+              <span class="stat-label">{{ t('guard.title') || '质量守门' }}</span>
+            </div>
+          </div>
         </div>
 
         <!-- Quick Actions Bar -->
         <div class="overview-actions-card">
           <div class="actions-group">
+            <button
+              v-if="guardStatus.fixable_count > 0"
+              class="action-pill warning"
+              :disabled="isGuardFixing"
+              @click="handleRunGuardFix"
+            >
+              <span class="codicon" :class="isGuardFixing ? 'codicon-loading codicon-modifier-spin' : 'codicon-wand'"></span>
+              <span>{{ t('guard.actions.auto_fix') || '一键自动修复' }} ({{ guardStatus.fixable_count }})</span>
+            </button>
             <button
               class="action-pill primary"
               :disabled="status.unstaged.length === 0"
@@ -474,6 +493,7 @@ import { loadMonaco, getLanguageForFile } from "../services/editor/monacoLoader"
 import TechIcon from "../components/common/TechIcon.vue";
 import GitGraphView from "../components/scm/GitGraphView.vue";
 import GitMoreActionsMenu from "../components/scm/GitMoreActionsMenu.vue";
+import { useGuard } from "../composables/useGuard";
 import GitFileContextMenu, { type ContextMenuTargetFile, type FileMenuActionType } from "../components/scm/GitFileContextMenu.vue";
 import GitActionModal, { type GitModalActionType } from "../components/scm/GitActionModal.vue";
 import { useToast } from "../composables/useToast";
@@ -518,6 +538,49 @@ const {
 const currentTab = ref<"changes" | "graph">(
   route.query.tab === "graph" ? "graph" : "changes"
 );
+
+const {
+  status: guardStatus,
+  isLoading: isGuardLoading,
+  isFixing: isGuardFixing,
+  fetchStatus: fetchGuardStatus,
+  runFix: runGuardFix,
+} = useGuard();
+
+const guardCardValue = computed(() => {
+  if (isGuardLoading.value) return "...";
+  if (guardStatus.value.errors_count > 0) return `${guardStatus.value.errors_count} 阻断`;
+  if (guardStatus.value.fixable_count > 0) return `${guardStatus.value.fixable_count} 可修复`;
+  return "已就绪";
+});
+
+const guardCardIcon = computed(() => {
+  if (isGuardLoading.value || isGuardFixing.value) return "codicon-loading codicon-modifier-spin";
+  if (guardStatus.value.errors_count > 0) return "codicon-shield-x";
+  if (guardStatus.value.warnings_count > 0) return "codicon-shield-alert";
+  return "codicon-shield-check";
+});
+
+const guardCardIconColor = computed(() => {
+  if (guardStatus.value.errors_count > 0) return "red";
+  if (guardStatus.value.warnings_count > 0) return "amber";
+  return "green";
+});
+
+const guardTooltip = computed(() => {
+  if (guardStatus.value.fixable_count > 0) {
+    return `质量守门发现 ${guardStatus.value.fixable_count} 处可修复问题，点击一键自动修复`;
+  }
+  return "质量守门通过，暂存区符合规范";
+});
+
+async function handleRunGuardFix() {
+  const ok = await runGuardFix("staged");
+  if (ok) {
+    showToast(t("guard.toast.fixed") || "✨ 已自动完成代码格式与卫生修复", "success");
+    await fetchStatus();
+  }
+}
 
 const isMoreMenuOpen = ref(false);
 const moreMenuPos = ref({ x: 0, y: 0 });
@@ -1061,6 +1124,7 @@ function openDiff(path: string, staged: boolean) {
 function handleManualRefresh() {
   fetchStatus().catch(() => {});
   fetchLog().catch(() => {});
+  fetchGuardStatus("staged").catch(() => {});
 }
 
 watch(
@@ -1090,6 +1154,7 @@ watch(
 onMounted(() => {
   fetchStatus().catch(() => {});
   fetchLog().catch(() => {});
+  fetchGuardStatus("staged").catch(() => {});
 });
 
 onBeforeUnmount(() => {

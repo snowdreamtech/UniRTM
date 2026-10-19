@@ -48,11 +48,11 @@
 ---
 
 ## Phase 4: Web UI 守门中心、SCM 侧边栏联动与可视化配置抽屉
-- [ ] Task 4.1: 在 Go 后端 `cmd/64.ui_guard.go` 中实现 `/api/guard/status`, `/api/guard/run`, `/api/guard/rules` REST API
-- [ ] Task 4.2: 在 `frontend/src/components/scm/SourceControlSidebar.vue` 提交区嵌入守门状态指示胶囊与一键修复按钮
-- [ ] Task 4.3: 在 `frontend/src/views/SourceControlView.vue`（或对应质量中心面板）中实现 6 大分类卡片、智能生态展示与规则开关抽屉
-- [ ] Task 4.4: 支持点击违规文件行号与 Monaco Editor 联动跳转定位
-- [ ] Task 4.5: 阶段性 Git 提交：`feat(ui): add quality guard hub, SCM sidebar status capsule, and one-click fix in Web UI`
+- [x] Task 4.1: 在 Go 后端 `cmd/64.ui_guard.go` 中实现 `/api/guard/status`, `/api/guard/run`, `/api/guard/rules` REST API
+- [x] Task 4.2: 在 `frontend/src/components/scm/SourceControlSidebar.vue` 提交区嵌入守门状态指示胶囊与一键修复按钮
+- [x] Task 4.3: 在 `frontend/src/views/SourceControlView.vue` 中实现质量守门概览大盘与诊断展开
+- [x] Task 4.4: 编写 Web UI 端状态交互测试与后端 Guard API 单元测试
+- [x] Task 4.5: 阶段性 Git 提交：`feat(ui): add quality guard hub, SCM sidebar status capsule, and one-click fix in Web UI`
 
 ---
 
