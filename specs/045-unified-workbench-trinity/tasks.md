@@ -23,10 +23,11 @@
 
 
 ## 阶段 4：文件管理器右键 Git 上下文动作融合 (Context Menu Cross-Pollination)
-- [ ] 4.1 在 `frontend/src/components/explorer/FileContextMenu.vue` 中动态根据当前选中项的 Git 状态注入 Git 操作组（暂存/取消暂存/放弃更改/对比差异）
-- [ ] 4.2 联动 `useGit`，操作完成后触发响应式状态总线通知，使 Explorer 树徽标与 SCM 变更列表即刻同步刷新
-- [ ] 4.3 编写测试验证文件上下文菜单的 Git 行为派发
-- [ ] 4.4 **执行提交 4**：`feat(explorer): integrate git actions into file context menu`
+- [x] 4.1 在 `frontend/src/components/explorer/FileContextMenu.vue` 中动态根据当前选中项的 Git 状态注入 Git 操作组（暂存/取消暂存/放弃更改/对比差异）
+- [x] 4.2 联动 `useGit`，操作完成后触发响应式状态总线通知，使 Explorer 树徽标与 SCM 变更列表即刻同步刷新
+- [x] 4.3 编写测试验证文件上下文菜单的 Git 行为派发
+- [x] 4.4 **执行提交 4**：`feat(explorer): integrate git actions into file context menu`
+
 
 ## 阶段 5：全 53 国多语言支持与端到端验证 (i18n & Verification)
 - [ ] 5.1 更新 `frontend/src/i18n/types.ts`、`zh-CN.ts` 与 `en-US.ts`，增加 Reveal、Diff Tab、Git 菜单相关词条

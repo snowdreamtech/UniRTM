@@ -61,10 +61,32 @@
       <span class="menu-icon codicon codicon-git-commit"></span>
       <span class="menu-label">在 Git Graph 中查看提交历史</span>
     </div>
-    <div v-if="hasGitChanges" class="menu-item" @click="handleOpenDiff">
-      <span class="menu-icon codicon codicon-diff"></span>
-      <span class="menu-label">打开差异比对 (Diff)</span>
-    </div>
+
+    <!-- Git Changes Group -->
+    <template v-if="gitStateInfo.hasGitChanges">
+      <div class="menu-separator"></div>
+
+      <div class="menu-item" @click="handleOpenDiff">
+        <span class="menu-icon codicon codicon-diff"></span>
+        <span class="menu-label">打开差异比对 (Diff)</span>
+      </div>
+
+      <div v-if="gitStateInfo.isStaged" class="menu-item" @click="handleUnstageFile">
+        <span class="menu-icon codicon codicon-remove"></span>
+        <span class="menu-label">取消暂存更改 (Unstage)</span>
+      </div>
+
+      <div v-if="gitStateInfo.isUnstaged" class="menu-item" @click="handleStageFile">
+        <span class="menu-icon codicon codicon-add"></span>
+        <span class="menu-label">暂存更改 (Stage)</span>
+      </div>
+
+      <div v-if="gitStateInfo.isUnstaged" class="menu-item danger" @click="handleDiscardFile">
+        <span class="menu-icon codicon codicon-discard"></span>
+        <span class="menu-label">放弃更改 (Discard)</span>
+      </div>
+    </template>
+
   </div>
 </template>
 
@@ -73,9 +95,19 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useFileTree } from "../../composables/useFileTree";
 import { useGit } from "../../composables/useGit";
+import { useWorkspaceBus } from "../../composables/useWorkspaceBus";
 
 const router = useRouter();
-const { getGitStatus, setGraphFilterPath } = useGit();
+const {
+  status,
+  getGitStatus,
+  setGraphFilterPath,
+  stage,
+  unstage,
+  discard,
+  fetchDiff,
+} = useGit();
+const { openDiff: openWorkspaceDiff, notifyGitStatusChanged } = useWorkspaceBus();
 
 const emit = defineEmits<{
   (e: "open-terminal", dirPath: string): void;
@@ -91,10 +123,20 @@ const {
   copyFileName,
 } = useFileTree();
 
-const hasGitChanges = computed(() => {
+const gitStateInfo = computed(() => {
   const node = contextMenu.value.node;
-  if (!node || node.is_dir) return false;
-  return !!getGitStatus(node.path);
+  if (!node || node.is_dir) {
+    return { hasGitChanges: false, isStaged: false, isUnstaged: false };
+  }
+  const isStaged = status.value.staged.some((item) => item.path === node.path);
+  const isUnstaged = status.value.unstaged.some((item) => item.path === node.path);
+  const quickStatus = getGitStatus(node.path);
+
+  return {
+    hasGitChanges: isStaged || isUnstaged || !!quickStatus,
+    isStaged,
+    isUnstaged: isUnstaged || (!isStaged && !!quickStatus),
+  };
 });
 
 function handleViewGitHistory() {
@@ -111,18 +153,48 @@ function handleViewGitHistory() {
   });
 }
 
-function handleOpenDiff() {
+async function handleOpenDiff() {
   const node = contextMenu.value.node;
   closeContextMenu();
   if (!node) return;
-  router.push({
-    name: "scm",
-    query: {
-      path: node.path,
-      staged: "false",
-    },
+
+  const isStaged = gitStateInfo.value.isStaged;
+  const diff = await fetchDiff(node.path, isStaged);
+
+  openWorkspaceDiff({
+    path: node.path,
+    originalContent: diff?.original || "",
+    modifiedContent: diff?.modified || "",
+    isStaged,
   });
 }
+
+async function handleStageFile() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (!node) return;
+  await stage([node.path]);
+  notifyGitStatusChanged();
+}
+
+async function handleUnstageFile() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (!node) return;
+  await unstage([node.path]);
+  notifyGitStatusChanged();
+}
+
+async function handleDiscardFile() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (!node) return;
+  if (confirm(`确定要放弃对 "${node.name}" 的所有未暂存更改吗？`)) {
+    await discard([node.path]);
+    notifyGitStatusChanged();
+  }
+}
+
 
 const menuRef = ref<HTMLElement | null>(null);
 
