@@ -201,5 +201,58 @@ describe("useEditorTabs", () => {
     closeAllTabs(true);
     expect(tabs.value.length).toBe(0);
   });
+
+  it("opens and switches diff tabs correctly", () => {
+    const { tabs, activeTabId, activeTab, openDiffTab } = useEditorTabs();
+
+    openDiffTab({
+      path: "cmd/main.go",
+      originalContent: "package main\n\n// old",
+      modifiedContent: "package main\n\n// new",
+      isStaged: false,
+    });
+
+    expect(tabs.value.length).toBe(1);
+    expect(activeTabId.value).toBe("diff:working:cmd/main.go");
+    expect(activeTab.value?.isDiff).toBe(true);
+    expect(activeTab.value?.name).toContain("Working Tree");
+    expect(activeTab.value?.diffMeta?.modifiedContent).toBe("package main\n\n// new");
+
+    // Opening again with same path switches to existing tab
+    openDiffTab({
+      path: "cmd/main.go",
+      originalContent: "package main\n\n// old 2",
+      modifiedContent: "package main\n\n// new 2",
+      isStaged: false,
+    });
+    expect(tabs.value.length).toBe(1);
+    expect(activeTab.value?.diffMeta?.modifiedContent).toBe("package main\n\n// new 2");
+
+    // Opening staged diff creates a separate staged diff tab
+    openDiffTab({
+      path: "cmd/main.go",
+      originalContent: "package main",
+      modifiedContent: "package main\n// staged",
+      isStaged: true,
+    });
+    expect(tabs.value.length).toBe(2);
+    expect(activeTabId.value).toBe("diff:staged:cmd/main.go");
+  });
+
+  it("sets tab git status correctly on matching normal tabs", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ content: "test content" }),
+    } as any);
+
+    const { tabs, openTab, setTabGitStatus } = useEditorTabs();
+    await openTab({ path: "foo.ts", name: "foo.ts" });
+
+    expect(tabs.value[0].gitStatus).toBeUndefined();
+
+    setTabGitStatus("foo.ts", "M");
+    expect(tabs.value[0].gitStatus).toBe("M");
+  });
 });
+
 

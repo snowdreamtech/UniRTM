@@ -1,11 +1,12 @@
 # 任务清单：文件管理器、编辑器与源代码管理三位一体协同系统 (Tasks)
 
 ## 阶段 1：统一工作区总线与 Diff 标签页模型 (Core Composable & Model)
-- [ ] 1.1 在 `frontend/src/composables/useEditorTabs.ts` 中增强 `EditorTab` 模型，支持 `isDiff`、`diffOriginalPath`、`diffOriginalContent`、`diffModifiedContent` 等属性
-- [ ] 1.2 在 `useEditorTabs.ts` 中实现 `openDiffTab(fileDiff: DiffTabOptions)` 与关闭/定位逻辑
-- [ ] 1.3 创建 `frontend/src/composables/useWorkspaceBus.ts` 轻量响应式协同总线（支持 `revealInExplorer`、`openInEditor`、`activeFileChanged` 等）
-- [ ] 1.4 编写 `frontend/src/composables/useWorkspaceBus.test.ts` 与 `useEditorTabs.test.ts` 扩展测试，确保用例 100% 通过
-- [ ] 1.5 **执行提交 1**：`feat(workbench): add workspace bus and diff tab support to useEditorTabs`
+- [x] 1.1 在 `frontend/src/composables/useEditorTabs.ts` 中增强 `EditorTab` 模型，支持 `isDiff`、`diffOriginalPath`、`diffOriginalContent`、`diffModifiedContent` 等属性
+- [x] 1.2 在 `useEditorTabs.ts` 中实现 `openDiffTab(fileDiff: DiffTabOptions)` 与关闭/定位逻辑
+- [x] 1.3 创建 `frontend/src/composables/useWorkspaceBus.ts` 轻量响应式协同总线（支持 `revealInExplorer`、`openInEditor`、`activeFileChanged` 等）
+- [x] 1.4 编写 `frontend/src/composables/useWorkspaceBus.test.ts` 与 `useEditorTabs.test.ts` 扩展测试，确保用例 100% 通过
+- [x] 1.5 **执行提交 1**：`feat(workbench): add workspace bus and diff tab support to useEditorTabs`
+
 
 ## 阶段 2：编辑器 Tab 视觉增强与 Diff 标签页渲染 (Editor Tab & Diff View)
 - [ ] 2.1 在 `frontend/src/views/ExplorerView.vue` 与 `EditorTabs.vue` 中支持 Diff 模式的 Monaco 差异编辑器渲染（复用现有 diff 引擎）

@@ -5,8 +5,28 @@ import { ref, computed } from "vue";
 import { getLanguageForFile } from "../services/editor/monacoLoader";
 import { useToast } from "./useToast";
 
+export interface DiffTabMeta {
+  originalPath?: string;
+  originalContent: string;
+  modifiedPath: string;
+  modifiedContent: string;
+  isStaged?: boolean;
+  commitHash?: string;
+  parentHash?: string;
+}
+
+export interface OpenDiffOptions {
+  path: string;
+  name?: string;
+  originalContent: string;
+  modifiedContent: string;
+  isStaged?: boolean;
+  commitHash?: string;
+  parentHash?: string;
+}
+
 export interface EditorTab {
-  id: string; // File relative path
+  id: string; // File relative path or "diff:..."
   path: string;
   name: string;
   language: string;
@@ -18,7 +38,11 @@ export interface EditorTab {
   size?: number;
   binaryReason?: "too_large" | "binary" | "unsupported";
   isPinned?: boolean;
+  isDiff?: boolean;
+  diffMeta?: DiffTabMeta;
+  gitStatus?: string;
 }
+
 
 export const KNOWN_BINARY_EXTENSIONS = new Set([
   "exe", "dll", "so", "dylib", "bin", "elf", "wasm",
@@ -248,12 +272,76 @@ export function useEditorTabs() {
     }
   }
 
+  function openDiffTab(options: OpenDiffOptions): void {
+    const diffId = options.commitHash
+      ? `diff:commit:${options.commitHash.slice(0, 7)}:${options.path}`
+      : options.isStaged
+      ? `diff:staged:${options.path}`
+      : `diff:working:${options.path}`;
+
+    const existing = tabs.value.find((t) => t.id === diffId);
+    if (existing) {
+      if (existing.diffMeta) {
+        existing.diffMeta.originalContent = options.originalContent;
+        existing.diffMeta.modifiedContent = options.modifiedContent;
+      }
+      activeTabId.value = existing.id;
+      return;
+    }
+
+    const fileName = options.path.split("/").pop() || options.path;
+    const displayName = options.name
+      ? options.name
+      : options.commitHash
+      ? `${fileName} (${options.commitHash.slice(0, 7)})`
+      : options.isStaged
+      ? `${fileName} (Staged)`
+      : `${fileName} (Working Tree)`;
+
+    const language = getLanguageForFile(fileName);
+
+    const diffTab: EditorTab = {
+      id: diffId,
+      path: options.path,
+      name: displayName,
+      language,
+      content: options.modifiedContent,
+      originalContent: options.originalContent,
+      isDirty: false,
+      isLoading: false,
+      isDiff: true,
+      diffMeta: {
+        originalPath: options.path,
+        originalContent: options.originalContent,
+        modifiedPath: options.path,
+        modifiedContent: options.modifiedContent,
+        isStaged: options.isStaged,
+        commitHash: options.commitHash,
+        parentHash: options.parentHash,
+      },
+      gitStatus: options.isStaged ? "S" : "M",
+    };
+
+    tabs.value.push(diffTab);
+    activeTabId.value = diffTab.id;
+  }
+
+  function setTabGitStatus(path: string, status: string): void {
+    tabs.value.forEach((t) => {
+      if (t.path === path && !t.isDiff) {
+        t.gitStatus = status;
+      }
+    });
+  }
+
   return {
     tabs,
     activeTabId,
     activeTab,
     hasDirtyTabs,
     openTab,
+    openDiffTab,
+    setTabGitStatus,
     switchTab,
     updateContent,
     saveTab,
@@ -266,3 +354,4 @@ export function useEditorTabs() {
     togglePinTab,
   };
 }
+
