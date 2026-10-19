@@ -65,24 +65,115 @@
         <div class="nav-group-title">
           {{ activeScope === 'user' ? '用户工具' : (t("sidebar.group_tools") || "项目工具") }}
         </div>
-        <button
-          v-for="tool in filteredToolItems"
-          :key="tool.name"
-          class="sidebar-item"
-          :class="{ active: activeSubItem === tool.name || activeSubItem === tool.id }"
-          @click="handleSubItemClick(tool.id || tool.name)"
-        >
-          <span class="item-icon"><TechIcon :id="tool.id || tool.name" :size="20" /></span>
-          <div class="item-dual">
-            <span class="item-label">{{ tool.name }}</span>
-            <span class="item-sub">{{ tool.version }}</span>
+
+        <!-- 1. ⚠️ 待安装 (N)：仅当 N > 0 时显示在最顶部，默认展开，琥珀色警示 -->
+        <div v-if="missingTools.length > 0" class="tools-accordion-group group-missing">
+          <div
+            class="accordion-header missing-header"
+            :class="{ collapsed: !isMissingExpanded }"
+            @click="isMissingExpanded = !isMissingExpanded"
+            :title="t('sidebar.tools_missing_hint') || '工作区已配置但尚未在本地安装的工具'"
+          >
+            <div class="accordion-header-left">
+              <span class="codicon twistie" :class="isMissingExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
+              <span class="accordion-status-icon warning">⚠️</span>
+              <span class="accordion-title">{{ t("sidebar.tools_missing") || "待安装" }}</span>
+            </div>
+            <span class="accordion-count badge-warning">{{ missingTools.length }}</span>
           </div>
-          <span
-            v-if="hasUpdate(tool.id || tool.name)"
-            class="status-indicator-dot update"
-            title="发现新版本，可升级"
-          >●</span>
-        </button>
+
+          <div v-show="isMissingExpanded" class="accordion-body">
+            <button
+              v-for="tool in missingTools"
+              :key="tool.name"
+              class="sidebar-item item-missing"
+              :class="{ active: activeSubItem === tool.name || activeSubItem === tool.id }"
+              @click="handleSubItemClick(tool.id || tool.name)"
+            >
+              <span class="item-icon"><TechIcon :id="tool.id || tool.name" :size="20" /></span>
+              <div class="item-dual">
+                <span class="item-label">{{ tool.name }}</span>
+                <span class="item-sub text-warning">{{ tool.version }}</span>
+              </div>
+              <span class="status-indicator-badge warning" :title="t('tools.status.missing') || '待安装'">
+                <span class="codicon codicon-warning"></span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. 🟢 可升级 (N)：仅当 N > 0 时展示，默认展开，绿色升级小圆点 -->
+        <div v-if="upgradableTools.length > 0" class="tools-accordion-group group-upgradable">
+          <div
+            class="accordion-header upgradable-header"
+            :class="{ collapsed: !isUpgradableExpanded }"
+            @click="isUpgradableExpanded = !isUpgradableExpanded"
+            :title="t('sidebar.tools_upgradable_hint') || '发现更高可用版本，支持一键升级'"
+          >
+            <div class="accordion-header-left">
+              <span class="codicon twistie" :class="isUpgradableExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
+              <span class="accordion-status-dot update">●</span>
+              <span class="accordion-title">{{ t("sidebar.tools_upgradable") || "可升级" }}</span>
+            </div>
+            <span class="accordion-count badge-success">{{ upgradableTools.length }}</span>
+          </div>
+
+          <div v-show="isUpgradableExpanded" class="accordion-body">
+            <button
+              v-for="tool in upgradableTools"
+              :key="tool.name"
+              class="sidebar-item item-upgradable"
+              :class="{ active: activeSubItem === tool.name || activeSubItem === tool.id }"
+              @click="handleSubItemClick(tool.id || tool.name)"
+            >
+              <span class="item-icon"><TechIcon :id="tool.id || tool.name" :size="20" /></span>
+              <div class="item-dual">
+                <span class="item-label">{{ tool.name }}</span>
+                <span class="item-sub">{{ tool.version }}</span>
+              </div>
+              <span
+                class="status-indicator-dot update"
+                :title="tool.upgradableVersion ? `可升级至 v${tool.upgradableVersion}` : (t('tools.actions.upgrade') || '可升级')"
+              >●</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. 已就绪 / 已安装 (N)：所有正常就绪的工具，支持折叠/展开 -->
+        <div class="tools-accordion-group group-ready">
+          <div
+            class="accordion-header ready-header"
+            :class="{ collapsed: !isReadyExpanded }"
+            @click="isReadyExpanded = !isReadyExpanded"
+          >
+            <div class="accordion-header-left">
+              <span class="codicon twistie" :class="isReadyExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
+              <span class="accordion-title">{{ t("sidebar.tools_ready") || "已就绪" }}</span>
+            </div>
+            <span class="accordion-count badge-neutral">{{ readyTools.length }}</span>
+          </div>
+
+          <div v-show="isReadyExpanded" class="accordion-body">
+            <button
+              v-for="tool in readyTools"
+              :key="tool.name"
+              class="sidebar-item"
+              :class="{ active: activeSubItem === tool.name || activeSubItem === tool.id }"
+              @click="handleSubItemClick(tool.id || tool.name)"
+            >
+              <span class="item-icon"><TechIcon :id="tool.id || tool.name" :size="20" /></span>
+              <div class="item-dual">
+                <span class="item-label">{{ tool.name }}</span>
+                <span class="item-sub">{{ tool.version }}</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Empty State when searching -->
+        <div v-if="allFilteredTools.length === 0" class="sidebar-empty-state">
+          <span class="empty-text">{{ t("common.no_results") || "未找到匹配工具" }}</span>
+        </div>
       </template>
 
       <!-- TASKS Navigation Items -->
@@ -225,6 +316,7 @@ import SourceControlSidebar from "../scm/SourceControlSidebar.vue";
 import { useFileTree } from "../../composables/useFileTree";
 import { useToolUpdates } from "../../composables/useToolUpdates";
 import { useToolScope } from "../../composables/useToolScope";
+import { categorizeTools } from "../../utils/toolStatus";
 
 const SIDEBAR_WIDTH_KEY = "unirtm_sidebar_width";
 const DEFAULT_SIDEBAR_WIDTH = 230;
@@ -294,7 +386,7 @@ function handlePointerDown(e: PointerEvent) {
   window.addEventListener("pointercancel", onPointerUp);
 }
 
-const { hasUpdate, syncFromToolsList } = useToolUpdates();
+const { syncFromToolsList, updateResults } = useToolUpdates();
 const { activeScope } = useToolScope();
 
 const props = defineProps<{
@@ -382,46 +474,29 @@ const filteredDashboardItems = computed(() => {
 
 
 // Tools items (Synchronized with active toolchains and runtimes by Scope)
+const isMissingExpanded = ref(true);
+const isUpgradableExpanded = ref(true);
+const isReadyExpanded = ref(true);
+
 const rawTools = ref<any[]>([
-  { id: "node", name: "Node.js", active_version: "26.8.1", global_version: "26.8.1" },
-  { id: "go", name: "Go", active_version: "1.27.2", global_version: "" },
-  { id: "python", name: "Python", active_version: "3.14.7", global_version: "" },
+  { id: "node", name: "Node.js", active_version: "26.8.1", global_version: "26.8.1", installed_versions: ["26.8.1"] },
+  { id: "go", name: "Go", active_version: "1.27.2", global_version: "", installed_versions: ["1.27.2"] },
+  { id: "python", name: "Python", active_version: "3.14.7", global_version: "", installed_versions: ["3.14.7"] },
 ]);
 
-const toolItems = computed(() => {
-  const isUser = activeScope.value === "user";
-  const items: any[] = [];
-  for (const rt of rawTools.value) {
-    if (isUser) {
-      if (rt.global_version && String(rt.global_version).trim()) {
-        items.push({
-          id: rt.id,
-          name: rt.name,
-          icon: rt.id,
-          version: rt.global_version,
-          status: "success",
-        });
-      }
-    } else {
-      if ((rt.active_version && String(rt.active_version).trim()) || rt.is_legacy) {
-        items.push({
-          id: rt.id,
-          name: rt.name,
-          icon: rt.id,
-          version: rt.active_version || rt.global_version,
-          status: "success",
-        });
-      }
-    }
-  }
-  return items;
+const categorizedTools = computed(() => {
+  return categorizeTools(
+    rawTools.value,
+    activeScope.value as "user" | "workspace",
+    updateResults.value,
+    searchQuery.value
+  );
 });
 
-const filteredToolItems = computed(() => {
-  if (!searchQuery.value) return toolItems.value;
-  const q = searchQuery.value.toLowerCase().trim();
-  return toolItems.value.filter((t) => t.name.toLowerCase().includes(q) || t.id.toLowerCase().includes(q));
-});
+const missingTools = computed(() => categorizedTools.value.missing);
+const upgradableTools = computed(() => categorizedTools.value.upgradable);
+const readyTools = computed(() => categorizedTools.value.ready);
+const allFilteredTools = computed(() => categorizedTools.value.allFiltered);
 
 // Tasks items dynamically synchronized with .unirtm.toml
 interface SidebarTaskItem {
@@ -772,5 +847,114 @@ onMounted(async () => {
   font-size: 0.75rem;
   font-weight: 700;
   color: var(--success);
+}
+
+/* Tools Accordion Groups */
+.tools-accordion-group {
+  margin-bottom: 6px;
+}
+
+.accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.accordion-header:hover {
+  background: var(--input-bg);
+  color: var(--text-main);
+}
+
+.accordion-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.accordion-header .twistie {
+  font-size: 10px;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+  width: 14px;
+  text-align: center;
+}
+
+.accordion-status-icon.warning {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.accordion-status-dot.update {
+  font-size: 10px;
+  color: #22c55e;
+  line-height: 1;
+}
+
+.accordion-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accordion-count {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  line-height: 1.2;
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.18);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.badge-success {
+  background: rgba(34, 197, 94, 0.18);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.badge-neutral {
+  background: var(--input-bg);
+  color: var(--text-muted);
+  border: 1px solid var(--card-border);
+}
+
+.accordion-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.status-indicator-badge.warning {
+  display: inline-flex;
+  align-items: center;
+  color: #f59e0b;
+  font-size: 13px;
+}
+
+.text-warning {
+  color: #f59e0b !important;
+}
+
+.sidebar-empty-state {
+  padding: 16px 12px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 </style>
