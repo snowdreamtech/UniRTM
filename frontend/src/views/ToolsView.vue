@@ -244,16 +244,6 @@
         <!-- Card Actions: Primary [切换] [安装] + More Menu [···] (锁定, 删除) -->
         <div class="runtime-card-footer">
           <button
-            v-if="getToolStatus(rt).state === 'missing'"
-            class="card-action-btn action-install is-missing-btn"
-            :id="'btn-install-missing-' + rt.id"
-            @click.stop="installRemoteVersion(rt.id, getToolStatus(rt).configuredVersion)"
-            :title="t('runtimes.action_install_missing') || '立即安装已配置版本'"
-          >
-            {{ t("runtimes.action_install") || "安装" }}
-          </button>
-          <button
-            v-else
             class="card-action-btn action-switch"
             :id="'btn-switch-' + rt.id"
             @click.stop="openSwitchVersionModal(rt)"
@@ -2515,12 +2505,6 @@ onBeforeUnmount(() => {
   font-size: 0.76rem;
 }
 
-.action-missing-install,
-.is-missing-btn {
-  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
-  color: #ffffff !important;
-  border-color: #d97706 !important;
-}
 
 .runtime-version-badge.is-muted {
   background: rgba(148, 163, 184, 0.12);
