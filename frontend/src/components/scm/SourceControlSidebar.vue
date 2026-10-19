@@ -1,5 +1,51 @@
 <template>
   <div class="scm-sidebar-container" id="scm-sidebar">
+    <!-- 0. Repositories Section (Multi-repository) -->
+    <div v-if="repositories.length > 0" class="scm-changes-group scm-repositories-group">
+      <div class="group-header" @click="isReposExpanded = !isReposExpanded">
+        <div class="group-left">
+          <span class="codicon twistie" :class="isReposExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
+          <span class="group-title">{{ t('scm.repositories') || '存储库' }}</span>
+          <span class="group-count">{{ repositories.length }}</span>
+        </div>
+        <div class="group-actions" @click.stop>
+          <button class="group-btn" :title="t('scm.actions.refresh')" @click="handleRefreshRepos">
+            <span class="codicon codicon-refresh" :class="{ 'codicon-modifier-spin': isLoadingRepositories }"></span>
+          </button>
+        </div>
+      </div>
+
+      <div v-show="isReposExpanded" class="group-items-list repo-items-list">
+        <div
+          v-for="repo in repositories"
+          :key="repo.id || repo.rootPath"
+          class="repo-item"
+          :class="{ active: activeRepo?.id === repo.id || activeRepo?.rootPath === repo.rootPath }"
+          @click="handleSelectRepo(repo)"
+          :title="`${repo.name} (${repo.branch})${repo.rootPath ? ' - ' + repo.rootPath : ''}`"
+        >
+          <span class="codicon codicon-repo repo-icon"></span>
+          <span class="repo-name">{{ repo.name }}</span>
+          <span class="repo-branch-pill">
+            <span class="repo-branch-name">{{ repo.branch }}{{ repo.isDirty ? '*' : '' }}</span>
+            <span v-if="repo.behind > 0 || repo.ahead > 0" class="repo-sync-pill">
+              <span v-if="repo.ahead > 0">↑{{ repo.ahead }}</span>
+              <span v-if="repo.behind > 0">↓{{ repo.behind }}</span>
+            </span>
+          </span>
+          <div class="repo-item-actions" @click.stop>
+            <button
+              class="item-action-btn"
+              :title="t('scm.actions.more')"
+              @click="openRepoActions($event, repo)"
+            >
+              <span class="codicon codicon-ellipsis"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 1. SCM Header: Branch info & Sync -->
     <div class="scm-header-bar">
       <div class="branch-selector" :title="`${t('scm.branch.current')}: ${currentBranch}${status.upstream ? ' -> ' + status.upstream : ''}`" @click="isBranchMenuOpen = !isBranchMenuOpen">
@@ -65,7 +111,7 @@
         <textarea
           v-model="commitMessage"
           class="commit-textarea"
-          :placeholder="t('scm.sidebar.commit_placeholder')"
+          :placeholder="commitPlaceholder"
           rows="3"
           @keydown.ctrl.enter.prevent="handleCommit"
           @keydown.meta.enter.prevent="handleCommit"
@@ -261,9 +307,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { useGit } from "../../composables/useGit";
+import { useGit, type GitRepositoryItem } from "../../composables/useGit";
 import { useEditorTabs } from "../../composables/useEditorTabs";
 import { useWorkspaceBus } from "../../composables/useWorkspaceBus";
 import { useToast } from "../../composables/useToast";
@@ -278,6 +324,11 @@ const router = useRouter();
 const route = useRoute();
 const { showToast } = useToast();
 const {
+  repositories,
+  activeRepo,
+  isLoadingRepositories,
+  fetchRepositories,
+  setActiveRepo,
   status,
   branches,
   currentBranch,
@@ -310,6 +361,7 @@ const {
 
 const { openTab } = useEditorTabs();
 
+const isReposExpanded = ref(true);
 const isStagedExpanded = ref(true);
 const isUnstagedExpanded = ref(true);
 const isBranchMenuOpen = ref(false);
@@ -329,9 +381,35 @@ const isFileContextMenuOpen = ref(false);
 const fileContextMenuPos = ref({ x: 0, y: 0 });
 const fileContextMenuTarget = ref<ContextMenuTargetFile | null>(null);
 
+const commitPlaceholder = computed(() => {
+  return t('scm.sidebar.commit_placeholder_branch', { branch: currentBranch.value }) ||
+    `消息(按Enter在“${currentBranch.value}”提交)`;
+});
+
 onMounted(async () => {
+  await fetchRepositories();
   await Promise.all([fetchStatus(), fetchBranches()]);
 });
+
+async function handleSelectRepo(repo: GitRepositoryItem) {
+  if (activeRepo.value?.id === repo.id || activeRepo.value?.rootPath === repo.rootPath) {
+    return;
+  }
+  await setActiveRepo(repo);
+}
+
+async function handleRefreshRepos() {
+  await fetchRepositories();
+  await Promise.all([fetchStatus(), fetchBranches()]);
+}
+
+async function openRepoActions(event: MouseEvent, repo: GitRepositoryItem) {
+  if (activeRepo.value?.id !== repo.id && activeRepo.value?.rootPath !== repo.rootPath) {
+    await setActiveRepo(repo);
+  }
+  moreMenuPos.value = { x: event.clientX, y: event.clientY };
+  isMoreMenuOpen.value = true;
+}
 
 function handleRefresh() {
   fetchStatus().catch(() => {});
@@ -1140,5 +1218,108 @@ async function handleModalConfirm(payload: {
   font-size: 12px;
   color: var(--text-muted);
   font-style: italic;
+}
+
+/* ── Repositories Group ── */
+.scm-repositories-group {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 4px;
+}
+
+.repo-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 4px;
+}
+
+.repo-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  font-size: 13px;
+  color: var(--text-main);
+  transition: background 0.15s ease;
+}
+
+.repo-item:hover {
+  background: var(--theme-list-hover-bg, rgba(255, 255, 255, 0.05));
+}
+
+.repo-item.active {
+  background: var(--theme-list-active-selection-bg, rgba(55, 148, 255, 0.15));
+  color: var(--theme-list-active-selection-fg, var(--text-main));
+  font-weight: 500;
+}
+
+.repo-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  background: var(--accent-color, #3b82f6);
+  border-radius: 2px;
+}
+
+.repo-icon {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.repo-item.active .repo-icon {
+  color: var(--accent-color, #3b82f6);
+}
+
+.repo-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repo-branch-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono, monospace);
+}
+
+.repo-branch-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repo-item.active .repo-branch-name {
+  color: var(--text-main);
+}
+
+.repo-sync-pill {
+  display: inline-flex;
+  gap: 3px;
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.repo-item-actions {
+  display: none;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+}
+
+.repo-item:hover .repo-item-actions {
+  display: flex;
 }
 </style>
