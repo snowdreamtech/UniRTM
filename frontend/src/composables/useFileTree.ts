@@ -6,6 +6,7 @@ import { useToast } from "./useToast";
 import { useEditorTabs } from "./useEditorTabs";
 import { useWorkspaceBus } from "./useWorkspaceBus";
 import { useGit } from "./useGit";
+import { useLocalHistory } from "./useLocalHistory";
 import { t } from "../i18n";
 
 export interface FSNode {
@@ -341,6 +342,12 @@ export function useFileTree() {
       if (res.ok && !data.error && data.success !== false) {
         showToast("文件已保存", "success");
         activeFileContent.value = content;
+        try {
+          const { recordSnapshot } = useLocalHistory();
+          recordSnapshot(path, content, "文件保存");
+        } catch {
+          // ignore
+        }
         return true;
       } else {
         throw new Error(data.error || "Save failed");

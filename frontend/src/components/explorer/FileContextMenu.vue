@@ -62,6 +62,12 @@
       <span class="menu-label">在 Git Graph 中查看提交历史</span>
     </div>
 
+    <!-- Local History Action -->
+    <div v-if="!contextMenu.node?.is_dir" class="menu-item" @click="handleOpenLocalHistory">
+      <span class="menu-icon codicon codicon-history"></span>
+      <span class="menu-label">本地历史记录 (Local History)</span>
+    </div>
+
     <!-- Git Changes Group -->
     <template v-if="gitStateInfo.hasGitChanges">
       <div class="menu-separator"></div>
@@ -96,6 +102,7 @@ import { useRouter } from "vue-router";
 import { useFileTree } from "../../composables/useFileTree";
 import { useGit } from "../../composables/useGit";
 import { useWorkspaceBus } from "../../composables/useWorkspaceBus";
+import { useLocalHistory } from "../../composables/useLocalHistory";
 
 const router = useRouter();
 const {
@@ -257,6 +264,15 @@ function handleOpenTerminal() {
   if (node) {
     const dir = node.is_dir ? node.path : getTargetParent();
     emit("open-terminal", dir);
+  }
+}
+
+function handleOpenLocalHistory() {
+  const node = contextMenu.value.node;
+  closeContextMenu();
+  if (node && !node.is_dir) {
+    const { openLocalHistory } = useLocalHistory();
+    openLocalHistory(node.path);
   }
 }
 

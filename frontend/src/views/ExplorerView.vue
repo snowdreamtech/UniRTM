@@ -627,6 +627,8 @@
         </div>
       </div>
     </Teleport>
+    <!-- 7. Local History Modal -->
+    <LocalHistoryModal />
   </div>
 </template>
 
@@ -637,6 +639,7 @@ import { t } from "../i18n";
 import TechIcon from "../components/common/TechIcon.vue";
 import MonacoEditor from "../components/editor/MonacoEditor.vue";
 import MonacoDiffEditor from "../components/editor/MonacoDiffEditor.vue";
+import LocalHistoryModal from "../components/explorer/LocalHistoryModal.vue";
 import { useFileTree } from "../composables/useFileTree";
 import { useEditorTabs, type EditorTab } from "../composables/useEditorTabs";
 import { useWorkspaceBus } from "../composables/useWorkspaceBus";

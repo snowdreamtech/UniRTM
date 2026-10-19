@@ -100,12 +100,12 @@
 - [x] 14.5 **执行提交 14**：`feat(editor): implement merge conflict detection and inline one-click resolution actions`
 
 
-## 阶段 15：无 Git 依赖的本地时间胶囊 (Local History & Snapshot Timeline) [待执行]
-- [ ] 15.1 创建 `frontend/src/composables/useLocalHistory.ts`，在文件保存时自动记录本地时间戳快照并限制轮转深度（最多保留 20 份）
-- [ ] 15.2 编写 `frontend/src/composables/useLocalHistory.test.ts` 单元测试，验证快照写入、按路径检索与按版本回退
-- [ ] 15.3 在 `FileContextMenu.vue` 中新增「本地历史记录 (Local History)」选项，点击唤起历史快照列表弹窗/抽屉
-- [ ] 15.4 点击历史快照项时，在主编辑器中调起 Diff 标签页并支持一键恢复到历史版本
-- [ ] 15.5 **执行提交 15**：`feat(workbench): implement local history snapshots and revision diff comparison`
+## 阶段 15：无 Git 依赖的本地时间胶囊 (Local History & Snapshot Timeline) [已完成]
+- [x] 15.1 创建 `frontend/src/composables/useLocalHistory.ts`，在文件保存时自动记录本地时间戳快照并限制轮转深度（最多保留 20 份）
+- [x] 15.2 编写 `frontend/src/composables/useLocalHistory.test.ts` 单元测试，验证快照写入、按路径检索与按版本回退
+- [x] 15.3 在 `FileContextMenu.vue` 中新增「本地历史记录 (Local History)」选项，点击唤起历史快照列表弹窗/抽屉
+- [x] 15.4 点击历史快照项时，在主编辑器中调起 Diff 标签页并支持一键恢复到历史版本
+- [x] 15.5 **执行提交 15**：`feat(workbench): implement local history snapshots and revision diff comparison`
 
 
 ## 阶段 16：全量 53 国多语言适配与端到端回归验证 (Final Verification) [待执行]
