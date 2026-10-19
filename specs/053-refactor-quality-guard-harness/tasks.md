@@ -40,10 +40,10 @@
 ---
 
 ## Phase 3: 双 Profile 隔离 (Pre-commit vs CI) 与 Git Hook 桥接优化
-- [ ] Task 3.1: 在 `.unirtm.toml` 中支持 `[guard.profiles.pre-commit]`（轻量极速、包含 gitleaks protect --staged）与 `[guard.profiles.ci]`（深度全量审计）
-- [ ] Task 3.2: 升级 `cmd/62.hook.go`，将 `unirtm hook run pre-commit` 无缝桥接到 Guard pre-commit profile
-- [ ] Task 3.3: 编写 profile 调度测试与 Hook 桥接测试
-- [ ] Task 3.4: 阶段性 Git 提交：`feat(guard): support pre-commit and CI dual profiles with gitleaks integration`
+- [x] Task 3.1: 在 `.unirtm.toml` 中支持 `[guard.profiles.pre-commit]`（轻量极速、包含 gitleaks protect --staged）与 `[guard.profiles.ci]`（深度全量审计）
+- [x] Task 3.2: 升级 `cmd/62.hook.go`，将 `unirtm hook run pre-commit` 无缝桥接到 Guard pre-commit profile
+- [x] Task 3.3: 编写 profile 调度测试与 Hook 桥接测试
+- [x] Task 3.4: 阶段性 Git 提交：`feat(guard): support pre-commit and CI dual profiles with gitleaks integration`
 
 ---
 

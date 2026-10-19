@@ -63,6 +63,13 @@ func runGuard(ctx context.Context, explicitFiles []string, autoFix bool) error {
 	}
 
 	mode := "changed"
+	if checkProfile == "pre-commit" {
+		mode = "staged"
+	} else if checkProfile == "ci" {
+		mode = "all"
+		autoFix = false // CI must be strict read-only
+	}
+
 	if checkAll {
 		mode = "all"
 	} else if checkStaged {
