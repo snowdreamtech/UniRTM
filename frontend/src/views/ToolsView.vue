@@ -178,16 +178,45 @@
                 {{ formatToolTitle(rt.name) }}
               </a>
               <div class="runtime-header-badges">
+                <!-- 1. 未配置态 -->
                 <span
-                  class="runtime-version-badge font-mono"
-                  :class="{
-                    'is-active': Boolean(getCurrentVersion(rt)),
-                    'is-muted': !getCurrentVersion(rt),
-                  }"
-                  :title="getCurrentVersion(rt) ? `${formatVersion(getCurrentVersion(rt))}` : t('runtimes.unconfigured')"
+                  v-if="getToolStatus(rt).state === 'unconfigured'"
+                  class="runtime-version-badge is-muted font-mono"
+                  :title="t('runtimes.unconfigured')"
                 >
-                  {{ getCurrentVersion(rt) ? formatVersion(getCurrentVersion(rt)) : t('runtimes.unconfigured') }}
+                  {{ t('runtimes.unconfigured') }}
                 </span>
+
+                <!-- 2. 已配置但未安装 (Missing) -> 琥珀警示色 -->
+                <span
+                  v-else-if="getToolStatus(rt).state === 'missing'"
+                  class="runtime-version-badge is-missing font-mono"
+                  :title="`工作区配置了 ${formatVersion(getToolStatus(rt).configuredVersion)}，但本地磁盘尚未安装`"
+                >
+                  <span class="missing-dot">●</span>
+                  <span>{{ formatVersion(getToolStatus(rt).configuredVersion) }} (待安装)</span>
+                </span>
+
+                <!-- 3. 已安装且已就绪 (Ready) -> 沉稳中性低噪音，不展示任何图标 -->
+                <span
+                  v-else
+                  class="runtime-version-badge is-ready font-mono"
+                  :title="formatVersion(getToolStatus(rt).configuredVersion)"
+                >
+                  {{ formatVersion(getToolStatus(rt).configuredVersion) }}
+                </span>
+
+                <!-- 4. 专属绿色升级徽标 (Upgradable) -> 绿色留给可升级状态 -->
+                <button
+                  v-if="getToolStatus(rt).state === 'upgradable' && getToolStatus(rt).upgradableVersion"
+                  type="button"
+                  class="runtime-upgrade-pill font-mono"
+                  :title="`可升级至最新版本 ${formatVersion(getToolStatus(rt).upgradableVersion!)}`"
+                  @click.stop="openRemoteModal(rt)"
+                >
+                  <span class="upgrade-arrow">↑</span>
+                  <span>{{ formatVersion(getToolStatus(rt).upgradableVersion!) }}</span>
+                </button>
               </div>
             </div>
             <span class="runtime-desc">{{ rt.description }}</span>
@@ -201,6 +230,16 @@
         <!-- Card Actions: Primary [切换] [安装] + More Menu [···] (锁定, 删除) -->
         <div class="runtime-card-footer">
           <button
+            v-if="getToolStatus(rt).state === 'missing'"
+            class="card-action-btn action-install is-missing-btn"
+            :id="'btn-install-missing-' + rt.id"
+            @click.stop="installRemoteVersion(rt.id, getToolStatus(rt).configuredVersion)"
+            :title="t('runtimes.action_install_missing') || '立即安装已配置版本'"
+          >
+            {{ t("runtimes.action_install") || "安装" }}
+          </button>
+          <button
+            v-else
             class="card-action-btn action-switch"
             :id="'btn-switch-' + rt.id"
             @click.stop="openSwitchVersionModal(rt)"
@@ -294,15 +333,37 @@
             <td class="td-version">
               <div class="table-version-cell">
                 <span
-                  class="runtime-version-badge font-mono"
-                  :class="{
-                    'is-active': Boolean(getCurrentVersion(rt)),
-                    'is-muted': !getCurrentVersion(rt),
-                  }"
-                  :title="getCurrentVersion(rt) ? `${formatVersion(getCurrentVersion(rt))}` : t('runtimes.unconfigured')"
+                  v-if="getToolStatus(rt).state === 'unconfigured'"
+                  class="runtime-version-badge is-muted font-mono"
+                  :title="t('runtimes.unconfigured')"
                 >
-                  {{ getCurrentVersion(rt) ? formatVersion(getCurrentVersion(rt)) : t('runtimes.unconfigured') }}
+                  {{ t('runtimes.unconfigured') }}
                 </span>
+                <span
+                  v-else-if="getToolStatus(rt).state === 'missing'"
+                  class="runtime-version-badge is-missing font-mono"
+                  :title="`配置了 ${formatVersion(getToolStatus(rt).configuredVersion)}，但本地尚未下载安装`"
+                >
+                  <span class="missing-dot">●</span>
+                  <span>{{ formatVersion(getToolStatus(rt).configuredVersion) }} (待安装)</span>
+                </span>
+                <span
+                  v-else
+                  class="runtime-version-badge is-ready font-mono"
+                  :title="formatVersion(getToolStatus(rt).configuredVersion)"
+                >
+                  {{ formatVersion(getToolStatus(rt).configuredVersion) }}
+                </span>
+                <button
+                  v-if="getToolStatus(rt).state === 'upgradable' && getToolStatus(rt).upgradableVersion"
+                  type="button"
+                  class="runtime-upgrade-pill font-mono"
+                  :title="`可升级至 ${formatVersion(getToolStatus(rt).upgradableVersion!)}`"
+                  @click.stop="openRemoteModal(rt)"
+                >
+                  <span class="upgrade-arrow">↑</span>
+                  <span>{{ formatVersion(getToolStatus(rt).upgradableVersion!) }}</span>
+                </button>
                 <span v-if="rt.pinned" class="pin-indicator" :title="rt.pin_reason || t('runtimes.action_lock')">📌</span>
               </div>
             </td>
@@ -802,6 +863,7 @@ import TechIcon from "../components/common/TechIcon.vue";
 import { validateRuntimeVersion } from "../utils/versionValidator";
 import { useToolUpdates, type ToolUpdateItem } from "../composables/useToolUpdates";
 import { getToolHomepage } from "../utils/toolHomepage";
+import { computeToolStatus, type ToolStatusResult } from "../utils/toolStatus";
 
 import { useToolScope } from "../composables/useToolScope";
 
@@ -1345,6 +1407,10 @@ function getCurrentVersion(rt: RuntimeItem): string {
     return rt.global_version || "";
   }
   return rt.active_version || rt.global_version || "";
+}
+
+function getToolStatus(rt: RuntimeItem): ToolStatusResult {
+  return computeToolStatus(rt, currentScope.value, updateResults.value);
 }
 
 const isSwitchModalOpen = ref(false);
@@ -2304,16 +2370,90 @@ onBeforeUnmount(() => {
   align-items: center;
 }
 
+/* 1. 已安装且就绪（正常态）：沉稳低噪音中性色，不展示任何小图标 */
+.runtime-version-badge.is-ready,
 .runtime-version-badge.is-active {
-  background: rgba(16, 185, 129, 0.12);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.16);
 }
 
-[data-theme="dark"] .runtime-version-badge.is-active {
-  background: rgba(16, 185, 129, 0.18);
-  color: #34d399;
-  border-color: rgba(52, 211, 153, 0.35);
+[data-theme="light"] .runtime-version-badge.is-ready,
+[data-theme="light"] .runtime-version-badge.is-active,
+:root[data-theme="light"] .runtime-version-badge.is-ready,
+:root[data-theme="light"] .runtime-version-badge.is-active {
+  background: #f1f5f9;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+}
+
+/* 2. 已配置但未安装（缺失态）：醒目琥珀警示色，提醒需要下载安装 */
+.runtime-version-badge.is-missing {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.38);
+  gap: 5px;
+}
+
+[data-theme="light"] .runtime-version-badge.is-missing,
+:root[data-theme="light"] .runtime-version-badge.is-missing {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
+
+.missing-dot {
+  font-size: 0.6rem;
+  line-height: 1;
+}
+
+/* 3. 可升级状态（专属绿色）：绿色独享给升级状态 */
+.runtime-upgrade-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.18rem 0.5rem;
+  border-radius: 5px;
+  background: rgba(16, 185, 129, 0.16);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  line-height: 1.2;
+}
+
+.runtime-upgrade-pill:hover {
+  background: rgba(16, 185, 129, 0.28);
+  border-color: #10b981;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="light"] .runtime-upgrade-pill,
+:root[data-theme="light"] .runtime-upgrade-pill {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+[data-theme="light"] .runtime-upgrade-pill:hover,
+:root[data-theme="light"] .runtime-upgrade-pill:hover {
+  background: #d1fae5;
+  border-color: #34d399;
+}
+
+.upgrade-arrow {
+  font-weight: 900;
+  font-size: 0.76rem;
+}
+
+.action-missing-install,
+.is-missing-btn {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  color: #ffffff !important;
+  border-color: #d97706 !important;
 }
 
 .runtime-version-badge.is-muted {

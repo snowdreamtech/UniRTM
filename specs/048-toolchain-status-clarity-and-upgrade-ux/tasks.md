@@ -1,8 +1,8 @@
 # 任务拆分与执行跟踪清单：工具链状态清晰化与低噪音升级系统 (Tasks)
 
 ## 任务执行进度概览
-- **当前阶段**：Phase 1 - 工具状态计算核心与测试完成
-- **总体进度**：5 / 12 已完成 (42%)
+- **当前阶段**：Phase 2 - 卡片与表格视觉重构与降噪完成
+- **总体进度**：9 / 12 已完成 (75%)
 
 ---
 
@@ -20,11 +20,11 @@
 ---
 
 ## Phase 2: 卡片与表格视觉重构与降噪 (UI Refactor & Noise Reduction)
-- [ ] Task 2.1: 重构 `ToolsView.vue` 卡片头部徽标（就绪态去图标化并变更为中性底色）
-- [ ] Task 2.2: 注入专属绿色升级徽标（`↑ 可升级`）与琥珀色缺失安装徽标
-- [ ] Task 2.3: 同步适配表格视图（Table View）中的版本列展示与状态自适应
-- [ ] Task 2.4: 在缺失（Missing）状态下自适应卡片首选操作为一键安装
-- [ ] Task 2.5: 阶段性 Git 提交：`feat(tools): refactor tool badges for low noise and dedicated upgrade color`
+- [x] Task 2.1: 重构 `ToolsView.vue` 卡片头部徽标（就绪态去图标化并变更为中性底色）
+- [x] Task 2.2: 注入专属绿色升级徽标（`↑ 可升级`）与琥珀色缺失安装徽标
+- [x] Task 2.3: 同步适配表格视图（Table View）中的版本列展示与状态自适应
+- [x] Task 2.4: 在缺失（Missing）状态下自适应卡片首选操作为一键安装
+- [x] Task 2.5: 阶段性 Git 提交：`feat(tools): refactor tool badges for low noise and dedicated upgrade color`
 
 ---
 
