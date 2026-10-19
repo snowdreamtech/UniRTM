@@ -71,7 +71,6 @@
           {{ node.name }}
         </span>
         <span v-if="gitStatus" class="git-tree-badge" :class="'badge-' + gitStatus">{{ gitStatus }}</span>
-        <span v-else-if="node.is_ignored" class="git-tree-badge badge-ignored" title="已由 .gitignore 排除">ignored</span>
         <span v-else-if="dirGitCount > 0 && !isExpanded" class="git-dir-badge">{{ dirGitCount }}</span>
       </div>
 
@@ -446,16 +445,6 @@ async function commitCreate() {
   color: #4ec9b0;
 }
 
-.git-tree-badge.badge-ignored {
-  font-size: 10px;
-  font-weight: 500;
-  color: #8c8c8c;
-  background: rgba(140, 140, 140, 0.12);
-  padding: 1px 4px;
-  border-radius: 3px;
-  letter-spacing: 0.2px;
-}
-
 .git-dir-badge {
   font-size: 10px;
   font-weight: 600;
@@ -513,11 +502,6 @@ async function commitCreate() {
 
 :root[data-theme="light"] .tree-node-row.is-ignored .tree-icon {
   filter: grayscale(100%) opacity(0.35) !important;
-}
-
-:root[data-theme="light"] .git-tree-badge.badge-ignored {
-  color: #94a3b8;
-  background: rgba(148, 163, 184, 0.16);
 }
 
 .tree-inline-input {
