@@ -892,6 +892,7 @@ async function handleChangeGuardScope(scope: "staged" | "all") {
 }
 
 async function handleRefreshGuard() {
+  emit("open-drawer", "output");
   const res = await fetchGuardStatus(currentGuardScope.value);
   if (res?.logs) {
     streamGuardLogs(res.logs);
@@ -1140,6 +1141,7 @@ const guardTooltip = computed(() => {
 });
 
 async function handleRunGuardFix() {
+  emit("open-drawer", "output");
   const ok = await runGuardFix(currentGuardScope.value);
   if (guardStatus.value.logs) {
     streamGuardLogs(guardStatus.value.logs);
