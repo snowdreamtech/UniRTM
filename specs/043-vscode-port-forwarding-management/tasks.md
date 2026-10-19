@@ -73,11 +73,11 @@
 - [x] 9.6 支持端口行键盘交互（Enter 改标签、⌘C 复制地址、⌘⌫ 停止/恢复转发）
 
 ## 阶段 10：端口访问控制安全防护与智能风控权衡系统（Smart Visibility Security Governance）
-- [ ] 10.1 在 `frontend/src/utils/portServiceRecognizer.ts` 中增加服务风险等级评估器 `assessPortRisk(port, item)`，精确判定 High-Risk 敏感端口（MySQL、Redis、Postgres、MongoDB、Docker、SSH 等）与 Standard-Web 端口
-- [ ] 10.2 在 `PortsPanelView.vue` 中实现智能公开确认对话框：
+- [x] 10.1 在 `frontend/src/utils/portServiceRecognizer.ts` 中增加服务风险等级评估器 `assessPortRisk(port, item)`，精确判定 High-Risk 敏感端口（MySQL、Redis、Postgres、MongoDB、Docker、SSH 等）与 Standard-Web 端口
+- [x] 10.2 在 `PortsPanelView.vue` 中实现智能公开确认对话框：
   - 普通 Web 端口支持 `[ ] 本次会话不再提醒` 复选框，勾选后持久化到会话存储，后续一键切换零打扰
   - 数据库等高危端口触发不可跳过的红色醒目强制警告弹窗（“高危服务公开警告”，防止致命越权暴露）
-- [ ] 10.3 在端口面板顶部或状态栏增加常态化公开端口告警指示条（Ambient Warning Banner）与「一键全部重置为私有」快捷安全收敛按钮
-- [ ] 10.4 编写针对风险评估与安全弹窗交互的单元测试
+- [x] 10.3 在端口面板顶部或状态栏增加常态化公开端口告警指示条（Ambient Warning Banner）与「一键全部重置为私有」快捷安全收敛按钮
+- [x] 10.4 编写针对风险评估与安全弹窗交互的单元测试
 
 

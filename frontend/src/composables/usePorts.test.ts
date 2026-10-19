@@ -215,6 +215,77 @@ describe("usePorts composable", () => {
     expect(dbPort?.status).toBe("inactive");
     expect(dbPort?.workspaceHint?.sourceFile).toBe("docker-compose.yml");
   });
+
+  it("publicPortsCount tracks count of public ports and resetAllPortsToPrivate resets all to private", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true }),
+    });
+
+    const { ports, publicPortsCount, addPort, updatePort, resetAllPortsToPrivate } = usePorts();
+
+    await addPort({ port: 3000, label: "Frontend", visibility: "private" });
+    await addPort({ port: 8080, label: "Backend API", visibility: "private" });
+    await addPort({ port: 3306, label: "Database", visibility: "private" });
+
+    expect(publicPortsCount.value).toBe(0);
+
+    // Make two ports public
+    await updatePort(3000, { visibility: "public" });
+    await updatePort(8080, { visibility: "public" });
+
+    expect(publicPortsCount.value).toBe(2);
+
+    // Call resetAllPortsToPrivate
+    await resetAllPortsToPrivate();
+
+    expect(publicPortsCount.value).toBe(0);
+    const p3000 = ports.value.find((p) => p.port === 3000);
+    const p8080 = ports.value.find((p) => p.port === 8080);
+    const p3306 = ports.value.find((p) => p.port === 3306);
+    expect(p3000?.visibility).toBe("private");
+    expect(p8080?.visibility).toBe("private");
+    expect(p3306?.visibility).toBe("private");
+  });
+
+  it("assessPortRisk correctly classifies high-risk vs standard web services", async () => {
+    const { assessPortRisk } = await import("../utils/portServiceRecognizer");
+
+    // High risk ports & processes
+    const mysqlRisk = assessPortRisk(3306);
+    expect(mysqlRisk.level).toBe("high");
+    expect(mysqlRisk.serviceCategory).toContain("MySQL");
+
+    const redisRisk = assessPortRisk(6379);
+    expect(redisRisk.level).toBe("high");
+    expect(redisRisk.serviceCategory).toContain("Redis");
+
+    const mongoRisk = assessPortRisk(27017);
+    expect(mongoRisk.level).toBe("high");
+    expect(mongoRisk.serviceCategory).toContain("MongoDB");
+
+    const dockerRisk = assessPortRisk(2375);
+    expect(dockerRisk.level).toBe("high");
+    expect(dockerRisk.serviceCategory).toContain("Docker");
+
+    const sshRisk = assessPortRisk(22);
+    expect(sshRisk.level).toBe("high");
+    expect(sshRisk.serviceCategory).toContain("SSH");
+
+    const customNamedDb = assessPortRisk(9999, { label: "My Postgres Node", serviceType: "database" });
+    expect(customNamedDb.level).toBe("high");
+
+    // Standard Web ports
+    const viteRisk = assessPortRisk(5173, { label: "Vite App" });
+    expect(viteRisk.level).toBe("standard");
+    expect(viteRisk.serviceCategory).toBe("Web 应用服务");
+
+    const nextRisk = assessPortRisk(3000, { label: "Next.js Web" });
+    expect(nextRisk.level).toBe("standard");
+
+    const apiRisk = assessPortRisk(8080, { label: "Spring Boot / Express API" });
+    expect(apiRisk.level).toBe("standard");
+  });
 });
 
 

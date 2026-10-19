@@ -1,4 +1,4 @@
-import type { PortProbeInfo, WorkspaceServiceHint } from "../types/ports";
+import type { PortProbeInfo, WorkspaceServiceHint, PortRiskAssessment } from "../types/ports";
 
 export interface ServiceRecognitionResult {
   label: string;
@@ -341,5 +341,75 @@ export function recognizePortService(
         sourceOrigin: "well-known",
       };
   }
+}
+
+/**
+ * Smart Port Security Risk Assessor
+ * Evaluates whether a port hosts sensitive database/infrastructure management services
+ * that require mandatory high-risk security interception before being exposed publicly.
+ */
+export function assessPortRisk(
+  port: number,
+  options?: {
+    serviceType?: string;
+    label?: string;
+    process?: string;
+  }
+): PortRiskAssessment {
+  const lbl = (options?.label || "").toLowerCase();
+  const proc = (options?.process || "").toLowerCase();
+  const sType = (options?.serviceType || "").toLowerCase();
+
+  // High-Risk: Databases & System Admin Daemons
+  if (
+    port === 3306 || // MySQL / MariaDB
+    port === 5432 || // PostgreSQL
+    port === 6379 || // Redis
+    port === 27017 || // MongoDB
+    port === 1521 || // Oracle
+    port === 1433 || // SQL Server
+    port === 9200 || // Elasticsearch
+    port === 9300 ||
+    port === 9042 || // Cassandra
+    port === 5984 || // CouchDB
+    port === 8086 || // InfluxDB
+    port === 2375 || // Docker Daemon (unencrypted)
+    port === 2376 || // Docker Daemon (TLS)
+    port === 22 ||   // SSH
+    port === 2379 || // etcd
+    sType === "database" ||
+    lbl.includes("redis") ||
+    lbl.includes("mysql") ||
+    lbl.includes("postgres") ||
+    lbl.includes("mongo") ||
+    lbl.includes("database") ||
+    proc.includes("redis") ||
+    proc.includes("mysqld") ||
+    proc.includes("postgres") ||
+    proc.includes("mongod")
+  ) {
+    let name = "数据库或管理服务";
+    if (port === 6379 || lbl.includes("redis") || proc.includes("redis")) name = "Redis 缓存数据库";
+    else if (port === 3306 || lbl.includes("mysql") || proc.includes("mysql")) name = "MySQL / MariaDB 数据库";
+    else if (port === 5432 || lbl.includes("postgres") || proc.includes("postgres")) name = "PostgreSQL 数据库";
+    else if (port === 27017 || lbl.includes("mongo") || proc.includes("mongo")) name = "MongoDB 数据库";
+    else if (port === 2375 || port === 2376 || proc.includes("dockerd")) name = "Docker Daemon 控制守护进程";
+    else if (port === 22 || proc.includes("sshd")) name = "SSH 远程管理服务";
+
+    return {
+      level: "high",
+      serviceCategory: name,
+      reason: `该端口运行着敏感的 ${name}。将其公开给全网或外部局域网极易导致未授权读取、篡改或勒索攻击。`,
+      recommendation: "强烈建议保持私有访问，通过安全的本地隧道连接使用。",
+    };
+  }
+
+  // Standard Web / API Service
+  return {
+    level: "standard",
+    serviceCategory: "Web 应用服务",
+    reason: "公开端口后，任何拥有链接或局域网 IP 的人员均可直接访问此 Web 服务。",
+    recommendation: "如仅需临时联调或演示，可在调试完成后一键重置为私有。",
+  };
 }
 

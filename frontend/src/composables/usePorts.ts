@@ -67,6 +67,11 @@ export function usePorts() {
     return ports.value.filter((p) => p.status === "active").length;
   });
 
+  // Public exposed ports count (for security banner & governance)
+  const publicPortsCount = computed(() => {
+    return ports.value.filter((p) => p.visibility === "public").length;
+  });
+
   // Filtered ports list based on search query
   const filteredPorts = computed(() => {
     const q = searchQuery.value.trim().toLowerCase();
@@ -505,6 +510,23 @@ export function usePorts() {
     return null;
   }
 
+  /**
+   * Reset all currently public ports back to private (emergency security convergence)
+   */
+  async function resetAllPortsToPrivate(): Promise<number> {
+    let count = 0;
+    for (const p of ports.value) {
+      if (p.visibility === "public") {
+        await updatePort(p.port, { visibility: "private" });
+        count++;
+      }
+    }
+    if (count > 0) {
+      showToast(`已将 ${count} 个公开端口全部安全重置为私有模式`, "success");
+    }
+    return count;
+  }
+
   return {
     ports,
     filteredPorts,
@@ -527,5 +549,7 @@ export function usePorts() {
     copyPort,
     openPort,
     findAvailableLocalPort,
+    publicPortsCount,
+    resetAllPortsToPrivate,
   };
 }

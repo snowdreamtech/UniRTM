@@ -62,3 +62,12 @@ export interface PortForwardPayload {
   visibility?: PortVisibility;
 }
 
+export type PortRiskLevel = "high" | "standard";
+
+export interface PortRiskAssessment {
+  level: PortRiskLevel;
+  serviceCategory: string;
+  reason: string;
+  recommendation: string;
+}
+

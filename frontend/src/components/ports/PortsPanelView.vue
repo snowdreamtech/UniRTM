@@ -45,6 +45,22 @@
       </div>
     </div>
 
+    <!-- Ambient Security Warning Banner (When any ports are public) -->
+    <div v-if="publicPortsCount > 0" class="ports-ambient-security-banner">
+      <div class="banner-left">
+        <span class="codicon codicon-shield banner-icon"></span>
+        <span class="banner-text">
+          当前有 <strong>{{ publicPortsCount }}</strong> 个端口处于<strong>公开访问</strong>状态（局域网与外部网络可直接建立连接）
+        </span>
+      </div>
+      <div class="banner-right">
+        <button class="banner-reset-btn" @click="resetAllPortsToPrivate" :title="t('ports.reset_all_private_tip') || '将所有公开端口安全收敛为私有模式'">
+          <span class="codicon codicon-lock"></span>
+          <span>{{ t('ports.reset_all_private') || '一键全部转为私有' }}</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Ports Table Wrapper -->
     <div class="ports-table-wrapper" @click="closeContextMenu">
       <table class="ports-table">
@@ -492,6 +508,79 @@
           </div>
         </div>
       </div>
+    <!-- Modal: Standard Web Public Security Prompt (Low-Risk, with 'Don't ask again' checkbox) -->
+    <Teleport to="body">
+      <div v-if="isWebPublicConfirmOpen" class="security-modal-backdrop" @click.self="isWebPublicConfirmOpen = false">
+        <div class="security-modal-card">
+          <div class="security-modal-header web">
+            <div class="modal-title-wrap">
+              <span class="codicon codicon-info header-icon web"></span>
+              <span class="header-title">{{ t('ports.public_web_title') || '公开端口安全提示' }}</span>
+            </div>
+            <button class="modal-close-btn" @click="isWebPublicConfirmOpen = false">
+              <span class="codicon codicon-close"></span>
+            </button>
+          </div>
+          <div class="security-modal-body">
+            <p class="security-modal-desc">
+              您正在将端口 <strong>{{ pendingVisibilityPort?.port }} ({{ pendingVisibilityPort?.label }})</strong> 设为公开：
+            </p>
+            <div class="security-info-box">
+              <p>• 处于公开状态后，同局域网设备或拥有访问链接的人员均可直接向该 Web 服务发送请求。</p>
+              <p>• 如服务包含未鉴权的敏感数据，建议在联调完毕后及时重置为私有。</p>
+            </div>
+            <label class="security-checkbox-label">
+              <input type="checkbox" v-model="dontAskAgainWeb" />
+              <span>{{ t('ports.dont_ask_again_session') || '本次会话不再提示（普通 Web 服务直接放行）' }}</span>
+            </label>
+          </div>
+          <div class="security-modal-footer">
+            <button class="dialog-btn secondary" @click="isWebPublicConfirmOpen = false">{{ t('ports.keep_private') || '保持私有' }}</button>
+            <button class="dialog-btn primary" @click="confirmStandardWebPublic">{{ t('ports.confirm_public') || '确认公开' }}</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Modal: High-Risk Mandatory Security Warning (High-Risk Databases/Infra) -->
+    <Teleport to="body">
+      <div v-if="isHighRiskConfirmOpen" class="security-modal-backdrop" @click.self="isHighRiskConfirmOpen = false">
+        <div class="security-modal-card high-risk">
+          <div class="security-modal-header danger">
+            <div class="modal-title-wrap">
+              <span class="codicon codicon-warning header-icon danger"></span>
+              <span class="header-title">{{ t('ports.high_risk_title') || '高危服务公开警告' }}</span>
+            </div>
+            <button class="modal-close-btn" @click="isHighRiskConfirmOpen = false">
+              <span class="codicon codicon-close"></span>
+            </button>
+          </div>
+          <div class="security-modal-body">
+            <div class="security-alert-box danger">
+              <div class="alert-title-row">
+                <span class="codicon codicon-shield alert-shield"></span>
+                <strong>检测到敏感基础设施服务：{{ pendingRiskAssessment?.serviceCategory }} (端口 {{ pendingVisibilityPort?.port }})</strong>
+              </div>
+              <p class="alert-reason">{{ pendingRiskAssessment?.reason }}</p>
+              <p class="alert-rec">{{ pendingRiskAssessment?.recommendation }}</p>
+            </div>
+            <label class="security-checkbox-label danger">
+              <input type="checkbox" v-model="highRiskAcknowledged" />
+              <span>{{ t('ports.high_risk_ack') || '我已知晓数据泄露与网络安全风险，仍确认将该数据库/管理服务暴露给外部网络' }}</span>
+            </label>
+          </div>
+          <div class="security-modal-footer">
+            <button class="dialog-btn secondary" @click="isHighRiskConfirmOpen = false">{{ t('ports.keep_private_recommended') || '保持私有 (推荐)' }}</button>
+            <button
+              class="dialog-btn danger"
+              :disabled="!highRiskAcknowledged"
+              @click="confirmHighRiskPublic"
+            >
+              {{ t('ports.force_public') || '强制设为公开' }}
+            </button>
+          </div>
+        </div>
+      </div>
     </Teleport>
   </div>
 </template>
@@ -500,7 +589,8 @@
 import { ref, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { usePorts } from "../../composables/usePorts";
 import { t } from "../../i18n";
-import type { PortForwardItem, PortProtocol } from "../../types/ports";
+import type { PortForwardItem, PortProtocol, PortRiskAssessment } from "../../types/ports";
+import { assessPortRisk } from "../../utils/portServiceRecognizer";
 
 const isMac = typeof navigator !== "undefined" && /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform || navigator.userAgent);
 
@@ -516,6 +606,8 @@ const {
   removePort,
   copyAddress,
   openPort,
+  publicPortsCount,
+  resetAllPortsToPrivate,
 } = usePorts();
 
 const selectedPortId = ref<string | null>(null);
@@ -621,9 +713,76 @@ async function submitEditLabel(item: PortForwardItem) {
   cancelEditLabel();
 }
 
+// Visibility Security Governance State
+const pendingVisibilityPort = ref<PortForwardItem | null>(null);
+const pendingRiskAssessment = ref<PortRiskAssessment | null>(null);
+
+// Low-Risk Standard Web Confirmation Modal State
+const isWebPublicConfirmOpen = ref<boolean>(false);
+const dontAskAgainWeb = ref<boolean>(false);
+
+// High-Risk Mandatory Warning Modal State
+const isHighRiskConfirmOpen = ref<boolean>(false);
+const highRiskAcknowledged = ref<boolean>(false);
+
 async function toggleVisibility(item: PortForwardItem) {
-  const nextVis = item.visibility === "public" ? "private" : "public";
-  await updatePort(item.port, { visibility: nextVis });
+  // If currently public, switching back to private is always safe and immediate
+  if (item.visibility === "public") {
+    await updatePort(item.port, { visibility: "private" });
+    return;
+  }
+
+  // Assess security risk
+  const risk = assessPortRisk(item.port, {
+    serviceType: item.workspaceHint?.serviceType,
+    label: item.label,
+    process: item.process,
+  });
+
+  pendingVisibilityPort.value = item;
+  pendingRiskAssessment.value = risk;
+
+  // Case 1: High-Risk (Databases, Redis, Docker, SSH) -> Mandatory Interception
+  if (risk.level === "high") {
+    highRiskAcknowledged.value = false;
+    isHighRiskConfirmOpen.value = true;
+    return;
+  }
+
+  // Case 2: Standard Web Port -> Check Session "Don't ask again"
+  const skipPrompt = typeof sessionStorage !== "undefined" && sessionStorage.getItem("unirtm_skip_web_public_warning") === "true";
+  if (skipPrompt) {
+    await updatePort(item.port, { visibility: "public" });
+    return;
+  }
+
+  // Open Standard Web Confirmation
+  dontAskAgainWeb.value = false;
+  isWebPublicConfirmOpen.value = true;
+}
+
+async function confirmStandardWebPublic() {
+  if (!pendingVisibilityPort.value) return;
+  const item = pendingVisibilityPort.value;
+  isWebPublicConfirmOpen.value = false;
+
+  if (dontAskAgainWeb.value && typeof sessionStorage !== "undefined") {
+    sessionStorage.setItem("unirtm_skip_web_public_warning", "true");
+  }
+
+  await updatePort(item.port, { visibility: "public" });
+  pendingVisibilityPort.value = null;
+  pendingRiskAssessment.value = null;
+}
+
+async function confirmHighRiskPublic() {
+  if (!pendingVisibilityPort.value || !highRiskAcknowledged.value) return;
+  const item = pendingVisibilityPort.value;
+  isHighRiskConfirmOpen.value = false;
+
+  await updatePort(item.port, { visibility: "public" });
+  pendingVisibilityPort.value = null;
+  pendingRiskAssessment.value = null;
 }
 
 function openContextMenu(event: MouseEvent, item: PortForwardItem) {
@@ -1911,5 +2070,275 @@ async function handleContextAction(action: string) {
 :global([data-theme="light"] .dialog-btn.secondary) {
   background: #f1f5f9 !important;
   color: #334155 !important;
+}
+
+/* Ambient Security Banner */
+.ports-ambient-security-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px;
+  background: rgba(245, 158, 11, 0.12);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+  font-size: 12px;
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.ports-ambient-security-banner .banner-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ports-ambient-security-banner .banner-icon {
+  font-size: 14px;
+  color: #f59e0b;
+}
+
+.banner-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.banner-reset-btn:hover {
+  background: rgba(245, 158, 11, 0.35);
+  color: #fff;
+}
+
+/* Security Confirmation Modals */
+.security-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+}
+
+.security-modal-card {
+  width: 460px;
+  background: var(--card-bg, #1e293b);
+  border: 1px solid var(--card-border, #334155);
+  border-radius: 8px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.security-modal-card.high-risk {
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.security-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--header-bg, #0f172a);
+  border-bottom: 1px solid var(--card-border, #1e293b);
+}
+
+.security-modal-header.danger {
+  background: rgba(239, 68, 68, 0.12);
+  border-bottom-color: rgba(239, 68, 68, 0.25);
+}
+
+.modal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main, #f8fafc);
+}
+
+.header-icon.web {
+  color: #0284c7;
+  font-size: 16px;
+}
+
+.header-icon.danger {
+  color: #ef4444;
+  font-size: 16px;
+}
+
+.security-modal-body {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-main, #cbd5e1);
+}
+
+.security-info-box {
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  padding: 8px 12px;
+  border-radius: 4px;
+  line-height: 1.6;
+}
+
+.security-alert-box.danger {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  padding: 10px 12px;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #fca5a5;
+}
+
+.alert-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ef4444;
+  font-size: 13px;
+}
+
+.alert-shield {
+  font-size: 14px;
+}
+
+.alert-reason {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.alert-rec {
+  margin: 0;
+  font-weight: 500;
+  color: #f87171;
+}
+
+.security-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  color: var(--text-muted, #94a3b8);
+  margin-top: 4px;
+}
+
+.security-checkbox-label.danger {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.security-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--header-bg, #0f172a);
+  border-top: 1px solid var(--card-border, #1e293b);
+}
+
+.dialog-btn.danger {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.dialog-btn.danger:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.dialog-btn.danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Light Mode Overrides for Security Elements */
+:global(:root[data-theme="light"] .ports-ambient-security-banner),
+:global([data-theme="light"] .ports-ambient-security-banner) {
+  background: #fffbeb !important;
+  border-bottom-color: #fde68a !important;
+  color: #b45309 !important;
+}
+
+:global(:root[data-theme="light"] .banner-reset-btn),
+:global([data-theme="light"] .banner-reset-btn) {
+  background: #fef3c7 !important;
+  border-color: #fcd34d !important;
+  color: #92400e !important;
+}
+
+:global(:root[data-theme="light"] .banner-reset-btn:hover),
+:global([data-theme="light"] .banner-reset-btn:hover) {
+  background: #fde68a !important;
+  color: #78350f !important;
+}
+
+:global(:root[data-theme="light"] .security-modal-card),
+:global([data-theme="light"] .security-modal-card) {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+:global(:root[data-theme="light"] .security-modal-card.high-risk),
+:global([data-theme="light"] .security-modal-card.high-risk) {
+  border-color: #fca5a5 !important;
+}
+
+:global(:root[data-theme="light"] .security-modal-header),
+:global([data-theme="light"] .security-modal-header) {
+  background: #f8fafc !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+:global(:root[data-theme="light"] .security-modal-header.danger),
+:global([data-theme="light"] .security-modal-header.danger) {
+  background: #fef2f2 !important;
+  border-bottom-color: #fee2e2 !important;
+}
+
+:global(:root[data-theme="light"] .security-modal-body),
+:global([data-theme="light"] .security-modal-body) {
+  color: #1e293b !important;
+}
+
+:global(:root[data-theme="light"] .security-info-box),
+:global([data-theme="light"] .security-info-box) {
+  background: #f0f9ff !important;
+  border-color: #bae6fd !important;
+  color: #0369a1 !important;
+}
+
+:global(:root[data-theme="light"] .security-alert-box.danger),
+:global([data-theme="light"] .security-alert-box.danger) {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #991b1b !important;
+}
+
+:global(:root[data-theme="light"] .alert-rec),
+:global([data-theme="light"] .alert-rec) {
+  color: #b91c1c !important;
+}
+
+:global(:root[data-theme="light"] .security-modal-footer),
+:global([data-theme="light"] .security-modal-footer) {
+  background: #f8fafc !important;
+  border-top-color: #e2e8f0 !important;
 }
 </style>
