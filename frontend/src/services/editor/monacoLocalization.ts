@@ -114,7 +114,7 @@ function getContrastMenuColors() {
 function patchContextView(contextView: HTMLElement): void {
   const c = getContrastMenuColors();
 
-  // 1) 外层容器 (context-view 本身，或 monaco-menu-container)
+  // 1) 外层容器
   contextView.style.setProperty("background-color", c.bg, "important");
   contextView.style.setProperty("color", c.fg, "important");
   contextView.style.setProperty("border", `1px solid ${c.border}`, "important");
@@ -122,40 +122,41 @@ function patchContextView(contextView: HTMLElement): void {
   contextView.style.setProperty("border-radius", "6px", "important");
   contextView.style.setProperty("overflow", "hidden", "important");
 
-  // 2) 所有子层：scrollable-element, monaco-menu, action-bar
-  const innerContainers = contextView.querySelectorAll<HTMLElement>(
+  // 2) 所有子层容器
+  contextView.querySelectorAll<HTMLElement>(
     ".monaco-scrollable-element, .monaco-menu, .monaco-action-bar.vertical"
-  );
-  innerContainers.forEach((el) => {
+  ).forEach((el) => {
     el.style.setProperty("background-color", c.bg, "important");
     el.style.setProperty("color", c.fg, "important");
   });
 
-  // 3) 菜单项：覆盖 Monaco 的 inline style（applyStyle() 在 render/focus/blur 时设置）
-  const menuItems = contextView.querySelectorAll<HTMLElement>(".action-menu-item");
-  menuItems.forEach((item) => {
-    item.style.setProperty("color", c.fg, "important");
-    // 不设置 backgroundColor（让 hover 态由下面处理）
-    if (item.style.backgroundColor) {
-      item.style.removeProperty("background-color");
+  // 3) 菜单项：区分 focused/hover 和普通态
+  contextView.querySelectorAll<HTMLElement>(".action-item").forEach((actionItem) => {
+    const menuItem = actionItem.querySelector<HTMLElement>(".action-menu-item");
+    if (!menuItem) return;
+    const isFocused = actionItem.classList.contains("focused");
+    if (isFocused) {
+      menuItem.style.setProperty("background-color", c.hoverBg, "important");
+      menuItem.style.setProperty("color", c.hoverFg, "important");
+    } else {
+      menuItem.style.setProperty("background-color", "transparent", "important");
+      menuItem.style.setProperty("color", c.fg, "important");
+    }
+    // keybinding in this item
+    const kb = menuItem.querySelector<HTMLElement>(".keybinding");
+    if (kb) {
+      kb.style.setProperty("color", isFocused ? c.hoverFg : c.keybinding, "important");
     }
   });
 
-  // 4) keybinding
-  const keybindings = contextView.querySelectorAll<HTMLElement>(".keybinding");
-  keybindings.forEach((kb) => {
-    kb.style.setProperty("color", c.keybinding, "important");
-  });
-
-  // 5) 分割线
-  const separators = contextView.querySelectorAll<HTMLElement>(".action-label.separator");
-  separators.forEach((sep) => {
+  // 4) 分割线
+  contextView.querySelectorAll<HTMLElement>(".action-label.separator").forEach((sep) => {
     sep.style.setProperty("border-bottom-color", c.sep, "important");
+    sep.style.setProperty("background-color", c.sep, "important");
   });
 
-  // 6) 翻译所有 action-label
-  const labels = contextView.querySelectorAll<HTMLElement>(".action-label:not(.separator)");
-  labels.forEach((el) => {
+  // 5) 翻译所有 action-label
+  contextView.querySelectorAll<HTMLElement>(".action-label:not(.separator)").forEach((el) => {
     const raw = el.textContent?.trim();
     if (raw) {
       const translated = translateMonacoLabel(raw);
@@ -171,7 +172,10 @@ function patchContextView(contextView: HTMLElement): void {
 // ---------------------------------------------------------------------------
 export function translateActiveMonacoMenus(): void {
   if (typeof document === "undefined") return;
+  // Monaco 编辑器右键菜单
   document.querySelectorAll<HTMLElement>(".context-view").forEach(patchContextView);
+  // Vue 自定义菜单（标签页右键菜单、文件树右键菜单）
+  document.querySelectorAll<HTMLElement>(".tab-context-menu, .tab-submenu-independent").forEach(patchContextView);
 }
 
 // ---------------------------------------------------------------------------
@@ -232,8 +236,13 @@ export function setupMonacoLocalization(): void {
         for (const node of mutation.addedNodes) {
           if (node.nodeType !== Node.ELEMENT_NODE) continue;
           const el = node as HTMLElement;
-          // 检测 context-view 节点被插入 DOM
-          if (el.classList?.contains("context-view") || el.querySelector?.(".context-view")) {
+          // 检测 context-view 或 Vue 自定义菜单节点被插入 DOM
+          if (
+            el.classList?.contains("context-view") ||
+            el.classList?.contains("tab-context-menu") ||
+            el.classList?.contains("tab-submenu-independent") ||
+            el.querySelector?.(".context-view, .tab-context-menu, .tab-submenu-independent")
+          ) {
             hasNewMenu = true;
           }
         }
