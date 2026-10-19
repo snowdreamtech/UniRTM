@@ -158,7 +158,7 @@
       <!-- Expandable Guard Diagnostics Dropdown -->
       <div v-if="isGuardDetailsOpen" class="guard-diagnostics-drawer">
         <div class="guard-drawer-header">
-          <span class="guard-drawer-title">{{ t('guard.diagnostics.title') || '质量守门诊断结果' }}</span>
+          <span class="guard-drawer-title">{{ t('guard.diagnostics.title') || '质量守卫诊断结果' }}</span>
           <button class="guard-close-btn" @click="isGuardDetailsOpen = false">×</button>
         </div>
         <div v-if="guardStatus.issues.length > 0" class="guard-issues-list">
@@ -179,7 +179,7 @@
         </div>
         <div v-else class="guard-issues-empty">
           <span class="codicon codicon-check"></span>
-          <span>{{ t('guard.status.passed') || '质量守门通过，未检测到违规项' }}</span>
+          <span>{{ t('guard.status.passed') || '质量守卫通过，未检测到违规项' }}</span>
         </div>
       </div>
 
@@ -529,11 +529,11 @@ const guardIconClass = computed(() => {
 });
 
 const guardLabelText = computed(() => {
-  if (isGuardLoading.value) return t("guard.status.checking") || "守门质检中...";
+  if (isGuardLoading.value) return t("guard.status.checking") || "守卫质检中...";
   if (isGuardFixing.value) return t("guard.status.fixing") || "正在自动修复...";
   if (guardStatus.value.errors_count > 0) return t("guard.status.blocked") || "拦截违规";
   if (guardStatus.value.fixable_count > 0) return `${guardStatus.value.fixable_count} ` + (t("guard.status.fixable") || "处可自愈");
-  return t("guard.status.passed") || "质量守门通过";
+  return t("guard.status.passed") || "质量守卫通过";
 });
 
 const guardTooltip = computed(() => {
@@ -555,7 +555,7 @@ async function handleRefreshGuard() {
 async function handleCommit() {
   if (guardStatus.value.errors_count > 0) {
     isGuardDetailsOpen.value = true;
-    showToast(t("guard.toast.blocked") || "质量守门检测到阻断违规，请先解决或修复后提交", "error");
+    showToast(t("guard.toast.blocked") || "质量守卫检测到阻断违规，请先解决或修复后提交", "error");
     return;
   }
   await commit(undefined, false, signCommit.value);
@@ -1448,39 +1448,64 @@ async function handleModalConfirm(payload: {
 }
 
 .guard-status-capsule {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
+  padding: 4px 10px;
   border-radius: 12px;
   font-size: 11px;
+  line-height: 1.4;
   cursor: pointer;
   user-select: none;
   transition: all 0.15s ease;
   border: 1px solid transparent;
+  box-sizing: border-box;
 }
 
 .guard-status-capsule.status-pass {
-  background: rgba(46, 160, 67, 0.12);
-  color: #3fb950;
-  border-color: rgba(46, 160, 67, 0.25);
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+:root[data-theme="light"] .guard-status-capsule.status-pass {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
 }
 
 .guard-status-capsule.status-warning {
-  background: rgba(210, 153, 34, 0.12);
-  color: #d29922;
-  border-color: rgba(210, 153, 34, 0.25);
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+:root[data-theme="light"] .guard-status-capsule.status-warning {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
 }
 
 .guard-status-capsule.status-error {
-  background: rgba(248, 81, 73, 0.12);
-  color: #f85149;
-  border-color: rgba(248, 81, 73, 0.25);
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+:root[data-theme="light"] .guard-status-capsule.status-error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
 }
 
 .guard-status-capsule.status-loading {
   background: rgba(255, 255, 255, 0.08);
-  color: #8b949e;
+  color: var(--text-muted, #94a3b8);
+}
+
+:root[data-theme="light"] .guard-status-capsule.status-loading {
+  background: #f1f5f9;
+  color: #64748b;
 }
 
 .guard-count-pill {
@@ -1489,7 +1514,11 @@ async function handleModalConfirm(payload: {
   font-size: 10px;
   font-weight: 600;
   background: currentColor;
-  color: #1e1e1e;
+  color: var(--card-bg, #1e1e1e);
+}
+
+:root[data-theme="light"] .guard-count-pill {
+  color: #ffffff;
 }
 
 .guard-actions-group {
@@ -1510,6 +1539,7 @@ async function handleModalConfirm(payload: {
   color: #fff;
   border: none;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
 .guard-btn-fix:hover:not(:disabled) {
@@ -1523,45 +1553,70 @@ async function handleModalConfirm(payload: {
   width: 24px;
   height: 24px;
   background: transparent;
-  color: #8b949e;
+  color: var(--text-muted, #94a3b8);
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .guard-btn-refresh:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: var(--section-bg, rgba(255, 255, 255, 0.1));
+  color: var(--text-main, #fff);
+}
+
+:root[data-theme="light"] .guard-btn-refresh {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .guard-btn-refresh:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #0f172a;
 }
 
 /* Guard Diagnostics Drawer */
 .guard-diagnostics-drawer {
-  background: #1e1e1e;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--card-bg, #121a2b);
+  border: 1px solid var(--card-border, rgba(0, 229, 255, 0.15));
   border-radius: 6px;
-  padding: 8px;
+  padding: 10px;
   margin-bottom: 8px;
-  max-height: 200px;
+  max-height: 220px;
   overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+:root[data-theme="light"] .guard-diagnostics-drawer {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .guard-drawer-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   font-size: 11px;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-main, #f8fafc);
+}
+
+:root[data-theme="light"] .guard-drawer-header {
+  color: #0f172a;
 }
 
 .guard-close-btn {
   background: transparent;
   border: none;
-  color: #8b949e;
+  color: var(--text-muted, #94a3b8);
   cursor: pointer;
   font-size: 14px;
   line-height: 1;
+}
+
+:root[data-theme="light"] .guard-close-btn {
+  color: #64748b;
 }
 
 .guard-issues-list {
@@ -1574,24 +1629,42 @@ async function handleModalConfirm(payload: {
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  padding: 4px 6px;
+  padding: 5px 8px;
   border-radius: 4px;
   font-size: 11px;
-  background: rgba(255, 255, 255, 0.03);
+  line-height: 1.4;
+  background: rgba(255, 255, 255, 0.04);
   cursor: pointer;
   transition: background 0.1s ease;
+}
+
+:root[data-theme="light"] .guard-issue-item {
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
 }
 
 .guard-issue-item:hover {
   background: rgba(255, 255, 255, 0.08);
 }
 
+:root[data-theme="light"] .guard-issue-item:hover {
+  background: #f1f5f9;
+}
+
 .guard-issue-item.severity-error {
-  color: #f85149;
+  color: #f87171;
+}
+
+:root[data-theme="light"] .guard-issue-item.severity-error {
+  color: #b91c1c;
 }
 
 .guard-issue-item.severity-warning {
-  color: #d29922;
+  color: #fbbf24;
+}
+
+:root[data-theme="light"] .guard-issue-item.severity-warning {
+  color: #b45309;
 }
 
 .guard-issue-info {
@@ -1603,33 +1676,56 @@ async function handleModalConfirm(payload: {
 
 .guard-issue-file {
   font-size: 10px;
-  color: #fff;
+  color: var(--text-main, #f8fafc);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+:root[data-theme="light"] .guard-issue-file {
+  color: #0f172a;
+}
+
 .guard-issue-msg {
   font-size: 11px;
-  color: #8b949e;
+  color: var(--text-muted, #94a3b8);
+}
+
+:root[data-theme="light"] .guard-issue-msg {
+  color: #475569;
 }
 
 .guard-fixable-tag {
   font-size: 9px;
   padding: 1px 4px;
   border-radius: 3px;
-  background: rgba(46, 160, 67, 0.2);
-  color: #3fb950;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+:root[data-theme="light"] .guard-fixable-tag {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
 }
 
 .guard-issues-empty {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px;
+  padding: 8px 10px;
   font-size: 11px;
-  color: #3fb950;
-  background: rgba(46, 160, 67, 0.1);
+  line-height: 1.5;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.25);
   border-radius: 4px;
+  box-sizing: border-box;
+}
+
+:root[data-theme="light"] .guard-issues-empty {
+  color: #047857;
+  background: #ecfdf5;
+  border-color: #a7f3d0;
 }
 </style>

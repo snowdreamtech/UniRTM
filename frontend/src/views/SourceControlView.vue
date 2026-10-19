@@ -142,7 +142,7 @@
                 @click="switchTab('guard')"
               >
                 <span class="codicon codicon-shield"></span>
-                <span>{{ t('guard.title') || '质量守门' }}</span>
+                <span>{{ t('guard.title') || '质量守卫' }}</span>
                 <span
                   v-if="guardIssuesCount > 0"
                   class="tab-count-pill"
@@ -215,7 +215,7 @@
             </div>
             <div class="stat-details">
               <span class="stat-value">{{ guardCardValue }}</span>
-              <span class="stat-label">{{ t('guard.title') || '质量守门' }}</span>
+              <span class="stat-label">{{ t('guard.title') || '质量守卫' }}</span>
             </div>
           </div>
         </div>
@@ -473,9 +473,9 @@
               <span class="codicon" :class="guardCardIcon"></span>
             </div>
             <div class="guard-hub-title-text">
-              <h2 class="guard-hub-title">{{ t('guard.title') || '质量守门与合规中心' }}</h2>
+              <h2 class="guard-hub-title">{{ t('guard.title') || '质量守卫与合规中心' }}</h2>
               <p class="guard-hub-desc">
-                Pre-commit & CI 双守门流水线：Phase 1 Fixer 原生自愈 ➔ Phase 2 Formatter 格式化 ➔ Phase 3 Linter & Security 门禁阻断与密钥防泄漏
+                Pre-commit & CI 双守卫流水线：Phase 1 Fixer 原生自愈 ➔ Phase 2 Formatter 格式化 ➔ Phase 3 Linter & Security 门禁阻断与密钥防泄漏
               </p>
             </div>
           </div>
@@ -560,7 +560,7 @@
             </div>
             <div class="step-status">
               <span class="codicon codicon-shield text-blue"></span>
-              <span>Pre-commit & CI 双守门</span>
+              <span>Pre-commit & CI 双守卫</span>
             </div>
           </div>
         </div>
@@ -569,8 +569,8 @@
         <div class="guard-diagnostics-section">
           <div class="diagnostics-bar">
             <div class="diagnostics-summary">
-              <span class="diag-title">{{ t('guard.diagnostics.title') || '质量守门诊断结果' }}</span>
-              <span class="diag-badge-clean" v-if="guardStatus.clean">🟢 {{ t('guard.status.passed') || '质量守门通过' }}</span>
+              <span class="diag-title">{{ t('guard.diagnostics.title') || '质量守卫诊断结果' }}</span>
+              <span class="diag-badge-clean" v-if="guardStatus.clean">🟢 {{ t('guard.status.passed') || '质量守卫通过' }}</span>
               <span class="diag-badge-errors" v-if="guardStatus.errors_count > 0">🔴 {{ guardStatus.errors_count }} 阻断违规</span>
               <span class="diag-badge-warnings" v-if="guardStatus.warnings_count > 0">🟡 {{ guardStatus.warnings_count }} 待优化项</span>
             </div>
@@ -602,7 +602,7 @@
           <!-- Clean State Illustration -->
           <div v-else class="guard-clean-state">
             <span class="codicon codicon-shield-check clean-icon"></span>
-            <h3 class="clean-title">{{ t('guard.status.passed') || '质量守门已通过' }}</h3>
+            <h3 class="clean-title">{{ t('guard.status.passed') || '质量守卫已通过' }}</h3>
             <p class="clean-subtitle">
               当前扫描范围内未发现任何格式违规、代码坏味道或泄密风险，符合提交规范。
             </p>
@@ -744,9 +744,9 @@ const guardCardIconColor = computed(() => {
 
 const guardTooltip = computed(() => {
   if (guardStatus.value.fixable_count > 0) {
-    return `质量守门发现 ${guardStatus.value.fixable_count} 处可修复问题，点击查看守门中心`;
+    return `质量守卫发现 ${guardStatus.value.fixable_count} 处可修复问题，点击查看守卫中心`;
   }
-  return "质量守门通过，点击打开守门中心";
+  return "质量守卫通过，点击打开守卫中心";
 });
 
 async function handleRunGuardFix() {
@@ -2142,7 +2142,8 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 16px;
   padding: 20px 24px;
-  background: var(--bg-primary);
+  background: var(--bg-color);
+  color: var(--text-main);
   overflow-y: auto;
 }
 
@@ -2155,6 +2156,7 @@ onBeforeUnmount(() => {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .guard-hub-title-group {
@@ -2174,34 +2176,54 @@ onBeforeUnmount(() => {
 }
 
 .guard-badge-large.green {
-  background: rgba(46, 160, 67, 0.15);
-  color: #3fb950;
-  border: 1px solid rgba(46, 160, 67, 0.3);
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+:root[data-theme="light"] .guard-badge-large.green {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
 }
 
 .guard-badge-large.amber {
-  background: rgba(210, 153, 34, 0.15);
-  color: #d29922;
-  border: 1px solid rgba(210, 153, 34, 0.3);
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+:root[data-theme="light"] .guard-badge-large.amber {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
 }
 
 .guard-badge-large.red {
-  background: rgba(248, 81, 73, 0.15);
-  color: #f85149;
-  border: 1px solid rgba(248, 81, 73, 0.3);
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+:root[data-theme="light"] .guard-badge-large.red {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
 }
 
 .guard-hub-title {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-main);
+  line-height: 1.4;
 }
 
 .guard-hub-desc {
   margin: 4px 0 0 0;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-muted);
+  line-height: 1.5;
 }
 
 .guard-hub-actions {
@@ -2212,10 +2234,15 @@ onBeforeUnmount(() => {
 
 .guard-scope-toggle {
   display: inline-flex;
-  background: var(--bg-secondary);
+  background: var(--section-bg);
   padding: 2px;
   border-radius: 6px;
   border: 1px solid var(--card-border);
+}
+
+:root[data-theme="light"] .guard-scope-toggle {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
 }
 
 .guard-scope-toggle .scope-btn {
@@ -2223,10 +2250,15 @@ onBeforeUnmount(() => {
   font-size: 12px;
   border: none;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.15s ease;
+  line-height: 1.4;
+}
+
+:root[data-theme="light"] .guard-scope-toggle .scope-btn {
+  color: #64748b;
 }
 
 .guard-scope-toggle .scope-btn.active {
@@ -2234,6 +2266,11 @@ onBeforeUnmount(() => {
   color: var(--accent-cyan);
   font-weight: 600;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme="light"] .guard-scope-toggle .scope-btn.active {
+  background: #ffffff;
+  color: #0284c7;
 }
 
 /* 3-Phase Pipeline Architecture Grid */
@@ -2252,10 +2289,16 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="light"] .pipeline-step-card {
+  background: #ffffff;
+  border-color: #cbd5e1;
 }
 
 .pipeline-arrow {
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: 18px;
   font-weight: bold;
 }
@@ -2279,14 +2322,19 @@ onBeforeUnmount(() => {
 .step-title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-main);
+  line-height: 1.4;
 }
 
 .step-desc {
   font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.4;
-  min-height: 34px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  min-height: 36px;
+}
+
+:root[data-theme="light"] .step-desc {
+  color: #475569;
 }
 
 .step-status {
@@ -2294,13 +2342,32 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   border-top: 1px solid var(--card-border);
   padding-top: 8px;
+  line-height: 1.4;
 }
 
-.text-green { color: #3fb950; }
-.text-blue { color: #58a6ff; }
+:root[data-theme="light"] .step-status {
+  border-top-color: #f1f5f9;
+  color: #64748b;
+}
+
+.text-green {
+  color: #34d399;
+}
+
+:root[data-theme="light"] .text-green {
+  color: #059669;
+}
+
+.text-blue {
+  color: #38bdf8;
+}
+
+:root[data-theme="light"] .text-blue {
+  color: #0284c7;
+}
 
 /* Diagnostics Panel */
 .guard-diagnostics-section {
@@ -2310,6 +2377,12 @@ onBeforeUnmount(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme="light"] .guard-diagnostics-section {
+  background: #ffffff;
+  border-color: #cbd5e1;
 }
 
 .diagnostics-bar {
@@ -2317,8 +2390,13 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: var(--bg-secondary);
+  background: var(--section-bg);
   border-bottom: 1px solid var(--card-border);
+}
+
+:root[data-theme="light"] .diagnostics-bar {
+  background: #f8fafc;
+  border-bottom-color: #e2e8f0;
 }
 
 .diagnostics-summary {
@@ -2330,30 +2408,49 @@ onBeforeUnmount(() => {
 .diag-title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-main);
+  line-height: 1.4;
 }
 
 .diag-badge-clean {
   font-size: 12px;
-  color: #3fb950;
+  color: #34d399;
   font-weight: 500;
+  line-height: 1.5;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+:root[data-theme="light"] .diag-badge-clean {
+  color: #047857;
 }
 
 .diag-badge-errors {
   font-size: 12px;
-  color: #f85149;
+  color: #f87171;
   font-weight: 600;
+  line-height: 1.5;
+}
+
+:root[data-theme="light"] .diag-badge-errors {
+  color: #b91c1c;
 }
 
 .diag-badge-warnings {
   font-size: 12px;
-  color: #d29922;
+  color: #fbbf24;
   font-weight: 600;
+  line-height: 1.5;
+}
+
+:root[data-theme="light"] .diag-badge-warnings {
+  color: #b45309;
 }
 
 .diag-files-count {
   font-size: 11px;
-  color: var(--text-secondary);
+  color: var(--text-muted);
 }
 
 .guard-issues-table {
@@ -2369,12 +2466,21 @@ onBeforeUnmount(() => {
   padding: 10px 16px;
   border-bottom: 1px solid var(--card-border);
   font-size: 12px;
+  line-height: 1.5;
   cursor: pointer;
   transition: background 0.1s ease;
 }
 
+:root[data-theme="light"] .issue-row {
+  border-bottom-color: #f1f5f9;
+}
+
 .issue-row:hover {
   background: rgba(255, 255, 255, 0.04);
+}
+
+:root[data-theme="light"] .issue-row:hover {
+  background: #f8fafc;
 }
 
 .issue-left {
@@ -2385,20 +2491,32 @@ onBeforeUnmount(() => {
 }
 
 .issue-row.severity-error .codicon-error {
-  color: #f85149;
+  color: #f87171;
+}
+
+:root[data-theme="light"] .issue-row.severity-error .codicon-error {
+  color: #b91c1c;
 }
 
 .issue-row.severity-warning .codicon-warning {
-  color: #d29922;
+  color: #fbbf24;
+}
+
+:root[data-theme="light"] .issue-row.severity-warning .codicon-warning {
+  color: #b45309;
 }
 
 .issue-file {
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--text-main);
 }
 
 .issue-line {
-  color: #58a6ff;
+  color: #38bdf8;
+}
+
+:root[data-theme="light"] .issue-line {
+  color: #0284c7;
 }
 
 .issue-rule {
@@ -2406,12 +2524,21 @@ onBeforeUnmount(() => {
   padding: 1px 5px;
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.06);
-  color: var(--text-secondary);
+  color: var(--text-muted);
+}
+
+:root[data-theme="light"] .issue-rule {
+  background: #f1f5f9;
+  color: #475569;
 }
 
 .issue-msg {
   flex: 1;
-  color: var(--text-secondary);
+  color: var(--text-muted);
+}
+
+:root[data-theme="light"] .issue-msg {
+  color: #475569;
 }
 
 .issue-right {
@@ -2424,14 +2551,20 @@ onBeforeUnmount(() => {
   font-size: 10px;
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(46, 160, 67, 0.15);
-  color: #3fb950;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
   font-weight: 600;
+}
+
+:root[data-theme="light"] .issue-fixable-pill {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
 }
 
 .issue-phase-tag {
   font-size: 10px;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   text-transform: uppercase;
 }
 
@@ -2446,21 +2579,31 @@ onBeforeUnmount(() => {
 
 .guard-clean-state .clean-icon {
   font-size: 48px;
-  color: #3fb950;
+  color: #34d399;
   margin-bottom: 12px;
+}
+
+:root[data-theme="light"] .guard-clean-state .clean-icon {
+  color: #059669;
 }
 
 .guard-clean-state .clean-title {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-main);
+  line-height: 1.5;
 }
 
 .guard-clean-state .clean-subtitle {
-  margin: 6px 0 0 0;
+  margin: 8px 0 0 0;
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   max-width: 480px;
+  line-height: 1.6;
+}
+
+:root[data-theme="light"] .guard-clean-state .clean-subtitle {
+  color: #64748b;
 }
 </style>
