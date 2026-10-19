@@ -1097,6 +1097,7 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/fs/write", handleFSWrite)
 
 	// ─── Git SCM API Handlers ─────────────────────────────────────────────────
+	mux.HandleFunc("/api/git/repositories", handleGitRepositories)
 	mux.HandleFunc("/api/git/status", handleGitStatus)
 	mux.HandleFunc("/api/git/stage", handleGitStage)
 	mux.HandleFunc("/api/git/unstage", handleGitUnstage)
@@ -3693,13 +3694,29 @@ type GitStatusResponse struct {
 	TotalChanges int             `json:"totalChanges"`
 }
 
-func runGitCommand(args ...string) (string, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", err
+// GitRepositoryItem represents a git repository in a multi-root/multi-project workspace.
+type GitRepositoryItem struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	RootPath     string `json:"rootPath"`
+	Branch       string `json:"branch"`
+	Upstream     string `json:"upstream"`
+	Ahead        int    `json:"ahead"`
+	Behind       int    `json:"behind"`
+	IsDirty      bool   `json:"isDirty"`
+	TotalChanges int    `json:"totalChanges"`
+}
+
+func runGitCommandInDir(dir string, args ...string) (string, error) {
+	if dir == "" {
+		var err error
+		dir, err = os.Getwd()
+		if err != nil {
+			return "", err
+		}
 	}
 	cmd := exec.Command("git", args...)
-	cmd.Dir = wd
+	cmd.Dir = dir
 	if askpassPath := getOrCreateAskPassHelper(); askpassPath != "" {
 		cmd.Env = append(os.Environ(),
 			"GIT_ASKPASS="+askpassPath,
@@ -3720,6 +3737,252 @@ func runGitCommand(args ...string) (string, error) {
 	return strings.TrimSpace(stdout.String()), nil
 }
 
+func resolveGitRepoDir(r *http.Request) string {
+	wd, _ := os.Getwd()
+	if r == nil {
+		return wd
+	}
+	repo := r.URL.Query().Get("repo")
+	if repo == "" {
+		repo = r.Header.Get("X-Git-Repo")
+	}
+	if repo == "" {
+		return wd
+	}
+
+	// 1. Direct absolute directory
+	if filepath.IsAbs(repo) {
+		if fi, err := os.Stat(repo); err == nil && fi.IsDir() {
+			return repo
+		}
+	}
+
+	// Find enclosing repo of wd
+	baseDir := wd
+	curr := wd
+	for {
+		if _, err := os.Stat(filepath.Join(curr, ".git")); err == nil {
+			baseDir = curr
+			break
+		}
+		p := filepath.Dir(curr)
+		if p == curr || p == "." || p == "/" {
+			break
+		}
+		curr = p
+	}
+
+	// 2. Relative to baseDir
+	rel := filepath.Join(baseDir, repo)
+	if fi, err := os.Stat(rel); err == nil && fi.IsDir() {
+		return rel
+	}
+
+	// 3. Match against workspaceRoots
+	roots := loadWorkspaceRoots(baseDir)
+	for _, root := range roots {
+		if root.Name == repo || root.ID == repo || filepath.Base(root.Path) == repo {
+			target := root.Path
+			if !filepath.IsAbs(target) {
+				target = filepath.Join(baseDir, target)
+			}
+			if fi, err := os.Stat(target); err == nil && fi.IsDir() {
+				return target
+			}
+		}
+	}
+
+	// 4. Sibling directory in parent
+	parent := filepath.Dir(baseDir)
+	sibling := filepath.Join(parent, repo)
+	if fi, err := os.Stat(sibling); err == nil && fi.IsDir() {
+		return sibling
+	}
+
+	return wd
+}
+
+func runGitInReq(r *http.Request, args ...string) (string, error) {
+	dir := resolveGitRepoDir(r)
+	return runGitCommandInDir(dir, args...)
+}
+
+func runGitCommand(args ...string) (string, error) {
+	return runGitCommandInDir("", args...)
+}
+
+func scanGitRepositories() []GitRepositoryItem {
+	wd, _ := os.Getwd()
+	visited := make(map[string]bool)
+	var candidates []string
+
+	addCandidate := func(dir string) {
+		if dir == "" {
+			return
+		}
+		clean := filepath.Clean(dir)
+		if visited[clean] {
+			return
+		}
+		visited[clean] = true
+		gitDir := filepath.Join(clean, ".git")
+		if _, err := os.Stat(gitDir); err == nil {
+			candidates = append(candidates, clean)
+		}
+	}
+
+	// 1. Current working directory and enclosing repository
+	curr := wd
+	enclosingRepo := ""
+	for {
+		if _, err := os.Stat(filepath.Join(curr, ".git")); err == nil {
+			addCandidate(curr)
+			enclosingRepo = curr
+			break
+		}
+		parent := filepath.Dir(curr)
+		if parent == curr || parent == "." || parent == "/" {
+			break
+		}
+		curr = parent
+	}
+	if enclosingRepo == "" {
+		addCandidate(wd)
+		enclosingRepo = wd
+	}
+
+	// 2. Workspace roots
+	roots := loadWorkspaceRoots(enclosingRepo)
+	for _, root := range roots {
+		fullPath := root.Path
+		if !filepath.IsAbs(fullPath) {
+			fullPath = filepath.Join(enclosingRepo, fullPath)
+		}
+		addCandidate(fullPath)
+
+		// Check subdirectories of workspace roots
+		if entries, err := os.ReadDir(fullPath); err == nil {
+			for _, entry := range entries {
+				if entry.IsDir() && !strings.HasPrefix(entry.Name(), ".") {
+					addCandidate(filepath.Join(fullPath, entry.Name()))
+				}
+			}
+		}
+	}
+
+	// 3. Immediate subdirectories of enclosingRepo
+	if entries, err := os.ReadDir(enclosingRepo); err == nil {
+		for _, entry := range entries {
+			if entry.IsDir() && !strings.HasPrefix(entry.Name(), ".") {
+				addCandidate(filepath.Join(enclosingRepo, entry.Name()))
+			}
+		}
+	}
+
+	// 4. Sibling directories of enclosingRepo in parent
+	parent := filepath.Dir(enclosingRepo)
+	if entries, err := os.ReadDir(parent); err == nil {
+		for _, entry := range entries {
+			if entry.IsDir() && !strings.HasPrefix(entry.Name(), ".") {
+				addCandidate(filepath.Join(parent, entry.Name()))
+			}
+		}
+	}
+
+	var results []GitRepositoryItem
+	for _, repoDir := range candidates {
+		name := filepath.Base(repoDir)
+		porcelain, err := runGitCommandInDir(repoDir, "status", "--porcelain=v1", "-b")
+		if err != nil {
+			continue
+		}
+
+		lines := strings.Split(porcelain, "\n")
+		branch := "HEAD"
+		upstream := ""
+		ahead := 0
+		behind := 0
+		totalChanges := 0
+
+		for _, l := range lines {
+			l = strings.TrimRight(l, "\r")
+			if strings.TrimSpace(l) == "" {
+				continue
+			}
+			if strings.HasPrefix(l, "## ") {
+				header := strings.TrimSpace(strings.TrimPrefix(l, "## "))
+				if strings.Contains(header, "...") {
+					parts := strings.Split(header, "...")
+					branch = parts[0]
+					rest := parts[1]
+					if idx := strings.Index(rest, " "); idx != -1 {
+						upstream = rest[:idx]
+						statusPart := rest[idx:]
+						if strings.Contains(statusPart, "ahead") {
+							var a int
+							if n, _ := fmt.Sscanf(statusPart[strings.Index(statusPart, "ahead")+5:], "%d", &a); n > 0 {
+								ahead = a
+							}
+						}
+						if strings.Contains(statusPart, "behind") {
+							var b int
+							if n, _ := fmt.Sscanf(statusPart[strings.Index(statusPart, "behind")+6:], "%d", &b); n > 0 {
+								behind = b
+							}
+						}
+					} else {
+						upstream = rest
+					}
+				} else {
+					branch = header
+				}
+			} else {
+				totalChanges++
+			}
+		}
+
+		results = append(results, GitRepositoryItem{
+			ID:           name,
+			Name:         name,
+			RootPath:     repoDir,
+			Branch:       branch,
+			Upstream:     upstream,
+			Ahead:        ahead,
+			Behind:       behind,
+			IsDirty:      totalChanges > 0,
+			TotalChanges: totalChanges,
+		})
+	}
+
+	// Sort results: place current working directory repo first if present, then alphabetical
+	cleanWD := filepath.Clean(wd)
+	sort.Slice(results, func(i, j int) bool {
+		if filepath.Clean(results[i].RootPath) == cleanWD {
+			return true
+		}
+		if filepath.Clean(results[j].RootPath) == cleanWD {
+			return false
+		}
+		return strings.ToLower(results[i].Name) < strings.ToLower(results[j].Name)
+	})
+
+	return results
+}
+
+func handleGitRepositories(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	repos := scanGitRepositories()
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":      true,
+		"repositories": repos,
+	})
+}
+
 func handleGitStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
@@ -3727,7 +3990,7 @@ func handleGitStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	porcelain, err := runGitCommand("status", "--porcelain=v1", "-b")
+	porcelain, err := runGitInReq(r, "status", "--porcelain=v1", "-b")
 	if err != nil {
 		// Not a git repository or git error
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
@@ -3837,7 +4100,7 @@ func handleGitStage(w http.ResponseWriter, r *http.Request) {
 		args = append(args, body.Paths...)
 	}
 
-	if _, err := runGitCommand(args...); err != nil {
+	if _, err := runGitInReq(r, args...); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
 		return
@@ -3862,7 +4125,7 @@ func handleGitUnstage(w http.ResponseWriter, r *http.Request) {
 		args = append(args, body.Paths...)
 	}
 
-	if _, err := runGitCommand(args...); err != nil {
+	if _, err := runGitInReq(r, args...); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
 		return
@@ -3883,8 +4146,8 @@ func handleGitDiscard(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&body)
 
 	for _, p := range body.Paths {
-		if _, err := runGitCommand("checkout", "--", p); err != nil {
-			_, _ = runGitCommand("clean", "-fd", "--", p)
+		if _, err := runGitInReq(r, "checkout", "--", p); err != nil {
+			_, _ = runGitInReq(r, "clean", "-fd", "--", p)
 		}
 	}
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
@@ -3921,7 +4184,7 @@ func handleGitCommit(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	out, err := runGitCommand(args...)
+	out, err := runGitInReq(r, args...)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -3944,21 +4207,27 @@ func handleGitDiff(w http.ResponseWriter, r *http.Request) {
 	modified := ""
 
 	if isStaged {
-		orig, _ := runGitCommand("show", "HEAD:"+filePath)
+		orig, _ := runGitInReq(r, "show", "HEAD:"+filePath)
 		original = orig
-		mod, _ := runGitCommand("show", ":"+filePath)
+		mod, _ := runGitInReq(r, "show", ":"+filePath)
 		modified = mod
 	} else {
-		orig, err := runGitCommand("show", ":"+filePath)
+		orig, err := runGitInReq(r, "show", ":"+filePath)
 		if err != nil {
-			orig, _ = runGitCommand("show", "HEAD:"+filePath)
+			orig, _ = runGitInReq(r, "show", "HEAD:"+filePath)
 		}
 		original = orig
 
-		wd, safePath, err := getSafeFSPath(filePath)
-		if err == nil && wd != "" {
-			data, _ := os.ReadFile(safePath)
+		repoDir := resolveGitRepoDir(r)
+		data, err := os.ReadFile(filepath.Join(repoDir, filePath))
+		if err == nil {
 			modified = string(data)
+		} else {
+			wd, safePath, err := getSafeFSPath(filePath)
+			if err == nil && wd != "" {
+				d, _ := os.ReadFile(safePath)
+				modified = string(d)
+			}
 		}
 	}
 
@@ -3983,7 +4252,7 @@ func handleGitBranches(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := runGitCommand("branch", "-a", "--format=%(refname:short)|%(HEAD)")
+	out, err := runGitInReq(r, "branch", "-a", "--format=%(refname:short)|%(HEAD)")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -4041,7 +4310,7 @@ func handleGitCheckout(w http.ResponseWriter, r *http.Request) {
 		args = []string{"checkout", "-b", body.Branch}
 	}
 
-	if _, err := runGitCommand(args...); err != nil {
+	if _, err := runGitInReq(r, args...); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
 		return
@@ -4057,8 +4326,8 @@ func handleGitSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pullOut, _ := runGitCommand("pull", "--ff-only")
-	pushOut, _ := runGitCommand("push")
+	pullOut, _ := runGitInReq(r, "pull", "--ff-only")
+	pushOut, _ := runGitInReq(r, "push")
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
@@ -4116,7 +4385,7 @@ func handleGitLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := runGitCommand("log", "-n", "30", "--pretty=format:%H%x09%h%x09%an%x09%ae%x09%at%x09%s%x09%G?%x09%GK%x09%GS%x09%GF")
+	out, err := runGitInReq(r, "log", "-n", "30", "--pretty=format:%H%x09%h%x09%an%x09%ae%x09%at%x09%s%x09%G?%x09%GK%x09%GS%x09%GF")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -4221,7 +4490,7 @@ func handleGitGraph(w http.ResponseWriter, r *http.Request) {
 		args = append(args, "--", filePath)
 	}
 
-	out, err := runGitCommand(args...)
+	out, err := runGitInReq(r, args...)
 	if err != nil {
 		out = ""
 	}
@@ -4294,7 +4563,7 @@ func handleGitGraph(w http.ResponseWriter, r *http.Request) {
 	// Also parse stashes if showStashes != "false"
 	showStashes := r.URL.Query().Get("showStashes")
 	if showStashes != "false" {
-		stashOut, err := runGitCommand("stash", "list", "--pretty=format:%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%s%x09%gd")
+		stashOut, err := runGitInReq(r, "stash", "list", "--pretty=format:%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%s%x09%gd")
 		if err == nil && strings.TrimSpace(stashOut) != "" {
 			for _, sLine := range strings.Split(stashOut, "\n") {
 				sLine = strings.TrimSpace(sLine)
@@ -4372,7 +4641,7 @@ func handleGitCommitDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metaOut, err := runGitCommand("show", "-s", "--format=%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%cn%x09%ce%x09%ct%x09%G?%x09%GK%x09%GS%x09%GF%x09%B", hash)
+	metaOut, err := runGitInReq(r, "show", "-s", "--format=%H%x09%h%x09%P%x09%an%x09%ae%x09%at%x09%cn%x09%ce%x09%ct%x09%G?%x09%GK%x09%GS%x09%GF%x09%B", hash)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -4415,8 +4684,8 @@ func handleGitCommitDetail(w http.ResponseWriter, r *http.Request) {
 		gpg = parseGpgInfo("", "", "", "")
 	}
 
-	nameStatusOut, _ := runGitCommand("diff-tree", "--no-commit-id", "--name-status", "-r", "-m", "--first-parent", hash)
-	numstatOut, _ := runGitCommand("show", "--numstat", "--pretty=", hash)
+	nameStatusOut, _ := runGitInReq(r, "diff-tree", "--no-commit-id", "--name-status", "-r", "-m", "--first-parent", hash)
+	numstatOut, _ := runGitInReq(r, "show", "--numstat", "--pretty=", hash)
 
 	numstatMap := make(map[string][2]int)
 	for _, line := range strings.Split(numstatOut, "\n") {
@@ -4505,7 +4774,7 @@ func handleGitCommitDiff(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if parent == "" {
-		p, err := runGitCommand("rev-parse", hash+"^")
+		p, err := runGitInReq(r, "rev-parse", hash+"^")
 		if err == nil {
 			parent = strings.TrimSpace(p)
 		}
@@ -4513,14 +4782,14 @@ func handleGitCommitDiff(w http.ResponseWriter, r *http.Request) {
 
 	original := ""
 	if parent != "" {
-		orig, err := runGitCommand("show", parent+":"+filePath)
+		orig, err := runGitInReq(r, "show", parent+":"+filePath)
 		if err == nil {
 			original = orig
 		}
 	}
 
 	modified := ""
-	mod, err := runGitCommand("show", hash+":"+filePath)
+	mod, err := runGitInReq(r, "show", hash+":"+filePath)
 	if err == nil {
 		modified = mod
 	}
@@ -4575,7 +4844,7 @@ func handleGitCompare(w http.ResponseWriter, r *http.Request) {
 		if len(h) >= 8 {
 			info.ShortHash = h[:8]
 		}
-		out, err := runGitCommand("show", "-s", "--format=%H%x09%h%x09%an%x09%at%x09%s", h)
+		out, err := runGitInReq(r, "show", "-s", "--format=%H%x09%h%x09%an%x09%at%x09%s", h)
 		if err == nil {
 			parts := strings.Split(out, "\t")
 			if len(parts) >= 5 {
@@ -4592,8 +4861,8 @@ func handleGitCompare(w http.ResponseWriter, r *http.Request) {
 	baseMeta := parseMeta(base)
 	targetMeta := parseMeta(target)
 
-	nameStatusOut, _ := runGitCommand("diff-tree", "--no-commit-id", "--name-status", "-r", base, target)
-	numstatOut, _ := runGitCommand("diff", "--numstat", base, target)
+	nameStatusOut, _ := runGitInReq(r, "diff-tree", "--no-commit-id", "--name-status", "-r", base, target)
+	numstatOut, _ := runGitInReq(r, "diff", "--numstat", base, target)
 
 	numstatMap := make(map[string][2]int)
 	for _, line := range strings.Split(numstatOut, "\n") {
@@ -4683,9 +4952,9 @@ func handleGitTag(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 	if body.Message != "" {
-		_, err = runGitCommand("tag", "-a", body.Name, "-m", body.Message, body.Hash)
+		_, err = runGitInReq(r, "tag", "-a", body.Name, "-m", body.Message, body.Hash)
 	} else {
-		_, err = runGitCommand("tag", body.Name, body.Hash)
+		_, err = runGitInReq(r, "tag", body.Name, body.Hash)
 	}
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -4714,14 +4983,14 @@ func handleGitBranchCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := runGitCommand("branch", body.Name, body.Hash); err != nil {
+	if _, err := runGitInReq(r, "branch", body.Name, body.Hash); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
 		return
 	}
 
 	if body.Checkout {
-		if _, err := runGitCommand("checkout", body.Name); err != nil {
+		if _, err := runGitInReq(r, "checkout", body.Name); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
 			return
@@ -4747,7 +5016,7 @@ func handleGitCherryPick(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := runGitCommand("cherry-pick", body.Hash)
+	out, err := runGitInReq(r, "cherry-pick", body.Hash)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -4773,7 +5042,7 @@ func handleGitRevert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := runGitCommand("revert", "--no-edit", body.Hash)
+	out, err := runGitInReq(r, "revert", "--no-edit", body.Hash)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -4805,7 +5074,7 @@ func handleGitReset(w http.ResponseWriter, r *http.Request) {
 		mode = "mixed"
 	}
 
-	out, err := runGitCommand("reset", "--"+mode, body.Hash)
+	out, err := runGitInReq(r, "reset", "--"+mode, body.Hash)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -4830,7 +5099,7 @@ func handleGitBranchRename(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "Both oldName and newName are required"})
 		return
 	}
-	if _, err := runGitCommand("branch", "-m", body.OldName, body.NewName); err != nil {
+	if _, err := runGitInReq(r, "branch", "-m", body.OldName, body.NewName); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
 		return
@@ -4857,7 +5126,7 @@ func handleGitBranchDelete(w http.ResponseWriter, r *http.Request) {
 	if body.Force {
 		flag = "-D"
 	}
-	if _, err := runGitCommand("branch", flag, body.Name); err != nil {
+	if _, err := runGitInReq(r, "branch", flag, body.Name); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
 		return
@@ -4889,7 +5158,7 @@ func handleGitBranchMerge(w http.ResponseWriter, r *http.Request) {
 		args = append(args, "--squash")
 	}
 	args = append(args, body.Branch)
-	out, err := runGitCommand(args...)
+	out, err := runGitInReq(r, args...)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -4912,7 +5181,7 @@ func handleGitBranchRebase(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "Branch is required"})
 		return
 	}
-	out, err := runGitCommand("rebase", body.Branch)
+	out, err := runGitInReq(r, "rebase", body.Branch)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -4946,7 +5215,7 @@ func handleGitBranchPush(w http.ResponseWriter, r *http.Request) {
 	} else {
 		args = append(args, "origin", body.Branch)
 	}
-	out, err := runGitCommand(args...)
+	out, err := runGitInReq(r, args...)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -4969,7 +5238,7 @@ func handleGitTagDelete(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "Tag name is required"})
 		return
 	}
-	if _, err := runGitCommand("tag", "-d", body.Name); err != nil {
+	if _, err := runGitInReq(r, "tag", "-d", body.Name); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
 		return
@@ -4997,7 +5266,7 @@ func handleGitTagPush(w http.ResponseWriter, r *http.Request) {
 		args = append(args, "--force")
 	}
 	args = append(args, "origin", body.Name)
-	out, err := runGitCommand(args...)
+	out, err := runGitInReq(r, args...)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -5050,7 +5319,7 @@ func handleGitStash(w http.ResponseWriter, r *http.Request) {
 		args = append(args, "-m", strings.TrimSpace(body.Message))
 	}
 
-	out, err := runGitCommand(args...)
+	out, err := runGitInReq(r, args...)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -5067,7 +5336,7 @@ func handleGitResetUncommitted(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := runGitCommand("reset", "--hard", "HEAD")
+	out, err := runGitInReq(r, "reset", "--hard", "HEAD")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -5084,7 +5353,7 @@ func handleGitClean(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := runGitCommand("clean", "-fd")
+	out, err := runGitInReq(r, "clean", "-fd")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -5111,7 +5380,7 @@ func handleGitPull(w http.ResponseWriter, r *http.Request) {
 		args = append(args, "--rebase")
 	}
 
-	out, err := runGitCommand(args...)
+	out, err := runGitInReq(r, args...)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -5128,7 +5397,7 @@ func handleGitFetch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := runGitCommand("fetch", "--all", "--prune")
+	out, err := runGitInReq(r, "fetch", "--all", "--prune")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -5152,7 +5421,7 @@ func handleGitStashApply(w http.ResponseWriter, r *http.Request) {
 	if strings.TrimSpace(body.Stash) != "" {
 		args = append(args, strings.TrimSpace(body.Stash))
 	}
-	out, err := runGitCommand(args...)
+	out, err := runGitInReq(r, args...)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -5175,7 +5444,7 @@ func handleGitStashPop(w http.ResponseWriter, r *http.Request) {
 	if strings.TrimSpace(body.Stash) != "" {
 		args = append(args, strings.TrimSpace(body.Stash))
 	}
-	out, err := runGitCommand(args...)
+	out, err := runGitInReq(r, args...)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -5198,7 +5467,7 @@ func handleGitStashDrop(w http.ResponseWriter, r *http.Request) {
 	if strings.TrimSpace(body.Stash) != "" {
 		args = append(args, strings.TrimSpace(body.Stash))
 	}
-	out, err := runGitCommand(args...)
+	out, err := runGitInReq(r, args...)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
@@ -5227,7 +5496,7 @@ func handleGitStashBranch(w http.ResponseWriter, r *http.Request) {
 	if strings.TrimSpace(body.Stash) != "" {
 		stashRef = strings.TrimSpace(body.Stash)
 	}
-	out, err := runGitCommand("stash", "branch", strings.TrimSpace(body.Branch), stashRef)
+	out, err := runGitInReq(r, "stash", "branch", strings.TrimSpace(body.Branch), stashRef)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})

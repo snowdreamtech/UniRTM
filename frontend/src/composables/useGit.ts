@@ -112,6 +112,18 @@ export interface GitCompareCommitInfo {
   message: string;
 }
 
+export interface GitRepositoryItem {
+  id: string;
+  name: string;
+  rootPath: string;
+  branch: string;
+  upstream?: string;
+  ahead: number;
+  behind: number;
+  isDirty: boolean;
+  totalChanges: number;
+}
+
 export interface GitCompareResult {
   base: GitCompareCommitInfo;
   target: GitCompareCommitInfo;
@@ -119,6 +131,10 @@ export interface GitCompareResult {
   totalAdditions: number;
   totalDeletions: number;
 }
+
+const repositories = ref<GitRepositoryItem[]>([]);
+const activeRepo = ref<GitRepositoryItem | null>(null);
+const isLoadingRepositories = ref<boolean>(false);
 
 const status = ref<GitStatusData>({
   branch: "main",
@@ -155,6 +171,20 @@ const isLoading = ref<boolean>(false);
 const isCommitting = ref<boolean>(false);
 const isSyncing = ref<boolean>(false);
 const lastError = ref<string | null>(null);
+
+function gitFetch(url: string, init?: RequestInit): Promise<Response> {
+  if (!activeRepo.value) {
+    return init !== undefined ? fetch(url, init) : fetch(url);
+  }
+  const separator = url.includes("?") ? "&" : "?";
+  const finalUrl = `${url}${separator}repo=${encodeURIComponent(activeRepo.value.id || activeRepo.value.rootPath)}`;
+  const headers = new Headers(init?.headers || {});
+  headers.set("X-Git-Repo", activeRepo.value.id || activeRepo.value.rootPath);
+  return fetch(finalUrl, {
+    ...init,
+    headers,
+  });
+}
 
 export function useGit() {
   const { showToast } = useToast();
@@ -195,7 +225,7 @@ export function useGit() {
     isLoading.value = true;
     lastError.value = null;
     try {
-      const res = await fetch("/api/git/status");
+      const res = await gitFetch("/api/git/status");
       if (!res.ok) {
         throw new Error(`Git status failed: HTTP ${res.status}`);
       }
@@ -232,7 +262,7 @@ export function useGit() {
    */
   async function fetchBranches(): Promise<GitBranchItem[]> {
     try {
-      const res = await fetch("/api/git/branches");
+      const res = await gitFetch("/api/git/branches");
       if (!res.ok) {
         throw new Error(`Git branches failed: HTTP ${res.status}`);
       }
@@ -259,7 +289,7 @@ export function useGit() {
         console.warn("[useGit] Failed to pre-save dirty tabs before stage:", saveErr);
       }
 
-      const res = await fetch("/api/git/stage", {
+      const res = await gitFetch("/api/git/stage", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paths: paths || [] }),
@@ -305,7 +335,7 @@ export function useGit() {
   async function unstage(paths?: string[]): Promise<boolean> {
     isLoading.value = true;
     try {
-      const res = await fetch("/api/git/unstage", {
+      const res = await gitFetch("/api/git/unstage", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paths: paths || [] }),
@@ -331,7 +361,7 @@ export function useGit() {
     if (!paths || paths.length === 0) return false;
     isLoading.value = true;
     try {
-      const res = await fetch("/api/git/discard", {
+      const res = await gitFetch("/api/git/discard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paths }),
@@ -372,7 +402,7 @@ export function useGit() {
       if (typeof sign === "boolean") {
         payload.sign = sign;
       }
-      const res = await fetch("/api/git/commit", {
+      const res = await gitFetch("/api/git/commit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -400,7 +430,7 @@ export function useGit() {
     if (!branch) return false;
     isLoading.value = true;
     try {
-      const res = await fetch("/api/git/checkout", {
+      const res = await gitFetch("/api/git/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ branch, create }),
@@ -440,7 +470,7 @@ export function useGit() {
   async function fetchDiff(path: string, staged: boolean = false): Promise<GitDiffResult | null> {
     try {
       const q = new URLSearchParams({ path, staged: String(staged) });
-      const res = await fetch(`/api/git/diff?${q.toString()}`);
+      const res = await gitFetch(`/api/git/diff?${q.toString()}`);
       if (!res.ok) {
         throw new Error(`Git diff failed: HTTP ${res.status}`);
       }
@@ -457,7 +487,7 @@ export function useGit() {
    */
   async function fetchLog(): Promise<GitCommitItem[]> {
     try {
-      const res = await fetch("/api/git/log");
+      const res = await gitFetch("/api/git/log");
       if (!res.ok) throw new Error(`Git log failed: HTTP ${res.status}`);
       const data = await res.json();
       commits.value = Array.isArray(data.commits) ? data.commits : [];
@@ -474,7 +504,7 @@ export function useGit() {
   async function sync(): Promise<boolean> {
     isSyncing.value = true;
     try {
-      const res = await fetch("/api/git/sync", { method: "POST" });
+      const res = await gitFetch("/api/git/sync", { method: "POST" });
       const data = await res.json();
       if (!res.ok || !data.success) {
         throw new Error(data.error || "同步失败");
@@ -521,7 +551,7 @@ export function useGit() {
       }
       q.set("limit", String(limit));
 
-      const res = await fetch(`/api/git/graph?${q.toString()}`);
+      const res = await gitFetch(`/api/git/graph?${q.toString()}`);
       if (!res.ok) throw new Error(`Git graph failed: HTTP ${res.status}`);
       const data = await res.json();
       const rawCommits = Array.isArray(data.commits) ? data.commits : [];
@@ -565,7 +595,7 @@ export function useGit() {
    */
   async function fetchCommitDetail(hash: string): Promise<GitCommitDetail | null> {
     try {
-      const res = await fetch(`/api/git/commit-detail?hash=${encodeURIComponent(hash)}`);
+      const res = await gitFetch(`/api/git/commit-detail?hash=${encodeURIComponent(hash)}`);
       if (!res.ok) throw new Error(`Fetch commit detail failed: HTTP ${res.status}`);
       const data = await res.json();
       if (data.success && data.commit) {
@@ -590,7 +620,7 @@ export function useGit() {
     try {
       const q = new URLSearchParams({ hash, path });
       if (parentHash) q.set("parent", parentHash);
-      const res = await fetch(`/api/git/commit-diff?${q.toString()}`);
+      const res = await gitFetch(`/api/git/commit-diff?${q.toString()}`);
       if (!res.ok) throw new Error(`Fetch commit diff failed: HTTP ${res.status}`);
       const data = await res.json();
       if (data.success) {
@@ -616,7 +646,7 @@ export function useGit() {
   async function fetchCompare(base: string, target: string): Promise<GitCompareResult | null> {
     try {
       const q = new URLSearchParams({ base, target });
-      const res = await fetch(`/api/git/compare?${q.toString()}`);
+      const res = await gitFetch(`/api/git/compare?${q.toString()}`);
       if (!res.ok) throw new Error(`Fetch compare failed: HTTP ${res.status}`);
       const data = await res.json();
       if (data.success && data.compare) {
@@ -635,7 +665,7 @@ export function useGit() {
    */
   async function createTag(name: string, hash: string, message?: string): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/tag", {
+      const res = await gitFetch("/api/git/tag", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, hash, message }),
@@ -660,7 +690,7 @@ export function useGit() {
     checkoutBranch: boolean = false
   ): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/branch/create", {
+      const res = await gitFetch("/api/git/branch/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, hash, checkout: checkoutBranch }),
@@ -683,7 +713,7 @@ export function useGit() {
    */
   async function cherryPick(hash: string): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/cherry-pick", {
+      const res = await gitFetch("/api/git/cherry-pick", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hash }),
@@ -705,7 +735,7 @@ export function useGit() {
    */
   async function revertCommit(hash: string): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/revert", {
+      const res = await gitFetch("/api/git/revert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hash }),
@@ -730,7 +760,7 @@ export function useGit() {
     mode: "soft" | "mixed" | "hard" = "mixed"
   ): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/reset", {
+      const res = await gitFetch("/api/git/reset", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hash, mode }),
@@ -752,7 +782,7 @@ export function useGit() {
    */
   async function renameBranch(oldName: string, newName: string): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/branch/rename", {
+      const res = await gitFetch("/api/git/branch/rename", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ oldName, newName }),
@@ -773,7 +803,7 @@ export function useGit() {
    */
   async function deleteBranch(name: string, force: boolean = false): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/branch/delete", {
+      const res = await gitFetch("/api/git/branch/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, force }),
@@ -798,7 +828,7 @@ export function useGit() {
     squash: boolean = false
   ): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/branch/merge", {
+      const res = await gitFetch("/api/git/branch/merge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ branch, noFf, squash }),
@@ -819,7 +849,7 @@ export function useGit() {
    */
   async function rebaseBranch(branch: string): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/branch/rebase", {
+      const res = await gitFetch("/api/git/branch/rebase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ branch }),
@@ -844,7 +874,7 @@ export function useGit() {
     force: boolean = false
   ): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/branch/push", {
+      const res = await gitFetch("/api/git/branch/push", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ branch, setUpstream, force }),
@@ -865,7 +895,7 @@ export function useGit() {
    */
   async function deleteTag(name: string): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/tag/delete", {
+      const res = await gitFetch("/api/git/tag/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
@@ -885,7 +915,7 @@ export function useGit() {
    */
   async function pushTag(name: string, force: boolean = false): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/tag/push", {
+      const res = await gitFetch("/api/git/tag/push", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, force }),
@@ -903,7 +933,7 @@ export function useGit() {
     const filename = `${ref.replace(/\//g, "_")}.zip`;
     showToast(t("scm.branch.archive_generating", { ref }), "info");
     try {
-      const res = await fetch(`/api/git/archive?ref=${encodeURIComponent(ref)}`);
+      const res = await gitFetch(`/api/git/archive?ref=${encodeURIComponent(ref)}`);
       if (!res.ok) {
         const data = await res.json().catch(() => ({ error: res.statusText }));
         throw new Error(data.error || "下载归档失败");
@@ -943,7 +973,7 @@ export function useGit() {
    */
   async function stashUncommitted(message?: string, includeUntracked: boolean = true): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/stash", {
+      const res = await gitFetch("/api/git/stash", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message, includeUntracked }),
@@ -966,7 +996,7 @@ export function useGit() {
    */
   async function stashApply(stash?: string): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/stash/apply", {
+      const res = await gitFetch("/api/git/stash/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ stash }),
@@ -988,7 +1018,7 @@ export function useGit() {
    */
   async function stashPop(stash?: string): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/stash/pop", {
+      const res = await gitFetch("/api/git/stash/pop", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ stash }),
@@ -1010,7 +1040,7 @@ export function useGit() {
    */
   async function stashDrop(stash?: string): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/stash/drop", {
+      const res = await gitFetch("/api/git/stash/drop", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ stash }),
@@ -1032,7 +1062,7 @@ export function useGit() {
    */
   async function stashBranch(branch: string, stash?: string): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/stash/branch", {
+      const res = await gitFetch("/api/git/stash/branch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ branch, stash }),
@@ -1055,7 +1085,7 @@ export function useGit() {
    */
   async function resetUncommitted(): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/reset-uncommitted", {
+      const res = await gitFetch("/api/git/reset-uncommitted", {
         method: "POST",
       });
       const data = await res.json();
@@ -1076,7 +1106,7 @@ export function useGit() {
    */
   async function cleanUntracked(): Promise<boolean> {
     try {
-      const res = await fetch("/api/git/clean", {
+      const res = await gitFetch("/api/git/clean", {
         method: "POST",
       });
       const data = await res.json();
@@ -1098,7 +1128,7 @@ export function useGit() {
   async function pull(rebase: boolean = false): Promise<boolean> {
     isLoading.value = true;
     try {
-      const res = await fetch("/api/git/pull", {
+      const res = await gitFetch("/api/git/pull", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rebase }),
@@ -1126,7 +1156,7 @@ export function useGit() {
   async function fetchRemote(): Promise<boolean> {
     isLoading.value = true;
     try {
-      const res = await fetch("/api/git/fetch", {
+      const res = await gitFetch("/api/git/fetch", {
         method: "POST",
       });
       const data = await res.json();
@@ -1146,7 +1176,64 @@ export function useGit() {
     }
   }
 
+  /**
+   * Fetches the list of git repositories in the current multi-project workspace.
+   */
+  async function fetchRepositories(): Promise<GitRepositoryItem[]> {
+    isLoadingRepositories.value = true;
+    try {
+      const res = await fetch("/api/git/repositories");
+      if (!res.ok) {
+        throw new Error(`Git repositories failed: HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      repositories.value = Array.isArray(data.repositories) ? data.repositories : [];
+      if (repositories.value.length > 0) {
+        if (!activeRepo.value || !repositories.value.some((r) => r.id === activeRepo.value?.id || r.rootPath === activeRepo.value?.rootPath)) {
+          activeRepo.value = repositories.value[0];
+        }
+      }
+      return repositories.value;
+    } catch (err: any) {
+      console.warn("[useGit] fetchRepositories error:", err);
+      return [];
+    } finally {
+      isLoadingRepositories.value = false;
+    }
+  }
+
+  /**
+   * Sets the active git repository for source control operations.
+   */
+  async function setActiveRepo(repoOrId: GitRepositoryItem | string): Promise<void> {
+    if (typeof repoOrId === "string") {
+      const target = repositories.value.find((r) => r.id === repoOrId || r.name === repoOrId || r.rootPath === repoOrId);
+      if (target) {
+        activeRepo.value = target;
+      } else {
+        activeRepo.value = {
+          id: repoOrId,
+          name: repoOrId,
+          rootPath: repoOrId,
+          branch: "HEAD",
+          ahead: 0,
+          behind: 0,
+          isDirty: false,
+          totalChanges: 0,
+        };
+      }
+    } else {
+      activeRepo.value = repoOrId;
+    }
+    await Promise.all([fetchStatus(), fetchBranches()]);
+  }
+
   return {
+    repositories,
+    activeRepo,
+    isLoadingRepositories,
+    fetchRepositories,
+    setActiveRepo,
     status,
     branches,
     commits,

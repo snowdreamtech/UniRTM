@@ -607,6 +607,64 @@ describe("useGit composable", () => {
     expect(graphLimit.value).toBe(200);
     expect(hasMoreCommits.value).toBe(true);
   });
+
+  it("fetchRepositories fetches list of repositories and defaults activeRepo", async () => {
+    const mockRepos = [
+      { id: "UniRTM", name: "UniRTM", rootPath: "/path/to/UniRTM", branch: "dev", ahead: 0, behind: 0, isDirty: false, totalChanges: 0 },
+      { id: "template", name: "template", rootPath: "/path/to/template", branch: "main", ahead: 2, behind: 0, isDirty: true, totalChanges: 1 },
+    ];
+
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url === "/api/git/repositories") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true, repositories: mockRepos }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ branch: "dev", staged: [], unstaged: [] }),
+      });
+    });
+
+    const { repositories, activeRepo, fetchRepositories, setActiveRepo } = useGit();
+    (activeRepo as any).value = null;
+
+    const list = await fetchRepositories();
+    expect(list).toHaveLength(2);
+    expect(repositories.value).toHaveLength(2);
+    expect(activeRepo.value?.id).toBe("UniRTM");
+
+    // Switch to template
+    await setActiveRepo("template");
+    expect(activeRepo.value?.id).toBe("template");
+
+    // Clean up
+    (activeRepo as any).value = null;
+  });
+
+  it("setActiveRepo passes repo parameter and header in git calls", async () => {
+    const mockRepo = { id: "template", name: "template", rootPath: "/path/to/template", branch: "main", ahead: 2, behind: 0, isDirty: true, totalChanges: 1 };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ branch: "main", staged: [], unstaged: [] }),
+    });
+
+    const { activeRepo, setActiveRepo, fetchStatus } = useGit();
+    await setActiveRepo(mockRepo);
+
+    await fetchStatus();
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/git/status?repo=template",
+      expect.objectContaining({
+        headers: expect.any(Headers),
+      })
+    );
+
+    // Clean up
+    activeRepo.value = null;
+  });
 });
 
 

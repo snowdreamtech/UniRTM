@@ -3195,17 +3195,167 @@ print(json.dumps({
 
           // ─── Git SCM API Handlers ─────────────────────────────────────────
           if (req.url?.startsWith("/api/git/")) {
-            const runGit = (args: string[]): string => {
+            const reqUrl = req.url || "";
+            const reqPath = reqUrl.split("?")[0];
+
+            const parseRepoParam = (): string | null => {
               try {
-                return execFileSync("git", args, { cwd: rootDir, encoding: "utf-8" }).trim();
+                const u = new URL(reqUrl, "http://localhost");
+                const qRepo = u.searchParams.get("repo");
+                if (qRepo) return qRepo;
+              } catch (_) {}
+              const headerRepo = req.headers["x-git-repo"] as string;
+              if (headerRepo) return headerRepo;
+              return null;
+            };
+
+            const resolveRepoPath = (repo: string | null): string => {
+              if (!repo) return rootDir;
+              if (path.isAbsolute(repo) && fs.existsSync(repo) && fs.statSync(repo).isDirectory()) {
+                return repo;
+              }
+              const rel = path.resolve(rootDir, repo);
+              if (fs.existsSync(rel) && fs.statSync(rel).isDirectory()) {
+                return rel;
+              }
+              // Check sibling in parent
+              const parent = path.dirname(rootDir);
+              const sibling = path.resolve(parent, repo);
+              if (fs.existsSync(sibling) && fs.statSync(sibling).isDirectory()) {
+                return sibling;
+              }
+              // Check workspaces.json
+              try {
+                const confFile = path.resolve(rootDir, ".unirtm", "workspaces.json");
+                if (fs.existsSync(confFile)) {
+                  const data = JSON.parse(fs.readFileSync(confFile, "utf-8"));
+                  if (Array.isArray(data.roots)) {
+                    for (const r of data.roots) {
+                      if (r.name === repo || r.id === repo || path.basename(r.path || "") === repo) {
+                        const target = path.isAbsolute(r.path) ? r.path : path.resolve(rootDir, r.path);
+                        if (fs.existsSync(target) && fs.statSync(target).isDirectory()) {
+                          return target;
+                        }
+                      }
+                    }
+                  }
+                }
+              } catch (_) {}
+              return rootDir;
+            };
+
+            const activeRepoDir = resolveRepoPath(parseRepoParam());
+
+            const runGit = (args: string[], customDir?: string): string => {
+              try {
+                return execFileSync("git", args, { cwd: customDir || activeRepoDir, encoding: "utf-8" }).trim();
               } catch (err: any) {
                 const stderr = err.stderr ? err.stderr.toString() : err.message;
                 throw new Error(stderr || err.message);
               }
             };
 
+            // GET /api/git/repositories
+            if (reqPath === "/api/git/repositories" && req.method === "GET") {
+              try {
+                const visited = new Set<string>();
+                const candidates: string[] = [];
+                const addCandidate = (dir: string) => {
+                  if (!dir) return;
+                  const res = path.resolve(dir);
+                  if (visited.has(res)) return;
+                  visited.add(res);
+                  if (fs.existsSync(path.join(res, ".git"))) {
+                    candidates.push(res);
+                  }
+                };
+
+                addCandidate(rootDir);
+
+                // Check workspaces.json
+                try {
+                  const confFile = path.resolve(rootDir, ".unirtm", "workspaces.json");
+                  if (fs.existsSync(confFile)) {
+                    const data = JSON.parse(fs.readFileSync(confFile, "utf-8"));
+                    if (Array.isArray(data.roots)) {
+                      for (const r of data.roots) {
+                        const target = path.isAbsolute(r.path) ? r.path : path.resolve(rootDir, r.path);
+                        addCandidate(target);
+                      }
+                    }
+                  }
+                } catch (_) {}
+
+                // Sibling directories of rootDir in parent
+                try {
+                  const parent = path.dirname(rootDir);
+                  const siblings = fs.readdirSync(parent);
+                  for (const s of siblings) {
+                    if (!s.startsWith(".")) addCandidate(path.join(parent, s));
+                  }
+                } catch (_) {}
+
+                const repos = [];
+                for (const c of candidates) {
+                  const name = path.basename(c);
+                  try {
+                    const porcelain = execFileSync("git", ["status", "--porcelain=v1", "-b"], { cwd: c, encoding: "utf-8" }).trim();
+                    const lines = porcelain ? porcelain.split("\n").filter(Boolean) : [];
+                    let branch = "HEAD";
+                    let upstream = "";
+                    let ahead = 0;
+                    let behind = 0;
+                    let totalChanges = 0;
+
+                    for (const line of lines) {
+                      if (line.startsWith("## ")) {
+                        const header = line.slice(3).trim();
+                        const branchMatch = header.match(/^([^.\s]+)(?:\.\.\.([^\s]+))?(?:\s+\[ahead\s+(\d+)(?:,\s+behind\s+(\d+))?\]|\s+\[behind\s+(\d+)\])?/);
+                        if (branchMatch) {
+                          branch = branchMatch[1] || "HEAD";
+                          upstream = branchMatch[2] || "";
+                          ahead = parseInt(branchMatch[3] || "0", 10);
+                          behind = parseInt(branchMatch[4] || branchMatch[5] || "0", 10);
+                        } else {
+                          branch = header.split("...")[0] || header;
+                        }
+                      } else {
+                        totalChanges++;
+                      }
+                    }
+
+                    repos.push({
+                      id: name,
+                      name,
+                      rootPath: c,
+                      branch,
+                      upstream,
+                      ahead,
+                      behind,
+                      isDirty: totalChanges > 0,
+                      totalChanges,
+                    });
+                  } catch (_) {}
+                }
+
+                repos.sort((a, b) => {
+                  if (a.rootPath === rootDir) return -1;
+                  if (b.rootPath === rootDir) return 1;
+                  return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+                });
+
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, repositories: repos }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: false, error: err.message, repositories: [] }));
+              }
+              return;
+            }
+
             // GET /api/git/status
-            if (req.url === "/api/git/status" && req.method === "GET") {
+            if (reqPath === "/api/git/status" && req.method === "GET") {
               try {
                 let porcelain = "";
                 try {
@@ -3278,7 +3428,7 @@ print(json.dumps({
             }
 
             // POST /api/git/stage
-            if (req.url === "/api/git/stage" && req.method === "POST") {
+            if (reqPath === "/api/git/stage" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -3302,7 +3452,7 @@ print(json.dumps({
             }
 
             // POST /api/git/unstage
-            if (req.url === "/api/git/unstage" && req.method === "POST") {
+            if (reqPath === "/api/git/unstage" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -3326,7 +3476,7 @@ print(json.dumps({
             }
 
             // POST /api/git/discard
-            if (req.url === "/api/git/discard" && req.method === "POST") {
+            if (reqPath === "/api/git/discard" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -3354,7 +3504,7 @@ print(json.dumps({
             }
 
             // POST /api/git/commit
-            if (req.url === "/api/git/commit" && req.method === "POST") {
+            if (reqPath === "/api/git/commit" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -3388,7 +3538,7 @@ print(json.dumps({
             }
 
             // GET /api/git/diff
-            if (req.url?.startsWith("/api/git/diff") && req.method === "GET") {
+            if (reqPath.startsWith("/api/git/diff") && req.method === "GET") {
               try {
                 const urlObj = new URL(req.url, "http://localhost");
                 const filePath = urlObj.searchParams.get("path") || "";
@@ -3435,7 +3585,7 @@ print(json.dumps({
             }
 
             // GET /api/git/branches
-            if (req.url === "/api/git/branches" && req.method === "GET") {
+            if (reqPath === "/api/git/branches" && req.method === "GET") {
               try {
                 const out = runGit(["branch", "-a", "--format=%(refname:short)|%(HEAD)"]);
                 const lines = out.split("\n").filter(Boolean);
@@ -3464,7 +3614,7 @@ print(json.dumps({
             }
 
             // POST /api/git/checkout
-            if (req.url === "/api/git/checkout" && req.method === "POST") {
+            if (reqPath === "/api/git/checkout" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -3492,7 +3642,7 @@ print(json.dumps({
               return;
             }
 
-            if (req.url === "/api/git/sync" && req.method === "POST") {
+            if (reqPath === "/api/git/sync" && req.method === "POST") {
               try {
                 let pullOut = "";
                 try {
@@ -3534,7 +3684,7 @@ print(json.dumps({
               };
             };
 
-            if (req.url?.startsWith("/api/git/log") && req.method === "GET") {
+            if (reqPath.startsWith("/api/git/log") && req.method === "GET") {
               try {
                 const out = runGit(["log", "-n", "30", "--pretty=format:%H%x09%h%x09%an%x09%ae%x09%at%x09%s%x09%G?%x09%GK%x09%GS%x09%GF"]);
                 const commits = out.split("\n").filter(Boolean).map((line: string) => {
@@ -3560,7 +3710,7 @@ print(json.dumps({
             }
 
             // GET /api/git/graph - Git Graph DAG topological log
-            if (req.url?.startsWith("/api/git/graph") && req.method === "GET") {
+            if (reqPath.startsWith("/api/git/graph") && req.method === "GET") {
               try {
                 const parsedUrl = new URL(req.url, "http://localhost");
                 const rawBranches = parsedUrl.searchParams.getAll("branch");
@@ -3692,7 +3842,7 @@ print(json.dumps({
             }
 
             // GET /api/git/commit-detail?hash=...
-            if (req.url?.startsWith("/api/git/commit-detail") && req.method === "GET") {
+            if (reqPath.startsWith("/api/git/commit-detail") && req.method === "GET") {
               try {
                 const parsedUrl = new URL(req.url, "http://localhost");
                 const hash = parsedUrl.searchParams.get("hash");
@@ -3813,7 +3963,7 @@ print(json.dumps({
             }
 
             // GET /api/git/commit-diff?hash=...&path=...&parent=...
-            if (req.url?.startsWith("/api/git/commit-diff") && req.method === "GET") {
+            if (reqPath.startsWith("/api/git/commit-diff") && req.method === "GET") {
               try {
                 const parsedUrl = new URL(req.url, "http://localhost");
                 const hash = parsedUrl.searchParams.get("hash");
@@ -3871,7 +4021,7 @@ print(json.dumps({
             }
 
             // GET /api/git/compare?base=...&target=...
-            if (req.url?.startsWith("/api/git/compare") && req.method === "GET") {
+            if (reqPath.startsWith("/api/git/compare") && req.method === "GET") {
               try {
                 const parsedUrl = new URL(req.url, "http://localhost");
                 const base = parsedUrl.searchParams.get("base");
@@ -3993,7 +4143,7 @@ print(json.dumps({
             }
 
             // POST /api/git/tag
-            if (req.url === "/api/git/tag" && req.method === "POST") {
+            if (reqPath === "/api/git/tag" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -4022,7 +4172,7 @@ print(json.dumps({
             }
 
             // POST /api/git/branch/create
-            if (req.url === "/api/git/branch/create" && req.method === "POST") {
+            if (reqPath === "/api/git/branch/create" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -4050,7 +4200,7 @@ print(json.dumps({
             }
 
             // POST /api/git/cherry-pick
-            if (req.url === "/api/git/cherry-pick" && req.method === "POST") {
+            if (reqPath === "/api/git/cherry-pick" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -4075,7 +4225,7 @@ print(json.dumps({
             }
 
             // POST /api/git/revert
-            if (req.url === "/api/git/revert" && req.method === "POST") {
+            if (reqPath === "/api/git/revert" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -4100,7 +4250,7 @@ print(json.dumps({
             }
 
             // POST /api/git/reset
-            if (req.url === "/api/git/reset" && req.method === "POST") {
+            if (reqPath === "/api/git/reset" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -4126,7 +4276,7 @@ print(json.dumps({
             }
 
             // POST /api/git/stash
-            if (req.url === "/api/git/stash" && req.method === "POST") {
+            if (reqPath === "/api/git/stash" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -4152,7 +4302,7 @@ print(json.dumps({
             }
 
             // POST /api/git/stash/apply
-            if (req.url === "/api/git/stash/apply" && req.method === "POST") {
+            if (reqPath === "/api/git/stash/apply" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -4173,7 +4323,7 @@ print(json.dumps({
             }
 
             // POST /api/git/stash/pop
-            if (req.url === "/api/git/stash/pop" && req.method === "POST") {
+            if (reqPath === "/api/git/stash/pop" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -4194,7 +4344,7 @@ print(json.dumps({
             }
 
             // POST /api/git/stash/drop
-            if (req.url === "/api/git/stash/drop" && req.method === "POST") {
+            if (reqPath === "/api/git/stash/drop" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -4215,7 +4365,7 @@ print(json.dumps({
             }
 
             // POST /api/git/stash/branch
-            if (req.url === "/api/git/stash/branch" && req.method === "POST") {
+            if (reqPath === "/api/git/stash/branch" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -4241,7 +4391,7 @@ print(json.dumps({
             }
 
             // POST /api/git/reset-uncommitted
-            if (req.url === "/api/git/reset-uncommitted" && req.method === "POST") {
+            if (reqPath === "/api/git/reset-uncommitted" && req.method === "POST") {
               try {
                 const out = runGit(["reset", "--hard", "HEAD"]);
                 res.setHeader("Content-Type", "application/json");
@@ -4255,7 +4405,7 @@ print(json.dumps({
             }
 
             // POST /api/git/clean
-            if (req.url === "/api/git/clean" && req.method === "POST") {
+            if (reqPath === "/api/git/clean" && req.method === "POST") {
               try {
                 const out = runGit(["clean", "-fd"]);
                 res.setHeader("Content-Type", "application/json");
@@ -4269,7 +4419,7 @@ print(json.dumps({
             }
 
             // POST /api/git/pull
-            if (req.url === "/api/git/pull" && req.method === "POST") {
+            if (reqPath === "/api/git/pull" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -4290,7 +4440,7 @@ print(json.dumps({
             }
 
             // POST /api/git/fetch
-            if (req.url === "/api/git/fetch" && req.method === "POST") {
+            if (reqPath === "/api/git/fetch" && req.method === "POST") {
               try {
                 const out = runGit(["fetch", "--all", "--prune"]);
                 res.setHeader("Content-Type", "application/json");
@@ -4304,7 +4454,7 @@ print(json.dumps({
             }
 
             // POST /api/git/branch/rename
-            if (req.url === "/api/git/branch/rename" && req.method === "POST") {
+            if (reqPath === "/api/git/branch/rename" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -4329,7 +4479,7 @@ print(json.dumps({
             }
 
             // POST /api/git/branch/delete
-            if (req.url === "/api/git/branch/delete" && req.method === "POST") {
+            if (reqPath === "/api/git/branch/delete" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -4354,7 +4504,7 @@ print(json.dumps({
             }
 
             // POST /api/git/branch/merge
-            if (req.url === "/api/git/branch/merge" && req.method === "POST") {
+            if (reqPath === "/api/git/branch/merge" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -4383,7 +4533,7 @@ print(json.dumps({
             }
 
             // POST /api/git/branch/rebase
-            if (req.url === "/api/git/branch/rebase" && req.method === "POST") {
+            if (reqPath === "/api/git/branch/rebase" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -4408,7 +4558,7 @@ print(json.dumps({
             }
 
             // POST /api/git/branch/push
-            if (req.url === "/api/git/branch/push" && req.method === "POST") {
+            if (reqPath === "/api/git/branch/push" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -4440,7 +4590,7 @@ print(json.dumps({
             }
 
             // POST /api/git/tag/delete
-            if (req.url === "/api/git/tag/delete" && req.method === "POST") {
+            if (reqPath === "/api/git/tag/delete" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -4465,7 +4615,7 @@ print(json.dumps({
             }
 
             // POST /api/git/tag/push
-            if (req.url === "/api/git/tag/push" && req.method === "POST") {
+            if (reqPath === "/api/git/tag/push" && req.method === "POST") {
               let bodyStr = "";
               req.on("data", (chunk: any) => (bodyStr += chunk));
               req.on("end", () => {
@@ -4493,7 +4643,7 @@ print(json.dumps({
             }
 
             // GET /api/git/archive?ref=...
-            if (req.url?.startsWith("/api/git/archive") && req.method === "GET") {
+            if (reqPath.startsWith("/api/git/archive") && req.method === "GET") {
               try {
                 const parsedUrl = new URL(req.url, "http://localhost");
                 const ref = parsedUrl.searchParams.get("ref") || "HEAD";
