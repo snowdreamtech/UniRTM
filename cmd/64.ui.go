@@ -12,6 +12,8 @@ import (
 	"io/fs"
 	"net"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -1123,6 +1125,14 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/git/clean", handleGitClean)
 	mux.HandleFunc("/api/git/pull", handleGitPull)
 	mux.HandleFunc("/api/git/fetch", handleGitFetch)
+
+	// ─── Port Forwarding API Handlers ──────────────────────────────────────────
+	mux.HandleFunc("/api/ports/list", handlePortsList)
+	mux.HandleFunc("/api/ports/forward", handlePortForward)
+	mux.HandleFunc("/api/ports/update", handlePortUpdate)
+	mux.HandleFunc("/api/ports/stop", handlePortStop)
+	mux.HandleFunc("/api/ports/unforward", handlePortUnforward)
+	mux.HandleFunc("/api/ports/preview/", handlePortPreview)
 
 	// ─── Static SPA Handler ───────────────────────────────────────────────────
 	fileServer := http.FileServer(http.FS(distFS))
@@ -5000,6 +5010,271 @@ func handleGitStashBranch(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "output": out})
 }
+
+// ─── Port Forwarding Management ─────────────────────────────────────────────
+
+type SystemListeningPort struct {
+	Port         int    `json:"port"`
+	Protocol     string `json:"protocol"`
+	LocalAddress string `json:"localAddress"`
+	Pid          int    `json:"pid,omitempty"`
+	Process      string `json:"process,omitempty"`
+	CommandLine  string `json:"commandLine,omitempty"`
+}
+
+type PortForwardRequest struct {
+	Port       int    `json:"port"`
+	LocalPort  int    `json:"localPort,omitempty"`
+	Label      string `json:"label,omitempty"`
+	Protocol   string `json:"protocol,omitempty"`
+	Visibility string `json:"visibility,omitempty"`
+}
+
+func scanListeningPorts() ([]SystemListeningPort, error) {
+	portsMap := make(map[int]SystemListeningPort)
+
+	// 1. Try ss (fastest, standard on modern Linux)
+	if ssPath, err := exec.LookPath("ss"); err == nil {
+		out, err := exec.Command(ssPath, "-tlpn").Output()
+		if err == nil {
+			lines := strings.Split(string(out), "\n")
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if !strings.HasPrefix(line, "LISTEN") {
+					continue
+				}
+				fields := strings.Fields(line)
+				if len(fields) < 4 {
+					continue
+				}
+				localAddr := fields[3]
+				port := extractPortFromAddr(localAddr)
+				if port <= 0 || port > 65535 {
+					continue
+				}
+
+				item := SystemListeningPort{
+					Port:         port,
+					Protocol:     "tcp",
+					LocalAddress: localAddr,
+				}
+
+				if len(fields) >= 5 {
+					procField := strings.Join(fields[4:], " ")
+					pid := extractPidFromUsers(procField)
+					if pid > 0 {
+						item.Pid = pid
+						item.CommandLine = readProcessCmdline(pid)
+						item.Process = extractProcessNameFromUsers(procField)
+					}
+				}
+				portsMap[port] = item
+			}
+		}
+	}
+
+	// 2. Try lsof as supplementary / fallback (useful for macOS or when ss couldn't resolve pid)
+	if lsofPath, err := exec.LookPath("lsof"); err == nil {
+		out, err := exec.Command(lsofPath, "-iTCP", "-sTCP:LISTEN", "-P", "-n").Output()
+		if err == nil {
+			lines := strings.Split(string(out), "\n")
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if strings.HasPrefix(line, "COMMAND") || line == "" {
+					continue
+				}
+				fields := strings.Fields(line)
+				if len(fields) < 9 {
+					continue
+				}
+				procName := fields[0]
+				pid, _ := strconv.Atoi(fields[1])
+				nameField := fields[8]
+				port := extractPortFromAddr(nameField)
+				if port <= 0 || port > 65535 {
+					continue
+				}
+
+				existing, ok := portsMap[port]
+				if !ok {
+					existing = SystemListeningPort{
+						Port:         port,
+						Protocol:     "tcp",
+						LocalAddress: nameField,
+					}
+				}
+				if existing.Pid == 0 && pid > 0 {
+					existing.Pid = pid
+					existing.Process = procName
+					existing.CommandLine = readProcessCmdline(pid)
+				}
+				portsMap[port] = existing
+			}
+		}
+	}
+
+	result := make([]SystemListeningPort, 0, len(portsMap))
+	for _, item := range portsMap {
+		result = append(result, item)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Port < result[j].Port
+	})
+
+	return result, nil
+}
+
+func extractPortFromAddr(addr string) int {
+	addr = strings.TrimSpace(addr)
+	if idx := strings.LastIndex(addr, ":"); idx != -1 && idx < len(addr)-1 {
+		portStr := addr[idx+1:]
+		if p, err := strconv.Atoi(portStr); err == nil {
+			return p
+		}
+	}
+	return 0
+}
+
+func extractPidFromUsers(s string) int {
+	idx := strings.Index(s, "pid=")
+	if idx == -1 {
+		return 0
+	}
+	sub := s[idx+4:]
+	end := strings.IndexAny(sub, ",)")
+	if end != -1 {
+		sub = sub[:end]
+	}
+	p, _ := strconv.Atoi(sub)
+	return p
+}
+
+func extractProcessNameFromUsers(s string) string {
+	idx := strings.Index(s, "((\"")
+	if idx != -1 {
+		sub := s[idx+3:]
+		end := strings.Index(sub, "\"")
+		if end != -1 {
+			return sub[:end]
+		}
+	}
+	return ""
+}
+
+func readProcessCmdline(pid int) string {
+	cmdPath := fmt.Sprintf("/proc/%d/cmdline", pid)
+	data, err := os.ReadFile(cmdPath)
+	if err == nil && len(data) > 0 {
+		return strings.TrimSpace(strings.ReplaceAll(string(data), "\x00", " "))
+	}
+	return ""
+}
+
+func handlePortsList(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	ports, err := scanListeningPorts()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":   true,
+		"listening": ports,
+	})
+}
+
+func handlePortForward(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var req PortForwardRequest
+	_ = json.NewDecoder(r.Body).Decode(&req)
+	if req.Port <= 0 || req.Port > 65535 {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid port"})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"port":    req.Port,
+	})
+}
+
+func handlePortUpdate(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var req PortForwardRequest
+	_ = json.NewDecoder(r.Body).Decode(&req)
+	if req.Port <= 0 || req.Port > 65535 {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid port"})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"port":    req.Port,
+	})
+}
+
+func handlePortStop(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var req PortForwardRequest
+	_ = json.NewDecoder(r.Body).Decode(&req)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"port":    req.Port,
+	})
+}
+
+func handlePortUnforward(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var req PortForwardRequest
+	_ = json.NewDecoder(r.Body).Decode(&req)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"port":    req.Port,
+	})
+}
+
+func handlePortPreview(w http.ResponseWriter, r *http.Request) {
+	subPath := strings.TrimPrefix(r.URL.Path, "/api/ports/preview/")
+	parts := strings.SplitN(subPath, "/", 2)
+	if len(parts) == 0 || parts[0] == "" {
+		http.Error(w, "Port required in path", http.StatusBadRequest)
+		return
+	}
+	port, err := strconv.Atoi(parts[0])
+	if err != nil || port <= 0 || port > 65535 {
+		http.Error(w, "Invalid port number", http.StatusBadRequest)
+		return
+	}
+
+	targetURL, _ := url.Parse(fmt.Sprintf("http://127.0.0.1:%d", port))
+	proxy := httputil.NewSingleHostReverseProxy(targetURL)
+
+	remainder := "/"
+	if len(parts) > 1 {
+		remainder = "/" + parts[1]
+	}
+	r.URL.Path = remainder
+
+	proxy.ServeHTTP(w, r)
+}
+
 
 
 

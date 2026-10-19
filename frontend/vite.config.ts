@@ -4381,6 +4381,131 @@ print(json.dumps({
             }
           }
 
+          // ─── Port Forwarding API Handlers ──────────────────────────────────────────
+          if (req.url?.startsWith("/api/ports/")) {
+            // GET /api/ports/list
+            if (req.url === "/api/ports/list" && req.method === "GET") {
+              try {
+                const portsMap = new Map();
+                // 1. Try ss -tlpn
+                try {
+                  const out = execFileSync("ss", ["-tlpn"], { encoding: "utf8" });
+                  for (const line of out.split("\n")) {
+                    const trimmed = line.trim();
+                    if (!trimmed.startsWith("LISTEN")) continue;
+                    const fields = trimmed.split(/\s+/);
+                    if (fields.length < 4) continue;
+                    const localAddr = fields[3];
+                    const idx = localAddr.lastIndexOf(":");
+                    if (idx === -1) continue;
+                    const port = parseInt(localAddr.slice(idx + 1), 10);
+                    if (!port || port <= 0 || port > 65535) continue;
+
+                    let pid = 0;
+                    let processName = "";
+                    let cmdline = "";
+                    if (fields.length >= 5) {
+                      const procField = fields.slice(4).join(" ");
+                      const pidMatch = procField.match(/pid=(\d+)/);
+                      if (pidMatch) {
+                        pid = parseInt(pidMatch[1], 10);
+                        try {
+                          const cPath = `/proc/${pid}/cmdline`;
+                          if (fs.existsSync(cPath)) {
+                            cmdline = fs.readFileSync(cPath, "utf8").replace(/\0/g, " ").trim();
+                          }
+                        } catch (_) {}
+                      }
+                      const nameMatch = procField.match(/\(\("([^"]+)"/);
+                      if (nameMatch) {
+                        processName = nameMatch[1];
+                      }
+                    }
+
+                    portsMap.set(port, {
+                      port,
+                      protocol: "tcp",
+                      localAddress: localAddr,
+                      pid: pid || undefined,
+                      process: processName || undefined,
+                      commandLine: cmdline || undefined,
+                    });
+                  }
+                } catch (_) {}
+
+                // 2. Fallback / supplement with lsof
+                if (portsMap.size === 0) {
+                  try {
+                    const out = execFileSync("lsof", ["-iTCP", "-sTCP:LISTEN", "-P", "-n"], { encoding: "utf8" });
+                    for (const line of out.split("\n")) {
+                      const trimmed = line.trim();
+                      if (trimmed.startsWith("COMMAND") || !trimmed) continue;
+                      const fields = trimmed.split(/\s+/);
+                      if (fields.length < 9) continue;
+                      const procName = fields[0];
+                      const pid = parseInt(fields[1], 10);
+                      const nameField = fields[8];
+                      const idx = nameField.lastIndexOf(":");
+                      if (idx === -1) continue;
+                      const port = parseInt(nameField.slice(idx + 1), 10);
+                      if (!port || port <= 0 || port > 65535) continue;
+
+                      let cmdline = "";
+                      try {
+                        const cPath = `/proc/${pid}/cmdline`;
+                        if (fs.existsSync(cPath)) {
+                          cmdline = fs.readFileSync(cPath, "utf8").replace(/\0/g, " ").trim();
+                        }
+                      } catch (_) {}
+
+                      portsMap.set(port, {
+                        port,
+                        protocol: "tcp",
+                        localAddress: nameField,
+                        pid: pid || undefined,
+                        process: procName,
+                        commandLine: cmdline || undefined,
+                      });
+                    }
+                  } catch (_) {}
+                }
+
+                const listening = Array.from(portsMap.values()).sort((a, b) => a.port - b.port);
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ success: true, listening }));
+              } catch (err: any) {
+                res.statusCode = 500;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ error: err.message }));
+              }
+              return;
+            }
+
+            // POST /api/ports/forward, /update, /stop, /unforward
+            if (
+              (req.url === "/api/ports/forward" ||
+                req.url === "/api/ports/update" ||
+                req.url === "/api/ports/stop" ||
+                req.url === "/api/ports/unforward") &&
+              req.method === "POST"
+            ) {
+              let bodyStr = "";
+              req.on("data", (chunk: any) => (bodyStr += chunk));
+              req.on("end", () => {
+                try {
+                  const body = JSON.parse(bodyStr || "{}");
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ success: true, port: body.port }));
+                } catch (err: any) {
+                  res.statusCode = 500;
+                  res.setHeader("Content-Type", "application/json");
+                  res.end(JSON.stringify({ error: err.message }));
+                }
+              });
+              return;
+            }
+          }
+
           if (req.url === "/api/system/browsers") {
             res.setHeader("Content-Type", "application/json");
             res.end(JSON.stringify({ browsers: [] }));
