@@ -651,24 +651,32 @@
               <span
                 v-if="isAlreadyInstalled(selectedRuntime?.id || '', rv.version)"
                 class="installed-tag"
-                title="已保存在本地共享安装池中，切换无需下载"
+                :class="{ 'active-scope-tag': isActiveInModalScope(selectedRuntime?.id || '', rv.version) }"
+                :title="isActiveInModalScope(selectedRuntime?.id || '', rv.version) ? '当前生效且已安装在本地' : '已保存在本地共享安装池中，切换无需下载'"
               >
-                已安装
+                {{ t("runtimes.installed") || "已安装" }}
+              </span>
+              <span
+                v-else-if="isActiveInModalScope(selectedRuntime?.id || '', rv.version)"
+                class="installed-tag is-missing"
+                :title="modalInstallScope === 'user' ? '用户默认已配置该版本，但本地尚未下载安装' : '工作区已配置该版本，但本地尚未下载安装'"
+              >
+                {{ t("runtimes.status_missing") || "待安装" }}
               </span>
             </div>
 
             <button
               class="install-action-btn"
               :class="{
-                'is-active-ver': isActiveInModalScope(selectedRuntime?.id || '', rv.version),
-                'is-installed': isAlreadyInstalled(selectedRuntime?.id || '', rv.version)
+                'is-active-ver': isActiveInModalScope(selectedRuntime?.id || '', rv.version) && isAlreadyInstalled(selectedRuntime?.id || '', rv.version),
+                'is-installed': isAlreadyInstalled(selectedRuntime?.id || '', rv.version) && !isActiveInModalScope(selectedRuntime?.id || '', rv.version)
               }"
-              :disabled="installingVer === rv.version || isActiveInModalScope(selectedRuntime?.id || '', rv.version)"
+              :disabled="installingVer === rv.version || (isActiveInModalScope(selectedRuntime?.id || '', rv.version) && isAlreadyInstalled(selectedRuntime?.id || '', rv.version))"
               @click="installRemoteVersion(selectedRuntime?.id || '', rv.version)"
             >
               <span v-if="installingVer === rv.version">{{ t("runtimes.installing") || "Installing..." }}</span>
-              <span v-else-if="isActiveInModalScope(selectedRuntime?.id || '', rv.version)">
-                当前使用
+              <span v-else-if="isActiveInModalScope(selectedRuntime?.id || '', rv.version) && isAlreadyInstalled(selectedRuntime?.id || '', rv.version)">
+                {{ t("runtimes.active_badge") || "当前使用" }}
               </span>
               <span v-else-if="isAlreadyInstalled(selectedRuntime?.id || '', rv.version)">
                 {{ modalInstallScope === 'user' ? (t("runtimes.set_user") || '设为用户') : (t("runtimes.set_workspace") || '设为工作区') }}
@@ -3545,6 +3553,13 @@ onBeforeUnmount(() => {
   border: 1px solid rgba(6, 182, 212, 0.4);
   box-shadow: 0 0 8px rgba(6, 182, 212, 0.18);
   font-weight: 700;
+}
+
+.installed-tag.is-missing {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  font-weight: 600;
 }
 
 .install-action-btn {
