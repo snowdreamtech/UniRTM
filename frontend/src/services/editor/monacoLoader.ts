@@ -31,6 +31,8 @@ export function setupMonacoEnvironment(): void {
 
 let monacoPromise: Promise<typeof import("monaco-editor")> | null = null;
 
+import { setupMonacoLocalization } from "./monacoLocalization";
+
 /**
  * Asynchronously load the full Monaco Editor on-demand.
  * 100% offline via local Vite worker bundles.
@@ -39,6 +41,7 @@ export function loadMonaco(): Promise<typeof import("monaco-editor")> {
   if (!monacoPromise) {
     monacoPromise = (async () => {
       await setupMonacoEnvironment();
+      setupMonacoLocalization();
       const monaco = await import("monaco-editor");
       return monaco;
     })();
