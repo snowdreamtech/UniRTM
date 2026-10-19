@@ -13,9 +13,9 @@
 ---
 
 ## Phase 1: Go 原生核心引擎与内置文本卫生/安全规则 (Core Engine & Builtin Rules)
-- [ ] Task 1.1: 创建 `internal/guard/types.go` 定义 Category (6大领域)、Phase (三阶流水线)、Severity、Issue、Rule 接口与配置结构
-- [ ] Task 1.2: 创建 `internal/guard/walker.go` 实现极速文件遍历引擎（支持 staged/changed/all 模式，按 extensions 过滤，遇到 node_modules/vendor/dist 等自动 SkipDir）
-- [ ] Task 1.3: 实现核心纯 Go 内置规则（`internal/guard/builtin/`）：
+- [x] Task 1.1: 创建 `internal/guard/types.go` 定义 Category (6大领域)、Phase (三阶流水线)、Severity、Issue、Rule 接口与配置结构
+- [x] Task 1.2: 创建 `internal/guard/walker.go` 实现极速文件遍历引擎（支持 staged/changed/all 模式，按 extensions 过滤，遇到 node_modules/vendor/dist 等自动 SkipDir）
+- [x] Task 1.3: 实现核心纯 Go 内置规则（`internal/guard/builtin/`）：
   - `whitespace.go` (去除行尾空格，支持 fix)
   - `eof.go` (单换行结尾，支持 fix)
   - `utf8bom.go` (去除 BOM，支持 fix)
@@ -25,8 +25,8 @@
   - `large_files.go` (检测大文件拦截)
   - `case_conflict.go` (检测大小写文件名冲突)
   - `lockfiles.go` (检测 lockfile 共存与冲突)
-- [ ] Task 1.4: 编写 `internal/guard/builtin_test.go` 与 `walker_test.go` 单元测试，确保 100% 覆盖与极致性能
-- [ ] Task 1.5: 阶段性 Git 提交：`feat(guard): implement core engine and Go-native builtin rules`
+- [x] Task 1.4: 编写 `internal/guard/builtin_test.go` 与 `walker_test.go` 单元测试，确保 100% 覆盖与极致性能
+- [x] Task 1.5: 阶段性 Git 提交：`feat(guard): implement core engine and Go-native builtin rules`
 
 ---
 
