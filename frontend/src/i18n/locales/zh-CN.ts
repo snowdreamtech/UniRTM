@@ -1171,7 +1171,7 @@ export const zhCn: TranslationDict = {
   "guard.toast.fixed": "✨ 已自动完成代码格式与卫生修复",
   "guard.toast.blocked": "质量守卫检测到阻断违规，请先解决或修复后提交",
   "guard.config.title": "配置文件感知与管理",
-  "guard.config.active": "项生效中",
+  "guard.config.active": "已生效",
   "guard.config.edit_main": "编辑主配置 .unirtm.toml",
   "guard.config.detected": "已检测到并生效",
   "guard.config.unconfigured": "未配置 (使用内置默认)",
