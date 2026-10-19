@@ -7,14 +7,29 @@
           v-for="tab in tabs"
           :key="tab.id"
           class="editor-tab"
-          :class="{ active: tab.id === activeTabId, 'is-pinned': tab.isPinned }"
+          :class="{
+            active: tab.id === activeTabId,
+            'is-pinned': tab.isPinned,
+            'is-diff': tab.isDiff,
+            'has-git-status': !!tab.gitStatus
+          }"
           @click="handleSelectTab(tab.id)"
           @auxclick.middle.stop="closeTab(tab.id)"
           @contextmenu.prevent.stop="openTabContextMenu($event, tab)"
-          :title="tab.path + (tab.isPinned ? ' (已固定)' : '')"
+          :title="tab.path + (tab.isPinned ? ' (已固定)' : '') + (tab.gitStatus ? ` [${tab.gitStatus}]` : '')"
         >
-          <TechIcon :id="tab.name" :size="16" class="tab-icon" />
-          <span class="tab-title">{{ tab.name }}</span>
+          <span v-if="tab.isDiff" class="codicon codicon-diff tab-icon diff-icon"></span>
+          <TechIcon v-else :id="tab.name" :size="16" class="tab-icon" />
+          <span
+            class="tab-title"
+            :class="[
+              tab.gitStatus ? 'git-color-' + tab.gitStatus : '',
+              tab.isDiff ? 'tab-title-diff' : ''
+            ]"
+          >
+            {{ tab.name }}
+          </span>
+          <span v-if="tab.gitStatus" class="tab-git-badge" :class="'badge-' + tab.gitStatus">{{ tab.gitStatus }}</span>
           <span v-if="tab.isDirty" class="dirty-dot" title="未保存更改">●</span>
           <button
             v-if="tab.isPinned"
@@ -33,6 +48,7 @@
             <span class="codicon codicon-close"></span>
           </button>
         </div>
+
       </div>
 
       <div class="tab-actions-right">
@@ -254,7 +270,14 @@
             </div>
           </div>
 
-          <!-- 3. Monaco Code Editor -->
+          <!-- 3. Monaco Diff Editor (Diff Tab) -->
+          <MonacoDiffEditor
+            v-else-if="activeTab.isDiff"
+            :key="'diff-' + activeTab.id"
+            :tab="activeTab"
+          />
+
+          <!-- 4. Monaco Code Editor (Normal Tab) -->
           <MonacoEditor
             v-else
             :key="activeTab.id"
@@ -263,6 +286,7 @@
             @cursor-change="handleCursorChange"
             @save="handleSave"
           />
+
         </template>
       </div>
 
@@ -594,8 +618,10 @@ import { useRouter, useRoute } from "vue-router";
 import { t } from "../i18n";
 import TechIcon from "../components/common/TechIcon.vue";
 import MonacoEditor from "../components/editor/MonacoEditor.vue";
+import MonacoDiffEditor from "../components/editor/MonacoDiffEditor.vue";
 import { useFileTree } from "../composables/useFileTree";
 import { useEditorTabs, type EditorTab } from "../composables/useEditorTabs";
+import { useWorkspaceBus } from "../composables/useWorkspaceBus";
 import { useTerminalSessions } from "../composables/useTerminalSessions";
 import { useToast } from "../composables/useToast";
 import { useGit } from "../composables/useGit";
@@ -603,6 +629,7 @@ import { useGit } from "../composables/useGit";
 const router = useRouter();
 const route = useRoute();
 const { getGitStatus, setGraphFilterPath } = useGit();
+const { onOpenDiff, onRevealFile, setActiveFilePath } = useWorkspaceBus();
 
 const emit = defineEmits<{
   (e: "open-drawer", tab: string): void;
@@ -624,6 +651,8 @@ const {
   activeTabId,
   activeTab,
   hasDirtyTabs,
+  openDiffTab,
+  setTabGitStatus,
   switchTab,
   updateContent,
   saveTab,
@@ -635,6 +664,7 @@ const {
   closeAllTabs,
   togglePinTab,
 } = useEditorTabs();
+
 
 // Tab Context Menu State
 const contextMenuRef = ref<HTMLDivElement | null>(null);
@@ -989,15 +1019,56 @@ function handleGlobalKeyDown(e: KeyboardEvent) {
   }
 }
 
+const busCleanups: (() => void)[] = [];
+
 onMounted(() => {
   window.addEventListener("pointerdown", handleGlobalPointerDown);
   window.addEventListener("keydown", handleGlobalKeyDown);
+
+  busCleanups.push(
+    onOpenDiff((req) => {
+      openDiffTab({
+        path: req.path,
+        name: req.name,
+        originalContent: req.originalContent,
+        modifiedContent: req.modifiedContent,
+        isStaged: req.isStaged,
+        commitHash: req.commitHash,
+        parentHash: req.parentHash,
+      });
+    })
+  );
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("pointerdown", handleGlobalPointerDown);
   window.removeEventListener("keydown", handleGlobalKeyDown);
+  busCleanups.forEach((fn) => fn());
 });
+
+watch(
+  () => activeTab.value?.path,
+  (newPath) => {
+    setActiveFilePath(newPath || "");
+  },
+  { immediate: true }
+);
+
+watch(
+  () => tabs.value,
+  () => {
+    tabs.value.forEach((tab) => {
+      if (!tab.isDiff && tab.path) {
+        const status = getGitStatus(tab.path);
+        if (status) {
+          tab.gitStatus = status;
+        }
+      }
+    });
+  },
+  { immediate: true, deep: true }
+);
+
 
 interface BreadcrumbItem {
   id: string;
@@ -1264,6 +1335,52 @@ function handleCreateFolderInside() {
   background-color: rgba(128, 128, 128, 0.2);
   color: var(--text-main);
 }
+
+.diff-icon {
+  color: #38bdf8;
+}
+
+.tab-title-diff {
+  font-style: italic;
+}
+
+.tab-git-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1;
+}
+
+.git-color-M {
+  color: #eab308 !important;
+}
+
+.badge-M {
+  background-color: rgba(234, 179, 8, 0.2);
+  color: #eab308;
+}
+
+.git-color-U,
+.git-color-A {
+  color: #22c55e !important;
+}
+
+.badge-U,
+.badge-A {
+  background-color: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.git-color-D {
+  color: #ef4444 !important;
+}
+
+.badge-D {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
 
 .tab-actions-right {
   display: flex;

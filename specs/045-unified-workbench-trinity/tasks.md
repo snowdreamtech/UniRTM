@@ -9,10 +9,11 @@
 
 
 ## 阶段 2：编辑器 Tab 视觉增强与 Diff 标签页渲染 (Editor Tab & Diff View)
-- [ ] 2.1 在 `frontend/src/views/ExplorerView.vue` 与 `EditorTabs.vue` 中支持 Diff 模式的 Monaco 差异编辑器渲染（复用现有 diff 引擎）
-- [ ] 2.2 在 Tab 栏中实现 Git 状态色彩（已修改黄色 M、新增绿色 U 等）与未保存圆点 `●` 的并存样式
-- [ ] 2.3 验证多 Tab 之间普通代码视图与 Diff 视图的平滑切换与关闭逻辑
-- [ ] 2.4 **执行提交 2**：`feat(editor): render diff tab in main editor and enhance tab git status decorators`
+- [x] 2.1 在 `frontend/src/views/ExplorerView.vue` 与 `EditorTabs.vue` 中支持 Diff 模式的 Monaco 差异编辑器渲染（复用现有 diff 引擎）
+- [x] 2.2 在 Tab 栏中实现 Git 状态色彩（已修改黄色 M、新增绿色 U 等）与未保存圆点 `●` 的并存样式
+- [x] 2.3 验证多 Tab 之间普通代码视图与 Diff 视图的平滑切换与关闭逻辑
+- [x] 2.4 **执行提交 2**：`feat(editor): render diff tab in main editor and enhance tab git status decorators`
+
 
 ## 阶段 3：文件管理器 ⟷ SCM 双向定位联动 (Bidirectional Reveal & Navigation)
 - [ ] 3.1 在 `frontend/src/views/ExplorerView.vue` 中监听 `workspaceBus.onRevealFile` 事件，实现递归自动展开父级目录并滚动平滑聚焦
