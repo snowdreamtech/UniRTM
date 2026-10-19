@@ -1119,4 +1119,7 @@ export const zhTw: TranslationDict = {
   "terminal.menu.export_log": "匯出終端機記錄",
   "terminal.menu.clear_history": "清除工作階段歷史快取",
   "terminal.rename_tab": "重新命名終端機",
+  "runtimes.status_missing": "待安裝",
+  "runtimes.status_upgradable": "可升級",
+  "runtimes.action_install_missing": "安裝已設定版本",
 };

@@ -1109,4 +1109,7 @@ export const koKr: TranslationDict = {
   "terminal.menu.export_log": "터미널 로그 내보내기",
   "terminal.menu.clear_history": "세션 기록 캐시 지우기",
   "terminal.rename_tab": "터미널 이름 바꾸기",
+  "runtimes.status_missing": "설치 필요",
+  "runtimes.status_upgradable": "업그레이드 가능",
+  "runtimes.action_install_missing": "설정된 버전 설치",
 };

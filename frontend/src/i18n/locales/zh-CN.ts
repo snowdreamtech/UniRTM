@@ -1124,4 +1124,7 @@ export const zhCn: TranslationDict = {
   "terminal.menu.export_log": "导出终端日志",
   "terminal.menu.clear_history": "清空历史缓存",
   "terminal.rename_tab": "重命名终端",
+  "runtimes.status_missing": "待安装",
+  "runtimes.status_upgradable": "可升级",
+  "runtimes.action_install_missing": "安装已配置版本",
 };

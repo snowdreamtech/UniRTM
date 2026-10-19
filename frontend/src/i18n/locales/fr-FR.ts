@@ -1110,4 +1110,7 @@ export const frFr: TranslationDict = {
   "terminal.menu.export_log": "Exporter le journal du terminal",
   "terminal.menu.clear_history": "Effacer l'historique de session",
   "terminal.rename_tab": "Renommer le terminal",
+  "runtimes.status_missing": "Manquant",
+  "runtimes.status_upgradable": "Mise à niveau disponible",
+  "runtimes.action_install_missing": "Installer la version configurée",
 };

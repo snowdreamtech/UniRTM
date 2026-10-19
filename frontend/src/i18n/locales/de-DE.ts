@@ -1111,4 +1111,7 @@ export const deDe: TranslationDict = {
   "terminal.menu.export_log": "Terminal-Protokoll exportieren",
   "terminal.menu.clear_history": "Sitzungsverlauf löschen",
   "terminal.rename_tab": "Terminal umbenennen",
+  "runtimes.status_missing": "Fehlt",
+  "runtimes.status_upgradable": "Aktualisierbar",
+  "runtimes.action_install_missing": "Konfigurierte Version installieren",
 };

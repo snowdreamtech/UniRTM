@@ -1110,4 +1110,7 @@ export const ruRu: TranslationDict = {
   "terminal.menu.export_log": "Экспорт журнала терминала",
   "terminal.menu.clear_history": "Очистить историю сеанса",
   "terminal.rename_tab": "Переименовать терминал",
+  "runtimes.status_missing": "Не установлено",
+  "runtimes.status_upgradable": "Доступно обновление",
+  "runtimes.action_install_missing": "Установить настроенную версию",
 };

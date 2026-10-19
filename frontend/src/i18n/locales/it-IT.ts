@@ -1111,4 +1111,7 @@ export const itIt: TranslationDict = {
   "terminal.menu.export_log": "Esporta registro del terminale",
   "terminal.menu.clear_history": "Cancella cronologia sessione",
   "terminal.rename_tab": "Rinomina terminale",
+  "runtimes.status_missing": "Mancante",
+  "runtimes.status_upgradable": "Aggiornabile",
+  "runtimes.action_install_missing": "Installa versione configurata",
 };

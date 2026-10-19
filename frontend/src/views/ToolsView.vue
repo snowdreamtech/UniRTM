@@ -194,7 +194,7 @@
                   :title="`工作区配置了 ${formatVersion(getToolStatus(rt).configuredVersion)}，但本地磁盘尚未安装`"
                 >
                   <span class="missing-dot">●</span>
-                  <span>{{ formatVersion(getToolStatus(rt).configuredVersion) }} (待安装)</span>
+                  <span>{{ formatVersion(getToolStatus(rt).configuredVersion) }} ({{ t('runtimes.status_missing') || '待安装' }})</span>
                 </span>
 
                 <!-- 3. 已安装且已就绪 (Ready) -> 沉稳中性低噪音，不展示任何图标 -->
@@ -345,7 +345,7 @@
                   :title="`配置了 ${formatVersion(getToolStatus(rt).configuredVersion)}，但本地尚未下载安装`"
                 >
                   <span class="missing-dot">●</span>
-                  <span>{{ formatVersion(getToolStatus(rt).configuredVersion) }} (待安装)</span>
+                  <span>{{ formatVersion(getToolStatus(rt).configuredVersion) }} ({{ t('runtimes.status_missing') || '待安装' }})</span>
                 </span>
                 <span
                   v-else

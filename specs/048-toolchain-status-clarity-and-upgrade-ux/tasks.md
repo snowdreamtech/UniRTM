@@ -1,8 +1,8 @@
 # 任务拆分与执行跟踪清单：工具链状态清晰化与低噪音升级系统 (Tasks)
 
 ## 任务执行进度概览
-- **当前阶段**：Phase 2 - 卡片与表格视觉重构与降噪完成
-- **总体进度**：9 / 12 已完成 (75%)
+- **当前阶段**：Phase 3 - 53 种多语言本地化与文案对齐完成
+- **总体进度**：10 / 12 已完成 (83%)
 
 ---
 
@@ -29,9 +29,9 @@
 ---
 
 ## Phase 3: 53 种多语言本地化与文案对齐 (i18n & Localization)
-- [ ] Task 3.1: 在 53 种语言包中同步新增状态词条（如 `runtimes.status_missing`, `runtimes.status_upgradable` 等）
-- [ ] Task 3.2: 运行 `npm test -- src/i18n/i18n.test.ts` 确保全语言键值一致
-- [ ] Task 3.3: 阶段性 Git 提交：`feat(tools): complete 53 locales for toolchain status badges`
+- [x] Task 3.1: 在 53 种语言包中同步新增状态词条（如 `runtimes.status_missing`, `runtimes.status_upgradable` 等）
+- [x] Task 3.2: 运行 `npm test -- src/i18n/i18n.test.ts` 确保全语言键值一致
+- [x] Task 3.3: 阶段性 Git 提交：`feat(tools): complete 53 locales for toolchain status badges`
 
 ---
 

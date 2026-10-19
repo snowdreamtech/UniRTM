@@ -1111,4 +1111,7 @@ export const ptBr: TranslationDict = {
   "terminal.menu.export_log": "Exportar log do terminal",
   "terminal.menu.clear_history": "Limpar histórico da sessão",
   "terminal.rename_tab": "Renomear terminal",
+  "runtimes.status_missing": "Faltando",
+  "runtimes.status_upgradable": "Atualizável",
+  "runtimes.action_install_missing": "Instalar versão configurada",
 };

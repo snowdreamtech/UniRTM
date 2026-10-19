@@ -451,4 +451,8 @@ export interface TranslationDict {
   "terminal.menu.export_log"?: string;
   "terminal.menu.clear_history"?: string;
   "terminal.rename_tab"?: string;
+
+  "runtimes.status_missing"?: string;
+  "runtimes.status_upgradable"?: string;
+  "runtimes.action_install_missing"?: string;
 }

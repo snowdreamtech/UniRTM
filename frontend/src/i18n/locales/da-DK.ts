@@ -1109,4 +1109,7 @@ export const daDk: TranslationDict = {
   "terminal.menu.export_log": "Export Terminal Log",
   "terminal.menu.clear_history": "Clear Session History",
   "terminal.rename_tab": "Rename Terminal",
+  "runtimes.status_missing": "Missing",
+  "runtimes.status_upgradable": "Upgradable",
+  "runtimes.action_install_missing": "Install Configured Version",
 };

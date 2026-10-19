@@ -1110,4 +1110,7 @@ export const jaJp: TranslationDict = {
   "terminal.menu.export_log": "ターミナルログのエクスポート",
   "terminal.menu.clear_history": "セッション履歴の消去",
   "terminal.rename_tab": "ターミナルの名前変更",
+  "runtimes.status_missing": "未インストール",
+  "runtimes.status_upgradable": "アップグレード可能",
+  "runtimes.action_install_missing": "設定されたバージョンをインストール",
 };
