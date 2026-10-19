@@ -700,6 +700,65 @@
       @cancel="modalVisible = false"
       @confirm="handleModalConfirm"
     />
+
+    <!-- Quality Guard In-Place Config Editor Modal -->
+    <Teleport to="body">
+      <div v-if="activeEditingConfig" class="config-editor-modal-overlay" @click.self="handleCloseConfigEditor">
+        <div class="config-editor-modal" role="dialog" aria-modal="true">
+          <div class="config-editor-header">
+            <div class="header-left">
+              <span class="codicon codicon-file-code file-icon"></span>
+              <div class="header-titles">
+                <div class="file-name">{{ activeEditingConfig.name }}</div>
+                <div class="file-desc">{{ activeEditingConfig.title }} · {{ activeEditingConfig.description }}</div>
+              </div>
+              <span class="config-badge" :class="activeEditingConfig.exists ? 'badge-active' : 'badge-draft'">
+                {{ activeEditingConfig.exists ? (t('guard.config.active') || '已生效') : (t('guard.config.unconfigured') || '未创建 (保存将创建)') }}
+              </span>
+            </div>
+            <div class="header-actions">
+              <button class="modal-action-btn secondary" @click="handleOpenInExplorer(activeEditingConfig.name)" :title="t('guard.config.open_in_explorer_title') || '在资源管理器以完整编辑器打开'">
+                <span class="codicon codicon-link-external"></span>
+                <span>{{ t('guard.config.open_in_explorer') || '全屏编辑器打开' }}</span>
+              </button>
+              <button class="modal-action-btn close" @click="handleCloseConfigEditor" title="关闭 (Esc)">
+                <span class="codicon codicon-close"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="config-editor-body">
+            <div v-if="isConfigEditorLoading" class="editor-loading">
+              <span class="codicon codicon-loading codicon-modifier-spin"></span>
+              <span>{{ t('common.loading') || '正在加载配置文件...' }}</span>
+            </div>
+            <div ref="configMonacoContainer" class="config-monaco-host" v-show="!isConfigEditorLoading"></div>
+          </div>
+
+          <div class="config-editor-footer">
+            <div class="footer-status">
+              <span v-if="isConfigDirty" class="status-dirty">● {{ t('editor.unsaved_changes') || '有未保存的更改' }}</span>
+              <span v-else class="status-clean">✔ {{ t('editor.all_saved') || '已是最新内容' }}</span>
+            </div>
+            <div class="footer-actions">
+              <button class="modal-btn secondary" @click="handleCloseConfigEditor">
+                {{ t('common.cancel') || '关闭' }}
+              </button>
+              <button class="modal-btn primary" :disabled="isConfigSaving" @click="handleSaveConfig(false)">
+                <span v-if="isConfigSaving" class="codicon codicon-loading codicon-modifier-spin"></span>
+                <span v-else class="codicon codicon-save"></span>
+                <span>{{ t('common.save') || '保存配置' }}</span>
+              </button>
+              <button class="modal-btn success" :disabled="isConfigSaving" @click="handleSaveConfig(true)">
+                <span v-if="isConfigSaving" class="codicon codicon-loading codicon-modifier-spin"></span>
+                <span v-else class="codicon codicon-play"></span>
+                <span>{{ t('guard.config.save_and_recheck') || '保存并重新质检' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -839,9 +898,217 @@ async function handleRefreshGuard() {
   }
 }
 
-function handleOpenConfigFile(fileName: string) {
+interface EditingConfigInfo {
+  name: string;
+  title: string;
+  description: string;
+  exists: boolean;
+}
+
+const activeEditingConfig = ref<EditingConfigInfo | null>(null);
+const isConfigEditorLoading = ref<boolean>(false);
+const isConfigSaving = ref<boolean>(false);
+const isConfigDirty = ref<boolean>(false);
+const configMonacoContainer = ref<HTMLDivElement | null>(null);
+let configMonacoEditor: any = null;
+let configMonacoModel: any = null;
+let originalConfigContent = "";
+
+function getStarterTemplateForFile(fileName: string): string {
+  if (fileName === ".unirtm.toml") {
+    return `# UniRTM Quality Guard Configuration Manifest
+[guard]
+enabled = true
+mode = "staged"       # "staged", "changed", "all"
+auto_detect = true
+
+# Path exclusions
+exclude_dirs = ["node_modules", "vendor", "dist", "build", ".git"]
+
+[guard.rules]
+# "hygiene/whitespace" = { enabled = true }
+# "hygiene/eof" = { enabled = true }
+`;
+  }
+  if (fileName.includes("golangci")) {
+    return `run:
+  timeout: 3m
+linters:
+  enable:
+    - gofmt
+    - govet
+    - staticcheck
+    - errcheck
+`;
+  }
+  if (fileName.includes("prettier")) {
+    return `{
+  "semi": true,
+  "singleQuote": false,
+  "tabWidth": 2,
+  "trailingComma": "es5"
+}
+`;
+  }
+  if (fileName.includes("gitleaks")) {
+    return `title = "UniRTM Gitleaks Configuration"
+[extend]
+useDefault = true
+`;
+  }
+  if (fileName.includes("editorconfig")) {
+    return `root = true
+
+[*]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+`;
+  }
+  if (fileName.includes("eslint")) {
+    return `export default [
+  {
+    rules: {
+      "no-unused-vars": "warn"
+    }
+  }
+];
+`;
+  }
+  if (fileName.includes("shellcheck")) {
+    return `# ShellCheck configuration
+disable=SC1090,SC1091
+`;
+  }
+  if (fileName.includes("ruff")) {
+    return `line-length = 88
+[lint]
+select = ["E", "F", "W"]
+`;
+  }
+  return "# Configuration file\\n";
+}
+
+async function handleOpenConfigFile(fileName: string) {
+  const found = guardConfigFiles.value.find((c) => c.name === fileName);
+  activeEditingConfig.value = {
+    name: fileName,
+    title: found?.title || fileName,
+    description: found?.description || "质量守卫配置文件",
+    exists: found?.exists ?? true,
+  };
+  isConfigEditorLoading.value = true;
+  isConfigDirty.value = false;
+
+  let content = "";
+  try {
+    const res = await fetch(`/api/fs/read?path=${encodeURIComponent(fileName)}`);
+    if (res.ok) {
+      const data = await res.json();
+      content = data.content !== undefined ? data.content : data.data?.content ?? "";
+      if (activeEditingConfig.value) activeEditingConfig.value.exists = true;
+    } else {
+      content = getStarterTemplateForFile(fileName);
+      if (activeEditingConfig.value) activeEditingConfig.value.exists = false;
+    }
+  } catch {
+    content = getStarterTemplateForFile(fileName);
+    if (activeEditingConfig.value) activeEditingConfig.value.exists = false;
+  } finally {
+    isConfigEditorLoading.value = false;
+  }
+
+  originalConfigContent = content;
+
+  await nextTick();
+  if (!configMonacoContainer.value) return;
+
+  const monaco = await loadMonaco();
+  const lang = getLanguageForFile(fileName);
+
+  if (configMonacoModel) {
+    configMonacoModel.dispose();
+  }
+  configMonacoModel = monaco.editor.createModel(content, lang);
+
+  if (!configMonacoEditor) {
+    configMonacoEditor = monaco.editor.create(configMonacoContainer.value, {
+      model: configMonacoModel,
+      theme: isDarkTheme.value ? "vs-dark" : "vs",
+      automaticLayout: true,
+      fontSize: 13,
+      lineNumbers: "on",
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      wordWrap: "on",
+      tabSize: 2,
+    });
+
+    configMonacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      handleSaveConfig(false);
+    });
+  } else {
+    configMonacoEditor.setModel(configMonacoModel);
+    monaco.editor.setTheme(isDarkTheme.value ? "vs-dark" : "vs");
+  }
+
+  configMonacoModel.onDidChangeContent(() => {
+    if (!configMonacoModel) return;
+    isConfigDirty.value = configMonacoModel.getValue() !== originalConfigContent;
+  });
+}
+
+async function handleSaveConfig(andRecheck = false) {
+  if (!activeEditingConfig.value || !configMonacoModel) return;
+  isConfigSaving.value = true;
+  const fileName = activeEditingConfig.value.name;
+  const content = configMonacoModel.getValue();
+  try {
+    const res = await fetch("/api/fs/write", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: fileName, content }),
+    });
+    if (res.ok) {
+      originalConfigContent = content;
+      isConfigDirty.value = false;
+      if (activeEditingConfig.value) activeEditingConfig.value.exists = true;
+      showToast(t("guard.config.save_success") || `已成功保存 ${fileName}`, "success");
+      await fetchGuardRules();
+      if (andRecheck) {
+        handleCloseConfigEditor();
+        await handleRefreshGuard();
+      }
+    } else {
+      showToast(t("guard.config.save_failed") || `保存 ${fileName} 失败`, "error");
+    }
+  } catch (err: any) {
+    showToast(`保存失败: ${err.message}`, "error");
+  } finally {
+    isConfigSaving.value = false;
+  }
+}
+
+function handleCloseConfigEditor() {
+  if (configMonacoModel) {
+    configMonacoModel.dispose();
+    configMonacoModel = null;
+  }
+  if (configMonacoEditor) {
+    configMonacoEditor.dispose();
+    configMonacoEditor = null;
+  }
+  activeEditingConfig.value = null;
+  isConfigDirty.value = false;
+}
+
+function handleOpenInExplorer(fileName: string) {
+  handleCloseConfigEditor();
   openTab({ path: fileName, name: fileName });
-  router.push({ name: "explorer" }).catch(() => {});
+  router.push({ name: "explorer", query: { from: "guard", file: fileName } }).catch(() => {});
   showToast(`已在代码编辑器中打开 ${fileName}`, "info");
 }
 
@@ -2995,5 +3262,246 @@ onBeforeUnmount(() => {
 
 :root[data-theme="light"] .guard-clean-state .clean-subtitle {
   color: #64748b;
+}
+
+/* In-Place Config Editor Modal Styles */
+.config-editor-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 24px;
+}
+
+.config-editor-modal {
+  width: 900px;
+  max-width: 92vw;
+  height: 640px;
+  max-height: 88vh;
+  background: var(--vscode-editor-background, #1e1e1e);
+  border: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+:root[data-theme="light"] .config-editor-modal {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.config-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: var(--vscode-editorGroupHeader-tabsBackground, #252526);
+  border-bottom: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
+}
+
+:root[data-theme="light"] .config-editor-header {
+  background: #f8fafc;
+  border-bottom-color: #e2e8f0;
+}
+
+.config-editor-header .header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.config-editor-header .file-icon {
+  font-size: 20px;
+  color: #38bdf8;
+}
+
+.config-editor-header .file-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main, #fff);
+  font-family: monospace;
+}
+
+.config-editor-header .file-desc {
+  font-size: 11px;
+  color: var(--text-muted, #94a3b8);
+}
+
+.config-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.config-badge.badge-active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.config-badge.badge-draft {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.config-editor-header .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.modal-action-btn.secondary {
+  background: var(--vscode-button-secondaryBackground, rgba(255, 255, 255, 0.08));
+  color: var(--vscode-button-secondaryForeground, #e2e8f0);
+  border-color: var(--vscode-panel-border, rgba(255, 255, 255, 0.12));
+}
+
+.modal-action-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.modal-action-btn.close {
+  background: transparent;
+  color: var(--text-muted, #94a3b8);
+  font-size: 16px;
+  padding: 4px;
+}
+
+.modal-action-btn.close:hover {
+  color: #ef4444;
+}
+
+.config-editor-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: var(--vscode-editor-background, #1e1e1e);
+}
+
+:root[data-theme="light"] .config-editor-body {
+  background: #ffffff;
+}
+
+.config-monaco-host {
+  width: 100%;
+  height: 100%;
+}
+
+.editor-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-muted, #94a3b8);
+  font-size: 13px;
+}
+
+.config-editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  background: var(--vscode-editorGroupHeader-tabsBackground, #252526);
+  border-top: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
+}
+
+:root[data-theme="light"] .config-editor-footer {
+  background: #f8fafc;
+  border-top-color: #e2e8f0;
+}
+
+.footer-status .status-dirty {
+  color: #f59e0b;
+  font-size: 12px;
+}
+
+.footer-status .status-clean {
+  color: #10b981;
+  font-size: 12px;
+}
+
+.footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.modal-btn.secondary {
+  background: transparent;
+  border-color: var(--vscode-panel-border, rgba(255, 255, 255, 0.15));
+  color: var(--text-main, #e2e8f0);
+}
+
+.modal-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme="light"] .modal-btn.secondary {
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+:root[data-theme="light"] .modal-btn.secondary:hover {
+  background: #f1f5f9;
+}
+
+.modal-btn.primary {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.modal-btn.primary:hover:not(:disabled) {
+  background: #0369a1;
+}
+
+.modal-btn.success {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.modal-btn.success:hover:not(:disabled) {
+  background: #059669;
+}
+
+.modal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

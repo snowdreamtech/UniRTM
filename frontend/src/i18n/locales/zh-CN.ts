@@ -1179,4 +1179,11 @@ export const zhCn: TranslationDict = {
   "guard.config.create_template": "创建模板 +",
   "guard.actions.view_output": "查看输出日志",
   "guard.actions.output": "输出日志",
+  "guard.actions.return_to_guard": "返回质量守卫",
+  "guard.config.editing_context": "正在编辑质量守卫配置文件",
+  "guard.config.open_in_explorer": "全屏编辑器打开",
+  "guard.config.open_in_explorer_title": "在资源管理器以完整编辑器打开",
+  "guard.config.save_success": "已成功保存配置文件",
+  "guard.config.save_failed": "保存配置文件失败",
+  "guard.config.save_and_recheck": "保存并重新质检",
 };

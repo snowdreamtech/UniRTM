@@ -1,5 +1,23 @@
 <template>
   <div class="view-container explorer-view" id="view-explorer">
+    <!-- Quality Guard Context Return Banner -->
+    <div v-if="route.query.from === 'guard'" class="return-guard-banner">
+      <div class="return-guard-content">
+        <button class="return-guard-btn" @click="handleReturnToGuard">
+          <span class="codicon codicon-arrow-left"></span>
+          <span>{{ t("guard.actions.return_to_guard") || "返回质量守卫" }}</span>
+        </button>
+        <span class="return-guard-divider">|</span>
+        <span class="return-guard-info">
+          <span class="codicon codicon-shield"></span>
+          {{ t("guard.config.editing_context") || "正在编辑质量守卫配置文件" }}: <strong>{{ route.query.file || activeTab?.name }}</strong>
+        </span>
+      </div>
+      <button class="return-guard-dismiss" @click="handleDismissGuardBanner" title="关闭横幅">
+        <span class="codicon codicon-close"></span>
+      </button>
+    </div>
+
     <!-- 1. Tabs Bar (Displayed when one or more tabs are open) -->
     <div v-if="tabs.length > 0" class="editor-tabs-bar">
       <div class="tabs-scroll-container">
@@ -649,6 +667,18 @@ import { useGit } from "../composables/useGit";
 
 const router = useRouter();
 const route = useRoute();
+
+function handleReturnToGuard() {
+  router.push({ path: "/scm", query: { scope: "workspace", tab: "guard" } });
+}
+
+function handleDismissGuardBanner() {
+  const q = { ...route.query };
+  delete q.from;
+  delete q.file;
+  router.replace({ query: q });
+}
+
 const { status: gitStatusData, getGitStatus, setGraphFilterPath, fetchStatus } = useGit();
 const { onOpenDiff, setActiveFilePath, onGitStatusChanged, onOpenInEditor, onSendToTerminal, onRevealInTerminal } = useWorkspaceBus();
 
@@ -2181,5 +2211,69 @@ function handleCreateFolderInside() {
 .split-divider.divider-vertical {
   height: 2px;
   cursor: row-resize;
+}
+
+/* Quality Guard Return Banner */
+.return-guard-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--vscode-editorGroupHeader-tabsBackground, rgba(16, 185, 129, 0.08));
+  border-bottom: 1px solid var(--vscode-panel-border, rgba(16, 185, 129, 0.25));
+  font-size: 12px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.return-guard-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.return-guard-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #10b981;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.return-guard-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.return-guard-divider {
+  color: var(--vscode-descriptionForeground, rgba(255, 255, 255, 0.3));
+}
+
+.return-guard-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--vscode-foreground, inherit);
+}
+
+.return-guard-dismiss {
+  background: transparent;
+  border: none;
+  color: var(--vscode-descriptionForeground, #888);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+}
+
+.return-guard-dismiss:hover {
+  color: var(--vscode-foreground, #fff);
+  background: rgba(255, 255, 255, 0.1);
 }
 </style>
