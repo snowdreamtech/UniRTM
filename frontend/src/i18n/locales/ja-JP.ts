@@ -1113,4 +1113,6 @@ export const jaJp: TranslationDict = {
   "runtimes.status_missing": "未インストール",
   "runtimes.status_upgradable": "アップグレード可能",
   "runtimes.action_install_missing": "設定されたバージョンをインストール",
+  "runtimes.count_missing_suffix": "件 未インストール",
+  "runtimes.missing_tooltip": "現在のスコープで設定されているが未インストールのツールが {count} 件あります。クリックして絞り込みます。",
 };

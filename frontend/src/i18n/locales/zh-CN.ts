@@ -1127,4 +1127,6 @@ export const zhCn: TranslationDict = {
   "runtimes.status_missing": "待安装",
   "runtimes.status_upgradable": "可升级",
   "runtimes.action_install_missing": "安装已配置版本",
+  "runtimes.count_missing_suffix": "个待安装",
+  "runtimes.missing_tooltip": "当前作用域有 {count} 个工具配置了但本地尚未安装，点击快速筛选",
 };

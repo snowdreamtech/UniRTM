@@ -95,6 +95,20 @@
         <span class="stat-badge">
           <b>{{ filteredRuntimes.length }}</b> {{ t("runtimes.count_runtimes_suffix") || "个工具" }}
         </span>
+
+        <!-- 待安装统计徽标：遵循低噪音原则，仅在 > 0 时醒目呈现，支持点击一键切换筛选 -->
+        <span
+          v-if="scopeMissingCount > 0"
+          class="stat-badge stat-badge-missing clickable"
+          :class="{ active: filterOnlyMissing }"
+          :title="t('runtimes.missing_tooltip', { count: scopeMissingCount }) || `当前作用域有 ${scopeMissingCount} 个工具配置了但本地尚未安装，点击快速筛选`"
+          @click="filterOnlyMissing = !filterOnlyMissing"
+        >
+          <span class="badge-dot warning-dot">●</span>
+          <b>{{ scopeMissingCount }}</b> {{ t("runtimes.count_missing_suffix") || "个待安装" }}
+        </span>
+
+        <!-- 可升级统计徽标：绿色专属升级状态 -->
         <span
           class="stat-badge"
           :class="{ highlight: scopeUpgradableCount > 0, clickable: scopeUpgradableCount > 0 }"
@@ -1229,16 +1243,26 @@ const emit = defineEmits<{
   (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string): void;
 }>();
 
-const filteredRuntimes = computed(() => {
-  let list = runtimes.value;
+const filterOnlyMissing = ref(false);
 
-  // Filter tools by active scope (Workspace vs User)
+const scopeRuntimes = computed(() => {
+  let list = runtimes.value;
   if (currentScope.value === "user") {
-    // User scope: only show tools configured in user global configuration (~/.config/unirtm/unirtm.toml)
-    list = list.filter((rt) => Boolean(rt.global_version && rt.global_version.trim()));
+    return list.filter((rt) => Boolean(rt.global_version && rt.global_version.trim()));
   } else {
-    // Workspace scope: only show tools configured in workspace (.unirtm.toml) or detected legacy files
-    list = list.filter((rt) => Boolean((rt.active_version && rt.active_version.trim()) || rt.is_legacy));
+    return list.filter((rt) => Boolean((rt.active_version && rt.active_version.trim()) || rt.is_legacy));
+  }
+});
+
+const scopeMissingCount = computed(() => {
+  return scopeRuntimes.value.filter((rt) => getToolStatus(rt).state === "missing").length;
+});
+
+const filteredRuntimes = computed(() => {
+  let list = scopeRuntimes.value;
+
+  if (filterOnlyMissing.value) {
+    list = list.filter((rt) => getToolStatus(rt).state === "missing");
   }
 
   if (props.activeSubItem && props.activeSubItem.trim()) {
@@ -1267,7 +1291,7 @@ function isToolUpgradable(rt: RuntimeItem): boolean {
 }
 
 const scopeUpgradableCount = computed(() => {
-  return filteredRuntimes.value.filter(isToolUpgradable).length;
+  return scopeRuntimes.value.filter(isToolUpgradable).length;
 });
 
 const filteredUpdateResults = computed(() => {
@@ -2246,10 +2270,52 @@ onBeforeUnmount(() => {
 }
 
 .stat-badge.highlight {
-  background: rgba(2, 132, 199, 0.1);
-  border-color: rgba(2, 132, 199, 0.3);
-  color: var(--accent-cyan);
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #10b981;
   font-weight: 600;
+}
+
+[data-theme="light"] .stat-badge.highlight,
+:root[data-theme="light"] .stat-badge.highlight {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #059669;
+}
+
+.stat-badge-missing {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #f59e0b;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-badge-missing.active {
+  background: rgba(245, 158, 11, 0.25);
+  border-color: #f59e0b;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+}
+
+.stat-badge-missing:hover {
+  filter: brightness(1.15);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+  transform: translateY(-1px);
+}
+
+[data-theme="light"] .stat-badge-missing,
+:root[data-theme="light"] .stat-badge-missing {
+  background: #fef3c7;
+  border-color: #fcd34d;
+  color: #b45309;
+}
+
+[data-theme="light"] .stat-badge-missing.active,
+:root[data-theme="light"] .stat-badge-missing.active {
+  background: #fde68a;
+  border-color: #d97706;
 }
 
 .stat-badge.clickable {
@@ -2259,7 +2325,7 @@ onBeforeUnmount(() => {
 
 .stat-badge.clickable:hover {
   filter: brightness(1.15);
-  box-shadow: 0 0 8px rgba(2, 132, 199, 0.25);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.25);
   transform: translateY(-1px);
 }
 

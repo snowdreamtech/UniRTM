@@ -455,4 +455,6 @@ export interface TranslationDict {
   "runtimes.status_missing"?: string;
   "runtimes.status_upgradable"?: string;
   "runtimes.action_install_missing"?: string;
+  "runtimes.count_missing_suffix"?: string;
+  "runtimes.missing_tooltip"?: string;
 }

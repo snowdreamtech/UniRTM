@@ -1114,4 +1114,6 @@ export const ptBr: TranslationDict = {
   "runtimes.status_missing": "Faltando",
   "runtimes.status_upgradable": "Atualizável",
   "runtimes.action_install_missing": "Instalar versão configurada",
+  "runtimes.count_missing_suffix": "faltando",
+  "runtimes.missing_tooltip": "{count} ferramentas configuradas, mas não instaladas localmente. Clique para filtrar.",
 };

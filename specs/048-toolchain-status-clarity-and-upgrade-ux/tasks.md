@@ -1,8 +1,8 @@
 # 任务拆分与执行跟踪清单：工具链状态清晰化与低噪音升级系统 (Tasks)
 
 ## 任务执行进度概览
-- **当前阶段**：Phase 4 - 全量回归与生产封箱发布 (100% 封箱交付)
-- **总体进度**：12 / 12 已完成 (100%)
+- **当前阶段**：Phase 5 - 顶部搜索栏待安装统计与一键过滤增强 (100% 封箱交付)
+- **总体进度**：17 / 17 已完成 (100%)
 
 ---
 
@@ -39,3 +39,14 @@
 - [x] Task 4.1: 运行全量单元测试（`npm run test`）确保所有测试用例绿灯
 - [x] Task 4.2: 运行生产环境打包（`npm run build`）确保 0 警告与 0 错误
 - [x] Task 4.3: 阶段性 Git 提交：`feat(tools): complete toolchain status clarity and release feature`
+
+---
+
+## Phase 5: 顶部搜索栏待安装统计与一键过滤增强 (Toolbar Missing Count & Quick Filter)
+- [x] Task 5.1: 在 `ToolsView.vue` 计算 `scopeMissingCount`，并在搜索工具栏渲染琥珀色 `⚠️ N 个待安装` 统计徽标
+- [x] Task 5.2: 支持点击徽标快速切换“待安装”专属过滤筛选（再次点击恢复查看全部）
+- [x] Task 5.3: 在 53 种语言包中同步新增 `runtimes.count_missing_suffix` 与 `runtimes.missing_tooltip`
+- [x] Task 5.4: 运行全量单元测试与生产构建确保 0 报错
+- [x] Task 5.5: 阶段性 Git 提交：`feat(tools): add toolbar missing counter and quick filter toggle`
+
+

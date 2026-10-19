@@ -1114,4 +1114,6 @@ export const deDe: TranslationDict = {
   "runtimes.status_missing": "Fehlt",
   "runtimes.status_upgradable": "Aktualisierbar",
   "runtimes.action_install_missing": "Konfigurierte Version installieren",
+  "runtimes.count_missing_suffix": "fehlend",
+  "runtimes.missing_tooltip": "{count} Tools konfiguriert, aber nicht lokal installiert. Klicken zum Filtern.",
 };

@@ -44,3 +44,8 @@
    - 当状态为 `missing` 时，卡片首要动作变更为直接触发安装该特定版本；
 4. **53 种国际化多语言支持**：
    - 包含新增状态文案（如 `runtimes.status_missing`、`runtimes.status_upgradable` 等）在 53 种语言中的精确无缝翻译。
+5. **顶部搜索工具栏缺失统计与快捷筛选 (Toolbar Missing Counter & Quick Filter)**：
+   - 在搜索栏右侧统计徽标区，当 `scopeMissingCount > 0` 时，动态展示琥珀色 `⚠️ N 个待安装` 徽标；
+   - 支持点击徽标一键切换“仅看待安装”与“看全部”，极速聚焦需下载补齐的环境；
+   - 当待安装数为 0 时，静默不展示，严格贯彻低噪音设计原则。
+

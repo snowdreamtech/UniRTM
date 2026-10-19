@@ -1114,4 +1114,6 @@ export const ptPt: TranslationDict = {
   "runtimes.status_missing": "Em falta",
   "runtimes.status_upgradable": "Atualizável",
   "runtimes.action_install_missing": "Instalar versão configurada",
+  "runtimes.count_missing_suffix": "em falta",
+  "runtimes.missing_tooltip": "{count} ferramentas configuradas, mas não instaladas localmente. Clique para filtrar.",
 };

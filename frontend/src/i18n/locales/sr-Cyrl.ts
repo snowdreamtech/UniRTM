@@ -1113,4 +1113,6 @@ export const srCyrl: TranslationDict = {
   "runtimes.status_missing": "Missing",
   "runtimes.status_upgradable": "Upgradable",
   "runtimes.action_install_missing": "Install Configured Version",
+  "runtimes.count_missing_suffix": "Missing",
+  "runtimes.missing_tooltip": "{count} tools configured but not installed locally. Click to filter.",
 };

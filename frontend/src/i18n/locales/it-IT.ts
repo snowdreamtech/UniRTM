@@ -1114,4 +1114,6 @@ export const itIt: TranslationDict = {
   "runtimes.status_missing": "Mancante",
   "runtimes.status_upgradable": "Aggiornabile",
   "runtimes.action_install_missing": "Installa versione configurata",
+  "runtimes.count_missing_suffix": "mancante/i",
+  "runtimes.missing_tooltip": "{count} strumenti configurati ma non installati localmente. Fai clic per filtrare.",
 };

@@ -1113,4 +1113,6 @@ export const ruRu: TranslationDict = {
   "runtimes.status_missing": "Не установлено",
   "runtimes.status_upgradable": "Доступно обновление",
   "runtimes.action_install_missing": "Установить настроенную версию",
+  "runtimes.count_missing_suffix": "не установлено",
+  "runtimes.missing_tooltip": "Настроено {count} инструментов, но не установлено локально. Нажмите для фильтрации.",
 };

@@ -1113,4 +1113,6 @@ export const frFr: TranslationDict = {
   "runtimes.status_missing": "Manquant",
   "runtimes.status_upgradable": "Mise à niveau disponible",
   "runtimes.action_install_missing": "Installer la version configurée",
+  "runtimes.count_missing_suffix": "manquant(s)",
+  "runtimes.missing_tooltip": "{count} outils configurés mais non installés localement. Cliquez pour filtrer.",
 };

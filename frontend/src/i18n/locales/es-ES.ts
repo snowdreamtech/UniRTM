@@ -1113,4 +1113,6 @@ export const esEs: TranslationDict = {
   "runtimes.status_missing": "Falta",
   "runtimes.status_upgradable": "Actualizable",
   "runtimes.action_install_missing": "Instalar versión configurada",
+  "runtimes.count_missing_suffix": "pendiente(s)",
+  "runtimes.missing_tooltip": "{count} herramientas configuradas pero no instaladas localmente. Haz clic para filtrar.",
 };

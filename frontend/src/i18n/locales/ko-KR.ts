@@ -1112,4 +1112,6 @@ export const koKr: TranslationDict = {
   "runtimes.status_missing": "설치 필요",
   "runtimes.status_upgradable": "업그레이드 가능",
   "runtimes.action_install_missing": "설정된 버전 설치",
+  "runtimes.count_missing_suffix": "개 설치 필요",
+  "runtimes.missing_tooltip": "현재 범위에 구성되었지만 로컬에 설치되지 않은 도구가 {count}개 있습니다. 클릭하여 필터링합니다.",
 };
