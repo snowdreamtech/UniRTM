@@ -68,8 +68,10 @@
               active: selectedPortId === item.id,
               inactive: item.status === 'inactive'
             }"
+            tabindex="0"
             @click="selectedPortId = item.id"
             @contextmenu.prevent="openContextMenu($event, item)"
+            @keydown="handleRowKeyDown($event, item)"
           >
             <!-- 1. Port & Status & Label -->
             <td class="td-port">
@@ -341,7 +343,7 @@
       </div>
     </div>
 
-    <!-- Right Click Context Menu (Teleported) -->
+    <!-- Right Click Context Menu (Teleported, 100% aligned with VS Code) -->
     <Teleport to="body">
       <div
         v-if="contextMenuVisible"
@@ -349,45 +351,145 @@
         :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
         @click.stop
       >
+        <!-- 1. Open in Browser -->
         <div class="menu-item" @click="handleContextAction('open')">
-          <span class="codicon codicon-globe menu-icon"></span>
-          <span>{{ t('ports.open_browser') || '在浏览器中打开' }}</span>
+          <span class="action-label">{{ t('ports.open_browser') || '在浏览器中打开' }}</span>
         </div>
-        <div class="menu-item" @click="handleContextAction('copy-address')">
-          <span class="codicon codicon-copy menu-icon"></span>
-          <span>{{ t('ports.copy_address') || '复制转发地址' }}</span>
+
+        <!-- 2. Preview in Editor (Simple Browser) -->
+        <div class="menu-item" @click="handleContextAction('preview')">
+          <span class="action-label">{{ t('ports.preview_in_editor') || '在编辑器中预览' }}</span>
         </div>
-        <div class="menu-item" @click="handleContextAction('copy-port')">
-          <span class="codicon codicon-symbol-numeric menu-icon"></span>
-          <span>{{ t('ports.copy_port') || '复制端口号' }}</span>
-        </div>
+
         <div class="menu-separator"></div>
-        <div class="menu-item" @click="handleContextAction('toggle-status')">
-          <span
-            class="codicon menu-icon"
-            :class="contextPort?.status === 'active' ? 'codicon-stop-circle' : 'codicon-play-circle'"
-          ></span>
-          <span>
-            {{ contextPort?.status === 'active' ? (t('ports.stop_forwarding') || '停止转发') : (t('ports.start_forwarding') || '恢复转发') }}
-          </span>
-        </div>
-        <div class="menu-item" @click="handleContextAction('toggle-visibility')">
-          <span
-            class="codicon menu-icon"
-            :class="contextPort?.visibility === 'public' ? 'codicon-lock' : 'codicon-globe'"
-          ></span>
-          <span>
-            {{ contextPort?.visibility === 'public' ? (t('ports.set_private') || '设为私有访问') : (t('ports.set_public') || '设为公开访问') }}
-          </span>
-        </div>
+
+        <!-- 3. Set Port Label -->
         <div class="menu-item" @click="handleContextAction('edit-label')">
-          <span class="codicon codicon-tag menu-icon"></span>
-          <span>{{ t('ports.edit_label') || '修改标签' }}</span>
+          <span class="action-label">{{ t('ports.set_label') || '设置端口标签' }}</span>
+          <span class="keybinding font-mono">↵</span>
         </div>
+
         <div class="menu-separator"></div>
-        <div class="menu-item danger" @click="handleContextAction('remove')">
-          <span class="codicon codicon-trash menu-icon"></span>
-          <span>{{ t('ports.remove_port') || '删除端口' }}</span>
+
+        <!-- 4. Copy Local Address -->
+        <div class="menu-item" @click="handleContextAction('copy-address')">
+          <span class="action-label">{{ t('ports.copy_local_address') || '复制本地地址' }}</span>
+          <span class="keybinding font-mono">{{ isMac ? '⌘ C' : 'Ctrl+C' }}</span>
+        </div>
+
+        <!-- 5. Change Local Address Port -->
+        <div class="menu-item" @click="handleContextAction('change-local-port')">
+          <span class="action-label">{{ t('ports.change_local_port') || '更改本地地址端口' }}</span>
+        </div>
+
+        <!-- 6. Change Port Protocol > (Submenu trigger) -->
+        <div
+          class="menu-item has-submenu"
+          :class="{ active: isProtocolSubmenuOpen }"
+          @mouseenter="openProtocolSubmenu($event)"
+          @mouseleave="scheduleCloseProtocolSubmenu"
+          @click.stop="openProtocolSubmenu($event)"
+        >
+          <span class="action-label">{{ t('ports.change_protocol') || '更改端口协议' }}</span>
+          <span class="submenu-chevron font-mono">›</span>
+        </div>
+
+        <div class="menu-separator"></div>
+
+        <!-- 7. Stop / Resume Forwarding Port -->
+        <div class="menu-item" @click="handleContextAction('toggle-status')">
+          <span class="action-label">
+            {{ contextPort?.status === 'active' ? (t('ports.stop_forwarding_port') || '停止转发端口') : (t('ports.start_forwarding_port') || '转发端口') }}
+          </span>
+          <span class="keybinding font-mono">{{ isMac ? '⌘ ⌫' : 'Del' }}</span>
+        </div>
+
+        <!-- 8. Forward a Port -->
+        <div class="menu-item" @click="handleContextAction('forward-port')">
+          <span class="action-label">{{ t('ports.forward_port') || '转发端口' }}</span>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- 6b. Secondary Protocol Submenu (Teleported, 100% aligned with VS Code) -->
+    <Teleport to="body">
+      <div
+        v-if="contextMenuVisible && isProtocolSubmenuOpen"
+        class="ports-context-menu ports-protocol-submenu"
+        :style="{ left: protocolSubmenuPos.x + 'px', top: protocolSubmenuPos.y + 'px' }"
+        @mouseenter="cancelCloseProtocolSubmenu"
+        @mouseleave="scheduleCloseProtocolSubmenu"
+        @click.stop
+      >
+        <div class="menu-item check-item" @click="handleSelectProtocol('http')">
+          <span class="check-mark font-mono">{{ (contextPort?.protocol === 'http' || !contextPort?.protocol) ? '✓' : '' }}</span>
+          <span class="action-label">HTTP</span>
+        </div>
+        <div class="menu-item check-item" @click="handleSelectProtocol('https')">
+          <span class="check-mark font-mono">{{ contextPort?.protocol === 'https' ? '✓' : '' }}</span>
+          <span class="action-label">HTTPS</span>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Modal: Simple Browser in-editor preview (VS Code aligned) -->
+    <Teleport to="body">
+      <div v-if="isPreviewModalOpen" class="simple-browser-backdrop" @click.self="isPreviewModalOpen = false">
+        <div class="simple-browser-window">
+          <div class="simple-browser-header">
+            <div class="simple-browser-title-group">
+              <span class="codicon codicon-globe browser-icon"></span>
+              <span class="browser-title font-mono">{{ previewModalTitle }}</span>
+            </div>
+            <div class="simple-browser-address-bar">
+              <button class="browser-btn" @click="reloadPreviewFrame" title="重新加载">
+                <span class="codicon codicon-refresh"></span>
+              </button>
+              <input type="text" class="browser-url-input font-mono" :value="previewModalUrl" readonly />
+              <button class="browser-btn" @click="openExternalFromPreview" title="在外部浏览器中打开">
+                <span class="codicon codicon-link-external"></span>
+              </button>
+            </div>
+            <button class="browser-close-btn" @click="isPreviewModalOpen = false" title="关闭预览">
+              <span class="codicon codicon-close"></span>
+            </button>
+          </div>
+          <div class="simple-browser-body">
+            <iframe v-if="previewModalUrl" :src="previewModalUrl" class="simple-browser-iframe" frameborder="0"></iframe>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Modal: Change Local Address Port (Prompt Dialog) -->
+    <Teleport to="body">
+      <div v-if="isChangeLocalPortModalOpen" class="change-port-backdrop" @click.self="isChangeLocalPortModalOpen = false">
+        <div class="change-port-dialog">
+          <div class="change-port-header">
+            <span class="change-port-title">{{ t('ports.change_local_port') || '更改本地地址端口' }}</span>
+            <button class="dialog-close-btn" @click="isChangeLocalPortModalOpen = false">
+              <span class="codicon codicon-close"></span>
+            </button>
+          </div>
+          <div class="change-port-body">
+            <p class="change-port-desc">
+              为端口 <strong>{{ targetLocalPortItem?.port }}</strong> 指定新的本地映射端口号 (1 - 65535)：
+            </p>
+            <input
+              ref="changeLocalPortInputRef"
+              v-model.number="changeLocalPortInput"
+              type="number"
+              min="1"
+              max="65535"
+              class="change-port-input font-mono"
+              @keydown.enter="submitChangeLocalPort"
+              @keydown.esc="isChangeLocalPortModalOpen = false"
+            />
+          </div>
+          <div class="change-port-footer">
+            <button class="dialog-btn secondary" @click="isChangeLocalPortModalOpen = false">取消</button>
+            <button class="dialog-btn primary" @click="submitChangeLocalPort">确认</button>
+          </div>
         </div>
       </div>
     </Teleport>
@@ -398,7 +500,9 @@
 import { ref, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { usePorts } from "../../composables/usePorts";
 import { t } from "../../i18n";
-import type { PortForwardItem } from "../../types/ports";
+import type { PortForwardItem, PortProtocol } from "../../types/ports";
+
+const isMac = typeof navigator !== "undefined" && /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform || navigator.userAgent);
 
 const {
   filteredPorts,
@@ -411,7 +515,6 @@ const {
   startPort,
   removePort,
   copyAddress,
-  copyPort,
   openPort,
 } = usePorts();
 
@@ -432,6 +535,22 @@ const editLabelInputRef = ref<HTMLInputElement | null>(null);
 const contextMenuVisible = ref<boolean>(false);
 const contextMenuPos = ref({ x: 0, y: 0 });
 const contextPort = ref<PortForwardItem | null>(null);
+
+// Protocol Submenu State
+const isProtocolSubmenuOpen = ref<boolean>(false);
+const protocolSubmenuPos = ref({ x: 0, y: 0 });
+let protocolSubmenuTimer: any = null;
+
+// Simple Browser In-Editor Preview Modal State
+const isPreviewModalOpen = ref<boolean>(false);
+const previewModalUrl = ref<string>("");
+const previewModalTitle = ref<string>("Simple Browser");
+
+// Change Local Port Prompt Dialog State
+const isChangeLocalPortModalOpen = ref<boolean>(false);
+const changeLocalPortInput = ref<number | undefined>(undefined);
+const targetLocalPortItem = ref<PortForwardItem | null>(null);
+const changeLocalPortInputRef = ref<HTMLInputElement | null>(null);
 
 let pollTimer: any = null;
 
@@ -510,45 +629,158 @@ async function toggleVisibility(item: PortForwardItem) {
 function openContextMenu(event: MouseEvent, item: PortForwardItem) {
   contextPort.value = item;
   contextMenuPos.value = {
-    x: Math.min(event.clientX, window.innerWidth - 220),
-    y: Math.min(event.clientY, window.innerHeight - 260),
+    x: Math.min(event.clientX, window.innerWidth - 240),
+    y: Math.min(event.clientY, window.innerHeight - 300),
   };
   contextMenuVisible.value = true;
+  isProtocolSubmenuOpen.value = false;
 }
 
 function closeContextMenu() {
   contextMenuVisible.value = false;
+  isProtocolSubmenuOpen.value = false;
+}
+
+function openProtocolSubmenu(event: MouseEvent) {
+  cancelCloseProtocolSubmenu();
+  const target = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  const screenWidth = window.innerWidth;
+  let x = target.right;
+  if (x + 130 > screenWidth) {
+    x = target.left - 130;
+  }
+  protocolSubmenuPos.value = {
+    x,
+    y: target.top - 4,
+  };
+  isProtocolSubmenuOpen.value = true;
+}
+
+function scheduleCloseProtocolSubmenu() {
+  protocolSubmenuTimer = setTimeout(() => {
+    isProtocolSubmenuOpen.value = false;
+  }, 220);
+}
+
+function cancelCloseProtocolSubmenu() {
+  if (protocolSubmenuTimer) {
+    clearTimeout(protocolSubmenuTimer);
+    protocolSubmenuTimer = null;
+  }
+}
+
+async function handleSelectProtocol(proto: PortProtocol) {
+  if (!contextPort.value) return;
+  const item = contextPort.value;
+  closeContextMenu();
+  await updatePort(item.port, { protocol: proto });
+}
+
+function openInEditorPreview(item: PortForwardItem) {
+  const url = item.previewUrl || `http://localhost:${item.localPort || item.port}/`;
+  previewModalUrl.value = url;
+  previewModalTitle.value = `Simple Browser: ${item.label || item.port}`;
+  isPreviewModalOpen.value = true;
+}
+
+function reloadPreviewFrame() {
+  const current = previewModalUrl.value;
+  previewModalUrl.value = "";
+  nextTick(() => {
+    previewModalUrl.value = current;
+  });
+}
+
+function openExternalFromPreview() {
+  if (previewModalUrl.value) {
+    window.open(previewModalUrl.value, "_blank");
+  }
+}
+
+function openChangeLocalPortModal(item: PortForwardItem) {
+  targetLocalPortItem.value = item;
+  changeLocalPortInput.value = item.localPort || item.port;
+  isChangeLocalPortModalOpen.value = true;
+  nextTick(() => {
+    changeLocalPortInputRef.value?.focus();
+    changeLocalPortInputRef.value?.select();
+  });
+}
+
+async function submitChangeLocalPort() {
+  if (!targetLocalPortItem.value || !changeLocalPortInput.value) return;
+  const newPort = Number(changeLocalPortInput.value);
+  if (isNaN(newPort) || newPort < 1 || newPort > 65535) {
+    return;
+  }
+  const item = targetLocalPortItem.value;
+  isChangeLocalPortModalOpen.value = false;
+  await updatePort(item.port, { localPort: newPort });
+}
+
+function handleRowKeyDown(event: KeyboardEvent, item: PortForwardItem) {
+  if (editingPortId.value === item.id) return;
+
+  // Enter -> edit label
+  if (event.key === "Enter") {
+    event.preventDefault();
+    startEditLabel(item);
+  }
+  // ⌘C / Ctrl+C -> copy local address
+  else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "c") {
+    event.preventDefault();
+    copyAddress(item);
+  }
+  // ⌘⌫ / Delete -> stop forwarding
+  else if ((event.metaKey && (event.key === "Backspace" || event.key === "Delete")) || event.key === "Delete") {
+    event.preventDefault();
+    if (item.status === "active") {
+      stopPort(item.port);
+    } else {
+      startPort(item.port);
+    }
+  }
 }
 
 async function handleContextAction(action: string) {
   if (!contextPort.value) return;
   const item = contextPort.value;
-  closeContextMenu();
 
   switch (action) {
     case "open":
+      closeContextMenu();
       openPort(item);
       break;
+    case "preview":
+      closeContextMenu();
+      openInEditorPreview(item);
+      break;
+    case "edit-label":
+      closeContextMenu();
+      startEditLabel(item);
+      break;
     case "copy-address":
+      closeContextMenu();
       await copyAddress(item);
       break;
-    case "copy-port":
-      await copyPort(item.port);
+    case "change-local-port":
+      closeContextMenu();
+      openChangeLocalPortModal(item);
       break;
     case "toggle-status":
+      closeContextMenu();
       if (item.status === "active") {
         await stopPort(item.port);
       } else {
         await startPort(item.port);
       }
       break;
-    case "toggle-visibility":
-      await toggleVisibility(item);
-      break;
-    case "edit-label":
-      startEditLabel(item);
+    case "forward-port":
+      closeContextMenu();
+      startInlineAdd();
       break;
     case "remove":
+      closeContextMenu();
       await removePort(item.port);
       break;
   }
@@ -1059,47 +1291,304 @@ async function handleContextAction(action: string) {
   cursor: pointer;
 }
 
-/* Context Menu */
+/* Context Menu (VS Code Native Aesthetic) */
 .ports-context-menu {
   position: fixed;
-  background: var(--card-bg, #0f172a);
-  border: 1px solid var(--card-border, #334155);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  border-radius: 6px;
+  background: var(--card-bg, #1e1e1e);
+  border: 1px solid var(--card-border, #454545);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  border-radius: 5px;
   padding: 4px 0;
   z-index: 99999;
-  min-width: 170px;
-  font-size: 12px;
+  min-width: 190px;
+  font-size: 13px;
+  font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+  user-select: none;
+}
+
+.ports-protocol-submenu {
+  min-width: 120px;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  color: var(--text-main, #e2e8f0);
+  justify-content: space-between;
+  padding: 4px 16px 4px 16px;
+  color: var(--text-main, #cccccc);
   cursor: pointer;
-  transition: background 0.1s ease;
+  transition: background 0.08s ease, color 0.08s ease;
+  height: 26px;
+  box-sizing: border-box;
 }
 
-.menu-item:hover {
-  background: var(--primary, #3b82f6);
-  color: #fff;
+.menu-item .action-label {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.menu-item .keybinding {
+  font-size: 11px;
+  color: var(--text-muted, #858585);
+  margin-left: 20px;
+}
+
+.menu-item .submenu-chevron {
+  font-size: 14px;
+  color: var(--text-muted, #858585);
+  margin-left: 14px;
+}
+
+.menu-item.check-item {
+  padding-left: 10px;
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+.menu-item .check-mark {
+  width: 14px;
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary, #38bdf8);
+}
+
+.menu-item:hover,
+.menu-item.active {
+  background: var(--primary, #094771);
+  color: #ffffff;
+}
+
+.menu-item:hover .keybinding,
+.menu-item:hover .submenu-chevron,
+.menu-item:hover .check-mark {
+  color: #ffffff;
 }
 
 .menu-item.danger:hover {
-  background: #ef4444;
-  color: #fff;
-}
-
-.menu-icon {
-  font-size: 13px;
+  background: #e51400;
+  color: #ffffff;
 }
 
 .menu-separator {
   height: 1px;
-  background: var(--card-border, #334155);
+  background: var(--card-border, #333333);
   margin: 4px 0;
+}
+
+/* Simple Browser Modal */
+.simple-browser-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+}
+
+.simple-browser-window {
+  width: 86vw;
+  height: 84vh;
+  max-width: 1280px;
+  background: var(--card-bg, #182234);
+  border: 1px solid var(--card-border, #334155);
+  border-radius: 8px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.simple-browser-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: var(--header-bg, #0f172a);
+  border-bottom: 1px solid var(--card-border, #1e293b);
+  gap: 12px;
+}
+
+.simple-browser-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-main, #f8fafc);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.simple-browser-address-bar {
+  flex: 1;
+  max-width: 600px;
+  display: flex;
+  align-items: center;
+  background: var(--input-bg, #0b1120);
+  border: 1px solid var(--card-border, #334155);
+  border-radius: 4px;
+  padding: 2px 6px;
+  gap: 6px;
+}
+
+.browser-url-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-main, #e2e8f0);
+  font-size: 12px;
+}
+
+.browser-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #94a3b8);
+  padding: 3px;
+  border-radius: 3px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.browser-btn:hover {
+  background: rgba(128, 128, 128, 0.2);
+  color: var(--text-main, #fff);
+}
+
+.browser-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #94a3b8);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.browser-close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.simple-browser-body {
+  flex: 1;
+  width: 100%;
+  background: #ffffff;
+}
+
+.simple-browser-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Change Local Port Prompt Dialog */
+.change-port-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+}
+
+.change-port-dialog {
+  width: 380px;
+  background: var(--card-bg, #1e293b);
+  border: 1px solid var(--card-border, #334155);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.change-port-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.change-port-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main, #f8fafc);
+}
+
+.dialog-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #94a3b8);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px;
+}
+
+.dialog-close-btn:hover {
+  color: var(--text-main, #f8fafc);
+}
+
+.change-port-desc {
+  font-size: 12px;
+  color: var(--text-muted, #cbd5e1);
+  margin: 0 0 8px 0;
+  line-height: 1.5;
+}
+
+.change-port-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--input-bg, #0f172a);
+  border: 1px solid var(--card-border, #334155);
+  border-radius: 4px;
+  color: var(--text-main, #f8fafc);
+  font-size: 13px;
+  padding: 6px 10px;
+  outline: none;
+}
+
+.change-port-input:focus {
+  border-color: var(--primary, #0284c7);
+}
+
+.change-port-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.dialog-btn {
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.dialog-btn.secondary {
+  background: var(--input-bg, #334155);
+  color: var(--text-main, #e2e8f0);
+}
+
+.dialog-btn.secondary:hover {
+  background: rgba(128, 128, 128, 0.25);
+}
+
+.dialog-btn.primary {
+  background: var(--primary, #0284c7);
+  color: #ffffff;
+}
+
+.dialog-btn.primary:hover {
+  filter: brightness(1.1);
 }
 
 /* ==========================================================================
@@ -1339,7 +1828,7 @@ async function handleContextAction(action: string) {
 
 :global(:root[data-theme="light"] .ports-context-menu),
 :global([data-theme="light"] .ports-context-menu) {
-  background: #ffffff !important;
+  background: #f8fafc !important;
   border-color: #cbd5e1 !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
 }
@@ -1349,14 +1838,20 @@ async function handleContextAction(action: string) {
   color: #1e293b !important;
 }
 
+:global(:root[data-theme="light"] .ports-context-menu .menu-item .keybinding),
+:global([data-theme="light"] .ports-context-menu .menu-item .submenu-chevron) {
+  color: #64748b !important;
+}
+
 :global(:root[data-theme="light"] .ports-context-menu .menu-item:hover),
-:global([data-theme="light"] .ports-context-menu .menu-item:hover) {
+:global([data-theme="light"] .ports-context-menu .menu-item:hover .keybinding),
+:global([data-theme="light"] .ports-context-menu .menu-item:hover .submenu-chevron),
+:global([data-theme="light"] .ports-context-menu .menu-item:hover .check-mark) {
   background: #0284c7 !important;
   color: #ffffff !important;
 }
 
-:global(:root[data-theme="light"] .ports-context-menu .menu-item.danger:hover),
-:global([data-theme="light"] .ports-context-menu .menu-item.danger:hover) {
+:global(:root[data-theme="light"] .ports-context-menu .menu-item.danger:hover) {
   background: #ef4444 !important;
   color: #ffffff !important;
 }
@@ -1364,5 +1859,57 @@ async function handleContextAction(action: string) {
 :global(:root[data-theme="light"] .ports-context-menu .menu-separator),
 :global([data-theme="light"] .ports-context-menu .menu-separator) {
   background: #e2e8f0 !important;
+}
+
+:global(:root[data-theme="light"] .simple-browser-window),
+:global([data-theme="light"] .simple-browser-window) {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+:global(:root[data-theme="light"] .simple-browser-header),
+:global([data-theme="light"] .simple-browser-header) {
+  background: #f8fafc !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+:global(:root[data-theme="light"] .simple-browser-address-bar),
+:global([data-theme="light"] .simple-browser-address-bar) {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+:global(:root[data-theme="light"] .browser-url-input),
+:global([data-theme="light"] .browser-url-input) {
+  color: #0f172a !important;
+}
+
+:global(:root[data-theme="light"] .change-port-dialog),
+:global([data-theme="light"] .change-port-dialog) {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+:global(:root[data-theme="light"] .change-port-title),
+:global([data-theme="light"] .change-port-title) {
+  color: #0f172a !important;
+}
+
+:global(:root[data-theme="light"] .change-port-desc),
+:global([data-theme="light"] .change-port-desc) {
+  color: #475569 !important;
+}
+
+:global(:root[data-theme="light"] .change-port-input),
+:global([data-theme="light"] .change-port-input) {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+:global(:root[data-theme="light"] .dialog-btn.secondary),
+:global([data-theme="light"] .dialog-btn.secondary) {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
 }
 </style>

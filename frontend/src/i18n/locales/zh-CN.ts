@@ -1064,4 +1064,12 @@ export const zhCn: TranslationDict = {
   "ports.process_unavailable": "流程信息不可用",
     "ports.expected_service": "预期工作区服务",
     "ports.probe_detected": "探针嗅探服务",
+    "ports.preview_in_editor": "在编辑器中预览",
+    "ports.set_label": "设置端口标签",
+    "ports.copy_local_address": "复制本地地址",
+    "ports.change_local_port": "更改本地地址端口",
+    "ports.change_protocol": "更改端口协议",
+    "ports.stop_forwarding_port": "停止转发端口",
+    "ports.start_forwarding_port": "恢复转发端口",
+    "ports.forward_port": "转发端口",
 };

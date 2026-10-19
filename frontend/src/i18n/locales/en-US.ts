@@ -1066,4 +1066,12 @@ export const enUs: TranslationDict = {
   "ports.process_unavailable": "Process info unavailable",
     "ports.expected_service": "Expected workspace service",
     "ports.probe_detected": "Probe detected service",
+    "ports.preview_in_editor": "Preview in Editor",
+    "ports.set_label": "Set Port Label",
+    "ports.copy_local_address": "Copy Local Address",
+    "ports.change_local_port": "Change Local Address Port",
+    "ports.change_protocol": "Change Port Protocol",
+    "ports.stop_forwarding_port": "Stop Forwarding Port",
+    "ports.start_forwarding_port": "Forward Port",
+    "ports.forward_port": "Forward a Port",
 };
