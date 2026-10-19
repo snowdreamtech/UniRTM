@@ -26,7 +26,8 @@
 - [x] 4.4 **执行提交 4**：`feat(git): integrate askpass and gpg loopback broker into git command execution`
 
 ## 阶段 5：全 53 国多语言支持与端到端质量验证 (i18n & Verification)
-- [ ] 5.1 更新 `frontend/src/i18n/types.ts`、`zh-CN.ts` 与 `en-US.ts`，添加 SSH/GPG 凭据相关文案
-- [ ] 5.2 自动同步词条到全 53 国语言字典，确保 `i18n.test.ts` 0 报错
-- [ ] 5.3 运行全量 `npm run test` 与 `npm run build`，确保类型检查与生产构建 100% 成功
-- [ ] 5.4 **执行提交 5**：`feat(i18n): sync multi-language keys and finalize credential broker validation`
+- [x] 5.1 更新 `frontend/src/i18n/types.ts`、`zh-CN.ts` 与 `en-US.ts`，添加 SSH/GPG 凭据相关文案
+- [x] 5.2 自动同步词条到全 53 国语言字典，确保 `i18n.test.ts` 0 报错
+- [x] 5.3 运行全量 `npm run test` 与 `npm run build`，确保类型检查与生产构建 100% 成功
+- [x] 5.4 **执行提交 5**：`feat(i18n): sync multi-language keys and finalize credential broker validation`
+

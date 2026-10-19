@@ -25,6 +25,18 @@ export interface TranslationDict {
   "drawer.reset_tab_order"?: string;
   "drawer.drag_reorder_tip"?: string;
   "drawer.panel_views"?: string;
+  "credential.unlock_ssh_title"?: string;
+  "credential.unlock_gpg_title"?: string;
+  "credential.unlock_git_title"?: string;
+  "credential.passphrase_label"?: string;
+  "credential.gpg_passphrase_label"?: string;
+  "credential.ssh_placeholder"?: string;
+  "credential.gpg_placeholder"?: string;
+  "credential.remember_session"?: string;
+  "credential.remember_hint"?: string;
+  "credential.caps_lock"?: string;
+  "credential.unlock_btn"?: string;
+  "credential.validating_btn"?: string;
   "drawer.empty_logs"?: string;
   "drawer.empty_tasks"?: string;
   "drawer.empty_doctor"?: string;
