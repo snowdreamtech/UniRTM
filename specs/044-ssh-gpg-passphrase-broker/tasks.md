@@ -7,10 +7,10 @@
 - [x] 1.4 **执行提交 1**：`feat(credential): implement credential broker types and composable with tests`
 
 ## 阶段 2：VS Code 质感密码解锁模态框 (PassphraseModal.vue UI)
-- [ ] 2.1 创建 `frontend/src/components/common/PassphraseModal.vue` 弹窗组件（支持 SSH/GPG 区分展示、密码小眼睛显隐、Caps Lock 检测）
-- [ ] 2.2 增加会话记住复选框 `[x] 在当前工作区会话期间记住密码` 与 `Enter`/`Esc` 快捷键支持
-- [ ] 2.3 在 `frontend/src/App.vue` 全局挂载 `PassphraseModal`，打通凭据弹窗弹出与关闭链路
-- [ ] 2.4 **执行提交 2**：`feat(ui): add modern PassphraseModal component with session keyring option`
+- [x] 2.1 创建 `frontend/src/components/common/PassphraseModal.vue` 弹窗组件（支持 SSH/GPG 区分展示、密码小眼睛显隐、Caps Lock 检测）
+- [x] 2.2 增加会话记住复选框 `[x] 在当前工作区会话期间记住密码` 与 `Enter`/`Esc` 快捷键支持
+- [x] 2.3 在 `frontend/src/App.vue` 全局挂载 `PassphraseModal`，打通凭据弹窗弹出与关闭链路
+- [x] 2.4 **执行提交 2**：`feat(ui): add modern PassphraseModal component with session keyring option`
 
 ## 阶段 3：Go 后端凭据协调器与内存安全缓存 (Backend Broker Core)
 - [ ] 3.1 在后端 `cmd/64.ui.go` 中实现线程安全的内存 Keyring 缓存 `sessionKeyring`（支持 TTL 超时清理）

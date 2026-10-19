@@ -94,6 +94,9 @@
       @open-network-settings="openSettings"
       @toggle-drawer="toggleDrawer"
     />
+
+    <!-- 5. Universal Git SSH & GPG Passphrase Prompt Modal -->
+    <PassphraseModal />
   </div>
 </template>
 
@@ -113,7 +116,11 @@ import { useToast } from "./composables/useToast";
 import { useToolUpdates } from "./composables/useToolUpdates";
 import { useAppScope } from "./composables/useAppScope";
 import { useTerminalSessions } from "./composables/useTerminalSessions";
+import { useCredentialBroker } from "./composables/useCredentialBroker";
 import ScopeSwitcher from "./components/common/ScopeSwitcher.vue";
+import PassphraseModal from "./components/common/PassphraseModal.vue";
+
+const { startBrokerPolling, stopBrokerPolling } = useCredentialBroker();
 
 const { checkUpdates } = useToolUpdates();
 const { activeScope, syncFromRoute } = useAppScope();
@@ -524,10 +531,12 @@ onMounted(() => {
   loadConfig();
   fetchThemes();
   checkUpdates().catch(() => {});
+  startBrokerPolling(1000);
   window.addEventListener("keydown", handleGlobalKeydown);
 });
 
 onUnmounted(() => {
+  stopBrokerPolling();
   window.removeEventListener("keydown", handleGlobalKeydown);
 });
 </script>
