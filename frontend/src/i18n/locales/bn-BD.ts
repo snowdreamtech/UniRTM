@@ -1016,4 +1016,8 @@ export const bnBd: TranslationDict = {
   "scm.stash.drop_confirm": "Are you sure you want to permanently drop {name}?",
   "scm.stash.create_branch": "Branch from Stash...",
   "scm.graph.toggle_stashes": "Show Stashes",
+  "scm.graph.load_more_commits": "Load More Commits...",
+  "scm.graph.loading_more": "Loading more commits...",
+  "scm.graph.all_commits_loaded": "All commits loaded",
+  "scm.graph.click_to_load_more": "Click to load more commits",
 };

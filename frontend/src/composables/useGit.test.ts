@@ -509,5 +509,77 @@ describe("useGit composable", () => {
       method: "POST",
     }));
   });
+
+  it("fetchGraph and loadMoreCommits support pagination and infinite scrolling", async () => {
+    // Generate 200 mock commits
+    const mockCommitsPage1 = Array.from({ length: 200 }, (_, i) => ({
+      hash: `commit_${i}`,
+      shortHash: `c${i}`,
+      parents: [],
+      author: "snowdream",
+      email: "snowdream@example.com",
+      timestamp: 1700000000 + i,
+      message: `commit message ${i}`,
+      refs: [],
+    }));
+
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      const u = new URL(url, "http://localhost");
+      const limit = Number(u.searchParams.get("limit") || 200);
+      if (limit === 200) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true, commits: mockCommitsPage1 }),
+        });
+      }
+      // When limit is 400, return 250 commits (meaning fewer than limit -> hasMore false)
+      const mockCommitsPage2 = Array.from({ length: 250 }, (_, i) => ({
+        hash: `commit_${i}`,
+        shortHash: `c${i}`,
+        parents: [],
+        author: "snowdream",
+        email: "snowdream@example.com",
+        timestamp: 1700000000 + i,
+        message: `commit message ${i}`,
+        refs: [],
+      }));
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ success: true, commits: mockCommitsPage2 }),
+      });
+    });
+
+    const {
+      graphCommits,
+      graphLimit,
+      hasMoreCommits,
+      isLoadingMore,
+      fetchGraph,
+      loadMoreCommits,
+      resetGraphLimit,
+    } = useGit();
+
+    resetGraphLimit();
+    expect(graphLimit.value).toBe(200);
+    expect(hasMoreCommits.value).toBe(true);
+
+    // Initial fetch of 200 commits
+    await fetchGraph();
+    expect(graphCommits.value).toHaveLength(200);
+    expect(hasMoreCommits.value).toBe(true); // 200 >= 200 -> hasMore is true
+
+    // Load next page (+200 -> limit 400)
+    await loadMoreCommits(200);
+    expect(graphLimit.value).toBe(400);
+    expect(graphCommits.value).toHaveLength(250);
+    expect(hasMoreCommits.value).toBe(false); // 250 < 400 -> hasMore is false
+    expect(isLoadingMore.value).toBe(false);
+
+    // Resetting limit restores limit to 200 and hasMore to true
+    resetGraphLimit(200);
+    expect(graphLimit.value).toBe(200);
+    expect(hasMoreCommits.value).toBe(true);
+  });
 });
+
 

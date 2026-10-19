@@ -143,7 +143,11 @@ const graphFilterBranch = computed<string>({
 });
 const graphFilterPath = ref<string | null>(null);
 const graphSearchQuery = ref<string>("");
+const graphLimit = ref<number>(200);
+const hasMoreCommits = ref<boolean>(true);
+const graphShowStashes = ref<boolean>(true);
 const isLoadingGraph = ref<boolean>(false);
+const isLoadingMore = ref<boolean>(false);
 const commitMessage = ref<string>("");
 const isLoading = ref<boolean>(false);
 const isCommitting = ref<boolean>(false);
@@ -448,7 +452,8 @@ export function useGit() {
     try {
       const b = options?.branch !== undefined ? options.branch : graphFilterBranches.value;
       const p = options?.path !== undefined ? options.path : graphFilterPath.value;
-      const limit = options?.limit || 200;
+      const limit = options?.limit !== undefined ? options.limit : graphLimit.value;
+      graphLimit.value = limit;
 
       const q = new URLSearchParams();
       if (Array.isArray(b)) {
@@ -460,6 +465,7 @@ export function useGit() {
       }
       if (p) q.set("path", p);
       if (options?.showStashes !== undefined) {
+        graphShowStashes.value = options.showStashes;
         q.set("showStashes", String(options.showStashes));
       }
       q.set("limit", String(limit));
@@ -467,7 +473,10 @@ export function useGit() {
       const res = await fetch(`/api/git/graph?${q.toString()}`);
       if (!res.ok) throw new Error(`Git graph failed: HTTP ${res.status}`);
       const data = await res.json();
-      graphCommits.value = Array.isArray(data.commits) ? data.commits : [];
+      const rawCommits = Array.isArray(data.commits) ? data.commits : [];
+      graphCommits.value = rawCommits;
+      const normalCount = rawCommits.filter((c: any) => !c.isStash && c.hash !== "*").length;
+      hasMoreCommits.value = normalCount >= limit;
       return graphCommits.value;
     } catch (err: any) {
       console.error("fetchGraph error:", err);
@@ -476,6 +485,28 @@ export function useGit() {
     } finally {
       isLoadingGraph.value = false;
     }
+  }
+
+  /**
+   * Loads next page of commits in graph DAG view.
+   */
+  async function loadMoreCommits(step: number = 200): Promise<GitGraphCommit[]> {
+    if (isLoadingGraph.value || isLoadingMore.value || !hasMoreCommits.value) return graphCommits.value;
+    isLoadingMore.value = true;
+    try {
+      const nextLimit = graphLimit.value + step;
+      return await fetchGraph({ limit: nextLimit, showStashes: graphShowStashes.value });
+    } finally {
+      isLoadingMore.value = false;
+    }
+  }
+
+  /**
+   * Resets graph limit pagination state.
+   */
+  function resetGraphLimit(initial: number = 200) {
+    graphLimit.value = initial;
+    hasMoreCommits.value = true;
   }
 
   /**
@@ -1076,6 +1107,11 @@ export function useGit() {
     graphFilterBranches,
     graphFilterPath,
     graphSearchQuery,
+    graphLimit,
+    hasMoreCommits,
+    isLoadingMore,
+    loadMoreCommits,
+    resetGraphLimit,
     isLoadingGraph,
     commitMessage,
     isLoading,

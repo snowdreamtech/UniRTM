@@ -49,7 +49,7 @@
         class="toolbar-btn"
         :class="{ loading: isLoadingGraph }"
         :title="t('scm.actions.refresh')"
-        @click="refreshGraph"
+        @click="handleManualRefresh"
       >
         <span class="codicon" :class="isLoadingGraph ? 'codicon-sync codicon-modifier-spin' : 'codicon-refresh'"></span>
         <span>{{ t('common.refresh') }}</span>
@@ -67,8 +67,14 @@
       </button>
 
       <!-- 5. Commit Count Badge -->
-      <div class="commit-count-pill">
-        <span>{{ t('scm.graph.commits_count', { count: filteredCommits.length }) }}</span>
+      <div
+        class="commit-count-pill"
+        :class="{ clickable: hasMoreCommits }"
+        :title="hasMoreCommits ? t('scm.graph.click_to_load_more') : undefined"
+        @click="hasMoreCommits ? handleLoadMore() : undefined"
+      >
+        <span v-if="isLoadingMore" class="codicon codicon-loading codicon-modifier-spin"></span>
+        <span>{{ t('scm.graph.commits_count', { count: filteredCommits.length }) }}{{ hasMoreCommits ? '+' : '' }}</span>
       </div>
     </div>
 
@@ -89,7 +95,7 @@
           <!-- SVG DAG Overlay for Lanes, Nodes, Bezier Curves -->
           <svg
             class="graph-svg-layer"
-            :style="{ width: graphColWidth + 'px', height: totalBodyHeight + 'px' }"
+            :style="{ width: graphColWidth + 'px', height: totalSvgHeight + 'px' }"
           >
             <!-- 1. Connecting Paths (Vertical lines & Bezier curves) -->
             <path
@@ -694,6 +700,40 @@
             </div>
           </div>
 
+          <!-- Bottom Pagination / Load More Row -->
+          <div
+            v-if="filteredCommits.length > 0"
+            class="graph-load-more-row"
+            :style="{
+              top: loadMoreTop + 'px',
+              height: LOAD_MORE_HEIGHT + 'px'
+            }"
+          >
+            <!-- When there are more commits to load -->
+            <template v-if="hasMoreCommits">
+              <button
+                class="load-more-btn"
+                :disabled="isLoadingMore || isLoadingGraph"
+                @click="handleLoadMore"
+              >
+                <span
+                  class="codicon"
+                  :class="(isLoadingMore || isLoadingGraph) ? 'codicon-loading codicon-modifier-spin' : 'codicon-arrow-down'"
+                ></span>
+                <span>
+                  {{ (isLoadingMore || isLoadingGraph) ? t('scm.graph.loading_more') : t('scm.graph.load_more_commits', { count: 200 }) }}
+                </span>
+              </button>
+            </template>
+            <!-- When all commits have been loaded -->
+            <template v-else>
+              <div class="all-commits-loaded-hint">
+                <span class="codicon codicon-check"></span>
+                <span>{{ t('scm.graph.all_commits_loaded') }}</span>
+              </div>
+            </template>
+          </div>
+
           <!-- Empty State -->
           <div v-if="filteredCommits.length === 0 && !isLoadingGraph" class="graph-empty-state">
             <span class="codicon codicon-inbox empty-icon"></span>
@@ -977,6 +1017,10 @@ const {
   stashBranch,
   resetUncommitted,
   cleanUntracked,
+  hasMoreCommits,
+  isLoadingMore,
+  loadMoreCommits,
+  resetGraphLimit,
 } = useGit();
 
 const { showToast } = useToast();
@@ -1148,7 +1192,20 @@ const graphColWidth = computed(() => {
   return Math.max(68, graphLayout.value.width);
 });
 
+const LOAD_MORE_HEIGHT = 46;
+
+const loadMoreTop = computed(() => {
+  return getRowTop(filteredCommits.value.length);
+});
+
 const totalBodyHeight = computed(() => {
+  const base = filteredCommits.value.length * ROW_HEIGHT;
+  const extra = expandedCommitIndex.value !== -1 ? EXPANDED_PANEL_HEIGHT : 0;
+  const bottomBar = filteredCommits.value.length > 0 ? LOAD_MORE_HEIGHT : 0;
+  return Math.max(ROW_HEIGHT, base + extra + bottomBar);
+});
+
+const totalSvgHeight = computed(() => {
   const base = filteredCommits.value.length * ROW_HEIGHT;
   const extra = expandedCommitIndex.value !== -1 ? EXPANDED_PANEL_HEIGHT : 0;
   return Math.max(ROW_HEIGHT, base + extra);
@@ -1385,7 +1442,14 @@ onBeforeUnmount(() => {
   window.removeEventListener("click", closeAllContextMenus);
 });
 
-async function refreshGraph() {
+async function handleManualRefresh() {
+  await refreshGraph(true);
+}
+
+async function refreshGraph(resetPagination = true) {
+  if (resetPagination) {
+    resetGraphLimit();
+  }
   await fetchStatus();
   await fetchGraph({
     branch: selectedBranches.value,
@@ -1396,13 +1460,13 @@ async function refreshGraph() {
 
 function toggleShowStashes() {
   showStashes.value = !showStashes.value;
-  refreshGraph();
+  refreshGraph(false);
 }
 
 function handleBranchesChange(newBranches: string[]) {
   selectedBranches.value = newBranches;
   graphFilterBranches.value = newBranches;
-  refreshGraph();
+  refreshGraph(true);
 }
 
 async function handleSelectCommit(commit: GitGraphCommit) {
@@ -1454,6 +1518,20 @@ function jumpToCommit(parentHash: string) {
 
 function handleScroll() {
   closeAllContextMenus();
+
+  if (!tableWrapperRef.value || isLoadingGraph.value || isLoadingMore.value || !hasMoreCommits.value) {
+    return;
+  }
+
+  const el = tableWrapperRef.value;
+  const scrollBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+  if (scrollBottom < 300) {
+    loadMoreCommits();
+  }
+}
+
+async function handleLoadMore() {
+  await loadMoreCommits();
 }
 
 // Context Menu Handling
@@ -1973,6 +2051,21 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
   border-radius: 10px;
 }
 
+.commit-count-pill.clickable {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.commit-count-pill.clickable:hover {
+  background: rgba(128, 128, 128, 0.2);
+  color: var(--text-main);
+  border-color: var(--primary, #3b82f6);
+}
+
 /* Split Main Container */
 .graph-main-split {
   flex: 1;
@@ -2251,6 +2344,57 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
 
 .empty-icon {
   font-size: 32px;
+}
+
+/* Bottom Pagination / Load More Row */
+.graph-load-more-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  box-sizing: border-box;
+  border-top: 1px dashed var(--card-border);
+  background: var(--card-bg, transparent);
+  z-index: 5;
+}
+
+.load-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 6px 18px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.load-more-btn:hover:not(:disabled) {
+  background: var(--active-bg, rgba(255, 255, 255, 0.08));
+  border-color: var(--primary, #3b82f6);
+  color: var(--primary, #3b82f6);
+}
+
+.load-more-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.all-commits-loaded-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 6px 12px;
+  user-select: none;
 }
 
 /* Inline Expanded Commit Detail Panel */

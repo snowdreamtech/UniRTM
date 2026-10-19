@@ -1029,4 +1029,8 @@ export const zhCn: TranslationDict = {
   "scm.stash.drop_confirm": "确定要永久删除暂存 {name} 吗？此操作无法撤销！",
   "scm.stash.create_branch": "基于暂存创建分支...",
   "scm.graph.toggle_stashes": "显示暂存记录",
+  "scm.graph.load_more_commits": "加载更多提交...",
+  "scm.graph.loading_more": "正在加载更多提交...",
+  "scm.graph.all_commits_loaded": "已加载全部提交",
+  "scm.graph.click_to_load_more": "点击加载更多提交",
 };

@@ -1025,4 +1025,8 @@ export const zhTw: TranslationDict = {
   "scm.stash.drop_confirm": "確定要永久刪除暫存 {name} 嗎？此操作無法復原！",
   "scm.stash.create_branch": "從暫存建立分支...",
   "scm.graph.toggle_stashes": "顯示暫存記錄",
+  "scm.graph.load_more_commits": "載入更多提交...",
+  "scm.graph.loading_more": "正在載入更多提交...",
+  "scm.graph.all_commits_loaded": "已載入全部提交",
+  "scm.graph.click_to_load_more": "點擊載入更多提交",
 };
