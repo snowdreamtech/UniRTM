@@ -7,6 +7,7 @@ export interface DiffLineChange {
   type: DiffChangeType;
   startLineNumber: number;
   endLineNumber: number;
+  originalText?: string;
 }
 
 /**
@@ -94,6 +95,8 @@ export function computeLineDiff(originalText: string, modifiedText: string): Dif
     let modStart = 0;
     let modEnd = 0;
 
+    const origReplacedLines: string[] = [];
+
     while (k < edits.length && edits[k].op !== "same") {
       if (edits[k].op === "add") {
         addCount++;
@@ -102,21 +105,29 @@ export function computeLineDiff(originalText: string, modifiedText: string): Dif
         if (line > modEnd) modEnd = line;
       } else {
         delCount++;
+        const oIdx = edits[k].origIdx;
+        if (oIdx >= 1 && oIdx <= origLines.length) {
+          origReplacedLines.push(origLines[oIdx - 1]);
+        }
       }
       k++;
     }
+
+    const origContent = origReplacedLines.join("\n");
 
     if (addCount > 0 && delCount > 0) {
       result.push({
         type: "modified",
         startLineNumber: modStart,
         endLineNumber: modEnd,
+        originalText: origContent,
       });
     } else if (addCount > 0) {
       result.push({
         type: "added",
         startLineNumber: modStart,
         endLineNumber: modEnd,
+        originalText: "",
       });
     } else if (delCount > 0) {
       // 纯删除行，标记在前一行或第 1 行
@@ -125,6 +136,7 @@ export function computeLineDiff(originalText: string, modifiedText: string): Dif
         type: "deleted",
         startLineNumber: refLine,
         endLineNumber: refLine,
+        originalText: origContent,
       });
     }
   }

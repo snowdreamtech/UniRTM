@@ -20,6 +20,7 @@ describe("diffGutter utility", () => {
       type: "added",
       startLineNumber: 2,
       endLineNumber: 2,
+      originalText: "",
     });
   });
 
@@ -33,6 +34,7 @@ describe("diffGutter utility", () => {
       type: "modified",
       startLineNumber: 2,
       endLineNumber: 2,
+      originalText: "beta",
     });
   });
 

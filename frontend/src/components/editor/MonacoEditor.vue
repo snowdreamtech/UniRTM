@@ -12,6 +12,33 @@
       </div>
     </div>
     <div ref="editorContainerRef" class="monaco-host-container"></div>
+    <!-- Inline Diff Peek Widget -->
+    <div
+      v-if="activeDiffPeek"
+      class="inline-diff-peek"
+      :style="{ top: `${activeDiffPeek.top}px`, left: `${activeDiffPeek.left}px` }"
+      @click.stop
+    >
+      <div class="peek-header">
+        <span class="peek-title">
+          <span class="codicon codicon-history"></span>
+          原版本代码 (第 {{ activeDiffPeek.diff.startLineNumber }} 行)
+        </span>
+        <div class="peek-actions">
+          <button class="peek-btn revert" title="回滚该代码块至原版 (Ctrl+Z 可撤销)" @click="revertActiveDiffRange">
+            <span class="codicon codicon-discard"></span>
+            还原此块
+          </button>
+          <button class="peek-btn close" title="关闭" @click="closeDiffPeek">
+            <span class="codicon codicon-close"></span>
+          </button>
+        </div>
+      </div>
+      <div class="peek-content">
+        <pre v-if="activeDiffPeek.diff.originalText" class="peek-pre deleted-code">{{ activeDiffPeek.diff.originalText }}</pre>
+        <span v-else class="peek-empty-tip">(新增代码，原版本无此内容)</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -43,6 +70,19 @@ let resizeObserver: ResizeObserver | null = null;
 let gutterDecorationIds: string[] = [];
 let diffDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
+interface ActiveDiffPeek {
+  diff: DiffLineChange;
+  top: number;
+  left: number;
+}
+
+const activeDiffPeek = ref<ActiveDiffPeek | null>(null);
+let currentDiffs: DiffLineChange[] = [];
+
+function closeDiffPeek(): void {
+  activeDiffPeek.value = null;
+}
+
 function updateGutterDecorations(): void {
   if (!editorInstance || !monaco) return;
   const model = editorInstance.getModel();
@@ -57,6 +97,7 @@ function updateGutterDecorations(): void {
   }
 
   const diffs = computeLineDiff(originalText, currentText);
+  currentDiffs = diffs;
   const newDecorations: MonacoType.editor.IModelDeltaDecoration[] = diffs.map((diff) => ({
     range: new monaco!.Range(diff.startLineNumber, 1, diff.endLineNumber, 1),
     options: {
@@ -66,6 +107,60 @@ function updateGutterDecorations(): void {
   }));
 
   gutterDecorationIds = editorInstance.deltaDecorations(gutterDecorationIds, newDecorations);
+}
+
+function revertActiveDiffRange(): void {
+  if (!activeDiffPeek.value || !editorInstance || !monaco) return;
+  const { diff } = activeDiffPeek.value;
+  const model = editorInstance.getModel();
+  if (!model) return;
+
+  if (diff.type === "added") {
+    const startLine = diff.startLineNumber;
+    const endLine = diff.endLineNumber;
+    const lineCount = model.getLineCount();
+    let range: MonacoType.Range;
+    if (endLine < lineCount) {
+      range = new monaco.Range(startLine, 1, endLine + 1, 1);
+    } else if (startLine > 1) {
+      const prevLineLen = model.getLineLength(startLine - 1);
+      range = new monaco.Range(startLine - 1, prevLineLen + 1, endLine, model.getLineLength(endLine) + 1);
+    } else {
+      range = new monaco.Range(startLine, 1, endLine, model.getLineLength(endLine) + 1);
+    }
+    editorInstance.executeEdits("revert-diff", [
+      {
+        range,
+        text: "",
+        forceMoveMarkers: true,
+      },
+    ]);
+  } else if (diff.type === "modified") {
+    const startLine = diff.startLineNumber;
+    const endLine = diff.endLineNumber;
+    const range = new monaco.Range(startLine, 1, endLine, model.getLineLength(endLine) + 1);
+    editorInstance.executeEdits("revert-diff", [
+      {
+        range,
+        text: diff.originalText ?? "",
+        forceMoveMarkers: true,
+      },
+    ]);
+  } else if (diff.type === "deleted") {
+    const line = diff.startLineNumber;
+    const range = new monaco.Range(line, 1, line, 1);
+    editorInstance.executeEdits("revert-diff", [
+      {
+        range,
+        text: (diff.originalText ?? "") + "\n",
+        forceMoveMarkers: true,
+      },
+    ]);
+  }
+
+  closeDiffPeek();
+  emit("change", model.getValue());
+  scheduleGutterDiffUpdate();
 }
 
 function scheduleGutterDiffUpdate(): void {
@@ -182,6 +277,36 @@ onMounted(async () => {
       if (editorInstance) {
         emit("change", editorInstance.getValue());
         scheduleGutterDiffUpdate();
+      }
+    });
+
+    // Mouse down on gutter diff decorations to show peek
+    editorInstance.onMouseDown((e) => {
+      if (
+        e.target.type === monaco!.editor.MouseTargetType.GUTTER_LINE_DECORATIONS ||
+        e.target.type === monaco!.editor.MouseTargetType.GUTTER_GLYPH_MARGIN ||
+        e.target.type === monaco!.editor.MouseTargetType.GUTTER_LINE_NUMBERS
+      ) {
+        const line = e.target.position?.lineNumber;
+        if (line) {
+          const matchingDiff = currentDiffs.find(
+            (d) => line >= d.startLineNumber && line <= d.endLineNumber
+          );
+          if (matchingDiff) {
+            const browserEvt = e.event.browserEvent as MouseEvent;
+            const containerRect = editorContainerRef.value?.getBoundingClientRect();
+            const top = (browserEvt.clientY - (containerRect?.top || 0)) + 6;
+            activeDiffPeek.value = {
+              diff: matchingDiff,
+              top: Math.max(16, Math.min(top, (containerRect?.height || 400) - 130)),
+              left: 56,
+            };
+            return;
+          }
+        }
+      }
+      if (activeDiffPeek.value) {
+        activeDiffPeek.value = null;
       }
     });
 
@@ -341,17 +466,20 @@ onBeforeUnmount(() => {
 :deep(.gutter-diff-added) {
   border-left: 3px solid #2ea043 !important;
   margin-left: 3px;
+  cursor: pointer;
 }
 
 :deep(.gutter-diff-modified) {
   border-left: 3px solid #007acc !important;
   margin-left: 3px;
+  cursor: pointer;
 }
 
 :deep(.gutter-diff-deleted) {
   border-bottom: 2px solid #f85149 !important;
   width: 6px;
   margin-left: 2px;
+  cursor: pointer;
 }
 
 :root[data-theme="light"] :deep(.gutter-diff-added) {
@@ -364,5 +492,105 @@ onBeforeUnmount(() => {
 
 :root[data-theme="light"] :deep(.gutter-diff-deleted) {
   border-bottom-color: #ef4444 !important;
+}
+
+/* Inline Diff Peek Widget */
+.inline-diff-peek {
+  position: absolute;
+  z-index: 40;
+  min-width: 300px;
+  max-width: 520px;
+  background-color: var(--card-bg, #1e1e1e);
+  border: 1px solid var(--card-border, rgba(128, 128, 128, 0.35));
+  border-radius: 6px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  font-size: 12px;
+  backdrop-filter: blur(8px);
+}
+
+:root[data-theme="light"] .inline-diff-peek {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.peek-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background-color: rgba(128, 128, 128, 0.1);
+  border-bottom: 1px solid var(--card-border, rgba(128, 128, 128, 0.2));
+}
+
+.peek-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: var(--text-main);
+  font-size: 11px;
+}
+
+.peek-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.peek-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+}
+
+.peek-btn.revert {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.peek-btn.revert:hover {
+  background-color: rgba(239, 68, 68, 0.22);
+}
+
+.peek-btn.close:hover {
+  background-color: rgba(128, 128, 128, 0.2);
+  color: var(--text-main);
+}
+
+.peek-content {
+  padding: 8px 10px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.peek-pre {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.08);
+  padding: 4px 6px;
+  border-radius: 3px;
+  border-left: 2px solid #ef4444;
+}
+
+.peek-empty-tip {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 11px;
 }
 </style>
