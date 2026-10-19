@@ -20,10 +20,10 @@
 - [x] 3.5 **执行提交 3**：`feat(backend): implement credential coordinator and in-memory session keyring`
 
 ## 阶段 4：Git/SSH/GPG 命令执行链路拦截与注入 (Execution Integration)
-- [ ] 4.1 在 `cmd/64.ui.go` 的 `runGitCommand` 中封装统一的 Broker 执行器，自动注入 `GIT_ASKPASS` 与 `SSH_ASKPASS`
-- [ ] 4.2 为 `git commit -S` 注入 `--pinentry-mode loopback` 并在底层捕获 GPG passphrase 请求并中继
-- [ ] 4.3 结合 `useGit.ts`，在前端触发 Commit / Push / Pull 时无缝挂起并唤醒凭据弹窗
-- [ ] 4.4 **执行提交 4**：`feat(git): integrate askpass and gpg loopback broker into git command execution`
+- [x] 4.1 在 `cmd/64.ui.go` 与 `cmd/64.ui_credential.go` 的 `runGitCommand` 中封装统一的 Broker 执行器，自动注入 `GIT_ASKPASS` 与 `SSH_ASKPASS`
+- [x] 4.2 为 `git commit -S` 注入 `--pinentry-mode loopback` 并在底层捕获 GPG passphrase 请求并中继
+- [x] 4.3 结合 `useGit.ts`，在前端触发 Commit / Push / Pull 时无缝挂起并唤醒凭据弹窗
+- [x] 4.4 **执行提交 4**：`feat(git): integrate askpass and gpg loopback broker into git command execution`
 
 ## 阶段 5：全 53 国多语言支持与端到端质量验证 (i18n & Verification)
 - [ ] 5.1 更新 `frontend/src/i18n/types.ts`、`zh-CN.ts` 与 `en-US.ts`，添加 SSH/GPG 凭据相关文案

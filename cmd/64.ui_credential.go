@@ -9,7 +9,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -199,3 +203,77 @@ func handleGitCredentialClearCache(w http.ResponseWriter, r *http.Request) {
 		"success": true,
 	})
 }
+
+var (
+	askpassHelperPath string
+	askpassHelperOnce sync.Once
+)
+
+// getOrCreateAskPassHelper creates a standalone lightweight POSIX shell script
+// that relays Git / SSH passphrase prompts to UniRTM's broker HTTP endpoint.
+func getOrCreateAskPassHelper() string {
+	askpassHelperOnce.Do(func() {
+		tmpDir := os.TempDir()
+		scriptFile := filepath.Join(tmpDir, fmt.Sprintf("unirtm-askpass-%d.sh", os.Getpid()))
+
+		targetPort := uiPort
+		if targetPort <= 0 {
+			targetPort = 5173
+		}
+
+		content := fmt.Sprintf(`#!/bin/sh
+PROMPT="$*"
+if command -v curl >/dev/null 2>&1; then
+    curl -s -X POST "http://127.0.0.1:%d/api/git/credential-internal-ask" -H "Content-Type: text/plain" --data-binary "$PROMPT"
+elif command -v wget >/dev/null 2>&1; then
+    wget -qO- --post-data="$PROMPT" "http://127.0.0.1:%d/api/git/credential-internal-ask"
+fi
+`, targetPort, targetPort)
+
+		if err := os.WriteFile(scriptFile, []byte(content), 0700); err == nil {
+			askpassHelperPath = scriptFile
+		}
+	})
+	return askpassHelperPath
+}
+
+// HTTP API: POST /api/git/credential-internal-ask
+// Invoked by the askpass helper script when Git or SSH prompts for password.
+func handleGitCredentialInternalAsk(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	promptBytes, _ := io.ReadAll(r.Body)
+	prompt := strings.TrimSpace(string(promptBytes))
+
+	// Detect whether prompt is for SSH, GPG, or HTTPS auth
+	reqType := "ssh"
+	targetKey := ""
+
+	lowerPrompt := strings.ToLower(prompt)
+	if strings.Contains(lowerPrompt, "gpg") || strings.Contains(lowerPrompt, "pinentry") {
+		reqType = "gpg"
+	} else if strings.Contains(lowerPrompt, "username") || strings.Contains(lowerPrompt, "password for 'https") {
+		reqType = "git-auth"
+	}
+
+	// Extract key path from prompt e.g. "Enter passphrase for key '/root/.ssh/id_rsa':"
+	if idx := strings.Index(prompt, "'"); idx != -1 {
+		rest := prompt[idx+1:]
+		if endIdx := strings.Index(rest, "'"); endIdx != -1 {
+			targetKey = rest[:endIdx]
+		}
+	}
+
+	pass, err := globalCredentialCoordinator.RequestGitCredential(reqType, prompt, targetKey, 60*time.Second)
+	if err != nil {
+		w.WriteHeader(http.StatusRequestTimeout)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	_, _ = w.Write([]byte(pass))
+}
+

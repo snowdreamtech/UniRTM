@@ -1131,6 +1131,7 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 	mux.HandleFunc("/api/git/credential-pending", handleGitCredentialPending)
 	mux.HandleFunc("/api/git/credential-respond", handleGitCredentialRespond)
 	mux.HandleFunc("/api/git/credential-clear-cache", handleGitCredentialClearCache)
+	mux.HandleFunc("/api/git/credential-internal-ask", handleGitCredentialInternalAsk)
 
 	// ─── Port Forwarding API Handlers ──────────────────────────────────────────
 	mux.HandleFunc("/api/ports/list", handlePortsList)
@@ -3491,6 +3492,13 @@ func runGitCommand(args ...string) (string, error) {
 	}
 	cmd := exec.Command("git", args...)
 	cmd.Dir = wd
+	if askpassPath := getOrCreateAskPassHelper(); askpassPath != "" {
+		cmd.Env = append(os.Environ(),
+			"GIT_ASKPASS="+askpassPath,
+			"SSH_ASKPASS="+askpassPath,
+			"SSH_ASKPASS_REQUIRE=force",
+		)
+	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -3698,6 +3706,7 @@ func handleGitCommit(w http.ResponseWriter, r *http.Request) {
 	}
 	if body.Sign != nil {
 		if *body.Sign {
+			args = append([]string{"-c", "gpg.extraargs=--pinentry-mode=loopback"}, args...)
 			args = append(args, "-S")
 		} else {
 			args = append(args, "--no-gpg-sign")

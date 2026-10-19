@@ -131,4 +131,21 @@ func TestCredentialHTTPHandlers(t *testing.T) {
 	var respData map[string]interface{}
 	_ = json.Unmarshal(respRec.Body.Bytes(), &respData)
 	assert.False(t, respData["success"].(bool))
+
+	// 4. Test getOrCreateAskPassHelper
+	helperPath := getOrCreateAskPassHelper()
+	assert.NotEmpty(t, helperPath)
+
+	// 5. POST /api/git/credential-internal-ask with cache hit
+	globalSessionKeyring.Set("/home/user/.ssh/id_rsa", "auto_cached_secret")
+	internalReq := httptest.NewRequest(
+		http.MethodPost,
+		"/api/git/credential-internal-ask",
+		bytes.NewBufferString("Enter passphrase for key '/home/user/.ssh/id_rsa':"),
+	)
+	internalRec := httptest.NewRecorder()
+	handleGitCredentialInternalAsk(internalRec, internalReq)
+	assert.Equal(t, http.StatusOK, internalRec.Code)
+	assert.Equal(t, "auto_cached_secret", internalRec.Body.String())
 }
+
