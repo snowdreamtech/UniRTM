@@ -708,6 +708,7 @@ const {
   activeTabId,
   activeTab,
   hasDirtyTabs,
+  openTab,
   openDiffTab,
   switchTab,
   updateContent,

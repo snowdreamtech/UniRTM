@@ -4,6 +4,7 @@
 import { ref, toRef, watch, nextTick } from "vue";
 import type { SearchAddon } from "@xterm/addon-search";
 import { useTerminalSearch } from "../../composables/useTerminalSearch";
+import { t } from "../../i18n";
 
 const props = defineProps<{
   visible: boolean;
@@ -98,13 +99,13 @@ watch(
           v-model="query"
           type="text"
           class="search-input"
-          placeholder="查找终端内容..."
+          :placeholder="t('terminal.search.placeholder')"
           @input="onInput"
         />
 
         <!-- Match Counter -->
         <span v-if="query" class="match-count">
-          {{ resultCount > 0 ? `${resultIndex + 1}/${resultCount}` : "无结果" }}
+          {{ resultCount > 0 ? `${resultIndex + 1}/${resultCount}` : t('terminal.search.no_results') }}
         </span>
 
         <!-- Option Toggles -->
@@ -113,7 +114,7 @@ watch(
             type="button"
             class="option-btn"
             :class="{ active: matchCase }"
-            title="区分大小写 (Alt+C)"
+            :title="t('terminal.search.match_case')"
             @click="toggleMatchCase"
           >
             Aa
@@ -122,7 +123,7 @@ watch(
             type="button"
             class="option-btn"
             :class="{ active: matchWholeWord }"
-            title="全字匹配 (Alt+W)"
+            :title="t('terminal.search.match_whole_word')"
             @click="toggleMatchWholeWord"
           >
             \b
@@ -131,7 +132,7 @@ watch(
             type="button"
             class="option-btn"
             :class="{ active: useRegex }"
-            title="使用正则表达式 (Alt+R)"
+            :title="t('terminal.search.use_regex')"
             @click="toggleUseRegex"
           >
             .*
@@ -144,7 +145,7 @@ watch(
         <button
           type="button"
           class="action-btn"
-          title="上一个匹配项 (Shift+Enter)"
+          :title="t('terminal.search.previous')"
           :disabled="!query || resultCount === 0"
           @click="handleFindPrevious"
         >
@@ -155,7 +156,7 @@ watch(
         <button
           type="button"
           class="action-btn"
-          title="下一个匹配项 (Enter)"
+          :title="t('terminal.search.next')"
           :disabled="!query || resultCount === 0"
           @click="handleFindNext"
         >
@@ -166,7 +167,7 @@ watch(
         <button
           type="button"
           class="action-btn close-btn"
-          title="关闭 (Escape)"
+          :title="t('terminal.search.close')"
           @click="emit('close')"
         >
           <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">

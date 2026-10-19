@@ -51,7 +51,7 @@
     <!-- Open in Integrated Terminal -->
     <div class="menu-item" @click="handleOpenTerminal">
       <span class="menu-icon codicon codicon-terminal"></span>
-      <span class="menu-label">在集成终端中打开</span>
+      <span class="menu-label">{{ t('explorer.context_menu.open_terminal') }}</span>
     </div>
 
     <div class="menu-separator"></div>
@@ -103,6 +103,7 @@ import { useFileTree } from "../../composables/useFileTree";
 import { useGit } from "../../composables/useGit";
 import { useWorkspaceBus } from "../../composables/useWorkspaceBus";
 import { useLocalHistory } from "../../composables/useLocalHistory";
+import { t } from "../../i18n";
 
 const router = useRouter();
 const {

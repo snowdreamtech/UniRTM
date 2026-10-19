@@ -2,6 +2,7 @@
 <!-- Licensed under the MIT License. See LICENSE file in the project root for full license information. -->
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { t } from "../../i18n";
 
 const props = defineProps<{
   visible: boolean;
@@ -84,7 +85,7 @@ onBeforeUnmount(() => {
       @click="hasSelection && handleItemClick(() => emit('copy'))"
     >
       <span class="menu-icon codicon codicon-copy"></span>
-      <span class="menu-label">复制</span>
+      <span class="menu-label">{{ t('terminal.menu.copy') }}</span>
       <span class="menu-shortcut">Ctrl+Shift+C</span>
     </div>
 
@@ -96,7 +97,7 @@ onBeforeUnmount(() => {
       @click="handleItemClick(() => emit('paste'))"
     >
       <span class="menu-icon codicon codicon-clippy"></span>
-      <span class="menu-label">粘贴</span>
+      <span class="menu-label">{{ t('terminal.menu.paste') }}</span>
       <span class="menu-shortcut">Ctrl+Shift+V</span>
     </div>
 
@@ -110,7 +111,7 @@ onBeforeUnmount(() => {
       @click="handleItemClick(() => emit('find'))"
     >
       <span class="menu-icon codicon codicon-search"></span>
-      <span class="menu-label">查找</span>
+      <span class="menu-label">{{ t('terminal.menu.find') }}</span>
       <span class="menu-shortcut">Ctrl+F</span>
     </div>
 
@@ -122,7 +123,7 @@ onBeforeUnmount(() => {
       @click="handleItemClick(() => emit('select-all'))"
     >
       <span class="menu-icon codicon codicon-check-all"></span>
-      <span class="menu-label">全选</span>
+      <span class="menu-label">{{ t('terminal.menu.select_all') }}</span>
       <span class="menu-shortcut">Ctrl+A</span>
     </div>
 
@@ -134,7 +135,7 @@ onBeforeUnmount(() => {
       @click="handleItemClick(() => emit('clear'))"
     >
       <span class="menu-icon codicon codicon-clear-all"></span>
-      <span class="menu-label">清空终端</span>
+      <span class="menu-label">{{ t('terminal.menu.clear') }}</span>
       <span class="menu-shortcut">Ctrl+K</span>
     </div>
 
@@ -148,7 +149,7 @@ onBeforeUnmount(() => {
       @click="handleItemClick(() => emit('restart'))"
     >
       <span class="menu-icon codicon codicon-refresh"></span>
-      <span class="menu-label">重新连接会话</span>
+      <span class="menu-label">{{ t('terminal.menu.restart') }}</span>
     </div>
   </div>
 </template>
