@@ -43,17 +43,51 @@
         <span v-else class="peek-empty-tip">(新增代码，原版本无此内容)</span>
       </div>
     </div>
+    <!-- Merge Conflict Banner Widget -->
+    <div v-if="detectedConflicts.length > 0 && activeConflict" class="conflict-banner">
+      <div class="conflict-banner-info">
+        <span class="codicon codicon-warning conflict-icon"></span>
+        <span class="conflict-text">
+          代码合并冲突 (第 {{ activeConflictIdx + 1 }}/{{ detectedConflicts.length }} 处 · 第 {{ activeConflict.startLine }} 行)
+        </span>
+      </div>
+      <div class="conflict-actions">
+        <button class="conflict-action-btn current" title="采用当前分支的修改" @click="resolveActiveConflict('current')">
+          采用当前更改 ({{ activeConflict.currentLabel }})
+        </button>
+        <button class="conflict-action-btn incoming" title="采用传入分支的修改" @click="resolveActiveConflict('incoming')">
+          采用传入更改 ({{ activeConflict.incomingLabel }})
+        </button>
+        <button class="conflict-action-btn both" title="同时保留双方更改" @click="resolveActiveConflict('both')">
+          保留两者
+        </button>
+        <div class="conflict-nav" v-if="detectedConflicts.length > 1">
+          <button class="conflict-nav-btn" title="上一处冲突" @click="prevConflict">
+            <span class="codicon codicon-arrow-up"></span>
+          </button>
+          <button class="conflict-nav-btn" title="下一处冲突" @click="nextConflict">
+            <span class="codicon codicon-arrow-down"></span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import type * as MonacoType from "monaco-editor";
 import "monaco-editor/min/vs/editor/editor.main.css";
 import { loadMonaco, getLanguageForFile } from "../../services/editor/monacoLoader";
 import { computeLineDiff, type DiffLineChange } from "../../utils/diffGutter";
 import type { EditorTab } from "../../composables/useEditorTabs";
 import { useGit } from "../../composables/useGit";
+import {
+  parseMergeConflicts,
+  getConflictResolutionText,
+  type MergeConflictRegion,
+  type ConflictResolution,
+} from "../../utils/mergeConflict";
 
 const props = defineProps<{
   tab: EditorTab;
@@ -83,6 +117,74 @@ interface ActiveDiffPeek {
 
 const activeDiffPeek = ref<ActiveDiffPeek | null>(null);
 let currentDiffs: DiffLineChange[] = [];
+
+const detectedConflicts = ref<MergeConflictRegion[]>([]);
+const activeConflictIdx = ref<number>(0);
+
+const activeConflict = computed(() => {
+  if (detectedConflicts.value.length === 0) return null;
+  const idx = Math.min(Math.max(0, activeConflictIdx.value), detectedConflicts.value.length - 1);
+  return detectedConflicts.value[idx];
+});
+
+function scanConflicts(): void {
+  if (!editorInstance) return;
+  const model = editorInstance.getModel();
+  if (!model) return;
+  const text = model.getValue();
+  detectedConflicts.value = parseMergeConflicts(text);
+  if (activeConflictIdx.value >= detectedConflicts.value.length) {
+    activeConflictIdx.value = Math.max(0, detectedConflicts.value.length - 1);
+  }
+}
+
+function scrollToActiveConflict(): void {
+  if (!editorInstance || !activeConflict.value) return;
+  editorInstance.revealLineInCenter(activeConflict.value.startLine);
+}
+
+function nextConflict(): void {
+  if (detectedConflicts.value.length <= 1) return;
+  activeConflictIdx.value = (activeConflictIdx.value + 1) % detectedConflicts.value.length;
+  scrollToActiveConflict();
+}
+
+function prevConflict(): void {
+  if (detectedConflicts.value.length <= 1) return;
+  activeConflictIdx.value = (activeConflictIdx.value - 1 + detectedConflicts.value.length) % detectedConflicts.value.length;
+  scrollToActiveConflict();
+}
+
+function resolveActiveConflict(resolution: ConflictResolution): void {
+  if (!editorInstance || !monaco || !activeConflict.value) return;
+  const conflict = activeConflict.value;
+  const model = editorInstance.getModel();
+  if (!model) return;
+
+  const replaceText = getConflictResolutionText(conflict, resolution);
+  const totalLines = model.getLineCount();
+
+  let range: MonacoType.Range;
+  let textToInsert = replaceText;
+  if (conflict.endLine < totalLines) {
+    range = new monaco.Range(conflict.startLine, 1, conflict.endLine + 1, 1);
+    textToInsert = replaceText ? `${replaceText}\n` : "";
+  } else {
+    range = new monaco.Range(conflict.startLine, 1, conflict.endLine, model.getLineLength(conflict.endLine) + 1);
+  }
+
+  editorInstance.executeEdits("resolve-conflict", [
+    {
+      range,
+      text: textToInsert,
+      forceMoveMarkers: true,
+    },
+  ]);
+
+  emit("change", model.getValue());
+  scheduleGutterDiffUpdate();
+  scanConflicts();
+}
 
 function closeDiffPeek(): void {
   activeDiffPeek.value = null;
@@ -303,12 +405,14 @@ onMounted(async () => {
 
     localizeEditorActions(editorInstance);
     setupEditorContextMenuLocalization(editorInstance, editorContainerRef.value);
+    scanConflicts();
 
     // Content change
     editorInstance.onDidChangeModelContent(() => {
       if (editorInstance) {
         emit("change", editorInstance.getValue());
         scheduleGutterDiffUpdate();
+        scanConflicts();
       }
     });
 
@@ -634,5 +738,101 @@ onBeforeUnmount(() => {
   color: var(--text-muted);
   font-style: italic;
   font-size: 11px;
+}
+
+.conflict-banner {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  z-index: 25;
+  background-color: var(--card-bg, #1e293b);
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+:root[data-theme="light"] .conflict-banner {
+  background-color: #fffbeb;
+  border-color: #f59e0b;
+  color: #92400e;
+}
+
+.conflict-banner-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #f59e0b;
+}
+
+.conflict-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.conflict-action-btn {
+  border: none;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.conflict-action-btn.current {
+  background-color: rgba(59, 130, 246, 0.18);
+  color: #3b82f6;
+}
+
+.conflict-action-btn.current:hover {
+  background-color: rgba(59, 130, 246, 0.3);
+}
+
+.conflict-action-btn.incoming {
+  background-color: rgba(16, 185, 129, 0.18);
+  color: #10b981;
+}
+
+.conflict-action-btn.incoming:hover {
+  background-color: rgba(16, 185, 129, 0.3);
+}
+
+.conflict-action-btn.both {
+  background-color: rgba(168, 85, 247, 0.18);
+  color: #a855f7;
+}
+
+.conflict-action-btn.both:hover {
+  background-color: rgba(168, 85, 247, 0.3);
+}
+
+.conflict-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+  border-left: 1px solid rgba(128, 128, 128, 0.25);
+  padding-left: 6px;
+}
+
+.conflict-nav-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: var(--text-muted);
+}
+
+.conflict-nav-btn:hover {
+  background: rgba(128, 128, 128, 0.2);
+  color: var(--text-main);
 }
 </style>

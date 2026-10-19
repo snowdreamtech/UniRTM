@@ -92,12 +92,12 @@
 - [x] 13.4 **执行提交 13**：`feat(i18n): sync multi-language keys and finalize phase 11-12 validation`
 
 
-## 阶段 14：Git 合并冲突智能识别与就地一键合并 (Merge Conflict Resolution) [待执行]
-- [ ] 14.1 实现 `frontend/src/utils/mergeConflict.ts`：解析标准 Git 冲突标记（`<<<<<<<`, `=======`, `>>>>>>>`），提取冲突区间、分支标签与代码块
-- [ ] 14.2 编写 `frontend/src/utils/mergeConflict.test.ts` 单元测试，覆盖单冲突、多冲突、非法嵌套及边界用例
-- [ ] 14.3 在 `frontend/src/components/editor/MonacoEditor.vue` 中挂载冲突标记感知条与一键操作（Accept Current, Accept Incoming, Accept Both）
-- [ ] 14.4 执行合并操作后通过 Monaco `executeEdits` 替换并自动清理标记，通知工作区总线
-- [ ] 14.5 **执行提交 14**：`feat(editor): implement merge conflict detection and inline one-click resolution actions`
+## 阶段 14：Git 合并冲突智能识别与就地一键合并 (Merge Conflict Resolution) [已完成]
+- [x] 14.1 实现 `frontend/src/utils/mergeConflict.ts`：解析标准 Git 冲突标记（`<<<<<<<`, `=======`, `>>>>>>>`），提取冲突区间、分支标签与代码块
+- [x] 14.2 编写 `frontend/src/utils/mergeConflict.test.ts` 单元测试，覆盖单冲突、多冲突、非法嵌套及边界用例
+- [x] 14.3 在 `frontend/src/components/editor/MonacoEditor.vue` 中挂载冲突标记感知条与一键操作（Accept Current, Accept Incoming, Accept Both）
+- [x] 14.4 执行合并操作后通过 Monaco `executeEdits` 替换并自动清理标记，通知工作区总线
+- [x] 14.5 **执行提交 14**：`feat(editor): implement merge conflict detection and inline one-click resolution actions`
 
 
 ## 阶段 15：无 Git 依赖的本地时间胶囊 (Local History & Snapshot Timeline) [待执行]
