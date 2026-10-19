@@ -511,7 +511,7 @@
               @click="handleRefreshGuard"
             >
               <span class="codicon codicon-refresh" :class="{ 'codicon-modifier-spin': isGuardLoading }"></span>
-              <span>{{ t('guard.actions.rescan') || '重新扫描' }}</span>
+              <span>{{ t('guard.actions.rescan') || '质检' }}</span>
             </button>
           </div>
         </div>

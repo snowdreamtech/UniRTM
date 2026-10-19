@@ -147,7 +147,7 @@
           <button
             class="guard-btn-refresh"
             :disabled="isGuardLoading"
-            :title="t('guard.actions.rescan') || '重新质检'"
+            :title="t('guard.actions.rescan') || '质检'"
             @click.stop="handleRefreshGuard"
           >
             <span class="codicon codicon-refresh" :class="{ 'codicon-modifier-spin': isGuardLoading }"></span>
