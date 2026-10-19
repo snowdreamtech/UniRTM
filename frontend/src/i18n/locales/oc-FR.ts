@@ -1172,4 +1172,7 @@ export const ocFr: TranslationDict = {
   "guard.config.save_success": "Configuration file saved successfully",
   "guard.config.save_failed": "Failed to save configuration file",
   "guard.config.save_and_recheck": "Save & Re-run Guard",
+  "guard.config.all_saved": "All changes saved",
+  "guard.config.unsaved_changes": "Unsaved changes",
+  "guard.config.loading": "Loading configuration file...",
 };

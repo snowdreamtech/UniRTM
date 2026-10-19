@@ -1181,4 +1181,7 @@ export const zhTw: TranslationDict = {
   "guard.config.save_success": "已成功儲存設定檔",
   "guard.config.save_failed": "儲存設定檔失敗",
   "guard.config.save_and_recheck": "儲存並重新質檢",
+  "guard.config.all_saved": "已是最新內容",
+  "guard.config.unsaved_changes": "有未儲存的變更",
+  "guard.config.loading": "正在載入設定檔...",
 };

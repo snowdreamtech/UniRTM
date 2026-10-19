@@ -1186,4 +1186,7 @@ export const zhCn: TranslationDict = {
   "guard.config.save_success": "已成功保存配置文件",
   "guard.config.save_failed": "保存配置文件失败",
   "guard.config.save_and_recheck": "保存并重新质检",
+  "guard.config.all_saved": "已是最新内容",
+  "guard.config.unsaved_changes": "有未保存的更改",
+  "guard.config.loading": "正在加载配置文件...",
 };

@@ -730,29 +730,29 @@
           <div class="config-editor-body">
             <div v-if="isConfigEditorLoading" class="editor-loading">
               <span class="codicon codicon-loading codicon-modifier-spin"></span>
-              <span>{{ t('common.loading') || '正在加载配置文件...' }}</span>
+              <span>{{ t('guard.config.loading') }}</span>
             </div>
             <div ref="configMonacoContainer" class="config-monaco-host" v-show="!isConfigEditorLoading"></div>
           </div>
 
           <div class="config-editor-footer">
             <div class="footer-status">
-              <span v-if="isConfigDirty" class="status-dirty">● {{ t('editor.unsaved_changes') || '有未保存的更改' }}</span>
-              <span v-else class="status-clean">✔ {{ t('editor.all_saved') || '已是最新内容' }}</span>
+              <span v-if="isConfigDirty" class="status-dirty">● {{ t('guard.config.unsaved_changes') }}</span>
+              <span v-else class="status-clean">✔ {{ t('guard.config.all_saved') }}</span>
             </div>
             <div class="footer-actions">
               <button class="modal-btn secondary" @click="handleCloseConfigEditor">
-                {{ t('common.cancel') || '关闭' }}
+                {{ t('common.close') }}
               </button>
               <button class="modal-btn primary" :disabled="isConfigSaving" @click="handleSaveConfig(false)">
                 <span v-if="isConfigSaving" class="codicon codicon-loading codicon-modifier-spin"></span>
                 <span v-else class="codicon codicon-save"></span>
-                <span>{{ t('common.save') || '保存配置' }}</span>
+                <span>{{ t('common.save') }}</span>
               </button>
               <button class="modal-btn success" :disabled="isConfigSaving" @click="handleSaveConfig(true)">
                 <span v-if="isConfigSaving" class="codicon codicon-loading codicon-modifier-spin"></span>
                 <span v-else class="codicon codicon-play"></span>
-                <span>{{ t('guard.config.save_and_recheck') || '保存并重新质检' }}</span>
+                <span>{{ t('guard.config.save_and_recheck') }}</span>
               </button>
             </div>
           </div>
