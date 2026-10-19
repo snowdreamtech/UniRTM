@@ -85,10 +85,10 @@
 - [x] 12.5 **执行提交 12**：`feat(explorer): display aggregated git change badges on collapsed directory nodes`
 
 
-## 阶段 13：全量 53 国多语言同步与端到端回归验证 (Final Verification) [待执行]
-- [ ] 13.1 在 `frontend/src/i18n/` 中补齐“暂存此块”等多语言词条，并同步更新至 53 种语言
-- [ ] 13.2 运行前端全量单元测试（`npm run test -- --run`）与打包构建检查（`npm run build`），确保 0 警告 0 报错
-- [ ] 13.3 更新 `tasks.md` 标记全部阶段任务为已完成 `[x]`
-- [ ] 13.4 **执行提交 13**：`feat(i18n): sync multi-language keys and finalize phase 11-12 validation`
+## 阶段 13：全量 53 国多语言同步与端到端回归验证 (Final Verification) [已完成]
+- [x] 13.1 在 `frontend/src/i18n/` 中补齐“暂存此块”等多语言词条，并同步更新至 53 种语言
+- [x] 13.2 运行前端全量单元测试（`npm run test -- --run`）与打包构建检查（`npm run build`），确保 0 警告 0 报错
+- [x] 13.3 更新 `tasks.md` 标记全部阶段任务为已完成 `[x]`
+- [x] 13.4 **执行提交 13**：`feat(i18n): sync multi-language keys and finalize phase 11-12 validation`
 
 
