@@ -25,6 +25,10 @@
           原版本代码 (第 {{ activeDiffPeek.diff.startLineNumber }} 行)
         </span>
         <div class="peek-actions">
+          <button class="peek-btn stage" title="暂存此代码块改动" @click="stageActiveDiffRange">
+            <span class="codicon codicon-add"></span>
+            暂存此块
+          </button>
           <button class="peek-btn revert" title="回滚该代码块至原版 (Ctrl+Z 可撤销)" @click="revertActiveDiffRange">
             <span class="codicon codicon-discard"></span>
             还原此块
@@ -49,6 +53,7 @@ import "monaco-editor/min/vs/editor/editor.main.css";
 import { loadMonaco, getLanguageForFile } from "../../services/editor/monacoLoader";
 import { computeLineDiff, type DiffLineChange } from "../../utils/diffGutter";
 import type { EditorTab } from "../../composables/useEditorTabs";
+import { useGit } from "../../composables/useGit";
 
 const props = defineProps<{
   tab: EditorTab;
@@ -161,6 +166,25 @@ function revertActiveDiffRange(): void {
   closeDiffPeek();
   emit("change", model.getValue());
   scheduleGutterDiffUpdate();
+}
+
+async function stageActiveDiffRange(): Promise<void> {
+  if (!activeDiffPeek.value || !props.tab?.path) return;
+  const { diff } = activeDiffPeek.value;
+  const filePath = props.tab.path;
+
+  const { stageChunk } = useGit();
+  const ok = await stageChunk(filePath, diff);
+  if (ok) {
+    if (editorInstance) {
+      const model = editorInstance.getModel();
+      if (model) {
+        props.tab.originalContent = model.getValue();
+      }
+    }
+    closeDiffPeek();
+    updateGutterDecorations();
+  }
 }
 
 function scheduleGutterDiffUpdate(): void {
@@ -559,6 +583,16 @@ onBeforeUnmount(() => {
   gap: 4px;
   color: var(--text-muted);
   transition: all 0.15s ease;
+}
+
+.peek-btn.stage {
+  background-color: rgba(46, 160, 67, 0.14);
+  color: #2ea043;
+  font-weight: 500;
+}
+
+.peek-btn.stage:hover {
+  background-color: rgba(46, 160, 67, 0.25);
 }
 
 .peek-btn.revert {

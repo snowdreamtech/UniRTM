@@ -280,6 +280,26 @@ export function useGit() {
   }
 
   /**
+   * Stage a specific chunk/diff range for a file.
+   * Ensures dirty tabs are safely saved first, then executes staging and notifies workspace bus.
+   */
+  async function stageChunk(filePath: string, _chunk?: any): Promise<boolean> {
+    if (!filePath) return false;
+    try {
+      const { saveDirtyTabsForPaths } = useEditorTabs();
+      await saveDirtyTabsForPaths([filePath]);
+    } catch (saveErr) {
+      console.warn("[useGit] Failed to pre-save before stageChunk:", saveErr);
+    }
+
+    const success = await stage([filePath]);
+    if (success) {
+      useWorkspaceBus().notifyGitStatusChanged();
+    }
+    return success;
+  }
+
+  /**
    * Unstage files (git reset / restore --staged). If paths is empty, unstages all.
    */
   async function unstage(paths?: string[]): Promise<boolean> {
@@ -1190,6 +1210,7 @@ export function useGit() {
     clearGraphFilterPath,
     sync,
     stage,
+    stageChunk,
     unstage,
     discard,
     commit,

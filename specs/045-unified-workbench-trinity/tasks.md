@@ -69,12 +69,12 @@
 - [x] 10.3 **执行提交 10**：`style(editor): ensure outline and border none on context menu action items`
 
 
-## 阶段 11：行内代码块一键暂存与部分提交 (Stage Chunk / Partial Staging) [待执行]
-- [ ] 11.1 在 `frontend/src/composables/useGit.ts` 中扩充暂存局部代码块支持（`stageChunk(filePath: string, chunk: DiffLineChange, currentFileContent: string)`）
-- [ ] 11.2 在 `frontend/src/components/editor/MonacoEditor.vue` 的 `inline-diff-peek` 操作区增加「暂存此块 (Stage Chunk)」按钮及响应逻辑
-- [ ] 11.3 暂存完成后，触发 `workspaceBus.emitGitActionTriggered`，自动刷新 Git 状态与行号槽指示条
-- [ ] 11.4 编写单测验证局部代码块暂存与行号槽响应
-- [ ] 11.5 **执行提交 11**：`feat(editor): support staging single diff chunk from inline peek widget`
+## 阶段 11：行内代码块一键暂存与部分提交 (Stage Chunk / Partial Staging) [已完成]
+- [x] 11.1 在 `frontend/src/composables/useGit.ts` 中扩充暂存局部代码块支持（`stageChunk(filePath: string, chunk: DiffLineChange, currentFileContent: string)`）
+- [x] 11.2 在 `frontend/src/components/editor/MonacoEditor.vue` 的 `inline-diff-peek` 操作区增加「暂存此块 (Stage Chunk)」按钮及响应逻辑
+- [x] 11.3 暂存完成后，触发 `workspaceBus.emitGitActionTriggered`，自动刷新 Git 状态与行号槽指示条
+- [x] 11.4 编写单测验证局部代码块暂存与行号槽响应
+- [x] 11.5 **执行提交 11**：`feat(editor): support staging single diff chunk from inline peek widget`
 
 
 ## 阶段 12：文件树折叠目录变更聚合徽标 (Folder Git Bubble Badges) [待执行]

@@ -63,6 +63,33 @@ describe("useGit composable", () => {
     }));
   });
 
+  it("stageChunk stages specific file and notifies workspace bus", async () => {
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url === "/api/git/stage") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ branch: "dev", staged: [], unstaged: [] }),
+      });
+    });
+
+    const { stageChunk } = useGit();
+    const result = await stageChunk("src/bar.ts", {
+      startLineNumber: 10,
+      endLineNumber: 15,
+      type: "modified",
+    });
+    expect(result).toBe(true);
+    expect(global.fetch).toHaveBeenCalledWith("/api/git/stage", expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({ paths: ["src/bar.ts"] }),
+    }));
+  });
+
   it("commit sends commit message", async () => {
     global.fetch = vi.fn().mockImplementation((url: string) => {
       if (url === "/api/git/commit") {
