@@ -5,9 +5,9 @@ package guard
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"time"
-
 )
 
 // PipelineSummary provides statistical metrics for a guard execution run
@@ -25,6 +25,7 @@ type PipelineResult struct {
 	Issues    []Issue         `json:"issues"`
 	Summary   PipelineSummary `json:"summary"`
 	HasErrors bool            `json:"has_errors"`
+	Logs      []string        `json:"logs"`
 }
 
 // Pipeline orchestrates rule execution across the 3 phases
@@ -50,6 +51,12 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 	opts.WorkspaceDir = p.WorkspaceDir
 
 	var allIssues []Issue
+	var logs []string
+	modeStr := opts.Mode
+	if modeStr == "" {
+		modeStr = "staged"
+	}
+	logs = append(logs, fmt.Sprintf("[%s] [Quality Guard] 启动代码质量守卫 (模式: %s, 扫描文件数: %d)", time.Now().Format("15:04:05"), modeStr, len(files)))
 
 	// Group rules by phase
 	var fixerRules, formatterRules, linterRules []Rule
@@ -70,6 +77,8 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 	}
 
 	// Phase 1: Fixer (Text & AST Repairs)
+	phase1Start := time.Now()
+	phase1Before := len(allIssues)
 	for _, r := range fixerRules {
 		select {
 		case <-ctx.Done():
@@ -81,8 +90,12 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 			allIssues = append(allIssues, issues...)
 		}
 	}
+	phase1Issues := len(allIssues) - phase1Before
+	logs = append(logs, fmt.Sprintf("[%s] [Phase 1 Fixer] 原生自愈检测完成: 检查 %d 项规则, 发现/自愈 %d 个问题 (%v)", time.Now().Format("15:04:05"), len(fixerRules), phase1Issues, time.Since(phase1Start).Round(time.Millisecond)))
 
 	// Phase 2: Formatter (Visual Layout Standardization)
+	phase2Start := time.Now()
+	phase2Before := len(allIssues)
 	for _, r := range formatterRules {
 		select {
 		case <-ctx.Done():
@@ -94,8 +107,12 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 			allIssues = append(allIssues, issues...)
 		}
 	}
+	phase2Issues := len(allIssues) - phase2Before
+	logs = append(logs, fmt.Sprintf("[%s] [Phase 2 Formatter] 代码排版格式化完成: 检查 %d 项规则, 发现/修复 %d 处格式偏差 (%v)", time.Now().Format("15:04:05"), len(formatterRules), phase2Issues, time.Since(phase2Start).Round(time.Millisecond)))
 
 	// Phase 3: Linter (Strict Read-only Rule Verification)
+	phase3Start := time.Now()
+	phase3Before := len(allIssues)
 	for _, r := range linterRules {
 		select {
 		case <-ctx.Done():
@@ -107,6 +124,8 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 			allIssues = append(allIssues, issues...)
 		}
 	}
+	phase3Issues := len(allIssues) - phase3Before
+	logs = append(logs, fmt.Sprintf("[%s] [Phase 3 Linter] 静态检查与密钥防泄密门禁完成: 检查 %d 项规则, 发现 %d 处待处理问题 (%v)", time.Now().Format("15:04:05"), len(linterRules), phase3Issues, time.Since(phase3Start).Round(time.Millisecond)))
 
 	// Calculate summary metrics
 	summary := PipelineSummary{
@@ -136,9 +155,16 @@ func (p *Pipeline) Run(ctx context.Context, files []string, opts ExecuteOptions)
 		return allIssues[i].Line < allIssues[j].Line
 	})
 
+	if hasErrors {
+		logs = append(logs, fmt.Sprintf("[%s] [Quality Guard] 守卫发现阻断: 存在 %d 处阻断违规, %d 处待优化项 (总耗时: %v)", time.Now().Format("15:04:05"), summary.ErrorsCount, summary.WarningsCount, summary.Duration.Round(time.Millisecond)))
+	} else {
+		logs = append(logs, fmt.Sprintf("[%s] [Quality Guard] 守卫检查通过: 0 阻断违规, 全部合规就绪 (总耗时: %v)", time.Now().Format("15:04:05"), summary.Duration.Round(time.Millisecond)))
+	}
+
 	return &PipelineResult{
 		Issues:    allIssues,
 		Summary:   summary,
 		HasErrors: hasErrors,
+		Logs:      logs,
 	}, nil
 }

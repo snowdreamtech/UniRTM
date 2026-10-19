@@ -24,6 +24,17 @@ export interface GuardStatus {
   warnings_count: number;
   fixable_count: number;
   issues: GuardIssue[];
+  logs?: string[];
+}
+
+export interface ConfigFileMeta {
+  name: string;
+  title: string;
+  description: string;
+  category: string;
+  phase: string;
+  exists: boolean;
+  path: string;
 }
 
 export interface GuardRuleMeta {
@@ -53,10 +64,12 @@ const status = ref<GuardStatus>({
   warnings_count: 0,
   fixable_count: 0,
   issues: [],
+  logs: [],
 });
 
 const builtinRules = ref<GuardRuleMeta[]>([]);
 const slots = ref<GuardSlotMeta[]>([]);
+const configFiles = ref<ConfigFileMeta[]>([]);
 const isLoading = ref(false);
 const isFixing = ref(false);
 
@@ -106,6 +119,7 @@ export function useGuard() {
         const data = await res.json();
         builtinRules.value = data.builtin_rules || [];
         slots.value = data.slots || [];
+        configFiles.value = data.config_files || [];
       }
     } catch (e) {
       console.error("Failed to fetch guard rules:", e);
@@ -116,6 +130,7 @@ export function useGuard() {
     status,
     builtinRules,
     slots,
+    configFiles,
     isLoading,
     isFixing,
     fetchStatus,

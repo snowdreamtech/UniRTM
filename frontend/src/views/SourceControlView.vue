@@ -565,6 +565,51 @@
           </div>
         </div>
 
+        <!-- Configuration Files & Ecosystem Perception Matrix -->
+        <div class="guard-config-matrix-card">
+          <div class="matrix-header">
+            <div class="matrix-title-group">
+              <span class="codicon codicon-settings-gear"></span>
+              <span class="matrix-title">{{ t('guard.config.title') || '配置文件感知与管理' }}</span>
+              <span class="matrix-badge">{{ guardConfigFiles.filter(c => c.exists).length }}/{{ guardConfigFiles.length }} 项生效中</span>
+            </div>
+            <div class="matrix-actions">
+              <button class="matrix-btn-output" @click="emit('open-drawer', 'output')" :title="t('guard.actions.view_output') || '在底部输出窗口查看日志'">
+                <span class="codicon codicon-output"></span>
+                <span>{{ t('guard.actions.view_output') || '查看输出日志' }}</span>
+              </button>
+              <button class="matrix-btn-primary" @click="handleOpenConfigFile('.unirtm.toml')">
+                <span class="codicon codicon-edit"></span>
+                <span>编辑主配置 .unirtm.toml</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="config-files-grid">
+            <div
+              v-for="cfg in guardConfigFiles"
+              :key="cfg.name"
+              class="config-file-chip"
+              :class="{ 'chip-detected': cfg.exists }"
+              @click="handleOpenConfigFile(cfg.name)"
+            >
+              <div class="chip-top">
+                <span class="chip-dot" :class="cfg.exists ? 'dot-active' : 'dot-inactive'"></span>
+                <span class="chip-filename font-mono">{{ cfg.name }}</span>
+                <span class="chip-phase-badge">{{ cfg.phase }}</span>
+              </div>
+              <div class="chip-title">{{ cfg.title }}</div>
+              <div class="chip-desc">{{ cfg.description }}</div>
+              <div class="chip-bottom">
+                <span class="chip-status-text" :class="cfg.exists ? 'text-green' : 'text-muted'">
+                  {{ cfg.exists ? '● 已检测到并生效' : '○ 未配置 (使用内置默认)' }}
+                </span>
+                <span class="chip-action-btn">{{ cfg.exists ? '打开编辑 ↗' : '创建模板 +' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Diagnostics Panel (VS Code Problems Explorer) -->
         <div class="guard-diagnostics-section">
           <div class="diagnostics-bar">
@@ -583,7 +628,13 @@
                 <span>{{ guardStatus.warnings_count }} 待优化项</span>
               </span>
             </div>
-            <span class="diag-files-count">已扫描 {{ guardStatus.scanned }} 个文件</span>
+            <div class="diag-bar-right">
+              <button class="diag-output-btn" @click="emit('open-drawer', 'output')" :title="t('guard.actions.view_output') || '在底部输出窗口查看质检日志'">
+                <span class="codicon codicon-output"></span>
+                <span>输出日志</span>
+              </button>
+              <span class="diag-files-count">已扫描 {{ guardStatus.scanned }} 个文件</span>
+            </div>
           </div>
 
           <!-- Issues Table / List -->
@@ -668,6 +719,11 @@ import GitActionModal, { type GitModalActionType } from "../components/scm/GitAc
 import { useToast } from "../composables/useToast";
 import { t } from "../i18n";
 
+const emit = defineEmits<{
+  (e: "log-event", level: "INFO" | "SUCCESS" | "WARN" | "ERROR", msg: string, detail?: string, category?: "output" | "tasks" | "doctor"): void;
+  (e: "open-drawer", tab?: "terminal" | "output" | "tasks" | "doctor" | "ports"): void;
+}>();
+
 const route = useRoute();
 const router = useRouter();
 const { isDarkTheme } = useTheme();
@@ -714,6 +770,8 @@ const {
   isFixing: isGuardFixing,
   fetchStatus: fetchGuardStatus,
   runFix: runGuardFix,
+  fetchRules: fetchGuardRules,
+  configFiles: guardConfigFiles,
 } = useGuard();
 
 const currentGuardScope = ref<"staged" | "all">("staged");
@@ -722,13 +780,36 @@ const guardIssuesCount = computed(() => {
   return (guardStatus.value.errors_count || 0) + (guardStatus.value.warnings_count || 0);
 });
 
+function streamGuardLogs(logs?: string[]) {
+  if (!logs || logs.length === 0) return;
+  for (const line of logs) {
+    let level: "INFO" | "SUCCESS" | "WARN" | "ERROR" = "INFO";
+    if (line.includes("守卫检查通过")) level = "SUCCESS";
+    else if (line.includes("守卫发现阻断") || line.includes("错误")) level = "ERROR";
+    else if (line.includes("警告") || line.includes("问题")) level = "WARN";
+    emit("log-event", level, line, undefined, "output");
+  }
+}
+
 async function handleChangeGuardScope(scope: "staged" | "all") {
   currentGuardScope.value = scope;
-  await fetchGuardStatus(scope);
+  const res = await fetchGuardStatus(scope);
+  if (res?.logs) {
+    streamGuardLogs(res.logs);
+  }
 }
 
 async function handleRefreshGuard() {
-  await fetchGuardStatus(currentGuardScope.value);
+  const res = await fetchGuardStatus(currentGuardScope.value);
+  if (res?.logs) {
+    streamGuardLogs(res.logs);
+  }
+}
+
+function handleOpenConfigFile(fileName: string) {
+  openTab({ path: fileName, name: fileName });
+  router.push({ name: "explorer" }).catch(() => {});
+  showToast(`已在代码编辑器中打开 ${fileName}`, "info");
 }
 
 const guardCardValue = computed(() => {
@@ -760,6 +841,9 @@ const guardTooltip = computed(() => {
 
 async function handleRunGuardFix() {
   const ok = await runGuardFix(currentGuardScope.value);
+  if (guardStatus.value.logs) {
+    streamGuardLogs(guardStatus.value.logs);
+  }
   if (ok) {
     showToast(t("guard.toast.fixed") || "✨ 已自动完成代码格式与卫生修复", "success");
     await fetchStatus();
@@ -1010,6 +1094,10 @@ function switchTab(tab: "changes" | "graph" | "guard") {
       tab,
     },
   });
+  if (tab === "guard") {
+    fetchGuardRules();
+    fetchGuardStatus(currentGuardScope.value);
+  }
 }
 
 function formatTime(ts: number): string {
@@ -1345,6 +1433,7 @@ onMounted(() => {
   fetchStatus().catch(() => {});
   fetchLog().catch(() => {});
   fetchGuardStatus("staged").catch(() => {});
+  fetchGuardRules().catch(() => {});
 });
 
 onBeforeUnmount(() => {
@@ -2372,6 +2461,247 @@ onBeforeUnmount(() => {
 
 :root[data-theme="light"] .text-blue {
   color: #0284c7;
+}
+
+/* Configuration Files Perception Matrix */
+.guard-config-matrix-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+:root[data-theme="light"] .guard-config-matrix-card {
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+
+.matrix-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+:root[data-theme="light"] .matrix-header {
+  border-bottom-color: #f1f5f9;
+}
+
+.matrix-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.matrix-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.matrix-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  font-weight: 600;
+}
+
+:root[data-theme="light"] .matrix-badge {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.matrix-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.matrix-btn-output {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  border: 1px solid var(--card-border);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+:root[data-theme="light"] .matrix-btn-output {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.matrix-btn-output:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.matrix-btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 5px;
+  background: var(--accent-cyan, #0ea5e9);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.matrix-btn-primary:hover {
+  opacity: 0.9;
+}
+
+.config-files-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.config-file-chip {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+:root[data-theme="light"] .config-file-chip {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.config-file-chip:hover {
+  border-color: var(--accent-cyan, #38bdf8);
+  transform: translateY(-1px);
+}
+
+.config-file-chip.chip-detected {
+  border-left: 3px solid #10b981;
+}
+
+.chip-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.chip-dot.dot-active {
+  background: #34d399;
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+}
+
+.chip-dot.dot-inactive {
+  background: #94a3b8;
+}
+
+.chip-filename {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  flex: 1;
+}
+
+.chip-phase-badge {
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+}
+
+.chip-title {
+  font-size: 11px;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.chip-desc {
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--card-border);
+  font-size: 10px;
+}
+
+:root[data-theme="light"] .chip-bottom {
+  border-top-color: #e2e8f0;
+}
+
+.chip-action-btn {
+  font-weight: 600;
+  color: var(--accent-cyan, #0ea5e9);
+}
+
+.diag-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.diag-output-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+:root[data-theme="light"] .diag-output-btn {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+.diag-output-btn:hover {
+  color: var(--text-main);
+  border-color: var(--accent-cyan, #0ea5e9);
 }
 
 /* Diagnostics Panel */

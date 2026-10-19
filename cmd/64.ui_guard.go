@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/snowdreamtech/unirtm/internal/guard"
 )
@@ -73,6 +74,7 @@ func handleGuardStatus(w http.ResponseWriter, r *http.Request) {
 		"warnings_count": res.Summary.WarningsCount,
 		"fixable_count":  fixableCount,
 		"issues":         res.Issues,
+		"logs":           res.Logs,
 	})
 }
 
@@ -129,7 +131,8 @@ func handleGuardRun(w http.ResponseWriter, r *http.Request) {
 
 	pipeline := guard.NewPipeline(pwd, cfg)
 	res, err := pipeline.Run(r.Context(), files, guard.ExecuteOptions{
-		Fix: req.Fix,
+		Mode: req.Mode,
+		Fix:  req.Fix,
 	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -141,6 +144,7 @@ func handleGuardRun(w http.ResponseWriter, r *http.Request) {
 		"success": true,
 		"summary": res.Summary,
 		"issues":  res.Issues,
+		"logs":    res.Logs,
 	})
 }
 
@@ -150,6 +154,11 @@ func handleGuardRules(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
 		return
+	}
+
+	pwd, err := os.Getwd()
+	if err != nil {
+		pwd = "."
 	}
 
 	rules := guard.GetAllBuiltinRules()
@@ -170,8 +179,52 @@ func handleGuardRules(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	type ConfigFileMeta struct {
+		Name        string `json:"name"`
+		Title       string `json:"title"`
+		Description string `json:"description"`
+		Category    string `json:"category"`
+		Phase       string `json:"phase"`
+		Exists      bool   `json:"exists"`
+		Path        string `json:"path"`
+	}
+
+	standardConfigs := []struct {
+		Name     string
+		Title    string
+		Desc     string
+		Category string
+		Phase    string
+	}{
+		{".unirtm.toml", "UniRTM 守卫总配置", "定义质量守卫运行模式、排除路径与工具槽位绑定", "core", "all"},
+		{".golangci.yml", "Go 静态检查门禁", "Go 语言代码质量规则集与静态分析配置", "lint", "Phase 3"},
+		{".prettierrc", "Web 统一格式化", "JavaScript/TypeScript/Vue/JSON 视觉排版规范", "format", "Phase 2"},
+		{".gitleaks.toml", "密钥泄露防护规则", "密码、私钥、API Key 与 Token 泄露拦截策略", "secret", "Phase 3"},
+		{".editorconfig", "跨编辑器基础规范", "统一文件编码、换行符及缩进风格", "hygiene", "Phase 1"},
+		{"eslint.config.mjs", "Web 前端代码质量", "TypeScript 与 Vue 语法规约与静态拦截", "lint", "Phase 3"},
+		{".shellcheckrc", "Shell 脚本检查规范", "POSIX / Bash 陷阱与质量规范配置", "lint", "Phase 3"},
+		{"ruff.toml", "Python 快速检查排版", "Python 代码语法树排版与规范拦截配置", "lint", "Phase 2/3"},
+	}
+
+	var configMetas []ConfigFileMeta
+	for _, sc := range standardConfigs {
+		fullPath := filepath.Join(pwd, sc.Name)
+		fi, err := os.Stat(fullPath)
+		exists := err == nil && !fi.IsDir()
+		configMetas = append(configMetas, ConfigFileMeta{
+			Name:        sc.Name,
+			Title:       sc.Title,
+			Description: sc.Desc,
+			Category:    sc.Category,
+			Phase:       sc.Phase,
+			Exists:      exists,
+			Path:        sc.Name,
+		})
+	}
+
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"builtin_rules": meta,
 		"slots":         guard.DefaultToolSlots,
+		"config_files":  configMetas,
 	})
 }
