@@ -17,9 +17,13 @@ export interface TranslationDict {
   "common.save_changes"?: string;
   "common.deleting"?: string;
 
+  "drawer.tab_terminal"?: string;
   "drawer.tab_output"?: string;
   "drawer.tab_tasks"?: string;
   "drawer.tab_doctor"?: string;
+  "drawer.tab_ports"?: string;
+  "drawer.reset_tab_order"?: string;
+  "drawer.drag_reorder_tip"?: string;
   "drawer.empty_logs"?: string;
   "drawer.empty_tasks"?: string;
   "drawer.empty_doctor"?: string;

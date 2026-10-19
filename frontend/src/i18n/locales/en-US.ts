@@ -25,6 +25,8 @@ export const enUs: TranslationDict = {
   "drawer.tab_output": "Output",
   "drawer.tab_tasks": "Tasks",
   "drawer.tab_doctor": "Doctor",
+  "drawer.reset_tab_order": "Reset Tab Order",
+  "drawer.drag_reorder_tip": "Drag to reorder tabs, right-click to reset",
   "drawer.empty_terminal": "Integrated terminal ready. Select a shell above or run tasks via shortcuts.",
   "terminal.title": "Integrated Terminal",
   "terminal.default_badge": "System Default",

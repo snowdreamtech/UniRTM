@@ -18,61 +18,37 @@
 
     <!-- Drawer Header Bar -->
     <div class="drawer-header">
-      <!-- Tabs on the left -->
-      <div class="drawer-tabs">
+      <!-- Tabs on the left (draggable with VS Code drop indicator) -->
+      <div class="drawer-tabs" @contextmenu.prevent="handleTabContextMenu($event)">
         <button
+          v-for="tabId in tabOrder"
+          :key="tabId"
           class="drawer-tab"
-          :class="{ active: currentTab === 'terminal' }"
-          @click="currentTab = 'terminal'"
+          :class="{
+            active: currentTab === tabId,
+            'is-dragging': draggedTabId === tabId,
+            'drop-indicator-left': dropTargetTabId === tabId && dropTargetPosition === 'before',
+            'drop-indicator-right': dropTargetTabId === tabId && dropTargetPosition === 'after',
+          }"
+          draggable="true"
+          :title="t('drawer.drag_reorder_tip') || '拖拽调整标签页顺序，右键重置'"
+          @dragstart="handleTabDragStart($event, tabId)"
+          @dragover="handleTabDragOver($event, tabId)"
+          @dragleave="handleTabDragLeave($event, tabId)"
+          @drop="handleTabDrop($event, tabId)"
+          @dragend="handleTabDragEnd"
+          @click="handleTabClick(tabId)"
         >
-          <span style="display: inline-flex; align-items: center; gap: 6px;">
-            <TechIcon id="workbench:terminal" :size="13" />
-            {{ t("drawer.tab_terminal") || "终端" }}
+          <span class="tab-label-inner">
+            <TechIcon :id="tabDefinitions[tabId].icon" :size="13" />
+            {{ tabDefinitions[tabId].label }}
           </span>
-        </button>
-        <button
-          class="drawer-tab"
-          :class="{ active: currentTab === 'output' }"
-          @click="currentTab = 'output'"
-        >
-          <span style="display: inline-flex; align-items: center; gap: 6px;">
-            <TechIcon id="workbench:logs" :size="13" />
-            {{ t("drawer.tab_output") }}
+          <span
+            v-if="tabDefinitions[tabId].badge && tabDefinitions[tabId].badge > 0"
+            class="tab-badge"
+          >
+            {{ tabDefinitions[tabId].badge }}
           </span>
-          <span v-if="outputLogs.length > 0" class="tab-badge">{{ outputLogs.length }}</span>
-        </button>
-        <button
-          class="drawer-tab"
-          :class="{ active: currentTab === 'tasks' }"
-          @click="currentTab = 'tasks'"
-        >
-          <span style="display: inline-flex; align-items: center; gap: 6px;">
-            <TechIcon id="workbench:tasks" :size="13" />
-            {{ t("drawer.tab_tasks") }}
-          </span>
-          <span v-if="tasksLogs.length > 0" class="tab-badge">{{ tasksLogs.length }}</span>
-        </button>
-        <button
-          class="drawer-tab"
-          :class="{ active: currentTab === 'doctor' }"
-          @click="currentTab = 'doctor'"
-        >
-          <span style="display: inline-flex; align-items: center; gap: 6px;">
-            <TechIcon id="workbench:doctor" :size="13" />
-            {{ t("drawer.tab_doctor") }}
-          </span>
-          <span v-if="doctorLogs.length > 0" class="tab-badge">{{ doctorLogs.length }}</span>
-        </button>
-        <button
-          class="drawer-tab"
-          :class="{ active: currentTab === 'ports' }"
-          @click="currentTab = 'ports'"
-        >
-          <span style="display: inline-flex; align-items: center; gap: 6px;">
-            <TechIcon id="workbench:ports" :size="13" />
-            {{ t("drawer.tab_ports") || "端口" }}
-          </span>
-          <span v-if="activePortsCount > 0" class="tab-badge">{{ activePortsCount }}</span>
         </button>
       </div>
 
@@ -413,6 +389,24 @@
 
     <!-- Dragging overlay for drawer height -->
     <div v-if="isDrawerHeightDragging" class="drawer-height-drag-overlay"></div>
+
+    <!-- Tab Context Menu (VS Code style right-click to reset) -->
+    <Teleport to="body">
+      <div
+        v-if="isTabContextMenuOpen"
+        class="tab-context-menu"
+        :style="{ top: `${tabContextMenuY}px`, left: `${tabContextMenuX}px` }"
+        @click.stop
+      >
+        <div class="tab-context-menu-item" @click="handleResetTabOrder">
+          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2.5 8a5.5 5.5 0 1 0 1.5-3.8L2 6" />
+            <path d="M2 2.5v3.5h3.5" />
+          </svg>
+          <span>{{ t("drawer.reset_tab_order") || "重置标签页顺序" }}</span>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -710,6 +704,183 @@ const doctorLogs = computed(() =>
   props.logs.filter((l) => l.category === "doctor")
 );
 
+const DRAWER_TAB_ORDER_KEY = "unirtm_drawer_tab_order";
+const DEFAULT_TAB_ORDER: DrawerTab[] = ["terminal", "output", "tasks", "doctor", "ports"];
+
+function getInitialTabOrder(): DrawerTab[] {
+  if (typeof localStorage === "undefined") return [...DEFAULT_TAB_ORDER];
+  try {
+    const saved = localStorage.getItem(DRAWER_TAB_ORDER_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        const valid = parsed.filter((id): id is DrawerTab => DEFAULT_TAB_ORDER.includes(id as DrawerTab));
+        const missing = DEFAULT_TAB_ORDER.filter((id) => !valid.includes(id));
+        return [...valid, ...missing];
+      }
+    }
+  } catch {}
+  return [...DEFAULT_TAB_ORDER];
+}
+
+const tabOrder = ref<DrawerTab[]>(getInitialTabOrder());
+
+interface TabDefinition {
+  id: DrawerTab;
+  label: string;
+  icon: string;
+  badge?: number;
+}
+
+const tabDefinitions = computed<Record<DrawerTab, TabDefinition>>(() => ({
+  terminal: {
+    id: "terminal",
+    label: t("drawer.tab_terminal") || "终端",
+    icon: "workbench:terminal",
+  },
+  output: {
+    id: "output",
+    label: t("drawer.tab_output") || "输出",
+    icon: "workbench:logs",
+    badge: outputLogs.value.length,
+  },
+  tasks: {
+    id: "tasks",
+    label: t("drawer.tab_tasks") || "任务",
+    icon: "workbench:tasks",
+    badge: tasksLogs.value.length,
+  },
+  doctor: {
+    id: "doctor",
+    label: t("drawer.tab_doctor") || "诊断",
+    icon: "workbench:doctor",
+    badge: doctorLogs.value.length,
+  },
+  ports: {
+    id: "ports",
+    label: t("drawer.tab_ports") || "端口",
+    icon: "workbench:ports",
+    badge: activePortsCount.value,
+  },
+}));
+
+// Tab 拖拽排序逻辑 (VS Code style Drag and Drop)
+const draggedTabId = ref<DrawerTab | null>(null);
+const dropTargetTabId = ref<DrawerTab | null>(null);
+const dropTargetPosition = ref<"before" | "after" | null>(null);
+let justDragged = false;
+
+function handleTabDragStart(e: DragEvent, tabId: DrawerTab) {
+  draggedTabId.value = tabId;
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", tabId);
+  }
+}
+
+function handleTabDragOver(e: DragEvent, targetTabId: DrawerTab) {
+  if (!draggedTabId.value || draggedTabId.value === targetTabId) {
+    dropTargetTabId.value = null;
+    dropTargetPosition.value = null;
+    return;
+  }
+  e.preventDefault();
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = "move";
+  }
+
+  const el = e.currentTarget as HTMLElement;
+  const rect = el.getBoundingClientRect();
+  const isLeft = e.clientX - rect.left < rect.width / 2;
+
+  dropTargetTabId.value = targetTabId;
+  dropTargetPosition.value = isLeft ? "before" : "after";
+}
+
+function handleTabDragLeave(e: DragEvent, tabId: DrawerTab) {
+  const el = e.currentTarget as HTMLElement;
+  if (e.relatedTarget && el.contains(e.relatedTarget as Node)) {
+    return;
+  }
+  if (dropTargetTabId.value === tabId) {
+    dropTargetTabId.value = null;
+    dropTargetPosition.value = null;
+  }
+}
+
+function handleTabDrop(e: DragEvent, targetTabId: DrawerTab) {
+  e.preventDefault();
+  const sourceId = draggedTabId.value;
+  if (!sourceId || sourceId === targetTabId) {
+    clearDragState();
+    return;
+  }
+
+  const currentOrder = [...tabOrder.value];
+  const oldIndex = currentOrder.indexOf(sourceId);
+  if (oldIndex === -1) {
+    clearDragState();
+    return;
+  }
+  currentOrder.splice(oldIndex, 1);
+
+  const targetIndex = currentOrder.indexOf(targetTabId);
+  if (targetIndex !== -1) {
+    const insertIndex = dropTargetPosition.value === "after" ? targetIndex + 1 : targetIndex;
+    currentOrder.splice(insertIndex, 0, sourceId);
+    tabOrder.value = currentOrder;
+    try {
+      localStorage.setItem(DRAWER_TAB_ORDER_KEY, JSON.stringify(currentOrder));
+    } catch {}
+  }
+
+  justDragged = true;
+  setTimeout(() => {
+    justDragged = false;
+  }, 100);
+
+  clearDragState();
+}
+
+function handleTabDragEnd() {
+  justDragged = true;
+  setTimeout(() => {
+    justDragged = false;
+  }, 100);
+  clearDragState();
+}
+
+function clearDragState() {
+  draggedTabId.value = null;
+  dropTargetTabId.value = null;
+  dropTargetPosition.value = null;
+}
+
+function handleTabClick(tabId: DrawerTab) {
+  if (justDragged) return;
+  currentTab.value = tabId;
+}
+
+// Tab 右键菜单 (VS Code style right-click to reset)
+const isTabContextMenuOpen = ref(false);
+const tabContextMenuX = ref(0);
+const tabContextMenuY = ref(0);
+
+function handleTabContextMenu(e: MouseEvent) {
+  e.preventDefault();
+  tabContextMenuX.value = Math.min(e.clientX, window.innerWidth - 180);
+  tabContextMenuY.value = Math.min(e.clientY, window.innerHeight - 100);
+  isTabContextMenuOpen.value = true;
+}
+
+function handleResetTabOrder() {
+  tabOrder.value = [...DEFAULT_TAB_ORDER];
+  try {
+    localStorage.removeItem(DRAWER_TAB_ORDER_KEY);
+  } catch {}
+  isTabContextMenuOpen.value = false;
+}
+
 const displayLogs = computed(() => {
   if (currentTab.value === "tasks") {
     return tasksLogs.value;
@@ -888,6 +1059,7 @@ function handleMenuKillTerminal() {
 function handleGlobalClick() {
   isNewMenuOpen.value = false;
   isMoreMenuOpen.value = false;
+  isTabContextMenuOpen.value = false;
 }
 
 watch(
@@ -1007,6 +1179,7 @@ onUnmounted(() => {
 }
 
 .drawer-tab {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -1017,8 +1190,14 @@ onUnmounted(() => {
   font-size: 0.75rem;
   font-weight: 500;
   padding: 0.35rem 0.65rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: color 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+}
+
+.drawer-tab:active {
+  cursor: grabbing;
 }
 
 .drawer-tab:hover {
@@ -1029,6 +1208,41 @@ onUnmounted(() => {
   color: var(--accent-cyan);
   border-bottom-color: var(--accent-cyan);
   font-weight: 600;
+}
+
+.drawer-tab.is-dragging {
+  opacity: 0.35;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* VS Code 风格的插入垂直指示线 */
+.drawer-tab.drop-indicator-left::before,
+.drawer-tab.drop-indicator-right::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  width: 2px;
+  background: var(--accent-cyan, #00e5ff);
+  box-shadow: 0 0 8px var(--accent-cyan, #00e5ff);
+  border-radius: 1px;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.drawer-tab.drop-indicator-left::before {
+  left: -2px;
+}
+
+.drawer-tab.drop-indicator-right::after {
+  right: -2px;
+}
+
+.tab-label-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
 }
 
 .tab-badge {
@@ -1044,11 +1258,54 @@ onUnmounted(() => {
   background: var(--card-border);
   color: var(--text-muted);
   line-height: 1;
+  pointer-events: none;
 }
 
 .drawer-tab.active .tab-badge {
   background: rgba(34, 211, 238, 0.15);
   color: var(--accent-cyan);
+}
+
+/* Tab 右键上下文菜单 (VS Code style) */
+.tab-context-menu {
+  position: fixed;
+  z-index: 100000;
+  background: var(--card-bg, #111827);
+  border: 1px solid var(--card-border, #1f2937);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  border-radius: 6px;
+  padding: 4px;
+  min-width: 155px;
+  font-size: 0.75rem;
+  color: var(--text-main, #f3f4f6);
+  user-select: none;
+  animation: tab-context-menu-fade 0.12s ease-out;
+}
+
+@keyframes tab-context-menu-fade {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.tab-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.tab-context-menu-item:hover {
+  background: rgba(0, 229, 255, 0.12);
+  color: var(--accent-cyan, #00e5ff);
 }
 
 /* Shell options for New Terminal dropdown */

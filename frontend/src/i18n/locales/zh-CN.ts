@@ -25,6 +25,8 @@ export const zhCn: TranslationDict = {
   "drawer.tab_output": "输出",
   "drawer.tab_tasks": "任务",
   "drawer.tab_doctor": "诊断",
+  "drawer.reset_tab_order": "重置标签页顺序",
+  "drawer.drag_reorder_tip": "拖拽调整标签页顺序，右键重置",
   "drawer.empty_terminal": "集成终端准备就绪。在上方选择 Shell 或通过快捷指令运行任务。",
   "terminal.title": "集成终端",
   "terminal.default_badge": "系统默认",
