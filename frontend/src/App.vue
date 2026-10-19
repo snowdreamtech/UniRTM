@@ -200,7 +200,7 @@ function getInitialDrawerTab(): DrawerTab {
   if (typeof localStorage === "undefined") return "terminal";
   try {
     const saved = localStorage.getItem("unirtm_drawer_tab");
-    if (saved === "terminal" || saved === "output" || saved === "tasks" || saved === "doctor") {
+    if (saved === "terminal" || saved === "output" || saved === "tasks" || saved === "doctor" || saved === "ports") {
       return saved as DrawerTab;
     }
   } catch {}

@@ -5,6 +5,23 @@ import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 import { getXtermTheme } from "../../utils/terminalTheme";
 import { registerTerminalSender, unregisterTerminalSender } from "../../composables/useTerminalSessions";
+import { usePorts } from "../../composables/usePorts";
+
+const { registerDetectedPort } = usePorts();
+const detectedPorts = new Set<number>();
+
+function sniffTerminalPorts(text: string) {
+  if (!text) return;
+  const regex = /(?:https?:\/\/)?(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]):(\d{2,5})/gi;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    const port = parseInt(match[1], 10);
+    if (port && port > 0 && port <= 65535 && !detectedPorts.has(port)) {
+      detectedPorts.add(port);
+      registerDetectedPort(port);
+    }
+  }
+}
 
 const props = defineProps<{
   paneId: string;
@@ -83,10 +100,12 @@ function connectWebSocket() {
       const msg = JSON.parse(event.data);
       if (msg.type === "output" && typeof msg.data === "string") {
         term.write(msg.data);
+        sniffTerminalPorts(msg.data);
       }
     } catch {
       // Raw string fallback
       term.write(event.data);
+      sniffTerminalPorts(String(event.data));
     }
   };
 

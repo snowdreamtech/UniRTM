@@ -63,6 +63,17 @@
           </span>
           <span v-if="doctorLogs.length > 0" class="tab-badge">{{ doctorLogs.length }}</span>
         </button>
+        <button
+          class="drawer-tab"
+          :class="{ active: currentTab === 'ports' }"
+          @click="currentTab = 'ports'"
+        >
+          <span style="display: inline-flex; align-items: center; gap: 6px;">
+            <TechIcon id="workbench:ports" :size="13" />
+            {{ t("drawer.tab_ports") || "端口" }}
+          </span>
+          <span v-if="activePortsCount > 0" class="tab-badge">{{ activePortsCount }}</span>
+        </button>
       </div>
 
       <!-- Action Tools on the right -->
@@ -391,6 +402,15 @@
       </div>
     </div>
 
+    <!-- 5. Ports View Body -->
+    <div
+      v-if="currentTab === 'ports'"
+      class="ports-drawer-wrapper"
+      :style="{ height: `${effectiveBodyHeight}px` }"
+    >
+      <PortsPanelView />
+    </div>
+
     <!-- Dragging overlay for drawer height -->
     <div v-if="isDrawerHeightDragging" class="drawer-height-drag-overlay"></div>
   </div>
@@ -404,6 +424,8 @@ import { useToast } from "../../composables/useToast";
 import { useTerminal, TerminalItem } from "../../composables/useTerminal";
 import { useTerminalSessions } from "../../composables/useTerminalSessions";
 import XTerminalPane from "../terminal/XTerminalPane.vue";
+import PortsPanelView from "../ports/PortsPanelView.vue";
+import { usePorts } from "../../composables/usePorts";
 
 export interface LogItem {
   timestamp: string;
@@ -413,7 +435,7 @@ export interface LogItem {
   category?: "output" | "tasks" | "doctor";
 }
 
-export type DrawerTab = "terminal" | "output" | "tasks" | "doctor";
+export type DrawerTab = "terminal" | "output" | "tasks" | "doctor" | "ports";
 
 const props = withDefaults(
   defineProps<{
@@ -438,6 +460,8 @@ const {
   currentTerminal,
   fetchTerminals,
 } = useTerminal();
+
+const { activePortsCount } = usePorts();
 
 const {
   sessions,
@@ -625,7 +649,7 @@ function handleDrawerHeightPointerDown(e: PointerEvent) {
 function getInitialTab(): DrawerTab {
   if (typeof localStorage === "undefined") return "terminal";
   const saved = localStorage.getItem(DRAWER_TAB_KEY);
-  if (saved === "terminal" || saved === "output" || saved === "tasks" || saved === "doctor") {
+  if (saved === "terminal" || saved === "output" || saved === "tasks" || saved === "doctor" || saved === "ports") {
     return saved as DrawerTab;
   }
   return "terminal";

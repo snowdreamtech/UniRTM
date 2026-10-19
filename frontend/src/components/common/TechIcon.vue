@@ -100,6 +100,7 @@ const WORKBENCH_CODICON_MAP: Record<string, string> = {
   "workbench:settings": "codicon-settings-gear",
   "workbench:about": "codicon-info",
   "workbench:terminal": "codicon-terminal",
+  "workbench:ports": "codicon-radio-tower",
   "workbench:logs": "codicon-output",
   "workbench:lock": "codicon-lock",
   "workbench:unlock": "codicon-unlock",
