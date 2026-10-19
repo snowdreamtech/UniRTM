@@ -6,6 +6,7 @@ import "@xterm/xterm/css/xterm.css";
 import { getXtermTheme } from "../../utils/terminalTheme";
 import { registerTerminalSender, unregisterTerminalSender } from "../../composables/useTerminalSessions";
 import { usePorts } from "../../composables/usePorts";
+import { createTerminalLinkProvider } from "../../composables/useTerminalLinks";
 
 const { registerDetectedPort } = usePorts();
 const detectedPorts = new Set<number>();
@@ -162,6 +163,7 @@ onMounted(() => {
 
   fitAddon = new FitAddon();
   term.loadAddon(fitAddon);
+  term.registerLinkProvider(createTerminalLinkProvider(term));
 
   term.open(terminalContainer.value);
 

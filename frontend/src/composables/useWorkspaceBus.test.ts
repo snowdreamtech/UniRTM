@@ -109,4 +109,45 @@ describe("useWorkspaceBus", () => {
     bus.setActiveFilePath("frontend/src/types/credential.ts");
     expect(bus.currentActiveFilePath.value).toBe("frontend/src/types/credential.ts");
   });
+
+  it("handles openInEditor requests", () => {
+    const bus = useWorkspaceBus();
+    const listener = vi.fn();
+    const unsubscribe = bus.onOpenInEditor(listener);
+
+    bus.openInEditor({ path: "src/views/App.vue", line: 42, column: 10 });
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: "src/views/App.vue",
+        line: 42,
+        column: 10,
+        timestamp: expect.any(Number),
+      })
+    );
+
+    unsubscribe();
+    bus.openInEditor({ path: "src/main.ts" });
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it("handles sendToTerminal and revealInTerminal broadcasts", () => {
+    const bus = useWorkspaceBus();
+    const sendListener = vi.fn();
+    const revealListener = vi.fn();
+
+    const unsubSend = bus.onSendToTerminal(sendListener);
+    const unsubReveal = bus.onRevealInTerminal(revealListener);
+
+    bus.sendToTerminal({ text: "npm test", addNewline: true });
+    expect(sendListener).toHaveBeenCalledTimes(1);
+    expect(sendListener).toHaveBeenCalledWith({ text: "npm test", addNewline: true });
+
+    bus.revealInTerminal("frontend/src");
+    expect(revealListener).toHaveBeenCalledTimes(1);
+    expect(revealListener).toHaveBeenCalledWith({ directoryPath: "frontend/src" });
+
+    unsubSend();
+    unsubReveal();
+  });
 });

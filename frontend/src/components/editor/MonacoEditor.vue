@@ -467,6 +467,17 @@ onMounted(async () => {
       editorInstance?.layout();
     }, 50);
 
+    function navigateToInitialPosition(): void {
+      if (!editorInstance || !props.tab.initialLine) return;
+      const line = props.tab.initialLine;
+      const col = props.tab.initialColumn || 1;
+      editorInstance.setPosition({ lineNumber: line, column: col });
+      editorInstance.revealPositionInCenter({ lineNumber: line, column: col });
+      editorInstance.focus();
+    }
+
+    navigateToInitialPosition();
+
     // Initial position
     const pos = editorInstance.getPosition();
     if (pos) {
@@ -495,7 +506,33 @@ watch(
         emit("cursor-change", pos.lineNumber, pos.column);
       }
       editorInstance.focus();
+      if (props.tab.initialLine) {
+        editorInstance.setPosition({
+          lineNumber: props.tab.initialLine,
+          column: props.tab.initialColumn || 1,
+        });
+        editorInstance.revealPositionInCenter({
+          lineNumber: props.tab.initialLine,
+          column: props.tab.initialColumn || 1,
+        });
+      }
     }
+  }
+);
+
+watch(
+  () => [props.tab.initialLine, props.tab.initialColumn],
+  ([newLine, newCol]) => {
+    if (!editorInstance || !newLine) return;
+    editorInstance.setPosition({
+      lineNumber: newLine,
+      column: newCol || 1,
+    });
+    editorInstance.revealPositionInCenter({
+      lineNumber: newLine,
+      column: newCol || 1,
+    });
+    editorInstance.focus();
   }
 );
 

@@ -24,12 +24,31 @@ export interface FileRenameEvent {
   isDir?: boolean;
 }
 
+export interface OpenInEditorRequest {
+  path: string;
+  line?: number;
+  column?: number;
+  timestamp: number;
+}
+
+export interface SendToTerminalRequest {
+  text: string;
+  addNewline?: boolean;
+}
+
+export interface RevealInTerminalRequest {
+  directoryPath: string;
+}
+
 type RevealListener = (req: RevealRequest) => void;
 type GitStatusChangeListener = () => void;
 type OpenDiffListener = (req: WorkspaceDiffRequest) => void;
 type FileReloadListener = (paths: string[]) => void;
 type FileRenameListener = (evt: FileRenameEvent) => void;
 type FileDeleteListener = (path: string) => void;
+type OpenInEditorListener = (req: OpenInEditorRequest) => void;
+type SendToTerminalListener = (req: SendToTerminalRequest) => void;
+type RevealInTerminalListener = (req: RevealInTerminalRequest) => void;
 
 const lastRevealRequest = ref<RevealRequest | null>(null);
 const currentActiveFilePath = ref<string>("");
@@ -39,6 +58,9 @@ const openDiffListeners = new Set<OpenDiffListener>();
 const fileReloadListeners = new Set<FileReloadListener>();
 const fileRenameListeners = new Set<FileRenameListener>();
 const fileDeleteListeners = new Set<FileDeleteListener>();
+const openInEditorListeners = new Set<OpenInEditorListener>();
+const sendToTerminalListeners = new Set<SendToTerminalListener>();
+const revealInTerminalListeners = new Set<RevealInTerminalListener>();
 
 /**
  * useWorkspaceBus: 轻量级跨组件协同状态总线
@@ -197,6 +219,85 @@ export function useWorkspaceBus() {
   }
 
   /**
+   * 在主编辑器中打开指定文件并定位到特定行/列
+   */
+  function openInEditor(req: { path: string; line?: number; column?: number }): void {
+    if (!req || !req.path) return;
+    const fullReq: OpenInEditorRequest = {
+      path: req.path,
+      line: req.line,
+      column: req.column,
+      timestamp: Date.now(),
+    };
+    openInEditorListeners.forEach((fn) => {
+      try {
+        fn(fullReq);
+      } catch (err) {
+        console.error("[WorkspaceBus] Error in openInEditor listener:", err);
+      }
+    });
+  }
+
+  /**
+   * 注册在主编辑器中打开文件的监听器
+   */
+  function onOpenInEditor(listener: OpenInEditorListener): () => void {
+    openInEditorListeners.add(listener);
+    return () => {
+      openInEditorListeners.delete(listener);
+    };
+  }
+
+  /**
+   * 发送指令或代码到当前活动终端执行
+   */
+  function sendToTerminal(req: SendToTerminalRequest): void {
+    if (!req || req.text === undefined) return;
+    sendToTerminalListeners.forEach((fn) => {
+      try {
+        fn(req);
+      } catch (err) {
+        console.error("[WorkspaceBus] Error in sendToTerminal listener:", err);
+      }
+    });
+  }
+
+  /**
+   * 注册发送至终端的监听器
+   */
+  function onSendToTerminal(listener: SendToTerminalListener): () => void {
+    sendToTerminalListeners.add(listener);
+    return () => {
+      sendToTerminalListeners.delete(listener);
+    };
+  }
+
+  /**
+   * 在集成终端中打开指定工作目录
+   */
+  function revealInTerminal(directoryPath: string): void {
+    if (!directoryPath) return;
+    const req: RevealInTerminalRequest = { directoryPath };
+    revealInTerminalListeners.forEach((fn) => {
+      try {
+        fn(req);
+      } catch (err) {
+        console.error("[WorkspaceBus] Error in revealInTerminal listener:", err);
+      }
+    });
+  }
+
+  /**
+   * 注册在集成终端中打开目录的监听器
+   */
+  function onRevealInTerminal(listener: RevealInTerminalListener): () => void {
+    revealInTerminalListeners.add(listener);
+    return () => {
+      revealInTerminalListeners.delete(listener);
+    };
+  }
+
+  /**
    * 清除所有监听器（主要用于单元测试隔离）
    */
   function _clearAllListeners(): void {
@@ -206,6 +307,9 @@ export function useWorkspaceBus() {
     fileReloadListeners.clear();
     fileRenameListeners.clear();
     fileDeleteListeners.clear();
+    openInEditorListeners.clear();
+    sendToTerminalListeners.clear();
+    revealInTerminalListeners.clear();
     lastRevealRequest.value = null;
     currentActiveFilePath.value = "";
   }
@@ -226,6 +330,12 @@ export function useWorkspaceBus() {
     notifyFileDeleted,
     onFileDeleted,
     setActiveFilePath,
+    openInEditor,
+    onOpenInEditor,
+    sendToTerminal,
+    onSendToTerminal,
+    revealInTerminal,
+    onRevealInTerminal,
     _clearAllListeners,
   };
 }

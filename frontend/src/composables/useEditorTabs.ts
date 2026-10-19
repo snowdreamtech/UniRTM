@@ -42,6 +42,8 @@ export interface EditorTab {
   isDiff?: boolean;
   diffMeta?: DiffTabMeta;
   gitStatus?: string;
+  initialLine?: number;
+  initialColumn?: number;
 }
 
 
@@ -69,10 +71,18 @@ export function useEditorTabs() {
     return tabs.value.some((t) => t.isDirty);
   });
 
-  async function openTab(file: { path: string; name: string; size?: number }): Promise<void> {
+  async function openTab(file: {
+    path: string;
+    name: string;
+    size?: number;
+    line?: number;
+    column?: number;
+  }): Promise<void> {
     const existing = tabs.value.find((t) => t.id === file.path);
     if (existing) {
       activeTabId.value = existing.id;
+      if (file.line !== undefined) existing.initialLine = file.line;
+      if (file.column !== undefined) existing.initialColumn = file.column;
       if (!existing.content && !existing.isDirty && !existing.isBinary) {
         try {
           const res = await fetch(`/api/fs/read?path=${encodeURIComponent(file.path)}`);
@@ -153,6 +163,8 @@ export function useEditorTabs() {
       isBinary,
       size: fileSize,
       binaryReason,
+      initialLine: file.line,
+      initialColumn: file.column,
     };
 
     tabs.value.push(newTab);

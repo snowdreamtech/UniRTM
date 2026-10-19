@@ -650,7 +650,7 @@ import { useGit } from "../composables/useGit";
 const router = useRouter();
 const route = useRoute();
 const { status: gitStatusData, getGitStatus, setGraphFilterPath, fetchStatus } = useGit();
-const { onOpenDiff, setActiveFilePath, onGitStatusChanged } = useWorkspaceBus();
+const { onOpenDiff, setActiveFilePath, onGitStatusChanged, onOpenInEditor } = useWorkspaceBus();
 
 const currentGitBranch = computed(() => {
   return gitStatusData.value?.branch || "main";
@@ -1092,6 +1092,15 @@ onMounted(() => {
         isStaged: req.isStaged,
         commitHash: req.commitHash,
         parentHash: req.parentHash,
+      });
+    }),
+    onOpenInEditor((req) => {
+      const fileName = req.path.split("/").pop() || req.path;
+      openTab({
+        path: req.path,
+        name: fileName,
+        line: req.line,
+        column: req.column,
       });
     }),
     onGitStatusChanged(() => {

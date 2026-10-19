@@ -13,11 +13,11 @@
 ---
 
 ## Phase 1: 依赖升级、超链接识别与堆栈穿透跳转 (Hyperlinks & Navigation)
-- [ ] Task 1.1: 安装 `@xterm/addon-search` 与 `@xterm/addon-web-links`
-- [ ] Task 1.2: 实现 `frontend/src/composables/useTerminalLinks.ts`，支持 Web 链接与文件路径解析（`:line:col` 提取）
-- [ ] Task 1.3: 在 `frontend/src/components/terminal/XTerminalPane.vue` 中集成链接提供者，与 `useWorkspaceBus` 的 `openInEditor` 联动
-- [ ] Task 1.4: 编写 `frontend/src/composables/useTerminalLinks.test.ts` 单元测试并通过验证
-- [ ] Task 1.5: 阶段性 Git 提交：`feat(terminal): support file stack trace and web url click navigation`
+- [x] Task 1.1: 安装 `@xterm/addon-search` 与 `@xterm/addon-web-links`
+- [x] Task 1.2: 实现 `frontend/src/composables/useTerminalLinks.ts`，支持 Web 链接与文件路径解析（`:line:col` 提取）
+- [x] Task 1.3: 在 `frontend/src/components/terminal/XTerminalPane.vue` 中集成链接提供者，与 `useWorkspaceBus` 的 `openInEditor` 联动
+- [x] Task 1.4: 编写 `frontend/src/composables/useTerminalLinks.test.ts` 单元测试并通过验证
+- [x] Task 1.5: 阶段性 Git 提交：`feat(terminal): support file stack trace and web url click navigation`
 
 ---
 
