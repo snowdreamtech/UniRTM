@@ -508,6 +508,8 @@
           </div>
         </div>
       </div>
+    </Teleport>
+
     <!-- Modal: Standard Web Public Security Prompt (Low-Risk, with 'Don't ask again' checkbox) -->
     <Teleport to="body">
       <div v-if="isWebPublicConfirmOpen" class="security-modal-backdrop" @click.self="isWebPublicConfirmOpen = false">
