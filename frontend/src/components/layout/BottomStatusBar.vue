@@ -6,11 +6,12 @@
       <div
         class="status-pill status-git"
         id="status-git-branch"
-        :title="`Git: ${currentBranch}${status.upstream ? ' -> ' + status.upstream : ''} (${status.behind}↓ ${status.ahead}↑) • 点击打开源代码管理`"
+        :title="`Git: ${activeRepo ? activeRepo.name + ' • ' : ''}${currentBranch}${status.upstream ? ' -> ' + status.upstream : ''} (${status.behind}↓ ${status.ahead}↑) • 点击打开源代码管理`"
         @click="$emit('select-tab', 'scm')"
       >
         <span class="status-icon"><TechIcon id="workbench:git" :size="13" :colored="false" /></span>
-        <span class="status-text font-mono">{{ currentBranch }}</span>
+        <span v-if="repositories.length > 1 && activeRepo" class="status-repo-name font-mono">{{ activeRepo.name }}</span>
+        <span class="status-text font-mono">{{ currentBranch }}{{ (status.staged.length > 0 || status.unstaged.length > 0) ? '*' : '' }}</span>
         <button
           v-if="status.ahead > 0 || status.behind > 0"
           class="git-sync-btn"
@@ -121,7 +122,7 @@ import { useGit } from "../../composables/useGit";
 
 const router = useRouter();
 const { activeScope, toggleScope } = useAppScope();
-const { currentBranch, status, isSyncing, sync } = useGit();
+const { currentBranch, status, isSyncing, sync, activeRepo, repositories } = useGit();
 
 async function handleSync() {
   await sync();
@@ -192,6 +193,13 @@ const mirrorLabel = computed(() => {
 
 .status-git:hover {
   background-color: var(--item-hover-bg, rgba(128, 128, 128, 0.12));
+}
+
+.status-repo-name {
+  font-weight: 600;
+  margin-right: 2px;
+  color: var(--text-main);
+  opacity: 0.95;
 }
 
 .git-sync-btn {

@@ -2,6 +2,23 @@
   <div class="git-graph-container" id="git-graph-view">
     <!-- Top Control & Filter Bar -->
     <div class="graph-toolbar">
+      <!-- 0. Repo Selector (Multi-Repository) -->
+      <div v-if="repositories.length > 0" class="toolbar-item repo-selector-item">
+        <span class="toolbar-label">{{ t('scm.graph.repo_label') || 'Repo:' }}</span>
+        <div class="repo-select-wrapper">
+          <select
+            class="graph-repo-select"
+            :value="activeRepo?.id || activeRepo?.name || ''"
+            @change="handleRepoChange(($event.target as HTMLSelectElement).value)"
+          >
+            <option v-for="r in repositories" :key="r.id || r.rootPath" :value="r.id || r.name">
+              {{ r.name }}
+            </option>
+          </select>
+          <span class="codicon codicon-chevron-down repo-select-arrow"></span>
+        </div>
+      </div>
+
       <!-- 1. Branch Selector (Multi-Branch Filter Popover) -->
       <div class="toolbar-item">
         <GitBranchFilterPopover
@@ -979,6 +996,10 @@ const ROW_HEIGHT = 34;
 const EXPANDED_PANEL_HEIGHT = 320;
 
 const {
+  repositories,
+  activeRepo,
+  fetchRepositories,
+  setActiveRepo,
   branches,
   status,
   currentBranch,
@@ -1431,7 +1452,19 @@ async function handleRowClick(event: MouseEvent, commit: GitGraphCommit) {
   }
 }
 
+async function handleRepoChange(repoId: string) {
+  const target = repositories.value.find((r) => r.id === repoId || r.name === repoId || r.rootPath === repoId);
+  if (target) {
+    await setActiveRepo(target);
+    selectedBranches.value = ["all"];
+    await fetchGraph();
+  }
+}
+
 onMounted(async () => {
+  if (repositories.value.length === 0) {
+    await fetchRepositories();
+  }
   await fetchStatus();
   await fetchBranches();
   await refreshGraph();
@@ -3207,6 +3240,51 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
   gap: 6px;
   margin-top: 10px;
   font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── Repo Selector ── */
+.repo-selector-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.repo-select-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.graph-repo-select {
+  appearance: none;
+  background: var(--input-bg, rgba(255, 255, 255, 0.06));
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 4px 24px 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  font-weight: 500;
+}
+
+.graph-repo-select:focus {
+  border-color: var(--accent-color, #3b82f6);
+}
+
+.repo-select-arrow {
+  position: absolute;
+  right: 6px;
+  pointer-events: none;
+  font-size: 12px;
   color: var(--text-muted);
 }
 </style>
