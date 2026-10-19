@@ -137,3 +137,84 @@ export function computeToolStatus(
     isInstalled: true,
   };
 }
+
+export interface SidebarToolItem {
+  id: string;
+  name: string;
+  icon: string;
+  version: string;
+  state: ToolDisplayState;
+  upgradableVersion: string | null;
+  raw: any;
+}
+
+export interface CategorizedTools {
+  missing: SidebarToolItem[];
+  upgradable: SidebarToolItem[];
+  ready: SidebarToolItem[];
+  allFiltered: SidebarToolItem[];
+}
+
+/**
+ * 将工具列表根据计算出的状态（missing / upgradable / ready）分类归入不同面板分组
+ * 并同时支持 searchQuery 过滤
+ */
+export function categorizeTools(
+  tools: any[],
+  scope: "user" | "workspace",
+  updates: ToolUpdateCandidate[] = [],
+  searchQuery: string = ""
+): CategorizedTools {
+  const q = searchQuery.toLowerCase().trim();
+  const missing: SidebarToolItem[] = [];
+  const upgradable: SidebarToolItem[] = [];
+  const ready: SidebarToolItem[] = [];
+  const allFiltered: SidebarToolItem[] = [];
+
+  for (const tool of tools) {
+    if (!tool) continue;
+    const hasConfig =
+      scope === "user"
+        ? Boolean(tool.global_version && String(tool.global_version).trim())
+        : Boolean(
+            (tool.active_version && String(tool.active_version).trim()) ||
+            tool.is_legacy ||
+            (tool.global_version && String(tool.global_version).trim())
+          );
+    if (!hasConfig) continue;
+
+    const status = computeToolStatus(tool, scope, updates);
+    if (status.state === "unconfigured") continue;
+
+    const item: SidebarToolItem = {
+      id: tool.id || tool.name,
+      name: tool.name || tool.id,
+      icon: tool.id || tool.name,
+      version: status.configuredVersion,
+      state: status.state,
+      upgradableVersion: status.upgradableVersion,
+      raw: tool,
+    };
+
+    if (q) {
+      const matchName = item.name.toLowerCase().includes(q);
+      const matchId = item.id.toLowerCase().includes(q);
+      const matchVer = item.version.toLowerCase().includes(q);
+      if (!matchName && !matchId && !matchVer) {
+        continue;
+      }
+    }
+
+    allFiltered.push(item);
+    if (item.state === "missing") {
+      missing.push(item);
+    } else if (item.state === "upgradable") {
+      upgradable.push(item);
+    } else if (item.state === "ready") {
+      ready.push(item);
+    }
+  }
+
+  return { missing, upgradable, ready, allFiltered };
+}
+

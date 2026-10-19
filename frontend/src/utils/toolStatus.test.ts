@@ -6,6 +6,7 @@ import {
   computeToolStatus,
   isVersionLocallyInstalled,
   compareSemverDesc,
+  categorizeTools,
   type ToolStatusItem,
   type ToolUpdateCandidate,
 } from "./toolStatus";
@@ -125,4 +126,80 @@ describe("toolStatus utility", () => {
       expect(resWorkspace.configuredVersion).toBe("1.2.0");
     });
   });
+
+  describe("categorizeTools", () => {
+    const mockTools = [
+      {
+        id: "node",
+        name: "Node.js",
+        active_version: "22.1.0",
+        installed_versions: ["20.18.0"], // 缺少 22.1.0 -> missing
+      },
+      {
+        id: "go",
+        name: "Go",
+        active_version: "1.23.0",
+        installed_versions: ["1.23.0"], // 存在升级 1.24.0 -> upgradable
+      },
+      {
+        id: "python",
+        name: "Python",
+        active_version: "3.12.0",
+        installed_versions: ["3.12.0"], // 已就绪 -> ready
+      },
+      {
+        id: "rust",
+        name: "Rust",
+        active_version: "", // 未配置 -> unconfigured / skipped
+        installed_versions: ["1.80.0"],
+      },
+    ];
+
+    const mockUpdates: ToolUpdateCandidate[] = [
+      {
+        id: "go",
+        name: "Go",
+        latest_version: "1.24.0",
+        has_update: true,
+      },
+    ];
+
+    it("categorizes tools into missing, upgradable, and ready correctly", () => {
+      const result = categorizeTools(mockTools, "workspace", mockUpdates);
+
+      expect(result.missing).toHaveLength(1);
+      expect(result.missing[0].id).toBe("node");
+      expect(result.missing[0].state).toBe("missing");
+
+      expect(result.upgradable).toHaveLength(1);
+      expect(result.upgradable[0].id).toBe("go");
+      expect(result.upgradable[0].state).toBe("upgradable");
+      expect(result.upgradable[0].upgradableVersion).toBe("1.24.0");
+
+      expect(result.ready).toHaveLength(1);
+      expect(result.ready[0].id).toBe("python");
+      expect(result.ready[0].state).toBe("ready");
+
+      expect(result.allFiltered).toHaveLength(3);
+    });
+
+    it("filters tools matching searchQuery", () => {
+      const result = categorizeTools(mockTools, "workspace", mockUpdates, "node");
+
+      expect(result.missing).toHaveLength(1);
+      expect(result.upgradable).toHaveLength(0);
+      expect(result.ready).toHaveLength(0);
+      expect(result.allFiltered).toHaveLength(1);
+    });
+
+    it("returns empty arrays when no tools match filter", () => {
+      const result = categorizeTools(mockTools, "workspace", mockUpdates, "nonexistent");
+
+      expect(result.missing).toHaveLength(0);
+      expect(result.upgradable).toHaveLength(0);
+      expect(result.ready).toHaveLength(0);
+      expect(result.allFiltered).toHaveLength(0);
+    });
+  });
 });
+
