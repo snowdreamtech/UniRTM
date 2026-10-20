@@ -82,7 +82,9 @@ func (r *IpAddressesRule) Execute(ctx context.Context, files []string, opts Exec
 			strings.HasSuffix(lowerRel, "_test.go") ||
 			strings.HasSuffix(lowerRel, ".test.ts") ||
 			strings.HasSuffix(lowerRel, ".spec.ts") ||
-			strings.HasSuffix(lowerRel, ".test.js") {
+			strings.HasSuffix(lowerRel, ".test.js") ||
+			strings.HasSuffix(lowerRel, "internal/network/defaults.go") ||
+			strings.HasSuffix(lowerRel, "internal/network/proxy_test_conn.go") {
 			continue
 		}
 

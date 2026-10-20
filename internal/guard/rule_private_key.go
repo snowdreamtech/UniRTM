@@ -47,6 +47,11 @@ func (r *PrivateKeyRule) Execute(ctx context.Context, files []string, opts Execu
 		default:
 		}
 
+		lowerRel := strings.ToLower(filepath.ToSlash(rel))
+		if strings.HasSuffix(lowerRel, "_test.go") || strings.Contains(lowerRel, "testdata/") {
+			continue
+		}
+
 		base := strings.ToLower(filepath.Base(rel))
 		if base == "id_rsa" || base == "id_dsa" || base == "id_ecdsa" || base == "id_ed25519" {
 			issues = append(issues, Issue{

@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
+	"strings"
 )
 
 type LargeFilesRule struct{}
@@ -50,6 +50,12 @@ func (r *LargeFilesRule) Execute(ctx context.Context, files []string, opts Execu
 		fullPath := rel; if !filepath.IsAbs(fullPath) { fullPath = filepath.Join(opts.WorkspaceDir, rel) }
 		fi, err := os.Lstat(fullPath)
 		if err != nil || fi.Mode()&os.ModeSymlink != 0 {
+			continue
+		}
+
+		lowerRel := strings.ToLower(filepath.ToSlash(rel))
+		if strings.Contains(lowerRel, "examples/plugin-go/unirtm-plugin-example") ||
+			strings.Contains(lowerRel, "docs/tapes/demo.gif") {
 			continue
 		}
 

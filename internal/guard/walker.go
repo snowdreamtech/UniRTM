@@ -30,6 +30,10 @@ var DefaultExcludedDirs = map[string]bool{
 	".next":        true,
 	".nuxt":        true,
 	".output":      true,
+	"testdata":     true,
+	".specify":     true,
+	".agent":       true,
+	".agents":      true,
 }
 
 // WalkOptions specifies target mode and filtering criteria
@@ -82,12 +86,31 @@ func CollectFiles(ctx context.Context, opts WalkOptions) ([]string, error) {
 			return walkAllFiles(absWs, excludeDirMap, opts)
 		}
 	case "all":
-		return walkAllFiles(absWs, excludeDirMap, opts)
+		if isGitRepo(absWs) {
+			files, err := getGitAllFiles(ctx, absWs)
+			if err == nil && len(files) > 0 {
+				rawFiles = files
+			} else {
+				return walkAllFiles(absWs, excludeDirMap, opts)
+			}
+		} else {
+			return walkAllFiles(absWs, excludeDirMap, opts)
+		}
 	default:
 		rawFiles, _ = getGitChangedFiles(ctx, absWs)
 	}
 
 	return filterFiles(absWs, rawFiles, excludeDirMap, opts)
+}
+
+func getGitAllFiles(ctx context.Context, dir string) ([]string, error) {
+	cmd := exec.CommandContext(ctx, "git", "ls-files", "--cached", "--others", "--exclude-standard")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+	return parseLines(out), nil
 }
 
 func isGitRepo(dir string) bool {

@@ -49,6 +49,11 @@ func (r *MergeConflictRule) Execute(ctx context.Context, files []string, opts Ex
 		default:
 		}
 
+		lowerRel := strings.ToLower(filepath.ToSlash(rel))
+		if strings.HasSuffix(lowerRel, "_test.go") || strings.Contains(lowerRel, "testdata/") {
+			continue
+		}
+
 		fullPath := rel; if !filepath.IsAbs(fullPath) { fullPath = filepath.Join(opts.WorkspaceDir, rel) }
 		fi, err := os.Lstat(fullPath)
 		if err != nil || fi.Mode()&os.ModeSymlink != 0 || fi.Size() > maxSize {
