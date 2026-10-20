@@ -61,6 +61,20 @@
         </button>
       </div>
 
+      <!-- 3.1 Conventional Commit Type Filter Pills -->
+      <div class="commit-type-filter-group">
+        <button
+          v-for="tItem in commitTypeFilterOptions"
+          :key="tItem.value"
+          class="type-filter-btn"
+          :class="{ active: selectedCommitType === tItem.value }"
+          :title="tItem.title"
+          @click="selectedCommitType = tItem.value"
+        >
+          {{ tItem.label }}
+        </button>
+      </div>
+
       <!-- 4. Refresh Button -->
       <button
         class="toolbar-btn"
@@ -1067,6 +1081,16 @@ const selectedBranches = ref<string[]>(
 );
 const showStashes = ref(true);
 const searchQuery = ref("");
+const selectedCommitType = ref<string>("all");
+
+const commitTypeFilterOptions = [
+  { label: "全部", value: "all", title: "显示全部提交" },
+  { label: "feat", value: "feat", title: "仅看新功能 (Features)" },
+  { label: "fix", value: "fix", title: "仅看缺陷修复 (Bug Fixes)" },
+  { label: "docs", value: "docs", title: "仅看文档更新 (Docs)" },
+  { label: "refactor", value: "refactor", title: "仅看重构 (Refactor)" },
+  { label: "chore", value: "chore", title: "仅看日常维护与构建 (Chore)" },
+];
 const tableWrapperRef = ref<HTMLElement | null>(null);
 const isLoadingDetail = ref(false);
 const isLoadingCompare = ref(false);
@@ -1181,9 +1205,16 @@ const allGraphCommits = computed(() => {
   return graphCommits.value;
 });
 
-// Filtered Commits by live search
+// Filtered Commits by live search and conventional type
 const filteredCommits = computed(() => {
-  const list = allGraphCommits.value;
+  let list = allGraphCommits.value;
+  if (selectedCommitType.value !== "all") {
+    list = list.filter((c) => {
+      if (c.hash === "*") return true; // Keep uncommitted virtual row
+      const parsed = parseCommitSubject(c.message);
+      return parsed && parsed.type === selectedCommitType.value;
+    });
+  }
   const query = searchQuery.value.trim().toLowerCase();
   if (!query) return list;
   return list.filter((c) => {
@@ -2069,6 +2100,43 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
 
 .graph-search-input:focus {
   border-color: var(--accent-cyan);
+}
+
+.commit-type-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.type-filter-btn {
+  font-size: 11px;
+  font-family: var(--font-family-mono, monospace);
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.type-filter-btn:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.type-filter-btn.active {
+  background: var(--accent-cyan-dim, rgba(14, 165, 233, 0.15));
+  border-color: var(--accent-cyan, #0ea5e9);
+  color: var(--accent-cyan, #0ea5e9);
+  font-weight: 600;
+}
+
+:root[data-theme="light"] .type-filter-btn.active {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #38bdf8;
 }
 
 .clear-search-btn {
