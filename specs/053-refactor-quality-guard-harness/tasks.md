@@ -41,6 +41,7 @@
   - `rule_empty_files.go` (检测无意义的空代码文件残留，白名单放行占位文件)
   - `rule_script_crlf.go` (检测 Shell 脚本 CRLF 换行符并在 Phase 1 自动修复为 LF，避免 bad interpreter 错误)
   - `rule_markdown.go` (检测 Markdown 标题层级跳跃、未闭合代码块与空链接/占位链接)
+  - `rule_ip_addresses.go` (检测源码和配置文件中硬编码的私有和公网 IPv4 地址)
 - [x] Task 1.4: 编写 `internal/guard/builtin_test.go` 与 `walker_test.go` 单元测试，确保 100% 覆盖与极致性能
 - [x] Task 1.5: 阶段性 Git 提交：`feat(guard): implement core engine and Go-native builtin rules`
 
