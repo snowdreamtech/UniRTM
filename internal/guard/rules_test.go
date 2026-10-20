@@ -4,6 +4,7 @@
 package guard_test
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"path/filepath"
@@ -730,10 +731,56 @@ func TestBuiltinRules_EmptyCodeFiles(t *testing.T) {
 	}
 }
 
+func TestBuiltinRules_ScriptCrlfAndFix(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	goodScript := filepath.Join(tmpDir, "good.sh")
+	_ = os.WriteFile(goodScript, []byte("#!/usr/bin/env bash\necho 'hello'\n"), 0755)
+
+	badScript := filepath.Join(tmpDir, "deploy.sh")
+	_ = os.WriteFile(badScript, []byte("#!/usr/bin/env bash\r\necho 'windows crlf'\r\n"), 0755)
+
+	badShebangNoExt := filepath.Join(tmpDir, "run-tool")
+	_ = os.WriteFile(badShebangNoExt, []byte("#!/bin/sh\r\necho 'shebang crlf'\r\n"), 0755)
+
+	rule := guard.NewScriptCrlfRule()
+	ctx := context.Background()
+
+	// Check without fix
+	issues, err := rule.Execute(ctx, []string{"good.sh", "deploy.sh", "run-tool"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+		Fix:          false,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) != 2 {
+		t.Fatalf("Expected 2 script CRLF issues, got %d: %v", len(issues), issues)
+	}
+
+	// Run with Fix
+	issuesFixed, err := rule.Execute(ctx, []string{"good.sh", "deploy.sh", "run-tool"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+		Fix:          true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issuesFixed) != 2 || !issuesFixed[0].Fixed || !issuesFixed[1].Fixed {
+		t.Fatalf("Expected 2 fixed issues, got %v", issuesFixed)
+	}
+
+	// Verify file content has no CRLF
+	fixedContent, _ := os.ReadFile(badScript)
+	if bytes.Contains(fixedContent, []byte("\r\n")) {
+		t.Errorf("Expected deploy.sh to be normalized to LF without CRLF")
+	}
+}
+
 func TestBuiltinRegistry(t *testing.T) {
 	rules := guard.GetAllBuiltinRules()
-	if len(rules) < 24 {
-		t.Errorf("Expected at least 24 builtin rules, got %d", len(rules))
+	if len(rules) < 25 {
+		t.Errorf("Expected at least 25 builtin rules, got %d", len(rules))
 	}
 }
 
