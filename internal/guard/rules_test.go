@@ -512,12 +512,39 @@ func TestBuiltinRules_MixedLineEndingsAndFix(t *testing.T) {
 	}
 }
 
-func TestBuiltinRegistry(t *testing.T) {
-	rules := guard.GetAllBuiltinRules()
-	if len(rules) < 17 {
-		t.Errorf("Expected at least 17 builtin rules, got %d", len(rules))
+func TestBuiltinRules_Xml(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	validXml := filepath.Join(tmpDir, "valid.xml")
+	_ = os.WriteFile(validXml, []byte(`<?xml version="1.0" encoding="UTF-8"?><root><item id="1">Text</item></root>`), 0644)
+
+	invalidXml := filepath.Join(tmpDir, "invalid.xml")
+	_ = os.WriteFile(invalidXml, []byte(`<?xml version="1.0"?><root><unclosed>text</root>`), 0644)
+
+	emptyXml := filepath.Join(tmpDir, "empty.xml")
+	_ = os.WriteFile(emptyXml, []byte("   \n"), 0644)
+
+	rule := guard.NewXmlRule()
+	ctx := context.Background()
+
+	issues, err := rule.Execute(ctx, []string{"valid.xml", "invalid.xml", "empty.xml"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) != 2 {
+		t.Fatalf("Expected 2 invalid XML issues, got %d: %v", len(issues), issues)
 	}
 }
+
+func TestBuiltinRegistry(t *testing.T) {
+	rules := guard.GetAllBuiltinRules()
+	if len(rules) < 18 {
+		t.Errorf("Expected at least 18 builtin rules, got %d", len(rules))
+	}
+}
+
 
 
 

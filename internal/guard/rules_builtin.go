@@ -27,6 +27,7 @@ func GetAllBuiltinRules() []Rule {
 		NewJsonRule(),
 		NewTomlRule(),
 		NewMixedLineEndingsRule(),
+		NewXmlRule(),
 	}
 }
 
