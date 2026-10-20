@@ -81,7 +81,8 @@ repos:
             docs/tapes/demo\.gif
           )
         stages: [pre-commit, pre-merge-commit]
-        description: "Prevent large files (>1MB) from being committed."
+        description: "Prevent large files (>10MB) from being committed."
+
 
       - id: check-merge-conflict
         name: check for merge conflicts

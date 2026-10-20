@@ -189,17 +189,43 @@ func TestBuiltinRules_LargeFiles(t *testing.T) {
 	rule := guard.NewLargeFilesRule()
 	ctx := context.Background()
 
-	issues, err := rule.Execute(ctx, []string{"big.bin"}, guard.ExecuteOptions{
+	// 1. Default limit is now 10MB -> 1.5MB should PASS
+	issuesDefault, err := rule.Execute(ctx, []string{"big.bin"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issuesDefault) != 0 {
+		t.Fatalf("Expected 1.5MB file to pass default 10MB limit, got: %v", issuesDefault)
+	}
+
+	// 2. Custom limit (1MB) -> 1.5MB should trigger error
+	issuesCustom, err := rule.Execute(ctx, []string{"big.bin"}, guard.ExecuteOptions{
 		WorkspaceDir: tmpDir,
 		MaxFileSize:  1024 * 1024, // 1MB limit
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(issues) != 1 {
-		t.Fatalf("Expected large file error, got: %v", issues)
+	if len(issuesCustom) != 1 {
+		t.Fatalf("Expected large file error for custom limit, got: %v", issuesCustom)
+	}
+
+	// 3. Huge file (11MB) with default limit -> should trigger error
+	hugePath := filepath.Join(tmpDir, "huge.bin")
+	_ = os.WriteFile(hugePath, make([]byte, 11*1024*1024), 0644)
+	issuesHuge, err := rule.Execute(ctx, []string{"huge.bin"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issuesHuge) != 1 {
+		t.Fatalf("Expected 11MB file to exceed default 10MB limit, got: %v", issuesHuge)
 	}
 }
+
 
 func TestBuiltinRules_CaseConflict(t *testing.T) {
 	rule := guard.NewCaseConflictRule()

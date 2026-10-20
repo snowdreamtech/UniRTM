@@ -37,7 +37,7 @@ func (r *LargeFilesRule) Execute(ctx context.Context, files []string, opts Execu
 	var issues []Issue
 	limit := opts.MaxFileSize
 	if limit <= 0 {
-		limit = 1024 * 1024 // 1MB default
+		limit = 10 * 1024 * 1024 // 10MB default
 	}
 
 	for _, rel := range files {
