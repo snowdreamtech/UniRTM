@@ -35,6 +35,8 @@
   - `rule_xml.go` (XML/XSD/XSL/PLIST 闭合良好性与语法有效性校验)
   - `rule_cloud_secrets.go` (离线云厂商及平台凭据/API Key 泄漏防范)
   - `rule_commit_msg.go` (Conventional Commits 规范与提交信息格式校验)
+  - `rule_yaml.go` (纯 Go 多文档 YAML / YML 配置文件语法有效性校验)
+  - `rule_debug_statements.go` (防呆拦截遗留在源码中的断点与调试语句)
 - [x] Task 1.4: 编写 `internal/guard/builtin_test.go` 与 `walker_test.go` 单元测试，确保 100% 覆盖与极致性能
 - [x] Task 1.5: 阶段性 Git 提交：`feat(guard): implement core engine and Go-native builtin rules`
 
