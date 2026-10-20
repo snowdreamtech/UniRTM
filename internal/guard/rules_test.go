@@ -442,11 +442,38 @@ func TestBuiltinRules_Json(t *testing.T) {
 	}
 }
 
-func TestBuiltinRegistry(t *testing.T) {
-	rules := guard.GetAllBuiltinRules()
-	if len(rules) < 15 {
-		t.Errorf("Expected at least 15 builtin rules, got %d", len(rules))
+func TestBuiltinRules_Toml(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	validToml := filepath.Join(tmpDir, "valid.toml")
+	_ = os.WriteFile(validToml, []byte("[project]\nname = \"unirtm\"\nversion = \"0.35.0\"\n"), 0644)
+
+	invalidToml := filepath.Join(tmpDir, "invalid.toml")
+	_ = os.WriteFile(invalidToml, []byte("[project\nname = \"unirtm\"\n"), 0644)
+
+	rule := guard.NewTomlRule()
+	ctx := context.Background()
+
+	issues, err := rule.Execute(ctx, []string{"valid.toml", "invalid.toml"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) != 1 {
+		t.Fatalf("Expected 1 invalid TOML issue, got %d: %v", len(issues), issues)
+	}
+	if issues[0].FilePath != "invalid.toml" {
+		t.Errorf("Expected invalid.toml to fail, got: %s", issues[0].FilePath)
 	}
 }
+
+func TestBuiltinRegistry(t *testing.T) {
+	rules := guard.GetAllBuiltinRules()
+	if len(rules) < 16 {
+		t.Errorf("Expected at least 16 builtin rules, got %d", len(rules))
+	}
+}
+
 
 
