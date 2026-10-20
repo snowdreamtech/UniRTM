@@ -468,12 +468,57 @@ func TestBuiltinRules_Toml(t *testing.T) {
 	}
 }
 
-func TestBuiltinRegistry(t *testing.T) {
-	rules := guard.GetAllBuiltinRules()
-	if len(rules) < 16 {
-		t.Errorf("Expected at least 16 builtin rules, got %d", len(rules))
+func TestBuiltinRules_MixedLineEndingsAndFix(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	mixedPath := filepath.Join(tmpDir, "mixed.txt")
+	// Line 1 ends with CRLF, Line 2 ends with LF
+	_ = os.WriteFile(mixedPath, []byte("line1\r\nline2\nline3\r\n"), 0644)
+
+	rule := guard.NewMixedLineEndingsRule()
+	ctx := context.Background()
+
+	// 1. Without fix
+	issues, err := rule.Execute(ctx, []string{"mixed.txt"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+		Fix:          false,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) != 1 {
+		t.Fatalf("Expected 1 mixed line ending issue, got %d: %v", len(issues), issues)
+	}
+	if issues[0].Fixed {
+		t.Errorf("Should not be marked fixed when Fix=false")
+	}
+
+	// 2. With fix
+	issuesFixed, err := rule.Execute(ctx, []string{"mixed.txt"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+		Fix:          true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issuesFixed) != 1 || !issuesFixed[0].Fixed {
+		t.Fatalf("Expected issue to be fixed, got: %v", issuesFixed)
+	}
+
+	// Verify file content on disk is now strictly LF
+	fixedContent, _ := os.ReadFile(mixedPath)
+	if string(fixedContent) != "line1\nline2\nline3\n" {
+		t.Errorf("Unexpected content after fix: %q", string(fixedContent))
 	}
 }
+
+func TestBuiltinRegistry(t *testing.T) {
+	rules := guard.GetAllBuiltinRules()
+	if len(rules) < 17 {
+		t.Errorf("Expected at least 17 builtin rules, got %d", len(rules))
+	}
+}
+
 
 
 

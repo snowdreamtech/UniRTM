@@ -26,6 +26,7 @@ func GetAllBuiltinRules() []Rule {
 		NewSvgSafetyRule(),
 		NewJsonRule(),
 		NewTomlRule(),
+		NewMixedLineEndingsRule(),
 	}
 }
 
