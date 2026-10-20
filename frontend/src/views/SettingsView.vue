@@ -1809,7 +1809,6 @@
 import { ref, computed, onMounted, onActivated, onDeactivated, onBeforeUnmount, watch, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { loadMonaco } from "../services/editor/monacoLoader";
-import { useEditorTabs } from "../composables/useEditorTabs";
 import { t, selectedLangSetting, setLanguage, SUPPORTED_LANGUAGES } from "../i18n";
 import { useTheme } from "../composables/useTheme";
 import { useThemeManager } from "../composables/useThemeManager";
@@ -1823,7 +1822,6 @@ const router = useRouter();
 const route = useRoute();
 const { showToast } = useToast();
 const { activeScope } = useAppScope();
-const { openTab } = useEditorTabs();
 
 function navigateToMarketplace(tab = "themes") {
   router.push({ path: "/marketplace", query: { tab } });
@@ -3510,7 +3508,6 @@ function handleOpenInExplorer(fileName: string) {
   showRawTomlModal.value = false;
   isTomlDirty.value = false;
 
-  openTab({ path: fileName, name: fileName });
   router.push({
     name: "explorer",
     query: {

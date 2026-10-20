@@ -1108,7 +1108,6 @@ function handleCloseConfigEditor() {
 
 function handleOpenInExplorer(fileName: string) {
   handleCloseConfigEditor();
-  openTab({ path: fileName, name: fileName });
   router.push({ name: "explorer", query: { from: "guard", file: fileName } }).catch(() => {});
   showToast(`已在代码编辑器中打开 ${fileName}`, "info");
 }

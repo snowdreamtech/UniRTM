@@ -71,6 +71,15 @@ export function useEditorTabs() {
     return tabs.value.some((t) => t.isDirty);
   });
 
+const pendingOpenings = new Map<string, Promise<void>>();
+
+function normalizePath(p: string): string {
+  if (!p) return "";
+  let clean = p.trim().replace(/\\/g, "/");
+  clean = clean.replace(/^\.\//, "");
+  return clean;
+}
+
   async function openTab(file: {
     path: string;
     name: string;
@@ -78,7 +87,10 @@ export function useEditorTabs() {
     line?: number;
     column?: number;
   }): Promise<void> {
-    const existing = tabs.value.find((t) => t.id === file.path);
+    const normPath = normalizePath(file.path);
+    const existing = tabs.value.find(
+      (t) => normalizePath(t.id) === normPath || normalizePath(t.path) === normPath
+    );
     if (existing) {
       activeTabId.value = existing.id;
       if (file.line !== undefined) existing.initialLine = file.line;
@@ -97,78 +109,107 @@ export function useEditorTabs() {
       return;
     }
 
-    const language = getLanguageForFile(file.name);
-    let fileContent = "";
-    let isBinary = false;
-    let binaryReason: "too_large" | "binary" | "unsupported" | undefined;
-    let fileSize = file.size;
-
-    // Check pre-known size or binary extension
-    if (fileSize && fileSize > 10 * 1024 * 1024) {
-      isBinary = true;
-      binaryReason = "too_large";
-    } else {
-      const ext = file.name.slice(file.name.lastIndexOf(".") + 1).toLowerCase();
-      if (file.name.includes(".") && KNOWN_BINARY_EXTENSIONS.has(ext)) {
-        isBinary = true;
-        binaryReason = "binary";
+    if (pendingOpenings.has(normPath)) {
+      await pendingOpenings.get(normPath);
+      const afterWait = tabs.value.find(
+        (t) => normalizePath(t.id) === normPath || normalizePath(t.path) === normPath
+      );
+      if (afterWait) {
+        activeTabId.value = afterWait.id;
       }
+      return;
     }
 
-    // Only read file content if not already known to be binary or too large
-    if (!isBinary) {
-      try {
-        const res = await fetch(`/api/fs/read?path=${encodeURIComponent(file.path)}`);
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          const errMsg = String(errorData.error || res.statusText || "");
-          if (errMsg.toLowerCase().includes("too large") || res.status === 400) {
-            isBinary = true;
-            binaryReason = errMsg.toLowerCase().includes("too large") ? "too_large" : "binary";
-            if (errorData.size) {
-              fileSize = errorData.size;
+    const openPromise = (async () => {
+      const language = getLanguageForFile(file.name);
+      let fileContent = "";
+      let isBinary = false;
+      let binaryReason: "too_large" | "binary" | "unsupported" | undefined;
+      let fileSize = file.size;
+
+      // Check pre-known size or binary extension
+      if (fileSize && fileSize > 10 * 1024 * 1024) {
+        isBinary = true;
+        binaryReason = "too_large";
+      } else {
+        const ext = file.name.slice(file.name.lastIndexOf(".") + 1).toLowerCase();
+        if (file.name.includes(".") && KNOWN_BINARY_EXTENSIONS.has(ext)) {
+          isBinary = true;
+          binaryReason = "binary";
+        }
+      }
+
+      // Only read file content if not already known to be binary or too large
+      if (!isBinary) {
+        try {
+          const res = await fetch(`/api/fs/read?path=${encodeURIComponent(file.path)}`);
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            const errMsg = String(errorData.error || res.statusText || "");
+            if (errMsg.toLowerCase().includes("too large") || res.status === 400) {
+              isBinary = true;
+              binaryReason = errMsg.toLowerCase().includes("too large") ? "too_large" : "binary";
+              if (errorData.size) {
+                fileSize = errorData.size;
+              }
+            } else {
+              throw new Error(errMsg || `HTTP ${res.status}`);
             }
           } else {
-            throw new Error(errMsg || `HTTP ${res.status}`);
+            const data = await res.json();
+            fileContent = data.content !== undefined ? data.content : data.data?.content ?? "";
+            if (data.size) {
+              fileSize = data.size;
+            }
+            // Detect null bytes in initial chunk (standard binary sniffing)
+            if (fileContent.slice(0, 1024).includes("\0")) {
+              isBinary = true;
+              binaryReason = "binary";
+            }
           }
-        } else {
-          const data = await res.json();
-          fileContent = data.content !== undefined ? data.content : data.data?.content ?? "";
-          if (data.size) {
-            fileSize = data.size;
+        } catch (err: any) {
+          if (!isBinary) {
+            fileContent = `// 读取文件失败: ${err.message}`;
+            showToast(`读取文件失败: ${err.message}`, "error");
           }
-          // Detect null bytes in initial chunk (standard binary sniffing)
-          if (fileContent.slice(0, 1024).includes("\0")) {
-            isBinary = true;
-            binaryReason = "binary";
-          }
-        }
-      } catch (err: any) {
-        if (!isBinary) {
-          fileContent = `// 读取文件失败: ${err.message}`;
-          showToast(`读取文件失败: ${err.message}`, "error");
         }
       }
+
+      // Check once more in case added while fetching
+      const doubleCheck = tabs.value.find(
+        (t) => normalizePath(t.id) === normPath || normalizePath(t.path) === normPath
+      );
+      if (doubleCheck) {
+        activeTabId.value = doubleCheck.id;
+        return;
+      }
+
+      const newTab: EditorTab = {
+        id: normPath,
+        path: normPath,
+        name: file.name,
+        language,
+        content: fileContent,
+        originalContent: fileContent,
+        isDirty: false,
+        isLoading: false,
+        isBinary,
+        size: fileSize,
+        binaryReason,
+        initialLine: file.line,
+        initialColumn: file.column,
+      };
+
+      tabs.value.push(newTab);
+      activeTabId.value = newTab.id;
+    })();
+
+    pendingOpenings.set(normPath, openPromise);
+    try {
+      await openPromise;
+    } finally {
+      pendingOpenings.delete(normPath);
     }
-
-    const newTab: EditorTab = {
-      id: file.path,
-      path: file.path,
-      name: file.name,
-      language,
-      content: fileContent,
-      originalContent: fileContent,
-      isDirty: false,
-      isLoading: false,
-      isBinary,
-      size: fileSize,
-      binaryReason,
-      initialLine: file.line,
-      initialColumn: file.column,
-    };
-
-    tabs.value.push(newTab);
-    activeTabId.value = newTab.id;
   }
 
   function switchTab(tabId: string): void {
@@ -358,6 +399,7 @@ export function useEditorTabs() {
   }
 
   function closeAllTabs(forceAll = false): void {
+    pendingOpenings.clear();
     if (forceAll) {
       tabs.value = [];
       activeTabId.value = "";

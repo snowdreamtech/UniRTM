@@ -49,6 +49,33 @@ describe("useEditorTabs", () => {
     expect(activeTabId.value).toBe("b.json");
   });
 
+  it("deduplicates concurrent openTab calls for the same file", async () => {
+    let resolveFetch: (val: any) => void;
+    const slowFetch = new Promise((resolve) => {
+      resolveFetch = resolve;
+    });
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(() => slowFetch as any);
+
+    const { tabs, activeTabId, openTab } = useEditorTabs();
+
+    // Call openTab concurrently with both .unirtm.toml and ./.unirtm.toml
+    const call1 = openTab({ path: ".unirtm.toml", name: ".unirtm.toml" });
+    const call2 = openTab({ path: "./.unirtm.toml", name: ".unirtm.toml" });
+
+    // Resolve fetch
+    resolveFetch!({
+      ok: true,
+      json: async () => ({ content: "# config content" }),
+    });
+
+    await Promise.all([call1, call2]);
+
+    expect(tabs.value.length).toBe(1);
+    expect(tabs.value[0].path).toBe(".unirtm.toml");
+    expect(activeTabId.value).toBe(".unirtm.toml");
+  });
+
   it("tracks dirty state on content modifications", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
       ok: true,
