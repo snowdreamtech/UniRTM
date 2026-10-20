@@ -28,6 +28,7 @@ func GetAllBuiltinRules() []Rule {
 		NewTomlRule(),
 		NewMixedLineEndingsRule(),
 		NewXmlRule(),
+		NewCloudSecretsRule(),
 	}
 }
 

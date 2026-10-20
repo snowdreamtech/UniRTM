@@ -538,12 +538,36 @@ func TestBuiltinRules_Xml(t *testing.T) {
 	}
 }
 
-func TestBuiltinRegistry(t *testing.T) {
-	rules := guard.GetAllBuiltinRules()
-	if len(rules) < 18 {
-		t.Errorf("Expected at least 18 builtin rules, got %d", len(rules))
+func TestBuiltinRules_CloudSecrets(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	dirtyFile := filepath.Join(tmpDir, "config.py")
+	_ = os.WriteFile(dirtyFile, []byte("aws_key = 'AKIA1234567890ABCDEF'\ngithub_token = 'ghp_1234567890abcdefghijklmnopqrstuvwxyz'\n"), 0644)
+
+	cleanFile := filepath.Join(tmpDir, "clean.go")
+	_ = os.WriteFile(cleanFile, []byte("package main\nconst token = \"normal_string\"\n"), 0644)
+
+	rule := guard.NewCloudSecretsRule()
+	ctx := context.Background()
+
+	issues, err := rule.Execute(ctx, []string{"config.py", "clean.go"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) != 2 {
+		t.Fatalf("Expected 2 cloud secret issues in config.py, got %d: %v", len(issues), issues)
 	}
 }
+
+func TestBuiltinRegistry(t *testing.T) {
+	rules := guard.GetAllBuiltinRules()
+	if len(rules) < 19 {
+		t.Errorf("Expected at least 19 builtin rules, got %d", len(rules))
+	}
+}
+
 
 
 
