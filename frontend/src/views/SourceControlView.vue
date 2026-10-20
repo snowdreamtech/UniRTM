@@ -585,7 +585,7 @@
             </div>
             <div class="step-status">
               <span class="codicon codicon-check text-green"></span>
-              <span>内置 32 项 Go 原生规则</span>
+              <span>内置 {{ guardBuiltinRules.length || 22 }} 项 Go 原生规则</span>
             </div>
           </div>
 
@@ -662,6 +662,85 @@
                   {{ cfg.exists ? ('● ' + t('guard.config.detected')) : ('○ ' + t('guard.config.unconfigured')) }}
                 </span>
                 <span class="chip-action-btn">{{ cfg.exists ? t('guard.config.open_edit') : t('guard.config.create_template') }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Built-in Native Rules Explorer Card -->
+        <div class="guard-rules-matrix-card">
+          <div class="matrix-header" @click="isRulesExpanded = !isRulesExpanded" style="cursor: pointer;">
+            <div class="matrix-title-group">
+              <span class="codicon" :class="isRulesExpanded ? 'codicon-chevron-down' : 'codicon-chevron-right'"></span>
+              <span class="matrix-title">纯 Go 原生内置智能规则库</span>
+              <span class="matrix-badge">{{ filteredBuiltinRules.length }}/{{ guardBuiltinRules.length }} 规则已就绪</span>
+            </div>
+            <div class="matrix-actions" @click.stop>
+              <div class="rules-filter-capsules">
+                <button
+                  class="rules-filter-capsule"
+                  :class="{ active: selectedGuardCategory === 'all' }"
+                  @click="selectedGuardCategory = 'all'"
+                >
+                  全部
+                </button>
+                <button
+                  class="rules-filter-capsule"
+                  :class="{ active: selectedGuardCategory === 'hygiene' }"
+                  @click="selectedGuardCategory = 'hygiene'"
+                >
+                  代码卫生
+                </button>
+                <button
+                  class="rules-filter-capsule"
+                  :class="{ active: selectedGuardCategory === 'security' }"
+                  @click="selectedGuardCategory = 'security'"
+                >
+                  安全与凭证
+                </button>
+                <button
+                  class="rules-filter-capsule"
+                  :class="{ active: selectedGuardCategory === 'git' }"
+                  @click="selectedGuardCategory = 'git'"
+                >
+                  Git 提交
+                </button>
+              </div>
+              <div class="rules-search-wrapper">
+                <span class="codicon codicon-search"></span>
+                <input
+                  v-model="guardRuleSearchQuery"
+                  class="rules-search-input"
+                  placeholder="搜索规则 ID 或后缀..."
+                />
+              </div>
+            </div>
+          </div>
+
+          <div v-show="isRulesExpanded" class="builtin-rules-grid">
+            <div
+              v-for="rule in filteredBuiltinRules"
+              :key="rule.id"
+              class="builtin-rule-item"
+            >
+              <div class="rule-item-top">
+                <span class="rule-id font-mono">{{ rule.id }}</span>
+                <span class="rule-phase-tag" :class="'phase-' + rule.phase">{{ rule.phase }}</span>
+              </div>
+              <div class="rule-item-meta">
+                <span class="rule-category-pill">{{ rule.category }}</span>
+                <div class="rule-exts" v-if="rule.extensions && rule.extensions.length > 0">
+                  <span
+                    v-for="ext in rule.extensions.slice(0, 5)"
+                    :key="ext"
+                    class="ext-pill"
+                  >
+                    {{ ext }}
+                  </span>
+                  <span v-if="rule.extensions.length > 5" class="ext-pill-more">
+                    +{{ rule.extensions.length - 5 }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -939,6 +1018,7 @@ const currentTab = ref<"changes" | "graph" | "guard">(
 
 const {
   status: guardStatus,
+  builtinRules: guardBuiltinRules,
   isLoading: isGuardLoading,
   isFixing: isGuardFixing,
   fetchStatus: fetchGuardStatus,
@@ -948,6 +1028,25 @@ const {
 } = useGuard();
 
 const currentGuardScope = ref<"staged" | "all">("staged");
+const guardRuleSearchQuery = ref("");
+const selectedGuardCategory = ref<string>("all");
+const isRulesExpanded = ref(true);
+
+const filteredBuiltinRules = computed(() => {
+  let list = guardBuiltinRules.value || [];
+  if (selectedGuardCategory.value !== "all") {
+    list = list.filter((r) => r.category === selectedGuardCategory.value);
+  }
+  if (guardRuleSearchQuery.value.trim()) {
+    const q = guardRuleSearchQuery.value.trim().toLowerCase();
+    list = list.filter(
+      (r) =>
+        r.id.toLowerCase().includes(q) ||
+        (r.extensions && r.extensions.some((ext: string) => ext.toLowerCase().includes(q)))
+    );
+  }
+  return list;
+});
 
 const guardIssuesCount = computed(() => {
   return (guardStatus.value.errors_count || 0) + (guardStatus.value.warnings_count || 0);
@@ -3269,6 +3368,158 @@ onBeforeUnmount(() => {
 .chip-action-btn {
   font-weight: 600;
   color: var(--accent-cyan, #0ea5e9);
+}
+
+/* Builtin Rules Explorer Matrix */
+.guard-rules-matrix-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+:root[data-theme="light"] .guard-rules-matrix-card {
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+
+.rules-filter-capsules {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rules-filter-capsule {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.rules-filter-capsule:hover,
+.rules-filter-capsule.active {
+  background: var(--accent-cyan-dim, rgba(14, 165, 233, 0.15));
+  border-color: var(--accent-cyan, #0ea5e9);
+  color: var(--accent-cyan, #0ea5e9);
+  font-weight: 500;
+}
+
+.rules-search-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.rules-search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 11px;
+  color: var(--text-main);
+  width: 140px;
+}
+
+.builtin-rules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+}
+
+.builtin-rule-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.15s ease;
+}
+
+.builtin-rule-item:hover {
+  border-color: var(--accent-cyan, #0ea5e9);
+}
+
+.rule-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rule-id {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rule-phase-tag {
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.rule-phase-tag.phase-fixer {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.rule-phase-tag.phase-linter {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.rule-item-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.rule-category-pill {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+}
+
+.rule-exts {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  overflow: hidden;
+}
+
+.ext-pill {
+  font-size: 9px;
+  font-family: var(--font-family-mono, monospace);
+  padding: 0 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+}
+
+.ext-pill-more {
+  font-size: 9px;
+  color: var(--text-muted);
 }
 
 .diag-bar-right {
