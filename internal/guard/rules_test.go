@@ -247,9 +247,143 @@ func TestBuiltinRules_Lockfiles(t *testing.T) {
 	}
 }
 
-func TestBuiltinRegistry(t *testing.T) {
-	rules := guard.GetAllBuiltinRules()
-	if len(rules) < 9 {
-		t.Errorf("Expected at least 9 builtin rules, got %d", len(rules))
+func TestBuiltinRules_ForbiddenFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	_ = os.WriteFile(filepath.Join(tmpDir, ".DS_Store"), []byte("garbage"), 0644)
+	_ = os.WriteFile(filepath.Join(tmpDir, "app.bak"), []byte("backup"), 0644)
+	_ = os.WriteFile(filepath.Join(tmpDir, "normal.go"), []byte("package main"), 0644)
+
+	rule := guard.NewForbiddenFilesRule()
+	ctx := context.Background()
+
+	issues, err := rule.Execute(ctx, []string{".DS_Store", "app.bak", "normal.go"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) != 2 {
+		t.Fatalf("Expected 2 forbidden file issues, got: %v", issues)
 	}
 }
+
+func TestBuiltinRules_Symlinks(t *testing.T) {
+	tmpDir := t.TempDir()
+	targetFile := filepath.Join(tmpDir, "target.txt")
+	_ = os.WriteFile(targetFile, []byte("content"), 0644)
+
+	// Valid relative symlink
+	validLink := filepath.Join(tmpDir, "valid_link")
+	_ = os.Symlink("target.txt", validLink)
+
+	// Absolute symlink
+	absLink := filepath.Join(tmpDir, "abs_link")
+	_ = os.Symlink(targetFile, absLink)
+
+	// Broken symlink
+	brokenLink := filepath.Join(tmpDir, "broken_link")
+	_ = os.Symlink("non_existent.txt", brokenLink)
+
+	rule := guard.NewSymlinksRule()
+	ctx := context.Background()
+
+	issues, err := rule.Execute(ctx, []string{"valid_link", "abs_link", "broken_link"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) != 2 {
+		t.Fatalf("Expected 2 symlink issues (1 abs, 1 broken), got: %v", issues)
+	}
+}
+
+func TestBuiltinRules_ShebangAndFix(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// 1. Script with shebang but lacking +x
+	scriptPath := filepath.Join(tmpDir, "build.sh")
+	_ = os.WriteFile(scriptPath, []byte("#!/bin/bash\necho ok\n"), 0644)
+
+	ruleExec := guard.NewShebangScriptsAreExecutableRule()
+	ctx := context.Background()
+
+	// Check without fix
+	issues, err := ruleExec.Execute(ctx, []string{"build.sh"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+		Fix:          false,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) != 1 {
+		t.Fatalf("Expected 1 shebang permission issue, got: %v", issues)
+	}
+
+	// Check with fix
+	issuesFixed, err := ruleExec.Execute(ctx, []string{"build.sh"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+		Fix:          true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issuesFixed) != 1 || !issuesFixed[0].Fixed {
+		t.Fatalf("Expected issue to be fixed, got: %v", issuesFixed)
+	}
+
+	// Verify chmod +x on disk
+	fi, _ := os.Stat(scriptPath)
+	if fi.Mode()&0111 == 0 {
+		t.Errorf("Expected script to have executable bit set after fix")
+	}
+
+	// 2. Executable lacking shebang
+	noShebangPath := filepath.Join(tmpDir, "run_no_shebang.sh")
+	_ = os.WriteFile(noShebangPath, []byte("echo 123\n"), 0755)
+
+	ruleLack := guard.NewExecutablesHaveShebangsRule()
+	issuesLack, err := ruleLack.Execute(ctx, []string{"run_no_shebang.sh"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issuesLack) != 1 {
+		t.Fatalf("Expected 1 lack-shebang issue, got: %v", issuesLack)
+	}
+}
+
+func TestBuiltinRules_SvgSafety(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	safeSvg := filepath.Join(tmpDir, "safe.svg")
+	_ = os.WriteFile(safeSvg, []byte(`<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40"/></svg>`), 0644)
+
+	unsafeSvg := filepath.Join(tmpDir, "unsafe.svg")
+	_ = os.WriteFile(unsafeSvg, []byte(`<svg><script>alert('xss')</script><circle/></svg>`), 0644)
+
+	unsafeEventSvg := filepath.Join(tmpDir, "onload.svg")
+	_ = os.WriteFile(unsafeEventSvg, []byte(`<svg onload="alert(1)"><circle/></svg>`), 0644)
+
+	rule := guard.NewSvgSafetyRule()
+	ctx := context.Background()
+
+	issues, err := rule.Execute(ctx, []string{"safe.svg", "unsafe.svg", "onload.svg"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) != 2 {
+		t.Fatalf("Expected 2 unsafe SVG issues, got: %v", issues)
+	}
+}
+
+func TestBuiltinRegistry(t *testing.T) {
+	rules := guard.GetAllBuiltinRules()
+	if len(rules) < 14 {
+		t.Errorf("Expected at least 14 builtin rules, got %d", len(rules))
+	}
+}
+

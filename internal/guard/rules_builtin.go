@@ -19,5 +19,11 @@ func GetAllBuiltinRules() []Rule {
 		NewCaseConflictRule(),
 		NewLockfileCoexistenceRule(),
 		NewLockfileConflictsRule(),
+		NewForbiddenFilesRule(),
+		NewSymlinksRule(),
+		NewExecutablesHaveShebangsRule(),
+		NewShebangScriptsAreExecutableRule(),
+		NewSvgSafetyRule(),
 	}
 }
+

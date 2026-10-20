@@ -25,6 +25,10 @@
   - `large_files.go` (检测大文件拦截)
   - `case_conflict.go` (检测大小写文件名冲突)
   - `lockfiles.go` (检测 lockfile 共存与冲突)
+  - `forbidden_files.go` (检测临时与残留垃圾文件)
+  - `symlinks.go` (检测死链与绝对路径软链)
+  - `shebang.go` (可执行脚本 shebang 校验与脚本执行权限自愈修复)
+  - `svg_safety.go` (检测 SVG 脚本注入与 XSS 安全漏洞)
 - [x] Task 1.4: 编写 `internal/guard/builtin_test.go` 与 `walker_test.go` 单元测试，确保 100% 覆盖与极致性能
 - [x] Task 1.5: 阶段性 Git 提交：`feat(guard): implement core engine and Go-native builtin rules`
 
