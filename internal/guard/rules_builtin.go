@@ -36,6 +36,7 @@ func GetAllBuiltinRules() []Rule {
 		NewEmptyCodeFilesRule(),
 		NewScriptCrlfRule(),
 		NewMarkdownRule(),
+		NewIpAddressesRule(),
 	}
 }
 
