@@ -31,6 +31,7 @@ func GetAllBuiltinRules() []Rule {
 		NewCloudSecretsRule(),
 		NewCommitMsgRule(),
 		NewYamlRule(),
+		NewDebugStatementsRule(),
 	}
 }
 

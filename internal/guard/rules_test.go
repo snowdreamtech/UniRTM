@@ -643,10 +643,39 @@ func TestBuiltinRules_Yaml(t *testing.T) {
 	}
 }
 
+func TestBuiltinRules_DebugStatements(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	goodJs := filepath.Join(tmpDir, "index.js")
+	_ = os.WriteFile(goodJs, []byte("console.log('hello');\n// debugger;\n"), 0644)
+
+	badJs := filepath.Join(tmpDir, "app.ts")
+	_ = os.WriteFile(badJs, []byte("function test() {\n  debugger;\n}\n"), 0644)
+
+	badPy := filepath.Join(tmpDir, "main.py")
+	_ = os.WriteFile(badPy, []byte("import pdb; pdb.set_trace()\n"), 0644)
+
+	testJs := filepath.Join(tmpDir, "app.test.ts")
+	_ = os.WriteFile(testJs, []byte("debugger;\n"), 0644)
+
+	rule := guard.NewDebugStatementsRule()
+	ctx := context.Background()
+
+	issues, err := rule.Execute(ctx, []string{"index.js", "app.ts", "main.py", "app.test.ts"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) != 2 {
+		t.Fatalf("Expected 2 debug statement issues, got %d: %v", len(issues), issues)
+	}
+}
+
 func TestBuiltinRegistry(t *testing.T) {
 	rules := guard.GetAllBuiltinRules()
-	if len(rules) < 21 {
-		t.Errorf("Expected at least 21 builtin rules, got %d", len(rules))
+	if len(rules) < 22 {
+		t.Errorf("Expected at least 22 builtin rules, got %d", len(rules))
 	}
 }
 
