@@ -43,7 +43,7 @@
         <button
           class="btn-raw-toml"
           :class="{ active: showRawTomlModal }"
-          @click="showRawTomlModal = !showRawTomlModal"
+          @click="handleOpenTomlEditor"
           :title="t('settings.open_toml') || '打开 TOML'"
         >
           <TechIcon id="workbench:edit" :size="14" />
@@ -52,26 +52,77 @@
       </div>
     </div>
 
-    <!-- Main Settings Body: Full-width Content Canvas -->
-    <div class="settings-content-canvas" ref="canvasScrollRef">
-        <!-- Raw TOML View Overlay if toggled -->
-        <div v-if="showRawTomlModal" class="raw-toml-view glass-card">
-          <div class="raw-toml-header">
-            <div class="toml-title-group">
-              <span class="font-mono text-cyan">{{ activeScope === 'user' ? (t('settings.user_toml') || '用户配置') : (t('settings.workspace_toml') || '工作区配置') }}</span>
-              <span class="toml-path font-mono">{{ activeScope === 'user' ? configData?.user?.path : configData?.workspace?.path }}</span>
+    <!-- In-Place Settings TOML Editor Modal (Does NOT leave settings view) -->
+    <Teleport to="body">
+      <div v-if="showRawTomlModal" class="config-editor-modal-overlay" @click.self="handleCloseTomlEditor">
+        <div class="config-editor-modal" role="dialog" aria-modal="true">
+          <div class="config-editor-header">
+            <div class="header-left">
+              <span class="codicon codicon-file-code file-icon"></span>
+              <div class="header-titles">
+                <div class="file-name">{{ activeTomlFileName }}</div>
+                <div class="file-desc">{{ activeTomlFilePath }}</div>
+              </div>
+              <span class="config-badge" :class="isTomlExists ? 'badge-active' : 'badge-draft'">
+                {{ isTomlExists ? (t('guard.config.active') || '已生效') : (t('guard.config.unconfigured') || '未创建 (保存将创建)') }}
+              </span>
+              <span class="scope-tag font-mono">
+                [{{ activeScope === 'user' ? (t('settings.scope_user') || '用户全局配置') : (t('settings.scope_workspace') || '工作区配置') }}]
+              </span>
             </div>
-            <div class="toml-actions">
-              <button class="btn-copy-toml" @click="copyRawToml">
-                {{ isCopied ? ('✓ ' + (t('settings.copied') || '已复制')) : (t('settings.copy_content') || '复制内容') }}
+            <div class="header-actions">
+              <button
+                class="modal-action-btn secondary"
+                @click="handleOpenInExplorer(activeTomlFileName)"
+                :title="t('guard.config.open_in_explorer_title') || '在资源管理器以完整编辑器打开'"
+              >
+                <span class="codicon codicon-screen-full"></span>
+                <span>{{ t('guard.config.open_in_explorer') || '全屏' }}</span>
               </button>
-              <button class="btn btn-icon btn-close-toml" @click="showRawTomlModal = false" :title="t('common.close') || '关闭'">
-                <TechIcon id="workbench:close" :size="14" />
+              <button
+                class="modal-action-btn copy"
+                @click="copyRawToml"
+                :title="t('settings.copy_content') || '复制内容'"
+              >
+                <span class="codicon" :class="isCopied ? 'codicon-check' : 'codicon-copy'"></span>
+                <span>{{ isCopied ? (t('settings.copied') || '已复制') : (t('common.copy') || '复制') }}</span>
+              </button>
+              <button class="modal-action-btn close" @click="handleCloseTomlEditor" title="关闭 (Esc)">
+                <span class="codicon codicon-close"></span>
               </button>
             </div>
           </div>
-          <pre class="raw-toml-pre"><code>{{ currentRawToml || (t('settings.empty_toml') || '# 配置文件尚无自定义内容') }}</code></pre>
+
+          <div class="config-editor-body">
+            <div v-if="isTomlLoading" class="editor-loading">
+              <span class="codicon codicon-loading codicon-modifier-spin"></span>
+              <span>{{ t('guard.config.loading') || '正在加载配置文件...' }}</span>
+            </div>
+            <div ref="tomlMonacoContainer" class="config-monaco-host" v-show="!isTomlLoading"></div>
+          </div>
+
+          <div class="config-editor-footer">
+            <div class="footer-status">
+              <span v-if="isTomlDirty" class="status-dirty">● {{ t('guard.config.unsaved_changes') || '有未保存的更改' }}</span>
+              <span v-else class="status-clean">✔ {{ t('guard.config.all_saved') || '已是最新内容' }}</span>
+            </div>
+            <div class="footer-actions">
+              <button class="modal-btn secondary" @click="handleCloseTomlEditor">
+                {{ t('common.close') || '关闭' }}
+              </button>
+              <button class="modal-btn primary" :disabled="isTomlSaving" @click="handleSaveToml">
+                <span v-if="isTomlSaving" class="codicon codicon-loading codicon-modifier-spin"></span>
+                <span v-else class="codicon codicon-save"></span>
+                <span>{{ t('common.save') || '保存' }}</span>
+              </button>
+            </div>
+          </div>
         </div>
+      </div>
+    </Teleport>
+
+    <!-- Main Settings Body: Full-width Content Canvas -->
+    <div class="settings-content-canvas" ref="canvasScrollRef">
 
         <!-- 1. General Settings -->
         <section
@@ -1755,8 +1806,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { loadMonaco } from "../services/editor/monacoLoader";
+import { useEditorTabs } from "../composables/useEditorTabs";
 import { t, selectedLangSetting, setLanguage, SUPPORTED_LANGUAGES } from "../i18n";
 import { useTheme } from "../composables/useTheme";
 import { useThemeManager } from "../composables/useThemeManager";
@@ -1767,8 +1820,10 @@ import CustomSelect from "../components/CustomSelect.vue";
 import TechIcon from "../components/common/TechIcon.vue";
 
 const router = useRouter();
+const route = useRoute();
 const { showToast } = useToast();
 const { activeScope } = useAppScope();
+const { openTab } = useEditorTabs();
 
 function navigateToMarketplace(tab = "themes") {
   router.push({ path: "/marketplace", query: { tab } });
@@ -3311,10 +3366,158 @@ function onBrowserPresetChange(val: string) {
 }
 
 
+const tomlMonacoContainer = ref<HTMLDivElement | null>(null);
+let tomlMonacoEditor: any = null;
+let tomlMonacoModel: any = null;
+let originalTomlContent = "";
+const isTomlLoading = ref(false);
+const isTomlSaving = ref(false);
+const isTomlDirty = ref(false);
+
+const activeTomlFileName = computed(() => {
+  return activeScope.value === "user" ? "unirtm.toml" : ".unirtm.toml";
+});
+
+const activeTomlFilePath = computed(() => {
+  return activeScope.value === "user"
+    ? (configData.value?.user?.path || "~/.config/unirtm/unirtm.toml")
+    : (configData.value?.workspace?.path || "./.unirtm.toml");
+});
+
+const isTomlExists = computed(() => {
+  return activeScope.value === "user"
+    ? !!configData.value?.user?.exists
+    : !!configData.value?.workspace?.exists;
+});
+
+async function handleOpenTomlEditor() {
+  showRawTomlModal.value = true;
+  isTomlLoading.value = true;
+  isTomlDirty.value = false;
+
+  let content = "";
+  try {
+    const res = await fetch(`/api/config/raw?scope=${activeScope.value}`);
+    if (res.ok) {
+      const data = await res.json();
+      content = data.content ?? "";
+    } else {
+      content = currentRawToml.value || "# UniRTM Configuration\n";
+    }
+  } catch {
+    content = currentRawToml.value || "# UniRTM Configuration\n";
+  } finally {
+    isTomlLoading.value = false;
+  }
+
+  originalTomlContent = content;
+
+  await nextTick();
+  if (!tomlMonacoContainer.value) return;
+
+  const monaco = await loadMonaco();
+  const isDark = document.documentElement.getAttribute("data-theme") !== "light";
+
+  if (tomlMonacoModel) {
+    tomlMonacoModel.dispose();
+  }
+  tomlMonacoModel = monaco.editor.createModel(content, "toml");
+
+  if (!tomlMonacoEditor) {
+    tomlMonacoEditor = monaco.editor.create(tomlMonacoContainer.value, {
+      model: tomlMonacoModel,
+      theme: isDark ? "vs-dark" : "vs",
+      automaticLayout: true,
+      fontSize: 13,
+      lineNumbers: "on",
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      wordWrap: "on",
+      tabSize: 2,
+    });
+
+    tomlMonacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      handleSaveToml();
+    });
+  } else {
+    tomlMonacoEditor.setModel(tomlMonacoModel);
+    monaco.editor.setTheme(isDark ? "vs-dark" : "vs");
+  }
+
+  tomlMonacoModel.onDidChangeContent(() => {
+    if (!tomlMonacoModel) return;
+    isTomlDirty.value = tomlMonacoModel.getValue() !== originalTomlContent;
+  });
+}
+
+async function handleSaveToml() {
+  if (!tomlMonacoModel) return;
+  isTomlSaving.value = true;
+  const content = tomlMonacoModel.getValue();
+  try {
+    const res = await fetch("/api/config/raw", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        scope: activeScope.value,
+        content,
+      }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      originalTomlContent = content;
+      isTomlDirty.value = false;
+      showToast(t("settings.save_toml_success") || "已成功保存配置文件", "success");
+      await loadConfigData();
+    } else {
+      showToast(data.error || (t("settings.save_toml_failed") || "保存配置文件失败"), "error");
+    }
+  } catch (err: any) {
+    showToast(`保存失败: ${err.message}`, "error");
+  } finally {
+    isTomlSaving.value = false;
+  }
+}
+
+function handleCloseTomlEditor() {
+  if (tomlMonacoModel) {
+    tomlMonacoModel.dispose();
+    tomlMonacoModel = null;
+  }
+  if (tomlMonacoEditor) {
+    tomlMonacoEditor.dispose();
+    tomlMonacoEditor = null;
+  }
+  showRawTomlModal.value = false;
+  isTomlDirty.value = false;
+  if (route.query.open_toml || route.query.file) {
+    const q = { ...route.query };
+    delete q.open_toml;
+    delete q.file;
+    router.replace({ query: q });
+  }
+}
+
+function handleOpenInExplorer(fileName: string) {
+  handleCloseTomlEditor();
+  openTab({ path: fileName, name: fileName });
+  router.push({
+    name: "explorer",
+    query: {
+      from: "settings",
+      file: fileName,
+      scope: activeScope.value,
+    },
+  }).catch(() => {});
+  showToast(`已在代码编辑器中打开 ${fileName}`, "info");
+}
+
 function copyRawToml() {
-  if (currentRawToml.value) {
-    navigator.clipboard.writeText(currentRawToml.value);
+  const content = tomlMonacoModel ? tomlMonacoModel.getValue() : currentRawToml.value;
+  if (content) {
+    navigator.clipboard.writeText(content);
     isCopied.value = true;
+    showToast(t("settings.copied") || "已复制到剪贴板", "success");
     setTimeout(() => {
       isCopied.value = false;
     }, 2000);
@@ -3790,7 +3993,32 @@ onMounted(() => {
       scrollToCategory(props.activeCategory!);
     }, 150);
   }
+  if (route.query.open_toml === "true" || route.query.file === ".unirtm.toml" || route.query.file === "unirtm.toml") {
+    handleOpenTomlEditor();
+  }
 });
+
+onBeforeUnmount(() => {
+  if (tomlMonacoModel) {
+    tomlMonacoModel.dispose();
+    tomlMonacoModel = null;
+  }
+  if (tomlMonacoEditor) {
+    tomlMonacoEditor.dispose();
+    tomlMonacoEditor = null;
+  }
+});
+
+watch(
+  () => [route.query.open_toml, route.query.file],
+  ([openToml, file]) => {
+    if (openToml === "true" || file === ".unirtm.toml" || file === "unirtm.toml") {
+      if (!showRawTomlModal.value) {
+        handleOpenTomlEditor();
+      }
+    }
+  }
+);
 </script>
 
 <style scoped>
@@ -4429,68 +4657,295 @@ onMounted(() => {
   opacity: 0.8;
 }
 
-/* Raw TOML View */
-.raw-toml-view {
-  padding: 16px;
-  border-radius: 8px;
-  border: 1px solid var(--card-border);
-  background: var(--card-bg);
-  margin-bottom: 12px;
+/* Settings TOML Monaco Editor Modal */
+.config-editor-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 24px;
 }
 
-.raw-toml-header {
+.config-editor-modal {
+  width: 920px;
+  max-width: 94vw;
+  height: 660px;
+  max-height: 90vh;
+  background: var(--vscode-editor-background, #1e1e1e);
+  border: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+:root[data-theme="light"] .config-editor-modal {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.config-editor-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  padding: 12px 18px;
+  background: var(--vscode-editorGroupHeader-tabsBackground, #252526);
+  border-bottom: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
 }
 
-.toml-title-group {
+:root[data-theme="light"] .config-editor-header {
+  background: #f8fafc;
+  border-bottom-color: #e2e8f0;
+}
+
+.config-editor-header .header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
-.toml-path {
-  font-size: 0.76rem;
-  color: var(--text-muted);
+.config-editor-header .file-icon {
+  font-size: 20px;
+  color: #38bdf8;
 }
 
-.toml-actions {
+.config-editor-header .file-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main, #fff);
+  font-family: monospace;
+}
+
+.config-editor-header .file-desc {
+  font-size: 11px;
+  color: var(--text-muted, #94a3b8);
+}
+
+.scope-tag {
+  font-size: 11px;
+  color: var(--accent-cyan, #06b6d4);
+  background: rgba(6, 182, 212, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.config-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.config-badge.badge-active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.config-badge.badge-draft {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.config-editor-header .header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.btn-copy-toml {
-  padding: 4px 10px;
-  background: var(--input-bg);
-  border: 1px solid var(--card-border);
-  color: var(--text-main);
+.modal-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
   border-radius: 4px;
-  font-size: 0.78rem;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.btn-close-toml {
+.modal-action-btn.secondary {
+  background: #2563eb;
+  color: #ffffff;
+  border: 1px solid #1d4ed8;
+}
+
+.modal-action-btn.secondary:hover {
+  background: #1d4ed8;
+  border-color: #1e40af;
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .modal-action-btn.secondary {
+  background: #0284c7;
+  color: #ffffff;
+  border: 1px solid #0369a1;
+}
+
+:root[data-theme="light"] .modal-action-btn.secondary:hover {
+  background: #0369a1;
+  color: #ffffff;
+}
+
+.modal-action-btn.copy {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.modal-action-btn.copy:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .modal-action-btn.copy {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+:root[data-theme="light"] .modal-action-btn.copy:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.modal-action-btn.close {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 14px;
+  padding: 5px 8px;
+  border-radius: 4px;
+}
+
+.modal-action-btn.close:hover {
+  color: #ffffff;
+  background: #ef4444;
+  border-color: #dc2626;
+}
+
+:root[data-theme="light"] .modal-action-btn.close {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+:root[data-theme="light"] .modal-action-btn.close:hover {
+  color: #ffffff;
+  background: #ef4444;
+  border-color: #dc2626;
+}
+
+.config-editor-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: var(--vscode-editor-background, #1e1e1e);
+}
+
+:root[data-theme="light"] .config-editor-body {
+  background: #ffffff;
+}
+
+.config-monaco-host {
+  width: 100%;
+  height: 100%;
+}
+
+.editor-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-muted, #94a3b8);
+  font-size: 13px;
+}
+
+.config-editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  background: var(--vscode-editorGroupHeader-tabsBackground, #252526);
+  border-top: 1px solid var(--vscode-panel-border, rgba(255, 255, 255, 0.08));
+}
+
+:root[data-theme="light"] .config-editor-footer {
+  background: #f8fafc;
+  border-top-color: #e2e8f0;
+}
+
+.footer-status .status-dirty {
+  color: #f59e0b;
+  font-size: 12px;
+}
+
+.footer-status .status-clean {
+  color: #10b981;
+  font-size: 12px;
+}
+
+.footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.modal-btn.secondary {
   background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  cursor: pointer;
+  border-color: var(--vscode-panel-border, rgba(255, 255, 255, 0.15));
+  color: var(--text-main, #e2e8f0);
 }
 
-.raw-toml-pre {
-  background: #060911;
-  padding: 14px;
-  border-radius: 6px;
-  border: 1px solid var(--card-border);
-  overflow-x: auto;
-  max-height: 260px;
-  font-size: 0.82rem;
-  color: #38bdf8;
-  margin: 0;
-  line-height: 1.5;
+.modal-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme="light"] .modal-btn.secondary {
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+:root[data-theme="light"] .modal-btn.secondary:hover {
+  background: #f1f5f9;
+}
+
+.modal-btn.primary {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.modal-btn.primary:hover:not(:disabled) {
+  background: #0369a1;
+}
+
+.modal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* ─── Network & Mirror Matrix Styles ─── */

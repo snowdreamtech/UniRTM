@@ -1174,4 +1174,8 @@ export const koKr: TranslationDict = {
   "guard.config.all_saved": "All changes saved",
   "guard.config.unsaved_changes": "Unsaved changes",
   "guard.config.loading": "Loading configuration file...",
+  "settings.return_to_settings": "Return to Settings",
+  "settings.editing_context": "Editing Settings configuration file",
+  "settings.save_toml_success": "Configuration file saved successfully",
+  "settings.save_toml_failed": "Failed to save configuration file",
 };

@@ -930,6 +930,19 @@ func setupUIMux(distFS fs.FS) *http.ServeMux {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
 	})
 
+	mux.HandleFunc("/api/config/raw", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet {
+			handleGetConfigRaw(w, r)
+			return
+		} else if r.Method == http.MethodPost || r.Method == http.MethodPut {
+			handlePostConfigRaw(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "method not allowed"})
+	})
+
 	mux.HandleFunc("/api/system/browsers", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
@@ -1242,6 +1255,81 @@ func handleGetConfig(w http.ResponseWriter, r *http.Request) {
 			"aliases":     wsCfg.Aliases,
 		},
 		"detected_browsers": detectInstalledBrowsers(),
+	})
+}
+
+func handleGetConfigRaw(w http.ResponseWriter, r *http.Request) {
+	scope := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("scope")))
+	var targetPath string
+	if scope == "user" {
+		targetPath = config.GetGlobalConfigPath()
+	} else {
+		targetPath = ".unirtm.toml"
+	}
+	exists := false
+	var content string
+	if data, err := os.ReadFile(targetPath); err == nil {
+		exists = true
+		content = string(data)
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"scope":   scope,
+		"path":    targetPath,
+		"exists":  exists,
+		"content": content,
+	})
+}
+
+func handlePostConfigRaw(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Scope   string `json:"scope"`
+		Content string `json:"content"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid json body: " + err.Error()})
+		return
+	}
+	scope := strings.ToLower(strings.TrimSpace(body.Scope))
+	if scope != "user" && scope != "workspace" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "scope must be 'user' or 'workspace'"})
+		return
+	}
+
+	// Validate TOML syntax before saving
+	var dummy map[string]interface{}
+	if err := toml.Unmarshal([]byte(body.Content), &dummy); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid TOML syntax: " + err.Error()})
+		return
+	}
+
+	var targetPath string
+	if scope == "user" {
+		targetPath = config.GetGlobalConfigPath()
+	} else {
+		targetPath = ".unirtm.toml"
+	}
+
+	parent := filepath.Dir(targetPath)
+	if err := os.MkdirAll(parent, 0755); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to create directory: " + err.Error()})
+		return
+	}
+
+	if err := os.WriteFile(targetPath, []byte(body.Content), 0644); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"error": "failed to write file: " + err.Error()})
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"scope":   scope,
+		"path":    targetPath,
+		"size":    len(body.Content),
 	})
 }
 

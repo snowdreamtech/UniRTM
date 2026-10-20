@@ -1,16 +1,16 @@
 <template>
   <div class="view-container explorer-view" id="view-explorer">
-    <!-- Quality Guard Context Return Banner -->
-    <div v-if="route.query.from === 'guard'" class="return-guard-banner">
+    <!-- Context Return Banner (Quality Guard or Settings) -->
+    <div v-if="route.query.from === 'guard' || route.query.from === 'settings'" class="return-guard-banner">
       <div class="return-guard-content">
-        <button class="return-guard-btn" @click="handleReturnToGuard">
+        <button class="return-guard-btn" @click="handleReturnContext">
           <span class="codicon codicon-arrow-left"></span>
-          <span>{{ t("guard.actions.return_to_guard") || "返回质量守卫" }}</span>
+          <span>{{ route.query.from === 'settings' ? (t("settings.return_to_settings") || "返回设置") : (t("guard.actions.return_to_guard") || "返回质量守卫") }}</span>
         </button>
         <span class="return-guard-divider">|</span>
         <span class="return-guard-info">
-          <span class="codicon codicon-shield"></span>
-          {{ t("guard.config.editing_context") || "正在编辑质量守卫配置文件" }}: <strong>{{ route.query.file || activeTab?.name }}</strong>
+          <span class="codicon" :class="route.query.from === 'settings' ? 'codicon-settings-gear' : 'codicon-shield'"></span>
+          {{ route.query.from === 'settings' ? (t("settings.editing_context") || "正在编辑设置配置文件") : (t("guard.config.editing_context") || "正在编辑质量守卫配置文件") }}: <strong>{{ route.query.file || activeTab?.name }}</strong>
         </span>
       </div>
       <button class="return-guard-dismiss" @click="handleDismissGuardBanner" title="关闭横幅">
@@ -668,8 +668,13 @@ import { useGit } from "../composables/useGit";
 const router = useRouter();
 const route = useRoute();
 
-function handleReturnToGuard() {
-  router.push({ path: "/scm", query: { scope: "workspace", tab: "guard" } });
+function handleReturnContext() {
+  if (route.query.from === "settings") {
+    const scope = (route.query.scope as string) || "workspace";
+    router.push({ path: "/settings", query: { scope } });
+  } else {
+    router.push({ path: "/scm", query: { scope: "workspace", tab: "guard" } });
+  }
 }
 
 function handleDismissGuardBanner() {
@@ -1145,7 +1150,23 @@ onMounted(() => {
       emit("open-drawer", "terminal");
     })
   );
+
+  const qFile = (route.query.file as string) || "";
+  if (qFile) {
+    const fileName = qFile.split("/").pop() || qFile;
+    openTab({ path: qFile, name: fileName });
+  }
 });
+
+watch(
+  () => route.query.file,
+  (newFile) => {
+    if (newFile && typeof newFile === "string") {
+      const fileName = newFile.split("/").pop() || newFile;
+      openTab({ path: newFile, name: fileName });
+    }
+  }
+);
 
 
 onBeforeUnmount(() => {
