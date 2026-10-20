@@ -43,8 +43,8 @@
         <button
           class="btn-raw-toml"
           :class="{ active: showRawTomlModal }"
-          @click="handleOpenTomlEditor"
-          :title="t('settings.open_toml') || '打开 TOML'"
+          @click="showRawTomlModal ? handleCloseTomlEditor() : handleOpenTomlEditor()"
+          :title="showRawTomlModal ? (t('settings.close_toml') || '关闭 TOML') : (t('settings.open_toml') || '打开 TOML')"
         >
           <TechIcon id="workbench:edit" :size="14" />
           <span>{{ showRawTomlModal ? (t('settings.close_toml') || '关闭 TOML') : (t('settings.open_toml') || '打开 TOML') }}</span>
@@ -1806,7 +1806,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from "vue";
+import { ref, computed, onMounted, onActivated, onDeactivated, onBeforeUnmount, watch, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { loadMonaco } from "../services/editor/monacoLoader";
 import { useEditorTabs } from "../composables/useEditorTabs";
@@ -3490,7 +3490,7 @@ function handleCloseTomlEditor() {
   }
   showRawTomlModal.value = false;
   isTomlDirty.value = false;
-  if (route.query.open_toml || route.query.file) {
+  if (route.name === "settings" && (route.query.open_toml || route.query.file)) {
     const q = { ...route.query };
     delete q.open_toml;
     delete q.file;
@@ -3499,7 +3499,17 @@ function handleCloseTomlEditor() {
 }
 
 function handleOpenInExplorer(fileName: string) {
-  handleCloseTomlEditor();
+  if (tomlMonacoModel) {
+    tomlMonacoModel.dispose();
+    tomlMonacoModel = null;
+  }
+  if (tomlMonacoEditor) {
+    tomlMonacoEditor.dispose();
+    tomlMonacoEditor = null;
+  }
+  showRawTomlModal.value = false;
+  isTomlDirty.value = false;
+
   openTab({ path: fileName, name: fileName });
   router.push({
     name: "explorer",
@@ -3993,8 +4003,28 @@ onMounted(() => {
       scrollToCategory(props.activeCategory!);
     }, 150);
   }
-  if (route.query.open_toml === "true" || route.query.file === ".unirtm.toml" || route.query.file === "unirtm.toml") {
+  if (
+    route.name === "settings" &&
+    (route.query.open_toml === "true" || route.query.file === ".unirtm.toml" || route.query.file === "unirtm.toml")
+  ) {
     handleOpenTomlEditor();
+  }
+});
+
+onActivated(() => {
+  if (
+    route.name === "settings" &&
+    (route.query.open_toml === "true" || route.query.file === ".unirtm.toml" || route.query.file === "unirtm.toml")
+  ) {
+    if (!showRawTomlModal.value) {
+      handleOpenTomlEditor();
+    }
+  }
+});
+
+onDeactivated(() => {
+  if (showRawTomlModal.value) {
+    handleCloseTomlEditor();
   }
 });
 
@@ -4010,8 +4040,11 @@ onBeforeUnmount(() => {
 });
 
 watch(
-  () => [route.query.open_toml, route.query.file],
-  ([openToml, file]) => {
+  () => [route.name, route.query.open_toml, route.query.file],
+  ([name, openToml, file]) => {
+    if (name !== "settings") {
+      return;
+    }
     if (openToml === "true" || file === ".unirtm.toml" || file === "unirtm.toml") {
       if (!showRawTomlModal.value) {
         handleOpenTomlEditor();
