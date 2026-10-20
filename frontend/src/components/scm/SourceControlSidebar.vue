@@ -469,9 +469,14 @@ const quickCommitPrefixes = [
   { label: 'feat', prefix: 'feat: ', title: '新功能 (Feature)' },
   { label: 'fix', prefix: 'fix: ', title: '修复缺陷 (Bug fix)' },
   { label: 'docs', prefix: 'docs: ', title: '文档变更 (Documentation)' },
+  { label: 'style', prefix: 'style: ', title: '代码格式 (Code style)' },
   { label: 'refactor', prefix: 'refactor: ', title: '代码重构 (Refactor)' },
+  { label: 'perf', prefix: 'perf: ', title: '性能优化 (Performance)' },
   { label: 'test', prefix: 'test: ', title: '测试用例 (Test)' },
-  { label: 'chore', prefix: 'chore: ', title: '构建与日常维护 (Chore)' },
+  { label: 'build', prefix: 'build: ', title: '构建与依赖 (Build)' },
+  { label: 'ci', prefix: 'ci: ', title: '持续集成 (CI/CD)' },
+  { label: 'chore', prefix: 'chore: ', title: '日常维护 (Chore)' },
+  { label: 'revert', prefix: 'revert: ', title: '代码回滚 (Revert)' },
 ];
 
 const commitValidation = computed<CommitMessageValidation>(() => {

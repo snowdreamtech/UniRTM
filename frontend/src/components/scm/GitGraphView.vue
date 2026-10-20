@@ -1142,8 +1142,14 @@ const commitTypeFilterOptions = [
   { label: "feat", value: "feat", title: "仅看新功能 (Features)" },
   { label: "fix", value: "fix", title: "仅看缺陷修复 (Bug Fixes)" },
   { label: "docs", value: "docs", title: "仅看文档更新 (Docs)" },
+  { label: "style", value: "style", title: "仅看代码风格 (Style)" },
   { label: "refactor", value: "refactor", title: "仅看重构 (Refactor)" },
-  { label: "chore", value: "chore", title: "仅看日常维护与构建 (Chore)" },
+  { label: "perf", value: "perf", title: "仅看性能优化 (Performance)" },
+  { label: "test", value: "test", title: "仅看测试 (Test)" },
+  { label: "build", value: "build", title: "仅看构建依赖 (Build)" },
+  { label: "ci", value: "ci", title: "仅看持续集成 (CI/CD)" },
+  { label: "chore", value: "chore", title: "仅看日常维护 (Chore)" },
+  { label: "revert", value: "revert", title: "仅看代码回滚 (Revert)" },
 ];
 const tableWrapperRef = ref<HTMLElement | null>(null);
 const isLoadingDetail = ref(false);
@@ -2529,6 +2535,18 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
   background: rgba(245, 158, 11, 0.18);
   color: #fbbf24;
   border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.cc-type-badge.cc-perf {
+  background: rgba(6, 182, 212, 0.18);
+  color: #22d3ee;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+.cc-type-badge.cc-revert {
+  background: rgba(244, 63, 94, 0.18);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.3);
 }
 
 .cc-type-badge.cc-chore,
