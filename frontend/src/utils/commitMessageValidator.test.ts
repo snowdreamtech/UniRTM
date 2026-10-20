@@ -58,4 +58,18 @@ describe('validateCommitMessage', () => {
     expect(res.isValid).toBe(false);
     expect(res.warning).toBeDefined();
   });
+
+  it('rejects header exceeding 120 characters limit', () => {
+    const longHeader = 'feat: ' + 'a'.repeat(125);
+    const res = validateCommitMessage(longHeader);
+    expect(res.isValid).toBe(false);
+    expect(res.warning).toContain('120');
+  });
+
+  it('gives soft advisory for header between 73 and 120 characters', () => {
+    const mediumHeader = 'feat: ' + 'a'.repeat(80);
+    const res = validateCommitMessage(mediumHeader);
+    expect(res.isValid).toBe(true);
+    expect(res.warning).toContain('72');
+  });
 });

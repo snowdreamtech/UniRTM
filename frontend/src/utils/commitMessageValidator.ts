@@ -98,7 +98,20 @@ export function validateCommitMessage(message: string): CommitMessageValidation 
     };
   }
 
-  // 6. First line length advisory (max 72)
+  // 6. Header max length enforcement (max 120)
+  if (firstLine.length > 120) {
+    return {
+      isValid: false,
+      type,
+      scope,
+      isBreaking,
+      description,
+      warning: '首行超过 120 字符上限 (Header exceeds 120 characters limit)',
+      canAutoFix: false,
+    };
+  }
+
+  // 7. First line length advisory (soft recommendation: 72 chars)
   if (firstLine.length > 72) {
     return {
       isValid: true,

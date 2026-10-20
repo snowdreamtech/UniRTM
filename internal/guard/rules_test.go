@@ -584,6 +584,26 @@ func TestBuiltinRules_CommitMsg(t *testing.T) {
 		t.Errorf("Expected subject with trailing period to fail")
 	}
 
+	// 120 character limits verification
+	longSubject := strings.Repeat("a", 125)
+	okLongHeader, reasonLong := guard.ValidateCommitMessage("feat: " + longSubject)
+	if okLongHeader {
+		t.Errorf("Expected commit header exceeding 120 chars to fail, reason: %s", reasonLong)
+	}
+
+	// Chinese characters are allowed (no-chinese restriction not applied)
+	okChinese, _ := guard.ValidateCommitMessage("feat(ui): 支持中文描述信息")
+	if !okChinese {
+		t.Errorf("Expected Chinese commit message to be allowed")
+	}
+
+	// Long body and URLs (no line length limit) must pass
+	longBodyMsg := "feat: short header\n\n" + strings.Repeat("https://example.com/very/long/url/path/that/exceeds/100/characters/for/documentation/links/and/references\n", 5)
+	okLongBody, reasonBody := guard.ValidateCommitMessage(longBodyMsg)
+	if !okLongBody {
+		t.Errorf("Expected message with long body lines to pass without limit, failed: %s", reasonBody)
+	}
+
 	// 2. Rule execution against COMMIT_EDITMSG file
 	tmpDir := t.TempDir()
 	validMsgFile := filepath.Join(tmpDir, "COMMIT_EDITMSG")

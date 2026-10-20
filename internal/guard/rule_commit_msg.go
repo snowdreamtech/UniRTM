@@ -25,6 +25,13 @@ var AllowedCommitTypes = []string{
 	"perf", "test", "build", "ci", "chore", "revert",
 }
 
+const (
+	// HeaderMaxLength specifies maximum allowed character count for commit header line (corresponding to commitlint header-max-length: 120)
+	HeaderMaxLength = 120
+	// SubjectMaxLength specifies maximum allowed character count for commit subject (corresponding to commitlint subject-max-length: 120)
+	SubjectMaxLength = 120
+)
+
 // ValidateCommitMessage validates raw commit message string against Conventional Commits specification
 func ValidateCommitMessage(msg string) (bool, string) {
 	lines := strings.Split(strings.ReplaceAll(msg, "\r\n", "\n"), "\n")
@@ -52,6 +59,11 @@ func ValidateCommitMessage(msg string) (bool, string) {
 		return true, ""
 	}
 
+	// Enforce header-max-length: [2, "always", 120]
+	if len([]rune(header)) > HeaderMaxLength {
+		return false, fmt.Sprintf("Commit header line exceeds %d characters (current: %d)", HeaderMaxLength, len([]rune(header)))
+	}
+
 	matches := conventionalCommitRegex.FindStringSubmatch(header)
 	if len(matches) == 0 {
 		return false, fmt.Sprintf(
@@ -63,6 +75,11 @@ func ValidateCommitMessage(msg string) (bool, string) {
 	subject := strings.TrimSpace(matches[4])
 	if subject == "" {
 		return false, "Commit message subject cannot be empty"
+	}
+
+	// Enforce subject-max-length: [2, "always", 120]
+	if len([]rune(subject)) > SubjectMaxLength {
+		return false, fmt.Sprintf("Commit subject exceeds %d characters (current: %d)", SubjectMaxLength, len([]rune(subject)))
 	}
 
 	if strings.HasSuffix(subject, ".") {
