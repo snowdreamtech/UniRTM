@@ -177,33 +177,19 @@ fi
 output = "interleaved"
 
 [tasks.fix]
-description = "Auto-fix code format, security flaws, and dependencies where supported"
-depends = ["lint", "audit:fix"]
+description = "Auto-fix code format, text hygiene, and dependencies in-place"
+depends = ["audit:fix"]
+run = "unirtm fix --all"
 output = "interleaved"
 
 [tasks.lint]
-description = "Fast lint: Check only modified files (staged & unstaged)"
-run = '''
-files=$(git ls-files -m -o --exclude-standard)
-if [ -z "$files" ]; then
-    echo '✨ No changed files to lint.'
-else
-    unirtm exec -- pre-commit run --files $files || {
-        echo '⚠️  First pass failed. Running second check...'
-        unirtm exec -- pre-commit run --files $files
-    }
-fi
-'''
+description = "Fast lint: Inspect changed files with Go-native Quality Guard"
+run = "unirtm check"
 output = "interleaved"
 
 [tasks.lint-all]
-description = "Full lint: Check all project files (used in CI or verify)"
-run = '''
-unirtm exec -- pre-commit run --all-files || {
-    echo '⚠️  First pass failed. Running second check...'
-    unirtm exec -- pre-commit run --all-files
-}
-'''
+description = "Full lint: Audit all repository files with Go-native Quality Guard"
+run = "unirtm check --all"
 output = "interleaved"
 
 [tasks.test]
@@ -215,6 +201,11 @@ description = "Run Go unit tests for all packages recursively"
 run = "unirtm exec -- go test -cover -v -timeout 10m -p 4 ./..."
 output = "interleaved"
 env = { GOTOOLCHAIN = 'auto', CGO_ENABLED = '0' }
+
+[tasks."test:frontend"]
+description = "Run Vue/Frontend Vitest unit tests"
+run = "cd frontend && npm test"
+output = "interleaved"
 
 [tasks."test:shell"]
 description = "Run Bats tests for install.sh"
@@ -231,9 +222,14 @@ description = "Run Pester tests for install.ps1"
 run = "pwsh -NoProfile -EncodedCommand JABjACAAPQAgAE4AZQB3AC0AUABlAHMAdABlAHIAQwBvAG4AZgBpAGcAdQByAGEAdABpAG8AbgA7ACAAJABjAC4AUgB1AG4ALgBQAGEAdABoACAAPQAgACcAdABlAHMAdABzAC8AaQBuAHMAdABhAGwAbAAuAFQAZQBzAHQAcwAuAHAAcwAxACcAOwAgACQAYwAuAFIAdQBuAC4ARQB4AGkAdAAgAD0AIAAkAHQAcgB1AGUAOwAgAEkAbgB2AG8AawBlAC0AUABlAHMAdABlAHIAIAAtAEMAbwBuAGYAaQBnAHUAcgBhAHQAaQBvAG4AIAAkAGMA"
 output = "interleaved"
 
+[tasks."test:all"]
+description = "Run full test suite across Go, Frontend, and shell scripts"
+depends = ["test", "test:frontend", "test:shell"]
+output = "interleaved"
+
 [tasks.verify]
-description = "Run full local verification sequentially (lint-all, test, audit) to prevent CI OOM"
-depends = ["lint-all", "test", "audit"]
+description = "Run full local verification sequentially (lint-all, test:all, audit) to prevent CI OOM"
+depends = ["lint-all", "test:all", "audit"]
 output = "interleaved"
 
 [tasks."audit:trivy-update"]
