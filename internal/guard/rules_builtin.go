@@ -29,6 +29,7 @@ func GetAllBuiltinRules() []Rule {
 		NewMixedLineEndingsRule(),
 		NewXmlRule(),
 		NewCloudSecretsRule(),
+		NewCommitMsgRule(),
 	}
 }
 

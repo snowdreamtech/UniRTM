@@ -561,12 +561,66 @@ func TestBuiltinRules_CloudSecrets(t *testing.T) {
 	}
 }
 
-func TestBuiltinRegistry(t *testing.T) {
-	rules := guard.GetAllBuiltinRules()
-	if len(rules) < 19 {
-		t.Errorf("Expected at least 19 builtin rules, got %d", len(rules))
+func TestBuiltinRules_CommitMsg(t *testing.T) {
+	// 1. Direct string validation
+	ok, _ := guard.ValidateCommitMessage("feat(guard): add commit-msg validation")
+	if !ok {
+		t.Errorf("Expected valid conventional commit to pass")
+	}
+
+	ok, _ = guard.ValidateCommitMessage("Merge branch 'main' into dev")
+	if !ok {
+		t.Errorf("Expected git merge commit to pass")
+	}
+
+	okBadType, _ := guard.ValidateCommitMessage("unknown(guard): something")
+	if okBadType {
+		t.Errorf("Expected invalid type to fail")
+	}
+
+	okTrailingPeriod, _ := guard.ValidateCommitMessage("fix: fix bug.")
+	if okTrailingPeriod {
+		t.Errorf("Expected subject with trailing period to fail")
+	}
+
+	// 2. Rule execution against COMMIT_EDITMSG file
+	tmpDir := t.TempDir()
+	validMsgFile := filepath.Join(tmpDir, "COMMIT_EDITMSG")
+	_ = os.WriteFile(validMsgFile, []byte("docs: update README\n\nDetailed explanation here.\n"), 0644)
+
+	rule := guard.NewCommitMsgRule()
+	ctx := context.Background()
+
+	issues, err := rule.Execute(ctx, []string{"COMMIT_EDITMSG"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) != 0 {
+		t.Fatalf("Expected 0 issues for valid commit message, got: %v", issues)
+	}
+
+	// Corrupt commit message
+	_ = os.WriteFile(validMsgFile, []byte("invalid commit message without type\n"), 0644)
+	issuesBad, err := rule.Execute(ctx, []string{"COMMIT_EDITMSG"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issuesBad) != 1 {
+		t.Fatalf("Expected 1 issue for invalid commit message, got: %v", issuesBad)
 	}
 }
+
+func TestBuiltinRegistry(t *testing.T) {
+	rules := guard.GetAllBuiltinRules()
+	if len(rules) < 20 {
+		t.Errorf("Expected at least 20 builtin rules, got %d", len(rules))
+	}
+}
+
 
 
 
