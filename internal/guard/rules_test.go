@@ -698,10 +698,42 @@ func TestBuiltinRules_BinaryArtifacts(t *testing.T) {
 	}
 }
 
+func TestBuiltinRules_EmptyCodeFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	goodSource := filepath.Join(tmpDir, "main.go")
+	_ = os.WriteFile(goodSource, []byte("package main\n"), 0644)
+
+	whitelistedInit := filepath.Join(tmpDir, "__init__.py")
+	_ = os.WriteFile(whitelistedInit, []byte(""), 0644)
+
+	whitelistedKeep := filepath.Join(tmpDir, ".gitkeep")
+	_ = os.WriteFile(whitelistedKeep, []byte(""), 0644)
+
+	badEmptyGo := filepath.Join(tmpDir, "empty.go")
+	_ = os.WriteFile(badEmptyGo, []byte(""), 0644)
+
+	badEmptyTs := filepath.Join(tmpDir, "empty.ts")
+	_ = os.WriteFile(badEmptyTs, []byte(""), 0644)
+
+	rule := guard.NewEmptyCodeFilesRule()
+	ctx := context.Background()
+
+	issues, err := rule.Execute(ctx, []string{"main.go", "__init__.py", ".gitkeep", "empty.go", "empty.ts"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) != 2 {
+		t.Fatalf("Expected 2 empty file issues, got %d: %v", len(issues), issues)
+	}
+}
+
 func TestBuiltinRegistry(t *testing.T) {
 	rules := guard.GetAllBuiltinRules()
-	if len(rules) < 23 {
-		t.Errorf("Expected at least 23 builtin rules, got %d", len(rules))
+	if len(rules) < 24 {
+		t.Errorf("Expected at least 24 builtin rules, got %d", len(rules))
 	}
 }
 

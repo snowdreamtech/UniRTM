@@ -33,6 +33,7 @@ func GetAllBuiltinRules() []Rule {
 		NewYamlRule(),
 		NewDebugStatementsRule(),
 		NewBinaryArtifactsRule(),
+		NewEmptyCodeFilesRule(),
 	}
 }
 
