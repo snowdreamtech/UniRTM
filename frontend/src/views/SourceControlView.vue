@@ -8,9 +8,15 @@
         <span
           v-if="isCommitDiff"
           class="diff-status-pill pill-commit"
-          :title="`${t('scm.diff.commit_badge')}: ${commitHash}`"
+          :title="`${t('scm.diff.commit_badge')}: ${commitHash}\n${commitSubject}`"
         >
-          {{ t('scm.diff.commit_badge') }} {{ commitHash.slice(0, 7) }}{{ parentHash ? ' vs ' + parentHash.slice(0, 7) : '' }}
+          <span class="commit-pill-hash">{{ commitHash.slice(0, 7) }}{{ parentHash ? ' vs ' + parentHash.slice(0, 7) : '' }}</span>
+          <span v-if="parsedCommitSubject" class="commit-pill-type" :class="'cc-' + parsedCommitSubject.type">
+            {{ parsedCommitSubject.type }}<span v-if="parsedCommitSubject.scope">({{ parsedCommitSubject.scope }})</span>
+          </span>
+          <span v-if="parsedCommitSubject?.description || commitSubject" class="commit-pill-msg">
+            {{ parsedCommitSubject?.description || commitSubject }}
+          </span>
         </span>
         <span
           v-else
@@ -944,6 +950,7 @@ const {
   fetchBranches,
   fetchDiff,
   fetchCommitDiff,
+  fetchCommitDetail,
   fetchLog,
   stage,
   unstage,
@@ -1656,6 +1663,25 @@ const isCommitDiff = computed(() => {
   return !!commitHash.value;
 });
 
+const currentCommitDetail = ref<any | null>(null);
+
+const commitSubject = computed(() => {
+  if (!currentCommitDetail.value?.message) return "";
+  return currentCommitDetail.value.message.split(/\r?\n/)[0];
+});
+
+const parsedCommitSubject = computed(() => {
+  if (!commitSubject.value) return null;
+  const m = commitSubject.value.match(/^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(([a-zA-Z0-9_.\-/]+)\))?(!)?: (.+)$/);
+  if (!m) return null;
+  return {
+    type: m[1],
+    scope: m[3] || null,
+    isBreaking: !!m[4],
+    description: m[5],
+  };
+});
+
 function getFileName(filePath: string): string {
   const parts = filePath.split("/");
   return parts[parts.length - 1] || filePath;
@@ -1673,7 +1699,11 @@ async function renderDiff(filePath: string, staged: boolean) {
   let diff: any = null;
   if (isCommitDiff.value) {
     diff = await fetchCommitDiff(commitHash.value, filePath, parentHash.value || undefined);
+    fetchCommitDetail(commitHash.value).then((d) => {
+      currentCommitDetail.value = d;
+    }).catch(() => {});
   } else {
+    currentCommitDetail.value = null;
     diff = await fetchDiff(filePath, staged);
   }
   if (!diff) return;
@@ -2893,6 +2923,57 @@ onBeforeUnmount(() => {
   background: rgba(168, 85, 247, 0.15);
   color: #c084fc;
   border: 1px solid rgba(168, 85, 247, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 460px;
+}
+
+.commit-pill-hash {
+  font-family: var(--font-family-mono, monospace);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.commit-pill-type {
+  font-size: 10px;
+  font-family: var(--font-family-mono, monospace);
+  padding: 0 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.commit-pill-type.cc-feat {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.commit-pill-type.cc-fix {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.commit-pill-type.cc-docs {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
+.commit-pill-type.cc-refactor {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+}
+
+.commit-pill-type.cc-chore {
+  background: rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+}
+
+.commit-pill-msg {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
 }
 
 :root[data-theme="light"] .diff-status-pill.pill-commit {
