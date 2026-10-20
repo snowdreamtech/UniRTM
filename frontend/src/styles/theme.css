@@ -809,72 +809,37 @@ html[dir="rtl"] .opt-check {
   color: #94a3b8 !important;
 }
 
-/* Tab Context Menu & Submenus (VS Code Aligned) */
-.tab-context-menu {
+/* Tab Context Menu & Submenus (VS Code Native Aligned & Responsive Robust) */
+.tab-context-menu,
+.tab-submenu-independent {
   position: fixed !important;
   z-index: 99999 !important;
   user-select: none;
-  min-width: 250px;
+  min-width: 260px !important;
+  max-width: 360px !important;
+  width: max-content !important;
+  box-sizing: border-box !important;
+  border-radius: 6px !important;
+  padding: 4px 0 !important;
   overflow: visible !important;
   animation: tabMenuFadeIn 0.12s ease-out;
 }
 
-.tab-context-menu .monaco-menu {
-  overflow: visible !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
-}
-
-.tab-context-menu .monaco-action-bar.vertical {
-  overflow: visible !important;
-}
-
-.tab-context-menu .actions-container {
-  overflow: visible !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  list-style: none !important;
-}
-
-/* Compact 1px Separators (eliminates huge empty gap) */
-.tab-context-menu .action-separator {
-  height: 1px !important;
-  min-height: 1px !important;
-  max-height: 1px !important;
-  line-height: 1px !important;
-  padding: 0 !important;
-  margin: 4px 6px !important;
-  background-color: rgba(128, 128, 128, 0.22) !important;
-  border: none !important;
-  list-style: none !important;
-  overflow: hidden !important;
-}
-
-:root[data-theme="dark"] .tab-context-menu .action-separator {
-  background-color: rgba(255, 255, 255, 0.12) !important;
-}
-
-:root[data-theme="light"] .tab-context-menu .action-separator {
-  background-color: rgba(0, 0, 0, 0.1) !important;
-}
-
-.tab-context-menu .action-item.has-submenu {
-  position: relative !important;
-  overflow: visible !important;
-}
-
-.tab-context-menu .submenu-arrow {
-  font-size: 14px;
-  margin-left: 16px;
-  opacity: 0.7;
-}
-
-/* Independent Secondary Submenu (Teleported to body) */
 .tab-submenu-independent {
-  position: fixed !important;
   z-index: 100000 !important;
-  user-select: none;
-  min-width: 175px !important;
+  min-width: 180px !important;
   animation: tabSubMenuFadeIn 0.1s ease-out;
+}
+
+@keyframes tabMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes tabSubMenuFadeIn {
@@ -888,35 +853,139 @@ html[dir="rtl"] .opt-check {
   }
 }
 
+.tab-context-menu .monaco-menu,
 .tab-submenu-independent .monaco-menu {
+  overflow: visible !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
+.tab-context-menu .monaco-action-bar.vertical,
+.tab-submenu-independent .monaco-action-bar.vertical {
+  overflow: visible !important;
+  width: 100% !important;
+}
+
+.tab-context-menu .actions-container,
 .tab-submenu-independent .actions-container {
+  overflow: visible !important;
   padding: 0 !important;
   margin: 0 !important;
   list-style: none !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
+.tab-context-menu .action-item,
+.tab-submenu-independent .action-item {
+  display: block !important;
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 4px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.tab-context-menu .action-item.has-submenu {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+/* Row Layout: strictly single line, flex nowrap, space-between */
+.tab-context-menu .action-menu-item,
+.tab-submenu-independent .action-menu-item {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  min-height: 26px !important;
+  height: 26px !important;
+  line-height: 26px !important;
+  padding: 0 8px !important;
+  margin: 1px 0 !important;
+  border-radius: 4px !important;
+  box-sizing: border-box !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  outline: none !important;
+  border: none !important;
+  transition: background-color 0.12s ease, color 0.12s ease !important;
+}
+
+/* Action Label: Left-aligned, flexible width, ellipsis, strictly nowrap */
+.tab-context-menu .action-label,
+.tab-submenu-independent .action-label {
+  display: inline-block !important;
+  flex: 1 1 auto !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-size: 12px !important;
+  line-height: 26px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Keybinding: Right-aligned, fixed width, strictly nowrap, safe spacing */
+.tab-context-menu .keybinding,
+.tab-submenu-independent .keybinding {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  margin-left: 24px !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+  font-size: 11px !important;
+  line-height: 26px !important;
+  font-family: inherit !important;
+  padding: 0 !important;
+}
+
+/* Submenu Arrow: Right-aligned chevron icon */
+.tab-context-menu .submenu-arrow,
+.tab-submenu-independent .submenu-arrow {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  font-size: 14px !important;
+  margin-left: 16px !important;
+  opacity: 0.7 !important;
+  align-items: center !important;
+}
+
+/* Compact 1px Separators */
+.tab-context-menu .action-separator,
 .tab-submenu-independent .action-separator {
+  display: block !important;
   height: 1px !important;
   min-height: 1px !important;
   max-height: 1px !important;
   line-height: 1px !important;
   padding: 0 !important;
   margin: 4px 6px !important;
-  background-color: rgba(128, 128, 128, 0.22) !important;
   border: none !important;
   list-style: none !important;
   overflow: hidden !important;
+  box-sizing: border-box !important;
 }
 
-:root[data-theme="dark"] .tab-submenu-independent .action-separator {
+:root[data-theme="dark"] .tab-context-menu .action-separator,
+:root[data-theme="dark"] .tab-submenu-independent .action-separator,
+[data-theme="dark"] .tab-context-menu .action-separator,
+[data-theme="dark"] .tab-submenu-independent .action-separator {
+  background-color: rgba(0, 0, 0, 0.12) !important;
+}
+
+:root[data-theme="light"] .tab-context-menu .action-separator,
+:root[data-theme="light"] .tab-submenu-independent .action-separator,
+[data-theme="light"] .tab-context-menu .action-separator,
+[data-theme="light"] .tab-submenu-independent .action-separator {
   background-color: rgba(255, 255, 255, 0.12) !important;
-}
-
-:root[data-theme="light"] .tab-submenu-independent .action-separator {
-  background-color: rgba(0, 0, 0, 0.1) !important;
 }
 
 
