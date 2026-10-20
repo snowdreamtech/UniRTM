@@ -406,10 +406,47 @@ func TestBuiltinRules_SvgSafety(t *testing.T) {
 	}
 }
 
-func TestBuiltinRegistry(t *testing.T) {
-	rules := guard.GetAllBuiltinRules()
-	if len(rules) < 14 {
-		t.Errorf("Expected at least 14 builtin rules, got %d", len(rules))
+func TestBuiltinRules_Json(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	validJson := filepath.Join(tmpDir, "valid.json")
+	_ = os.WriteFile(validJson, []byte(`{"name": "unirtm", "version": 1}`), 0644)
+
+	invalidJson := filepath.Join(tmpDir, "invalid.json")
+	_ = os.WriteFile(invalidJson, []byte(`{"name": "unirtm", "unclosed": }`), 0644)
+
+	jsonc := filepath.Join(tmpDir, "tsconfig.json")
+	_ = os.WriteFile(jsonc, []byte(`{
+		// Single line comment
+		/* Multi-line
+		   comment */
+		"compilerOptions": {
+			"target": "es2022"
+		}
+	}`), 0644)
+
+	rule := guard.NewJsonRule()
+	ctx := context.Background()
+
+	issues, err := rule.Execute(ctx, []string{"valid.json", "invalid.json", "tsconfig.json"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) != 1 {
+		t.Fatalf("Expected 1 invalid JSON issue, got %d: %v", len(issues), issues)
+	}
+	if issues[0].FilePath != "invalid.json" {
+		t.Errorf("Expected invalid.json to fail, got: %s", issues[0].FilePath)
 	}
 }
+
+func TestBuiltinRegistry(t *testing.T) {
+	rules := guard.GetAllBuiltinRules()
+	if len(rules) < 15 {
+		t.Errorf("Expected at least 15 builtin rules, got %d", len(rules))
+	}
+}
+
 

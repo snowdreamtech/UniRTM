@@ -24,6 +24,7 @@ func GetAllBuiltinRules() []Rule {
 		NewExecutablesHaveShebangsRule(),
 		NewShebangScriptsAreExecutableRule(),
 		NewSvgSafetyRule(),
+		NewJsonRule(),
 	}
 }
 
