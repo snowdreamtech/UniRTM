@@ -780,7 +780,7 @@
               :key="idx"
               class="issue-row"
               :class="'severity-' + issue.severity"
-              @click="handleOpenIssueFile(issue.file_path)"
+              @click="handleOpenIssueFile(issue.file_path, issue.line)"
             >
               <div class="issue-left">
                 <span class="codicon" :class="issue.severity === 'error' ? 'codicon-error' : 'codicon-warning'"></span>
@@ -789,7 +789,14 @@
               </div>
               <div class="issue-msg">{{ issue.message }}</div>
               <div class="issue-right">
-                <span v-if="issue.fixable" class="issue-fixable-pill">⚡ {{ t('guard.fixable') }}</span>
+                <button
+                  v-if="issue.fixable"
+                  class="issue-fixable-action-btn"
+                  :title="t('guard.actions.auto_fix') || '自动修复此文件'"
+                  @click.stop="runGuardFix(currentGuardScope, [issue.file_path])"
+                >
+                  ⚡ {{ t('guard.fixable') }}
+                </button>
                 <span class="issue-phase-tag font-mono">{{ issue.phase }}</span>
               </div>
             </div>
@@ -1362,9 +1369,9 @@ async function handleRunGuardFix() {
   }
 }
 
-function handleOpenIssueFile(path: string) {
+function handleOpenIssueFile(path: string, line?: number) {
   const fileName = getFileName(path);
-  openTab({ path, name: fileName });
+  openTab({ path, name: fileName, line });
   router.push({ name: "explorer" }).catch(() => {});
 }
 
@@ -3748,19 +3755,36 @@ onBeforeUnmount(() => {
   gap: 8px;
 }
 
+.issue-fixable-action-btn,
 .issue-fixable-pill {
   font-size: 10px;
-  padding: 2px 6px;
+  padding: 2px 8px;
   border-radius: 4px;
   background: rgba(16, 185, 129, 0.15);
   color: #34d399;
   font-weight: 600;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
+.issue-fixable-action-btn:hover {
+  background: rgba(16, 185, 129, 0.3);
+  color: #ffffff;
+  border-color: #34d399;
+}
+
+:root[data-theme="light"] .issue-fixable-action-btn,
 :root[data-theme="light"] .issue-fixable-pill {
   background: #ecfdf5;
   color: #047857;
   border: 1px solid #a7f3d0;
+}
+
+:root[data-theme="light"] .issue-fixable-action-btn:hover {
+  background: #d1fae5;
+  color: #065f46;
 }
 
 .issue-phase-tag {

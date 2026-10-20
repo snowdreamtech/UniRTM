@@ -196,14 +196,21 @@
             :key="idx"
             class="guard-issue-item"
             :class="'severity-' + iss.severity"
-            @click="handleOpenFileInEditor(iss.file_path)"
+            @click="handleOpenFileInEditor(iss.file_path, iss.line)"
           >
             <span class="codicon" :class="iss.severity === 'error' ? 'codicon-error' : 'codicon-warning'"></span>
             <div class="guard-issue-info">
-              <span class="guard-issue-file font-mono">{{ iss.file_path }}{{ iss.line ? ':' + iss.line : '' }}</span>
+              <span class="guard-issue-file font-mono">{{ iss.file_path }}<span v-if="iss.line" class="issue-line-badge">:{{ iss.line }}</span></span>
               <span class="guard-issue-msg">{{ iss.message }}</span>
             </div>
-            <span v-if="iss.fixable" class="guard-fixable-tag">{{ t('guard.fixable') || '可修复' }}</span>
+            <button
+              v-if="iss.fixable"
+              class="guard-single-fix-btn"
+              :title="t('guard.actions.auto_fix') || '自动修复此文件'"
+              @click.stop="handleRunGuardFix([iss.file_path])"
+            >
+              ⚡ {{ t('guard.fixable') || '可修复' }}
+            </button>
           </div>
         </div>
       </div>
@@ -607,8 +614,8 @@ function handleCapsuleClick() {
   }
 }
 
-async function handleRunGuardFix() {
-  const ok = await runGuardFix("staged");
+async function handleRunGuardFix(targetFiles?: string[]) {
+  const ok = await runGuardFix("staged", targetFiles);
   if (ok) {
     showToast(t("guard.toast.fixed") || "✨ 已自动完成代码格式与卫生修复", "success");
     await fetchStatus();
@@ -657,9 +664,9 @@ async function handleDiscardAll() {
   }
 }
 
-function handleOpenFileInEditor(path: string) {
+function handleOpenFileInEditor(path: string, line?: number) {
   const fileName = getFileName(path);
-  openTab({ path, name: fileName });
+  openTab({ path, name: fileName, line });
   router.push({ name: "explorer" }).catch(() => {});
 }
 
@@ -1874,18 +1881,36 @@ async function handleModalConfirm(payload: {
   color: #475569;
 }
 
+.guard-single-fix-btn,
 .guard-fixable-tag {
   font-size: 9px;
-  padding: 1px 4px;
+  padding: 1px 6px;
   border-radius: 3px;
   background: rgba(16, 185, 129, 0.2);
   color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
+.guard-single-fix-btn:hover {
+  background: rgba(16, 185, 129, 0.35);
+  color: #ffffff;
+  border-color: #34d399;
+}
+
+:root[data-theme="light"] .guard-single-fix-btn,
 :root[data-theme="light"] .guard-fixable-tag {
   background: #ecfdf5;
   color: #047857;
   border: 1px solid #a7f3d0;
+}
+
+:root[data-theme="light"] .guard-single-fix-btn:hover {
+  background: #d1fae5;
+  color: #065f46;
 }
 
 .guard-issues-empty {
