@@ -35,6 +35,7 @@ func GetAllBuiltinRules() []Rule {
 		NewBinaryArtifactsRule(),
 		NewEmptyCodeFilesRule(),
 		NewScriptCrlfRule(),
+		NewMarkdownRule(),
 	}
 }
 
