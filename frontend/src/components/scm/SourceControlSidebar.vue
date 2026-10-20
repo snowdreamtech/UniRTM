@@ -168,7 +168,7 @@
             class="guard-btn-fix"
             :disabled="isGuardFixing"
             :title="t('guard.actions.auto_fix') || '一键自动修复'"
-            @click.stop="handleRunGuardFix"
+            @click.stop="() => handleRunGuardFix()"
           >
             <span class="codicon" :class="isGuardFixing ? 'codicon-loading codicon-modifier-spin' : 'codicon-wand'"></span>
             <span>{{ t('guard.actions.fix') || '自动修复' }}</span>
