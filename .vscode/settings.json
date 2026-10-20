@@ -116,7 +116,7 @@
   // Set default terminal profile for Linux to Bash
   "terminal.integrated.defaultProfile.linux": "bash",
   // Disable warning when pasting multiple lines into terminal
-  "terminal.integrated.enableMultiLinePasteWarning": false,
+  "terminal.integrated.enableMultiLinePasteWarning": "never",
   // Ensure files end with a newline character (POSIX standard)
   "files.insertFinalNewline": true,
   // Automatically trim trailing whitespace on save
@@ -303,8 +303,10 @@
   "debug.inlineValues": "on",
   // [Terminal] Linux specific: Copy text on selection (X11 style)
   "terminal.integrated.copyOnSelection": true,
-  // [Terminal] Enable sticky scroll to keep executed commands visible at the top
-  "terminal.integrated.stickyScroll.enabled": true,
+  // [Terminal] Disable sticky scroll to prevent duplicate pinned prompt header
+  "terminal.integrated.stickyScroll.enabled": false,
+  // [Terminal] Disable shell integration to prevent duplicate prompt injection on startup
+  "terminal.integrated.shellIntegration.enabled": false,
   // ------------------------------------------------------------
   // 14. File Integrity & Visual Guides
   // ------------------------------------------------------------
