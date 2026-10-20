@@ -30,6 +30,7 @@ func GetAllBuiltinRules() []Rule {
 		NewXmlRule(),
 		NewCloudSecretsRule(),
 		NewCommitMsgRule(),
+		NewYamlRule(),
 	}
 }
 

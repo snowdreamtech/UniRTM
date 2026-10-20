@@ -614,10 +614,39 @@ func TestBuiltinRules_CommitMsg(t *testing.T) {
 	}
 }
 
+func TestBuiltinRules_Yaml(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	validYaml := filepath.Join(tmpDir, "config.yaml")
+	_ = os.WriteFile(validYaml, []byte("version: '3.8'\nservices:\n  app:\n    image: nginx:latest\n---\nkind: ConfigMap\n"), 0644)
+
+	invalidYaml := filepath.Join(tmpDir, "bad.yaml")
+	_ = os.WriteFile(invalidYaml, []byte("key: [unclosed bracket\n"), 0644)
+
+	emptyYaml := filepath.Join(tmpDir, "empty.yml")
+	_ = os.WriteFile(emptyYaml, []byte("   \n"), 0644)
+
+	rule := guard.NewYamlRule()
+	ctx := context.Background()
+
+	issues, err := rule.Execute(ctx, []string{"config.yaml", "bad.yaml", "empty.yml"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) != 1 {
+		t.Fatalf("Expected 1 invalid YAML issue, got %d: %v", len(issues), issues)
+	}
+	if issues[0].FilePath != "bad.yaml" {
+		t.Errorf("Expected bad.yaml to fail, got: %s", issues[0].FilePath)
+	}
+}
+
 func TestBuiltinRegistry(t *testing.T) {
 	rules := guard.GetAllBuiltinRules()
-	if len(rules) < 20 {
-		t.Errorf("Expected at least 20 builtin rules, got %d", len(rules))
+	if len(rules) < 21 {
+		t.Errorf("Expected at least 21 builtin rules, got %d", len(rules))
 	}
 }
 
