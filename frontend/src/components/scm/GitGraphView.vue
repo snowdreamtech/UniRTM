@@ -598,9 +598,38 @@
                     </div>
                   </div>
 
-                  <!-- Full Commit Message -->
+                  <!-- Full Commit Message with Structured Conventional Presentation -->
                   <div class="inline-message-box">
-                    <pre class="inline-message-text">{{ selectedCommitDetail?.message || selectedCommit.message }}</pre>
+                    <template v-if="parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message)">
+                      <div class="inline-message-top">
+                        <div class="inline-subject-row">
+                          <template v-if="parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).parsedSubject">
+                            <span class="cc-type-badge large" :class="'cc-' + parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).parsedSubject!.type">
+                              {{ parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).parsedSubject!.type }}
+                            </span>
+                            <span v-if="parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).parsedSubject!.scope" class="cc-scope-badge large">
+                              ({{ parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).parsedSubject!.scope }})
+                            </span>
+                            <span v-if="parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).parsedSubject!.isBreaking" class="cc-breaking-badge large">BREAKING</span>
+                            <span class="inline-subject-title">{{ parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).parsedSubject!.description }}</span>
+                          </template>
+                          <template v-else>
+                            <span class="inline-subject-title">{{ parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).subject }}</span>
+                          </template>
+                        </div>
+                        <button
+                          class="inline-copy-msg-btn"
+                          :title="t('scm.actions.copy_message') || '复制提交信息'"
+                          @click.stop="handleCopyCommitDetailMessage(selectedCommitDetail?.message || selectedCommit.message)"
+                        >
+                          <span class="codicon codicon-copy"></span>
+                        </button>
+                      </div>
+
+                      <div v-if="parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).body" class="inline-body-content">
+                        <pre class="inline-body-text">{{ parseFullCommitMessage(selectedCommitDetail?.message || selectedCommit.message).body }}</pre>
+                      </div>
+                    </template>
                   </div>
                 </template>
               </div>
@@ -1111,6 +1140,28 @@ function parseCommitSubject(msg: string) {
     isBreaking: !!m[4],
     description: m[5],
   };
+}
+
+function parseFullCommitMessage(rawMsg: string) {
+  if (!rawMsg) return { subject: "", body: "", parsedSubject: null };
+  const lines = rawMsg.split(/\r?\n/);
+  const firstLine = lines[0] || "";
+  const body = lines.slice(1).join("\n").trim();
+  const parsedSubject = parseCommitSubject(firstLine);
+  return {
+    subject: firstLine,
+    body,
+    parsedSubject,
+  };
+}
+
+async function handleCopyCommitDetailMessage(msg: string) {
+  try {
+    await navigator.clipboard.writeText(msg);
+    showToast(t("scm.actions.copied") || "已复制提交说明", "info");
+  } catch {
+    showToast("Copy failed", "error");
+  }
 }
 
 const comparePair = computed<{ base: GitGraphCommit; target: GitGraphCommit } | null>(() => {
@@ -2863,15 +2914,78 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
   flex: 1;
   min-height: 60px;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.inline-message-text {
+.inline-message-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.inline-subject-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.cc-type-badge.large {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.cc-scope-badge.large {
+  font-size: 11px;
+  padding: 1px 6px;
+}
+
+.cc-breaking-badge.large {
+  font-size: 11px;
+  padding: 2px 6px;
+}
+
+.inline-subject-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.4;
+}
+
+.inline-copy-msg-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 3px 5px;
+  border-radius: 4px;
+  display: inline-flex;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.inline-copy-msg-btn:hover {
+  background: rgba(128, 128, 128, 0.15);
+  color: var(--accent-cyan);
+}
+
+.inline-body-content {
+  border-top: 1px dashed var(--card-border);
+  padding-top: 6px;
+}
+
+.inline-body-text {
   margin: 0;
   font-family: inherit;
   font-size: 11px;
   line-height: 1.5;
   white-space: pre-wrap;
-  color: var(--text-main);
+  color: var(--text-muted);
 }
 
 /* Right Column: Files */
