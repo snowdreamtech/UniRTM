@@ -232,8 +232,22 @@
                   <span class="gpg-badge-label">{{ getGpgBadgeLabel(commit.gpg.status) }}</span>
                 </span>
 
-                <!-- Message Text -->
-                <span class="commit-subject" :title="commit.message">{{ commit.message }}</span>
+                <!-- Message Text with Conventional Commits Pill Badges -->
+                <span class="commit-subject" :title="commit.message">
+                  <template v-if="parseCommitSubject(commit.message)">
+                    <span class="cc-type-badge" :class="'cc-' + parseCommitSubject(commit.message)!.type">
+                      {{ parseCommitSubject(commit.message)!.type }}
+                    </span>
+                    <span v-if="parseCommitSubject(commit.message)!.scope" class="cc-scope-badge">
+                      {{ parseCommitSubject(commit.message)!.scope }}
+                    </span>
+                    <span v-if="parseCommitSubject(commit.message)!.isBreaking" class="cc-breaking-badge">!</span>
+                    <span class="cc-desc-text">{{ parseCommitSubject(commit.message)!.description }}</span>
+                  </template>
+                  <template v-else>
+                    {{ commit.message }}
+                  </template>
+                </span>
               </template>
             </div>
 
@@ -1061,6 +1075,19 @@ const compareCommit = ref<GitGraphCommit | null>(null);
 const isComparing = computed(() => {
   return !!(selectedCommit.value && compareCommit.value && activeCompare.value);
 });
+
+function parseCommitSubject(msg: string) {
+  if (!msg || msg.startsWith("*") || msg.startsWith("Uncommitted")) return null;
+  const firstLine = msg.split(/\r?\n/)[0];
+  const m = firstLine.match(/^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(([a-zA-Z0-9_.\-/]+)\))?(!)?: (.+)$/);
+  if (!m) return null;
+  return {
+    type: m[1],
+    scope: m[3] || null,
+    isBreaking: !!m[4],
+    description: m[5],
+  };
+}
 
 const comparePair = computed<{ base: GitGraphCommit; target: GitGraphCommit } | null>(() => {
   if (compareCommit.value && selectedCommit.value) {
@@ -2288,6 +2315,115 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--text-main);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cc-type-badge {
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-family-mono, monospace);
+  padding: 1px 5px;
+  border-radius: 4px;
+  line-height: 1.2;
+  flex-shrink: 0;
+  text-transform: lowercase;
+}
+
+.cc-type-badge.cc-feat {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.cc-type-badge.cc-fix {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.cc-type-badge.cc-docs {
+  background: rgba(59, 130, 246, 0.18);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.cc-type-badge.cc-refactor {
+  background: rgba(168, 85, 247, 0.18);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.cc-type-badge.cc-test {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.cc-type-badge.cc-chore,
+.cc-type-badge.cc-ci,
+.cc-type-badge.cc-build,
+.cc-type-badge.cc-style {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+:root[data-theme="light"] .cc-type-badge.cc-feat {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+:root[data-theme="light"] .cc-type-badge.cc-fix {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+:root[data-theme="light"] .cc-type-badge.cc-docs {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+:root[data-theme="light"] .cc-type-badge.cc-refactor {
+  background: #faf5ff;
+  color: #7e22ce;
+  border-color: #e9d5ff;
+}
+
+:root[data-theme="light"] .cc-type-badge.cc-test {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.cc-scope-badge {
+  font-size: 10px;
+  font-family: var(--font-family-mono, monospace);
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.cc-breaking-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: #ef4444;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.cc-desc-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .col-date {
