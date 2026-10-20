@@ -153,13 +153,70 @@
               </button>
             </div>
 
-            <div class="header-branch-pill">
-              <span class="codicon codicon-git-branch"></span>
-              <span class="branch-name">{{ currentBranch }}</span>
-              <span v-if="status.ahead > 0 || status.behind > 0" class="branch-sync-badge">
-                <span v-if="status.behind > 0">↓ {{ status.behind }}</span>
-                <span v-if="status.ahead > 0">↑ {{ status.ahead }}</span>
-              </span>
+            <div class="header-branch-wrapper" ref="branchSelectorRef">
+              <div
+                class="header-branch-pill"
+                :class="{ active: isBranchMenuOpen }"
+                :title="`${t('scm.branch.current') || '当前分支'}: ${currentBranch}${status.upstream ? ' -> ' + status.upstream : ''}`"
+                @click="toggleBranchMenu"
+              >
+                <span class="codicon codicon-git-branch"></span>
+                <span class="branch-name">{{ currentBranch }}</span>
+                <span v-if="status.ahead > 0 || status.behind > 0" class="branch-sync-badge">
+                  <span v-if="status.behind > 0">↓ {{ status.behind }}</span>
+                  <span v-if="status.ahead > 0">↑ {{ status.ahead }}</span>
+                </span>
+                <span class="codicon codicon-chevron-down twistie" :class="{ 'is-expanded': isBranchMenuOpen }"></span>
+              </div>
+
+              <!-- Branch Switcher Dropdown Popover -->
+              <div v-if="isBranchMenuOpen" class="header-branch-dropdown" @click.stop>
+                <div class="branch-dropdown-header">
+                  <span class="dropdown-title">{{ t('scm.branch.switch') || '切换分支' }}</span>
+                  <div class="dropdown-header-actions">
+                    <button class="branch-action-icon-btn" :title="t('scm.actions.refresh') || '刷新'" @click.stop="handleRefreshBranches">
+                      <span class="codicon codicon-refresh" :class="{ 'codicon-modifier-spin': isSwitchingBranch }"></span>
+                    </button>
+                    <button class="branch-close-btn" @click.stop="isBranchMenuOpen = false">×</button>
+                  </div>
+                </div>
+
+                <!-- Quick Search Input -->
+                <div class="branch-search-box">
+                  <span class="codicon codicon-search search-icon"></span>
+                  <input
+                    v-model="branchSearchQuery"
+                    type="text"
+                    class="branch-search-input"
+                    :placeholder="t('scm.branch.filter') || '搜索分支...'"
+                    ref="branchSearchInputRef"
+                    @keydown.esc="isBranchMenuOpen = false"
+                  />
+                  <span
+                    v-if="branchSearchQuery"
+                    class="codicon codicon-close clear-icon"
+                    @click="branchSearchQuery = ''"
+                  ></span>
+                </div>
+
+                <!-- Branches List -->
+                <div class="branch-list-scroll">
+                  <div v-if="filteredBranches.length === 0" class="branch-empty-hint">
+                    <span>{{ t('scm.branch.no_match') || '无匹配分支' }}</span>
+                  </div>
+                  <div
+                    v-for="b in filteredBranches"
+                    :key="b.name"
+                    class="header-branch-item"
+                    :class="{ 'is-current': b.current }"
+                    @click="handleSelectBranch(b.name)"
+                  >
+                    <span class="codicon" :class="b.current ? 'codicon-check current-check' : 'codicon-git-branch'"></span>
+                    <span class="branch-item-name font-mono">{{ b.name }}</span>
+                    <span v-if="b.remote" class="branch-remote-tag">{{ t('scm.branch.remote') || '远程' }}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -793,6 +850,8 @@ const { showToast } = useToast();
 const {
   status,
   currentBranch,
+  branches,
+  checkout,
   totalChanges,
   commits,
   fetchStatus,
@@ -820,6 +879,59 @@ const {
   resetUncommitted,
   cleanUntracked,
 } = useGit();
+
+const isBranchMenuOpen = ref(false);
+const branchSearchQuery = ref("");
+const branchSearchInputRef = ref<HTMLInputElement | null>(null);
+const branchSelectorRef = ref<HTMLElement | null>(null);
+const isSwitchingBranch = ref(false);
+
+const filteredBranches = computed(() => {
+  const query = branchSearchQuery.value.trim().toLowerCase();
+  if (!query) return branches.value;
+  return branches.value.filter((b) => b.name.toLowerCase().includes(query));
+});
+
+function toggleBranchMenu(e: MouseEvent) {
+  e.stopPropagation();
+  isBranchMenuOpen.value = !isBranchMenuOpen.value;
+  if (isBranchMenuOpen.value) {
+    branchSearchQuery.value = "";
+    fetchBranches().catch(() => {});
+    nextTick(() => {
+      branchSearchInputRef.value?.focus();
+    });
+  }
+}
+
+async function handleRefreshBranches() {
+  await fetchBranches();
+}
+
+async function handleSelectBranch(branchName: string) {
+  if (branchName === currentBranch.value) {
+    isBranchMenuOpen.value = false;
+    return;
+  }
+  isSwitchingBranch.value = true;
+  try {
+    await checkout(branchName);
+    showToast(t("scm.branch.switched", { branch: branchName }) || `已切换至分支: ${branchName}`, "success");
+    isBranchMenuOpen.value = false;
+    await Promise.all([fetchStatus(), fetchBranches(), fetchLog()]);
+  } catch (err: any) {
+    showToast(err.message || "切换分支失败", "error");
+  } finally {
+    isSwitchingBranch.value = false;
+  }
+}
+
+function handleWindowClick(e: MouseEvent) {
+  if (branchSelectorRef.value && !branchSelectorRef.value.contains(e.target as Node)) {
+    isBranchMenuOpen.value = false;
+  }
+}
+
 
 const currentTab = ref<"changes" | "graph" | "guard">(
   route.query.tab === "graph" ? "graph" : route.query.tab === "guard" ? "guard" : "changes"
@@ -1732,12 +1844,15 @@ watch(
 
 onMounted(() => {
   fetchStatus().catch(() => {});
+  fetchBranches().catch(() => {});
   fetchLog().catch(() => {});
   fetchGuardStatus("staged").catch(() => {});
   fetchGuardRules().catch(() => {});
+  window.addEventListener("click", handleWindowClick);
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener("click", handleWindowClick);
   if (monacoDiffEditor) {
     monacoDiffEditor.dispose();
     monacoDiffEditor = null;
@@ -1751,6 +1866,7 @@ onBeforeUnmount(() => {
     modifiedModel = null;
   }
 });
+
 </script>
 
 <style scoped>
@@ -1931,6 +2047,10 @@ onBeforeUnmount(() => {
   margin: 4px 0 0 0;
 }
 
+.header-branch-wrapper {
+  position: relative;
+}
+
 .header-branch-pill {
   display: flex;
   align-items: center;
@@ -1942,6 +2062,182 @@ onBeforeUnmount(() => {
   border-radius: 20px;
   font-weight: 500;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.header-branch-pill:hover,
+.header-branch-pill.active {
+  border-color: var(--accent-blue, #3b82f6);
+  background: var(--section-bg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.header-branch-pill .twistie {
+  font-size: 11px;
+  transition: transform 0.2s ease;
+  color: var(--text-muted);
+}
+
+.header-branch-pill .twistie.is-expanded {
+  transform: rotate(180deg);
+}
+
+.header-branch-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 280px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: branchFadeIn 0.15s ease-out;
+}
+
+@keyframes branchFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.branch-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--card-border);
+  background: var(--section-bg);
+}
+
+.dropdown-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dropdown-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.branch-action-icon-btn,
+.branch-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.branch-action-icon-btn:hover,
+.branch-close-btn:hover {
+  color: var(--text-main);
+  background: var(--card-border);
+}
+
+.branch-search-box {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--card-border);
+  gap: 6px;
+  background: var(--card-bg);
+}
+
+.branch-search-box .search-icon {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.branch-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 12px;
+  color: var(--text-main);
+}
+
+.branch-search-box .clear-icon {
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.branch-list-scroll {
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.branch-empty-hint {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.header-branch-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.15s ease;
+  color: var(--text-main);
+}
+
+.header-branch-item:hover {
+  background: var(--section-bg);
+}
+
+.header-branch-item.is-current {
+  background: var(--accent-subtle, rgba(59, 130, 246, 0.08));
+  color: var(--accent-blue, #3b82f6);
+  font-weight: 500;
+}
+
+.header-branch-item .current-check {
+  color: var(--accent-blue, #3b82f6);
+  font-weight: bold;
+}
+
+.branch-item-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-branch-item .branch-remote-tag {
+  font-size: 10px;
+  padding: 1px 4px;
+  background: var(--section-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 3px;
+  color: var(--text-muted);
 }
 
 .branch-sync-badge {
@@ -1951,6 +2247,7 @@ onBeforeUnmount(() => {
   padding: 1px 6px;
   border-radius: 10px;
 }
+
 
 /* Stats Grid */
 .scm-stats-grid {
