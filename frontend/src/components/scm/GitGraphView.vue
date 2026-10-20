@@ -390,6 +390,25 @@
               </div>
 
               <div class="inline-detail-actions-right">
+                <!-- Collapse / Expand All (Tree mode only) -->
+                <button
+                  v-if="filesViewMode === 'tree'"
+                  class="inline-icon-btn"
+                  :title="t('scm.detail.collapse_all') || '折叠全部目录'"
+                  @click="collapseAllFolders"
+                >
+                  <span class="codicon codicon-collapse-all"></span>
+                </button>
+                <button
+                  v-if="filesViewMode === 'tree'"
+                  class="inline-icon-btn"
+                  :title="t('scm.detail.expand_all') || '展开全部目录'"
+                  @click="expandAllFolders"
+                >
+                  <span class="codicon codicon-expand-all"></span>
+                </button>
+                <div v-if="filesViewMode === 'tree'" class="action-divider"></div>
+
                 <!-- Tree vs List View Toggle -->
                 <button
                   class="inline-icon-btn"
@@ -640,9 +659,15 @@
               <!-- Right Column: Changed Files Tree / List -->
               <div class="inline-files-column">
                 <div class="inline-files-header">
-                  <span class="inline-files-count">
-                    {{ t('scm.detail.changed_files') }} ({{ currentFiles.length }})
-                  </span>
+                  <div class="inline-files-count-group">
+                    <span class="inline-files-count">
+                      {{ t('scm.detail.changed_files') }} ({{ currentFiles.length }})
+                    </span>
+                    <span v-if="totalAdditions > 0 || totalDeletions > 0" class="inline-files-stats-pill">
+                      <span v-if="totalAdditions > 0" class="stat-add">+{{ totalAdditions }}</span>
+                      <span v-if="totalDeletions > 0" class="stat-del">-{{ totalDeletions }}</span>
+                    </span>
+                  </div>
                   <div class="inline-files-search">
                     <span class="codicon codicon-search"></span>
                     <input
@@ -1481,6 +1506,32 @@ function toggleFolder(folderPath: string) {
   } else {
     collapsedFolders.value.add(folderPath);
   }
+}
+
+const totalAdditions = computed(() => {
+  return currentFiles.value.reduce((acc, f) => acc + (f.additions || 0), 0);
+});
+
+const totalDeletions = computed(() => {
+  return currentFiles.value.reduce((acc, f) => acc + (f.deletions || 0), 0);
+});
+
+function collapseAllFolders() {
+  const allDirs = new Set<string>();
+  function collect(nodes: FileTreeNode[]) {
+    for (const n of nodes) {
+      if (n.isDir) {
+        allDirs.add(n.path);
+        collect(n.children);
+      }
+    }
+  }
+  collect(fileTreeData.value);
+  collapsedFolders.value = allDirs;
+}
+
+function expandAllFolders() {
+  collapsedFolders.value = new Set();
 }
 
 function handleFileClick(path: string) {
@@ -3008,10 +3059,28 @@ function getGpgTooltip(gpg?: GitGpgInfo): string {
   flex-shrink: 0;
 }
 
+.inline-files-count-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .inline-files-count {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-main);
+}
+
+.inline-files-stats-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-family: var(--font-family-mono, monospace);
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
 }
 
 .inline-files-search {
