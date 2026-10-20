@@ -118,6 +118,35 @@
         ></textarea>
       </div>
 
+      <!-- Conventional Commits Quick Badges & Real-time Validation Bar -->
+      <div v-if="!commitMessage.trim()" class="commit-quick-prefixes">
+        <span
+          v-for="p in quickCommitPrefixes"
+          :key="p.label"
+          class="prefix-pill"
+          :title="p.title"
+          @click="applyQuickPrefix(p.prefix)"
+        >
+          {{ p.label }}
+        </span>
+      </div>
+      <div v-else class="commit-validation-bar" :class="{ 'is-valid': commitValidation.isValid, 'is-warning': !commitValidation.isValid || commitValidation.warning }">
+        <div class="validation-status-left">
+          <span class="codicon" :class="commitValidation.isValid ? 'codicon-pass' : 'codicon-warning'"></span>
+          <span v-if="commitValidation.isValid" class="validation-type-badge">{{ commitValidation.type }}<span v-if="commitValidation.scope">({{ commitValidation.scope }})</span></span>
+          <span class="validation-msg">{{ commitValidation.warning || (t('scm.commit.conventional_valid') || 'Conventional Commits 合规') }}</span>
+        </div>
+        <button
+          v-if="commitValidation.canAutoFix"
+          class="commit-auto-fix-btn"
+          :title="t('guard.actions.auto_fix') || '自动修复格式'"
+          @click.stop="handleAutoFixCommitMessage"
+        >
+          <span class="codicon codicon-wand"></span>
+          <span>{{ t('guard.actions.fix') || '规范化' }}</span>
+        </button>
+      </div>
+
       <div class="commit-options-bar">
         <label class="gpg-sign-toggle" :title="t('scm.sidebar.gpg_sign')">
           <input type="checkbox" v-model="signCommit" class="gpg-sign-checkbox" />
@@ -373,6 +402,7 @@ import GitMoreActionsMenu from "./GitMoreActionsMenu.vue";
 import GitFileContextMenu, { type ContextMenuTargetFile, type FileMenuActionType } from "./GitFileContextMenu.vue";
 import GitActionModal, { type GitModalActionType } from "./GitActionModal.vue";
 import { useGuard } from "../../composables/useGuard";
+import { validateCommitMessage, type CommitMessageValidation } from "../../utils/commitMessageValidator";
 
 const router = useRouter();
 const route = useRoute();
@@ -427,6 +457,38 @@ const moreMenuPos = ref({ x: 0, y: 0 });
 const modalVisible = ref(false);
 const activeModalType = ref<GitModalActionType | null>(null);
 const modalTargetRefName = ref<string | undefined>(undefined);
+
+const quickCommitPrefixes = [
+  { label: 'feat', prefix: 'feat: ', title: '新功能 (Feature)' },
+  { label: 'fix', prefix: 'fix: ', title: '修复缺陷 (Bug fix)' },
+  { label: 'docs', prefix: 'docs: ', title: '文档变更 (Documentation)' },
+  { label: 'refactor', prefix: 'refactor: ', title: '代码重构 (Refactor)' },
+  { label: 'test', prefix: 'test: ', title: '测试用例 (Test)' },
+  { label: 'chore', prefix: 'chore: ', title: '构建与日常维护 (Chore)' },
+];
+
+const commitValidation = computed<CommitMessageValidation>(() => {
+  return validateCommitMessage(commitMessage.value);
+});
+
+function applyQuickPrefix(prefix: string) {
+  if (!commitMessage.value) {
+    commitMessage.value = prefix;
+  } else {
+    const existing = quickCommitPrefixes.find((p) => commitMessage.value.startsWith(p.prefix));
+    if (existing) {
+      commitMessage.value = prefix + commitMessage.value.slice(existing.prefix.length);
+    } else {
+      commitMessage.value = prefix + commitMessage.value;
+    }
+  }
+}
+
+function handleAutoFixCommitMessage() {
+  if (commitValidation.value.canAutoFix && commitValidation.value.fixedMessage) {
+    commitMessage.value = commitValidation.value.fixedMessage;
+  }
+}
 
 const selectedDiffPath = ref<string>("");
 const selectedIsStaged = ref<boolean>(false);
@@ -1088,6 +1150,111 @@ async function handleModalConfirm(payload: {
   align-items: center;
   justify-content: flex-start;
   padding: 2px 2px;
+}
+
+.commit-quick-prefixes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 2px 2px;
+}
+
+.prefix-pill {
+  font-size: 10px;
+  font-family: var(--font-family-mono, monospace);
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.prefix-pill:hover {
+  background: var(--accent-cyan-dim, rgba(88, 166, 255, 0.15));
+  border-color: var(--accent-cyan, #58a6ff);
+  color: var(--accent-cyan, #58a6ff);
+}
+
+.commit-validation-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--card-border);
+  margin-top: 2px;
+}
+
+.commit-validation-bar.is-valid {
+  border-color: rgba(63, 185, 80, 0.3);
+  background: rgba(63, 185, 80, 0.08);
+}
+
+.commit-validation-bar.is-valid .codicon-pass {
+  color: #3fb950;
+}
+
+.commit-validation-bar.is-warning {
+  border-color: rgba(210, 153, 34, 0.35);
+  background: rgba(210, 153, 34, 0.08);
+}
+
+.commit-validation-bar.is-warning .codicon-warning {
+  color: #d29922;
+}
+
+.validation-status-left {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.validation-type-badge {
+  font-size: 10px;
+  font-family: var(--font-family-mono, monospace);
+  padding: 0 4px;
+  border-radius: 3px;
+  background: rgba(88, 166, 255, 0.2);
+  color: var(--accent-cyan, #58a6ff);
+  font-weight: 600;
+}
+
+.validation-msg {
+  font-size: 11px;
+  color: var(--text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.commit-auto-fix-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--accent-cyan, #58a6ff);
+  background: var(--accent-cyan-dim, rgba(88, 166, 255, 0.15));
+  color: var(--accent-cyan, #58a6ff);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+
+.commit-auto-fix-btn:hover {
+  opacity: 0.85;
 }
 
 .gpg-sign-toggle {
