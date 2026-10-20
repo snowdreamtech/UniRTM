@@ -389,6 +389,7 @@ func TestGenerateHookEnvScript_Bash(t *testing.T) {
 	assert.Contains(t, script, "unirtm hook-env --shell bash")
 	assert.Contains(t, script, "PROMPT_COMMAND")
 	assert.Contains(t, script, "PS1=$'\n'\"$PS1\"")
+	assert.Contains(t, script, `elif [[ "$PROMPT_COMMAND" != *"_unirtm_hook"* ]]; then`)
 }
 
 func TestGenerateHookEnvScript_Zsh(t *testing.T) {
@@ -429,6 +430,7 @@ func TestGenerateHookEnvScript_PowerShell(t *testing.T) {
 	assert.Contains(t, script, "$env:UNIRTM_OLD_PWD")
 	assert.Contains(t, script, "hook-env --shell powershell")
 	assert.Contains(t, script, "function prompt")
+	assert.Contains(t, script, "$global:_unirtm_hook_installed")
 }
 
 func TestGenerateHookEnvScript_UnsupportedShell(t *testing.T) {
