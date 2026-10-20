@@ -616,11 +616,6 @@ func (m *AutoActivationManager) generatePosixHook(sb *strings.Builder, shell She
 	sb.WriteString("\n")
 
 	if shell == ShellBash {
-		sb.WriteString("# Prevent prompt concatenation in bash\n")
-		sb.WriteString("if [[ -n \"${PS1:-}\" && \"$PS1\" != *$'\n'* ]]; then\n")
-		sb.WriteString("  PS1=$'\n'\"$PS1\"\n")
-		sb.WriteString("fi\n")
-		sb.WriteString("\n")
 		sb.WriteString("# Install the hook in bash idempotently\n")
 		sb.WriteString("if [[ -z \"${PROMPT_COMMAND:-}\" ]]; then\n")
 		sb.WriteString("  PROMPT_COMMAND=\"_unirtm_hook\"\n")

@@ -388,7 +388,6 @@ func TestGenerateHookEnvScript_Bash(t *testing.T) {
 	assert.Contains(t, script, "UNIRTM_OLD_PWD")
 	assert.Contains(t, script, "unirtm hook-env --shell bash")
 	assert.Contains(t, script, "PROMPT_COMMAND")
-	assert.Contains(t, script, "PS1=$'\n'\"$PS1\"")
 	assert.Contains(t, script, `elif [[ "$PROMPT_COMMAND" != *"_unirtm_hook"* ]]; then`)
 }
 
