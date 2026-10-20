@@ -672,10 +672,36 @@ func TestBuiltinRules_DebugStatements(t *testing.T) {
 	}
 }
 
+func TestBuiltinRules_BinaryArtifacts(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	goodSource := filepath.Join(tmpDir, "main.go")
+	_ = os.WriteFile(goodSource, []byte("package main\n"), 0644)
+
+	badExe := filepath.Join(tmpDir, "app.exe")
+	_ = os.WriteFile(badExe, []byte("MZ\x90\x00"), 0644)
+
+	badZip := filepath.Join(tmpDir, "archive.tar.gz")
+	_ = os.WriteFile(badZip, []byte("fake tar gz content"), 0644)
+
+	rule := guard.NewBinaryArtifactsRule()
+	ctx := context.Background()
+
+	issues, err := rule.Execute(ctx, []string{"main.go", "app.exe", "archive.tar.gz"}, guard.ExecuteOptions{
+		WorkspaceDir: tmpDir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) != 2 {
+		t.Fatalf("Expected 2 binary artifact issues, got %d: %v", len(issues), issues)
+	}
+}
+
 func TestBuiltinRegistry(t *testing.T) {
 	rules := guard.GetAllBuiltinRules()
-	if len(rules) < 22 {
-		t.Errorf("Expected at least 22 builtin rules, got %d", len(rules))
+	if len(rules) < 23 {
+		t.Errorf("Expected at least 23 builtin rules, got %d", len(rules))
 	}
 }
 

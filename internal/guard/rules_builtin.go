@@ -32,6 +32,7 @@ func GetAllBuiltinRules() []Rule {
 		NewCommitMsgRule(),
 		NewYamlRule(),
 		NewDebugStatementsRule(),
+		NewBinaryArtifactsRule(),
 	}
 }
 
