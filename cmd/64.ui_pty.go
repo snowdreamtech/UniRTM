@@ -79,6 +79,9 @@ func handleTerminalWebSocket(ws *websocket.Conn) {
 		rows = uint16(r)
 	}
 
+	currentCols := cols
+	currentRows := rows
+
 	session, err := startPTYSession(shellPath, cwd, cols, rows)
 	if err != nil {
 		pterm.Error.Printf("Failed to spawn PTY session: %v\n", err)
@@ -135,7 +138,9 @@ func handleTerminalWebSocket(ws *websocket.Conn) {
 					_, _ = session.Write([]byte(ctrl.Data))
 				}
 			case "resize":
-				if ctrl.Cols > 0 && ctrl.Rows > 0 {
+				if ctrl.Cols > 0 && ctrl.Rows > 0 && (ctrl.Cols != currentCols || ctrl.Rows != currentRows) {
+					currentCols = ctrl.Cols
+					currentRows = ctrl.Rows
 					session.Resize(ctrl.Cols, ctrl.Rows)
 				}
 			case "kill":

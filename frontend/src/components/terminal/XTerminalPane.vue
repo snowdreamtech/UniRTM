@@ -139,15 +139,28 @@ function updateTerminalTheme() {
   term.options.theme = getXtermTheme(isDark);
 }
 
+let lastSentCols = 0;
+let lastSentRows = 0;
+let resizeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
 function connectWebSocket() {
   if (!term) return;
   isConnecting.value = true;
   connectionError.value = null;
 
+  if (fitAddon) {
+    try {
+      fitAddon.fit();
+    } catch {}
+  }
+
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   const host = window.location.host;
   const cols = term.cols || 80;
   const rows = term.rows || 24;
+
+  lastSentCols = cols;
+  lastSentRows = rows;
 
   const url = `${protocol}//${host}/api/terminal/ws?id=${encodeURIComponent(props.paneId)}&shell=${encodeURIComponent(props.shellPath)}&cols=${cols}&rows=${rows}`;
 
@@ -169,7 +182,9 @@ function connectWebSocket() {
       }
     });
     if (fitAddon) {
-      fitAddon.fit();
+      try {
+        fitAddon.fit();
+      } catch {}
       sendResize();
     }
   };
@@ -207,15 +222,41 @@ function connectWebSocket() {
   };
 }
 
-function sendResize() {
+function sendResize(immediate = false) {
   if (!term || !ws || ws.readyState !== WebSocket.OPEN) return;
-  ws.send(
-    JSON.stringify({
-      type: "resize",
-      cols: term.cols,
-      rows: term.rows,
-    })
-  );
+  const cols = term.cols;
+  const rows = term.rows;
+  if (!cols || !rows) return;
+  if (cols === lastSentCols && rows === lastSentRows) return;
+
+  const doSend = () => {
+    if (!term || !ws || ws.readyState !== WebSocket.OPEN) return;
+    const currentCols = term.cols;
+    const currentRows = term.rows;
+    if (currentCols === lastSentCols && currentRows === lastSentRows) return;
+    lastSentCols = currentCols;
+    lastSentRows = currentRows;
+    ws.send(
+      JSON.stringify({
+        type: "resize",
+        cols: currentCols,
+        rows: currentRows,
+      })
+    );
+  };
+
+  if (immediate) {
+    if (resizeDebounceTimer) {
+      clearTimeout(resizeDebounceTimer);
+      resizeDebounceTimer = null;
+    }
+    doSend();
+  } else {
+    if (resizeDebounceTimer) {
+      clearTimeout(resizeDebounceTimer);
+    }
+    resizeDebounceTimer = setTimeout(doSend, 60);
+  }
 }
 
 function reconnect() {
@@ -381,6 +422,10 @@ onBeforeUnmount(() => {
   if (resizeObserver) {
     resizeObserver.disconnect();
     resizeObserver = null;
+  }
+  if (resizeDebounceTimer) {
+    clearTimeout(resizeDebounceTimer);
+    resizeDebounceTimer = null;
   }
   if (themeObserver) {
     themeObserver.disconnect();
