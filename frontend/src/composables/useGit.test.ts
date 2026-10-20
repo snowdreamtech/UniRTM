@@ -665,6 +665,57 @@ describe("useGit composable", () => {
     // Clean up
     activeRepo.value = null;
   });
+
+  it("restores activeRepo from localStorage upon fetchRepositories", async () => {
+    const mockRepos = [
+      { id: "repo-A", name: "repo-A", rootPath: "/path/to/repo-A", branch: "dev", ahead: 0, behind: 0, isDirty: false, totalChanges: 0 },
+      { id: "repo-B", name: "repo-B", rootPath: "/path/to/repo-B", branch: "main", ahead: 1, behind: 0, isDirty: false, totalChanges: 0 },
+    ];
+
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url === "/api/git/repositories") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true, repositories: mockRepos }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ branch: "main", staged: [], unstaged: [] }),
+      });
+    });
+
+    // Mock localStorage
+    const storageMock = (() => {
+      let store: Record<string, string> = { unirtm_active_git_repo: "repo-B" };
+      return {
+        getItem: (key: string) => store[key] || null,
+        setItem: (key: string, value: string) => { store[key] = value; },
+        removeItem: (key: string) => { delete store[key]; },
+        clear: () => { store = {}; },
+      };
+    })();
+    Object.defineProperty(global, "localStorage", {
+      value: storageMock,
+      writable: true,
+      configurable: true,
+    });
+
+    const { activeRepo, fetchRepositories, setActiveRepo } = useGit();
+    (activeRepo as any).value = null;
+
+    await fetchRepositories();
+    expect(activeRepo.value?.id).toBe("repo-B");
+
+    // Change to repo-A
+    await setActiveRepo("repo-A");
+    expect(activeRepo.value?.id).toBe("repo-A");
+    expect(storageMock.getItem("unirtm_active_git_repo")).toBe("repo-A");
+
+    // Clean up
+    (activeRepo as any).value = null;
+  });
 });
+
 
 

@@ -132,6 +132,30 @@ export interface GitCompareResult {
   totalDeletions: number;
 }
 
+export const GIT_ACTIVE_REPO_STORAGE_KEY = "unirtm_active_git_repo";
+
+export function getPersistedActiveRepoId(): string | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    return localStorage.getItem(GIT_ACTIVE_REPO_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function persistActiveRepo(repo: GitRepositoryItem | null): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    if (!repo) {
+      localStorage.removeItem(GIT_ACTIVE_REPO_STORAGE_KEY);
+    } else {
+      localStorage.setItem(GIT_ACTIVE_REPO_STORAGE_KEY, repo.id || repo.rootPath || repo.name);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 const repositories = ref<GitRepositoryItem[]>([]);
 const activeRepo = ref<GitRepositoryItem | null>(null);
 const isLoadingRepositories = ref<boolean>(false);
@@ -1189,8 +1213,18 @@ export function useGit() {
       const data = await res.json();
       repositories.value = Array.isArray(data.repositories) ? data.repositories : [];
       if (repositories.value.length > 0) {
+        const savedId = getPersistedActiveRepoId();
+        if (savedId) {
+          const matched = repositories.value.find(
+            (r) => r.id === savedId || r.rootPath === savedId || r.name === savedId
+          );
+          if (matched) {
+            activeRepo.value = matched;
+          }
+        }
         if (!activeRepo.value || !repositories.value.some((r) => r.id === activeRepo.value?.id || r.rootPath === activeRepo.value?.rootPath)) {
           activeRepo.value = repositories.value[0];
+          persistActiveRepo(activeRepo.value);
         }
       }
       return repositories.value;
@@ -1225,6 +1259,7 @@ export function useGit() {
     } else {
       activeRepo.value = repoOrId;
     }
+    persistActiveRepo(activeRepo.value);
     await Promise.all([fetchStatus(), fetchBranches()]);
   }
 
