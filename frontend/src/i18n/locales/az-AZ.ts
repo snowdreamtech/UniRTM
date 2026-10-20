@@ -1159,7 +1159,7 @@ export const azAz: TranslationDict = {
   "guard.toast.blocked": "Quality Guard detected blocking issues, please fix before committing",
   "guard.config.title": "Configuration Perception & Management",
   "guard.config.active": "Active",
-  "guard.config.edit_main": "Edit .unirtm.toml",
+  "guard.config.edit_main": "Edit",
   "guard.config.detected": "Detected & Active",
   "guard.config.unconfigured": "Not configured (Using default)",
   "guard.config.open_edit": "Open & Edit ↗",

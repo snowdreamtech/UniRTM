@@ -1171,7 +1171,7 @@ export const zhTw: TranslationDict = {
   "guard.toast.blocked": "品質守衛檢測到阻斷違規，請先解決或修復後提交",
   "guard.config.title": "配置文件感知與管理",
   "guard.config.active": "已生效",
-  "guard.config.edit_main": "編輯主配置 .unirtm.toml",
+  "guard.config.edit_main": "編輯",
   "guard.config.detected": "已檢測到並生效",
   "guard.config.unconfigured": "未配置 (使用內建預設)",
   "guard.config.open_edit": "打開編輯 ↗",

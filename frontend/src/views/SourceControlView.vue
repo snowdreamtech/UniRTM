@@ -578,9 +578,9 @@
                 <span class="codicon codicon-output"></span>
                 <span>{{ t('guard.actions.view_output') }}</span>
               </button>
-              <button class="matrix-btn-primary" @click="handleOpenConfigFile('.unirtm.toml')">
+              <button class="matrix-btn-primary" @click="handleOpenConfigFile('.unirtm.toml')" title=".unirtm.toml">
                 <span class="codicon codicon-edit"></span>
-                <span>{{ t('guard.config.edit_main') }}</span>
+                <span>{{ t('guard.config.edit_main') || '编辑' }}</span>
               </button>
             </div>
           </div>
